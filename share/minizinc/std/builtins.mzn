@@ -295,13 +295,13 @@ function var float: min(array[$U] of var float: x) =
 
 
 /** @group builtins.arithmetic Return index of minimum of elements in array \a x */
-function int: arg_min(array[int] of int: x);
+function $$E: arg_min(array[$$E] of int: x);
 /** @group builtins.arithmetic Return index of minimum of elements in array \a x */
-function int: arg_min(array[int] of float: x);
+function $$E: arg_min(array[$$E] of float: x);
 /** @group builtins.arithmetic Return index of maximum of elements in array \a x */
-function int: arg_max(array[int] of int: x);
+function $$E: arg_max(array[$$E] of int: x);
 /** @group builtins.arithmetic Return index of maximum of elements in array \a x */
-function int: arg_max(array[int] of float: x);
+function $$E: arg_max(array[$$E] of float: x);
 
 /** @group builtins.arithmetic Return absolute value of \a x */
 function int: abs(int: x);
@@ -710,7 +710,7 @@ function int: length(array[$T] of var opt $U: x);
 
   The resulting array has the same index set as \a x.
 */
-function array[int] of $T: reverse(array[int] of $T: x) =
+function array[$$E] of $T: reverse(array[$$E] of $T: x) =
   let { int: l = max(index_set(x))+min(index_set(x)) } in
   array1d(index_set(x),[x[l-i] | i in index_set(x)]);
 
@@ -718,7 +718,7 @@ function array[int] of $T: reverse(array[int] of $T: x) =
 
   The resulting array has the same index set as \a x.
 */
-function array[int] of var $T: reverse(array[int] of var $T: x) =
+function array[$$E] of var $T: reverse(array[$$E] of var $T: x) =
   let { int: l = max(index_set(x))+min(index_set(x)) } in
   array1d(index_set(x),[x[l-i] | i in index_set(x)]);
 
@@ -726,7 +726,7 @@ function array[int] of var $T: reverse(array[int] of var $T: x) =
 
   The resulting array has the same index set as \a x.
 */
-function array[int] of var opt $T: reverse(array[int] of var opt $T: x) =
+function array[$$E] of var opt $T: reverse(array[$$E] of var opt $T: x) =
   let { int: l = max(index_set(x))+min(index_set(x)) } in
   array1d(index_set(x),[x[l-i] | i in index_set(x)]);
 
@@ -734,47 +734,47 @@ function array[int] of var opt $T: reverse(array[int] of var opt $T: x) =
 test index_sets_agree(array[$T] of var opt $U: x, array[$T] of var opt $W: y);
 
 /** @group builtins.array Return index set of one-dimensional array \a x */
-function set of int: index_set(array[int] of var opt $U: x);
+function set of $$E: index_set(array[$$E] of var opt $U: x);
 /** @group builtins.array Return index set of first dimension of two-dimensional array \a x */
-function set of int: index_set_1of2(array[int,int] of var opt $U: x);
+function set of $$E: index_set_1of2(array[$$E,int] of var opt $U: x);
 /** @group builtins.array Return index set of second dimension of two-dimensional array \a x */
-function set of int: index_set_2of2(array[int,int] of var opt $U: x);
+function set of $$E: index_set_2of2(array[int,$$E] of var opt $U: x);
 /** @group builtins.array Return index set of first dimension of 3-dimensional array \a x */
-function set of int: index_set_1of3(array[int,int,int] of var opt $U: x);
+function set of $$E: index_set_1of3(array[$$E,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of second dimension of 3-dimensional array \a x */
-function set of int: index_set_2of3(array[int,int,int] of var opt $U: x);
+function set of $$E: index_set_2of3(array[int,$$E,int] of var opt $U: x);
 /** @group builtins.array Return index set of third dimension of 3-dimensional array \a x */
-function set of int: index_set_3of3(array[int,int,int] of var opt $U: x);
+function set of $$E: index_set_3of3(array[int,int,$$E] of var opt $U: x);
 /** @group builtins.array Return index set of first dimension of 4-dimensional array \a x */
-function set of int: index_set_1of4(array[int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_1of4(array[$$E,int,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of second dimension of 4-dimensional array \a x */
-function set of int: index_set_2of4(array[int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_2of4(array[int,$$E,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of third dimension of 4-dimensional array \a x */
-function set of int: index_set_3of4(array[int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_3of4(array[int,int,$$E,int] of var opt $U: x);
 /** @group builtins.array Return index set of fourth dimension of 4-dimensional array \a x */
-function set of int: index_set_4of4(array[int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_4of4(array[int,int,int,$$E] of var opt $U: x);
 /** @group builtins.array Return index set of first dimension of 5-dimensional array \a x */
-function set of int: index_set_1of5(array[int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_1of5(array[$$E,int,int,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of second dimension of 5-dimensional array \a x */
-function set of int: index_set_2of5(array[int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_2of5(array[int,$$E,int,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of third dimension of 5-dimensional array \a x */
-function set of int: index_set_3of5(array[int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_3of5(array[int,int,$$E,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of fourth dimension of 5-dimensional array \a x */
-function set of int: index_set_4of5(array[int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_4of5(array[int,int,int,$$E,int] of var opt $U: x);
 /** @group builtins.array Return index set of fifth dimension of 5-dimensional array \a x */
-function set of int: index_set_5of5(array[int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_5of5(array[int,int,int,int,$$E] of var opt $U: x);
 /** @group builtins.array Return index set of first dimension of 6-dimensional array \a x */
-function set of int: index_set_1of6(array[int,int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_1of6(array[$$E,int,int,int,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of second dimension of 6-dimensional array \a x */
-function set of int: index_set_2of6(array[int,int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_2of6(array[int,$$E,int,int,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of third dimension of 6-dimensional array \a x */
-function set of int: index_set_3of6(array[int,int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_3of6(array[int,int,$$E,int,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of fourth dimension of 6-dimensional array \a x */
-function set of int: index_set_4of6(array[int,int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_4of6(array[int,int,int,$$E,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of fifth dimension of 6-dimensional array \a x */
-function set of int: index_set_5of6(array[int,int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_5of6(array[int,int,int,int,$$E,int] of var opt $U: x);
 /** @group builtins.array Return index set of sixth dimension of 6-dimensional array \a x */
-function set of int: index_set_6of6(array[int,int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_6of6(array[int,int,int,int,int,$$E] of var opt $U: x);
 
 /** @group builtins.array Return array \a x coerced to index set 1..length(\a x) */
 function array[int] of $V: array1d(array[$U] of $V: x);
@@ -784,129 +784,129 @@ function array[int] of var $V: array1d(array[$U] of var $V: x);
 function array[int] of var opt $V: array1d(array[$U] of var opt $V: x);
 
 /** @group builtins.array Return array \a x coerced to one-dimensional array with index set \a S */
-function array[int] of $V: array1d(set of int: S,
+function array[$$E] of $V: array1d(set of $$E: S,
                                    array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to one-dimensional array with index set \a S */
-function array[int] of var $V: array1d(set of int: S,
+function array[$$E] of var $V: array1d(set of $$E: S,
                                        array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to one-dimensional array with index set \a S */
-function array[int] of var opt $V: array1d(set of int: S,
+function array[$$E] of var opt $V: array1d(set of $$E: S,
                                            array[$U] of var opt $V: x);
 
 /** @group builtins.array Return array \a x coerced to two-dimensional array with index sets \a S1 and \a S2 */
-function array[int,int] of $V: array2d(set of int: S1, set of int: S2, 
+function array[$$E,$$F] of $V: array2d(set of $$E: S1, set of $$F: S2, 
                                        array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to two-dimensional array with index sets \a S1 and \a S2 */
-function array[int,int] of var $V: array2d(set of int: S1, set of int: S2, 
+function array[$$E,$$F] of var $V: array2d(set of $$E: S1, set of $$F: S2, 
                                            array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to two-dimensional array with index sets \a S1 and \a S2 */
-function array[int,int] of var opt $V: array2d(set of int: S1, set of int: S2, 
+function array[$$E,$$F] of var opt $V: array2d(set of $$E: S1, set of $$F: S2, 
                                                array[$U] of var opt $V: x);
 
 /** @group builtins.array Return array \a x coerced to three-dimensional array with
   index sets \a S1, \a S2 and \a S3
 */
-function array[int,int,int] of $V: array3d(set of int: S1,
-                                           set of int: S2,
-                                           set of int: S3,
+function array[$$E,$$F,$$G] of $V: array3d(set of $$E: S1,
+                                           set of $$F: S2,
+                                           set of $$G: S3,
                                            array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to three-dimensional array with
   index sets \a S1, \a S2 and \a S3
 */
-function array[int,int,int] of var $V: array3d(set of int: S1,
-                                               set of int: S2,
-                                               set of int: S3,
+function array[$$E,$$F,$$G] of var $V: array3d(set of $$E: S1,
+                                               set of $$F: S2,
+                                               set of $$G: S3,
                                                array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to three-dimensional array with
   index sets \a S1, \a S2 and \a S3
 */
-function array[int,int,int] of var opt $V: array3d(set of int: S1,
-                                                   set of int: S2,
-                                                   set of int: S3,
+function array[$$E,$$F,$$G] of var opt $V: array3d(set of $$E: S1,
+                                                   set of $$F: S2,
+                                                   set of $$G: S3,
                                                    array[$U] of var opt $V: x);
 
 /** @group builtins.array Return array \a x coerced to 4-dimensional array with
   index sets \a S1, \a S2, \a S3 and \a S4
 */
-function array[int,int,int,int] of $V: array4d(set of int: S1,
-                                               set of int: S2,
-                                               set of int: S3,
-                                               set of int: S4,
+function array[$$E,$$F,$$G,$$H] of $V: array4d(set of $$E: S1,
+                                               set of $$F: S2,
+                                               set of $$G: S3,
+                                               set of $$H: S4,
                                                array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to 4-dimensional array with
   index sets \a S1, \a S2, \a S3 and \a S4
 */
-function array[int,int,int,int] of var $V: array4d(set of int: S1,
-                                                   set of int: S2,
-                                                   set of int: S3,
-                                                   set of int: S4,
+function array[$$E,$$F,$$G,$$H] of var $V: array4d(set of $$E: S1,
+                                                   set of $$F: S2,
+                                                   set of $$G: S3,
+                                                   set of $$H: S4,
                                                    array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to 4-dimensional array with
   index sets \a S1, \a S2, \a S3 and \a S4
 */
-function array[int,int,int,int] of var opt $V: array4d(set of int: S1,
-                                                       set of int: S2,
-                                                       set of int: S3,
-                                                       set of int: S4,
+function array[$$E,$$F,$$G,$$H] of var opt $V: array4d(set of $$E: S1,
+                                                       set of $$F: S2,
+                                                       set of $$G: S3,
+                                                       set of $$H: S4,
                                                        array[$U] of var opt $V: x);
 
 /** @group builtins.array Return array \a x coerced to 5-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4 and \a S5
 */
-function array[int,int,int,int,int] of $V: array5d(set of int: S1,
-                                                   set of int: S2,
-                                                   set of int: S3,
-                                                   set of int: S4,
-                                                   set of int: S5,
+function array[$$E,$$F,$$G,$$H,$$I] of $V: array5d(set of $$E: S1,
+                                                   set of $$F: S2,
+                                                   set of $$G: S3,
+                                                   set of $$H: S4,
+                                                   set of $$I: S5,
                                                    array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to 5-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4 and \a S5
 */
-function array[int,int,int,int,int] of var $V: array5d(set of int: S1,
-                                                       set of int: S2,
-                                                       set of int: S3,
-                                                       set of int: S4,
-                                                       set of int: S5,
+function array[$$E,$$F,$$G,$$H,$$I] of var $V: array5d(set of $$E: S1,
+                                                       set of $$F: S2,
+                                                       set of $$G: S3,
+                                                       set of $$H: S4,
+                                                       set of $$I: S5,
                                                        array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to 5-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4 and \a S5
 */
-function array[int,int,int,int,int] of var opt $V: array5d(set of int: S1,
-                                                           set of int: S2,
-                                                           set of int: S3,
-                                                           set of int: S4,
-                                                           set of int: S5,
+function array[$$E,$$F,$$G,$$H,$$I] of var opt $V: array5d(set of $$E: S1,
+                                                           set of $$F: S2,
+                                                           set of $$G: S3,
+                                                           set of $$H: S4,
+                                                           set of $$I: S5,
                                                            array[$U] of var opt $V: x);
 
 /** @group builtins.array Return array \a x coerced to 6-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4, \a S5 and \a S6
 */
-function array[int,int,int,int,int,int] of $V: array6d(set of int: S1,
-                                                       set of int: S2,
-                                                       set of int: S3,
-                                                       set of int: S4,
-                                                       set of int: S5,
-                                                       set of int: S6,
+function array[$$E,$$F,$$G,$$H,$$I,$$J] of $V: array6d(set of $$E: S1,
+                                                       set of $$F: S2,
+                                                       set of $$G: S3,
+                                                       set of $$H: S4,
+                                                       set of $$I: S5,
+                                                       set of $$J: S6,
                                                        array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to 6-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4, \a S5 and \a S6
 */
-function array[int,int,int,int,int,int] of var $V: array6d(set of int: S1,
-                                                           set of int: S2,
-                                                           set of int: S3,
-                                                           set of int: S4,
-                                                           set of int: S5,
-                                                           set of int: S6,
+function array[$$E,$$F,$$G,$$H,$$I,$$J] of var $V: array6d(set of $$E: S1,
+                                                           set of $$F: S2,
+                                                           set of $$G: S3,
+                                                           set of $$H: S4,
+                                                           set of $$I: S5,
+                                                           set of $$J: S6,
                                                            array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to 6-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4, \a S5 and \a S6
 */
-function array[int,int,int,int,int,int] of var opt $V: array6d(set of int: S1,
-                                                               set of int: S2,
-                                                               set of int: S3,
-                                                               set of int: S4,
-                                                               set of int: S5,
-                                                               set of int: S6,
+function array[$$E,$$F,$$G,$$H,$$I,$$J] of var opt $V: array6d(set of $$E: S1,
+                                                               set of $$F: S2,
+                                                               set of $$G: S3,
+                                                               set of $$H: S4,
+                                                               set of $$I: S5,
+                                                               set of $$J: S6,
                                                                array[$U] of var opt $V: x);
 
 /** @group builtins.array Return array \a y coerced to array with same number of
@@ -923,23 +923,23 @@ function array[$T] of var $V: arrayXd(array[$T] of var opt $X: x, array[$U] of v
 function array[$T] of var opt $V: arrayXd(array[$T] of var opt $X: x, array[$U] of var opt $V: y);
 
 /** @group builtins.array Return row \a r of array \a x */
-function array[int] of $T: row(array[int, int] of $T: x, int: r) =
+function array[$$E] of $T: row(array[int, $$E] of $T: x, int: r) =
   array1d(index_set_2of2(x), [x[r,i] | i in index_set_2of2(x)]);
 /** @group builtins.array Return row \a r of array \a x */
-function array[int] of var $T: row(array[int, int] of var $T: x, int: r) =
+function array[$$E] of var $T: row(array[int, $$E] of var $T: x, int: r) =
   array1d(index_set_2of2(x), [x[r,i] | i in index_set_2of2(x)]);
 /** @group builtins.array Return row \a r of array \a x */
-function array[int] of var opt $T: row(array[int, int] of var opt $T: x, int: r) =
+function array[$$E] of var opt $T: row(array[int, $$E] of var opt $T: x, int: r) =
   array1d(index_set_2of2(x), [x[r,i] | i in index_set_2of2(x)]);
 
 /** @group builtins.array Return column \a c of array \a x */
-function array[int] of $T: col(array[int,int] of $T: x, int: c) =
+function array[$$E] of $T: col(array[$$E,int] of $T: x, int: c) =
   array1d(index_set_1of2(x), [x[i,c] | i in index_set_1of2(x)]);
 /** @group builtins.array Return column \a c of array \a x */
-function array[int] of var $T: col(array[int,int] of var $T: x, int: c) =
+function array[$$E] of var $T: col(array[$$E,int] of var $T: x, int: c) =
   array1d(index_set_1of2(x), [x[i,c] | i in index_set_1of2(x)]);
 /** @group builtins.array Return column \a c of array \a x */
-function array[int] of var opt $T: col(array[int,int] of var opt $T: x, int: c) =
+function array[$$E] of var opt $T: col(array[$$E,int] of var opt $T: x, int: c) =
   array1d(index_set_1of2(x), [x[i,c] | i in index_set_1of2(x)]);
 
 /** @group builtins.array Test if \a i is in the index set of \a x */
@@ -947,7 +947,7 @@ test has_index(int: i, array[int] of var opt $T: x) = i in index_set(x);
 /** @group builtins.array Test if \a e is an element of array \a x */
 test has_element($T: e, array[int] of $T: x) = exists (i in index_set(x)) (x[i]=e);
 /** @group builtins.array Test if \a e is an element of array \a x */
-predicate has_element($T: e, array[int] of var opt $T: x) = exists (i in index_set(x)) (x[i]=e);
+predicate has_element($T: e, array[$$E] of var opt $T: x) = exists (i in index_set(x)) (x[i]=e);
 
 /***
   @groupdef builtins.sort Array sorting operations
@@ -958,45 +958,45 @@ predicate has_element($T: e, array[int] of var opt $T: x) = exists (i in index_s
 The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
 \a x[\p i] will appear in the output before \a x[\p j].
 */
-function array[int] of var opt $T: sort_by(array[int] of var opt $T: x, array[int] of int: y);
+function array[$$E] of var opt $T: sort_by(array[$$E] of var opt $T: x, array[$$E] of int: y);
 /** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order
 
 The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
 \a x[\p i] will appear in the output before \a x[\p j].
 */
-function array[int] of var $T: sort_by(array[int] of var $T: x, array[int] of int: y);
+function array[$$E] of var $T: sort_by(array[$$E] of var $T: x, array[$$E] of int: y);
 /** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order
 
 The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
 \a x[\p i] will appear in the output before \a x[\p j].
 */
-function array[int] of $T: sort_by(array[int] of $T: x, array[int] of int: y);
+function array[$$E] of $T: sort_by(array[$$E] of $T: x, array[$$E] of int: y);
 
 /** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order 
 
 The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
 \a x[\p i] will appear in the output before \a x[\p j].
 */
-function array[int] of var opt $T: sort_by(array[int] of var opt $T: x, array[int] of float: y);
+function array[$$E] of var opt $T: sort_by(array[$$E] of var opt $T: x, array[$$E] of float: y);
 /** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order
 
 The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
 \a x[\p i] will appear in the output before \a x[\p j].
 */
-function array[int] of var $T: sort_by(array[int] of var $T: x, array[int] of float: y);
+function array[$$E] of var $T: sort_by(array[$$E] of var $T: x, array[$$E] of float: y);
 /** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order
 
 The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
 \a x[\p i] will appear in the output before \a x[\p j].
 */
-function array[int] of $T: sort_by(array[int] of $T: x, array[int] of float: y);
+function array[$$E] of $T: sort_by(array[$$E] of $T: x, array[$$E] of float: y);
 
 /** @group builtins.sort Return values from array \a x sorted in non-decreasing order */
-function array[int] of int: sort(array[int] of int: x);
+function array[$$E] of int: sort(array[$$E] of int: x);
 /** @group builtins.sort Return values from array \a x sorted in non-decreasing order */
-function array[int] of float: sort(array[int] of float: x);
+function array[$$E] of float: sort(array[$$E] of float: x);
 /** @group builtins.sort Return values from array \a x sorted in non-decreasing order */
-function array[int] of bool: sort(array[int] of bool: x);
+function array[$$E] of bool: sort(array[$$E] of bool: x);
 
 /** @group builtins.sort
 Returns the permutation \a p which causes \a x to be in sorted order hence
@@ -1004,7 +1004,7 @@ Returns the permutation \a p which causes \a x to be in sorted order hence
 
 The permutation is the stable sort hence \a x[\a p[\p i]] = \a x[\a p[\p i+1]] \(\rightarrow\) \a p[\p i] < \a p[\p i+1].
 */
-function array[int] of int: arg_sort(array[int] of int:x) =
+function array[int] of $$E: arg_sort(array[$$E] of int:x) =
   sort_by([i | i in index_set(x)], x);
 
 /** @group builtins.sort
@@ -1013,7 +1013,7 @@ Returns the permutation \a p which causes \a x to be in sorted order hence
 
 The permutation is the stable sort hence \a x[\a p[\p i]] = \a x[\a p[\p i+1]] \(\rightarrow\) \a p[\p i] < \a p[\p i+1].
 */
-function array[int] of int: arg_sort(array[int] of float:x) =
+function array[int] of $$E: arg_sort(array[$$E] of float:x) =
   sort_by([i | i in index_set(x)], x);
 
 /***
@@ -1046,7 +1046,7 @@ function array[$T] of var float: bool2float(array[$T] of var bool: x) ::promise_
 /** @group builtins.coercion Return Boolean \a b coerced to an integer  */
 function var int: bool2int(var bool: b);
 /** @group builtins.coercion Return array of Booleans \a b coerced to an array of integers  */
-function array[int] of var int: bool2int(array[int] of var bool: b);
+function array[$$E] of var int: bool2int(array[$$E] of var bool: b);
 /** @group builtins.coercion Return Boolean \a b coerced to a float  */
 function var float: bool2float(var bool: b) = int2float(bool2int(b));
 /** @group builtins.coercion Return integer \a x coerced to a float  */
@@ -2047,7 +2047,7 @@ function set of int: anon_enum(int: n) = 1..n;
 /** @group builtins.language Return MiniZinc version encoded as an integer (major*10000+minor*1000+patch). */
 function int: mzn_compiler_version();
 
-/** @group builtins.language Return string representation given an integer major*10000+minor*1000+patch
+/** @group builtins.language Return string representation of \a v given an integer major*10000+minor*1000+patch
 */
 function string: mzn_version_to_string(int: v) =
   show(v div 10000)++"."++show((v div 100) mod 100)++"."++show(v mod 100);

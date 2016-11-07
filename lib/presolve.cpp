@@ -114,7 +114,7 @@ namespace MiniZinc {
       CallSeeker(std::vector<Subproblem*>& subproblems, EnvI& env, Model* m) : subproblems(subproblems), env(env), m(m) { }
       virtual void vCall(Call &call) {
         for (size_t i = 0; i < subproblems.size(); ++i) {
-          if (subproblems[i]->getPredicate() == m->matchFn(env, &call)) {
+          if (subproblems[i]->getPredicate() == m->matchFn(env, &call, true)) {
             subproblems[i]->addCall(&call);
           }
         }

@@ -378,6 +378,19 @@ function var bool: '<'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) 
   occur and the value of \a x is less than or equal to the value of \a y. */
 function var bool: '<='(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
 
+/** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
+  occur and the value of \a x is greater than the value of \a y. */
+function bool: '>'(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
+/** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
+  occur and the value of \a x is greater than or equal to the value of \a y. */
+function bool: '>='(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
+/** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
+  occur and the value of \a x is less than the value of \a y. */
+function bool: '<'(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
+/** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
+  occur and the value of \a x is less than or equal to the value of \a y. */
+function bool: '<='(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
+
 /** @group optiontypes.int Return minimum of elements in \a x that are not absent, or
 absent if all elements in \a x are absent. */
 function var opt int: min(array[int] of var opt int: x) ::promise_total =
@@ -458,6 +471,10 @@ predicate int_ne(var opt int : x, var opt int : y) =
 function var int: sum(array[int] of var opt int: x) =
   sum (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 0 endif);
 
+/** @group optiontypes.int Return product of non-absent elements of \a x. */
+function var int: product(array[int] of var opt int: x) =
+  sum (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 1 endif);
+
 /** @group optiontypes.int Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt int: element(var opt int: idx, array[int] of var int: x) =
   if absent(idx) then <> else element(deopt(idx),x) endif;
@@ -496,16 +513,16 @@ function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,in
  @groupdef options Compiler options
 */
 
-/*** @group options Whether to only generate domains that are contiguous ranges */
+/** @group options Whether to only generate domains that are contiguous ranges */
 opt bool: mzn_opt_only_range_domains;
 
-/*** @group options Check whether to only generate domains that are contiguous ranges */
+/** @group options Check whether to only generate domains that are contiguous ranges */
 
 test mzn_check_only_range_domains() =
   if absent(mzn_opt_only_range_domains) then false
   else deopt(mzn_opt_only_range_domains) endif;
 
-/*** @group options If defined, this can be used to check that the MiniZinc compiler supports all the features used in the model. */
+/** @group options If defined, this can be used to check that the MiniZinc compiler supports all the features used in the model. */
 opt int: mzn_min_version_required;
 
 constraint assert(absent(mzn_min_version_required) \/ deopt(mzn_min_version_required) <= mzn_compiler_version(), "This model requires MiniZinc version "++mzn_version_to_string(deopt(mzn_min_version_required))++" but you are running version "++mzn_version_to_string(mzn_compiler_version()));

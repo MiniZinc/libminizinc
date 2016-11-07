@@ -59,6 +59,17 @@ namespace MiniZinc {
     }
   }
   
+  inline IntLit*
+  IntLit::aEnum(IntVal v, unsigned int enumId) {
+    if (enumId==0)
+      return a(v);
+    IntLit* il = new IntLit(Location().introduce(), v);
+    Type tt(il->type());
+    tt.enumId(enumId);
+    il->type(tt);
+    return il;
+  }
+  
   inline
   FloatLit::FloatLit(const Location& loc, FloatVal v)
   : Expression(loc,E_FLOATLIT,Type::parfloat()), _v(v) {

@@ -238,11 +238,8 @@ namespace MiniZinc {
     std::string nonEnumToString(void) const;
   public:
     /// Check if \a bt0 is a subtype of \a bt1
-    static bool bt_subtype(const Type& t0, const Type& t1) {
-      // TODO: this should be
-      //      if (t0.bt() == t1.bt() && (t0.enumId() == t1.enumId() || t1.enumId()==0))
-      // But currently subtyping on enums does not work yet
-      if (t0.bt() == t1.bt())
+    static bool bt_subtype(const Type& t0, const Type& t1, bool strictEnums) {
+      if (t0.bt() == t1.bt() && (!strictEnums || t0.dim() != 0 || (t0.enumId() == t1.enumId() || t1.enumId()==0)))
         return true;
       switch (t0.bt()) {
         case BT_BOOL: return (t1.bt()==BT_INT || t1.bt()==BT_FLOAT);
@@ -252,19 +249,19 @@ namespace MiniZinc {
     }
 
     /// Check if this type is a subtype of \a t
-    bool isSubtypeOf(const Type& t) const {
+    bool isSubtypeOf(const Type& t, bool strictEnums) const {
       if (_dim==0 && t._dim!=0 && _st==ST_SET && t._st==ST_PLAIN &&
-          ( bt()==BT_BOT || bt_subtype(*this, t) || t.bt()==BT_TOP) && _ti==TI_PAR &&
+          ( bt()==BT_BOT || bt_subtype(*this, t, strictEnums) || t.bt()==BT_TOP) && _ti==TI_PAR &&
           (_ot==OT_PRESENT || _ot==t._ot) )
         return true;
       // either same dimension or t has variable dimension
       if (_dim!=t._dim && (_dim==0 || t._dim!=-1))
         return false;
       // same type, this is present or both optional
-      if (_ti==t._ti && bt_subtype(*this,t) && _st==t._st)
+      if (_ti==t._ti && bt_subtype(*this,t,strictEnums) && _st==t._st)
         return _ot==OT_PRESENT || _ot==t._ot;
       // this is par other than that same type as t
-      if (_ti==TI_PAR && bt_subtype(*this,t) && _st==t._st)
+      if (_ti==TI_PAR && bt_subtype(*this,t,strictEnums) && _st==t._st)
         return _ot==OT_PRESENT || _ot==t._ot;
       if ( _ti==TI_PAR && t._bt==BT_BOT)
         return true;

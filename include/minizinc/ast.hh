@@ -315,6 +315,8 @@ namespace MiniZinc {
     void rehash(void);
     /// Allocate literal
     static IntLit* a(IntVal v);
+    /// Allocate literal for enumerated type (only used internally for generators)
+    static IntLit* aEnum(IntVal v, unsigned int enumId);
   };
   /// \brief Float literal expression
   class FloatLit : public Expression {
@@ -1229,13 +1231,13 @@ namespace MiniZinc {
 
     /** \brief Compute return type given argument types \a ta
      */
-    Type rtype(EnvI& env, const std::vector<Expression*>& ta);
+    Type rtype(EnvI& env, const std::vector<Expression*>& ta, bool strictEnums);
     /** \brief Compute return type given argument types \a ta
      */
-    Type rtype(EnvI& env, const std::vector<Type>& ta);
+    Type rtype(EnvI& env, const std::vector<Type>& ta, bool strictEnums);
     /** \brief Compute expected type of argument \a n given argument types \a ta
      */
-    Type argtype(const std::vector<Expression*>& ta, int n);
+    Type argtype(EnvI& env, const std::vector<Expression*>& ta, int n);
 
     /// Return whether function is defined in the standard library
     bool from_stdlib(void) const { return _from_stdlib; };

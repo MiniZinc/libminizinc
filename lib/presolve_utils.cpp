@@ -56,7 +56,7 @@ namespace MiniZinc{
       void vUnOp(const UnOp&) {}
       /// Visit call
       void vCall(Call& call) {
-        if (call.decl() && (model1->matchFn(env1, &call) == nullptr) ) {
+        if (call.decl() && (model1->matchFn(env1, &call, true) == nullptr) ) {
           model1->registerFn(env1, call.decl());
           RegisterCalls rc(model1, env1);
           TopDownIterator<RegisterCalls> tdi(rc);
@@ -263,22 +263,22 @@ namespace MiniZinc{
     conversionArgs.push_back(index1);
     Call* index2 = new Call(Location(), "index_set", std::vector<Expression*>(1, variables));
     index2->type(Type::parsetint());
-    index2->decl(m->matchFn(env, index2));
+    index2->decl(m->matchFn(env, index2, true));
     conversionArgs.push_back(index2);
     conversionArgs.push_back(dataExpr);
     Call* tableData = new Call(Location(), "array2d", conversionArgs);
     tableData->type(boolTable ? Type::parbool(2) : Type::parint(2));
-    tableData->decl(m->matchFn(env, tableData));
+    tableData->decl(m->matchFn(env, tableData, true));
 
     std::vector<Expression*> tableArgs;
     tableArgs.push_back(variables);
     tableArgs.push_back(tableData);
 
     Call* tableCall = new Call(Location(), boolTable ? "table_bool" : "table_int", tableArgs);
-    FunctionI* tableDecl = m->matchFn(env, tableCall);
+    FunctionI* tableDecl = m->matchFn(env, tableCall, true);
     if (tableDecl == nullptr) {
       registerTableConstraint();
-      tableDecl = m->matchFn(env, tableCall);
+      tableDecl = m->matchFn(env, tableCall, true);
       assert(tableDecl != nullptr);
     }
     tableCall->decl(tableDecl);
@@ -291,14 +291,14 @@ namespace MiniZinc{
     if (var->type().dim() > 1) {
       Call* c = new Call(Location(), "array1d", std::vector<Expression*>(1, var));
       c->type(var->type().bt() == Type::BT_BOOL ? Type::varbool(1) : Type::varint(1));
-      c->decl(m->matchFn(env, c));
+      c->decl(m->matchFn(env, c, true));
       var = c;
     }
 
     if (var->type().bt() == Type::BT_BOOL && !boolTable) {
       Call* c = new Call(Location(), "bool2int", std::vector<Expression*>(1, var));
       c->type(Type::varint(var->type().dim()));
-      c->decl(m->matchFn(env, c));
+      c->decl(m->matchFn(env, c, true));
       var = c;
     }
 

@@ -27,7 +27,7 @@ namespace MiniZinc {
   
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
           FunctionI::builtin_e b) {
-    FunctionI* fi = m->matchFn(env,id,t);
+    FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.e = b;
     } else {
@@ -36,7 +36,7 @@ namespace MiniZinc {
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
           FunctionI::builtin_f b) {
-    FunctionI* fi = m->matchFn(env,id,t);
+    FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.f = b;
     } else {
@@ -45,7 +45,7 @@ namespace MiniZinc {
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
           FunctionI::builtin_i b) {
-    FunctionI* fi = m->matchFn(env,id,t);
+    FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.i = b;
     } else {
@@ -54,7 +54,7 @@ namespace MiniZinc {
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
           FunctionI::builtin_b b) {
-    FunctionI* fi = m->matchFn(env,id,t);
+    FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.b = b;
     } else {
@@ -63,7 +63,7 @@ namespace MiniZinc {
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
           FunctionI::builtin_s b) {
-    FunctionI* fi = m->matchFn(env,id,t);
+    FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.s = b;
     } else {
@@ -72,7 +72,7 @@ namespace MiniZinc {
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
           FunctionI::builtin_str b) {
-    FunctionI* fi = m->matchFn(env,id,t);
+    FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.str = b;
     } else {
@@ -1744,8 +1744,8 @@ namespace MiniZinc {
   FloatVal b_normal_int_float(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     assert(args.size() ==2);
-    const double mean = eval_float(env,args[0]).toDouble();
-    const double stdv = double(eval_int(env,args[1]).toInt());
+    const double mean = double(eval_int(env,args[0]).toInt());
+    const double stdv = eval_float(env,args[1]).toDouble();
     std::normal_distribution<double> distribution(mean,stdv);
     // return a sample from the distribution
     return distribution(rnd_generator());
@@ -2096,12 +2096,22 @@ namespace MiniZinc {
   IntVal b_enum_next(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     IntVal v = eval_int(env, args[0]);
+    if (args[0]->type().enumId() != 0) {
+      IntSetVal* isv = eval_intset(env, env.getEnum(args[0]->type().enumId())->e()->e());
+      if (!isv->contains(v+1))
+        throw ResultUndefinedError(env, call->loc(), "value outside of enum range");
+    }
     return v+1;
   }
 
   IntVal b_enum_prev(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
     IntVal v = eval_int(env, args[0]);
+    if (args[0]->type().enumId() != 0) {
+      IntSetVal* isv = eval_intset(env, env.getEnum(args[0]->type().enumId())->e()->e());
+      if (!isv->contains(v-1))
+        throw ResultUndefinedError(env, call->loc(), "value outside of enum range");
+    }
     return v-1;
   }
 
