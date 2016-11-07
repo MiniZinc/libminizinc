@@ -352,18 +352,7 @@ void Flattener::flatten()
                 if (flag_verbose)
                   std::cerr << "Presolving ...";
 
-                Presolver::Options preOpts;
-                preOpts.includePaths = includePaths;
-                preOpts.stdLibDir = std_lib_dir;
-                preOpts.globalsDir = globals_dir;
-                preOpts.modelOutput = flag_output_presolved;
-                preOpts.printModels = flag_print_presolve;
-                preOpts.verbose = flag_verbose;
-                preOpts.newfzn = flag_newfzn;
-                preOpts.optimize = flag_optimize;
-                preOpts.onlyRangeDomains = flag_only_range_domains;
-
-                Presolver(env, m, preOpts).presolve();
+                Presolver(env, m, this).presolve();
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }

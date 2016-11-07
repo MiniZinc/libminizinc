@@ -67,11 +67,11 @@ namespace MiniZinc {
 
     EnvI& env;
     Model* m;
-    Options& options;
+    Flattener* flattener;
   public:
     /// Default constructor
-    TableBuilder(EnvI& env, Model* m, Options& options, bool boolTable)
-            : env(env), m(m), options(options), boolTable(boolTable) { };
+    TableBuilder(EnvI& env, Model* m, Flattener* flattener, bool boolTable)
+            : env(env), m(m), flattener(flattener), boolTable(boolTable) { };
     /// Constructs full table constraint from function item, solution, and optionally given table variable arguments
     void buildFromSolver(FunctionI* f, Solns2Vector* solns, ASTExprVec<Expression> variables = ASTExprVec<Expression>());
     /// Adds variable to the table constraint

@@ -48,12 +48,12 @@ namespace MiniZinc {
       }
     }
 
-    if (options.modelOutput != "") {
-      if (options.verbose)
-        std::cerr << "\tPrinting presolved model to '" << options.modelOutput << "' ..." << std::flush;
+    if (flattener->flag_output_presolved != "") {
+      if (flattener->flag_verbose)
+        std::cerr << "\tPrinting presolved model to '" << flattener->flag_output_presolved << "' ..." << std::flush;
 
       std::ofstream os;
-      os.open(options.modelOutput.c_str(), std::ios::out);
+      os.open(flattener->flag_output_presolved.c_str(), std::ios::out);
       checkIOStatus (os.good(), " I/O error: cannot open presolved model output file. ");
       os << "include \"table.mzn\";" << std::endl << std::endl;
       Printer p(os);
@@ -64,7 +64,7 @@ namespace MiniZinc {
       checkIOStatus (os.good(), " I/O error: cannot write presolved model output file. ");
       os.close();
 
-      if (options.verbose)
+      if (flattener->flag_verbose)
         std::cerr << "done." << std::endl;
     }
   }
@@ -75,9 +75,9 @@ namespace MiniZinc {
       std::vector<Subproblem*>& subproblems;
       EnvI& env;
       Model* model;
-      Options& options;
-      PresolveVisitor(std::vector<Subproblem*>& subproblems, EnvI& env, Model* model, Options& options) : subproblems(
-              subproblems), env(env), model(model), options(options) { }
+      Flattener* flattener;
+      PresolveVisitor(std::vector<Subproblem*>& subproblems, EnvI& env, Model* model, Flattener* flattener) : subproblems(
+              subproblems), env(env), model(model), flattener(flattener) { }
       void vFunctionI(FunctionI* i) {
         Expression* ann = getAnnotation(i->ann(),constants().presolve.presolve);
         if (ann) {
@@ -93,19 +93,19 @@ namespace MiniZinc {
             }
 
             if ( s_id->v() == constants().presolve.calls->v() )
-              subproblems.push_back( new CallsSubproblem(model, env, i, options, solver) );
+              subproblems.push_back( new CallsSubproblem(model, env, i, flattener, solver) );
             else if ( s_id->v() == constants().presolve.model->v() )
-              subproblems.push_back( new ModelSubproblem(model, env, i, options, solver) );
+              subproblems.push_back( new ModelSubproblem(model, env, i, flattener, solver) );
             else if ( s_id->v() == constants().presolve.global->v() )
-              subproblems.push_back( new GlobalSubproblem(model, env, i, options, solver) );
+              subproblems.push_back( new GlobalSubproblem(model, env, i, flattener, solver) );
             else
               throw TypeError(env, s_id->loc(), "Invalid presolve strategy `" + s_id->str().str() + "'");
           } else {
-            subproblems.push_back( new ModelSubproblem(model, env, i, options) );
+            subproblems.push_back( new ModelSubproblem(model, env, i, flattener) );
           }
         }
       }
-    } pv(subproblems, env.envi(), model, options);
+    } pv(subproblems, env.envi(), model, flattener);
     iterItems(pv, model);
   }
 
@@ -142,9 +142,9 @@ namespace MiniZinc {
     iterItems(ci, model);
   }
 
-  Presolver::Subproblem::Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Options& options,
+  Presolver::Subproblem::Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* flattener,
                                     std::string solver)
-          : origin(origin), origin_env(origin_env), predicate(predicate), options(options), solver(solver) {
+          : origin(origin), origin_env(origin_env), predicate(predicate), flattener(flattener), solver(solver) {
     GCLock lock;
     m = new Model();
     e = new Env(m);
@@ -174,18 +174,18 @@ namespace MiniZinc {
 
     predicate->ann().clear();
 
-    if (options.verbose)
+    if (flattener->flag_verbose)
       std::cerr << std::endl << "\tPresolving `" + predicate->id().str() + "' ... " << std::endl;
 
-    if(options.verbose)
+    if(flattener->flag_verbose)
       std::cerr << "\t\tConstructing predicate model ...";
     constructModel();
-    if(options.verbose)
+    if(flattener->flag_verbose)
       std::cerr << " done (" << stoptime(lastTime) << ")" << std::endl;
 
-    if(options.verbose)
+    if(flattener->flag_verbose)
       std::cerr << "\t\tPresolving problem ...";
-    if (options.printModels) {
+    if (flattener->flag_print_presolve) {
       std::cout << "% Presolve model `" << predicate->id().c_str() << "'" << std::endl;
       Printer p(std::cout);
       std::cout << std::endl;
@@ -193,16 +193,16 @@ namespace MiniZinc {
       std::cout << std::endl;
     }
     solveModel();
-    if(options.verbose)
+    if(flattener->flag_verbose)
       std::cerr << " done (" << stoptime(lastTime) << ")" << std::endl;
 
-    if(options.verbose)
+    if(flattener->flag_verbose)
       std::cerr << "\t\tInserting solutions ...";
     replaceUsage();
-    if(options.verbose)
+    if(flattener->flag_verbose)
       std::cerr << " done (" << stoptime(lastTime) << ")" << std::endl;
 
-    if (options.verbose)
+    if (flattener->flag_verbose)
       std::cerr << "\t done (" << stoptime(startTime) << ")" << std::endl;
   }
 
@@ -274,7 +274,7 @@ namespace MiniZinc {
     m->addItem(constraint);
     m->addItem(SolveI::sat(Location()));
 
-    generateFlatZinc(*e, options.onlyRangeDomains, options.optimize, options.newfzn);
+    generateFlatZinc(*e, flattener->flag_only_range_domains, flattener->flag_optimize, flattener->flag_newfzn);
   }
 
   void Presolver::GlobalSubproblem::replaceUsage() {
@@ -292,7 +292,7 @@ namespace MiniZinc {
     if(constraint == Element)
       throw EvalError(origin_env, Location(), "Set types are unsupported for predicate presolving");
 
-    auto builder = TableBuilder(origin_env, origin, options, constraint == BoolTable);
+    auto builder = TableBuilder(origin_env, origin, flattener, constraint == BoolTable);
     builder.buildFromSolver(predicate, solns);
     Expression* tableCall = builder.getExpression();
 
@@ -349,21 +349,21 @@ namespace MiniZinc {
 
     predicate->ann().clear();
 
-    if (options.verbose)
+    if (flattener->flag_verbose)
       std::cerr << std::endl << "\tPresolving `" + predicate->id().str() + "' ... " << std::endl;
 
     for (int i = 0; i < calls.size(); ++i) {
       currentCall = calls[i];
-      if(options.verbose)
+      if(flattener->flag_verbose)
         std::cerr << "\t\tConstructing model for call " << i+1 << " ...";
       constructModel();
-      if(options.verbose)
+      if(flattener->flag_verbose)
         std::cerr << " done (" << stoptime(lastTime) << ")" << std::endl;
 
 //      TODO: check if the current range has already been solved.
-      if(options.verbose)
+      if(flattener->flag_verbose)
         std::cerr << "\t\tPresolving call " << i+1 << "  ...";
-      if (options.printModels) {
+      if (flattener->flag_print_presolve) {
         std::cout << "% Presolve model `" << predicate->id().c_str() << "' " << i+1 << std::endl;
         Printer p(std::cout);
         std::cout << std::endl;
@@ -371,17 +371,17 @@ namespace MiniZinc {
         std::cout << std::endl;
       }
       solveModel();
-      if(options.verbose)
+      if(flattener->flag_verbose)
         std::cerr << " done (" << stoptime(lastTime) << ")" << std::endl;
 
-      if(options.verbose)
+      if(flattener->flag_verbose)
         std::cerr << "\t\tInserting solutions ...";
       replaceUsage();
-      if(options.verbose)
+      if(flattener->flag_verbose)
         std::cerr << " done (" << stoptime(lastTime) << ")" << std::endl;
     }
 
-    if (options.verbose)
+    if (flattener->flag_verbose)
       std::cerr << "\t done (" << stoptime(startTime) << ")" << std::endl;
   }
 
@@ -436,7 +436,7 @@ namespace MiniZinc {
       }
     }
 
-    generateFlatZinc(*e, options.onlyRangeDomains, options.optimize, options.newfzn);
+    generateFlatZinc(*e, flattener->flag_only_range_domains, flattener->flag_optimize, flattener->flag_newfzn);
   }
 
   void Presolver::CallsSubproblem::replaceUsage() {
@@ -454,7 +454,7 @@ namespace MiniZinc {
     if(constraint == Element)
       throw EvalError(origin_env, Location(), "Set types are unsupported for predicate presolving");
 
-    auto builder = TableBuilder(origin_env, origin, options, constraint == BoolTable);
+    auto builder = TableBuilder(origin_env, origin, flattener, constraint == BoolTable);
     builder.buildFromSolver(predicate, solns, currentCall->args());
     Call* tableCall = builder.getExpression();
 

@@ -13,6 +13,7 @@
 #include <minizinc/presolve_utils.hh>
 #include <fstream>
 #include <minizinc/astiterator.hh>
+#include <minizinc/flattener.hh>
 
 namespace MiniZinc{
 
@@ -353,19 +354,19 @@ namespace MiniZinc{
     GCLock lock;
 
     std::string loc = boolTable ? "/table_bool.mzn" : "/table_int.mzn";
-    std::ifstream file(options.stdLibDir + "/" + options.globalsDir + loc);
+    std::ifstream file(flattener->std_lib_dir + "/" + flattener->globals_dir + loc);
     bool exists = file.is_open();
     file.close();
 
     Model* table_model = nullptr;
     Env table_env(table_model);
     if (exists) {
-      table_model = parse(table_env, std::vector<std::string>(1, options.stdLibDir + "/" + options.globalsDir + loc),
-                          std::vector<std::string>(), options.includePaths, false, false,
+      table_model = parse(table_env, std::vector<std::string>(1, flattener->std_lib_dir + "/" + flattener->globals_dir + loc),
+                          std::vector<std::string>(), flattener->includePaths, false, false,
                           false, std::cerr);
     } else {
-      table_model = parse(table_env, std::vector<std::string>(1, options.stdLibDir + "/std" + loc),
-                          std::vector<std::string>(), options.includePaths, false, false,
+      table_model = parse(table_env, std::vector<std::string>(1, flattener->std_lib_dir + "/std" + loc),
+                          std::vector<std::string>(), flattener->includePaths, false, false,
                           false, std::cerr);
     }
 
