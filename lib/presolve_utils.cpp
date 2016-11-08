@@ -210,7 +210,7 @@ namespace MiniZinc{
   bool Presolver::Solns2Vector::evalOutput() {
     GCLock lock;
 
-    UNORDERED_NAMESPACE::unordered_map<std::string, Expression*>* solution = new std::unordered_map<std::string, Expression*>();
+    UNORDERED_NAMESPACE::unordered_map<std::string, Expression*>* solution = new UNORDERED_NAMESPACE::unordered_map<std::string, Expression*>();
     for (unsigned int i = 0; i < getModel()->size(); i++) {
       if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
         Expression* cpi = copy(copyEnv, vdi->e()->e());
