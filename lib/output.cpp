@@ -192,9 +192,8 @@ namespace MiniZinc {
               args[0] = array1d;
             }
             std::string enumName = createEnumToStringName(ti_id, "_toString_");
-            Call* convertEnum = new Call(Location().introduce(),enumName,args);
-            convertEnum->type(Type::parstring());
-            c.args()[c.args().size()-1] = convertEnum;
+            c.id(ASTString(enumName));
+            c.args(args);
           }
         }
         c.decl(env.orig->matchFn(env,&c,false));
@@ -381,14 +380,17 @@ namespace MiniZinc {
           std::ostringstream s;
           s << vd->id()->str().str() << " = ";
           if (vd->type().dim() > 0) {
+            ArrayLit* al = NULL;
+            if (vd->e())
+              al = eval_array_lit(e, vd->e());
             s << "array" << vd->type().dim() << "d(";
-            if (vd->e() != NULL) {
-              ArrayLit* al = eval_array_lit(e, vd->e());
-              for (unsigned int i=0; i<al->dims(); i++) {
+            for (unsigned int i=0; i<vd->type().dim(); i++) {
+              unsigned int enumId = (vd->type().enumId() != 0 ? e.getArrayEnum(vd->type().enumId())[i] : 0);
+              if (enumId != 0) {
+                s << e.getEnum(enumId)->e()->id()->str() << ",";
+              } else if (al != NULL) {
                 s << al->min(i) << ".." << al->max(i) << ",";
-              }
-            } else {
-              for (unsigned int i=0; i<vd->type().dim(); i++) {
+              } else {
                 IntSetVal* idxset = eval_intset(e,vd->ti()->ranges()[i]->domain());
                 s << *idxset << ",";
               }
