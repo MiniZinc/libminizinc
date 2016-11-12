@@ -18,15 +18,19 @@
 
 namespace MiniZinc {
 
+
+  Presolver::Presolver(Env& env, Flattener* flattener)
+          : env(env), flattener(flattener) {
+    findPresolveAnnotations();
+  }
+
   Presolver::~Presolver() {
     for (Subproblem* it : subproblems)
       delete it;
   }
 
   void Presolver::presolve() {
-    findPresolveAnnotations();
     if (subproblems.size() < 1){
-
       return;
     }
 
@@ -100,48 +104,61 @@ namespace MiniZinc {
           }
         }
       }
-    } pv(subproblems, env.envi(), model, flattener);
-    iterItems(pv, model);
+    } pv(subproblems, env.envi(), env.model(), flattener);
+    iterItems(pv, env.model());
   }
 
   void Presolver::findPresolvedCalls() {
-    class CallSeeker : public EVisitor {
-    public:
-      std::vector<Subproblem*>& subproblems;
-      EnvI& env;
-      Model* m;
+//    class CallSeeker : public EVisitor {
+//    public:
+//      std::vector<Subproblem*>& subproblems;
+//      EnvI& env;
+//      Model* m;
+//
+//      CallSeeker(std::vector<Subproblem*>& subproblems, EnvI& env, Model* m) : subproblems(subproblems), env(env), m(m) { }
+//      virtual void vCall(Call &call) {
+//        for (size_t i = 0; i < subproblems.size(); ++i) {
+//          if (subproblems[i]->getPredicate() == call.decl()) {
+//            subproblems[i]->addCall(&call);
+//          }
+//        }
+//      }
+//    } cf(subproblems, env.envi(), env.flat());
+//    TopDownIterator<CallSeeker> cf_it(cf);
+//
+//    class CallItems : public ItemVisitor {
+//    public:
+//      TopDownIterator<CallSeeker>& cf_it;
+//      CallItems(TopDownIterator<CallSeeker>& cf_it) : cf_it(cf_it) { }
+//
+//      virtual void vVarDeclI(VarDeclI* i) {cf_it.run(i->e());}
+//      virtual void vAssignI(AssignI* i) {cf_it.run(i->e());}
+//      virtual void vConstraintI(ConstraintI* i) {cf_it.run(i->e());}
+//      virtual void vSolveI(SolveI* i) {cf_it.run(i->e());}
+//      virtual void vOutputI(OutputI* i) {cf_it.run(i->e());}
+//      virtual void vFunctionI(FunctionI* i) {cf_it.run(i->e());}
+//    } ci(cf_it);
+//    iterItems(ci, env.flat());
 
-      CallSeeker(std::vector<Subproblem*>& subproblems, EnvI& env, Model* m) : subproblems(subproblems), env(env), m(m) { }
-      virtual void vCall(Call &call) {
+    for (ConstraintIterator it = env.flat()->begin_constraints(); it != env.flat()->end_constraints(); ++it) {
+      if (Call* c = it->e()->dyn_cast<Call>()) {
         for (size_t i = 0; i < subproblems.size(); ++i) {
-          if (subproblems[i]->getPredicate() == m->matchFn(env, &call, true)) {
-            subproblems[i]->addCall(&call);
+          if (subproblems[i]->getPredicate() == c->decl()) {
+            subproblems[i]->addCall(c, &(*it));
           }
         }
       }
-    } cf(subproblems, env.envi(), model);
-    TopDownIterator<CallSeeker> cf_it(cf);
-
-    class CallItems : public ItemVisitor {
-    public:
-      TopDownIterator<CallSeeker>& cf_it;
-      CallItems(TopDownIterator<CallSeeker>& cf_it) : cf_it(cf_it) { }
-
-      virtual void vVarDeclI(VarDeclI* i) {cf_it.run(i->e());}
-      virtual void vAssignI(AssignI* i) {cf_it.run(i->e());}
-      virtual void vConstraintI(ConstraintI* i) {cf_it.run(i->e());}
-      virtual void vSolveI(SolveI* i) {cf_it.run(i->e());}
-      virtual void vOutputI(OutputI* i) {cf_it.run(i->e());}
-      virtual void vFunctionI(FunctionI* i) {cf_it.run(i->e());}
-    } ci(cf_it);
-    iterItems(ci, model);
+    }
   }
 
-  Presolver::Subproblem::Subproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* flattener)
-          : origin(origin), origin_env(origin_env), predicate(predicate), flattener(flattener) {
+  Presolver::Subproblem::Subproblem(Model* origin, EnvI& origin_env, FunctionI* pred_orig, Flattener* flattener)
+          : origin(origin), origin_env(origin_env), pred_orig(pred_orig), flattener(flattener) {
     GCLock lock;
     m = new Model();
     e = new Env(m);
+
+    predicate = copy(e->envi(), cm, pred_orig, false, true)->cast<FunctionI>();
+    pred_orig->e(nullptr);
 
     origin->mergeStdLib(e->envi(), m);
     registerBuiltins(*e, m);
@@ -213,7 +230,6 @@ namespace MiniZinc {
 
     MiniZinc::Options ops = MiniZinc::Options();
     ops.setBoolParam(constants().opts.solver.allSols.str(), true);
-    ops.setBoolParam(constants().opts.statistics.str(), false);
 
     if (flattener->flag_fzn_solver == "" && !getGlobalSolverRegistry()->getSolverFactories().empty()) {
       si = getGlobalSolverRegistry()->getSolverFactories().front()->createSI(*e);
@@ -240,17 +256,15 @@ namespace MiniZinc {
 
   void Presolver::GlobalSubproblem::constructModel() {
     GCLock lock;
-    CopyMap cm;
 
-    FunctionI* pred = copy(e->envi(), cm, predicate, false, true)->cast<FunctionI>();
-    m->addItem(pred);
-    recursiveRegisterFns(m, e->envi(), pred);
+    m->addItem(predicate);
+    recursiveRegisterFns(m, e->envi(), predicate);
     std::vector<Expression*> args;
-    if (pred->params().size() < 1) {
-      throw EvalError(origin_env, pred->loc(), "Presolving requires a predicate which includes parameters as targeted "
+    if (predicate->params().size() < 1) {
+      throw EvalError(origin_env, predicate->loc(), "Presolving requires a predicate which includes parameters as targeted "
               "variables for presolving");
     }
-    for ( VarDecl* it : pred->params() ) {
+    for ( VarDecl* it : predicate->params() ) {
       // TODO: Decide on strategy on parameter arguments
       if (it->type().ti() == Type::TypeInst::TI_PAR) {
         throw EvalError(origin_env, it->loc(), "Presolving is currently only supported for predicates using variable "
@@ -262,7 +276,7 @@ namespace MiniZinc {
       arg->type(vd->type());
       args.push_back(arg);
     }
-    Call* pred_call = new Call(Location(), pred->id().str(), args, pred);
+    Call* pred_call = new Call(Location(), predicate->id().str(), args, predicate);
     pred_call->type(Type::varbool());
     ConstraintI* constraint = new ConstraintI(Location(), pred_call);
     m->addItem(constraint);
@@ -299,6 +313,7 @@ namespace MiniZinc {
 
     std::vector<Expression*> domains;
     for (Expression* it : calls[0]->args()) {
+      // TODO: Can this be simplified with FlatZinc Calls?
       domains.push_back( computeDomainExpr(origin_env, it) );
     }
 
@@ -306,6 +321,7 @@ namespace MiniZinc {
     while (it != calls.end()) {
       for (unsigned int i = 0; i < (*it)->args().size(); ++i) {
         if (domains[i] != nullptr) {
+          // TODO: Can this be simplified with FlatZinc Calls?
           Expression* type = computeDomainExpr(origin_env, (*it)->args()[i] );
           if (type != nullptr) {
             Expression* expr = new BinOp(Location(), domains[i], BOT_UNION, type);
@@ -324,6 +340,7 @@ namespace MiniZinc {
 //        TODO: Throw error when array ranges do not match between calls
 //        TODO: Or even better, split off submodels, grouping them by array ranges
         std::vector<TypeInst*> ranges;
+        // TODO: Can this be simplified with FlatZinc Calls?
         computeRanges(origin_env, calls[0]->args()[i], ranges);
         predicate->params()[i]->ti()->setRanges(ranges);
       }
@@ -347,7 +364,7 @@ namespace MiniZinc {
       std::cerr << std::endl << "\tPresolving `" + predicate->id().str() + "' ... " << std::endl;
 
     for (int i = 0; i < calls.size(); ++i) {
-      currentCall = calls[i];
+      currentCall = i;
       if(flattener->flag_verbose)
         std::cerr << "\t\tConstructing model for call " << i+1 << " ...";
       constructModel();
@@ -375,12 +392,13 @@ namespace MiniZinc {
         std::cerr << " done (" << stoptime(lastTime) << ")" << std::endl;
     }
 
+    origin_env.flat()->compact();
     if (flattener->flag_verbose)
       std::cerr << "\t done (" << stoptime(startTime) << ")" << std::endl;
   }
 
   void Presolver::CallsSubproblem::constructModel() {
-    assert(currentCall != nullptr);
+    assert(currentCall >= 0 && currentCall <= calls.size());
     GCLock lock;
 
     if(m->size() != 0) {
@@ -392,12 +410,16 @@ namespace MiniZinc {
       registerBuiltins(*e, m);
     }
 
-    FunctionI* pred = copy(e->envi(), predicate, false, true)->cast<FunctionI>();
-    m->addItem(pred);
-    recursiveRegisterFns(m, e->envi(), pred);
+    m->addItem(predicate);
+    recursiveRegisterFns(m, e->envi(), predicate);
     std::vector<Expression*> args;
+    if (predicate->params().size() < 1) {
+      // TODO: Make parameter included call-based.
+      throw EvalError(origin_env, predicate->loc(), "Presolving requires a predicate which includes parameters as targeted "
+              "variables for presolving");
+    }
     std::vector<VarDecl*> decls;
-    for (VarDecl* it : pred->params()) {
+    for (VarDecl* it : predicate->params()) {
       // TODO: Decide on strategy on parameter arguments
       if (it->type().ti() == Type::TypeInst::TI_PAR) {
         throw EvalError(origin_env, it->loc(), "Presolving is currently unsupported for predicates using parameter"
@@ -412,20 +434,22 @@ namespace MiniZinc {
       arg->type(vd->type());
       args.push_back(arg);
     }
-    Call* pred_call = new Call(Location(), pred->id().str(), args, pred);
+    Call* pred_call = new Call(Location(), predicate->id().str(), args, predicate);
     pred_call->type(Type::varbool());
     ConstraintI* constraint = new ConstraintI(Location(), pred_call);
     m->addItem(constraint);
     m->addItem(SolveI::sat(Location()));
 
 
-    assert( decls.size() == currentCall->args().size() );
+    assert( decls.size() == calls[currentCall]->args().size() );
     for (int i = 0; i < decls.size(); ++i) {
-      Expression* dom = computeDomainExpr(origin_env, currentCall->args()[i]);
+      // TODO: Can this be simplified with FlatZinc Calls?
+      Expression* dom = computeDomainExpr(origin_env, calls[currentCall]->args()[i]);
       decls[i]->ti()->domain(dom);
-      if (currentCall->args()[i]->type().dim() > 0) {
+      if (calls[currentCall]->args()[i]->type().dim() > 0) {
         std::vector<TypeInst*> ranges;
-        computeRanges(origin_env, currentCall->args()[i], ranges);
+        // TODO: Can this be simplified with FlatZinc Calls?
+        computeRanges(origin_env, calls[currentCall]->args()[i], ranges);
         decls[i]->ti()->setRanges(ranges);
       }
     }
@@ -449,12 +473,12 @@ namespace MiniZinc {
       throw EvalError(origin_env, Location(), "Set types are unsupported for predicate presolving");
 
     auto builder = TableBuilder(origin_env, origin, flattener, constraint == BoolTable);
-    builder.buildFromSolver(predicate, solns, currentCall->args());
+    builder.buildFromSolver(predicate, solns, calls[currentCall]->args());
     Call* tableCall = builder.getExpression();
 
-    currentCall->id( tableCall->id() );
-    currentCall->args( tableCall->args() );
-    currentCall->decl( tableCall->decl() );
+    (void) flat_exp(origin_env, Ctx(), tableCall, constants().var_true, constants().var_true);
+
+    origin_env.flat_removeItem(items[currentCall]);
   }
 
 }

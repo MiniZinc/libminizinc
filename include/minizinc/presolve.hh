@@ -31,7 +31,6 @@ namespace MiniZinc {
 
     /// Model & Env in which the presolver is active
     Env& env;
-    Model* model;
     /// Contains problems to be solved to presolve marked predicates
     std::vector<Subproblem*> subproblems;
     /// Flattener object for option use
@@ -44,8 +43,7 @@ namespace MiniZinc {
 
   public:
     /// Constructor
-    Presolver(Env& env, Model* m, Flattener* flattener)
-            : env(env), model(m), flattener(flattener) {}
+    Presolver(Env& env, Flattener* flattener);
     /// Destructor
     virtual ~Presolver();
     /// Presolves all marked predicates in the model
@@ -57,16 +55,20 @@ namespace MiniZinc {
     /// Model & Env in which the presolve statement occured
     Model* origin;
     EnvI& origin_env;
-    /// predicate around which the submodel revolves
-    FunctionI* predicate;
-    /// calls to the predicate in the model
+    /// The original predicate
+    FunctionI* pred_orig;
+    /// Calls to the predicate and respective items in the model
     std::vector<Call*> calls;
+    std::vector<ConstraintI*> items;
     /// Flattener for compiling flag access.
     Flattener* flattener;
 
     /// Constructed Model & Env to solve subproblem.
     Model* m = nullptr;
     Env* e = nullptr;
+    CopyMap cm;
+    /// predicate around which the submodel revolves
+    FunctionI* predicate;
     /// Solver used to solve constructed model.
     SolverInstanceBase* si = nullptr;
     Solns2Vector* solns = nullptr;
@@ -79,9 +81,9 @@ namespace MiniZinc {
     /// Destructor
     virtual ~Subproblem();
     /// Adds a reference to a call for the predicate to be presolved
-    void addCall(Call* c) { calls.push_back(c); }
+    void addCall(Call* c, ConstraintI* i) { calls.push_back(c); items.push_back(i); }
     /// Getter for the function item of the predicate to be presolved
-    FunctionI* getPredicate() const { return predicate; }
+    FunctionI* getPredicate() const { return pred_orig; }
     /// Solves subproblem
     virtual void solve();
 
@@ -120,7 +122,7 @@ namespace MiniZinc {
 
   class Presolver::CallsSubproblem : public Presolver::Subproblem {
   protected:
-    Call* currentCall = nullptr;
+    int currentCall;
 
   public:
     /// Constructor

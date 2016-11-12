@@ -351,11 +351,11 @@ void Flattener::flatten()
               populateOutput(env);
             } else {
 #ifdef PRESOLVE
+              Presolver* presolver;
               if (!flag_no_presolve){
                 if (flag_verbose)
-                  std::cerr << "Presolving ...";
-
-                Presolver(env, m, this).presolve();
+                  std::cerr << "Marking Pre-Solve Annotations ...";
+                presolver = new Presolver(env, this);
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }
@@ -408,6 +408,15 @@ void Flattener::flatten()
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }
+#ifdef PRESOLVE
+              if (!flag_no_presolve){
+                if (flag_verbose)
+                  std::cerr << "Presolving ...";
+                presolver->presolve();
+                if (flag_verbose)
+                  std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+              }
+#endif
 
               if (!flag_newfzn) {
                 if (flag_verbose)
