@@ -143,6 +143,7 @@ class MIP_wrapper {
                   bool fMIPSol  // if with a MIP feas sol - lazy cuts only
                                  );
     struct CBUserInfo {
+      MIP_wrapper* wrapper = 0;
       MIP_wrapper::Output* pOutput=0;
       MIP_wrapper::Output* pCutOutput=0;
       bool fVerb = false;              // used in Gurobi

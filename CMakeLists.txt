@@ -48,6 +48,21 @@ if (BUILD_STATIC_EXECUTABLE)
   SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 endif()
 
+include (CheckIncludeFiles)
+
+# -------------------------------------------------------------------------------------------------------------------
+option (BUILD_GUROBI_PLUGIN "Build Gurobi binding as a plugin" OFF)
+if (BUILD_GUROBI_PLUGIN)
+  if(HAS_GUROBI)
+    CHECK_INCLUDE_FILES (dlfcn.h HAS_DLFCN_H)
+    CHECK_INCLUDE_FILES (Windows.h HAS_WINDOWS_H)
+    if(HAS_DLFCN_H OR HAS_WINDOWS_H)
+      set(HAS_GUROBI_PLUGIN TRUE)
+    endif()
+  endif()
+endif()
+
+
 # -------------------------------------------------------------------------------------------------------------------
 
 if(APPLE)
@@ -324,18 +339,22 @@ find_package ( Threads REQUIRED )
 # -------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_GUROBI)  # Version 6.5
-  link_directories("${GUROBI_HOME}/lib")
 
 	add_library(minizinc_gurobi
-    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp include/minizinc/solvers/MIP/MIP_gurobi_wrap.hh
 	)
   target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
-	target_link_libraries(minizinc_gurobi minizinc gurobi70 ${CMAKE_THREAD_LIBS_INIT})
+  if(HAS_GUROBI_PLUGIN)
+    target_link_libraries(minizinc_gurobi minizinc ${CMAKE_THREAD_LIBS_INIT})
+  else()
+    link_directories("${GUROBI_HOME}/lib")
+    target_link_libraries(minizinc_gurobi minizinc gurobi70 ${CMAKE_THREAD_LIBS_INIT})
+  endif()
 
 	add_executable(mzn-gurobi minizinc.cpp)
   target_compile_definitions( mzn-gurobi PRIVATE HAS_MIP )
   target_include_directories(mzn-gurobi PRIVATE "${GUROBI_HOME}/include")
-	target_link_libraries(mzn-gurobi minizinc_gurobi gurobi70 ${CMAKE_THREAD_LIBS_INIT})
+	target_link_libraries(mzn-gurobi minizinc_gurobi ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_gurobi mzn-gurobi
     RUNTIME DESTINATION bin
