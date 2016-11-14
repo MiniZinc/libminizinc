@@ -31,69 +31,69 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     vector<double> x;
 
   public:
-    int (*dll_GRBaddconstr) (GRBmodel *model, int numnz, int *cind, double *cval,
+    int (__stdcall *dll_GRBaddconstr) (GRBmodel *model, int numnz, int *cind, double *cval,
                              char sense, double rhs, const char *constrname);
 
-    int (*dll_GRBaddvars) (GRBmodel *model, int numvars, int numnz,
+    int (__stdcall *dll_GRBaddvars) (GRBmodel *model, int numvars, int numnz,
                            int *vbeg, int *vind, double *vval,
                            double *obj, double *lb, double *ub, char *vtype,
                            char **varnames);
 
-    int (*dll_GRBcbcut) (void *cbdata, int cutlen, const int *cutind, const double *cutval,
+    int (__stdcall *dll_GRBcbcut) (void *cbdata, int cutlen, const int *cutind, const double *cutval,
                          char cutsense, double cutrhs);
 
-    int (*dll_GRBcbget) (void *cbdata, int where, int what, void *resultP);
+    int (__stdcall *dll_GRBcbget) (void *cbdata, int where, int what, void *resultP);
 
-    int (*dll_GRBcblazy) (void *cbdata, int lazylen, const int *lazyind,
+    int (__stdcall *dll_GRBcblazy) (void *cbdata, int lazylen, const int *lazyind,
                           const double *lazyval, char lazysense, double lazyrhs);
 
-    void (*dll_GRBfreeenv) (GRBenv *env);
+    void (__stdcall *dll_GRBfreeenv) (GRBenv *env);
 
-    int (*dll_GRBfreemodel) (GRBmodel *model);
+    int (__stdcall *dll_GRBfreemodel) (GRBmodel *model);
 
-    int (*dll_GRBgetdblattr) (GRBmodel *model, const char *attrname, double *valueP);
+    int (__stdcall *dll_GRBgetdblattr) (GRBmodel *model, const char *attrname, double *valueP);
 
-    int (*dll_GRBgetdblattrarray) (GRBmodel *model, const char *attrname,
+    int (__stdcall *dll_GRBgetdblattrarray) (GRBmodel *model, const char *attrname,
                                    int first, int len, double *values);
 
-    GRBenv * (*dll_GRBgetenv) (GRBmodel *model);
+    GRBenv * (__stdcall *dll_GRBgetenv) (GRBmodel *model);
 
-    const char * (*dll_GRBgeterrormsg) (GRBenv *env);
+    const char * (__stdcall *dll_GRBgeterrormsg) (GRBenv *env);
 
-    int (*dll_GRBgetintattr) (GRBmodel *model, const char *attrname, int *valueP);
+    int (__stdcall *dll_GRBgetintattr) (GRBmodel *model, const char *attrname, int *valueP);
 
-    int (*dll_GRBloadenv) (GRBenv **envP, const char *logfilename);
+    int (__stdcall *dll_GRBloadenv) (GRBenv **envP, const char *logfilename);
 
-    int (*dll_GRBnewmodel) (GRBenv *env, GRBmodel **modelP, const char *Pname, int numvars,
+    int (__stdcall *dll_GRBnewmodel) (GRBenv *env, GRBmodel **modelP, const char *Pname, int numvars,
                             double *obj, double *lb, double *ub, char *vtype,
                             char **varnames);
 
-    int (*dll_GRBoptimize) (GRBmodel *model);
+    int (__stdcall *dll_GRBoptimize) (GRBmodel *model);
 
-    int (*dll_GRBreadparams) (GRBenv *env, const char *filename);
+    int (__stdcall *dll_GRBreadparams) (GRBenv *env, const char *filename);
 
-    int (*dll_GRBsetcallbackfunc) (GRBmodel *model,
+    int (__stdcall *dll_GRBsetcallbackfunc) (GRBmodel *model,
                                    int (__stdcall *cb)(CB_ARGS),
                                    void  *usrdata);
 
-    int (*dll_GRBsetdblparam) (GRBenv *env, const char *paramname, double value);
+    int (__stdcall *dll_GRBsetdblparam) (GRBenv *env, const char *paramname, double value);
 
-    int (*dll_GRBsetintparam) (GRBenv *env, const char *paramname, int value);
+    int (__stdcall *dll_GRBsetintparam) (GRBenv *env, const char *paramname, int value);
 
-    int (*dll_GRBsetintattr) (GRBmodel *model, const char *attrname, int newvalue);
+    int (__stdcall *dll_GRBsetintattr) (GRBmodel *model, const char *attrname, int newvalue);
 
-    int (*dll_GRBsetintattrlist) (GRBmodel *model, const char *attrname,
+    int (__stdcall *dll_GRBsetintattrlist) (GRBmodel *model, const char *attrname,
                     int len, int *ind, int *newvalues);
 
-    int (*dll_GRBsetstrparam) (GRBenv *env, const char *paramname, const char *value);
+    int (__stdcall *dll_GRBsetstrparam) (GRBenv *env, const char *paramname, const char *value);
 
-    int (*dll_GRBupdatemodel) (GRBmodel *model);
+    int (__stdcall *dll_GRBupdatemodel) (GRBmodel *model);
 
-    int (*dll_GRBwrite) (GRBmodel *model, const char *filename);
+    int (__stdcall *dll_GRBwrite) (GRBmodel *model, const char *filename);
 
-    int (*dll_GRBwriteparams) (GRBenv *env, const char *filename);
+    int (__stdcall *dll_GRBwriteparams) (GRBenv *env, const char *filename);
 
-    int (*dll_GRBgetintparam) (GRBenv *env, const char *paramname, int *valueP);
+    int (__stdcall *dll_GRBgetintparam) (GRBenv *env, const char *paramname, int *valueP);
     
   public:
     MIP_gurobi_wrapper() { openGUROBI(); }
