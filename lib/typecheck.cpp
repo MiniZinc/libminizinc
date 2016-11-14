@@ -720,7 +720,7 @@ namespace MiniZinc {
               if (vi->type().st() != ty.st()) {
                 throw TypeError(_env,al.loc(),"non-uniform array literal");
               }
-              if (ty.enumId() != vi->type().enumId()) {
+              if (vi->type().enumId() != 0 && ty.enumId() != vi->type().enumId()) {
                 ty.enumId(0);
               }
             } else {
