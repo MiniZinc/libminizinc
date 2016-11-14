@@ -24,6 +24,7 @@
 #include <stdexcept>
 
 #include <minizinc/config.hh>
+#include <minizinc/exception.hh>
 
 #ifdef HAS_GUROBI_PLUGIN
 #ifdef HAS_DLFCN_H
@@ -142,9 +143,9 @@ void MIP_gurobi_wrapper::wrap_assert(bool cond, string msg, bool fTerm)
 namespace {
   void* dll_open(const char* file) {
 #ifdef HAS_DLFCN_H
-    return dlopen( (std::string("lib")+file).c_str(), RTLD_NOW);
+    return dlopen( (std::string("lib")+file+".so").c_str(), RTLD_NOW);
 #else
-    return LoadLibrary(file);
+    return LoadLibrary((std::string(file)+".dll").c_str());
 #endif
   }
   void* dll_sym(void* dll, const char* sym) {
@@ -169,9 +170,13 @@ void MIP_gurobi_wrapper::openGUROBI()
 {
 #ifdef HAS_GUROBI_PLUGIN
   
-  gurobi_dll = dll_open("gurobi70.so");
+  gurobi_dll = dll_open("gurobi70");
   if (gurobi_dll==NULL) {
-    gurobi_dll = dll_open("gurobi65.so");
+    gurobi_dll = dll_open("gurobi65");
+  }
+
+  if (gurobi_dll==NULL) {
+    throw MiniZinc::InternalError("cannot load gurobi dll");
   }
   
   *(void**)(&dll_GRBaddconstr) = dll_sym(gurobi_dll, "GRBaddconstr");
