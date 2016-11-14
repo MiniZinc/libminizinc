@@ -23,7 +23,15 @@
 #include <cmath>
 #include <stdexcept>
 
+#include <minizinc/config.hh>
+
+#ifdef HAS_GUROBI_PLUGIN
+#ifdef HAS_DLFCN_H
 #include <dlfcn.h>
+#elif defined HAS_WINDOWS_H
+#include <Windows.h>
+#endif
+#endif
 
 using namespace std;
 
@@ -129,38 +137,98 @@ void MIP_gurobi_wrapper::wrap_assert(bool cond, string msg, bool fTerm)
    }
 }
 
+#ifdef HAS_GUROBI_PLUGIN
+
+namespace {
+  void* dll_open(const char* file) {
+#ifdef HAS_DLFCN_H
+    return dlopen( (std::string("lib")+file).c_str(), RTLD_NOW);
+#else
+    return LoadLibrary(file);
+#endif
+  }
+  void* dll_sym(void* dll, const char* sym) {
+#ifdef HAS_DLFCN_H
+    return dlsym(dll, sym);
+#else
+    return GetProcAddress((HMODULE)dll, sym);
+#endif
+  }
+  void dll_close(void* dll) {
+#ifdef HAS_DLFCN_H
+    dlclose(dll);
+#else
+    FreeLibrary((HMODULE)dll);
+#endif
+  }
+}
+
+#endif
+
 void MIP_gurobi_wrapper::openGUROBI()
 {
-  void* gurobi_dll = dlopen("libgurobi70.so", RTLD_NOW);
+#ifdef HAS_GUROBI_PLUGIN
+  
+  gurobi_dll = dll_open("gurobi70.so");
   if (gurobi_dll==NULL) {
-    gurobi_dll = dlopen("libgurobi65.so", RTLD_NOW);
+    gurobi_dll = dll_open("gurobi65.so");
   }
   
-  *(void**)(&dll_GRBaddconstr) = dlsym(gurobi_dll, "GRBaddconstr");
-  *(void**)(&dll_GRBaddvars) = dlsym(gurobi_dll, "GRBaddvars");
-  *(void**)(&dll_GRBcbcut) = dlsym(gurobi_dll, "GRBaddvars");
-  *(void**)(&dll_GRBcbget) = dlsym(gurobi_dll, "GRBcbget");
-  *(void**)(&dll_GRBcblazy) = dlsym(gurobi_dll, "GRBcblazy");
-  *(void**)(&dll_GRBfreeenv) = dlsym(gurobi_dll, "GRBfreeenv");
-  *(void**)(&dll_GRBfreemodel) = dlsym(gurobi_dll, "GRBfreemodel");
-  *(void**)(&dll_GRBgetdblattr) = dlsym(gurobi_dll, "GRBgetdblattr");
-  *(void**)(&dll_GRBgetdblattrarray) = dlsym(gurobi_dll, "GRBgetdblattrarray");
-  *(void**)(&dll_GRBgetenv) = dlsym(gurobi_dll, "GRBgetenv");
-  *(void**)(&dll_GRBgeterrormsg) = dlsym(gurobi_dll, "GRBgeterrormsg");
-  *(void**)(&dll_GRBgetintattr) = dlsym(gurobi_dll, "GRBgetintattr");
-  *(void**)(&dll_GRBloadenv) = dlsym(gurobi_dll, "GRBloadenv");
-  *(void**)(&dll_GRBnewmodel) = dlsym(gurobi_dll, "GRBnewmodel");
-  *(void**)(&dll_GRBoptimize) = dlsym(gurobi_dll, "GRBoptimize");
-  *(void**)(&dll_GRBreadparams) = dlsym(gurobi_dll, "GRBreadparams");
-  *(void**)(&dll_GRBsetcallbackfunc) = dlsym(gurobi_dll, "GRBsetcallbackfunc");
-  *(void**)(&dll_GRBsetdblparam) = dlsym(gurobi_dll, "GRBsetdblparam");
-  *(void**)(&dll_GRBsetintattr) = dlsym(gurobi_dll, "GRBsetintattr");
-  *(void**)(&dll_GRBsetintattrlist) = dlsym(gurobi_dll, "GRBsetintattrlist");
-  *(void**)(&dll_GRBsetintparam) = dlsym(gurobi_dll, "GRBsetintparam");
-  *(void**)(&dll_GRBsetstrparam) = dlsym(gurobi_dll, "GRBsetstrparam");
-  *(void**)(&dll_GRBupdatemodel) = dlsym(gurobi_dll, "GRBupdatemodel");
-  *(void**)(&dll_GRBwrite) = dlsym(gurobi_dll, "GRBwrite");
-  *(void**)(&dll_GRBwriteparams) = dlsym(gurobi_dll, "GRBwriteparams");
+  *(void**)(&dll_GRBaddconstr) = dll_sym(gurobi_dll, "GRBaddconstr");
+  *(void**)(&dll_GRBaddvars) = dll_sym(gurobi_dll, "GRBaddvars");
+  *(void**)(&dll_GRBcbcut) = dll_sym(gurobi_dll, "GRBcbcut");
+  *(void**)(&dll_GRBcbget) = dll_sym(gurobi_dll, "GRBcbget");
+  *(void**)(&dll_GRBcblazy) = dll_sym(gurobi_dll, "GRBcblazy");
+  *(void**)(&dll_GRBfreeenv) = dll_sym(gurobi_dll, "GRBfreeenv");
+  *(void**)(&dll_GRBfreemodel) = dll_sym(gurobi_dll, "GRBfreemodel");
+  *(void**)(&dll_GRBgetdblattr) = dll_sym(gurobi_dll, "GRBgetdblattr");
+  *(void**)(&dll_GRBgetdblattrarray) = dll_sym(gurobi_dll, "GRBgetdblattrarray");
+  *(void**)(&dll_GRBgetenv) = dll_sym(gurobi_dll, "GRBgetenv");
+  *(void**)(&dll_GRBgeterrormsg) = dll_sym(gurobi_dll, "GRBgeterrormsg");
+  *(void**)(&dll_GRBgetintattr) = dll_sym(gurobi_dll, "GRBgetintattr");
+  *(void**)(&dll_GRBloadenv) = dll_sym(gurobi_dll, "GRBloadenv");
+  *(void**)(&dll_GRBnewmodel) = dll_sym(gurobi_dll, "GRBnewmodel");
+  *(void**)(&dll_GRBoptimize) = dll_sym(gurobi_dll, "GRBoptimize");
+  *(void**)(&dll_GRBreadparams) = dll_sym(gurobi_dll, "GRBreadparams");
+  *(void**)(&dll_GRBsetcallbackfunc) = dll_sym(gurobi_dll, "GRBsetcallbackfunc");
+  *(void**)(&dll_GRBsetdblparam) = dll_sym(gurobi_dll, "GRBsetdblparam");
+  *(void**)(&dll_GRBsetintattr) = dll_sym(gurobi_dll, "GRBsetintattr");
+  *(void**)(&dll_GRBsetintattrlist) = dll_sym(gurobi_dll, "GRBsetintattrlist");
+  *(void**)(&dll_GRBsetintparam) = dll_sym(gurobi_dll, "GRBsetintparam");
+  *(void**)(&dll_GRBsetstrparam) = dll_sym(gurobi_dll, "GRBsetstrparam");
+  *(void**)(&dll_GRBupdatemodel) = dll_sym(gurobi_dll, "GRBupdatemodel");
+  *(void**)(&dll_GRBwrite) = dll_sym(gurobi_dll, "GRBwrite");
+  *(void**)(&dll_GRBwriteparams) = dll_sym(gurobi_dll, "GRBwriteparams");
+
+#else
+
+  dll_GRBaddconstr = GRBaddconstr;
+  dll_GRBaddvars = GRBaddvars;
+  dll_GRBcbcut = GRBcbcut;
+  dll_GRBcbget = GRBcbget;
+  dll_GRBcblazy = GRBcblazy;
+  dll_GRBfreeenv = GRBfreeenv;
+  dll_GRBfreemodel = GRBfreemodel;
+  dll_GRBgetdblattr = GRBgetdblattr;
+  dll_GRBgetdblattrarray = GRBgetdblattrarray;
+  dll_GRBgetenv = GRBgetenv;
+  dll_GRBgeterrormsg = GRBgeterrormsg;
+  dll_GRBgetintattr = GRBgetintattr;
+  dll_GRBloadenv = GRBloadenv;
+  dll_GRBnewmodel = GRBnewmodel;
+  dll_GRBoptimize = GRBoptimize;
+  dll_GRBreadparams = GRBreadparams;
+  dll_GRBsetcallbackfunc = GRBsetcallbackfunc;
+  dll_GRBsetdblparam = GRBsetdblparam;
+  dll_GRBsetintattr = GRBsetintattr;
+  dll_GRBsetintattrlist = GRBsetintattrlist;
+  dll_GRBsetintparam = GRBsetintparam;
+  dll_GRBsetstrparam = GRBsetstrparam;
+  dll_GRBupdatemodel = GRBupdatemodel;
+  dll_GRBwrite = GRBwrite;
+  dll_GRBwriteparams = GRBwriteparams;
+  
+#endif
   
   cbui.wrapper = this;
   
@@ -190,6 +258,9 @@ void MIP_gurobi_wrapper::closeGUROBI()
     dll_GRBfreeenv(env);
   /// and at last:
 //   MIP_wrapper::cleanup();
+#ifdef HAS_DLFCN_H
+  dll_close(gurobi_dll);
+#endif
 }
 
 void MIP_gurobi_wrapper::doAddVars
