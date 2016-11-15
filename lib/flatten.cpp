@@ -384,6 +384,12 @@ namespace MiniZinc {
   bool EnvI::isSubtype(const Type& t1, const Type& t2, bool strictEnums) {
     if (!t1.isSubtypeOf(t2,strictEnums))
       return false;
+    if (strictEnums && t1.dim()==0 && t2.dim()!=0 && t2.enumId() != 0) {
+      // set assigned to an array
+      const std::vector<unsigned int>& t2enumIds = getArrayEnum(t2.enumId());
+      if (t2enumIds[t2enumIds.size()-1] != 0 && t1.enumId() != t2enumIds[t2enumIds.size()-1])
+        return false;
+    }
     if (strictEnums && t1.dim() > 0 && t1.enumId() != t2.enumId()) {
       if (t1.enumId()==0)
         return false;

@@ -2095,35 +2095,22 @@ namespace MiniZinc {
   
   IntVal b_enum_next(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    IntVal v = eval_int(env, args[0]);
-    if (args[0]->type().enumId() != 0) {
-      IntSetVal* isv = eval_intset(env, env.getEnum(args[0]->type().enumId())->e()->e());
-      if (!isv->contains(v+1))
-        throw ResultUndefinedError(env, call->loc(), "value outside of enum range");
-    }
+    IntSetVal* isv = eval_intset(env, args[0]);
+    IntVal v = eval_int(env, args[1]);
+    if (!isv->contains(v+1))
+      throw ResultUndefinedError(env, call->loc(), "value outside of enum range");
     return v+1;
   }
 
   IntVal b_enum_prev(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
-    IntVal v = eval_int(env, args[0]);
-    if (args[0]->type().enumId() != 0) {
-      IntSetVal* isv = eval_intset(env, env.getEnum(args[0]->type().enumId())->e()->e());
-      if (!isv->contains(v-1))
-        throw ResultUndefinedError(env, call->loc(), "value outside of enum range");
-    }
+    IntSetVal* isv = eval_intset(env, args[0]);
+    IntVal v = eval_int(env, args[1]);
+    if (!isv->contains(v-1))
+      throw ResultUndefinedError(env, call->loc(), "value outside of enum range");
     return v-1;
   }
 
-  IntSetVal* b_enum_base_set(EnvI& env, Call* call) {
-    ASTExprVec<Expression> args = call->args();
-    if (args[0]->type().enumId() != 0) {
-      VarDeclI* enumDecl = env.getEnum(args[0]->type().enumId());
-      return eval_intset(env, enumDecl->e()->e());
-    }
-    return IntSetVal::a(-IntVal::infinity(),IntVal::infinity());
-  }
-  
   IntVal b_mzn_compiler_version(EnvI&, Call*) {
     return atoi(MZN_VERSION_MAJOR)*10000+atoi(MZN_VERSION_MINOR)*1000+atoi(MZN_VERSION_PATCH);
   }
@@ -2802,17 +2789,8 @@ namespace MiniZinc {
       t[0] = Type::parsetint();
       t[1] = Type::parint();
       rb(env, m, ASTString("to_enum"),t,b_to_enum);
-    }
-    {
-      std::vector<Type> t(1);
-      t[0] = Type::parint();
       rb(env, m, ASTString("enum_next"),t,b_enum_next);
       rb(env, m, ASTString("enum_prev"),t,b_enum_prev);
-    }
-    {
-      std::vector<Type> t(1);
-      t[0] = Type::varint();
-      rb(env, m, ASTString("enum_base_set"),t,b_enum_base_set);
     }
     {
       rb(env, m, ASTString("mzn_compiler_version"), std::vector<Type>(), b_mzn_compiler_version);

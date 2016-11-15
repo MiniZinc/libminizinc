@@ -234,9 +234,9 @@ function     $T: max(    $T: x,     $T: y);
 /** @group builtins.arithmetic Return maximum of elements in array \a x */
 function     $T: max(array[$U] of     $T: x);
 /** @group builtins.arithmetic Return minimum of elements in set \a x */
-function int: min(set of int: x);
+function $$E: min(set of $$E: x);
 /** @group builtins.arithmetic Return maximum of elements in set \a x */
-function int: max(set of int: x);
+function $$E: max(set of $$E: x);
 
 /** @group builtins.arithmetic Return maximum of \a x and \a y */
 function var int: max(var int: x, var int: y) :: promise_total =
@@ -637,7 +637,7 @@ function     set of $T:  'symdiff'(    set of $T: x,      set of $T: y);
 function var set of int: 'symdiff'(var set of int: x, var set of int: y);
 
 /** @group builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
-function set of int: '..'(int: a,int: b);
+function set of $$E: '..'($$E: a,$$E: b);
 /** @group builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
 function set of float: '..'(float: a,float: b);
 
@@ -1101,7 +1101,7 @@ function array[$T] of var float: int2float(array[$T] of var int: x) ::promise_to
 % Only supported for set of int:
 % function array[int] of $T: set2array(set of $T);
 /** @group builtins.coercion Return a set of integers \a x coerced to an array of integers  */
-function array[int] of int: set2array(set of int: x);
+function array[int] of $$E: set2array(set of $$E: x);
 
 
 /***
@@ -1377,20 +1377,17 @@ function bool: abort(string: msg);
   
 */
 
-/** @group builtins.enum Return set of values in enum of \a x  */
-function set of $$E: enum_base_set(var $$E: x);
-
 /** @group builtins.enum Return next greater enum value of \a x */
-function $$E: enum_next($$E: x);
+function $$E: enum_next(set of $$E: e, $$E: x);
 /** @group builtins.enum Return next greater enum value of \a x */
-function var $$E: enum_next(var $$E: x) =
-  let { constraint x < max(enum_base_set(x)) } in x+1;
+function var $$E: enum_next(set of $$E: e, var $$E: x) =
+  let { constraint x < max(e) } in x+1;
 
 /** @group builtins.enum Return next smaller enum value of \a x */
-function $$E: enum_prev($$E: x);
+function $$E: enum_prev(set of $$E: e, $$E: x);
 /** @group builtins.enum Return next smaller enum value of \a x */
-function var $$E: enum_prev(var $$E: x) =
-  let { constraint x > min(enum_base_set(x)) } in x-1;
+function var $$E: enum_prev(set of $$E: e, var $$E: x) =
+  let { constraint x > min(e) } in x-1;
 
 /** @group builtins.enum Convert \a x to enum type \a X */
 function $$E: to_enum(set of $$E: X, int: x);
