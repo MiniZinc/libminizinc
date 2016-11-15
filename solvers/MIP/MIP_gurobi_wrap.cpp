@@ -263,7 +263,7 @@ void MIP_gurobi_wrapper::closeGUROBI()
     dll_GRBfreeenv(env);
   /// and at last:
 //   MIP_wrapper::cleanup();
-#ifdef HAS_DLFCN_H
+#ifdef HAS_GUROBI_PLUGIN
   dll_close(gurobi_dll);
 #endif
 }

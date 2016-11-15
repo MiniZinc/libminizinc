@@ -345,7 +345,7 @@ if(HAS_GUROBI)  # Version 6.5
 	)
   target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
   if(HAS_GUROBI_PLUGIN)
-    target_link_libraries(minizinc_gurobi minizinc ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(minizinc_gurobi minizinc dl ${CMAKE_THREAD_LIBS_INIT})
   else()
     link_directories("${GUROBI_HOME}/lib")
     target_link_libraries(minizinc_gurobi minizinc gurobi70 ${CMAKE_THREAD_LIBS_INIT})
