@@ -610,6 +610,11 @@ function     bool: 'in'(    int: x,     set of int: y);
 /** @group builtins.set \a x is an element of the set \a y */
 function var bool: 'in'(var int: x, var set of int: y);
 
+/** @group builtins.set Test if \a x is an element of the set \a y */
+function     bool: 'in'(    float: x,     set of float: y);
+/** @group builtins.set Test if \a x is an element of the set \a y */
+function var bool: 'in'(var float: x,     set of float: y);
+
 /** @group builtins.set Test if \a x is a subset of \a y */
 function     bool: 'subset'(    set of $T: x,      set of $T: y);
 /** @group builtins.set \a x is a subset of \a y */
@@ -1418,8 +1423,12 @@ predicate var_dom(var float:x, float: l, float: u) =
   if has_bounds(x) /\ lb(x) >= l /\ ub(x) <= u then true
   else x >= l /\ x <= u
   endif;
+predicate var_dom(var float:x, set of float: d) =
+  x in d;
 test var_dom(float:x, float: l, float: u) =
   x >= l /\ x <= u;
+test var_dom(float:x, set of float: d) =
+  x in d;
 
 predicate var_dom(array[$T] of var set of int: x, set of int: d) =
     let { array[int] of var set of int: xx = array1d(x) }
@@ -1430,6 +1439,9 @@ predicate var_dom(array[$T] of var int: x, set of int: d) =
 predicate var_dom(array[$T] of var float: x, float: l, float: u) =
     let { array[int] of var float: xx = array1d(x) }
     in forall (i in index_set(xx)) (var_dom(xx[i],l,u));
+predicate var_dom(array[$T] of var float: x, set of float: d) =
+    let { array[int] of var float: xx = array1d(x) }
+    in forall (i in index_set(xx)) (var_dom(xx[i],d));
 
 test var_dom(array[$T] of set of int: x, set of int: d) =
     let { array[int] of set of int: xx = array1d(x) }
@@ -1440,6 +1452,9 @@ test var_dom(array[$T] of int: x, set of int: d) =
 test var_dom(array[$T] of float: x, float: l, float: u) =
     let { array[int] of float: xx = array1d(x) }
     in forall (i in index_set(xx)) (var_dom(xx[i],l,u));
+test var_dom(array[$T] of float: x, set of float: d) =
+    let { array[int] of float: xx = array1d(x) }
+    in forall (i in index_set(xx)) (var_dom(xx[i],d));
 
 function var set of int: array2set(array[int] of var int: x) ::promise_total =
     let {

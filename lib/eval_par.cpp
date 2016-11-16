@@ -830,6 +830,20 @@ namespace MiniZinc {
           } catch (ResultUndefinedError&) {
             return false;
           }
+        } else if (lhs->type().isfloat() && rhs->type().isfloatset()) {
+          try {
+            FloatVal v0 = eval_float(env,lhs);
+            GCLock lock;
+            FloatSetVal* v1 = eval_floatset(env,rhs);
+            switch (bo->op()) {
+              case BOT_IN: return v1->contains(v0);
+              default:
+                assert(false);
+                throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
+            }
+          } catch (ResultUndefinedError&) {
+            return false;
+          }
         } else if (lhs->type().is_set() && rhs->type().is_set()) {
           try {
             GCLock lock;
