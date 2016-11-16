@@ -109,36 +109,6 @@ namespace MiniZinc {
   }
 
   void Presolver::findPresolvedCalls() {
-//    class CallSeeker : public EVisitor {
-//    public:
-//      std::vector<Subproblem*>& subproblems;
-//      EnvI& env;
-//      Model* m;
-//
-//      CallSeeker(std::vector<Subproblem*>& subproblems, EnvI& env, Model* m) : subproblems(subproblems), env(env), m(m) { }
-//      virtual void vCall(Call &call) {
-//        for (size_t i = 0; i < subproblems.size(); ++i) {
-//          if (subproblems[i]->getPredicate() == call.decl()) {
-//            subproblems[i]->addCall(&call);
-//          }
-//        }
-//      }
-//    } cf(subproblems, env.envi(), env.flat());
-//    TopDownIterator<CallSeeker> cf_it(cf);
-//
-//    class CallItems : public ItemVisitor {
-//    public:
-//      TopDownIterator<CallSeeker>& cf_it;
-//      CallItems(TopDownIterator<CallSeeker>& cf_it) : cf_it(cf_it) { }
-//
-//      virtual void vVarDeclI(VarDeclI* i) {cf_it.run(i->e());}
-//      virtual void vAssignI(AssignI* i) {cf_it.run(i->e());}
-//      virtual void vConstraintI(ConstraintI* i) {cf_it.run(i->e());}
-//      virtual void vSolveI(SolveI* i) {cf_it.run(i->e());}
-//      virtual void vOutputI(OutputI* i) {cf_it.run(i->e());}
-//      virtual void vFunctionI(FunctionI* i) {cf_it.run(i->e());}
-//    } ci(cf_it);
-//    iterItems(ci, env.flat());
 
     for (ConstraintIterator it = env.flat()->begin_constraints(); it != env.flat()->end_constraints(); ++it) {
       if (Call* c = it->e()->dyn_cast<Call>()) {
@@ -276,11 +246,11 @@ namespace MiniZinc {
       arg->type(vd->type());
       args.push_back(arg);
     }
-    Call* pred_call = new Call(Location(), predicate->id().str(), args, predicate);
+    Call* pred_call = new Call(predicate->loc().introduce(), predicate->id().str(), args, predicate);
     pred_call->type(Type::varbool());
-    ConstraintI* constraint = new ConstraintI(Location(), pred_call);
+    ConstraintI* constraint = new ConstraintI(predicate->loc().introduce(), pred_call);
     m->addItem(constraint);
-    m->addItem(SolveI::sat(Location()));
+    m->addItem(SolveI::sat(predicate->loc().introduce()));
 
     generateFlatZinc(*e, flattener->flag_only_range_domains, flattener->flag_optimize, flattener->flag_newfzn);
   }
@@ -298,13 +268,27 @@ namespace MiniZinc {
 
 //    TODO: Add set support
     if(constraint == Element)
-      throw EvalError(origin_env, Location(), "Set types are unsupported for predicate presolving");
+      throw EvalError(origin_env, predicate->loc(), "Set types are unsupported for predicate presolving");
 
     auto builder = TableBuilder(origin_env, origin, flattener, constraint == BoolTable);
     builder.buildFromSolver(predicate, solns);
-    Expression* tableCall = builder.getExpression();
+    Expression* genTable = builder.getExpression();
 
-    predicate->e(tableCall);
+    predicate->e(genTable);
+    pred_orig->e(genTable);
+
+    for (int i = 0; i < calls.size(); ++i) {
+      builder.resetVariables();
+      for (int j = 0; j < calls[i]->args().size(); ++j) {
+        builder.addVariable(calls[i]->args()[j]);
+      }
+      Expression* tableCall = builder.getExpression();
+
+      origin_env.flat_removeItem(items[i]);
+      // TODO: Seems to introduce unused array declarations in FlatZinc.
+      (void) flat_exp(origin_env, Ctx(), tableCall, constants().var_true, constants().var_true);
+      delete tableCall;
+    }
   }
 
   void Presolver::ModelSubproblem::constructModel() {
@@ -324,7 +308,7 @@ namespace MiniZinc {
           // TODO: Can this be simplified with FlatZinc Calls?
           Expression* type = computeDomainExpr(origin_env, (*it)->args()[i] );
           if (type != nullptr) {
-            Expression* expr = new BinOp(Location(), domains[i], BOT_UNION, type);
+            Expression* expr = new BinOp(predicate->loc().introduce(), domains[i], BOT_UNION, type);
             expr->type( type->type() );
             domains[i] = expr;
           } else {
@@ -425,18 +409,18 @@ namespace MiniZinc {
         throw EvalError(origin_env, it->loc(), "Presolving is currently unsupported for predicates using parameter"
                 "arguments");
       }
-      VarDecl* vd = new VarDecl(Location(), it->ti(), it->id(), NULL);
-      m->addItem(new VarDeclI(Location(), vd));
+      VarDecl* vd = new VarDecl(predicate->loc().introduce(), it->ti(), it->id(), NULL);
+      m->addItem(new VarDeclI(predicate->loc().introduce(), vd));
 
       decls.push_back(vd);
 
-      Id* arg = new Id(Location(), vd->id()->str().str(), vd);
+      Id* arg = new Id(predicate->loc().introduce(), vd->id()->str().str(), vd);
       arg->type(vd->type());
       args.push_back(arg);
     }
-    Call* pred_call = new Call(Location(), predicate->id().str(), args, predicate);
+    Call* pred_call = new Call(predicate->loc().introduce(), predicate->id().str(), args, predicate);
     pred_call->type(Type::varbool());
-    ConstraintI* constraint = new ConstraintI(Location(), pred_call);
+    ConstraintI* constraint = new ConstraintI(predicate->loc().introduce(), pred_call);
     m->addItem(constraint);
     m->addItem(SolveI::sat(Location()));
 
@@ -470,7 +454,7 @@ namespace MiniZinc {
 
 //    TODO: Add set support
     if(constraint == Element)
-      throw EvalError(origin_env, Location(), "Set types are unsupported for predicate presolving");
+      throw EvalError(origin_env, pred_orig->loc(), "Set types are unsupported for predicate presolving");
 
     auto builder = TableBuilder(origin_env, origin, flattener, constraint == BoolTable);
     builder.buildFromSolver(predicate, solns, calls[currentCall]->args());

@@ -254,27 +254,29 @@ namespace MiniZinc{
     ArrayLit* dataExpr = new ArrayLit(Location(), data);
     dataExpr->type(boolTable ? Type::parbool(1) : Type::parint(1));
 
-    std::vector<Expression*> conversionArgs;
-    SetLit* index1 = new SetLit(Location(),
-                                IntSetVal::a(
-                                        std::vector<IntSetVal::Range>(1, IntSetVal::Range(IntVal(1), IntVal(rows)))
-                                ));
-    index1->type(Type::parsetint());
-    conversionArgs.push_back(index1);
-    Call* index2 = new Call(Location(), "index_set", std::vector<Expression*>(1, variables));
-    index2->type(Type::parsetint());
-    index2->decl(m->matchFn(env, index2, true));
-    conversionArgs.push_back(index2);
-    conversionArgs.push_back(dataExpr);
-    Call* tableData = new Call(Location(), "array2d", conversionArgs);
-    tableData->type(boolTable ? Type::parbool(2) : Type::parint(2));
-    tableData->decl(m->matchFn(env, tableData, true));
+    if (dataCall == nullptr) {
+      std::vector<Expression*> conversionArgs;
+      SetLit* index1 = new SetLit(Location(),
+                                  IntSetVal::a(
+                                          std::vector<IntSetVal::Range>(1, IntSetVal::Range(IntVal(1), IntVal(rows)))
+                                  ));
+      index1->type(Type::parsetint());
+      conversionArgs.push_back(index1);
+      Call* index2 = new Call(Location(), "index_set", std::vector<Expression*>(1, variables));
+      index2->type(Type::parsetint());
+      index2->decl(m->matchFn(env, index2, true));
+      conversionArgs.push_back(index2);
+      conversionArgs.push_back(dataExpr);
+      dataCall = new Call(Location(), "array2d", conversionArgs);
+      dataCall->type(boolTable ? Type::parbool(2) : Type::parint(2));
+      dataCall->decl(m->matchFn(env, dataCall, true));
+    }
 
     std::vector<Expression*> tableArgs;
     tableArgs.push_back(variables);
-    tableArgs.push_back(tableData);
+    tableArgs.push_back(dataCall);
 
-    Call* tableCall = new Call(Location(), boolTable ? "table_bool" : "table_int", tableArgs);
+    Call* tableCall = new Call(Location().introduce(), boolTable ? "table_bool" : "table_int", tableArgs);
     FunctionI* tableDecl = m->matchFn(env, tableCall, true);
     if (tableDecl == nullptr) {
       registerTableConstraint();
@@ -289,14 +291,14 @@ namespace MiniZinc{
 
   void Presolver::TableBuilder::addVariable(Expression* var) {
     if (var->type().dim() > 1) {
-      Call* c = new Call(Location(), "array1d", std::vector<Expression*>(1, var));
+      Call* c = new Call(Location().introduce(), "array1d", std::vector<Expression*>(1, var));
       c->type(var->type().bt() == Type::BT_BOOL ? Type::varbool(1) : Type::varint(1));
       c->decl(m->matchFn(env, c, true));
       var = c;
     }
 
     if (var->type().bt() == Type::BT_BOOL && !boolTable) {
-      Call* c = new Call(Location(), "bool2int", std::vector<Expression*>(1, var));
+      Call* c = new Call(Location().introduce(), "bool2int", std::vector<Expression*>(1, var));
       c->type(Type::varint(var->type().dim()));
       c->decl(m->matchFn(env, c, true));
       var = c;

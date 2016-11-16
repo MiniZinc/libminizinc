@@ -61,6 +61,7 @@ namespace MiniZinc {
     long long int rows;
 
     Expression* variables = nullptr;
+    Call* dataCall = nullptr;
 
     std::vector<Expression*> vVariables;
     std::vector<Expression*> data;
@@ -76,9 +77,12 @@ namespace MiniZinc {
     void buildFromSolver(FunctionI* f, Solns2Vector* solns, ASTExprVec<Expression> variables = ASTExprVec<Expression>());
     /// Adds variable to the table constraint
     void addVariable(Expression* var);
+    /// Reset variables
+    void resetVariables() { variables = nullptr; vVariables.clear(); }
     /// Adds a data point to the table constraint
     /// (this function must be called alternating the variables)
     void addData(Expression* dat);
+    void resetData() { dataCall = nullptr; data.clear(); }
     /// Returns a call to the generated table constraint
     Call* getExpression();
     /// Sets the number of number of points of data for every variable
