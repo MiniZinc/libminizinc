@@ -645,6 +645,21 @@ if (BUILD_HTML_DOCUMENTATION)
   INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION doc)
 endif()
 
+option (BUILD_HTML_DOCUMENTATION_JEKYLL "Build HTML documentation for the MiniZinc library" OFF)
+
+if (BUILD_HTML_DOCUMENTATION_JEKYLL)
+  add_custom_target(doc ALL
+    DEPENDS "mzn2doc"
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    COMMAND mzn2doc --toplevel-groups 2
+    --include-stdlib
+    --html-header ${PROJECT_SOURCE_DIR}/doc/html/header_jekyll.html
+    --html-footer ${PROJECT_SOURCE_DIR}/doc/html/footer_jekyll.html
+      --output-base ${PROJECT_BINARY_DIR}/doc/html/doc share/minizinc/std/globals.mzn
+  )
+  INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION doc)
+endif()
+
 option (BUILD_PDF_DOCUMENTATION "Build PDF documentation for the MiniZinc language" OFF)
 
 if (BUILD_PDF_DOCUMENTATION)
