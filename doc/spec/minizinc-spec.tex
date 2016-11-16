@@ -3222,16 +3222,13 @@ Each case name can be coerced automatically to the integer corresponding to its 
 For each enumerated type $T$, the following functions exist:
 
 \begin{verbatim}
-  % Return set of values in enum of x
-  function set of T: enum_base_set(var T: x);
-
-  % Return next greater enum value of x
-  function T: enum_next(T: x);
-  function var T: enum_next(var T: x);
+  % Return next greater enum value of x in enum type X
+  function T: enum_next(set of T: X, T: x);
+  function var T: enum_next(set of T: X, var T: x);
   
-  % Return next smaller enum value of x
-  function T: enum_prev(T: x);
-  function var T: enum_prev(var T: x);
+  % Return next smaller enum value of x in enum type X
+  function T: enum_prev(set of T: X, T: x);
+  function var T: enum_prev(set of T: X, var T: x);
 
   % Convert x to enum type X
   function T: to_enum(set of T: X, int: x);
