@@ -64,7 +64,7 @@ void Flattener::printHelp(ostream& os)
   os
   << "Presolver options:" << std::endl
   << "  --no-presolve\n    Do not presolve marked predicates." << std::endl
-  << "  -f <exe>, --solver <exe>, --flatzinc-cmd <exe>\n    The backend solver filename." << std::endl
+  << "  -p <exe>, --presolver <exe>\n    The backend solver filename." << std::endl
   << "  --output-presolve-mzn\n    Print generated MiniZinc models to be presolved on standard output" << std::endl
   << "  --presolved <file>, --output-presolved-to-file <file>\n    Filename for presolved predicates output" << std::endl
   << std::endl;
@@ -120,7 +120,7 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
   } else if ( cop.getOption( "--output-ozn-to-stdout" ) ) {
     flag_output_ozn_stdout = true;
 #ifdef PRESOLVE
-  } else if ( cop.getOption( "-f --solver --flatzinc-cmd", &flag_fzn_solver) ) {
+  } else if ( cop.getOption( "-p --presolver", &flag_fzn_solver) ) {
   } else if ( cop.getOption( "--presolved --output-presolved-to-file", &flag_output_presolved ) ) {
   } else if ( cop.getOption( "--no-presolve" ) ) {
     flag_no_presolve = true;
