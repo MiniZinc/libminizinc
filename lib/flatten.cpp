@@ -4813,6 +4813,8 @@ namespace MiniZinc {
                         Call* c = new Call(Location().introduce(),"var_dom",domargs);
                         c->type(Type::varbool());
                         c->decl(env.orig->matchFn(env,c,false));
+                        if (c->decl()==NULL)
+                          throw InternalError("no matching declaration found for var_dom");
                         domconstraint = c;
                       } else {
                         domconstraint = new BinOp(Location().introduce(),args[i](),bot,dom);
@@ -4848,6 +4850,8 @@ namespace MiniZinc {
                         Call* c = new Call(Location().introduce(),"var_dom",domargs);
                         c->type(Type::varbool());
                         c->decl(env.orig->matchFn(env,c,false));
+                        if (c->decl()==NULL)
+                          throw InternalError("no matching declaration found for var_dom");
                         domconstraint = c;
                       } else {
                         domconstraint = new BinOp(Location().introduce(),args[i](),BOT_IN,dom);
@@ -4997,6 +5001,8 @@ namespace MiniZinc {
                       Call* c = new Call(Location().introduce(),"var_dom",domargs);
                       c->type(Type::varbool());
                       c->decl(env.orig->matchFn(env,c,false));
+                      if (c->decl()==NULL)
+                        throw InternalError("no matching declaration found for var_dom");
                       domconstraint = c;
                     } else {
                       GCLock lock;
@@ -5110,6 +5116,8 @@ namespace MiniZinc {
                 Call* c = new Call(vd->ti()->loc().introduce(),"var_dom",domargs);
                 c->type(Type::varbool());
                 c->decl(env.orig->matchFn(env,c,false));
+                if (c->decl()==NULL)
+                  throw InternalError("no matching declaration found for var_dom");
                 VarDecl* b_b = (nctx.b==C_ROOT && b==constants().var_true) ? b : NULL;
                 VarDecl* r_r = (nctx.b==C_ROOT && b==constants().var_true) ? b : NULL;
                 ee = flat_exp(env, nctx, c, r_r, b_b);
