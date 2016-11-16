@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 constraint xorall([]) = false;
 constraint xorall([false]) = false;
 constraint xorall([true]) = true;

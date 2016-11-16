@@ -14,13 +14,6 @@ function array[int] of var int: arg_sort(array[int] of var int:x) :: promise_tot
             in  p
          endif;
 
-/** @group globals.sort
-Returns the permutation \a p which causes \a x to be in sorted order hence
-\a x[\a p[\p i]] <= \a x[\a p[\p i+1]].
-
-The permutation is the stable sort hence \a x[\a p[\p i]] = \a x[\a p[\p i+1]] \(\rightarrow\) \a p[\p i] < \a p[\p i+1].
-*/
-function array[int] of int: arg_sort(array[int] of int:x);
 
 /** @group globals.sort
 Returns the permutation \a p which causes \a x to be in sorted order hence

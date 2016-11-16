@@ -36,6 +36,8 @@ namespace MiniZinc {
   IntSetVal* eval_intset(EnvI& env, Expression* e);
   /// Evaluate a par bool set \a e
   IntSetVal* eval_boolset(EnvI& env, Expression* e);
+  /// Evaluate a par float set \a e
+  FloatSetVal* eval_floatset(EnvI& env, Expression* e);
   /// Evaluate a par string \a e
   std::string eval_string(EnvI& env, Expression* e);
   /// Evaluate a par expression \a e and return it wrapped in a literal
@@ -95,7 +97,10 @@ namespace MiniZinc {
   void
   eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id,
                 IntVal i, KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
-    e->decl(gen,id)->e()->cast<IntLit>()->v(i);
+    {
+      GCLock lock;
+      e->decl(gen,id)->e(IntLit::a(i));
+    }
     CallStackItem csi(env, e->decl(gen,id)->id(), i);
     if (id == e->n_decls(gen)-1) {
       if (gen == e->n_generators()-1) {
@@ -252,6 +257,10 @@ namespace MiniZinc {
     Eval eval;
     return eval_comp(env, eval,e);
   }  
+  
+  Expression* follow_id(Expression* e);
+  Expression* follow_id_to_decl(Expression* e);
+  Expression* follow_id_to_value(Expression* e);
   
 }
 

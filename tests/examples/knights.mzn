@@ -1,5 +1,6 @@
 % RUNS ON mzn20_fd
-% RUNS ON mzn20_fd_linear
+% RUNS ON mzn-fzn_fd
+% RUNS ON mzn20_mip
 % knights.mzn
 % Ralph Becket
 % vim: ft=zinc ts=4 sw=4 et

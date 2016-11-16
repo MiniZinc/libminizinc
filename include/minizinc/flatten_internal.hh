@@ -93,6 +93,12 @@ namespace MiniZinc {
     bool _failed;
     unsigned int ids;
     ASTStringMap<ASTString>::t reifyMap;
+    typedef UNORDERED_NAMESPACE::unordered_map<VarDeclI*,unsigned int> EnumMap;
+    EnumMap enumMap;
+    std::vector<VarDeclI*> enumVarDecls;
+    typedef UNORDERED_NAMESPACE::unordered_map<std::string,unsigned int> ArrayEnumMap;
+    ArrayEnumMap arrayEnumMap;
+    std::vector<std::vector<unsigned int> > arrayEnumDecls;
   public:
     EnvI(Model* orig0);
     ~EnvI(void);
@@ -103,6 +109,13 @@ namespace MiniZinc {
     Map::iterator map_end(void);
     void dump(void);
     
+    unsigned int registerEnum(VarDeclI* vdi);
+    VarDeclI* getEnum(unsigned int i) const;
+    unsigned int registerArrayEnum(const std::vector<unsigned int>& arrayEnum);
+    const std::vector<unsigned int>& getArrayEnum(unsigned int i) const;
+    /// Check if \a t1 is a subtype of \a t2 (including enumerated types if \a strictEnum is true)
+    bool isSubtype(const Type& t1, const Type& t2, bool strictEnum);
+    
     void flat_addItem(Item* i);
     void flat_removeItem(int i);
     void flat_removeItem(Item* i);
@@ -110,16 +123,16 @@ namespace MiniZinc {
     void fail(void);
     bool failed(void) const;
     Model* flat(void);
+    void swap();
+    void swap_output() { std::swap( orig, output ); }
     ASTString reifyId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
     void addWarning(const std::string& msg);
     void collectVarDecls(bool b);
+    /// deprecated, use Solns2Out
+    std::ostream& evalOutput(std::ostream& os);
     void createErrorStack(void);
   };
-
-  Expression* follow_id(Expression* e);
-  Expression* follow_id_to_decl(Expression* e);
-  Expression* follow_id_to_value(Expression* e);
 
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
 
@@ -211,7 +224,7 @@ namespace MiniZinc {
           // fall through
         case BOT_LQ:
         {
-          Ranges::Bounded<IntSetRanges> b = Ranges::Bounded<IntSetRanges>::maxiter(dr,v);
+          Ranges::Bounded<IntVal,IntSetRanges> b = Ranges::Bounded<IntVal,IntSetRanges>::maxiter(dr,v);
           ndomain = IntSetVal::ai(b);
         }
           break;
@@ -220,14 +233,14 @@ namespace MiniZinc {
           // fall through
         case BOT_GQ:
         {
-          Ranges::Bounded<IntSetRanges> b = Ranges::Bounded<IntSetRanges>::miniter(dr,v);
+          Ranges::Bounded<IntVal,IntSetRanges> b = Ranges::Bounded<IntVal,IntSetRanges>::miniter(dr,v);
           ndomain = IntSetVal::ai(b);
         }
           break;
         case BOT_NQ:
         {
-          Ranges::Const c(v,v);
-          Ranges::Diff<IntSetRanges,Ranges::Const> d(dr,c);
+          Ranges::Const<IntVal> c(v,v);
+          Ranges::Diff<IntVal,IntSetRanges,Ranges::Const<IntVal> > d(dr,c);
           ndomain = IntSetVal::ai(d);
         }
           break;
@@ -237,14 +250,14 @@ namespace MiniZinc {
     }
     static Domain intersect_domain(Domain dom, Val v0, Val v1) {
       IntSetRanges dr(dom);
-      Ranges::Const c(v0,v1);
-      Ranges::Inter<IntSetRanges,Ranges::Const> inter(dr,c);
+      Ranges::Const<IntVal> c(v0,v1);
+      Ranges::Inter<IntVal,IntSetRanges,Ranges::Const<IntVal> > inter(dr,c);
       return IntSetVal::ai(inter);
     }
     static Val floor_div(Val v0, Val v1) {
-      return static_cast<long long int>(floor(static_cast<FloatVal>(v0.toInt()) / static_cast<FloatVal>(v1.toInt())));
+      return static_cast<long long int>(floor(static_cast<double>(v0.toInt()) / static_cast<double>(v1.toInt())));
     }
-    static Val ceil_div(Val v0, Val v1) { return static_cast<long long int>(ceil(static_cast<FloatVal>(v0.toInt()) / v1.toInt())); }
+    static Val ceil_div(Val v0, Val v1) { return static_cast<long long int>(ceil(static_cast<double>(v0.toInt()) / v1.toInt())); }
     static IntLit* newLit(Val v) { return IntLit::a(v); }
   };
   template<>
@@ -288,101 +301,72 @@ namespace MiniZinc {
     static bool finite(const FloatBounds& ib) { return true; }
     static bool finite(const FloatVal&) { return true; }
     static Bounds compute_bounds(EnvI& env, Expression* e) { return compute_float_bounds(env,e); }
-    typedef BinOp* Domain;
-    static Domain eval_domain(EnvI& env, Expression* e) {
-      BinOp* bo = e->cast<BinOp>();
-      assert(bo->op() == BOT_DOTDOT);
-      if (bo->lhs()->isa<FloatLit>() && bo->rhs()->isa<FloatLit>())
-        return bo;
-      BinOp* ret = new BinOp(bo->loc(),eval_par(env,bo->lhs()),BOT_DOTDOT,eval_par(env,bo->rhs()));
-      ret->type(bo->type());
-      return ret;
-    }
-    static Expression* new_domain(Val v) {
-      BinOp* ret = new BinOp(Location().introduce(),FloatLit::a(v),BOT_DOTDOT,FloatLit::a(v));
-      ret->type(Type::parsetfloat());
-      return ret;
-    }
-    static Expression* new_domain(Val v0, Val v1) {
-      BinOp* ret = new BinOp(Location().introduce(),FloatLit::a(v0),BOT_DOTDOT,FloatLit::a(v1));
-      ret->type(Type::parsetfloat());
-      return ret;
-    }
-    static Expression* new_domain(Domain d) { return d; }
-    static bool domain_contains(Domain dom, Val v) {
-      return dom==NULL || (dom->lhs()->cast<FloatLit>()->v() <= v && dom->rhs()->cast<FloatLit>()->v() >= v);
-    }
+    typedef FloatSetVal* Domain;
+    static Domain eval_domain(EnvI& env, Expression* e) { return eval_floatset(env, e); }
+
+    static Expression* new_domain(Val v) { return new SetLit(Location().introduce(),FloatSetVal::a(v,v)); }
+    static Expression* new_domain(Val v0, Val v1) { return new SetLit(Location().introduce(),FloatSetVal::a(v0,v1)); }
+    static Expression* new_domain(Domain d) { return new SetLit(Location().introduce(),d); }
+    static bool domain_contains(Domain dom, Val v) { return dom->contains(v); }
+    static bool domain_equals(Domain dom, Val v) { return dom->size()==1 && dom->min(0)==v && dom->max(0)==v; }
+    
     static bool domain_tighter(Domain dom, Bounds b) {
-      return dom != NULL && (!b.valid || dom->lhs()->cast<FloatLit>()->v() > b.l ||
-                             dom->rhs()->cast<FloatLit>()->v() < b.u);
+      return !b.valid || dom->min() > b.l || dom->max() < b.u;
     }
     static bool domain_intersects(Domain dom, Val v0, Val v1) {
-      return dom==NULL || (dom->lhs()->cast<FloatLit>()->v() <= v1 && dom->rhs()->cast<FloatLit>()->v() >= v0);
+      return (v0 > v1) || (dom->size() > 0 && dom->min(0) <= v1 && v0 <= dom->max(dom->size()-1));
     }
-    static bool domain_equals(Domain dom, Val v) {
-      return dom != NULL && dom->lhs()->cast<FloatLit>()->v() == v && dom->rhs()->cast<FloatLit>()->v() == v;
-    }
+    static bool domain_empty(Domain dom) { return dom->size()==0; }
+
     static bool domain_equals(Domain dom1, Domain dom2) {
-      if (dom1==dom2) return true;
-      if (dom1==NULL || dom2==NULL) return false;
-      return
-      dom1->lhs()->cast<FloatLit>()->v() == dom2->lhs()->cast<FloatLit>()->v() &&
-      dom1->rhs()->cast<FloatLit>()->v() == dom2->rhs()->cast<FloatLit>()->v();
+      FloatSetRanges d1(dom1);
+      FloatSetRanges d2(dom2);
+      return Ranges::equal(d1,d2);
     }
-    static bool domain_empty(Domain dom) {
-      return dom != NULL && dom->lhs()->cast<FloatLit>()->v() > dom->rhs()->cast<FloatLit>()->v();
-    }
+
     static Domain intersect_domain(Domain dom, Val v0, Val v1) {
       if (dom) {
-        Val lb = dom->lhs()->cast<FloatLit>()->v();
-        Val ub = dom->rhs()->cast<FloatLit>()->v();
-        Val nlb = std::max(lb,v0);
-        Val nub = std::min(ub,v1);
-        if (nlb==lb && nub==ub)
-          return dom;
-        Domain d = new BinOp(Location().introduce(), FloatLit::a(nlb),
-                             BOT_DOTDOT, FloatLit::a(nub));
-        d->type(Type::parsetfloat());
-        return d;
+        FloatSetRanges dr(dom);
+        Ranges::Const<FloatVal> c(v0,v1);
+        Ranges::Inter<FloatVal,FloatSetRanges,Ranges::Const<FloatVal> > inter(dr,c);
+        return FloatSetVal::ai(inter);
       } else {
-        Domain d = new BinOp(Location().introduce(), FloatLit::a(v0), BOT_DOTDOT, FloatLit::a(v1));
-        d->type(Type::parsetfloat());
+        Domain d = FloatSetVal::a(v0,v1);
         return d;
       }
     }
     static Domain limit_domain(BinOpType bot, Domain dom, Val v) {
-      if (dom) {
-        Val lb = dom->lhs()->cast<FloatLit>()->v();
-        Val ub = dom->rhs()->cast<FloatLit>()->v();
-        Domain ndomain;
-        switch (bot) {
-          case BOT_LE:
-            return NULL;
-          case BOT_LQ:
-            if (v < ub) {
-              Domain d = new BinOp(dom->loc(),dom->lhs(),BOT_DOTDOT,FloatLit::a(v));
-              d->type(Type::parsetfloat());
-              return d;
-            } else {
-              return dom;
-            }
-          case BOT_GR:
-            return NULL;
-          case BOT_GQ:
-            if (v > lb) {
-              Domain d = new BinOp(dom->loc(),FloatLit::a(v),BOT_DOTDOT,dom->rhs());
-              d->type(Type::parsetfloat());
-              return d;
-            } else {
-              return dom;
-            }
-          case BOT_NQ:
-            return NULL;
-          default: assert(false); return NULL;
+      FloatSetRanges dr(dom);
+      FloatSetVal* ndomain;
+      switch (bot) {
+        case BOT_LE:
+          v -= 1;
+          // fall through
+        case BOT_LQ:
+        {
+          Ranges::Bounded<FloatVal,FloatSetRanges> b = Ranges::Bounded<FloatVal,FloatSetRanges>::maxiter(dr,v);
+          ndomain = FloatSetVal::ai(b);
         }
-        return ndomain;
+          break;
+        case BOT_GR:
+          v += 1;
+          // fall through
+        case BOT_GQ:
+        {
+          Ranges::Bounded<FloatVal,FloatSetRanges> b = Ranges::Bounded<FloatVal,FloatSetRanges>::miniter(dr,v);
+          ndomain = FloatSetVal::ai(b);
+        }
+          break;
+        case BOT_NQ:
+        {
+          Ranges::Const<FloatVal> c(v,v);
+          Ranges::Diff<FloatVal,FloatSetRanges,Ranges::Const<FloatVal> > d(dr,c);
+          ndomain = FloatSetVal::ai(d);
+        }
+          break;
+        default: assert(false); return NULL;
       }
-      return NULL;
+      return ndomain;
     }
     static Val floor_div(Val v0, Val v1) { return v0 / v1; }
     static Val ceil_div(Val v0, Val v1) { return v0 / v1; }

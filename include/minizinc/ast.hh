@@ -78,6 +78,9 @@ namespace MiniZinc {
     
     /// Return location with introduced flag set
     Location introduce(void) const;
+    
+    /// Location used for un-allocated expressions
+    static Location nonalloc;
   };
 
   /// Output operator for locations
@@ -109,6 +112,7 @@ namespace MiniZinc {
     Annotation(void) : _s(NULL) {}
     ~Annotation(void);
     bool contains(Expression* e) const;
+    bool containsCall(const ASTString& id);
     bool isEmpty(void) const;
     ExpressionSetIter begin(void) const;
     ExpressionSetIter end(void) const;
@@ -118,6 +122,8 @@ namespace MiniZinc {
     void removeCall(const ASTString& id);
     void clear(void);
     void merge(const Annotation& ann);
+    
+    static Annotation empty;
   };
   
   /// returns the Annotation specified by the string; returns NULL if not exists
@@ -150,21 +156,22 @@ namespace MiniZinc {
     };
 
     ExpressionId eid(void) const {
-      return static_cast<ExpressionId>(_id);
+      return isUnboxedInt() ? E_INTLIT : static_cast<ExpressionId>(_id);
     }
 
     const Location& loc(void) const {
-      return _loc;
+      return isUnboxedInt() ? Location::nonalloc : _loc;
     }
     void loc(const Location& l) {
-      _loc = l;
+      if (!isUnboxedInt())
+        _loc = l;
     }
     const Type& type(void) const {
-      return _type;
+      return isUnboxedInt() ? Type::unboxedint : _type;
     }
     void type(const Type& t);
     size_t hash(void) const {
-      return _hash;
+      return isUnboxedInt() ? unboxedIntToIntVal().hash() : _hash;
     }
   protected:
     /// Combination function for hash values
@@ -188,10 +195,49 @@ namespace MiniZinc {
       : ASTNode(eid), _loc(loc), _type(t) {}
 
   public:
+    bool isUnboxedInt(void) const {
+      // bit 1 is set
+      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
+    }
+    IntVal unboxedIntToIntVal(void) const {
+      assert(isUnboxedInt());
+      unsigned long long int i = reinterpret_cast<ptrdiff_t>(this) & ~static_cast<ptrdiff_t>(3);
+      bool pos = ((reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(2)) == 0);
+      if (pos) {
+        return i >> 2;
+      } else {
+        return -(static_cast<long long int>(i>>2));
+      }
+    }
+    static IntLit* intToUnboxedInt(long long int i) {
+      long long int j = i < 0 ? -i : i;
+      ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 2) | static_cast<ptrdiff_t>(1);
+      if (i < 0)
+        ubi_p = ubi_p | static_cast<ptrdiff_t>(2);
+      return reinterpret_cast<IntLit*>(ubi_p);
+    }
+    bool isTagged(void) const {
+      // only bit 2 is set
+      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
+    }
+    
+    Expression* tag(void) const {
+      return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
+                                           static_cast<ptrdiff_t>(2));
+    }
+    Expression* untag(void) const {
+      return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) &
+                                           ~static_cast<ptrdiff_t>(2));
+    }
 
     /// Test if expression is of type \a T
     template<class T> bool isa(void) const {
-      return _id==T::eid;
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-undefined-compare"
+      if (nullptr==this)
+        throw InternalError("isa: nullptr");
+#pragma clang diagnostic pop
+      return isUnboxedInt() ? T::eid==E_INTLIT : _id==T::eid;
     }
     /// Cast expression to type \a T*
     template<class T> T* cast(void) {
@@ -236,12 +282,12 @@ namespace MiniZinc {
     /// Add annotation \a ann to the expression
     void addAnnotations(std::vector<Expression*> ann);
 
-    const Annotation& ann(void) const { return _ann; }
-    Annotation& ann(void) { return _ann; }
+    const Annotation& ann(void) const { return isUnboxedInt() ? Annotation::empty : _ann; }
+    Annotation& ann(void) { return isUnboxedInt() ? Annotation::empty : _ann; }
     
     /// Return hash value of \a e
     static size_t hash(const Expression* e) {
-      return e==NULL ? 0 : e->_hash;
+      return e==NULL ? 0 : e->hash();
     }
     
     /// Check if \a e0 and \a e1 are equal
@@ -256,19 +302,21 @@ namespace MiniZinc {
   protected:
     /// The value of this expression
     IntVal _v;
+    /// Constructor
+    IntLit(const Location& loc, IntVal v);
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_INTLIT;
-    /// Constructor
-    IntLit(const Location& loc, IntVal v);
     /// Access value
-    IntVal v(void) const { return _v; }
-    /// Set value
-    void v(IntVal val) { _v = val; }
+    IntVal v(void) const {
+      return isUnboxedInt() ? unboxedIntToIntVal() : _v;
+    }
     /// Recompute hash value
     void rehash(void);
-    /// Allocate new temporary literal (tries to avoid allocation)
+    /// Allocate literal
     static IntLit* a(IntVal v);
+    /// Allocate literal for enumerated type (only used internally for generators)
+    static IntLit* aEnum(IntVal v, unsigned int enumId);
   };
   /// \brief Float literal expression
   class FloatLit : public Expression {
@@ -294,8 +342,12 @@ namespace MiniZinc {
   protected:
     /// The value of this expression
     ASTExprVec<Expression> _v;
-    /// A range-list based representation for an integer set, or NULL
-    IntSetVal* _isv;
+    union {
+      /// A range-list based representation for an integer set, or NULL
+      IntSetVal* isv;
+      /// A range-list based representation for an float set, or NULL
+      FloatSetVal* fsv;
+    } _u;
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_SETLIT;
@@ -305,14 +357,20 @@ namespace MiniZinc {
     SetLit(const Location& loc, ASTExprVec<Expression> v);
     /// Construct set
     SetLit(const Location& loc, IntSetVal* isv);
+    /// Construct set
+    SetLit(const Location& loc, FloatSetVal* fsv);
     /// Access value
     ASTExprVec<Expression> v(void) const { return _v; }
     /// Set value
     void v(const ASTExprVec<Expression>& val) { _v = val; }
-    /// Access value
-    IntSetVal* isv(void) const { return _isv; }
-    /// Set value
-    void isv(IntSetVal* val) { _isv = val; }
+    /// Access integer set value if present
+    IntSetVal* isv(void) const { return type().bt()==Type::BT_INT ? _u.isv : NULL; }
+    /// Set integer set value
+    void isv(IntSetVal* val) { _u.isv = val; }
+    /// Access float set value if present
+    FloatSetVal* fsv(void) const { return type().bt()==Type::BT_FLOAT ? _u.fsv : NULL; }
+    /// Set integer set value
+    void fsv(FloatSetVal* val) { _u.fsv = val; }
     /// Recompute hash value
     void rehash(void);
   };
@@ -412,6 +470,8 @@ namespace MiniZinc {
     ASTString v(void) const { return _v; }
     /// Set identifier
     void v(const ASTString& val) { _v = val; }
+    /// Check whether it is an enum identifier (starting with two $ signs)
+    bool isEnum(void) const { return _v.c_str()[0]=='$'; }
     /// Recompute hash value
     void rehash(void);
   };
@@ -871,6 +931,10 @@ namespace MiniZinc {
     bool computedDomain(void) const { return _flag_1; }
     /// Set if domain is computed from right hand side of variable
     void setComputedDomain(bool b) { _flag_1=b; }
+    /// Check if this TypeInst represents an enum
+    bool isEnum(void) const { return _flag_2; }
+    /// Set if this TypeInst represents an enum
+    void setIsEnum(bool b) { _flag_2=b; }
   };
 
   /**
@@ -1096,6 +1160,8 @@ namespace MiniZinc {
     OutputI(const Location& loc, Expression* e);
     /// Access expression
     Expression* e(void) const { return _e; }
+    /// Update expression
+    void e(Expression* e) { _e=e; }
   };
 
   class EnvI;
@@ -1113,6 +1179,8 @@ namespace MiniZinc {
     Annotation _ann;
     /// Function body (or NULL)
     Expression* _e;
+    /// Whether function is defined in the standard library
+    bool _from_stdlib;
   public:
     /// The identifier of this item type
     static const ItemId iid = II_FUN;
@@ -1163,14 +1231,17 @@ namespace MiniZinc {
     
     /** \brief Compute return type given argument types \a ta
      */
-    Type rtype(EnvI& env, const std::vector<Expression*>& ta);
+    Type rtype(EnvI& env, const std::vector<Expression*>& ta, bool strictEnums);
     /** \brief Compute return type given argument types \a ta
      */
-    Type rtype(EnvI& env, const std::vector<Type>& ta);
+    Type rtype(EnvI& env, const std::vector<Type>& ta, bool strictEnums);
     /** \brief Compute expected type of argument \a n given argument types \a ta
      */
-    Type argtype(const std::vector<Expression*>& ta, int n);
+    Type argtype(EnvI& env, const std::vector<Expression*>& ta, int n);
 
+    /// Return whether function is defined in the standard library
+    bool from_stdlib(void) const { return _from_stdlib; };
+    
     /// Mark for GC
     void mark(void) {
       _gc_mark = 1;
@@ -1322,6 +1393,8 @@ namespace MiniZinc {
           ASTString ge;
           ASTString eq;
           ASTString ne;
+          ASTString in;
+          ASTString dom;
         } float_;
 
         struct {
@@ -1340,6 +1413,7 @@ namespace MiniZinc {
           ASTString ge;
           ASTString eq;
           ASTString ne;
+          ASTString in;
         } float_reif;
 
         ASTString bool_eq;
@@ -1367,6 +1441,7 @@ namespace MiniZinc {
       struct {
         Id* output_var;
         ASTString output_array;
+        Id* add_to_output;
         Id* is_defined_var;
         ASTString defines_var;
         Id* is_reverse_map;
@@ -1374,7 +1449,101 @@ namespace MiniZinc {
         Id* maybe_partial;
         ASTString doc_comment;
         ASTString is_introduced;
+        Id* user_cut;            // MIP
+        Id* lazy_constraint;            // MIP
       } ann;
+
+      /// Command line options
+      struct { /// basic MiniZinc command line options
+        ASTString cmdlineData_str;
+        ASTString cmdlineData_short_str;        
+        ASTString datafile_str;
+        ASTString datafile_short_str;
+        ASTString globalsDir_str;
+        ASTString globalsDir_alt_str;
+        ASTString globalsDir_short_str;
+        ASTString help_str;
+        ASTString help_short_str;
+        ASTString ignoreStdlib_str;
+        ASTString include_str;
+        ASTString inputFromStdin_str;
+        ASTString instanceCheckOnly_str;
+        ASTString no_optimize_str;
+        ASTString no_optimize_alt_str;
+        ASTString no_outputOzn_str;
+        ASTString no_outputOzn_short_str;
+        ASTString no_typecheck_str;       
+        ASTString newfzn_str;        
+        ASTString outputBase_str;
+        ASTString outputFznToStdout_str;
+        ASTString outputFznToStdout_alt_str;
+        ASTString outputOznToFile_str;
+        ASTString outputOznToStdout_str;
+        ASTString outputFznToFile_str;
+        ASTString outputFznToFile_alt_str;
+        ASTString outputFznToFile_short_str;
+        ASTString rangeDomainsOnly_str;
+        ASTString statistics_str;
+        ASTString statistics_short_str;
+        ASTString stdlib_str;
+        ASTString verbose_str;
+        ASTString verbose_short_str;
+        ASTString version_str;
+        ASTString werror_str; 
+        
+        struct {
+          ASTString all_sols_str;
+          ASTString fzn_solver_str;
+        } solver;
+        
+      } cli;
+      
+      /// options strings to find setting in Options map
+      struct {
+        ASTString cmdlineData;
+        ASTString datafile;
+        ASTString datafiles;
+        ASTString fznToStdout;
+        ASTString fznToFile;
+        ASTString globalsDir;
+        ASTString ignoreStdlib;
+        ASTString includeDir;
+        ASTString includePaths;
+        ASTString instanceCheckOnly;
+        ASTString inputFromStdin;
+        ASTString model;
+        ASTString newfzn;  
+        ASTString noOznOutput;
+        ASTString optimize;
+        ASTString outputBase;
+        ASTString oznToFile;
+        ASTString oznToStdout;
+        ASTString rangeDomainsOnly;
+        ASTString statistics;
+        ASTString stdlib;
+        ASTString typecheck;
+        ASTString verbose;
+        ASTString werror;
+        
+        struct {
+          ASTString allSols;
+          ASTString numSols;
+          ASTString threads;
+          ASTString fzn_solver;
+          ASTString fzn_flags;
+          ASTString fzn_flag;
+        } solver;
+        
+      } opts;
+      
+      /// categories of the command line interface options
+      struct {
+        ASTString general;
+        ASTString io;        
+        ASTString solver;
+        ASTString translation;
+      } cli_cat;
+      
       /// Keep track of allocated integer literals
       UNORDERED_NAMESPACE::unordered_map<IntVal, WeakRef> integerMap;
       /// Keep track of allocated float literals

@@ -18,9 +18,11 @@ Prerequisite software:
 - cmake
 - A recent C++ compiler, libminizinc has been tested with recent versions of
   clang, g++, and Microsoft Visual C++.
-- The bison and flex parser/lexer generators. These usually come packaged for
-  Linux distributions, and they are part of the Xcode developer tools for Mac
-  OS. On Windows, you can e.g. install them via cygwin.
+- If you intend to change lexer/parser templates or checkout development
+  snapshots, the bison and flex parser/lexer generators. These usually come
+  packaged for Linux distributions, and they are part of the Xcode developer
+  tools for Mac OS. On Windows, simplest is to have MinGW(64) tools on the
+  path, or use winFlexBison.
 
 Download the source code from the git repository or uncompress a source
 archive. Then change into the toplevel directory (the one containing this file).
@@ -30,6 +32,11 @@ To perform the build:
 > cd build/
 > cmake ..
 > cmake --build .
+
+This will compile the mzn-fzn driver by default. To enable other solvers, 
+set their paths e.g. as 'cmake -DGECODE_HOME="___" ..', see the example BUILD.*
+scripts and CMakeLists.txt for available interfaces. In Windows, when using
+64-bit versions of solver libraries, add -G"Visual Studio 12 2013 Win64".
 
 To install MiniZinc:
 > cmake --build . --target install
@@ -49,8 +56,12 @@ solns2out tools. These are drop-in replacements for the MiniZinc 1.6 versions.
 Add the bin directory in the installation path to your PATH environment variable if necessary,
 or (if you did not install) add the "build" directory to your PATH.
 
-We currently do not provide the minizinc driver program that was part
-of MiniZinc 1.6 in the source distribution. It is however included in the
-binary distributions. If you have both MiniZinc 1.6 and 2 installed (and MiniZinc 2.0
+If you have both MiniZinc 1.6 and 2 installed (and MiniZinc 2.0
 occurs on the PATH before 1.6), you can use the old minizinc driver
 with the new versions of mzn2fzn and solns2out.
+
+Useful options: -v to print progress log and -s for
+solution statistics. Alternatively, most targets support -a for continuous printing of new
+solutions. Note that the solver backends are expected to print solutions on stdout
+and other messages either on stderr or as comments (%...\n).
+Each specialized solver backend might have individual options.

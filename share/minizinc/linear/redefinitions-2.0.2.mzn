@@ -2,10 +2,17 @@
 % that can be overridden by solvers.
 
 
-predicate symmetry_breaking_constraint(var bool: b) = b;
+predicate symmetry_breaking_constraint(var bool: b) =
+    (b) :: MIP_lazy %:: MIP_cut   %% MIP_cut wrong in CPLEX 12.6.3
+    %% Symm breaking as lazy is 1% better in Gurobi 6.5.2 on the Challenges 2012-2015
+    %% true    %% TO omit all symmetry_breaking_constraint's
+    ;
 
-predicate redundant_constraint(var bool: b) = b;
-  % = true;
+%% Make sure no feasible solutions are cut off:
+predicate redundant_constraint(var bool: b) =
+  (b) %:: MIP_cut
+  % true   %% To omit all redundant_constraint's
+  ;
 
 %% Linearized element: just call without shifting
 predicate array_var_bool_element_nonshifted(var int: idx, array[int] of var bool: x, var bool: c) =

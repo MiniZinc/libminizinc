@@ -1,0 +1,5 @@
+#!/bin/sh
+
+MINIZINC_EXEC=mzn-cplex
+
+$MINIZINC_EXEC -G linear $*

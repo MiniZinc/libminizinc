@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 include "bin_packing.mzn";
 
 % The example from the GCC.

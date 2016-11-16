@@ -159,7 +159,7 @@ namespace MiniZinc {
             IntSetVal* isv1 = eval_intset(env,id1->decl()->ti()->domain());
             IntSetRanges isv0r(isv0);
             IntSetRanges isv1r(isv1);
-            Ranges::Inter<IntSetRanges,IntSetRanges> inter(isv0r,isv1r);
+            Ranges::Inter<IntVal,IntSetRanges,IntSetRanges> inter(isv0r,isv1r);
             IntSetVal* nd = IntSetVal::ai(inter);
             if (nd->size()==0) {
               env.fail();
@@ -177,19 +177,23 @@ namespace MiniZinc {
             }
           } else {
             // float
-            BinOp* dom0 = id0->decl()->ti()->domain()->cast<BinOp>();
-            BinOp* dom1 = id1->decl()->ti()->domain()->cast<BinOp>();
-            FloatVal lb0 = dom0->lhs()->cast<FloatLit>()->v();
-            FloatVal ub0 = dom0->rhs()->cast<FloatLit>()->v();
-            FloatVal lb1 = dom1->lhs()->cast<FloatLit>()->v();
-            FloatVal ub1 = dom1->rhs()->cast<FloatLit>()->v();
-            FloatVal lb = std::max(lb0,lb1);
-            FloatVal ub = std::min(ub0,ub1);
-            if (lb != lb1 || ub != ub1) {
-              BinOp* newdom = new BinOp(Location(), FloatLit::a(lb), BOT_DOTDOT, FloatLit::a(ub));
-              newdom->type(Type::parsetfloat());
-              id1->decl()->ti()->domain(newdom);
-              if (lb==lb0 && ub==ub0) {
+            FloatSetVal* isv0 = eval_floatset(env,id0->decl()->ti()->domain());
+            FloatSetVal* isv1 = eval_floatset(env,id1->decl()->ti()->domain());
+            FloatSetRanges isv0r(isv0);
+            FloatSetRanges isv1r(isv1);
+            Ranges::Inter<FloatVal,FloatSetRanges,FloatSetRanges> inter(isv0r,isv1r);
+            FloatSetVal* nd = FloatSetVal::ai(inter);
+            
+            FloatSetRanges nd_r(nd);
+            FloatSetRanges isv1r_2(isv1);
+            
+            if (nd->size()==0) {
+              env.fail();
+            } else if (!Ranges::equal(nd_r,isv1r_2)) {
+              id1->decl()->ti()->domain(new SetLit(Location(), nd));
+              FloatSetRanges nd_r_2(nd);
+              FloatSetRanges isv0r_2(isv0);
+              if (Ranges::equal(nd_r_2,isv0r_2)) {
                 id1->decl()->ti()->setComputedDomain(id0->decl()->ti()->computedDomain());
               } else {
                 id1->decl()->ti()->setComputedDomain(false);
@@ -938,7 +942,7 @@ namespace MiniZinc {
                 canRemove = true;
               } else {
                 FloatVal value = eval_float(env,arg);
-                if (LinearTraits<FloatLit>::domain_contains(ti->domain()->cast<BinOp>(), value)) {
+                if (LinearTraits<FloatLit>::domain_contains(eval_floatset(env,ti->domain()), value))  {
                   ti->domain(new BinOp(Location().introduce(), arg, BOT_DOTDOT, arg));
                   ti->setComputedDomain(false);
                   canRemove = true;
@@ -985,7 +989,16 @@ namespace MiniZinc {
           }
           CollectDecls cd(env.vo,deletedVarDecls,ii);
           topDown(cd,c);
-          env.flat_removeItem(ii);
+
+          if (VarDeclI* vdi = ii->dyn_cast<VarDeclI>()) {
+            vdi->e()->e(constants().boollit(is_true));
+            pushDependentConstraints(env, vdi->e()->id(), constraintQueue);
+            if (env.vo.occurrences(vdi->e())==0) {
+              vdi->remove();
+            }
+          } else {
+            env.flat_removeItem(ii);
+          }
         }
       } else if (c->id()==constants().ids.bool2int) {
         VarDeclI* vdi = ii->cast<VarDeclI>();

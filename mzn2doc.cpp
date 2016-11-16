@@ -135,7 +135,8 @@ int main(int argc, char** argv) {
         std::cerr << "Error: cannot handle file " << input_file << "." << std::endl;
         goto error;
       }
-      std::string extension = input_file.substr(input_file.length()-4,string::npos);
+      size_t last_dot = input_file.find_last_of('.');
+      std::string extension = input_file.substr(last_dot,string::npos);
       if (extension == ".mzn") {
         if (filename=="") {
           filename = input_file;
@@ -143,7 +144,7 @@ int main(int argc, char** argv) {
           std::cerr << "Error: Multiple .mzn files given." << std::endl;
           goto error;
         }
-      } else if (extension == ".dzn") {
+      } else if (extension == ".dzn" || extension == ".json") {
         std::cerr << "Error: cannot generate documentation for data files." << std::endl;
       } else {
         std::cerr << "Error: cannot handle file extension " << extension << "." << std::endl;
@@ -223,10 +224,13 @@ int main(int argc, char** argv) {
     std::stringstream errstream;
     if (flag_verbose)
       std::cerr << "Parsing '" << filename << "'" << std::endl;
-    if (Model* m = parse(filename, vector<string>(), includePaths, flag_ignoreStdlib, true,
+    std::vector<std::string> filenames;
+    filenames.push_back(filename);
+    Env env;
+    if (Model* m = parse(env, filenames, vector<string>(), includePaths, flag_ignoreStdlib, true,
                          flag_verbose, errstream)) {
       try {
-        Env env(m);
+        env.model(m);
         if (flag_verbose)
           std::cerr << "Done parsing." << std::endl;
         if (flag_verbose)

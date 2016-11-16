@@ -61,7 +61,23 @@ namespace MiniZinc {
   Model::outputItem() {
     return _outputItem;
   }
-  
+
+  void
+  Model::addItem(Item* i) {
+    _items.push_back(i);
+    if (i->isa<SolveI>()) {
+      Model* m = this;
+      while (m->_parent)
+        m = m->_parent;
+      m->_solveItem = i->cast<SolveI>();
+    } else if (i->isa<OutputI>()) {
+      Model* m = this;
+      while (m->_parent)
+        m = m->_parent;
+      m->_outputItem = i->cast<OutputI>();
+    }
+  }
+
   void
   Model::registerFn(EnvI& env, FunctionI* fi) {
     Model* m = this;
@@ -79,7 +95,11 @@ namespace MiniZinc {
         if (v[i]->params().size() == fi->params().size()) {
           bool alleq=true;
           for (unsigned int j=0; j<fi->params().size(); j++) {
-            if (v[i]->params()[j]->type() != fi->params()[j]->type()) {
+            Type t1 = v[i]->params()[j]->type();
+            Type t2 = fi->params()[j]->type();
+            t1.enumId(0);
+            t2.enumId(0);
+            if (t1 != t2) {
               alleq=false; break;
             }
           }
@@ -103,7 +123,8 @@ namespace MiniZinc {
 
   FunctionI*
   Model::matchFn(EnvI& env, const ASTString& id,
-                 const std::vector<Type>& t) {
+                 const std::vector<Type>& t,
+                 bool strictEnums) {
     if (id==constants().var_redef->id())
       return constants().var_redef;
     Model* m = this;
@@ -122,10 +143,10 @@ namespace MiniZinc {
       if (fi->params().size() == t.size()) {
         bool match=true;
         for (unsigned int j=0; j<t.size(); j++) {
-          if (!t[j].isSubtypeOf(fi->params()[j]->type())) {
+          if (!env.isSubtype(t[j],fi->params()[j]->type(),strictEnums)) {
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
-            std::cerr << t[j].toString() << " does not match "
-            << fi->params()[j]->type().toString() << "\n";
+            std::cerr << t[j].toString(env) << " does not match "
+            << fi->params()[j]->type().toString(env) << "\n";
 #endif
             match=false;
             break;
@@ -139,6 +160,17 @@ namespace MiniZinc {
     return NULL;
   }
 
+  void
+  Model::mergeStdLib(EnvI &env, Model *m) const {
+    for (FnMap::const_iterator it=fnmap.begin(); it != fnmap.end(); ++it) {
+      for (std::vector<FunctionI*>::const_iterator cit = it->second.begin(); cit != it->second.end(); ++cit) {
+        if ((*cit)->from_stdlib()) {
+          m->registerFn(env, *cit);
+        }
+      }
+    }
+  }
+  
   namespace {
     class FunSort {
     public:
@@ -169,9 +201,42 @@ namespace MiniZinc {
     }
   }
 
+  void
+  Model::checkFnOverloading(EnvI& env) {
+    Model* m = this;
+    while (m->_parent)
+      m = m->_parent;
+    for (FnMap::iterator it=m->fnmap.begin(); it!=m->fnmap.end(); ++it) {
+      std::vector<FunctionI*>& fs = it->second;
+      for (unsigned int i=0; i<fs.size()-1; i++) {
+        FunctionI* cur = fs[i];
+        for (unsigned int j=i+1; j<fs.size(); j++) {
+          FunctionI* cmp = fs[j];
+          if (cur->params().size() != cmp->params().size())
+            break;
+          bool allEqual = true;
+          for (unsigned int i=0; i<cur->params().size(); i++) {
+            Type t1 = cur->params()[i]->type();
+            Type t2 = cmp->params()[i]->type();
+            t1.enumId(0);
+            t2.enumId(0);
+            if (t1!=t2) {
+              allEqual = false;
+              break;
+            }
+          }
+          if (allEqual)
+            throw TypeError(env,cur->loc(),
+                            "unsupported type of overloading. \nFunction/predicate with equivalent signature defined in "+cmp->loc().toString());
+        }
+      }
+    }
+  }
+  
   FunctionI*
   Model::matchFn(EnvI& env, const ASTString& id,
-                 const std::vector<Expression*>& args) const {
+                 const std::vector<Expression*>& args,
+                 bool strictEnums) const {
     if (id==constants().var_redef->id())
       return constants().var_redef;
     const Model* m = this;
@@ -192,10 +257,10 @@ namespace MiniZinc {
       if (fi->params().size() == args.size()) {
         bool match=true;
         for (unsigned int j=0; j<args.size(); j++) {
-          if (!args[j]->type().isSubtypeOf(fi->params()[j]->type())) {
+          if (!env.isSubtype(args[j]->type(),fi->params()[j]->type(),strictEnums)) {
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
-            std::cerr << args[j]->type().toString() << " does not match "
-            << fi->params()[j]->type().toString() << "\n";
+            std::cerr << args[j]->type().toString(env) << " does not match "
+            << fi->params()[j]->type().toString(env) << "\n";
 #endif
             match=false;
             break;
@@ -219,14 +284,14 @@ namespace MiniZinc {
     Type t = matched[0]->ti()->type();
     t.ti(Type::TI_PAR);
     for (unsigned int i=1; i<matched.size(); i++) {
-      if (!t.isSubtypeOf(matched[i]->ti()->type()))
+      if (!env.isSubtype(t,matched[i]->ti()->type(),strictEnums))
         throw TypeError(env, botarg->loc(), "ambiguous overloading on return type of function");
     }
     return matched[0];
   }
   
   FunctionI*
-  Model::matchFn(EnvI& env, Call* c) const {
+  Model::matchFn(EnvI& env, Call* c, bool strictEnums) const {
     if (c->id()==constants().var_redef->id())
       return constants().var_redef;
     const Model* m = this;
@@ -247,10 +312,10 @@ namespace MiniZinc {
       if (fi->params().size() == c->args().size()) {
         bool match=true;
         for (unsigned int j=0; j<c->args().size(); j++) {
-          if (!c->args()[j]->type().isSubtypeOf(fi->params()[j]->type())) {
+          if (!env.isSubtype(c->args()[j]->type(),fi->params()[j]->type(),strictEnums)) {
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
-            std::cerr << c->args()[j]->type().toString() << " does not match "
-            << fi->params()[j]->type().toString() << "\n";
+            std::cerr << c->args()[j]->type().toString(env) << " does not match "
+            << fi->params()[j]->type().toString(env) << "\n";
             std::cerr << "Wrong argument is " << *c->args()[j];
 #endif
             match=false;
@@ -275,7 +340,7 @@ namespace MiniZinc {
     Type t = matched[0]->ti()->type();
     t.ti(Type::TI_PAR);
     for (unsigned int i=1; i<matched.size(); i++) {
-      if (!t.isSubtypeOf(matched[i]->ti()->type()))
+      if (!env.isSubtype(t,matched[i]->ti()->type(),strictEnums))
         throw TypeError(env, botarg->loc(), "ambiguous overloading on return type of function");
     }
     return matched[0];

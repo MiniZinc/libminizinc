@@ -8,6 +8,7 @@ include/minizinc/parser.tab.hh
 lib/lexer.yy.cpp
 lib/parser.tab.cpp
 core
+build/
 res/
 CMakeCache.txt
 CMakeFiles
@@ -16,3 +17,6 @@ cmake_install.cmake
 install_manifest.txt
 libminizinc.build
 libminizinc.xcodeproj
+*.bak
+*.out
+*.err

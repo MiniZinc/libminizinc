@@ -15,6 +15,7 @@ namespace MiniZinc {
   Expression::equal(const Expression* e0, const Expression* e1) {
     if (e0==e1) return true;
     if (e0 == NULL || e1 == NULL) return false;
+    if (e0->isUnboxedInt() || e1->isUnboxedInt()) return false;
     if (e0->_id != e1->_id) return false;
     if (e0->type() != e1->type()) return false;
     if (e0->hash() != e1->hash()) return false;
@@ -23,6 +24,10 @@ namespace MiniZinc {
 
   inline void
   Expression::type(const Type& t) {
+    if (isUnboxedInt()) {
+      assert(t == Type::parint());
+      return;
+    }
     if (eid()==E_VARDECL) {
       this->cast<VarDecl>()->id()->_type = t;
     } else if (eid()==E_ID && this->cast<Id>()->decl()) {
@@ -40,6 +45,10 @@ namespace MiniZinc {
 
   inline IntLit*
   IntLit::a(MiniZinc::IntVal v) {
+    
+    if (v > -(LLONG_MAX >> 3) && v < (LLONG_MAX >> 3))
+      return intToUnboxedInt(v.toInt());
+    
     UNORDERED_NAMESPACE::unordered_map<IntVal, WeakRef>::iterator it = constants().integerMap.find(v);
     if (it==constants().integerMap.end() || it->second()==NULL) {
       IntLit* il = new IntLit(Location().introduce(), v);
@@ -48,6 +57,17 @@ namespace MiniZinc {
     } else {
       return it->second()->cast<IntLit>();
     }
+  }
+  
+  inline IntLit*
+  IntLit::aEnum(IntVal v, unsigned int enumId) {
+    if (enumId==0)
+      return a(v);
+    IntLit* il = new IntLit(Location().introduce(), v);
+    Type tt(il->type());
+    tt.enumId(enumId);
+    il->type(tt);
+    return il;
   }
   
   inline
@@ -71,20 +91,31 @@ namespace MiniZinc {
   inline
   SetLit::SetLit(const Location& loc,
                  const std::vector<Expression*>& v)
-  : Expression(loc,E_SETLIT,Type()), _v(ASTExprVec<Expression>(v)), _isv(NULL) {
+  : Expression(loc,E_SETLIT,Type()), _v(ASTExprVec<Expression>(v)) {
+    _u.isv = NULL;
     rehash();
   }
   
   inline
   SetLit::SetLit(const Location& loc, ASTExprVec<Expression> v)
-  : Expression(loc,E_SETLIT,Type()), _v(v), _isv(NULL) {
+  : Expression(loc,E_SETLIT,Type()), _v(v) {
+    _u.isv = NULL;
     rehash();
   }
 
   inline
   SetLit::SetLit(const Location& loc, IntSetVal* isv)
-  : Expression(loc,E_SETLIT,Type()), _isv(isv) {
+  : Expression(loc,E_SETLIT,Type()) {
     _type = Type::parsetint();
+    _u.isv = isv;
+    rehash();
+  }
+
+  inline
+  SetLit::SetLit(const Location& loc, FloatSetVal* fsv)
+  : Expression(loc,E_SETLIT,Type()) {
+    _type = Type::parsetfloat();
+    _u.fsv = fsv;
     rehash();
   }
 
@@ -417,7 +448,7 @@ namespace MiniZinc {
 
   inline Expression*
   VarDecl::e(void) const {
-    return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(_e) & ~ static_cast<ptrdiff_t>(1));
+    return _e->isUnboxedInt() ? _e : _e->untag();
   }
 
   inline void
@@ -443,14 +474,16 @@ namespace MiniZinc {
   }
   inline bool
   VarDecl::evaluated(void) const {
-    return reinterpret_cast<ptrdiff_t>(_e) & 1;
+    return _e->isUnboxedInt() || _e->isTagged();
   }
   inline void
   VarDecl::evaluated(bool t) {
-    if (t)
-      _e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(_e) | 1);
-    else
-      _e = reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(_e) & ~static_cast<ptrdiff_t>(1));
+    if (!_e->isUnboxedInt()) {
+      if (t)
+        _e = _e->tag();
+      else
+        _e = _e->untag();
+    }
   }
   inline void
   VarDecl::flat(VarDecl* vd) {
@@ -464,6 +497,7 @@ namespace MiniZinc {
                      Expression* domain)
   : Expression(loc,E_TI,type), _ranges(ranges), _domain(domain) {
     _flag_1 = false;
+    _flag_2 = false;
     rehash();
   }
 
@@ -473,6 +507,7 @@ namespace MiniZinc {
                      Expression* domain)
   : Expression(loc,E_TI,type), _domain(domain) {
     _flag_1 = false;
+    _flag_2 = false;
     rehash();
   }
 
@@ -542,6 +577,12 @@ namespace MiniZinc {
     _builtins.i = NULL;
     _builtins.s = NULL;
     _builtins.str = NULL;
+    _from_stdlib = (loc.filename == "builtins.mzn" ||
+              loc.filename.endsWith("/builtins.mzn") ||
+              loc.filename == "stdlib.mzn" ||
+              loc.filename.endsWith("/stdlib.mzn") ||
+              loc.filename == "flatzinc_builtins.mzn" ||
+              loc.filename.endsWith("/flatzinc_builtins.mzn"));
   }
 
 }

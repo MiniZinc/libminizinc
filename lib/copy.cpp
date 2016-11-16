@@ -54,6 +54,14 @@ namespace MiniZinc {
     if (it==m.end()) return NULL;
     return static_cast<IntSetVal*>(it->second);
   }
+  void CopyMap::insert(FloatSetVal* e0, FloatSetVal* e1) {
+    m.insert(std::pair<void*,void*>(e0,e1));
+  }
+  FloatSetVal* CopyMap::find(FloatSetVal* e) {
+    MyMap::iterator it = m.find(e);
+    if (it==m.end()) return NULL;
+    return static_cast<FloatSetVal*>(it->second);
+  }
 
   Location copy_location(CopyMap& m, const Location& _loc) {
     Location loc;
@@ -92,8 +100,7 @@ namespace MiniZinc {
     switch (e->eid()) {
     case Expression::E_INTLIT:
       {
-        IntLit* c = new IntLit(copy_location(m,e),
-                              e->cast<IntLit>()->v());
+        IntLit* c = IntLit::a(e->cast<IntLit>()->v());
         m.insert(e,c);
         ret = c;
       }
@@ -109,7 +116,7 @@ namespace MiniZinc {
     case Expression::E_SETLIT:
       {
         SetLit* s = e->cast<SetLit>();
-        SetLit* c = new SetLit(copy_location(m,e),NULL);
+        SetLit* c = new SetLit(copy_location(m,e),static_cast<IntSetVal*>(NULL));
         m.insert(e,c);
         if (s->isv()) {
           IntSetVal* isv;
@@ -121,7 +128,17 @@ namespace MiniZinc {
             m.insert(s->isv(),isv);
           }
           c->isv(isv);
-        } else {          
+        } else if (s->fsv()) {
+          FloatSetVal* fsv;
+          if (FloatSetVal* fsvc = m.find(s->fsv())) {
+            fsv = fsvc;
+          } else {
+            FloatSetRanges r(s->fsv());
+            fsv = FloatSetVal::ai(r);
+            m.insert(s->fsv(),fsv);
+          }
+          c->fsv(fsv);
+        } else {
           if (ASTExprVecO<Expression*>* ve = m.find(s->v())) {
             c->v(ASTExprVec<Expression>(ve));
           } else {
@@ -375,6 +392,7 @@ namespace MiniZinc {
           c->flat(vd->flat());
         c->payload(vd->payload());
         m.insert(e,c);
+        m.insert(c,c);
         c->ti(static_cast<TypeInst*>(copy(env,m,vd->ti(),followIds,copyFundecls,isFlatModel)));
         c->e(copy(env,m,vd->e(),followIds,copyFundecls,isFlatModel));
         c->type(c->ti()->type());
@@ -413,6 +431,7 @@ namespace MiniZinc {
         }
         TypeInst* c = new TypeInst(copy_location(m,e),t->type(),
           ASTExprVec<TypeInst>(r),copy(env,m,t->domain(),followIds,copyFundecls,isFlatModel));
+        c->setIsEnum(t->isEnum());
         m.insert(e,c);
         ret = c;
       }

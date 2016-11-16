@@ -35,44 +35,6 @@ shift 2
 # CMD: anything else on the command line is the command to be executed.
 CMD=$@
 
-# Check the time and memory limits every ten seconds in a background
-# process.  If either limit is reached, kill the process.
-(
-	for (( i=0 ; i<$TIMELIMIT ; i+=10 ))
-	do
-		# Sleep for 10 seconds.
-		sleep 10
-		# Obtain the process memory usage in kilobytes.
-		# (We use this form of ps arguments for portability).
-		CMDMEMUSAGEKB=`ps -p $CMDPID -o vsize=""`
-		# Quit if the process has already terminated.
-		if [ -z $CMDMEMUSAGEKB ]
-		then
-			exit 0
-		fi
-		# Kill the process if it has exceeded its memory limit.
-		if [ $CMDMEMUSAGEKB -gt $MEMLIMITKB ]
-		then
-			kill -KILL $CMDPID >/dev/null 2>&1
-			echo "" >&2
-			echo "EXCEEDED MEMORY LIMIT OF $MEMLIMITMB Mbytes" >&2
-			exit 1
-		fi
-	done
-	# Kill the process if it has exceeded its time limit.
-	if ps -p $CMDPID >/dev/null 2>&1
-	then
-		kill -KILL $CMDPID >/dev/null 2>&1
-		echo "" >&2
-		echo "EXCEEDED TIME LIMIT OF $TIMELIMIT s" >&2
-		exit 1
-	fi
-) &
-
-# The background process above sometimes does not seem to fire or does not
-# kill all subprocesses.  "ulimit" is more reliable, but it is not clear how
-# to get useful, specific error messages.  Thus for now we use both methods.
-
 declare TimeoutOrig=$(ulimit -t)
 declare MemoryOrig=$(ulimit -v)
 
@@ -82,6 +44,44 @@ if test ! -e /bin/cygpath.exe
 then
     ulimit -S -t ${TIMELIMIT}
     ulimit -S -v ${MEMLIMITKB}
+else   ### Only on Cygwin: Ubuntu 15 does not allow to delete output files and reports wrong exit result
+  # Check the time and memory limits every ten seconds in a background
+  # process.  If either limit is reached, kill the process.
+  (
+    for (( i=0 ; i<$TIMELIMIT ; i+=1 ))
+    do
+      # Sleep for 1 seconds.
+      sleep 1
+      # Obtain the process memory usage in kilobytes.
+      # (We use this form of ps arguments for portability).
+      CMDMEMUSAGEKB=`ps -p $CMDPID -o vsize=""`
+      # Quit if the process has already terminated.
+      if [ -z $CMDMEMUSAGEKB ]
+      then
+        exit 0
+      fi
+      # Kill the process if it has exceeded its memory limit.
+      if [ $CMDMEMUSAGEKB -gt $MEMLIMITKB ]
+      then
+        kill -KILL $CMDPID >/dev/null 2>&1
+        echo "" >&2
+        echo "EXCEEDED MEMORY LIMIT OF $MEMLIMITMB Mbytes" >&2
+        exit 1
+      fi
+    done
+    # Kill the process if it has exceeded its time limit.
+    if ps -p $CMDPID >/dev/null 2>&1
+    then
+      kill -KILL $CMDPID >/dev/null 2>&1
+      echo "" >&2
+      echo "EXCEEDED TIME LIMIT OF $TIMELIMIT s" >&2
+      exit 1
+    fi
+  ) &
+
+  # The background process above sometimes does not seem to fire or does not
+  # kill all subprocesses.  "ulimit" is more reliable, but it is not clear how
+  # to get useful, specific error messages.  Thus for now we use both methods.
 fi
 
 # Run the command.

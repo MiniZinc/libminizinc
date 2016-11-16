@@ -1,5 +1,7 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 % RUNS ON mzn20_fd_linear
+% RUNS ON mzn20_mip
 
 % Regression test for bug #347: mzn2fzn's FlatZinc optimiser was incorrectly
 % optimising away some of the equality constraints involving uav1 below.

@@ -14,6 +14,13 @@
 
 #include <minizinc/values.hh>
 
+#ifdef _MSC_VER 
+#define _CRT_SECURE_NO_WARNINGS
+#undef ERROR    // MICROsoft.
+#undef min
+#undef max
+#endif
+
 namespace MiniZinc { namespace Ranges {
   
   /**
@@ -27,12 +34,13 @@ namespace MiniZinc { namespace Ranges {
    * \ingroup FuncIterRanges
    */
 
+  template<class Val>
   class MinMax {
   protected:
     /// Minimum of current range
-    IntVal mi;
+    Val mi;
     /// Maximum of current range
-    IntVal ma;
+    Val ma;
     /// %Set range such that iteration stops
     void finish(void);
   public:
@@ -41,7 +49,7 @@ namespace MiniZinc { namespace Ranges {
     /// Default constructor
     MinMax(void);
     /// Initialize with range \a min to \a max
-    MinMax(IntVal min, IntVal max);
+    MinMax(Val min, Val max);
     //@}
 
     /// \name Iteration control
@@ -53,62 +61,69 @@ namespace MiniZinc { namespace Ranges {
     /// \name Range access
     //@{
     /// Return smallest value of range
-    IntVal min(void) const;
+    Val min(void) const;
     /// Return largest value of range
-    IntVal max(void) const;
+    Val max(void) const;
     /// Return width of range (distance between minimum and maximum)
-    IntVal width(void) const;
+    Val width(void) const;
     //@}
   };
 
+  template<class Val>
   inline void
-  MinMax::finish(void) {
+  MinMax<Val>::finish(void) {
     mi = 1; ma = 0;
   }
 
+  template<class Val>
   inline
-  MinMax::MinMax(void) {}
+  MinMax<Val>::MinMax(void) {}
 
+  template<class Val>
   inline
-  MinMax::MinMax(IntVal min, IntVal max)
+  MinMax<Val>::MinMax(Val min, Val max)
     : mi(min), ma(max) {}
 
+  template<class Val>
   inline bool
-  MinMax::operator ()(void) const {
+  MinMax<Val>::operator ()(void) const {
     return mi <= ma;
   }
 
-  inline IntVal
-  MinMax::min(void) const {
+  template<class Val>
+  inline Val
+  MinMax<Val>::min(void) const {
     return mi;
   }
-  inline IntVal
-  MinMax::max(void) const {
+  template<class Val>
+  inline Val
+  MinMax<Val>::max(void) const {
     return ma;
   }
-  inline IntVal
-  MinMax::width(void) const {
+  template<class Val>
+  inline Val
+  MinMax<Val>::width(void) const {
     if (mi > ma)
       return 0;
     if (mi.isFinite() && ma.isFinite())
       return ma-mi+1;
-    return IntVal::infinity();
+    return Val::infinity();
   }
   
   
-  template<class I>
+  template<class Val,class I>
   class Bounded {
   protected:
     I i;
-    IntVal _min;
+    Val _min;
     bool use_min;
-    IntVal _max;
+    Val _max;
     bool use_max;
-    Bounded(I& i, IntVal min0, bool umin0, IntVal max0, bool umax0);
+    Bounded(I& i, Val min0, bool umin0, Val max0, bool umax0);
   public:
-    static Bounded miniter(I& i, IntVal min);
-    static Bounded maxiter(I& i, IntVal max);
-    static Bounded minmaxiter(I& i, IntVal min, IntVal max);
+    static Bounded miniter(I& i, Val min);
+    static Bounded maxiter(I& i, Val max);
+    static Bounded minmaxiter(I& i, Val min, Val max);
 
     /// \name Iteration control
     //@{
@@ -121,76 +136,77 @@ namespace MiniZinc { namespace Ranges {
     /// \name Range access
     //@{
     /// Return smallest value of range
-    IntVal min(void) const;
+    Val min(void) const;
     /// Return largest value of range
-    IntVal max(void) const;
+    Val max(void) const;
     /// Return width of range (distance between minimum and maximum)
-    IntVal width(void) const;
+    Val width(void) const;
     //@}
   };
 
-  template<class I>
+  template<class Val,class I>
   inline
-  Bounded<I>::Bounded(I& i0, IntVal min0, bool umin0, IntVal max0, bool umax0)
+  Bounded<Val,I>::Bounded(I& i0, Val min0, bool umin0, Val max0, bool umax0)
     : i(i0), _min(min0), use_min(umin0), _max(max0), use_max(umax0) {
     while (i() && use_min && i.max() < _min)
       ++i;
   }
-  template<class I>
-  inline Bounded<I>
-  Bounded<I>::miniter(I& i, IntVal min) {
+  template<class Val,class I>
+  inline Bounded<Val,I>
+  Bounded<Val,I>::miniter(I& i, Val min) {
     return Bounded(i,min,true,0,false);
   }
-  template<class I>
-  inline Bounded<I>
-  Bounded<I>::maxiter(I& i, IntVal max) {
+  template<class Val,class I>
+  inline Bounded<Val,I>
+  Bounded<Val,I>::maxiter(I& i, Val max) {
     return Bounded(i,0,false,max,true);
   }
-  template<class I>
-  inline Bounded<I>
-  Bounded<I>::minmaxiter(I& i, IntVal min, IntVal max) {
+  template<class Val,class I>
+  inline Bounded<Val,I>
+  Bounded<Val,I>::minmaxiter(I& i, Val min, Val max) {
     return Bounded(i,min,true,max,true);
   }
 
-  template<class I>
+  template<class Val,class I>
   inline bool
-  Bounded<I>::operator ()(void) const {
+  Bounded<Val,I>::operator ()(void) const {
     return i() && (!use_max || i.min() <= _max);
   }
-  template<class I>
+  template<class Val,class I>
   inline void
-  Bounded<I>::operator ++(void) {
+  Bounded<Val,I>::operator ++(void) {
     ++i;
     while (i() && use_min && i.max() < _min)
       ++i;
   }
-  template<class I>
-  inline IntVal
-  Bounded<I>::min(void) const {
+  template<class Val,class I>
+  inline Val
+  Bounded<Val,I>::min(void) const {
     return use_min ? std::max(_min,i.min()) : i.min();
   }
-  template<class I>
-  inline IntVal
-  Bounded<I>::max(void) const {
+  template<class Val,class I>
+  inline Val
+  Bounded<Val,I>::max(void) const {
     return use_max ? std::min(_max,i.max()) : i.max();
   }
-  template<class I>
-  inline IntVal
-  Bounded<I>::width(void) const {
+  template<class Val,class I>
+  inline Val
+  Bounded<Val,I>::width(void) const {
     if (min() > max())
       return 0;
     if (min().isFinite() && max().isFinite())
       return max()-min()+1;
-    return IntVal::infinity();
+    return Val::infinity();
   }
 
+  template<class Val>
   class Const {
   protected:
-    IntVal _min;
-    IntVal _max;
+    Val _min;
+    Val _max;
     bool done;
   public:
-    Const(IntVal min0, IntVal max0);
+    Const(Val min0, Val max0);
 
     /// \name Iteration control
     //@{
@@ -203,35 +219,41 @@ namespace MiniZinc { namespace Ranges {
     /// \name Range access
     //@{
     /// Return smallest value of range
-    IntVal min(void) const;
+    Val min(void) const;
     /// Return largest value of range
-    IntVal max(void) const;
+    Val max(void) const;
     /// Return width of range (distance between minimum and maximum)
-    IntVal width(void) const;
+    Val width(void) const;
     //@}
   };
 
+  template<class Val>
   inline
-  Const::Const(IntVal min0, IntVal max0) : _min(min0), _max(max0), done(min0>max0) {}
+  Const<Val>::Const(Val min0, Val max0) : _min(min0), _max(max0), done(min0>max0) {}
+  template<class Val>
   inline bool
-  Const::operator ()(void) const {
+  Const<Val>::operator ()(void) const {
     return !done;
   }
+  template<class Val>
   inline void
-  Const::operator ++(void) {
+  Const<Val>::operator ++(void) {
     done = true;
   }
-  inline IntVal
-  Const::min(void) const { return _min; }
-  inline IntVal
-  Const::max(void) const { return _max; }
-  inline IntVal
-  Const::width(void) const {
+  template<class Val>
+  inline Val
+  Const<Val>::min(void) const { return _min; }
+  template<class Val>
+  inline Val
+  Const<Val>::max(void) const { return _max; }
+  template<class Val>
+  inline Val
+  Const<Val>::width(void) const {
     if (min() > max())
       return 0;
     if (min().isFinite() && max().isFinite())
       return max()-min()+1;
-    return IntVal::infinity();
+    return Val::infinity();
   }
   
   /**
@@ -239,8 +261,8 @@ namespace MiniZinc { namespace Ranges {
    *
    * \ingroup FuncIterRanges
    */
-  template<class I, class J>
-  class Union : public MinMax {
+  template<class Val, class I, class J>
+  class Union : public MinMax<Val> {
   protected:
     /// First iterator
     I i;
@@ -264,8 +286,39 @@ namespace MiniZinc { namespace Ranges {
     //@}
   };
 
-
-
+  /// Return whether an interval ending with \a x overlaps with an interval starting at \a y
+  inline
+  bool overlaps(const IntVal& x, const IntVal& y) {
+    return x.plus(1) >= y;
+  }
+  /// Return whether an interval ending with \a x overlaps with an interval starting at \a y
+  inline
+  bool overlaps(const FloatVal& x, const FloatVal& y) {
+    if (x.isPlusInfinity())
+      return true;
+    if (y.isMinusInfinity())
+      return true;
+    if (x.isFinite() && y.isFinite()) {
+      return std::nextafter(x.toDouble(),INFINITY) >= y.toDouble();
+    }
+    return x >= y;
+  }
+  inline
+  IntVal nextHigher(const IntVal& x) { return x.plus(1); }
+  inline
+  IntVal nextLower(const IntVal& x) { return x.minus(1); }
+  inline
+  FloatVal nextHigher(const FloatVal& x) {
+    if (x.isFinite())
+      return std::nextafter(x.toDouble(),INFINITY);
+    return x;
+  }
+  inline
+  FloatVal nextLower(const FloatVal& x) {
+    if (x.isFinite())
+      return std::nextafter(x.toDouble(),-INFINITY);
+    return x;
+  }
 
 
   /*
@@ -273,51 +326,51 @@ namespace MiniZinc { namespace Ranges {
    *
    */
 
-  template<class I, class J>
+  template<class Val, class I, class J>
   inline void
-  Union<I,J>::operator ++(void) {
+  Union<Val,I,J>::operator ++(void) {
     if (!i() && !j()) {
-      finish(); return;
+      MinMax<Val>::finish(); return;
     }
 
-    if (!i() || (j() && (j.max().plus(1) < i.min()))) {
-      mi = j.min(); ma = j.max(); ++j; return;
+    if (!i() || (j() && (!overlaps(j.max(),i.min())))) {
+      MinMax<Val>::mi = j.min(); MinMax<Val>::ma = j.max(); ++j; return;
     }
-    if (!j() || (i() && (i.max().plus(1) < j.min()))) {
-      mi = i.min(); ma = i.max(); ++i; return;
+    if (!j() || (i() && (!overlaps(i.max(),j.min())))) {
+      MinMax<Val>::mi = i.min(); MinMax<Val>::ma = i.max(); ++i; return;
     }
 
-    mi = std::min(i.min(),j.min());
-    ma = std::max(i.max(),j.max());
+    MinMax<Val>::mi = std::min(i.min(),j.min());
+    MinMax<Val>::ma = std::max(i.max(),j.max());
 
     ++i; ++j;
 
   next:
-    if (i() && (i.min() <= ma.plus(1))) {
-      ma = std::max(ma,i.max()); ++i;
+    if (i() && (overlaps(MinMax<Val>::ma,i.min()))) {
+      MinMax<Val>::ma = std::max(MinMax<Val>::ma,i.max()); ++i;
       goto next;
     }
-    if (j() && (j.min() <= ma.plus(1))) {
-      ma = std::max(ma,j.max()); ++j;
+    if (j() && (overlaps(MinMax<Val>::ma,j.min()))) {
+      MinMax<Val>::ma = std::max(MinMax<Val>::ma,j.max()); ++j;
       goto next;
     }
   }
 
 
-  template<class I, class J>
+  template<class Val, class I, class J>
   inline
-  Union<I,J>::Union(void) {}
+  Union<Val,I,J>::Union(void) {}
 
-  template<class I, class J>
+  template<class Val, class I, class J>
   inline
-  Union<I,J>::Union(I& i0, J& j0)
+  Union<Val,I,J>::Union(I& i0, J& j0)
     : i(i0), j(j0) {
     operator ++();
   }
 
-  template<class I, class J>
+  template<class Val, class I, class J>
   inline void
-  Union<I,J>::init(I& i0, J& j0) {
+  Union<Val,I,J>::init(I& i0, J& j0) {
     i = i0; j = j0;
     operator ++();
   }
@@ -327,8 +380,8 @@ namespace MiniZinc { namespace Ranges {
    *
    * \ingroup FuncIterRanges
    */
-  template<class I, class J>
-  class Inter : public MinMax {
+  template<class Val, class I, class J>
+  class Inter : public MinMax<Val> {
   protected:
     /// First iterator
     I i;
@@ -360,9 +413,9 @@ namespace MiniZinc { namespace Ranges {
    *
    */
 
-  template<class I, class J>
+  template<class Val, class I, class J>
   inline void
-  Inter<I,J>::operator ++(void) {
+  Inter<Val,I,J>::operator ++(void) {
     if (!i() || !j()) goto done;
     do {
       while (i() && (i.max() < j.min())) ++i;
@@ -371,28 +424,28 @@ namespace MiniZinc { namespace Ranges {
       if (!j()) goto done;
     } while (i.max() < j.min());
     // Now the intervals overlap: consume the smaller interval
-    ma = std::min(i.max(),j.max());
-    mi = std::max(i.min(),j.min());
+    MinMax<Val>::ma = std::min(i.max(),j.max());
+    MinMax<Val>::mi = std::max(i.min(),j.min());
     if (i.max() < j.max()) ++i; else ++j;
     return;
   done:
-    finish();
+    MinMax<Val>::finish();
   }
 
-  template<class I, class J>
+  template<class Val, class I, class J>
   inline
-  Inter<I,J>::Inter(void) {}
+  Inter<Val,I,J>::Inter(void) {}
 
-  template<class I, class J>
+  template<class Val, class I, class J>
   inline
-  Inter<I,J>::Inter(I& i0, J& j0)
+  Inter<Val,I,J>::Inter(I& i0, J& j0)
     : i(i0), j(j0) {
     operator ++();
   }
 
-  template<class I, class J>
+  template<class Val, class I, class J>
   inline void
-  Inter<I,J>::init(I& i0, J& j0) {
+  Inter<Val,I,J>::init(I& i0, J& j0) {
     i = i0; j = j0;
     operator ++();
   }
@@ -403,8 +456,8 @@ namespace MiniZinc { namespace Ranges {
    * \ingroup FuncIterRanges
    */
 
-  template<class I, class J>
-  class Diff : public MinMax {
+  template<class Val, class I, class J>
+  class Diff : public MinMax<Val> {
   protected:
     /// Iterator from which to subtract
     I i;
@@ -430,68 +483,68 @@ namespace MiniZinc { namespace Ranges {
 
 
 
-  template<class I, class J>
+  template<class Val, class I, class J>
   inline void
-  Diff<I,J>::operator ++(void) {
+  Diff<Val,I,J>::operator ++(void) {
     // Precondition: mi <= ma
     // Task: find next mi greater than ma
     while (true) {
       if (!i()) break;
-      mi = ma.plus(1);
-      ma = i.max();
-      if (mi > i.max()) {
+      MinMax<Val>::mi = nextHigher(MinMax<Val>::ma);
+      MinMax<Val>::ma = i.max();
+      if (MinMax<Val>::mi > i.max()) {
         ++i;
         if (!i()) break;
-        mi = i.min();
-        ma = i.max();
+        MinMax<Val>::mi = i.min();
+        MinMax<Val>::ma = i.max();
       }
-      while (j() && (j.max() < mi))
+      while (j() && (j.max() < MinMax<Val>::mi))
         ++j;
-      if (j() && (j.min() <= ma)) {
+      if (j() && (j.min() <= MinMax<Val>::ma)) {
         // Now the interval [mi ... ma] must be shrunken
         // Is [mi ... ma] completely consumed?
-        if ((mi >= j.min()) && (ma <= j.max()))
+        if ((MinMax<Val>::mi >= j.min()) && (MinMax<Val>::ma <= j.max()))
           continue;
         // Does [mi ... ma] overlap on the left?
-        if (j.min() <= mi) {
-          mi = j.max().plus(1);
+        if (j.min() <= MinMax<Val>::mi) {
+          MinMax<Val>::mi = nextHigher(j.max());
           // Search for max!
           ++j;
-          if (j() && (j.min() <= ma))
-            ma = j.min().minus(1);
+          if (j() && (j.min() <= MinMax<Val>::ma))
+            MinMax<Val>::ma = nextLower(j.min());
         } else {
-          ma = j.min().minus(1);
+          MinMax<Val>::ma = nextLower(j.min());
         }
       }
       return;
     }
-    finish();
+    MinMax<Val>::finish();
   }
 
-  template<class I, class J>
+  template<class Val, class I, class J>
   inline
-  Diff<I,J>::Diff(void) {}
+  Diff<Val,I,J>::Diff(void) {}
 
-  template<class I, class J>
+  template<class Val, class I, class J>
   inline
-  Diff<I,J>::Diff(I& i0, J& j0)
+  Diff<Val,I,J>::Diff(I& i0, J& j0)
     : i(i0), j(j0) {
     if (!i()) {
-      finish();
+      MinMax<Val>::finish();
     } else {
-      mi = i.min().minus(1); ma = mi;
+      MinMax<Val>::mi = nextLower(i.min()); MinMax<Val>::ma = MinMax<Val>::mi;
       operator ++();
     }
   }
 
-  template<class I, class J>
+  template<class Val, class I, class J>
   inline void
-  Diff<I,J>::init(I& i0, J& j0) {
+  Diff<Val,I,J>::init(I& i0, J& j0) {
     i = i0; j = j0;
     if (!i()) {
-      finish();
+      MinMax<Val>::finish();
     } else {
-      mi = i.min().minus(1); ma = mi;
+      MinMax<Val>::mi = nextLower(i.min()); MinMax<Val>::ma = MinMax<Val>::mi;
       operator ++();
     }
   }
@@ -600,9 +653,9 @@ namespace MiniZinc { namespace Ranges {
    */
 
   //@{
-  /// Size of all ranges of range iterator \a i
+  /// Cardinality of the set represented by range iterator \a i
   template<class I>
-  IntVal size(I& i);
+  IntVal cardinality(I& i);
 
   /// Check whether range iterators \a i and \a j are equal
   template<class I, class J>
@@ -631,7 +684,7 @@ namespace MiniZinc { namespace Ranges {
 
   template<class I>
   inline IntVal
-  size(I& i) {
+  cardinality(I& i) {
     IntVal s = 0;
     while (i()) {
       if (i.width().isFinite()) {

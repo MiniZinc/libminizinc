@@ -1,4 +1,5 @@
 % RUNS ON mzn20_fd
+% RUNS ON mzn-fzn_fd
 include "lex2.mzn";
 
 array[1..2, 1..2] of var 1..2: y;

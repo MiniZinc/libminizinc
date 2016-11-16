@@ -59,6 +59,7 @@ namespace MiniZinc {
   class EvalFloatVal {
   public:
     typedef FloatVal Val;
+    typedef FloatVal ArrayVal;
     static FloatVal e(EnvI& env, Expression* e) {
       return eval_float(env, e);
     }
@@ -134,6 +135,16 @@ namespace MiniZinc {
     }
     static Expression* exp(IntSetVal* e) { return new SetLit(Location(),e); }
   };
+  class EvalFloatSet {
+  public:
+    typedef FloatSetVal* Val;
+    static FloatSetVal* e(EnvI& env, Expression* e) {
+      return eval_floatset(env, e);
+    }
+    static Expression* exp(FloatSetVal* e) {
+      return new SetLit(Location(),e);
+    }
+  };
   class EvalBoolSet {
   public:
     typedef IntSetVal* Val;
@@ -148,6 +159,15 @@ namespace MiniZinc {
     typedef Expression* ArrayVal;
     static SetLit* e(EnvI& env, Expression* e) {
       return new SetLit(e->loc(),eval_intset(env, e));
+    }
+    static Expression* exp(Expression* e) { return e; }
+  };
+  class EvalFloatSetLit {
+  public:
+    typedef SetLit* Val;
+    typedef Expression* ArrayVal;
+    static SetLit* e(EnvI& env, Expression* e) {
+      return new SetLit(e->loc(),eval_floatset(env, e));
     }
     static Expression* exp(Expression* e) { return e; }
   };
@@ -237,9 +257,9 @@ namespace MiniZinc {
               }
             } else if (vd->e()->type().bt()==Type::BT_FLOAT) {
               GCLock lock;
-              BinOp* bo = dom->cast<BinOp>();
-              FloatVal dom_min = eval_float(env,bo->lhs());
-              FloatVal dom_max = eval_float(env,bo->rhs());
+              FloatSetVal* fsv = eval_floatset(env, dom);
+              FloatVal dom_min = fsv->min();
+              FloatVal dom_max = fsv->max();
               checkDom(env, vd->id(), dom_min, dom_max, vd->e());
             }
           }
@@ -487,25 +507,26 @@ namespace MiniZinc {
           switch (bo->op()) {
           case BOT_UNION:
             {
-              Ranges::Union<IntSetRanges,IntSetRanges> u(ir0,ir1);
+              Ranges::Union<IntVal,IntSetRanges,IntSetRanges> u(ir0,ir1);
               return IntSetVal::ai(u);
             }
           case BOT_DIFF:
             {
-              Ranges::Diff<IntSetRanges,IntSetRanges> u(ir0,ir1);
+              Ranges::Diff<IntVal,IntSetRanges,IntSetRanges> u(ir0,ir1);
               return IntSetVal::ai(u);
             }
           case BOT_SYMDIFF:
             {
-              Ranges::Union<IntSetRanges,IntSetRanges> u(ir0,ir1);
-              Ranges::Inter<IntSetRanges,IntSetRanges> i(ir0,ir1);
-              Ranges::Diff<Ranges::Union<IntSetRanges,IntSetRanges>,
-                           Ranges::Inter<IntSetRanges,IntSetRanges>> sd(u,i);
+              Ranges::Union<IntVal,IntSetRanges,IntSetRanges> u(ir0,ir1);
+              Ranges::Inter<IntVal,IntSetRanges,IntSetRanges> i(ir0,ir1);
+              Ranges::Diff<IntVal,
+                           Ranges::Union<IntVal,IntSetRanges,IntSetRanges>,
+                           Ranges::Inter<IntVal,IntSetRanges,IntSetRanges>> sd(u,i);
               return IntSetVal::ai(sd);
             }
           case BOT_INTERSECT:
             {
-              Ranges::Inter<IntSetRanges,IntSetRanges> u(ir0,ir1);
+              Ranges::Inter<IntVal,IntSetRanges,IntSetRanges> u(ir0,ir1);
               return IntSetVal::ai(u);
             }
           default: throw EvalError(env, e->loc(),"not a set of int expression", bo->opToString());
@@ -551,6 +572,142 @@ namespace MiniZinc {
     }
   }
 
+  FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
+    if (SetLit* sl = e->dyn_cast<SetLit>()) {
+      if (sl->fsv())
+        return sl->fsv();
+    }
+    CallStackItem csi(env,e);
+    switch (e->eid()) {
+      case Expression::E_SETLIT:
+      {
+        SetLit* sl = e->cast<SetLit>();
+        std::vector<FloatVal> vals(sl->v().size());
+        for (unsigned int i=0; i<sl->v().size(); i++)
+          vals[i] = eval_float(env,sl->v()[i]);
+        return FloatSetVal::a(vals);
+      }
+      case Expression::E_BOOLLIT:
+      case Expression::E_INTLIT:
+      case Expression::E_FLOATLIT:
+      case Expression::E_STRINGLIT:
+      case Expression::E_ANON:
+      case Expression::E_TIID:
+      case Expression::E_VARDECL:
+      case Expression::E_TI:
+      case Expression::E_UNOP:
+        throw EvalError(env, e->loc(),"not a set of float expression");
+        break;
+      case Expression::E_ARRAYLIT:
+      {
+        ArrayLit* al = e->cast<ArrayLit>();
+        std::vector<FloatVal> vals(al->v().size());
+        for (unsigned int i=0; i<al->v().size(); i++)
+          vals[i] = eval_float(env,al->v()[i]);
+        return FloatSetVal::a(vals);
+      }
+        break;
+      case Expression::E_COMP:
+      {
+        Comprehension* c = e->cast<Comprehension>();
+        std::vector<FloatVal> a = eval_comp<EvalFloatVal>(env,c);
+        return FloatSetVal::a(a);
+      }
+      case Expression::E_ID:
+      {
+        GCLock lock;
+        return eval_floatset(env, eval_id<EvalFloatSetLit>(env,e));
+      }
+        break;
+      case Expression::E_ARRAYACCESS:
+      {
+        GCLock lock;
+        return eval_floatset(env,eval_arrayaccess(env,e->cast<ArrayAccess>()));
+      }
+        break;
+      case Expression::E_ITE:
+      {
+        ITE* ite = e->cast<ITE>();
+        for (int i=0; i<ite->size(); i++) {
+          if (eval_bool(env,ite->e_if(i)))
+            return eval_floatset(env,ite->e_then(i));
+        }
+        return eval_floatset(env,ite->e_else());
+      }
+        break;
+      case Expression::E_BINOP:
+      {
+        BinOp* bo = e->cast<BinOp>();
+        Expression* lhs = eval_par(env, bo->lhs());
+        Expression* rhs = eval_par(env, bo->rhs());
+        if (lhs->type().isfloatset() && rhs->type().isfloatset()) {
+          FloatSetVal* v0 = eval_floatset(env,lhs);
+          FloatSetVal* v1 = eval_floatset(env,rhs);
+          FloatSetRanges fr0(v0);
+          FloatSetRanges fr1(v1);
+          switch (bo->op()) {
+            case BOT_UNION:
+            {
+              Ranges::Union<FloatVal,FloatSetRanges,FloatSetRanges> u(fr0,fr1);
+              return FloatSetVal::ai(u);
+            }
+            case BOT_DIFF:
+            {
+              Ranges::Diff<FloatVal,FloatSetRanges,FloatSetRanges> u(fr0,fr1);
+              return FloatSetVal::ai(u);
+            }
+            case BOT_SYMDIFF:
+            {
+              Ranges::Union<FloatVal,FloatSetRanges,FloatSetRanges> u(fr0,fr1);
+              Ranges::Inter<FloatVal,FloatSetRanges,FloatSetRanges> i(fr0,fr1);
+              Ranges::Diff<FloatVal,Ranges::Union<FloatVal,FloatSetRanges,FloatSetRanges>,
+              Ranges::Inter<FloatVal,FloatSetRanges,FloatSetRanges>> sd(u,i);
+              return FloatSetVal::ai(sd);
+            }
+            case BOT_INTERSECT:
+            {
+              Ranges::Inter<FloatVal,FloatSetRanges,FloatSetRanges> u(fr0,fr1);
+              return FloatSetVal::ai(u);
+            }
+            default: throw EvalError(env, e->loc(),"not a set of int expression", bo->opToString());
+          }
+        } else if (lhs->type().isfloat() && rhs->type().isfloat()) {
+          if (bo->op() != BOT_DOTDOT)
+            throw EvalError(env, e->loc(), "not a set of float expression", bo->opToString());
+          return FloatSetVal::a(eval_float(env, lhs), eval_float(env, rhs));
+        } else {
+          throw EvalError(env, e->loc(), "not a set of float expression", bo->opToString());
+        }
+      }
+        break;
+      case Expression::E_CALL:
+      {
+        Call* ce = e->cast<Call>();
+        if (ce->decl()==NULL)
+          throw EvalError(env, e->loc(), "undeclared function", ce->id());
+        
+        if (ce->decl()->_builtins.e)
+          return eval_floatset(env,ce->decl()->_builtins.e(env,ce));
+        
+        if (ce->decl()->e()==NULL)
+          throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+        
+        return eval_call<EvalFloatSet>(env,ce);
+      }
+        break;
+      case Expression::E_LET:
+      {
+        Let* l = e->cast<Let>();
+        l->pushbindings();
+        FloatSetVal* ret = eval_floatset(env,l->in());
+        l->popbindings();
+        return ret;
+      }
+        break;
+      default: assert(false); return NULL;
+    }
+  }
+  
   bool eval_bool(EnvI& env, Expression* e) {
     if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
       return bl->v();
@@ -669,6 +826,20 @@ namespace MiniZinc {
             default:
               assert(false);
               throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
+            }
+          } catch (ResultUndefinedError&) {
+            return false;
+          }
+        } else if (lhs->type().isfloat() && rhs->type().isfloatset()) {
+          try {
+            FloatVal v0 = eval_float(env,lhs);
+            GCLock lock;
+            FloatSetVal* v1 = eval_floatset(env,rhs);
+            switch (bo->op()) {
+              case BOT_IN: return v1->contains(v0);
+              default:
+                assert(false);
+                throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
             }
           } catch (ResultUndefinedError&) {
             return false;
@@ -856,25 +1027,25 @@ namespace MiniZinc {
           switch (bo->op()) {
             case BOT_UNION:
             {
-              Ranges::Union<IntSetRanges,IntSetRanges> u(ir0,ir1);
+              Ranges::Union<IntVal,IntSetRanges,IntSetRanges> u(ir0,ir1);
               return IntSetVal::ai(u);
             }
             case BOT_DIFF:
             {
-              Ranges::Diff<IntSetRanges,IntSetRanges> u(ir0,ir1);
+              Ranges::Diff<IntVal,IntSetRanges,IntSetRanges> u(ir0,ir1);
               return IntSetVal::ai(u);
             }
             case BOT_SYMDIFF:
             {
-              Ranges::Union<IntSetRanges,IntSetRanges> u(ir0,ir1);
-              Ranges::Inter<IntSetRanges,IntSetRanges> i(ir0,ir1);
-              Ranges::Diff<Ranges::Union<IntSetRanges,IntSetRanges>,
-              Ranges::Inter<IntSetRanges,IntSetRanges>> sd(u,i);
+              Ranges::Union<IntVal,IntSetRanges,IntSetRanges> u(ir0,ir1);
+              Ranges::Inter<IntVal,IntSetRanges,IntSetRanges> i(ir0,ir1);
+              Ranges::Diff<IntVal,Ranges::Union<IntVal,IntSetRanges,IntSetRanges>,
+              Ranges::Inter<IntVal,IntSetRanges,IntSetRanges>> sd(u,i);
               return IntSetVal::ai(sd);
             }
             case BOT_INTERSECT:
             {
-              Ranges::Inter<IntSetRanges,IntSetRanges> u(ir0,ir1);
+              Ranges::Inter<IntVal,IntSetRanges,IntSetRanges> u(ir0,ir1);
               return IntSetVal::ai(u);
             }
             default: throw EvalError(env, e->loc(),"not a set of bool expression", bo->opToString());
@@ -1280,11 +1451,10 @@ namespace MiniZinc {
               }
             }
           } else if (id->decl()->ti()->type().isfloat()) {
-            if (BinOp* bo = id->decl()->ti()->domain()->dyn_cast<BinOp>()) {
-              if (bo->op()==BOT_DOTDOT && bo->lhs()->isa<FloatLit>() && bo->rhs()->isa<FloatLit>()) {
-                if (bo->lhs()->cast<FloatLit>()->v() == bo->rhs()->cast<FloatLit>()->v()) {
-                  return bo->lhs();
-                }
+            if (id->decl()->ti()->domain()) {
+              FloatSetVal* fsv = eval_floatset(env, id->decl()->ti()->domain());
+              if (fsv->min() == fsv->max()) {
+                return new FloatLit(Location(), fsv->min());
               }
             }
           }
@@ -1319,6 +1489,9 @@ namespace MiniZinc {
         }
         if (e->type().isintset()) {
           return EvalSetLit::e(env,e);
+        }
+        if (e->type().isfloatset()) {
+          return EvalFloatSetLit::e(env,e);
         }
         if (e->type().isboolset()) {
           return EvalBoolSetLit::e(env,e);
@@ -1541,7 +1714,7 @@ namespace MiniZinc {
         while (id->decl()->e() && id->decl()->e()->isa<Id>()) {
           id = id->decl()->e()->cast<Id>();
         }
-        if (parAccess && id->decl()->e() && id->decl()->e()->isa<ArrayLit>()) {
+        if (parAccess && id->decl()->e()) {
           bool success;
           Expression* e = eval_arrayaccess(env,&aa, success);
           if (success) {
@@ -1737,7 +1910,7 @@ namespace MiniZinc {
       } else if (c.id() == "card") {
         if (IntSetVal* isv = compute_intset_bounds(env,c.args()[0])) {
           IntSetRanges isr(isv);
-          _bounds.push_back(Bounds(0,Ranges::size(isr)));
+          _bounds.push_back(Bounds(0,Ranges::cardinality(isr)));
         } else {
           valid = false;
           _bounds.push_back(Bounds(0,0));
@@ -1867,9 +2040,8 @@ namespace MiniZinc {
       while (vd->flat() && vd->flat() != vd)
         vd = vd->flat();
       if (vd->ti()->domain()) {
-        BinOp* bo = vd->ti()->domain()->cast<BinOp>();
-        assert(bo->op() == BOT_DOTDOT);
-        _bounds.push_back(FBounds(eval_float(env,bo->lhs()),eval_float(env,bo->rhs())));
+        FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
+        _bounds.push_back(FBounds(fsv->min(), fsv->max()));
       } else {
         if (vd->e()) {
           BottomUpIterator<ComputeFloatBounds> cbi(*this);
@@ -1900,7 +2072,7 @@ namespace MiniZinc {
         while (id->decl()->e() && id->decl()->e()->isa<Id>()) {
           id = id->decl()->e()->cast<Id>();
         }
-        if (parAccess && id->decl()->e() && id->decl()->e()->isa<ArrayLit>()) {
+        if (parAccess && id->decl()->e()) {
           bool success;
           Expression* e = eval_arrayaccess(env,&aa, success);
           if (success) {
@@ -1910,9 +2082,8 @@ namespace MiniZinc {
           }
         }
         if (id->decl()->ti()->domain()) {
-          BinOp* bo = id->decl()->ti()->domain()->cast<BinOp>();
-          assert(bo->op() == BOT_DOTDOT);
-          FBounds b(eval_float(env,bo->lhs()),eval_float(env,bo->rhs()));
+          FloatSetVal* fsv = eval_floatset(env, id->decl()->ti()->domain());
+          FBounds b(fsv->min(), fsv->max());
           _bounds.push_back(b);
           return;
         }
@@ -1934,50 +2105,56 @@ namespace MiniZinc {
     void vBinOp(const BinOp& bo) {
       FBounds b1 = _bounds.back(); _bounds.pop_back();
       FBounds b0 = _bounds.back(); _bounds.pop_back();
-      switch (bo.op()) {
-        case BOT_PLUS:
-          _bounds.push_back(FBounds(b0.first+b1.first,b0.second+b1.second));
-          break;
-        case BOT_MINUS:
-          _bounds.push_back(FBounds(b0.first-b1.second,b0.second-b1.first));
-          break;
-        case BOT_MULT:
-        {
-          FloatVal x0 = b0.first*b1.first;
-          FloatVal x1 = b0.first*b1.second;
-          FloatVal x2 = b0.second*b1.first;
-          FloatVal x3 = b0.second*b1.second;
-          FloatVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
-          FloatVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
-          _bounds.push_back(FBounds(m,n));
+      if (!b1.first.isFinite() || !b1.second.isFinite() || !b0.first.isFinite() || !b0.second.isFinite()) {
+        valid = false;
+        _bounds.push_back(FBounds(0.0,0.0));
+      } else {
+
+        switch (bo.op()) {
+          case BOT_PLUS:
+            _bounds.push_back(FBounds(b0.first+b1.first,b0.second+b1.second));
+            break;
+          case BOT_MINUS:
+            _bounds.push_back(FBounds(b0.first-b1.second,b0.second-b1.first));
+            break;
+          case BOT_MULT:
+          {
+            FloatVal x0 = b0.first*b1.first;
+            FloatVal x1 = b0.first*b1.second;
+            FloatVal x2 = b0.second*b1.first;
+            FloatVal x3 = b0.second*b1.second;
+            FloatVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
+            FloatVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
+            _bounds.push_back(FBounds(m,n));
+          }
+            break;
+          case BOT_DIV:
+          case BOT_IDIV:
+          case BOT_MOD:
+          case BOT_LE:
+          case BOT_LQ:
+          case BOT_GR:
+          case BOT_GQ:
+          case BOT_EQ:
+          case BOT_NQ:
+          case BOT_IN:
+          case BOT_SUBSET:
+          case BOT_SUPERSET:
+          case BOT_UNION:
+          case BOT_DIFF:
+          case BOT_SYMDIFF:
+          case BOT_INTERSECT:
+          case BOT_PLUSPLUS:
+          case BOT_EQUIV:
+          case BOT_IMPL:
+          case BOT_RIMPL:
+          case BOT_OR:
+          case BOT_AND:
+          case BOT_XOR:
+          case BOT_DOTDOT:
+            valid = false;
+            _bounds.push_back(FBounds(0.0,0.0));
         }
-          break;
-        case BOT_DIV:
-        case BOT_IDIV:
-        case BOT_MOD:
-        case BOT_LE:
-        case BOT_LQ:
-        case BOT_GR:
-        case BOT_GQ:
-        case BOT_EQ:
-        case BOT_NQ:
-        case BOT_IN:
-        case BOT_SUBSET:
-        case BOT_SUPERSET:
-        case BOT_UNION:
-        case BOT_DIFF:
-        case BOT_SYMDIFF:
-        case BOT_INTERSECT:
-        case BOT_PLUSPLUS:
-        case BOT_EQUIV:
-        case BOT_IMPL:
-        case BOT_RIMPL:
-        case BOT_OR:
-        case BOT_AND:
-        case BOT_XOR:
-        case BOT_DOTDOT:
-          valid = false;
-          _bounds.push_back(FBounds(0,0));
       }
     }
     /// Visit unary operator
@@ -2022,12 +2199,37 @@ namespace MiniZinc {
         for (unsigned int i=0; i<al->v().size(); i++) {
           FBounds b = _bounds.back(); _bounds.pop_back();
           FloatVal cv = le ? eval_float(env,coeff->v()[i]) : 1.0;
+
           if (cv > 0) {
-            lb += cv*b.first;
-            ub += cv*b.second;
+            if (b.first.isFinite()) {
+              if (lb.isFinite()) {
+                lb += cv*b.first;
+              }
+            } else {
+              lb = b.first;
+            }
+            if (b.second.isFinite()) {
+              if (ub.isFinite()) {
+                ub += cv*b.second;
+              }
+            } else {
+              ub = b.second;
+            }
           } else {
-            lb += cv*b.second;
-            ub += cv*b.first;
+            if (b.second.isFinite()) {
+              if (lb.isFinite()) {
+                lb += cv*b.second;
+              }
+            } else {
+              lb = -b.second;
+            }
+            if (b.first.isFinite()) {
+              if (ub.isFinite()) {
+                ub += cv*b.first;
+              }
+            } else {
+              ub = -b.first;
+            }
           }
         }
         _bounds.push_back(FBounds(lb,ub));
@@ -2037,13 +2239,18 @@ namespace MiniZinc {
         cbi.run(c.args()[1]);
         FBounds b1 = _bounds.back(); _bounds.pop_back();
         FBounds b0 = _bounds.back(); _bounds.pop_back();
-        FloatVal x0 = b0.first*b1.first;
-        FloatVal x1 = b0.first*b1.second;
-        FloatVal x2 = b0.second*b1.first;
-        FloatVal x3 = b0.second*b1.second;
-        FloatVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
-        FloatVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
-        _bounds.push_back(FBounds(m,n));
+        if (!b1.first.isFinite() || !b1.second.isFinite() || !b0.first.isFinite() || !b0.second.isFinite()) {
+          valid = false;
+          _bounds.push_back(FBounds(0,0));
+        } else {
+          FloatVal x0 = b0.first*b1.first;
+          FloatVal x1 = b0.first*b1.second;
+          FloatVal x2 = b0.second*b1.first;
+          FloatVal x3 = b0.second*b1.second;
+          FloatVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
+          FloatVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
+          _bounds.push_back(FBounds(m,n));
+        }
       } else if (c.id() == "int2float") {
         ComputeIntBounds ib(env);
         BottomUpIterator<ComputeIntBounds> cbi(ib);
@@ -2148,8 +2355,8 @@ namespace MiniZinc {
           _bounds.push_back(NULL);
           return;
         }
-        Ranges::Const cr(ib.l,ib.u);
-        Ranges::Union<IntSetRanges, Ranges::Const> u(i0,cr);
+        Ranges::Const<IntVal> cr(ib.l,ib.u);
+        Ranges::Union<IntVal,IntSetRanges, Ranges::Const<IntVal> > u(i0,cr);
         isv = IntSetVal::ai(u);
       }
       _bounds.push_back(isv);
@@ -2186,7 +2393,7 @@ namespace MiniZinc {
         while (id->decl()->e() && id->decl()->e()->isa<Id>()) {
           id = id->decl()->e()->cast<Id>();
         }
-        if (parAccess && id->decl()->e() && id->decl()->e()->isa<ArrayLit>()) {
+        if (parAccess && id->decl()->e()) {
           bool success;
           Expression* e = eval_arrayaccess(env,&aa, success);
           if (success) {
@@ -2229,7 +2436,7 @@ namespace MiniZinc {
           {
             IntSetRanges b0r(b0);
             IntSetRanges b1r(b1);
-            Ranges::Union<IntSetRanges,IntSetRanges> u(b0r,b1r);
+            Ranges::Union<IntVal,IntSetRanges,IntSetRanges> u(b0r,b1r);
             _bounds.push_back(IntSetVal::ai(u));
           }
           break;
@@ -2282,7 +2489,7 @@ namespace MiniZinc {
         IntSetVal* b1 = _bounds.back(); _bounds.pop_back();
         IntSetRanges b0r(b0);
         IntSetRanges b1r(b1);
-        Ranges::Union<IntSetRanges,IntSetRanges> u(b0r,b1r);
+        Ranges::Union<IntVal,IntSetRanges,IntSetRanges> u(b0r,b1r);
         _bounds.push_back(IntSetVal::ai(u));
       } else if (valid && c.id() == "set_diff") {
         IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
@@ -2330,4 +2537,49 @@ namespace MiniZinc {
       return NULL;  
   }
 
+  Expression* follow_id(Expression* e) {
+    for (;;) {
+      if (e==NULL)
+        return NULL;
+      if (e->eid()==Expression::E_ID && e != constants().absent) {
+        e = e->cast<Id>()->decl()->e();
+      } else {
+        return e;
+      }
+    }
+  }
+  
+  Expression* follow_id_to_decl(Expression* e) {
+    for (;;) {
+      if (e==NULL)
+        return NULL;
+      if (e==constants().absent)
+        return e;
+      switch (e->eid()) {
+        case Expression::E_ID:
+          e = e->cast<Id>()->decl();
+          break;
+        case Expression::E_VARDECL:
+          if (e->cast<VarDecl>()->e() && e->cast<VarDecl>()->e()->isa<Id>())
+            e = e->cast<VarDecl>()->e();
+          else
+            return e;
+          break;
+        default:
+          return e;
+      }
+    }
+  }
+  
+  Expression* follow_id_to_value(Expression* e) {
+    Expression* decl = follow_id_to_decl(e);
+    if (VarDecl* vd = decl->dyn_cast<VarDecl>()) {
+      if (vd->e() && vd->e()->type().ispar())
+        return vd->e();
+      return vd->id();
+    } else {
+      return decl;
+    }
+  }
+  
 }
