@@ -1,0 +1,456 @@
+
+\newpage
+
+\section{Boolean Satisfiability Modelling in \ZincOrMiniZinc}\label{sec:sat}
+
+\ZincOrMiniZinc can be used to model Boolean satisfiability
+problems where the variables are restricted to be Boolean (\texttt{bool}).
+\ZincOrMiniZinc can be used with efficient Boolean satisfiability 
+solvers to solve the resulting models efficiently.
+
+
+\subsection{Modelling Integers}
+
+Many times although we wish to use a Boolean satisfiability solver we may
+need to model some integer parts of our problem. 
+
+There are three common ways of modelling an integer variables 
+$I$ in the range $0..m$ where $m = 2^{k}-1$
+using Boolean
+variables. 
+\begin{itemize}
+\item Binary: $I$ is represented by $k$ binary variables $i_0, \ldots,
+  i_{k-1}$ where $I = 2^{k-1} i_{k-1} + 2^{k-2} i_{k-2} + \cdots + 2 i_1 +
+  i_0$. This can be represented in \ZincOrMiniZinc as
+\begin{code}
+array[0..k-1]  of var bool: i;
+var 0..pow(2,k)-1: I = sum(j in 0..k-1)(bool2int(i[j])*pow(2,j));
+\end{code}
+\item Unary: where $I$ is represented by $m$ binary variables $i_1, \ldots,
+  i_m$
+and $i = \sum_{j=1}^m bool2int(i_j)$.  Since there is massive redundancy in
+the unary representation we usually require that $i_j \rightarrow i_{j-1}, 1
+< j \leq m$. This can be represented in \ZincOrMiniZinc as
+\begin{code}
+array[1..m]  of var bool: i;
+constraint forall(j in 2..m)(i[j] -> i[j-1]);
+var 0..m: I = sum(j in 1..m)(bool2int(i[j]);
+\end{code}
+\item Value: where $I$ is represented by $m+1$ binary variables $i_0,
+  \ldots, i_m$ where
+$i = k \Leftrightarrow i_k$, and at most one of $i_0, \ldots, i_m$ is true. 
+This can be represented in \ZincOrMiniZinc as
+\begin{code}
+array[0..m]  of var bool: i;
+constraint sum(j in 0..m)(bool2int(i[j]) == 1;
+var 0..m: I;
+constraint foall(j in 0..m)(I == j <-> i[j]);
+\end{code}
+\end{itemize}
+
+There are advantages and disadvantages to each representation.  It depends
+on what operations on integers are to required in the model as to which is
+preferable.
+
+\subsection{Modelling Disequality}
+
+Let us considering modelling a latin squares problem. A latin square
+is an $n \times n$ grid of numbers from $1..n$ such that 
+each number appears exactly once in every row and column. 
+An integer model for latin squares is shown in \autoref{ex:latin}.
+
+\begin{figure}
+\insertlitcode{latin}
+\begin{litcode}{latin}{mzn}
+int: n; % size of latin square
+array[1..n,1..n] of var 1..n: a;
+
+include "alldifferent.mzn";
+constraint forall(i in 1..n)(
+             alldifferent(j in 1..n)(a[i,j]) /\
+             alldifferent(j in 1..n)(a[j,i])
+           );
+solve satisfy;
+output [ show(a[i,j]) ++ if j == n then "\n" else " " endif |
+         i in 1..n, j in 1..n ];
+\end{litcode}
+\caption{Integer Model for Latin Squares 
+(\texttt{latin.mzn}).\label{ex:latin}}
+\end{figure}
+
+The only constraint on the integers is in fact disequality, which is encoded
+in the \texttt{alldifferent} constraint. 
+The value representation is the best way of representing disequality.
+A Boolean only model for latin squares is shown in
+\autoref{ex:latinbool}.
+Note each integer array element $a[i,j]$ is replaced by an array of
+Booleans.
+We use the \texttt{exactlyone} predicate to encode that each value is used
+exactly once in every row and every column, as well as to encode that exactly
+one of the Booleans corresponding to integer array element $a[i,j]$ is true.
+
+\begin{figure}
+\insertlitcode{latinbool}
+\begin{litcode}{latinbool}{mzn}
+int: n; % size of latin square
+array[1..n,1..n,1..n] of var bool: a;
+
+predicate atmostone(array[int] of var bool:x) =
+          forall(i,j in index_set(x) where i < j)(
+            (not x[i] \/ not x[j]));
+predicate exactlyone(array[int] of var bool:x) =
+          atmostone(x) /\ exists(x);
+
+constraint forall(i,j in 1..n)(
+             exactlyone(k in 1..n)(a[i,j,k]) /\
+             exactlyone(k in 1..n)(a[i,k,j]) /\
+             exactlyone(k in 1..n)(a[k,i,j])
+           );
+solve satisfy;
+output [ if fix(a[i,j,k]) then
+            show(k) ++ if j == n then "\n" else " " endif 
+         else "" endif | i,j,k in 1..n ];
+\end{litcode}
+\caption{Boolean Model for Latin Squares 
+(\texttt{latinbool.mzn}).\label{ex:latinbool}}
+\end{figure}
+
+\subsection{Modelling Cardinality}
+
+
+Let us consider modelling the Light Up puzzle. The puzzle consists of a 
+rectangular grid of squares which are blank, or filled. Every filled square
+may contain a number from 1 to 4, or may have no number. The aim is to place
+lights
+in the blank squares so that
+\begin{itemize}
+\item
+Each blank square is ``illuminated'', that is can see a light through an
+uninterupted line of blank squares
+\item No two lights can see each other
+\item The number of lights adjacent to a numbered filled square
+is exactly the number in the filled square.
+\end{itemize}
+An example of a Light Up puzzle is shown in \autoref{fig:lightup}
+together with its solution.
+
+\begin{figure}[t]
+\begin{center}
+\begin{tabular}{cc}
+\includegraphics[width=4.9cm]{figures/lightup}
+& \includegraphics[width=5cm]{figures/lightup2} \\
+(a) & (b) 
+\end{tabular}
+\end{center}
+\caption{An example of a Light Up puzzle showing (a) the initial puzzle
+and (b) the completed solution}
+\label{fig:lightup}
+\end{figure}
+
+It is natural to model this problem
+using Boolean variables to determine which
+squares contain a light and which do not, but there is some integer
+arithmetic to consider for the filled squares.
+
+\begin{figure}
+\insertlitcode{lightup}
+\begin{litcode}{lightup}{mzn}
+int: h; set of int: H = 1..h; % board height
+int: w; set of int: W = 1..w; % board width
+array[H,W] of -1..5: b;       % board
+int: E = -1;                  % empty square
+set of int: N = 0..4;         % filled and numbered square
+int: F =  5;                  % filled unnumbered square
+
+% position (i1,j1) is visible to (i2,j2)
+test visible(int: i1, int: j1, int: i2, int: j2) = 
+    ((i1 == i2) /\ forall(j in min(j1,j2)..max(j1,j2))(b[i1,j] == E))
+ \/ ((j1 == j2) /\ forall(i in min(i1,i2)..max(i1,i2))(b[i,j1] == E));
+
+array[H,W] of var bool: l; % is there a light
+
+% filled squares have no lights
+constraint forall(i in H, j in W, where b[i,j] != E)(l[i,j] == false);
+% lights next to filled numbered square agree
+include "boolsum.mzn";
+constraint forall(i in H, j in W where b[i,j] in N)(
+    bool_sum_eq([ l[i1,j1] | i1 in i-1..i+1, j1 in j-1..j+1 where
+                             abs(i1 - i) + abs(j1 - j) == 1 /\
+                             i1 in H /\ j1 in W ], b[i,j]));
+% each blank square is illuminated
+constraint forall(i in H, j in W where b[i,j] == E)(
+             exists(j1 in W where visible(i,j,i,j1))(l[i,j1]) \/
+             exists(i1 in H where visible(i,j,i1,j))(l[i1,j]) 
+           );
+% no two lights see each other
+constraint forall(i1,i2 in H, j1,j2 in W where 
+                  (i1 != i2 \/ j1 != j2) /\ b[i1,j1] == E 
+                  /\ b[i2,j2] == E /\ visible(i1,j1,i2,j2))(
+             not l[i1,j1] \/ not l[i2,j2]
+           );
+
+solve satisfy;
+output [ if b[i,j] != E then show(b[i,j])
+         else if fix(l[i,j]) then "L" else "." endif
+         endif ++ if j == w then "\n" else " " endif |
+         i in H, j in W];
+\end{litcode}
+\caption{SAT Model for the Light Up puzzle 
+(\texttt{lightup.mzn}).\label{ex:lightup}}
+\end{figure}
+
+A model for the problem is given in \autoref{ex:lightup}.
+A data file for the problem shown in \autoref{fig:lightup}
+is shown in \autoref{fig:lightupdzn}.
+
+\begin{figure}
+\insertlitcode{lightup.dzn}
+\begin{litcode}{lightup.dzn}{}
+h = 7;
+w = 7;
+b = [| -1,-1,-1,-1, 0,-1,-1 
+     | -1,-1,-1,-1,-1,-1,-1
+     |  0,-1,-1, 3,-1,-1,-1
+     | -1,-1, 2,-1, 4,-1,-1
+     | -1,-1,-1, 5,-1,-1, 1
+     | -1,-1,-1,-1,-1,-1,-1
+     |  1,-1, 2,-1,-1,-1,-1 |];
+\end{litcode}
+\caption{Datafile for the Light Up puzzle
+instance shown in \autoref{fig:lightup}}
+\label{fig:lightupdzn}
+\end{figure}
+
+
+The model makes use of a Boolean sum predicate
+\begin{code}
+predicate bool_sum_eq(array[int] of var bool:x, int:s);
+\end{code}
+which requires that the sum of an array of Boolean equals some fixed
+integer. There are a number of ways of modelling such
+\emph{cardinality} constraints using Booleans.
+
+\begin{itemize}
+\item Adder networks: we can use a network of adders to
+build a binary Boolean representation of the sum of the Booleans
+\item Sorting networks: we can use a sorting network to sort
+the array of Booleans to create a unary representation of the sum
+of the Booleans
+\item Binary decision diagrams: we can create a binary decision diagram
+(BDD) that encodes the cardinality constraint.
+\end{itemize}
+
+\begin{figure}
+\insertlitcode{bboolsum}
+\begin{litcode}{bboolsum}{mzn}
+% the sum of booleans x = s
+predicate bool_sum_eq(array[int] of var bool:x, int:s) =
+     let { int: c = length(x) } in
+     if s < 0 then false 
+     elseif s == 0 then
+          forall(i in 1..c)(x[i] == false)
+     elseif s < c then
+          let { % cp = number of bits required for representing 0..c
+                int: cp = floor(log2(int2float(c))),
+                % z is sum of x in binary 
+                array[0..cp] of var bool:z  } in
+          binary_sum(x, z) /\ 
+          % z == s
+          forall(i in 0..cp)(z[i] == ((s div pow(2,i)) mod 2 == 1)) 
+     elseif s == c then
+          forall(i in 1..c)(x[i] == true)
+     else false endif;
+
+include "binarysum.mzn";
+\end{litcode}
+\caption{Cardinality constraints by binary adder networks
+(\texttt{bboolsum.mzn}).\label{ex:bboolsum}}
+\end{figure}
+
+\begin{figure}
+\insertlitcode{binarysum}
+\begin{litcode}{binarysum}{mzn}
+% the sum of bits x = s in binary. 
+%            s[0], s[1], ..., s[k] where 2^k >= length(x) > 2^(k-1)
+predicate binary_sum(array[int] of var bool:x, 
+                     array[int] of var bool:s)=
+     let { int: l = length(x) } in 
+     if l == 1 then s[0] = x[1]
+     elseif l == 2 then 
+             s[0] = (x[1] xor x[2]) /\ s[1] = (x[1] /\ x[2])
+     else let { int: ll = (l div 2),
+                array[1..ll] of var bool: f = [ x[i] | i in 1..ll ], 
+                array[1..ll] of var bool: t = [x[i]| i in ll+1..2*ll],
+                var bool: b = if ll*2 == l then false else x[l] endif,
+                int: cp = floor(log2(int2float(ll))),
+                array[0..cp] of var bool: fs,
+                array[0..cp] of var bool: ts } in
+                binary_sum(f, fs) /\ binary_sum(t, ts) /\
+                binary_add(fs, ts, b, s)
+     endif;
+
+% add two binary numbers x, and y and carry in bit ci to get binary s
+predicate binary_add(array[int] of var bool: x,
+                     array[int] of var bool: y,
+                     var bool: ci,
+                     array[int] of var bool: s) =
+    let { int:l = length(x), 
+          int:n = length(s), } in  
+    assert(l == length(y),
+          "length of binary_add input args must be same",
+    assert(n == l \/ n == l+1, "length of binary_add output " ++
+                         "must be equal or one more than inputs",
+    let { array[0..l] of var bool: c } in
+    full_adder(x[0], y[0], ci, s[0], c[0]) /\
+    forall(i in 1..l)(full_adder(x[i], y[i], c[i-1], s[i], c[i])) /\
+    if n > l then s[n] = c[l] else c[l] == false endif ));
+    
+predicate full_adder(var bool: x, var bool: y, var bool: ci,
+                     var bool: s, var bool: co) =
+          let { var bool: xy = x xor y } in 
+          s = (xy xor ci) /\ co = ((x /\ y) \/ (ci /\ xy));
+\end{litcode}
+\caption{Code for building binary addition networks
+(\texttt{binarysum.mzn}).\label{ex:binarysum}}
+\end{figure}
+
+We can implement \texttt{bool\_sum\_eq} using binary adder networks
+using the code shown in \autoref{ex:bboolsum}.
+The predicate \texttt{binary\_sum} 
+defined in \autoref{ex:binarysum}
+creates a binary representation
+of the sum of $x$ by splitting the list into two,
+summing up each half to create a binary representation
+and then summing these two binary numbers using \texttt{binary\_add}.
+If the list $x$ is odd the last bit is saved to use as a carry in
+to the binary addition.
+
+\pjs{Add a picture of an adding network}
+
+\begin{figure}
+\insertlitcode{uboolsum}
+\begin{litcode}{uboolsum}{mzn}
+% the sum of booleans x = s
+predicate bool_sum_eq(array[int] of var bool:x, int:s) =
+     let { int: c = length(x) } in
+     if s < 0 then false 
+     elseif s == 0 then forall(i in 1..c)(x[i] == false)
+     elseif s < c then
+          let { % cp = nearest power of 2 >= c
+                int: cp = pow(2,ceil(log2(int2float(c)))),
+                array[1..cp] of var bool:y, % y is padded version of x
+                array[1..cp] of var bool:z  } in
+          forall(i in 1..c)(y[i] == x[i]) /\
+          forall(i in c+1..cp)(y[i] == false) /\
+          oesort(y, z) /\ z[s] == true /\ z[s+1] == false
+     elseif s == c then forall(i in 1..c)(x[i] == true)
+     else false endif;
+
+include "oesort.mzn";
+\end{litcode}
+\caption{Cardinality constraints by sorting networks
+(\texttt{uboolsum.mzn}).\label{ex:uboolsum}}
+\end{figure}
+
+\begin{figure}
+\insertlitcode{oesort}
+\begin{litcode}{oesort}{mzn}
+%% odd-even sort
+%% y is the sorted version of x, all trues before falses
+predicate oesort(array[int] of var bool:x, array[int] of var bool:y)=
+  let { int: c = card(index_set(x)) } in
+  if c == 1 then x[1] == y[1] 
+  elseif c == 2 then comparator(x[1],x[2],y[1],y[2])
+  else
+    let { 
+      array[1..c div 2] of var bool:xf = [x[i] | i in 1..c div 2],
+      array[1..c div 2] of var bool:xl = [x[i] | i in c div 2 +1..c],
+      array[1..c div 2] of var bool:tf,
+      array[1..c div 2] of var bool:tl } in
+    oesort(xf,tf) /\ oesort(xl,tl) /\ oemerge(tf ++ tl, y)
+  endif;
+
+%% odd-even merge
+%% y is the sorted version of x, all trues before falses
+%% assumes first half of x is sorted, and second half of x
+predicate oemerge(array[int] of var bool:x, array[int] of var bool:y)=
+  let { int: c = card(index_set(x)) } in
+  if c == 1 then x[1] == y[1] 
+  elseif c == 2 then comparator(x[1],x[2],y[1],y[2])
+  else
+    let { array[1..c div 2] of var bool:xo = 
+            [ x[i] | i in 1..c where i mod 2 == 1],
+          array[1..c div 2] of var bool:xe = 
+            [ x[i] | i in 1..c where i mod 2 == 0],
+          array[1..c div 2] of var bool:to,
+          array[1..c div 2] of var bool:te } in
+      oemerge(xo,to) /\ oemerge(xe,te) /\
+      y[1] = to[1] /\
+      forall(i in 1..c div 2 -1)(
+        comparator(te[i],to[i+1],y[2*i],y[2*i+1])) /\ 
+      y[c] = te[c div 2]
+  endif));
+ 
+% comparator o1 = max(i1,i2), o2 = min(i1,i2)
+predicate comparator(var bool:i1,var bool:i2,var bool:o1,var bool:o2)=
+          (o1 = (i1 \/ i2)) /\ (o2 = (i1 /\ i2));
+\end{litcode}
+\caption{Odd-even merge sorting networks
+(\texttt{oesort.mzn}).\label{ex:oesort}}
+\end{figure}
+
+We can implement \texttt{bool\_sum\_eq} using unary sorting networks
+using the code shown in \autoref{ex:uboolsum}.
+The cardinality constraint is defined by expanding the input
+$x$ to have length a power of 2, and sorting the resulting bits
+using an odd-even merge sorting network. 
+The odd-even merge sorter works shown in \autoref{ex:oesort}
+recursively by splitting
+the input list in 2, sorting each list and merging the two
+sorted lists.  
+
+\pjs{Add much more stuff on sorting networks}
+
+
+
+\pjs{Add a picture of an adding network}
+
+\begin{figure}
+\insertlitcode{bddsum}
+\begin{litcode}{bddsum}{mzn}
+% the sum of booleans x = s
+predicate bool_sum_eq(array[int] of var bool:x, int:s) =
+     let { int: c = length(x),
+           array[1..c] of var bool: y = [x[i] | i in index_set(x)] 
+     } in
+     rec_bool_sum_eq(y, 1, s);
+
+predicate rec_bool_sum_eq(array[int] of var bool:x, int: f, int:s) =
+     let { int: c = length(x) } in
+     if s < 0 then false 
+     elseif s == 0 then
+          forall(i in f..c)(x[i] == false)
+     elseif s < c - f + 1 then
+          (x[f] == true /\ rec_bool_sum_eq(x,f+1,s-1)) \/
+          (x[f] == false /\ rec_bool_sum_eq(x,f+1,s))
+     elseif s == c - f + 1 then
+          forall(i in f..c)(x[i] == true)
+     else false endif;
+\end{litcode}
+\caption{Cardinality constraints by binary decision diagrams
+(\texttt{bddsum.mzn}).\label{ex:bddsum}}
+\end{figure}
+
+We can implement \texttt{bool\_sum\_eq} using binary decision diagrams
+using the code shown in \autoref{ex:bddsum}.
+The cardinality constraint is broken into two cases:
+either the first element $x[1]$ is $\mathit{true}$, 
+and the sum of the remaining bits
+is $s-1$, or $x[1]$ is $\mathit{false}$ and the sum of the remaining bits
+is $s$. For efficiency this relies on common subexpression elimination
+to avoid creating many equivalent constraints.
+
+
+\pjs{Add a picture of a bdd network network}
+
+

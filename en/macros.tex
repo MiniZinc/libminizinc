@@ -1,0 +1,113 @@
+\documentclass[a4paper,twoside,12pt,openright]{article}
+\usepackage{etex}
+\usepackage{xspace}
+\usepackage{ifthen}
+\usepackage{a4wide}
+\usepackage[charter]{mathdesign}
+\usepackage[T1]{fontenc}
+\usepackage[scaled=0.88]{beramono}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{color}
+\usepackage{pifont}
+\usepackage[dvips]{graphicx}
+\usepackage{pstricks}
+\usepackage{pstricks-add}
+\usepackage{pst-node}
+\usepackage{picinpar}
+\usepackage{subfigure}
+\usepackage{calc}
+\usepackage{colortbl}
+\usepackage[hypcap]{caption}
+
+%\definecolor{UglyGreen}{rgb}{0,1,0}
+\definecolor{UglyGreen}{rgb}{0.418,0.556,0.137}
+%\definecolor{UglyBlue}{rgb}{0,0,1}
+\definecolor{UglyBlue}{rgb}{0.273,0.508,0.703}
+%\definecolor{UglyRed}{rgb}{0.2,0,0}
+\definecolor{UglyRed}{rgb}{0.801,0.359,0.359}
+%\definecolor{UglyOrange}{rgb}{0.2,0,0}
+\definecolor{UglyOrange}{rgb}{0.930,0.906,0.664}
+
+
+\usepackage[ps2pdf,%
+            breaklinks=false,
+            hyperindex=true,
+            bookmarksnumbered=true,
+            colorlinks=true,
+            linkcolor=UglyBlue,
+            pagecolor=UglyBlue,
+            citecolor=UglyBlue,
+            filecolor=UglyGreen,
+            urlcolor=UglyGreen,
+            pdftitle={A MiniZinc Tutorial},
+            pdfauthor={Kim Marriott and Peter J. Stuckey},
+            pdfsubject={},
+            pdfkeywords={},
+            pdfcreator={},
+            pdfproducer={},
+            pdfdisplaydoctitle=true
+            ]{hyperref}
+
+% Redefine math tt alphabet to use beromono
+\SetMathAlphabet{\mathtt}{normal}{\encodingdefault}{\ttdefault}{m}{n}%
+\SetMathAlphabet{\mathtt}{bold}{\encodingdefault}{\ttdefault}{b}{n}%
+
+
+%% Absolute URL
+\newcommand{\AURL}[2]{\href{#1}{#2}}
+%% Relative URL
+\newcommand{\DOWNLOAD}[2]{\href{http://www.minizinc.org/downloads/tutorial-examples-latest/#1}{#2}}
+
+\newcommand{\CppInline}[1]{\texttt{#1}}
+\newcommand{\litanon}{$\cdots$}
+\newcommand{\litkw}[1]{\textbf{#1}}
+\newcommand{\litkwt}[1]{\CppInline{\textbf{#1}}}
+\newcommand{\litc}[1]{\textit{#1}}
+\newcommand{\lits}{\mbox{ }}
+\newcommand{\litstr}[1]{\textcolor{UglyGreen}{#1}}
+\newcommand{\litlabel}[2]{\hypertarget{#1}{\textcolor{UglyRed}{\normalfont\bfseries\textsc{#2} $\equiv$}}}
+\newcommand{\litfile}[3]{\hypertarget{#1}{\textcolor{UglyRed}{\normalfont\bfseries\textsc{#2}
+      $\equiv$}}\hfill% 
+\textcolor{UglyBlue}{\normalfont\bfseries\textsc{%
+\DOWNLOAD{#3}{[download]}}}}
+\newcommand{\litref}[2]{\hyperlink{#1}{$\blacktriangleright$\,\normalfont\bfseries\textsc{#2}}}
+
+\newcommand{\fcbox}[2]{%
+\psframebox[cornersize=absolute,linearc=0.05,linecolor=#1,linewidth=0.01pt,opacity=0.20,fillcolor=#1,fillstyle=solid]{#2}}
+
+\newcommand{\litcmdblock}[1]{%
+\begin{center}\fcbox{UglyRed}{\begin{minipage}{0.95\textwidth}\ttfamily #1%
+\end{minipage}}\end{center}}
+
+\newcommand{\smalllitcmdblock}[1]{%
+\begin{center}\fcbox{UglyRed}{\begin{minipage}{0.9\textwidth}\ttfamily #1%
+\end{minipage}}\end{center}}
+
+\newcommand{\litcodeblock}[1]{%
+\begin{center}\fcbox{UglyOrange}{\begin{minipage}{0.95\textwidth}\ttfamily #1%
+\end{minipage}}\end{center}}
+
+\newcommand{\smalllitcodeblock}[1]{%
+\begin{center}\fcbox{UglyOrange}{\begin{minipage}{0.9\textwidth}\ttfamily #1%
+\end{minipage}}\end{center}}
+
+\newcommand{\litcodepage}[2]{%
+\fcbox{UglyOrange}{\begin{minipage}{#2}\ttfamily #1\end{minipage}}}
+
+\newcommand{\otherref}[2]{\autoref{#1}~(#2)}
+
+
+\newcommand{\fcframe}[2]{%
+\psframe[cornersize=absolute,linearc=0.05,linecolor=white,linewidth=0.0,fillcolor=white,fillstyle=solid]#2%
+\psframe[cornersize=absolute,linearc=0.05,linecolor=#1,linewidth=0.01pt,opacity=0.50,fillcolor=#1,fillstyle=solid]#2%
+}
+\newcommand{\fcbwframe}{%
+\psframe[cornersize=absolute,linearc=0.05,linecolor=black,linewidth=0.25pt,fillcolor=white,fillstyle=solid]}
+\newcommand{\fccircle}[1]{%
+\pscircle[linecolor=#1,linewidth=0.01pt,opacity=0.50,fillcolor=#1,fillstyle=solid]}
+
+
+%%%
+%%% Chapter and part headings
+%%%

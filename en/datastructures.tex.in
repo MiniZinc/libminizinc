@@ -1,0 +1,725 @@
+\section{Data Structures}
+
+Zinc supports variables of arbitrarily nested complex types.  This often
+allows for more high-level and concise models compared to e.g. MiniZinc.
+This section gives an overview of the available data types.
+
+\subsection{Tuples}
+
+
+Tuples can be 
+used to represent combinatorial objects that have multiple dimensions,
+for instance pairs of integers. 
+We access the components of a tuple using an expression of the form
+\qquote{tuple}\texttt{.}\qquote{field number}\index{tuple!access} 
+where \qquote{field number} is an explicit integer (that is not an integer
+variable) between 1 and the arity of the tuple. 
+Langford's problem requires us to order $k$ copies of the integers 1 to $n$
+such that there is 1 digit between consecutive 1s, two digits between
+consecutive 2s, etc. The digits in the model are represented by
+tuples $(i,j)$ represents the $j^{th}$ copy of digit $i$.
+
+\begin{figure}
+\insertlitcode{langford}
+\begin{litcode}{langford}{zinc}
+include "globals.zinc";
+
+int: k = 2;	% sets 1..k
+int: n = 3;	% numbers 1..n
+
+% Num[p]: (number, set) pair at position p in the sought sequence
+array[1..n*k] of tuple(var 1..n, var 1..k): Num;	
+constraint alldifferent(Num);
+
+constraint forall(i in 1..n*k)(
+    % except for the last copy of each digit
+    % distance to the next identical digit is the value of the digit + 1
+    % and the copy of the digit is one more than here
+	       Num[i].2 != k -> (Num[i + Num[i].1+1].1 == Num[i].1 /\
+                                 Num[i + Num[i].1+1].2 == Num[i].2 + 1)     
+	   );
+
+solve satisfy;
+
+output [ "langford: ", show(n), " numbers; ", show(k),
+         " sets\nsolution:" ] ++ 
+         [ " " ++ show(Num[p].1) | p in 1..n*k ] ++ ["\n"];
+\end{litcode}
+\caption{A model for Langford's number problem (CSPLib problem 24)
+  (\texttt{langford.zinc}).\label{ex:langford}}
+\end{figure}
+
+Tuples can be used to represent combinatorial objects with multiple dimensions
+such as a point in two- or three-dimensional space. The components of a tuple
+can be of different type, e.g. a tuple can have a float and an integer field.
+By encoding an object as a tuple instead of separate variables makes it easier
+to ensure consistency between the different components. For instance, assume
+we are looking for a point in two-dimensional space that is to be an element of
+a set of possible candidate points, then we can encode this as follows.
+\begin{code}
+tuple(var int, var int): point;
+
+set of tuple(int, int): points;
+
+constraint point in points;
+\end{code}
+
+In absence of tuples one would have to use a table constraint to encode this.
+The model in Figure~\ref{ex:langford} is another example of how tuples can
+make models more succinct. In this example, we have an all different constraint
+over an array of tuples (\texttt{Num}). In absence of tuples we would have to
+declare to integer arrays (\texttt{Num\_1} and \texttt{Num\_2}) and decompose
+the all different constraint:
+\begin{code}
+array[1..n*k] of var 1..n: Num_1;
+array[1..n*k] of var 1..k: Num_2;
+
+constraint forall(i, j in 1..n*k where i < j)
+    (Num_1[i] != Num_1[j] \/ Num_2[i] != Num_2[j]);
+\end{code}
+
+
+\defblock{Tuples}{
+A tuple\index{tuple|textbf} 
+type has the form:
+\litblock{
+\texttt{\litkw{tuple}} \texttt{(} \qquote{type-expr}, \ldots,  
+\qquote{type-expr} \texttt{)}
+}
+\ttindexdef{tuple}
+where each \qquote{type-expr} 
+can be different.  To create tuple objects we use the
+notation 
+\litblock{
+\texttt{(} \qquote{expr}, \ldots,  \qquote{expr} \texttt{)}
+}
+We can access individual fields of a tuple using the notation
+\qquote{tuple}\texttt{.}$n$\index{tuple!index|textbf} 
+where $n$ is a integer constant from 
+one to the arity of the tuple.
+}
+
+\subsection{Type Synonyms}
+
+A type synonym\index{type!synonym} is simply a name for a complex type expression.
+For example
+\begin{code}
+type MyTuple = tuple( int, float, var int, string );
+\end{code}
+defines \texttt{MyTuple} as the type defined on the right hand
+side.  We can use \texttt{MyTuple} anywhere we put a
+type expression rather than writing the whole
+complex type each time.
+The one exception is that 
+type synonyms cannot be modified by adding \texttt{var}
+in front.
+
+\subsection{Records}
+
+
+\begin{figure}
+\insertlitcode{meal.zinc:types}
+\caption{Type definitions for meal planning using records
+(\texttt{meal.zinc})\label{ex:meal:types}}
+\end{figure}
+
+\begin{figure}
+\insertlitcode{meal.zinc}
+\begin{litcode}{meal.zinc}{}
+% Planning a balanced meal
+\begin{litblock}{types}
+enum Name;
+
+type MealItem =
+    record(Name: name, int: energy, int: protein,
+           int: salt,  int: fat,    int: cost);
+
+set of int: energy_range =
+    min(i in meal_items)(i.energy)  .. max(i in meal_items)(i.energy);
+set of int: protein_range =
+    min(i in meal_items)(i.protein) .. max(i in meal_items)(i.protein);
+set of int: salt_range =
+    min(i in meal_items)(i.salt)    .. max(i in meal_items)(i.salt);
+set of int: fat_range =
+    min(i in meal_items)(i.fat)     .. max(i in meal_items)(i.fat);
+set of int: cost_range =
+    min(i in meal_items)(i.cost)    .. max(i in meal_items)(i.cost);
+
+type VarMealItem =
+    record(var Name: name, var energy_range: energy,
+           var protein_range: protein, var salt_range: salt,
+           var fat_range: fat, var cost_range: cost);
+\end{litblock}
+int: min_energy;
+int: min_protein;
+int: max_salt;
+int: max_fat;
+
+set of Name: desserts;
+set of Name: mains;
+set of Name: sides;
+
+set of MealItem: meal_items;
+
+VarMealItem: main;
+VarMealItem: side;
+VarMealItem: dessert;
+
+var int: budget;
+
+constraint main.name in mains /\ main in meal_items;
+constraint side.name in sides /\ side in meal_items;
+constraint dessert.name in desserts /\ dessert in meal_items;
+
+constraint main.energy + side.energy + dessert.energy >= min_energy;
+constraint main.protein+side.protein+dessert.protein >= min_protein;
+constraint main.salt + side.salt + dessert.salt <= max_salt;
+constraint main.fat + side.fat + dessert.fat <= max_fat;
+constraint budget = main.cost + side.cost + dessert.cost;
+
+solve minimize budget; 
+
+output ["main = ", show(main.name), ", side = ", show(side.name),
+  ", dessert = ",show(dessert.name), ", cost = ",show(budget), "\n"];
+\end{litcode}
+\caption{A model for meal planning using records
+  (\texttt{meal.zinc}).\label{ex:mealz}}
+\end{figure}
+
+\begin{figure}
+\insertlitcode{meal-zinc.dzn}
+\begin{litcode}{meal-zinc.dzn}{}
+enum Name = { icecream, banana, chocolate_cake, lasagna, 
+              steak, rice, chips, brocolli, beans };
+
+meal_items = { (icecream,       1200,  50,  10, 120,  400),
+               (banana,          800, 120,   5,  20,  120),
+               (chocolate_cake, 2500, 400,  20, 100,  600),
+               (lasagna,        3000, 200, 100, 250,  450),
+               (steak,          1800, 800,  50, 100, 1200),
+               (rice,           1200,  50,   5,  20,  100),
+               (chips,          2000,  50, 200, 200,  250),
+               (brocolli,        700, 100,  10,  10,  125),
+               (beans,          1900, 250,  60,  90,  150) };
+
+min_energy  = 3300;
+min_protein = 500;
+
+max_salt = 180;
+max_fat  = 320;
+
+desserts = { icecream, banana, chocolate_cake };
+mains    = { lasagna, steak, beans };
+sides    = { rice, chips, brocolli };
+\end{litcode}
+\caption{Data for meal planning (\texttt{meal-zinc.dzn}).\label{ex:mealzd}}
+\end{figure}
+
+Records are similar to tuples, but have named fields, which often makes them
+a more natural encoding than tuples.
+The model in \autoref{ex:mealz} searches for balanced meals.
+Each meal item has a name (encoded as an enum), a kilojoule count,
+protein in grams, salt in milligrams, and fat in grams, as well as cost
+in cents. We define the type \texttt{MealItem} which is a record with fields
+for all the above properties. A balanced meal must contain a main course,
+a dessert, and a side dish. We use a variable of type \texttt{VarMealItem} to
+represent each of these components. 
+Note that we need two type synonyms because of the restriction discussed
+in the previous subsection.
+We require that each of \texttt{main},
+\texttt{side} and \texttt{dessert} is in our database of meal items
+(\texttt{meal\_items}), and that \texttt{main} is a main course, \texttt{dessert}
+is a dessert and \texttt{side} is a side dish.
+The model searches for a minimal cost meal 
+which has a minimum kilojoule count
+\texttt{min\_energy}, a minimum amount of protein
+\texttt{min\_protein}, maximum amount of salt \texttt{max\_salt} and fat
+\texttt{max\_fat}.
+
+
+\defblock{Records}{
+A record\index{record|textbf} 
+type has the form:
+\litblock{
+\texttt{litkw{record}} \texttt{(} \qquote{arg-def}, \ldots,  
+\qquote{arg-def} \texttt{)}
+}\ttindexdef{record}
+where each \qquote{arg-def} defines an identifier (field-name) with a type.
+We can create records using the notation:
+\litblock{
+\texttt{(} \qquote{field-name} \texttt{:} \qquote{expr}, \ldots,
+\qquote{field-name} \texttt{:} \qquote{expr} \texttt{)}
+}
+Where the field-names can be in any order, but all must be included.
+We can also coerce a tuple which has the same types in the same order 
+to a record.
+We can access individual fields of a tuple using the notation
+\qquote{record}\texttt{.}\qquote{field-name}\index{record!field
+  access|texbf} 
+where 
+\qquote{field-name} is one of the field names defined for the record type.
+}
+
+\subsection{Constrained Types}
+
+A unique feature of Zinc is the ability to define new types that involve
+constraints, so that each variable defined over the type automatically
+inherits the additional constraints.
+
+An example of a constrained type\index{type!constrained} 
+is given below:
+\begin{code}
+type floatp = (float: f where f >= 0.0);
+\end{code}
+defining a new type \texttt{floatp} which is non-negative floating
+point numbers. Since type synonyms cannot be modified by
+putting \texttt{var} in front the following is illegal
+\begin{code}
+var floatp: x;
+\end{code}
+but they can be used elsewhere just like types, e.g.
+\begin{code}
+array[1..n]  of floatp: fs = ...
+\end{code}
+
+\begin{figure}
+\insertlitcode{jobshop.zinc}
+\begin{litcode}{jobshop.zinc}{}
+type TASK = (record(var 0..max(d): dr, % duration
+                    var 0..total: s, % start time
+                    var 0..total: e  % end time
+                   ): t where t.e == t.s + t.dr);
+predicate before(TASK: x, TASK: y) = x.e <= y.s;
+predicate nonoverlap(TASK: x, TASK: y) =
+          x `before` y \/ y `before` x;
+predicate ends(TASK: x, var int:et) = x.e <= et;
+
+int: jobs;                                    % no of jobs
+int: tasks;                                   % no of tasks per job
+
+array [1..jobs,1..tasks] of int: d;           % task durations
+int: total = sum(i in 1..jobs, j in 1..tasks)(d[i,j]);
+array [1..jobs,1..tasks] of TASK: t;          % tasks
+var 0..total: end;                            % total end time
+
+constraint %% setup durations
+    forall(i in 1..jobs, j in 1..tasks)(t[i,j].dr = d[i,j]);
+constraint %% ensure the tasks occur in sequence
+    forall(i in 1..jobs) (
+        forall(j in 1..tasks-1)
+            (t[i,j] `before` t[i,j+1]) /\
+        t[i,tasks] `ends` end
+    );
+constraint %% ensure no overlap of tasks
+    forall(j in 1..tasks) (
+        forall(i,k in 1..jobs where i < k) (
+            t[i,j] `nonoverlap` t[k,j]
+        )
+    );
+
+solve minimize end;
+
+output ["end = ", show(end), "\n"] ++
+       [ show(t[i,j].s) ++ " " ++ 
+         if j == tasks then "\n" else "" endif |
+         i in 1..jobs, j in 1..tasks ];
+\end{litcode}
+\caption{A model for jobshops scheduling using a constrained
+  type to define tasks
+  (\texttt{jobshop.zinc}).\label{ex:jobshopz}}
+\end{figure}
+
+An example of usage of a complex constrained 
+type is shown in \autoref{ex:jobshopz}.
+A new type \texttt{TASK} is defined which is a constrained record type
+holding duration, start and end times for a task.  The
+end time is constrained to be the start time plus 
+duration and all components are constrained to be non-negative.
+We next define some predicates over tasks: one task is before another,
+two tasks do not overlap, and a task ends before some time.
+The remainder of the jobshop model is the 
+effectively same as the original one shown
+in \autoref{ex:jobshop}. Notice the use of back quotes
+to treat the new predicates as infix operators.
+
+\defblock{Type synonyms and Constrained type}{
+A type synonym\index{type!synonym|textbf} 
+gives a name to a type expression, 
+it can be used anywhere a type can be used except it cannot appear after
+\texttt{var}. It is defined by an item of the form:
+\litblock{
+\texttt{\litkw{type}} \qquote{type-name} \texttt{=} \qquote{type-expr} \texttt{;}
+}\ttindexdef{type}
+
+A constrained type\index{type!constrained|textbf} 
+expression has the form
+\litblock{
+\texttt{(} \qquote{type-expr} \texttt{:} \qquote{exemplar-name} \texttt{where}
+\qquote{bool-exp} \texttt{)}
+}
+where \qquote{exemplar-name} is an identifier, which is used in the Boolean
+expression \qquote{bool-expr} to define the constraints on the type.
+The scope of the \qquote{exemplar-name} is only the Boolean expression.
+We often use type synonyms in conjunction with constrained types.
+}
+
+
+
+\subsection{Complex Sets}
+
+\begin{figure}
+\insertlitcode{sonet}
+\begin{litcode}{sonet}{zinc}
+int: nb_nodes; % number of nodes
+int: nb_rings; % number of rings
+int: capacity; % maximum number of nodes per ring
+
+    % Demand is a set of (unordered) node pairs
+set of tuple(1 .. nb_nodes, 1 .. nb_nodes): Demand;
+
+var set of tuple(1 .. nb_rings, 1 .. nb_nodes): network;
+
+constraint
+        % Rings have a maximum to the number of nodes they can take
+    forall(ring in 1 .. nb_rings)
+        ( sum(node in 1 .. nb_nodes)
+             ( bool2int((ring,node) in network) ) <= capacity )
+    /\
+        % Pairs of nodes in demand must occur on a common ring
+    forall(np in Demand)
+        ( let { var 1 .. nb_rings: ring } in
+            (ring, np.1) in network /\
+            (ring, np.2) in network );
+
+solve minimize card(network);
+
+output [
+	"Network of size " ++ show(card(network)) ++ ":\n" ++
+        show(network), "\n"
+];
+\end{litcode}
+\caption{A model for the SONET problem
+  (\texttt{sonet.zinc}).\label{ex:sonet}}
+\end{figure}
+
+\begin{figure}
+\insertlitcode{sonet.dzn}
+\begin{litcode}{sonet.dzn}{}
+nb_nodes = 5;
+nb_rings = 2;
+capacity = 4;
+Demand = { (1,3), (3,5), (3,2), (2,4), (4,1) };
+\end{litcode}
+\caption{Data for the SONET problem
+  (\texttt{sonet.dzn}).\label{ex:sonetd}}
+\end{figure}
+
+Zinc allows set\index{variable!set} 
+variables of arbitrary (finite) element type. An example
+use is the model for the SONET problem %\cite{} 
+given
+in \autoref{ex:sonet}. In this problem, we have a set of nodes and
+a set of communication demands between nodes. Nodes are installed on
+one or more SONET rings, and every pair of nodes that needs to communicate
+needs to be on a common ring. Rings have a maximum number of nodes they
+can contain (\texttt{capacity}). The (maximum) number of rings is also given
+(\texttt{nb\_rings}). The problem is to find an assignment of nodes to rings
+that satisfies the communication and capacity constraints, and that minimises
+the total number of nodes over all rings. We represent such an assignment by
+a set variable whose element type are pairs (tuples) of ring number and node
+number, i.e. if ($r$, $n$) is in the set, then node $n$ is on ring $r$.
+
+\subsection{Complex Arrays}
+
+Arrays\index{array!complex} in Zinc can be indexed by arbitrary finite types
+and contain arbitrary types. 
+
+\subsubsection{Arrays of Complex Types}
+
+Arrays can be of arbitrary complex types.  There is one proviso.
+We cannot use an array with a variable index unless the type
+of array can be a variable type.
+
+\begin{code}
+array[1..4] of string: s = ["a", "b", "c", "d"];
+var 1..4: i;
+constraint s[i] = "b";
+\end{code}
+results in the error message
+\begin{code}
+array.zinc:3:
+  type-inst error: non-fixed array index cannot be used to access an 
+  array with a non-varifiable element type-inst `string'
+\end{code}
+
+Sometimes it is very convenient to use arrays of complex types.
+Consider a model for laying out tables in a document.
+Each cell in the table has a number of configurations
+depending on the height: on one line it
+requires $n_1$ pixels width, 
+with two lines it requires $n_2$ pixels width, etc.
+The aim of table layout is to layout the table with the minimum number of
+lines assuming a fixed total width of the table.
+
+\begin{figure}
+\insertlitcode{layout}
+\begin{litcode}{layout}{zinc}
+int: pixelwidth; % pixel width for layout
+int: maxlines;    % maximum no of lines
+
+int: rows; % number of rows
+int: cols; % number of cols
+set of int: ROWS = 1..rows;
+set of int: COLS = 1..cols;
+
+% for each table cell the pixel width required for given lines
+array[ROWS,COLS] of array[int] of int: sizes; 
+
+array[ROWS,COLS] of var 0..pixelwidth: cellwidth; % width of cell
+array[ROWS,COLS] of var 1..maxlines: cellheight;  % height of cell
+
+array[ROWS] of var 0..maxlines: rowheight;        % height of row
+array[COLS] of var 0..pixelwidth: colwidth;       % width of col
+
+constraint forall(r in ROWS, c in COLS)(
+	          cellheight[r,c] <= length(sizes[r,c]));
+
+constraint pixelwidth >= sum(c in COLS)(colwidth[c]);
+
+constraint forall(r in ROWS, c in COLS)(
+		  rowheight[r] >= cellheight[r,c] 
+	       /\ colwidth[c] >= cellwidth[r,c]
+	       /\ cellwidth[r,c] == sizes[r,c][cellheight[r,c]]); 
+
+solve minimize sum(r in ROWS)(rowheight[r]);	
+
+output ["("++show(cellheight[r,c])++","++ show(cellwidth[r,c])++")" 
+    ++ if c == cols then "\n" else " " endif | r in ROWS, c in COLS];
+\end{litcode}
+\caption{A model for table layout using arrays of arrays
+  (\texttt{layout.zinc}).\label{ex:layout}}
+\end{figure}
+
+A natural model for this is to define a two dimensional array
+of configurations, each of which is an array.\index{array!of arrays}
+The \texttt{sizes} data 
+in \autoref{ex:layout} captures this complex arrays. Note that since
+we are not allowed to have \emph{variable} arrays whenever we use
+\texttt{sizes} the array indices must be given.  But the configuration
+arrays are arrays of integers, so once we have such an array we can use a
+variable index, which is exactly what happens in the last line of the third
+constraint. 
+
+\begin{figure}
+\insertlitcode{layout.dzn}
+\begin{litcode}{layout.dzn}{}
+pixelwidth = 100;
+maxlines = 9;
+
+rows = 3;
+cols = 3;
+
+sizes = [| [60,35,24],    [70,43,30,20], [30,20,15]
+         | [70,43,30,20], [30,20,15],    [15]  
+         | [60,35,24],    [70,43,30,20], [30,18,12] |]; 	      
+\end{litcode}
+\caption{A small data set for table layout
+  (\texttt{layout.dzn}).\label{ex:layoutd}}
+\end{figure}
+
+We can compile the layout model with
+\begin{cmd}
+$ zinc layout.zinc
+\end{cmd}
+and run it with the data shown in Figure~\ref{ex:layoutd} using
+\begin{cmd}
+$ ./layout layout.dzn
+\end{cmd}
+obtaining the output
+\begin{cmd}
+(2,35) (2,43) (2,20)
+(3,30) (1,30) (1,15)
+(2,35) (2,43) (2,18)
+\end{cmd}
+
+\subsubsection{Arrays with Complex Indices}
+
+If we restrict ourselves to multi-dimensional arrays
+indexed by integers we may have to define many useless variables.
+
+\begin{figure}
+\insertlitcode{golomb}
+\begin{litcode}{golomb}{mzn}
+include "alldifferent.mzn";
+
+int: n; % number of marks on ruler
+int: m; % max length of ruler
+
+array[1..n] of var 0..m: mark;
+array[1..n,1..n] of var 0..m: diffs;
+
+constraint mark[1] = 0;
+constraint forall ( i in 1..n-1 ) ( mark[i] < mark[i+1] );
+constraint forall (i,j in 1..n where i > j)          % (diff)
+                  (diffs[i,j] = mark[i] - mark[j]);  % (diff)
+constraint alldifferent([ diffs[i,j] | i,j in 1..n where i > j]);
+constraint diffs[2,1] < diffs[n,n-1];  % symmetry break
+
+solve satisfy;
+
+output ["marks = ",show(mark),"\n"];
+\end{litcode}
+\caption{A model for Golomb rulers with unconstrained variables
+  (\texttt{golomb.mzn}).\label{ex:unc}}
+\end{figure}
+
+Consider the model for Golomb rulers shown in \autoref{ex:unc}.
+A Golomb ruler is one where the 
+absolute differences between any two marks on
+the ruler are different.
+It creates a two dimensional array of difference variables, but 
+only uses those of the form \texttt{diff[i,j]} where $i > j$.
+\ifthenelse {\boolean{Rabbit}}{}
+{Running the model with data file \texttt{golomb1.dzn}
+containing \texttt{n = 4; m = 6;} by
+\begin{cmd}
+$ zinc golomb.mzn
+$ ./golomb golomb.dzn
+\end{cmd}
+results in output
+\begin{cmd}
+marks = [ 1:0, 2:2, 3:5, 4:6 ]
+\end{cmd}
+and everything seems fine with the model.
+But if we ask for all solutions using
+\begin{cmd}
+$ ./golomb --solutions all golomb.dzn
+\end{cmd} %$
+we seem to get stuck computing answers.
+}
+
+\begin{figure}
+\insertlitcode{golomb.zinc}
+\begin{litcode}{golomb.zinc}{}
+include "alldifferent.mzn";
+
+int: n; % number of marks on ruler
+int: m; % max length of ruler
+
+set of tuple(1..n,1..n): pairs = {(i,j) | i,j in 1..n where i > j};
+
+array[1..n] of var 0..m: mark;
+array[pairs] of var 0..m: diffs;
+
+constraint mark[1] = 0;
+constraint forall ( i in 1..n-1 ) ( mark[i] < mark[i+1] );
+constraint forall (t in pairs)                       
+                  (diffs[t] = mark[t.1] - mark[t.2]);
+constraint alldifferent([ diffs[t] | t in pairs]);
+constraint diffs[2,1] < diffs[n,n-1];  % symmetry break
+
+solve satisfy;
+
+output ["marks = ",show(mark),"\n"];
+\end{litcode}
+\caption{A model for Golomb rulers without unconstrained variables
+  (\texttt{golomb.zinc}).\label{ex:unc_zinc}}
+\end{figure}
+
+A better solution is to avoid creating unused variables altogether. In
+\autoref{ex:unc_zinc}, we have changed the index set of
+array\index{array!index set}
+\texttt{diffs} to be exactly those tuples we are interested in. The index
+set is defined to be the set parameter \texttt{pairs} whose value is
+computed by a set comprehension.
+
+\ignore{
+\begin{fminipage}{Complex  Arrays}
+Arrays in Zinc can map from any finite index type to any element type.
+In Zinc multidimensional arrays are in fact arrays indexed by a tuple type.
+So the expression \texttt{a[1,2]} and \texttt{a[(1,2)]} have identical
+meaning.
+
+On proviso on Zinc arrays is that if they are used with variables in 
+the index positions, then the element type must be possible to make into
+a variable.
+\end{fminipage}
+}
+\ifthenelse {\boolean{Rabbit}}{}
+{
+\begin{figure}
+\insertlitcode{wedding.zinc}
+\begin{litcode}{wedding.zinc}{}
+enum Guests = { bride, groom, bestman, bridesmaid, bob, carol, 
+                ted, alice, ron, rona, ed, clara };
+
+set of int: Seats = 1..12;
+
+set of tuple(Guests,Guests): Hatreds = { (groom,clara), 
+             (carol,bestman), (ed,ted), (bride,alice), (ted,ron) };
+
+set of Guests: Males =   { groom, bestman, bob, ted, ron,ed };
+set of Guests: Females = { bride,bridesmaid,carol,alice,rona,clara }; 
+
+array[Guests] of var Seats: pos; % seat of guest
+
+include "alldifferent.mzn";
+
+constraint alldifferent([ pos[g] | g in Guests ]);
+
+constraint forall(g in Males)( pos[g] mod 2 == 1 );
+constraint forall(g in Females)( pos[g] mod 2 == 0 );
+
+constraint    pos[ed] != 1 /\ pos[ed] != 6 
+           /\ pos[ed] != 7 /\ pos[ed] != 12;
+constraint abs(pos[bride] - pos[groom]) <= 1 /\ 
+	   (pos[bride] <= 6 <-> pos[groom] <= 6);
+
+solve maximize sum(h in Hatreds)(
+          let {  var Seats: p1 = pos[h.1],
+                 var Seats: p2 = pos[h.2],
+                 var 0..1: same = bool2int(p1 <= 6 <-> p2 <= 6) } in   
+	  same * abs(p1 - p2) + 
+	  (1-same) * (abs(13 - p1 - p2) + 1));
+
+
+output [ show(g)++" " | s in Seats, g in Guests where fix(pos[g]) == s]
+       ++ ["\n"]; 
+\end{litcode}
+\caption{A model arranging seats at a wedding
+  (\texttt{wedding.zinc}).\label{ex:wedding3}}
+\end{figure}
+
+A more complex example of the use of arrays with complex indices is
+the program in Figure~\ref{ex:wedding3} 
+which arranges seats at the wedding table.
+The table has 12 numbered seats in order around the table, 6 on each side.
+Males must sit in odd numbered seats, and females in even. 
+Ed cannot sit at the end of the table because of a phobia, 
+and the bride and groom must
+sit next to each other. The aim is to maximize the distance between known
+hatreds. The distance between seats is the difference in seat number
+if on the same side, otherwise its the distance to the opposite seat
++ 1.  
+
+Running
+\begin{cmd}
+$ zinc wedding.zinc
+$ ./wedding}
+\end{cmd}
+Results in the output
+\begin{cmd}
+ted bride groom rona bob carol ron alice ed bridesmaid bestman clara
+\end{cmd}
+
+The resulting table placement is illustrated in Figure~\ref{fig:wedding}
+where the lines indicate hatreds. The total distance is 22.
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=10cm]{figures/wedding}
+\end{center}
+\caption{Seating arrangement at the wedding table}
+\label{fig:wedding}
+\end{figure}
+}

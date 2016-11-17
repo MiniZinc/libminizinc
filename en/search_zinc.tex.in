@@ -1,0 +1,66 @@
+\subsection{User-defined Search}
+
+Zinc also supports user-defined backtrack tree search,
+in the form of the \texttt{tree\_search}\ttindexdef{tree\_search}
+annotation framework:
+\begin{code}
+solve :: tree_search(VARIABLES, SELECTOR, BRANCHER) ...
+\end{code}
+
+\medskip
+
+\texttt{VARIABLES} is an array of variables.
+\texttt{SELECTOR} determines the variable selection strategy:
+it is a Zinc function that takes an array of the same type
+as \texttt{VARIABLES} and returns a variable from it to branch on.
+The implementation ensures that no fixed variables are in
+the variables passed to \texttt{SELECTOR}.
+\texttt{BRANCHER} determines the branching decisions:
+it is a Zinc function\index{function} that takes a variable and returns
+corresponding decisions in order as an array of constraints.
+
+
+Let us look at a user-defined alternative for the search
+in the $n$-queens model in \autoref{ex:queens-ann}.
+For each queen, we want to try positions
+close to the centre of the chess board first.
+To do this, we can add the following to the model:
+\begin{code}
+search_ann = tree_search(q, min_domsize, middle_out_assign);
+
+function array[int] of var bool: middle_out_assign(var int: x) =
+    [ x = d | d in middle_out ];
+
+array[1..n] of 1..n: middle_out =
+    [ if i mod 2 = 0 then (n-i) div 2 + 1 else (n+i+1) div 2 endif
+      | i in 1..n ];
+\end{code}
+The auxiliary array \texttt{middle\_out} is a list of values ordered
+from the middle of the board outwards.
+The function \texttt{middle\_out\_assign} uses it to return
+a corresponding ordered list of branching constraints,
+which are just simple variable assignments in this case.
+The function \texttt{min\_domsize} corresponds to
+\texttt{first\_fail} of MiniZinc.  Its definition is
+\begin{code}
+function var int: min_domsize(array[int] of var int: x) =
+    let { tuple(int,int): s =
+              min([ (dom_size(x[i]),i) | i in index_set(x) ]) } in
+    x[s.2];
+\end{code}
+It works by first constructing a list of domain size--variable pairs.
+Taking the least element of this list then returns a pair with least
+domain size, more specifically the left-most such pair.
+Of that pair, the variable component is returned.
+
+\medskip
+
+It is interesting to note that the MiniZinc search constructs,
+e.g.~\texttt{int\_search}\ttindex{int\_search},
+are actually mapped to the
+\texttt{tree\_search} framework, instead of being implemented separately.
+
+\medskip
+
+The predefined search functions for the \texttt{tree\_search} framework
+are in the library file \texttt{lib/zinc/tree\_search.zinc'}

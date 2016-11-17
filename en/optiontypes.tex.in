@@ -1,0 +1,149 @@
+\newpage
+\section{Option Types}
+\index{option types}
+\label{sec:optiontypes}
+
+Option types are a powerful abstraction that allow concise modelling. An
+option type decision variable represents a decision that has another
+possibility $\top$, represented in \ZincOrMiniZinc as \texttt{<>}
+indicating the variable is \emph{absent}.
+Option type decisions are useful for modelling problems where a decision is
+not meaningful unless other decisions are made first.
+
+\subsection{Declaring and Using Option Types}
+
+
+\defblock{Option type Variables}{
+An option type variable\index{variable!option type|textbf} is declared as:
+\begin{quote}
+  [\texttt{\litkw{var}}] \texttt{\litkw{opt}} \qquote{\emph{type}} \texttt{:} \qquote{\emph{var-name}} 
+\end{quote}
+where \emph{type} is one of \texttt{int}, \texttt{float} or \texttt{bool} or
+a fixed range expression.
+Option type variables can be parameters but this is rarely useful.
+
+An option type variable can take the addition value
+\texttt{<>}\index{<>@\texttt{<>}|textbf}
+indicating \emph{absent}
+
+Three builtin functions are provided for option type variables:
+\texttt{absent}($v$) returns \texttt{true} iff option type variable $v$ takes the value
+\texttt{<>},
+\texttt{occurs}($v$) returns \texttt{true} iff option type variable $v$ does not take the value
+\texttt{<>},
+and
+\texttt{deopt}($v$) returns the normal value of $v$ or fails if it takes the
+value \texttt{<>}.
+}
+
+The most common use of option types is for optional tasks in scheduling.
+In the flexible job shop scheduling problem we have $n$ tasks to perform
+on $k$ machines, and the time to complete each task on each machine
+may be different. The aim is to minimize the completion time of all tasks.
+A model using option types to encode the problem is given in
+\autoref{ex:flexible-js}. We model the problem using $n \times k$ optional
+tasks representing the possibility of each task run on each machine.
+We require that start time of the task and its duration spans the optional
+tasks that make it up, and require only one actually runs using the
+\texttt{alternative} global constraint.
+We require that at most one task runs on any machine using the
+\texttt{disjunctive} global constraint extended to optional tasks.
+Finally we constrain that at most $k$ tasks run at any time, a redundant
+constraint that holds on the actual (not optional) tasks.
+
+
+\begin{figure}
+\insertlitcode{flexible-js}
+\begin{litcode}{flexible-js}{mzn}
+int: horizon;                  % time horizon
+set of int: Time = 0..horizon;
+enum Task;
+enum Machine; 
+
+array[Task,Machine] of int: d; % duration on each machine
+int: maxd = max([ d[t,m] | t in Task, m in Machine ]);
+int: mind = min([ d[t,m] | t in Task, m in Machine ]);
+
+array[Task] of var Time: S;             % start time
+array[Task] of var mind..maxd: D;       % duration
+array[Task,Machine] of var opt Time: O; % optional task start
+
+constraint forall(t in Task)(alternative(S[t],D[t],
+                 [O[t,m]|m in Machine],[d[t,m]|m in Machine]));
+constraint forall(m in Machine)
+                 (disjunctive([O[t,m]|t in Task],[d[t,m]|t in Task]));
+constraint cumulative(S,D,[1|i in Task],k);
+
+solve minimize max(t in Task)(S[t] + D[t]);
+\end{litcode}
+\caption{Model for flexible job shop scheduling using option types
+  (\texttt{flexible-js.mzn}).\label{ex:flexible-js}}
+\end{figure}
+  
+\pjs{Finish the damn section!}
+
+\subsection{Hidden Option Types}
+
+Option type variable arise implicitly when list comprehensions are
+constructed with iteration over variable sets, or where the expressions in
+\texttt{where} clauses are not fixed.
+
+For example the model fragment
+\begin{code}
+var set of 1..n: x;
+constraint sum(i in x)(i) <= limit;
+\end{code}
+is syntactic sugar for
+\begin{code}
+var set of 1..n: x;
+constraint sum(i in 1..n)(if i in x then i else <> endif) <= limit;
+\end{code}
+The \texttt{sum} builtin function actually operates on a list of
+type-inst \texttt{var opt int}. Since the \texttt{<>} acts as the identity
+0 for + this gives the expected results.
+
+Similarly the model fragment
+\begin{code}
+array[1..n] of var int: x;  
+constraint forall(i in 1..n where x[i] >= 0)(x[i] <= limit);
+\end{code}
+is syntactic sugar for
+\begin{code}
+array[1..n] of var int: x;  
+constraint forall(i in 1..n)(if x[i] >= 0 then x[i] <= limit else <> endif);
+\end{code}
+Again the \texttt{forall} function actually operates on a list
+of type-inst \texttt{var opt bool}. Since \texttt{<>} acts
+as identity \texttt{true} for $\wedge$ this gives the expected results.
+
+The hidden uses can lead to unexpected behaviour though so care is
+warranted. Consider
+\begin{code}
+var set of 1..9: x;
+constraint card(x) <= 4;
+constraint length([ i | i in x]) > 5;
+solve satisfy;
+\end{code}
+which would appear to be unsatisfiable.  It returns $x = {1,2,3,4}$ as
+example answer. This is correct since the second constraint is equivalent to
+\begin{code}
+constraint length([ if i in x then i else <> endif | i in 1..9 ]) > 5;
+\end{code}
+and the length of the list of optional integers is always 9 so the
+constraint always holds!
+
+
+One can avoid hidden option types by not constructing iteration over
+variables sets or using unfixed \texttt{where} clauses.
+For example the above two examples could be rewritten without option types as
+\begin{code}
+var set of 1..n: x;
+constraint sum(i in 1..n)(bool2int(i in x)*i) <= limit;
+\end{code}
+and
+\begin{code}
+array[1..n] of var int: x;  
+constraint forall(i in 1..n)(x[i] >= 0 -> x[i] <= limit);
+\end{code}
+
+

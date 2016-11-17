@@ -1,0 +1,11 @@
+;;; xindy style file
+(markup-locclass-list :open "\dotfill" :sep "")
+
+(define-attributes (( "textbf" "default" )) )
+(markup-locref   :attr  "textbf"     :open "\textbf{\hyperpage{" :close "}}")
+(markup-locref   :attr  "textit"     :open "\textit{\hyperpage{" :close "}}")
+(markup-locref   :attr  "textttt"     :open "\textttt{\hyperpage{" :close "}}")
+(markup-locref   :attr  "texttsc"     :open "\texttsc{\hyperpage{" :close "}}")
+(markup-locref   :attr  "default"     :open "\hyperpage{" :close "}")
+
+

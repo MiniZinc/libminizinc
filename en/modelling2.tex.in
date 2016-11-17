@@ -1,0 +1,1613 @@
+\newpage
+\section{More Complex Models}
+
+In the last section we introduced the basic structure of a \ZincOrMiniZinc
+model. In this section we introduce the array and set data structures,
+enumerated types and
+more complex constraints.
+
+\subsection{Arrays and Sets}
+\label{sec:arrayset}
+
+Almost always we are interested in building models where the number of
+constraints and variables is dependent on the input data. 
+In order to do so we will usually use arrays.\index{array}   
+
+
+Consider a simple finite element model for modelling temperatures on a
+rectangular sheet of metal.  We approximate the temperatures across the
+sheet by breaking the sheet into a finite number of elements in a 2
+dimensional matrix. 
+A model is shown in \autoref{ex:laplace}. 
+It declares the width \texttt{w} and height \texttt{h} 
+of the finite element model.
+The declaration 
+\insertlitcode{laplace:arraydec}
+declares four fixed sets of integers describing the dimensions of the finite
+element model: \texttt{HEIGHT} is the whole height of the model, while \texttt{CHEIGHT} is
+the centre of the height omitting the top and bottom,
+\texttt{WIDTH} is the whole width of the model, while
+\texttt{CWIDTH} is the centre of the width omitting the left and rightsides,
+Finally a two dimensional array of float variables \texttt{t} 
+with rows numbered
+$0$ to $h$ (\texttt{HEIGHT}) and columns $0$ to $h$ (\texttt{WIDTH}), 
+to represent the temperatures at each
+point in the metal plate.
+We can access the element of the array in the $i^{th}$ row and $j^{th}$ column 
+using an expression
+\texttt{t[} $i$ \texttt{,} $j$ \texttt{]}.\index{array!access}
+
+
+Laplace's
+equation states that when the plate reaches a steady state 
+the temperature at each internal point is the average of its orthogonal
+neighbours. The constraint 
+\insertlitcode{laplace:equation}
+ensures each internal point $(i,j)$ to the
+average of its four orthogonal neighbours.  
+The constraints
+\insertlitcode{laplace:sides}
+constrains the temperatures on each edge to be equal, and
+gives these temperatures names: \texttt{left}, \texttt{right}, \texttt{top}
+and \texttt{bottom}.
+While the constraints
+\insertlitcode{laplace:corners}
+ensure that the corners (which are irrelevant) are set to 0.0.
+%We also give a name \texttt{center} to the temperature at the ``center''
+%of the plate.
+We can determine the temperatures in a plate broken into 5 $\times$ 5
+elements with left, right and bottom temperature 0 and top temperature 100
+with the model shown in \autoref{ex:laplace}.
+
+\begin{figure}
+\insertlitcode{laplace}
+\begin{litcode}{laplace}{mzn}
+int: w = 4;
+int: h = 4;
+
+\begin{litblock}{arraydec}
+set of int: HEIGHT = 0..h;
+set of int: CHEIGHT = 1..h-1;
+set of int: WIDTH = 0..w;
+set of int: CWIDTH = 1..w-1;  
+array[HEIGHT,WIDTH] of var float: t; % temperature at point (i,j)
+\end{litblock}
+var float: left;   % left   edge temperature
+var float: right;  % right  edge temperature
+var float: top;    % top    edge temperature
+var float: bottom; % bottom edge temperature
+
+\begin{litblock}{equation}
+% Laplace equation: each internal temp. is average of its neighbours
+constraint forall(i in CHEIGHT, j in CWIDTH)(
+              4.0*t[i,j] = t[i-1,j] + t[i,j-1] + t[i+1,j] + t[i,j+1]);
+\end{litblock}
+\begin{litblock}{sides}
+% edge constraints
+constraint forall(i in CHEIGHT)(t[i,0] = left);
+constraint forall(i in CHEIGHT)(t[i,w] = right);
+constraint forall(j in CWIDTH)(t[0,j] = top);
+constraint forall(j in CWIDTH)(t[h,j] = bottom);
+\end{litblock}
+\begin{litblock}{corners}
+% corner constraints
+constraint t[0,0]=0.0;
+constraint t[0,w]=0.0;
+constraint t[h,0]=0.0;
+constraint t[h,w]=0.0; 
+\end{litblock}
+left = 0.0;
+right = 0.0;
+top = 100.0;
+bottom = 0.0;
+
+solve satisfy;
+
+output [ show_float(6, 2, t[i,j]) ++ 
+         if j == h then "\n" else " " endif |
+         i in HEIGHT, j in WIDTH
+];
+\end{litcode}
+\caption{Finite element plate model 
+for determining steady state temperatures (\texttt{laplace.mzn}).\label{ex:laplace}}
+\end{figure}
+
+Running the command
+\begin{cmd}
+$ mzn-g12mip laplace.mzn
+\end{cmd} %$
+gives the output
+\begin{cmd}
+  0.00 100.00 100.00 100.00   0.00
+  0.00  42.86  52.68  42.86   0.00
+  0.00  18.75  25.00  18.75   0.00
+  0.00   7.14   9.82   7.14   0.00
+  0.00   0.00   0.00   0.00   0.00
+----------
+\end{cmd}
+
+
+\defblock{Sets}{
+\index{set|textbf}
+Set variables are declared with a declaration of the form
+\begin{quote}
+\texttt{\litkw{set of}} \qquote{\emph{type-inst}} \texttt{:}
+\qquote{\emph{var-name}} \texttt{;}
+\end{quote}
+\ttindexdef{set}\index{type-inst}
+where sets of integers, enums (see later), floats or Booleans are allowed.
+The only type allowed for decision variable sets are variables sets of
+integers or enums.
+Set literals are of form
+\begin{quote}
+\texttt{\{} \qquote{\emph{expr$_1$}}, ... , \qquote{\emph{expr$_n$}} \texttt{\}} 
+\end{quote}
+or are range expressions over either integers, enums or floats of form
+\begin{quote}
+\qquote{\emph{expr$_1$}} \texttt{..} \qquote{\emph{expr$_2$}} 
+\end{quote}
+\index{range}
+The standard set operations\index{operator!set|textbf} 
+are provided: element membership 
+(\texttt{in}\ttindexdef{in}),
+(non-strict) subset relationship (\texttt{subset}\ttindexdef{subset}), 
+(non-strict) superset relationship (\texttt{superset}\ttindexdef{superset}), union 
+(\texttt{union}\ttindexdef{union}),
+intersection (\texttt{intersect}\ttindexdef{intersect}), 
+set difference (\texttt{diff}\ttindexdef{diff}), 
+symmetric set difference (\texttt{symdiff}\ttindexdef{symdiff}) 
+and the number of elements in the 
+set (\texttt{card}\ttindexdef{card}).
+
+As we have seen set variables and set literals (including ranges) can be
+used as an implicit type in variable declarations in which case the variable
+has the type of the elements in the set and the variable is implicitly
+constrained to be a member of the set.
+}
+
+
+Our cake baking problem is an example of a very simple kind of production
+planning problem.  In this kind of problem we wish to determine how much of
+each kind of product to make to maximise the profit where manufacturing a
+product consumes varying amounts of some fixed resources.  We can generalise
+the \ZincOrMiniZinc model in \autoref{ex:cakes2} to handle this kind of problem
+with a model that is generic in the kinds of resources and products.  The
+model is shown in \autoref{ex:prod-planning} and a sample data file (for
+the cake baking example) is shown in \autoref{fig:prod-planning-data}.
+
+
+\begin{figure}
+\insertlitcode{simple-prod-planning}
+\begin{litcode}{simple-prod-planning}{mzn}
+% Products to be produced
+enum Products;  
+% profit per unit for each product
+array[Products] of int: profit;
+% Resources to be used
+enum Resources;
+% amount of each resource available
+array[Resources] of int: capacity; 
+
+% units of each resource required to produce 1 unit of product
+array[Products, Resources] of int: consumption; 
+constraint assert(forall (r in Resources, p in Products) 
+           (consumption[p,r] >= 0), "Error: negative consumption");
+
+% bound on number of Products
+int: mproducts = max (p in Products) 
+                     (min (r in Resources where consumption[p,r] > 0) 
+                          (capacity[r] div consumption[p,r]));
+
+% Variables: how much should we make of each product
+array[Products] of var 0..mproducts: produce;
+array[Resources] of var 0..max(capacity): used;
+
+% Production cannot use more than the available Resources:
+constraint forall (r in Resources) (     
+      used[r] = sum (p in Products)(consumption[p, r] * produce[p]) 
+)
+constraint forall (r in Resources) (     
+      used[r] <= capacity[r]
+);    
+
+% Maximize profit
+solve maximize sum (p in Products) (profit[p]*produce[p]);
+
+output [ "\(p) = \(produce[p]);\n" | p in Products ] ++
+       [ "\(r) = \(used[r]);\n" | r in Resources ];
+\end{litcode}
+\caption{Model for simple production planning (\texttt{simple-prod-planning.mzn})}.\label{ex:prod-planning}
+\end{figure}
+
+\begin{figure}
+\insertlitcode{simple-prod-planning-data}
+\begin{litcode}{simple-prod-planning-data}{dzn}
+% Data file for simple production planning model
+Products = { BananaCake, ChocolateCake };
+profit = [400, 450]; % in cents
+
+Resources = { Flour, Banana, Sugar, Butter, Cocoa };
+capacity = [4000, 6, 2000, 500, 500];
+
+consumption= [| 250, 2, 75, 100, 0,
+              | 200, 0, 150, 150, 75 |];
+\end{litcode}
+\caption{Example data file for the simple production planning problem.}
+\label{fig:prod-planning-data}
+\end{figure}
+
+The new feature in this model is the use of enumerated
+types\index{type|enumerated}\index{enum}. 
+These allow us to treat the choice of resources and products as parameters to
+the model.
+The first item in the model
+\begin{code}
+enum Products;
+\end{code}
+declares \texttt{Products} as an \emph{unknown} set of products.
+
+\clearpage
+\newpage
+
+\defblock{Enumerated Types}{
+  \index{enumerated type|textbf}\index{enum|textbf}
+  Enumerated types, which we shall refer to as \texttt{enum}s, 
+are declared with a declaration of
+  the form
+\begin{quote}
+\texttt{\litkw{enum}} 
+\qquote{\emph{var-name}};
+\end{quote}
+\ttindexdef{enum}
+An enumerated type is defined by an assignment of the form
+\begin{quote}
+\qquote{\emph{var-name}}
+\texttt{=}
+\texttt{\{} \qquote{\emph{var-name$_1$}}, ... , \qquote{\emph{var-name$_n$}} \texttt{\}}  \texttt{;}
+\end{quote}
+where \emph{var-name$_1$}, \ldots, \emph{var-name$_n$} are the elements of
+the enumerated type, with name \emph{var-name}. 
+Each of the elements of the enumerated type is also effectively declared by
+this definition as a new constant of that type.
+The declaration and definition can be combined into one line as usual.
+}
+
+
+The second item declares an array of integers:
+\begin{code}
+array[Products] of int: profit;
+\end{code}
+The index set\index{array!index set} 
+of the array \texttt{profit} is \texttt{Products}.
+Ideally this would mean that only elements of the set \texttt{Products}
+could be used to index the array.  But enumerated types in \ZincOrMiniZinc{}
+are treated similar to integers so at present the only guarantee is that
+only $1, 2, ..., |\mathit{Products}|$ are valid indices into the array.
+The array access \texttt{profit[i]} gives the profit for product
+\texttt{i}.
+
+The elements of an enumerated type of $n$ elements 
+act very similar to the integers 1..$n$. They can be compared, they are
+ordered, by the order they appear in the enumerated type definition,
+they can be interated over, they can appear as indices of arrays, in fact
+they can appear almost anywhere an integer can appear.
+
+In the example data file we have initialized the array using a list of 
+integers
+\begin{code}
+Products = { BananaCake, ChocolateCake };  
+profit = [400,450];
+\end{code}
+meaning the profit for a banana cake is 400, while for a chocolate cake it
+is 450.  Internally \texttt{BananaCake} will be treated like the integer 1,
+while \texttt{ChocolateCake} will be treated like the integer 2.
+While \ZincOrMiniZinc does not provide an explicit list type, one-dimensional
+arrays with an index set $1..n$ behave like lists, and we will sometimes
+refer to them as lists\index{list}.
+
+In a similar fashion, in the next 2 items we declare a set of resources
+\texttt{Resources}, and an array \texttt{capacity} which gives the amount of
+each resource that is available.
+
+More interestingly, the item
+\begin{code}
+array[Products, Resources] of int: consumption;
+\end{code}
+declares a 2-D array \texttt{consumption}. The value of
+\texttt{consumption[p,r]} is the amount of resource \texttt{r} required to
+produce one unit of product \texttt{p}. Note that the first index is the row
+and the second is the column.
+
+The data file contains an example initialization of a 2-D array:
+\begin{code}
+consumption= [| 250, 2, 75,  100, 0,
+              | 200, 0, 150, 150, 75 |];
+\end{code}
+            
+Notice how the delimiter \texttt{|} is used to separate rows.
+
+\defblock{Arrays}{
+\index{array|textbf}
+Thus, \ZincOrMiniZinc provides one- and multi-dimensional arrays
+which are declared using the type:
+\litblock{
+\litkw{array}\texttt{[} \qquote{\emph{index-set$_1$}}, ...,
+\qquote{\emph{index-set$_n$}} \texttt{]} \litkw{of}
+ \qquote{\emph{type-inst}} 
+}
+MiniZinc requires that the array declaration contains the index set of each
+dimension and that the index set is either an integer range, a set
+variable initialised to an integer range, or an enumeration
+type\index{enumerated type}. Arrays can contain any of the base
+types: integers, enums, Booleans, floats or strings.  These can be fixed or unfixed
+except for strings which can only be parameters. Arrays can also contain
+sets but they cannot contain arrays.
+
+
+One-dimensional array literals are of form
+\litblock{
+\texttt{[} \qquote{\emph{expr$_1$}}, ... , \qquote{\emph{expr$_n$}} \texttt{]} 
+}
+\index{array!literal!1D}
+while two-dimensional array literals are of form
+\litblock{
+\texttt{[|} \qquote{\emph{expr$_{1,1}$}}, ... , \qquote{\emph{expr$_{1,n}$}}, 
+              \texttt{|} ...,   \texttt{|} \qquote{\emph{expr$_{m,1}$}}, ... , \qquote{\emph{expr$_{m,n}$}} \texttt{|]} 
+}
+\index{array!literal!2D}
+where the array has $m$ rows and $n$ columns.
+
+The family of built-in functions \texttt{array1d}\ttindexdef{array1d}, 
+\texttt{array2d}\ttindexdef{array2d}, etc,
+can be used to initialise an array of any dimension from a list (or more
+exactly a one-dimensional array). The call:
+\litblock{
+\texttt{\litkw{array}}$n$\texttt{d}(\qquote{\emph{index-set$_1$}}, ..., \qquote{\emph{index-set$_n$}}, \qquote{\emph{list}} \texttt{)}
+}
+\ttindexdef{array$n$d}
+returns an $n$ dimensional array with index sets given by the first $n$
+arguments and the last argument contains the elements of the array. For
+instance, \texttt{\litkw{array2d}(1..3, 1..2, [1, 2, 3, 4, 5, 6])} is equivalent to
+\texttt{[|1, 2 |3, 4 |5, 6|])}.
+
+
+Array elements are accessed in the usual way: \texttt{a[i,j]} gives the
+element in the $i^{th}$ row and $j^{th}$ column.\index{array!access|textbf}
+
+\pjs{New array functions!}
+
+
+The concatenation operator `\texttt{++}'
+\ttindexdefs{++} 
+can be used to concatenate two
+one-dimensional arrays together. The result is a list, i.e. a
+one-dimensional array whose elements are indexed from 1.  For instance
+\texttt{[4000, 6] ++ [2000, 500, 500]} evaluates to \texttt{[4000, 6,
+  2000, 500, 500]}. The built-in function 
+\texttt{length} returns the length
+of a one-dimensional array.
+}
+
+The next item in the model defines the parameter \texttt{mproducts}. This is
+set to an upper-bound on the number of products of any type that can be
+produced. This is quite a complex example of nested
+array comprehensions and aggregation operators.  We shall introduce these
+before we try to understand this item and the rest of the model.
+
+First, \ZincOrMiniZinc provides list comprehensions similar to those provided in
+many functional programming languages. For example, the list comprehension
+\texttt{[i + j | i, j in 1..3 where j < i]} evaluates to \texttt{[1 + 2, 1 +
+  3, 2 + 3]} which is \texttt{[3, 4, 5]}. Of course \texttt{[3, 4, 5]} is
+simply an array with index set $1..3$.
+
+\ZincOrMiniZinc also provides set comprehensions which have a similar syntax: for
+instance, \texttt{\{i + j | i, j in 1..3 where j < i\}} evaluates to the set
+\texttt{\{3, 4, 5\}}.
+
+\defblock{List and Set Comprehensions}{
+\index{comprehension|textbf}
+\index{comprehension!list}
+The generic form of a list comprehension is
+\litblock{
+ \texttt{[} \qquote{\emph{expr}}  \texttt{|} \qquote{\emph{generator-exp}}  \texttt{]}  
+}
+The expression \qquote{\emph{expr}} specifies how to construct elements in the
+output list from the elements generated by \qquote{\emph{generator-exp}}. 
+The generator  \qquote{\emph{generator-exp}} consists of a comma separated sequence of generator expressions optionally followed by a Boolean expression. The two forms are
+\litblock{
+ \qquote{\emph{generator}}, ..., \qquote{\emph{generator}} \\
+  \qquote{\emph{generator}}, ..., \qquote{\emph{generator}} \texttt{\litkw{where}}   \qquote{\emph{bool-exp}}  
+}
+The optional \qquote{\emph{bool-exp}} in the second form acts as a filter on
+the generator expression: only elements satisfying the Boolean expression
+are used to construct elements in the output list.  A generator
+\qquote{\emph{generator}}\index{comprehension!generator}\index{generator} 
+has form
+\litblock{
+ \qquote{\emph{identifier}},..., \qquote{\emph{identifier}} \texttt{\litkw{in}}
+ \qquote{\emph{array-exp}}
+}
+Each identifier is an \emph{iterator}\index{iterator|textbf} 
+which takes the values
+of the array expression in turn, with the last identifier varying most rapidly.
+ 
+The generators of a list comprehension, and \qquote{\emph{bool-exp}}
+usually do not involve decision variables.
+If they do involve decision variables
+then the list produced is a list of \texttt{var opt} $T$ where $T$ is the type
+of the \qquote{\emph{expr}}. See the discussion of option
+types\index{option type} in \autoref{sec:optiontypes} for more details.
+
+
+Set comprehensions\index{comprehension!set}
+are almost identical to list comprehensions: the only
+difference is the use of `\texttt{\{}' and `\texttt{\}}' to enclose the
+expression rather than `\texttt{[}' and `\texttt{]}'.
+% and the generator %%% not true
+% iterates over a set expression rather than an array expression.
+The elements generated by a set comprehension must be
+fixed\index{fixed}, i.e. free of decision variables.
+Similarly the generators and optional \qquote{\emph{bool-exp}}
+for set comprehensions must be fixed.
+}
+
+Second, \ZincOrMiniZinc provides a number of built-in functions that take a
+one-dimensional array and aggregate the elements. Probably the most useful
+of these is \texttt{forall}\ttindex{forall}. 
+This takes an array of Boolean expressions
+(that is, constraints) and returns a single Boolean expression which is the
+logical conjunction of the Boolean expressions in the array.
+
+For example, consider the expression 
+\begin{code}
+forall( [a[i] != a[j] | i,j in 1..3 where i < j])
+\end{code}
+where \texttt{a} is an arithmetic array with index set $1..3$. This
+constrains the elements in \texttt{a} to be different. The list
+comprehension evaluates to \texttt{[ a[1] != a[2], a[1] != a[3], a[2] !=
+  a[3] ]} and so the \texttt{forall} function returns the logical
+conjunction \texttt{a[1] != a[2] $\wedge$ a[1] != a[3] $\wedge$ a[2] != a[3]}.
+
+\defblock{Aggregation functions}{
+\index{aggregation function|textbf}
+  The \emph{aggregation functions} for arithmetic arrays are: 
+\texttt{sum}\ttindexdef{sum}\index{aggregation function!\texttt{sum}}
+  which adds the elements, 
+\texttt{product}\ttindexdef{product}\index{aggregation function!\texttt{product}} which multiplies them together,
+  and \texttt{min}\ttindexdef{min}\index{aggregation function!\texttt{min}} and 
+\texttt{max}\ttindexdef{max}\index{aggregation function!\texttt{max}} which respectively return the least and
+  greatest element in the array. When applied to an empty array, \texttt{min} and
+  \texttt{max} give a run-time error, \texttt{sum} returns 0 and \texttt{product}
+  returns 1.
+
+  \ZincOrMiniZinc provides four aggregation functions for arrays containing Boolean
+  expressions. As we have seen, the first of these, 
+  \texttt{forall}\ttindexdef{forall}\index{aggregation function!\texttt{forall}}, returns
+  a single constraint which is the logical conjunction of the
+  constraints.
+  The second function, \texttt{exists}\ttindexdef{exists}\index{aggregation function!\texttt{exists}}, 
+  returns the logical
+  disjunction of the constraints. Thus, \texttt{forall} enforces that all
+  constraints in the array hold, while \texttt{exists} ensures that at least
+  one of the constraints holds.
+  The third function, \texttt{xorall}\ttindexdef{xorall}\index{aggregation function!\texttt{xorall}},
+  ensures that an odd number of constraints hold.
+  The fourth function, \texttt{iffall}\ttindexdef{iffall}\index{aggregation function!\texttt{iffall}},
+  ensures that an even number of constraints holds.
+}
+
+The third, and final, piece in the puzzle is that \ZincOrMiniZinc allows a special
+syntax for aggregation functions when used with an array
+comprehension. Instead of writing
+\begin{code}
+forall( [a[i] != a[j] | i,j in 1..3 where i < j])
+\end{code}
+the modeller can instead write the more mathematical looking
+\begin{code}
+forall (i,j in 1..3 where i < j) (a[i] != a[j])
+\end{code}
+The two expressions are completely equivalent: the modeller is free to use
+whichever they feel looks most natural.
+
+\defblock{Generator call expressions}{
+\index{generator call|textbf}
+\index{expression!generator call}
+A \emph{generator call expression} has form
+\litblock{
+\qquote{\emph{agg-func}} \texttt{(} \qquote{\emph{generator-exp}} \texttt{)}  \texttt{(} \qquote{\emph{exp}} \texttt{)} 
+}
+The round brackets around the generator expression
+\qquote{\emph{generator-exp}} and the constructor expression
+\qquote{\emph{exp}} are not optional: they must be there.  This is
+equivalent to writing
+\litblock{
+\qquote{\emph{agg-func}}\texttt{(} \texttt{[} \qquote{\emph{expr}}  \texttt{|} \qquote{\emph{generator-exp}}  \texttt{]}  \texttt{)}
+}
+The aggregation function \qquote{\emph{agg-func}} is any \ZincOrMiniZinc
+functions expecting a single array as argument.\index{aggregation function}
+}
+
+We are now in a position to understand the rest of the simple production
+planning model shown in \autoref{ex:prod-planning}. For the moment ignore
+the item defining \texttt{mproducts}.  The item afterwards:
+\begin{code}
+array[Products] of var 0..mproducts: produce;
+\end{code}
+defines a one-dimensional array \texttt{produce} of decision variables.  The
+value of \texttt{produce[p]} will be set to the amount of product \texttt{p}
+in the optimal solution.
+The next item
+\begin{code}
+array[Resources] of var 0..max(capacity): used;
+\end{code}
+defines a set of auxiliary variables that record how much of each resource
+is used. 
+The next two constraints
+{\small 
+\begin{code}
+constraint forall (r in Resources)      
+           (used[r] = sum (p in Products) (consumption[p, r] * produce[p]));
+constraint forall (r in Resources)(used[r] <= capacity[r] );
+\end{code}}
+computes in \texttt{used[r]}  the total consumption of the
+resource \texttt{r} and ensures it is less than the available amount.
+Finally, the item
+\begin{code}
+solve maximize sum (p in Products) (profit[p]*produce[p]);
+\end{code}
+indicates that this is a maximisation problem and that the objective to be maximised is the total profit.
+
+
+We now return to the definition of \texttt{mproducts}. For each product
+\texttt{p} the expression
+\begin{code}
+(min (r in Resources where consumption[p,r] > 0) 
+                                 (capacity[r] div consumption[p,r])
+\end{code}
+determines the maximum amount of \texttt{p} that can be produced taking into
+account the amount of each resource \texttt{r} and how much of \texttt{r} is
+required to produce the product. Notice the use of the filter \texttt{where
+  consumption[p,r] > 0} to ensure that only resources required to make the
+product are considered so as to avoid a division by zero error.  Thus, the
+complete expression
+\begin{code}
+int: mproducts = max (p in Products) 
+                     (min (r in Resources where consumption[p,r] > 0) 
+                                 (capacity[r] div consumption[p,r]));
+\end{code}
+computes the maximum amount of \emph{any} product that can be produced, and
+so this can be used as an upper bound on the domain of the decision
+variables in \texttt{produce}.
+
+Finally notice the output item is more complex, 
+and uses list comprehensions\index{comprehension!list}
+to create an understandable output. Running
+\begin{cmd}
+$ mzn-g12fd simple-prod-planning.mzn simple-prod-planning-data.dzn
+\end{cmd} %$
+results in the output
+\begin{cmd}
+BananaCake = 2;
+ChocolateCake = 2;
+Flour = 900;
+Banana = 4;
+Sugar = 450;
+Butter = 500;
+Cocoa = 150;
+----------
+\end{cmd}
+
+
+\subsection{Global Constraints}
+
+\index{constraint!global|see{global constraint}}
+\index{global constraint}
+\ZincOrMiniZinc includes a library of global constraints which can also be used
+to define models. An example is the \talldiff{}\ttindex{alldifferent} 
+constraint which requires
+all the variables appearing in its argument to be different.
+
+\begin{figure}
+\insertlitcode{send-more-money}
+\begin{litcode}{send-more-money}{mzn}
+include "alldifferent.mzn";
+
+var 1..9: S;
+var 0..9: E;
+var 0..9: N;
+var 0..9: D;
+var 1..9: M;
+var 0..9: O;
+var 0..9: R;
+var 0..9: Y;
+
+constraint           1000 * S + 100 * E + 10 * N + D
+                   + 1000 * M + 100 * O + 10 * R + E
+       = 10000 * M + 1000 * O + 100 * N + 10 * E + Y;
+
+constraint alldifferent([S,E,N,D,M,O,R,Y]);
+
+solve satisfy;
+
+output ["   \(S)\(E)\(N)\(D)\n",
+        "+  \(M)\(O)\(R)\(E)\n",
+        "= \(M)\(O)\(N)\(E)\(Y)\n"];
+\end{litcode}
+\caption{Model for the cryptarithmetic problem
+SEND+MORE=MONEY (\texttt{send-more-money.mzn}).\label{ex:smm}}
+\end{figure}
+
+The SEND+MORE=MONEY problem requires assigning a different
+digit to each letter so that the arithmetic constraint holds.
+The model shown in \autoref{ex:smm} uses the constraint expression
+\talldiff{}\texttt{([S,E,N,D,M,O,R,Y])} 
+to ensure that each letter takes a different digit value.
+The global constraint is made available
+in the model using include item
+\begin{code}
+include "alldifferent.mzn";
+\end{code}
+which makes 
+the global constraint \talldiff{} usable by the model.
+One could replace this line by
+\begin{code}
+include "globals.mzn";
+\end{code}
+which includes all globals.
+
+A list of all the global constraints 
+defined for \ZincOrMiniZinc is included in the
+release documentation. See \autoref{sec:globals} for
+a description of some important global constraints. 
+
+\subsection{Conditional Expressions}
+
+\index{expression!conditional}
+\ZincOrMiniZinc provides a conditional \emph{if-then-else-endif}
+expression.
+An example of its use is
+\begin{code}
+int: r = if y != 0 then x div y else 0 endif;
+\end{code}
+which sets $r$ to $x$ divided by $y$ unless $y$ is zero in which case
+it sets it to zero.
+
+\defblock{Conditional expressions}{
+\index{expression!conditional|textbf}
+ The form of a conditional expression is
+\litblock{
+\texttt{\litkw{if}} \qquote{\emph{boolexp}} \texttt{\litkw{then}} 
+\qquote{\emph{exp$_1$}} 
+\texttt{\litkw{else}} \qquote{\emph{exp$_2$}} \texttt{\litkw{endif}}
+}
+\ttindexdef{if}
+\ttindexdef{then}
+\ttindexdef{else}
+\ttindexdef{endif}
+It is a true expression rather than a control flow statement and so can be used in other expressions. It evaluates to \qquote{\emph{exp$_1$}} if the Boolean expression \qquote{\emph{boolexp}} is true and 
+\qquote{\emph{exp$_2$}} otherwise. The type of the conditional expression is that of 
+\qquote{\emph{exp$_1$}} and \qquote{\emph{exp$_2$}} which must have the same
+type.
+
+If the \qquote{\emph{boolexp}} contains decision variables, then the 
+type-inst
+of the expression is \texttt{var} $T$ where $T$ is the type of
+\qquote{\emph{exp$_1$}} and \qquote{\emph{exp$_2$}} even if both
+expressions are fixed.
+}
+
+
+\begin{figure}
+\insertlitcode{sudoku}
+\begin{litcode}{sudoku}{mzn}
+include "alldifferent.mzn";
+
+int: S;
+int: N = S * S;
+int: digs = ceil(log(10.0,int2float(N))); % digits for output
+
+set of int: PuzzleRange = 1..N;
+set of int: SubSquareRange = 1..S;
+
+array[1..N,1..N] of 0..N: start; %% initial board 0 = empty
+array[1..N,1..N] of var PuzzleRange: puzzle;
+
+% fill initial board
+constraint forall(i,j in PuzzleRange)(
+    if start[i,j] > 0 then puzzle[i,j] = start[i,j] else true endif );
+
+% All different in rows 
+constraint forall (i in PuzzleRange) (
+                   alldifferent( [ puzzle[i,j] | j in PuzzleRange ]) ); 
+
+% All different in columns.
+constraint forall (j in PuzzleRange) (
+                   alldifferent( [ puzzle[i,j] | i in PuzzleRange ]) ); 
+
+% All different in sub-squares:
+constraint
+        forall (a, o in SubSquareRange)(
+                alldifferent( [ puzzle[(a-1) *S + a1, (o-1)*S + o1] |
+                                        a1, o1 in SubSquareRange ] ) );
+
+solve satisfy;
+
+output  [ show_int(digs,puzzle[i,j]) ++ " " ++ 
+         if j mod S == 0 then " " else "" endif ++
+         if j == N then
+             if i != N then 
+                if i mod S == 0 then "\n\n" else "\n" endif 
+         else "" endif else "" endif  
+         | i,j in PuzzleRange ] ++ ["\n"];
+\end{litcode}
+\caption{Model for generalized Sudoku problem 
+(\texttt{sudoku.mzn}).\label{ex:sudoku}}
+\end{figure}
+
+
+\begin{figure}
+\begin{tabular}{cc}
+\begin{minipage}[t]{0.4\textwidth}
+\insertlitcode{sudoku.dzn}
+\begin{litcode}{sudoku.dzn}{}
+S=3;
+start=[|
+0, 0, 0, 0, 0, 0, 0, 0, 0|
+0, 6, 8, 4, 0, 1, 0, 7, 0|
+0, 0, 0, 0, 8, 5, 0, 3, 0|
+0, 2, 6, 8, 0, 9, 0, 4, 0|
+0, 0, 7, 0, 0, 0, 9, 0, 0|
+0, 5, 0, 1, 0, 6, 3, 2, 0|
+0, 4, 0, 6, 1, 0, 0, 0, 0|
+0, 3, 0, 2, 0, 7, 6, 9, 0|
+0, 0, 0, 0, 0, 0, 0, 0, 0|];
+\end{litcode}
+\end{minipage}
+&
+\begin{minipage}[t]{0.4\textwidth}
+{~}\includegraphics{figures/sudoku}
+\end{minipage}
+\end{tabular}
+\caption{Example data file for generalised Sudoku problem 
+(\texttt{sudoku.dzn}) and the problem it represents.\label{ex:sudokud}}
+\end{figure}
+
+
+Conditional expressions are very useful in building complex models, or
+complex output. Consider the model of Sudoku problems shown in
+\autoref{ex:sudoku}. The initial board positions are given by the
+\texttt{start} parameter where 0 represents an empty
+board position. This is converted to constraints on the decision variables
+\texttt{puzzle} using the conditional expression
+\begin{code}
+constraint forall(i,j in PuzzleRange)(
+     if start[i,j] > 0 then puzzle[i,j] = start[i,j] else true endif );
+\end{code}
+
+Conditional expressions are also very useful for 
+defining complex output.\index{output}
+In the Sudoku model of \autoref{ex:sudoku} the expression
+\begin{code}
+if j mod S == 0 then " " else "" endif 
+\end{code}
+inserts an extra space between groups of size $S$.
+The output expression also use conditional expressions to
+and add blank lines
+after each $S$ lines. The resulting output is highly readable.
+
+The remaining constraints ensure that the numbers appearing in each
+row and column and $S \times S$ subsquare are all different.
+
+
+
+One can use MiniZinc to search 
+for all solutions to a satisfaction problem (\texttt{solve satisfy}) 
+by using the flag \texttt{-a}
+or \texttt{--all-solutions}. Running
+\index{runtime flag!\texttt{-a}}
+\index{runtime flag!\texttt{--all-solutions}}
+\index{solution!all}
+\begin{cmd}
+$ mzn-g12fd --all-solutions sudoku.mzn sudoku.dzn
+\end{cmd} %$
+results in
+\begin{cmd}
+ 5 9 3  7 6 2  8 1 4 
+ 2 6 8  4 3 1  5 7 9 
+ 7 1 4  9 8 5  2 3 6 
+
+ 3 2 6  8 5 9  1 4 7
+ 1 8 7  3 2 4  9 6 5
+ 4 5 9  1 7 6  3 2 8
+
+ 9 4 2  6 1 8  7 5 3
+ 8 3 5  2 4 7  6 9 1
+ 6 7 1  5 9 3  4 8 2
+----------
+==========
+\end{cmd}
+
+
+The line \texttt{==========}\index{solution!end \texttt{==========}}
+\ttindex{==========} 
+is output when the system has output all possible
+solutions, here verifying that there is exactly one.
+
+
+
+\subsection{Enumerated Types}\label{sec:enum}
+\index{type!enumerated}
+
+Enumerated types allows us to build models that depend on a set of objects
+which are part of the data, or are named in the model, and hence make models
+easier to understand and debug.
+We have introduce enumerated types or enums briefly, in this subsection we
+will explore how we can use them more fully, and show some of the built in
+functions for dealing with enumerated types.
+
+Let's revisit the problem of coloring the graph of Australia from \autoref{sec:modelling}.
+
+\begin{figure}
+\insertlitcode{aust-enum}
+\begin{litcode}{aust-enum}{mzn}
+enum Color;
+var Color: wa; 
+var Color: nt; 
+var Color: sa;
+var Color: q;
+var Color: nsw;
+var Color: v;
+var Color: t;
+constraint wa != nt /\ wa != sa /\ nt != sa /\ nt != q /\ sa != q;
+constraint sa != nsw /\ sa != v /\ q != nsw /\ nsw != v; 
+solve satisfy;
+\end{litcode}
+\caption{Model for coloring Australia using enumerated types 
+(\texttt{aust-enum.mzn}).\label{ex:aust-enum}}
+\end{figure}
+
+The model shown in \autoref{ex:aust-enum} declares an enumerated type
+\texttt{Color} which must be defined in the data file.  Each of the state
+variables is declared to take a value from this enumerated type.
+Running this program using 
+\begin{cmd}
+$ minizinc -D"Color = { red, yellow, blue };" aust-enum.mzn
+\end{cmd} %$
+might result in output
+\begin{cmd}
+wa = yellow;
+nt = blue;
+sa = red;
+q = yellow;
+nsw = blue;
+v = yellow;
+t = red;
+\end{cmd}
+
+\defblock{Enumerated Type Variable Declarations}{
+An enumerated type parameter variable\index{variable!declaration!enum} is declared as either:
+\begin{quote}
+  \qquote{\emph{enum-name}} \texttt{:} \qquote{\emph{var-name}} \\
+  \qquote{\emph{l}} \texttt{..} \qquote{\emph{u}} \texttt{:} \qquote{\emph{var-name}}
+\end{quote}
+where \emph{enum-name} is the name of a enumerated type, and
+\emph{l} and \emph{u} are fixed enumerated type expressions of the same
+enumerated type.
+
+An enumerated type decision variable is declared
+as either:\index{var@\texttt{var}!enum@\texttt{enum}|textbf}
+\begin{quote}
+  \texttt{\litkw{var}} \qquote{\emph{enum-name}} \texttt{:}
+  \qquote{\emph{var-name}} \\
+  \texttt{\litkw{var}} \qquote{\emph{l}} \texttt{..} \qquote{\emph{u}} \texttt{:} \qquote{\emph{var-name}}
+\end{quote}
+where \emph{enum-name} is the name of a enumerated type, and
+\emph{l} and \emph{u} are fixed enumerated type expressions of the same
+enumerated type.
+}
+
+A key behaviour of enumerated types is that they are automatically coerced
+to integers when they are used in a position expecting an integer.
+For example, this allows us to use global constraints defined on integers,
+e.g.
+\begin{code}
+global_cardinality_low_up([wa,nt,sa,q,nsw,v,t],
+                          [red,yellow,blue],[2,2,2],[2,2,3]);
+\end{code}
+requires at least two states to be colored each color and three to be
+colored blue.
+
+
+\defblock{Enumerated Type Operations}{
+There are a number of built in operations on enumerated types:
+\begin{itemize}
+\item \texttt{enum\_next}($X$,$x$)\ttindexdef{enum\_next}: returns the next value in after $x$ in the
+  enumerated type $X$. This is a partial function, if $x$ is the last value in
+  the enumerated type $X$ then the function returns $\bot$ causing the Boolean
+  expression containing the expression to evaluate to $\mathit{false}$.
+\item \texttt{enum\_prev}($X$,$x$)\ttindexdef{enum\_prev}:
+  returns the previous value before $x$ in the
+  enumerated type $X$. Similarly \texttt{enum\_prev} is a partial function. 
+\item \texttt{to\_enum}($Enum$,$i$)\ttindexdef{to\_enum}: maps an integer expression $i$ to an
+  enumerated type value in type $Enum$ or evaluates to $\bot$ if $i$ is less
+  than or equal to 0 or greater then 
+the number of elements in $Enum$. 
+\end{itemize}
+Note also that a number of standard functions are applicable to enumerated
+types
+\begin{itemize}
+\item \texttt{card}($Enum$): returns the cardinality of an enumerated type $Enum$.
+\item \texttt{min}($Enum$): returns the minimum element of of an enumerated type $Enum$.
+\item \texttt{max}($Enum$): returns the maximum element of of an enumerated type $Enum$.
+\end{itemize}
+}
+
+
+\subsection{Complex Constraints}\label{sec:complex}
+\index{constraint!complex}
+Constraints are the core of the \ZincOrMiniZinc model. 
+We have seen simple relational expressions but constraints can be considerably more powerful than this.
+A constraint is allowed to be any Boolean expression. 
+Imagine a scheduling problem in which we have 
+two tasks that cannot overlap in time.
+If \texttt{s1} and \texttt{s2} are the corresponding start times
+and \texttt{d1} and \texttt{d2} are the corresponding
+durations
+we can express this as:
+\begin{code}
+constraint s1 + d1 <= s2  \/ s2 + d2 <= s1;
+\end{code}
+which ensures that the tasks do not overlap.
+
+
+\defblock{Booleans}{
+\index{Boolean}
+\index{expression!Boolean|textbf}
+Boolean expressions in \ZincOrMiniZinc can be written using a standard mathematical syntax.
+The Boolean literals are \texttt{true}\ttindexdef{true} and 
+\texttt{false}\ttindexdef{false} 
+and the Boolean 
+operators\index{operator!Boolean|textbf}
+are 
+conjunction, i.e. and  (\texttt{/\Backslash}\index{//@\texttt{/\textbackslash}~|textbf}), 
+disjunction, i.e. or  (\texttt{\Backslash/}\index{/>@\texttt{\textbackslash/}~|textbf}),  
+only-if (\texttt{<-}\ttindexdefs{<-}), 
+implies (\texttt{->}\ttindexdefs{->}), 
+if-and-only-if (\texttt{<->}\ttindexdefs{<->}) and 
+negation (\texttt{not}\ttindexdef{not}).
+The built-in function \texttt{bool2int}\ttindexdef{bool2int} 
+coerces Booleans to integers: it 
+returns 1 if its argument is true and 0 otherwise.
+}
+
+\begin{figure}
+\insertlitcode{jobshop}
+\begin{litcode}{jobshop}{mzn}
+enum JOB;
+enum TASK;
+TASK: last = max(TASK);
+array [JOB,TASK] of int: d;                   % task durations
+int: total = sum(i in JOB, j in TASK)(d[i,j]);% total duration
+int: digs = ceil(log(10.0,int2float(total))); % digits for output
+array [JOB,TASK] of var 0..total: s;          % start times
+var 0..total: end;                            % total end time
+
+
+constraint %% ensure the tasks occur in sequence
+    forall(i in JOB) (
+        forall(j in TASK where j < last) 
+            (s[i,j] + d[i,j] <= s[i,enum_next(TASK,j)]) /\
+        s[i,last] + d[i,last] <= end
+    );
+
+constraint %% ensure no overlap of tasks
+    forall(j in TASK) (
+        forall(i,k in JOB where i < k) (
+            s[i,j] + d[i,j] <= s[k,j] \/
+            s[k,j] + d[k,j] <= s[i,j]
+        )
+    );
+
+solve minimize end;
+
+output ["end = \(end)\n"] ++
+       [ show_int(digs,s[i,j]) ++ " " ++ 
+         if j == last then "\n" else "" endif |
+         i in JOB, j in TASK ];
+\end{litcode} 
+\caption{Model for job-shop scheduling problems
+  (\texttt{jobshop.mzn}).\label{ex:jobshop}}
+\end{figure}
+
+\begin{figure}
+  \insertlitcode{jdata}
+  \begin{litcode}{jdata}{dzn}
+JOB = anon_enum(5);
+TASK = anon_enum(5);
+d = [| 1, 4, 5, 3, 6 
+     | 3, 2, 7, 1, 2
+     | 4, 4, 4, 4, 4  
+     | 1, 1, 1, 6, 8
+     | 7, 3, 2, 2, 1 |];
+  \end{litcode}
+  \caption{Data for job-shop scheduling problems
+    (\texttt{jdata.dzn}).\label{ex:jdata}}
+\end{figure}
+
+The job shop scheduling model given in \autoref{ex:jobshop}
+gives a realistic example of the use of this disjunctive modelling
+capability. In job shop scheduling we have a set of jobs, each consisting
+of a sequence of tasks on separate machines: so task $[i,j]$ is the
+task in the $i^{th}$ job performed on the $j^{th}$ machine.  
+Each sequence of tasks must be completed in order,
+and no two tasks on the same machine can overlap in time. 
+Even small instances of this problem can be quite challenging to find
+optimal solutions.
+
+The command
+\begin{cmd}
+$ mzn-g12fd --all-solutions jobshop.mzn jdata.dzn
+\end{cmd} %$
+solves a small job shop scheduling problem, and illustrates the behaviour of 
+\texttt{all-solutions} for optimisation problems.  Here the solver outputs
+each better solutions as it finds it, rather than all possible optimal
+solutions. The (partial) output from this command is:
+\begin{cmd}
+end = 41
+ 0  1  5 10 13
+ 5  8 10 25 26
+ 1 10 17 21 28
+ 8 14 21 26 32
+ 9 16 22 32 40
+----------
+\end{cmd}
+and after quite a few more solutions then finally:
+\begin{cmd}
+end = 31
+ 0  3  7 12 18 
+ 6  9 19 26 28
+ 2 11 15 19 24
+ 1  2  3  4 10
+ 9 16 26 28 30 
+----------
+end = 30
+ 1  2  6 11 17 
+ 6 10 15 22 23
+ 2  6 11 15 25
+ 0  1  2  3  9
+ 9 16 22 24 29 
+----------
+==========
+\end{cmd}
+indicating an optimal solution with end time 30 is finally found,
+and proved optimal.
+We can generate all \emph{optimal solutions}\index{solution!optimal} 
+by adding a constraint that
+\texttt{end = 30} and changing the solve item to \texttt{solve satisfy}
+and then executing 
+\begin{cmd}
+$ mzn-g12fd --all-solutions jobshop.mzn jobshop.dzn
+\end{cmd} %$
+For this problem there are very many optimal solutions.
+
+\begin{figure}
+\insertlitcode{stable-marriage}
+\begin{litcode}{stable-marriage}{mzn}
+int: n;
+
+enum Men = anon_enum(n);
+enum Women = anon_enum(n);
+
+array[Women, Men] of int: rankWomen;
+array[Men, Women] of int: rankMen;
+
+array[Men] of var Women: wife;
+array[Women] of var Men: husband;
+
+\begin{litblock}{assignment}
+constraint forall (m in Men) (husband[wife[m]]=m);
+constraint forall (w in Women) (wife[husband[w]]=w);
+\end{litblock}
+\begin{litblock}{ranking}
+constraint forall (m in Men, o in Women) (
+     rankMen[m,o] < rankMen[m,wife[m]] -> 
+         rankWomen[o,husband[o]] < rankWomen[o,m] );
+
+constraint forall (w in Women, o in Men) (
+     rankWomen[w,o] < rankWomen[w,husband[w]] -> 
+         rankMen[o,wife[o]] < rankMen[o,w] );
+\end{litblock}
+solve satisfy;
+
+output ["wives= \(wife)\nhusbands= \(husband)\n"];
+\end{litcode}
+\caption{Model for stable marriage problem
+    (\texttt{stable-marriage.mzn}).\label{ex:stable-marriage}}
+\end{figure}
+
+
+\begin{figure}
+\insertlitcode{stable-marriage.dzn}
+\begin{litcode}{stable-marriage.dzn}{}
+n = 5;
+rankWomen = 
+ [| 1, 2, 4, 3, 5,
+  | 3, 5, 1, 2, 4,
+  | 5, 4, 2, 1, 3,
+  | 1, 3, 5, 4, 2,
+  | 4, 2, 3, 5, 1 |];
+  
+rankMen = 
+ [| 5, 1, 2, 4, 3,
+  | 4, 1, 3, 2, 5,
+  | 5, 3, 2, 4, 1,
+  | 1, 5, 4, 3, 2,
+  | 4, 3, 2, 1, 5 |];
+\end{litcode}
+\caption{Example data file for the stable marriage problem
+model shown in \autoref{ex:stable-marriage}.\label{ex:sm-data}}
+\end{figure}
+
+Another powerful modelling feature in \ZincOrMiniZinc is 
+that decision variables
+can be used for array access\index{array!access}.  
+As an example, consider the 
+(old-fashioned) \emph{stable
+  marriage problem}. We have $n$ (straight) women and $n$ (straight)
+men. Each man has a ranked list of women and vice versa. We want to find a
+husband/wife for each women/man so that all marriages are \emph{stable} in
+the sense that:
+\begin{itemize}
+\item whenever $m$ prefers another women $o$ to his wife $w$, 
+$o$ prefers her husband to $m$, and
+\item whenever $w$ prefers another man $o$ to her husband $m$, $o$ prefers his wife to $w$.
+\end{itemize}
+
+This can be elegantly modelled in 
+\ZincOrMiniZinc. 
+The model and sample data is shown in \autoref{ex:stable-marriage} and \autoref{ex:sm-data}. 
+
+The first three items in the model declare the number of men/women and the
+set of men and women. Here we introduce the use of \emph{anonymous
+  enumerated types}. Both \texttt{Men} and \texttt{Women} are sets of size
+$n$, but we do not wish to mix them up so we use an anonymous enumerated
+type. This allows \ZincOrMiniZinc{} to detect modelling errors where we use
+\texttt{Men} for \texttt{Women} or vice versa.
+
+
+The matrices \texttt{rankWomen} and \texttt{rankMen}, 
+respectively, give the women's ranking  of the men and the men's ranking of the women.
+Thus, the entry  \texttt{rankWomen[w,m]}
+gives the ranking by woman \texttt{w} of man \texttt{m}. The lower the number in the ranking, the more the man or women is preferred. 
+
+There are two arrays of decision variables: \texttt{wife} and
+\texttt{husband}. These, respectively, contain the wife of each man and the
+husband of each women.
+
+The first two constraints
+\insertlitcode{stable-marriage:assignment}
+ensure that the assignment of husbands and wives is consistent: $w$ is the
+wife of $m$ implies $m$ is the husband of $w$ and vice versa. Notice how in
+\texttt{husband[wife[m]]} the index expression \texttt{wife[m]} is a
+decision variable, not a parameter.
+
+The next two constraints are a  direct encoding of the stability condition:
+\insertlitcode{stable-marriage:ranking}
+This natural modelling of the stable marriage problem is made possible by
+the ability to use decision variables as array indices and to construct
+constraints using the standard Boolean connectives.  
+The alert reader may
+be wondering at this stage, what happens if the array index variable takes a
+value that is outside the index set of the array. \ZincOrMiniZinc treats this as
+failure: an array access \texttt{a[e]} implicitly adds the constraint
+\texttt{e in index\char`\_set(a)}
+to the closest surrounding Boolean context where
+\texttt{index\char`\_set(a)}\ttindexdef{index\_set} 
+gives the index set of \texttt{a}.
+
+\defblock{Anonymous Enumerated Types}{
+An \emph{anonymous enumerated type}
+expression\index{type!enumerated!anonymous}\ttindexdef{enum\_anon}
+is of the form \texttt{enum\_anon(} $n$ \texttt{)} where $n$ is a fixed integer
+expression defining the size of the enumerated type.
+
+An anonymous enumerated type is just like any other enumerated type except
+that we have no names for its elements. When printed out, they are given
+unique names based on the enumerated type name.
+}
+
+
+
+Thus for example, consider the variable declarations
+\begin{code}
+array[1..2] of int: a= [2,3];
+var 0..2: x;
+var 2..3: y;
+\end{code}
+The constraint \texttt{a[x] = y}
+will succeed with $x=1 \wedge y=2$ and $x=2 \wedge y=3$.
+And the constraint \texttt{not a[x] = y} will succeed with 
+$x=0 \wedge y=2$, $x=0 \wedge y=3$, $x=1 \wedge y=3$ and $x=2 \wedge y=2$.
+
+In the case of invalid array accesses by a parameter, the formal semantics
+of MiniZinc treats this as failure so as to ensure that the treatment of
+parameters and decision variables is consistent, but a warning is issued
+since it is almost always an error.
+
+
+\begin{figure}
+\insertlitcode{magic-series}
+\begin{litcode}{magic-series}{mzn}
+int: n;
+array[0..n-1] of var 0..n: s;
+
+constraint forall(i in 0..n-1) (
+   s[i] = (sum(j in 0..n-1)(bool2int(s[j]=i))));
+
+solve satisfy;   
+
+output [ "s = \(s);\n" ] ;
+\end{litcode}
+\caption{Model solving the magic series problem
+  (\texttt{magic-series.mzn}).\label{ex:magic-series}}
+\end{figure}
+
+The coercion function 
+\texttt{bool2int}\ttindex{bool2int} 
+can be called with any Boolean
+expression. This allows the \ZincOrMiniZinc 
+modeller to use so called \emph{higher
+  order constraints}\index{constraint!higher order}.  
+As a simple example consider the \emph{magic series
+  problem}: find a list of numbers $s= [s_0,\ldots,s_{n-1}]$ 
+such that $s_i$ is the number
+of occurrences of $i$ in $s$. An example is $s = [1,2,1,0]$.
+
+A \ZincOrMiniZinc 
+model for this problem %(based on an OPL model given in~\cite{})
+is shown in \autoref{ex:magic-series}. The use of
+\texttt{bool2int} allows us to sum up the number of times the constraint
+\texttt{s[j]=i} is satisfied.
+Executing the command
+\begin{cmd}
+$ mzn-g12fd --all-solutions magic-series.mzn -D "n=4;"
+\end{cmd} %$
+leads to the output
+\begin{cmd}
+s = [1, 2, 1, 0];
+----------
+s = [2, 0, 2, 0];
+----------
+==========
+\end{cmd}
+indicating exactly two solutions to the problem.
+
+Note that \ZincOrMiniZinc will automatically coerce Booleans
+to integers and integers to floats when required. 
+We could replace the the constraint item in \autoref{ex:magic-series}
+with
+\begin{code}
+constraint forall(i in 0..n-1) (
+   s[i] = (sum(j in 0..n-1)(s[j]=i)));
+\end{code}
+and get identical results, since the Boolean expression
+\texttt{s[j] = i} will be automatically coerced to an
+integer, effectively by the \ZincOrMiniZinc system automatically adding the
+missing \texttt{bool2int}.
+
+\defblock{Coercion}{
+\index{coercion!automatic}
+\index{coercion!\texttt{bool2int}}
+\index{coercion!\texttt{int2float}}
+In \ZincOrMiniZinc one can \emph{coerce} a Boolean value to
+an integer value using the \texttt{bool2int} function.
+Similarly one can coerce an integer value to a float value using
+\texttt{int2float}. 
+The instantiation of the coerced value is the same as the argument,
+e.g. \texttt{par bool} is coerced to \texttt{par int}, while
+\texttt{var bool} is coerced to \texttt{var int}. 
+
+\ZincOrMiniZinc automatically coerces Boolean expressions to integer
+expressions and integer expressions to float expressions,
+by inserting \texttt{bool2int} and \texttt{int2float} in the model
+appropriately.
+Note that it will also coerce Booleans to floats using two steps.
+ }
+
+\subsection{Set Constraints}
+
+\index{constraint!set}
+Another powerful modelling feature of \ZincOrMiniZinc 
+is that it allows sets 
+containing integers to be decision variables:
+this means that when the model is evaluated the solver will find which elements are in the set.
+
+As a simple example, consider the \emph{0/1 knapsack problem}. This is a restricted form of the knapsack problem in which we can either choose to place the item in the knapsack or not. Each item has a weight and a profit and we want to find which choice of items leads to the maximum profit subject to the knapsack not being too full. 
+
+It is natural to model this in \ZincOrMiniZinc with a single decision variable:
+\index{var@\texttt{var}!set@\texttt{set}}
+where \texttt{ITEM} is the set of possible items. If the arrays
+\texttt{weight[i]} and \texttt{profit[i]} respectively give the weight and
+profit of item \texttt{i}, and the maximum weight the knapsack can carry is
+given by \texttt{capacity} then a naural model is given in
+\autoref{ex:knapsack-binary}.
+
+
+\begin{figure}
+\insertlitcode{knapsack}
+\begin{litcode}{knapsack}{mzn}
+enum ITEM;
+int: capacity;
+
+array[ITEM] of int: profits;
+array[ITEM] of int: weights;
+
+var set of ITEM: knapsack;
+
+constraint sum (i in knapsack) (weights[i]) <= capacity;
+
+solve maximize sum (i in knapsack) (profits[i]) ;
+
+output ["knapsack = \(knapsack)\n"];
+\end{litcode}
+\caption{Model for the 0/1 knapsack problem
+  (\texttt{knapsack.mzn}).\label{ex:knapsack-binary}}
+\end{figure}
+
+Notice that the \texttt{var}\ttindex{var} 
+keyword comes before the \texttt{set}\ttindex{set} 
+declaration indicating that the
+set itself is the decision variable. 
+This contrasts with an array in which the \texttt{var} keyword
+qualifies the elements in the array rather than the array itself since the
+basic structure of the array is fixed, i.e. its index set.
+
+\begin{figure}
+\insertlitcode{social-golfers}
+\begin{litcode}{social-golfers}{mzn}
+include "partition_set.mzn";
+int: weeks;    set of int: WEEK = 1..weeks; 
+int: groups;   set of int: GROUP = 1..groups;
+int: size;     set of int: SIZE = 1..size;
+int: ngolfers = groups*size; 
+set of int: GOLFER = 1..ngolfers;
+
+array[WEEK,GROUP] of var set of GOLFER: Sched;
+
+\begin{litblock}{constraints}
+constraint 
+    forall (i in 1..weeks-1) (
+               Sched[i,1] < Sched[i+1,1]
+    ) /\
+    forall (i in WEEK, j in GROUP) (
+           card(Sched[i,j]) = size
+        /\ forall (k in j+1..groups) (
+                Sched[i,j] < Sched[i,k]
+             /\ Sched[i,j] intersect Sched[i,k] = {}
+           )
+    ) /\
+    forall (i in WEEK) (
+          partition_set([Sched[i,j] | j in GROUP], GOLFER)
+       /\ forall (j in 1..groups-1) (
+              Sched[i,j] < Sched[i,j+1]
+          )
+    ) /\
+    forall (i in 1..weeks-1, j in i+1..weeks) (
+        forall (x,y in GROUP) (
+            card(Sched[i,x] intersect Sched[j,y]) <= 1
+        )
+    );
+\end{litblock}
+\begin{litblock}{symmetry}
+  constraint 
+    % Fix the first week %
+    forall (i in GROUP, j in SIZE) (
+        ((i-1)*size + j) in Sched[1,i]
+    ) /\
+    % Fix first group of second week %
+    forall (i in SIZE) (
+        ((i-1)*size + 1) in Sched[2,1]
+    ) /\
+    % Fix first 'size' players
+    forall (w in 2..weeks, p in SIZE) (
+        p in Sched[w,p]
+    );
+\end{litblock}
+  
+solve satisfy;
+
+output [ show(Sched[i,j]) ++ " " ++
+         if j == groups then "\n" else "" endif |
+         i in WEEK, j in GROUP ];
+\end{litcode}
+\caption{Model for the social golfers problems 
+(\texttt{social-golfers.mzn}).\label{ex:social-golfers}}
+\end{figure}
+
+
+\begin{figure}
+\insertlitcode{social-golfers:constraints}
+\caption{Constraints for the social golfers problems.
+\label{ex:social-golfers-constraints}}
+\end{figure}
+
+
+\begin{figure}
+\insertlitcode{social-golfers:symmetry}
+\caption{Symmetry breaking constraints for the social golfers problems.
+\label{ex:social-golfers-symmetry}}
+\end{figure}
+
+
+As a more complex example of set constraint consider the social golfers
+problem shown in \autoref{ex:social-golfers}. 
+The aim is to schedule a golf tournament over \texttt{weeks}
+using \texttt{groups} $\times$ \texttt{size} golfers. Each week we have to
+schedule \texttt{groups} different groups each of size \texttt{size}.
+No two pairs of golfers should ever play in two groups.
+
+The variables in the model are sets of golfers \texttt{Sched[i,j]}
+for the $i^{th}$ week and $j^{th}$ group,
+
+The constraints shown in
+\autoref{ex:social-golfers-constraints} 
+first enforces an ordering on the first
+set in each week to remove symmetry in swapping weeks. Next it 
+enforces an ordering on the sets in each week, and makes each set have a
+cardinality of \texttt{size}.
+It then ensures that each week is a partition of the set of golfers
+using the global constraint 
+\texttt{partition\_set}\index{global constraint!\texttt{partition\char`\_set}}. 
+Finally the last constraint ensures that no two players play in two
+groups together (since the cardinality of the intersection of any two groups
+is at most 1).
+
+There are also symmetry breaking\index{symmetry!breaking} 
+initialisation constraints shown in \autoref{ex:social-golfers-symmetry}: 
+the first week
+is fixed to have all players in order; the second week is made up of the
+first players of each of the first groups in the first week; finally the
+model forces the first \texttt{size} players to appear in their corresponding 
+group number for the remaining weeks.
+
+Executing the command
+\begin{cmd}
+$ mzn-g12fd social-golfers.mzn social-golfers.dzn
+\end{cmd} %$
+where the data file defines a problem with 4 weeks, with 4 groups
+of size 3 leads to the output
+\begin{cmd}
+1..3 4..6 7..9 10..12 
+{ 1, 4, 7 } { 2, 5, 10 } { 3, 9, 11 } { 6, 8, 12 }
+{ 1, 5, 8 } { 2, 6, 11 } { 3, 7, 12 } { 4, 9, 10 }
+{ 1, 6, 9 } { 2, 4, 12 } { 3, 8, 10 } { 5, 7, 11 }
+----------
+\end{cmd}
+Notice hows sets which are ranges may be output in range format.
+
+
+\subsection{Putting it all together}
+
+We finish this section with a complex example illustrating most
+of the features introduced in this chapter including 
+enumerated types, complex constraints, global constraints, 
+and complex output.
+
+\begin{figure}
+\insertlitcode{wedding}
+\begin{litcode}{wedding}{mzn}
+enum Guests = { bride, groom, bestman, bridesmaid, bob, carol, 
+  ted, alice, ron, rona, ed, clara}; 
+set of int: Seats = 1..12;
+set of int: Hatreds = 1..5;
+array[Hatreds] of Guests: h1 = [groom, carol, ed, bride, ted];
+array[Hatreds] of Guests: h2 = [clara, bestman, ted, alice, ron];
+set of Guests: Males = {groom, bestman, bob, ted, ron,ed};
+set of Guests: Females = {bride,bridesmaid,carol,alice,rona,clara}; 
+
+array[Guests] of var Seats: pos; % seat of guest
+array[Hatreds] of var Seats: p1;  % seat of guest 1 in hatred
+array[Hatreds] of var Seats: p2;  % seat of guest 2 in hatred 
+array[Hatreds] of var 0..1: sameside;  % seats of hatred on same side 
+array[Hatreds] of var Seats: cost;  % penalty of hatred  
+
+include "alldifferent.mzn";
+constraint alldifferent(pos);
+constraint forall(g in Males)( pos[g] mod 2 == 1 );
+constraint forall(g in Females)( pos[g] mod 2 == 0 );
+constraint not (pos[ed] in {1,6,7,12});
+constraint abs(pos[bride] - pos[groom]) <= 1 /\ 
+           (pos[bride] <= 6 <-> pos[groom] <= 6);
+constraint forall(h in Hatreds)(
+               p1[h] = pos[h1[h]] /\
+               p2[h] = pos[h2[h]] /\
+               sameside[h] = bool2int(p1[h] <= 6 <-> p2[h] <= 6) /\
+               cost[h] = sameside[h] * abs(p1[h] - p2[h]) +
+                  (1 - sameside[h]) * (abs(13 - p1[h] - p2[h]) + 1) );
+
+solve maximize sum(h in Hatreds)(cost[h]);
+
+output [ show(g)++" " | s in Seats,g in Guests where fix(pos[g]) == s]
+       ++ ["\n"]; 
+\end{litcode}
+\caption{Planning wedding seating using enumerated types
+(\texttt{wedding.mzn})\label{ex:wedding}}
+\end{figure}
+
+The model of \autoref{ex:wedding} arranges seats at the wedding table.
+The table has 12 numbered seats in order around the table, 6 on each side.
+Males must sit in odd numbered seats, and females in even. 
+Ed cannot sit at the end of the table because of a phobia, 
+and the bride and groom must
+sit next to each other. The aim is to maximize the distance between known
+hatreds. The distance between seats is the difference in seat number
+if on the same side, otherwise its the distance to the opposite seat
++ 1. 
+
+Note that in the output statement we consider each seat $s$ and search for a
+guest $g$ who is assigned to that seat. We make use of the built in function
+\texttt{fix} which checks if a decision variables is fixed and returns its
+fixed value, and otherwise aborts. 
+This is always safe to use in output statements, since by the
+time the output statement is run all decision variables should be fixed.
+
+
+
+Running
+\begin{cmd}
+$ mzn-g12fd wedding.mzn
+\end{cmd} %$
+Results in the output
+\begin{cmd}
+ted bride groom rona bob carol ron alice ed bridesmaid bestman clara
+----------
+==========
+\end{cmd}
+
+The resulting table placement is illustrated in \autoref{fig:wedding}
+where the lines indicate hatreds. The total distance is 22.
+
+\begin{figure}
+\begin{center}
+\includegraphics[width=10cm]{figures/wedding}
+\end{center}
+\caption{Seating arrangement at the wedding table}
+\label{fig:wedding}
+\end{figure}
+
+
+\pjs{Move the fix definition elsewhere!}
+\defblock{Fix}{
+In output items the built-in function \texttt{fix}\ttindexdef{fix}\index{output!\texttt{fix}} checks that
+the value of a decision variable is fixed\index{fixed} 
+and coerces the instantiation from
+decision variable to parameter.
+}
+
+% oil-blending
+%arrays floats sum forall
+%more complex datafile
+
+%suduko
+%2-D array
+%complex transformation from data file
+
+%jobshop
+%disjunction,
+
+%talk about other complex constraints--IC example?
+
+%magic sequence
+%reification
+
+%warehouse placement
+%reification more complex example
+
+%0/1 knapsack
+%set constraint
+
+%social golfers
+%more complex set constraint
+
+%finish with larger example from Mark
+

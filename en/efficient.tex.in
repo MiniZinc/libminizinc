@@ -1,0 +1,741 @@
+\newpage
+
+\section{Effective Modelling Practices in \ZincOrMiniZinc}\label{sec:efficient}
+
+There are almost always multiple
+ways to model the same problem, some of which generate models which are
+efficient to solve, and some of which are not.
+In general it is very hard to tell a priori which models are the most
+efficient
+for solving a particular problem, and indeed it may critically depend on
+the underlying solver used, and search strategy.  In this chapter we
+concentrate
+on modelling practices that avoid inefficiency in generating models
+and generated models.
+
+
+\subsection{Variable Bounds}
+
+\index{variable!bound}
+Finite domain propagation engines, which are the principle type of solver
+targeted by \ZincOrMiniZinc are more effective the tighter the bounds on the
+variables involved.  They can also behave badly with problems which
+have subexpressions that take large integer values, since they may
+implicitly limit the size of integer variables.
+
+\ignore{
+\begin{figure}[h]
+\insertlitcode{unbounded}
+\begin{litcode}{unbounded}{mzn}
+var int: a;
+var int: b;
+
+constraint 200*a + 150 * b <= 4000;
+constraint 100*a + 250 * b >= 0;
+
+solve satisfy;
+
+output ["a = ",show(a), " b = ", show(b), "\n"];
+%output ["a = \(a);\n"];
+\end{litcode}
+\caption{A model with unbounded integers
+  (\texttt{unbounded.mzn}).\label{ex:unb}}
+\end{figure}
+\noindent{}The result of executing 
+\begin{cmd}
+$ mzn-g12fd unbounded.mzn
+\end{cmd} %$
+is the error message
+\begin{cmd}
+evaluation of model would result in integer overflow.
+\end{cmd}
+This is because the \texttt{var int}\index{\texttt{var}!\texttt{int}} 
+variables get default bounds
+$-1,000,000 .. 1,000,000$ leading to intermediate expressions which
+are too big to be represented in the default bounds.
+Changing the variable declarations to \texttt{var -1000..1000} will lead
+to solutions being found immediately.
+Note that using the mixed integer solver 
+\begin{cmd}
+$ mzn-g12mip unbounded.mzn
+\end{cmd} %$
+immediately returns an answer \texttt{a = 0 b = 0}.}
+
+
+Note that even models where all variables are bounded, may introduce
+intermediate expressions that are too large for the solver.
+}
+
+\begin{figure}
+\insertlitcode{grocery}
+\begin{litcode}{grocery}{mzn}
+var int: item1; 
+var int: item2;
+var int: item3;
+var int: item4;
+
+constraint item1 + item2 + item3 + item4 == 711;
+constraint item1 * item2 * item3 * item4 == 711 * 100 * 100 * 100;
+  
+constraint         0 < item1 /\ item1 <= item2
+           /\ item2 <= item3 /\ item3 <= item4;
+  
+solve satisfy;
+
+output ["{", show(item1), ",", show(item2), ",", show(item3), ",",
+        show(item4),"}\n"];
+\end{litcode}
+\caption{A model with unbounded variables
+  (\texttt{grocery.mzn}).\label{ex:grocery}}
+\end{figure}
+
+The grocery problem shown in \autoref{ex:grocery} finds 4 items
+whose prices in dollars add up to 7.11 and multiply up to 7.11.
+The variables are declared unbounded. Running 
+\begin{cmd}
+$ mzn-g12fd grocery.mzn
+\end{cmd} %$
+yields 
+\begin{cmd}
+=====UNSATISFIABLE=====
+% grocery.fzn:11: warning: model inconsistency detected before search.
+\end{cmd}
+This is because the 
+intermediate expressions in the multiplication
+are also \texttt{var ints} 
+and are given default bounds in the solver
+$-1,000,000 .. 1,000,000$ 
+and these ranges are too small to hold the
+values of the intermediate expressions may need to take.
+
+Modifying the model so that the items are declared with tight bounds
+\begin{code}
+var 1..711: item1;
+var 1..711: item2;
+var 1..711: item3;
+var 1..711: item4;
+\end{code}
+results in a better model, since now \ZincOrMiniZinc can infer bounds on the
+intermediate expressions and use these rather than the default bounds.
+With this modification, executing the model gives
+\begin{cmd}
+{120,125,150,316}
+----------
+\end{cmd}
+ 
+Note however that even the improved model may be too difficult for
+some solvers.
+Running 
+\begin{cmd}
+$ mzn-g12lazy grocery.mzn
+\end{cmd} %$
+does not return an answer, since the solver builds a huge representation
+for the intermediate product variables.
+
+\defblock{Bounding variables}{
+\index{variable!bound}
+Always try to use bounded variables in models. 
+When using \texttt{let}
+declarations to introduce new variables, always try to define them 
+with correct and tight bounds.  This will make your model more efficient,
+and avoid the possibility of unexpected overflows.
+One exception is when you introduce a new variable which is 
+immediately defined as equal to an expression. Usually \ZincOrMiniZinc will be
+able to infer effective bounds from the expression.
+}
+
+
+\subsection{Unconstrained Variables}
+
+\index{variable!unconstrained}
+Sometimes when modelling it is easier to introduce more variables than
+actually required to model the problem.
+
+\begin{figure}
+\insertlitcode{golomb}
+\begin{litcode}{golomb}{mzn}
+include "alldifferent.mzn";
+
+int: n; % number of marks on ruler
+int: m; % max length of ruler
+
+array[1..n] of var 0..m: mark;
+array[1..n,1..n] of var 0..m: diffs;
+
+constraint mark[1] = 0;
+constraint forall ( i in 1..n-1 ) ( mark[i] < mark[i+1] );
+constraint forall (i,j in 1..n where i > j)          % (diff)
+                  (diffs[i,j] = mark[i] - mark[j]);  % (diff)
+constraint alldifferent([ diffs[i,j] | i,j in 1..n where i > j]);
+constraint diffs[2,1] < diffs[n,n-1];  % symmetry break
+
+solve satisfy;
+
+output ["mark = \(mark);\ndiffs = \(diffs);\n"];
+\end{litcode}
+\caption{A model for Golomb rulers with unconstrained variables
+  (\texttt{golomb.mzn}).\label{ex:unc}}
+\end{figure}
+
+Consider the model for Golomb rulers shown in \autoref{ex:unc}.
+A Golomb ruler of $n$ marks is one where the absolute differences
+between any two marks are different. 
+It creates a two dimensional array of difference variables, but 
+only uses those of the form \texttt{diff[i,j]} where $i > j$.
+Running the model as 
+\begin{cmd}
+$ mzn-g12fd golomb.mzn -D "n = 4; m = 6;"
+\end{cmd} %$
+results in output
+\begin{cmd}
+mark = [0, 1, 4, 6];
+diffs = [0, 0, 0, 0, 1, 0, 0, 0, 4, 3, 0, 0, 6, 5, 2, 0];
+----------
+\end{cmd}
+and everything seems fine with the model.
+But if we ask for all solutions using
+\begin{cmd}
+$ mzn-g12fd -a golomb.mzn -D "n = 4; m = 6;"
+\end{cmd} %$
+we are presented with a never ending list of the same solution!
+
+What is going on?  In order for the finite domain solver to finish
+it needs to fix all variables, including the variables \texttt{diff[i,j]}
+where $i \leq j$, which means there are countless ways of generating a
+solution, simply by changing these variables to take arbitrary values.
+
+We can avoid problems with unconstrained variables, by modifying
+the model so that they are fixed to some value. For example replacing
+the lines marked \texttt{(diff}) in \autoref{ex:unc}
+to 
+\begin{code}
+constraint forall(i,j in 1..n) 
+                 (diffs[i,j] = if (i > j) then mark[i] - mark[j]
+                               else 0 endif);
+\end{code}
+ensures that the extra variables are all fixed to 0. With this change
+the solver returns just one solution.
+
+\ZincOrMiniZinc will automatically remove variables which are unconstrained
+and not used in the output.  An alternate solution to the above problem is
+simply to remove the output of the \texttt{diffs} array by changing the
+output statement to
+\begin{code}
+output ["mark = \(mark);\n"];
+\end{code}
+With this change running 
+\begin{cmd}
+$ mzn-g12fd -a golomb.mzn -D "n = 4; m = 6;"
+\end{cmd} %$
+simply results in
+\begin{cmd}
+mark = [0, 1, 4, 6];
+----------
+==========
+\end{cmd}
+illustrating the unique solution.
+
+\ignore{
+% You may be able to use local variables to avoid creating unconstrained
+% variables. You can omit the \texttt{diff} variables from the model
+% \texttt{golomb.mzn} by replacing the lines marked from \texttt{(diff)}
+% and \texttt{(let}} by
+% \begin{verbatim}
+% constraint alldifferent([ mark[i] - mark[j] | u,j in 1..n where i > j ]);
+% constraint m[2] - m[1] < m[n] - m[n-1];
+% \end{verbatim}
+
+The real danger of unconstrained search variables is when they are
+searched upon. Since they are irrelevant to the problem they can
+explode the search, for no purpose.
+
+\begin{figure}
+\insertlitcode{unconstrained}
+\begin{litcode}{unconstrained}{mzn}
+include "alldifferent.mzn";
+
+array[1..15] of var bool: b;
+array[1..4] of var 1..10: x;
+
+constraint alldifferent(x) /\ sum(i in 1..4)(x[i]) = 9;
+
+solve satisfy;
+
+output ["b = \(b);\nx = \(x);\n"]
+\end{litcode}
+\caption{A model with unconstrained variables
+  (\texttt{unconstrained.mzn}).\label{ex:uncb}}
+\end{figure}
+
+Consider the unsatisfiable model shown in \autoref{ex:uncb} where the
+Boolean variables \texttt{b} are unconstrained. Executing
+\begin{cmd}
+$ mzn-g12fd --statistics unconstrained.mzn
+\end{cmd} %$
+\index{statistics}
+which prints statistics\index{runtime flag!\texttt{--statistics}}
+(we can alternately use \texttt{-s}\index{runtime flag!\texttt{--statistics}}) 
+shows that search requires 3s and searches 490,000 
+choices. Removing the useless Boolean variables means the search is instant
+and searches 14 choices.  
+}
+
+
+\defblock{Unconstrained Variables}{
+\index{variable!unconstrained}
+Models should never have unconstrained variables. Sometimes it is
+difficult to model without unnecessary variables. 
+If this is the case add
+constraints to fix the unnecessary variables, 
+so they cannot influence the
+solving.
+}
+
+
+\subsection{Effective Generators}
+\index{generator}
+
+Imagine we want to count the number of triangles ($K_3$ subgraphs)
+appearing in a graph.  Suppose the graph is defined by
+an adjacency matrix: $adj[i,j]$ is true if nodes $i$ and $j$ are
+adjacent.  We might write
+\begin{code}
+int: count = sum ([ 1 | i,j,k in NODES where i < j  /\ j < k 
+                       /\ adj[i,j] /\ adj[i,k] /\ adj[j,k]]);
+\end{code}
+which is certainly correct, but it examines all triples of nodes.
+If the graph is sparse we can do better by realising that some
+tests can be applied as soon as we select $i$ and $j$.
+\begin{code}
+int: count = sum( i,j in NODES where i < j /\ adj[i,j])
+     (sum([1 | k in NODES where j < k /\ adj[i,k] /\ adj[j,k]]));
+\end{code}
+
+You can use the builitin \texttt{trace}\ttindexdef{trace} function to help
+determine what is happening inside generators. 
+
+\defblock{Tracing}{
+The function \texttt{trace}($s$,$e$) prints the string $s$ before
+evaluating the expression $e$ and returning its value.  
+It can be used in any context.  
+}
+
+For example, we can see how many times the test is performed in the inner
+loop for both versions of the calculation.
+\insertlitcode{count1}
+\begin{litcode}{count1}{mzn}
+\begin{litblock}{ignore}
+int:n;
+set of int: NODES = 1..n;
+array [NODES,NODES] of bool: adj;
+bool: t = true;
+bool: f = false;
+n = 4;
+\end{litblock}
+int:count=sum([ 1 | i,j,k in NODES where 
+          trace("+", i<j /\j<k /\ adj[i,j] /\ adj[i,k] /\ adj[j,k]) ]);
+adj = [| false, true,  true,  false
+       | true,  false, true,  false
+       | true,  true,  false, true
+       | false, false, true,  false |];
+constraint trace("\n",true);
+solve satisfy;
+\end{litcode}
+Produces the output:
+\begin{cmd}
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+----------
+\end{cmd}
+indicating the inner loop is evaluated 64 times while
+\insertlitcode{count2}
+\begin{litcode}{count2}{mzn}
+\begin{litblock}{ignore}
+int:n;
+set of int: NODES = 1..n;
+array [NODES,NODES] of bool: adj;
+bool: t = true;
+bool: f = false;
+n = 4;
+adj = [| false, true,  true,  false
+       | true,  false, true,  false
+       | true,  true,  false, true
+       | false, false, true,  false |];
+solve satisfy;
+\end{litblock}
+int: count = sum( i,j in NODES where i < j /\ adj[i,j])
+  (sum([1 | k in NODES where trace("+", j < k /\ adj[i,k] /\ adj[j,k])]));
+\begin{litblock}{ignore}
+constraint trace("\n",true);
+\end{litblock}
+\end{litcode}
+Produces the output:
+\begin{cmd}
+++++++++++++++++
+----------
+\end{cmd}
+indicating the inner loop is evaluated 16 times.
+
+Note that you can use the dependent strings in \texttt{trace} to
+understand what is happening during model creation.
+\insertlitcode{count3}
+\begin{litcode}{count3}{mzn}
+\begin{litblock}{ignore}
+int:n;
+set of int: NODES = 1..n;
+array [NODES,NODES] of bool: adj;
+bool: t = true;
+bool: f = false;
+n = 4;
+adj = [| false, true,  true,  false
+       | true,  false, true,  false
+       | true,  true,  false, true
+       | false, false, true,  false |];
+solve satisfy;
+\end{litblock}
+int: count = sum( i,j in NODES where i < j /\ adj[i,j])(
+       sum([trace("("++show(i)++","++show(j)++","++show(k)++")",1) | 
+             k in NODES where  j < k /\ adj[i,k] /\ adj[j,k]]));
+\begin{litblock}{ignore}
+constraint trace("\n",true);
+\end{litblock}
+\end{litcode}
+will print out each of triangles that is found in the calculation.
+It produces the output
+\begin{cmd}
+(1,2,3)
+----------
+\end{cmd}
+
+
+
+\subsection{Redundant Constraints}
+
+\index{constraint!redundant}
+The form of a model will affect how well the constraint solver can solve it.
+In many cases adding constraints which are redundant, i.e. are logically
+implied by the existing model, may improve the search for
+solutions by making more information available to the solver earlier.
+
+Consider the magic series problem from Section~\autoref{sec:complex}.
+\ifthenelse {\boolean{UseZinc}}
+{
+Running this for $n = 64$ as follows:
+\ifthenelse {\boolean{Rabbit}}
+{
+\begin{cmd}
+$ zinc magic-series.mzn
+$ ./magic-series -S n64.dzn
+\end{cmd}
+takes minutes to solve.
+}
+{
+\begin{cmd}
+$ zinc magic-series.mzn
+$ ./magic-series --solutions all -S n64.dzn
+\end{cmd}
+takes a few seconds of solving and returns 1 solution.}}
+{
+Running this for $n = 16$ as follows:
+\begin{cmd}
+$ mzn-g12fd --all-solutions --statistics magic-series.mzn -D "n=16;"
+\end{cmd} %$
+might result in output
+\begin{cmd}
+s = [12, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0];
+----------
+==========
+\end{cmd}
+and the statistics showing 174 choice points required.
+}
+
+We can add redundant constraints to the model. Since each number
+in the sequence counts the number of occurrences of a number we know
+that they sum up to $n$. Similarly we know that the sum of
+$s[i] \times i$ must also add up to $n$ because the sequence is magic.
+Adding these constraints to our model using
+\insertlitcode{magic-series2:redundant}
+gives the model in
+\autoref{ex:magic-series2}.
+
+\begin{figure}
+\insertlitcode{magic-series2}
+\begin{litcode}{magic-series2}{mzn}
+int: n;
+array[0..n-1] of var 0..n: s;
+
+constraint forall(i in 0..n-1) (
+   s[i] = (sum(j in 0..n-1)(bool2int(s[j]=i))));
+\begin{litblock}{redundant}
+constraint sum(i in 0..n-1)(s[i]) = n;
+constraint sum(i in 0..n-1)(s[i] * i) = n;
+\end{litblock}
+solve satisfy;   
+
+output [ "s = ", show(s), ";\n" ] ;
+\end{litcode}
+\caption{Model solving the magic series problem with
+  redundant constraints (\texttt{magic-series2.mzn}).\label{ex:magic-series2}}
+\end{figure}
+
+\ifthenelse {\boolean{UseZinc}}
+{
+\ifthenelse {\boolean{Rabbit}}
+{
+Running the same problem as before
+\begin{cmd}
+$ zinc magic-series2.mzn
+$ ./magic-series2 -S n64.dzn
+\end{cmd}
+finds the same solution almost immediately.
+}
+{
+Running the same problem as before
+\begin{cmd}
+$ zinc magic-series2.mzn
+$ ./magic-series2 --solutions all -S n64.dzn
+\end{cmd}
+requires much less solving time and returns the same solution.
+The redundant constraints have allowed the solver to prune the
+search much earlier.}}
+{
+Running the same problem as before
+\begin{cmd}
+$ mzn-g12fd --all-solutions --statistics magic-series2.mzn -D "n=16;"
+\end{cmd} %$
+results in the same output, but with statistics showing just 13 choicepoints
+explored. The redundant constraints have allowed the solver to prune the
+search much earlier.}
+
+
+\subsection{Modelling Choices}
+
+There are many ways to model the same problem in \ZincOrMiniZinc, 
+although some may be more natural than others.
+Different models may have very different efficiency of solving, and worse
+yet, different models may be better or worse for different solving backends.
+There are however some guidelines for usually producing better models:
+
+\defblock{Choosing between models}{
+The better model is likely to have some of the following features
+\begin{itemize}
+\item smaller number of variables, or at least those that are not
+  functionally defined by other variables
+\item smaller domain sizes of variables
+\item more succinct, or direct, definition of the constraints of the model
+\item uses global constraints as much as possible
+\end{itemize}
+In reality all this has to be tempered by how effective the search is for
+the model.  Usually the effectiveness of search is hard to judge except by
+experimentation.
+}
+
+Consider the problem of finding permutations of $n$ numbers
+from 1 to $n$ such that the differences between adjacent numbers
+also form a permutation of numbers $1$ to $n-1$.
+Note that the $u$ variables are functionally defined by
+the $x$ variables so the raw search space is $n^n$
+The obvious way to model this problem is shown in \autoref{ex:allint}
+
+\begin{figure}
+\insertlitcode{allinterval}
+\begin{litcode}{allinterval}{mzn}
+include "alldifferent.mzn";
+
+int: n;
+
+array[1..n] of var 1..n: x;      % sequence of numbers
+array[1..n-1] of var 1..n-1: u;  % sequence of differences
+
+constraint alldifferent(x);
+constraint alldifferent(u);
+constraint forall(i in 1..n-1)(u[i] = abs(x[i+1] - x[i]));
+
+solve :: int_search(x, first_fail, indomain_min, complete)
+      satisfy;
+output ["x = ",show(x),"\n"];
+\end{litcode}
+\caption{A natural model for the all interval series problem
+  ``prob007'' in CSPlib.
+  (\texttt{allinterval.mzn}).\label{ex:allint}}
+\end{figure}
+
+In this model the array $x$ represents the permutation of the $n$
+numbers and the constraints are naturally represented using \talldiff{}.
+\ifthenelse {\boolean{UseZinc}}
+{
+Running the model
+\begin{cmd}
+$ zinc allinterval.mzn
+$ ./allinterval.mzn --solutions all -S n10.dzn
+\end{cmd}
+finds all solutions in a 2.0s.}
+{Running the model
+\begin{cmd}
+$ mzn-g12fd -all-solutions --statistics allinterval.mzn -D "n=10;"
+\end{cmd} %$
+finds all solutions in 84598 choice points and 3s.}
+
+An alternate model uses array $y$ where $y[i]$ gives the
+position of the number $i$ in the sequence.  
+We also model the positions of the differences using variables
+$v$. $v[i]$ is the position in the sequence where the absolute difference
+$i$ occurs.  If the values of $y[i]$ and $y[j]$ differ by one 
+where $j > i$, meaning the
+positions are adjacent, then $v[j-i]$ is constrained to be the earliest
+of these positions.
+We can add two redundant constraints to this model:
+since we know that a difference of $n-1$ must result, we know that
+the positions of 1 and $n$ must be adjacent
+$| y[1] - y[n] | = 1$,
+which also tell us that the position of difference $n-1$ is
+the earlier of $y[1]$ and $y[n]$, i.e.
+$v[n-1] = min(y[1], y[n])$.
+With this we can model the problem
+as shown in \autoref{ex:allint2}. The output statement recreates the
+original sequence $x$ from the array of positions $y$.
+
+\begin{figure}
+\insertlitcode{allinterval2}
+\begin{litcode}{allinterval2}{mzn}
+include "alldifferent.mzn";
+
+int: n;
+
+array[1..n] of var 1..n: y;  % position of each number
+array[1..n-1] of var 1..n-1: v; % position of difference i
+
+constraint alldifferent(y);
+constraint alldifferent(v);
+constraint forall(i,j in 1..n where i < j)(
+	   	 (y[i] - y[j] = 1 -> v[j-i] = y[j]) /\
+                 (y[j] - y[i] = 1 -> v[j-i] = y[i])
+	   );
+
+constraint abs(y[1] - y[n]) = 1 /\ v[n-1] = min(y[1], y[n]);
+
+solve :: int_search(y, first_fail, indomain_min, complete)
+      satisfy;
+
+output [ "x = [",] ++
+       [ show(i) ++ if j == n then "]\n;" else ", " endif 
+         | j in 1..n, i in 1..n where j == fix(y[i]) ];
+\end{litcode}
+\caption{An inverse model for the all interval series problem
+  ``prob007'' in CSPlib.
+  (\texttt{allinterval2.mzn}).\label{ex:allint2}}
+\end{figure}
+
+The inverse model has the same size as the original model, in terms of
+number of variables and domain sizes.  But the inverse model has a much more
+indirect way of modelling the relationship between $y$ and $v$ variables
+as opposed to the relationship between $x$ and $u$ variables.
+Hence we might expect the original model to be better.
+
+\ifthenelse {\boolean{UseZinc}}
+{
+The command
+\begin{cmd}
+$ zinc allinterval2.mzn
+$ ./allinterval2.mzn --solutions all -S n10.dzn
+\end{cmd}
+finds all the solutions in 4.4s.}
+{The command
+\begin{cmd}
+$ mzn-g12fd --all-solutions --statistics allinterval2.mzn -D "n=10;"
+\end{cmd} %$
+finds all the solutions in  75536 choice points and 18s.}
+Interestingly, although the model is not as succinct here, the search on the
+$y$ variables is better than searching on the $x$ variables. 
+The lack of succinctness means that even though the search requires
+less choice it is substantially slower.
+
+\subsection{Multiple Modelling and Channels}
+
+When we have two models for the same problem it may be 
+useful to use both models together by tying the variables in the two models
+together, since each can give different information to the solver.
+
+\begin{figure}
+\insertlitcode{allinterval3}
+\begin{litcode}{allinterval3}{mzn}
+include "inverse.mzn";
+
+int: n;
+
+array[1..n] of var 1..n: x;  % sequence of numbers
+array[1..n-1] of var 1..n-1: u;  % sequence of differences
+
+constraint forall(i in 1..n-1)(u[i] = abs(x[i+1] - x[i])); 
+
+array[1..n] of var 1..n: y;  % position of each number
+array[1..n-1] of var 1..n-1: v; % position of difference i
+
+constraint inverse(x,y);
+constraint inverse(u,v);
+
+constraint abs(y[1] - y[n]) = 1 /\ v[n-1] = min(y[1], y[n]);
+
+solve :: int_search(y, first_fail, indomain_min, complete)
+      satisfy;
+
+output ["x = ",show(x),"\n"];
+\end{litcode}
+\caption{A dual model for the all interval series problem
+  ``prob007'' in CSPlib.
+  (\texttt{allinterval3.mzn}).\label{ex:allint3}}
+\end{figure}
+
+\autoref{ex:allint3} gives a dual model combining features of 
+\texttt{allinterval.mzn} and \texttt{allinterval2.mzn}.
+The beginning of the model is taken from \texttt{allinterval.mzn}.
+We then introduce the $y$ and $v$ variables from \texttt{allinterval2.mzn}.
+We tie the variables together using the 
+global 
+\texttt{inverse}\ttindex{inverse}\index{global constraint!\texttt{inverse}}:
+$inverse(x,y)$ holds if $y$ is the inverse function of $x$ (and vice versa)
+that is $x[i] = j \Leftrightarrow y[j] = i$. A definition
+is shown in \autoref{ex:inverse}.
+The model does not include the constraints relating the 
+$y$ and $v$ variables, they are redundant (and indeed propagation
+redundant%~\cite{prop-redundant}
+) 
+so they do not add information for a
+propagation solver. The \talldiff{} constraints are also missing since
+they are made redundant (and propagation redundant) by the inverse
+constraints.
+The only constraints are the relationships of the $x$ and $u$ variables
+and the redundant constraints on $y$ and $v$.
+
+\begin{figure}
+\insertlitcode{inverse}
+\begin{litcode}{inverse}{mzn}
+predicate inverse(array[int] of var int: f,
+                  array[int] of var int: invf) =
+    forall(j in index_set(invf))(invf[j] in index_set(f)) /\
+    forall(i in index_set(f))(
+        f[i] in index_set(invf) /\
+        forall(j in index_set(invf))(j == f[i] <-> i == invf[j])
+    );
+\end{litcode}
+\caption{A definition of the \texttt{inverse} global
+  constraint.
+(\texttt{inverse.mzn}).\label{ex:inverse}}
+\end{figure}
+
+One of the benefits of the dual model is that there is more scope for
+defining different search strategies.
+Running the dual model, 
+\begin{cmd}
+$ mzn-g12fd -all-solutions --statistics allinterval3.mzn -D "n=10;"
+\end{cmd} %$
+which note uses the search strategy of
+the inverse model, labelling the $y$ variables, 
+finds all solutions in 1714 choice points and 0.5s.
+Note that running the same model with labelling on $x$ variables
+requires 13142 choice points and 1.5s.
+
+
+
+
+
+%\subsection{Symmetry}
