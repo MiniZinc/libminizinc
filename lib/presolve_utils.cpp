@@ -87,8 +87,10 @@ namespace MiniZinc{
     switch (exp->eid()) {
       case Expression::E_ID: {
         VarDecl* vd = follow_id_to_decl(exp)->dyn_cast<VarDecl>();
-        if (vd) {
+        if ( vd && vd->ti()->domain() ) {
           return vd->ti()->domain();
+        } else if (vd->e()) {
+          return computeDomainExpr(env, vd->e());
         } else {
           break;
         }
