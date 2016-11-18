@@ -830,6 +830,20 @@ namespace MiniZinc {
           } catch (ResultUndefinedError&) {
             return false;
           }
+        } else if (lhs->type().isfloat() && rhs->type().isfloatset()) {
+          try {
+            FloatVal v0 = eval_float(env,lhs);
+            GCLock lock;
+            FloatSetVal* v1 = eval_floatset(env,rhs);
+            switch (bo->op()) {
+              case BOT_IN: return v1->contains(v0);
+              default:
+                assert(false);
+                throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
+            }
+          } catch (ResultUndefinedError&) {
+            return false;
+          }
         } else if (lhs->type().is_set() && rhs->type().is_set()) {
           try {
             GCLock lock;
@@ -2091,50 +2105,56 @@ namespace MiniZinc {
     void vBinOp(const BinOp& bo) {
       FBounds b1 = _bounds.back(); _bounds.pop_back();
       FBounds b0 = _bounds.back(); _bounds.pop_back();
-      switch (bo.op()) {
-        case BOT_PLUS:
-          _bounds.push_back(FBounds(b0.first+b1.first,b0.second+b1.second));
-          break;
-        case BOT_MINUS:
-          _bounds.push_back(FBounds(b0.first-b1.second,b0.second-b1.first));
-          break;
-        case BOT_MULT:
-        {
-          FloatVal x0 = b0.first*b1.first;
-          FloatVal x1 = b0.first*b1.second;
-          FloatVal x2 = b0.second*b1.first;
-          FloatVal x3 = b0.second*b1.second;
-          FloatVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
-          FloatVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
-          _bounds.push_back(FBounds(m,n));
+      if (!b1.first.isFinite() || !b1.second.isFinite() || !b0.first.isFinite() || !b0.second.isFinite()) {
+        valid = false;
+        _bounds.push_back(FBounds(0.0,0.0));
+      } else {
+
+        switch (bo.op()) {
+          case BOT_PLUS:
+            _bounds.push_back(FBounds(b0.first+b1.first,b0.second+b1.second));
+            break;
+          case BOT_MINUS:
+            _bounds.push_back(FBounds(b0.first-b1.second,b0.second-b1.first));
+            break;
+          case BOT_MULT:
+          {
+            FloatVal x0 = b0.first*b1.first;
+            FloatVal x1 = b0.first*b1.second;
+            FloatVal x2 = b0.second*b1.first;
+            FloatVal x3 = b0.second*b1.second;
+            FloatVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
+            FloatVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
+            _bounds.push_back(FBounds(m,n));
+          }
+            break;
+          case BOT_DIV:
+          case BOT_IDIV:
+          case BOT_MOD:
+          case BOT_LE:
+          case BOT_LQ:
+          case BOT_GR:
+          case BOT_GQ:
+          case BOT_EQ:
+          case BOT_NQ:
+          case BOT_IN:
+          case BOT_SUBSET:
+          case BOT_SUPERSET:
+          case BOT_UNION:
+          case BOT_DIFF:
+          case BOT_SYMDIFF:
+          case BOT_INTERSECT:
+          case BOT_PLUSPLUS:
+          case BOT_EQUIV:
+          case BOT_IMPL:
+          case BOT_RIMPL:
+          case BOT_OR:
+          case BOT_AND:
+          case BOT_XOR:
+          case BOT_DOTDOT:
+            valid = false;
+            _bounds.push_back(FBounds(0.0,0.0));
         }
-          break;
-        case BOT_DIV:
-        case BOT_IDIV:
-        case BOT_MOD:
-        case BOT_LE:
-        case BOT_LQ:
-        case BOT_GR:
-        case BOT_GQ:
-        case BOT_EQ:
-        case BOT_NQ:
-        case BOT_IN:
-        case BOT_SUBSET:
-        case BOT_SUPERSET:
-        case BOT_UNION:
-        case BOT_DIFF:
-        case BOT_SYMDIFF:
-        case BOT_INTERSECT:
-        case BOT_PLUSPLUS:
-        case BOT_EQUIV:
-        case BOT_IMPL:
-        case BOT_RIMPL:
-        case BOT_OR:
-        case BOT_AND:
-        case BOT_XOR:
-        case BOT_DOTDOT:
-          valid = false;
-          _bounds.push_back(FBounds(0,0));
       }
     }
     /// Visit unary operator
@@ -2179,12 +2199,37 @@ namespace MiniZinc {
         for (unsigned int i=0; i<al->v().size(); i++) {
           FBounds b = _bounds.back(); _bounds.pop_back();
           FloatVal cv = le ? eval_float(env,coeff->v()[i]) : 1.0;
+
           if (cv > 0) {
-            lb += cv*b.first;
-            ub += cv*b.second;
+            if (b.first.isFinite()) {
+              if (lb.isFinite()) {
+                lb += cv*b.first;
+              }
+            } else {
+              lb = b.first;
+            }
+            if (b.second.isFinite()) {
+              if (ub.isFinite()) {
+                ub += cv*b.second;
+              }
+            } else {
+              ub = b.second;
+            }
           } else {
-            lb += cv*b.second;
-            ub += cv*b.first;
+            if (b.second.isFinite()) {
+              if (lb.isFinite()) {
+                lb += cv*b.second;
+              }
+            } else {
+              lb = -b.second;
+            }
+            if (b.first.isFinite()) {
+              if (ub.isFinite()) {
+                ub += cv*b.first;
+              }
+            } else {
+              ub = -b.first;
+            }
           }
         }
         _bounds.push_back(FBounds(lb,ub));
@@ -2194,13 +2239,18 @@ namespace MiniZinc {
         cbi.run(c.args()[1]);
         FBounds b1 = _bounds.back(); _bounds.pop_back();
         FBounds b0 = _bounds.back(); _bounds.pop_back();
-        FloatVal x0 = b0.first*b1.first;
-        FloatVal x1 = b0.first*b1.second;
-        FloatVal x2 = b0.second*b1.first;
-        FloatVal x3 = b0.second*b1.second;
-        FloatVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
-        FloatVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
-        _bounds.push_back(FBounds(m,n));
+        if (!b1.first.isFinite() || !b1.second.isFinite() || !b0.first.isFinite() || !b0.second.isFinite()) {
+          valid = false;
+          _bounds.push_back(FBounds(0,0));
+        } else {
+          FloatVal x0 = b0.first*b1.first;
+          FloatVal x1 = b0.first*b1.second;
+          FloatVal x2 = b0.second*b1.first;
+          FloatVal x3 = b0.second*b1.second;
+          FloatVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
+          FloatVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
+          _bounds.push_back(FBounds(m,n));
+        }
       } else if (c.id() == "int2float") {
         ComputeIntBounds ib(env);
         BottomUpIterator<ComputeIntBounds> cbi(ib);
