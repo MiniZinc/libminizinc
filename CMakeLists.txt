@@ -30,8 +30,8 @@ endif()
 # -------------------------------------------------------------------------------------------------------------------
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
-set (libminizinc_VERSION_MINOR 0)
-set (libminizinc_VERSION_PATCH 97)
+set (libminizinc_VERSION_MINOR 1)
+set (libminizinc_VERSION_PATCH 0)
 
 if (ADDITIONAL_DATE_STRING)
   set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
@@ -51,6 +51,24 @@ if (BUILD_STATIC_EXECUTABLE)
 #  SET(BUILD_SHARED_LIBRARIES OFF)
   SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 endif()
+
+include (CheckIncludeFiles)
+
+# -------------------------------------------------------------------------------------------------------------------
+option (BUILD_GUROBI_PLUGIN "Build Gurobi binding as a plugin" OFF)
+if (BUILD_GUROBI_PLUGIN)
+  if(HAS_GUROBI)
+    CHECK_INCLUDE_FILES (dlfcn.h HAS_DLFCN_H)
+    if(HAS_DLFCN_H)
+      find_library (NEEDS_LIBDL NAMES dl)
+    endif()
+    CHECK_INCLUDE_FILES (Windows.h HAS_WINDOWS_H)
+    if(HAS_DLFCN_H OR HAS_WINDOWS_H)
+      set(HAS_GUROBI_PLUGIN TRUE)
+    endif()
+  endif()
+endif()
+
 
 # -------------------------------------------------------------------------------------------------------------------
 
@@ -333,18 +351,22 @@ find_package ( Threads REQUIRED )
 # -------------------------------------------------------------------------------------------------------------------
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_GUROBI)  # Version 6.5
-  link_directories("${GUROBI_HOME}/lib")
 
 	add_library(minizinc_gurobi
-    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp include/minizinc/solvers/MIP/MIP_gurobi_wrap.hh
 	)
   target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
-	target_link_libraries(minizinc_gurobi minizinc gurobi70 ${CMAKE_THREAD_LIBS_INIT})
+  if(HAS_GUROBI_PLUGIN)
+    target_link_libraries(minizinc_gurobi minizinc ${NEEDS_LIBDL} ${CMAKE_THREAD_LIBS_INIT})
+  else()
+    link_directories("${GUROBI_HOME}/lib")
+    target_link_libraries(minizinc_gurobi minizinc gurobi70 ${CMAKE_THREAD_LIBS_INIT})
+  endif()
 
 	add_executable(mzn-gurobi minizinc.cpp)
   target_compile_definitions( mzn-gurobi PRIVATE HAS_MIP )
   target_include_directories(mzn-gurobi PRIVATE "${GUROBI_HOME}/include")
-	target_link_libraries(mzn-gurobi minizinc_gurobi gurobi70 ${CMAKE_THREAD_LIBS_INIT})
+	target_link_libraries(mzn-gurobi minizinc_gurobi ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_gurobi mzn-gurobi
     RUNTIME DESTINATION bin
@@ -515,13 +537,18 @@ endif()
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_OSICBC)  # Tested version 2.9.8. Use svn to get the latest /stable snapshot however rev2265 fails to link
 
-  if (WIN32 AND NOT UNIX)  #  Windows config based on  https://projects.coin-or.org/Cbc/wiki/VSSetup
+  if (EXISTS "${OSICBC_HOME}/include/coin/" AND EXISTS "${OSICBC_HOME}/lib")
+    set(CBC_INCLUDEDIRS "${OSICBC_HOME}/include/coin/")
+    set(LNDIR "${OSICBC_HOME}/lib")
+  else()
     set(CBC_INCLUDEDIRS "${OSICBC_HOME}/Clp/src/" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Cbc/src/" "${OSICBC_HOME}/Cbc/src/OsiCbc" "${OSICBC_HOME}/Cgl/src/CglZeroHalf" "${OSICBC_HOME}/Cgl/src/CglLandP" "${OSICBC_HOME}/Cgl/src/CglTwomir" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding2" "${OSICBC_HOME}/Cgl/src/CglFlowCover" "${OSICBC_HOME}/Cgl/src/CglClique" "${OSICBC_HOME}/Cgl/src/CglOddHole" "${OSICBC_HOME}/Cgl/src/CglKnapsackCover" "${OSICBC_HOME}/Cgl/src/CglGomory" "${OSICBC_HOME}/Cgl/src/CglPreProcess" "${OSICBC_HOME}/Cgl/src/CglDuplicateRow" "${OSICBC_HOME}/Cgl/src/CglRedSplit" "${OSICBC_HOME}/Cgl/src/CglProbing" "${OSICBC_HOME}/Cgl/src" "${OSICBC_HOME}/Clp/src" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Osi/src/Osi" "${OSICBC_HOME}/CoinUtils/src" "${OSICBC_HOME}/BuildTools/headers" "${OSICBC_HOME}/Cgl/src/CglResidualCapacity")
     set(LNDIR "${OSICBC_HOME}/Cbc/MSVisualStudio/v10/x64-v120-Release")
+  endif()
+
+  if (WIN32 AND NOT UNIX)  #  Windows config based on  https://projects.coin-or.org/Cbc/wiki/VSSetup
     set(OSICBC_LIBS "libOsi" "libOsiClp" "libOsiCbc" "libClp" "libCgl" "libCbc" "libCbcSolver" "libCoinUtils")
   else ()
-    set(CBC_INCLUDEDIRS "${OSICBC_HOME}/include/coin/")
-    set(LNDIR "${OSICBC_HOME}/lib") # The order below is important for static versions of cbc libs to link. "z" needed for static
+    # The order below is important for static versions of cbc libs to link. "z" needed for static
     set(OSICBC_LIBS "CbcSolver" "Cbc" "Cgl" "OsiClp"  "Clp" "Osi"  "CoinUtils" "z") # "ClpSolver" after OsiClp;  "OsiCbc" 
 #    set(OSICBC_LIBS "`PKG_CONFIG_PATH=/home/bg/Documents/prj/coin-Cbc-2.9/lib64/pkgconfig:/home/bg/Documents/prj/coin-Cbc-2.9/lib/pkgconfig:/home/bg/Documents/prj/coin-Cbc-2.9/share/pkgconfig: pkg-config --libs cbc`")
   endif()
@@ -624,6 +651,21 @@ if (BUILD_HTML_DOCUMENTATION)
        ${PROJECT_SOURCE_DIR}/doc/html/footer.html
        ${PROJECT_SOURCE_DIR}/doc/html/MiniZn_logo.jpg
        DESTINATION ${PROJECT_BINARY_DIR}/doc/html/)
+  INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION doc)
+endif()
+
+option (BUILD_HTML_DOCUMENTATION_JEKYLL "Build HTML documentation for the MiniZinc library" OFF)
+
+if (BUILD_HTML_DOCUMENTATION_JEKYLL)
+  add_custom_target(doc ALL
+    DEPENDS "mzn2doc"
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    COMMAND mzn2doc --toplevel-groups 2
+    --include-stdlib
+    --html-header ${PROJECT_SOURCE_DIR}/doc/html/header_jekyll.html
+    --html-footer ${PROJECT_SOURCE_DIR}/doc/html/footer_jekyll.html
+      --output-base ${PROJECT_BINARY_DIR}/doc/html/doc share/minizinc/std/globals.mzn
+  )
   INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION doc)
 endif()
 

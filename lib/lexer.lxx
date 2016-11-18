@@ -487,7 +487,11 @@ _[A-Za-z][A-Za-z0-9_]* {
 "\xE2\x88\xAA"      { return MZN_UNION; }
 "\xE2\x88\xA9"      { return MZN_INTERSECT; }
 
-$$?[A-Za-z][A-Za-z0-9_]* {
+$$[A-Za-z][A-Za-z0-9_]* {
+  beginToken(yyget_extra(yyscanner), yylloc, yytext);
+  yylval->sValue = strdup(yytext+1); return MZN_TI_ENUM_IDENTIFIER; }
+
+$[A-Za-z][A-Za-z0-9_]* {
                     beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->sValue = strdup(yytext+1); return MZN_TI_IDENTIFIER; }
 

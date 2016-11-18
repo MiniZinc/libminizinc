@@ -384,6 +384,12 @@ namespace MiniZinc {
   bool EnvI::isSubtype(const Type& t1, const Type& t2, bool strictEnums) {
     if (!t1.isSubtypeOf(t2,strictEnums))
       return false;
+    if (strictEnums && t1.dim()==0 && t2.dim()!=0 && t2.enumId() != 0) {
+      // set assigned to an array
+      const std::vector<unsigned int>& t2enumIds = getArrayEnum(t2.enumId());
+      if (t2enumIds[t2enumIds.size()-1] != 0 && t1.enumId() != t2enumIds[t2enumIds.size()-1])
+        return false;
+    }
     if (strictEnums && t1.dim() > 0 && t1.enumId() != t2.enumId()) {
       if (t1.enumId()==0)
         return false;
@@ -4807,6 +4813,8 @@ namespace MiniZinc {
                         Call* c = new Call(Location().introduce(),"var_dom",domargs);
                         c->type(Type::varbool());
                         c->decl(env.orig->matchFn(env,c,false));
+                        if (c->decl()==NULL)
+                          throw InternalError("no matching declaration found for var_dom");
                         domconstraint = c;
                       } else {
                         domconstraint = new BinOp(Location().introduce(),args[i](),bot,dom);
@@ -4842,6 +4850,8 @@ namespace MiniZinc {
                         Call* c = new Call(Location().introduce(),"var_dom",domargs);
                         c->type(Type::varbool());
                         c->decl(env.orig->matchFn(env,c,false));
+                        if (c->decl()==NULL)
+                          throw InternalError("no matching declaration found for var_dom");
                         domconstraint = c;
                       } else {
                         domconstraint = new BinOp(Location().introduce(),args[i](),BOT_IN,dom);
@@ -4991,6 +5001,8 @@ namespace MiniZinc {
                       Call* c = new Call(Location().introduce(),"var_dom",domargs);
                       c->type(Type::varbool());
                       c->decl(env.orig->matchFn(env,c,false));
+                      if (c->decl()==NULL)
+                        throw InternalError("no matching declaration found for var_dom");
                       domconstraint = c;
                     } else {
                       GCLock lock;
@@ -5104,6 +5116,8 @@ namespace MiniZinc {
                 Call* c = new Call(vd->ti()->loc().introduce(),"var_dom",domargs);
                 c->type(Type::varbool());
                 c->decl(env.orig->matchFn(env,c,false));
+                if (c->decl()==NULL)
+                  throw InternalError("no matching declaration found for var_dom");
                 VarDecl* b_b = (nctx.b==C_ROOT && b==constants().var_true) ? b : NULL;
                 VarDecl* r_r = (nctx.b==C_ROOT && b==constants().var_true) ? b : NULL;
                 ee = flat_exp(env, nctx, c, r_r, b_b);

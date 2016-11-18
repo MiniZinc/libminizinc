@@ -3222,16 +3222,13 @@ Each case name can be coerced automatically to the integer corresponding to its 
 For each enumerated type $T$, the following functions exist:
 
 \begin{verbatim}
-  % Return set of values in enum of x
-  function set of T: enum_base_set(var T: x);
-
-  % Return next greater enum value of x
-  function T: enum_next(T: x);
-  function var T: enum_next(var T: x);
+  % Return next greater enum value of x in enum type X
+  function T: enum_next(set of T: X, T: x);
+  function var T: enum_next(set of T: X, var T: x);
   
-  % Return next smaller enum value of x
-  function T: enum_prev(T: x);
-  function var T: enum_prev(var T: x);
+  % Return next smaller enum value of x in enum type X
+  function T: enum_prev(set of T: X, T: x);
+  function var T: enum_prev(set of T: X, var T: x);
 
   % Convert x to enum type X
   function T: to_enum(set of T: X, int: x);
@@ -5150,6 +5147,42 @@ as described in Section~\ref{Output Items}.
 A newline must be appended if the solution text does not end with a newline.
 
 %-----------------------------------------------------------------------------%
+
+%=============================================================================%
+\clearpage
+\section{JSON support}
+  \label{json}
+%=============================================================================%
+
+MiniZinc can support reading input parameters and providing output formatted
+as JSON objects. A JSON input file needs to have the following structure:
+
+\begin{itemize}
+  \item Consist of a single top-level object
+  \item The members of the object (the key-value pairs) represent model parameters
+  \item Each member key must be a valid MiniZinc identifier (and it supplies the value for the corresponding parameter of the model)
+  \item Each member value can be one of the following:
+  \begin{itemize}
+    \item A string (assigned to a MiniZinc string parameter)
+    \item A number (assigned to a MiniZinc int or float parameter)
+    \item The values \texttt{true} or \texttt{false} (assigned to a MiniZinc bool parameter)
+    \item An array of values. Arrays of arrays are supported only if all inner arrays are of the same length, so that they can be mapped to multi-dimensional MiniZinc arrays.
+    \item A set of values encoded as an object with a single member with key \verb|"set"| and a list of values (the elements of the set).
+  \end{itemize}
+\end{itemize}
+
+This is an example of a JSON parameter file using all of the above features:
+
+\begin{verbatim}
+    {
+      "n" : 3,
+      "distances" : [ [1,2,3],
+                      [4,5,6]],
+      "patterns"  : [ {"set" : [1,3,5]}, {"set" : [2,4,6]} ]
+    }
+\end{verbatim}
+
+The first parameter declares a simple integer \texttt{n}. The \texttt{distances} parameter is a two-dimensional array; note that all inner arrays must be of the same size in order to map to a (rectangular) MiniZinc two-dimensional array. The third parameter is an array of sets of integers.
 
 \end{document}
 

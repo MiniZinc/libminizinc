@@ -469,7 +469,7 @@ namespace MiniZinc {
 %token <dValue> MZN_FLOAT_LITERAL "float literal"
 %token <sValue> MZN_IDENTIFIER "identifier" MZN_QUOTED_IDENTIFIER "quoted identifier" MZN_STRING_LITERAL "string literal"
 %token <sValue> MZN_STRING_QUOTE_START "interpolated string start" MZN_STRING_QUOTE_MID "interpolated string middle" MZN_STRING_QUOTE_END "interpolated string end"
-%token <sValue> MZN_TI_IDENTIFIER "type-inst identifier" MZN_DOC_COMMENT "documentation comment" MZN_DOC_FILE_COMMENT "file-level documentation comment"
+%token <sValue> MZN_TI_IDENTIFIER "type-inst identifier" MZN_TI_ENUM_IDENTIFIER "type-inst enum identifier" MZN_DOC_COMMENT "documentation comment" MZN_DOC_FILE_COMMENT "file-level documentation comment"
 
 %token MZN_VAR "var" MZN_PAR "par"
 
@@ -1023,6 +1023,11 @@ base_ti_expr_tail :
       { $$ = new TypeInst(@$,Type::top(),
                          new TIId(@$, $1));
         free($1);
+      }
+    | MZN_TI_ENUM_IDENTIFIER
+      { $$ = new TypeInst(@$,Type::parint(),
+          new TIId(@$, $1));
+          free($1);
       }
 
 expr_list : expr_list_head comma_or_none
