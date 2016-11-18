@@ -127,11 +127,12 @@ namespace MiniZinc {
     m = new Model();
     e = new Env(m);
 
-    predicate = copy(e->envi(), cm, pred_orig, false, true)->cast<FunctionI>();
-    pred_orig->e(nullptr);
-
     origin->mergeStdLib(e->envi(), m);
     registerBuiltins(*e, m);
+
+    predicate = copy(e->envi(), cm, pred_orig, false, true)->cast<FunctionI>();
+    pred_orig->e(nullptr);
+    m->addItem(predicate);
   }
 
   Presolver::Subproblem::~Subproblem() {
@@ -152,8 +153,6 @@ namespace MiniZinc {
       return;
     clock_t startTime = std::clock();
     clock_t lastTime = startTime;
-
-    predicate->ann().clear();
 
     if (flattener->flag_verbose)
       std::cerr << std::endl << "\tPresolving `" + predicate->id().str() + "' ... " << std::endl;
@@ -227,7 +226,6 @@ namespace MiniZinc {
   void Presolver::GlobalSubproblem::constructModel() {
     GCLock lock;
 
-    m->addItem(predicate);
     recursiveRegisterFns(m, e->envi(), predicate);
     std::vector<Expression*> args;
     if (predicate->params().size() < 1) {
@@ -274,7 +272,6 @@ namespace MiniZinc {
     builder.buildFromSolver(predicate, solns);
     Expression* genTable = builder.getExpression();
 
-    predicate->e(genTable);
     pred_orig->e(genTable);
 
     for (int i = 0; i < calls.size(); ++i) {
@@ -392,9 +389,9 @@ namespace MiniZinc {
       e = new Env(m);
       origin->mergeStdLib(e->envi(), m);
       registerBuiltins(*e, m);
+      m->addItem(predicate);
     }
 
-    m->addItem(predicate);
     recursiveRegisterFns(m, e->envi(), predicate);
     std::vector<Expression*> args;
     if (predicate->params().size() < 1) {
