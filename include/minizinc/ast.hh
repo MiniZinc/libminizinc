@@ -1457,8 +1457,8 @@ namespace MiniZinc {
       struct {
         ASTString presolve;
         Id* calls;
+        Id* instance;
         Id* model;
-        Id* global;
       } presolve;
 
       /// Command line options

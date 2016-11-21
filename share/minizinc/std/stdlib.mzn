@@ -208,11 +208,11 @@ annotation presolve;
 /** @group annotations.presolve.strategy Presolve for every call */
 annotation calls;
 
-/** @group annotations.presolve.strategy Presolve for all instances in the model */
-annotation model;
+/** @group annotations.presolve.strategy Presolve for current instance of the model */
+annotation instance;
 
-/** @group annotations.presolve.strategy Presolve for all possible input */
-annotation global;
+/** @group annotations.presolve.strategy Presolve as declared in the model */
+annotation model;
 
 
 /***
