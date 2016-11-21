@@ -89,14 +89,14 @@ namespace MiniZinc {
 
             if ( s_id->v() == constants().presolve.calls->v() )
               subproblems.push_back( new CallsSubproblem(model, env, i, flattener) );
+            else if ( s_id->v() == constants().presolve.instance->v() )
+              subproblems.push_back( new InstanceSubproblem(model, env, i, flattener) );
             else if ( s_id->v() == constants().presolve.model->v() )
               subproblems.push_back( new ModelSubproblem(model, env, i, flattener) );
-            else if ( s_id->v() == constants().presolve.global->v() )
-              subproblems.push_back( new GlobalSubproblem(model, env, i, flattener) );
             else
               throw TypeError(env, s_id->loc(), "Invalid presolve strategy `" + s_id->str().str() + "'");
           } else {
-            subproblems.push_back( new ModelSubproblem(model, env, i, flattener) );
+            subproblems.push_back( new InstanceSubproblem(model, env, i, flattener) );
           }
         }
       }
@@ -238,7 +238,7 @@ namespace MiniZinc {
       throw InternalError("Solver returned with solved status but did not return any solutions");
   }
 
-  void Presolver::GlobalSubproblem::constructModel() {
+  void Presolver::ModelSubproblem::constructModel() {
     GCLock lock;
     CopyMap cm;
 
@@ -271,7 +271,7 @@ namespace MiniZinc {
     generateFlatZinc(*e, flattener->flag_only_range_domains, flattener->flag_optimize, flattener->flag_newfzn);
   }
 
-  void Presolver::GlobalSubproblem::replaceUsage() {
+  void Presolver::ModelSubproblem::replaceUsage() {
     GCLock lock;
 
     Constraint constraint = BoolTable;
@@ -293,7 +293,7 @@ namespace MiniZinc {
     predicate->e(tableCall);
   }
 
-  void Presolver::ModelSubproblem::constructModel() {
+  void Presolver::InstanceSubproblem::constructModel() {
     assert(calls.size() > 0);
     GCLock lock;
 
@@ -332,7 +332,7 @@ namespace MiniZinc {
       }
     }
 
-    GlobalSubproblem::constructModel();
+    ModelSubproblem::constructModel();
   }
 
   void Presolver::CallsSubproblem::solve() {

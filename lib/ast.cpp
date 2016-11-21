@@ -1195,10 +1195,10 @@ namespace MiniZinc {
     presolve.presolve = ASTString("presolve");
     presolve.calls = new Id(Location(), ASTString("calls"), NULL);
     presolve.calls->type(Type::ann());
+    presolve.instance = new Id(Location(), ASTString("instance"), NULL);
+    presolve.instance->type(Type::ann());
     presolve.model = new Id(Location(), ASTString("model"), NULL);
     presolve.model->type(Type::ann());
-    presolve.global = new Id(Location(), ASTString("global"), NULL);
-    presolve.global->type(Type::ann());
 
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
@@ -1399,8 +1399,8 @@ namespace MiniZinc {
 
     v.push_back(new StringLit(Location(),presolve.presolve));
     v.push_back(presolve.calls);
+    v.push_back(presolve.instance);
     v.push_back(presolve.model);
-    v.push_back(presolve.global);
 
     v.push_back(new StringLit(Location(),cli.cmdlineData_short_str));
     v.push_back(new StringLit(Location(),cli.cmdlineData_str));
