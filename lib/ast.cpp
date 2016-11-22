@@ -1197,7 +1197,7 @@ namespace MiniZinc {
     presolve.calls->type(Type::ann());
     presolve.instance = new Id(Location(), ASTString("instance"), NULL);
     presolve.instance->type(Type::ann());
-    presolve.model = new Id(Location(), ASTString("global"), NULL);
+    presolve.model = new Id(Location(), ASTString("model"), NULL);
     presolve.model->type(Type::ann());
 
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
