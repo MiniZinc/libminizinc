@@ -25,8 +25,8 @@ namespace MiniZinc {
     class TableBuilder; // presolve_utils.hh
   protected:
     class Subproblem;
-    class GlobalSubproblem;
     class ModelSubproblem;
+    class InstanceSubproblem;
     class CallsSubproblem;
 
     /// Model & Env in which the presolver is active
@@ -96,10 +96,10 @@ namespace MiniZinc {
     virtual void replaceUsage() = 0;
   };
 
-  class Presolver::GlobalSubproblem : public Presolver::Subproblem {
+  class Presolver::ModelSubproblem : public Presolver::Subproblem {
   public:
     /// Constructor
-    GlobalSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* flattener)
+    ModelSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* flattener)
             : Subproblem(origin, origin_env, predicate, flattener) { }
 
   protected:
@@ -109,11 +109,11 @@ namespace MiniZinc {
     virtual void replaceUsage();
   };
 
-  class Presolver::ModelSubproblem : public Presolver::GlobalSubproblem {
+  class Presolver::InstanceSubproblem : public Presolver::ModelSubproblem {
   public:
     /// Constructor
-    ModelSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* flattener)
-            : GlobalSubproblem(origin, origin_env, predicate, flattener) { }
+    InstanceSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* flattener)
+            : ModelSubproblem(origin, origin_env, predicate, flattener) { }
 
   protected:
     /// Implements Subproblem pure virtual
