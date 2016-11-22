@@ -60,7 +60,7 @@ namespace MiniZinc {
       os.open(flattener->flag_output_presolved.c_str(), std::ios::out);
       checkIOStatus (os.good(), " I/O error: cannot open presolved model output file. ");
       os << "include \"table.mzn\";" << std::endl << std::endl;
-      Printer p(os);
+      Printer p(os, 80, false);
       for (Subproblem* it : subproblems){
         p.print(it->getPredicate());
         os << std::endl;
@@ -167,7 +167,7 @@ namespace MiniZinc {
       std::cerr << "\t\tPresolving problem ...";
     if (flattener->flag_print_presolve) {
       std::cout << "% Presolve model `" << predicate->id().c_str() << "'" << std::endl;
-      Printer p(std::cout);
+      Printer p(std::cout, 80, false);
       std::cout << std::endl;
       p.print(e->model());
       std::cout << std::endl;
