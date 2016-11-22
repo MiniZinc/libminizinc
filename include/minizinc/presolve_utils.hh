@@ -26,7 +26,7 @@ namespace MiniZinc {
   Expression* computeDomainExpr(EnvI& env, Expression* exp);
 
   /// Computes the array ranges for an given array expression and add these ranges to the given vector
-  void computeRanges(EnvI& env, Expression* exp, std::vector<TypeInst*>& ranges);
+  void computeRanges(EnvI& env, CopyMap& cm, Expression* exp, std::vector<TypeInst*>& ranges);
 
   /// Generates the flatzinc model given the environment and given flags
   void generateFlatZinc(Env& env, bool rangeDomains, bool optimizeFZN, bool newFZN);

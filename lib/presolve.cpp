@@ -322,7 +322,7 @@ namespace MiniZinc {
 //        TODO: Or even better, split off submodels, grouping them by array ranges
         std::vector<TypeInst*> ranges;
         // TODO: Can this be simplified with FlatZinc Calls?
-        computeRanges(origin_env, calls[0]->args()[i], ranges);
+        computeRanges(origin_env, cm, calls[0]->args()[i], ranges);
         predicate->params()[i]->ti()->setRanges(ranges);
       }
       if(domains[i] != nullptr) {
@@ -430,7 +430,7 @@ namespace MiniZinc {
       if (calls[currentCall]->args()[i]->type().dim() > 0) {
         std::vector<TypeInst*> ranges;
         // TODO: Can this be simplified with FlatZinc Calls?
-        computeRanges(origin_env, calls[currentCall]->args()[i], ranges);
+        computeRanges(origin_env, cm, calls[currentCall]->args()[i], ranges);
         decls[i]->ti()->setRanges(ranges);
       }
     }

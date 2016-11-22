@@ -174,19 +174,20 @@ namespace MiniZinc{
     }
   }
 
-  void computeRanges(EnvI& env, Expression* exp, std::vector<TypeInst*>& ranges) {
+  void computeRanges(EnvI& env, CopyMap& cm, Expression* exp, std::vector<TypeInst*>& ranges) {
     assert(exp->type().dim() > 0);
     if (exp->eid() == Expression::E_ID) {
       ASTExprVec<TypeInst> id_ranges = exp->cast<Id>()->decl()->ti()->ranges();
       for (TypeInst* range : id_ranges) {
-        ranges.push_back(new TypeInst(Location(), Type::parsetint(), range->domain()));
+        TypeInst* ti = copy(env, cm, range)->cast<TypeInst>();
+        ranges.push_back(ti);
       }
     } else {
       ArrayLit* al = eval_array_lit(env, exp);
       for (int j = 0; j < al->dims(); ++j) {
         TypeInst* ti = new TypeInst(Location(), Type::parsetint(),
-                                    new SetLit(Location(), IntSetVal::a(IntVal(al->min(j)), IntVal(al->max(j)))
-                                    ));
+                                    new BinOp(Location(), IntLit::a(IntVal(al->min(j))),
+                                              BOT_DOTDOT, IntLit::a(IntVal(al->max(j)))));
         ranges.push_back(ti);
       }
     }
