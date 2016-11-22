@@ -85,7 +85,7 @@ namespace MiniZinc {
     /// Getter for the function item of the predicate to be presolved
     FunctionI* getPredicate() const { return pred_orig; }
     /// Solves subproblem
-    virtual void solve();
+    virtual void presolve();
 
   protected:
     /// Constructs MiniZinc model from subproblem
@@ -129,7 +129,7 @@ namespace MiniZinc {
     CallsSubproblem(Model* origin, EnvI& origin_env, FunctionI* predicate, Flattener* flattener)
             : Subproblem(origin, origin_env, predicate, flattener) { }
     /// Override Subproblem solve
-    virtual void solve();
+    virtual void presolve();
 
   protected:
     /// Implements Subproblem pure virtual

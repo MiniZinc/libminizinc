@@ -39,7 +39,7 @@ namespace MiniZinc {
 //    TODO: More intelligent presolving in case of circular presolving
     for (Subproblem* it : subproblems) {
       try {
-        it->solve();
+        it->presolve();
       } catch(std::exception& e) {
         Exception* m = dynamic_cast<Exception*>(&e);
         std::cout << "% warning: Presolving `" << it->getPredicate()->id().str() << "' failed: ";
@@ -148,7 +148,7 @@ namespace MiniZinc {
     if(solns) delete solns;
   }
 
-  void Presolver::Subproblem::solve() {
+  void Presolver::Subproblem::presolve() {
     if (calls.empty())
       return;
     clock_t startTime = std::clock();
@@ -333,7 +333,7 @@ namespace MiniZinc {
     ModelSubproblem::constructModel();
   }
 
-  void Presolver::CallsSubproblem::solve() {
+  void Presolver::CallsSubproblem::presolve() {
     if (calls.empty())
       return;
     clock_t startTime = std::clock();
