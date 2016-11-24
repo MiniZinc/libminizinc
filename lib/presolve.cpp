@@ -132,6 +132,7 @@ namespace MiniZinc {
     origin->mergeStdLib(e->envi(), m);
     registerBuiltins(*e, m);
 
+    pred_orig->ann().clear();
     predicate = copy(e->envi(), cm, pred_orig, false, true)->cast<FunctionI>();
     pred_orig->e(nullptr);
     m->addItem(predicate);
