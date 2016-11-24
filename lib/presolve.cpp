@@ -56,7 +56,7 @@ namespace MiniZinc {
 
     if (flattener->flag_output_presolved != "") {
       if (flattener->flag_verbose)
-        std::cerr << "\tPrinting presolved model to '" << flattener->flag_output_presolved << "' ..." << std::flush;
+        std::cerr << "\tPrinting presolved predicates to '" << flattener->flag_output_presolved << "' ..." << std::flush;
 
       std::ofstream os;
       os.open(flattener->flag_output_presolved.c_str(), std::ios::out);
