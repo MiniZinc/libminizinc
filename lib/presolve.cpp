@@ -42,13 +42,15 @@ namespace MiniZinc {
         it->presolve();
       } catch(std::exception& e) {
         Exception* m = dynamic_cast<Exception*>(&e);
-        std::cout << "% warning: Presolving `" << it->getPredicate()->id().str() << "' failed: ";
+        std::cout << "% error: Presolving `" << it->getPredicate()->id().str() << "' failed: ";
         if(m) {
           std::cout << m->msg();
         } else {
           std::cout << e.what();
         }
         std::cout << "." << std::endl;
+//        TODO: Should we continue without presolving? (Then replace predicate calls with flattened calls)
+        std::exit(EXIT_FAILURE);
       }
     }
 
