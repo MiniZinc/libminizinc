@@ -71,7 +71,7 @@ namespace MiniZinc {
       os.close();
 
       if (flattener->flag_verbose)
-        std::cerr << "done." << std::endl;
+        std::cerr << " done." << std::endl;
     }
   }
 
