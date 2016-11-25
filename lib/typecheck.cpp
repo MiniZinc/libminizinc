@@ -859,6 +859,12 @@ namespace MiniZinc {
           throw TypeError(_env,c.e()->loc(),
             "array comprehension expression cannot be an array");
         tt.dim(1);
+        if (tt.enumId() != 0) {
+          std::vector<unsigned int> enumIds(2);
+          enumIds[0] = 0;
+          enumIds[1] = tt.enumId();
+          tt.enumId(_env.registerArrayEnum(enumIds));
+        }
       }
       c.type(tt);
     }
