@@ -1127,6 +1127,12 @@ function string: show(var opt set of $T: x);
 function string: show(var opt $T: x);
 /** @group builtins.string Convert \a x into a string */
 function string: show(array[$U] of var opt $T: x);
+
+function string: showDzn(var opt set of $T: x);
+function string: showDzn(var opt $T: x);
+function string: showDzn(array[$U] of var opt $T: x);
+
+
 /** @group builtins.string Formatted to-string conversion for integers
 
 Converts the integer \a x into a string right

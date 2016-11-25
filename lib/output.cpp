@@ -173,7 +173,7 @@ namespace MiniZinc {
       EnvI& env;
       Decls(EnvI& env0) : env(env0) {}
       void vCall(Call& c) {
-        if (c.id()=="format" || c.id()=="show") {
+        if (c.id()=="format" || c.id()=="show" || c.id()=="showDzn") {
           int enumId = c.args()[c.args().size()-1]->type().enumId();
           if (enumId != 0 && c.args()[c.args().size()-1]->type().dim() != 0) {
             const std::vector<unsigned int>& enumIds = env.getArrayEnum(enumId);
@@ -182,7 +182,7 @@ namespace MiniZinc {
           if (enumId > 0) {
             Id* ti_id = env.getEnum(enumId)->e()->id();
             GCLock lock;
-            std::vector<Expression*> args(1);
+            std::vector<Expression*> args(2);
             args[0] = c.args()[c.args().size()-1];
             if (args[0]->type().dim() > 1) {
               Call* array1d = new Call(Location().introduce(),ASTString("array1d"),args);
@@ -191,9 +191,13 @@ namespace MiniZinc {
               array1d->type(array1dt);
               args[0] = array1d;
             }
+            args[1] = constants().boollit(c.id()=="showDzn");
             std::string enumName = createEnumToStringName(ti_id, "_toString_");
             c.id(ASTString(enumName));
             c.args(args);
+          }
+          if (c.id()=="showDzn") {
+            c.id(constants().ids.show);
           }
         }
         c.decl(env.orig->matchFn(env,&c,false));
@@ -401,7 +405,7 @@ namespace MiniZinc {
           
           std::vector<Expression*> showArgs(1);
           showArgs[0] = vd->id();
-          Call* show = new Call(Location().introduce(),constants().ids.show,showArgs);
+          Call* show = new Call(Location().introduce(),ASTString("showDzn"),showArgs);
           show->type(Type::parstring());
           FunctionI* fi = e.orig->matchFn(e, show, false);
           assert(fi);
