@@ -17,6 +17,15 @@
 
 namespace MiniZinc{
 
+  bool paramArgument(FunctionI* i) {
+    for (VarDecl* v : i->params()) {
+      if (v->ti()->type().ispar()) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   void recursiveRegisterFns(Model* model, EnvI& env, FunctionI* fn) {
 //    TODO: Can't use Evisitor because of const in parameter.
     class RegisterCalls {
@@ -231,23 +240,29 @@ namespace MiniZinc{
 
     if (variables.size() == 0) {
       for (auto it = f->params().begin(); it != f->params().end(); ++it) {
-        Expression* id = new Id(Location(), (*it)->id()->str(), (*it));
-        id->type((*it)->type());
-        addVariable(id);
+        if ((*it)->type().isvar()) {
+          Expression* id = new Id(Location(), (*it)->id()->str(), (*it));
+          id->type((*it)->type());
+          addVariable(id);
+        }
       }
     } else {
       for (auto it = variables.begin(); it != variables.end(); ++it) {
-        addVariable(*it);
+        if ((*it)->type().isvar()) {
+          addVariable(*it);
+        }
       }
     }
 
     for (int i = 0; i < solns->getSolutions().size(); ++i) {
       auto sol = solns->getSolutions()[i];
       for (auto it = f->params().begin(); it != f->params().end(); ++it) {
-        Expression* exp = sol->find((*it)->id()->str().str())->second;
-        exp->type(exp->type().bt() == Type::BT_BOOL ? Type::parbool((*it)->type().dim()) : Type::parint(
-                (*it)->type().dim()));
-        addData(exp);
+        if ((*it)->type().isvar()) {
+          Expression* exp = sol->find((*it)->id()->str().str())->second;
+          exp->type(exp->type().bt() == Type::BT_BOOL ? Type::parbool((*it)->type().dim()) : Type::parint(
+                  (*it)->type().dim()));
+          addData(exp);
+        }
       }
     }
   }

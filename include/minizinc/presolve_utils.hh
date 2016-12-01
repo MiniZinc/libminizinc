@@ -19,6 +19,9 @@
 
 namespace MiniZinc {
 
+  /// Returns true if the function contains a paramter argument.
+  bool paramArgument(FunctionI* i);
+
   /// Registers function and all dependencies to model
   void recursiveRegisterFns(Model*, EnvI&, FunctionI*);
 

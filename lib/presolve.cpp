@@ -89,7 +89,14 @@ namespace MiniZinc {
         if (ann) {
           if (! i->e()->type().isvarbool())
             throw TypeError(env, i->loc(), "Presolve annotation on non-predicate `" + i->id().str() + "'");
-          if(ann->eid() == Expression::E_CALL) {
+          if ( paramArgument(i) ) {
+            if ((ann->eid() == Expression::E_CALL)
+                && !(ann->cast<Call>()->args()[0]->cast<Id>()->v() == constants().presolve.calls->v())) {
+              std::cout << "% warning: The arguments for predicate `" << i->id().str() << "' contain 1 or more"
+                      << " parameter arguments; the calls strategy is used to pre-solve the predicate" << std::endl;
+            }
+            subproblems.push_back(new CallsSubproblem(model, env, i, flattener));
+          } else if (ann->eid() == Expression::E_CALL) {
             ASTExprVec<Expression> args = ann->cast<Call>()->args();
             Id* s_id = args[0]->cast<Id>();
 
@@ -236,10 +243,8 @@ namespace MiniZinc {
               "variables for presolving");
     }
     for ( VarDecl* it : predicate->params() ) {
-      // TODO: Decide on strategy on parameter arguments
       if (it->type().ti() == Type::TypeInst::TI_PAR) {
-        throw EvalError(origin_env, it->loc(), "Presolving is currently only supported for predicates using variable "
-                "parameters");
+        throw EvalError(origin_env, it->loc(), "Pre-solving with the model strategy is only supported with the calls strategy.");
       }
       VarDecl* vd = new VarDecl(Location(), it->ti(), it->id(), NULL);
       m->addItem(new VarDeclI(Location(), vd));
@@ -398,17 +403,11 @@ namespace MiniZinc {
     recursiveRegisterFns(m, e->envi(), predicate);
     std::vector<Expression*> args;
     if (predicate->params().size() < 1) {
-      // TODO: Make parameter included call-based.
       throw EvalError(origin_env, predicate->loc(), "Presolving requires a predicate which includes parameters as targeted "
               "variables for presolving");
     }
     std::vector<VarDecl*> decls;
     for (VarDecl* it : predicate->params()) {
-      // TODO: Decide on strategy on parameter arguments
-      if (it->type().ti() == Type::TypeInst::TI_PAR) {
-        throw EvalError(origin_env, it->loc(), "Presolving is currently unsupported for predicates using parameter"
-                "arguments");
-      }
       VarDecl* vd = new VarDecl(predicate->loc().introduce(), it->ti(), it->id(), NULL);
       m->addItem(new VarDeclI(predicate->loc().introduce(), vd));
 
@@ -427,14 +426,18 @@ namespace MiniZinc {
 
     assert( decls.size() == calls[currentCall]->args().size() );
     for (int i = 0; i < decls.size(); ++i) {
-      // TODO: Can this be simplified with FlatZinc Calls?
-      Expression* dom = computeDomainExpr(origin_env, calls[currentCall]->args()[i]);
-      decls[i]->ti()->domain(dom);
-      if (calls[currentCall]->args()[i]->type().dim() > 0) {
-        std::vector<TypeInst*> ranges;
+      if (calls[currentCall]->args()[i]->type().ispar()) {
+        decls[i]->e(calls[currentCall]->args()[i]);
+      } else {
         // TODO: Can this be simplified with FlatZinc Calls?
-        computeRanges(origin_env, cm, calls[currentCall]->args()[i], ranges);
-        decls[i]->ti()->setRanges(ranges);
+        Expression* dom = computeDomainExpr(origin_env, calls[currentCall]->args()[i]);
+        decls[i]->ti()->domain(dom);
+        if (calls[currentCall]->args()[i]->type().dim() > 0) {
+          std::vector<TypeInst*> ranges;
+          // TODO: Can this be simplified with FlatZinc Calls?
+          computeRanges(origin_env, cm, calls[currentCall]->args()[i], ranges);
+          decls[i]->ti()->setRanges(ranges);
+        }
       }
     }
 
