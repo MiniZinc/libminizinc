@@ -1423,10 +1423,28 @@ namespace MiniZinc {
           bu_ty.run(i->e());
           if (i->e()) {
             Type et = i->e()->type();
+
+            bool needOptCoercion = et.isopt() && et.isint();
+            if (needOptCoercion) {
+              et.ot(Type::OT_PRESENT);
+            }
+            
             if (! (env.isSubtype(et,Type::varint(),true) ||
                    env.isSubtype(et,Type::varfloat(),true)))
               throw TypeError(env, i->e()->loc(),
                 "objective has invalid type, expected int or float, actual `"+et.toString(env)+"'");
+
+            if (needOptCoercion) {
+              GCLock lock;
+              std::vector<Expression*> args(2);
+              args[0] = i->e();
+              args[1] = constants().boollit(i->st()==SolveI::ST_MAX);
+              Call* c = new Call(Location().introduce(), ASTString("objective_deopt_"), args);
+              c->decl(env.orig->matchFn(env, c, false));
+              assert(c->decl());
+              c->type(et);
+              i->e(c);
+            }
           }
         }
         void vOutputI(OutputI* i) {
