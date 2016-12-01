@@ -60,7 +60,6 @@ void Flattener::printHelp(ostream& os)
   << "  -D \"fMIPdomains=false\"\n    No domain unification for MIP" << std::endl
   << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by inequalities" << std::endl
   << std::endl;
- #ifdef PRESOLVE
   os
   << "Presolver options:" << std::endl
   << "  --no-presolve\n    Do not presolve marked predicates." << std::endl
@@ -68,7 +67,6 @@ void Flattener::printHelp(ostream& os)
   << "  --output-presolve-mzn\n    Print generated MiniZinc models to be presolved on standard output" << std::endl
   << "  --presolved <file>, --output-presolved-to-file <file>\n    Filename for presolved predicates output" << std::endl
   << std::endl;
- #endif
   os
   << "Flattener output options:" << std::endl
   << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
@@ -119,14 +117,12 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     flag_output_fzn_stdout = true;
   } else if ( cop.getOption( "--output-ozn-to-stdout" ) ) {
     flag_output_ozn_stdout = true;
-#ifdef PRESOLVE
   } else if ( cop.getOption( "-p --presolver", &flag_fzn_solver) ) {
   } else if ( cop.getOption( "--presolved --output-presolved-to-file", &flag_output_presolved ) ) {
   } else if ( cop.getOption( "--no-presolve" ) ) {
     flag_no_presolve = true;
   } else if ( cop.getOption( "--output-presolve-mzn" ) ) {
     flag_print_presolve = true;
-#endif
   } else if ( cop.getOption( "--output-mode", &buffer ) ) {
     if (buffer == "dzn") {
       flag_output_mode = FlatteningOptions::OUTPUT_DZN;
@@ -350,7 +346,6 @@ void Flattener::flatten()
               env.swap();
               populateOutput(env);
             } else {
-#ifdef PRESOLVE
               Presolver* presolver;
               if (!flag_no_presolve){
                 if (flag_verbose)
@@ -359,7 +354,6 @@ void Flattener::flatten()
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }
-#endif
               if (flag_verbose)
                 std::cerr << "Flattening ...";
 
@@ -408,7 +402,6 @@ void Flattener::flatten()
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }
-#ifdef PRESOLVE
               if (!flag_no_presolve){
                 if (flag_verbose)
                   std::cerr << "Presolving ...";
@@ -416,7 +409,6 @@ void Flattener::flatten()
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }
-#endif
 
               if (!flag_newfzn) {
                 if (flag_verbose)

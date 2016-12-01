@@ -99,13 +99,11 @@ namespace MiniZinc {
     clock_t starttime01;
     clock_t lasttime;
 
-#ifdef PRESOLVE
     friend class Presolver;
     bool flag_no_presolve = false;
     bool flag_print_presolve = false;
     std::string flag_output_presolved;
     std::string flag_fzn_solver = "";
-#endif
 
   };
 
