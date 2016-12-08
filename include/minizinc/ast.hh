@@ -1456,6 +1456,7 @@ namespace MiniZinc {
       /// Presolve annotations
       struct {
         ASTString presolve;
+        ASTString autotable;
         Id* calls;
         Id* instance;
         Id* model;

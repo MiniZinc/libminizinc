@@ -190,28 +190,34 @@ annotation outdomain_random;
 annotation complete;
 
 /***
- @groupdef annotations.presolve Predicate presolve annotations
+ @groupdef annotations.presolve Pre-solve annotations
 */
 
-/** @group annotations.presolve Presolve using the default solver  */
+/** @group annotations.presolve Pre-solve item using method  */
 annotation presolve(
-    ann: strategy
+    ann: method
 );
 
-/** @group annotations.presolve Presolve using the default solver and model solving strategy */
-annotation presolve;
-
 /***
- @groupdef annotations.presolve.strategy Presolve strategy Annotations
+ @groupdef annotations.presolve.method Pre-solve method annotations
 */
 
-/** @group annotations.presolve.strategy Presolve for every call */
+/** @group annotations.presolve.method Transform function into table constraints using the strategy */
+annotation autotable(
+    ann: strategy
+);
+/** @group annotations.presolve.method Transform function into table constraints using the default strategy */
+annotation autotable;
+
+/***
+ @groupdef annotations.presolve.strategy Pre-solve strategy Annotations
+*/
+
+/** @group annotations.presolve.strategy Pre-solve for every call */
 annotation calls;
-
-/** @group annotations.presolve.strategy Presolve for current instance of the model */
+/** @group annotations.presolve.strategy Pre-solve for current instance of the model */
 annotation instance;
-
-/** @group annotations.presolve.strategy Presolve as declared in the model */
+/** @group annotations.presolve.strategy Pre-solve as declared in the model */
 annotation model;
 
 

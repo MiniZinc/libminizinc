@@ -85,31 +85,55 @@ namespace MiniZinc {
       PresolveVisitor(std::vector<Subproblem*>& subproblems, EnvI& env, Model* model, Flattener* flattener) : subproblems(
               subproblems), env(env), model(model), flattener(flattener) { }
       void vFunctionI(FunctionI* i) {
-        Expression* ann = getAnnotation(i->ann(),constants().presolve.presolve);
+        Expression* ann = getAnnotation(i->ann(), constants().presolve.presolve);
         if (ann) {
+//          TODO: Remove when functions are supported
           if (! i->e()->type().isvarbool())
             throw TypeError(env, i->loc(), "Presolve annotation on non-predicate `" + i->id().str() + "'");
-          if ( paramArgument(i) ) {
-            if ((ann->eid() == Expression::E_CALL)
-                && !(ann->cast<Call>()->args()[0]->cast<Id>()->v() == constants().presolve.calls->v())) {
-              std::cout << "% warning: The arguments for predicate `" << i->id().str() << "' contain 1 or more"
-                      << " parameter arguments; the calls strategy is used to pre-solve the predicate" << std::endl;
-            }
-            subproblems.push_back(new CallsSubproblem(model, env, i, flattener));
-          } else if (ann->eid() == Expression::E_CALL) {
-            ASTExprVec<Expression> args = ann->cast<Call>()->args();
-            Id* s_id = args[0]->cast<Id>();
 
-            if ( s_id->v() == constants().presolve.calls->v() )
-              subproblems.push_back( new CallsSubproblem(model, env, i, flattener) );
-            else if ( s_id->v() == constants().presolve.instance->v() )
-              subproblems.push_back( new InstanceSubproblem(model, env, i, flattener) );
-            else if ( s_id->v() == constants().presolve.model->v() )
-              subproblems.push_back( new ModelSubproblem(model, env, i, flattener) );
-            else
-              throw TypeError(env, s_id->loc(), "Invalid presolve strategy `" + s_id->str().str() + "'");
+          if (Call* presolve_call = ann->dyn_cast<Call>()) {
+
+            if (Call* method = presolve_call->args()[0]->dyn_cast<Call>()) {
+              if (method->id() == constants().presolve.autotable) {
+                if (Id* strategy = method->args()[0]->dyn_cast<Id>()) {
+                  if( !(strategy->v() == constants().presolve.calls->v()) && paramArgument(i)) {
+                    std::cout << "% warning: The arguments for predicate `" << i->id().str() << "' contain 1 or more"
+                              << " parameter arguments; the calls strategy is used to pre-solve the predicate" << std::endl;
+                    subproblems.push_back( new CallsSubproblem(model, env, i, flattener) );
+                  } else if ( strategy->v() == constants().presolve.calls->v() )
+                    subproblems.push_back( new CallsSubproblem(model, env, i, flattener) );
+                  else if ( strategy->v() == constants().presolve.instance->v() )
+                    subproblems.push_back( new InstanceSubproblem(model, env, i, flattener) );
+                  else if ( strategy->v() == constants().presolve.model->v() )
+                    subproblems.push_back( new ModelSubproblem(model, env, i, flattener) );
+                  else
+                    throw TypeError(env, strategy->loc(), "Invalid pre-solve strategy `" + strategy->str().str() + "'");
+                } else {
+                  throw TypeError(env, method->loc(), "Invalid pre-solve strategy");
+                }
+              } else {
+                throw TypeError(env, method->loc(), "Invalid pre-solve method `" + method->id().str() + "'");
+              }
+
+            } else if (Id* method = presolve_call->args()[0]->dyn_cast<Id>()) {
+              if (method->v() == constants().presolve.autotable) {
+                if (paramArgument(i)) {
+                  std::cout << "% warning: The arguments for predicate `" << i->id().str() << "' contain 1 or more"
+                            << " parameter arguments; the calls strategy is used to pre-solve the predicate" << std::endl;
+                  subproblems.push_back( new CallsSubproblem(model, env, i, flattener) );
+                } else {
+                  subproblems.push_back(new InstanceSubproblem(model, env, i, flattener));
+                }
+              } else {
+                throw TypeError(env, method->loc(), "Invalid pre-solve method `" + method->str().str() + "'");
+              }
+
+            } else{
+              throw TypeError(env, method->loc(), "Invalid pre-solve method `" + method->str().str() + "'");
+            }
+
           } else {
-            subproblems.push_back( new InstanceSubproblem(model, env, i, flattener) );
+            throw TypeError(env, ann->loc(), "Pre-solve method is empty for `" + i->id().str() + "'");
           }
         }
       }
@@ -244,7 +268,7 @@ namespace MiniZinc {
     }
     for ( VarDecl* it : predicate->params() ) {
       if (it->type().ti() == Type::TypeInst::TI_PAR) {
-        throw EvalError(origin_env, it->loc(), "Pre-solving with the model strategy is only supported with the calls strategy.");
+        throw EvalError(origin_env, it->loc(), "Pre-solving with parameter arguments is only supported with the calls strategy.");
       }
       VarDecl* vd = new VarDecl(Location(), it->ti(), it->id(), NULL);
       m->addItem(new VarDeclI(Location(), vd));
