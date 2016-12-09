@@ -2363,7 +2363,7 @@ namespace MiniZinc {
     }
     /// Visit identifier
     void vId(const Id& id) {
-      if (id.decl()->ti()->domain()) {
+      if (id.decl()->ti()->domain() && !id.decl()->ti()->domain()->isa<TIId>()) {
         _bounds.push_back(eval_intset(env,id.decl()->ti()->domain()));
       } else {
         if (id.decl()->e()) {

@@ -13,6 +13,7 @@
 #define __MINIZINC_ITER_HH__
 
 #include <minizinc/values.hh>
+#include <cmath>
 
 #ifdef _MSC_VER 
 #define _CRT_SECURE_NO_WARNINGS
