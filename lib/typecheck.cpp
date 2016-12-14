@@ -64,7 +64,7 @@ namespace MiniZinc {
     return name;
   }
   
-  AssignI* createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, VarDecl* vd_enumToString, std::vector<Item*>& enumItems) {
+  AssignI* createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, VarDecl* vd_enumToString, Model* enumItems) {
 
     Id* ident = vd->id();
     SetLit* sl = NULL;
@@ -87,7 +87,7 @@ namespace MiniZinc {
         Call* toEnum = new Call(sl->v()[i]->loc(), ASTString("to_enum"), toEnumArgs);
         toEnum->decl(env.orig->matchFn(env, toEnum, false));
         VarDecl* vd_id = new VarDecl(ti_id->loc(),ti_id,sl->v()[i]->cast<Id>()->str(),toEnum);
-        enumItems.push_back(new VarDeclI(vd_id->loc(),vd_id));
+        enumItems->addItem(new VarDeclI(vd_id->loc(),vd_id));
       }
       SetLit* nsl = new SetLit(vd->loc(), IntSetVal::a(1,sl->v().size()));
       Type tt = nsl->type();
@@ -114,7 +114,7 @@ namespace MiniZinc {
         TypeInst* ti = new TypeInst(Location().introduce(),Type::parstring(1));
         ti->setRanges(ranges);
         vd_enumToString = new VarDecl(Location().introduce(),ti,name,al);
-        enumItems.push_back(new VarDeclI(Location().introduce(),vd_enumToString));
+        enumItems->addItem(new VarDeclI(Location().introduce(),vd_enumToString));
       }
       
       TypeInst* ti_aa = new TypeInst(Location().introduce(),Type::parint());
@@ -133,7 +133,7 @@ namespace MiniZinc {
       FunctionI* fi = new FunctionI(Location().introduce(),
                                     createEnumToStringName(ident, "_toString_"),
                                     ti_fi,fi_params,aa);
-      enumItems.push_back(fi);
+      enumItems->addItem(fi);
     } else {
       if (vd_enumToString) {
         /// TODO: find a better solution (don't introduce the vd_enumToString until we
@@ -176,7 +176,7 @@ namespace MiniZinc {
         FunctionI* fi = new FunctionI(Location().introduce(),
                                       createEnumToStringName(ident, "_toString_"),
                                       ti_fi,fi_params,ite);
-        enumItems.push_back(fi);
+        enumItems->addItem(fi);
       }
     }
     
@@ -262,7 +262,7 @@ namespace MiniZinc {
       FunctionI* fi = new FunctionI(Location().introduce(),
                                     createEnumToStringName(ident, "_toString_"),
                                     ti_fi,fi_params,let);
-      enumItems.push_back(fi);
+      enumItems->addItem(fi);
     }
     
     {
@@ -318,14 +318,14 @@ namespace MiniZinc {
       FunctionI* fi = new FunctionI(Location().introduce(),
                                     createEnumToStringName(ident, "_toString_"),
                                     ti_fi,fi_params,bopp1);
-      enumItems.push_back(fi);
+      enumItems->addItem(fi);
     }
     
     return ret;
   }
   
   void
-  TopoSorter::add(EnvI& env, VarDeclI* vdi, bool unique, bool handleEnums, std::vector<Item*>& enumItems) {
+  TopoSorter::add(EnvI& env, VarDeclI* vdi, bool unique, bool handleEnums, Model* enumItems) {
     VarDecl* vd = vdi->e();
     if (handleEnums && vd->ti()->isEnum()) {
       unsigned int enumId = env.registerEnum(vdi);
@@ -344,7 +344,7 @@ namespace MiniZinc {
         TypeInst* ti = new TypeInst(Location().introduce(),Type::parstring(1));
         ti->setRanges(ranges);
         VarDecl* vd_enumToString = new VarDecl(Location().introduce(),ti,name,NULL);
-        enumItems.push_back(new VarDeclI(Location().introduce(),vd_enumToString));
+        enumItems->addItem(new VarDeclI(Location().introduce(),vd_enumToString));
       }
     }
     DeclMap::iterator vd_id = idmap.find(vd->id());
@@ -1228,7 +1228,7 @@ namespace MiniZinc {
     
     std::vector<FunctionI*> functionItems;
     std::vector<AssignI*> assignItems;
-    std::vector<Item*> enumItems;
+    Model* enumItems = new Model;
     
     class TSV0 : public ItemVisitor {
     public:
@@ -1238,9 +1238,9 @@ namespace MiniZinc {
       bool hadSolveItem;
       std::vector<FunctionI*>& fis;
       std::vector<AssignI*>& ais;
-      std::vector<Item*>& enumis;
+      Model* enumis;
       TSV0(EnvI& env0, TopoSorter& ts0, Model* model0, std::vector<FunctionI*>& fis0, std::vector<AssignI*>& ais0,
-           std::vector<Item*>& enumis0)
+           Model* enumis0)
         : env(env0), ts(ts0), model(model0), hadSolveItem(false), fis(fis0), ais(ais0), enumis(enumis0) {}
       void vAssignI(AssignI* i) { ais.push_back(i); }
       void vVarDeclI(VarDeclI* i) { ts.add(env, i, true, true, enumis); }
@@ -1256,20 +1256,21 @@ namespace MiniZinc {
     } _tsv0(env.envi(),ts,m,functionItems,assignItems,enumItems);
     iterItems(_tsv0,m);
 
-    for (unsigned int i=0; i<enumItems.size(); i++) {
-      if (AssignI* ai = enumItems[i]->dyn_cast<AssignI>()) {
+    for (unsigned int i=0; i<enumItems->size(); i++) {
+      if (AssignI* ai = (*enumItems)[i]->dyn_cast<AssignI>()) {
         assignItems.push_back(ai);
-      } else if (VarDeclI* vdi = enumItems[i]->dyn_cast<VarDeclI>()) {
+      } else if (VarDeclI* vdi = (*enumItems)[i]->dyn_cast<VarDeclI>()) {
         m->addItem(vdi);
         ts.add(env.envi(), vdi, true, false, enumItems);
       } else {
-        FunctionI* fi = enumItems[i]->dyn_cast<FunctionI>();
+        FunctionI* fi = (*enumItems)[i]->dyn_cast<FunctionI>();
         m->addItem(fi);
         m->registerFn(env.envi(),fi);
         functionItems.push_back(fi);
       }
     }
-    enumItems.clear();
+
+    Model* enumItems2 = new Model;
     
     for (unsigned int i=0; i<assignItems.size(); i++) {
       AssignI* ai = assignItems[i];
@@ -1284,7 +1285,7 @@ namespace MiniZinc {
         VarDecl* vd_enum = ts.get(env.envi(),name,vd->loc());
         if (vd_enum->e())
           throw TypeError(env.envi(),ai->loc(),"multiple assignment to the same variable");
-        AssignI* ai_enum = createEnumMapper(env.envi(), m, vd->ti()->type().enumId(), vd, vd_enum, enumItems);
+        AssignI* ai_enum = createEnumMapper(env.envi(), m, vd->ti()->type().enumId(), vd, vd_enum, enumItems2);
         if (ai_enum) {
           vd_enum->e(ai_enum->e());
           ai_enum->remove();
@@ -1293,17 +1294,20 @@ namespace MiniZinc {
       ai->remove();
     }
     
-    for (unsigned int i=0; i<enumItems.size(); i++) {
-      if (VarDeclI* vdi = enumItems[i]->dyn_cast<VarDeclI>()) {
+    for (unsigned int i=0; i<enumItems2->size(); i++) {
+      if (VarDeclI* vdi = (*enumItems2)[i]->dyn_cast<VarDeclI>()) {
         m->addItem(vdi);
         ts.add(env.envi(), vdi, true, false, enumItems);
       } else {
-        FunctionI* fi = enumItems[i]->cast<FunctionI>();
+        FunctionI* fi = (*enumItems2)[i]->cast<FunctionI>();
         m->addItem(fi);
         m->registerFn(env.envi(),fi);
         functionItems.push_back(fi);
       }
     }
+    
+    delete enumItems;
+    delete enumItems2;
     
     class TSV1 : public ItemVisitor {
     public:
