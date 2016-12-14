@@ -12,6 +12,8 @@ Changes:
  - Add missing min/max functions for set variables. Can be redefined to solver
    builtins using the new redefinitions-2.1.1.mzn library file.
  - Add support for option type expressions as objective functions.
+ - Automatically coerce arrays constructed using ++ to any enum index set
+   (in addition to array literals and comprehensions).
 
 Bug fixes:
  - Include cmath header to fix compilation issues with some compilers. Fixes #125.

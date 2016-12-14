@@ -1105,7 +1105,9 @@ namespace MiniZinc {
         if (vd.e()) {
           Type vdt = vd.ti()->type();
           Type vet = vd.e()->type();
-          if (vdt.enumId() != 0 && vdt.dim() > 0 && (vd.e()->isa<ArrayLit>() || vd.e()->isa<Comprehension>())) {
+          if (vdt.enumId() != 0 && vdt.dim() > 0 &&
+              (vd.e()->isa<ArrayLit>() || vd.e()->isa<Comprehension>() ||
+               (vd.e()->isa<BinOp>() && vd.e()->cast<BinOp>()->op()==BOT_PLUSPLUS))) {
             // Special case: index sets of array literals and comprehensions automatically
             // coerce to any enum index set
             const std::vector<unsigned int>& enumIds = _env.getArrayEnum(vdt.enumId());
