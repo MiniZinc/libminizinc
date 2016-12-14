@@ -5,11 +5,26 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.1.1
+=============
+
+Changes:
+ - Add missing min/max functions for set variables. Can be redefined to solver
+   builtins using the new redefinitions-2.1.1.mzn library file.
+ - Add support for option type expressions as objective functions.
+
+Bug fixes:
+ - Include cmath header to fix compilation issues with some compilers. Fixes #125.
+ - Fix a garbage collection bug in the type checking for enumerated types that would
+   sometimes lead to crashes or incorrect error messages.
+ - Fix type checking of comprehensions that involve enumerated types.
+ - Fix bounds computation for var sets of enumerated types.
+ - Support anon_enum function as documented.
+
 Version 2.1.0
 =============
 
 Changes:
-
  - MiniZinc now supports enumerated types.
  - Solvers can be interfaced directly to the MiniZinc library, and MiniZinc
    comes with direct support for the CBC, Gurobi and CPLEX MIP solvers.
