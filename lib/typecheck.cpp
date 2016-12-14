@@ -64,7 +64,7 @@ namespace MiniZinc {
     return name;
   }
   
-  AssignI* createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, VarDecl* vd_enumToString, std::vector<Item*>& enumItems) {
+  AssignI* createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, VarDecl* vd_enumToString, Model* enumItems) {
 
     Id* ident = vd->id();
     SetLit* sl = NULL;
@@ -87,7 +87,7 @@ namespace MiniZinc {
         Call* toEnum = new Call(sl->v()[i]->loc(), ASTString("to_enum"), toEnumArgs);
         toEnum->decl(env.orig->matchFn(env, toEnum, false));
         VarDecl* vd_id = new VarDecl(ti_id->loc(),ti_id,sl->v()[i]->cast<Id>()->str(),toEnum);
-        enumItems.push_back(new VarDeclI(vd_id->loc(),vd_id));
+        enumItems->addItem(new VarDeclI(vd_id->loc(),vd_id));
       }
       SetLit* nsl = new SetLit(vd->loc(), IntSetVal::a(1,sl->v().size()));
       Type tt = nsl->type();
@@ -114,54 +114,79 @@ namespace MiniZinc {
         TypeInst* ti = new TypeInst(Location().introduce(),Type::parstring(1));
         ti->setRanges(ranges);
         vd_enumToString = new VarDecl(Location().introduce(),ti,name,al);
-        enumItems.push_back(new VarDeclI(Location().introduce(),vd_enumToString));
+        enumItems->addItem(new VarDeclI(Location().introduce(),vd_enumToString));
       }
       
       TypeInst* ti_aa = new TypeInst(Location().introduce(),Type::parint());
       VarDecl* vd_aa = new VarDecl(Location().introduce(),ti_aa,"x");
       vd_aa->toplevel(false);
+      TypeInst* ti_ab = new TypeInst(Location().introduce(),Type::parbool());
+      VarDecl* vd_ab = new VarDecl(Location().introduce(),ti_ab,"b");
+      vd_ab->toplevel(false);
       std::vector<Expression*> aa_args(1);
       aa_args[0] = vd_aa->id();
       ArrayAccess* aa = new ArrayAccess(Location().introduce(),vd_enumToString->id(),aa_args);
       TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
-      std::vector<VarDecl*> fi_params(1);
+      std::vector<VarDecl*> fi_params(2);
       fi_params[0] = vd_aa;
+      fi_params[1] = vd_ab;
       FunctionI* fi = new FunctionI(Location().introduce(),
                                     createEnumToStringName(ident, "_toString_"),
                                     ti_fi,fi_params,aa);
-      enumItems.push_back(fi);
+      enumItems->addItem(fi);
     } else {
       if (vd_enumToString) {
         /// TODO: find a better solution (don't introduce the vd_enumToString until we
         ///       know it's a non-anonymous enum)
         vd_enumToString->e(new ArrayLit(Location().introduce(), std::vector<Expression*>()));
       }
-      TypeInst* ti_aa = new TypeInst(Location().introduce(),Type::parint());
-      VarDecl* vd_aa = new VarDecl(Location().introduce(),ti_aa,"x");
-      vd_aa->toplevel(false);
-      
-      StringLit* sl = new StringLit(Location().introduce(), ASTString(ident->str().str()+"_"));
-      std::vector<Expression*> showIntArgs(1);
-      showIntArgs[0] = vd_aa->id();
-      Call* showInt = new Call(Location().introduce(), constants().ids.show, showIntArgs);
-      BinOp* construct_string = new BinOp(Location().introduce(), sl, BOT_PLUSPLUS, showInt);
-      
-      TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
-      std::vector<VarDecl*> fi_params(1);
-      fi_params[0] = vd_aa;
-      FunctionI* fi = new FunctionI(Location().introduce(),
-                                    createEnumToStringName(ident, "_toString_"),
-                                    ti_fi,fi_params,construct_string);
-      enumItems.push_back(fi);
+      {
+        TypeInst* ti_aa = new TypeInst(Location().introduce(),Type::parint());
+        VarDecl* vd_aa = new VarDecl(Location().introduce(),ti_aa,"x");
+        vd_aa->toplevel(false);
+        
+        TypeInst* ti_ab = new TypeInst(Location().introduce(),Type::parbool());
+        VarDecl* vd_ab = new VarDecl(Location().introduce(),ti_ab,"b");
+        vd_ab->toplevel(false);
+
+        StringLit* sl_dzn = new StringLit(Location().introduce(),
+                                          ASTString("to_enum("+ident->str().str()+","));
+        std::vector<Expression*> showIntArgs(1);
+        showIntArgs[0] = vd_aa->id();
+        Call* showInt_dzn = new Call(Location().introduce(), constants().ids.show, showIntArgs);
+        BinOp* construct_string_dzn = new BinOp(Location().introduce(), sl_dzn, BOT_PLUSPLUS, showInt_dzn);
+        StringLit* closing_bracket = new StringLit(Location().introduce(), ASTString(")"));
+        BinOp* construct_string_dzn_2 = new BinOp(Location().introduce(), construct_string_dzn,
+                                             BOT_PLUSPLUS, closing_bracket);
+        
+        StringLit* sl = new StringLit(Location().introduce(), ASTString(ident->str().str()+"_"));
+        Call* showInt = new Call(Location().introduce(), constants().ids.show, showIntArgs);
+        BinOp* construct_string = new BinOp(Location().introduce(), sl, BOT_PLUSPLUS, showInt);
+        
+        std::vector<Expression*> if_then(2);
+        if_then[0] = vd_ab->id();
+        if_then[1] = construct_string_dzn_2;
+        ITE* ite = new ITE(Location().introduce(), if_then, construct_string);
+        
+        
+        TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
+        std::vector<VarDecl*> fi_params(2);
+        fi_params[0] = vd_aa;
+        fi_params[1] = vd_ab;
+        FunctionI* fi = new FunctionI(Location().introduce(),
+                                      createEnumToStringName(ident, "_toString_"),
+                                      ti_fi,fi_params,ite);
+        enumItems->addItem(fi);
+      }
     }
     
     {
       /*
        
-       function _toString_ENUM(array[$U] of ENUM: x) =
+       function _toString_ENUM(array[$U] of ENUM: x, bool: b) =
          let {
            array[int] of ENUM: xx = array1d(x)
-         } in "[" ++ join(", ", [ _toString_ENUM(xx[i]) | i in index_set(xx) ]) ++ "]";
+         } in "[" ++ join(", ", [ _toString_ENUM(xx[i],b) | i in index_set(xx) ]) ++ "]";
        
        */
 
@@ -173,6 +198,10 @@ namespace MiniZinc {
       TypeInst* x_ti = new TypeInst(Location().introduce(),Type::parint(-1),ranges,ident);
       VarDecl* vd_x = new VarDecl(Location().introduce(),x_ti,"x");
       vd_x->toplevel(false);
+
+      TypeInst* b_ti = new TypeInst(Location().introduce(),Type::parbool());
+      VarDecl* vd_b = new VarDecl(Location().introduce(),b_ti,"b");
+      vd_b->toplevel(false);
 
       TypeInst* xx_range = new TypeInst(Location().introduce(),Type::parint(),NULL);
       std::vector<TypeInst*> xx_ranges(1);
@@ -194,8 +223,9 @@ namespace MiniZinc {
       aa_xxi_idx[0] = idx_i->id();
       ArrayAccess* aa_xxi = new ArrayAccess(Location().introduce(),vd_xx->id(),aa_xxi_idx);
       
-      std::vector<Expression*> _toString_ENUMArgs(1);
+      std::vector<Expression*> _toString_ENUMArgs(2);
       _toString_ENUMArgs[0] = aa_xxi;
+      _toString_ENUMArgs[1] = vd_b->id();
       Call* _toString_ENUM = new Call(Location().introduce(),
                                       createEnumToStringName(ident, "_toString_"),
                                       _toString_ENUMArgs);
@@ -226,19 +256,20 @@ namespace MiniZinc {
       Let* let = new Let(Location().introduce(),let_args,bopp1);
       
       TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
-      std::vector<VarDecl*> fi_params(1);
+      std::vector<VarDecl*> fi_params(2);
       fi_params[0] = vd_x;
+      fi_params[1] = vd_b;
       FunctionI* fi = new FunctionI(Location().introduce(),
                                     createEnumToStringName(ident, "_toString_"),
                                     ti_fi,fi_params,let);
-      enumItems.push_back(fi);
+      enumItems->addItem(fi);
     }
     
     {
       /*
        
-       function _toString_ENUM(set of ENUM: x) =
-         "{" ++ join(", ", [ _toString_ENUM(i) | i in x ]) ++ "}";
+       function _toString_ENUM(set of ENUM: x, bool: b) =
+         "{" ++ join(", ", [ _toString_ENUM(i,b) | i in x ]) ++ "}";
        
        */
       
@@ -247,12 +278,17 @@ namespace MiniZinc {
       VarDecl* vd_x = new VarDecl(Location().introduce(),x_ti,"x");
       vd_x->toplevel(false);
       
+      TypeInst* b_ti = new TypeInst(Location().introduce(),Type::parbool());
+      VarDecl* vd_b = new VarDecl(Location().introduce(),b_ti,"b");
+      vd_b->toplevel(false);
+
       TypeInst* idx_i_ti = new TypeInst(Location().introduce(),Type::parint());
       VarDecl* idx_i = new VarDecl(Location().introduce(),idx_i_ti,"i");
       idx_i->toplevel(false);
       
-      std::vector<Expression*> _toString_ENUMArgs(1);
+      std::vector<Expression*> _toString_ENUMArgs(2);
       _toString_ENUMArgs[0] = idx_i->id();
+      _toString_ENUMArgs[1] = vd_b->id();
       Call* _toString_ENUM = new Call(Location().introduce(),
                                       createEnumToStringName(ident, "_toString_"),
                                       _toString_ENUMArgs);
@@ -276,19 +312,20 @@ namespace MiniZinc {
       BinOp* bopp1 = new BinOp(Location().introduce(),bopp0,BOT_PLUSPLUS,sl_close);
       
       TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
-      std::vector<VarDecl*> fi_params(1);
+      std::vector<VarDecl*> fi_params(2);
       fi_params[0] = vd_x;
+      fi_params[1] = vd_b;
       FunctionI* fi = new FunctionI(Location().introduce(),
                                     createEnumToStringName(ident, "_toString_"),
                                     ti_fi,fi_params,bopp1);
-      enumItems.push_back(fi);
+      enumItems->addItem(fi);
     }
     
     return ret;
   }
   
   void
-  TopoSorter::add(EnvI& env, VarDeclI* vdi, bool unique, bool handleEnums, std::vector<Item*>& enumItems) {
+  TopoSorter::add(EnvI& env, VarDeclI* vdi, bool unique, bool handleEnums, Model* enumItems) {
     VarDecl* vd = vdi->e();
     if (handleEnums && vd->ti()->isEnum()) {
       unsigned int enumId = env.registerEnum(vdi);
@@ -307,7 +344,7 @@ namespace MiniZinc {
         TypeInst* ti = new TypeInst(Location().introduce(),Type::parstring(1));
         ti->setRanges(ranges);
         VarDecl* vd_enumToString = new VarDecl(Location().introduce(),ti,name,NULL);
-        enumItems.push_back(new VarDeclI(Location().introduce(),vd_enumToString));
+        enumItems->addItem(new VarDeclI(Location().introduce(),vd_enumToString));
       }
     }
     DeclMap::iterator vd_id = idmap.find(vd->id());
@@ -859,6 +896,12 @@ namespace MiniZinc {
           throw TypeError(_env,c.e()->loc(),
             "array comprehension expression cannot be an array");
         tt.dim(1);
+        if (tt.enumId() != 0) {
+          std::vector<unsigned int> enumIds(2);
+          enumIds[0] = 0;
+          enumIds[1] = tt.enumId();
+          tt.enumId(_env.registerArrayEnum(enumIds));
+        }
       }
       c.type(tt);
     }
@@ -1062,7 +1105,9 @@ namespace MiniZinc {
         if (vd.e()) {
           Type vdt = vd.ti()->type();
           Type vet = vd.e()->type();
-          if (vdt.enumId() != 0 && vdt.dim() > 0 && (vd.e()->isa<ArrayLit>() || vd.e()->isa<Comprehension>())) {
+          if (vdt.enumId() != 0 && vdt.dim() > 0 &&
+              (vd.e()->isa<ArrayLit>() || vd.e()->isa<Comprehension>() ||
+               (vd.e()->isa<BinOp>() && vd.e()->cast<BinOp>()->op()==BOT_PLUSPLUS))) {
             // Special case: index sets of array literals and comprehensions automatically
             // coerce to any enum index set
             const std::vector<unsigned int>& enumIds = _env.getArrayEnum(vdt.enumId());
@@ -1074,6 +1119,10 @@ namespace MiniZinc {
                 nEnumIds[i] = 0;
               nEnumIds[nEnumIds.size()-1] = enumIds[enumIds.size()-1];
               vdt.enumId(_env.registerArrayEnum(nEnumIds));
+            }
+          } else if (vd.ti()->isEnum() && vd.e()->isa<Call>()) {
+            if (vd.e()->cast<Call>()->id()=="anon_enum") {
+              vet.enumId(vdt.enumId());
             }
           }
           
@@ -1181,7 +1230,7 @@ namespace MiniZinc {
     
     std::vector<FunctionI*> functionItems;
     std::vector<AssignI*> assignItems;
-    std::vector<Item*> enumItems;
+    Model* enumItems = new Model;
     
     class TSV0 : public ItemVisitor {
     public:
@@ -1191,9 +1240,9 @@ namespace MiniZinc {
       bool hadSolveItem;
       std::vector<FunctionI*>& fis;
       std::vector<AssignI*>& ais;
-      std::vector<Item*>& enumis;
+      Model* enumis;
       TSV0(EnvI& env0, TopoSorter& ts0, Model* model0, std::vector<FunctionI*>& fis0, std::vector<AssignI*>& ais0,
-           std::vector<Item*>& enumis0)
+           Model* enumis0)
         : env(env0), ts(ts0), model(model0), hadSolveItem(false), fis(fis0), ais(ais0), enumis(enumis0) {}
       void vAssignI(AssignI* i) { ais.push_back(i); }
       void vVarDeclI(VarDeclI* i) { ts.add(env, i, true, true, enumis); }
@@ -1209,20 +1258,21 @@ namespace MiniZinc {
     } _tsv0(env.envi(),ts,m,functionItems,assignItems,enumItems);
     iterItems(_tsv0,m);
 
-    for (unsigned int i=0; i<enumItems.size(); i++) {
-      if (AssignI* ai = enumItems[i]->dyn_cast<AssignI>()) {
+    for (unsigned int i=0; i<enumItems->size(); i++) {
+      if (AssignI* ai = (*enumItems)[i]->dyn_cast<AssignI>()) {
         assignItems.push_back(ai);
-      } else if (VarDeclI* vdi = enumItems[i]->dyn_cast<VarDeclI>()) {
+      } else if (VarDeclI* vdi = (*enumItems)[i]->dyn_cast<VarDeclI>()) {
         m->addItem(vdi);
         ts.add(env.envi(), vdi, true, false, enumItems);
       } else {
-        FunctionI* fi = enumItems[i]->dyn_cast<FunctionI>();
+        FunctionI* fi = (*enumItems)[i]->dyn_cast<FunctionI>();
         m->addItem(fi);
         m->registerFn(env.envi(),fi);
         functionItems.push_back(fi);
       }
     }
-    enumItems.clear();
+
+    Model* enumItems2 = new Model;
     
     for (unsigned int i=0; i<assignItems.size(); i++) {
       AssignI* ai = assignItems[i];
@@ -1237,7 +1287,7 @@ namespace MiniZinc {
         VarDecl* vd_enum = ts.get(env.envi(),name,vd->loc());
         if (vd_enum->e())
           throw TypeError(env.envi(),ai->loc(),"multiple assignment to the same variable");
-        AssignI* ai_enum = createEnumMapper(env.envi(), m, vd->ti()->type().enumId(), vd, vd_enum, enumItems);
+        AssignI* ai_enum = createEnumMapper(env.envi(), m, vd->ti()->type().enumId(), vd, vd_enum, enumItems2);
         if (ai_enum) {
           vd_enum->e(ai_enum->e());
           ai_enum->remove();
@@ -1246,17 +1296,20 @@ namespace MiniZinc {
       ai->remove();
     }
     
-    for (unsigned int i=0; i<enumItems.size(); i++) {
-      if (VarDeclI* vdi = enumItems[i]->dyn_cast<VarDeclI>()) {
+    for (unsigned int i=0; i<enumItems2->size(); i++) {
+      if (VarDeclI* vdi = (*enumItems2)[i]->dyn_cast<VarDeclI>()) {
         m->addItem(vdi);
         ts.add(env.envi(), vdi, true, false, enumItems);
       } else {
-        FunctionI* fi = enumItems[i]->cast<FunctionI>();
+        FunctionI* fi = (*enumItems2)[i]->cast<FunctionI>();
         m->addItem(fi);
         m->registerFn(env.envi(),fi);
         functionItems.push_back(fi);
       }
     }
+    
+    delete enumItems;
+    delete enumItems2;
     
     class TSV1 : public ItemVisitor {
     public:
@@ -1376,10 +1429,28 @@ namespace MiniZinc {
           bu_ty.run(i->e());
           if (i->e()) {
             Type et = i->e()->type();
+
+            bool needOptCoercion = et.isopt() && et.isint();
+            if (needOptCoercion) {
+              et.ot(Type::OT_PRESENT);
+            }
+            
             if (! (env.isSubtype(et,Type::varint(),true) ||
                    env.isSubtype(et,Type::varfloat(),true)))
               throw TypeError(env, i->e()->loc(),
                 "objective has invalid type, expected int or float, actual `"+et.toString(env)+"'");
+
+            if (needOptCoercion) {
+              GCLock lock;
+              std::vector<Expression*> args(2);
+              args[0] = i->e();
+              args[1] = constants().boollit(i->st()==SolveI::ST_MAX);
+              Call* c = new Call(Location().introduce(), ASTString("objective_deopt_"), args);
+              c->decl(env.orig->matchFn(env, c, false));
+              assert(c->decl());
+              c->type(et);
+              i->e(c);
+            }
           }
         }
         void vOutputI(OutputI* i) {

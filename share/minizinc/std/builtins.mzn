@@ -691,6 +691,12 @@ function var set of int: array_intersect(array[int] of var set of int: x) ::prom
       } in y[u-1]
     endif;
 
+/** @group builtins.set Return the minimum of the set \a s */
+function var $$E: min(var set of $$E: s);
+
+/** @group builtins.set Return the maximum of the set \a s */
+function var $$E: max(var set of $$E: s);
+
 /***
   @groupdef builtins.array Array operations
   
@@ -1121,6 +1127,12 @@ function string: show(var opt set of $T: x);
 function string: show(var opt $T: x);
 /** @group builtins.string Convert \a x into a string */
 function string: show(array[$U] of var opt $T: x);
+
+function string: showDzn(var opt set of $T: x);
+function string: showDzn(var opt $T: x);
+function string: showDzn(array[$U] of var opt $T: x);
+
+
 /** @group builtins.string Formatted to-string conversion for integers
 
 Converts the integer \a x into a string right
@@ -2073,6 +2085,7 @@ include "redefinitions.mzn";
 include "redefinitions-2.0.mzn";
 include "redefinitions-2.0.2.mzn";
 include "redefinitions-2.1.mzn";
+include "redefinitions-2.1.1.mzn";
 
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%

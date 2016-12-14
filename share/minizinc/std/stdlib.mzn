@@ -484,6 +484,13 @@ function var opt int: element(var opt int: idx, array[int] of var opt int: x) =
 function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt int: x) =
   if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
 
+/* Internal function used to optimize over option type objective */
+
+function var int: objective_deopt_(var opt int: x, bool: direction) =
+  let {
+    int: worst = if direction then lb(x)-1 else ub(x)+1 endif;
+  } in if occurs(x) then deopt(x) else worst endif;
+
 /***
  @groupdef options Compiler options
 */
