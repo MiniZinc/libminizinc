@@ -1213,6 +1213,11 @@ namespace MiniZinc {
               const std::string& id, TypeInst* ti,
               const std::vector<VarDecl*>& params,
               Expression* e = NULL);
+    /// Constructor
+    FunctionI(const Location& loc,
+              const ASTString& id, TypeInst* ti,
+              const ASTExprVec<VarDecl>& params,
+              Expression* e = NULL);
 
     /// Access identifier
     ASTString id(void) const { return _id; }

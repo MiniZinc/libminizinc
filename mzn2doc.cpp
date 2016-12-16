@@ -47,6 +47,7 @@ int main(int argc, char** argv) {
   bool flag_ignoreStdlib = false;
   bool flag_verbose = false;
   bool flag_include_stdlib = false;
+  bool flag_index = true;
   int toplevel_groups = 0;
   string output_base;
   string html_header_file;
@@ -118,6 +119,8 @@ int main(int argc, char** argv) {
       html_footer_file = string(argv[i]);
     } else if (string(argv[i])=="--include-stdlib") {
       flag_include_stdlib = true;
+    } else if (string(argv[i])=="--no-index") {
+      flag_index = false;
     } else if (string(argv[i])=="--globals-dir" ||
                string(argv[i])=="--mzn-globals-dir") {
       i++;
@@ -255,7 +258,7 @@ int main(int argc, char** argv) {
           basedir = basename.substr(0, lastSlash)+"/";
           basename = basename.substr(lastSlash+1, std::string::npos);
         }
-        std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(env.envi(),m,basename,toplevel_groups,flag_include_stdlib);
+        std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(env.envi(),m,basename,toplevel_groups,flag_include_stdlib,flag_index);
         for (unsigned int i=0; i<docs.size(); i++) {
           std::ofstream os(basedir+docs[i].filename()+".html");
           std::string header = html_header;
@@ -304,6 +307,7 @@ error:
             << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
             << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
             << "  --single-page\n    Print entire documentation on a single HTML page." << std::endl
+            << "  --no-index\n       Do not generate an index of all symbols." << std::endl
             << std::endl
             << "Output options:" << std::endl << std::endl
             << "  --output-base <name>\n    Base name for output files" << std::endl
