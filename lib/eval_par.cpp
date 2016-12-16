@@ -1974,13 +1974,17 @@ namespace MiniZinc {
   };
 
   IntBounds compute_int_bounds(EnvI& env, Expression* e) {
-    ComputeIntBounds cb(env);
-    BottomUpIterator<ComputeIntBounds> cbi(cb);
-    cbi.run(e);
-    if (cb.valid) {
-      assert(cb._bounds.size() == 1);
-      return IntBounds(cb._bounds.back().first,cb._bounds.back().second,true);
-    } else {
+    try {
+      ComputeIntBounds cb(env);
+      BottomUpIterator<ComputeIntBounds> cbi(cb);
+      cbi.run(e);
+      if (cb.valid) {
+        assert(cb._bounds.size() == 1);
+        return IntBounds(cb._bounds.back().first,cb._bounds.back().second,true);
+      } else {
+        return IntBounds(0,0,false);
+      }
+    } catch (ResultUndefinedError&) {
       return IntBounds(0,0,false);
     }
   }
@@ -2308,13 +2312,17 @@ namespace MiniZinc {
   };
   
   FloatBounds compute_float_bounds(EnvI& env, Expression* e) {
-    ComputeFloatBounds cb(env);
-    BottomUpIterator<ComputeFloatBounds> cbi(cb);
-    cbi.run(e);
-    if (cb.valid) {
-      assert(cb._bounds.size() > 0);
-      return FloatBounds(cb._bounds.back().first,cb._bounds.back().second,true);
-    } else {
+    try {
+      ComputeFloatBounds cb(env);
+      BottomUpIterator<ComputeFloatBounds> cbi(cb);
+      cbi.run(e);
+      if (cb.valid) {
+        assert(cb._bounds.size() > 0);
+        return FloatBounds(cb._bounds.back().first,cb._bounds.back().second,true);
+      } else {
+        return FloatBounds(0.0,0.0,false);
+      }
+    } catch (ResultUndefinedError&) {
       return FloatBounds(0.0,0.0,false);
     }
   }
@@ -2528,13 +2536,17 @@ namespace MiniZinc {
   };
 
   IntSetVal* compute_intset_bounds(EnvI& env, Expression* e) {
-    ComputeIntSetBounds cb(env);
-    BottomUpIterator<ComputeIntSetBounds> cbi(cb);
-    cbi.run(e);
-    if (cb.valid)
-      return cb._bounds.back();
-    else
-      return NULL;  
+    try {
+      ComputeIntSetBounds cb(env);
+      BottomUpIterator<ComputeIntSetBounds> cbi(cb);
+      cbi.run(e);
+      if (cb.valid)
+        return cb._bounds.back();
+      else
+        return NULL;
+    } catch (ResultUndefinedError&) {
+      return NULL;
+    }
   }
 
   Expression* follow_id(Expression* e) {
