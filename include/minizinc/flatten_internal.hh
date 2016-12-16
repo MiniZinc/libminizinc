@@ -132,6 +132,7 @@ namespace MiniZinc {
     /// deprecated, use Solns2Out
     std::ostream& evalOutput(std::ostream& os);
     void createErrorStack(void);
+    Call* surroundingCall(void) const;
   };
 
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);

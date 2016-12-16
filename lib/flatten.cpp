@@ -469,6 +469,12 @@ namespace MiniZinc {
     }
   }
   
+  Call* EnvI::surroundingCall(void) const {
+    if (callStack.size() >= 2)
+      return callStack[callStack.size()-2]->untag()->dyn_cast<Call>();
+    return NULL;
+  }
+  
   CallStackItem::CallStackItem(EnvI& env0, Expression* e) : env(env0) {
     if (e->isa<VarDecl>())
       env.idStack.push_back(env.callStack.size());
@@ -3580,58 +3586,74 @@ namespace MiniZinc {
               cond = where[0];
             }
             
+            Expression* new_e;
 
-            Expression* r_bounds = NULL;
-            if (c->e()->type().bt()==Type::BT_INT && c->e()->type().dim() == 0) {
-              std::vector<Expression*> ubargs(1);
-              ubargs[0] = c->e();
-              if (c->e()->type().st()==Type::ST_SET) {
-                Call* bc = new Call(Location().introduce(),"ub",ubargs);
-                bc->type(Type::parsetint());
-                bc->decl(env.orig->matchFn(env, bc, false));
-                r_bounds = bc;
-              } else {
-                Call* lbc = new Call(Location().introduce(),"lb",ubargs);
-                lbc->type(Type::parint());
-                lbc->decl(env.orig->matchFn(env, lbc, false));
-                Call* ubc = new Call(Location().introduce(),"ub",ubargs);
-                ubc->type(Type::parint());
-                ubc->decl(env.orig->matchFn(env, ubc, false));
-                r_bounds = new BinOp(Location().introduce(),lbc,BOT_DOTDOT,ubc);
-                r_bounds->type(Type::parsetint());
-              }
-            }
-            Type tt;
-            tt = c->e()->type();
-            tt.ti(Type::TI_VAR);
-            tt.ot(Type::OT_OPTIONAL);
+            Call* surround = env.surroundingCall();
             
-            TypeInst* ti = new TypeInst(Location().introduce(),tt,r_bounds);
-            VarDecl* r = new VarDecl(c->loc(),ti,env.genId());
-            r->addAnnotation(constants().ann.promise_total);
-            r->introduced(true);
-            r->flat(r);
+            Type ntype = c->type();
+            if (surround->id()==constants().ids.forall) {
+              new_e = new BinOp(Location().introduce(), cond, BOT_IMPL, c->e());
+              new_e->type(Type::varbool());
+              ntype.ot(Type::OT_PRESENT);
+            } else if (surround->id()==constants().ids.exists) {
+              new_e = new BinOp(Location().introduce(), cond, BOT_AND, c->e());
+              new_e->type(Type::varbool());
+              ntype.ot(Type::OT_PRESENT);
+            } else {
+              Expression* r_bounds = NULL;
+              if (c->e()->type().bt()==Type::BT_INT && c->e()->type().dim() == 0) {
+                std::vector<Expression*> ubargs(1);
+                ubargs[0] = c->e();
+                if (c->e()->type().st()==Type::ST_SET) {
+                  Call* bc = new Call(Location().introduce(),"ub",ubargs);
+                  bc->type(Type::parsetint());
+                  bc->decl(env.orig->matchFn(env, bc, false));
+                  r_bounds = bc;
+                } else {
+                  Call* lbc = new Call(Location().introduce(),"lb",ubargs);
+                  lbc->type(Type::parint());
+                  lbc->decl(env.orig->matchFn(env, lbc, false));
+                  Call* ubc = new Call(Location().introduce(),"ub",ubargs);
+                  ubc->type(Type::parint());
+                  ubc->decl(env.orig->matchFn(env, ubc, false));
+                  r_bounds = new BinOp(Location().introduce(),lbc,BOT_DOTDOT,ubc);
+                  r_bounds->type(Type::parsetint());
+                }
+                r_bounds->addAnnotation(constants().ann.maybe_partial);
+              }
+              Type tt;
+              tt = c->e()->type();
+              tt.ti(Type::TI_VAR);
+              tt.ot(Type::OT_OPTIONAL);
+              
+              TypeInst* ti = new TypeInst(Location().introduce(),tt,r_bounds);
+              VarDecl* r = new VarDecl(c->loc(),ti,env.genId());
+              r->addAnnotation(constants().ann.promise_total);
+              r->introduced(true);
+              r->flat(r);
 
-            std::vector<Expression*> let_exprs(3);
-            let_exprs[0] = r;
-            BinOp* r_eq_e = new BinOp(Location().introduce(),r->id(),BOT_EQ,c->e());
-            r_eq_e->type(Type::varbool());
-            let_exprs[1] = new BinOp(Location().introduce(),cond,BOT_IMPL,r_eq_e);
-            let_exprs[1]->type(Type::varbool());
-            let_exprs[1]->addAnnotation(constants().ann.promise_total);
-            let_exprs[1]->addAnnotation(constants().ann.maybe_partial);
-            std::vector<Expression*> absent_r_args(1);
-            absent_r_args[0] = r->id();
-            Call* absent_r = new Call(Location().introduce(), "absent", absent_r_args);
-            absent_r->type(Type::varbool());
-            absent_r->decl(env.orig->matchFn(env, absent_r, false));
-            let_exprs[2] = new BinOp(Location().introduce(),cond,BOT_OR,absent_r);
-            let_exprs[2]->type(Type::varbool());
-            let_exprs[2]->addAnnotation(constants().ann.promise_total);
-            Let* let = new Let(Location().introduce(), let_exprs, r->id());
-            let->type(r->type());
-            Comprehension* nc = new Comprehension(c->loc(),let,gs,c->set());
-            nc->type(c->type());
+              std::vector<Expression*> let_exprs(3);
+              let_exprs[0] = r;
+              BinOp* r_eq_e = new BinOp(Location().introduce(),r->id(),BOT_EQ,c->e());
+              r_eq_e->type(Type::varbool());
+              let_exprs[1] = new BinOp(Location().introduce(),cond,BOT_IMPL,r_eq_e);
+              let_exprs[1]->type(Type::varbool());
+              let_exprs[1]->addAnnotation(constants().ann.promise_total);
+              let_exprs[1]->addAnnotation(constants().ann.maybe_partial);
+              std::vector<Expression*> absent_r_args(1);
+              absent_r_args[0] = r->id();
+              Call* absent_r = new Call(Location().introduce(), "absent", absent_r_args);
+              absent_r->type(Type::varbool());
+              absent_r->decl(env.orig->matchFn(env, absent_r, false));
+              let_exprs[2] = new BinOp(Location().introduce(),cond,BOT_OR,absent_r);
+              let_exprs[2]->type(Type::varbool());
+              let_exprs[2]->addAnnotation(constants().ann.promise_total);
+              Let* let = new Let(Location().introduce(), let_exprs, r->id());
+              let->type(r->type());
+              new_e = let;
+            }
+            Comprehension* nc = new Comprehension(c->loc(),new_e,gs,c->set());
+            nc->type(ntype);
             c = nc;
             c_ka = c;
           }
