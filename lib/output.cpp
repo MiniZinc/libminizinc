@@ -185,7 +185,9 @@ namespace MiniZinc {
             std::vector<Expression*> args(2);
             args[0] = c.args()[c.args().size()-1];
             if (args[0]->type().dim() > 1) {
-              Call* array1d = new Call(Location().introduce(),ASTString("array1d"),args);
+              std::vector<Expression*> a1dargs(1);
+              a1dargs[0] = args[0];
+              Call* array1d = new Call(Location().introduce(),ASTString("array1d"),a1dargs);
               Type array1dt = args[0]->type();
               array1dt.dim(1);
               array1d->type(array1dt);
