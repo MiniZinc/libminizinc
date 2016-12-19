@@ -922,6 +922,10 @@ namespace MiniZinc {
         needIntLit = true;
       } else {
         ty_id = ty_in;
+        if (ty_in.enumId() != 0) {
+          const std::vector<unsigned int>& enumIds = _env.getArrayEnum(ty_in.enumId());
+          ty_id.enumId(enumIds.back());
+        }
         ty_id.dim(0);
       }
       for (int j=0; j<c.n_decls(gen_i); j++) {
