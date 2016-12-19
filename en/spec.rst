@@ -624,7 +624,7 @@ A type-inst expression specifies a type-inst.
 Type-inst expressions may include type-inst constraints.
 Type-inst expressions appear in variable declarations
 (:ref:`spec-Declarations`) and user-defined operation items
-(:ref:`preds-and-fns`)..
+(:ref:`spec-preds-and-fns`)..
 
 Type-inst expressions have this syntax:
 
@@ -1352,6 +1352,1143 @@ a normal function identifier by quoting it, e.g: :mzn:`'+'(3, 4)` is
 equivalent to :mzn:`3 + 4`.
 
 The meaning of each operator is given in :ref:`spec-builtins`.
+
+Expression Atoms
+~~~~~~~~~~~~~~~~
+
+.. _spec-Identifier-Expressions-and-Quoted-Operator-Expressions:
+
+Identifier Expressions and Quoted Operator Expressions
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Identifier expressions and quoted operator expressions have the following
+syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Identifiers and quoted operators
+  :end-before: %
+
+Examples of identifiers were given in :ref:`spec-Identifiers`.  The
+following are examples of quoted operators:
+
+.. code-block:: minizinc
+
+  '+'
+  'union'
+
+In quoted operators, whitespace is not permitted between either quote
+and the operator.  :ref:`spec-Operators` lists MiniZinc's built-in operators.
+
+Syntactically, any identifier or quoted operator can serve as an expression.
+However, in a valid model any identifier or quoted operator serving as an
+expression must be the name of a variable.
+
+.. _spec-Anonymous-Decision-Variables:
+
+Anonymous Decision Variables
+++++++++++++++++++++++++++++
+
+There is a special identifier, :mzn:`_`, that represents an unfixed,
+anonymous decision variable.  It can take on any type that can be a decision
+variable.  It is particularly useful for initialising decision variables
+within compound types.  For example, in the following array the first and
+third elements are fixed to 1 and 3 respectively and the second and fourth
+elements are unfixed:
+
+.. code-block:: minizinc
+
+  array[1..4] of var int: xs = [1, _, 3, _];
+
+Any expression that does not contain :mzn:`_` and does not involve
+decision variables is fixed.
+
+Boolean Literals
+++++++++++++++++
+
+Boolean literals have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Boolean literals
+  :end-before: %
+
+Integer and Float Literals
+++++++++++++++++++++++++++
+
+There are three forms of integer literals - decimal, hexadecimal, and
+octal - with these respective forms:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Integer literals
+  :end-before: %
+
+For example: :mzn:`0`, :mzn:`005`, :mzn:`123`, :mzn:`0x1b7`,
+:mzn:`0o777`;  but not :mzn:`-1`.
+
+Float literals have the following form:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Float literals
+  :end-before: %
+
+For example: :mzn:`1.05`, :mzn:`1.3e-5`, :mzn:`1.3+e5`;  but not
+:mzn:`1.`, :mzn:`.5`, :mzn:`1.e5`, :mzn:`.1e5`, :mzn:`-1.0`,
+:mzn:`-1E05`.
+A :mzn:`-` symbol preceding an integer or float literal is parsed as a
+unary minus (regardless of intervening whitespace), not as part of the
+literal.  This is because it is not possible in general to distinguish a
+:mzn:`-` for a negative integer or float literal from a binary minus
+when lexing.
+
+.. _spec-String-Interpolation-Expressions:
+
+String Literals and String Interpolation
+++++++++++++++++++++++++++++++++++++++++
+
+String literals are written as in C:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % String literals
+  :end-before: %
+
+This includes C-style escape sequences, such as :mzn:`\"` for
+double quotes, :mzn:`\\` for backslash, and
+:mzn:`\n` for newline.
+
+For example: :mzn:`"Hello, world!\n"`.
+
+String literals must fit on a single line.  
+
+Long string literals can be split across multiple lines using string
+concatenation.  For example:
+
+.. code-block:: minizinc
+
+    string: s = "This is a string literal "
+             ++ "split across two lines.";
+
+A string expression can contain an arbitrary MiniZinc expression, which will
+be converted to a string similar to the builtin :mzn:`show` function and
+inserted into the string.
+
+For example:
+
+.. code-block:: minizinc
+
+  var set of 1..10: q;
+  solve satisfy;
+  output [show("The value of q is \(q), and it has \(card(q)) elements.")];
+
+.. _spec-set-literals:
+
+Set Literals
+++++++++++++
+
+Set literals have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Set literals
+  :end-before: %
+
+For example:
+
+.. code-block:: minizinc
+
+  { 1, 3, 5 }
+  { }
+  { 1, 2.0 }
+
+The type-insts of all elements in a literal set must be the same, or
+coercible to the same type-inst (as in the last example above, where the
+integer :mzn:`1` will be coerced to a :mzn:`float`).
+
+
+.. _spec-set-comprehensions:
+
+Set Comprehensions
+++++++++++++++++++
+
+Set comprehensions have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Set comprehensions
+  :end-before: %
+
+For example (with the literal equivalent on the right):
+
+.. code-block:: minizinc
+
+    { 2*i | i in 1..5 }     % { 2, 4, 6, 8, 10 }
+    {  1  | i in 1..5 }     % { 1 }   (no duplicates in sets)
+
+The expression before the :mzn:`|` is the *head expression*.  The
+expression after the :mzn:`in` is a *generator expression*.
+Generators can be restricted by a *where-expression*.  For example:
+
+.. code-block:: minizinc
+
+  { i | i in 1..10 where (i mod 2 = 0) }     % { 2, 4, 6, 8, 10 }
+
+When multiple generators are present, the right-most generator acts as the
+inner-most one.  For example:
+
+.. code-block:: minizinc
+
+    { 3*i+j | i in 0..2, j in {0, 1} }    % { 0, 1, 3, 4, 6, 7 }
+
+The scope of local generator variables is given by the following rules:
+
+- They are visible within the head expression (before the :mzn:`|`).
+- They are visible within the where-expression.
+- They are visible within generator expressions in any subsequent
+  generators.
+
+The last of these rules means that the following set comprehension is allowed:
+
+.. code-block:: minizinc
+
+    { i+j | i in 1..3, j in 1..i }  % { 1+1, 2+1, 2+2, 3+1, 3+2, 3+3 }
+
+A generator expression must be an array or a fixed set.
+
+*Rationale: For set comprehensions, set generators would suffice, but for
+array comprehensions, array generators are required for full expressivity
+(e.g., to provide control over the order of the elements in the resulting
+array).  Set comprehensions have array generators for consistency with array
+comprehensions, which makes implementations simpler.*
+
+The where-expression (if present) must be Boolean.  
+It can be var, in which case the type of the comprehension is lifted to an optional type.  Only one
+where-expression per comprehension is allowed.
+
+*Rationale:
+Allowing one where-expression per generator is another possibility, and one
+that could seemingly result in more efficient evaluation in some cases.  For
+example, consider the following comprehension:*
+
+.. code-block:: minizinc
+
+    [f(i, j) | i in A1, j in A2 where p(i) /\ q(i,j)]
+
+*If multiple where-expressions were allowed, this could be expressed more
+efficiently in the following manner, which avoids the fruitless "inner loop
+iterations" for each "outer loop iteration" that does not satisfy*
+:mzn:`p(i)`:
+
+.. code-block:: minizinc
+
+    [f(i, j) | i in A1 where p(i), j in A2 where q(i,j)]
+
+*However, this efficiency can also be achieved with nested comprehensions:*
+
+.. code-block:: minizinc
+
+    [f(i, j) | i in [k | k in A1 where p(k)], j in A2 where q(i,j)]
+
+*Therefore, a single where-expression is all that is supported.*
+
+.. _spec-array-literals:
+
+Array Literals
+++++++++++++++
+
+Array literals have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Array literals
+  :end-before: %
+
+For example:
+
+.. code-block:: minizinc
+
+    [1, 2, 3, 4]
+    []
+    [1, _]
+
+
+In a array literal all elements must have the same type-inst, or
+be coercible to the same type-inst (as in the last example above, where the
+fixed integer :mzn:`1` will be coerced to a :mzn:`var int`).
+
+The indices of a array literal are implicitly :mzn:`1..n`, where :mzn:`n` is
+the length of the literal.
+
+.. _spec-2d-array-literals:
+
+2d Array Literals
++++++++++++++++++
+
+Simple 2d array literals have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % 2D Array literals
+  :end-before: %
+
+For example:
+
+.. code-block:: minizinc
+
+    [| 1, 2, 3
+     | 4, 5, 6
+     | 7, 8, 9 |]       % array[1..3, 1..3]
+    [| x, y, z |]       % array[1..1, 1..3]
+    [| 1 | _ | _ |]     % array[1..3, 1..1]
+
+In a 2d array literal, every sub-array must have the same length.
+
+In a 2d array literal all elements must have the same type-inst, or
+be coercible to the same type-inst (as in the last example above, where the
+fixed integer :mzn:`1` will be coerced to a :mzn:`var int`).
+
+The indices of a 2d array literal are implicitly :mzn:`(1,1)..(m,n)`,
+where :mzn:`m` and :mzn:`n` are determined by the shape of the literal.
+
+
+.. _spec-array-comprehensions:
+
+Array Comprehensions
+++++++++++++++++++++
+
+Array comprehensions have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Array comprehensions
+  :end-before: %
+
+For example (with the literal equivalents on the right):
+
+.. code-block:: minizinc
+
+    [2*i | i in 1..5]       % [2, 4, 6, 8, 10]
+
+Array comprehensions have more flexible type and inst requirements than set
+comprehensions (see :ref:`spec-Set-Comprehensions`).
+
+Array comprehensions are allowed over a variable set with finite type, the
+result is an array of optional type, with length equal to the 
+cardinality of the upper bound of the variable set.
+For example:
+
+.. code-block:: minizinc
+
+    var set of 1..5: x;
+    array[int] of var opt int: y = [ i * i | i in x ];
+
+The length of array will be 5. 
+
+Array comprehensions are allowed where the where-expression is a :mzn:`var bool`.
+Again the resulting array is of optional type, and of length
+equal to that given by the generator expressions.
+For example:
+
+.. code-block:: minizinc
+
+   var int x;
+   array[int] of var opt int: y = [ i | i in 1..10 where i != x ];
+
+The length of the array wtill be 10.
+
+The indices of an evaluated simple array comprehension are implicitly
+:mzn:`1..n`, where :mzn:`n` is the length of the evaluated comprehension.
+
+.. _spec-array-access-expressions:
+
+Array Access Expressions
+++++++++++++++++++++++++
+
+Array elements are accessed using square brackets after an expression:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Array access
+  :end-before: %
+
+For example:
+
+.. code-block:: minizinc
+
+    int: x = a1[1];
+
+If all the indices used in an array access are fixed, the type-inst of the
+result is the same as the element type-inst.  However, if any
+indices are not fixed, the type-inst of the result is the varified element
+type-inst.  For example, if we have:
+
+.. code-block:: minizinc
+
+   array[1..2] of int: a2 = [1, 2];
+   var int: i;
+
+then the type-inst of :mzn:`a2[i]` is :mzn:`var int`.  If the element type-inst
+is not varifiable, such an access causes a static error.
+
+Multi dimensional arrays 
+are accessed using comma separated indices.
+
+.. code-block:: minizinc
+
+    array[1..3,1..3] of int: a3;
+    int: y = a3[1, 2];
+
+Indices must match the index set type of the array. For example, an array
+declared with an enum index set can only be accessed using indices from that
+enum.
+
+.. code-block:: minizinc
+
+    enum X = {A,B,C};
+    array[X] of int: a4 = [1,2,3];
+    int: y = a4[1];                  % wrong index type
+    int: z = a4[B];                  % correct
+
+
+Annotation Literals
++++++++++++++++++++
+
+Literals of the :mzn:`ann` type have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Annotation literals
+  :end-before: %
+
+For example:
+
+.. code-block:: minizinc
+
+    foo
+    cons(1, cons(2, cons(3, nil)))
+
+There is no way to inspect or deconstruct annotation literals in a MiniZinc
+model;  they are intended to be inspected only by an implementation, e.g., to
+direct compilation.
+
+If-then-else Expressions
+++++++++++++++++++++++++
+
+MiniZinc provides if-then-else expressions, which provide selection from two
+alternatives based on a condition.  They have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % If-then-else expressions
+  :end-before: %
+
+For example:
+
+.. code-block:: minizinc
+
+    if x <= y then x else y endif
+    if x < 0 then -1 elseif x > 0 then 1 else 0 endif
+
+The presence of the :mzn:`endif` avoids possible ambiguity when an
+if-then-else expression is part of a larger expression.
+
+The type-inst of the :mzn:`if` expression must be :mzn:`par bool` or
+:mzn:`var bool`.
+The :mzn:`then` and
+:mzn:`else` expressions must have the same type-inst, or be coercible to the
+same type-inst, which is also the type-inst of the whole expression.
+
+If the :mzn:`if` expression is :mzn:`var bool` then the type-inst of the
+:mzn:`then` and :mzn:`else` expressions must be varifiable.
+
+If the :mzn:`if` expression is :mzn:`par bool` then 
+evaluation of if-then-else expressions is lazy: the condition is evaluated,
+and then only one of the :mzn:`then` and :mzn:`else` branches are evaluated,
+depending on whether the condition succeeded or failed. 
+This is not the case if it is :mzn:`var bool`.
+
+
+.. _spec-let-expressions:
+
+Let Expressions
++++++++++++++++
+
+Let expressions provide a way of introducing local names for one or more
+expressions and local constraints
+that can be used within another expression.  They are
+particularly useful in user-defined operations.
+
+Let expressions have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Let expressions
+  :end-before: %
+
+For example:
+
+.. code-block:: minizinc
+
+    let { int: x = 3, int: y = 4; } in x + y;
+    let { var int: x; 
+          constraint x >= y /\ x >= -y /\ (x = y \/ x = -y); } 
+    in x 
+
+The scope of a let local variable covers:
+
+- The type-inst and initialisation expressions of any subsequent variables
+  within the let expression (but not the variable's own initialisation
+  expression).
+- The expression after the :mzn:`in`, which is parsed as greedily as
+  possible.
+
+A variable can only be declared once in a let expression.
+
+Thus in the following examples the first is acceptable but the rest are not:
+
+.. code-block:: minizinc
+
+    let { int: x = 3; int: y = x; } in x + y;  % ok
+    let { int: y = x; int: x = 3; } in x + y;  % x not visible in y's defn.
+    let { int: x = x; } in x;                  % x not visible in x's defn.
+    let { int: x = 3; int: x = 4; } in x;      % x declared twice
+
+.. 
+  The type-inst expressions can include type-inst variables if the let is
+  within a function or predicate body in which the same type-inst variables
+  were present in the function or predicate signature.
+  TODO: type-inst variables are currently not fully supported
+
+The initialiser for a let local variable can be omitted only if the variable
+is a decision variable.  For example:
+
+.. code-block:: minizinc
+
+    let { var int: x; } in ...;    % ok
+    let {     int: x; } in ...;    % illegal
+
+The type-inst of the entire let expression is the type-inst of the expression
+after the :mzn:`in` keyword.
+
+There is a complication involving let expressions in negative contexts.  A
+let expression occurs in a negative context if it occurs in an expression
+of the form :mzn:`not X`, :mzn:`X <-> Y}` or in the sub-expression
+:mzn:`X` in :mzn:`X -> Y` or :mzn:`Y <- X`, or in a subexpression 
+:mzn:`bool2int(X)`.
+
+If a let expression is used in a negative context, then any let-local
+decision variables must be defined only in terms of non-local variables and
+parameters.  This is because local variables are implicitly existentially
+quantified, and if the let expression occurred in a negative context then
+the local variables would be effectively universally quantified which is not
+supported by MiniZinc.
+
+Constraints in let expressions float to the nearest enclosing Boolean
+context.  For example
+
+.. code-block:: minizinc
+
+     constraint b -> x + let { var 0..2: y; constraint y != -1;} in y >= 4;
+
+is equivalent to
+
+.. code-block:: minizinc
+
+     var 0..2: y;
+     constraint b -> (x + y >= 4 /\ y != 1);
+
+Call Expressions
+++++++++++++++++
+
+Call expressions are used to call predicates and functions.
+
+Call expressions have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Call expressions
+  :end-before: %
+
+For example:
+
+.. code-block:: minizinc
+
+    x = min(3, 5);
+
+The type-insts of the expressions passed as arguments must match the
+argument types of the called predicate/function.  The return type of the
+predicate/function must also be appropriate for the calling context.
+
+Note that a call to a function or predicate with no arguments is
+syntactically indistinguishable from the use of a variable, and so must be
+determined during type-inst checking.
+
+Evaluation of the arguments in call expressions is strict: all arguments
+are evaluated before the call itself is evaluated.  Note that this includes
+Boolean operations such as ``/\``, ``\/``, :mzn:`->` and :mzn:`<-`
+which could be lazy in one argument.  The one exception is :mzn:`assert`,
+which is lazy in its third argument (:ref:`spec-Other-Operations`).
+
+*Rationale: Boolean operations are strict because: (a) this minimises
+exceptional cases;  (b) in an expression like* :mzn:`A -> B` *where*
+:mzn:`A` *is not fixed and* :mzn:`B` *causes an abort, the appropriate
+behaviour is unclear if laziness is present;  and (c) if a user needs
+laziness, an if-then-else can be used.*
+
+The order of argument evaluation is not specified.  *Rationale: Because MiniZinc
+is declarative, there is no obvious need to specify an evaluation order, and
+leaving it unspecified gives implementors some freedom.*
+
+.. _spec-generator-call-expressions:
+
+Generator Call Expressions
+++++++++++++++++++++++++++
+
+MiniZinc has special syntax for certain kinds of call expressions which makes
+models much more readable.
+
+Generator call expressions have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Generator call expressions
+  :end-before: %
+
+A generator call expression :mzn:`P(Gs)(E)` is equivalent to the call
+expression :mzn:`P([E | Gs])`.
+For example, the expression:
+
+.. code-block:: minizinc
+
+    forall(i,j in Domain where i<j)
+        (noattack(i, j, queens[i], queens[j]));
+
+(in a model specifying the N-queens problem) is equivalent to:
+
+.. code-block:: minizinc
+
+    forall( [ noattack(i, j, queens[i], queens[j])
+            | i,j in Domain where i<j ] );
+
+The parentheses around the latter expression are mandatory;  this avoids
+possible confusion when the generator call expression is part of a larger
+expression.
+
+The identifier must be the name of a unary predicate or function that takes
+an array argument.
+
+The generators and where-expression (if present) have the same requirements
+as those in array comprehensions (:ref:`spec-Array-Comprehensions`).
+
+.. _spec-items:
+
+Items
+-----
+
+This section describes the top-level program items.
+
+.. _spec-include-items:
+
+Include Items
+~~~~~~~~~~~~~
+
+Include items allow a model to be split across multiple files.  They have
+this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Include items
+  :end-before: %
+
+For example:
+
+.. code-block:: minizinc
+
+    include "foo.mzn";
+
+includes the file ``foo.mzn``.
+
+Include items are particularly useful for accessing libraries or breaking up
+large models into small pieces.  They are not, as :ref:`spec-Model-Instance-Files`
+explains, used for specifying data files.
+
+If the given name is not a complete path then the file is searched for in an
+implementation-defined set of directories.  The search directories must be
+able to be altered with a command line option.
+
+.. _spec-declarations:
+
+Variable Declaration Items
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Variable declarations have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Variable declaration items
+  :end-before: %
+
+For example:
+
+.. code-block:: minizinc
+
+    int: A = 10;
+
+It is a type-inst error if a variable is declared and/or defined more than
+once in a model.
+
+A variable whose declaration does not include an assignment can be
+initialised by a separate assignment item (:ref:`spec-Assignments`).  For
+example, the above item can be separated into the following two items:
+
+.. code-block:: minizinc
+
+    int: A;
+    ...
+    A = 10;
+
+All variables that contain a parameter component must be defined at
+instance-time.
+
+Variables can have one or more annotations.
+:ref:`spec-Annotations` has more on annotations.
+
+
+.. _spec-enum_items:
+
+Enum Items
+~~~~~~~~~~
+
+Enumerated type items have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Enum items
+  :end-before: %
+
+An example of an enum:
+
+.. code-block:: minizinc
+
+     enum country = {Australia, Canada, China, England, USA};
+
+Each alternative is called an *enum case*.  The identifier used to name
+each case (e.g. :mzn:`Australia`) is
+called the *enum case name*.
+
+Because enum case names all reside in the top-level namespace
+(:ref:`spec-Namespaces`), case names in different enums must be distinct.
+
+An enum can be declared but not defined, in which case it must be defined
+elsewhere within the model, or in a data file.
+For example, a model file could contain this:
+
+.. code-block:: minizinc
+
+    enum Workers;
+    enum Shifts;
+
+and the data file could contain this:
+
+.. code-block:: minizinc
+
+    Workers = { welder, driller, stamper };
+    Shifts  = { idle, day, night };
+
+Sometimes it is useful to be able to refer to one of the enum case names
+within the model.  This can be achieved by using a variable.  The model
+would read:
+
+.. code-block:: minizinc
+
+    enum Shifts;
+    Shifts: idle;            % Variable representing the idle constant.
+
+and the data file:
+
+.. code-block:: minizinc
+
+    enum Shifts = { idle_const, day, night };
+    idle = idle_const;      % Assignment to the variable.
+
+Although the constant :mzn:`idle_const` cannot be mentioned in the
+model, the variable :mzn:`idle` can be.
+
+All enums must be defined at instance-time.
+
+Enum items can be annotated.
+:ref:`spec-Annotations` has more details on annotations.
+
+Each case name can be coerced automatically to the integer corresponding to its index in the type.
+
+.. code-block:: minizinc
+
+  int: oz = Australia;  % oz = 1
+
+For each enumerated type :mzn:`T`, the following functions exist:
+
+.. code-block:: minizinc
+
+  % Return next greater enum value of x in enum type X
+  function T: enum_next(set of T: X, T: x);
+  function var T: enum_next(set of T: X, var T: x);
+  
+  % Return next smaller enum value of x in enum type X
+  function T: enum_prev(set of T: X, T: x);
+  function var T: enum_prev(set of T: X, var T: x);
+
+  % Convert x to enum type X
+  function T: to_enum(set of T: X, int: x);
+  function var T: to_enum(set of T: X, var int: x);
+
+.. _spec-assignments:
+
+Assignment Items
+~~~~~~~~~~~~~~~~
+
+Assignments have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Assign items
+  :end-before: %
+
+For example:
+
+.. code-block:: minizinc
+
+    A = 10;
+
+.. % \pjs{Add something about automatic coercion of index sets?}
+
+.. _spec-constraint-items:
+
+Constraint Items
+~~~~~~~~~~~~~~~~
+
+Constraint items form the heart of a model.  Any solutions found for a model
+will satisfy all of its constraints.
+
+Constraint items have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Constraint items
+  :end-before: %
+
+For example:
+
+.. code-block:: minizinc
+
+    constraint a*x < b;
+
+The expression in a constraint item must have type-inst :mzn:`par bool` or
+:mzn:`var bool`; note however that constraints with fixed expressions are
+not very useful.
+
+.. _spec-solve-items:
+
+Solve Items
+~~~~~~~~~~~
+
+Every model must have exactly one solve item.  Solve items have the
+following syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Solve item
+  :end-before: %
+
+Example solve items:
+
+.. code-block:: minizinc
+
+    solve satisfy;
+    solve maximize a*x + y - 3*z;
+
+The solve item determines whether the model represents a constraint
+satisfaction problem or an optimisation problem.  In the latter case the
+given expression is the one to be minimized/maximized.
+
+The expression in a minimize/maximize solve item can have integer or float type.
+
+*Rationale: This is possible because all type-insts have a defined order.*
+Note that having an expression with a fixed type-inst in a solve item is not
+very useful as it means that the model requires no optimisation.
+
+Solve items can be annotated.  :ref:`spec-Annotations` has more details on
+annotations.
+
+.. _spec-output-items:
+
+Output Items
+~~~~~~~~~~~~
+
+Output items are used to present the solutions of a model instance.
+They have the following syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Output items
+  :end-before: %
+
+For example:
+
+.. code-block:: minizinc
+
+    output ["The value of x is ", show(x), "!\n"];
+
+The expression must have type-inst :mzn:`array[int] of par string`. It can
+be composed using the built-in operator :mzn:`++` and the built-in functions
+:mzn:`show`, :mzn:`show_int`, and :mzn:`show_float` (:ref:`spec-builtins`),
+as well as string interpolations
+(:ref:`spec-String-Interpolation-Expressions`). The output is the
+concatenation of the elements of the array. If multiple output items exist,
+the output is the concatenation of all of their outputs, in the order in
+which they appear in the model.
+
+If no output item is present,
+the implementation should print all the global variables and their values
+in a readable format.
+
+.. _spec-annotation-items:
+
+Annotation Items
+~~~~~~~~~~~~~~~~
+
+Annotation items are used to augment the :mzn:`ann` type.  They have the
+following syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Annotation items
+  :end-before: %
+
+For example:
+
+.. code-block:: minizinc
+
+    annotation solver(int: kind);
+
+It is a type-inst error if an annotation is declared and/or defined more
+than once in a model.
+
+The use of annotations is described in :ref:`spec-Annotations`.
+
+.. _spec-preds-and-fns:
+
+User-defined Operations
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. 
+  % XXX: not saying if operations need to be defined.  Implementation
+  % currently requires functions and tests to be defined if used, but
+  % predicates can be bodyless even if used.  Should perhaps require functions
+  % to be defined even if they're not used (like parameters), and make tests
+  % like predicates?
+
+MiniZinc models can contain user-defined operations.  They have this syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Predicate, test and function items
+  :end-before: %
+
+The type-inst expressions can include type-inst variables in
+the function and predicate declaration.
+
+For example, predicate :mzn:`even` checks that its argument is an even
+number.
+
+.. code-block:: minizinc
+
+    predicate even(var int: x) =
+        x mod 2 = 0;
+
+A predicate supported natively by the target solver can be declared as
+follows:
+
+.. code-block:: minizinc
+
+    predicate alldifferent(array [int] of var int: xs);
+
+Predicate declarations that are natively supported 
+in MiniZinc are restricted to using FlatZinc
+types (for instance, multi-dimensional and non-1-based arrays are
+forbidden).
+.. % \pjs{need to fix this if we allow2d arrays in FlatZinc!}
+
+Declarations for user-defined operations can be annotated.
+:ref:`spec-Annotations` has more details on annotations.
+
+.. _spec-basic-properties:
+
+Basic Properties
+++++++++++++++++
+
+The term "predicate" is generally used to refer to both test items and
+predicate items.  When the two kinds must be distinguished, the terms
+"test item" and "predicate item" can be used.
+
+The return type-inst of a test item is implicitly :mzn:`par bool`.  The
+return type-inst of a predicate item is implicitly :mzn:`var bool`.
+
+Predicates and functions are allowed to be recursive. Termination of
+a recursive function call depends solely on its fixed arguments, i.e., 
+recursive functions and predicates cannot be used to define recursively 
+constrained variables.
+.. % \Rationale{This ensures that the satisfiability of models is decidable.}
+
+Predicates and functions introduce their own local names, being those of the
+formal arguments.  The scope of these names covers the predicate/function
+body.  Argument names cannot be repeated within a predicate/function
+declaration.
+
+Ad-hoc polymorphism
++++++++++++++++++++
+
+MiniZinc supports ad-hoc polymorphism via overloading.  Functions
+and predicates (both built-in and user-defined) can be overloaded.  A name
+can be overloaded as both a function and a predicate.
+
+It is a type-inst error if a single version of an overloaded operation with
+a particular type-inst signature is defined more than once
+in a model.  For example:
+
+.. code-block:: minizinc
+
+    predicate p(1..5: x);
+    predicate p(1..5: x) = false;       % ok:     first definition
+    predicate p(1..5: x) = true;        % error:  repeated definition
+
+The combination of overloading and coercions can cause problems.
+Two overloadings of an operation are said to *overlap* if they could match
+the same arguments.  For example, the following overloadings of :mzn:`p`
+overlap, as they both match the call :mzn:`p(3)`.
+
+.. code-block:: minizinc
+
+    predicate p(par int: x);
+    predicate p(var int: x);
+
+However, the following two predicates do not overlap because they cannot
+match the same argument:
+
+.. code-block:: minizinc
+
+    predicate q(int:        x);
+    predicate q(set of int: x);
+
+We avoid two potential overloading problems by placing some restrictions on
+overlapping overloadings of operations.
+
+#. The first problem is ambiguity.  Different placement of coercions in
+   operation arguments may allow different choices for the overloaded function.
+   For instance, if a MiniZinc function :mzn:`f` is overloaded like this:
+
+   .. code-block:: minizinc
+
+    function int: f(int: x, float: y) = 0;
+    function int: f(float: x, int: y) = 1;
+
+   then :mzn:`f(3,3)` could be either 0 or 1 depending on
+   coercion/overloading choices.
+
+   To avoid this problem, any overlapping overloadings of an operation must
+   be semantically equivalent with respect to coercion.  For example, the
+   two overloadings of the predicate :mzn:`p` above must have bodies that are
+   semantically equivalent with respect to overloading.
+
+   Currently, this requirement is not checked and the modeller must satisfy it
+   manually.  In the future, we may require the sharing of bodies among
+   different versions of overloaded operations, which would provide automatic
+   satisfaction of this requirement.
+#. The second problem is that certain combinations of overloadings could
+   require a MiniZinc implementation to perform combinatorial search in
+   order to explore different choices of coercions and overloading.  For
+   example, if function :mzn:`g` is overloaded like this:
+
+   .. code-block:: minizinc
+
+       function float: g(int: t1, float: t2) = t2;
+       function int  : g(float: t1, int: t2) = t1;
+
+   then how the overloading of :mzn:`g(3,4)` is resolved depends upon its
+   context:
+
+   .. code-block:: minizinc
+
+       float: s = g(3,4);
+       int: t = g(3,4);
+
+   In the definition of :mzn:`s` the first overloaded definition must be used
+   while in the definition of :mzn:`t` the second must be used.
+   
+   To avoid this problem, all overlapping overloadings of an operation must be
+   closed under intersection of their input type-insts.  That is, if overloaded
+   versions have input type-inst :math:`(S_1,....,S_n)` and :math:`(T_1,...,T_n)` then
+   there must be another overloaded version with input type-inst
+   :math:`(R_1,...,R_n)` where each :math:`R_i` is the greatest lower bound (*glb*) of
+   :math:`S_i` and :math:`T_i`.
+   
+   Also, all overlapping overloadings of an operation must be monotonic.  That
+   is, if there are overloaded versions with input type-insts :math:`(S_1,....,S_n)`
+   and :math:`(T_1,...,T_n)` and output type-inst :math:`S` and :math:`T`, respectively, then
+   :math:`S_i \preceq T_i` for all :math:`i`, implies :math:`S \preceq T`.  At call sites, the
+   matching overloading that is lowest on the type-inst lattice is always used.
+   
+   For :mzn:`g` above, the type-inst intersection (or *glb*) of
+   :mzn:`(int,float)`  and :mzn:`(float,int)` is
+   :mzn:`(int,int)`.  Thus, the overloaded versions are not closed under
+   intersection and the user needs to provide another overloading for
+   :mzn:`g` with input type-inst :mzn:`(int,int)`.  The natural
+   definition is:
+
+   .. code-block:: minizinc
+
+       function int: g(int: t1, int: t2) = t1;
+
+   Once :mzn:`g` has been augmented with the third overloading, it satisfies
+   the monotonicity requirement because the output type-inst of the third
+   overloading is :mzn:`int` which is less than the output
+   type-inst of the original overloadings.
+   
+   Monotonicity and closure under type-inst conjunction ensure that whenever an
+   overloaded function or predicate is reached during type-inst checking, there
+   is always a unique and safe "minimal" version to choose, and so the
+   complexity of type-inst checking remains linear.  Thus in our example
+   :mzn:`g(3,4)` is always resolved by choosing the new overloaded
+   definition.
+
+
+Local Variables
++++++++++++++++
+
+Local variables in operation bodies are introduced using let expressions.
+For example, the predicate :mzn:`have_common_divisor` takes two
+integer values and checks whether they have a common divisor greater than
+one:
+
+.. code-block:: minizinc
+
+    predicate have_common_divisor(int: A, int: B) =
+        let {
+            var 2..min(A,B): C;
+        } in
+            A mod C = 0 /\
+            B mod C = 0;
+
+However, as :ref:`spec-Let-Expressions` explained, because :mzn:`C` is
+not defined, this predicate cannot be called in a negative context.  The
+following is a version that could be called in a negative context:
+
+.. code-block:: minizinc
+
+    predicate have_common_divisor(int: A, int: B) =
+        exists(C in 2..min(A,B))
+            (A mod C = 0 /\ B mod C = 0);
 
 Full grammar
 ------------
