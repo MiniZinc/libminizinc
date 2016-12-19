@@ -5,6 +5,14 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.1.2
+=============
+
+Bug fixes:
+ - Fix a bug in the type checking for generators that iterate over
+   arrays of enums.
+ - Fix a bug in the output handling of arrays of enums.
+
 Version 2.1.1
 =============
 
