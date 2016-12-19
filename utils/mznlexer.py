@@ -13,17 +13,22 @@ class MznLexer(RegexLexer):
                 'in','include','int','list','of','op','output','minimize','maximize','par','predicate',
                 'record','set','solve','string','test','tuple','type','var','where',
                 'subset','superset','intersect','union','diff','symdiff',
-                'satisfy'
-                ), suffix=r'\b'), Name.Builtin),
+                'satisfy', 'if', 'then', 'elseif', 'else', 'endif', 'false', 'true', 'not', 'div', 'mod',
+                'xor', 'opt'
+                ), prefix=r'\b', suffix=r'\b'), Name.Builtin),
+            (words((
+                '<->', '->', '<-', '/\\', '\\/', '..'
+                )), Name.Builtin),
             (r'/\*', Comment.Multiline, 'comment'),
             (r'%.*?$', Comment.Singleline),
+            (r'[A-Za-z][A-Za-z0-9_]*', Name),
             # Octal Literal
             (r'0o[0-7_]+', Number.Oct),
             # Hexadecimal Literal
             (r'0x[0-9a-fA-F_]+', Number.Hex),
             # Decimal Literal
-            (r'[0-9][0-9_]*(\.[0-9_]+[eE][+\-]?[0-9_]+|'
-             r'\.[0-9_]*|[eE][+\-]?[0-9_]+)', Number.Float),
+            (r'[0-9]+\.[0-9]+|'
+             r'[0-9]+\.[0-9]+[Ee][+-]?[0-9]+|[0-9]+[Ee][+-]?[0-9]+', Number.Float),
             (r'[0-9][0-9_]*', Number.Integer),            
             (r'"', String, 'string'),
             (r'.', Text)
@@ -55,7 +60,9 @@ class MznDefLexer(MznLexer):
 
     tokens = {
         'root': [
-            (r'<[0-9a-zA-Z- ]+>', Comment.Singleline),
+            (r'<[0-9a-zA-Z- ]+>', Comment.Special),
+            (r'::=', Comment.Special),
+            (words(('|',), prefix=r'^\s*'), Comment.Special),
             inherit
         ]
     }
