@@ -18,73 +18,74 @@
 
 <ti-expr-and-id> ::= <ti-expr> ":" <ident>
 
-<include-item> ::= include <string-literal>
+<include-item> ::= "include" <string-literal>
 
-<var-decl-item> ::= <ti-expr-and-id> <annotations> [ = <expr> ]
+<var-decl-item> ::= <ti-expr-and-id> <annotations> [ "=" <expr> ]
 
-<assign-item> ::= <ident> = <expr>
+<assign-item> ::= <ident> "=" <expr>
 
-<constraint-item> ::= constraint <expr>
+<constraint-item> ::= "constraint" <expr>
 
-<solve-item> ::= solve <annotations> satisfy
-               | solve <annotations> minimize <expr>
-               | solve <annotations> maximize <expr>
+<solve-item> ::= "solve" <annotations> "satisfy"
+               | "solve" <annotations> "minimize" <expr>
+               | "solve" <annotations> "maximize" <expr>
 
-<output-item> ::= output <expr>
+<output-item> ::= "output" <expr>
 
-<annotation-item> ::= annotation <ident> <params>
+<annotation-item> ::= "annotation" <ident> <params>
 
-<predicate-item> ::= predicate <operation-item-tail>
+<predicate-item> ::= "predicate" <operation-item-tail>
 
-<test-item> ::= test <operation-item-tail>
+<test-item> ::= "test" <operation-item-tail>
 
-<function-item> ::= function <ti-expr> : <operation-item-tail>
+<function-item> ::= "function" <ti-expr> ":" <operation-item-tail>
 
-<operation-item-tail> ::= <ident> <params> <annotations> [ = <expr> ]
+<operation-item-tail> ::= <ident> <params> <annotations> [ "=" <expr> ]
 
-<params> ::= [ ( <ti-expr-and-id> , ... ) ]
+<params> ::= [ ( <ti-expr-and-id> "," ... ) ]
 
 % Type-inst expressions
 <ti-expr> ::= <base-ti-expr>
 
 <base-ti-expr> ::= <var-par> <base-ti-expr-tail>
 
-<var-par> ::= var | par | ε
+<var-par> ::= "var" | "par" | ε
 
 <base-ti-expr-tail> ::= <ident>
-                      | bool
-                      | int
-                      | float
-                      | string
+                      | "bool"
+                      | "int"
+                      | "float"
+                      | "string"
                       | <set-ti-expr-tail>
                       | <array-ti-expr-tail>
-                      | ann
-                      | opt <base-ti-expr-tail>
-                      | { <expr>,... }
-                      | <num-expr> .. <num-expr>
+                      | "ann"
+                      | "opt" <base-ti-expr-tail>
+                      | { <expr> "," ... }
+                      | <num-expr> ".." <num-expr>
 
 % Set type-inst expressions
-<set-ti-expr-tail> ::= set of <base-type>
+<set-ti-expr-tail> ::= "set" "of" <base-type>
 
 % Array type-inst expressions
-<array-ti-expr-tail> ::= array [ <ti-expr> , ... ] of <ti-expr>
-                       | list of <ti-expr>
+<array-ti-expr-tail> ::= "array" [ <ti-expr> "," ... ] "of" <ti-expr>
+                       | "list" "of" <ti-expr>
 
 %
 <ti-variable-expr-tail> ::= $[A-Za-z][A-Za-z0-9_]*
 
-<op-ti-expr-tail> ::= op ( <ti-expr> : ( <ti-expr> , ... ) )
+<op-ti-expr-tail> ::= "op" ( <ti-expr> ":" ( <ti-expr> "," ... ) )
 
+% Expressions
 <expr> ::= <expr-atom> <expr-binop-tail>
 
 <expr-atom> ::= <expr-atom-head> <expr-atom-tail> <annotations>
 
-<expr-binop-tail> ::= [ <bin-op> <expr> ]
+<expr-binop-tail> ::= "[" <bin-op> <expr> "]"
 
 <expr-atom-head> ::= <builtin-un-op> <expr-atom>
-                   | ( <expr> )
+                   | "(" <expr> ")"
                    | <ident-or-quoted-op>
-                   | _
+                   | "_"
                    | <bool-literal>
                    | <int-literal>
                    | <float-literal>
@@ -105,14 +106,15 @@
 <expr-atom-tail> ::= ε
                    | <array-access-tail> <expr-atom-tail>
 
+% Numeric expressions
 <num-expr> ::= <num-expr-atom> <num-expr-binop-tail>
 
 <num-expr-atom> ::= <num-expr-atom-head> <expr-atom-tail> <annotations>
 
-<num-expr-binop-tail> ::= [ <num-bin-op> <num-expr> ]
+<num-expr-binop-tail> ::= "[" <num-bin-op> <num-expr> "]"
 
 <num-expr-atom-head> ::= <builtin-num-un-op> <num-expr-atom>
-                       | ( <num-expr> )
+                       | "(" <num-expr> ")"
                        | <ident-or-quoted-op>
                        | <int-literal>
                        | <float-literal>
@@ -122,23 +124,26 @@
                        | <call-expr>
                        | <gen-call-expr>
 
+% Built-in operators
 <builtin-op> ::= <builtin-bin-op> | <builtin-un-op>
 
 <bin-op> ::= <builtin-bin-op> | ‘<ident>‘
 
-<builtin-bin-op> ::= <-> | -> | <- | \/ | xor | /\ | < | > | <= | >= | == | = | !=
-                   | in | subset | superset | union | diff | symdiff
-                   | .. | intersect| ++ | <builtin-num-bin-op>
+<builtin-bin-op> ::= "<->" | "->" | "<-" | "\/" | "xor" | "/\" | "<" | ">" | "<=" | ">=" | "==" | "=" | "!="
+                   | "in" | "subset" | "superset" | "union" | "diff" | "symdiff"
+                   | ".." | "intersect" | "++" | <builtin-num-bin-op>
 
-<builtin-un-op> ::= not | <builtin-num-un-op>
+<builtin-un-op> ::= "not" | <builtin-num-un-op>
 
+% Built-in numeric operators
 <num-bin-op> ::= <builtin-num-bin-op> | ‘<ident>‘
 
-<builtin-num-bin-op> ::= + | - | * | / | div | mod
+<builtin-num-bin-op> ::= "+" | "-" | "*" | "/" | "div" | "mod"
 
-<builtin-num-un-op> ::= + | -
+<builtin-num-un-op> ::= "+" | "-"
 
-<bool-literal> ::= false | true
+% Literals
+<bool-literal> ::= "false" | "true"
 
 <int-literal> ::= [0-9]+
                 | 0x[0-9A-Fa-f]+
@@ -151,45 +156,45 @@
 <string-contents> ::= ([^"\n\] | \[^\n(])*
 
 <string-literal> ::= "<string-contents>"
-                   | "<string-contents>\( <string-interpolate-tail>
+                   | "<string-contents>"\(" <string-interpolate-tail>
 
-<string-interpolate-tail> ::= <expr> )<string-contents>"
-                            | <expr> )<string-contents>\( <string-interpolate-tail>
+<string-interpolate-tail> ::= <expr> ")"<string-contents>"
+                            | <expr> ")"<string-contents>"\(" <string-interpolate-tail>
 
-<set-literal> ::= { [ <expr> , ... ] }
+<set-literal> ::= "{" [ <expr> "," ... ] "}"
 
-<set-comp> ::= { <expr> | <comp-tail> }
+<set-comp> ::= "{" <expr> "|" <comp-tail> "}"
 
-<comp-tail> ::= <generator> , ... [ where <expr> ]
+<comp-tail> ::= <generator> "," ... [ "where" <expr> ]
 
-<generator> ::= <ident> , ... in <expr>
+<generator> ::= <ident> "," ... "in" <expr>
 
-<array-literal> ::= [ [ <expr> , ... ] ]
+<array-literal> ::= "[" [ <expr> "," ... ] "]"
 
-<array-literal-2d> ::= [| [ (<expr> , ...) | ... ] |]
+<array-literal-2d> ::= "[|" [ (<expr> "," ...) | ... ] "|]"
 
-<array-comp> ::= [ <expr> | <comp-tail> ]
+<array-comp> ::= "[" <expr> "|" <comp-tail> "]"
 
-<array-access-tail> ::= [ <expr> , ... ]
+<array-access-tail> ::= "[ <expr> "," ... "]"
 
-<ann-literal> ::= <ident> [ ( <expr> , ... ) ]
+<ann-literal> ::= <ident> [ "(" <expr> "," ... ")" ]
 
-<if-then-else-expr> ::= if <expr> then <expr> ( elseif <expr> then <expr> )* else <expr> endif
+<if-then-else-expr> ::= "if" <expr> "then" <expr> ( "elseif" <expr> "then" <expr> )* "else" <expr> "endif"
 
-<call-expr> ::= <ident-or-quoted-op> [ ( <expr> , ... ) ]
+<call-expr> ::= <ident-or-quoted-op> [ "(" <expr> "," ... ")" ]
 
-<let-expr> ::= let { <let-item> ; ... } in <expr>
+<let-expr> ::= "let" "{" <let-item> ";" ... "}" "in" <expr>
 
 <let-item> ::= <var-decl-item>
              | <constraint-item>
 
-<gen-call-expr> ::= <ident-or-quoted-op> ( <comp-tail> ) ( <expr> )
+<gen-call-expr> ::= <ident-or-quoted-op> "(" <comp-tail> ")" "(" <expr> ")"
 
 <ident> ::= [A-Za-z][A-Za-z0-9_]* | ’[^’\xa\xd\x0]*’
 
 <ident-or-quoted-op> ::= <ident>
                        | ’<builtin-op>’
 
-<annotations> ::= ( :: <annotation> )*
+<annotations> ::= ( "::" <annotation> )*
 
 <annotation> ::= <expr-atom-head> <expr-atom-tail>

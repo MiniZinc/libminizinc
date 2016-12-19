@@ -669,10 +669,10 @@ expression.
 .. _spec-built-in-scalar-types:
 
 Built-in Scalar Types and Type-insts
-------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Booleans
-~~~~~~~~
+++++++++
 
 |TyOverview|
 Booleans represent truthhood or falsity.  *Rationale: Boolean values are
@@ -710,7 +710,7 @@ Also Booleans can be automatically coerced to integers; see
 .. _spec-integers:
 
 Integers
-~~~~~~~~
+++++++++
 
 |TyOverview|
 Integers represent integral numbers.  Integer representations are
@@ -752,7 +752,7 @@ Also, integers can be automatically coerced to floats;  see
 .. _spec-floats:
 
 Floats
-~~~~~~
+++++++
 
 |TyOverview|
 Floats represent real numbers.  Float representations are
@@ -791,7 +791,7 @@ float variable need not be.
 .. _spec-enumerated-types:
 
 Enumerated Types
-~~~~~~~~~~~~~~~~
+++++++++++++++++
 
 |TyOverview|
 Enumerated types (or *enums* for short) provide a set of named
@@ -832,7 +832,7 @@ enum variable need not be.
 .. _spec-strings:
 
 Strings
-~~~~~~~
++++++++
 
 |TyOverview|
 Strings are primitive, i.e., they are not lists of characters.
@@ -867,22 +867,491 @@ a string using the built-in :mzn:`show` function or using string interpolation
 Built-in Compound Types and Type-insts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+.. _spec-sets:
+
 Sets
 ++++
+
+|TyOverview|
+A set is a collection with no duplicates.
+
+|TyInsts|
+The type-inst of a set's elements must be fixed.  *Rationale: This is because
+current solvers are not powerful enough to handle sets containing decision
+variables.*
+Sets may contain any type, and may be fixed or unfixed.
+If a set is unfixed, its elements must be finite, unless it occurs in one
+of the following contexts:
+
+- the argument of a predicate, function or annotation.
+- the declaration of a variable or let local variable with an
+  assigned value.
+
+|TySyntax|
+A set base type-inst expression tail has this syntax:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Set type-inst expressions
   :end-before: %
 
+Some example set type-inst expressions:
+
+.. code-block:: minizinc
+
+  set of int
+  var set of bool
+
+|TyFiniteType|
+Yes, if the set elements are finite types.  Otherwise, no.
+
+The domain of a set type that is a finite type is the powerset of the domain
+of its element type.  For example, the domain of :mzn:`set of 1..2` is
+:mzn:`powerset(1..2)`, which is :mzn:`{}, {1}, {1,2}, {2}`.
+
+|TyVarifiable|
+:mzn:`par set of TI` |varify| :mzn:`var set of TI`,
+:mzn:`var set of TI` |varify| :mzn:`var set of TI`.
+
+|TyOrdering|
+The pre-defined ordering on sets is a lexicographic ordering of the
+*sorted set form*, where :mzn:`{1,2}` is in sorted set form, for example,
+but :mzn:`{2,1}` is not.
+This means, for instance, :mzn:`{} < {1,3} < {2}`.
+
+|TyInit|
+A fixed set variable must be initialised at instance-time;  an unfixed
+set variable need not be.
+
+|TyCoercions|
+:mzn:`par set of TI` |coerce| :mzn:`par set of UI` and
+:mzn:`par set of TI` |coerce| :mzn:`var set of UI` and
+:mzn:`var set of TI` |coerce| :mzn:`var set of UI`, if
+:mzn:`TI` |coerce| :mzn:`UI`.
+
 Arrays
 ++++++
+
+|TyOverview|
+MiniZinc arrays are maps from fixed integers to values.  
+Values can be of any type.  
+The values can only have base type-insts.  
+Arrays-of-arrays are not allowed.
+Arrays can be multi-dimensional.
+
+MiniZinc arrays can be declared in two different ways.
+
+- *Explicitly-indexed* arrays have index types in the declaration
+  that are finite types.  For example:
+
+  .. code-block:: minizinc
+
+    array[0..3] of int: a1;
+    array[1..5, 1..10] of var float: a5;
+
+  For such arrays, the index type specifies exactly the indices that will
+  be in the array - the array's index set is the *domain* of the
+  index type - and if the indices of the value assigned do not match then
+  it is a run-time error.
+
+  For example, the following assignments cause run-time errors:
+
+  .. code-block:: minizinc
+
+    a1 = [4,6,4,3,2];   % too many elements
+    a5 = [];            % too few elements
+- *Implicitly-indexed* arrays have index types in the declaration
+  that are not finite types.  For example:
+
+  .. code-block:: minizinc
+
+    array[int,int] of int: a6;
+
+  No checking of indices occurs when these variables are assigned.
+
+In MiniZinc all index sets of an array must be contiguous ranges of
+integers, or enumerated types. The expression used for initialisation of an
+array must have matching index sets. An array expression with an enum index
+set can be assigned to an array declared with an integer index set, but not
+the other way around. The exception are array literals, which can be
+assigned to arrays declared with enum index sets.
+
+For example:
+
+.. code-block:: minizinc
+
+  enum X = {A,B,C};
+  enum Y = {D,E,F};
+  array[X] of int: x = array1d(X, [5,6,7]); % correct
+  array[Y] of int: y = x;                   % index set mismatch: Y != X
+  array[int] of int: z = x;                 % correct: assign X index set to int
+  array[X] of int: x2 = [10,11,12];         % correct: automatic coercion for array literals
+
+The initialisation of an array can be done in a separate assignment
+statement, which may be present in the model or a separate data file.
+
+Arrays can be accessed.  See :ref:`spec-Array-Access-Expressions` for
+details.
+
+|TyInsts|
+An array's size must be fixed.  Its indices must also have
+fixed type-insts.  Its elements may be fixed or unfixed.
+
+|TySyntax|
+An array base type-inst expression tail has this syntax:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Array type-inst expressions
   :end-before: %
 
+Some example array type-inst expressions:
+
+.. code-block:: minizinc
+
+  array[1..10] of int
+  list of var int
+
+Note that :mzndef:`list of <T>` is just syntactic sugar for
+:mzndef:`array[int] of <T>`.  *Rationale: Integer-indexed arrays of this form
+are very common, and so worthy of special support to make things easier for
+modellers.  Implementing it using syntactic sugar avoids adding an extra
+type to the language, which keeps things simple for implementers.*
+
+Because arrays must be fixed-size it is a type-inst error to precede an
+array type-inst expression with :mzn:`var`.
+
+|TyFiniteType|
+Yes, if the index types and element type are all finite types.
+Otherwise, no.
+
+The domain of an array type that is a finite array is the set of all
+distinct arrays whose index set equals the domain of the index type
+and whose elements are of the array element type.
+
+|TyVarifiable|
+No.
+
+|TyOrdering|
+Arrays are ordered lexicographically, taking absence of a value for a given key
+to be before any value for that key.  For example,
+:mzn:`[1, 1]` is less than
+:mzn:`[1, 2]`, which is less than :mzn:`[1, 2, 3]` and
+:mzn:`array1d(2..4,[0, 0, 0])` is less than :mzn:`[1, 2, 3]`.
+
+|TyInit|
+An explicitly-indexed array variable must be initialised at instance-time
+only if its elements must be initialised at instance time.
+An implicitly-indexed array variable must be initialised at instance-time
+so that its length and index set is known.
+
+|TyCoercions|
+:mzn:`array[TI0] of TI` |coerce| :mzn:`array[UI0] of UI` if
+:mzn:`TI0` |coerce| :mzn:`UI0` and :mzn:`TI` |coerce| :mzn:`UI`.
+
+.. _spec-option-types:
+
+Option Types
+++++++++++++
+
+|TyOverview|
+Option types defined using the :mzn:`opt` type constructor, define types
+that may or may not be there. They are similar to ``Maybe`` types of
+Haskell implicity adding a new value :mzn:`<>` to the type.
+
+
+|TyInsts|
+The argument of an option type must be one of the base types
+:mzn:`bool`, :mzn:`int` or :mzn:`float`.
+
+|TySyntax|
+The option type is written :mzndef:`opt <T>` where :mzndef:`<T>` if one of
+the three base types, or one of their constrained instances.
+
+|TyFiniteType|
+Yes if the underlying type is finite, otherwise no.
+
+|TyVarifiable|
+Yes.
+
+|TyOrdering|
+:mzn:`<>` is always less than any other value in the type.
+But beware that overloading of operators like :mzn:`<` is different for
+option types.
+
+|TyInit|
+An :mzn:`opt` type variable does not need to be initialised at
+instance-time. An uninitialised :mzn:`opt` type variable is automatically
+initialised to :mzn:`<>`.
+
+|TyCoercions|
+:mzn:`TI` |coerce| :mzn:`opt UI` if :mzn:`TI` |coerce| :mzn:`UI`..
+
+.. _spec-the-annotation-type:
+
+The Annotation Type
++++++++++++++++++++
+
+|TyOverview|
+The annotation type, :mzn:`ann`, can be used to represent arbitrary term
+structures.  It is augmented by annotation items (:ref:`spec-Annotation-Items`).
+
+|TyInsts|
+:mzn:`ann` is always considered unfixed, because it may contain unfixed
+elements.  It cannot be preceded by :mzn:`var`.
+
+|TySyntax|
+The annotation type is written :mzn:`ann`.
+
+|TyFiniteType|
+No.
+
+|TyVarifiable|
+No.
+
+|TyOrdering|
+N/A.  Annotation types do not have an ordering defined on them.
+
+|TyInit|
+An :mzn:`ann` variable must be initialised at instance-time.
+
+|TyCoercions|
+None.
+
+
+.. _spec-constrained-type-insts:
+
+Constrained Type-insts
+~~~~~~~~~~~~~~~~~~~~~~
+
+One powerful feature of MiniZinc is *constrained type-insts*.  A
+constrained type-inst is a restricted version of a *base* type-inst,
+i.e., a type-inst with fewer values in its domain.
+
+.. _spec-set-expression-type-insts:
+
+Set Expression Type-insts
++++++++++++++++++++++++++
+
+Three kinds of expressions can be used in type-insts.
+
+#. Integer ranges:  e.g. :mzn:`1..3`.
+#. Set literals:  e.g. :mzn:`var {1,3,5}`.
+#. Identifiers:  the name of a set parameter (which can be global,
+   let-local, the argument of a predicate or function, or a generator
+   value) can serve as a type-inst.
+
+In each case the base type is that of the set's elements, and the values
+within the set serve as the domain.  For example, whereas a variable with
+type-inst :mzn:`var int` can take any integer value, a variable with
+type-inst :mzn:`var 1..3` can only take the value 1, 2 or 3.
+
+All set expression type-insts are finite types.  Their domain is equal to
+the set itself.
+
+Float Range Type-insts
+++++++++++++++++++++++
+
+Float ranges can be used as type-insts, e.g. :mzn:`1.0 .. 3.0`.  These are
+treated similarly to integer range type-insts, although :mzn:`1.0 .. 3.0` is
+not a valid expression whereas :mzn:`1 .. 3` is.
+
+Float ranges are not finite types.
+
+.. _spec-expressions:
+
+Expressions
+-----------
+
+.. _spec-expressions-overview:
+
+Expressions Overview
+~~~~~~~~~~~~~~~~~~~~
+
+Expressions represent values.  They occur in various kinds of items.  They
+have the following syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Expressions
+  :end-before: %
+
+Expressions can be composed from sub-expressions combined with operators.
+All operators (binary and unary) are described in :ref:`spec-Operators`,
+including the precedences of the binary operators.  All unary operators bind
+more tightly than all binary operators.
+
+Expressions can have one or more annotations.  Annotations bind
+more tightly than unary and binary operator applications, but less tightly
+than access operations and non-operator applications.  In some cases this
+binding is non-intuitive.  For example, in the first three of the following
+lines, the annotation :mzn:`a` binds to the identifier expression
+:mzn:`x` rather than the operator application.  However, the fourth
+line features a non-operator application (due to the single quotes around
+the :mzn:`not`) and so the annotation binds to the whole application.
+
+.. code-block:: minizinc
+
+  not x::a;
+  not (x)::a;
+  not(x)::a;
+  'not'(x)::a;
+
+:ref:`spec-Annotations` has more on annotations.
+
+Expressions can be contained within parentheses.
+
+The array access operations
+all bind more tightly than unary and binary operators and annotations.  
+They are described in more detail in :ref:`spec-Array-Access-Expressions`.
+
+The remaining kinds of expression atoms (from :mzndef:`<ident>` to
+:mzndef:`<gen-call-expr>`) are described in
+:ref:`spec-Identifier-Expressions-and-Quoted-Operator-Expressions` to :ref:`spec-Generator-Call-Expressions`.
+
+We also distinguish syntactically valid numeric expressions.  This allows
+range types to be parsed correctly.
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Numeric expressions
+  :end-before: %
+
+.. _spec-operators:
+
+Operators
+~~~~~~~~~
+
+Operators are functions that are distinguished by their syntax in one or two
+ways.  First, some of them contain non-alphanumeric characters that normal
+functions do not (e.g. :mzn:`+`).  Second, their application is written
+in a manner different to normal functions.
+
+We distinguish between binary operators, which can be applied in an infix
+manner (e.g. :mzn:`3 + 4`), and unary operators, which can be applied in a
+prefix manner without parentheses (e.g. :mzn:`not x`).  We also
+distinguish between built-in operators and user-defined operators.  The
+syntax is the following:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Built-in operators
+  :end-before: %
+
+Again, we syntactically distinguish numeric operators.
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Built-in numeric operators
+  :end-before: %
+
+Some operators can be written using their unicode symbols, which are listed
+in :numref:`bin-ops-unicode` (recall that MiniZinc input is UTF-8).
+
+.. _bin-ops-unicode:
+
+.. cssclass:: table-nonfluid table-bordered
+
+.. table:: Unicode equivalents of binary operators
+
+  ================  =======================  ==========
+  Operator          Unicode symbol           UTF-8 code
+  ================  =======================  ==========
+  :mzn:`<->`        :math:`\leftrightarrow`  E2 86 94
+  :mzn:`->`         :math:`\rightarrow`      E2 86 92
+  :mzn:`<-`         :math:`\leftarrow`       E2 86 90
+  :mzn:`not`        :math:`\lnot`            C2 AC
+  ``\/``            :math:`\lor`             E2 88 A8
+  ``/\``            :math:`\land`            E2 88 A7
+  :mzn:`!=`         :math:`\neq`             E2 89 A0
+  :mzn:`<=`         :math:`\leq`             E2 89 A4
+  :mzn:`>=`         :math:`\geq`             E2 89 A5
+  :mzn:`in`         :math:`\in`              E2 88 88
+  :mzn:`subset`     :math:`\subseteq`        E2 8A 86
+  :mzn:`superset`   :math:`\supseteq`        E2 8A 87
+  :mzn:`union`      :math:`\cup`             E2 88 AA
+  :mzn:`intersect`  :math:`\cap`             E2 88 A9
+  ================  =======================  ==========
+
+The binary operators are listed in :numref:`bin-ops`. A lower precedence
+number means tighter binding; for example, :mzn:`1+2*3` is parsed as
+:mzn:`1+(2*3)` because :mzn:`*` binds tighter than :mzn:`+`. Associativity
+indicates how chains of operators with equal precedences are handled; for
+example, :mzn:`1+2+3` is parsed as :mzn:`(1+2)+3` because :mzn:`+` is
+left-associative, :mzn:`a++b++c` is parsed as :mzn:`a++(b++c)` because
+:mzn:`++` is right-associative, and :mzn:`1<x<2` is a syntax error because
+:mzn:`<` is non-associative.
+
+.. _bin-ops:
+
+.. cssclass:: table-nonfluid table-bordered
+
+.. table:: Binary infix operators
+
+  ===============================  ====== ======
+  Symbol(s)                        Assoc. Prec. 
+  ===============================  ====== ======
+  :mzn:`<->`                       left   1200  
+
+  :mzn:`->`                        left   1100  
+  :mzn:`<-`                        left   1100  
+
+  ``\/``                           left   1000  
+  :mzn:`xor`                       left   1000  
+
+  ``/\``                           left   900   
+
+  :mzn:`<`                         none   800   
+  :mzn:`>`                         none   800   
+  :mzn:`<=`                        none   800   
+  :mzn:`>=`                        none   800   
+  :mzn:`==`,                   
+  :mzn:`=`                         none   800   
+  :mzn:`!=`                        none   800   
+                             
+  :mzn:`in`                        none   700   
+  :mzn:`subset`                    none   700   
+  :mzn:`superset`                  none   700   
+                             
+  :mzn:`union`                     left   600   
+  :mzn:`diff`                      left   600   
+  :mzn:`symdiff`                   left   600   
+                             
+  :mzn:`..`                        none   500   
+                             
+  :mzn:`+`                         left   400   
+  :mzn:`-`                         left   400   
+                             
+  :mzn:`*`                         left   300   
+  :mzn:`div`                       left   300   
+  :mzn:`mod`                       left   300   
+  :mzn:`/`                         left   300   
+  :mzn:`intersect`                 left   300   
+                             
+  :mzn:`++`                        right  200   
+
+  `````  :mzndef:`<ident>` `````   left   100   
+  ===============================  ====== ======
+
+
+A user-defined binary operator is created by backquoting a normal
+identifier, for example:
+
+.. code-block:: minizinc
+
+  A `min2` B
+
+This is a static error if the identifier is not the name of a binary
+function or predicate.
+
+The unary operators are: :mzn:`+`, :mzn:`-` and :mzn:`not`.
+User-defined unary operators are not possible.
+
+As :ref:`spec-Identifiers` explains, any built-in operator can be used as
+a normal function identifier by quoting it, e.g: :mzn:`'+'(3, 4)` is
+equivalent to :mzn:`3 + 4`.
+
+The meaning of each operator is given in :ref:`spec-builtins`.
 
 Full grammar
 ------------
