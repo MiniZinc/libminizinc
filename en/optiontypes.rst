@@ -63,7 +63,7 @@ constraint that holds on the actual (not optional) tasks.
 .. literalinclude:: examples/flexible-js.mzn
   :language: minizinc
   :name: ex-flexible-js
-  :caption: Model for flexible job shop scheduling using option types (``flexible-js.mzn``).
+  :caption: Model for flexible job shop scheduling using option types (:download:`flexible-js.mzn <examples/flexible-js.mzn>`).
   
 .. \pjs{Finish the damn section!}
 

@@ -29,7 +29,7 @@ implicitly limit the size of integer variables.
 .. literalinclude:: examples/grocery.mzn
   :language: minizinc
   :name: ex-grocery
-  :caption: A model with unbounded variables (``grocery.mzn``).
+  :caption: A model with unbounded variables (:download:`grocery.mzn <examples/grocery.mzn>`).
 
 The grocery problem shown in :numref:`ex-grocery` finds 4 items
 whose prices in dollars add up to 7.11 and multiply up to 7.11.
@@ -109,7 +109,7 @@ actually required to model the problem.
 .. literalinclude:: examples/golomb.mzn
   :language: minizinc
   :name: ex-unc
-  :caption: A model for Golomb rulers with unconstrained variables (``golomb.mzn``).
+  :caption: A model for Golomb rulers with unconstrained variables (:download:`golomb.mzn <examples/golomb.mzn>`).
 
 Consider the model for Golomb rulers shown in :numref:`ex-unc`.
 A Golomb ruler of :mzn:`n` marks is one where the absolute differences
@@ -314,7 +314,7 @@ gives the model in
 .. literalinclude:: examples/magic-series2.mzn
   :language: minizinc
   :name: ex-magic-series2
-  :caption: Model solving the magic series problem with redundant constraints (``magic-series2.mzn``).
+  :caption: Model solving the magic series problem with redundant constraints (:download:`magic-series2.mzn <examples/magic-series2.mzn>`).
 
 Running the same problem as before
 
@@ -337,12 +337,14 @@ yet, different models may be better or worse for different solving backends.
 There are however some guidelines for usually producing better models:
 
 .. defblock:: Choosing between models
+
   The better model is likely to have some of the following features
-    - smaller number of variables, or at least those that are not
-      functionally defined by other variables
-    - smaller domain sizes of variables
-    - more succinct, or direct, definition of the constraints of the model
-    - uses global constraints as much as possible
+
+  - smaller number of variables, or at least those that are not
+    functionally defined by other variables
+  - smaller domain sizes of variables
+  - more succinct, or direct, definition of the constraints of the model
+  - uses global constraints as much as possible
 
   In reality all this has to be tempered by how effective the search is for
   the model.  Usually the effectiveness of search is hard to judge except by
@@ -358,7 +360,7 @@ The obvious way to model this problem is shown in :numref:`ex-allint`.
 .. literalinclude:: examples/allinterval.mzn
   :language: minizinc
   :name: ex-allint
-  :caption: A natural model for the all interval series problem ``prob007'' in CSPli (``allinterval.mzn``).
+  :caption: A natural model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval.mzn <examples/allinterval.mzn>`).
 
 In this model the array :mzn:`x` represents the permutation of the :mzn:`n`
 numbers and the constraints are naturally represented using :mzn:`alldifferent`.
@@ -392,7 +394,7 @@ original sequence :mzn:`x` from the array of positions :mzn:`y`.
 .. literalinclude:: examples/allinterval2.mzn
   :language: minizinc
   :name: ex-allint2
-  :caption: An inverse model for the all interval series problem ``prob007'' in CSPlib (``allinterval2.mzn``).
+  :caption: An inverse model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval2.mzn <examples/allinterval2.mzn>`).
 
 The inverse model has the same size as the original model, in terms of
 number of variables and domain sizes.  But the inverse model has a much more
@@ -422,12 +424,12 @@ together, since each can give different information to the solver.
 .. literalinclude:: examples/allinterval3.mzn
   :language: minizinc
   :name: ex-allint3
-  :caption: A dual model for the all interval series problem ``prob007'' in CSPlib (``allinterval3.mzn``).
+  :caption: A dual model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval3.mzn <examples/allinterval3.mzn>`).
 
 :numref:`ex-allint3` gives a dual model combining features of 
-``allinterval.mzn`` and ``allinterval2.mzn``.
-The beginning of the model is taken from ``allinterval.mzn``.
-We then introduce the :mzn:`y` and :mzn:`v` variables from ``allinterval2.mzn``.
+:download:`allinterval.mzn <examples/allinterval.mzn>` and :download:`allinterval2.mzn <examples/allinterval2.mzn>`.
+The beginning of the model is taken from :download:`allinterval.mzn <examples/allinterval.mzn>`.
+We then introduce the :mzn:`y` and :mzn:`v` variables from :download:`allinterval2.mzn <examples/allinterval2.mzn>`.
 We tie the variables together using the 
 global 
 :mzn:`inverse` constraint:
@@ -447,7 +449,7 @@ and the redundant constraints on :mzn:`y` and :mzn:`v`.
 .. literalinclude:: examples/inverse.mzn
   :language: minizinc
   :name: ex-inverse
-  :caption: A definition of the ``inverse`` global constraint (``inverse.mzn``).
+  :caption: A definition of the ``inverse`` global constraint (:download:`inverse.mzn <examples/inverse.mzn>`).
 
 One of the benefits of the dual model is that there is more scope for
 defining different search strategies.

@@ -3,29 +3,23 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to MiniZinc's documentation!
-====================================
+MiniZinc Documentation
+======================
 
-Contents:
+.. .. image:: figures/MiniZn_logo_2.*
+..   :height: 300px
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
    :numbered:
 
-   intro
-   modelling
-   modelling2
-   predicates
-   optiontypes
-   mzn_search
-   efficient
-   sat
+   part_1_introduction
+   part_2_tutorial
+   part_3_reference
 
-Indices and tables
-==================
+.. only:: builder_html
+
+  Indices and tables
+  ------------------
 
   * :ref:`genindex`
-
-.. * :ref:`modindex`
-.. * :ref:`search`
-

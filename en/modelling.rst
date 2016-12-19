@@ -26,7 +26,7 @@ have different colours.
 
 .. literalinclude:: examples/aust.mzn
   :language: minizinc
-  :caption: A MiniZinc model ``aust.mzn`` for colouring the states and territories in Australia
+  :caption: A MiniZinc model :download:`aust.mzn <examples/aust.mzn>` for colouring the states and territories in Australia
   :name: ex-aust
 
 We can model this problem very easily in MiniZinc. The model is shown in :numref:`ex-aust`.
@@ -263,7 +263,7 @@ We can evaluate our model by typing
   
   $ mzn-gecode aust.mzn
 
-where ``aust.mzn``
+where :download:`aust.mzn <examples/aust.mzn>`
 is the name of the file containing our MiniZinc model.
 We must use the file extension ``.mzn`` to indicate a MiniZinc model.
 The command ``mzn-gecode`` uses the Gecode finite domain solver to evaluate
@@ -288,11 +288,6 @@ by the MiniZinc output to indicate a solution has been found.
 An Arithmetic Optimisation Example
 ----------------------------------
 
-.. literalinclude:: examples/cakes.mzn
-  :language: minizinc
-  :caption: Model for determining how many banana and chocolate cakes to bake for the school fete
-  :name: ex-cakes
-
 Our second example is motivated by the need to bake some cakes for a fete at
 our local school.
 We know how to make two sorts of cakes.\footnote{WARNING: please don't use
@@ -307,6 +302,11 @@ The question is how many of each sort of cake should we bake for the fete to
 maximise the profit.
 A possible
 MiniZinc model is shown in :numref:`ex-cakes`.
+
+.. literalinclude:: examples/cakes.mzn
+  :language: minizinc
+  :caption: Model for determining how many banana and chocolate cakes to bake for the school fete (:download:`cakes.mzn <examples/cakes.mzn>`)
+  :name: ex-cakes
 
 .. index::
   single: expression; arithmetic
@@ -409,7 +409,7 @@ and a model can be run with any number of data files (though a variable/paramete
 
 .. literalinclude:: examples/cakes2.mzn
   :language: minizinc
-  :caption: Data-independent model for determining how many banana and chocolate cakes to bake for the school fete
+  :caption: Data-independent model for determining how many banana and chocolate cakes to bake for the school fete (:download`cakes2.mzn <examples/cakes2.mzn>`)
   :name: ex-cakes2
 
 Our new model is shown in :numref:`ex-cakes2`.
@@ -419,8 +419,8 @@ We can run it using the command
 
   $ mzn-gecode cakes2.mzn pantry.dzn
 
-where the data file ``pantry.dzn`` is defined in
-:numref:`fig-pantry1`. This gives the same result as ``cakes.mzn``.
+where the data file :download:`pantry.dzn <examples/pantry.dzn>` is defined in
+:numref:`fig-pantry1`. This gives the same result as :download:`cakes.mzn <examples/cakes.mzn>`.
 The output from running the command
 
 .. code-block:: bash
@@ -437,7 +437,7 @@ with an alternate data set defined in
   ----------
   ==========
 
-If we remove the output statement from ``cakes.mzn`` then
+If we remove the output statement from :download:`cakes.mzn <examples/cakes.mzn>` then
 MiniZinc will use a default output. In this case the resulting
 output  will be
 
@@ -456,12 +456,12 @@ output  will be
 
 .. literalinclude:: examples/pantry.dzn
   :language: minizinc
-  :caption: Example data file for ``cakes2.mzn``
+  :caption: Example data file for :download:`cakes2.mzn <examples/cakes2.mzn>` (:download:`pantry.dzn <examples/pantry.dzn>`)
   :name: fig-pantry1
 
 .. literalinclude:: examples/pantry2.dzn
   :language: minizinc
-  :caption: Example data file for ``cakes2.mzn``
+  :caption: Example data file for :download:`cakes2.mzn <examples/cakes2.mzn>` (:download:`pantry2.dzn <examples/pantry2.dzn>`)
   :name: fig-pantry2
 
 Small data files can be entered 
@@ -517,7 +517,7 @@ calculation to calculate the balance after each quarter.
 
 .. literalinclude:: examples/loan.mzn
   :language: minizinc
-  :caption: Model for determining relationships between a 1 year loan repaying every quarter
+  :caption: Model for determining relationships between a 1 year loan repaying every quarter ((:download:`loan.mzn <examples/loan.mzn>`))
   :name: ex-loan
 
 Note that we declare a float variable ``f``
@@ -527,7 +527,7 @@ similar to an integer variable using the keyword :mzn:`float` instead of
 We can use the same model to answer a number of different questions.
 The first question is: if I borrow $1000 at 4% and repay $260 per
 quarter, how much do I end up owing? This question is encoded by
-the data file ``loan1.dzn``.
+the data file :download:`loan1.dzn <examples/loan1.dzn>`.
 
 Since we wish to use real number variables and constraint we need to use a solver
 that supports this type of problem.
@@ -551,7 +551,7 @@ The output is
 The second question is if I want to borrow $1000 at 4% and owe nothing at
 the end, how much do I need to repay?
 This question is encoded by
-the data file ``loan2.dzn``.
+the data file :download:`loan2.dzn <examples/loan2.dzn>`.
 The output from running the command
 
 .. code-block:: bash
@@ -568,7 +568,7 @@ is
 
 The third question is if I can repay $250 a quarter, how much can I borrow
 at 4% to end up owing nothing? 
-This question is encoded by the data file ``loan3.dzn``.
+This question is encoded by the data file :download:`loan3.dzn <examples/loan3.dzn>`.
 The output from running the command
 
 .. code-block:: bash
@@ -585,15 +585,15 @@ is
 
 .. literalinclude:: examples/loan1.dzn
   :language: minizinc
-  :caption: Example data file for ``loan.mzn``
+  :caption: Example data file for :download:`loan.mzn <examples/loan.mzn>` (:download:`loan1.dzn <examples/loan1.dzn>`)
 
 .. literalinclude:: examples/loan2.dzn
   :language: minizinc
-  :caption: Example data file for ``loan.mzn``
+  :caption: Example data file for :download:`loan.mzn <examples/loan.mzn>` (:download:`loan2.dzn <examples/loan2.dzn>`)
 
 .. literalinclude:: examples/loan3.dzn
   :language: minizinc
-  :caption: Example data file for ``loan.mzn``
+  :caption: Example data file for :download:`loan.mzn <examples/loan.mzn>` (:download:`loan3.dzn <examples/loan3.dzn>`)
 
 
 .. defblock:: Float Arithmetic Operators
@@ -677,116 +677,116 @@ used.
 
 There are 8 kinds of :index:`items <item>`.
 
-  - :index:`Include items <item; include>` allow the contents of another file to be inserted into the model.
-    They have the form:
-    
-    .. code-block:: minizincdef
-    
-      include <filename>;
-
-    where :mzndef:`<filename>` is a string literal.
-    They allow large models to be split into smaller sub-models and also the
-    inclusion of constraints defined in library files.
-    We shall see an example in :numref:`ex-smm`.
-
-  - :index:`Variable declarations <item; variable declaration>` declare new variables.
-    Such variables are global variables and can be referred to from anywhere in the
-    model.
-    Variables come in two kinds.
-    Parameters which are assigned a fixed value in the model or in a data file and
-    decision variables whose value is found only when the model is solved.
-    We say that parameters are :index:`fixed` and decision variables
-    :index:`unfixed`.
-    The variable can be optionally assigned a value as part of the declaration.
-    The form is:
-
-    .. index:
-      single: expression; type-inst
-      single: par
-      single: var
-
-    .. code-block:: minizincdef
-
-      <type inst expr>: <variable> [ = ] <expression>;
-
-    The :mzndef:`<type-inst expr>`
-    gives the instantiation and type of the
-    variable. These are one of the more complex aspects of MiniZinc.
-    Instantiations are declared using :mzn:`par`
-    for parameters and
-    :mzn:`var` for decision variables. If there is no explicit instantiation
-    declaration then the variable is a parameter.  
-    The type can be a base type,
-    an :index:`integer or float range <range>`
-    or an array or a set.
-    The base types are :mzn:`float`,
-    :mzn:`int`, 
-    :mzn:`string`, 
-    :mzn:`bool`,
-    :mzn:`ann` 
-    of which only
-    :mzn:`float`, :mzn:`int` and :mzn:`bool` can be used for decision
-    variables. 
-    The base type :mzn:`ann` is an :index:`annotation` --
-    we shall discuss
-    annotations in :ref:`sec-search`.
-    :index:`Integer range expressions <range; integer>` can be used
-    instead of the type :mzn:`int`. 
-    Similarly :index:`float range expressions <range; float>`
-    can be used instead of type :mzn:`float`.
-    These are typically used to give the
-    domain of a decision variable but can also be used to restrict the
-    range of a parameter. Another use of variable declarations is to
-    define :index:`enumerated types`, which we discuss in :ref:`sec-enum`.
-
-  - :index:`Assignment items <item; assignment>` assign a value to a variable. They have the form:
-
-    .. code-block:: minizincdef
-
-      <variable> = <expression>;
-
-    Values can be assigned to decision variables in which case the assignment is
-    equivalent to writing :mzndef:`constraint <variable> = <expression>`.
-
-  - :index:`Constraint items <item; constraint>` form the heart of the model. They have the form:
+- :index:`Include items <item; include>` allow the contents of another file to be inserted into the model.
+  They have the form:
   
-    .. code-block:: minizincdef
-    
-      constraint <Boolean expression>;
+  .. code-block:: minizincdef
+  
+    include <filename>;
 
-    We have already seen examples of simple constraints using arithmetic
-    comparison and the built-in :mzn:`assert` operator. In the next section we
-    shall see examples of more complex constraints.
+  where :mzndef:`<filename>` is a string literal.
+  They allow large models to be split into smaller sub-models and also the
+  inclusion of constraints defined in library files.
+  We shall see an example in :numref:`ex-smm`.
 
-  - :index:`Solve items <item; solve>` specify exactly what kind of solution is being looked for.
-    As we have seen they have one of three forms:
-    
-    .. code-block:: minizincdef
+- :index:`Variable declarations <item; variable declaration>` declare new variables.
+  Such variables are global variables and can be referred to from anywhere in the
+  model.
+  Variables come in two kinds.
+  Parameters which are assigned a fixed value in the model or in a data file and
+  decision variables whose value is found only when the model is solved.
+  We say that parameters are :index:`fixed` and decision variables
+  :index:`unfixed`.
+  The variable can be optionally assigned a value as part of the declaration.
+  The form is:
 
-      solve satisfy;
-      solve maximize <arithmetic expression>;
-      solve minimize <arithmetic expression>;
+  .. index:
+    single: expression; type-inst
+    single: par
+    single: var
 
-    A model is required to have exactly one solve item.
+  .. code-block:: minizincdef
 
-  - :index:`Output items <item; output>` are for nicely presenting the results of the model execution. 
-    They have the form:
-    
-    .. code-block:: minizincdef
+    <type inst expr>: <variable> [ = ] <expression>;
 
-      output [ <string expression>, ..., <string expression> ];
+  The :mzndef:`<type-inst expr>`
+  gives the instantiation and type of the
+  variable. These are one of the more complex aspects of MiniZinc.
+  Instantiations are declared using :mzn:`par`
+  for parameters and
+  :mzn:`var` for decision variables. If there is no explicit instantiation
+  declaration then the variable is a parameter.  
+  The type can be a base type,
+  an :index:`integer or float range <range>`
+  or an array or a set.
+  The base types are :mzn:`float`,
+  :mzn:`int`, 
+  :mzn:`string`, 
+  :mzn:`bool`,
+  :mzn:`ann` 
+  of which only
+  :mzn:`float`, :mzn:`int` and :mzn:`bool` can be used for decision
+  variables. 
+  The base type :mzn:`ann` is an :index:`annotation` --
+  we shall discuss
+  annotations in :ref:`sec-search`.
+  :index:`Integer range expressions <range; integer>` can be used
+  instead of the type :mzn:`int`. 
+  Similarly :index:`float range expressions <range; float>`
+  can be used instead of type :mzn:`float`.
+  These are typically used to give the
+  domain of a decision variable but can also be used to restrict the
+  range of a parameter. Another use of variable declarations is to
+  define :index:`enumerated types`, which we discuss in :ref:`sec-enum`.
 
-    If there is no output item, MiniZinc will by default print out the values of
-    all the decision variables which are not optionally assigned a value in the
-    format of assignment items.
+- :index:`Assignment items <item; assignment>` assign a value to a variable. They have the form:
 
-  - :index:`Enumerated type declarations <item; enum>`.
-    We discuss these in :ref:`sec-arrayset` and :ref:`sec-enum`.
+  .. code-block:: minizincdef
 
-  - :index:`Predicate, function and test items <item; predicate>` are for defining new constraints, 
-    functions and Boolean tests.
-    We discuss these in :ref:`sec-predicates`.
+    <variable> = <expression>;
+
+  Values can be assigned to decision variables in which case the assignment is
+  equivalent to writing :mzndef:`constraint <variable> = <expression>`.
+
+- :index:`Constraint items <item; constraint>` form the heart of the model. They have the form:
+
+  .. code-block:: minizincdef
+  
+    constraint <Boolean expression>;
+
+  We have already seen examples of simple constraints using arithmetic
+  comparison and the built-in :mzn:`assert` operator. In the next section we
+  shall see examples of more complex constraints.
+
+- :index:`Solve items <item; solve>` specify exactly what kind of solution is being looked for.
+  As we have seen they have one of three forms:
+  
+  .. code-block:: minizincdef
+
+    solve satisfy;
+    solve maximize <arithmetic expression>;
+    solve minimize <arithmetic expression>;
+
+  A model is required to have exactly one solve item.
+
+- :index:`Output items <item; output>` are for nicely presenting the results of the model execution. 
+  They have the form:
+  
+  .. code-block:: minizincdef
+
+    output [ <string expression>, ..., <string expression> ];
+
+  If there is no output item, MiniZinc will by default print out the values of
+  all the decision variables which are not optionally assigned a value in the
+  format of assignment items.
+
+- :index:`Enumerated type declarations <item; enum>`.
+  We discuss these in :ref:`sec-arrayset` and :ref:`sec-enum`.
+
+- :index:`Predicate, function and test items <item; predicate>` are for defining new constraints, 
+  functions and Boolean tests.
+  We discuss these in :ref:`sec-predicates`.
 
 
-  - The :index:`annotation item <item; annotation>` is used to define a new annotation. We 
-    discuss these in :ref:`sec-search`.
+- The :index:`annotation item <item; annotation>` is used to define a new annotation. We 
+  discuss these in :ref:`sec-search`.
