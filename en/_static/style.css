@@ -1,0 +1,11 @@
+code {
+  background: inherit;
+  padding: 0;  
+}
+.highlight, .highlight .cs {
+  background: inherit;
+  padding: 0;
+}
+.table-nonfluid {
+  width: auto !important;
+}
