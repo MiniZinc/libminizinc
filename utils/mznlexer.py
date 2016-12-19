@@ -9,8 +9,8 @@ class MznLexer(RegexLexer):
     tokens = {
         'root': [
             (words((
-                'ann','annotation','any','array','assert','bool','constraint','enum','float','function',
-                'in','include','int','list','of','op','output','minimize','maximize','par','predicate',
+                'ann','annotation','any','array','assert','bool','constraint','case','enum','float','function',
+                'in','include','int','let','list','of','op','output','minimize','maximize','par','predicate',
                 'record','set','solve','string','test','tuple','type','var','where',
                 'subset','superset','intersect','union','diff','symdiff',
                 'satisfy', 'if', 'then', 'elseif', 'else', 'endif', 'false', 'true', 'not', 'div', 'mod',
