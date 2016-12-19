@@ -270,7 +270,7 @@ latex_elements = {
      # Additional stuff for the LaTeX preamble.
      #
      # 'preamble': '',
-
+     'preamble': r'\usepackage{../../../utils/mznstyle}',
      # Latex figure (float) alignment
      #
      # 'figure_align': 'htbp',
@@ -287,12 +287,12 @@ latex_documents = [
 # The name of an image file (relative to this directory) to place at the top of
 # the title page.
 #
-# latex_logo = None
+latex_logo = 'figures/MiniZn_logo_2_small.pdf'
 
 # For "manual" documents, if this is true, then toplevel headings are parts,
 # not chapters.
 #
-# latex_use_parts = False
+latex_toplevel_sectioning = "part"
 
 # If true, show page references after internal links.
 #
