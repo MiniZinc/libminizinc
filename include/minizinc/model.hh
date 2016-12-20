@@ -131,6 +131,7 @@ namespace MiniZinc {
     SolveI* solveItem(void);
 
     OutputI* outputItem(void);
+    void setOutputItem(OutputI* oi);
 
     
     /// Add a file-level documentation comment
