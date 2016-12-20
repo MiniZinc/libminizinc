@@ -2706,6 +2706,710 @@ are two distinct cases.
   sometimes do use array accesses that can fail.   In such cases, the
   "bubbling up" behaviour is a reasonable one.*
 
+.. _spec-builtins:
+
+Built-in Operations
+-------------------
+
+This appendix lists built-in operators, functions and
+predicates.  They may be implemented as true built-ins, or in libraries that
+are automatically imported for all models.  Many of them are overloaded.
+
+Operator names are written within single quotes when used in type
+signatures, e.g. :mzn:`bool: '\/'(bool, bool)`.
+
+We use the syntax :mzn:`TI: f(TI1,...,TIn)` to represent an operation
+named :mzn:`f` that takes arguments with type-insts :mzn:`TI,...,TIn`
+and returns a value with type-inst :mzn:`TI`.  This is slightly more
+compact than the usual MiniZinc syntax, in that it omits argument names.
+
+
+Comparison Operations
+~~~~~~~~~~~~~~~~~~~~~
+
+
+Less than.  Other comparisons are similar:
+greater than (:mzn:`>`),
+less than or equal (:mzn:`<=`),
+greater than or equal (:mzn:`>=`),
+equality (:mzn:`==`, :mzn:`=`),
+and disequality (:mzn:`!=`).
+
+.. % \pjs{Check use of any here!}
+
+.. code-block:: minizinc
+
+      bool: '<'(    $T,     $T)
+  var bool: '<'(var $T, var $T)
+
+
+
+
+
+Arithmetic Operations
+~~~~~~~~~~~~~~~~~~~~~
+
+
+Addition.  Other numeric operations are similar:
+subtraction (:mzn:`-`), and
+multiplication (:mzn:`*`).
+
+.. code-block:: minizinc
+
+      int:   '+'(    int,       int)
+  var int:   '+'(var int,   var int)
+      float: '+'(    float,     float)
+  var float: '+'(var float, var float)
+
+
+
+
+
+Unary minus.  Unary plus (:mzn:`+`) is similar.
+
+.. code-block:: minizinc
+
+      int:   '-'(    int)
+  var int:   '-'(var int)
+      float: '-'(    float)
+  var float: '-'(var float)
+
+
+
+
+
+Integer and floating-point division and modulo.
+
+.. code-block:: minizinc
+
+      int:   'div'(    int,       int)
+  var int:   'div'(var int,   var int)
+      int:   'mod'(    int,       int)
+  var int:   'mod'(var int,   var int)
+      float: '/'  (    float,     float)
+  var float: '/'  (var float, var float)
+
+
+
+The result of the modulo operation, if non-zero, always has the same sign as
+its first operand.  The integer division and modulo operations are connected
+by the following identity:
+
+.. code-block:: minizinc
+
+  x = (x div y) * y + (x mod y)
+
+
+
+Some illustrative examples:
+
+.. code-block:: minizinc
+
+   7 div  4 =  1        7 mod  4 =  3
+  -7 div  4 = -1       -7 mod  4 = -3 
+   7 div -4 = -1        7 mod -4 = 3
+  -7 div -4 =  1       -7 mod -4 = -3
+
+
+
+
+
+Sum multiple numbers.
+Product (:mzn:`product`) is similar.  Note that the sum of an empty array
+is 0, and the product of an empty array is 1.
+
+.. code-block:: minizinc
+
+      int:   sum(array[$T]  of     int  )
+  var int:   sum(array[$T]  of var int  )
+      float: sum(array[$T]  of     float)
+  var float: sum(array[$T]  of var float)
+
+
+
+
+
+Minimum of two values;  maximum (:mzn:`max`) is
+similar.
+
+.. code-block:: minizinc
+
+  any $T:    min(any $T,    any $T )
+
+
+
+
+
+Minimum of an array of values;  maximum (:mzn:`max`) is similar.
+Aborts if the array is empty.
+
+.. code-block:: minizinc
+
+  any $U:    min(array[$T]  of any $U)
+
+
+
+
+
+Minimum of a fixed set;  maximum (:mzn:`max`) is similar.
+Aborts if the set is empty.
+
+.. code-block:: minizinc
+
+  $T:    min(set of $T)
+
+
+
+
+
+Absolute value of a number.
+
+.. code-block:: minizinc
+
+      int:   abs(    int)
+  var int:   abs(var int)
+      float: abs(    float)
+  var float: abs(var float)
+
+
+
+
+
+Square root of a float.  Aborts if argument is negative.
+
+.. code-block:: minizinc
+
+      float: sqrt(    float)
+  var float: sqrt(var float)
+
+
+
+
+
+Power operator.  E.g. :mzn:`pow(2, 5)` gives :mzn:`32`.
+
+.. code-block:: minizinc
+
+    int: pow(int,       int)
+  float: pow(float,     float)
+
+
+.. 
+  % We should also have:
+  %  var float: pow(var float, int)
+
+
+Natural exponent.
+
+.. code-block:: minizinc
+
+      float: exp(float)
+  var float: exp(var float)
+
+
+
+
+
+Natural logarithm.  Logarithm to base 10 (:mzn:`log10`) and logarithm to base
+2 (:mzn:`log2`) are similar.
+
+.. code-block:: minizinc
+
+      float: ln(float)
+  var float: ln(var float)
+
+
+
+
+
+General logarithm;  the first argument is the base.
+
+.. code-block:: minizinc
+
+  float: log(float, float)
+
+
+
+
+
+Sine.  Cosine (:mzn:`cos`), tangent (:mzn:`tan`), inverse sine
+(:mzn:`asin`), inverse cosine (:mzn:`acos`), inverse tangent
+(:mzn:`atan`), hyperbolic sine (:mzn:`sinh`), hyperbolic cosine
+(:mzn:`cosh`), hyperbolic tangent (:mzn:`tanh`),
+inverse hyperbolic sine (:mzn:`asinh`), inverse hyperbolic cosine
+(:mzn:`acosh`) and inverse hyperbolic tangent (:mzn:`atanh`) are similar.
+
+.. code-block:: minizinc
+
+      float: sin(float)
+  var float: sin(var float)
+
+
+
+
+
+Logical Operations
+~~~~~~~~~~~~~~~~~~
+
+
+Conjunction.  Other logical operations are similar:
+disjunction (``\/``)
+reverse implication (:mzn:`<-`),
+forward implication (:mzn:`->`),
+bi-implication (:mzn:`<->`),
+exclusive disjunction (:mzn:`xor`),
+logical negation (:mzn:`not`).
+
+Note that the implication operators are not written
+using :mzn:`=>`, :mzn:`<=` and :mzn:`<=>` as is the case in some
+languages.  This allows :mzn:`<=` to instead represent "less than or
+equal".
+
+.. code-block:: minizinc
+
+      bool: '/\'(    bool,     bool)
+  var bool: '/\'(var bool, var bool)
+
+
+
+
+
+Universal quantification.
+Existential quantification (:mzn:`exists`) is similar.  Note that, when
+applied to an empty list, :mzn:`forall` returns :mzn:`true`, and
+:mzn:`exists` returns :mzn:`false`.
+
+.. code-block:: minizinc
+
+      bool: forall(array[$T]  of     bool)
+  var bool: forall(array[$T]  of var bool)
+
+
+
+
+
+N-ary exclusive disjunction.
+N-ary bi-implication (:mzn:`iffall`) is similar, with :mzn:`true` instead
+of :mzn:`false`.
+
+.. code-block:: minizinc
+
+      bool: xorall(array[$T]  of     bool: bs) = foldl('xor', false, bs)
+  var bool: xorall(array[$T]  of var bool: bs) = foldl('xor', false, bs)
+
+
+
+
+
+Set Operations
+~~~~~~~~~~~~~~
+
+
+Set membership.
+
+.. code-block:: minizinc
+
+      bool: 'in'(     $T,       set of $T )
+  var bool: 'in'(var int,   var set of int)
+
+
+
+
+
+Non-strict subset.  Non-strict superset (:mzn:`superset`) is similar.
+
+.. code-block:: minizinc
+
+      bool: 'subset'(    set of $T ,     set of $T )
+  var bool: 'subset'(var set of int, var set of int)
+
+
+
+
+
+Set union.  Other set operations are similar:
+intersection (:mzn:`intersect`),
+difference (:mzn:`diff`),
+symmetric difference (:mzn:`symdiff`).
+
+.. code-block:: minizinc
+
+      set of  $T: 'union'(    set of  $T,     set of  $T )
+  var set of int: 'union'(var set of int, var set of int )
+
+
+
+
+
+Set range.  If the first argument is larger than the second
+(e.g. :mzn:`1..0`), it returns the empty set.
+
+.. code-block:: minizinc
+
+  set of int: '..'(int, int)
+
+
+
+
+
+Cardinality of a set.
+
+.. code-block:: minizinc
+
+      int: card(    set of  $T)
+  var int: card(var set of int)
+
+
+
+
+
+Union of an array of sets.
+Intersection of multiple sets (:mzn:`array_intersect`) is similar.
+
+.. code-block:: minizinc
+
+      set of  $U:    array_union(array[$T]  of     set of  $U)
+  var set of int:    array_union(array[$T]  of var set of int)
+
+
+Array Operations
+~~~~~~~~~~~~~~~~
+
+
+Length of an array.
+
+.. code-block:: minizinc
+
+  int: length(array[$T] of any $U)
+
+
+
+
+
+List concatenation.  Returns the list (integer-indexed array) containing
+all elements of the first argument followed by all elements of the
+second argument, with elements occurring in the same order as
+in the arguments.  The resulting indices are in the range :mzn:`1..n`,
+where :mzn:`n` is the sum of the lengths of the arguments.
+*Rationale: This allows list-like arrays to be concatenated naturally
+and avoids problems with overlapping indices.  The resulting indices
+are consistent with those of implicitly indexed array literals.*
+Note that :mzn:`'++'` also performs string concatenation.
+
+.. code-block:: minizinc
+
+  array[int] of any $T: '++'(array[int] of any $T, array[int] of any $T)
+
+
+Index sets of arrays.  If the argument is a literal, returns :mzn:`1..n`
+where :mzn:`n` is the (sub-)array length.  Otherwise, returns the declared
+or inferred index set.  This list is only partial, it extends in the obvious
+way, for arrays of higher dimensions.
+
+.. code-block:: minizinc
+
+  set of $T:  index_set     (array[$T]      of any $V)
+  set of $T:  index_set_1of2(array[$T, $U]  of any $V)
+  set of $U:  index_set_2of2(array[$T, $U]  of any $V)
+  ...
+
+Replace the indices of the array given by the last argument with the
+Cartesian product of the sets given by the previous arguments.  Similar
+versions exist for arrays up to 6 dimensions.
+
+.. code-block:: minizinc
+
+  array[$T1] of any $V: array1d(set of $T1, array[$U] of any $V)
+  array[$T1,$T2] of any $V:
+      array2d(set of $T1, set of $T2, array[$U] of any $V)
+  array[$T1,$T2,$T3] of any $V:
+      array3d(set of $T1, set of $T2, set of $T3, array[$U] of any $V)
+
+
+Coercion Operations
+~~~~~~~~~~~~~~~~~~~
+
+
+Round a float towards :math:`+\infty`, :math:`-\infty`, and the nearest integer,
+respectively.
+
+.. code-block:: minizinc
+
+  int: ceil (float)
+  int: floor(float)
+  int: round(float)
+
+
+Explicit casts from one type-inst to another.
+
+.. code-block:: minizinc
+
+      int:          bool2int(    bool)
+  var int:          bool2int(var bool)
+      float:        int2float(    int)
+  var float:        int2float(var int)
+  array[int] of $T: set2array(set of $T)
+
+
+String Operations
+~~~~~~~~~~~~~~~~~
+
+
+To-string conversion.  Converts any value to a string for output purposes.
+The exact form of the resulting string is implementation-dependent.
+
+.. code-block:: minizinc
+
+  string: show(any $T)
+
+
+Formatted to-string conversion for integers.
+Converts the integer given by the second argument into a string right justified
+by the number of characters given by the first argument, or left justified
+if that argument is negative.
+If the second argument is not fixed, the form of the string is
+implementation-dependent.
+
+.. code-block:: minizinc
+
+  string: show_int(int, var int);
+
+
+Formatted to-string conversion for floats.
+Converts the float given by the third argument into a string right
+justified by the number of characters given by the first argument, or left
+justified if that argument is negative.
+The number of digits to appear after the decimal point is given by
+the second argument.
+It is a run-time error for the second argument to be negative.
+If the third argument is not fixed, the form of the string is
+implemenation-dependent.
+
+.. code-block:: minizinc
+
+  string: show_float(int, int, var float)
+
+
+String concatenation.  Note that :mzn:`'++'` also performs array
+concatenation.
+
+.. code-block:: minizinc
+
+  string: '++'(string, string)
+
+
+Concatenate an array of strings.
+Equivalent to folding :mzn:`'++'` over the array, but may be implemented more
+efficiently.
+
+.. code-block:: minizinc
+
+   string: concat(array[$T] of string)
+
+
+Concatenate an array of strings, putting a seperator beween adjacent strings.
+Returns the the empty string if the array is empty.
+
+.. code-block:: minizinc
+
+   string: join(string, array[$T] of string)
+
+
+Bound and Domain Operations
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The bound operations :mzn:`lb` and :mzn:`ub` return fixed, correct lower/upper bounds
+to the expression.
+For numeric types, they return a lower/upper bound value,
+e.g. the lowest/highest value the expression can take.
+For set types, they return a subset/superset,
+e.g. the intersection/union of all possible values of the set expression.
+
+The bound operations abort on expressions that have no corresponding finite bound.
+For example, this would be the case for a variable declared without bounds
+in an implementation that does not assign default bounds.
+(Set expressions always have a finite lower bound of course,
+namely :mzn:`{}`, the empty set.)
+
+Numeric lower/upper bound:
+
+.. code-block:: minizinc
+
+  int:   lb(var int)
+  float: lb(var float)
+  int:   ub(var int)
+  float: ub(var float)
+
+
+Set lower/upper bound:
+
+.. code-block:: minizinc
+
+  set of int: lb(var set of int)
+  set of int: ub(var set of int)
+
+Versions of the bound operations that operate on arrays are also available,
+they return a safe lower bound or upper bound for all members of the array
+- they abort if the array is empty:
+
+.. code-block:: minizinc
+
+  int:        lb_array(array[$T] of var int)
+  float:      lb_array(array[$T] of var float)
+  set of int: lb_array(array[$T] of var set of int)
+  int:        ub_array(array[$T] of var int)
+  float:      ub_array(array[$T] of var float)
+  set of int: ub_array(array[$T] of var set of int)
+
+
+
+
+
+Integer domain:
+
+.. code-block:: minizinc
+
+  set of int: dom(var int)
+
+
+
+The domain operation :mzn:`dom` returns a fixed superset
+of the possible values of the expression.
+
+
+Integer array domain, returns a superset of all possible values that may
+appear in the array - this aborts if the array is empty:
+
+.. code-block:: minizinc
+
+  set of int: dom_array(array[$T] of var int)
+
+Domain size for integers:
+
+.. code-block:: minizinc
+
+  int: dom_size(var int)
+
+The domain size operation :mzn:`dom_size` is equivalent
+to :mzn:`card(dom(x))`.
+
+Note that these operations can produce different results depending on when
+they are evaluated and what form the argument takes.  For example, consider
+the numeric lower bound operation.
+
+- If the argument is a fixed expression, the result is the argument's
+  value.
+
+- If the argument is a decision variable, then the result depends on
+  the context.
+
+  - If the implementation can determine a lower bound for the variable,
+    the result is that lower bound.
+    The lower bound may be from the variable's declaration,
+    or higher than that due to preprocessing,
+    or lower than that if an implementation-defined lower bound is applied
+    (e.g. if the variable was declared with no lower bound,
+    but the implementation imposes a lowest possible bound).
+
+  - If the implementation cannot determine a lower bound for the variable,
+    the operation aborts.
+
+- If the argument is any other kind of unfixed expression, the
+  lower bound depends on the bounds of unfixed subexpressions
+  and the connecting operators.
+
+.. _spec-option-type-operations:
+
+Option Type Operations
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The option type value (:math:`\top`) is written
+
+.. code-block:: minizinc
+
+  opt $T:  '<>';
+
+
+One can determine if an option type variable actually occurs or not using
+:mzn:`occurs` and :mzn:`absent`
+
+.. code-block:: minizinc
+
+  par bool: occurs(par opt $T);
+  var bool: occurs(var opt $T);
+  par bool: absent(par opt $T);
+  var bool: absent(var opt $T);
+
+
+One can return the non-optional value of an option type variable using the
+function :mzn:`deopt`
+
+.. code-block:: minizinc
+
+  par $T: deopt{par opt $T);
+  var $T: deopt(var opt $T);
+
+
+.. 
+  % Note that this is not really a function only a pseudo function placeholder
+  % used in the translation of option types to non-option types.
+  % \pjs{Explain better}
+
+.. _spec-other-operations:
+
+Other Operations
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Check a Boolean expression is true, and abort if not, printing the second
+argument as the error message.  The first one returns the third argument, and
+is particularly useful for sanity-checking arguments to predicates and
+functions;  importantly, its third argument is lazy, i.e. it is only evaluated
+if the condition succeeds.  The second one returns :mzn:`true` and is useful
+for global sanity-checks (e.g. of instance data) in constraint items.
+
+.. code-block:: minizinc
+
+  any $T:   assert(bool, string, any $T)
+  par bool: assert(bool, string)
+
+
+Abort evaluation, printing the given string.
+
+.. code-block:: minizinc
+
+  any $T: abort(string)
+
+Return true. As a side-effect, an implementation may print the first argument.
+
+.. code-block:: minizinc
+
+  bool: trace(string)
+
+
+Return the second argument.
+As a side-effect, an implementation may print the first argument.
+
+.. code-block:: minizinc
+
+  any $T: trace(string, any $T)
+
+
+Check if the argument's value is fixed at this point in evaluation.  If not,
+abort; if so, return its value.  This is most useful in output items when
+decision variables should be fixed: it allows them to be used in places
+where a fixed value is needed, such as if-then-else conditions.
+
+.. code-block:: minizinc
+
+  $T: fix(any $T)
+
+
+As above, but return :mzn:`false` if the argument's value is not fixed.
+
+.. code-block:: minizinc
+
+  par bool: is_fixed(any $T)
+
 Full grammar
 ------------
 
