@@ -114,10 +114,10 @@ The type of the values is integer so all of the variables in the model are integ
   start with an alphabetic character. Thus ``myName_2`` is a valid
   identifier.  MiniZinc
   *keywords* are not allowed to be 
-  used as identifier names, they are listed in :ref:`sec-keywords`.
+  used as identifier names, they are listed in :ref:`spec-identifiers`.
   Neither are MiniZinc *operators*
   allowed to be used as identifier names;
-  they are listed in :ref:`sec-operators`.
+  they are listed in :ref:`spec-Operators`.
 
 MiniZinc carefully 
 distinguishes between the two kinds of model variables:

@@ -195,10 +195,10 @@ Run-time Outcomes
 Assuming there are no static errors,
 the output from the run-time phase has the following abstract form:
 
-.. code-block:: minizincdef
-
-  <output> ::= <no-solutions> [ <warnings> ] <free-text>
-             | ( <solution> )* [ <complete> ] <free-text>
+.. literalinclude:: output.mzn
+  :language: minizincdef
+  :start-after: % Output
+  :end-before: %
 
 If a solution occurs in the output
 then it must be feasible.
@@ -236,9 +236,10 @@ and must have the semantics described there.
 Content type ``application/x-zinc-output`` extends
 the syntax from the previous section as follows:
 
-.. code-block:: minizincdef
-
-  <solution> ::= <solution-text> [ \n ] "----------" \n
+.. literalinclude:: output.mzn
+  :language: minizincdef
+  :start-after: % Solutions
+  :end-before: %
 
 The solution text for each solution must be
 as described in :ref:`spec-Output-Items`.
@@ -247,17 +248,19 @@ A newline must be appended if the solution text does not end with a newline.
 without necessarily knowing how the solutions are formatted.*
 Solutions end with a sequence of ten dashes followed by a newline.
 
-.. code-block:: minizincdef
-
-  <no-solutions> ::= "=====UNSATISFIABLE=====" \n
+.. literalinclude:: output.mzn
+  :language: minizincdef
+  :start-after: % Unsatisfiable
+  :end-before: %
 
 The completness result is printed on a separate line.
 *Rationale: The strings are designed to clearly indicate
 the end of the solutions.*
 
-.. code-block:: minizincdef
-
-  <complete> ::= "==========" \n
+.. literalinclude:: output.mzn
+  :language: minizincdef
+  :start-after: % Complete
+  :end-before: %
 
 If the search is complete, a statement corresponding to the outcome is printed.
 For an outcome of no solutions
@@ -268,12 +271,10 @@ and for an outcome of no better solutions
 the statement is that the last solution is optimal.
 *Rationale: These are the logical implications of a search being complete.*
 
-.. code-block:: minizincdef
-
-  <warnings> ::= ( <message> )+
-  
-  <message>  ::= ( <line> )+
-  <line>     ::= "%" [^\n]* \n
+.. literalinclude:: output.mzn
+  :language: minizincdef
+  :start-after: % Messages
+  :end-before: %
 
 If the search is incomplete,
 one or more messages describing reasons for incompleteness may be printed.
@@ -863,6 +864,8 @@ instance-time.
 None automatic.  However, any non-string value can be manually converted to
 a string using the built-in :mzn:`show` function or using string interpolation
 (see :ref:`spec-String-Interpolation-Expressions`).
+
+.. _spec-Built-in-Compound-Types:
 
 Built-in Compound Types and Type-insts
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -2508,6 +2511,7 @@ They have the following syntax:
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Annotations
+  :end-before: %
 
 For example:
 
@@ -3409,6 +3413,72 @@ As above, but return :mzn:`false` if the argument's value is not fixed.
 .. code-block:: minizinc
 
   par bool: is_fixed(any $T)
+
+
+.. _spec-content-types:
+
+Content-types
+-------------
+
+The content-type ``application/x-zinc-output`` defines
+a text output format for Zinc.
+The format extends the abstract syntax and semantics
+given in :ref:`spec-Run-time-Outcomes`,
+and is discussed in detail in :ref:`spec-Output`.
+
+The full syntax is as follows:
+
+.. literalinclude:: output.mzn
+  :language: minizincdef
+
+The solution text for each solution must be
+as described in :ref:`spec-Output-Items`.
+A newline must be appended if the solution text does not end with a newline.
+
+.. _spec-json:
+
+JSON support
+------------
+
+MiniZinc can support reading input parameters and providing output formatted
+as JSON objects. A JSON input file needs to have the following structure:
+
+- Consist of a single top-level object
+
+- The members of the object (the key-value pairs) represent model parameters
+
+- Each member key must be a valid MiniZinc identifier (and it supplies the value for the corresponding parameter of the model)
+
+- Each member value can be one of the following:
+
+  - A string (assigned to a MiniZinc string parameter)
+
+  - A number (assigned to a MiniZinc int or float parameter)
+
+  - The values ``true`` or ``false`` (assigned to a MiniZinc bool parameter)
+
+  - An array of values. Arrays of arrays are supported only if all inner arrays are of the same length, so that they can be mapped to multi-dimensional MiniZinc arrays.
+
+  - A set of values encoded as an object with a single member with key ``"set"`` and a list of values (the elements of the set).
+
+This is an example of a JSON parameter file using all of the above features:
+
+.. code-block:: json
+
+    {
+      "n" : 3,
+      "distances" : [ [1,2,3],
+                      [4,5,6]],
+      "patterns"  : [ {"set" : [1,3,5]}, {"set" : [2,4,6]} ]
+    }
+
+
+The first parameter declares a simple integer ``n``. The
+``distances`` parameter is a two-dimensional array; note that all inner
+arrays must be of the same size in order to map to a (rectangular) MiniZinc
+two-dimensional array. The third parameter is an array of sets of integers.
+
+.. _spec-grammar:
 
 Full grammar
 ------------
