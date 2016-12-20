@@ -2490,6 +2490,222 @@ following is a version that could be called in a negative context:
         exists(C in 2..min(A,B))
             (A mod C = 0 /\ B mod C = 0);
 
+.. _spec-annotations:
+
+Annotations
+-----------
+
+Annotations - values of the :mzn:`ann` type - allow a modeller to specify
+non-declarative and solver-specific information that is beyond the core
+language.  Annotations do not change the meaning of a model, however, only
+how it is solved.
+
+Annotations can be attached to variables (on their declarations),
+expresssions, type-inst synonyms, enum items, solve items and on user
+defined operations.
+They have the following syntax:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Annotations
+
+For example:
+
+.. code-block:: minizinc
+
+    int: x::foo;
+    x = (3 + 4)::bar("a", 9)::baz("b");
+    solve :: blah(4)
+        minimize x;
+
+The types of the argument expressions must match the argument types of the
+declared annotation.  Unlike user-defined predicates and functions,
+annotations cannot be overloaded.  *Rationale: There is no particular strong
+reason for this, it just seemed to make things simpler.*
+
+Annotation signatures can contain type-inst variables.
+
+The order and nesting of annotations do not matter.  For the expression case
+it can be helpful to view the annotation connector :mzn:`::` as an
+overloaded operator:
+
+.. code-block:: minizinc
+
+    ann: '::'(any $T: e, ann: a);       % associative
+    ann: '::'(ann:    a, ann: b);       % associative + commutative
+
+Both operators are associative, the second is commutative.  This means that
+the following expressions are all equivalent:
+
+.. code-block:: minizinc
+
+    e :: a :: b
+    e :: b :: a
+    (e :: a) :: b
+    (e :: b) :: a
+    e :: (a :: b)
+    e :: (b :: a)
+
+This property also applies to annotations on solve items and variable
+declaration items.  *Rationale: This property make things simple, as it
+allows all nested combinations of annotations to be treated as if they are
+flat, thus avoiding the need to determine what is the meaning of an
+annotated annotation.  It also makes the MiniZinc abstract syntax tree simpler
+by avoiding the need to represent nesting.*
+
+.. _spec-partiality:
+
+Partiality
+----------
+
+The presence of constrained type-insts in MiniZinc means that
+various operations are potentially *partial*, i.e., not clearly defined
+for all possible inputs.  For example, what happens if a function expecting
+a positive argument is passed a negative argument?  What happens if a
+variable is assigned a value that does not satisfy its type-inst constraints?
+What happens if an array index is out of bounds?  This section describes
+what happens in all these cases.
+
+.. % \pjs{This is not what seems to happen in the current MiniZinc!}
+
+In general, cases involving fixed values that do not satisfy constraints
+lead to run-time aborts.
+*Rationale: Our experience shows that if a fixed value fails a constraint, it
+is almost certainly due to a programming error.  Furthermore, these cases
+are easy for an implementation to check.*
+
+But cases involving unfixed values vary, as we will see.
+*Rationale: The best thing to do for unfixed values varies from case to case.
+Also, it is difficult to check constraints on unfixed values, particularly
+because during search a decision variable might become fixed and then
+backtracking will cause this value to be reverted, in which case aborting is
+a bad idea.*
+
+Partial Assignments
+~~~~~~~~~~~~~~~~~~~
+
+The first operation involving partiality is assignment.  There are four
+distinct cases for assignments.
+
+- A value assigned to a fixed, constrained global variable is checked at
+  run-time;  if the assigned value does not satisfy its constraints, it is
+  a run-time error.  In other words, this:
+
+  .. code-block:: minizinc
+
+    1..5: x = 3;
+
+  is equivalent to this:
+
+  .. code-block:: minizinc
+
+    int: x = 3;
+    constraint assert(x in 1..5,
+                      "assignment to global parameter 'x' failed")
+
+- A value assigned to an unfixed, constrained global variable makes the
+  assignment act like a constraint;  if the assigned value does not
+  satisfy the variable's constraints, it causes a run-time model failure.
+  In other words, this:
+
+  .. code-block:: minizinc
+
+    var 1..5: x = 3;
+
+  is equivalent to this:
+
+  .. code-block:: minizinc
+
+    var int: x = 3;
+    constraint x in 1..5;
+
+  *Rationale: This behaviour is easy to understand and easy to implement.*
+
+- A value assigned to a fixed, constrained let-local variable is checked at
+  run-time;  if the assigned value does not satisfy its constraints, it is
+  a run-time error.  In other words, this:
+
+  .. code-block:: minizinc
+
+    let { 1..5: x = 3; } in x+1
+
+  is equivalent to this:
+
+  .. code-block:: minizinc
+
+    let { int: x = 3; } in
+        assert(x in 1..5,
+               "assignment to let parameter 'x' failed", x+1)
+
+- A value assigned to an unfixed, constrained let-local variable makes the
+  assignment act like a constraint;  if the constraint fails at run-time, the
+  failure "bubbles up" to the nearest enclosing Boolean scope, where it
+  is interpreted as :mzn:`false`.
+
+  *Rationale: This behaviour is consistent with assignments to global
+  variables.*
+
+Note that in cases where a value is partly fixed and partly unfixed, e.g., some
+arrays, the different elements are checked according to the different cases,
+and fixed elements are checked before unfixed elements.  For example:
+
+.. code-block:: minizinc
+
+    u = [ let { var 1..5: x = 6} in x, let { par 1..5: y = 6; } in y) ];
+
+This causes a run-time abort, because the second, fixed element is checked
+before the first, unfixed element.  This ordering is true for the cases in the
+following sections as well.  *Rationale: This ensures that failures cannot
+mask aborts, which seems desirable.*
+
+Partial Predicate/Function and Annotation Arguments
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The second kind of operation involving partiality is calls and annotations.
+
+.. 
+  % The behaviour for these operations is simple:  constraints on arguments are
+  % ignored.
+  %
+  % \Rationale{This is easy to implement and easy to understand.  It is also
+  % justifiable in the sense that predicate/function/annotation arguments are
+  % values that are passed in from elsewhere;  if those values are to be
+  % constrained, that could be done earlier.  (In comparison, when a variable
+  % with a constrained type-inst is declared, any assigned value must clearly
+  % respect that constraint.)}
+
+The semantics is similar to assignments:  fixed arguments that fail their constraints
+will cause aborts, and unfixed arguments that fail their constraints will
+cause failure, which bubbles up to the nearest enclosing Boolean scope.
+
+
+Partial Array Accesses
+~~~~~~~~~~~~~~~~~~~~~~
+
+The third kind of operation involving partiality is array access.  There
+are two distinct cases.
+
+- A fixed value used as an array index is checked at run-time;  if the
+  index value is not in the index set of the array, it is a run-time
+  error.
+
+- An unfixed value used as an array index makes the access act like a
+  constraint;  if the access fails at run-time, the failure "bubbles up"
+  to the nearest enclosing Boolean scope, where it is interpreted as
+  :mzn:`false`.  For example:
+
+  .. code-block:: minizinc
+
+    array[1..3] of int: a = [1,2,3];
+    var int: i;
+    constraint (a[i] + 3) > 10 \/ i = 99;
+
+  Here the array access fails, so the failure bubbles up to the
+  disjunction, and :mzn:`i` is constrained to be 99.
+  *Rationale: Unlike predicate/function calls, modellers in practice
+  sometimes do use array accesses that can fail.   In such cases, the
+  "bubbling up" behaviour is a reasonable one.*
+
 Full grammar
 ------------
 
