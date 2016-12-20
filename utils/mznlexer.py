@@ -61,8 +61,16 @@ class MznDefLexer(MznLexer):
     tokens = {
         'root': [
             (r'<[0-9a-zA-Z- ]+>', Comment.Special),
+            (r'"/\\"', String),
+            (r'"""', String),
+            (r'"\\\("', String),
+            (r'\[[^ ]', String.Regex, 'regex'),
             (r'::=', Comment.Special),
             (words(('|',), prefix=r'^\s*'), Comment.Special),
             inherit
+        ],
+        'regex': [
+            (r'\]', String.Regex, '#pop'),
+            (r'.', String.Regex)
         ]
     }

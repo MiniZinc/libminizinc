@@ -102,6 +102,7 @@ The basics of the EBNF used in this specification are as follows.
 
 - Non-terminals are written between angle brackets, :mzndef:`<item>`.
 - Terminals are written in double quotes, e.g. :mzndef:`"constraint"`.
+  A double quote terminal is written as a sequence of three double quotes: :mzndef:`"""`.
 - Optional items are written in square brackets,
   e.g. :mzndef:`[ "var" ]`.
 - Sequences of zero or more items are written with parentheses and a
@@ -131,7 +132,8 @@ The output grammar also includes some details of the use of whitespace.
 The following conventions are used:
 
 - A newline character or CRLF sequence is written ``\n``.
-- A sequence of space characters of length $n$ is written $n$``SP``, e.g., ``2SP``.
+
+.. - A sequence of space characters of length :math:`n` is written ``nSP``, e.g., ``2SP``.
 
 .. _spec-Overview:
 

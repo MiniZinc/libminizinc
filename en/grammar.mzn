@@ -172,10 +172,10 @@
 % String literals
 <string-contents> ::= ([^"\n\] | \[^\n(])*
 
-<string-literal> ::= \"<string-contents>\"
-                   | \"<string-contents>"\(" <string-interpolate-tail>
+<string-literal> ::= """ <string-contents> """
+                   | """ <string-contents> "\(" <string-interpolate-tail>
 
-<string-interpolate-tail> ::= <expr> ")"<string-contents>\"
+<string-interpolate-tail> ::= <expr> ")"<string-contents>"""
                             | <expr> ")"<string-contents>"\(" <string-interpolate-tail>
 
 % Set literals
@@ -192,13 +192,13 @@
 <array-literal> ::= "[" [ <expr> "," ... ] "]"
 
 % 2D Array literals
-<array-literal-2d> ::= "[|" [ (<expr> "," ...) | ... ] "|]"
+<array-literal-2d> ::= "[|" [ (<expr> "," ...) "|" ... ] "|]"
 
 % Array comprehensions
 <array-comp> ::= "[" <expr> "|" <comp-tail> "]"
 
 % Array access
-<array-access-tail> ::= "[ <expr> "," ... "]"
+<array-access-tail> ::= "[" <expr> "," ... "]"
 
 % Annotation literals
 <ann-literal> ::= <ident> [ "(" <expr> "," ... ")" ]
