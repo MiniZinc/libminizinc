@@ -1500,6 +1500,7 @@ namespace MiniZinc {
           bo->type(Type::parstring(1));
           outputItem->e(bo);
           oi->remove();
+          m->setOutputItem(outputItem);
         }
       }
     } _tsv3(env.envi(),m);

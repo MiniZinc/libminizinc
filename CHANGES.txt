@@ -12,6 +12,9 @@ Bug fixes:
  - Fix a bug in the type checking for generators that iterate over
    arrays of enums.
  - Fix a bug in the output handling of arrays of enums.
+ - Fix handling of multiple output items (only the last item was
+   compiled, now the concatenation is used for output as defined
+   in the specification).
 
 Version 2.1.1
 =============

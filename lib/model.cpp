@@ -79,6 +79,14 @@ namespace MiniZinc {
   }
 
   void
+  Model::setOutputItem(OutputI* oi) {
+    Model* m = this;
+    while (m->_parent)
+      m = m->_parent;
+    m->_outputItem = oi;
+  }
+  
+  void
   Model::registerFn(EnvI& env, FunctionI* fi) {
     Model* m = this;
     while (m->_parent)
