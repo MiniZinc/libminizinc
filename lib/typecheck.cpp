@@ -1081,6 +1081,7 @@ namespace MiniZinc {
                 } else {
                   throw TypeError(env.envi(), vdi->e()->loc(), "Only ranges allowed in FlatZinc type inst");
                 }
+                break;
               }
               case Expression::E_ID:
               {
@@ -1093,6 +1094,14 @@ namespace MiniZinc {
                   throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
                 }
                 vdi->e()->type(t);
+                break;
+              }
+              case Expression::E_SETLIT:
+              {
+                SetLit* sl = vdi->e()->ti()->domain()->cast<SetLit>();
+                t.bt(Type::BT_INT);
+                vdi->e()->type(t);
+                break;
               }
               default:
                 throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
