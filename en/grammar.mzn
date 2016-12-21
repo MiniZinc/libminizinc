@@ -14,9 +14,6 @@
           | <function-item>
           | <annotation-item>
 
-%
-<type-inst-syn-item> ::= "type" <ident> <annotations> "=" <ti-expr>
-
 <ti-expr-and-id> ::= <ti-expr> ":" <ident>
 
 % Include items
@@ -83,11 +80,6 @@
 % Array type-inst expressions
 <array-ti-expr-tail> ::= "array" [ <ti-expr> "," ... ] "of" <ti-expr>
                        | "list" "of" <ti-expr>
-
-%
-<ti-variable-expr-tail> ::= $[A-Za-z][A-Za-z0-9_]*
-
-<op-ti-expr-tail> ::= "op" ( <ti-expr> ":" ( <ti-expr> "," ... ) )
 
 % Expressions
 <expr> ::= <expr-atom> <expr-binop-tail>
@@ -217,6 +209,8 @@
 
 % Generator call expressions
 <gen-call-expr> ::= <ident-or-quoted-op> "(" <comp-tail> ")" "(" <expr> ")"
+
+% Miscellaneous
 
 % Identifiers
 <ident> ::= [A-Za-z][A-Za-z0-9_]* | ’[^’\xa\xd\x0]*’

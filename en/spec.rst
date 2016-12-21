@@ -3485,5 +3485,33 @@ two-dimensional array. The third parameter is an array of sets of integers.
 Full grammar
 ------------
 
+Items
+~~~~~
+
 .. literalinclude:: grammar.mzn
   :language: minizincdef
+  :end-before: % Type-inst expressions
+
+Type-Inst Expressions
+~~~~~~~~~~~~~~~~~~~~~
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Type-inst expressions
+  :end-before: % Expressions
+
+Expressions
+~~~~~~~~~~~
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Expressions
+  :end-before: % Miscellaneous
+
+Miscellaneous Elements
+~~~~~~~~~~~~~~~~~~~~~~
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Miscellaneous
+
