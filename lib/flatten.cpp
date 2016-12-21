@@ -771,8 +771,6 @@ namespace MiniZinc {
         filenameId = findFilename->second;
       }
 
-      if(fopts.only_toplevel_paths && filenameId != 0)
-        return false;
 
       // If this call is not a dummy StringLit with empty Location (so that deferred compilation doesn't drop the paths)
       if(e->eid() != Expression::E_STRINGLIT || loc.first_line || loc.first_column || loc.last_line || loc.last_column) {
@@ -831,6 +829,8 @@ namespace MiniZinc {
           os << "un:" << e->cast<UnOp>()->opToString();
           break;
         case Expression::E_CALL:
+          if(fopts.only_toplevel_paths)
+            return false;
           os << "ca:" << e->cast<Call>()->id();
           break;
         case Expression::E_VARDECL:
@@ -3220,6 +3220,7 @@ namespace MiniZinc {
   
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     if (e==NULL) return EE();
+    
     EE ret;
     assert(!e->type().isunknown());
     if (e->type().ispar() && !e->isa<Let>() && !e->isa<VarDecl>() && e->type().bt()!=Type::BT_ANN) {
