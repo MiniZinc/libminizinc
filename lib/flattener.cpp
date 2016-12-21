@@ -395,6 +395,10 @@ void Flattener::flatten()
             if (flag_statistics) {
               FlatModelStatistics stats = statistics(env);
               std::cerr << "Generated FlatZinc statistics:\n";
+
+              std::cerr << "Paths: ";
+              std::cerr << env.envi().getPathMap().size() << std::endl;
+
               std::cerr << "Variables: ";
               HadOne ho;
               std::cerr << ho(stats.n_bool_vars, " bool");
