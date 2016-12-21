@@ -5,6 +5,71 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.1.2
+=============
+
+Bug fixes:
+ - Fix a bug in the type checking for generators that iterate over
+   arrays of enums.
+ - Fix a bug in the output handling of arrays of enums.
+ - Fix handling of multiple output items (only the last item was
+   compiled, now the concatenation is used for output as defined
+   in the specification).
+
+Version 2.1.1
+=============
+
+Changes:
+ - Add missing min/max functions for set variables. Can be redefined to solver
+   builtins using the new redefinitions-2.1.1.mzn library file.
+ - Add support for option type expressions as objective functions.
+ - Automatically coerce arrays constructed using ++ to any enum index set
+   (in addition to array literals and comprehensions).
+
+Bug fixes:
+ - Include cmath header to fix compilation issues with some compilers. Fixes #125.
+ - Fix a garbage collection bug in the type checking for enumerated types that would
+   sometimes lead to crashes or incorrect error messages.
+ - Fix type checking of comprehensions that involve enumerated types.
+ - Fix bounds computation for var sets of enumerated types.
+ - Support anon_enum function as documented.
+
+Version 2.1.0
+=============
+
+Changes:
+ - MiniZinc now supports enumerated types.
+ - Solvers can be interfaced directly to the MiniZinc library, and MiniZinc
+   comes with direct support for the CBC, Gurobi and CPLEX MIP solvers.
+ - The linearisation library has been updated, resulting in much better FlatZinc
+   being generated for MIP solvers.
+ - Data files can be in JSON format, and MiniZinc can produce JSON output
+   (using the --output-mode command line option).
+ - Variables can be annotated as ::add_to_output instead of writing an output
+   item.
+ - The compiler can output information about the parameters and output variables
+   of a model (using the --model-interface-only option).
+ - Floats are handled better (detecting infinities and handling sets of floats).
+ - Bounds can be computed for more expressions (instead of failing with an error
+   message).
+
+Bug fixes:
+ - Fix a bug in optimization that could remove variables even if they are used.
+   Fixes #123.
+ - Fix float variable declarations with sets of floats as domains.
+   Fixes #117 and #98.
+ - Fix type checking and evaluation of asserts with array arguments. Fixes #109.
+ - Fix abs(var float) declaration to work on floats without declared bounds.
+   Fixes #106.
+ - Fix a bug in the computation of int and float bounds that could result in
+   incorrect bounds in some cases. Fixes #94.
+ - Fix garbage collection when creating output models. Fixes #77.
+ - Fix binary operators on optional variables (in some cases comparison
+   operators were reversed).
+ - Fix optimization of unconstrained variables (could sometimes lead to
+   constraints being removed although they were not subsumed).
+ 
+
 Version 2.0.14
 ==============
 

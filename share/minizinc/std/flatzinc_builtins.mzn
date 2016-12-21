@@ -156,6 +156,14 @@ predicate float_lt_reif(var float: a, var float: b, var bool: r);
 predicate float_ne(var float: a, var float: b);
 /** @group flatzinc Constrains \a r &harr; (\a a ≠ \a b) */
 predicate float_ne_reif(var float: a, var float: b, var bool: r);
+/** @group flatzinc Constrains \( \a a \in\ [ \a b, \a c ] \) */
+predicate float_in(var float: a, float: b, float: c);
+/** @group flatzinc Constrains \a r &harr; \( \a a \in\ [ \a b, \a c ] \) */
+predicate float_in_reif(var float: a, float: b, float: c, var bool: r);
+/** @group flatzinc Constrains the domain of \a x using the values in \a as, using each
+  pair of values \a as[2*\p i-1]..\a as[2*\p i] for \p i in 1..\p n/2 as a possible range
+ */
+predicate float_dom(var float: x, array[int] of float: as);
 
 /** @group flatzinc Constrains \( \a c = \sum_i \a as[i]*\a bs[i] \) */
 predicate float_lin_eq(array[int] of float: as, array[int] of var float: bs, float: c);

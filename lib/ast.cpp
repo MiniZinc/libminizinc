@@ -14,6 +14,7 @@
 #include <minizinc/astexception.hh>
 #include <minizinc/iter.hh>
 #include <minizinc/model.hh>
+#include <minizinc/flatten_internal.hh>
 
 #include <minizinc/prettyprinter.hh>
 
@@ -86,10 +87,13 @@ namespace MiniZinc {
         case Expression::E_ANON:
           break;
         case Expression::E_SETLIT:
-          if (cur->cast<SetLit>()->isv())
+          if (cur->cast<SetLit>()->isv()) {
             cur->cast<SetLit>()->isv()->mark();
-          else
+          } else if (cur->cast<SetLit>()->fsv()) {
+              cur->cast<SetLit>()->fsv()->mark();
+          } else {
             pushall(cur->cast<SetLit>()->v());
+          }
           break;
         case Expression::E_STRINGLIT:
           cur->cast<StringLit>()->v().mark();
@@ -180,6 +184,12 @@ namespace MiniZinc {
     if (isv()) {
       HASH_NAMESPACE::hash<IntVal> h;
       for (IntSetRanges r0(isv()); r0(); ++r0) {
+        cmb_hash(h(r0.min()));
+        cmb_hash(h(r0.max()));
+      }
+    } else if (fsv()) {
+      HASH_NAMESPACE::hash<FloatVal> h;
+      for (FloatSetRanges r0(fsv()); r0(); ++r0) {
         cmb_hash(h(r0.min()));
         cmb_hash(h(r0.max()));
       }
@@ -645,8 +655,21 @@ namespace MiniZinc {
     const Location& getLoc(Expression* e, FunctionI*) { return e->loc(); }
     const Location& getLoc(const Type&, FunctionI* fi) { return fi->loc(); }
 
+    bool isaTIId(Expression* e) {
+      if (TIId* t = Expression::dyn_cast<TIId>(e)) {
+        return !t->v().beginsWith("$");
+      }
+      return false;
+    }
+    bool isaEnumTIId(Expression* e) {
+      if (TIId* t = Expression::dyn_cast<TIId>(e)) {
+        return t->v().beginsWith("$");
+      }
+      return false;
+    }
+    
     template<class T>
-    Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta) {
+    Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strictEnum) {
       if (fi->id()==constants().var_redef->id())
         return Type::varbool();
       Type ret = fi->ti()->type();
@@ -655,7 +678,7 @@ namespace MiniZinc {
         dh = fi->ti()->domain()->cast<TIId>()->v();
       ASTString rh;
       if (fi->ti()->ranges().size()==1 &&
-          fi->ti()->ranges()[0]->domain() && fi->ti()->ranges()[0]->domain()->isa<TIId>())
+          isaTIId(fi->ti()->ranges()[0]->domain()))
         rh = fi->ti()->ranges()[0]->domain()->cast<TIId>()->v();
       
       ASTStringMap<Type>::t tmap;
@@ -687,23 +710,22 @@ namespace MiniZinc {
               if (its_par.bt()==Type::BT_TOP || its_par.bt()==Type::BT_BOT) {
                 its_par.bt(tiit_par.bt());
               }
-              if (tiit_par.isSubtypeOf(its_par)) {
+              if (env.isSubtype(tiit_par,its_par,strictEnum)) {
                 if (it->second.bt() == Type::BT_TOP)
                   it->second.bt(tiit.bt());
-              } else if (its_par.isSubtypeOf(tiit_par)) {
+              } else if (env.isSubtype(its_par,tiit_par,strictEnum)) {
                 it->second = tiit_par;
               } else {
                 throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
                                 tiid.str()+" instantiated with different types ("+
-                                tiit.toString()+" vs "+
-                                it->second.toString()+")");
+                                tiit.toString(env)+" vs "+
+                                it->second.toString(env)+")");
               }
             }
           }
         }
         if (tii->ranges().size()==1 &&
-            tii->ranges()[0]->domain() &&
-            tii->ranges()[0]->domain()->isa<TIId>()) {
+            isaTIId(tii->ranges()[0]->domain())) {
           ASTString tiid = tii->ranges()[0]->domain()->cast<TIId>()->v();
           if (getType(ta[i]).dim()==0) {
             throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+tiid.str()+
@@ -720,8 +742,33 @@ namespace MiniZinc {
             } else if (it->second!=tiit) {
               throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
                               tiid.str()+" instantiated with different types ("+
-                              tiit.toString()+" vs "+
-                              it->second.toString()+")");
+                              tiit.toString(env)+" vs "+
+                              it->second.toString(env)+")");
+            }
+          }
+        } else if (tii->ranges().size() > 0) {
+          for (unsigned int j=0; j<tii->ranges().size(); j++) {
+            if (isaEnumTIId(tii->ranges()[j]->domain())) {
+              ASTString enumTIId = tii->ranges()[j]->domain()->cast<TIId>()->v();
+              Type tiit = getType(ta[i]);
+              Type enumIdT;
+              if (tiit.enumId() != 0) {
+                unsigned int enumId = env.getArrayEnum(tiit.enumId())[j];
+                enumIdT = Type::parsetenum(enumId);
+              } else {
+                enumIdT = Type::parsetint();
+              }
+              ASTStringMap<Type>::t::iterator it = tmap.find(enumTIId);
+              // TODO: this may clash if the same enum TIId is used for different types
+              // but the same enum
+              if (it==tmap.end()) {
+                tmap.insert(std::pair<ASTString,Type>(enumTIId,enumIdT));
+              } else {
+                if (it->second.enumId() != enumIdT.enumId()) {
+                  throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
+                                  enumTIId.str()+" used for different enum types");
+                }
+              }
             }
           }
         }
@@ -730,32 +777,63 @@ namespace MiniZinc {
         ASTStringMap<Type>::t::iterator it = tmap.find(dh);
         if (it==tmap.end())
           throw TypeError(env, fi->loc(),"type-inst variable $"+dh.str()+" used but not defined");
-        ret.bt(it->second.bt());
-        if (ret.st()==Type::ST_PLAIN)
-          ret.st(it->second.st());
+        if (dh.beginsWith("$")) {
+          // this is an enum
+          ret.bt(Type::BT_INT);
+          ret.enumId(it->second.enumId());
+        } else {
+          ret.bt(it->second.bt());
+          ret.enumId(it->second.enumId());
+          if (ret.st()==Type::ST_PLAIN)
+            ret.st(it->second.st());
+        }
       }
       if (rh.size() != 0) {
         ASTStringMap<Type>::t::iterator it = tmap.find(rh);
         if (it==tmap.end())
           throw TypeError(env, fi->loc(),"type-inst variable $"+rh.str()+" used but not defined");
         ret.dim(it->second.dim());
+      } else if (fi->ti()->ranges().size() > 0) {
+        std::vector<unsigned int> enumIds(fi->ti()->ranges().size()+1);
+        bool hadRealEnum = false;
+        if (ret.enumId()==0) {
+          enumIds[enumIds.size()-1] = 0;
+        } else {
+          enumIds[enumIds.size()-1] = env.getArrayEnum(ret.enumId())[enumIds.size()-1];
+          hadRealEnum = true;
+        }
+        
+        for (unsigned int i=0; i<fi->ti()->ranges().size(); i++) {
+          if (isaEnumTIId(fi->ti()->ranges()[i]->domain())) {
+            ASTString enumTIId = fi->ti()->ranges()[i]->domain()->cast<TIId>()->v();
+            ASTStringMap<Type>::t::iterator it = tmap.find(enumTIId);
+            if (it==tmap.end())
+              throw TypeError(env, fi->loc(),"type-inst variable $"+enumTIId.str()+" used but not defined");
+            enumIds[i] = it->second.enumId();
+            hadRealEnum = (enumIds[i] != 0);
+          } else {
+            enumIds[i] = 0;
+          }
+        }
+        if (hadRealEnum)
+          ret.enumId(env.registerArrayEnum(enumIds));
       }
       return ret;
     }
   }
   
   Type
-  FunctionI::rtype(EnvI& env, const std::vector<Expression*>& ta) {
-    return return_type(env, this, ta);
+  FunctionI::rtype(EnvI& env, const std::vector<Expression*>& ta, bool strictEnums) {
+    return return_type(env, this, ta, strictEnums);
   }
 
   Type
-  FunctionI::rtype(EnvI& env, const std::vector<Type>& ta) {
-    return return_type(env, this, ta);
+  FunctionI::rtype(EnvI& env, const std::vector<Type>& ta, bool strictEnums) {
+    return return_type(env, this, ta, strictEnums);
   }
 
   Type
-  FunctionI::argtype(const std::vector<Expression *>& ta, int n) {
+  FunctionI::argtype(EnvI& env, const std::vector<Expression *>& ta, int n) {
     TypeInst* tii = params()[n]->ti();
     if (tii->domain() && tii->domain()->isa<TIId>()) {
       Type ty = ta[n]->type();
@@ -769,14 +847,14 @@ namespace MiniZinc {
           toCheck.st(tii->type().st());
           toCheck.dim(tii->type().dim());
           if (toCheck != ty) {
-            if (ty.isSubtypeOf(toCheck)) {
+            if (env.isSubtype(ty,toCheck,true)) {
               ty = toCheck;
             } else {
               Type ty_par = ty;
               ty_par.ti(Type::TI_PAR);
               Type toCheck_par = toCheck;
               toCheck_par.ti(Type::TI_PAR);
-              if (ty_par.isSubtypeOf(toCheck_par)) {
+              if (env.isSubtype(ty_par,toCheck_par,true)) {
                 ty.bt(toCheck.bt());
               }
             }
@@ -808,8 +886,16 @@ namespace MiniZinc {
           } else {
             return false;
           }
+        } else if (s0->fsv()) {
+          if (s1->fsv()) {
+            FloatSetRanges r0(s0->fsv());
+            FloatSetRanges r1(s1->fsv());
+            return Ranges::equal(r0,r1);
+          } else {
+            return false;
+          }
         } else {
-          if (s1->isv()) return false;
+          if (s1->isv() || s1->fsv()) return false;
           if (s0->v().size() != s1->v().size()) return false;
           for (unsigned int i=0; i<s0->v().size(); i++)
             if (!Expression::equal( s0->v()[i], s1->v()[i] ))
@@ -1043,6 +1129,8 @@ namespace MiniZinc {
     ids.float_.ge = ASTString("float_ge");
     ids.float_.eq = ASTString("float_eq");
     ids.float_.ne = ASTString("float_ne");
+    ids.float_.in = ASTString("float_in");
+    ids.float_.dom = ASTString("float_dom");
 
     ids.float_reif.lin_eq = ASTString("float_lin_eq_reif");
     ids.float_reif.lin_le = ASTString("float_lin_le_reif");
@@ -1059,6 +1147,7 @@ namespace MiniZinc {
     ids.float_reif.ge = ASTString("float_ge_reif");
     ids.float_reif.eq = ASTString("float_eq_reif");
     ids.float_reif.ne = ASTString("float_ne_reif");
+    ids.float_reif.in = ASTString("float_in_reif");
 
     ids.bool_eq = ASTString("bool_eq");
     ids.bool_eq_reif = ASTString("bool_eq_reif");
@@ -1085,6 +1174,8 @@ namespace MiniZinc {
     ann.output_var = new Id(Location(), ASTString("output_var"), NULL);
     ann.output_var->type(Type::ann());
     ann.output_array = ASTString("output_array");
+    ann.add_to_output = new Id(Location(), ASTString("add_to_output"), NULL);
+    ann.add_to_output->type(Type::ann());
     ann.is_defined_var = new Id(Location(), ASTString("is_defined_var"), NULL);
     ann.is_defined_var->type(Type::ann());
     ann.defines_var = ASTString("defines_var");
@@ -1248,6 +1339,8 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.float_.ge));
     v.push_back(new StringLit(Location(),ids.float_.eq));
     v.push_back(new StringLit(Location(),ids.float_.ne));
+    v.push_back(new StringLit(Location(),ids.float_.in));
+    v.push_back(new StringLit(Location(),ids.float_.dom));
 
     v.push_back(new StringLit(Location(),ids.float_reif.lin_eq));
     v.push_back(new StringLit(Location(),ids.float_reif.lin_le));
@@ -1264,6 +1357,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.float_reif.ge));
     v.push_back(new StringLit(Location(),ids.float_reif.eq));
     v.push_back(new StringLit(Location(),ids.float_reif.ne));
+    v.push_back(new StringLit(Location(),ids.float_reif.in));
 
     v.push_back(new StringLit(Location(),ids.bool_eq));
     v.push_back(new StringLit(Location(),ids.bool_eq_reif));
@@ -1284,6 +1378,7 @@ namespace MiniZinc {
     v.push_back(ctx.neg);
     v.push_back(ctx.mix);
     v.push_back(ann.output_var);
+    v.push_back(ann.add_to_output);
     v.push_back(new StringLit(Location(),ann.output_array));
     v.push_back(ann.is_defined_var);
     v.push_back(new StringLit(Location(),ann.defines_var));

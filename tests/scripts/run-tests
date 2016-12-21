@@ -51,6 +51,9 @@ RUNSONREGEX="\<RUNS  *ON  *$BASEPROG\>"
 #
 rm -f "$IGNORES" "$FAILURES"
 
+NTESTS=0
+NFAIL=0
+
 # Find all applicable test cases.
 #
 for FILENAME in $(find $DIRS -name '*'$SUFFIX -o -name '*.dzn' | sort)
@@ -107,6 +110,8 @@ do
     PASSFAIL=fail
     run-test $PROG $FILENAME  &&  PASSFAIL=pass
 
+    NTESTS=$((NTESTS+1))
+
     if test $FORCE_DELAY
     then
         sleep 1
@@ -118,6 +123,7 @@ do
 
     if [ $PASSFAIL = "fail" ]
     then
+        NFAIL=$((NFAIL+1))
         echo "$DIR/$FILENAME ($PROG)" >> "$FAILURES"
     fi
 
@@ -127,6 +133,7 @@ if [ -e "$FAILURES" ]
 then
     echo "$(basename $FAILURES):"
     cat "$FAILURES"
+    echo "$((100-$NFAIL*100/$NTESTS))"% of tests succeeded
 else
     echo "All tests passed."
 fi

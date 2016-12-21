@@ -21,12 +21,80 @@ extern "C" {
 class MIP_gurobi_wrapper : public MIP_wrapper {
     GRBenv        * env = 0;
     GRBmodel      * model = 0;
-    int             error;
+#ifdef HAS_GUROBI_PLUGIN
+    void          * gurobi_dll;
+#endif
+  int             error;
     string          gurobi_buffer;   // [GRB_MESSAGEBUFSIZE];
     string          gurobi_status_buffer; // [GRB_MESSAGEBUFSIZE];
     
     vector<double> x;
 
+  public:
+    int (__stdcall *dll_GRBaddconstr) (GRBmodel *model, int numnz, int *cind, double *cval,
+                             char sense, double rhs, const char *constrname);
+
+    int (__stdcall *dll_GRBaddvars) (GRBmodel *model, int numvars, int numnz,
+                           int *vbeg, int *vind, double *vval,
+                           double *obj, double *lb, double *ub, char *vtype,
+                           char **varnames);
+
+    int (__stdcall *dll_GRBcbcut) (void *cbdata, int cutlen, const int *cutind, const double *cutval,
+                         char cutsense, double cutrhs);
+
+    int (__stdcall *dll_GRBcbget) (void *cbdata, int where, int what, void *resultP);
+
+    int (__stdcall *dll_GRBcblazy) (void *cbdata, int lazylen, const int *lazyind,
+                          const double *lazyval, char lazysense, double lazyrhs);
+
+    void (__stdcall *dll_GRBfreeenv) (GRBenv *env);
+
+    int (__stdcall *dll_GRBfreemodel) (GRBmodel *model);
+
+    int (__stdcall *dll_GRBgetdblattr) (GRBmodel *model, const char *attrname, double *valueP);
+
+    int (__stdcall *dll_GRBgetdblattrarray) (GRBmodel *model, const char *attrname,
+                                   int first, int len, double *values);
+
+    GRBenv * (__stdcall *dll_GRBgetenv) (GRBmodel *model);
+
+    const char * (__stdcall *dll_GRBgeterrormsg) (GRBenv *env);
+
+    int (__stdcall *dll_GRBgetintattr) (GRBmodel *model, const char *attrname, int *valueP);
+
+    int (__stdcall *dll_GRBloadenv) (GRBenv **envP, const char *logfilename);
+
+    int (__stdcall *dll_GRBnewmodel) (GRBenv *env, GRBmodel **modelP, const char *Pname, int numvars,
+                            double *obj, double *lb, double *ub, char *vtype,
+                            char **varnames);
+
+    int (__stdcall *dll_GRBoptimize) (GRBmodel *model);
+
+    int (__stdcall *dll_GRBreadparams) (GRBenv *env, const char *filename);
+
+    int (__stdcall *dll_GRBsetcallbackfunc) (GRBmodel *model,
+                                   int (__stdcall *cb)(CB_ARGS),
+                                   void  *usrdata);
+
+    int (__stdcall *dll_GRBsetdblparam) (GRBenv *env, const char *paramname, double value);
+
+    int (__stdcall *dll_GRBsetintparam) (GRBenv *env, const char *paramname, int value);
+
+    int (__stdcall *dll_GRBsetintattr) (GRBmodel *model, const char *attrname, int newvalue);
+
+    int (__stdcall *dll_GRBsetintattrlist) (GRBmodel *model, const char *attrname,
+                    int len, int *ind, int *newvalues);
+
+    int (__stdcall *dll_GRBsetstrparam) (GRBenv *env, const char *paramname, const char *value);
+
+    int (__stdcall *dll_GRBupdatemodel) (GRBmodel *model);
+
+    int (__stdcall *dll_GRBwrite) (GRBmodel *model, const char *filename);
+
+    int (__stdcall *dll_GRBwriteparams) (GRBenv *env, const char *filename);
+
+    int (__stdcall *dll_GRBgetintparam) (GRBenv *env, const char *paramname, int *valueP);
+    
   public:
     MIP_gurobi_wrapper() { openGUROBI(); }
     virtual ~MIP_gurobi_wrapper() { closeGUROBI(); }
@@ -52,6 +120,9 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
                         LinConType sense, double rhs,
                         int mask = MaskConsType_Normal,
                         string rowName = "");
+    int nRows=0;    // to count rows in order tp notice lazy constraints
+    std::vector<int> nLazyIdx;
+    std::vector<int> nLazyValue;
     /// adding an implication
 //     virtual void addImpl() = 0;
     virtual void setObjSense(int s);   // +/-1 for max/min
@@ -59,12 +130,12 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     virtual double getInfBound() { return GRB_INFINITY; }
                         
     virtual int getNCols() {
-      GRBupdatemodel(model);
-      int cols; error = GRBgetintattr(model, GRB_INT_ATTR_NUMVARS, &cols); return cols;
+      dll_GRBupdatemodel(model);
+      int cols; error = dll_GRBgetintattr(model, GRB_INT_ATTR_NUMVARS, &cols); return cols;
     }
     virtual int getNRows() {
-      GRBupdatemodel(model);
-      int cols; error = GRBgetintattr(model, GRB_INT_ATTR_NUMCONSTRS, &cols); return cols;
+      dll_GRBupdatemodel(model);
+      int cols; error = dll_GRBgetintattr(model, GRB_INT_ATTR_NUMCONSTRS, &cols); return cols;
     }
                         
 //     void setObjUB(double ub) { objUB = ub; }

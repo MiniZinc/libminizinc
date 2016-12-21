@@ -17,3 +17,9 @@
 #cmakedefine HAS_GETFILEATTRIBUTES
 
 #cmakedefine HAS_MEMCPY_S
+
+#cmakedefine HAS_DLFCN_H
+
+#cmakedefine HAS_WINDOWS_H
+
+#cmakedefine HAS_GUROBI_PLUGIN

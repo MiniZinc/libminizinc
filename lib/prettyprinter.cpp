@@ -159,6 +159,29 @@ namespace MiniZinc {
     return ret;
   }
   
+  void ppFloatVal(std::ostream& os, const FloatVal& fv, bool hexFloat) {
+    std::ostringstream oss;
+    if (fv.isFinite()) {
+      if (hexFloat) {
+        throw InternalError( "disabled due to hexfloat being not supported by g++ 4.9" );
+//          std::hexfloat(oss);
+        oss << fv.toDouble();
+        os << oss.str();
+      } else {
+        oss << std::setprecision(std::numeric_limits<double>::digits10+1);
+        oss << fv;
+        if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
+          oss << ".0";
+        os << oss.str();
+      }
+    } else {
+      if (fv.isPlusInfinity())
+        os << "infinity";
+      else
+        os << "-infinity";
+    }
+  }
+  
   class PlainPrinter {
   public:
     std::ostream& os;
@@ -206,12 +229,7 @@ namespace MiniZinc {
         break;
       case Expression::E_FLOATLIT:
         {
-          std::ostringstream oss;
-          oss << std::setprecision(std::numeric_limits<double>::digits10+1);
-          oss << e->cast<FloatLit>()->v();
-          if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
-            oss << ".0";
-          os << oss.str();
+          ppFloatVal(os, e->cast<FloatLit>()->v());
         }
         break;
       case Expression::E_SETLIT:
@@ -241,6 +259,43 @@ namespace MiniZinc {
               os << "}";
               if (!sl.isv()->max(sl.isv()->size()-1).isFinite())
                 os << "++" << sl.isv()->min(sl.isv()->size()-1) << ".." << sl.isv()->max(sl.isv()->size()-1);
+            }
+          } else if (sl.fsv()) {
+            if (sl.fsv()->size()==0) {
+              os << (_flatZinc ? "1.0..0.0" : "{}");
+            } else if (sl.fsv()->size()==1) {
+              ppFloatVal(os, sl.fsv()->min(0));
+              os << "..";
+              ppFloatVal(os, sl.fsv()->max(0));
+            } else {
+              bool allSingleton = true;
+              for (FloatSetRanges isr(sl.fsv()); isr(); ++isr) {
+                if (isr.min() != isr.max()) {
+                  allSingleton = false;
+                  break;
+                }
+              }
+              if (allSingleton) {
+                os << "{";
+                bool first = true;
+                for (FloatSetRanges isr(sl.fsv()); isr(); ++isr) {
+                  if (!first)
+                    os << ",";
+                  first = false;
+                  ppFloatVal(os, isr.min());
+                }
+                os << "}";
+              } else {
+                bool first = true;
+                for (FloatSetRanges isr(sl.fsv()); isr(); ++isr) {
+                  if (!first)
+                    os << "++";
+                  first = false;
+                  ppFloatVal(os, isr.min());
+                  os << "..";
+                  ppFloatVal(os, isr.max());
+                }
+              }
             }
           } else {
             os << "{";
@@ -1045,10 +1100,7 @@ namespace MiniZinc {
     }
     ret mapFloatLit(const FloatLit& fl) {
       std::ostringstream oss;
-      oss << std::setprecision(std::numeric_limits<double>::digits10+1);
-      oss << fl.v();
-      if (oss.str().find("e") == std::string::npos && oss.str().find(".") == std::string::npos)
-        oss << ".0";
+      ppFloatVal(oss, fl.v());
       return new StringDocument(oss.str());
     }
     ret mapSetLit(const SetLit& sl) {
@@ -1077,6 +1129,33 @@ namespace MiniZinc {
             dl->addDocumentToList(new StringDocument(oss.str()));
           }
         }
+      } else if (sl.fsv()) {
+        if (sl.fsv()->size()==0) {
+          dl = new DocumentList("1.0..0.0","","");
+        } else if (sl.fsv()->size()==1) {
+          dl = new DocumentList("", "..", "");
+          {
+            std::ostringstream oss;
+            ppFloatVal(oss, sl.fsv()->min(0));
+            dl->addDocumentToList(new StringDocument(oss.str()));
+          }
+          {
+            std::ostringstream oss;
+            ppFloatVal(oss, sl.fsv()->max(0));
+            dl->addDocumentToList(new StringDocument(oss.str()));
+          }
+        } else {
+          dl = new DocumentList("", "++", "", true);
+          FloatSetRanges fsr(sl.fsv());
+          for (; fsr(); ++fsr) {
+            std::ostringstream oss;
+            ppFloatVal(oss, fsr.min());
+            oss << "..";
+            ppFloatVal(oss, fsr.max());
+            dl->addDocumentToList(new StringDocument(oss.str()));
+          }
+        }
+
       } else {
         dl = new DocumentList("{", ", ", "}", true);
         for (unsigned int i = 0; i < sl.v().size(); i++) {

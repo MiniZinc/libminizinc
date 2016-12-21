@@ -64,14 +64,7 @@ namespace MiniZinc {
     ~Model(void);
     
     /// Add \a i to the model
-    void addItem(Item* i) {
-      _items.push_back(i);
-      if (i->isa<SolveI>()) {
-        _solveItem = i->cast<SolveI>();
-      } else if (i->isa<OutputI>()) {
-        _outputItem = i->cast<OutputI>();
-      }
-    }
+    void addItem(Item* i);
     
     /// Get parent model
     Model* parent(void) const { return _parent; }
@@ -97,13 +90,17 @@ namespace MiniZinc {
     void registerFn(EnvI& env, FunctionI* fi);
     /// Sort functions by type
     void sortFn(void);
+    /// Check that registered functions do not clash wrt overloading
+    void checkFnOverloading(EnvI& env);
     /// Return function declaration for \a id matching \a args
     FunctionI* matchFn(EnvI& env, const ASTString& id,
-                       const std::vector<Expression*>& args) const;
+                       const std::vector<Expression*>& args,
+                       bool strictEnums) const;
     /// Return function declaration for \a id matching types \a t
-    FunctionI* matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t);
+    FunctionI* matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t,
+                       bool strictEnums);
     /// Return function declaration matching call \a c
-    FunctionI* matchFn(EnvI& env, Call* c) const;
+    FunctionI* matchFn(EnvI& env, Call* c, bool strictEnums) const;
     /// Merge all builtin functions into \a m
     void mergeStdLib(EnvI& env, Model* m) const;
 
@@ -134,6 +131,7 @@ namespace MiniZinc {
     SolveI* solveItem(void);
 
     OutputI* outputItem(void);
+    void setOutputItem(OutputI* oi);
 
     
     /// Add a file-level documentation comment
@@ -230,10 +228,12 @@ namespace MiniZinc {
   private:
     EnvI* e;
   public:
+    Env(void);
     Env(Model* m);
     ~Env(void);
     
     Model* model(void);
+    void model(Model* m);
     Model* flat(void);
     void swap();
     Model* output(void);

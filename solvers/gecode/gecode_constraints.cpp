@@ -1398,12 +1398,12 @@ namespace MiniZinc {
     void p_float_lin_cmp(GecodeSolverInstance& s, FloatRelType frt, const Call* ce) {
       FloatValArgs fa = s.arg2floatargs(ce->args()[0]);
       FloatVarArgs fv = s.arg2floatvarargs(ce->args()[1]);
-      linear(*s._current_space, fa, fv, frt, ce->args()[2]->cast<FloatLit>()->v());
+      linear(*s._current_space, fa, fv, frt, ce->args()[2]->cast<FloatLit>()->v().toDouble());
     }
     void p_float_lin_cmp_reif(GecodeSolverInstance& s, FloatRelType frt, const Call* ce) {
       FloatValArgs fa = s.arg2floatargs(ce->args()[0]);
       FloatVarArgs fv = s.arg2floatvarargs(ce->args()[1]);
-      linear(*s._current_space, fa, fv, frt, ce->args()[2]->cast<FloatLit>()->v(), s.arg2boolvar(ce->args()[3]));
+      linear(*s._current_space, fa, fv, frt, ce->args()[2]->cast<FloatLit>()->v().toDouble(), s.arg2boolvar(ce->args()[3]));
     }
     void p_float_lin_eq(SolverInstanceBase& s, const Call* ce) {
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);

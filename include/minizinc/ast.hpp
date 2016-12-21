@@ -59,6 +59,17 @@ namespace MiniZinc {
     }
   }
   
+  inline IntLit*
+  IntLit::aEnum(IntVal v, unsigned int enumId) {
+    if (enumId==0)
+      return a(v);
+    IntLit* il = new IntLit(Location().introduce(), v);
+    Type tt(il->type());
+    tt.enumId(enumId);
+    il->type(tt);
+    return il;
+  }
+  
   inline
   FloatLit::FloatLit(const Location& loc, FloatVal v)
   : Expression(loc,E_FLOATLIT,Type::parfloat()), _v(v) {
@@ -80,20 +91,31 @@ namespace MiniZinc {
   inline
   SetLit::SetLit(const Location& loc,
                  const std::vector<Expression*>& v)
-  : Expression(loc,E_SETLIT,Type()), _v(ASTExprVec<Expression>(v)), _isv(NULL) {
+  : Expression(loc,E_SETLIT,Type()), _v(ASTExprVec<Expression>(v)) {
+    _u.isv = NULL;
     rehash();
   }
   
   inline
   SetLit::SetLit(const Location& loc, ASTExprVec<Expression> v)
-  : Expression(loc,E_SETLIT,Type()), _v(v), _isv(NULL) {
+  : Expression(loc,E_SETLIT,Type()), _v(v) {
+    _u.isv = NULL;
     rehash();
   }
 
   inline
   SetLit::SetLit(const Location& loc, IntSetVal* isv)
-  : Expression(loc,E_SETLIT,Type()), _isv(isv) {
+  : Expression(loc,E_SETLIT,Type()) {
     _type = Type::parsetint();
+    _u.isv = isv;
+    rehash();
+  }
+
+  inline
+  SetLit::SetLit(const Location& loc, FloatSetVal* fsv)
+  : Expression(loc,E_SETLIT,Type()) {
+    _type = Type::parsetfloat();
+    _u.fsv = fsv;
     rehash();
   }
 
@@ -475,6 +497,7 @@ namespace MiniZinc {
                      Expression* domain)
   : Expression(loc,E_TI,type), _ranges(ranges), _domain(domain) {
     _flag_1 = false;
+    _flag_2 = false;
     rehash();
   }
 
@@ -484,6 +507,7 @@ namespace MiniZinc {
                      Expression* domain)
   : Expression(loc,E_TI,type), _domain(domain) {
     _flag_1 = false;
+    _flag_2 = false;
     rehash();
   }
 
@@ -559,6 +583,30 @@ namespace MiniZinc {
               loc.filename.endsWith("/stdlib.mzn") ||
               loc.filename == "flatzinc_builtins.mzn" ||
               loc.filename.endsWith("/flatzinc_builtins.mzn"));
+  }
+
+  inline
+  FunctionI::FunctionI(const Location& loc,
+                       const ASTString& id, TypeInst* ti,
+                       const ASTExprVec<VarDecl>& params,
+                       Expression* e)
+  : Item(loc, II_FUN),
+  _id(id),
+  _ti(ti),
+  _params(params),
+  _e(e) {
+    _builtins.e = NULL;
+    _builtins.b = NULL;
+    _builtins.f = NULL;
+    _builtins.i = NULL;
+    _builtins.s = NULL;
+    _builtins.str = NULL;
+    _from_stdlib = (loc.filename == "builtins.mzn" ||
+                    loc.filename.endsWith("/builtins.mzn") ||
+                    loc.filename == "stdlib.mzn" ||
+                    loc.filename.endsWith("/stdlib.mzn") ||
+                    loc.filename == "flatzinc_builtins.mzn" ||
+                    loc.filename.endsWith("/flatzinc_builtins.mzn"));
   }
 
 }

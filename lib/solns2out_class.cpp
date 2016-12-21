@@ -151,7 +151,7 @@ void Solns2Out::parseAssignments(string& solution) {
         for (unsigned int i=0; i<c->args().size(); i++)
           c->args()[i]->type(Type::parsetint());
         c->args()[c->args().size()-1]->type(de.first->type());
-        c->decl(getModel()->matchFn(pEnv->envi(), c));
+        c->decl(getModel()->matchFn(pEnv->envi(), c, false));
       }
       de.first->e(ai->e());
     }

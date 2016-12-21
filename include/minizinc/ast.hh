@@ -315,6 +315,8 @@ namespace MiniZinc {
     void rehash(void);
     /// Allocate literal
     static IntLit* a(IntVal v);
+    /// Allocate literal for enumerated type (only used internally for generators)
+    static IntLit* aEnum(IntVal v, unsigned int enumId);
   };
   /// \brief Float literal expression
   class FloatLit : public Expression {
@@ -340,8 +342,12 @@ namespace MiniZinc {
   protected:
     /// The value of this expression
     ASTExprVec<Expression> _v;
-    /// A range-list based representation for an integer set, or NULL
-    IntSetVal* _isv;
+    union {
+      /// A range-list based representation for an integer set, or NULL
+      IntSetVal* isv;
+      /// A range-list based representation for an float set, or NULL
+      FloatSetVal* fsv;
+    } _u;
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_SETLIT;
@@ -351,14 +357,20 @@ namespace MiniZinc {
     SetLit(const Location& loc, ASTExprVec<Expression> v);
     /// Construct set
     SetLit(const Location& loc, IntSetVal* isv);
+    /// Construct set
+    SetLit(const Location& loc, FloatSetVal* fsv);
     /// Access value
     ASTExprVec<Expression> v(void) const { return _v; }
     /// Set value
     void v(const ASTExprVec<Expression>& val) { _v = val; }
-    /// Access value
-    IntSetVal* isv(void) const { return _isv; }
-    /// Set value
-    void isv(IntSetVal* val) { _isv = val; }
+    /// Access integer set value if present
+    IntSetVal* isv(void) const { return type().bt()==Type::BT_INT ? _u.isv : NULL; }
+    /// Set integer set value
+    void isv(IntSetVal* val) { _u.isv = val; }
+    /// Access float set value if present
+    FloatSetVal* fsv(void) const { return type().bt()==Type::BT_FLOAT ? _u.fsv : NULL; }
+    /// Set integer set value
+    void fsv(FloatSetVal* val) { _u.fsv = val; }
     /// Recompute hash value
     void rehash(void);
   };
@@ -458,6 +470,8 @@ namespace MiniZinc {
     ASTString v(void) const { return _v; }
     /// Set identifier
     void v(const ASTString& val) { _v = val; }
+    /// Check whether it is an enum identifier (starting with two $ signs)
+    bool isEnum(void) const { return _v.c_str()[0]=='$'; }
     /// Recompute hash value
     void rehash(void);
   };
@@ -917,6 +931,10 @@ namespace MiniZinc {
     bool computedDomain(void) const { return _flag_1; }
     /// Set if domain is computed from right hand side of variable
     void setComputedDomain(bool b) { _flag_1=b; }
+    /// Check if this TypeInst represents an enum
+    bool isEnum(void) const { return _flag_2; }
+    /// Set if this TypeInst represents an enum
+    void setIsEnum(bool b) { _flag_2=b; }
   };
 
   /**
@@ -1195,6 +1213,11 @@ namespace MiniZinc {
               const std::string& id, TypeInst* ti,
               const std::vector<VarDecl*>& params,
               Expression* e = NULL);
+    /// Constructor
+    FunctionI(const Location& loc,
+              const ASTString& id, TypeInst* ti,
+              const ASTExprVec<VarDecl>& params,
+              Expression* e = NULL);
 
     /// Access identifier
     ASTString id(void) const { return _id; }
@@ -1213,13 +1236,13 @@ namespace MiniZinc {
     
     /** \brief Compute return type given argument types \a ta
      */
-    Type rtype(EnvI& env, const std::vector<Expression*>& ta);
+    Type rtype(EnvI& env, const std::vector<Expression*>& ta, bool strictEnums);
     /** \brief Compute return type given argument types \a ta
      */
-    Type rtype(EnvI& env, const std::vector<Type>& ta);
+    Type rtype(EnvI& env, const std::vector<Type>& ta, bool strictEnums);
     /** \brief Compute expected type of argument \a n given argument types \a ta
      */
-    Type argtype(const std::vector<Expression*>& ta, int n);
+    Type argtype(EnvI& env, const std::vector<Expression*>& ta, int n);
 
     /// Return whether function is defined in the standard library
     bool from_stdlib(void) const { return _from_stdlib; };
@@ -1375,6 +1398,8 @@ namespace MiniZinc {
           ASTString ge;
           ASTString eq;
           ASTString ne;
+          ASTString in;
+          ASTString dom;
         } float_;
 
         struct {
@@ -1393,6 +1418,7 @@ namespace MiniZinc {
           ASTString ge;
           ASTString eq;
           ASTString ne;
+          ASTString in;
         } float_reif;
 
         ASTString bool_eq;
@@ -1420,6 +1446,7 @@ namespace MiniZinc {
       struct {
         Id* output_var;
         ASTString output_array;
+        Id* add_to_output;
         Id* is_defined_var;
         ASTString defines_var;
         Id* is_reverse_map;

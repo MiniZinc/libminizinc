@@ -31,6 +31,8 @@ namespace MiniZinc {
     ASTStringO* find(const ASTString& e);
     void insert(IntSetVal* e0, IntSetVal* e1);
     IntSetVal* find(IntSetVal* e);
+    void insert(FloatSetVal* e0, FloatSetVal* e1);
+    FloatSetVal* find(FloatSetVal* e);
     template<class T>
     void insert(ASTExprVec<T> e0, ASTExprVec<T> e1) {
       m.insert(std::pair<void*,void*>(e0.vec(),e1.vec()));

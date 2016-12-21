@@ -36,7 +36,7 @@
 
 namespace MiniZinc {
 
-  IncludeI* update_include(Model* parent, IncludeI* inc, std::vector<std::string>& includes, bool verbose=false) {
+  IncludeI* update_include(Env& e, Model* parent, IncludeI* inc, std::vector<std::string>& includes, bool verbose=false) {
     std::string filename = inc->f().str();
     std::vector<std::string> datafiles;
 
@@ -53,7 +53,7 @@ namespace MiniZinc {
     std::ifstream fi(full_filename.str());
     if(fi.is_open()) {
         std::vector<std::string> filenames {full_filename.str()};
-        Model* inc_mod = parse(filenames, datafiles, includes, true, true, verbose, std::cerr);
+        Model* inc_mod = parse(e, filenames, datafiles, includes, true, true, verbose, std::cerr);
         IncludeI* new_inc = new IncludeI(inc->loc(), filename);
         new_inc->m(inc_mod);
         inc_mod->setParent(parent);
@@ -66,7 +66,7 @@ namespace MiniZinc {
         std::ifstream fi(full_filename.str());
         if(fi.is_open()) {
           std::vector<std::string> filenames {full_filename.str()};
-          Model* inc_mod = parse(filenames, datafiles, includes, true, true, verbose, std::cerr);
+          Model* inc_mod = parse(e, filenames, datafiles, includes, true, true, verbose, std::cerr);
           IncludeI* new_inc = new IncludeI(inc->loc(), filename);
           new_inc->m(inc_mod);
           inc_mod->setParent(parent);
@@ -93,7 +93,7 @@ namespace MiniZinc {
 
     for(Item* item : *m) {
       if(IncludeI* inc = item->dyn_cast<IncludeI>()) {
-        IncludeI* ninc = update_include(new_mod, inc, new_includePaths, verbose);
+        IncludeI* ninc = update_include(e, new_mod, inc, new_includePaths, verbose);
         if(ninc) new_mod->addItem(ninc);
       } else {
         new_mod->addItem(copy(e.envi(),cm,item));

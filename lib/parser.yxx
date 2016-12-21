@@ -26,6 +26,7 @@ namespace MiniZinc{ class Location; }
 
 #include <minizinc/parser.hh>
 #include <minizinc/file_utils.hh>
+#include <minizinc/json_parser.hh>
 
 using namespace std;
 using namespace MiniZinc;
@@ -234,70 +235,70 @@ namespace MiniZinc {
     return NULL;
   }
 
-  Model* parse(const vector<string>& filenames,
-               const vector<string>& datafiles,
-               const vector<string>& ip,
-               bool ignoreStdlib,
-               bool parseDocComments,
-               bool verbose,
-               ostream& err) {
-    GCLock lock;
-
+  void parse(Env& env,
+             Model*& model,
+             const vector<string>& filenames,
+             const vector<string>& datafiles,
+             const vector<string>& ip,
+             bool ignoreStdlib,
+             bool parseDocComments,
+             bool verbose,
+             ostream& err) {
+    
     vector<string> includePaths;
     for (unsigned int i=0; i<ip.size(); i++)
       includePaths.push_back(ip[i]);
-
+    
     vector<pair<string,Model*> > files;
     map<string,Model*> seenModels;
-
-    string fileDirname; string fileBasename;
-    Model* model = NULL;
-    if (filenames.empty()) {
-      err << "Error: no model given" << std::endl;
-      goto error;
+    
+    if (filenames.size() > 0) {
+      GCLock lock;
+      string fileDirname; string fileBasename;
+      filepath(filenames[0], fileDirname, fileBasename);
+      model->setFilename(fileBasename);
+      
+      files.push_back(pair<string,Model*>("",model));
+      
+      for (unsigned int i=1; i<filenames.size(); i++) {
+        GCLock lock;
+        string dirName, baseName;
+        filepath(filenames[i], dirName, baseName);
+        
+        Model* includedModel = new Model;
+        includedModel->setFilename(baseName);
+        files.push_back(pair<string,Model*>(dirName,includedModel));
+        seenModels.insert(pair<string,Model*>(baseName,includedModel));
+        Location loc;
+        loc.filename=ASTString(filenames[0]);
+        IncludeI* inc = new IncludeI(loc,includedModel->filename());
+        inc->m(includedModel,true);
+        model->addItem(inc);
+      }
     }
-    filepath(filenames[0], fileDirname, fileBasename);
-
-    model = new Model();
-    model->setFilename(fileBasename);
-
+    
     if (!ignoreStdlib) {
+      GCLock lock;
       Model* stdlib = new Model;
       stdlib->setFilename("stdlib.mzn");
       files.push_back(pair<string,Model*>("./",stdlib));
       seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
       Location stdlibloc;
-      stdlibloc.filename=ASTString(filenames[0]);
-      IncludeI* stdlibinc = 
-        new IncludeI(stdlibloc,stdlib->filename());
+      stdlibloc.filename=ASTString(model->filename());
+      IncludeI* stdlibinc =
+      new IncludeI(stdlibloc,stdlib->filename());
       stdlibinc->m(stdlib,true);
       model->addItem(stdlibinc);
     }
     
-    files.push_back(pair<string,Model*>("",model));
-    
-    for (unsigned int i=1; i<filenames.size(); i++) {
-      string dirName, baseName;
-      filepath(filenames[i], dirName, baseName);
-
-      Model* includedModel = new Model;
-      includedModel->setFilename(baseName);
-      files.push_back(pair<string,Model*>(dirName,includedModel));
-      seenModels.insert(pair<string,Model*>(baseName,includedModel));
-      Location loc;
-      loc.filename=ASTString(filenames[0]);
-      IncludeI* inc = new IncludeI(loc,includedModel->filename());
-      inc->m(includedModel,true);
-      model->addItem(inc);
-    }
-
     while (!files.empty()) {
+      GCLock lock;
       pair<string,Model*>& np = files.back();
       string parentPath = np.first;
       Model* m = np.second;
       files.pop_back();
       string f(m->filename().str());
-            
+      
       for (Model* p=m->parent(); p; p=p->parent()) {
         if (f == p->filename().c_str()) {
           err << "Error: cyclic includes: " << std::endl;
@@ -310,6 +311,10 @@ namespace MiniZinc {
       ifstream file;
       string fullname;
       if (parentPath=="") {
+        if (filenames.size() == 0) {
+          err << "Internal error." << endl;
+          goto error;
+        }
         fullname = filenames[0];
         if (FileUtils::file_exists(fullname)) {
           file.open(fullname.c_str(), std::ios::binary);
@@ -333,7 +338,7 @@ namespace MiniZinc {
       if (verbose)
         std::cerr << "processing file '" << fullname << "'" << endl;
       std::string s = get_file_contents(file);
-
+      
       m->setFilepath(fullname);
       bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
       isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
@@ -350,149 +355,84 @@ namespace MiniZinc {
     }
     
     for (unsigned int i=0; i<datafiles.size(); i++) {
+      GCLock lock;
       string f = datafiles[i];
-      std::string s;
-      if (f.size() > 5 && f.substr(0,5)=="cmd:/") {
-        s = f.substr(5);
+      if (f.size()>6 && f.substr(f.size()-5,string::npos)==".json") {
+        JSONParser jp(env.envi());
+        jp.parse(model, f);
       } else {
-        std::ifstream file;
-        file.open(f.c_str(), std::ios::binary);
-        if (!FileUtils::file_exists(f) || !file.is_open()) {
-          err << "Error: cannot open data file '" << f << "'." << endl;
+        string s;
+        if (f.size() > 5 && f.substr(0,5)=="cmd:/") {
+          s = f.substr(5);
+        } else {
+          std::ifstream file;
+          file.open(f.c_str(), std::ios::binary);
+          if (!FileUtils::file_exists(f) || !file.is_open()) {
+            err << "Error: cannot open data file '" << f << "'." << endl;
+            goto error;
+          }
+          if (verbose)
+            std::cerr << "processing data file '" << f << "'" << endl;
+          s = get_file_contents(file);
+        }
+        
+        ParserState pp(f, s, err, files, seenModels, model, true, false, parseDocComments);
+        yylex_init(&pp.yyscanner);
+        yyset_extra(&pp, pp.yyscanner);
+        yyparse(&pp);
+        if (pp.yyscanner)
+          yylex_destroy(pp.yyscanner);
+        if (pp.hadError) {
           goto error;
         }
-        if (verbose)
-          std::cerr << "processing data file '" << f << "'" << endl;
-        s = get_file_contents(file);
-      }
-
-      ParserState pp(f, s, err, files, seenModels, model, true, false, parseDocComments);
-      yylex_init(&pp.yyscanner);
-      yyset_extra(&pp, pp.yyscanner);
-      yyparse(&pp);
-      if (pp.yyscanner)
-        yylex_destroy(pp.yyscanner);
-      if (pp.hadError) {
-        goto error;
       }
     }
     
-    return model;
+    return;
   error:
     delete model;
-    return NULL;
+    model = NULL;
+  }
+  
+  Model* parse(Env& env,
+               const vector<string>& filenames,
+               const vector<string>& datafiles,
+               const vector<string>& ip,
+               bool ignoreStdlib,
+               bool parseDocComments,
+               bool verbose,
+               ostream& err) {
+
+    if (filenames.empty()) {
+      err << "Error: no model given" << std::endl;
+      return NULL;
+    }
+
+    Model* model;
+    {
+      GCLock lock;
+      model = new Model();
+    }
+    parse(env, model, filenames, datafiles,
+          ip, ignoreStdlib, parseDocComments, verbose, err);
+    return model;
   }
 
-  Model* parseData(Model* model,
+  Model* parseData(Env& env,
+                   Model* model,
                    const vector<string>& datafiles,
                    const vector<string>& includePaths,
                    bool ignoreStdlib,
                    bool parseDocComments,
                    bool verbose,
                    ostream& err) {
-  GCLock lock;
+    
+    vector<string> filenames;
+    parse(env, model, filenames, datafiles, includePaths,
+          ignoreStdlib, parseDocComments, verbose, err);
+    return model;
+  }
 
-  vector<pair<string,Model*> > files;
-  map<string,Model*> seenModels;
-  
-  if (!ignoreStdlib) {
-    Model* stdlib = new Model;
-    stdlib->setFilename("stdlib.mzn");
-    files.push_back(pair<string,Model*>("./",stdlib));
-    seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
-    IncludeI* stdlibinc =
-      new IncludeI(Location(),stdlib->filename());
-    stdlibinc->m(stdlib,true);
-    model->addItem(stdlibinc);
-  }
-  
-  while (!files.empty()) {
-    pair<string,Model*>& np = files.back();
-    string parentPath = np.first;
-    Model* m = np.second;
-    files.pop_back();
-    string f(m->filename().str());
-    
-    for (Model* p=m->parent(); p; p=p->parent()) {
-      if (f == p->filename().c_str()) {
-        err << "Error: cyclic includes: " << std::endl;
-        for (Model* pe=m; pe; pe=pe->parent()) {
-          err << "  " << pe->filename() << std::endl;
-        }
-        goto error;
-      }
-    }
-    ifstream file;
-    string fullname;
-    if (parentPath=="") {
-      err << "Internal error." << std::endl;
-      goto error;
-    } else {
-      for (unsigned int i=0; i<includePaths.size(); i++) {
-        fullname = includePaths[i]+f;
-        if (FileUtils::file_exists(fullname)) {
-          file.open(fullname.c_str(), std::ios::binary);
-          if (file.is_open())
-            break;
-        }
-      }
-    }
-    if (!file.is_open()) {
-      err << "Error: cannot open file '" << f << "'." << endl;
-      goto error;
-    }
-    if (verbose)
-      std::cerr << "processing file '" << fullname << "'" << endl;
-    std::string s = get_file_contents(file);
-    
-    m->setFilepath(fullname);
-    bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
-    isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
-    isFzn |= (fullname.compare(fullname.length()-4,4,".szn")==0);
-    ParserState pp(fullname,s, err, files, seenModels, m, false, isFzn, parseDocComments);
-    yylex_init(&pp.yyscanner);
-    yyset_extra(&pp, pp.yyscanner);
-    yyparse(&pp);
-    if (pp.yyscanner)
-    yylex_destroy(pp.yyscanner);
-    if (pp.hadError) {
-      goto error;
-    }
-  }
-  
-  for (unsigned int i=0; i<datafiles.size(); i++) {
-    string f = datafiles[i];
-    std::string s;
-    if (f.size() > 5 && f.substr(0,5)=="cmd:/") {
-      s = f.substr(5);
-    } else {
-      std::ifstream file;
-      file.open(f.c_str(), std::ios::binary);
-      if (!FileUtils::file_exists(f) || !file.is_open()) {
-        err << "Error: cannot open data file '" << f << "'." << endl;
-        goto error;
-      }
-      if (verbose)
-        std::cerr << "processing data file '" << f << "'" << endl;
-      s = get_file_contents(file);
-    }
-    
-    ParserState pp(f, s, err, files, seenModels, model, true, false, parseDocComments);
-    yylex_init(&pp.yyscanner);
-    yyset_extra(&pp, pp.yyscanner);
-    yyparse(&pp);
-    if (pp.yyscanner)
-    yylex_destroy(pp.yyscanner);
-    if (pp.hadError) {
-      goto error;
-    }
-  }
-  
-  return model;
-  error:
-  delete model;
-  return NULL;
-}
 
 }
 
@@ -529,7 +469,7 @@ namespace MiniZinc {
 %token <dValue> MZN_FLOAT_LITERAL "float literal"
 %token <sValue> MZN_IDENTIFIER "identifier" MZN_QUOTED_IDENTIFIER "quoted identifier" MZN_STRING_LITERAL "string literal"
 %token <sValue> MZN_STRING_QUOTE_START "interpolated string start" MZN_STRING_QUOTE_MID "interpolated string middle" MZN_STRING_QUOTE_END "interpolated string end"
-%token <sValue> MZN_TI_IDENTIFIER "type-inst identifier" MZN_DOC_COMMENT "documentation comment" MZN_DOC_FILE_COMMENT "file-level documentation comment"
+%token <sValue> MZN_TI_IDENTIFIER "type-inst identifier" MZN_TI_ENUM_IDENTIFIER "type-inst enum identifier" MZN_DOC_COMMENT "documentation comment" MZN_DOC_FILE_COMMENT "file-level documentation comment"
 
 %token MZN_VAR "var" MZN_PAR "par"
 
@@ -644,7 +584,7 @@ namespace MiniZinc {
 %type <expression> set_expr string_expr string_quote_rest
 %type <expression> simple_array_literal simple_array_literal_2d simple_array_comp if_then_else_expr call_expr quoted_op_call let_expr operation_item_tail set_literal set_comp
 
-%type <expression_v> expr_list expr_list_head elseif_list let_vardecl_item_list
+%type <expression_v> expr_list expr_list_head elseif_list let_vardecl_item_list enum_id_list
 %type <expression_vv> simple_array_literal_2d_list array_access_tail
 %type <expression_vvv> simple_array_literal_3d_list
 
@@ -679,22 +619,38 @@ item_list_head:
       item
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if ($1) pp->model->addItem($1);
+        if ($1) {
+          pp->model->addItem($1);
+          GC::unlock();
+          GC::lock();
+        }
       }
     | doc_file_comments item
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if ($2) pp->model->addItem($2);
+        if ($2) {
+          pp->model->addItem($2);
+          GC::unlock();
+          GC::lock();
+        }
       }
     | item_list_head ';' item
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if ($3) pp->model->addItem($3);
+        if ($3) {
+          pp->model->addItem($3);
+          GC::unlock();
+          GC::lock();
+        }
       }
     | item_list_head ';' doc_file_comments item
       {
         ParserState* pp = static_cast<ParserState*>(parm);
-        if ($4) pp->model->addItem($4);
+        if ($4) {
+          pp->model->addItem($4);
+          GC::unlock();
+          GC::lock();
+        }
       }
     | error ';' item
 
@@ -793,6 +749,45 @@ vardecl_item :
           $$ = new VarDeclI(@$,$1);
         delete $2;
       }
+    | MZN_ENUM MZN_IDENTIFIER
+      {
+        TypeInst* ti = new TypeInst(@$,Type::parsetint());
+        ti->setIsEnum(true);
+        VarDecl* vd = new VarDecl(@$,ti,$2);
+        free($2);
+        $$ = new VarDeclI(@$,vd);
+      }
+    | MZN_ENUM MZN_IDENTIFIER MZN_EQ '{' enum_id_list '}'
+      {
+        TypeInst* ti = new TypeInst(@$,Type::parsetint());
+        ti->setIsEnum(true);
+        SetLit* sl = new SetLit(@$, *$5);
+        VarDecl* vd = new VarDecl(@$,ti,$2,sl);
+        free($2);
+        delete $5;
+        $$ = new VarDeclI(@$,vd);
+      }
+    | MZN_ENUM MZN_IDENTIFIER MZN_EQ MZN_IDENTIFIER '(' expr ')'
+      {
+        TypeInst* ti = new TypeInst(@$,Type::parsetint());
+        ti->setIsEnum(true);
+        vector<Expression*> args;
+        args.push_back($6);
+        Call* sl = new Call(@$, ASTString($4), args);
+        VarDecl* vd = new VarDecl(@$,ti,$2,sl);
+        free($2);
+        $$ = new VarDeclI(@$,vd);
+      }
+
+enum_id_list :
+      // empty
+      { $$ = new std::vector<Expression*>(); }
+    | MZN_IDENTIFIER
+      { $$ = new std::vector<Expression*>();
+        $$->push_back(new Id(@$,$1,NULL)); free($1);
+      }
+    | enum_id_list ',' MZN_IDENTIFIER
+      { $$ = $1; if ($$) $$->push_back(new Id(@$,$3,NULL)); free($3); }
 
 assign_item :
       MZN_IDENTIFIER MZN_EQ expr
@@ -1028,6 +1023,11 @@ base_ti_expr_tail :
       { $$ = new TypeInst(@$,Type::top(),
                          new TIId(@$, $1));
         free($1);
+      }
+    | MZN_TI_ENUM_IDENTIFIER
+      { $$ = new TypeInst(@$,Type::parint(),
+          new TIId(@$, $1));
+          free($1);
       }
 
 expr_list : expr_list_head comma_or_none

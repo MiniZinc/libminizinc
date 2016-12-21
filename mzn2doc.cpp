@@ -47,6 +47,7 @@ int main(int argc, char** argv) {
   bool flag_ignoreStdlib = false;
   bool flag_verbose = false;
   bool flag_include_stdlib = false;
+  bool flag_index = true;
   int toplevel_groups = 0;
   string output_base;
   string html_header_file;
@@ -118,6 +119,8 @@ int main(int argc, char** argv) {
       html_footer_file = string(argv[i]);
     } else if (string(argv[i])=="--include-stdlib") {
       flag_include_stdlib = true;
+    } else if (string(argv[i])=="--no-index") {
+      flag_index = false;
     } else if (string(argv[i])=="--globals-dir" ||
                string(argv[i])=="--mzn-globals-dir") {
       i++;
@@ -135,7 +138,8 @@ int main(int argc, char** argv) {
         std::cerr << "Error: cannot handle file " << input_file << "." << std::endl;
         goto error;
       }
-      std::string extension = input_file.substr(input_file.length()-4,string::npos);
+      size_t last_dot = input_file.find_last_of('.');
+      std::string extension = input_file.substr(last_dot,string::npos);
       if (extension == ".mzn") {
         if (filename=="") {
           filename = input_file;
@@ -143,7 +147,7 @@ int main(int argc, char** argv) {
           std::cerr << "Error: Multiple .mzn files given." << std::endl;
           goto error;
         }
-      } else if (extension == ".dzn") {
+      } else if (extension == ".dzn" || extension == ".json") {
         std::cerr << "Error: cannot generate documentation for data files." << std::endl;
       } else {
         std::cerr << "Error: cannot handle file extension " << extension << "." << std::endl;
@@ -225,10 +229,11 @@ int main(int argc, char** argv) {
       std::cerr << "Parsing '" << filename << "'" << std::endl;
     std::vector<std::string> filenames;
     filenames.push_back(filename);
-    if (Model* m = parse(filenames, vector<string>(), includePaths, flag_ignoreStdlib, true,
+    Env env;
+    if (Model* m = parse(env, filenames, vector<string>(), includePaths, flag_ignoreStdlib, true,
                          flag_verbose, errstream)) {
       try {
-        Env env(m);
+        env.model(m);
         if (flag_verbose)
           std::cerr << "Done parsing." << std::endl;
         if (flag_verbose)
@@ -253,7 +258,7 @@ int main(int argc, char** argv) {
           basedir = basename.substr(0, lastSlash)+"/";
           basename = basename.substr(lastSlash+1, std::string::npos);
         }
-        std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(env.envi(),m,basename,toplevel_groups,flag_include_stdlib);
+        std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(env.envi(),m,basename,toplevel_groups,flag_include_stdlib,flag_index);
         for (unsigned int i=0; i<docs.size(); i++) {
           std::ofstream os(basedir+docs[i].filename()+".html");
           std::string header = html_header;
@@ -302,6 +307,7 @@ error:
             << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
             << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
             << "  --single-page\n    Print entire documentation on a single HTML page." << std::endl
+            << "  --no-index\n       Do not generate an index of all symbols." << std::endl
             << std::endl
             << "Output options:" << std::endl << std::endl
             << "  --output-base <name>\n    Base name for output files" << std::endl

@@ -46,7 +46,7 @@ namespace MiniZinc {
 	  return Gecode::IRT_LQ;
       }
 
-#define PosterImpl(X) void X(SolverInstanceBase&, const Call*)
+#define PosterImpl(X) void X(SolverInstanceBase& s, const Call* ce)
 
       PosterImpl(p_distinct);
       PosterImpl(p_distinctOffset);
@@ -247,8 +247,8 @@ namespace MiniZinc {
 #define P_FLOAT_OP(Op) \
       PosterImpl(p_float_ ## Op ) {\
 	  GecodeSolverInstance& gi = (GecodeSolverInstance&)s; \
-	  FloatVar x = gi.arg2FloatVar(ce->args()[0]);\
-	  FloatVar y = gi.arg2FloatVar(ce->args()[1]);\
+	  Gecode::FloatVar x = gi.arg2floatvar(ce->args()[0]);\
+	  Gecode::FloatVar y = gi.arg2floatvar(ce->args()[1]);\
 	  Op(gi ,x,y);\
       }
       P_FLOAT_OP(acos)

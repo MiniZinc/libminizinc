@@ -26,7 +26,7 @@ namespace MiniZinc {
       }
     }
     std::stringstream ss;
-    ss << "For option: " << name << " expected Par String vector, received " << e->type().toString() << std::endl;
+    ss << "For option: " << name << " expected Par String vector, received " << e->type().nonEnumToString() << std::endl;
     throw InternalError(ss.str());
   }
   
@@ -353,7 +353,8 @@ namespace MiniZinc {
       }      
       else { 
         if(arg.length() > 4) {
-          std::string extension = arg.substr(arg.length()-4,std::string::npos);
+          size_t last_dot = arg.find_last_of('.');
+          std::string extension = arg.substr(last_dot,std::string::npos);
           if (extension == ".mzn") {
             if(model != "") {
               std::cerr << "Error: Multiple .mzn files given." << std::endl;
@@ -362,7 +363,7 @@ namespace MiniZinc {
             model = arg;
             continue;
           }
-          else if(extension == ".dzn") {
+          else if(extension == ".dzn" || extension==".json") {
             datafiles.push_back(arg);                 
             continue;
           }
