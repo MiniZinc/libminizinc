@@ -117,7 +117,7 @@ namespace MiniZinc {
     /// until ... exit, eof,  ??   TODO
     /// These functions should only be called explicitly
     /// from SolverInstance
-    virtual bool evalOutput();
+    virtual bool evalOutput( const std::string& s_ExtraInfo = "" );
     /// This means the solver exits
     virtual bool evalStatus(SolverInstance::Status status);
 
@@ -148,7 +148,7 @@ namespace MiniZinc {
     /// Parsing fznsolver's complete raw text output
     void parseAssignments( std::string& );
     
-    virtual bool __evalOutput(std::ostream& os, bool flag_flush);
+    virtual bool __evalOutput(std::ostream& os, bool flag_flush, const std::string& s_ExtraInfo = "" );
     virtual bool __evalOutputFinal( bool flag_flush );
     virtual bool __evalStatusMsg(SolverInstance::Status status);
     

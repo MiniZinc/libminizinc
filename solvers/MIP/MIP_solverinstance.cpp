@@ -268,7 +268,7 @@ void MIP_solverinstance::printStatistics(ostream& os, bool fLegend)
       if (mip_wrap->getNOpen())
         os << " ( " << mip_wrap->getNOpen() << " )";
       os << "    " << std::ctime( &n_c );
-      os << endl;
+//  ctime already adds EOL.     os << endl;
       os.copyfmt( oldState );
 //       os.precision(nPrec);
 //       os.setf( flgSave );

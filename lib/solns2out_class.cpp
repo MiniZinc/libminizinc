@@ -164,11 +164,11 @@ void Solns2Out::declNewOutput() {
   status = SolverInstance::SAT;
 }
 
-bool Solns2Out::evalOutput() {
+bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
   if ( !fNewSol2Print )
     return true;
   ostringstream oss;
-  if (!__evalOutput( oss, false ))
+  if (!__evalOutput( oss, false, s_ExtraInfo ))
     return false;
   if ( _opt.flag_unique || _opt.flag_canonicalize ) {
     auto res = sSolsCanon.insert( oss.str() );
@@ -201,7 +201,8 @@ bool Solns2Out::evalOutput() {
   return true;
 }
 
-bool Solns2Out::__evalOutput( ostream& fout, bool flag_output_flush ) {
+bool Solns2Out::__evalOutput(
+    ostream& fout, bool flag_output_flush, const string& s_ExtraInfo ) {
   if ( 0!=outputExpr ) {
 //     GCLock lock;
 //     ArrayLit* al = eval_array_lit(pEnv->envi(),outputExpr);
@@ -222,6 +223,11 @@ bool Solns2Out::__evalOutput( ostream& fout, bool flag_output_flush ) {
 //         fout.flush();
 //     }
     pEnv->envi().evalOutput( fout );
+  }
+  if ( s_ExtraInfo.size() ) {
+    fout << s_ExtraInfo;
+    if ( '\n'!=s_ExtraInfo.back() )                 /// TODO is this enough to check EOL?
+      fout << '\n';
   }
   fout << _opt.solution_separator << '\n';
   if (flag_output_flush)
