@@ -273,8 +273,8 @@ bool Solns2Out::__evalStatusMsg( SolverInstance::Status status ) {
   stat2msg[ SolverInstance::ERROR ] = _opt.error_msg;
   auto it=stat2msg.find(status);
   if ( stat2msg.end()!=it ) {
-    getOutput() << it->second << '\n';
     getOutput() << comments;
+    getOutput() << it->second << '\n';
     if ( _opt.flag_output_flush )
       getOutput().flush();
     Solns2Out::status = status;
