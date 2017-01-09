@@ -59,7 +59,7 @@ namespace MiniZinc {
       bool flag_output_flush = true;
       bool flag_output_time = false;
       int flag_ignore_lines = 0;
-      bool flag_unique = 0;
+      bool flag_unique = 1;
       bool flag_canonicalize = 0;
       std::string flag_output_noncanonical;
       std::string flag_output_raw;
@@ -148,7 +148,7 @@ namespace MiniZinc {
     /// Parsing fznsolver's complete raw text output
     void parseAssignments( std::string& );
     
-    virtual bool __evalOutput(std::ostream& os, bool flag_flush, const std::string& s_ExtraInfo = "" );
+    virtual bool __evalOutput( std::ostream& os );
     virtual bool __evalOutputFinal( bool flag_flush );
     virtual bool __evalStatusMsg(SolverInstance::Status status);
     

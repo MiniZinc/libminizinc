@@ -35,7 +35,7 @@ void Solns2Out::printHelp(ostream& os)
   "    Specify solution status messages. The defaults:\n"
   "    \"=====UNSATISFIABLE=====\", \"=====UNSATorUNBOUNDED=====\", \"=====UNBOUNDED=====\",\n"
   "    \"=====UNKNOWN=====\", \"=====ERROR=====\", \"==========\", respectively." << std::endl
-  << "  --unique\n    Avoid duplicate solutions.\n"
+  << "  --non-unique\n    Allow duplicate solutions.\n"
   << "  -c, --canonicalize\n    Canonicalize the output solution stream (i.e., buffer and sort).\n"
   << "  --output-non-canonical <file>\n    Non-buffered solution output file in case of canonicalization.\n"
   << "  --output-raw <file>\n    File to dump the solver's raw output (not for hard-linked solvers)\n"
@@ -69,6 +69,8 @@ bool Solns2Out::processOption(int& i, const int argc, const char** argv)
   } else if ( cop.getOption( "--search-complete-msg", &_opt.search_complete_msg ) ) {
   } else if ( cop.getOption( "--unique") ) {
     _opt.flag_unique = true;
+  } else if ( cop.getOption( "--non-unique") ) {
+    _opt.flag_unique = false;
   } else if ( cop.getOption( "-c --canonicalize") ) {
     _opt.flag_canonicalize = true;
   } else if ( cop.getOption( "--output-non-canonical", &_opt.flag_output_noncanonical) ) {
@@ -168,41 +170,56 @@ bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
   if ( !fNewSol2Print )
     return true;
   ostringstream oss;
-  if (!__evalOutput( oss, false, s_ExtraInfo ))
+  if (!__evalOutput( oss ))
     return false;
+  bool fNew=true;
   if ( _opt.flag_unique || _opt.flag_canonicalize ) {
     auto res = sSolsCanon.insert( oss.str() );
     if ( !res.second )            // repeated solution
-      return true;
+      fNew = false;
   }
-  ++nSolns;
-  if ( _opt.flag_canonicalize ) {
-    if ( pOfs_non_canon.get() )
-      if ( pOfs_non_canon->good() ) {
-        (*pOfs_non_canon) << oss.str();
-        (*pOfs_non_canon) << comments;
-        if (_opt.flag_output_time)
-          (*pOfs_non_canon) << "% time elapsed: " << stoptime(starttime) << "\n";
-        if ( _opt.flag_output_flush )
-          pOfs_non_canon->flush();
-      }
-  } else {
-    if ( _opt.solution_comma.size() && nSolns>1 )
-      getOutput() << _opt.solution_comma << '\n';
-    getOutput() << oss.str();
-    if ( _opt.flag_output_flush )
-      getOutput().flush();
+  if ( fNew ) {
+    ++nSolns;
+    if ( _opt.flag_canonicalize ) {
+      if ( pOfs_non_canon.get() )
+        if ( pOfs_non_canon->good() ) {
+          (*pOfs_non_canon) << oss.str();
+          (*pOfs_non_canon) << comments;
+          if ( s_ExtraInfo.size() ) {
+            (*pOfs_non_canon) << s_ExtraInfo;
+            if ( '\n'!=s_ExtraInfo.back() )                 /// TODO is this enough to check EOL?
+              (*pOfs_non_canon) << '\n';
+          }
+          if (_opt.flag_output_time)
+            (*pOfs_non_canon) << "% time elapsed: " << stoptime(starttime) << "\n";
+          (*pOfs_non_canon) << _opt.solution_separator << '\n';
+          if ( _opt.flag_output_flush )
+            pOfs_non_canon->flush();
+        }
+    } else {
+      if ( _opt.solution_comma.size() && nSolns>1 )
+        getOutput() << _opt.solution_comma << '\n';
+      getOutput() << oss.str();
+    }
   }
-  getOutput() << comments;      // should not be sorted
+  getOutput() << comments;                          // print them now ????
   comments = "";
+  if ( s_ExtraInfo.size() ) {
+    getOutput() << s_ExtraInfo;
+    if ( '\n'!=s_ExtraInfo.back() )                 /// TODO is this enough to check EOL?
+      getOutput() << '\n';
+  }
   if (_opt.flag_output_time)
     getOutput() << "% time elapsed: " << stoptime(starttime) << "\n";
+  if ( fNew && !_opt.flag_canonicalize )
+    getOutput() << _opt.solution_separator << '\n';
+  if ( _opt.flag_output_flush )
+    getOutput().flush();
   restoreDefaults();     // cleans data. evalOutput() should not be called again w/o assigning new data.
   return true;
 }
 
-bool Solns2Out::__evalOutput(
-    ostream& fout, bool flag_output_flush, const string& s_ExtraInfo ) {
+bool Solns2Out::__evalOutput( ostream& fout ) {
   if ( 0!=outputExpr ) {
 //     GCLock lock;
 //     ArrayLit* al = eval_array_lit(pEnv->envi(),outputExpr);
@@ -224,14 +241,6 @@ bool Solns2Out::__evalOutput(
 //     }
     pEnv->envi().evalOutput( fout );
   }
-  if ( s_ExtraInfo.size() ) {
-    fout << s_ExtraInfo;
-    if ( '\n'!=s_ExtraInfo.back() )                 /// TODO is this enough to check EOL?
-      fout << '\n';
-  }
-  fout << _opt.solution_separator << '\n';
-  if (flag_output_flush)
-    fout.flush();
   return true;
 }
 
@@ -249,6 +258,7 @@ bool Solns2Out::__evalOutputFinal( bool ) {
     if ( _opt.solution_comma.size() && &sol != &*sSolsCanon.begin() )
       getOutput() << _opt.solution_comma << '\n';
     getOutput() << sol;
+    getOutput() << _opt.solution_separator << '\n';
   }
   return true;
 }
@@ -360,7 +370,7 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
     } else {
       solution += line + '\n';
       if ( _opt.flag_output_comments ) {
-        size_t comment_pos = line.find('%');
+        size_t comment_pos = line.find('%');    // Pretty simple  TODO
         if (comment_pos != string::npos) {
           comments += line.substr(comment_pos);
           comments += "\n";
