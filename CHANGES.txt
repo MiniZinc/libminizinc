@@ -5,6 +5,10 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Bug fixes:
+ - Fix definition of multi-dimensional element constraints to impose
+   correct bounds on index variables.
+
 Version 2.1.2
 =============
 
