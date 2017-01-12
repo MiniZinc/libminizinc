@@ -1105,7 +1105,6 @@ namespace MiniZinc {
     /// Visit variable declaration
     void vVarDecl(VarDecl& vd) {
       if (ignoreVarDecl) {
-        assert(!vd.type().isunknown());
         if (vd.e()) {
           Type vdt = vd.ti()->type();
           Type vet = vd.e()->type();
@@ -1130,13 +1129,18 @@ namespace MiniZinc {
             }
           }
           
-          if (! _env.isSubtype(vet,vdt,true)) {
+          if (vd.type().isunknown()) {
+            vd.ti()->type(vet);
+            vd.type(vet);
+          } else if (! _env.isSubtype(vet,vdt,true)) {
             _typeErrors.push_back(TypeError(_env,vd.e()->loc(),
                                             "initialisation value for `"+vd.id()->str().str()+"' has invalid type-inst: expected `"+
                                             vd.ti()->type().toString(_env)+"', actual `"+vd.e()->type().toString(_env)+"'"));
           } else {
             vd.e(addCoercion(_env, _model, vd.e(), vd.ti()->type())());
           }
+        } else {
+          assert(!vd.type().isunknown());
         }
       } else {
         vd.type(vd.ti()->type());
@@ -1190,7 +1194,7 @@ namespace MiniZinc {
                             "type-inst cannot be an array");
         }
       }
-      if (tt.isunknown()) {
+      if (tt.isunknown() && ti.domain()) {
         assert(ti.domain());
         switch (ti.domain()->type().bt()) {
         case Type::BT_INT:
@@ -1258,6 +1262,15 @@ namespace MiniZinc {
         if (hadSolveItem)
           throw TypeError(env,si->loc(),"Only one solve item allowed");
         hadSolveItem = true;
+        if (si->e()) {
+          GCLock lock;
+          TypeInst* ti = new TypeInst(Location().introduce(), Type());
+          VarDecl* obj = new VarDecl(Location().introduce(), ti, "_objective", si->e());
+          VarDeclI* i = new VarDeclI(Location().introduce(), obj);
+          env.orig->addItem(i);
+          si->e(obj->id());
+        }
+        
       }
     } _tsv0(env.envi(),ts,m,functionItems,assignItems,enumItems);
     iterItems(_tsv0,m);

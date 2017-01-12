@@ -364,22 +364,26 @@ namespace MiniZinc {
     }
   }
   
-  void createDznOutput(EnvI& e) {
+  void createDznOutput(EnvI& e, bool outputObjective) {
     std::vector<Expression*> outputVars;
     bool had_add_to_output = false;
     for (unsigned int i=0; i<e.orig->size(); i++) {
       if (VarDeclI* vdi = (*e.orig)[i]->dyn_cast<VarDeclI>()) {
         VarDecl* vd = vdi->e();
         bool process_var = false;
-        if (vd->ann().contains(constants().ann.add_to_output)) {
-          if (!had_add_to_output) {
-            outputVars.clear();
-          }
-          had_add_to_output = true;
+        if (outputObjective && vd->id()->idn()==-1 && vd->id()->v()=="_objective") {
           process_var = true;
         } else {
-          if (!had_add_to_output) {
-            process_var = vd->type().isvar() && vd->e()==NULL;
+          if (vd->ann().contains(constants().ann.add_to_output)) {
+            if (!had_add_to_output) {
+              outputVars.clear();
+            }
+            had_add_to_output = true;
+            process_var = true;
+          } else {
+            if (!had_add_to_output) {
+              process_var = vd->type().isvar() && vd->e()==NULL;
+            }
           }
         }
         if (process_var) {
@@ -427,7 +431,7 @@ namespace MiniZinc {
     e.orig->addItem(newOutputItem);
   }
 
-  void createJSONOutput(EnvI& e) {
+  void createJSONOutput(EnvI& e, bool outputObjective) {
     std::vector<Expression*> outputVars;
     outputVars.push_back(new StringLit(Location().introduce(), "{\n"));
     bool had_add_to_output = false;
@@ -436,17 +440,21 @@ namespace MiniZinc {
       if (VarDeclI* vdi = (*e.orig)[i]->dyn_cast<VarDeclI>()) {
         VarDecl* vd = vdi->e();
         bool process_var = false;
-        if (vd->ann().contains(constants().ann.add_to_output)) {
-          if (!had_add_to_output) {
-            outputVars.clear();
-            outputVars.push_back(new StringLit(Location().introduce(), "{\n"));
-            first_var = true;
-          }
-          had_add_to_output = true;
+        if (outputObjective && vd->id()->idn()==-1 && vd->id()->v()=="_objective") {
           process_var = true;
         } else {
-          if (!had_add_to_output) {
-            process_var = vd->type().isvar() && vd->e()==NULL;
+          if (vd->ann().contains(constants().ann.add_to_output)) {
+            if (!had_add_to_output) {
+              outputVars.clear();
+              outputVars.push_back(new StringLit(Location().introduce(), "{\n"));
+              first_var = true;
+            }
+            had_add_to_output = true;
+            process_var = true;
+          } else {
+            if (!had_add_to_output) {
+              process_var = vd->type().isvar() && vd->e()==NULL;
+            }
           }
         }
         if (process_var) {
@@ -484,20 +492,20 @@ namespace MiniZinc {
   }
   
   void createOutput(EnvI& e, std::vector<VarDecl*>& deletedFlatVarDecls,
-                    FlatteningOptions::OutputMode outputMode) {
+                    FlatteningOptions::OutputMode outputMode, bool outputObjective) {
     // Create new output model
     OutputI* outputItem = NULL;
     GCLock lock;
     
     switch (outputMode) {
       case FlatteningOptions::OUTPUT_DZN:
-        createDznOutput(e);
+        createDznOutput(e,outputObjective);
         break;
       case FlatteningOptions::OUTPUT_JSON:
-        createJSONOutput(e);
+        createJSONOutput(e,outputObjective);
       default:
         if (e.orig->outputItem()==NULL) {
-          createDznOutput(e);
+          createDznOutput(e,outputObjective);
         }
         break;
     }

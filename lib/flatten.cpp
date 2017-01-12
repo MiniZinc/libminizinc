@@ -5066,7 +5066,7 @@ namespace MiniZinc {
         VarDecl* it = v->flat();
         if (it==NULL) {
           TypeInst* ti = eval_typeinst(env,v);
-          bool reuseVarId = v->type().isann() || ( v->toplevel() && v->id()->idn()==-1 && v->id()->v().c_str()[0]!='\'' );
+          bool reuseVarId = v->type().isann() || ( v->toplevel() && v->id()->idn()==-1 && v->id()->v().c_str()[0]!='\'' && v->id()->v().c_str()[0]!='_' );
           VarDecl* vd = newVarDecl(env, ctx, ti, reuseVarId ? v->id() : NULL, v, NULL);
           v->flat(vd);
           Ctx nctx;
@@ -5364,7 +5364,7 @@ namespace MiniZinc {
       if (opt.keepOutputInFzn) {
         copyOutput(env);
       } else {
-        createOutput(env, deletedVarDecls, opt.outputMode);
+        createOutput(env, deletedVarDecls, opt.outputMode, opt.outputObjective);
       }
       
       // Flatten remaining redefinitions
