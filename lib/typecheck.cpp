@@ -23,6 +23,59 @@
 
 namespace MiniZinc {
   
+  Scopes::Scopes(void) {
+    s.push_back(Scope());
+    s.back().toplevel = true;
+  }
+  
+  void
+  Scopes::add(EnvI &env, VarDecl *vd) {
+    if (!s.back().toplevel && vd->ti()->isEnum() && vd->e()) {
+      throw TypeError(env, vd->loc(), "enums are only allowed at top level");
+    }
+    if (vd->id()->idn()==-1 && vd->id()->v()=="")
+      return;
+    DeclMap::iterator vdi = s.back().m.find(vd->id());
+    if (vdi == s.back().m.end()) {
+      s.back().m.insert(vd->id(),vd);
+    } else {
+      GCLock lock;
+      throw TypeError(env, vd->loc(),"identifier `"+vd->id()->str().str()+
+                      "' already defined");
+    }
+  }
+  
+  void
+  Scopes::push(bool toplevel) {
+    s.push_back(Scope());
+    s.back().toplevel = toplevel;
+  }
+  
+  void
+  Scopes::pop(void) {
+    s.pop_back();
+  }
+  
+  VarDecl*
+  Scopes::find(Id *ident) {
+    int cur = s.size()-1;
+    for (;;) {
+      DeclMap::iterator vdi = s[cur].m.find(ident);
+      if (vdi == s[cur].m.end()) {
+        if (s[cur].toplevel) {
+          if (cur > 0)
+            cur = 0;
+          else
+            return NULL;
+        } else {
+          cur--;
+        }
+      } else {
+        return vdi->second;
+      }
+    }
+  }
+  
   struct VarDeclCmp {
     UNORDERED_NAMESPACE::unordered_map<VarDecl*,int>& _pos;
     VarDeclCmp(UNORDERED_NAMESPACE::unordered_map<VarDecl*,int>& pos) : _pos(pos) {}
@@ -325,7 +378,7 @@ namespace MiniZinc {
   }
   
   void
-  TopoSorter::add(EnvI& env, VarDeclI* vdi, bool unique, bool handleEnums, Model* enumItems) {
+  TopoSorter::add(EnvI& env, VarDeclI* vdi, bool handleEnums, Model* enumItems) {
     VarDecl* vd = vdi->e();
     if (handleEnums && vd->ti()->isEnum()) {
       unsigned int enumId = env.registerEnum(vdi);
@@ -347,77 +400,41 @@ namespace MiniZinc {
         enumItems->addItem(new VarDeclI(Location().introduce(),vd_enumToString));
       }
     }
-    DeclMap::iterator vd_id = idmap.find(vd->id());
-    if (vd_id == idmap.end()) {
-      Decls nd; nd.push_back(vd);
-      idmap.insert(vd->id(),nd);
-    } else {
-      if (unique) {
-        GCLock lock;
-        throw TypeError(env, vd->loc(),"identifier `"+vd->id()->str().str()+
-                        "' already defined");
-      }
-      vd_id->second.push_back(vd);
-    }
-  }
-  void
-  TopoSorter::add(EnvI& env, VarDecl* vd, bool unique) {
-    if (vd->ti()->isEnum() && vd->e()) {
-      throw TypeError(env, vd->loc(), "enums are only allowed at top level");
-    }
-    DeclMap::iterator vdi = idmap.find(vd->id());
-    if (vdi == idmap.end()) {
-      Decls nd; nd.push_back(vd);
-      idmap.insert(vd->id(),nd);
-    } else {
-      if (unique) {
-        GCLock lock;
-        throw TypeError(env, vd->loc(),"identifier `"+vd->id()->str().str()+
-                        "' already defined");
-      }
-      vdi->second.push_back(vd);
-    }
-  }
-  void
-  TopoSorter::remove(EnvI& env, VarDecl* vd) {
-    DeclMap::iterator vdi = idmap.find(vd->id());
-    assert(vdi != idmap.end());
-    vdi->second.pop_back();
-    if (vdi->second.empty())
-      idmap.remove(vd->id());
+    scopes.add(env, vd);
   }
 
   VarDecl*
   TopoSorter::get(EnvI& env, const ASTString& id_v, const Location& loc) {
     GCLock lock;
     Id* id = new Id(Location(), id_v, NULL);
-    DeclMap::iterator decl = idmap.find(id);
-    if (decl==idmap.end()) {
-      GCLock lock;
+    VarDecl* decl = scopes.find(id);
+    if (decl==NULL) {
       throw TypeError(env,loc,"undefined identifier `"+id->str().str()+"'");
     }
-    return decl->second.back();
+    return decl;
   }
 
   VarDecl*
-  TopoSorter::checkId(EnvI& env, Id* id, const Location& loc) {
-    DeclMap::iterator decl = idmap.find(id);
-    if (decl==idmap.end()) {
+  TopoSorter::checkId(EnvI& env, Id* ident, const Location& loc) {
+    VarDecl* decl = scopes.find(ident);
+    if (decl==NULL) {
       GCLock lock;
-      throw TypeError(env,loc,"undefined identifier `"+id->str().str()+"'");
+      throw TypeError(env,loc,"undefined identifier `"+ident->str().str()+"'");
     }
-    PosMap::iterator pi = pos.find(decl->second.back());
+    PosMap::iterator pi = pos.find(decl);
     if (pi==pos.end()) {
       // new id
-      run(env, decl->second.back());
+      scopes.push(true);
+      run(env, decl);
+      scopes.pop();
     } else {
       // previously seen, check if circular
       if (pi->second==-1) {
         GCLock lock;
-        throw TypeError(env,loc,"circular definition of `"+id->str().str()+"'");
+        throw TypeError(env,loc,"circular definition of `"+ident->str().str()+"'");
       }
     }
-    return decl->second.back();
+    return decl;
   }
 
   VarDecl*
@@ -448,8 +465,10 @@ namespace MiniZinc {
       break;
     case Expression::E_ID:
       {
-        if (e != constants().absent)
-          e->cast<Id>()->decl(checkId(env, e->cast<Id>(),e->loc()));
+        if (e != constants().absent) {
+          VarDecl* vd = checkId(env, e->cast<Id>(),e->loc());
+          e->cast<Id>()->decl(vd);
+        }
       }
       break;
     case Expression::E_ARRAYLIT:
@@ -470,20 +489,18 @@ namespace MiniZinc {
     case Expression::E_COMP:
       {
         Comprehension* ce = e->cast<Comprehension>();
+        scopes.push(false);
         for (int i=0; i<ce->n_generators(); i++) {
           run(env, ce->in(i));
           for (int j=0; j<ce->n_decls(i); j++) {
-            add(env, ce->decl(i,j), false);
+            run(env, ce->decl(i,j));
+            scopes.add(env, ce->decl(i,j));
           }
         }
         if (ce->where())
           run(env, ce->where());
         run(env, ce->e());
-        for (int i=0; i<ce->n_generators(); i++) {
-          for (int j=0; j<ce->n_decls(i); j++) {
-            remove(env, ce->decl(i,j));
-          }
-        }
+        scopes.pop();
       }
       break;
     case Expression::E_ITE:
@@ -559,10 +576,11 @@ namespace MiniZinc {
     case Expression::E_LET:
       {
         Let* let = e->cast<Let>();
+        scopes.push(false);
         for (unsigned int i=0; i<let->let().size(); i++) {
           run(env, let->let()[i]);
           if (VarDecl* vd = let->let()[i]->dyn_cast<VarDecl>()) {
-            add(env, vd,false);
+            scopes.add(env, vd);
           }
         }
         run(env, let->in());
@@ -575,11 +593,7 @@ namespace MiniZinc {
             let->let_orig()[i] = NULL;
           }
         }
-        for (unsigned int i=0; i<let->let().size(); i++) {
-          if (VarDecl* vd = let->let()[i]->dyn_cast<VarDecl>()) {
-            remove(env, vd);
-          }
-        }
+        scopes.pop();
       }
       break;
     }
@@ -1253,7 +1267,7 @@ namespace MiniZinc {
            Model* enumis0)
         : env(env0), ts(ts0), model(model0), hadSolveItem(false), fis(fis0), ais(ais0), enumis(enumis0) {}
       void vAssignI(AssignI* i) { ais.push_back(i); }
-      void vVarDeclI(VarDeclI* i) { ts.add(env, i, true, true, enumis); }
+      void vVarDeclI(VarDeclI* i) { ts.add(env, i, true, enumis); }
       void vFunctionI(FunctionI* i) {
         model->registerFn(env, i);
         fis.push_back(i);
@@ -1280,7 +1294,7 @@ namespace MiniZinc {
         assignItems.push_back(ai);
       } else if (VarDeclI* vdi = (*enumItems)[i]->dyn_cast<VarDeclI>()) {
         m->addItem(vdi);
-        ts.add(env.envi(), vdi, true, false, enumItems);
+        ts.add(env.envi(), vdi, false, enumItems);
       } else {
         FunctionI* fi = (*enumItems)[i]->dyn_cast<FunctionI>();
         m->addItem(fi);
@@ -1316,7 +1330,7 @@ namespace MiniZinc {
     for (unsigned int i=0; i<enumItems2->size(); i++) {
       if (VarDeclI* vdi = (*enumItems2)[i]->dyn_cast<VarDeclI>()) {
         m->addItem(vdi);
-        ts.add(env.envi(), vdi, true, false, enumItems);
+        ts.add(env.envi(), vdi, false, enumItems);
       } else {
         FunctionI* fi = (*enumItems2)[i]->cast<FunctionI>();
         m->addItem(fi);
@@ -1348,11 +1362,11 @@ namespace MiniZinc {
           ts.run(env,fi->params()[i]);
         for (ExpressionSetIter it = fi->ann().begin(); it != fi->ann().end(); ++it)
           ts.run(env,*it);
+        ts.scopes.push(false);
         for (unsigned int i=0; i<fi->params().size(); i++)
-          ts.add(env,fi->params()[i],false);
+          ts.scopes.add(env,fi->params()[i]);
         ts.run(env,fi->e());
-        for (unsigned int i=0; i<fi->params().size(); i++)
-          ts.remove(env,fi->params()[i]);
+        ts.scopes.pop();
       }
     } _tsv1(env.envi(),ts);
     iterItems(_tsv1,m);

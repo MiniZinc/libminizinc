@@ -8,6 +8,9 @@ https://github.com/MiniZinc/libminizinc/issues
 Bug fixes:
  - Fix definition of multi-dimensional element constraints to impose
    correct bounds on index variables.
+ - Fix binding analysis during type checking, which did not handle the
+   shadowing of top-level declarations by comprehension generators correctly.
+   Fixes #129.
 
 Version 2.1.2
 =============
