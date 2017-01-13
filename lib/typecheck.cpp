@@ -829,11 +829,17 @@ namespace MiniZinc {
           tv.dim(1);
           aa.v(addCoercion(_env, _model, aa.v(), tv)());
         } else {
-          throw TypeError(_env,aa.v()->loc(),"not an array in array access");
+          std::ostringstream oss;
+          oss << "array access attempted on expression of type `" << aa.v()->type().toString(_env) << "'";
+          throw TypeError(_env,aa.v()->loc(),oss.str());
         }
       }
-      if (aa.v()->type().dim() != aa.idx().size())
-        throw TypeError(_env,aa.v()->loc(),"array dimensions do not match");
+      if (aa.v()->type().dim() != aa.idx().size()) {
+        std::ostringstream oss;
+        oss << aa.v()->type().dim() << "-dimensional array accessed with "
+        << aa.idx().size() << (aa.idx().size()==1 ? " expression" : " expressions");
+        throw TypeError(_env,aa.v()->loc(),oss.str());
+      }
       Type tt = aa.v()->type();
       if (tt.enumId() != 0) {
         const std::vector<unsigned int>& arrayEnumIds = _env.getArrayEnum(tt.enumId());
