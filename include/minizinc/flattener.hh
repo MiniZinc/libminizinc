@@ -98,6 +98,7 @@ namespace MiniZinc {
     std::string flag_output_base;
     std::string flag_output_fzn;
     std::string flag_output_ozn;
+    std::string flag_output_paths;
     bool flag_output_fzn_stdout = false;
     bool flag_output_ozn_stdout = false;
     bool flag_instance_check_only = false;

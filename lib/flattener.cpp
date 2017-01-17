@@ -17,6 +17,7 @@
 #endif
 
 #include <minizinc/flattener.hh>
+#include <minizinc/pathfileprinter.hh>
 #include <fstream>
 
 using namespace std;
@@ -106,6 +107,8 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
       "-o --fzn --output-to-file --output-fzn-to-file"
       : "--fzn --output-fzn-to-file", &flag_output_fzn) ) {
   } else if ( cop.getOption( "-O --ozn --output-ozn-to-file", &flag_output_ozn) ) {
+  } else if ( cop.getOption( "--output-paths-to-file", &flag_output_paths) ) {
+    fopts.keep_mzn_paths = true;
   } else if ( cop.getOption( "--output-to-stdout --output-fzn-to-stdout" ) ) {
     flag_output_fzn_stdout = true;
   } else if ( cop.getOption( "--output-ozn-to-stdout" ) ) {
@@ -305,6 +308,9 @@ void Flattener::flatten()
     if (flag_output_fzn == "") {
       flag_output_fzn = flag_output_base+".fzn";
     }
+    if (flag_output_paths == "" && fopts.keep_mzn_paths) {
+      flag_output_paths = flag_output_base+".paths";
+    }
     if (flag_output_ozn == "" && ! flag_no_output_ozn) {
       flag_output_ozn = flag_output_base+".ozn";
     }
@@ -459,6 +465,21 @@ void Flattener::flatten()
               } else {
                 cerr << "    This is a satisfiability problem." << endl;
               }
+            }
+
+            if (flag_output_paths != "") {
+              if (flag_verbose)
+                std::cerr << "Printing Paths to '"
+                << flag_output_paths << "' ..." << std::flush;
+              std::ofstream os;
+              os.open(flag_output_paths.c_str(), ios::out);
+              checkIOStatus (os.good(), " I/O error: cannot open fzn output file. ");
+              PathFilePrinter pfp(os, env.envi());
+              pfp.print(env.flat());
+              checkIOStatus (os.good(), " I/O error: cannot write fzn output file. ");
+              os.close();
+              if (flag_verbose)
+                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
             }
 
             if (flag_output_fzn_stdout) {

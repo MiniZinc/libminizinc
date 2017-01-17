@@ -267,6 +267,7 @@ ${lexer_cpp}
 lib/model.cpp
 ${parser_cpp}
 lib/prettyprinter.cpp
+lib/pathfileprinter.cpp
 lib/solver.cpp
 lib/solver_instance.cpp
 lib/solver_instance_base.cpp
@@ -313,6 +314,7 @@ include/minizinc/options.hh
 include/minizinc/output.hh
 include/minizinc/parser.hh
 include/minizinc/prettyprinter.hh
+include/minizinc/pathfileprinter.hh
 include/minizinc/solver.hh
 include/minizinc/solver_instance.hh
 include/minizinc/solver_instance_base.hh

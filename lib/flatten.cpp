@@ -864,9 +864,14 @@ namespace MiniZinc {
           os << "stl:" << *e;
           break;
         case Expression::E_ID:
-          os << "id";
-          if(isCompIter)
-            os << *e->cast<Id>()->decl()->e();
+          if (isCompIter) {
+            if (e->cast<Id>()->decl()->e()->type().ispar())
+              os << *e << "=" << *e->cast<Id>()->decl()->e();
+            else
+              os << *e << "=?";
+          } else {
+            os << "id:" << *e;
+          }
           break;
         case Expression::E_ANON:
           os << "anon";
@@ -881,14 +886,9 @@ namespace MiniZinc {
         {
           const Comprehension* cmp = e->cast<Comprehension>();
           if (cmp->set())
-            os << "sc:";
+            os << "sc";
           else
-            os << "ac:";
-          for (unsigned int i=0; i<cmp->n_generators(); i++) {
-            for (unsigned int j=0; j<cmp->n_decls(i); j++) {
-              os << " " << cmp->decl(i, j)->id()->str() << "=" << *cmp->decl(i, j)->e();
-            }
-          }
+            os << "ac";
         }
           break;
         case Expression::E_ITE:
