@@ -296,6 +296,7 @@ namespace MiniZinc {
     }
     return sl;
   }
+
   void addPathAnnotation(EnvI& env, Expression* e) {
     if(!e->type().isann()) {
       GCLock lock;
@@ -6069,12 +6070,15 @@ namespace MiniZinc {
                     vd->addAnnotation(constants().ann.is_defined_var);
                     nc->addAnnotation(definesVarAnn(vd->id()));
                   }
-                  StringLit* sl = getLongestMznPathAnnotation(env, c);
+                  StringLit* vsl = getLongestMznPathAnnotation(env, vdi->e());
+                  StringLit* csl = getLongestMznPathAnnotation(env, c);
+                  CallStackItem* vsi=NULL;
                   CallStackItem* csi=NULL;
-                  if(sl)
-                    csi = new CallStackItem(env, sl);
+                  if(vsl) vsi = new CallStackItem(env, vsl);
+                  if(csl) csi = new CallStackItem(env, csl);
                   (void) flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
                   if(csi) delete csi;
+                  if(vsi) delete vsi;
                 }
               }
             }
