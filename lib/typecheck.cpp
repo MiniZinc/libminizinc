@@ -1190,9 +1190,15 @@ namespace MiniZinc {
 //            }
           } else if (ri->type() != Type::parint()) {
             assert(ri->isa<TypeInst>());
-            throw TypeError(_env,ri->loc(),
-              "invalid type in array index, expected `set of int', actual `"+
-              ri->type().toString(_env)+"'");
+            TypeInst* riti = ri->cast<TypeInst>();
+            if (riti->domain()) {
+              throw TypeError(_env,ri->loc(),
+                "array index set expression has invalid type, expected `set of int', actual `set of "+
+                ri->type().toString(_env)+"'");
+            } else {
+              throw TypeError(_env,ri->loc(),
+                              "cannot use `"+ri->type().toString(_env)+"' as array index set (did you mean `int'?)");
+            }
           }
         }
         tt.dim(foundTIId ? -1 : ti.ranges().size());
