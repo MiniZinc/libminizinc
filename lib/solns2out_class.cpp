@@ -370,9 +370,11 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
     } else {
       solution += line + '\n';
       if ( _opt.flag_output_comments ) {
-        size_t comment_pos = line.find('%');    // Pretty simple  TODO
-        if (comment_pos != string::npos) {
-          comments += line.substr(comment_pos);
+        std::istringstream iss( line );
+        char c='_';
+        iss >> skipws >> c;
+        if ( iss.good() && '%'==c) {
+          comments += line;
           comments += "\n";
         }
       }
