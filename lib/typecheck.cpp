@@ -127,11 +127,15 @@ namespace MiniZinc {
     GCLock lock;
     if (Call* c = vd->e()->dyn_cast<Call>()) {
       if (c->id()!="anon_enum") {
-        throw TypeError(env, c->loc(), "invalid initialisation for enum");
+        throw TypeError(env, c->loc(),
+                        "invalid initialisation for enum `"+ident->v().str()+"'");
       }
-    } else {
-      sl = vd->e()->cast<SetLit>();
+    } else if ( (sl = vd->e()->dyn_cast<SetLit>()) ) {
       for (unsigned int i=0; i<sl->v().size(); i++) {
+        if (!sl->v()[i]->isa<Id>()) {
+          throw TypeError(env, sl->v()[i]->loc(),
+                          "invalid initialisation for enum `"+ident->v().str()+"'");
+        }
         TypeInst* ti_id = new TypeInst(sl->v()[i]->loc(),Type::parenum(enumId));
         
         std::vector<Expression*> toEnumArgs(2);
@@ -147,6 +151,9 @@ namespace MiniZinc {
       tt.enumId(vd->type().enumId());
       nsl->type(tt);
       vd->e(nsl);
+    } else {
+      throw TypeError(env, vd->e()->loc(),
+                      "invalid initialisation for enum `"+ident->v().str()+"'");
     }
 
     
