@@ -34,10 +34,10 @@ void MiniZinc::cleanupGlobalFlattener(Flattener* pFlt) {
 
 void Flattener::printVersion(ostream& os)
 {
-  os << "NICTA MiniZinc to FlatZinc converter, version "
+  os << "MiniZinc to FlatZinc converter, version "
      << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
   os << "Copyright (C) 2014-" << string(__DATE__).substr(7, 4)
-     << "   Monash University and NICTA" << std::endl;
+     << "   Monash University, NICTA, Data61" << std::endl;
 }
 
 void Flattener::printHelp(ostream& os)
