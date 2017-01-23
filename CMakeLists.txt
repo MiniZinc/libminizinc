@@ -422,7 +422,7 @@ endif()
 
 # ----------------------------------------------------------------------------------------------------------
 if(HAS_SCIP)   # SCIP version tested: 3.2.1
-  link_directories("${SCIP_DIR}/../lib"  )  # For the single library
+  link_directories("${SCIP_DIR}/../lib"  )  # For the single library, use 'make scipoptlib' when building SCIP
 
   if(UNIX)
 #    set(SCIP_OS "linux")

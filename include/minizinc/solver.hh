@@ -87,7 +87,7 @@ namespace MiniZinc {
     Flattener* flt=0;
     SolverInstanceBase* si=0;
     bool is_mzn2fzn;
-
+    std::string executable_name;
   public:
     Solns2Out s2out;
     
@@ -102,8 +102,8 @@ namespace MiniZinc {
     MznSolver(bool ism2f = false);
     virtual ~MznSolver();
     virtual void addFlattener();
-    virtual bool processOptions(int argc, const char** argv);
-    virtual void printHelp();
+    virtual bool processOptions(int argc, const char** argv, std::ostream& os);
+    virtual void printHelp(std::ostream& os);
     virtual void flatten();
     virtual size_t getNSolvers() { return getGlobalSolverRegistry()->getSolverFactories().size(); }
     /// If building a flattening exe only.

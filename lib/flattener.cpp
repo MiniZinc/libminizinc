@@ -34,10 +34,10 @@ void MiniZinc::cleanupGlobalFlattener(Flattener* pFlt) {
 
 void Flattener::printVersion(ostream& os)
 {
-  os << "NICTA MiniZinc to FlatZinc converter, version "
+  os << "MiniZinc to FlatZinc converter, version "
      << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
   os << "Copyright (C) 2014-" << string(__DATE__).substr(7, 4)
-     << "   Monash University and NICTA" << std::endl;
+     << "   Monash University, NICTA, Data61" << std::endl;
 }
 
 void Flattener::printHelp(ostream& os)
@@ -71,6 +71,7 @@ void Flattener::printHelp(ostream& os)
   << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
   << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
   << "  --output-mode <item|dzn|json>\n    Create output according to output item (default), or output compatible\n    with dzn or json format" << std::endl
+  << "  --output-objective\n    Print value of objective function in dzn or json output" << std::endl
   << "  -Werror\n    Turn warnings into errors" << std::endl
   ;
 }
@@ -120,6 +121,8 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     } else {
       goto error;
     }
+  } else if ( cop.getOption( "--output-objective" ) ) {
+    flag_output_objective = true;
   } else if ( cop.getOption( "- --input-from-stdin" ) ) {
       if (datafiles.size() > 0 || filenames.size() > 0)
         goto error;
@@ -339,6 +342,7 @@ void Flattener::flatten()
               try {
                 fopts.onlyRangeDomains = flag_only_range_domains;
                 fopts.outputMode = flag_output_mode;
+                fopts.outputObjective = flag_output_objective;
                 ::flatten(env,fopts);
               } catch (LocationException& e) {
                 if (flag_verbose)

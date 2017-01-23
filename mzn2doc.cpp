@@ -66,9 +66,9 @@ int main(int argc, char** argv) {
     if (string(argv[i])==string("-h") || string(argv[i])==string("--help"))
         goto error;
     if (string(argv[i])==string("--version")) {
-      std::cout << "NICTA MiniZinc documentation generator, version "
+      std::cout << "MiniZinc documentation generator, version "
         << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
-      std::cout << "Copyright (C) 2014, 2015 Monash University and NICTA" << std::endl;
+      std::cout << "Copyright (C) 2014-2017 Monash University, NICTA, Data61" << std::endl;
       std::exit(EXIT_SUCCESS);
     }
     if (beginswith(string(argv[i]),"-I")) {
@@ -296,7 +296,9 @@ int main(int argc, char** argv) {
   return 0;
 
 error:
-  std::cerr << "Usage: "<< argv[0]
+  std::string executable_name(argv[0]);
+  executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
+  std::cerr << "Usage: "<< executable_name
             << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl
             << std::endl
             << "Options:" << std::endl

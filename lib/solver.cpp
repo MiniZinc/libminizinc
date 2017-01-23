@@ -82,7 +82,7 @@ void SolverFactory::destroySI(SolverInstanceBase * pSI) {
   sistorage.erase(it);
 }
 
-MznSolver::MznSolver(bool ism2f) : is_mzn2fzn(ism2f) { }
+MznSolver::MznSolver(bool ism2f) : is_mzn2fzn(ism2f), executable_name("<executable>") { }
 
 MznSolver::~MznSolver()
 {
@@ -122,19 +122,19 @@ void MznSolver::addSolverInterface()
     << getGlobalSolverRegistry()->getSolverFactories().back()->getVersion() << endl;  
 }
 
-void MznSolver::printHelp()
+void MznSolver::printHelp(std::ostream& os)
 {
   if ( !ifMzn2Fzn() )
-  cout
-    << "NICTA MiniZinc driver.\n"
-    << "Usage: <executable>"  //<< argv[0]
+  os
+    << "MiniZinc driver.\n"
+    << "Usage: "  << executable_name
     << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn" << std::endl;
   else
-  cout
-    << "NICTA MiniZinc to FlatZinc converter.\n"
-    << "Usage: <executable>"  //<< argv[0]
+  os
+    << "MiniZinc to FlatZinc converter.\n"
+    << "Usage: "  << executable_name
     << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl;
-  cout
+  os
     << "Options:" << std::endl
     << "  --help, -h\n    Print this help message." << std::endl
     << "  --version\n    Print version information." << std::endl
@@ -142,27 +142,29 @@ void MznSolver::printHelp()
     << "  -s, --statistics\n    Print statistics." << std::endl;
 //   if ( getNSolvers() )
   
-  getFlt()->printHelp(cout);
-  cout << endl;
+  getFlt()->printHelp(os);
+  os << endl;
   if ( !ifMzn2Fzn() ) {
-    s2out.printHelp(cout);
-    cout << endl;
+    s2out.printHelp(os);
+    os << endl;
   }
   for (auto it = getGlobalSolverRegistry()->getSolverFactories().rbegin();
         it != getGlobalSolverRegistry()->getSolverFactories().rend(); ++it) {
-       (*it)->printHelp(cout);
-      cout << endl;
+       (*it)->printHelp(os);
+      os << endl;
   }
 }
 
-bool MznSolver::processOptions(int argc, const char** argv)
+bool MznSolver::processOptions(int argc, const char** argv, std::ostream& os)
 {
+  executable_name = argv[0];
+  executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
   int i=1;
   if (argc < 2)
     return false;
   for (i=1; i<argc; ++i) {
     if (string(argv[i])=="-h" || string(argv[i])=="--help") {
-      printHelp();
+      printHelp(os);
       std::exit(EXIT_SUCCESS);
     }
     if (string(argv[i])=="--version") {
@@ -189,7 +191,9 @@ Found: { }
   }
   return true;
 NotFound:
-  cerr << "  Unrecognized option or bad format: '" << argv[i] << "'" << endl;
+  std::string executable_name(argv[0]);
+  executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
+  os << executable_name << ": Unrecognized option or bad format `" << argv[i] << "'" << endl;
   return false;
 }
 

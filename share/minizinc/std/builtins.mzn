@@ -1530,7 +1530,10 @@ function var int: element_mt(var int: idx, array[int] of var int: x) :: promise_
   } in r;
 
 function var int: element(var int: idx, array[int] of var int: x) =
-  if mzn_in_root_context(idx) \/ (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
+  if mzn_in_root_context(idx) then let {
+    constraint idx in index_set(x)
+  } in element_t(idx,x)
+  elseif (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
     element_t(idx,x)
   else let {
     constraint idx in index_set(x)
@@ -1542,7 +1545,12 @@ function var int: element(var int: idx1, var int: idx2,
   let {
     int: dim = card(index_set_2of2(x));
     int: min_flat = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
-  } in if mzn_in_root_context(idx1) \/
+  } in if mzn_in_root_context(idx1) then
+         let {
+           constraint idx1 in index_set_1of2(x);
+           constraint idx2 in index_set_2of2(x);
+         } in element_t( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+       elseif
        ((has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
         /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x))))
        then
@@ -1563,7 +1571,13 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3,
     int: min = min(index_set_1of3(x))*dim2*dim3+
                min(index_set_2of3(x))*dim3+
                min(index_set_3of3(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then
+       let {
+         constraint idx1 in index_set_1of3(x);
+         constraint idx2 in index_set_2of3(x);
+         constraint idx3 in index_set_3of3(x);
+       } in element_t( (idx1*(dim2*dim3)+idx2*dim3+idx3-min)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of3(x)) /\ ub(idx2) <= max(index_set_2of3(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x))))
@@ -1587,7 +1601,14 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3, var int: 
                min(index_set_2of4(x))*dim3*dim4+
                min(index_set_3of4(x))*dim4+
                min(index_set_4of4(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then
+         let {
+           constraint idx1 in index_set_1of4(x);
+           constraint idx2 in index_set_2of4(x);
+           constraint idx3 in index_set_3of4(x);
+           constraint idx4 in index_set_4of4(x);
+         } in element_t( (idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of4(x)) /\ ub(idx2) <= max(index_set_2of4(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of4(x)) /\ ub(idx3) <= max(index_set_3of4(x)))
@@ -1622,7 +1643,10 @@ function var float: element_mt(var int: idx, array[int] of var float: x) :: prom
   } in r;
 
 function var float: element(var int: idx, array[int] of var float: x) =
-  if mzn_in_root_context(idx) \/ (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
+  if mzn_in_root_context(idx) then let {
+    constraint idx in index_set(x)
+  } in element_t(idx,x)
+  elseif (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
     element_t(idx,x)
   else let {
     constraint idx in index_set(x)
@@ -1634,7 +1658,12 @@ function var float: element(var int: idx1, var int: idx2,
   let {
     int: dim = card(index_set_2of2(x));
     int: min_flat = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then
+         let {
+           constraint idx1 in index_set_1of2(x);
+           constraint idx2 in index_set_2of2(x);
+         } in element_t( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x))) )
        then
@@ -1655,7 +1684,12 @@ function var float: element(var int: idx1, var int: idx2, var int: idx3,
     int: min = min(index_set_1of3(x))*dim2*dim3+
                min(index_set_2of3(x))*dim3+
                min(index_set_3of3(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then let {
+         constraint idx1 in index_set_1of3(x);
+         constraint idx2 in index_set_2of3(x);
+         constraint idx3 in index_set_3of3(x);
+       } in element_t( (idx1*(dim2*dim3)+idx2*dim3+idx3-min)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of3(x)) /\ ub(idx2) <= max(index_set_2of3(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x))) )
@@ -1679,7 +1713,13 @@ function var float: element(var int: idx1, var int: idx2, var int: idx3, var int
                min(index_set_2of4(x))*dim3*dim4+
                min(index_set_3of4(x))*dim4+
                min(index_set_4of4(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then let {
+         constraint idx1 in index_set_1of4(x);
+         constraint idx2 in index_set_2of4(x);
+         constraint idx3 in index_set_3of4(x);
+         constraint idx4 in index_set_4of4(x);
+       } in element_t( (idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of4(x)) /\ ub(idx2) <= max(index_set_2of4(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of4(x)) /\ ub(idx3) <= max(index_set_3of4(x)))
@@ -1714,7 +1754,10 @@ function var set of int: element_mt(var int: idx, array[int] of var set of int: 
   } in r;
 
 function var set of int: element(var int: idx, array[int] of var set of int: x) =
-  if mzn_in_root_context(idx) \/ (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
+  if mzn_in_root_context(idx) then let {
+    constraint idx in index_set(x)
+  } in element_t(idx,x)
+  elseif (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
     element_t(idx,x)
   else let {
     constraint idx in index_set(x)
@@ -1726,7 +1769,12 @@ function var set of int: element(var int: idx1, var int: idx2,
   let {
     int: dim = card(index_set_2of2(x));
     int: min_flat = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then
+         let {
+           constraint idx1 in index_set_1of2(x);
+           constraint idx2 in index_set_2of2(x);
+         } in element_t( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x))) )
        then
@@ -1747,7 +1795,13 @@ function var set of int: element(var int: idx1, var int: idx2, var int: idx3,
     int: min = min(index_set_1of3(x))*dim2*dim3+
                min(index_set_2of3(x))*dim3+
                min(index_set_3of3(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then
+       let {
+         constraint idx1 in index_set_1of3(x);
+         constraint idx2 in index_set_2of3(x);
+         constraint idx3 in index_set_3of3(x);
+       } in element_t( (idx1*(dim2*dim3)+idx2*dim3+idx3-min)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of3(x)) /\ ub(idx2) <= max(index_set_2of3(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x))) )
@@ -1771,7 +1825,14 @@ function var set of int: element(var int: idx1, var int: idx2, var int: idx3, va
                min(index_set_2of4(x))*dim3*dim4+
                min(index_set_3of4(x))*dim4+
                min(index_set_4of4(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then
+       let {
+         constraint idx1 in index_set_1of4(x);
+         constraint idx2 in index_set_2of4(x);
+         constraint idx3 in index_set_3of4(x);
+         constraint idx4 in index_set_4of4(x);
+       } in element_t( (idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of4(x)) /\ ub(idx2) <= max(index_set_2of4(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of4(x)) /\ ub(idx3) <= max(index_set_3of4(x)))
@@ -1806,7 +1867,9 @@ function var bool: element_mt(var int: idx, array[int] of var bool: x) :: promis
   } in r;
 
 function var bool: element(var int: idx, array[int] of var bool: x) =
-  if mzn_in_root_context(idx) \/ (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
+  if mzn_in_root_context(idx) then
+    idx in index_set(x) /\ element_t(idx,x)
+  elseif (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
     element_t(idx,x)
   else idx in index_set(x) /\ element_mt(idx,x)
   endif;
@@ -1816,7 +1879,12 @@ function var bool: element(var int: idx1, var int: idx2,
   let {
     int: dim = card(index_set_2of2(x));
     int: min_flat = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then
+         let {
+           constraint idx1 in index_set_1of2(x);
+           constraint idx2 in index_set_2of2(x);
+         } in element_t( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x))) )
        then
@@ -1837,7 +1905,13 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3,
     int: min = min(index_set_1of3(x))*dim2*dim3+
                min(index_set_2of3(x))*dim3+
                min(index_set_3of3(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then
+       let {
+         constraint idx1 in index_set_1of3(x);
+         constraint idx2 in index_set_2of3(x);
+         constraint idx3 in index_set_3of3(x);
+       } in element_t( (idx1*(dim2*dim3)+idx2*dim3+idx3-min)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of3(x)) /\ ub(idx2) <= max(index_set_2of3(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x))) )
@@ -1861,7 +1935,14 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3, var int:
                min(index_set_2of4(x))*dim3*dim4+
                min(index_set_3of4(x))*dim4+
                min(index_set_4of4(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then
+       let {
+         constraint idx1 in index_set_1of4(x);
+         constraint idx2 in index_set_2of4(x);
+         constraint idx3 in index_set_3of4(x);
+         constraint idx4 in index_set_4of4(x);
+       } in element_t( (idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of4(x)) /\ ub(idx2) <= max(index_set_2of4(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of4(x)) /\ ub(idx3) <= max(index_set_3of4(x)))
