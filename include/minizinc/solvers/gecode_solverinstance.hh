@@ -30,6 +30,27 @@
 #include <minizinc/solver.hh>
 #include <minizinc/solvers/gecode/fzn_space.hh>
 
+#if GECODE_VERSION_NUMBER >= 500000
+#define HAS_GECODE_VERSION_5
+#endif
+
+#ifdef HAS_GECODE_VERSION_5
+#define MZ_IntConLevel Gecode::IntPropLevel
+#define MZ_ICL_VAL Gecode::IPL_VAL
+#define MZ_ICL_DOM Gecode::IPL_DOM 
+#define MZ_ICL_BND Gecode::IPL_BND
+#define MZ_ICL_DEF Gecode::IPL_DEF
+#define MZ_EPK_DEF Gecode::IPL_DEF
+#else
+#define MZ_IntConLevel Gecode::IntConLevel
+#define MZ_ICL_VAL Gecode::ICL_VAL
+#define MZ_ICL_DOM Gecode::ICL_DOM 
+#define MZ_ICL_BND Gecode::ICL_BND
+#define MZ_ICL_DEF Gecode::ICL_DEF
+#define MZ_EPK_DEF Gecode::EPK_DEF
+#endif
+
+
 namespace MiniZinc {
   
  /* class GecodeVariable {
@@ -271,7 +292,9 @@ namespace MiniZinc {
     Gecode::FloatVarArgs arg2floatvarargs(Expression* arg, int offset = 0);
 #endif
     /// Convert \a ann to IntConLevel
-    Gecode::IntConLevel ann2icl(const Annotation& ann);
+
+
+    MZ_IntConLevel ann2icl(const Annotation& ann);
 
      /// convert the annotation \a s int variable selection to the respective Gecode var selection
     Gecode::TieBreak<Gecode::IntVarBranch> ann2ivarsel(std::string s, Gecode::Rnd& rnd, double decay);
