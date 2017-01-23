@@ -105,10 +105,19 @@ namespace MiniZinc {
     virtual Gecode::Search::Statistics statistics(void) = 0;
   };
 
+#ifdef HAS_GECODE_VERSION_5
+  template<template<class> class Engine,
+           template<class, template<class> class> class Meta>
+#else 
   template<template<class> class Engine,
            template<template<class> class,class> class Meta>
+#endif
   class MetaEngine : public GecodeEngine {
+#ifdef HAS_GECODE_VERSION_5
+    Meta<FznSpace,Engine> e;
+#else
     Meta<Engine,FznSpace> e;
+#endif
   public:
     MetaEngine(FznSpace* s, Search::Options& o) : e(s,o) {}
     virtual FznSpace* next(void) { return e.next(); }
@@ -850,20 +859,20 @@ namespace MiniZinc {
   }
 #endif
 
-  Gecode::IntConLevel
+  MZ_IntConLevel
   GecodeSolverInstance::ann2icl(const Annotation& ann) {
     if (!ann.isEmpty()) {
       if (getAnnotation(ann, "val"))
-          return Gecode::ICL_VAL;
+          return MZ_ICL_VAL;
       if (getAnnotation(ann, "domain"))
-          return Gecode::ICL_DOM;
+          return MZ_ICL_DOM;
       if (getAnnotation(ann, "bounds") ||
               getAnnotation(ann, "boundsR") ||
               getAnnotation(ann, "boundsD") ||
               getAnnotation(ann, "boundsZ"))
-          return Gecode::ICL_BND;
+          return MZ_ICL_BND;
     }
-    return Gecode::ICL_DEF;
+    return MZ_ICL_DEF;
   }
 
   VarDecl*
@@ -1028,7 +1037,12 @@ namespace MiniZinc {
         << (_current_space->iv.size() +
             _current_space->bv.size() +
             _current_space->sv.size()) << std::endl
+#ifdef HAS_GECODE_VERSION_5
+        << "%%  propagators:   " << Gecode::PropagatorGroup::all.size(*_current_space) << endl
+
+#else
         << "%%  propagators:   " << _current_space->propagators() << std::endl
+#endif
         << "%%  propagations:  " << stat.propagate << std::endl
         << "%%  nodes:         " << stat.node << std::endl
         << "%%  failures:      " << stat.fail << std::endl

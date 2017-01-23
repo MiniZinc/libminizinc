@@ -65,7 +65,7 @@ namespace MiniZinc {
 
   string FZN_SolverFactory::getVersion()
   {
-    string v = "NICTA FZN solver plugin, compiled  " __DATE__ "  " __TIME__;
+    string v = "FZN solver plugin, compiled  " __DATE__ "  " __TIME__;
     return v;
   }
 

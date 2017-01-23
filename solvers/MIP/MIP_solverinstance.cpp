@@ -252,7 +252,6 @@ void MIP_solverinstance::printStatistics(ostream& os, bool fLegend)
   auto nn = std::chrono::system_clock::now();
   auto n_c = std::chrono::system_clock::to_time_t( nn );
     {
-//       int nPrec = 
       std::ios oldState(nullptr);
       oldState.copyfmt(std::cout);
       os.precision(12);
@@ -268,17 +267,8 @@ void MIP_solverinstance::printStatistics(ostream& os, bool fLegend)
       if (mip_wrap->getNOpen())
         os << " ( " << mip_wrap->getNOpen() << " )";
       os << "    " << std::ctime( &n_c );
-      os << endl;
+      //  ctime already adds EOL.     os << endl;
       os.copyfmt( oldState );
-//       os.precision(nPrec);
-//       os.setf( flgSave );
-//       std::os << "% MIP_Objective_ : " << mip_wrap->getObjValue() << std::endl;
-// //         std::os << "% MIP_AbsGap__   : "
-// //           << std::fabs(_ilocplex->getBestObjValue()-_ilocplex->getObjValue()) << std::endl;
-// //         std::os << "% MIP_RelGap__   : " << _ilocplex->getMIPRelativeGap() << std::endl;
-//       std::os   << "% MIP_BestBound_ : " << mip_wrap->getBestBound() << std::endl;
-//       std::os   << "% Real/CPU Time_ : " << mip_wrap->getCPUTime() << " sec\n" << std::endl;
-//       std::os << "%------------------------------------------------------------------------\n"<< std::endl;
     }
 }
 

@@ -23,16 +23,16 @@ namespace MiniZinc {
     void p_distinct(SolverInstanceBase& s, const Call* call) {
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       IntVarArgs va = gi.arg2intvarargs(call->args()[0]);
-      IntConLevel icl = gi.ann2icl(call->ann());
-      distinct(*gi._current_space, va, icl == Gecode::ICL_DEF ? Gecode::ICL_DOM : icl);
+      MZ_IntConLevel icl = gi.ann2icl(call->ann());
+      distinct(*gi._current_space, va, icl == MZ_ICL_DEF ? MZ_ICL_DOM : icl);
     }
 
     void p_distinctOffset(SolverInstanceBase& s, const Call* call) {
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       IntVarArgs va = gi.arg2intvarargs(call->args()[1]);
       IntArgs oa = gi.arg2intargs(call->args()[0]);
-      IntConLevel icl = gi.ann2icl(call->ann());
-      distinct(*gi._current_space, oa, va, icl == ICL_DEF ? ICL_DOM : icl);
+      MZ_IntConLevel icl = gi.ann2icl(call->ann());
+      distinct(*gi._current_space, oa, va, icl == MZ_ICL_DEF ? MZ_ICL_DOM : icl);
     }
 
     void p_all_equal(SolverInstanceBase& s, const Call* call) {
@@ -909,8 +909,8 @@ namespace MiniZinc {
         iv1 << IntVar(*gi._current_space,0,iv0.size());
       }
 
-      IntConLevel icl = gi.ann2icl(ann);
-      if (icl==ICL_DOM) {
+      MZ_IntConLevel icl = gi.ann2icl(ann);
+      if (icl==MZ_ICL_DOM) {
         IntVarArgs allvars = iv0+iv1;
         unshare(*gi._current_space, allvars);
         count(*gi._current_space, allvars.slice(0,1,iv0.size()), 
@@ -1074,8 +1074,8 @@ namespace MiniZinc {
       int xoff = call->args()[1]->cast<IntLit>()->v().toInt();
       IntVarArgs y = gi.arg2intvarargs(call->args()[2]);
       int yoff = call->args()[3]->cast<IntLit>()->v().toInt();
-      IntConLevel icl = gi.ann2icl(call->ann());
-      channel(*gi._current_space, x, xoff, y, yoff, icl == ICL_DEF ? ICL_DOM : icl);
+      MZ_IntConLevel icl = gi.ann2icl(call->ann());
+      channel(*gi._current_space, x, xoff, y, yoff, icl == MZ_ICL_DEF ? MZ_ICL_DOM : icl);
     }
 
     void p_increasing_int(SolverInstanceBase& s, const Call* call) {
@@ -1122,7 +1122,11 @@ namespace MiniZinc {
         ts.add(t);
       }
       ts.finalize();
-      extensional(*gi._current_space,x,ts,EPK_DEF,gi.ann2icl(ann));
+#ifdef HAS_GECODE_VERSION_5
+      extensional(*gi._current_space,x,ts,gi.ann2icl(ann));
+#else
+      extensional(*gi._current_space,x,ts,MZ_EPK_DEF,gi.ann2icl(ann));
+#endif
     }
     void p_table_bool(SolverInstanceBase& s, const Call* call) {
       const Annotation& ann =call->ann();
@@ -1140,7 +1144,11 @@ namespace MiniZinc {
         ts.add(t);
       }
       ts.finalize();
-      extensional(*gi._current_space,x,ts,EPK_DEF,gi.ann2icl(ann));
+#ifdef HAS_GECODE_VERSION_5
+      extensional(*gi._current_space,x,ts,gi.ann2icl(ann));
+#else
+      extensional(*gi._current_space,x,ts,MZ_EPK_DEF,gi.ann2icl(ann));
+#endif
     }
 
     void p_cumulatives(SolverInstanceBase& s, const Call* call) {

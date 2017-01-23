@@ -52,14 +52,18 @@ namespace MiniZinc {
   }
 
   void SolverInstanceBase::printSolution() {
+    std::ostringstream oss;
+    if ( getOptions().getBoolParam(constants().opts.statistics.str()) )
+      printStatistics(oss, 1);             // Insert stats before sol separator
     if ( 0==pS2Out ) {
       getEnv()->evalOutput(std::cout);               // deprecated
+      std::cout << oss.str();
+      if ( oss.str().size() && '\n'!=oss.str().back() )
+        std::cout << '\n';
       std::cout << "----------" << std::endl;
     }
     else
-      getSolns2Out()->evalOutput();
-    if ( getOptions().getBoolParam(constants().opts.statistics.str()) )
-      printStatistics(std::cout, 1);
+      getSolns2Out()->evalOutput( oss.str() );
   }
 
   void SolverInstanceBase2::printSolution() {

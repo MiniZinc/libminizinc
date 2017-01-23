@@ -39,13 +39,15 @@ namespace MiniZinc {
     bool keep_mzn_paths;
     /// Only range domains for old linearization. Set from redefs to true if not here
     bool onlyRangeDomains;
-    /// Create JSON output
+    /// Create standard, DZN or JSON output
     enum OutputMode {
       OUTPUT_ITEM, OUTPUT_DZN, OUTPUT_JSON
     } outputMode;
+    /// Output objective value (only for DZN and JSON mode)
+    bool outputObjective;
     /// Default constructor
     FlatteningOptions(void)
-    : keepOutputInFzn(false), verbose(false), only_toplevel_paths(false), keep_mzn_paths(false), onlyRangeDomains(false), outputMode(OUTPUT_ITEM) {}
+    : keepOutputInFzn(false), verbose(false), only_toplevel_paths(false), keep_mzn_paths(false), onlyRangeDomains(false), outputMode(OUTPUT_ITEM), outputObjective(false) {}
   };
 
   class Pass {
