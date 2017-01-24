@@ -213,6 +213,7 @@ namespace MiniZinc {
       TypeInst* vd_rename_ti = copy(e,e.cmap,vd->ti())->cast<TypeInst>();
       VarDecl* vd_rename = new VarDecl(Location().introduce(), vd_rename_ti, vd->flat()->id()->idn(), NULL);
       vd_rename->flat(vd->flat());
+      makePar(e,vd_rename);
       vd->e(vd_rename->id());
       e.output->addItem(new VarDeclI(Location().introduce(), vd_rename));
     }
