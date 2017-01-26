@@ -320,6 +320,8 @@ namespace MiniZinc {
             os << "<>";
           } else {
             const Id* id = e->cast<Id>();
+            if(id->decl())
+              id = id->decl()->id();
             if (id->idn() == -1) {
               os << id->v();
             } else {

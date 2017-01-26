@@ -6035,7 +6035,8 @@ namespace MiniZinc {
                     FunctionI* decl = env.orig->matchFn(env,c,false);
                     env.map_remove(c);
                     if (decl->e() || c->id() == constants().ids.forall) {
-                      addPathAnnotation(env, decl->e());
+                      if (decl->e())
+                        addPathAnnotation(env, decl->e());
                       c->decl(decl);
                       nc = c;
                     }
