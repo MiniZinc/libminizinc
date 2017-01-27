@@ -1,4 +1,4 @@
-import psutil, shlex, subprocess, resource, timeit, io, re
+import psutil, shlex, subprocess, resource, timeit, io, re, sys
 import utils, json_config
 
 ## TODO Keyline/value dictionaries: entries == json_config.s_CommentKey are ignored. Make it a parameter
@@ -54,7 +54,7 @@ def runCmd( s_Cmd, b_Shell=False, timeo=None, meml=None ):
             for p in procs:
                 p.kill()
             completed.stdout, completed.stderr = proc.communicate()
-    ### Clean up: -----------------------------------------------------
+    ### Clean up: (does psutil.Process.communicate() wait for all descendants?)  -----------------------------------
     procs = psutil.Process().children(recursive=True)
     for p in procs:
         p.kill()
