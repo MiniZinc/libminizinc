@@ -5564,7 +5564,7 @@ namespace MiniZinc {
             }
             vd->e(let_e);
             flatmap.push_back(vd->flat());
-            if (Id* id = let_e->dyn_cast<Id>()) {
+            if (Id* id = Expression::dyn_cast<Id>(let_e)) {
               vd->flat(id->decl());
             } else {
               vd->flat(vd);
