@@ -237,9 +237,9 @@ class MZT_Param:
                 "s_SolverCall" : ["mzn-gurobi -v -s -a -G linear " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
               },
               "Stderr_Keyvalues": {
-                s_AddKey+"Preslv_Rows": [ "Presolved:", "", 2 ],
-                s_AddKey+"Preslv_Cols": [ "Presolved:", "", 4 ],
-                s_AddKey+"Preslv_Non0": [ "Presolved:", "", 6 ]
+                s_AddKey+"Preslv_Rows": [ "Presolved:", " ", 2 ],
+                s_AddKey+"Preslv_Cols": [ "Presolved:", " ", 4 ],
+                s_AddKey+"Preslv_Non0": [ "Presolved:", " ", 6 ]
               },
             },
             "BE_MZN-CPLEX": {
@@ -250,9 +250,9 @@ class MZT_Param:
                 #"b_ThruShell"  : [True],
               },
               "Stderr_Keyvalues": {
-                s_AddKey+"Preslv_Rows": [ "Reduced MIP has [0-9] rows", "[]", 4 ],
-                s_AddKey+"Preslv_Cols": [ "Reduced MIP has [0-9] rows", "[]", 6 ],
-                s_AddKey+"Preslv_Non0": [ "Reduced MIP has [0-9] rows", "[]", 9 ]
+                s_AddKey+"Preslv_Rows": [ "Reduced MIP has [0-9]+ rows,", " ", 4 ],
+                s_AddKey+"Preslv_Cols": [ "Reduced MIP has [0-9]+ rows,", " ", 6 ],
+                s_AddKey+"Preslv_Non0": [ "Reduced MIP has [0-9]+ rows,", " ", 9 ]
               },
             },
             "BE_FZN-GECODE": {
@@ -541,6 +541,7 @@ class MznTest:
             rng = range( 0, min( nCM, len(self.solList ) ) )
         else:
             rng = range( -1, max( nCM-1, -len(self.solList)-1 ), -1 )
+        self.result["SOLUTION_CHECKS_DONE"] = 0
         self.result["SOLUTION_CHECKS_FAILED"] = 0
         ## Iterate over the solution range
         for iSol in rng:
@@ -558,6 +559,7 @@ class MznTest:
                 # self.result["__CHECKS__"].append( chkRes )
                 if 0>chkRes["Sol_Status"][0] and -3<=chkRes["Sol_Status"][0]:
                     bCheckOK = False
+            self.result["SOLUTION_CHECKS_DONE"] += 1
             if not bCheckOK:
                 self.result["SOLUTION_CHECKS_FAILED"] += 1
                 self.result["SOLUTION_FAILED"] =self.solList[ iSol ]
