@@ -50,26 +50,24 @@ namespace MiniZinc {
         // Variable name
         name << path.substr(idpos, semi-idpos);
 
-        if(!ignore_array) {
-          // Check for array
-          int dim = 0;
-          int ilpos = semi-idpos;
-          do {
-            ilpos = path.find("il:", ilpos);
-            if(ilpos > -1) {
-              ilpos += 3;
-              semi = path.find(";", ilpos);
-              if(semi > -1) {
-                if(dim == 0) name << "[";
-                else name << ",";
-                name << path.substr(ilpos, semi-ilpos);
-                dim ++;
-              }
+        // Check for array
+        int dim = 0;
+        int ilpos = semi-idpos;
+        do {
+          ilpos = path.find("il:", ilpos);
+          if(ilpos > -1) {
+            ilpos += 3;
+            semi = path.find(";", ilpos);
+            if(semi > -1) {
+              if(dim == 0) name << "[";
+              else name << ",";
+              name << path.substr(ilpos, semi-ilpos);
+              dim ++;
             }
-          } while(ilpos > -1);
+          }
+        } while(ilpos > -1);
 
-          if(dim > 0) name << "]";
-        }
+        if(dim > 0) name << "?]";
 
         // Check for anon
         if(path.find(":anon") != -1 || path.find("=") != -1) {
@@ -145,12 +143,22 @@ namespace MiniZinc {
       NamePair np = betternames[id];
       if(np.first != "" || np.second != "") {
         os << *id << "\t";
-        if(np.first == "")
-          os << *id << "\t";
-        else
-          os << np.first << "\t";
 
-        os << np.second << std::endl;
+        { // Name
+          if(np.first == "") {
+            os << *id << "\t";
+          } else {
+            std::string name = np.first;
+            os << name;
+            if(name.find("?") != -1)
+              os <<"(" << *id << ")";
+            os << "\t";
+          }
+        }
+
+        { // Path
+          os << np.second << std::endl;
+        }
       }
     }
   }
