@@ -14,16 +14,25 @@
 
 #include <iostream>
 #include <minizinc/ast.hh>
+#include <minizinc/stl_map_set.hh>
+#include <utility>
 
 namespace MiniZinc {
 
   class Model;
   
   class PathFilePrinter {
+
+  typedef std::pair<std::string, std::string> NamePair;
+  typedef UNORDERED_NAMESPACE::unordered_map<Id*, NamePair > NameMap;
+
+  NameMap betternames;
   private:
     std::ostream& os;
     EnvI& ei;
     bool remove_paths;
+
+    void addBetterName(Id* id, std::string name, std::string path, bool overwrite);
 
   public:
     PathFilePrinter(std::ostream& o, EnvI& envi, bool rem = true);
