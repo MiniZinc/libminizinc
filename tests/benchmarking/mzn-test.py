@@ -4,8 +4,8 @@
 ##  This program runs MiniZinc solvers over a set of instances,
 ##  checks solutions and compares to given solution logs.
 
-##  TODO [Andreas] Checking all solutions. Return at most N failed solutions.
-##  TODO Process groups? Make sure timeout works for all subprocesses, at least when not running as shell
+##  TODO --output-objective produces _objective in dzn which cannot be read by checker.
+##  TODO Process groups? Make sure timeout works for all subprocesses
 ##  TODO If checking fails, tests should run still
 
 import sys
@@ -228,12 +228,13 @@ class MZT_Param:
               s_CommentKey: [ "------------------- Specializations for pure minizinc driver" ],
               "EXE":{
                 "s_SolverCall": [ "minizinc --mzn2fzn-cmd 'mzn2fzn " + sDZNOutputAgrs + "' -s -a %s"], # _objective fails for checking
+                "b_ThruShell"  : [False],
               },
             },
             "BE_MZN-GUROBI": {
               s_CommentKey: [ "------------------- Specializations for Gurobi solver instance" ],
               "EXE":{
-                "s_SolverCall" : ["mzn-gurobi -v -s -a -G linear " + sDZNOutputAgrs + " %s"], # _objective fails for checking
+                "s_SolverCall" : ["mzn-gurobi -v -s -a -G linear " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
               },
               "Stderr_Keyvalues": {
                 s_AddKey+"Preslv_Rows": [ "Presolved:", "[]", 2 ],
@@ -257,7 +258,9 @@ class MZT_Param:
             "BE_FZN-GECODE": {
               s_CommentKey: [ "------------------- Specializations for Gecode FlatZinc interpreter" ],
               "EXE": {
-                "s_SolverCall" : ["mzn-fzn -s -G gecode --solver fzn-gecode " + sDZNOutputAgrs + " %s"], # _objective fails for checking
+#                "s_SolverCall" : ["mzn-fzn -s -G gecode --solver fzn-gecode " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
+                "s_SolverCall" : ["minizinc -s -G gecode -f fzn-gecode --mzn2fzn-cmd 'mzn2fzn " + sDZNOutputAgrs + "' %s"], # _objective fails for checking
+                "b_ThruShell"  : [False],
               }
             },
             "BE_FZN-CHUFFED": {

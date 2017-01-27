@@ -7,7 +7,7 @@ sChunkSep = '---'           ## A single line like this separates chunks in a log
 ###################### Logfile I/O #####################
 ##############################################################################################
 ## PROBLEM: JSON does not allow appending.
-## WORKAROUND: separate [JSON] chunks by '---'
+## WORKAROUND: separate [JSON] chunks by '---', inspired by https://github.com/pvorb/jsml.
 ## Writing an arbitrary chunk: ensure end-of-line before separator
 def writeLogChunk( wf, ch ):
     ss = ch.__str__()
