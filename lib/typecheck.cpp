@@ -918,6 +918,10 @@ namespace MiniZinc {
               "set comprehension expression must be scalar, but is `"
               +c.e()->type().toString(_env)+"'");
         tt.st(Type::ST_SET);
+        if (tt.isvar()) {
+          c.e(addCoercion(_env, _model, c.e(), Type::varint())());
+          tt.bt(Type::BT_INT);
+        }
       } else {
         if (c.e()->type().dim() != 0)
           throw TypeError(_env,c.e()->loc(),
