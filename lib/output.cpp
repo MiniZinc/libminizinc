@@ -383,7 +383,21 @@ namespace MiniZinc {
             process_var = true;
           } else {
             if (!had_add_to_output) {
-              process_var = vd->type().isvar() && vd->e()==NULL;
+              process_var = false;
+              if (vd->type().isvar()) {
+                if (vd->e()) {
+                  if (ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
+                    for (unsigned int i=0; i<al->v().size(); i++) {
+                      if (al->v()[i]->isa<AnonVar>()) {
+                        process_var = true;
+                        break;
+                      }
+                    }
+                  }
+                } else {
+                  process_var = true;
+                }
+              }
             }
           }
         }
