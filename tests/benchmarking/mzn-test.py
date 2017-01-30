@@ -4,15 +4,15 @@
 ##  This program runs MiniZinc solvers over a set of instances,
 ##  checks solutions and compares to given solution logs.
 
+##  TODO Run as post-processor on existing DZN output
 ##  TODO --output-objective produces _objective in dzn which cannot be read by checker.
-##  TODO Process groups? Make sure timeout works for all subprocesses
-##  TODO If checking fails, tests should run still
+##  TODO continuous output dumping as option
+##  TODO CPU/user time limit
 
 import sys
 import os.path, platform
 ##import numpy
 import math
-##from tabulate import tabulate
 import json, argparse
 import datetime
 from collections import OrderedDict
@@ -31,7 +31,7 @@ sFlnSolLastDzn = "sol_last.dzn"     ### File to save the DZN solution for checki
 sFlnLastStdout = "last_stdout"      ### File to dump stdout for any backend call
 sFlnLastStderr = "last_stderr"
 
-sDZNOutputAgrs = "--output-mode dzn"  ## --output-objective"    ## The flattener arguments to enable solution checking
+sDZNOutputAgrs = "--output-mode dzn --output-objective"    ## The flattener arguments to enable solution checking
 
 s_UsageExamples = ( 
     "\nUsage examples:"
@@ -147,8 +147,8 @@ class MZT_Param:
               "for example for values to be read from the outputs.",
               "Adding is only possible if the key is prefixed by '"+s_AddKey+"'"
             ],
-            "MINIZINC-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_MINIZINC" ],
-            "FZN-GECODE-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_FZN-GECODE" ],
+            "MINIZINC-CHK": [ "__BE_COMMON", "__BE_CHECKER_OLDMINIZINC", "BE_MINIZINC" ],
+            "FZN-GECODE-CHK": [ "__BE_COMMON", "__BE_CHECKER_OLDMINIZINC", "BE_FZN-GECODE" ],
             "FZN-CHUFFED-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_FZN-CHUFFED" ]
           },
           "BACKEND_DEFS": {
@@ -183,7 +183,7 @@ class MZT_Param:
                 s_CommentKey: [ "Numerical values to be extracted from a line in stderr.",
                   " { <outvar>: [ <regex search pattern>, <regex to replace by spaces>, <value's pos in the line>] }."
                 ], 
-                "TimeFlt": [ "Flattening done,", "[s]", 3, "/// E.g., 'Flattening done, 3s' produces 3" ]
+                "Time_Flt": [ "Flattening done,", "[s]", 3, "/// E.g., 'Flattening done, 3s' produces 3" ]
               },
               "Stdout_Keylines": {
                 s_CommentKey: [ "Similar to Stderr_Keylines"],
@@ -219,6 +219,16 @@ class MZT_Param:
             "__BE_CHECKER": {
               s_CommentKey: ["Specializations for a general checker" ],
               "EXE": {
+                "s_ExtraCmdline" : ["--allow-multiple-assignments"],
+                "b_ThruShell"  : [False],
+                "n_TimeoutRealHard": [15],
+                "n_VMEMLIMIT_SoftHard": [12582912, 12582912]
+              }
+            },
+            "__BE_CHECKER_OLDMINIZINC": {
+              s_CommentKey: ["Specializations for a general checker using the 1.6 MiniZinc driver" ],
+              "EXE": {
+                "s_ExtraCmdline" : ["--mzn2fzn-cmd 'mzn2fzn --output-mode dzn --allow-multiple-assignments'"],
                 "b_ThruShell"  : [False],
                 "n_TimeoutRealHard": [15],
                 "n_VMEMLIMIT_SoftHard": [12582912, 12582912]
@@ -437,20 +447,32 @@ class MznTest:
         
     def runTheInstances(self):
         logCurrent, lLogNames = self.cmpRes.addLog( self.params.args.result )
+        self.cmpRes.initListComparison()
         if self.params.sThisName!=lLogNames[0]:
             lLogNames[1] = self.params.sThisName
         for i_Inst in range( len(self.params.instList) ):
             s_Inst = self.params.instList[ i_Inst ]
             self.initInstance( i_Inst, s_Inst )
             self.solveOriginal( s_Inst )
-            if self.ifShouldCheck():
-                self.checkOriginal( s_Inst )
-            else:
-                print( "NO CHECK." )
-            logCurrent[
-              frozenset( self.result["Inst_Files"].split() ) ] = self.result
+            try:
+                if self.ifShouldCheck():
+                    self.checkOriginal( s_Inst )
+                else:
+                    print( "NO CHECK." )
+            except:
+                print( "  WARNING: failed to check instance solution. ", sys.exc_info()[0] )
+            sSet_Inst = frozenset( self.result["Inst_Files"].split() )
+            logCurrent[ sSet_Inst ] = self.result
+            try:
+                self.cmpRes.compareInstance( sSet_Inst )
+            except int:
+                print( "  WARNING: failed to compare/rank instance. ", sys.exc_info()[0] )
         
     def summarize(self):
+        try:
+            self.cmpRes.summarize()
+        except int:
+            print( "  WARNING: failed to summarize results. ", sys.exc_info()[0] )
         print( "\nResult logs saved to '", self.params.args.resultUnchk, "' and '", self.params.args.result,
                "'; failed solutions saved to '",
                self.params.cfg["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0],

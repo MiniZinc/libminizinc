@@ -96,7 +96,7 @@ def parseStdout( completed, result, mapKL, mapKV, solList ):
         if "Sol_Status" in res00:
             if 1==res00[ "Sol_Status" ][0]:
                 result["Number_Solutions"] += 1
-                result["SolutionLast"] = l_SolLast     ## Or save it? Need from a file then but might be great to have here
+                result["Solution_Last"] = l_SolLast     ## Or save it? Need from a file then but might be great to have here
                 if None!=solList:
                     solList.append( l_SolLast )
                 l_SolLast = ""                         ## Clean up
