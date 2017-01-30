@@ -79,6 +79,7 @@ namespace MiniZinc {
     bool flag_noMIPdomains = false;
     bool flag_statistics = false;
     bool flag_stdinInput = false;
+    bool flag_allow_multi_assign = false;
 
     std::string std_lib_dir;
     std::string globals_dir;

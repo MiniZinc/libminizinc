@@ -158,7 +158,7 @@ namespace MiniZinc {
           pEnv->model(pOutput);
           MZN_ASSERT_HARD_MSG( pEnv, "solns2out: could not allocate Env" );
           pEnv_guard.reset( pEnv );
-          MiniZinc::typecheck(*pEnv,pOutput,typeErrors);
+          MiniZinc::typecheck(*pEnv,pOutput,typeErrors,false,false);
           MiniZinc::registerBuiltins(*pEnv,pOutput);
           pEnv->envi().swap_output();
           return true;

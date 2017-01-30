@@ -213,6 +213,7 @@ namespace MiniZinc {
       TypeInst* vd_rename_ti = copy(e,e.cmap,vd->ti())->cast<TypeInst>();
       VarDecl* vd_rename = new VarDecl(Location().introduce(), vd_rename_ti, vd->flat()->id()->idn(), NULL);
       vd_rename->flat(vd->flat());
+      makePar(e,vd_rename);
       vd->e(vd_rename->id());
       e.output->addItem(new VarDeclI(Location().introduce(), vd_rename));
     }
@@ -382,7 +383,21 @@ namespace MiniZinc {
             process_var = true;
           } else {
             if (!had_add_to_output) {
-              process_var = vd->type().isvar() && vd->e()==NULL;
+              process_var = false;
+              if (vd->type().isvar()) {
+                if (vd->e()) {
+                  if (ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
+                    for (unsigned int i=0; i<al->v().size(); i++) {
+                      if (al->v()[i]->isa<AnonVar>()) {
+                        process_var = true;
+                        break;
+                      }
+                    }
+                  }
+                } else {
+                  process_var = true;
+                }
+              }
             }
           }
         }

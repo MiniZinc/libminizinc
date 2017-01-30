@@ -5006,6 +5006,22 @@ namespace MiniZinc {
                 } else {
                   ret = flat_exp(env,ctx,decl->e(),r,NULL);
                   args_ee.push_back(ret);
+                  if (decl->e()->type().dim() > 0) {
+                    ArrayLit* al = follow_id_to_value(ret.r())->cast<ArrayLit>();
+                    assert(al->dims() == decl->e()->type().dim());
+                    for (unsigned int i=0; i<decl->ti()->ranges().size(); i++) {
+                      if (decl->ti()->ranges()[i]->domain() &&
+                          !decl->ti()->ranges()[i]->domain()->isa<TIId>()) {
+                        GCLock lock;
+                        IntSetVal* isv = eval_intset(env, decl->ti()->ranges()[i]->domain());
+                        if (al->min(i) != isv->min() || al->max(i) != isv->max()) {
+                          EE ee;
+                          ee.b = constants().lit_false;
+                          args_ee.push_back(ee);
+                        }
+                      }
+                    }
+                  }
                   if (decl->ti()->domain() && !decl->ti()->domain()->isa<TIId>()) {
                     BinOpType bot;
                     if (ret.r()->type().st() == Type::ST_SET) {
