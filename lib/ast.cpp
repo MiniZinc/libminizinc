@@ -810,7 +810,7 @@ namespace MiniZinc {
             if (it==tmap.end())
               throw TypeError(env, fi->loc(),"type-inst variable $"+enumTIId.str()+" used but not defined");
             enumIds[i] = it->second.enumId();
-            hadRealEnum = (enumIds[i] != 0);
+            hadRealEnum |= (enumIds[i] != 0);
           } else {
             enumIds[i] = 0;
           }
