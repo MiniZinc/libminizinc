@@ -50,7 +50,6 @@ void Flattener::printHelp(ostream& os)
   << "  -e, --model-check-only\n    Check the model (without requiring data) for errors, but do not\n    convert to FlatZinc." << std::endl
   << "  --model-interface-only\n    Only extract parameters and output variables." << std::endl
   << "  --no-optimize\n    Do not optimize the FlatZinc" << std::endl
-  // \n    Currently does nothing (only available for compatibility with 1.6)
   << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl
   << "  -D <data>, --cmdline-data <data>\n    Include the given data assignment in the model." << std::endl
   << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
@@ -59,6 +58,7 @@ void Flattener::printHelp(ostream& os)
   << "  -I --search-dir\n    Additionally search for included files in <dir>." << std::endl
   << "  -D \"fMIPdomains=false\"\n    No domain unification for MIP" << std::endl
   << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by inequalities" << std::endl
+  << "  --allow-multiple-assignments\n    Allow multiple assignments to the same variable (e.g. in dzn)" << std::endl
   << std::endl;
   os
   << "Flattener output options:" << std::endl
@@ -146,6 +146,8 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     flag_noMIPdomains = true;
   } else if ( cop.getOption( "-Werror" ) ) {
     flag_werror = true;
+  } else if ( cop.getOption( "--allow-multiple-assignments" ) ) {
+    flag_allow_multi_assign = true;
   } else {
     if (flag_stdinInput)
       goto error;
@@ -312,7 +314,7 @@ void Flattener::flatten()
           if (flag_verbose)
             std::cerr << "Typechecking ...";
           vector<TypeError> typeErrors;
-          MiniZinc::typecheck(env, m, typeErrors, flag_model_check_only || flag_model_interface_only);
+          MiniZinc::typecheck(env, m, typeErrors, flag_model_check_only || flag_model_interface_only, flag_allow_multi_assign);
           if (typeErrors.size() > 0) {
             for (unsigned int i=0; i<typeErrors.size(); i++) {
               if (flag_verbose)

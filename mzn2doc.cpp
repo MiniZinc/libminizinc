@@ -239,7 +239,7 @@ int main(int argc, char** argv) {
         if (flag_verbose)
           std::cerr << "Typechecking ...";
         vector<TypeError> typeErrors;
-        MiniZinc::typecheck(env, m, typeErrors, true);
+        MiniZinc::typecheck(env, m, typeErrors, true, false);
         if (typeErrors.size() > 0) {
           for (unsigned int i=0; i<typeErrors.size(); i++) {
             if (flag_verbose)
