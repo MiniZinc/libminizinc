@@ -180,15 +180,6 @@ namespace MiniZinc {
     }
     static Expression* exp(Expression* e) { return e; }
   };
-  class EvalNone {
-  public:
-    typedef Expression* Val;
-    typedef Expression* ArrayVal;
-    static Expression* e(EnvI&, Expression* e) {
-      return e;
-    }
-    static Expression* exp(Expression* e) { return e; }
-  };
   class EvalCopy {
   public:
     typedef Expression* Val;
