@@ -1221,7 +1221,7 @@ namespace MiniZinc {
           if (ti.domain()->type().ti() != Type::TI_PAR ||
               ti.domain()->type().st() != Type::ST_SET)
             throw TypeError(_env,ti.domain()->loc(),
-                            "type-inst must be par set");
+                            "type-inst must be par set but is `"+ti.domain()->type().toString(_env)+"'");
           if (ti.domain()->type().dim() != 0)
             throw TypeError(_env,ti.domain()->loc(),
                             "type-inst cannot be an array");
