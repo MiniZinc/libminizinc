@@ -4985,7 +4985,7 @@ namespace MiniZinc {
                   ret = flat_exp(env,ctx,decl->e(),r,NULL);
                   args_ee.push_back(ret);
                   if (decl->e()->type().dim() > 0) {
-                    ArrayLit* al = follow_id_to_value(ret.r())->cast<ArrayLit>();
+                    ArrayLit* al = follow_id(ret.r())->cast<ArrayLit>();
                     assert(al->dims() == decl->e()->type().dim());
                     for (unsigned int i=0; i<decl->ti()->ranges().size(); i++) {
                       if (decl->ti()->ranges()[i]->domain() &&
