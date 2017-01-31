@@ -573,7 +573,7 @@ namespace MiniZinc {
 
     for (Model::FnMap::iterator it = m->fnmap.begin(); it != m->fnmap.end(); ++it) {
       for (unsigned int i=0; i<it->second.size(); i++)
-        c->registerFn(env,copy(env,cm,it->second[i],false,true,isFlatModel)->cast<FunctionI>());
+        c->registerFn(env,copy(env,cm,it->second[i].fi,false,true,isFlatModel)->cast<FunctionI>());
     }
     cm.insert(m,c);
     return c;

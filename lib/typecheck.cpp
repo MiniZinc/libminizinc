@@ -1440,6 +1440,8 @@ namespace MiniZinc {
       }
     }
     
+    m->fixFnMap();
+    
     {
       Typer<true> ty(env.envi(), m, typeErrors);
       BottomUpIterator<Typer<true> > bu_ty(ty);

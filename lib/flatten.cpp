@@ -4321,9 +4321,9 @@ namespace MiniZinc {
               le0 = get_linexp<FloatLit>(e0.r());
             }
             if (le0) {
-              if (boe1->type().isint() && !boe1->type().isopt()) {
+              if (boe0->type().isint() && boe1->type().isint() && !boe1->type().isopt()) {
                 le1 = get_linexp<IntLit>(e1.r());
-              } else if (boe1->type().isfloat() && !boe1->type().isopt()) {
+              } else if (boe0->type().isfloat() && boe1->type().isfloat() && !boe1->type().isopt()) {
                 le1 = get_linexp<FloatLit>(e1.r());
               }
             }

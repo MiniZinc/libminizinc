@@ -37,8 +37,19 @@ namespace MiniZinc {
     /// Next model in root set list
     Model* _roots_next;
 
+    struct FnEntry {
+      std::vector<Type> t;
+      FunctionI* fi;
+      bool isPolymorphic;
+      FnEntry(FunctionI* fi0);
+      bool operator <(const FnEntry&) const;
+    };
+    
+    /// Add all instances of polymorphic entry \a fe to \a entries
+    void addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& entries);
+    
     /// Type of map from identifiers to function declarations
-    typedef ASTStringMap<std::vector<FunctionI*> >::t FnMap;
+    typedef ASTStringMap<std::vector<FnEntry> >::t FnMap;
     /// Map from identifiers to function declarations
     FnMap fnmap;
 
@@ -92,6 +103,8 @@ namespace MiniZinc {
     void sortFn(void);
     /// Check that registered functions do not clash wrt overloading
     void checkFnOverloading(EnvI& env);
+    /// Fix function table after type checking
+    void fixFnMap(void);
     /// Return function declaration for \a id matching \a args
     FunctionI* matchFn(EnvI& env, const ASTString& id,
                        const std::vector<Expression*>& args,
