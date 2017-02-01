@@ -1,4 +1,4 @@
-import psutil, shlex, subprocess, resource, timeit, io, re, sys
+import psutil, shlex, subprocess, resource, timeit, re, sys
 import utils, json_config
 
 ## TODO Keyline/value dictionaries: entries == json_config.s_CommentKey are ignored. Make it a parameter
@@ -71,8 +71,7 @@ def runCmd( s_Cmd, b_Shell=False, timeo=None, meml=None ):
     tm = timeit.default_timer() - tm
     return completed, tm
     
-def parseStderr( completed, result, mapKL, mapKV ):
-    f = io.StringIO( completed.stderr )
+def parseStderr( f, result, mapKL, mapKV ):
 #        result["ProbSense"] = None
 #        result["TimeFlt"] = None
     for line in f:
@@ -81,8 +80,7 @@ def parseStderr( completed, result, mapKL, mapKV ):
         checkKeyvalues( line, mapKV, result )
         
 ## Puts feasible solutions into solList if it's not None
-def parseStdout( completed, result, mapKL, mapKV, solList ):
-    f = io.StringIO( completed.stdout )
+def parseStdout( f, result, mapKL, mapKV, solList ):
     l_SolLast = ""
     n_SolStatus = 0
     result["Number_Solutions"] = 0

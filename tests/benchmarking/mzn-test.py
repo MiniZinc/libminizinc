@@ -8,7 +8,7 @@
 ##  TODO continuous output dumping as option
 ##  TODO CPU/user time limit
 
-import sys
+import sys, io
 import os.path, platform
 ##import numpy
 import math
@@ -33,7 +33,7 @@ sDZNOutputAgrs = "--output-mode dzn --output-objective"    ## The flattener argu
 
 s_UsageExamples = ( 
     "\nUSAGE EXAMPLES:"
-    "\n(1)  \"mzn-test.py model.mzn data.dzn [--checkDZN stdout.txt [--checkStderr stderr.txt]]\"                  ::: check the instance's solutions, optionally reading them from a DZN-formatted file or solving first."
+    "\n(1)  \"mzn-test.py model.mzn data.dzn [--checkDZN stdout.txt [--checkStderr stderr.txt]] [--chkPrf MINIZINC-CHK --chkPrf FZN-GECODE-CHK] [--tCheck 15]\"                  ::: check the instance's solutions, optionally reading them from a DZN-formatted file or solving first, optionally overriding default checker list etc."
     "\n(2)  \"mzn-test.py --slvPrf MZN-CPLEX -t 300 -l instList1.txt -l instList2.txt --name ChuffedTest_003 --result newLog00.json prevLog1.json prevLog2.json --failed failLog.json\""
     "             ::: solve instances using the specified solver profile and wall time limit 300 seconds. The instances are taken from the list files. The test is aliased ChuffedTest_003. Results are saved to newLog00.json and (TODO) compared/ranked to those in prevLog's. (Probably) incorrect solutions are saved to failLog.json."
     "\n(3)  \"mzn-test.py [-l instList1.txt] -c prevLog1.json -c prevLog2.json [--cmpOnly]\"                  ::: only compare existing logs, optionally limited to the given instances."
@@ -57,11 +57,13 @@ class MZT_Param:
               ' instance file types specified in config')
         parser.add_argument('--cmpOnly', '--compareOnly', action='store_true',
                             help='only compare JSON logs, optionally selecting the provided instance (lists)')
+        parser.add_argument('--chkPrf', '--checkerProfile', metavar='<prf_name>', action='append',
+                            help='checker profile from those defined in config section \"CHECKER_PROFILES\", can be a few')
         parser.add_argument('--tCheck',
                             type=float,
                             metavar='<sec>', help='checker backend wall-time limit, default: '+
                               str(self.cfgDefault["BACKEND_DEFS"]["__BE_CHECKER"]["EXE"]["n_TimeoutRealHard"][0]))
-        parser.add_argument('--slvPrf', '--solverProfile', metavar='<profile_name>',
+        parser.add_argument('--slvPrf', '--solverProfile', metavar='<prf_name>',
                             help='solver profile from those defined in config section \"SOLVER_PROFILES\"')
         parser.add_argument('--solver', '--solverCall', metavar='"<exe+flags or shell command(s) if --shellSolve 1>"',
                             help='solver backend call, should be quoted. Insert %%s where instance files need to be. Add \''
@@ -332,8 +334,10 @@ class MZT_Param:
             self.slvBE["EXE"]["s_SolverCall"][0] = self.args.solver
         if None!=self.args.shellSolve:
             self.slvBE["EXE"]["b_ThruShell"][0] = self.args.shellSolve!=0
-        print ( "\nSolver config: ", json.dumps( self.slvBE["EXE"] ) )
+        print ( "\nSolver/checker configurations:\n     SLV_CFG: ", json.dumps( self.slvBE["EXE"] ) )
         ### COMPILE THE CHECKER BACKENDS
+        if None!=self.args.chkPrf and 0<len( self.args.chkPrf ):
+            self.cfg["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["Checkers"] = self.args.chkPrf
         chkPrfList = self.cfg["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["Checkers"]
         self.chkBEs = []
         for chkPrfName in chkPrfList:
@@ -344,7 +348,7 @@ class MZT_Param:
                 self.chkBEs[-1] = json_config.mergeJSON( self.chkBEs[-1], self.cfg["BACKEND_DEFS"][chkPrf[i]] )
             if None!=self.args.tCheck:
                 self.chkBEs[-1]["EXE"]["n_TimeoutRealHard"][0] = self.args.tCheck
-            print ( "Checker config: ", json.dumps( self.chkBEs[-1]["EXE"] ) )
+            print ( "     CHK_CFG: ", json.dumps( self.chkBEs[-1]["EXE"] ) )
         ### SAVE THE SOLVER BACKEND
         if None!=self.args.saveSolverCfg:
             with open( self.args.saveSolverCfg, 'w' ) as wf:
@@ -523,42 +527,56 @@ class MznTest:
         
     ## Solve a given MZN instance and return the result map
     ## Arguments: instance files in a string, backend parameter dictionary
+    ## solList provided <=> this is solving (not checking) and will use --checkDZN if opted
     def solveInstance(self, s_Inst, slvBE, slvName, solList=None):
+        resSlv = OrderedDict()
+        bChkDZN = True if None!=solList and None!=self.params.args.checkDZN else False
+        if bChkDZN:
 #        print( "Running '", slvBE["EXE"]["s_SolverCall"][0] \
 #          + ' ' + slvBE["EXE"]["s_ExtraCmdline"][0], "'... ", sep='', end='', flush=True )
-        print( slvName, "... ", sep='', end='', flush=True )
-        s_Call = slvBE["EXE"]["s_SolverCall"][0] % s_Inst \
-          + ' ' + slvBE["EXE"]["s_ExtraCmdline"][0]
-        resSlv = OrderedDict()
-        resSlv["Solver_Call"] = s_Call
-        resSlv["DateTime_Start"] = datetime.datetime.now().__str__()
-        completed, tmAll = \
-            mzn_exec.runCmd(
-              s_Call,
-              slvBE["EXE"]["b_ThruShell"][0],
-              slvBE["EXE"]["n_TimeoutRealHard"][0],
-              slvBE["EXE"]["n_VMEMLIMIT_SoftHard"]
-            )
-        with open( sFlnLastStdout + slvName + '.txt', "w" ) as tf:
-            tf.write( completed.stdout )
-        with open( sFlnLastStderr + slvName + '.txt', "w" ) as tf:
-            tf.write( completed.stderr )
-        print( "STDOUT/ERR: ", len(completed.stdout), '/',
-              len(completed.stderr), " bytes", sep='', end=', ' )
-        resSlv["DateTime_Finish"] = datetime.datetime.now().__str__()
-        resSlv["TimeReal_All"] = tmAll
-        resSlv["TimeReal_LastStatus"] = 0
-        resSlv["Hostname"] = platform.uname()[1]
-        mzn_exec.parseStderr( completed, resSlv, slvBE["Stderr_Keylines"], slvBE["Stderr_Keyvalues"] )
-        resSlv["Sol_Status"] = [-50, "   ????? NO STATUS LINE PARSED."]
-        mzn_exec.parseStdout( completed, resSlv, slvBE["Stdout_Keylines"], slvBE["Stdout_Keyvalues"], solList )
+            resSlv["Sol_Status"] = [-50, "   ????? NO STATUS LINE PARSED."]
+            print( "_PARSING '", self.params.args.checkDZN, sep='', end="'... " )
+            with open( self.params.args.checkDZN, 'r' ) as ro:
+                mzn_exec.parseStdout( ro, resSlv, slvBE["Stdout_Keylines"], slvBE["Stdout_Keyvalues"], solList )
+                print( ro.tell(), "bytes", end='' )
+            if None!=self.params.args.checkStderr:
+                print( "  and '", self.params.args.checkStderr, sep='', end="'... " )
+                with open( self.params.args.checkStderr, 'r' ) as re:
+                    mzn_exec.parseStderr( re, resSlv, slvBE["Stderr_Keylines"], slvBE["Stderr_Keyvalues"] )
+                    print( re.tell(), "bytes", end='' )
+        else:      #### Solving oneself
+            print( slvName, "... ", sep='', end='', flush=True )
+            s_Call = slvBE["EXE"]["s_SolverCall"][0] % s_Inst \
+              + ' ' + slvBE["EXE"]["s_ExtraCmdline"][0]
+            resSlv["Solver_Call"] = s_Call
+            resSlv["DateTime_Start"] = datetime.datetime.now().__str__()
+            completed, tmAll = \
+                mzn_exec.runCmd(
+                  s_Call,
+                  slvBE["EXE"]["b_ThruShell"][0],
+                  slvBE["EXE"]["n_TimeoutRealHard"][0],
+                  slvBE["EXE"]["n_VMEMLIMIT_SoftHard"]
+                )
+            with open( sFlnLastStdout + slvName + '.txt', "w" ) as tf:
+                tf.write( completed.stdout )
+            with open( sFlnLastStderr + slvName + '.txt', "w" ) as tf:
+                tf.write( completed.stderr )
+            print( "STDOUT/ERR: ", len(completed.stdout), '/',
+                  len(completed.stderr), " bytes", sep='', end=', ' )
+            print( " t: {:.3f}".format( tmAll ), end=' s, ' )
+            resSlv["DateTime_Finish"] = datetime.datetime.now().__str__()
+            resSlv["TimeReal_All"] = tmAll
+            resSlv["TimeReal_LastStatus"] = 0
+            resSlv["Hostname"] = platform.uname()[1]
+            mzn_exec.parseStderr( io.StringIO( completed.stderr ), resSlv, slvBE["Stderr_Keylines"], slvBE["Stderr_Keyvalues"] )
+            resSlv["Sol_Status"] = [-50, "   ????? NO STATUS LINE PARSED."]
+            mzn_exec.parseStdout( io.StringIO( completed.stdout ), resSlv, slvBE["Stdout_Keylines"], slvBE["Stdout_Keyvalues"], solList )
         dTmLast = utils.try_float( resSlv.get( "RealTime_Solns2Out" ) )
         if None!=dTmLast:
             resSlv["TimeReal_LastStatus"] = dTmLast / 1000.0
             resSlv.pop( "RealTime_Solns2Out" )
         ## if "SolutionLast" in resSlv:
         ##     print( "   SOLUTION_LAST:\n", resSlv["SolutionLast"], sep='' )
-        print( " t: {:.3f}".format( tmAll ), end=' s, ' )
         print( "   STATUS:", resSlv["Sol_Status"] )
         return resSlv
       
