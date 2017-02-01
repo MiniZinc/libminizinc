@@ -5,7 +5,6 @@
 ##  checks solutions and compares to given solution logs.
 
 ##  TODO Run as post-processor on existing DZN output
-##  TODO --output-objective produces _objective in dzn which cannot be read by checker.
 ##  TODO continuous output dumping as option
 ##  TODO CPU/user time limit
 
@@ -21,23 +20,23 @@ import utils, json_config, json_log, mzn_exec, cmp_result_logs
 from json_config import s_CommentKey, s_AddKey
 
 s_ProgramDescr = 'MiniZinc testing automation. (c) 2017 Monash University, gleb.belov@monash.edu'
-s_ProgramDescrLong = ( "Allows solving of 1 or several instances and automatic feasibility checking"
-    "\nof produced solutions by the configured solver/checker profiles.")
+s_ProgramDescrLong = ( "Allows checking of MiniZinc solutions by configurable checker profiles. The solutions can be input or produced by a chosen solver profile, for 1 or several instances, with result comparison and (TODO) ranking.")
 
 ###########################   GENERAL CONFIG. Could be in the JSON config actually    #########################
 sFlnSolUnchk = "solUnchk.json"      ### Logfiles to append immediate results
 sFlnSolCheck = "solCheck.json"
 sFlnSolLastDzn = "sol_last.dzn"     ### File to save the DZN solution for checking
-sFlnLastStdout = "last_stdout"      ### File to dump stdout for any backend call
+sFlnLastStdout = "last_stdout"      ### File name base to dump stdout for any backend call
 sFlnLastStderr = "last_stderr"
 
-sDZNOutputAgrs = "--output-mode dzn --output-objective"    ## The flattener arguments to enable solution checking
+sDZNOutputAgrs = "--output-mode dzn --output-objective"    ## The flattener arguments to produce DZN-compatible output facilitating solution checking
 
 s_UsageExamples = ( 
-    "\nUsage examples:"
-    "\n(1)  \"mzn-test.py model.mzn data.dzn\"                  ::: solve and check the instance with default settings."
+    "\nUSAGE EXAMPLES:"
+    "\n(1)  \"mzn-test.py model.mzn data.dzn [--checkDZN stdout.txt [--checkStderr stderr.txt]]\"                  ::: check the instance's solutions, optionally reading them from a DZN-formatted file or solving first."
     "\n(2)  \"mzn-test.py --slvPrf MZN-CPLEX -t 300 -l instList1.txt -l instList2.txt --name ChuffedTest_003 --result newLog00.json prevLog1.json prevLog2.json --failed failLog.json\""
     "             ::: solve instances using the specified solver profile and wall time limit 300 seconds. The instances are taken from the list files. The test is aliased ChuffedTest_003. Results are saved to newLog00.json and (TODO) compared/ranked to those in prevLog's. (Probably) incorrect solutions are saved to failLog.json."
+    "\n(3)  \"mzn-test.py [-l instList1.txt] -c prevLog1.json -c prevLog2.json [--cmpOnly]\"                  ::: only compare existing logs, optionally limited to the given instances."
   )
 ##############################################################################################
 ################ Parameters of MZN-Test, including config and command-line
@@ -49,10 +48,20 @@ class MZT_Param:
           epilog=s_UsageExamples)
         parser.add_argument('instanceFiles', nargs='*', metavar='<instanceFile>',
           help='model instance files, if no instance lists supplied, otherwise existing solution logs to compare with')
+        parser.add_argument('--checkDZN', '--checkStdout', metavar='<stdout_file>',
+                            help='check existing DZN-formatted solutions from <stdout_file>. The DZN format is produced, e.g., if the model is flattened with \'' + sDZNOutputAgrs + '\'')
+        parser.add_argument('--checkStderr', metavar='<stderr_file>',
+                            help='for checking, read stderr from <stderr_file> (not essential).')
         parser.add_argument('-l', '--instanceList', dest='l_InstLists', action='append', metavar='<instanceList>',
             help='file with a list of instance input files, one instance per line,'
               ' instance file types specified in config')
-        parser.add_argument('--slvPrf', '--solverProfile', metavar='<profile name>',
+        parser.add_argument('--cmpOnly', '--compareOnly', action='store_true',
+                            help='only compare JSON logs, optionally selecting the provided instance (lists)')
+        parser.add_argument('--tCheck',
+                            type=float,
+                            metavar='<sec>', help='checker backend wall-time limit, default: '+
+                              str(self.cfgDefault["BACKEND_DEFS"]["__BE_CHECKER"]["EXE"]["n_TimeoutRealHard"][0]))
+        parser.add_argument('--slvPrf', '--solverProfile', metavar='<profile_name>',
                             help='solver profile from those defined in config section \"SOLVER_PROFILES\"')
         parser.add_argument('--solver', '--solverCall', metavar='"<exe+flags or shell command(s) if --shellSolve 1>"',
                             help='solver backend call, should be quoted. Insert %%s where instance files need to be. Add \''
@@ -62,10 +71,6 @@ class MZT_Param:
                             type=float,
                             metavar='<sec>', help='solver backend wall-time limit, default: '+
                               str(self.cfgDefault["BACKEND_DEFS"]["__BE_SOLVER"]["EXE"]["n_TimeoutRealHard"][0]))
-        parser.add_argument('--tCheck',
-                            type=float,
-                            metavar='<sec>', help='checker backend wall-time limit, default: '+
-                              str(self.cfgDefault["BACKEND_DEFS"]["__BE_CHECKER"]["EXE"]["n_TimeoutRealHard"][0]))
         parser.add_argument('--result', default=sFlnSolCheck, metavar='<file>',
                             help='save result log to <file>, default: \''+sFlnSolCheck+'\'')
         parser.add_argument('--name', '--testName', metavar='<string>', help='name of this test run, defaults to result log file name')
@@ -205,7 +210,8 @@ class MZT_Param:
                                         "/// The objval as reported by solver."],
                 "DualBnd_Solver":   [ "% obj, bound, CPU_time, nodes", "[,:]", 8 ],
                 "CPUTime_Solver":   [ "% obj, bound, CPU_time, nodes", "[,:]", 9 ],
-                "NNodes_Solver":   [ "% obj, bound, CPU_time, nodes", "[,:]", 10 ]
+                "NNodes_Solver":   [ "% obj, bound, CPU_time, nodes", "[,:]", 10 ],
+                "RealTime_Solns2Out": [ "% time elapsed:", " ", 4 ],
               }
             },
             "__BE_SOLVER": {
@@ -228,7 +234,7 @@ class MZT_Param:
             "__BE_CHECKER_OLDMINIZINC": {
               s_CommentKey: ["Specializations for a general checker using the 1.6 MiniZinc driver" ],
               "EXE": {
-                "s_ExtraCmdline" : ["--mzn2fzn-cmd 'mzn2fzn --output-mode dzn --allow-multiple-assignments'"],
+                "s_ExtraCmdline" : ["--mzn2fzn-cmd 'mzn2fzn -v -s --output-mode dzn --allow-multiple-assignments'"],
                 "b_ThruShell"  : [False],
                 "n_TimeoutRealHard": [15],
                 "n_VMEMLIMIT_SoftHard": [12582912, 12582912]
@@ -237,14 +243,14 @@ class MZT_Param:
             "BE_MINIZINC": {
               s_CommentKey: [ "------------------- Specializations for pure minizinc driver" ],
               "EXE":{
-                "s_SolverCall": [ "minizinc --mzn2fzn-cmd 'mzn2fzn " + sDZNOutputAgrs + "' -s -a %s"], # _objective fails for checking
+                "s_SolverCall": [ "minizinc --mzn2fzn-cmd 'mzn2fzn -v -s " + sDZNOutputAgrs + "' -s -a %s"], # _objective fails for checking
                 "b_ThruShell"  : [False],
               },
             },
             "BE_MZN-GUROBI": {
               s_CommentKey: [ "------------------- Specializations for Gurobi solver instance" ],
               "EXE":{
-                "s_SolverCall" : ["mzn-gurobi -v -s -a -G linear " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
+                "s_SolverCall" : ["mzn-gurobi -v -s -a -G linear --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
               },
               "Stderr_Keyvalues": {
                 s_AddKey+"Preslv_Rows": [ "Presolved:", " ", 2 ],
@@ -255,7 +261,7 @@ class MZT_Param:
             "BE_MZN-CPLEX": {
               s_CommentKey: [ "------------------- Specializations for IBM ILOG CPLEX solver instance" ],
               "EXE": {
-                "s_SolverCall" : ["mzn-cplex -v -s -a -G linear " + sDZNOutputAgrs + " %s"], # _objective fails for checking
+                "s_SolverCall" : ["mzn-cplex -v -s -a -G linear  --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking
                 #"s_SolverCall" : ["./run-mzn-cplex.sh %s"],
                 #"b_ThruShell"  : [True],
               },
@@ -269,14 +275,14 @@ class MZT_Param:
               s_CommentKey: [ "------------------- Specializations for Gecode FlatZinc interpreter" ],
               "EXE": {
 #                "s_SolverCall" : ["mzn-fzn -s -G gecode --solver fzn-gecode " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
-                "s_SolverCall" : ["minizinc -s -G gecode -f fzn-gecode --mzn2fzn-cmd 'mzn2fzn " + sDZNOutputAgrs + "' %s"], # _objective fails for checking
+                "s_SolverCall" : ["minizinc -s -G gecode -f fzn-gecode --mzn2fzn-cmd 'mzn2fzn -v -s " + sDZNOutputAgrs + "' %s"], # _objective fails for checking
                 "b_ThruShell"  : [False],
               }
             },
             "BE_FZN-CHUFFED": {
               s_CommentKey: [ "------------------- Specializations for Chuffed FlatZinc interpreter" ],
               "EXE": {
-                "s_SolverCall" : ["mzn-fzn -s -G chuffed --solver fzn-chuffed " + sDZNOutputAgrs + " %s"], # _objective fails for checking
+                "s_SolverCall" : ["mzn-fzn -s -G chuffed --solver fzn-chuffed --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking
                 "s_ExtraCmdline" : ["--fzn-flag -f"]
               }
             }
@@ -393,7 +399,7 @@ class MznTest:
         ## Can compile the list from log files, see below
         self.params.instList = []
         ## If -l not used, take the pos args
-        if 0<len( self.params.args.instanceFiles ) and \
+        if not self.params.args.cmpOnly and 0<len( self.params.args.instanceFiles ) and \
           ( None==self.params.args.l_InstLists or 0==len( self.params.args.l_InstLists ) ):
             self.params.instList.append( " ".join( self.params.args.instanceFiles ) )     ## Also if l_InstLists?  TODO
         ## If -l used, compile the inst list files
@@ -419,7 +425,10 @@ class MznTest:
         cmpFileList = []
         if None!=self.params.args.compare:     ### If -c used
             cmpFileList += self.params.args.compare
-        ### If -l not used, interpret pos arguments as comparison logs
+        ## Mode "compare only" if explicit or no instances
+        self.bCmpOnly = True if self.params.args.cmpOnly or \
+              0==len( self.params.instList ) else False
+        ### If -l used, interpret pos arguments as comparison logs
         if None!=self.params.args.l_InstLists and 0<len( self.params.args.l_InstLists ):
             cmpFileList += self.params.args.instanceFiles
         for sFlnLog in cmpFileList:
@@ -447,9 +456,9 @@ class MznTest:
         
     def runTheInstances(self):
         logCurrent, lLogNames = self.cmpRes.addLog( self.params.args.result )
-        self.cmpRes.initListComparison()
         if self.params.sThisName!=lLogNames[0]:
             lLogNames[1] = self.params.sThisName
+        self.cmpRes.initListComparison()
         for i_Inst in range( len(self.params.instList) ):
             s_Inst = self.params.instList[ i_Inst ]
             self.initInstance( i_Inst, s_Inst )
@@ -465,7 +474,18 @@ class MznTest:
             logCurrent[ sSet_Inst ] = self.result
             try:
                 self.cmpRes.compareInstance( sSet_Inst )
-            except int:
+            except:
+                print( "  WARNING: failed to compare/rank instance. ", sys.exc_info()[0] )
+
+    def compareLogs(self):
+        self.cmpRes.initListComparison()
+        theList = [ frozenset( lfn.split() ) for lfn in self.params.instList ]
+        if 0==len( theList ):
+            theList = self.cmpRes.getInstanceUnion()
+        for sInst in theList:
+            try:
+                self.cmpRes.compareInstance( sInst )
+            except:
                 print( "  WARNING: failed to compare/rank instance. ", sys.exc_info()[0] )
         
     def summarize(self):
@@ -473,7 +493,8 @@ class MznTest:
             self.cmpRes.summarize()
         except int:
             print( "  WARNING: failed to summarize results. ", sys.exc_info()[0] )
-        print( "\nResult logs saved to '", self.params.args.resultUnchk, "' and '", self.params.args.result,
+        if not self.bCmpOnly:
+            print( "\nResult logs saved to '", self.params.args.resultUnchk, "' and '", self.params.args.result,
                "'; failed solutions saved to '",
                self.params.cfg["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0],
                "' in an \"appendable JSON\" format, cf. https://github.com/pvorb/jsml."
@@ -496,15 +517,16 @@ class MznTest:
 
     ## Solve the original instance
     def solveOriginal( self, s_Inst ):
-        self.result["__SOLVE__"] = self.solveInstance( s_Inst, self.params.slvBE, '_SLV', self.solList )
+        self.result["__SOLVE__"] = self.solveInstance( s_Inst, self.params.slvBE, '_SOLVING', self.solList )
         # print( "   RESULT:\n", self.result )
         self.saveSolution( self.fileSol00 )
         
     ## Solve a given MZN instance and return the result map
     ## Arguments: instance files in a string, backend parameter dictionary
     def solveInstance(self, s_Inst, slvBE, slvName, solList=None):
-        print( "Running '", slvBE["EXE"]["s_SolverCall"][0] \
-          + ' ' + slvBE["EXE"]["s_ExtraCmdline"][0], "'... ", sep='', end='', flush=True )
+#        print( "Running '", slvBE["EXE"]["s_SolverCall"][0] \
+#          + ' ' + slvBE["EXE"]["s_ExtraCmdline"][0], "'... ", sep='', end='', flush=True )
+        print( slvName, "... ", sep='', end='', flush=True )
         s_Call = slvBE["EXE"]["s_SolverCall"][0] % s_Inst \
           + ' ' + slvBE["EXE"]["s_ExtraCmdline"][0]
         resSlv = OrderedDict()
@@ -525,10 +547,15 @@ class MznTest:
               len(completed.stderr), " bytes", sep='', end=', ' )
         resSlv["DateTime_Finish"] = datetime.datetime.now().__str__()
         resSlv["TimeReal_All"] = tmAll
+        resSlv["TimeReal_LastStatus"] = 0
         resSlv["Hostname"] = platform.uname()[1]
         mzn_exec.parseStderr( completed, resSlv, slvBE["Stderr_Keylines"], slvBE["Stderr_Keyvalues"] )
         resSlv["Sol_Status"] = [-50, "   ????? NO STATUS LINE PARSED."]
         mzn_exec.parseStdout( completed, resSlv, slvBE["Stdout_Keylines"], slvBE["Stdout_Keyvalues"], solList )
+        dTmLast = utils.try_float( resSlv.get( "RealTime_Solns2Out" ) )
+        if None!=dTmLast:
+            resSlv["TimeReal_LastStatus"] = dTmLast / 1000.0
+            resSlv.pop( "RealTime_Solns2Out" )
         ## if "SolutionLast" in resSlv:
         ##     print( "   SOLUTION_LAST:\n", resSlv["SolutionLast"], sep='' )
         print( " t: {:.3f}".format( tmAll ), end=' s, ' )
@@ -604,7 +631,10 @@ class MznTest:
         self.obtainParams()
         self.compileExplicitModelLists()
         self.compileResultLogs()
-        self.runTheInstances()
+        if not self.bCmpOnly:
+            self.runTheInstances()
+        else:
+            self.compareLogs()
         self.summarize()
         
 #  def main

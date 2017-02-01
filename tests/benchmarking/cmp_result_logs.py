@@ -5,7 +5,7 @@
 
 from collections import OrderedDict
 # import prettytable
-import utils
+import utils, functools
 
 #####################################################################################
 ################### class CompareLogs ##################
@@ -40,8 +40,7 @@ class CompareLogs:
       
     ## Return the union of all instances in all logs
     def getInstanceUnion( self ):
-        assert False
-        return []                      ## TODO
+        return list( functools.reduce(set.union, (set(d[0].keys()) for d in self.lResLogs)) )
 
     ## Return the intersection of all instances in all logs
     def getInstanceIntersection( self ):
@@ -110,7 +109,6 @@ class CompareLogs:
                 mSlv = mLog[ sInst ][ "__SOLVE__" ]               ## __SOLVE__ always there???
                 if "Problem_Sense" in mSlv:
                     self.sSenses[ mSlv["Problem_Sense"][0] ] = mSlv["Problem_Sense"][1]
-        print ( "Instance sense(s?):", self.sSenses )
         if 1<len( self.sSenses ):
             self.lInstContradOptSense.append( sInst )
                 
@@ -139,7 +137,7 @@ class CompareLogs:
                       None!=dObj_MZN and abs( dObj_MZN ) < 1e45 else (mSlv.get("ObjVal_MZN"), False)
                 ## Assuming solver value is better if different
                 dObj, bObj_SLV = (dObj_SLV, True) if \
-                      None!=dObj_SLV and abs( dObj_SLV ) < 1e45 else (mSlv.get("ObjVal_Solver"), False)
+                      None!=dObj_SLV and abs( dObj_SLV ) < 1e45 else (dObj, False)
                 if bObj_MZN and bObj_SLV:
                     if abs( dObj_MZN-dObj_SLV ) > 1e-6 * max( abs(dObj_MZN), abs(dObj_SLV) ):
                         aResultThisInst[ "n_Errors" ] += 1
@@ -172,9 +170,10 @@ class CompareLogs:
                         aResultThisInst[ "n_OPT" ] = 1
                         if None==dObj or abs( dObj ) >= 1e45:
                             aResultThisInst[ "n_Errors" ] += 1
-                            print ( "  WARNING: instance", sInst,
-                              " method", lNames, " :: optimal status but no obj value",
-                              ( "" if None==dObj else str(dObj) ) )
+                            print ( "  WARNING: instance ", sInst,
+                              ", method '", lNames, "'  :: optimal status but bad obj value: '",
+                              ( "" if None==dObj else str(dObj) ), "', result record: ", mRes,
+                              ",, dObj_MZN: ", dObj_MZN, sep='' )
                         else:
                             self.mOptVal[ dObj ] = lNames            ## Could have used OrderedDict
                             self.lOptVal.append( (dObj, lNames) )    ## To have both a map and the order
@@ -189,9 +188,9 @@ class CompareLogs:
                         aResultThisInst[ "n_FEAS" ] = 1
                         if None==dObj or abs( dObj ) >= 1e45:
                             aResultThisInst[ "n_Errors" ] += 1
-                            print ( "  WARNING: instance", sInst,
-                              " method", lNames, " :: optimal status but no obj value",
-                              ( "" if None==dObj else str(dObj) ) )
+                            print ( "  WARNING: instance ", sInst,
+                              ", method '", lNames, "'  :: feasible status but bad obj value: '",
+                              ( "" if None==dObj else str(dObj) ), "', result record: ", mRes, sep='' )
                         else:
                             self.lPrimBnd.append( (dObj, lNames) )
                 ## Handle infeasibility
