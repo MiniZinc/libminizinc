@@ -79,7 +79,7 @@ class MZT_Param:
         parser.add_argument('--failed', ## default=self.cfgDefault["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0],
                             metavar='<file>', help='save failed check reports to <file>, default: \''+
                               self.cfgDefault["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0]+'\'')
-        parser.add_argument('--nCheckMax', '--nCheckedMax', ## default=self.cfgDefault["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0],
+        parser.add_argument('--nCheckMax', '--nCheck', '--nCheckedMax', ## default=self.cfgDefault["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0],
                             type=int,
                             metavar='<file>', help='max number of solutions checked per instance.'
                               ' Negative means checking starts from the last obtained solution. Default: '+
