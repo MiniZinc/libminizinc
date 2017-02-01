@@ -4321,9 +4321,9 @@ namespace MiniZinc {
               le0 = get_linexp<FloatLit>(e0.r());
             }
             if (le0) {
-              if (boe1->type().isint() && !boe1->type().isopt()) {
+              if (boe0->type().isint() && boe1->type().isint() && !boe1->type().isopt()) {
                 le1 = get_linexp<IntLit>(e1.r());
-              } else if (boe1->type().isfloat() && !boe1->type().isopt()) {
+              } else if (boe0->type().isfloat() && boe1->type().isfloat() && !boe1->type().isopt()) {
                 le1 = get_linexp<FloatLit>(e1.r());
               }
             }
@@ -5007,7 +5007,7 @@ namespace MiniZinc {
                   ret = flat_exp(env,ctx,decl->e(),r,NULL);
                   args_ee.push_back(ret);
                   if (decl->e()->type().dim() > 0) {
-                    ArrayLit* al = follow_id_to_value(ret.r())->cast<ArrayLit>();
+                    ArrayLit* al = follow_id(ret.r())->cast<ArrayLit>();
                     assert(al->dims() == decl->e()->type().dim());
                     for (unsigned int i=0; i<decl->ti()->ranges().size(); i++) {
                       if (decl->ti()->ranges()[i]->domain() &&
