@@ -146,7 +146,7 @@ namespace MiniZinc {
     static Expression* exp(Expression* e) { return e; }
     static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
       for (unsigned int i=0; i<fi->ti()->ranges().size(); i++) {
-        if (fi->ti()->ranges()[i]->domain()) {
+        if (fi->ti()->ranges()[i]->domain() && !fi->ti()->ranges()[i]->domain()->isa<TIId>()) {
           IntSetVal* isv = eval_intset(env, fi->ti()->ranges()[i]->domain());
           if (v->min(i) != isv->min() || v->max(i) != isv->max()) {
             std::ostringstream oss;
