@@ -49,10 +49,10 @@ class MZT_Param:
         parser.add_argument('instanceFiles', nargs='*', metavar='<instanceFile>',
           help='model instance files, if no instance lists supplied, otherwise existing solution logs to compare with')
         parser.add_argument('--checkDZN', '--checkStdout', metavar='<stdout_file>',
-                            help='check existing DZN-formatted solutions from <stdout_file>. The DZN format is produced, e.g., if the model is flattened with \'' + sDZNOutputAgrs + '\'')
+                            help='check DZN-formatted solutions from a solver\'s <stdout_file>. The DZN format is produced, e.g., if the model is flattened with \'' + sDZNOutputAgrs + '\'')
         parser.add_argument('--checkStderr', metavar='<stderr_file>',
-                            help='for checking, read stderr from <stderr_file> (not essential).')
-        parser.add_argument('-l', '--instanceList', dest='l_InstLists', action='append', metavar='<instanceList>',
+                            help='for checking, read a solver\'s stderr log from <stderr_file> (not essential)')
+        parser.add_argument('-l', '--instanceList', dest='l_InstLists', action='append', metavar='<instanceListFile>',
             help='file with a list of instance input files, one instance per line,'
               ' instance file types specified in config')
         parser.add_argument('--cmpOnly', '--compareOnly', action='store_true',
@@ -66,8 +66,9 @@ class MZT_Param:
         parser.add_argument('--slvPrf', '--solverProfile', metavar='<prf_name>',
                             help='solver profile from those defined in config section \"SOLVER_PROFILES\"')
         parser.add_argument('--solver', '--solverCall', metavar='"<exe+flags or shell command(s) if --shellSolve 1>"',
-                            help='solver backend call, should be quoted. Insert %%s where instance files need to be. Add \''
-                             + sDZNOutputAgrs + '\' to enable solution checking, unless the model has a suitable output definition')
+                            help='solver backend call, should be quoted. Insert %%s where instance files need to be. Flatten with \''
+                             + sDZNOutputAgrs + '\' to enable solution checking, unless the model has a suitable output definition.'
+                             " Pass '--output-time' to the output filter (e.g., solns2out) to enable ranking by time")
         parser.add_argument('--shellSolve', type=int, metavar='0/1', help='solver call through shell')
         parser.add_argument('-t', '--tSolve',
                             type=float,
@@ -81,16 +82,16 @@ class MZT_Param:
                               self.cfgDefault["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0]+'\'')
         parser.add_argument('--nCheckMax', '--nCheck', '--nCheckedMax', ## default=self.cfgDefault["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0],
                             type=int,
-                            metavar='<file>', help='max number of solutions checked per instance.'
+                            metavar='<N>', help='max number of solutions checked per instance.'
                               ' Negative means checking starts from the last obtained solution. Default: '+
                               str(self.cfgDefault["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["n_CheckedMax"][0]))
         parser.add_argument('--nFailedSaveMax', ## default=self.cfgDefault["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0],
                             type=int,
-                            metavar='<file>', help='max number of failed solution reports saved per instance, default: '+
+                            metavar='<N>', help='max number of failed solution reports saved per instance, default: '+
                               str(self.cfgDefault["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["n_FailedSaveMax"][0]))
         parser.add_argument('--resultUnchk', default=sFlnSolUnchk, metavar='<file>', help='save unchecked result log to <file>')
         parser.add_argument('-c', '--compare', action="append", metavar='<file>',
-                            help='compare results to existing <file>. This flag can be omitted if -l is used.')
+                            help='compare results to existing <file>. This flag can be omitted if -l is used')
         
         parser.add_argument('--mergeCfg', action="append", metavar='<file>', help='merge config from <file>')
         parser.add_argument('--saveCfg', metavar='<file>', help='save internal config to <file>. Can be useful to modify some parameters and run with --mergeCfg')
