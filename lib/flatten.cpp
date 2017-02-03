@@ -1233,9 +1233,17 @@ namespace MiniZinc {
               } else {
                 ASTString cid;
                 if (e->type().isint()) {
-                  cid = constants().ids.int_.eq;
+                  if (e->type().isopt()) {
+                    cid = ASTString("int_opt_eq");
+                  } else {
+                    cid = constants().ids.int_.eq;
+                  }
                 } else if (e->type().isbool()) {
-                  cid = constants().ids.bool_eq;
+                  if (e->type().isopt()) {
+                    cid = ASTString("bool_opt_eq");
+                  } else {
+                    cid = constants().ids.bool_eq;
+                  }
                 } else if (e->type().is_set()) {
                   cid = constants().ids.set_eq;
                 } else if (e->type().isfloat()) {
@@ -1313,7 +1321,17 @@ namespace MiniZinc {
                 } else {
                   vd->ti()->setComputedDomain(true);
                 }
-                vd->ti()->domain(new SetLit(Location().introduce(),ibv));
+                SetLit* ibv_l = new SetLit(Location().introduce(),ibv);
+                vd->ti()->domain(ibv_l);
+                if (vd->type().isopt()) {
+                  std::vector<Expression*> args(2);
+                  args[0] = vd->id();
+                  args[1] = ibv_l;
+                  Call* c = new Call(Location().introduce(), "var_dom", args);
+                  c->type(Type::varbool());
+                  c->decl(env.orig->matchFn(env, c, false));
+                  (void) flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+                }
               }
             }
           }
