@@ -8,7 +8,15 @@ https://github.com/MiniZinc/libminizinc/issues
 Version 2.1.3
 =============
 
+Changes:
+ - Remove more internal annotations from the generated FlatZinc.
+
 Bug fixes:
+ - Add missing var_dom function for arrays of optional integer variables.
+   Fixes #133.
+ - Fix aliasing for optional integer variables. Fixes #132.
+ - Remove all annotations from output model.
+ - Fix computation of return type for functions that return arrays of enums.
  - Don't output newline if user-defined solution separator or status message is empty
  - Fix return type computation for functions where return type contains
    enums.
