@@ -348,6 +348,10 @@ predicate var_dom(var opt int:x, set of int: s) =
     set of int: new_dom = dom(dx) intersect s;
   } in if new_dom = {} then absent(x) else dx in new_dom endif;
 
+predicate var_dom(array[$T] of var opt int: x, set of int: d) =
+    let { array[int] of var opt int: xx = array1d(x) }
+    in forall (i in index_set(xx)) (var_dom(xx[i],d));
+
 predicate int_opt_eq(var opt int: x, var opt int: y) =
   deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
 
