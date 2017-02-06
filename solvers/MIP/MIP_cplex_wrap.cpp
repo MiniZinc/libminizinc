@@ -551,11 +551,13 @@ void msgfunction(void *handle, const char *msg_string)
 void MIP_cplex_wrapper::solve() {  // Move into ancestor?
 
   /////////////// Last-minute solver options //////////////////
+  if ( flag_all_solutions && 0==nProbType )
+    cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
   // Before all manual params ???
-    if (sReadParams.size()) {
-     status = CPXreadcopyparam (env, sReadParams.c_str());
-     wrap_assert(!status, "Failed to read CPLEX parameters.", false);
-    }
+  if (sReadParams.size()) {
+    status = CPXreadcopyparam (env, sReadParams.c_str());
+    wrap_assert(!status, "Failed to read CPLEX parameters.", false);
+  }
     
   /* Turn on output to the screen */
    if (fVerbose) {

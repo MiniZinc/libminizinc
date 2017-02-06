@@ -408,6 +408,8 @@ SCIP_DECL_MESSAGEWARNING(printMsg) {
 SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
 
   /////////////// Last-minute solver options //////////////////
+  if ( flag_all_solutions && 0==nProbType )
+    cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
 
     if (nThreads>0)
       SCIP_CALL( SCIPsetIntParam(scip, "lp/threads", nThreads) );
