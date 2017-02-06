@@ -657,6 +657,8 @@ MIP_osicbc_wrapper::Status MIP_osicbc_wrapper::convertStatus()
 
 
 void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
+  if ( flag_all_solutions && 0==nProbType )
+    cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
   try {
     /// Not using CoinPackedMatrix any more, so need to add all constraints at once:
     /// But this gives segf:

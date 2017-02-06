@@ -325,10 +325,12 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
   if (solveItem->st() != SolveI::SolveType::ST_SAT) {
     if (solveItem->st() == SolveI::SolveType::ST_MAX) {
       getMIPWrapper()->setObjSense(1);
+      getMIPWrapper()->setProbType(1);
       if (mip_wrap->fVerbose)
         cerr << "    MIP_solverinstance: this is a MAXimization problem." << endl;
     } else {
       getMIPWrapper()->setObjSense(-1);
+      getMIPWrapper()->setProbType(-1);
       if (mip_wrap->fVerbose)
         cerr << "    MIP_solverinstance: this is a MINimization problem." << endl;
     }
@@ -337,6 +339,7 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
         << dObjVarLB << ", " << dObjVarUB << endl;
     }
   } else {
+    getMIPWrapper()->setProbType(0);
     if (mip_wrap->fVerbose)
       cerr << "    MIP_solverinstance: this is a SATisfiability problem." << endl;
   }

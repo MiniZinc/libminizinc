@@ -481,6 +481,9 @@ MIP_gurobi_wrapper::Status MIP_gurobi_wrapper::convertStatus(int gurobiStatus)
 
 
 void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
+  if ( flag_all_solutions && 0==nProbType )
+    cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
+  
    error = dll_GRBupdatemodel(model);                  // for model export
    wrap_assert( !error,  "Failed to update model." );
    
