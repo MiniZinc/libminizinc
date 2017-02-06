@@ -99,6 +99,8 @@ namespace MiniZinc {
       }
     }
     
+    pS2Out->declNewOutput();  // Even for empty output decl
+    
     //iterate over set of ids that have an output annotation && obtain their right hand side from the flat model
     for(unsigned int i=0; i<_varsWithOutput.size(); i++) {
       VarDecl* vd = _varsWithOutput[i];
