@@ -377,8 +377,13 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
         char c='_';
         iss >> skipws >> c;
         if ( iss.good() && '%'==c) {
-          comments += line;
-          comments += "\n";
+          // Feed comments directly
+          getOutput() << line << '\n';
+          if ( _opt.flag_output_flush )
+            getOutput().flush();
+          if ( pOfs_non_canon.get() )
+            if ( pOfs_non_canon->good() )
+              ( *pOfs_non_canon ) << line << '\n';
         }
       }
     }
