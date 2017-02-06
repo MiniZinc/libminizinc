@@ -73,7 +73,7 @@ bool Solns2Out::processOption(int& i, const int argc, const char** argv)
     _opt.flag_unique = false;
   } else if ( cop.getOption( "-c --canonicalize") ) {
     _opt.flag_canonicalize = true;
-  } else if ( cop.getOption( "--output-non-canonical", &_opt.flag_output_noncanonical) ) {
+  } else if ( cop.getOption( "--output-non-canonical --output-non-canon", &_opt.flag_output_noncanonical) ) {
   } else if ( cop.getOption( "--output-raw", &_opt.flag_output_raw) ) {
 //   } else if ( cop.getOption( "--number-output", &_opt.flag_number_output ) ) {
   } else {

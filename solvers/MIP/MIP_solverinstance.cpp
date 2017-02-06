@@ -455,21 +455,29 @@ void MIP_solverinstance::processFlatZinc(void) {
       VarId res;
       Id* id = it->e()->id();
       id = id->decl()->id();
-      if (it->e()->e()) {
-        res = exprToVar(it->e()->e());     // modify obj coef??     TODO
-      } else {
-        double obj = vd==objVd ? 1.0 : 0.0;
-        res = getMIPWrapper()->addVar(obj, lb, ub, vType, id->str().c_str());
-        if (vd==objVd) {
-          dObjVarLB = lb;
-          dObjVarUB = ub;
-          getMIPWrapper()->output.nObjVarIndex = res;
-          if ( getMIPWrapper()->fVerbose )
-            cerr << "  MIP: objective variable index (0-based): " << res << endl;
+      double obj = vd==objVd ? 1.0 : 0.0;
+      if (it->e()->e()) {     // has init-expr
+        auto id1 = it->e()->e()->dyn_cast<Id>();
+        if (id1)
+          MZN_ASSERT_HARD( 0==id1->decl()->e() );      // ???
+        res = exprToVar(it->e()->e());     // follow to rhs?     TODO
+        MZN_ASSERT_HARD( !getMIPWrapper()->fPhase1Over ); // Still can change colUB, colObj
+        /// Tighten the ini-expr's bounds
+        getMIPWrapper()->colLB.at( res ) = max( getMIPWrapper()->colLB.at( res ), lb );
+        getMIPWrapper()->colUB.at( res ) = min( getMIPWrapper()->colUB.at( res ), ub );
+        if ( 0.0!=obj ) {
+          getMIPWrapper()->colObj.at( res ) = obj;
         }
+      } else {
+        res = getMIPWrapper()->addVar(obj, lb, ub, vType, id->str().c_str());
       }
-//       if ("X_INTRODUCED_137" == string(id->str().c_str())) {
-//       }
+      if ( 0.0!=obj ) {
+        dObjVarLB = lb;
+        dObjVarUB = ub;
+        getMIPWrapper()->output.nObjVarIndex = res;
+        if ( getMIPWrapper()->fVerbose )
+          cerr << "  MIP: objective variable index (0-based): " << res << endl;
+      }
       _variableMap.insert(id, res);
       assert( res == _variableMap.get(id) );
     }
