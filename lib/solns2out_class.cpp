@@ -223,7 +223,8 @@ bool Solns2Out::__evalOutput( ostream& fout, bool flag_output_flush ) {
 //     }
     pEnv->envi().evalOutput( fout );
   }
-  fout << _opt.solution_separator << '\n';
+  if (!_opt.solution_separator.empty())
+    fout << _opt.solution_separator << '\n';
   if (flag_output_flush)
     fout.flush();
   return true;
@@ -257,7 +258,8 @@ bool Solns2Out::__evalStatusMsg( SolverInstance::Status status ) {
   stat2msg[ SolverInstance::ERROR ] = _opt.error_msg;
   auto it=stat2msg.find(status);
   if ( stat2msg.end()!=it ) {
-    getOutput() << it->second << '\n';
+    if (!it->second.empty())
+      getOutput() << it->second << '\n';
     getOutput() << comments;
     if ( _opt.flag_output_flush )
       getOutput().flush();

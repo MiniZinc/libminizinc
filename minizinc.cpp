@@ -63,8 +63,8 @@ int main(int argc, const char** argv) {
   try {
     
     slv.addFlattener();
-    if (!slv.processOptions(argc, argv)) {
-      slv.printHelp();
+    if (!slv.processOptions(argc, argv, cerr)) {
+      slv.printHelp(cerr);
       exit(EXIT_FAILURE);
     }
     slv.flatten();

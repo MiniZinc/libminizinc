@@ -55,6 +55,14 @@ namespace MiniZinc {
       return eval_int(env, e);
     }
     static Expression* exp(IntVal e) { return IntLit::a(e); }
+    static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
+      if (fi->ti()->domain() && !fi->ti()->domain()->isa<TIId>()) {
+        IntSetVal* isv = eval_intset(env, fi->ti()->domain());
+        if (!isv->contains(v)) {
+          throw ResultUndefinedError(env, Location().introduce(), "function result violates function type-inst");
+        }
+      }
+    }
   };
   class EvalFloatVal {
   public:
@@ -64,6 +72,14 @@ namespace MiniZinc {
       return eval_float(env, e);
     }
     static Expression* exp(FloatVal e) { return FloatLit::a(e); }
+    static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
+      if (fi->ti()->domain() && !fi->ti()->domain()->isa<TIId>()) {
+        FloatSetVal* fsv = eval_floatset(env, fi->ti()->domain());
+        if (!fsv->contains(v)) {
+          throw ResultUndefinedError(env, Location().introduce(), "function result violates function type-inst");
+        }
+      }
+    }
   };
   class EvalFloatLit {
   public:
@@ -82,6 +98,7 @@ namespace MiniZinc {
       return eval_string(env, e);
     }
     static Expression* exp(const std::string& e) { return new StringLit(Location(),e); }
+    static void checkRetVal(EnvI& env, Val v, FunctionI* fi) { }
   };
   class EvalStringLit {
   public:
@@ -108,6 +125,7 @@ namespace MiniZinc {
       return eval_bool(env, e);
     }
     static Expression* exp(bool e) { return constants().boollit(e); }
+    static void checkRetVal(EnvI& env, Val v, FunctionI* fi) { }
   };
   class EvalArrayLit {
   public:
@@ -126,6 +144,69 @@ namespace MiniZinc {
       return copy(env,eval_array_lit(env, e),true)->cast<ArrayLit>();
     }
     static Expression* exp(Expression* e) { return e; }
+    static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
+      for (unsigned int i=0; i<fi->ti()->ranges().size(); i++) {
+        if (fi->ti()->ranges()[i]->domain() && !fi->ti()->ranges()[i]->domain()->isa<TIId>()) {
+          IntSetVal* isv = eval_intset(env, fi->ti()->ranges()[i]->domain());
+          if (v->min(i) != isv->min() || v->max(i) != isv->max()) {
+            std::ostringstream oss;
+            oss << "array index set " << (i+1) << " of function result violates function type-inst";
+            throw ResultUndefinedError(env, fi->e()->loc(), oss.str());
+          }
+        }
+      }
+      if (fi->ti()->domain() && !fi->ti()->domain()->isa<TIId>() && fi->ti()->type().ti()==Type::TI_PAR) {
+        Type base_t = fi->ti()->type();
+        if (base_t.bt() == Type::BT_INT) {
+          IntSetVal* isv = eval_intset(env, fi->ti()->domain());
+          if (base_t.st() == Type::ST_PLAIN) {
+            for (unsigned int i=0; i<v->v().size(); i++) {
+              IntVal iv = eval_int(env, v->v()[i]);
+              if (!isv->contains(iv)) {
+                std::ostringstream oss;
+                oss << "array contains value " << iv << " which is not contained in " << *isv;
+                throw ResultUndefinedError(env, fi->e()->loc(), "function result violates function type-inst, "+oss.str());
+              }
+            }
+          } else {
+            for (unsigned int i=0; i<v->v().size(); i++) {
+              IntSetVal* iv = eval_intset(env, v->v()[i]);
+              IntSetRanges isv_r(isv);
+              IntSetRanges v_r(iv);
+              if (!Ranges::subset(v_r, isv_r)) {
+                std::ostringstream oss;
+                oss << "array contains value " << *iv << " which is not a subset of " << *isv;
+                throw ResultUndefinedError(env, fi->e()->loc(), "function result violates function type-inst, "+oss.str());
+              }
+            }
+          }
+        } else if (base_t.bt() == Type::BT_FLOAT) {
+          FloatSetVal* fsv = eval_floatset(env, fi->ti()->domain());
+          if (base_t.st() == Type::ST_PLAIN) {
+            for (unsigned int i=0; i<v->v().size(); i++) {
+              FloatVal fv = eval_float(env, v->v()[i]);
+              if (!fsv->contains(fv)) {
+                std::ostringstream oss;
+                oss << "array contains value " << fv << " which is not contained in " << *fsv;
+                throw ResultUndefinedError(env, fi->e()->loc(), "function result violates function type-inst, "+oss.str());
+              }
+            }
+          } else {
+            for (unsigned int i=0; i<v->v().size(); i++) {
+              FloatSetVal* fv = eval_floatset(env, v->v()[i]);
+              FloatSetRanges fsv_r(fsv);
+              FloatSetRanges v_r(fv);
+              if (!Ranges::subset(v_r, fsv_r)) {
+                std::ostringstream oss;
+                oss << "array contains value " << *fv << " which is not a subset of " << *fsv;
+                throw ResultUndefinedError(env, fi->e()->loc(), "function result violates function type-inst, "+oss.str());
+              }
+            }
+          }
+
+        }
+      }
+    }
   };
   class EvalIntSet {
   public:
@@ -134,6 +215,16 @@ namespace MiniZinc {
       return eval_intset(env, e);
     }
     static Expression* exp(IntSetVal* e) { return new SetLit(Location(),e); }
+    static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
+      if (fi->ti()->domain() && !fi->ti()->domain()->isa<TIId>()) {
+        IntSetVal* isv = eval_intset(env, fi->ti()->domain());
+        IntSetRanges isv_r(isv);
+        IntSetRanges v_r(v);
+        if (!Ranges::subset(v_r, isv_r)) {
+          throw ResultUndefinedError(env, Location().introduce(), "function result violates function type-inst");
+        }
+      }
+    }
   };
   class EvalFloatSet {
   public:
@@ -144,6 +235,16 @@ namespace MiniZinc {
     static Expression* exp(FloatSetVal* e) {
       return new SetLit(Location(),e);
     }
+    static void checkRetVal(EnvI& env, Val v, FunctionI* fi) {
+      if (fi->ti()->domain() && !fi->ti()->domain()->isa<TIId>()) {
+        FloatSetVal* fsv = eval_floatset(env, fi->ti()->domain());
+        FloatSetRanges fsv_r(fsv);
+        FloatSetRanges v_r(v);
+        if (!Ranges::subset(v_r, fsv_r)) {
+          throw ResultUndefinedError(env, Location().introduce(), "function result violates function type-inst");
+        }
+      }
+    }
   };
   class EvalBoolSet {
   public:
@@ -152,6 +253,7 @@ namespace MiniZinc {
       return eval_boolset(env, e);
     }
     static Expression* exp(IntSetVal* e) { return new SetLit(Location(),e); }
+    static void checkRetVal(EnvI& env, Val v, FunctionI* fi) { }
   };
   class EvalSetLit {
   public:
@@ -206,6 +308,7 @@ namespace MiniZinc {
       return eval_par(env, e);
     }
     static Expression* exp(Expression* e) { return e; }
+    static void checkRetVal(EnvI& env, Val v, FunctionI* fi) { }
   };
 
   void checkDom(EnvI& env, Id* arg, IntSetVal* dom, Expression* e) {
@@ -267,6 +370,7 @@ namespace MiniZinc {
       }
     }
     typename Eval::Val ret = Eval::e(env,ce->decl()->e());
+    Eval::checkRetVal(env, ret, ce->decl());
     for (unsigned int i=ce->decl()->params().size(); i--;) {
       VarDecl* vd = ce->decl()->params()[i];
       vd->e(previousParameters[i]);

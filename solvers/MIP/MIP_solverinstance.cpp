@@ -154,10 +154,6 @@ namespace SCIPConstraints {
     // See if the solver adds indexation itself: no.
     std::stringstream ss;
     ss << "p_lin_" << (gi.getMIPWrapper()->nAddedRows++);
-//     cerr << "  coefs: ";
-//     for (size_t i=0; i<coefs.size(); ++i)
-//       cerr << coefs[i] << ", ";
-//     cerr << endl;
     gi.getMIPWrapper()->addRow(coefs.size(), &vars[0], &coefs[0], lt, rhs,
                                GetMaskConsType(call), ss.str());
   }
@@ -192,12 +188,16 @@ namespace SCIPConstraints {
         vars.push_back( gi.exprToVar(args[1]) );
       } else
         rhs += gi.exprToConst(args[1]);
-      // Check feas-ty?    TODO
-
-      std::stringstream ss;
-      ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
-      gi.getMIPWrapper()->addRow(vars.size(), &vars[0], &coefs[0], nCmp, rhs,
-                               GetMaskConsType(call), ss.str());
+      /// Check feas-ty
+      if ( coefs.empty() ) {
+        if ( 1e-5 < fabs( rhs ) )
+          si._status = SolverInstance::UNSAT;
+      } else {
+        std::stringstream ss;
+        ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
+        gi.getMIPWrapper()->addRow(vars.size(), &vars[0], &coefs[0], nCmp, rhs,
+                                GetMaskConsType(call), ss.str());
+      }
     }
    void p_eq(SolverInstanceBase& si, const Call* call) {
      p_non_lin( si, call, MIP_wrapper::EQ );
@@ -344,7 +344,9 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
   
   lastIncumbent = 1e200;                  // for callbacks
   MIP_wrapper::Status sw;
-  if ( getMIPWrapper()->getNCols() ) {
+  if ( SolverInstance::UNSAT == _status )     // already deduced - exit now
+    return _status;
+  if ( getMIPWrapper()->getNCols() ) {     // If any variables, we need to run solver just to get values?
     getMIPWrapper()->provideSolutionCallback(HandleSolutionCallback, this);
     if ( cutGenerators.size() )  // only then, can modify presolve
       getMIPWrapper()->provideCutCallback(HandleCutCallback, this);
@@ -361,8 +363,10 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
     case MIP_wrapper::Status::OPT:
       if ( SolveI::SolveType::ST_SAT != getEnv()->flat()->solveItem()->st() ) {
         s = SolverInstance::OPT;
-        break;
-      }    // else: for SAT problems just say SAT
+      } else {
+        s = SolverInstance::SAT;    // For SAT problems, just say SAT unless we know it's complete
+      }
+      break;
     case MIP_wrapper::Status::SAT:
       s = SolverInstance::SAT;
       break;

@@ -174,9 +174,9 @@ namespace MiniZinc {
     opt->setBoolParam(constants().opts.verbose.str(),true);
   }
   void cli_version(CLIOptions* opt) {
-    std::cout << "NICTA MiniZinc to FlatZinc converter, version "
+    std::cout << "MiniZinc to FlatZinc converter, version "
       << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
-    std::cout << "Copyright (C) 2014, 2015 Monash University and NICTA" << std::endl;
+    std::cout << "Copyright (C) 2014-2017 Monash University, NICTA, Data61" << std::endl;
     std::exit(EXIT_SUCCESS);
   }
   void cli_werror(CLIOptions* opt) {

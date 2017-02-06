@@ -643,6 +643,8 @@ namespace MiniZinc {
     Expression* where(void) const { return _where; }
     /// Return generator body
     Expression* e(void) const { return _e; }
+    /// Set generator body
+    void e(Expression* e0) { _e = e0; }
     /// Re-construct (used for copying)
     void init(Expression* e, Generators& g);
   };
