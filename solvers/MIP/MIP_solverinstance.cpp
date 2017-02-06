@@ -466,8 +466,8 @@ void MIP_solverinstance::processFlatZinc(void) {
         res = exprToVar(it->e()->e());     // follow to rhs?     TODO
         MZN_ASSERT_HARD( !getMIPWrapper()->fPhase1Over ); // Still can change colUB, colObj
         /// Tighten the ini-expr's bounds
-        getMIPWrapper()->colLB.at( res ) = max( getMIPWrapper()->colLB.at( res ), lb );
-        getMIPWrapper()->colUB.at( res ) = min( getMIPWrapper()->colUB.at( res ), ub );
+        lb = getMIPWrapper()->colLB.at( res ) = max( getMIPWrapper()->colLB.at( res ), lb );
+        ub = getMIPWrapper()->colUB.at( res ) = min( getMIPWrapper()->colUB.at( res ), ub );
         if ( 0.0!=obj ) {
           getMIPWrapper()->colObj.at( res ) = obj;
         }
