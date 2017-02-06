@@ -1134,7 +1134,9 @@ namespace MiniZinc {
                 } else if (vdi->e()->e()->type().isintset()) {
                   IntSetVal* isv = eval_intset(env, vdi->e()->e());
                   IntSetVal* dom = eval_intset(env, vdi->e()->ti()->domain());
-                  if (!Ranges::subset(isv, dom))
+                  IntSetRanges isv_r(isv);
+                  IntSetRanges dom_r(dom);
+                  if (!Ranges::subset(isv_r, dom_r))
                     env.fail();
                 } else if (vdi->e()->e()->type().isfloat()) {
                   FloatVal fv = eval_float(env, vdi->e()->e());
