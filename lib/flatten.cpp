@@ -1239,9 +1239,17 @@ namespace MiniZinc {
               } else {
                 ASTString cid;
                 if (e->type().isint()) {
-                  cid = constants().ids.int_.eq;
+                  if (e->type().isopt()) {
+                    cid = ASTString("int_opt_eq");
+                  } else {
+                    cid = constants().ids.int_.eq;
+                  }
                 } else if (e->type().isbool()) {
-                  cid = constants().ids.bool_eq;
+                  if (e->type().isopt()) {
+                    cid = ASTString("bool_opt_eq");
+                  } else {
+                    cid = constants().ids.bool_eq;
+                  }
                 } else if (e->type().is_set()) {
                   cid = constants().ids.set_eq;
                 } else if (e->type().isfloat()) {
@@ -1319,7 +1327,17 @@ namespace MiniZinc {
                 } else {
                   vd->ti()->setComputedDomain(true);
                 }
-                vd->ti()->domain(new SetLit(Location().introduce(),ibv));
+                SetLit* ibv_l = new SetLit(Location().introduce(),ibv);
+                vd->ti()->domain(ibv_l);
+                if (vd->type().isopt()) {
+                  std::vector<Expression*> args(2);
+                  args[0] = vd->id();
+                  args[1] = ibv_l;
+                  Call* c = new Call(Location().introduce(), "var_dom", args);
+                  c->type(Type::varbool());
+                  c->decl(env.orig->matchFn(env, c, false));
+                  (void) flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+                }
               }
             }
           }
@@ -5850,6 +5868,24 @@ namespace MiniZinc {
     }
   }
   
+  void clearInternalAnnotations(Expression* e) {
+    e->ann().remove(constants().ann.promise_total);
+    e->ann().remove(constants().ann.maybe_partial);
+    e->ann().remove(constants().ann.add_to_output);
+    // Remove defines_var(x) annotation where x is par
+    std::vector<Expression*> removeAnns;
+    for (ExpressionSetIter anns = e->ann().begin(); anns != e->ann().end(); ++anns) {
+      if (Call* c = (*anns)->dyn_cast<Call>()) {
+        if (c->id() == constants().ann.defines_var && c->args()[0]->type().ispar()) {
+          removeAnns.push_back(c);
+        }
+      }
+    }
+    for (unsigned int i=0; i<removeAnns.size(); i++) {
+      e->ann().remove(removeAnns[i]);
+    }
+  }
+  
   void oldflatzinc(Env& e) {
     Model* m = e.flat();
 
@@ -5894,7 +5930,8 @@ namespace MiniZinc {
         vd->ann().remove(constants().ctx.neg);
         vd->ann().remove(constants().ctx.root);
         vd->ann().remove(constants().ann.promise_total);
-
+        vd->ann().remove(constants().ann.add_to_output);
+        
         // Record whether this VarDecl is equal to an Id (aliasing)
         if (vd->e() && vd->e()->isa<Id>()) {
           declsWithIds.push_back(i);
@@ -5967,6 +6004,7 @@ namespace MiniZinc {
               }
               // Post new constraint
               if (ve != constants().lit_true) {
+                clearInternalAnnotations(ve);
                 e.envi().flat_addItem(new ConstraintI(Location().introduce(),ve));
               }
             }
@@ -6003,6 +6041,7 @@ namespace MiniZinc {
                 }
                 nc->addAnnotation(definesVarAnn(vd->id()));
                 nc->ann().merge(c->ann());
+                clearInternalAnnotations(nc);
                 e.envi().flat_addItem(new ConstraintI(Location().introduce(),nc));
               } else {
                 assert(vd->e()->eid() == Expression::E_ID ||
@@ -6071,6 +6110,9 @@ namespace MiniZinc {
               nc->type(cc->type());
               nc->addAnnotation(definesVarAnn(vd->id()));
               nc->ann().merge(cc->ann());
+              
+              clearInternalAnnotations(nc);
+              
               e.envi().flat_addItem(new ConstraintI(Location().introduce(),nc));
             } else {
               // RHS must be literal or Id
@@ -6134,20 +6176,8 @@ namespace MiniZinc {
           }
         }
       } else if (ConstraintI* ci = (*m)[i]->dyn_cast<ConstraintI>()) {
-
-        // Remove defines_var(x) annotation where x is par
-        std::vector<Expression*> removeAnns;
-        for (ExpressionSetIter anns = ci->e()->ann().begin(); anns != ci->e()->ann().end(); ++anns) {
-          if (Call* c = (*anns)->dyn_cast<Call>()) {
-            if (c->id() == constants().ann.defines_var && c->args()[0]->type().ispar()) {
-              removeAnns.push_back(c);
-            }
-          }
-        }
-        for (unsigned int i=0; i<removeAnns.size(); i++) {
-          ci->e()->ann().remove(removeAnns[i]);
-        }
-
+        clearInternalAnnotations(ci->e());
+        
         if (Call* vc = ci->e()->dyn_cast<Call>()) {
           for (unsigned int i=0; i<vc->args().size(); i++) {
             // Change array indicies to be 1 indexed

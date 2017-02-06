@@ -687,6 +687,10 @@ namespace MiniZinc {
         if (tii->domain() && tii->domain()->isa<TIId>()) {
           ASTString tiid = tii->domain()->cast<TIId>()->v();
           Type tiit = getType(ta[i]);
+          if (tiit.enumId() != 0 && tiit.dim() > 0) {
+            const std::vector<unsigned int>& enumIds = env.getArrayEnum(tiit.enumId());
+            tiit.enumId(enumIds[enumIds.size()-1]);
+          }
           tiit.dim(0);
           if (tii->type().st()==Type::ST_SET)
             tiit.st(Type::ST_PLAIN);
@@ -780,12 +784,20 @@ namespace MiniZinc {
         if (dh.beginsWith("$")) {
           // this is an enum
           ret.bt(Type::BT_INT);
-          ret.enumId(it->second.enumId());
         } else {
           ret.bt(it->second.bt());
-          ret.enumId(it->second.enumId());
           if (ret.st()==Type::ST_PLAIN)
             ret.st(it->second.st());
+        }
+        if (fi->ti()->ranges().size() > 0 && it->second.enumId() != 0) {
+          std::vector<unsigned int> enumIds(fi->ti()->ranges().size()+1);
+          for (unsigned int i=0; i<fi->ti()->ranges().size(); i++) {
+            enumIds[i] = 0;
+          }
+          enumIds[enumIds.size()-1] = it->second.enumId();
+          ret.enumId(env.registerArrayEnum(enumIds));
+        } else {
+          ret.enumId(it->second.enumId());
         }
       }
       if (rh.size() != 0) {

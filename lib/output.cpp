@@ -218,6 +218,95 @@ namespace MiniZinc {
       e.output->addItem(new VarDeclI(Location().introduce(), vd_rename));
     }
   }
+
+  class ClearAnnotations {
+  public:
+    /// Push all elements of \a v onto \a stack
+    template<class E>
+    static void pushVec(std::vector<Expression*>& stack, ASTExprVec<E> v) {
+      for (unsigned int i=0; i<v.size(); i++)
+        stack.push_back(v[i]);
+    }
+
+    static void run(Expression* root) {
+      std::vector<Expression*> stack;
+      stack.push_back(root);
+      while (!stack.empty()) {
+        Expression* e = stack.back();
+        stack.pop_back();
+        if (e==NULL) {
+          continue;
+        }
+        e->ann().clear();
+        switch (e->eid()) {
+          case Expression::E_INTLIT:
+          case Expression::E_FLOATLIT:
+          case Expression::E_BOOLLIT:
+          case Expression::E_STRINGLIT:
+          case Expression::E_ID:
+          case Expression::E_ANON:
+          case Expression::E_TIID:
+            break;
+          case Expression::E_SETLIT:
+            pushVec(stack, e->template cast<SetLit>()->v());
+            break;
+          case Expression::E_ARRAYLIT:
+            pushVec(stack, e->template cast<ArrayLit>()->v());
+            break;
+          case Expression::E_ARRAYACCESS:
+            pushVec(stack, e->template cast<ArrayAccess>()->idx());
+            stack.push_back(e->template cast<ArrayAccess>()->v());
+            break;
+          case Expression::E_COMP:
+          {
+            Comprehension* comp = e->template cast<Comprehension>();
+            stack.push_back(comp->where());
+            for (unsigned int i=comp->n_generators(); i--; ) {
+              stack.push_back(comp->in(i));
+              for (unsigned int j=comp->n_decls(i); j--; ) {
+                stack.push_back(comp->decl(i, j));
+              }
+            }
+            stack.push_back(comp->e());
+          }
+            break;
+          case Expression::E_ITE:
+          {
+            ITE* ite = e->template cast<ITE>();
+            stack.push_back(ite->e_else());
+            for (int i=0; i<ite->size(); i++) {
+              stack.push_back(ite->e_if(i));
+              stack.push_back(ite->e_then(i));
+            }
+          }
+            break;
+          case Expression::E_BINOP:
+            stack.push_back(e->template cast<BinOp>()->rhs());
+            stack.push_back(e->template cast<BinOp>()->lhs());
+            break;
+          case Expression::E_UNOP:
+            stack.push_back(e->template cast<UnOp>()->e());
+            break;
+          case Expression::E_CALL:
+            pushVec(stack, e->template cast<Call>()->args());
+            break;
+          case Expression::E_VARDECL:
+            stack.push_back(e->template cast<VarDecl>()->e());
+            stack.push_back(e->template cast<VarDecl>()->ti());
+            break;
+          case Expression::E_LET:
+            stack.push_back(e->template cast<Let>()->in());
+            pushVec(stack, e->template cast<Let>()->let());
+            break;
+          case Expression::E_TI:
+            stack.push_back(e->template cast<TypeInst>()->domain());
+            pushVec(stack,e->template cast<TypeInst>()->ranges());
+            break;
+        }
+      }
+      
+    }
+  };
   
   void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
     class O : public EVisitor {
@@ -245,7 +334,7 @@ namespace MiniZinc {
           makePar(env,nvi->e());
           nvi->e()->ti()->domain(NULL);
           nvi->e()->flat(vd->flat());
-          nvi->e()->ann().clear();
+          ClearAnnotations::run(nvi->e());
           nvi->e()->introduced(false);
           if (reallyFlat)
             env.output_vo.add(reallyFlat, env.output->size());
