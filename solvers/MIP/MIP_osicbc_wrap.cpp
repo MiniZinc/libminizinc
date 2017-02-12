@@ -72,8 +72,8 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
 //   << "--writeParam <file> write OSICBC parameters to file" << std::endl
 //   << "--tuneParam         instruct OSICBC to tune parameters instead of solving   NOT IMPL"
 
-  << "--absGap <n>        absolute gap |primal-dual| to stop. Default 0.99" << std::endl
-  << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8" << std::endl
+  << "--absGap <n>        absolute gap |primal-dual| to stop" << std::endl
+  << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
   << "--intTol <n>        integrality tolerance for a variable. Default 1e-6" << std::endl
 //   << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
@@ -95,7 +95,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
  
  static   string cbc_cmdOptions;
 
- static   double absGap=0.99;
+ static   double absGap=-1;
  static   double relGap=1e-8;
  static   double intTol=1e-6;
  static   double objDiff=1.0;
@@ -736,10 +736,12 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 #endif
 //     CbcSolver control(osi);
 //     control.solve();
-    
-    model.setAllowableGap( absGap );
-    model.setAllowableFractionGap( relGap );
-    model.setIntegerTolerance( intTol );
+    if ( absGap>=0.0 )
+      model.setAllowableGap( absGap );
+    if ( relGap>=0.0 )
+      model.setAllowableFractionGap( relGap );
+    if ( intTol>=0.0 )
+      model.setIntegerTolerance( intTol );
 //     model.setCutoffIncrement( objDiff );
     
     CoinMessageHandler msgStderr(stderr);
