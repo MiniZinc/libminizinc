@@ -47,9 +47,11 @@ MIP_wrapper* MIP_WrapperFactory::GetDefaultMIPWrapper() {
 string MIP_WrapperFactory::getVersion( ) {
   ostringstream oss;
   oss << "  MIP wrapper for Gurobi library ";
-//  int major, minor, technical;
-//  GRBversion(&major, &minor, &technical);
-//  oss << major << '.' << minor << '.' << technical;
+  MIP_gurobi_wrapper mgw( (int) 5 );
+  mgw.checkDLL();
+  int major, minor, technical;
+  mgw.dll_GRBversion(&major, &minor, &technical);
+  oss << major << '.' << minor << '.' << technical;
   oss << ".  Compiled  " __DATE__ "  " __TIME__;
   return oss.str();
 }
@@ -166,7 +168,7 @@ namespace {
 
 #endif
 
-void MIP_gurobi_wrapper::openGUROBI()
+void MIP_gurobi_wrapper::checkDLL()
 {
 #ifdef HAS_GUROBI_PLUGIN
   
@@ -179,6 +181,7 @@ void MIP_gurobi_wrapper::openGUROBI()
     throw MiniZinc::InternalError("cannot load gurobi dll");
   }
   
+  *(void**)(&dll_GRBversion) = dll_sym(gurobi_dll, "GRBversion");
   *(void**)(&dll_GRBaddconstr) = dll_sym(gurobi_dll, "GRBaddconstr");
   *(void**)(&dll_GRBaddvars) = dll_sym(gurobi_dll, "GRBaddvars");
   *(void**)(&dll_GRBcbcut) = dll_sym(gurobi_dll, "GRBcbcut");
@@ -207,6 +210,7 @@ void MIP_gurobi_wrapper::openGUROBI()
 
 #else
 
+  dll_GRBversion = GRBversion;
   dll_GRBaddconstr = GRBaddconstr;
   dll_GRBaddvars = GRBaddvars;
   dll_GRBcbcut = GRBcbcut;
@@ -234,6 +238,12 @@ void MIP_gurobi_wrapper::openGUROBI()
   dll_GRBwriteparams = GRBwriteparams;
   
 #endif
+}
+
+
+void MIP_gurobi_wrapper::openGUROBI()
+{
+  checkDLL();
   
   cbui.wrapper = this;
   
