@@ -275,6 +275,10 @@ void Flattener::flatten()
 
   includePaths.push_back(std_lib_dir+"/std/");
 
+  if (globals_dir != "") {
+    includePaths.push_back(std_lib_dir+"/"+globals_dir+"/");
+  }
+
   for (unsigned int i=0; i<includePaths.size(); i++) {
     if (!FileUtils::directory_exists(includePaths[i])) {
       std::cerr << "Cannot access include directory " << includePaths[i] << "\n";
@@ -335,6 +339,9 @@ void Flattener::flatten()
         if (flag_verbose)
           std::cerr << "Parsing '" << filenames[0] << "' ...";
         m = parse(env, filenames, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+        if (globals_dir != "") {
+          includePaths.pop_back();
+        }
       }
       if (m) {
         env.model(m);
