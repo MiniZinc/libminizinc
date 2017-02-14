@@ -1,3 +1,4 @@
+import os
 
 def try_float( sVal, dft=None ):
     res = dft
@@ -44,3 +45,12 @@ class MyTab:
                 print( ("{0:"+str(nWMax[iC])+'}').format(matr[iR][iC] if iC<len( matr[ iR ] ) else '-'),
                       end=self.sColSep if iC+1<len(hdr) else '\n' )
         return res
+
+def openFile_autoDir( sFln, sMode ):
+    sDir = os.path.dirname( sFln )
+    if 0<len(sDir):
+        try:
+            os.makedirs( sDir, exist_ok=True)
+        except:
+            print( "Failed to create dir '", sDir, "'.", sep='' )
+    return open( sFln, sMode )

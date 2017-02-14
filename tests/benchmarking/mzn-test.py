@@ -23,11 +23,11 @@ s_ProgramDescr = 'MiniZinc testing automation. (c) 2017 Monash University, gleb.
 s_ProgramDescrLong = ( "Allows checking of MiniZinc solutions by configurable checker profiles. The solutions can be input or produced by a chosen solver profile, for 1 or several instances, with result comparison and (TODO) ranking.")
 
 ###########################   GENERAL CONFIG. Could be in the JSON config actually    #########################
-sFlnSolUnchk = "solUnchk.json"      ### Logfiles to append immediate results
-sFlnSolCheck = "solCheck.json"
-sFlnSolLastDzn = "sol_last.dzn"     ### File to save the DZN solution for checking
-sFlnLastStdout = "last_stdout"      ### File name base to dump stdout for any backend call
-sFlnLastStderr = "last_stderr"
+sFlnSolUnchk = "mzn-test/sol__unchk.json"      ### Logfiles to append immediate results
+sFlnSolCheck = "mzn-test/sol.json"
+sFlnSolLastDzn = "mzn-test/sol_last.dzn"     ### File to save the DZN solution for checking
+sFlnLastStdout = "mzn-test/last_stdout"      ### File name base to dump stdout for any backend call
+sFlnLastStderr = "mzn-test/last_stderr"
 
 sDZNOutputAgrs = "--output-mode dzn --output-objective"    ## The flattener arguments to produce DZN-compatible output facilitating solution checking
 
@@ -130,9 +130,9 @@ class MZT_Param:
                         "/// At the moment only the 1st element is used for solving" ],
             "SOLUTION_CHECKING": {
               "Checkers": ["FZN-GECODE-CHK", "MINIZINC-CHK" ],
-              "n_CheckedMax": [ -3, "/// Negative value means it's that many last solutions" ],
+              "n_CheckedMax": [ -10, "/// Negative value means it's that many last solutions" ],
               "n_FailedSaveMax": [ 3, "/// After that many failed solutions, stop checking the instance" ],
-              "s_FailedSaveFile": [ "solFail.json", "/// Filename to save failed solutions" ],
+              "s_FailedSaveFile": [ "mzn-test/solFail.json", "/// Filename to save failed solutions" ],
             },
             "Instance_List": {
               s_CommentKey: [ "Params for instance lists.",
@@ -174,7 +174,7 @@ class MZT_Param:
                   " Then you can do shell tricks but Ctrl+C may not kill all subprocesses etc."],
                 "n_TimeoutRealHard": [500, "/// Real-time timeout per instance, seconds,"
                   " for all solution steps together. Use mzn/backend options for CPU time limit."],
-                "n_VMEMLIMIT_SoftHard": [12582912, 12582912, "/// 2 limits, soft/hard. Platform-dependent in Python 3.6"]
+                "n_VMEMLIMIT_SoftHard": [8582912, 8582912, "/// 2 limits, soft/hard. Platform-dependent in Python 3.6"]
               },
               "Stderr_Keylines": {
                 s_CommentKey: [ "A complete line in stderr will be interpreted accordingly.",
@@ -222,7 +222,7 @@ class MZT_Param:
               "EXE": {
                 "b_ThruShell"  : [False],
                 "n_TimeoutRealHard": [500],
-                "n_VMEMLIMIT_SoftHard": [12582912, 12582912]
+                "n_VMEMLIMIT_SoftHard": [8582912, 8582912]
               }
             },
             "__BE_CHECKER": {
@@ -231,7 +231,7 @@ class MZT_Param:
                 "s_ExtraCmdline" : ["--allow-multiple-assignments"],
                 "b_ThruShell"  : [False],
                 "n_TimeoutRealHard": [15],
-                "n_VMEMLIMIT_SoftHard": [12582912, 12582912]
+                "n_VMEMLIMIT_SoftHard": [8582912, 8582912]
               }
             },
             "__BE_CHECKER_OLDMINIZINC": {
@@ -240,7 +240,7 @@ class MZT_Param:
                 "s_ExtraCmdline" : ["--mzn2fzn-cmd 'mzn2fzn -v -s --output-mode dzn --allow-multiple-assignments'"],
                 "b_ThruShell"  : [False],
                 "n_TimeoutRealHard": [15],
-                "n_VMEMLIMIT_SoftHard": [12582912, 12582912]
+                "n_VMEMLIMIT_SoftHard": [8582912, 8582912]
               }
             },
             "BE_MINIZINC": {
@@ -253,7 +253,7 @@ class MZT_Param:
             "BE_MZN-GUROBI": {
               s_CommentKey: [ "------------------- Specializations for Gurobi solver instance" ],
               "EXE":{
-                "s_SolverCall" : ["mzn-gurobi -v -s -a -G linear --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
+                "s_SolverCall" : ["mzn-gurobi -v -s -a -G linear --timeout 300 --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
               },
               "Stderr_Keyvalues": {
                 s_AddKey+"Preslv_Rows": [ "Presolved:", " ", 2 ],
@@ -264,7 +264,7 @@ class MZT_Param:
             "BE_MZN-CPLEX": {
               s_CommentKey: [ "------------------- Specializations for IBM ILOG CPLEX solver instance" ],
               "EXE": {
-                "s_SolverCall" : ["mzn-cplex -v -s -a -G linear  --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking
+                "s_SolverCall" : ["mzn-cplex -v -s -a -G linear --timeout 300 --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking
                 #"s_SolverCall" : ["./run-mzn-cplex.sh %s"],
                 #"b_ThruShell"  : [True],
               },
@@ -285,8 +285,8 @@ class MZT_Param:
             "BE_FZN-CHUFFED": {
               s_CommentKey: [ "------------------- Specializations for Chuffed FlatZinc interpreter" ],
               "EXE": {
-                "s_SolverCall" : ["mzn-fzn -s -G chuffed --solver fzn-chuffed --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking
-                "s_ExtraCmdline" : ["--fzn-flag -f"]
+                "s_SolverCall" : ["mzn-fzn -s -G chuffed --solver fzn-chuffed --fzn-flag -f --output-time "
+                                    + sDZNOutputAgrs + " %s"], # _objective fails for checking
               }
             }
           }
@@ -316,7 +316,7 @@ class MZT_Param:
             self.cfg["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["n_FailedSaveMax"][0] = self.args.nFailedSaveMax
         ################ SAVE FINAL CFG
         if None!=self.args.saveCfg:
-            with open( self.args.saveCfg, 'w' ) as wf:
+            with utils.openFile_autoDir( self.args.saveCfg, 'w' ) as wf:
                 print( "Saving final config to", self.args.saveCfg )
                 json.dump( self.cfg, wf, sort_keys=True, indent=json_config.n_JSON_Indent )
         ### COMPILE THE SOLVER BACKEND
@@ -352,12 +352,12 @@ class MZT_Param:
             print ( "     CHK_CFG: ", json.dumps( self.chkBEs[-1]["EXE"] ) )
         ### SAVE THE SOLVER BACKEND
         if None!=self.args.saveSolverCfg:
-            with open( self.args.saveSolverCfg, 'w' ) as wf:
+            with utils.openFile_autoDir( self.args.saveSolverCfg, 'w' ) as wf:
                 print( "Saving solver config to", self.args.saveSolverCfg )
                 json.dump( self.slvBE, wf, sort_keys=True, indent=json_config.n_JSON_Indent )
         ### SAVE THE CHECKER BACKENDS
         if None!=self.args.saveCheckerCfg:
-            with open( self.args.saveCheckerCfg, 'w' ) as wf:
+            with utils.openFile_autoDir( self.args.saveCheckerCfg, 'w' ) as wf:
                 print( "Saving checker config to", self.args.saveCheckerCfg )
                 json.dump( self.chkBE, wf, sort_keys=True, indent=json_config.n_JSON_Indent )
         self.sThisName = self.args.result
@@ -387,16 +387,10 @@ class MZT_Param:
 class MznTest:
     def obtainParams( self ):
         self.params.obtainParams()
-        ## TRUNCATING files first, the "a" - better on Win
-        with open( self.params.args.resultUnchk, "w" ) as wf:
-            pass
-        self.fileSol00 = open( self.params.args.resultUnchk, "a" )
-        with open( self.params.args.result, "w" ) as wf:
-            pass
-        self.fileSol = open( self.params.args.result, "a" )
-        with open( self.params.cfg["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0], "w" ) as wf:
-            pass
-        self.fileFail = open( self.params.cfg["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0], "a" )
+        ## TRUNCATING files first, then "a" - better on Win??
+        self.fileSol00 = utils.openFile_autoDir( self.params.args.resultUnchk, "w" )
+        self.fileSol = utils.openFile_autoDir( self.params.args.result, "w" )
+        self.fileFail = utils.openFile_autoDir( self.params.cfg["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0], "w" )
         
     ## If an instance was specified in cmdline, or model list(s) supplied
     def compileExplicitModelLists(self):
@@ -463,6 +457,7 @@ class MznTest:
         logCurrent, lLogNames = self.cmpRes.addLog( self.params.args.result )
         if self.params.sThisName!=lLogNames[0]:
             lLogNames[1] = self.params.sThisName
+        self.nChecksFailed = 0
         self.cmpRes.initListComparison()
         for i_Inst in range( len(self.params.instList) ):
             s_Inst = self.params.instList[ i_Inst ]
@@ -475,6 +470,9 @@ class MznTest:
                     print( "NO CHECK." )
             except:
                 print( "  WARNING: failed to check instance solution. ", sys.exc_info()[0] )
+            ## Saving to the main log:
+            self.saveSolution( self.fileSol )
+            ## Ranking:
             sSet_Inst = frozenset( self.result["Inst_Files"].split() )
             logCurrent[ sSet_Inst ] = self.result
             try:
@@ -499,11 +497,11 @@ class MznTest:
         except int:
             print( "  WARNING: failed to summarize results. ", sys.exc_info()[0] )
         if not self.bCmpOnly:
-            print( "\nResult logs saved to '", self.params.args.resultUnchk, "' and '", self.params.args.result,
-               "'; failed solutions saved to '",
+            print( "\nResult logs saved to '",  self.params.args.result,
+               "', with the unchecked log in '", self.params.args.resultUnchk, "'; failed solutions saved to '",
                self.params.cfg["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0],
                "' in an \"appendable JSON\" format, cf. https://github.com/pvorb/jsml."
-               "\nSolver/checker stdout/err outputs saved to 'last_stdout/err_...txt'.", sep='')
+               "\nSolver/checker stdout(err) outputs saved to 'mzn-test/last_stdout(err)_...txt'.", sep='')
 
 ##############################################################################################
 ######################### MZNTest average-level #############################
@@ -558,9 +556,9 @@ class MznTest:
                   slvBE["EXE"]["n_TimeoutRealHard"][0],
                   slvBE["EXE"]["n_VMEMLIMIT_SoftHard"]
                 )
-            with open( sFlnLastStdout + slvName + '.txt', "w" ) as tf:
+            with utils.openFile_autoDir( sFlnLastStdout + slvName + '.txt', "w" ) as tf:
                 tf.write( completed.stdout )
-            with open( sFlnLastStderr + slvName + '.txt', "w" ) as tf:
+            with utils.openFile_autoDir( sFlnLastStderr + slvName + '.txt', "w" ) as tf:
                 tf.write( completed.stderr )
             print( "STDOUT/ERR: ", len(completed.stdout), '/',
                   len(completed.stderr), " bytes", sep='', end=', ' )
@@ -570,7 +568,10 @@ class MznTest:
             resSlv["TimeReal_LastStatus"] = 0
             resSlv["Hostname"] = platform.uname()[1]
             mzn_exec.parseStderr( io.StringIO( completed.stderr ), resSlv, slvBE["Stderr_Keylines"], slvBE["Stderr_Keyvalues"] )
-            resSlv["Sol_Status"] = [-50, "   ????? NO STATUS LINE PARSED."]
+            if "Time_Flt" in resSlv:
+                resSlv["Sol_Status"] = [-50, "   ????? NO STATUS LINE PARSED."]
+            else:
+                resSlv["Sol_Status"] = [-51, "   !!!!! NOFZN"]
             mzn_exec.parseStdout( io.StringIO( completed.stdout ), resSlv, slvBE["Stdout_Keylines"], slvBE["Stdout_Keyvalues"], solList )
         dTmLast = utils.try_float( resSlv.get( "RealTime_Solns2Out" ) )
         if None!=dTmLast:
@@ -616,7 +617,7 @@ class MznTest:
             ## Try modify
             # self.solList[ iSol ] = self.solList[iSol][:20] + '1' + self.solList[iSol][21:]
             print ( "  CHK SOL", iSol if iSol<0 else (iSol+1), end='... ' )
-            with open( sFlnSolLastDzn, "w" ) as wf:          ## Save the selected solution
+            with utils.openFile_autoDir( sFlnSolLastDzn, "w" ) as wf:          ## Save the selected solution
                 wf.write( self.solList[ iSol ] )
             s_IC = s_Inst + ' ' + sFlnSolLastDzn
             bCheckOK = True
@@ -636,8 +637,8 @@ class MznTest:
                     print ( self.result["SOLUTION_CHECKS_FAILED"], "failed solution(s) saved, go on" )
                     break
                     
-        print( "   CHECK FAILS:", self.result["SOLUTION_CHECKS_FAILED"] )
-        self.saveSolution( self.fileSol )
+        print( "   CHECK FAILS on this instance: ", self.result["SOLUTION_CHECKS_FAILED"],
+                ",  total check-failed instances: ", self.nChecksFailed, sep='' )
             
     def __init__(self):
         ## Default params
