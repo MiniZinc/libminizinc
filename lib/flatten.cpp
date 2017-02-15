@@ -391,8 +391,9 @@ namespace MiniZinc {
         return false;
     }
     if (strictEnums && t1.dim() > 0 && t1.enumId() != t2.enumId()) {
-      if (t1.enumId()==0)
-        return false;
+      if (t1.enumId()==0) {
+        return t1.isbot();
+      }
       if (t2.enumId()!=0) {
         const std::vector<unsigned int>& t1enumIds = getArrayEnum(t1.enumId());
         const std::vector<unsigned int>& t2enumIds = getArrayEnum(t2.enumId());
