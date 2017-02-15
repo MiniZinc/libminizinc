@@ -402,7 +402,7 @@ namespace MiniZinc {
           if (t2enumIds[i] != 0 && t1enumIds[i] != t2enumIds[i])
             return false;
         }
-        if (t2enumIds[t1enumIds.size()-1]!=0 && t1enumIds[t1enumIds.size()-1]!=t2enumIds[t2enumIds.size()-1])
+        if (!t1.isbot() && t2enumIds[t1enumIds.size()-1]!=0 && t1enumIds[t1enumIds.size()-1]!=t2enumIds[t2enumIds.size()-1])
           return false;
       }
     }
