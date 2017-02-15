@@ -77,7 +77,7 @@ namespace MiniZinc {
     return NULL;
   }
 
-  Env* changeLibrary(Env& e, std::vector<std::string>& includePaths, std::string globals_dir, bool verbose=false) {
+  Env* changeLibrary(Env& e, std::vector<std::string>& includePaths, std::string globals_dir, CompilePassFlags& compflags, bool verbose=false) {
     GC::lock();
     CopyMap cm;
     Model* m = e.model();
@@ -102,7 +102,7 @@ namespace MiniZinc {
 
     Env* fenv = new Env(new_mod);
     std::vector<TypeError> typeErrors;
-    MiniZinc::typecheck(*fenv, new_mod, typeErrors);
+    MiniZinc::typecheck(*fenv, new_mod, typeErrors, compflags.model_check_only || compflags.model_interface_only, compflags.allow_multi_assign);
     if (typeErrors.size() > 0) {
       for (unsigned int i=0; i<typeErrors.size(); i++) {
         std::cerr << std::endl;
@@ -136,12 +136,12 @@ namespace MiniZinc {
 
   Env* CompilePass::run(Env* store) {
     Timer lasttime;
-    if(compflags.flag_verbose)
+    if(compflags.verbose)
       std::cerr << "\n\tCompilePass: Flatten with \'" << library << "\' library ...\n";
 
     Env* new_env;
     if(change_library) {
-      new_env = changeLibrary(*env, includePaths, library, compflags.flag_verbose);
+      new_env = changeLibrary(*env, includePaths, library, compflags, compflags.verbose);
 
       new_env->envi().passes = store->envi().passes;
       new_env->envi().maxPathDepth = store->envi().maxPathDepth;
@@ -153,43 +153,43 @@ namespace MiniZinc {
 
     flatten(*new_env, fopts);
 
-    if ( ! compflags.flag_noMIPdomains ) {
-      if (compflags.flag_verbose)
+    if ( ! compflags.noMIPdomains ) {
+      if (compflags.verbose)
         std::cerr << "MIP domains ...";
-      MIPdomains(*new_env, compflags.flag_statistics);
-      if (compflags.flag_verbose)
+      MIPdomains(*new_env, compflags.statistics);
+      if (compflags.verbose)
         std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
     }
 
-    //if(new_env->envi().pass == 0) compflags.flag_optimize = true;
-    //else compflags.flag_optimize = false;
+    //if(new_env->envi().pass == 0) compflags.optimize = true;
+    //else compflags.optimize = false;
 
-    if (compflags.flag_optimize) {
-      if (compflags.flag_verbose)
+    if (compflags.optimize) {
+      if (compflags.verbose)
         std::cerr << "Optimizing ...";
       optimize(*new_env);
       for (unsigned int i=0; i<new_env->warnings().size(); i++) {
-        std::cerr << (compflags.flag_werror ? "\n  ERROR: " : "\n  WARNING: ") << new_env->warnings()[i];
+        std::cerr << (compflags.werror ? "\n  ERROR: " : "\n  WARNING: ") << new_env->warnings()[i];
       }
-      if (compflags.flag_werror && new_env->warnings().size() > 0) {
+      if (compflags.werror && new_env->warnings().size() > 0) {
         exit(EXIT_FAILURE);
       }
-      if (compflags.flag_verbose)
+      if (compflags.verbose)
         std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
     }
 
-    if (!compflags.flag_newfzn) {
-      if (compflags.flag_verbose)
+    if (!compflags.newfzn) {
+      if (compflags.verbose)
         std::cerr << "Converting to old FlatZinc ...";
       oldflatzinc(*new_env);
-      if (compflags.flag_verbose)
+      if (compflags.verbose)
         std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
     } else {
       new_env->flat()->compact();
       new_env->output()->compact();
     }
 
-    if(compflags.flag_verbose)
+    if(compflags.verbose)
       std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
     return new_env;

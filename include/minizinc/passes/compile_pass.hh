@@ -18,12 +18,15 @@
 namespace MiniZinc {
 
   struct CompilePassFlags {
-    bool flag_noMIPdomains;
-    bool flag_verbose;
-    bool flag_statistics;
-    bool flag_optimize;
-    bool flag_newfzn;
-    bool flag_werror;
+    bool noMIPdomains;
+    bool verbose;
+    bool statistics;
+    bool optimize;
+    bool newfzn;
+    bool werror;
+    bool model_check_only;
+    bool model_interface_only;
+    bool allow_multi_assign;
   };
 
   class CompilePass : public Pass {

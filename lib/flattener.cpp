@@ -399,12 +399,15 @@ void Flattener::flatten()
 #endif
                 FlatteningOptions pass_opts = fopts;
                 CompilePassFlags cfs;
-                cfs.flag_noMIPdomains = flag_noMIPdomains;
-                cfs.flag_verbose      = flag_verbose;
-                cfs.flag_statistics   = flag_statistics;
-                cfs.flag_optimize     = flag_optimize;
-                cfs.flag_newfzn       = flag_newfzn;
-                cfs.flag_werror       = flag_werror;
+                cfs.noMIPdomains = flag_noMIPdomains;
+                cfs.verbose      = flag_verbose;
+                cfs.statistics   = flag_statistics;
+                cfs.optimize     = flag_optimize;
+                cfs.newfzn       = flag_newfzn;
+                cfs.werror       = flag_werror;
+                cfs.model_check_only = flag_model_check_only;
+                cfs.model_interface_only  = flag_model_interface_only;
+                cfs.allow_multi_assign    = flag_allow_multi_assign;
 
                 for(unsigned int i=1; i<flag_npasses; i++) {
                   if(flag_gecode) {
