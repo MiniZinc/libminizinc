@@ -918,6 +918,10 @@ namespace MiniZinc {
               "set comprehension expression must be scalar, but is `"
               +c.e()->type().toString(_env)+"'");
         tt.st(Type::ST_SET);
+        if (tt.isvar()) {
+          c.e(addCoercion(_env, _model, c.e(), Type::varint())());
+          tt.bt(Type::BT_INT);
+        }
       } else {
         if (c.e()->type().dim() != 0)
           throw TypeError(_env,c.e()->loc(),
@@ -1221,7 +1225,7 @@ namespace MiniZinc {
           if (ti.domain()->type().ti() != Type::TI_PAR ||
               ti.domain()->type().st() != Type::ST_SET)
             throw TypeError(_env,ti.domain()->loc(),
-                            "type-inst must be par set");
+                            "type-inst must be par set but is `"+ti.domain()->type().toString(_env)+"'");
           if (ti.domain()->type().dim() != 0)
             throw TypeError(_env,ti.domain()->loc(),
                             "type-inst cannot be an array");
@@ -1266,7 +1270,7 @@ namespace MiniZinc {
     void vTIId(TIId& id) {}
   };
   
-  void typecheck(Env& env, Model* m, std::vector<TypeError>& typeErrors, bool ignoreUndefinedParameters) {
+  void typecheck(Env& env, Model* m, std::vector<TypeError>& typeErrors, bool ignoreUndefinedParameters, bool allowMultiAssignment) {
     TopoSorter ts(m);
     
     std::vector<FunctionI*> functionItems;
@@ -1327,20 +1331,29 @@ namespace MiniZinc {
     for (unsigned int i=0; i<assignItems.size(); i++) {
       AssignI* ai = assignItems[i];
       VarDecl* vd = ts.get(env.envi(),ai->id(),ai->loc());
-      if (vd->e())
-        throw TypeError(env.envi(),ai->loc(),"multiple assignment to the same variable");
-      vd->e(ai->e());
-      
-      if (vd->ti()->isEnum()) {
-        GCLock lock;
-        ASTString name(createEnumToStringName(vd->id(),"_enum_to_string_"));
-        VarDecl* vd_enum = ts.get(env.envi(),name,vd->loc());
-        if (vd_enum->e())
+      if (vd->e()) {
+        if (allowMultiAssignment) {
+          GCLock lock;
+          m->addItem(new ConstraintI(ai->loc(),
+                                     new BinOp(ai->loc(),
+                                               new Id(Location().introduce(),ai->id(),vd), BOT_EQ, ai->e())));
+        } else {
           throw TypeError(env.envi(),ai->loc(),"multiple assignment to the same variable");
-        AssignI* ai_enum = createEnumMapper(env.envi(), m, vd->ti()->type().enumId(), vd, vd_enum, enumItems2);
-        if (ai_enum) {
-          vd_enum->e(ai_enum->e());
-          ai_enum->remove();
+        }
+      } else {
+        vd->e(ai->e());
+        
+        if (vd->ti()->isEnum()) {
+          GCLock lock;
+          ASTString name(createEnumToStringName(vd->id(),"_enum_to_string_"));
+          VarDecl* vd_enum = ts.get(env.envi(),name,vd->loc());
+          if (vd_enum->e())
+            throw TypeError(env.envi(),ai->loc(),"multiple definition of the same enum");
+          AssignI* ai_enum = createEnumMapper(env.envi(), m, vd->ti()->type().enumId(), vd, vd_enum, enumItems2);
+          if (ai_enum) {
+            vd_enum->e(ai_enum->e());
+            ai_enum->remove();
+          }
         }
       }
       ai->remove();
@@ -1426,6 +1439,8 @@ namespace MiniZinc {
           bu_ty.run(functionItems[i]->params()[j]);
       }
     }
+    
+    m->fixFnMap();
     
     {
       Typer<true> ty(env.envi(), m, typeErrors);

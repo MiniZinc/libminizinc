@@ -1125,6 +1125,26 @@ namespace MiniZinc {
                 unify(env, deletedVarDecls, vdi->e()->id(), id1);
                 pushDependentConstraints(env, id1, constraintQueue);
               }
+              if (vdi->e()->e() && vdi->e()->e()->type().ispar() && vdi->e()->ti()->domain()) {
+                if (vdi->e()->e()->type().isint()) {
+                  IntVal iv = eval_int(env, vdi->e()->e());
+                  IntSetVal* dom = eval_intset(env, vdi->e()->ti()->domain());
+                  if (!dom->contains(iv))
+                    env.fail();
+                } else if (vdi->e()->e()->type().isintset()) {
+                  IntSetVal* isv = eval_intset(env, vdi->e()->e());
+                  IntSetVal* dom = eval_intset(env, vdi->e()->ti()->domain());
+                  IntSetRanges isv_r(isv);
+                  IntSetRanges dom_r(dom);
+                  if (!Ranges::subset(isv_r, dom_r))
+                    env.fail();
+                } else if (vdi->e()->e()->type().isfloat()) {
+                  FloatVal fv = eval_float(env, vdi->e()->e());
+                  FloatSetVal* dom = eval_floatset(env, vdi->e()->ti()->domain());
+                  if (!dom->contains(fv))
+                    env.fail();
+                }
+              }
               if (vdi->e()->ti()->type()!=Type::varbool() || vdi->e()->ti()->domain()==NULL)
                 pushVarDecl(env, vdi, env.vo.find(vdi->e()), vardeclQueue);
             }

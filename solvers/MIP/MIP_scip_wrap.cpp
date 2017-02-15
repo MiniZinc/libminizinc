@@ -62,9 +62,9 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   << "--writeParam <file> write SCIP parameters to file" << std::endl
 //   << "--tuneParam         instruct SCIP to tune parameters instead of solving   NOT IMPL"
 
-  << "--absGap <n>        absolute gap |primal-dual| to stop. Default 0.99" << std::endl
-  << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8" << std::endl
-//   << "--intTol <n>        integrality tolerance for a variable. Default 1e-6" << std::endl
+  << "--absGap <n>        absolute gap |primal-dual| to stop" << std::endl
+  << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
+  << "--intTol <n>        integrality tolerance for a variable. Default 1e-6" << std::endl
 //   << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
   << std::endl;
@@ -83,7 +83,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
  static   string sWriteParams;
  static   bool flag_all_solutions = false;
 
- static   double absGap=0.99;
+ static   double absGap=-1;
  static   double relGap=1e-8;
  static   double intTol=1e-6;
  static   double objDiff=1.0;
@@ -408,6 +408,8 @@ SCIP_DECL_MESSAGEWARNING(printMsg) {
 SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
 
   /////////////// Last-minute solver options //////////////////
+  if ( flag_all_solutions && 0==nProbType )
+    cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
 
     if (nThreads>0)
       SCIP_CALL( SCIPsetIntParam(scip, "lp/threads", nThreads) );
@@ -418,8 +420,12 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
     if (nWorkMemLimit>0)
       SCIP_CALL( SCIPsetRealParam(scip, "limits/memory", nWorkMemLimit) );
 
-    SCIP_CALL( SCIPsetRealParam( scip, "limits/absgap", absGap ) );
-    SCIP_CALL( SCIPsetRealParam( scip, "limits/gap", relGap ) );
+    if ( absGap>=0.0 )
+      SCIP_CALL( SCIPsetRealParam( scip, "limits/absgap", absGap ) );
+    if ( relGap>=0.0 )
+      SCIP_CALL( SCIPsetRealParam( scip, "limits/gap", relGap ) );
+    if ( intTol>=0.0 )
+      SCIP_CALL( SCIPsetRealParam( scip, "numerics/feastol", intTol ) );
 
 //    retcode =  SCIP_setintparam (env, SCIP_PARAM_ClockType, 1);            // CPU time
 //    wrap_assert(!retcode, "  SCIP Warning: Failure to measure CPU time.", false);

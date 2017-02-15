@@ -31,6 +31,8 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     vector<double> x;
 
   public:
+    void (__stdcall *dll_GRBversion) (int*, int*, int*);
+    
     int (__stdcall *dll_GRBaddconstr) (GRBmodel *model, int numnz, int *cind, double *cval,
                              char sense, double rhs, const char *constrname);
 
@@ -97,6 +99,8 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     
   public:
     MIP_gurobi_wrapper() { openGUROBI(); }
+    /// This constructor is to check DLL only, GRBversion does not need a license
+    MIP_gurobi_wrapper( int ) { }
     virtual ~MIP_gurobi_wrapper() { closeGUROBI(); }
     
     bool processOption(int& i, int argc, const char** argv);
@@ -108,6 +112,8 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
 
     /// derived should overload and call the ancestor
 //     virtual void cleanup();
+    
+    void checkDLL();
     void openGUROBI();
     void closeGUROBI();
     

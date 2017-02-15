@@ -258,6 +258,12 @@ namespace MiniZinc {
       return isa<T>() ? static_cast<const T*>(this) : NULL;
     }
 
+    /// Test if expression is of type \a T
+    template<class T> static bool isa(Expression* e) {
+      if (e==NULL)
+        return NULL;
+      return e->isUnboxedInt() ? T::eid==E_INTLIT : e->_id==T::eid;
+    }
     /// Cast expression to type \a T*
     template<class T> static T* cast(Expression* e) {
       return e==NULL ? NULL : e->cast<T>();
@@ -643,6 +649,8 @@ namespace MiniZinc {
     Expression* where(void) const { return _where; }
     /// Return generator body
     Expression* e(void) const { return _e; }
+    /// Set generator body
+    void e(Expression* e0) { _e = e0; }
     /// Re-construct (used for copying)
     void init(Expression* e, Generators& g);
   };

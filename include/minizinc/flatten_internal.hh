@@ -317,8 +317,8 @@ namespace MiniZinc {
     }
     static ASTString id_eq(void) { return constants().ids.float_.eq; }
     typedef FloatBounds Bounds;
-    static bool finite(const FloatBounds& ib) { return true; }
-    static bool finite(const FloatVal&) { return true; }
+    static bool finite(const FloatBounds& ib) { return ib.l.isFinite() && ib.u.isFinite(); }
+    static bool finite(const FloatVal& v) { return v.isFinite(); }
     static Bounds compute_bounds(EnvI& env, Expression* e) { return compute_float_bounds(env,e); }
     typedef FloatSetVal* Domain;
     static Domain eval_domain(EnvI& env, Expression* e) { return eval_floatset(env, e); }

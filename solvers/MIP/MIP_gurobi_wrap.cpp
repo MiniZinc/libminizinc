@@ -47,9 +47,11 @@ MIP_wrapper* MIP_WrapperFactory::GetDefaultMIPWrapper() {
 string MIP_WrapperFactory::getVersion( ) {
   ostringstream oss;
   oss << "  MIP wrapper for Gurobi library ";
-//  int major, minor, technical;
-//  GRBversion(&major, &minor, &technical);
-//  oss << major << '.' << minor << '.' << technical;
+  MIP_gurobi_wrapper mgw( (int) 5 );
+  mgw.checkDLL();
+  int major, minor, technical;
+  mgw.dll_GRBversion(&major, &minor, &technical);
+  oss << major << '.' << minor << '.' << technical;
   oss << ".  Compiled  " __DATE__ "  " __TIME__;
   return oss.str();
 }
@@ -71,8 +73,8 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   << "--writeParam <file> write GUROBI parameters to file" << std::endl
 //   << "--tuneParam         instruct GUROBI to tune parameters instead of solving   NOT IMPL"
 
-  << "--absGap <n>        absolute gap |primal-dual| to stop. Default 0.99" << std::endl
-  << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8" << std::endl
+  << "--absGap <n>        absolute gap |primal-dual| to stop" << std::endl
+  << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
   << "--intTol <n>        integrality tolerance for a variable. Default 1e-6" << std::endl
 //   << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
@@ -92,7 +94,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
  static   string sWriteParams;
  static   bool flag_all_solutions = false;
 
- static   double absGap=0.99;
+ static   double absGap=-1;
  static   double relGap=1e-8;
  static   double intTol=1e-6;
  static   double objDiff=1.0;
@@ -166,7 +168,7 @@ namespace {
 
 #endif
 
-void MIP_gurobi_wrapper::openGUROBI()
+void MIP_gurobi_wrapper::checkDLL()
 {
 #ifdef HAS_GUROBI_PLUGIN
   
@@ -179,6 +181,7 @@ void MIP_gurobi_wrapper::openGUROBI()
     throw MiniZinc::InternalError("cannot load gurobi dll");
   }
   
+  *(void**)(&dll_GRBversion) = dll_sym(gurobi_dll, "GRBversion");
   *(void**)(&dll_GRBaddconstr) = dll_sym(gurobi_dll, "GRBaddconstr");
   *(void**)(&dll_GRBaddvars) = dll_sym(gurobi_dll, "GRBaddvars");
   *(void**)(&dll_GRBcbcut) = dll_sym(gurobi_dll, "GRBcbcut");
@@ -207,6 +210,7 @@ void MIP_gurobi_wrapper::openGUROBI()
 
 #else
 
+  dll_GRBversion = GRBversion;
   dll_GRBaddconstr = GRBaddconstr;
   dll_GRBaddvars = GRBaddvars;
   dll_GRBcbcut = GRBcbcut;
@@ -234,6 +238,12 @@ void MIP_gurobi_wrapper::openGUROBI()
   dll_GRBwriteparams = GRBwriteparams;
   
 #endif
+}
+
+
+void MIP_gurobi_wrapper::openGUROBI()
+{
+  checkDLL();
   
   cbui.wrapper = this;
   
@@ -481,6 +491,9 @@ MIP_gurobi_wrapper::Status MIP_gurobi_wrapper::convertStatus(int gurobiStatus)
 
 
 void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
+  if ( flag_all_solutions && 0==nProbType )
+    cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
+  
    error = dll_GRBupdatemodel(model);                  // for model export
    wrap_assert( !error,  "Failed to update model." );
    
@@ -538,15 +551,15 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
 //      wrap_assert(!error, "Failed to set GRB_PARAM_MIP_Limits_TreeMemory.", false);
 //     }
 
-   if ( true ) {
+   if ( absGap>=0.0 ) {
      error = dll_GRBsetdblparam( dll_GRBgetenv(model),  "MIPGapAbs", absGap );
      wrap_assert(!error, "Failed to set  MIPGapAbs.", false);
    }
-   if ( true ) {
+   if ( relGap>=0.0 ) {
      error = dll_GRBsetdblparam( dll_GRBgetenv(model),  "MIPGap", relGap );
      wrap_assert(!error, "Failed to set  MIPGap.", false);
    }
-   if ( true ) {
+   if ( intTol>=0.0 ) {
      error = dll_GRBsetdblparam( dll_GRBgetenv(model),  "IntFeasTol", intTol );
      wrap_assert(!error, "Failed to set   IntFeasTol.", false);
    }

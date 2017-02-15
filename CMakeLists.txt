@@ -27,7 +27,7 @@ endif()
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 1)
-set (libminizinc_VERSION_PATCH 2)
+set (libminizinc_VERSION_PATCH 3)
 
 if (ADDITIONAL_DATE_STRING)
   set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
@@ -536,7 +536,7 @@ if(HAS_SCIP_SEPLIBS)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_OSICBC)  # Tested version 2.9.8. Use svn to get the latest /stable snapshot however rev2265 fails to link
+if(HAS_OSICBC)  # Tested version 2.9.8, rev 2329. Use svn/git to get the latest revision, see https://projects.coin-or.org/Cbc
 
   if (EXISTS "${OSICBC_HOME}/include/coin/" AND EXISTS "${OSICBC_HOME}/lib")
     set(CBC_INCLUDEDIRS "${OSICBC_HOME}/include/coin/")

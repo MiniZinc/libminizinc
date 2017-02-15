@@ -247,6 +247,8 @@ function var opt bool: reverse_map(var bool: occ, var bool: d);
 function opt bool: reverse_map(bool: occ, bool: d) ::promise_total =
   if occ then d else <> endif;
 
+predicate bool_opt_eq(var opt bool: x, var opt bool: y) =
+  deopt(x)=deopt(y) /\ occurs(x)=occurs(y);
 
 /** @group optiontypes.bool True iff both \a b0 and \a b1 are absent or
   both are present and have the same value. */
@@ -340,6 +342,19 @@ function var int : deopt_internal(var opt int : x) ::promise_total =
 function var opt int: reverse_map(var bool: occ, var int: d);
 function opt int: reverse_map(bool: occ, int: d) ::promise_total =
   if occ then d else <> endif;
+
+predicate var_dom(var opt int:x, set of int: s) =
+  let {
+    var int: dx = deopt(x);
+    set of int: new_dom = dom(dx) intersect s;
+  } in if new_dom = {} then absent(x) else dx in new_dom endif;
+
+predicate var_dom(array[$T] of var opt int: x, set of int: d) =
+    let { array[int] of var opt int: xx = array1d(x) }
+    in forall (i in index_set(xx)) (var_dom(xx[i],d));
+
+predicate int_opt_eq(var opt int: x, var opt int: y) =
+  deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
 
 /** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than the value of \a y. */

@@ -26,8 +26,8 @@ namespace MiniZinc {
     /// Type-inst
     enum TypeInst { TI_PAR, TI_VAR };
     /// Basic type
-    enum BaseType { BT_TOP, BT_BOOL, BT_INT, BT_FLOAT, BT_STRING, BT_ANN,
-                    BT_BOT, BT_UNKNOWN };
+    enum BaseType { BT_BOOL, BT_INT, BT_FLOAT, BT_STRING, BT_ANN,
+                    BT_TOP, BT_BOT, BT_UNKNOWN };
     /// Whether the expression is plain or set
     enum SetType { ST_PLAIN, ST_SET };
     /// Whether the expression is normal or optional

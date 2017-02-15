@@ -154,10 +154,6 @@ namespace SCIPConstraints {
     // See if the solver adds indexation itself: no.
     std::stringstream ss;
     ss << "p_lin_" << (gi.getMIPWrapper()->nAddedRows++);
-//     cerr << "  coefs: ";
-//     for (size_t i=0; i<coefs.size(); ++i)
-//       cerr << coefs[i] << ", ";
-//     cerr << endl;
     gi.getMIPWrapper()->addRow(coefs.size(), &vars[0], &coefs[0], lt, rhs,
                                GetMaskConsType(call), ss.str());
   }
@@ -192,12 +188,16 @@ namespace SCIPConstraints {
         vars.push_back( gi.exprToVar(args[1]) );
       } else
         rhs += gi.exprToConst(args[1]);
-      // Check feas-ty?    TODO
-
-      std::stringstream ss;
-      ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
-      gi.getMIPWrapper()->addRow(vars.size(), &vars[0], &coefs[0], nCmp, rhs,
-                               GetMaskConsType(call), ss.str());
+      /// Check feas-ty
+      if ( coefs.empty() ) {
+        if ( 1e-5 < fabs( rhs ) )
+          si._status = SolverInstance::UNSAT;
+      } else {
+        std::stringstream ss;
+        ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
+        gi.getMIPWrapper()->addRow(vars.size(), &vars[0], &coefs[0], nCmp, rhs,
+                                GetMaskConsType(call), ss.str());
+      }
     }
    void p_eq(SolverInstanceBase& si, const Call* call) {
      p_non_lin( si, call, MIP_wrapper::EQ );
@@ -315,10 +315,12 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
   if (solveItem->st() != SolveI::SolveType::ST_SAT) {
     if (solveItem->st() == SolveI::SolveType::ST_MAX) {
       getMIPWrapper()->setObjSense(1);
+      getMIPWrapper()->setProbType(1);
       if (mip_wrap->fVerbose)
         cerr << "    MIP_solverinstance: this is a MAXimization problem." << endl;
     } else {
       getMIPWrapper()->setObjSense(-1);
+      getMIPWrapper()->setProbType(-1);
       if (mip_wrap->fVerbose)
         cerr << "    MIP_solverinstance: this is a MINimization problem." << endl;
     }
@@ -327,6 +329,7 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
         << dObjVarLB << ", " << dObjVarUB << endl;
     }
   } else {
+    getMIPWrapper()->setProbType(0);
     if (mip_wrap->fVerbose)
       cerr << "    MIP_solverinstance: this is a SATisfiability problem." << endl;
   }
@@ -334,7 +337,9 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
   
   lastIncumbent = 1e200;                  // for callbacks
   MIP_wrapper::Status sw;
-  if ( getMIPWrapper()->getNCols() ) {
+  if ( SolverInstance::UNSAT == _status )     // already deduced - exit now
+    return _status;
+  if ( getMIPWrapper()->getNCols() ) {     // If any variables, we need to run solver just to get values?
     getMIPWrapper()->provideSolutionCallback(HandleSolutionCallback, this);
     if ( cutGenerators.size() )  // only then, can modify presolve
       getMIPWrapper()->provideCutCallback(HandleCutCallback, this);
@@ -351,8 +356,10 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
     case MIP_wrapper::Status::OPT:
       if ( SolveI::SolveType::ST_SAT != getEnv()->flat()->solveItem()->st() ) {
         s = SolverInstance::OPT;
-        break;
-      }    // else: for SAT problems just say SAT
+      } else {
+        s = SolverInstance::SAT;    // For SAT problems, just say SAT unless we know it's complete
+      }
+      break;
     case MIP_wrapper::Status::SAT:
       s = SolverInstance::SAT;
       break;
@@ -451,21 +458,29 @@ void MIP_solverinstance::processFlatZinc(void) {
       VarId res;
       Id* id = it->e()->id();
       id = id->decl()->id();
-      if (it->e()->e()) {
-        res = exprToVar(it->e()->e());     // modify obj coef??     TODO
-      } else {
-        double obj = vd==objVd ? 1.0 : 0.0;
-        res = getMIPWrapper()->addVar(obj, lb, ub, vType, id->str().c_str());
-        if (vd==objVd) {
-          dObjVarLB = lb;
-          dObjVarUB = ub;
-          getMIPWrapper()->output.nObjVarIndex = res;
-          if ( getMIPWrapper()->fVerbose )
-            cerr << "  MIP: objective variable index (0-based): " << res << endl;
+      double obj = vd==objVd ? 1.0 : 0.0;
+      if (it->e()->e()) {     // has init-expr
+        auto id1 = it->e()->e()->dyn_cast<Id>();
+        if (id1)
+          MZN_ASSERT_HARD( 0==id1->decl()->e() );      // ???
+        res = exprToVar(it->e()->e());     // follow to rhs?     TODO
+        MZN_ASSERT_HARD( !getMIPWrapper()->fPhase1Over ); // Still can change colUB, colObj
+        /// Tighten the ini-expr's bounds
+        lb = getMIPWrapper()->colLB.at( res ) = max( getMIPWrapper()->colLB.at( res ), lb );
+        ub = getMIPWrapper()->colUB.at( res ) = min( getMIPWrapper()->colUB.at( res ), ub );
+        if ( 0.0!=obj ) {
+          getMIPWrapper()->colObj.at( res ) = obj;
         }
+      } else {
+        res = getMIPWrapper()->addVar(obj, lb, ub, vType, id->str().c_str());
       }
-//       if ("X_INTRODUCED_137" == string(id->str().c_str())) {
-//       }
+      if ( 0.0!=obj ) {
+        dObjVarLB = lb;
+        dObjVarUB = ub;
+        getMIPWrapper()->output.nObjVarIndex = res;
+        if ( getMIPWrapper()->fVerbose )
+          cerr << "  MIP: objective variable index (0-based): " << res << endl;
+      }
       _variableMap.insert(id, res);
       assert( res == _variableMap.get(id) );
     }

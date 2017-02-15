@@ -73,7 +73,7 @@ bool Solns2Out::processOption(int& i, const int argc, const char** argv)
     _opt.flag_unique = false;
   } else if ( cop.getOption( "-c --canonicalize") ) {
     _opt.flag_canonicalize = true;
-  } else if ( cop.getOption( "--output-non-canonical", &_opt.flag_output_noncanonical) ) {
+  } else if ( cop.getOption( "--output-non-canonical --output-non-canon", &_opt.flag_output_noncanonical) ) {
   } else if ( cop.getOption( "--output-raw", &_opt.flag_output_raw) ) {
 //   } else if ( cop.getOption( "--number-output", &_opt.flag_number_output ) ) {
   } else {
@@ -192,7 +192,8 @@ bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
           }
           if (_opt.flag_output_time)
             (*pOfs_non_canon) << "% time elapsed: " << stoptime(starttime) << "\n";
-          (*pOfs_non_canon) << _opt.solution_separator << '\n';
+          if (!_opt.solution_separator.empty())
+            (*pOfs_non_canon) << _opt.solution_separator << '\n';
           if ( _opt.flag_output_flush )
             pOfs_non_canon->flush();
         }
@@ -211,7 +212,7 @@ bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
   }
   if (_opt.flag_output_time)
     getOutput() << "% time elapsed: " << stoptime(starttime) << "\n";
-  if ( fNew && !_opt.flag_canonicalize )
+  if ( fNew && !_opt.flag_canonicalize && !_opt.solution_separator.empty())
     getOutput() << _opt.solution_separator << '\n';
   if ( _opt.flag_output_flush )
     getOutput().flush();
@@ -258,7 +259,8 @@ bool Solns2Out::__evalOutputFinal( bool ) {
     if ( _opt.solution_comma.size() && &sol != &*sSolsCanon.begin() )
       getOutput() << _opt.solution_comma << '\n';
     getOutput() << sol;
-    getOutput() << _opt.solution_separator << '\n';
+    if (!_opt.solution_separator.empty())
+      getOutput() << _opt.solution_separator << '\n';
   }
   return true;
 }
@@ -274,7 +276,8 @@ bool Solns2Out::__evalStatusMsg( SolverInstance::Status status ) {
   auto it=stat2msg.find(status);
   if ( stat2msg.end()!=it ) {
     getOutput() << comments;
-    getOutput() << it->second << '\n';
+    if (!it->second.empty())
+      getOutput() << it->second << '\n';
     if ( _opt.flag_output_flush )
       getOutput().flush();
     Solns2Out::status = status;
@@ -374,8 +377,13 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
         char c='_';
         iss >> skipws >> c;
         if ( iss.good() && '%'==c) {
-          comments += line;
-          comments += "\n";
+          // Feed comments directly
+          getOutput() << line << '\n';
+          if ( _opt.flag_output_flush )
+            getOutput().flush();
+          if ( pOfs_non_canon.get() )
+            if ( pOfs_non_canon->good() )
+              ( *pOfs_non_canon ) << line << '\n';
         }
       }
     }

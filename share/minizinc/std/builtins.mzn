@@ -43,6 +43,28 @@ function     bool: '!='(    $T: x,     $T: y);
 /** @group builtins.compare Return if \a x is not equal to \a y */
 function var bool: '!='(var $T: x, var $T: y);
 
+% Special case comparison operators for integer variable and float constant
+function var bool: '<='(var int: x, float: y) = (x <= floor(y));
+function var bool: '>='(var int: x, float: y) = (x >= ceil(y));
+function var bool: '<='(float: x, var int: y) = (y >= ceil(x));
+function var bool: '>='(float: x, var int: y) = (y <= floor(x));
+
+function var bool: '<'(var int: x, float: y) = (x <= ceil(y)-1);
+function var bool: '>'(float: x, var int: y) = (y <= ceil(x)-1);
+function var bool: '>'(var int: x, float: y) = (x >= floor(y)+1);
+function var bool: '<'(float: x, var int: y) = (y >= floor(x)+1);
+
+function var bool: '='(var int: x, float: y) =
+  if ceil(y)=floor(y) then x=ceil(y) else false endif;
+function var bool: '='(float: x, var int: y) =
+  if ceil(x)=floor(x) then y=ceil(x) else false endif;
+
+function var bool: '!='(var int: x, float: y) =
+  if ceil(y)=floor(y) then x != ceil(y) else true endif;
+function var bool: '!='(float: x, var int: y) =
+  if ceil(x)=floor(x) then y != ceil(x) else true endif;
+
+
 /** @group builtins.compare Return if array \a x is lexicographically smaller than array \a y */
 function     bool: '<'(array[$U] of     $T: x,array[$U] of     $T: y);
 /** @group builtins.compare Return if array \a x is lexicographically smaller than array \a y */

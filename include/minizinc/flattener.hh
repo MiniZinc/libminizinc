@@ -84,6 +84,7 @@ namespace MiniZinc {
     bool flag_noMIPdomains = false;
     bool flag_statistics = false;
     bool flag_stdinInput = false;
+    bool flag_allow_multi_assign = false;
 
     bool flag_gecode = false;
     unsigned int flag_npasses = 1;
