@@ -258,7 +258,12 @@ namespace MiniZinc{
       auto sol = solns->getSolutions()[i];
       for (auto it = f->params().begin(); it != f->params().end(); ++it) {
         if ((*it)->type().isvar()) {
-          Expression* exp = sol->find((*it)->id()->str().str())->second;
+          std::string key = (*it)->id()->str().str();
+          auto elem = sol->find(key);
+          if(elem == sol->end()) {
+            throw InternalError("Incomplete solution; `"+key+"' not found.");
+          }
+          Expression* exp = elem->second;
           exp->type(exp->type().bt() == Type::BT_BOOL ? Type::parbool((*it)->type().dim()) : Type::parint(
                   (*it)->type().dim()));
           addData(exp);
