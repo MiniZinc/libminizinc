@@ -151,11 +151,25 @@ namespace SCIPConstraints {
     }
     assert(coefs.size() == vars.size());
 
-    // See if the solver adds indexation itself: no.
-    std::stringstream ss;
-    ss << "p_lin_" << (gi.getMIPWrapper()->nAddedRows++);
-    gi.getMIPWrapper()->addRow(coefs.size(), &vars[0], &coefs[0], lt, rhs,
-                               GetMaskConsType(call), ss.str());
+    /// Check feas-ty
+    if ( coefs.empty() ) {
+      if ( (MIP_wrapper::LinConType::EQ==lt && 1e-5 < fabs( rhs ))
+        || (MIP_wrapper::LinConType::LQ==lt && -1e-5 > ( rhs ))
+        || (MIP_wrapper::LinConType::GQ==lt && 1e-5 < ( rhs ))
+      ) {
+        si._status = SolverInstance::UNSAT;
+        if ( gi.getMIPWrapper()->fVerbose )
+          cerr << "  Constraint '" << *call
+            << "' seems infeasible: simplified to 0 (rel) " << rhs
+            << endl;
+      }
+    } else {
+      // See if the solver adds indexation itself: no.
+      std::stringstream ss;
+      ss << "p_lin_" << (gi.getMIPWrapper()->nAddedRows++);
+      gi.getMIPWrapper()->addRow(coefs.size(), &vars[0], &coefs[0], lt, rhs,
+                                GetMaskConsType(call), ss.str());
+    }
   }
 
   void p_int_lin_le(SolverInstanceBase& si, const Call* call) {
@@ -190,8 +204,16 @@ namespace SCIPConstraints {
         rhs += gi.exprToConst(args[1]);
       /// Check feas-ty
       if ( coefs.empty() ) {
-        if ( 1e-5 < fabs( rhs ) )
+        if ( (MIP_wrapper::LinConType::EQ==nCmp && 1e-5 < fabs( rhs ))
+          || (MIP_wrapper::LinConType::LQ==nCmp && -1e-5 > ( rhs ))
+          || (MIP_wrapper::LinConType::GQ==nCmp && 1e-5 < ( rhs ))
+        ) {
           si._status = SolverInstance::UNSAT;
+          if ( gi.getMIPWrapper()->fVerbose )
+            cerr << "  Constraint '" << *call
+              << "' seems infeasible: simplified to 0 (rel) " << rhs
+              << endl;
+        }
       } else {
         std::stringstream ss;
         ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
