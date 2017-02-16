@@ -203,9 +203,9 @@ void MznSolver::flatten()
   getFlt()->set_flag_statistics(get_flag_statistics());
   clock_t tm01 = clock();
   getFlt()->flatten();
+  /// The following message tells mzn-test.py that flattening succeeded.
   if (get_flag_verbose())
     std::cerr << "  Flattening done, " << timeDiff(clock(), tm01) << std::endl;
-
 }
 
 void MznSolver::solve()

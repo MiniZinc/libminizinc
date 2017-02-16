@@ -421,7 +421,7 @@ void Flattener::flatten()
               if (!ho)
                 std::cerr << "none";
               std::cerr << "\n";
-              /// Objective+bounds / SAT
+              /// Objective / SAT. These messages are used by mzn-test.py.
               SolveI* solveItem = env.flat()->solveItem();
               if (solveItem->st() != SolveI::SolveType::ST_SAT) {
                 if (solveItem->st() == SolveI::SolveType::ST_MAX) {
@@ -429,8 +429,6 @@ void Flattener::flatten()
                 } else {
                   cerr << "    This is a minimization problem." << endl;
                 }
-//                 cerr << "    Bounds for the objective function: "
-//                   << dObjVarLB << ", " << dObjVarUB << endl;
               } else {
                 cerr << "    This is a satisfiability problem." << endl;
               }
