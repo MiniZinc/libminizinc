@@ -4,9 +4,9 @@
 ##  This program runs MiniZinc solvers over a set of instances,
 ##  checks solutions and compares to given solution logs.
 
-##  TODO Run as post-processor on existing DZN output
+##  TODO -a for optimization only
 ##  TODO continuous output dumping as option
-##  TODO CPU/user time limit
+##  TODO CPU/user time limit, proper memory limit (setrlimit not working)
 
 import sys, io
 import os.path, platform
@@ -472,7 +472,7 @@ class MznTest:
                 else:
                     print( "NO CHECK." )
             except:
-                print( "  WARNING: failed to check instance solution. ", sys.exc_info()[0] )
+                print( "  WARNING: failed to check instance solution. ", sys.exc_info() )
             ## Saving to the main log:
             self.saveSolution( self.fileSol )
             ## Ranking:
@@ -480,8 +480,12 @@ class MznTest:
             logCurrent[ sSet_Inst ] = self.result
             try:
                 self.cmpRes.compareInstance( sSet_Inst )
+                if i_Inst < len(self.params.instList)-1:
+                    print( "STATS:  ", end='' )
+                    self.cmpRes.summarizeCurrent( lLogNames )
+                    print( "" )
             except:
-                print( "  WARNING: failed to compare/rank instance. ", sys.exc_info()[0] )
+                print( "  WARNING: failed to compare/rank instance. ", sys.exc_info() )
 
     def compareLogs(self):
         self.cmpRes.initListComparison()
@@ -492,13 +496,13 @@ class MznTest:
             try:
                 self.cmpRes.compareInstance( sInst )
             except:
-                print( "  WARNING: failed to compare/rank instance. ", sys.exc_info()[0] )
+                print( "  WARNING: failed to compare/rank instance. ", sys.exc_info() )
         
     def summarize(self):
         try:
             self.cmpRes.summarize()
         except int:
-            print( "  WARNING: failed to summarize results. ", sys.exc_info()[0] )
+            print( "  WARNING: failed to summarize results. ", sys.exc_info() )
         if not self.bCmpOnly:
             print( "\nResult logs saved to '",  self.params.args.result,
                "', with the unchecked log in '", self.params.args.resultUnchk, "'; failed solutions saved to '",
@@ -583,7 +587,7 @@ class MznTest:
         ## if "SolutionLast" in resSlv:
         ##     print( "   SOLUTION_LAST:\n", resSlv["SolutionLast"], sep='' )
         if None!=solList:
-            print( "  Nsol:", len(solList), end='' )
+            print( "  Nsol:", len(solList), end=',' )
         print( "   STATUS:", resSlv["Sol_Status"] )
         return resSlv
       
@@ -630,7 +634,7 @@ class MznTest:
             # self.result["__CHECKS__"] = []
             for iChk in range ( len ( self.params.chkBEs ) ):
                 chkBE = self.params.chkBEs[ iChk ]
-                chkRes = self.solveInstance( s_IC, chkBE, '  Checker '+str(iChk+1) )
+                chkRes = self.solveInstance( s_IC, chkBE, '__Checker_'+str(iChk+1) )
                 # self.result["__CHECKS__"].append( chkRes )
                 if ( -51==chkRes["Sol_Status"][0]                                       ## NOFZN
                   or ( 0>chkRes["Sol_Status"][0] and -3<=chkRes["Sol_Status"][0] ) ):   ## INFEAS

@@ -130,7 +130,7 @@ def checkKeyvalues( line, dictVal, result ):
                     lineSubst = re.sub( paramArray[1], ' ', line )
                 except:
                     print("   WARNING: failed to substitute regex '", paramArray[1],
-                          "' by ' ' in string '", line, "':  ", sys.exc_info()[0]
+                          "' by ' ' in string '", line, "':  ", sys.exc_info()[0:2]
                           , sep='')
                 else:
                     lSL = lineSubst.split()

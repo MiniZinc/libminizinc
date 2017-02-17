@@ -81,6 +81,15 @@ class CompareLogs:
         self.checkContradictions( sInst )
         self.rankPerformance( sInst )
       
+    ## Summarize up to current instance
+    def summarizeCurrent( self, lLogNames ):
+        lNames = " ".join(lLogNames)
+        mCmpVals = self.mCmpVecVals[lNames]
+        for hdr in self.hdrSummary:
+            print( hdr[1], ":",
+                  mCmpVals[hdr[0]] if hdr[0] in mCmpVals else 0,
+                  sep='', end=' ' )
+    
     ## Summarize
     def summarize( self ):
         ### Printing summary
@@ -123,8 +132,8 @@ class CompareLogs:
                   0<mRes["SOLUTION_CHECKS_FAILED"]:
                     aResultThisInst[ "n_CheckFailed" ] = 1
                     utils.addMapValues( self.mCmpVecVals[lNames], aResultThisInst )
-                    print ( "  WARNING: instance", sInst,
-                           " method", lNames, " :: solutions not confirmed." )
+                    print ( "  WARNING: instance ", sInst,
+                           ",  method '", lNames, "'  :: solutions not confirmed.", sep='' )
                     continue                                        ## TODO. Param?
                 aResultThisInst[ "n_Errors" ] = 0
                 mSlv = mRes[ "__SOLVE__" ]
@@ -159,7 +168,7 @@ class CompareLogs:
                     nSense = next(iter(self.sSenses.keys()))
                 else:
                     nSense = -2  ## ??
-                self.bOptProblem = True if 0!=nSense or None!=dBnd or None!=dObj else False
+                self.bOptProblem = True if 0!=nSense else False     ## or (None!=dBnd or None!=dObj)
                 ## Handle optimality / SAT completed
                 if 2==n_SolStatus:
                     if not self.bOptProblem:
