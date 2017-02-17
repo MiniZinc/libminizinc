@@ -533,6 +533,7 @@ class MznTest:
         
     ## Solve a given MZN instance and return the result map
     ## Arguments: instance files in a string, backend parameter dictionary
+    ## slvName is used for screen output and last_std(out/err)_... naming, so better no spaces
     ## solList provided <=> this is solving (not checking) and will use --checkDZN if opted
     def solveInstance(self, s_Inst, slvBE, slvName, solList=None):
         resSlv = OrderedDict()
@@ -631,19 +632,22 @@ class MznTest:
                 wf.write( self.solList[ iSol ] )
             s_IC = s_Inst + ' ' + sFlnSolLastDzn
             bCheckOK = True
+            chkFlSt = []
             # self.result["__CHECKS__"] = []
             for iChk in range ( len ( self.params.chkBEs ) ):
                 chkBE = self.params.chkBEs[ iChk ]
                 chkRes = self.solveInstance( s_IC, chkBE, '__Checker_'+str(iChk+1) )
                 # self.result["__CHECKS__"].append( chkRes )
-                if ( -51==chkRes["Sol_Status"][0]                                       ## NOFZN
-                  or ( 0>chkRes["Sol_Status"][0] and -3<=chkRes["Sol_Status"][0] ) ):   ## INFEAS
+                if ( ## -51==chkRes["Sol_Status"][0] or               ## NOFZN? No, flattener should report INFEAS.
+                    ( 0>chkRes["Sol_Status"][0] and -3<=chkRes["Sol_Status"][0] ) ):   ## INFEAS
                     bCheckOK = False
+                    chkFlSt = chkRes["Sol_Status"]
             self.result["SOLUTION_CHECKS_DONE"] += 1
             if not bCheckOK:
                 fFailed = 1
                 self.result["SOLUTION_CHECKS_FAILED"] += 1
-                self.result["SOLUTION_FAILED"] =self.solList[ iSol ]
+                self.result["SOLUTION_FAILED_LAST"] = self.solList[ iSol ]
+                self.result["SOLUTION_FAILED_LAST__CHKSTATUS"] = chkRes["Sol_Status"]
                 self.saveSolution( self.fileFail )
                 if nFSM<=self.result["SOLUTION_CHECKS_FAILED"]:
                     print ( self.result["SOLUTION_CHECKS_FAILED"], "failed solution(s) saved, go on" )
