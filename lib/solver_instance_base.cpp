@@ -143,7 +143,11 @@ namespace MiniZinc {
           std::vector<std::pair<int,int> > dims_v;
           for( int i=0;i<dims->length();i++) {
             IntSetVal* isv = eval_intset(getEnv()->envi(), dims->v()[i]);
-            dims_v.push_back(std::pair<int,int>(isv->min(0).toInt(),isv->max(isv->size()-1).toInt()));
+            if (isv->size()==0) {
+              dims_v.push_back(std::pair<int,int>(1,0));
+            } else {
+              dims_v.push_back(std::pair<int,int>(isv->min().toInt(),isv->max().toInt()));
+            }
           }
           ArrayLit* array_solution = new ArrayLit(Location(),array_elems,dims_v);
           KeepAlive ka(array_solution);
