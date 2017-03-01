@@ -156,7 +156,9 @@ class MZT_Param:
               "Adding is only possible if the key is prefixed by '"+s_AddKey+"'"
             ],
             "MINIZINC-CHK": [ "__BE_COMMON", "__BE_CHECKER_OLDMINIZINC", "BE_MINIZINC" ],
+            "MZN-GECODE-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_MZN-GECODE" ],
             "FZN-GECODE-CHK": [ "__BE_COMMON", "__BE_CHECKER_OLDMINIZINC", "BE_FZN-GECODE" ],
+            "FZN-GECODE-SHELL-CHK": [ "__BE_COMMON", "__BE_CHECKER_OLDMINIZINC", "BE_FZN-GECODE_SHELL" ],
             "FZN-CHUFFED-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_FZN-CHUFFED" ]
           },
           "BACKEND_DEFS": {
@@ -277,12 +279,31 @@ class MZT_Param:
                 s_AddKey+"Preslv_Non0": [ "Reduced MIP has [0-9]+ rows,", " ", 9 ]
               },
             },
+            "BE_MZN-GECODE": {
+              s_CommentKey: [ "------------------- Specializations for Gecode FlatZinc interpreter" ],
+              "EXE": {
+#                "s_SolverCall" : ["mzn-fzn -s -G gecode --solver fzn-gecode " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
+                "s_SolverCall" : ["mzn-gecode -v -s -G gecode " + sDZNOutputAgrs
+                     + " %s"],
+                "b_ThruShell"  : [True],
+              }
+            },
             "BE_FZN-GECODE": {
               s_CommentKey: [ "------------------- Specializations for Gecode FlatZinc interpreter" ],
               "EXE": {
 #                "s_SolverCall" : ["mzn-fzn -s -G gecode --solver fzn-gecode " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
-                "s_SolverCall" : ["minizinc -s -G gecode -f fzn-gecode --mzn2fzn-cmd 'mzn2fzn -v -s " + sDZNOutputAgrs + "' %s"], # _objective fails for checking
+                "s_SolverCall" : ["minizinc -s -G gecode -f fzn-gecode --mzn2fzn-cmd 'mzn2fzn -v -s " + sDZNOutputAgrs + "' %s"],
                 "b_ThruShell"  : [False],
+              }
+            },
+            "BE_FZN-GECODE_SHELL": {
+              s_CommentKey: [ "------------------- Specializations for Gecode FlatZinc interpreter" ],
+              "EXE": {
+#                "s_SolverCall" : ["mzn-fzn -s -G gecode --solver fzn-gecode " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
+                "s_SolverCall" : ["mzn2fzn -v -s -G gecode " + sDZNOutputAgrs
+                     + " --allow-multiple-assignments %s --fzn tmp.fzn --ozn tmp.ozn; fzn-gecode tmp.fzn | solns2out tmp.ozn"],
+                "b_ThruShell"  : [True],
+                "s_ExtraCmdline" : [""],
               }
             },
             "BE_FZN-CHUFFED": {
