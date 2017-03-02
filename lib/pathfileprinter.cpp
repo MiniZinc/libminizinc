@@ -19,8 +19,8 @@
 
 namespace MiniZinc {
 
-  PathFilePrinter::PathFilePrinter(std::ostream& o, EnvI& envi, bool rem) : os(o), ei(envi), remove_paths(rem) {};
-    
+  PathFilePrinter::PathFilePrinter(std::ostream& o, EnvI& envi, bool rem) : os(o), ei(envi), remove_paths(rem), constraint_index(0) {};
+
   void PathFilePrinter::addBetterName(Id* id, std::string name, std::string path, bool overwrite = false) {
     std::string oname;
     std::string opath;
@@ -35,7 +35,7 @@ namespace MiniZinc {
       oname = name;
     if(path != "" && (overwrite || opath == ""))
       opath = path;
-  
+
     betternames[id] = NamePair(oname, opath);
   }
 
@@ -160,8 +160,29 @@ namespace MiniZinc {
           os << np.second << std::endl;
         }
       }
+    } else if (ConstraintI* ci = item->dyn_cast<ConstraintI>()) {
+      StringLit* sl = NULL;
+      Call* e = ci->e()->cast<Call>();
+      for(ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
+        if(Call* ca = (*it)->dyn_cast<Call>()) {
+          ASTString cid = ca->id();
+          if(ca->id() == constants().ann.mzn_path) {
+            sl = ca->args()[0]->cast<StringLit>();
+          }
+        }
+      }
+
+      {
+        os << constraint_index << "\t";
+        os << constraint_index << "\t";
+        if (sl) {
+          os << sl->v();
+        } else {
+          os << "";
+        }
+        os << std::endl;
+      }
+      constraint_index++;
     }
   }
-
-
 }
