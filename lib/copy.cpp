@@ -15,52 +15,43 @@
 namespace MiniZinc {
 
   void CopyMap::insert(Expression* e0, Expression* e1) {
-    m.insert(std::pair<void*,void*>(e0,e1));
+    if (!e0->isUnboxedInt() && !e1->isUnboxedInt())
+      node_m.insert(e0,e1);
   }
   Expression* CopyMap::find(Expression* e) {
-    MyMap::iterator it = m.find(e);
-    if (it==m.end()) return NULL;
-    return static_cast<Expression*>(it->second);
+    return static_cast<Expression*>(node_m.find(e));
   }
   void CopyMap::insert(Item* e0, Item* e1) {
-    m.insert(std::pair<void*,void*>(e0,e1));
+    node_m.insert(e0,e1);
   }
   Item* CopyMap::find(Item* e) {
-    MyMap::iterator it = m.find(e);
-    if (it==m.end()) return NULL;
-    return static_cast<Item*>(it->second);
+    return static_cast<Item*>(node_m.find(e));
   }
   void CopyMap::insert(Model* e0, Model* e1) {
-    m.insert(std::pair<void*,void*>(e0,e1));
+    model_m.insert(std::make_pair(e0,e1));
   }
   Model* CopyMap::find(Model* e) {
-    MyMap::iterator it = m.find(e);
-    if (it==m.end()) return NULL;
-    return static_cast<Model*>(it->second);
+    ModelMap::iterator it = model_m.find(e);
+    if (it==model_m.end()) return NULL;
+    return it->second;
   }
   void CopyMap::insert(const ASTString& e0, const ASTString& e1) {
-    m.insert(std::pair<void*,void*>(e0.aststr(),e1.aststr()));
+    node_m.insert(e0.aststr(),e1.aststr());
   }
   ASTStringO* CopyMap::find(const ASTString& e) {
-    MyMap::iterator it = m.find(e.aststr());
-    if (it==m.end()) return NULL;
-    return static_cast<ASTStringO*>(it->second);
+    return static_cast<ASTStringO*>(node_m.find(e.aststr()));
   }
   void CopyMap::insert(IntSetVal* e0, IntSetVal* e1) {
-    m.insert(std::pair<void*,void*>(e0,e1));
+    node_m.insert(e0,e1);
   }
   IntSetVal* CopyMap::find(IntSetVal* e) {
-    MyMap::iterator it = m.find(e);
-    if (it==m.end()) return NULL;
-    return static_cast<IntSetVal*>(it->second);
+    return static_cast<IntSetVal*>(node_m.find(e));
   }
   void CopyMap::insert(FloatSetVal* e0, FloatSetVal* e1) {
-    m.insert(std::pair<void*,void*>(e0,e1));
+    node_m.insert(e0,e1);
   }
   FloatSetVal* CopyMap::find(FloatSetVal* e) {
-    MyMap::iterator it = m.find(e);
-    if (it==m.end()) return NULL;
-    return static_cast<FloatSetVal*>(it->second);
+    return static_cast<FloatSetVal*>(node_m.find(e));
   }
 
   Location copy_location(CopyMap& m, const Location& _loc) {

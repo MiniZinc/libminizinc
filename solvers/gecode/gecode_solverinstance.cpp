@@ -522,26 +522,28 @@ namespace MiniZinc {
     if(si->e()) {
       _current_space->_optVarIsInt = (si->e()->type().isvarint());
       if(Id* id = si->e()->dyn_cast<Id>()) {
-        GecodeVariable var = resolveVar(id->decl());
-        if(_current_space->_optVarIsInt) {
-          IntVar intVar = var.intVar(_current_space);
-          for(unsigned int i=0; i<_current_space->iv.size(); i++) {
-            if(_current_space->iv[i].same(intVar)) {
-              _current_space->_optVarIdx = i;
-              break;
+        if (si->e()->type().isvar()) {
+          GecodeVariable var = resolveVar(id->decl());
+          if(_current_space->_optVarIsInt) {
+            IntVar intVar = var.intVar(_current_space);
+            for(unsigned int i=0; i<_current_space->iv.size(); i++) {
+              if(_current_space->iv[i].same(intVar)) {
+                _current_space->_optVarIdx = i;
+                break;
+              }
             }
-          }
-          assert(_current_space->_optVarIdx >= 0);
-        } else {
-          FloatVar floatVar = var.floatVar(_current_space);
-          for(unsigned int i=0; i<_current_space->fv.size(); i++) {
-            if(_current_space->fv[i].same(floatVar)) {
-              _current_space->_optVarIdx = i;
-              break;
+            assert(_current_space->_optVarIdx >= 0);
+          } else {
+            FloatVar floatVar = var.floatVar(_current_space);
+            for(unsigned int i=0; i<_current_space->fv.size(); i++) {
+              if(_current_space->fv[i].same(floatVar)) {
+                _current_space->_optVarIdx = i;
+                break;
+              }
             }
+            assert(_current_space->_optVarIdx >= 0);
           }
-          assert(_current_space->_optVarIdx >= 0);
-        }
+        } 
       }
       else { // the solve expression has to be a variable/id
         assert(false);

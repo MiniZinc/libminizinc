@@ -24,10 +24,10 @@ def runCmd( s_Cmd, b_Shell=False, timeo=None, meml=None ):
     else:
         l_Cmd = shlex.split( s_Cmd )
     if None!=meml:
-        if hasattr( resource, 'RLIMIT_DATA' ):  ## TODO move into preexec_fn for parallel tests?
-            resource.setrlimit( resource.RLIMIT_DATA, ( meml[0], meml[1] ) )
+        if hasattr( resource, 'RLIMIT_RSS' ):  ## TODO move into preexec_fn for parallel tests?
+            resource.setrlimit( resource.RLIMIT_RSS, ( meml[0], meml[1] ) )
         else:
-            print( "  ... but the OS doesn't support RLIMIT_DATA." )
+            print( "  ... but the OS doesn't support RLIMIT_RSS." )
     tm = timeit.default_timer()
     ################# In the following, the subprocess.RUN method fails to kill shell calls on Linux
     #try:
@@ -130,7 +130,7 @@ def checkKeyvalues( line, dictVal, result ):
                     lineSubst = re.sub( paramArray[1], ' ', line )
                 except:
                     print("   WARNING: failed to substitute regex '", paramArray[1],
-                          "' by ' ' in string '", line, "':  ", sys.exc_info()[0]
+                          "' by ' ' in string '", line, "':  ", sys.exc_info()[0:2]
                           , sep='')
                 else:
                     lSL = lineSubst.split()

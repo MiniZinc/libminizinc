@@ -4,9 +4,9 @@
 ##  This program runs MiniZinc solvers over a set of instances,
 ##  checks solutions and compares to given solution logs.
 
-##  TODO Run as post-processor on existing DZN output
+##  TODO -a for optimization only
 ##  TODO continuous output dumping as option
-##  TODO CPU/user time limit
+##  TODO CPU/user time limit, proper memory limit (setrlimit not working)
 
 import sys, io
 import os.path, platform
@@ -156,7 +156,9 @@ class MZT_Param:
               "Adding is only possible if the key is prefixed by '"+s_AddKey+"'"
             ],
             "MINIZINC-CHK": [ "__BE_COMMON", "__BE_CHECKER_OLDMINIZINC", "BE_MINIZINC" ],
+            "MZN-GECODE-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_MZN-GECODE" ],
             "FZN-GECODE-CHK": [ "__BE_COMMON", "__BE_CHECKER_OLDMINIZINC", "BE_FZN-GECODE" ],
+            "FZN-GECODE-SHELL-CHK": [ "__BE_COMMON", "__BE_CHECKER_OLDMINIZINC", "BE_FZN-GECODE_SHELL" ],
             "FZN-CHUFFED-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_FZN-CHUFFED" ]
           },
           "BACKEND_DEFS": {
@@ -169,12 +171,13 @@ class MZT_Param:
                 s_CommentKey: [ "Solver call parameters" ],
                 "s_SolverCall" : ["minizinc -v -s -a " + sDZNOutputAgrs + " %s",
                   "/// The 1st element defines the call line. %s is replaced by the instance filename(s)."],
-                "s_ExtraCmdline" : ["", "/// The 1st element gives extra cmdline arguments to the call"],
+                "s_ExtraCmdline" : ["", "/// Only for __BE_SOLVER/__BE_CHECKER... subprofiles."
+                                        " The 1st element gives extra cmdline arguments to the call"],
                 "b_ThruShell"  : [False, "/// Set True to call solver thru shell."
                   " Then you can do shell tricks but Ctrl+C may not kill all subprocesses etc."],
                 "n_TimeoutRealHard": [500, "/// Real-time timeout per instance, seconds,"
                   " for all solution steps together. Use mzn/backend options for CPU time limit."],
-                "n_VMEMLIMIT_SoftHard": [8582912, 8582912, "/// 2 limits, soft/hard. Platform-dependent in Python 3.6"]
+                "n_VMEMLIMIT_SoftHard": [8100000, 8100000, "/// 2 limits, soft/hard. Platform-dependent in Python 3.6"]
               },
               "Stderr_Keylines": {
                 s_CommentKey: [ "A complete line in stderr will be interpreted accordingly.",
@@ -191,7 +194,8 @@ class MZT_Param:
                 s_CommentKey: [ "Numerical values to be extracted from a line in stderr.",
                   " { <outvar>: [ <regex search pattern>, <regex to replace by spaces>, <value's pos in the line>] }."
                 ], 
-                "Time_Flt": [ "Flattening done,", "[s]", 3, "/// E.g., 'Flattening done, 3s' produces 3" ]
+                "Time_Flt": [ "Flattening done,", "[s]", 3, "/// E.g., 'Flattening done, 3s' produces 3."
+                                " !!! This is interpreted as successful flattening by the checker" ]
               },
               "Stdout_Keylines": {
                 s_CommentKey: [ "Similar to Stderr_Keylines"],
@@ -220,9 +224,10 @@ class MZT_Param:
             "__BE_SOLVER": {
               s_CommentKey: ["Specializations for a general solver" ],
               "EXE": {
+                "s_ExtraCmdline" : ["-a"],
                 "b_ThruShell"  : [False],
                 "n_TimeoutRealHard": [500],
-                "n_VMEMLIMIT_SoftHard": [8582912, 8582912]
+                "n_VMEMLIMIT_SoftHard": [8100000, 8100000]
               }
             },
             "__BE_CHECKER": {
@@ -231,7 +236,7 @@ class MZT_Param:
                 "s_ExtraCmdline" : ["--allow-multiple-assignments"],
                 "b_ThruShell"  : [False],
                 "n_TimeoutRealHard": [15],
-                "n_VMEMLIMIT_SoftHard": [8582912, 8582912]
+                "n_VMEMLIMIT_SoftHard": [8100000, 8100000]
               }
             },
             "__BE_CHECKER_OLDMINIZINC": {
@@ -240,13 +245,13 @@ class MZT_Param:
                 "s_ExtraCmdline" : ["--mzn2fzn-cmd 'mzn2fzn -v -s --output-mode dzn --allow-multiple-assignments'"],
                 "b_ThruShell"  : [False],
                 "n_TimeoutRealHard": [15],
-                "n_VMEMLIMIT_SoftHard": [8582912, 8582912]
+                "n_VMEMLIMIT_SoftHard": [8100000, 8100000]
               }
             },
             "BE_MINIZINC": {
               s_CommentKey: [ "------------------- Specializations for pure minizinc driver" ],
               "EXE":{
-                "s_SolverCall": [ "minizinc --mzn2fzn-cmd 'mzn2fzn -v -s " + sDZNOutputAgrs + "' -s -a %s"], # _objective fails for checking
+                "s_SolverCall": [ "minizinc --mzn2fzn-cmd 'mzn2fzn -v -s " + sDZNOutputAgrs + "' -s %s"], # _objective fails for checking
                 "b_ThruShell"  : [False],
               },
             },
@@ -264,7 +269,7 @@ class MZT_Param:
             "BE_MZN-CPLEX": {
               s_CommentKey: [ "------------------- Specializations for IBM ILOG CPLEX solver instance" ],
               "EXE": {
-                "s_SolverCall" : ["mzn-cplex -v -s -a -G linear --timeout 300 --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking
+                "s_SolverCall" : ["mzn-cplex -v -s -G linear --timeout 300 --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking
                 #"s_SolverCall" : ["./run-mzn-cplex.sh %s"],
                 #"b_ThruShell"  : [True],
               },
@@ -274,12 +279,31 @@ class MZT_Param:
                 s_AddKey+"Preslv_Non0": [ "Reduced MIP has [0-9]+ rows,", " ", 9 ]
               },
             },
+            "BE_MZN-GECODE": {
+              s_CommentKey: [ "------------------- Specializations for Gecode FlatZinc interpreter" ],
+              "EXE": {
+#                "s_SolverCall" : ["mzn-fzn -s -G gecode --solver fzn-gecode " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
+                "s_SolverCall" : ["mzn-gecode -v -s -G gecode " + sDZNOutputAgrs
+                     + " %s"],
+                "b_ThruShell"  : [True],
+              }
+            },
             "BE_FZN-GECODE": {
               s_CommentKey: [ "------------------- Specializations for Gecode FlatZinc interpreter" ],
               "EXE": {
 #                "s_SolverCall" : ["mzn-fzn -s -G gecode --solver fzn-gecode " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
-                "s_SolverCall" : ["minizinc -s -G gecode -f fzn-gecode --mzn2fzn-cmd 'mzn2fzn -v -s " + sDZNOutputAgrs + "' %s"], # _objective fails for checking
+                "s_SolverCall" : ["minizinc -s -G gecode -f fzn-gecode --mzn2fzn-cmd 'mzn2fzn -v -s " + sDZNOutputAgrs + "' %s"],
                 "b_ThruShell"  : [False],
+              }
+            },
+            "BE_FZN-GECODE_SHELL": {
+              s_CommentKey: [ "------------------- Specializations for Gecode FlatZinc interpreter" ],
+              "EXE": {
+#                "s_SolverCall" : ["mzn-fzn -s -G gecode --solver fzn-gecode " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
+                "s_SolverCall" : ["mzn2fzn -v -s -G gecode " + sDZNOutputAgrs
+                     + " --allow-multiple-assignments %s --fzn tmp.fzn --ozn tmp.ozn; fzn-gecode tmp.fzn | solns2out tmp.ozn"],
+                "b_ThruShell"  : [True],
+                "s_ExtraCmdline" : [""],
               }
             },
             "BE_FZN-CHUFFED": {
@@ -469,7 +493,7 @@ class MznTest:
                 else:
                     print( "NO CHECK." )
             except:
-                print( "  WARNING: failed to check instance solution. ", sys.exc_info()[0] )
+                print( "  WARNING: failed to check instance solution. ", sys.exc_info() )
             ## Saving to the main log:
             self.saveSolution( self.fileSol )
             ## Ranking:
@@ -477,8 +501,12 @@ class MznTest:
             logCurrent[ sSet_Inst ] = self.result
             try:
                 self.cmpRes.compareInstance( sSet_Inst )
+                if i_Inst < len(self.params.instList)-1:
+                    print( "STATS:  ", end='' )
+                    self.cmpRes.summarizeCurrent( lLogNames )
+                    print( "" )
             except:
-                print( "  WARNING: failed to compare/rank instance. ", sys.exc_info()[0] )
+                print( "  WARNING: failed to compare/rank instance. ", sys.exc_info() )
 
     def compareLogs(self):
         self.cmpRes.initListComparison()
@@ -489,13 +517,13 @@ class MznTest:
             try:
                 self.cmpRes.compareInstance( sInst )
             except:
-                print( "  WARNING: failed to compare/rank instance. ", sys.exc_info()[0] )
+                print( "  WARNING: failed to compare/rank instance. ", sys.exc_info() )
         
     def summarize(self):
         try:
             self.cmpRes.summarize()
         except int:
-            print( "  WARNING: failed to summarize results. ", sys.exc_info()[0] )
+            print( "  WARNING: failed to summarize results. ", sys.exc_info() )
         if not self.bCmpOnly:
             print( "\nResult logs saved to '",  self.params.args.result,
                "', with the unchecked log in '", self.params.args.resultUnchk, "'; failed solutions saved to '",
@@ -526,6 +554,7 @@ class MznTest:
         
     ## Solve a given MZN instance and return the result map
     ## Arguments: instance files in a string, backend parameter dictionary
+    ## slvName is used for screen output and last_std(out/err)_... naming, so better no spaces
     ## solList provided <=> this is solving (not checking) and will use --checkDZN if opted
     def solveInstance(self, s_Inst, slvBE, slvName, solList=None):
         resSlv = OrderedDict()
@@ -571,7 +600,7 @@ class MznTest:
             if "Time_Flt" in resSlv:
                 resSlv["Sol_Status"] = [-50, "   ????? NO STATUS LINE PARSED."]
             else:
-                resSlv["Sol_Status"] = [-51, "   !!!!! NOFZN"]
+                resSlv["Sol_Status"] = [-51, "   !!!!! NOFZN"]     ## This can mean a check failed.
             mzn_exec.parseStdout( io.StringIO( completed.stdout ), resSlv, slvBE["Stdout_Keylines"], slvBE["Stdout_Keyvalues"], solList )
         dTmLast = utils.try_float( resSlv.get( "RealTime_Solns2Out" ) )
         if None!=dTmLast:
@@ -579,6 +608,8 @@ class MznTest:
             resSlv.pop( "RealTime_Solns2Out" )
         ## if "SolutionLast" in resSlv:
         ##     print( "   SOLUTION_LAST:\n", resSlv["SolutionLast"], sep='' )
+        if None!=solList:
+            print( "  Nsol:", len(solList), end=',' )
         print( "   STATUS:", resSlv["Sol_Status"] )
         return resSlv
       
@@ -612,31 +643,38 @@ class MznTest:
             rng = range( -1, max( nCM-1, -len(self.solList)-1 ), -1 )
         self.result["SOLUTION_CHECKS_DONE"] = 0
         self.result["SOLUTION_CHECKS_FAILED"] = 0
+        fFailed = 0
         ## Iterate over the solution range
         for iSol in rng:
             ## Try modify
             # self.solList[ iSol ] = self.solList[iSol][:20] + '1' + self.solList[iSol][21:]
-            print ( "  CHK SOL", iSol if iSol<0 else (iSol+1), end='... ' )
+            print ( "CHK SOL ", iSol if iSol<0 else (iSol+1), '/', len(rng), sep='', end='... ' )
             with utils.openFile_autoDir( sFlnSolLastDzn, "w" ) as wf:          ## Save the selected solution
                 wf.write( self.solList[ iSol ] )
             s_IC = s_Inst + ' ' + sFlnSolLastDzn
             bCheckOK = True
+            chkFlSt = []
             # self.result["__CHECKS__"] = []
             for iChk in range ( len ( self.params.chkBEs ) ):
                 chkBE = self.params.chkBEs[ iChk ]
-                chkRes = self.solveInstance( s_IC, chkBE, '_CHK'+str(iChk+1) )
+                chkRes = self.solveInstance( s_IC, chkBE, '__Checker_'+str(iChk+1) )
                 # self.result["__CHECKS__"].append( chkRes )
-                if 0>chkRes["Sol_Status"][0] and -3<=chkRes["Sol_Status"][0]:
+                if ( ## -51==chkRes["Sol_Status"][0] or               ## NOFZN? No, flattener should report INFEAS.
+                    ( 0>chkRes["Sol_Status"][0] and -3<=chkRes["Sol_Status"][0] ) ):   ## INFEAS
                     bCheckOK = False
+                    chkFlSt = chkRes["Sol_Status"]
             self.result["SOLUTION_CHECKS_DONE"] += 1
             if not bCheckOK:
+                fFailed = 1
                 self.result["SOLUTION_CHECKS_FAILED"] += 1
-                self.result["SOLUTION_FAILED"] =self.solList[ iSol ]
+                self.result["SOLUTION_FAILED_LAST"] = self.solList[ iSol ]
+                self.result["SOLUTION_FAILED_LAST__CHKSTATUS"] = chkRes["Sol_Status"]
                 self.saveSolution( self.fileFail )
                 if nFSM<=self.result["SOLUTION_CHECKS_FAILED"]:
                     print ( self.result["SOLUTION_CHECKS_FAILED"], "failed solution(s) saved, go on" )
                     break
-                    
+              
+        self.nChecksFailed += fFailed
         print( "   CHECK FAILS on this instance: ", self.result["SOLUTION_CHECKS_FAILED"],
                 ",  total check-failed instances: ", self.nChecksFailed, sep='' )
             

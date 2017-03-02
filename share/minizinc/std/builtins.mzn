@@ -1514,7 +1514,7 @@ predicate bool_xor_reif(var bool: a, var bool: b, var bool: c) =
   bool_xor(a,b,c);
 
 predicate xorall_reif(array[int] of var bool: b, var bool: c) =
-  xorall([not c]++b);
+  let { var bool: nc ::is_defined_var; constraint xorall([nc]++b) ::defines_var(nc); } in c = not nc;
 
 function var int: lin_exp(array[int] of int, array[int] of var int, int);
 function var float: lin_exp(array[int] of float, array[int] of var float, float);

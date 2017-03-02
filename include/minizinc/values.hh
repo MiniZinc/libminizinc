@@ -692,8 +692,12 @@ namespace MiniZinc {
   template<class Char, class Traits>
   std::basic_ostream<Char,Traits>&
   operator <<(std::basic_ostream<Char,Traits>& os, const IntSetVal& s) {
-    for (IntSetRanges isr(&s); isr(); ++isr)
-      os << isr.min() << ".." << isr.max() << " ";
+    if (s.size()==0) {
+      os << "1..0";
+    } else {
+      for (IntSetRanges isr(&s); isr(); ++isr)
+        os << isr.min() << ".." << isr.max() << " ";
+    }
     return os;
   }
   
