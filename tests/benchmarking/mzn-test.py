@@ -4,6 +4,7 @@
 ##  This program runs MiniZinc solvers over a set of instances,
 ##  checks solutions and compares to given solution logs.
 
+##  TODO type errors etc. when checking?
 ##  TODO -a for optimization only
 ##  TODO continuous output dumping as option
 ##  TODO CPU/user time limit, proper memory limit (setrlimit not working)
@@ -129,7 +130,7 @@ class MZT_Param:
                         #"MZN-CPLEX",
                         "/// At the moment only the 1st element is used for solving" ],
             "SOLUTION_CHECKING": {
-              "Checkers": ["FZN-GECODE-CHK", "MINIZINC-CHK" ],
+              "Checkers": ["FZN-GECODE-CHK", "MINIZINC-CHK", "MZN-CPLEX-CHK" ],
               "n_CheckedMax": [ -10, "/// Negative value means it's that many last solutions" ],
               "n_FailedSaveMax": [ 3, "/// After that many failed solutions, stop checking the instance" ],
               "s_FailedSaveFile": [ "mzn-test/solFail.json", "/// Filename to save failed solutions" ],
@@ -157,6 +158,8 @@ class MZT_Param:
             ],
             "MINIZINC-CHK": [ "__BE_COMMON", "__BE_CHECKER_OLDMINIZINC", "BE_MINIZINC" ],
             "MZN-GECODE-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_MZN-GECODE" ],
+            "MZN-GUROBI-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_MZN-GUROBI" ],
+            "MZN-CPLEX-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_MZN-CPLEX" ],
             "FZN-GECODE-CHK": [ "__BE_COMMON", "__BE_CHECKER_OLDMINIZINC", "BE_FZN-GECODE" ],
             "FZN-GECODE-SHELL-CHK": [ "__BE_COMMON", "__BE_CHECKER_OLDMINIZINC", "BE_FZN-GECODE_SHELL" ],
             "FZN-CHUFFED-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_FZN-CHUFFED" ]
@@ -481,6 +484,7 @@ class MznTest:
         logCurrent, lLogNames = self.cmpRes.addLog( self.params.args.result )
         if self.params.sThisName!=lLogNames[0]:
             lLogNames[1] = self.params.sThisName
+        self.nCheckedInstances = 0
         self.nChecksFailed = 0
         self.cmpRes.initListComparison()
         for i_Inst in range( len(self.params.instList) ):
@@ -491,7 +495,8 @@ class MznTest:
                 if self.ifShouldCheck():
                     self.checkOriginal( s_Inst )
                 else:
-                    print( "NO CHECK." )
+                    print( "NO CHECK,  total check-failed instances:", self.nChecksFailed,
+                           "from", self.nCheckedInstances )
             except:
                 print( "  WARNING: failed to check instance solution. ", sys.exc_info() )
             ## Saving to the main log:
@@ -674,9 +679,11 @@ class MznTest:
                     print ( self.result["SOLUTION_CHECKS_FAILED"], "failed solution(s) saved, go on" )
                     break
               
+        self.nCheckedInstances += 1
         self.nChecksFailed += fFailed
         print( "   CHECK FAILS on this instance: ", self.result["SOLUTION_CHECKS_FAILED"],
-                ",  total check-failed instances: ", self.nChecksFailed, sep='' )
+                ",  total check-failed instances: ", self.nChecksFailed,
+                " from ", self.nCheckedInstances, sep='' )
             
     def __init__(self):
         ## Default params
