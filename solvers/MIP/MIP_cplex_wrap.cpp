@@ -300,7 +300,7 @@ solcallback (CPXCENVptr env, void *cbdata, int wherefrom, void *cbhandle)
                                         0, info->pOutput->nCols-1);
       if ( status )  goto TERMINATE;
 
-      info->pOutput->dCPUTime = -1;
+      info->pOutput->dCPUTime = double(std::clock() - info->pOutput->cCPUTime0) / CLOCKS_PER_SEC;
 
       /// Call the user function:
       if (info->solcbfn)
@@ -692,6 +692,7 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
     
    status = CPXgettime (env, &output.dCPUTime);
    wrap_assert(!status, "Failed to get time stamp.", false);
+   cbui.pOutput->cCPUTime0 = std::clock();
 
    /* Optimize the problem and obtain solution. */
    status = CPXmipopt (env, lp);

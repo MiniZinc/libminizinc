@@ -105,6 +105,7 @@ class MIP_wrapper {
       int nNodes=0;
       int nOpenNodes=0;
       double dCPUTime = 0;
+      std::clock_t cCPUTime0 = 0;
     };      
     Output output;
 
