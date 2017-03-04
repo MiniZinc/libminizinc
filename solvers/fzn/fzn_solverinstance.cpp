@@ -418,7 +418,10 @@ namespace MiniZinc {
           int status = execvp(argv[0], argv);
           if (status == -1) {
             std::stringstream ssm;
-            ssm << "Error occurred when executing FZN solver with command \"" << argv[0] << " " << argv[1] << " " << argv[2] << "\".";
+            ssm << "Error occurred when executing FZN solver with command \"";
+            for ( auto& s: cmd_line )
+              ssm << s << ' ';
+            ssm << "\".";
             throw InternalError(ssm.str());
           }
         }
