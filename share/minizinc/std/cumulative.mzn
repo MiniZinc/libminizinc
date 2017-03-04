@@ -28,7 +28,7 @@ predicate cumulative(array[int] of var int: s,
             set of int: Tasks = 
                 {i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0 }
         } in
-            if 0==card(Tasks) then true
+            if 0==card(Tasks) then /*true*/ 0==card(index_set(s)) \/ b>=0
             else
                 let {
                     int: early = min([ lb(s[i])            | i in Tasks ]), 
