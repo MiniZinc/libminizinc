@@ -148,7 +148,10 @@ class MZT_Param:
             s_CommentKey: [ "Similar to CHECKER_PROFILES." ],
             "MINIZINC": [ "__BE_COMMON", "__BE_SOLVER", "BE_MINIZINC" ],
             "MZN-GUROBI": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-GUROBI" ],
-            "MZN-CPLEX": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-CPLEX" ]
+            "MZN-CPLEX": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-CPLEX" ],
+            "MZN-CBC": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-CBC" ],
+            "MZN-GECODE": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-GECODE" ],
+            "FZN-CHUFFED": [ "__BE_COMMON", "__BE_SOLVER", "BE_FZN-CHUFFED" ]
           },
           "CHECKER_PROFILES": {
             s_CommentKey: [ "Each profile gives a list of backend defs to use.",
@@ -282,13 +285,21 @@ class MZT_Param:
                 s_AddKey+"Preslv_Non0": [ "Reduced MIP has [0-9]+ rows,", " ", 9 ]
               },
             },
+            "BE_MZN-CBC": {
+              s_CommentKey: [ "------------------- Specializations for COIN-OR Branch&Cut solver instance" ],
+              "EXE": {
+                "s_SolverCall" : ["mzn-cbc -v -s -G linear --timeout 300 --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking
+                #"s_SolverCall" : ["./run-mzn-cplex.sh %s"],
+                #"b_ThruShell"  : [True],
+              },
+            },
             "BE_MZN-GECODE": {
               s_CommentKey: [ "------------------- Specializations for Gecode FlatZinc interpreter" ],
               "EXE": {
 #                "s_SolverCall" : ["mzn-fzn -s -G gecode --solver fzn-gecode " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
-                "s_SolverCall" : ["mzn-gecode -v -s -G gecode " + sDZNOutputAgrs
+                "s_SolverCall" : ["mzn-gecode --time 300000 -v -s -G gecode " + sDZNOutputAgrs
                      + " %s"],
-                "b_ThruShell"  : [True],
+                "b_ThruShell"  : [False],
               }
             },
             "BE_FZN-GECODE": {
@@ -312,7 +323,7 @@ class MZT_Param:
             "BE_FZN-CHUFFED": {
               s_CommentKey: [ "------------------- Specializations for Chuffed FlatZinc interpreter" ],
               "EXE": {
-                "s_SolverCall" : ["mzn-fzn -s -G chuffed --solver fzn-chuffed --fzn-flag -f --output-time "
+                "s_SolverCall" : ["mzn-fzn -v -s -G chuffed --solver fzn-chuffed --fzn-flags -f --fzn-flags --time-out --fzn-flags 300 --output-time "
                                     + sDZNOutputAgrs + " %s"], # _objective fails for checking
               }
             }
