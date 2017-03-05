@@ -76,7 +76,7 @@ namespace MiniZinc {
     << "  -f, --solver, --flatzinc-cmd <exe>\n     the backend solver filename. The default: flatzinc.\n"
     << "  -b, --backend, --solver-backend <be>\n     the backend codename. Currently passed to the solver.\n"
     << "  --fzn-flags <options>, --flatzinc-flags <options>\n     Specify option to be passed to the FlatZinc interpreter.\n"
-    << "  --fzn-flag <option>, --flatzinc-flag <option>\n     As above, but for options that need to be quoted.\n"
+    << "  --fzn-flag <option>, --flatzinc-flag <option>\n     As above, but for a single option string that need to be quoted in a shell.\n"
     << "  -n <n>, --num-solutions <n>\n     An upper bound on the number of solutions to output. The default should be 1.\n"
     << "  -a, --all, --all-solns, --all-solutions\n     Print all solutions.\n"
     << "  -p <n>, --parallel <n>\n     Use <n> threads during search. The default is solver-dependent.\n"
@@ -397,8 +397,17 @@ namespace MiniZinc {
           close(pipes[2][0]);
 
           std::vector<char*> cmd_line;
-          for (auto& iCmdl: _fzncmd)
-            cmd_line.push_back( strdup(iCmdl.c_str()) );
+          for (auto& iCmdl: _fzncmd) {
+            std::istringstream iss(iCmdl);
+            while (1) {
+              string sBuf;
+              iss >> std::skipws >> sBuf;
+              if ( sBuf.size() )
+                cmd_line.push_back( strdup(sBuf.c_str()) );
+              else
+                break;
+            }
+          }
           cmd_line.push_back(strdup(_canPipe ? "-" : fznFile.c_str()));
 
           char** argv = new char*[cmd_line.size() + 1];
@@ -409,7 +418,10 @@ namespace MiniZinc {
           int status = execvp(argv[0], argv);
           if (status == -1) {
             std::stringstream ssm;
-            ssm << "Error occurred when executing FZN solver with command \"" << argv[0] << " " << argv[1] << " " << argv[2] << "\".";
+            ssm << "Error occurred when executing FZN solver with command \"";
+            for ( auto& s: cmd_line )
+              ssm << s << ' ';
+            ssm << "\".";
             throw InternalError(ssm.str());
           }
         }
@@ -493,7 +505,7 @@ namespace MiniZinc {
       std::cerr << "Using FZN solver " << cmd_line[0]
         << " for solving, parameters: ";
       for ( int i=1; i<cmd_line.size(); ++i )
-        cerr << cmd_line[i] << ' ';
+        cerr << "" << cmd_line[i] << " ";
       cerr << std::endl;
     }
     

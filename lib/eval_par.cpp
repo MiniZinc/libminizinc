@@ -804,248 +804,253 @@ namespace MiniZinc {
   }
   
   bool eval_bool(EnvI& env, Expression* e) {
-    if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
-      return bl->v();
-    }
-    CallStackItem csi(env,e);
-    switch (e->eid()) {
-    case Expression::E_INTLIT:
-    case Expression::E_FLOATLIT:
-    case Expression::E_STRINGLIT:
-    case Expression::E_ANON:
-    case Expression::E_TIID:
-    case Expression::E_SETLIT:
-    case Expression::E_ARRAYLIT:
-    case Expression::E_COMP:
-    case Expression::E_VARDECL:
-    case Expression::E_TI:
-      assert(false);
-      throw EvalError(env, e->loc(),"not a bool expression");
-      break;
-    case Expression::E_ID:
-      {
-        GCLock lock;
-        return eval_id<EvalBoolLit>(env,e)->v();
+    try {
+      if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
+        return bl->v();
       }
-      break;
-    case Expression::E_ARRAYACCESS:
-      {
-        GCLock lock;
-        return eval_bool(env,eval_arrayaccess(env,e->cast<ArrayAccess>()));
-      }
-      break;
-    case Expression::E_ITE:
-      {
-        ITE* ite = e->cast<ITE>();
-        for (int i=0; i<ite->size(); i++) {
-          if (eval_bool(env,ite->e_if(i)))
-            return eval_bool(env,ite->e_then(i));
+      CallStackItem csi(env,e);
+      switch (e->eid()) {
+      case Expression::E_INTLIT:
+      case Expression::E_FLOATLIT:
+      case Expression::E_STRINGLIT:
+      case Expression::E_ANON:
+      case Expression::E_TIID:
+      case Expression::E_SETLIT:
+      case Expression::E_ARRAYLIT:
+      case Expression::E_COMP:
+      case Expression::E_VARDECL:
+      case Expression::E_TI:
+        assert(false);
+        throw EvalError(env, e->loc(),"not a bool expression");
+        break;
+      case Expression::E_ID:
+        {
+          GCLock lock;
+          return eval_id<EvalBoolLit>(env,e)->v();
         }
-        return eval_bool(env,ite->e_else());
-      }
-      break;
-    case Expression::E_BINOP:
-      {
-        BinOp* bo = e->cast<BinOp>();
-        Expression* lhs = bo->lhs();
-        Expression* rhs = bo->rhs();
-        if ( bo->op()==BOT_EQ && (lhs->type().isopt() || rhs->type().isopt()) ) {
-          if (lhs == constants().absent || rhs==constants().absent)
-            return lhs==rhs;
+        break;
+      case Expression::E_ARRAYACCESS:
+        {
+          GCLock lock;
+          return eval_bool(env,eval_arrayaccess(env,e->cast<ArrayAccess>()));
         }
-        if (lhs->type().isbool() && rhs->type().isbool()) {
-          try {
-            switch (bo->op()) {
-            case BOT_LE: return eval_bool(env,lhs)<eval_bool(env,rhs);
-            case BOT_LQ: return eval_bool(env,lhs)<=eval_bool(env,rhs);
-            case BOT_GR: return eval_bool(env,lhs)>eval_bool(env,rhs);
-            case BOT_GQ: return eval_bool(env,lhs)>=eval_bool(env,rhs);
-            case BOT_EQ: return eval_bool(env,lhs)==eval_bool(env,rhs);
-            case BOT_NQ: return eval_bool(env,lhs)!=eval_bool(env,rhs);
-            case BOT_EQUIV: return eval_bool(env,lhs)==eval_bool(env,rhs);
-            case BOT_IMPL: return (!eval_bool(env,lhs))||eval_bool(env,rhs);
-            case BOT_RIMPL: return (!eval_bool(env,rhs))||eval_bool(env,lhs);
-            case BOT_OR: return eval_bool(env,lhs)||eval_bool(env,rhs);
-            case BOT_AND: return eval_bool(env,lhs)&&eval_bool(env,rhs);
-            case BOT_XOR: return eval_bool(env,lhs)^eval_bool(env,rhs);
-            default:
-              assert(false);
-              throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
-            }
-          } catch (ResultUndefinedError&) {
-            return false;
+        break;
+      case Expression::E_ITE:
+        {
+          ITE* ite = e->cast<ITE>();
+          for (int i=0; i<ite->size(); i++) {
+            if (eval_bool(env,ite->e_if(i)))
+              return eval_bool(env,ite->e_then(i));
           }
-        } else if (lhs->type().isint() && rhs->type().isint()) {
-          try {
-            IntVal v0 = eval_int(env,lhs);
-            IntVal v1 = eval_int(env,rhs);
-            switch (bo->op()) {
-              case BOT_LE: return v0<v1;
-              case BOT_LQ: return v0<=v1;
-              case BOT_GR: return v0>v1;
-              case BOT_GQ: return v0>=v1;
-              case BOT_EQ: return v0==v1;
-              case BOT_NQ: return v0!=v1;
+          return eval_bool(env,ite->e_else());
+        }
+        break;
+      case Expression::E_BINOP:
+        {
+          BinOp* bo = e->cast<BinOp>();
+          Expression* lhs = bo->lhs();
+          Expression* rhs = bo->rhs();
+          if ( bo->op()==BOT_EQ && (lhs->type().isopt() || rhs->type().isopt()) ) {
+            if (lhs == constants().absent || rhs==constants().absent)
+              return lhs==rhs;
+          }
+          if (lhs->type().isbool() && rhs->type().isbool()) {
+            try {
+              switch (bo->op()) {
+              case BOT_LE: return eval_bool(env,lhs)<eval_bool(env,rhs);
+              case BOT_LQ: return eval_bool(env,lhs)<=eval_bool(env,rhs);
+              case BOT_GR: return eval_bool(env,lhs)>eval_bool(env,rhs);
+              case BOT_GQ: return eval_bool(env,lhs)>=eval_bool(env,rhs);
+              case BOT_EQ: return eval_bool(env,lhs)==eval_bool(env,rhs);
+              case BOT_NQ: return eval_bool(env,lhs)!=eval_bool(env,rhs);
+              case BOT_EQUIV: return eval_bool(env,lhs)==eval_bool(env,rhs);
+              case BOT_IMPL: return (!eval_bool(env,lhs))||eval_bool(env,rhs);
+              case BOT_RIMPL: return (!eval_bool(env,rhs))||eval_bool(env,lhs);
+              case BOT_OR: return eval_bool(env,lhs)||eval_bool(env,rhs);
+              case BOT_AND: return eval_bool(env,lhs)&&eval_bool(env,rhs);
+              case BOT_XOR: return eval_bool(env,lhs)^eval_bool(env,rhs);
               default:
                 assert(false);
                 throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
+              }
+            } catch (ResultUndefinedError&) {
+              return false;
             }
-          } catch (ResultUndefinedError&) {
-            return false;
-          }
-        } else if (lhs->type().isfloat() && rhs->type().isfloat()) {
-          try {
-            FloatVal v0 = eval_float(env,lhs);
-            FloatVal v1 = eval_float(env,rhs);
-            switch (bo->op()) {
-              case BOT_LE: return v0<v1;
-              case BOT_LQ: return v0<=v1;
-              case BOT_GR: return v0>v1;
-              case BOT_GQ: return v0>=v1;
-              case BOT_EQ: return v0==v1;
-              case BOT_NQ: return v0!=v1;
-              default:
-                assert(false);
-                throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
+          } else if (lhs->type().isint() && rhs->type().isint()) {
+            try {
+              IntVal v0 = eval_int(env,lhs);
+              IntVal v1 = eval_int(env,rhs);
+              switch (bo->op()) {
+                case BOT_LE: return v0<v1;
+                case BOT_LQ: return v0<=v1;
+                case BOT_GR: return v0>v1;
+                case BOT_GQ: return v0>=v1;
+                case BOT_EQ: return v0==v1;
+                case BOT_NQ: return v0!=v1;
+                default:
+                  assert(false);
+                  throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
+              }
+            } catch (ResultUndefinedError&) {
+              return false;
             }
-          } catch (ResultUndefinedError&) {
-            return false;
-          }
-        } else if (lhs->type().isint() && rhs->type().isintset()) {
-          try {
-            IntVal v0 = eval_int(env,lhs);
-            GCLock lock;
-            IntSetVal* v1 = eval_intset(env,rhs);
-            switch (bo->op()) {
-            case BOT_IN: return v1->contains(v0);
-            default:
-              assert(false);
-              throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
+          } else if (lhs->type().isfloat() && rhs->type().isfloat()) {
+            try {
+              FloatVal v0 = eval_float(env,lhs);
+              FloatVal v1 = eval_float(env,rhs);
+              switch (bo->op()) {
+                case BOT_LE: return v0<v1;
+                case BOT_LQ: return v0<=v1;
+                case BOT_GR: return v0>v1;
+                case BOT_GQ: return v0>=v1;
+                case BOT_EQ: return v0==v1;
+                case BOT_NQ: return v0!=v1;
+                default:
+                  assert(false);
+                  throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
+              }
+            } catch (ResultUndefinedError&) {
+              return false;
             }
-          } catch (ResultUndefinedError&) {
-            return false;
-          }
-        } else if (lhs->type().isfloat() && rhs->type().isfloatset()) {
-          try {
-            FloatVal v0 = eval_float(env,lhs);
-            GCLock lock;
-            FloatSetVal* v1 = eval_floatset(env,rhs);
-            switch (bo->op()) {
+          } else if (lhs->type().isint() && rhs->type().isintset()) {
+            try {
+              IntVal v0 = eval_int(env,lhs);
+              GCLock lock;
+              IntSetVal* v1 = eval_intset(env,rhs);
+              switch (bo->op()) {
               case BOT_IN: return v1->contains(v0);
               default:
                 assert(false);
                 throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
+              }
+            } catch (ResultUndefinedError&) {
+              return false;
             }
-          } catch (ResultUndefinedError&) {
-            return false;
-          }
-        } else if (lhs->type().is_set() && rhs->type().is_set()) {
-          try {
-            GCLock lock;
-            IntSetVal* v0 = eval_intset(env,lhs);
-            IntSetVal* v1 = eval_intset(env,rhs);
-            IntSetRanges ir0(v0);
-            IntSetRanges ir1(v1);
-            switch (bo->op()) {
-            case BOT_LE: return Ranges::less(ir0,ir1);
-            case BOT_LQ: return Ranges::lessEq(ir0,ir1);
-            case BOT_GR: return Ranges::less(ir1,ir0);
-            case BOT_GQ: return Ranges::lessEq(ir1,ir0);
-            case BOT_EQ: return Ranges::equal(ir0,ir1);
-            case BOT_NQ: return !Ranges::equal(ir0,ir1);
-            case BOT_SUBSET: return Ranges::subset(ir0,ir1);
-            case BOT_SUPERSET: return Ranges::subset(ir1,ir0);
-            default:
-              throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
+          } else if (lhs->type().isfloat() && rhs->type().isfloatset()) {
+            try {
+              FloatVal v0 = eval_float(env,lhs);
+              GCLock lock;
+              FloatSetVal* v1 = eval_floatset(env,rhs);
+              switch (bo->op()) {
+                case BOT_IN: return v1->contains(v0);
+                default:
+                  assert(false);
+                  throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
+              }
+            } catch (ResultUndefinedError&) {
+              return false;
             }
-          } catch (ResultUndefinedError&) {
-            return false;
-          }
-        } else if (lhs->type().isstring() && rhs->type().isstring()) {
-          try {
-            GCLock lock;
-            std::string s0 = eval_string(env,lhs);
-            std::string s1 = eval_string(env,rhs);
-            switch (bo->op()) {
-              case BOT_EQ: return s0==s1;
-              case BOT_NQ: return s0!=s1;
-              case BOT_LE: return s0<s1;
-              case BOT_LQ: return s0<=s1;
-              case BOT_GR: return s0>s1;
-              case BOT_GQ: return s0>=s1;
+          } else if (lhs->type().is_set() && rhs->type().is_set()) {
+            try {
+              GCLock lock;
+              IntSetVal* v0 = eval_intset(env,lhs);
+              IntSetVal* v1 = eval_intset(env,rhs);
+              IntSetRanges ir0(v0);
+              IntSetRanges ir1(v1);
+              switch (bo->op()) {
+              case BOT_LE: return Ranges::less(ir0,ir1);
+              case BOT_LQ: return Ranges::lessEq(ir0,ir1);
+              case BOT_GR: return Ranges::less(ir1,ir0);
+              case BOT_GQ: return Ranges::lessEq(ir1,ir0);
+              case BOT_EQ: return Ranges::equal(ir0,ir1);
+              case BOT_NQ: return !Ranges::equal(ir0,ir1);
+              case BOT_SUBSET: return Ranges::subset(ir0,ir1);
+              case BOT_SUPERSET: return Ranges::subset(ir1,ir0);
               default:
                 throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
-            }
-          } catch (ResultUndefinedError&) {
-            return false;
-          }
-        } else if (bo->op()==BOT_EQ && lhs->type().isann()) {
-          return Expression::equal(lhs, rhs);
-        } else if (bo->op()==BOT_EQ && lhs->type().dim() > 0 &&
-                   rhs->type().dim() > 0) {
-          try {
-            ArrayLit* al0 = eval_array_lit(env,lhs);
-            ArrayLit* al1 = eval_array_lit(env,rhs);
-            if (al0->v().size() != al1->v().size())
-              return false;
-            for (unsigned int i=0; i<al0->v().size(); i++) {
-              if (!Expression::equal(eval_par(env,al0->v()[i]), eval_par(env,al1->v()[i]))) {
-                return false;
               }
+            } catch (ResultUndefinedError&) {
+              return false;
             }
-            return true;
+          } else if (lhs->type().isstring() && rhs->type().isstring()) {
+            try {
+              GCLock lock;
+              std::string s0 = eval_string(env,lhs);
+              std::string s1 = eval_string(env,rhs);
+              switch (bo->op()) {
+                case BOT_EQ: return s0==s1;
+                case BOT_NQ: return s0!=s1;
+                case BOT_LE: return s0<s1;
+                case BOT_LQ: return s0<=s1;
+                case BOT_GR: return s0>s1;
+                case BOT_GQ: return s0>=s1;
+                default:
+                  throw EvalError(env, e->loc(),"not a bool expression", bo->opToString());
+              }
+            } catch (ResultUndefinedError&) {
+              return false;
+            }
+          } else if (bo->op()==BOT_EQ && lhs->type().isann()) {
+            return Expression::equal(lhs, rhs);
+          } else if (bo->op()==BOT_EQ && lhs->type().dim() > 0 &&
+                     rhs->type().dim() > 0) {
+            try {
+              ArrayLit* al0 = eval_array_lit(env,lhs);
+              ArrayLit* al1 = eval_array_lit(env,rhs);
+              if (al0->v().size() != al1->v().size())
+                return false;
+              for (unsigned int i=0; i<al0->v().size(); i++) {
+                if (!Expression::equal(eval_par(env,al0->v()[i]), eval_par(env,al1->v()[i]))) {
+                  return false;
+                }
+              }
+              return true;
+            } catch (ResultUndefinedError&) {
+              return false;
+            }
+          } else {
+            throw EvalError(env, e->loc(), "not a bool expression", bo->opToString());
+          }
+        }
+        break;
+      case Expression::E_UNOP:
+        {
+          UnOp* uo = e->cast<UnOp>();
+          bool v0 = eval_bool(env,uo->e());
+          switch (uo->op()) {
+          case UOT_NOT: return !v0;
+          default:
+            assert(false);
+            throw EvalError(env, e->loc(),"not a bool expression", uo->opToString());
+          }
+        }
+        break;
+      case Expression::E_CALL:
+        {
+          try {
+            Call* ce = e->cast<Call>();
+            if (ce->decl()==NULL)
+              throw EvalError(env, e->loc(), "undeclared function", ce->id());
+            
+            if (ce->decl()->_builtins.b)
+              return ce->decl()->_builtins.b(env,ce);
+
+            if (ce->decl()->_builtins.e)
+              return eval_bool(env,ce->decl()->_builtins.e(env,ce));
+
+            if (ce->decl()->e()==NULL)
+              throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+            
+            return eval_call<EvalBoolVal>(env,ce);
           } catch (ResultUndefinedError&) {
             return false;
           }
-        } else {
-          throw EvalError(env, e->loc(), "not a bool expression", bo->opToString());
         }
-      }
-      break;
-    case Expression::E_UNOP:
-      {
-        UnOp* uo = e->cast<UnOp>();
-        bool v0 = eval_bool(env,uo->e());
-        switch (uo->op()) {
-        case UOT_NOT: return !v0;
-        default:
-          assert(false);
-          throw EvalError(env, e->loc(),"not a bool expression", uo->opToString());
+        break;
+      case Expression::E_LET:
+        {
+          Let* l = e->cast<Let>();
+          l->pushbindings();
+          bool ret = eval_bool(env,l->in());
+          l->popbindings();
+          return ret;
         }
+        break;
+      default: assert(false); return false;
       }
-      break;
-    case Expression::E_CALL:
-      {
-        try {
-          Call* ce = e->cast<Call>();
-          if (ce->decl()==NULL)
-            throw EvalError(env, e->loc(), "undeclared function", ce->id());
-          
-          if (ce->decl()->_builtins.b)
-            return ce->decl()->_builtins.b(env,ce);
-
-          if (ce->decl()->_builtins.e)
-            return eval_bool(env,ce->decl()->_builtins.e(env,ce));
-
-          if (ce->decl()->e()==NULL)
-            throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
-          
-          return eval_call<EvalBoolVal>(env,ce);
-        } catch (ResultUndefinedError&) {
-          return false;
-        }
-      }
-      break;
-    case Expression::E_LET:
-      {
-        Let* l = e->cast<Let>();
-        l->pushbindings();
-        bool ret = eval_bool(env,l->in());
-        l->popbindings();
-        return ret;
-      }
-      break;
-    default: assert(false); return false;
+    } catch (ResultUndefinedError&) {
+      // undefined means false
+      return false;
     }
   }
 

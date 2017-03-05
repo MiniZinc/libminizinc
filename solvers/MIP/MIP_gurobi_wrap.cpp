@@ -398,7 +398,7 @@ solcallback(GRBmodel *model,
         assert(info->pOutput->x);
         gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL, (void*)info->pOutput->x);
         
-        info->pOutput->dCPUTime = -1;
+        info->pOutput->dCPUTime = double(std::clock() - info->pOutput->cCPUTime0) / CLOCKS_PER_SEC;
 
         /// Call the user function:
         if (info->solcbfn)
@@ -605,7 +605,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
      wrap_assert(!error, "Failed to write GUROBI parameters.", false);
     }
 
-   output.dCPUTime = std::clock();
+   cbui.pOutput->cCPUTime0 = output.dCPUTime = std::clock();
 
    /* Optimize the problem and obtain solution. */
    error = dll_GRBoptimize(model);

@@ -4,6 +4,7 @@
 ##  This program runs MiniZinc solvers over a set of instances,
 ##  checks solutions and compares to given solution logs.
 
+##  TODO type errors etc. when checking?
 ##  TODO -a for optimization only
 ##  TODO continuous output dumping as option
 ##  TODO CPU/user time limit, proper memory limit (setrlimit not working)
@@ -129,7 +130,7 @@ class MZT_Param:
                         #"MZN-CPLEX",
                         "/// At the moment only the 1st element is used for solving" ],
             "SOLUTION_CHECKING": {
-              "Checkers": ["FZN-GECODE-CHK", "MINIZINC-CHK" ],
+              "Checkers": ["FZN-GECODE-CHK", "MINIZINC-CHK", "MZN-CPLEX-CHK" ],
               "n_CheckedMax": [ -10, "/// Negative value means it's that many last solutions" ],
               "n_FailedSaveMax": [ 3, "/// After that many failed solutions, stop checking the instance" ],
               "s_FailedSaveFile": [ "mzn-test/solFail.json", "/// Filename to save failed solutions" ],
@@ -147,7 +148,10 @@ class MZT_Param:
             s_CommentKey: [ "Similar to CHECKER_PROFILES." ],
             "MINIZINC": [ "__BE_COMMON", "__BE_SOLVER", "BE_MINIZINC" ],
             "MZN-GUROBI": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-GUROBI" ],
-            "MZN-CPLEX": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-CPLEX" ]
+            "MZN-CPLEX": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-CPLEX" ],
+            "MZN-CBC": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-CBC" ],
+            "MZN-GECODE": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-GECODE" ],
+            "FZN-CHUFFED": [ "__BE_COMMON", "__BE_SOLVER", "BE_FZN-CHUFFED" ]
           },
           "CHECKER_PROFILES": {
             s_CommentKey: [ "Each profile gives a list of backend defs to use.",
@@ -157,6 +161,8 @@ class MZT_Param:
             ],
             "MINIZINC-CHK": [ "__BE_COMMON", "__BE_CHECKER_OLDMINIZINC", "BE_MINIZINC" ],
             "MZN-GECODE-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_MZN-GECODE" ],
+            "MZN-GUROBI-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_MZN-GUROBI" ],
+            "MZN-CPLEX-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_MZN-CPLEX" ],
             "FZN-GECODE-CHK": [ "__BE_COMMON", "__BE_CHECKER_OLDMINIZINC", "BE_FZN-GECODE" ],
             "FZN-GECODE-SHELL-CHK": [ "__BE_COMMON", "__BE_CHECKER_OLDMINIZINC", "BE_FZN-GECODE_SHELL" ],
             "FZN-CHUFFED-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_FZN-CHUFFED" ]
@@ -279,13 +285,21 @@ class MZT_Param:
                 s_AddKey+"Preslv_Non0": [ "Reduced MIP has [0-9]+ rows,", " ", 9 ]
               },
             },
+            "BE_MZN-CBC": {
+              s_CommentKey: [ "------------------- Specializations for COIN-OR Branch&Cut solver instance" ],
+              "EXE": {
+                "s_SolverCall" : ["mzn-cbc -v -s -G linear --timeout 300 --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking
+                #"s_SolverCall" : ["./run-mzn-cplex.sh %s"],
+                #"b_ThruShell"  : [True],
+              },
+            },
             "BE_MZN-GECODE": {
               s_CommentKey: [ "------------------- Specializations for Gecode FlatZinc interpreter" ],
               "EXE": {
 #                "s_SolverCall" : ["mzn-fzn -s -G gecode --solver fzn-gecode " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
-                "s_SolverCall" : ["mzn-gecode -v -s -G gecode " + sDZNOutputAgrs
+                "s_SolverCall" : ["mzn-gecode --time 300000 -v -s -G gecode " + sDZNOutputAgrs
                      + " %s"],
-                "b_ThruShell"  : [True],
+                "b_ThruShell"  : [False],
               }
             },
             "BE_FZN-GECODE": {
@@ -309,7 +323,7 @@ class MZT_Param:
             "BE_FZN-CHUFFED": {
               s_CommentKey: [ "------------------- Specializations for Chuffed FlatZinc interpreter" ],
               "EXE": {
-                "s_SolverCall" : ["mzn-fzn -s -G chuffed --solver fzn-chuffed --fzn-flag -f --output-time "
+                "s_SolverCall" : ["mzn-fzn -v -s -G chuffed --solver fzn-chuffed --fzn-flags -f --fzn-flags --time-out --fzn-flags 300 --output-time "
                                     + sDZNOutputAgrs + " %s"], # _objective fails for checking
               }
             }
@@ -481,6 +495,7 @@ class MznTest:
         logCurrent, lLogNames = self.cmpRes.addLog( self.params.args.result )
         if self.params.sThisName!=lLogNames[0]:
             lLogNames[1] = self.params.sThisName
+        self.nCheckedInstances = 0
         self.nChecksFailed = 0
         self.cmpRes.initListComparison()
         for i_Inst in range( len(self.params.instList) ):
@@ -491,7 +506,8 @@ class MznTest:
                 if self.ifShouldCheck():
                     self.checkOriginal( s_Inst )
                 else:
-                    print( "NO CHECK." )
+                    print( "NO CHECK,  total check-failed instances:", self.nChecksFailed,
+                           "from", self.nCheckedInstances )
             except:
                 print( "  WARNING: failed to check instance solution. ", sys.exc_info() )
             ## Saving to the main log:
@@ -674,9 +690,11 @@ class MznTest:
                     print ( self.result["SOLUTION_CHECKS_FAILED"], "failed solution(s) saved, go on" )
                     break
               
+        self.nCheckedInstances += 1
         self.nChecksFailed += fFailed
         print( "   CHECK FAILS on this instance: ", self.result["SOLUTION_CHECKS_FAILED"],
-                ",  total check-failed instances: ", self.nChecksFailed, sep='' )
+                ",  total check-failed instances: ", self.nChecksFailed,
+                " from ", self.nCheckedInstances, sep='' )
             
     def __init__(self):
         ## Default params

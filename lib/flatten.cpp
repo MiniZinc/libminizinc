@@ -1546,11 +1546,22 @@ namespace MiniZinc {
           Expression* ret = e;
           if (e==NULL || (e->type().ispar() && e->type().isbool())) {
             GCLock lock;
-            if (e==NULL || eval_bool(env,e)) {
-              vd->e(constants().lit_true);
-            } else {
-              vd->e(constants().lit_false);
+            bool isTrue = (e==NULL || eval_bool(env,e));
+
+            // Check if redefinition of bool_eq exists, if yes call it
+            std::vector<Expression*> args(2);
+            args[0] = vd->id();
+            args[1] = constants().boollit(isTrue);
+            Call* c = new Call(Location().introduce(),constants().ids.bool_eq,args);
+            c->decl(env.orig->matchFn(env,c,false));
+            c->type(c->decl()->rtype(env,args,false));
+            bool didRewrite = false;
+            if (c->decl()->e()) {
+              flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+              didRewrite = true;
             }
+            
+            vd->e(constants().boollit(isTrue));
             if (vd->ti()->domain()) {
               if (vd->ti()->domain() != vd->e()) {
                 env.fail();
@@ -1560,16 +1571,9 @@ namespace MiniZinc {
               vd->ti()->domain(vd->e());
               vd->ti()->setComputedDomain(true);
             }
-            std::vector<Expression*> args(2);
-            args[0] = vd->id();
-            args[1] = vd->e();
-            Call* c = new Call(Location().introduce(),constants().ids.bool_eq,args);
-            c->decl(env.orig->matchFn(env,c,false));
-            c->type(c->decl()->rtype(env,args,false));
-            if (c->decl()->e()) {
-              flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+            if (didRewrite) {
               return vd->id();
-            }            
+            }
           } else {
             if (e->type().dim() > 0) {
               // Check that index sets match
