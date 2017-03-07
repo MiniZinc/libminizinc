@@ -277,7 +277,7 @@ void MIP_solverinstance::registerConstraints() {
   
   _constraintRegistry.add(ASTString("array_var_float_element__XBZ_lb__cutgen"),
                           SCIPConstraints::p_XBZ_cutgen);
-  
+  _constraintRegistry.setViewHandler( SCIPConstraints::setView );
 }
 
 void MIP_solverinstance::printStatistics(ostream& os, bool fLegend)
@@ -496,14 +496,17 @@ void MIP_solverinstance::processFlatZinc(void) {
       MZN_ASSERT_HARD( vd0 );
 //       id = vd0->id();
       double obj = vd==objVd ? 1.0 : 0.0;
-      if (vd0->e()) {     // has init-expr
-        auto id1 = vd0->e()->dyn_cast<Id>();
-        if (id1)
-          MZN_ASSERT_HARD( 0==id1->decl()->e() );      // ???
+      if (vd0!=vd) {     // has init-expr
+        auto id1 = vd0->id();
+        MZN_ASSERT_HARD( 0!=id1 );
+        if ( id!=id1 ) {
+//         if (id1)
+//           MZN_ASSERT_HARD( 0==id1->decl()->e() );      // ???
 //        res = exprToVar(vd0->e());     // follow to rhs?     TODO
-        MZN_ASSERT_HARD( !getMIPWrapper()->fPhase1Over ); // Still can change colUB, colObj
+          MZN_ASSERT_HARD( !getMIPWrapper()->fPhase1Over ); // Still can change colUB, colObj
         /// Tighten the ini-expr's bounds?
-        _varViews.push_back( make_pair( id, id1 ) );
+          _varViews.push_back( make_pair( id, id1 ) );
+        }
       }
       res = getMIPWrapper()->addVar(obj, lb, ub, vType, id->str().c_str());
       if ( 0.0!=obj ) {
