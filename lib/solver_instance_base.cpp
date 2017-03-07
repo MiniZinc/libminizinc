@@ -50,6 +50,11 @@ namespace MiniZinc {
     }
     it->second(_base, c);
   }
+  void Registry::postView(Id* id1, Id* id2) {
+    MZN_ASSERT_HARD_MSG( 0!=vh, "Registry: variable view handler must be set." );
+    vh( _base, id1, id2 );
+  }
+
 
   void SolverInstanceBase::printSolution() {
     std::ostringstream oss;

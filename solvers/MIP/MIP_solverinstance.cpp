@@ -247,6 +247,17 @@ namespace SCIPConstraints {
     
     gi.registerCutGenerator( move( pCG ) );
   }
+  
+  // equality of 2 variables
+  void setView( SolverInstanceBase& si, Id* id1, Id* id2 ) {
+    MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
+    MIP_solver::Variable vars[] = { gi.exprToVar( id1 ), gi.exprToVar( id2 ) };
+    double coefs[] = { -1.0, 1.0 };
+    std::stringstream ss;
+    ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
+    gi.getMIPWrapper()->addRow(2, &vars[0], &coefs[0], MIP_wrapper::EQ, 0.0,
+                            MIP_wrapper::MaskConsType_Normal, ss.str());
+  }
 }
 
 void MIP_solverinstance::registerConstraints() {
@@ -419,6 +430,7 @@ void MIP_solverinstance::processFlatZinc(void) {
     }
   }
 
+  vector<pair<Id*,Id*> > _varViews;
   for (VarDeclIterator it = getEnv()->flat()->begin_vardecls(); it != getEnv()->flat()->end_vardecls(); ++it) {
     if (it->removed()) {
       continue;
@@ -435,8 +447,8 @@ void MIP_solverinstance::processFlatZinc(void) {
 //         cerr << endl;
       }
     }
-    if (vd->type().dim() == 0 && it->e()->type().isvar() && !it->removed()) {
-      MiniZinc::TypeInst* ti = it->e()->ti();
+    if (vd->type().dim() == 0 && vd->type().isvar() && !it->removed()) {
+      MiniZinc::TypeInst* ti = vd->ti();
       MIP_wrapper::VarType vType = MIP_wrapper::VarType::REAL;     // fInt = false;
       if (ti->type().isvarint() || ti->type().isint())
         vType = MIP_wrapper::VarType::INT;
@@ -458,12 +470,12 @@ void MIP_solverinstance::processFlatZinc(void) {
       double lb=0.0, ub=1.0;  // for bool
       if (ti->domain()) {
         if (MIP_wrapper::VarType::REAL == vType) {
-          FloatBounds fb = compute_float_bounds(getEnv()->envi(), it->e()->id());
+          FloatBounds fb = compute_float_bounds(getEnv()->envi(), vd->id());
           assert(fb.valid);
           lb = fb.l.toDouble();
           ub = fb.u.toDouble();
         } else if (MIP_wrapper::VarType::INT == vType) {
-          IntBounds ib = compute_int_bounds(getEnv()->envi(), it->e()->id());
+          IntBounds ib = compute_int_bounds(getEnv()->envi(), vd->id());
           assert(ib.valid);
           lb = ib.l.toInt();
           ub = ib.u.toInt();
@@ -478,24 +490,22 @@ void MIP_solverinstance::processFlatZinc(void) {
 //         throw runtime_error("MIP_solverinstance: domains with holes ! supported, use --MIPdomains");
 
       VarId res;
-      Id* id = it->e()->id();
-      id = id->decl()->id();
+      Id* id = vd->id();
+      id = id->decl()->id();   // ???
+      VarDecl* vd0 = follow_id_to_decl( id )->dyn_cast<VarDecl>();
+      MZN_ASSERT_HARD( vd0 );
+//       id = vd0->id();
       double obj = vd==objVd ? 1.0 : 0.0;
-      if (it->e()->e()) {     // has init-expr
-        auto id1 = it->e()->e()->dyn_cast<Id>();
+      if (vd0->e()) {     // has init-expr
+        auto id1 = vd0->e()->dyn_cast<Id>();
         if (id1)
           MZN_ASSERT_HARD( 0==id1->decl()->e() );      // ???
-        res = exprToVar(it->e()->e());     // follow to rhs?     TODO
+//        res = exprToVar(vd0->e());     // follow to rhs?     TODO
         MZN_ASSERT_HARD( !getMIPWrapper()->fPhase1Over ); // Still can change colUB, colObj
-        /// Tighten the ini-expr's bounds
-        lb = getMIPWrapper()->colLB.at( res ) = max( getMIPWrapper()->colLB.at( res ), lb );
-        ub = getMIPWrapper()->colUB.at( res ) = min( getMIPWrapper()->colUB.at( res ), ub );
-        if ( 0.0!=obj ) {
-          getMIPWrapper()->colObj.at( res ) = obj;
-        }
-      } else {
-        res = getMIPWrapper()->addVar(obj, lb, ub, vType, id->str().c_str());
+        /// Tighten the ini-expr's bounds?
+        _varViews.push_back( make_pair( id, id1 ) );
       }
+      res = getMIPWrapper()->addVar(obj, lb, ub, vType, id->str().c_str());
       if ( 0.0!=obj ) {
         dObjVarLB = lb;
         dObjVarUB = ub;
@@ -504,7 +514,7 @@ void MIP_solverinstance::processFlatZinc(void) {
           cerr << "  MIP: objective variable index (0-based): " << res << endl;
       }
       _variableMap.insert(id, res);
-      assert( res == _variableMap.get(id) );
+//       assert( res == _variableMap.get(id) );
     }
   }
   if (mip_wrap->fVerbose && mip_wrap->sLitValues.size())
@@ -515,7 +525,11 @@ void MIP_solverinstance::processFlatZinc(void) {
     getMIPWrapper()->addPhase1Vars(); 
 
   if (mip_wrap->fVerbose)
-    cerr << "  MIP_solverinstance: adding constraints..." << flush;
+    cerr << "  MIP_solverinstance: "
+      << _varViews.size() << " variable views. Adding constraints..." << flush;
+     
+  for ( auto vv: _varViews )
+    _constraintRegistry.postView( vv.first, vv.second );
   
   for (ConstraintIterator it = getEnv()->flat()->begin_constraints(); it != getEnv()->flat()->end_constraints(); ++it) {
     if (!it->removed()) {
