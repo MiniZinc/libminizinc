@@ -106,19 +106,14 @@ namespace MiniZinc {
   };
   
   typedef void (*poster) (SolverInstanceBase&, const Call* call);
-  typedef void (*viewhandler) (SolverInstanceBase&, Id* , Id* );
   class Registry {
   protected:
     ASTStringMap<poster>::t _registry;
     SolverInstanceBase& _base;
-    viewhandler vh=0;
   public:
     Registry(SolverInstanceBase& base) : _base(base) {}
     void add(const ASTString& name, poster p);
-    void post(Call* c);
-    void setViewHandler( viewhandler v_ ) { vh = v_; }
-    /// Post a variable view
-    void postView(Id* id1, Id* id2);
+    void post(Call* c);      
     void cleanup() { _registry.clear(); }
   };
 

@@ -101,7 +101,6 @@ predicate float_max(var float: x, var float: y, var float: z) =
     array_float_maximum(z, [x, y]);
 
 predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
-    %% trace_stdout( "  array_float_minimum_I( \(m), \(x) ) \n" ) /\
     let { int: n = length(x),
           constraint assert(1 == min(index_set(x)), "  array_float_minimum_I: argument indexed not from 1??"),
           int: iMinUB = arg_min([ub(x[i]) | i in 1..n]),
