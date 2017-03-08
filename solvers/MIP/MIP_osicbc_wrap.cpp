@@ -803,10 +803,12 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
    }
 #endif
 
-   cbc_cmdOptions += " -threads ";
-   ostringstream oss;
-   oss << nThreads;
-   cbc_cmdOptions += oss.str();
+   if ( 1<nThreads ) {
+    cbc_cmdOptions += " -threads ";
+    ostringstream oss;
+    oss << nThreads;
+    cbc_cmdOptions += oss.str();
+   }
    cbc_cmdOptions += " -solve";
    cbc_cmdOptions += " -quit";
 
