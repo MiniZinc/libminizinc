@@ -468,7 +468,7 @@ void MIP_solverinstance::processFlatZinc(void) {
           }
         } else if (MIP_wrapper::VarType::INT == vType) {
           IntBounds ib = compute_int_bounds(getEnv()->envi(), it->e()->id());
-          if (ib.valid) {
+          if (ib.valid) {  // Normally should be
             lb = ib.l.toInt();
             ub = ib.u.toInt();
           } else {
@@ -501,7 +501,6 @@ void MIP_solverinstance::processFlatZinc(void) {
           ub = min( ub, dRHS );
         }
         if ( it->e()!=vd00 ) {    // A different vardecl
-          MZN_ASSERT_HARD( !it->e()->e() );              // No another init-expr
           res = exprToVar( vd00->id() );                 // Assume FZN is sorted.
           MZN_ASSERT_HARD( !getMIPWrapper()->fPhase1Over ); // Still can change colUB, colObj
           /// Tighten the ini-expr's bounds
