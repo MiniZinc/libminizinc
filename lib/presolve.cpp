@@ -199,13 +199,6 @@ namespace MiniZinc {
 
     if(flattener->flag_verbose)
       std::cerr << "\t\tPresolving problem ...";
-    if (flattener->flag_print_presolve) {
-      std::cout << "% Presolve model `" << predicate->id().c_str() << "'" << std::endl;
-      Printer p(std::cout, 80, false);
-      std::cout << std::endl;
-      p.print(e->model());
-      std::cout << std::endl;
-    }
     solveModel();
     if(flattener->flag_verbose)
       std::cerr << " done (" << stoptime(lastTime) << ")" << std::endl;
@@ -281,6 +274,15 @@ namespace MiniZinc {
     ConstraintI* constraint = new ConstraintI(predicate->loc().introduce(), pred_call);
     m->addItem(constraint);
     m->addItem(SolveI::sat(predicate->loc().introduce()));
+
+
+    if (flattener->flag_print_presolve) {
+      std::cout << "% Presolve model `" << predicate->id().c_str() << "'" << std::endl;
+      Printer p(std::cout, 80, false);
+      std::cout << std::endl;
+      p.print(e->model());
+      std::cout << std::endl;
+    }
 
     generateFlatZinc(*e, flattener->flag_only_range_domains, flattener->flag_optimize, flattener->flag_newfzn);
   }
@@ -387,13 +389,6 @@ namespace MiniZinc {
 //      TODO: check if the current range has already been solved.
       if(flattener->flag_verbose)
         std::cerr << "\t\tPresolving call " << i+1 << "  ...";
-      if (flattener->flag_print_presolve) {
-        std::cout << "% Presolve model `" << predicate->id().c_str() << "' " << i+1 << std::endl;
-        Printer p(std::cout);
-        std::cout << std::endl;
-        p.print(e->model());
-        std::cout << std::endl;
-      }
       solveModel();
       if(flattener->flag_verbose)
         std::cerr << " done (" << stoptime(lastTime) << ")" << std::endl;
@@ -463,6 +458,14 @@ namespace MiniZinc {
           decls[i]->ti()->setRanges(ranges);
         }
       }
+    }
+
+    if (flattener->flag_print_presolve) {
+      std::cout << "% Presolve model `" << predicate->id().c_str() << "' " << currentCall+1 << std::endl;
+      Printer p(std::cout);
+      std::cout << std::endl;
+      p.print(e->model());
+      std::cout << std::endl;
     }
 
     generateFlatZinc(*e, flattener->flag_only_range_domains, flattener->flag_optimize, flattener->flag_newfzn);
