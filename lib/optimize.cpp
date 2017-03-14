@@ -610,23 +610,27 @@ namespace MiniZinc {
           Item* item = constraintQueue.back();
           constraintQueue.pop_back();
           Call* c;
-          ArrayLit* al;
+          ArrayLit* al = NULL;
           if (ConstraintI* ci = item->dyn_cast<ConstraintI>()) {
             ci->flag(false);
             c = Expression::dyn_cast<Call>(ci->e());
-            al = NULL;
           } else {
+            if (item->removed()) {
+              item = m[envi.vo.find(item->cast<VarDeclI>()->e()->id()->decl())]->cast<VarDeclI>();
+            }
             item->cast<VarDeclI>()->flag(false);
             c = Expression::dyn_cast<Call>(item->cast<VarDeclI>()->e()->e());
             al = Expression::dyn_cast<ArrayLit>(item->cast<VarDeclI>()->e()->e());
           }
-          if (al) {
-            substituteFixedVars(envi, item, deletedVarDecls);
-            pushDependentConstraints(envi, item->cast<VarDeclI>()->e()->id(), constraintQueue);
-          } else if (!c || !(c->id()==constants().ids.forall || c->id()==constants().ids.exists ||
-                             c->id()==constants().ids.clause) ) {
-            substituteFixedVars(envi, item, deletedVarDecls);
-            handledConstraint = simplifyConstraint(envi,item,deletedVarDecls,constraintQueue,vardeclQueue);
+          if (!item->removed()) {
+            if (al) {
+              substituteFixedVars(envi, item, deletedVarDecls);
+              pushDependentConstraints(envi, item->cast<VarDeclI>()->e()->id(), constraintQueue);
+            } else if (!c || !(c->id()==constants().ids.forall || c->id()==constants().ids.exists ||
+                               c->id()==constants().ids.clause) ) {
+              substituteFixedVars(envi, item, deletedVarDecls);
+              handledConstraint = simplifyConstraint(envi,item,deletedVarDecls,constraintQueue,vardeclQueue);
+            }
           }
         }
       }
