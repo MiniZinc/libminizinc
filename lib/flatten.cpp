@@ -4297,6 +4297,7 @@ namespace MiniZinc {
             
             if (ctx.b==C_ROOT && r==constants().var_true && e1.r()->type().ispar() &&
                 e0.r()->isa<Id>() && (bot==BOT_IN || bot==BOT_SUBSET) ) {
+              /// TODO: check for float
               VarDecl* vd = e0.r()->cast<Id>()->decl();
               if (vd->ti()->domain()==NULL) {
                 vd->ti()->domain(e1.r());
@@ -4324,6 +4325,9 @@ namespace MiniZinc {
                   } else if (changeDom) {
                     id->decl()->ti()->setComputedDomain(false);
                     id->decl()->ti()->domain(new SetLit(Location().introduce(),newdom));
+                    if (id->decl()->e()==NULL && newdom->min()==newdom->max()) {
+                      id->decl()->e(IntLit::a(newdom->min()));
+                    }
                   }
                   id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
                 }
