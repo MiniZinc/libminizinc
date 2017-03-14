@@ -3954,15 +3954,15 @@ namespace MiniZinc {
               nctx.neg = negArgs;
               nctx.b = negArgs ? C_NEG : C_ROOT;
               std::vector<Expression*> todo;
-              todo.push_back(boe0);
               todo.push_back(boe1);
+              todo.push_back(boe0);
               while (!todo.empty()) {
                 Expression* e_todo = todo.back();
                 todo.pop_back();
                 BinOp* e_bo = e_todo->dyn_cast<BinOp>();
                 if (e_bo && e_bo->op()==BOT_AND) {
-                  todo.push_back(e_bo->lhs());
                   todo.push_back(e_bo->rhs());
+                  todo.push_back(e_bo->lhs());
                 } else {
                   (void) flat_exp(env,nctx,e_todo,constants().var_true,constants().var_true);
                 }
