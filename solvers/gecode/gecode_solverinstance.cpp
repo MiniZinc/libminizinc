@@ -57,6 +57,8 @@ namespace MiniZinc {
       int passes = atoi(argv[i]);
       if(passes >= 0)
         _options.setIntParam(std::string("pre_passes"), passes);
+    } else if (string(argv[i])=="-a") {
+      _options.setBoolParam(std::string("all_solutions"), true);
     } else if (string(argv[i])=="--node") {
       if (++i==argc) return false;
       int nodes = atoi(argv[i]);
@@ -94,6 +96,8 @@ namespace MiniZinc {
     << "    failure cutoff (0 = none, solution mode)" << std::endl
     << "  --time <ms>" << std::endl
     << "    time (in ms) cutoff (0 = none, solution mode)" << std::endl
+    << "  -a" << std::endl
+    << "    print intermediate solutions" << std::endl
     << std::endl;
   }
 
@@ -364,6 +368,8 @@ namespace MiniZinc {
     _run_shave = _options.getBoolParam(std::string("shave"), false);
     _pre_passes = _options.getIntParam(std::string("pre_passes"), 1);
     _print_stats = _options.getBoolParam(std::string("statistics"), false);
+    _all_solutions = _options.getBoolParam(std::string("all_solutions"), false);
+    _n_max_solutions = _options.getIntParam(std::string("n_solutions"), 1);
     _current_space = new FznSpace();
 
     // iterate over VarDecls of the flat model and create variables
@@ -1052,29 +1058,17 @@ namespace MiniZinc {
         << "%%  peak depth:    " << stat.depth << std::endl
         << std::endl;
   }
-  
-  SolverInstanceBase::Status
-  GecodeSolverInstance::solve(void) {
 
-    prepareEngine();
-
-    if(_run_sac || _run_shave) {
-      presolve();
-    }
-
-    if (_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
-      _solution = engine->next();
-    } else {
-      while (FznSpace* next_sol = engine->next()) {
-        if(_solution) delete _solution;
-        _solution = next_sol;
-      }
-    }
-
-    if (_solution) {
+  void GecodeSolverInstance::processSolution(void) {
+    if(_solution) {
       assignSolutionToOutput();
+      printSolution();
       if (_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
-        _status = SolverInstance::SAT;
+        if (engine->stopped()) {
+          _status = SolverInstance::SAT;
+        } else {
+          _status = SolverInstance::OPT;
+        }
       } else {
         if (engine->stopped()) {
           Gecode::Search::Statistics stat = engine->statistics();
@@ -1103,10 +1097,34 @@ namespace MiniZinc {
         _status = SolverInstance::UNSAT;
       }
     }
-    
-    if (_print_stats) {
-      print_stats();
+  }
+
+  SolverInstanceBase::Status
+  GecodeSolverInstance::solve(void) {
+
+    prepareEngine();
+
+    if(_run_sac || _run_shave) {
+      presolve();
     }
+
+    while (FznSpace* next_sol = engine->next()) {
+      if(_solution) delete _solution;
+      _solution = next_sol;
+      _n_found_solutions++;
+
+      if(_all_solutions) {
+        processSolution();
+        if (_print_stats) print_stats();
+      } else {
+        if (_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
+          break;
+        }
+      }
+    }
+
+    processSolution();
+    if (_print_stats) print_stats();
     
     return _status;
   }

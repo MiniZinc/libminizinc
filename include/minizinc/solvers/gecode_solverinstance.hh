@@ -224,6 +224,7 @@ namespace MiniZinc {
     bool _run_sac;
     bool _run_shave;
     unsigned int _pre_passes;
+    bool _all_solutions;
     unsigned int _n_max_solutions;
     unsigned int _n_found_solutions;
     Model* _flat;
@@ -257,6 +258,7 @@ namespace MiniZinc {
     bool sac(bool toFixedPoint, bool shaving);
     void print_stats();
 
+    void processSolution(void);
     virtual Expression* getSolutionValue(Id* id);
 
     Gecode::Space* getGecodeModel(void);
