@@ -64,7 +64,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   << "--writeModel <file>   write model to <file> (.mps)" << std::endl
   << "-a, --all             print intermediate solutions for optimization problems\n"
      "      (not from FeasPump. Can be slow.)" << std::endl
-//   << "-p <N>              use N threads, default: 1" << std::endl
+   << "-p <N>              use N threads, default: 1. CBC should be configured with --enable-cbc-parallel" << std::endl
 //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
   << "--timeout <N>         stop search after N seconds" << std::endl
 //   << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
@@ -803,6 +803,12 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
    }
 #endif
 
+   if ( 1<nThreads ) {
+    cbc_cmdOptions += " -threads ";
+    ostringstream oss;
+    oss << nThreads;
+    cbc_cmdOptions += oss.str();
+   }
    cbc_cmdOptions += " -solve";
    cbc_cmdOptions += " -quit";
 

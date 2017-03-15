@@ -65,7 +65,7 @@ double MIP_solverinstance::exprToConst(Expression* e) {
     } else if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
       return ( bl->v() );
     } else {
-      throw InternalError("unexpected expression");
+      throw InternalError("Expected a numeric/bool literal");
     }
 }
 
@@ -459,14 +459,22 @@ void MIP_solverinstance::processFlatZinc(void) {
       if (ti->domain()) {
         if (MIP_wrapper::VarType::REAL == vType) {
           FloatBounds fb = compute_float_bounds(getEnv()->envi(), it->e()->id());
-          assert(fb.valid);
-          lb = fb.l.toDouble();
-          ub = fb.u.toDouble();
+          if (fb.valid) {
+            lb = fb.l.toDouble();
+            ub = fb.u.toDouble();
+          } else {
+            lb = 1.0;
+            ub = 0.0;
+          }
         } else if (MIP_wrapper::VarType::INT == vType) {
           IntBounds ib = compute_int_bounds(getEnv()->envi(), it->e()->id());
-          assert(ib.valid);
-          lb = ib.l.toInt();
-          ub = ib.u.toInt();
+          if (ib.valid) {  // Normally should be
+            lb = ib.l.toInt();
+            ub = ib.u.toInt();
+          } else {
+            lb = 1;
+            ub = 0;
+          }
         } 
       } else if (MIP_wrapper::VarType::BINARY != vType) {
         lb = -getMIPWrapper()->getInfBound();  // if just 1 bound inf, using MZN's default?  TODO
@@ -479,22 +487,39 @@ void MIP_solverinstance::processFlatZinc(void) {
 
       VarId res;
       Id* id = it->e()->id();
-      id = id->decl()->id();
+      MZN_ASSERT_HARD( id == id->decl()->id() );   // Assume all unified
+      MZN_ASSERT_HARD( it->e() == id->decl() );    // Assume all unified
       double obj = vd==objVd ? 1.0 : 0.0;
-      if (it->e()->e()) {     // has init-expr
-        auto id1 = it->e()->e()->dyn_cast<Id>();
-        if (id1)
-          MZN_ASSERT_HARD( 0==id1->decl()->e() );      // ???
-        res = exprToVar(it->e()->e());     // follow to rhs?     TODO
-        MZN_ASSERT_HARD( !getMIPWrapper()->fPhase1Over ); // Still can change colUB, colObj
-        /// Tighten the ini-expr's bounds
-        lb = getMIPWrapper()->colLB.at( res ) = max( getMIPWrapper()->colLB.at( res ), lb );
-        ub = getMIPWrapper()->colUB.at( res ) = min( getMIPWrapper()->colUB.at( res ), ub );
-        if ( 0.0!=obj ) {
-          getMIPWrapper()->colObj.at( res ) = obj;
+      auto decl00 = follow_id_to_decl( it->e() );
+      MZN_ASSERT_HARD ( decl00->isa<VarDecl>() );
+      {
+        auto vd00 = decl00->dyn_cast<VarDecl>();
+        if ( 0!=vd00->e() ) {
+          // Should be a const
+          auto dRHS = exprToConst( vd00->e() );
+          lb = max( lb, dRHS );
+          ub = min( ub, dRHS );
         }
-      } else {
-        res = getMIPWrapper()->addVar(obj, lb, ub, vType, id->str().c_str());
+        if ( it->e()!=vd00 ) {    // A different vardecl
+          res = exprToVar( vd00->id() );                 // Assume FZN is sorted.
+          MZN_ASSERT_HARD( !getMIPWrapper()->fPhase1Over ); // Still can change colUB, colObj
+          /// Tighten the ini-expr's bounds
+          lb = getMIPWrapper()->colLB.at( res ) = max( getMIPWrapper()->colLB.at( res ), lb );
+          ub = getMIPWrapper()->colUB.at( res ) = min( getMIPWrapper()->colUB.at( res ), ub );
+          if ( 0.0!=obj ) {
+            getMIPWrapper()->colObj.at( res ) = obj;
+          }
+        } else {
+          res = getMIPWrapper()->addVar(obj, lb, ub, vType, id->str().c_str());
+        }
+      }
+      /// Test infeasibility
+      if ( lb>ub ) {
+        _status = SolverInstance::UNSAT;
+        if ( getMIPWrapper()->fVerbose )
+          cerr << "  VarDecl '" << *(it->e())
+            << "' seems infeasible: computed bounds [" << lb << ", " << ub << ']'
+            << endl;
       }
       if ( 0.0!=obj ) {
         dObjVarLB = lb;

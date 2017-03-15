@@ -4373,15 +4373,15 @@ namespace MiniZinc {
               nctx.neg = negArgs;
               nctx.b = negArgs ? C_NEG : C_ROOT;
               std::vector<Expression*> todo;
-              todo.push_back(boe0);
               todo.push_back(boe1);
+              todo.push_back(boe0);
               while (!todo.empty()) {
                 Expression* e_todo = todo.back();
                 todo.pop_back();
                 BinOp* e_bo = e_todo->dyn_cast<BinOp>();
                 if (e_bo && e_bo->op()==BOT_AND) {
-                  todo.push_back(e_bo->lhs());
                   todo.push_back(e_bo->rhs());
+                  todo.push_back(e_bo->lhs());
                 } else {
                   (void) flat_exp(env,nctx,e_todo,constants().var_true,constants().var_true);
                 }
@@ -4694,6 +4694,7 @@ namespace MiniZinc {
             
             if (ctx.b==C_ROOT && r==constants().var_true && e1.r()->type().ispar() &&
                 e0.r()->isa<Id>() && (bot==BOT_IN || bot==BOT_SUBSET) ) {
+              /// TODO: check for float
               VarDecl* vd = e0.r()->cast<Id>()->decl();
               if (vd->ti()->domain()==NULL) {
                 vd->ti()->domain(e1.r());
@@ -4721,6 +4722,9 @@ namespace MiniZinc {
                   } else if (changeDom) {
                     id->decl()->ti()->setComputedDomain(false);
                     id->decl()->ti()->domain(new SetLit(Location().introduce(),newdom));
+                    if (id->decl()->e()==NULL && newdom->min()==newdom->max()) {
+                      id->decl()->e(IntLit::a(newdom->min()));
+                    }
                   }
                   id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
                 }
