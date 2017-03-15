@@ -930,11 +930,11 @@ namespace MiniZinc {
   GecodeSolver::Variable
   GecodeSolverInstance::resolveVar(Expression* e) {
     if (Id* id = e->dyn_cast<Id>()) {
-        return _variableMap.get(id); //lookupVar(id->decl());
+        return _variableMap.get(id->decl()->id()); //lookupVar(id->decl());
     } else if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
         return _variableMap.get(vd->id()->decl()->id());
     } else if (ArrayAccess* aa = e->dyn_cast<ArrayAccess>()) {
-        return _variableMap.get(resolveArrayAccess(aa)->id());
+        return _variableMap.get(resolveArrayAccess(aa)->id()->decl()->id());
     } else {
         std::stringstream ssm;
         ssm << "Expected Id, VarDecl or ArrayAccess instead of \"" << *e << "\"";
