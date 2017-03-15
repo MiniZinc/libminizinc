@@ -59,6 +59,11 @@ namespace MiniZinc {
         _options.setIntParam(std::string("pre_passes"), passes);
     } else if (string(argv[i])=="-a") {
       _options.setBoolParam(std::string("all_solutions"), true);
+    } else if (string(argv[i])=="-n") {
+      if (++i==argc) return false;
+      int n = atoi(argv[i]);
+      if(n >= 0)
+        _options.setIntParam(std::string("n_solutions"), n);
     } else if (string(argv[i])=="--node") {
       if (++i==argc) return false;
       int nodes = atoi(argv[i]);
@@ -98,6 +103,8 @@ namespace MiniZinc {
     << "    time (in ms) cutoff (0 = none, solution mode)" << std::endl
     << "  -a" << std::endl
     << "    print intermediate solutions" << std::endl
+    << "  -n <sols>" << std::endl
+    << "    number of solutions" << std::endl
     << std::endl;
   }
 
@@ -130,7 +137,8 @@ namespace MiniZinc {
   };
 
      GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options)
-       : SolverInstanceImpl<GecodeSolver>(env,options), _current_space(NULL),
+       : SolverInstanceImpl<GecodeSolver>(env,options), _n_found_solutions(0),
+       _current_space(NULL),
        _solution(NULL), engine(NULL) {
        registerConstraints();
        _flat = env.flat();
@@ -1113,7 +1121,7 @@ namespace MiniZinc {
       _solution = next_sol;
       _n_found_solutions++;
 
-      if(_all_solutions) {
+      if(_all_solutions || _n_found_solutions < _n_max_solutions) {
         processSolution();
         if (_print_stats) print_stats();
       } else {
