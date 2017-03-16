@@ -71,8 +71,8 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   << "--writeParam <file> write GUROBI parameters to file" << std::endl
 //   << "--tuneParam         instruct GUROBI to tune parameters instead of solving   NOT IMPL"
 
-  << "--absGap <n>        absolute gap |primal-dual| to stop. Default 0.99" << std::endl
-  << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8" << std::endl
+  << "--absGap <n>        absolute gap |primal-dual| to stop" << std::endl
+  << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
   << "--intTol <n>        integrality tolerance for a variable. Default 1e-6" << std::endl
 //   << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
@@ -92,7 +92,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
  static   string sWriteParams;
  static   bool flag_all_solutions = false;
 
- static   double absGap=0.99;
+ static   double absGap=-1;
  static   double relGap=1e-8;
  static   double intTol=1e-6;
  static   double objDiff=1.0;
@@ -481,6 +481,9 @@ MIP_gurobi_wrapper::Status MIP_gurobi_wrapper::convertStatus(int gurobiStatus)
 
 
 void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
+  if ( flag_all_solutions && 0==nProbType )
+    cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
+  
    error = dll_GRBupdatemodel(model);                  // for model export
    wrap_assert( !error,  "Failed to update model." );
    
@@ -538,15 +541,15 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
 //      wrap_assert(!error, "Failed to set GRB_PARAM_MIP_Limits_TreeMemory.", false);
 //     }
 
-   if ( true ) {
+   if ( absGap>=0.0 ) {
      error = dll_GRBsetdblparam( dll_GRBgetenv(model),  "MIPGapAbs", absGap );
      wrap_assert(!error, "Failed to set  MIPGapAbs.", false);
    }
-   if ( true ) {
+   if ( relGap>=0.0 ) {
      error = dll_GRBsetdblparam( dll_GRBgetenv(model),  "MIPGap", relGap );
      wrap_assert(!error, "Failed to set  MIPGap.", false);
    }
-   if ( true ) {
+   if ( intTol>=0.0 ) {
      error = dll_GRBsetdblparam( dll_GRBgetenv(model),  "IntFeasTol", intTol );
      wrap_assert(!error, "Failed to set   IntFeasTol.", false);
    }

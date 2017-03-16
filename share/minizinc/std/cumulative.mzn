@@ -26,16 +26,21 @@ predicate cumulative(array[int] of var int: s,
     else
         let { 
             set of int: Tasks = 
-                {i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0 },
-            int: early = min([ lb(s[i])            | i in Tasks ]), 
-            int: late  = max([ ub(s[i]) + ub(d[i]) | i in Tasks ]) 
-        } in (
-            if late - early > 5000 then
-               cumulative_task(s, d, r, b)
+                {i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0 }
+        } in
+            if 0==card(Tasks) then /*true*/ 0==card(index_set(s)) \/ b>=0
             else
-               cumulative_time(s, d, r, b)
+                let {
+                    int: early = min([ lb(s[i])            | i in Tasks ]), 
+                    int: late  = max([ ub(s[i]) + ub(d[i]) | i in Tasks ]) 
+                } in (
+                    if late - early > 5000 then
+                      cumulative_task(s, d, r, b)
+                    else
+                      cumulative_time(s, d, r, b)
+                    endif
+                )
             endif
-        )
     endif
     ));
 

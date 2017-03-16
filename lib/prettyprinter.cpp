@@ -323,7 +323,7 @@ namespace MiniZinc {
             if (id->idn() == -1) {
               os << id->v();
             } else {
-              os << "X_INTRODUCED_" << id->idn();
+              os << "X_INTRODUCED_" << id->idn() << "_";
             }
           }
         }
@@ -570,7 +570,7 @@ namespace MiniZinc {
           const VarDecl& vd = *e->cast<VarDecl>();
           p(vd.ti());
           if (vd.id()->idn() != -1) {
-            os << ": X_INTRODUCED_" << vd.id()->idn();
+            os << ": X_INTRODUCED_" << vd.id()->idn() << "_";
           } else if (vd.id()->v().size() != 0)
             os << ": " << vd.id()->v();
           if (vd.introduced()) {
@@ -1181,7 +1181,7 @@ namespace MiniZinc {
         return new StringDocument(id.v().str());
       else {
         std::ostringstream oss;
-        oss << "X_INTRODUCED_" << id.idn();
+        oss << "X_INTRODUCED_" << id.idn() << "_";
         return new StringDocument(oss.str());
       }
     }
@@ -1515,7 +1515,7 @@ namespace MiniZinc {
         dl->addStringToList(vd.id()->v().str());
       } else {
         std::ostringstream oss;
-        oss << "X_INTRODUCED_" << vd.id()->idn();
+        oss << "X_INTRODUCED_" << vd.id()->idn() << "_";
         dl->addStringToList(oss.str());
       }
         

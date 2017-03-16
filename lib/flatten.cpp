@@ -391,8 +391,9 @@ namespace MiniZinc {
         return false;
     }
     if (strictEnums && t1.dim() > 0 && t1.enumId() != t2.enumId()) {
-      if (t1.enumId()==0)
-        return false;
+      if (t1.enumId()==0) {
+        return t1.isbot();
+      }
       if (t2.enumId()!=0) {
         const std::vector<unsigned int>& t1enumIds = getArrayEnum(t1.enumId());
         const std::vector<unsigned int>& t2enumIds = getArrayEnum(t2.enumId());
@@ -401,7 +402,7 @@ namespace MiniZinc {
           if (t2enumIds[i] != 0 && t1enumIds[i] != t2enumIds[i])
             return false;
         }
-        if (t2enumIds[t1enumIds.size()-1]!=0 && t1enumIds[t1enumIds.size()-1]!=t2enumIds[t2enumIds.size()-1])
+        if (!t1.isbot() && t2enumIds[t1enumIds.size()-1]!=0 && t1enumIds[t1enumIds.size()-1]!=t2enumIds[t2enumIds.size()-1])
           return false;
       }
     }
@@ -1152,11 +1153,22 @@ namespace MiniZinc {
           Expression* ret = e;
           if (e==NULL || (e->type().ispar() && e->type().isbool())) {
             GCLock lock;
-            if (e==NULL || eval_bool(env,e)) {
-              vd->e(constants().lit_true);
-            } else {
-              vd->e(constants().lit_false);
+            bool isTrue = (e==NULL || eval_bool(env,e));
+
+            // Check if redefinition of bool_eq exists, if yes call it
+            std::vector<Expression*> args(2);
+            args[0] = vd->id();
+            args[1] = constants().boollit(isTrue);
+            Call* c = new Call(Location().introduce(),constants().ids.bool_eq,args);
+            c->decl(env.orig->matchFn(env,c,false));
+            c->type(c->decl()->rtype(env,args,false));
+            bool didRewrite = false;
+            if (c->decl()->e()) {
+              flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+              didRewrite = true;
             }
+            
+            vd->e(constants().boollit(isTrue));
             if (vd->ti()->domain()) {
               if (vd->ti()->domain() != vd->e()) {
                 env.fail();
@@ -1166,16 +1178,9 @@ namespace MiniZinc {
               vd->ti()->domain(vd->e());
               vd->ti()->setComputedDomain(true);
             }
-            std::vector<Expression*> args(2);
-            args[0] = vd->id();
-            args[1] = vd->e();
-            Call* c = new Call(Location().introduce(),constants().ids.bool_eq,args);
-            c->decl(env.orig->matchFn(env,c,false));
-            c->type(c->decl()->rtype(env,args,false));
-            if (c->decl()->e()) {
-              flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+            if (didRewrite) {
               return vd->id();
-            }            
+            }
           } else {
             if (e->type().dim() > 0) {
               // Check that index sets match
@@ -3949,15 +3954,15 @@ namespace MiniZinc {
               nctx.neg = negArgs;
               nctx.b = negArgs ? C_NEG : C_ROOT;
               std::vector<Expression*> todo;
-              todo.push_back(boe0);
               todo.push_back(boe1);
+              todo.push_back(boe0);
               while (!todo.empty()) {
                 Expression* e_todo = todo.back();
                 todo.pop_back();
                 BinOp* e_bo = e_todo->dyn_cast<BinOp>();
                 if (e_bo && e_bo->op()==BOT_AND) {
-                  todo.push_back(e_bo->lhs());
                   todo.push_back(e_bo->rhs());
+                  todo.push_back(e_bo->lhs());
                 } else {
                   (void) flat_exp(env,nctx,e_todo,constants().var_true,constants().var_true);
                 }
@@ -4270,6 +4275,7 @@ namespace MiniZinc {
             
             if (ctx.b==C_ROOT && r==constants().var_true && e1.r()->type().ispar() &&
                 e0.r()->isa<Id>() && (bot==BOT_IN || bot==BOT_SUBSET) ) {
+              /// TODO: check for float
               VarDecl* vd = e0.r()->cast<Id>()->decl();
               if (vd->ti()->domain()==NULL) {
                 vd->ti()->domain(e1.r());
@@ -4297,6 +4303,9 @@ namespace MiniZinc {
                   } else if (changeDom) {
                     id->decl()->ti()->setComputedDomain(false);
                     id->decl()->ti()->domain(new SetLit(Location().introduce(),newdom));
+                    if (id->decl()->e()==NULL && newdom->min()==newdom->max()) {
+                      id->decl()->e(IntLit::a(newdom->min()));
+                    }
                   }
                   id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
                 }

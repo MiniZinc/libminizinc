@@ -93,6 +93,7 @@ namespace MiniZinc {
     Model* _rootset;
     KeepAlive* _roots;
     WeakRef* _weakRefs;
+    ASTNodeWeakMap* _nodeWeakMaps;
     static const int _max_fl = 5;
     FreeListNode* _fl[_max_fl+1];
     static const size_t _fl_size[_max_fl+1];
@@ -133,6 +134,7 @@ namespace MiniZinc {
       , _rootset(NULL)
       , _roots(NULL)
       , _weakRefs(NULL)
+      , _nodeWeakMaps(NULL)
       , _alloced_mem(0)
       , _free_mem(0)
       , _gc_threshold(10)
@@ -501,6 +503,17 @@ namespace MiniZinc {
         fixPrev = true;
       }
     }
+    
+    for (ASTNodeWeakMap* wr = _nodeWeakMaps; wr != NULL; wr = wr->next()) {
+      std::vector<ASTNode*> toRemove;
+      for (auto n : wr->_m) {
+        if (n.first->_gc_mark==0 || n.second->_gc_mark==0)
+          toRemove.push_back(n.first);
+      }
+      for (auto n : toRemove) {
+        wr->_m.erase(n);
+      }
+    }
 
 #if defined(MINIZINC_GC_STATS)
     std::cerr << "+";
@@ -727,6 +740,27 @@ namespace MiniZinc {
       e->_n->_p = e->_p;
     }
   }
+  void
+  GC::addNodeWeakMap(ASTNodeWeakMap* m) {
+    assert(m->_p==NULL);
+    assert(m->_n==NULL);
+    m->_n = GC::gc()->_heap->_nodeWeakMaps;
+    if (GC::gc()->_heap->_nodeWeakMaps)
+      GC::gc()->_heap->_nodeWeakMaps->_p = m;
+    GC::gc()->_heap->_nodeWeakMaps = m;
+  }
+  void
+  GC::removeNodeWeakMap(ASTNodeWeakMap* m) {
+    if (m->_p) {
+      m->_p->_n = m->_n;
+    } else {
+      assert(GC::gc()->_heap->_nodeWeakMaps==m);
+      GC::gc()->_heap->_nodeWeakMaps = m->_n;
+    }
+    if (m->_n) {
+      m->_n->_p = m->_p;
+    }
+  }
 
   WeakRef::WeakRef(Expression* e)
   : _e(e), _p(NULL), _n(NULL), _valid(true) {
@@ -757,4 +791,25 @@ namespace MiniZinc {
     return *this;
   }
 
+  ASTNodeWeakMap::ASTNodeWeakMap(void)
+  : _p(NULL), _n(NULL) {
+    GC::gc()->addNodeWeakMap(this);
+  }
+  
+  ASTNodeWeakMap::~ASTNodeWeakMap(void) {
+    GC::gc()->removeNodeWeakMap(this);
+  }
+
+  void
+  ASTNodeWeakMap::insert(ASTNode* n0, ASTNode* n1) {
+    _m.insert(std::make_pair(n0,n1));
+  }
+  
+  ASTNode*
+  ASTNodeWeakMap::find(ASTNode* n) {
+    NodeMap::iterator it = _m.find(n);
+    if (it==_m.end()) return NULL;
+    return it->second;
+  }
+  
 }

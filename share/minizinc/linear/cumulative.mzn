@@ -19,17 +19,19 @@ predicate cumulative(array[int] of var int: s,
         if mzn_in_redundant_constraint() /\ fMZN__IgnoreRedundantCumulative then
             true
         else
-                let { 
-                set of int: tasks = 
-                    {i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0 },
-                set of int: times = dom_array( [ s[i] | i in tasks ] )
-                } in
-%        my_trace("  cumul: times = " ++ show(times)) /\
-        if nMZN__UnarySizeMax_cumul>=card(times)*card(tasks) then     %%%   -- Mem overflow on rcmsp. PARAMETER? TODO
-            cumulative_time_decomp(s, d, r, b, times) 
-        else 
-            cumulative_task_decomp(s, d, r, b) 
-        endif
+            let { 
+            set of int: tasks = 
+                {i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0 },
+            set of int: times = dom_array( [ s[i] | i in tasks ] )
+            } in
+                if 0==card(tasks) then /*true*/ 0==card(index_set(s)) \/ b>=0
+                else
+                    if nMZN__UnarySizeMax_cumul>=card(times)*card(tasks) then     %%%   -- Mem overflow on rcmsp. PARAMETER? TODO
+                        cumulative_time_decomp(s, d, r, b, times) 
+                    else 
+                        cumulative_task_decomp(s, d, r, b) 
+                    endif
+                endif
         endif
     ));
 

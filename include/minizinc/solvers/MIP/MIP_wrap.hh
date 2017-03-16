@@ -90,6 +90,8 @@ class MIP_wrapper {
   public:
     /// Parameter
     bool fVerbose = false;
+    
+    int nProbType = -2;  // +-1: max/min; 0: sat
 
   public:
     struct Output {
@@ -206,6 +208,8 @@ class MIP_wrapper {
     /// debugging stuff
 //     set<double> sLitValues;
     std::unordered_map<double, VarId> sLitValues;
+    
+    void setProbType( int t ) { nProbType=t; }
     
     /// adding a variable, at once to the solver, this is for the 2nd phase
     virtual VarId addVar(double obj, double lb, double ub, 
