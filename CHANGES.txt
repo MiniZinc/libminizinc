@@ -5,6 +5,31 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.1.4
+=============
+
+Changes:
+ - Add warning for MIP solvers that do not support -a option for satisfaction
+   problems.
+ - Print introduced variable names with additional underscore to make
+   debugging FlatZinc easier. Fixes #147.
+ - Add support for pow function in linearisation library.
+ - Add support for parallel solving with CBC.
+ - Flatten top-level conjunctions in the order defined in the model.
+
+Bug fixes:
+ - Fix a garbage collection bug that could cause dangling pointers when
+   expressions were copied.
+ - Fix type checker to allow empty arrays to be assigned to variables
+   declared as arrays of enums.
+ - Fix infeasibility check in MIP translation for some inequality constraints.
+ - Improved defines_var annotations for reified xor constraints. Fixes #146.
+ - Fix output of empty integer sets and deal with empty arrays in output models.
+ - Fix MIP translation when boolean variables were removed due to aliasing.
+ - Improve corner cases for linearisation of cumulative constraint.
+ - Properly report undefinedness in par bool expressions.
+ - Enable some additional constant folding during flattening. Fixes #149.
+
 Version 2.1.3
 =============
 
