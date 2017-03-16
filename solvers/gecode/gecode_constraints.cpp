@@ -24,12 +24,14 @@ namespace MiniZinc {
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       IntVarArgs va = gi.arg2intvarargs(call->args()[0]);
       MZ_IntConLevel icl = gi.ann2icl(call->ann());
+      unshare(*gi._current_space, va);
       distinct(*gi._current_space, va, icl == MZ_ICL_DEF ? MZ_ICL_DOM : icl);
     }
 
     void p_distinctOffset(SolverInstanceBase& s, const Call* call) {
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       IntVarArgs va = gi.arg2intvarargs(call->args()[1]);
+      unshare(*gi._current_space, va);
       IntArgs oa = gi.arg2intargs(call->args()[0]);
       MZ_IntConLevel icl = gi.ann2icl(call->ann());
       distinct(*gi._current_space, oa, va, icl == MZ_ICL_DEF ? MZ_ICL_DOM : icl);
@@ -883,7 +885,11 @@ namespace MiniZinc {
       }
       l << load;
       IntArgs sizes = gi.arg2intargs(call->args()[2]);
-      binpacking(*gi._current_space, l, bin, sizes, gi.ann2icl(ann));
+
+      IntVarArgs allvars = l + bin;
+      unshare(*gi._current_space, allvars);
+      binpacking(*gi._current_space, allvars.slice(0,1,l.size()), allvars.slice(l.size(),1,bin.size()),
+                 sizes, gi.ann2icl(ann));
     }
 
     void p_global_cardinality(SolverInstanceBase& s, const Call* call) {
@@ -917,6 +923,7 @@ namespace MiniZinc {
             allvars.slice(iv0.size(),1,iv1.size()),
             cover, gi.ann2icl(ann));
       } else {
+        unshare(*gi._current_space, iv0);
         count(*gi._current_space, iv0, iv1, cover, gi.ann2icl(ann));
       }
     }
@@ -927,6 +934,7 @@ namespace MiniZinc {
       IntVarArgs iv0 = gi.arg2intvarargs(call->args()[0]);
       IntArgs cover = gi.arg2intargs(call->args()[1]);
       IntVarArgs iv1 = gi.arg2intvarargs(call->args()[2]);
+      unshare(*gi._current_space, iv0);
       count(*gi._current_space, iv0, iv1, cover, gi.ann2icl(ann));
     }
 
@@ -955,7 +963,8 @@ namespace MiniZinc {
           y << IntSet(0,x.size());
         }
       }
-
+  
+      unshare(*gi._current_space, x);
       count(*gi._current_space, x, y, cover, gi.ann2icl(ann));
     }
 
@@ -971,6 +980,7 @@ namespace MiniZinc {
       for (int i=cover.size(); i--;)
         y[i] = IntSet(lbound[i],ubound[i]);
 
+      unshare(*gi._current_space, x);
       count(*gi._current_space, x, y, cover, gi.ann2icl(ann));
     }
 
@@ -1047,6 +1057,7 @@ namespace MiniZinc {
 
       DFA dfa(q0,t,f);
       free(f);
+      unshare(*gi._current_space, iv);
       extensional(*gi._current_space, iv, dfa, gi.ann2icl(ann));
     }
 
@@ -1071,8 +1082,10 @@ namespace MiniZinc {
     void p_inverse_offsets(SolverInstanceBase& s, const Call* call) {
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       IntVarArgs x = gi.arg2intvarargs(call->args()[0]);
+      unshare(*gi._current_space, x);
       int xoff = call->args()[1]->cast<IntLit>()->v().toInt();
       IntVarArgs y = gi.arg2intvarargs(call->args()[2]);
+      unshare(*gi._current_space, y);
       int yoff = call->args()[3]->cast<IntLit>()->v().toInt();
       MZ_IntConLevel icl = gi.ann2icl(call->ann());
       channel(*gi._current_space, x, xoff, y, yoff, icl == MZ_ICL_DEF ? MZ_ICL_DOM : icl);
@@ -1176,11 +1189,13 @@ namespace MiniZinc {
           IntArgs durationI(n);
           for (int i=n; i--;)
             durationI[i] = duration[i].val();
+          unshare(*gi._current_space,start);
           unary(*gi._current_space,start,durationI);
         } else {
           IntVarArgs end(n);
           for (int i=n; i--;)
             end[i] = expr(*gi._current_space,start[i]+duration[i]);
+          unshare(*gi._current_space,start);
           unary(*gi._current_space,start,duration,end);
         }
       } else if (height.assigned()) {
@@ -1235,6 +1250,7 @@ namespace MiniZinc {
       int q = call->args()[2]->cast<IntLit>()->v().toInt();
       int l = call->args()[3]->cast<IntLit>()->v().toInt();
       int u = call->args()[4]->cast<IntLit>()->v().toInt();
+      unshare(*gi._current_space, x);
       sequence(*gi._current_space, x, S, q, l, u, gi.ann2icl(ann));
     }
 
@@ -1247,6 +1263,7 @@ namespace MiniZinc {
       int l = call->args()[3]->cast<IntLit>()->v().toInt();
       int u = call->args()[4]->cast<IntLit>()->v().toInt();
       IntSet S(val, val);
+      unshare(*gi._current_space, x);
       sequence(*gi._current_space, x, S, q, l, u, gi.ann2icl(ann));
     }
 
@@ -1254,6 +1271,7 @@ namespace MiniZinc {
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       IntVarArgs x = gi.arg2intvarargs(call->args()[0]);
       IntArgs p = gi.arg2intargs(call->args()[1]);
+      unshare(*gi._current_space, x);
       unary(*gi._current_space, x, p);
     }
 
@@ -1262,6 +1280,7 @@ namespace MiniZinc {
       IntVarArgs x = gi.arg2intvarargs(call->args()[0]);
       IntArgs p = gi.arg2intargs(call->args()[1]);
       BoolVarArgs m = gi.arg2boolvarargs(call->args()[2]);
+      unshare(*gi._current_space, x);
       unary(*gi._current_space, x, p, m);
     }
 
@@ -1283,6 +1302,7 @@ namespace MiniZinc {
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       int off = call->args()[0]->cast<IntLit>()->v().toInt();
       IntVarArgs xv = gi.arg2intvarargs(call->args()[1]);
+      unshare(*gi._current_space, xv);
       circuit(*gi._current_space,off,xv,gi.ann2icl(ann));
     }
     void p_circuit_cost_array(SolverInstanceBase& s, const Call* call) {
@@ -1292,6 +1312,7 @@ namespace MiniZinc {
       IntVarArgs xv = gi.arg2intvarargs(call->args()[1]);
       IntVarArgs yv = gi.arg2intvarargs(call->args()[2]);
       IntVar z = gi.arg2intvar(call->args()[3]);
+      unshare(*gi._current_space, xv);
       circuit(*gi._current_space,c,xv,yv,z,gi.ann2icl(ann));
     }
     void p_circuit_cost(SolverInstanceBase& s, const Call* call) {
@@ -1300,6 +1321,7 @@ namespace MiniZinc {
       IntArgs c = gi.arg2intargs(call->args()[0]);
       IntVarArgs xv = gi.arg2intvarargs(call->args()[1]);
       IntVar z = gi.arg2intvar(call->args()[2]);
+      unshare(*gi._current_space, xv);
       circuit(*gi._current_space,c,xv,z,gi.ann2icl(ann));
     }
 
@@ -1356,8 +1378,10 @@ namespace MiniZinc {
       IntSet v = gi.arg2intset(s.env().envi(), call->args()[2]);
       if (call->args()[0]->type().isvarint()) {
         IntVar n = gi.arg2intvar(call->args()[0]);
+        unshare(*gi._current_space, x);
         count(*gi._current_space,x,v,IRT_EQ,n,gi.ann2icl(ann));
       } else {
+        unshare(*gi._current_space, x);
         count(*gi._current_space,x,v,IRT_EQ,call->args()[0]->cast<IntLit>()->v().toInt(),gi.ann2icl(ann));
       }
     }
