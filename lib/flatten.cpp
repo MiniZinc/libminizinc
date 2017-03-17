@@ -5895,6 +5895,348 @@ namespace MiniZinc {
     }
   }
   
+  std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDecl* vd) {
+    std::vector<Expression*> added_constraints;
+    
+    // In FlatZinc par variables have RHSs, not domains
+    if (vd->type().ispar()) {
+      vd->ann().clear();
+      vd->introduced(false);
+      vd->ti()->domain(NULL);
+    }
+    
+    // Remove boolean context annotations used only on compilation
+    vd->ann().remove(constants().ctx.mix);
+    vd->ann().remove(constants().ctx.pos);
+    vd->ann().remove(constants().ctx.neg);
+    vd->ann().remove(constants().ctx.root);
+    vd->ann().remove(constants().ann.promise_total);
+    vd->ann().remove(constants().ann.add_to_output);
+    
+    // In FlatZinc the RHS of a VarDecl must be a literal, Id or empty
+    // Example:
+    //   var 1..5: x = function(y)
+    // becomes:
+    //   var 1..5: x;
+    //   relation(x, y);
+    if (vd->type().isvar() && vd->type().isbool()) {
+      if (Expression::equal(vd->ti()->domain(),constants().lit_true)) {
+        // Ex: var true: b = e()
+        
+        // Store RHS
+        Expression* ve = vd->e();
+        vd->e(constants().lit_true);
+        vd->ti()->domain(NULL);
+        // Ex: var bool: b = true
+        
+        // If vd had a RHS
+        if (ve != NULL) {
+          if (Call* vcc = ve->dyn_cast<Call>()) {
+            // Convert functions to relations:
+            //   exists([x]) => array_bool_or([x],true)
+            //   forall([x]) => array_bool_and([x],true)
+            //   clause([x]) => bool_clause([x])
+            ASTString cid;
+            std::vector<Expression*> args;
+            if (vcc->id() == constants().ids.exists) {
+              cid = constants().ids.array_bool_or;
+              args.push_back(vcc->args()[0]);
+              args.push_back(constants().lit_true);
+            } else if (vcc->id() == constants().ids.forall) {
+              cid = constants().ids.array_bool_and;
+              args.push_back(vcc->args()[0]);
+              args.push_back(constants().lit_true);
+            } else if (vcc->id() == constants().ids.clause) {
+              cid = constants().ids.bool_clause;
+              args.push_back(vcc->args()[0]);
+              args.push_back(vcc->args()[1]);
+            }
+            
+            if (args.size()==0) {
+              // Post original RHS as stand alone constraint
+              ve = vcc;
+            } else {
+              // Create new call, retain annotations from original RHS
+              Call* nc = new Call(vcc->loc().introduce(),cid,args);
+              nc->type(vcc->type());
+              nc->ann().merge(vcc->ann());
+              ve = nc;
+            }
+          } else if (Id* id = ve->dyn_cast<Id>()) {
+            if (id->decl()->ti()->domain() != constants().lit_true) {
+              // Inconsistent assignment: post bool_eq(y, true)
+              std::vector<Expression*> args(2);
+              args[0] = id;
+              args[1] = constants().lit_true;
+              GCLock lock;
+              ve = new Call(Location().introduce(),constants().ids.bool_eq,args);
+            } else {
+              // Don't post this
+              ve = constants().lit_true;
+            }
+          }
+          // Post new constraint
+          if (ve != constants().lit_true) {
+            clearInternalAnnotations(ve);
+            added_constraints.push_back(ve);
+          }
+        }
+      } else {
+        // Ex: var false: b = e()
+        if (vd->e() != NULL) {
+          if (vd->e()->eid()==Expression::E_CALL) {
+            // Convert functions to relations:
+            //  var false: b = exists([x]) => array_bool_or([x], b)
+            //  var false: b = forall([x]) => array_bool_and([x], b)
+            //  var false: b = clause([x]) => bool_clause_reif([x], b)
+            const Call* c = vd->e()->cast<Call>();
+            GCLock lock;
+            vd->e(NULL);
+            vd->addAnnotation(constants().ann.is_defined_var);
+            ASTString cid;
+            if (c->id() == constants().ids.exists) {
+              cid = constants().ids.array_bool_or;
+            } else if (c->id() == constants().ids.forall) {
+              cid = constants().ids.array_bool_and;
+            } else if (c->id() == constants().ids.clause) {
+              cid = constants().ids.bool_clause_reif;
+            } else {
+              cid = env.reifyId(c->id());
+            }
+            std::vector<Expression*> args(c->args().size());
+            std::copy(c->args().begin(),c->args().end(),args.begin());
+            args.push_back(vd->id());
+            Call * nc = new Call(c->loc().introduce(),cid,args);
+            nc->type(c->type());
+            nc->decl(env.orig->matchFn(env, nc, false));
+            if (nc->decl()==NULL) {
+              throw FlatteningError(env,c->loc(),"'"+c->id().str()+"' is used in a reified context but no reified version is available");
+            }
+            nc->addAnnotation(definesVarAnn(vd->id()));
+            nc->ann().merge(c->ann());
+            clearInternalAnnotations(nc);
+            added_constraints.push_back(nc);
+          } else {
+            assert(vd->e()->eid() == Expression::E_ID ||
+                   vd->e()->eid() == Expression::E_BOOLLIT);
+          }
+        }
+        if (Expression::equal(vd->ti()->domain(),constants().lit_false)) {
+          vd->ti()->domain(NULL);
+          vd->e(constants().lit_false);
+        }
+      }
+    } else if (vd->type().isvar() && vd->type().dim()==0) {
+      // Int or Float var
+      if (vd->e() != NULL) {
+        if (const Call* cc = vd->e()->dyn_cast<Call>()) {
+          // Remove RHS from vd
+          vd->e(NULL);
+          vd->addAnnotation(constants().ann.is_defined_var);
+          
+          std::vector<Expression*> args(cc->args().size());
+          ASTString cid;
+          if (cc->id() == constants().ids.lin_exp) {
+            // a = lin_exp([1],[b],5) => int_lin_eq([1,-1],[b,a],-5):: defines_var(a)
+            ArrayLit* le_c = follow_id(cc->args()[0])->cast<ArrayLit>();
+            std::vector<Expression*> nc(le_c->v().size());
+            std::copy(le_c->v().begin(),le_c->v().end(),nc.begin());
+            if (le_c->type().bt()==Type::BT_INT) {
+              cid = constants().ids.int_.lin_eq;
+              nc.push_back(IntLit::a(-1));
+              args[0] = new ArrayLit(Location().introduce(),nc);
+              args[0]->type(Type::parint(1));
+              ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
+              std::vector<Expression*> nx(le_x->v().size());
+              std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
+              nx.push_back(vd->id());
+              args[1] = new ArrayLit(Location().introduce(),nx);
+              args[1]->type(le_x->type());
+              IntVal d = cc->args()[2]->cast<IntLit>()->v();
+              args[2] = IntLit::a(-d);
+            } else {
+              // float
+              cid = constants().ids.float_.lin_eq;
+              nc.push_back(FloatLit::a(-1.0));
+              args[0] = new ArrayLit(Location().introduce(),nc);
+              args[0]->type(Type::parfloat(1));
+              ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
+              std::vector<Expression*> nx(le_x->v().size());
+              std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
+              nx.push_back(vd->id());
+              args[1] = new ArrayLit(Location().introduce(),nx);
+              args[1]->type(le_x->type());
+              FloatVal d = cc->args()[2]->cast<FloatLit>()->v();
+              args[2] = FloatLit::a(-d);
+            }
+          } else {
+            if (cc->id() == "card") {
+              // card is 'set_card' in old FlatZinc
+              cid = constants().ids.set_card;
+            } else {
+              cid = cc->id();
+            }
+            std::copy(cc->args().begin(),cc->args().end(),args.begin());
+            args.push_back(vd->id());
+          }
+          Call* nc = new Call(cc->loc().introduce(),cid,args);
+          nc->type(cc->type());
+          nc->addAnnotation(definesVarAnn(vd->id()));
+          nc->ann().merge(cc->ann());
+          
+          clearInternalAnnotations(nc);
+          added_constraints.push_back(nc);
+        } else {
+          // RHS must be literal or Id
+          assert(vd->e()->eid() == Expression::E_ID ||
+                 vd->e()->eid() == Expression::E_INTLIT ||
+                 vd->e()->eid() == Expression::E_FLOATLIT ||
+                 vd->e()->eid() == Expression::E_BOOLLIT ||
+                 vd->e()->eid() == Expression::E_SETLIT);
+        }
+      }
+    } else if (vd->type().dim() > 0) {
+      // vd is an array
+      
+      // If RHS is an Id, follow id to RHS
+      // a = [1,2,3]; b = a;
+      // vd = b => vd = [1,2,3]
+      if (!vd->e()->isa<ArrayLit>()) {
+        vd->e(follow_id(vd->e()));
+      }
+      
+      // If empty array or 1 indexed, continue
+      if (vd->ti()->ranges().size() == 1 &&
+          vd->ti()->ranges()[0]->domain() != NULL &&
+          vd->ti()->ranges()[0]->domain()->isa<SetLit>()) {
+        IntSetVal* isv = vd->ti()->ranges()[0]->domain()->cast<SetLit>()->isv();
+        if (isv && (isv->size()==0 || isv->min(0)==1))
+          return added_constraints;
+      }
+      
+      // Array should be 1 indexed since ArrayLit is 1 indexed
+      assert(vd->e() != NULL);
+      ArrayLit* al = NULL;
+      Expression* e = vd->e();
+      while (al==NULL) {
+        switch (e->eid()) {
+          case Expression::E_ARRAYLIT:
+            al = e->cast<ArrayLit>();
+            break;
+          case Expression::E_ID:
+            e = e->cast<Id>()->decl()->e();
+            break;
+          default:
+            assert(false);
+        }
+      }
+      std::vector<int> dims(2);
+      dims[0] = 1;
+      dims[1] = al->length();
+      al->setDims(ASTIntVec(dims));
+      IntSetVal* isv = IntSetVal::a(1,al->length());
+      if (vd->ti()->ranges().size() == 1) {
+        vd->ti()->ranges()[0]->domain(new SetLit(Location().introduce(),isv));
+      } else {
+        std::vector<TypeInst*> r(1);
+        r[0] = new TypeInst(vd->ti()->ranges()[0]->loc(),
+                            vd->ti()->ranges()[0]->type(),
+                            new SetLit(Location().introduce(),isv));
+        ASTExprVec<TypeInst> ranges(r);
+        TypeInst* ti = new TypeInst(vd->ti()->loc(),vd->ti()->type(),ranges,vd->ti()->domain());
+        vd->ti(ti);
+      }
+    }
+    return added_constraints;
+  }
+  
+  Expression* cleanup_constraint(EnvI& env, UNORDERED_NAMESPACE::unordered_set<Item*>& globals, Expression* ce) {
+    clearInternalAnnotations(ce);
+    
+    if (Call* vc = ce->dyn_cast<Call>()) {
+      for (unsigned int i=0; i<vc->args().size(); i++) {
+        // Change array indicies to be 1 indexed
+        if (ArrayLit* al = vc->args()[i]->dyn_cast<ArrayLit>()) {
+          if (al->dims()>1 || al->min(0)!= 1) {
+            std::vector<int> dims(2);
+            dims[0] = 1;
+            dims[1] = al->length();
+            GCLock lock;
+            al->setDims(ASTIntVec(dims));
+          }
+        }
+      }
+      // Convert functions to relations:
+      //   exists([x]) => array_bool_or([x],true)
+      //   forall([x]) => array_bool_and([x],true)
+      //   clause([x]) => bool_clause([x])
+      //   bool_xor([x],[y]) => bool_xor([x],[y],true)
+      if (vc->id() == constants().ids.exists) {
+        GCLock lock;
+        vc->id(ASTString("array_bool_or"));
+        std::vector<Expression*> args(2);
+        args[0] = vc->args()[0];
+        args[1] = constants().lit_true;
+        ASTExprVec<Expression> argsv(args);
+        vc->args(argsv);
+        vc->decl(env.orig->matchFn(env, vc, false));
+      } else if (vc->id() == constants().ids.forall) {
+        GCLock lock;
+        vc->id(ASTString("array_bool_and"));
+        std::vector<Expression*> args(2);
+        args[0] = vc->args()[0];
+        args[1] = constants().lit_true;
+        ASTExprVec<Expression> argsv(args);
+        vc->args(argsv);
+        vc->decl(env.orig->matchFn(env, vc, false));
+      } else if (vc->id() == constants().ids.clause) {
+        GCLock lock;
+        vc->id(ASTString("bool_clause"));
+        vc->decl(env.orig->matchFn(env, vc, false));
+      } else if (vc->id() == constants().ids.bool_xor && vc->args().size()==2) {
+        GCLock lock;
+        std::vector<Expression*> args(3);
+        args[0] = vc->args()[0];
+        args[1] = vc->args()[1];
+        args[2] = constants().lit_true;
+        ASTExprVec<Expression> argsv(args);
+        vc->args(argsv);
+        vc->decl(env.orig->matchFn(env, vc, false));
+      }
+      
+      // If vc->decl() is a solver builtin and has not been added to the
+      // FlatZinc, add it
+      if (vc->decl() && vc->decl() != constants().var_redef &&
+          !vc->decl()->from_stdlib() &&
+          globals.find(vc->decl())==globals.end()) {
+        env.flat_addItem(vc->decl());
+        globals.insert(vc->decl());
+      }
+      return ce;
+    } else if (Id* id = ce->dyn_cast<Id>()) {
+      // Ex: constraint b; => constraint bool_eq(b, true);
+      std::vector<Expression*> args(2);
+      args[0] = id;
+      args[1] = constants().lit_true;
+      GCLock lock;
+      return new Call(Location().introduce(),constants().ids.bool_eq,args);
+    } else if (BoolLit* bl = ce->dyn_cast<BoolLit>()) {
+      // Ex: true => delete; false => bool_eq(false, true);
+      if (!bl->v()) {
+        GCLock lock;
+        std::vector<Expression*> args(2);
+        args[0] = constants().lit_false;
+        args[1] = constants().lit_true;
+        Call* neq = new Call(Location().introduce(),constants().ids.bool_eq,args);
+        return neq;
+      } else {
+        return NULL;
+      }
+    } else {
+      return ce;
+    }
+  }
+  
   void oldflatzinc(Env& e) {
     Model* m = e.flat();
 
@@ -5925,22 +6267,7 @@ namespace MiniZinc {
       if (VarDeclI* vdi = (*m)[i]->dyn_cast<VarDeclI>()) {
         GCLock lock;
         VarDecl* vd = vdi->e();
-
-        // In FlatZinc par variables have RHSs, not domains
-        if (vd->type().ispar()) {
-          vd->ann().clear();
-          vd->introduced(false);
-          vd->ti()->domain(NULL);
-        }
-
-        // Remove boolean context annotations used only on compilation
-        vd->ann().remove(constants().ctx.mix);
-        vd->ann().remove(constants().ctx.pos);
-        vd->ann().remove(constants().ctx.neg);
-        vd->ann().remove(constants().ctx.root);
-        vd->ann().remove(constants().ann.promise_total);
-        vd->ann().remove(constants().ann.add_to_output);
-        
+        std::vector<Expression*> added_constraints = cleanup_vardecl(e.envi(), vd);
         // Record whether this VarDecl is equal to an Id (aliasing)
         if (vd->e() && vd->e()->isa<Id>()) {
           declsWithIds.push_back(i);
@@ -5948,323 +6275,34 @@ namespace MiniZinc {
         } else {
           vdi->e()->payload(i);
         }
-
-        // In FlatZinc the RHS of a VarDecl must be a literal, Id or empty
-        // Example:
-        //   var 1..5: x = function(y)
-        // becomes:
-        //   var 1..5: x;
-        //   relation(x, y);
-        if (vd->type().isvar() && vd->type().isbool()) {
-          if (Expression::equal(vd->ti()->domain(),constants().lit_true)) {
-            // Ex: var true: b = e()
-
-            // Store RHS
-            Expression* ve = vd->e();
-            vd->e(constants().lit_true);
-            vd->ti()->domain(NULL);
-            // Ex: var bool: b = true
-
-            // If vd had a RHS
-            if (ve != NULL) {
-              if (Call* vcc = ve->dyn_cast<Call>()) {
-                // Convert functions to relations:
-                //   exists([x]) => array_bool_or([x],true)
-                //   forall([x]) => array_bool_and([x],true)
-                //   clause([x]) => bool_clause([x])
-                ASTString cid;
-                std::vector<Expression*> args;
-                if (vcc->id() == constants().ids.exists) {
-                  cid = constants().ids.array_bool_or;
-                  args.push_back(vcc->args()[0]);
-                  args.push_back(constants().lit_true);
-                } else if (vcc->id() == constants().ids.forall) {
-                  cid = constants().ids.array_bool_and;
-                  args.push_back(vcc->args()[0]);
-                  args.push_back(constants().lit_true);
-                } else if (vcc->id() == constants().ids.clause) {
-                  cid = constants().ids.bool_clause;
-                  args.push_back(vcc->args()[0]);
-                  args.push_back(vcc->args()[1]);
-                }
-
-                if (args.size()==0) {
-                  // Post original RHS as stand alone constraint
-                  ve = vcc;
-                } else {
-                  // Create new call, retain annotations from original RHS
-                  Call* nc = new Call(vcc->loc().introduce(),cid,args);
-                  nc->type(vcc->type());
-                  nc->ann().merge(vcc->ann());
-                  ve = nc;
-                }
-              } else if (Id* id = ve->dyn_cast<Id>()) {
-                if (id->decl()->ti()->domain() != constants().lit_true) {
-                  // Inconsistent assignment: post bool_eq(y, true)
-                  std::vector<Expression*> args(2);
-                  args[0] = id;
-                  args[1] = constants().lit_true;
-                  GCLock lock;
-                  ve = new Call(Location().introduce(),constants().ids.bool_eq,args);
-                } else {
-                  // Don't post this
-                  ve = constants().lit_true;
-                }
-              }
-              // Post new constraint
-              if (ve != constants().lit_true) {
-                clearInternalAnnotations(ve);
-                e.envi().flat_addItem(new ConstraintI(Location().introduce(),ve));
-              }
-            }
-          } else {
-            // Ex: var false: b = e()
-            if (vd->e() != NULL) {
-              if (vd->e()->eid()==Expression::E_CALL) {
-                // Convert functions to relations:
-                //  var false: b = exists([x]) => array_bool_or([x], b)
-                //  var false: b = forall([x]) => array_bool_and([x], b)
-                //  var false: b = clause([x]) => bool_clause_reif([x], b)
-                const Call* c = vd->e()->cast<Call>();
-                GCLock lock;
-                vd->e(NULL);
-                vd->addAnnotation(constants().ann.is_defined_var);
-                ASTString cid;
-                if (c->id() == constants().ids.exists) {
-                  cid = constants().ids.array_bool_or;
-                } else if (c->id() == constants().ids.forall) {
-                  cid = constants().ids.array_bool_and;
-                } else if (c->id() == constants().ids.clause) {
-                  cid = constants().ids.bool_clause_reif;
-                } else {
-                  cid = e.envi().reifyId(c->id());
-                }
-                std::vector<Expression*> args(c->args().size());
-                std::copy(c->args().begin(),c->args().end(),args.begin());
-                args.push_back(vd->id());
-                Call * nc = new Call(c->loc().introduce(),cid,args);
-                nc->type(c->type());
-                nc->decl(env.orig->matchFn(env, nc, false));
-                if (nc->decl()==NULL) {
-                  throw FlatteningError(env,c->loc(),"'"+c->id().str()+"' is used in a reified context but no reified version is available");
-                }
-                nc->addAnnotation(definesVarAnn(vd->id()));
-                nc->ann().merge(c->ann());
-                clearInternalAnnotations(nc);
-                e.envi().flat_addItem(new ConstraintI(Location().introduce(),nc));
-              } else {
-                assert(vd->e()->eid() == Expression::E_ID ||
-                       vd->e()->eid() == Expression::E_BOOLLIT);
-              }
-            }
-            if (Expression::equal(vd->ti()->domain(),constants().lit_false)) {
-              vd->ti()->domain(NULL);
-              vd->e(constants().lit_false);
-            }
-          }
-        } else if (vd->type().isvar() && vd->type().dim()==0) {
-          // Int or Float var
-          if (vd->e() != NULL) {
-            if (const Call* cc = vd->e()->dyn_cast<Call>()) {
-              // Remove RHS from vd
-              vd->e(NULL);
-              vd->addAnnotation(constants().ann.is_defined_var);
-
-              std::vector<Expression*> args(cc->args().size());
-              ASTString cid;
-              if (cc->id() == constants().ids.lin_exp) {
-                // a = lin_exp([1],[b],5) => int_lin_eq([1,-1],[b,a],-5):: defines_var(a)
-                ArrayLit* le_c = follow_id(cc->args()[0])->cast<ArrayLit>();
-                std::vector<Expression*> nc(le_c->v().size());
-                std::copy(le_c->v().begin(),le_c->v().end(),nc.begin());
-                if (le_c->type().bt()==Type::BT_INT) {
-                  cid = constants().ids.int_.lin_eq;
-                  nc.push_back(IntLit::a(-1));
-                  args[0] = new ArrayLit(Location().introduce(),nc);
-                  args[0]->type(Type::parint(1));
-                  ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
-                  std::vector<Expression*> nx(le_x->v().size());
-                  std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
-                  nx.push_back(vd->id());
-                  args[1] = new ArrayLit(Location().introduce(),nx);
-                  args[1]->type(le_x->type());
-                  IntVal d = cc->args()[2]->cast<IntLit>()->v();
-                  args[2] = IntLit::a(-d);
-                } else {
-                  // float
-                  cid = constants().ids.float_.lin_eq;
-                  nc.push_back(FloatLit::a(-1.0));
-                  args[0] = new ArrayLit(Location().introduce(),nc);
-                  args[0]->type(Type::parfloat(1));
-                  ArrayLit* le_x = follow_id(cc->args()[1])->cast<ArrayLit>();
-                  std::vector<Expression*> nx(le_x->v().size());
-                  std::copy(le_x->v().begin(),le_x->v().end(),nx.begin());
-                  nx.push_back(vd->id());
-                  args[1] = new ArrayLit(Location().introduce(),nx);
-                  args[1]->type(le_x->type());
-                  FloatVal d = cc->args()[2]->cast<FloatLit>()->v();
-                  args[2] = FloatLit::a(-d);
-                }
-              } else {
-                if (cc->id() == "card") {
-                  // card is 'set_card' in old FlatZinc
-                  cid = constants().ids.set_card;
-                } else {
-                  cid = cc->id();
-                }
-                std::copy(cc->args().begin(),cc->args().end(),args.begin());
-                args.push_back(vd->id());
-              }
-              Call* nc = new Call(cc->loc().introduce(),cid,args);
-              nc->type(cc->type());
-              nc->addAnnotation(definesVarAnn(vd->id()));
-              nc->ann().merge(cc->ann());
-              
-              clearInternalAnnotations(nc);
-              
-              e.envi().flat_addItem(new ConstraintI(Location().introduce(),nc));
-            } else {
-              // RHS must be literal or Id
-              assert(vd->e()->eid() == Expression::E_ID ||
-                     vd->e()->eid() == Expression::E_INTLIT ||
-                     vd->e()->eid() == Expression::E_FLOATLIT ||
-                     vd->e()->eid() == Expression::E_BOOLLIT ||
-                     vd->e()->eid() == Expression::E_SETLIT);
-            }
-          }
-        } else if (vd->type().dim() > 0) {
-          // vd is an array
-
-          // If RHS is an Id, follow id to RHS
-          // a = [1,2,3]; b = a;
-          // vd = b => vd = [1,2,3]
-          if (!vd->e()->isa<ArrayLit>()) {
-            vd->e(follow_id(vd->e()));
-          }
-
-          // If empty array or 1 indexed, continue
-          if (vd->ti()->ranges().size() == 1 &&
-              vd->ti()->ranges()[0]->domain() != NULL &&
-              vd->ti()->ranges()[0]->domain()->isa<SetLit>()) {
-            IntSetVal* isv = vd->ti()->ranges()[0]->domain()->cast<SetLit>()->isv();
-            if (isv && (isv->size()==0 || isv->min(0)==1))
-              continue;
-          }
-
-          // Array should be 1 indexed since ArrayLit is 1 indexed
-          assert(vd->e() != NULL);
-          ArrayLit* al = NULL;
-          Expression* e = vd->e();
-          while (al==NULL) {
-            switch (e->eid()) {
-              case Expression::E_ARRAYLIT:
-                al = e->cast<ArrayLit>();
-                break;
-              case Expression::E_ID:
-                e = e->cast<Id>()->decl()->e();
-                break;
-              default:
-                assert(false);
-            }
-          }
-          std::vector<int> dims(2);
-          dims[0] = 1;
-          dims[1] = al->length();
-          al->setDims(ASTIntVec(dims));
-          IntSetVal* isv = IntSetVal::a(1,al->length());
-          if (vd->ti()->ranges().size() == 1) {
-            vd->ti()->ranges()[0]->domain(new SetLit(Location().introduce(),isv));
-          } else {
-            std::vector<TypeInst*> r(1);
-            r[0] = new TypeInst(vd->ti()->ranges()[0]->loc(),
-                                vd->ti()->ranges()[0]->type(),
-                                new SetLit(Location().introduce(),isv));
-            ASTExprVec<TypeInst> ranges(r);
-            TypeInst* ti = new TypeInst(vd->ti()->loc(),vd->ti()->type(),ranges,vd->ti()->domain());
-            vd->ti(ti);
-          }
+        for (auto nc : added_constraints) {
+          e.envi().flat_addItem(new ConstraintI(Location().introduce(),nc));
         }
       } else if (ConstraintI* ci = (*m)[i]->dyn_cast<ConstraintI>()) {
-        clearInternalAnnotations(ci->e());
-        
-        if (Call* vc = ci->e()->dyn_cast<Call>()) {
-          for (unsigned int i=0; i<vc->args().size(); i++) {
-            // Change array indicies to be 1 indexed
-            if (ArrayLit* al = vc->args()[i]->dyn_cast<ArrayLit>()) {
-              if (al->dims()>1 || al->min(0)!= 1) {
-                std::vector<int> dims(2);
-                dims[0] = 1;
-                dims[1] = al->length();
-                GCLock lock;
-                al->setDims(ASTIntVec(dims));
+        Expression* new_ce = cleanup_constraint(e.envi(), globals, ci->e());
+        if (new_ce) {
+          ci->e(new_ce);
+        } else {
+          ci->remove();
+        }
+      } else if (FunctionI* fi = (*m)[i]->dyn_cast<FunctionI>()) {
+        if (Let* let = Expression::dyn_cast<Let>(fi->e())) {
+          std::vector<Expression*> new_let;
+          for (unsigned int i=0; i<let->let().size(); i++) {
+            Expression* let_e = let->let()[i];
+            if (VarDecl* vd = let_e->dyn_cast<VarDecl>()) {
+              std::vector<Expression*> added_constraints = cleanup_vardecl(e.envi(), vd);
+              new_let.push_back(vd);
+              for (auto nc : added_constraints)
+                new_let.push_back(nc);
+            } else {
+              Expression* new_ce = cleanup_constraint(e.envi(), globals, let_e);
+              if (new_ce) {
+                new_let.push_back(new_ce);
               }
             }
           }
-          // Convert functions to relations:
-          //   exists([x]) => array_bool_or([x],true)
-          //   forall([x]) => array_bool_and([x],true)
-          //   clause([x]) => bool_clause([x])
-          //   bool_xor([x],[y]) => bool_xor([x],[y],true)
-          if (vc->id() == constants().ids.exists) {
-            GCLock lock;
-            vc->id(ASTString("array_bool_or"));
-            std::vector<Expression*> args(2);
-            args[0] = vc->args()[0];
-            args[1] = constants().lit_true;
-            ASTExprVec<Expression> argsv(args);
-            vc->args(argsv);
-            vc->decl(e.envi().orig->matchFn(env, vc, false));
-          } else if (vc->id() == constants().ids.forall) {
-            GCLock lock;
-            vc->id(ASTString("array_bool_and"));
-            std::vector<Expression*> args(2);
-            args[0] = vc->args()[0];
-            args[1] = constants().lit_true;
-            ASTExprVec<Expression> argsv(args);
-            vc->args(argsv);
-            vc->decl(e.envi().orig->matchFn(env, vc, false));
-          } else if (vc->id() == constants().ids.clause) {
-            GCLock lock;
-            vc->id(ASTString("bool_clause"));
-            vc->decl(e.envi().orig->matchFn(env, vc, false));
-          } else if (vc->id() == constants().ids.bool_xor && vc->args().size()==2) {
-            GCLock lock;
-            std::vector<Expression*> args(3);
-            args[0] = vc->args()[0];
-            args[1] = vc->args()[1];
-            args[2] = constants().lit_true;
-            ASTExprVec<Expression> argsv(args);
-            vc->args(argsv);
-            vc->decl(e.envi().orig->matchFn(env, vc, false));
-          }
-
-          // If vc->decl() is a solver builtin and has not been added to the
-          // FlatZinc, add it
-          if (vc->decl() && vc->decl() != constants().var_redef &&
-              !vc->decl()->from_stdlib() &&
-              globals.find(vc->decl())==globals.end()) {
-            e.envi().flat_addItem(vc->decl());
-            globals.insert(vc->decl());
-          }
-        } else if (Id* id = ci->e()->dyn_cast<Id>()) {
-          // Ex: constraint b; => constraint bool_eq(b, true);
-          std::vector<Expression*> args(2);
-          args[0] = id;
-          args[1] = constants().lit_true;
-          GCLock lock;
-          ci->e(new Call(Location().introduce(),constants().ids.bool_eq,args));
-        } else if (BoolLit* bl = ci->e()->dyn_cast<BoolLit>()) {
-          // Ex: true => delete; false => bool_eq(false, true);
-          if (!bl->v()) {
-            GCLock lock;
-            std::vector<Expression*> args(2);
-            args[0] = constants().lit_false;
-            args[1] = constants().lit_true;
-            Call* neq = new Call(Location().introduce(),constants().ids.bool_eq,args);
-            ci->e(neq);
-          } else {
-            ci->remove();
-          }
+          fi->e(new Let(let->loc(), new_let, let->in()));
         }
       } else if (SolveI* si = (*m)[i]->dyn_cast<SolveI>()) {
         if (si->e() && si->e()->type().ispar()) {
