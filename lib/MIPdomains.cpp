@@ -312,14 +312,16 @@ namespace MiniZinc {
         if ( ic->removed() )
           continue;
         if ( Call* c = ic->e()->dyn_cast<Call>() ) {
-          if ( auto ipct = mCallTypes.find(c->decl())
-                != mCallTypes.end() ) {
+          auto ipct = mCallTypes.find(c->decl());
+          if ( ipct != mCallTypes.end() ) {
             // No ! here because might be deleted immediately in later versions.
 //             ic->remove();                              // mark removed at once
             MZN_MIPD__assert_hard( c->args().size() > 1 );
             ++MIPD__stats[ N_POSTs__all ];
             VarDecl* vd0 = expr2VarDecl(c->args()[0]);
             if ( 0==vd0 ) {
+              /// Only allow literals as main argument for equality_encoding
+              MZN_MIPD__assert_hard( equality_encoding__POST==ipct->first );
               ic->remove();
               continue;                           // ignore this call
             }
