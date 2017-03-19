@@ -9,12 +9,13 @@
 %-----------------------------------------------------------------------------%
 %
 % Linear equations and inequations
-% Use indicators for reifs (CPLEX?)  Seems worse.
+% TODO Use indicators for (half)reifs.
 % Otherwise and more using unary encoding for reasonable domains
 %
 %-----------------------------------------------------------------------------%
 
 % Domains: reduce all to aux_ stuff?
+%% never use Concert's reif feature
 
 %% var, var
 predicate int_le_reif(var int: x, var int: y, var bool: b) =
@@ -48,9 +49,7 @@ predicate int_le_reif(var int: x, int: y, var bool: b) =
     if true==fix(b) then x<=y else x>y endif
   elseif ub(x)<=lb(y) then b==true
   elseif lb(x)>ub(y) then b==false
-  elseif false then                       %% never use Concert's reif feature
-%      my_trace__DBG("  int_le_reif  INDIC: \(x) \\/ \(y) <-> \(b) \n") /\
-%      int_lin_le_reif__IND( [1, -1], [x, y], 0, b) /\
+  elseif false then                
     true
   else
     if fPostprocessDomains then
@@ -73,22 +72,14 @@ predicate int_lt_reif(var int: x, var int: y, var bool: b) =
 
 %% var, var
 predicate int_ne(var int: x, var int: y) =
-%    my_trace("  int_ne(var " ++ show(lb(x)) ++ " .. " ++ show(ub(x))
-%            ++ ": \(x), var " ++ show(lb(y)) ++ " .. " ++ show(ub(y)) ++ ": \(y))\n") /\
     if fPostproDom_DIFF then
       int_ne(x-y, 0)
     else
       int_ne__SIMPLE(x-y, 0)
     endif;
-%    let { var 0..1: p }       in
-%    aux_int_lt_if_1(x, y, p) /\
-%    aux_int_gt_if_0(x, y, p);
 
 %% var, const
 predicate int_ne(var int: x, int: y) =
-  %%     int_eq_reif(x, y, false);
-%     my_trace("  int_ne(var " ++ show(lb(x)) ++ " .. " ++ show(ub(x))
-%            ++ ": \(x) (has_bounds(x): \(has_bounds(x))),  int " ++ show(y) ++ ")\n") /\
      if y in dom(x) then 
        if y==ub(x) then
          x <= y-1
@@ -96,7 +87,7 @@ predicate int_ne(var int: x, int: y) =
          x >= y+1
        elseif fPostprocessDomains then
          int_ne__POST(x, y)
-       elseif card(dom(x))<nMZN__UnaryLenMax_neq then                          %% PARAM TODO
+       elseif card(dom(x))<nMZN__UnaryLenMax_neq then
           let {
             array[int] of var int: p = eq_encode(x);
           } in
@@ -110,11 +101,6 @@ predicate int_ne(var int: x, int: y) =
 %% var, const. No postprocessing
 predicate int_ne__SIMPLE(var int: x, int: y) =
   if false then
-%    let { var bool: fEq; } in
-%      int_lin_eq_reif__IND( [1, -1], [x, y], 0, fEq) /\
-%      fEq = false    %% -- this is how CPLEX 12.6.2 needs it, not in the BOUNDS section   TODO?
-%      my_trace__DBG("  int_ne  INDIC: \(x) \\/ \(y)  \n") /\
-%      int_lin_ne__IND( [1, -1], [x, y], 0) /\
     true
   else
     let { var 0..1: p }
@@ -125,8 +111,6 @@ predicate int_ne__SIMPLE(var int: x, int: y) =
 
 %% var, var
 predicate int_eq_reif(var int: x, var int: y, var bool: b) =
-%    my_trace("  int_eq_reif ( x: " ++ if has_bounds(x) then show(dom(x)) else "int" endif
-%      ++ ",  y: " ++ if has_bounds(y) then show(dom(y)) else "int" endif ++ " )\n" ) /\
     if is_fixed(b) then
       if true==fix(b) then x==y else x!=y endif
     elseif card(dom(x) intersect dom(y))>0 then
@@ -149,13 +133,9 @@ predicate int_eq_reif(var int: x, var int: y, var bool: b) =
 
 %% var, const
 predicate int_eq_reif(var int: x, int: y, var bool: b) =
-%  my_trace("  int_eq_reif(var " ++ show(lb(x)) ++ " .. " ++ show(ub(x))
-%       ++ ": \(x),  int " ++ show(y) ++ ", bool: \(b))\n") /\
   if is_fixed(b) then
     if true==fix(b) then x==y else x!=y endif
   elseif y in dom(x) then
-%    my_trace("  int_eq_reif ( x: " ++ if has_bounds(x) then show(dom(x)) else "int" endif
-%      ++ ",  y=const: " ++ show(y) ++ " )\n") /\
     if y==lb(x) then
       int_lt_reif(y, x, not b)
     elseif y==ub(x) then
@@ -176,13 +156,9 @@ predicate int_eq_reif(var int: x, int: y, var bool: b) =
     
 
 predicate int_ne_reif(var int: x, var int: y, var bool: b) =
-%  my_trace("  int_ne_reif(var " ++ show(lb(x)) ++ " .. " ++ show(ub(x))
-%       ++ ": \(x),  var int \(y), bool: \(b))\n") /\
     int_eq_reif(x, y, not b);
 
 predicate int_ne_reif(var int: x, int: y, var bool: b) =
-%  my_trace("  int_ne_reif(var " ++ show(lb(x)) ++ " .. " ++ show(ub(x))
-%       ++ ": \(x),  int " ++ show(y) ++ ", bool: \(b))\n") /\
     int_eq_reif(x, y, not b);
 
 %-----------------------------------------------------------------------------%
@@ -198,10 +174,6 @@ function var float: sum2float( array[int] of int: c, array[int] of var int: x ) 
 %% lin_expr, const
 predicate int_lin_le_reif(array[int] of int: c, array[int] of var int: x,
                           int: d, var bool: b) =
-%    my_trace("  int_lin_le_reif: \(c), \(x), \(d), \(b) \n") /\
-%    my_trace("  int_lin_le_reif: coefs = " ++ show(c) ) /\
-%    my_trace("  int_lin_le_reif: lb's  = " ++ show([lb(x[i]) | i in index_set(x)]) ) /\
-%    my_trace("  int_lin_le_reif: ub's  = " ++ show([ub(x[i]) | i in index_set(x)]) ++ "\n" ) /\
   if fPostprocessDomains /\ fPostproDom_DIFF then
     int_le_reif(sum(i in index_set(x))( c[i] * x[i] ), d, b)
   elseif fAvoidNI then
@@ -231,15 +203,9 @@ predicate int_lin_eq_reif(array[int] of int: c, array[int] of var int: x,
     else
       aux_int_eq_iff_1(sum(i in index_set(x))( c[i]*x[i] ), d, b)
     endif;
-    %% -- use eq_encode as well? TODO
 
 %% lin_expr, const
 predicate int_lin_ne(array[int] of int: c, array[int] of var int: x, int: d) =
-%  if false then
-%    let { var bool: fEq; } in
-%      int_lin_eq_reif__IND( c, x, d, fEq ) /\
-%      fEq = false    %% -- this is how CPLEX 12.6.2 needs it, not in the BOUNDS section   TODO?
-%  my_trace("  int_lin_ne: \(c), \(x), \(d) \n") /\
   if fPostprocessDomains /\ fPostproDom_DIFF then
     int_ne(sum(i in index_set(x))( c[i]*x[i] ),d)
   elseif fAvoidNI then
@@ -251,7 +217,6 @@ predicate int_lin_ne(array[int] of int: c, array[int] of var int: x, int: d) =
 %% lin_expr, const
 predicate int_lin_ne_reif(array[int] of int: c, array[int] of var int: x,
                           int: d, var bool: b) =
-%    my_trace("  int_lin_ne_reif: \(c), \(x), \(d), \(b) \n") /\
     if fPostprocessDomains /\ fPostproDom_DIFF then
       int_ne_reif(sum(i in index_set(x))( c[i]*x[i] ), d, b)
     else
@@ -266,7 +231,6 @@ predicate float_le_reif(var float: x, float: y, var bool: b) =
   if is_fixed(b) then
     if true==fix(b) then x<=y else x>y endif
   elseif false then
-%    my_trace__DBG("  float_le_reif  INDIC: \(x) \\/ \(y) <-> \(b) \n") /\
     float_lin_le_reif__IND( [1.0, -1.0], [x, y], 0.0, b)
   elseif ub(x) <= y then
     b == true
@@ -283,7 +247,6 @@ predicate float_le_reif(float: x, var float: y, var bool: b) =
   if is_fixed(b) then
     if true==fix(b) then x<=y else x>y endif
   elseif false then
-%    my_trace__DBG("  float_le_reif  INDIC: \(x) \\/ \(y) <-> \(b) \n") /\
     float_lin_le_reif__IND( [1.0, -1.0], [x, y], 0.0, b)
   elseif ub(x) <= lb(y) then
     b == true
@@ -408,14 +371,10 @@ predicate aux_int_eq_iff_1(var int: x, var int: y, var int: p) =
   elseif fPostprocessDomains /\ fPostproDom_DIFF then
     abort("  aux_int_eq_iff_1 should not be used with full domain postprocessing")
   elseif false then
-%    my_trace__DBG("  aux_int_eq_iff_1  INDIC: \(x) \\/ \(y) <-> \(p) \n") /\
-%    int_lin_eq_reif__IND([1, -1], [x, y], 0, (p==1)) /\
     true
   else
     let { array[1..2] of var 0..1: q }
     in
-%  my_trace("  aux_int_eq_iff_1: var " ++ show(dom(x))
-%              ++ ", var " ++ show(dom(y)) ++ "\n") /\
     aux_int_le_if_1(x, y, p) /\
     aux_int_ge_if_1(x, y, p) /\
     aux_int_lt_if_0(x, y, q[1]) /\
@@ -458,7 +417,6 @@ predicate aux_float_eq_iff_1(var float: x, var float: y, var int: p) =
   elseif fPostprocessDomains /\ fPostproDom_DIFF then
     abort("  aux_float_eq_iff_1 should not be used with full domain postprocessing")
   else
-%%  if fMZN__UseIndicators then   ??????
     let { array[1..2] of var 0..1: q }
     in
     aux_float_le_if_1(x, y, p) /\
