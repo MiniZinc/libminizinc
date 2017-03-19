@@ -319,6 +319,10 @@ namespace MiniZinc {
             MZN_MIPD__assert_hard( c->args().size() > 1 );
             ++MIPD__stats[ N_POSTs__all ];
             VarDecl* vd0 = expr2VarDecl(c->args()[0]);
+            if ( 0==vd0 ) {
+              ic->remove();
+              continue;                           // ignore this call
+            }
             DBGOUT_MIPD__ ( "  Call " << c->id().str()
               << " uses variable " << vd0->id()->str() );
             if ( vd0->payload() == -1 ) {         // ! yet visited
@@ -1633,12 +1637,14 @@ namespace MiniZinc {
       // The requirement to have actual variable objects
       // might be a limitation if more optimizations are done before...
       // Might need to flexibilize this                       TODO
-      MZN_MIPD__assert_hard_msg( ! arg->dyn_cast<IntLit>(),
-                                 "Expression " << *arg << " is an IntLit!" );
-      MZN_MIPD__assert_hard( ! arg->dyn_cast<FloatLit>() );
-      MZN_MIPD__assert_hard( ! arg->dyn_cast<BoolLit>() );
+//       MZN_MIPD__assert_hard_msg( ! arg->dyn_cast<IntLit>(),
+//                                  "Expression " << *arg << " is an IntLit!" );
+//       MZN_MIPD__assert_hard( ! arg->dyn_cast<FloatLit>() );
+//       MZN_MIPD__assert_hard( ! arg->dyn_cast<BoolLit>() );
       Id* id = arg->dyn_cast<Id>();
-      MZN_MIPD__assert_hard(id);
+//       MZN_MIPD__assert_hard(id);
+      if ( 0==id )
+        return 0;                        // the call using this should be ignored?
       VarDecl* vd = id->decl();
       MZN_MIPD__assert_hard(vd);
       return vd;

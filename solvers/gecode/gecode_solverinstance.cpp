@@ -1081,19 +1081,30 @@ namespace MiniZinc {
         if (engine->stopped()) {
           Gecode::Search::Statistics stat = engine->statistics();
           Driver::CombinedStop* cs = static_cast<Driver::CombinedStop*>(engine_options.stop);
+          std::cerr << "% GecodeSolverInstance: ";
           int r = cs->reason(stat, engine_options);
           if (r & Driver::CombinedStop::SR_INT)
             std::cerr << "user interrupt " << std::endl;
           else {
-            if (r & Driver::CombinedStop::SR_NODE)
+            if (r & Driver::CombinedStop::SR_NODE) {
               _status_reason = SolverInstance::SR_LIMIT;
-            if (r & Driver::CombinedStop::SR_FAIL)
+              std::cerr << "node ";
+            }
+            if (r & Driver::CombinedStop::SR_FAIL) {
               _status_reason = SolverInstance::SR_LIMIT;
-            if (r & Driver::CombinedStop::SR_TIME)
+              std::cerr << "failure ";
+            }
+            if (r & Driver::CombinedStop::SR_TIME) {
               _status_reason = SolverInstance::SR_LIMIT;
+              std::cerr << "time ";
+            }
             std::cerr << "limit reached" << std::endl << std::endl;
           }
-          _status = SolverInstance::UNKNOWN;
+          if(_n_found_solutions > 0) {
+            _status = SolverInstance::SAT;
+          } else {
+            _status = SolverInstance::UNKNOWN;
+          }
         } else {
           _status = SolverInstance::OPT;
         }
