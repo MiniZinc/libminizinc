@@ -44,6 +44,7 @@
 ///   - so better turn that off TODO
 /// CSE for lineq coefs     TODO
 
+///  TODO use integer division instead of INT_EPS
 #define INT_EPS 1e-5    // the absolute epsilon for integrality of integer vars.
 
 
@@ -1480,15 +1481,20 @@ namespace MiniZinc {
         std::vector<Expression*> nc_c(coefs.size());
         std::vector<Expression*> nx(coefs.size());
         bool fFloat = !((*vars.begin())->type().isint());
-        for ( auto v: vars ) {
-          if ( fFloat == v->type().isint() ) {     // mixed types not allowed...
-            std::ostringstream oss;
-            oss << "addLinConstr: mixed var types: ";
-            for ( auto v: vars )
-              oss << v->type().isint();
-            throw std::runtime_error(oss.str());
+        /// mixed types not allowed...
+        /// but trying float_lin_.. if at least1 float     TODO
+        if ( !fFloat )
+          for ( auto v: vars ) {
+            if ( !v->type().isint() )
+              fFloat = true;
+            if ( false/*fFloat == v->type().isint()*/ ) {
+              std::ostringstream oss;
+              oss << "addLinConstr: mixed var types: ";
+              for ( auto v: vars )
+                oss << v->type().isint();
+              throw std::runtime_error(oss.str());
+            }
           }
-        }
         auto sName = constants().ids.float_.lin_eq; // "int_lin_eq";
         FunctionI* fDecl = mipd.float_lin_eq;
         if ( fFloat ) {                 // MZN_MIPD__assert_hard all vars of same type     TODO
