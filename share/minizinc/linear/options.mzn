@@ -94,7 +94,7 @@ int: nMZN__UnaryLenMax_setInReif = nMZN__UnaryLenMax__ALL;
 %-----------------------------------------------------------------------------%
 % Strict inequality
 % The relative epsilon
-float: float_lt_EPS_coef__ = 1e-03;
+float: float_lt_EPS_coef__ = 1e-04;
 
 %-----------------------------------------------------------------------------%
 %%% Set =true to PRINT TRACING messages for some constraints:
