@@ -565,7 +565,7 @@ namespace MiniZinc {
       filepath(filenames[0], fileDirname, fileBasename);
       model->setFilename(fileBasename);
       
-      files.push_back(pair<string,Model*>("",model));
+      files.push_back(pair<string,Model*>(fileDirname,model));
       
       for (unsigned int i=1; i<filenames.size(); i++) {
         GCLock lock;
@@ -622,7 +622,7 @@ namespace MiniZinc {
           err << "Internal error." << endl;
           goto error;
         }
-        fullname = f;  // filenames[0];
+        fullname = parentPath + f;  // filenames[0];
         if (FileUtils::file_exists(fullname)) {
           file.open(fullname.c_str(), std::ios::binary);
         }
