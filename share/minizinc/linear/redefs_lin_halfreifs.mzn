@@ -34,7 +34,7 @@ predicate aux_int_le_zero_if_0(var int: x, var int: p) =
   if is_fixed(p) then
     if 0==fix(p) then x<=0 else true endif         %% 0==fix !!
   elseif is_fixed(x) then         %%% Needed to avoid constant domain var
-    if fix(x)>0.0 then p==1 else true endif
+    if fix(x)>0 then p==1 else true endif
   elseif fPostprocessDomains /\ fPostproDom_AUX then
     aux_int_le_zero_if_1__POST(x, 1-p)
   elseif fMZN__UseIndicators then
