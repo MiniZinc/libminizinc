@@ -167,12 +167,7 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
         if ( fOutputByDefault )        // mzn2fzn mode
           goto error;
       }
-//       if (filenames.empty()) {
-        filenames.push_back(input_file);
-//       } else {
-//         std::cerr << "Error: Multiple .mzn or .fzn files given." << std::endl;
-//         goto error;
-//       }
+      filenames.push_back(input_file);
     } else if (extension == ".dzn" || extension == ".json") {
       datafiles.push_back(input_file);
     } else {
@@ -301,8 +296,15 @@ void Flattener::flatten()
         std::vector<SyntaxError> se;
         m = parseFromString(input, "stdin", includePaths, flag_ignoreStdlib, false, flag_verbose, errstream, se);
       } else {
-        if (flag_verbose)
-          std::cerr << "Parsing '" << filenames[0] << "' ...";
+        if (flag_verbose) {
+          MZN_ASSERT_HARD_MSG( filenames.size(), "at least one model file needed" );
+          std::cerr << "Parsing file(s) '" << filenames[0] << '\'';
+          for ( int i=1; i<filenames.size(); ++i )
+            std::cerr << ", '" << filenames[i] << '\'';
+          for ( const auto& sFln: datafiles )
+            std::cerr << ", '" << sFln << '\'';
+          std::cerr << " ..." << std::endl;
+        }
         m = parse(env, filenames, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
       }
       if (m) {

@@ -577,7 +577,7 @@ namespace MiniZinc {
         files.push_back(pair<string,Model*>(dirName,includedModel));
         seenModels.insert(pair<string,Model*>(baseName,includedModel));
         Location loc;
-        loc.filename=ASTString(filenames[0]);
+        loc.filename=ASTString(filenames[i]);
         IncludeI* inc = new IncludeI(loc,includedModel->filename());
         inc->m(includedModel,true);
         model->addItem(inc);
@@ -622,7 +622,7 @@ namespace MiniZinc {
           err << "Internal error." << endl;
           goto error;
         }
-        fullname = filenames[0];
+        fullname = f;  // filenames[0];
         if (FileUtils::file_exists(fullname)) {
           file.open(fullname.c_str(), std::ios::binary);
         }
