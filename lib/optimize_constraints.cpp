@@ -274,6 +274,18 @@ namespace MiniZinc {
         return OptimizeRegistry::CS_OK;
       }
     }
+
+    OptimizeRegistry::ConstraintStatus o_div(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+      if (c->args()[1]->type().ispar()) {
+        IntVal c1v = eval_int(env, c->args()[1]);
+        if (c->args()[0]->type().ispar() && c->args().size()==3 && c->args()[2]->type().ispar()) {
+          IntVal c0v = eval_int(env, c->args()[0]);
+          IntVal c2v = eval_int(env, c->args()[2]);
+          return (c0v / c1v == c2v) ? OptimizeRegistry::CS_ENTAILED : OptimizeRegistry::CS_FAILED;
+        }
+      }
+      return OptimizeRegistry::CS_OK;
+    }
     
     class Register {
     public:
@@ -289,6 +301,7 @@ namespace MiniZinc {
         OptimizeRegistry::registry().reg(constants().ids.int_.lin_eq, o_linear);
         OptimizeRegistry::registry().reg(constants().ids.int_.lin_le, o_linear);
         OptimizeRegistry::registry().reg(constants().ids.int_.lin_ne, o_linear);
+        OptimizeRegistry::registry().reg(constants().ids.int_.div, o_div);
         OptimizeRegistry::registry().reg(id_element, o_element);
         OptimizeRegistry::registry().reg(constants().ids.lin_exp, o_lin_exp);
         OptimizeRegistry::registry().reg(id_var_element, o_element);
