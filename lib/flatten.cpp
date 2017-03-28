@@ -5249,10 +5249,7 @@ namespace MiniZinc {
         return false;
     } else if (e->type()==Type::parfloat()) {
       FloatSetVal* fsv = eval_floatset(env,domain);
-      FloatSetRanges fr(fsv);
-      FloatSetVal* rsv = eval_floatset(env,e);
-      FloatSetRanges rr(rsv);
-      if (!Ranges::subset(rr, fr))
+      if (!fsv->contains(eval_float(env, e)))
         return false;
     } else if (e->type()==Type::parsetint()) {
       IntSetVal* isv = eval_intset(env,domain);
@@ -5260,6 +5257,13 @@ namespace MiniZinc {
       IntSetVal* rsv = eval_intset(env,e);
       IntSetRanges rr(rsv);
       if (!Ranges::subset(rr, ir))
+        return false;
+    } else if (e->type()==Type::parsetfloat()) {
+      FloatSetVal* fsv = eval_floatset(env,domain);
+      FloatSetRanges fr(fsv);
+      FloatSetVal* rsv = eval_floatset(env,e);
+      FloatSetRanges rr(rsv);
+      if (!Ranges::subset(rr, fr))
         return false;
     }
     return true;
