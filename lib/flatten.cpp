@@ -1204,7 +1204,12 @@ namespace MiniZinc {
                         if (newdom->size()==0) {
                           env.fail();
                         } else {
-                          vdi->ti()->domain(new SetLit(Location().introduce(),newdom));
+                          IntSetRanges vdi_domr2(vdi_dom);
+                          IntSetRanges newdomr(newdom);
+                          if (!Ranges::equal(vdi_domr2, newdomr)) {
+                            vdi->ti()->domain(new SetLit(Location().introduce(),newdom));
+                            vdi->ti()->setComputedDomain(false);
+                          }
                         }
                       }
                     }
@@ -1225,7 +1230,12 @@ namespace MiniZinc {
                         if (newdom->size()==0) {
                           env.fail();
                         } else {
-                          vdi->ti()->domain(new SetLit(Location().introduce(),newdom));
+                          FloatSetRanges vdi_domr2(vdi_dom);
+                          FloatSetRanges newdomr(newdom);
+                          if (!Ranges::equal(vdi_domr2, newdomr)) {
+                            vdi->ti()->domain(new SetLit(Location().introduce(),newdom));
+                            vdi->ti()->setComputedDomain(false);
+                          }
                         }
                       }
                     }
