@@ -577,10 +577,6 @@ namespace MiniZinc {
           assert(fi);
           show->decl(fi);
           outputVars.push_back(show);
-          if (vd->type().dim() > 0) {
-            StringLit* eol = new StringLit(Location().introduce(),")");
-            outputVars.push_back(eol);
-          }
         }
       }
       void vOutputI(OutputI* oi) {
