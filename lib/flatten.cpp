@@ -5319,6 +5319,33 @@ namespace MiniZinc {
           if (v->e()->type().isvar() && v->e()->type().dim() > 0 && v->e()->e() == NULL) {
             (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
           }
+          if (v->e()->type().ispar() && v->e()->type().dim() > 0 && v->e()->ti()->domain()==NULL) {
+            // Compute bounds for array literals
+            ArrayLit* al = eval_array_lit(env, v->e()->e());
+            if (v->e()->type().bt()==Type::BT_INT && v->e()->type().st()==Type::ST_PLAIN) {
+              IntVal lb = IntVal::infinity();
+              IntVal ub = -IntVal::infinity();
+              for (unsigned int i=0; i<al->v().size(); i++) {
+                IntVal vi = eval_int(env, al->v()[i]);
+                lb = std::min(lb, vi);
+                ub = std::max(ub, vi);
+              }
+              GCLock lock;
+              v->e()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(lb, ub)));
+              v->e()->ti()->setComputedDomain(true);
+            } else if (v->e()->type().bt()==Type::BT_FLOAT && v->e()->type().st()==Type::ST_PLAIN) {
+              FloatVal lb = FloatVal::infinity();
+              FloatVal ub = -FloatVal::infinity();
+              for (unsigned int i=0; i<al->v().size(); i++) {
+                FloatVal vi = eval_float(env, al->v()[i]);
+                lb = std::min(lb, vi);
+                ub = std::max(ub, vi);
+              }
+              GCLock lock;
+              v->e()->ti()->domain(new SetLit(Location().introduce(), FloatSetVal::a(lb, ub)));
+              v->e()->ti()->setComputedDomain(true);
+            }
+          }
         }
       } _ead(env);
       iterItems<ExpandArrayDecls>(_ead,e.model());;
