@@ -1411,21 +1411,23 @@ namespace MiniZinc {
     } else {
       if (ArrayLit* al = e->dyn_cast<ArrayLit>()) {
         
-        std::vector<unsigned int> dims(al->dims());
-        for (unsigned int i=0; i<al->dims(); i++) {
-          dims[i] = al->max(i)-al->min(i)+1;
+        std::vector<unsigned int> dims(al->dims()-1);
+        dims[0] = al->max(al->dims()-1)-al->min(al->dims()-1)+1;
+        
+        for (unsigned int i=1; i<al->dims()-1; i++) {
+          dims[i] = dims[i-1] * (al->max(al->dims()-1-i)-al->min(al->dims()-1-i)+1);
         }
 
         std::ostringstream oss;
         oss << "[";
         for (unsigned int i=0; i<al->v().size(); i++) {
-          for (unsigned int j=0; j<dims.size()-1; j++) {
+          for (unsigned int j=0; j<dims.size(); j++) {
             if (i % dims[j] == 0) {
               oss << "[";
             }
           }
           oss << b_show_json_basic(env, al->v()[i]);
-          for (unsigned int j=0; j<dims.size()-1; j++) {
+          for (unsigned int j=0; j<dims.size(); j++) {
             if (i % dims[j] == dims[j]-1) {
               oss << "]";
             }
