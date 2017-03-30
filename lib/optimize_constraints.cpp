@@ -286,6 +286,67 @@ namespace MiniZinc {
       }
       return OptimizeRegistry::CS_OK;
     }
+
+    OptimizeRegistry::ConstraintStatus o_set_in(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+      if (c->args()[1]->type().ispar()) {
+        if (c->args()[0]->type().ispar()) {
+          IntSetVal* isv = eval_intset(env, c->args()[1]);
+          return isv->contains(eval_int(env,c->args()[0])) ? OptimizeRegistry::CS_ENTAILED : OptimizeRegistry::CS_FAILED;
+        } else if (Id* ident = c->args()[0]->dyn_cast<Id>()) {
+          VarDecl* vd = ident->decl();
+          IntSetVal* isv = eval_intset(env, c->args()[1]);
+          if (vd->ti()->domain()) {
+            IntSetVal* dom = eval_intset(env, vd->ti()->domain());
+            {
+              IntSetRanges isv_r(isv);
+              IntSetRanges dom_r(dom);
+              if (Ranges::subset(dom_r, isv_r))
+                return OptimizeRegistry::CS_ENTAILED;
+            }
+            {
+              IntSetRanges isv_r(isv);
+              IntSetRanges dom_r(dom);
+              if (Ranges::disjoint(dom_r, isv_r))
+                return OptimizeRegistry::CS_FAILED;
+            }
+          } else if (isv->min()==isv->max()) {
+            std::vector<Expression*> args(2);
+            args[0] = vd->id();
+            args[1] = IntLit::a(isv->min());
+            Call* eq = new Call(Location(),constants().ids.int_.eq,args);
+            rewrite = eq;
+            return OptimizeRegistry::CS_REWRITE;
+            
+          }
+        }
+      }
+      return OptimizeRegistry::CS_OK;
+    }
+
+    OptimizeRegistry::ConstraintStatus o_int_ne(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+      Expression* e0 = c->args()[0];
+      Expression* e1 = c->args()[1];
+      if (e0->type().ispar() && e1->type().ispar()) {
+        return eval_int(env, e0) != eval_int(env, e1) ? OptimizeRegistry::CS_ENTAILED : OptimizeRegistry::CS_FAILED;
+      }
+      if (e1->isa<Id>()) {
+        std::swap(e0, e1);
+      }
+      if (Id* ident = e0->dyn_cast<Id>()) {
+        if (e1->type().ispar()) {
+          if (ident->decl()->ti()->domain()) {
+            IntVal e1v = eval_int(env, e1);
+            IntSetVal* isv = eval_intset(env, ident->decl()->ti()->domain());
+            if (!isv->contains(e1v))
+              return OptimizeRegistry::CS_ENTAILED;
+            if (e1v==isv->min() && e1v==isv->max())
+              return OptimizeRegistry::CS_FAILED;
+          }
+        }
+      }
+      
+      return OptimizeRegistry::CS_OK;
+    }
     
     class Register {
     public:
@@ -307,6 +368,8 @@ namespace MiniZinc {
         OptimizeRegistry::registry().reg(id_var_element, o_element);
         OptimizeRegistry::registry().reg(constants().ids.clause, o_clause);
         OptimizeRegistry::registry().reg(constants().ids.bool_clause, o_clause);
+        OptimizeRegistry::registry().reg(constants().ids.set_in, o_set_in);
+        OptimizeRegistry::registry().reg(constants().ids.int_.ne, o_int_ne);
       }
     } _r;
     
