@@ -5329,8 +5329,10 @@ namespace MiniZinc {
           if (v->e()->type().isvar() && v->e()->type().dim() > 0 && v->e()->e() == NULL) {
             (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
           }
-          if (v->e()->type().ispar() && v->e()->type().dim() > 0 && v->e()->ti()->domain()==NULL) {
+          if (v->e()->type().ispar() && v->e()->type().dim() > 0 && v->e()->ti()->domain()==NULL
+              && (v->e()->type().bt()==Type::BT_INT || v->e()->type().bt()==Type::BT_FLOAT)) {
             // Compute bounds for array literals
+            GCLock lock;
             ArrayLit* al = eval_array_lit(env, v->e()->e());
             if (v->e()->type().bt()==Type::BT_INT && v->e()->type().st()==Type::ST_PLAIN) {
               IntVal lb = IntVal::infinity();
