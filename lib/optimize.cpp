@@ -1076,9 +1076,13 @@ namespace MiniZinc {
               env.fail();
               return true;
             } else if (is_false) {
-              CollectDecls cd(env.vo,deletedVarDecls,ii);
-              topDown(cd,c);
-              env.flat_removeItem(ii);
+              if (ii->isa<ConstraintI>()) {
+                CollectDecls cd(env.vo,deletedVarDecls,ii);
+                topDown(cd,c);
+                env.flat_removeItem(ii);
+              } else {
+                deletedVarDecls.push_back(ii->cast<VarDeclI>()->e());
+              }
               return true;
             } else {
               VarDeclI* vdi = ii->cast<VarDeclI>();
@@ -1088,9 +1092,13 @@ namespace MiniZinc {
             }
           case OptimizeRegistry::CS_ENTAILED:
             if (is_true) {
-              CollectDecls cd(env.vo,deletedVarDecls,ii);
-              topDown(cd,c);
-              env.flat_removeItem(ii);
+              if (ii->isa<ConstraintI>()) {
+                CollectDecls cd(env.vo,deletedVarDecls,ii);
+                topDown(cd,c);
+                env.flat_removeItem(ii);
+              } else {
+                deletedVarDecls.push_back(ii->cast<VarDeclI>()->e());
+              }
               return true;
             } else if (is_false) {
               env.fail();
@@ -1151,6 +1159,11 @@ namespace MiniZinc {
               }
               if (vdi->e()->ti()->type()!=Type::varbool() || vdi->e()->ti()->domain()==NULL)
                 pushVarDecl(env, vdi, env.vo.find(vdi->e()), vardeclQueue);
+
+              if (is_true) {
+                constraintQueue.push_back(ii);
+              }
+            
             }
             return true;
           }
