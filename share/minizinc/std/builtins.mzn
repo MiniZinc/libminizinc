@@ -380,7 +380,6 @@ function var int: pow(var int: x, var int: y) =
   } in
   if yy = 0 then 1
   elseif yy = 1 then x
-  elseif yy = 2 then x*x else
   let { var int: r;
         constraint int_pow(x,y,r);
   } in r
@@ -397,7 +396,6 @@ function var float: pow(var float: x, var float: y) =
   } in
   if yy = 0.0 then 1.0
   elseif yy = 1.0 then x
-  elseif yy = 2.0 then x*x else
   let { var float: r;
         constraint float_pow(x,y,r);
   } in r
