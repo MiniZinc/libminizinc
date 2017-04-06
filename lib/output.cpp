@@ -456,9 +456,17 @@ namespace MiniZinc {
   
   void createDznOutput(EnvI& e, bool outputObjective) {
     std::vector<Expression*> outputVars;
-    bool had_add_to_output = false;
-    for (unsigned int i=0; i<e.orig->size(); i++) {
-      if (VarDeclI* vdi = (*e.orig)[i]->dyn_cast<VarDeclI>()) {
+    
+    class DZNOVisitor : public ItemVisitor {
+    protected:
+      EnvI& e;
+      bool outputObjective;
+      std::vector<Expression*>& outputVars;
+      bool had_add_to_output;
+    public:
+      DZNOVisitor(EnvI& e0, bool outputObjective0, std::vector<Expression*>& outputVars0)
+      : e(e0), outputObjective(outputObjective0), outputVars(outputVars0), had_add_to_output(false) {}
+      void vVarDeclI(VarDeclI* vdi) {
         VarDecl* vd = vdi->e();
         bool process_var = false;
         if (outputObjective && vd->id()->idn()==-1 && vd->id()->v()=="_objective") {
@@ -527,21 +535,32 @@ namespace MiniZinc {
           outputVars.push_back(eol);
         }
       }
-    }
+      void vOutputI(OutputI* oi) {
+        oi->remove();
+      }
+    } dznov(e, outputObjective, outputVars);
+
+    iterItems(dznov, e.orig);
+    
     OutputI* newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
-    if (e.orig->outputItem()) {
-      e.orig->outputItem()->remove();
-    }
     e.orig->addItem(newOutputItem);
   }
 
   void createJSONOutput(EnvI& e, bool outputObjective) {
     std::vector<Expression*> outputVars;
     outputVars.push_back(new StringLit(Location().introduce(), "{\n"));
-    bool had_add_to_output = false;
-    bool first_var = true;
-    for (unsigned int i=0; i<e.orig->size(); i++) {
-      if (VarDeclI* vdi = (*e.orig)[i]->dyn_cast<VarDeclI>()) {
+
+    class JSONOVisitor : public ItemVisitor {
+    protected:
+      EnvI& e;
+      bool outputObjective;
+      std::vector<Expression*>& outputVars;
+      bool had_add_to_output;
+      bool first_var;
+    public:
+      JSONOVisitor(EnvI& e0, bool outputObjective0, std::vector<Expression*>& outputVars0)
+      : e(e0), outputObjective(outputObjective0), outputVars(outputVars0), had_add_to_output(false), first_var(true) {}
+      void vVarDeclI(VarDeclI* vdi) {
         VarDecl* vd = vdi->e();
         bool process_var = false;
         if (outputObjective && vd->id()->idn()==-1 && vd->id()->v()=="_objective") {
@@ -580,18 +599,18 @@ namespace MiniZinc {
           assert(fi);
           show->decl(fi);
           outputVars.push_back(show);
-          if (vd->type().dim() > 0) {
-            StringLit* eol = new StringLit(Location().introduce(),")");
-            outputVars.push_back(eol);
-          }
         }
       }
-    }
+      void vOutputI(OutputI* oi) {
+        oi->remove();
+      }
+    } jsonov(e, outputObjective, outputVars);
+    
+    iterItems(jsonov, e.orig);
+
     outputVars.push_back(new StringLit(Location().introduce(), "\n}\n"));
+    
     OutputI* newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
-    if (e.orig->outputItem()) {
-      e.orig->outputItem()->remove();
-    }
     e.orig->addItem(newOutputItem);
   }
   

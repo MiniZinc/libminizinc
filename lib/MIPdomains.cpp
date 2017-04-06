@@ -44,6 +44,7 @@
 ///   - so better turn that off TODO
 /// CSE for lineq coefs     TODO
 
+///  TODO use integer division instead of INT_EPS
 #define INT_EPS 1e-5    // the absolute epsilon for integrality of integer vars.
 
 
@@ -312,14 +313,16 @@ namespace MiniZinc {
         if ( ic->removed() )
           continue;
         if ( Call* c = ic->e()->dyn_cast<Call>() ) {
-          if ( auto ipct = mCallTypes.find(c->decl())
-                != mCallTypes.end() ) {
+          auto ipct = mCallTypes.find(c->decl());
+          if ( ipct != mCallTypes.end() ) {
             // No ! here because might be deleted immediately in later versions.
 //             ic->remove();                              // mark removed at once
             MZN_MIPD__assert_hard( c->args().size() > 1 );
             ++MIPD__stats[ N_POSTs__all ];
             VarDecl* vd0 = expr2VarDecl(c->args()[0]);
             if ( 0==vd0 ) {
+              /// Only allow literals as main argument for equality_encoding
+              MZN_MIPD__assert_hard( equality_encoding__POST==ipct->first );
               ic->remove();
               continue;                           // ignore this call
             }
@@ -1478,15 +1481,20 @@ namespace MiniZinc {
         std::vector<Expression*> nc_c(coefs.size());
         std::vector<Expression*> nx(coefs.size());
         bool fFloat = !((*vars.begin())->type().isint());
-        for ( auto v: vars ) {
-          if ( fFloat == v->type().isint() ) {     // mixed types not allowed...
-            std::ostringstream oss;
-            oss << "addLinConstr: mixed var types: ";
-            for ( auto v: vars )
-              oss << v->type().isint();
-            throw std::runtime_error(oss.str());
+        /// mixed types not allowed...
+        /// but trying float_lin_.. if at least1 float     TODO
+        if ( !fFloat )
+          for ( auto v: vars ) {
+            if ( !v->type().isint() )
+              fFloat = true;
+            if ( false/*fFloat == v->type().isint()*/ ) {
+              std::ostringstream oss;
+              oss << "addLinConstr: mixed var types: ";
+              for ( auto v: vars )
+                oss << v->type().isint();
+              throw std::runtime_error(oss.str());
+            }
           }
-        }
         auto sName = constants().ids.float_.lin_eq; // "int_lin_eq";
         FunctionI* fDecl = mipd.float_lin_eq;
         if ( fFloat ) {                 // MZN_MIPD__assert_hard all vars of same type     TODO
