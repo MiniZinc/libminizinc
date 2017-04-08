@@ -298,11 +298,11 @@ namespace MiniZinc {
   }
 
   void addPathAnnotation(EnvI& env, Expression* e) {
-    if(!e->type().isann()) {
+    if(!e->type().isann() && e->type().dim() == 0) {
       GCLock lock;
       Annotation& ann = e->ann();
-      ann.removeCall(constants().ann.mzn_path);
-
+      if(ann.containsCall(constants().ann.mzn_path))
+        return;
 
       EnvI::ReversePathMap& reversePathMap = env.getReversePathMap();
 
@@ -867,10 +867,10 @@ namespace MiniZinc {
           break;
         case Expression::E_ID:
           if (isCompIter) {
-            if (e->cast<Id>()->decl()->e()->type().ispar())
+            //if (e->cast<Id>()->decl()->e()->type().ispar())
               os << *e << "=" << *e->cast<Id>()->decl()->e();
-            else
-              os << *e << "=?";
+            //else
+            //  os << *e << "=?";
           } else {
             os << "id:" << *e;
           }
@@ -1677,6 +1677,7 @@ namespace MiniZinc {
             
             if (ret != vd->id()) {
               vd->e(ret);
+              addPathAnnotation(env, ret);
               env.vo_add_exp(vd);
               ret = vd->id();
             }
@@ -2241,6 +2242,7 @@ namespace MiniZinc {
       args[1]->type(tt);
       args[2] = LinearTraits<Lit>::newLit(constval);
       Call* c = new Call(e0->loc().introduce(),constants().ids.lin_exp,args);
+      addPathAnnotation(env, c);
       tt = args[1]->type();
       tt.dim(0);
       c->decl(env.orig->matchFn(env, c, false));
@@ -5403,11 +5405,13 @@ namespace MiniZinc {
                 EE res = flat_exp(env,ctx,callres(),r,b);
                 args_ee.push_back(res);
                 ret.b = conj(env,b,Ctx(),args_ee);
+                addPathAnnotation(env, res.r());
                 ret.r = bind(env,ctx,r,res.r());
                 if (!ctx.neg && !cr_c->type().isann())
                   env.map_insert(cr_c,ret);
               } else {
                 ret.b = conj(env,b,Ctx(),args_ee);
+                addPathAnnotation(env, cr_c);
                 ret.r = bind(env,ctx,r,cr_c);
                 if (!ctx.neg && !cr_c->type().isann())
                   env.map_insert(cr_c,ret);
