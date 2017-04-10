@@ -298,7 +298,7 @@ namespace MiniZinc {
   }
 
   void addPathAnnotation(EnvI& env, Expression* e) {
-    if(!e->type().isann() && e->type().dim() == 0) {
+    if(!(e->type().isann() || e->isa<Id>()) && e->type().dim() == 0) {
       GCLock lock;
       Annotation& ann = e->ann();
       if(ann.containsCall(constants().ann.mzn_path))
