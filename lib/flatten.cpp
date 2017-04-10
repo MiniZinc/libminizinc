@@ -2464,6 +2464,7 @@ namespace MiniZinc {
             Call* clause = new Call(Location().introduce(), constants().ids.clause, clauseArgs);
             clause->decl(env.orig->matchFn(env, clause, false));
             clause->type(clause->decl()->rtype(env, clauseArgs, false));
+            CallStackItem _csi(env, clause);
             (void) flat_exp(env, Ctx(), clause, constants().var_true, constants().var_true);
           }
           conditions.pop_back();
