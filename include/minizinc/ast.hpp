@@ -218,7 +218,10 @@ namespace MiniZinc {
       d[i*2+1] = dims[i].second;
     }
     _v = ASTExprVec<Expression>(v);
-    _dims = ASTIntVec(d);
+    if (d.size()!=2 || d[0]!=1) {
+      // only allocate dims vector if it is not a 1d array indexed from 1
+      _dims = ASTIntVec(d);
+    }
     rehash();
   }
 
@@ -234,7 +237,10 @@ namespace MiniZinc {
       d[i*2+1] = dims[i].second;
     }
     _v = v;
-    _dims = ASTIntVec(d);
+    if (d.size()!=2 || d[0]!=1) {
+      // only allocate dims vector if it is not a 1d array indexed from 1
+      _dims = ASTIntVec(d);
+    }
     rehash();
   }
 
@@ -243,11 +249,8 @@ namespace MiniZinc {
                      ASTExprVec<Expression> v)
   : Expression(loc,E_ARRAYLIT,Type()) {
     _flag_1 = false;
-    std::vector<int> dims(2);
-    dims[0]=1;
-    dims[1]=v.size();
     _v = v;
-    _dims = ASTIntVec(dims);
+    // don't allocate dims vector since this is a 1d array indexed from 1
     rehash();
   }
 
@@ -256,11 +259,8 @@ namespace MiniZinc {
                      const std::vector<Expression*>& v)
   : Expression(loc,E_ARRAYLIT,Type()) {
     _flag_1 = false;
-    std::vector<int> dims(2);
-    dims[0]=1;
-    dims[1]=v.size();
+    // don't allocate dims vector since this is a 1d array indexed from 1
     _v = ASTExprVec<Expression>(v);
-    _dims = ASTIntVec(dims);
     rehash();
   }
 

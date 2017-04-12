@@ -242,29 +242,24 @@ namespace MiniZinc {
     init_hash();
   }
 
-  void
-  ArrayLit::rehash(void) {
-    init_hash();
-    HASH_NAMESPACE::hash<int> h;
-    for (unsigned int i=0; i<_dims.size(); i+=2) {
-      cmb_hash(h(_dims[i]));
-      cmb_hash(h(_dims[i+1]));
-    }
-    for (unsigned int i=_v.size(); i--;) {
-      cmb_hash(h(i));
-      cmb_hash(Expression::hash(_v[i]));
-    }
-  }
   int
   ArrayLit::dims(void) const {
-    return _dims.size()/2;
+    return _dims.size()==0 ? 1 : _dims.size()/2;
   }
   int
   ArrayLit::min(int i) const {
+    if (_dims.size()==0) {
+      assert(i==0);
+      return 1;
+    }
     return _dims[2*i];
   }
   int
   ArrayLit::max(int i) const {
+    if (_dims.size()==0) {
+      assert(i==0);
+      return _v.size();
+    }
     return _dims[2*i+1];
   }
   int
@@ -274,6 +269,19 @@ namespace MiniZinc {
     for(int i=1; i<dims(); i++)
       l *= (max(i) - min(i) + 1);
     return l;
+  }
+  void
+  ArrayLit::rehash(void) {
+    init_hash();
+    HASH_NAMESPACE::hash<int> h;
+    for (unsigned int i=0; i<dims(); i+=2) {
+      cmb_hash(h(min(i)));
+      cmb_hash(h(max(i)));
+    }
+    for (unsigned int i=_v.size(); i--;) {
+      cmb_hash(h(i));
+      cmb_hash(Expression::hash(_v[i]));
+    }
   }
 
   void
