@@ -73,6 +73,7 @@ namespace MiniZinc {
   Expression::mark(Expression* e) {
     if (e==NULL || e->isUnboxedInt()) return;
     std::vector<const Expression*> stack;
+    stack.reserve(1000);
     stack.push_back(e);
     while (!stack.empty()) {
       const Expression* cur = stack.back(); stack.pop_back();
