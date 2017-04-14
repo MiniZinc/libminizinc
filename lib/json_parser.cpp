@@ -69,10 +69,7 @@ namespace MiniZinc {
   
   Location
   JSONParser::errLocation(void) const {
-    Location loc;
-    loc.filename = filename;
-    loc.first_line = line;
-    loc.first_column = column;
+    Location loc(filename,line,column,line,column);
     return loc;
   }
   

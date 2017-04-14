@@ -19,8 +19,8 @@
 #include <map>
 #include <cerrno>
 
-namespace MiniZinc{ class Location; }
-#define YYLTYPE MiniZinc::Location
+namespace MiniZinc{ class ParserLocation; }
+#define YYLTYPE MiniZinc::ParserLocation
 #define YYLTYPE_IS_DECLARED 1
 #define YYLTYPE_IS_TRIVIAL 0
 
@@ -32,11 +32,11 @@ using namespace std;
 using namespace MiniZinc;
 
 #define YYLLOC_DEFAULT(Current, Rhs, N) \
-  Current.filename = Rhs[1].filename; \
-  Current.first_line = Rhs[1].first_line; \
-  Current.first_column = Rhs[1].first_column; \
-  Current.last_line = Rhs[N].last_line; \
-  Current.last_column = Rhs[N].last_column;
+  Current.filename(Rhs[1].filename()); \
+  Current.first_line(Rhs[1].first_line()); \
+  Current.first_column(Rhs[1].first_column()); \
+  Current.last_line(Rhs[N].last_line()); \
+  Current.last_column(Rhs[N].last_column());
 
 int yyparse(void*);
 int yylex(YYSTYPE*, YYLTYPE*, void* scanner);
@@ -54,16 +54,16 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
     m = m->parent();
     pp->err << "(included from file '" << m->filename() << "')" << endl;
   }
-  pp->err << location->filename << ":"
-          << location->first_line << ":" << endl;
+  pp->err << location->filename() << ":"
+          << location->first_line() << ":" << endl;
   pp->printCurrentLine();
-  for (int i=0; i<static_cast<int>(location->first_column)-1; i++)
+  for (int i=0; i<static_cast<int>(location->first_column())-1; i++)
     pp->err << " ";
-  for (unsigned int i=location->first_column; i<=location->last_column; i++)
+  for (unsigned int i=location->first_column(); i<=location->last_column(); i++)
     pp->err << "^";
   pp->err << std::endl << "Error: " << str << std::endl << std::endl;
   pp->hadError = true;
-  pp->syntaxErrors.push_back(SyntaxError(*location, str));
+  pp->syntaxErrors.push_back(SyntaxError(Location(*location), str));
 }
 
 bool notInDatafile(YYLTYPE* location, void* parm, const string& item) {
@@ -102,18 +102,18 @@ std::string get_file_contents(std::ifstream &in)
   throw(errno);
 }
 
-Expression* createDocComment(const Location& loc, const std::string& s) {
+Expression* createDocComment(const ParserLocation& loc, const std::string& s) {
   std::vector<Expression*> args(1);
   args[0] = new StringLit(loc, s);
-  Call* c = new Call(loc, constants().ann.doc_comment, args);
+  Call* c = new Call(Location(loc), constants().ann.doc_comment, args);
   c->type(Type::ann());
   return c;
 }
 
-Expression* createArrayAccess(const Location& loc, Expression* e, std::vector<std::vector<Expression*> >& idx) {
+Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vector<std::vector<Expression*> >& idx) {
   Expression* ret = e;
   for (unsigned int i=0; i<idx.size(); i++) {
-    ret = new ArrayAccess(loc, ret, idx[i]);
+    ret = new ArrayAccess(Location(loc), ret, idx[i]);
   }
   return ret;
 }
@@ -269,8 +269,7 @@ namespace MiniZinc {
         includedModel->setFilename(baseName);
         files.push_back(pair<string,Model*>(dirName,includedModel));
         seenModels.insert(pair<string,Model*>(baseName,includedModel));
-        Location loc;
-        loc.filename=ASTString(filenames[i]);
+        Location loc(ASTString(filenames[i]),0,0,0,0);
         IncludeI* inc = new IncludeI(loc,includedModel->filename());
         inc->m(includedModel,true);
         model->addItem(inc);
@@ -283,8 +282,7 @@ namespace MiniZinc {
       stdlib->setFilename("stdlib.mzn");
       files.push_back(pair<string,Model*>("./",stdlib));
       seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
-      Location stdlibloc;
-      stdlibloc.filename=ASTString(model->filename());
+      Location stdlibloc(ASTString(model->filename()),0,0,0,0);
       IncludeI* stdlibinc =
       new IncludeI(stdlibloc,stdlib->filename());
       stdlibinc->m(stdlib,true);
@@ -462,7 +460,7 @@ namespace MiniZinc {
 %initial-action
 {
   GCLock lock;
-  @$.filename = ASTString(static_cast<ParserState*>(parm)->filename);
+  @$.filename(ASTString(static_cast<ParserState*>(parm)->filename));
 }
 
 %token <iValue> MZN_INTEGER_LITERAL "integer literal" MZN_BOOL_LITERAL "bool literal"

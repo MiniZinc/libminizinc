@@ -565,7 +565,7 @@ namespace MiniZinc {
     for (; lastError < stack.size(); lastError++) {
       Expression* e = stack[lastError]->untag();
       bool isCompIter = stack[lastError]->isTagged();
-      if (e->loc().is_introduced)
+      if (e->loc().is_introduced())
         continue;
       if (!isCompIter && e->isa<Id>()) {
         break;
@@ -578,10 +578,10 @@ namespace MiniZinc {
     for (int i=lastError-1; i>=0; i--) {
       Expression* e = stack[i]->untag();
       bool isCompIter = stack[i]->isTagged();
-      ASTString newloc_f = e->loc().filename;
-      if (e->loc().is_introduced)
+      ASTString newloc_f = e->loc().filename();
+      if (e->loc().is_introduced())
         continue;
-      int newloc_l = e->loc().first_line;
+      int newloc_l = e->loc().first_line();
       if (newloc_f != curloc_f || newloc_l != curloc_l) {
         os << "  " << newloc_f << ":" << newloc_l << ":" << std::endl;
         curloc_f = newloc_f;
@@ -1725,12 +1725,12 @@ namespace MiniZinc {
   }
   
   bool isBuiltin(FunctionI* decl) {
-    return (decl->loc().filename == "builtins.mzn" ||
-            decl->loc().filename.endsWith("/builtins.mzn") ||
-            decl->loc().filename == "stdlib.mzn" ||
-            decl->loc().filename.endsWith("/stdlib.mzn") ||
-            decl->loc().filename == "flatzinc_builtins.mzn" ||
-            decl->loc().filename.endsWith("/flatzinc_builtins.mzn"));
+    return (decl->loc().filename() == "builtins.mzn" ||
+            decl->loc().filename().endsWith("/builtins.mzn") ||
+            decl->loc().filename() == "stdlib.mzn" ||
+            decl->loc().filename().endsWith("/stdlib.mzn") ||
+            decl->loc().filename() == "flatzinc_builtins.mzn" ||
+            decl->loc().filename().endsWith("/flatzinc_builtins.mzn"));
   }
   
   Call* same_call(Expression* e, const ASTString& id) {
@@ -5448,8 +5448,7 @@ namespace MiniZinc {
       
       if (!hadSolveItem) {
         e.envi().errorStack.clear();
-        Location modelLoc;
-        modelLoc.filename = e.model()->filepath();
+        Location modelLoc(e.model()->filepath(),0,0,0,0);
         throw FlatteningError(e.envi(),modelLoc, "Model does not have a solve item");
       }
 

@@ -71,6 +71,78 @@ namespace MiniZinc {
   }
   
   inline
+  Location::LocVec::LocVec(const ASTString& filename, unsigned int fl,
+                           unsigned int first_column, unsigned int last_line, unsigned int last_column) : ASTVec(3) {
+    *(_data+0) = filename.aststr();
+    long long unsigned int lines = fl;
+    long long unsigned int ll = last_line;
+    lines |= ll << 20;
+    long long unsigned int columns = first_column;
+    long long unsigned int lc = last_column;
+    columns |= lc << 20;
+    
+    union {
+      long long int i;
+      unsigned long long int u;
+    } ui;
+    
+    ui.u = lines;
+    *(_data+1) = IntLit::a(ui.i);
+    
+    ui.u = columns;
+    *(_data+2) = IntLit::a(ui.i);
+    
+    assert(first_line()==fl);
+  }
+
+  inline ASTString
+  Location::LocVec::filename(void) const {
+    return static_cast<ASTStringO*>(_data[0]);
+  }
+  inline unsigned int
+  Location::LocVec::first_line(void) const {
+    IntLit* il = static_cast<IntLit*>(_data[1]);
+    long long unsigned int mask = 0xFFFFF;
+    union {
+      long long int i;
+      unsigned long long int u;
+    } ui;
+    ui.i = il->v().toInt();
+    return ui.u & mask;
+  }
+  inline unsigned int
+  Location::LocVec::last_line(void) const {
+    IntLit* il = static_cast<IntLit*>(_data[1]);
+    union {
+      long long int i;
+      unsigned long long int u;
+    } ui;
+    ui.i = il->v().toInt();
+    return ui.u >> 20;
+  }
+  inline unsigned int
+  Location::LocVec::first_column(void) const {
+    IntLit* il = static_cast<IntLit*>(*(_data+2));
+    long long unsigned int mask = 0xFFFFF;
+    union {
+      long long int i;
+      unsigned long long int u;
+    } ui;
+    ui.i = il->v().toInt();
+    return ui.u & mask;
+  }
+  inline unsigned int
+  Location::LocVec::last_column(void) const {
+    IntLit* il = static_cast<IntLit*>(*(_data+2));
+    union {
+      long long int i;
+      unsigned long long int u;
+    } ui;
+    ui.i = il->v().toInt();
+    return ui.u >> 20;
+  }
+  
+  inline
   FloatLit::FloatLit(const Location& loc, FloatVal v)
   : Expression(loc,E_FLOATLIT,Type::parfloat()), _v(v) {
     rehash();
@@ -577,12 +649,12 @@ namespace MiniZinc {
     _builtins.i = NULL;
     _builtins.s = NULL;
     _builtins.str = NULL;
-    _from_stdlib = (loc.filename == "builtins.mzn" ||
-              loc.filename.endsWith("/builtins.mzn") ||
-              loc.filename == "stdlib.mzn" ||
-              loc.filename.endsWith("/stdlib.mzn") ||
-              loc.filename == "flatzinc_builtins.mzn" ||
-              loc.filename.endsWith("/flatzinc_builtins.mzn"));
+    _from_stdlib = (loc.filename() == "builtins.mzn" ||
+              loc.filename().endsWith("/builtins.mzn") ||
+              loc.filename() == "stdlib.mzn" ||
+              loc.filename().endsWith("/stdlib.mzn") ||
+              loc.filename() == "flatzinc_builtins.mzn" ||
+              loc.filename().endsWith("/flatzinc_builtins.mzn"));
   }
 
   inline
@@ -601,12 +673,12 @@ namespace MiniZinc {
     _builtins.i = NULL;
     _builtins.s = NULL;
     _builtins.str = NULL;
-    _from_stdlib = (loc.filename == "builtins.mzn" ||
-                    loc.filename.endsWith("/builtins.mzn") ||
-                    loc.filename == "stdlib.mzn" ||
-                    loc.filename.endsWith("/stdlib.mzn") ||
-                    loc.filename == "flatzinc_builtins.mzn" ||
-                    loc.filename.endsWith("/flatzinc_builtins.mzn"));
+    _from_stdlib = (loc.filename() == "builtins.mzn" ||
+                    loc.filename().endsWith("/builtins.mzn") ||
+                    loc.filename() == "stdlib.mzn" ||
+                    loc.filename().endsWith("/stdlib.mzn") ||
+                    loc.filename() == "flatzinc_builtins.mzn" ||
+                    loc.filename().endsWith("/flatzinc_builtins.mzn"));
   }
 
 }

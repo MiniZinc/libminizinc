@@ -1573,7 +1573,7 @@ namespace MiniZinc {
   }
 
   std::string b_file_path(EnvI&, Call* call) {
-    return FileUtils::file_path(call->loc().filename.str());
+    return FileUtils::file_path(call->loc().filename().str());
   }
   
   std::string b_concat(EnvI& env, Call* call) {

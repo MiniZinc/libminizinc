@@ -55,24 +55,7 @@ namespace MiniZinc {
   }
 
   Location copy_location(CopyMap& m, const Location& _loc) {
-    Location loc;
-    loc.first_line = _loc.first_line;
-    loc.first_column = _loc.first_column;
-    loc.last_line = _loc.last_line;
-    loc.last_column = _loc.last_column;
-    loc.is_introduced = _loc.is_introduced;
-    if (_loc.filename != "") {
-      if (ASTStringO* f = m.find(ASTString(_loc.filename))) {
-        loc.filename = ASTString(f);
-      } else {
-        ASTString fn(_loc.filename.str());
-        m.insert(ASTString(_loc.filename), fn);
-        loc.filename = fn;
-      }
-    } else {
-      loc.filename = ASTString();
-    }
-    return loc;
+    return _loc;
   }
   Location copy_location(CopyMap& m, Expression* e) {
     return copy_location(m,e->loc());
