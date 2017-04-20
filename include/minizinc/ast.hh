@@ -597,6 +597,9 @@ namespace MiniZinc {
     Generator(const std::vector<ASTString>& v,
               Expression* in);
     /// Allocate
+    Generator(const std::vector<Id*>& v,
+              Expression* in);
+    /// Allocate
     Generator(const std::vector<VarDecl*>& v,
               Expression* in);
     

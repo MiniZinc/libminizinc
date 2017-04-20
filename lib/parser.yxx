@@ -1573,19 +1573,19 @@ call_expr :
     | MZN_IDENTIFIER '(' comp_or_expr ')' '(' expr ')'
       { 
         vector<Generator> gens;
-        vector<ASTString> ids;
+        vector<Id*> ids;
         if ($3) {
           for (unsigned int i=0; i<$3->first.size(); i++) {
             if (Id* id = Expression::dyn_cast<Id>($3->first[i])) {
-              ids.push_back(id->v());
+              ids.push_back(id);
             } else {
               if (BinOp* boe = Expression::dyn_cast<BinOp>($3->first[i])) {
                 if (boe->lhs() && boe->rhs()) {
                   Id* id = Expression::dyn_cast<Id>(boe->lhs());
                   if (id && boe->op() == BOT_IN) {
-                    ids.push_back(id->v());
+                    ids.push_back(id);
                     gens.push_back(Generator(ids,boe->rhs()));
-                    ids = vector<ASTString>();
+                    ids = vector<Id*>();
                   } else {
                     yyerror(&@3, parm, "illegal expression in generator call");
                   }
