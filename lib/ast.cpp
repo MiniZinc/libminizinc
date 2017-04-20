@@ -306,6 +306,18 @@ namespace MiniZinc {
     _v = vd;
     _in = in;
   }
+  Generator::Generator(const std::vector<Id*>& v,
+                       Expression* in) {
+    std::vector<VarDecl*> vd;
+    for (unsigned int i=0; i<v.size(); i++) {
+      VarDecl* nvd = new VarDecl(v[i]->loc(),
+                                 new TypeInst(v[i]->loc(),Type::parint()),v[i]->v());
+      nvd->toplevel(false);
+      vd.push_back(nvd);
+    }
+    _v = vd;
+    _in = in;
+  }
   Generator::Generator(const std::vector<std::string>& v,
                        Expression* in) {
     std::vector<VarDecl*> vd;
