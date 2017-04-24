@@ -1087,8 +1087,14 @@ namespace MiniZinc {
       if (FunctionI* fi = _model->matchFn(_env,call.id(),args,true)) {
         bool cv = false;
         for (unsigned int i=0; i<args.size(); i++) {
-          args[i] = addCoercion(_env, _model,call.args()[i],fi->argtype(_env,args,i))();
-          call.args()[i] = args[i];
+          if(Comprehension* c = call.args()[i]->dyn_cast<Comprehension>()) {
+            Type t = fi->argtype(_env,args,i);
+            t.dim(0);
+            c->e(addCoercion(_env, _model, c->e(), t)());
+          } else {
+            args[i] = addCoercion(_env, _model,call.args()[i],fi->argtype(_env,args,i))();
+            call.args()[i] = args[i];
+          }
           cv = cv || args[i]->type().cv();
         }
         Type ty = fi->rtype(_env,args,true);
