@@ -264,7 +264,7 @@ class MZT_Param:
             "BE_MZN-GUROBI": {
               s_CommentKey: [ "------------------- Specializations for Gurobi solver instance" ],
               "EXE":{
-                "s_SolverCall" : ["mzn-gurobi -v -s -a -G linear --timeout 300 --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
+                "s_SolverCall" : ["mzn-gurobi -v -s -G linear --timeout 300 --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
               },
               "Stderr_Keyvalues": {
                 s_AddKey+"Preslv_Rows": [ "Presolved:", " ", 2 ],
@@ -275,7 +275,7 @@ class MZT_Param:
             "BE_MZN-CPLEX": {
               s_CommentKey: [ "------------------- Specializations for IBM ILOG CPLEX solver instance" ],
               "EXE": {
-                "s_SolverCall" : ["mzn-cplex -v -s -G linear --timeout 300 --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking
+                "s_SolverCall" : ["mzn-cplex -v -s -G linear -D fIndConstr=true -D fMIPdomains=false --timeout 300 --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking
                 #"s_SolverCall" : ["./run-mzn-cplex.sh %s"],
                 #"b_ThruShell"  : [True],
               },
@@ -590,6 +590,9 @@ class MznTest:
                     print( re.tell(), "bytes", end='' )
         else:      #### Solving oneself
             print( slvName, "... ", sep='', end='', flush=True )
+#            s_InstMerged = s_Inst.strip()
+#            s_InstMerged = regex.sub( r"[.\\/:~]", "", s_InstMerged );
+#            s_InstMerged = regex.sub( r"[ ]", "-", s_InstMerged );
             s_Call = slvBE["EXE"]["s_SolverCall"][0] % s_Inst \
               + ' ' + slvBE["EXE"]["s_ExtraCmdline"][0]
             resSlv["Solver_Call"] = s_Call
@@ -684,7 +687,7 @@ class MznTest:
                 fFailed = 1
                 self.result["SOLUTION_CHECKS_FAILED"] += 1
                 self.result["SOLUTION_FAILED_LAST"] = self.solList[ iSol ]
-                self.result["SOLUTION_FAILED_LAST__CHKSTATUS"] = chkRes["Sol_Status"]
+                # self.result["SOLUTION_FAILED_LAST__CHKSTATUS"] = chkRes["Sol_Status"]
                 self.saveSolution( self.fileFail )
                 if nFSM<=self.result["SOLUTION_CHECKS_FAILED"]:
                     print ( self.result["SOLUTION_CHECKS_FAILED"], "failed solution(s) saved, go on" )
