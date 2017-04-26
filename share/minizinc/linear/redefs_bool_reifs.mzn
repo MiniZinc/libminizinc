@@ -31,7 +31,7 @@ predicate bool_and__INT(var int: x, var int: y, var int: z) =
 
 
 predicate bool_or(var bool: p, var bool: q, var bool: r) =
-  if fMZN__UseIndicators then
+  if false then
       int_lin_le_reif__IND( [-1, -1], [p, q], -1, r)
   else
     let { var int: x = bool2int(p),
