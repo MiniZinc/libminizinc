@@ -13,6 +13,8 @@
  * linearization module && a flexible flattener-to-solver interface
  */
 
+/// TODO Quadratic terms, even CBC
+
 #ifdef _MSC_VER 
 #define _CRT_SECURE_NO_WARNINGS
 #endif
@@ -186,48 +188,156 @@ namespace SCIPConstraints {
   }
 
   // The non-_lin constraints happen in a failed model || in a non-optimized one:
-   void p_non_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType nCmp) {
-      MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
-      ASTExprVec<Expression> args = call->args();
-      vector<double> coefs;
-      vector<MIP_solver::Variable> vars;
-      double rhs = 0.0;
-      if ( args[0]->isa<Id>() ) {
-        coefs.push_back( 1.0 );
-        vars.push_back( gi.exprToVar(args[0]) );
-      } else
-        rhs -= gi.exprToConst(args[0]);
-      if ( args[1]->isa<Id>() ) {
-        coefs.push_back( -1.0 );
-        vars.push_back( gi.exprToVar(args[1]) );
-      } else
-        rhs += gi.exprToConst(args[1]);
-      /// Check feas-ty
-      if ( coefs.empty() ) {
-        if ( (MIP_wrapper::LinConType::EQ==nCmp && 1e-5 < fabs( rhs ))
-          || (MIP_wrapper::LinConType::LQ==nCmp && -1e-5 > ( rhs ))
-          || (MIP_wrapper::LinConType::GQ==nCmp && 1e-5 < ( rhs ))
-        ) {
-          si._status = SolverInstance::UNSAT;
-          if ( gi.getMIPWrapper()->fVerbose )
-            cerr << "  Constraint '" << *call
-              << "' seems infeasible: simplified to 0 (rel) " << rhs
-              << endl;
-        }
-      } else {
-        std::stringstream ss;
-        ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
-        gi.getMIPWrapper()->addRow(vars.size(), &vars[0], &coefs[0], nCmp, rhs,
-                                GetMaskConsType(call), ss.str());
+  void p_non_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType nCmp) {
+    MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
+    ASTExprVec<Expression> args = call->args();
+    vector<double> coefs;
+    vector<MIP_solver::Variable> vars;
+    double rhs = 0.0;
+    if ( args[0]->isa<Id>() ) {
+      coefs.push_back( 1.0 );
+      vars.push_back( gi.exprToVar(args[0]) );
+    } else
+      rhs -= gi.exprToConst(args[0]);
+    if ( args[1]->isa<Id>() ) {
+      coefs.push_back( -1.0 );
+      vars.push_back( gi.exprToVar(args[1]) );
+    } else
+      rhs += gi.exprToConst(args[1]);
+    /// Check feas-ty
+    if ( coefs.empty() ) {
+      if ( (MIP_wrapper::LinConType::EQ==nCmp && 1e-5 < fabs( rhs ))
+        || (MIP_wrapper::LinConType::LQ==nCmp && -1e-5 > ( rhs ))
+        || (MIP_wrapper::LinConType::GQ==nCmp && 1e-5 < ( rhs ))
+      ) {
+        si._status = SolverInstance::UNSAT;
+        if ( gi.getMIPWrapper()->fVerbose )
+          cerr << "  Constraint '" << *call
+            << "' seems infeasible: simplified to 0 (rel) " << rhs
+            << endl;
       }
+    } else {
+      std::stringstream ss;
+      ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
+      gi.getMIPWrapper()->addRow(vars.size(), &vars[0], &coefs[0], nCmp, rhs,
+                              GetMaskConsType(call), ss.str());
     }
-   void p_eq(SolverInstanceBase& si, const Call* call) {
-     p_non_lin( si, call, MIP_wrapper::EQ );
-   }
-   void p_le(SolverInstanceBase& si, const Call* call) {
-     p_non_lin( si, call, MIP_wrapper::LQ );
-   }
-   
+  }
+  void p_eq(SolverInstanceBase& si, const Call* call) {
+    p_non_lin( si, call, MIP_wrapper::EQ );
+  }
+  void p_le(SolverInstanceBase& si, const Call* call) {
+    p_non_lin( si, call, MIP_wrapper::LQ );
+  }
+
+  /// var1<=0 if var2==0
+  void p_indicator_le0_if0(SolverInstanceBase& si, const Call* call) {
+    MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
+    ASTExprVec<Expression> args = call->args();
+    /// Looking at the bounded variable and the flag
+    bool f1const=0, f2const=0;
+    double val1, val2;
+    MIP_solver::Variable var1, var2;
+    if ( args[0]->isa<Id>() ) {
+      var1 = gi.exprToVar(args[0]);
+    } else {
+      f1const = 1;
+      val1 = gi.exprToConst(args[0]);
+    }
+    if ( args[1]->isa<Id>() ) {
+      var2 = gi.exprToVar(args[1]);
+    } else {
+      f2const = 1;
+      val2 = gi.exprToConst(args[1]);
+    }
+    /// Check feas-ty. 1e-6 ?????????????   TODO
+    if ( f1const && f2const ) {
+      if ( val1>1e-6 && val2<1e-6 ) {        
+        si._status = SolverInstance::UNSAT;
+        if ( gi.getMIPWrapper()->fVerbose )
+          cerr << "  Constraint '" << *call
+            << "' seems infeasible: " << val2 << "==0 -> " << val1 << "<=0"
+            << endl;
+      }
+    } else if ( f1const ) {
+      if ( val1>1e-6 ) // so  var2==1
+        gi.getMIPWrapper()->setVarBounds( var2, 1.0, 1.0 );
+    } else if ( f2const ) {
+      if ( val2<1e-6 )           // so  var1<=0
+        gi.getMIPWrapper()->setVarUB( var1, 0.0 );
+    } else {
+      std::ostringstream ss;
+      ss << "p_ind_" << (gi.getMIPWrapper()->nAddedRows++);
+      double coef = 1.0;
+      gi.getMIPWrapper()->addIndicatorConstraint( var2, 0, 1, &var1, &coef,
+                                                  MIP_wrapper::LinConType::LQ, 0.0, ss.str() );
+      ++gi.getMIPWrapper()->nIndicatorConstr;
+    }
+  }
+
+  /// var1==var2 if var3==1
+  void p_indicator_eq_if1(SolverInstanceBase& si, const Call* call) {
+    MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
+    ASTExprVec<Expression> args = call->args();
+    vector<double> coefs;
+    vector<MIP_solver::Variable> vars;
+    double rhs = 0.0;
+    /// Looking at the bounded variables and the flag
+    bool f1const=0, f2const=0, fBconst=0;
+    double val1, val2, valB;
+    MIP_solver::Variable var1, var2, varB;
+    if ( args[0]->isa<Id>() ) {
+      var1 = gi.exprToVar(args[0]);
+      coefs.push_back( 1.0 );
+      vars.push_back( var1 );
+    } else {
+      f1const = 1;
+      val1 = gi.exprToConst(args[0]);
+      rhs -= val1;
+    }
+    if ( args[1]->isa<Id>() ) {
+      var2 = gi.exprToVar(args[1]);
+      coefs.push_back( -1.0 );
+      vars.push_back( var2 );
+    } else {
+      f2const = 1;
+      val2 = gi.exprToConst(args[1]);
+      rhs += val2;
+    }
+    if ( args[2]->isa<Id>() ) {
+      varB = gi.exprToVar(args[2]);
+    } else {
+      fBconst = 1;
+      valB = gi.exprToConst(args[2]);
+    }
+    /// Check feas-ty. 1e-6 ?????????????   TODO
+    if ( f1const && f2const && fBconst ) {
+      if ( fabs(val1-val2)>1e-6 && val2>0.999999 ) {        
+        si._status = SolverInstance::UNSAT;
+        if ( gi.getMIPWrapper()->fVerbose )
+          cerr << "  Constraint '" << *call
+            << "' seems infeasible: " << valB << "==0 -> " << val1 << "==" << val2
+            << endl;
+      }
+    } else if ( f1const && f2const ) {
+      if ( fabs(val1-val2)>1e-6 ) // so  varB=0
+        gi.getMIPWrapper()->setVarBounds( varB, 0.0, 0.0 );
+    } else if ( fBconst ) {
+      if ( val2>0.999999 ) {          // so  var1<=0
+        std::ostringstream ss;
+        ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
+        gi.getMIPWrapper()->addRow(vars.size(), &vars[0], &coefs[0], MIP_wrapper::LinConType::EQ, rhs,
+                                MIP_wrapper::MaskConsType_Normal, ss.str());
+      }
+    } else {
+      std::ostringstream ss;
+      ss << "p_ind_" << (gi.getMIPWrapper()->nAddedRows++);
+      gi.getMIPWrapper()->addIndicatorConstraint( varB, 1, coefs.size(), vars.data(), coefs.data(),
+                                                  MIP_wrapper::LinConType::EQ, rhs, ss.str() );
+      ++gi.getMIPWrapper()->nIndicatorConstr;
+    }
+  }
+
   /// The XBZ cut generator
   void p_XBZ_cutgen(SolverInstanceBase& si, const Call* call) {
     MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
@@ -264,6 +374,12 @@ void MIP_solverinstance::registerConstraints() {
   _constraintRegistry.add(ASTString("float_lin_le"), SCIPConstraints::p_float_lin_le);
 //   _constraintRegistry.add(ASTString("float_plus"),   SCIPConstraints::p_plus);
   
+  /// Indicators, if supported by the solver
+  _constraintRegistry.add(ASTString("aux_int_le_zero_if_0__IND"), SCIPConstraints::p_indicator_le0_if0);
+  _constraintRegistry.add(ASTString("aux_float_le_zero_if_0__IND"), SCIPConstraints::p_indicator_le0_if0);
+  _constraintRegistry.add(ASTString("aux_float_eq_if_1__IND"), SCIPConstraints::p_indicator_eq_if1);
+  
+  /// XBZ cut generator
   _constraintRegistry.add(ASTString("array_var_float_element__XBZ_lb__cutgen"),
                           SCIPConstraints::p_XBZ_cutgen);
   
@@ -550,13 +666,17 @@ void MIP_solverinstance::processFlatZinc(void) {
     }
   }
 
-  if (mip_wrap->fVerbose)
+  if (mip_wrap->fVerbose) {
     cerr << " done, " << mip_wrap->getNRows() << " rows && "
-    << mip_wrap->getNCols() << " columns in total." << endl;
-  if (mip_wrap->fVerbose && mip_wrap->sLitValues.size())
-    cerr << "  MIP_solverinstance: overall,  "
-      << mip_wrap->nLitVars << " literals with "
-      << mip_wrap-> sLitValues.size() << " values used." << endl;
+    << mip_wrap->getNCols() << " columns in total.";
+    if (mip_wrap->nIndicatorConstr)
+      cerr << "  " << mip_wrap->nIndicatorConstr << " indicator constraints." << endl;
+    cerr  << endl;
+    if (mip_wrap->sLitValues.size())
+      cerr << "  MIP_solverinstance: overall,  "
+        << mip_wrap->nLitVars << " literals with "
+        << mip_wrap-> sLitValues.size() << " values used." << endl;
+  }
 }  // processFlatZinc
 
 Expression* MIP_solverinstance::getSolutionValue(Id* id) {

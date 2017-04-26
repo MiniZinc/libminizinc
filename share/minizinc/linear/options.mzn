@@ -21,8 +21,11 @@ ann: MIP_cut = user_cut;         %% MIP_cut: make sure no feasible solutions are
 ann: MIP_lazy = lazy_constraint;
 
 %-----------------------------------------------------------------------------%
-bool: fMZN__UseIndicators=false;    %% Pass on indicator constraints, CPLEX only.  [DISABLED]
-    %% Reifs give wrong result on 2012/amaze, so using implications only
+opt bool: fIndConstr;
+bool: fMZN__UseIndicators =    %% Pass on indicator constraints
+           if absent( fIndConstr ) then false
+           else deopt( fIndConstr ) endif;
+    %% CPLEX 12.6.2 Concert: reifs give wrong result on 2012/amaze, so using implications only
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% MIPdomains %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --------------------------------------------------------------------------------------- %

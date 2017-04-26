@@ -63,6 +63,8 @@ predicate aux_float_lt_zero_if_0(var float: x, var int: p) =
     if fix(x)>=0.0 then p==1 else true endif
   elseif fPostprocessDomains /\ fPostproDom_AUX then
     aux_float_lt_zero_if_1__POST(x, 1-p, 1-p, float_lt_EPS_coef__)
+  elseif fMZN__UseIndicators then
+    aux_float_le_zero_if_0__IND(x+float_lt_EPS_coef__, p)       %% Here just absolute EPS,  TODO
   else
     let { float: rho = float_lt_EPS_coef__ * abs(ub(x)) }  % same order of magnitude as ub(x)
     in
