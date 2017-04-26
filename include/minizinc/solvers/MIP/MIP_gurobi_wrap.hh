@@ -36,6 +36,9 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     int (__stdcall *dll_GRBaddconstr) (GRBmodel *model, int numnz, int *cind, double *cval,
                              char sense, double rhs, const char *constrname);
 
+    int (__stdcall *dll_GRBaddgenconstrIndicator) (  GRBmodel  *model, const char  *name, int binvar,
+        int binval, int nvars, int*  ind, double* val, char  sense, double  rhs );
+    
     int (__stdcall *dll_GRBaddvars) (GRBmodel *model, int numvars, int numnz,
                            int *vbeg, int *vind, double *vval,
                            double *obj, double *lb, double *ub, char *vtype,
@@ -84,6 +87,8 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
 
     int (__stdcall *dll_GRBsetintattr) (GRBmodel *model, const char *attrname, int newvalue);
 
+    int (__stdcall *dll_GRBsetdblattrelement) (GRBmodel *model, const char *attrname, int iv, double v);
+
     int (__stdcall *dll_GRBsetintattrlist) (GRBmodel *model, const char *attrname,
                     int len, int *ind, int *newvalues);
 
@@ -126,6 +131,13 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
                         LinConType sense, double rhs,
                         int mask = MaskConsType_Normal,
                         string rowName = "");
+    virtual void setVarBounds( int iVar, double lb, double ub );
+    virtual void setVarLB( int iVar, double lb );
+    virtual void setVarUB( int iVar, double ub );
+    /// Indicator constraint: x[iBVar]==bVal -> lin constr
+    virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int *rmatind, double* rmatval,
+                        LinConType sense, double rhs,
+                        std::string rowName = "");
     int nRows=0;    // to count rows in order tp notice lazy constraints
     std::vector<int> nLazyIdx;
     std::vector<int> nLazyValue;

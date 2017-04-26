@@ -242,7 +242,7 @@ void MIP_cplex_wrapper::addIndicatorConstraint(
   int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
   MIP_wrapper::LinConType sense, double rhs, string rowName)
 {
-  wrap_assert( 0<=bVal && 1>=bVal, "CPLEX: addIndicatorConstraint: bVal not 0/1" );
+  wrap_assert( 0<=bVal && 1>=bVal, "mzn-cplex: addIndicatorConstraint: bVal not 0/1" );
   char ssense=getCPLEXConstrSense(sense);
   status = CPXaddindconstr (env, lp, iBVar, 1-bVal, nnz, rhs,
       ssense, rmatind, rmatval, rowName.c_str());
@@ -251,7 +251,7 @@ void MIP_cplex_wrapper::addIndicatorConstraint(
 
 void MIP_cplex_wrapper::setVarBounds(int iVar, double lb, double ub)
 {
-  wrap_assert( lb<=ub, "CPLEX: setVarBounds: lb>ub" );
+  wrap_assert( lb<=ub, "mzn-cplex: setVarBounds: lb>ub" );
   char cl = 'L', cu = 'U';
   status = CPXchgbds (env, lp, 1, &iVar, &cl, &lb);
   wrap_assert( !status,  "Failed to set lower bound." );
