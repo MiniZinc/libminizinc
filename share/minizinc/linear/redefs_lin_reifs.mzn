@@ -195,7 +195,6 @@ predicate int_lin_lt_reif(array[int] of int: c, array[int] of var int: x,
 %% lin_expr, const
 predicate int_lin_eq_reif(array[int] of int: c, array[int] of var int: x,
                           int: d, var bool: b) =
-%    my_trace("  int_lin_eq_reif: \(c), \(x), \(d), \(b) \n" ) /\
     if fPostprocessDomains /\ fPostproDom_DIFF then
       int_eq_reif(sum(i in index_set(x))( c[i]*x[i] ), d, b)
     elseif fAvoidNI then
@@ -228,6 +227,7 @@ predicate int_lin_ne_reif(array[int] of int: c, array[int] of var int: x,
 
 %% var float, const
 predicate float_le_reif(var float: x, float: y, var bool: b) =
+%%  trace( "float_le_reif(\(x), \(y), \(b))\n" ) /\
   if is_fixed(b) then
     if true==fix(b) then x<=y else x>y endif
   elseif false then
@@ -352,14 +352,14 @@ predicate float_lin_ne_reif(array[int] of float: c, array[int] of var float: x,
 predicate float_lin_le_reif(array[int] of float: c, array[int] of var float: x,
                             float: d, var bool: b) =
   if fPostprocessDomains /\ fPostproDom_DIFF then
-    float_le_reif(sum(i in index_set(x))( c[i]*x[i] ), d, not b)
+    float_le_reif(sum(i in index_set(x))( c[i]*x[i] ), d, b)
   else
-    float_le_reif__NOPOST(sum(i in index_set(x))( c[i]*x[i] ), d, not b)
+    float_le_reif__NOPOST(sum(i in index_set(x))( c[i]*x[i] ), d, b)
   endif;
 
 predicate float_lin_lt_reif(array[int] of float: c, array[int] of var float: x,
                             float: d, var bool: b) =
-    float_lt_reif(sum(i in index_set(x))( c[i]*x[i] ), d, not b);
+    float_lt_reif(sum(i in index_set(x))( c[i]*x[i] ), d, b);
 
 
 %-----------------------------------------------------------------------------%
