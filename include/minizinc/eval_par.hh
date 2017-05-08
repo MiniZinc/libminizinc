@@ -14,6 +14,7 @@
 
 #include <minizinc/model.hh>
 #include <minizinc/iter.hh>
+#include <minizinc/astexception.hh>
 
 #include <minizinc/prettyprinter.hh>
 
@@ -189,6 +190,9 @@ namespace MiniZinc {
   eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id,
                 KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
     IntSetVal* isv = eval_intset(env, in());
+    if (isv->card().isPlusInfinity()) {
+      throw EvalError(env,in()->loc(),"comprehension iterates over an infinite set");
+    }
     IntSetRanges rsi(isv);
     Ranges::ToValues<IntSetRanges> rsv(rsi);
     for (; rsv(); ++rsv) {
