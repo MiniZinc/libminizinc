@@ -23,7 +23,6 @@ predicate aux_float_eq_if_1(var float: x, var float: y, var int: p) =
   elseif fPostprocessDomains /\ fPostproDom_AUX /\ fPostproDom_DIFF then
     aux_float_eq_zero_if_1__POST(x - y, p, p)
   elseif fMZN__UseIndicators then
-%    my_trace__DBG("  aux_float_eq_if_1  INDIC: \(x) \\/ \(y) <-> \(p) \n") /\
     aux_float_eq_if_1__IND(x, y, p)
   else
     aux_float_le_if_1(x, y, p) /\
@@ -64,7 +63,7 @@ predicate aux_float_lt_zero_if_0(var float: x, var int: p) =
   elseif fPostprocessDomains /\ fPostproDom_AUX then
     aux_float_lt_zero_if_1__POST(x, 1-p, 1-p, float_lt_EPS_coef__)
   else
-    let { float: rho = float_lt_EPS_coef__ * abs(ub(x)) }  % same order of magnitude as ub(x)
+    let { float: rho = float_lt_EPS_coef__ * max(abs(ub(x)), abs(lb(x))) }  % same order of magnitude as ub(x)
     in
     x < (ub(x) + rho) * p
   endif;
