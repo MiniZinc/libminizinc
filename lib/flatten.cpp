@@ -2290,7 +2290,11 @@ namespace MiniZinc {
     for (unsigned int i=0; i<2; i++) {
       Val sign = (i==0 ? 1 : -1);
       if (Lit* l = le[i]->dyn_cast<Lit>()) {
-        d += sign*l->v();
+        try {
+          d += sign*l->v();
+        } catch (ArithmeticError& e) {
+          throw EvalError(env,l->loc(),e.msg());
+        }
       } else if (le[i]->isa<Id>()) {
         coeffv.push_back(sign);
         alv.push_back(le[i]);
@@ -2298,11 +2302,16 @@ namespace MiniZinc {
         GCLock lock;
         ArrayLit* sc_coeff = eval_array_lit(env,sc->args()[0]);
         ArrayLit* sc_al = eval_array_lit(env,sc->args()[1]);
-        d += sign*LinearTraits<Lit>::eval(env,sc->args()[2]);
-        for (unsigned int j=0; j<sc_coeff->v().size(); j++) {
-          coeffv.push_back(sign*LinearTraits<Lit>::eval(env,sc_coeff->v()[j]));
-          alv.push_back(sc_al->v()[j]);
+        try {
+          d += sign*LinearTraits<Lit>::eval(env,sc->args()[2]);
+          for (unsigned int j=0; j<sc_coeff->v().size(); j++) {
+            coeffv.push_back(sign*LinearTraits<Lit>::eval(env,sc_coeff->v()[j]));
+            alv.push_back(sc_al->v()[j]);
+          }
+        } catch (ArithmeticError& e) {
+          throw EvalError(env,sc->loc(),e.msg());
         }
+        
       } else {
         throw EvalError(env, le[i]->loc(), "Internal error, unexpected expression inside linear expression");
       }
