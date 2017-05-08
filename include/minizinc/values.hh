@@ -213,12 +213,21 @@ namespace MiniZinc {
   }
   inline
   IntVal operator *(const IntVal& x, const IntVal& y) {
-    if (! (x.isFinite() && y.isFinite()))
-      throw ArithmeticError("arithmetic operation on infinite value");
-    return x.toSafeInt()*y.toSafeInt();
+    if (!x.isFinite()) {
+      if (y.isFinite() && std::abs(y._v)==1)
+        return IntVal(x._v*y._v,x.isFinite());
+    } else if (!y.isFinite()) {
+      if (x.isFinite() && std::abs(x._v)==1)
+        return IntVal(x._v*y._v,true);
+    } else {
+      return x.toSafeInt()*y.toSafeInt();
+    }
+    throw ArithmeticError("arithmetic operation on infinite value");
   }
   inline
   IntVal operator /(const IntVal& x, const IntVal& y) {
+    if (y.isFinite() && std::abs(y._v)==1)
+      return IntVal(x._v * y._v, x.isFinite());
     if (! (x.isFinite() && y.isFinite()))
       throw ArithmeticError("arithmetic operation on infinite value");
     return x.toInt()/y.toInt();
