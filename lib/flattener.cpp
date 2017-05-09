@@ -61,6 +61,13 @@ void Flattener::printHelp(ostream& os)
   << "  --allow-multiple-assignments\n    Allow multiple assignments to the same variable (e.g. in dzn)" << std::endl
   << std::endl;
   os
+  << "Presolver options:" << std::endl
+  << "  --no-presolve\n    Do not presolve marked predicates." << std::endl
+  << "  -p <exe>, --presolver <exe>\n    The backend solver filename." << std::endl
+  << "  --output-presolve-mzn\n    Print generated MiniZinc models to be presolved on standard output" << std::endl
+  << "  --presolved <file>, --output-presolved-to-file <file>\n    Filename for presolved predicates output" << std::endl
+  << std::endl;
+  os
   << "Flattener output options:" << std::endl
   << "  --no-output-ozn, -O-\n    Do not output ozn file" << std::endl
   << "  --output-base <name>\n    Base name for output files" << std::endl
@@ -111,6 +118,12 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     flag_output_fzn_stdout = true;
   } else if ( cop.getOption( "--output-ozn-to-stdout" ) ) {
     flag_output_ozn_stdout = true;
+  } else if ( cop.getOption( "-p --presolver", &flag_fzn_solver) ) {
+  } else if ( cop.getOption( "--presolved --output-presolved-to-file", &flag_output_presolved ) ) {
+  } else if ( cop.getOption( "--no-presolve" ) ) {
+    flag_no_presolve = true;
+  } else if ( cop.getOption( "--output-presolve-mzn" ) ) {
+    flag_print_presolve = true;
   } else if ( cop.getOption( "--output-mode", &buffer ) ) {
     if (buffer == "dzn") {
       flag_output_mode = FlatteningOptions::OUTPUT_DZN;
@@ -340,6 +353,14 @@ void Flattener::flatten()
               env.swap();
               populateOutput(env);
             } else {
+              Presolver* presolver;
+              if (!flag_no_presolve){
+                if (flag_verbose)
+                  std::cerr << "Marking Pre-Solve Annotations ...";
+                presolver = new Presolver(env, this);
+                if (flag_verbose)
+                  std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+              }
               if (flag_verbose)
                 std::cerr << "Flattening ...";
 
@@ -386,6 +407,13 @@ void Flattener::flatten()
                 if (flag_werror && env.warnings().size() > 0) {
                   exit(EXIT_FAILURE);
                 }
+                if (flag_verbose)
+                  std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+              }
+              if (!flag_no_presolve){
+                if (flag_verbose)
+                  std::cerr << "Presolving ...";
+                presolver->presolve();
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }

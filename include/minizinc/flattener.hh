@@ -33,6 +33,7 @@
 #include <minizinc/file_utils.hh>
 #include <minizinc/solver_instance.hh>
 #include <minizinc/options.hh>
+#include <minizinc/presolve.hh>
 
 namespace MiniZinc {
   
@@ -99,6 +100,12 @@ namespace MiniZinc {
 
     clock_t starttime01;
     clock_t lasttime;
+
+    friend class Presolver;
+    bool flag_no_presolve = false;
+    bool flag_print_presolve = false;
+    std::string flag_output_presolved;
+    std::string flag_fzn_solver = "";
 
   };
 

@@ -280,6 +280,8 @@ lib/options.cpp
 lib/optimize_constraints.cpp
 lib/output.cpp
 lib/parser.yxx
+lib/presolve.cpp
+lib/presolve_utils.cpp
 lib/solns2out_class.cpp
 lib/statistics.cpp
 lib/lexer.lxx
@@ -311,6 +313,8 @@ include/minizinc/optimize_constraints.hh
 include/minizinc/options.hh
 include/minizinc/output.hh
 include/minizinc/parser.hh
+include/minizinc/presolve.hh
+include/minizinc/presolve_utils.hh
 include/minizinc/prettyprinter.hh
 include/minizinc/solver.hh
 include/minizinc/solver_instance.hh
@@ -323,6 +327,7 @@ include/minizinc/typecheck.hh
 include/minizinc/values.hh
 include/minizinc/stl_map_set.hh
 include/minizinc/thirdparty/SafeInt3.hpp
+solvers/fzn/fzn_solverinstance.cpp
 ${parser_hh}
 )
 
