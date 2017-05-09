@@ -7,19 +7,19 @@ project (libminizinc CXX C)
 # ---- For example, to produce mzn-gecode run "cd build; cmake -D GECODE_HOME=$GECODE_HOME ..; cmake --build ."  ----
 # -------------------------------------------------------------------------------------------------------------------
 set(HAS_FZN    TRUE)                 ### Always compile the mzn-fzn driver
-if (DEFINED GECODE_HOME)
+if (DEFINED GECODE_HOME AND NOT "${GECODE_HOME} " STREQUAL " ")
   set(HAS_GECODE TRUE)
 endif()
-if (DEFINED CPLEX_STUDIO_DIR)
+if (DEFINED CPLEX_STUDIO_DIR AND NOT "${CPLEX_STUDIO_DIR} " STREQUAL " ")
   set(HAS_CPLEX TRUE)
 endif()
-if(DEFINED GUROBI_HOME)
+if(DEFINED GUROBI_HOME AND NOT "${GUROBI_HOME} " STREQUAL " ")
   set(HAS_GUROBI TRUE)
 endif()
-if (DEFINED SCIP_DIR AND DEFINED SOPLEX_DIR AND DEFINED ZIMPL_DIR)
+if (DEFINED SCIP_DIR AND DEFINED SOPLEX_DIR AND DEFINED ZIMPL_DIR AND NOT "${SCIP_DIR} " STREQUAL " ")
   set(HAS_SCIP TRUE)                     # Can use SCIP w/o ZIMPL too
 endif()
-if (DEFINED OSICBC_HOME)
+if (DEFINED OSICBC_HOME AND NOT "${OSICBC_HOME} " STREQUAL " ")
   set(HAS_OSICBC TRUE)
 endif()
 
