@@ -835,20 +835,20 @@ namespace MiniZinc {
       bool isCompIter = callStack[i]->isTagged();
       Location loc = e->loc();
       int filenameId;
-      UNORDERED_NAMESPACE::unordered_map<std::string, int>::iterator findFilename = filenameMap.find(loc.filename.str());
+      UNORDERED_NAMESPACE::unordered_map<std::string, int>::iterator findFilename = filenameMap.find(loc.filename().str());
       if (findFilename == filenameMap.end()) {
         if(!force && pass >= passes-1)
           return false;
         filenameId = filenameMap.size();
-        filenameMap.insert(std::make_pair(loc.filename.str(), filenameMap.size()));
+        filenameMap.insert(std::make_pair(loc.filename().str(), filenameMap.size()));
       } else {
         filenameId = findFilename->second;
       }
 
 
       // If this call is not a dummy StringLit with empty Location (so that deferred compilation doesn't drop the paths)
-      if(e->eid() != Expression::E_STRINGLIT || loc.first_line || loc.first_column || loc.last_line || loc.last_column) {
-        os << loc.filename.str() << ':' << loc.first_line << ':' << loc.first_column << ':' << loc.last_line << ':' << loc.last_column << ':';
+      if(e->eid() != Expression::E_STRINGLIT || loc.first_line() || loc.first_column() || loc.last_line() || loc.last_column()) {
+        os << loc.filename().str() << ':' << loc.first_line() << ':' << loc.first_column() << ':' << loc.last_line() << ':' << loc.last_column() << ':';
       switch (e->eid()) {
         case Expression::E_INTLIT:
           os << "il:" << *e;
@@ -6009,8 +6009,9 @@ namespace MiniZinc {
                     args[0] = vdi->e()->id();
                     args[1] = IntLit::a(i);
                     // Give distinct location to each int_ne introduced
-                    Location loc = vdi->e()->loc();
-                    loc.first_column += i.toInt();
+                    Location oldloc = vdi->e()->loc();
+                    Location loc(oldloc.filename(), oldloc.first_line(), oldloc.first_column() + i.toInt(),
+                                                    oldloc.last_line(),  oldloc.last_column());
                     Call* call = new Call(Location().introduce(),constants().ids.int_.ne,args);
                     call->type(Type::varbool());
                     call->decl(env.orig->matchFn(env, call, false));
