@@ -50,8 +50,13 @@ namespace MiniZinc {
             /// Construct brancher
             AuxVarBrancher(Gecode::Home home, Gecode::TieBreak<Gecode::IntVarBranch> int_varsel0,
                     Gecode::IntValBranch int_valsel0,
+#ifdef HAS_GECODE_VERSION_5_1
+                    Gecode::TieBreak<Gecode::BoolVarBranch> bool_varsel0,
+                    Gecode::BoolValBranch bool_valsel0
+#else
                     Gecode::TieBreak<Gecode::IntVarBranch> bool_varsel0,
                     Gecode::IntValBranch bool_valsel0
+#endif
 #ifdef GECODE_HAS_SET_VARS
                     ,
                     Gecode::SetVarBranch set_varsel0,
@@ -98,8 +103,13 @@ namespace MiniZinc {
 
             Gecode::TieBreak<Gecode::IntVarBranch> int_varsel;
             Gecode::IntValBranch int_valsel;
+#ifdef HAS_GECODE_VERSION_5_1
+            Gecode::TieBreak<Gecode::BoolVarBranch> bool_varsel;
+            Gecode::BoolValBranch bool_valsel;
+#else
             Gecode::TieBreak<Gecode::IntVarBranch> bool_varsel;
             Gecode::IntValBranch bool_valsel;
+#endif
 #ifdef GECODE_HAS_SET_VARS
             Gecode::SetVarBranch set_varsel;
             Gecode::SetValBranch set_valsel;
@@ -176,8 +186,13 @@ namespace MiniZinc {
             static void post(Gecode::Home home,
                     Gecode::TieBreak<Gecode::IntVarBranch> int_varsel,
                     Gecode::IntValBranch int_valsel,
+#ifdef HAS_GECODE_VERSION_5_1
+                    Gecode::TieBreak<Gecode::BoolVarBranch> bool_varsel,
+                    Gecode::BoolValBranch bool_valsel
+#else
                     Gecode::TieBreak<Gecode::IntVarBranch> bool_varsel,
                     Gecode::IntValBranch bool_valsel
+#endif
 #ifdef GECODE_HAS_SET_VARS
                     ,
                     Gecode::SetVarBranch set_varsel,
@@ -202,7 +217,7 @@ namespace MiniZinc {
             /// Delete brancher and return its size
             virtual size_t dispose(Gecode::Space&) {
                 return sizeof(*this);
-            }      
+            }
     };
 
 } 

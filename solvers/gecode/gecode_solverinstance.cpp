@@ -1345,8 +1345,13 @@ namespace MiniZinc {
                                                         std::vector<bool>& fv_searched,
                                                         TieBreak<IntVarBranch>& def_int_varsel,
                                                         IntValBranch& def_int_valsel,
+                                                #ifdef HAS_GECODE_VERSION_5_1
+                                                        TieBreak<BoolVarBranch>& def_bool_varsel,
+                                                        BoolValBranch& def_bool_valsel,
+                                                #else
                                                         TieBreak<IntVarBranch>& def_bool_varsel,
                                                         IntValBranch& def_bool_valsel,
+                                                #endif
                                                 #ifdef GECODE_HAS_SET_VARS
                                                         SetVarBranch& def_set_varsel,
                                                         SetValBranch& def_set_valsel,
@@ -1442,8 +1447,13 @@ namespace MiniZinc {
         std::string r0, r1;
         //BrancherHandle bh = 
         branch(*_current_space, va, 
+#ifdef HAS_GECODE_VERSION_5_1
+            ann2bvarsel(call->args()[1]->cast<Id>()->str().str(),rnd,decay),
+            ann2bvalsel(call->args()[2]->cast<Id>()->str().str(),r0,r1,rnd), NULL //,
+#else
             ann2ivarsel(call->args()[1]->cast<Id>()->str().str(),rnd,decay),
             ann2ivalsel(call->args()[2]->cast<Id>()->str().str(),r0,r1,rnd), NULL //,
+#endif
             //&varValPrint<BoolVar>
             );
         //branchInfo.add(bh,r0,r1,names);
@@ -1456,9 +1466,14 @@ namespace MiniZinc {
       } 
       else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "bool_default_search") {
         Call* call = flatAnn[i]->dyn_cast<Call>();
-        def_bool_varsel = ann2ivarsel(call->args()[0]->cast<Id>()->str().str(),rnd,decay);
         std::string r0;
+#ifdef HAS_GECODE_VERSION_5_1
+        def_bool_varsel = ann2bvarsel(call->args()[0]->cast<Id>()->str().str(),rnd,decay);
+        def_bool_valsel = ann2bvalsel(call->args()[1]->cast<Id>()->str().str(),r0,r0,rnd);
+#else
+        def_bool_varsel = ann2ivarsel(call->args()[0]->cast<Id>()->str().str(),rnd,decay);
         def_bool_valsel = ann2ivalsel(call->args()[1]->cast<Id>()->str().str(),r0,r0,rnd);
+#endif
       } 
       else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "set_search") {
 #ifdef GECODE_HAS_SET_VARS
@@ -1570,8 +1585,13 @@ namespace MiniZinc {
     Rnd rnd(static_cast<unsigned int>(seed));
     TieBreak<IntVarBranch> def_int_varsel = INT_VAR_AFC_SIZE_MAX(0.99);
     IntValBranch def_int_valsel = INT_VAL_MIN();
+#ifdef HAS_GECODE_VERSION_5_1
+    TieBreak<BoolVarBranch> def_bool_varsel = BOOL_VAR_AFC_MAX(0.99);
+    BoolValBranch def_bool_valsel = BOOL_VAL_MIN();
+#else
     TieBreak<IntVarBranch> def_bool_varsel = INT_VAR_AFC_MAX(0.99);
     IntValBranch def_bool_valsel = INT_VAL_MIN();
+#endif
 #ifdef GECODE_HAS_SET_VARS
     SetVarBranch def_set_varsel = SET_VAR_AFC_SIZE_MAX(0.99);
     SetValBranch def_set_valsel = SET_VAL_MIN_INC();
@@ -1809,6 +1829,16 @@ namespace MiniZinc {
     if (s == "afc_size_max" || s=="dom_w_deg") {
         return TieBreak<IntVarBranch>(INT_VAR_AFC_SIZE_MAX(decay));
     }
+#ifdef HAS_GECODE_VERSION_5_1
+    if (s == "action_min")
+        return TieBreak<IntVarBranch>(INT_VAR_ACTION_MIN(decay));
+    if (s == "action_max")
+        return TieBreak<IntVarBranch>(INT_VAR_ACTION_MAX(decay));
+    if (s == "action_size_min")
+        return TieBreak<IntVarBranch>(INT_VAR_ACTION_SIZE_MIN(decay));
+    if (s == "action_size_max")
+        return TieBreak<IntVarBranch>(INT_VAR_ACTION_SIZE_MAX(decay));
+#else
     if (s == "activity_min")
         return TieBreak<IntVarBranch>(INT_VAR_ACTIVITY_MIN(decay));
     if (s == "activity_max")
@@ -1817,6 +1847,7 @@ namespace MiniZinc {
         return TieBreak<IntVarBranch>(INT_VAR_ACTIVITY_SIZE_MIN(decay));
     if (s == "activity_size_max")
         return TieBreak<IntVarBranch>(INT_VAR_ACTIVITY_SIZE_MAX(decay));
+#endif
     std::cerr << "Warning, ignored search annotation: " << s << std::endl;
     return TieBreak<IntVarBranch>(INT_VAR_NONE());
   }
@@ -1867,7 +1898,106 @@ namespace MiniZinc {
     r0 = "="; r1 = "!=";
     return INT_VAL_MIN();
   }
-  
+
+#ifdef HAS_GECODE_VERSION_5_1
+  TieBreak<BoolVarBranch> GecodeSolverInstance::ann2bvarsel(std::string s, Rnd& rnd, double decay) {
+    if ((s == "input_order") ||
+        (s == "first_fail") ||
+        (s == "anti_first_fail") ||
+        (s == "smallest") ||
+        (s == "largest") ||
+        (s == "max_regret"))
+      return TieBreak<BoolVarBranch>(BOOL_VAR_NONE());
+    if ((s == "occurrence") ||
+        (s == "most_constrained"))
+      return TieBreak<BoolVarBranch>(BOOL_VAR_DEGREE_MAX());
+    if (s == "random")
+      return TieBreak<BoolVarBranch>(BOOL_VAR_RND(rnd));
+    if ((s == "afc_min") ||
+        (s == "afc_size_min"))
+      return TieBreak<BoolVarBranch>(BOOL_VAR_AFC_MIN(decay));
+    if ((s == "afc_max") ||
+        (s == "afc_size_max") ||
+        (s == "dom_w_deg"))
+      return TieBreak<BoolVarBranch>(BOOL_VAR_AFC_MAX(decay));
+#ifdef HAS_GECODE_VERSION_5_1
+    if ((s == "action_min") &&
+        (s == "action_size_min"))
+      return TieBreak<BoolVarBranch>(BOOL_VAR_ACTION_MIN(decay));
+    if ((s == "action_max") ||
+        (s == "action_size_max"))
+      return TieBreak<BoolVarBranch>(BOOL_VAR_ACTION_MAX(decay));
+#else
+    if ((s == "activity_min") &&
+        (s == "activity_size_min"))
+      return TieBreak<BoolVarBranch>(BOOL_VAR_ACTIVITY_MIN(decay));
+    if ((s == "activity_max") ||
+        (s == "activity_size_max"))
+      return TieBreak<BoolVarBranch>(BOOL_VAR_ACTIVITY_MAX(decay));
+#endif
+    std::cerr << "Warning, ignored search annotation: " << s << std::endl;
+    return TieBreak<BoolVarBranch>(BOOL_VAR_NONE());
+  }
+
+  BoolValBranch GecodeSolverInstance::ann2bvalsel(std::string s, std::string& r0, std::string& r1, Rnd& rnd) {
+    if (s == "indomain_min") {
+      r0 = "="; r1 = "!=";
+      return BOOL_VAL_MIN();
+    }
+    if (s == "indomain_max") {
+      r0 = "="; r1 = "!=";
+      return BOOL_VAL_MAX();
+    }
+    if (s == "indomain_median") {
+      r0 = "="; r1 = "!=";
+      return BOOL_VAL_MIN();
+    }
+    if (s == "indomain_split") {
+      r0 = "<="; r1 = ">";
+      return BOOL_VAL_MIN();
+    }
+    if (s == "indomain_reverse_split") {
+      r0 = ">"; r1 = "<=";
+      return BOOL_VAL_MAX();
+    }
+    if (s == "indomain_random") {
+      r0 = "="; r1 = "!=";
+      return BOOL_VAL_RND(rnd);
+    }
+    if (s == "indomain") {
+      r0 = "="; r1 = "=";
+      return BOOL_VAL_MIN();
+    }
+    if (s == "indomain_middle") {
+      std::cerr << "Warning, replacing unsupported annotation "
+        << "indomain_middle with indomain_median" << std::endl;
+      r0 = "="; r1 = "!=";
+      return BOOL_VAL_MIN();
+    }
+    if (s == "indomain_interval") {
+      std::cerr << "Warning, replacing unsupported annotation "
+        << "indomain_interval with indomain_split" << std::endl;
+      r0 = "<="; r1 = ">";
+      return BOOL_VAL_MIN();
+    }
+    std::cerr << "Warning, ignored search annotation: " << s << "\n";
+    r0 = "="; r1 = "!=";
+    return BOOL_VAL_MIN();
+  }
+
+  BoolAssign GecodeSolverInstance::ann2asnbvalsel(std::string s, Rnd& rnd) {
+    if ((s == "indomain_min") || (s == "indomain_median"))
+      return BOOL_ASSIGN_MIN();
+    if (s == "indomain_max")
+      return BOOL_ASSIGN_MAX();
+    if (s == "indomain_random") {
+      return BOOL_ASSIGN_RND(rnd);
+    }
+    std::cerr << "Warning, ignored search annotation: " << s << "\n";
+    return BOOL_ASSIGN_MIN();
+  }
+#endif
+
   IntAssign 
   GecodeSolverInstance::ann2asnivalsel(std::string s, Rnd& rnd) {
     if (s == "indomain_min")
@@ -1904,6 +2034,16 @@ namespace MiniZinc {
             return SET_VAR_AFC_SIZE_MIN(decay);
         if (s == "afc_size_max")
             return SET_VAR_AFC_SIZE_MAX(decay);
+#ifdef HAS_GECODE_VERSION_5_1
+        if (s == "action_min")
+            return SET_VAR_ACTION_MIN(decay);
+        if (s == "action_max")
+            return SET_VAR_ACTION_MAX(decay);
+        if (s == "action_size_min")
+            return SET_VAR_ACTION_SIZE_MIN(decay);
+        if (s == "action_size_max")
+            return SET_VAR_ACTION_SIZE_MAX(decay);
+#else
         if (s == "activity_min")
             return SET_VAR_ACTIVITY_MIN(decay);
         if (s == "activity_max")
@@ -1912,6 +2052,7 @@ namespace MiniZinc {
             return SET_VAR_ACTIVITY_SIZE_MIN(decay);
         if (s == "activity_size_max")
             return SET_VAR_ACTIVITY_SIZE_MAX(decay);
+#endif
         if (s == "random") {
             return SET_VAR_RND(rnd);
         }
@@ -1973,6 +2114,16 @@ namespace MiniZinc {
             return TieBreak<FloatVarBranch>(FLOAT_VAR_AFC_SIZE_MIN(decay));
         if (s == "afc_size_max")
             return TieBreak<FloatVarBranch>(FLOAT_VAR_AFC_SIZE_MAX(decay));
+#ifdef HAS_GECODE_VERSION_5_1
+        if (s == "action_min")
+            return TieBreak<FloatVarBranch>(FLOAT_VAR_ACTION_MIN(decay));
+        if (s == "action_max")
+            return TieBreak<FloatVarBranch>(FLOAT_VAR_ACTION_MAX(decay));
+        if (s == "action_size_min")
+            return TieBreak<FloatVarBranch>(FLOAT_VAR_ACTION_SIZE_MIN(decay));
+        if (s == "action_size_max")
+            return TieBreak<FloatVarBranch>(FLOAT_VAR_ACTION_SIZE_MAX(decay));
+#else
         if (s == "activity_min")
             return TieBreak<FloatVarBranch>(FLOAT_VAR_ACTIVITY_MIN(decay));
         if (s == "activity_max")
@@ -1981,6 +2132,7 @@ namespace MiniZinc {
             return TieBreak<FloatVarBranch>(FLOAT_VAR_ACTIVITY_SIZE_MIN(decay));
         if (s == "activity_size_max")
             return TieBreak<FloatVarBranch>(FLOAT_VAR_ACTIVITY_SIZE_MAX(decay));
+#endif
         std::cerr << "Warning, ignored search annotation: " << s << std::endl;
         return TieBreak<FloatVarBranch>(FLOAT_VAR_NONE());
     }
