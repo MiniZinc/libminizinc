@@ -254,12 +254,23 @@ class MIP_wrapper {
       fPhase1Over = true;    // SCIP needs after adding
     }
 
+    /// var bounds
+    virtual void setVarBounds( int iVar, double lb, double ub )  { throw 0; }
+    virtual void setVarLB( int iVar, double lb )  { throw 0; }
+    virtual void setVarUB( int iVar, double ub )  { throw 0; }
     /// adding a linear constraint
     virtual void addRow(int nnz, int *rmatind, double* rmatval,
                         LinConType sense, double rhs,
                         int mask = MaskConsType_Normal,
                         std::string rowName = "") = 0;
+    /// Indicator constraint: x[iBVar]==bVal -> lin constr
+    virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int *rmatind, double* rmatval,
+                        LinConType sense, double rhs,
+                        std::string rowName = "") { throw std::runtime_error("Indicator constraints not supported. "); }
+                        
+                        
     int nAddedRows = 0;   // for name counting
+    int nIndicatorConstr = 0;
     /// adding an implication
 //     virtual void addImpl() = 0;
     virtual void setObjSense(int s) = 0;   // +/-1 for max/min

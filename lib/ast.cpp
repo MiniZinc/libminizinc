@@ -26,29 +26,26 @@ namespace MiniZinc {
   
   Annotation Annotation::empty;
   
-  Location::Location(void)
-  : first_line(0),
-    first_column(0),
-    last_line(0),
-    last_column(0),
-    is_introduced(0) {}
 
   std::string
   Location::toString(void) const {
     std::ostringstream oss;
-    oss << filename << ":" << first_line << "." << first_column;
+    oss << filename() << ":" << first_line() << "." << first_column();
     return oss.str();
   }
 
   void
   Location::mark(void) const {
-    filename.mark();
+    if (lv())
+      lv()->mark();
   }
   
   Location
   Location::introduce() const {
     Location l = *this;
-    l.is_introduced = 1;
+    if (l._loc_info.lv) {
+      l._loc_info.t |= 1;
+    }
     return l;
   }
 
@@ -73,6 +70,7 @@ namespace MiniZinc {
   Expression::mark(Expression* e) {
     if (e==NULL || e->isUnboxedInt()) return;
     std::vector<const Expression*> stack;
+    stack.reserve(1000);
     stack.push_back(e);
     while (!stack.empty()) {
       const Expression* cur = stack.back(); stack.pop_back();

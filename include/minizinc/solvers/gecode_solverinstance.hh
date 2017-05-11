@@ -31,7 +31,13 @@
 #include <minizinc/solvers/gecode/fzn_space.hh>
 
 #if GECODE_VERSION_NUMBER >= 500000
+
 #define HAS_GECODE_VERSION_5
+
+#if GECODE_VERSION_NUMBER >= 500100
+#define HAS_GECODE_VERSION_5_1
+#endif
+
 #endif
 
 #ifdef HAS_GECODE_VERSION_5
@@ -304,6 +310,16 @@ namespace MiniZinc {
     Gecode::IntValBranch ann2ivalsel(std::string s, std::string& r0, std::string& r1, Gecode::Rnd& rnd);
     /// convert assign value selection
     Gecode::IntAssign ann2asnivalsel(std::string s, Gecode::Rnd& rnd);
+
+#ifdef HAS_GECODE_VERSION_5_1
+    Gecode::TieBreak<Gecode::BoolVarBranch> ann2bvarsel(std::string s, Gecode::Rnd& rnd, double decay);
+    /// convert the annotation \a s int value selection to the respectbve Gecode val selection
+    Gecode::BoolValBranch ann2bvalsel(std::string s, std::string& r0, std::string& r1, Gecode::Rnd& rnd);
+    /// convert assign value selection
+    Gecode::BoolAssign ann2asnbvalsel(std::string s, Gecode::Rnd& rnd);
+#endif
+
+
 #ifdef GECODE_HAS_SET_VARS
     Gecode::SetVarBranch ann2svarsel(std::string s, Gecode::Rnd& rnd, double decay);
     Gecode::SetValBranch ann2svalsel(std::string s, std::string r0, std::string r1, Gecode::Rnd& rnd);
@@ -342,8 +358,14 @@ namespace MiniZinc {
                                                         std::vector<bool>& fv_searched,
                                                         Gecode::TieBreak<Gecode::IntVarBranch>& def_int_varsel,
                                                         Gecode::IntValBranch& def_int_valsel,
+                                                #ifdef HAS_GECODE_VERSION_5_1
+                                                        Gecode::TieBreak<Gecode::BoolVarBranch>& def_bool_varsel,
+                                                        Gecode::BoolValBranch& def_bool_valsel,
+                                                #else
                                                         Gecode::TieBreak<Gecode::IntVarBranch>& def_bool_varsel,
                                                         Gecode::IntValBranch& def_bool_valsel,
+                                                #endif
+
                                                 #ifdef GECODE_HAS_SET_VARS
                                                         Gecode::SetVarBranch& def_set_varsel,
                                                         Gecode::SetValBranch& def_set_valsel,

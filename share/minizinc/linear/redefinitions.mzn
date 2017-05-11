@@ -19,7 +19,7 @@ function var int: bool2int(var bool: x) :: promise_total =
       b2i;
 
 predicate bool_eq(var bool: x, var bool: y) =
-%  my_trace(" bool_eq: \(x), \(y) \n") /\
+%  trace(" bool_eq: \(x), \(y) \n") /\
   bool2int(x)==bool2int(y);
 
 %---------------------------- BASIC (HALF)REIFS -----------------------------%
@@ -42,7 +42,7 @@ include "nosets.mzn";                %% For set_le, set_lt ... Usind std/nosets
 % (some solutions of the original problem may become invalid).
 
 predicate float_lt(var float: x, var float: y) =
-     (x - y) <= (1.0+float_lt_EPS_coef__)*ub(x - y);
+     (x - y) <= (-float_lt_EPS_coef__)*max(abs(ub(x - y)), abs(ub(y-x)));
 
 predicate float_lin_lt(array[int] of float: c, array[int] of var float: x,
                             float: d) =
@@ -55,7 +55,6 @@ predicate float_lin_lt(array[int] of float: c, array[int] of var float: x,
 predicate int_abs(var int: x, var int: z) =
 %% The simplifications seem worse on   league.mzn	model90-18-20.dzn:
 %% but the .lp seem to differ just by order...?? TODO
-%  my_trace("  int_abs: dom(x)=\(dom(x))\n") /\
   if lb(x)>=0 then z==x
   elseif ub(x)<=0 then z==-x
   else
@@ -235,8 +234,6 @@ elseif is_fixed(y) then
       ( card(dom(x))==card(dom(y)) /\ 0 in dom(y) /\ not (0 in dom(x)) )
       then int_times(y,x,z)
     else
-%       my_trace ( " int_times(x,y,z): dom(x) = " ++ show(dom(x))
-%         ++ ", dom(y) = " ++ show(dom(y)) ++ "\n" ) /\
       let {
           set of int: s = lb(x)..ub(x),
           set of int: r = {lb(x)*lb(y), lb(x)*ub(y), ub(x)*lb(y), ub(x)*ub(y)},
@@ -256,11 +253,7 @@ predicate int_times_unary(var int: x, set of int: domx__, var int: y, var int: z
     %% set of int: domx = if card(domx__)>0 then domx__ else dom(x) endif,
     array[int, int] of var int: pp=eq_encode(x, y)
   } in
-%  my_trace ( " int_times_unary(\(x),\(y),\(z)): dom(x) = " ++ show(dom(x)) ++ "  " ) /\
-    %  my_trace ( ", domx = " ++ show(domx) ++ "  " ) /\
-    %  my_trace ( ", dom(y) = " ++ show(dom(y)) ++ "  " ) /\
     z>=min(r) /\ z<=max(r) /\
-%    my_trace ( ", dom(z) = " ++ show(dom(z)) ++ "\n" ) /\    %% after the bounds
     z==sum(i in index_set_1of2(pp), j in index_set_2of2(pp))
          (i * j * pp[i, j]) /\
     forall(i in index_set_1of2(pp), j in index_set_2of2(pp)
@@ -282,11 +275,7 @@ predicate int_times_unary__NOFN(var int: x, set of int: domx__, var int: y, var 
     if is_fixed(x) \/ is_fixed(y) then
       z==x*y
     else
-%     my_trace ( " int_times_unary__NOFN(\(x),\(y),\(z)): dom(x) = " ++ show(dom(x)) ++ "  " ) /\
-     %  my_trace ( ", domx = " ++ show(domx) ++ "  " ) /\
-%     my_trace ( ", dom(y) = " ++ show(dom(y)) ++ "  " ) /\
         z>=min(r) /\ z<=max(r) /\
-%     my_trace ( ", dom(z) = " ++ show(dom(z)) ++ "\n" ) /\    %% after the bounds
         sum(pp)==1 /\
         z==sum(i in index_set(valX), j in index_set(valY))
              (valX[i] * valY[j] * pp[i, j]) /\
@@ -470,7 +459,6 @@ predicate array_set_element(var int: x, array[int] of set of int: y, var set of 
 % Normally not called because all plugged into the domain.
 % Might be called instead of set_in(x, var set of int s) if s gets fixed?
 predicate set_in(var int: x, set of int: s__) =
-%    my_trace("  set_in ( x: " ++ if has_bounds(x) then show(dom(x)) else "int" endif ++ ", s__: " ++ show(s__) ++ " )\n" ) /\
     let {
       set of int: s = if has_bounds(x) then s__ intersect dom(x) else s__ endif,
       constraint  min(s) <= x /\ x <= max(s);
@@ -479,14 +467,6 @@ predicate set_in(var int: x, set of int: s__) =
     elseif fPostprocessDomains then
       set_in__POST(x, s)
     else
-%      if card(s intersect dom(x))<=nMZN__UnaryLenMax_setIn then               %% PARAM TODO
-%        let {
-%          array[int] of var int: p = eq_encode(x);
-%        } in
-%          sum(i in s intersect dom(x))(p[i]) == 1 /\
-%          forall(i in dom(x) diff s)(p[i]==0)
-%      else
-%        1 == fVarInBigSetOfInt(x, s)
       let {
         array[int] of int: sL = [ e | e in s where not (e - 1 in s) ];
         array[int] of int: sR = [ e | e in s where not (e + 1 in s) ];
@@ -498,11 +478,6 @@ predicate set_in(var int: x, set of int: s__) =
         x >= sum(i in index_set(sL))(B[i]*sL[i])     
         /\ 
         x <= sum(i in index_set(sR))(B[i]*sR[i])
-%      endif
-%            1 == sum(e in s)(bool2int( x == e ))
-%        exists(e in s)( x = e )
-%        let { var 1..card(s): i } in
-%        array_int_element(i, [v | v in s], x)
     endif;
 
 % XXX  only for a fixed set
@@ -510,7 +485,6 @@ predicate set_in_reif(var int: x, set of int: s__, var bool: b) =
   if is_fixed(b) then
     if true==fix(b) then x in s__ else x in dom(x) diff s__ endif
   else
-%    my_trace("  set_in_reif ( x: " ++ if has_bounds(x) then show(dom(x)) else "int" endif ++ ", s__: " ++ show(s__) ++ " )\n" ) /\
     let {
       set of int: s = if has_bounds(x) then s__ intersect dom(x) else s__ endif,
     } in

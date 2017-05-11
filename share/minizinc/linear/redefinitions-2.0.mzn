@@ -7,25 +7,25 @@ predicate bool_clause_reif(array[int] of var bool: p, array[int] of var bool: n,
 
     
 predicate array_float_minimum(var float: m, array[int] of var float: x) =
-  if fMZN__UseIndicators then
+  if false then
     array_float_minimum__IND(m, x)     %% transfer to Concert because of prepro
   else
     array_float_minimum_I( m, [ x[i] | i in index_set(x)])
   endif;
 predicate array_float_maximum(var float: m, array[int] of var float: x) =
-  if fMZN__UseIndicators then
+  if false then
     array_float_maximum__IND(m, x)
   else
     array_float_minimum_I(-m, [-x[i] | i in index_set(x)])
   endif;
 predicate array_int_minimum(var int: m, array[int] of var int: x) =
-  if fMZN__UseIndicators then
+  if false then
     array_int_minimum__IND(m, x)
   else
     array_float_minimum_I( int2float(m), [ int2float(x[i]) | i in index_set(x)])
   endif;
 predicate array_int_maximum(var int: m, array[int] of var int: x) =
-  if fMZN__UseIndicators then
+  if false then
     array_int_maximum__IND(m, x)
   else
     array_float_minimum_I(-int2float(m), [-int2float(x[i]) | i in index_set(x)])

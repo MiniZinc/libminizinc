@@ -24,8 +24,8 @@
 #pragma warning(push, 1)
 #endif
 
-namespace MiniZinc{ class Location; }
-#define YYLTYPE MiniZinc::Location
+namespace MiniZinc{ class ParserLocation; }
+#define YYLTYPE MiniZinc::ParserLocation
 #define YYLTYPE_IS_DECLARED 1
 #define YYLTYPE_IS_TRIVIAL 0
 
@@ -38,7 +38,7 @@ int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
 #define YY_USER_ACTION \
   { MiniZinc::ParserState* parm =  \
     static_cast<MiniZinc::ParserState*>(yyget_extra(yyscanner)); \
-    yylloc->first_line = yylloc->last_line = parm->lineno; \
+    yylloc->first_line(parm->lineno); yylloc->last_line(parm->lineno); \
   }
 
 bool hexstrtointval(const char* s, long long int& v) {
@@ -76,9 +76,9 @@ void beginToken(void* parm, YYLTYPE* yyloc, char* t) {
   MiniZinc::ParserState* pp =
     static_cast<MiniZinc::ParserState*>(parm);
   int tokenLength = strlen(t);
-  yyloc->first_column = pp->nTokenNextStart;
+  yyloc->first_column(pp->nTokenNextStart);
   pp->nTokenNextStart += tokenLength;
-  yyloc->last_column = pp->nTokenNextStart-1;
+  yyloc->last_column(pp->nTokenNextStart-1);
 }
 
 void clearBuffer(void* parm) {

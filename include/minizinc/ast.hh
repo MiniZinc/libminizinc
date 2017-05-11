@@ -51,27 +51,118 @@ namespace MiniZinc {
   class ExpressionSet;
   class ExpressionSetIter;
   
+  /// %Location of an expression used during parsing
+  class ParserLocation {
+  protected:
+    
+    /// Source code file name
+    ASTString _filename;
+    /// Line where expression starts
+    unsigned int _first_line;
+    /// Line where expression ends
+    unsigned int _last_line;
+    /// Column where expression starts
+    unsigned int _first_column;
+    /// Column where expression ends
+    unsigned int _last_column;
+  public:
+    /// Construct empty location
+    ParserLocation(void) : _first_line(0), _last_line(0), _first_column(0), _last_column(0) {}
+    
+    /// Construct location
+    ParserLocation(const ASTString& filename, unsigned int first_line, unsigned int first_column, unsigned int last_line, unsigned int last_column)
+    : _filename(filename), _first_line(first_line), _last_line(last_line), _first_column(first_column), _last_column(last_column) {}
+    
+    ASTString filename(void) const { return _filename; }
+    void filename(const ASTString& f) { _filename = f; }
+    
+    unsigned int first_line(void) const { return _first_line; }
+    void first_line(unsigned int l) { _first_line = l; }
+    
+    unsigned int last_line(void) const { return _last_line; }
+    void last_line(unsigned int l) { _last_line = l; }
+    
+    unsigned int first_column(void) const { return _first_column; }
+    void first_column(unsigned int c) { _first_column = c; }
+    
+    unsigned int last_column(void) const { return _last_column; }
+    void last_column(unsigned int c) { _last_column = c; }
+    
+  };
+
   /// %Location of an expression in the source code
   class Location {
-  public:
-    /// Source code file name
-    ASTString filename;
-    /// Line where expression starts
-    unsigned int first_line;
-    /// Column where expression starts
-    unsigned int first_column;
-    /// Line where expression ends
-    unsigned int last_line;
-    /// Column where expression ends
-    unsigned int last_column : 30;
-    /// Whether the location was introduced during compilation
-    unsigned int is_introduced : 1;
+  protected:
     
+    /// Internal representation of a Location
+    class LocVec : public ASTVec {
+    protected:
+      LocVec(const ASTString& filename, unsigned int first_line, unsigned int first_column, unsigned int last_line, unsigned int last_column);
+    public:
+      static LocVec* a(const ASTString& filename, unsigned int first_line, unsigned int first_column, unsigned int last_line, unsigned int last_column) {
+        LocVec* v = static_cast<LocVec*>(alloc(3));
+        new (v) LocVec(filename,first_line,first_column,last_line,last_column);
+        return v;
+      }
+      void mark(void) {
+        _gc_mark = 1;
+        if (_data[0])
+          static_cast<ASTStringO*>(_data[0])->mark();
+      }
+      
+      ASTString filename(void) const;
+      unsigned int first_line(void) const;
+      unsigned int last_line(void) const;
+      unsigned int first_column(void) const;
+      unsigned int last_column(void) const;
+    };
+    
+    union LI {
+      LocVec* lv;
+      ptrdiff_t t;
+    } _loc_info;
+    
+    LocVec* lv(void) const {
+      LI li = _loc_info;
+      li.t &= ~static_cast<ptrdiff_t>(1);
+      return li.lv;
+    }
+    
+  public:
     /// Construct empty location
-    Location(void);
+    Location(void) { _loc_info.lv = NULL; }
+
+    /// Construct location
+    Location(const ASTString& filename, unsigned int first_line, unsigned int first_column, unsigned int last_line, unsigned int last_column) {
+      _loc_info.lv = LocVec::a(filename,first_line,first_column,last_line,last_column);
+    }
+
+    Location(const ParserLocation& loc) {
+      _loc_info.lv = LocVec::a(loc.filename(),loc.first_line(),loc.first_column(),loc.last_line(),loc.last_column());
+    }
     
     /// Return string representation
     std::string toString(void) const;
+
+    /// Return filename
+    ASTString filename(void) const { return lv() ? lv()->filename() : ASTString(); }
+    
+    /// Return first line number
+    unsigned int first_line(void) const { return lv() ? lv()->first_line() : 0; }
+    
+    /// Return last line number
+    unsigned int last_line(void) const { return lv() ? lv()->last_line() : 0; }
+    
+    /// Return first column number
+    unsigned int first_column(void) const { return lv() ? lv()->first_column() : 0; }
+    
+    /// Return last column number
+    unsigned int last_column(void) const { return lv() ? lv()->last_column() : 0; }
+    
+    /// Return whether location is introduced by the compiler
+    bool is_introduced(void) const {
+      return _loc_info.lv==NULL || ( (_loc_info.t & 1) != 0);
+    }
     
     /// Mark as alive for garbage collection
     void mark(void) const;
@@ -89,10 +180,10 @@ namespace MiniZinc {
   operator <<(std::basic_ostream<Char,Traits>& os, const Location& loc) {
     std::basic_ostringstream<Char,Traits> s;
     s.copyfmt(os); s.width(0);
-    if (loc.filename=="") {
+    if (loc.filename()=="") {
       s << "unknown file";
     } else {
-      s << loc.filename << ":" << loc.first_line;
+      s << loc.filename() << ":" << loc.first_line();
     }
     return os << s.str();
   }

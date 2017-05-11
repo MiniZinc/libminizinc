@@ -607,7 +607,7 @@ namespace MiniZinc {
             Printer p(body_os, 70);
             p.print(f_body->e());
 
-            std::string filename = f_body->loc().filename.str();
+            std::string filename = f_body->loc().filename().str();
             size_t lastSlash = filename.find_last_of("/");
             if (lastSlash != std::string::npos) {
               filename = filename.substr(lastSlash+1, std::string::npos);
@@ -617,7 +617,7 @@ namespace MiniZinc {
             os << "<div class='mzn-fundecl-body'>";
             os << body_os.str();
             os << "</div>\n";
-            os << "(standard decomposition from "<<filename << ":" << f_body->loc().first_line<<")";
+            os << "(standard decomposition from "<< filename << ":" << f_body->loc().first_line()<<")";
             os << "</div>";
           }
         }

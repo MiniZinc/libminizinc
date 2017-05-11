@@ -953,7 +953,7 @@ namespace MiniZinc {
     for (; lastError < stack.size(); lastError++) {
       Expression* e = stack[lastError]->untag();
       bool isCompIter = stack[lastError]->isTagged();
-      if (e->loc().is_introduced)
+      if (e->loc().is_introduced())
         continue;
       if (!isCompIter && e->isa<Id>()) {
         break;
@@ -966,10 +966,10 @@ namespace MiniZinc {
     for (int i=lastError-1; i>=0; i--) {
       Expression* e = stack[i]->untag();
       bool isCompIter = stack[i]->isTagged();
-      ASTString newloc_f = e->loc().filename;
-      if (e->loc().is_introduced)
+      ASTString newloc_f = e->loc().filename();
+      if (e->loc().is_introduced())
         continue;
-      int newloc_l = e->loc().first_line;
+      int newloc_l = e->loc().first_line();
       if (newloc_f != curloc_f || newloc_l != curloc_l) {
         os << "  " << newloc_f << ":" << newloc_l << ":" << std::endl;
         curloc_f = newloc_f;
@@ -2113,12 +2113,12 @@ namespace MiniZinc {
   }
   
   bool isBuiltin(FunctionI* decl) {
-    return (decl->loc().filename == "builtins.mzn" ||
-            decl->loc().filename.endsWith("/builtins.mzn") ||
-            decl->loc().filename == "stdlib.mzn" ||
-            decl->loc().filename.endsWith("/stdlib.mzn") ||
-            decl->loc().filename == "flatzinc_builtins.mzn" ||
-            decl->loc().filename.endsWith("/flatzinc_builtins.mzn"));
+    return (decl->loc().filename() == "builtins.mzn" ||
+            decl->loc().filename().endsWith("/builtins.mzn") ||
+            decl->loc().filename() == "stdlib.mzn" ||
+            decl->loc().filename().endsWith("/stdlib.mzn") ||
+            decl->loc().filename() == "flatzinc_builtins.mzn" ||
+            decl->loc().filename().endsWith("/flatzinc_builtins.mzn"));
   }
   
   Call* same_call(Expression* e, const ASTString& id) {
@@ -2693,7 +2693,11 @@ namespace MiniZinc {
     for (unsigned int i=0; i<2; i++) {
       Val sign = (i==0 ? 1 : -1);
       if (Lit* l = le[i]->dyn_cast<Lit>()) {
-        d += sign*l->v();
+        try {
+          d += sign*l->v();
+        } catch (ArithmeticError& e) {
+          throw EvalError(env,l->loc(),e.msg());
+        }
       } else if (le[i]->isa<Id>()) {
         coeffv.push_back(sign);
         alv.push_back(le[i]);
@@ -2701,11 +2705,16 @@ namespace MiniZinc {
         GCLock lock;
         ArrayLit* sc_coeff = eval_array_lit(env,sc->args()[0]);
         ArrayLit* sc_al = eval_array_lit(env,sc->args()[1]);
-        d += sign*LinearTraits<Lit>::eval(env,sc->args()[2]);
-        for (unsigned int j=0; j<sc_coeff->v().size(); j++) {
-          coeffv.push_back(sign*LinearTraits<Lit>::eval(env,sc_coeff->v()[j]));
-          alv.push_back(sc_al->v()[j]);
+        try {
+          d += sign*LinearTraits<Lit>::eval(env,sc->args()[2]);
+          for (unsigned int j=0; j<sc_coeff->v().size(); j++) {
+            coeffv.push_back(sign*LinearTraits<Lit>::eval(env,sc_coeff->v()[j]));
+            alv.push_back(sc_al->v()[j]);
+          }
+        } catch (ArithmeticError& e) {
+          throw EvalError(env,sc->loc(),e.msg());
         }
+        
       } else {
         throw EvalError(env, le[i]->loc(), "Internal error, unexpected expression inside linear expression");
       }
@@ -5844,8 +5853,7 @@ namespace MiniZinc {
     
       if (!hadSolveItem) {
         e.envi().errorStack.clear();
-        Location modelLoc;
-        modelLoc.filename = e.model()->filepath();
+        Location modelLoc(e.model()->filepath(),0,0,0,0);
         throw FlatteningError(e.envi(),modelLoc, "Model does not have a solve item");
       }
 
