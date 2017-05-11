@@ -1442,6 +1442,7 @@ namespace MiniZinc {
         SetLit* newDom = new SetLit( Location().introduce(), IntSetVal::a( LB, UB ) );
         TypeInst* ti = new TypeInst(Location().introduce(),Type::varint(),newDom);
         VarDecl* newVar = new VarDecl(Location().introduce(),ti,mipd.getEnv()->envi().genId());
+        newVar->flat(newVar);
         mipd.getEnv()->envi().flat_addItem(new VarDeclI(Location().introduce(),newVar));
         return newVar;
       }
@@ -1480,27 +1481,35 @@ namespace MiniZinc {
                       );
         std::vector<Expression*> nc_c(coefs.size());
         std::vector<Expression*> nx(coefs.size());
-        bool fFloat = !((*vars.begin())->type().isint());
-        /// mixed types not allowed...
-        /// but trying float_lin_.. if at least1 float     TODO
-        if ( !fFloat )
-          for ( auto v: vars ) {
-            if ( !v->type().isint() )
-              fFloat = true;
-            if ( false/*fFloat == v->type().isint()*/ ) {
-              std::ostringstream oss;
-              oss << "addLinConstr: mixed var types: ";
-              for ( auto v: vars )
-                oss << v->type().isint();
-              throw std::runtime_error(oss.str());
-            }
+        bool fFloat = false;
+        for ( auto v: vars ) {
+          if ( !v->type().isint() ) {
+            fFloat = true;
+            break;
           }
+        }
         auto sName = constants().ids.float_.lin_eq; // "int_lin_eq";
         FunctionI* fDecl = mipd.float_lin_eq;
         if ( fFloat ) {                 // MZN_MIPD__assert_hard all vars of same type     TODO
           for ( int i=0; i<vars.size(); ++i ) {
             nc_c[i] = FloatLit::a( coefs[i] );
-            nx[i] = vars[i];   // ->id();   once passing a general expression
+            if (vars[i]->type().isint()) {
+              std::vector<Expression*> i2f_args(1);
+              i2f_args[0] = vars[i];
+              Call* i2f = new Call(Location().introduce(),constants().ids.int2float,i2f_args);
+              i2f->type(Type::varfloat());
+              i2f->decl(mipd.getEnv()->model()->matchFn(mipd.getEnv()->envi(), i2f, false));
+              EnvI::Map::iterator it = mipd.getEnv()->envi().map_find(i2f);
+              if (it==mipd.getEnv()->envi().map_end()) {
+                EE ret = flat_exp(mipd.getEnv()->envi(), Ctx(), i2f, NULL, constants().var_true);
+                nx[i] = ret.r();
+              } else {
+                Expression* r = it->second.r();
+                nx[i] = r;
+              }
+            } else {
+              nx[i] = vars[i];   // ->id();   once passing a general expression
+            }
           }
           args[2] = FloatLit::a(rhs);
           args[2]->type(Type::parfloat(0));
