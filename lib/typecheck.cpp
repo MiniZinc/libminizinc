@@ -881,6 +881,9 @@ namespace MiniZinc {
         }
         if (aai->type().isvar()) {
           tt.ti(Type::TI_VAR);
+          if (tt.bt()==Type::BT_ANN || tt.bt()==Type::BT_STRING) {
+            throw TypeError(_env,aai->loc(),std::string("array access using a variable not supported for array of ")+(tt.bt()==Type::BT_ANN ? "ann" : "string"));
+          }
         }
         if (aai->type().cv())
           tt.cv(true);
