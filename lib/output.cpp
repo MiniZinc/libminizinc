@@ -460,12 +460,11 @@ namespace MiniZinc {
     class DZNOVisitor : public ItemVisitor {
     protected:
       EnvI& e;
-      bool outputObjective;
       std::vector<Expression*>& outputVars;
       bool had_add_to_output;
     public:
-      DZNOVisitor(EnvI& e0, bool outputObjective0, std::vector<Expression*>& outputVars0)
-      : e(e0), outputObjective(outputObjective0), outputVars(outputVars0), had_add_to_output(false) {}
+      DZNOVisitor(EnvI& e0, std::vector<Expression*>& outputVars0)
+      : e(e0), outputVars(outputVars0), had_add_to_output(false) {}
       void vVarDeclI(VarDeclI* vdi) {
         VarDecl* vd = vdi->e();
         bool process_var = false;
@@ -520,7 +519,7 @@ namespace MiniZinc {
       void vOutputI(OutputI* oi) {
         oi->remove();
       }
-    } dznov(e, outputObjective, outputVars);
+    } dznov(e, outputVars);
 
     iterItems(dznov, e.orig);
     
@@ -535,13 +534,12 @@ namespace MiniZinc {
     class JSONOVisitor : public ItemVisitor {
     protected:
       EnvI& e;
-      bool outputObjective;
       std::vector<Expression*>& outputVars;
       bool had_add_to_output;
       bool first_var;
     public:
-      JSONOVisitor(EnvI& e0, bool outputObjective0, std::vector<Expression*>& outputVars0)
-      : e(e0), outputObjective(outputObjective0), outputVars(outputVars0), had_add_to_output(false), first_var(true) {}
+      JSONOVisitor(EnvI& e0, std::vector<Expression*>& outputVars0)
+      : e(e0), outputVars(outputVars0), had_add_to_output(false), first_var(true) {}
       void vVarDeclI(VarDeclI* vdi) {
         VarDecl* vd = vdi->e();
         bool process_var = false;
@@ -582,7 +580,7 @@ namespace MiniZinc {
       void vOutputI(OutputI* oi) {
         oi->remove();
       }
-    } jsonov(e, outputObjective, outputVars);
+    } jsonov(e, outputVars);
     
     iterItems(jsonov, e.orig);
 
