@@ -1499,14 +1499,8 @@ namespace MiniZinc {
               Call* i2f = new Call(Location().introduce(),constants().ids.int2float,i2f_args);
               i2f->type(Type::varfloat());
               i2f->decl(mipd.getEnv()->model()->matchFn(mipd.getEnv()->envi(), i2f, false));
-              EnvI::Map::iterator it = mipd.getEnv()->envi().map_find(i2f);
-              if (it==mipd.getEnv()->envi().map_end()) {
-                EE ret = flat_exp(mipd.getEnv()->envi(), Ctx(), i2f, NULL, constants().var_true);
-                nx[i] = ret.r();
-              } else {
-                Expression* r = it->second.r();
-                nx[i] = r;
-              }
+              EE ret = flat_exp(mipd.getEnv()->envi(), Ctx(), i2f, NULL, constants().var_true);
+              nx[i] = ret.r();
             } else {
               nx[i] = vars[i];   // ->id();   once passing a general expression
             }
