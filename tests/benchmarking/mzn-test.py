@@ -578,6 +578,16 @@ class MznTest:
     ## Arguments: instance files in a string, backend parameter dictionary
     ## slvName is used for screen output and last_std(out/err)_... naming, so better no spaces
     ## solList provided <=> this is solving (not checking) and will use --checkDZN if opted
+
+    ##  TODO
+    ## Because we cannot limit memory of the subprocesses directly AND there seem to be bugs in the Python 3.4 impl,
+    ## could replace the subprocess call by a call to an external which would run under given memory/time limits
+    ## and save output to given files.
+    ## OR: update from Python 3.4.2?
+    ## NAming output / model files: sort input filenames, replace spaces/punctuation
+    ### USE smth like
+    ## keepcharacters = (' ','.','_')
+    ## "".join(c for c in filename if c.isalnum() or c in keepcharacters else 'I').strip()
     def solveInstance(self, s_Inst, slvBE, slvName, solList=None):
         resSlv = OrderedDict()
         bChkDZN = True if None!=solList and None!=self.params.args.checkDZN else False
@@ -609,11 +619,11 @@ class MznTest:
                     s_UsingOpt = sUseJN % s_InstMerged
                     s_Call += ' ' + s_UsingOpt
             if solList is not None:
-                if self.params.args.debug is not None and self.params.args.debug | 1:
-                    print( "  CALL: \"", s_Call, "\"", sep='' )
+                if self.params.args.debug is not None and ( self.params.args.debug & 1 ):
+                    print( "  CALL: \"", s_Call, "\"", sep='', flush=True )
             else:
-                if self.params.args.debug is not None and self.params.args.debug | 2:
-                    print( "  CALL: \"", s_Call, "\"", sep='' )
+                if self.params.args.debug is not None and ( self.params.args.debug & 2 ):
+                    print( "  CALL: \"", s_Call, "\"", sep='', flush=True )
             resSlv["Solver_Call"] = s_Call
             resSlv["DateTime_Start"] = datetime.datetime.now().__str__()
             completed, tmAll = \
@@ -640,6 +650,9 @@ class MznTest:
             else:
                 resSlv["Sol_Status"] = [-51, "   !!!!! NOFZN"]     ## This can mean a check failed.
             mzn_exec.parseStdout( io.StringIO( completed.stdout ), resSlv, slvBE["Stdout_Keylines"], slvBE["Stdout_Keyvalues"], solList )
+            ## Adding the outputs to the log
+            resSlv["StdErr"] = completed.stderr
+            resSlv["StdOut"] = completed.stdout
         dTmLast = utils.try_float( resSlv.get( "RealTime_Solns2Out" ) )
         if None!=dTmLast:
             resSlv["TimeReal_LastStatus"] = dTmLast / 1000.0
