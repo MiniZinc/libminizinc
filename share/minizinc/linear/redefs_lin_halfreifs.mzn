@@ -19,11 +19,10 @@ predicate aux_float_eq_if_1(var float: x, var float: y, var int: p) =
   elseif is_fixed(x) /\ is_fixed(y) then         %%% Needed to avoid constant domain var
     if fix(x)!=fix(y) then p==0 else true endif
   elseif is_fixed(x-y) then                      %%% Hypothetically possible to land here
-    if 0!=fix(x-y) then p==0 else true endif
+    if 0.0!=fix(x-y) then p==0 else true endif
   elseif fPostprocessDomains /\ fPostproDom_AUX /\ fPostproDom_DIFF then
     aux_float_eq_zero_if_1__POST(x - y, p, p)
   elseif fMZN__UseIndicators then
-%    my_trace__DBG("  aux_float_eq_if_1  INDIC: \(x) \\/ \(y) <-> \(p) \n") /\
     aux_float_eq_if_1__IND(x, y, p)
   else
     aux_float_le_if_1(x, y, p) /\
@@ -31,12 +30,6 @@ predicate aux_float_eq_if_1(var float: x, var float: y, var int: p) =
   endif;
 
 predicate aux_int_le_zero_if_0(var int: x, var int: p) =
-%    my_trace("  aux_int_le_zero_if_0( \(x), \(p))\n") /\
-%     if card(dom(x))<20 then
-%       let { array[int] of var int: pp = eq_encode(x) } in
-%       my_trace ("    aux_int_le_zero_if_0 by unary: dom(x) = " ++ show(dom(x)) ++ "\n") /\
-%       sum ( i in dom(x) where i<=0 ) ( pp[i] ) == p
-%     else
   if is_fixed(p) then
     if 0==fix(p) then x<=0 else true endif         %% 0==fix !!
   elseif is_fixed(x) then         %%% Needed to avoid constant domain var
@@ -44,7 +37,6 @@ predicate aux_int_le_zero_if_0(var int: x, var int: p) =
   elseif fPostprocessDomains /\ fPostproDom_AUX then
     aux_int_le_zero_if_1__POST(x, 1-p)
   elseif fMZN__UseIndicators then
-%    my_trace__DBG("  aux_int_le_zero_if_0  INDIC: \(x) \\/ \(p) \n") /\
     aux_int_le_zero_if_0__IND(x, p)
   else
       x <= ub(x) * p
@@ -58,7 +50,6 @@ predicate aux_float_le_zero_if_0(var float: x, var int: p) =
   elseif fPostprocessDomains /\ fPostproDom_AUX then
     aux_float_le_zero_if_1__POST(x, 1-p, 1-p)
   elseif fMZN__UseIndicators then
-%    my_trace__DBG("  aux_float_le_zero_if_0  INDIC: \(x) \\/ \(p)  \n") /\
     aux_float_le_zero_if_0__IND(x, p)
   else
     x <= ub(x) * p
@@ -72,7 +63,7 @@ predicate aux_float_lt_zero_if_0(var float: x, var int: p) =
   elseif fPostprocessDomains /\ fPostproDom_AUX then
     aux_float_lt_zero_if_1__POST(x, 1-p, 1-p, float_lt_EPS_coef__)
   else
-    let { float: rho = float_lt_EPS_coef__ * abs(ub(x)) }  % same order of magnitude as ub(x)
+    let { float: rho = float_lt_EPS_coef__ * max(abs(ub(x)), abs(lb(x))) }  % same order of magnitude as ub(x)
     in
     x < (ub(x) + rho) * p
   endif;

@@ -1204,7 +1204,12 @@ namespace MiniZinc {
                         if (newdom->size()==0) {
                           env.fail();
                         } else {
-                          vdi->ti()->domain(new SetLit(Location().introduce(),newdom));
+                          IntSetRanges vdi_domr2(vdi_dom);
+                          IntSetRanges newdomr(newdom);
+                          if (!Ranges::equal(vdi_domr2, newdomr)) {
+                            vdi->ti()->domain(new SetLit(Location().introduce(),newdom));
+                            vdi->ti()->setComputedDomain(false);
+                          }
                         }
                       }
                     }
@@ -1225,7 +1230,12 @@ namespace MiniZinc {
                         if (newdom->size()==0) {
                           env.fail();
                         } else {
-                          vdi->ti()->domain(new SetLit(Location().introduce(),newdom));
+                          FloatSetRanges vdi_domr2(vdi_dom);
+                          FloatSetRanges newdomr(newdom);
+                          if (!Ranges::equal(vdi_domr2, newdomr)) {
+                            vdi->ti()->domain(new SetLit(Location().introduce(),newdom));
+                            vdi->ti()->setComputedDomain(false);
+                          }
                         }
                       }
                     }
@@ -2280,7 +2290,11 @@ namespace MiniZinc {
     for (unsigned int i=0; i<2; i++) {
       Val sign = (i==0 ? 1 : -1);
       if (Lit* l = le[i]->dyn_cast<Lit>()) {
-        d += sign*l->v();
+        try {
+          d += sign*l->v();
+        } catch (ArithmeticError& e) {
+          throw EvalError(env,l->loc(),e.msg());
+        }
       } else if (le[i]->isa<Id>()) {
         coeffv.push_back(sign);
         alv.push_back(le[i]);
@@ -2288,11 +2302,16 @@ namespace MiniZinc {
         GCLock lock;
         ArrayLit* sc_coeff = eval_array_lit(env,sc->args()[0]);
         ArrayLit* sc_al = eval_array_lit(env,sc->args()[1]);
-        d += sign*LinearTraits<Lit>::eval(env,sc->args()[2]);
-        for (unsigned int j=0; j<sc_coeff->v().size(); j++) {
-          coeffv.push_back(sign*LinearTraits<Lit>::eval(env,sc_coeff->v()[j]));
-          alv.push_back(sc_al->v()[j]);
+        try {
+          d += sign*LinearTraits<Lit>::eval(env,sc->args()[2]);
+          for (unsigned int j=0; j<sc_coeff->v().size(); j++) {
+            coeffv.push_back(sign*LinearTraits<Lit>::eval(env,sc_coeff->v()[j]));
+            alv.push_back(sc_al->v()[j]);
+          }
+        } catch (ArithmeticError& e) {
+          throw EvalError(env,sc->loc(),e.msg());
         }
+        
       } else {
         throw EvalError(env, le[i]->loc(), "Internal error, unexpected expression inside linear expression");
       }
@@ -5249,10 +5268,7 @@ namespace MiniZinc {
         return false;
     } else if (e->type()==Type::parfloat()) {
       FloatSetVal* fsv = eval_floatset(env,domain);
-      FloatSetRanges fr(fsv);
-      FloatSetVal* rsv = eval_floatset(env,e);
-      FloatSetRanges rr(rsv);
-      if (!Ranges::subset(rr, fr))
+      if (!fsv->contains(eval_float(env, e)))
         return false;
     } else if (e->type()==Type::parsetint()) {
       IntSetVal* isv = eval_intset(env,domain);
@@ -5260,6 +5276,13 @@ namespace MiniZinc {
       IntSetVal* rsv = eval_intset(env,e);
       IntSetRanges rr(rsv);
       if (!Ranges::subset(rr, ir))
+        return false;
+    } else if (e->type()==Type::parsetfloat()) {
+      FloatSetVal* fsv = eval_floatset(env,domain);
+      FloatSetRanges fr(fsv);
+      FloatSetVal* rsv = eval_floatset(env,e);
+      FloatSetRanges rr(rsv);
+      if (!Ranges::subset(rr, fr))
         return false;
     }
     return true;
@@ -5292,6 +5315,35 @@ namespace MiniZinc {
         void vVarDeclI(VarDeclI* v) {
           if (v->e()->type().isvar() && v->e()->type().dim() > 0 && v->e()->e() == NULL) {
             (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
+          }
+          if (v->e()->type().ispar() && v->e()->type().dim() > 0 && v->e()->ti()->domain()==NULL
+              && (v->e()->type().bt()==Type::BT_INT || v->e()->type().bt()==Type::BT_FLOAT)) {
+            // Compute bounds for array literals
+            GCLock lock;
+            ArrayLit* al = eval_array_lit(env, v->e()->e());
+            if (v->e()->type().bt()==Type::BT_INT && v->e()->type().st()==Type::ST_PLAIN) {
+              IntVal lb = IntVal::infinity();
+              IntVal ub = -IntVal::infinity();
+              for (unsigned int i=0; i<al->v().size(); i++) {
+                IntVal vi = eval_int(env, al->v()[i]);
+                lb = std::min(lb, vi);
+                ub = std::max(ub, vi);
+              }
+              GCLock lock;
+              v->e()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(lb, ub)));
+              v->e()->ti()->setComputedDomain(true);
+            } else if (v->e()->type().bt()==Type::BT_FLOAT && v->e()->type().st()==Type::ST_PLAIN) {
+              FloatVal lb = FloatVal::infinity();
+              FloatVal ub = -FloatVal::infinity();
+              for (unsigned int i=0; i<al->v().size(); i++) {
+                FloatVal vi = eval_float(env, al->v()[i]);
+                lb = std::min(lb, vi);
+                ub = std::max(ub, vi);
+              }
+              GCLock lock;
+              v->e()->ti()->domain(new SetLit(Location().introduce(), FloatSetVal::a(lb, ub)));
+              v->e()->ti()->setComputedDomain(true);
+            }
           }
         }
       } _ead(env);
