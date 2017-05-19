@@ -1,4 +1,4 @@
-import psutil, shlex, subprocess, resource, timeit, re, sys
+import timeit, re, sys, os
 import utils, json_config
 
 ## TODO Keyline/value dictionaries: entries == json_config.s_CommentKey are ignored. Make it a parameter
@@ -14,11 +14,28 @@ def on_terminate(proc):
 ##############################################################################################
 ###################### MZN instance execution + result parsing low-level #####################
 ##############################################################################################
-## runCmd. Actually should be used for checking as well.
+## runCmdCmdline using system(). Actually used for checking as well.
+## run the specified shell command string and return the time.
+## can add ulimit etc.
+## s1, s2: filenames for strout, stderr
+## dictCmd: commands for Win and non-Win
+## meml: list of 2 values, soft & hard limits as N bytes
+def runCmdCmdline( s_Cmd, s1, s2, dictCmd, timeo, bVerbose=False, meml=None ):
+    tm = timeit.default_timer()
+    setCmd = dictCmd["windows"] if "win" in sys.platform and "cygwin" not in sys.platform else dictCmd["non-windows"]
+    sCmd = setCmd["runVerbose" if bVerbose else "runSilent"].format(meml[1], timeo, s_Cmd, s1, s2)
+    print( "\n  RUNNING:", sCmd )
+    os.system(sCmd)
+    tm = timeit.default_timer() - tm
+    return tm
+
+
+## runCmd using psutils. Actually should be used for checking as well.
 ## run the specified shell command string and return the popen result.
 ## TODO catch intermediate solutions if needed
 ## meml: list of 2 values, soft & hard limits as N bytes
 def runCmd( s_Cmd, b_Shell=False, timeo=None, meml=None ):
+    import psutil, shlex, subprocess, resource
     if b_Shell:
         l_Cmd = s_Cmd
     else:
