@@ -5,6 +5,37 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.1.5
+=============
+
+Changes:
+ - Some improvements to the linearisation library.
+ - Make parser read multiple .mzn files correctly.
+ - Enable better bounds computation for array access expressions on
+   fixed arrays.
+ - Perform better constant folding during optimisation phase. Fixes #155.
+ - Don't rewrite pow function into multiplication in the case of power of 2.
+ - Save some memory by making certain internal data structures more compact.
+ - Improve source code location of identifiers in generator calls (should give
+   more precise error messages).
+ - Produce an error message when a comprehension attempts to iterate over an
+   infinite set.
+ - Produce better error messages for operations on infinite values (previously
+   some errors did not contain a source code location).
+ - Speed up garbage collection by pre-allocating some memory.
+
+Bug fixes:
+ - Fix range check for float literals in arrays.
+ - Fix a bug where a constraint could be removed incorrectly. Fixes #150.
+ - Include variables for dzn and json output from all included models, not
+   just the main model. Fixes #153.
+ - Produce multi-dimensional arrays in json output. Fixes #156 and #157.
+ - Remove incorrect closing bracket from json output. Fixes #154.
+ - Fix bounds computation of par int and float arrays.
+ - Don't allow var access to arrays of strings or annotations (since that would
+   require an element constraint and var string / var ann types).
+ - Introduce int2float constraints where necessary for some linearisations.
+
 Version 2.1.4
 =============
 
