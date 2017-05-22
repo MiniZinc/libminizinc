@@ -264,7 +264,7 @@ namespace MiniZinc {
     bool sac(bool toFixedPoint, bool shaving);
     void print_stats();
 
-    void processSolution(void);
+    void processSolution(bool last_sol = false);
     virtual Expression* getSolutionValue(Id* id);
 
     Gecode::Space* getGecodeModel(void);

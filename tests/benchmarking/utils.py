@@ -46,11 +46,21 @@ class MyTab:
                       end=self.sColSep if iC+1<len(hdr) else '\n' )
         return res
 
-def openFile_autoDir( sFln, sMode ):
+## change string to be abke to become a filename
+def flnfy( sStr ):
+    keepcharacters = ('-','_')
+    return "".join(c if c.isalnum() or c in keepcharacters else 'I' for c in sStr).strip()
+
+def makeDirname( sFln ):
     sDir = os.path.dirname( sFln )
     if 0<len(sDir):
         try:
             os.makedirs( sDir, exist_ok=True)
         except:
             print( "Failed to create dir '", sDir, "'.", sep='' )
+            return False
+    return True
+
+def openFile_autoDir( sFln, sMode ):
+    makeDirname( sFln )
     return open( sFln, sMode )
