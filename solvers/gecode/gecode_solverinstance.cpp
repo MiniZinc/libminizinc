@@ -1067,7 +1067,7 @@ namespace MiniZinc {
         << std::endl;
   }
 
-  void GecodeSolverInstance::processSolution(void) {
+  void GecodeSolverInstance::processSolution(bool last_sol) {
     if(_solution) {
       assignSolutionToOutput();
       printSolution();
@@ -1106,7 +1106,7 @@ namespace MiniZinc {
             _status = SolverInstance::UNKNOWN;
           }
         } else {
-          _status = SolverInstance::OPT;
+          _status = last_sol ? SolverInstance::OPT : SolverInstance::SAT;
         }
       }
     } else {
@@ -1127,7 +1127,8 @@ namespace MiniZinc {
       presolve();
     }
 
-    while (FznSpace* next_sol = engine->next()) {
+    FznSpace* next_sol = NULL;
+    while (next_sol = engine->next()) {
       if(_solution) delete _solution;
       _solution = next_sol;
       _n_found_solutions++;
@@ -1135,6 +1136,8 @@ namespace MiniZinc {
       if(_all_solutions || _n_found_solutions < _n_max_solutions) {
         processSolution();
         if (_print_stats) print_stats();
+      } else if(_n_found_solutions == _n_max_solutions){
+        break;
       } else {
         if (_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
           break;
@@ -1142,7 +1145,7 @@ namespace MiniZinc {
       }
     }
 
-    processSolution();
+    processSolution(next_sol == NULL);
     if (_print_stats) print_stats();
     
     return _status;
