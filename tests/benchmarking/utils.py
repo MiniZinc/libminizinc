@@ -35,15 +35,15 @@ class MyTab:
                     if nWMax[ iC ]<len( str( matr[iR][iC] ) ):
                         nWMax[ iC ] = len( str( matr[iR][iC] ) )
         ## Printing
-        print( ("{0:<"+str(nWMax[0])+'}').format(hdr[0]), end=self.sColSep )
+        res =( ("{0:<"+str(nWMax[0])+'}').format(hdr[0]) + self.sColSep )
         for iC in range( 1, len( hdr ) ):
-            print( ("{0:"+str(nWMax[iC])+'}').format(hdr[iC]),
-                  end=self.sColSep if iC+1<len(hdr) else '\n' )
+            res += ( ("{0:"+str(nWMax[iC])+'}').format(hdr[iC])
+                  + self.sColSep if iC+1<len(hdr) else '\n' )
         for iR in range( len( matr ) ):
-            print( ("{0:<"+str(nWMax[0])+'}').format(matr[iR][0] if 0<len( matr[ iR ] ) else '-'), end=self.sColSep )
+            res += ( ("{0:<"+str(nWMax[0])+'}').format(matr[iR][0] if 0<len( matr[ iR ] ) else '-') + self.sColSep )
             for iC in range( 1, len( matr[iR] ) ):
-                print( ("{0:"+str(nWMax[iC])+'}').format(matr[iR][iC] if iC<len( matr[ iR ] ) else '-'),
-                      end=self.sColSep if iC+1<len(hdr) else '\n' )
+                res += ( ("{0:"+str(nWMax[iC])+'}').format(matr[iR][iC] if iC<len( matr[ iR ] ) else '-')
+                       + self.sColSep if iC+1<len(hdr) else '\n' )
         return res
 
 ## change string to be abke to become a filename
