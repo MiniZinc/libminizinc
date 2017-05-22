@@ -481,6 +481,13 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
     getMIPWrapper()->provideSolutionCallback(HandleSolutionCallback, this);
     if ( cutGenerators.size() )  // only then, can modify presolve
       getMIPWrapper()->provideCutCallback(HandleCutCallback, this);
+    ////////////// clean up envi /////////////////
+    {
+      cleanupForNonincrementalSolving();
+      if (GC::locked() && mip_wrap->fVerbose)
+        std::cerr << "WARNING: GC is locked before SolverInstance::solve()! Wasting memory.cleanupForNonincrementalSolving" << std::endl;
+      GCLock lock;
+    }
     getMIPWrapper()->solve();
   //   printStatistics(cout, 1);   MznSolver does this (if it wants)
     sw = getMIPWrapper()->getStatus();

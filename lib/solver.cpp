@@ -107,6 +107,7 @@ void MznSolver::addFlattener()
 
 void MznSolver::addSolverInterface()
 {
+  GCLock lock;
   if ( getGlobalSolverRegistry()->getSolverFactories().empty() ) {
     cerr << " MznSolver: NO SOLVER FACTORIES LINKED." << endl;
     assert( 0 );
@@ -210,11 +211,14 @@ void MznSolver::flatten()
 
 void MznSolver::solve()
 {
-  GCLock lock;
-  getSI()->getOptions().setBoolParam  (constants().opts.verbose.str(),  get_flag_verbose());
-  getSI()->getOptions().setBoolParam  (constants().opts.statistics.str(),  get_flag_statistics());
-  getSI()->processFlatZinc();
+  { // To be able to clean up flatzinc after PrcessFlt()
+    GCLock lock;
+    getSI()->getOptions().setBoolParam  (constants().opts.verbose.str(),  get_flag_verbose());
+    getSI()->getOptions().setBoolParam  (constants().opts.statistics.str(),  get_flag_statistics());
+    getSI()->processFlatZinc();
+  }
   SolverInstance::Status status = getSI()->solve();
+  GCLock lock;
   if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
     getSI()->printSolution();             // What if it's already printed?  TODO
     if ( !getSI()->getSolns2Out()->fStatusPrinted )

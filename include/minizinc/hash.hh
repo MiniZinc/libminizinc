@@ -160,6 +160,7 @@ namespace MiniZinc {
     void remove(KeepAlive& e) {
       _m.erase(e);
     }
+    void clear() { _m.clear(); }
     template <class D> void dump(void) {
       for (iterator i = _m.begin(); i != _m.end(); ++i) {
         std::cerr << i->first() << ": " << D::d(i->second) << std::endl;

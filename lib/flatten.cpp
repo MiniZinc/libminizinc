@@ -475,7 +475,16 @@ namespace MiniZinc {
       return callStack[callStack.size()-2]->untag()->dyn_cast<Call>();
     return NULL;
   }
-  
+ 
+  void EnvI::cleanupExceptOutput() {
+    cmap.clear();
+    map.clear();
+    delete _flat;
+    delete orig;
+    _flat=0;
+    orig=0;
+  }
+ 
   CallStackItem::CallStackItem(EnvI& env0, Expression* e) : env(env0) {
     if (e->isa<VarDecl>())
       env.idStack.push_back(env.callStack.size());
