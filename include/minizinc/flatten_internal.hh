@@ -151,6 +151,8 @@ namespace MiniZinc {
     std::ostream& evalOutput(std::ostream& os);
     void createErrorStack(void);
     Call* surroundingCall(void) const;
+
+    void cleanupExceptOutput();
   };
 
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);

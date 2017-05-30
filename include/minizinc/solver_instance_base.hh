@@ -61,6 +61,8 @@ namespace MiniZinc {
     virtual Status next(void) = 0;
     /// generate the solver-instance-representation from the flatzinc model
     virtual void processFlatZinc(void) = 0;
+    /// clean up input model & flatzinc
+    void cleanupForNonincrementalSolving() { getEnv()->envi().cleanupExceptOutput(); }
     /// solve the problem instance (according to the solve specification in the flatzinc model)
     virtual Status solve(void);
     /// return reason for status given by solve

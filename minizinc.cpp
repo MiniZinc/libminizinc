@@ -73,7 +73,7 @@ int main(int argc, const char** argv) {
     {
       fSuccess = true;
       if ( !slv.ifMzn2Fzn() ) {          // only then
-        GCLock lock;
+        // GCLock lock;                  // better locally, to enable cleanup after ProcessFlt()
         slv.addSolverInterface();
         slv.solve();
       }

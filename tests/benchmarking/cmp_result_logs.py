@@ -92,12 +92,7 @@ class CompareLogs:
     
     ## Summarize
     def summarize( self ):
-        ### Printing summary
-        print ('')
-        print ('='*50)
-        print('            SUMMARY')
-        print ('='*50)
-        print ( utils.MyTab().tabulate(
+        return ( utils.MyTab().tabulate(
             [ [ lcv[1][hdr[0]] if hdr[0] in lcv[1] else 0
                 for hdr in self.hdrSummary ]
               for lcv in self.lCmpVecs ],

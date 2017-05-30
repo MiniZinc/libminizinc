@@ -225,6 +225,7 @@ namespace MiniZinc {
     ~ASTNodeWeakMap(void);
     void insert(ASTNode* n0, ASTNode* n1);
     ASTNode* find(ASTNode* n);
+    void clear() { _m.clear(); }
   };
 }
 

@@ -450,15 +450,18 @@ void HandleCutCallback(const MIP_wrapper::Output& out, MIP_wrapper::CutInput& in
 
 SolverInstance::Status MIP_solverinstance::solve(void) {
   SolveI* solveItem = getEnv()->flat()->solveItem();
+  int nProbType=0;
   if (solveItem->st() != SolveI::SolveType::ST_SAT) {
     if (solveItem->st() == SolveI::SolveType::ST_MAX) {
       getMIPWrapper()->setObjSense(1);
       getMIPWrapper()->setProbType(1);
+      nProbType=1;
       if (mip_wrap->fVerbose)
         cerr << "    MIP_solverinstance: this is a MAXimization problem." << endl;
     } else {
       getMIPWrapper()->setObjSense(-1);
       getMIPWrapper()->setProbType(-1);
+      nProbType=-1;
       if (mip_wrap->fVerbose)
         cerr << "    MIP_solverinstance: this is a MINimization problem." << endl;
     }
@@ -481,6 +484,13 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
     getMIPWrapper()->provideSolutionCallback(HandleSolutionCallback, this);
     if ( cutGenerators.size() )  // only then, can modify presolve
       getMIPWrapper()->provideCutCallback(HandleCutCallback, this);
+    ////////////// clean up envi /////////////////
+    {
+      cleanupForNonincrementalSolving();
+      if (GC::locked() && mip_wrap->fVerbose)
+        std::cerr << "WARNING: GC is locked before SolverInstance::solve()! Wasting memory." << std::endl;
+      GCLock lock;
+    }
     getMIPWrapper()->solve();
   //   printStatistics(cout, 1);   MznSolver does this (if it wants)
     sw = getMIPWrapper()->getStatus();
@@ -492,7 +502,7 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
   SolverInstance::Status s = SolverInstance::UNKNOWN;
   switch(sw) {
     case MIP_wrapper::Status::OPT:
-      if ( SolveI::SolveType::ST_SAT != getEnv()->flat()->solveItem()->st() ) {
+      if ( 0!=nProbType ) {
         s = SolverInstance::OPT;
       } else {
         s = SolverInstance::SAT;    // For SAT problems, just say SAT unless we know it's complete

@@ -40,11 +40,6 @@ def runCmd( s_Cmd, b_Shell=False, timeo=None, meml=None ):
         l_Cmd = s_Cmd
     else:
         l_Cmd = shlex.split( s_Cmd )
-    if None!=meml:
-        if hasattr( resource, 'RLIMIT_RSS' ):  ## TODO move into preexec_fn for parallel tests?
-            resource.setrlimit( resource.RLIMIT_RSS, ( meml[0], meml[1] ) )
-        else:
-            print( "  ... but the OS doesn't support RLIMIT_RSS." )
     tm = timeit.default_timer()
     ################# In the following, the subprocess.RUN method fails to kill shell calls on Linux
     #try:
@@ -55,6 +50,11 @@ def runCmd( s_Cmd, b_Shell=False, timeo=None, meml=None ):
     ################# Using psutils
     proc = psutil.Popen(l_Cmd, shell=b_Shell,
           universal_newlines=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    if None!=meml:
+        if hasattr( psutil, 'RLIMIT_AS' ):  ## TODO move into preexec_fn for parallel tests?
+            proc.rlimit( resource.RLIMIT_AS, ( meml[0]*1000, meml[1]*1000 ) )
+        else:
+            print( "  ... but the OS doesn't support RLIMIT_AS." )
     completed = Output()
     try:
         completed.stdout, completed.stderr = proc.communicate(timeout=timeo)
@@ -64,7 +64,7 @@ def runCmd( s_Cmd, b_Shell=False, timeo=None, meml=None ):
         for p in procs:
             p.terminate()
         try:
-            completed.stdout, completed.stderr = proc.communicate(timeout=3)
+            completed.stdout, completed.stderr = proc.communicate(timeout=1)
         except subprocess.TimeoutExpired as te:
             print ( " hard_kill. ", end='' )
             procs = psutil.Process().children(recursive=True)

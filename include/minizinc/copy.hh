@@ -44,6 +44,10 @@ namespace MiniZinc {
       ASTNode* n = node_m.find(e.vec());
       return static_cast<ASTExprVecO<T*>*>(n);
     }
+    void clear() {
+      model_m.clear();
+      node_m.clear();
+    }
   };
 
   /// Create a deep copy of expression \a e
