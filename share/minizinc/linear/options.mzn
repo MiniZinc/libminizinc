@@ -97,7 +97,11 @@ int: nMZN__UnaryLenMax_setInReif = nMZN__UnaryLenMax__ALL;
 %-----------------------------------------------------------------------------%
 % Strict inequality
 % The relative epsilon
-float: float_lt_EPS_coef__ = 1e-04;
+%%% Has the problem that when relating to upper bound of various differences,
+%%% getting different absolute eps
+% float: float_lt_EPS_coef__ = 1e-04;
+%%% Absolute:
+float: float_lt_EPS = 1e-02;
 
 %-----------------------------------------------------------------------------%
 %%% Set =true to PRINT TRACING messages for some constraints:

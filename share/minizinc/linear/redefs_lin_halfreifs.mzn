@@ -61,13 +61,14 @@ predicate aux_float_lt_zero_if_0(var float: x, var int: p) =
   elseif is_fixed(x) then         %%% Needed to avoid constant domain var
     if fix(x)>=0.0 then p==1 else true endif
   elseif fPostprocessDomains /\ fPostproDom_AUX then
-    aux_float_lt_zero_if_1__POST(x, 1-p, 1-p, float_lt_EPS_coef__)
+    aux_float_lt_zero_if_1__POST(x, 1-p, 1-p, float_lt_EPS)
   elseif fMZN__UseIndicators then
-    aux_float_le_zero_if_0__IND(x+float_lt_EPS_coef__, p)       %% Here just absolute EPS,  TODO
+    aux_float_le_zero_if_0__IND(x+float_lt_EPS, p)       %% Here just absolute EPS,  TODO
   else
-    let { float: rho = float_lt_EPS_coef__ * max(abs(ub(x)), abs(lb(x))) }  % same order of magnitude as ub(x)
-    in
-    x < (ub(x) + rho) * p
+    %% let { float: rho = float_lt_EPS_coef__ * max(abs(ub(x)), abs(lb(x))) }  % same order of magnitude as ub(x)
+    %% in
+    %% x < (ub(x) + rho) * p
+    x < (ub(x) + float_lt_EPS) * p
   endif;
 
 

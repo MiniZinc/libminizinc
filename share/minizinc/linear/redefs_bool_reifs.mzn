@@ -61,6 +61,7 @@ predicate bool_xor(var bool: p, var bool: q, var bool: r) =
 
 
 predicate bool_eq_reif(var bool: p, var bool: q, var bool: r) =
+%%    trace(" bool_eq_reif: \(p), \(q), \(r) \n") /\
     if is_fixed(r) then   % frequent case
         if fix(r) = true then p = q else bool_not(p,q) endif
     elseif false then

@@ -19,7 +19,7 @@ function var int: bool2int(var bool: x) :: promise_total =
       b2i;
 
 predicate bool_eq(var bool: x, var bool: y) =
-%  trace(" bool_eq: \(x), \(y) \n") /\
+%%  trace(" bool_eq: \(x), \(y) \n") /\
   bool2int(x)==bool2int(y);
 
 %---------------------------- BASIC (HALF)REIFS -----------------------------%
@@ -42,7 +42,8 @@ include "nosets.mzn";                %% For set_le, set_lt ... Usind std/nosets
 % (some solutions of the original problem may become invalid).
 
 predicate float_lt(var float: x, var float: y) =
-     (x - y) <= (-float_lt_EPS_coef__)*max(abs(ub(x - y)), abs(ub(y-x)));
+%     (x - y) <= (-float_lt_EPS_coef__)*max(abs(ub(x - y)), abs(ub(y-x)));
+      x <= y - float_lt_EPS;
 
 predicate float_lin_lt(array[int] of float: c, array[int] of var float: x,
                             float: d) =
