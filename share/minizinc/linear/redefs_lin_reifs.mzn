@@ -141,11 +141,13 @@ predicate int_eq_reif(var int: x, int: y, var bool: b) =
   if is_fixed(b) then
     if true==fix(b) then x==y else x!=y endif
   elseif y in dom(x) then
-    if y==lb(x) then
-      int_lt_reif(y, x, not b)
-    elseif y==ub(x) then
-      int_lt_reif(x, y, not b)
-    elseif fPostprocessDomains then
+%%%  THIS seems pretty complex, especially for binaries, and does not connect to eq_encoding (/ MIPD?)
+%%    if y==lb(x) then
+%%      int_lt_reif(y, x, not b)
+%%    elseif y==ub(x) then
+%%      int_lt_reif(x, y, not b)
+%%    else
+      if fPostprocessDomains then
       int_eq_reif__POST(x, y, b)
     elseif card(dom(x))<nMZN__UnaryLenMax_eq then                                 %% PARAM TODO. That low (10) is needed for l2p
       let {
