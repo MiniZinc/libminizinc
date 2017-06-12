@@ -338,7 +338,7 @@ namespace SCIPConstraints {
     }
   }
 
-  /// The XBZ cut generator
+  /// Initialize the XBZ cut generator
   void p_XBZ_cutgen(SolverInstanceBase& si, const Call* call) {
     MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
     Env& _env = gi.env();
@@ -357,6 +357,25 @@ namespace SCIPConstraints {
     
     gi.registerCutGenerator( move( pCG ) );
   }
+  
+  /// Initialize the SEC cut generator
+  void p_SEC_cutgen(SolverInstanceBase& si, const Call* call) {
+    MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
+    Env& _env = gi.env();
+    
+    unique_ptr<SECCutGen> pCG( new SECCutGen( gi.getMIPWrapper() ) );
+    
+    ASTExprVec<Expression> args = call->args();
+    assert( args.size()==1 );
+    gi.exprToVarArray(args[0], pCG->varXij);            // WHAT ABOUT CONSTANTS?
+    const double dN = sqrt( pCG->varXij.size() );
+    MZN_ASSERT_HARD( fabs( dN - round(dN) ) < 1e-6 );   // should be a square matrix
+//     cout << "  NEXT_CUTGEN" << endl;
+//     pCG->print( cout );
+    
+    gi.registerCutGenerator( move( pCG ) );
+  }
+
 }
 
 void MIP_solverinstance::registerConstraints() {
@@ -379,9 +398,10 @@ void MIP_solverinstance::registerConstraints() {
   _constraintRegistry.add(ASTString("aux_float_le_zero_if_0__IND"), SCIPConstraints::p_indicator_le0_if0);
   _constraintRegistry.add(ASTString("aux_float_eq_if_1__IND"), SCIPConstraints::p_indicator_eq_if1);
   
-  /// XBZ cut generator
+  /// Cut generators
   _constraintRegistry.add(ASTString("array_var_float_element__XBZ_lb__cutgen"),
                           SCIPConstraints::p_XBZ_cutgen);
+  _constraintRegistry.add(ASTString("circuit__SECcuts"), SCIPConstraints::p_SEC_cutgen);
   
 }
 

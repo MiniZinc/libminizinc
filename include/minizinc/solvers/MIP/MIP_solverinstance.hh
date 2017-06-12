@@ -52,6 +52,17 @@ namespace MiniZinc {
     void generate(const MIP_wrapper::Output&, MIP_wrapper::CutInput&);
     void print( std::ostream& );
   };
+  
+  /// SEC cut generator for circuit
+  class SECCutGen : public CutGen {
+    SECCutGen() { }
+    MIP_wrapper* pMIP=0;
+  public:
+    SECCutGen( MIP_wrapper* pw ) : pMIP(pw) { }
+    vector<MIP_wrapper::VarId> varXij;
+    void generate(const MIP_wrapper::Output&, MIP_wrapper::CutInput&);
+    void print( std::ostream& );
+  };
 
   class MIP_solverinstance : public SolverInstanceImpl<MIP_solver> {
     protected:
