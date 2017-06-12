@@ -634,7 +634,12 @@ namespace MiniZinc {
   }
   void
   Let::popbindings(void) {
-    GC::untrail();
+    for (unsigned int i=_let.size(); i--;) {
+      if (VarDecl* vd = _let[i]->dyn_cast<VarDecl>()) {
+        GC::untrail();
+        break;
+      }
+    }
   }
 
   void
