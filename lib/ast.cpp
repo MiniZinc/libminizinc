@@ -713,8 +713,12 @@ namespace MiniZinc {
             tiit.enumId(enumIds[enumIds.size()-1]);
           }
           tiit.dim(0);
-          if (tii->type().st()==Type::ST_SET)
+          if (tii->type().st()==Type::ST_SET) {
             tiit.st(Type::ST_PLAIN);
+          }
+          if (isaEnumTIId(tii->domain())) {
+            tiit.st(Type::ST_SET);
+          }
           ASTStringMap<Type>::t::iterator it = tmap.find(tiid);
           if (it==tmap.end()) {
             tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
