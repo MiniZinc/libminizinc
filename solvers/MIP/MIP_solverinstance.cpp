@@ -508,9 +508,10 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
       getMIPWrapper()->provideCutCallback(HandleCutCallback, this);
     ////////////// clean up envi /////////////////
     {
-      cleanupForNonincrementalSolving();
-      if (GC::locked() && mip_wrap->fVerbose)
-        std::cerr << "WARNING: GC is locked before SolverInstance::solve()! Wasting memory." << std::endl;
+      /// Removing for now - need access to output variables  TODO
+//       cleanupForNonincrementalSolving();
+//       if (GC::locked() && mip_wrap->fVerbose)
+//         std::cerr << "WARNING: GC is locked before SolverInstance::solve()! Wasting memory." << std::endl;
       GCLock lock;
     }
     getMIPWrapper()->solve();
