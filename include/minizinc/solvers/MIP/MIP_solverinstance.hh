@@ -60,6 +60,7 @@ namespace MiniZinc {
   public:
     SECCutGen( MIP_wrapper* pw ) : pMIP(pw) { }
     vector<MIP_wrapper::VarId> varXij;
+    int nN=0;                        // N nodes
     void generate(const MIP_wrapper::Output&, MIP_wrapper::CutInput&);
     void print( std::ostream& );
   };

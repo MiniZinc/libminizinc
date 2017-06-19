@@ -29,6 +29,7 @@
 using namespace std;
 
 #include <minizinc/solvers/MIP/MIP_solverinstance.hh>
+#include <minizinc/algorithms/min_cut.h>
 
 using namespace MiniZinc;
 
@@ -370,6 +371,7 @@ namespace SCIPConstraints {
     gi.exprToVarArray(args[0], pCG->varXij);            // WHAT ABOUT CONSTANTS?
     const double dN = sqrt( pCG->varXij.size() );
     MZN_ASSERT_HARD( fabs( dN - round(dN) ) < 1e-6 );   // should be a square matrix
+    pCG->nN = round(dN);
 //     cout << "  NEXT_CUTGEN" << endl;
 //     pCG->print( cout );
     
@@ -785,4 +787,43 @@ void XBZCutGen::print( ostream& os )
   for ( int i=0; i<varB.size(); ++i )
     os << varB[i] << ' ';
   os << endl;
+}
+
+void SECCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInput& cutsIn) {
+  assert( pMIP );
+  /// Extract graph, converting to undirected
+  typedef map< pair< int, int >, double > TMapFlow;
+  TMapFlow mapFlow;                                     
+  for ( int i=0; i<nN; ++i ) {
+    for ( int j=0; j<nN; ++j ) {
+      const double xij = slvOut.x[ varXij[ nN*i + j ] ];
+      if ( i==j )
+        MZN_ASSERT_HARD_MSG( 1e-6 > fabs(xij), "circuit: X[" << (i+1) << ", " << (j+1) << "==" << xij );
+      MZN_ASSERT_HARD_MSG( -1e-6 < xij && 1.0+1e-6 > xij,
+                           "circuit: X[" << (i+1) << ", " << (j+1) << "==" << xij );
+      if ( 1e-6 <= xij ) {
+        mapFlow[ make_pair( min(i,j), max(i,j) ) ] += xij;
+      }
+    }
+  }
+  /// Invoking Min Cut
+  Algorithms::MinCut mc;
+  mc.nNodes = nN;
+  mc.edges.reserve( mapFlow.size() );
+  mc.weights.reserve( mapFlow.size() );
+  for ( const auto& mf: mapFlow ) {
+    mc.edges.push_back( mf.first );
+    mc.weights.push_back( mf.second );
+  }
+  mc.solve();
+  /// ...
+  MIP_wrapper::CutDef cut( MIP_wrapper::GQ, MIP_wrapper::MaskConsType_Usercut );
+  double dViol = cut.computeViol( slvOut.x, slvOut.nCols );
+  if ( dViol > 0.01 ) {   // ?? PARAM?  TODO
+    cutsIn.push_back( cut );
+    cerr << " vi" << dViol << flush;
+  }
+}
+
+void SECCutGen::print(ostream&) {
 }

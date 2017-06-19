@@ -12,14 +12,17 @@ predicate circuit(array[int] of var int: x) =
 	  int: n = card(S),
 	  array[l+1..l+n-1] of var 2..n: order,
 	  constraint forall( i in S )( x[i] in S ),             %% Self-mapping
-    constraint l>=lb_array( [ x[i] | i in S diff l ] ),   %% Able to come into l
-    constraint u<=ub_array( [ x[i] | i in S diff u ] ),   %% Able to come into u
         } in
     alldifferent(x) /\	
     forall(i in S)(x[i] != i) /\ 
 %    alldifferent(order) /\
     if fMZN__fSECcuts then
-      circuit__SECcuts( eq_encode( x ) )
+      let {
+        array [int, int] of var int: eq_x = eq_encode( x ),
+        constraint assert( l==min( index_set_2of2( eq_x ) ),   %% self-mapping
+        constraint assert( u==max( index_set_2of2( eq_x ) ),
+      } in
+      circuit__SECcuts( eq_encode( eq_x ) )
     else
       %%% MTZ model. Note that INTEGER order vars seem better!:
       forall (i,j in l+1..l+n-1 where i!=j /\ j in dom(x[i])) (
