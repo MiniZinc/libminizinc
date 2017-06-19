@@ -65,10 +65,14 @@ predicate aux_float_lt_zero_if_0(var float: x, var int: p) =
   elseif fMZN__UseIndicators then
     aux_float_le_zero_if_0__IND(x+float_lt_EPS, p)       %% Here just absolute EPS,  TODO
   else
-    %% let { float: rho = float_lt_EPS_coef__ * max(abs(ub(x)), abs(lb(x))) }  % same order of magnitude as ub(x)
-    %% in
+    let { float: rho = float_lt_EPS_coef__ * max(abs(ub(x)), abs(lb(x))) }  % same order of magnitude as ub(x)
+    in
+    %%% This one causes 2x- derivation of EPS:
     %% x < (ub(x) + rho) * p
-    x < (ub(x) + float_lt_EPS) * p
+    %%% Better?
+       x <= (ub(x) + rho) * p - rho
+    %%% This just uses absolute eps:
+    %% x < (ub(x) + float_lt_EPS) * p
   endif;
 
 
