@@ -818,11 +818,13 @@ void SECCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInpu
   }
   mc.solve();
   /// Check if violation
-  if ( mc.wMinCut <= 0.99 ) {
-    MIP_wrapper::CutDef cut( MIP_wrapper::GQ, MIP_wrapper::MaskConsType_Usercut );
+  if ( mc.wMinCut <= 1.98 ) {
+    MIP_wrapper::CutDef cut( MIP_wrapper::GQ, MIP_wrapper::MaskConsType_Lazy | MIP_wrapper::MaskConsType_Usercut );
     cut.rhs = 1.0;
+    int nCutSize=0;
     for ( int i=0; i<nN; ++i )
     if ( mc.parities[i] ) {
+      ++nCutSize;
       for ( int j=0; j<nN; ++j )
       if ( !mc.parities[j] ) {
         cut.addVar( varXij[ nN*i + j ], 1.0 );
@@ -831,7 +833,10 @@ void SECCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInpu
     double dViol = cut.computeViol( slvOut.x, slvOut.nCols );
     if ( dViol > 0.01 ) {   // ?? PARAM?  TODO
       cutsIn.push_back( cut );
-      cerr << "  SEC: vi" << dViol << "  N NODES: " << nN << flush;
+      cerr << "  SEC: vi" << dViol
+        << "  N NODES: " << nN
+        << "  |X|: : " << nCutSize
+        << flush;
     } else {
       MZN_ASSERT_HARD_MSG( 0, "  SEC cut: N nodes = " << nN << ": violation = " << dViol );
     }

@@ -35,7 +35,7 @@ namespace MiniZinc {
   public:
     virtual ~CutGen() { }
     /// Say what type of cuts
-    virtual int getMask() { return MIP_wrapper::MaskConsType_Usercut; }
+    virtual int getMask() = 0;
     /// Adds new cuts to the 2nd parameter
     virtual void generate(const MIP_wrapper::Output&, MIP_wrapper::CutInput&) = 0;
     virtual void print( std::ostream& ) { }
@@ -47,6 +47,8 @@ namespace MiniZinc {
     MIP_wrapper* pMIP=0;
   public:
     XBZCutGen( MIP_wrapper* pw ) : pMIP(pw) { }
+    /// Say what type of cuts
+    virtual int getMask() { return MIP_wrapper::MaskConsType_Usercut; }
     vector<MIP_wrapper::VarId> varX, varB;
     MIP_wrapper::VarId varZ;
     void generate(const MIP_wrapper::Output&, MIP_wrapper::CutInput&);
@@ -59,6 +61,8 @@ namespace MiniZinc {
     MIP_wrapper* pMIP=0;
   public:
     SECCutGen( MIP_wrapper* pw ) : pMIP(pw) { }
+    /// Say what type of cuts
+    virtual int getMask() { return MIP_wrapper::MaskConsType_Lazy | MIP_wrapper::MaskConsType_Usercut; }
     vector<MIP_wrapper::VarId> varXij;
     int nN=0;                        // N nodes
     void generate(const MIP_wrapper::Output&, MIP_wrapper::CutInput&);

@@ -474,8 +474,9 @@ solcallback(GRBmodel *model,
 //       if ( cutInput.size() )
 //         cerr << "\n   N CUTS:  " << nCuts << endl;
       for ( auto& cd : cutInput ) {
-        assert( cd.mask &
-          (MIP_wrapper::MaskConsType_Usercut|MIP_wrapper::MaskConsType_Lazy) );
+        if ( ! ( cd.mask &
+          (MIP_wrapper::MaskConsType_Usercut|MIP_wrapper::MaskConsType_Lazy) ) )
+          throw runtime_error( "Cut callback: should be user/lazy" );
         if ( cd.mask & MIP_wrapper::MaskConsType_Usercut ) {
           int error = gw->dll_GRBcbcut(cbdata, cd.rmatind.size(),
                   cd.rmatind.data(), cd.rmatval.data(), 

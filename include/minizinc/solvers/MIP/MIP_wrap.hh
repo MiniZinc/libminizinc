@@ -156,6 +156,7 @@ class MIP_wrapper {
       /// Union of all flags used for the registered callback cuts
       /// See MaskConstrType_..
       /// Solvers need to know this
+      /// In MIP_solverinstance, class CutGen defines getMask() which should return that
       int cutMask = 0; // can be any combination of User/Lazy
     };
     CBUserInfo cbui;
