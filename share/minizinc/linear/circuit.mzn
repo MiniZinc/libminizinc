@@ -15,16 +15,15 @@ predicate circuit(array[int] of var int: x) =
     alldifferent(x) /\	
     forall(i in S)(x[i] != i) /\ 
 %    alldifferent(order) /\
-    if fMZN__fSECcuts then
+    if nMZN__fSECcuts>0 then
       let {
         array [int, int] of var int: eq_x = eq_encode( x ),
         constraint assert( l==min( index_set_2of2( eq_x ) ), "circuit: index set mismatch" ),   %% self-mapping
         constraint assert( u==max( index_set_2of2( eq_x ) ), "circuit: index set mismatch" ),
       } in
       circuit__SECcuts( eq_x )
-    else 
-      %true       SECs as extra cuts vs. the only ones - CPLEX only
-    % endif /\
+    else true endif /\
+    if nMZN__fSECcuts<2 then
       %%% MTZ model. Note that INTEGER order vars seem better!:
       let {
         array[l+1..l+n-1] of var 2..n: order,
@@ -34,7 +33,7 @@ predicate circuit(array[int] of var int: x) =
           + (n-3)*bool2int(x[j]==i)     %% the Desrochers & Laporte '91 term
           %%%%  --- strangely enough it is much worse on vrp-s2-v2-c7_vrp-v2-c7_det_ADAPT_1_INVERSE.mzn!
           <= n-2 )
-    endif
+    else true endif
     %% ... but seems improved with this (leaving also for SEC)
     /\ if n>2 then forall (i,j in S where i<j) ( x[i]!=j \/ x[j]!=i )      %% Only this improves overall with DL'91
        else true endif

@@ -417,45 +417,51 @@ solcallback(GRBmodel *model,
       cerr << msg << flush;
     }
   } else if ( GRB_CB_MIPSOL==where ) {
-      /* MIP solution callback */
-      gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_NODCNT, &nodecnt);
-      info->pOutput->nNodes = nodecnt;
-      gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &objVal);
-      gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOLCNT, &solcnt);
+    /* MIP solution callback */
+    gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_NODCNT, &nodecnt);
+    info->pOutput->nNodes = nodecnt;
+    gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &objVal);
+    gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOLCNT, &solcnt);
+    /// Better not use the x if lazy added
+    assert(info->pOutput->x);
+    gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL, (void*)info->pOutput->x);
+    
 
-      if ( solcnt ) {
-        
-        if ( fabs(info->pOutput->objVal - objVal) > 1e-12*(1.0 + fabs(objVal)) ) {
-          newincumbent = 1;
-          info->pOutput->objVal = objVal;
-          info->pOutput->status = MIP_wrapper::SAT;
-          info->pOutput->statusName = "feasible from a callback";
+    /// Callback for lazy cuts
+    /// Before printing
+    if ( info->cutcbfn && info->cutMask&MIP_wrapper::MaskConsType_Lazy ) {
+      MIP_wrapper::CutInput cutInput;
+      cerr << "  GRB: GRB_CB_MIPSOL (" << objVal << ") -> cut callback " << endl;
+      info->cutcbfn( *info->pOutput, cutInput, info->ppp, true );
+      for ( auto& cd : cutInput ) {
+//         assert( cd.mask & MIP_wrapper::MaskConsType_Lazy );
+        if ( cd.mask & MIP_wrapper::MaskConsType_Lazy ) {  // take only lazy constr generators
+          int error = gw->dll_GRBcblazy(cbdata, cd.rmatind.size(),
+                  cd.rmatind.data(), cd.rmatval.data(), 
+                  getGRBSense(cd.sense), cd.rhs);
+          if (error)
+            cerr << "  GRB_wrapper: failed to add lazy cut. " << endl;
+           else
+             newincumbent = -1;
+//             info->pOutput->objVal = 1e100;  // to mark that we can get a new incumbent which should be printed
         }
       }
-    if ( newincumbent ) {
-        assert(info->pOutput->x);
-        gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL, (void*)info->pOutput->x);
+    }
+    if ( solcnt && newincumbent>=0 ) {
+      if ( fabs(info->pOutput->objVal - objVal) > 1e-12*(1.0 + fabs(objVal)) ) {
+        newincumbent = 1;
+        info->pOutput->objVal = objVal;
+        info->pOutput->status = MIP_wrapper::SAT;
+        info->pOutput->statusName = "feasible from a callback";
+      }
+    }
+    if ( newincumbent>0 ) {
         
         info->pOutput->dCPUTime = double(std::clock() - info->pOutput->cCPUTime0) / CLOCKS_PER_SEC;
 
         /// Call the user function:
         if (info->solcbfn)
             (*info->solcbfn)(*info->pOutput, info->ppp);
-    }
-    /// Callback for lazy cuts
-    if ( info->cutcbfn && info->cutMask&MIP_wrapper::MaskConsType_Lazy ) {
-      MIP_wrapper::CutInput cutInput;
-      info->cutcbfn( *info->pOutput, cutInput, info->ppp, true );
-      for ( auto& cd : cutInput ) {
-//         assert( cd.mask & MIP_wrapper::MaskConsType_Lazy );
-        if ( cd.mask & MIP_wrapper::MaskConsType_Lazy ) {
-          int error = gw->dll_GRBcblazy(cbdata, cd.rmatind.size(),
-                  cd.rmatind.data(), cd.rmatval.data(), 
-                  getGRBSense(cd.sense), cd.rhs);
-          if (error)
-            cerr << "  GRB_wrapper: failed to add lazy cut. " << endl;
-        }
-      }
     }
   } else if ( GRB_CB_MIPNODE==where  ) {
     int status;
@@ -467,6 +473,7 @@ solcallback(GRBmodel *model,
       assert( outpRlx.x && outpRlx.nCols );
 //       dll_GRBcbget(cbdata, where, GRB_CB_MIPNODE_RELOBJ, outpRlx.objVal);
       gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPNODE_REL, (void*)outpRlx.x);
+//       cerr << "  GRB: GRB_CB_MIPNODE -> cut callback " << endl;
       MIP_wrapper::CutInput cutInput;
       info->cutcbfn( outpRlx, cutInput, info->ppp, false );
 //       static int nCuts=0;

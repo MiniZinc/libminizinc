@@ -29,10 +29,10 @@ bool: fMZN__UseIndicators =    %% Pass on indicator constraints
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Subtour elimination in circuit %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --------------------------------------------------------------------------------------- %
-opt bool: fSECcuts;
-bool: fMZN__fSECcuts =    %% Pass on circuit constraints to the MIP_solverinstance
-           if absent( fSECcuts ) then false
-           else deopt( fSECcuts ) endif;
+opt int: nSECcuts;       %% 0,1: use MTZ formulation
+int: nMZN__fSECcuts =    %% 1,2: pass on circuit constraints to the MIP_solverinstance's cut gen
+           if absent( nSECcuts ) then 0
+           else deopt( nSECcuts ) endif;
 
     
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% MIPdomains %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
