@@ -1412,7 +1412,9 @@ namespace MiniZinc {
       if (ArrayLit* al = e->dyn_cast<ArrayLit>()) {
         
         std::vector<unsigned int> dims(al->dims()-1);
-        dims[0] = al->max(al->dims()-1)-al->min(al->dims()-1)+1;
+        if (dims.size() != 0) {
+          dims[0] = al->max(al->dims()-1)-al->min(al->dims()-1)+1;
+        }
         
         for (unsigned int i=1; i<al->dims()-1; i++) {
           dims[i] = dims[i-1] * (al->max(al->dims()-1-i)-al->min(al->dims()-1-i)+1);

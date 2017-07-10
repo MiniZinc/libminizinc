@@ -19,6 +19,7 @@
 
 %% var, var
 predicate int_le_reif(var int: x, var int: y, var bool: b) =
+%%  trace(" int_le_reif VV: \(x), \(y), \(b) \n") /\
   if is_fixed(b) then
     if true==fix(b) then x<=y else x>y endif
   elseif ub(x)<=lb(y) then b==true
@@ -32,6 +33,7 @@ predicate int_le_reif(var int: x, var int: y, var bool: b) =
 
 %% const, var
 predicate int_le_reif(int: x, var int: y, var bool: b) =
+%%  trace(" int_le_reif CV: \(x), \(y), \(b) \n") /\
   if is_fixed(b) then
     if true==fix(b) then x<=y else x>y endif
   elseif ub(x)<=lb(y) then b==true
@@ -45,6 +47,7 @@ predicate int_le_reif(int: x, var int: y, var bool: b) =
 
 %% var, const
 predicate int_le_reif(var int: x, int: y, var bool: b) =
+%%  trace(" int_le_reif VC: \(x), \(y), \(b) \n") /\
   if is_fixed(b) then
     if true==fix(b) then x<=y else x>y endif
   elseif ub(x)<=lb(y) then b==true
@@ -111,6 +114,7 @@ predicate int_ne__SIMPLE(var int: x, int: y) =
 
 %% var, var
 predicate int_eq_reif(var int: x, var int: y, var bool: b) =
+%%    trace(" int_eq_reif VV: \(x), \(y), \(b) \n") /\
     if is_fixed(b) then
       if true==fix(b) then x==y else x!=y endif
     elseif card(dom(x) intersect dom(y))>0 then
@@ -133,15 +137,17 @@ predicate int_eq_reif(var int: x, var int: y, var bool: b) =
 
 %% var, const
 predicate int_eq_reif(var int: x, int: y, var bool: b) =
+%%  trace(" int_eq_reif VC: \(x), \(y), \(b) \n") /\
   if is_fixed(b) then
     if true==fix(b) then x==y else x!=y endif
   elseif y in dom(x) then
-    if y==lb(x) then
-      int_lt_reif(y, x, not b)
-    elseif y==ub(x) then
-      int_lt_reif(x, y, not b)
-    elseif fPostprocessDomains then
+    if fPostprocessDomains then
       int_eq_reif__POST(x, y, b)
+%%%  THIS seems pretty complex, especially for binaries, and does not connect to eq_encoding (/ MIPD?)
+%%    elseif y==lb(x) then
+%%      int_lt_reif(y, x, not b)
+%%    elseif y==ub(x) then
+%%      int_lt_reif(x, y, not b)
     elseif card(dom(x))<nMZN__UnaryLenMax_eq then                                 %% PARAM TODO. That low (10) is needed for l2p
       let {
         array[int] of var int: p = eq_encode(x);
@@ -237,7 +243,7 @@ predicate float_le_reif(var float: x, float: y, var bool: b) =
   elseif lb(x) > y then
     b == false
   elseif fPostprocessDomains then
-    float_le_reif__POST(x, y, b, float_lt_EPS_coef__)
+    float_le_reif__POST(x, y, b, float_lt_EPS)
   else
     float_le_reif__NOPOST(x, y, b)
   endif;
@@ -253,7 +259,7 @@ predicate float_le_reif(float: x, var float: y, var bool: b) =
   elseif lb(x) > ub(y) then
     b == false
   elseif fPostprocessDomains then
-    float_ge_reif__POST(y, x, b, float_lt_EPS_coef__)
+    float_ge_reif__POST(y, x, b, float_lt_EPS)
   else
     float_le_reif(-y, -x, b)
   endif;
@@ -283,7 +289,7 @@ predicate float_lt_reif(var float: x, var float: y, var bool: b) =
   if is_fixed(b) then
     if true==fix(b) then x<y else x>=y endif
   elseif fPostprocessDomains /\ fPostproDom_DIFF then
-    aux_float_lt_zero_iff_1__POST(x - y, b, float_lt_EPS_coef__)
+    aux_float_lt_zero_iff_1__POST(x - y, b, float_lt_EPS)
   else
     aux_float_lt_if_1(x, y, (b)) /\
     aux_float_ge_if_0(x, y, (b))
@@ -292,7 +298,7 @@ predicate float_lt_reif(var float: x, var float: y, var bool: b) =
 %% var, const
 predicate float_ne(var float: x, float: y) =
   if fPostprocessDomains then
-    float_ne__POST(x, y, float_lt_EPS_coef__)
+    float_ne__POST(x, y, float_lt_EPS)
   else
     float_ne__SIMPLE(x, y)
   endif;
@@ -323,7 +329,7 @@ predicate float_eq_reif(var float: x, var float: y, var bool: b) =
   elseif is_fixed(x) /\ is_fixed(y) then
     b == (fix(x) == fix(y))
   elseif fPostprocessDomains /\ fPostproDom_DIFF then
-    float_eq_reif__POST(x-y, 0, b, float_lt_EPS_coef__)
+    float_eq_reif__POST(x-y, 0, b, float_lt_EPS)
   else
     aux_float_eq_iff_1(x, y, (bool2int(b)))
   endif;
