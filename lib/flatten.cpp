@@ -838,7 +838,8 @@ namespace MiniZinc {
 
     unsigned int lastError = callStack.size();
 
-    std::string sep = ";";
+    std::string major_sep = ";";
+    std::string minor_sep = "|";
     for (unsigned int i=0; i<lastError; i++) {
       Expression* e = callStack[i]->untag();
       bool isCompIter = callStack[i]->isTagged();
@@ -857,22 +858,26 @@ namespace MiniZinc {
 
       // If this call is not a dummy StringLit with empty Location (so that deferred compilation doesn't drop the paths)
       if(e->eid() != Expression::E_STRINGLIT || loc.first_line() || loc.first_column() || loc.last_line() || loc.last_column()) {
-        os << loc.filename().str() << ':' << loc.first_line() << ':' << loc.first_column() << ':' << loc.last_line() << ':' << loc.last_column() << ':';
+        os << loc.filename().str() << minor_sep
+           << loc.first_line()     << minor_sep
+           << loc.first_column()   << minor_sep
+           << loc.last_line()      << minor_sep
+           << loc.last_column()    << minor_sep;
       switch (e->eid()) {
         case Expression::E_INTLIT:
-          os << "il:" << *e;
+          os << "il" << minor_sep << *e;
           break;
         case Expression::E_FLOATLIT:
-          os << "fl:" << *e;
+          os << "fl" << minor_sep << *e;
           break;
         case Expression::E_SETLIT:
-          os << "sl:" << *e;
+          os << "sl" << minor_sep << *e;
           break;
         case Expression::E_BOOLLIT:
-          os << "bl:" << *e;
+          os << "bl" << minor_sep << *e;
           break;
         case Expression::E_STRINGLIT:
-          os << "stl:" << *e;
+          os << "stl" << minor_sep << *e;
           break;
         case Expression::E_ID:
           if (isCompIter) {
@@ -881,7 +886,7 @@ namespace MiniZinc {
             //else
             //  os << *e << "=?";
           } else {
-            os << "id:" << *e;
+            os << "id" << minor_sep << *e;
           }
           break;
         case Expression::E_ANON:
@@ -906,15 +911,15 @@ namespace MiniZinc {
           os << "ite";
           break;
         case Expression::E_BINOP:
-          os << "bin:" << e->cast<BinOp>()->opToString();
+          os << "bin" << minor_sep << e->cast<BinOp>()->opToString();
           break;
         case Expression::E_UNOP:
-          os << "un:" << e->cast<UnOp>()->opToString();
+          os << "un" << minor_sep << e->cast<UnOp>()->opToString();
           break;
         case Expression::E_CALL:
           if(fopts.only_toplevel_paths)
             return false;
-          os << "ca:" << e->cast<Call>()->id();
+          os << "ca" << minor_sep << e->cast<Call>()->id();
           break;
         case Expression::E_VARDECL:
           os << "vd";
@@ -933,9 +938,9 @@ namespace MiniZinc {
           os << "unknown expression (internal error)";
           break;
       }
-      os << sep;
+      os << major_sep;
       } else {
-        os << e->cast<StringLit>()->v() << sep;
+        os << e->cast<StringLit>()->v() << major_sep;
       }
     }
     return true;
