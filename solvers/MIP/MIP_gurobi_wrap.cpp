@@ -172,7 +172,10 @@ void MIP_gurobi_wrapper::checkDLL()
 {
 #ifdef HAS_GUROBI_PLUGIN
   
-  gurobi_dll = dll_open("gurobi70");
+  gurobi_dll = dll_open("gurobi75");
+  if (gurobi_dll==NULL) {
+    gurobi_dll = dll_open("gurobi70");
+  }
   if (gurobi_dll==NULL) {
     gurobi_dll = dll_open("gurobi65");
   }
@@ -268,6 +271,9 @@ void MIP_gurobi_wrapper::closeGUROBI()
      /* Free up the problem as allocated by GRB_createprob, if necessary */
   /* Free model */
 
+  // If not allocated, skip
+  if (0==model)
+    return;
   dll_GRBfreemodel(model);
   model = 0;
 

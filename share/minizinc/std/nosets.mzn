@@ -14,8 +14,8 @@ function set of int: reverse_map(array[int] of bool: b) ::promise_total =
 array[int] of var bool: set2bools(var set of int: x) ::promise_total =
   if is_fixed(x) then set2bools(fix(x)) else
   let {
-    array[min(ub(x))..max(ub(x))] of var bool: b =
-      [ set2bools_bit( x, i ) | i in min(ub(x))..max(ub(x)) ];
+    array[int] of var bool: b = array1d( min(ub(x))..max(ub(x)),
+      [ set2bools_bit( x, i ) | i in min(ub(x))..max(ub(x)) ] );
     constraint (x = reverse_map(b)) :: is_reverse_map;
   } in b
   endif;
@@ -23,9 +23,9 @@ array[int] of var bool: set2bools(var set of int: x, set of int: ubx) ::promise_
   if is_fixed(x) then set2bools(fix(x), ubx) else
   let {
     array[int] of var bool: b0 = set2bools( x );       %% Call in any case ?? TODO
-    array[min(ubx)..max(ubx)] of var bool: b =
+    array[int] of var bool: b = array1d( min(ubx)..max(ubx),
       [ if i in ubx then set2bools_bit( x, i ) else false endif
-        | i in min(ubx)..max(ubx) ];
+        | i in min(ubx)..max(ubx) ] );
 %% Not again:    constraint (x = reverse_map(b)) :: is_reverse_map;
   } in b
   endif;
@@ -232,7 +232,7 @@ function var int: card(var set of int: x) ::promise_total =
   let {
     array[int] of var bool: bx = set2bools(x);
     var 0..length(bx) : c;
-    constraint bool_lin_eq([1 | i in index_set(bx)],bx,c);
+    constraint bool_lin_eq([1 | i in index_set(bx)],[bx[i] | i in index_set(bx)],c);
   } in c;
 
 predicate set_in(var int: x, var set of int: y) =
