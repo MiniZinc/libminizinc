@@ -824,27 +824,27 @@ void SECCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInpu
     cut.rhs = 1.0;
     int nCutSize=0;
     constexpr int nElemPrint = 20;
-    cerr << "  CUT: [ ";
+    // cerr << "  CUT: [ ";
     for ( int i=0; i<nN; ++i )
     if ( mc.parities[i] ) {
       ++nCutSize;
-      if ( nCutSize<=nElemPrint )
-        cerr << (i+1) << ", ";
-      else if ( nCutSize==nElemPrint+1 )
-        cerr << "...";
+      //if ( nCutSize<=nElemPrint )
+      //  cerr << (i+1) << ", ";
+      //else if ( nCutSize==nElemPrint+1 )
+      //  cerr << "...";
       for ( int j=0; j<nN; ++j )
       if ( !mc.parities[j] ) {
         cut.addVar( varXij[ nN*i + j ], 1.0 );
       }
     }
-    cerr << "]. " << flush;
+    // cerr << "]. " << flush;
     double dViol = cut.computeViol( slvOut.x, slvOut.nCols );
     if ( dViol > 0.01 ) {   // ?? PARAM?  TODO
       cutsIn.push_back( cut );
-      cerr << "  SEC: viol=" << dViol
+      /* cerr << "  SEC: viol=" << dViol
         << "  N NODES: " << nN
         << "  |X|: : " << nCutSize
-        << flush;
+        << flush; */
     } else {
       MZN_ASSERT_HARD_MSG( 0, "  SEC cut: N nodes = " << nN << ": violation = " << dViol );
     }

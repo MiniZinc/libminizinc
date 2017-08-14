@@ -501,8 +501,8 @@ myusercutcallback (CPXCENVptr env,
       info->cutcbfn( outpRlx, cutInput, info->ppp, fMIPSol );
       static int nCuts=0;
       nCuts += cutInput.size();
-      if ( cutInput.size() )
-        cerr << "\n   N CUTS:  " << nCuts << endl;
+      // if ( cutInput.size() )
+      //  cerr << "\n   N CUTS:  " << nCuts << endl;
       for ( auto& cd : cutInput ) {
         if ( ! ( cd.mask &
           (MIP_wrapper::MaskConsType_Usercut|MIP_wrapper::MaskConsType_Lazy) ) )
