@@ -396,7 +396,6 @@ namespace MiniZinc {
         int idCount = 0;
         std::vector<VarDecl*> pos;
         std::vector<VarDecl*> neg;
-        
         for (unsigned int j=0; j<c->args().size(); j++) {
           bool unit = (j==0 ? isConjunction : !isConjunction);
           ArrayLit* al = follow_id(c->args()[j])->cast<ArrayLit>();
@@ -454,13 +453,19 @@ namespace MiniZinc {
             if (bi->isa<ConstraintI>()) {
               env.envi().fail();
             } else {
-              CollectDecls cd(envi.vo,deletedVarDecls,bi);
-              topDown(cd,bi->cast<VarDeclI>()->e()->e());
-              bi->cast<VarDeclI>()->e()->ti()->domain(constants().lit_false);
-              bi->cast<VarDeclI>()->e()->ti()->setComputedDomain(true);
-              bi->cast<VarDeclI>()->e()->e(constants().lit_false);
-              pushVarDecl(envi, bi->cast<VarDeclI>(), boolConstraints[i], vardeclQueue);
-              pushDependentConstraints(envi, bi->cast<VarDeclI>()->e()->id(), constraintQueue);
+              if (bi->cast<VarDeclI>()->e()->ti()->domain()) {
+                if (eval_bool(envi, bi->cast<VarDeclI>()->e()->ti()->domain())) {
+                  envi.fail();
+                }
+              } else {
+                CollectDecls cd(envi.vo,deletedVarDecls,bi);
+                topDown(cd,bi->cast<VarDeclI>()->e()->e());
+                bi->cast<VarDeclI>()->e()->ti()->domain(constants().lit_false);
+                bi->cast<VarDeclI>()->e()->ti()->setComputedDomain(true);
+                bi->cast<VarDeclI>()->e()->e(constants().lit_false);
+                pushVarDecl(envi, bi->cast<VarDeclI>(), boolConstraints[i], vardeclQueue);
+                pushDependentConstraints(envi, bi->cast<VarDeclI>()->e()->id(), constraintQueue);
+              }
             }
           } else {
             if (bi->isa<ConstraintI>()) {
@@ -468,13 +473,19 @@ namespace MiniZinc {
               topDown(cd,bi->cast<ConstraintI>()->e());
               bi->remove();
             } else {
-              CollectDecls cd(envi.vo,deletedVarDecls,bi);
-              topDown(cd,bi->cast<VarDeclI>()->e()->e());
-              bi->cast<VarDeclI>()->e()->ti()->domain(constants().lit_true);
-              bi->cast<VarDeclI>()->e()->ti()->setComputedDomain(true);
-              bi->cast<VarDeclI>()->e()->e(constants().lit_true);
-              pushVarDecl(envi, bi->cast<VarDeclI>(), boolConstraints[i], vardeclQueue);
-              pushDependentConstraints(envi, bi->cast<VarDeclI>()->e()->id(), constraintQueue);
+              if (bi->cast<VarDeclI>()->e()->ti()->domain()) {
+                if (!eval_bool(envi, bi->cast<VarDeclI>()->e()->ti()->domain())) {
+                  envi.fail();
+                }
+              } else {
+                CollectDecls cd(envi.vo,deletedVarDecls,bi);
+                topDown(cd,bi->cast<VarDeclI>()->e()->e());
+                bi->cast<VarDeclI>()->e()->ti()->domain(constants().lit_true);
+                bi->cast<VarDeclI>()->e()->ti()->setComputedDomain(true);
+                bi->cast<VarDeclI>()->e()->e(constants().lit_true);
+                pushVarDecl(envi, bi->cast<VarDeclI>(), boolConstraints[i], vardeclQueue);
+                pushDependentConstraints(envi, bi->cast<VarDeclI>()->e()->id(), constraintQueue);
+              }
             }
           }
         }
@@ -848,6 +859,7 @@ namespace MiniZinc {
                           std::vector<VarDecl*>& deletedVarDecls,
                           std::vector<Item*>& constraintQueue,
                           std::vector<int>& vardeclQueue) {
+    std::cerr << "simplify1 " << *ii;
     Expression* con_e;
     bool is_true;
     bool is_false;
@@ -1214,6 +1226,7 @@ namespace MiniZinc {
       remove = false;
       return;
     }
+    std::cerr << "simplify " << *ii;
     bool isTrue = vd->ti()->domain()==constants().lit_true;
     Expression* e = NULL;
     ConstraintI* ci = ii->dyn_cast<ConstraintI>();
