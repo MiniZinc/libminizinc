@@ -351,7 +351,7 @@ find_package ( Threads REQUIRED )
 # -------------------------------------------------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_GUROBI)  # Version 6.5
+if(HAS_GUROBI)  # Version 7.5
 
 	add_library(minizinc_gurobi
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp include/minizinc/solvers/MIP/MIP_gurobi_wrap.hh
@@ -361,7 +361,7 @@ if(HAS_GUROBI)  # Version 6.5
     target_link_libraries(minizinc_gurobi minizinc ${NEEDS_LIBDL} ${CMAKE_THREAD_LIBS_INIT})
   else()
     link_directories("${GUROBI_HOME}/lib")
-    target_link_libraries(minizinc_gurobi minizinc gurobi70 ${CMAKE_THREAD_LIBS_INIT})
+    target_link_libraries(minizinc_gurobi minizinc gurobi75 ${CMAKE_THREAD_LIBS_INIT})
   endif()
 
 	add_executable(mzn-gurobi minizinc.cpp)

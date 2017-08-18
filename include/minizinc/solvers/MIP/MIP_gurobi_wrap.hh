@@ -37,7 +37,7 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
                              char sense, double rhs, const char *constrname);
 
     int (__stdcall *dll_GRBaddgenconstrIndicator) (  GRBmodel  *model, const char  *name, int binvar,
-        int binval, int nvars, int*  ind, double* val, char  sense, double  rhs );
+        int binval, int nvars, const int*  ind, const double* val, char  sense, double  rhs );
     
     int (__stdcall *dll_GRBaddvars) (GRBmodel *model, int numvars, int numnz,
                            int *vbeg, int *vind, double *vval,
