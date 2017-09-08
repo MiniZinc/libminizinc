@@ -987,6 +987,7 @@ namespace MiniZinc {
 
   void
   GecodeSolverInstance::prepareEngine(void) {
+    GCLock lock;
     if (engine==NULL) {
       // TODO: check what we need to do options-wise
       std::vector<Expression*> branch_vars;
@@ -1072,7 +1073,7 @@ namespace MiniZinc {
       assignSolutionToOutput();
       printSolution();
       if (_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
-        if (engine->stopped()) {
+        if (engine->stopped() || !last_sol) {
           _status = SolverInstance::SAT;
         } else {
           _status = SolverInstance::OPT;
@@ -1136,12 +1137,9 @@ namespace MiniZinc {
       if(_all_solutions || _n_found_solutions < _n_max_solutions) {
         processSolution();
         if (_print_stats) print_stats();
-      } else if(_n_found_solutions == _n_max_solutions){
+      } else if (_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT &&
+                 _n_found_solutions == _n_max_solutions) {
         break;
-      } else {
-        if (_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
-          break;
-        }
       }
     }
 
