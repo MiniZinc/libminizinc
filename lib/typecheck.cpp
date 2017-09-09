@@ -1307,6 +1307,7 @@ namespace MiniZinc {
           TypeInst* ti = new TypeInst(Location().introduce(), Type());
           VarDecl* obj = new VarDecl(Location().introduce(), ti, "_objective", si->e());
           VarDeclI* i = new VarDeclI(Location().introduce(), obj);
+          ts.add(env, i, true, enumis);
           env.orig->addItem(i);
           si->e(obj->id());
         }
