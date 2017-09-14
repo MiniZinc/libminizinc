@@ -30,7 +30,7 @@ have different colours.
   :name: ex-aust
 
 We can model this problem very easily in MiniZinc. The model is shown in :numref:`ex-aust`.
-The first line in the model is a comment. A comment starts with a  ``\%`` which indicates that the rest of the line is a comment.
+The first line in the model is a comment. A comment starts with a  ``%`` which indicates that the rest of the line is a comment.
 MiniZinc also has C-style block comments, 
 which start with ``/*`` and end with ``*/``.
 
@@ -409,7 +409,7 @@ and a model can be run with any number of data files (though a variable/paramete
 
 .. literalinclude:: examples/cakes2.mzn
   :language: minizinc
-  :caption: Data-independent model for determining how many banana and chocolate cakes to bake for the school fete (:download`cakes2.mzn <examples/cakes2.mzn>`)
+  :caption: Data-independent model for determining how many banana and chocolate cakes to bake for the school fete (:download:`cakes2.mzn <examples/cakes2.mzn>`)
   :name: ex-cakes2
 
 Our new model is shown in :numref:`ex-cakes2`.
