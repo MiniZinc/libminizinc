@@ -17,7 +17,7 @@
 
 \DeclareCaptionFont{white}{\color{white}}
 
-\renewenvironment{notice}[2]{
+\renewenvironment{sphinxadmonition}[2]{
   \begin{tcolorbox}[colbacktitle=UglyBlue,coltitle=white,colframe=UglyBlue,fonttitle=\bfseries\large,title=#2]
 }{\end{tcolorbox}}
 
@@ -26,12 +26,12 @@
 \newtcolorbox[auto counter,number within=chapter]{codebox}[2][]{% 
   title=\textbf{Listing~\thetcbcounter:} #2,#1}
 
-\renewcommand{\Verbatim}[1][1]{%
-  % quit horizontal mode if we are still in a paragraph
+\renewenvironment{sphinxVerbatim}{%
+  % % quit horizontal mode if we are still in a paragraph
   % \par
-  % list starts new par, but we don't want it to be set apart vertically
+  % % list starts new par, but we don't want it to be set apart vertically
   % \parskip\z@skip
-  % first, let's check if there is a caption
+  % % first, let's check if there is a caption
   % \ifx\sphinxVerbatimTitle\empty
   %     \addvspace\z@% counteract possible previous negative skip (French lists!)
   %     \smallskip
@@ -42,16 +42,26 @@
   %         \needspace{\sphinxliteralblockwithoutcaptionneedspace}%
   %         \phantomsection\sphinxLiteralBlockLabel
   %     \fi
+  %     \let\spx@Verbatim@Title\@empty
+  % \else
+  % % non-empty \sphinxVerbatimTitle has label inside it (in case there is one)
+  %    \setbox\spx@Verbatim@TitleBox
+  %           \hbox{\begin{minipage}{\linewidth}%
+  %                   \sphinxVerbatimTitle
+  %                 \end{minipage}}%
   % \fi
-  % non-empty \sphinxVerbatimTitle has label inside it (in case there is one)
-  % Customize framed.sty \MakeFramed to glue caption to literal block
-  % \global\spx@myfirstframedpassfalse
-  % via \spx@fcolorbox, will use \spx@VerbatimFBox which inserts title
-  % \def\FrameCommand   {\spx@colorbox\spx@fcolorbox }%
-  % \let\FirstFrameCommand\FrameCommand
-  % for mid pages and last page portion of (long) split frame:
-  % \def\MidFrameCommand{\spx@colorbox\fcolorbox }%
-  % \let\LastFrameCommand\MidFrameCommand
+  % \fboxsep\sphinxverbatimsep \fboxrule\sphinxverbatimborder
+  % % setting borderwidth to zero is simplest for no-frame effect with same pagebreaks
+  % \ifspx@opt@verbatimwithframe\else\fboxrule\z@\fi
+  % \let\FrameCommand     \spx@Verbatim@FrameCommand
+  % \let\FirstFrameCommand\spx@Verbatim@FirstFrameCommand
+  % \let\MidFrameCommand  \spx@Verbatim@MidFrameCommand
+  % \let\LastFrameCommand \spx@Verbatim@LastFrameCommand
+  % \ifspx@opt@verbatimhintsturnover\else
+  %     \let\spx@Verbatim@Continued\@empty
+  %     \let\spx@Verbatim@Continues\@empty
+  % \fi
+  % \ifspx@opt@verbatimwrapslines
   % fancyvrb's Verbatim puts each input line in (unbreakable) horizontal boxes.
   % This customization wraps each line from the input in a \vtop, thus
   % allowing it to wrap and display on two or more lines in the latex output.
@@ -60,27 +70,24 @@
   %       to achieve this without extensive rewrite of fancyvrb.
   %     - The (not used in sphinx) obeytabs option to Verbatim is
   %       broken by this change (showtabs and tabspace work).
-  % \sbox\sphinxcontinuationbox {\sphinxcontinuationsymbol}%
-  % \sbox\sphinxvisiblespacebox {\FV@SetupFont\sphinxvisiblespace}%
-  \def\FancyVerbFormatLine ##1{\hsize\linewidth
-          \vtop{\raggedright\hyphenpenalty\z@\exhyphenpenalty\z@
-                \doublehyphendemerits\z@\finalhyphendemerits\z@
-                \strut ##1\strut}%
-          }%
-  % If the linebreak is at a space, the latter will be displayed as visible
-  % space at end of first line, and a continuation symbol starts next line.
-  % Stretch/shrink are however usually zero for typewriter font.
-  \def\FV@Space {%
-       \nobreak\hskip\z@ plus\fontdimen3\font minus\fontdimen4\font
-       \discretionary{\copy\sphinxvisiblespacebox}{\sphinxafterbreak}
-                     {\kern\fontdimen2\font}%
-       }%
-  % go around fancyvrb's check of @currenvir (for case of minipage below)
-  \renewcommand*{\VerbatimEnvironment}{\gdef\FV@EnvironName{Verbatim}}%
+  % \expandafter\def\expandafter\FV@SetupFont\expandafter
+  %   {\FV@SetupFont\sbox\sphinxcontinuationbox {\spx@opt@verbatimcontinued}%
+  %                 \sbox\sphinxvisiblespacebox {\spx@opt@verbatimvisiblespace}}%
+  % \def\FancyVerbFormatLine ##1{\hsize\linewidth
+  %         \vtop{\raggedright\hyphenpenalty\z@\exhyphenpenalty\z@
+  %               \doublehyphendemerits\z@\finalhyphendemerits\z@
+  %               \strut ##1\strut}%
+  %         }%
+  % \let\FV@Space\spx@verbatim@space
+  % % Allow breaks at special characters using \PYG... macros.
+  % \sphinxbreaksatspecials
+  % % Breaks at punctuation characters . , ; ? ! and / (needs catcode activation)
+  % \def\FancyVerbCodes{\sphinxbreaksviaactive}%
+  % \fi % end of conditional code for wrapping long code lines
+  % go around fancyvrb's check of \@currenvir
+  \let\VerbatimEnvironment\sphinxVerbatimEnvironment
   % go around fancyvrb's check of current list depth
   \def\@toodeep {\advance\@listdepth\@ne}%
-  % Allow breaks at special characters using \PYG... macros.
-  \sphinxbreaksatspecials
   % The list environment is needed to control perfectly the vertical space.
   % Note: \OuterFrameSep used by framed.sty is later set to \topsep hence 0pt.
   % - if caption: vertical space above caption = (\abovecaptionskip + D) with
@@ -94,11 +101,9 @@
   \rightmargin\z@
   \parindent  \z@% becomes \itemindent. Default zero, but perhaps overwritten.
   \trivlist\item\relax
-  % use a minipage if we are already inside a framed environment
+     \ifsphinxverbatimwithminipage\spx@inframedtrue\fi
+     % use a minipage if we are already inside a framed environment
      \ifspx@inframed\noindent\begin{minipage}{\linewidth}\fi
-     % \MakeFramed {% adapted over from framed.sty's snugshade environment
-     % \advance\hsize-\width\@totalleftmargin\z@\linewidth\hsize
-     % \@setminipage  }%
      \ifx\sphinxVerbatimTitle\empty
        \begin{tcolorbox}[breakable,toprule at break=0pt,bottomrule at break=0pt,pad at break*=0mm]
      \else
@@ -106,21 +111,22 @@
        % \begin{codebox}{\sphinxLiteralBlockLabel \sphinxVerbatimTitle}
        \captionsetup{aboveskip=0pt,belowskip=0pt,justification=raggedright,singlelinecheck=false,font=white}
        % \traceon
-\begin{tcolorbox}[breakable,,toprule at break=0pt,bottomrule at break=0pt,pad at break*=0mm,title=\captionof{literal-block}{\sphinxVerbatimTitle \sphinxLiteralBlockLabel}]
+\begin{tcolorbox}[breakable,,toprule at break=0pt,bottomrule at break=0pt,pad at break*=0mm,title={\sphinxVerbatimTitle}]
       % \traceoff
      \fi
      \small
      % For grid placement from \strut's in \FancyVerbFormatLine
      \lineskip\z@skip
-     % Breaks at punctuation characters . , ; ? ! and / need catcode=\active
-     % and the active comma should not be overwritten by \@noligs
-     \let\verbatim@nolig@list \sphinx@verbatim@nolig@list
-     \OriginalVerbatim[#1,codes*=\sphinxbreaksatpunct]%
+     % active comma should not be overwritten by \@noligs
+     \ifspx@opt@verbatimwrapslines
+       \let\verbatim@nolig@list \sphinx@verbatim@nolig@list
+     \fi
+     % will fetch its optional arguments if any
+     \OriginalVerbatim
 }
-\renewcommand{\endVerbatim}{%
+{%
   \endOriginalVerbatim
-  \par%\unskip
-  \@minipagefalse%\endMakeFramed
+  % \par\unskip\@minipagefalse\endMakeFramed % from framed.sty snugshade
      \ifx\sphinxVerbatimTitle\empty
        \end{tcolorbox}
      \else
@@ -129,14 +135,4 @@
      \fi
   \ifspx@inframed\end{minipage}\fi
   \endtrivlist
-}
-\renewcommand*\sphinxSetupCaptionForVerbatim [2]
-{%
-    % \needspace{\sphinxliteralblockneedspace}%
-% insert a \label via \sphinxLiteralBlockLabel
-% reset to normal the color for the literal block caption
-% the caption inserts \abovecaptionskip whitespace above itself (usually 10pt)
-% there is also \belowcaptionskip but it is usually zero, hence the \smallskip
-    \def\sphinxVerbatimTitle
-       {#2}%
 }
