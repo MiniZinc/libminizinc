@@ -3,14 +3,16 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-MiniZinc Documentation
-======================
+The MiniZinc Manual
+===================
 
-.. .. image:: figures/MiniZn_logo_2.*
-..   :height: 300px
+.. .. only:: builder_html
+..
+..   .. image:: figures/MiniZn_logo_2.*
+..     :height: 150px
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
    :numbered:
 
    part_1_introduction

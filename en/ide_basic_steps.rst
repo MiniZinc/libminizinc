@@ -1,2 +1,2 @@
-Basic steps with the MiniZinc IDE
+First steps with the MiniZinc IDE
 =================================

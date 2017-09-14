@@ -1,3 +1,5 @@
+.. _part-tutorial:
+
 A MiniZinc Tutorial
 +++++++++++++++++++
 
@@ -10,3 +12,4 @@ A MiniZinc Tutorial
    mzn_search
    efficient
    sat
+   flattening
