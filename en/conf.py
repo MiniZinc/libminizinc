@@ -146,6 +146,8 @@ html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 html_theme_options = {
     
     'source_link_position': "",
+    
+    'globaltoc_depth': 3,
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
