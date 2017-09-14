@@ -62,8 +62,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'MiniZinc Documentation'
-copyright = '2016, Peter J. Stuckey, Kim Marriott, Guido Tack'
-author = 'Peter J. Stuckey, Kim Marriott, Guiod Tack'
+copyright = '2016, 2017, Peter J. Stuckey, Kim Marriott, Guido Tack'
+author = 'Peter J. Stuckey, Kim Marriott, Guido Tack'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
