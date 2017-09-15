@@ -110,13 +110,13 @@
      % use a minipage if we are already inside a framed environment
      \ifspx@inframed\noindent\begin{minipage}{\linewidth}\fi
      \ifx\sphinxVerbatimTitle\empty
-       \begin{tcolorbox}[breakable,toprule at break=0pt,bottomrule at break=0pt,pad at break*=0mm]
+       \begin{tcolorbox}[breakable,toprule at break=0pt,bottomrule at break=0pt,pad at break*=2mm]
      \else
        % \show\sphinxVerbatimTitle
        % \begin{codebox}{\sphinxLiteralBlockLabel \sphinxVerbatimTitle}
        \captionsetup{aboveskip=0pt,belowskip=0pt,justification=raggedright,singlelinecheck=false,font=white}
        % \traceon
-\begin{tcolorbox}[breakable,,toprule at break=0pt,bottomrule at break=0pt,pad at break*=0mm,title={\sphinxVerbatimTitle}]
+\begin{tcolorbox}[breakable,,toprule at break=0pt,bottomrule at break=0pt,pad at break*=2mm,title={\sphinxVerbatimTitle}]
       % \traceoff
      \fi
      \small
