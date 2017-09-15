@@ -517,7 +517,7 @@ calculation to calculate the balance after each quarter.
 
 .. literalinclude:: examples/loan.mzn
   :language: minizinc
-  :caption: Model for determining relationships between a 1 year loan repaying every quarter ((:download:`loan.mzn <examples/loan.mzn>`))
+  :caption: Model for determining relationships between a 1 year loan repaying every quarter (:download:`loan.mzn <examples/loan.mzn>`)
   :name: ex-loan
 
 Note that we declare a float variable ``f``
