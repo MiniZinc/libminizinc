@@ -6,6 +6,11 @@
 \RequirePackage{caption}
 \PassOptionsToPackage{hanging,nooneline}{caption}
 
+\RequirePackage{chngcntr}
+
+\counterwithin{chapter}{part}
+\renewcommand{\thepart}{\arabic{part}}
+
 %\definecolor{UglyGreen}{rgb}{0,1,0}
 \definecolor{UglyGreen}{rgb}{0.418,0.556,0.137}
 %\definecolor{UglyBlue}{rgb}{0,0,1}
