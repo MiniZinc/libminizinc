@@ -724,7 +724,7 @@ or ``--all-solutions``. Running
 
 .. code-block:: bash
 
-  $ mzn-g12fd --all-solutions sudoku.mzn sudoku.dzn
+  $ mzn-gecode --all-solutions sudoku.mzn sudoku.dzn
 
 results in
 

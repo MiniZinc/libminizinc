@@ -62,8 +62,8 @@ master_doc = 'index'
 
 # General information about the project.
 project = 'MiniZinc'
-copyright = '2016, Peter J. Stuckey, Kim Marriott'
-author = 'Peter J. Stuckey, Kim Marriott'
+copyright = '2016, Peter J. Stuckey, Kim Marriott, Guido Tack'
+author = 'Peter J. Stuckey, Kim Marriott, Guido Tack'
 
 # The version info for the project you're documenting, acts as replacement for
 # |version| and |release|, also used in various other places throughout the
@@ -273,7 +273,7 @@ latex_elements = {
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
     (master_doc, 'MiniZinc.tex', 'MiniZinc Documentation',
-     'Peter J. Stuckey, Kim Marriott', 'manual'),
+     'Peter J. Stuckey, Kim Marriott, Guido Tack', 'manual'),
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

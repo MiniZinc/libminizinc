@@ -644,7 +644,7 @@ and similarly :mzn:`e1 <- e2` is rewritten as  :mzn:`e1 \/ not e2`.
 The context for a Boolean expression is given by:
 
 root
-  root context is the context for any expression $e$ appearing as
+  root context is the context for any expression :mzn:`e` appearing as
   the argument of :mzn:`constraint` or as an
   :index:`assignment` item, or appearing as a sub expression :mzn:`e1`
   or :mzn:`e2` in an expression :mzn:`e1 /\ e2` occuring in a root context.
@@ -902,6 +902,6 @@ of the same name.
 For example, in the model shown in :numref:`ex-scope` 
 the :mzn:`x` in :mzn:`-x <= y` is the global :mzn:`x`,
 the :mzn:`x` in
-:mzn:`even(x)` is the iterator :mzn:`x in 1..u`,
+:mzn:`smallx(x)` is the iterator :mzn:`x in 1..u`,
 while the :mzn:`y` in the disjunction is the second
 argument of the predicate.
