@@ -16,6 +16,8 @@ modeller.
 Functions are used in MiniZinc to capture common structures of models.
 Indeed a predicate is just a function with output type :mzn:`var bool`.
 
+.. _sec-globals:
+
 Global Constraints
 ------------------
 

@@ -581,8 +581,6 @@ results in the output
   ==========
 
 
-.. _sec-globals:
-
 Global Constraints
 ------------------
 
