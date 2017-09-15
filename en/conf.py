@@ -459,3 +459,4 @@ def setup(sphinx):
     from mznlexer import MznLexer, MznDefLexer
     sphinx.add_lexer("minizinc", MznLexer())
     sphinx.add_lexer("minizincdef", MznDefLexer())
+    sphinx.add_stylesheet("style.css")
