@@ -81,14 +81,12 @@ MiniZinc is evolving, however, and so is this document.
 For a formally published paper on the MiniZinc language
 and the superset Zinc language, please see:
 
-  N. Nethercote, P.J. Stuckey, R. Becket, S. Brand, G.J. Duck, and G. Tack.
+- N. Nethercote, P.J. Stuckey, R. Becket, S. Brand, G.J. Duck, and G. Tack.
   Minizinc: Towards a standard CP modelling language.
   In C. Bessiere, editor, *Proceedings of the 13th International
   Conference on Principles and Practice of Constraint Programming*, volume 4741
   of *LNCS*, pages 529--543. Springer-Verlag, 2007.
-
-
-  K. Marriott, N. Nethercote, R. Rafeh, P.J. Stuckey,
+- K. Marriott, N. Nethercote, R. Rafeh, P.J. Stuckey,
   M. Garcia de la Banda, and M. Wallace.
   The Design of the Zinc Modelling Language.
   *Constraints*, 13(3):229-267, 2008.
