@@ -77,7 +77,7 @@ with the model shown in :numref:`ex-laplace`.
 .. literalinclude:: examples/laplace.mzn
   :language: minizinc
   :name: ex-laplace
-  :caption: Finite element plate model for determining steady state temperatures (``laplace.mzn``).
+  :caption: Finite element plate model for determining steady state temperatures (:download:`laplace.mzn <examples/laplace.mzn>`).
 
 Running the command
 
@@ -153,12 +153,12 @@ the cake baking example) is shown in :numref:`fig-prod-planning-data`.
 .. literalinclude:: examples/simple-prod-planning.mzn
   :language: minizinc
   :name: ex-prod-planning
-  :caption: Model for simple production planning (``simple-prod-planning.mzn``).
+  :caption: Model for simple production planning (:download:`simple-prod-planning.mzn <examples/simple-prod-planning.mzn>`).
 
 .. literalinclude:: examples/simple-prod-planning-data.dzn
   :language: minizinc
   :name: fig-prod-planning-data
-  :caption: Example data file for the simple production planning problem.
+  :caption: Example data file for the simple production planning problem (:download:`simple-prod-planning-data.dzn <examples/simple-prod-planning-data.dzn>`).
 
 The new feature in this model is the use of :index:`enumerated
 types <type; enumerated>`. 
@@ -192,7 +192,7 @@ declares ``Products`` as an *unknown* set of products.
 
     enum <var-name> = { <var-name-1>, ..., <var-name-n> } ;
     
-  where :mzndef:`<var-name-1`, ..., :mzndef:`<var-name-n>` are the elements of
+  where :mzndef:`<var-name-1>`, ..., :mzndef:`<var-name-n>` are the elements of
   the enumerated type, with name :mzndef:`<var-name>`. 
   Each of the elements of the enumerated type is also effectively declared by
   this definition as a new constant of that type.
@@ -284,9 +284,9 @@ Notice how the delimiter ``|`` is used to separate rows.
 
   .. code-block:: minizincdef
   
-    [| <expr-1,1>, ..., <expr-1,n>
-     | ...
-     | <expr-m,1>, ..., <expr-m,n> |]
+    [| <expr-1-1>, ..., <expr-1-n> |
+       ...                         |
+       <expr-m-1>, ..., <expr-m-n> |]
 
   where the array has ``m`` rows and ``n`` columns.
 
@@ -598,7 +598,7 @@ all the variables appearing in its argument to be pairwise different.
 .. literalinclude:: examples/send-more-money.mzn
   :language: minizinc
   :name: ex-smm
-  :caption: Model for the cryptarithmetic problem SEND+MORE=MONEY (``send-more-money.mzn``)
+  :caption: Model for the cryptarithmetic problem SEND+MORE=MONEY (:download:`send-more-money.mzn <examples/send-more-money.mzn>`)
 
 The SEND+MORE=MONEY problem requires assigning a different
 digit to each letter so that the arithmetic constraint holds.
@@ -670,19 +670,19 @@ it sets it to zero.
 .. literalinclude:: examples/sudoku.mzn
   :language: minizinc
   :name: ex-sudoku
-  :caption: Model for generalized Sudoku problem (``sudoku.mzn``)
+  :caption: Model for generalized Sudoku problem (:download:`sudoku.mzn <examples/sudoku.mzn>`)
 
 
 .. literalinclude:: examples/sudoku.dzn
   :language: minizinc
   :name: ex-sudokud
-  :caption: Example data file for generalised Sudoku problem (``sudoku.dzn``)
+  :caption: Example data file for generalised Sudoku problem (:download:`sudoku.dzn <examples/sudoku.dzn>`)
 
 .. _fig-sudoku:
 
 .. figure:: figures/sudoku.*
   
-  The problem represented by data file ``sudoku.dzn``
+  The problem represented by data file :download:`sudoku.dzn <examples/sudoku.dzn>`
 
 Conditional expressions are very useful in building complex models, or
 complex output. Consider the model of Sudoku problems shown in
@@ -771,7 +771,7 @@ Let's revisit the problem of coloring the graph of Australia from :ref:`sec-mode
 .. literalinclude:: examples/aust-enum.mzn
   :language: minizinc
   :name: ex-aust-enum
-  :caption: Model for coloring Australia using enumerated types (``aust-enum.mzn``).
+  :caption: Model for coloring Australia using enumerated types (:download:`aust-enum.mzn <examples/aust-enum.mzn>`).
 
 The model shown in :numref:`ex-aust-enum` declares an enumerated type
 :mzn:`Color` which must be defined in the data file.  Each of the state
@@ -841,23 +841,23 @@ colored blue.
 
   There are a number of built in operations on enumerated types:
 
-    - :mzn:`enum_next(X,x)`: returns the next value in after :mzn:`x` in the
-      enumerated type :mzn:`X`. This is a partial function, if :mzn:`x` is the last value in
-      the enumerated type :mzn:`X` then the function returns :math:`\bot` causing the Boolean
-      expression containing the expression to evaluate to :mzn:`false`.
-    - :mzn:`enum_prev(X,x)`:
-      returns the previous value before :mzn:`x` in the
-      enumerated type :mzn:`X`. Similarly :mzn:`enum_prev` is a partial function. 
-    - :mzn:`to_enum(X,i)`: maps an integer expression :mzn:`i` to an
-      enumerated type value in type :mzn:`X` or evaluates to :math:`\bot` if :mzn:`i` is less
-      than or equal to 0 or greater than the number of elements in :mzn:`X`.
+  - :mzn:`enum_next(X,x)`: returns the next value in after :mzn:`x` in the
+    enumerated type :mzn:`X`. This is a partial function, if :mzn:`x` is the last value in
+    the enumerated type :mzn:`X` then the function returns :math:`\bot` causing the Boolean
+    expression containing the expression to evaluate to :mzn:`false`.
+  - :mzn:`enum_prev(X,x)`:
+    returns the previous value before :mzn:`x` in the
+    enumerated type :mzn:`X`. Similarly :mzn:`enum_prev` is a partial function. 
+  - :mzn:`to_enum(X,i)`: maps an integer expression :mzn:`i` to an
+    enumerated type value in type :mzn:`X` or evaluates to :math:`\bot` if :mzn:`i` is less
+    than or equal to 0 or greater than the number of elements in :mzn:`X`.
 
   Note also that a number of standard functions are applicable to enumerated
   types:
 
-    - :mzn:`card(X)`: returns the cardinality of an enumerated type :mzn:`X`.
-    - :mzn:`min(X)`: returns the minimum element of of an enumerated type :mzn:`X`.
-    - :mzn:`max(X)`: returns the maximum element of of an enumerated type :mzn:`X`.
+  - :mzn:`card(X)`: returns the cardinality of an enumerated type :mzn:`X`.
+  - :mzn:`min(X)`: returns the minimum element of of an enumerated type :mzn:`X`.
+  - :mzn:`max(X)`: returns the maximum element of of an enumerated type :mzn:`X`.
 
 
 .. _sec-complex:
@@ -901,8 +901,8 @@ which ensures that the tasks do not overlap.
   and the Boolean 
   operators
   are 
-  conjunction, i.e. and  (:mzn:`/\`), 
-  disjunction, i.e. or  (:mzn:`\/`),  
+  conjunction, i.e. and  (``/\``), 
+  disjunction, i.e. or  (``\/``),  
   only-if (:mzn:`<-`), 
   implies (:mzn:`->`), 
   if-and-only-if (:mzn:`<->`) and 
@@ -915,12 +915,12 @@ which ensures that the tasks do not overlap.
 .. literalinclude:: examples/jobshop.mzn
   :language: minizinc
   :name: ex-jobshop
-  :caption: Model for job-shop scheduling problems (``jobshop.mzn``).
+  :caption: Model for job-shop scheduling problems (:download:`jobshop.mzn <examples/jobshop.mzn>`).
 
 .. literalinclude:: examples/jdata.dzn
   :language: minizinc
   :name: ex-jdata
-  :caption: Data for job-shop scheduling problems (``jdata.dzn``).
+  :caption: Data for job-shop scheduling problems (:download:`jdata.dzn <examples/jdata.dzn>`).
 
 The job shop scheduling model given in :numref:`ex-jobshop`
 gives a realistic example of the use of this disjunctive modelling
@@ -991,12 +991,12 @@ For this problem there are 3,444,375 optimal solutions.
 .. literalinclude:: examples/stable-marriage.mzn
   :language: minizinc
   :name: ex-stable-marriage
-  :caption: Model for the stable marriage problem (``stable-marriage.mzn``).
+  :caption: Model for the stable marriage problem (:download:`stable-marriage.mzn <examples/stable-marriage.mzn>`).
 
 .. literalinclude:: examples/stable-marriage.dzn
   :language: minizinc
   :name: ex-sm-data
-  :caption: Example data for the stable marriage problem (``stable-marriage.mzn``).
+  :caption: Example data for the stable marriage problem (:download:`stable-marriage.dzn <examples/stable-marriage.dzn>`).
 
 Another powerful modelling feature in MiniZinc is 
 that decision variables
@@ -1007,8 +1007,8 @@ men. Each man has a ranked list of women and vice versa. We want to find a
 husband/wife for each women/man so that all marriages are *stable* in
 the sense that:
 
-  - whenever :mzn:`m` prefers another women :mzn:`o` to his wife :mzn:`w`, :mzn:`o` prefers her husband to :mzn:`m`, and
-  - whenever :mzn:`w` prefers another man :mzn:`o` to her husband :mzn:`m`, :mzn:`o` prefers his wife to :mzn:`w`.
+- whenever :mzn:`m` prefers another women :mzn:`o` to his wife :mzn:`w`, :mzn:`o` prefers her husband to :mzn:`m`, and
+- whenever :mzn:`w` prefers another man :mzn:`o` to her husband :mzn:`m`, :mzn:`o` prefers his wife to :mzn:`w`.
 
 This can be elegantly modelled in 
 MiniZinc. 
@@ -1094,7 +1094,7 @@ since it is almost always an error.
 .. literalinclude:: examples/magic-series.mzn
   :language: minizinc
   :name: ex-magic-series
-  :caption: Model solving the magic series problem (``magic-series.mzn``).
+  :caption: Model solving the magic series problem (:download:`magic-series.mzn <examples/magic-series.mzn>`).
 
 .. index::
   single: bool2int
@@ -1197,7 +1197,7 @@ given by :mzn:`capacity` then a naural model is given in
 .. literalinclude:: examples/knapsack.mzn
   :language: minizinc
   :name: ex-knapsack-binary
-  :caption: Model for the 0/1 knapsack problem (``knapsack.mzn``).
+  :caption: Model for the 0/1 knapsack problem (:download:`knapsack.mzn <examples/knapsack.mzn>`).
 
 Notice that the :mzn:`var`
 keyword comes before the :mzn:`set`
@@ -1210,7 +1210,7 @@ basic structure of the array is fixed, i.e. its index set.
 .. literalinclude:: examples/social-golfers.mzn
   :language: minizinc
   :name: ex-social-golfers
-  :caption: Model for the social golfers problems (``social-golfers.mzn``).
+  :caption: Model for the social golfers problems (:download:`social-golfers.mzn <examples/social-golfers.mzn>`).
 
 
 As a more complex example of set constraint consider the social golfers
@@ -1277,7 +1277,7 @@ and complex output.
 .. literalinclude:: examples/wedding.mzn
   :language: minizinc
   :name: ex-wedding
-  :caption: Planning wedding seating using enumerated types (``wedding.mzn``).
+  :caption: Planning wedding seating using enumerated types (:download:`wedding.mzn <examples/wedding.mzn>`).
 
 The model of :numref:`ex-wedding` arranges seats at the wedding table.
 The table has 12 numbered seats in order around the table, 6 on each side.

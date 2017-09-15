@@ -19,39 +19,39 @@ There are three common ways of modelling an integer variables
 using Boolean
 variables. 
 
-  - Binary: :math:`I` is represented by :math:`k` binary variables
-    :math:`i_0, \ldots, i_{k-1}` where
-    :math:`I = 2^{k-1} i_{k-1} + 2^{k-2} i_{k-2} + \cdots + 2 i_1 + i_0`.
-    This can be represented in MiniZinc as
+- Binary: :math:`I` is represented by :math:`k` binary variables
+  :math:`i_0, \ldots, i_{k-1}` where
+  :math:`I = 2^{k-1} i_{k-1} + 2^{k-2} i_{k-2} + \cdots + 2 i_1 + i_0`.
+  This can be represented in MiniZinc as
 
-    .. code-block:: minizinc
+  .. code-block:: minizinc
 
-      array[0..k-1]  of var bool: i;
-      var 0..pow(2,k)-1: I = sum(j in 0..k-1)(bool2int(i[j])*pow(2,j));
+    array[0..k-1]  of var bool: i;
+    var 0..pow(2,k)-1: I = sum(j in 0..k-1)(bool2int(i[j])*pow(2,j));
 
-  - Unary: where :math:`I` is represented by :math:`m` binary variables
-    :math:`i_1, \ldots, i_m`
-    and :math:`i = \sum_{j=1}^m \mathtt{bool2int}(i_j)`.  Since there is massive redundancy in
-    the unary representation we usually require that
-    :math:`i_j \rightarrow i_{j-1}, 1 < j \leq m`. This can be represented in MiniZinc as
+- Unary: where :math:`I` is represented by :math:`m` binary variables
+  :math:`i_1, \ldots, i_m`
+  and :math:`i = \sum_{j=1}^m \mathtt{bool2int}(i_j)`.  Since there is massive redundancy in
+  the unary representation we usually require that
+  :math:`i_j \rightarrow i_{j-1}, 1 < j \leq m`. This can be represented in MiniZinc as
 
-    .. code-block:: minizinc
+  .. code-block:: minizinc
 
-      array[1..m]  of var bool: i;
-      constraint forall(j in 2..m)(i[j] -> i[j-1]);
-      var 0..m: I = sum(j in 1..m)(bool2int(i[j]);
+    array[1..m]  of var bool: i;
+    constraint forall(j in 2..m)(i[j] -> i[j-1]);
+    var 0..m: I = sum(j in 1..m)(bool2int(i[j]);
 
-  - Value: where :math:`I` is represented by :math:`m+1` binary variables
-    :math:`i_0, \ldots, i_m` where
-    :math:`i = k \Leftrightarrow i_k`, and at most one of :math:`i_0, \ldots, i_m` is true. 
-    This can be represented in MiniZinc as
+- Value: where :math:`I` is represented by :math:`m+1` binary variables
+  :math:`i_0, \ldots, i_m` where
+  :math:`i = k \Leftrightarrow i_k`, and at most one of :math:`i_0, \ldots, i_m` is true. 
+  This can be represented in MiniZinc as
 
-    .. code-block:: minizinc
+  .. code-block:: minizinc
 
-      array[0..m]  of var bool: i;
-      constraint sum(j in 0..m)(bool2int(i[j]) == 1;
-      var 0..m: I;
-      constraint foall(j in 0..m)(I == j <-> i[j]);
+    array[0..m]  of var bool: i;
+    constraint sum(j in 0..m)(bool2int(i[j]) == 1;
+    var 0..m: I;
+    constraint foall(j in 0..m)(I == j <-> i[j]);
 
 There are advantages and disadvantages to each representation.  It depends
 on what operations on integers are to required in the model as to which is
@@ -68,7 +68,7 @@ An integer model for latin squares is shown in :numref:`ex-latin`.
 .. literalinclude:: examples/latin.mzn
   :language: minizinc
   :name: ex-latin
-  :caption: Integer model for Latin Squares (``latin.mzn``).
+  :caption: Integer model for Latin Squares (:download:`latin.mzn <examples/latin.mzn>`).
 
 The only constraint on the integers is in fact disequality, which is encoded
 in the :mzn:`alldifferent` constraint. 
@@ -84,7 +84,7 @@ one of the Booleans corresponding to integer array element :mzn:`a[i,j]` is true
 .. literalinclude:: examples/latinbool.mzn
   :language: minizinc
   :name: ex-latinbool
-  :caption: Boolean model for Latin Squares (``latinbool.mzn``).
+  :caption: Boolean model for Latin Squares (:download:`latinbool.mzn <examples/latinbool.mzn>`).
 
 Modelling Cardinality
 ---------------------
@@ -95,11 +95,11 @@ may contain a number from 1 to 4, or may have no number. The aim is to place
 lights
 in the blank squares so that
 
-  - Each blank square is "illuminated", that is can see a light through an
-    uninterupted line of blank squares
-  - No two lights can see each other
-  - The number of lights adjacent to a numbered filled square
-    is exactly the number in the filled square.
+- Each blank square is "illuminated", that is can see a light through an
+  uninterupted line of blank squares
+- No two lights can see each other
+- The number of lights adjacent to a numbered filled square
+  is exactly the number in the filled square.
 
 An example of a Light Up puzzle is shown in :numref:`fig-lightup`
 with its solution in :numref:`fig-lightup-sol`.
@@ -124,7 +124,7 @@ arithmetic to consider for the filled squares.
 .. literalinclude:: examples/lightup.mzn
   :language: minizinc
   :name: ex-lightup
-  :caption: SAT Model for the Light Up puzzle (``lightup.mzn``).
+  :caption: SAT Model for the Light Up puzzle (:download:`lightup.mzn <examples/lightup.mzn>`).
 
 A model for the problem is given in :numref:`ex-lightup`.
 A data file for the problem shown in :numref:`fig-lightup`
@@ -145,24 +145,24 @@ which requires that the sum of an array of Boolean equals some fixed
 integer. There are a number of ways of modelling such
 *cardinality* constraints using Booleans.
 
-  - Adder networks: we can use a network of adders to
-    build a binary Boolean representation of the sum of the Booleans
-  - Sorting networks: we can use a sorting network to sort
-    the array of Booleans to create a unary representation of the sum
-    of the Booleans
-  - Binary decision diagrams: we can create a binary decision diagram
-    (BDD) that encodes the cardinality constraint.
+- Adder networks: we can use a network of adders to
+  build a binary Boolean representation of the sum of the Booleans
+- Sorting networks: we can use a sorting network to sort
+  the array of Booleans to create a unary representation of the sum
+  of the Booleans
+- Binary decision diagrams: we can create a binary decision diagram
+  (BDD) that encodes the cardinality constraint.
 
 
 .. literalinclude:: examples/bboolsum.mzn
   :language: minizinc
   :name: ex-bboolsum
-  :caption: Cardinality constraints by binary adder networks (``bboolsum.mzn``).
+  :caption: Cardinality constraints by binary adder networks (:download:`bboolsum.mzn <examples/bboolsum.mzn>`).
 
 .. literalinclude:: examples/binarysum.mzn
   :language: minizinc
   :name: ex-binarysum
-  :caption: Code for building binary addition networks (``binarysum.mzn``).
+  :caption: Code for building binary addition networks (:download:`binarysum.mzn <examples/binarysum.mzn>`).
 
 We can implement :mzn:`bool_sum_eq` using binary adder networks
 using the code shown in :numref:`ex-bboolsum`.
@@ -180,12 +180,12 @@ to the binary addition.
 .. literalinclude:: examples/uboolsum.mzn
   :language: minizinc
   :name: ex-uboolsum
-  :caption: Cardinality constraints by sorting networks (``uboolsum.mzn``).
+  :caption: Cardinality constraints by sorting networks (:download:`uboolsum.mzn <examples/uboolsum.mzn>`).
 
 .. literalinclude:: examples/oesort.mzn
   :language: minizinc
   :name: ex-oesort
-  :caption: Odd-even merge sorting networks (``oesort.mzn``).
+  :caption: Odd-even merge sorting networks (:download:`oesort.mzn <examples/oesort.mzn>`).
 
 We can implement :mzn:`bool_sum_eq` using unary sorting networks
 using the code shown in :numref:`ex-uboolsum`.
@@ -206,7 +206,7 @@ sorted lists.
 .. literalinclude:: examples/bddsum.mzn
   :language: minizinc
   :name: ex-bddsum
-  :caption: Cardinality constraints by binary decision diagrams (``bddsum.mzn``).
+  :caption: Cardinality constraints by binary decision diagrams (:download:`bddsum.mzn <examples/bddsum.mzn>`).
 
 We can implement :mzn:`bool_sum_eq` using binary decision diagrams
 using the code shown in :mzn:`ex:bddsum`.

@@ -29,7 +29,7 @@ implicitly limit the size of integer variables.
 .. literalinclude:: examples/grocery.mzn
   :language: minizinc
   :name: ex-grocery
-  :caption: A model with unbounded variables (``grocery.mzn``).
+  :caption: A model with unbounded variables (:download:`grocery.mzn <examples/grocery.mzn>`).
 
 The grocery problem shown in :numref:`ex-grocery` finds 4 items
 whose prices in dollars add up to 7.11 and multiply up to 7.11.
@@ -109,7 +109,7 @@ actually required to model the problem.
 .. literalinclude:: examples/golomb.mzn
   :language: minizinc
   :name: ex-unc
-  :caption: A model for Golomb rulers with unconstrained variables (``golomb.mzn``).
+  :caption: A model for Golomb rulers with unconstrained variables (:download:`golomb.mzn <examples/golomb.mzn>`).
 
 Consider the model for Golomb rulers shown in :numref:`ex-unc`.
 A Golomb ruler of :mzn:`n` marks is one where the absolute differences
@@ -314,7 +314,7 @@ gives the model in
 .. literalinclude:: examples/magic-series2.mzn
   :language: minizinc
   :name: ex-magic-series2
-  :caption: Model solving the magic series problem with redundant constraints (``magic-series2.mzn``).
+  :caption: Model solving the magic series problem with redundant constraints (:download:`magic-series2.mzn <examples/magic-series2.mzn>`).
 
 Running the same problem as before
 
@@ -337,12 +337,14 @@ yet, different models may be better or worse for different solving backends.
 There are however some guidelines for usually producing better models:
 
 .. defblock:: Choosing between models
+
   The better model is likely to have some of the following features
-    - smaller number of variables, or at least those that are not
-      functionally defined by other variables
-    - smaller domain sizes of variables
-    - more succinct, or direct, definition of the constraints of the model
-    - uses global constraints as much as possible
+
+  - smaller number of variables, or at least those that are not
+    functionally defined by other variables
+  - smaller domain sizes of variables
+  - more succinct, or direct, definition of the constraints of the model
+  - uses global constraints as much as possible
 
   In reality all this has to be tempered by how effective the search is for
   the model.  Usually the effectiveness of search is hard to judge except by
@@ -358,7 +360,7 @@ The obvious way to model this problem is shown in :numref:`ex-allint`.
 .. literalinclude:: examples/allinterval.mzn
   :language: minizinc
   :name: ex-allint
-  :caption: A natural model for the all interval series problem ``prob007'' in CSPli (``allinterval.mzn``).
+  :caption: A natural model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval.mzn <examples/allinterval.mzn>`).
 
 In this model the array :mzn:`x` represents the permutation of the :mzn:`n`
 numbers and the constraints are naturally represented using :mzn:`alldifferent`.
@@ -392,7 +394,7 @@ original sequence :mzn:`x` from the array of positions :mzn:`y`.
 .. literalinclude:: examples/allinterval2.mzn
   :language: minizinc
   :name: ex-allint2
-  :caption: An inverse model for the all interval series problem ``prob007'' in CSPlib (``allinterval2.mzn``).
+  :caption: An inverse model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval2.mzn <examples/allinterval2.mzn>`).
 
 The inverse model has the same size as the original model, in terms of
 number of variables and domain sizes.  But the inverse model has a much more
@@ -412,6 +414,8 @@ Interestingly, although the model is not as succinct here, the search on the
 The lack of succinctness means that even though the search requires
 less choice it is substantially slower.
 
+.. _sec-multiple-modelling-and-channels:
+
 Multiple Modelling and Channels
 -------------------------------
 
@@ -422,12 +426,12 @@ together, since each can give different information to the solver.
 .. literalinclude:: examples/allinterval3.mzn
   :language: minizinc
   :name: ex-allint3
-  :caption: A dual model for the all interval series problem ``prob007'' in CSPlib (``allinterval3.mzn``).
+  :caption: A dual model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval3.mzn <examples/allinterval3.mzn>`).
 
 :numref:`ex-allint3` gives a dual model combining features of 
-``allinterval.mzn`` and ``allinterval2.mzn``.
-The beginning of the model is taken from ``allinterval.mzn``.
-We then introduce the :mzn:`y` and :mzn:`v` variables from ``allinterval2.mzn``.
+:download:`allinterval.mzn <examples/allinterval.mzn>` and :download:`allinterval2.mzn <examples/allinterval2.mzn>`.
+The beginning of the model is taken from :download:`allinterval.mzn <examples/allinterval.mzn>`.
+We then introduce the :mzn:`y` and :mzn:`v` variables from :download:`allinterval2.mzn <examples/allinterval2.mzn>`.
 We tie the variables together using the 
 global 
 :mzn:`inverse` constraint:
@@ -447,7 +451,7 @@ and the redundant constraints on :mzn:`y` and :mzn:`v`.
 .. literalinclude:: examples/inverse.mzn
   :language: minizinc
   :name: ex-inverse
-  :caption: A definition of the ``inverse`` global constraint (``inverse.mzn``).
+  :caption: A definition of the ``inverse`` global constraint (:download:`inverse.mzn <examples/inverse.mzn>`).
 
 One of the benefits of the dual model is that there is more scope for
 defining different search strategies.
@@ -462,3 +466,83 @@ the inverse model, labelling the :mzn:`y` variables,
 finds all solutions in 1714 choice points and 0.5s.
 Note that running the same model with labelling on the :mzn:`x` variables
 requires 13142 choice points and 1.5s.
+
+Symmetry
+--------
+
+Symmetry is very common in constraint satisfaction and optimisation problems. To illustrate this, let us look again at the n-queens problem from :numref:`ex-queens`. The top left chess board in :numref:`fig-queens-sym` shows a solution to the 8-queens problems (labeled "original"). The remaining chess boards show seven symmetric variants of the same solution: rotated by 90, 180 and 270 degrees, and flipped vertically.
+
+.. _fig-queens-sym:
+
+.. figure:: figures/queens_symm.*
+  
+  Symmetric variants of an 8-queens solution
+
+
+If we wanted to enumerate *all* solutions to the 8-queens problem, we could obviously save the solver some work by only enumerating *non-symmetric* solutions, and then generating the symmetric variants ourselves. This is one reason why we want to get rid of symmetry in constraint models. The other, much more important reason, is that the solver may also **explore symmetric variants of non-solution states!**
+
+For example, a typical constraint solver may try to place the queen in column 1 into row 1 (which is fine), and then try to put the column 2 queen into row 3, which, at first sight, does not violate any of the constraints. However, this configuration cannot be completed to a full solution (which the solver finds out after a little search). :numref:`fig-queens-sym-unsat` shows this configuration on the top left chess board. Now nothing prevents the solver from trying, e.g., the second configuration from the left in the bottom row of :numref:`fig-queens-sym-unsat`, where the queen in column 1 is still in row 1, and the queen in column 3 is placed in row 2. Therefore, even when only searching for a single solution, the solver may explore many symmetric states that it has already seen and proven unsatisfiable before!
+
+.. _fig-queens-sym-unsat:
+
+.. figure:: figures/queens_symm_unsat.*
+  
+  Symmetric variants of an 8-queens unsatisfiable partial assignment
+
+Static Symmetry Breaking
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+The modelling technique for dealing with symmetry is called *symmetry breaking*, and in its simplest form, involves adding constraints to the model that rule out all symmetric variants of a (partial) assignment to the variables except one. These constraints are called *static symmetry breaking constraints*.
+
+The basic idea behind symmetry breaking is to impose an *order*. For example, to rule out any vertical flips of the chess board, we could simply add the constraint that the queen in the first column must be in the top half of the board:
+
+.. code-block:: minizinc
+
+  constraint q[1] <= n div 2;
+
+Convince yourself that this would remove exactly half of the symmetric variants in :numref:`fig-queens-sym`. In order to remove *all* symmetry, we need to work a bit harder.
+
+Whenever we can express all symmetries as permutations of the array of variables, a set of *lexicographic ordering constraints* can be used to break all symmetry. For example, if the array of variables is called :mzn:`x`, and reversing the array is a symmetry of the problem, then the following constraint will break that symmetry:
+
+.. code-block:: minizinc
+
+  constraint lex_lesseq(x, reverse(x));
+
+How about two-dimensional arrays? Lexicographic ordering works just the same, we only have to coerce the arrays into one dimension. For example, the following breaks the symmetry of flipping the array along one of the diagonals (note the swapped indices in the second comprehension):
+
+.. code-block:: minizinc
+
+  array[1..n,1..n] of var int: x;
+  constraint lex_lesseq([ x[i,j] | i,j in 1..n ], [ x[j,i] | i,j in 1..n ]);
+
+The great thing about using lexicographic ordering constraints is that we can add multiple ones (to break several symmetries simultaneously), without them interfering with each other, as long as we keep the order in the first argument the same.
+
+For the n-queens problem, unfortunately this technique does not immediately apply, because some of its symmetries cannot be described as permutations of the :mzn:`q` array. The trick to overcome this is to express the n-queens problem in terms of Boolean variables that model, for each field of the board, whether it contains a queen or not. Now all the symmetries can be modeled as permutations of this array. Since the main constraints of the n-queens problem are much easier to express with the integer :mzn:`q` array, we simply use both models together and add channeling constraints between them, as explained in :ref:`sec-multiple-modelling-and-channels`.
+
+The full model, with added Boolean variables, channeling constraints and symmetry breaking constraints is shown in :numref:`ex-queens-sym`. We can conduct a little experiment to check whether it successfully breaks all the symmetry. Try running the model with increasing values for :mzn:`n`, e.g. from 1 to 10, counting the number of solutions (e.g., by using the ``-s`` flag with the Gecode solver, or selecting "Print all solutions" as well as "Statistics for solving" in the IDE). You should get the following sequence of numbers of solutions: 1, 0, 0, 1, 2, 1, 6, 12, 46, 92. To verify the sequence, you can search for it in the *On-Line Encyclopedia of Integer Sequences* (http://oeis.org).
+
+.. literalinclude:: examples/nqueens_sym.mzn
+  :language: minizinc
+  :name: ex-queens-sym
+  :start-after: % Alternative
+  :end-before: % search
+  :caption: Partial model for n-queens with symmetry breaking (full model: :download:`nqueens_sym.mzn <examples/nqueens_sym.mzn>`).
+
+
+Other Examples of Symmetry
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Many other problems have inherent symmetries, and breaking these can often make a significant difference in solving performance. Here is a list of some common cases:
+
+- Bin packing: when trying to pack items into bins, any two bins that have 
+  the same capacity are symmetric.
+- Graph colouring: When trying to assign colours to nodes in a graph such 
+  that adjacent nodes must have different colours, we typically model 
+  colours as integer numbers. However, any permutation of colours is again a 
+  valid graph colouring.
+- Vehicle routing: if the task is to assign customers to certain vehicles, 
+  any two vehicles with the same capacity may be symmetric (this is similar 
+  to the bin packing example).
+- Rostering/time tabling: two staff members with the same skill set may be 
+  interchangeable, just like two rooms with the same capacity or technical 
+  equipment.

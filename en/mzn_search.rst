@@ -48,7 +48,7 @@ where they undo the last choice made and then try to make a new choice.
 .. literalinclude:: examples/nqueens.mzn
   :language: minizinc
   :name: ex-queens
-  :caption: Model for n-queens (``nqueens.mzn``).
+  :caption: Model for n-queens (:download:`nqueens.mzn <examples/nqueens.mzn>`).
 
 A simple example of a finite domain problem is the :math:`n` queens
 problem which requires that we
@@ -163,24 +163,23 @@ value selection), looking across the entire search tree
   There are three basic search annotations corresponding to different
   basic variable types:
 
-    - :mzndef:`int_search( <variables>, <varchoice>, <constrainchoice>, <strategy> )`
-
-      where :mzndef:`<variables>` is a one dimensional array of :mzn:`var int`,
-      :mzndef:`<varchoice>` is a variable choice annotation discussed below,
-      :mzndef:`<constrainchoice>` is a choice of how to constrain a variable, discussed
-      below, and :mzndef:`<strategy>` is a search strategy which we will assume for now
-      is :mzn:`complete`.
-    - :mzndef:`bool_search( <variables>, <varchoice>, <constrainchoice>, <strategy> )`
-      where :mzndef:`<variables>` is a one dimensional array of :mzn:`var bool`
-      and the rest are as above.
-    - :mzndef:`set_search( <variables>, <varchoice>, <constrainchoice>, <strategy> )`
-      where :mzndef:`<variables>` is a one dimensional array of :mzn:`var set of int`
-      and the rest are as above.
-    - :mzndef:`float_search( <variables>, <precision>, <varchoice>, <constrainchoice>, <strategy> )`
-      where :mzndef:`<variables>` is a one dimensional array of :mzn:`var float`,
-      :mzndef:`<precision>` is a fixed float specifying the :math:`\epsilon` below which
-      two float values are considered equal,
-      and the rest are as above.
+  - :mzndef:`int_search( <variables>, <varchoice>, <constrainchoice>, <strategy> )`
+    where :mzndef:`<variables>` is a one dimensional array of :mzn:`var int`,
+    :mzndef:`<varchoice>` is a variable choice annotation discussed below,
+    :mzndef:`<constrainchoice>` is a choice of how to constrain a variable, discussed
+    below, and :mzndef:`<strategy>` is a search strategy which we will assume for now
+    is :mzn:`complete`.
+  - :mzndef:`bool_search( <variables>, <varchoice>, <constrainchoice>, <strategy> )`
+    where :mzndef:`<variables>` is a one dimensional array of :mzn:`var bool`
+    and the rest are as above.
+  - :mzndef:`set_search( <variables>, <varchoice>, <constrainchoice>, <strategy> )`
+    where :mzndef:`<variables>` is a one dimensional array of :mzn:`var set of int`
+    and the rest are as above.
+  - :mzndef:`float_search( <variables>, <precision>, <varchoice>, <constrainchoice>, <strategy> )`
+    where :mzndef:`<variables>` is a one dimensional array of :mzn:`var float`,
+    :mzndef:`<precision>` is a fixed float specifying the :math:`\epsilon` below which
+    two float values are considered equal,
+    and the rest are as above.
 
   .. index::
     single: search; variable choice
@@ -190,9 +189,9 @@ value selection), looking across the entire search tree
 
   Example variable choice annotations are:
 
-    - :mzn:`input_order`: choose in order from the array
-    - :mzn:`first_fail`: choose the variable with the smallest domain size, and
-    - :mzn:`smallest`: choose the variable with the smallest value in its domain.
+  - :mzn:`input_order`: choose in order from the array
+  - :mzn:`first_fail`: choose the variable with the smallest domain size, and
+  - :mzn:`smallest`: choose the variable with the smallest value in its domain.
 
   .. index::
     single: search; constrain choice
@@ -203,10 +202,10 @@ value selection), looking across the entire search tree
 
   Example ways to constrain a variable are:
 
-    - :mzn:`indomain_min`: assign the variable its smallest domain value,
-    - :mzn:`indomain_median`: assign the variable its median domain value,
-    - :mzn:`indomain_random`: assign the variable a random value from its domain, and
-    - :mzn:`indomain_split` bisect the variables domain excluding the upper half.
+  - :mzn:`indomain_min`: assign the variable its smallest domain value,
+  - :mzn:`indomain_median`: assign the variable its median domain value,
+  - :mzn:`indomain_random`: assign the variable a random value from its domain, and
+  - :mzn:`indomain_split` bisect the variables domain excluding the upper half.
 
   The :mzndef:`<strategy>` is almost always :mzn:`complete` for complete search.
   For a complete list of variable and constraint choice annotations
@@ -284,7 +283,7 @@ to annotation variables.
 .. literalinclude:: examples/nqueens-ann.mzn
   :language: minizinc
   :name: ex-queens-ann
-  :caption: Annotated model for n-queens (``nqueens-ann.mzn``).
+  :caption: Annotated model for n-queens (:download:`nqueens-ann.mzn <examples/nqueens-ann.mzn>`).
 
 The program in :numref:`ex-queens-ann` illustrates the use of annotation
 declarations, annotations and annotation variables.
@@ -323,6 +322,8 @@ A small comparison of the number of choices made to find the first solution
 of the n-queens problems using the 4 different search strategies
 is shown in the table below (where --- means more than 100,000 choices).
 Clearly the right search strategy can make a significant difference.
+
+.. cssclass:: table-nonfluid table-bordered
 
 +-----+-----------+--------------+--------+-----------+
 |  n  | input-min | input-median | ff-min | ff-median |

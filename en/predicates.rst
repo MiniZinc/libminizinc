@@ -48,8 +48,8 @@ The argument is an array of integer variables.
 The :mzn:`alldifferent` constraint is one of the most studied and used global constraints in
 constraint programming.  It is used to define assignment subproblems, and
 efficient global propagators for :mzn:`alldifferent` exist.
-The models ``send-more-money.mzn`` (:numref:`ex-smm`)
-and ``sudoku.mzn`` (:numref:`ex-sudoku`)
+The models :download:`send-more-money.mzn <examples/send-more-money.mzn>` (:numref:`ex-smm`)
+and :download:`sudoku.mzn <examples/sudoku.mzn>` (:numref:`ex-sudoku`)
 are examples of models using :mzn:`alldifferent`.
 
 Cumulative
@@ -74,12 +74,12 @@ than a global resource bound :mzn:`b` at any one time.
 .. literalinclude:: examples/moving.mzn
   :language: minizinc
   :name: ex-moving
-  :caption: Model for moving furniture using ``cumulative`` (``moving.mzn``).
+  :caption: Model for moving furniture using ``cumulative`` (:download:`moving.mzn <examples/moving.mzn>`).
 
 .. literalinclude:: examples/moving.dzn
   :language: minizinc
   :name: ex-movingd
-  :caption: Data for moving furniture using ``cumulative`` (``moving.dzn``).
+  :caption: Data for moving furniture using ``cumulative`` (:download:`moving.dzn <examples/moving.dzn>`).
 
 The model in :numref:`ex-moving` finds a schedule for moving furniture
 so that each piece of furniture has enough handlers (people) and enough trolleys
@@ -143,12 +143,12 @@ and :math:`t` to be a set of tuples.
 .. literalinclude:: examples/meal.mzn
   :language: minizinc
   :name: ex-meal
-  :caption: Model for meal planning using ``table`` constraint (``meal.mzn``).
+  :caption: Model for meal planning using ``table`` constraint (:download:`meal.mzn <examples/meal.mzn>`).
 
 .. literalinclude:: examples/meal.dzn
   :language: minizinc
   :name: ex-meald
-  :caption: Data for meal planning defining the ``table`` used (``meal.dzn``).
+  :caption: Data for meal planning defining the ``table`` used (:download:`meal.dzn <examples/meal.dzn>`).
 
 The model in :numref:`ex-meal` searches for balanced meals.
 Each meal item has a name (encoded as an integer), a kilojoule count,
@@ -201,6 +201,8 @@ This can be encoded using the incomplete DFA shown in :numref:`fig-dfa`.
 We can encode this DFA as having start state :mzn:`1`, final states :mzn:`1..6`,
 and transition function 
 
+.. cssclass:: table-nonfluid table-bordered
+
 +---+---+---+---+
 |   | d | n | o |
 +===+===+===+===+
@@ -227,7 +229,7 @@ takes at least :mzn:`min_night` night shifts.
 .. literalinclude:: examples/nurse.mzn
   :language: minizinc
   :name: ex-nurse
-  :caption: Model for nurse rostering using ``regular`` constraint (``nurse.mzn``)
+  :caption: Model for nurse rostering using ``regular`` constraint (:download:`nurse.mzn <examples/nurse.mzn>`)
 
 Running the command
 
@@ -289,7 +291,7 @@ libraries defining the standard constraints and types.
 .. literalinclude:: examples/jobshop2.mzn
   :language: minizinc
   :name: ex-jobshop2
-  :caption: Model for job shop scheduling using predicates (``jobshop2.mzn``)
+  :caption: Model for job shop scheduling using predicates (:download:`jobshop2.mzn <examples/jobshop2.mzn>`)
 
 We start with a simple example, revisiting the job shop scheduling problem
 from the previous section.  The model is shown in
@@ -437,7 +439,7 @@ The complete model is shown in :numref:`ex-manhattan`.
 .. literalinclude:: examples/manhattan.mzn
   :language: minizinc
   :name: ex-manhattan
-  :caption: Model for a number placement problem illustrating the use of functions (``manhattan.mzn``).
+  :caption: Model for a number placement problem illustrating the use of functions (:download:`manhattan.mzn <examples/manhattan.mzn>`).
 
 .. defblock:: Function definitions
 
@@ -486,7 +488,7 @@ with minimal changes to our model. The model is shown in
 .. literalinclude:: examples/jobshop3.mzn
   :language: minizinc
   :name: ex-jobshop3
-  :caption: Model for job shop scheduling using ``disjunctive`` predicate (``jobshop3.mzn``).
+  :caption: Model for job shop scheduling using ``disjunctive`` predicate (:download:`jobshop3.mzn <examples/jobshop3.mzn>`).
 
 .. index::
   single: global constraint; disjunctive
@@ -505,14 +507,14 @@ signature
 We can use the disjunctive constraint to define the non-overlap of tasks as
 shown in :numref:`ex-jobshop3`. 
 We assume a definition for the :mzn:`disjunctive` predicate is given
-by the file ``disjunctive.mzn`` which is included in the model.
+by the file :download:`disjunctive.mzn <examples/disjunctive.mzn>` which is included in the model.
 If the underlying system
 supports :mzn:`disjunctive` directly, it will include a file
-``disjunctive.mzn`` in its globals directory (with contents
+:download:`disjunctive.mzn <examples/disjunctive.mzn>` in its globals directory (with contents
 just the signature definition above).
 If the system we are using does not support disjunctive directly
 we can give our own definition by creating the file
-``disjunctive.mzn``.
+:download:`disjunctive.mzn <examples/disjunctive.mzn>`.
 The simplest implementation simply makes use of the :mzn:`no_overlap`
 predicate defined above. 
 A better implementation is to make use of a global :mzn:`cumulative`
@@ -527,7 +529,7 @@ Note also that we use a ternary version of :mzn:`assert` here.
 .. literalinclude:: examples/disjunctive.mzn
   :language: minizinc
   :name: ex-disj
-  :caption: Defining a ``disjunctive`` predicate using ``cumulative`` (``disjunctive.mzn``).
+  :caption: Defining a ``disjunctive`` predicate using ``cumulative`` (:download:`disjunctive.mzn <examples/disjunctive.mzn>`).
 
 .. \ignore{ % for capture for testing!
 .. $ mzn-g12fd jobshop3.mzn jobshop.dzn
@@ -579,7 +581,7 @@ to the model explicitly.
 .. literalinclude:: examples/wedding2.mzn
   :language: minizinc
   :name: ex-wedding2
-  :caption: Using local variables to define a complex objective function (``wedding2.mzn``).
+  :caption: Using local variables to define a complex objective function (:download:`wedding2.mzn <examples/wedding2.mzn>`).
 
 
 Context
@@ -782,7 +784,7 @@ declared as finite then there is an error.
 .. literalinclude:: examples/reflection.mzn
   :language: minizinc
   :name: ex-reflect
-  :caption: Using reflection predicates (``reflection.mzn``).
+  :caption: Using reflection predicates (:download:`reflection.mzn <examples/reflection.mzn>`).
 
 For example, the model show in :numref:`ex-reflect`
 may output
@@ -828,12 +830,12 @@ more solutions than the weaker initial approximation.
   There are reflection functions to interrogate 
   the possible values of expressions containing variables:
   
-    - :mzndef:`dom(<exp>)`
-      returns a safe approximation to the possible values of the expression. 
-    - :mzndef:`lb(<exp>)`
-      returns a safe approximation to the lower bound value of the expression. 
-    - :mzndef:`ub(<exp>)`
-      returns a safe approximation to the upper bound value of the expression. 
+  - :mzndef:`dom(<exp>)`
+    returns a safe approximation to the possible values of the expression. 
+  - :mzndef:`lb(<exp>)`
+    returns a safe approximation to the lower bound value of the expression. 
+  - :mzndef:`ub(<exp>)`
+    returns a safe approximation to the upper bound value of the expression. 
 
   The expressions for :mzn:`lb` and :mzn:`ub`
   can only be of types :mzn:`int`, :mzn:`bool`,
@@ -847,15 +849,15 @@ more solutions than the weaker initial approximation.
   There are also versions that work directly on arrays of expressions (with
   similar restrictions):
 
-    - :mzndef:`dom_array(<array-exp>)`:
-      returns a safe approximation to the union of all 
-      possible values of the expressions appearing in the array. 
-    - :mzndef:`lb_array(<array-exp>)`
-      returns a safe approximation to the lower bound of all expressions appearing
-      in the array.
-    - :mzndef:`ub_array(<array-exp>)`
-      returns a safe approximation to the upper bound of all expressions appearing
-      in the array.
+  - :mzndef:`dom_array(<array-exp>)`:
+    returns a safe approximation to the union of all 
+    possible values of the expressions appearing in the array. 
+  - :mzndef:`lb_array(<array-exp>)`
+    returns a safe approximation to the lower bound of all expressions appearing
+    in the array.
+  - :mzndef:`ub_array(<array-exp>)`
+    returns a safe approximation to the upper bound of all expressions appearing
+    in the array.
 
 The combinations of predicates, local variables and domain reflection
 allows the definition of complex global constraints by decomposition.
@@ -866,7 +868,7 @@ constraint using the code shown in :numref:`ex-cumul`.
 .. literalinclude:: examples/cumulative.mzn
   :language: minizinc
   :name: ex-cumul
-  :caption: Defining a ``cumulative`` predicate by decomposition (``cumulative.mzn``).
+  :caption: Defining a ``cumulative`` predicate by decomposition (:download:`cumulative.mzn <examples/cumulative.mzn>`).
 
 The decomposition uses :mzn:`lb` and :mzn:`ub` to determine
 the set of times :mzn:`times` over which tasks could range.
@@ -886,10 +888,10 @@ in declarations are visible in every expression in the model.
 MiniZinc introduces locally scoped
 variables in a number of ways:
 
-  - as :index:`iterator <variable; iterator>`
-    variables in :index:`comprehension` expressions
-  - using :mzn:`let` expressions
-  - as predicate and function :index:`arguments <argument>`
+- as :index:`iterator <variable; iterator>`
+  variables in :index:`comprehension` expressions
+- using :mzn:`let` expressions
+- as predicate and function :index:`arguments <argument>`
 
 Any local scoped variable overshadows the outer scoped variables
 of the same name.
@@ -897,7 +899,7 @@ of the same name.
 .. literalinclude:: examples/scope.mzn
   :language: minizinc
   :name: ex-scope
-  :caption: A model for illustrating scopes of variables (``scope.mzn``).
+  :caption: A model for illustrating scopes of variables (:download:`scope.mzn <examples/scope.mzn>`).
 
 For example, in the model shown in :numref:`ex-scope` 
 the :mzn:`x` in :mzn:`-x <= y` is the global :mzn:`x`,
