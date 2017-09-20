@@ -340,11 +340,15 @@ namespace MiniZinc {
   template<class Eval>
   typename Eval::Val eval_call(EnvI& env, Call* ce) {
     std::vector<Expression*> previousParameters(ce->decl()->params().size());
+    std::vector<Expression*> params(ce->decl()->params().size());
+    for (unsigned int i=0; i<ce->decl()->params().size(); i++) {
+      params[i] = eval_par(env, ce->args()[i]);
+    }
     for (unsigned int i=ce->decl()->params().size(); i--;) {
       VarDecl* vd = ce->decl()->params()[i];
       previousParameters[i] = vd->e();
       vd->flat(vd);
-      vd->e(eval_par(env, ce->args()[i]));
+      vd->e(params[i]);
       if (vd->e()->type().ispar()) {
         if (Expression* dom = vd->ti()->domain()) {
           if (!dom->isa<TIId>()) {
