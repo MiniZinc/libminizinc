@@ -5,6 +5,22 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.1.6
+=============
+
+Bug fixes:
+
+ - Fully evaluate parameters before binding formal arguments when evaluating
+   call expressions. Fixes #177.
+ - Fix incorrect simplification of Boolean constraints assigned to variables
+   that are assigned to false
+ - Fix bug in flattening of linear equations that contain the same variable on
+   both sides
+ - Fix un-trailing for let expressions, which could sometimes cause incorrect
+   code to be emitted when lets are evaluated in nested loops. Fixes #166.   
+ - Fix bug in JSON output of one-dimensional array literals
+ - Fix unification of enum type-inst variables
+
 Version 2.1.5
 =============
 
