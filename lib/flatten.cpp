@@ -2503,7 +2503,7 @@ namespace MiniZinc {
     } else {
       GCLock lock;
       if (assignTo != NULL) {
-        Val resultCoeff;
+        Val resultCoeff = 0;
         typename LinearTraits<Lit>::Bounds bounds(d,d,true);
         for (unsigned int i=coeffv.size(); i--;) {
           if (alv[i]()==assignTo) {
@@ -2525,7 +2525,7 @@ namespace MiniZinc {
             break;
           }
         }
-        if (bounds.valid) {
+        if (bounds.valid && resultCoeff!=0) {
           if (resultCoeff < 0) {
             bounds.l = LinearTraits<Lit>::floor_div(bounds.l,-resultCoeff);
             bounds.u = LinearTraits<Lit>::ceil_div(bounds.u,-resultCoeff);
