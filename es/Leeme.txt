@@ -1,0 +1,18 @@
+
+
+Requerimientos.
+
+Pasos:
+- Instala el administrador de paquetes que faltan para macOS (https://brew.sh/).
+Para ello se debe de ejecutar el siguente comando en una terminal de macOS.
+/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+
+- Ejecuta en consola el siguiente comando:
+brew install docutils
+
+- Instala el packete Sphinx mediante el siguiente comando:
+sudo pip install Sphinx
+sudo pip install sphinx_bootstrap_theme
+
+Ejecución del script.
+python3 conf.py
