@@ -859,7 +859,6 @@ namespace MiniZinc {
                           std::vector<VarDecl*>& deletedVarDecls,
                           std::vector<Item*>& constraintQueue,
                           std::vector<int>& vardeclQueue) {
-    std::cerr << "simplify1 " << *ii;
     Expression* con_e;
     bool is_true;
     bool is_false;
@@ -1226,7 +1225,6 @@ namespace MiniZinc {
       remove = false;
       return;
     }
-    std::cerr << "simplify " << *ii;
     bool isTrue = vd->ti()->domain()==constants().lit_true;
     Expression* e = NULL;
     ConstraintI* ci = ii->dyn_cast<ConstraintI>();

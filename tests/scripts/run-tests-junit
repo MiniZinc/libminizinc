@@ -1,0 +1,177 @@
+#!/bin/bash
+# vim: ft=sh ts=4 sw=4 et
+#
+# usage: run-tests <prog> <suffix> [<dirname> ...]
+#
+# Find the test cases in <dirname> ... and subdirectories thereof and run
+# them with 'run-test <prog> <testcase>'.  Failing test cases are summarised
+# in a FAILURES.<prog> file.
+#
+# A test case is either <model><suffix> or <model>.<testid>.dzn
+# where there is a corresponding <model><suffix> file.
+#
+# Note that if a model file does not contain a comment of the form
+# 'RUNS ON <prog>' then the test case will be skipped.  Ignored test
+# cases are summarised in an IGNORED.<prog> file.
+
+# If the environment variable FORCE_DELAY is set then a small delay
+# will be introduced between each test case.  This is useful for
+# avoid resource limits on Mac OS X, usually indicated by the following
+# error message:
+#
+#   fork: Resource temporarily unavailable
+
+# Uncomment the next line for debugging:
+# set -x
+
+# The name of this program as invoked.
+#
+THIS=$(basename $0)
+
+THISDIR="$(pwd)"
+
+# 
+if [ $# -lt 2 ]
+then
+    echo "usage: $THIS <prog> <suffix> [<dirname> ...]" >&2
+    exit 1
+fi
+
+PROG=$1
+SUFFIX=$2
+shift 2
+DIRS=$@
+[ -z "$DIRS" ] && DIRS=.
+BASEPROG=$(basename $PROG)
+FAILURES="$(pwd)/FAILURES.$BASEPROG"
+IGNORES="$(pwd)/IGNORED.$BASEPROG"
+RUNSONREGEX="\<RUNS  *ON  *$BASEPROG\>"
+
+# Clear out any old IGNORES and FAILURES files.
+#
+rm -f "$IGNORES" "$FAILURES"
+
+NTESTS=0
+
+# Count number of tests
+for FILENAME in $(find $DIRS -name '*'$SUFFIX -o -name '*.dzn' | sort)
+do
+  # Skip this file if there's a corresponding .dzn file or
+  # it is a .dzn file, but doesn't have the corresponding $SUFFIX file.
+  #
+  case $FILENAME in
+      *.dzn)
+          # Ignore .dzn files that don't have a model file with
+          # the right suffix.
+          MODELNAME=$(echo $FILENAME | sed 's/[.].*//')$SUFFIX
+          if [ ! -e $MODELNAME ]
+          then
+              continue
+          fi
+          ;;
+      *)
+          # Ignore model files that have one or more .dzn files.
+          BASENAME=$(basename $FILENAME $SUFFIX)
+          if ls $BASENAME'*.dzn' >/dev/null 2>&1
+          then
+              continue
+          fi
+          ;;
+  esac
+
+  NTESTS=$((NTESTS+1))
+  
+done
+
+echo "<testsuite name=\"$BASEPROG\" tests=\"$NTESTS\">"
+
+NTESTS=0
+NFAIL=0
+
+# Find all applicable test cases.
+#
+for FILENAME in $(find $DIRS -name '*'$SUFFIX -o -name '*.dzn' | sort)
+do
+
+    # Return to the directory where we began.
+    #
+    cd "$THISDIR" >/dev/null 2>&1
+
+    # cd to the directory of the problem file.
+    #
+    DIR=$(dirname $FILENAME)
+    if [ -n "$DIR" ]
+    then
+        cd $DIR >/dev/null 2>&1
+        FILENAME=$(basename $FILENAME)
+    fi
+
+    # Skip this file if there's a corresponding .dzn file or
+    # it is a .dzn file, but doesn't have the corresponding $SUFFIX file.
+    #
+    case $FILENAME in
+        *.dzn)
+            # Ignore .dzn files that don't have a model file with
+            # the right suffix.
+            MODELNAME=$(echo $FILENAME | sed 's/[.].*//')$SUFFIX
+            if [ ! -e $MODELNAME ]
+            then
+                continue
+            fi
+            MODELFILE=$MODELNAME
+            ;;
+        *)
+            # Ignore model files that have one or more .dzn files.
+            BASENAME=$(basename $FILENAME $SUFFIX)
+            if ls $BASENAME'*.dzn' >/dev/null 2>&1
+            then
+                continue
+            fi
+            MODELFILE=$FILENAME
+            ;;
+    esac
+
+    # Ignore model files that don't contain the
+    # string 'RUNS ON $BASEPROG'.
+    if ! grep -q "$RUNSONREGEX" $MODELFILE
+    then
+        echo "$DIR/$FILENAME" >> "$IGNORES"
+        continue
+    fi
+
+    # Run the test.
+    #
+    echo "<testcase name=\"$FILENAME\" classname=\"none\" >"
+    PASSFAIL=fail
+    run-test $PROG $FILENAME >test_stdout 2>&1  &&  PASSFAIL=pass
+    if [ $PASSFAIL = "fail" ]
+    then
+      echo "<failure message=\"test failed\"></failure>"
+    fi
+    echo "<system-out>"
+    echo "<![CDATA["
+    cat test_stdout
+    echo "]]>"
+    echo "</system-out>"
+    echo "</testcase>"
+
+    NTESTS=$((NTESTS+1))
+
+    if test $FORCE_DELAY
+    then
+        sleep 1
+    fi
+
+    # Return to the directory where we began.
+    #
+    cd "$THISDIR" >/dev/null 2>&1
+
+    if [ $PASSFAIL = "fail" ]
+    then
+        NFAIL=$((NFAIL+1))
+        echo "$DIR/$FILENAME ($PROG)" >> "$FAILURES"
+    fi
+
+done
+
+echo "</testsuite>"
