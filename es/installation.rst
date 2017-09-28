@@ -1,7 +1,7 @@
 Instalación
 ============
 
-Una instalación completa del sistema MiniZinc comprende el MiniZinc *compilador de herramientas*, uno o más *solucionadores*, y opcionalmente el *MiniZinc IDE*.
+Una instalación completa del sistema MiniZinc comprende el MiniZinc *compilador de herramientas*, uno o más *solvers*, y opcionalmente el *MiniZinc IDE*.
 Se proporcionan paquetes binarios totalmente autónomos que contienen estos componentes para todos los sistemas operativos principales. Alternativamente, es posible compilar todos los componentes del código fuente.
 
 
@@ -10,14 +10,14 @@ Paquetes Binarios
 
 La forma más sencilla de obtener un sistema completo de MiniZinc es utilizar el *Conjunto de paquetes binarios**, disponibles en http://www.minizinc.org/software.html.
 
-El conjunto de paquetes binarios contienen el compilador y el IDE, así como los siguientes solucionadores: Gecode, Chuffed, COIN-OR CBC y una interfaz Gurobi (la biblioteca Gurobi no está incluida). Para compatibilidad con versiones anteriores de MiniZinc, los paquetes también contienen el ahora desusado G12 suite de solucionadores (G12 fd, G12 lazy, G12 MIP).
+El conjunto de paquetes binarios contienen el compilador y el IDE, así como los siguientes solvers: Gecode, Chuffed, COIN-OR CBC y una interfaz Gurobi (la biblioteca Gurobi no está incluida). Para compatibilidad con versiones anteriores de MiniZinc, los paquetes también contienen el ahora desusado G12 suite de solvers (G12 fd, G12 lazy, G12 MIP).
 
 
 
 Microsoft Windows
 ~~~~~~~~~~~~~~~~~
 
-Para instalar el conjunto de paquetes binarios, simplemente descarga el instalador, realiza doble-click para ejecutarlo, y siga las indicaciones. **Nota** tu deberias seleccionar la versión de 64 bits del instalador si tu sistema operativo Windows es de una versión de 64 bits, de lo contrario escoja la versión de 32 bits.
+Para instalar el conjunto de paquetes binarios, simplemente descarga el instalador, realiza doble-click para ejecutarlo, y siga las indicaciones. **Nota** tu deberías seleccionar la versión de 64 bits del instalador si tu sistema operativo Windows es de una versión de 64 bits, de lo contrario escoja la versión de 32 bits.
 
 Una vez finalizada la instalación, puede encontrar el IDE de MiniZinc instalado como una aplicación de Windows. Las extensiones de archivo ``.mzn``, ``.dzn`` y ``.fzn`` están vinculadas al IDE, por lo que al hacer doble-clic en cualquier archivo de MiniZinc, éste debe de abrirlo en el IDE.
 
@@ -29,7 +29,7 @@ Linux
 
 La distribución binaria de MiniZinc para Linux se proporciona como un archivo que contiene todo lo que se necesita para ejecutar MiniZinc. Fue compilado en un sistema LTS de Ubuntu 16.04, pero agrupa todas las bibliotecas necesarias excepto las bibliotecas C y C ++ del sistema (por lo que debería ser compatible con cualquier distribución Linux que use las mismas bibliotecas C y C ++ que Ubuntu 16.04). ** Nota: ** Debe de seleccionar la versión de 64 bits del instalador si su Linux es un sistema operativo de 64 bits, de lo contrario elegir la versión de 32 bits.
 
-Después de descargar, se debe de descomprir el archivo. Por ejemplo, en su directorio personal o en cualquier otra ubicación donde desee instalarlo:
+Después de descargar, se debe de descomprimir el archivo. Por ejemplo, en su directorio personal o en cualquier otra ubicación donde desee instalarlo:
 
 .. code-block:: bash
 
@@ -52,11 +52,11 @@ Para utilizar las herramientas MiniZinc desde un terminal, debe agregar la ruta 
 Compilación desde el código fuente
 ----------------------------
 
-Todos los componentes de MiniZinc son software libre y de código abierto, y la compilación debiese de ser sencilla si tiene instaladas todas las herramientas de compilación necesarias. Sin embargo, los componentes de terceros, en particular de los diferentes solucionadores, pueden ser más difíciles de instalar correctamente y no podemos proporcionar ningún soporte para estos componentes.
+Todos los componentes de MiniZinc son software libre y de código abierto, y la compilación debiese de ser sencilla si tiene instaladas todas las herramientas de compilación necesarias. Sin embargo, los componentes de terceros, en particular de los diferentes solvers, pueden ser más difíciles de instalar correctamente y no podemos proporcionar ningún soporte para estos componentes.
 
 El código fuente de MiniZinc se puede descargar desde su repositorio GitHub en https://github.com/MiniZinc/libminizinc. El código fuente para el MiniZinc IDE se encuentra disponible en https://github.com/MiniZinc/MiniZincIDE.
 
-También necesitará instalar solucionadores adicionales para usar con MiniZinc. Para empezar, pruebe con Gecode (http://www.gecode.org) o Chuffed (https://github.com/chuffed/chuffed). Aquí no incluimos instrucciones de instalación para estos solucionadores.
+También necesitará instalar solvers adicionales para usar con MiniZinc. Para empezar, pruebe con Gecode (http://www.gecode.org) o Chuffed (https://github.com/chuffed/chuffed). Aquí no incluimos instrucciones de instalación para estos solvers.
 
 
 Microsoft Windows

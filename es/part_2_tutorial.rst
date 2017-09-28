@@ -1,7 +1,7 @@
 .. _part-tutorial:
 
-A MiniZinc Tutorial
-+++++++++++++++++++
+Un Tutorial de MiniZinc
++++++++++++++++++++++++
 
 .. toctree::
 

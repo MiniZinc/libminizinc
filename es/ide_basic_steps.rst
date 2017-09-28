@@ -1,2 +1,2 @@
-First steps with the MiniZinc IDE
-=================================
+Primeros pasos con el IDE de MiniZinc
+=====================================

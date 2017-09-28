@@ -3,7 +3,7 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-The MiniZinc Manual
+El Manual de Minizinc
 ===================
 
 .. .. only:: builder_html
@@ -21,7 +21,7 @@ The MiniZinc Manual
 
 .. only:: builder_html
 
-  Indices and tables
+  Índices y tablas
   ------------------
 
   * :ref:`genindex`

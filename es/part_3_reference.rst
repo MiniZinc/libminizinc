@@ -1,7 +1,7 @@
 .. _part-reference:
 
-MiniZinc Reference Documentation
-++++++++++++++++++++++++++++++++
+Documentación de referencia de MiniZinc
++++++++++++++++++++++++++++++++++++++++
 
 .. toctree::
 

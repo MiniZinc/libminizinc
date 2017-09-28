@@ -19,50 +19,44 @@
 .. |TyCoercions| replace:: *Coercions.*
 
 
-Specification of MiniZinc
+Especificación de MiniZinc
 =========================
 
-Introduction
+Introducción
 ------------
 
-This document defines MiniZinc, a language for modelling constraint
-satisfaction and optimisation problems.
+Este documento define a MiniZinc, el cual es un lenguaje para modelar satisfacción de restricciones y problemas de optimización.
 
-MiniZinc is a high-level, typed, mostly first-order, functional, modelling
-language.  It provides:
 
-- mathematical notation-like syntax (automatic coercions, overloading,
-  iteration, sets, arrays);
-- expressive constraints (finite domain, set, linear arithmetic, integer);
-- support for different kinds of problems (satisfaction, explicit
-  optimisation);
-- separation of data from model;
-- high-level data structures and data encapsulation (sets,
-  arrays, enumerated types, constrained type-insts);
-- extensibility (user-defined functions and predicates);
-- reliability (type checking, instantiation checking, assertions);
-- solver-independent modelling;
-- simple, declarative semantics.
+MiniZinc es un lenguaje de modelado de alto nivel, mecanografiado, sobre todo de primer orden, funcional.
+El lenguaje provee de:
 
-MiniZinc is similar to 
-OPL and moves closer to CLP languages such as ECLiPSe.
+- Sintaxis como una notación matemática (coerciones automáticas, sobrecarga, iteraciones, conjuntos, arreglos);
+- Restricciones expresivas (dominio finito, conjunto, aritmética lineal, entera);
+- Soporte para diferentes tipos de problemas (satisfacción, optimización explicita);
+- Separación del modelo y de los datos;
+- Estructuras de datos de alto-nivel y encapsulamiento de datos (conjuntos, arreglos, tipos de enumeración restriciones de tipo-instanciación);
+- Extensibilidad (usuarios definen funciones y predicados);
+- Confiabilidad (verificación de tipo, comprobación de instancias, aserciones);
+- Modelado independiente del solver;
+- Semántica declarativa y simple;
 
-This document has the following structure.
-:ref:`spec-syntax-notation` introduces the syntax notation
-used throughout the specification.
-:ref:`spec-Overview` provides a high-level overview of MiniZinc models.
-:ref:`spec-Syntax-Overview` covers syntax basics.
-:ref:`spec-High-level-Model-Structure` covers high-level structure: items,
-multi-file models, namespaces, and scopes.
-:ref:`spec-Types` introduces types and type-insts.
-:ref:`spec-Expressions` covers expressions.
-:ref:`spec-Items` describes the top-level items in detail.
-:ref:`spec-Annotations` describes annotations.
-:ref:`spec-Partiality` describes how partiality is handled in various
-cases.
-:ref:`spec-builtins` describes the language built-ins.
-:ref:`spec-Grammar` gives the MiniZinc grammar.
-:ref:`spec-Content-types` defines content-types used in this specification.
+Minizinc es similar a OPL y más cercano a los lenguajes de CLP como ECLIPSe.
+
+Este documento tiene la siguiente estructura
+:ref:`spec-syntax-notation` introduce la notación de sintaxis utilizado en toda la especificación.
+:ref:`spec-Overview` ofrece una visión general de alto nivel de los modelos MiniZinc.
+:ref:`spec-Syntax-Overview` cubre los fundamentos de la sintaxis.
+:ref:`spec-High-level-Model-Structure` cubre las estructuras de alto nivel: elementos, modelos de archivos múltiples, espacios de nombres y ámbitos.
+:ref:`spec-Types` cubre los tipos y los tipo-instanciación.
+:ref:`spec-Expressions` cubre las expresiones.
+:ref:`spec-Items` describe en detalle los elementos de nivel-superior.
+:ref:`spec-Annotations` describe las anotaciones.
+:ref:`spec-Partiality` describe como se maneja la parcialidad en varios casos.
+:ref:`spec-builtins` describe el lenguaje incorporado.
+:ref:`spec-Grammar` da la gramática de MiniZinc.
+:ref:`spec-Content-types` define los tipos de contenido utilizados en esta especificación.
+
 
 This document also provides some explanation of why certain design decisions
 were made.  Such explanations are marked by the word *Rationale* and
@@ -111,13 +105,13 @@ The basics of the EBNF used in this specification are as follows.
   terminal, and three dots.  For example, this:
 
   .. code-block:: minizincdef
-    
+
     <expr> "," ...
 
   is short for this:
 
   .. code-block:: minizincdef
-    
+
     <expr> ( "," <expr> )* [ "," ]
 
   The final terminal is always optional in non-empty lists.
@@ -305,7 +299,7 @@ Character Set
 The input files to MiniZinc must be encoded as UTF-8.
 
 MiniZinc is case sensitive.  There are no places where upper-case or
-lower-case letters must be used.  
+lower-case letters must be used.
 
 MiniZinc has no layout restrictions, i.e., any single piece of whitespace
 (containing spaces, tabs and newlines) is equivalent to any other.
@@ -338,20 +332,20 @@ Identifiers have the following syntax:
 
 A number of keywords are reserved and cannot be used as identifiers.  The
 keywords are:
-:mzn:`ann`, 
-:mzn:`annotation`, 
-:mzn:`any`, 
-:mzn:`array`, 
-:mzn:`bool`, 
+:mzn:`ann`,
+:mzn:`annotation`,
+:mzn:`any`,
+:mzn:`array`,
+:mzn:`bool`,
 :mzn:`case`,
-:mzn:`constraint`, 
+:mzn:`constraint`,
 :mzn:`diff`,
 :mzn:`div`,
 :mzn:`else`,
-:mzn:`elseif`, 
-:mzn:`endif`, 
-:mzn:`enum`, 
-:mzn:`false`, 
+:mzn:`elseif`,
+:mzn:`endif`,
+:mzn:`enum`,
+:mzn:`false`,
 :mzn:`float`,
 :mzn:`function`,
 :mzn:`if`,
@@ -532,7 +526,7 @@ individually, giving:  an overview of the type and its possible
 instantiations, the syntax for its type-insts, whether it is a finite
 type (and if so, its domain), whether it is varifiable, the ordering and
 equality operations, whether its variables must be initialised at
-instance-time, and whether it can be involved in automatic coercions.  
+instance-time, and whether it can be involved in automatic coercions.
 
 Properties of Types
 ~~~~~~~~~~~~~~~~~~~
@@ -572,7 +566,7 @@ values it may take) may be reduced, possibly to a single value.
 An *instantiation* (sometimes abbreviated to *inst*) describes
 how fixed or unfixed a variable is at instance-time.  At the most basic
 level, the instantiation system distinguishes between two kinds of
-variables:  
+variables:
 
 #. *Parameters*, whose values are fixed at instance-time (usually written just as "fixed").
 #. *Decision variables* (often abbreviated to *variables*), whose values may
@@ -602,7 +596,7 @@ Some type-insts can be automatically coerced to another type-inst.  For
 example, if a :mzn:`par int` value is used in a context where a
 :mzn:`var int` is expected, it is automatically coerced to a
 :mzn:`var int`.  We write this :mzn:`par int` |coerce| :mzn:`var int`.
-Also, any type-inst can be considered coercible to itself. 
+Also, any type-inst can be considered coercible to itself.
 MiniZinc allows coercions between some types as well.
 
 Some type-insts can be *varified*, i.e., made unfixed at the top-level.
@@ -611,7 +605,7 @@ For example, :mzn:`par int` is varified to :mzn:`var int`.  We write this
 
 Type-insts that are varifiable include the type-insts of the types that can
 be decision variables (Booleans, integers, floats, sets, enumerated types).
-Varification is relevant to type-inst synonyms and 
+Varification is relevant to type-inst synonyms and
 array accesses.
 
 Type-inst expression overview
@@ -642,7 +636,7 @@ by the first :mzndef:`<expr>`.)
 
 This fully covers the type-inst expressions for scalar types.  The compound
 type-inst expression syntax is covered in more detail in
-:ref:`spec-Built-in-Compound-Types`.  
+:ref:`spec-Built-in-Compound-Types`.
 
 The :mzn:`par` and :mzn:`var` keywords (or lack of them) determine the
 instantiation.  The :mzn:`par` annotation can be omitted;  the following
@@ -936,9 +930,9 @@ Arrays
 ++++++
 
 |TyOverview|
-MiniZinc arrays are maps from fixed integers to values.  
-Values can be of any type.  
-The values can only have base type-insts.  
+MiniZinc arrays are maps from fixed integers to values.
+Values can be of any type.
+The values can only have base type-insts.
 Arrays-of-arrays are not allowed.
 Arrays can be multi-dimensional.
 
@@ -1205,7 +1199,7 @@ the :mzn:`not`) and so the annotation binds to the whole application.
 Expressions can be contained within parentheses.
 
 The array access operations
-all bind more tightly than unary and binary operators and annotations.  
+all bind more tightly than unary and binary operators and annotations.
 They are described in more detail in :ref:`spec-Array-Access-Expressions`.
 
 The remaining kinds of expression atoms (from :mzndef:`<ident>` to
@@ -1292,48 +1286,48 @@ left-associative, :mzn:`a++b++c` is parsed as :mzn:`a++(b++c)` because
 .. table:: Binary infix operators
 
   ===============================  ====== ======
-  Symbol(s)                        Assoc. Prec. 
+  Symbol(s)                        Assoc. Prec.
   ===============================  ====== ======
-  :mzn:`<->`                       left   1200  
+  :mzn:`<->`                       left   1200
 
-  :mzn:`->`                        left   1100  
-  :mzn:`<-`                        left   1100  
+  :mzn:`->`                        left   1100
+  :mzn:`<-`                        left   1100
 
-  ``\/``                           left   1000  
-  :mzn:`xor`                       left   1000  
+  ``\/``                           left   1000
+  :mzn:`xor`                       left   1000
 
-  ``/\``                           left   900   
+  ``/\``                           left   900
 
-  :mzn:`<`                         none   800   
-  :mzn:`>`                         none   800   
-  :mzn:`<=`                        none   800   
-  :mzn:`>=`                        none   800   
-  :mzn:`==`,                   
-  :mzn:`=`                         none   800   
-  :mzn:`!=`                        none   800   
-                             
-  :mzn:`in`                        none   700   
-  :mzn:`subset`                    none   700   
-  :mzn:`superset`                  none   700   
-                             
-  :mzn:`union`                     left   600   
-  :mzn:`diff`                      left   600   
-  :mzn:`symdiff`                   left   600   
-                             
-  :mzn:`..`                        none   500   
-                             
-  :mzn:`+`                         left   400   
-  :mzn:`-`                         left   400   
-                             
-  :mzn:`*`                         left   300   
-  :mzn:`div`                       left   300   
-  :mzn:`mod`                       left   300   
-  :mzn:`/`                         left   300   
-  :mzn:`intersect`                 left   300   
-                             
-  :mzn:`++`                        right  200   
+  :mzn:`<`                         none   800
+  :mzn:`>`                         none   800
+  :mzn:`<=`                        none   800
+  :mzn:`>=`                        none   800
+  :mzn:`==`,
+  :mzn:`=`                         none   800
+  :mzn:`!=`                        none   800
 
-  `````  :mzndef:`<ident>` `````   left   100   
+  :mzn:`in`                        none   700
+  :mzn:`subset`                    none   700
+  :mzn:`superset`                  none   700
+
+  :mzn:`union`                     left   600
+  :mzn:`diff`                      left   600
+  :mzn:`symdiff`                   left   600
+
+  :mzn:`..`                        none   500
+
+  :mzn:`+`                         left   400
+  :mzn:`-`                         left   400
+
+  :mzn:`*`                         left   300
+  :mzn:`div`                       left   300
+  :mzn:`mod`                       left   300
+  :mzn:`/`                         left   300
+  :mzn:`intersect`                 left   300
+
+  :mzn:`++`                        right  200
+
+  `````  :mzndef:`<ident>` `````   left   100
   ===============================  ====== ======
 
 
@@ -1464,7 +1458,7 @@ double quotes, :mzn:`\\` for backslash, and
 
 For example: :mzn:`"Hello, world!\n"`.
 
-String literals must fit on a single line.  
+String literals must fit on a single line.
 
 Long string literals can be split across multiple lines using string
 concatenation.  For example:
@@ -1566,7 +1560,7 @@ array comprehensions, array generators are required for full expressivity
 array).  Set comprehensions have array generators for consistency with array
 comprehensions, which makes implementations simpler.*
 
-The where-expression (if present) must be Boolean.  
+The where-expression (if present) must be Boolean.
 It can be var, in which case the type of the comprehension is lifted to an optional type.  Only one
 where-expression per comprehension is allowed.
 
@@ -1678,7 +1672,7 @@ Array comprehensions have more flexible type and inst requirements than set
 comprehensions (see :ref:`spec-Set-Comprehensions`).
 
 Array comprehensions are allowed over a variable set with finite type, the
-result is an array of optional type, with length equal to the 
+result is an array of optional type, with length equal to the
 cardinality of the upper bound of the variable set.
 For example:
 
@@ -1687,7 +1681,7 @@ For example:
     var set of 1..5: x;
     array[int] of var opt int: y = [ i * i | i in x ];
 
-The length of array will be 5. 
+The length of array will be 5.
 
 Array comprehensions are allowed where the where-expression is a :mzn:`var bool`.
 Again the resulting array is of optional type, and of length
@@ -1735,7 +1729,7 @@ type-inst.  For example, if we have:
 then the type-inst of :mzn:`a2[i]` is :mzn:`var int`.  If the element type-inst
 is not varifiable, such an access causes a static error.
 
-Multi dimensional arrays 
+Multi dimensional arrays
 are accessed using comma separated indices.
 
 .. code-block:: minizinc
@@ -1806,10 +1800,10 @@ same type-inst, which is also the type-inst of the whole expression.
 If the :mzn:`if` expression is :mzn:`var bool` then the type-inst of the
 :mzn:`then` and :mzn:`else` expressions must be varifiable.
 
-If the :mzn:`if` expression is :mzn:`par bool` then 
+If the :mzn:`if` expression is :mzn:`par bool` then
 evaluation of if-then-else expressions is lazy: the condition is evaluated,
 and then only one of the :mzn:`then` and :mzn:`else` branches are evaluated,
-depending on whether the condition succeeded or failed. 
+depending on whether the condition succeeded or failed.
 This is not the case if it is :mzn:`var bool`.
 
 
@@ -1835,9 +1829,9 @@ For example:
 .. code-block:: minizinc
 
     let { int: x = 3, int: y = 4; } in x + y;
-    let { var int: x; 
-          constraint x >= y /\ x >= -y /\ (x = y \/ x = -y); } 
-    in x 
+    let { var int: x;
+          constraint x >= y /\ x >= -y /\ (x = y \/ x = -y); }
+    in x
 
 The scope of a let local variable covers:
 
@@ -1858,7 +1852,7 @@ Thus in the following examples the first is acceptable but the rest are not:
     let { int: x = x; } in x;                  % x not visible in x's defn.
     let { int: x = 3; int: x = 4; } in x;      % x declared twice
 
-.. 
+..
   The type-inst expressions can include type-inst variables if the let is
   within a function or predicate body in which the same type-inst variables
   were present in the function or predicate signature.
@@ -1878,7 +1872,7 @@ after the :mzn:`in` keyword.
 There is a complication involving let expressions in negative contexts.  A
 let expression occurs in a negative context if it occurs in an expression
 of the form :mzn:`not X`, :mzn:`X <-> Y}` or in the sub-expression
-:mzn:`X` in :mzn:`X -> Y` or :mzn:`Y <- X`, or in a subexpression 
+:mzn:`X` in :mzn:`X -> Y` or :mzn:`Y <- X`, or in a subexpression
 :mzn:`bool2int(X)`.
 
 If a let expression is used in a negative context, then any let-local
@@ -2137,7 +2131,7 @@ For each enumerated type :mzn:`T`, the following functions exist:
   % Return next greater enum value of x in enum type X
   function T: enum_next(set of T: X, T: x);
   function var T: enum_next(set of T: X, var T: x);
-  
+
   % Return next smaller enum value of x in enum type X
   function T: enum_prev(set of T: X, T: x);
   function var T: enum_prev(set of T: X, var T: x);
@@ -2285,7 +2279,7 @@ The use of annotations is described in :ref:`spec-Annotations`.
 User-defined Operations
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-.. 
+..
   % XXX: not saying if operations need to be defined.  Implementation
   % currently requires functions and tests to be defined if used, but
   % predicates can be bodyless even if used.  Should perhaps require functions
@@ -2317,7 +2311,7 @@ follows:
 
     predicate alldifferent(array [int] of var int: xs);
 
-Predicate declarations that are natively supported 
+Predicate declarations that are natively supported
 in MiniZinc are restricted to using FlatZinc
 types (for instance, multi-dimensional and non-1-based arrays are
 forbidden).
@@ -2339,8 +2333,8 @@ The return type-inst of a test item is implicitly :mzn:`par bool`.  The
 return type-inst of a predicate item is implicitly :mzn:`var bool`.
 
 Predicates and functions are allowed to be recursive. Termination of
-a recursive function call depends solely on its fixed arguments, i.e., 
-recursive functions and predicates cannot be used to define recursively 
+a recursive function call depends solely on its fixed arguments, i.e.,
+recursive functions and predicates cannot be used to define recursively
 constrained variables.
 .. % \Rationale{This ensures that the satisfiability of models is decidable.}
 
@@ -2428,20 +2422,20 @@ overlapping overloadings of operations.
 
    In the definition of :mzn:`s` the first overloaded definition must be used
    while in the definition of :mzn:`t` the second must be used.
-   
+
    To avoid this problem, all overlapping overloadings of an operation must be
    closed under intersection of their input type-insts.  That is, if overloaded
    versions have input type-inst :math:`(S_1,....,S_n)` and :math:`(T_1,...,T_n)` then
    there must be another overloaded version with input type-inst
    :math:`(R_1,...,R_n)` where each :math:`R_i` is the greatest lower bound (*glb*) of
    :math:`S_i` and :math:`T_i`.
-   
+
    Also, all overlapping overloadings of an operation must be monotonic.  That
    is, if there are overloaded versions with input type-insts :math:`(S_1,....,S_n)`
    and :math:`(T_1,...,T_n)` and output type-inst :math:`S` and :math:`T`, respectively, then
    :math:`S_i \preceq T_i` for all :math:`i`, implies :math:`S \preceq T`.  At call sites, the
    matching overloading that is lowest on the type-inst lattice is always used.
-   
+
    For :mzn:`g` above, the type-inst intersection (or *glb*) of
    :mzn:`(int,float)`  and :mzn:`(float,int)` is
    :mzn:`(int,int)`.  Thus, the overloaded versions are not closed under
@@ -2457,7 +2451,7 @@ overlapping overloadings of operations.
    the monotonicity requirement because the output type-inst of the third
    overloading is :mzn:`int` which is less than the output
    type-inst of the original overloadings.
-   
+
    Monotonicity and closure under type-inst conjunction ensure that whenever an
    overloaded function or predicate is reached during type-inst checking, there
    is always a unique and safe "minimal" version to choose, and so the
@@ -2667,7 +2661,7 @@ Partial Predicate/Function and Annotation Arguments
 
 The second kind of operation involving partiality is calls and annotations.
 
-.. 
+..
   % The behaviour for these operations is simple:  constraints on arguments are
   % ignored.
   %
@@ -2810,7 +2804,7 @@ Some illustrative examples:
 .. code-block:: minizinc
 
    7 div  4 =  1        7 mod  4 =  3
-  -7 div  4 = -1       -7 mod  4 = -3 
+  -7 div  4 = -1       -7 mod  4 = -3
    7 div -4 = -1        7 mod -4 = 3
   -7 div -4 =  1       -7 mod -4 = -3
 
@@ -2898,7 +2892,7 @@ Power operator.  E.g. :mzn:`pow(2, 5)` gives :mzn:`32`.
   float: pow(float,     float)
 
 
-.. 
+..
   % We should also have:
   %  var float: pow(var float, int)
 
@@ -3354,7 +3348,7 @@ function :mzn:`deopt`
   var $T: deopt(var opt $T);
 
 
-.. 
+..
   % Note that this is not really a function only a pseudo function placeholder
   % used in the translation of option types to non-option types.
   % \pjs{Explain better}
@@ -3512,4 +3506,3 @@ Miscellaneous Elements
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Miscellaneous
-

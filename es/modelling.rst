@@ -1,70 +1,70 @@
 .. _sec-modelling:
 
-Basic Modelling in MiniZinc
-===========================
+Modelamiento básico en MiniZinc
+===============================
 
 .. highlight:: minizinc
   :linenothreshold: 5
 
-In this section we introduce the basic structure of a MiniZinc model using two simple examples.
+En esta sección se presenta la estructura básica de un modelo MiniZinc utilizando dos ejemplos simples.
 
-Our First Example
------------------
+Nuestro primer ejemplo
+----------------------
 
 .. _fig-aust:
 
 .. figure:: figures/aust.*
-  
-  Australian states
 
-As our first example, imagine that we wish to colour a map
-of Australia as shown in :numref:`fig-aust`.
-It is made up of seven different states and territories 
-each of which must be given a  colour so that adjacent regions
-have different colours. 
+  Estados de Australia
 
+Como nuestro primer ejemplo, imagine que se desea colorear el mapa de Australia, tal como se ve en la figura :numref:`fig-aust`.
+
+Esta figura se compone de siete estados diferentes, cada uno de los estados debe de tener un color y cada región adyacentes tiene que poseer diferentes colores.
 
 .. literalinclude:: examples/aust.mzn
   :language: minizinc
-  :caption: A MiniZinc model :download:`aust.mzn <examples/aust.mzn>` for colouring the states and territories in Australia
+  :caption: Un modelo de MiniZinc :download:`aust.mzn <examples/aust.mzn>` para colorear los estados y territorios en Australia
   :name: ex-aust
 
-We can model this problem very easily in MiniZinc. The model is shown in :numref:`ex-aust`.
-The first line in the model is a comment. A comment starts with a  ``%`` which indicates that the rest of the line is a comment.
-MiniZinc also has C-style block comments, 
-which start with ``/*`` and end with ``*/``.
+Este problema se puede modelar muy fácil en MiniZinc. El modelo se muestra en :numref:`ex-aust`.
 
-The next part of the model declares the variables in the model.
-The line
+La primera línea del modelo corresponde a un comentario. Un comentario comienza con un ``%``, que indica que el resto de la línea es un comentario.
+
+MiniZinc también tiene comentarios de bloque similares al estilo del lenguaje de programación C. Este tipo de comentario comienzan con ``/*`` y finalizan con un ``*/``.
+
+La siguiente parte del modelo declara las variables en el modelo.
+
+La línea
 
 ::
 
   int: nc = 3;
 
-specifies a :index:`parameter` in the problem which is the
-number of colours to be used.
-Parameters are similar to (constant) variables in most programming languages.
-They must be
-declared and given a :index:`type`. In this case the type is :mzn:`int`. 
-They are given a value by an :index:`assignment`.
-MiniZinc allows the assignment to be included as part of the declaration
-(as in the line above) or to be a separate assignment statement.
-Thus the following is equivalent to the single line above
+especifica un :index:`parameter` en el problema, el cual es el número de colores a ser utilizados.
+
+Los parámetros son similares a las variables (constantes) de la mayoría de los lenguajes de programación.
+
+Estos deben de ser declarados y se debe de especificar un :index:`type`.
+En este caso, el tipo de dato es :mzn:`int`.
+
+Además se le debe de dar un valor al parámetro mediante una :index:`assignment`.
+
+MiniZinc permite incluir la asignación como parte de la declaración (como en la línea anterior) o ser una sentencia de asignación separada.
+Así, la siguiente asignación de dos líneas, es equivalente a la asignación de una línea.
 
 ::
 
   int: nc;
   nc = 3;
 
-Unlike variables in many programming languages a parameter can only be given a
-*single* value, in that sense they are named constants.
-It is an error for a parameter to occur in more than one assignment.
+A diferencia de las variables, en muchos lenguajes de programación a un parámetro sólo se le puede asignar un solo valor. En ese sentido, son denominadas constantes. Es un error que un parámetro posea más de una asignación.
 
-The basic :index:`parameter types <single: type; parameter>`
-are :index:`integers <integer>` (:mzn:`int`), 
+
+Lo básico :index:`parameter types <single: type; parameter>`
+son :index:`integers <integer>` (:mzn:`int`),
 floating point numbers  (:mzn:`float`),
 :index:`Booleans <Boolean>` (:mzn:`bool`) and
-:index:`strings <string>` (:mzn:`string`). 
+:index:`strings <string>` (:mzn:`string`).
 Arrays and sets are also supported.
 
 .. index::
@@ -81,7 +81,7 @@ MiniZinc model is executed that the solving system determines if the
 decision variable can be assigned a value that satisfies the constraints in the
 model and if so what this is.
 
-In our example model  we associate a *decision variable* with each region, 
+In our example model  we associate a *decision variable* with each region,
 ``wa``, ``nt``, ``sa``, ``q``, ``nsw``, ``v`` and ``t``,
 which stands for the (unknown) colour to be used to fill the region.
 
@@ -90,14 +90,14 @@ which stands for the (unknown) colour to be used to fill the region.
 
 For each decision variable we need to give the set of possible values the
 variable can take. This is called the variable's
-*domain*.  
+*domain*.
 This can be given as part of the :index:`variable declaration <variable; declaration>` and the
 :index:`type` of the decision variable is inferred from the type of the values in the domain.
 
 In MiniZinc decision variables
-can be Booleans, integers, floating point numbers, 
-or sets. 
-Also supported are arrays whose elements are 
+can be Booleans, integers, floating point numbers,
+or sets.
+Also supported are arrays whose elements are
 decision variables.
 In our MiniZinc model we use integers to model the different colours. Thus each of our
 decision variables is declared to have the domain :mzn:`1..nc`
@@ -113,13 +113,13 @@ The type of the values is integer so all of the variables in the model are integ
   alphabetic characters, digits and the underscore ``_`` character. They must
   start with an alphabetic character. Thus ``myName_2`` is a valid
   identifier.  MiniZinc
-  *keywords* are not allowed to be 
+  *keywords* are not allowed to be
   used as identifier names, they are listed in :ref:`spec-identifiers`.
   Neither are MiniZinc *operators*
   allowed to be used as identifier names;
   they are listed in :ref:`spec-Operators`.
 
-MiniZinc carefully 
+MiniZinc carefully
 distinguishes between the two kinds of model variables:
 parameters and decision variables. The kinds of expressions that can be
 constructed using decision variables are more restricted than those that can
@@ -141,7 +141,7 @@ used, so can a parameter of the same type.
   as either:
 
   .. code-block:: minizincdef
-    
+
     var int : <var-name>
     var <l>..<u> : <var-name>
 
@@ -151,14 +151,14 @@ used, so can a parameter of the same type.
 Formally the distinction between parameters and decision variables is called
 the *instantiation* of the variable.
 The combination of variable instantiation and type is called a
-:index:`type-inst`. 
+:index:`type-inst`.
 As you start to use MiniZinc you will undoubtedly see examples of
 *type-inst* errors.
 
 .. index::
   single: constraint
 
-The next component of the model are the *constraints*. 
+The next component of the model are the *constraints*.
 These specify the Boolean expressions that the decision variables must satisfy
 to be a valid solution to the model.
 In this case we have a number of not equal constraints between the decision
@@ -167,8 +167,8 @@ different colours.
 
 .. defblock:: Relational Operators
 
-  MiniZinc provides the :index:`relational operators <operator; relational>`: 
-  
+  MiniZinc provides the :index:`relational operators <operator; relational>`:
+
   .. index::
     single: =
     single: ==
@@ -177,11 +177,11 @@ different colours.
     single: <=
     single: >
     single: >=
-  
-  equal (``=`` or ``==``), not equal 
-  (``!=``), 
-  strictly less than (``<``), 
-  strictly greater than (``>``), 
+
+  equal (``=`` or ``==``), not equal
+  (``!=``),
+  strictly less than (``<``),
+  strictly greater than (``>``),
   less than or equal to (``<=``), and
   greater than or equal to (``>=``).
 
@@ -192,16 +192,16 @@ The next line in the model:
 
   solve satisfy;
 
-indicates the kind of problem it is. 
+indicates the kind of problem it is.
 In this case it is a :index:`satisfaction` problem:
-we wish to find a value for the 
+we wish to find a value for the
 decision variables that satisfies the constraints but we do not care which one.
 
 .. index::
   single: output
 
 The final part of the model is the *output* statement. This tells MiniZinc what to
-print when the model has been run and a :index:`solution` is found.  
+print when the model has been run and a :index:`solution` is found.
 
 .. defblock:: Output and Strings
 
@@ -213,7 +213,7 @@ print when the model has been run and a :index:`solution` is found.
   An output statement is followed by a *list* of strings. These are
   typically either :index:`string literals <string; literal>`
   which are written between double quotes and
-  use a C like notation for special characters, 
+  use a C like notation for special characters,
   or an expression of the form :mzn:`show(e)`
   where :mzn:`e` is a MiniZinc expression.
   In the example ``\n``
@@ -222,7 +222,7 @@ print when the model has been run and a :index:`solution` is found.
 
   There are also formatted varieties of :mzn:`show` for numbers:
   :mzn:`show_int(n,X)`
-  outputs the value of integer 
+  outputs the value of integer
   ``X`` in at least :math:`|n|` characters, right justified
   if :math:`n > 0` and left justified otherwise;
   :mzn:`show_float(n,d,X)`
@@ -234,21 +234,21 @@ print when the model has been run and a :index:`solution` is found.
   split across multiple lines using the string concatenation operator
   ``++``.
   For example, the string literal
-  
+
   ::
-  
+
     "Invalid datafile: Amount of flour is non-negative"
 
-  is equivalent to the string literal expression  
+  is equivalent to the string literal expression
 
   ::
 
     "Invalid datafile: " ++
     "Amount of flour is non-negative"
 
-  MiniZinc supports 
+  MiniZinc supports
   :index:`interpolated strings <string; literal; interpolated>`.
-  Expressions can be embedded directly in string literals, 
+  Expressions can be embedded directly in string literals,
   where a sub string of the form :mzn:`"\(e)"`
   is replaced by the result of :mzn:`show(e)`.
   For example :mzn:`"t=\(t)\n"` produces the same string as
@@ -260,14 +260,14 @@ print when the model has been run and a :index:`solution` is found.
 We can evaluate our model by typing
 
 .. code-block:: bash
-  
+
   $ mzn-gecode aust.mzn
 
 where :download:`aust.mzn <examples/aust.mzn>`
 is the name of the file containing our MiniZinc model.
 We must use the file extension ``.mzn`` to indicate a MiniZinc model.
 The command ``mzn-gecode`` uses the Gecode finite domain solver to evaluate
-our model. 
+our model.
 
 When we run this we obtain the result:
 
@@ -283,7 +283,7 @@ When we run this we obtain the result:
   single: solution; separator ----------
 
 The line of 10 dashes ``----------`` is automatically added
-by the MiniZinc output to indicate a solution has been found. 
+by the MiniZinc output to indicate a solution has been found.
 
 An Arithmetic Optimisation Example
 ----------------------------------
@@ -311,7 +311,7 @@ MiniZinc model is shown in :numref:`ex-cakes`.
 .. index::
   single: expression; arithmetic
 
-The first new feature is the use of *arithmetic expressions*. 
+The first new feature is the use of *arithmetic expressions*.
 
 .. defblock:: Integer Arithmetic Operators
 
@@ -323,22 +323,22 @@ The first new feature is the use of *arithmetic expressions*.
     single: *
     single: mod
 
-  MiniZinc provides the standard integer arithmetic operators.  
+  MiniZinc provides the standard integer arithmetic operators.
   Addition (``+``),
   subtraction (``-``),
   multiplication (``*``),
-  integer division (:mzn:`div`) 
-  and 
-  integer modulus (:mzn:`mod`). 
+  integer division (:mzn:`div`)
+  and
+  integer modulus (:mzn:`mod`).
   It also provides ``+`` and ``-``
-  as unary operators. 
+  as unary operators.
 
   Integer modulus is defined to give a result :math:`a` :mzn:`mod` :math:`b`
-  that has the same sign as the 
+  that has the same sign as the
   dividend :math:`a`. Integer division is defined so that
   :math:`a = b ` ``*`` :math:`(a` :mzn:`div` :math:`b) + (a` :mzn:`mod` :math:`b)`.
 
-  MiniZinc provides standard integer functions for 
+  MiniZinc provides standard integer functions for
   absolute value (:mzn:`abs`) and power function (:mzn:`pow`).
   For example :mzn:`abs(-4)` and :mzn:`pow(2,5)` evaluate to
   ``4`` and ``32`` respectively.
@@ -360,10 +360,10 @@ The second new feature shown in the example is optimisation. The line
   solve maximize 400 * b + 450 * c;
 
 specifies that we want to find a solution that maximises the expression in
-the solve statement called the 
-*objective*.  
+the solve statement called the
+*objective*.
 The objective can be any
-kind of arithmetic expression.  One can replace the keyword 
+kind of arithmetic expression.  One can replace the keyword
 :mzn:`maximize`
 by :mzn:`minimize` to specify a minimisation problem.
 
@@ -398,14 +398,14 @@ make the amount of each ingredient a parameter of the model and then set
 their values at the top of the model.
 
 Even better would be to set the value of these parameters in a separate
-*data file*. 
+*data file*.
 MiniZinc (like most other modelling languages) allows the
 use of data files to set the value of parameters declared in the original
 model. This allows the same model to be easily used with different data by
 running it with different data files.
 
 Data files must have the file extension ``.dzn`` to indicate a MiniZinc data file
-and a model can be run with any number of data files (though a variable/parameter can only be assigned a value in one file). 
+and a model can be run with any number of data files (though a variable/parameter can only be assigned a value in one file).
 
 .. literalinclude:: examples/cakes2.mzn
   :language: minizinc
@@ -464,10 +464,10 @@ output  will be
   :caption: Example data file for :download:`cakes2.mzn <examples/cakes2.mzn>` (:download:`pantry2.dzn <examples/pantry2.dzn>`)
   :name: fig-pantry2
 
-Small data files can be entered 
+Small data files can be entered
 without directly creating a ``.dzn``
 file, using the :index:`command line flag <data file;command line>`
-``-D`` *string*, 
+``-D`` *string*,
 where *string* is the contents of the data
 file. For example the command
 
@@ -482,8 +482,8 @@ will give identical results to
 
   $ mzn-g12fd cakes2.mzn pantry.dzn
 
-Data files can only contain assignment statements for 
-decision variables and parameters in the model(s) for which they are intended. 
+Data files can only contain assignment statements for
+decision variables and parameters in the model(s) for which they are intended.
 
 .. index::
   single: assert
@@ -511,7 +511,7 @@ Real Number Solving
 
 MiniZinc also supports "real number" constraint solving using
 floating point variables and constraints.  Consider a problem of taking out a short loan
-for one year to be repaid in 4 quarterly instalments. 
+for one year to be repaid in 4 quarterly instalments.
 A model for this is shown in :numref:`ex-loan`. It uses a simple interest
 calculation to calculate the balance after each quarter.
 
@@ -544,8 +544,8 @@ The output is
 
 ::
 
-  Borrowing 1000.00 at 4.0% interest, and repaying 260.00 
-  per quarter for 1 year leaves 65.78 owing 
+  Borrowing 1000.00 at 4.0% interest, and repaying 260.00
+  per quarter for 1 year leaves 65.78 owing
   ----------
 
 The second question is if I want to borrow $1000 at 4% and owe nothing at
@@ -567,7 +567,7 @@ is
   ----------
 
 The third question is if I can repay $250 a quarter, how much can I borrow
-at 4% to end up owing nothing? 
+at 4% to end up owing nothing?
 This question is encoded by the data file :download:`loan3.dzn <examples/loan3.dzn>`.
 The output from running the command
 
@@ -605,57 +605,57 @@ is
     single: *
     single: /
     single: abs
-    single: sqrt 
+    single: sqrt
     single: ln
-    single: log2 
+    single: log2
     single: log10
-    single: exp 
-    single: sin 
-    single: cos 
+    single: exp
+    single: sin
+    single: cos
     single: tan
-    single: asin 
-    single: acos 
-    single: atan 
+    single: asin
+    single: acos
+    single: atan
     single: sinh
     single: cosh
     single: tanh
     single: asinh
-    single: acosh 
+    single: acosh
     single: atanh
     single: pow
 
-  MiniZinc provides the standard floating point arithmetic operators:  
-  addition (``+``), 
+  MiniZinc provides the standard floating point arithmetic operators:
+  addition (``+``),
   subtraction (``-``),
-  multiplication (``*``) 
-  and floating point division (``/``). 
-  It also provides ``+`` and ``-`` as unary operators. 
+  multiplication (``*``)
+  and floating point division (``/``).
+  It also provides ``+`` and ``-`` as unary operators.
 
-  MiniZinc can automatically coerce integers to 
+  MiniZinc can automatically coerce integers to
   floating point numbers. But to make the coercion explicit, the built-in function
   :mzn:`int2float`
   can be used. Note that one consequence of the automatic coercion is that
   an expression :mzn:`a / b` is always considered a floating point division. If
   you need an integer division, make sure to use the :mzn:`div` operator!
 
-  MiniZinc provides in addition the following floating point functions: 
+  MiniZinc provides in addition the following floating point functions:
   absolute value (``abs``),
-  square root (``sqrt``), 
+  square root (``sqrt``),
   natural logarithm (``ln``),
-  logarithm base 2 (``log2``), 
+  logarithm base 2 (``log2``),
   logarithm base 10 (``log10``),
-  exponentiation of $e$ (``exp``), 
-  sine (``sin``), 
-  cosine (``cos``), 
+  exponentiation of $e$ (``exp``),
+  sine (``sin``),
+  cosine (``cos``),
   tangent (``tan``),
-  arcsine (``asin``), 
-  arc\-cosine (``acos``), 
-  arctangent (``atan``), 
+  arcsine (``asin``),
+  arc\-cosine (``acos``),
+  arctangent (``atan``),
   hyperbolic sine (``sinh``),
   hyperbolic cosine (``cosh``),
   hyperbolic tangent (``tanh``),
   hyperbolic arcsine (``asinh``),
-  hyperbolic arccosine (``acosh``), 
+  hyperbolic arccosine (``acosh``),
   hyperbolic arctangent (``atanh``),
   and power (``pow``) which is the only binary function, the rest are
   unary.
@@ -669,19 +669,19 @@ Basic structure of a model
 --------------------------
 
 We are now in a position to summarise the basic structure of a MiniZinc model.
-It consists of multiple *items* each of which has a 
-semicolon ``;`` at its end. 
+It consists of multiple *items* each of which has a
+semicolon ``;`` at its end.
 Items can occur in any order.
-For example, identifiers need not be declared before they are 
-used. 
+For example, identifiers need not be declared before they are
+used.
 
 There are 8 kinds of :index:`items <item>`.
 
 - :index:`Include items <item; include>` allow the contents of another file to be inserted into the model.
   They have the form:
-  
+
   .. code-block:: minizincdef
-  
+
     include <filename>;
 
   where :mzndef:`<filename>` is a string literal.
@@ -715,23 +715,23 @@ There are 8 kinds of :index:`items <item>`.
   Instantiations are declared using :mzn:`par`
   for parameters and
   :mzn:`var` for decision variables. If there is no explicit instantiation
-  declaration then the variable is a parameter.  
+  declaration then the variable is a parameter.
   The type can be a base type,
   an :index:`integer or float range <range>`
   or an array or a set.
   The base types are :mzn:`float`,
-  :mzn:`int`, 
-  :mzn:`string`, 
+  :mzn:`int`,
+  :mzn:`string`,
   :mzn:`bool`,
-  :mzn:`ann` 
+  :mzn:`ann`
   of which only
   :mzn:`float`, :mzn:`int` and :mzn:`bool` can be used for decision
-  variables. 
+  variables.
   The base type :mzn:`ann` is an :index:`annotation` --
   we shall discuss
   annotations in :ref:`sec-search`.
   :index:`Integer range expressions <range; integer>` can be used
-  instead of the type :mzn:`int`. 
+  instead of the type :mzn:`int`.
   Similarly :index:`float range expressions <range; float>`
   can be used instead of type :mzn:`float`.
   These are typically used to give the
@@ -751,7 +751,7 @@ There are 8 kinds of :index:`items <item>`.
 - :index:`Constraint items <item; constraint>` form the heart of the model. They have the form:
 
   .. code-block:: minizincdef
-  
+
     constraint <Boolean expression>;
 
   We have already seen examples of simple constraints using arithmetic
@@ -760,7 +760,7 @@ There are 8 kinds of :index:`items <item>`.
 
 - :index:`Solve items <item; solve>` specify exactly what kind of solution is being looked for.
   As we have seen they have one of three forms:
-  
+
   .. code-block:: minizincdef
 
     solve satisfy;
@@ -769,9 +769,9 @@ There are 8 kinds of :index:`items <item>`.
 
   A model is required to have exactly one solve item.
 
-- :index:`Output items <item; output>` are for nicely presenting the results of the model execution. 
+- :index:`Output items <item; output>` are for nicely presenting the results of the model execution.
   They have the form:
-  
+
   .. code-block:: minizincdef
 
     output [ <string expression>, ..., <string expression> ];
@@ -783,10 +783,10 @@ There are 8 kinds of :index:`items <item>`.
 - :index:`Enumerated type declarations <item; enum>`.
   We discuss these in :ref:`sec-arrayset` and :ref:`sec-enum`.
 
-- :index:`Predicate, function and test items <item; predicate>` are for defining new constraints, 
+- :index:`Predicate, function and test items <item; predicate>` are for defining new constraints,
   functions and Boolean tests.
   We discuss these in :ref:`sec-predicates`.
 
 
-- The :index:`annotation item <item; annotation>` is used to define a new annotation. We 
+- The :index:`annotation item <item; annotation>` is used to define a new annotation. We
   discuss these in :ref:`sec-search`.
