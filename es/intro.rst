@@ -13,9 +13,9 @@ MiniZinc está diseñado para interactuar fácilmente con diferentes solucionado
 
 La traducción desde MiniZinc a FlatZinc es especializable para los solucionadores de backend individuales, por lo que pueden controlar en qué terminan las restricciones de forma. En particular, MiniZinc permite la especificación de restricciones globales por descomposición.
 
-La traducción de MiniZinc a FlatZinc hace uso de una biblioteca de funciones y definiciones de predicado para el solver objetivo en particular, lo que permite al compilador MiniZinc producir FlatZinc especializado que sólo contiene los tipos de variables y restricciones soportados por el destino.
+La traducción de MiniZinc a FlatZinc hace uso de una biblioteca de funciones y definiciones de predicado para el *solver* objetivo en particular, lo que permite al compilador MiniZinc producir FlatZinc especializado que sólo contiene los tipos de variables y restricciones soportados por el destino.
 
-En particular, MiniZinc permite la especificación de *restricciones globales* por *descomposición*. Además, las *anotaciones* del modelo permiten al usuario ajustar el comportamiento del solver, independientemente del significado declarativo del modelo.
+En particular, MiniZinc permite la especificación de *restricciones globales* por *descomposición*. Además, las *anotaciones* del modelo permiten al usuario ajustar el comportamiento del *solver*, independientemente del significado declarativo del modelo.
 
 
 Estructura
@@ -26,12 +26,12 @@ Esta documentación consta de tres partes.
 
 :ref:`La segunda parte <part-tutorial>` es una introducción al modelado con MiniZinc, desde la sintaxis básica y técnicas de modelado simples, hasta temas más avanzados. También explica cómo MiniZinc se compila a FlatZinc.
 
-:ref:`La tercera parte <part-reference>` contiene la documentación de referencia para MiniZinc. Incluyendo una definición del lenguaje MiniZinc, documentación sobre cómo interconectar un solver a FlatZinc, y una lista de todos los predicados y funciones en la biblioteca estándar de MiniZinc.
+:ref:`La tercera parte <part-reference>` contiene la documentación de referencia para MiniZinc. Incluyendo una definición del lenguaje MiniZinc, documentación sobre cómo interconectar un *solver* a FlatZinc, y una lista de todos los predicados y funciones en la biblioteca estándar de MiniZinc.
 
 
 
 Cómo leer esto
-----------------
+--------------
 
 Si eres nuevo en MiniZinc, sigue las instrucciones de instalación, la introducción al IDE y luego explora el tutorial. La mayoría del código de ejemplo se puede descargar, pero a veces es más útil escribir por ti mismo para obtener el idioma en su memoria muscular!.
 Si necesita ayuda, visite el sitio web de MiniZinc en http://www.minizinc.org donde encontrará un foro de discusión.
@@ -47,12 +47,12 @@ Si necesita ayuda, visite el sitio web de MiniZinc en http://www.minizinc.org do
 .. literalinclude:: examples/dummy.mzn
   :language: minizinc
   :name: ex-ex
-  :caption: A code example (:download:`dummy.mzn <examples/dummy.mzn>`)
+  :caption: Un código de ejemplo (:download:`dummy.mzn <examples/dummy.mzn>`)
 
 A lo largo de la documentación, algunos conceptos se definen un poco más formalmente en secciones especiales como ésta.
 
 .. defblock:: Más detalles
 
-  Estas secciones se pueden omitir si sólo desea trabajar con el tutorial por primera vez, pero contienen información importante para cualquier usuario de MiniZinc!  
+  Estas secciones se pueden omitir si sólo desea trabajar con el tutorial por primera vez, pero contienen información importante para cualquier usuario de MiniZinc!
 
 Finalmente, si encuentra algún error en esta documentación, infórmelo a través de nuestro GitHub issue tracker.

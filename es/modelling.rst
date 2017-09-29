@@ -21,9 +21,9 @@ Como nuestro primer ejemplo, imagine que se desea colorear el mapa de Australia,
 
 Esta figura se compone de siete estados diferentes, cada uno de los estados debe de tener un color y cada región adyacentes tiene que poseer diferentes colores.
 
-.. literalinclude:: examples/aust.mzn
+.. literalinclude:: examples/aust_es.mzn
   :language: minizinc
-  :caption: Un modelo de MiniZinc :download:`aust.mzn <examples/aust.mzn>` para colorear los estados y territorios en Australia
+  :caption: Un modelo de MiniZinc :download:`aust_es.mzn <examples/aust_es.mzn>` para colorear los estados y territorios en Australia
   :name: ex-aust
 
 Este problema se puede modelar muy fácil en MiniZinc. El modelo se muestra en :numref:`ex-aust`.
@@ -40,14 +40,14 @@ La línea
 
   int: nc = 3;
 
-especifica un :index:`parameter` en el problema, el cual es el número de colores a ser utilizados.
+especifica un :index:`parámetro` en el problema, el cual es el número de colores a ser utilizados.
 
 Los parámetros son similares a las variables (constantes) de la mayoría de los lenguajes de programación.
 
-Estos deben de ser declarados y se debe de especificar un :index:`type`.
+Estos deben de ser declarados y se debe de especificar un :index:`tipo` de dato.
 En este caso, el tipo de dato es :mzn:`int`.
 
-Además se le debe de dar un valor al parámetro mediante una :index:`assignment`.
+Además se le debe de dar un valor al parámetro mediante una :index:`asignación`.
 
 MiniZinc permite incluir la asignación como parte de la declaración (como en la línea anterior) o ser una sentencia de asignación separada.
 Así, la siguiente asignación de dos líneas, es equivalente a la asignación de una línea.
@@ -60,114 +60,83 @@ Así, la siguiente asignación de dos líneas, es equivalente a la asignación d
 A diferencia de las variables, en muchos lenguajes de programación a un parámetro sólo se le puede asignar un solo valor. En ese sentido, son denominadas constantes. Es un error que un parámetro posea más de una asignación.
 
 
-Lo básico :index:`parameter types <single: type; parameter>`
-son :index:`integers <integer>` (:mzn:`int`),
-floating point numbers  (:mzn:`float`),
-:index:`Booleans <Boolean>` (:mzn:`bool`) and
-:index:`strings <string>` (:mzn:`string`).
-Arrays and sets are also supported.
+Lo tipos de parámetros básicos son: :index:`enteros <integer>` (:mzn:`int`),
+números de punto flotante  (:mzn:`float`),
+:index:`boleanos <Boolean>` (:mzn:`bool`) y
+:index:`cadenas <string>` (:mzn:`string`).
+Arreglos y conjuntos también son soportados.
 
 .. index::
   see: decision variable; variable
 
-MiniZinc models can also contain another kind of variable called a
-*decision variable*.
-:index:`Decision variables <variable>` are variables in the sense of mathematical or logical
-variables.
-Unlike parameters and variables in a standard programming language, the
-modeller does not need to give them a value.
-Rather the value of a decision variable is unknown and it is only when the
-MiniZinc model is executed that the solving system determines if the
-decision variable can be assigned a value that satisfies the constraints in the
-model and if so what this is.
 
-In our example model  we associate a *decision variable* with each region,
-``wa``, ``nt``, ``sa``, ``q``, ``nsw``, ``v`` and ``t``,
-which stands for the (unknown) colour to be used to fill the region.
+Los modelos MiniZinc también pueden contener otro tipo de variable llamadas *variables de decisión*.
+Las :index:`variables de decisión <variable>` son variables en el sentido de las matemáticas o variables lógicas.
+A diferencia de parámetros y variables en un lenguaje de programación estándar, el modelador no necesita darles un valor.
+
+Más bien, el valor de una variable de decisión es desconocido. En consecuencia, es solamente cuando se ejecuta el modelo en MiniZinc, que el sistema de resolución determina si la variable de decisión se puede asignar un valor que satisface las restricciones en el modelo.
+
+En nuestro modelo de ejemplo, nosotros asociamos una *variable de decisión* a cada estado:
+``wa``, ``nt``, ``sa``, ``q``, ``nsw``, ``v`` y ``t`` que representa el color (desconocido) que se utilizará para llenar la región.
 
 .. index::
   single: domain
 
-For each decision variable we need to give the set of possible values the
-variable can take. This is called the variable's
-*domain*.
-This can be given as part of the :index:`variable declaration <variable; declaration>` and the
-:index:`type` of the decision variable is inferred from the type of the values in the domain.
+Para cada variable de decisión se necesita dar el conjunto de los posibles valores que la variable puede tomar.
+Esto se llama *dominio* de la variable. Esto se puede dar como parte de la :index:`declaración de la variable <variable; declaration>` y el :index:`tipo` de la variable de decisión se infiere a partir del tipo de los valores en el dominio.
 
-In MiniZinc decision variables
-can be Booleans, integers, floating point numbers,
-or sets.
-Also supported are arrays whose elements are
-decision variables.
-In our MiniZinc model we use integers to model the different colours. Thus each of our
-decision variables is declared to have the domain :mzn:`1..nc`
-which is an integer range expression
-indicating the set :math:`\{ 1, 2, \dots, nc \}`
-using the :mzn:`var` declaration.
-The type of the values is integer so all of the variables in the model are integer decision variables.
+En MiniZinc, las variables de decisión pueden ser booleanas, enteras, números de punto flotante o conjuntos.
+También se admiten las matrices cuyos elementos son variables de decisión. En nuestro modelo MiniZinc usamos números enteros para modelar los diferentes colores.
+Por lo tanto, cada una de las variables de decisión declarada posee el dominio :mzn:`1..nc`.
+Este dominio declarado es una expresión de un intervalo de tipo entero indicado por el conjunto :math:`\{ 1, 2, \dots, nc \}` usado en la declaración :mzn:`var`. El tipo de los valores es entero, por lo que todas las variables del modelo son variables de decisión enteras.
 
-.. defblock:: Identifiers
 
-  Identifiers, which are used to name parameters and variables,
-  are sequences of lower and uppercase
-  alphabetic characters, digits and the underscore ``_`` character. They must
-  start with an alphabetic character. Thus ``myName_2`` is a valid
-  identifier.  MiniZinc
-  *keywords* are not allowed to be
-  used as identifier names, they are listed in :ref:`spec-identifiers`.
-  Neither are MiniZinc *operators*
-  allowed to be used as identifier names;
-  they are listed in :ref:`spec-Operators`.
+.. defblock:: Identificadores
 
-MiniZinc carefully
-distinguishes between the two kinds of model variables:
-parameters and decision variables. The kinds of expressions that can be
-constructed using decision variables are more restricted than those that can
-be built from parameters. However, in any place that a decision variable can be
-used, so can a parameter of the same type.
+  Los identificadores, son utilizados para nombrar parámetros y variables,
+  son secuencias de caracteres alfabéticos de minúsculas y mayúsculas, dígitos y el carácter ``_`` de subrayado .
+  Además, deben de comenzar con un carácter alfabético. Así, ``myName_2`` es un identificador válido.
 
-.. defblock:: Integer Variable Declarations
+  Las *palabras clave* en MiniZinc no se pueden utilizar como nombres de identificador. Estas, se encuentran listadas en: ref:`spec-identifiers`.
 
-  An :index:`integer parameter variable <variable; declaration; integer>` is declared as either:
+  Tampoco se permite que los *operadores* de MiniZinc se utilicen como identificadores; el listado aparece en :ref:`spec-Operators`.
+
+
+MiniZinc distingue cuidadosamente entre los dos tipos de variables del modelo: los parámetros y las variables de decisión. Los tipos de expresiones que se pueden construir usando variables de decisión son más restringidos que los que se pueden construir a partir de parámetros. Sin embargo, en cualquier lugar en que se pueda utilizar una variable de decisión, también se puede tener un parámetro del mismo tipo.
+
+
+.. defblock:: Declaraciones de variables enteras
+
+  Una :index:`variable de parámetro entero <variable; declaration; integer>` se declara como:
 
   .. code-block:: minizincdef
 
     int : <var-name>
     <l> .. <u> : <var-name>
 
-  where :mzndef:`<l>` and :mzndef:`<u>` are fixed integer expressions.
+  en donde :mzndef:`<l>` y :mzndef:`<u>` son expresiones enteras fijas.
 
-  An integer decision variable is declared
-  as either:
+  Una variable de decisión entera se declara como:
 
   .. code-block:: minizincdef
 
     var int : <var-name>
     var <l>..<u> : <var-name>
 
-  where :mzndef:`<l>` and :mzndef:`<u>` are fixed integer expressions.
+  en donde :mzndef:`<l>` y :mzndef:`<u>` son expresiones enteras fijas.
 
 
-Formally the distinction between parameters and decision variables is called
-the *instantiation* of the variable.
-The combination of variable instantiation and type is called a
-:index:`type-inst`.
-As you start to use MiniZinc you will undoubtedly see examples of
-*type-inst* errors.
+Formalmente la distinción entre parámetros y variables de decisión se denomina *instanciación* de la variable. La combinación de la instanciación variable y el tipo se llama tipo-instanciación (:index:`type-inst`).
+A medida de que usted empiece a usar MiniZinc, sin duda verá ejemplos de errores de tipo-instanciación (:index:`type-inst`).
 
 .. index::
   single: constraint
 
-The next component of the model are the *constraints*.
-These specify the Boolean expressions that the decision variables must satisfy
-to be a valid solution to the model.
-In this case we have a number of not equal constraints between the decision
-variables enforcing that if two states are adjacent then they must have
-different colours.
+El siguiente componente del modelo son las *restricciones*. Estas especifican las expresiones booleanas que las variables de decisión deben satisfacer para ser una solución válida para el modelo. En este ejemplo, existe un número de restricciones no iguales entre las variables de decisión, las cuales hacen cumplir que si dos estados son adyacentes, entonces deben tener colores diferentes.
 
-.. defblock:: Relational Operators
+.. defblock:: Operadores relacionales
 
-  MiniZinc provides the :index:`relational operators <operator; relational>`:
+  MiniZinc proporciona los :index:`operadores relacionales <operator; relational>`:
 
   .. index::
     single: =
@@ -178,98 +147,84 @@ different colours.
     single: >
     single: >=
 
-  equal (``=`` or ``==``), not equal
+  igual (``=`` or ``==``), no igual
   (``!=``),
-  strictly less than (``<``),
-  strictly greater than (``>``),
-  less than or equal to (``<=``), and
-  greater than or equal to (``>=``).
+  estrictamente menor que (``<``),
+  estrictamente mayor que (``>``),
+  menor o igual a (``<=``), y
+  mayor o igual que (``>=``).
 
 
-The next line in the model:
+La siguiente línea del modelo:
 
 ::
 
   solve satisfy;
 
-indicates the kind of problem it is.
-In this case it is a :index:`satisfaction` problem:
-we wish to find a value for the
-decision variables that satisfies the constraints but we do not care which one.
+
+indica que el tipo de problema que es. En este caso, es un problema de :index:`satisfacción`: es decir, se debe de encontrar un valor para las variables de decisión que satisface las restricciones pero no nos importa cuál.
 
 .. index::
   single: output
 
-The final part of the model is the *output* statement. This tells MiniZinc what to
-print when the model has been run and a :index:`solution` is found.
+La parte final del modelo es la declaración de *salida*. Esto le indica a MiniZinc lo que debe de imprimir cuando se ejecute el modelo y encuentre una :index:`solución`.
 
-.. defblock:: Output and Strings
+.. defblock:: Salida y cadenas
 
   .. index::
     single: output
     single: string
     single: show
 
-  An output statement is followed by a *list* of strings. These are
-  typically either :index:`string literals <string; literal>`
-  which are written between double quotes and
-  use a C like notation for special characters,
-  or an expression of the form :mzn:`show(e)`
-  where :mzn:`e` is a MiniZinc expression.
-  In the example ``\n``
-  represents the newline character and ``\t`` a
-  tab.
+  Una instrucción de salida es seguida por una *lista* de cadenas. Estos son típicamente :index:`string literales <string; literal>`
+  que se escriben entre comillas dobles y utilizan una notación C para caracteres especiales,
+  o una expresión de la forma :mzn:`show(e)`
+  en donde :mzn:`e` es una espresión de MiniZinc.
+  En el ejemplo ``\n`` representa el carácter de nueva línea y ``\t`` un tabulador.
 
-  There are also formatted varieties of :mzn:`show` for numbers:
+  También hay variedades de formato :mzn:`show` para números:
   :mzn:`show_int(n,X)`
-  outputs the value of integer
-  ``X`` in at least :math:`|n|` characters, right justified
-  if :math:`n > 0` and left justified otherwise;
+  salidas de valores enteros
+  ``X`` en al menos :math:`|n|` carácteres, justificados a la derecha
+  si :math:`n > 0` y de otro modo, justificado a la izquierda;
   :mzn:`show_float(n,d,X)`
-  outputs the value of float ``X`` in at least :math:`|n|` characters, right justified
-  if :math:`n > 0` and left justified otherwise, with :math`d` characters after the
-  decimal point.
+  salidas de los valores de punto flotante (mzn:`float`) ``X`` en al menos :math:`|n|` carácteres, justificados a la derecha
+  si :math:`n > 0` y de otro modo, justificado a la izquierda, con :math`d` carácteres después del punto decimal.
 
-  :index:`String literals <string; literal>` must fit on a single line. Longer string literals can be
-  split across multiple lines using the string concatenation operator
-  ``++``.
-  For example, the string literal
+  Los :index:`Literales de cadenas <string; literal>` deben encajar en una sola línea. Los literales de cadena más largos se pueden dividir en varias líneas utilizando el operador de concatenación de cadenas ``++``.
+  Por ejemplo, el literal
 
   ::
 
-    "Invalid datafile: Amount of flour is non-negative"
+    "Archivo de datos no válido: La cantidad de harina no es negativa"
 
-  is equivalent to the string literal expression
+  es equivalente a la expresión literal de cadena
 
   ::
 
-    "Invalid datafile: " ++
-    "Amount of flour is non-negative"
+    "Archivo de datos no válido: " ++
+    "La cantidad de harina no es negativa"
 
-  MiniZinc supports
-  :index:`interpolated strings <string; literal; interpolated>`.
-  Expressions can be embedded directly in string literals,
-  where a sub string of the form :mzn:`"\(e)"`
-  is replaced by the result of :mzn:`show(e)`.
-  For example :mzn:`"t=\(t)\n"` produces the same string as
-  :mzn:`"t=" ++ show(t) ++ "\n"`.
+  MiniZinc soporta
+  :index:`cadenas interpoladas <string; literal; interpolated>`.
+  Las expresiones pueden ser incorporados directamente en las cadenas literales,
+  donde una subcadena del forma :mzn:`"\(e)"`
+  es reemplazada por el resultado :mzn:`show(e)`.
+  Por ejemplo, :mzn:`"t=\(t)\n"` produce la misma cadena como :mzn:`"t=" ++ show(t) ++ "\n"`.
 
-  A model can contain multiple output statements. In that case, all outputs
-  are concatenated in the order they appear in the model.
+  Un modelo puede contener varias declaraciones de salida. En ese caso, todas las salidas se concatenan en el orden en que aparecen en el modelo.
 
-We can evaluate our model by typing
+Podemos evaluar nuestro modelo escribiendo
 
 .. code-block:: bash
 
   $ mzn-gecode aust.mzn
 
-where :download:`aust.mzn <examples/aust.mzn>`
-is the name of the file containing our MiniZinc model.
-We must use the file extension ``.mzn`` to indicate a MiniZinc model.
-The command ``mzn-gecode`` uses the Gecode finite domain solver to evaluate
-our model.
+en donde :download:`aust.mzn <examples/aust.mzn>` es el nombre del archivo que contiene nuestro modelo MiniZinc.
+Se debe de utilizar la extensión de archivo ``.mzn`` para indicar un modelo MiniZinc.
+El comando ``mzn-gecode`` utiliza el *solver* de dominios finitos Gecode para evaluar nuestro modelo.
 
-When we run this we obtain the result:
+Cuando ejecutamos esto obtenemos el resultado:
 
 ::
 
@@ -282,38 +237,32 @@ When we run this we obtain the result:
 .. index::
   single: solution; separator ----------
 
-The line of 10 dashes ``----------`` is automatically added
-by the MiniZinc output to indicate a solution has been found.
+La línea de 10 guiones ``----------`` es automáticamente agregada por la salida de MiniZinc, la cual indica que se ha encontrado una solución.
 
-An Arithmetic Optimisation Example
-----------------------------------
 
-Our second example is motivated by the need to bake some cakes for a fete at
-our local school.
-We know how to make two sorts of cakes.\footnote{WARNING: please don't use
-these recipes at home}
-A banana cake which takes 250g of self-raising flour, 2 mashed bananas, 75g
-sugar and 100g of butter, and a chocolate cake which takes 200g of self-raising
-flour, 75g of cocoa, 150g sugar and 150g of butter.
-We can sell a chocolate cake for $4.50 and a banana cake for $4.00.  And we
-have 4kg self-raising flour, 6 bananas, 2kg of sugar, 500g of butter and 500g
-of cocoa.
-The question is how many of each sort of cake should we bake for the fete to
-maximise the profit.
-A possible
-MiniZinc model is shown in :numref:`ex-cakes`.
+Un ejemplo de optimización aritmética
+-------------------------------------
 
-.. literalinclude:: examples/cakes.mzn
+El segundo ejemplo está motivado por la necesidad de hornear pasteles para una fiesta en nuestra escuela local. Sabemos cómo hacer dos tipos de tortas. \footnote{Advertencia: por favor no utilice estas recetas en casa}
+Un pastel de plátano que toma 250g de harina, 2 plátanos para puré de plátano, 75g de azúcar y 100g de mantequilla. Para un pastel de chocolate se necesita 200g de harina, 75g de cacao, 150g de azúcar y 150g de mantequilla.
+
+Podemos vender un pastel de chocolate por $4.50 y un pastel de plátano por $4.00. Además, tenemos 4kg de harina, 6 plátanos, 2kg de azúcar, 500g de mantequilla y 500g de cacao.
+
+La pregunta es, ¿cuántos de cada tipo de pastel debemos hornear para la fiesta para maximizar el beneficio?.
+
+A continuación se muestra el posible modelo de MiniZinc en :numref:`ex-cakes`.
+
+.. literalinclude:: examples/cakes_es.mzn
   :language: minizinc
-  :caption: Model for determining how many banana and chocolate cakes to bake for the school fete (:download:`cakes.mzn <examples/cakes.mzn>`)
+  :caption: Modelo para determinar cuántos pasteles de banana y chocolate para hornear para la fiesta de la escuela (:download:`cakes_es.mzn <examples/cakes_es.mzn>`)
   :name: ex-cakes
 
 .. index::
   single: expression; arithmetic
 
-The first new feature is the use of *arithmetic expressions*.
+La primera nueva característica es el uso de *expresiones aritméticas*.
 
-.. defblock:: Integer Arithmetic Operators
+.. defblock:: Operadores Aritméticos Enteros
 
   .. index::
     single: operator; integer
@@ -323,29 +272,25 @@ The first new feature is the use of *arithmetic expressions*.
     single: *
     single: mod
 
-  MiniZinc provides the standard integer arithmetic operators.
-  Addition (``+``),
-  subtraction (``-``),
-  multiplication (``*``),
-  integer division (:mzn:`div`)
-  and
-  integer modulus (:mzn:`mod`).
-  It also provides ``+`` and ``-``
-  as unary operators.
+  MiniZinc proporciona los estándar operadores aritméticos enteros.
 
-  Integer modulus is defined to give a result :math:`a` :mzn:`mod` :math:`b`
-  that has the same sign as the
-  dividend :math:`a`. Integer division is defined so that
+  Adición (``+``),
+  subtracción (``-``),
+  multiplicación (``*``),
+  división entera (:mzn:`div`)
+  y
+  módulo entero (:mzn:`mod`).
+  También proporciona ``+`` y ``-``
+  como operadores unarios.
+
+  El módulo entero se define para dar un resultado :math:`a` :mzn:`mod` :math:`b`
+  que tiene el mismo signo que el dividendo :math:`a`. La división entera se define de modo que
   :math:`a = b ` ``*`` :math:`(a` :mzn:`div` :math:`b) + (a` :mzn:`mod` :math:`b)`.
 
-  MiniZinc provides standard integer functions for
-  absolute value (:mzn:`abs`) and power function (:mzn:`pow`).
-  For example :mzn:`abs(-4)` and :mzn:`pow(2,5)` evaluate to
-  ``4`` and ``32`` respectively.
+  MiniZinc proporciona funciones enteras estándar para el valor absoluto (:mzn:`abs`) y función de potencia (:mzn:`pow`).
+  Por ejemplo, :mzn:`abs(-4)` y :mzn:`pow(2,5)` es evaluado como ``4`` and ``32`` respectivamente.
 
-  The syntax for arithmetic literals is reasonably standard. Integer literals
-  can be decimal, hexadecimal or octal. For instance ``0``, ``5``,
-  ``123``, ``0x1b7``, ``0o777``.
+  La sintaxis para literales aritméticos es razonablemente estándar. Los literales enteros pueden ser decimales, hexadecimales u octales. Por ejemplo, ``0``, ``5``, ``123``, ``0x1b7``, ``0o777``.
 
 .. index::
   single: optimization
@@ -353,93 +298,79 @@ The first new feature is the use of *arithmetic expressions*.
   single: maximize
   single: minimize
 
-The second new feature shown in the example is optimisation. The line
+La segunda característica mostrada en el ejemplo es la optimización. La línea
 
 ::
 
   solve maximize 400 * b + 450 * c;
 
-specifies that we want to find a solution that maximises the expression in
-the solve statement called the
-*objective*.
-The objective can be any
-kind of arithmetic expression.  One can replace the keyword
-:mzn:`maximize`
-by :mzn:`minimize` to specify a minimisation problem.
+especifica que queremos encontrar una solución que maximice la expresión declarada, esto se denomina *objetivo*.
 
-When we run this we obtain the result:
+El objetivo puede ser cualquier tipo de expresión aritmética. Se puede reemplazar la palabra clave
+:mzn:`maximize`
+por :mzn:`minimize` para especificar un problema de minimización.
+
+Cuando ejecutamos esto obtenemos el resultado:
 
 ::
 
-  no. of banana cakes = 2
-  no. of chocolate cakes = 2
+  Número de tortas de plátano = 2
+  Número de tortas de chocolate = 2
   ----------
   ==========
 
 .. index::
   single: solution; end `==========`
 
-The line ``==========``
-is output automatically for optimisation problems when the system has proved
-that a solution is optimal.
+La línea ``==========``
+se muestra automáticamente para problemas de optimización cuando el sistema ha demostrado que una solución es óptima.
 
 
 .. index::
   single: data file
 
-Datafiles and Assertions
-------------------------
 
-A drawback of this model is that if we wish to solve a similar problem the
-next time we need to bake cakes for the school (which is often) we need to
-modify the constraints in the model to reflect the ingredients that we have
-in the pantry. If we want to reuse the model then we would be better off to
-make the amount of each ingredient a parameter of the model and then set
-their values at the top of the model.
+Archivos de datos y afirmaciones
+--------------------------------
 
-Even better would be to set the value of these parameters in a separate
-*data file*.
-MiniZinc (like most other modelling languages) allows the
-use of data files to set the value of parameters declared in the original
-model. This allows the same model to be easily used with different data by
-running it with different data files.
+Un inconveniente de este modelo es que si queremos resolver un problema similar, la próxima vez que necesitamos hornear pasteles para la escuela (que es a menudo) tenemos que modificar las restricciones en el modelo para reflejar los ingredientes que tenemos en la despensa. Si queremos reutilizar el modelo entonces es más conveniente dejar que la cantidad de cada ingrediente sea un parámetro del modelo y luego fijar sus valores en la parte superior del modelo.
 
-Data files must have the file extension ``.dzn`` to indicate a MiniZinc data file
-and a model can be run with any number of data files (though a variable/parameter can only be assigned a value in one file).
+Incluso mejor sería establecer el valor de estos parámetros en un archivo de datos separado (*data file*). MiniZinc (como la mayoría de los otros lenguajes de modelado) permite el uso de archivos de datos para establecer el valor de los parámetros declarado en el modelo original. Esto permite que el mismo modelo se utilice fácilmente con diferentes datos ejecutándolo con diferentes archivos de datos.
 
-.. literalinclude:: examples/cakes2.mzn
+
+Los archivos de datos deben tener la extensión de archivo ``.dzn`` para indicar un archivo de datos MiniZinc y un modelo se puede ejecutar con cualquier número de archivos de datos (aunque una variable/parámetro sólo se puede asignar un valor en un archivo).
+
+.. literalinclude:: examples/cakes2_es.mzn
   :language: minizinc
-  :caption: Data-independent model for determining how many banana and chocolate cakes to bake for the school fete (:download:`cakes2.mzn <examples/cakes2.mzn>`)
+  :caption: Modelo independiente de los datos para determinar cuántos pasteles de banana y chocolate para hornear para la fiesta de la escuela (:download:`cakes2_es.mzn <examples/cakes2_es.mzn>`)
   :name: ex-cakes2
 
-Our new model is shown in :numref:`ex-cakes2`.
-We can run it using the command
+Nuestro nuevo modelo se muestra en :numref:`ex-cakes2`.
+Podemos ejecutarlo usando el comando
 
 .. code-block: bash
 
-  $ mzn-gecode cakes2.mzn pantry.dzn
+  $ mzn-gecode cakes2_es.mzn pantry.dzn
 
-where the data file :download:`pantry.dzn <examples/pantry.dzn>` is defined in
-:numref:`fig-pantry1`. This gives the same result as :download:`cakes.mzn <examples/cakes.mzn>`.
-The output from running the command
+donde el archivo de datos :download:`pantry.dzn <examples/pantry.dzn>` es definido en
+:numref:`fig-pantry1`. Esto da el mismo resultado que :download:`cakes.mzn <examples/cakes.mzn>`.
+El resultado de la ejecución del comando
 
 .. code-block:: bash
 
   $ mzn-gecode cakes2.mzn pantry2.dzn
 
-with an alternate data set defined in
+con un conjunto de datos alternativo definido en
 :numref:`fig-pantry2` is
 
 ::
 
-  no. of banana cakes = 3
-  no. of chocolate cakes = 8
+  Número de tortas de plátano = 3
+  Número de tortas de chocolate = 8
   ----------
   ==========
 
-If we remove the output statement from :download:`cakes.mzn <examples/cakes.mzn>` then
-MiniZinc will use a default output. In this case the resulting
-output  will be
+Si eliminamos la instrucción de salida de :download:`cakes_es.mzn <examples/cakes_es.mzn>` entonces MiniZinc utilizará una salida predeterminada. En este caso, la salida resultante será
 
 ::
 
@@ -448,155 +379,137 @@ output  will be
   ----------
   ==========
 
-.. defblock:: Default Output
+.. defblock:: Salida por defecto
 
-  A MiniZinc model with no output will output a line for each
-  decision variable with its value, unless it is assigned an expression
-  on its declaration. Note how the output is in the form of a correct datafile.
+  A MiniZinc model with no output will output a line for each decision variable with its value, unless it is assigned an expression on its declaration. Note how the output is in the form of a correct datafile.
 
 .. literalinclude:: examples/pantry.dzn
   :language: minizinc
-  :caption: Example data file for :download:`cakes2.mzn <examples/cakes2.mzn>` (:download:`pantry.dzn <examples/pantry.dzn>`)
+  :caption: Ejemplo de archivo de datos para :download:`cakes2.mzn <examples/cakes2.mzn>` (:download:`pantry.dzn <examples/pantry.dzn>`)
   :name: fig-pantry1
 
 .. literalinclude:: examples/pantry2.dzn
   :language: minizinc
-  :caption: Example data file for :download:`cakes2.mzn <examples/cakes2.mzn>` (:download:`pantry2.dzn <examples/pantry2.dzn>`)
+  :caption: Ejemplo de archivo de datos para :download:`cakes2.mzn <examples/cakes2.mzn>` (:download:`pantry2.dzn <examples/pantry2.dzn>`)
   :name: fig-pantry2
 
-Small data files can be entered
-without directly creating a ``.dzn``
-file, using the :index:`command line flag <data file;command line>`
-``-D`` *string*,
-where *string* is the contents of the data
-file. For example the command
+Se pueden introducir pequeños archivos de datos sin crear un archivo de datos ``.dzn``, usando una :index:`bandera en la línea de comandos <data file;command line>`
+``-D`` *cadena*,
+en donde *cadena* es el contenido del archivo de datos. Por ejemplo, el comando
 
 .. code-block:: bash
 
   $ mzn-gecode cakes2.mzn -D \
        "flour=4000;banana=6;sugar=2000;butter=500;cocoa=500;"
 
-will give identical results to
+dará idénticos resultados que
 
 .. code-block:: bash
 
   $ mzn-g12fd cakes2.mzn pantry.dzn
 
-Data files can only contain assignment statements for
-decision variables and parameters in the model(s) for which they are intended.
+Los archivos de datos sólo pueden contener instrucciones de asignación para variables de decisión y parámetros en el modelo o modelos a los que están destinados.
 
 .. index::
   single: assert
 
-Defensive programming suggests that we should check that the values in the
-data file are reasonable.  For our example it is sensible to check that the
-quantity of all ingredients is non-negative and generate a run-time error if
-this is not true. MiniZinc provides a built-in Boolean operator for checking
-parameter values. The form is :mzn:`assert(B,S)`. The Boolean expression
-``B`` is evaluated and if it is false execution aborts and the string
-expression ``S`` is evaluated and printed as an error message. To check and
-generate an appropriate error message if the amount of flour is negative we
-can simply add the line
+La programación defensiva sugiere que debemos comprobar que los valores en el archivo de datos son razonables. Para nuestro ejemplo es razonable comprobar que la cantidad de todos los ingredientes no es negativa y generar un error en tiempo de ejecución si esto no es cierto.
+
+MiniZinc proporciona un operador (*built-in*) booleano incorporado para comprobar los valores de los parámetros.
+La forma es :mzn:`assert(B,S)`. La expresión booleana ``B`` es evaluada, y si la ejecución es falsa se aborta y la expresión de cadena ``S`` se evalúa e imprime como un mensaje de error. Para comprobar y generar un mensaje de error apropiado si la cantidad de harina es negativa podemos simplemente agregar la línea
 
 ::
 
-  constraint assert(flour >= 0,"Amount of flour is non-negative");
+  constraint assert(flour >= 0,"La cantidad de harina no debe ser negativa");
 
-to our model. Notice that the :mzn:`assert` expression is a Boolean
-expression and so is regarded as a type of constraint. We can add similar
-lines to check that the quantity of the other ingredients is non-negative.
+a nuestro modelo. Observe que la espresión :mzn:`assert` es una expresión booleana y por lo tanto es considerado como un tipo de restricción. Podemos agregar líneas similares para comprobar que la cantidad de los otros ingredientes no es negativa.
 
-Real Number Solving
--------------------
 
-MiniZinc also supports "real number" constraint solving using
-floating point variables and constraints.  Consider a problem of taking out a short loan
-for one year to be repaid in 4 quarterly instalments.
-A model for this is shown in :numref:`ex-loan`. It uses a simple interest
-calculation to calculate the balance after each quarter.
 
-.. literalinclude:: examples/loan.mzn
+Resolviendo números reales
+-------------------------
+
+Minizinc también soporta la resolución de restricciones con números reales usado en variables de punto flotante y restricciones.
+
+Considere un problema de tomar un préstamo a corto por un año, el cual será reembolsado en 4 cuotas trimestrales.
+
+Un modelo para esto se muestra en :numref:`ex-loan`. Utiliza un cálculo de interés simple para calcular el saldo después de cada trimestre.
+
+.. literalinclude:: examples/loan_es.mzn
   :language: minizinc
-  :caption: Model for determining relationships between a 1 year loan repaying every quarter (:download:`loan.mzn <examples/loan.mzn>`)
+  :caption: Modelo para determinar las relaciones entre un préstamo de 1 año y lo reembolsado cada trimestre (:download:`loan_es.mzn <examples/loan_es.mzn>`)
   :name: ex-loan
 
-Note that we declare a float variable ``f``
-similar to an integer variable using the keyword :mzn:`float` instead of
-:mzn:`int`.
+Tenga en cuenta que declaramos una variable flotante ``f`` similar a una variable entera utilizando la palabra clave :mzn:`float` en lugar de :mzn:`int`.
 
-We can use the same model to answer a number of different questions.
-The first question is: if I borrow $1000 at 4% and repay $260 per
-quarter, how much do I end up owing? This question is encoded by
-the data file :download:`loan1.dzn <examples/loan1.dzn>`.
+Podemos utilizar el mismo modelo para responder a una serie de preguntas diferentes.
+La primera pregunta es: Si tomo prestado $1000 al 4% y debo pagar $260 por trimestre, cuánto puedo terminar debiendo?.
+Esta pregunta está codificada por el archivo de datos :download:`loan1.dzn <examples/loan1.dzn>`.
 
-Since we wish to use real number variables and constraint we need to use a solver
-that supports this type of problem.
-A suitable solver would be one that supports mixed integer linear
-programming.
-The MiniZinc distribution contains such a solver.
-We can invoke it using the command ``mzn-cbc``:
+Puesto que deseamos utilizar variables de números reales y restricción, necesitamos usar un *solver* que soporte este tipo de problema.
+Un solver adecuado sería uno que soporta la programación lineal entera mixta.
+La distribución MiniZinc contiene un *solver*.
+La salida al ejecutar el comando ``mzn-cbc``:
 
 .. code-block:: bash
 
   $ mzn-cbc loan.mzn loan1.dzn
 
-The output is
+La salida es
 
 ::
 
-  Borrowing 1000.00 at 4.0% interest, and repaying 260.00
-  per quarter for 1 year leaves 65.78 owing
+  Préstamo 1000.00 al 4.0% interés y reembolso 260.00
+  por trimestre para 1 año deja 65.78 debido
   ----------
 
-The second question is if I want to borrow $1000 at 4% and owe nothing at
-the end, how much do I need to repay?
-This question is encoded by
-the data file :download:`loan2.dzn <examples/loan2.dzn>`.
-The output from running the command
+La segunda pregunta es: Si tomo prestado $1000 al 4% y no debo nada al final, ¿cuánto tengo que pagar?.
+Esta pregunta está codificada por el archivo de datos :download:`loan2.dzn <examples/loan2.dzn>`.
+La salida al ejecutar el comando
 
 .. code-block:: bash
 
   $ mzn-cbc loan.mzn loan2.dzn
 
-is
+La salida es
 
 ::
 
-  Borrowing 1000.00 at 4.0% interest, and repaying 275.49
-  per quarter for 1 year leaves 0.00 owing
+  Préstamo 1000.00 al 4.0% interés y reembolso 275.49
+  por trimestre para 1 año deja 0.00 debido
   ----------
 
-The third question is if I can repay $250 a quarter, how much can I borrow
-at 4% to end up owing nothing?
-This question is encoded by the data file :download:`loan3.dzn <examples/loan3.dzn>`.
-The output from running the command
+La tercera pregunta, es si puedo pagar $250 por trimestre, ¿cuánto puedo pedir prestado al 4% para terminar por no pagar nada?.
+Esta pregunta está codificada por el archivo de datos
+ :download:`loan3.dzn <examples/loan3.dzn>`.
+La salida al ejecutar el comando
 
 .. code-block:: bash
 
   $ mzn-g12mip loan.mzn loan3.dzn
 
-is
+La salida es
 
 ::
 
-  Borrowing 907.47 at 4.0% interest, and repaying 250.00
-  per quarter for 1 year leaves 0.00 owing
+  Préstamo 907.47 at 4.0% interés y reembolso 250.00
+  por trimestre para 1 año deja 0.00 debido
   ----------
 
 .. literalinclude:: examples/loan1.dzn
   :language: minizinc
-  :caption: Example data file for :download:`loan.mzn <examples/loan.mzn>` (:download:`loan1.dzn <examples/loan1.dzn>`)
+  :caption: Ejemplo de archivo de datos para :download:`loan.mzn <examples/loan.mzn>` (:download:`loan1.dzn <examples/loan1.dzn>`)
 
 .. literalinclude:: examples/loan2.dzn
   :language: minizinc
-  :caption: Example data file for :download:`loan.mzn <examples/loan.mzn>` (:download:`loan2.dzn <examples/loan2.dzn>`)
+  :caption: Ejemplo de archivo de datos para :download:`loan.mzn <examples/loan.mzn>` (:download:`loan2.dzn <examples/loan2.dzn>`)
 
 .. literalinclude:: examples/loan3.dzn
   :language: minizinc
-  :caption: Example data file for :download:`loan.mzn <examples/loan.mzn>` (:download:`loan3.dzn <examples/loan3.dzn>`)
+  :caption: Ejemplo de archivo de datos para :download:`loan.mzn <examples/loan.mzn>` (:download:`loan3.dzn <examples/loan3.dzn>`)
 
 
-.. defblock:: Float Arithmetic Operators
+.. defblock:: Operadores de Coma Flotante
 
   .. index:
     single: operator; float
@@ -624,81 +537,68 @@ is
     single: atanh
     single: pow
 
-  MiniZinc provides the standard floating point arithmetic operators:
-  addition (``+``),
-  subtraction (``-``),
-  multiplication (``*``)
+  MiniZinc proporciona los siguiente operadores  estándar aritméticos de punto flotante:
+  adición (``+``),
+  subtracción (``-``),
+  multiplicación (``*``)
   and floating point division (``/``).
-  It also provides ``+`` and ``-`` as unary operators.
+  and floating point division ``+`` y ``-`` as unary operators.
 
-  MiniZinc can automatically coerce integers to
-  floating point numbers. But to make the coercion explicit, the built-in function
-  :mzn:`int2float`
-  can be used. Note that one consequence of the automatic coercion is that
-  an expression :mzn:`a / b` is always considered a floating point division. If
-  you need an integer division, make sure to use the :mzn:`div` operator!
+  MiniZinc puede coaccionar de forma automática números enteros a los números de punto flotante. Pero para hacer la coerción explícita, la función incorporada
+  :mzn:`int2float` puede ser usada. Obsérvese que una consecuencia de la coerción automática es que una expresión :mzn:`a / b` siempre se considera una división de punto flotante. Si necesita una división entera, asegúrese de usar el operador :mzn:`div`!.
 
-  MiniZinc provides in addition the following floating point functions:
-  absolute value (``abs``),
-  square root (``sqrt``),
-  natural logarithm (``ln``),
-  logarithm base 2 (``log2``),
-  logarithm base 10 (``log10``),
-  exponentiation of $e$ (``exp``),
-  sine (``sin``),
-  cosine (``cos``),
-  tangent (``tan``),
-  arcsine (``asin``),
-  arc\-cosine (``acos``),
-  arctangent (``atan``),
-  hyperbolic sine (``sinh``),
-  hyperbolic cosine (``cosh``),
-  hyperbolic tangent (``tanh``),
-  hyperbolic arcsine (``asinh``),
-  hyperbolic arccosine (``acosh``),
-  hyperbolic arctangent (``atanh``),
-  and power (``pow``) which is the only binary function, the rest are
-  unary.
+  MiniZinc proporciona además las siguientes funciones de coma flotante:
+  valor absoluto (``abs``),
+  raíz cuadrada (``sqrt``),
+  logaritmo natural (``ln``),
+  logaritmo en base 2 (``log2``),
+  logaritmo en base 10 (``log10``),
+  exponenciación de $e$ (``exp``),
+  seno (``sin``),
+  coseno (``cos``),
+  tangente (``tan``),
+  arcoseno (``asin``),
+  arco-coseno (``acos``),
+  arco-tangente (``atan``),
+  seno hiperbólico (``sinh``),
+  coseno hiperbólico(``cosh``),
+  tangente hiperbólico(``tanh``),
+  arcoseno hiperbólico(``asinh``),
+  arco-coseno hiperbólico(``acosh``),
+  arco-tangente hiperbólico(``atanh``),
+  y potencia (``pow``) que es la única función binaria, el resto son unarios.
 
-  The syntax for arithmetic literals is reasonably standard. Example float
-  literals are ``1.05``, ``1.3e-5`` and ``1.3E+5``.
+  La sintaxis para literales aritméticos es razonablemente estándar. Ejemplo literales flotantes son ``1.05``, ``1.3e-5`` and ``1.3E+5``.
 
 .. \pjs{Should do multiple solutions????}
 
-Basic structure of a model
---------------------------
+Estructura básica de un modelo
+-----------------------------
 
-We are now in a position to summarise the basic structure of a MiniZinc model.
-It consists of multiple *items* each of which has a
-semicolon ``;`` at its end.
-Items can occur in any order.
-For example, identifiers need not be declared before they are
-used.
+Ahora estamos en condiciones de resumir la estructura básica de un modelo MiniZinc. La estructura esta compuesta por varios elementos (*items*), cada uno de los cuales tiene un punto y coma ``;``` al final. Los elementos pueden ocurrir en cualquier orden.
 
-There are 8 kinds of :index:`items <item>`.
+Por ejemplo, los identificadores no necesitan ser declarados antes de ser utilizados.
 
-- :index:`Include items <item; include>` allow the contents of another file to be inserted into the model.
-  They have the form:
+Hay 8 clases de :index:`elementos <item>`.
+
+- :index:`Include items <item; include>` permiten que el contenido de otro archivo se inserte en el modelo.
+  Estos tienen la forma:
 
   .. code-block:: minizincdef
 
     include <filename>;
 
-  where :mzndef:`<filename>` is a string literal.
-  They allow large models to be split into smaller sub-models and also the
-  inclusion of constraints defined in library files.
-  We shall see an example in :numref:`ex-smm`.
+  en donde, :mzndef:`<filename>` es una cadena literal.
+  Permite que los modelos grandes se dividan en sub-modelos más pequeños y también la inclusión de restricciones definidas en los archivos de la biblioteca.
+  Veremos un ejemplo en :numref:`ex-smm`.
 
-- :index:`Variable declarations <item; variable declaration>` declare new variables.
-  Such variables are global variables and can be referred to from anywhere in the
-  model.
-  Variables come in two kinds.
-  Parameters which are assigned a fixed value in the model or in a data file and
-  decision variables whose value is found only when the model is solved.
-  We say that parameters are :index:`fixed` and decision variables
-  :index:`unfixed`.
-  The variable can be optionally assigned a value as part of the declaration.
-  The form is:
+- :index:`Variable declarations <item; variable declaration>` declaran nuevas variables.
+  Estas variables son variables globales y pueden ser referidos a desde cualquier parte del modelo.
+  Las variables pueden ser de dos tipos.
+  Parámetros a los que se asigna un valor fijo en el modelo o en un archivo de datos y variables de decisión cuyo valor se encuentra sólo cuando se resuelve el modelo.
+  Decimos que los parámetros son :index:`fixed` y variables de decisión :index:`unfixed`.
+  A la variable se le puede asignar opcionalmente un valor como parte de la declaración.
+  La forma es:
 
   .. index:
     single: expression; type-inst
@@ -709,57 +609,42 @@ There are 8 kinds of :index:`items <item>`.
 
     <type inst expr>: <variable> [ = ] <expression>;
 
-  The :mzndef:`<type-inst expr>`
-  gives the instantiation and type of the
-  variable. These are one of the more complex aspects of MiniZinc.
-  Instantiations are declared using :mzn:`par`
-  for parameters and
-  :mzn:`var` for decision variables. If there is no explicit instantiation
-  declaration then the variable is a parameter.
-  The type can be a base type,
-  an :index:`integer or float range <range>`
-  or an array or a set.
-  The base types are :mzn:`float`,
+  El :mzndef:`<type-inst expr>` da la instanciación y el tipo de la variable. Estos son uno de los aspectos más complejos de MiniZinc.
+  Las instanciaciones se declaran utilizando :mzn:`par` para parámetros y
+  :mzn:`var` para variables de decisión. Si no hay una declaración de instanciación explícita entonces la variable es un parámetro.
+  El tipo puede ser un tipo base, como :index:`integer o float range <range>` o un arreglo o un conjunto.
+  Los tipos bases son :mzn:`float`,
   :mzn:`int`,
   :mzn:`string`,
   :mzn:`bool`,
   :mzn:`ann`
-  of which only
-  :mzn:`float`, :mzn:`int` and :mzn:`bool` can be used for decision
-  variables.
-  The base type :mzn:`ann` is an :index:`annotation` --
-  we shall discuss
-  annotations in :ref:`sec-search`.
-  :index:`Integer range expressions <range; integer>` can be used
-  instead of the type :mzn:`int`.
-  Similarly :index:`float range expressions <range; float>`
-  can be used instead of type :mzn:`float`.
-  These are typically used to give the
-  domain of a decision variable but can also be used to restrict the
-  range of a parameter. Another use of variable declarations is to
-  define :index:`enumerated types`, which we discuss in :ref:`sec-enum`.
+  de los cuales solo
+  :mzn:`float`, :mzn:`int` and :mzn:`bool` puede usarse para variables de decisión.
+  El tipo de base :mzn:`ann` es una :index:`annotation` --
+  Se analiza las anotaciones en :ref:`sec-search`.
+  :index:`Integer range expressions <range; integer>` puede ser utilizado en lugar del tipo :mzn:`int`.
+  Igualmente :index:`float range expressions <range; float>` puede utilizarse en lugar del tipo :mzn:`float`.
+  Éstos se usan típicamente para dar el dominio de una variable de la decisión pero se pueden también utilizar para restringir el rango de un parámetro. Otro uso de las declaraciones de variables es definir :index:`enumerated types`, los cuales se discuten en :ref:`sec-enum`.
 
-- :index:`Assignment items <item; assignment>` assign a value to a variable. They have the form:
+- :index:`Assignment items <item; assignment>` asignar un valor a una variable. Tienen la forma:
 
   .. code-block:: minizincdef
 
     <variable> = <expression>;
 
-  Values can be assigned to decision variables in which case the assignment is
-  equivalent to writing :mzndef:`constraint <variable> = <expression>`.
+  Los valores se pueden asignar a las variables de decisión, en cuyo caso la asignación es equivalente a la escritura :mzndef:`constraint <variable> = <expression>`.
 
-- :index:`Constraint items <item; constraint>` form the heart of the model. They have the form:
+- :index:`Constraint items <item; constraint>` forman el corazón del modelo. Tienen la forma:
 
   .. code-block:: minizincdef
 
     constraint <Boolean expression>;
 
-  We have already seen examples of simple constraints using arithmetic
-  comparison and the built-in :mzn:`assert` operator. In the next section we
-  shall see examples of more complex constraints.
+  Ya hemos visto ejemplos de restricciones simples usando la comparación aritmética y el operador :mzn:`assert` incorporado.
+  En la siguiente sección veremos ejemplos de restricciones más complejas.
 
-- :index:`Solve items <item; solve>` specify exactly what kind of solution is being looked for.
-  As we have seen they have one of three forms:
+- :index:`Solve items <item; solve>` especifique exactamente qué tipo de solución se busca.
+  Como hemos visto, tienen una de las siguientes tres formas:
 
   .. code-block:: minizincdef
 
@@ -767,26 +652,23 @@ There are 8 kinds of :index:`items <item>`.
     solve maximize <arithmetic expression>;
     solve minimize <arithmetic expression>;
 
-  A model is required to have exactly one solve item.
+  Se requiere un modelo para tener exactamente un elemento de resolución.
 
-- :index:`Output items <item; output>` are for nicely presenting the results of the model execution.
-  They have the form:
+- :index:`Output items <item; output>` son para presentar bien los resultados de la ejecución del modelo.
+  Estas tienen la forma:
 
   .. code-block:: minizincdef
 
     output [ <string expression>, ..., <string expression> ];
 
-  If there is no output item, MiniZinc will by default print out the values of
-  all the decision variables which are not optionally assigned a value in the
-  format of assignment items.
+  Si no hay ningún elemento de salida,
+  por defecto MiniZinc imprimirá los valores de todas las variables de decisión. Estas variables no se les asignará opcionalmente un valor en el formato de los elementos de asignación.
 
 - :index:`Enumerated type declarations <item; enum>`.
-  We discuss these in :ref:`sec-arrayset` and :ref:`sec-enum`.
+  Se discute eso en :ref:`sec-arrayset` y :ref:`sec-enum`.
 
-- :index:`Predicate, function and test items <item; predicate>` are for defining new constraints,
-  functions and Boolean tests.
-  We discuss these in :ref:`sec-predicates`.
+- :index:`Predicate, function and test items <item; predicate>` son para definir nuevas restricciones, funciones y pruebas booleanas.
+  Se discute eso en :ref:`sec-predicates`.
 
 
-- The :index:`annotation item <item; annotation>` is used to define a new annotation. We
-  discuss these in :ref:`sec-search`.
+- El :index:`annotation item <item; annotation>` se utiliza para definir una nueva anotación. Se discute eso en :ref:`sec-search`.
