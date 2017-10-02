@@ -67,12 +67,16 @@
                       | "int"
                       | "float"
                       | "string"
+                      | <ti-variable-expr-tail>
                       | <set-ti-expr-tail>
                       | <array-ti-expr-tail>
                       | "ann"
                       | "opt" <base-ti-expr-tail>
                       | { <expr> "," ... }
                       | <num-expr> ".." <num-expr>
+
+% Type-inst variables
+<ti-variable-expr-tail> ::= $[A-Za-z][A-Za-z0-9_]*
 
 % Set type-inst expressions
 <set-ti-expr-tail> ::= "set" "of" <base-type>
@@ -98,11 +102,9 @@
                    | <string-literal>
                    | <set-literal>
                    | <set-comp>
-                   | <simple-array-literal>
-                   | <simple-array-literal-2d>
-                   | <indexed-array-literal>
-                   | <simple-array-comp>
-                   | <indexed-array-comp>
+                   | <array-literal>
+                   | <array-literal-2d>
+                   | <array-comp>
                    | <ann-literal>
                    | <if-then-else-expr>
                    | <let-expr>
@@ -125,7 +127,6 @@
                        | <int-literal>
                        | <float-literal>
                        | <if-then-else-expr>
-                       | <case-expr>
                        | <let-expr>
                        | <call-expr>
                        | <gen-call-expr>

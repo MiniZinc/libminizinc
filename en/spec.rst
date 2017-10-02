@@ -367,6 +367,7 @@ keywords are:
 :mzn:`not`,
 :mzn:`of`,
 :mzn:`op`,
+:mzn:`opt`,
 :mzn:`output`,
 :mzn:`par`,
 :mzn:`predicate`,
