@@ -62,13 +62,15 @@
 
 <var-par> ::= "var" | "par" | ε
 
+<base-type> ::= "bool"
+              | "int"
+              | "float"
+              | "string"
+
 <base-ti-expr-tail> ::= <ident>
-                      | "bool"
-                      | "int"
-                      | "float"
-                      | "string"
-                      | <ti-variable-expr-tail>
+                      | <base-type>
                       | <set-ti-expr-tail>
+                      | <ti-variable-expr-tail>
                       | <array-ti-expr-tail>
                       | "ann"
                       | "opt" <base-ti-expr-tail>
