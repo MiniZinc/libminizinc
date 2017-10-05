@@ -134,7 +134,7 @@ namespace MiniZinc {
     for (unsigned int i=0; i<ip.size(); i++)
       includePaths.push_back(ip[i]);
 
-    vector<pair<string,Model*> > files;
+    vector<ParseWorkItem> files;
     map<string,Model*> seenModels;
 
     Model* model = new Model();
@@ -143,7 +143,7 @@ namespace MiniZinc {
     if (!ignoreStdlib) {
       Model* stdlib = new Model;
       stdlib->setFilename("stdlib.mzn");
-      files.push_back(pair<string,Model*>("./",stdlib));
+      files.push_back(ParseWorkItem(stdlib,"./","stdlib.mzn"));
       seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
       IncludeI* stdlibinc = new IncludeI(Location(),stdlib->filename());
       stdlibinc->m(stdlib,true);
@@ -170,9 +170,9 @@ namespace MiniZinc {
     }
 
     while (!files.empty()) {
-      pair<string,Model*>& np = files.back();
-      string parentPath = np.first;
-      Model* m = np.second;
+      ParseWorkItem& np = files.back();
+      string parentPath = np.dirName;
+      Model* m = np.m;
       files.pop_back();
       string f(m->filename().str());
 
@@ -249,7 +249,7 @@ namespace MiniZinc {
     for (unsigned int i=0; i<ip.size(); i++)
       includePaths.push_back(ip[i]);
     
-    vector<pair<string,Model*> > files;
+    vector<ParseWorkItem> files;
     map<string,Model*> seenModels;
     
     if (filenames.size() > 0) {
@@ -258,21 +258,26 @@ namespace MiniZinc {
       filepath(filenames[0], fileDirname, fileBasename);
       model->setFilename(fileBasename);
       
-      files.push_back(pair<string,Model*>(fileDirname,model));
+      files.push_back(ParseWorkItem(model,fileDirname,fileBasename));
       
       for (unsigned int i=1; i<filenames.size(); i++) {
         GCLock lock;
         string dirName, baseName;
         filepath(filenames[i], dirName, baseName);
-        
-        Model* includedModel = new Model;
-        includedModel->setFilename(baseName);
-        files.push_back(pair<string,Model*>(dirName,includedModel));
-        seenModels.insert(pair<string,Model*>(baseName,includedModel));
-        Location loc(ASTString(filenames[i]),0,0,0,0);
-        IncludeI* inc = new IncludeI(loc,includedModel->filename());
-        inc->m(includedModel,true);
-        model->addItem(inc);
+
+        bool isFzn = (baseName.compare(baseName.length()-4,4,".fzn")==0);
+        if (isFzn) {
+          files.push_back(ParseWorkItem(model,dirName,baseName));
+        } else {
+          Model* includedModel = new Model;
+          includedModel->setFilename(baseName);
+          files.push_back(ParseWorkItem(includedModel,dirName,baseName));
+          seenModels.insert(pair<string,Model*>(baseName,includedModel));
+          Location loc(ASTString(filenames[i]),0,0,0,0);
+          IncludeI* inc = new IncludeI(loc,includedModel->filename());
+          inc->m(includedModel,true);
+          model->addItem(inc);
+        }
       }
     }
     
@@ -280,7 +285,7 @@ namespace MiniZinc {
       GCLock lock;
       Model* stdlib = new Model;
       stdlib->setFilename("stdlib.mzn");
-      files.push_back(pair<string,Model*>("./",stdlib));
+      files.push_back(ParseWorkItem(stdlib,"./","stdlib.mzn"));
       seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
       Location stdlibloc(ASTString(model->filename()),0,0,0,0);
       IncludeI* stdlibinc =
@@ -291,12 +296,13 @@ namespace MiniZinc {
     
     while (!files.empty()) {
       GCLock lock;
-      pair<string,Model*>& np = files.back();
-      string parentPath = np.first;
-      Model* m = np.second;
+      ParseWorkItem& np = files.back();
+      string parentPath = np.dirName;
+      Model* m = np.m;
+      //      string f(m->filename().str());
+      string f(np.fileName);
       files.pop_back();
-      string f(m->filename().str());
-      
+
       for (Model* p=m->parent(); p; p=p->parent()) {
         if (f == p->filename().c_str()) {
           err << "Error: cyclic includes: " << std::endl;
@@ -337,7 +343,8 @@ namespace MiniZinc {
         std::cerr << "processing file '" << fullname << "'" << endl;
       std::string s = get_file_contents(file);
       
-      m->setFilepath(fullname);
+      if (m->filepath().size() == 0)
+        m->setFilepath(fullname);
       bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
       isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
       isFzn |= (fullname.compare(fullname.length()-4,4,".szn")==0);
@@ -723,7 +730,7 @@ include_item :
           string fpath, fbase; filepath(pp->filename, fpath, fbase);
           if (fpath=="")
             fpath="./";
-          pair<string,Model*> pm(fpath, im);
+          ParseWorkItem pm(im, fpath, $2);
           pp->files.push_back(pm);
           ii->m(im);
           pp->seenModels.insert(pair<string,Model*>($2,im));

@@ -46,12 +46,21 @@ extern "C" int isatty(int);
 
 namespace MiniZinc {
 
+  struct ParseWorkItem {
+    Model* m;
+    std::string dirName;
+    std::string fileName;
+    ParseWorkItem(Model* m0, const std::string& dirName0, const std::string& fileName0)
+    : m(m0), dirName(dirName0), fileName(fileName0) {}
+  };
+  
+
   /// %State of the %MiniZinc parser
   class ParserState {
   public:
     ParserState(const std::string& f,
                 const std::string& b, std::ostream& err0,
-                std::vector<std::pair<std::string,Model*> >& files0,
+                std::vector<ParseWorkItem>& files0,
                 std::map<std::string,Model*>& seenModels0,
                 MiniZinc::Model* model0,
                 bool isDatafile0, bool isFlatZinc0, bool parseDocComments0)
@@ -72,7 +81,7 @@ namespace MiniZinc {
     int lineStartPos;
     int nTokenNextStart;
 
-    std::vector<std::pair<std::string,Model*> >& files;
+    std::vector<ParseWorkItem>& files;
     std::map<std::string,Model*>& seenModels;
     MiniZinc::Model* model;
 
