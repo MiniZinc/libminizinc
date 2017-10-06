@@ -760,16 +760,13 @@ namespace MiniZinc {
               if (ty.st() != vi->type().st()) {
                 throw TypeError(_env,al.loc(),"non-uniform array literal");
               }
-              if (ty.enumId() != vi->type().enumId()) {
-                ty.enumId(0);
-              }
             } else {
               haveInferredType = true;
               ty.st(vi->type().st());
-              ty.enumId(vi->type().enumId());
             }
             if (vi->type().bt() != Type::BT_BOT) {
               ty.bt(vi->type().bt());
+              ty.enumId(vi->type().enumId());
             }
           }
         } else {
