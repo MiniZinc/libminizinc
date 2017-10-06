@@ -230,6 +230,31 @@ Flattener::~Flattener()
     }
 }
 
+Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
+  Env& e = *getEnv();
+
+  Env* pre_env = &e;
+  pre_env->envi().passes = static_cast<unsigned int>(passes.size());
+  Timer lasttime;
+  bool verbose = false;
+  for(unsigned int i=0; i<passes.size(); i++) {
+    pre_env->envi().pass = i;
+    if(verbose)
+      std::cerr << "Start pass " << i << ":\n";
+
+    Env* out_env = passes[i]->run(pre_env);
+    if(pre_env != &e && pre_env != out_env) {
+      delete pre_env->model();
+      delete pre_env;
+    }
+    pre_env = out_env;
+
+    if(verbose)
+      std::cerr << "Finish pass " << i << ": " << stoptime(lasttime) << "\n";
+  }
+
+  return pre_env;
+}
 
 void Flattener::flatten()
 {
@@ -325,7 +350,7 @@ void Flattener::flatten()
     try {
       Model* m;
       pEnv.reset(new Env());
-      Env& env = *getEnv();
+      Env* env = getEnv();
       if (flag_stdinInput) {
         if (flag_verbose)
           std::cerr << "Parsing standard input ..." << endl;
@@ -342,34 +367,26 @@ void Flattener::flatten()
             std::cerr << ", '" << sFln << '\'';
           std::cerr << " ..." << std::endl;
         }
-        m = parse(env, filenames, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+        m = parse(*env, filenames, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
         if (globals_dir != "") {
           includePaths.pop_back();
         }
       }
       if (m) {
-        env.model(m);
-//         pModel.reset(m);   // seems to be unnec
+        env->model(m);
         if (flag_typecheck) {
           if (flag_verbose)
             std::cerr << " done parsing (" << stoptime(lasttime) << ")" << std::endl;
-          if (flag_verbose)
-            std::cerr << "Typechecking ...";
-
-          pEnv.reset(new Env(m));
-          Env& env = *getEnv();
-          if (flag_verbose)
-            std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
 
           if (flag_model_interface_only) {
-            MiniZinc::output_model_interface(env, m, std::cout);
+            MiniZinc::output_model_interface(*env, m, std::cout);
           }
           
           if (!flag_instance_check_only && !flag_model_check_only && !flag_model_interface_only) {
             if (is_flatzinc) {
               GCLock lock;
               vector<TypeError> typeErrors;
-              MiniZinc::typecheck(env, m, typeErrors, flag_model_check_only || flag_model_interface_only, flag_allow_multi_assign);
+              MiniZinc::typecheck(*env, m, typeErrors, flag_model_check_only || flag_model_interface_only, flag_allow_multi_assign);
               if (typeErrors.size() > 0) {
                 for (unsigned int i=0; i<typeErrors.size(); i++) {
                   if (flag_verbose)
@@ -379,15 +396,14 @@ void Flattener::flatten()
                 }
                 exit(EXIT_FAILURE);
               }
-              MiniZinc::registerBuiltins(env, m);
-              env.swap();
-              populateOutput(env);
+              MiniZinc::registerBuiltins(*env, m);
+              env->swap();
+              populateOutput(*env);
             } else {
               if (flag_verbose)
                 std::cerr << "Flattening ...";
 
               try {
-                std::vector<Pass*> passes;
                 fopts.onlyRangeDomains = flag_only_range_domains;
                 fopts.verbose = flag_verbose;
                 fopts.outputMode = flag_output_mode;
@@ -411,47 +427,60 @@ void Flattener::flatten()
                 cfs.model_interface_only  = flag_model_interface_only;
                 cfs.allow_multi_assign    = flag_allow_multi_assign;
 
+                std::vector<unique_ptr<Pass> > managed_passes;
                 for(unsigned int i=1; i<flag_npasses; i++) {
                   if(flag_gecode) {
 #ifdef HAS_GECODE
-                    passes.push_back(new CompilePass(&env, pass_opts, cfs, std_lib_dir+"/gecode/", includePaths, true));
-                    passes.push_back(new GecodePass(gopts));
+                    managed_passes.emplace_back(new CompilePass(env, pass_opts, cfs,
+                                                                std_lib_dir+"/gecode/",
+                                                                includePaths, true));
+                    managed_passes.emplace_back(new GecodePass(gopts));
 #endif
                   } else {
-                    passes.push_back(new CompilePass(&env, pass_opts, cfs, std_lib_dir+"/std/", includePaths,  true));
+                    managed_passes.emplace_back(new CompilePass(env, pass_opts, cfs,
+                                                                std_lib_dir+"/std/",
+                                                                includePaths,  true));
                   }
                 }
-                passes.push_back(new CompilePass(&env, fopts, cfs, std_lib_dir+"/"+globals_dir+"/", includePaths, true));
+                managed_passes.emplace_back(new CompilePass(env, fopts, cfs,
+                                                            std_lib_dir+"/"+globals_dir+"/",
+                                                            includePaths, true));
 
                 fopts.outputObjective = flag_output_objective;
-                env = *multiPassFlatten(env, passes);
+                Env* out_env = multiPassFlatten(managed_passes);
+
+                if(out_env != env) {
+                  delete env->model();
+                  pEnv.reset(out_env);
+                }
+                env = out_env;
               } catch (LocationException& e) {
                 if (flag_verbose)
                   std::cerr << std::endl;
                 std::cerr << e.what() << ": " << std::endl;
-                env.dumpErrorStack(std::cerr);
+                env->dumpErrorStack(std::cerr);
                 std::cerr << "  " << e.msg() << std::endl;
                 exit(EXIT_FAILURE);
               }
-              for (unsigned int i=0; i<env.warnings().size(); i++) {
-                std::cerr << (flag_werror ? "\n  ERROR: " : "\n  WARNING: ") << env.warnings()[i];
+              for (unsigned int i=0; i<env->warnings().size(); i++) {
+                std::cerr << (flag_werror ? "\n  ERROR: " : "\n  WARNING: ") << env->warnings()[i];
               }
-              if (flag_werror && env.warnings().size() > 0) {
+              if (flag_werror && env->warnings().size() > 0) {
                 exit(EXIT_FAILURE);
               }
-              env.clearWarnings();
+              env->clearWarnings();
               //            Model* flat = env.flat();
               if (flag_verbose)
                 std::cerr << " done (" << stoptime(lasttime)
-                << "), max stack depth " << env.maxCallStack() << std::endl;
+                << "), max stack depth " << env->maxCallStack() << std::endl;
             }
 
             if (flag_statistics) {
-              FlatModelStatistics stats = statistics(env);
+              FlatModelStatistics stats = statistics(*env);
               std::cerr << "Generated FlatZinc statistics:\n";
 
               std::cerr << "Paths: ";
-              std::cerr << env.envi().getPathMap().size() << std::endl;
+              std::cerr << env->envi().getPathMap().size() << std::endl;
 
               std::cerr << "Variables: ";
               HadOne ho;
@@ -472,7 +501,7 @@ void Flattener::flatten()
                 std::cerr << "none";
               std::cerr << "\n";
               /// Objective / SAT. These messages are used by mzn-test.py.
-              SolveI* solveItem = env.flat()->solveItem();
+              SolveI* solveItem = env->flat()->solveItem();
               if (solveItem->st() != SolveI::SolveType::ST_SAT) {
                 if (solveItem->st() == SolveI::SolveType::ST_MAX) {
                   cerr << "    This is a maximization problem." << endl;
@@ -491,8 +520,8 @@ void Flattener::flatten()
               std::ofstream os;
               os.open(flag_output_paths.c_str(), ios::out);
               checkIOStatus (os.good(), " I/O error: cannot open fzn output file. ");
-              PathFilePrinter pfp(os, env.envi());
-              pfp.print(env.flat());
+              PathFilePrinter pfp(os, env->envi());
+              pfp.print(env->flat());
               checkIOStatus (os.good(), " I/O error: cannot write fzn output file. ");
               os.close();
               if (flag_verbose)
@@ -503,7 +532,7 @@ void Flattener::flatten()
               if (flag_verbose)
                 std::cerr << "Printing FlatZinc to stdout ..." << std::endl;
               Printer p(std::cout,0);
-              p.print(env.flat());
+              p.print(env->flat());
               if (flag_verbose)
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
             } else if(flag_output_fzn != "") {
@@ -514,7 +543,7 @@ void Flattener::flatten()
               os.open(flag_output_fzn.c_str(), ios::out);
               checkIOStatus (os.good(), " I/O error: cannot open fzn output file. ");
               Printer p(os,0);
-              p.print(env.flat());
+              p.print(env->flat());
               checkIOStatus (os.good(), " I/O error: cannot write fzn output file. ");
               os.close();
               if (flag_verbose)
@@ -525,7 +554,7 @@ void Flattener::flatten()
                 if (flag_verbose)
                   std::cerr << "Printing .ozn to stdout ..." << std::endl;
                 Printer p(std::cout,0);
-                p.print(env.output());
+                p.print(env->output());
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               } else if (flag_output_ozn != "") {
@@ -536,7 +565,7 @@ void Flattener::flatten()
                 os.open(flag_output_ozn.c_str(), std::ios::out);
                 checkIOStatus (os.good(), " I/O error: cannot open ozn output file. ");
                 Printer p(os,0);
-                p.print(env.output());
+                p.print(env->output());
                 checkIOStatus (os.good(), " I/O error: cannot write ozn output file. ");
                 os.close();
                 if (flag_verbose)
@@ -551,7 +580,6 @@ void Flattener::flatten()
           Printer p(std::cout);
           p.print(m);
         }
-//         delete m;
       } else {
         if (flag_verbose)
           std::cerr << std::endl;

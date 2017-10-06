@@ -92,8 +92,12 @@ namespace MiniZinc {
     FlatteningOptions fopts;
     unsigned int pathUse;
 
-    typedef UNORDERED_NAMESPACE::unordered_map<std::string, std::pair<WeakRef, unsigned int> > PathMap;
-    typedef UNORDERED_NAMESPACE::unordered_map<WeakRef, std::string, WRHash, WREq> ReversePathMap;
+    struct PathVar {
+      KeepAlive decl;
+      unsigned int pass_no;
+    };
+    typedef UNORDERED_NAMESPACE::unordered_map<std::string, PathVar> PathMap;
+    typedef UNORDERED_NAMESPACE::unordered_map<KeepAlive, std::string, KAHash, KAEq> ReversePathMap;
     typedef UNORDERED_NAMESPACE::unordered_map<std::string, int> FilenameMap;
     int in_maybe_partial;
   protected:
@@ -146,7 +150,7 @@ namespace MiniZinc {
     ReversePathMap& getReversePathMap() { return reversePathMap; }
     FilenameMap& getFilenameMap() { return filenameMap; }
 
-    void setMaps(EnvI& env);
+    void copyPathMapsAndState(EnvI& env);
     /// deprecated, use Solns2Out
     std::ostream& evalOutput(std::ostream& os);
     void createErrorStack(void);

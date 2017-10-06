@@ -67,7 +67,8 @@ namespace MiniZinc {
     SolverInstance::Status status = SolverInstance::UNKNOWN;
     
   private:
-    
+    Env* multiPassFlatten(const std::vector<std::unique_ptr<Pass> >& passes);
+
     bool fOutputByDefault = true;      // if the class is used in mzn2fzn, write .fzn+.ozn by default
     std::vector<std::string> filenames;
     std::vector<std::string> datafiles;

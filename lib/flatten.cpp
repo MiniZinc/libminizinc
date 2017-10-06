@@ -339,8 +339,8 @@ namespace MiniZinc {
         EnvI::PathMap::iterator it = pathMap.find(path);
 
         if(it != pathMap.end()) {
-          VarDecl* ovd = Expression::cast<VarDecl>(it->second.first());
-          unsigned int ovd_pass = it->second.second;
+          VarDecl* ovd = Expression::cast<VarDecl>((it->second.decl)());
+          unsigned int ovd_pass = it->second.pass_no;
 
           if(ovd) {
             // If ovd was introduced during the same pass, we can unify
@@ -358,7 +358,7 @@ namespace MiniZinc {
             // Check whether ovd was unified in a previous pass
             if(ovd->id() != ovd->id()->decl()->id()) {
               std::string path2 = reversePathMap[ovd->id()->decl()];
-              std::pair<WeakRef, unsigned int> vd_tup(vd, env.pass);
+              EnvI::PathVar vd_tup {vd, env.pass};
 
               pathMap[path] = vd_tup;
               pathMap[path2] = vd_tup;
@@ -369,7 +369,7 @@ namespace MiniZinc {
           // Create new VarDecl and add it to the maps
           vd = new VarDecl(getLoc(env, origVd, rhs), ti, getId(env, origId));
           hasBeenAdded = false;
-          std::pair<WeakRef, unsigned int> vd_tup(vd, env.pass);
+          EnvI::PathVar vd_tup {vd, env.pass};
           pathMap       [path] = vd_tup;
           reversePathMap[  vd] = path;
         }
@@ -581,10 +581,13 @@ namespace MiniZinc {
     }
   }
 
-  void EnvI::setMaps(EnvI& env) {
-    pathMap = env.pathMap;
+  void EnvI::copyPathMapsAndState(EnvI& env) {
+    passes = env.passes;
+    maxPathDepth = env.maxPathDepth;
+    pass = env.pass;
     filenameMap = env.filenameMap;
     maxPathDepth = env.maxPathDepth;
+    pathMap = env.getPathMap();
   }
   
   void EnvI::flat_removeItem(MiniZinc::Item* i) {

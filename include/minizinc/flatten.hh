@@ -56,9 +56,6 @@ namespace MiniZinc {
       virtual Env* run(Env* env) = 0;
       virtual ~Pass() {};
   };
-
-  /// Flatten model \a m several times and record information in its env
-  Env* multiPassFlatten(Env& m, std::vector<Pass*>& passes);
   
   /// Flatten model \a m
   void flatten(Env& m, FlatteningOptions opt = FlatteningOptions());
