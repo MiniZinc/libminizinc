@@ -341,8 +341,7 @@ namespace MiniZinc {
       FloatSetVal* ndomain;
       switch (bot) {
         case BOT_LE:
-          v -= 1;
-          // fall through
+          return NULL;
         case BOT_LQ:
         {
           Ranges::Bounded<FloatVal,FloatSetRanges> b = Ranges::Bounded<FloatVal,FloatSetRanges>::maxiter(dr,v);
@@ -350,8 +349,7 @@ namespace MiniZinc {
         }
           break;
         case BOT_GR:
-          v += 1;
-          // fall through
+          return NULL;
         case BOT_GQ:
         {
           Ranges::Bounded<FloatVal,FloatSetRanges> b = Ranges::Bounded<FloatVal,FloatSetRanges>::miniter(dr,v);
