@@ -262,7 +262,7 @@ namespace MiniZinc {
       {
         VarDeclI* vd = i->cast<VarDeclI>();
         toAnnotate = vd->e()->e();
-        vo.add(vd, _flat->size()-1);
+        vo.add_idx(vd, _flat->size()-1);
         toAdd = vd->e();
         break;
       }

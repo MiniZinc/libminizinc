@@ -69,6 +69,7 @@ namespace MiniZinc {
     Model* output;
     VarOccurrences vo;
     VarOccurrences output_vo;
+    VarOccurrences output_vo_flat;
     CopyMap cmap;
     IdMap<KeepAlive> reverseMappers;
     struct WW {
