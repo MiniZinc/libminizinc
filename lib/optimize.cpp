@@ -22,11 +22,11 @@
 
 namespace MiniZinc {
 
-  void VarOccurrences::add(VarDeclI *i, int idx_i)
+  void VarOccurrences::add_idx(VarDeclI *i, int idx_i)
   {
     idx.insert(i->e()->id(), idx_i);
   }
-  void VarOccurrences::add(VarDecl *e, int idx_i)
+  void VarOccurrences::add_idx(VarDecl *e, int idx_i)
   {
     assert(find(e) == -1);
     idx.insert(e->id(), idx_i);
@@ -208,10 +208,10 @@ namespace MiniZinc {
       
       // If both variables are output variables, unify them in the output model
       if (isOutput(id0->decl())) {
-        assert(env.output_vo.find(id0->decl()) != -1);
-        VarDecl* id0_output = (*env.output)[env.output_vo.find(id0->decl())]->cast<VarDeclI>()->e();
-        assert(env.output_vo.find(id1->decl()) != -1);
-        VarDecl* id1_output = (*env.output)[env.output_vo.find(id1->decl())]->cast<VarDeclI>()->e();
+        assert(env.output_vo_flat.find(id0->decl()) != -1);
+        VarDecl* id0_output = (*env.output)[env.output_vo_flat.find(id0->decl())]->cast<VarDeclI>()->e();
+        assert(env.output_vo_flat.find(id1->decl()) != -1);
+        VarDecl* id1_output = (*env.output)[env.output_vo_flat.find(id1->decl())]->cast<VarDeclI>()->e();
         if (id0_output->e() == NULL) {
           id0_output->e(id1_output->id());
         }
@@ -760,7 +760,7 @@ namespace MiniZinc {
                 }
               }
               if (val) {
-                VarDecl* vd_out = (*envi.output)[envi.output_vo.find(cur)]->cast<VarDeclI>()->e();
+                VarDecl* vd_out = (*envi.output)[envi.output_vo_flat.find(cur)]->cast<VarDeclI>()->e();
                 vd_out->e(val);
                 CollectDecls cd(envi.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
                 topDown(cd,cur->e());

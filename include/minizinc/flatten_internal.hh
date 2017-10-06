@@ -72,6 +72,7 @@ namespace MiniZinc {
     unsigned int pass;
     unsigned int passes;
     unsigned int maxPathDepth;
+    VarOccurrences output_vo_flat;
     CopyMap cmap;
     IdMap<KeepAlive> reverseMappers;
     struct WW {

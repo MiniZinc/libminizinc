@@ -760,16 +760,13 @@ namespace MiniZinc {
               if (ty.st() != vi->type().st()) {
                 throw TypeError(_env,al.loc(),"non-uniform array literal");
               }
-              if (ty.enumId() != vi->type().enumId()) {
-                ty.enumId(0);
-              }
             } else {
               haveInferredType = true;
               ty.st(vi->type().st());
-              ty.enumId(vi->type().enumId());
             }
             if (vi->type().bt() != Type::BT_BOT) {
               ty.bt(vi->type().bt());
+              ty.enumId(vi->type().enumId());
             }
           }
         } else {
@@ -1294,10 +1291,11 @@ namespace MiniZinc {
       bool hadSolveItem;
       std::vector<FunctionI*>& fis;
       std::vector<AssignI*>& ais;
+      VarDeclI* objective;
       Model* enumis;
       TSV0(EnvI& env0, TopoSorter& ts0, Model* model0, std::vector<FunctionI*>& fis0, std::vector<AssignI*>& ais0,
            Model* enumis0)
-        : env(env0), ts(ts0), model(model0), hadSolveItem(false), fis(fis0), ais(ais0), enumis(enumis0) {}
+        : env(env0), ts(ts0), model(model0), hadSolveItem(false), fis(fis0), ais(ais0), objective(NULL), enumis(enumis0) {}
       void vAssignI(AssignI* i) { ais.push_back(i); }
       void vVarDeclI(VarDeclI* i) { ts.add(env, i, true, enumis); }
       void vFunctionI(FunctionI* i) {
@@ -1312,15 +1310,17 @@ namespace MiniZinc {
           GCLock lock;
           TypeInst* ti = new TypeInst(Location().introduce(), Type());
           VarDecl* obj = new VarDecl(Location().introduce(), ti, "_objective", si->e());
-          VarDeclI* i = new VarDeclI(Location().introduce(), obj);
-          ts.add(env, i, true, enumis);
-          env.orig->addItem(i);
           si->e(obj->id());
+          objective = new VarDeclI(Location().introduce(), obj);
         }
         
       }
     } _tsv0(env.envi(),ts,m,functionItems,assignItems,enumItems);
     iterItems(_tsv0,m);
+    if (_tsv0.objective) {
+      m->addItem(_tsv0.objective);
+      ts.add(env.envi(), _tsv0.objective, true, enumItems);
+    }
 
     for (unsigned int i=0; i<enumItems->size(); i++) {
       if (AssignI* ai = (*enumItems)[i]->dyn_cast<AssignI>()) {

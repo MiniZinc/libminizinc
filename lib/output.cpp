@@ -323,9 +323,9 @@ namespace MiniZinc {
         VarDecl* reallyFlat = vd->flat();
         while (reallyFlat != NULL && reallyFlat != reallyFlat->flat())
           reallyFlat = reallyFlat->flat();
-        IdMap<int>::iterator idx = reallyFlat ? env.output_vo.idx.find(reallyFlat->id()) : env.output_vo.idx.end();
+        IdMap<int>::iterator idx = reallyFlat ? env.output_vo_flat.idx.find(reallyFlat->id()) : env.output_vo_flat.idx.end();
         IdMap<int>::iterator idx2 = env.output_vo.idx.find(vd->id());
-        if (idx==env.output_vo.idx.end() && idx2==env.output_vo.idx.end()) {
+        if (idx==env.output_vo_flat.idx.end() && idx2==env.output_vo.idx.end()) {
           VarDeclI* nvi = new VarDeclI(Location().introduce(), copy(env,env.cmap,vd)->cast<VarDecl>());
           Type t = nvi->e()->ti()->type();
           if (t.ti() != Type::TI_PAR) {
@@ -337,8 +337,8 @@ namespace MiniZinc {
           ClearAnnotations::run(nvi->e());
           nvi->e()->introduced(false);
           if (reallyFlat)
-            env.output_vo.add(reallyFlat, env.output->size());
-          env.output_vo.add(nvi, env.output->size());
+            env.output_vo_flat.add_idx(reallyFlat, env.output->size());
+          env.output_vo.add_idx(nvi, env.output->size());
           env.output_vo.add(nvi->e(), ci);
           env.output->addItem(nvi);
           
@@ -802,12 +802,12 @@ namespace MiniZinc {
                   }
                 }
               }
-              if (env.output_vo.find(reallyFlat) == -1)
-                env.output_vo.add(reallyFlat, env.output->size());
+              if (env.output_vo_flat.find(reallyFlat) == -1)
+                env.output_vo_flat.add_idx(reallyFlat, env.output->size());
             }
           }
           makePar(env,vdi_copy->e());
-          env.output_vo.add(vdi_copy, env.output->size());
+          env.output_vo.add_idx(vdi_copy, env.output->size());
           CollectOccurrencesE ce(env.output_vo,vdi_copy);
           topDown(ce, vdi_copy->e());
           env.output->addItem(vdi_copy);
@@ -937,7 +937,7 @@ namespace MiniZinc {
               }
               vd->flat(NULL);
             }
-            e.output_vo.add(item->cast<VarDeclI>(), i);
+            e.output_vo.add_idx(item->cast<VarDeclI>(), i);
             CollectOccurrencesE ce(e.output_vo,item);
             topDown(ce, vd);
           }
