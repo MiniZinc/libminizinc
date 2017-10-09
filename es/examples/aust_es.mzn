@@ -1,4 +1,4 @@
-% Colorear Australia utilizando nc colores.
+% Colorear Australia utilizando "nc" colores.
 int: nc = 3;
 
 var 1..nc: wa;   var 1..nc: nt;  var 1..nc: sa;   var 1..nc: q;

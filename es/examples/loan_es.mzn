@@ -1,9 +1,9 @@
 %% Variables.
 
-% Reembolso trimestral
+% Reembolso trimestral.
 var float: R;
 
-% Capital prestado inicialmente
+% Capital prestado inicialmente.
 var float: P;
 
 % Tasa de interés
@@ -12,7 +12,7 @@ var 0.0 .. 10.0: I;
 %% Variables intermedias.
 
 % saldo después de un trimestre.
-var float: B1; % balance after one quarter
+var float: B1;
 
 % Saldo después de dos trimestres.
 var float: B2;
@@ -20,10 +20,10 @@ var float: B2;
 % Saldo después de tres trimestres.
 var float: B3;
 
-% Saldo adeudado al final
+% Saldo adeudado al final.
 var float: B4;
 
-% Restricciones
+% Restricciones.
 constraint B1 = P * (1.0 + I) - R;
 constraint B2 = B1 * (1.0 + I) - R;
 constraint B3 = B2 * (1.0 + I) - R;
