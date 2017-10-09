@@ -60,6 +60,18 @@ void Flattener::printHelp(ostream& os)
   << "  -D \"fMIPdomains=false\"\n    No domain unification for MIP" << std::endl
   << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by inequalities" << std::endl
   << "  --allow-multiple-assignments\n    Allow multiple assignments to the same variable (e.g. in dzn)" << std::endl
+  << std::endl
+  << "Flattener two-pass options:" << std::endl
+  << "  --two-pass\n    Flatten twice to make better flattening decisions for the target" << std::endl
+#ifdef HAS_GECODE
+  << "  --use-gecode\n    Perform root-node-propagation with Gecode (adds --two-pass)" << std::endl
+  << "  --shave\n    Probe bounds of all variables at the root node (adds --use-gecode)" << std::endl
+  << "  --sac\n    Probe values of all variables at the root node (adds --use-gecode)" << std::endl
+  << "  --pre-passes <n>\n    Number of times to apply shave/sac pass (0 = fixed-point, 1 = default)" << std::endl
+#endif
+  << "  Two-pass optimisation levels:  -O0:    Disable two-pass (default)" << std::endl
+  << "    -O1:    Same as: --two-pass    -O2:    Same as: --use-gecode" << std::endl
+  << "    -O3:    Same as: --shave       -O4:    Same as: --sac" << std::endl
   << std::endl;
   os
   << "Flattener output options:" << std::endl
@@ -69,8 +81,11 @@ void Flattener::printHelp(ostream& os)
        : "  --fzn <file>, --output-fzn-to-file <file>\n" )
   << "    Filename for generated FlatZinc output" << std::endl
   << "  -O, --ozn, --output-ozn-to-file <file>\n    Filename for model output specification (-O- for none)" << std::endl
+  << "  --keep-paths\n    Output a symbol table (.paths file)" << std::endl
+  << "  --output-paths-to-file <file>\n    Output a symbol table (.paths file)" << std::endl
   << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
   << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
+  << "  --output-paths-to-stdout\n    Output symbol table to standard output" << std::endl
   << "  --output-mode <item|dzn|json>\n    Create output according to output item (default), or output compatible\n    with dzn or json format" << std::endl
   << "  --output-objective\n    Print value of objective function in dzn or json output" << std::endl
   << "  -Werror\n    Turn warnings into errors" << std::endl
@@ -107,13 +122,15 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     fOutputByDefault ?
       "-o --fzn --output-to-file --output-fzn-to-file"
       : "--fzn --output-fzn-to-file", &flag_output_fzn) ) {
-  } else if ( cop.getOption( "-O --ozn --output-ozn-to-file", &flag_output_ozn) ) {
   } else if ( cop.getOption( "--output-paths-to-file", &flag_output_paths) ) {
     fopts.keep_mzn_paths = true;
   } else if ( cop.getOption( "--output-to-stdout --output-fzn-to-stdout" ) ) {
     flag_output_fzn_stdout = true;
   } else if ( cop.getOption( "--output-ozn-to-stdout" ) ) {
     flag_output_ozn_stdout = true;
+  } else if ( cop.getOption( "--output-paths-to-stdout" ) ) {
+    fopts.keep_mzn_paths = true;
+    flag_output_paths_stdout = true;
   } else if ( cop.getOption( "--output-mode", &buffer ) ) {
     if (buffer == "dzn") {
       flag_output_mode = FlatteningOptions::OUTPUT_DZN;
@@ -151,34 +168,66 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     flag_werror = true;
   } else if (string(argv[i])=="--use-gecode") {
 #ifdef HAS_GECODE
+    flag_two_pass = true;
     flag_gecode = true;
 #else
-    std::cerr << "warning: Gecode not available.\n";
+    std::cerr << "warning: Gecode not available. Ignoring '--use-gecode'\n";
 #endif
+  } else if (string(argv[i])=="--sac") {
+#ifdef HAS_GECODE
+    flag_two_pass = true;
+    flag_gecode = true;
+    flag_sac = true;
+#else
+    std::cerr << "warning: Gecode not available. Ignoring '--sac'\n";
+#endif
+
+  } else if (string(argv[i])=="--shave") {
+#ifdef HAS_GECODE
+    flag_two_pass = true;
+    flag_gecode = true;
+    flag_shave = true;
+#else
+    std::cerr << "warning: Gecode not available. Ignoring '--shave'\n";
+#endif
+  } else if (string(argv[i])=="--two-pass") {
+    flag_two_pass = true;
   } else if (string(argv[i])=="--npass") {
     i++;
-    if (i==argc) {
-      goto error;
-    }
+    if (i==argc) goto error;
+    std::cerr << "warning: --npass option is deprecated --two-pass\n";
     int passes = atoi(argv[i]);
-    if(passes > 0)
-      flag_npasses = passes;
-  } else if (string(argv[i])=="--keep-paths") {
-    fopts.keep_mzn_paths = true;
-  } else if (string(argv[i])=="--sac") {
-    flag_sac = true;
-  } else if (string(argv[i])=="--shave") {
-    flag_shave = true;
-  } else if (string(argv[i])=="--only-toplevel-presolve") {
-    fopts.only_toplevel_paths = true;
+    if(passes == 1) flag_two_pass = false;
+    else if(passes == 2) flag_two_pass = true;
   } else if (string(argv[i])=="--pre-passes") {
     i++;
-    if (i==argc) {
-      goto error;
-    }
+    if (i==argc) goto error;
     int passes = atoi(argv[i]);
-    if(passes >= 0)
-      flag_pre_passes = passes;
+    if(passes >= 0) {
+      flag_pre_passes = static_cast<unsigned int>(passes);
+    }
+  } else if (string(argv[i])=="-O0") {
+    flag_two_pass = false;
+    flag_gecode = false;
+  } else if (string(argv[i])=="-O1") {
+    flag_two_pass = true;
+  } else if (string(argv[i])=="-O2") {
+    flag_two_pass = true;
+    flag_gecode = true;
+  } else if (string(argv[i])=="-O3") {
+    flag_two_pass = true;
+    flag_gecode = true;
+    flag_shave = true;
+  } else if (string(argv[i])=="-O4") {
+    flag_two_pass = true;
+    flag_gecode = true;
+    flag_sac = true;
+    // ozn options must be after the -O<n> optimisation options
+  } else if ( cop.getOption( "-O --ozn --output-ozn-to-file", &flag_output_ozn) ) {
+  } else if (string(argv[i])=="--keep-paths") {
+    fopts.keep_mzn_paths = true;
+  } else if (string(argv[i])=="--only-toplevel-presolve") {
+    fopts.only_toplevel_paths = true;
   } else if ( cop.getOption( "--allow-multiple-assignments" ) ) {
     flag_allow_multi_assign = true;
   } else {
@@ -428,19 +477,15 @@ void Flattener::flatten()
                 cfs.allow_multi_assign    = flag_allow_multi_assign;
 
                 std::vector<unique_ptr<Pass> > managed_passes;
-                for(unsigned int i=1; i<flag_npasses; i++) {
-                  if(flag_gecode) {
+
+                if(flag_two_pass) {
+                  std::string library = std_lib_dir + (flag_gecode ? "/gecode/" : "/std/");
+                  managed_passes.emplace_back(new CompilePass(env, pass_opts, cfs,
+                                                              library, includePaths,  true));
 #ifdef HAS_GECODE
-                    managed_passes.emplace_back(new CompilePass(env, pass_opts, cfs,
-                                                                std_lib_dir+"/gecode/",
-                                                                includePaths, true));
+                  if(flag_gecode)
                     managed_passes.emplace_back(new GecodePass(gopts));
 #endif
-                  } else {
-                    managed_passes.emplace_back(new CompilePass(env, pass_opts, cfs,
-                                                                std_lib_dir+"/std/",
-                                                                includePaths,  true));
-                  }
                 }
                 managed_passes.emplace_back(new CompilePass(env, fopts, cfs,
                                                             std_lib_dir+"/"+globals_dir+"/",
@@ -513,7 +558,14 @@ void Flattener::flatten()
               }
             }
 
-            if (flag_output_paths != "") {
+            if (flag_output_paths_stdout) {
+              if (flag_verbose)
+                std::cerr << "Printing Paths to stdout ..." << std::endl;
+              PathFilePrinter pfp(std::cout, env->envi());
+              pfp.print(env->flat());
+              if (flag_verbose)
+                std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+            } else if (flag_output_paths != "") {
               if (flag_verbose)
                 std::cerr << "Printing Paths to '"
                 << flag_output_paths << "' ..." << std::flush;

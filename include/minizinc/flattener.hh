@@ -88,7 +88,7 @@ namespace MiniZinc {
     bool flag_allow_multi_assign = false;
 
     bool flag_gecode = false;
-    unsigned int flag_npasses = 1;
+    bool flag_two_pass = false;
     bool flag_sac = false;
     bool flag_shave = false;
     unsigned int flag_pre_passes = 1;
@@ -103,6 +103,7 @@ namespace MiniZinc {
     std::string flag_output_paths;
     bool flag_output_fzn_stdout = false;
     bool flag_output_ozn_stdout = false;
+    bool flag_output_paths_stdout = false;
     bool flag_instance_check_only = false;
     bool flag_model_check_only = false;
     bool flag_model_interface_only = false;
