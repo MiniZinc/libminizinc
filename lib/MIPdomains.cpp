@@ -324,7 +324,7 @@ namespace MiniZinc {
               DBGOUT_MIPD__ ( "  Call " << *c
                 << ": 1st arg not a VarDecl, removing if eq_encoding..." );
               /// Only allow literals as main argument for equality_encoding
-              if ( equality_encoding__POST==ipct->first );    //  was MZN_MIPD__assert_hard before MZN 2017
+              if ( equality_encoding__POST==ipct->first )    //  was MZN_MIPD__assert_hard before MZN 2017
                 ic->remove();
               continue;                           // ignore this call
             }
