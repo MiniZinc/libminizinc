@@ -1,0 +1,5 @@
+output [(show(Sched[i,j])++" ")++if j==groups then "\n" else "" endif | i in WEEK, j in GROUP, ];
+set of int: WEEK = 1..4;
+int: groups = 4;
+set of int: GROUP = 1..4;
+array [WEEK,GROUP] of set of int: Sched;

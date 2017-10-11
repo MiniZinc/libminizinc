@@ -144,9 +144,9 @@ html_theme_path = sphinx_bootstrap_theme.get_html_theme_path()
 # documentation.
 #
 html_theme_options = {
-    
+
     'source_link_position': "",
-    
+
     'globaltoc_depth': 3,
 }
 
@@ -461,7 +461,3 @@ def setup(sphinx):
     sphinx.add_lexer("minizinc", MznLexer())
     sphinx.add_lexer("minizincdef", MznDefLexer())
     sphinx.add_stylesheet("style.css")
-
-def setup(app):
-    import six
-    print('Six version: %s' % six.__version__)

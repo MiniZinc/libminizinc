@@ -1,12 +1,12 @@
-% A MiniZinc model
+% Un modelo MiniZinc
 <model> ::= [ <item> ";" ... ]
 
-% Items
+% Elementos
 <item>  ::= <include-item>
           | <var-decl-item>
           | <enum-item>
           | <assign-item>
-          | <constraint-item> 
+          | <constraint-item>
           | <solve-item>
           | <output-item>
           | <predicate-item>
@@ -16,35 +16,35 @@
 
 <ti-expr-and-id> ::= <ti-expr> ":" <ident>
 
-% Include items
+% Incluir elementos
 <include-item> ::= "include" <string-literal>
 
-% Variable declaration items
+% Elementos de declaración de variables
 <var-decl-item> ::= <ti-expr-and-id> <annotations> [ "=" <expr> ]
 
-% Enum items
+% Elementos de enumeración
 <enum-item>  ::= "enum" <ident> <annotations> [ "=" <enum-cases> ]
 
 <enum-cases> ::= "{" <ident> "," ... "}"
 
-% Assign items
+% Elementos de asignación
 <assign-item> ::= <ident> "=" <expr>
 
-% Constraint items
+% Elementos de restricciones
 <constraint-item> ::= "constraint" <expr>
 
-% Solve item
+% Elemento del solver
 <solve-item> ::= "solve" <annotations> "satisfy"
                | "solve" <annotations> "minimize" <expr>
                | "solve" <annotations> "maximize" <expr>
 
-% Output items
+% Elementos de salida
 <output-item> ::= "output" <expr>
 
-% Annotation items
+% Elementos de anotaciones
 <annotation-item> ::= "annotation" <ident> <params>
 
-% Predicate, test and function items
+% Predicado, prueba y elementos de funciones
 <predicate-item> ::= "predicate" <operation-item-tail>
 
 <test-item> ::= "test" <operation-item-tail>
@@ -62,23 +62,17 @@
 
 <var-par> ::= "var" | "par" | ε
 
-<base-type> ::= "bool"
-              | "int"
-              | "float"
-              | "string"
-
 <base-ti-expr-tail> ::= <ident>
-                      | <base-type>
+                      | "bool"
+                      | "int"
+                      | "float"
+                      | "string"
                       | <set-ti-expr-tail>
-                      | <ti-variable-expr-tail>
                       | <array-ti-expr-tail>
                       | "ann"
                       | "opt" <base-ti-expr-tail>
                       | { <expr> "," ... }
                       | <num-expr> ".." <num-expr>
-
-% Type-inst variables
-<ti-variable-expr-tail> ::= $[A-Za-z][A-Za-z0-9_]*
 
 % Set type-inst expressions
 <set-ti-expr-tail> ::= "set" "of" <base-type>
@@ -87,7 +81,7 @@
 <array-ti-expr-tail> ::= "array" [ <ti-expr> "," ... ] "of" <ti-expr>
                        | "list" "of" <ti-expr>
 
-% Expressions
+% Expresiones
 <expr> ::= <expr-atom> <expr-binop-tail>
 
 <expr-atom> ::= <expr-atom-head> <expr-atom-tail> <annotations>
@@ -104,9 +98,11 @@
                    | <string-literal>
                    | <set-literal>
                    | <set-comp>
-                   | <array-literal>
-                   | <array-literal-2d>
-                   | <array-comp>
+                   | <simple-array-literal>
+                   | <simple-array-literal-2d>
+                   | <indexed-array-literal>
+                   | <simple-array-comp>
+                   | <indexed-array-comp>
                    | <ann-literal>
                    | <if-then-else-expr>
                    | <let-expr>
@@ -116,7 +112,7 @@
 <expr-atom-tail> ::= ε
                    | <array-access-tail> <expr-atom-tail>
 
-% Numeric expressions
+% Expresiones numéricas
 <num-expr> ::= <num-expr-atom> <num-expr-binop-tail>
 
 <num-expr-atom> ::= <num-expr-atom-head> <expr-atom-tail> <annotations>
@@ -129,6 +125,7 @@
                        | <int-literal>
                        | <float-literal>
                        | <if-then-else-expr>
+                       | <case-expr>
                        | <let-expr>
                        | <call-expr>
                        | <gen-call-expr>
