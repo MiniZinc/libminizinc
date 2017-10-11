@@ -290,8 +290,8 @@ An Arithmetic Optimisation Example
 
 Our second example is motivated by the need to bake some cakes for a fete at
 our local school.
-We know how to make two sorts of cakes.\footnote{WARNING: please don't use
-these recipes at home}
+We know how to make two sorts of cakes (WARNING: please don't use
+these recipes at home).
 A banana cake which takes 250g of self-raising flour, 2 mashed bananas, 75g
 sugar and 100g of butter, and a chocolate cake which takes 200g of self-raising
 flour, 75g of cocoa, 150g sugar and 150g of butter.
