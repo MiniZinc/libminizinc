@@ -70,8 +70,13 @@ void Flattener::printHelp(ostream& os)
   << "  --pre-passes <n>\n    Number of times to apply shave/sac pass (0 = fixed-point, 1 = default)" << std::endl
 #endif
   << "  Two-pass optimisation levels:  -O0:    Disable two-pass (default)" << std::endl
-  << "    -O1:    Same as: --two-pass    -O2:    Same as: --use-gecode" << std::endl
+  << "    -O1:    Same as: --two-pass"
+#ifdef HAS_GECODE
+  << "    -O2:    Same as: --use-gecode" << std::endl
   << "    -O3:    Same as: --shave       -O4:    Same as: --sac" << std::endl
+#else
+  << std::endl
+#endif
   << std::endl;
   os
   << "Flattener output options:" << std::endl
@@ -211,6 +216,7 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     flag_gecode = false;
   } else if (string(argv[i])=="-O1") {
     flag_two_pass = true;
+#ifdef HAS_GECODE
   } else if (string(argv[i])=="-O2") {
     flag_two_pass = true;
     flag_gecode = true;
@@ -223,6 +229,7 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     flag_gecode = true;
     flag_sac = true;
     // ozn options must be after the -O<n> optimisation options
+#endif
   } else if ( cop.getOption( "-O --ozn --output-ozn-to-file", &flag_output_ozn) ) {
   } else if (string(argv[i])=="--keep-paths") {
     fopts.keep_mzn_paths = true;
@@ -283,11 +290,11 @@ Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
   Env& e = *getEnv();
 
   Env* pre_env = &e;
-  pre_env->envi().passes = static_cast<unsigned int>(passes.size());
+  pre_env->envi().final_pass_no = static_cast<unsigned int>(passes.size());
   Timer lasttime;
   bool verbose = false;
   for(unsigned int i=0; i<passes.size(); i++) {
-    pre_env->envi().pass = i;
+    pre_env->envi().current_pass_no = i;
     if(verbose)
       std::cerr << "Start pass " << i << ":\n";
 

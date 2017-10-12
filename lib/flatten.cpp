@@ -344,7 +344,7 @@ namespace MiniZinc {
 
           if(ovd) {
             // If ovd was introduced during the same pass, we can unify
-            if(env.pass == ovd_pass) {
+            if(env.current_pass_no == ovd_pass) {
               vd = ovd;
               if(origId)
                 origId->decl(vd);
@@ -358,7 +358,7 @@ namespace MiniZinc {
             // Check whether ovd was unified in a previous pass
             if(ovd->id() != ovd->id()->decl()->id()) {
               std::string path2 = reversePathMap[ovd->id()->decl()];
-              EnvI::PathVar vd_tup {vd, env.pass};
+              EnvI::PathVar vd_tup {vd, env.current_pass_no};
 
               pathMap[path] = vd_tup;
               pathMap[path2] = vd_tup;
@@ -369,7 +369,7 @@ namespace MiniZinc {
           // Create new VarDecl and add it to the maps
           vd = new VarDecl(getLoc(env, origVd, rhs), ti, getId(env, origId));
           hasBeenAdded = false;
-          EnvI::PathVar vd_tup {vd, env.pass};
+          EnvI::PathVar vd_tup {vd, env.current_pass_no};
           pathMap       [path] = vd_tup;
           reversePathMap[  vd] = path;
         }
@@ -421,8 +421,8 @@ namespace MiniZinc {
   EnvI::EnvI(Model* orig0) :
     orig(orig0),
     output(new Model),
-    pass(0),
-    passes(1),
+    current_pass_no(0),
+    final_pass_no(1),
     maxPathDepth(0),
     ignorePartial(false),
     maxCallStack(0),
@@ -582,9 +582,9 @@ namespace MiniZinc {
   }
 
   void EnvI::copyPathMapsAndState(EnvI& env) {
-    passes = env.passes;
+    final_pass_no = env.final_pass_no;
     maxPathDepth = env.maxPathDepth;
-    pass = env.pass;
+    current_pass_no = env.current_pass_no;
     filenameMap = env.filenameMap;
     maxPathDepth = env.maxPathDepth;
     pathMap = env.getPathMap();
@@ -833,7 +833,7 @@ namespace MiniZinc {
   EnvI::dumpPath(std::ostream& os, bool force) {
     force = force ? force : fopts.keep_mzn_paths;
     if (callStack.size() > maxPathDepth) {
-      if(!force && pass >= passes-1) {
+      if(!force && current_pass_no >= final_pass_no-1) {
         return false;
       }
       maxPathDepth = callStack.size();
@@ -850,7 +850,7 @@ namespace MiniZinc {
       int filenameId;
       UNORDERED_NAMESPACE::unordered_map<std::string, int>::iterator findFilename = filenameMap.find(loc.filename().str());
       if (findFilename == filenameMap.end()) {
-        if(!force && pass >= passes-1)
+        if(!force && current_pass_no >= final_pass_no-1)
           return false;
         filenameId = filenameMap.size();
         filenameMap.insert(std::make_pair(loc.filename().str(), filenameMap.size()));

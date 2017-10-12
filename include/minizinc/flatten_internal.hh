@@ -69,9 +69,14 @@ namespace MiniZinc {
     Model* output;
     VarOccurrences vo;
     VarOccurrences output_vo;
-    unsigned int pass;
-    unsigned int passes;
+
+    // The current pass number (used for unifying and disabling path construction in final pass)
+    unsigned int current_pass_no;
+    // Used for disabling path construction in final pass
+    unsigned int final_pass_no;
+    // Used for disabling path construction past the maxPathDepth of previous passes
     unsigned int maxPathDepth;
+
     VarOccurrences output_vo_flat;
     CopyMap cmap;
     IdMap<KeepAlive> reverseMappers;
@@ -97,9 +102,13 @@ namespace MiniZinc {
       KeepAlive decl;
       unsigned int pass_no;
     };
+    // Store mapping from path string to (VarDecl, pass_no) tuples
     typedef UNORDERED_NAMESPACE::unordered_map<std::string, PathVar> PathMap;
+    // Mapping from arbitrary Expressions to paths
     typedef UNORDERED_NAMESPACE::unordered_map<KeepAlive, std::string, KAHash, KAEq> ReversePathMap;
+    // Map from filename to integer (space saving optimisation)
     typedef UNORDERED_NAMESPACE::unordered_map<std::string, int> FilenameMap;
+
     int in_maybe_partial;
   protected:
     Map map;
