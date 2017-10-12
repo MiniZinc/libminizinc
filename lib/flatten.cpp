@@ -22,12 +22,6 @@
 
 #include <minizinc/flatten_internal.hh>
 
-#include <iomanip>
-
-// temporary
-#include <minizinc/prettyprinter.hh>
-
-#include <fstream>
 namespace MiniZinc {
 
   /// Output operator for contexts
@@ -2375,11 +2369,6 @@ namespace MiniZinc {
     cmix.i = C_MIX;
 
     for (int i=0; i<ite->size(); i++) {
-      //std::stringstream ss;
-      //ss << "ite:" << i;
-      //StringLit* ite_iter = new StringLit(Location(), ss.str());
-      //KeepAlive ka(ite_iter);
-      //CallStackItem _csi(env, ite_iter);
       bool cond = true;
       if (ite->e_if(i)->type()==Type::parbool()) {
         // par bool case: evaluate condition statically

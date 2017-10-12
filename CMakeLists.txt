@@ -326,6 +326,7 @@ include/minizinc/typecheck.hh
 include/minizinc/values.hh
 include/minizinc/stl_map_set.hh
 include/minizinc/thirdparty/SafeInt3.hpp
+include/minizinc/passes/compile_pass.hh
 ${parser_hh}
 )
 
@@ -585,7 +586,12 @@ if(HAS_GECODE)
     solvers/gecode/gecode_solverinstance.cpp
     solvers/gecode/gecode_constraints.cpp
     lib/passes/gecode_pass.cpp
-    solvers/gecode/aux_brancher.hh)
+    solvers/gecode/aux_brancher.hh
+    include/minizinc/passes/gecode_pass.hh
+    include/minizinc/solvers/gecode/fzn_space.hh
+    include/minizinc/solvers/gecode_solverinstance.hh
+    include/minizinc/solvers/gecode/gecode_constraints.hh
+    )
 
   target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include")
   target_link_libraries(minizinc_gecode
