@@ -351,11 +351,10 @@ void Flattener::flatten()
     std::exit(EXIT_FAILURE);
   }
 
-  includePaths.push_back(std_lib_dir+"/std/");
-
   if (globals_dir != "") {
     includePaths.push_back(std_lib_dir+"/"+globals_dir+"/");
   }
+  includePaths.push_back(std_lib_dir+"/std/");
 
   for (unsigned int i=0; i<includePaths.size(); i++) {
     if (!FileUtils::directory_exists(includePaths[i])) {
@@ -425,7 +424,7 @@ void Flattener::flatten()
         }
         m = parse(*env, filenames, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
         if (globals_dir != "") {
-          includePaths.pop_back();
+          includePaths.erase(includePaths.begin());
         }
       }
       if (m) {
