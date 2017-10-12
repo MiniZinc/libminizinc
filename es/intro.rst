@@ -44,10 +44,10 @@ Si necesita ayuda, visite el sitio web de MiniZinc en http://www.minizinc.org do
 
   Algunos de los ejemplos de código se muestran en cuadros como el siguiente. Si un cuadro de código tiene un encabezado, suele enumerar el nombre de un archivo que se puede descargar desde http://minizinc.org/tutorial/examples.
 
-.. literalinclude:: examples/dummy.mzn
+.. literalinclude:: examples/dummy_es.mzn
   :language: minizinc
   :name: ex-ex
-  :caption: Un código de ejemplo (:download:`dummy.mzn <examples/dummy.mzn>`)
+  :caption: Un código de ejemplo (:download:`dummy_es.mzn <examples/dummy_es.mzn>`)
 
 A lo largo de la documentación, algunos conceptos se definen un poco más formalmente en secciones especiales como ésta.
 

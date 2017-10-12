@@ -218,9 +218,9 @@ Podemos evaluar nuestro modelo escribiendo
 
 .. code-block:: bash
 
-  $ mzn-gecode aust.mzn
+  $ mzn-gecode aust_es.mzn
 
-en donde :download:`aust.mzn <examples/aust.mzn>` es el nombre del archivo que contiene nuestro modelo MiniZinc.
+en donde :download:`aust_es.mzn <examples/aust_es.mzn>` es el nombre del archivo que contiene nuestro modelo MiniZinc.
 Se debe de utilizar la extensión de archivo ``.mzn`` para indicar un modelo MiniZinc.
 El comando ``mzn-gecode`` utiliza el *solver* de dominios finitos Gecode para evaluar nuestro modelo.
 
@@ -352,13 +352,13 @@ Podemos ejecutarlo usando el comando
 
   $ mzn-gecode cakes2_es.mzn pantry.dzn
 
-donde el archivo de datos :download:`pantry.dzn <examples/pantry.dzn>` es definido en
-:numref:`fig-pantry1`. Esto da el mismo resultado que :download:`cakes.mzn <examples/cakes.mzn>`.
+donde el archivo de datos :download:`pantry.dzn <examples/pantry_es.dzn>` es definido en
+:numref:`fig-pantry1`. Esto da el mismo resultado que :download:`cakes_es.mzn <examples/cakes_es.mzn>`.
 El resultado de la ejecución del comando
 
 .. code-block:: bash
 
-  $ mzn-gecode cakes2.mzn pantry2.dzn
+  $ mzn-gecode cakes2_es.mzn pantry2_es.dzn
 
 con un conjunto de datos alternativo definido en
 :numref:`fig-pantry2` is
@@ -385,12 +385,12 @@ Si eliminamos la instrucción de salida de :download:`cakes_es.mzn <examples/cak
 
 .. literalinclude:: examples/pantry.dzn
   :language: minizinc
-  :caption: Ejemplo de archivo de datos para :download:`cakes2.mzn <examples/cakes2.mzn>` (:download:`pantry.dzn <examples/pantry.dzn>`)
+  :caption: Ejemplo de archivo de datos para :download:`cakes2_es.mzn <examples/cakes2_es.mzn>` (:download:`pantry.dzn <examples/pantry_es.dzn>`)
   :name: fig-pantry1
 
 .. literalinclude:: examples/pantry2.dzn
   :language: minizinc
-  :caption: Ejemplo de archivo de datos para :download:`cakes2.mzn <examples/cakes2.mzn>` (:download:`pantry2.dzn <examples/pantry2.dzn>`)
+  :caption: Ejemplo de archivo de datos para :download:`cakes2_es.mzn <examples/cakes2_es.mzn>` (:download:`pantry2.dzn <examples/pantry2_es.dzn>`)
   :name: fig-pantry2
 
 Se pueden introducir pequeños archivos de datos sin crear un archivo de datos ``.dzn``, usando una :index:`bandera en la línea de comandos <data file;command line>`
@@ -399,14 +399,14 @@ en donde *cadena* es el contenido del archivo de datos. Por ejemplo, el comando
 
 .. code-block:: bash
 
-  $ mzn-gecode cakes2.mzn -D \
+  $ mzn-gecode cakes2_es.mzn -D \
        "flour=4000;banana=6;sugar=2000;butter=500;cocoa=500;"
 
 dará idénticos resultados que
 
 .. code-block:: bash
 
-  $ mzn-g12fd cakes2.mzn pantry.dzn
+  $ mzn-g12fd cakes2_es.mzn pantry.dzn
 
 Los archivos de datos sólo pueden contener instrucciones de asignación para variables de decisión y parámetros en el modelo o modelos a los que están destinados.
 
@@ -453,7 +453,7 @@ La salida al ejecutar el comando ``mzn-cbc``:
 
 .. code-block:: bash
 
-  $ mzn-cbc loan.mzn loan1.dzn
+  $ mzn-cbc loan_es.mzn loan1_es.dzn
 
 La salida es
 
@@ -464,12 +464,12 @@ La salida es
   ----------
 
 La segunda pregunta es: Si tomo prestado $1000 al 4% y no debo nada al final, ¿cuánto tengo que pagar?.
-Esta pregunta está codificada por el archivo de datos :download:`loan2.dzn <examples/loan2.dzn>`.
+Esta pregunta está codificada por el archivo de datos :download:`loan2_es.dzn <examples/loan2_es.dzn>`.
 La salida al ejecutar el comando
 
 .. code-block:: bash
 
-  $ mzn-cbc loan.mzn loan2.dzn
+  $ mzn-cbc loan_es.mzn loan2_es.dzn
 
 La salida es
 
@@ -481,12 +481,12 @@ La salida es
 
 La tercera pregunta, es si puedo pagar $250 por trimestre, ¿cuánto puedo pedir prestado al 4% para terminar por no pagar nada?.
 Esta pregunta está codificada por el archivo de datos
- :download:`loan3.dzn <examples/loan3.dzn>`.
+ :download:`loan3_es.dzn <examples/loan3_es.dzn>`.
 La salida al ejecutar el comando
 
 .. code-block:: bash
 
-  $ mzn-g12mip loan.mzn loan3.dzn
+  $ mzn-g12mip loan_es.mzn loan3_es.dzn
 
 La salida es
 
@@ -498,15 +498,15 @@ La salida es
 
 .. literalinclude:: examples/loan1.dzn
   :language: minizinc
-  :caption: Ejemplo de archivo de datos para :download:`loan.mzn <examples/loan.mzn>` (:download:`loan1.dzn <examples/loan1.dzn>`)
+  :caption: Ejemplo de archivo de datos para :download:`loan_es.mzn <examples/loan_es.mzn>` (:download:`loan1_es.dzn <examples/loan1_es.dzn>`)
 
 .. literalinclude:: examples/loan2.dzn
   :language: minizinc
-  :caption: Ejemplo de archivo de datos para :download:`loan.mzn <examples/loan.mzn>` (:download:`loan2.dzn <examples/loan2.dzn>`)
+  :caption: Ejemplo de archivo de datos para :download:`loan_es.mzn <examples/loan_es.mzn>` (:download:`loan2.dzn <examples/loan2_es.dzn>`)
 
 .. literalinclude:: examples/loan3.dzn
   :language: minizinc
-  :caption: Ejemplo de archivo de datos para :download:`loan.mzn <examples/loan.mzn>` (:download:`loan3.dzn <examples/loan3.dzn>`)
+  :caption: Ejemplo de archivo de datos para :download:`loan_es.mzn <examples/loan_es.mzn>` (:download:`loan3_es.dzn <examples/loan3_es.dzn>`)
 
 
 .. defblock:: Operadores de Coma Flotante
