@@ -3610,7 +3610,7 @@ namespace MiniZinc {
             for (int i=0; i<static_cast<int>(asize.toInt()); i++) {
               CallStackItem csi(env, IntLit::a(i));
               TypeInst* vti = new TypeInst(Location().introduce(),tt,vd->ti()->domain());
-              VarDecl* nvd = newVarDecl(env,ctx,vti,NULL,vd,NULL);
+              VarDecl* nvd = newVarDecl(env,Ctx(),vti,NULL,vd,NULL);
               elems[i] = nvd->id();
             }
             // After introducing variables for each array element, the original domain can be
