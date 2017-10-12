@@ -6014,13 +6014,11 @@ namespace MiniZinc {
                     std::vector<Expression*> args(2);
                     args[0] = vdi->e()->id();
                     args[1] = IntLit::a(i);
-                    // Give distinct location to each int_ne introduced
-                    Location oldloc = vdi->e()->loc();
-                    Location loc(oldloc.filename(), oldloc.first_line(), oldloc.first_column() + i.toInt(),
-                                                    oldloc.last_line(),  oldloc.last_column());
-                    Call* call = new Call(Location().introduce(),constants().ids.int_.ne,args);
+                    Call* call = new Call(vdi->e()->loc(),constants().ids.int_.ne,args);
                     call->type(Type::varbool());
                     call->decl(env.orig->matchFn(env, call, false));
+                    // Give distinct call stacks for each int_ne added
+                    CallStackItem csi(env, IntLit::a(i));
                     env.flat_addItem(new ConstraintI(Location().introduce(), call));
                     firstHole = domr.max().plus(1);
                   }
