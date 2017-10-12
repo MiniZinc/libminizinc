@@ -220,7 +220,7 @@ namespace MiniZinc {
       }
 
       if(tighter) {
-        vd->ti()->domain(copy(envi, ovd->ti()->domain()));
+        vd->ti()->domain(ovd->ti()->domain());
         if(vd->e() == NULL && fixed) {
           if(vd->ti()->type().isvarint()) {
             vd->type(Type::parint());
