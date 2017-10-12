@@ -105,7 +105,7 @@ namespace MiniZinc {
     // Store mapping from path string to (VarDecl, pass_no) tuples
     typedef UNORDERED_NAMESPACE::unordered_map<std::string, PathVar> PathMap;
     // Mapping from arbitrary Expressions to paths
-    typedef UNORDERED_NAMESPACE::unordered_map<KeepAlive, std::string, KAHash, KAEq> ReversePathMap;
+    typedef UNORDERED_NAMESPACE::unordered_map<WeakRef, std::string, WRHash, WREq> ReversePathMap;
     // Map from filename to integer (space saving optimisation)
     typedef UNORDERED_NAMESPACE::unordered_map<std::string, int> FilenameMap;
 
