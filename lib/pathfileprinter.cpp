@@ -19,58 +19,59 @@
 
 namespace MiniZinc {
 
-  PathFilePrinter::PathFilePrinter(std::ostream& o, EnvI& envi, bool rem) : os(o), ei(envi), remove_paths(rem), constraint_index(0) {};
+using std::string;
 
-  void PathFilePrinter::addBetterName(Id* id, std::string name, std::string path, bool overwrite = false) {
-    std::string oname;
-    std::string opath;
+  PathFilePrinter::PathFilePrinter(std::ostream& o, EnvI& envi, bool rem) :
+      os(o), ei(envi), remove_paths(rem), constraint_index(0) {};
+
+  void PathFilePrinter::addBetterName(Id* id, string name, string path, bool overwrite = false) {
+    string oname;
+    string opath;
 
     NameMap::iterator it = betternames.find(id);
-    if(it!=betternames.end()) {
+    if(it != betternames.end()) {
       oname = it->second.first;
       opath = it->second.second;
     }
 
-    if(name != "" && (overwrite || oname == ""))
-      oname = name;
-    if(path != "" && (overwrite || opath == ""))
-      opath = path;
+    if(!name.empty() && (overwrite || oname.empty())) oname = name;
+    if(!path.empty() && (overwrite || opath.empty())) opath = path;
 
     betternames[id] = NamePair(oname, opath);
   }
 
-  std::string path2name(std::string path, bool ignore_array = true) {
+  string path2name(string path) {
     std::stringstream name;
 
-    int idpos = path.rfind("id:");
-    if(idpos > -1) {
+    size_t idpos = path.rfind("id:");
+    if(idpos != string::npos) {
       idpos += 3;
-      int semi = path.find(";", idpos);
-      if(semi > -1) {
+      size_t semi = path.find(";", idpos);
+      if(semi != string::npos) {
         // Variable name
         name << path.substr(idpos, semi-idpos);
 
         // Check for array
         int dim = 0;
-        int ilpos = semi-idpos;
+        size_t ilpos = semi-idpos;
         do {
           ilpos = path.find("il:", ilpos);
-          if(ilpos > -1) {
+          if(ilpos != string::npos) {
             ilpos += 3;
             semi = path.find(";", ilpos);
-            if(semi > -1) {
+            if(semi != string::npos) {
               if(dim == 0) name << "[";
               else name << ",";
               name << path.substr(ilpos, semi-ilpos);
               dim ++;
             }
           }
-        } while(ilpos > -1);
+        } while(ilpos != string::npos);
 
         if(dim > 0) name << "?]";
 
         // Check for anon
-        if(path.find(":anon") != -1 || path.find("=") != -1) {
+        if(path.find(":anon") != string::npos || path.find("=") != string::npos) {
           name.str("");
           name.clear();
         }
@@ -122,8 +123,8 @@ namespace MiniZinc {
           } else if(ca->id() == constants().ann.mzn_path) {
             StringLit* sl = ca->args()[0]->cast<StringLit>();
             addBetterName(e->id(), path2name(sl->v().str()), sl->v().str());
-            //if(remove_paths)
-            //  e->ann().removeCall(constants().ann.mzn_path);
+            if(remove_paths)
+              e->ann().removeCall(constants().ann.mzn_path);
           }
         }
       }
@@ -141,47 +142,44 @@ namespace MiniZinc {
     if(VarDeclI* vdi = item->dyn_cast<VarDeclI>()) {
       Id* id = vdi->e()->id();
       NamePair np = betternames[id];
-      if(np.first != "" || np.second != "") {
+      if(!np.first.empty() || !np.second.empty()) {
+        // FlatZinc name
         os << *id << "\t";
 
-        { // Name
-          if(np.first == "") {
-            os << *id << "\t";
-          } else {
-            std::string name = np.first;
-            os << name;
-            if(name.find("?") != -1)
-              os <<"(" << *id << ")";
-            os << "\t";
-          }
+        // Nice name
+        if(np.first.empty()) {
+          os << *id << "\t";
+        } else {
+          string name = np.first;
+          os << name;
+          if(name.find("?") != string::npos)
+            os <<"(" << *id << ")";
+          os << "\t";
         }
 
-        { // Path
-          os << np.second << std::endl;
-        }
+        // Path
+        os << np.second << std::endl;
       }
     } else if (ConstraintI* ci = item->dyn_cast<ConstraintI>()) {
-      StringLit* sl = NULL;
+      StringLit* sl = nullptr;
       Call* e = ci->e()->cast<Call>();
       for(ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
         if(Call* ca = (*it)->dyn_cast<Call>()) {
           ASTString cid = ca->id();
-          if(ca->id() == constants().ann.mzn_path) {
+          if(cid == constants().ann.mzn_path) {
             sl = ca->args()[0]->cast<StringLit>();
           }
         }
       }
 
-      {
-        os << constraint_index << "\t";
-        os << constraint_index << "\t";
-        if (sl) {
-          os << sl->v();
-        } else {
-          os << "";
-        }
-        os << std::endl;
+      os << constraint_index << "\t";
+      os << constraint_index << "\t";
+      if (sl) {
+        os << sl->v();
+      } else {
+        os << "";
       }
+      os << std::endl;
       constraint_index++;
     }
   }
