@@ -9,18 +9,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MINIZINC_HTMLPRINTER_HH
-#define __MINIZINC_HTMLPRINTER_HH
+#ifndef __MINIZINC_PATHPRINTER_HH
+#define __MINIZINC_PATHPRINTER_HH
 
-#include <iostream>
 #include <minizinc/ast.hh>
 #include <minizinc/stl_map_set.hh>
-#include <utility>
 
 namespace MiniZinc {
 
   class Model;
-  
+
   class PathFilePrinter {
 
   typedef std::pair<std::string, std::string> NamePair;

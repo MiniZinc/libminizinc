@@ -9,10 +9,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include <minizinc/prettyprinter.hh>
 #include <minizinc/pathfileprinter.hh>
-
-#include <minizinc/model.hh>
 #include <minizinc/flatten_internal.hh>
 
 #include <sstream>
@@ -20,6 +17,7 @@
 namespace MiniZinc {
 
 using std::string;
+using std::vector;
 
   PathFilePrinter::PathFilePrinter(std::ostream& o, EnvI& envi, bool rem) :
       os(o), ei(envi), remove_paths(rem), constraint_index(0) {};
@@ -85,6 +83,7 @@ using std::string;
     // Build map
     for(VarDeclIterator vdit = m->begin_vardecls(); vdit != m->end_vardecls(); ++vdit) {
       VarDecl* e = vdit->e();
+      vector<Expression*> removes;
       for(ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
         if(Call* ca = (*it)->dyn_cast<Call>()) {
           ASTString cid = ca->id();
@@ -98,12 +97,12 @@ using std::string;
 
                   // Array of sets
                   ASTExprVec<Expression> dimsets = ca->args()[0]->cast<ArrayLit>()->v();
-                  std::vector<IntVal> dims(dimsets.size(), 1);
+                  vector<IntVal> dims(dimsets.size(), 1);
                   for(unsigned int i=0; i<dimsets.size(); i++) {
                     SetLit* sl = dimsets[i]->cast<SetLit>();
                     dims[i] = sl->isv()->card();
                   }
-                  std::vector<IntVal> dimspan(dims.size(), 1);
+                  vector<IntVal> dimspan(dims.size(), 1);
                   for(unsigned int i=0; i<dims.size(); i++)
                     for(unsigned int j=i+1; j<dims.size(); j++)
                       dimspan[i] *= dims[j];
@@ -124,17 +123,19 @@ using std::string;
             StringLit* sl = ca->args()[0]->cast<StringLit>();
             addBetterName(e->id(), path2name(sl->v().str()), sl->v().str());
             if(remove_paths)
-              e->ann().removeCall(constants().ann.mzn_path);
+              removes.push_back(e);
           }
         }
       }
 
+      for(Expression* e : removes)
+        e->ann().removeCall(constants().ann.mzn_path);
+
     }
 
     // Print values
-    for(Item* item : *m) {
+    for(Item* item : *m)
       print(item);
-    }
 
   }
 
