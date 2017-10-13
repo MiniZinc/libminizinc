@@ -82,6 +82,7 @@ namespace MiniZinc {
 //   }
   
   void SolverInstanceBase2::assignSolutionToOutput() {
+    GCLock lock;
     
     MZN_ASSERT_HARD_MSG( 0!=pS2Out, "Setup a Solns2Out object to use default solution extraction/reporting procs" );
     
