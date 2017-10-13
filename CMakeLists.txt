@@ -537,7 +537,8 @@ if(HAS_SCIP_SEPLIBS)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_OSICBC)  # Tested version 2.9.8, rev 2329. Use svn/git to get the latest revision, see https://projects.coin-or.org/Cbc
+if(HAS_OSICBC)  
+  ### Tested version 2.9.9, rev 2345 on 12.10.17 from the stable snapshot https://projects.coin-or.org/svn/Cbc/stable/2.9
 
   if (EXISTS "${OSICBC_HOME}/include/coin/" AND EXISTS "${OSICBC_HOME}/lib")
     set(CBC_INCLUDEDIRS "${OSICBC_HOME}/include/coin/")

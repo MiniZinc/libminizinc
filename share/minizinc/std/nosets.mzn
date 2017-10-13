@@ -176,6 +176,11 @@ predicate set_subset_reif(var set of int: x, var set of int: y, var bool: b) =
     else bx[i] -> by[i] endif
   );
 
+%%% Map the subset operation to superset
+predicate set_superset(var set of int: x, var set of int: y) = set_subset( y, x );
+predicate set_superset_reif(var set of int: x, var set of int: y, var bool: b) =
+    set_subset_reif( y, x, b );
+
 function var set of int: set_intersect(var set of int: x, var set of int: y) ::promise_total =
   let {
     array[int] of var bool: bx = set2bools(x);

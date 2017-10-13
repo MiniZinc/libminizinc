@@ -56,6 +56,8 @@ string MIP_WrapperFactory::getVersion( ) {
   return oss.str();
 }
 
+static const vector<string> sGurobiDLLs = { "gurobi75", "gurobi70", "gurobi65" };
+
 void MIP_WrapperFactory::printHelp(ostream& os) {
   os
   << "GUROBI MIP wrapper options:" << std::endl
@@ -73,11 +75,13 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   << "--writeParam <file> write GUROBI parameters to file" << std::endl
 //   << "--tuneParam         instruct GUROBI to tune parameters instead of solving   NOT IMPL"
 
-  << "--absGap <n>        absolute gap |primal-dual| to stop" << std::endl
+  << "\n--absGap <n>        absolute gap |primal-dual| to stop" << std::endl
   << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
   << "--intTol <n>        integrality tolerance for a variable. Default 1e-6" << std::endl
 //   << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
+  << "\n--dll <basename>    Gurobi DLL base name, such as gurobi75, when using plugin. Default range tried: "
+       << sGurobiDLLs.front() << " .. " << sGurobiDLLs.back() << std::endl
   << std::endl;
 }
 
@@ -99,6 +103,8 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
  static   double intTol=1e-6;
  static   double objDiff=1.0;
 
+ static   string sGurobiDLL;
+
 bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
   MiniZinc::CLOParser cop( i, argc, argv );
   if ( string(argv[i])=="-a"
@@ -116,6 +122,7 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
   } else if ( cop.get( "--absGap", &absGap ) ) {
   } else if ( cop.get( "--relGap", &relGap ) ) {
   } else if ( cop.get( "--intTol", &intTol ) ) {
+  } else if ( cop.get( "--dll", &sGurobiDLL ) ) {
 //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
   } else
     return false;
@@ -171,17 +178,19 @@ namespace {
 void MIP_gurobi_wrapper::checkDLL()
 {
 #ifdef HAS_GUROBI_PLUGIN
-  
-  gurobi_dll = dll_open("gurobi75");
-  if (gurobi_dll==NULL) {
-    gurobi_dll = dll_open("gurobi70");
-  }
-  if (gurobi_dll==NULL) {
-    gurobi_dll = dll_open("gurobi65");
+ 
+  if ( sGurobiDLL.size() ) { 
+    gurobi_dll = dll_open( sGurobiDLL.c_str() );
+  } else {
+    for( const auto& s: sGurobiDLLs ) {
+      gurobi_dll = dll_open( s.c_str() );
+      if ( NULL!=gurobi_dll )
+        break;
+    }
   }
 
   if (gurobi_dll==NULL) {
-    throw MiniZinc::InternalError("cannot load gurobi dll");
+    throw MiniZinc::InternalError("cannot load gurobi dll, specify --dll");
   }
   
   *(void**)(&dll_GRBversion) = dll_sym(gurobi_dll, "GRBversion");
