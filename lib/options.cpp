@@ -74,7 +74,7 @@ namespace MiniZinc {
   };
   void Options::setFloatParam(const std::string& name, double e) {
     GCLock lock;
-    FloatLit* fl = new FloatLit(Location(), e);
+    FloatLit* fl = FloatLit::a(e);
     KeepAlive ka(fl);
     
     setFloatParam(name, ka);

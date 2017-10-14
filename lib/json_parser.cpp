@@ -252,7 +252,7 @@ namespace MiniZinc {
         break;
       case T_FLOAT:
         for (unsigned int i=0; i<elems.size(); i++) {
-          elems_e[i] = new FloatLit(Location().introduce(),elems[i].d);
+          elems_e[i] = FloatLit::a(elems[i].d);
         }
         break;
       case T_STRING:
@@ -304,7 +304,7 @@ namespace MiniZinc {
           exps.push_back(IntLit::a(next.i));
           break;
         case T_FLOAT:
-          exps.push_back(new FloatLit(Location().introduce(),next.d));
+          exps.push_back(FloatLit::a(next.d));
           break;
         case T_STRING:
           exps.push_back(new StringLit(Location().introduce(),next.s));
@@ -333,7 +333,7 @@ namespace MiniZinc {
         return IntLit::a(next.i);
         break;
       case T_FLOAT:
-        return new FloatLit(Location().introduce(),next.d);
+        return FloatLit::a(next.d);
       case T_STRING:
         return new StringLit(Location().introduce(),next.s);
       case T_BOOL:

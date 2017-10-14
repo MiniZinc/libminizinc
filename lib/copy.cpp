@@ -15,7 +15,7 @@
 namespace MiniZinc {
 
   void CopyMap::insert(Expression* e0, Expression* e1) {
-    if (!e0->isUnboxedInt() && !e1->isUnboxedInt())
+    if (!e0->isUnboxedVal() && !e1->isUnboxedVal())
       node_m.insert(e0,e1);
   }
   Expression* CopyMap::find(Expression* e) {
@@ -81,8 +81,7 @@ namespace MiniZinc {
       break;
     case Expression::E_FLOATLIT:
       {
-        FloatLit* c = new FloatLit(copy_location(m,e),
-                                   e->cast<FloatLit>()->v());
+        FloatLit* c = FloatLit::a(e->cast<FloatLit>()->v());
         m.insert(e,c);
         ret = c;
       }

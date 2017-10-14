@@ -5198,8 +5198,8 @@ namespace MiniZinc {
                 if (vd->ti()->type().isfloat()) {
                   FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
                   if (fsv->size()==1) {
-                    domargs[1] = new FloatLit(Location(), fsv->min());
-                    domargs.push_back(new FloatLit(Location(), fsv->max()));
+                    domargs[1] = FloatLit::a(fsv->min());
+                    domargs.push_back(FloatLit::a(fsv->max()));
                   } else {
                     domargs[1] = vd->ti()->domain();
                   }

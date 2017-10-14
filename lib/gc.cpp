@@ -693,26 +693,26 @@ namespace MiniZinc {
 
   KeepAlive::KeepAlive(Expression* e)
     : _e(e), _p(NULL), _n(NULL) {
-    if (_e && !_e->isUnboxedInt())
+    if (_e && !_e->isUnboxedVal())
       GC::gc()->addKeepAlive(this);
   }
   KeepAlive::~KeepAlive(void) {
-    if (_e && !_e->isUnboxedInt())
+    if (_e && !_e->isUnboxedVal())
       GC::gc()->removeKeepAlive(this);
   }
   KeepAlive::KeepAlive(const KeepAlive& e) : _e(e._e), _p(NULL), _n(NULL) {
-    if (_e && !_e->isUnboxedInt())
+    if (_e && !_e->isUnboxedVal())
       GC::gc()->addKeepAlive(this);
   }
   KeepAlive&
   KeepAlive::operator =(const KeepAlive& e) {
-    if (_e && !_e->isUnboxedInt()) {
-      if (e._e==NULL || e._e->isUnboxedInt()) {
+    if (_e && !_e->isUnboxedVal()) {
+      if (e._e==NULL || e._e->isUnboxedVal()) {
         GC::gc()->removeKeepAlive(this);
         _p = _n = NULL;
       }
     } else {
-      if (e._e!=NULL && !e._e->isUnboxedInt())
+      if (e._e!=NULL && !e._e->isUnboxedVal())
         GC::gc()->addKeepAlive(this);
     }
     _e = e._e;
@@ -764,26 +764,26 @@ namespace MiniZinc {
 
   WeakRef::WeakRef(Expression* e)
   : _e(e), _p(NULL), _n(NULL), _valid(true) {
-    if (_e && !_e->isUnboxedInt())
+    if (_e && !_e->isUnboxedVal())
       GC::gc()->addWeakRef(this);
   }
   WeakRef::~WeakRef(void) {
-    if ((_e && !_e->isUnboxedInt()) || !_valid)
+    if ((_e && !_e->isUnboxedVal()) || !_valid)
       GC::gc()->removeWeakRef(this);
   }
   WeakRef::WeakRef(const WeakRef& e) : _e(e()), _p(NULL), _n(NULL), _valid(true) {
-    if (_e && !_e->isUnboxedInt())
+    if (_e && !_e->isUnboxedVal())
       GC::gc()->addWeakRef(this);
   }
   WeakRef&
   WeakRef::operator =(const WeakRef& e) {
-    if ((_e && !_e->isUnboxedInt()) || !_valid) {
-      if (e()==NULL || e()->isUnboxedInt()) {
+    if ((_e && !_e->isUnboxedVal()) || !_valid) {
+      if (e()==NULL || e()->isUnboxedVal()) {
         GC::gc()->removeWeakRef(this);
         _n = _p = NULL;
       }
     } else {
-      if (e()!=NULL && !e()->isUnboxedInt())
+      if (e()!=NULL && !e()->isUnboxedVal())
         GC::gc()->addWeakRef(this);
     }
     _e = e();

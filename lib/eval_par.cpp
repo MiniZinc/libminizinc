@@ -1558,7 +1558,7 @@ namespace MiniZinc {
             if (id->decl()->ti()->domain()) {
               FloatSetVal* fsv = eval_floatset(env, id->decl()->ti()->domain());
               if (fsv->min() == fsv->max()) {
-                return new FloatLit(Location(), fsv->min());
+                return FloatLit::a(fsv->min());
               }
             }
           }

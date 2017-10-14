@@ -22,6 +22,7 @@
 #include <utility>
 #include <vector>
 #include <cstddef>
+#include <cstdint>
 
 #include <iostream>
 
@@ -246,23 +247,36 @@ namespace MiniZinc {
       E_TI, E_TIID, EID_END = E_TIID
     };
 
+    bool isUnboxedVal(void) const {
+      // bit 1 or bit 0 is set
+      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) != 0;
+    }
+    bool isUnboxedInt(void) const {
+      // bit 1 is set, bit 0 is not set
+      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
+    }
+    bool isUnboxedFloatVal(void) const {
+      // bit 0 is set (and doubles fit inside pointers)
+      return (sizeof(double) <= sizeof(FloatLit*)) && (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
+    }
+
     ExpressionId eid(void) const {
-      return isUnboxedInt() ? E_INTLIT : static_cast<ExpressionId>(_id);
+      return isUnboxedInt() ? E_INTLIT : isUnboxedFloatVal() ? E_FLOATLIT : static_cast<ExpressionId>(_id);
     }
 
     const Location& loc(void) const {
-      return isUnboxedInt() ? Location::nonalloc : _loc;
+      return isUnboxedVal() ? Location::nonalloc : _loc;
     }
     void loc(const Location& l) {
-      if (!isUnboxedInt())
+      if (!isUnboxedVal())
         _loc = l;
     }
     const Type& type(void) const {
-      return isUnboxedInt() ? Type::unboxedint : _type;
+      return isUnboxedInt() ? Type::unboxedint : isUnboxedFloatVal() ? Type::unboxedfloat : _type;
     }
     void type(const Type& t);
     size_t hash(void) const {
-      return isUnboxedInt() ? unboxedIntToIntVal().hash() : _hash;
+      return isUnboxedInt() ? unboxedIntToIntVal().hash() : isUnboxedFloatVal() ? unboxedFloatToFloatVal().hash() : _hash;
     }
   protected:
     /// Combination function for hash values
@@ -286,39 +300,83 @@ namespace MiniZinc {
       : ASTNode(eid), _loc(loc), _type(t) {}
 
   public:
-    bool isUnboxedInt(void) const {
-      // bit 1 is set
-      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
-    }
     IntVal unboxedIntToIntVal(void) const {
       assert(isUnboxedInt());
-      unsigned long long int i = reinterpret_cast<ptrdiff_t>(this) & ~static_cast<ptrdiff_t>(3);
-      bool pos = ((reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(2)) == 0);
+      unsigned long long int i = reinterpret_cast<ptrdiff_t>(this) & ~static_cast<ptrdiff_t>(7);
+      bool pos = ((reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(4)) == 0);
       if (pos) {
-        return i >> 2;
+        return i >> 3;
       } else {
-        return -(static_cast<long long int>(i>>2));
+        return -(static_cast<long long int>(i>>3));
       }
     }
     static IntLit* intToUnboxedInt(long long int i) {
+      static const unsigned int pointerBits = sizeof(IntLit*)*8;
+      static const long long int maxUnboxedVal = (static_cast<long long int>(1) << (pointerBits - 3)) - static_cast<long long int>(1);
+      if (i < -maxUnboxedVal || i > maxUnboxedVal)
+        return NULL;
       long long int j = i < 0 ? -i : i;
-      ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 2) | static_cast<ptrdiff_t>(1);
+      ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 3) | static_cast<ptrdiff_t>(2);
       if (i < 0)
-        ubi_p = ubi_p | static_cast<ptrdiff_t>(2);
+        ubi_p = ubi_p | static_cast<ptrdiff_t>(4);
       return reinterpret_cast<IntLit*>(ubi_p);
     }
+    FloatVal unboxedFloatToFloatVal(void) const {
+      assert(isUnboxedFloatVal());
+      union {
+        double d;
+        uint64_t bits;
+        const Expression* p;
+      } _u;
+      _u.p = this;
+      _u.bits = _u.bits >> 1;
+      uint64_t exponent = (_u.bits & (static_cast<uint64_t>(0x3FF) << 52)) >> 52;
+      if (exponent != 0) {
+        exponent += 512; // reconstruct original bias of 1023
+      }
+      uint64_t sign = (_u.bits & (static_cast<uint64_t>(1)<<62) ? 1 : 0);
+      _u.bits = (sign << 63) | (exponent << 52) | ( _u.bits & static_cast<uint64_t>(0xFFFFFFFFFFFFF));
+      return _u.d;
+    }
+    static FloatLit* doubleToUnboxedFloatVal(double d) {
+      if (sizeof(double) > sizeof(FloatLit*))
+        return NULL;
+      union {
+        double d;
+        uint64_t bits;
+        FloatLit* p;
+      } _u;
+      _u.d = d;
+
+      uint64_t exponent = (_u.bits & (static_cast<uint64_t>(0x7FF) << 52)) >> 52;
+      if (exponent != 0) {
+        if (exponent < 513 || exponent > 1534)
+          return NULL; // exponent doesn't fit in 10 bits
+        exponent -= 512; // make exponent fit in 10 bits, with bias 511
+      }
+      bool sign = _u.bits & (static_cast<uint64_t>(1) << 63);
+      
+      _u.bits = _u.bits & ~(static_cast<uint64_t>(0x7FF) << 52); // mask out top 11 bits (previously exponent)
+      _u.bits = (_u.bits << 1) | 1u; // shift by one bit and add tag for double
+      _u.bits = _u.bits | (static_cast<uint64_t>(sign) << 63) | (static_cast<uint64_t>(exponent) << 53);
+      return _u.p;
+    }
+    
     bool isTagged(void) const {
       // only bit 2 is set
-      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
+      assert(!isUnboxedFloatVal());
+      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(7)) == 4;
     }
     
     Expression* tag(void) const {
+      assert(!isUnboxedFloatVal());
       return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
-                                           static_cast<ptrdiff_t>(2));
+                                           static_cast<ptrdiff_t>(4));
     }
     Expression* untag(void) const {
+      assert(!isUnboxedFloatVal());
       return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) &
-                                           ~static_cast<ptrdiff_t>(2));
+                                           ~static_cast<ptrdiff_t>(4));
     }
 
     /// Test if expression is of type \a T
@@ -328,7 +386,7 @@ namespace MiniZinc {
       if (nullptr==this)
         throw InternalError("isa: nullptr");
 #pragma clang diagnostic pop
-      return isUnboxedInt() ? T::eid==E_INTLIT : _id==T::eid;
+      return isUnboxedInt() ? T::eid==E_INTLIT : isUnboxedFloatVal() ? T::eid==E_FLOATLIT : _id==T::eid;
     }
     /// Cast expression to type \a T*
     template<class T> T* cast(void) {
@@ -353,7 +411,7 @@ namespace MiniZinc {
     template<class T> static bool isa(Expression* e) {
       if (e==NULL)
         return NULL;
-      return e->isUnboxedInt() ? T::eid==E_INTLIT : e->_id==T::eid;
+      return e->isUnboxedInt() ? T::eid==E_INTLIT : e->isUnboxedFloatVal() ? T::eid==E_FLOATLIT : e->_id==T::eid;
     }
     /// Cast expression to type \a T*
     template<class T> static T* cast(Expression* e) {
@@ -379,8 +437,8 @@ namespace MiniZinc {
     /// Add annotation \a ann to the expression
     void addAnnotations(std::vector<Expression*> ann);
 
-    const Annotation& ann(void) const { return isUnboxedInt() ? Annotation::empty : _ann; }
-    Annotation& ann(void) { return isUnboxedInt() ? Annotation::empty : _ann; }
+    const Annotation& ann(void) const { return isUnboxedVal() ? Annotation::empty : _ann; }
+    Annotation& ann(void) { return isUnboxedVal() ? Annotation::empty : _ann; }
     
     /// Return hash value of \a e
     static size_t hash(const Expression* e) {
@@ -420,18 +478,18 @@ namespace MiniZinc {
   protected:
     /// The value of this expression
     FloatVal _v;
+    /// Constructor
+    FloatLit(const Location& loc, FloatVal v);
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_FLOATLIT;
-    /// Constructor
-    FloatLit(const Location& loc, FloatVal v);
     /// Access value
-    FloatVal v(void) const { return _v; }
-    /// Set value
-    void v(FloatVal val) { _v = val; }
+    FloatVal v(void) const {
+      return isUnboxedFloatVal() ? unboxedFloatToFloatVal() : _v;
+    }
     /// Recompute hash value
     void rehash(void);
-    /// Allocate new temporary literal (tries to avoid allocation)
+    /// Allocate literal
     static FloatLit* a(FloatVal v);
   };
   /// \brief Set literal expression
