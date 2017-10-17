@@ -290,7 +290,8 @@ Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
   Env& e = *getEnv();
 
   Env* pre_env = &e;
-  pre_env->envi().final_pass_no = static_cast<unsigned int>(passes.size());
+  size_t npasses = passes.size();
+  pre_env->envi().final_pass_no = static_cast<unsigned int>(npasses);
   Timer lasttime;
   bool verbose = false;
   for(unsigned int i=0; i<passes.size(); i++) {
@@ -299,6 +300,7 @@ Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
       std::cerr << "Start pass " << i << ":\n";
 
     Env* out_env = passes[i]->run(pre_env);
+    if(out_env == nullptr) return nullptr;
     if(pre_env != &e && pre_env != out_env) {
       delete pre_env->model();
       delete pre_env;
@@ -352,7 +354,7 @@ void Flattener::flatten()
   }
 
   if (globals_dir != "") {
-    includePaths.push_back(std_lib_dir+"/"+globals_dir+"/");
+    includePaths.insert(includePaths.begin(), std_lib_dir+"/"+globals_dir+"/");
   }
   includePaths.push_back(std_lib_dir+"/std/");
 
@@ -499,6 +501,7 @@ void Flattener::flatten()
 
                 fopts.outputObjective = flag_output_objective;
                 Env* out_env = multiPassFlatten(managed_passes);
+                if(out_env == nullptr) exit(EXIT_FAILURE);
 
                 if(out_env != env) {
                   delete env->model();

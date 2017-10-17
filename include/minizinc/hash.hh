@@ -133,19 +133,6 @@ namespace MiniZinc {
       return Expression::equal(e0(),e1());
     }
   };
-  /// Hash class for WeakRef objects
-  struct WRHash {
-    size_t operator() (const WeakRef& e) const {
-      return Expression::hash(e());
-    }
-  };
-  /// Equality test for WeakRef objects
-  struct WREq {
-    bool operator() (const WeakRef& e0, const WeakRef& e1) const {
-      return Expression::equal(e0(),e1());
-    }
-  };
-
 
   /// Hash map from KeepAlive to \a T
   template<class T>

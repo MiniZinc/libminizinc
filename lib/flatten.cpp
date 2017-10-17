@@ -239,6 +239,7 @@ namespace MiniZinc {
         }
       }
     }
+
     return tighter;
   }
 
@@ -269,7 +270,8 @@ namespace MiniZinc {
 
     if(const VarDecl* vd = e->dyn_cast<const VarDecl>()) {
       EnvI::ReversePathMap& reversePathMap = env.getReversePathMap();
-      EnvI::ReversePathMap::iterator it = reversePathMap.find(vd->id()->decl());
+      KeepAlive vd_decl_ka (vd->id()->decl());
+      EnvI::ReversePathMap::iterator it = reversePathMap.find(vd_decl_ka);
       if(it != reversePathMap.end()) {
         sl = new StringLit(Location(), it->second);
       }
@@ -302,7 +304,8 @@ namespace MiniZinc {
 
       std::vector<Expression*> path_args(1);
       std::string p;
-      EnvI::ReversePathMap::iterator it = reversePathMap.find(e);
+      KeepAlive e_ka (e);
+      EnvI::ReversePathMap::iterator it = reversePathMap.find(e_ka);
       if(it == reversePathMap.end()) {
         p = getPath(env);
       } else {
@@ -319,7 +322,7 @@ namespace MiniZinc {
   }
 
   VarDecl* newVarDecl(EnvI& env, Ctx ctx, TypeInst* ti, Id* origId, VarDecl* origVd, Expression* rhs) {
-    VarDecl* vd = NULL;
+    VarDecl* vd = nullptr;
 
     // Is this vardecl already in the FlatZinc (for unification)
     bool hasBeenAdded = false;
@@ -328,8 +331,8 @@ namespace MiniZinc {
     if(ti->type().dim() == 0 && !ti->type().isann()) {
       std::string path = getPath(env);
       if(!path.empty()) {
-        EnvI::PathMap& pathMap = env.getPathMap();
         EnvI::ReversePathMap& reversePathMap = env.getReversePathMap();
+        EnvI::PathMap& pathMap = env.getPathMap();
         EnvI::PathMap::iterator it = pathMap.find(path);
 
         if(it != pathMap.end()) {
@@ -351,12 +354,18 @@ namespace MiniZinc {
 
             // Check whether ovd was unified in a previous pass
             if(ovd->id() != ovd->id()->decl()->id()) {
-              std::string path2 = reversePathMap[ovd->id()->decl()];
-              EnvI::PathVar vd_tup {vd, env.current_pass_no};
+              // We may not have seen the pointed to decl just yet
+              KeepAlive ovd_decl_ka(ovd->id()->decl());
+              EnvI::ReversePathMap::iterator path2It = reversePathMap.find(ovd_decl_ka);
+              if(path2It != reversePathMap.end()) {
+                std::string path2 = path2It->second;
+                EnvI::PathVar vd_tup {vd, env.current_pass_no};
 
-              pathMap[path] = vd_tup;
-              pathMap[path2] = vd_tup;
-              reversePathMap[vd] = path;
+                pathMap[path] = vd_tup;
+                pathMap[path2] = vd_tup;
+                KeepAlive vd_ka(vd);
+                reversePathMap.insert(vd_ka, path);
+              }
             }
           }
         } else {
@@ -365,11 +374,12 @@ namespace MiniZinc {
           hasBeenAdded = false;
           EnvI::PathVar vd_tup {vd, env.current_pass_no};
           pathMap       [path] = vd_tup;
-          reversePathMap[  vd] = path;
+          KeepAlive vd_ka(vd);
+          reversePathMap.insert(vd_ka, path);
         }
       }
     }
-    if(vd == NULL) {
+    if(vd == nullptr) {
       vd = new VarDecl(getLoc(env, origVd, rhs), ti, getId(env, origId));
       hasBeenAdded = false;
     }
@@ -582,6 +592,7 @@ namespace MiniZinc {
     filenameMap = env.filenameMap;
     maxPathDepth = env.maxPathDepth;
     pathMap = env.getPathMap();
+    reversePathMap = env.getReversePathMap();
   }
   
   void EnvI::flat_removeItem(MiniZinc::Item* i) {
@@ -3363,14 +3374,14 @@ namespace MiniZinc {
     }
     
   }
-  
+
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     if (e==NULL) return EE();
-    
+
     EE ret;
     assert(!e->type().isunknown());
     if (e->type().ispar() && !e->isa<Let>() && !e->isa<VarDecl>() && e->type().bt()!=Type::BT_ANN) {
-      
+
       if (e->type().cv()) {
         KeepAlive ka = flat_cv_exp(env,ctx,e);
         ret.r = bind(env,ctx,r,ka());

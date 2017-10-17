@@ -34,42 +34,8 @@ namespace MiniZinc {
   using std::string;
   using std::vector;
 
-  inline
-  IncludeI* parse_include(Env& e, Model* parent, const IncludeI* inc, const vector<string>& includes, bool verbose,
-                          const vector<string>& datafiles, const string& filename) {
-    vector<string> filenames {filename};
-    Model* inc_mod = parse(e, filenames, datafiles, includes, true, true, verbose, std::cerr);
-    IncludeI* new_inc = new IncludeI(inc->loc(), filename);
-    new_inc->m(inc_mod);
-    inc_mod->setParent(parent);
-    return new_inc;
-  }
-
-  IncludeI* update_include(Env& e, Model* parent, const IncludeI* inc, const vector<string>& includes, bool verbose=false) {
-    string filename = inc->f().str();
-    vector<string> datafiles;
-
-    string parentPath = parent->filepath().str();
-    parentPath.erase(std::find(parentPath.rbegin(), parentPath.rend(), '/').base(), parentPath.end());
-
-    std::stringstream full_filename;
-    full_filename << (!parentPath.empty() ? parentPath + "/" : "") << filename;
-
-    std::ifstream fi(full_filename.str());
-    if(fi.is_open()) return parse_include(e, parent, inc, includes, verbose, datafiles, full_filename.str());
-
-    for(unsigned int i=0; i<includes.size(); i++) {
-      full_filename.str("");
-      string path = includes[i];
-      full_filename << path << '/' << filename;
-      std::ifstream fi(full_filename.str());
-      if(fi.is_open()) return parse_include(e, parent, inc, includes, verbose, datafiles, full_filename.str());
-    }
-    return nullptr;
-  }
-
   Env* changeLibrary(Env& e, vector<string>& includePaths, string globals_dir, CompilePassFlags& compflags, bool verbose=false) {
-    GC::lock();
+    GCLock lock;
     CopyMap cm;
     Model* m = e.model();
     Model* new_mod = new Model();
@@ -82,16 +48,37 @@ namespace MiniZinc {
       new_includePaths.push_back(globals_dir);
     new_includePaths.insert(new_includePaths.end(), includePaths.begin(), includePaths.end());
 
+    // Collect include items
+    vector<string> include_names;
     for(Item* item : *m) {
       if(IncludeI* inc = item->dyn_cast<IncludeI>()) {
-        IncludeI* ninc = update_include(e, new_mod, inc, new_includePaths, verbose);
-        if(ninc) new_mod->addItem(ninc);
+        include_names.push_back(inc->f().str());
       } else {
         new_mod->addItem(copy(e.envi(),cm,item));
       }
     }
 
+    std::stringstream ss;
+    for(auto& name : include_names)
+      ss << "include \""<< name << "\";";
+
+    vector<SyntaxError> syntax_errors;
     Env* fenv = new Env(new_mod);
+    //Model* inc_mod = parse(*fenv, include_names, {}, new_includePaths, true, true, verbose, std::cerr);
+    Model* inc_mod = parseFromString(ss.str(), "MultiPassDummy.mzn", new_includePaths, true, true, verbose, std::cerr, syntax_errors);
+    if(inc_mod == nullptr) {
+        for(const SyntaxError& se : syntax_errors) {
+            std::cerr << std::endl;
+            std::cerr << se.what() << ": " << se.msg() << std::endl;
+            std::cerr << se.loc() << std::endl;
+        }
+        return nullptr;
+    }
+    IncludeI* new_inc = new IncludeI(Location().introduce(), string("MultiPassDummy.mzn"));
+    new_inc->m(inc_mod);
+    inc_mod->setParent(new_mod);
+    new_mod->addItem(new_inc);
+
     vector<TypeError> typeErrors;
     MiniZinc::typecheck(*fenv, new_mod, typeErrors, compflags.model_check_only || compflags.model_interface_only, compflags.allow_multi_assign);
     if (typeErrors.size() > 0) {
@@ -103,8 +90,6 @@ namespace MiniZinc {
       exit(EXIT_FAILURE);
     }
     registerBuiltins(*fenv, new_mod);
-
-    GC::unlock();
 
     return fenv;
   }
@@ -124,6 +109,7 @@ namespace MiniZinc {
   }
 
   Env* CompilePass::run(Env* store) {
+      GCLock lock;
     Timer lasttime;
     if(compflags.verbose)
       std::cerr << "\n\tCompilePass: Flatten with \'" << library << "\' library ...\n";
@@ -131,6 +117,7 @@ namespace MiniZinc {
     Env* new_env;
     if(change_library) {
       new_env = changeLibrary(*env, includePaths, library, compflags, compflags.verbose);
+      if(new_env == nullptr) return nullptr;
       new_env->envi().copyPathMapsAndState(store->envi());
     } else {
       new_env = env;
