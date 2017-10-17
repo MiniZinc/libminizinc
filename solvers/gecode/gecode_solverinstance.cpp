@@ -1326,10 +1326,7 @@ namespace MiniZinc {
             } else {
               FloatNum l = floatvar.min(),
                        u = floatvar.max();
-              nvd->ti()->domain(new BinOp(nvd->loc(),
-                    new FloatLit(nvd->loc(), l),
-                    BOT_DOTDOT,
-                    new FloatLit(nvd->loc(), u)));
+              nvd->ti()->domain(new SetLit(nvd->loc(), FloatSetVal::a(l, u)));
             }
           }
         }
