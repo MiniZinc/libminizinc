@@ -23,6 +23,7 @@ namespace MiniZinc {
   Location Location::nonalloc;
   
   Type Type::unboxedint = Type::parint();
+  Type Type::unboxedfloat = Type::parfloat();
   
   Annotation Annotation::empty;
   
@@ -51,12 +52,12 @@ namespace MiniZinc {
 
   void
   Expression::addAnnotation(Expression* ann) {
-    if (!isUnboxedInt())
+    if (!isUnboxedVal())
       _ann.add(ann);
   }
   void
   Expression::addAnnotations(std::vector<Expression*> ann) {
-    if (!isUnboxedInt())
+    if (!isUnboxedVal())
       for (unsigned int i=0; i<ann.size(); i++)
         if (ann[i])
           _ann.add(ann[i]);
@@ -68,13 +69,13 @@ namespace MiniZinc {
 #define pushann(a) do { for (ExpressionSetIter it = a.begin(); it != a.end(); ++it) { pushstack(*it); }} while(0)
   void
   Expression::mark(Expression* e) {
-    if (e==NULL || e->isUnboxedInt()) return;
+    if (e==NULL || e->isUnboxedVal()) return;
     std::vector<const Expression*> stack;
     stack.reserve(1000);
     stack.push_back(e);
     while (!stack.empty()) {
       const Expression* cur = stack.back(); stack.pop_back();
-      if (!cur->isUnboxedInt() && cur->_gc_mark==0) {
+      if (!cur->isUnboxedVal() && cur->_gc_mark==0) {
         cur->_gc_mark = 1;
         cur->loc().mark();
         pushann(cur->ann());

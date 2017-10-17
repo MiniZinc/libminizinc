@@ -16,6 +16,12 @@ namespace MiniZinc {
     if (e0==e1) return true;
     if (e0 == NULL || e1 == NULL) return false;
     if (e0->isUnboxedInt() || e1->isUnboxedInt()) return false;
+    if (e0->isUnboxedFloatVal() || e1->isUnboxedFloatVal()) {
+      if (e0->isUnboxedFloatVal() && e1->isUnboxedFloatVal()) {
+        return e0->unboxedFloatToFloatVal()==e1->unboxedFloatToFloatVal();
+      }
+      return false;
+    }
     if (e0->_id != e1->_id) return false;
     if (e0->type() != e1->type()) return false;
     if (e0->hash() != e1->hash()) return false;
@@ -24,8 +30,9 @@ namespace MiniZinc {
 
   inline void
   Expression::type(const Type& t) {
-    if (isUnboxedInt()) {
-      assert(t == Type::parint());
+    if (isUnboxedVal()) {
+      assert(!isUnboxedInt() || t == Type::parint());
+      assert(!isUnboxedFloatVal() || t == Type::parfloat());
       return;
     }
     if (eid()==E_VARDECL) {
@@ -46,13 +53,21 @@ namespace MiniZinc {
   inline IntLit*
   IntLit::a(MiniZinc::IntVal v) {
     
-    if (v > -(LLONG_MAX >> 3) && v < (LLONG_MAX >> 3))
-      return intToUnboxedInt(v.toInt());
+    if (v.isFinite()) {
+      IntLit* ret = intToUnboxedInt(v.toInt());
+      if (ret) {
+        return ret;
+      }
+    }
     
     UNORDERED_NAMESPACE::unordered_map<IntVal, WeakRef>::iterator it = constants().integerMap.find(v);
     if (it==constants().integerMap.end() || it->second()==NULL) {
       IntLit* il = new IntLit(Location().introduce(), v);
-      constants().integerMap.insert(std::make_pair(v, il));
+      if (it==constants().integerMap.end()) {
+        constants().integerMap.insert(std::make_pair(v, il));
+      } else {
+        it->second = il;
+      }
       return il;
     } else {
       return it->second()->cast<IntLit>();
@@ -150,10 +165,21 @@ namespace MiniZinc {
 
   inline FloatLit*
   FloatLit::a(MiniZinc::FloatVal v) {
+    if (sizeof(double) <= sizeof(FloatLit*) && v.isFinite()) {
+      FloatLit* ret = Expression::doubleToUnboxedFloatVal(v.toDouble());
+      if (ret) {
+        return ret;
+      }
+    }
+    
     UNORDERED_NAMESPACE::unordered_map<FloatVal, WeakRef>::iterator it = constants().floatMap.find(v);
     if (it==constants().floatMap.end() || it->second()==NULL) {
       FloatLit* fl = new FloatLit(Location().introduce(), v);
-      constants().floatMap.insert(std::make_pair(v, fl));
+      if (it==constants().floatMap.end()) {
+        constants().floatMap.insert(std::make_pair(v, fl));
+      } else {
+        it->second = fl;
+      }
       return fl;
     } else {
       return it->second()->cast<FloatLit>();
@@ -520,7 +546,7 @@ namespace MiniZinc {
 
   inline Expression*
   VarDecl::e(void) const {
-    return _e->isUnboxedInt() ? _e : _e->untag();
+    return _e->isUnboxedVal() ? _e : _e->untag();
   }
 
   inline void
@@ -546,11 +572,11 @@ namespace MiniZinc {
   }
   inline bool
   VarDecl::evaluated(void) const {
-    return _e->isUnboxedInt() || _e->isTagged();
+    return _e->isUnboxedVal() || _e->isTagged();
   }
   inline void
   VarDecl::evaluated(bool t) {
-    if (!_e->isUnboxedInt()) {
+    if (!_e->isUnboxedVal()) {
       if (t)
         _e = _e->tag();
       else

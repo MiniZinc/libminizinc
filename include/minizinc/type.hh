@@ -167,6 +167,7 @@ namespace MiniZinc {
     }
 
     static Type unboxedint;
+    static Type unboxedfloat;
     
     bool isunknown(void) const { return _bt==BT_UNKNOWN; }
     bool isplain(void) const {
