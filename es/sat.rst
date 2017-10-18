@@ -1,39 +1,30 @@
 .. _sec-sat:
 
-Boolean Satisfiability Modelling in MiniZinc
-============================================
+Modelado de la satisfacción Booleana en MiniZinc
+================================================
 
-MiniZinc can be used to model Boolean satisfiability
-problems where the variables are restricted to be Boolean (:mzn:`bool`).
-MiniZinc can be used with efficient Boolean satisfiability 
-solvers to solve the resulting models efficiently.
+MiniZinc  puede usarse para modelar problemas de satisfaccion booleanos, donde las variables estan restringidas a ser booleano (:mzn:`bool`).
+MiniZinc se puede utilizar con solucionadores de satisfacción booleanos eficientes para resolver los modelos resultantes de manera eficiente.
 
-Modelling Integers
-------------------
+Modelando Enteros
+-----------------
 
-Many times although we wish to use a Boolean satisfiability solver we may
-need to model some integer parts of our problem. 
+Muchas veces, aunque deseamos utilizar un solucionador de satisfaccion booleano, podriamos necesitar modelar algunas partes enteras de nuestro problema.
 
-There are three common ways of modelling an integer variables
-:math:`I` in the range :math:`0 \dots m` where :math:`m = 2^{k}-1`
-using Boolean
-variables. 
+Hay tres formas comunes de modelar variables enteras: :math:`I` en el rango de :math:`0 \dots m`, donde :math:`m = 2^{k}-1` utiliza variables booleanas.
 
-- Binary: :math:`I` is represented by :math:`k` binary variables
-  :math:`i_0, \ldots, i_{k-1}` where
-  :math:`I = 2^{k-1} i_{k-1} + 2^{k-2} i_{k-2} + \cdots + 2 i_1 + i_0`.
-  This can be represented in MiniZinc as
+- Binary: :math:`I` es representado por :math:`k` variables binarias :math:`i_0, \ldots, i_{k-1}`, donde :math:`I = 2^{k-1} i_{k-1} + 2^{k-2} i_{k-2} + \cdots + 2 i_1 + i_0`.
+
+  Esto puede ser representado en MiniZinc como
 
   .. code-block:: minizinc
 
-    array[0..k-1]  of var bool: i;
+    array[0..k-1] of var bool: i;
     var 0..pow(2,k)-1: I = sum(j in 0..k-1)(bool2int(i[j])*pow(2,j));
 
-- Unary: where :math:`I` is represented by :math:`m` binary variables
-  :math:`i_1, \ldots, i_m`
-  and :math:`i = \sum_{j=1}^m \mathtt{bool2int}(i_j)`.  Since there is massive redundancy in
-  the unary representation we usually require that
-  :math:`i_j \rightarrow i_{j-1}, 1 < j \leq m`. This can be represented in MiniZinc as
+- Unary: donde :math:`I` es representado por :math:`m` variables binarias :math:`i_1, \ldots, i_m` y :math:`i = \sum_{j=1}^m \mathtt{bool2int}(i_j)`.  Como hay redundancia masiva en la representacion unaria, usualmente requerimos que :math:`i_j \rightarrow i_{j-1}, 1 < j \leq m`.
+
+  Esto puede ser representado en MiniZinc como
 
   .. code-block:: minizinc
 
@@ -41,161 +32,126 @@ variables.
     constraint forall(j in 2..m)(i[j] -> i[j-1]);
     var 0..m: I = sum(j in 1..m)(bool2int(i[j]);
 
-- Value: where :math:`I` is represented by :math:`m+1` binary variables
-  :math:`i_0, \ldots, i_m` where
-  :math:`i = k \Leftrightarrow i_k`, and at most one of :math:`i_0, \ldots, i_m` is true. 
-  This can be represented in MiniZinc as
+- Value: donde :math:`I` es representado por :math:`m+1` variables binarias :math:`i_0, \ldots, i_m` donde :math:`i = k \Leftrightarrow i_k`, y como máximo uno de :math:`i_0, \ldots, i_m` es verdadero.
+
+  Esto puede ser representado en MiniZinc como
 
   .. code-block:: minizinc
 
-    array[0..m]  of var bool: i;
+    array[0..m] of var bool: i;
     constraint sum(j in 0..m)(bool2int(i[j]) == 1;
     var 0..m: I;
     constraint foall(j in 0..m)(I == j <-> i[j]);
 
-There are advantages and disadvantages to each representation.  It depends
-on what operations on integers are to required in the model as to which is
-preferable.
+Hay ventajas y desventajas para cada representación. Depende de qué operaciones en enteros se requieran en el modelo y cuál es preferible.
 
-Modelling Disequality
+Modelando Desigualdad
 ---------------------
 
-Let us consider modelling a latin squares problem. A latin square
-is an :math:`n \times n` grid of numbers from :math:`1..n` such that 
-each number appears exactly once in every row and column. 
-An integer model for latin squares is shown in :numref:`ex-latin`.
+Consideremos el modelado de un problema de cuadrados latinos. Un cuadrado latino es una matriz: math:`n \ times n` de números de: math:` 1..n`, tal que cada número aparece exactamente una vez en cada fila y columna.
+Un modelo entero para cuadrados latinos se muestra en :numref:`ex-latin`.
 
-.. literalinclude:: examples/latin.mzn
+.. literalinclude:: examples/latin_es.mzn
   :language: minizinc
   :name: ex-latin
-  :caption: Integer model for Latin Squares (:download:`latin.mzn <examples/latin.mzn>`).
+  :caption: Modelo entero para los cuadrados latino (:download:`latin_es.mzn <examples/latin_es.mzn>`).
 
-The only constraint on the integers is in fact disequality, which is encoded
-in the :mzn:`alldifferent` constraint. 
-The value representation is the best way of representing disequality.
-A Boolean only model for latin squares is shown in
-:numref:`ex-latinbool`.
-Note each integer array element :mzn:`a[i,j]` is replaced by an array of
-Booleans.
-We use the :mzn:`exactlyone` predicate to encode that each value is used
-exactly once in every row and every column, as well as to encode that exactly
-one of the Booleans corresponding to integer array element :mzn:`a[i,j]` is true.
+  La única limitación de los enteros es de hecho desigualdad, que se codifica en la restricción :mzn:`alldifferent`.
+  La representación del valor es la mejor forma de representar la desigualdad.
+  Un modelo solo booleano para cuadrados latinos se muestra en :numref:`ex-latinbool`.
+  Tenga en cuenta cada elemento del conjunto de enteros :mzn:`a[i, j]` se reemplaza por un arreglo de booleanos.
+  Utilizamos el predicado :mzn:`exactlyone` para codificar que cada valor se use exactamente una vez en cada fila y en cada columna, así como para codificar que exactamente uno de los Booleanos correspondiente al elemento de arreglo entero :mzn:`a[i, j]` es verdadero.
 
-.. literalinclude:: examples/latinbool.mzn
+.. literalinclude:: examples/latinbool_es.mzn
   :language: minizinc
   :name: ex-latinbool
-  :caption: Boolean model for Latin Squares (:download:`latinbool.mzn <examples/latinbool.mzn>`).
+  :caption: Modelo booleano para los cuadrados latinos (:download:`latinbool_es.mzn <examples/latinbool_es.mzn>`).
 
-Modelling Cardinality
----------------------
 
-Let us consider modelling the Light Up puzzle. The puzzle consists of a 
-rectangular grid of squares which are blank, or filled. Every filled square
-may contain a number from 1 to 4, or may have no number. The aim is to place
-lights
-in the blank squares so that
+Modelando Cardinalidad
+----------------------
 
-- Each blank square is "illuminated", that is can see a light through an
-  uninterupted line of blank squares
-- No two lights can see each other
-- The number of lights adjacent to a numbered filled square
-  is exactly the number in the filled square.
+Consideremos el modelado del rompecabezas de Light Up. El rompecabezas consiste en una cuadrícula rectangular de cuadrados que están en blanco, o llenos. Cada cuadrado lleno puede contener un número del 1 al 4, o puede no tener ningún número. El objetivo es colocar luces en los cuadrados en blanco para que
 
-An example of a Light Up puzzle is shown in :numref:`fig-lightup`
-with its solution in :numref:`fig-lightup-sol`.
+- Cada casilla en blanco está "iluminada", es decir, puede ver una luz a través de una línea ininterrumpida de cuadrados en blanco.
+- No se pueden ver dos luces a si mismas.
+- El número de luces adyacentes a un cuadrado lleno numerado es exactamente el número en el cuadrado lleno.
+
+Un ejemplo de un rompecabezas de Light Up se muestra en :numref:`fig-lightup`
+con su solución en :numref:`fig-lightup-sol`.
 
 .. _fig-lightup:
 
 .. figure:: figures/lightup.*
-  
-  An example of a Light Up puzzle
+
+  Un ejemplo de un rompecabezas de Light Up
 
 .. _fig-lightup-sol:
 
 .. figure:: figures/lightup2.*
-  
-  The completed solution of the Light Up puzzle
 
-It is natural to model this problem
-using Boolean variables to determine which
-squares contain a light and which do not, but there is some integer
-arithmetic to consider for the filled squares.
+  La solución completa del rompecabezas de Light Up
 
-.. literalinclude:: examples/lightup.mzn
+Es natural modelar este problema usando variables booleanas para determinar qué cuadrados contienen una luz y cuáles no, pero hay algo de aritmética entera que considerar para los cuadrados llenos.
+
+.. literalinclude:: examples/lightup_es.mzn
   :language: minizinc
   :name: ex-lightup
-  :caption: SAT Model for the Light Up puzzle (:download:`lightup.mzn <examples/lightup.mzn>`).
+  :caption: Modelo SAT para el rompecabezas de Light Up (:download:`lightup_es.mzn <examples/lightup_es.mzn>`).
 
 A model for the problem is given in :numref:`ex-lightup`.
 A data file for the problem shown in :numref:`fig-lightup`
 is shown in :numref:`fig-lightupdzn`.
 
-.. literalinclude:: examples/lightup.dzn
+Un modelo para el problema es dado en :numref:`ex-lightup`.
+Un archivo de datos para el problema :numref:`fig-lightup` se muestra en :numref:`fig-lightupdzn`.
+
+.. literalinclude:: examples/lightup_es.dzn
   :language: minizinc
   :name: fig-lightupdzn
-  :caption: Datafile for the Light Up puzzle instance shown in :numref:`fig-lightup`.
+  :caption: El archivo de datos para la instancia del rompecabezas de Light Up se muestra en :numref:`fig-lightup`.
 
-The model makes use of a Boolean sum predicate
+El modelo hace uso de un predicado de suma booleana
 
 .. code-block:: minizinc
 
   predicate bool_sum_eq(array[int] of var bool:x, int:s);
 
-which requires that the sum of an array of Boolean equals some fixed
-integer. There are a number of ways of modelling such
-*cardinality* constraints using Booleans.
+que requiere que la suma de un arreglo de Boolean sea igual a un entero fijo. Existen varias formas de modelar tales restricciones de *cardinalidad* usando Booleanos.
 
-- Adder networks: we can use a network of adders to
-  build a binary Boolean representation of the sum of the Booleans
-- Sorting networks: we can use a sorting network to sort
-  the array of Booleans to create a unary representation of the sum
-  of the Booleans
-- Binary decision diagrams: we can create a binary decision diagram
-  (BDD) that encodes the cardinality constraint.
+- Sumar redes: podemos usar una red de sumadores para construir una representación booleana binaria de la suma de los booleanos.
+- Redes de clasificación: podemos usar una red de clasificación para ordenar el arreglo de Booleanos para crear una representación unaria de la suma de los Booleanos.
+- Diagramas de decisiones binarias: podemos crear un diagrama de decisión binario (BDD) que codifica la restricción de cardinalidad.
 
-
-.. literalinclude:: examples/bboolsum.mzn
+.. literalinclude:: examples/bboolsum_es.mzn
   :language: minizinc
   :name: ex-bboolsum
-  :caption: Cardinality constraints by binary adder networks (:download:`bboolsum.mzn <examples/bboolsum.mzn>`).
+  :caption: Restricciones de cardinalidad por las redes de sumador binarias (:download:`bboolsum_es.mzn <examples/bboolsum_es.mzn>`).
 
 .. literalinclude:: examples/binarysum.mzn
   :language: minizinc
   :name: ex-binarysum
-  :caption: Code for building binary addition networks (:download:`binarysum.mzn <examples/binarysum.mzn>`).
+  :caption: Código para construir redes de adición binaria (:download:`binarysum_es.mzn <examples/binarysum_es.mzn>`).
 
-We can implement :mzn:`bool_sum_eq` using binary adder networks
-using the code shown in :numref:`ex-bboolsum`.
-The predicate :mzn:`binary_sum`
-defined in :numref:`ex-binarysum`
-creates a binary representation
-of the sum of :mzn:`x` by splitting the list into two,
-summing up each half to create a binary representation
-and then summing these two binary numbers using :mzn:`binary_add`.
-If the list :mzn:`x` is odd the last bit is saved to use as a carry in
-to the binary addition.
+Podemos implementar :mzn:`bool_sum_eq` usando redes de sumador binarias usando el código que se muestra en :numref:`ex-bboolsum`.
+El predicado :mzn:`binary_sum` definido en :numref:`ex-binarysum` crea una representación binaria de la suma de :mzn:`x` al dividir la lista en dos, sumando cada mitad para crear una representación binaria y luego sumando estos dos números binarios usando :mzn:`binary_add`.
+Si la lista :mzn:`x` es impar, el último bit se guarda para usar como un complemento a la adición binaria
 
 .. \pjs{Add a picture of an adding network}
 
-.. literalinclude:: examples/uboolsum.mzn
+.. literalinclude:: examples/uboolsum_es.mzn
   :language: minizinc
   :name: ex-uboolsum
-  :caption: Cardinality constraints by sorting networks (:download:`uboolsum.mzn <examples/uboolsum.mzn>`).
+  :caption: Cardinality constraints by sorting networks (:download:`uboolsum_es.mzn <examples/uboolsum_es.mzn>`).
 
-.. literalinclude:: examples/oesort.mzn
+.. literalinclude:: examples/oesort_es.mzn
   :language: minizinc
   :name: ex-oesort
-  :caption: Odd-even merge sorting networks (:download:`oesort.mzn <examples/oesort.mzn>`).
+  :caption: Odd-even merge sorting networks (:download:`oesort_es.mzn <examples/oesort_es.mzn>`).
 
-We can implement :mzn:`bool_sum_eq` using unary sorting networks
-using the code shown in :numref:`ex-uboolsum`.
-The cardinality constraint is defined by expanding the input
-:mzn:`x` to have length a power of 2, and sorting the resulting bits
-using an odd-even merge sorting network. 
-The odd-even merge sorter shown in :mzn:`ex-oesort` works 
-recursively by splitting
-the input list in 2, sorting each list and merging the two
-sorted lists.  
+Podemos implementar :mzn:`bool_sum_eq` utilizando redes de clasificación unaria utilizando el código que se muestra en :numref:` ex-uboolsum`.
+La restricción de cardinalidad se define expandiendo la entrada :mzn:`x` para tener una longitud de una potencia de 2 y clasificar los bits resultantes utilizando una red de clasificación de combinación de pares impares.
+El clasificador de combinación impar-par que se muestra en :mzn:`ex-oesort` funciona recursivamente mediante la divición de la lista de entrada en 2, ordenando cada lista y combinando las dos listas ya ordenadas.
 
 .. \pjs{Add much more stuff on sorting networks}
 
@@ -203,21 +159,12 @@ sorted lists.
 
 .. \pjs{Add a picture of an adding network}
 
-.. literalinclude:: examples/bddsum.mzn
+.. literalinclude:: examples/bddsum_es.mzn
   :language: minizinc
   :name: ex-bddsum
-  :caption: Cardinality constraints by binary decision diagrams (:download:`bddsum.mzn <examples/bddsum.mzn>`).
+  :caption: Cardinality constraints by binary decision diagrams (:download:`bddsum_es.mzn <examples/bddsum_es.mzn>`).
 
-We can implement :mzn:`bool_sum_eq` using binary decision diagrams
-using the code shown in :mzn:`ex:bddsum`.
-The cardinality constraint is broken into two cases:
-either the first element :mzn:`x[1]` is :mzn:`true`, 
-and the sum of the remaining bits
-is :mzn:`s-1`, or :mzn:`x[1]` is :mzn:`false` and the sum of the remaining bits
-is :mzn:`s`. For efficiency this relies on common subexpression elimination
-to avoid creating many equivalent constraints.
-
+Nosotros podemos implementar :mzn:`bool_sum_eq` usando diagramas de decición binaria usando el codigo que se muestra en :mzn:`ex:bddsum`.
+La restricción de cardinalidad se divide en dos casos: ya sea en el primer elemento :mzn:`x[1]` es :mzn:`true`, y la suma de los bits restantes es :mzn:`s-1`, o :mzn:`x[1]` es :mzn:`false` y la suma de los bits restantes es :mzn:`s`. Por eficiencia, esto se basa en la eliminación de la subexpresión común para evitar crear muchas restricciones equivalentes.
 
 .. \pjs{Add a picture of a bdd network network}
-
-
