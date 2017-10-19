@@ -977,7 +977,7 @@ namespace MiniZinc {
           return new BoolLit(Location(), var.boolVar(_solution).val());
         case Type::BT_FLOAT:
           assert(var.floatVar(_solution).assigned());
-          return new FloatLit(Location(), (var.floatVar(_solution).val()).med());
+          return FloatLit::a(var.floatVar(_solution).val().med());
         default: return NULL;
       }
     } else {
@@ -1001,7 +1001,7 @@ namespace MiniZinc {
           branch_vars.push_back(solveExpr);
           solve_args.push_back(new ArrayLit(Location(), branch_vars));
           if (!_current_space->_optVarIsInt) // TODO: why??
-            solve_args.push_back(new FloatLit(Location(), 0.0));
+            solve_args.push_back(FloatLit::a(0.0));
           solve_args.push_back(new Id(Location(), "input_order", NULL));
           solve_args.push_back(new Id(Location(), _current_space->_optVarIsInt ? "indomain_min" : "indomain_split", NULL));
           solve_args.push_back(new Id(Location(), "complete", NULL));
@@ -1011,7 +1011,7 @@ namespace MiniZinc {
           branch_vars.push_back(solveExpr);
           solve_args.push_back(new ArrayLit(Location(), branch_vars));
           if (!_current_space->_optVarIsInt)
-            solve_args.push_back(new FloatLit(Location(), 0.0));
+            solve_args.push_back(FloatLit::a(0.0));
           solve_args.push_back(new Id(Location(), "input_order", NULL));
           solve_args.push_back(new Id(Location(), _current_space->_optVarIsInt ? "indomain_max" : "indomain_split_reverse", NULL));
           solve_args.push_back(new Id(Location(), "complete", NULL));
@@ -1322,14 +1322,12 @@ namespace MiniZinc {
               FloatNum l = floatvar.min();
               nvd->type(Type::parfloat());
               nvd->ti(new TypeInst(nvd->loc(), Type::parfloat()));
-              nvd->e(new FloatLit(nvd->loc(), l));
+              nvd->e(FloatLit::a(l));
             } else {
               FloatNum l = floatvar.min(),
                        u = floatvar.max();
-              nvd->ti()->domain(new BinOp(nvd->loc(),
-                    new FloatLit(nvd->loc(), l),
-                    BOT_DOTDOT,
-                    new FloatLit(nvd->loc(), u)));
+              nvd->ti()->domain(new SetLit(nvd->loc(),
+                    FloatSetVal::a(l, u)));
             }
           }
         }
