@@ -354,7 +354,7 @@ predicate array_var_float_element(var int: i00, array[int] of var float: a,
           z <= maxUB /\
     if is_fixed(i00) then z==a[fix(i00)]
     elseif minLB==maxUB then true
-    elseif ub(i00)-lb(i00)==1 /*2==card( dom( i00 ) )*/ then
+    elseif {0,1}==dom(i00) /*ub(i00)-lb(i00)==1*/ /*2==card( dom( i00 ) )*/ then
           aux_float_eq_if_1(z, a[lb(i00)], (ub(i00)-i00)) /\
           aux_float_eq_if_1(z, a[ub(i00)], (i00-lb(i00)))
     else
