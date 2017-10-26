@@ -5339,14 +5339,17 @@ namespace MiniZinc {
         onlyRangeDomains = eval_bool(e.envi(), check_only_range);
       }
       
-      class ExpandArrayDecls : public ItemVisitor {
+      bool hadSolveItem = false;
+      // Flatten main model
+      class FV : public ItemVisitor {
       public:
         EnvI& env;
-        ExpandArrayDecls(EnvI& env0) : env(env0) {}
+        bool& hadSolveItem;
+        FV(EnvI& env0, bool& hadSolveItem0) : env(env0), hadSolveItem(hadSolveItem0) {}
+        bool enter(Item* i) {
+          return !(i->isa<ConstraintI>()  && env.failed());
+        }
         void vVarDeclI(VarDeclI* v) {
-          if (v->e()->type().isvar() && v->e()->type().dim() > 0 && v->e()->e() == NULL) {
-            (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
-          }
           if (v->e()->type().ispar() && v->e()->type().dim() > 0 && v->e()->ti()->domain()==NULL
               && (v->e()->type().bt()==Type::BT_INT || v->e()->type().bt()==Type::BT_FLOAT)) {
             // Compute bounds for array literals
@@ -5376,21 +5379,6 @@ namespace MiniZinc {
               v->e()->ti()->setComputedDomain(true);
             }
           }
-        }
-      } _ead(env);
-      iterItems<ExpandArrayDecls>(_ead,e.model());;
-      
-      bool hadSolveItem = false;
-      // Flatten main model
-      class FV : public ItemVisitor {
-      public:
-        EnvI& env;
-        bool& hadSolveItem;
-        FV(EnvI& env0, bool& hadSolveItem0) : env(env0), hadSolveItem(hadSolveItem0) {}
-        bool enter(Item* i) {
-          return !(i->isa<ConstraintI>()  && env.failed());
-        }
-        void vVarDeclI(VarDeclI* v) {
           if (v->e()->type().isvar() || v->e()->type().isann()) {
             (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
           } else {
