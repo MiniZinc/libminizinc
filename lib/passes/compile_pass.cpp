@@ -79,18 +79,6 @@ namespace MiniZinc {
     inc_mod->setParent(new_mod);
     new_mod->addItem(new_inc);
 
-    vector<TypeError> typeErrors;
-    MiniZinc::typecheck(*fenv, new_mod, typeErrors, compflags.model_check_only || compflags.model_interface_only, compflags.allow_multi_assign);
-    if (typeErrors.size() > 0) {
-      for (unsigned int i=0; i<typeErrors.size(); i++) {
-        std::cerr << std::endl;
-        std::cerr << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
-        std::cerr << typeErrors[i].loc() << std::endl;
-      }
-      exit(EXIT_FAILURE);
-    }
-    registerBuiltins(*fenv, new_mod);
-
     return fenv;
   }
 
@@ -122,6 +110,18 @@ namespace MiniZinc {
     } else {
       new_env = env;
     }
+
+    vector<TypeError> typeErrors;
+    MiniZinc::typecheck(*new_env, new_env->model(), typeErrors, compflags.model_check_only || compflags.model_interface_only, compflags.allow_multi_assign);
+    if (typeErrors.size() > 0) {
+      for (unsigned int i=0; i<typeErrors.size(); i++) {
+        std::cerr << std::endl;
+        std::cerr << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
+        std::cerr << typeErrors[i].loc() << std::endl;
+      }
+      exit(EXIT_FAILURE);
+    }
+    registerBuiltins(*new_env, new_env->model());
 
     flatten(*new_env, fopts);
 
