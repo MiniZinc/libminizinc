@@ -248,12 +248,22 @@ namespace MiniZinc {
     };
 
     bool isUnboxedVal(void) const {
-      // bit 1 or bit 0 is set
-      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) != 0;
+      if (sizeof(double) <= sizeof(FloatLit*)) {
+        // bit 1 or bit 0 is set
+        return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) != 0;
+      } else {
+        // bit 0 is set
+        return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) != 0;
+      }
     }
     bool isUnboxedInt(void) const {
-      // bit 1 is set, bit 0 is not set
-      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
+      if (sizeof(double) <= sizeof(FloatLit*)) {
+        // bit 1 is set, bit 0 is not set
+        return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
+      } else {
+        // bit 0 is set
+        return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
+      }
     }
     bool isUnboxedFloatVal(void) const {
       // bit 0 is set (and doubles fit inside pointers)
@@ -302,24 +312,45 @@ namespace MiniZinc {
   public:
     IntVal unboxedIntToIntVal(void) const {
       assert(isUnboxedInt());
-      unsigned long long int i = reinterpret_cast<ptrdiff_t>(this) & ~static_cast<ptrdiff_t>(7);
-      bool pos = ((reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(4)) == 0);
-      if (pos) {
-        return i >> 3;
+      if (sizeof(double) <= sizeof(FloatVal*)) {
+        unsigned long long int i = reinterpret_cast<ptrdiff_t>(this) & ~static_cast<ptrdiff_t>(7);
+        bool pos = ((reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(4)) == 0);
+        if (pos) {
+          return i >> 3;
+        } else {
+          return -(static_cast<long long int>(i>>3));
+        }
       } else {
-        return -(static_cast<long long int>(i>>3));
+        unsigned long long int i = reinterpret_cast<ptrdiff_t>(this) & ~static_cast<ptrdiff_t>(3);
+        bool pos = ((reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(2)) == 0);
+        if (pos) {
+          return i >> 2;
+        } else {
+          return -(static_cast<long long int>(i>>2));
+        }
       }
     }
     static IntLit* intToUnboxedInt(long long int i) {
       static const unsigned int pointerBits = sizeof(IntLit*)*8;
-      static const long long int maxUnboxedVal = (static_cast<long long int>(1) << (pointerBits - 3)) - static_cast<long long int>(1);
-      if (i < -maxUnboxedVal || i > maxUnboxedVal)
-        return NULL;
-      long long int j = i < 0 ? -i : i;
-      ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 3) | static_cast<ptrdiff_t>(2);
-      if (i < 0)
-        ubi_p = ubi_p | static_cast<ptrdiff_t>(4);
-      return reinterpret_cast<IntLit*>(ubi_p);
+      if (sizeof(double) <= sizeof(FloatVal*)) {
+        static const long long int maxUnboxedVal = (static_cast<long long int>(1) << (pointerBits - 3)) - static_cast<long long int>(1);
+        if (i < -maxUnboxedVal || i > maxUnboxedVal)
+          return NULL;
+        long long int j = i < 0 ? -i : i;
+        ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 3) | static_cast<ptrdiff_t>(2);
+        if (i < 0)
+          ubi_p = ubi_p | static_cast<ptrdiff_t>(4);
+        return reinterpret_cast<IntLit*>(ubi_p);
+      } else {
+        static const long long int maxUnboxedVal = (static_cast<long long int>(1) << (pointerBits - 2)) - static_cast<long long int>(1);
+        if (i < -maxUnboxedVal || i > maxUnboxedVal)
+          return NULL;
+        long long int j = i < 0 ? -i : i;
+        ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 2) | static_cast<ptrdiff_t>(1);
+        if (i < 0)
+          ubi_p = ubi_p | static_cast<ptrdiff_t>(2);
+        return reinterpret_cast<IntLit*>(ubi_p);
+      }
     }
     FloatVal unboxedFloatToFloatVal(void) const {
       assert(isUnboxedFloatVal());
@@ -364,19 +395,30 @@ namespace MiniZinc {
     
     bool isTagged(void) const {
       // only bit 2 is set
-      assert(!isUnboxedFloatVal());
-      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(7)) == 4;
+      assert(!isUnboxedVal());
+      if (sizeof(double) <= sizeof(FloatVal*))
+        return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(7)) == 4;
+      else
+        return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
     }
     
     Expression* tag(void) const {
-      assert(!isUnboxedFloatVal());
-      return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
-                                           static_cast<ptrdiff_t>(4));
+      assert(!isUnboxedVal());
+      if (sizeof(double) <= sizeof(FloatVal*))
+        return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
+                                             static_cast<ptrdiff_t>(4));
+      else
+        return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
+                                             static_cast<ptrdiff_t>(2));
     }
     Expression* untag(void) const {
-      assert(!isUnboxedFloatVal());
-      return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) &
-                                           ~static_cast<ptrdiff_t>(4));
+      assert(!isUnboxedVal());
+      if (sizeof(double) <= sizeof(FloatVal*))
+        return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) &
+                                             ~static_cast<ptrdiff_t>(4));
+      else
+        return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) &
+                                             ~static_cast<ptrdiff_t>(2));
     }
 
     /// Test if expression is of type \a T

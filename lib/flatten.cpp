@@ -229,7 +229,7 @@ namespace MiniZinc {
           } else if(vd->ti()->type().isvarfloat()) {
             vd->type(Type::parfloat());
             vd->ti(new TypeInst(vd->loc(), Type::parfloat()));
-            vd->e(new FloatLit(vd->loc(), doubleval));
+            vd->e(FloatLit::a(doubleval));
           } else if(vd->ti()->type().isvarbool()) {
             vd->type(Type::parbool());
             vd->ti(new TypeInst(vd->loc(), Type::parbool()));
@@ -5751,14 +5751,14 @@ namespace MiniZinc {
         check_only_range->decl(env.orig->matchFn(e.envi(), check_only_range, false));
         onlyRangeDomains = eval_bool(e.envi(), check_only_range);
       }
-    
+
       class ExpandArrayDecls : public ItemVisitor {
       public:
         EnvI& env;
         ExpandArrayDecls(EnvI& env0) : env(env0) {}
         void vVarDeclI(VarDeclI* v) {
-          if (v->e()->type().isvar() && v->e()->type().dim() > 0 && v->e()->e() == NULL) {
-            (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
+          if (v->e()->type().isvar() && v->e()->type().dim() > 0 && v->e()->ti()->domain()==NULL) {
+            (void) flat_exp(env, Ctx(), v->e()->id(), NULL, constants().var_true);
           }
           if (v->e()->type().ispar() && v->e()->type().dim() > 0 && v->e()->ti()->domain()==NULL
               && (v->e()->type().bt()==Type::BT_INT || v->e()->type().bt()==Type::BT_FLOAT)) {
