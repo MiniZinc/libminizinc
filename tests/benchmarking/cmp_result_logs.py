@@ -5,7 +5,7 @@
 
 from collections import OrderedDict
 # import prettytable
-import utils, functools
+import utils, functools, io
 
 #####################################################################################
 ################### class CompareLogs ##################
@@ -58,7 +58,7 @@ class CompareLogs:
     ## Init stats etc.
     def initListComparison( self ):
         self.nInstWithOptSense = 0
-        self.lInstContradOptSense = []
+        ## Using warning strings...     self.lInstContradOptSense = []
         self.lCmpVecs = []                  # List of summary vectors for each method
         self.mCmpVecVals = {}               # Maps to the "quantity" parts of those
         self.mCmpVecQual = {}               # Maps to the "quality" parts
@@ -72,6 +72,17 @@ class CompareLogs:
             
         self.mInfeas, self.mNoFZN, self.mFail, self.mError = {}, {}, {}, {}
         self.nCntrStatus, self.nContrOptVal, self.nContrBounds = 0, 0, 0
+
+        ############################## Output strings
+        self.ioContrSense = io.StringIO() 
+        self.ioContrStatus = io.StringIO()
+        self.ioContrObjValMZN = io.StringIO()
+        self.ioBadObjValueStatusOpt = io.StringIO()
+        self.ioBadObjValueStatusFeas = io.StringIO()
+        self.ioContrOptVal = io.StringIO()
+        self.ioContrBounds = io.StringIO()
+        self.ioBadChecks = io.StringIO()
+        self.ioErrors = io.StringIO()
       
     ## Compare methods on the given instance
     def compareInstance( self, sInst ):
@@ -92,12 +103,32 @@ class CompareLogs:
     
     ## Summarize
     def summarize( self ):
-        return ( utils.MyTab().tabulate(
-            [ [ lcv[1][hdr[0]] if hdr[0] in lcv[1] else 0
-                for hdr in self.hdrSummary ]
-              for lcv in self.lCmpVecs ],
-              [ pr[1] for pr in self.hdrSummary ]
-          ) )
+        return \
+            "\n------------------ SOLUTION CHECKS FAILURES ------------------\n\n" + \
+            self.ioBadChecks.getvalue() + \
+            "\n\n------------------ OBJECTIVE SENSE CONTRADICTIONS ------------------\n\n" + \
+            self.ioContrSense.getvalue() + \
+            "\n\n------------------ OBJECTIVE VALUE MZN / SOLVER CONTRADICTIONS ------------------\n\n" + \
+            self.ioContrObjValMZN.getvalue() + \
+            "\n\n------------------ OBJECTIVE VALUE BAD, STATUS OPTIMAL ------------------\n\n" + \
+            self.ioBadObjValueStatusOpt.getvalue() + \
+            "\n\n------------------ OBJECTIVE VALUE BAD, STATUS FEASIBLE ------------------\n\n" + \
+            self.ioBadObjValueStatusFeas.getvalue() + \
+            "\n\n------------------ STATUS CONTRADICTIONS ------------------\n\n" + \
+            self.ioContrStatus.getvalue() + \
+            "\n\n------------------ OBJECTIVE VALUE CONTRADICTIONS ------------------\n\n" + \
+            self.ioContrOptVal.getvalue() + \
+            "\n\n------------------ DUAL BOUND CONTRADICTIONS ------------------\n\n" + \
+            self.ioContrBounds.getvalue() + \
+            "\n\n------------------ ERRORS REPORTED BY SOLVERS ------------------\n\n" + \
+            self.ioErrors.getvalue() + \
+            "\n\n------------------ SUMMARY TABLE ------------------\n\n" + \
+            utils.MyTab().tabulate(
+              [ [ lcv[1][hdr[0]] if hdr[0] in lcv[1] else 0
+                  for hdr in self.hdrSummary ]
+                for lcv in self.lCmpVecs ],
+                [ pr[1] for pr in self.hdrSummary ]
+            )
       
 ###############################################################################################
 ####################### LEVEL 2 #########################
@@ -112,9 +143,11 @@ class CompareLogs:
             if sInst in mLog:
                 mSlv = mLog[ sInst ][ "__SOLVE__" ]               ## __SOLVE__ always there???
                 if "Problem_Sense" in mSlv:
-                    self.sSenses[ mSlv["Problem_Sense"][0] ] = mSlv["Problem_Sense"][1]
+                    self.sSenses[ mSlv["Problem_Sense"][0] ] = lNames # mSlv["Problem_Sense"][1]
         if 1<len( self.sSenses ):
             self.lInstContradOptSense.append( sInst )
+            print( "WARNING: DIFFERENT OBJ SENSES REPORTED for the instance ", sInst,
+                   ":  ", self.sSenses, sep='', file=ioContrSense )
                 
     def compileInstanceResults( self, sInst ):
         for mLog, lN in self.lResLogs:                ## Select method and its name list
@@ -127,8 +160,8 @@ class CompareLogs:
                   0<mRes["SOLUTION_CHECKS_FAILED"]:
                     aResultThisInst[ "n_CheckFailed" ] = 1
                     utils.addMapValues( self.mCmpVecVals[lNames], aResultThisInst )
-                    print ( "  WARNING: instance ", sInst,
-                           ",  method '", lNames, "'  :: solutions not confirmed.", sep='' )
+                    print( "WARNING: SOLUTION CHECK(S) FAILED for the instance ", sInst,
+                           ",  method '", lNames, "'.", sep='', file = self.ioBadChecks )
                     continue                                        ## TODO. Param?
                 aResultThisInst[ "n_Errors" ] = 0
                 mSlv = mRes[ "__SOLVE__" ]
@@ -139,15 +172,15 @@ class CompareLogs:
                 ## Compare obj vals
                 dObj, bObj_MZN = (dObj_MZN, True) if \
                       None!=dObj_MZN and abs( dObj_MZN ) < 1e45 else (mSlv.get("ObjVal_MZN"), False)
-                ## Assuming solver value is better if different
+                ## Assuming solver value is better if different. WHY? Well it' happened both ways
                 dObj, bObj_SLV = (dObj_SLV, True) if \
                       None!=dObj_SLV and abs( dObj_SLV ) < 1e45 else (dObj, False)
                 if bObj_MZN and bObj_SLV:
                     if abs( dObj_MZN-dObj_SLV ) > 1e-6 * max( abs(dObj_MZN), abs(dObj_SLV) ):
                         aResultThisInst[ "n_Errors" ] += 1
-                        print ( "  WARNING: instance", sInst,
-                           " method", lNames, " :: MZN / solver obj values different:",
-                           dObj_MZN, " / ", dObj_SLV)
+                        print ( "  WARNING: DIFFERENT MZN / SOLVER OBJ VALUES for the instance ", sInst,
+                           ", method '", lNames, "' : ",
+                           dObj_MZN, " / ", dObj_SLV, sep-'', file=self.ioContrObjValMZN)
                 ## Retrieve solution status
                 if "Sol_Status" in mSlv:
                     n_SolStatus = mSlv[ "Sol_Status" ][0]
@@ -174,10 +207,10 @@ class CompareLogs:
                         aResultThisInst[ "n_OPT" ] = 1
                         if None==dObj or abs( dObj ) >= 1e45:
                             aResultThisInst[ "n_Errors" ] += 1
-                            print ( "  WARNING: instance ", sInst,
-                              ", method '", lNames, "'  :: optimal status but bad obj value: '",
-                              ( "" if None==dObj else str(dObj) ), "', result record: ", mRes,
-                              ",, dObj_MZN: ", dObj_MZN, sep='' )
+                            print ( "  WARNING: OPTIMAL STATUS BUT BAD OBJ VALUE, instance ", sInst,
+                              ", method '", lNames, "': '",
+                              ( "" if None==dObj else str(dObj) ), "', result record: ",   # mRes,
+                              ",, dObj_MZN: ", dObj_MZN, sep='', file=self.ioBadObjValueStatusOpt )
                         else:
                             self.mOptVal[ dObj ] = lNames            ## Could have used OrderedDict
                             self.lOptVal.append( (dObj, lNames) )    ## To have both a map and the order
@@ -192,9 +225,10 @@ class CompareLogs:
                         aResultThisInst[ "n_FEAS" ] = 1
                         if None==dObj or abs( dObj ) >= 1e45:
                             aResultThisInst[ "n_Errors" ] += 1
-                            print ( "  WARNING: instance ", sInst,
-                              ", method '", lNames, "'  :: feasible status but bad obj value: '",
-                              ( "" if None==dObj else str(dObj) ), "', result record: ", mRes, sep='' )
+                            print ( "  WARNING: feasible status but bad obj value, instance ", sInst,
+                                    ", method '", lNames, "' :'",
+                              ( "" if None==dObj else str(dObj) ), "', result record: ",  #  mRes,
+                              sep='', file=self.ioBadObjValueStatusFeas )
                         else:
                             self.lPrimBnd.append( (dObj, lNames) )
                 ## Handle infeasibility
@@ -207,6 +241,9 @@ class CompareLogs:
                 elif -4==n_SolStatus:
                     aResultThisInst[ "n_Errors" ] = 1
                     self.mError. setdefault( sInst, [] ).append( lNames )
+                    print( "ERROR REPORTED for the instance ", sInst, ", method '", lNames,
+                            "',  result record: ",   ## mRes,
+                            sep='', file=self.ioErrors )
                 else:
                     aResultThisInst[ "n_UNKNOWN" ] = 1
                 ## Handle NOFZN
