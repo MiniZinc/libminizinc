@@ -449,12 +449,6 @@ namespace MiniZinc {
       return isa<T>() ? static_cast<const T*>(this) : NULL;
     }
 
-    /// Test if expression is of type \a T
-    template<class T> static bool isa(Expression* e) {
-      if (e==NULL)
-        return NULL;
-      return e->isUnboxedInt() ? T::eid==E_INTLIT : e->isUnboxedFloatVal() ? T::eid==E_FLOATLIT : e->_id==T::eid;
-    }
     /// Cast expression to type \a T*
     template<class T> static T* cast(Expression* e) {
       return e==NULL ? NULL : e->cast<T>();
