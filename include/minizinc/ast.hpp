@@ -331,7 +331,7 @@ namespace MiniZinc {
         d[i*2] = dims[i].first;
         d[i*2+1] = dims[i].second;
       }
-      if (d.size()!=2 || d[0]!=1) {
+      if (v._u._v->flag() || d.size()!=2 || d[0]!=1) {
         // only allocate dims vector if it is not a 1d array indexed from 1
         _dims = ASTIntVec(d);
       }
@@ -359,7 +359,14 @@ namespace MiniZinc {
       _dims = ASTIntVec(d);
     } else {
       _u._v = v._u._v;
-      // don't allocate dims vector since this is a 1d array indexed from 1
+      if (_u._v->flag()) {
+        std::vector<int> d(2);
+        d[0] = 1;
+        d[1] = v.length();
+        _dims = ASTIntVec(d);
+      } else {
+        // don't allocate dims vector since this is a 1d array indexed from 1
+      }
     }
     rehash();
   }
