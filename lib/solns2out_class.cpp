@@ -104,7 +104,8 @@ bool Solns2Out::initFromEnv(Env* pE) {
 void Solns2Out::createOutputMap() {
   for (unsigned int i=0; i<getModel()->size(); i++) {
     if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
-      declmap.insert(pair<ASTString,DE>(vdi->e()->id()->str(),DE(vdi->e(),vdi->e()->e())));
+      GCLock lock;
+      declmap.insert(pair<std::string,DE>(vdi->e()->id()->str().str(),DE(vdi->e(),vdi->e()->e())));
     } else if (OutputI* oi = (*getModel())[i]->dyn_cast<OutputI>()) {
       MZN_ASSERT_HARD_MSG( outputExpr == oi->e(),
         "solns2out_base: <=1 output items allowed currently  TODO?" );
@@ -116,7 +117,7 @@ Solns2Out::DE& Solns2Out::findOutputVar( ASTString id ) {
   declNewOutput();
   if ( declmap.empty() )
     createOutputMap();
-  auto it = declmap.find( id );
+  auto it = declmap.find( id.str() );
   MZN_ASSERT_HARD_MSG( declmap.end()!=it,
                        "solns2out_base: unexpected id in output: " << id );
   return it->second;
@@ -125,6 +126,7 @@ Solns2Out::DE& Solns2Out::findOutputVar( ASTString id ) {
 void Solns2Out::restoreDefaults() {
   for (unsigned int i=0; i<getModel()->size(); i++) {
     if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
+      GCLock lock;
       auto& de = findOutputVar(vdi->e()->id()->str());
       vdi->e()->e(de.second());
       vdi->e()->evaluated(false);
