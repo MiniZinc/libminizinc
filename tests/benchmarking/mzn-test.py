@@ -9,7 +9,7 @@
 ##  TODO continuous output dumping as option
 ##  TODO CPU/user time limit, proper memory limit (setrlimit not working)
 
-import sys, io, re as regex
+import sys, io, re as regex, traceback
 import os.path, platform
 ##import numpy
 import math
@@ -600,8 +600,9 @@ class MznTest:
             try:
                 self.cmpRes.compareInstance( sInst )
             except:
-                print( "  WARNING: failed to compare/rank instance. ", sys.exc_info() )
-        
+                print( "  ------  WARNING: failed to compare/rank instance. ",  )
+                traceback.print_exc()
+
     def summarize(self):
         try:
             ### Printing summary
