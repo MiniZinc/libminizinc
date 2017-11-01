@@ -111,7 +111,7 @@ namespace MiniZinc {
 
         if(ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
           std::vector<Expression*> array_elems;
-          ASTExprVec<Expression> array = al->v();
+          ArrayLit& array = *al;
           for(unsigned int j=0; j<array.size(); j++) {
             if(Id* id = array[j]->dyn_cast<Id>()) {
               //std::cout << "DEBUG: getting solution value from " << *id  << " : " << id->v() << std::endl;
@@ -143,7 +143,7 @@ namespace MiniZinc {
           }
           std::vector<std::pair<int,int> > dims_v;
           for( int i=0;i<dims->length();i++) {
-            IntSetVal* isv = eval_intset(getEnv()->envi(), dims->v()[i]);
+            IntSetVal* isv = eval_intset(getEnv()->envi(), (*dims)[i]);
             if (isv->size()==0) {
               dims_v.push_back(std::pair<int,int>(1,0));
             } else {
@@ -172,9 +172,9 @@ namespace MiniZinc {
         if(e->isa<Call>() && e->cast<Call>()->id().str() == "seq_search") {
             Call* c = e->cast<Call>();
             ArrayLit* anns = c->args()[0]->cast<ArrayLit>();
-            for(unsigned int i=0; i<anns->v().size(); i++) {
+            for(unsigned int i=0; i<anns->size(); i++) {
                 Annotation subann;
-                subann.add(anns->v()[i]);
+                subann.add((*anns)[i]);
                 flattenSearchAnnotations(subann, out);
             }
         } else {

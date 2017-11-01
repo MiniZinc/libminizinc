@@ -219,26 +219,40 @@ namespace MiniZinc {
       {
         ArrayLit* al = e->cast<ArrayLit>();
         std::vector<std::pair<int,int> > dims(al->dims());
-        for (unsigned int i=al->dims(); i--;) {
+        for (unsigned int i=0; i<dims.size(); i++) {
           dims[i].first = al->min(i);
           dims[i].second = al->max(i);
         }
-        ArrayLit* c = new ArrayLit(copy_location(m,e),std::vector<Expression*>(),dims);
-        m.insert(e,c);
-
-        ASTExprVecO<Expression*>* v;
-        if (ASTExprVecO<Expression*>* cv = m.find(al->v())) {
-          v = cv;
+        if (ArrayLit* sliceView = al->getSliceLiteral()) {
+          ASTIntVec dimsInternal = al->dimsInternal();
+          int sliceDims = sliceView->dims();
+          int dimsOffset = al->dims()*2;
+          std::vector<std::pair<int,int>> slice(sliceDims);
+          for (int i=0; i<sliceDims; i++) {
+            slice[i].first = dimsInternal[dimsOffset+i*2];
+            slice[i].second = dimsInternal[dimsOffset+i*2+1];
+          }
+          ArrayLit* c = new ArrayLit(copy_location(m,e),copy(env,m,sliceView,followIds,copyFundecls,isFlatModel)->cast<ArrayLit>(),dims,slice);
+          m.insert(e,c);
+          ret = c;
         } else {
-          std::vector<Expression*> elems(al->v().size());
-          for (unsigned int i=al->v().size(); i--;)
-            elems[i] = copy(env,m,al->v()[i],followIds,copyFundecls,isFlatModel);
-          ASTExprVec<Expression> ce(elems);
-          m.insert(al->v(),ce);
-          v = ce.vec();
+          ArrayLit* c = new ArrayLit(copy_location(m,e),std::vector<Expression*>(),dims);
+          m.insert(e,c);
+
+          ASTExprVecO<Expression*>* v;
+          if (ASTExprVecO<Expression*>* cv = m.find(al->getVec())) {
+            v = cv;
+          } else {
+            std::vector<Expression*> elems(al->size());
+            for (unsigned int i=al->size(); i--;)
+              elems[i] = copy(env,m,(*al)[i],followIds,copyFundecls,isFlatModel);
+            ASTExprVec<Expression> ce(elems);
+            m.insert(al->getVec(),ce);
+            v = ce.vec();
+          }
+          c->setVec(ASTExprVec<Expression>(v));
+          ret = c;
         }
-        c->v(ASTExprVec<Expression>(v));
-        ret = c;
       }
       break;
     case Expression::E_ARRAYACCESS:

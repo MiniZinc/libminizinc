@@ -89,11 +89,11 @@ namespace MiniZinc {
       } else {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env,args[0]);
-        if (al->v().size()==0)
+        if (al->size()==0)
           throw ResultUndefinedError(env, al->loc(), "minimum of empty array is undefined");
-        IntVal m = eval_int(env,al->v()[0]);
-        for (unsigned int i=1; i<al->v().size(); i++)
-          m = std::min(m, eval_int(env,al->v()[i]));
+        IntVal m = eval_int(env,(*al)[0]);
+        for (unsigned int i=1; i<al->size(); i++)
+          m = std::min(m, eval_int(env,(*al)[i]));
         return m;
       }
     case 2:
@@ -114,11 +114,11 @@ namespace MiniZinc {
       } else {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env,args[0]);
-        if (al->v().size()==0)
+        if (al->size()==0)
           throw ResultUndefinedError(env, al->loc(), "maximum of empty array is undefined");
-        IntVal m = eval_int(env,al->v()[0]);
-        for (unsigned int i=1; i<al->v().size(); i++)
-          m = std::max(m, eval_int(env,al->v()[i]));
+        IntVal m = eval_int(env,(*al)[0]);
+        for (unsigned int i=1; i<al->size(); i++)
+          m = std::max(m, eval_int(env,(*al)[i]));
         return m;
       }
     case 2:
@@ -134,12 +134,12 @@ namespace MiniZinc {
     ASTExprVec<Expression> args = call->args();
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
-    if (al->v().size()==0)
+    if (al->size()==0)
       throw ResultUndefinedError(env, al->loc(), "argmin of empty array is undefined");
-    IntVal m = eval_int(env,al->v()[0]);
+    IntVal m = eval_int(env,(*al)[0]);
     int m_idx = 0;
-    for (unsigned int i=1; i<al->v().size(); i++) {
-      IntVal mi = eval_int(env,al->v()[i]);
+    for (unsigned int i=1; i<al->size(); i++) {
+      IntVal mi = eval_int(env,(*al)[i]);
       if (mi < m) {
         m = mi;
         m_idx = i;
@@ -151,12 +151,12 @@ namespace MiniZinc {
     ASTExprVec<Expression> args = call->args();
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
-    if (al->v().size()==0)
+    if (al->size()==0)
       throw ResultUndefinedError(env, al->loc(), "argmax of empty array is undefined");
-    IntVal m = eval_int(env,al->v()[0]);
+    IntVal m = eval_int(env,(*al)[0]);
     int m_idx = 0;
-    for (unsigned int i=1; i<al->v().size(); i++) {
-      IntVal mi = eval_int(env,al->v()[i]);
+    for (unsigned int i=1; i<al->size(); i++) {
+      IntVal mi = eval_int(env,(*al)[i]);
       if (mi > m) {
         m = mi;
         m_idx = i;
@@ -168,12 +168,12 @@ namespace MiniZinc {
     ASTExprVec<Expression> args = call->args();
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
-    if (al->v().size()==0)
+    if (al->size()==0)
       throw ResultUndefinedError(env, al->loc(), "argmin of empty array is undefined");
-    FloatVal m = eval_float(env,al->v()[0]);
+    FloatVal m = eval_float(env,(*al)[0]);
     int m_idx = 0;
-    for (unsigned int i=1; i<al->v().size(); i++) {
-      FloatVal mi = eval_float(env,al->v()[i]);
+    for (unsigned int i=1; i<al->size(); i++) {
+      FloatVal mi = eval_float(env,(*al)[i]);
       if (mi < m) {
         m = mi;
         m_idx = i;
@@ -185,12 +185,12 @@ namespace MiniZinc {
     ASTExprVec<Expression> args = call->args();
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
-    if (al->v().size()==0)
+    if (al->size()==0)
       throw ResultUndefinedError(env, al->loc(), "argmax of empty array is undefined");
-    FloatVal m = eval_float(env,al->v()[0]);
+    FloatVal m = eval_float(env,(*al)[0]);
     int m_idx = 0;
-    for (unsigned int i=1; i<al->v().size(); i++) {
-      FloatVal mi = eval_float(env,al->v()[i]);
+    for (unsigned int i=1; i<al->size(); i++) {
+      FloatVal mi = eval_float(env,(*al)[i]);
       if (mi > m) {
         m = mi;
         m_idx = i;
@@ -288,11 +288,11 @@ namespace MiniZinc {
     if (e != NULL) {
       GCLock lock;
       ArrayLit* al = eval_array_lit(env,e);
-      if (al->v().size()==0)
+      if (al->size()==0)
         throw EvalError(env, Location(), "lower bound of empty array undefined");
       IntVal min = IntVal::infinity();
-      for (unsigned int i=0; i<al->v().size(); i++) {
-        IntBounds ib = compute_int_bounds(env,al->v()[i]);
+      for (unsigned int i=0; i<al->size(); i++) {
+        IntBounds ib = compute_int_bounds(env,(*al)[i]);
         if (!ib.valid)
           goto b_array_lb_int_done;
         min = std::min(min, ib.l);
@@ -348,11 +348,11 @@ namespace MiniZinc {
     if (e != NULL) {
       GCLock lock;
       ArrayLit* al = eval_array_lit(env,e);
-      if (al->v().size()==0)
+      if (al->size()==0)
         throw EvalError(env, Location(), "upper bound of empty array undefined");
       IntVal max = -IntVal::infinity();
-      for (unsigned int i=0; i<al->v().size(); i++) {
-        IntBounds ib = compute_int_bounds(env,al->v()[i]);
+      for (unsigned int i=0; i<al->size(); i++) {
+        IntBounds ib = compute_int_bounds(env,(*al)[i]);
         if (!ib.valid)
           goto b_array_ub_int_done;
         max = std::max(max, ib.u);
@@ -376,11 +376,11 @@ namespace MiniZinc {
     assert(args.size()==1);
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
-    if (al->v().size()==0)
+    if (al->size()==0)
       return 0;
     IntVal m = 0;
-    for (unsigned int i=0; i<al->v().size(); i++)
-      m += eval_int(env,al->v()[i]);
+    for (unsigned int i=0; i<al->size(); i++)
+      m += eval_int(env,(*al)[i]);
     return m;
   }
 
@@ -389,11 +389,11 @@ namespace MiniZinc {
     assert(args.size()==1);
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
-    if (al->v().size()==0)
+    if (al->size()==0)
       return 1;
     IntVal m = 1;
-    for (unsigned int i=0; i<al->v().size(); i++)
-      m *= eval_int(env,al->v()[i]);
+    for (unsigned int i=0; i<al->size(); i++)
+      m *= eval_int(env,(*al)[i]);
     return m;
   }
 
@@ -402,11 +402,11 @@ namespace MiniZinc {
     assert(args.size()==1);
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
-    if (al->v().size()==0)
+    if (al->size()==0)
       return 1;
     FloatVal m = 1.0;
-    for (unsigned int i=0; i<al->v().size(); i++)
-      m *= eval_float(env,al->v()[i]);
+    for (unsigned int i=0; i<al->size(); i++)
+      m *= eval_float(env,(*al)[i]);
     return m;
   }
 
@@ -458,12 +458,12 @@ namespace MiniZinc {
     if (e != NULL) {
       GCLock lock;
       ArrayLit* al = eval_array_lit(env,e);
-      if (al->v().size()==0)
+      if (al->size()==0)
         throw EvalError(env, Location(), "lower bound of empty array undefined");
       bool min_valid = false;
       FloatVal min = 0.0;
-      for (unsigned int i=0; i<al->v().size(); i++) {
-        FloatBounds fb = compute_float_bounds(env,al->v()[i]);
+      for (unsigned int i=0; i<al->size(); i++) {
+        FloatBounds fb = compute_float_bounds(env,(*al)[i]);
         if (!fb.valid)
           goto b_array_lb_float_done;
         if (min_valid) {
@@ -508,12 +508,12 @@ namespace MiniZinc {
     if (e != NULL) {
       GCLock lock;
       ArrayLit* al = eval_array_lit(env,e);
-      if (al->v().size()==0)
+      if (al->size()==0)
         throw EvalError(env, Location(), "upper bound of empty array undefined");
       bool max_valid = false;
       FloatVal max = 0.0;
-      for (unsigned int i=0; i<al->v().size(); i++) {
-        FloatBounds fb = compute_float_bounds(env,al->v()[i]);
+      for (unsigned int i=0; i<al->size(); i++) {
+        FloatBounds fb = compute_float_bounds(env,(*al)[i]);
         if (!fb.valid)
           goto b_array_ub_float_done;
         if (max_valid) {
@@ -543,11 +543,11 @@ namespace MiniZinc {
     assert(args.size()==1);
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
-    if (al->v().size()==0)
+    if (al->size()==0)
       return 0;
     FloatVal m = 0;
-    for (unsigned int i=0; i<al->v().size(); i++)
-      m += eval_float(env,al->v()[i]);
+    for (unsigned int i=0; i<al->size(); i++)
+      m += eval_float(env,(*al)[i]);
     return m;
   }
 
@@ -560,11 +560,11 @@ namespace MiniZinc {
         } else {
           GCLock lock;
           ArrayLit* al = eval_array_lit(env,args[0]);
-          if (al->v().size()==0)
+          if (al->size()==0)
             throw EvalError(env, al->loc(), "min on empty array undefined");
-          FloatVal m = eval_float(env,al->v()[0]);
-          for (unsigned int i=1; i<al->v().size(); i++)
-            m = std::min(m, eval_float(env,al->v()[i]));
+          FloatVal m = eval_float(env,(*al)[0]);
+          for (unsigned int i=1; i<al->size(); i++)
+            m = std::min(m, eval_float(env,(*al)[i]));
           return m;
         }
       case 2:
@@ -585,11 +585,11 @@ namespace MiniZinc {
         } else {
           GCLock lock;
           ArrayLit* al = eval_array_lit(env,args[0]);
-          if (al->v().size()==0)
+          if (al->size()==0)
             throw EvalError(env, al->loc(), "max on empty array undefined");
-          FloatVal m = eval_float(env,al->v()[0]);
-          for (unsigned int i=1; i<al->v().size(); i++)
-            m = std::max(m, eval_float(env,al->v()[i]));
+          FloatVal m = eval_float(env,(*al)[0]);
+          for (unsigned int i=1; i<al->size(); i++)
+            m = std::max(m, eval_float(env,(*al)[i]));
           return m;
         }
       case 2:
@@ -740,12 +740,12 @@ namespace MiniZinc {
     assert(args.size()==1);
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
-    if (al->v().size()==0)
+    if (al->size()==0)
       throw EvalError(env, Location(), "upper bound of empty array undefined");
-    IntSetVal* ub = b_ub_set(env,al->v()[0]);
-    for (unsigned int i=1; i<al->v().size(); i++) {
+    IntSetVal* ub = b_ub_set(env,(*al)[0]);
+    for (unsigned int i=1; i<al->size(); i++) {
       IntSetRanges isr(ub);
-      IntSetRanges r(b_ub_set(env,al->v()[i]));
+      IntSetRanges r(b_ub_set(env,(*al)[i]));
       Ranges::Union<IntVal,IntSetRanges,IntSetRanges> u(isr,r);
       ub = IntSetVal::ai(u);
     }
@@ -832,12 +832,12 @@ namespace MiniZinc {
     if (e != NULL) {
       GCLock lock;
       ArrayLit* al = eval_array_lit(env,e);
-      if (al->v().size()==0)
+      if (al->size()==0)
         throw EvalError(env, Location(), "lower bound of empty array undefined");
       IntVal min = IntVal::infinity();
       IntVal max = -IntVal::infinity();
-      for (unsigned int i=0; i<al->v().size(); i++) {
-        IntBounds ib = compute_int_bounds(env,al->v()[i]);
+      for (unsigned int i=0; i<al->size(); i++) {
+        IntBounds ib = compute_int_bounds(env,(*al)[i]);
         if (!ib.valid)
           goto b_array_lb_int_done;
         min = std::min(min, ib.l);
@@ -880,12 +880,12 @@ namespace MiniZinc {
         throw EvalError(env, ae->loc(),"invalid argument to dom");
       }
     }
-    if (al->v().size()==0)
+    if (al->size()==0)
       return IntSetVal::a();
-    IntSetVal* isv = b_dom_varint(env,al->v()[0]);
-    for (unsigned int i=1; i<al->v().size(); i++) {
+    IntSetVal* isv = b_dom_varint(env,(*al)[0]);
+    for (unsigned int i=1; i<al->size(); i++) {
       IntSetRanges isr(isv);
-      IntSetRanges r(b_dom_varint(env,al->v()[i]));
+      IntSetRanges r(b_dom_varint(env,(*al)[i]));
       Ranges::Union<IntVal,IntSetRanges,IntSetRanges> u(isr,r);
       isv = IntSetVal::ai(u);
     }
@@ -954,9 +954,9 @@ namespace MiniZinc {
         dim1d *= dims[i].second-dims[i].first+1;
       }
     }
-    if (dim1d != al->v().size())
+    if (dim1d != al->size())
       throw EvalError(env, al->loc(), "mismatch in array dimensions");
-    ArrayLit* ret = new ArrayLit(al->loc(), al->v(), dims);
+    ArrayLit* ret = new ArrayLit(al->loc(), *al, dims);
     Type t = al->type();
     t.dim(d);
     ret->type(t);
@@ -970,7 +970,7 @@ namespace MiniZinc {
     if (al->dims()==1 && al->min(0)==1) {
       return args[0]->isa<Id>() ? args[0] : al;
     }
-    ArrayLit* ret = new ArrayLit(al->loc(), al->v());
+    ArrayLit* ret = new ArrayLit(al->loc(), *al);
     Type t = al->type();
     t.dim(1);
     ret->type(t);
@@ -1022,7 +1022,7 @@ namespace MiniZinc {
     for (unsigned int i=al0->dims(); i--;) {
       dims[i] = std::make_pair(al0->min(i), al0->max(i));
     }
-    ArrayLit* ret = new ArrayLit(al1->loc(), al1->v(), dims);
+    ArrayLit* ret = new ArrayLit(al1->loc(), *al1, dims);
     Type t = al1->type();
     t.dim(dims.size());
     ret->type(t);
@@ -1034,7 +1034,7 @@ namespace MiniZinc {
     ASTExprVec<Expression> args = call->args();
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
-    return al->v().size();
+    return al->size();
   }
   
   IntVal b_bool2int(EnvI& env, Call* call) {
@@ -1048,8 +1048,8 @@ namespace MiniZinc {
       throw EvalError(env, Location(), "forall needs exactly one argument");
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
-    for (unsigned int i=al->v().size(); i--;)
-      if (!eval_bool(env,al->v()[i]))
+    for (unsigned int i=al->size(); i--;)
+      if (!eval_bool(env,(*al)[i]))
         return false;
     return true;
   }
@@ -1059,8 +1059,8 @@ namespace MiniZinc {
       throw EvalError(env, Location(), "exists needs exactly one argument");
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
-    for (unsigned int i=al->v().size(); i--;)
-      if (eval_bool(env,al->v()[i]))
+    for (unsigned int i=al->size(); i--;)
+      if (eval_bool(env,(*al)[i]))
         return true;
     return false;
   }
@@ -1070,12 +1070,12 @@ namespace MiniZinc {
       throw EvalError(env, Location(), "clause needs exactly two arguments");
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
-    for (unsigned int i=al->v().size(); i--;)
-      if (eval_bool(env,al->v()[i]))
+    for (unsigned int i=al->size(); i--;)
+      if (eval_bool(env,(*al)[i]))
         return true;
     al = eval_array_lit(env,args[1]);
-    for (unsigned int i=al->v().size(); i--;)
-      if (!eval_bool(env,al->v()[i]))
+    for (unsigned int i=al->size(); i--;)
+      if (!eval_bool(env,(*al)[i]))
         return true;
     return false;
   }
@@ -1086,8 +1086,8 @@ namespace MiniZinc {
     GCLock lock;
     int count = 0;
     ArrayLit* al = eval_array_lit(env,args[0]);
-    for (unsigned int i=al->v().size(); i--;)
-      count += eval_bool(env,al->v()[i]);
+    for (unsigned int i=al->size(); i--;)
+      count += eval_bool(env,(*al)[i]);
     return count % 2 == 1;
   }
   bool b_iffall_par(EnvI& env, Call* call) {
@@ -1097,8 +1097,8 @@ namespace MiniZinc {
     GCLock lock;
     int count = 0;
     ArrayLit* al = eval_array_lit(env,args[0]);
-    for (unsigned int i=al->v().size(); i--;)
-      count += eval_bool(env,al->v()[i]);
+    for (unsigned int i=al->size(); i--;)
+      count += eval_bool(env,(*al)[i]);
     return count % 2 == 0;
   }
   
@@ -1148,10 +1148,10 @@ namespace MiniZinc {
     assert(args.size()==1);
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
-    if (al->v().size()==0)
+    if (al->size()==0)
       return true;
-    for (unsigned int i=0; i<al->v().size(); i++) {
-      if (exp_is_fixed(env,al->v()[i])==NULL)
+    for (unsigned int i=0; i<al->size(); i++) {
+      if (exp_is_fixed(env,(*al)[i])==NULL)
         return false;
     }
     return true;
@@ -1184,11 +1184,11 @@ namespace MiniZinc {
     assert(args.size()==1);
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
-    std::vector<Expression*> fixed(al->v().size());
+    std::vector<Expression*> fixed(al->size());
     for (unsigned int i=0; i<fixed.size(); i++) {
-      fixed[i] = exp_is_fixed(env,al->v()[i]);
+      fixed[i] = exp_is_fixed(env,(*al)[i]);
       if (fixed[i]==NULL)
-        throw EvalError(env, al->v()[i]->loc(), "expression is not fixed");
+        throw EvalError(env, (*al)[i]->loc(), "expression is not fixed");
     }
     ArrayLit* ret = new ArrayLit(Location(), fixed);
     Type tt = al->type();
@@ -1331,9 +1331,9 @@ namespace MiniZinc {
       e = eval_par(env,e);
       if (ArrayLit* al = e->dyn_cast<ArrayLit>()) {
         oss << "[";
-        for (unsigned int i=0; i<al->v().size(); i++) {
-          p.print(al->v()[i]);
-          if (i<al->v().size()-1)
+        for (unsigned int i=0; i<al->size(); i++) {
+          p.print((*al)[i]);
+          if (i<al->size()-1)
             oss << ", ";
         }
         oss << "]";
@@ -1422,20 +1422,20 @@ namespace MiniZinc {
 
         std::ostringstream oss;
         oss << "[";
-        for (unsigned int i=0; i<al->v().size(); i++) {
+        for (unsigned int i=0; i<al->size(); i++) {
           for (unsigned int j=0; j<dims.size(); j++) {
             if (i % dims[j] == 0) {
               oss << "[";
             }
           }
-          oss << b_show_json_basic(env, al->v()[i]);
+          oss << b_show_json_basic(env, (*al)[i]);
           for (unsigned int j=0; j<dims.size(); j++) {
             if (i % dims[j] == dims[j]-1) {
               oss << "]";
             }
           }
           
-          if (i<al->v().size()-1)
+          if (i<al->size()-1)
             oss << ", ";
         }
         oss << "]";
@@ -1584,8 +1584,8 @@ namespace MiniZinc {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[0]);
     std::ostringstream oss;
-    for (unsigned int i=0; i<al->v().size(); i++) {
-      oss << eval_string(env,al->v()[i]);
+    for (unsigned int i=0; i<al->size(); i++) {
+      oss << eval_string(env,(*al)[i]);
     }
     return oss.str();
   }
@@ -1597,9 +1597,9 @@ namespace MiniZinc {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,args[1]);
     std::ostringstream oss;
-    for (unsigned int i=0; i<al->v().size(); i++) {
-      oss << eval_string(env,al->v()[i]);
-      if (i<al->v().size()-1)
+    for (unsigned int i=0; i<al->size(); i++) {
+      oss << eval_string(env,(*al)[i]);
+      if (i<al->size()-1)
         oss << sep;
     }
     return oss.str();
@@ -1609,12 +1609,12 @@ namespace MiniZinc {
     ASTExprVec<Expression> args = call->args();
     assert(args.size()==1);
     ArrayLit* al = eval_array_lit(env,args[0]);
-    if (al->v().size()==0)
+    if (al->size()==0)
       return IntSetVal::a();
-    IntSetVal* isv = eval_intset(env,al->v()[0]);
-    for (unsigned int i=0; i<al->v().size(); i++) {
+    IntSetVal* isv = eval_intset(env,(*al)[0]);
+    for (unsigned int i=0; i<al->size(); i++) {
       IntSetRanges i0(isv);
-      IntSetRanges i1(eval_intset(env,al->v()[i]));
+      IntSetRanges i1(eval_intset(env,(*al)[i]));
       Ranges::Union<IntVal,IntSetRanges, IntSetRanges> u(i0,i1);
       isv = IntSetVal::ai(u);
     }
@@ -1626,8 +1626,8 @@ namespace MiniZinc {
     assert(args.size()==1);
     ArrayLit* al = eval_array_lit(env,args[0]);
     std::vector<IntSetVal::Range> ranges;
-    if (al->v().size() > 0) {
-      IntSetVal* i0 = eval_intset(env,al->v()[0]);
+    if (al->size() > 0) {
+      IntSetVal* i0 = eval_intset(env,(*al)[0]);
       if (i0->size() > 0) {
         IntSetRanges i0r(i0);
         IntVal min = i0r.min();
@@ -1636,8 +1636,8 @@ namespace MiniZinc {
           IntVal max = i0r.max();
           // Intersect with all other intervals
         restart:
-          for (int j=al->v().size(); j--;) {
-            IntSetRanges ij(eval_intset(env,al->v()[j]));
+          for (int j=al->size(); j--;) {
+            IntSetRanges ij(eval_intset(env,(*al)[j]));
             // Skip intervals that are too small
             while (ij() && (ij.max() < min))
               ++ij;
@@ -1673,11 +1673,11 @@ namespace MiniZinc {
     assert(args.size()==2);
     ArrayLit* al = eval_array_lit(env,args[0]);
     ArrayLit* order_e = eval_array_lit(env,args[1]);
-    std::vector<IntVal> order(order_e->v().size());
-    std::vector<int> a(order_e->v().size());
+    std::vector<IntVal> order(order_e->size());
+    std::vector<int> a(order_e->size());
     for (unsigned int i=0; i<order.size(); i++) {
       a[i] = i;
-      order[i] = eval_int(env,order_e->v()[i]);
+      order[i] = eval_int(env,(*order_e)[i]);
     }
     struct Ord {
       std::vector<IntVal>& order;
@@ -1689,7 +1689,7 @@ namespace MiniZinc {
     std::stable_sort(a.begin(), a.end(), _ord);
     std::vector<Expression*> sorted(a.size());
     for (unsigned int i=sorted.size(); i--;)
-      sorted[i] = al->v()[a[i]];
+      sorted[i] = (*al)[a[i]];
     ArrayLit* al_sorted = new ArrayLit(al->loc(), sorted);
     al_sorted->type(al->type());
     return al_sorted;
@@ -1700,11 +1700,11 @@ namespace MiniZinc {
     assert(args.size()==2);
     ArrayLit* al = eval_array_lit(env,args[0]);
     ArrayLit* order_e = eval_array_lit(env,args[1]);
-    std::vector<FloatVal> order(order_e->v().size());
-    std::vector<int> a(order_e->v().size());
+    std::vector<FloatVal> order(order_e->size());
+    std::vector<int> a(order_e->size());
     for (unsigned int i=0; i<order.size(); i++) {
       a[i] = i;
-      order[i] = eval_float(env,order_e->v()[i]);
+      order[i] = eval_float(env,(*order_e)[i]);
     }
     struct Ord {
       std::vector<FloatVal>& order;
@@ -1716,7 +1716,7 @@ namespace MiniZinc {
     std::stable_sort(a.begin(), a.end(), _ord);
     std::vector<Expression*> sorted(a.size());
     for (unsigned int i=sorted.size(); i--;)
-      sorted[i] = al->v()[a[i]];
+      sorted[i] = (*al)[a[i]];
     ArrayLit* al_sorted = new ArrayLit(al->loc(), sorted);
     al_sorted->type(al->type());
     return al_sorted;
@@ -1726,9 +1726,9 @@ namespace MiniZinc {
     ASTExprVec<Expression> args = call->args();
     assert(args.size()==1);
     ArrayLit* al = eval_array_lit(env,args[0]);
-    std::vector<Expression*> sorted(al->v().size());
+    std::vector<Expression*> sorted(al->size());
     for (unsigned int i=sorted.size(); i--;)
-      sorted[i] = al->v()[i];
+      sorted[i] = (*al)[i];
     struct Ord {
       EnvI& env;
       Ord(EnvI& env0) : env(env0) {}
@@ -2022,9 +2022,9 @@ namespace MiniZinc {
           << *al << std::endl;
       throw EvalError(env, al->loc(), ssm.str());
     }
-    std::vector<long long int> weights(al->v().size());
-    for(unsigned int i = 0; i < al->v().size(); i++) {
-      weights[i] = eval_int(env,al->v()[i]).toInt();
+    std::vector<long long int> weights(al->size());
+    for(unsigned int i = 0; i < al->size(); i++) {
+      weights[i] = eval_int(env,(*al)[i]).toInt();
     }
 #ifdef _MSC_VER
     std::size_t i(0);
@@ -2137,6 +2137,31 @@ namespace MiniZinc {
     return atoi(MZN_VERSION_MAJOR)*10000+atoi(MZN_VERSION_MINOR)*1000+atoi(MZN_VERSION_PATCH);
   }
   
+  Expression* b_slice(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    ArrayLit* al = eval_array_lit(env,args[0]);
+
+    ArrayLit* slice = eval_array_lit(env,args[1]);
+    std::vector<std::pair<int,int>> newSlice(slice->size());
+    for (unsigned int i=0; i<slice->size(); i++) {
+      IntSetVal* isv = eval_intset(env, (*slice)[i]);
+      if (isv->size()>1)
+        throw ResultUndefinedError(env, call->loc(), "array slice must be contiguous");
+      int sl_min = isv->min().isFinite() ? isv->min().toInt() : al->min(i);
+      int sl_max = isv->max().isFinite() ? isv->max().toInt() : al->max(i);
+      if (sl_min < al->min(i) || sl_max > al->max(i))
+        throw ResultUndefinedError(env, call->loc(), "array slice out of bounds");
+      newSlice[i] = std::pair<int,int>(sl_min, sl_max);
+    }
+    
+    std::vector<std::pair<int,int>> newDims(args.size()-2);
+    for (unsigned int i=0; i<newDims.size(); i++) {
+      IntSetVal* isv = eval_intset(env, args[2+i]);
+      newDims[i] = std::pair<int,int>(isv->min().toInt(), isv->max().toInt());
+    }
+    return new ArrayLit(al->loc(), al, newDims, newSlice);
+  }
+  
   void registerBuiltins(Env& e, Model* m) {
     EnvI& env = e.envi();
     
@@ -2148,6 +2173,7 @@ namespace MiniZinc {
     t_intarray[0] = Type::parint(-1);
     
     GCLock lock;
+    
     rb(env, m, ASTString("min"), t_intint, b_int_min);
     rb(env, m, ASTString("min"), t_intarray, b_int_min);
     rb(env, m, ASTString("max"), t_intint, b_int_max);
@@ -2300,6 +2326,23 @@ namespace MiniZinc {
       rb(env, m, ASTString("array6d"), t_arrayXd, b_array6d);
       t_arrayXd[6] = Type::optvartop(-1);
       rb(env, m, ASTString("array6d"), t_arrayXd, b_array6d);
+    }
+    {
+      std::vector<Type> stv(3);
+      stv[0] = Type::parint(-1);
+      stv[1] = Type::parsetint(1);
+      stv[2] = Type::parsetint();
+      rb(env, m, ASTString("slice_1d"), stv, b_slice);
+      stv.push_back(Type::parsetint());
+      rb(env, m, ASTString("slice_2d"), stv, b_slice);
+      stv.push_back(Type::parsetint());
+      rb(env, m, ASTString("slice_3d"), stv, b_slice);
+      stv.push_back(Type::parsetint());
+      rb(env, m, ASTString("slice_4d"), stv, b_slice);
+      stv.push_back(Type::parsetint());
+      rb(env, m, ASTString("slice_5d"), stv, b_slice);
+      stv.push_back(Type::parsetint());
+      rb(env, m, ASTString("slice_6d"), stv, b_slice);
     }
     {
       std::vector<Type> t(2);

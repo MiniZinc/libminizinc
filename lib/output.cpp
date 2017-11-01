@@ -251,7 +251,9 @@ namespace MiniZinc {
             pushVec(stack, e->template cast<SetLit>()->v());
             break;
           case Expression::E_ARRAYLIT:
-            pushVec(stack, e->template cast<ArrayLit>()->v());
+            for (unsigned int i=0; i<e->cast<ArrayLit>()->size(); i++) {
+              stack.push_back((*e->cast<ArrayLit>())[i]);
+            }
             break;
           case Expression::E_ARRAYACCESS:
             pushVec(stack, e->template cast<ArrayAccess>()->idx());
@@ -484,8 +486,8 @@ namespace MiniZinc {
               if (vd->type().isvar()) {
                 if (vd->e()) {
                   if (ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
-                    for (unsigned int i=0; i<al->v().size(); i++) {
-                      if (al->v()[i]->isa<AnonVar>()) {
+                    for (unsigned int i=0; i<al->size(); i++) {
+                      if ((*al)[i]->isa<AnonVar>()) {
                         process_var = true;
                         break;
                       }
@@ -772,8 +774,8 @@ namespace MiniZinc {
                   bool needOutputAnn = true;
                   if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
                     ArrayLit* al = reallyFlat->e()->cast<ArrayLit>();
-                    for (unsigned int i=0; i<al->v().size(); i++) {
-                      if (Id* id = al->v()[i]->dyn_cast<Id>()) {
+                    for (unsigned int i=0; i<al->size(); i++) {
+                      if (Id* id = (*al)[i]->dyn_cast<Id>()) {
                         if (env.reverseMappers.find(id) != env.reverseMappers.end()) {
                           needOutputAnn = false;
                           break;
@@ -893,8 +895,8 @@ namespace MiniZinc {
                 bool needOutputAnn = true;
                 if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
                   ArrayLit* al = reallyFlat->e()->cast<ArrayLit>();
-                  for (unsigned int i=0; i<al->v().size(); i++) {
-                    if (Id* id = al->v()[i]->dyn_cast<Id>()) {
+                  for (unsigned int i=0; i<al->size(); i++) {
+                    if (Id* id = (*al)[i]->dyn_cast<Id>()) {
                       if (e.reverseMappers.find(id) != e.reverseMappers.end()) {
                         needOutputAnn = false;
                         break;

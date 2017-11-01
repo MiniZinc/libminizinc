@@ -481,8 +481,8 @@ namespace MiniZinc {
     case Expression::E_ARRAYLIT:
       {
         ArrayLit* al = e->cast<ArrayLit>();
-        for (unsigned int i=0; i<al->v().size(); i++)
-          run(env, al->v()[i]);
+        for (unsigned int i=0; i<al->size(); i++)
+          run(env, (*al)[i]);
       }
       break;
     case Expression::E_ARRAYACCESS:
@@ -609,6 +609,67 @@ namespace MiniZinc {
   }
   
   KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) {
+    if (e->isa<ArrayAccess>() && e->type().dim() > 0) {
+      ArrayAccess* aa = e->cast<ArrayAccess>();
+      // Turn ArrayAccess into a slicing operation
+      std::vector<Expression*> args;
+      args.push_back(aa->v());
+      args.push_back(NULL);
+      std::vector<Expression*> slice;
+      GCLock lock;
+      for (unsigned int i=0; i<aa->idx().size(); i++) {
+        if (aa->idx()[i]->type().is_set()) {
+          bool needIdxSet = true;
+          bool needInter = true;
+          if (SetLit* sl = aa->idx()[i]->dyn_cast<SetLit>()) {
+            if (sl->isv() && sl->isv()->size()==1) {
+              if (sl->isv()->min().isFinite() && sl->isv()->max().isFinite()) {
+                args.push_back(sl);
+                needIdxSet = false;
+              } else if (sl->isv()->min()==-IntVal::infinity() && sl->isv()->max()==IntVal::infinity()) {
+                needInter = false;
+              }
+            }
+          }
+          if (needIdxSet) {
+            std::ostringstream oss;
+            oss << "index_set_" << (i+1) << "of" << aa->idx().size();
+            std::vector<Expression*> origIdxsetArgs(1);
+            origIdxsetArgs[0] = aa->v();
+            Call* origIdxset = new Call(aa->v()->loc(), ASTString(oss.str()), origIdxsetArgs);
+            FunctionI* fi = m->matchFn(env, origIdxset, false);
+            if (!fi)
+              throw TypeError(env, e->loc(), "missing builtin "+oss.str());
+            origIdxset->type(fi->rtype(env, origIdxsetArgs, false));
+            origIdxset->decl(fi);
+            if (needInter) {
+              BinOp* inter = new BinOp(aa->idx()[i]->loc(), aa->idx()[i], BOT_INTERSECT, origIdxset);
+              inter->type(Type::parsetint());
+              args.push_back(inter);
+            } else {
+              args.push_back(origIdxset);
+            }
+          }
+          slice.push_back(aa->idx()[i]);
+        } else {
+          BinOp* bo = new BinOp(aa->idx()[i]->loc(),aa->idx()[i],BOT_DOTDOT,aa->idx()[i]);
+          bo->type(Type::parsetint());
+          slice.push_back(bo);
+        }
+      }
+      ArrayLit* a_slice = new ArrayLit(e->loc(), slice);
+      a_slice->type(Type::parsetint(1));
+      args[1] = a_slice;
+      std::ostringstream oss;
+      oss << "slice_" << (args.size()-2) << "d";
+      Call* c = new Call(e->loc(), ASTString(oss.str()), args);
+      FunctionI* fi = m->matchFn(env, c, false);
+      if (!fi)
+        throw TypeError(env, e->loc(), "missing builtin "+oss.str());
+      c->type(fi->rtype(env, args, false));
+      c->decl(fi);
+      return c;
+    }
     if (e->type().dim()==funarg_t.dim() && (funarg_t.bt()==Type::BT_BOT || funarg_t.bt()==Type::BT_TOP || e->type().bt()==funarg_t.bt() || e->type().bt()==Type::BT_BOT))
       return e;
     std::vector<Expression*> args(1);
@@ -736,8 +797,8 @@ namespace MiniZinc {
       Type ty; ty.dim(al.dims());
       std::vector<AnonVar*> anons;
       bool haveInferredType = false;
-      for (unsigned int i=0; i<al.v().size(); i++) {
-        Expression* vi = al.v()[i];
+      for (unsigned int i=0; i<al.size(); i++) {
+        Expression* vi = al[i];
         if (vi->type().dim() > 0)
           throw TypeError(_env,vi->loc(),"arrays cannot be elements of arrays");
         
@@ -811,8 +872,8 @@ namespace MiniZinc {
         for (unsigned int i=0; i<anons.size(); i++) {
           anons[i]->type(at);
         }
-        for (unsigned int i=0; i<al.v().size(); i++) {
-          al.v()[i] = addCoercion(_env, _model, al.v()[i], at)();
+        for (unsigned int i=0; i<al.size(); i++) {
+          al.set(i, addCoercion(_env, _model, al[i], at)());
         }
       }
       if (ty.enumId() != 0) {
@@ -837,6 +898,8 @@ namespace MiniZinc {
           oss << "array access attempted on expression of type `" << aa.v()->type().toString(_env) << "'";
           throw TypeError(_env,aa.v()->loc(),oss.str());
         }
+      } else if (aa.v()->isa<ArrayAccess>()) {
+        aa.v(addCoercion(_env, _model, aa.v(), aa.v()->type())());
       }
       if (aa.v()->type().dim() != aa.idx().size()) {
         std::ostringstream oss;
@@ -863,25 +926,42 @@ namespace MiniZinc {
         }
         tt.enumId(arrayEnumIds[arrayEnumIds.size()-1]);
       }
-      tt.dim(0);
+      int n_dimensions = 0;
+      bool isVarAccess = false;
+      bool isSlice = false;
       for (unsigned int i=0; i<aa.idx().size(); i++) {
         Expression* aai = aa.idx()[i];
         if (aai->isa<AnonVar>()) {
           aai->type(Type::varint());
         }
-        if (aai->type().is_set() || (aai->type().bt() != Type::BT_INT && aai->type().bt() != Type::BT_BOOL) || aai->type().dim() != 0) {
-          throw TypeError(_env,aa.loc(),"array index must be `int', but is `"+aai->type().toString(_env)+"'");
+        if ((aai->type().bt() != Type::BT_INT && aai->type().bt() != Type::BT_BOOL) || aai->type().dim() != 0) {
+          throw TypeError(_env,aa.loc(),"array index must be `int' or `set of int', but is `"+aai->type().toString(_env)+"'");
         }
-        aa.idx()[i] = addCoercion(_env, _model, aai, Type::varint())();
+        if (aai->type().is_set()) {
+          if (isVarAccess || aai->type().isvar()) {
+            throw TypeError(_env,aa.loc(),"array slicing with variable range or index not supported");
+          }
+          isSlice = true;
+          aa.idx()[i] = addCoercion(_env, _model, aai, Type::varsetint())();
+          n_dimensions++;
+        } else {
+          aa.idx()[i] = addCoercion(_env, _model, aai, Type::varint())();
+        }
+        
         if (aai->type().isopt()) {
           tt.ot(Type::OT_OPTIONAL);
         }
         if (aai->type().isvar()) {
+          isVarAccess = true;
+          if (isSlice) {
+            throw TypeError(_env,aa.loc(),"array slicing with variable range or index not supported");
+          }
           tt.ti(Type::TI_VAR);
           if (tt.bt()==Type::BT_ANN || tt.bt()==Type::BT_STRING) {
             throw TypeError(_env,aai->loc(),std::string("array access using a variable not supported for array of ")+(tt.bt()==Type::BT_ANN ? "ann" : "string"));
           }
         }
+        tt.dim(n_dimensions);
         if (aai->type().cv())
           tt.cv(true);
       }

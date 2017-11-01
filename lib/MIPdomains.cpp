@@ -391,10 +391,10 @@ namespace MiniZinc {
 //           ArrayLit* al = c->args()[1]->dyn_cast<ArrayLit>();
           ArrayLit* al = follow_id(c->args()[1])->cast<ArrayLit>();
           MZN_MIPD__assert_hard( al );
-          MZN_MIPD__assert_hard( al->v().size() >= 1 );
-          if ( al->v().size() == 1 ) {   // 1-term scalar product in the rhs
+          MZN_MIPD__assert_hard( al->size() >= 1 );
+          if ( al->size() == 1 ) {   // 1-term scalar product in the rhs
             LinEq2Vars led;
-            led.vd = { {vd, expr2VarDecl(al->v()[0])} };
+            led.vd = { {vd, expr2VarDecl((*al)[0])} };
 //             const int f1 = ( vd->payload()>=0 );
 //             const int f2 = ( led.vd[1]->payload()>=0 );
             if ( ! fCheckArg || ( led.vd[1]->payload()>=0 ) ) {
@@ -482,7 +482,7 @@ namespace MiniZinc {
             MZN_MIPD__assert_hard( c->args().size() == 3 );
             ArrayLit* al = follow_id(c->args()[1])->cast<ArrayLit>();
             MZN_MIPD__assert_hard( al );
-            if ( al->v().size() == 2 ) {   // 2-term eqn
+            if ( al->size() == 2 ) {   // 2-term eqn
               LinEq2Vars led;
               expr2DeclArray(c->args()[1], led.vd);
               // At least 1 touched var:
@@ -499,7 +499,7 @@ namespace MiniZinc {
                 put2VarsConnection( led );
                 ++MIPD__stats[ fIntLinEq ? N_POSTs__eq2intlineq : N_POSTs__eq2floatlineq ];
               }
-            } else if ( al->v().size() == 1 ) {
+            } else if ( al->size() == 1 ) {
               static int nn=0;
               if ( ++nn <= 7 ) {
                 std::cerr << "  MIPD: LIN_EQ with 1 variable::: " << std::flush;
@@ -1667,9 +1667,9 @@ namespace MiniZinc {
     template <class Array>
     long long expr2DeclArray(Expression* arg, Array& aVD) {
       ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
-      checkOrResize( aVD, al->v().size() );
-      for (unsigned int i=0; i<al->v().size(); i++)
-        aVD[i] = expr2VarDecl(al->v()[i]);
+      checkOrResize( aVD, al->size() );
+      for (unsigned int i=0; i<al->size(); i++)
+        aVD[i] = expr2VarDecl((*al)[i]);
       return al->min(0);
     }
     
@@ -1677,9 +1677,9 @@ namespace MiniZinc {
     template <class Array>
     long long expr2ExprArray(Expression* arg, Array& aVD) {
       ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
-      checkOrResize( aVD, al->v().size() );
-      for (unsigned int i=0; i<al->v().size(); i++)
-        aVD[i] = ( al->v()[i] );
+      checkOrResize( aVD, al->size() );
+      for (unsigned int i=0; i<al->size(); i++)
+        aVD[i] = ( (*al)[i] );
       return al->min(0);
     }
 
@@ -1715,9 +1715,9 @@ namespace MiniZinc {
 //         MZN_MIPD__assert_hard( vals.size() == al->v().size() );
 //       else
 //         vals.resize( al->v().size() );
-      checkOrResize(vals, al->v().size());
-      for (unsigned int i=0; i<al->v().size(); i++) {
-        vals[i] = expr2Const(al->v()[i]);
+      checkOrResize(vals, al->size());
+      for (unsigned int i=0; i<al->size(); i++) {
+        vals[i] = expr2Const((*al)[i]);
       }
     }
     

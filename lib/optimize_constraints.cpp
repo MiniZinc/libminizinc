@@ -39,14 +39,14 @@ namespace MiniZinc {
     
     OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expression*& rewrite) {
       ArrayLit* al_c = eval_array_lit(env,c->args()[0]);
-      std::vector<IntVal> coeffs(al_c->v().size());
-      for (unsigned int i=0; i<al_c->v().size(); i++) {
-        coeffs[i] = eval_int(env,al_c->v()[i]);
+      std::vector<IntVal> coeffs(al_c->size());
+      for (unsigned int i=0; i<al_c->size(); i++) {
+        coeffs[i] = eval_int(env,(*al_c)[i]);
       }
       ArrayLit* al_x = eval_array_lit(env,c->args()[1]);
-      std::vector<KeepAlive> x(al_x->v().size());
-      for (unsigned int i=0; i<al_x->v().size(); i++) {
-        x[i] = al_x->v()[i];
+      std::vector<KeepAlive> x(al_x->size());
+      for (unsigned int i=0; i<al_x->size(); i++) {
+        x[i] = (*al_x)[i];
       }
       IntVal d = 0;
       simplify_lin<IntLit>(coeffs, x, d);
@@ -134,7 +134,7 @@ namespace MiniZinc {
         rewrite = c;
         return OptimizeRegistry::CS_REWRITE;
       }
-      if (coeffs.size() < al_c->v().size()) {
+      if (coeffs.size() < al_c->size()) {
         std::vector<Expression*> coeffs_e(coeffs.size());
         std::vector<Expression*> x_e(coeffs.size());
         for (unsigned int i=0; i<coeffs.size(); i++) {
@@ -165,21 +165,21 @@ namespace MiniZinc {
     OptimizeRegistry::ConstraintStatus o_lin_exp(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
       if (c->type().isint()) {
         ArrayLit* al_c = eval_array_lit(env,c->args()[0]);
-        std::vector<IntVal> coeffs(al_c->v().size());
-        for (unsigned int i=0; i<al_c->v().size(); i++) {
-          coeffs[i] = eval_int(env,al_c->v()[i]);
+        std::vector<IntVal> coeffs(al_c->size());
+        for (unsigned int i=0; i<al_c->size(); i++) {
+          coeffs[i] = eval_int(env,(*al_c)[i]);
         }
         ArrayLit* al_x = eval_array_lit(env,c->args()[1]);
-        std::vector<KeepAlive> x(al_x->v().size());
-        for (unsigned int i=0; i<al_x->v().size(); i++) {
-          x[i] = al_x->v()[i];
+        std::vector<KeepAlive> x(al_x->size());
+        for (unsigned int i=0; i<al_x->size(); i++) {
+          x[i] = (*al_x)[i];
         }
         IntVal d = eval_int(env,c->args()[2]);
         simplify_lin<IntLit>(coeffs, x, d);
         if (coeffs.size()==0) {
           rewrite = IntLit::a(d);
           return OptimizeRegistry::CS_REWRITE;
-        } else if (coeffs.size() < al_c->v().size()) {
+        } else if (coeffs.size() < al_c->size()) {
           if (coeffs.size()==1 && coeffs[0]==1 && d==0) {
             rewrite = x[0]();
             return OptimizeRegistry::CS_REWRITE;
@@ -217,10 +217,10 @@ namespace MiniZinc {
       if (c->args()[0]->isa<IntLit>()) {
         IntVal idx = eval_int(env,c->args()[0]);
         ArrayLit* al = eval_array_lit(env,c->args()[1]);
-        if (idx < 1 || idx > al->v().size()) {
+        if (idx < 1 || idx > al->size()) {
           return OptimizeRegistry::CS_FAILED;
         }
-        Expression* result = al->v()[idx.toInt()-1];
+        Expression* result = (*al)[idx.toInt()-1];
         std::vector<Expression*> args(2);
         args[0] = result;
         args[1] = c->args()[2];
@@ -235,15 +235,15 @@ namespace MiniZinc {
       std::vector<VarDecl*> pos;
       std::vector<VarDecl*> neg;
       ArrayLit* al_pos = eval_array_lit(env, c->args()[0]);
-      for (unsigned int i=0; i<al_pos->v().size(); i++) {
-        if (Id* ident = al_pos->v()[i]->dyn_cast<Id>()) {
+      for (unsigned int i=0; i<al_pos->size(); i++) {
+        if (Id* ident = (*al_pos)[i]->dyn_cast<Id>()) {
           if (ident->decl()->ti()->domain()==NULL)
             pos.push_back(ident->decl());
         }
       }
       ArrayLit* al_neg = eval_array_lit(env, c->args()[1]);
-      for (unsigned int i=0; i<al_neg->v().size(); i++) {
-        if (Id* ident = al_neg->v()[i]->dyn_cast<Id>()) {
+      for (unsigned int i=0; i<al_neg->size(); i++) {
+        if (Id* ident = (*al_neg)[i]->dyn_cast<Id>()) {
           if (ident->decl()->ti()->domain()==NULL)
             neg.push_back(ident->decl());
         }

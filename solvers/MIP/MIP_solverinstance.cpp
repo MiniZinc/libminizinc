@@ -54,9 +54,9 @@ MIP_solver::Variable MIP_solverinstance::exprToVar(Expression* arg) {
 void MIP_solverinstance::exprToVarArray(Expression* arg, vector<VarId> &vars) {
   ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
   vars.clear();
-  vars.reserve(al->v().size());
-  for (unsigned int i=0; i<al->v().size(); i++)
-    vars.push_back(exprToVar(al->v()[i]));
+  vars.reserve(al->size());
+  for (unsigned int i=0; i<al->size(); i++)
+    vars.push_back(exprToVar((*al)[i]));
 }
 
 double MIP_solverinstance::exprToConst(Expression* e) {
@@ -74,9 +74,9 @@ double MIP_solverinstance::exprToConst(Expression* e) {
 void MIP_solverinstance::exprToArray(Expression* arg, vector<double> &vals) {
   ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
   vals.clear();
-  vals.reserve(al->v().size());
-  for (unsigned int i=0; i<al->v().size(); i++) {
-    vals.push_back( exprToConst( al->v()[i] ) );
+  vals.reserve(al->size());
+  for (unsigned int i=0; i<al->size(); i++) {
+    vals.push_back( exprToConst( (*al)[i] ) );
   }
 }
 
@@ -140,16 +140,16 @@ namespace SCIPConstraints {
 
     /// Process coefs & vars together to eliminate literals (problem with Gurobi's updatemodel()'s)
     ArrayLit* alC = eval_array_lit(_env.envi(), args[0]);
-    coefs.reserve(alC->v().size());
+    coefs.reserve(alC->size());
     ArrayLit* alV = eval_array_lit(_env.envi(), args[1]);
-    vars.reserve(alV->v().size());
-    for (unsigned int i=0; i<alV->v().size(); i++) {
-      const double dCoef = gi.exprToConst( alC->v()[i] );
-      if (Id* ident = alV->v()[i]->dyn_cast<Id>()) {
+    vars.reserve(alV->size());
+    for (unsigned int i=0; i<alV->size(); i++) {
+      const double dCoef = gi.exprToConst( (*alC)[i] );
+      if (Id* ident = (*alV)[i]->dyn_cast<Id>()) {
         coefs.push_back( dCoef );
         vars.push_back( gi.exprToVar( ident ) );
       } else
-        rhs -= dCoef*gi.exprToConst( alV->v()[i] );
+        rhs -= dCoef*gi.exprToConst( (*alV)[i] );
     }
     assert(coefs.size() == vars.size());
 

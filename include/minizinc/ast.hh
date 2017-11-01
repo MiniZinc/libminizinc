@@ -681,9 +681,25 @@ namespace MiniZinc {
     friend class Expression;
   protected:
     /// The array
-    ASTExprVec<Expression> _v;
+    union {
+      /// An expression vector (if _flag_2==false)
+      ASTExprVecO<Expression*>* _v;
+      /// Another array literal (if _flag_2==true)
+      ArrayLit* _al;
+    } _u;
     /// The declared array dimensions
+    // If _flag_2 is true, then this is an array view. In that case,
+    // the _dims array holds the sliced dimensions
     ASTIntVec _dims;
+    /// Set compressed vector (initial repetitions are removed)
+    void compress(const std::vector<Expression*>& v, const std::vector<int>& dims);
+  public:
+    /// Index conversion from slice to original
+    int origIdx(int i) const;
+    /// Get element \a i of a sliced array
+    Expression* slice_get(int i) const;
+    /// Set element \a i of a sliced array
+    void slice_set(int i, Expression* e);
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ARRAYLIT;
@@ -693,24 +709,34 @@ namespace MiniZinc {
              const std::vector<std::pair<int,int> >& dims);
     /// Constructor (existing content)
     ArrayLit(const Location& loc,
-             ASTExprVec<Expression> v,
+             ArrayLit& v,
              const std::vector<std::pair<int,int> >& dims);
     /// Constructor (one-dimensional, existing content)
     ArrayLit(const Location& loc,
-             ASTExprVec<Expression> v);
+             ArrayLit& v);
     /// Constructor (one-dimensional)
     ArrayLit(const Location& loc,
              const std::vector<Expression*>& v);
     /// Constructor (two-dimensional)
     ArrayLit(const Location& loc,
              const std::vector<std::vector<Expression*> >& v);
+    /// Constructor for slices
+    ArrayLit(const Location& loc, ArrayLit* v,
+             const std::vector<std::pair<int,int> >& dims,
+             const std::vector<std::pair<int,int> >& slice);
     /// Recompute hash value
     void rehash(void);
+
+    // The following methods are only used for copying
     
     /// Access value
-    ASTExprVec<Expression> v(void) const { return _v; }
+    ASTExprVec<Expression> getVec(void) const { assert(!_flag_2); return _u._v; }
     /// Set value
-    void v(const ASTExprVec<Expression>& val) { _v = val; }
+    void setVec(const ASTExprVec<Expression>& val) { assert(!_flag_2); _u._v = val.vec(); }
+    /// Get underlying array (if this is an array slice) or NULL
+    ArrayLit* getSliceLiteral(void) const { return _flag_2 ? _u._al : NULL; }
+    /// Get underlying _dims vector
+    ASTIntVec dimsInternal(void) const { return _dims; }
 
     /// Return number of dimensions
     int dims(void) const;
@@ -720,12 +746,18 @@ namespace MiniZinc {
     int max(int i) const;
     /// Return the length of the array
     int length(void) const;
-    /// Set dimension vector
-    void setDims(ASTIntVec dims) { _dims = dims; }
+    /// Turn into 1d array (only used at the end of flattening)
+    void make1d(void);
     /// Check if this array was produced by flattening
     bool flat(void) const { return _flag_1; }
     /// Set whether this array was produced by flattening
     void flat(bool b) { _flag_1 = b; }
+    /// Return size of underlying array
+    unsigned int size(void) const { return (_flag_2 || _u._v->flag()) ? length() : _u._v->size(); }
+    /// Access element \a i
+    Expression* operator[](int i) const { return (_flag_2 || _u._v->flag()) ? slice_get(i) : (*_u._v)[i]; }
+    /// Set element \a i
+    void set(int i, Expression* e) { if (_flag_2 || _u._v->flag()) { slice_set(i,e); } else { (*_u._v)[i] = e; } }
   };
   /// \brief Array access expression
   class ArrayAccess : public Expression {
