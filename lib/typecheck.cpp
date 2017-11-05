@@ -295,7 +295,7 @@ namespace MiniZinc {
       Call* index_set_xx = new Call(Location().introduce(),"index_set",index_set_xx_args);
       std::vector<VarDecl*> gen_exps(1);
       gen_exps[0] = idx_i;
-      Generator gen(gen_exps,index_set_xx);
+      Generator gen(gen_exps,index_set_xx,NULL);
       
       Generators generators;
       generators._g.push_back(gen);
@@ -355,7 +355,7 @@ namespace MiniZinc {
       
       std::vector<VarDecl*> gen_exps(1);
       gen_exps[0] = idx_i;
-      Generator gen(gen_exps,vd_x->id());
+      Generator gen(gen_exps,vd_x->id(),NULL);
       
       Generators generators;
       generators._g.push_back(gen);
@@ -503,9 +503,9 @@ namespace MiniZinc {
             run(env, ce->decl(i,j));
             scopes.add(env, ce->decl(i,j));
           }
+          if (ce->where(i))
+            run(env, ce->where(i));
         }
-        if (ce->where())
-          run(env, ce->where());
         run(env, ce->e());
         scopes.pop();
       }
@@ -899,18 +899,18 @@ namespace MiniZinc {
         }
         if (ty_in.cv())
           tt.cv(true);
-      }
-      if (c.where()) {
-        if (c.where()->type() == Type::varbool()) {
-          tt.ot(Type::OT_OPTIONAL);
-          tt.ti(Type::TI_VAR);
-        } else if (c.where()->type() != Type::parbool()) {
-          throw TypeError(_env,c.where()->loc(),
-                          "where clause must be bool, but is `"+
-                          c.where()->type().toString(_env)+"'");
+        if (c.where(i)) {
+          if (c.where(i)->type() == Type::varbool()) {
+            tt.ot(Type::OT_OPTIONAL);
+            tt.ti(Type::TI_VAR);
+          } else if (c.where(i)->type() != Type::parbool()) {
+            throw TypeError(_env,c.where(i)->loc(),
+                            "where clause must be bool, but is `"+
+                            c.where(i)->type().toString(_env)+"'");
+          }
+          if (c.where(i)->type().cv())
+            tt.cv(true);
         }
-        if (c.where()->type().cv())
-          tt.cv(true);
       }
       if (c.set()) {
         if (c.e()->type().dim() != 0 || c.e()->type().st() == Type::ST_SET)

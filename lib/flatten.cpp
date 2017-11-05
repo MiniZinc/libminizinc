@@ -3141,11 +3141,10 @@ namespace MiniZinc {
             Call* idxset = new Call(id->loc().introduce(),"index_set",idxsetargs);
             idxset->decl(env.orig->matchFn(env, idxset, false));
             idxset->type(idxset->decl()->rtype(env, idxsetargs, false));
-            Generator gen(gen_id,idxset);
+            Generator gen(gen_id,idxset,NULL);
             std::vector<Expression*> idx(1);
             Generators gens;
             gens._g.push_back(gen);
-            gens._w = NULL;
             UnOp* aanot = new UnOp(id->loc(),UOT_NOT,NULL);
             Comprehension* cp = new Comprehension(id->loc(),
               aanot, gens, false);
@@ -3592,6 +3591,7 @@ namespace MiniZinc {
         
         if (c->type().isopt()) {
           std::vector<Expression*> in(c->n_generators());
+          std::vector<Expression*> orig_where(c->n_generators());
           std::vector<Expression*> where;
           GCLock lock;
           for (int i=0; i<c->n_generators(); i++) {
@@ -3610,18 +3610,20 @@ namespace MiniZinc {
             } else {
               in[i] = c->in(i);
             }
+            if (c->where(i) && c->where(i)->type().isvar()) {
+              orig_where[i] = NULL;
+              where.push_back(c->where(i));
+            } else {
+              orig_where[i] = c->where(i);
+            }
           }
-          if (where.size() > 0 || (c->where() && c->where()->type().isvar())) {
+          if (where.size() > 0) {
             Generators gs;
-            if (c->where()==NULL || c->where()->type().ispar())
-              gs._w = c->where();
-            else
-              where.push_back(c->where());
             for (int i=0; i<c->n_generators(); i++) {
               std::vector<VarDecl*> vds(c->n_decls(i));
               for (int j=0; j<c->n_decls(i); j++)
                 vds[j] = c->decl(i, j);
-              gs._g.push_back(Generator(vds,in[i]));
+              gs._g.push_back(Generator(vds,in[i],orig_where[i]));
             }
             Expression* cond;
             if (where.size() > 1) {

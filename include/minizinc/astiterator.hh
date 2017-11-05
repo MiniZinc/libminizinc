@@ -194,13 +194,13 @@ namespace MiniZinc {
             {
               Comprehension* comp = ce->template cast<Comprehension>();
               stack.push_back(C(comp->e()));
-              stack.push_back(C(comp->where()));
               for (unsigned int i=comp->n_generators(); i--; ) {
                 for (unsigned int j=comp->n_decls(i); j--; ) {
                   stack.push_back(C(comp->decl(i, j)));
                 }
                 stack.push_back(C(comp,i));
                 stack.push_back(C(comp->in(i)));
+                stack.push_back(C(comp->where(i)));
               }
             }
             break;
@@ -296,8 +296,8 @@ namespace MiniZinc {
         _t.vComprehension(*e->template cast<Comprehension>());
         {
           Comprehension* comp = e->template cast<Comprehension>();
-          stack.push_back(comp->where());
           for (unsigned int i=comp->n_generators(); i--; ) {
+            stack.push_back(comp->where(i));
             stack.push_back(comp->in(i));
             for (unsigned int j=comp->n_decls(i); j--; ) {
               stack.push_back(comp->decl(i, j));
