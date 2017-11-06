@@ -6,6 +6,11 @@
 %-----------------------------------------------------------------------------%
 %---------- USER and LAZY CUTS -----------------------------------------------%
 /*
+   PLEASE NOTE:
+   If you export FZN file with lazy_constraint/user_cut annotations,
+   their declarations are not exported currently (as of 7.11.17).
+   WORKAROUND: when solving that fzn, add -G linear,
+   e.g., as follows: mzn-cplex -G linear model.fzn
  * For Gurobi, the constraints marked as MIP_cut and/or MIP_lazy are added
  * into the overall model and marked with the foll values of Lazy attribute:
  *   ::MIP_lazy             1
