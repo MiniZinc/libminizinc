@@ -1,4 +1,5 @@
-import os
+import os, copy, io
+from collections import OrderedDict
 
 def try_float( sVal, dft=None ):
     res = dft
@@ -19,6 +20,58 @@ def addMapValues( dict1, dict2 ):
         else:
             dict1[key] = dict2[key]
             
+class MatrixByStr:          ### Matrix with string keys
+    def __init__( self,
+            rows, cols,          ## each a list of tuples: (short, long) row/column names
+            defval = 0 ):
+        self.rows, self.cols = rows, cols
+        self.mbs = OrderedDict( (r[0],
+            OrderedDict( (c[0], copy.deepcopy(defval)) for c in cols )) for r in rows )
+
+    def __getitem__( self, k ):
+        return self.mbs[ k[0] ][ k[1] ]
+
+    def __setitem__( self, k, v ):
+        self.mbs[ k[0] ][ k[1] ] = v
+
+    def stringify2D( self ):           ## compact 2D print
+        return MyTab().tabulate( [
+            [key] + list(row.values())        ## merge each row's key into the row
+              for key,row in self.mbs.items() ],
+            [""] + [ col[0] for col in self.cols ] )
+
+    ## assumes each item is a list
+    def stringifyLists( self, title, rowIntro, colIntro ):
+        resIO = io.StringIO()
+        print( '#'*50, file=resIO )
+        print( '#'*50, file=resIO )
+        print( '#'*50, file=resIO )
+        print( title, file=resIO )
+        print( '#'*50, file=resIO )
+        print( '#'*50, file=resIO )
+        print( '#'*50, file=resIO )
+        print( file=resIO )
+
+        for kr, r in self.mbs.items():
+            print( '#'*50, file=resIO )
+            print( '#'*50, file=resIO )
+            print( rowIntro, kr, file=resIO )
+            print( '#'*50, file=resIO )
+            print( '#'*50, file=resIO )
+            print( file=resIO )
+
+            for kc, c in r.items():
+                print( '#'*50, file=resIO )
+                print( rowIntro, kr, file=resIO )
+                print( "   ", colIntro, kc, file=resIO )
+                print( '#'*50, file=resIO )
+
+                for el in c:
+                    print( el, file=resIO )
+                print( file=resIO )
+
+        return resIO.getvalue()
+
 class MyTab:
     def __init__( self ):
         self.sColSep='  '

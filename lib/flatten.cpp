@@ -6137,6 +6137,13 @@ namespace MiniZinc {
                     nc->type(Type::varbool());
                     nc->decl(array_bool_and);
                   }
+                } else if (isTrueVar && c->id() == constants().ids.clause && array_bool_clause) {
+                  std::vector<Expression*> args(2);
+                  args[0] = c->args()[0];
+                  args[1] = c->args()[1];
+                  nc = new Call(c->loc().introduce(),array_bool_clause->id(),args);
+                  nc->type(Type::varbool());
+                  nc->decl(array_bool_clause);
                 } else if (c->id() == constants().ids.clause && array_bool_clause_reif) {
                   std::vector<Expression*> args(3);
                   args[0] = c->args()[0];
@@ -6182,6 +6189,10 @@ namespace MiniZinc {
                   CollectDecls cd(env.vo,deletedVarDecls,vdi);
                   topDown(cd,c);
                   vd->e(NULL);
+                  /// TODO: check if removing variables here makes sense:
+//                  if (!isOutput(vd) && env.vo.occurrences(vd)==0) {
+//                    removedItems.push_back(vdi);
+//                  }
                   if (nc != c) {
                     vd->addAnnotation(constants().ann.is_defined_var);
                     nc->addAnnotation(definesVarAnn(vd->id()));
