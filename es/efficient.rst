@@ -26,29 +26,29 @@ variables involved.  They can also behave badly with problems which
 have subexpressions that take large integer values, since they may
 implicitly limit the size of integer variables.
 
-.. literalinclude:: examples/grocery.mzn
+.. literalinclude:: examples/grocery_es.mzn
   :language: minizinc
   :name: ex-grocery
-  :caption: A model with unbounded variables (:download:`grocery.mzn <examples/grocery.mzn>`).
+  :caption: A model with unbounded variables (:download:`grocery_es.mzn <examples/grocery_es.mzn>`).
 
 The grocery problem shown in :numref:`ex-grocery` finds 4 items
 whose prices in dollars add up to 7.11 and multiply up to 7.11.
-The variables are declared unbounded. Running 
+The variables are declared unbounded. Running
 
 .. code-block:: bash
 
-  $ mzn-g12fd grocery.mzn
+  $ mzn-g12fd grocery_es.mzn
 
-yields 
+yields
 
 ::
 
   =====UNSATISFIABLE=====
   % grocery.fzn:11: warning: model inconsistency detected before search.
 
-This is because the 
+This is because the
 intermediate expressions in the multiplication
-are also :mzn:`var int` 
+are also :mzn:`var int`
 and are given default bounds in the solver
 :math:`-1,000,000 \dots 1,000,000`,
 and these ranges are too small to hold the
@@ -71,14 +71,14 @@ With this modification, executing the model gives
 
   {120,125,150,316}
   ----------
- 
+
 Note however that even the improved model may be too difficult for
 some solvers.
-Running 
+Running
 
 .. code-block:: bash
 
-  $ mzn-g12lazy grocery.mzn
+  $ mzn-g12lazy grocery_es.mzn
 
 does not return an answer, since the solver builds a huge representation
 for the intermediate product variables.
@@ -88,12 +88,12 @@ for the intermediate product variables.
   .. index::
     single: variable; bound
 
-  Always try to use bounded variables in models. 
+  Always try to use bounded variables in models.
   When using :mzn:`let`
-  declarations to introduce new variables, always try to define them 
+  declarations to introduce new variables, always try to define them
   with correct and tight bounds.  This will make your model more efficient,
   and avoid the possibility of unexpected overflows.
-  One exception is when you introduce a new variable which is 
+  One exception is when you introduce a new variable which is
   immediately defined as equal to an expression. Usually MiniZinc will be
   able to infer effective bounds from the expression.
 
@@ -106,21 +106,21 @@ Unconstrained Variables
 Sometimes when modelling it is easier to introduce more variables than
 actually required to model the problem.
 
-.. literalinclude:: examples/golomb.mzn
+.. literalinclude:: examples/golomb_es.mzn
   :language: minizinc
   :name: ex-unc
-  :caption: A model for Golomb rulers with unconstrained variables (:download:`golomb.mzn <examples/golomb.mzn>`).
+  :caption: A model for Golomb rulers with unconstrained variables (:download:`golomb_es.mzn <examples/golomb_es.mzn>`).
 
 Consider the model for Golomb rulers shown in :numref:`ex-unc`.
 A Golomb ruler of :mzn:`n` marks is one where the absolute differences
-between any two marks are different. 
-It creates a two dimensional array of difference variables, but 
+between any two marks are different.
+It creates a two dimensional array of difference variables, but
 only uses those of the form :mzn:`diff[i,j]` where :mzn:`i > j`.
-Running the model as 
+Running the model as
 
 .. code-block:: bash
 
-  $ mzn-g12fd golomb.mzn -D "n = 4; m = 6;"
+  $ mzn-g12fd golomb_es.mzn -D "n = 4; m = 6;"
 
 results in output
 
@@ -135,7 +135,7 @@ But if we ask for all solutions using
 
 .. code-block:: bash
 
-  $ mzn-g12fd -a golomb.mzn -D "n = 4; m = 6;"
+  $ mzn-g12fd -a golomb_es.mzn -D "n = 4; m = 6;"
 
 we are presented with a never ending list of the same solution!
 
@@ -147,11 +147,11 @@ solution, simply by changing these variables to take arbitrary values.
 We can avoid problems with unconstrained variables, by modifying
 the model so that they are fixed to some value. For example replacing
 the lines marked :mzn:`% (diff}` in :numref:`ex-unc`
-to 
+to
 
 .. code-block:: minizinc
 
-  constraint forall(i,j in 1..n) 
+  constraint forall(i,j in 1..n)
                    (diffs[i,j] = if (i > j) then mark[i] - mark[j]
                                  else 0 endif);
 
@@ -167,11 +167,11 @@ output statement to
 
   output ["mark = \(mark);\n"];
 
-With this change running 
+With this change running
 
 .. code-block:: bash
 
-  $ mzn-g12fd -a golomb.mzn -D "n = 4; m = 6;"
+  $ mzn-g12fd -a golomb_es.mzn -D "n = 4; m = 6;"
 
 simply results in
 
@@ -190,9 +190,9 @@ illustrating the unique solution.
     single: variable; unconstrained
 
   Models should never have unconstrained variables. Sometimes it is
-  difficult to model without unnecessary variables. 
+  difficult to model without unnecessary variables.
   If this is the case add
-  constraints to fix the unnecessary variables, 
+  constraints to fix the unnecessary variables,
   so they cannot influence the
   solving.
 
@@ -210,7 +210,7 @@ adjacent.  We might write
 
 .. code-block:: minizinc
 
-  int: count = sum ([ 1 | i,j,k in NODES where i < j  /\ j < k 
+  int: count = sum ([ 1 | i,j,k in NODES where i < j  /\ j < k
                          /\ adj[i,j] /\ adj[i,k] /\ adj[j,k]]);
 
 which is certainly correct, but it examines all triples of nodes.
@@ -223,18 +223,18 @@ tests can be applied as soon as we select :mzn:`i` and :mzn:`j`.
        (sum([1 | k in NODES where j < k /\ adj[i,k] /\ adj[j,k]]));
 
 You can use the builitin :mzn:`trace` :index:`function <trace>` to help
-determine what is happening inside generators. 
+determine what is happening inside generators.
 
 .. defblock:: Tracing
 
   The function :mzn:`trace(s,e)` prints the string :mzn:`s` before
   evaluating the expression :mzn:`e` and returning its value.
-  It can be used in any context.  
+  It can be used in any context.
 
 For example, we can see how many times the test is performed in the inner
 loop for both versions of the calculation.
 
-.. literalinclude:: examples/count1.mzn
+.. literalinclude:: examples/count1_es.mzn
   :language: minizinc
   :lines: 8-15
 
@@ -247,7 +247,7 @@ Produces the output:
 
 indicating the inner loop is evaluated 64 times while
 
-.. literalinclude:: examples/count2.mzn
+.. literalinclude:: examples/count2_es.mzn
   :language: minizinc
   :lines: 13-14
 
@@ -263,7 +263,7 @@ indicating the inner loop is evaluated 16 times.
 Note that you can use the dependent strings in :mzn:`trace` to
 understand what is happening during model creation.
 
-.. literalinclude:: examples/count3.mzn
+.. literalinclude:: examples/count3_es.mzn
   :language: minizinc
   :lines: 13-15
 
@@ -291,7 +291,7 @@ Running this for :mzn:`n = 16` as follows:
 
 .. code-block:: bash
 
-  $ mzn-g12fd --all-solutions --statistics magic-series.mzn -D "n=16;"
+  $ mzn-g12fd --all-solutions --statistics magic-series_es.mzn -D "n=16;"
 
 might result in output
 
@@ -307,20 +307,20 @@ We can add redundant constraints to the model. Since each number
 in the sequence counts the number of occurrences of a number we know
 that they sum up to :mzn:`n`. Similarly we know that the sum of
 :mzn:`s[i] * i` must also add up to :mzn:`n` because the sequence is magic.
-Adding these constraints 
+Adding these constraints
 gives the model in
 :numref:`ex-magic-series2`.
 
-.. literalinclude:: examples/magic-series2.mzn
+.. literalinclude:: examples/magic-series2_es.mzn
   :language: minizinc
   :name: ex-magic-series2
-  :caption: Model solving the magic series problem with redundant constraints (:download:`magic-series2.mzn <examples/magic-series2.mzn>`).
+  :caption: Model solving the magic series problem with redundant constraints (:download:`magic-series2_es.mzn <examples/magic-series2_es.mzn>`).
 
 Running the same problem as before
 
 .. code-block:: bash
 
-  $ mzn-g12fd --all-solutions --statistics magic-series2.mzn -D "n=16;"
+  $ mzn-g12fd --all-solutions --statistics magic-series2_es.mzn -D "n=16;"
 
 results in the same output, but with statistics showing just 13 choicepoints
 explored. The redundant constraints have allowed the solver to prune the
@@ -330,7 +330,7 @@ search much earlier.
 Modelling Choices
 -----------------
 
-There are many ways to model the same problem in MiniZinc, 
+There are many ways to model the same problem in MiniZinc,
 although some may be more natural than others.
 Different models may have very different efficiency of solving, and worse
 yet, different models may be better or worse for different solving backends.
@@ -357,10 +357,10 @@ Note that the :mzn:`u` variables are functionally defined by
 the :mzn:`x` variables so the raw search space is :math:`n^n`.
 The obvious way to model this problem is shown in :numref:`ex-allint`.
 
-.. literalinclude:: examples/allinterval.mzn
+.. literalinclude:: examples/allinterval_es.mzn
   :language: minizinc
   :name: ex-allint
-  :caption: A natural model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval.mzn <examples/allinterval.mzn>`).
+  :caption: A natural model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval_es.mzn <examples/allinterval_es.mzn>`).
 
 In this model the array :mzn:`x` represents the permutation of the :mzn:`n`
 numbers and the constraints are naturally represented using :mzn:`alldifferent`.
@@ -369,15 +369,15 @@ Running the model
 
 .. code-block:: bash
 
-  $ mzn-g12fd -all-solutions --statistics allinterval.mzn -D "n=10;"
+  $ mzn-g12fd -all-solutions --statistics allinterval_es.mzn -D "n=10;"
 
 finds all solutions in 84598 choice points and 3s.
 
 An alternate model uses array :mzn:`y` where :mzn:`y[i]` gives the
-position of the number :mzn:`i` in the sequence.  
+position of the number :mzn:`i` in the sequence.
 We also model the positions of the differences using variables
 :mzn:`v`. :mzn:`v[i]` is the position in the sequence where the absolute difference
-:mzn:`i` occurs.  If the values of :mzn:`y[i]` and :mzn:`y[j]` differ by one 
+:mzn:`i` occurs.  If the values of :mzn:`y[i]` and :mzn:`y[j]` differ by one
 where :mzn:`j > i`, meaning the
 positions are adjacent, then :mzn:`v[j-i]` is constrained to be the earliest
 of these positions.
@@ -391,10 +391,10 @@ With this we can model the problem
 as shown in :numref:`ex-allint2`. The output statement recreates the
 original sequence :mzn:`x` from the array of positions :mzn:`y`.
 
-.. literalinclude:: examples/allinterval2.mzn
+.. literalinclude:: examples/allinterval2_es.mzn
   :language: minizinc
   :name: ex-allint2
-  :caption: An inverse model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval2.mzn <examples/allinterval2.mzn>`).
+  :caption: An inverse model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval2_es.mzn <examples/allinterval2_es.mzn>`).
 
 The inverse model has the same size as the original model, in terms of
 number of variables and domain sizes.  But the inverse model has a much more
@@ -406,11 +406,11 @@ The command
 
 .. code-block:: bash
 
-  $ mzn-g12fd --all-solutions --statistics allinterval2.mzn -D "n=10;"
+  $ mzn-g12fd --all-solutions --statistics allinterval2_es.mzn -D "n=10;"
 
 finds all the solutions in  75536 choice points and 18s.
 Interestingly, although the model is not as succinct here, the search on the
-:mzn:`y` variables is better than searching on the :mzn:`x` variables. 
+:mzn:`y` variables is better than searching on the :mzn:`x` variables.
 The lack of succinctness means that even though the search requires
 less choice it is substantially slower.
 
@@ -419,28 +419,28 @@ less choice it is substantially slower.
 Multiple Modelling and Channels
 -------------------------------
 
-When we have two models for the same problem it may be 
+When we have two models for the same problem it may be
 useful to use both models together by tying the variables in the two models
 together, since each can give different information to the solver.
 
-.. literalinclude:: examples/allinterval3.mzn
+.. literalinclude:: examples/allinterval3_es.mzn
   :language: minizinc
   :name: ex-allint3
-  :caption: A dual model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval3.mzn <examples/allinterval3.mzn>`).
+  :caption: A dual model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval3_es.mzn <examples/allinterval3_es.mzn>`).
 
-:numref:`ex-allint3` gives a dual model combining features of 
-:download:`allinterval.mzn <examples/allinterval.mzn>` and :download:`allinterval2.mzn <examples/allinterval2.mzn>`.
-The beginning of the model is taken from :download:`allinterval.mzn <examples/allinterval.mzn>`.
-We then introduce the :mzn:`y` and :mzn:`v` variables from :download:`allinterval2.mzn <examples/allinterval2.mzn>`.
-We tie the variables together using the 
-global 
+:numref:`ex-allint3` gives a dual model combining features of
+:download:`allinterval_es.mzn <examples/allinterval_es.mzn>` and :download:`allinterval2_es.mzn <examples/allinterval2_es.mzn>`.
+The beginning of the model is taken from :download:`allinterval_es.mzn <examples/allinterval_es.mzn>`.
+We then introduce the :mzn:`y` and :mzn:`v` variables from :download:`allinterval2_es.mzn <examples/allinterval2_es.mzn>`.
+We tie the variables together using the
+global
 :mzn:`inverse` constraint:
 :mzn:`inverse(x,y)` holds if :mzn:`y` is the inverse function of :mzn:`x` (and vice versa),
 that is :mzn:`x[i] = j <-> y[j] = i`. A definition
 is shown in :numref:`ex-inverse`.
-The model does not include the constraints relating the 
+The model does not include the constraints relating the
 :mzn:`y` and :mzn:`v` variables, they are redundant (and indeed propagation
-redundant) 
+redundant)
 so they do not add information for a
 propagation solver. The :mzn:`alldifferent` constraints are also missing since
 they are made redundant (and propagation redundant) by the inverse
@@ -448,21 +448,21 @@ constraints.
 The only constraints are the relationships of the :mzn:`x` and :mzn:`u` variables
 and the redundant constraints on :mzn:`y` and :mzn:`v`.
 
-.. literalinclude:: examples/inverse.mzn
+.. literalinclude:: examples/inverse_es.mzn
   :language: minizinc
   :name: ex-inverse
-  :caption: A definition of the ``inverse`` global constraint (:download:`inverse.mzn <examples/inverse.mzn>`).
+  :caption: A definition of the ``inverse`` global constraint (:download:`inverse_es.mzn <examples/inverse_es.mzn>`).
 
 One of the benefits of the dual model is that there is more scope for
 defining different search strategies.
-Running the dual model, 
+Running the dual model,
 
 .. code-block:: bash
 
-  $ mzn-g12fd -all-solutions --statistics allinterval3.mzn -D "n=10;"
+  $ mzn-g12fd -all-solutions --statistics allinterval3_es.mzn -D "n=10;"
 
 which uses the search strategy of
-the inverse model, labelling the :mzn:`y` variables, 
+the inverse model, labelling the :mzn:`y` variables,
 finds all solutions in 1714 choice points and 0.5s.
 Note that running the same model with labelling on the :mzn:`x` variables
 requires 13142 choice points and 1.5s.
@@ -475,7 +475,7 @@ Symmetry is very common in constraint satisfaction and optimisation problems. To
 .. _fig-queens-sym:
 
 .. figure:: figures/queens_symm.*
-  
+
   Symmetric variants of an 8-queens solution
 
 
@@ -486,7 +486,7 @@ For example, a typical constraint solver may try to place the queen in column 1 
 .. _fig-queens-sym-unsat:
 
 .. figure:: figures/queens_symm_unsat.*
-  
+
   Symmetric variants of an 8-queens unsatisfiable partial assignment
 
 Static Symmetry Breaking
@@ -521,12 +521,12 @@ For the n-queens problem, unfortunately this technique does not immediately appl
 
 The full model, with added Boolean variables, channeling constraints and symmetry breaking constraints is shown in :numref:`ex-queens-sym`. We can conduct a little experiment to check whether it successfully breaks all the symmetry. Try running the model with increasing values for :mzn:`n`, e.g. from 1 to 10, counting the number of solutions (e.g., by using the ``-s`` flag with the Gecode solver, or selecting "Print all solutions" as well as "Statistics for solving" in the IDE). You should get the following sequence of numbers of solutions: 1, 0, 0, 1, 2, 1, 6, 12, 46, 92. To verify the sequence, you can search for it in the *On-Line Encyclopedia of Integer Sequences* (http://oeis.org).
 
-.. literalinclude:: examples/nqueens_sym.mzn
+.. literalinclude:: examples/nqueens_sym_es.mzn
   :language: minizinc
   :name: ex-queens-sym
   :start-after: % Alternative
   :end-before: % search
-  :caption: Partial model for n-queens with symmetry breaking (full model: :download:`nqueens_sym.mzn <examples/nqueens_sym.mzn>`).
+  :caption: Partial model for n-queens with symmetry breaking (full model: :download:`nqueens_sym_es.mzn <examples/nqueens_sym_es.mzn>`).
 
 
 Other Examples of Symmetry
@@ -534,15 +534,15 @@ Other Examples of Symmetry
 
 Many other problems have inherent symmetries, and breaking these can often make a significant difference in solving performance. Here is a list of some common cases:
 
-- Bin packing: when trying to pack items into bins, any two bins that have 
+- Bin packing: when trying to pack items into bins, any two bins that have
   the same capacity are symmetric.
-- Graph colouring: When trying to assign colours to nodes in a graph such 
-  that adjacent nodes must have different colours, we typically model 
-  colours as integer numbers. However, any permutation of colours is again a 
+- Graph colouring: When trying to assign colours to nodes in a graph such
+  that adjacent nodes must have different colours, we typically model
+  colours as integer numbers. However, any permutation of colours is again a
   valid graph colouring.
-- Vehicle routing: if the task is to assign customers to certain vehicles, 
-  any two vehicles with the same capacity may be symmetric (this is similar 
+- Vehicle routing: if the task is to assign customers to certain vehicles,
+  any two vehicles with the same capacity may be symmetric (this is similar
   to the bin packing example).
-- Rostering/time tabling: two staff members with the same skill set may be 
-  interchangeable, just like two rooms with the same capacity or technical 
+- Rostering/time tabling: two staff members with the same skill set may be
+  interchangeable, just like two rooms with the same capacity or technical
   equipment.

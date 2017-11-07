@@ -17,67 +17,58 @@ Declara el ancho ``w`` y la altura ``h`` del modelo de elementos finitos.
 
 La declaración
 
-.. literalinclude:: examples/laplace.mzn
+.. literalinclude:: examples/laplace_es.mzn
   :language: minizinc
   :lines: 5-9
 
-declares four fixed sets of integers describing the dimensions of the finite element model:
-``HEIGHT`` is the whole height of the model, while ``CHEIGHT`` is the centre of the height omitting the top and bottom,
-``WIDTH`` is the whole width of the model, while ``CWIDTH`` is the centre of the width omitting the left and rightsides,
+declara cuatro conjuntos fijos de enteros que describen las dimensiones del modelo de elementos finitos:
+``HEIGHT`` es toda la altura del modelo, mientras que ``CHEIGHT`` es el centro de la altura omitiendo la parte superior e inferior,
+``WIDTH`` es el ancho total del modelo, mientras que ``CWIDTH`` es el centro de la anchura omitiendo la izquierda y derecha,
 
-Finally a two dimensional array of float variables ``t``
-with rows numbered
-:math:`0` to :math:`h` (``HEIGHT``) and columns :math:`0` to :math:`w` (``WIDTH``),
-to represent the temperatures at each
-point in the metal plate.
-We can access the element of the array in the :math:`i^{th}` row and :math:`j^{th}` column
-using an expression :mzn:`t[i,j]`.
+Finalmente, una matriz bidimensional de variables flotantes ``t`` con filas numeradas :math:`0` to :math:`h` (``HEIGHT``) y columnas :math:`0` to :math:`w` (``WIDTH``), para representar las temperaturas en cada punto de la placa metálica.
+Podemos acceder al elemento de la matriz en la :math: fila `i^{th}` y columna :math:`j^{th}` usando una expresión :mzn:`t[i,j]`.
 
 
-Laplace's
-equation states that when the plate reaches a steady state
-the temperature at each internal point is the average of its orthogonal
-neighbours. The constraint
+La ecuación de Laplace indica que cuando la placa alcanza un estado estacionario la temperatura en cada punto interno es la media de sus vecinos ortogonales.
 
-.. literalinclude:: examples/laplace.mzn
+La restricción
+
+.. literalinclude:: examples/laplace_es.mzn
   :language: minizinc
   :lines: 16-18
 
-ensures that each internal point :math:`(i,j)` is the
-average of its four orthogonal neighbours.
-The constraints
+asegura que cada punto interno :math:`(i,j)` es el promedio de sus cuatro vecinos ortogonales.
 
-.. literalinclude:: examples/laplace.mzn
+Las restricciones
+
+.. literalinclude:: examples/laplace_es.mzn
   :language: minizinc
   :lines: 20-24
 
-restrict the temperatures on each edge to be equal, and
-gives these temperatures names: ``left``, ``right``, ``top``
-and ``bottom``.
-While the constraints
+restringir las temperaturas en cada borde para ser iguales, y da estos nombres de las temperaturas: ``left``, ``right``, ``top`` and ``bottom``.
 
-.. literalinclude:: examples/laplace.mzn
+Si bien las limitaciones
+
+.. literalinclude:: examples/laplace_es.mzn
   :language: minizinc
   :lines: 26-30
 
-ensure that the corners (which are irrelevant) are set to 0.0.
-We can determine the temperatures in a plate broken into 5 :math:`\times` 5
-elements with left, right and bottom temperature 0 and top temperature 100
-with the model shown in :numref:`ex-laplace`.
+asegurarse que las esquinas (que son irrelevantes) se ajustan a 0.0.
+Podemos determinar las temperaturas en una placa dividida en 5 :math:`\times` 5 elementos con temperatura izquierda, derecha e inferior 0 y temperatura superior 100 con el modelo mostrado en:numref:`ex-laplace`.
 
 
-.. literalinclude:: examples/laplace.mzn
+.. literalinclude:: examples/laplace_es.mzn
   :language: minizinc
   :name: ex-laplace
-  :caption: Finite element plate model for determining steady state temperatures (:download:`laplace.mzn <examples/laplace.mzn>`).
+  :caption: Finite element plate model for determining steady state temperatures (:download:`laplace_es.mzn <examples/laplace_es.mzn>`).
 
-Running the command
+Ejecutando el comando
 
 .. code-block:: bash
 
-  $ mzn-cbc laplace.mzn
+  $ mzn-cbc laplace_es.mzn
 
-gives the output
+da la salida
 
 ::
 
@@ -93,38 +84,36 @@ gives the output
   .. index::
     single: set
 
-  Set variables are declared with a declaration of the form
+  Las variables de conjunto se declaran con una declaración de la forma
 
   .. code-block:: minizincdef
 
     set of <type-inst> : <var-name> ;
 
-  where sets of integers, enums (see later), floats or Booleans are allowed.
-  The only type allowed for decision variable sets are variable sets of
-  integers or enums.
-  Set literals are of the form
+  donde se permiten conjuntos de enteros, enumeraciones (ver más adelante), flotantes o booleanos.
+  El único tipo permitido para conjuntos de variables de decisión son conjuntos variables de enteros o enumeraciones.
+
+  Los literales establecidos son de la forma
 
   .. code-block:: minizincdef
 
     { <expr-1>, ..., <expr-n> }
 
-  or are :index:`range` expressions over either integers, enums or floats of the form
+  o son expresiones :index:`range` sobre enteros, enumeraciones o flotantes de la forma
 
   .. code-block:: minizincdef
 
     <expr-1> .. <expr-2>
 
-  The standard :index:`set operations <operator; set>`
-  are provided: element membership
-  (:mzn:`in`),
-  (non-strict) subset relationship (:mzn:`subset`),
-  (non-strict) superset relationship (:mzn:`superset`), union
-  (:mzn:`union`),
-  intersection (:mzn:`intersect`),
-  set difference (:mzn:`diff`),
-  symmetric set difference (:mzn:`symdiff`)
-  and the number of elements in the
-  set (:mzn:`card`).
+  El estandar :index:`set operations <operator; set>` están provistos por:
+  pertenencia elemento (:mzn:`in`),
+  (no-estricto) relación de subconjuntos (:mzn:`subset`),
+  (no-estricto) relación superconjunto (:mzn:`superset`),
+  union (:mzn:`union`),
+  intersecciñon (:mzn:`intersect`),
+  diferencia de conjuntos (:mzn:`diff`),
+  diferencia de conjunto simétrico (:mzn:`symdiff`)
+  y la cantidad de elementos en el conjunto (:mzn:`card`).
 
   As we have seen set variables and set literals (including ranges) can be
   used as an implicit type in variable declarations in which case the variable
@@ -142,15 +131,15 @@ model is shown in :numref:`ex-prod-planning` and a sample data file (for
 the cake baking example) is shown in :numref:`fig-prod-planning-data`.
 
 
-.. literalinclude:: examples/simple-prod-planning.mzn
+.. literalinclude:: examples/simple-prod-planning_es.mzn
   :language: minizinc
   :name: ex-prod-planning
-  :caption: Model for simple production planning (:download:`simple-prod-planning.mzn <examples/simple-prod-planning.mzn>`).
+  :caption: Model for simple production planning (:download:`simple-prod-planning_es.mzn <examples/simple-prod-planning_es.mzn>`).
 
-.. literalinclude:: examples/simple-prod-planning-data.dzn
+.. literalinclude:: examples/simple-prod-planning-data_es.dzn
   :language: minizinc
   :name: fig-prod-planning-data
-  :caption: Example data file for the simple production planning problem (:download:`simple-prod-planning-data.dzn <examples/simple-prod-planning-data.dzn>`).
+  :caption: Example data file for the simple production planning problem (:download:`simple-prod-planning-data_es.dzn <examples/simple-prod-planning-data_es.dzn>`).
 
 The new feature in this model is the use of :index:`enumerated
 types <type; enumerated>`.
@@ -556,7 +545,7 @@ to create an understandable output. Running
 
 .. code-block:: bash
 
-  $ mzn-gecode simple-prod-planning.mzn simple-prod-planning-data.dzn
+  $ mzn-gecode simple-prod-planning_es.mzn simple-prod-planning-data_es.dzn
 
 results in the output
 
@@ -585,10 +574,10 @@ constraint which requires
 all the variables appearing in its argument to be pairwise different.
 
 
-.. literalinclude:: examples/send-more-money.mzn
+.. literalinclude:: examples/send-more-money_es.mzn
   :language: minizinc
   :name: ex-smm
-  :caption: Model for the cryptarithmetic problem SEND+MORE=MONEY (:download:`send-more-money.mzn <examples/send-more-money.mzn>`)
+  :caption: Model for the cryptarithmetic problem SEND+MORE=MONEY (:download:`send-more-money_es.mzn <examples/send-more-money_es.mzn>`)
 
 The SEND+MORE=MONEY problem requires assigning a different
 digit to each letter so that the arithmetic constraint holds.
@@ -600,7 +589,7 @@ in the model using include item
 
 .. code-block:: minizinc
 
-  include "alldifferent.mzn";
+  include "alldifferent_es.mzn";
 
 which makes
 the global constraint :mzn:`alldifferent` usable by the model.
@@ -612,10 +601,7 @@ One could replace this line by
 
 which includes all globals.
 
-A list of all the global constraints
-defined for MiniZinc is included in the
-release documentation. See :ref:`sec-globals` for
-a description of some important global constraints.
+A list of all the global constraints defined for MiniZinc is included in the release documentation. See :ref:`sec-globals` for a description of some important global constraints.
 
 
 Conditional Expressions
@@ -657,22 +643,22 @@ it sets it to zero.
   :mzndef:`<exp-1>` and :mzndef:`<exp-2>` even if both
   expressions are fixed.
 
-.. literalinclude:: examples/sudoku.mzn
+.. literalinclude:: examples/sudoku_es.mzn
   :language: minizinc
   :name: ex-sudoku
-  :caption: Model for generalized Sudoku problem (:download:`sudoku.mzn <examples/sudoku.mzn>`)
+  :caption: Model for generalized Sudoku problem (:download:`sudoku_es.mzn <examples/sudoku_es.mzn>`)
 
 
-.. literalinclude:: examples/sudoku.dzn
+.. literalinclude:: examples/sudoku_es.dzn
   :language: minizinc
   :name: ex-sudokud
-  :caption: Example data file for generalised Sudoku problem (:download:`sudoku.dzn <examples/sudoku.dzn>`)
+  :caption: Example data file for generalised Sudoku problem (:download:`sudoku_es.dzn <examples/sudoku_es.dzn>`)
 
 .. _fig-sudoku:
 
 .. figure:: figures/sudoku.*
 
-  The problem represented by data file :download:`sudoku.dzn <examples/sudoku.dzn>`
+  The problem represented by data file :download:`sudoku_es.dzn <examples/sudoku_es.dzn>`
 
 Conditional expressions are very useful in building complex models, or
 complex output. Consider the model of Sudoku problems shown in
@@ -714,7 +700,7 @@ or ``--all-solutions``. Running
 
 .. code-block:: bash
 
-  $ mzn-g12fd --all-solutions sudoku.mzn sudoku.dzn
+  $ mzn-g12fd --all-solutions sudoku_es.mzn sudoku_es.dzn
 
 results in
 
@@ -758,10 +744,10 @@ functions for dealing with enumerated types.
 Let's revisit the problem of coloring the graph of Australia from :ref:`sec-modelling`.
 
 
-.. literalinclude:: examples/aust-enum.mzn
+.. literalinclude:: examples/aust-enum_es.mzn
   :language: minizinc
   :name: ex-aust-enum
-  :caption: Model for coloring Australia using enumerated types (:download:`aust-enum.mzn <examples/aust-enum.mzn>`).
+  :caption: Model for coloring Australia using enumerated types (:download:`aust-enum_es.mzn <examples/aust-enum_es.mzn>`).
 
 The model shown in :numref:`ex-aust-enum` declares an enumerated type
 :mzn:`Color` which must be defined in the data file.  Each of the state
@@ -770,7 +756,7 @@ Running this program using
 
 .. code-block:: bash
 
-  $ mzn-gecode -D"Color = { red, yellow, blue };" aust-enum.mzn
+  $ mzn-gecode -D "Color = { red, yellow, blue };" aust-enum_es.mzn
 
 might result in output
 
@@ -902,15 +888,15 @@ which ensures that the tasks do not overlap.
   built-in function :mzn:`bool2int` can be used: it
   returns 1 if its argument is true and 0 otherwise.
 
-.. literalinclude:: examples/jobshop.mzn
+.. literalinclude:: examples/jobshop_es.mzn
   :language: minizinc
   :name: ex-jobshop
-  :caption: Model for job-shop scheduling problems (:download:`jobshop.mzn <examples/jobshop.mzn>`).
+  :caption: Model for job-shop scheduling problems (:download:`jobshop_es.mzn <examples/jobshop_es.mzn>`).
 
-.. literalinclude:: examples/jdata.dzn
+.. literalinclude:: examples/jdata_es.dzn
   :language: minizinc
   :name: ex-jdata
-  :caption: Data for job-shop scheduling problems (:download:`jdata.dzn <examples/jdata.dzn>`).
+  :caption: Data for job-shop scheduling problems (:download:`jdata_es.dzn <examples/jdata_es.dzn>`).
 
 The job shop scheduling model given in :numref:`ex-jobshop`
 gives a realistic example of the use of this disjunctive modelling
@@ -926,7 +912,7 @@ The command
 
 .. code-block:: bash
 
-  $ mzn-gecode --all-solutions jobshop.mzn jdata.dzn
+  $ mzn-gecode --all-solutions jobshop_es.mzn jdata_es.dzn
 
 solves a small job shop scheduling problem, and illustrates the behaviour of
 \texttt{all-solutions} for optimisation problems.  Here the solver outputs
@@ -974,19 +960,19 @@ and then executing
 
 .. code-block:: bash
 
-  $ mzn-gecode --all-solutions jobshop.mzn jobshop.dzn
+  $ mzn-gecode --all-solutions jobshop_es.mzn jobshop_es.dzn
 
 For this problem there are 3,444,375 optimal solutions.
 
-.. literalinclude:: examples/stable-marriage.mzn
+.. literalinclude:: examples/stable-marriage_es.mzn
   :language: minizinc
   :name: ex-stable-marriage
-  :caption: Model for the stable marriage problem (:download:`stable-marriage.mzn <examples/stable-marriage.mzn>`).
+  :caption: Model for the stable marriage problem (:download:`stable-marriage_es.mzn <examples/stable-marriage_es.mzn>`).
 
-.. literalinclude:: examples/stable-marriage.dzn
+.. literalinclude:: examples/stable-marriage_es.dzn
   :language: minizinc
   :name: ex-sm-data
-  :caption: Example data for the stable marriage problem (:download:`stable-marriage.dzn <examples/stable-marriage.dzn>`).
+  :caption: Example data for the stable marriage problem (:download:`stable-marriage_es.dzn <examples/stable-marriage_es.dzn>`).
 
 Another powerful modelling feature in MiniZinc is
 that decision variables
@@ -1023,7 +1009,7 @@ husband of each women.
 
 The first two constraints
 
-.. literalinclude:: examples/stable-marriage.mzn
+.. literalinclude:: examples/stable-marriage_es.mzn
   :language: minizinc
   :lines: 13-14
 
@@ -1034,7 +1020,7 @@ decision variable, not a parameter.
 
 The next two constraints are a  direct encoding of the stability condition:
 
-.. literalinclude:: examples/stable-marriage.mzn
+.. literalinclude:: examples/stable-marriage_es.mzn
   :language: minizinc
   :lines: 16-22
 
@@ -1081,10 +1067,10 @@ of MiniZinc treats this as failure so as to ensure that the treatment of
 parameters and decision variables is consistent, but a warning is issued
 since it is almost always an error.
 
-.. literalinclude:: examples/magic-series.mzn
+.. literalinclude:: examples/magic-series_es.mzn
   :language: minizinc
   :name: ex-magic-series
-  :caption: Model solving the magic series problem (:download:`magic-series.mzn <examples/magic-series.mzn>`).
+  :caption: Model solving the magic series problem (:download:`magic-series_es.mzn <examples/magic-series_es.mzn>`).
 
 .. index::
   single: bool2int
@@ -1109,7 +1095,7 @@ Executing the command
 
 .. code-block:: bash
 
-  $ mzn-gecode --all-solutions magic-series.mzn -D "n=4;"
+  $ mzn-gecode --all-solutions magic-series_es.mzn -D "n=4;"
 
 leads to the output
 
@@ -1184,10 +1170,10 @@ profit of item :mzn:`i`, and the maximum weight the knapsack can carry is
 given by :mzn:`capacity` then a naural model is given in
 :numref:`ex-knapsack-binary`.
 
-.. literalinclude:: examples/knapsack.mzn
+.. literalinclude:: examples/knapsack_es.mzn
   :language: minizinc
   :name: ex-knapsack-binary
-  :caption: Model for the 0/1 knapsack problem (:download:`knapsack.mzn <examples/knapsack.mzn>`).
+  :caption: Model for the 0/1 knapsack problem (:download:`knapsack_es.mzn <examples/knapsack_es.mzn>`).
 
 Notice that the :mzn:`var`
 keyword comes before the :mzn:`set`
@@ -1197,10 +1183,10 @@ This contrasts with an array in which the :mzn:`var` keyword
 qualifies the elements in the array rather than the array itself since the
 basic structure of the array is fixed, i.e. its index set.
 
-.. literalinclude:: examples/social-golfers.mzn
+.. literalinclude:: examples/social-golfers_es.mzn
   :language: minizinc
   :name: ex-social-golfers
-  :caption: Model for the social golfers problems (:download:`social-golfers.mzn <examples/social-golfers.mzn>`).
+  :caption: Model for the social golfers problems (:download:`social-golfers_es.mzn <examples/social-golfers_es.mzn>`).
 
 
 As a more complex example of set constraint consider the social golfers
@@ -1240,7 +1226,7 @@ Executing the command
 
 .. code-block:: bash
 
-  $ mzn-gecode social-golfers.mzn social-golfers.dzn
+  $ mzn-gecode social-golfers_es.mzn social-golfers_es.dzn
 
 where the data file defines a problem with 4 weeks, with 4 groups
 of size 3 leads to the output
@@ -1264,10 +1250,10 @@ of the features introduced in this chapter including
 enumerated types, complex constraints, global constraints,
 and complex output.
 
-.. literalinclude:: examples/wedding.mzn
+.. literalinclude:: examples/wedding_es.mzn
   :language: minizinc
   :name: ex-wedding
-  :caption: Planning wedding seating using enumerated types (:download:`wedding.mzn <examples/wedding.mzn>`).
+  :caption: Planning wedding seating using enumerated types (:download:`wedding_es.mzn <examples/wedding_es.mzn>`).
 
 The model of :numref:`ex-wedding` arranges seats at the wedding table.
 The table has 12 numbered seats in order around the table, 6 on each side.
@@ -1291,7 +1277,7 @@ Running
 
 .. code-block:: bash
 
-  $ mzn-gecode wedding.mzn
+  $ mzn-gecode wedding_es.mzn
 
 Results in the output
 

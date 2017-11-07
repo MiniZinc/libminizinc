@@ -22,7 +22,7 @@ Declaring and Using Option Types
     single: variable; option type
 
   An option type variable is declared as:
-  
+
   .. code-block:: minizincdef
 
     var opt <type> : <var-name:
@@ -60,11 +60,11 @@ We require that at most one task runs on any machine using the
 Finally we constrain that at most :mzn:`k` tasks run at any time, a redundant
 constraint that holds on the actual (not optional) tasks.
 
-.. literalinclude:: examples/flexible-js.mzn
+.. literalinclude:: examples/flexible-js_es.mzn
   :language: minizinc
   :name: ex-flexible-js
-  :caption: Model for flexible job shop scheduling using option types (:download:`flexible-js.mzn <examples/flexible-js.mzn>`).
-  
+  :caption: Model for flexible job shop scheduling using option types (:download:`flexible-js_es.mzn <examples/flexible-js_es.mzn>`).
+
 .. \pjs{Finish the damn section!}
 
 Hidden Option Types
@@ -96,14 +96,14 @@ Similarly the model fragment
 
 .. code-block:: minizinc
 
-  array[1..n] of var int: x;  
+  array[1..n] of var int: x;
   constraint forall(i in 1..n where x[i] >= 0)(x[i] <= limit);
 
 is syntactic sugar for
 
 .. code-block:: minizinc
 
-  array[1..n] of var int: x;  
+  array[1..n] of var int: x;
   constraint forall(i in 1..n)(if x[i] >= 0 then x[i] <= limit else <> endif);
 
 Again the :mzn:`forall` function actually operates on a list
@@ -142,8 +142,6 @@ For example the above two examples could be rewritten without option types as
 and
 
 .. code-block:: minizinc
-  
-  array[1..n] of var int: x;  
+
+  array[1..n] of var int: x;
   constraint forall(i in 1..n)(x[i] >= 0 -> x[i] <= limit);
-
-

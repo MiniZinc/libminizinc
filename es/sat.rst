@@ -128,7 +128,7 @@ que requiere que la suma de un arreglo de Boolean sea igual a un entero fijo. Ex
   :name: ex-bboolsum
   :caption: Restricciones de cardinalidad por las redes de sumador binarias (:download:`bboolsum_es.mzn <examples/bboolsum_es.mzn>`).
 
-.. literalinclude:: examples/binarysum.mzn
+.. literalinclude:: examples/binarysum_es.mzn
   :language: minizinc
   :name: ex-binarysum
   :caption: Código para construir redes de adición binaria (:download:`binarysum_es.mzn <examples/binarysum_es.mzn>`).

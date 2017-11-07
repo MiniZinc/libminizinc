@@ -58,22 +58,14 @@ Este documento tiene la siguiente estructura
 :ref:`spec-Content-types` define los tipos de contenido utilizados en esta especificación.
 
 
-This document also provides some explanation of why certain design decisions
-were made.  Such explanations are marked by the word *Rationale* and
-written in italics, and do not constitute part of the specification as such.
-*Rationale: These explanations are present because they are useful to both
-the designers and the users of MiniZinc.*
+This document also provides some explanation of why certain design decisions were made.  Such explanations are marked by the word *Rationale* and written in italics, and do not constitute part of the specification as such. *Rationale: These explanations are present because they are useful to both the designers and the users of MiniZinc.*
 
 Original authors.
 ~~~~~~~~~~~~~~~~~
 
-The original version of this document was prepared by
-Nicholas Nethercote, Kim Marriott, Reza Rafeh, Mark Wallace
-and Maria Garcia de la Banda.
-MiniZinc is evolving, however, and so is this document.
+The original version of this document was prepared by Nicholas Nethercote, Kim Marriott, Reza Rafeh, Mark Wallace and Maria Garcia de la Banda. MiniZinc is evolving, however, and so is this document.
 
-For a formally published paper on the MiniZinc language
-and the superset Zinc language, please see:
+For a formally published paper on the MiniZinc language and the superset Zinc language, please see:
 
 - N. Nethercote, P.J. Stuckey, R. Becket, S. Brand, G.J. Duck, and G. Tack.
   Minizinc: Towards a standard CP modelling language.

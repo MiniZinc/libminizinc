@@ -352,7 +352,7 @@ Podemos ejecutarlo usando el comando
 
   $ mzn-gecode cakes2_es.mzn pantry.dzn
 
-donde el archivo de datos :download:`pantry.dzn <examples/pantry_es.dzn>` es definido en
+donde el archivo de datos :download:`pantry_es.dzn <examples/pantry_es.dzn>` es definido en
 :numref:`fig-pantry1`. Esto da el mismo resultado que :download:`cakes_es.mzn <examples/cakes_es.mzn>`.
 El resultado de la ejecución del comando
 
@@ -383,14 +383,14 @@ Si eliminamos la instrucción de salida de :download:`cakes_es.mzn <examples/cak
 
   A MiniZinc model with no output will output a line for each decision variable with its value, unless it is assigned an expression on its declaration. Note how the output is in the form of a correct datafile.
 
-.. literalinclude:: examples/pantry.dzn
+.. literalinclude:: examples/pantry_es.dzn
   :language: minizinc
-  :caption: Ejemplo de archivo de datos para :download:`cakes2_es.mzn <examples/cakes2_es.mzn>` (:download:`pantry.dzn <examples/pantry_es.dzn>`)
+  :caption: Ejemplo de archivo de datos para :download:`cakes2_es.mzn <examples/cakes2_es.mzn>` (:download:`pantry_es.dzn <examples/pantry_es.dzn>`)
   :name: fig-pantry1
 
-.. literalinclude:: examples/pantry2.dzn
+.. literalinclude:: examples/pantry2_es.dzn
   :language: minizinc
-  :caption: Ejemplo de archivo de datos para :download:`cakes2_es.mzn <examples/cakes2_es.mzn>` (:download:`pantry2.dzn <examples/pantry2_es.dzn>`)
+  :caption: Ejemplo de archivo de datos para :download:`cakes2_es.mzn <examples/cakes2_es.mzn>` (:download:`pantry2_es.dzn <examples/pantry2_es.dzn>`)
   :name: fig-pantry2
 
 Se pueden introducir pequeños archivos de datos sin crear un archivo de datos ``.dzn``, usando una :index:`bandera en la línea de comandos <data file;command line>`
@@ -406,7 +406,7 @@ dará idénticos resultados que
 
 .. code-block:: bash
 
-  $ mzn-g12fd cakes2_es.mzn pantry.dzn
+  $ mzn-g12fd cakes2_es.mzn pantry_es.dzn
 
 Los archivos de datos sólo pueden contener instrucciones de asignación para variables de decisión y parámetros en el modelo o modelos a los que están destinados.
 
@@ -444,7 +444,7 @@ Tenga en cuenta que declaramos una variable flotante ``f`` similar a una variabl
 
 Podemos utilizar el mismo modelo para responder a una serie de preguntas diferentes.
 La primera pregunta es: Si tomo prestado $1000 al 4% y debo pagar $260 por trimestre, cuánto puedo terminar debiendo?.
-Esta pregunta está codificada por el archivo de datos :download:`loan1.dzn <examples/loan1.dzn>`.
+Esta pregunta está codificada por el archivo de datos :download:`loan1_es.dzn <examples/loan1_es.dzn>`.
 
 Puesto que deseamos utilizar variables de números reales y restricción, necesitamos usar un *solver* que soporte este tipo de problema.
 Un solver adecuado sería uno que soporta la programación lineal entera mixta.

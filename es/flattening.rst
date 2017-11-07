@@ -8,7 +8,7 @@ FlatZinc and Flattening
 Constraint solvers do not directly support MiniZinc models, rather in order
 to run a MiniZinc model, it is translated into a simple subset of MiniZinc
 called FlatZinc. FlatZinc reflects the fact that most constraint solvers
-only solve satisfaction 
+only solve satisfaction
 problems of the form :math:`\bar{exists} c_1 \wedge \cdots \wedge c_m`
 or optimization problems of the form
 :math:`\text{minimize } z \text{ subject to }  c_1 \wedge \cdots \wedge c_m`,
@@ -21,7 +21,7 @@ expression in a restricted form.
 The tool ``mzn2fzn``
 takes a MiniZinc model and data files and creates
 a flattened FlatZinc model which is equivalent to the MiniZinc model with
-the given data, and that appears in the restricted form discussed above.  
+the given data, and that appears in the restricted form discussed above.
 Normally the construction of a FlatZinc model which is sent to a solver is
 hidden from the user but you can view the result of flattening a model
 ``model.mzn`` with
@@ -45,9 +45,9 @@ constraints which do not themselves contain structured terms.
 Consider the following model for ensuring that two circles in a rectangular
 box do not overlap:
 
-.. literalinclude:: examples/cnonoverlap.mzn
+.. literalinclude:: examples/cnonoverlap_es.mzn
   :language: minizinc
-  :caption: Modelling non overlap of two circles (:download:`cnonoverlap.mzn <examples/cnonoverlap.mzn>`).
+  :caption: Modelling non overlap of two circles (:download:`cnonoverlap_es.mzn <examples/cnonoverlap_es.mzn>`).
   :name: fig-nonoverlap
 
 
@@ -73,7 +73,7 @@ large expression.
 After simplification the variable and parameter declarations parts of
 the model of :numref:`fig-nonoverlap` become
 
-.. literalinclude:: examples/cnonoverlap.fzn
+.. literalinclude:: examples/cnonoverlap_es.fzn
   :language: minizinc
   :start-after: % Variables
   :end-before: %
@@ -95,7 +95,7 @@ reuse it.  This is called *common subexpression elimination*.
 The subexpression :mzn:`(x1 - x2)*(x1 - x2)` can be named
 :mzn:`FLOAT02`
 and we can define it as
-:mzn:`constraint FLOAT02 = FLOAT01 * FLOAT01;` 
+:mzn:`constraint FLOAT02 = FLOAT01 * FLOAT01;`
 We can similarly name :mzn:`constraint FLOAT03 = y1 - y2;`
 and
 :mzn:`constraint FLOAT04 = FLOAT03 * FLOAT03;`
@@ -127,7 +127,7 @@ for example the constraint :mzn:`FLOAT01 = x1 - x2` is first rewritten to
 :mzn:`FLOAT01 + x2 = x1` and then output using the :mzn:`float_plus` primitive
 constraint. The resulting constraint form is as follows:
 
-.. literalinclude:: examples/cnonoverlap.fzn
+.. literalinclude:: examples/cnonoverlap_es.fzn
   :language: minizinc
   :start-after: % Constraints
   :end-before: %
@@ -154,13 +154,13 @@ be fully represented by the bounds of a variable, the inequality forces the
 lower bound of :mzn:`FLOAT05` to be :mzn:`25.0` and is then redundant.  The final
 flattened form of the model of :numref:`fig-nonoverlap` is:
 
-.. literalinclude:: examples/cnonoverlap.fzn
+.. literalinclude:: examples/cnonoverlap_es.fzn
   :language: minizinc
 
 Objectives
 ~~~~~~~~~~
 
-MiniZinc flattens minimization or maximization 
+MiniZinc flattens minimization or maximization
 objectives just like constraints.  The objective
 expression is flattened and a variable is created for it, just as for other
 expressions. In the FlatZinc output the solve item is always on a single
@@ -178,18 +178,18 @@ are linear constraints of the form
 .. math:: a_1 x_1 + \cdots + a_n x_n \begin{array}[c]{c} = \\ \leq \\ < \end{array} a_0
 
 where :math:`a_i` are integer or floating point constants, and
-:math:`x_i` are integer or floating point variables. 
+:math:`x_i` are integer or floating point variables.
 They are highly expressive, and are the only class of constraint supported
-by (integer) linear programming constraint solvers. 
+by (integer) linear programming constraint solvers.
 The translator from MiniZinc to FlatZinc tries to create linear
 constraints, rather than break up linear constraints into many
 subexpressions.
 
 .. \pjs{Maybe use the equation from SEND-MORE-MONEY instead?}
 
-.. literalinclude:: examples/linear.mzn
+.. literalinclude:: examples/linear_es.mzn
   :language: minizinc
-  :caption: A MiniZinc model to illustrate linear constraint flattening (:download:`linear.mzn <examples/linear.mzn>`).
+  :caption: A MiniZinc model to illustrate linear constraint flattening (:download:`linear_es.mzn <examples/linear_es.mzn>`).
   :name: fig-lflat
 
 Consider the model shown in :numref:`fig-lflat`. Rather than create
@@ -198,12 +198,12 @@ variables for all the subexressions :math:`3*x`, :math:`3*x - y`, :math:`x * z`,
 and :math:`19 + d * (x + y + z) - 4*d`
 translation will attempt to create a large linear constraint which captures
 as much as possible of the constraint in a single FlatZinc
-constraint. 
+constraint.
 
 Flattening creates linear expressions as a single unit rather than building
 intermediate variables for each subexpression. It also simplfies the linear
 expression created.  Extracting the linear expression from the constraints
-leads to 
+leads to
 
 .. code-block:: minizinc
 
@@ -214,7 +214,7 @@ leads to
 Notice how the *nonlinear expression* :math:`x \times z` is extracted as a
 new subexpression and given a name, while the remaining terms are collected
 together so that each variable appears exactly once (and indeed variable :math:`y`
-whose terms cancel is eliminated). 
+whose terms cancel is eliminated).
 
 Finally each constraint is written to FlatZinc form obtaining:
 
@@ -229,9 +229,9 @@ Finally each constraint is written to FlatZinc form obtaining:
 Unrolling Expressions
 ---------------------
 
-Most models require creating a number of constraints which is 
+Most models require creating a number of constraints which is
 dependent on the input data.  MiniZinc supports these models with array
-types, list and set comprehensions, and aggregation functions. 
+types, list and set comprehensions, and aggregation functions.
 
 Consider the following aggregate expression from the production scheduling
 example of :numref:`ex-prod-planning`.
@@ -255,8 +255,8 @@ Given the data
 
 .. code-block:: minizinc
 
-  nproducts = 2; 
-  nresources = 5; 
+  nproducts = 2;
+  nresources = 5;
   capacity = [4000, 6, 2000, 500, 500];
   consumption= [| 250, 2, 75, 100, 0,
                 | 200, 0, 150, 150, 75 |];
@@ -266,12 +266,12 @@ this first builds the array for :mzn:`p = 1`
 .. code-block:: minizinc
 
   [ capacity[r] div consumption[p,r]
-                             | r in 1..5 where consumption[p,r] > 0]          
+                             | r in 1..5 where consumption[p,r] > 0]
 
 which is :mzn:`[16, 3, 26, 5]` and then calculates the minimum as 3.
 It then builds the same array for :mzn:`p = 2` which is
 :mzn:`[20, 13, 3, 6]` and calculates the minimum as 3. It then constructs the
-array :mzn:`[3, 3]` and calculates the maximum as 3.  
+array :mzn:`[3, 3]` and calculates the maximum as 3.
 There is no representation of :mzn:`mproducts` in the output FlatZinc,
 this evaluation is simply used to replace :mzn:`mproducts` by the
 calculated value 3.
@@ -315,15 +315,15 @@ In FlatZinc form this is
 
 Notice how the temporary array variables :mzn:`v[i]` are replaced by the
 original variables in the output FlatZinc.
-       
+
 Arrays
 ------
 
-One dimensional arrays 
+One dimensional arrays
 in MiniZinc can have arbitrary indices as long as they are
 contiguous integers.  In FlatZinc all arrays are indexed from :mzn:`1..l`
 where :mzn:`l` is the length of the array.  This means that array lookups need to
-be translated to the FlatZinc view of indices. 
+be translated to the FlatZinc view of indices.
 
 Consider the following MiniZinc model for balancing a seesaw
 of length :mzn:`2 * l2`,
@@ -348,7 +348,7 @@ Given :mzn:`cw = 2`, :mzn:`l2 = 2`, and :mzn:`m = 3` the unrolling produces the 
   array[-2..2] of var 0..3: w;
   var -2..2: p
   constraint -2*w[-2] + -1*w[-1] + 0*w[0] + 1*w[1] + 2*w[2] = 0;
-  constraint w[-2] + w[-1] + w[0] + w[1] + w[2] = 5; 
+  constraint w[-2] + w[-1] + w[0] + w[1] + w[2] = 5;
   constraint w[p] = 2;
 
 But FlatZinc insists that the :mzn:`w` array starts at index 1.
@@ -362,7 +362,7 @@ may need to create a new variable.  The result for the equations above is
   var -2..2: p
   var 1..5: INT01;
   constraint -2*w[1] + -1*w[2] + 0*w[3] + 1*w[4] + 2*w[5] = 0;
-  constraint w[1] + w[2] + w[3] + w[4] + w[5] = 5; 
+  constraint w[1] + w[2] + w[3] + w[4] + w[5] = 5;
   constraint w[INT01] = 2;
   constraint INT01 = p + 3;
 
@@ -380,15 +380,15 @@ array index lookup is mapped to :mzn:`array_var_int_element`.
   constraint int_lin_eq([-1, 1], [INT01, p], -3);
 
 Multidimensional arrays are supported by MiniZinc, but only single
-dimension arrays are supported by FlatZinc (at present). 
+dimension arrays are supported by FlatZinc (at present).
 This means that multidimensional arrays must be mapped to single dimension
 arrays, and multidimensional array access must be mapped to single dimension
-array access. 
-  
+array access.
+
 Consider the Laplace equation constraints defined for a finite element
 plate model in :numref:`ex-laplace`:
 
-.. literalinclude:: examples/laplace.mzn
+.. literalinclude:: examples/laplace_es.mzn
   :language: minizinc
   :start-after: % arraydec
   :end-before: % sides
@@ -411,7 +411,7 @@ Assuming :mzn:`w = 4` and :mzn:`h = 4` this creates the constraints
 
 The 2 dimensional array of 25 elements is converted to a one dimensional
 array and the indices are changed accordingly: so index :mzn:`[i,j]` becomes
-:mzn:`[i * 5 + j + 1]`. 
+:mzn:`[i * 5 + j + 1]`.
 
 .. code-block:: minizinc
 
@@ -435,13 +435,13 @@ Reification
 
 FlatZinc models involve only variables and parameter declarations
 and a series of primitive constraints.  Hence when we model in MiniZinc
-with Boolean connectives other than conjunction, something has to be done. 
-The core approach to handling complex formulae that use 
+with Boolean connectives other than conjunction, something has to be done.
+The core approach to handling complex formulae that use
 connectives other than conjunction is by
-*reification*. 
+*reification*.
 Reifying a constraint :math:`c` createsa new constraint equivalent to :math:`b \leftrightarrow c`
 where the Boolean variable :math:`b` is :mzn:`true`
-if the constraint holds and :mzn:`false` if it doesn't hold. 
+if the constraint holds and :mzn:`false` if it doesn't hold.
 
 Once we have the capability to *reify* constraints the treatment of
 complex formulae is not different from arithmetic expressions. We create a
@@ -454,14 +454,14 @@ scheduling example of :numref:`ex-jobshop`.
 
 .. code-block:: minizinc
 
-  constraint %% ensure no overlap of tasks 
+  constraint %% ensure no overlap of tasks
       forall(j in 1..tasks) (
-          forall(i,k in 1..jobs where i < k) ( 
-              s[i,j] + d[i,j] <= s[k,j] \/ 
+          forall(i,k in 1..jobs where i < k) (
+              s[i,j] + d[i,j] <= s[k,j] \/
               s[k,j] + d[k,j] <= s[i,j]
       ) );
 
-Given the data file  
+Given the data file
 
 .. code-block:: minizinc
 
@@ -469,7 +469,7 @@ Given the data file
   tasks = 3;
   d = [| 5, 3, 4 | 2, 6, 3 |]
 
-then the unrolling creates 
+then the unrolling creates
 
 .. code-block:: minizinc
 
@@ -514,7 +514,7 @@ The :mzn:`int_lin_le_reif` is the reified form of the linear constraint
 
 Most FlatZinc primitive constraints :math:`p(\bar{x})` have a reified form
 :math:`\mathit{p\_reif}(\bar{x},b)` which takes an additional final argument :math:`b`
-and defines the constraint :math:`b \leftrightarrow p(\bar{x})`. 
+and defines the constraint :math:`b \leftrightarrow p(\bar{x})`.
 FlatZinc primitive constraints which define functional relationships,
 like :mzn:`int_plus` and :mzn:`int_plus`, do
 not need to support reification. Instead, the equality with the result of the function is reified.
@@ -527,7 +527,7 @@ integer variable (restricted to :mzn:`0..1`) to hold this value.
 
 Consider the magic series problem of :numref:`ex-magic-series`.
 
-.. literalinclude:: examples/magic-series.mzn
+.. literalinclude:: examples/magic-series_es.mzn
   :language: minizinc
   :end-before: solve satisfy
 
@@ -583,7 +583,7 @@ Predicates
 
 An important factor in the support for MiniZinc by many different solvers
 is that global constraints (and indeed FlatZinc constraints) can be
-specialized for the particular solver. 
+specialized for the particular solver.
 
 Each solver will either specify a predicate without a definition, or with a
 definition. For example a solver that has a builtin global :mzn:`alldifferent`
@@ -609,13 +609,13 @@ with the constructed arguments: :math:`p(\bar{v})`.
 If the predicate has a definition :math:`p(\bar{x}) = \phi(\bar{x})`
 then we replace the predicate call :math:`p(\bar{t})`
 with the body of the predicate with the formal arguments replaced by the
-argument variables, that is :math:`\phi(\bar{v})`. 
+argument variables, that is :math:`\phi(\bar{v})`.
 Note that if a predicate call  :math:`p(\bar{t})`
 appears in a reified position and it has no definition, we check for the
 existence of a reified version of the predicate :math:`\mathit{p\_reif}(\bar{x},b)` in which
 case we use that.
 
-Consider the :mzn:`alldifferent` constraint in the 
+Consider the :mzn:`alldifferent` constraint in the
 SEND-MORE-MONEY example of :numref:`ex-smm`
 
 .. code-block:: minizinc
@@ -636,10 +636,10 @@ same array twice the FlatZinc solver does not have to construct it twice.
 In this case since it is not used twice a later stage of the translation
 will replace :mzn:`v` by its definition.
 
-What if the solver uses the default definition of :mzn:`alldifferent`? 
+What if the solver uses the default definition of :mzn:`alldifferent`?
 Then the variable :mzn:`v` is defined as usual, and the predicate call is
 replaced by a renamed copy where :mzn:`v` replaces the formal argument :mzn:`x`.
-The resulting code is 
+The resulting code is
 
 .. code-block:: minizinc
 
@@ -649,7 +649,7 @@ The resulting code is
 which we examined in :ref:`sec-unroll`.
 
 Consider the following constraint, where :mzn:`alldifferent` appears in a reified
-position. 
+position.
 
 .. code-block:: minizinc
 
@@ -685,7 +685,7 @@ which will eventually be flattened to the FlatZinc form
   constraint array_bool_and([BOOL03,BOOL05,BOOL06],BOOL07);
   constraint array_bool_or([BOOL04,BOOL07],true);
 
-Note how common subexpression elimination reuses the 
+Note how common subexpression elimination reuses the
 reified inequality :mzn:`B != C` (although there is a better translation which
 lifts the common constraint to the top level conjunction).
 
@@ -696,21 +696,21 @@ Let Expressions
 
 Let expressions are a powerful facility of MiniZinc to introduce new
 variables. This is useful for creating common sub expressions, and for
-defining local variables for predicates.  
+defining local variables for predicates.
 During flattening let expressions are translated to variable and constraint
 declarations. The relational semantics of MiniZinc means that these
-constraints must appear as if conjoined 
-in the first enclosing Boolean expression. 
+constraints must appear as if conjoined
+in the first enclosing Boolean expression.
 
 A key feature of let expressions is that each time they are used they
-create new variables. 
+create new variables.
 
 Consider the flattening of the code
 
 .. code-block:: minizinc
 
   constraint even(u) \/ even(v);
-  predicate even(var int: x) = 
+  predicate even(var int: x) =
             let { var int: y } in x = 2 * y;
 
 First the predicate calls are replaced by their definition.
@@ -718,14 +718,14 @@ First the predicate calls are replaced by their definition.
 .. code-block:: minizinc
 
   constraint (let { var int: y} in u = 2 * y) \/
-             (let { var int: y} in v = 2 * y);   
+             (let { var int: y} in v = 2 * y);
 
 Next let variables are renamed apart
 
 .. code-block:: minizinc
 
   constraint (let { var int: y1} in u = 2 * y1) \/
-             (let { var int: y2} in v = 2 * y2);   
+             (let { var int: y2} in v = 2 * y2);
 
 Finally variable declarations are extracted to the top level
 
@@ -733,9 +733,9 @@ Finally variable declarations are extracted to the top level
 
   var int: y1;
   var int: y2;
-  constraint u = 2 * y1 \/ v = 2 * y2;   
+  constraint u = 2 * y1 \/ v = 2 * y2;
 
-Once the let expression is removed we can flatten as usual.        
+Once the let expression is removed we can flatten as usual.
 
 Remember that let expressions can define values for newly introduced
 variables (and indeed must do so for parameters).
@@ -749,7 +749,7 @@ Consider the complex objective function for wedding seating problem of
   solve maximize sum(h in Hatreds)(
         let {  var Seats: p1 = pos[h1[h]],
                var Seats: p2 = pos[h2[h]],
-               var 0..1: same = bool2int(p1 <= 6 <-> p2 <= 6) } in   
+               var 0..1: same = bool2int(p1 <= 6 <-> p2 <= 6) } in
         same * abs(p1 - p2) + (1-same) * (abs(13 - p1 - p2) + 1));
 
 For conciseness we assume only the first two Hatreds, so
@@ -766,34 +766,34 @@ reality they would be replaced by their definition):
 
 .. code-block:: minizinc
 
-  solve maximize 
+  solve maximize
         (let { var Seats: p1 = pos[groom],
                var Seats: p2 = pos[clara],
-               var 0..1: same = bool2int(p1 <= 6 <-> p2 <= 6) } in   
-         same * abs(p1 - p2) + (1-same) * (abs(13 - p1 - p2) + 1)) 
+               var 0..1: same = bool2int(p1 <= 6 <-> p2 <= 6) } in
+         same * abs(p1 - p2) + (1-same) * (abs(13 - p1 - p2) + 1))
         +
         (let { var Seats: p1 = pos[carol],
                var Seats: p2 = pos[bestman],
-               var 0..1: same = bool2int(p1 <= 6 <-> p2 <= 6) } in   
-         same * abs(p1 - p2) + (1-same) * (abs(13 - p1 - p2) + 1)); 
+               var 0..1: same = bool2int(p1 <= 6 <-> p2 <= 6) } in
+         same * abs(p1 - p2) + (1-same) * (abs(13 - p1 - p2) + 1));
 
 Next each new variable in a let expression is renamed to be distinct
 
 .. code-block:: minizinc
 
-  solve maximize 
+  solve maximize
         (let { var Seats: p11 = pos[groom],
                var Seats: p21 = pos[clara],
-               var 0..1: same1 = bool2int(p11 <= 6 <-> p21 <= 6) } in   
-         same1 * abs(p11 - p21) + (1-same1) * (abs(13 - p11 - p21) + 1)) 
+               var 0..1: same1 = bool2int(p11 <= 6 <-> p21 <= 6) } in
+         same1 * abs(p11 - p21) + (1-same1) * (abs(13 - p11 - p21) + 1))
         +
         (let { var Seats: p12 = pos[carol],
                var Seats: p22 = pos[bestman],
-               var 0..1: same2 = bool2int(p12 <= 6 <-> p22 <= 6) } in   
-         same2 * abs(p12 - p22) + (1-same2) * (abs(13 - p12 - p22) + 1)); 
+               var 0..1: same2 = bool2int(p12 <= 6 <-> p22 <= 6) } in
+         same2 * abs(p12 - p22) + (1-same2) * (abs(13 - p12 - p22) + 1));
 
-Variables in the let expression 
-are extracted to the top level and 
+Variables in the let expression
+are extracted to the top level and
 defining constraints are extracted to the correct
 level (which in this case is also the top level).
 
@@ -805,16 +805,16 @@ level (which in this case is also the top level).
   constraint p12 = pos[clara];
   constraint p11 = pos[groom];
   constraint same1 = bool2int(p11 <= 6 <-> p21 <= 6);
-  var Seats p12; 
+  var Seats p12;
   var Seats p22;
   var 0..1: same2;
   constraint p12 = pos[carol];
   constraint p22 = pos[bestman];
-  constraint same2 = bool2int(p12 <= 6 <-> p22 <= 6) } in   
-  solve maximize 
-        same1 * abs(p11 - p21) + (1-same1) * (abs(13 - p11 - p21) + 1)) 
+  constraint same2 = bool2int(p12 <= 6 <-> p22 <= 6) } in
+  solve maximize
+        same1 * abs(p11 - p21) + (1-same1) * (abs(13 - p11 - p21) + 1))
         +
-        same2 * abs(p12 - p22) + (1-same2) * (abs(13 - p12 - p22) + 1)); 
+        same2 * abs(p12 - p22) + (1-same2) * (abs(13 - p12 - p22) + 1));
 
 Now we have constructed equivalent MiniZinc code without the use of let
 expressions and the flattening can proceed as usual.
@@ -825,7 +825,7 @@ consider the following model
 .. code-block:: minizinc
 
   var 0..9: x;
-  constraint x >= 1 -> let { var 2..9: y = x - 1 } in 
+  constraint x >= 1 -> let { var 2..9: y = x - 1 } in
                        y + (let { var int: z = x * y } in z * z) < 14;
 
 We extract the variable definitions to the top level and the constraints to
@@ -841,7 +841,7 @@ the implication.
 
 Note that if we know that the equation defining a  variable definition
 cannot fail we can extract it to the top level. This will usually make
-solving substantially faster. 
+solving substantially faster.
 
 For the example above the constraint :mzn:`y = x - 1` can fail since the domain
 of :mzn:`y` is not big enough for all possible values of :mzn:`x - 1`. But the
@@ -857,9 +857,9 @@ A better flattening will give
   constraint z = x * y;
   constraint x >= 1 -> (y = x - 1 /\ y + z * z < 14);
 
-Currently ``mzn2fzn`` does this by always defining the declared 
+Currently ``mzn2fzn`` does this by always defining the declared
 bounds of an
-introduced variable to be big enough for its defining equation to always 
+introduced variable to be big enough for its defining equation to always
 hold and then adding bounds constraints in the correct context for the let
 expression.   On the example above this results in
 
@@ -872,7 +872,7 @@ expression.   On the example above this results in
   constraint z = x * y;
   constraint x >= 1 -> (y >= 2 /\ y + z * z < 14);
 
-This translation leads to more efficient solving since the possibly 
+This translation leads to more efficient solving since the possibly
 complex calculation of the let variable is not reified.
 
 Another reason for this approach is that it also works when introduced variables
@@ -882,7 +882,7 @@ Consider the following example similar to the previous one
 .. code-block:: minizinc
 
   var 0..9: x;
-  constraint (let { var 2..9: y = x - 1 } in 
+  constraint (let { var 2..9: y = x - 1 } in
              y + (let { var int: z = x * y } in z * z) > 14) -> x >= 5;
 
 The let expressions appear in a negated context, but each introduced
@@ -914,13 +914,13 @@ The treatment of *constraint items* in let expressions is analogous
 to defined variables. One can think of a constraint as equivalent to
 defining a new Boolean variable. The definitions of the new Boolean variables
 are extractted to the top level, and the Boolean remains in the correct
-context. 
+context.
 
 .. code-block:: minizinc
 
   constraint z > 1 -> let { var int: y,
                             constraint (x >= 0) -> y = x,
-                            constraint (x < 0)  -> y = -x 
+                            constraint (x < 0)  -> y = -x
                       } in y * (y - 2) >= z;
 
 is treated like

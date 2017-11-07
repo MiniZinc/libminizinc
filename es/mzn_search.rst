@@ -45,10 +45,10 @@ the search must proceed down a different set of
 choices.  Typically finite domain solvers use :index:`depth first search <search; depth first>`
 where they undo the last choice made and then try to make a new choice.
 
-.. literalinclude:: examples/nqueens.mzn
+.. literalinclude:: examples/nqueens_es.mzn
   :language: minizinc
   :name: ex-queens
-  :caption: Model for n-queens (:download:`nqueens.mzn <examples/nqueens.mzn>`).
+  :caption: Model for n-queens (:download:`nqueens_es.mzn <examples/nqueens_es.mzn>`).
 
 A simple example of a finite domain problem is the :math:`n` queens
 problem which requires that we
@@ -72,7 +72,7 @@ since it would be able to take an already placed queen.
 .. _fig-9q-a:
 
 .. figure:: figures/tree-4.*
-  
+
   Partial search trees for 9 queens
 
 .. _fig-9q-b:
@@ -84,7 +84,7 @@ since it would be able to take an already placed queen.
 .. _fig-9q-c:
 
 .. figure:: figures/chess9x9-4.*
-  
+
   The initial propagation on adding further ``q[6] = 4``
 
 A search strategy determines which choices to make. The decisions we have
@@ -124,7 +124,7 @@ problem. The annotation is attached to the solve item, after the keyword
 :mzn:`solve`.
 The search annotation
 
-.. literalinclude:: examples/nqueens.mzn
+.. literalinclude:: examples/nqueens_es.mzn
   :language: minizinc
   :lines: 11-12
 
@@ -134,7 +134,7 @@ This search annotation means that we should search by selecting from
 the array of integer variables :mzn:`q`, the variable with the smallest
 current domain (this is the :mzn:`first_fail` rule), and try setting
 it to its smallest possible value
-(:mzn:`indomain_min` 
+(:mzn:`indomain_min`
 value selection), looking across the entire search tree
 (:mzn:`complete` search).
 
@@ -258,12 +258,12 @@ to annotation variables.
   .. index::
     single: ann
 
-  Annotations have a type :mzn:`ann`. 
+  Annotations have a type :mzn:`ann`.
   You can declare an annotation
   :index:`parameter` (with optional assignment):
-  
+
   .. code-block:: minizincdef
-  
+
     ann : <ident>;
     ann : <ident> = <ann-expr> ;
 
@@ -275,15 +275,15 @@ to annotation variables.
 
   We can declare a new :index:`annotation`
   using the :mzn:`annotation` :index:`item <item; annotation>`:
-  
+
   .. code-block:: minizincdef
-  
+
     annotation <annotation-name> ( <arg-def>, ..., <arg-def> ) ;
-  
-.. literalinclude:: examples/nqueens-ann.mzn
+
+.. literalinclude:: examples/nqueens-ann_es.mzn
   :language: minizinc
   :name: ex-queens-ann
-  :caption: Annotated model for n-queens (:download:`nqueens-ann.mzn <examples/nqueens-ann.mzn>`).
+  :caption: Annotated model for n-queens (:download:`nqueens-ann_es.mzn <examples/nqueens-ann_es.mzn>`).
 
 The program in :numref:`ex-queens-ann` illustrates the use of annotation
 declarations, annotations and annotation variables.
