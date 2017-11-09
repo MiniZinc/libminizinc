@@ -354,8 +354,8 @@ predicate array_var_float_element(var int: i00, array[int] of var float: a,
     if is_fixed(i00) then z==a[fix(i00)]
     elseif minLB==maxUB then true
     elseif {0,1}==dom(i00) /*ub(i00)-lb(i00)==1*/ /*2==card( dom( i00 ) )*/ then
-          aux_float_eq_if_1(z, a[lb(i00)], (ub(i00)-i00)) /\
-          aux_float_eq_if_1(z, a[ub(i00)], (i00-lb(i00)))
+      aux_float_eq_if_1(z, a[lb(i00)], (ub(i00)-i00)) /\
+      aux_float_eq_if_1(z, a[ub(i00)], (i00-lb(i00)))
     else
       let {
         array[int] of var int: p = eq_encode(i00),
@@ -432,28 +432,59 @@ predicate array_var_float_element__XBZ_lb(array[int] of var float: x, array[int]
 % Set constraints
 
 predicate array_var_set_element(var int: x, array[int] of var set of int: y, var set of int: z) =
-%  let {
-%    int: yLB = min([min(ub[i]]),
-%  } in
+  let {
+    constraint x in index_set( y );
+    set of int: sUB = array_union( [ ub(y[i]) | i in dom(x) ] );
+    set of int: sLB = array_intersect( [ lb(y[i]) | i in dom(x) ] );
+    constraint trace( "set[]: \(x), \(y), \(z)\n" );
+  } in
   forall (k in ub(z)) (
-    if k in array_union(y) then
-      set2bools(z)[k] == 
-        [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in index_set(y) ][x]
+    set2bools(z)[k] == 
+      if k in sUB then
+        if k in sLB then
+          true
+        else
+          array1d( lb(x)..ub(x),
+            [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in dom(x) ] )[x]
+        endif
+      else
+        false
+      endif
+  ) /\
+  forall (k in sUB diff ub(z))(
+    if k in sLB then
+      false                     %% fail the constraint
     else
-      set2bools(z)[k] == false
+      not array1d( lb(x)..ub(x),
+        [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in dom(x) ] )[x]
     endif
   );
 
 predicate array_set_element(var int: x, array[int] of set of int: y, var set of int: z) =
-%  let {
-%    int: yLB = min([min(ub[i]]),
-%  } in
+  let {
+    constraint x in index_set( y );
+    set of int: sUB = array_union( [ y[i] | i in dom(x) ] );
+    set of int: sLB = array_intersect( [ y[i] | i in dom(x) ] );
+  } in
   forall (k in ub(z)) (
-    if k in array_union(y) then
-      set2bools(z)[k] == 
-        [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in index_set(y) ][x]
+    set2bools(z)[k] == 
+      if k in sUB then
+        if k in sLB then
+          true
+        else
+          array1d( lb(x)..ub(x),
+            [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in dom(x) ] )[x]
+        endif
+      else
+        false
+      endif
+  ) /\
+  forall (k in sUB diff ub(z))(
+    if k in sLB then
+      false                     %% fail the constraint
     else
-      set2bools(z)[k] == false
+      not array1d( lb(x)..ub(x),
+        [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in dom(x) ] )[x]
     endif
   );
 
