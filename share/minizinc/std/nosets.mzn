@@ -256,5 +256,63 @@ function array[int] of var bool: setarray2bools(array[int] of var set of int: x)
   endif;
 %% Par version no sense
   
+
+predicate array_var_set_element(var int: x, array[int] of var set of int: y, var set of int: z) =
+  let {
+    constraint x in index_set( y );
+    set of int: sUB = array_union( [ ub(y[i]) | i in dom(x) ] );
+    set of int: sLB = array_intersect( [ lb(y[i]) | i in dom(x) ] );
+    constraint trace( "set[]: \(x), \(y), \(z)\n" );
+  } in
+  forall (k in ub(z)) (
+    set2bools(z)[k] == 
+      if k in sUB then
+        if k in sLB then
+          true
+        else
+          array1d( lb(x)..ub(x),
+            [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in dom(x) ] )[x]
+        endif
+      else
+        false
+      endif
+  ) /\
+  forall (k in sUB diff ub(z))(
+    if k in sLB then
+      false                     %% fail the constraint
+    else
+      not array1d( lb(x)..ub(x),
+        [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in dom(x) ] )[x]
+    endif
+  );
+
+predicate array_set_element(var int: x, array[int] of set of int: y, var set of int: z) =
+  let {
+    constraint x in index_set( y );
+    set of int: sUB = array_union( [ y[i] | i in dom(x) ] );
+    set of int: sLB = array_intersect( [ y[i] | i in dom(x) ] );
+  } in
+  forall (k in ub(z)) (
+    set2bools(z)[k] == 
+      if k in sUB then
+        if k in sLB then
+          true
+        else
+          array1d( lb(x)..ub(x),
+            [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in dom(x) ] )[x]
+        endif
+      else
+        false
+      endif
+  ) /\
+  forall (k in sUB diff ub(z))(
+    if k in sLB then
+      false                     %% fail the constraint
+    else
+      not array1d( lb(x)..ub(x),
+        [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in dom(x) ] )[x]
+    endif
+  );
+
 annotation set_search(array[int] of var set of int: x, ann: a1, ann: a2, ann: a3) =
   bool_search(setarray2bools(x),a1,a2,a3);
