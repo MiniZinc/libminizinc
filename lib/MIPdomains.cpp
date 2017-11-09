@@ -1481,8 +1481,8 @@ namespace MiniZinc {
         }
         DBGOUT_MIPD( " ] " << ( CMPT_EQ == nCmpType ? "== " : "<= " ) << rhs );
                       );
-        std::vector<Expression*> nc_c(coefs.size());
-        std::vector<Expression*> nx(coefs.size());
+        std::vector<Expression*> nc_c;
+        std::vector<Expression*> nx;
         bool fFloat = false;
         for ( auto v: vars ) {
           if ( !v->type().isint() ) {
@@ -1493,8 +1493,10 @@ namespace MiniZinc {
         auto sName = constants().ids.float_.lin_eq; // "int_lin_eq";
         FunctionI* fDecl = mipd.float_lin_eq;
         if ( fFloat ) {                 // MZN_MIPD__assert_hard all vars of same type     TODO
-          for ( int i=0; i<vars.size(); ++i ) {
-            nc_c[i] = FloatLit::a( coefs[i] );
+          for ( int i=0; i<vars.size(); ++i )
+          if ( fabs( coefs[i] )>1e-8 )          /// Only add terms with non-0 coefs. TODO Eps=param
+          {
+            nc_c.push_back( FloatLit::a( coefs[i] ) );
             if (vars[i]->type().isint()) {
               std::vector<Expression*> i2f_args(1);
               i2f_args[0] = vars[i];
@@ -1502,9 +1504,9 @@ namespace MiniZinc {
               i2f->type(Type::varfloat());
               i2f->decl(mipd.getEnv()->model()->matchFn(mipd.getEnv()->envi(), i2f, false));
               EE ret = flat_exp(mipd.getEnv()->envi(), Ctx(), i2f, NULL, constants().var_true);
-              nx[i] = ret.r();
+              nx.push_back( ret.r() );
             } else {
-              nx[i] = vars[i];   // ->id();   once passing a general expression
+              nx.push_back( vars[i] );   // ->id();   once passing a general expression
             }
           }
           args[2] = FloatLit::a(rhs);
@@ -1518,9 +1520,11 @@ namespace MiniZinc {
             fDecl = mipd.float_lin_le;
           }
         } else {
-          for ( int i=0; i<vars.size(); ++i ) {
-            nc_c[i] = IntLit::a( coefs[i] );
-            nx[i] = vars[i];  //->id();
+          for ( int i=0; i<vars.size(); ++i )
+          if ( fabs( coefs[i] )>1e-8 )          /// Only add terms with non-0 coefs. TODO Eps=param
+          {
+            nc_c.push_back( IntLit::a( coefs[i] ) );
+            nx.push_back( vars[i] );  //->id();
           }
           args[2] = IntLit::a(rhs);
           args[2]->type(Type::parint(0));
