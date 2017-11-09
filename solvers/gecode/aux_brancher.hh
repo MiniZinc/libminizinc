@@ -21,7 +21,6 @@
 #include <gecode/set.hh>
 #endif
 
-#define GECODE_HAS_FLOAT_VARS
 #ifdef GECODE_HAS_FLOAT_VARS
 #include <gecode/float.hh>
 #endif
