@@ -21,7 +21,6 @@
 #include <gecode/set.hh>
 #endif
 
-#define GECODE_HAS_FLOAT_VARS
 #ifdef GECODE_HAS_FLOAT_VARS
 #include <gecode/float.hh>
 #endif
@@ -354,8 +353,12 @@ namespace MiniZinc {
     void setSearchStrategyFromAnnotation(std::vector<Expression*> flatAnn, 
                                                         std::vector<bool>& iv_searched, 
                                                         std::vector<bool>& bv_searched,
+                                                #ifdef GECODE_HAS_SET_VARS
                                                         std::vector<bool>& sv_searched,
+                                                #endif
+                                                #ifdef GECODE_HAS_FLOAT_VARS
                                                         std::vector<bool>& fv_searched,
+                                                #endif
                                                         Gecode::TieBreak<Gecode::IntVarBranch>& def_int_varsel,
                                                         Gecode::IntValBranch& def_int_valsel,
                                                 #ifdef HAS_GECODE_VERSION_5_1
