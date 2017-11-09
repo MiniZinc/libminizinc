@@ -262,7 +262,6 @@ predicate array_var_set_element(var int: x, array[int] of var set of int: y, var
     constraint x in index_set( y );
     set of int: sUB = array_union( [ ub(y[i]) | i in dom(x) ] );
     set of int: sLB = array_intersect( [ lb(y[i]) | i in dom(x) ] );
-    constraint trace( "set[]: \(x), \(y), \(z)\n" );
   } in
   forall (k in ub(z)) (
     set2bools(z)[k] == 
