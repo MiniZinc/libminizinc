@@ -19,6 +19,7 @@
 #include <ctime>
 #include <memory>
 #include <iomanip>
+#include <unordered_map>
 
 #include <minizinc/model.hh>
 #include <minizinc/parser.hh>
