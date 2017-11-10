@@ -1,18 +1,10 @@
 .. _sec-efficient:
 
-Effective Modelling Practices in MiniZinc
-=========================================
+Prácticas de modelado efectivas en MiniZinc
+===========================================
 
-There are almost always multiple
-ways to model the same problem, some of which generate models which are
-efficient to solve, and some of which are not.
-In general it is very hard to tell a priori which models are the most
-efficient
-for solving a particular problem, and indeed it may critically depend on
-the underlying solver used, and search strategy.  In this chapter we
-concentrate
-on modelling practices that avoid inefficiency in generating models
-and generated models.
+Existen casi siempre múltiples formas de modelar el mismo problema, algunas de las cuales generan modelos que son eficientes de resolver y otros que no son.
+En general, es muy difícil determinar a priori qué modelos son los más eficientes para resolver un problema en particular, y de hecho puede depender críticamente del solver subyacente utilizado y de la estrategia de búsqueda. En este capítulo nos concentramos en las prácticas de modelado que evitan la ineficiencia en la generación de modelos y de los modelos generados.
 
 Variable Bounds
 ---------------
@@ -20,20 +12,16 @@ Variable Bounds
 .. index::
   single: variable; bound
 
-Finite domain propagation engines, which are the principle type of solver
-targeted by MiniZinc, are more effective the tighter the bounds on the
-variables involved.  They can also behave badly with problems which
-have subexpressions that take large integer values, since they may
-implicitly limit the size of integer variables.
+Los motores de propagación de dominio finito, que son el principal tipo de solución objetivo de MiniZinc, son más efectivos cuanto más estrictos sean los límites de las variables involucradas. También pueden comportarse mal con problemas que tienen subexpresiones que toman valores enteros grandes, ya que pueden limitar implícitamente el tamaño de las variables enteras.
 
 .. literalinclude:: examples/grocery_es.mzn
   :language: minizinc
   :name: ex-grocery
-  :caption: A model with unbounded variables (:download:`grocery_es.mzn <examples/grocery_es.mzn>`).
+  :caption: Un modelo con variables no acotadas (:download:`grocery_es.mzn <examples/grocery_es.mzn>`).
 
-The grocery problem shown in :numref:`ex-grocery` finds 4 items
-whose prices in dollars add up to 7.11 and multiply up to 7.11.
-The variables are declared unbounded. Running
+The grocery problem shown in :numref:`ex-grocery` finds 4 items whose prices in dollars add up to 7.11 and multiply up to 7.11. The variables are declared unbounded. Running
+
+El problema de comestibles que se muestra en :numref:`ex-grocery` encuentra 4 elementos cuyos precios en dólares suman 7.11 y se multiplican hasta 7.11. Las variables son declaradas no acotadas. Corriendo
 
 .. code-block:: bash
 
@@ -46,15 +34,9 @@ yields
   =====UNSATISFIABLE=====
   % grocery.fzn:11: warning: model inconsistency detected before search.
 
-This is because the
-intermediate expressions in the multiplication
-are also :mzn:`var int`
-and are given default bounds in the solver
-:math:`-1,000,000 \dots 1,000,000`,
-and these ranges are too small to hold the
-values that the intermediate expressions may need to take.
+Esto se debe a que las expresiones intermedias en la multiplicación también son :mzn:`var int` y tienen límites predeterminados en el solver :math:`-1,000,000 \dots 1,000,000`, y estos rangos son demasiado pequeños para contener los valores que las expresiones intermedias puede necesitar tomar.
 
-Modifying the model so that the items are declared with tight bounds
+Modificar el modelo para que las variables se declaren con límites estrechos.
 
 .. code-block:: minizinc
 
@@ -63,66 +45,54 @@ Modifying the model so that the items are declared with tight bounds
   var 1..711: item3;
   var 1..711: item4;
 
-results in a better model, since now MiniZinc can infer bounds on the
-intermediate expressions and use these rather than the default bounds.
-With this modification, executing the model gives
+da como resultado un mejor modelo, ya que ahora MiniZinc puede inferir los límites en las expresiones intermedias y usar estos en lugar de los límites predeterminados. Con esta modificación, la ejecución del modelo da
 
 ::
 
   {120,125,150,316}
   ----------
 
-Note however that even the improved model may be too difficult for
-some solvers.
-Running
+Sin embargo, tenga en cuenta que incluso el modelo mejorado puede ser demasiado difícil para algunos solucionadores.
+Corriendo
 
 .. code-block:: bash
 
   $ mzn-g12lazy grocery_es.mzn
 
-does not return an answer, since the solver builds a huge representation
-for the intermediate product variables.
+no devuelve una respuesta, ya que el solucionador crea una gran representación para las variables intermedias del producto.
 
 .. defblock:: Bounding variables
 
   .. index::
     single: variable; bound
 
-  Always try to use bounded variables in models.
-  When using :mzn:`let`
-  declarations to introduce new variables, always try to define them
-  with correct and tight bounds.  This will make your model more efficient,
-  and avoid the possibility of unexpected overflows.
-  One exception is when you introduce a new variable which is
-  immediately defined as equal to an expression. Usually MiniZinc will be
-  able to infer effective bounds from the expression.
+Siempre trate de usar variables limitadas en los modelos.
+Al usar declaraciones :mzn:`let` para introducir nuevas variables, siempre intente definirlas con límites correctos y ajustados. Esto hará que su modelo sea más eficiente y evitará la posibilidad de desbordamientos inesperados.
+Una excepción es cuando introduce una nueva variable que se define inmediatamente como igual a una expresión. Por lo general, MiniZinc podrá inferir límites efectivos a partir de la expresión.
 
-Unconstrained Variables
------------------------
+Variables sin restricciones
+---------------------------
 
 .. index::
   single: variable; unconstrained
 
-Sometimes when modelling it is easier to introduce more variables than
-actually required to model the problem.
+A veces, cuando se modela, es más fácil introducir más variables de las que realmente se requieren para modelar el problema.
 
 .. literalinclude:: examples/golomb_es.mzn
   :language: minizinc
   :name: ex-unc
-  :caption: A model for Golomb rulers with unconstrained variables (:download:`golomb_es.mzn <examples/golomb_es.mzn>`).
+  :caption: Un modelo para los gobernantes de Golomb con variables sin restricciones (:download:`golomb_es.mzn <examples/golomb_es.mzn>`).
 
-Consider the model for Golomb rulers shown in :numref:`ex-unc`.
-A Golomb ruler of :mzn:`n` marks is one where the absolute differences
-between any two marks are different.
-It creates a two dimensional array of difference variables, but
-only uses those of the form :mzn:`diff[i,j]` where :mzn:`i > j`.
-Running the model as
+Considere el modelo de reglas de Golomb que se muestra en :numref:`ex-unc`.
+Una regla Golomb de :mzn:`n` marcas es una donde las diferencias absolutas entre cualesquiera de dos marcas son diferentes
+Crea una matriz bidimensional de variables de diferencia, pero solo usa aquellas de la forma :mzn:`diff[i,j]` donde :mzn:`i > j`.
+Ejecutando el modelo como
 
 .. code-block:: bash
 
   $ mzn-g12fd golomb_es.mzn -D "n = 4; m = 6;"
 
-results in output
+resulta en la salida
 
 ::
 
@@ -130,24 +100,21 @@ results in output
   diffs = [0, 0, 0, 0, 1, 0, 0, 0, 4, 3, 0, 0, 6, 5, 2, 0];
   ----------
 
-and everything seems fine with the model.
-But if we ask for all solutions using
+y todo parece estar bien con el modelo.
+
+Pero si requerimos todas las soluciones utilizando
 
 .. code-block:: bash
 
   $ mzn-g12fd -a golomb_es.mzn -D "n = 4; m = 6;"
 
-we are presented with a never ending list of the same solution!
+¡Se nos presenta una lista interminable de la misma solución!
 
-What is going on?  In order for the finite domain solver to finish
-it needs to fix all variables, including the variables :mzn:`diff[i,j]`
-where :mzn:`i <= j`, which means there are countless ways of generating a
-solution, simply by changing these variables to take arbitrary values.
+¿Qué está pasando? Para que el solucionador de dominio finito termine, debe de  corregir todas las variables, incluidas las variables :mzn:`diff [i, j]` donde :mzn:`i <= j`, lo que significa que hay innumerables formas de generar un solución, simplemente cambiando estas variables para tomar valores arbitrarios.
 
-We can avoid problems with unconstrained variables, by modifying
-the model so that they are fixed to some value. For example replacing
-the lines marked :mzn:`% (diff}` in :numref:`ex-unc`
-to
+We can avoid problems with unconstrained variables, by modifying the model so that they are fixed to some value. For example replacing the lines marked :mzn:`% (diff}` in :numref:`ex-unc` to
+
+Podemos evitar problemas con variables no restringidas, modificando el modelo para que se fijen a algún valor. Por ejemplo en :numref:`ex-unc`, reemplazando las líneas marcadas como :mzn:`% (diff}` a
 
 .. code-block:: minizinc
 
@@ -155,25 +122,21 @@ to
                    (diffs[i,j] = if (i > j) then mark[i] - mark[j]
                                  else 0 endif);
 
-ensures that the extra variables are all fixed to 0. With this change
-the solver returns just one solution.
+asegura que las variables adicionales estén todas fijadas en 0. Con este cambio, el solucionador nos devuelve solo una solución.
 
-MiniZinc will automatically remove variables which are unconstrained
-and not used in the output.  An alternate solution to the above problem is
-simply to remove the output of the :mzn:`diffs` array by changing the
-output statement to
+MiniZinc eliminará automáticamente las variables que no están restringidas y no se utilizan en la salida. Una solución alternativa al problema anterior es simplemente eliminar la salida de la matriz :mzn:`diffs` cambiando la declaración de salida a
 
 .. code-block:: minizinc
 
   output ["mark = \(mark);\n"];
 
-With this change running
+Con este cambio funcionando
 
 .. code-block:: bash
 
   $ mzn-g12fd -a golomb_es.mzn -D "n = 4; m = 6;"
 
-simply results in
+Simplemente se traduce en
 
 ::
 
@@ -181,7 +144,7 @@ simply results in
   ----------
   ==========
 
-illustrating the unique solution.
+Ilustrando una solución única.
 
 
 .. defblock:: Unconstrained Variables
@@ -189,33 +152,28 @@ illustrating the unique solution.
   .. index::
     single: variable; unconstrained
 
-  Models should never have unconstrained variables. Sometimes it is
-  difficult to model without unnecessary variables.
-  If this is the case add
-  constraints to fix the unnecessary variables,
-  so they cannot influence the
-  solving.
+Los modelos nunca deben tener variables sin restricciones. Algunas veces es difícil modelar sin variables innecesarias. Si este es el caso, agregue restricciones para corregir las variables innecesarias, de modo que no puedan influir en la resolución.
 
 
-Effective Generators
---------------------
+
+
+Generadores efectivos
+---------------------
 
 .. index::
   single: generator
 
-Imagine we want to count the number of triangles (:math:`K_3` subgraphs)
-appearing in a graph.  Suppose the graph is defined by
-an adjacency matrix: :mzn:`adj[i,j]` is true if nodes :mzn:`i` and :mzn:`j` are
-adjacent.  We might write
+Imagine que queremos contar el número de triángulos (:math:`K_3` subgrafos) que aparecen en un grafo. Supongamos que el grafo está definido por una matriz de adyacencia: :mzn:`adj[i, j]` es verdadero si los nodos :mzn:`i` y :mzn:`j` son adyacentes.
+
+Podríamos escribir
 
 .. code-block:: minizinc
 
   int: count = sum ([ 1 | i,j,k in NODES where i < j  /\ j < k
                          /\ adj[i,j] /\ adj[i,k] /\ adj[j,k]]);
 
-which is certainly correct, but it examines all triples of nodes.
-If the graph is sparse we can do better by realising that some
-tests can be applied as soon as we select :mzn:`i` and :mzn:`j`.
+lo cual es ciertamente correcto, pero examina todos los triples de nodos.
+Si el gráfico es escaso, podemos hacerlo mejor al darnos cuenta de que algunas pruebas se pueden aplicar tan pronto como seleccionamos :mzn:`i` y :mzn:`j`.
 
 .. code-block:: minizinc
 
@@ -225,75 +183,84 @@ tests can be applied as soon as we select :mzn:`i` and :mzn:`j`.
 You can use the builitin :mzn:`trace` :index:`function <trace>` to help
 determine what is happening inside generators.
 
+Puedes usar builitin :mzn:`trace` :index:`function <trace>` para ayudar
+determinar qué está sucediendo dentro de los generadores
+
 .. defblock:: Tracing
 
-  The function :mzn:`trace(s,e)` prints the string :mzn:`s` before
-  evaluating the expression :mzn:`e` and returning its value.
-  It can be used in any context.
+La función :mzn:`trace (s, e)` imprime la cadena :mzn:`s` antes de evaluar la expresión :mzn:`e` y devuelve su valor.
+Se puede usar en cualquier contexto.
 
-For example, we can see how many times the test is performed in the inner
-loop for both versions of the calculation.
+
+Por ejemplo, podemos ver cuántas veces se realiza la prueba en el interior
+bucle para ambas versiones del cálculo.
 
 .. literalinclude:: examples/count1_es.mzn
   :language: minizinc
   :lines: 8-15
 
-Produces the output:
+Produce el resultado:
 
 ::
 
   ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ----------
 
-indicating the inner loop is evaluated 64 times while
+indicando el bucle interno se evalúa 64 veces mientras
 
 .. literalinclude:: examples/count2_es.mzn
   :language: minizinc
   :lines: 13-14
 
-Produces the output:
+Produce el resultado:
 
 ::
 
   ++++++++++++++++
   ----------
 
-indicating the inner loop is evaluated 16 times.
+indicando el bucle interno se evalúa 16 veces.
 
-Note that you can use the dependent strings in :mzn:`trace` to
-understand what is happening during model creation.
+Tenga en cuenta que puede usar las cadenas dependientes en :mzn:`trace` para comprender lo que está sucediendo durante la creación del modelo.
 
 .. literalinclude:: examples/count3_es.mzn
   :language: minizinc
   :lines: 13-15
 
-will print out each of triangles that is found in the calculation.
-It produces the output
+
+imprimirá cada uno de los triángulos que se encuentran en el cálculo.
+
+Produce la salida:
 
 ::
 
   (1,2,3)
   ----------
 
-Redundant Constraints
----------------------
+
+
+
+Restricciones redundantes
+-------------------------
 
 .. index::
   single: constraint; redundant
 
 The form of a model will affect how well the constraint solver can solve it.
-In many cases adding constraints which are redundant, i.e. are logically
-implied by the existing model, may improve the search for
-solutions by making more information available to the solver earlier.
+In many cases adding constraints which are redundant, i.e. are logically implied by the existing model, may improve the search for solutions by making more information available to the solver earlier.
 
-Consider the magic series problem from :ref:`sec-complex`.
-Running this for :mzn:`n = 16` as follows:
+La forma de un modelo afectará qué tan bien puede resolverlo el solucionador de restricciones.
+En muchos casos, la adición de restricciones que son redundantes, es decir, están lógicamente implícitas en el modelo existente, puede mejorar la búsqueda de soluciones al hacer que el solucionador tenga más información antes.
+
+
+Considere el problema de la serie mágica de :ref:`sec-complex`.
+Ingresando para :mzn:`n = 16` de la siguiente manera:
 
 .. code-block:: bash
 
   $ mzn-g12fd --all-solutions --statistics magic-series_es.mzn -D "n=16;"
 
-might result in output
+puede resultar en la salida
 
 ::
 
@@ -301,8 +268,7 @@ might result in output
   ----------
   ==========
 
-and the statistics showing 174 choice points required.
-
+y las estadísticas muestran 174 puntos de elección requeridos.
 We can add redundant constraints to the model. Since each number
 in the sequence counts the number of occurrences of a number we know
 that they sum up to :mzn:`n`. Similarly we know that the sum of
