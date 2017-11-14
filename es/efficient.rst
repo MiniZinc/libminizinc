@@ -6,8 +6,8 @@ Prácticas de modelado efectivas en MiniZinc
 Existen casi siempre múltiples formas de modelar el mismo problema, algunas de las cuales generan modelos que son eficientes de resolver y otros que no son.
 En general, es muy difícil determinar a priori qué modelos son los más eficientes para resolver un problema en particular, y de hecho puede depender críticamente del solver subyacente utilizado y de la estrategia de búsqueda. En este capítulo nos concentramos en las prácticas de modelado que evitan la ineficiencia en la generación de modelos y de los modelos generados.
 
-Variable Bounds
----------------
+Límites de las Variables
+------------------------
 
 .. index::
   single: variable; bound

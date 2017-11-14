@@ -1,2 +1,2 @@
-Interfacing Solvers to Flatzinc
-===============================
+Interfaces de solucionadores a Flatzinc
+=======================================
