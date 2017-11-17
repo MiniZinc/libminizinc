@@ -602,6 +602,7 @@ class MznTest:
             except:
                 print( "  ------  WARNING: failed to compare/rank instance. ",  )
                 traceback.print_exc()
+        self.cmpRes.summarizeCmp()
 
     def summarize(self):
         try:
