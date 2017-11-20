@@ -19,8 +19,8 @@ namespace MiniZinc {
 using std::string;
 using std::vector;
 
-  PathFilePrinter::PathFilePrinter(std::ostream& o, EnvI& envi, bool rem) :
-      os(o), ei(envi), remove_paths(rem), constraint_index(0) {};
+  PathFilePrinter::PathFilePrinter(std::ostream& o, EnvI& envi, bool keep) :
+      os(o), ei(envi), keep_paths(keep), constraint_index(0) {};
 
   void PathFilePrinter::addBetterName(Id* id, string name, string path, bool overwrite = false) {
     string oname;
@@ -83,7 +83,6 @@ using std::vector;
     // Build map
     for(VarDeclIterator vdit = m->begin_vardecls(); vdit != m->end_vardecls(); ++vdit) {
       VarDecl* e = vdit->e();
-      vector<Expression*> removes;
       for(ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
         if(Call* ca = (*it)->dyn_cast<Call>()) {
           ASTString cid = ca->id();
@@ -122,15 +121,9 @@ using std::vector;
           } else if(ca->id() == constants().ann.mzn_path) {
             StringLit* sl = ca->args()[0]->cast<StringLit>();
             addBetterName(e->id(), path2name(sl->v().str()), sl->v().str());
-            if(remove_paths)
-              removes.push_back(e);
           }
         }
       }
-
-      for(Expression* e : removes)
-        e->ann().removeCall(constants().ann.mzn_path);
-
     }
 
     // Print values
@@ -161,6 +154,8 @@ using std::vector;
         // Path
         os << np.second << std::endl;
       }
+      if(!keep_paths)
+        vdi->e()->ann().removeCall(constants().ann.mzn_path);
     } else if (ConstraintI* ci = item->dyn_cast<ConstraintI>()) {
       StringLit* sl = nullptr;
       Call* e = ci->e()->cast<Call>();
@@ -172,6 +167,8 @@ using std::vector;
           }
         }
       }
+      if(!keep_paths)
+        e->ann().removeCall(constants().ann.mzn_path);
 
       os << constraint_index << "\t";
       os << constraint_index << "\t";

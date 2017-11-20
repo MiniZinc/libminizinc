@@ -28,13 +28,13 @@ namespace MiniZinc {
   private:
     std::ostream& os;
     EnvI& ei;
-    bool remove_paths;
+    bool keep_paths;
     int constraint_index;
 
     void addBetterName(Id* id, std::string name, std::string path, bool overwrite);
 
   public:
-    PathFilePrinter(std::ostream& o, EnvI& envi, bool rem = true);
+    PathFilePrinter(std::ostream& o, EnvI& envi, bool keep = false);
     void print(Model* m);
     void print(Item* i);
   };

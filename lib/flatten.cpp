@@ -836,7 +836,7 @@ namespace MiniZinc {
  
   bool
   EnvI::dumpPath(std::ostream& os, bool force) {
-    force = force ? force : fopts.keep_mzn_paths;
+    force = force ? force : fopts.collect_mzn_paths;
     if (callStack.size() > maxPathDepth) {
       if(!force && current_pass_no >= final_pass_no-1) {
         return false;
@@ -6749,17 +6749,6 @@ namespace MiniZinc {
         if(item->cast<VarDeclI>()->e()->type().ot() == Type::OT_OPTIONAL ||
             item->cast<VarDeclI>()->e()->type().bt() == Type::BT_ANN) {
           e.envi().flat_removeItem(i);
-        }
-        if(!e.envi().fopts.keep_mzn_paths && vdi->e()->e())
-          vdi->e()->e()->ann().removeCall(constants().ann.mzn_path);
-      } else if(ConstraintI* ci = item->dyn_cast<ConstraintI>()) {
-        if(!e.envi().fopts.keep_mzn_paths)
-          ci->e()->ann().removeCall(constants().ann.mzn_path);
-      } else if(SolveI* si = item->dyn_cast<SolveI>()) {
-        if(!e.envi().fopts.keep_mzn_paths) {
-          si->ann().removeCall(constants().ann.mzn_path);
-          if(si->e())
-            si->e()->ann().removeCall(constants().ann.mzn_path);
         }
       }
     }

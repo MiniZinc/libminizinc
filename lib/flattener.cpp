@@ -86,8 +86,9 @@ void Flattener::printHelp(ostream& os)
        : "  --fzn <file>, --output-fzn-to-file <file>\n" )
   << "    Filename for generated FlatZinc output" << std::endl
   << "  -O, --ozn, --output-ozn-to-file <file>\n    Filename for model output specification (-O- for none)" << std::endl
-  << "  --keep-paths\n    Output a symbol table (.paths file)" << std::endl
-  << "  --output-paths-to-file <file>\n    Output a symbol table (.paths file)" << std::endl
+  << "  --keep-paths\n    Don't remove path annotations from FlatZinc" << std::endl
+  << "  --output-paths\n    Output a symbol table (.paths file)" << std::endl
+  << "  --output-paths-to-file <file>\n    Output a symbol table (.paths file) to <file>" << std::endl
   << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
   << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
   << "  --output-paths-to-stdout\n    Output symbol table to standard output" << std::endl
@@ -128,13 +129,15 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
       "-o --fzn --output-to-file --output-fzn-to-file"
       : "--fzn --output-fzn-to-file", &flag_output_fzn) ) {
   } else if ( cop.getOption( "--output-paths-to-file", &flag_output_paths) ) {
-    fopts.keep_mzn_paths = true;
+    fopts.collect_mzn_paths = true;
+  } else if ( cop.getOption( "--output-paths") ) {
+    fopts.collect_mzn_paths = true;
   } else if ( cop.getOption( "--output-to-stdout --output-fzn-to-stdout" ) ) {
     flag_output_fzn_stdout = true;
   } else if ( cop.getOption( "--output-ozn-to-stdout" ) ) {
     flag_output_ozn_stdout = true;
   } else if ( cop.getOption( "--output-paths-to-stdout" ) ) {
-    fopts.keep_mzn_paths = true;
+    fopts.collect_mzn_paths = true;
     flag_output_paths_stdout = true;
   } else if ( cop.getOption( "--output-mode", &buffer ) ) {
     if (buffer == "dzn") {
@@ -232,7 +235,8 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
 #endif
   } else if ( cop.getOption( "-O --ozn --output-ozn-to-file", &flag_output_ozn) ) {
   } else if (string(argv[i])=="--keep-paths") {
-    fopts.keep_mzn_paths = true;
+    flag_keep_mzn_paths = true;
+    fopts.collect_mzn_paths = true;
   } else if (string(argv[i])=="--only-toplevel-presolve") {
     fopts.only_toplevel_paths = true;
   } else if ( cop.getOption( "--allow-multiple-assignments" ) ) {
@@ -242,7 +246,7 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
       goto error;
     std::string input_file(argv[i]);
     if (input_file.length()<=4) {
-//       std::cerr << "Error: cannot handle file " << input_file << "." << std::endl;
+      // std::cerr << "Error: cannot handle file " << input_file << "." << std::endl;
       goto error;
     }
     size_t last_dot = input_file.find_last_of('.');
@@ -394,7 +398,7 @@ void Flattener::flatten()
     if (flag_output_fzn == "") {
       flag_output_fzn = flag_output_base+".fzn";
     }
-    if (flag_output_paths == "" && fopts.keep_mzn_paths) {
+    if (flag_output_paths == "" && fopts.collect_mzn_paths) {
       flag_output_paths = flag_output_base+".paths";
     }
     if (flag_output_ozn == "" && ! flag_no_output_ozn) {
@@ -570,7 +574,7 @@ void Flattener::flatten()
             if (flag_output_paths_stdout) {
               if (flag_verbose)
                 std::cerr << "Printing Paths to stdout ..." << std::endl;
-              PathFilePrinter pfp(std::cout, env->envi());
+              PathFilePrinter pfp(std::cout, env->envi(), flag_keep_mzn_paths);
               pfp.print(env->flat());
               if (flag_verbose)
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
@@ -581,7 +585,7 @@ void Flattener::flatten()
               std::ofstream os;
               os.open(flag_output_paths.c_str(), ios::out);
               checkIOStatus (os.good(), " I/O error: cannot open fzn output file. ");
-              PathFilePrinter pfp(os, env->envi());
+              PathFilePrinter pfp(os, env->envi(), flag_keep_mzn_paths);
               pfp.print(env->flat());
               checkIOStatus (os.good(), " I/O error: cannot write fzn output file. ");
               os.close();
