@@ -190,6 +190,7 @@ Flattener::~Flattener()
     if(is_flatzinc) {
       pEnv->swap();
     }
+  delete pEnv->model();
 }
 
 
