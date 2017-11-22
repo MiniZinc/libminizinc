@@ -141,7 +141,9 @@ predicate int_eq_reif(var int: x, int: y, var bool: b) =
   if is_fixed(b) then
     if true==fix(b) then x==y else x!=y endif
   elseif y in dom(x) then
-    if fPostprocessDomains then
+    if is_fixed(x) then
+      b <-> y==fix(x)
+    elseif fPostprocessDomains then
       int_eq_reif__POST(x, y, b)
 %%%  THIS seems pretty complex, especially for binaries, and does not connect to eq_encoding (/ MIPD?)
 %%    elseif y==lb(x) then
