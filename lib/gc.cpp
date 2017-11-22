@@ -489,19 +489,25 @@ namespace MiniZinc {
     }
     
     bool fixPrev = false;
+    WeakRef* prevWr = NULL;
     for (WeakRef* wr = _weakRefs; wr != NULL; wr = wr->next()) {
       if (fixPrev) {
         fixPrev = false;
-        WeakRef* p = wr->_p;
-        removeWeakRef(p);
-        p->_n = NULL;
-        p->_p = NULL;
+        removeWeakRef(prevWr);
+        prevWr->_n = NULL;
+        prevWr->_p = NULL;
       }
       if ((*wr)() && (*wr)()->_gc_mark==0) {
         wr->_e = NULL;
         wr->_valid = false;
         fixPrev = true;
+        prevWr = wr;
       }
+    }
+    if (fixPrev) {
+      removeWeakRef(prevWr);
+      prevWr->_n = NULL;
+      prevWr->_p = NULL;
     }
     
     for (ASTNodeWeakMap* wr = _nodeWeakMaps; wr != NULL; wr = wr->next()) {
