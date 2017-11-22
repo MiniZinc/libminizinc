@@ -71,10 +71,10 @@ void Flattener::printHelp(ostream& os)
   << "  --sac\n    Probe values of all variables at the root node (adds --use-gecode)" << std::endl
   << "  --pre-passes <n>\n    Number of times to apply shave/sac pass (0 = fixed-point, 1 = default)" << std::endl
 #endif
-  << "  Two-pass optimisation levels:  -O0:    Disable two-pass (default)" << std::endl
-  << "    -O1:    Same as: --two-pass"
+  << "  Two-pass optimisation levels:  -O0:    Disable optimize (--no-optimize)" << std::endl
+  << "    -O1:    Single pass (default)"
 #ifdef HAS_GECODE
-  << "    -O2:    Same as: --use-gecode" << std::endl
+  <<                                  "  -O2:    Same as: --use-gecode" << std::endl
   << "    -O3:    Same as: --shave       -O4:    Same as: --sac" << std::endl
 #else
   << std::endl
@@ -219,10 +219,9 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
       flag_pre_passes = static_cast<unsigned int>(passes);
     }
   } else if (string(argv[i])=="-O0") {
-    flag_two_pass = false;
-    flag_gecode = false;
+    flag_optimize = false;
   } else if (string(argv[i])=="-O1") {
-    flag_two_pass = true;
+    // Default settings
 #ifdef HAS_GECODE
   } else if (string(argv[i])=="-O2") {
     flag_two_pass = true;
