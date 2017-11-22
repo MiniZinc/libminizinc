@@ -488,7 +488,7 @@ La salida al ejecutar el comando
 
   $ mzn-g12mip loan_es.mzn loan3_es.dzn
 
-La salida es
+La salida es:
 
 ::
 
@@ -496,15 +496,15 @@ La salida es
   por trimestre para 1 año deja 0.00 debido
   ----------
 
-.. literalinclude:: examples/loan1.dzn
+.. literalinclude:: examples/loan1_es.dzn
   :language: minizinc
   :caption: Ejemplo de archivo de datos para :download:`loan_es.mzn <examples/loan_es.mzn>` (:download:`loan1_es.dzn <examples/loan1_es.dzn>`)
 
-.. literalinclude:: examples/loan2.dzn
+.. literalinclude:: examples/loan2_es.dzn
   :language: minizinc
   :caption: Ejemplo de archivo de datos para :download:`loan_es.mzn <examples/loan_es.mzn>` (:download:`loan2.dzn <examples/loan2_es.dzn>`)
 
-.. literalinclude:: examples/loan3.dzn
+.. literalinclude:: examples/loan3_es.dzn
   :language: minizinc
   :caption: Ejemplo de archivo de datos para :download:`loan_es.mzn <examples/loan_es.mzn>` (:download:`loan3_es.dzn <examples/loan3_es.dzn>`)
 

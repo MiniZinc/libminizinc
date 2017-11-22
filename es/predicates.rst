@@ -391,42 +391,45 @@ Las funciones son útiles para definir y documentar expresiones complejas que se
 Funciones de reflexión
 ----------------------
 
-To help write generic tests and predicates, various reflection functions return information about array index sets, var set domains and decision variable ranges. Those for index sets are :mzndef:`index_set(<1-D array>)`, :mzndef:`index_set_1of2(<2-D array>)`, :mzndef:`index_set_2of2(<2-D array>)`, and so on for higher dimensional arrays.
 
-A better model of the job shop conjoins all the non-overlap constraints for a single machine into a single disjunctive constraint.
-An advantage of this approach is that while we may initially model this simply as a conjunction of :mzn:`non-overlap` constraints, if the underlying solver has a better approach to solving disjunctive constraints we can use that instead, with minimal changes to our model. The model is shown in :numref:`ex-jobshop3`.
+Para ayudar a escribir pruebas genéricas y predicados, varias funciones de reflexión devuelven información sobre conjuntos de índices de matriz, dominios de conjuntos de variables y rangos de variables de decisión. Los de los conjuntos de índices son :mzndef:`index_set(<1-D array>)`, :mzndef:`index_set_1of2(<2-D array>)`, :mzndef:`index_set_2of2(<2-D array>)`, y así sucesivamente para matrices de mayor dimensión.
 
+Un mejor modelo de tienda de trabajo combina todas las restricciones no superpuestas para una sola máquina en una única restricción disyuntiva.
+Una ventaja de este enfoque es que si bien inicialmente podemos modelar esto simplemente como una conjunción de: restricciones :mzn:`non-overlap`, si el solucionador subyacente tiene un mejor enfoque para resolver las restricciones disyuntivas, podemos usar eso en su lugar, con cambios mínimos en nuestro modelo. El modelo se muestra en :numref:`ex-jobshop3`.
 
 .. literalinclude:: examples/jobshop3_es.mzn
   :language: minizinc
   :name: ex-jobshop3
-  :caption: Model for job shop scheduling using ``disjunctive`` predicate (:download:`jobshop3_es.mzn <examples/jobshop3_es.mzn>`).
+  :caption: Modelo para la programación de la tienda de trabajo usando un predicado ``disjunctive`` (:download:`jobshop3_es.mzn <examples/jobshop3_es.mzn>`).
 
 .. index::
   single: global constraint; disjunctive
 
-The :mzn:`disjunctive` constraint takes an array of start times for each task and an array of their durations and makes sure that only one task is active at any one time. We define the disjunctive constraint as a :index:`predicate <predicate; definition>` with signature
+La restricción :mzn:`disjunctive` toma una matriz de tiempos de inicio para cada tarea y una matriz de sus duraciones y se asegura de que solo una tarea esté activa en un momento dado. Definimos la restricción disyuntiva como un :index:`predicate <predicate; definition>` con firma
 
 .. code-block:: minizinc
 
   predicate disjunctive(array[int] of var int:s, array[int] of int:d);
 
-We can use the disjunctive constraint to define the non-overlap of tasks as shown in :numref:`ex-jobshop3`.
-We assume a definition for the :mzn:`disjunctive` predicate is given by the file :download:`disjunctive_es.mzn <examples/disjunctive_es.mzn>` which is included in the model.
-If the underlying system supports :mzn:`disjunctive` directly, it will include a file :download:`disjunctive_es.mzn <examples/disjunctive_es.mzn>` in its globals directory (with contents just the signature definition above).
+Podemos usar la restricción disyuntiva para definir la no superposición de tareas como se muestra en :numref:`ex-jobshop3`.
+Suponemos una definición para el predicado :mzn:`disjunctive` está dada por el archivo :download:`disjunctive_es.mzn <examples/disjunctive_es.mzn>` que se incluye en el modelo.
+Si el sistema subyacente admite :mzn:`disjunctive`directamente, incluirá un archivo :download:`disjunctive_es.mzn <examples/disjunctive_es.mzn>` en su directorio global (con contenido solo la definición de firma anterior).
 
-If the system we are using does not support disjunctive directly we can give our own definition by creating the file :download:`disjunctive_es.mzn <examples/disjunctive_es.mzn>`.
 
-The simplest implementation simply makes use of the :mzn:`no_overlap` predicate defined above.
-A better implementation is to make use of a global :mzn:`cumulative` constraint assuming it is supported by the underlying solver. :numref:`ex-disj` shows an implementation of :mzn:`disjunctive`.
+Si el sistema que estamos utilizando no es compatible directamente con disyuntivo, podemos dar nuestra propia definición creando el archivo :download:`disjunctive_es.mzn <examples/disjunctive_es.mzn>`.
 
-Note how we use the :mzn:`index_set` reflection function to (a) check that the arguments to :mzn:`disjunctive` make sense, and (b) construct the array of resource utilisations of the appropriate size for :mzn:`cumulative`.
-Note also that we use a ternary version of :mzn:`assert` here.
+La implementación más simple simplemente hace uso del predicado :mzn:`no_overlap` definido anteriormente.
+Una mejor implementación es hacer uso de una restricción global :mzn:`cumulative` asumiendo que sea compatible con el solucionador subyacente. :numref:`ex-disj` muestra una implementación de :mzn:`disjunctive`.
+
+Observe cómo usamos la función de reflexión :mzn:`index_set` para
+(a) verificar que los argumentos para :mzn:`disjunctive` tengan sentido, y
+(b) construir la matriz de utilizaciones de recursos del tamaño apropiado para :mzn:`cumulative`.
+Tenga en cuenta también que utilizamos una versión ternaria de :mzn:`assert` aquí.
 
 .. literalinclude:: examples/disjunctive_es.mzn
   :language: minizinc
   :name: ex-disj
-  :caption: Defining a ``disjunctive`` predicate using ``cumulative`` (:download:`disjunctive_es.mzn <examples/disjunctive_es.mzn>`).
+  :caption: Definir un predicado ``disjunctive`` utilizando ``cumulative`` (:download:`disjunctive_es.mzn <examples/disjunctive_es.mzn>`).
 
 .. \ignore{ % for capture for testing!
 .. $ mzn-g12fd jobshop3_es.mzn jobshop_es.dzn
@@ -434,42 +437,43 @@ Note also that we use a ternary version of :mzn:`assert` here.
 
 
 
-Local Variables
+Variables Locales
 ---------------
 
 .. index::
   single: variable; local
   single: let
 
-It is often useful to introduce *local variables* in a predicate, function or test.
-The :mzn:`let` expression allows you to do so.
-It can be used to introduce both decision :index:`variables <variable>` and :index:`parameters <parameter>`, but parameters must be initialised. For example:
+
+A menudo es útil introducir *variables locales* en un predicado, función o prueba.
+La expresión :mzn:`let` te permite hacerlo.
+Se puede usar para introducir ambas decisiones :index:`variables <variable>` y :index:`parameters <parameter>`, pero los parámetros deben inicializarse. Por ejemplo:
 
 .. code-block:: minizinc
 
   var s..e: x;
   let {int: l = s div 2; int: u = e div 2; var l .. u: y;} in x = 2*y
 
-introduces parameters :mzn:`l` and :mzn:`u` and variable :mzn:`y`.
+Introduce parámetros :mzn:`l`, :mzn:`u` y variable :mzn:`y`.
 
-While most useful in :index:`predicate`, :index:`function` and test definitions, :mzn:`let` expressions can also be used in other expressions, for example for eliminating common subexpressions:
+Si bien es más útil en :index:`predicate`, :index:`function` y en las definiciones de prueba, las expresiones :mzn:`let` también se pueden usar en otras expresiones, por ejemplo para eliminar subexpresiones comunes:
 
 .. code-block:: minizinc
 
   constraint let { var int: s = x1 + x2 + x3 + x4 } in
              l <= s /\ s <= u;
 
-Local variables can be used anywhere and can be quite useful for simplifying complex expressions.
-:numref:`ex-wedding2` gives a revised version of the wedding model, using local variables to define the :index:`objective` function, rather than adding lots of variables to the model explicitly.
+Las variables locales se pueden usar en cualquier lugar y pueden ser bastante útiles para simplificar expresiones complejas.
+:numref:`ex-wedding2` da una versión revisada del modelo de boda, usando variables locales para definir la función :index:`objective`, en lugar de agregar muchas variables al modelo explícitamente.
 
 .. literalinclude:: examples/wedding2_es.mzn
   :language: minizinc
   :name: ex-wedding2
-  :caption: Using local variables to define a complex objective function (:download:`wedding2_es.mzn <examples/wedding2_es.mzn>`).
+  :caption: Usar variables locales para definir una función objetivo compleja (:download:`wedding2_es.mzn <examples/wedding2_es.mzn>`).
 
 
-Context
--------
+Contexto
+--------
 
 .. index::
   single: context
@@ -477,8 +481,8 @@ Context
   single: predicate
   single: function
 
-One limitation is that predicates and functions containing decision variables that are not initialised in the declaration cannot be used inside a negative context.
-The following is illegal:
+Una limitación es que los predicados y las funciones que contienen variables de decisión que no se inicializan en la declaración no se pueden usar dentro de un contexto negativo.
+Lo siguiente es ilegal:
 
 .. code-block:: minizinc
 
