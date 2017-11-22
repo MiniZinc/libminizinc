@@ -19,8 +19,8 @@ namespace MiniZinc {
 using std::string;
 using std::vector;
 
-  PathFilePrinter::PathFilePrinter(std::ostream& o, EnvI& envi, bool keep) :
-      os(o), ei(envi), keep_paths(keep), constraint_index(0) {};
+  PathFilePrinter::PathFilePrinter(std::ostream& o, EnvI& envi) :
+      os(o), ei(envi), constraint_index(0) {}
 
   void PathFilePrinter::addBetterName(Id* id, string name, string path, bool overwrite = false) {
     string oname;
@@ -154,8 +154,6 @@ using std::vector;
         // Path
         os << np.second << std::endl;
       }
-      if(!keep_paths)
-        vdi->e()->ann().removeCall(constants().ann.mzn_path);
     } else if (ConstraintI* ci = item->dyn_cast<ConstraintI>()) {
       StringLit* sl = nullptr;
       Call* e = ci->e()->cast<Call>();
@@ -167,8 +165,6 @@ using std::vector;
           }
         }
       }
-      if(!keep_paths)
-        e->ann().removeCall(constants().ann.mzn_path);
 
       os << constraint_index << "\t";
       os << constraint_index << "\t";

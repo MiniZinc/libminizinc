@@ -574,7 +574,7 @@ void Flattener::flatten()
             if (flag_output_paths_stdout) {
               if (flag_verbose)
                 std::cerr << "Printing Paths to stdout ..." << std::endl;
-              PathFilePrinter pfp(std::cout, env->envi(), flag_keep_mzn_paths);
+              PathFilePrinter pfp(std::cout, env->envi());
               pfp.print(env->flat());
               if (flag_verbose)
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
@@ -585,12 +585,28 @@ void Flattener::flatten()
               std::ofstream os;
               os.open(flag_output_paths.c_str(), ios::out);
               checkIOStatus (os.good(), " I/O error: cannot open fzn output file. ");
-              PathFilePrinter pfp(os, env->envi(), flag_keep_mzn_paths);
+              PathFilePrinter pfp(os, env->envi());
               pfp.print(env->flat());
               checkIOStatus (os.good(), " I/O error: cannot write fzn output file. ");
               os.close();
               if (flag_verbose)
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+            }
+
+            if (fopts.collect_mzn_paths && !flag_keep_mzn_paths) {
+              class RemovePathAnnotations : public ItemVisitor {
+              public:
+                void removePath(Annotation& a) const {
+                  a.removeCall(constants().ann.mzn_path);
+                }
+                void vVarDeclI(VarDeclI* vdi) const { removePath(vdi->e()->ann()); }
+                void vConstraintI(ConstraintI* ci) const { removePath(ci->e()->ann()); }
+                void vSolveI(SolveI* si) const {
+                  removePath(si->ann());
+                  if(Expression* e = si->e()) removePath(e->ann());
+                }
+              } removePaths;
+              iterItems<RemovePathAnnotations>(removePaths, env->flat());
             }
 
             if (flag_output_fzn_stdout) {
