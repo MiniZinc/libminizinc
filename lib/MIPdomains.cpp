@@ -87,8 +87,12 @@ namespace MiniZinc {
 
   class MIPD {  
   public:
-    MIPD(Env* env, bool fV=false) : __env(env) { getEnv(); fVerbose=fV; }
+    MIPD(Env* env, bool fV, int nmi, double dmd) :
+      __env(env), nMaxIntv2Bits(nmi), dMaxNValueDensity(dmd) { getEnv(); fVerbose=fV; }
     static bool fVerbose;
+    const int nMaxIntv2Bits=0;  // Maximal interval length to enforce equality encoding
+    const double dMaxNValueDensity=3.0;  // Maximal ratio card_int() / size() of a domain
+                                   // to enforce ee
     bool MIPdomains() {
       MIPD__stats[ N_POSTs__NSubintvMin ] = 1e100;
       MIPD__stats[ N_POSTs__SubSizeMin ] = 1e100;
@@ -913,8 +917,10 @@ namespace MiniZinc {
           syncWithEqEncoding();
           syncOtherEqEncodings();          
         } else {  // ! cls.fRef1HasEqEncode
-          if ( sDomain.size()>=2 )              // need to simplify stuff otherwise
+          if ( sDomain.size()>=2 ) {             // need to simplify stuff otherwise
+            considerDenseEncoding();
             createDomainFlags();
+          }
         }
         implement__POSTs();
         
@@ -1154,17 +1160,32 @@ namespace MiniZinc {
         // TODO  This could be in the var projection? No, need the final domain
       }
       
+      /// Depending on params,
+      /// create an equality encoding for an integer variable
+      /// TODO What if a float's domain is discrete?
+      void considerDenseEncoding() {
+        if ( cls.varRef1->id()->type().isint() ) {
+          if ( sDomain.max_interval() <= mipd.nMaxIntv2Bits ||
+              sDomain.card_int() <= mipd.dMaxNValueDensity * sDomain.size() ) {
+            sDomain.split2Bits();
+            ++MIPD__stats[ N_POSTs__clEEEnforced ];
+          }
+        }
+      }
+
       /// if ! eq_encoding, creates a flag for each subinterval in the domain
       /// && constrains sum(flags)==1
       void createDomainFlags() {
         std::vector<Expression*> vVars( sDomain.size() );         // flags for each subinterval
         std::vector<double> vIntvLB( sDomain.size() + 1 ), vIntvUB__( sDomain.size() + 1 );
         int i=0;
+        double dMaxIntv=-1.0;
         for ( auto& intv : sDomain ) {
           intv.varFlag = addIntVar( 0.0, 1.0 );
           vVars[i] = intv.varFlag->id();
           vIntvLB[i] = intv.left;
           vIntvUB__[i] = -intv.right;
+          dMaxIntv = std::max( dMaxIntv, intv.right-intv.left );
           ++i;
         }
         // Sum of flags == 1
@@ -1173,9 +1194,15 @@ namespace MiniZinc {
         // Domain decomp
         vVars.push_back( cls.varRef1->id() );
         vIntvLB[i] = -1.0;                                 // var1 >= sum(LBi*flagi)
-        vIntvUB__[i] = 1.0;                               // var1 <= sum(UBi*flagi)
-        addLinConstr( vIntvLB, vVars, CMPT_LE, 0.0 );
-        addLinConstr( vIntvUB__, vVars, CMPT_LE, 0.0 );
+        /// STRICT equality encoding if small intervals
+        if ( dMaxIntv > 1e-6 ) {                 // EPS = param?   TODO
+          vIntvUB__[i] = 1.0;                               // var1 <= sum(UBi*flagi)
+          addLinConstr( vIntvLB, vVars, CMPT_LE, 0.0 );
+          addLinConstr( vIntvUB__, vVars, CMPT_LE, 0.0 );
+        } else {
+          ++MIPD__stats[ N_POSTs__clEEFound ];
+          addLinConstr( vIntvLB, vVars, CMPT_EQ, 0.0 );
+        }
       }
       
       /// deletes them as well
@@ -1767,7 +1794,10 @@ namespace MiniZinc {
       << MIPD__stats[ N_POSTs__SubSizeMin ] << " / "
       << dSubSizeAve << " / "
       << MIPD__stats[ N_POSTs__SubSizeMax ] << " SubIntvSize m/a/m, "
-      << MIPD__stats[ N_POSTs__cliquesWithEqEncode ] << " clq eq_encoded ";
+      << MIPD__stats[ N_POSTs__cliquesWithEqEncode ] << "+"
+      << MIPD__stats[ N_POSTs__clEEEnforced ] << "("
+      << MIPD__stats[ N_POSTs__clEEFound ] << ")"
+      << " clq eq_encoded ";
 //       << std::flush
       if ( TCliqueSorter::LinEqGraph::dCoefMax > 1.0 )
         os 
@@ -1900,7 +1930,6 @@ namespace MiniZinc {
     return bnds.left > Interval<N>::infMinus()
       && bnds.right < Interval<N>::infPlus();      
   }
-  /// Check there are no useless interval splittings
   template <class N>
   bool SetOfIntervals<N>::checkDisjunctStrict() {
     for ( auto it=this->begin(); it!=this->end(); ++it ) {
@@ -1915,11 +1944,39 @@ namespace MiniZinc {
     }
     return true;
   }
+  /// Assumes integer interval bounds
+  template <class N>
+  int SetOfIntervals<N>::card_int() const {
+    int nn=0;
+    for (auto it=this->begin(); it!=this->end(); ++it) {
+      ++nn;
+      nn += int(round( it->right - it->left ));
+    }
+    return nn;
+  }
+  template <class N>
+  N SetOfIntervals<N>::max_interval() const {
+    N ll=-1;
+    for (auto it=this->begin(); it!=this->end(); ++it) {
+      ll = std::max( ll, it->right - it->left );
+    }
+    return ll;
+  }
+  /// Assumes integer interval bounds
+  template <class N>
+  void SetOfIntervals<N>::split2Bits() {
+    Base bsNew;
+    for (auto it=this->begin(); it!=this->end(); ++it) {
+      for (int v = round( it->left ); v<=round( it->right ); ++v)
+        bsNew.insert( Intv( v, v ) );
+    }
+    *(Base*)this = std::move( bsNew );
+  }
   
   bool MIPD::fVerbose = false;
 
-  void MIPdomains(Env& env, bool fVerbose) {
-    MIPD mipd( &env, fVerbose );
+  void MIPdomains(Env& env, bool fVerbose, int nmi, double dmd) {
+    MIPD mipd( &env, fVerbose, nmi, dmd );
     if ( ! mipd.MIPdomains() ) {
       GCLock lock;
       env.envi().fail();
