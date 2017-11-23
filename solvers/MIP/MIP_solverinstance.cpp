@@ -488,9 +488,10 @@ SolverInstance::Status MIP_solverinstance::solve(void) {
     {
       /// Removing for now - need access to output variables  TODO
 //       cleanupForNonincrementalSolving();
-//       if (GC::locked() && mip_wrap->fVerbose)
-//         std::cerr << "WARNING: GC is locked before SolverInstance::solve()! Wasting memory." << std::endl;
-      GCLock lock;
+      if (GC::locked() && mip_wrap->fVerbose)
+        std::cerr << "WARNING: GC is locked before SolverInstance::solve()! Wasting memory." << std::endl;
+      // GCLock lock;
+      GC::trigger();
     }
     getMIPWrapper()->solve();
   //   printStatistics(cout, 1);   MznSolver does this (if it wants)
