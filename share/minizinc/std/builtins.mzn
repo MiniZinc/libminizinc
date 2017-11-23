@@ -262,8 +262,8 @@ function $$E: max(set of $$E: x);
 
 /** @group builtins.arithmetic Return maximum of \a x and \a y */
 function var int: max(var int: x, var int: y) :: promise_total =
-  let { var max(lb(x),lb(y))..max(ub(x),ub(y)): m;
-        constraint int_max(x,y,m);
+  let { var max(lb(x),lb(y))..max(ub(x),ub(y)): m ::is_defined_var;
+        constraint int_max(x,y,m) ::defines_var(m);
   } in m;
 
 /** @group builtins.arithmetic Return maximum of elements in array \a x */
@@ -275,8 +275,8 @@ function var int: max(array[$U] of var int: x) =
 
 /** @group builtins.arithmetic Return minimum of \a x and \a y */
 function var int: min(var int: x, var int: y) :: promise_total =
-  let { var min(lb(x),lb(y))..min(ub(x),ub(y)): m;
-        constraint int_min(x,y,m);
+  let { var min(lb(x),lb(y))..min(ub(x),ub(y)): m ::is_defined_var;
+        constraint int_min(x,y,m) ::defines_var(m);
   } in m;
 
 /** @group builtins.arithmetic Return minimum of elements in array \a x */
@@ -291,8 +291,8 @@ function var int: min(array[$U] of var int: x) =
 
 /** @group builtins.arithmetic Return maximum of \a x and \a y */
 function var float: max(var float: x, var float: y) :: promise_total =
-  let { var float: m;
-        constraint float_max(x,y,m);
+  let { var float: m ::is_defined_var;
+        constraint float_max(x,y,m) ::defines_var(m);
   } in m;
 
 /** @group builtins.arithmetic Return maximum of elements in array \a x */
@@ -304,8 +304,8 @@ function var float: max(array[$U] of var float: x) =
 
 /** @group builtins.arithmetic Return minimum of \a x and \a y */
 function var float: min(var float: x, var float: y) :: promise_total =
-  let { var float: m;
-        constraint float_min(x,y,m);
+  let { var float: m ::is_defined_var;
+        constraint float_min(x,y,m) ::defines_var(m);
   } in m;
 
 /** @group builtins.arithmetic Return minimum of elements in array \a x */
@@ -331,8 +331,8 @@ function int: abs(int: x);
 /** @group builtins.arithmetic Return absolute value of \a x */
 function var int: abs(var int: x) :: promise_total =
   if has_bounds(x) /\ lb(x) >= 0 then x else
-  let { var 0..max(-lb(x),ub(x)): m;
-        constraint int_abs(x,m);
+  let { var 0..max(-lb(x),ub(x)): m ::is_defined_var;
+        constraint int_abs(x,m) ::defines_var(m);
   } in m
   endif;
 
@@ -342,14 +342,14 @@ function float: abs(float: x);
 function var float: abs(var float: x) :: promise_total =
   if has_bounds(x) then
     if lb(x) >= 0.0 then x else
-    let { var 0.0..max(-lb(x),ub(x)): m;
-          constraint float_abs(x,m);
+    let { var 0.0..max(-lb(x),ub(x)): m ::is_defined_var;
+          constraint float_abs(x,m) ::defines_var(m);
     } in m
     endif
   else
-    let { var float: m;
+    let { var float: m ::is_defined_var;
           constraint m >= 0.0;
-          constraint float_abs(x,m);
+          constraint float_abs(x,m) ::defines_var(m);
     } in m
   endif;
 
@@ -380,8 +380,8 @@ function var int: pow(var int: x, var int: y) =
   } in
   if yy = 0 then 1
   elseif yy = 1 then x else
-  let { var int: r;
-        constraint int_pow(x,y,r);
+  let { var int: r ::is_defined_var;
+        constraint int_pow(x,y,r) ::defines_var(r);
   } in r
   endif;
 
@@ -396,8 +396,8 @@ function var float: pow(var float: x, var float: y) =
   } in
   if yy = 0.0 then 1.0
   elseif yy = 1.0 then x else
-  let { var float: r;
-        constraint float_pow(x,y,r);
+  let { var float: r ::is_defined_var;
+        constraint float_pow(x,y,r) ::defines_var(r);
   } in r
   endif;
 
@@ -412,8 +412,8 @@ function float: exp(float: x);
 /** @group builtins.explog Return \(e ^ {\a x}\) */
 function var float: exp(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_exp(x,r);
+    var float: r ::is_defined_var;
+    constraint float_exp(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.explog Return \(\ln \a x\) */
@@ -421,8 +421,8 @@ function float: ln(float: x);
 /** @group builtins.explog Return \(\ln \a x\) */
 function var float: ln(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_ln(x,r);
+    var float: r ::is_defined_var;
+    constraint float_ln(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.explog Return \(\log_{10} \a x\) */
@@ -430,8 +430,8 @@ function float: log10(float: x);
 /** @group builtins.explog Return \(\log_{10} \a x\) */
 function var float: log10(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_log10(x,r);
+    var float: r ::is_defined_var;
+    constraint float_log10(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.explog Return \(\log_{2} \a x\) */
@@ -439,8 +439,8 @@ function float: log2(float: x);
 /** @group builtins.explog Return \(\log_{2} \a x\) */
 function var float: log2(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_log2(x,r);
+    var float: r ::is_defined_var;
+    constraint float_log2(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.explog Return \(\log_{\a x} \a y\) */
@@ -457,8 +457,8 @@ function float: sin(float: x);
 /** @group builtins.trigonometric Return \(\sin \a x\) */
 function var float: sin(var float: x) ::promise_total =
   let {
-    var -1.0..1.0: r;
-    constraint float_sin(x,r);
+    var -1.0..1.0: r ::is_defined_var;
+    constraint float_sin(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\cos \a x\) */
@@ -466,8 +466,8 @@ function float: cos(float: x);
 /** @group builtins.trigonometric Return \(\cos \a x\) */
 function var float: cos(var float: x) ::promise_total =
   let {
-    var -1.0..1.0: r;
-    constraint float_cos(x,r);
+    var -1.0..1.0: r ::is_defined_var;
+    constraint float_cos(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\tan \a x\) */
@@ -475,8 +475,8 @@ function float: tan(float: x);
 /** @group builtins.trigonometric Return \(\tan \a x\) */
 function var float: tan(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_tan(x,r);
+    var float: r ::is_defined_var;
+    constraint float_tan(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\mbox{asin}\ \a x\) */
@@ -484,8 +484,8 @@ function float: asin(float: x);
 /** @group builtins.trigonometric Return \(\mbox{asin}\ \a x\) */
 function var float: asin(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_asin(x,r);
+    var float: r ::is_defined_var;
+    constraint float_asin(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\mbox{acos}\ \a x\) */
@@ -493,8 +493,8 @@ function float: acos(float: x);
 /** @group builtins.trigonometric Return \(\mbox{acos}\ \a x\) */
 function var float: acos(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_acos(x,r);
+    var float: r ::is_defined_var;
+    constraint float_acos(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\mbox{atan}\ \a x\) */
@@ -502,8 +502,8 @@ function float: atan(float: x);
 /** @group builtins.trigonometric Return \(\mbox{atan}\ \a x\) */
 function var float: atan(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_atan(x,r);
+    var float: r ::is_defined_var;
+    constraint float_atan(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\sinh \a x\) */
@@ -511,8 +511,8 @@ function float: sinh(float: x);
 /** @group builtins.trigonometric Return \(\sinh \a x\) */
 function var float: sinh(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_sinh(x,r);
+    var float: r ::is_defined_var;
+    constraint float_sinh(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\cosh \a x\) */
@@ -520,8 +520,8 @@ function float: cosh(float: x);
 /** @group builtins.trigonometric Return \(\cosh \a x\) */
 function var float: cosh(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_cosh(x,r);
+    var float: r ::is_defined_var;
+    constraint float_cosh(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\tanh \a x\) */
@@ -529,8 +529,8 @@ function float: tanh(float: x);
 /** @group builtins.trigonometric Return \(\tanh \a x\) */
 function var float: tanh(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_tanh(x,r);
+    var float: r ::is_defined_var;
+    constraint float_tanh(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\mbox{asinh}\ \a x\) */
@@ -538,8 +538,8 @@ function float: asinh(float: x);
 /** @group builtins.trigonometric Return \(\mbox{asinh}\ \a x\) */
 function var float: asinh(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_asinh(x,r);
+    var float: r ::is_defined_var;
+    constraint float_asinh(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\mbox{acosh}\ \a x\) */
@@ -547,8 +547,8 @@ function float: acosh(float: x);
 /** @group builtins.trigonometric Return \(\mbox{acosh}\ \a x\) */
 function var float: acosh(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_acosh(x,r);
+    var float: r ::is_defined_var;
+    constraint float_acosh(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\mbox{atanh}\ \a x\) */
@@ -556,8 +556,8 @@ function float: atanh(float: x);
 /** @group builtins.trigonometric Return \(\mbox{atanh}\ \a x\) */
 function var float: atanh(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_atanh(x,r);
+    var float: r ::is_defined_var;
+    constraint float_atanh(x,r) ::defines_var(r);
   } in r;
 
 
@@ -2023,8 +2023,8 @@ function var int: max_t(array[int] of var int: x) :: promise_total =
   elseif length(x)=1 then x[min(index_set(x))]
   elseif length(x)=2 then max(x[1],x[2])
   else let {
-    var lb_array(x)..ub_array(x): m;
-    constraint array_int_maximum(m,x);
+    var lb_array(x)..ub_array(x): m ::is_defined_var;
+    constraint array_int_maximum(m,x) ::defines_var(m);
   } in m
   endif;
 
@@ -2033,8 +2033,8 @@ function var int: min_t(array[int] of var int: x) :: promise_total =
   elseif length(x)=1 then x[1]
   elseif length(x)=2 then min(x[1],x[2])
   else let {
-    var lb_array(x)..ub_array(x): m;
-    constraint array_int_minimum(m,x);
+    var lb_array(x)..ub_array(x): m ::is_defined_var;
+    constraint array_int_minimum(m,x) ::defines_var(m);
   } in m
   endif;
 
@@ -2043,8 +2043,8 @@ function var float: max_t(array[int] of var float: x) :: promise_total =
   elseif length(x)=1 then x[min(index_set(x))]
   elseif length(x)=2 then min(x[1],x[2])
   else let {
-    var float: m;
-    constraint array_float_maximum(m,x);
+    var float: m ::is_defined_var;
+    constraint array_float_maximum(m,x) ::defines_var(m);
   } in m
   endif;
   
@@ -2053,8 +2053,8 @@ function var float: min_t(array[int] of var float: x) :: promise_total =
   elseif length(x)=1 then x[1]
   elseif length(x)=2 then min(x[1],x[2])
   else let {
-    var float: m;
-    constraint array_float_minimum(m,x);
+    var float: m ::is_defined_var;
+    constraint array_float_minimum(m,x) ::defines_var(m);
   } in m
   endif;
   
