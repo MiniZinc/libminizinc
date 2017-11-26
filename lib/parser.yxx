@@ -1442,7 +1442,14 @@ simple_array_comp :
       }
 
 if_then_else_expr :
-      MZN_IF expr MZN_THEN expr elseif_list MZN_ELSE expr MZN_ENDIF
+      MZN_IF expr MZN_THEN expr MZN_ENDIF
+      {
+        std::vector<Expression*> iexps;
+        iexps.push_back($2);
+        iexps.push_back($4);
+        $$=new ITE(@$, iexps, constants().boollit(true));
+      }
+    | MZN_IF expr MZN_THEN expr elseif_list MZN_ELSE expr MZN_ENDIF
       {
         std::vector<Expression*> iexps;
         iexps.push_back($2);
