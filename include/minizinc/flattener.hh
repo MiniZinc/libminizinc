@@ -77,6 +77,8 @@ namespace MiniZinc {
     bool flag_werror = false;
     bool flag_only_range_domains = false;
     bool flag_noMIPdomains = false;
+    int  opt_MIPDmaxIntvEE = 0;
+    double opt_MIPDmaxDensEE = 3.0;
     bool flag_statistics = false;
     bool flag_stdinInput = false;
     bool flag_allow_multi_assign = false;

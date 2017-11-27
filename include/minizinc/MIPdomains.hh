@@ -42,7 +42,7 @@ struct MIPD_Infeasibility_Exception {
 namespace MiniZinc {
 
   /// Linearize domain constraints in \a env
-  void MIPdomains(Env& env, bool fVerbose = false);
+  void MIPdomains(Env& env, bool fVerbose = false, int=0, double=3.0);
   
   enum EnumStatIdx__MIPD { 
     N_POSTs__all,                     // N all POSTs in the model
@@ -61,7 +61,7 @@ namespace MiniZinc {
     N_POSTs__NSubintvMin, N_POSTs__NSubintvSum, N_POSTs__NSubintvMax, // as N subintervals
     N_POSTs__SubSizeMin, N_POSTs__SubSizeSum, N_POSTs__SubSizeMax, // subintv. size
     N_POSTs__linCoefMin, N_POSTs__linCoefMax,
-    N_POSTs__cliquesWithEqEncode,
+    N_POSTs__cliquesWithEqEncode, N_POSTs__clEEEnforced, N_POSTs__clEEFound,
     N_POSTs__size };
   extern std::vector<double> MIPD__stats;
   
@@ -127,12 +127,18 @@ namespace MiniZinc {
   template <class N>
   class SetOfIntervals : public std::multiset<Interval<N> > {
   public:
+    using Intv = Interval<N>;
     typedef std::multiset<Interval<N> > Base;
     typedef typename Base::iterator iterator;
     SetOfIntervals() : Base() { }
     SetOfIntervals(std::initializer_list<Interval<N> > il) : Base( il )  { }
     template <class Iter>
     SetOfIntervals( Iter i1, Iter i2 ) : Base( i1, i2 )  { }
+    /// Number of integer values in all the intervals
+    /// Assumes the interval bounds are ints
+    int card_int() const;
+    /// Max interval length
+    N max_interval() const;
     template <class N1>
     void intersect(const SetOfIntervals<N1>& s2);
     /// Assumes open intervals to cut out from closed
@@ -149,8 +155,12 @@ namespace MiniZinc {
     typedef std::pair<iterator, iterator> SplitResult;
     SplitResult split(iterator& it, N pos);
     bool checkFiniteBounds();
+    /// Check there are no useless interval splittings
     bool checkDisjunctStrict();
     Interval<N> getBounds() const;
+    /// Split domain into the integer values
+    /// May assume integer bounds
+    void split2Bits();
   };  // class SetOfIntervals
   typedef SetOfIntervals<double> SetOfIntvReal;
   

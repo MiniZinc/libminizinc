@@ -920,6 +920,37 @@ namespace MiniZinc {
     return true;
   }
   
+  Expression* createDummyValue(EnvI& env, const Type& t) {
+    if (t.dim()>0) {
+      Expression* ret = new ArrayLit(Location().introduce(), std::vector<Expression*>());
+      Type ret_t = t;
+      ret_t.ti(Type::TI_PAR);
+      ret->type(ret_t);
+      return ret;
+    }
+    if (t.st()==Type::ST_SET) {
+      Expression* ret = new SetLit(Location().introduce(), std::vector<Expression*>());
+      Type ret_t = t;
+      ret_t.ti(Type::TI_PAR);
+      ret->type(ret_t);
+      return ret;
+    }
+    switch (t.bt()) {
+      case Type::BT_INT:
+        return IntLit::a(0);
+      case Type::BT_BOOL:
+        return constants().boollit(false);
+      case Type::BT_FLOAT:
+        return FloatLit::a(0);
+      case Type::BT_STRING:
+        return new StringLit(Location().introduce(), "");
+      case Type::BT_ANN:
+        return constants().ann.promise_total;
+      default:
+        return NULL;
+    }
+  }
+  
   KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
     assert(e==NULL || !e->isa<VarDecl>());
     if (vd==constants().var_ignore)
@@ -3047,6 +3078,7 @@ namespace MiniZinc {
         ret.r = bind(env,ctx,r,eval_par(env,e));
         ret.b = bind(env,Ctx(),b,constants().lit_true);
       } catch (ResultUndefinedError&) {
+        ret.r = createDummyValue(env, e->type());
         ret.b = bind(env,Ctx(),b,constants().lit_false);
       }
       return ret;
@@ -5058,6 +5090,7 @@ namespace MiniZinc {
                   ret.r = bind(env,ctx,r,eval_par(env,cr_c));
                   ret.b = conj(env,b,Ctx(),args_ee);
                 } catch (ResultUndefinedError&) {
+                  ret.r = createDummyValue(env, cr_c->type());
                   ret.b = bind(env,Ctx(),b,constants().lit_false);
                   return ret;
                 }

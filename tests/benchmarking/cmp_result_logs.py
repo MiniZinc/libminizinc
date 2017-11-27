@@ -123,10 +123,10 @@ class CompareLogs:
             print( hdr[1], ":",
                   mCmpVals[hdr[0]] if hdr[0] in mCmpVals else 0,
                   sep='', end=' ' )
-    
-    ## Summarize
-    def summarize( self ):
-        return \
+
+    ## Summarize comparisons / ranking
+    def summarizeCmp( self ):
+        print(
             self.matrRankingMsg.stringifyLists( "       METHODS' STAND-OUTS",
                     "        METHOD",
                     "        PARAMETER" ) + \
@@ -147,15 +147,20 @@ class CompareLogs:
             "\n\n------------------ DUAL BOUND CONTRADICTIONS ------------------\n\n" + \
             self.ioContrBounds.getvalue() + \
             "\n\n------------------ ERRORS REPORTED BY SOLVERS ------------------\n\n" + \
-            self.ioErrors.getvalue() + \
-            "\n\n------------------ SUMMARY TABLE ------------------\n\n" + \
+            self.ioErrors.getvalue() + "\n" + \
+            "\n\n------------------ RANKING ------------------\n\n" + \
+            self.matrRanking.stringify2D()
+        )
+    
+    ## Summarize
+    def summarize( self ):
+        return \
             utils.MyTab().tabulate(
               [ [ lcv[1][hdr[0]] if hdr[0] in lcv[1] else 0
                   for hdr in self.hdrSummary ]
                 for lcv in self.lCmpVecs ],
                 [ pr[1] for pr in self.hdrSummary ]
-            ) + "\n" + \
-            self.matrRanking.stringify2D()
+            )
       
 ###############################################################################################
 ####################### LEVEL 2 #########################

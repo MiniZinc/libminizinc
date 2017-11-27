@@ -221,23 +221,26 @@ namespace MiniZinc {
       return alloc(size);
     }
 
+    void trigger(void) {
+#ifdef MINIZINC_GC_STATS
+      std::cerr << "GC\n\talloced " << (_alloced_mem/1024) << "\n\tfree " << (_free_mem/1024) << "\n\tdiff "
+      << ((_alloced_mem-_free_mem)/1024)
+      << "\n\tthreshold " << (_gc_threshold/1024)
+      << "\n";
+#endif
+      mark();
+      sweep();
+      _gc_threshold = static_cast<size_t>(_alloced_mem * 1.5);
+#ifdef MINIZINC_GC_STATS
+      std::cerr << "done\n\talloced " << (_alloced_mem/1024) << "\n\tfree " << (_free_mem/1024) << "\n\tdiff "
+      << ((_alloced_mem-_free_mem)/1024)
+      << "\n\tthreshold " << (_gc_threshold/1024)
+      << "\n";
+#endif
+    }
     void rungc(void) {
       if (_alloced_mem > _gc_threshold) {
-#ifdef MINIZINC_GC_STATS
-        std::cerr << "GC\n\talloced " << (_alloced_mem/1024) << "\n\tfree " << (_free_mem/1024) << "\n\tdiff "
-                  << ((_alloced_mem-_free_mem)/1024)
-                  << "\n\tthreshold " << (_gc_threshold/1024)
-                  << "\n";
-#endif
-        mark();
-        sweep();
-        _gc_threshold = static_cast<size_t>(_alloced_mem * 1.5);
-#ifdef MINIZINC_GC_STATS
-        std::cerr << "done\n\talloced " << (_alloced_mem/1024) << "\n\tfree " << (_free_mem/1024) << "\n\tdiff "
-                  << ((_alloced_mem-_free_mem)/1024)
-                  << "\n\tthreshold " << (_gc_threshold/1024)
-                  << "\n";
-#endif
+        trigger();
       }
     }
     void mark(void);
@@ -347,6 +350,11 @@ namespace MiniZinc {
     gc()->_lock_count--;
   }
 
+  void GC::trigger(void) {
+    if (!locked())
+      gc()->_heap->trigger();
+  }
+  
   const size_t GC::Heap::pageSize;
 
   const size_t
@@ -489,19 +497,25 @@ namespace MiniZinc {
     }
     
     bool fixPrev = false;
+    WeakRef* prevWr = NULL;
     for (WeakRef* wr = _weakRefs; wr != NULL; wr = wr->next()) {
       if (fixPrev) {
         fixPrev = false;
-        WeakRef* p = wr->_p;
-        removeWeakRef(p);
-        p->_n = NULL;
-        p->_p = NULL;
+        removeWeakRef(prevWr);
+        prevWr->_n = NULL;
+        prevWr->_p = NULL;
       }
       if ((*wr)() && (*wr)()->_gc_mark==0) {
         wr->_e = NULL;
         wr->_valid = false;
         fixPrev = true;
+        prevWr = wr;
       }
+    }
+    if (fixPrev) {
+      removeWeakRef(prevWr);
+      prevWr->_n = NULL;
+      prevWr->_p = NULL;
     }
     
     for (ASTNodeWeakMap* wr = _nodeWeakMaps; wr != NULL; wr = wr->next()) {

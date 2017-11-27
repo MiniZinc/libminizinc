@@ -476,6 +476,7 @@ namespace MiniZinc {
           _current_space->bv_introduced.push_back(isIntroduced);
           isDefined = MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str().str()) != NULL;
           _current_space->bv_defined.push_back(isDefined);
+#ifdef GECODE_HAS_FLOAT_VARS
         } else if(vd->type().isfloat()) {
           if(it->e()->e() == NULL) { // there is NO initialisation expression
             Expression* domain = ti->domain();
@@ -513,6 +514,7 @@ namespace MiniZinc {
           _current_space->fv_introduced.push_back(isIntroduced);
           isDefined = MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str().str()) != NULL;
           _current_space->fv_defined.push_back(isDefined);
+#endif
         } else {
           std::stringstream ssm;
           ssm << "Type " << *ti << " is currently not supported by Gecode." << std::endl;
@@ -547,6 +549,7 @@ namespace MiniZinc {
               }
             }
             assert(_current_space->_optVarIdx >= 0);
+#ifdef GECODE_HAS_FLOAT_VARS
           } else {
             FloatVar floatVar = var.floatVar(_current_space);
             for(unsigned int i=0; i<_current_space->fv.size(); i++) {
@@ -556,6 +559,7 @@ namespace MiniZinc {
               }
             }
             assert(_current_space->_optVarIdx >= 0);
+#endif
           }
         } 
       }
@@ -974,10 +978,12 @@ namespace MiniZinc {
           return IntLit::a(var.intVar(_solution).val());
         case Type::BT_BOOL:
           assert(var.boolVar(_solution).assigned());
-          return new BoolLit(Location(), var.boolVar(_solution).val());
+          return constants().boollit(var.boolVar(_solution).val());
+#ifdef GECODE_HAS_FLOAT_VARS
         case Type::BT_FLOAT:
           assert(var.floatVar(_solution).assigned());
           return FloatLit::a(var.floatVar(_solution).val().med());
+#endif
         default: return NULL;
       }
     } else {
@@ -1316,6 +1322,7 @@ namespace MiniZinc {
                 nvd->e(new BoolLit(nvd->loc(), l));
               }
             }
+#ifdef GECODE_HAS_FLOAT_VAR
           } else if(bt == Type::BaseType::BT_FLOAT) {
             Gecode::FloatVar floatvar = it->second.floatVar(_current_space);
             if(floatvar.assigned() && !nvd->e()) {
@@ -1329,6 +1336,7 @@ namespace MiniZinc {
               nvd->ti()->domain(new SetLit(nvd->loc(),
                     FloatSetVal::a(l, u)));
             }
+#endif
           }
         }
       }
@@ -1340,8 +1348,12 @@ namespace MiniZinc {
   GecodeSolverInstance::setSearchStrategyFromAnnotation(std::vector<Expression*> flatAnn, 
                                                         std::vector<bool>& iv_searched, 
                                                         std::vector<bool>& bv_searched,
+						#ifdef GECODE_HAS_SET_VARS
                                                         std::vector<bool>& sv_searched,
+						#endif
+                                                #ifdef GECODE_HAS_FLOAT_VARS
                                                         std::vector<bool>& fv_searched,
+                                                #endif
                                                         TieBreak<IntVarBranch>& def_int_varsel,
                                                         IntValBranch& def_int_valsel,
                                                 #ifdef HAS_GECODE_VERSION_5_1
@@ -1626,7 +1638,13 @@ namespace MiniZinc {
       flatAnn.push_back(additionalAnn);
     }
     if (flatAnn.size() > 0) {
-      setSearchStrategyFromAnnotation(flatAnn, iv_searched, bv_searched,sv_searched,fv_searched,
+      setSearchStrategyFromAnnotation(flatAnn, iv_searched, bv_searched,
+                              #ifdef GECODE_HAS_SET_VARS
+                                      sv_searched,
+                              #endif
+                              #ifdef GECODE_HAS_FLOAT_VARS
+                                      fv_searched,
+                              #endif
                                       def_int_varsel,def_int_valsel,def_bool_varsel,def_bool_valsel,
                               #ifdef GECODE_HAS_SET_VARS
                                       def_set_varsel,def_set_valsel,
