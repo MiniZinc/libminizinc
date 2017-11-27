@@ -1447,7 +1447,7 @@ if_then_else_expr :
         std::vector<Expression*> iexps;
         iexps.push_back($2);
         iexps.push_back($4);
-        $$=new ITE(@$, iexps, constants().boollit(true));
+        $$=new ITE(@$, iexps, NULL);
       }
     | MZN_IF expr MZN_THEN expr elseif_list MZN_ELSE expr MZN_ENDIF
       {

@@ -970,6 +970,12 @@ namespace MiniZinc {
     }
     /// Visit if-then-else
     void vITE(ITE& ite) {
+      bool mustBeBool = false;
+      if (ite.e_else()==NULL) {
+        // this is an "if <cond> then <expr> endif" so the <expr> must be bool
+        ite.e_else(constants().boollit(true));
+        mustBeBool = true;
+      }
       Type tret = ite.e_else()->type();
       std::vector<AnonVar*> anons;
       bool allpar = !(tret.isvar());
@@ -978,7 +984,7 @@ namespace MiniZinc {
           allpar = false;
           anons.push_back(av);
         } else {
-          throw TypeError(_env,ite.e_else()->loc(), "cannot infer type of expression in else branch of conditional");
+          throw TypeError(_env,ite.e_else()->loc(), "cannot infer type of expression in `else' branch of conditional");
         }
       }
       bool allpresent = !(tret.isopt());
@@ -998,17 +1004,22 @@ namespace MiniZinc {
             allpar = false;
             anons.push_back(av);
           } else {
-            throw TypeError(_env,ethen->loc(), "cannot infer type of expression in then branch of conditional");
+            throw TypeError(_env,ethen->loc(), "cannot infer type of expression in `then' branch of conditional");
           }
         } else {
           if (tret.isbot() || tret.isunknown())
             tret.bt(ethen->type().bt());
+          if (mustBeBool && (ethen->type().bt() != Type::BT_BOOL ||  ethen->type().dim() > 0 ||
+                             ethen->type().st() != Type::ST_PLAIN || ethen->type().ot() != Type::OT_PRESENT)) {
+            throw TypeError(_env,ite.loc(), std::string("conditional without `else' branch must have bool type, ")+
+                            "but `then' branch has type `"+ethen->type().toString(_env)+"'");
+          }
           if ( (!ethen->type().isbot() && !Type::bt_subtype(ethen->type(), tret, true) && !Type::bt_subtype(tret, ethen->type(), true)) ||
               ethen->type().st() != tret.st() ||
               ethen->type().dim() != tret.dim()) {
             throw TypeError(_env,ethen->loc(),
-                            "type mismatch in branches of conditional. Then-branch has type `"+
-                            ethen->type().toString(_env)+"', but else branch has type `"+
+                            "type mismatch in branches of conditional. `then' branch has type `"+
+                            ethen->type().toString(_env)+"', but `else' branch has type `"+
                             tret.toString(_env)+"'");
           }
           if (Type::bt_subtype(tret, ethen->type(), true)) {
