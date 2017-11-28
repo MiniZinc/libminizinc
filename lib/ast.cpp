@@ -112,7 +112,6 @@ namespace MiniZinc {
           break;
         case Expression::E_COMP:
           pushstack(cur->cast<Comprehension>()->_e);
-          pushstack(cur->cast<Comprehension>()->_where);
           pushall(cur->cast<Comprehension>()->_g);
           cur->cast<Comprehension>()->_g_idx.mark();
           break;
@@ -294,7 +293,8 @@ namespace MiniZinc {
   }
 
   Generator::Generator(const std::vector<ASTString>& v,
-                       Expression* in) {
+                       Expression* in,
+                       Expression* where) {
     std::vector<VarDecl*> vd;
     for (unsigned int i=0; i<v.size(); i++) {
       VarDecl* nvd = new VarDecl(in->loc(),
@@ -304,9 +304,11 @@ namespace MiniZinc {
     }
     _v = vd;
     _in = in;
+    _where = where;
   }
   Generator::Generator(const std::vector<Id*>& v,
-                       Expression* in) {
+                       Expression* in,
+                       Expression* where) {
     std::vector<VarDecl*> vd;
     for (unsigned int i=0; i<v.size(); i++) {
       VarDecl* nvd = new VarDecl(v[i]->loc(),
@@ -316,9 +318,11 @@ namespace MiniZinc {
     }
     _v = vd;
     _in = in;
+    _where = where;
   }
   Generator::Generator(const std::vector<std::string>& v,
-                       Expression* in) {
+                       Expression* in,
+                       Expression* where) {
     std::vector<VarDecl*> vd;
     for (unsigned int i=0; i<v.size(); i++) {
       VarDecl* nvd = new VarDecl(in->loc(),
@@ -328,11 +332,14 @@ namespace MiniZinc {
     }
     _v = vd;
     _in = in;
+    _where = where;
   }
   Generator::Generator(const std::vector<VarDecl*>& v,
-                       Expression* in) {
+                       Expression* in,
+                       Expression* where) {
     _v = v;
     _in = in;
+    _where = where;
   }
 
   bool
@@ -345,7 +352,6 @@ namespace MiniZinc {
     HASH_NAMESPACE::hash<unsigned int> h;
     cmb_hash(h(set()));
     cmb_hash(Expression::hash(_e));
-    cmb_hash(Expression::hash(_where));
     cmb_hash(h(_g_idx.size()));
     for (unsigned int i=_g_idx.size(); i--;) {
       cmb_hash(h(_g_idx[i]));
@@ -368,18 +374,26 @@ namespace MiniZinc {
   Comprehension::in(int i) const {
     return _g[_g_idx[i]];
   }
-
+  const Expression*
+  Comprehension::where(int i) const {
+    return _g[_g_idx[i]+1];
+  }
+  Expression*
+  Comprehension::where(int i) {
+    return _g[_g_idx[i]+1];
+  }
+  
   int
   Comprehension::n_decls(int i) const {
-    return _g_idx[i+1]-_g_idx[i]-1;
+    return _g_idx[i+1]-_g_idx[i]-2;
   }
   VarDecl*
   Comprehension::decl(int gen, int i) {
-    return _g[_g_idx[gen]+1+i]->cast<VarDecl>();
+    return _g[_g_idx[gen]+2+i]->cast<VarDecl>();
   }
   const VarDecl*
   Comprehension::decl(int gen, int i) const {
-    return _g[_g_idx[gen]+1+i]->cast<VarDecl>();
+    return _g[_g_idx[gen]+2+i]->cast<VarDecl>();
   }
 
   void
@@ -994,7 +1008,6 @@ namespace MiniZinc {
         const Comprehension* c1 = e1->cast<Comprehension>();
         if (c0->set() != c1->set()) return false;
         if (!Expression::equal ( c0->_e, c1->_e )) return false;
-        if (!Expression::equal ( c0->_where, c1->_where )) return false;
         if (c0->_g.size() != c1->_g.size()) return false;
         for (unsigned int i=0; i<c0->_g.size(); i++) {
           if (!Expression::equal( c0->_g[i], c1->_g[i] ))

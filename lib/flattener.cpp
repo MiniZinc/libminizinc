@@ -291,6 +291,7 @@ Flattener::~Flattener()
     if(is_flatzinc) {
       pEnv->swap();
     }
+  delete pEnv->model();
 }
 
 Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {

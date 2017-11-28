@@ -18,6 +18,7 @@
 
 #include <string>
 #include <sstream>
+#include <unordered_map>
 
 #include <minizinc/prettyprinter.hh>
 
@@ -295,7 +296,7 @@ namespace MiniZinc {
       Call* index_set_xx = new Call(Location().introduce(),"index_set",index_set_xx_args);
       std::vector<VarDecl*> gen_exps(1);
       gen_exps[0] = idx_i;
-      Generator gen(gen_exps,index_set_xx);
+      Generator gen(gen_exps,index_set_xx,NULL);
       
       Generators generators;
       generators._g.push_back(gen);
@@ -355,7 +356,7 @@ namespace MiniZinc {
       
       std::vector<VarDecl*> gen_exps(1);
       gen_exps[0] = idx_i;
-      Generator gen(gen_exps,vd_x->id());
+      Generator gen(gen_exps,vd_x->id(),NULL);
       
       Generators generators;
       generators._g.push_back(gen);
@@ -503,9 +504,9 @@ namespace MiniZinc {
             run(env, ce->decl(i,j));
             scopes.add(env, ce->decl(i,j));
           }
+          if (ce->where(i))
+            run(env, ce->where(i));
         }
-        if (ce->where())
-          run(env, ce->where());
         run(env, ce->e());
         scopes.pop();
       }
@@ -890,7 +891,17 @@ namespace MiniZinc {
     /// Visit array comprehension
     void vComprehension(Comprehension& c) {
       Type tt = c.e()->type();
+      typedef std::unordered_map<VarDecl*, int> genMap_t;
+      typedef std::unordered_map<VarDecl*, std::vector<Expression*> > whereMap_t;
+      genMap_t generatorMap;
+      whereMap_t whereMap;
+      int declCount = 0;
+      bool didMoveWheres = false;
       for (int i=0; i<c.n_generators(); i++) {
+        for (int j=0; j<c.n_decls(i); j++) {
+          generatorMap[c.decl(i,j)] = declCount++;
+          whereMap[c.decl(i,j)] = std::vector<Expression*>();
+        }
         Expression* g_in = c.in(i);
         const Type& ty_in = g_in->type();
         if (ty_in == Type::varsetint()) {
@@ -899,19 +910,91 @@ namespace MiniZinc {
         }
         if (ty_in.cv())
           tt.cv(true);
-      }
-      if (c.where()) {
-        if (c.where()->type() == Type::varbool()) {
-          tt.ot(Type::OT_OPTIONAL);
-          tt.ti(Type::TI_VAR);
-        } else if (c.where()->type() != Type::parbool()) {
-          throw TypeError(_env,c.where()->loc(),
-                          "where clause must be bool, but is `"+
-                          c.where()->type().toString(_env)+"'");
+        if (c.where(i)) {
+          if (c.where(i)->type() == Type::varbool()) {
+            tt.ot(Type::OT_OPTIONAL);
+            tt.ti(Type::TI_VAR);
+          } else if (c.where(i)->type() != Type::parbool()) {
+            throw TypeError(_env,c.where(i)->loc(),
+                            "where clause must be bool, but is `"+
+                            c.where(i)->type().toString(_env)+"'");
+          }
+          if (c.where(i)->type().cv())
+            tt.cv(true);
+          
+          // Try to move parts of the where clause to earlier generators
+          std::vector<Expression*> wherePartsStack;
+          std::vector<Expression*> whereParts;
+          wherePartsStack.push_back(c.where(i));
+          while (!wherePartsStack.empty()) {
+            Expression* e = wherePartsStack.back();
+            wherePartsStack.pop_back();
+            if (BinOp* bo = e->dyn_cast<BinOp>()) {
+              if (bo->op()==BOT_AND) {
+                wherePartsStack.push_back(bo->rhs());
+                wherePartsStack.push_back(bo->lhs());
+              } else {
+                whereParts.push_back(e);
+              }
+            } else {
+              whereParts.push_back(e);
+            }
+          }
+          
+          for (unsigned int wpi=0; wpi < whereParts.size(); wpi++) {
+            Expression* wp = whereParts[wpi];
+            class FindLatestGen : public EVisitor {
+            public:
+              int gen;
+              VarDecl* decl;
+              const genMap_t& generatorMap;
+              FindLatestGen(const genMap_t& generatorMap0) : gen(-1), decl(NULL), generatorMap(generatorMap0) {}
+              void vId(const Id& ident) {
+                genMap_t::const_iterator it = generatorMap.find(ident.decl());
+                if (it != generatorMap.end() && it->second > gen) {
+                  gen = it->second;
+                  decl = ident.decl();
+                }
+              }
+            } flg(generatorMap);
+            topDown(flg, wp);
+            whereMap[flg.decl].push_back(wp);
+            
+            if (flg.gen < declCount-1)
+              didMoveWheres = true;
+            
+          }
         }
-        if (c.where()->type().cv())
-          tt.cv(true);
       }
+      
+      if (didMoveWheres) {
+        Generators generators;
+        for (int i=0; i<c.n_generators(); i++) {
+          std::vector<VarDecl*> decls;
+          for (int j=0; j<c.n_decls(i); j++) {
+            decls.push_back(c.decl(i,j));
+            if (whereMap[c.decl(i,j)].size() != 0) {
+              // need a generator for all the decls up to this point
+              Expression* whereExpr = whereMap[c.decl(i,j)][0];
+              for (unsigned int k=1; k<whereMap[c.decl(i,j)].size(); k++) {
+                GCLock lock;
+                BinOp* bo = new BinOp(Location().introduce(), whereExpr, BOT_AND, whereMap[c.decl(i,j)][k]);
+                Type bo_t = whereMap[c.decl(i,j)][k]->type().ispar() && whereExpr->type().ispar() ? Type::parbool() : Type::varbool();
+                bo->type(bo_t);
+                whereExpr = bo;
+              }
+              generators._g.push_back(Generator(decls,c.in(i),whereExpr));
+              decls.clear();
+            } else if (j==c.n_decls(i)-1) {
+              generators._g.push_back(Generator(decls,c.in(i),NULL));
+              decls.clear();
+            }
+          }
+        }
+        GCLock lock;
+        c.init(c.e(), generators);
+      }
+      
       if (c.set()) {
         if (c.e()->type().dim() != 0 || c.e()->type().st() == Type::ST_SET)
           throw TypeError(_env,c.e()->loc(),
@@ -970,6 +1053,12 @@ namespace MiniZinc {
     }
     /// Visit if-then-else
     void vITE(ITE& ite) {
+      bool mustBeBool = false;
+      if (ite.e_else()==NULL) {
+        // this is an "if <cond> then <expr> endif" so the <expr> must be bool
+        ite.e_else(constants().boollit(true));
+        mustBeBool = true;
+      }
       Type tret = ite.e_else()->type();
       std::vector<AnonVar*> anons;
       bool allpar = !(tret.isvar());
@@ -978,7 +1067,7 @@ namespace MiniZinc {
           allpar = false;
           anons.push_back(av);
         } else {
-          throw TypeError(_env,ite.e_else()->loc(), "cannot infer type of expression in else branch of conditional");
+          throw TypeError(_env,ite.e_else()->loc(), "cannot infer type of expression in `else' branch of conditional");
         }
       }
       bool allpresent = !(tret.isopt());
@@ -998,17 +1087,22 @@ namespace MiniZinc {
             allpar = false;
             anons.push_back(av);
           } else {
-            throw TypeError(_env,ethen->loc(), "cannot infer type of expression in then branch of conditional");
+            throw TypeError(_env,ethen->loc(), "cannot infer type of expression in `then' branch of conditional");
           }
         } else {
           if (tret.isbot() || tret.isunknown())
             tret.bt(ethen->type().bt());
+          if (mustBeBool && (ethen->type().bt() != Type::BT_BOOL ||  ethen->type().dim() > 0 ||
+                             ethen->type().st() != Type::ST_PLAIN || ethen->type().ot() != Type::OT_PRESENT)) {
+            throw TypeError(_env,ite.loc(), std::string("conditional without `else' branch must have bool type, ")+
+                            "but `then' branch has type `"+ethen->type().toString(_env)+"'");
+          }
           if ( (!ethen->type().isbot() && !Type::bt_subtype(ethen->type(), tret, true) && !Type::bt_subtype(tret, ethen->type(), true)) ||
               ethen->type().st() != tret.st() ||
               ethen->type().dim() != tret.dim()) {
             throw TypeError(_env,ethen->loc(),
-                            "type mismatch in branches of conditional. Then-branch has type `"+
-                            ethen->type().toString(_env)+"', but else branch has type `"+
+                            "type mismatch in branches of conditional. `then' branch has type `"+
+                            ethen->type().toString(_env)+"', but `else' branch has type `"+
                             tret.toString(_env)+"'");
           }
           if (Type::bt_subtype(tret, ethen->type(), true)) {

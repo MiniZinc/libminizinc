@@ -978,7 +978,7 @@ namespace MiniZinc {
           return IntLit::a(var.intVar(_solution).val());
         case Type::BT_BOOL:
           assert(var.boolVar(_solution).assigned());
-          return new BoolLit(Location(), var.boolVar(_solution).val());
+          return constants().boollit(var.boolVar(_solution).val());
 #ifdef GECODE_HAS_FLOAT_VARS
         case Type::BT_FLOAT:
           assert(var.floatVar(_solution).assigned());
