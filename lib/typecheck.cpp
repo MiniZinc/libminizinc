@@ -890,7 +890,17 @@ namespace MiniZinc {
     /// Visit array comprehension
     void vComprehension(Comprehension& c) {
       Type tt = c.e()->type();
+      typedef std::unordered_map<VarDecl*, int> genMap_t;
+      typedef std::unordered_map<VarDecl*, std::vector<Expression*> > whereMap_t;
+      genMap_t generatorMap;
+      whereMap_t whereMap;
+      int declCount = 0;
+      bool didMoveWheres = false;
       for (int i=0; i<c.n_generators(); i++) {
+        for (int j=0; j<c.n_decls(i); j++) {
+          generatorMap[c.decl(i,j)] = declCount++;
+          whereMap[c.decl(i,j)] = std::vector<Expression*>();
+        }
         Expression* g_in = c.in(i);
         const Type& ty_in = g_in->type();
         if (ty_in == Type::varsetint()) {
@@ -910,8 +920,80 @@ namespace MiniZinc {
           }
           if (c.where(i)->type().cv())
             tt.cv(true);
+          
+          // Try to move parts of the where clause to earlier generators
+          std::vector<Expression*> wherePartsStack;
+          std::vector<Expression*> whereParts;
+          wherePartsStack.push_back(c.where(i));
+          while (!wherePartsStack.empty()) {
+            Expression* e = wherePartsStack.back();
+            wherePartsStack.pop_back();
+            if (BinOp* bo = e->dyn_cast<BinOp>()) {
+              if (bo->op()==BOT_AND) {
+                wherePartsStack.push_back(bo->rhs());
+                wherePartsStack.push_back(bo->lhs());
+              } else {
+                whereParts.push_back(e);
+              }
+            } else {
+              whereParts.push_back(e);
+            }
+          }
+          
+          for (unsigned int wpi=0; wpi < whereParts.size(); wpi++) {
+            Expression* wp = whereParts[wpi];
+            class FindLatestGen : public EVisitor {
+            public:
+              int gen;
+              VarDecl* decl;
+              const genMap_t& generatorMap;
+              FindLatestGen(const genMap_t& generatorMap0) : gen(-1), decl(NULL), generatorMap(generatorMap0) {}
+              void vId(const Id& ident) {
+                genMap_t::const_iterator it = generatorMap.find(ident.decl());
+                if (it != generatorMap.end() && it->second > gen) {
+                  gen = it->second;
+                  decl = ident.decl();
+                }
+              }
+            } flg(generatorMap);
+            topDown(flg, wp);
+            whereMap[flg.decl].push_back(wp);
+            
+            if (flg.gen < declCount-1)
+              didMoveWheres = true;
+            
+          }
         }
       }
+      
+      if (didMoveWheres) {
+        Generators generators;
+        for (int i=0; i<c.n_generators(); i++) {
+          std::vector<VarDecl*> decls;
+          for (int j=0; j<c.n_decls(i); j++) {
+            decls.push_back(c.decl(i,j));
+            if (whereMap[c.decl(i,j)].size() != 0) {
+              // need a generator for all the decls up to this point
+              Expression* whereExpr = whereMap[c.decl(i,j)][0];
+              for (unsigned int k=1; k<whereMap[c.decl(i,j)].size(); k++) {
+                GCLock lock;
+                BinOp* bo = new BinOp(Location().introduce(), whereExpr, BOT_AND, whereMap[c.decl(i,j)][k]);
+                Type bo_t = whereMap[c.decl(i,j)][k]->type().ispar() && whereExpr->type().ispar() ? Type::parbool() : Type::varbool();
+                bo->type(bo_t);
+                whereExpr = bo;
+              }
+              generators._g.push_back(Generator(decls,c.in(i),whereExpr));
+              decls.clear();
+            } else if (j==c.n_decls(i)-1) {
+              generators._g.push_back(Generator(decls,c.in(i),NULL));
+              decls.clear();
+            }
+          }
+        }
+        GCLock lock;
+        c.init(c.e(), generators);
+      }
+      
       if (c.set()) {
         if (c.e()->type().dim() != 0 || c.e()->type().st() == Type::ST_SET)
           throw TypeError(_env,c.e()->loc(),
