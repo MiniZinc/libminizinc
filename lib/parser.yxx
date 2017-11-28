@@ -456,8 +456,7 @@ namespace MiniZinc {
          MiniZinc::Generator* generator;
          std::vector<MiniZinc::Generator>* generator_v;
          std::vector<std::string>* string_v;
-         std::pair<std::vector<MiniZinc::Expression*>,
-                   MiniZinc::Expression*>* expression_p;
+         std::vector<std::pair<MiniZinc::Expression*,MiniZinc::Expression*> >* expression_p;
          MiniZinc::Generators* generators;
        }
 
@@ -598,7 +597,7 @@ namespace MiniZinc {
 %type <generator_v> generator_list generator_list_head
 %type <string_v> id_list id_list_head
 
-%type <expression_p> comp_or_expr
+%type <expression_p> comp_or_expr comp_or_expr_head
 
 %type <expression_v> annotations ne_annotations
 
@@ -1317,9 +1316,7 @@ set_comp :
 
 comp_tail :
       generator_list
-      { if ($1) $$=new Generators; $$->_g = *$1; $$->_w = NULL; delete $1; }
-    | generator_list MZN_WHERE expr
-      { if ($1) $$=new Generators; $$->_g = *$1; $$->_w = $3; delete $1; }
+      { if ($1) $$=new Generators; $$->_g = *$1; delete $1; }
 
 generator_list : generator_list_head comma_or_none
 
@@ -1331,7 +1328,9 @@ generator_list_head :
 
 generator : 
       id_list MZN_IN expr
-      { if ($1 && $3) $$=new Generator(*$1,$3); else $$=NULL; delete $1; }
+      { if ($1 && $3) $$=new Generator(*$1,$3,NULL); else $$=NULL; delete $1; }
+    | id_list MZN_IN expr MZN_WHERE expr
+      { if ($1 && $3) $$=new Generator(*$1,$3,$5); else $$=NULL; delete $1; }
 
 id_list : id_list_head comma_or_none
 
@@ -1571,11 +1570,20 @@ call_expr :
     | quoted_op_call
     | MZN_IDENTIFIER '(' comp_or_expr ')'
       { 
-        if ($3==NULL || $3->second) {
-          yyerror(&@3, parm, "syntax error, 'where' expression outside generator call");
-          $$=NULL;
-        } else {
-          $$=new Call(@$, $1, $3->first);
+        if ($3!=NULL) {
+          bool hadWhere = false;
+          std::vector<Expression*> args;
+          for (unsigned int i=0; i<$3->size(); i++) {
+            if ((*$3)[i].second) {
+              yyerror(&@3, parm, "syntax error, 'where' expression outside generator call");
+              hadWhere = true;
+              $$=NULL;
+            }
+            args.push_back((*$3)[i].first);
+          }
+          if (!hadWhere) {
+            $$=new Call(@$, $1, args);
+          }
         }
         free($1);
         delete $3;
@@ -1585,23 +1593,29 @@ call_expr :
         vector<Generator> gens;
         vector<Id*> ids;
         if ($3) {
-          for (unsigned int i=0; i<$3->first.size(); i++) {
-            if (Id* id = Expression::dyn_cast<Id>($3->first[i])) {
+          for (unsigned int i=0; i<$3->size(); i++) {
+            if (Id* id = Expression::dyn_cast<Id>((*$3)[i].first)) {
+              if ((*$3)[i].second) {
+                ParserLocation loc = (*$3)[i].second->loc().parserLocation();
+                yyerror(&loc, parm, "illegal where expression in generator call");
+              }
               ids.push_back(id);
             } else {
-              if (BinOp* boe = Expression::dyn_cast<BinOp>($3->first[i])) {
+              if (BinOp* boe = Expression::dyn_cast<BinOp>((*$3)[i].first)) {
                 if (boe->lhs() && boe->rhs()) {
                   Id* id = Expression::dyn_cast<Id>(boe->lhs());
                   if (id && boe->op() == BOT_IN) {
                     ids.push_back(id);
-                    gens.push_back(Generator(ids,boe->rhs()));
+                    gens.push_back(Generator(ids,boe->rhs(),(*$3)[i].second));
                     ids = vector<Id*>();
                   } else {
-                    yyerror(&@3, parm, "illegal expression in generator call");
+                    ParserLocation loc = (*$3)[i].first->loc().parserLocation();
+                    yyerror(&loc, parm, "illegal expression in generator call");
                   }
                 }
               } else {
-                yyerror(&@3, parm, "illegal expression in generator call");
+                ParserLocation loc = (*$3)[i].first->loc().parserLocation();
+                yyerror(&loc, parm, "illegal expression in generator call");
               }
             }
           }
@@ -1613,7 +1627,7 @@ call_expr :
         if (pp->hadError) {
           $$=NULL;
         } else {
-          Generators g; g._g = gens; g._w = $3->second;
+          Generators g; g._g = gens;
           Comprehension* ac = new Comprehension(@$, $6,g,false);
           vector<Expression*> args; args.push_back(ac);
           $$=new Call(@$, $1, args);
@@ -1622,19 +1636,19 @@ call_expr :
         delete $3;
       }
 
-comp_or_expr :
-      expr_list
-      { $$=new pair<vector<Expression*>,Expression*>;
-        if ($1) $$->first=*$1;
-        $$->second=NULL;
-        delete $1;
-      }
-    | expr_list MZN_WHERE expr
-      { $$=new pair<vector<Expression*>,Expression*>;
-        if ($1) $$->first=*$1;
-        $$->second=$3;
-        delete $1;
-      }
+comp_or_expr : comp_or_expr_head comma_or_none
+
+comp_or_expr_head :
+      expr
+      { $$=new vector<pair<Expression*,Expression*> >;
+        $$->push_back(pair<Expression*,Expression*>($1,NULL)); }
+    | expr MZN_WHERE expr
+      { $$=new vector<pair<Expression*,Expression*> >;
+        $$->push_back(pair<Expression*,Expression*>($1,$3)); }
+    | comp_or_expr_head ',' expr
+      { $$=$1; if ($$ && $3) $$->push_back(pair<Expression*,Expression*>($3,NULL)); }
+    | comp_or_expr_head ',' expr MZN_WHERE expr
+      { $$=$1; if ($$ && $3 && $5) $$->push_back(pair<Expression*,Expression*>($3,$5)); }
 
 let_expr :
       MZN_LET '{' let_vardecl_item_list '}' MZN_IN expr %prec PREC_ANNO
