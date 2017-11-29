@@ -748,18 +748,18 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
      wrap_assert(!status, "Failed to write CPLEX parameters.", false);
     }
     
-   status = CPXgettime (env, &output.dCPUTime);
-   wrap_assert(!status, "Failed to get time stamp.", false);
+   // status = CPXgettime (env, &output.dCPUTime);
+   // wrap_assert(!status, "Failed to get time stamp.", false);
    cbui.pOutput->cCPUTime0 = std::clock();
 
    /* Optimize the problem and obtain solution. */
    status = CPXmipopt (env, lp);
    wrap_assert( !status,  "Failed to optimize MIP." );
 
-   double tmNow;
-   status = CPXgettime (env, &tmNow);
+   double tmNow = std::clock();
+   // status = CPXgettime (env, &tmNow);   Buggy in 12.7.1.0
    wrap_assert(!status, "Failed to get time stamp.", false);
-   output.dCPUTime = tmNow - output.dCPUTime;
+   output.dCPUTime = (tmNow - cbui.pOutput->cCPUTime0) / CLOCKS_PER_SEC;
 
    int solstat = CPXgetstat (env, lp);
    output.status = convertStatus(solstat);
