@@ -3,9 +3,9 @@
 %
 % AUTHORS
 % Sebastian Brand
-% Gleb Belov (2015)
+% Gleb Belov (2015-)
 %   cf. Belov, Tack, Wallace. Updated Linearization Library for MiniZinc 2.0. ModRef Workshop, CP 2015.
-%  AIMS: generality, flexibility, extensibility
+%   cf. Belov, Stuckey, Tack, Wallace. Improved Linearization of Constraint Programming Models. CP 2016.
 */
 
 %----------------------------- BOOL2INT --------------------------------%

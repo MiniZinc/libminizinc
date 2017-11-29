@@ -5,7 +5,9 @@ The executables mzn-cplex, mzn-gurobi, mzn-scip and mzn-cbc use the
 corresponding MIP solver library. They can interpret FlatZinc code compiled with
 -Glinear, as well as handle original model files (by flattening + solving).
 
-All MIP solvers directly support multi-threading. For this, CBC needs to be
+Please run them with --help to see available functionalities.
+
+All MIP solvers directly support multi-threading (option -p). For this, CBC needs to be
 configured with --enable-cbc-parallel. Use svn/git to get the latest stable CBC revision,
 see https://projects.coin-or.org/Cbc, currently https://projects.coin-or.org/svn/Cbc/stable/2.9
 
@@ -16,6 +18,17 @@ Calling a solver on a MiniZinc directly:
 or separated flattening+solving - sometimes more stable but slower due to file I/O:
  
       mzn2fzn -G linear model.mzn data.dzn && mzn-gorubi -v -s -a model.fzn | solns2out model.ozn
+
+UNIFIED DOMAIN REFINEMENT (MIPdomains)
+===================================
+The 'MIPdomains' feature of the Flattener aims at reducing the number of binary flags
+encoding linearized domain constraints, see
+
+   [1] Belov, Stuckey, Tack, Wallace. Improved Linearization of Constraint Programming Models. CP 2016.
+
+By default it is on, but for some models such as packing problems with CPLEX, it is better off.
+To turn it off, add option -D fMIPdomains=false during flattening.
+Some parameters of the unification are available, run with --help.
 
 INDICATOR CONSTRAINTS
 ===================================
