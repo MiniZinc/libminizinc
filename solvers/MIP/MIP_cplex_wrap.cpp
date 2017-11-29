@@ -249,6 +249,28 @@ void MIP_cplex_wrapper::addIndicatorConstraint(
   wrap_assert( !status,  "Failed to add indicator constraint." );
 }
 
+bool MIP_cplex_wrapper::addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals ) {
+  assert( vars.size()==vals.size() );
+  const char* sMSName = "MZNMS";
+  int msindex=-1;
+  const int beg=0;
+  /// Check if we already added a start
+  status = CPXgetmipstartindex (env, lp, sMSName, &msindex);
+  if ( status ) {      // not existent
+    // status = CPXaddmipstarts (env, lp, mcnt, nzcnt, beg, varindices,
+    //                            values, effortlevel, mipstartname);
+    status = CPXaddmipstarts (env, lp, 1, vars.size(), &beg, vars.data(),
+                                 vals.data(), nullptr, (char**)&sMSName);
+    wrap_assert( !status,  "Failed to add warm start." );
+  } else {
+    // status = CPXchgmipstarts (env, lp, mcnt, mipstartindices, nzcnt, beg, varindices, values, effortlevel);
+    status = CPXchgmipstarts (env, lp, 1, &msindex, vars.size(), &beg, vars.data(),
+                                 vals.data(), nullptr);
+    wrap_assert( !status,  "Failed to extend warm start." );
+  }
+  return true;
+}
+
 void MIP_cplex_wrapper::setVarBounds(int iVar, double lb, double ub)
 {
   wrap_assert( lb<=ub, "mzn-cplex: setVarBounds: lb>ub" );

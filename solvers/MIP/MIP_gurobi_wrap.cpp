@@ -216,6 +216,7 @@ void MIP_gurobi_wrapper::checkDLL()
   *(void**)(&dll_GRBsetintattr) = dll_sym(gurobi_dll, "GRBsetintattr");
   *(void**)(&dll_GRBsetintattrlist) = dll_sym(gurobi_dll, "GRBsetintattrlist");
   *(void**)(&dll_GRBsetdblattrelement) = dll_sym(gurobi_dll, "GRBsetdblattrelement");
+  *(void**)(&dll_GRBsetdblattrlist) = dll_sym(gurobi_dll, "GRBsetdblattrlist");
   *(void**)(&dll_GRBsetintparam) = dll_sym(gurobi_dll, "GRBsetintparam");
   *(void**)(&dll_GRBsetstrparam) = dll_sym(gurobi_dll, "GRBsetstrparam");
   *(void**)(&dll_GRBupdatemodel) = dll_sym(gurobi_dll, "GRBupdatemodel");
@@ -247,6 +248,7 @@ void MIP_gurobi_wrapper::checkDLL()
   dll_GRBsetintattr = GRBsetintattr;
   dll_GRBsetintattrlist = GRBsetintattrlist;
   dll_GRBsetdblattrelement = GRBsetdblattrelement;
+  dll_GRBsetdblattrlist = GRBsetdblattrlist;
   dll_GRBsetintparam = GRBsetintparam;
   dll_GRBsetstrparam = GRBsetstrparam;
   dll_GRBupdatemodel = GRBupdatemodel;
@@ -380,6 +382,15 @@ void MIP_gurobi_wrapper::addIndicatorConstraint(
   error = dll_GRBaddgenconstrIndicator(model, rowName.c_str(), iBVar, bVal,
                                    nnz, rmatind, rmatval, ssense, rhs);    
   wrap_assert( !error,  "Failed to add indicator constraint." );
+}
+
+bool MIP_gurobi_wrapper::addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals ) {
+  assert( vars.size()==vals.size() );
+  static_assert( sizeof(VarId)==sizeof(int) );
+  // error = GRBsetdblattrelement(model, "Start", 0, 1.0);
+  error = dll_GRBsetdblattrlist(model, "Start", vars.size(), (int*)vars.data(), (double*)vals.data());
+  wrap_assert( !error,  "Failed to add warm start" );
+  return true;
 }
 
 void MIP_gurobi_wrapper::setVarBounds(int iVar, double lb, double ub)

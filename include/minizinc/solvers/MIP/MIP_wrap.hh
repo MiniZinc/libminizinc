@@ -267,7 +267,11 @@ class MIP_wrapper {
     virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int *rmatind, double* rmatval,
                         LinConType sense, double rhs,
                         std::string rowName = "") { throw std::runtime_error("Indicator constraints not supported. "); }
-                        
+                
+    /// Return 0 if ignoring warm starts    
+    virtual bool addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals ) {
+      return false;
+    }
                         
     int nAddedRows = 0;   // for name counting
     int nIndicatorConstr = 0;

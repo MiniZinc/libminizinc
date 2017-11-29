@@ -678,6 +678,8 @@ void MIP_solverinstance::processFlatZinc(void) {
     }
   }
 
+  processSearchAnnotations( solveItem->ann() );
+
   if (mip_wrap->fVerbose) {
     cerr << " done, " << mip_wrap->getNRows() << " rows && "
     << mip_wrap->getNCols() << " columns in total.";
@@ -706,6 +708,50 @@ Expression* MIP_solverinstance::getSolutionValue(Id* id) {
   } else {
     return id->decl()->e();
   }
+}
+
+void 
+MIP_solverinstance::processSearchAnnotations(const Annotation& ann) {
+    for(ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
+        Expression* e = *i;
+        if ( e->isa<Call>() ) {
+            Call* c = e->cast<Call>();
+            if ( c->id().str() == "warm_start_array" ) {
+                ArrayLit* anns = c->args()[0]->cast<ArrayLit>();
+                for(unsigned int i=0; i<anns->v().size(); i++) {
+                    Annotation subann;
+                    subann.add(anns->v()[i]);
+                    processSearchAnnotations( subann );
+                }
+            } else
+            if ( c->id().str() == "warm_start" ) {
+                auto args = c->args();
+                MZN_ASSERT_HARD_MSG( args.size()>=2, "ERROR: warm_start needs 2 array args" );
+                vector<double> coefs;
+                vector<MIP_solverinstance::VarId> vars;
+
+    /// Process coefs & vars together to eliminate literals (problem with Gurobi's updatemodel()'s)
+                ArrayLit* alC = eval_array_lit(_env.envi(), args[1]);
+                MZN_ASSERT_HARD_MSG( 0!=alC, "ERROR: warm_start needs 2 array args" );
+                coefs.reserve(alC->v().size());
+                ArrayLit* alV = eval_array_lit(_env.envi(), args[0]);
+                MZN_ASSERT_HARD_MSG( 0!=alV, "ERROR: warm_start needs 2 array args" );
+                vars.reserve(alV->v().size());
+                for (unsigned int i=0; i<alV->v().size() && i<alC->v().size(); i++) {
+                  const double dCoef = exprToConst( alC->v()[i] );
+                  if (Id* ident = alV->v()[i]->dyn_cast<Id>()) {
+                    coefs.push_back( dCoef );
+                    vars.push_back( exprToVar( ident ) );
+                  } // else ignore
+                }
+                assert(coefs.size() == vars.size());
+                if ( !getMIPWrapper()->addWarmStart( vars, coefs ) ) {
+                  cerr << "WARNING: MIP backend seems to ignore warm starts" << endl;
+                  return;
+                }
+            }
+        }
+    }
 }
 
 void MIP_solverinstance::genCuts(const MIP_wrapper::Output& slvOut,
