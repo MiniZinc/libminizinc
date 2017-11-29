@@ -51,7 +51,7 @@ solve
   minimize x[1] + b + xf[2] + card( xs[1] intersect xs[3] );
 
 If you'd like to provide a most complete warmstart information, please provide values for all
-variables which are output when there is no solve item or when compiled with --output-mode dzn.
+variables which are output when there is no output item or when compiled with --output-mode dzn.
 Still, this excludes auxiliary variables introduced by let's. To capture them, you can customize
 the output item, or try the FlatZinc level, see below.
 
