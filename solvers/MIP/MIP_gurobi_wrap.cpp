@@ -386,7 +386,7 @@ void MIP_gurobi_wrapper::addIndicatorConstraint(
 
 bool MIP_gurobi_wrapper::addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals ) {
   assert( vars.size()==vals.size() );
-  static_assert( sizeof(VarId)==sizeof(int) );
+  static_assert( sizeof(VarId)==sizeof(int), "VarId should be (u)int currently" );
   // error = GRBsetdblattrelement(model, "Start", 0, 1.0);
   error = dll_GRBsetdblattrlist(model, "Start", vars.size(), (int*)vars.data(), (double*)vals.data());
   wrap_assert( !error,  "Failed to add warm start" );
