@@ -759,7 +759,7 @@ MIP_solverinstance::processSearchAnnotations(const Annotation& ann) {
                   } // else ignore
                 }
                 assert(coefs.size() == vars.size());
-                if ( !getMIPWrapper()->addWarmStart( vars, coefs ) ) {
+                if ( coefs.size() && !getMIPWrapper()->addWarmStart( vars, coefs ) ) {
                   cerr << "WARNING: MIP backend seems to ignore warm starts" << endl;
                   return;
                 }
