@@ -321,8 +321,9 @@ annotation warm_start( array[int] of var set of int: x, array[int] of set of int
        let {
          array[int] of var bool: xb = set2bools(x[i]),
          set of int: is_var = ub(x[i]) diff lb(x[i]),
+         int: iV = i - min(index_set(x)) + min(index_set(v)),
        } in
        warm_start( [ xb[k] | k in is_var ],
-         [ k in v[i] | k in is_var ] )       %% ignoring v[i] diff ub(x[i]) and lb(x[i]) diff v[i]
-   | i in index_set(x) ] );
+         if iV in index_set(v) then [ k in v[iV] | k in is_var ] else [] endif )
+   | i in index_set(x) ] );       %% ignoring v[i] diff ub(x[i]) and lb(x[i]) diff v[i]
 
