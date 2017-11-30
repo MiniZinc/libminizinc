@@ -724,6 +724,7 @@ Expression* MIP_solverinstance::getSolutionValue(Id* id) {
 
 void 
 MIP_solverinstance::processSearchAnnotations(const Annotation& ann) {
+    int nVal = 0;
     for(ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
         Expression* e = *i;
         if ( e->isa<Call>() ) {
@@ -759,12 +760,16 @@ MIP_solverinstance::processSearchAnnotations(const Annotation& ann) {
                   } // else ignore
                 }
                 assert(coefs.size() == vars.size());
+                nVal += coefs.size();
                 if ( coefs.size() && !getMIPWrapper()->addWarmStart( vars, coefs ) ) {
-                  cerr << "WARNING: MIP backend seems to ignore warm starts" << endl;
+                  cerr << "\nWARNING: MIP backend seems to ignore warm starts" << endl;
                   return;
                 }
             }
         }
+    }
+    if ( nVal && getMIPWrapper()->fVerbose ) {
+      cerr << "  MIP: added " << nVal << " MIPstart values..." << flush;
     }
 }
 
