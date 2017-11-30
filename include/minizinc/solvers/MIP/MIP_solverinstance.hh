@@ -98,6 +98,7 @@ namespace MiniZinc {
       void exprToArray(Expression* e, vector<double> &vals);
       void exprToVarArray(Expression* e, vector<VarId> &vars);
       double exprToConst(Expression* e);
+      std::pair<double, bool> exprToConstEasy(Expression* e);
 
       Expression* getSolutionValue(Id* id);
 

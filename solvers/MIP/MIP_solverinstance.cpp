@@ -59,15 +59,26 @@ void MIP_solverinstance::exprToVarArray(Expression* arg, vector<VarId> &vars) {
     vars.push_back(exprToVar(al->v()[i]));
 }
 
-double MIP_solverinstance::exprToConst(Expression* e) {
+std::pair<double,bool> MIP_solverinstance::exprToConstEasy(Expression* e) {
+    std::pair<double, bool> res { 0.0, true };
     if (IntLit* il = e->dyn_cast<IntLit>()) {
-      return ( il->v().toInt() );
+      res.first = ( il->v().toInt() );
     } else if (FloatLit* fl = e->dyn_cast<FloatLit>()) {
-      return ( fl->v().toDouble() );
+      res.first = ( fl->v().toDouble() );
     } else if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
-      return ( bl->v() );
+      res.first = ( bl->v() );
     } else {
-      throw InternalError("Expected a numeric/bool literal");
+      res.second = false;
+    }
+    return res;
+}
+
+double MIP_solverinstance::exprToConst(Expression* e) {
+    auto e2ce = exprToConstEasy( e );
+    if ( !e2ce.second ) {
+      std::ostringstream oss;
+      oss << "ExprToConst: expected a numeric/bool literal, getting " << *e;
+      throw InternalError( oss.str() );
     }
 }
 
@@ -738,9 +749,11 @@ MIP_solverinstance::processSearchAnnotations(const Annotation& ann) {
                 MZN_ASSERT_HARD_MSG( 0!=alV, "ERROR: warm_start needs 2 array args" );
                 vars.reserve(alV->v().size());
                 for (unsigned int i=0; i<alV->v().size() && i<alC->v().size(); i++) {
-                  const double dCoef = exprToConst( alC->v()[i] );
+                  const auto e2c = exprToConstEasy( alC->v()[i] );
+                  /// Check if it is not an opt int etc. and a proper variable
+                  if (e2c.second) 
                   if (Id* ident = alV->v()[i]->dyn_cast<Id>()) {
-                    coefs.push_back( dCoef );
+                    coefs.push_back( e2c.first );
                     vars.push_back( exprToVar( ident ) );
                   } // else ignore
                 }
