@@ -74,12 +74,13 @@ std::pair<double,bool> MIP_solverinstance::exprToConstEasy(Expression* e) {
 }
 
 double MIP_solverinstance::exprToConst(Expression* e) {
-    auto e2ce = exprToConstEasy( e );
+    const auto e2ce = exprToConstEasy( e );
     if ( !e2ce.second ) {
       std::ostringstream oss;
       oss << "ExprToConst: expected a numeric/bool literal, getting " << *e;
       throw InternalError( oss.str() );
     }
+    return e2ce.first;
 }
 
 void MIP_solverinstance::exprToArray(Expression* arg, vector<double> &vals) {
