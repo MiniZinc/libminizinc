@@ -322,7 +322,7 @@ annotation warm_start( array[int] of var set of int: x, array[int] of set of int
          array[int] of var bool: xb = set2bools(x[i]),
          set of int: is_var = ub(x[i]) diff lb(x[i]),
        } in
-       warm_start( [ xb[i] | i in is_var ],
-         [ i in v[i] | i in is_var ] )       %% ignoring v[i] diff ub(x[i]) and lb(x[i]) diff v[i]
+       warm_start( [ xb[k] | k in is_var ],
+         [ k in v[i] | k in is_var ] )       %% ignoring v[i] diff ub(x[i]) and lb(x[i]) diff v[i]
    | i in index_set(x) ] );
 
