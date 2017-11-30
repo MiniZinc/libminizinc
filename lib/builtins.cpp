@@ -264,6 +264,42 @@ namespace MiniZinc {
       throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
     return eval_bool(env,e);
   }
+
+  FloatVal b_deopt_float(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    GCLock lock;
+    Expression* e = eval_par(env,args[0]);
+    if (e==constants().absent)
+      throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+    return eval_float(env,e);
+  }
+
+  IntSetVal* b_deopt_intset(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    GCLock lock;
+    Expression* e = eval_par(env,args[0]);
+    if (e==constants().absent)
+      throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+    return eval_intset(env,e);
+  }
+  
+  std::string b_deopt_string(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    GCLock lock;
+    Expression* e = eval_par(env,args[0]);
+    if (e==constants().absent)
+      throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+    return eval_string(env,e);
+  }
+  
+  Expression* b_deopt_expr(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    GCLock lock;
+    Expression* e = eval_par(env,args[0]);
+    if (e==constants().absent)
+      throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+    return e;
+  };
   
   IntVal b_array_lb_int(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
@@ -2635,11 +2671,20 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parint();
       t[0].ot(Type::OT_OPTIONAL);
+      t[0].bt(Type::BT_TOP);
       rb(env, m, ASTString("occurs"), t, b_occurs);
+      rb(env, m, ASTString("deopt"), t, b_deopt_expr);
+      t[0].bt(Type::BT_INT);
       rb(env, m, ASTString("deopt"), t, b_deopt_int);
       t[0].bt(Type::BT_BOOL);
-      rb(env, m, ASTString("occurs"), t, b_occurs);
       rb(env, m, ASTString("deopt"), t, b_deopt_bool);
+      t[0].bt(Type::BT_FLOAT);
+      rb(env, m, ASTString("deopt"), t, b_deopt_float);
+      t[0].bt(Type::BT_STRING);
+      rb(env, m, ASTString("deopt"), t, b_deopt_string);
+      t[0].bt(Type::BT_INT);
+      t[0].st(Type::ST_SET);
+      rb(env, m, ASTString("deopt"), t, b_deopt_intset);
     }
     {
       std::vector<Type> t(2);
