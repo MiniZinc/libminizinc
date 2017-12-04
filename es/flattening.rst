@@ -307,11 +307,11 @@ Considere las restricciones de ecuación de Laplace definidas para un modelo de 
   :end-before: % sides
 
 
-Asumiendo :mzn:`w = 4` y :mzn:`h = 4` esto crea las restricciones
+Asumiendo :mzn:`w = 4` y :mzn:`h = 4` esto crea las restricciones:
 
 .. code-block:: minizinc
 
-  array[0..4,0..4] of var float: t; % temperature at point (i,j)
+  array[0..4,0..4] of var float: t; % temperatura en el punto (i,j)
   constraint 4.0*t[1,1] = t[0,1] + t[1,0] + t[2,1] + t[1,2];
   constraint 4.0*t[1,2] = t[0,2] + t[1,1] + t[2,2] + t[1,3];
   constraint 4.0*t[1,3] = t[0,3] + t[1,2] + t[2,3] + t[1,4];
@@ -573,7 +573,7 @@ Observe cómo la eliminación de subexpresiones común reutiliza la desigualdad 
 Expresiones Let
 ---------------
 
-Las expresiones ``let``son una poderosa herramienta de MiniZinc para introducir nuevas variables. Esto es útil para crear sub expresiones comunes y para definir variables locales para predicados.
+Las expresiones ``let`` son una poderosa herramienta de MiniZinc para introducir nuevas variables. Esto es útil para crear sub expresiones comunes y para definir variables locales para predicados.
 
 Durante el aplanamiento, las expresiones de ``let`` se traducen a declaraciones de variables y restricciones. La semántica relacional de MiniZinc significa que estas restricciones deben aparecer como si estuvieran conjuntas en la primera expresión booleana adjunta.
 
@@ -594,7 +594,7 @@ Primero, las llamadas de predicados se reemplazan por su definición.
   constraint (let { var int: y} in u = 2 * y) \/
              (let { var int: y} in v = 2 * y);
 
-A continuación, las variables ``let``se renombran aparte como:
+A continuación, las variables ``let`` se renombran aparte como:
 
 .. code-block:: minizinc
 
