@@ -5430,7 +5430,7 @@ namespace MiniZinc {
           return !(i->isa<ConstraintI>()  && env.failed());
         }
         void vVarDeclI(VarDeclI* v) {
-          if (v->e()->type().ispar() && v->e()->type().dim() > 0 && v->e()->ti()->domain()==NULL
+          if (v->e()->type().ispar() && !v->e()->type().isopt() && v->e()->type().dim() > 0 && v->e()->ti()->domain()==NULL
               && (v->e()->type().bt()==Type::BT_INT || v->e()->type().bt()==Type::BT_FLOAT)) {
             // Compute bounds for array literals
             GCLock lock;
