@@ -778,6 +778,8 @@ namespace MiniZinc {
           throw TypeError(_env,sl.v()[i]->loc(),"set literals cannot contain arrays");
         if (sl.v()[i]->type().isvar())
           ty.ti(Type::TI_VAR);
+        if (sl.v()[i]->type().isopt())
+          throw TypeError(_env,sl.v()[i]->loc(),"set literals cannot contain option type values");
         if (sl.v()[i]->type().cv())
           ty.cv(true);
         if (enumId != sl.v()[i]->type().enumId())
@@ -843,7 +845,7 @@ namespace MiniZinc {
         if (ty.bt()==Type::BT_UNKNOWN) {
           if (av == NULL) {
             if (haveInferredType) {
-              if (ty.st() != vi->type().st()) {
+              if (ty.st() != vi->type().st() && vi->type().ot()!=Type::OT_OPTIONAL) {
                 throw TypeError(_env,al.loc(),"non-uniform array literal");
               }
             } else {
@@ -858,7 +860,7 @@ namespace MiniZinc {
         } else {
           if (av == NULL) {
             if (vi->type().bt() == Type::BT_BOT) {
-              if (vi->type().st() != ty.st()) {
+              if (vi->type().st() != ty.st() && vi->type().ot()!=Type::OT_OPTIONAL) {
                 throw TypeError(_env,al.loc(),"non-uniform array literal");
               }
               if (vi->type().enumId() != 0 && ty.enumId() != vi->type().enumId()) {
