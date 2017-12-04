@@ -304,13 +304,15 @@ namespace MiniZinc {
 
   void checkDom(EnvI& env, Id* arg, IntSetVal* dom, Expression* e) {
     bool oob = false;
-    if (e->type().isintset()) {
-      IntSetVal* ev = eval_intset(env, e);
-      IntSetRanges ev_r(ev);
-      IntSetRanges dom_r(dom);
-      oob = !Ranges::subset(ev_r, dom_r);
-    } else {
-      oob = !dom->contains(eval_int(env,e));
+    if (!e->type().isopt()) {
+      if (e->type().isintset()) {
+          IntSetVal* ev = eval_intset(env, e);
+          IntSetRanges ev_r(ev);
+          IntSetRanges dom_r(dom);
+          oob = !Ranges::subset(ev_r, dom_r);
+      } else {
+        oob = !dom->contains(eval_int(env,e));
+      }
     }
     if (oob) {
       std::ostringstream oss;
@@ -320,11 +322,13 @@ namespace MiniZinc {
   }
 
   void checkDom(EnvI& env, Id* arg, FloatVal dom_min, FloatVal dom_max, Expression* e) {
-    FloatVal ev = eval_float(env, e);
-    if (ev < dom_min || ev > dom_max) {
-      std::ostringstream oss;
-      oss << "value for argument `" << *arg << "' out of bounds";
-      throw EvalError(env, e->loc(), oss.str());
+    if (!e->type().isopt()) {
+      FloatVal ev = eval_float(env, e);
+      if (ev < dom_min || ev > dom_max) {
+        std::ostringstream oss;
+        oss << "value for argument `" << *arg << "' out of bounds";
+        throw EvalError(env, e->loc(), oss.str());
+      }
     }
   }
   
