@@ -367,7 +367,7 @@ El modelo completo se muestra en :numref:`ex-manhattan`.
 .. literalinclude:: examples/manhattan_es.mzn
   :language: minizinc
   :name: ex-manhattan
-  :caption: Model for a number placement problem illustrating the use of functions (:download:`manhattan_es.mzn <examples/manhattan_es.mzn>`).
+  :caption: Modelo para un problema de ubicación numérica que ilustra el uso de funciones (:download:`manhattan_es.mzn <examples/manhattan_es.mzn>`).
 
 .. defblock:: Function definitions
 
@@ -380,8 +380,8 @@ Las funciones se definen mediante una declaración de la forma
 
     function <ret-type> : <func-name> ( <arg-def>, ..., <arg-def> ) = <exp>
 
-  The :mzndef:`<func-name>` must be a valid MiniZinc identifier, and each :mzndef:`<arg-def>` is a valid MiniZinc type declaration.
-  The :mzndef:`<ret-type>` is the return type of the function which must be the type of :mzndef:`<exp>`. Arguments have the same restrictions as in predicate definitions.
+El :mzndef:`<func-name>` debe ser un identificador MiniZinc válido, y cada uno de los :mzndef:`<arg-def>` es una declaración de tipo MiniZinc válida.
+El :mzndef:`<ret-type>` es el tipo de retorno de la función que debe ser el tipo :mzndef:`<exp>`. Los argumentos tienen las mismas restricciones que en las definiciones de predicados.
 
 Funciones en MiniZinc pueden tener cualquier tipo de retorno, no solo tipos de retorno fijos.
 
@@ -424,7 +424,7 @@ Una mejor implementación es hacer uso de una restricción global :mzn:`cumulati
 Observe cómo usamos la función de reflexión :mzn:`index_set` para
 (a) verificar que los argumentos para :mzn:`disjunctive` tengan sentido, y
 (b) construir la matriz de utilizaciones de recursos del tamaño apropiado para :mzn:`cumulative`.
-Tenga en cuenta también que utilizamos una versión ternaria de :mzn:`assert` aquí.
+Tenga en cuenta también que utilizamos una versión ternaria :mzn:`assert` aquí.
 
 .. literalinclude:: examples/disjunctive_es.mzn
   :language: minizinc
@@ -491,9 +491,11 @@ Lo siguiente es ilegal:
 
   constraint not even(z);
 
-The reason for this is that solvers only solve existentially constrained problems, and if we introduce a local variable in a negative context, then the variable is *universally quantified* and hence out of scope of the underlying solvers. For example the :math:`\neg \mathit{even}(z)` is equivalent to :math:`\neg \exists y. z = 2y` which is equivalent to :math:`\forall y. z \neq 2y`.
 
-If local variables are given values, then they can be used in negative contexts. The following is legal
+La razón de esto es que los solucionadores solo resuelven problemas existencialmente restringidos, y si introducimos una variable local en un contexto negativo, entonces la variable es *universalmente cuantificada*. Por lo tanto, fuera del alcance de los solucionadores subyacentes. Por ejemplo, :math:`\neg \mathit{even}(z)` es equivalente a :math:`\neg \exists y. z = 2y`, que es equivalente a :math:`\forall y. z \neq 2y`.
+
+Si las variables locales reciben valores, entonces pueden usarse en contextos negativos. Lo siguiente es legal:
+
 
 .. code-block:: minizinc
 
@@ -502,54 +504,60 @@ If local variables are given values, then they can be used in negative contexts.
 
   constraint not even(z);
 
-Note that the meaning of :mzn:`even` is correct, since if :mzn:`x` is even then :math:`x = 2 * (x ~\mbox{div}~ 2)`. Note that for this definition :math:`\neg \mathit{even}(z)` is equivalent to :math:`\neg \exists y. y = z ~\mbox{div}~ 2 \wedge z = 2y` which is equivalent to :math:`\exists y. y = z ~\mbox{div}~ 2 \wedge \neg z \neq 2y`, because :math:`y` is functionally defined by :math:`z`.
 
+Tenga en cuenta que el significado de :mzn:`even` es correcto, ya que si :mzn:`x` es par :math:`x = 2 * (x ~\mbox{div}~ 2)`.
+Tenga en cuenta que para esta definición :math:`\neg \mathit{even}(z)` es equivalente a :math:`\neg \exists y. y = z ~\mbox{div}~ 2 \wedge z = 2y` que es equivalente a :math:`\exists y. y = z ~\mbox{div}~ 2 \wedge \neg z \neq 2y`, porque: math:`y` se define funcionalmente por :math:`z`.
 
-Every expression in MiniZinc appears in one of the four *contexts*: :index:`root <context; !root>`, :index:`positive <context; !positive>`, :index:`negative <context; !negative>`, or :index:`mixed <context; !mixed>`.
-The context of a non-Boolean expression is simply the context of its nearest enclosing Boolean expression. The one exception is that the objective expression appears in a root context (since it has no enclosing Boolean expression).
+Cada expresión en MiniZinc aparece en uno de los cuatro *contextos* :index:`root <context; !root>`, :index:`positive <context; !positive>`, :index:`negative <context; !negative>`, o :index:`mixed <context; !mixed>`.
+El contexto de una expresión no booleana es simplemente el contexto de su expresión booleana más cercana. La única excepción es que la expresión objetivo aparece en un contexto raíz (ya que no tiene una expresión booleana adjunta).
 
-For the purposes of defining contexts we assume implication expressions :mzn:`e1 -> e2` are rewritten equivalently as :mzn:`not e1 \/ e2`, and similarly :mzn:`e1 <- e2` is rewritten as  :mzn:`e1 \/ not e2`.
+Para los propósitos de definir contextos asumimos expresiones de implicación :mzn:`e1 -> e2` se reescriben de forma equivalente como :mzn:`not e1 \/ e2`, y de manera similar :mzn:`e1 <- e2` se reescribe como :mzn:`e1 \/ no e2`.
 
-The context for a Boolean expression is given by:
+El contexto para una expresión booleana viene dado por:
 
-Root:
-root context is the context for any expression $e$ appearing as the argument of :mzn:`constraint` or as an :index:`assignment` item, or appearing as a sub expression :mzn:`e1` or :mzn:`e2` in an expression :mzn:`e1 /\ e2` occuring in a root context.
+Raíz:
+El contexto raíz es el contexto para cualquier expresión $e$ que aparece como el argumento de :mzn:`constraint` o como un elemento :index:`assignment`, o que aparece como una subexpresión :mzn:`e1` o :mzn:`e2` en una expresión :mzn:`e1 /\ e2` que ocurre en un contexto raíz.
 
-Root context Boolean expressions must hold in any model of the problem.
+Las expresiones booleanas de contexto raíz deben mantenerse en cualquier modelo del problema.
 
-Positive:
-positive context is the context for any expression appearing as a sub expression :mzn:`e1` or :mzn:`e2` in an expression :mzn:`e1 \/ e2` occuring in a root or positive context, appearing as a sub expression :mzn:`e1` or :mzn:`e2` in an expression :mzn:`e1 /\ e2` occuring in a positive context, or appearing as a sub expression :mzn:`e` in an expression :mzn:`not e` appearing in a negative context.
+Positivo:
+Un contexto positivo es el contexto para cualquier expresión que aparece como una expresión secundaria :mzn:`e1` o :mzn:`e2` en una expresión :mzn:`e1 \/ e2` que ocurre en un contexto raíz o positivo, el cual aparece como una subexpresión :mzn:`e1` o :mzn:`e2` en una expresión :mzn:`e1 /\ e2` que aparece en un contexto positivo, o que aparece como una subexpresión :mzn:`e` en una expresión:mzn:`not e` que aparece en un contexto negativo.
 
-Positive context Boolean expressions need not hold in a model, but making them hold will only increase the possibility that the enclosing constraint holds. A positive context expression has an even number of negations in the path from the enclosing root context to the expression.
+Las expresiones booleanas de contexto positivo no necesitan mantenerse en un modelo, pero hacer que se sostengan solo aumentará la posibilidad de que se mantenga la restricción adjunta. Una expresión de contexto positiva tiene un número par de negaciones en la ruta desde el contexto raíz adjunto a la expresión.
 
-Negative:
-negative context is the context for any expression appearing as a sub expression :mzn:`e1` or :mzn:`e2` in an expression :mzn:`e1 \/ e2` or :mzn:`e1 /\ e2` occuring in a negative context, or appearing as a sub expression :mzn:`e` in an expression :mzn:`not e` appearing in a positive context.
+Negativo:
+El contexto negativo es el contexto para cualquier expresión que aparece como una subexpresión :mzn:`e1` o :mzn:`e2` en una expresión :mzn:`e1 \/ e2` o :mzn:`e1 /\ e2` que ocurre en un negativo contexto, o que aparece como una subexpresión :mzn:`e` en una expresión :mzn:`not e` que aparece en un contexto positivo.
 
-Negative context Boolean expressions need not hold in a model, but making them false will increase the possibility that the enclosing constraint holds. A negative context expression has an odd number of negations in the path from the enclosing root context to the expression.
+Un contexto negativo es el contexto para cualquier expresión que aparezca como una expresión secundaria: mzn: `e1` o: mzn:` e2` en una expresión: mzn: `e1 \ / e2` o: mzn:` e1 / \ e2` que aparece en un contexto negativo, o que aparece como una subexpresión: mzn: `e` en una expresión: mzn:` not e` que aparece en un contexto positivo.
 
-Mixed:
-mixed context is the context for any Boolean expression appearing as a subexpression :mzn:`e1` or :mzn:`e2` in :mzn:`e1 <-> e2`, :mzn:`e1 = e2`, or :mzn:`bool2int(e)`.
+Las expresiones booleanas de contexto negativo no necesitan mantenerse en un modelo, pero al hacerlas falsas aumentará la posibilidad de que se mantenga la restricción de inclusión. Una expresión de contexto negativa tiene un número impar de negaciones en la ruta desde el contexto raíz adjunto a la expresión.
 
-Mixed context expression are effectively both positive and negative. This can be seen from the fact that :mzn:`e1 <-> e2` is equivalent to :mzn:`(e1 /\ e2) \/ (not e1 /\ not e2)` and :mzn:`x = bool2int(e)` is equivalent to :mzn:`(e /\ x=1) \/ (not e /\ x=0)`.
+Mixto:
+Un contexto mixto es el contexto para cualquier expresión booleana que aparece como una subexpresión  :mzn:`e1` o :mzn:`e2` en :mzn:`e1 <-> e2`, :mzn:`e1 = e2`, o :mzn:`bool2int(e)`.
 
-Consider the code fragment
+La expresión de contexto mixto es tanto positiva como negativa. Esto se puede ver por el hecho de que :mzn:`e1 <-> e2` es equivalente a :mzn:`(e1 /\ e2) \/ (not e1 /\ not e2)` y :mzn:`x = bool2int(e)` es equivalente a :mzn:`(e /\ x=1) \/ (not e /\ x=0)`.
+
+Considera el fragmento de código
 
 .. code-block:: minizinc
 
   constraint x > 0 /\ (i <= 4 -> x + bool2int(x > i) = 5);
 
-Then :mzn:`x > 0` is in the root context, :mzn:`i <= 4}` is in a negative context, :mzn:`x + bool2int(x > i) = 5` is in a positive context, and :mzn:`x > i` is in a mixed context.
+
+Entonces :mzn:`x > 0` está en el contexto raíz, :mzn:`i <= 4}` está en un contexto negativo, :mzn:`x + bool2int(x > i) = 5` está en una posición positiva contexto, y :mzn:`x > i` está en un contexto mixto.
 
 
-
-Local Constraints
------------------
+Restricciones locales
+---------------------
 
 .. index::
   single: constraint; local
 
 Let expressions can also be used to include local constraints, usually to constrain the behaviour of local variables.
 For example, consider defining a square root function making use of only multiplication:
+
+Las expresiones ``let`` también se pueden usar para incluir restricciones locales, generalmente para restringir el comportamiento de las variables locales.
+Por ejemplo, considere la definición de una función de raíz cuadrada haciendo uso de solo la multiplicación:
 
 .. code-block:: minizinc
 
@@ -558,9 +566,9 @@ For example, consider defining a square root function making use of only multipl
                  constraint y >= 0;
                  constraint x = y * y; } in y;
 
-The local constraints ensure :mzn:`y` takes the correct value; which is then returned by the function.
+Las restricciones locales aseguran que :mzn:`y` toma el valor correcto; que luego es devuelto por la función.
 
-Local constraints can be used in any let expression, though the most common usage is in defining functions.
+Las restricciones locales se pueden usar en cualquier expresión de let, aunque el uso más común es en la definición de funciones.
 
 
 .. defblock:: Let expressions
@@ -569,30 +577,33 @@ Local constraints can be used in any let expression, though the most common usag
     single: expression; let
 
   :index:`Local variables <variable;local>`
-  can be introduced in any expression with a *let expression*
-  of the form:
+
+Se puede introducir en cualquier expresión con *let expression* de la forma:
 
   .. code-block:: minizincdef
 
     let { <dec>; ... <dec> ; } in <exp>
 
-The declarations :mzndef:`<dec>` can be declarations of decision variables and parameters (which must be initialised) or constraint items.
-No declaration can make use of a newly declared variable before it is introduced.
+Las declaraciones :mzndef:`<dec>` pueden ser declaraciones de variables y parámetros de decisión (que deben inicializarse) o elementos de restricción.
+Ninguna declaración puede hacer uso de una variable recientemente declarada antes de ser presentada.
 
-Note that local variables and constraints cannot occur in tests.
-Local variables cannot occur in predicates or functions that appear in a :index:`negative <context; negative>` or :index:`mixed <context; mixed>` context, unless the variable is defined by an expression.
+Tenga en cuenta que las variables locales y las restricciones no pueden ocurrir en las pruebas.
+Las variables locales no pueden ocurrir en predicados o funciones que aparecen en un :index:`negative <context; negative>` o en un contexto :index:`mixed <context; mixed>`, a menos que la variable esté definida por una expresión.
 
 
-Domain Reflection Functions
----------------------------
+Funciones de reflexión del dominio
+----------------------------------
 
 .. index::
   single: domain; reflection
 
-Other important reflection functions are those that allow us to access the domains of variables. The expression :mzn:`lb(x)` returns a value that is lower than or equal to any value that :mzn:`x` may take in  a solution of the problem. Usually it will just be the declared lower :index:`bound <variable; bound>` of :mzn:`x`.
-If :mzn:`x` is declared as a non-finite type, e.g. simply :mzn:`var int` then it is an error.
+Otras funciones de reflexión importantes son aquellas que nos permiten acceder a los dominios de las variables. La expresión :mzn:`lb(x)` devuelve un valor que es menor o igual a cualquier valor :mzn `x` que pueda tomar en una solución del problema. Por lo general, será el más bajo declarado :index:`bound <variable; bound>` de :mzn:`x`
+
+Si :mzn:`x` se declara como un tipo no finito, por ejemplo, :mzn:`var int`, entonces es un error.
+
 Similarly the expression :mzn:`dom(x)` returns a (non-strict) superset of the possible values of :mzn:`x` in any solution of the problem.
-Again it is usually the declared values, and again if it is not declared as finite then there is an error.
+
+De nuevo, generalmente son los valores declarados, y de nuevo si no se declara como finito, entonces hay un error.
 
 .. \ignore{ % for capture for testing!
 .. $ mzn-g12fd reflection_es.mzn
@@ -602,9 +613,10 @@ Again it is usually the declared values, and again if it is not declared as fini
 .. literalinclude:: examples/reflection_es.mzn
   :language: minizinc
   :name: ex-reflect
-  :caption: Using reflection predicates (:download:`reflection_es.mzn <examples/reflection_es.mzn>`).
+  :caption: Usar predicados de reflexión (:download:`reflection_es.mzn <examples/reflection_es.mzn>`).
 
-For example, the model show in :numref:`ex-reflect` may output
+
+Por ejemplo, el modelo descrito en :numref:`ex-reflect` puede mostrar:
 
 ::
 
@@ -612,7 +624,7 @@ For example, the model show in :numref:`ex-reflect` may output
   D = -10..10
   ----------
 
-or
+O
 
 ::
 
@@ -620,19 +632,20 @@ or
   D = {0, 1, 2, 3, 4}
   ----------
 
-or any answer with :math:`-10 \leq y \leq 0` and :math:`\{0, \ldots, 4\} \subseteq D \subseteq \{-10, \ldots, 10\}`.
+O cualquier respuesta con :math:`-10 \leq y \leq 0` y :math:`\{0, \ldots, 4\} \subseteq D \subseteq \{-10, \ldots, 10\}`.
 
-Variable domain reflection expressions should be used in a manner where they are correct for any safe approximations, but note this is not checked!
+Las expresiones de reflexión de dominio variable deben usarse de manera tal que sean correctas para cualquier aproximación segura, ¡pero tenga en cuenta que esto no está verificado!
 
-For example the additional code
+
+Por ejemplo, el código adicional
 
 .. code-block:: minizinc
 
   var -10..10: z;
   constraint z <= y;
 
-is not a safe usage of the domain information.
-Since using the tighter (correct) approximation leads to more solutions than the weaker initial approximation.
+No es un uso seguro de la información de dominio.
+Dado que el uso de la aproximación más ajustada (correcta) conduce a más soluciones que la aproximación inicial más débil.
 
 .. TODO: this sounds wrong!
 
@@ -641,56 +654,53 @@ Since using the tighter (correct) approximation leads to more solutions than the
   .. index::
     single: domain; reflection
 
-  There are reflection functions to interrogate the possible values of expressions containing variables:
+Hay funciones de reflexión para interrogar los posibles valores de las expresiones que contienen variables:
 
-  - :mzndef:`dom(<exp>)`
-    returns a safe approximation to the possible values of the expression.
-  - :mzndef:`lb(<exp>)`
-    returns a safe approximation to the lower bound value of the expression.
-  - :mzndef:`ub(<exp>)`
-    returns a safe approximation to the upper bound value of the expression.
+  - :mzndef:`dom(<exp>)` devuelve una aproximación segura a los posibles valores de la expresión.
+  - :mzndef:`lb(<exp>)` devuelve una aproximación segura al valor límite inferior de la expresión.
+  - :mzndef:`ub(<exp>)` devuelve una aproximación segura al valor límite superior de la expresión.
 
-  The expressions for :mzn:`lb` and :mzn:`ub` can only be of types :mzn:`int`, :mzn:`bool`, :mzn:`float` or :mzn:`set of int`.
-  For :mzn:`dom` the type cannot be :mzn:`float`.
-  If one of the variables appearing in :mzndef:`<exp>` has a :index:`non-finite declared type <type; non-finite>` (e.g. :mzn:`var int` or :mzn:`var float`) then an error can occur.
+The expressions for :mzn:`lb` and :mzn:`ub` can only be of types :mzn:`int`, :mzn:`bool`, :mzn:`float` or :mzn:`set of int`.
+For :mzn:`dom` the type cannot be :mzn:`float`.
+If one of the variables appearing in :mzndef:`<exp>` has a :index:`non-finite declared type <type; non-finite>` (e.g. :mzn:`var int` or :mzn:`var float`) then an error can occur.
 
-  There are also versions that work directly on arrays of expressions (with similar restrictions):
+También hay versiones que funcionan directamente en matrices de expresiones (con restricciones similares):
 
-  - :mzndef:`dom_array(<array-exp>)`: returns a safe approximation to the union of all possible values of the expressions appearing in the array.
-  - :mzndef:`lb_array(<array-exp>)`: returns a safe approximation to the lower bound of all expressions appearing in the array.
-  - :mzndef:`ub_array(<array-exp>)`: returns a safe approximation to the upper bound of all expressions appearing in the array.
+  - :mzndef:`dom_array(<array-exp>)`: Devuelve una aproximación segura a la unión de todos los valores posibles de las expresiones que aparecen en la matriz.
+  - :mzndef:`lb_array(<array-exp>)`: Devuelve una aproximación segura al límite inferior de todas las expresiones que aparecen en la matriz.
+  - :mzndef:`ub_array(<array-exp>)`: Devuelve una aproximación segura al límite superior de todas las expresiones que aparecen en la matriz.
 
-The combinations of predicates, local variables and domain reflection allows the definition of complex global constraints by decomposition.
-We can define the time based decomposition of the :mzn:`cumulative` constraint using the code shown in :numref:`ex-cumul`.
+Las combinaciones de predicados, variables locales y reflexión de dominio permiten la definición de restricciones globales complejas por descomposición.
+Podemos definir la descomposición basada en el tiempo de la restricción :mzn:`cumulative` utilizando el código que se muestra en :numref:`ex-cumul`.
 
 .. literalinclude:: examples/cumulative_es.mzn
   :language: minizinc
   :name: ex-cumul
   :caption: Defining a ``cumulative`` predicate by decomposition (:download:`cumulative_es.mzn <examples/cumulative_es.mzn>`).
 
-The decomposition uses :mzn:`lb` and :mzn:`ub` to determine the set of times :mzn:`times` over which tasks could range.
-It then asserts for each time :mzn:`t` in :mzn:`times` that the sum of resources for the active tasks at time :mzn:`t` is less than the bound :mzn:`b`.
+La descomposición usa :mzn:`lb` y :mzn:`ub` para determinar el conjunto de veces :mzn:`times` sobre las cuales las tareas podrían estar en rango.
+A continuación, afirma para cada momento :mzn:`t` en :mzn:`times` que la suma de recursos para las tareas activas en el momento :mzn:`t` es menor que la límite :mzn:`b`.
 
-Scope
------
+Alcance
+-------
 
 .. index::
   single: scope
 
-It is worth briefly mentioning the scope of declarations in MiniZinc.
-MiniZinc has a single namespace, so all variables appearing in declarations are visible in every expression in the model.
-MiniZinc introduces locally scoped variables in a number of ways:
+Vale la pena mencionar brevemente el alcance de las declaraciones en MiniZinc.
+MiniZinc tiene un único espacio de nombre, por lo que todas las variables que aparecen en las declaraciones son visibles en cada expresión del modelo.
 
-- as :index:`iterator <variable; iterator>`
-  variables in :index:`comprehension` expressions
-- using :mzn:`let` expressions
-- as predicate and function :index:`arguments <argument>`
+MiniZinc presenta variables con ámbito local de varias maneras:
 
-Any local scoped variable overshadows the outer scoped variables of the same name.
+- Como :index:`iterator <variable; iterator>` variables en expresiones :index:`comprehension`.
+- Usando las expresiones :mzn:`let`.
+- Como predicado y función :index:`arguments <argument>`
+
+Cualquier variable de ámbito local eclipsa las variables de ámbito externo del mismo nombre.
 
 .. literalinclude:: examples/scope_es.mzn
   :language: minizinc
   :name: ex-scope
-  :caption: A model for illustrating scopes of variables (:download:`scope_es.mzn <examples/scope_es.mzn>`).
+  :caption: Un modelo para ilustrar alcances de variables (:download:`scope_es.mzn <examples/scope_es.mzn>`).
 
-For example, in the model shown in :numref:`ex-scope` the :mzn:`x` in :mzn:`-x <= y` is the global :mzn:`x`, the :mzn:`x` in :mzn:`smallx(x)` is the iterator :mzn:`x in 1..u`, while the :mzn:`y` in the disjunction is the second argument of the predicate.
+Por ejemplo, en el modelo que se muestra en :numref:`ex-scope` the :mzn:`x` en :mzn:`-x <= y` es el global :mzn:`x`, el :mzn:`x` en :mzn:`smallx (x)` es el iterador :mzn:`x in 1..u`, mientras que :mzn:`y` en la disyunción es el segundo argumento del predicado.
