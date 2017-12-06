@@ -18,6 +18,7 @@
 
 #include <string>
 #include <sstream>
+#include <unordered_map>
 
 #include <minizinc/prettyprinter.hh>
 
@@ -177,22 +178,36 @@ namespace MiniZinc {
         enumItems->addItem(new VarDeclI(Location().introduce(),vd_enumToString));
       }
       
-      TypeInst* ti_aa = new TypeInst(Location().introduce(),Type::parint());
+      Type tx = Type::parint();
+      tx.ot(Type::OT_OPTIONAL);
+      TypeInst* ti_aa = new TypeInst(Location().introduce(),tx);
       VarDecl* vd_aa = new VarDecl(Location().introduce(),ti_aa,"x");
       vd_aa->toplevel(false);
       TypeInst* ti_ab = new TypeInst(Location().introduce(),Type::parbool());
       VarDecl* vd_ab = new VarDecl(Location().introduce(),ti_ab,"b");
       vd_ab->toplevel(false);
-      std::vector<Expression*> aa_args(1);
-      aa_args[0] = vd_aa->id();
-      ArrayAccess* aa = new ArrayAccess(Location().introduce(),vd_enumToString->id(),aa_args);
       TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
       std::vector<VarDecl*> fi_params(2);
       fi_params[0] = vd_aa;
       fi_params[1] = vd_ab;
+
+      std::vector<Expression*> deopt_args(1);
+      deopt_args[0] = vd_aa->id();
+      Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
+      Call* occurs = new Call(Location().introduce(), "occurs", deopt_args);
+      std::vector<Expression*> aa_args(1);
+      aa_args[0] = deopt;
+      ArrayAccess* aa = new ArrayAccess(Location().introduce(),vd_enumToString->id(),aa_args);
+
+      StringLit* sl_absent = new StringLit(Location().introduce(),"<>");
+      std::vector<Expression*> ite_ifelse(2);
+      ite_ifelse[0] = occurs;
+      ite_ifelse[1] = aa;
+      ITE* ite = new ITE(Location().introduce(),ite_ifelse,sl_absent);
+      
       FunctionI* fi = new FunctionI(Location().introduce(),
                                     createEnumToStringName(ident, "_toString_"),
-                                    ti_fi,fi_params,aa);
+                                    ti_fi,fi_params,ite);
       enumItems->addItem(fi);
     } else {
       if (vd_enumToString) {
@@ -201,7 +216,9 @@ namespace MiniZinc {
         vd_enumToString->e(new ArrayLit(Location().introduce(), std::vector<Expression*>()));
       }
       {
-        TypeInst* ti_aa = new TypeInst(Location().introduce(),Type::parint());
+        Type tx = Type::parint();
+        tx.ot(Type::OT_OPTIONAL);
+        TypeInst* ti_aa = new TypeInst(Location().introduce(),tx);
         VarDecl* vd_aa = new VarDecl(Location().introduce(),ti_aa,"x");
         vd_aa->toplevel(false);
         
@@ -209,23 +226,30 @@ namespace MiniZinc {
         VarDecl* vd_ab = new VarDecl(Location().introduce(),ti_ab,"b");
         vd_ab->toplevel(false);
 
+        std::vector<Expression*> deopt_args(1);
+        deopt_args[0] = vd_aa->id();
+        Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
+        Call* if_absent = new Call(Location().introduce(), "absent", deopt_args);
+        StringLit* sl_absent = new StringLit(Location().introduce(),"<>");
+
         StringLit* sl_dzn = new StringLit(Location().introduce(),
                                           ASTString("to_enum("+ident->str().str()+","));
         std::vector<Expression*> showIntArgs(1);
-        showIntArgs[0] = vd_aa->id();
-        Call* showInt_dzn = new Call(Location().introduce(), constants().ids.show, showIntArgs);
-        BinOp* construct_string_dzn = new BinOp(Location().introduce(), sl_dzn, BOT_PLUSPLUS, showInt_dzn);
+        showIntArgs[0] = deopt;
+        Call* showInt = new Call(Location().introduce(), constants().ids.show, showIntArgs);
+        BinOp* construct_string_dzn = new BinOp(Location().introduce(), sl_dzn, BOT_PLUSPLUS, showInt);
         StringLit* closing_bracket = new StringLit(Location().introduce(), ASTString(")"));
         BinOp* construct_string_dzn_2 = new BinOp(Location().introduce(), construct_string_dzn,
                                              BOT_PLUSPLUS, closing_bracket);
         
         StringLit* sl = new StringLit(Location().introduce(), ASTString(ident->str().str()+"_"));
-        Call* showInt = new Call(Location().introduce(), constants().ids.show, showIntArgs);
         BinOp* construct_string = new BinOp(Location().introduce(), sl, BOT_PLUSPLUS, showInt);
         
-        std::vector<Expression*> if_then(2);
-        if_then[0] = vd_ab->id();
-        if_then[1] = construct_string_dzn_2;
+        std::vector<Expression*> if_then(4);
+        if_then[0] = if_absent;
+        if_then[1] = sl_absent;
+        if_then[2] = vd_ab->id();
+        if_then[3] = construct_string_dzn_2;
         ITE* ite = new ITE(Location().introduce(), if_then, construct_string);
         
         
@@ -243,9 +267,9 @@ namespace MiniZinc {
     {
       /*
        
-       function _toString_ENUM(array[$U] of ENUM: x, bool: b) =
+       function _toString_ENUM(array[$U] of opt Foo: x, bool: b) =
          let {
-           array[int] of ENUM: xx = array1d(x)
+           array[int] of opt ENUM: xx = array1d(x)
          } in "[" ++ join(", ", [ _toString_ENUM(xx[i],b) | i in index_set(xx) ]) ++ "]";
        
        */
@@ -255,7 +279,9 @@ namespace MiniZinc {
       std::vector<TypeInst*> ranges(1);
       ranges[0] = ti_range;
 
-      TypeInst* x_ti = new TypeInst(Location().introduce(),Type::parint(-1),ranges,ident);
+      Type tx = Type::parint(-1);
+      tx.ot(Type::OT_OPTIONAL);
+      TypeInst* x_ti = new TypeInst(Location().introduce(),tx,ranges,ident);
       VarDecl* vd_x = new VarDecl(Location().introduce(),x_ti,"x");
       vd_x->toplevel(false);
 
@@ -266,7 +292,7 @@ namespace MiniZinc {
       TypeInst* xx_range = new TypeInst(Location().introduce(),Type::parint(),NULL);
       std::vector<TypeInst*> xx_ranges(1);
       xx_ranges[0] = xx_range;
-      TypeInst* xx_ti = new TypeInst(Location().introduce(),Type::parint(1),xx_ranges);
+      TypeInst* xx_ti = new TypeInst(Location().introduce(),tx,xx_ranges,ident);
       
       std::vector<Expression*> array1dArgs(1);
       array1dArgs[0] = vd_x->id();
@@ -295,7 +321,7 @@ namespace MiniZinc {
       Call* index_set_xx = new Call(Location().introduce(),"index_set",index_set_xx_args);
       std::vector<VarDecl*> gen_exps(1);
       gen_exps[0] = idx_i;
-      Generator gen(gen_exps,index_set_xx);
+      Generator gen(gen_exps,index_set_xx,NULL);
       
       Generators generators;
       generators._g.push_back(gen);
@@ -328,12 +354,13 @@ namespace MiniZinc {
     {
       /*
        
-       function _toString_ENUM(set of ENUM: x, bool: b) =
-         "{" ++ join(", ", [ _toString_ENUM(i,b) | i in x ]) ++ "}";
+       function _toString_ENUM(opt set of ENUM: x, bool: b) =
+         if absent(x) then <> else "{" ++ join(", ", [ _toString_ENUM(i,b) | i in x ]) ++ "}" endif;
        
        */
       
       Type argType = Type::parsetenum(ident->type().enumId());
+      argType.ot(Type::OT_OPTIONAL);
       TypeInst* x_ti = new TypeInst(Location().introduce(),argType,ident);
       VarDecl* vd_x = new VarDecl(Location().introduce(),x_ti,"x");
       vd_x->toplevel(false);
@@ -353,9 +380,16 @@ namespace MiniZinc {
                                       createEnumToStringName(ident, "_toString_"),
                                       _toString_ENUMArgs);
       
+      
+      std::vector<Expression*> deopt_args(1);
+      deopt_args[0] = vd_x->id();
+      Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
+      Call* if_absent = new Call(Location().introduce(), "absent", deopt_args);
+      StringLit* sl_absent = new StringLit(Location().introduce(),"<>");
+
       std::vector<VarDecl*> gen_exps(1);
       gen_exps[0] = idx_i;
-      Generator gen(gen_exps,vd_x->id());
+      Generator gen(gen_exps,deopt,NULL);
       
       Generators generators;
       generators._g.push_back(gen);
@@ -371,13 +405,106 @@ namespace MiniZinc {
       StringLit* sl_close = new StringLit(Location().introduce(),"}");
       BinOp* bopp1 = new BinOp(Location().introduce(),bopp0,BOT_PLUSPLUS,sl_close);
       
+      
+      std::vector<Expression*> if_then(2);
+      if_then[0] = if_absent;
+      if_then[1] = sl_absent;
+      ITE* ite = new ITE(Location().introduce(), if_then, bopp1);
+      
       TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
       std::vector<VarDecl*> fi_params(2);
       fi_params[0] = vd_x;
       fi_params[1] = vd_b;
       FunctionI* fi = new FunctionI(Location().introduce(),
                                     createEnumToStringName(ident, "_toString_"),
-                                    ti_fi,fi_params,bopp1);
+                                    ti_fi,fi_params,ite);
+      enumItems->addItem(fi);
+    }
+
+    {
+      /*
+       
+       function _toString_ENUM(array[$U] of opt set of ENUM: x, bool: b) =
+       let {
+       array[int] of opt set of ENUM: xx = array1d(x)
+       } in "[" ++ join(", ", [ _toString_ENUM(xx[i],b) | i in index_set(xx) ]) ++ "]";
+       
+       */
+      
+      TIId* tiid = new TIId(Location().introduce(),"U");
+      TypeInst* ti_range = new TypeInst(Location().introduce(),Type::parint(),tiid);
+      std::vector<TypeInst*> ranges(1);
+      ranges[0] = ti_range;
+      
+      Type tx = Type::parsetint(-1);
+      tx.ot(Type::OT_OPTIONAL);
+      TypeInst* x_ti = new TypeInst(Location().introduce(),tx,ranges,ident);
+      VarDecl* vd_x = new VarDecl(Location().introduce(),x_ti,"x");
+      vd_x->toplevel(false);
+      
+      TypeInst* b_ti = new TypeInst(Location().introduce(),Type::parbool());
+      VarDecl* vd_b = new VarDecl(Location().introduce(),b_ti,"b");
+      vd_b->toplevel(false);
+      
+      TypeInst* xx_range = new TypeInst(Location().introduce(),Type::parint(),NULL);
+      std::vector<TypeInst*> xx_ranges(1);
+      xx_ranges[0] = xx_range;
+      TypeInst* xx_ti = new TypeInst(Location().introduce(),tx,xx_ranges,ident);
+      
+      std::vector<Expression*> array1dArgs(1);
+      array1dArgs[0] = vd_x->id();
+      Call* array1dCall = new Call(Location().introduce(),"array1d",array1dArgs);
+      
+      VarDecl* vd_xx = new VarDecl(Location().introduce(),xx_ti,"xx",array1dCall);
+      vd_xx->toplevel(false);
+      
+      TypeInst* idx_i_ti = new TypeInst(Location().introduce(),Type::parint());
+      VarDecl* idx_i = new VarDecl(Location().introduce(),idx_i_ti,"i");
+      idx_i->toplevel(false);
+      
+      std::vector<Expression*> aa_xxi_idx(1);
+      aa_xxi_idx[0] = idx_i->id();
+      ArrayAccess* aa_xxi = new ArrayAccess(Location().introduce(),vd_xx->id(),aa_xxi_idx);
+      
+      std::vector<Expression*> _toString_ENUMArgs(2);
+      _toString_ENUMArgs[0] = aa_xxi;
+      _toString_ENUMArgs[1] = vd_b->id();
+      Call* _toString_ENUM = new Call(Location().introduce(),
+                                      createEnumToStringName(ident, "_toString_"),
+                                      _toString_ENUMArgs);
+      
+      std::vector<Expression*> index_set_xx_args(1);
+      index_set_xx_args[0] = vd_xx->id();
+      Call* index_set_xx = new Call(Location().introduce(),"index_set",index_set_xx_args);
+      std::vector<VarDecl*> gen_exps(1);
+      gen_exps[0] = idx_i;
+      Generator gen(gen_exps,index_set_xx,NULL);
+      
+      Generators generators;
+      generators._g.push_back(gen);
+      Comprehension* comp = new Comprehension(Location().introduce(),_toString_ENUM,generators,false);
+      
+      std::vector<Expression*> join_args(2);
+      join_args[0] = new StringLit(Location().introduce(),", ");
+      join_args[1] = comp;
+      Call* join = new Call(Location().introduce(),"join",join_args);
+      
+      StringLit* sl_open = new StringLit(Location().introduce(),"[");
+      BinOp* bopp0 = new BinOp(Location().introduce(),sl_open,BOT_PLUSPLUS,join);
+      StringLit* sl_close = new StringLit(Location().introduce(),"]");
+      BinOp* bopp1 = new BinOp(Location().introduce(),bopp0,BOT_PLUSPLUS,sl_close);
+      
+      std::vector<Expression*> let_args(1);
+      let_args[0] = vd_xx;
+      Let* let = new Let(Location().introduce(),let_args,bopp1);
+      
+      TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
+      std::vector<VarDecl*> fi_params(2);
+      fi_params[0] = vd_x;
+      fi_params[1] = vd_b;
+      FunctionI* fi = new FunctionI(Location().introduce(),
+                                    createEnumToStringName(ident, "_toString_"),
+                                    ti_fi,fi_params,let);
       enumItems->addItem(fi);
     }
     
@@ -503,9 +630,9 @@ namespace MiniZinc {
             run(env, ce->decl(i,j));
             scopes.add(env, ce->decl(i,j));
           }
+          if (ce->where(i))
+            run(env, ce->where(i));
         }
-        if (ce->where())
-          run(env, ce->where());
         run(env, ce->e());
         scopes.pop();
       }
@@ -680,6 +807,9 @@ namespace MiniZinc {
       if (e->type().isvar()) {
         throw TypeError(env, e->loc(),"cannot coerce var set into array");
       }
+      if (e->type().isopt()) {
+        throw TypeError(env, e->loc(),"cannot coerce opt set into array");
+      }
       std::vector<Expression*> set2a_args(1);
       set2a_args[0] = e;
       Call* set2a = new Call(e->loc(), ASTString("set2array"), set2a_args);
@@ -753,6 +883,8 @@ namespace MiniZinc {
           throw TypeError(_env,sl.v()[i]->loc(),"set literals cannot contain arrays");
         if (sl.v()[i]->type().isvar())
           ty.ti(Type::TI_VAR);
+        if (sl.v()[i]->type().isopt())
+          throw TypeError(_env,sl.v()[i]->loc(),"set literals cannot contain option type values");
         if (sl.v()[i]->type().cv())
           ty.cv(true);
         if (enumId != sl.v()[i]->type().enumId())
@@ -818,7 +950,7 @@ namespace MiniZinc {
         if (ty.bt()==Type::BT_UNKNOWN) {
           if (av == NULL) {
             if (haveInferredType) {
-              if (ty.st() != vi->type().st()) {
+              if (ty.st() != vi->type().st() && vi->type().ot()!=Type::OT_OPTIONAL) {
                 throw TypeError(_env,al.loc(),"non-uniform array literal");
               }
             } else {
@@ -833,7 +965,7 @@ namespace MiniZinc {
         } else {
           if (av == NULL) {
             if (vi->type().bt() == Type::BT_BOT) {
-              if (vi->type().st() != ty.st()) {
+              if (vi->type().st() != ty.st() && vi->type().ot()!=Type::OT_OPTIONAL) {
                 throw TypeError(_env,al.loc(),"non-uniform array literal");
               }
               if (vi->type().enumId() != 0 && ty.enumId() != vi->type().enumId()) {
@@ -970,7 +1102,17 @@ namespace MiniZinc {
     /// Visit array comprehension
     void vComprehension(Comprehension& c) {
       Type tt = c.e()->type();
+      typedef std::unordered_map<VarDecl*, int> genMap_t;
+      typedef std::unordered_map<VarDecl*, std::vector<Expression*> > whereMap_t;
+      genMap_t generatorMap;
+      whereMap_t whereMap;
+      int declCount = 0;
+      bool didMoveWheres = false;
       for (int i=0; i<c.n_generators(); i++) {
+        for (int j=0; j<c.n_decls(i); j++) {
+          generatorMap[c.decl(i,j)] = declCount++;
+          whereMap[c.decl(i,j)] = std::vector<Expression*>();
+        }
         Expression* g_in = c.in(i);
         const Type& ty_in = g_in->type();
         if (ty_in == Type::varsetint()) {
@@ -979,19 +1121,91 @@ namespace MiniZinc {
         }
         if (ty_in.cv())
           tt.cv(true);
-      }
-      if (c.where()) {
-        if (c.where()->type() == Type::varbool()) {
-          tt.ot(Type::OT_OPTIONAL);
-          tt.ti(Type::TI_VAR);
-        } else if (c.where()->type() != Type::parbool()) {
-          throw TypeError(_env,c.where()->loc(),
-                          "where clause must be bool, but is `"+
-                          c.where()->type().toString(_env)+"'");
+        if (c.where(i)) {
+          if (c.where(i)->type() == Type::varbool()) {
+            tt.ot(Type::OT_OPTIONAL);
+            tt.ti(Type::TI_VAR);
+          } else if (c.where(i)->type() != Type::parbool()) {
+            throw TypeError(_env,c.where(i)->loc(),
+                            "where clause must be bool, but is `"+
+                            c.where(i)->type().toString(_env)+"'");
+          }
+          if (c.where(i)->type().cv())
+            tt.cv(true);
+          
+          // Try to move parts of the where clause to earlier generators
+          std::vector<Expression*> wherePartsStack;
+          std::vector<Expression*> whereParts;
+          wherePartsStack.push_back(c.where(i));
+          while (!wherePartsStack.empty()) {
+            Expression* e = wherePartsStack.back();
+            wherePartsStack.pop_back();
+            if (BinOp* bo = e->dyn_cast<BinOp>()) {
+              if (bo->op()==BOT_AND) {
+                wherePartsStack.push_back(bo->rhs());
+                wherePartsStack.push_back(bo->lhs());
+              } else {
+                whereParts.push_back(e);
+              }
+            } else {
+              whereParts.push_back(e);
+            }
+          }
+          
+          for (unsigned int wpi=0; wpi < whereParts.size(); wpi++) {
+            Expression* wp = whereParts[wpi];
+            class FindLatestGen : public EVisitor {
+            public:
+              int gen;
+              VarDecl* decl;
+              const genMap_t& generatorMap;
+              FindLatestGen(const genMap_t& generatorMap0) : gen(-1), decl(NULL), generatorMap(generatorMap0) {}
+              void vId(const Id& ident) {
+                genMap_t::const_iterator it = generatorMap.find(ident.decl());
+                if (it != generatorMap.end() && it->second > gen) {
+                  gen = it->second;
+                  decl = ident.decl();
+                }
+              }
+            } flg(generatorMap);
+            topDown(flg, wp);
+            whereMap[flg.decl].push_back(wp);
+            
+            if (flg.gen < declCount-1)
+              didMoveWheres = true;
+            
+          }
         }
-        if (c.where()->type().cv())
-          tt.cv(true);
       }
+      
+      if (didMoveWheres) {
+        Generators generators;
+        for (int i=0; i<c.n_generators(); i++) {
+          std::vector<VarDecl*> decls;
+          for (int j=0; j<c.n_decls(i); j++) {
+            decls.push_back(c.decl(i,j));
+            if (whereMap[c.decl(i,j)].size() != 0) {
+              // need a generator for all the decls up to this point
+              Expression* whereExpr = whereMap[c.decl(i,j)][0];
+              for (unsigned int k=1; k<whereMap[c.decl(i,j)].size(); k++) {
+                GCLock lock;
+                BinOp* bo = new BinOp(Location().introduce(), whereExpr, BOT_AND, whereMap[c.decl(i,j)][k]);
+                Type bo_t = whereMap[c.decl(i,j)][k]->type().ispar() && whereExpr->type().ispar() ? Type::parbool() : Type::varbool();
+                bo->type(bo_t);
+                whereExpr = bo;
+              }
+              generators._g.push_back(Generator(decls,c.in(i),whereExpr));
+              decls.clear();
+            } else if (j==c.n_decls(i)-1) {
+              generators._g.push_back(Generator(decls,c.in(i),NULL));
+              decls.clear();
+            }
+          }
+        }
+        GCLock lock;
+        c.init(c.e(), generators);
+      }
+      
       if (c.set()) {
         if (c.e()->type().dim() != 0 || c.e()->type().st() == Type::ST_SET)
           throw TypeError(_env,c.e()->loc(),
@@ -1050,6 +1264,12 @@ namespace MiniZinc {
     }
     /// Visit if-then-else
     void vITE(ITE& ite) {
+      bool mustBeBool = false;
+      if (ite.e_else()==NULL) {
+        // this is an "if <cond> then <expr> endif" so the <expr> must be bool
+        ite.e_else(constants().boollit(true));
+        mustBeBool = true;
+      }
       Type tret = ite.e_else()->type();
       std::vector<AnonVar*> anons;
       bool allpar = !(tret.isvar());
@@ -1058,7 +1278,7 @@ namespace MiniZinc {
           allpar = false;
           anons.push_back(av);
         } else {
-          throw TypeError(_env,ite.e_else()->loc(), "cannot infer type of expression in else branch of conditional");
+          throw TypeError(_env,ite.e_else()->loc(), "cannot infer type of expression in `else' branch of conditional");
         }
       }
       bool allpresent = !(tret.isopt());
@@ -1078,17 +1298,22 @@ namespace MiniZinc {
             allpar = false;
             anons.push_back(av);
           } else {
-            throw TypeError(_env,ethen->loc(), "cannot infer type of expression in then branch of conditional");
+            throw TypeError(_env,ethen->loc(), "cannot infer type of expression in `then' branch of conditional");
           }
         } else {
           if (tret.isbot() || tret.isunknown())
             tret.bt(ethen->type().bt());
+          if (mustBeBool && (ethen->type().bt() != Type::BT_BOOL ||  ethen->type().dim() > 0 ||
+                             ethen->type().st() != Type::ST_PLAIN || ethen->type().ot() != Type::OT_PRESENT)) {
+            throw TypeError(_env,ite.loc(), std::string("conditional without `else' branch must have bool type, ")+
+                            "but `then' branch has type `"+ethen->type().toString(_env)+"'");
+          }
           if ( (!ethen->type().isbot() && !Type::bt_subtype(ethen->type(), tret, true) && !Type::bt_subtype(tret, ethen->type(), true)) ||
               ethen->type().st() != tret.st() ||
               ethen->type().dim() != tret.dim()) {
             throw TypeError(_env,ethen->loc(),
-                            "type mismatch in branches of conditional. Then-branch has type `"+
-                            ethen->type().toString(_env)+"', but else branch has type `"+
+                            "type mismatch in branches of conditional. `then' branch has type `"+
+                            ethen->type().toString(_env)+"', but `else' branch has type `"+
                             tret.toString(_env)+"'");
           }
           if (Type::bt_subtype(tret, ethen->type(), true)) {
@@ -1167,8 +1392,23 @@ namespace MiniZinc {
       if (FunctionI* fi = _model->matchFn(_env,call.id(),args,true)) {
         bool cv = false;
         for (unsigned int i=0; i<args.size(); i++) {
-          args[i] = addCoercion(_env, _model,call.args()[i],fi->argtype(_env,args,i))();
-          call.args()[i] = args[i];
+
+          if(Comprehension* c = call.args()[i]->dyn_cast<Comprehension>()) {
+            Type t_before = c->e()->type();
+            Type t = fi->argtype(_env,args,i);
+            t.dim(0);
+            c->e(addCoercion(_env, _model, c->e(), t)());
+            Type t_after = c->e()->type();
+            if (t_before != t_after) {
+              Type ct = c->type();
+              ct.bt(t_after.bt());
+              c->type(ct);
+            }
+          } else {
+            args[i] = addCoercion(_env, _model,call.args()[i],fi->argtype(_env,args,i))();
+            call.args()[i] = args[i];
+          }
+
           cv = cv || args[i]->type().cv();
         }
         Type ty = fi->rtype(_env,args,true);

@@ -57,6 +57,7 @@ class MIP_cplex_wrapper : public MIP_wrapper {
     virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int *rmatind, double* rmatval,
                         LinConType sense, double rhs,
                         std::string rowName = "");
+    virtual bool addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals );
     /// adding an implication
 //     virtual void addImpl() = 0;
     virtual void setObjSense(int s);   // +/-1 for max/min

@@ -52,8 +52,6 @@ predicate int_le_reif(var int: x, int: y, var bool: b) =
     if true==fix(b) then x<=y else x>y endif
   elseif ub(x)<=lb(y) then b==true
   elseif lb(x)>ub(y) then b==false
-  elseif false then                
-    true
   else
     if fPostprocessDomains then
       int_le_reif__POST(x, y, b)
@@ -71,7 +69,13 @@ predicate int_le_reif__NOPOST(var int: x, var int: y, var bool: b) =
 
 %% var, var
 predicate int_lt_reif(var int: x, var int: y, var bool: b) =
-    int_le_reif(x-y, -1, b);
+    %% int_le_reif(x-y, -1, b);   %% This would produce a new variable x-y and possibly POST it
+                                  %% but it looks like differences should not be
+    if is_fixed( x ) then
+      int_le_reif(x+1, y, b)
+    else
+      int_le_reif(x, y-1, b)
+    endif;
 
 %% var, var
 predicate int_ne(var int: x, var int: y) =
@@ -141,14 +145,16 @@ predicate int_eq_reif(var int: x, int: y, var bool: b) =
   if is_fixed(b) then
     if true==fix(b) then x==y else x!=y endif
   elseif y in dom(x) then
-    if fPostprocessDomains then
+    if is_fixed(x) then
+      b <-> y==fix(x)
+    elseif fPostprocessDomains then
       int_eq_reif__POST(x, y, b)
 %%%  THIS seems pretty complex, especially for binaries, and does not connect to eq_encoding (/ MIPD?)
 %%    elseif y==lb(x) then
 %%      int_lt_reif(y, x, not b)
 %%    elseif y==ub(x) then
 %%      int_lt_reif(x, y, not b)
-    elseif card(dom(x))<nMZN__UnaryLenMax_eq then                                 %% PARAM TODO. That low (10) is needed for l2p
+    elseif card(dom(x))<nMZN__UnaryLenMax_eq then
       let {
         array[int] of var int: p = eq_encode(x);
       } in

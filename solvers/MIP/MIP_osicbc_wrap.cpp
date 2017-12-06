@@ -420,10 +420,10 @@ MyEventHandler3::event(CbcEvent whichEvent)
       
       // Trying to obtain solution for the original model:
       assert( model_ && model_->solver() );
-      double objOffset=0;
-      model_->solver()->getDblParam(OsiObjOffset, objOffset);
-      double objVal = (model_->getObjValue() - objOffset);
-      double bestBnd = (model_->getBestPossibleObjValue() - objOffset);
+      // double objOffset=0;
+      // model_->solver()->getDblParam(OsiObjOffset, objOffset);
+      double objVal = (model_->getObjValue() );  //- objOffset);   John Forrest suggested to remove, 17.11.17
+      double bestBnd = (model_->getBestPossibleObjValue() );  //- objOffset);
       if ( 0!=cbcPreProcessPointer ) {
         if ( OsiSolverInterface* cbcPreOrig = cbcPreProcessPointer->originalModel() ) {
           objVal *= cbcPreOrig->getObjSense();

@@ -401,12 +401,12 @@ namespace MiniZinc {
             }
             os << " in ";
             p(c.in(i));
+            if (c.where(i) != NULL) {
+              os << " where ";
+              p(c.where(i));
+            }
             if (i < c.n_generators())
               os << ", ";
-          }
-          if (c.where() != NULL) {
-            os << " where ";
-            p(c.where());
           }
           os << (c.set() ? "}" : "]");
         }
@@ -1261,13 +1261,13 @@ namespace MiniZinc {
         gen->addDocumentToList(idents);
         gen->addStringToList(" in ");
         gen->addDocumentToList(expressionToDocument(c.in(i)));
+        if (c.where(i) != NULL) {
+          gen->addStringToList(" where ");
+          gen->addDocumentToList(expressionToDocument(c.where(i)));
+        }
         generators->addDocumentToList(gen);
       }
       head->addDocumentToList(generators);
-      if (c.where() != NULL) {
-        head->addStringToList("where");
-        head->addDocumentToList(expressionToDocument(c.where()));
-      }
       dl->addDocumentToList(head);
 
       return dl;
@@ -1473,15 +1473,15 @@ namespace MiniZinc {
               gen->addDocumentToList(idents);
               gen->addStringToList(" in ");
               gen->addDocumentToList(expressionToDocument(com->in(i)));
+              if (com->where(i) != NULL) {
+                gen->addStringToList(" where ");
+                gen->addDocumentToList(expressionToDocument(com->where(i)));
+              }
               generators->addDocumentToList(gen);
             }
 
             args->addStringToList("(");
             args->addDocumentToList(generators);
-            if (com->where() != NULL) {
-              args->addStringToList("where");
-              args->addDocumentToList(expressionToDocument(com->where()));
-            }
             args->addStringToList(")");
 
             args->addStringToList("(");

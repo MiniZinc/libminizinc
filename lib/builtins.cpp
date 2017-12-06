@@ -264,6 +264,42 @@ namespace MiniZinc {
       throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
     return eval_bool(env,e);
   }
+
+  FloatVal b_deopt_float(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    GCLock lock;
+    Expression* e = eval_par(env,args[0]);
+    if (e==constants().absent)
+      throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+    return eval_float(env,e);
+  }
+
+  IntSetVal* b_deopt_intset(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    GCLock lock;
+    Expression* e = eval_par(env,args[0]);
+    if (e==constants().absent)
+      throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+    return eval_intset(env,e);
+  }
+  
+  std::string b_deopt_string(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    GCLock lock;
+    Expression* e = eval_par(env,args[0]);
+    if (e==constants().absent)
+      throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+    return eval_string(env,e);
+  }
+  
+  Expression* b_deopt_expr(EnvI& env, Call* call) {
+    ASTExprVec<Expression> args = call->args();
+    GCLock lock;
+    Expression* e = eval_par(env,args[0]);
+    if (e==constants().absent)
+      throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+    return e;
+  };
   
   IntVal b_array_lb_int(EnvI& env, Call* call) {
     ASTExprVec<Expression> args = call->args();
@@ -2237,6 +2273,8 @@ namespace MiniZinc {
       std::vector<Type> t_arrayXd(1);
       t_arrayXd[0] = Type::top(-1);
       rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d_list);
+      t_arrayXd[0].ot(Type::OT_OPTIONAL);
+      rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d_list);
       t_arrayXd[0] = Type::vartop(-1);
       rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d_list);
       t_arrayXd[0] = Type::optvartop(-1);
@@ -2247,6 +2285,8 @@ namespace MiniZinc {
       t_arrayXd[0] = Type::parsetint();
       t_arrayXd[1] = Type::top(-1);
       rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d);
+      t_arrayXd[1].ot(Type::OT_OPTIONAL);
+      rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d);
       t_arrayXd[1] = Type::vartop(-1);
       rb(env, m, ASTString("array1d"), t_arrayXd, b_array1d);
       t_arrayXd[1] = Type::optvartop(-1);
@@ -2254,8 +2294,10 @@ namespace MiniZinc {
     }
     {
       std::vector<Type> t_arrayXd(2);
-      t_arrayXd[0] = Type::top(-1);
+      t_arrayXd[0] = Type::optvartop(-1);
       t_arrayXd[1] = Type::top(-1);
+      rb(env, m, ASTString("arrayXd"), t_arrayXd, b_arrayXd);
+      t_arrayXd[1].ot(Type::OT_OPTIONAL);
       rb(env, m, ASTString("arrayXd"), t_arrayXd, b_arrayXd);
       t_arrayXd[1] = Type::vartop(-1);
       rb(env, m, ASTString("arrayXd"), t_arrayXd, b_arrayXd);
@@ -2267,6 +2309,8 @@ namespace MiniZinc {
       t_arrayXd[0] = Type::parsetint();
       t_arrayXd[1] = Type::parsetint();
       t_arrayXd[2] = Type::top(-1);
+      rb(env, m, ASTString("array2d"), t_arrayXd, b_array2d);
+      t_arrayXd[2].ot(Type::OT_OPTIONAL);
       rb(env, m, ASTString("array2d"), t_arrayXd, b_array2d);
       t_arrayXd[2] = Type::vartop(-1);
       rb(env, m, ASTString("array2d"), t_arrayXd, b_array2d);
@@ -2280,6 +2324,8 @@ namespace MiniZinc {
       t_arrayXd[2] = Type::parsetint();
       t_arrayXd[3] = Type::top(-1);
       rb(env, m, ASTString("array3d"), t_arrayXd, b_array3d);
+      t_arrayXd[3].ot(Type::OT_OPTIONAL);
+      rb(env, m, ASTString("array3d"), t_arrayXd, b_array3d);
       t_arrayXd[3] = Type::vartop(-1);
       rb(env, m, ASTString("array3d"), t_arrayXd, b_array3d);
       t_arrayXd[3] = Type::optvartop(-1);
@@ -2292,6 +2338,8 @@ namespace MiniZinc {
       t_arrayXd[2] = Type::parsetint();
       t_arrayXd[3] = Type::parsetint();
       t_arrayXd[4] = Type::top(-1);
+      rb(env, m, ASTString("array4d"), t_arrayXd, b_array4d);
+      t_arrayXd[4].ot(Type::OT_OPTIONAL);
       rb(env, m, ASTString("array4d"), t_arrayXd, b_array4d);
       t_arrayXd[4] = Type::vartop(-1);
       rb(env, m, ASTString("array4d"), t_arrayXd, b_array4d);
@@ -2307,6 +2355,8 @@ namespace MiniZinc {
       t_arrayXd[4] = Type::parsetint();
       t_arrayXd[5] = Type::top(-1);
       rb(env, m, ASTString("array5d"), t_arrayXd, b_array5d);
+      t_arrayXd[5].ot(Type::OT_OPTIONAL);
+      rb(env, m, ASTString("array5d"), t_arrayXd, b_array5d);
       t_arrayXd[5] = Type::vartop(-1);
       rb(env, m, ASTString("array5d"), t_arrayXd, b_array5d);
       t_arrayXd[5] = Type::optvartop(-1);
@@ -2321,6 +2371,8 @@ namespace MiniZinc {
       t_arrayXd[4] = Type::parsetint();
       t_arrayXd[5] = Type::parsetint();
       t_arrayXd[6] = Type::top(-1);
+      rb(env, m, ASTString("array6d"), t_arrayXd, b_array6d);
+      t_arrayXd[6].ot(Type::OT_OPTIONAL);
       rb(env, m, ASTString("array6d"), t_arrayXd, b_array6d);
       t_arrayXd[6] = Type::vartop(-1);
       rb(env, m, ASTString("array6d"), t_arrayXd, b_array6d);
@@ -2678,11 +2730,20 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parint();
       t[0].ot(Type::OT_OPTIONAL);
+      t[0].bt(Type::BT_TOP);
       rb(env, m, ASTString("occurs"), t, b_occurs);
+      rb(env, m, ASTString("deopt"), t, b_deopt_expr);
+      t[0].bt(Type::BT_INT);
       rb(env, m, ASTString("deopt"), t, b_deopt_int);
       t[0].bt(Type::BT_BOOL);
-      rb(env, m, ASTString("occurs"), t, b_occurs);
       rb(env, m, ASTString("deopt"), t, b_deopt_bool);
+      t[0].bt(Type::BT_FLOAT);
+      rb(env, m, ASTString("deopt"), t, b_deopt_float);
+      t[0].bt(Type::BT_STRING);
+      rb(env, m, ASTString("deopt"), t, b_deopt_string);
+      t[0].bt(Type::BT_INT);
+      t[0].st(Type::ST_SET);
+      rb(env, m, ASTString("deopt"), t, b_deopt_intset);
     }
     {
       std::vector<Type> t(2);

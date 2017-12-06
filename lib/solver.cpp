@@ -93,6 +93,7 @@ MznSolver::~MznSolver()
   if (flt)
     cleanupGlobalFlattener(flt);
   flt=0;
+  GC::trigger();
 }
 
 bool MznSolver::ifMzn2Fzn() {

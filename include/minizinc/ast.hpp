@@ -431,6 +431,7 @@ namespace MiniZinc {
     for (unsigned int i=0; i<g._g.size(); i++) {
       idx.push_back(es.size());
       es.push_back(g._g[i]._in);
+      es.push_back(g._g[i]._where);
       for (unsigned int j=0; j<g._g[i]._v.size(); j++) {
         es.push_back(g._g[i]._v[j]);
       }
@@ -438,7 +439,6 @@ namespace MiniZinc {
     idx.push_back(es.size());
     _g = ASTExprVec<Expression>(es);
     _g_idx = ASTIntVec(idx);
-    _where = g._w;
     rehash();
   }
   inline

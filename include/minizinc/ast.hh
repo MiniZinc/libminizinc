@@ -173,6 +173,10 @@ namespace MiniZinc {
     
     /// Location used for un-allocated expressions
     static Location nonalloc;
+    
+    ParserLocation parserLocation(void) const {
+      return ParserLocation(filename(), first_line(), first_column(), last_line(), last_column());
+    }
   };
 
   /// Output operator for locations
@@ -806,29 +810,29 @@ namespace MiniZinc {
     std::vector<VarDecl*> _v;
     /// in-expression
     Expression* _in;
+    /// where-expression
+    Expression* _where;
   public:
     /// Allocate
     Generator(const std::vector<std::string>& v,
-              Expression* in);
+              Expression* in, Expression* where);
     /// Allocate
     Generator(const std::vector<ASTString>& v,
-              Expression* in);
+              Expression* in, Expression* where);
     /// Allocate
     Generator(const std::vector<Id*>& v,
-              Expression* in);
+              Expression* in, Expression* where);
     /// Allocate
     Generator(const std::vector<VarDecl*>& v,
-              Expression* in);
+              Expression* in, Expression* where);
     
   };
   /// \brief A list of generators with one where-expression
   struct Generators {
     /// %Generators
     std::vector<Generator> _g;
-    /// where-expression
-    Expression* _w;
     /// Constructor
-    Generators(void) : _w(NULL) {}
+    Generators(void) {}
   };
   /// \brief An expression representing an array- or set-comprehension
   class Comprehension : public Expression {
@@ -840,8 +844,6 @@ namespace MiniZinc {
     ASTExprVec<Expression> _g;
     /// A list of indices where generators start
     ASTIntVec _g_idx;
-    /// The where-clause (or NULL)
-    Expression* _where;
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_COMP;
@@ -865,8 +867,10 @@ namespace MiniZinc {
     VarDecl* decl(int gen, int i);
     /// Return declaration \a i for generator \a gen
     const VarDecl* decl(int gen, int i) const;
-    /// Return where clause
-    Expression* where(void) const { return _where; }
+    /// Return where clause for generator \a i
+    Expression* where(int i);
+    /// Return where clause for generator \a i
+    const Expression* where(int i) const;
     /// Return generator body
     Expression* e(void) const { return _e; }
     /// Set generator body

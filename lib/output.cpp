@@ -262,8 +262,8 @@ namespace MiniZinc {
           case Expression::E_COMP:
           {
             Comprehension* comp = e->template cast<Comprehension>();
-            stack.push_back(comp->where());
             for (unsigned int i=comp->n_generators(); i--; ) {
+              stack.push_back(comp->where(i));
               stack.push_back(comp->in(i));
               for (unsigned int j=comp->n_decls(i); j--; ) {
                 stack.push_back(comp->decl(i, j));

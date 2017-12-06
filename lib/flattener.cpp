@@ -57,6 +57,8 @@ void Flattener::printHelp(ostream& os)
   << "  - --input-from-stdin\n    Read problem from standard input" << std::endl
   << "  -I --search-dir\n    Additionally search for included files in <dir>." << std::endl
   << "  -D \"fMIPdomains=false\"\n    No domain unification for MIP" << std::endl
+  << "  --MIPDMaxIntvEE <n>\n    Max integer domain subinterval length to enforce equality encoding, default " << opt_MIPDmaxIntvEE << std::endl
+  << "  --MIPDMaxDensEE <n>\n    Max domain cardinality to N subintervals ratio\n    to enforce equality encoding, default " << opt_MIPDmaxDensEE << ", either condition triggers" << std::endl
   << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by inequalities" << std::endl
   << "  --allow-multiple-assignments\n    Allow multiple assignments to the same variable (e.g. in dzn)" << std::endl
   << std::endl;
@@ -144,6 +146,8 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     flag_only_range_domains = true;
   } else if ( cop.getOption( "--no-MIPdomains" ) ) {   // internal
     flag_noMIPdomains = true;
+  } else if ( cop.getOption( "--MIPDMaxIntvEE", &opt_MIPDmaxIntvEE ) ) {
+  } else if ( cop.getOption( "--MIPDMaxDensEE", &opt_MIPDmaxDensEE ) ) {
   } else if ( cop.getOption( "-Werror" ) ) {
     flag_werror = true;
   } else if ( cop.getOption( "--allow-multiple-assignments" ) ) {
@@ -195,6 +199,7 @@ Flattener::~Flattener()
     if(is_flatzinc) {
       pEnv->swap();
     }
+  delete pEnv->model();
 }
 
 
@@ -371,7 +376,7 @@ void Flattener::flatten()
               if ( ! flag_noMIPdomains ) {
                 if (flag_verbose)
                   std::cerr << "MIP domains ...";
-                MIPdomains(env, flag_statistics);
+                MIPdomains(env, flag_statistics, opt_MIPDmaxIntvEE, opt_MIPDmaxDensEE);
                 if (flag_verbose)
                   std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
               }

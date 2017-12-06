@@ -285,12 +285,12 @@ namespace MiniZinc {
           new Comprehension(copy_location(m,e),NULL,g,c->set());
         m.insert(c,cc);
 
-        g._w = copy(env,m,c->where(),followIds,copyFundecls,isFlatModel);
         for (int i=0; i<c->n_generators(); i++) {
           std::vector<VarDecl*> vv;
           for (int j=0; j<c->n_decls(i); j++)
             vv.push_back(static_cast<VarDecl*>(copy(env,m,c->decl(i,j),followIds,copyFundecls,isFlatModel)));
-          g._g.push_back(Generator(vv,copy(env,m,c->in(i),followIds,copyFundecls,isFlatModel)));
+          g._g.push_back(Generator(vv,copy(env,m,c->in(i),followIds,copyFundecls,isFlatModel),
+                                   copy(env,m,c->where(i),followIds,copyFundecls,isFlatModel)));
         }
         cc->init(copy(env,m,c->e(),followIds,copyFundecls,isFlatModel),g);
         ret = cc;
