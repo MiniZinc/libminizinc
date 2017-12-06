@@ -6,14 +6,11 @@ Option Types
 .. index::
   single: option types
 
-Option types are a powerful abstraction that allows for concise modelling. An
-option type decision variable represents a decision that has another
-possibility :math:`\top`, represented in MiniZinc as :mzn:`<>`
-indicating the variable is *absent*.
-Option type decisions are useful for modelling problems where a decision is
-not meaningful unless other decisions are made first.
+Tipo de opciones son una abstraccion poderosa que permite modelar de forma concisa. Un tipo de opcion de variable de decicion representa una decicion que tiene otra posibilidad :math:`\top`, representada en MiniZinc como :mzn:`<>` indicando que la variable es *absent*.
+Las deciciones de tipo de opcion son utiles para modelar problemas donde una decicion no es significativa a menos que otras deciciones sean hechas primero.
 
-Declaring and Using Option Types
+
+Declarando y Utilizando Tipos de Opciones
 --------------------------------
 
 .. defblock:: Option type Variables
@@ -21,97 +18,68 @@ Declaring and Using Option Types
   .. index::
     single: variable; option type
 
-  An option type variable is declared as:
+Una variable de tipo de opción se declara como:
 
   .. code-block:: minizincdef
 
     var opt <type> : <var-name:
 
-  where :mzndef:`<type>` is one of :mzn:`int`, :mzn:`float` or :mzn:`bool` or
-  a fixed range expression.
-  Option type variables can be parameters but this is rarely useful.
+Donde :mzndef:`<type>` es uno de :mzn:`int`, :mzn:`float` o :mzn:`bool` o una expresion de rango fijo.
 
-  An option type variable can take the additional value
-  :mzn:`<>`
-  indicating *absent*.
+Las variables de tipo de opción pueden ser parámetros, pero esto rara vez es útil.
+Una variable de tipo de opción puede tomar el valor adicional :mzn:`<>` indicando *absent*.
 
-  Three builtin functions are provided for option type variables:
-  :mzn:`absent(v)` returns :mzn:`true` iff option type variable :mzn:`v` takes the value
-  :mzn:`<>`,
-  :mzn:`occurs(v)` returns :mzn:`true` iff option type variable :mzn:`v` does *not* take the value
-  :mzn:`<>`,
-  and
-  :mzn:`deopt(v)` returns the normal value of :mzn:`v` or fails if it takes the
-  value :mzn:`<>`.
+Se proporcionan tres funciones integradas para las variables de tipo de opción: :mzn:`absent(v)` retorna :mzn:`true` si la opción de tipo variable : mzn:`v` toma el valor :mzn:`<>`, :mzn:`occurs(v)` retorna :mzn:`true` si la opción de tipo variable :mzn:`v` no *not* toma el valor :mzn:`<>`, y :mzn:`deopt(v)` devuelve el valor normal de :mzn:`v` o falla si toma el valor :mzn:`<>`.
 
-
-The most common use of option types is for optional tasks in scheduling.
-In the flexible job shop scheduling problem we have :mzn:`n` tasks to perform
-on :mzn:`k` machines, and the time to complete each task on each machine
-may be different. The aim is to minimize the completion time of all tasks.
-A model using option types to encode the problem is given in
-:numref:`ex-flexible-js`. We model the problem using :math:`n \times k` optional
-tasks representing the possibility of each task run on each machine.
-We require that start time of the task and its duration spans the optional
-tasks that make it up, and require only one actually runs using the
-:mzn:`alternative` global constraint.
-We require that at most one task runs on any machine using the
-:mzn:`disjunctive` global constraint extended to optional tasks.
-Finally we constrain that at most :mzn:`k` tasks run at any time, a redundant
-constraint that holds on the actual (not optional) tasks.
+El uso más común de tipo de opciones es para tareas opcionales en una planificación. En el problema de la planificación de trabajo flexible en una tienda, tenemos :mzn:`n` tarea que ejecutar en la máquina :mzn:`k` ,y el tiempo para completar cada tarea en cada maquina puede ser diferente. El objetivo es minimizar el tiempo requerido para completar todas las tareas. Un modelo usando tipo de opciones para codificar el problema es dado en :numref:`ex-flexible-js`. Nosotros modelamos el problema usando :math:`n \times k` las tareas opcionales aquí representan la posibilidad de que cada tarea sea llevada a cabo en cada maquina. Nosotros requerimos que el tiempo de partida de cada tarea y su duración abarque las tareas optativas que las constituye, y de hecho requerimos que solo una sea ejecutada usando :mzn:`alternative` restricción global. Requerimos que como máximo una tarea sea ejecutada en una maquina usando el :mzn:`disjunctive` restricción global extendida a tareas opcionales. Finalmente restringimos que como máximo :mzn:`k` tareas sean ejecutadas en cualquier momento, una restricción redundante que se mantiene en la tarea actual, no las opcionales.
 
 .. literalinclude:: examples/flexible-js_es.mzn
   :language: minizinc
   :name: ex-flexible-js
-  :caption: Model for flexible job shop scheduling using option types (:download:`flexible-js_es.mzn <examples/flexible-js_es.mzn>`).
+  :caption: Modelo para la programación de taller de trabajo flexible utilizando tipos de opciones (:download:`flexible-js_es.mzn <examples/flexible-js_es.mzn>`).
 
 .. \pjs{Finish the damn section!}
 
-Hidden Option Types
--------------------
 
-Option type variable arise implicitly when list comprehensions are
-constructed with iteration over variable sets, or where the expressions in
-:mzn:`where` clauses are not fixed.
 
-For example the model fragment
+Tipos de opciones ocultos
+-------------------------
+
+La variable de tipo de opción surge implícitamente cuando las comprensiones de lista se construyen con iteración sobre conjuntos de variables, o cuando las expresiones en las cláusulas :mzn:`where` no son fijas.
+
+Por ejemplo el fragmento modelo:
 
 .. code-block:: minizinc
 
   var set of 1..n: x;
   constraint sum(i in x)(i) <= limit;
 
-is syntactic sugar for
+Es una sintaxis para:
 
 .. code-block:: minizinc
 
   var set of 1..n: x;
   constraint sum(i in 1..n)(if i in x then i else <> endif) <= limit;
 
-The :mzn:`sum` builtin function actually operates on a list of
-type-inst :mzn:`var opt int`. Since the :mzn:`<>` acts as the identity
-0 for + this gives the expected results.
+La función :mzn:`sum` built-in realmente funciona en una lista de tipo-instanciación (type-inst) :mzn:`var opt int`. Dado que :mzn:`<>` actúa como la identidad 0 para +, esto da los resultados esperados.
 
-Similarly the model fragment
+Del mismo modo, el fragmento del modelo
 
 .. code-block:: minizinc
 
   array[1..n] of var int: x;
   constraint forall(i in 1..n where x[i] >= 0)(x[i] <= limit);
 
-is syntactic sugar for
+Es una sintaxis para:
 
 .. code-block:: minizinc
 
   array[1..n] of var int: x;
   constraint forall(i in 1..n)(if x[i] >= 0 then x[i] <= limit else <> endif);
 
-Again the :mzn:`forall` function actually operates on a list
-of type-inst :mzn:`var opt bool`. Since :mzn:`<>` acts
-as identity :mzn:`true` for :mzn:`/\ ` this gives the expected results.
+Nuevamente la función :mzn:`forall` en realidad opera en una lista de tipo-instanciación :mzn:`var opt bool`. Dado que :mzn:`<>` actúa como identidad :mzn:`true` para :mzn:`/\` esto da los resultados esperados.
 
-The hidden uses can lead to unexpected behaviour though so care is
-warranted. Consider
+Sin embargo, los usos ocultos pueden conducir a un comportamiento inesperado, por lo que se requiere cuidado. Considerar
 
 .. code-block:: minizinc
 
@@ -120,26 +88,23 @@ warranted. Consider
   constraint length([ i | i in x]) > 5;
   solve satisfy;
 
-which would appear to be unsatisfiable.  It returns :mzn:`x = {1,2,3,4}` as
-example answer. This is correct since the second constraint is equivalent to
+Que parece ser insatisfactorio. Esto retorna :mzn:`x = {1,2,3,4}` como ejemplo de respuesta. Esto es correcto ya que la segunda restricción es equivalente a:
 
 .. code-block:: minizinc
 
   constraint length([ if i in x then i else <> endif | i in 1..9 ]) > 5;
 
-and the length of the list of optional integers is always 9 so the
-constraint always holds!
+Y el largo de la lista de enteros opcionales es siempre 9 por lo tanto la restricción siempre se mantiene!
 
-One can avoid hidden option types by not constructing iteration over
-variables sets or using unfixed :mzn:`where` clauses.
-For example the above two examples could be rewritten without option types as
+Se pueden evitar los tipos de opciones ocultos al no construir iteraciones sobre conjuntos de variables o usar cláusulas no fijadas :mzn:`where`.
+Por ejemplo, los dos ejemplos anteriores podrían reescribirse sin tipos de opciones como:
 
 .. code-block:: minizinc
 
   var set of 1..n: x;
   constraint sum(i in 1..n)(bool2int(i in x)*i) <= limit;
 
-and
+Y
 
 .. code-block:: minizinc
 
