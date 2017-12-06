@@ -314,4 +314,16 @@ predicate array_set_element(var int: x, array[int] of set of int: y, var set of 
   );
 
 annotation set_search(array[int] of var set of int: x, ann: a1, ann: a2, ann: a3) =
-  bool_search(setarray2bools(x),a1,a2,a3);
+  seq_search( [ bool_search(set2bools(x[i]),a1,a2,a3) | i in index_set(x) ] );
+
+annotation warm_start( array[int] of var set of int: x, array[int] of set of int: v ) =
+   warm_start_array( [
+       let {
+         array[int] of var bool: xb = set2bools(x[i]),
+         set of int: is_var = ub(x[i]) diff lb(x[i]),
+         int: iV = i - min(index_set(x)) + if 0<length(v) then min(index_set(v)) else 0 endif,
+       } in
+       warm_start( [ xb[k] | k in is_var ],
+         if iV in index_set(v) then [ k in v[iV] | k in is_var ] else [] endif )
+   | i in index_set(x) ] );       %% ignoring v[i] diff ub(x[i]) and lb(x[i]) diff v[i]
+

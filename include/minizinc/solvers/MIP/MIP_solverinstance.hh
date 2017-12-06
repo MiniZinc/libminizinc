@@ -81,6 +81,7 @@ namespace MiniZinc {
 
       virtual Status next(void) { assert(0); return SolverInstance::UNKNOWN; }
       virtual void processFlatZinc(void);
+      virtual void processSearchAnnotations( const Annotation& ann );
       virtual Status solve(void);
       virtual void resetSolver(void) { }
       
@@ -92,10 +93,12 @@ namespace MiniZinc {
       virtual void printStatisticsLine(std::ostream& os, bool fLegend=0) { printStatistics(os, fLegend); }
 
     public:
+      /// creates a var for a literal, if necessary
       VarId exprToVar(Expression* e);
       void exprToArray(Expression* e, vector<double> &vals);
       void exprToVarArray(Expression* e, vector<VarId> &vars);
       double exprToConst(Expression* e);
+      std::pair<double, bool> exprToConstEasy(Expression* e);
 
       Expression* getSolutionValue(Id* id);
 

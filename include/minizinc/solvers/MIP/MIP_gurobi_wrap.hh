@@ -92,6 +92,9 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     int (__stdcall *dll_GRBsetintattrlist) (GRBmodel *model, const char *attrname,
                     int len, int *ind, int *newvalues);
 
+    int (__stdcall *dll_GRBsetdblattrlist) (GRBmodel *model, const char *attrname,
+                    int len, int *ind, double *newvalues);
+
     int (__stdcall *dll_GRBsetstrparam) (GRBenv *env, const char *paramname, const char *value);
 
     int (__stdcall *dll_GRBupdatemodel) (GRBmodel *model);
@@ -138,6 +141,7 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int *rmatind, double* rmatval,
                         LinConType sense, double rhs,
                         std::string rowName = "");
+    virtual bool addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals );
     int nRows=0;    // to count rows in order tp notice lazy constraints
     std::vector<int> nLazyIdx;
     std::vector<int> nLazyValue;

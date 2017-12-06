@@ -59,16 +59,28 @@ void MIP_solverinstance::exprToVarArray(Expression* arg, vector<VarId> &vars) {
     vars.push_back(exprToVar(al->v()[i]));
 }
 
-double MIP_solverinstance::exprToConst(Expression* e) {
+std::pair<double,bool> MIP_solverinstance::exprToConstEasy(Expression* e) {
+    std::pair<double, bool> res { 0.0, true };
     if (IntLit* il = e->dyn_cast<IntLit>()) {
-      return ( il->v().toInt() );
+      res.first = ( il->v().toInt() );
     } else if (FloatLit* fl = e->dyn_cast<FloatLit>()) {
-      return ( fl->v().toDouble() );
+      res.first = ( fl->v().toDouble() );
     } else if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
-      return ( bl->v() );
+      res.first = ( bl->v() );
     } else {
-      throw InternalError("Expected a numeric/bool literal");
+      res.second = false;
     }
+    return res;
+}
+
+double MIP_solverinstance::exprToConst(Expression* e) {
+    const auto e2ce = exprToConstEasy( e );
+    if ( !e2ce.second ) {
+      std::ostringstream oss;
+      oss << "ExprToConst: expected a numeric/bool literal, getting " << *e;
+      throw InternalError( oss.str() );
+    }
+    return e2ce.first;
 }
 
 void MIP_solverinstance::exprToArray(Expression* arg, vector<double> &vals) {
@@ -678,6 +690,8 @@ void MIP_solverinstance::processFlatZinc(void) {
     }
   }
 
+  processSearchAnnotations( solveItem->ann() );
+
   if (mip_wrap->fVerbose) {
     cerr << " done, " << mip_wrap->getNRows() << " rows && "
     << mip_wrap->getNCols() << " columns in total.";
@@ -706,6 +720,57 @@ Expression* MIP_solverinstance::getSolutionValue(Id* id) {
   } else {
     return id->decl()->e();
   }
+}
+
+void 
+MIP_solverinstance::processSearchAnnotations(const Annotation& ann) {
+    int nVal = 0;
+    for(ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
+        Expression* e = *i;
+        if ( e->isa<Call>() ) {
+            Call* c = e->cast<Call>();
+            if ( c->id().str() == "warm_start_array" ) {
+                ArrayLit* anns = c->args()[0]->cast<ArrayLit>();
+                for(unsigned int i=0; i<anns->v().size(); i++) {
+                    Annotation subann;
+                    subann.add(anns->v()[i]);
+                    processSearchAnnotations( subann );
+                }
+            } else
+            if ( c->id().str() == "warm_start" ) {
+                auto args = c->args();
+                MZN_ASSERT_HARD_MSG( args.size()>=2, "ERROR: warm_start needs 2 array args" );
+                vector<double> coefs;
+                vector<MIP_solverinstance::VarId> vars;
+
+    /// Process coefs & vars together to eliminate literals (problem with Gurobi's updatemodel()'s)
+                ArrayLit* alC = eval_array_lit(_env.envi(), args[1]);
+                MZN_ASSERT_HARD_MSG( 0!=alC, "ERROR: warm_start needs 2 array args" );
+                coefs.reserve(alC->v().size());
+                ArrayLit* alV = eval_array_lit(_env.envi(), args[0]);
+                MZN_ASSERT_HARD_MSG( 0!=alV, "ERROR: warm_start needs 2 array args" );
+                vars.reserve(alV->v().size());
+                for (unsigned int i=0; i<alV->v().size() && i<alC->v().size(); i++) {
+                  const auto e2c = exprToConstEasy( alC->v()[i] );
+                  /// Check if it is not an opt int etc. and a proper variable
+                  if (e2c.second) 
+                  if (Id* ident = alV->v()[i]->dyn_cast<Id>()) {
+                    coefs.push_back( e2c.first );
+                    vars.push_back( exprToVar( ident ) );
+                  } // else ignore
+                }
+                assert(coefs.size() == vars.size());
+                nVal += coefs.size();
+                if ( coefs.size() && !getMIPWrapper()->addWarmStart( vars, coefs ) ) {
+                  cerr << "\nWARNING: MIP backend seems to ignore warm starts" << endl;
+                  return;
+                }
+            }
+        }
+    }
+    if ( nVal && getMIPWrapper()->fVerbose ) {
+      cerr << "  MIP: added " << nVal << " MIPstart values..." << flush;
+    }
 }
 
 void MIP_solverinstance::genCuts(const MIP_wrapper::Output& slvOut,

@@ -192,6 +192,23 @@ annotation complete;
 
 
 /***
+ @groupdef annotations.warmstart Warm start annotations
+*/
+
+/** @group annotations.warmstart Specify warm start values for an array of booleans */
+annotation warm_start( array[int] of var bool: x, array[int] of bool: v );
+/** @group annotations.warmstart Specify warm start values for an array of integers */
+annotation warm_start( array[int] of var int: x, array[int] of int: v );
+/** @group annotations.warmstart Specify warm start values for an array of floats */
+annotation warm_start( array[int] of var float: x, array[int] of float: v );
+/** @group annotations.warmstart Specify warm start values for an array of sets */
+annotation warm_start( array[int] of var set of int: x, array[int] of set of int: v );
+
+/** @group annotations.warmstart Specify warm starts in an array \a w */
+annotation warm_start_array( array[int] of ann: w );
+
+
+/***
   @groupdef optiontypes Option type support
   
   These functions and predicates implement the standard library for working
