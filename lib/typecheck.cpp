@@ -676,8 +676,8 @@ namespace MiniZinc {
     case Expression::E_CALL:
       {
         Call* ce = e->cast<Call>();
-        for (unsigned int i=0; i<ce->args().size(); i++)
-          run(env, ce->args()[i]);
+        for (unsigned int i=0; i<ce->n_args(); i++)
+          run(env, ce->arg(i));
       }
       break;
     case Expression::E_VARDECL:
@@ -1387,13 +1387,14 @@ namespace MiniZinc {
     }
     /// Visit call
     void vCall(Call& call) {
-      std::vector<Expression*> args(call.args().size());
-      std::copy(call.args().begin(),call.args().end(),args.begin());
+      std::vector<Expression*> args(call.n_args());
+      for (unsigned int i=args.size(); i--;)
+        args[i] = call.arg(i);
       if (FunctionI* fi = _model->matchFn(_env,call.id(),args,true)) {
         bool cv = false;
         for (unsigned int i=0; i<args.size(); i++) {
 
-          if(Comprehension* c = call.args()[i]->dyn_cast<Comprehension>()) {
+          if(Comprehension* c = call.arg(i)->dyn_cast<Comprehension>()) {
             Type t_before = c->e()->type();
             Type t = fi->argtype(_env,args,i);
             t.dim(0);
@@ -1405,8 +1406,8 @@ namespace MiniZinc {
               c->type(ct);
             }
           } else {
-            args[i] = addCoercion(_env, _model,call.args()[i],fi->argtype(_env,args,i))();
-            call.args()[i] = args[i];
+            args[i] = addCoercion(_env, _model,call.arg(i),fi->argtype(_env,args,i))();
+            call.arg(i, args[i]);
           }
 
           cv = cv || args[i]->type().cv();
@@ -1419,9 +1420,9 @@ namespace MiniZinc {
         std::ostringstream oss;
         oss << "no function or predicate with this signature found: `";
         oss << call.id() << "(";
-        for (unsigned int i=0; i<call.args().size(); i++) {
-          oss << call.args()[i]->type().toString(_env);
-          if (i<call.args().size()-1) oss << ",";
+        for (unsigned int i=0; i<call.n_args(); i++) {
+          oss << call.arg(i)->type().toString(_env);
+          if (i<call.n_args()-1) oss << ",";
         }
         oss << ")'";
         throw TypeError(_env,call.loc(), oss.str());

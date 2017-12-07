@@ -132,7 +132,10 @@ namespace MiniZinc {
           break;
         case Expression::E_CALL:
           cur->cast<Call>()->id().mark();
-          pushall(cur->cast<Call>()->_args);
+          for (unsigned int i=cur->cast<Call>()->n_args(); i--;)
+            pushstack(cur->cast<Call>()->arg(i));
+          if (!cur->cast<Call>()->_u._oneArg->isUnboxedVal() && !cur->cast<Call>()->_u._oneArg->isTagged())
+            cur->cast<Call>()->_u._args->mark();
           if (FunctionI* fi = cur->cast<Call>()->_decl) {
             fi->mark();
             fi->id().mark();
@@ -724,9 +727,9 @@ namespace MiniZinc {
     HASH_NAMESPACE::hash<FunctionI*> hf;
     cmb_hash(hf(_decl));
     HASH_NAMESPACE::hash<unsigned int> hu;
-    cmb_hash(hu(_args.size()));
-    for (unsigned int i=_args.size(); i--;)
-      cmb_hash(Expression::hash(_args[i]));
+    cmb_hash(hu(n_args()));
+    for (unsigned int i=0; i<n_args(); i++)
+      cmb_hash(Expression::hash(arg(i)));
   }
 
   void
@@ -1190,9 +1193,9 @@ namespace MiniZinc {
         const Call* c1 = e1->cast<Call>();
         if (c0->id() != c1->id()) return false;
         if (c0->_decl != c1->_decl) return false;
-        if (c0->args().size() != c1->args().size()) return false;
-        for (unsigned int i=0; i<c0->args().size(); i++)
-          if (!Expression::equal ( c0->args()[i], c1->args()[i] ))
+        if (c0->n_args() != c1->n_args()) return false;
+        for (unsigned int i=0; i<c0->n_args(); i++)
+          if (!Expression::equal ( c0->arg(i), c1->arg(i) ))
             return false;
         return true;
       }

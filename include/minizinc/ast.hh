@@ -991,8 +991,12 @@ namespace MiniZinc {
   protected:
     /// Identifier of called predicate or function
     ASTString _id;
-    /// Arguments to the call
-    ASTExprVec<Expression> _args;
+    union {
+      /// Single-argument call (tagged pointer)
+      Expression* _oneArg;
+      /// Arguments to the call
+      ASTExprVecO<Expression*>* _args;
+    } _u;
     /// The predicate or function declaration (or NULL)
     FunctionI* _decl;
   public:
@@ -1012,10 +1016,35 @@ namespace MiniZinc {
     ASTString id(void) const { return _id; }
     /// Set identifier
     void id(const ASTString& i) { _id = i; }
-    /// Access arguments
-    ASTExprVec<Expression> args(void) const { return _args; }
+    /// Number of arguments
+    unsigned int n_args(void) const { return _u._oneArg->isUnboxedVal() || _u._oneArg->isTagged() ? 1 : _u._args->size(); }
+    /// Access argument \a i
+    Expression* arg(int i) const {
+      if (_u._oneArg->isUnboxedVal() || _u._oneArg->isTagged()) {
+        assert(i==0);
+        return _u._oneArg->isUnboxedVal() ? _u._oneArg : _u._oneArg->untag();
+      } else {
+        return (*_u._args)[i];
+      }
+    }
+    /// Set argument \a i
+    void arg(int i, Expression* e) {
+      if (_u._oneArg->isUnboxedVal() || _u._oneArg->isTagged()) {
+        assert(i==0);
+        _u._oneArg = e->isUnboxedVal() ? e : e->tag();
+      } else {
+        (*_u._args)[i] = e;
+      }
+    }
     /// Set arguments
-    void args(const ASTExprVec<Expression>& a) { _args = a; }
+    void args(const ASTExprVec<Expression>& a) {
+      if (a.size()==1) {
+        _u._oneArg = a[0]->isUnboxedVal() ? a[0] : a[0]->tag();
+      } else {
+        _u._args = a.vec();
+        assert(!_u._oneArg->isTagged());
+      }
+    }
     /// Access declaration
     FunctionI* decl(void) const { return _decl; }
     /// Set declaration

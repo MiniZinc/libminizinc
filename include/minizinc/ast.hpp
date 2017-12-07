@@ -486,7 +486,11 @@ namespace MiniZinc {
              FunctionI* decl)
   : Expression(loc, E_CALL,Type()) {
     _id = ASTString(id);
-    _args = ASTExprVec<Expression>(args);
+    if (args.size()==1) {
+      _u._oneArg = args[0]->isUnboxedVal() ? args[0] : args[0]->tag();
+    } else {
+      _u._args = ASTExprVec<Expression>(args).vec();
+    }
     _decl = decl;
     rehash();
   }
@@ -498,7 +502,11 @@ namespace MiniZinc {
              FunctionI* decl)
   : Expression(loc, E_CALL,Type()) {
     _id = id;
-    _args = ASTExprVec<Expression>(args);
+    if (args.size()==1) {
+      _u._oneArg = args[0]->isUnboxedVal() ? args[0] : args[0]->tag();
+    } else {
+      _u._args = ASTExprVec<Expression>(args).vec();
+    }
     _decl = decl;
     rehash();
   }

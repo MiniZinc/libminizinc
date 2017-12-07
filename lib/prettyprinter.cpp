@@ -557,9 +557,9 @@ namespace MiniZinc {
         {
           const Call& c = *e->cast<Call>();
           os << c.id() << "(";
-          for (unsigned int i = 0; i < c.args().size(); i++) {
-            p(c.args()[i]);
-            if (i < c.args().size()-1)
+          for (unsigned int i = 0; i < c.n_args(); i++) {
+            p(c.arg(i));
+            if (i < c.n_args()-1)
               os << ",";
           }
           os << ")";
@@ -1445,7 +1445,7 @@ namespace MiniZinc {
       return dl;
     }
     ret mapCall(const Call& c) {
-      if (c.args().size() == 1) {
+      if (c.n_args() == 1) {
         /*
          * if we have only one argument, and this is an array comprehension,
          * we convert it into the following syntax
@@ -1454,7 +1454,7 @@ namespace MiniZinc {
          * forall (i in 1..10) (f(i,j))
          */
 
-        const Expression* e = c.args()[0];
+        const Expression* e = c.arg(0);
         if (e->isa<Comprehension>()) {
           const Comprehension* com = e->cast<Comprehension>();
           if (!com->set()) {
@@ -1499,8 +1499,8 @@ namespace MiniZinc {
       }
       std::string beg = c.id().str() + "(";
       DocumentList* dl = new DocumentList(beg, ", ", ")");
-      for (unsigned int i = 0; i < c.args().size(); i++) {
-        dl->addDocumentToList(expressionToDocument(c.args()[i]));
+      for (unsigned int i = 0; i < c.n_args(); i++) {
+        dl->addDocumentToList(expressionToDocument(c.arg(i)));
       }
       return dl;
 

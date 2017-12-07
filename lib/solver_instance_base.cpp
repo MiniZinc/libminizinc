@@ -133,7 +133,7 @@ namespace MiniZinc {
           }
           GCLock lock;
           ArrayLit* dims;
-          Expression* e = output_array_ann->args()[0];
+          Expression* e = output_array_ann->arg(0);
           if(ArrayLit* al = e->dyn_cast<ArrayLit>()) {
             dims = al;
           } else if(Id* id = e->dyn_cast<Id>()) {
@@ -171,7 +171,7 @@ namespace MiniZinc {
         Expression* e = *i;
         if(e->isa<Call>() && e->cast<Call>()->id().str() == "seq_search") {
             Call* c = e->cast<Call>();
-            ArrayLit* anns = c->args()[0]->cast<ArrayLit>();
+            ArrayLit* anns = c->arg(0)->cast<ArrayLit>();
             for(unsigned int i=0; i<anns->size(); i++) {
                 Annotation subann;
                 subann.add((*anns)[i]);

@@ -337,7 +337,7 @@ namespace MiniZinc {
     std::vector<Expression*> previousParameters(ce->decl()->params().size());
     std::vector<Expression*> params(ce->decl()->params().size());
     for (unsigned int i=0; i<ce->decl()->params().size(); i++) {
-      params[i] = eval_par(env, ce->args()[i]);
+      params[i] = eval_par(env, ce->arg(i));
     }
     for (unsigned int i=ce->decl()->params().size(); i--;) {
       VarDecl* vd = ce->decl()->params()[i];
@@ -1645,16 +1645,16 @@ namespace MiniZinc {
                 return eval_par(env,c->decl()->_builtins.e(env,c));
               } else {
                 if (c->decl()->e()==NULL) {
-                  if (c->id()=="deopt" && Expression::equal(c->args()[0],constants().absent))
+                  if (c->id()=="deopt" && Expression::equal(c->arg(0),constants().absent))
                     throw ResultUndefinedError(env, e->loc(), "deopt(<>) is undefined");
                   return c;
                 }
                 return eval_call<EvalPar>(env,c);
               }
             } else {
-              std::vector<Expression*> args(c->args().size());
+              std::vector<Expression*> args(c->n_args());
               for (unsigned int i=0; i<args.size(); i++) {
-                args[i] = eval_par(env,c->args()[i]);
+                args[i] = eval_par(env,c->arg(i));
               }
               Call* nc = new Call(c->loc(),c->id(),args,c->decl());
               nc->type(c->type());
@@ -1954,18 +1954,18 @@ namespace MiniZinc {
     void vCall(Call& c) {
       if (c.id() == constants().ids.lin_exp || c.id() == constants().ids.sum) {
         bool le = c.id() == constants().ids.lin_exp;
-        ArrayLit* coeff = le ? eval_array_lit(env,c.args()[0]): NULL;
-        if (c.args()[le ? 1 : 0]->type().isopt()) {
+        ArrayLit* coeff = le ? eval_array_lit(env,c.arg(0)): NULL;
+        if (c.arg(le ? 1 : 0)->type().isopt()) {
           valid = false;
           _bounds.push_back(Bounds(0,0));
           return;
         }
-        ArrayLit* al = eval_array_lit(env,c.args()[le ? 1 : 0]);
+        ArrayLit* al = eval_array_lit(env,c.arg(le ? 1 : 0));
         if (le) {
           _bounds.pop_back(); // remove constant (third arg) from stack
         }
           
-        IntVal d = le ? c.args()[2]->cast<IntLit>()->v() : 0;
+        IntVal d = le ? c.arg(2)->cast<IntLit>()->v() : 0;
         int stacktop = _bounds.size();
         for (unsigned int i=al->size(); i--;) {
           BottomUpIterator<ComputeIntBounds> cbi(*this);
@@ -2016,7 +2016,7 @@ namespace MiniZinc {
         }
         _bounds.push_back(Bounds(lb,ub));
       } else if (c.id() == "card") {
-        if (IntSetVal* isv = compute_intset_bounds(env,c.args()[0])) {
+        if (IntSetVal* isv = compute_intset_bounds(env,c.arg(0))) {
           IntSetRanges isr(isv);
           _bounds.push_back(Bounds(0,Ranges::cardinality(isr)));
         } else {
@@ -2287,17 +2287,17 @@ namespace MiniZinc {
     void vCall(Call& c) {
       if (c.id() == constants().ids.lin_exp || c.id() == constants().ids.sum) {
         bool le = c.id() == constants().ids.lin_exp;
-        ArrayLit* coeff = le ? eval_array_lit(env,c.args()[0]): NULL;
+        ArrayLit* coeff = le ? eval_array_lit(env,c.arg(0)): NULL;
         if (le) {
           _bounds.pop_back(); // remove constant (third arg) from stack
         }
-        if (c.args()[le ? 1 : 0]->type().isopt()) {
+        if (c.arg(le ? 1 : 0)->type().isopt()) {
           valid = false;
           _bounds.push_back(FBounds(0.0,0.0));
           return;
         }
-        ArrayLit* al = eval_array_lit(env,c.args()[le ? 1 : 0]);
-        FloatVal d = le ? c.args()[2]->cast<FloatLit>()->v() : 0.0;
+        ArrayLit* al = eval_array_lit(env,c.arg(le ? 1 : 0));
+        FloatVal d = le ? c.arg(2)->cast<FloatLit>()->v() : 0.0;
         int stacktop = _bounds.size();
         for (unsigned int i=al->size(); i--;) {
           BottomUpIterator<ComputeFloatBounds> cbi(*this);
@@ -2347,8 +2347,8 @@ namespace MiniZinc {
         _bounds.push_back(FBounds(lb,ub));
       } else if (c.id() == "float_times") {
         BottomUpIterator<ComputeFloatBounds> cbi(*this);
-        cbi.run(c.args()[0]);
-        cbi.run(c.args()[1]);
+        cbi.run(c.arg(0));
+        cbi.run(c.arg(1));
         FBounds b1 = _bounds.back(); _bounds.pop_back();
         FBounds b0 = _bounds.back(); _bounds.pop_back();
         if (!b1.first.isFinite() || !b1.second.isFinite() || !b0.first.isFinite() || !b0.second.isFinite()) {
@@ -2366,7 +2366,7 @@ namespace MiniZinc {
       } else if (c.id() == "int2float") {
         ComputeIntBounds ib(env);
         BottomUpIterator<ComputeIntBounds> cbi(ib);
-        cbi.run(c.args()[0]);
+        cbi.run(c.arg(0));
         if (!ib.valid)
           valid = false;
         ComputeIntBounds::Bounds result = ib._bounds.back();
@@ -2378,7 +2378,7 @@ namespace MiniZinc {
         }
       } else if (c.id() == "abs") {
         BottomUpIterator<ComputeFloatBounds> cbi(*this);
-        cbi.run(c.args()[0]);
+        cbi.run(c.arg(0));
         FBounds b0 = _bounds.back();
         if (b0.first < 0) {
           _bounds.pop_back();

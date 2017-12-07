@@ -41,9 +41,9 @@ namespace MiniZinc {
       void vUnOp(const UnOp&) {}
       /// Visit call
       void vCall(Call& c) {
-        std::vector<Type> tv(c.args().size());
-        for (unsigned int i=c.args().size(); i--;) {
-          tv[i] = c.args()[i]->type();
+        std::vector<Type> tv(c.n_args());
+        for (unsigned int i=c.n_args(); i--;) {
+          tv[i] = c.arg(i)->type();
           tv[i].ti(Type::TI_PAR);
         }
         FunctionI* decl = env.output->matchFn(env,c.id(), tv, false);
@@ -112,9 +112,9 @@ namespace MiniZinc {
         _id.decl(_id.decl()->flat());
       }
       void vCall(Call& c) {
-        std::vector<Type> tv(c.args().size());
-        for (unsigned int i=c.args().size(); i--;) {
-          tv[i] = c.args()[i]->type();
+        std::vector<Type> tv(c.n_args());
+        for (unsigned int i=c.n_args(); i--;) {
+          tv[i] = c.arg(i)->type();
           tv[i].ti(Type::TI_PAR);
         }
         FunctionI* decl = c.decl();
@@ -174,8 +174,8 @@ namespace MiniZinc {
       Decls(EnvI& env0) : env(env0) {}
       void vCall(Call& c) {
         if (c.id()=="format" || c.id()=="show" || c.id()=="showDzn") {
-          int enumId = c.args()[c.args().size()-1]->type().enumId();
-          if (enumId != 0 && c.args()[c.args().size()-1]->type().dim() != 0) {
+          int enumId = c.arg(c.n_args()-1)->type().enumId();
+          if (enumId != 0 && c.arg(c.n_args()-1)->type().dim() != 0) {
             const std::vector<unsigned int>& enumIds = env.getArrayEnum(enumId);
             enumId = enumIds[enumIds.size()-1];
           }
@@ -183,7 +183,7 @@ namespace MiniZinc {
             Id* ti_id = env.getEnum(enumId)->e()->id();
             GCLock lock;
             std::vector<Expression*> args(2);
-            args[0] = c.args()[c.args().size()-1];
+            args[0] = c.arg(c.n_args()-1);
             if (args[0]->type().dim() > 1) {
               std::vector<Expression*> a1dargs(1);
               a1dargs[0] = args[0];
@@ -290,7 +290,8 @@ namespace MiniZinc {
             stack.push_back(e->template cast<UnOp>()->e());
             break;
           case Expression::E_CALL:
-            pushVec(stack, e->template cast<Call>()->args());
+            for (unsigned int i=0; i<e->template cast<Call>()->n_args(); i++)
+              stack.push_back(e->template cast<Call>()->arg(i));
             break;
           case Expression::E_VARDECL:
             stack.push_back(e->template cast<VarDecl>()->e());
@@ -348,9 +349,9 @@ namespace MiniZinc {
           if ( (it = env.reverseMappers.find(nvi->e()->id())) != env.reverseMappers.end()) {
             Call* rhs = copy(env,env.cmap,it->second())->cast<Call>();
             {
-              std::vector<Type> tv(rhs->args().size());
-              for (unsigned int i=rhs->args().size(); i--;) {
-                tv[i] = rhs->args()[i]->type();
+              std::vector<Type> tv(rhs->n_args());
+              for (unsigned int i=rhs->n_args(); i--;) {
+                tv[i] = rhs->arg(i)->type();
                 tv[i].ti(Type::TI_PAR);
               }
               FunctionI* decl = env.output->matchFn(env, rhs->id(), tv, false);
@@ -654,9 +655,9 @@ namespace MiniZinc {
         return true;
       }
       void vCall(Call& c) {
-        std::vector<Type> tv(c.args().size());
-        for (unsigned int i=c.args().size(); i--;) {
-          tv[i] = c.args()[i]->type();
+        std::vector<Type> tv(c.n_args());
+        for (unsigned int i=c.n_args(); i--;) {
+          tv[i] = c.arg(i)->type();
           tv[i].ti(Type::TI_PAR);
         }
         FunctionI* decl = env.output->matchFn(env, c.id(), tv, false);
@@ -734,9 +735,9 @@ namespace MiniZinc {
                 // output model to map the FlatZinc value back to the model variable.
                 Call* rhs = copy(env,env.cmap,it->second())->cast<Call>();
                 {
-                  std::vector<Type> tv(rhs->args().size());
-                  for (unsigned int i=rhs->args().size(); i--;) {
-                    tv[i] = rhs->args()[i]->type();
+                  std::vector<Type> tv(rhs->n_args());
+                  for (unsigned int i=rhs->n_args(); i--;) {
+                    tv[i] = rhs->arg(i)->type();
                     tv[i].ti(Type::TI_PAR);
                   }
                   FunctionI* decl = env.output->matchFn(env, rhs->id(), tv, false);
@@ -854,9 +855,9 @@ namespace MiniZinc {
                 vd->e(flate);
               } else if ( (it = e.reverseMappers.find(vd->id())) != e.reverseMappers.end()) {
                 Call* rhs = copy(e,e.cmap,it->second())->cast<Call>();
-                std::vector<Type> tv(rhs->args().size());
-                for (unsigned int i=rhs->args().size(); i--;) {
-                  tv[i] = rhs->args()[i]->type();
+                std::vector<Type> tv(rhs->n_args());
+                for (unsigned int i=rhs->n_args(); i--;) {
+                  tv[i] = rhs->arg(i)->type();
                   tv[i].ti(Type::TI_PAR);
                 }
                 FunctionI* decl = e.output->matchFn(e, rhs->id(), tv, false);

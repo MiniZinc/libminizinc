@@ -225,7 +225,8 @@ namespace MiniZinc {
             stack.push_back(C(ce->template cast<UnOp>()->e()));
             break;
           case Expression::E_CALL:
-            pushVec(stack, ce->template cast<Call>()->args());
+            for (unsigned int i=0; i<ce->template cast<Call>()->n_args(); i++)
+              stack.push_back(ce->template cast<Call>()->arg(i));
             break;
           case Expression::E_VARDECL:
             stack.push_back(C(ce->template cast<VarDecl>()->e()));
@@ -332,7 +333,8 @@ namespace MiniZinc {
         break;
         case Expression::E_CALL:
         _t.vCall(*e->template cast<Call>());
-        pushVec(stack, e->template cast<Call>()->args());
+        for (unsigned int i=0; i<e->template cast<Call>()->n_args(); i++)
+          stack.push_back(e->template cast<Call>()->arg(i));
         break;
         case Expression::E_VARDECL:
         _t.vVarDecl(*e->template cast<VarDecl>());
