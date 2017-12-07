@@ -438,7 +438,7 @@ Tenga en cuenta también que utilizamos una versión ternaria :mzn:`assert` aqu�
 
 
 Variables Locales
----------------
+-----------------
 
 .. index::
   single: variable; local

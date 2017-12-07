@@ -1,7 +1,7 @@
 .. _sec-optiontypes:
 
-Option Types
-============
+Tipos de Opciones
+=================
 
 .. index::
   single: option types

@@ -1,142 +1,92 @@
 .. _sec-search:
 
-Search
-======
+Búsqueda
+========
 
 .. index::
   single: annotation
 
-By default in MiniZinc there is no declaration of how
-we want to search for solutions. This leaves the search
-completely up to the underlying solver.
-But sometimes, particularly for combinatorial integer problems,
-we may want to specify how the search should be undertaken.
-This requires us to communicate to the solver a :index:`search` strategy.
-Note that the search strategy is *not* really part
-of the model.
-Indeed it is not required that each solver implements all
-possible search strategies.
-MiniZinc uses a consistent approach to communicating extra information
-to the constraint solver using *annotations*.
+Por defecto en MiniZinc no hay una declaración de cómo queremos buscar soluciones. Esto deja la búsqueda completamente al solucionador subyacente. Pero a veces, en particular para los problemas de entero combinatorio, es posible que deseemos especificar cómo debe realizarse la búsqueda. Esto requiere que nos comuniquemos con el solucionador a una estrategía :index:`search` strategy. Tenga en cuenta que la estrategia de búsqueda *no* es realmente parte del modelo. De hecho, no se requiere que cada solucionador implemente todas las posibles estrategias de búsqueda. MiniZinc usa un enfoque consistente para comunicar información adicional al solucionador de restricciones usando *anotaciones*.
 
-Finite Domain Search
---------------------
+Búsqueda de dominio finito
+--------------------------
 
 .. index::
   single: search; finite domain
 
-Search in a finite domain solver involves examining the
-remaining possible values of variables and choosing to
-constrain some variables further.
-The search then adds a new constraint that
-restricts the remaining values
-of the variable
-(in effect guessing where the solution might lie),
-and then applies propagation to determine what other values
-are still possible in solutions.
-In order to guarantee completeness, the search leaves another
-choice which is the negation of the new constraint.
-The search ends either when
-the finite domain solver detects that all constraints are satisfied,
-and hence a solution has been found, or that the constraints are
-unsatisfiable.
-When unsatisfiability is detected
-the search must proceed down a different set of
-choices.  Typically finite domain solvers use :index:`depth first search <search; depth first>`
-where they undo the last choice made and then try to make a new choice.
+La búsqueda en un solucionador de dominio finito implica examinar los restantes valores posibles de las variables y elegir restringir aún más algunas variables. La búsqueda agrega una nueva restricción que restringe los valores restantes de la variable (en efecto, adivinar dónde podría estar la solución), y luego aplica la propagación para determinar qué otros valores todavía son posibles en las soluciones. Para garantizar la integridad, la búsqueda deja otra opción que es la negación de la nueva restricción. La búsqueda finaliza cuando el solucionador de dominio finito detecta que se cumplen todas las restricciones y, por lo tanto, se ha encontrado una solución o que las restricciones no son satisfactorias. Cuando se detecta insatisfacción, la búsqueda debe continuar por un conjunto diferente de opciones. Normalmente, los solucionadores de dominio finito usan :index:`depth first search <search; depth first>` donde deshacer la última elección realizada y luego intentar hacer una nueva elección.
 
 .. literalinclude:: examples/nqueens_es.mzn
   :language: minizinc
   :name: ex-queens
-  :caption: Model for n-queens (:download:`nqueens_es.mzn <examples/nqueens_es.mzn>`).
+  :caption: Modelo para n-reinas (:download:`nqueens_es.mzn <examples/nqueens_es.mzn>`).
 
-A simple example of a finite domain problem is the :math:`n` queens
-problem which requires that we
-place :math:`n` queens on an :math:`n \times n` chessboard so that none can
-attack another.
-The variable :mzn:`q[i]` records in which row the queen in column :mzn:`i`
-is placed. The :mzn:`alldifferent` constraints ensure
-that no two queens are on the same row, or diagonal.
-A typical (partial) search tree
-for :mzn:`n = 9` is illustrated in :numref:`fig-9q-a`.
-We first set :mzn:`q[1] = 1`, this removes values from the domains of other
-variables, so that e.g. :mzn:`q[2]` cannot take the values 1 or 2.
-We then set :mzn:`q[2] = 3`, this further removes values from the domains
-of other variables. We set :mzn:`q[3] = 5` (its earliest possible value).
-The state of the chess board after these three decisions is shown in
-:numref:`fig-9q-b` where the queens indicate the position
-of the queens fixed already and
-the stars indicate positions where we cannot place a queen
-since it would be able to take an already placed queen.
+
+
+
+Un ejemplo simple de un problema de dominio finito es el problema matemático :math:`n` reinas, que requiere que pongamos :math:`n` reinas en un tablero de ajedrez :math:`n \times n` para que ninguno pueda atacar a otro.
+
+La variable :mzn:`q[i]` registra en qué fila se coloca la reina en la columna :mzn:`i`. Las restricciones :mzn:`alldifferent` aseguran que no haya dos reinas en la misma fila o diagonal.
+
+Un árbol de búsqueda típico (parcial) para :mzn:`n = 9` se ilustra en :numref:` fig-9q-a`.
+
+Primero establecemos :mzn:`q[1] = 1`, esto elimina los valores de los dominios de otras variables. De modo que, por ejemplo :mzn:`q[2]` no puede tomar los valores 1 o 2.
+
+Luego establecemos :mzn:`q[2] = 3`, esto elimina los valores de los dominios de otras variables. Establecemos :mzn:`q[3] = 5` (su valor más temprano posible).
+
+El estado del tablero de ajedrez después de estas tres decisiones se muestra en :numref:`fig-9q-b` donde las reinas indican la posición de las reinas ya fijadas y las estrellas indican las posiciones donde no podemos colocar una reina ya que podría tomar una reina ya colocada.
 
 .. _fig-9q-a:
 
 .. figure:: figures/tree-4.*
 
-  Partial search trees for 9 queens
+Árboles de búsqueda parcial para 9 reinas
 
 .. _fig-9q-b:
 
 .. figure:: figures/chess9x9-3.*
 
-  The state after the addition of ``q[1] = 1``, ``q[2] = 4``, ``q[3] = 5``
+El estado después de la adición de ``q[1] = 1``, ``q[2] = 4``, ``q[3] = 5``
 
 .. _fig-9q-c:
 
 .. figure:: figures/chess9x9-4.*
 
-  The initial propagation on adding further ``q[6] = 4``
+La propagación inicial al agregar más ``q[6] = 4``
 
-A search strategy determines which choices to make. The decisions we have
-made so far follow the simple strategy of picking the
-first variable which is not fixed yet, and try to set it to its least
-possible value.  Following this strategy the next decision would be
-:mzn:`q[4] = 7`.
-An alternate strategy for variable selection is to choose the variable whose
-current set of possible values (*domain*) is smallest.
-Under this so called *first-fail*
-variable selection strategy the next decision would be
-:mzn:`q[6] = 4`.
-If we make this decision, then initially propagation removes the additional
-values shown in :numref:`fig-9q-c`. But this leaves only one value for
-:mzn:`q[8]`, :mzn:`q[8] = 7`, so this is forced, but then this leaves only one
-possible value for :mzn:`q[7]` and :mzn:`q[9]`, that is 2. Hence a constraint must be
-violated. We have detected unsatisfiability, and the solver must backtrack
-undoing the last decision :mzn:`q[6] = 4` and adding its negation :mzn:`q[6] != 4`
-(leading us to state (c) in the tree in :numref:`fig-9q-a`)
-which forces :mzn:`q[6] = 8`. This removes some values from the domain
-and then we again reinvoke the search strategy to decide what to do.
+Una estrategia de búsqueda determina qué opciones tomar. Las decisiones que hemos tomado hasta ahora siguen la simple estrategia de elegir la primera variable que aún no se ha solucionado e intentar establecerla en su menor valor posible. Siguiendo esta estrategia, la siguiente decisión sería :mzn:`q[4] = 7`.
 
-Many finite domain searches are defined in this way:
-choose a variable to constrain further, and then choose how to
-constrain it further.
+Una estrategia alternativa para la selección de variables es elegir la variable cuyo conjunto actual de valores posibles (*dominio*) sea más pequeño.
 
-Search Annotations
-------------------
+En virtud de la llamada estrategia de selección de variables *first-fail*, la siguiente decisión sería :mzn:`q[6] = 4`.
+
+
+Si tomamos esta decisión, inicialmente la propagación elimina los valores adicionales que se muestran en :numref:`fig-9q-c`. Pero esto deja solo un valor para :mzn:`q[8]`, :mzn:`q[8] = 7`, entonces esto es forzado, pero esto deja solo un valor posible para :mzn:`q[7]` y :mzn:`q[9]`, eso es 2. Por lo tanto, se debe violar una restricción. Hemos detectado insatisfacción, y el solucionador debe retroceder deshaciendo la última decisión :mzn:`q[6] = 4` y agregando su negación :mzn:`q[6]! = 4` (llevándonos al estado (c) en el árbol en :numref:`fig-9q-a`) que fuerza :mzn:`q[6] = 8`. Esto elimina algunos valores del dominio y luego reinvocamos la estrategia de búsqueda para decidir qué hacer.
+
+Muchas búsquedas de dominio finito se definen de esta manera: elija una variable para restringir aún más, y luego elija cómo restringirla aún más.
+
+
+
+
+Anotaciones de búsqueda
+-----------------------
 
 .. index::
   single: search; annotation
   single: solve
 
-Search annotations in MiniZinc
-specify how to search in order to find a solution to the
-problem. The annotation is attached to the solve item, after the keyword
-:mzn:`solve`.
-The search annotation
+Las anotaciones de búsqueda en MiniZinc especifican cómo buscar para encontrar una solución al problema. La anotación se adjunta al elemento de resolver, después de la palabra clave :mzn:`solve`.
+
+La anotación de búsqueda
 
 .. literalinclude:: examples/nqueens_es.mzn
   :language: minizinc
   :lines: 11-12
 
-appears on the solve item. Annotations are attached to parts of
-the model using the connector :mzn:`::`.
-This search annotation means that we should search by selecting from
-the array of integer variables :mzn:`q`, the variable with the smallest
-current domain (this is the :mzn:`first_fail` rule), and try setting
-it to its smallest possible value
-(:mzn:`indomain_min`
-value selection), looking across the entire search tree
-(:mzn:`complete` search).
+
+Aparece en el elemento de resolver. Las anotaciones se adjuntan a las partes del modelo utilizando el conector :mzn:`::`.
+
+Esta anotación de búsqueda significa que debemos buscar seleccionando de la matriz de variables enteras :mzn:`q`, la variable con el dominio actual más pequeño (esta es la regla :mzn:`first_fail`), e intenta configurarlo en su valor más pequeño valor posible (selección del valor :mzn:`indomain_min`), mirando a través de todo el árbol de búsqueda (búsqueda :mzn:`complete`).
 
 
 
@@ -160,8 +110,7 @@ value selection), looking across the entire search tree
     single: bool_search
     single: set_search
 
-  There are three basic search annotations corresponding to different
-  basic variable types:
+Hay tres anotaciones de búsqueda básicas correspondientes a diferentes tipos de variables básicas:
 
   - :mzndef:`int_search( <variables>, <varchoice>, <constrainchoice>, <strategy> )`
     where :mzndef:`<variables>` is a one dimensional array of :mzn:`var int`,
@@ -187,7 +136,7 @@ value selection), looking across the entire search tree
     single: first_fail
     single: smallest
 
-  Example variable choice annotations are:
+Ejemplo de anotaciones de elección de variable son:
 
   - :mzn:`input_order`: choose in order from the array
   - :mzn:`first_fail`: choose the variable with the smallest domain size, and
@@ -200,20 +149,17 @@ value selection), looking across the entire search tree
     single: indomain_random
     single: indomain_split
 
-  Example ways to constrain a variable are:
+Ejemplos de formas de restringir una variable son:
 
-  - :mzn:`indomain_min`: assign the variable its smallest domain value,
-  - :mzn:`indomain_median`: assign the variable its median domain value,
-  - :mzn:`indomain_random`: assign the variable a random value from its domain, and
-  - :mzn:`indomain_split` bisect the variables domain excluding the upper half.
+  - :mzn:`indomain_min`: asignar a la variable su valor de dominio más pequeño,
+  - :mzn:`indomain_median`: asignar la variable su valor de dominio mediano,
+  - :mzn:`indomain_random`: asignarle a la variable un valor aleatorio de su dominio, y
+  - :mzn:`indomain_split` bisectar el dominio de variables excluyendo la mitad superior.
 
-  The :mzndef:`<strategy>` is almost always :mzn:`complete` for complete search.
-  For a complete list of variable and constraint choice annotations
-  see the FlatZinc specification in the MiniZinc reference
-  documentation.
+El :mzndef:`<strategy>` casi siempre es :mzn:`complete` para una búsqueda completa.
+Para obtener una lista completa de las anotaciones de opciones de restricciones y restricciones, consulte la especificación FlatZinc en la documentación de referencia MiniZinc.
 
-We can construct more complex search strategies using search
-constructor annotations. There is only one such annotation at present:
+Podemos construir estrategias de búsqueda más complejas utilizando anotaciones de constructor de búsqueda. Solo hay una anotación de este tipo en el presente:
 
 .. index::
   single: search; sequential
@@ -223,13 +169,12 @@ constructor annotations. There is only one such annotation at present:
 
   seq_search([ <search-ann>, ..., <search-ann> ])
 
-The sequential search constructor first undertakes the search given
-by the first annotation in its list, when all variables in this annotation
-are fixed it undertakes the second search annotation, etc. until all
-search annotations are complete.
+El constructor de búsqueda secuencial primero emprende la búsqueda dada por la primera anotación en su lista, cuando todas las variables en esta anotación son fijas, emprende la segunda anotación de búsqueda, etc. hasta que todas las anotaciones de búsqueda estén completas.
 
-Consider the jobshop scheduling model shown in :numref:`ex-jobshop3`.
-We could replace the solve item with
+
+Considere el modelo de planificación de puestos de trabajo que se muestra en :numref:`ex-jobshop3`.
+
+Podríamos reemplazar el elemento de resolver con:
 
 .. code-block:: minizinc
 
@@ -238,43 +183,35 @@ We could replace the solve item with
                int_search([end], input_order, indomain_min, complete)])
         minimize end
 
-which tries to set start times :mzn:`s` by choosing the job that can start
-earliest and setting it to that time. When all start times are complete
-the end time :mzn:`end` may not be fixed. Hence we set it to
-its minimal possible value.
+Que intenta establecer tiempos de inicio :mzn:`s` al elegir el trabajo que puede comenzar más temprano y establecerlo en ese momento. Cuando se completan todos los tiempos de inicio, el tiempo de finalización :mzn:`end` no se puede arreglar. Por lo tanto, lo establecemos en su valor mínimo posible.
 
-Annotations
+
+Anotaciones
 -----------
 
 .. index::
   single: annotation
 
-Annotations are a first class object in MiniZinc. We
-can declare new annotations in a model, and declare and assign
-to annotation variables.
+Las anotaciones son un objeto de primera clase en MiniZinc. Podemos declarar nuevas anotaciones en un modelo, declarar y asignar a las variables de anotación.
 
 .. defblock:: Annotations
 
   .. index::
     single: ann
 
-  Annotations have a type :mzn:`ann`.
-  You can declare an annotation
-  :index:`parameter` (with optional assignment):
+Las anotaciones tienen un tipo :mzn:`ann`.
+Puede declarar una anotación :index:`parameter` (con asignación opcional):
 
   .. code-block:: minizincdef
 
     ann : <ident>;
     ann : <ident> = <ann-expr> ;
 
-  and assign to an annotation variable just as any other parameter.
+Y asignar a una variable de anotación como cualquier otro parámetro.
 
-  :index:`Expressions <expression>`, :index:`variable declarations <variable; declaration>`,
-  and :mzn:`solve` items can all
-  be annotated using the :mzn:`::` operator.
+Los elementos :index:`Expressions <expression>`, :index:`variable declarations <variable; declaration>`, y :mzn:`solve` se pueden anotar utilizando el operador :mzn:`::`.
 
-  We can declare a new :index:`annotation`
-  using the :mzn:`annotation` :index:`item <item; annotation>`:
+Podemos declarar un nuevo :index:`annotation` utilizando el :mzn:`annotation` :index:`item <item; annotation>`:
 
   .. code-block:: minizincdef
 
@@ -283,24 +220,19 @@ to annotation variables.
 .. literalinclude:: examples/nqueens-ann_es.mzn
   :language: minizinc
   :name: ex-queens-ann
-  :caption: Annotated model for n-queens (:download:`nqueens-ann_es.mzn <examples/nqueens-ann_es.mzn>`).
+  :caption: Modelo anotado para n-reinas (:download:`nqueens-ann_es.mzn <examples/nqueens-ann_es.mzn>`).
 
-The program in :numref:`ex-queens-ann` illustrates the use of annotation
-declarations, annotations and annotation variables.
-We declare a new annotation :mzn:`bitdomain` which is meant to tell
-the solver that variables domains should be represented via bit arrays
-of size :mzn:`nwords`.
-The annotation is attached to the declarations of the variables :mzn:`q`.
-Each of the :mzn:`alldifferent` constraints is annotated with
-the built in annotation :mzn:`domain`
-which instructs the solver to use
-the domain propagating version of :mzn:`alldifferent` if it has one.
-An annotation variable :mzn:`search_ann` is declared and used
-to define the search strategy.  We can give the value to the search
-strategy in a separate data file.
+El programa en :numref:`ex-queens-ann` ilustra el uso de declaraciones de anotación, anotaciones y variables de anotación.
 
-Example search annotations might be the following (where
-we imagine each line is in a separate data file)
+Declaramos una nueva anotación :mzn:`bitdomain`, que pretende decirle al solucionador que los dominios variables deben representarse mediante matrices de bits de tamaño :mzn:`nwords`.
+
+La anotación se adjunta a las declaraciones de las variables :mzn:`q`.
+
+Cada una de las restricciones :mzn:`alldifferent` se anota con la anotación incorporada :mzn:`domain` que indica al solucionador que use la versión de propagación de dominio de :mzn:`alldifferent` si tiene una.
+
+Una variable de anotación :mzn:`search_ann` se declara y se usa para definir la estrategia de búsqueda. Podemos dar el valor a la estrategia de búsqueda en un archivo de datos separado.
+
+Las anotaciones de búsqueda de ejemplo pueden ser las siguientes (donde imaginamos que cada línea está en un archivo de datos separado).
 
 .. code-block:: minizinc
 
@@ -309,19 +241,9 @@ we imagine each line is in a separate data file)
   search_ann = int_search(q, first_fail, indomain_min, complete);
   search_ann = int_search(q, first_fail, indomain_median, complete);
 
-The first just tries the queens in order setting them to the
-minimum value, the second tries the queens variables in order, but sets
-them to their median value, the third tries the queen variable with smallest
-domain and sets it to the minimum value, and the final strategy
-tries the queens variable with smallest domain setting it to its median
-value.
+El primero solo prueba las reinas para establecerlas en el valor mínimo, el segundo prueba las variables reinas en orden, pero las establece en su valor mediano, el tercero prueba la variable reina con el dominio más pequeño y lo establece en el valor mínimo, y la estrategia final prueba la variable reinas con el dominio más pequeño configurándola en su valor mediano.
 
-Different search strategies can make a significant difference in
-how easy it is to find solutions.
-A small comparison of the number of choices made to find the first solution
-of the n-queens problems using the 4 different search strategies
-is shown in the table below (where --- means more than 100,000 choices).
-Clearly the right search strategy can make a significant difference.
+Las diferentes estrategias de búsqueda pueden marcar una diferencia significativa en lo fácil que es encontrar soluciones. En la siguiente tabla se muestra una pequeña comparación de la cantidad de elecciones realizadas para encontrar la primera solución de los problemas de n-reinas utilizando las 4 estrategias de búsqueda diferentes (donde --- significa más de 100,000 opciones). Claramente, la estrategia de búsqueda correcta puede marcar una diferencia significativa.
 
 .. cssclass:: table-nonfluid table-bordered
 
