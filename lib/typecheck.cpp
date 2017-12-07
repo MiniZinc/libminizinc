@@ -1313,9 +1313,16 @@ namespace MiniZinc {
         bool cv = false;
         for (unsigned int i=0; i<args.size(); i++) {
           if(Comprehension* c = call.args()[i]->dyn_cast<Comprehension>()) {
+            Type t_before = c->e()->type();
             Type t = fi->argtype(_env,args,i);
             t.dim(0);
             c->e(addCoercion(_env, _model, c->e(), t)());
+            Type t_after = c->e()->type();
+            if (t_before != t_after) {
+              Type ct = c->type();
+              ct.bt(t_after.bt());
+              c->type(ct);
+            }
           } else {
             args[i] = addCoercion(_env, _model,call.args()[i],fi->argtype(_env,args,i))();
             call.args()[i] = args[i];

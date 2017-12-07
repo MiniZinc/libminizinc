@@ -54,13 +54,17 @@ array[1..3] of var 0..10: x;
 array[1..3] of var 0.0..10.5: xf;
 var bool: b;
 array[1..3] of var set of 5..9: xs;
+constraint b+sum(x)==1;
+constraint b+sum(xf)==2.4;
+constraint 5==sum( [ card(xs[i]) | i in index_set(xs) ] );
 solve
-  :: warm_start( [b], [true] )
+  :: warm_start( [b], [<>] )                         %%% Use <> for missing values
   :: warm_start_array( [
-       warm_start( x, [2,8,4] ),
-       warm_start( xf, [5.6,5.8,4.7] ),
-       warm_start( xs, [ {}, 6..8, {3,6} ] )
+       warm_start( x, [<>,8,4] ),
+       warm_start( xf, array1d(-5..-3, [5.6,<>,4.7] ) ),
+       warm_start( xs, array1d( -3..-2, [ 6..8, 5..7 ] ) )
      ] )
+  :: seq_search( [ int_search(x, first_fail, indomain_min, complete)  ] )
   minimize x[1] + b + xf[2] + card( xs[1] intersect xs[3] );
 
 If you'd like to provide a most complete warmstart information, please provide values for all

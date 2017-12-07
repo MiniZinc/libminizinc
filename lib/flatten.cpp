@@ -3406,8 +3406,20 @@ namespace MiniZinc {
     
   }
 
+#ifndef NDEBUG
+  void mzn_break_here(Expression* e) {
+    std::cerr << "% mzn_break_here: " << *e << "\n";
+  }
+#endif
+
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     if (e==NULL) return EE();
+
+#ifndef NDEBUG
+    Annotation& e_ann = e->ann();
+    if(e_ann.contains(constants().ann.mzn_break_here))
+        mzn_break_here(e);
+#endif
 
     EE ret;
     assert(!e->type().isunknown());

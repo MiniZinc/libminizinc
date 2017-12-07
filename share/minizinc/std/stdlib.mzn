@@ -52,7 +52,15 @@ annotation is_reverse_map;
 /** @group annotations.general Document the function or variable declaration item with
   the string \a s. */
 annotation doc_comment(string: s);
+/** @group annotations.general String representation of the call-stack when the annotated item
+  was introduced. Can be used to uniquely identify variables and constraints across different
+  compilations of a model that may have different names. This annotations is introduced into
+  FlatZinc code by the compiler and is retained if --keep-paths argument is used. */
 annotation mzn_path(string: s);
+/** @group annotations.general With debug build of mzn2fzn, call MiniZinc::mzn_break_here when
+  flattening this expression to make debugging easier. This annotation is ignored by the
+  release build.*/
+annotation mzn_break_here;
 
 /***
  @groupdef annotations.prop Propagation strength annotations
@@ -206,6 +214,57 @@ annotation warm_start( array[int] of var set of int: x, array[int] of set of int
 
 /** @group annotations.warmstart Specify warm starts in an array \a w */
 annotation warm_start_array( array[int] of ann: w );
+
+
+/***
+ @groupdef annotations.warmstart.optvals Warm start annotations with optional values
+
+ The value arrays can contain <> elements (absent values).
+ The following decompositions eliminate those elements
+ because FlatZinc 1.6 does not support optionals.
+*/
+
+/** @group annotations.warmstart.optvals Specify warm start values for an array of booleans */
+annotation warm_start( array[int] of var bool: x, array[int] of opt bool: v ) =
+    if 0==length(x) \/ 0==length(v) then
+        warm_start( x, [] )
+    else
+        warm_start( [ x[i] | i in index_set(x) where
+            i-min(index_set(x))+min(index_set(v))>length(v) \/
+            occurs( v[ i-min(index_set(x))+min(index_set(v)) ] ) ],
+            [ deopt(v[i]) | i in index_set(v) where occurs(v[i]) ] )
+    endif;
+/** @group annotations.warmstart.optvals Specify warm start values for an array of integers */
+annotation warm_start( array[int] of var int: x, array[int] of opt int: v ) =
+    if 0==length(x) \/ 0==length(v) then
+        warm_start( x, [] )
+    else
+        warm_start( [ x[i] | i in index_set(x) where
+            i-min(index_set(x))+min(index_set(v))>length(v) \/
+            occurs( v[ i-min(index_set(x))+min(index_set(v)) ] ) ],
+            [ deopt(v[i]) | i in index_set(v) where occurs(v[i]) ] )
+    endif;
+/** @group annotations.warmstart.optvals Specify warm start values for an array of floats */
+annotation warm_start( array[int] of var float: x, array[int] of opt float: v ) =
+    if 0==length(x) \/ 0==length(v) then
+        warm_start( x, [] )
+    else
+        warm_start( [ x[i] | i in index_set(x) where
+            i-min(index_set(x))+min(index_set(v))>length(v) \/
+            occurs( v[ i-min(index_set(x))+min(index_set(v)) ] ) ],
+            [ deopt(v[i]) | i in index_set(v) where occurs(v[i]) ] )
+    endif;
+/** @group annotations.warmstart.optvals Specify warm start values for an array of sets */
+annotation warm_start( array[int] of var set of int: x, array[int] of opt set of int: v ) =
+    if 0==length(x) \/ 0==length(v) then
+        warm_start( x, [] )
+    else
+        warm_start( [ x[i] | i in index_set(x) where
+            i-min(index_set(x))+min(index_set(v))>length(v) \/
+            occurs( v[ i-min(index_set(x))+min(index_set(v)) ] ) ],
+            [ deopt(v[i]) | i in index_set(v) where occurs(v[i]) ] )
+    endif;
+
 
 
 /***
