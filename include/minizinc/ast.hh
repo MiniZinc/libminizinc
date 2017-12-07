@@ -1717,6 +1717,7 @@ namespace MiniZinc {
         ASTString is_introduced;
         Id* user_cut;            // MIP
         Id* lazy_constraint;            // MIP
+        Id* mzn_break_here;
       } ann;
 
       /// Command line options
