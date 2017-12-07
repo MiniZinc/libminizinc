@@ -1022,7 +1022,7 @@ namespace MiniZinc {
     /// Visit array comprehension
     void vComprehension(Comprehension& c) {
       Type tt = c.e()->type();
-      typedef std::unordered_map<VarDecl*, int> genMap_t;
+      typedef std::unordered_map<VarDecl*, std::pair<int,int> > genMap_t;
       typedef std::unordered_map<VarDecl*, std::vector<Expression*> > whereMap_t;
       genMap_t generatorMap;
       whereMap_t whereMap;
@@ -1030,71 +1030,86 @@ namespace MiniZinc {
       bool didMoveWheres = false;
       for (int i=0; i<c.n_generators(); i++) {
         for (int j=0; j<c.n_decls(i); j++) {
-          generatorMap[c.decl(i,j)] = declCount++;
+          generatorMap[c.decl(i,j)] = std::pair<int,int>(i,declCount++);
           whereMap[c.decl(i,j)] = std::vector<Expression*>();
         }
         Expression* g_in = c.in(i);
-        const Type& ty_in = g_in->type();
-        if (ty_in == Type::varsetint()) {
-          tt.ot(Type::OT_OPTIONAL);
-          tt.ti(Type::TI_VAR);
-        }
-        if (ty_in.cv())
-          tt.cv(true);
-        if (c.where(i)) {
-          if (c.where(i)->type() == Type::varbool()) {
+        if (g_in) {
+          const Type& ty_in = g_in->type();
+          if (ty_in == Type::varsetint()) {
             tt.ot(Type::OT_OPTIONAL);
             tt.ti(Type::TI_VAR);
-          } else if (c.where(i)->type() != Type::parbool()) {
-            throw TypeError(_env,c.where(i)->loc(),
-                            "where clause must be bool, but is `"+
-                            c.where(i)->type().toString(_env)+"'");
           }
-          if (c.where(i)->type().cv())
+          if (ty_in.cv())
             tt.cv(true);
-          
-          // Try to move parts of the where clause to earlier generators
-          std::vector<Expression*> wherePartsStack;
-          std::vector<Expression*> whereParts;
-          wherePartsStack.push_back(c.where(i));
-          while (!wherePartsStack.empty()) {
-            Expression* e = wherePartsStack.back();
-            wherePartsStack.pop_back();
-            if (BinOp* bo = e->dyn_cast<BinOp>()) {
-              if (bo->op()==BOT_AND) {
-                wherePartsStack.push_back(bo->rhs());
-                wherePartsStack.push_back(bo->lhs());
+          if (c.where(i)) {
+            if (c.where(i)->type() == Type::varbool()) {
+              tt.ot(Type::OT_OPTIONAL);
+              tt.ti(Type::TI_VAR);
+            } else if (c.where(i)->type() != Type::parbool()) {
+              throw TypeError(_env,c.where(i)->loc(),
+                              "where clause must be bool, but is `"+
+                              c.where(i)->type().toString(_env)+"'");
+            }
+            if (c.where(i)->type().cv())
+              tt.cv(true);
+            
+            // Try to move parts of the where clause to earlier generators
+            std::vector<Expression*> wherePartsStack;
+            std::vector<Expression*> whereParts;
+            wherePartsStack.push_back(c.where(i));
+            while (!wherePartsStack.empty()) {
+              Expression* e = wherePartsStack.back();
+              wherePartsStack.pop_back();
+              if (BinOp* bo = e->dyn_cast<BinOp>()) {
+                if (bo->op()==BOT_AND) {
+                  wherePartsStack.push_back(bo->rhs());
+                  wherePartsStack.push_back(bo->lhs());
+                } else {
+                  whereParts.push_back(e);
+                }
               } else {
                 whereParts.push_back(e);
               }
-            } else {
-              whereParts.push_back(e);
+            }
+            
+            for (unsigned int wpi=0; wpi < whereParts.size(); wpi++) {
+              Expression* wp = whereParts[wpi];
+              class FindLatestGen : public EVisitor {
+              public:
+                int decl_idx;
+                VarDecl* decl;
+                const genMap_t& generatorMap;
+                Comprehension* comp;
+                FindLatestGen(const genMap_t& generatorMap0, Comprehension* comp0) : decl_idx(-1), decl(NULL), generatorMap(generatorMap0), comp(comp0) {}
+                void vId(const Id& ident) {
+                  genMap_t::const_iterator it = generatorMap.find(ident.decl());
+                  if (it != generatorMap.end() && it->second.second > decl_idx) {
+                    decl_idx = it->second.second;
+                    decl = ident.decl();
+                    int gen = it->second.first;
+                    while (comp->in(gen) == NULL && gen < comp->n_generators()-1) {
+                      decl_idx++;
+                      gen++;
+                      decl = comp->decl(gen, 0);
+                    }
+                  }
+                }
+              } flg(generatorMap,&c);
+              topDown(flg, wp);
+              whereMap[flg.decl].push_back(wp);
+              
+              if (flg.decl_idx < declCount-1)
+                didMoveWheres = true;
+              
             }
           }
-          
-          for (unsigned int wpi=0; wpi < whereParts.size(); wpi++) {
-            Expression* wp = whereParts[wpi];
-            class FindLatestGen : public EVisitor {
-            public:
-              int gen;
-              VarDecl* decl;
-              const genMap_t& generatorMap;
-              FindLatestGen(const genMap_t& generatorMap0) : gen(-1), decl(NULL), generatorMap(generatorMap0) {}
-              void vId(const Id& ident) {
-                genMap_t::const_iterator it = generatorMap.find(ident.decl());
-                if (it != generatorMap.end() && it->second > gen) {
-                  gen = it->second;
-                  decl = ident.decl();
-                }
-              }
-            } flg(generatorMap);
-            topDown(flg, wp);
-            whereMap[flg.decl].push_back(wp);
-            
-            if (flg.gen < declCount-1)
-              didMoveWheres = true;
-            
+        } else {
+          assert(c.where(i) != NULL);
+          if (!c.where(i)->type().ispar()) {
+            throw TypeError(_env,c.where(i)->loc(), "assignment generator must be par");
           }
+          whereMap[c.decl(i,0)].push_back(c.where(i));
         }
       }
       
@@ -1153,33 +1168,42 @@ namespace MiniZinc {
     /// Visit array comprehension generator
     void vComprehensionGenerator(Comprehension& c, int gen_i) {
       Expression* g_in = c.in(gen_i);
-      const Type& ty_in = g_in->type();
-      if (ty_in != Type::varsetint() && ty_in != Type::parsetint() && ty_in.dim() != 1) {
-        throw TypeError(_env,g_in->loc(),
-                        "generator expression must be (par or var) set of int or one-dimensional array, but is `"
-                        +ty_in.toString(_env)+"'");
-      }
-      Type ty_id;
-      bool needIntLit = false;
-      if (ty_in.dim()==0) {
-        ty_id = Type::parint();
-        ty_id.enumId(ty_in.enumId());
-        needIntLit = true;
+      if (g_in==NULL) {
+        // This is an "assignment generator" (i = expr)
+        assert(c.where(gen_i) != NULL);
+        assert(c.n_decls(gen_i) == 1);
+        const Type& ty_where = c.where(gen_i)->type();
+        c.decl(gen_i,0)->type(ty_where);
+        c.decl(gen_i,0)->ti()->type(ty_where);
       } else {
-        ty_id = ty_in;
-        if (ty_in.enumId() != 0) {
-          const std::vector<unsigned int>& enumIds = _env.getArrayEnum(ty_in.enumId());
-          ty_id.enumId(enumIds.back());
+        const Type& ty_in = g_in->type();
+        if (ty_in != Type::varsetint() && ty_in != Type::parsetint() && ty_in.dim() != 1) {
+          throw TypeError(_env,g_in->loc(),
+                          "generator expression must be (par or var) set of int or one-dimensional array, but is `"
+                          +ty_in.toString(_env)+"'");
         }
-        ty_id.dim(0);
-      }
-      for (int j=0; j<c.n_decls(gen_i); j++) {
-        if (needIntLit) {
-          GCLock lock;
-          c.decl(gen_i,j)->e(IntLit::aEnum(0,ty_id.enumId()));
+        Type ty_id;
+        bool needIntLit = false;
+        if (ty_in.dim()==0) {
+          ty_id = Type::parint();
+          ty_id.enumId(ty_in.enumId());
+          needIntLit = true;
+        } else {
+          ty_id = ty_in;
+          if (ty_in.enumId() != 0) {
+            const std::vector<unsigned int>& enumIds = _env.getArrayEnum(ty_in.enumId());
+            ty_id.enumId(enumIds.back());
+          }
+          ty_id.dim(0);
         }
-        c.decl(gen_i,j)->type(ty_id);
-        c.decl(gen_i,j)->ti()->type(ty_id);
+        for (int j=0; j<c.n_decls(gen_i); j++) {
+          if (needIntLit) {
+            GCLock lock;
+            c.decl(gen_i,j)->e(IntLit::aEnum(0,ty_id.enumId()));
+          }
+          c.decl(gen_i,j)->type(ty_id);
+          c.decl(gen_i,j)->ti()->type(ty_id);
+        }
       }
     }
     /// Visit if-then-else

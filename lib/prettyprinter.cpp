@@ -399,11 +399,16 @@ namespace MiniZinc {
               if (j < c.n_decls(i)-1)
                 os << ",";
             }
-            os << " in ";
-            p(c.in(i));
-            if (c.where(i) != NULL) {
-              os << " where ";
+            if (c.in(i)==NULL) {
+              os << " = ";
               p(c.where(i));
+            } else {
+              os << " in ";
+              p(c.in(i));
+              if (c.where(i) != NULL) {
+                os << " where ";
+                p(c.where(i));
+              }
             }
             if (i < c.n_generators())
               os << ", ";
@@ -1259,11 +1264,16 @@ namespace MiniZinc {
           idents->addStringToList(c.decl(i, j)->id()->v().str());
         }
         gen->addDocumentToList(idents);
-        gen->addStringToList(" in ");
-        gen->addDocumentToList(expressionToDocument(c.in(i)));
-        if (c.where(i) != NULL) {
-          gen->addStringToList(" where ");
+        if (c.in(i)==NULL) {
+          gen->addStringToList(" = ");
           gen->addDocumentToList(expressionToDocument(c.where(i)));
+        } else {
+          gen->addStringToList(" in ");
+          gen->addDocumentToList(expressionToDocument(c.in(i)));
+          if (c.where(i) != NULL) {
+            gen->addStringToList(" where ");
+            gen->addDocumentToList(expressionToDocument(c.where(i)));
+          }
         }
         generators->addDocumentToList(gen);
       }
@@ -1471,11 +1481,16 @@ namespace MiniZinc {
                   com->decl(i,j)->id()->v().str());
               }
               gen->addDocumentToList(idents);
-              gen->addStringToList(" in ");
-              gen->addDocumentToList(expressionToDocument(com->in(i)));
-              if (com->where(i) != NULL) {
-                gen->addStringToList(" where ");
+              if (com->in(i) == NULL) {
+                gen->addStringToList(" = ");
                 gen->addDocumentToList(expressionToDocument(com->where(i)));
+              } else {
+                gen->addStringToList(" in ");
+                gen->addDocumentToList(expressionToDocument(com->in(i)));
+                if (com->where(i) != NULL) {
+                  gen->addStringToList(" where ");
+                  gen->addDocumentToList(expressionToDocument(com->where(i)));
+                }
               }
               generators->addDocumentToList(gen);
             }
