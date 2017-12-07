@@ -52,6 +52,10 @@ annotation is_reverse_map;
 /** @group annotations.general Document the function or variable declaration item with
   the string \a s. */
 annotation doc_comment(string: s);
+/** @group annotations.general With debug build of mzn2fzn, call MiniZinc::mzn_break_here when
+  flattening this expression to make debugging easier. This annotation is ignored by the
+  release build.*/
+annotation mzn_break_here;
 
 /***
  @groupdef annotations.prop Propagation strength annotations
