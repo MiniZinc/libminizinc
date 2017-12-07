@@ -395,7 +395,7 @@ namespace MiniZinc {
               ArrayLit* al = new ArrayLit(Location().introduce(), args);
               args.resize(1);
               args[0] = al;
-              reallyFlat->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args,NULL));
+              reallyFlat->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args));
             }
             checkRenameVar(env, nvi->e());
           } else {
@@ -800,7 +800,7 @@ namespace MiniZinc {
                     ArrayLit* al = new ArrayLit(Location().introduce(), args);
                     args.resize(1);
                     args[0] = al;
-                    vd->flat()->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args,NULL));
+                    vd->flat()->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args));
                     checkRenameVar(env, vd);
                   }
                 }
@@ -932,7 +932,7 @@ namespace MiniZinc {
                       ArrayLit* al = new ArrayLit(Location().introduce(), args);
                       args.resize(1);
                       args[0] = al;
-                      vd->flat()->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args,NULL));
+                      vd->flat()->addAnnotation(new Call(Location().introduce(),constants().ann.output_array,args));
                     }
                     checkRenameVar(e, vd);
                   }

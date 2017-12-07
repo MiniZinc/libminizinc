@@ -989,33 +989,35 @@ namespace MiniZinc {
   class Call : public Expression {
     friend class Expression;
   protected:
-    /// Identifier of called predicate or function
-    ASTString _id;
+    union {
+      /// Identifier of called predicate or function
+      ASTStringO* _id;
+      /// The predicate or function declaration (or NULL)
+      FunctionI* _decl;
+    } _u_id;
     union {
       /// Single-argument call (tagged pointer)
       Expression* _oneArg;
       /// Arguments to the call
       ASTExprVecO<Expression*>* _args;
     } _u;
-    /// The predicate or function declaration (or NULL)
-    FunctionI* _decl;
+    /// Check if _u_id contains an id or a decl
+    bool hasId(void) const;
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_CALL;
     /// Constructor
     Call(const Location& loc,
          const std::string& id,
-         const std::vector<Expression*>& args,
-         FunctionI* decl=NULL);
+         const std::vector<Expression*>& args);
     /// Constructor
     Call(const Location& loc,
          const ASTString& id,
-         const std::vector<Expression*>& args,
-         FunctionI* decl=NULL);
+         const std::vector<Expression*>& args);
     /// Access identifier
-    ASTString id(void) const { return _id; }
-    /// Set identifier
-    void id(const ASTString& i) { _id = i; }
+    ASTString id(void) const;
+    /// Set identifier (overwrites decl)
+    void id(const ASTString& i);
     /// Number of arguments
     unsigned int n_args(void) const { return _u._oneArg->isUnboxedVal() || _u._oneArg->isTagged() ? 1 : _u._args->size(); }
     /// Access argument \a i
@@ -1046,9 +1048,9 @@ namespace MiniZinc {
       }
     }
     /// Access declaration
-    FunctionI* decl(void) const { return _decl; }
-    /// Set declaration
-    void decl(FunctionI* f) { _decl = f; }
+    FunctionI* decl(void) const;
+    /// Set declaration (overwrites id)
+    void decl(FunctionI* f);
     /// Recompute hash value
     void rehash(void);
   };

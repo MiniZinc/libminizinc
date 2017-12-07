@@ -341,10 +341,12 @@ namespace MiniZinc {
         }
         Call* c = new Call(copy_location(m,e),id_v,std::vector<Expression*>());
 
-        if (copyFundecls) {
-          c->decl(Item::cast<FunctionI>(copy(env,m,ca->decl())));
-        } else {
-          c->decl(ca->decl());
+        if (ca->decl()) {
+          if (copyFundecls) {
+            c->decl(Item::cast<FunctionI>(copy(env,m,ca->decl())));
+          } else {
+            c->decl(ca->decl());
+          }
         }
         
         m.insert(e,c);

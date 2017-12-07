@@ -478,37 +478,64 @@ namespace MiniZinc {
     rehash();
   }
 
+  inline bool
+  Call::hasId(void) const {
+    return (reinterpret_cast<ptrdiff_t>(_u_id._decl) & static_cast<ptrdiff_t>(1)) == 0;
+  }
+  
+  inline ASTString
+  Call::id(void) const {
+    return hasId() ? _u_id._id : decl()->id();
+  }
+  
+  inline void
+  Call::id(const ASTString& i) {
+    _u_id._id = i.aststr();
+    assert(hasId());
+    assert(decl()==NULL);
+  }
 
+  inline FunctionI*
+  Call::decl(void) const {
+    return hasId() ? NULL : reinterpret_cast<FunctionI*>(reinterpret_cast<ptrdiff_t>(_u_id._decl) & ~static_cast<ptrdiff_t>(1));
+  }
+  
+  inline void
+  Call::decl(FunctionI* f) {
+    assert(f != NULL);
+    _u_id._decl = reinterpret_cast<FunctionI*>(reinterpret_cast<ptrdiff_t>(f) | static_cast<ptrdiff_t>(1));
+  }
+  
   inline
   Call::Call(const Location& loc,
-             const std::string& id,
-             const std::vector<Expression*>& args,
-             FunctionI* decl)
+             const std::string& id0,
+             const std::vector<Expression*>& args)
   : Expression(loc, E_CALL,Type()) {
-    _id = ASTString(id);
+    id(ASTString(id0));
     if (args.size()==1) {
       _u._oneArg = args[0]->isUnboxedVal() ? args[0] : args[0]->tag();
     } else {
       _u._args = ASTExprVec<Expression>(args).vec();
     }
-    _decl = decl;
     rehash();
+    assert(hasId());
+    assert(decl() == NULL);
   }
 
   inline
   Call::Call(const Location& loc,
-             const ASTString& id,
-             const std::vector<Expression*>& args,
-             FunctionI* decl)
+             const ASTString& id0,
+             const std::vector<Expression*>& args)
   : Expression(loc, E_CALL,Type()) {
-    _id = id;
+    id(ASTString(id0));
     if (args.size()==1) {
       _u._oneArg = args[0]->isUnboxedVal() ? args[0] : args[0]->tag();
     } else {
       _u._args = ASTExprVec<Expression>(args).vec();
     }
-    _decl = decl;
     rehash();
+    assert(hasId());
+    assert(decl() == NULL);
   }
 
   inline

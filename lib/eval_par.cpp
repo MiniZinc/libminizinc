@@ -1656,7 +1656,7 @@ namespace MiniZinc {
               for (unsigned int i=0; i<args.size(); i++) {
                 args[i] = eval_par(env,c->arg(i));
               }
-              Call* nc = new Call(c->loc(),c->id(),args,c->decl());
+              Call* nc = new Call(c->loc(),c->id(),args);
               nc->type(c->type());
               return nc;
             }
