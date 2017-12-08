@@ -595,6 +595,14 @@ namespace MiniZinc {
     for (unsigned int i=_args.size(); i--;)
       cmb_hash(Expression::hash(_args[i]));
   }
+  
+  void
+  VarDecl::trail(void) {
+    GC::trail(&_e,e());
+    if (_ti->ranges().size() > 0) {
+      GC::trail(reinterpret_cast<Expression**>(&_ti),_ti);
+    }
+  }
 
   void
   VarDecl::rehash(void) {
@@ -638,10 +646,7 @@ namespace MiniZinc {
     GC::mark();
     for (unsigned int i=_let.size(); i--;) {
       if (VarDecl* vd = _let[i]->dyn_cast<VarDecl>()) {
-        GC::trail(&vd->_e,vd->e());
-        if (vd->ti()->ranges().size() > 0) {
-          GC::trail(reinterpret_cast<Expression**>(&vd->_ti),vd->ti());
-        }
+        vd->trail();
         vd->e(_let_orig[i]);
       }
     }

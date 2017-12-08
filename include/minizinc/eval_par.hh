@@ -100,6 +100,8 @@ namespace MiniZinc {
                 IntVal i, KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
     {
       GCLock lock;
+      GC::mark();
+      e->decl(gen,id)->trail();
       e->decl(gen,id)->e(IntLit::a(i));
     }
     CallStackItem csi(env, e->decl(gen,id)->id(), i);
@@ -135,21 +137,24 @@ namespace MiniZinc {
     } else {
       eval_comp_set<Eval>(env, eval,e,gen,id+1,in,a);
     }
+    GC::untrail();
+    e->decl(gen,id)->flat(NULL);
   }
 
   template<class Eval>
   void
   eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id,
                   IntVal i, KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
+    GC::mark();
+    e->decl(gen,id)->trail();
+    CallStackItem csi(env, e->decl(gen,id)->id(), i);
     if (in()==NULL) {
       // this is an assignment generator
       Expression* asn = eval_par(env, e->where(gen));
-      CallStackItem csi(env, e->decl(gen,id)->id(), i);
       e->decl(gen,id)->e(asn);
       e->rehash();
     } else {
       ArrayLit* al = in()->cast<ArrayLit>();
-      CallStackItem csi(env, e->decl(gen,id)->id(), i);
       e->decl(gen,id)->e(al->v()[i.toInt()]);
       e->rehash();
     }
@@ -185,7 +190,7 @@ namespace MiniZinc {
     } else {
       eval_comp_array<Eval>(env, eval,e,gen,id+1,in,a);
     }
-    e->decl(gen,id)->e(NULL);
+    GC::untrail();
     e->decl(gen,id)->flat(NULL);
   }
 
