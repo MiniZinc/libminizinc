@@ -296,9 +296,10 @@ namespace MiniZinc {
                        Expression* in,
                        Expression* where) {
     std::vector<VarDecl*> vd;
+    Location loc = in == NULL ? where->loc() : in->loc();
     for (unsigned int i=0; i<v.size(); i++) {
-      VarDecl* nvd = new VarDecl(in->loc(),
-                                 new TypeInst(in->loc(),Type::parint()),v[i]);
+      VarDecl* nvd = new VarDecl(loc,
+                                 new TypeInst(loc,Type::parint()),v[i]);
       nvd->toplevel(false);
       vd.push_back(nvd);
     }
@@ -324,9 +325,10 @@ namespace MiniZinc {
                        Expression* in,
                        Expression* where) {
     std::vector<VarDecl*> vd;
+    Location loc = in == NULL ? where->loc() : in->loc();
     for (unsigned int i=0; i<v.size(); i++) {
-      VarDecl* nvd = new VarDecl(in->loc(),
-                                 new TypeInst(in->loc(),Type::parint()),ASTString(v[i]));
+      VarDecl* nvd = new VarDecl(loc,
+                                 new TypeInst(loc,Type::parint()),ASTString(v[i]));
       nvd->toplevel(false);
       vd.push_back(nvd);
     }

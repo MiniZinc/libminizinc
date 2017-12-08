@@ -4691,16 +4691,16 @@ namespace MiniZinc {
                 ctx0.b = +ctx0.b;
                 ctx1.b = -ctx1.b;
               } else if (boe0->type().bt()==Type::BT_INT) {
-                ctx0.i = +ctx0.i;
-                ctx1.i = -ctx1.i;
+                ctx0.i = +ctx0.b;
+                ctx1.i = -ctx1.b;
               }
             } else {
               if (boe0->type().bt()==Type::BT_BOOL) {
                 ctx0.b = -ctx0.b;
                 ctx1.b = +ctx1.b;
               } else if (boe0->type().bt()==Type::BT_INT) {
-                ctx0.i = -ctx0.i;
-                ctx1.i = +ctx1.i;
+                ctx0.i = -ctx0.b;
+                ctx1.i = +ctx1.b;
               }
             }
             goto flatten_bool_op;
@@ -4712,16 +4712,16 @@ namespace MiniZinc {
                 ctx0.b = +ctx0.b;
                 ctx1.b = -ctx1.b;
               } else if (boe0->type().bt()==Type::BT_INT) {
-                ctx0.i = +ctx0.i;
-                ctx1.i = -ctx1.i;
+                ctx0.i = +ctx0.b;
+                ctx1.i = -ctx1.b;
               }
             } else {
               if (boe0->type().bt()==Type::BT_BOOL) {
                 ctx0.b = -ctx0.b;
                 ctx1.b = +ctx1.b;
               } else if (boe0->type().bt()==Type::BT_INT) {
-                ctx0.i = -ctx0.i;
-                ctx1.i = +ctx1.i;
+                ctx0.i = -ctx0.b;
+                ctx1.i = +ctx1.b;
               }
             }
             goto flatten_bool_op;
@@ -4733,16 +4733,16 @@ namespace MiniZinc {
                 ctx0.b = -ctx0.b;
                 ctx1.b = +ctx1.b;
               } else if (boe0->type().bt()==Type::BT_INT) {
-                ctx0.i = -ctx0.i;
-                ctx1.i = +ctx1.i;
+                ctx0.i = -ctx0.b;
+                ctx1.i = +ctx1.b;
               }
             } else {
               if (boe0->type().bt()==Type::BT_BOOL) {
                 ctx0.b = +ctx0.b;
                 ctx1.b = -ctx1.b;
               } else if (boe0->type().bt()==Type::BT_INT) {
-                ctx0.i = +ctx0.i;
-                ctx1.i = -ctx1.i;
+                ctx0.i = +ctx0.b;
+                ctx1.i = -ctx1.b;
               }
             }
             goto flatten_bool_op;
@@ -4754,16 +4754,16 @@ namespace MiniZinc {
                 ctx0.b = -ctx0.b;
                 ctx1.b = +ctx1.b;
               } else if (boe0->type().bt()==Type::BT_INT) {
-                ctx0.i = -ctx0.i;
-                ctx1.i = +ctx1.i;
+                ctx0.i = -ctx0.b;
+                ctx1.i = +ctx1.b;
               }
             } else {
               if (boe0->type().bt()==Type::BT_BOOL) {
                 ctx0.b = +ctx0.b;
                 ctx1.b = -ctx1.b;
               } else if (boe0->type().bt()==Type::BT_INT) {
-                ctx0.i = +ctx0.i;
-                ctx1.i = -ctx1.i;
+                ctx0.i = +ctx0.b;
+                ctx1.i = -ctx1.b;
               }
             }
             goto flatten_bool_op;
@@ -5183,27 +5183,83 @@ namespace MiniZinc {
           }
           
           std::vector<EE> args_ee(c->args().size());
-          bool mixContext = decl->e()!=NULL ||
-            (cid != constants().ids.forall && cid != constants().ids.exists && cid != constants().ids.bool2int &&
-             cid != constants().ids.sum && cid != constants().ids.lin_exp && cid != "assert");
           bool isPartial = false;
-          for (unsigned int i=c->args().size(); i--;) {
-            Ctx argctx = nctx;
-            if (mixContext) {
-              if (cid==constants().ids.clause) {
-                argctx.b = (i==0 ? +nctx.b : -nctx.b);
-              } else if (c->args()[i]->type().bt()==Type::BT_BOOL) {
-                argctx.b = C_MIX;
-              } else if (c->args()[i]->type().bt()==Type::BT_INT) {
-                argctx.i = C_MIX;
-              }
-            }
-            Expression* tmp = follow_id_to_decl(c->args()[i]);
+
+          if (cid == constants().ids.lin_exp && c->type().isint()) {
+            // Linear expressions need special context handling:
+            // the context of a variable expression depends on the corresponding coefficient
+            
+            // flatten the coefficient array
+            Expression* tmp = follow_id_to_decl(c->args()[0]);
+            ArrayLit* coeffs;
             if (VarDecl* vd = tmp->dyn_cast<VarDecl>())
               tmp = vd->id();
-            CallArgItem cai(env);
-            args_ee[i] = flat_exp(env,argctx,tmp,NULL,NULL);
-            isPartial |= isfalse(env, args_ee[i].b());
+            {
+              CallArgItem cai(env);
+              args_ee[0] = flat_exp(env,nctx,tmp,NULL,NULL);
+              isPartial |= isfalse(env, args_ee[0].b());
+              coeffs = eval_array_lit(env, args_ee[0].r());
+            }
+
+            ArrayLit* vars = eval_array_lit(env, c->args()[1]);
+            if (vars->flat()) {
+              args_ee[1].r = vars;
+              args_ee[1].b = constants().var_true;
+            } else {
+              CallArgItem cai(env);
+              CallStackItem _csi(env,c->args()[1]);
+              std::vector<EE> elems_ee(vars->v().size());
+              for (unsigned int i=vars->v().size(); i--;) {
+                Ctx argctx = nctx;
+                argctx.i = eval_int(env,coeffs->v()[i])<0 ? -nctx.i : +nctx.i;
+                elems_ee[i] = flat_exp(env,argctx,vars->v()[i],NULL,NULL);
+              }
+              std::vector<Expression*> elems(elems_ee.size());
+              for (unsigned int i=elems.size(); i--;)
+                elems[i] = elems_ee[i].r();
+              KeepAlive ka;
+              {
+                GCLock lock;
+                ArrayLit* alr = new ArrayLit(Location().introduce(),elems);
+                alr->type(vars->type());
+                alr->flat(true);
+                ka = alr;
+              }
+              args_ee[1].r = ka();
+              args_ee[1].b = conj(env,b,Ctx(),elems_ee);
+            }
+
+            {
+              Expression* constant = follow_id_to_decl(c->args()[2]);
+              if (VarDecl* vd = constant->dyn_cast<VarDecl>())
+                constant = vd->id();
+              CallArgItem cai(env);
+              args_ee[2] = flat_exp(env,nctx,constant,NULL,NULL);
+              isPartial |= isfalse(env, args_ee[2].b());
+            }
+
+          } else {
+            bool mixContext = decl->e()!=NULL ||
+              (cid != constants().ids.forall && cid != constants().ids.exists && cid != constants().ids.bool2int &&
+               cid != constants().ids.sum && cid != "assert");
+            for (unsigned int i=c->args().size(); i--;) {
+              Ctx argctx = nctx;
+              if (mixContext) {
+                if (cid==constants().ids.clause) {
+                  argctx.b = (i==0 ? +nctx.b : -nctx.b);
+                } else if (c->args()[i]->type().bt()==Type::BT_BOOL) {
+                  argctx.b = C_MIX;
+                } else if (c->args()[i]->type().bt()==Type::BT_INT) {
+                  argctx.i = C_MIX;
+                }
+              }
+              Expression* tmp = follow_id_to_decl(c->args()[i]);
+              if (VarDecl* vd = tmp->dyn_cast<VarDecl>())
+                tmp = vd->id();
+              CallArgItem cai(env);
+              args_ee[i] = flat_exp(env,argctx,tmp,NULL,NULL);
+              isPartial |= isfalse(env, args_ee[i].b());
+            }
           }
           if (isPartial && c->type().isbool() && !c->type().isopt()) {
             ret.b = bind(env,Ctx(),b,constants().lit_true);
@@ -5934,10 +5990,18 @@ namespace MiniZinc {
             nsi = SolveI::sat(Location());
             break;
           case SolveI::ST_MIN:
-            nsi = SolveI::min(Location().introduce(),flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r());
+            {
+              Ctx ctx;
+              ctx.i = C_NEG;
+              nsi = SolveI::min(Location().introduce(),flat_exp(env,ctx,si->e(),NULL,constants().var_true).r());
+            }
             break;
           case SolveI::ST_MAX:
-            nsi = SolveI::max(Location().introduce(),flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r());
+            {
+              Ctx ctx;
+              ctx.i = C_POS;
+              nsi = SolveI::max(Location().introduce(),flat_exp(env,Ctx(),si->e(),NULL,constants().var_true).r());
+            }
             break;
           }
           for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {

@@ -44,7 +44,7 @@ namespace MiniZinc {
     /// Boolen negation flag
     bool neg;
     /// Default constructor (root context)
-    Ctx(void) : b(C_ROOT), i(C_POS), neg(false) {}
+    Ctx(void) : b(C_ROOT), i(C_MIX), neg(false) {}
     /// Copy constructor
     Ctx(const Ctx& ctx) : b(ctx.b), i(ctx.i), neg(ctx.neg) {}
     /// Assignment operator
