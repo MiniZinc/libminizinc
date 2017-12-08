@@ -473,13 +473,13 @@ MiniZinc incluye una biblioteca de restricciones globales que también se puede 
 .. literalinclude:: examples/send-more-money_es.mzn
   :language: minizinc
   :name: ex-smm
-  :caption:Modelo para el problema criptoaritméticos SEND+MORE=MONEY (:download:`send-more-money_es.mzn <examples/send-more-money_es.mzn>`)
+  :caption: Modelo para el problema criptoaritméticos SEND + MORE = MONEY (:download:`send-more-money_es.mzn <examples/send-more-money_es.mzn>`)
 
 El problema SEND + MORE = MONEY requiere asignar un dígito diferente a cada letra para que la restricción aritmética se mantenga. El modelo que se muestra en :numref:`ex-smm` usa la expresión de restricción :mzn:`alldifferent([S,E,N,D,M,O,R,Y])` para garantizar que cada letra tome un dígito diferente valor. La restricción global está disponible en el modelo utilizando el elemento *include*
 
 .. code-block:: minizinc
 
-  include "alldifferent_es.mzn";
+  include "alldifferent.mzn";
 
 Lo que hace que la restricción global :mzn:`alldifferent` sea utilizable por el modelo. Uno podría reemplazar esta línea por
 
@@ -595,8 +595,6 @@ La línea ``==========`` se emite cuando el sistema ha generado todas las soluci
 
 .. _sec-enum:
 
-
-
 Tipos enumerados
 ----------------
 
@@ -666,22 +664,19 @@ Un comportamiento clave de los tipos enumerados es que son coercionados automát
 
 Esto requiere al menos dos estados para colorear cada color y tres para ser de color azul.
 
-.. defblock:: Enumerated Type Operations
+.. defblock:: Operaciones de tipo enumeradas
 
-Hay una serie de operaciones integradas en tipos enumerados:
+  Hay una serie de operaciones integradas en tipos enumerados:
 
-- :mzn:`enum_next(X,x)`: returns the next value in after :mzn:`x` in the enumerated type :mzn:`X`. This is a partial function, if :mzn:`x` is the last value in the enumerated type :mzn:`X` then the function returns :math:`\bot` causing the Boolean expression containing the expression to evaluate to :mzn:`false`.
-- :mzn:`enum_prev(X,x)`: returns the previous value before :mzn:`x` in the enumerated type :mzn:`X`. Similarly :mzn:`enum_prev` is a partial function.
-- :mzn:`to_enum(X,i)`: maps an integer expression :mzn:`i` to an enumerated type value in type :mzn:`X` or evaluates to :math:`\bot` if :mzn:`i` is less than or equal to 0 or greater than the number of elements in :mzn:`X`.
+  - :mzn:`enum_next(X, x)`: devuelve el siguiente valor después de :mzn:`x` en el tipo enumerado :mzn:`X`. Esta es una función parcial, si :mzn:`x` es el último valor en el tipo enumerado :mzn:`X` luego la función devuelve :math:`\bot` haciendo que la expresión booleana que contiene la expresión evalúe :mzn:`false`.
+  - :mzn:`enum_prev(X, x)`: devuelve el valor anterior antes de :mzn:`x` en el tipo enumerado :mzn:`X`. Del mismo modo :mzn:`enum_prev` es una función parcial.
+  - :mzn:`to_enum(X, i)`: asigna una expresión entera :mzn:`i` a un valor de tipo enumerado en tipo :mzn:`X` o evalúa a :math:`\bot` si :mzn:`i` es menor o igual que 0 o mayor que la cantidad de elementos en :mzn:`X`.
 
 Tenga en cuenta también que una serie de funciones estándar son aplicables a los tipos enumerados:
 
-- :mzn:`card(X)`: devuelve la cardinalidad de un tipo enumerado :mzn:`X`.
-- :mzn:`min(X)`: devuelve el elemento mínimo de un tipo enumerado :mzn:`X`.
-- :mzn:`max(X)`: devuelve el elemento máximo de un tipo enumerado :mzn:`X`.
-
-
-
+  - :mzn:`card(X)`: devuelve la cardinalidad de un tipo enumerado :mzn:`X`.
+  - :mzn:`min(X)`: devuelve el elemento mínimo de un tipo enumerado :mzn:`X`.
+  - :mzn:`max(X)`: devuelve el elemento máximo de un tipo enumerado :mzn:`X`.
 
 .. _sec-complex:
 
@@ -892,20 +887,25 @@ Establecer restricciones
 .. index::
   single: constraint; set
 
- Otra poderosa característica de modelado de MiniZinc es que permite que los conjuntos que contienen enteros sean variables de decisión. Esto significa que cuando se evalúa el modelo, el solucionador encontrará qué elementos están en el conjunto. Como un ejemplo simple, considere el problema *0/1 mochila*. Esta es una forma restringida del problema de la mochila en la que podemos elegir colocar el artículo en la mochila o no. Cada artículo tiene un peso y una ganancia y queremos encontrar qué opción de artículos conduce a la ganancia máxima sujeta a que la mochila no esté demasiado llena. Es natural modelar esto en MiniZinc con una única variable de decisión: :mzn:`var set of ITEM: knapsack` donde :mzn:`ITEM` es el conjunto de elementos posibles. Si los arreglos :mzn:`weight [i]` y :mzn:`profit [i]` respectivamente dan el peso y el beneficio del ítem :mzn:`i`, y el peso máximo que puede llevar la mochila viene dado por :mzn:`capacity` luego se da un modelo naural en :numref:`ex-knapsack-binary`.
+Otra poderosa característica de modelado de MiniZinc es que permite que los conjuntos que contienen enteros sean variables de decisión. Esto significa que cuando se evalúa el modelo, el solucionador encontrará qué elementos están en el conjunto. Como un ejemplo simple, considere el problema *0/1 de la mochila*.
+
+Esta es una forma restringida del problema de la mochila en la que podemos elegir colocar el artículo en la mochila o no. Cada artículo tiene un peso y una ganancia y queremos encontrar qué opción de artículos conduce a la ganancia máxima sujeta a que la mochila no esté demasiado llena.
+
+Es natural modelar esto en MiniZinc con una única variable de decisión: :mzn:`var set of ITEM: knapsack` donde :mzn:`ITEM` es el conjunto de elementos posibles. Si los arreglos :mzn:`weight[i]` y :mzn:`profit[i]` respectivamente dan el peso y el beneficio del ítem :mzn:`i`, y el peso máximo que puede llevar la mochila viene dado por :mzn:`capacity` luego se da un modelo naural en :numref:`ex-knapsack-binary`.
 
 .. literalinclude:: examples/knapsack_es.mzn
   :language: minizinc
   :name: ex-knapsack-binary
   :caption: Modelo para el problema de mochila 0/1 (:download:`knapsack_es.mzn <examples/knapsack_es.mzn>`).
 
-Observe que la palabra clave :mzn:`var` viene antes de la declaración :mzn:`set` que indica que el conjunto en sí es la variable de decisión. Esto contrasta con una matriz en la que la palabra clave :mzn:`var` califica los elementos en la matriz en lugar de la matriz en sí, ya que la estructura básica de la matriz es fija, es decir, su conjunto de índices.
+Observe que la palabra clave :mzn:`var` viene antes de la declaración :mzn:`set` que indica que el conjunto en sí es la variable de decisión.
+
+Esto contrasta con una matriz en la que la palabra clave :mzn:`var` califica los elementos en la matriz en lugar de la matriz en sí, ya que la estructura básica de la matriz es fija, es decir, su conjunto de índices.
 
 .. literalinclude:: examples/social-golfers_es.mzn
   :language: minizinc
   :name: ex-social-golfers
   :caption: Modelo para los problemas de los golfistas sociales (:download:`social-golfers_es.mzn <examples/social-golfers_es.mzn>`).
-
 
 Como un ejemplo más complejo de restricción de conjuntos, considere el problema de los golfistas sociales que se muestra en :numref:`ex-social-golfers`. El objetivo es programar un torneo de golf sobre :mzn:`weeks` usando :mzn:`groups` :math:`\times` :mzn:`size` de golfistas. Cada semana tenemos que programar :mzn:`groups` diferentes grupos cada uno de tamaño :mzn:`size`. No hay dos pares de golfistas que jueguen en dos grupos
 

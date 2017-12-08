@@ -4,7 +4,7 @@
    contain the root `toctree` directive.
 
 El Manual de Minizinc
-===================
+=====================
 
 .. .. only:: builder_html
 ..
@@ -22,6 +22,6 @@ El Manual de Minizinc
 .. only:: builder_html
 
   Índices y tablas
-  ------------------
+  ----------------
 
   * :ref:`genindex`

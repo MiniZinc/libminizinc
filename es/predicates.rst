@@ -43,7 +43,7 @@ Un uso de :mzn:`alldifferent` tiene la forma
 El argumento es una matriz de variables enteras.
 
 La restricción :mzn:`alldifferent` es una de las restricciones globales más estudiadas y utilizadas en la programación de restricciones. Se usa para definir subproblemas de asignación y existen propagadores globales eficientes para :mzn:`alldifferent`.
-Los modelos :download:`send-more-money_es.mzn <examples/send-more-money_es.mzn>` (:numref:`ex-smm`) y :download:`sudoku_es.mzn <examples/sudoku_es.mzn> `(:numref:`ex-sudoku`) son ejemplos de modelos que usan :mzn:`alldifferent`.
+Los modelos :download:`send-more-money_es.mzn <examples/send-more-money_es.mzn>` (:numref:`ex-smm`) y :download:`sudoku_es.mzn <examples/sudoku_es.mzn>` (:numref:`ex-sudoku`) son ejemplos de modelos que usan :mzn:`alldifferent`.
 
 
 

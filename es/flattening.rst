@@ -27,7 +27,7 @@ En este capítulo, exploramos el proceso de traducción de MiniZinc a FlatZinc.
 
 
 Flattening Expressiones
-----------------------
+-----------------------
 
 Las restricciones del solucionador subyacente significan que las expresiones complejas en MiniZinc deben *flattened* (aplanarse o aplanar) para usar solo conjunciones de restricciones primitivas que no contienen por sí mismas términos estructurados.
 
@@ -303,9 +303,8 @@ Considere las restricciones de ecuación de Laplace definidas para un modelo de 
 
 .. literalinclude:: examples/laplace_es.mzn
   :language: minizinc
-  :start-after: % arraydec
-  :end-before: % sides
-
+  :start-after: % Array declaration.
+  :end-before: % Lados.
 
 Asumiendo :mzn:`w = 4` y :mzn:`h = 4` esto crea las restricciones:
 

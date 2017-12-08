@@ -11,7 +11,7 @@ Las deciciones de tipo de opcion son utiles para modelar problemas donde una dec
 
 
 Declarando y Utilizando Tipos de Opciones
---------------------------------
+-----------------------------------------
 
 .. defblock:: Option type Variables
 
@@ -77,9 +77,9 @@ Es una sintaxis para:
   array[1..n] of var int: x;
   constraint forall(i in 1..n)(if x[i] >= 0 then x[i] <= limit else <> endif);
 
-Nuevamente la función :mzn:`forall` en realidad opera en una lista de tipo-instanciación :mzn:`var opt bool`. Dado que :mzn:`<>` actúa como identidad :mzn:`true` para :mzn:`/\` esto da los resultados esperados.
+Nuevamente la función :mzn:`forall` en realidad opera en una lista de tipo-instanciación :mzn:`var opt bool`. Dado que :mzn:`<>` actúa como identidad :mzn:`true` para :mzn:`/\ ` esto da los resultados esperados.
 
-Sin embargo, los usos ocultos pueden conducir a un comportamiento inesperado, por lo que se requiere cuidado. Considerar
+Sin embargo, los usos ocultos pueden conducir a un comportamiento inesperado, por lo que se requiere cuidado. Considerar:
 
 .. code-block:: minizinc
 

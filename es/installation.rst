@@ -6,7 +6,7 @@ Se proporcionan paquetes binarios totalmente autónomos que contienen estos comp
 
 
 Paquetes Binarios
----------------
+-----------------
 
 La forma más sencilla de obtener un sistema completo de MiniZinc es utilizar el *Conjunto de paquetes binarios**, disponibles en http://www.minizinc.org/software.html.
 
@@ -50,7 +50,7 @@ Para utilizar las herramientas MiniZinc desde un terminal, debe agregar la ruta 
   $ export PATH=/Applications/MiniZincIDE.app/Contents/Resources:$PATH
 
 Compilación desde el código fuente
-----------------------------
+----------------------------------
 
 Todos los componentes de MiniZinc son software libre y de código abierto, y la compilación debiese de ser sencilla si tiene instaladas todas las herramientas de compilación necesarias. Sin embargo, los componentes de terceros, en particular de los diferentes solvers, pueden ser más difíciles de instalar correctamente y no podemos proporcionar ningún soporte para estos componentes.
 
@@ -146,4 +146,4 @@ Herramientas de desarrollo necesarias:
 
 
 Agregar soluciones de terceros
---------------------------
+------------------------------

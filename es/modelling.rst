@@ -427,7 +427,7 @@ a nuestro modelo. Observe que la espresión :mzn:`assert` es una expresión bool
 
 
 Resolviendo números reales
--------------------------
+--------------------------
 
 Minizinc también soporta la resolución de restricciones con números reales usado en variables de punto flotante y restricciones.
 
@@ -480,8 +480,7 @@ La salida es
   ----------
 
 La tercera pregunta, es si puedo pagar $250 por trimestre, ¿cuánto puedo pedir prestado al 4% para terminar por no pagar nada?.
-Esta pregunta está codificada por el archivo de datos
- :download:`loan3_es.dzn <examples/loan3_es.dzn>`.
+Esta pregunta está codificada por el archivo de datos :download:`loan3_es.dzn <examples/loan3_es.dzn>`.
 La salida al ejecutar el comando
 
 .. code-block:: bash
@@ -573,7 +572,7 @@ La salida es:
 .. \pjs{Should do multiple solutions????}
 
 Estructura básica de un modelo
------------------------------
+------------------------------
 
 Ahora estamos en condiciones de resumir la estructura básica de un modelo MiniZinc. La estructura esta compuesta por varios elementos (*items*), cada uno de los cuales tiene un punto y coma ``;``` al final. Los elementos pueden ocurrir en cualquier orden.
 
@@ -669,6 +668,5 @@ Hay 8 clases de :index:`elementos <item>`.
 
 - :index:`Predicate, function and test items <item; predicate>` son para definir nuevas restricciones, funciones y pruebas booleanas.
   Se discute eso en :ref:`sec-predicates`.
-
 
 - El :index:`annotation item <item; annotation>` se utiliza para definir una nueva anotación. Se discute eso en :ref:`sec-search`.

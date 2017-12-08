@@ -101,7 +101,7 @@ resulta en la salida
 
 y todo parece estar bien con el modelo.
 
-Pero si requerimos todas las soluciones utilizando
+Pero si requerimos todas las soluciones utilizando:
 
 .. code-block:: bash
 
@@ -111,7 +111,7 @@ Pero si requerimos todas las soluciones utilizando
 
 ¿Qué está pasando? Para que el solucionador de dominio finito termine, debe de  corregir todas las variables, incluidas las variables :mzn:`diff [i, j]` donde :mzn:`i <= j`, lo que significa que hay innumerables formas de generar un solución, simplemente cambiando estas variables para tomar valores arbitrarios.
 
-We can avoid problems with unconstrained variables, by modifying the model so that they are fixed to some value. For example replacing the lines marked :mzn:`% (diff}` in :numref:`ex-unc` to
+We can avoid problems with unconstrained variables, by modifying the model so that they are fixed to some value. For example replacing the lines marked :mzn:`%(diff}` in :numref:`ex-unc` to
 
 Podemos evitar problemas con variables no restringidas, modificando el modelo para que se fijen a algún valor. Por ejemplo en :numref:`ex-unc`, reemplazando las líneas marcadas como :mzn:`% (diff}` a
 
@@ -179,17 +179,14 @@ Si el gráfico es escaso, podemos hacerlo mejor al darnos cuenta de que algunas 
   int: count = sum( i,j in NODES where i < j /\ adj[i,j])
        (sum([1 | k in NODES where j < k /\ adj[i,k] /\ adj[j,k]]));
 
-Puedes usar builitin :mzn:`trace` :index:`function <trace>` para ayudar
-determinar qué está sucediendo dentro de los generadores
+Puedes usar builitin :mzn:`trace` :index:`function <trace>` para ayudar determinar qué está sucediendo dentro de los generadores
 
-.. defblock:: Tracing
+.. defblock:: Rastreo (Tracing)
 
-La función :mzn:`trace (s, e)` imprime la cadena :mzn:`s` antes de evaluar la expresión :mzn:`e` y devuelve su valor.
-Se puede usar en cualquier contexto.
+  La función :mzn:`trace(s,e)` imprime la cadena :mzn:`s` antes de evaluar la expresión :mzn:`e` y devuelve su valor.
+  Se puede usar en cualquier contexto.
 
-
-Por ejemplo, podemos ver cuántas veces se realiza la prueba en el interior
-bucle para ambas versiones del cálculo.
+Por ejemplo, podemos ver cuántas veces se realiza la prueba en el interior bucle para ambas versiones del cálculo.
 
 .. literalinclude:: examples/count1_es.mzn
   :language: minizinc
@@ -202,7 +199,7 @@ Produce el resultado:
   ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ----------
 
-indicando el bucle interno se evalúa 64 veces mientras
+Indicando el bucle interno se evalúa 64 veces mientras
 
 .. literalinclude:: examples/count2_es.mzn
   :language: minizinc
@@ -215,7 +212,7 @@ Produce el resultado:
   ++++++++++++++++
   ----------
 
-indicando el bucle interno se evalúa 16 veces.
+Indicando el bucle interno se evalúa 16 veces.
 
 Tenga en cuenta que puede usar las cadenas dependientes en :mzn:`trace` para comprender lo que está sucediendo durante la creación del modelo.
 
@@ -291,14 +288,14 @@ Sin embargo, hay algunas pautas para producir generalmente mejores modelos:
 
 .. defblock:: Choosing between models
 
-El mejor modelo es probable que tenga algunas de las siguientes características:
+  El mejor modelo es probable que tenga algunas de las siguientes características:
 
   - Menor número de variables, o al menos aquellas que no están definidas funcionalmente por otras variables.
   - Tamaños de dominio más pequeños de variables.
   - Definición más sucinta o directa de las limitaciones del modelo.
-  - Usa restricciones globales tanto como sea posible.
+  - Usar restricciones globales tanto como sea posible.
 
-En realidad, todo esto tiene que ser atenuado por cuán efectiva es la búsqueda para el modelo. Por lo general, la efectividad de la búsqueda es difícil de juzgar excepto por experimentación.
+  En realidad, todo esto tiene que ser atenuado por cuán efectiva es la búsqueda para el modelo. Por lo general, la efectividad de la búsqueda es difícil de juzgar excepto por experimentación.
 
 Considere el problema de encontrar permutaciones de :math:`n` números del 1 al :math:`n`, tal que las diferencias entre números adyacentes también forman una permutación de los números de 1 a :math:`n-1`.
 Tenga en cuenta que las variables :mzn:`u` están definidas funcionalmente por las variables :mzn:`x`, por lo que el espacio de búsqueda sin formato es :math:`n^n`.
@@ -309,7 +306,7 @@ La forma obvia de modelar este problema se muestra en :numref:`ex-allint`.
   :name: ex-allint
   :caption: Un modelo natural para el problema de todas las series de intervalos ``prob007`` en CSPlib (:download:`allinterval_es.mzn <examples/allinterval_es.mzn>`).
 
-En este modelo, la matriz :mzn:`x` representa la permutación de los números: mzn:` n` y las restricciones se representan naturalmente usando :mzn:`alldifferent`.
+En este modelo, la matriz :mzn:`x` representa la permutación de los números: mzn:`n` y las restricciones se representan naturalmente usando :mzn:`alldifferent`.
 
 Ejecutando el modelo
 
@@ -416,8 +413,8 @@ Por ejemplo, un solucionador de restricciones típico puede tratar de colocar a 
 
   Symmetric variants of an 8-queens unsatisfiable partial assignment
 
-Static Symmetry Breaking
-~~~~~~~~~~~~~~~~~~~~~~~~
+Rompiendo la simetría estática
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 La técnica de modelado para tratar con simetría se llama *ruptura de simetría*, y en su forma más simple, implica agregar restricciones al modelo que descarta todas las variantes simétricas de una asignación (parcial) a las variables excepto a uno. Estas restricciones se llaman *restricciones de ruptura de simetría estática*.
 
@@ -453,9 +450,9 @@ El modelo completo, con variables booleanas añadidas, restricciones de canaliza
 .. literalinclude:: examples/nqueens_sym_es.mzn
   :language: minizinc
   :name: ex-queens-sym
-  :start-after: % Alternative
-  :end-before: % search
-  :caption: Partial model for n-queens with symmetry breaking (full model: :download:`nqueens_sym_es.mzn <examples/nqueens_sym_es.mzn>`).
+  :start-after: % Modelo booleano alternativo:
+  :end-before: % Búsqueda.
+  :caption: Modelo parcial para n-reinas con ruptura de simetría (full model: :download:`nqueens_sym_es.mzn <examples/nqueens_sym_es.mzn>`).
 
 
 Otros ejemplos de simetría

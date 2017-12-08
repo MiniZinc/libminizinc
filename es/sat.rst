@@ -56,11 +56,11 @@ Un modelo entero para cuadrados latinos se muestra en :numref:`ex-latin`.
   :name: ex-latin
   :caption: Modelo entero para los cuadrados latino (:download:`latin_es.mzn <examples/latin_es.mzn>`).
 
-  La única limitación de los enteros es de hecho desigualdad, que se codifica en la restricción :mzn:`alldifferent`.
-  La representación del valor es la mejor forma de representar la desigualdad.
-  Un modelo solo booleano para cuadrados latinos se muestra en :numref:`ex-latinbool`.
-  Tenga en cuenta cada elemento del conjunto de enteros :mzn:`a[i, j]` se reemplaza por un arreglo de booleanos.
-  Utilizamos el predicado :mzn:`exactlyone` para codificar que cada valor se use exactamente una vez en cada fila y en cada columna, así como para codificar que exactamente uno de los Booleanos correspondiente al elemento de arreglo entero :mzn:`a[i, j]` es verdadero.
+La única limitación de los enteros es de hecho desigualdad, que se codifica en la restricción :mzn:`alldifferent`.
+La representación del valor es la mejor forma de representar la desigualdad.
+Un modelo solo booleano para cuadrados latinos se muestra en :numref:`ex-latinbool`.
+Tenga en cuenta cada elemento del conjunto de enteros :mzn:`a[i, j]` se reemplaza por un arreglo de booleanos.
+Utilizamos el predicado :mzn:`exactlyone` para codificar que cada valor se use exactamente una vez en cada fila y en cada columna, así como para codificar que exactamente uno de los Booleanos correspondiente al elemento de arreglo entero :mzn:`a[i, j]` es verdadero.
 
 .. literalinclude:: examples/latinbool_es.mzn
   :language: minizinc
