@@ -323,7 +323,7 @@ class CompareLogs:
                 self.nOptSense=-1                            ## minimize
             elif nPMax > nDMin + 1e-6 and nPMin < nDMax - 1e-6 or \
                nPMin < nDMax - 1e-6 and nPMax > nDMin + 1e-6:
-                self.nContradBounds += 1
+                self.nContrBounds += 1
                 self.fContr = True
                 print( "CONTRADICTION of BOUNDS: instance " + str(sInst) + \
                   ":\n  PRIMALS: " + str(self.lPrimBnd) + ",\n  DUALS: " + str(self.lDualBnd),
