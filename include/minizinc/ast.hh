@@ -798,7 +798,6 @@ namespace MiniZinc {
   };
   /// \brief A variable declaration expression
   class VarDecl : public Expression {
-    friend class Let;
   protected:
     /// Type-inst of the declared variable
     TypeInst* _ti;
@@ -860,6 +859,8 @@ namespace MiniZinc {
     int payload(void) const { return _payload; }
     /// Set payload
     void payload(int i) { _payload = i; }
+    /// Put current value on trail
+    void trail(void);
   };
   
   class EnvI;
