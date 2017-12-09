@@ -2,21 +2,21 @@
 
 .. |varify| replace:: :math:`\stackrel{v}{\rightarrow}`
 
-.. |TyOverview| replace:: *Overview.*
+.. |TyOverview| replace:: *Visión general.*
 
-.. |TyInsts| replace:: *Allowed Insts.*
+.. |TyInsts| replace:: *Instancias permitidas.*
 
-.. |TySyntax| replace:: *Syntax.*
+.. |TySyntax| replace:: *Sintaxis.*
 
-.. |TyFiniteType| replace:: *Finite?*
+.. |TyFiniteType| replace:: *Finito?*
 
-.. |TyVarifiable| replace:: *Varifiable?*
+.. |TyVarifiable| replace:: *Varificable?*
 
-.. |TyOrdering| replace:: *Ordering.*
+.. |TyOrdering| replace:: *Ordenando.*
 
-.. |TyInit| replace:: *Initialisation.*
+.. |TyInit| replace:: *Inicialización.*
 
-.. |TyCoercions| replace:: *Coercions.*
+.. |TyCoercions| replace:: *Coerciones.*
 
 
 Especificación de MiniZinc
@@ -425,18 +425,19 @@ MiniZinc admite la sobrecarga de operaciones integradas y definidas por el usuar
 
 
 
-Scopes
-~~~~~~
+Alcances
+~~~~~~~~
 
-Within the top-level namespace, there are several kinds of local scope that
-introduce local names:
+Dentro del espacio de nombres de nivel superior, hay varios tipos de ámbito local que
+introducir nombres locales:
 
-- Comprehension expressions (:ref:`spec-Set-Comprehensions`).
-- Let expressions (:ref:`spec-Let-Expressions`).
-- Function and predicate argument lists and bodies (:ref:`spec-preds-and-fns`).
+- Expresiones de Comprensión (:ref:`spec-Set-Comprehensions`).
+- Expresiones Let (:ref:`spec-Let-Expressions`).
+- Listas de funciones y argumentos de predicados y cuerpos (:ref:`spec-preds-and-fns`).
 
-The listed sections specify these scopes in more detail.  In each case, any
-names declared in the local scope overshadow identical global names.
+Las secciones enumeradas especifican estos ámbitos con más detalle. En cada caso, cualquier
+los nombres declarados en el ámbito local eclipsan nombres globales idénticos.
+
 
 .. _spec-types:
 
@@ -446,6 +447,7 @@ Tipos y Tipos de Instanciación
 ------------------------------
 
 MiniZinc proporciona:
+
 - Cuatro tipos de escalar incorporados: Booleanos (Boolean), enteros (Integer), flotantes (Float) y cadenas (Strings);
 - Tipos enumerados;
 - Dos tipos integrados compuestos: conjuntos y matrices multidimensionales;
@@ -462,7 +464,7 @@ Propiedades de los tipos
 La siguiente lista presenta algunas propiedades generales de los tipos MiniZinc.
 
 - Actualmente, todos los tipos son monotipos. En el futuro, podemos permitir tipos que son polimórficos en otros tipos y también las limitaciones asociadas.
-- Distinguimos tipos que son *tipos finitos*. En MiniZinc, los tipos finitos incluyen booleanos, enumeraciones (enums), tipos definidos via conjunto de expresiones tipo-instanciación como los tipos de rango (ver :ref:`spec-Set-Expression-Type-insts`), así como conjuntos y matrices, compuestos de tipos finitos. Los tipos que no son tipos finitos son enteros no restringidos, flotantes no restringidos, cadenas no restringidas y :mzn:`ann`. Los tipos finitos son relevantes para conjuntos (:mzn:`spec-Sets`) y los índices de matriz (:mzn:`spec-Arrays`). Cada tipo finito tiene un *dominio*, que es un valor establecido que contiene todos los valores posibles representados por el tipo.
+- Distinguimos tipos que son *tipos finitos*. En MiniZinc, los tipos finitos incluyen booleanos, enumeraciones (enums), tipos definidos via conjunto de expresiones tipo-instanciación como los tipos de rango (ver :ref:`spec-Set-Expression-type-insts`), así como conjuntos y matrices, compuestos de tipos finitos. Los tipos que no son tipos finitos son enteros no restringidos, flotantes no restringidos, cadenas no restringidas y :mzn:`ann`. Los tipos finitos son relevantes para conjuntos (:mzn:`spec-Sets`) y los índices de matriz (:mzn:`spec-Arrays`). Cada tipo finito tiene un *dominio*, que es un valor establecido que contiene todos los valores posibles representados por el tipo.
 - Todos los tipos de primer orden (esto excluye :mzn:`ann`) tiene incorporado un orden total y un sistema incorporado en la igualdad; ``>``, ``<``, ``==``/``=``, ``!=``, ``<=`` and ``>=`` los operadores de comparación se pueden aplicar a cualquier par de valores del mismo tipo. *Razón fundamental: Esto facilita la especificación de ruptura de simetría y de predicados y funciones polimórficos.* Tenga en cuenta que, como en la mayoría de los lenguajes, el uso de igualdad en flotantes o tipos que contienen flotantes generalmente no es confiable debido a su representación inexacta. Una implementación puede optar por advertir sobre el uso de igualdad con flotantes o tipos que contienen flotantes.
 
 .. _spec-instantiations:
@@ -499,3 +501,747 @@ Por ejemplo, :mzn:`par int` está varificado a :mzn:`var int`.  Escribimos esto 
 
 Tipo-instanciación que son varificables incluyen el tipo-instanciación de los tipos que pueden ser variables de decisión (Booleanos, enteros, flotantes, conjuntos, tipos enumerados).
 La varificación es relevante para tipo-instanciación sinónimos y accesos a la matriz.
+
+
+
+
+
+
+Visión general de expresiones de Tipo-instanciación
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Esta sección describe parcialmente cómo escribir inserciones de tipo en modelos MiniZinc.
+Se proporcionan más detalles para cada tipo tal como se describen en las siguientes secciones.
+
+Una expresión tipo-instanciación especifica un tipo-instanciación.
+Una expresión tipo-instanciación puede incluir un tipo-instanciación constraints.
+Una expresión tipo-instanciación aparece en declaraciones de variables (:ref:`spec-Declarations`) y elementos de operación definidos por el usuario (:ref:`spec-preds-and-fns`).
+
+Una expresión de tipo-instanciación tiene las siguientes sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Type-inst expressions
+  :end-before: %
+
+(La alternativa final, para los tipos de rango, usa el numérico específico :mzndef:`<num-expr>` no terminal, definido en :ref:`spec-Expressions-Overview`, en lugar de la :mzndef:`<expr>` no terminal.  Si este no fuera el caso, la regla nunca coincidiría porque el operador ``..`` siempre se correspondería con el primero :mzndef:`<expr>`.)
+
+Esto cubre completamente las expresiones tipo-instanciación para tipos escalares. El compuesto de las sintaxis de las expresiones de tipo-instanciación está descrita con más detalle en :ref:`spec-Built-in-Compound-Types`.
+
+Las palabras claves :mzn:`par` y :mzn:`var` (o falta de ellos) determina la instanciación. La anotación :mzn:`par` puede ser emitida;  las siguientes dos expresiones de tipo-instanciación son equivalentes:
+
+.. code-block:: minizinc
+
+    par int
+    int
+
+*Razón fundamental: El uso explícito de la palabra clave* :mzn:`var` *permite que una implementación compruebe que todos los parámetros se inicializan en el modelo o la instancia. También documenta claramente qué variables son parámetros y permite una comprobación de tipo-instanciación más precisa.*
+
+A tipo-instanciación es fijo si no contiene :mzn:`var` o :mzn:`any`, con la excepción de :mzn:`ann`.
+
+Tenga en cuenta que varias expresoines de tipo-instanciación que son sintácticamente expresables representan una ilegal tipo-instanciación. Por ejemplo, aunque la gramática permite :mzn:`var` frente a todas estas bases de colas de expresión de tipo-instanciación, es un error de tipo-instanciación que tiene una :mzn:`var` en el frente de una expresión de cadena o matriz.
+
+.. _spec-built-in-scalar-types:
+
+
+
+Tipos escalares incorporados y tipos de instanciación
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Booleanos
++++++++++
+
+|TyOverview|
+Los booleanos representan la verdad o la falsedad (verdadero o falso, true o false). *Justificación: los valores booleanos no están representados por números enteros.
+Los booleanos se pueden convertir explícitamente a enteros con la función * :mzn:`bool2int` *, lo que hace que la intención del usuario sea clara.*
+
+|TyInsts|
+Los booleanos pueden ser fijos o no.
+
+|TySyntax|
+Los booleanos fijos son escritos como :mzn:`bool` o :mzn:`par bool`.  Los booleanos no fijos se escriben como :mzn:`var bool`.
+
+|TyFiniteType|
+Sí. El dominio de un booleano es :mzn:`false, true`.
+
+|TyVarifiable|
+:mzn:`par bool` |varify| :mzn:`var bool`, :mzn:`var bool` |varify| :mzn:`var bool`.
+
+|TyOrdering|
+El valor :mzn:`false` se considera más pequeño que :mzn:`true`.
+
+|TyInit|
+Una variable booleana fija se debe inicializar en el momento de la instancia; una variable booleana sin fijar no tiene que ser.
+
+|TyCoercions|
+:mzn:`par bool` |coerce| :mzn:`var bool`.
+
+También los booleanos se pueden forzar automáticamente a enteros; ver :ref:`spec-Integers`.
+
+.. _spec-integers:
+
+
+Integers
+++++++++
+
+|TyOverview|
+Los números enteros representan números enteros. Las representaciones enteras están definidas por la implementación. Esto significa que el rango representable de enteros está definido por la implementación. Sin embargo, una implementación debe abortar en tiempo de ejecución si una operación entera se desborda.
+
+|TyInsts|
+Los enteros pueden ser fijos o no.
+
+|TySyntax|
+Los enteros fijos están escritos como :mzn:`int` o :mzn:`par int`.  Los enteros no fijos se escriben como :mzn:`var int`.
+
+|TyFiniteType|
+No, a menos que esté limitado por una expresión establecida (ver :ref:`spec-Set-Expression-Type-insts`).
+
+|TyVarifiable|
+:mzn:`par int` |varify| :mzn:`var int`,
+:mzn:`var int` |varify| :mzn:`var int`.
+
+|TyOrdering|
+El orden en enteros es el estándar.
+
+|TyInit|
+Una variable entera fija se debe inicializar en el momento de la instancia; una variable entera no fijada no lo necesita.
+
+|TyCoercions|
+:mzn:`par int` |coerce| :mzn:`var int`,
+:mzn:`par bool` |coerce| :mzn:`par int`,
+:mzn:`par bool` |coerce| :mzn:`var int`,
+:mzn:`var bool` |coerce| :mzn:`var int`.
+
+Además, los enteros se pueden forzar automáticamente a flotantes; ver :ref:`spec-Floats`.
+
+.. _spec-floats:
+
+
+
+Punto Flotante (Floats)
++++++++++++++++++++++++
+
+|TyOverview|
+Los números de punto flotante representan números reales. Las representaciones de números flotantes están definidas por la implementación. Esto significa que el rango y la precisión representables de los números de punto flotante están definidos por la implementación. Sin embargo, una implementación debe abortar en tiempo de ejecución en operaciones de punto flotante excepcionales
+
+(por ejemplo, aquellos que producen ``NaN``, es decir, Not a Number: No es un número, si usas número de punto flotante IEEE754).
+
+|TyInsts|
+Los números de punto flotante puede ser arreglado o no.
+
+|TySyntax|
+Los números de punto flotante son escritos como :mzn:`float` o :mzn:`par float`. Los números de punto flotante no fijos son escritos como :mzn:`var float`.
+
+|TyFiniteType|
+No, a menos que esté limitado por una expresión establecida (ver :ref:`spec-Set-Expression-Type-insts`).
+
+|TyVarifiable|
+:mzn:`par float` |varify| :mzn:`var float`,
+:mzn:`var float` |varify| :mzn:`var float`.
+
+|TyOrdering|
+El orden en los número de punto flotante es el estándar.
+
+|TyInit|
+Una variable flotante fija se debe inicializar en el momento de la instancia; una variable flotante no fija no lo necesita.
+
+|TyCoercions|
+:mzn:`par int` |coerce| :mzn:`par float`,
+:mzn:`par int` |coerce| :mzn:`var float`,
+:mzn:`var int` |coerce| :mzn:`var float`,
+:mzn:`par float` |coerce| :mzn:`var float`.
+
+.. _spec-enumerated-types:
+
+
+
+
+
+Tipos Enumerados
+++++++++++++++++
+
+|TyOverview|
+Los tipos enumerados (o *enumerados* para abreviar) proporcionan un conjunto de alternativas nombradas. Cada alternativa se identifica por su *nombre del caso*.
+Los tipos enumerados, como en muchos otros idiomas, se pueden usar en lugar de tipos enteros para lograr una verificación de tipo más estricta.
+
+|TyInsts|
+Las enumeraciones pueden ser fijas o no.
+
+|TySyntax|
+Las variables de un tipo enumerado llamado ``X`` están representados por el término :mzn:`X` o :mzn:`par X` si es fija, y :mzn:`var X` si es no fija.
+
+|TyFiniteType|
+Sí.
+El dominio de una enumeración es el conjunto que contiene todos sus nombres de casos.
+
+|TyVarifiable|
+:mzn:`par X` |varify| :mzn:`var X`,
+:mzn:`var X` |varify| :mzn:`var X`.
+
+|TyOrdering|
+Cuando se comparan dos valores enumerados con diferentes nombres de casos, el valor con el nombre del caso que se declara primero se considera más pequeño que el valor con el nombre del caso que se declara en segundo lugar.
+
+|TyInit|
+Una variable de enumeración fija se debe inicializar en el momento de la instancia; una variable enumeración no fijada no lo necesita.
+
+|TyCoercions|
+:mzn:`par X` |coerce| :mzn:`par int`,
+:mzn:`var X` |coerce| :mzn:`var int`.
+
+.. _spec-strings:
+
+
+
+Cadenas (Strings)
++++++++++++++++++
+
+|TyOverview|
+Las cadenas son primitivas, es decir, no son listas de caracteres.
+
+Las expresiones de cadena se utilizan en aserciones, elementos de salida y anotaciones, y los literales de cadena se utilizan en los elementos de inclusión.
+
+|TyInsts|
+Las cadenas deben ser corregidas.
+
+|TySyntax|
+Las cadenas fijas están escritas como :mzn:`string` o :mzn:`par string`.
+
+|TyFiniteType|
+No, a menos que esté limitado por una expresión establecida (ver :ref:`spec-Set-Expression-Type-insts`).
+
+|TyVarifiable|
+No.
+
+|TyOrdering|
+Las cadenas se ordenan lexicográficamente utilizando los códigos de caracteres subyacentes.
+
+|TyInit|
+Una variable de cadena (que solo se puede arreglar) se debe inicializar en el momento de la instancia.
+
+|TyCoercions|
+Ninguno automático. Sin embargo, cualquier valor que no sea de cadena se puede convertir manualmente a una cadena usando la función built-in :mzn:`show` o usando la interpolación de cuerdas (ver :ref:`spec-String-Interpolation-Expressions`).
+
+.. _spec-Built-in-Compound-Types:
+
+
+
+Tipos de compuestos incorporados y Tipo-Instanciación
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _spec-sets:
+
+
+Conjuntos
++++++++++
+
+|TyOverview|
+Un conjunto es una colección sin duplicados.
+
+|TyInsts|
+Un tipo-instanciación de los elementos de un conjunto debe ser fija. *Justificación: Esto se debe a que los solucionadores actuales no son lo suficientemente potentes como para manejar conjuntos que contienen variables de decisión.*
+
+Los conjuntos pueden contener cualquier tipo, y pueden ser fijos o no.
+Si un conjunto no está fijado, sus elementos deben ser finitos, a menos que ocurra en uno de los siguientes contextos:
+
+- El argumento de un predicado, función o anotación.
+- La declaración de una variable o una variable local ``let`` con un valor asignado.
+
+|TySyntax|
+Una base establecida de una expresión de tipo-instanciación tiene la siguiente sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Set type-inst expressions
+  :end-before: %
+
+Algunos ejemplos de expresiones de conjuntos de tipo-instanciación:
+
+.. code-block:: minizinc
+
+  set of int
+  var set of bool
+
+|TyFiniteType|
+Sí, si los elementos establecidos son tipos finitos. De otra manera no.
+
+El dominio de un tipo de conjunto que es un tipo finito es el conjunto de poder del dominio de su tipo de elemento. Por ejemplo, el dominio de :mzn:`set of 1..2` es :mzn:`powerset(1..2)`, cual es :mzn:`{}, {1}, {1,2}, {2}`.
+
+|TyVarifiable|
+:mzn:`par set of TI` |varify| :mzn:`var set of TI`,
+:mzn:`var set of TI` |varify| :mzn:`var set of TI`.
+
+|TyOrdering|
+El orden predefinido en los conjuntos es un ordenamiento lexicográfico del *forma de conjunto ordenado*, donde :mzn:`{1,2}` está en forma de conjunto ordenado, por ejemplo, :mzn:`{2,1}` no es.
+Esto significa, por ejemplo, :mzn:`{} < {1,3} < {2}`.
+
+|TyInit|
+Una variable de conjunto fijo se debe inicializar en el momento de la instancia; una variable set no fijada no necesita ser.
+
+|TyCoercions|
+:mzn:`par set of TI` |coerce| :mzn:`par set of UI` y
+:mzn:`par set of TI` |coerce| :mzn:`var set of UI` y
+:mzn:`var set of TI` |coerce| :mzn:`var set of UI`, si
+:mzn:`TI` |coerce| :mzn:`UI`.
+
+
+
+
+Arreglos
+++++++++
+
+|TyOverview|
+Los arrays MiniZinc son mapas de enteros fijos a valores.
+Los valores pueden ser de cualquier tipo.
+Los valores solo pueden tener inserciones de base tipo-instanciación.
+Las matrices de matrices no están permitidas.
+Las matrices pueden ser multidimensionales.
+
+Las matrices MiniZinc se pueden declarar de dos maneras diferentes.
+
+- *Las matrices explícitamente indexadas* tienen tipos de índice en la declaración que son tipos finitos. Por ejemplo:
+
+  .. code-block:: minizinc
+
+    array[0..3] of int: a1;
+    array[1..5, 1..10] of var float: a5;
+
+Para tales arrays, el tipo de índice especifica exactamente los índices que estarán en la matriz - el conjunto de índices de la matriz es el *dominio* del tipo de índice - y si los índices del valor asignado no coinciden, entonces es un tiempo de ejecución error.
+
+Por ejemplo, las siguientes asignaciones causan errores en tiempo de ejecución:
+
+  .. code-block:: minizinc
+
+    a1 = [4,6,4,3,2];   % Demasiados elementos.
+    a5 = [];            % Muy pocos elementos.
+
+- *Las matrices implícitamente indexadas* tienen tipos de índice en la declaración que no son tipos finitos. Por ejemplo:
+
+  .. code-block:: minizinc
+
+    array[int,int] of int: a6;
+
+  No se verifican los índices cuando estas variables están asignadas.
+
+En MiniZinc, todos los conjuntos de índices de una matriz deben ser rangos contiguos de enteros o tipos enumerados.
+La expresión utilizada para la inicialización de una matriz debe tener conjuntos de índices coincidentes.
+Una expresión de matriz con un conjunto de índices enum se puede asignar a una matriz declarada con un conjunto de índices enteros, pero no al revés.
+La excepción son los literales de matriz, que se pueden asignar a matrices declaradas con conjuntos de índices enumerados.
+
+Por ejemplo:
+
+.. code-block:: minizinc
+
+  enum X = {A,B,C};
+  enum Y = {D,E,F};
+  array[X] of int: x = array1d(X, [5,6,7]); % correcto
+  array[Y] of int: y = x;                   % conjunto de índices no coinciden: Y != X
+  array[int] of int: z = x;                 % correcto: asigne el índice X establecido en int
+  array[X] of int: x2 = [10,11,12];         % correcto: coerción automática para literales de matriz
+
+La inicialización de una matriz se puede hacer en una declaración de asignación separada, que puede estar presente en el modelo o en un archivo de datos separado.
+
+Las matrices pueden ser accedidos. Ver :ref:`spec-Array-Access-Expressions` para más detalles.
+
+|TyInsts|
+El tamaño de una matriz debe ser fijo. Sus índices también deben tener inserciones de tipo fijo. Sus elementos pueden ser fijos o no.
+
+|TySyntax|
+Un arreglo base de una expresión de tipo-instanciación tiene la siguiente sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Array type-inst expressions
+  :end-before: %
+
+Algunos ejemplos de arreglos de expresiones de tipo-instanciación:
+
+.. code-block:: minizinc
+
+  array[1..10] of int
+  list of var int
+
+Tenga en cuenta que :mzndef:`list of <T>` es solo sintáctico para :mzndef:`array[int] of <T>`. *Justificación: Las matrices con índices enteros de este formulario son muy comunes y merecen un soporte especial para facilitar las cosas a los modeladores. Implementarlo usando azúcar sintáctico evita agregar un tipo extra al lenguaje, lo que simplifica las cosas para los implementadores.*
+
+Como las matrices deben ser de tamaño fijo, es un error tipo-instanciación que precede a una expresión tipo-instanciación de matriz con :mzn:`var`.
+
+|TyFiniteType|
+Sí, si los tipos de índice y el tipo de elemento son todos tipos finitos.
+De otra manera no.
+
+El dominio de un tipo de matriz que es una matriz finita es el conjunto de todas las matrices distintas cuyo conjunto de índices es igual al dominio del tipo de índice y cuyos elementos son del tipo de elemento de matriz.
+
+|TyVarifiable|
+No.
+
+|TyOrdering|
+Las matrices se ordenan lexicográficamente, tomando la ausencia de un valor para una clave dada antes de cualquier valor para esa clave. Por ejemplo,
+:mzn:`[1, 1]` es menor que
+:mzn:`[1, 2]`, que es menor que :mzn:`[1, 2, 3]` y
+:mzn:`array1d(2..4,[0, 0, 0])` que es menor que  :mzn:`[1, 2, 3]`.
+
+|TyInit|
+Una variable de matriz indexada explícitamente debe inicializarse en instancia-tiempo solo si sus elementos deben inicializarse en el momento de la instancia.
+Una variable de matriz indexada implícitamente se debe inicializar en el momento de la instancia para que se conozca su longitud y conjunto de índices.
+
+|TyCoercions|
+:mzn:`array[TI0] of TI` |coerce| :mzn:`array[UI0] of UI` si
+:mzn:`TI0` |coerce| :mzn:`UI0` y :mzn:`TI` |coerce| :mzn:`UI`.
+
+.. _spec-option-types:
+
+
+
+
+Tipos de opciones
++++++++++++++++++
+
+|TyOverview|
+Los tipos de opciones definidos usando el constructor de tipo :mzn:`opt`, definen tipos que pueden o no estar allí. Son similares a tipos ``Puede`` (``Maybe``) de la implicidad de Haskell agrega un nuevo valor :mzn:`<>` al tipo.
+
+
+|TyInsts|
+El argumento de un tipo de opción debe ser uno de los tipos base :mzn:`bool`, :mzn:`int` o :mzn:`float`.
+
+|TySyntax|
+El tipo de opción está escrito :mzndef:`opt <T>` donde :mzndef:`<T>` si es uno de los tres tipos base, o una de sus instancias restringidas.
+
+|TyFiniteType|
+Sí, si el tipo subyacente es finito, de lo contrario no.
+
+|TyVarifiable|
+Sí.
+
+|TyOrdering|
+:mzn:`<>` siempre es menor que cualquier otro valor en el tipo.
+Pero ten cuidado con la sobrecarga de operadores como :mzn:`<`, que es diferente para los tipos de opciones.
+
+|TyInit|
+Una variable de tipo :mzn:`opt` no necesita ser inicializado en el momento de la instancia. Un tipo de variable sin inicializar :mzn:`opt` se inicializa automáticamente a :mzn:`<>`.
+
+|TyCoercions|
+:mzn:`TI` |coerce| :mzn:`opt UI` si :mzn:`TI` |coerce| :mzn:`UI`..
+
+.. _spec-the-annotation-type:
+
+
+
+El Tipo de Anotación
+++++++++++++++++++++
+
+|TyOverview|
+El tipo de anotación, :mzn:`ann`, se puede usar para representar estructuras de términos arbitrarios. Se aumenta con elementos de anotación (:ref:`spec-Annotation-Items`).
+
+|TyInsts|
+:mzn:`ann` siempre se considera no fijado, ya que puede contener elementos no fijadas. No puede ser precedido por :mzn:`var`.
+
+|TySyntax|
+El tipo de anotación está escrito :mzn:`ann`.
+
+|TyFiniteType|
+No.
+
+|TyVarifiable|
+No.
+
+|TyOrdering|
+N/A.  Los tipos de anotación no tienen un orden definido en ellos.
+
+|TyInit|
+Una variable :mzn:`ann` debe inicializarse en el momento de la instancia.
+
+|TyCoercions|
+Ninguna.
+
+
+.. _spec-constrained-type-insts:
+
+
+
+
+Restricciones de Tipo-instanciación
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Una poderosa característica de MiniZinc es *restricciones de tipo-instanciación*. Una restricción de tipo-instanciación es una versión restringida de *base* tipo-instanciación, ejemplo, un tipo-instanciación con un menor número de valores en su dominio.
+
+.. _spec-set-expression-type-insts:
+
+
+
+Conjunto de expresiones de Tipo-instanciación
++++++++++++++++++++++++++++++++++++++++++++++
+
+Se pueden usar tres tipos de expresiones en tipo-instanciación.
+
+#. Rangos enteros:  ejemplos. :mzn:`1..3`.
+#. Conjunto de literales:  ejemplos. :mzn:`var {1,3,5}`.
+#. Identifiers: el nombre de un parámetro establecido (que puede ser global, let-local, el argumento de un predicado o función, o un valor de generador) puede servir como tipo-instanciación.
+
+En cada caso, el tipo de base es el de los elementos del conjunto, y los valores dentro del conjunto sirven como el dominio. Por ejemplo, mientras que una variable con tipo-instanciación :mzn:`var int` puede tomar cualquier valor entero, una variable con tipo-instanciación :mzn:`var 1..3` solo puede tomar el valor 1, 2 o 3.
+
+Todas las expresiones establecidas de tipo-instanciación son tipos finitos. Su dominio es igual al conjunto en sí.
+
+
+
+Rango de los números de Tipo-instanciación
+++++++++++++++++++++++++++++++++++++++++++
+
+Los rangos de los números de punto flotantes se pueden usar como tipo-instanciación, ejemplo, :mzn:`1.0 .. 3.0`.  Estos se tratan de manera similar al rango entero tipo-instanciación, a pesar de que
+ :mzn:`1.0 .. 3.0` no es una expresión válida mientras es :mzn:`1 .. 3`.
+
+Los rangos de números de punto flotante no son tipos finitos.
+
+.. _spec-expressions:
+
+
+
+Expresiones
+-----------
+
+.. _spec-expressions-overview:
+
+
+
+Resumen de expresiones
+~~~~~~~~~~~~~~~~~~~~~~
+
+Las expresiones representan valores. Ocurren en varios tipos de artículos. Tienen la siguiente sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Expressions
+  :end-before: %
+
+Las expresiones se pueden componer a partir de subexpresiones combinadas con operadores.
+Todos los operadores (binarios y unarios) se describen en :ref:`spec-Operators`, incluyendo las precedencias de los operadores binarios. Todos los operadores unarios se unen más estrechamente que todos los operadores binarios.
+
+Las expresiones pueden tener una o más anotaciones. Las anotaciones se vinculan más estrechamente que las aplicaciones de operador unario y binario, pero menos estrechamente que las operaciones de acceso y las aplicaciones que no son de operador. En algunos casos, este enlace no es intuitivo. Por ejemplo, en las primeras tres de las siguientes líneas, la anotación :mzn:`a` se une a la expresión del identificador :mzn:`x` en lugar de la aplicación del operador. Sin embargo, la cuarta línea presenta una aplicación sin operador (debido a las comillas simples alrededor del :mzn:`not`) y entonces la anotación se une a toda la aplicación.
+
+.. code-block:: minizinc
+
+  not x::a;
+  not (x)::a;
+  not(x)::a;
+  'not'(x)::a;
+
+:ref:`spec-Annotations` tiene más en anotaciones.
+
+Las expresiones se pueden contener entre paréntesis.
+
+Las operaciones de acceso a la matriz se unen más estrechamente que las anotaciones y operadores unarios y binarios.
+Se describen con más detalle en :ref:`spec-Array-Access-Expressions`.
+
+Los tipos restantes de átomos de expresión (from :mzndef:`<ident>` a
+:mzndef:`<gen-call-expr>`) están descritos en
+:ref:`spec-Identifier-Expressions-and-Quoted-Operator-Expressions` a :ref:`spec-Generator-Call-Expressions`.
+
+También distinguimos expresiones numéricas sintácticamente válidas. Esto permite que los tipos de rango sean analizados correctamente.
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Numeric expressions
+  :end-before: %
+
+.. _spec-operators:
+
+
+
+Operadores
+~~~~~~~~~~
+
+Los operadores son funciones que se distinguen por su sintaxis de una o dos formas. Primero, algunos de ellos contienen caracteres no alfanuméricos que las funciones normales no (por ejemplo, :mzn:`+`). Segundo, su aplicación está escrita de una manera diferente a las funciones normales.
+
+Distinguimos entre operadores binarios, que se pueden aplicar de manera infija (por ejemplo, :mzn:`3 + 4`), y operadores unarios, que se pueden aplicar de manera prefija sin paréntesis (por ejemplo, :mzn:`not x`). También distinguimos entre operadores integrados y operadores definidos por el usuario. La sintaxis es la siguiente:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Built-in operators
+  :end-before: %
+
+Nuevamente, distinguimos sintácticamente operadores numéricos.
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Built-in numeric operators
+  :end-before: %
+
+Algunos operadores se pueden escribir utilizando sus símbolos Unicode, que se enumeran en :numref:`bin-ops-unicode` (recuerde que la entrada de MiniZinc es UTF-8).
+
+.. _bin-ops-unicode:
+
+.. cssclass:: table-nonfluid table-bordered
+
+.. table:: Unicode equivalents of binary operators
+
+
+  ================  =======================  ============
+  Operador          Símbolo Unicode symbol   Código UTF-8
+  ================  =======================  ============
+  :mzn:`<->`        :math:`\leftrightarrow`  E2 86 94
+  :mzn:`->`         :math:`\rightarrow`      E2 86 92
+  :mzn:`<-`         :math:`\leftarrow`       E2 86 90
+  :mzn:`not`        :math:`\lnot`            C2 AC
+  ``\/``            :math:`\lor`             E2 88 A8
+  ``/\``            :math:`\land`            E2 88 A7
+  :mzn:`!=`         :math:`\neq`             E2 89 A0
+  :mzn:`<=`         :math:`\leq`             E2 89 A4
+  :mzn:`>=`         :math:`\geq`             E2 89 A5
+  :mzn:`in`         :math:`\in`              E2 88 88
+  :mzn:`subset`     :math:`\subseteq`        E2 8A 86
+  :mzn:`superset`   :math:`\supseteq`        E2 8A 87
+  :mzn:`union`      :math:`\cup`             E2 88 AA
+  :mzn:`intersect`  :math:`\cap`             E2 88 A9
+  ================  =======================  ============
+
+Los operadores binarios se enumeran en :numref:`bin-ops`. Un número de precedencia más bajo significa un enlace más estricto; por ejemplo, :mzn:`1+2*3` es analizado como :mzn:`1+(2*3)` porque :mzn:`*` se une más fuerte que :mzn:`+`. La asociatividad indica cómo se manejan las cadenas de operadores con igual precedencia; por ejemplo, :mzn:`1+2+3` es analizado como :mzn:`(1+2)+3` porque :mzn:`+` es de izquierda asociativo, :mzn:`a++b++c` es analizado como :mzn:`a++(b++c)` porque :mzn:`++` es asociativo por la derecha, y :mzn:`1<x<2` es un error de sintaxis porque :mzn:`<` no es asociativo.
+
+.. _bin-ops:
+
+.. cssclass:: table-nonfluid table-bordered
+
+.. table:: Binary infix operators
+
+  ===============================  ========== ===========
+  Symbolo(s)                       Asociación Precedencia
+  ===============================  ========== ===========
+  :mzn:`<->`                       izquierda  1200
+
+  :mzn:`->`                        izquierda  1100
+  :mzn:`<-`                        izquierda  1100
+
+  ``\/``                           izquierda  1000
+  :mzn:`xor`                       izquierda  1000
+
+  ``/\``                           izquierda  900
+
+  :mzn:`<`                         ninguna    800
+  :mzn:`>`                         ninguna    800
+  :mzn:`<=`                        ninguna    800
+  :mzn:`>=`                        ninguna    800
+  :mzn:`==`,
+  :mzn:`=`                         ninguna    800
+  :mzn:`!=`                        ninguna    800
+
+  :mzn:`in`                        ninguna    700
+  :mzn:`subset`                    ninguna    700
+  :mzn:`superset`                  ninguna    700
+
+  :mzn:`union`                     izquierda  600
+  :mzn:`diff`                      izquierda  600
+  :mzn:`symdiff`                   izquierda  600
+
+  :mzn:`..`                        ninguna    500
+
+  :mzn:`+`                         izquierda  400
+  :mzn:`-`                         izquierda  400
+
+  :mzn:`*`                         izquierda  300
+  :mzn:`div`                       izquierda  300
+  :mzn:`mod`                       izquierda  300
+  :mzn:`/`                         izquierda  300
+  :mzn:`intersect`                 izquierda  300
+
+  :mzn:`++`                        derecha    200
+
+  `````  :mzndef:`<ident>` `````   izquierda  100
+  ===============================  ========== ===========
+
+
+Un operador binario definido por el usuario se crea mediante el retroceso de un identificador normal, por ejemplo:
+
+.. code-block:: minizinc
+
+  A `min2` B
+
+Este es un error estático si el identificador no es el nombre de una función o predicado binario.
+
+Los operadores unarios son: :mzn:`+`, :mzn:`-` y :mzn:`not`.
+Los operadores unarios definidos por el usuario no son posibles.
+
+Como explica:ref:`spec-Identifiers`, cualquier operador incorporado se puede usar como un identificador de función normal citándolo, por ejemplo: :mzn:`'+'(3, 4)` es equivalente a :mzn:`3 + 4`.
+
+El significado de cada operador se da en :ref:`spec-builtins`.
+
+
+
+
+Expresiones atómicas
+~~~~~~~~~~~~~~~~~~~~
+
+.. _spec-Identifier-Expressions-and-Quoted-Operator-Expressions:
+
+Expresiones de identificador y expresiones de operador entrecomilladas
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+Las expresiones de identificador y las expresiones de operador entre comillas tienen la siguiente sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Identifiers and quoted operators
+  :end-before: %
+
+Se dieron ejemplos de identificadores en :ref:`spec-Identifiers`.  Los siguientes son ejemplos de operadores cotizados:
+
+.. code-block:: minizinc
+
+  '+'
+  'union'
+
+En los operadores citados, el espacio en blanco no está permitido entre la cotización y el operador.  :ref:`spec-Operators` enumera los operadores incorporados de MiniZinc.
+
+Sintácticamente, cualquier identificador o operador citado puede servir como una expresión.
+Sin embargo, en un modelo válido, cualquier identificador o operador citado que sirva como expresión debe ser el nombre de una variable.
+
+.. _spec-Anonymous-Decision-Variables:
+
+
+
+Variables de decisión anónimas
+++++++++++++++++++++++++++++++
+
+Hay un identificador especial, :mzn:`_`, que representa una variable de decisión anónima no fija. Puede tomar cualquier tipo que pueda ser una variable de decisión. Es particularmente útil para inicializar variables de decisión dentro de tipos compuestos. Por ejemplo, en la siguiente matriz, los elementos primero y tercero se fijan en 1 y 3, respectivamente, y los elementos segundo y cuarto no están fijos:
+
+.. code-block:: minizinc
+
+  array[1..4] of var int: xs = [1, _, 3, _];
+
+Cualquier expresión que no contenga :mzn:`_` y no involucra variables de decisión, por lo que es fijo.
+
+
+
+
+Literales booleanos
++++++++++++++++++++
+
+Los literales booleanos tienen esta sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Boolean literals
+  :end-before: %
+
+
+
+Entero y Literales de números de punto flotante
++++++++++++++++++++++++++++++++++++++++++++++++
+
+Hay tres formas de literales enteros: decimal, hexadecimal y octal, con estas formas respectivas:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Integer literals
+  :end-before: %
+
+Por ejemplo: :mzn:`0`, :mzn:`005`, :mzn:`123`, :mzn:`0x1b7`, :mzn:`0o777`;  pero no :mzn:`-1`.
+
+Los literales de punto flotante poseen la siguiente forma:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Float literals
+  :end-before: %
+
+Por ejemplo: :mzn:`1.05`, :mzn:`1.3e-5`, :mzn:`1.3+e5`;  pero no :mzn:`1.`, :mzn:`.5`, :mzn:`1.e5`, :mzn:`.1e5`, :mzn:`-1.0`, :mzn:`-1E05`.
+
+Un símbolo :mzn:`-` precede a un entero o literal de número flotante se analiza como unario menos (ndependientemente del espacio en blanco intermedio), no como parte del literal.  Esto se debe a que, en general, no es posible distinguir una :mzn:`-` para un entero negativo o literal de número flotante de un binario menos cuando se lee.
+
+.. _spec-String-Interpolation-Expressions:
