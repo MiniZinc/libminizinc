@@ -993,7 +993,6 @@ namespace MiniZinc {
   };
   /// \brief A variable declaration expression
   class VarDecl : public Expression {
-    friend class Let;
   protected:
     /// Type-inst of the declared variable
     TypeInst* _ti;
@@ -1055,6 +1054,8 @@ namespace MiniZinc {
     int payload(void) const { return _payload; }
     /// Set payload
     void payload(int i) { _payload = i; }
+    /// Put current value on trail
+    void trail(void);
   };
   
   class EnvI;
@@ -1656,6 +1657,7 @@ namespace MiniZinc {
         ASTString is_introduced;
         Id* user_cut;            // MIP
         Id* lazy_constraint;            // MIP
+        Id* mzn_break_here;
       } ann;
 
       /// Command line options

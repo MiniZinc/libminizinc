@@ -43,6 +43,8 @@ predicate bool_or(var bool: p, var bool: q, var bool: r) =
     x <= z /\ y <= z   % strong
   endif;
 
+predicate bool_xor(var bool: p, var bool: q) =
+  1==p+q;
 
 predicate bool_xor(var bool: p, var bool: q, var bool: r) =
   if false then

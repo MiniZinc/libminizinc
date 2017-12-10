@@ -296,9 +296,10 @@ namespace MiniZinc {
                        Expression* in,
                        Expression* where) {
     std::vector<VarDecl*> vd;
+    Location loc = in == NULL ? where->loc() : in->loc();
     for (unsigned int i=0; i<v.size(); i++) {
-      VarDecl* nvd = new VarDecl(in->loc(),
-                                 new TypeInst(in->loc(),Type::parint()),v[i]);
+      VarDecl* nvd = new VarDecl(loc,
+                                 new TypeInst(loc,Type::parint()),v[i]);
       nvd->toplevel(false);
       vd.push_back(nvd);
     }
@@ -324,9 +325,10 @@ namespace MiniZinc {
                        Expression* in,
                        Expression* where) {
     std::vector<VarDecl*> vd;
+    Location loc = in == NULL ? where->loc() : in->loc();
     for (unsigned int i=0; i<v.size(); i++) {
-      VarDecl* nvd = new VarDecl(in->loc(),
-                                 new TypeInst(in->loc(),Type::parint()),ASTString(v[i]));
+      VarDecl* nvd = new VarDecl(loc,
+                                 new TypeInst(loc,Type::parint()),ASTString(v[i]));
       nvd->toplevel(false);
       vd.push_back(nvd);
     }
@@ -593,6 +595,14 @@ namespace MiniZinc {
     for (unsigned int i=_args.size(); i--;)
       cmb_hash(Expression::hash(_args[i]));
   }
+  
+  void
+  VarDecl::trail(void) {
+    GC::trail(&_e,e());
+    if (_ti->ranges().size() > 0) {
+      GC::trail(reinterpret_cast<Expression**>(&_ti),_ti);
+    }
+  }
 
   void
   VarDecl::rehash(void) {
@@ -636,10 +646,7 @@ namespace MiniZinc {
     GC::mark();
     for (unsigned int i=_let.size(); i--;) {
       if (VarDecl* vd = _let[i]->dyn_cast<VarDecl>()) {
-        GC::trail(&vd->_e,vd->e());
-        if (vd->ti()->ranges().size() > 0) {
-          GC::trail(reinterpret_cast<Expression**>(&vd->_ti),vd->ti());
-        }
+        vd->trail();
         vd->e(_let_orig[i]);
       }
     }
@@ -1244,7 +1251,11 @@ namespace MiniZinc {
     ann.user_cut->type(Type::ann());
     ann.lazy_constraint = new Id(Location(), ASTString("lazy_constraint"), NULL);
     ann.lazy_constraint->type(Type::ann());
-    
+#ifndef NDEBUG
+    ann.mzn_break_here = new Id(Location(), ASTString("mzn_break_here"), NULL);
+    ann.mzn_break_here->type(Type::ann());
+#endif
+
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
     
@@ -1441,7 +1452,10 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(), ann.is_introduced));
     v.push_back(ann.user_cut);
     v.push_back(ann.lazy_constraint);
-    
+#ifndef NDEBUG
+    v.push_back(ann.mzn_break_here);
+#endif
+
     v.push_back(new StringLit(Location(),cli.cmdlineData_short_str));
     v.push_back(new StringLit(Location(),cli.cmdlineData_str));
     v.push_back(new StringLit(Location(),cli.datafile_short_str));
