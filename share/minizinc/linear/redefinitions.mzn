@@ -185,18 +185,16 @@ predicate aux_int_division_modulo(var int: x, var int: y, var int: q,
         var int: r) =
     let {
       int: bx = max(abs(lb(x)), abs(ub(x)));
-      constraint -bx<=q /\ q<=bx;
+      constraint q in -bx..bx;
       int: by = max(abs(lb(y)), abs(ub(y)));
-      constraint -by+1<=r /\ r<=by-1;
-      var 0..1: p
+      constraint r in -by+1..by-1;
+      var 0..1: p = (x>=0),
     }
     in
     x = y * q + r /\
     % 0 <= x -> 0 <= r    which is    0 > x \/ 0 <= r
-    aux_int_lt_if_1(x, 0, p) /\
     aux_int_ge_if_0(r, 0, p) /\
     % x < 0 -> r <= 0    which is    x >= 0 \/ r <= 0
-    aux_int_ge_if_0(x, 0, p) /\
     aux_int_le_if_1(r, 0, p) /\
     % abs(r) < abs(y)
     let { var 1.. max(abs(lb(y)), abs(ub(y))): w = abs(y) }

@@ -62,6 +62,9 @@ opt bool: fAvoidNewInts;
 bool: fAvoidNI =                  %% Actually this is only for ..._lin_..., not for just x-y
            if absent( fAvoidNewInts ) then false
            else deopt( fAvoidNewInts ) endif;
+opt bool: fNewVarsInAuxEq;
+bool: fAuxIntEqOLD00 = if absent(fNewVarsInAuxEq) then false else deopt(fNewVarsInAuxEq) endif;
+bool: fAuxFloatEqOLD00 = if absent(fNewVarsInAuxEq) then false else deopt(fNewVarsInAuxEq) endif;
 
 %%%%%%%%%%%%%%%%%%%%%  Redundant constraints ---------------------------------------------- %
 bool: fMZN__IgnoreRedundantCumulative=false;

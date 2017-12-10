@@ -209,7 +209,7 @@ predicate int_lin_eq_reif(array[int] of int: c, array[int] of var int: x,
                           int: d, var bool: b) =
     if fPostprocessDomains /\ fPostproDom_DIFF then
       int_eq_reif(sum(i in index_set(x))( c[i]*x[i] ), d, b)
-    elseif fAvoidNI then
+    elseif fAvoidNI /\ fAuxIntEqOLD00 then
       aux_int_eq_iff_1__float(sum2float( c, x ), d, b)
     else
       aux_int_eq_iff_1(sum(i in index_set(x))( c[i]*x[i] ), d, b)
@@ -384,7 +384,7 @@ predicate aux_int_eq_iff_1(var int: x, var int: y, var int: p) =
     abort("  aux_int_eq_iff_1 should not be used with full domain postprocessing")
   elseif false then
     true
-  else
+  elseif fAuxIntEqOLD00 then
     let { array[1..2] of var 0..1: q }
     in
     aux_int_le_if_1(x, y, p) /\
@@ -392,9 +392,13 @@ predicate aux_int_eq_iff_1(var int: x, var int: y, var int: p) =
     aux_int_lt_if_0(x, y, q[1]) /\
     aux_int_gt_if_0(x, y, q[2]) /\
     sum(q) == p + 1
+  else
+    p == (x<=y /\ y<=x)
+    /\ 1+p == (x<y) + (y<x)
   endif;
 
 predicate aux_int_eq_iff_1__float(var float: x, float: y, var int: p) =
+  if fAuxIntEqOLD00 then
     let { array[1..2] of var 0..1: q }
     in
     aux_int_le_if_1(x, y, p) /\
@@ -402,7 +406,9 @@ predicate aux_int_eq_iff_1__float(var float: x, float: y, var int: p) =
     aux_int_lt_if_0(x, y, q[1]) /\
     aux_int_gt_if_0(x, y, q[2]) /\
     sum(q) == p + 1
-    ;
+  else
+    assert( false, "Don't use aux_int_eq_iff_1__float with fAuxIntEqOLD00" )
+  endif;
 
     % Alternative 2
 predicate aux_int_eq_iff_1__WEAK1(var int: x, var int: y, var int: p) =
@@ -428,7 +434,7 @@ predicate aux_float_eq_iff_1(var float: x, var float: y, var int: p) =
     if 1==fix(p) then x==y else x!=y endif
   elseif fPostprocessDomains /\ fPostproDom_DIFF then
     abort("  aux_float_eq_iff_1 should not be used with full domain postprocessing")
-  else
+  elseif fAuxFloatEqOLD00 then
     let { array[1..2] of var 0..1: q }
     in
     aux_float_le_if_1(x, y, p) /\
@@ -436,6 +442,9 @@ predicate aux_float_eq_iff_1(var float: x, var float: y, var int: p) =
     aux_float_lt_if_0(x, y, (q[1])) /\
     aux_float_gt_if_0(x, y, (q[2])) /\
     sum(i in 1..2)((q[i])) == 1 + p
+  else
+    p == (x<=y /\ y<=x)
+    /\ 1+p == (x<y) + (y<x)
   endif;
 
   
