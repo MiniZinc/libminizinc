@@ -43,11 +43,15 @@ function var bool: set2bools_bit( var set of int: x, int: i ) ::promise_total =
   
 predicate set_eq(var set of int: x, var set of int: y) =
   if not has_ub_set(x) /\ not has_ub_set(y) then
-    assert(false, "Cannot determine bounds of set variables")
+    assert(false, "set_eq: cannot determine bounds of set variables")
   elseif not has_ub_set(x) then set_eq(y,x)
   else
   let {
-    set of int: uby = if has_ub_set(y) then ub(y) else ub(x) endif;
+    set of int: uby = if has_ub_set(y) then ub(y) else
+      let {
+        constraint y subset x,
+      } in ub(x)
+    endif;
     array[int] of var bool: bx = set2bools(x);
     array[int] of var bool: by = set2bools(y,uby);
   } in forall (i in index_set(bx) union index_set(by)) (
@@ -215,9 +219,9 @@ function var set of int: set_diff(var set of int: x, var set of int: y) ::promis
   let {
     array[int] of var bool: bx = set2bools(x);
     array[int] of var bool: by = set2bools(y);
-    var set of (index_set(bx) diff index_set(by)): z;
+    var set of ub(x) diff lb(y): z;
     array[int] of var bool: bz = set2bools(z);
-    constraint forall (i in index_set(bz)) (
+    constraint forall (i in ub(z)) (
       bz[i] = (bx[i] /\ (not by[i]))
     );
   } in z;
@@ -226,9 +230,9 @@ function var set of int: set_symdiff(var set of int: x, var set of int: y) ::pro
   let {
     array[int] of var bool: bx = set2bools(x);
     array[int] of var bool: by = set2bools(y);
-    var set of (index_set(bx) diff index_set(by)): z;
+    var set of (ub(x) diff lb(y)) union (ub(y) diff lb(x)): z;
     array[int] of var bool: bz = set2bools(z);
-    constraint forall (i in index_set(bz)) (
+    constraint forall (i in ub(z)) (
       bz[i] = (bx[i] xor by[i])
     );
   } in z;
@@ -240,11 +244,19 @@ function var int: card(var set of int: x) ::promise_total =
     constraint bool_lin_eq([1 | i in index_set(bx)],[bx[i] | i in index_set(bx)],c);
   } in c;
 
+predicate set_in(int: x, var set of int: y) =
+  let {
+    array[int] of var bool: by = set2bools(y);
+  } in by[x];
 predicate set_in(var int: x, var set of int: y) =
   let {
     array[int] of var bool: by = set2bools(y);
   } in by[x];
 
+predicate set_in_reif(int: x, var set of int: y, var bool: b) =
+  let {
+    array[int] of var bool: by = set2bools(y);
+  } in b <-> by[x];
 predicate set_in_reif(var int: x, var set of int: y, var bool: b) =
   let {
     array[int] of var bool: by = set2bools(y);

@@ -585,13 +585,14 @@ void MIP_solverinstance::processFlatZinc(void) {
       } else if (ti->type().isvarfloat() || ti->type().isfloat()) {
       } else {
         std::stringstream ssm;
-        ssm << "This type of var is ! handled by MIP: " << *it << std::endl;
+        ssm << "This type of var is not handled by MIP: " << *it << std::endl;
         ssm << "  VarDecl flags (ti, bt, st, ot): "
           << ti->type().ti()
           << ti->type().bt()
           << ti->type().st()
           << ti->type().ot()
           << ", dim == " << ti->type().dim()
+          << "\nRemove the variable or add a constraint so it is redefined."
           << endl;
         throw InternalError(ssm.str());
       }
