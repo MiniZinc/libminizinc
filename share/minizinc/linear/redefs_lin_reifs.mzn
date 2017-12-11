@@ -394,7 +394,7 @@ predicate aux_int_eq_iff_1(var int: x, var int: y, var int: p) =
     sum(q) == p + 1
   else
     p == (x<=y /\ y<=x)
-    /\ 1+p == (x<y) + (y<x)
+    /\ 1+p == (x<=y) + (y<=x)
   endif;
 
 predicate aux_int_eq_iff_1__float(var float: x, float: y, var int: p) =
@@ -444,7 +444,7 @@ predicate aux_float_eq_iff_1(var float: x, var float: y, var int: p) =
     sum(i in 1..2)((q[i])) == 1 + p
   else
     p == (x<=y /\ y<=x)
-    /\ 1+p == (x<y) + (y<x)
+    /\ 1+p == (x<=y) + (y<=x)
   endif;
 
   
