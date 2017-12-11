@@ -266,11 +266,12 @@ void MIP_gurobi_wrapper::openGUROBI()
   cbui.wrapper = this;
   
    /* Initialize the GUROBI environment */
+   cout << "% " << flush;               // Gurobi 7.5.2 prints "Academic License..."
    error = dll_GRBloadenv (&env, "mzn-gurobi.log");
    wrap_assert ( !error, "Could not open GUROBI environment." );
    error = dll_GRBsetintparam(env, "OutputFlag", 0);  // Switch off output
-//    error = dll_GRBsetintparam(env, "LogToConsole",
-//                             fVerbose ? 1 : 0);  // also when flag_all_solutions?  TODO
+//   error = dll_GRBsetintparam(env, "LogToConsole",
+//                            fVerbose ? 1 : 0);  // also when flag_all_solutions?  TODO
   /* Create the problem. */
    error = dll_GRBnewmodel(env, &model, "mzn_gurobi", 0, NULL, NULL, NULL, NULL, NULL);
    wrap_assert ( model, "Failed to create LP." );
