@@ -1245,3 +1245,770 @@ Por ejemplo: :mzn:`1.05`, :mzn:`1.3e-5`, :mzn:`1.3+e5`;  pero no :mzn:`1.`, :mzn
 Un símbolo :mzn:`-` precede a un entero o literal de número flotante se analiza como unario menos (ndependientemente del espacio en blanco intermedio), no como parte del literal.  Esto se debe a que, en general, no es posible distinguir una :mzn:`-` para un entero negativo o literal de número flotante de un binario menos cuando se lee.
 
 .. _spec-String-Interpolation-Expressions:
+
+
+
+
+Literales de cadenas e interpolación de cadenas
++++++++++++++++++++++++++++++++++++++++++++++++
+
+Los literales de cadena se escriben como en C:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % String literals
+  :end-before: %
+
+Esto incluye secuencias de escape estilo C, como :mzn:`\"` para comillas dobles, :mzn:`\\` para la barra invertida, y :mzn:`\n` para nueva línea.
+
+Por ejemplo: :mzn:`"Hello, world!\n"`.
+
+Los literales de cadena deben caber en una sola línea.
+
+Los literales de cadena larga se pueden dividir en varias líneas mediante la concatenación de cadenas. Por ejemplo:
+
+.. code-block:: minizinc
+
+    string: s = "This is a string literal "
+             ++ "split across two lines.";
+
+Una expresión de cadena puede contener una expresión arbitraria de MiniZinc, que se convertirá en una cadena similar a la función builtin :mzn:`show` y se insertará en la cadena.
+
+Por ejemplo:
+
+.. code-block:: minizinc
+
+  var set of 1..10: q;
+  solve satisfy;
+  output [show("The value of q is \(q), and it has \(card(q)) elements.")];
+
+.. _spec-set-literals:
+
+
+
+Establecer Literales
+++++++++++++++++++++
+
+Los literales establecidos tienen esta sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Set literals
+  :end-before: %
+
+Por ejemplo:
+
+.. code-block:: minizinc
+
+  { 1, 3, 5 }
+  { }
+  { 1, 2.0 }
+
+La instanciación de tipo de todos los elementos en un conjunto literal debe ser la misma, o coercible para la misma instancia de tipo (como en el último ejemplo anterior, donde el entero :mzn:`1` será coaccionado a un :mzn:`float`).
+
+
+.. _spec-set-comprehensions:
+
+
+
+
+
+Establecer comprensiones
+++++++++++++++++++++++++
+
+Las comprensiones establecidas tienen esta sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Set comprehensions
+  :end-before: %
+
+Por ejemplo (con el equivalente literal a la derecha):
+
+.. code-block:: minizinc
+
+    { 2*i | i in 1..5 }     % { 2, 4, 6, 8, 10 }
+    {  1  | i in 1..5 }     % { 1 }   (no duplicates in sets)
+
+La expresión antes del :mzn:`|` es la *expresión de la cabeza*. La expresión después del :mzn:`in` es una *expresión del generador*.
+Los generadores pueden ser restringidos por una expresión mientras (*where-expression*). Por ejemplo:
+
+.. code-block:: minizinc
+
+  { i | i in 1..10 where (i mod 2 = 0) }     % { 2, 4, 6, 8, 10 }
+
+Cuando hay múltiples generadores presentes, el generador que está más a la derecha actúa como el más interno. Por ejemplo:
+
+.. code-block:: minizinc
+
+    { 3*i+j | i in 0..2, j in {0, 1} }    % { 0, 1, 3, 4, 6, 7 }
+
+El alcance de las variables del generador local viene dado por las siguientes reglas:
+
+- Son visibles dentro de la expresión de la cabeza (antes de
+ :mzn:`|`).
+- Son visibles dentro de la expresión mientras (where-expression).
+- Son visibles dentro de las expresiones del generador en cualquier generador posterior.
+
+La última de estas reglas significa que se permite la siguiente comprensión del conjunto:
+
+.. code-block:: minizinc
+
+    { i+j | i in 1..3, j in 1..i }  % { 1+1, 2+1, 2+2, 3+1, 3+2, 3+3 }
+
+Una expresión de generador debe ser una matriz o un conjunto fijo.
+
+*Razón fundamental: Para las comprensiones del conjunto, los generadores de conjuntos serían suficientes, pero para las comprensiones de matriz, se requieren generadores de matriz para una expresividad total (ejemplo., para proporcionar control sobre el orden de los elementos en la matriz resultante). Las comprensiones de conjuntos tienen generadores de matriz para coherencia con las comprensiones de matriz, lo que hace que las implementaciones sean más simples.*
+
+
+La expresión mientras (si está presente) debe ser booleano.
+Puede ser ``var``, en cuyo caso el tipo de comprensión se eleva a un tipo opcional. Solo una donde se permite la expresión por comprensión.
+
+*Razón fundamental:
+Permitir una expresión-donde por generador es otra posibilidad, y una que aparentemente podría dar como resultado una evaluación más eficiente en algunos casos. Por ejemplo, considere la siguiente comprensión:*
+
+.. code-block:: minizinc
+
+    [f(i, j) | i in A1, j in A2 where p(i) /\ q(i,j)]
+
+*Si se permitieran múltiples expresiones-where, esto podría expresarse más eficientemente de la siguiente manera, lo que evita las "iteraciones de bucle interno" infructuosas para cada "iteración de bucle externo" que no satisface* :mzn:`p(i)`:
+
+.. code-block:: minizinc
+
+    [f(i, j) | i in A1 where p(i), j in A2 where q(i,j)]
+
+*Sin embargo, esta eficiencia también se puede lograr con comprensiones anidadas:*
+
+.. code-block:: minizinc
+
+    [f(i, j) | i in [k | k in A1 where p(k)], j in A2 where q(i,j)]
+
+*Por lo tanto, una sola expresión de dónde es todo lo que es compatible.*
+
+.. _spec-array-literals:
+
+
+
+Literales de matrices
++++++++++++++++++++++
+
+Los literales de matriz tienen esta sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Array literals
+  :end-before: %
+
+  Por ejemplo:
+
+.. code-block:: minizinc
+
+    [1, 2, 3, 4]
+    []
+    [1, _]
+
+
+En una matriz literal, todos los elementos deben tener la misma instancia de tipo, o ser coercibles para la misma instancia de tipo (como en el último ejemplo anterior, donde el entero fijo :mzn:`1` será coaccionado a un :mzn:`var int`).
+
+Los índices de una matriz literal son implícitamente :mzn:`1..n`, donde :mzn:`n` es la longitud del literal.
+
+.. _spec-2d-array-literals:
+
+
+
+Arreglos literales en 2d
+++++++++++++++++++++++++
+
+Los literales simples de arreglos 2d tienen esta sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % 2D Array literals
+  :end-before: %
+
+Por ejemplo:
+
+.. code-block:: minizinc
+
+    [| 1, 2, 3
+     | 4, 5, 6
+     | 7, 8, 9 |]       % array[1..3, 1..3]
+    [| x, y, z |]       % array[1..1, 1..3]
+    [| 1 | _ | _ |]     % array[1..3, 1..1]
+
+En un 2d array literal, cada sub-array debe tener la misma longitud.
+
+En un 2d array literal, todos los elementos deben tener la misma instancia de tipo, o ser coercibles para el mismo tipo de instanciación (como en el último ejemplo anterior, donde el entero fijo :mzn:`1` será coaccionado a un :mzn:`var int`).
+
+Los índices de un 2d array literal están implícitamente :mzn:`(1,1)..(m,n)`, donde :mzn:`m` y :mzn:`n` están determinados por la forma del literal.
+
+
+.. _spec-array-comprehensions:
+
+
+
+
+Arreglo de Comprensiones
+++++++++++++++++++++++++
+
+Arreglo de Comprensiones tienen la siguiente sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Array comprehensions
+  :end-before: %
+
+Por ejemplo (con los equivalentes literales a la derecha):
+
+.. code-block:: minizinc
+
+    [2*i | i in 1..5]       % [2, 4, 6, 8, 10]
+
+Arreglo de Comprensiones tener requisitos de tipo e instanciación más flexibles que las comprensiones establecidas (see :ref:`spec-Set-Comprehensions`).
+
+Arreglo de Comprensiones se permiten sobre un conjunto de variables con tipo finito, el resultado es una matriz de tipo opcional, con una longitud igual a la cardinalidad del límite superior del conjunto de variables.
+
+Por ejemplo:
+
+.. code-block:: minizinc
+
+    var set of 1..5: x;
+    array[int] of var opt int: y = [ i * i | i in x ];
+
+La longitud de la matriz será 5.
+
+Se permiten las comprensiones de matriz donde la expresión mientras es :mzn:`var bool`.
+De nuevo, la matriz resultante es de tipo opcional, y de longitud igual a la dada por las expresiones del generador.
+Por ejemplo:
+
+.. code-block:: minizinc
+
+   var int x;
+   array[int] of var opt int: y = [ i | i in 1..10 where i != x ];
+
+La longitud de la matriz será 10.
+
+Los índices de una comprensión de matriz simple evaluada son implícitamente
+:mzn:`1..n`, donde :mzn:`n` es la duración de la comprensión evaluada.
+
+.. _spec-array-access-expressions:
+
+
+
+Expresiones de Matriz de Acceso
++++++++++++++++++++++++++++++++
+
+Se accede a los elementos de matriz usando corchetes después de una expresión:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Array access
+  :end-before: %
+
+Por ejemplo:
+
+.. code-block:: minizinc
+
+    int: x = a1[1];
+
+Si todos los índices utilizados en un arreglo de acceso son fijos, la tipo-instanciación del resultado es la misma que el elemento tipo-instanciación. Sin embargo, si los índices no son fijos, la tipo-instanciación del resultado es el elemento varificado tipo-instanciación. Por ejemplo, si tenemos:
+
+.. code-block:: minizinc
+
+   array[1..2] of int: a2 = [1, 2];
+   var int: i;
+
+Entonces el tipo-instanciación de :mzn:`a2[i]` es :mzn:`var int`. Si el elemento tipo-instanciación no es variable, tal acceso causa un error estático.
+
+Se accede a matrices multidimensionales usando índices separados por comas.
+
+.. code-block:: minizinc
+
+    array[1..3,1..3] of int: a3;
+    int: y = a3[1, 2];
+
+Los índices deben coincidir con el tipo de conjunto de índice de la matriz. Por ejemplo, una matriz declarada con un conjunto de índices enum solo se puede acceder usando índices de esa enumeración.
+
+.. code-block:: minizinc
+
+    enum X = {A,B,C};
+    array[X] of int: a4 = [1,2,3];
+    int: y = a4[1];                  % tipo de índice incorrecto
+    int: z = a4[B];                  % correcto
+
+
+Literales de Anotación
+++++++++++++++++++++++
+
+Literales del tipo :mzn:`ann` tiene la siguiente sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Annotation literals
+  :end-before: %
+
+Por ejemplo:
+
+.. code-block:: minizinc
+
+    foo
+    cons(1, cons(2, cons(3, nil)))
+
+No hay forma de inspeccionar o deconstruir literales de anotación en un modelo MiniZinc;  están destinados a ser inspeccionados solo por una implementación, por ejemplo, para dirigir la compilación.
+
+
+
+
+
+
+Expresiones Si-Entonces-Sino (If-then-else)
++++++++++++++++++++++++++++++++++++++++++++
+
+MiniZinc proporciona expresiones if-then-else, que proporcionan una selección de dos alternativas basadas en una condición. Ellos tienen esta sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % If-then-else expressions
+  :end-before: %
+
+Por ejemplo:
+
+.. code-block:: minizinc
+
+    if x <= y then x else y endif
+    if x < 0 then -1 elseif x > 0 then 1 else 0 endif
+
+La presencia del :mzn:`endif` evita la posible ambigüedad cuando una expresión if-then-else es parte de una expresión más grande.
+
+La instanciación de tipo de la :mzn:`if` la expresión debe ser :mzn:`par bool` o :mzn:`var bool`.
+El :mzn:`then` y :mzn:`else` las expresiones deben tener el mismo tipo-instanciación o ser coercibles para el mismo tipo-instanciación, que también es el tipo-instanciación de toda la expresión.
+
+Si la expresión :mzn:`if` es :mzn:`var bool` entonces el tipo-instanciación de el :mzn:`then` y la expresión :mzn:`else` debe ser varificable.
+
+Si la expresión :mzn:`if` es :mzn:`par bool` entonces la evaluación de las expresiones if-then-else es floja (lazy): la condición es evaluada, y luego solo uno de los :mzn:`then` y :mzn:`else` las ramas se evalúan, dependiendo de si la condición tuvo éxito o falló.
+Este no es el caso si es :mzn:`var bool`.
+
+
+.. _spec-let-expressions:
+
+
+Expresiones Let
++++++++++++++++
+
+Las expresiones Let proporcionan una forma de introducir nombres locales para una o más expresiones y restricciones locales que se pueden usar dentro de otra expresión. Son particularmente útiles en operaciones definidas por el usuario.
+
+Las expresions ``let`` tienen la siguiente sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Let expressions
+  :end-before: %
+
+Por ejemplo:
+
+.. code-block:: minizinc
+
+    let { int: x = 3, int: y = 4; } in x + y;
+    let { var int: x;
+          constraint x >= y /\ x >= -y /\ (x = y \/ x = -y); }
+    in x
+
+El alcance de una variable local ``let`` abarca:
+
+- Las expresiones de tipo-instanciación e inicialización de cualquier variable posterior dentro de la expresión let (pero no la expresión de inicialización propia de la variable).
+- La expresión después del :mzn:`in`, que es analizado tan codiciosamente como sea posible.
+
+Una variable solo puede declararse una vez en una expresión let.
+
+Por lo tanto, en los siguientes ejemplos, el primero es aceptable, pero el resto no:
+
+.. code-block:: minizinc
+
+    let { int: x = 3; int: y = x; } in x + y;  % ok
+    let { int: y = x; int: x = 3; } in x + y;  % x not visible in y's defn.
+    let { int: x = x; } in x;                  % x not visible in x's defn.
+    let { int: x = 3; int: x = 4; } in x;      % x declared twice
+
+..
+  The type-inst expressions can include type-inst variables if the let is
+  within a function or predicate body in which the same type-inst variables
+  were present in the function or predicate signature.
+  TODO: type-inst variables are currently not fully supported
+
+El inicializador para una variable local let puede omitirse solo si la variable es una variable de decisión. Por ejemplo:
+
+.. code-block:: minizinc
+
+    let { var int: x; } in ...;    % ok
+    let {     int: x; } in ...;    % illegal
+
+La tipo-instanciación de toda la expresión let es la tipo-instanciación de la expresión después de la palabra clave :mzn:`in`.
+
+Hay una complicación que involucra expresiones de let en contextos negativos.  Una expresión ``let`` ocurre en un contexto negativo si ocurre en una expresión de la forma :mzn:`not X`, :mzn:`X <-> Y}` o en la sub-expresión
+:mzn:`X` en :mzn:`X -> Y` o :mzn:`Y <- X`, o en una subexpresion
+:mzn:`bool2int(X)`.
+
+Las restricciones en las expresiones de let flotan al contexto booleano circundante más cercano. Por ejemplo
+
+.. code-block:: minizinc
+
+     constraint b -> x + let { var 0..2: y; constraint y != -1;} in y >= 4;
+
+Es equivalente a:
+
+.. code-block:: minizinc
+
+     var 0..2: y;
+     constraint b -> (x + y >= 4 /\ y != 1);
+
+
+
+Expresiones de llamada
+++++++++++++++++++++++
+
+Las expresiones de llamada se usan para llamar predicados y funciones.
+
+Las expresiones de llamada tienen esta sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Call expressions
+  :end-before: %
+
+Por ejemplo:
+
+.. code-block:: minizinc
+
+    x = min(3, 5);
+
+
+El tipo-instanciación de las expresiones pasadas como argumentos debe coincidir con los tipos de argumento de las llamadas predicado/función. El tipo de retorno del predicado/función también debe ser apropiado para el contexto de llamada.
+
+Tenga en cuenta que una llamada a una función o predicado sin argumentos es sintácticamente indistinguible del uso de una variable, y así debe determinarse durante la comprobación de tipo-instanciación.
+
+La evaluación de los argumentos en las expresiones de llamada es estricta: todos los argumentos se evalúan antes de que se evalúe la llamada. Tenga en cuenta que esto incluye operaciones booleanas como ``/\``, ``\/``, :mzn:`->` y :mzn:`<-` que podría ser flojo (lazy) en un argumento. La única excepción es :mzn:`assert`, que es flojo en su tercer argumento (:ref:`spec-Other-Operations`).
+
+*Razón fundamental: Las operaciones booleanas son estrictas porque:
+(a) esto minimiza casos excepcionales;
+(b) en una expresión como* :mzn:`A -> B` *donde* :mzn:`A` *no es fijo y* :mzn:`B` *provoca un aborto, el comportamiento apropiado no está claro si la pereza está presente; y
+(c) si un usuario necesita laziness, un if-then-else puede ser usado.*
+
+El orden de evaluación de los argumentos no está especificado. *Justificación: debido a que MiniZinc es declarativo, no existe una necesidad obvia de especificar una orden de evaluación, y dejarla sin especificar da a los implementadores cierta libertad.*
+
+.. _spec-generator-call-expressions:
+
+
+
+Expresiones de Generador de llamadas
+++++++++++++++++++++++++++++++++++++
+
+MiniZinc tiene una sintaxis especial para ciertos tipos de expresiones de llamada lo que hace que los modelos sean mucho más legibles.
+
+Las expresiones de llamada del generador tienen esta sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Generator call expressions
+  :end-before: %
+
+Una expresión de llamada del generador :mzn:`P(Gs)(E)` es equivalente a la expresión de llamada :mzn:`P([E | Gs])`.
+Por ejemplo, la expresión:
+
+.. code-block:: minizinc
+
+    forall(i,j in Domain where i<j)
+        (noattack(i, j, queens[i], queens[j]));
+
+(en un modelo que especifica el problema N-Reinas) es equivalente a:
+
+.. code-block:: minizinc
+
+    forall( [ noattack(i, j, queens[i], queens[j])
+            | i,j in Domain where i<j ] );
+
+Los paréntesis alrededor de la última expresión son obligatorios; esto evita una posible confusión cuando la expresión de llamada del generador es parte de una expresión más grande.
+
+El identificador debe ser el nombre de un predicado o función unaria que toma un argumento de matriz.
+
+Los generadores y expresión-mientras (si está presente) tienen los mismos requisitos que aquellos en las comprensiones de matriz (:ref:`spec-Array-Comprehensions`).
+
+.. _spec-items:
+
+
+
+
+Elementos
+---------
+
+Esta sección describe los elementos del programa de nivel superior.
+
+.. _spec-include-items:
+
+
+
+Incluir elementos
+~~~~~~~~~~~~~
+
+Incluir elementos permite dividir un modelo en varios archivos. Ellos tienen esta sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Include items
+  :end-before: %
+
+Por ejemplo:
+
+.. code-block:: minizinc
+
+    include "foo.mzn";
+
+Incluye el archivo ``foo.mzn``.
+
+Incluir elementos es particularmente útil para acceder a bibliotecas o dividir modelos grandes en piezas pequeñas. Ellos no son, como :ref:`spec-Model-Instance-Files` explica, utilizado para especificar archivos de datos.
+
+Si el nombre de pila no es completo, el archivo se busca en un conjunto de directorios definido por la implementación. Los directorios de búsqueda deben poder modificarse con una opción de línea de comando.
+
+.. _spec-declarations:
+
+
+
+Elementos de declaración variable
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Las declaraciones de variables tienen esta sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Variable declaration items
+  :end-before: %
+
+Por ejemplo:
+
+.. code-block:: minizinc
+
+    int: A = 10;
+
+Es un error de instantación de tipo si una variable se declara y/o define más de una vez en un modelo.
+
+Una variable cuya declaración no incluye una asignación se puede inicializar mediante un elemento de asignación por separado (:ref:`spec-Assignments`).  Por ejemplo, el artículo anterior se puede separar en los siguientes dos elementos:
+
+.. code-block:: minizinc
+
+    int: A;
+    ...
+    A = 10;
+
+Todas las variables que contienen un componente de parámetro deben definirse en instancia-tiempo.
+
+Las variables pueden tener una o más anotaciones. :ref:`spec-Annotations` tiene más en las anotaciones.
+
+
+.. _spec-enum_items:
+
+
+
+
+
+
+Elementos de Enumeración
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Los elementos de tipo enumerados tienen esta sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Enum items
+  :end-before: %
+
+Un ejemplo de una enumeración:
+
+.. code-block:: minizinc
+
+     enum country = {Australia, Canada, China, England, USA};
+
+Cada alternativa se llama *caso de enumeración (enum case)*.  El identificador utilizado para nombrar cada caso (por ejemplo, :mzn:`Australia`) se llama el *nombre del caso enum (enum case name)*.
+
+Debido a que los nombres de casos de enumeraciones residen en el espacio de nombres de nivel superior (:ref:`spec-Namespaces`), los nombres de los casos en diferentes enumeraciones deben ser distintos.
+
+Una enumeración puede declararse pero no definirse, en cuyo caso debe definirse en otra parte dentro del modelo o en un archivo de datos.
+Por ejemplo, un archivo de modelo podría contener esto:
+
+.. code-block:: minizinc
+
+    enum Workers;
+    enum Shifts;
+
+Y el archivo de datos podría contener esto:
+
+.. code-block:: minizinc
+
+    Workers = { welder, driller, stamper };
+    Shifts  = { idle, day, night };
+
+Algunas veces es útil poder referirse a uno de los nombres de las cajas enum dentro del modelo. Esto se puede lograr usando una variable. El modelo leería:
+
+.. code-block:: minizinc
+
+    enum Shifts;
+    Shifts: idle;            % Variable representing the idle constant.
+
+Y el archivo de datos:
+
+.. code-block:: minizinc
+
+    enum Shifts = { idle_const, day, night };
+    idle = idle_const;      % Assignment to the variable.
+
+Aunque la constante :mzn:`idle_const` no se puede mencionar en el modelo, la variable :mzn:`idle` puede ser.
+
+Todas las enumeraciones se deben definir en el momento de la instancia.
+
+Los elementos de enumeraciones se pueden anotar. :ref:`spec-Annotations` tiene más detalles sobre las anotaciones.
+
+Cada nombre de caso se puede forzar automáticamente al entero correspondiente a su índice en el tipo.
+
+.. code-block:: minizinc
+
+  int: oz = Australia;  % oz = 1
+
+Para cada tipo enumerado :mzn:`T`, las siguientes funciones existen:
+
+.. code-block:: minizinc
+
+  % Devuelve el siguiente valor de enumeración mayor de x en un tipo de enumeración X
+  function T: enum_next(set of T: X, T: x);
+  function var T: enum_next(set of T: X, var T: x);
+
+  % Devuelve el siguiente valor enumeración más pequeño de x en un tipo de enumeración X
+  function T: enum_prev(set of T: X, T: x);
+  function var T: enum_prev(set of T: X, var T: x);
+
+  % Convertir x a un tipo de enumeración X
+  function T: to_enum(set of T: X, int: x);
+  function var T: to_enum(set of T: X, var int: x);
+
+.. _spec-assignments:
+
+
+
+
+Artículos de asignación
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Las asignaciones tienen esta sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Assign items
+  :end-before: %
+
+Por ejemplo:
+
+.. code-block:: minizinc
+
+    A = 10;
+
+.. % \pjs{Add something about automatic coercion of index sets?}
+
+.. _spec-constraint-items:
+
+
+
+Objetos de restricción
+~~~~~~~~~~~~~~~~~~~~~~
+
+Los elementos de restricción forman el corazón de un modelo. Cualquier solución encontrada para un modelo satisfará todas sus limitaciones.
+Los elementos de restricción tienen esta sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Constraint items
+  :end-before: %
+
+Por ejemplo:
+
+.. code-block:: minizinc
+
+    constraint a*x < b;
+
+La expresión en un elemento de restricción debe tener instanciación de tipo :mzn:`par bool` o :mzn:`var bool`; sin embargo, tenga en cuenta que las restricciones con expresiones fijas no son muy útiles.
+
+.. _spec-solve-items:
+
+
+
+Elementos Solve
+~~~~~~~~~~~~~~~
+
+Cada modelo debe tener exactamente un elemento de solución. Los elementos de resolución tienen la siguiente sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Solve item
+  :end-before: %
+
+Ejemplo de elmentos solve:
+
+.. code-block:: minizinc
+
+    solve satisfy;
+    solve maximize a*x + y - 3*z;
+
+El elemento solve determina si el modelo representa un problema de satisfacción de restricciones o un problema de optimización. En el último caso, la expresión dada es la que se debe minimizar/maximizar.
+
+La expresión en un elemento de solve de minimizar/maximizar puede tener un tipo entero o flotante
+
+*Rationale: This is possible because all type-insts have a defined order.*
+Tenga en cuenta que tener una expresión con una instanciación de tipo fija en un elemento solve no es muy útil, ya que significa que el modelo no requiere optimización.
+
+Elementos solve puede ser anotado. :ref:`spec-Annotations` tiene más detalles sobre las anotaciones.
+
+.. _spec-output-items:
+
+
+
+Elementos de salida
+~~~~~~~~~~~~~~~~~~~
+
+Los elementos de salida se utilizan para presentar las soluciones de una instancia modelo.
+Tienen la siguiente sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Output items
+  :end-before: %
+
+Por ejemplo:
+
+.. code-block:: minizinc
+
+    output ["The value of x is ", show(x), "!\n"];
+
+La expresión debe tener un tipo-instanciación de :mzn:`array[int] of par string`. Se puede componer utilizando el operador incorporado :mzn:`++` y las funciones incorporadas :mzn:`show`, :mzn:`show_int`, y :mzn:`show_float` (:ref:`spec-builtins`), así como interpolaciones de cuerdas (:ref:`spec-String-Interpolation-Expressions`). La salida es la concatenación de los elementos de la matriz. Si existen múltiples elementos de salida, la salida es la concatenación de todas sus salidas, en el orden en que aparecen en el modelo.
+
+Si no hay ningún elemento de salida presente, la implementación debe imprimir todas las variables globales y sus valores en un formato legible.
+
+.. _spec-annotation-items:
+
+
+Artículos de Anotación
+~~~~~~~~~~~~~~~~~~~~~~
+
+Los elementos de anotación se utilizan para aumentar el tipo :mzn:`ann`.  Tienen la siguiente sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Annotation items
+  :end-before: %
+
+Por ejemplo:
+
+.. code-block:: minizinc
+
+    annotation solver(int: kind);
+
+Es un error de instanciación de tipo si una anotación se declara y/o define más de una vez en un modelo.
+
+El uso de anotaciones se describe en :ref:`spec-Annotations`.
+
+.. _spec-preds-and-fns:
