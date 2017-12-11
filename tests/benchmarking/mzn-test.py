@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 ##  Author: Gleb Belov@monash.edu  2017
 ##  This program runs MiniZinc solvers over a set of instances,
