@@ -3,9 +3,9 @@
 % Guido Tack <guido.tack@monash.edu>
 % Gleb Belov <gleb.belov@monash.edu>
 %
-% Set comparisons are often used just to avoid symmetries. For that, lex cmp of direct set2bools
-% would be much cheaper than the actual set_le++ below                    TODO
 
+include "lex_less.mzn";
+include "lex_lesseq.mzn";
 
 function var set of int: reverse_map(array[int] of var bool: b);
 function set of int: reverse_map(array[int] of bool: b) ::promise_total =
@@ -41,7 +41,7 @@ function var bool: set2bools_bit( var set of int: x, int: i ) ::promise_total =
   else false endif;
   
   
-predicate set_eq(var set of int: x, var set of int: y) =
+predicate set_eq(var set of int: x, var set of int: y) ::promise_total =
   if not has_ub_set(x) /\ not has_ub_set(y) then
     assert(false, "set_eq: cannot determine bounds of set variables")
   elseif not has_ub_set(x) then set_eq(y,x)
@@ -61,7 +61,7 @@ predicate set_eq(var set of int: x, var set of int: y) =
   )
   endif;
 
-predicate set_eq_reif(var set of int: x, var set of int: y, var bool: b) =
+predicate set_eq_reif(var set of int: x, var set of int: y, var bool: b) ::promise_total =
   if is_fixed(b) then
     if true==fix(b) then x==y else x!=y endif
   else
@@ -75,7 +75,7 @@ predicate set_eq_reif(var set of int: x, var set of int: y, var bool: b) =
     )
   endif;
 
-predicate set_ne(var set of int: x, var set of int: y) =
+predicate set_ne(var set of int: x, var set of int: y) ::promise_total =
   let {
     array[int] of var bool: bx = set2bools(x);
     array[int] of var bool: by = set2bools(y);
@@ -85,84 +85,45 @@ predicate set_ne(var set of int: x, var set of int: y) =
     else bx[i]!=by[i] endif
   );
 
-predicate set_ne_reif(var set of int: x, var set of int: y, var bool: b) =
+predicate set_ne_reif(var set of int: x, var set of int: y, var bool: b) ::promise_total =
   set_eq_reif( x, y, not b );
 
-  %%% lex cmp of the sparse vectors
-predicate set_le_lt_base__(var set of int: x, var set of int: y,
-                         var bool: fValReif, bool: fStrict) ::promise_total =
-  let {         %%   DOES NOT HELP in -Glinear globals_alldiff_set_nosets.mzn ....
-    array[int] of var bool: bx0 = set2bools(x);   %% just to call reverse_map
-    array[int] of var bool: by0 = set2bools(y);
-  } in
-  if not has_ub_set(x) \/ not has_ub_set(y) then
-    assert(false, "set_le_lt_base__: cannot determine bounds of set variables")
-  elseif {}==ub(x) /\ {}==ub(y) then
-    fValReif==not fStrict
-  elseif {}!=ub(x) /\ {}!=ub(y) /\ max(ub(x))<min(ub(y)) /\ not fStrict then
-    fValReif
-  elseif {}!=ub(x) /\ {}!=ub(y) /\ min(ub(x))>max(ub(y)) /\ fStrict then
-    not fValReif
-  else
+  
+% Set comparisons are often used just to avoid symmetries.
+predicate set_le(var set of int: x, var set of int: y) ::promise_total =
   let {
-    set of int: ubxy = ub(x) union ub(y);
+    set of int: ubxy = ub(x) union ub(y),
     array[int] of var bool: bx = set2bools(x, ubxy);
     array[int] of var bool: by = set2bools(y, ubxy);
-    int: i0 = min( ubxy );
-    array[i0..i0+length(bx)] of var bool: bOkFrom;
-    array[int] of var bool: bXMaxFrom = getMaxRearBools( set2bools( x ), i0+1..max(ubxy)+1 );
-    array[int] of var bool: bYMaxFrom = getMaxRearBools( set2bools( y ), i0+1..max(ubxy)+1 );
   } in
-    % trace( "set_le_lt_base__: " ++  show(ub(x)) ++ ", " ++ show(ub(y)) ++ "\n") /\
-    (bOkFrom[i0] == fValReif)
-    /\
-    (bOkFrom[i0+length(bx)] == not fStrict)
-    /\
-    forall(i in ubxy) (                %% Can linearize stronger?    TODO
-        bOkFrom[i] <-> (
-              ( (bx[i] == by[i]) /\ bOkFrom[i+1] )
-              \/
-              ( (bx[i] <  by[i]) /\ not bXMaxFrom[i+1] )
-              \/
-              ( (bx[i] >  by[i]) /\ bYMaxFrom[i+1] )
-        )
-    )
-  endif;
-
-function var bool: getMaxRearBools_bit( array[int] of var bool: b, int: i ) =
-  if {}==index_set( b ) \/ i>max( index_set( b ) ) then 
-    false
-  elseif i in index_set( b ) then
-    b[i] \/ getMaxRearBools_bit( b, i+1 )
-  else
-    getMaxRearBools_bit( b, min( index_set( b ) ) )
-  endif;
-
-%% Returns an array of bools each is the max of b[i] and the later elements
-function array[int] of var bool: getMaxRearBools( array[int] of var bool: b ) =
-  array1d( index_set(b), [ getMaxRearBools_bit( b, i )
-    | i in index_set( b ) ] );
-  
-%% Generalizes getMaxRearBools to a sub/superset of the array's indexes
-function array[int] of var bool: getMaxRearBools(
-                                 array[int] of var bool: b, set of int: ubb ) =
-  array1d( min(ubb)..max(ubb), [ getMaxRearBools_bit( b, i )
-             | i in min(ubb)..max(ubb) ] );
-
-  
-predicate set_le(var set of int: x, var set of int: y) ::promise_total =
-  set_le_lt_base__(x, y, true, false);
+    lex_lesseq( by, bx );
 
 predicate set_le_reif(var set of int: x, var set of int: y, var bool: p) ::promise_total =
-  set_le_lt_base__(x, y, p, false);
+  let {
+    set of int: ubxy = ub(x) union ub(y),
+    array[int] of var bool: bx = set2bools(x, ubxy);
+    array[int] of var bool: by = set2bools(y, ubxy);
+  } in
+    lex_lesseq_bool_reif( by, bx, p );
 
 predicate set_lt(var set of int: x, var set of int: y) ::promise_total =
-  set_le_lt_base__(x, y, true, true);
+  let {
+    set of int: ubxy = ub(x) union ub(y),
+    array[int] of var bool: bx = set2bools(x, ubxy);
+    array[int] of var bool: by = set2bools(y, ubxy);
+  } in
+    lex_less( by, bx );
 
 predicate set_lt_reif(var set of int: x, var set of int: y, var bool: p) ::promise_total =
-  set_le_lt_base__(x, y, p, true);
+  let {
+    set of int: ubxy = ub(x) union ub(y),
+    array[int] of var bool: bx = set2bools(x, ubxy);
+    array[int] of var bool: by = set2bools(y, ubxy);
+  } in
+    lex_less_bool_reif( by, bx,p );
 
-predicate set_subset(var set of int: x, var set of int: y) =
+
+predicate set_subset(var set of int: x, var set of int: y) ::promise_total =
   let {
     array[int] of var bool: bx = set2bools(x);
     array[int] of var bool: by = set2bools(y);
@@ -171,7 +132,7 @@ predicate set_subset(var set of int: x, var set of int: y) =
     else bx[i] -> by[i] endif
   );
 
-predicate set_subset_reif(var set of int: x, var set of int: y, var bool: b) =
+predicate set_subset_reif(var set of int: x, var set of int: y, var bool: b) ::promise_total =
   let {
     array[int] of var bool: bx = set2bools(x);
     array[int] of var bool: by = set2bools(y);
@@ -181,8 +142,8 @@ predicate set_subset_reif(var set of int: x, var set of int: y, var bool: b) =
   );
 
 %%% Map the subset operation to superset
-predicate set_superset(var set of int: x, var set of int: y) = set_subset( y, x );
-predicate set_superset_reif(var set of int: x, var set of int: y, var bool: b) =
+predicate set_superset(var set of int: x, var set of int: y) ::promise_total = set_subset( y, x );
+predicate set_superset_reif(var set of int: x, var set of int: y, var bool: b) ::promise_total =
     set_subset_reif( y, x, b );
 
 function var set of int: set_intersect(var set of int: x, var set of int: y) ::promise_total =
@@ -244,20 +205,20 @@ function var int: card(var set of int: x) ::promise_total =
     constraint bool_lin_eq([1 | i in index_set(bx)],[bx[i] | i in index_set(bx)],c);
   } in c;
 
-predicate set_in(int: x, var set of int: y) =
+predicate set_in(int: x, var set of int: y) ::promise_total =
   let {
     array[int] of var bool: by = set2bools(y);
   } in by[x];
-predicate set_in(var int: x, var set of int: y) =
+predicate set_in(var int: x, var set of int: y) ::promise_total =
   let {
     array[int] of var bool: by = set2bools(y);
   } in by[x];
 
-predicate set_in_reif(int: x, var set of int: y, var bool: b) =
+predicate set_in_reif(int: x, var set of int: y, var bool: b) ::promise_total =
   let {
     array[int] of var bool: by = set2bools(y);
   } in b <-> by[x];
-predicate set_in_reif(var int: x, var set of int: y, var bool: b) =
+predicate set_in_reif(var int: x, var set of int: y, var bool: b) ::promise_total =
   let {
     array[int] of var bool: by = set2bools(y);
   } in b <-> by[x];
@@ -269,7 +230,7 @@ function array[int] of var bool: setarray2bools(array[int] of var set of int: x)
 %% Par version no sense
   
 
-predicate array_var_set_element(var int: x, array[int] of var set of int: y, var set of int: z) =
+predicate array_var_set_element(var int: x, array[int] of var set of int: y, var set of int: z) ::promise_total =
   let {
     constraint x in index_set( y );
     set of int: sUB = array_union( [ ub(y[i]) | i in dom(x) ] );
@@ -297,7 +258,7 @@ predicate array_var_set_element(var int: x, array[int] of var set of int: y, var
     endif
   );
 
-predicate array_set_element(var int: x, array[int] of set of int: y, var set of int: z) =
+predicate array_set_element(var int: x, array[int] of set of int: y, var set of int: z) ::promise_total =
   let {
     constraint x in index_set( y );
     set of int: sUB = array_union( [ y[i] | i in dom(x) ] );
