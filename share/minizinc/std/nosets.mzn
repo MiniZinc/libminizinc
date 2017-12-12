@@ -90,6 +90,7 @@ predicate set_ne_reif(var set of int: x, var set of int: y, var bool: b) ::promi
 
   
 % Set comparisons are often used just to avoid symmetries.
+% Reifs/imps are done automatically from these templates
 predicate set_le(var set of int: x, var set of int: y) ::promise_total =
   let {
     set of int: ubxy = ub(x) union ub(y),
@@ -98,14 +99,6 @@ predicate set_le(var set of int: x, var set of int: y) ::promise_total =
   } in
     lex_lesseq( by, bx );
 
-predicate set_le_reif(var set of int: x, var set of int: y, var bool: p) ::promise_total =
-  let {
-    set of int: ubxy = ub(x) union ub(y),
-    array[int] of var bool: bx = set2bools(x, ubxy);
-    array[int] of var bool: by = set2bools(y, ubxy);
-  } in
-    lex_lesseq_bool_reif( by, bx, p );
-
 predicate set_lt(var set of int: x, var set of int: y) ::promise_total =
   let {
     set of int: ubxy = ub(x) union ub(y),
@@ -113,14 +106,6 @@ predicate set_lt(var set of int: x, var set of int: y) ::promise_total =
     array[int] of var bool: by = set2bools(y, ubxy);
   } in
     lex_less( by, bx );
-
-predicate set_lt_reif(var set of int: x, var set of int: y, var bool: p) ::promise_total =
-  let {
-    set of int: ubxy = ub(x) union ub(y),
-    array[int] of var bool: bx = set2bools(x, ubxy);
-    array[int] of var bool: by = set2bools(y, ubxy);
-  } in
-    lex_less_bool_reif( by, bx,p );
 
 
 predicate set_subset(var set of int: x, var set of int: y) ::promise_total =
