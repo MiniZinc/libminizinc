@@ -1345,8 +1345,7 @@ Cuando hay múltiples generadores presentes, el generador que está más a la de
 
 El alcance de las variables del generador local viene dado por las siguientes reglas:
 
-- Son visibles dentro de la expresión de la cabeza (antes de
- :mzn:`|`).
+- Son visibles dentro de la expresión de la cabeza (antes de :mzn:`|`).
 - Son visibles dentro de la expresión mientras (where-expression).
 - Son visibles dentro de las expresiones del generador en cualquier generador posterior.
 
@@ -1399,7 +1398,7 @@ Los literales de matriz tienen esta sintaxis:
   :start-after: % Array literals
   :end-before: %
 
-  Por ejemplo:
+Por ejemplo:
 
 .. code-block:: minizinc
 
@@ -1747,7 +1746,7 @@ Esta sección describe los elementos del programa de nivel superior.
 
 
 Incluir elementos
-~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~
 
 Incluir elementos permite dividir un modelo en varios archivos. Ellos tienen esta sintaxis:
 
@@ -2012,3 +2011,994 @@ Es un error de instanciación de tipo si una anotación se declara y/o define m�
 El uso de anotaciones se describe en :ref:`spec-Annotations`.
 
 .. _spec-preds-and-fns:
+
+
+
+
+
+
+Operaciones definidas por el usuario
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+..
+  % XXX: not saying if operations need to be defined.  Implementation
+  % currently requires functions and tests to be defined if used, but
+  % predicates can be bodyless even if used.  Should perhaps require functions
+  % to be defined even if they're not used (like parameters), and make tests
+  % like predicates?
+
+Los modelos MiniZinc pueden contener operaciones definidas por el usuario. Ellos tienen esta sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Predicate, test and function items
+  :end-before: %
+
+Las expresiones de instanciación de tipos pueden incluir variables type-inst en la función y declaración de predicado.
+
+Por ejemplo, el predicado :mzn:`even` verifica que su argumento sea un número par.
+
+.. code-block:: minizinc
+
+    predicate even(var int: x) =
+        x mod 2 = 0;
+
+Un predicado soportado de forma nativa por el solucionador de destino se puede declarar de la siguiente manera:
+
+.. code-block:: minizinc
+
+    predicate alldifferent(array [int] of var int: xs);
+
+Las declaraciones de predicados que se admiten de forma nativa en MiniZinc están restringidas al uso de tipos de FlatZinc (por ejemplo, las matrices multidimensionales y no basadas en 1 están prohibidas).
+
+.. % \pjs{need to fix this if we allow2d arrays in FlatZinc!}
+
+Las declaraciones para las operaciones definidas por el usuario se pueden anotar. :ref:`spec-Annotations` tiene más detalles sobre las anotaciones.
+
+.. _spec-basic-properties:
+
+
+
+
+
+
+Propiedades básicas
++++++++++++++++++++
+
+El término "predicado" generalmente se usa para referirse tanto a elementos de prueba como a elementos predicados. Cuando se deben distinguir los dos tipos, se pueden usar los términos "elemento de prueba" y "elemento predicado".
+
+El retorno tipo-instanciación de un elemento de prueba es implícitamente :mzn:`par bool`.  El retorno tipo-instanciación de un elemento predicado es implícitamente :mzn:`var bool`.
+
+Los predicados y las funciones pueden ser recursivos. La terminación de una llamada a función recursiva depende únicamente de sus argumentos fijos, es decir, las funciones recursivas y los predicados no se pueden usar para definir variables restringidas recursivamente.
+
+.. % \Rationale{This ensures that the satisfiability of models is decidable.}
+
+Los predicados y las funciones introducen sus propios nombres locales, siendo los de los argumentos formales. El alcance de estos nombres cubre el predicado/cuerpo de la función. Los nombres de argumento no se pueden repetir dentro de una declaración de predicado/función.
+
+
+Polimorfismo ad-hoc
++++++++++++++++++++
+
+MiniZinc admite polimorfismo ad-hoc mediante sobrecarga. Las funciones y los predicados (tanto integrados como definidos por el usuario) pueden sobrecargarse. Un nombre puede estar sobrecargado como una función y un predicado.
+
+Es un error tipo-instanciación si una sola versión de una operación sobrecargada con una firma particular tipo-instanciación se define más de una vez en un modelo. Por ejemplo:
+
+.. code-block:: minizinc
+
+    predicate p(1..5: x);
+    predicate p(1..5: x) = false;       % correcto : primera definición
+    predicate p(1..5: x) = true;        % error    : definición repetida
+
+La combinación de sobrecarga y coacciones puede causar problemas.
+Se dice que dos sobrecargas de una operación * se superponen * si pueden coincidir con los mismos argumentos. Por ejemplo, las siguientes sobrecargas de :mzn:`p` se superponen, ya que ambos coinciden con la llamada :mzn:`p(3)`.
+
+.. code-block:: minizinc
+
+    predicate p(par int: x);
+    predicate p(var int: x);
+
+Sin embargo, los siguientes dos predicados no se superponen porque no pueden coincidir con el mismo argumento:
+
+.. code-block:: minizinc
+
+    predicate q(int:        x);
+    predicate q(set of int: x);
+
+Evitamos dos posibles problemas de sobrecarga al imponer algunas restricciones a la superposición de sobrecargas de operaciones.
+
+#. El primer problema es la ambigüedad. La colocación diferente de las coerciones en los argumentos de operación puede permitir diferentes opciones para la función sobrecargada.
+Por ejemplo, si una función MiniZinc :mzn:`f` está sobrecargado así:
+
+   .. code-block:: minizinc
+
+    function int: f(int: x, float: y) = 0;
+    function int: f(float: x, int: y) = 1;
+
+   Entonces :mzn:`f(3,3)` podría ser 0 o 1 dependiendo de las opciones de coerción/sobrecarga.
+
+   Para evitar este problema, cualquier sobrecarga superpuesta de una operación debe ser semánticamente equivalente con respecto a la coerción.  Por ejemplo, las dos sobrecargas del predicado :mzn:`p` anteriormente debe tener cuerpos que son semánticamente equivalentes con respecto a la sobrecarga.
+
+   Actualmente, este requisito no se verifica y el modelador debe satisfacerlo manualmente. En el futuro, es posible que solicitemos compartir los cuerpos entre las diferentes versiones de las operaciones sobrecargadas, lo que proporcionaría la satisfacción automática de este requisito.
+
+#. El segundo problema es que ciertas combinaciones de sobrecargas podrían requerir una implementación de MiniZinc para realizar una búsqueda combinatoria con el fin de explorar diferentes opciones de coerción y sobrecarga. Por ejemplo, si la función :mzn:`g` está sobrecargado así:
+
+   .. code-block:: minizinc
+
+       function float: g(int: t1, float: t2) = t2;
+       function int  : g(float: t1, int: t2) = t1;
+
+  Entonces, cómo se resuelve la sobrecarga de :mzn:`g(3,4)` depende de su contexto:
+
+   .. code-block:: minizinc
+
+       float: s = g(3,4);
+       int: t = g(3,4);
+
+  En la definición de :mzn:`s` la primera definición sobrecargada debe ser utilizada mientras que en la definición de :mzn:`t` el segundo debe ser usado.
+
+Para evitar este problema, todas las sobrecargas superpuestas de una operación deben cerrarse bajo la intersección de su entrada tipo-instanciación.  Es decir, si las versiones sobrecargadas tienen entrada de tipo-instanciación :math:`(S_1,....,S_n)` y :math:`(T_1,...,T_n)` entonces debe haber otra versión sobrecargada con entrada tipo-instanciación :math:`(R_1,...,R_n)` donde cada :math:`R_i` es el límite inferior más grande (*glb*) de :math:`S_i` y :math:`T_i`.
+
+Además, todas las sobrecargas superpuestas de una operación deben ser monótonas. Es decir, si hay versiones sobrecargadas con entrada tipo-instanciación :math:`(S_1,....,S_n)` y :math:`(T_1,...,T_n)` y salida tipo-instanciación :math:`S` y :math:`T`, respectivamente, entonces :math:`S_i \preceq T_i` para todos :math:`i`, implica :math:`S \preceq T`.  En los sitios de llamadas, siempre se utiliza la sobrecarga de coincidencia que es más baja en el enrejado tipo-instanciación.
+
+Para :mzn:`g` posteriormente, el tipo-instanciación intersection (o *glb*) de :mzn:`(int,float)` y :mzn:`(float,int)` es :mzn:`(int,int)`.  Por lo tanto, las versiones sobrecargadas no se cierran en intersección y el usuario debe proporcionar otra sobrecarga para :mzn:`g` con entrada de tipo-instanciación :mzn:`(int,int)`.  La definición natural es:
+
+   .. code-block:: minizinc
+
+       function int: g(int: t1, int: t2) = t1;
+
+Una vez :mzn:`g` se ha aumentado con la tercera sobrecarga, satisface el requisito de monotonicidad porque la salida tipo-instanciación de la tercera sobrecarga es :mzn:`int` que es menor que la salida tipo-instanciación de las sobrecargas originales.
+
+La monotonicidad y el cierre bajo la conjunción tipo-instanciación aseguran que siempre que se alcanza una función o predicado sobrecargado durante la comprobación de tipo-instanciación, siempre hay una versión "mínima" segura y única para elegir, por lo que la complejidad de la comprobación de tipo-instanciación permanece lineal. Por lo tanto, en nuestro ejemplo :mzn:`g(3,4)` siempre se resuelve eligiendo la nueva definición sobrecargada.
+
+
+
+
+
+Variables locales
++++++++++++++++++
+
+Las variables locales en los cuerpos de operación se introducen usando expresiones ``let``.
+Por ejemplo, el predicado :mzn:`have_common_divisor` toma dos valores enteros y comprueba si tienen un divisor común mayor que uno:
+
+.. code-block:: minizinc
+
+    predicate have_common_divisor(int: A, int: B) =
+        let {
+            var 2..min(A,B): C;
+        } in
+            A mod C = 0 /\
+            B mod C = 0;
+
+Sin embargo, como :ref:`spec-Let-Expressions` explicado, porque :mzn:`C` no está definido, este predicado no puede ser llamado en un contexto negativo. La siguiente es una versión que podría llamarse en un contexto negativo:
+
+.. code-block:: minizinc
+
+    predicate have_common_divisor(int: A, int: B) =
+        exists(C in 2..min(A,B))
+            (A mod C = 0 /\ B mod C = 0);
+
+.. _spec-annotations:
+
+
+
+Anotaciones
+-----------
+
+Anotaciones: valores del tipo :mzn:`ann`, permitir que un modelador especifique información no declarativa y específica del solucionador que está más allá del lenguaje central. Las anotaciones no cambian el significado de un modelo, sin embargo, solo cómo se resuelve.
+
+Las anotaciones se pueden adjuntar a variables (en sus declaraciones), expresiones, sinónimos de tipo-instanciación, elementos de enumeraciones, elementos de solución y operaciones definidas por el usuario.
+Tienen la siguiente sintaxis:
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Annotations
+  :end-before: %
+
+Por ejemplo:
+
+.. code-block:: minizinc
+
+    int: x::foo;
+    x = (3 + 4)::bar("a", 9)::baz("b");
+    solve :: blah(4)
+        minimize x;
+
+Los tipos de expresiones de argumento deben coincidir con los tipos de argumento de la anotación declarada. A diferencia de los predicados y funciones definidos por el usuario, las anotaciones no pueden sobrecargarse. *Justificación: no hay una razón particularmente fuerte para esto, simplemente parecía hacer las cosas más simples.*
+
+
+Las firmas de anotación pueden contener variables de tipo-instanciación.
+
+El orden y el anidamiento de las anotaciones no importan. Para el caso de expresión, puede ser útil ver el conector de anotación :mzn:`::` como un operador sobrecargado:
+
+.. code-block:: minizinc
+
+    ann: '::'(any $T: e, ann: a);       % associative
+    ann: '::'(ann:    a, ann: b);       % associative + commutative
+
+Ambos operadores son asociativos, el segundo es conmutativo. Esto significa que las siguientes expresiones son todas equivalentes:
+
+.. code-block:: minizinc
+
+    e :: a :: b
+    e :: b :: a
+    (e :: a) :: b
+    (e :: b) :: a
+    e :: (a :: b)
+    e :: (b :: a)
+
+Esta propiedad también se aplica a las anotaciones sobre elementos de solución y elementos de declaración variable. *Justificación: esta propiedad simplifica las cosas, ya que permite que todas las combinaciones anidadas de anotaciones se traten como si fueran planas, evitando así la necesidad de determinar cuál es el significado de una anotación anotada. También simplifica el árbol de sintaxis abstracta MiniZinc al evitar la necesidad de representar el anidamiento.*
+
+.. _spec-partiality:
+
+
+Parcialidad
+-----------
+
+La presencia de tipo-instanciación restringida en MiniZinc significa que varias operaciones son potencialmente *parciales*, es decir, no están claramente definidas para todas las entradas posibles. Por ejemplo, ¿qué sucede si una función que espera un argumento positivo pasa un argumento negativo? ¿Qué sucede si a una variable se le asigna un valor que no satisface sus restricciones tipo-instanciación? ¿Qué sucede si un índice de matriz está fuera de límites? Esta sección describe lo que sucede en todos estos casos.
+
+.. % \pjs{This is not what seems to happen in the current MiniZinc!}
+
+En general, los casos que implican valores fijos que no satisfacen las restricciones conducen a abortos en tiempo de ejecución. *Justificación: nuestra experiencia muestra que si un valor fijo falla una restricción, es casi seguro que se debe a un error de programación. Además, estos casos son fáciles de verificar para una implementación.*
+
+Pero los casos que involucran valores no fijados varían, como veremos. *Justificación: lo mejor que se puede hacer con los valores no fijados varía de un caso a otro. Además, es difícil verificar las restricciones en los valores no fijados, sobre todo porque durante la búsqueda una variable de decisión puede ser fija y, a continuación, retroceder hará que este valor se revierta, en cuyo caso abortar es una mala idea.*
+
+
+
+
+
+Asignaciones parciales
+~~~~~~~~~~~~~~~~~~~~~~
+
+La primera operación que implica parcialidad es la asignación. Hay cuatro casos distintos para las asignaciones.
+
+- Un valor asignado a una variable global fija, limitada se verifica en tiempo de ejecución; si el valor asignado no satisface sus restricciones, es un error en tiempo de ejecución. En otras palabras, esto:
+
+  .. code-block:: minizinc
+
+    1..5: x = 3;
+
+Es equivalente a esto:
+
+.. code-block:: minizinc
+
+    int: x = 3;
+    constraint assert(x in 1..5,
+                      "assignment to global parameter 'x' failed")
+
+- Un valor asignado a una variable global restringida no fija hace que la asignación actúe como una restricción. Si el valor asignado no satisface las restricciones de la variable, causa un error en el modelo en tiempo de ejecución.
+
+En otras palabras, esto:
+
+.. code-block:: minizinc
+
+    var 1..5: x = 3;
+
+Es equivalente a esto:
+
+.. code-block:: minizinc
+
+    var int: x = 3;
+    constraint x in 1..5;
+
+*Justificación: este comportamiento es fácil de entender y fácil de implementar.*
+
+- Un valor asignado a una variable fija, limitada y localizada se verifica en tiempo de ejecución; si el valor asignado no satisface sus restricciones, es un error en tiempo de ejecución. En otras palabras, esto:
+
+.. code-block:: minizinc
+
+    let { 1..5: x = 3; } in x+1
+
+Es equivalente a esto:
+
+.. code-block:: minizinc
+
+    let { int: x = 3; } in
+        assert(x in 1..5,
+               "assignment to let parameter 'x' failed", x+1)
+
+- Un valor asignado a una variable localmente limitada y no fijada hace que la asignación actúe como una restricción; si la restricción falla en el tiempo de ejecución, la falla "burbujea" hacia el alcance booleano circundante más cercano, donde se interpreta como :mzn:`false`.
+
+*Justificación: este comportamiento es coherente con las asignaciones a variables globales.*
+
+Tenga en cuenta que en los casos en que un valor es parcialmente fijo y parcialmente no fijo, por ejemplo, algunas matrices, los diferentes elementos se verifican según los diferentes casos, y los elementos fijos se comprueban antes de los elementos no fijos. Por ejemplo:
+
+.. code-block:: minizinc
+
+    u = [ let { var 1..5: x = 6} in x, let { par 1..5: y = 6; } in y) ];
+
+Esto provoca un aborto en tiempo de ejecución, porque el segundo elemento fijo se comprueba antes del primer elemento no fijo. Este orden también es cierto para los casos en las siguientes secciones. *Justificación: esto asegura que las fallas no pueden enmascarar interrupciones, lo que parece deseable.*
+
+
+
+Predicados/Funciones parciales y Argumentos de Anotaciones
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+El segundo tipo de operación que implica parcialidad es llamadas y anotaciones.
+
+..
+  % The behaviour for these operations is simple:  constraints on arguments are
+  % ignored.
+  %
+  % \Rationale{This is easy to implement and easy to understand.  It is also
+  % justifiable in the sense that predicate/function/annotation arguments are
+  % values that are passed in from elsewhere;  if those values are to be
+  % constrained, that could be done earlier.  (In comparison, when a variable
+  % with a constrained type-inst is declared, any assigned value must clearly
+  % respect that constraint.)}
+
+La semántica es similar a las asignaciones: los argumentos fijos que fallan sus restricciones provocarán abortos, y los argumentos no fijados que fallan sus restricciones causarán fallas, que se disparan hasta el alcance booleano circundante más cercano.
+
+
+Accesos parciales de matriz
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+El tercer tipo de operación que implica parcialidad es el acceso a la matriz. Hay dos casos distintos.
+
+- Un valor fijo utilizado como un índice de matriz se verifica en tiempo de ejecución; si el valor del índice no está en el conjunto de índice de la matriz, es un error en tiempo de ejecución.
+
+- Un valor no fijo utilizado como un índice de matriz hace que el acceso actúe como una restricción; si el acceso falla en el tiempo de ejecución, la falla "burbujea" hacia el alcance booleano circundante más cercano, donde se interpreta como :mzn:`false`. Por ejemplo:
+
+
+  .. code-block:: minizinc
+
+    array[1..3] of int: a = [1,2,3];
+    var int: i;
+    constraint (a[i] + 3) > 10 \/ i = 99;
+
+Aquí el acceso a la matriz falla, por lo que la falla sube hasta la disyunción, y :mzn:`i` está obligado a ser 99. *Justificación: a diferencia de las llamadas al predicado/función, los modeladores en la práctica a veces usan accesos de matriz que pueden fallar. En tales casos, el comportamiento de "burbujeo" es razonable.*
+
+.. _spec-builtins:
+
+
+
+
+Operaciones incorporadas
+------------------------
+
+Este apéndice enumera los operadores integrados, las funciones y los predicados. Pueden implementarse como integradas verdaderas, o en bibliotecas que se importan automáticamente para todos los modelos. Muchos de ellos están sobrecargados.
+
+Los nombres de los operadores están escritos dentro de comillas simples cuando se usan en firmas de tipo, por ejemplo :mzn:`bool: '\/'(bool, bool)`.
+
+Usamos la sintaxis :mzn:`TI: f(TI1,...,TIn)` para representar una operación llamada :mzn:`f` eso toma argumentos con un tipo-instanciación :mzn:`TI,...,TIn` y devuelve un valor con tipo-instanciación :mzn:`TI`.  Esto es un poco más compacto que la sintaxis MiniZinc habitual, ya que omite los nombres de los argumentos.
+
+
+
+Operaciones de comparación
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Menos que. Otras comparaciones son similares:
+mayor que (:mzn:`>`),
+menor o igual (:mzn:`<=`),
+mayor que o igual (:mzn:`>=`),
+igual (:mzn:`==`, :mzn:`=`),
+y desigualdad (:mzn:`!=`).
+
+.. % \pjs{Check use of any here!}
+
+.. code-block:: minizinc
+
+      bool: '<'(    $T,     $T)
+  var bool: '<'(var $T, var $T)
+
+
+
+
+
+Operaciones aritmeticas
+~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Adición. Otras operaciones numéricas son similares: resta (:mzn:`-`), y multiplicación (:mzn:`*`).
+
+.. code-block:: minizinc
+
+      int:   '+'(    int,       int)
+  var int:   '+'(var int,   var int)
+      float: '+'(    float,     float)
+  var float: '+'(var float, var float)
+
+
+
+
+
+Menos unaria (:mzn:`-`).  Suma unaria (:mzn:`+`) es similar.
+
+.. code-block:: minizinc
+
+      int:   '-'(    int)
+  var int:   '-'(var int)
+      float: '-'(    float)
+  var float: '-'(var float)
+
+
+
+
+
+Entero y división de punto flotante y módulo.
+
+.. code-block:: minizinc
+
+      int:   'div'(    int,       int)
+  var int:   'div'(var int,   var int)
+      int:   'mod'(    int,       int)
+  var int:   'mod'(var int,   var int)
+      float: '/'  (    float,     float)
+  var float: '/'  (var float, var float)
+
+
+
+El resultado de la operación de módulo, si no es cero, siempre tiene el mismo signo que su primer operando. Las operaciones de división entera y módulo están conectadas por la siguiente identidad:
+
+
+.. code-block:: minizinc
+
+  x = (x div y) * y + (x mod y)
+
+
+
+Algunos ejemplos ilustrativos:
+
+.. code-block:: minizinc
+
+   7 div  4 =  1        7 mod  4 =  3
+  -7 div  4 = -1       -7 mod  4 = -3
+   7 div -4 = -1        7 mod -4 = 3
+  -7 div -4 =  1       -7 mod -4 = -3
+
+
+
+
+
+Suma de multiples números.
+Producto (:mzn:`product`) es similar. Tenga en cuenta que la suma de una matriz vacía es 0, y el producto de una matriz vacía es 1.
+
+.. code-block:: minizinc
+
+      int:   sum(array[$T]  of     int  )
+  var int:   sum(array[$T]  of var int  )
+      float: sum(array[$T]  of     float)
+  var float: sum(array[$T]  of var float)
+
+
+
+
+
+Mínimo de dos valores; máximo (:mzn:`max`) es similar.
+
+.. code-block:: minizinc
+
+  any $T:    min(any $T,    any $T )
+
+
+
+
+
+Mínimo de una matriz de valores; máximo (:mzn:`max`) es similar.
+Aborta si el argumento el arreglo esta vacio.
+
+.. code-block:: minizinc
+
+  any $U:    min(array[$T]  of any $U)
+
+
+
+
+
+Mínimo de un conjunto fijo; máximo (:mzn:`max`) es similar.
+Aborta si el argumento el conjunto esta vacio.
+
+.. code-block:: minizinc
+
+  $T:    min(set of $T)
+
+
+
+
+
+Valor absoluto de un número.
+
+.. code-block:: minizinc
+
+      int:   abs(    int)
+  var int:   abs(var int)
+      float: abs(    float)
+  var float: abs(var float)
+
+
+
+
+
+Raíz cuadrada de un número en punto flotante (``float``). Aborta si el argumento es negativo.
+
+.. code-block:: minizinc
+
+      float: sqrt(    float)
+  var float: sqrt(var float)
+
+
+
+Operador de energía.  Por ejemplo, :mzn:`pow(2, 5)` da como resultado :mzn:`32`.
+
+.. code-block:: minizinc
+
+    int: pow(int,       int)
+  float: pow(float,     float)
+
+
+..
+  % We should also have:
+  %  var float: pow(var float, int)
+
+
+Natural exponent.
+
+.. code-block:: minizinc
+
+      float: exp(float)
+  var float: exp(var float)
+
+
+
+
+
+Logaritmo natural. Logaritmo en base 10 (:mzn:`log10`) y logaritmo en base
+2 (:mzn:`log2`) son similares.
+
+.. code-block:: minizinc
+
+      float: ln(float)
+  var float: ln(var float)
+
+
+
+Logaritmo general; el primer argumento es la base.
+
+.. code-block:: minizinc
+
+  float: log(float, float)
+
+
+Seno (:mzn:`sin`), Coseno (:mzn:`cos`), tangente (:mzn:`tan`), seno inverso
+(:mzn:`asin`), coseno inverso (:mzn:`acos`), tangente inversa
+(:mzn:`atan`), seno hiperbólico (:mzn:`sinh`), coseno hiperbólico
+(:mzn:`cosh`), tangente hiperbólica (:mzn:`tanh`),
+seno hiperbólico inverso (:mzn:`asinh`), coseno hiperbólico inverso
+(:mzn:`acosh`) y tangente hiperbólica inversa (:mzn:`atanh`) son similares.
+
+.. code-block:: minizinc
+
+      float: sin(float)
+  var float: sin(var float)
+
+
+Operaciones Lógicas
+~~~~~~~~~~~~~~~~~~~
+
+Conjunción. Otras operaciones lógicas son similares:
+disyunción (``\/``)
+implicación inversa (:mzn:`<-`),
+implicación directa (:mzn:`->`),
+bi-implicación (:mzn:`<->`),
+exclusive disjunction (:mzn:`xor`),
+negación lógica (:mzn:`not`).
+
+Tenga en cuenta que los operadores de implicación no están escritos usando :mzn:`=>`, :mzn:`<=` y :mzn:`<=>` como es el caso en algunos idiomas.  Esto permite :mzn:`<=` para representar en su lugar "menor que o igual".
+
+.. code-block:: minizinc
+
+      bool: '/\'(    bool,     bool)
+  var bool: '/\'(var bool, var bool)
+
+
+
+Cuantificación universal.
+Cuantificación existencial (:mzn:`exists`) es similar.  Tenga en cuenta que, cuando se aplica a una lista vacía, :mzn:`forall` retorna :mzn:`true`, y :mzn:`exists` retorna :mzn:`false`.
+
+  .. code-block:: minizinc
+
+        bool: forall(array[$T]  of     bool)
+    var bool: forall(array[$T]  of var bool)
+
+
+
+
+
+N-aria disyunción exclusiva.
+N-aria bi-implicación (:mzn:`iffall`) es similar, con :mzn:`true` en lugar de :mzn:`false`.
+
+  .. code-block:: minizinc
+
+        bool: xorall(array[$T]  of     bool: bs) = foldl('xor', false, bs)
+    var bool: xorall(array[$T]  of var bool: bs) = foldl('xor', false, bs)
+
+
+Operaciones de Matriz
+~~~~~~~~~~~~~~~~~~~~~
+
+Longitud de una matriz.
+
+.. code-block:: minizinc
+
+int: length(array[$T] of any $U)
+
+
+Concatenación de lista Devuelve la lista (matriz indexada entera) que contiene todos los elementos del primer argumento seguidos por todos los elementos del segundo argumento, con elementos que ocurren en el mismo orden que en los argumentos. Los índices resultantes están en el rango :mzn:`1..n`, donde :mzn:`n` es la suma de las longitudes de los argumentos. *Justificación: Esto permite que las matrices en forma de listas se concatenen naturalmente y evita problemas con índices superpuestos. Los índices resultantes son consistentes con los de literales indexados implícitamente.*
+
+Tenga en cuenta que :mzn:`'++'` también realiza la concatenación de cadenas.
+
+.. code-block:: minizinc
+
+  array[int] of any $T: '++'(array[int] of any $T, array[int] of any $T)
+
+
+Conjuntos de índices de matrices. Si el argumento es un literal, retorna :mzn:`1..n` en donde :mzn:`n` es el largo de la sub-matriz.  De lo contrario, devuelve el conjunto de índices declarado o inferido. Esta lista es solo parcial, se extiende de manera obvia, para matrices de mayores dimensiones.
+
+.. code-block:: minizinc
+
+  set of $T:  index_set     (array[$T]      of any $V)
+  set of $T:  index_set_1of2(array[$T, $U]  of any $V)
+  set of $U:  index_set_2of2(array[$T, $U]  of any $V)
+  ...
+
+Reemplace los índices de la matriz dada por el último argumento con el
+Producto cartesiano de los conjuntos dados por los argumentos anteriores. Existen versiones similares para matrices de hasta 6 dimensiones.
+
+.. code-block:: minizinc
+
+  array[$T1] of any $V: array1d(set of $T1, array[$U] of any $V)
+  array[$T1,$T2] of any $V:
+      array2d(set of $T1, set of $T2, array[$U] of any $V)
+  array[$T1,$T2,$T3] of any $V:
+      array3d(set of $T1, set of $T2, set of $T3, array[$U] of any $V)
+
+
+
+
+Operaciones de coerción
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Redondea un número de punto flotante (``float``) hacia :math:`+\infty`, :math:`-\infty`, y el entero más cercano, respectivamente.
+
+.. code-block:: minizinc
+
+  int: ceil (float)
+  int: floor(float)
+  int: round(float)
+
+
+Conversiones explícitas de una instancia de tipo-instanciación.
+
+.. code-block:: minizinc
+
+      int:          bool2int(    bool)
+  var int:          bool2int(var bool)
+      float:        int2float(    int)
+  var float:        int2float(var int)
+  array[int] of $T: set2array(set of $T)
+
+
+
+
+Operaciones de cadena
+~~~~~~~~~~~~~~~~~~~~~
+
+
+Conversión de cadena. Convierte cualquier valor en una cadena para fines de salida. La forma exacta de la cadena resultante depende de la implementación.
+
+.. code-block:: minizinc
+
+  string: show(any $T)
+
+
+Conversión de cadena formateada para enteros.
+Convierte el entero dado por el segundo argumento en una cadena a la derecha justificada por el número de caracteres dados por el primer argumento, o justificado a la izquierda si ese argumento es negativo.
+Si el segundo argumento no es fijo, la forma de la cadena depende de la implementación.
+
+.. code-block:: minizinc
+
+  string: show_int(int, var int);
+
+
+Conversión de cadena formateada para flotadores.
+Convierte la flotación dada por el tercer argumento en una cadena a la derecha justificada por el número de caracteres dados por el primer argumento, o justificada a la izquierda si ese argumento es negativo.
+La cantidad de dígitos que aparecen después del punto decimal viene dada por el segundo argumento.
+Es un error en tiempo de ejecución para que el segundo argumento sea negativo.
+Si el tercer argumento no es fijo, la forma de la cadena depende de la implementación.
+
+.. code-block:: minizinc
+
+  string: show_float(int, int, var float)
+
+
+Concatenación de cadenas Tenga en cuenta que :mzn:`'++'` también realiza concatenación de matriz.
+
+.. code-block:: minizinc
+
+  string: '++'(string, string)
+
+
+Concatenar una matriz de cadenas.
+Equivalente a :mzn:`'++'` sobre la matriz, pero puede implementarse de manera más eficiente.
+
+.. code-block:: minizinc
+
+   string: concat(array[$T] of string)
+
+
+Concatenar una matriz de cadenas, poniendo un separador entre cadenas adyacentes.
+Devuelve la cadena vacía si la matriz está vacía.
+
+.. code-block:: minizinc
+
+   string: join(string, array[$T] of string)
+
+
+
+
+Operaciones vinculadas y de dominio
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Las operaciones de límite :mzn:`lb` y :mzn:`ub` devuelve los límites fijos inferiores/superiores corregidos a la expresión.
+
+Para los tipos numéricos, devuelven un valor límite inferior/superior, por ejemplo, el valor más-bajo/más-alto que la expresión puede tomar.
+
+Para los tipos de conjuntos, devuelven un subconjunto/superconjunto, por ejemplo, la intersección/unión de todos los valores posibles de la expresión establecida.
+
+Las operaciones enlazadas abortan en expresiones que no tienen un límite finito correspondiente.
+Por ejemplo, este sería el caso de una variable declarada sin límites en una implementación que no asigna límites predeterminados. Las expresiones set siempre tienen un límite inferior finito de curso, es decir :mzn:`{}`, el conjunto vacío.
+
+Numérico de límite inferior/superior:
+
+.. code-block:: minizinc
+
+  int:   lb(var int)
+  float: lb(var float)
+  int:   ub(var int)
+  float: ub(var float)
+
+
+Establecer límite inferior/superior:
+
+.. code-block:: minizinc
+
+  set of int: lb(var set of int)
+  set of int: ub(var set of int)
+
+Las versiones de las operaciones vinculadas que operan en matrices también están disponibles, devuelven un límite inferior seguro o límite superior para todos los miembros de la matriz - abortan si la matriz está vacía:
+
+.. code-block:: minizinc
+
+  int:        lb_array(array[$T] of var int)
+  float:      lb_array(array[$T] of var float)
+  set of int: lb_array(array[$T] of var set of int)
+  int:        ub_array(array[$T] of var int)
+  float:      ub_array(array[$T] of var float)
+  set of int: ub_array(array[$T] of var set of int)
+
+
+
+
+Dominio Entero:
+
+.. code-block:: minizinc
+
+  set of int: dom(var int)
+
+
+La operación de dominio :mzn:`dom` devuelve un superconjunto fijo de los posibles valores de la expresión.
+
+Entero de dominio de matriz, devuelve un superconjunto de todos los valores posibles que pueden aparecer en la matriz; esto se cancela si la matriz está vacía:
+
+.. code-block:: minizinc
+
+  set of int: dom_array(array[$T] of var int)
+
+Tamaño de dominio para enteros:
+
+.. code-block:: minizinc
+
+  int: dom_size(var int)
+
+La operación de tamaño de dominio :mzn:`dom_size` es equivalente a :mzn:`card(dom(x))`.
+
+Tenga en cuenta que estas operaciones pueden producir resultados diferentes dependiendo de cuándo se evalúan y qué forma toma el argumento. Por ejemplo, considere la operación de límite inferior numérico.
+
+
+- Si el argumento es una expresión fija, el resultado es el valor del argumento.
+
+- Si el argumento es una variable de decisión, el resultado depende del contexto.
+
+- Si la implementación puede determinar un límite inferior para la variable, el resultado es ese límite inferior. El límite inferior puede ser de la declaración de la variable, o más alto que debido al preprocesamiento, o menor que si se aplica un límite inferior definido por la implementación (por ejemplo, si la variable se declaró sin límite inferior, pero la implementación impone un límite mínimo ligado).
+
+- Si la implementación no puede determinar un límite inferior para la variable, la operación aborta.
+
+- Si el argumento es cualquier otro tipo de expresión no fijada, el límite inferior depende de los límites de las subexpresiones no fijadas y de los operadores de conexión.
+
+
+.. _spec-option-type-operations:
+
+
+
+Operaciones de Tipo de Opción
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+El valor del tipo de opción (:math:`\top`) es escrito
+
+.. code-block:: minizinc
+
+  opt $T:  '<>';
+
+
+Uno puede determinar si una variable de tipo de opción realmente ocurre o no usando :mzn:`occurs` y :mzn:`absent`
+
+.. code-block:: minizinc
+
+  par bool: occurs(par opt $T);
+  var bool: occurs(var opt $T);
+  par bool: absent(par opt $T);
+  var bool: absent(var opt $T);
+
+
+Uno puede devolver el valor no opcional de una variable de tipo de opción usando la función :mzn:`deopt`
+
+.. code-block:: minizinc
+
+  par $T: deopt{par opt $T);
+  var $T: deopt(var opt $T);
+
+
+..
+  % Note that this is not really a function only a pseudo function placeholder
+  % used in the translation of option types to non-option types.
+  % \pjs{Explain better}
+
+.. _spec-other-operations:
+
+
+
+Otras operaciones
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Verifique que una expresión booleana sea verdadera, y aborte si no, imprimiendo el segundo argumento como el mensaje de error. El primero devuelve el tercer argumento, y es particularmente útil para los argumentos de comprobación de formalidad para los predicados y las funciones; importante, su tercer argumento es flojo, es decir, solo se evalúa si la condición tiene éxito. El segundo devuelve: mzn: `true` y es útil para verificaciones de cordura globales (por ejemplo, de datos de instancia) en elementos de restricción.
+
+
+.. code-block:: minizinc
+
+  any $T:   assert(bool, string, any $T)
+  par bool: assert(bool, string)
+
+
+Cancelar la evaluación, imprimiendo la cadena dada.
+
+.. code-block:: minizinc
+
+  any $T: abort(string)
+
+Devuelve verdadero. Como efecto secundario, una implementación puede imprimir el primer argumento.
+
+.. code-block:: minizinc
+
+  bool: trace(string)
+
+
+Devuelve el segundo argumento.
+Como efecto secundario, una implementación puede imprimir el primer argumento.
+
+.. code-block:: minizinc
+
+  any $T: trace(string, any $T)
+
+Verifique si el valor del argumento está fijo en este punto de la evaluación. Si no, aborta; si es así, devuelve su valor. Esto es más útil en los elementos de salida cuando las variables de decisión deben ser corregidas: permite que se utilicen en lugares donde se necesita un valor fijo, como las condiciones if-then-else.
+
+
+.. code-block:: minizinc
+
+  $T: fix(any $T)
+
+
+Como arriba, pero retorna :mzn:`false` si el valor del argumento no es fijo.
+
+.. code-block:: minizinc
+
+  par bool: is_fixed(any $T)
+
+
+.. _spec-content-types:
+
+
+
+Tipos de Contenido
+------------------
+
+El tipo de contenido ``application/x-zinc-output`` define un formato de salida de texto para Zinc.
+El formato amplía la sintaxis abstracta y la semántica dadas en
+
+
+ :ref:`spec-Run-time-Outcomes`, and is discussed in detail in :ref:`spec-Output`.
+
+La sintaxis completa es la siguiente:
+
+.. literalinclude:: output.mzn
+  :language: minizincdef
+
+El texto de la solución para cada solución debe ser como se describe en :ref:`spec-Output-Items`.
+Se debe agregar una nueva línea si el texto de la solución no finaliza con una nueva línea.
+
+.. _spec-json:
+
+
+
+Soporte de JSON
+-----------------------------
+
+MiniZinc puede admitir la lectura de parámetros de entrada y proporcionar resultados formateados como objetos JSON. Un archivo de entrada JSON debe tener la siguiente estructura:
+
+- Consiste en un solo objeto de nivel superior
+
+- Los miembros del objeto (pares clave-valor) representan parámetros del modelo
+
+- Cada clave miembro debe ser un identificador MiniZinc válido (y proporciona el valor para el parámetro correspondiente del modelo)
+
+- Cada valor de miembro puede ser uno de los siguientes:
+
+  - Una cadena (asignado a un parámetro de cadena MiniZinc)
+
+  - Un número (asignado a un parámetro MiniZinc int o float)
+
+  - Los valores ``true`` o ``false`` (asignado a un parámetro bool MiniZinc)
+
+  - Una matriz de valores. Las matrices de matrices solo se admiten si todas las matrices internas tienen la misma longitud, por lo que se pueden asignar a matrices multidimensionales MiniZinc.
+
+  - Un conjunto de valores codificados como un objeto con un único miembro con clave ``"set"`` y una lista de valores (los elementos del conjunto).
+
+Este es un ejemplo de un archivo de parámetros JSON que utiliza todas las características anteriores:
+
+.. code-block:: json
+
+    {
+      "n" : 3,
+      "distances" : [ [1,2,3],
+                      [4,5,6]],
+      "patterns"  : [ {"set" : [1,3,5]}, {"set" : [2,4,6]} ]
+    }
+
+
+El primer parámetro declara un entero simple ``n``. El parámetro ``distances`` es una matriz bidimensional; tenga en cuenta que todas las matrices internas deben ser del mismo tamaño para mapearse en una matriz bidimensional (rectangular) MiniZinc. El tercer parámetro es una matriz de conjuntos de enteros.
+
+.. _spec-grammar:
+
+
+
+Gramática completa
+------------------
+
+Elementos
+~~~~~~~~~
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :end-before: % Type-inst expressions
+
+Expresiones de Tipo-Instanciación
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Type-inst expressions
+  :end-before: % Expressions
+
+Expresiones
+~~~~~~~~~~~
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Expressions
+  :end-before: % Miscellaneous
+
+Elementos Misceláneo
+~~~~~~~~~~~~~~~~~~~~~~~
+
+.. literalinclude:: grammar.mzn
+  :language: minizincdef
+  :start-after: % Miscellaneous
