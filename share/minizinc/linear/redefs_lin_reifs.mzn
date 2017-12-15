@@ -393,8 +393,8 @@ predicate aux_int_eq_iff_1(var int: x, var int: y, var int: p) =
     aux_int_gt_if_0(x, y, q[2]) /\
     sum(q) == p + 1
   else
-    p == (x<=y /\ y<=x)
-    /\ 1+p == (x<=y) + (y<=x)
+    %% redundant p == (x<=y /\ y<=x) /\
+    1+p == (x<=y) + (y<=x)
   endif;
 
 predicate aux_int_eq_iff_1__float(var float: x, float: y, var int: p) =
@@ -443,8 +443,8 @@ predicate aux_float_eq_iff_1(var float: x, var float: y, var int: p) =
     aux_float_gt_if_0(x, y, (q[2])) /\
     sum(i in 1..2)((q[i])) == 1 + p
   else
-    p == (x<=y /\ y<=x)
-    /\ 1+p == (x<=y) + (y<=x)
+    %% redundant p == (x<=y /\ y<=x) /\
+    1+p == (x<=y) + (y<=x)
   endif;
 
   
