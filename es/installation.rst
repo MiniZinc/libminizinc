@@ -74,7 +74,8 @@ Herramientas de desarrollo necesarias:
 
   mkdir build
   cd build
-  cmake -G "Visual Studio 14 2015 Win64" -DCMAKE_INSTALL_PREFIX="C:/Archivos de Programas/MiniZinc" ..
+  cmake -G "Visual Studio 14 2015 Win64"
+    -DCMAKE_INSTALL_PREFIX="C:/Archivos de Programas/MiniZinc" ..
   cmake --build . --config Release --target install
 
 Esto instalará MiniZinc en la ubicación habitual de Archivos de programa. Puedes cambiar en dónde se instala modificando el ``CMAKE_INSTALL_PREFIX``.
@@ -145,5 +146,5 @@ Herramientas de desarrollo necesarias:
 
 
 
-Agregar soluciones de terceros
-------------------------------
+.. % Agregar soluciones de terceros
+.. % ------------------------------

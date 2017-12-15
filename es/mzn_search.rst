@@ -40,19 +40,19 @@ El estado del tablero de ajedrez después de estas tres decisiones se muestra en
 
 .. figure:: figures/tree-4.*
 
-Árboles de búsqueda parcial para 9 reinas
+  Árboles de búsqueda parcial para 9 reinas
 
 .. _fig-9q-b:
 
 .. figure:: figures/chess9x9-3.*
 
-El estado después de la adición de ``q[1] = 1``, ``q[2] = 4``, ``q[3] = 5``
+  El estado después de la adición de ``q[1] = 1``, ``q[2] = 4``, ``q[3] = 5``
 
 .. _fig-9q-c:
 
 .. figure:: figures/chess9x9-4.*
 
-La propagación inicial al agregar más ``q[6] = 4``
+  La propagación inicial al agregar más ``q[6] = 4``
 
 Una estrategia de búsqueda determina qué opciones tomar. Las decisiones que hemos tomado hasta ahora siguen la simple estrategia de elegir la primera variable que aún no se ha solucionado e intentar establecerla en su menor valor posible. Siguiendo esta estrategia, la siguiente decisión sería :mzn:`q[4] = 7`.
 
@@ -103,14 +103,14 @@ Esta anotación de búsqueda significa que debemos buscar seleccionando de la ma
 .. % . & . & . &   &   &   & . & . & . \\ \hline
 .. % \end{tabular}
 
-.. defblock:: Basic search annotations
+.. defblock:: Anotaciones de Búsqueda Básicas
 
   .. index::
     single: int_search
     single: bool_search
     single: set_search
 
-Hay tres anotaciones de búsqueda básicas correspondientes a diferentes tipos de variables básicas:
+  Hay tres anotaciones de búsqueda básicas correspondientes a diferentes tipos de variables básicas:
 
   - :mzndef:`int_search( <variables>, <varchoice>, <constrainchoice>, <strategy> )`
     where :mzndef:`<variables>` is a one dimensional array of :mzn:`var int`,
@@ -136,7 +136,7 @@ Hay tres anotaciones de búsqueda básicas correspondientes a diferentes tipos d
     single: first_fail
     single: smallest
 
-Ejemplo de anotaciones de elección de variable son:
+  Ejemplo de anotaciones de elección de variable son:
 
   - :mzn:`input_order`: choose in order from the array
   - :mzn:`first_fail`: choose the variable with the smallest domain size, and
@@ -149,15 +149,15 @@ Ejemplo de anotaciones de elección de variable son:
     single: indomain_random
     single: indomain_split
 
-Ejemplos de formas de restringir una variable son:
+  Ejemplos de formas de restringir una variable son:
 
   - :mzn:`indomain_min`: asignar a la variable su valor de dominio más pequeño,
   - :mzn:`indomain_median`: asignar la variable su valor de dominio mediano,
   - :mzn:`indomain_random`: asignarle a la variable un valor aleatorio de su dominio, y
   - :mzn:`indomain_split` bisectar el dominio de variables excluyendo la mitad superior.
 
-El :mzndef:`<strategy>` casi siempre es :mzn:`complete` para una búsqueda completa.
-Para obtener una lista completa de las anotaciones de opciones de restricciones y restricciones, consulte la especificación FlatZinc en la documentación de referencia MiniZinc.
+  El :mzndef:`<strategy>` casi siempre es :mzn:`complete` para una búsqueda completa.
+  Para obtener una lista completa de las anotaciones de opciones de restricciones y restricciones, consulte la especificación FlatZinc en la documentación de referencia MiniZinc.
 
 Podemos construir estrategias de búsqueda más complejas utilizando anotaciones de constructor de búsqueda. Solo hay una anotación de este tipo en el presente:
 
@@ -194,24 +194,24 @@ Anotaciones
 
 Las anotaciones son un objeto de primera clase en MiniZinc. Podemos declarar nuevas anotaciones en un modelo, declarar y asignar a las variables de anotación.
 
-.. defblock:: Annotations
+.. defblock:: Anotaciones
 
   .. index::
     single: ann
 
-Las anotaciones tienen un tipo :mzn:`ann`.
-Puede declarar una anotación :index:`parameter` (con asignación opcional):
+  Las anotaciones tienen un tipo :mzn:`ann`.
+  Puede declarar una anotación :index:`parameter` (con asignación opcional):
 
   .. code-block:: minizincdef
 
     ann : <ident>;
     ann : <ident> = <ann-expr> ;
 
-Y asignar a una variable de anotación como cualquier otro parámetro.
+  Y asignar a una variable de anotación como cualquier otro parámetro.
 
-Los elementos :index:`Expressions <expression>`, :index:`variable declarations <variable; declaration>`, y :mzn:`solve` se pueden anotar utilizando el operador :mzn:`::`.
+  Los elementos :index:`Expressions <expression>`, :index:`variable declarations <variable; declaration>`, y :mzn:`solve` se pueden anotar utilizando el operador :mzn:`::`.
 
-Podemos declarar un nuevo :index:`annotation` utilizando el :mzn:`annotation` :index:`item <item; annotation>`:
+  Podemos declarar un nuevo :index:`annotation` utilizando el :mzn:`annotation` :index:`item <item; annotation>`:
 
   .. code-block:: minizincdef
 

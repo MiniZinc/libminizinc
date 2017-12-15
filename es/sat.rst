@@ -48,7 +48,7 @@ Hay ventajas y desventajas para cada representación. Depende de qué operacione
 Modelando Desigualdad
 ---------------------
 
-Consideremos el modelado de un problema de cuadrados latinos. Un cuadrado latino es una matriz: math:`n \ times n` de números de: math:` 1..n`, tal que cada número aparece exactamente una vez en cada fila y columna.
+Consideremos el modelado de un problema de cuadrados latinos. Un cuadrado latino es una matriz :math:`n \ times n` de números de :math:`1..n`, tal que cada número aparece exactamente una vez en cada fila y columna.
 Un modelo entero para cuadrados latinos se muestra en :numref:`ex-latin`.
 
 .. literalinclude:: examples/latin_es.mzn
@@ -142,12 +142,12 @@ Si la lista :mzn:`x` es impar, el último bit se guarda para usar como un comple
 .. literalinclude:: examples/uboolsum_es.mzn
   :language: minizinc
   :name: ex-uboolsum
-  :caption: Cardinality constraints by sorting networks (:download:`uboolsum_es.mzn <examples/uboolsum_es.mzn>`).
+  :caption: Restricciones de Cardinalidad Clasificando Redes (:download:`uboolsum_es.mzn <examples/uboolsum_es.mzn>`).
 
 .. literalinclude:: examples/oesort_es.mzn
   :language: minizinc
   :name: ex-oesort
-  :caption: Odd-even merge sorting networks (:download:`oesort_es.mzn <examples/oesort_es.mzn>`).
+  :caption: Odd-even Fusionar Redes de Clasificación (:download:`oesort_es.mzn <examples/oesort_es.mzn>`).
 
 Podemos implementar :mzn:`bool_sum_eq` utilizando redes de clasificación unaria utilizando el código que se muestra en :numref:` ex-uboolsum`.
 La restricción de cardinalidad se define expandiendo la entrada :mzn:`x` para tener una longitud de una potencia de 2 y clasificar los bits resultantes utilizando una red de clasificación de combinación de pares impares.
@@ -162,7 +162,7 @@ El clasificador de combinación impar-par que se muestra en :mzn:`ex-oesort` fun
 .. literalinclude:: examples/bddsum_es.mzn
   :language: minizinc
   :name: ex-bddsum
-  :caption: Cardinality constraints by binary decision diagrams (:download:`bddsum_es.mzn <examples/bddsum_es.mzn>`).
+  :caption: Restricciones de cardinalidad por diagramas de decisión binarios (:download:`bddsum_es.mzn <examples/bddsum_es.mzn>`).
 
 Nosotros podemos implementar :mzn:`bool_sum_eq` usando diagramas de decición binaria usando el codigo que se muestra en :mzn:`ex:bddsum`.
 La restricción de cardinalidad se divide en dos casos: ya sea en el primer elemento :mzn:`x[1]` es :mzn:`true`, y la suma de los bits restantes es :mzn:`s-1`, o :mzn:`x[1]` es :mzn:`false` y la suma de los bits restantes es :mzn:`s`. Por eficiencia, esto se basa en la eliminación de la subexpresión común para evitar crear muchas restricciones equivalentes.

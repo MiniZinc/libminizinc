@@ -138,7 +138,8 @@
 
 <bin-op> ::= <builtin-bin-op> | â€˜<ident>â€˜
 
-<builtin-bin-op> ::= "<->" | "->" | "<-" | "\/" | "xor" | "/\" | "<" | ">" | "<=" | ">=" | "==" | "=" | "!="
+<builtin-bin-op> ::= "<->" | "->" | "<-" | "\/" | "xor" | "/\" | "<" | ">"
+                   | "<=" | ">=" | "==" | "=" | "!="
                    | "in" | "subset" | "superset" | "union" | "diff" | "symdiff"
                    | ".." | "intersect" | "++" | <builtin-num-bin-op>
 
@@ -171,7 +172,8 @@
                    | """ <string-contents> "\(" <string-interpolate-tail>
 
 <string-interpolate-tail> ::= <expr> ")"<string-contents>"""
-                            | <expr> ")"<string-contents>"\(" <string-interpolate-tail>
+                            | <expr> ")"<string-contents>"\("
+                            <string-interpolate-tail>
 
 % Set literals
 <set-literal> ::= "{" [ <expr> "," ... ] "}"
@@ -199,7 +201,8 @@
 <ann-literal> ::= <ident> [ "(" <expr> "," ... ")" ]
 
 % If-then-else expressions
-<if-then-else-expr> ::= "if" <expr> "then" <expr> ( "elseif" <expr> "then" <expr> )* "else" <expr> "endif"
+<if-then-else-expr> ::= "if" <expr> "then" <expr>
+          ( "elseif" <expr> "then" <expr> )* "else" <expr> "endif"
 
 % Call expressions
 <call-expr> ::= <ident-or-quoted-op> [ "(" <expr> "," ... ")" ]
@@ -226,4 +229,3 @@
 <annotations> ::= ( "::" <annotation> )*
 
 <annotation> ::= <expr-atom-head> <expr-atom-tail>
-%

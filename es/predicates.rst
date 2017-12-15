@@ -66,12 +66,12 @@ Requiere que un conjunto de tareas proporcionadas por las horas de inicio :mzn:`
 .. literalinclude:: examples/moving_es.mzn
   :language: minizinc
   :name: ex-moving
-  :caption: Model for moving furniture using ``cumulative`` (:download:`moving_es.mzn <examples/moving_es.mzn>`).
+  :caption: Modelo para mover muebles usando ``cumulative`` (:download:`moving_es.mzn <examples/moving_es.mzn>`).
 
 .. literalinclude:: examples/moving_es.dzn
   :language: minizinc
   :name: ex-movingd
-  :caption: Data for moving furniture using ``cumulative`` (:download:`moving_es.dzn <examples/moving_es.dzn>`).
+  :caption: Datos para mover muebles usando ``cumulative`` (:download:`moving_es.dzn <examples/moving_es.dzn>`).
 
 El modelo en :numref:`ex-moving` encuentra un cronograma para mover los muebles de modo que cada mueble tenga suficientes manipuladores (personas) y suficientes carritos disponibles durante el movimiento. Se proporciona el tiempo disponible, los manipuladores y los carros, y los datos proporcionan para cada objeto la duración del movimiento, el número de manipuladores y la cantidad de carros requeridos.
 
@@ -96,13 +96,13 @@ Puede dar como resultado la salida
 
 .. figure:: figures/handlers_es.*
 
-Histograma de uso de los manipuladores en movimiento.
+  Histograma de uso de los manipuladores en movimiento.
 
 .. _fig-histogram-b:
 
 .. figure:: figures/trolleys_es.*
 
-Histograma de uso de carritos en el movimiento.
+  Histograma de uso de carritos en el movimiento.
 
 Table
 ~~~~~
@@ -127,12 +127,12 @@ La restricción impone :math:`x \in t` donde consideramos :math:`x` y cada fila 
 .. literalinclude:: examples/meal_es.mzn
   :language: minizinc
   :name: ex-meal
-  :caption: Model for meal planning using ``table`` constraint (:download:`meal_es.mzn <examples/meal_es.mzn>`).
+  :caption: Modelo para la planificación de comidas usando la restricción ``table`` (:download:`meal_es.mzn <examples/meal_es.mzn>`).
 
 .. literalinclude:: examples/meal_es.dzn
   :language: minizinc
   :name: ex-meald
-  :caption: Data for meal planning defining the ``table`` used (:download:`meal_es.dzn <examples/meal_es.dzn>`).
+  :caption: Datos para la planificación de comidas que definen la tabla ``table`` usada (:download:`meal_es.dzn <examples/meal_es.dzn>`).
 
 El modelo en :numref:`ex-meal` busca comidas balanceadas.
 Cada elemento de comida tiene un nombre (codificado como un entero), un kilojulio, proteínas en gramos, sal en miligramos y grasa en gramos, así como un costo en centavos. La relación entre estos elementos se codifica utilizando una restricción :mzn:`table`.
@@ -163,7 +163,7 @@ El estado 0 está reservado para ser un estado siempre fallido.
 
 .. figure:: figures/dfa.*
 
-Un DFA determina las listas correctas.
+  Un DFA determina las listas correctas.
 
 Considere un problema de lista de enfermeras. Cada enfermera está programada para cada día como:
 (d) en el turno de día,
@@ -197,7 +197,7 @@ El modelo que se muestra en :numref:`ex-nurse` encuentra un cronograma para :mzn
 .. literalinclude:: examples/nurse_es.mzn
   :language: minizinc
   :name: ex-nurse
-  :caption: Model for nurse rostering using ``regular`` constraint (:download:`nurse_es.mzn <examples/nurse_es.mzn>`)
+  :caption: Modelo para la formación de la enfermera usando la restricción ``regular`` (:download:`nurse_es.mzn <examples/nurse_es.mzn>`)
 
 Ejecutando el comando
 
@@ -245,7 +245,7 @@ Una de las características de modelado más potentes de MiniZinc, es la capacid
 .. literalinclude:: examples/jobshop2_es.mzn
   :language: minizinc
   :name: ex-jobshop2
-  :caption: Model for job shop scheduling using predicates (:download:`jobshop2_es.mzn <examples/jobshop2_es.mzn>`)
+  :caption: Modelo para la programación de taller de trabajo usando predicados (:download:`jobshop2_es.mzn <examples/jobshop2_es.mzn>`)
 
 Comenzamos con un ejemplo simple, revisando el problema de programación de la tienda de trabajo de la sección anterior. El modelo se muestra en :numref:`ex-jobshop2`. El elemento de interés es el elemento :mzn:`predicate`:
 
@@ -267,18 +267,18 @@ Por ejemplo:
 .. $ mzn-g12fd jobshop2_es.mzn jobshop_es.dzn
 .. } % $
 
-.. defblock:: Predicate definitions
+.. defblock:: Definiciones de Predicado
 
   .. index::
     single: predicate; definition
 
-Los predicados se definen mediante una declaración con la forma
+  Los predicados se definen mediante una declaración con la forma
 
   .. code-block:: minizincdef
 
     predicate <pred-name> ( <arg-def>, ..., <arg-def> ) = <bool-exp>
 
-El :mzndef:`<pred-name>` debe ser un identificador de MiniZinc válido, y cada uno de las :mzndef:`<arg-def>` es una válida declaración del :index:`type` en MiniZinc.
+  El :mzndef:`<pred-name>` debe ser un identificador de MiniZinc válido, y cada uno de las :mzndef:`<arg-def>` es una válida declaración del :index:`type` en MiniZinc.
 
 
   .. \ignore{The type-insts\index{type-inst}
@@ -297,15 +297,15 @@ El :mzndef:`<pred-name>` debe ser un identificador de MiniZinc válido, y cada u
   .. as well as set variables with a
   .. non-finite element type.}
 
-Una relajación de las definiciones :index:`argument` es que los tipos de índice para matrices pueden ser :index:`unbounded <array; conjunto de índices; sin límites> `, escrito en :mzn:`int`.
+  Una relajación de las definiciones :index:`argument` es que los tipos de índice para matrices pueden ser :index:`unbounded <array; conjunto de índices; sin límites> `, escrito en :mzn:`int`.
 
   .. code-block:: minizincdef
 
     test <pred-name> ( <arg-def>, ..., <arg-def> ) = <bool-exp>
 
-El :mzndef:`<bool-expo>` del cuerpo debe ser reparado.
+  El :mzndef:`<bool-expo>` del cuerpo debe ser reparado.
 
-También presentamos una nueva forma del comando :mzn:`assert` para usarlo en predicados.
+  También presentamos una nueva forma del comando :mzn:`assert` para usarlo en predicados.
 
   .. code-block:: minizincdef
 
@@ -374,21 +374,21 @@ El modelo completo se muestra en :numref:`ex-manhattan`.
   .. index::
     single: function; definition
 
-Las funciones se definen mediante una declaración de la forma
+  Las funciones se definen mediante una declaración de la forma
 
   .. code-block:: minizincdef
 
     function <ret-type> : <func-name> ( <arg-def>, ..., <arg-def> ) = <exp>
 
-El :mzndef:`<func-name>` debe ser un identificador MiniZinc válido, y cada uno de los :mzndef:`<arg-def>` es una declaración de tipo MiniZinc válida.
-El :mzndef:`<ret-type>` es el tipo de retorno de la función que debe ser el tipo :mzndef:`<exp>`. Los argumentos tienen las mismas restricciones que en las definiciones de predicados.
+  El :mzndef:`<func-name>` debe ser un identificador MiniZinc válido, y cada uno de los :mzndef:`<arg-def>` es una declaración de tipo MiniZinc válida.
+  El :mzndef:`<ret-type>` es el tipo de retorno de la función que debe ser el tipo :mzndef:`<exp>`. Los argumentos tienen las mismas restricciones que en las definiciones de predicados.
 
 Funciones en MiniZinc pueden tener cualquier tipo de retorno, no solo tipos de retorno fijos.
 
 Las funciones son útiles para definir y documentar expresiones complejas que se usan varias veces en un modelo.
 
 
-Funciones de reflexión
+Funciones de Reflexión
 ----------------------
 
 
@@ -413,7 +413,8 @@ La restricción :mzn:`disjunctive` toma una matriz de tiempos de inicio para cad
 
 Podemos usar la restricción disyuntiva para definir la no superposición de tareas como se muestra en :numref:`ex-jobshop3`.
 Suponemos una definición para el predicado :mzn:`disjunctive` está dada por el archivo :download:`disjunctive_es.mzn <examples/disjunctive_es.mzn>` que se incluye en el modelo.
-Si el sistema subyacente admite :mzn:`disjunctive`directamente, incluirá un archivo :download:`disjunctive_es.mzn <examples/disjunctive_es.mzn>` en su directorio global (con contenido solo la definición de firma anterior).
+
+Si el sistema subyacente admite :mzn:`disjunctive` directamente, incluirá un archivo :download:`disjunctive_es.mzn <examples/disjunctive_es.mzn>` en su directorio global (con contenido solo la definición de firma anterior).
 
 
 Si el sistema que estamos utilizando no es compatible directamente con disyuntivo, podemos dar nuestra propia definición creando el archivo :download:`disjunctive_es.mzn <examples/disjunctive_es.mzn>`.
@@ -506,7 +507,7 @@ Si las variables locales reciben valores, entonces pueden usarse en contextos ne
 
 
 Tenga en cuenta que el significado de :mzn:`even` es correcto, ya que si :mzn:`x` es par :math:`x = 2 * (x ~\mbox{div}~ 2)`.
-Tenga en cuenta que para esta definición :math:`\neg \mathit{even}(z)` es equivalente a :math:`\neg \exists y. y = z ~\mbox{div}~ 2 \wedge z = 2y` que es equivalente a :math:`\exists y. y = z ~\mbox{div}~ 2 \wedge \neg z \neq 2y`, porque: math:`y` se define funcionalmente por :math:`z`.
+Tenga en cuenta que para esta definición :math:`\neg \mathit{even}(z)` es equivalente a :math:`\neg \exists y. y = z ~\mbox{div}~ 2 \wedge z = 2y` que es equivalente a :math:`\exists y. y = z ~\mbox{div}~ 2 \wedge \neg z \neq 2y`, porque :math:`y` se define funcionalmente por :math:`z`.
 
 Cada expresión en MiniZinc aparece en uno de los cuatro *contextos* :index:`root <context; !root>`, :index:`positive <context; !positive>`, :index:`negative <context; !negative>`, o :index:`mixed <context; !mixed>`.
 El contexto de una expresión no booleana es simplemente el contexto de su expresión booleana más cercana. La única excepción es que la expresión objetivo aparece en un contexto raíz (ya que no tiene una expresión booleana adjunta).
@@ -528,12 +529,12 @@ Las expresiones booleanas de contexto positivo no necesitan mantenerse en un mod
 Negativo:
 El contexto negativo es el contexto para cualquier expresión que aparece como una subexpresión :mzn:`e1` o :mzn:`e2` en una expresión :mzn:`e1 \/ e2` o :mzn:`e1 /\ e2` que ocurre en un negativo contexto, o que aparece como una subexpresión :mzn:`e` en una expresión :mzn:`not e` que aparece en un contexto positivo.
 
-Un contexto negativo es el contexto para cualquier expresión que aparezca como una expresión secundaria: mzn: `e1` o: mzn:` e2` en una expresión: mzn: `e1 \ / e2` o: mzn:` e1 / \ e2` que aparece en un contexto negativo, o que aparece como una subexpresión: mzn: `e` en una expresión: mzn:` not e` que aparece en un contexto positivo.
+Un contexto negativo es el contexto para cualquier expresión que aparezca como una expresión secundaria :mzn:`e1` o :mzn:`e2` en una expresión :mzn:`e1 \/ e2` o :mzn:`e1 /\ e2` que aparece en un contexto negativo, o que aparece como una subexpresión :mzn:`e` en una expresión :mzn:`not e` que aparece en un contexto positivo.
 
 Las expresiones booleanas de contexto negativo no necesitan mantenerse en un modelo, pero al hacerlas falsas aumentará la posibilidad de que se mantenga la restricción de inclusión. Una expresión de contexto negativa tiene un número impar de negaciones en la ruta desde el contexto raíz adjunto a la expresión.
 
 Mixto:
-Un contexto mixto es el contexto para cualquier expresión booleana que aparece como una subexpresión  :mzn:`e1` o :mzn:`e2` en :mzn:`e1 <-> e2`, :mzn:`e1 = e2`, o :mzn:`bool2int(e)`.
+Un contexto mixto es el contexto para cualquier expresión booleana que aparece como una subexpresión :mzn:`e1` o :mzn:`e2` en :mzn:`e1 <-> e2`, :mzn:`e1 = e2`, o :mzn:`bool2int(e)`.
 
 La expresión de contexto mixto es tanto positiva como negativa. Esto se puede ver por el hecho de que :mzn:`e1 <-> e2` es equivalente a :mzn:`(e1 /\ e2) \/ (not e1 /\ not e2)` y :mzn:`x = bool2int(e)` es equivalente a :mzn:`(e /\ x=1) \/ (not e /\ x=0)`.
 
@@ -571,27 +572,27 @@ Las restricciones locales aseguran que :mzn:`y` toma el valor correcto; que lueg
 Las restricciones locales se pueden usar en cualquier expresión de let, aunque el uso más común es en la definición de funciones.
 
 
-.. defblock:: Let expressions
+.. defblock:: Expresiones Let
 
   .. index::
     single: expression; let
 
   :index:`Local variables <variable;local>`
 
-Se puede introducir en cualquier expresión con *let expression* de la forma:
+  Se puede introducir en cualquier expresión con *let expression* de la forma:
 
   .. code-block:: minizincdef
 
     let { <dec>; ... <dec> ; } in <exp>
 
-Las declaraciones :mzndef:`<dec>` pueden ser declaraciones de variables y parámetros de decisión (que deben inicializarse) o elementos de restricción.
-Ninguna declaración puede hacer uso de una variable recientemente declarada antes de ser presentada.
+  Las declaraciones :mzndef:`<dec>` pueden ser declaraciones de variables y parámetros de decisión (que deben inicializarse) o elementos de restricción.
+  Ninguna declaración puede hacer uso de una variable recientemente declarada antes de ser presentada.
 
-Tenga en cuenta que las variables locales y las restricciones no pueden ocurrir en las pruebas.
-Las variables locales no pueden ocurrir en predicados o funciones que aparecen en un :index:`negative <context; negative>` o en un contexto :index:`mixed <context; mixed>`, a menos que la variable esté definida por una expresión.
+  Tenga en cuenta que las variables locales y las restricciones no pueden ocurrir en las pruebas.
+  Las variables locales no pueden ocurrir en predicados o funciones que aparecen en un :index:`negative <context; negative>` o en un contexto :index:`mixed <context; mixed>`, a menos que la variable esté definida por una expresión.
 
 
-Funciones de reflexión del dominio
+Funciones de Reflexión del Dominio
 ----------------------------------
 
 .. index::
@@ -654,17 +655,17 @@ Dado que el uso de la aproximación más ajustada (correcta) conduce a más solu
   .. index::
     single: domain; reflection
 
-Hay funciones de reflexión para interrogar los posibles valores de las expresiones que contienen variables:
+  Hay funciones de reflexión para interrogar los posibles valores de las expresiones que contienen variables:
 
   - :mzndef:`dom(<exp>)` devuelve una aproximación segura a los posibles valores de la expresión.
   - :mzndef:`lb(<exp>)` devuelve una aproximación segura al valor límite inferior de la expresión.
   - :mzndef:`ub(<exp>)` devuelve una aproximación segura al valor límite superior de la expresión.
 
-The expressions for :mzn:`lb` and :mzn:`ub` can only be of types :mzn:`int`, :mzn:`bool`, :mzn:`float` or :mzn:`set of int`.
-For :mzn:`dom` the type cannot be :mzn:`float`.
-If one of the variables appearing in :mzndef:`<exp>` has a :index:`non-finite declared type <type; non-finite>` (e.g. :mzn:`var int` or :mzn:`var float`) then an error can occur.
+  Las expresiones para :mzn:`lb` y :mzn:`ub` solo puede ser de tipos :mzn:`int`, :mzn:`bool`, :mzn:`float` o :mzn:`set of int`.
+  Para :mzn:`dom` el tipo no puede ser :mzn:`float`.
+  Si una de las variables que aparecen en :mzndef:`<exp>` tiene un :index:`non-finite declared type <type; non-finite>` (por ejemplo, :mzn:`var int` o :mzn:`var float`) entonces un error puede ocurrir.
 
-También hay versiones que funcionan directamente en matrices de expresiones (con restricciones similares):
+  También hay versiones que funcionan directamente en matrices de expresiones (con restricciones similares):
 
   - :mzndef:`dom_array(<array-exp>)`: Devuelve una aproximación segura a la unión de todos los valores posibles de las expresiones que aparecen en la matriz.
   - :mzndef:`lb_array(<array-exp>)`: Devuelve una aproximación segura al límite inferior de todas las expresiones que aparecen en la matriz.
@@ -676,7 +677,7 @@ Podemos definir la descomposición basada en el tiempo de la restricción :mzn:`
 .. literalinclude:: examples/cumulative_es.mzn
   :language: minizinc
   :name: ex-cumul
-  :caption: Defining a ``cumulative`` predicate by decomposition (:download:`cumulative_es.mzn <examples/cumulative_es.mzn>`).
+  :caption: Definiendo un predicado ``cumulative`` por descomposición (:download:`cumulative_es.mzn <examples/cumulative_es.mzn>`).
 
 La descomposición usa :mzn:`lb` y :mzn:`ub` para determinar el conjunto de veces :mzn:`times` sobre las cuales las tareas podrían estar en rango.
 A continuación, afirma para cada momento :mzn:`t` en :mzn:`times` que la suma de recursos para las tareas activas en el momento :mzn:`t` es menor que la límite :mzn:`b`.

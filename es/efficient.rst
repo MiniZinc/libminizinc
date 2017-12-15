@@ -60,14 +60,14 @@ Corriendo
 
 no devuelve una respuesta, ya que el solucionador crea una gran representación para las variables intermedias del producto.
 
-.. defblock:: Bounding variables
+.. defblock:: Variables de Delimitación
 
   .. index::
     single: variable; bound
 
-Siempre trate de usar variables limitadas en los modelos.
-Al usar declaraciones :mzn:`let` para introducir nuevas variables, siempre intente definirlas con límites correctos y ajustados. Esto hará que su modelo sea más eficiente y evitará la posibilidad de desbordamientos inesperados.
-Una excepción es cuando introduce una nueva variable que se define inmediatamente como igual a una expresión. Por lo general, MiniZinc podrá inferir límites efectivos a partir de la expresión.
+  Siempre trate de usar variables limitadas en los modelos.
+  Al usar declaraciones :mzn:`let` para introducir nuevas variables, siempre intente definirlas con límites correctos y ajustados. Esto hará que su modelo sea más eficiente y evitará la posibilidad de desbordamientos inesperados.
+  Una excepción es cuando introduce una nueva variable que se define inmediatamente como igual a una expresión. Por lo general, MiniZinc podrá inferir límites efectivos a partir de la expresión.
 
 Variables sin restricciones
 ---------------------------
@@ -151,7 +151,7 @@ Ilustrando una solución única.
   .. index::
     single: variable; unconstrained
 
-Los modelos nunca deben tener variables sin restricciones. Algunas veces es difícil modelar sin variables innecesarias. Si este es el caso, agregue restricciones para corregir las variables innecesarias, de modo que no puedan influir en la resolución.
+  Los modelos nunca deben tener variables sin restricciones. Algunas veces es difícil modelar sin variables innecesarias. Si este es el caso, agregue restricciones para corregir las variables innecesarias, de modo que no puedan influir en la resolución.
 
 
 
@@ -286,7 +286,7 @@ Hay muchas maneras de modelar el mismo problema en MiniZinc, aunque algunas pued
 Los diferentes modelos pueden tener una eficacia de resolución muy diferente, y lo que es peor, diferentes modelos pueden ser mejores o peores para los diferentes backends de resolución.
 Sin embargo, hay algunas pautas para producir generalmente mejores modelos:
 
-.. defblock:: Choosing between models
+.. defblock:: Elegir entre Modelos
 
   El mejor modelo es probable que tenga algunas de las siguientes características:
 
@@ -306,7 +306,7 @@ La forma obvia de modelar este problema se muestra en :numref:`ex-allint`.
   :name: ex-allint
   :caption: Un modelo natural para el problema de todas las series de intervalos ``prob007`` en CSPlib (:download:`allinterval_es.mzn <examples/allinterval_es.mzn>`).
 
-En este modelo, la matriz :mzn:`x` representa la permutación de los números: mzn:`n` y las restricciones se representan naturalmente usando :mzn:`alldifferent`.
+En este modelo, la matriz :mzn:`x` representa la permutación de los números :mzn:`n` y las restricciones se representan naturalmente usando :mzn:`alldifferent`.
 
 Ejecutando el modelo
 
@@ -328,7 +328,7 @@ Con esto podemos modelar el problema como se muestra en :numref:`ex-allint2`. La
 .. literalinclude:: examples/allinterval2_es.mzn
   :language: minizinc
   :name: ex-allint2
-  :caption: An inverse model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval2_es.mzn <examples/allinterval2_es.mzn>`).
+  :caption: Un modelo inverso para el problema de toda la serie de intervalos ``prob007`` en CSPlib (:download:`allinterval2_es.mzn <examples/allinterval2_es.mzn>`).
 
 El modelo inverso tiene el mismo tamaño que el modelo original, en términos de cantidad de variables y tamaños de dominio. Pero el modelo inverso tiene una forma mucho más indirecta de modelar la relación entre las variables :mzn:`y` y :mzn:`v` en oposición a la relación entre las variables :mzn:`x` y :mzn:`u`.
 
@@ -342,7 +342,7 @@ El comando
 
 Encuentra todas las soluciones en 75536 puntos de elección y 18s.
 
-Curiosamente, aunque el modelo no es tan breve aquí, la búsqueda en las variables :mzn:`y` es mejor que buscar en las variables: mzn:`x`.
+Curiosamente, aunque el modelo no es tan breve aquí, la búsqueda en las variables :mzn:`y` es mejor que buscar en las variables :mzn:`x`.
 La falta de concisión significa que, aunque la búsqueda requiere menos opciones, es mucho más lenta.
 
 .. _sec-multiple-modelling-and-channels:
@@ -356,7 +356,7 @@ Cuando tenemos dos modelos para el mismo problema, puede ser útil utilizar ambo
 .. literalinclude:: examples/allinterval3_es.mzn
   :language: minizinc
   :name: ex-allint3
-  :caption: A dual model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval3_es.mzn <examples/allinterval3_es.mzn>`).
+  :caption: Un modelo dual para el problema de toda la serie de intervalos ``prob007`` en CSPlib (:download:`allinterval3_es.mzn <examples/allinterval3_es.mzn>`).
 
 :numref:`ex-allint3` gives a dual model combining features of :download:`allinterval_es.mzn <examples/allinterval_es.mzn>` and :download:`allinterval2_es.mzn <examples/allinterval2_es.mzn>`.
 
@@ -376,7 +376,7 @@ Las únicas restricciones son las relaciones de las variables :mzn:`x` y :mzn:`u
 .. literalinclude:: examples/inverse_es.mzn
   :language: minizinc
   :name: ex-inverse
-  :caption: A definition of the ``inverse`` global constraint (:download:`inverse_es.mzn <examples/inverse_es.mzn>`).
+  :caption: Una definición de la restricción global ``inverse`` (:download:`inverse_es.mzn <examples/inverse_es.mzn>`).
 
 Uno de los beneficios del modelo dual es que hay más posibilidades para definir diferentes estrategias de búsqueda.
 
@@ -398,20 +398,20 @@ La simetría es muy común en problemas de satisfacción y optimización de rest
 
 .. _fig-queens-sym:
 
-.. figure:: figures/queens_symm.*
+.. figure:: figures/queens_symm_es.*
 
-Variantes simétricas de una solución de 8 reinas.
+  Variantes simétricas de una solución de 8 reinas.
 
 Si quisiéramos enumerar *todas* las soluciones del problema de las 8 reinas, obviamente podríamos ahorrarle algo de trabajo al solucionador enumerando solo las soluciones *no simétricas* y luego generando las variantes simétricas nosotros mismos. Esta es una de las razones por las que queremos deshacernos de la simetría en los modelos de restricción. La otra razón, mucho más importante, es que el solucionador también puede **explorar variantes simétricas de estados sin solución**.
 
 Por ejemplo, un solucionador de restricciones típico puede tratar de colocar a la reina en la columna 1 en la fila 1 (lo cual está bien), y luego tratar de poner la reina en la columna 2 y en la fila 3, que, a primera vista, no viola ninguno de los restricciones Sin embargo, esta configuración no se puede completar con una solución completa (que el solucionador descubre después de una pequeña búsqueda). :numref:`fig-queens-sym-unsat` muestra esta configuración en el tablero de ajedrez superior izquierdo. Ahora nada impide que el solucionador intente, por ejemplo, la segunda configuración desde la izquierda en la fila inferior de :numref:`fig-queens-sym-unsat`, donde la reina en la columna 1 todavía está en la fila 1, y la reina en la columna 3 se coloca en la fila 2. Por lo tanto, incluso cuando solo se busca una solución única, el solucionador puede explorar muchos estados simétricos que ya ha visto y probado como insatisfactorios.
-
 
 .. _fig-queens-sym-unsat:
 
 .. figure:: figures/queens_symm_unsat.*
 
   Symmetric variants of an 8-queens unsatisfiable partial assignment
+
 
 Rompiendo la simetría estática
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -443,7 +443,7 @@ Lo mejor del uso de restricciones de ordenamiento lexicográfico es que podemos 
 
 Para el problema de n-queens, lamentablemente esta técnica no se aplica de inmediato, porque algunas de sus simetrías no se pueden describir como permutaciones de la matriz :mzn:`q`. El truco para superar esto es expresar el problema de n-queens en términos de variables booleanas que modelan, para cada campo del tablero, si contiene una reina o no.
 
-Ahora todas las simetrías se pueden modelar como permutaciones de esta matriz. Dado que las principales restricciones del problema n-queens son mucho más fáciles de expresar con una matriz entera mzn:`q`, simplemente usamos ambos modelos juntos y agregamos restricciones de canal entre ellos, como se explica en :ref:`sec-multiple- modeling-and-channels`.
+Ahora todas las simetrías se pueden modelar como permutaciones de esta matriz. Dado que las principales restricciones del problema n-queens son mucho más fáciles de expresar con una matriz entera mzn:`q`, simplemente usamos ambos modelos juntos y agregamos restricciones de canal entre ellos, como se explica en :ref:`sec-multiple-modelling-and-channels`.
 
 El modelo completo, con variables booleanas añadidas, restricciones de canalización y restricciones de ruptura de simetría se muestra en :numref:`ex-queens-sym`. Podemos realizar un pequeño experimento para verificar si rompe con éxito toda la simetría. Intente ejecutar el modelo con valores crecientes para :mzn:`n`. Ejemplo, desde 1 a 10, contando el número de soluciones (por ejemplo, utilizando el indicador ``-s`` con el solucionador Gecode, o seleccionando "Imprimir todas las soluciones", así como también "Estadísticas para resolver" en el IDE). Debe obtener la siguiente secuencia de números de soluciones: 1, 0, 0, 1, 2, 1, 6, 12, 46, 92. Para verificar la secuencia, puede buscarla en la *Enciclopedia en línea de Secuencias Enteras* (http://oeis.org).
 

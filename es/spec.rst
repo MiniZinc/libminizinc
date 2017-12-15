@@ -318,6 +318,7 @@ Se reservan varias palabras clave y no se pueden usar como identificadores. Las 
 :mzn:`not`,
 :mzn:`of`,
 :mzn:`op`,
+:mzn:`opt`,
 :mzn:`output`,
 :mzn:`par`,
 :mzn:`predicate`,
@@ -833,10 +834,13 @@ Por ejemplo:
 
   enum X = {A,B,C};
   enum Y = {D,E,F};
-  array[X] of int: x = array1d(X, [5,6,7]); % correcto
-  array[Y] of int: y = x;                   % conjunto de índices no coinciden: Y != X
-  array[int] of int: z = x;                 % correcto: asigne el índice X establecido en int
-  array[X] of int: x2 = [10,11,12];         % correcto: coerción automática para literales de matriz
+  array[X] of int: x = array1d(X, [5,6,7]); % Correcto
+  array[Y] of int: y = x;                   % Conjunto de índices no
+                                            % coinciden : Y != X
+  array[int] of int: z = x;                 % Correcto: asigne el índice X
+                                            % establecido en int
+  array[X] of int: x2 = [10,11,12];         % Correcto: coerción automática
+                                            % para literales de matriz
 
 La inicialización de una matriz se puede hacer en una declaración de asignación separada, que puede estar presente en el modelo o en un archivo de datos separado.
 
@@ -985,8 +989,8 @@ Todas las expresiones establecidas de tipo-instanciación son tipos finitos. Su 
 Rango de los números de Tipo-instanciación
 ++++++++++++++++++++++++++++++++++++++++++
 
-Los rangos de los números de punto flotantes se pueden usar como tipo-instanciación, ejemplo, :mzn:`1.0 .. 3.0`.  Estos se tratan de manera similar al rango entero tipo-instanciación, a pesar de que
- :mzn:`1.0 .. 3.0` no es una expresión válida mientras es :mzn:`1 .. 3`.
+Los rangos de los números de punto flotantes se pueden usar como tipo-instanciación. Por ejemplo, :mzn:`1.0 .. 3.0`.
+Estos se tratan de manera similar al rango entero tipo-instanciación, a pesar de que :mzn:`1.0 .. 3.0` no es una expresión válida mientras es :mzn:`1 .. 3`.
 
 Los rangos de números de punto flotante no son tipos finitos.
 
@@ -2192,7 +2196,7 @@ Tienen la siguiente sintaxis:
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Annotations
-  :end-before: %
+.. #  :end-before: %
 
 Por ejemplo:
 
@@ -2860,7 +2864,7 @@ Uno puede devolver el valor no opcional de una variable de tipo de opción usand
 Otras operaciones
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Verifique que una expresión booleana sea verdadera, y aborte si no, imprimiendo el segundo argumento como el mensaje de error. El primero devuelve el tercer argumento, y es particularmente útil para los argumentos de comprobación de formalidad para los predicados y las funciones; importante, su tercer argumento es flojo, es decir, solo se evalúa si la condición tiene éxito. El segundo devuelve: mzn: `true` y es útil para verificaciones de cordura globales (por ejemplo, de datos de instancia) en elementos de restricción.
+Verifique que una expresión booleana sea verdadera, y aborte si no, imprimiendo el segundo argumento como el mensaje de error. El primero devuelve el tercer argumento, y es particularmente útil para los argumentos de comprobación de formalidad para los predicados y las funciones; importante, su tercer argumento es flojo, es decir, solo se evalúa si la condición tiene éxito. El segundo devuelve :mzn:`true` y es útil para verificaciones de cordura globales (por ejemplo, de datos de instancia) en elementos de restricción.
 
 
 .. code-block:: minizinc
@@ -2996,7 +3000,7 @@ Expresiones
   :start-after: % Expressions
   :end-before: % Miscellaneous
 
-Elementos Misceláneo
+Elementos Misceláneos
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 .. literalinclude:: grammar.mzn

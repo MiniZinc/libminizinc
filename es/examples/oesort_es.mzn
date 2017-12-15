@@ -1,5 +1,6 @@
 % Ordenamiento odd-even.
-% y es la versión ordenada de x, todos los verdaderos (true) antes de los falsos (false).
+% y es la versión ordenada de x, todos los verdaderos (true)
+% antes de los falsos (false).
 predicate oesort(array[int] of var bool:x, array[int] of var bool:y)=
   let { int: c = card(index_set(x)) } in
   if c == 1 then x[1] == y[1]
@@ -14,7 +15,8 @@ predicate oesort(array[int] of var bool:x, array[int] of var bool:y)=
   endif;
 
 % Unión odd-even
-% y es la versión ordenada de x, todos los valores antes de los valores falsos (false).
+% y es la versión ordenada de x, todos los valores antes de los
+% valores falsos (false).
 % Suponen que la primera y segunda mitad de x está ordenada.
 predicate oemerge(array[int] of var bool:x, array[int] of var bool:y)=
   let { int: c = card(index_set(x)) } in

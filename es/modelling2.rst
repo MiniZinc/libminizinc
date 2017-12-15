@@ -26,7 +26,7 @@ declara cuatro conjuntos fijos de enteros que describen las dimensiones del mode
 ``WIDTH`` es el ancho total del modelo, mientras que ``CWIDTH`` es el centro de la anchura omitiendo la izquierda y derecha,
 
 Finalmente, una matriz bidimensional de variables flotantes ``t`` con filas numeradas :math:`0` to :math:`h` (``HEIGHT``) y columnas :math:`0` to :math:`w` (``WIDTH``), para representar las temperaturas en cada punto de la placa metálica.
-Podemos acceder al elemento de la matriz en la :math: fila `i^{th}` y columna :math:`j^{th}` usando una expresión :mzn:`t[i,j]`.
+Podemos acceder al elemento de la matriz en la fila :math:`i^{th}` y columna :math:`j^{th}` usando una expresión :mzn:`t[i,j]`.
 
 
 La ecuación de Laplace indica que cuando la placa alcanza un estado estacionario la temperatura en cada punto interno es la media de sus vecinos ortogonales.
@@ -60,7 +60,7 @@ Podemos determinar las temperaturas en una placa dividida en 5 :math:`\times` 5 
 .. literalinclude:: examples/laplace_es.mzn
   :language: minizinc
   :name: ex-laplace
-  :caption: Finite element plate model for determining steady state temperatures (:download:`laplace_es.mzn <examples/laplace_es.mzn>`).
+  :caption: Modelo de placa de elementos finitos para determinar las temperaturas en estado estable (:download:`laplace_es.mzn <examples/laplace_es.mzn>`).
 
 Ejecutando el comando
 
@@ -79,7 +79,7 @@ Da la salida
     0.00   0.00   0.00   0.00   0.00
   ----------
 
-.. defblock:: Sets
+.. defblock:: Conjuntos
 
   .. index::
     single: set
@@ -146,13 +146,13 @@ Declara ``Products`` como un conjunto de productos *desconocido*.
     single: enumerated type
     single enum
 
-Los tipos enumerados, a los que nos referiremos como ``enumeraciones``, se declaran con una declaración de la forma:
+  Los tipos enumerados, a los que nos referiremos como ``enumeraciones``, se declaran con una declaración de la forma:
 
   .. code-block:: minizincdef
 
     enum <var-name> ;
 
-Un tipo enumerado se define mediante una asignación del formulario
+  Un tipo enumerado se define mediante una asignación del formulario
 
 
   .. code-block:: minizincdef
@@ -160,9 +160,9 @@ Un tipo enumerado se define mediante una asignación del formulario
     enum <var-name> = { <var-name-1>, ..., <var-name-n> } ;
 
 
-Donde :mzndef:`<var-name-1>`, ..., :mzndef:`<var-name-n>` son los elementos del tipo enumerado, con el nombre :mzndef:`<var-name>`.
-Cada uno de los elementos del tipo enumerado también es declarado efectivamente por esta definición como una nueva constante de ese tipo.
-La declaración y la definición se pueden combinar en una línea como de costumbre.
+  Donde :mzndef:`<var-name-1>`, ..., :mzndef:`<var-name-n>` son los elementos del tipo enumerado, con el nombre :mzndef:`<var-name>`.
+  Cada uno de los elementos del tipo enumerado también es declarado efectivamente por esta definición como una nueva constante de ese tipo.
+  La declaración y la definición se pueden combinar en una línea como de costumbre.
 
 El segundo elemento declara una matriz de enteros:
 
@@ -212,15 +212,15 @@ Observe cómo el delimitador ``|`` se usa para separar filas.
     single: array
 
 
-Por lo tanto, MiniZinc proporciona matrices de una y varias dimensiones que se declaran utilizando el tipo:
+  Por lo tanto, MiniZinc proporciona matrices de una y varias dimensiones que se declaran utilizando el tipo:
 
   .. code-block:: minizincdef
 
     array [ <index-set-1>, ..., <index-set-n> ] of <type-inst>
 
-MiniZinc requiere que la declaración de matriz contenga el conjunto de índices de cada dimensión y que el conjunto de índices sea un rango entero, una variable establecida inicializada a un rango entero, o un :index:`enumeration type <enumerated type>`.
+  MiniZinc requiere que la declaración de matriz contenga el conjunto de índices de cada dimensión y que el conjunto de índices sea un rango entero, una variable establecida inicializada a un rango entero, o un :index:`enumeration type <enumerated type>`.
 
-Las matrices pueden contener cualquiera de los tipos base: enteros, enumeraciones, booleanos, flotantes o cadenas. Estos pueden ser fijos o no, a excepción de cadenas que solo pueden ser parámetros. Las matrices también pueden contener conjuntos, pero no pueden contener matrices.
+  Las matrices pueden contener cualquiera de los tipos base: enteros, enumeraciones, booleanos, flotantes o cadenas. Estos pueden ser fijos o no, a excepción de cadenas que solo pueden ser parámetros. Las matrices también pueden contener conjuntos, pero no pueden contener matrices.
 
   :index:`One-dimensional array literals <array; literal; 1D>` son de la forma:
 
@@ -228,7 +228,7 @@ Las matrices pueden contener cualquiera de los tipos base: enteros, enumeracione
 
     [ <expr-1>, ..., <expr-n> ]
 
-Mientras que :index:`two-dimensional array literals <array; literal; 2D>` son de la forma:
+  Mientras que :index:`two-dimensional array literals <array; literal; 2D>` son de la forma:
 
   .. code-block:: minizincdef
 
@@ -236,11 +236,11 @@ Mientras que :index:`two-dimensional array literals <array; literal; 2D>` son de
        ...                         |
        <expr-m-1>, ..., <expr-m-n> |]
 
-Donde la matriz tiene columnas ``m`` y ``n``.
+  Donde la matriz tiene columnas ``m`` y ``n``.
 
-La familia de funciones incorporadas :mzn:`array1d`, :mzn:`array2d`, etc., se puede utilizar para inicializar una matriz de cualquier dimensión de una lista (o más exactamente una matriz unidimensional).
+  La familia de funciones incorporadas :mzn:`array1d`, :mzn:`array2d`, etc., se puede utilizar para inicializar una matriz de cualquier dimensión de una lista (o más exactamente una matriz unidimensional).
 
-La llamada:
+  La llamada:
 
   .. code-block:: minizincdef
 
@@ -251,18 +251,18 @@ La llamada:
   instance, :mzn:`array2d(1..3, 1..2, [1, 2, 3, 4, 5, 6])` is equivalent to
   :mzn:`[|1, 2 |3, 4 |5, 6|]`.
 
-Devuelve una matriz dimensional ``n`` con conjuntos de índices dados por los primeros argumentos ``n`` y el último argumento contiene los elementos de la matriz.
-Por ejemplo, :mzn:`array2d (1..3, 1..2, [1, 2, 3, 4, 5, 6])` es equivalente a :mzn:`[| 1, 2 | 3, 4 | 5, 6 |]`.
+  Devuelve una matriz dimensional ``n`` con conjuntos de índices dados por los primeros argumentos ``n`` y el último argumento contiene los elementos de la matriz.
+  Por ejemplo, :mzn:`array2d (1..3, 1..2, [1, 2, 3, 4, 5, 6])` es equivalente a :mzn:`[| 1, 2 | 3, 4 | 5, 6 |]`.
 
-Los elementos de la matriz son :index:`accessed <array; access>` de la forma habitual: :mzn:`a[i, j]` da el elemento en la fila :math:`i^{th}` y en la columna :math:`j^{th}`.
+  Los elementos de la matriz son :index:`accessed <array; access>` de la forma habitual: :mzn:`a[i, j]` da el elemento en la fila :math:`i^{th}` y en la columna :math:`j^{th}`.
 
   .. \pjs{New array functions!}
 
-El operador de concatenación ``++`` se puede usar para concatenar dos matrices unidimensionales juntas. El resultado es una lista, es decir, una matriz unidimensional cuyos elementos están indexados desde 1.
+  El operador de concatenación ``++`` se puede usar para concatenar dos matrices unidimensionales juntas. El resultado es una lista, es decir, una matriz unidimensional cuyos elementos están indexados desde 1.
 
-Por ejemplo, :mzn:`[4000, 6] ++ [2000, 500, 500]` evalúa a :mzn:`[4000, 6 , 2000, 500, 500]`.
+  Por ejemplo, :mzn:`[4000, 6] ++ [2000, 500, 500]` evalúa a :mzn:`[4000, 6 , 2000, 500, 500]`.
 
-La función incorporada :mzn:`length` devuelve la longitud de una matriz unidimensional.
+  La función incorporada :mzn:`length` devuelve la longitud de una matriz unidimensional.
 
 El siguiente elemento en el modelo define el parámetro :mzn:`mproducts`. Esto se establece en un límite superior en la cantidad de productos de cualquier tipo que se pueden producir. Este es un ejemplo bastante complejo de comprensiones de conjuntos anidados y operadores de agregación. Los presentaremos antes de tratar de entender este artículo y el resto del modelo.
 
@@ -270,37 +270,37 @@ En primer lugar, MiniZinc proporciona comprensiones de listas similares a las pr
 
 MiniZinc también proporciona conjuntos de comprensiones que tienen una sintaxis similar: por ejemplo, :mzn:`{i + j | i, j in 1..3 where j < i}` evalúa al conjunto :mzn:`{3, 4, 5}`.
 
-.. defblock:: List and Set Comprehensions
+.. defblock:: Enumeraciones y Establecer comprensiones
 
   .. index:
     single: comprehension
     single: comprehension; list
 
-La forma genérica de una lista de comprensión es
+  La forma genérica de una lista de comprensión es
 
   .. code-block:: minizincdef
 
     [ <expr> | <generator-exp> ]
 
-La expresión :mzndef:`<expr>` especifica cómo construir elementos en la lista de salida a partir de los elementos generados por :mzndef:`<generator-exp>`. El generador :mzndef:`<generator-exp>` consiste en una secuencia separada por comas de expresiones generadoras opcionalmente, seguidas de una expresión booleana. Las dos formas son:
+  La expresión :mzndef:`<expr>` especifica cómo construir elementos en la lista de salida a partir de los elementos generados por :mzndef:`<generator-exp>`. El generador :mzndef:`<generator-exp>` consiste en una secuencia separada por comas de expresiones generadoras opcionalmente, seguidas de una expresión booleana. Las dos formas son:
 
   .. code-block:: minizincdef
 
     <generator>, ..., <generator>
     <generator>, ..., <generator> where <bool-exp>
 
-El opcional :mzndef:`<bool-exp>` en la segunda forma actúa como un filtro en la expresión del generador. Solo los elementos que satisfacen la expresión booleana se usan para construir elementos en la lista de salida.
-Un :index:`generator <comprehension; generator>` :mzndef:`<generator>` tiene la forma:
+  El opcional :mzndef:`<bool-exp>` en la segunda forma actúa como un filtro en la expresión del generador. Solo los elementos que satisfacen la expresión booleana se usan para construir elementos en la lista de salida.
+  Un :index:`generator <comprehension; generator>` :mzndef:`<generator>` tiene la forma:
 
   .. code-block:: minizincdef
 
     <identifier>, ..., <identifier> in <array-exp>
 
-Cada identificador es un *iterador* que toma los valores de la expresión de la matriz a su vez, con el último identificador que varía más rápidamente.
+  Cada identificador es un *iterador* que toma los valores de la expresión de la matriz a su vez, con el último identificador que varía más rápidamente.
 
-Los generadores de una lista de comprensión y :mzndef:`<bool-exp>` generalmente no involucran variables de decisión. Si implican variables de decisión, la lista producida es una lista de :mzndef:`var opt <T>` donde :mzndef:`<T>` es el tipo de :mzndef:`<expr>`. Vea la discusión de :index:`option types <option type>` en :ref:`sec-optiontypes` para más detalles.
+  Los generadores de una lista de comprensión y :mzndef:`<bool-exp>` generalmente no involucran variables de decisión. Si implican variables de decisión, la lista producida es una lista de :mzndef:`var opt <T>` donde :mzndef:`<T>` es el tipo de :mzndef:`<expr>`. Vea la discusión de :index:`option types <option type>` en :ref:`sec-optiontypes` para más detalles.
 
-:index:`Set comprehensions <comprehension; set>` son casi idénticos a las comprensiones de la lista. La única diferencia es el uso de ``{`` y ``}`` para adjuntar la expresión en lugar de ``[`` y ``]``. Los elementos generados por una comprensión de conjunto deben ser :index:`fixed`, es decir, libre de variables de decisión. Del mismo modo, los generadores y opcional :mzndef:`<bool-exp>` para establecer las comprensiones deben ser corregidos.
+  :index:`Conjuntos de comprensiones <comprehension; set>` son casi idénticos a las comprensiones de la lista. La única diferencia es el uso de ``{`` y ``}`` para adjuntar la expresión en lugar de ``[`` y ``]``. Los elementos generados por una comprensión de conjunto deben ser :index:`fixed`, es decir, libre de variables de decisión. Del mismo modo, los generadores y opcional :mzndef:`<bool-exp>` para establecer las comprensiones deben ser corregidos.
 
 .. index::
   single: forall
@@ -316,7 +316,7 @@ Por ejemplo, considera la expresión:
 Donde ``a`` es una matriz aritmética con el conjunto de índices ``1..3``.
 Esto limita los elementos en ``a`` para que sean diferentes por pares. La lista de comprensión se evalúa como :mzn:`[a [1] != a[2], a[1] != a[3], a[2] != a[3]]` y entonces el :mzn:`forall` devuelve la conjunción de logica mzn:`a[1] != a[2] /\ a[1] != a[3] /\ a[2] != a[3]`.
 
-.. defblock:: Aggregation functions
+.. defblock:: Funciones de Agregación
 
   .. index::
     single: aggregation function
@@ -337,14 +337,14 @@ Esto limita los elementos en ``a`` para que sean diferentes por pares. La lista 
     single: aggregation function; xorall
     single: aggregation function; iffall
 
-Las *funciones de agregación* para matrices aritméticas son:
-:mzn:`sum` que agrega los elementos,
-:mzn:`product` que las multiplica,
-y :mzn:`min` y :mzn:`max` que devuelven respectivamente el menor y mayor elemento en la matriz.
-Cuando se aplica a un conjunto vacío, :mzn:`min` y :mzn:`max` dan un error en tiempo de ejecución, :mzn:`sum` devuelve 0 y :mzn:`product` devuelve 1.
+  Las *funciones de agregación* para matrices aritméticas son:
+  :mzn:`sum` que agrega los elementos,
+  :mzn:`product` que las multiplica,
+  y :mzn:`min` y :mzn:`max` que devuelven respectivamente el menor y mayor elemento en la matriz.
+  Cuando se aplica a un conjunto vacío, :mzn:`min` y :mzn:`max` dan un error en tiempo de ejecución, :mzn:`sum` devuelve 0 y :mzn:`product` devuelve 1.
 
-MiniZinc proporciona cuatro funciones de agregación para matrices que contienen expresiones booleanas. Como hemos visto, el primero de ellos, :mzn:`forall`, devuelve una única restricción que es la conjunción lógica de las restricciones.
-La segunda función, :mzn:`exists`, devuelve la disyunción lógica de las restricciones. Por lo tanto, :mzn:`forall` impone que todas las restricciones en la matriz se mantengan, mientras que :mzn:`exists` asegura que al menos una de las restricciones se mantenga. La tercera función, :mzn:`xorall`, asegura que se mantenga un número impar de restricciones. La cuarta función, :mzn:`iffall`, garantiza que se mantenga un número par de restricciones.
+  MiniZinc proporciona cuatro funciones de agregación para matrices que contienen expresiones booleanas. Como hemos visto, el primero de ellos, :mzn:`forall`, devuelve una única restricción que es la conjunción lógica de las restricciones.
+  La segunda función, :mzn:`exists`, devuelve la disyunción lógica de las restricciones. Por lo tanto, :mzn:`forall` impone que todas las restricciones en la matriz se mantengan, mientras que :mzn:`exists` asegura que al menos una de las restricciones se mantenga. La tercera función, :mzn:`xorall`, asegura que se mantenga un número impar de restricciones. La cuarta función, :mzn:`iffall`, garantiza que se mantenga un número par de restricciones.
 
 
 La tercera y última pieza del rompecabezas es que MiniZinc permite una sintaxis especial para funciones de agregación cuando se usa con una comprensión de matriz. En lugar de escribir:
@@ -361,27 +361,27 @@ El modelador puede en cambio escribir el aspecto más matemático
 
 Las dos expresiones son completamente equivalentes: el modelador es libre de usar el que parezca más natural.
 
-.. defblock:: Generator call expressions
+.. defblock:: Generador de Expresiones de Llamada
 
   .. index::
     single: generator call
     single: expression; generator call
 
-Una *expresión de llamada del generador* tiene forma:
+  Una *expresión de llamada del generador* tiene forma:
 
   .. code-block:: minizincdef
 
     <agg-func> ( <generator-exp> ) ( <exp> )
 
 
-Los corchetes alrededor de la expresión del generador :mzndef:`<generator-exp>` y la expresión del constructor :mzndef:`<exp>` no son opcionales, deben estar allí.
-Esto es equivalente a escribir:
+  Los corchetes alrededor de la expresión del generador :mzndef:`<generator-exp>` y la expresión del constructor :mzndef:`<exp>` no son opcionales, deben estar allí.
+  Esto es equivalente a escribir:
 
   .. code-block:: minizincdef
 
     <agg-func> ( [ <exp> | <generator-exp> ] )
 
-El :index:`aggregation function` :mzndef:`<agg-func>` es cualquier función de MiniZinc que espera una única matriz como argumento.
+  El :index:`aggregation function` :mzndef:`<agg-func>` es cualquier función de MiniZinc que espera una única matriz como argumento.
 
 Ahora estamos en condiciones de comprender el resto del modelo de planificación de producción simple que se muestra en :numref:`ex-prod-planning`. Por el momento, ignore el elemento que define :mzn:`mproducts`. El elemento más tarde:
 
@@ -423,8 +423,6 @@ Ahora volvemos a la definición de :mzn:`mproducts`. Para cada producto
 
   (min (r in Resources where consumption[p,r] > 0)
                                    (capacity[r] div consumption[p,r])
-
-determines the maximum amount of :mzn:`p` that can be produced taking into account the amount of each resource :mzn:`r` and how much of :mzn:`r` is required to produce the product. Notice the use of the filter :mzn:`where consumption[p,r] > 0` to ensure that only resources required to make the product are considered so as to avoid a division by zero error.  Thus, the complete expression
 
 Determina la cantidad máxima de :mzn:`p` que se puede producir teniendo en cuenta la cantidad de cada recurso :mzn:`r` y la cantidad de :mzn:`r` que se requiere para producir el producto. Tenga en cuenta el uso del filtro :mzn:`where consumption[p,r] > 0` para garantizar que solo los recursos necesarios para fabricar el producto se consideran a fin de evitar una división por error cero.
 
@@ -509,20 +507,20 @@ Un ejemplo de su uso es:
 
 Que establece :mzn:`r` a :mzn:`x` dividido por :mzn:`y` a menos que :mzn:`y` sea cero, en cuyo caso lo pone a cero.
 
-.. defblock:: Conditional expressions
+.. defblock:: Expresiones condicionales
 
   .. index::
     single: expression; conditional
 
-La forma de una expresión condicional es
+  La forma de una expresión condicional es
 
   .. code-block:: minizincdef
 
     if <bool-exp> then <exp-1> else <exp-2> endif
 
-Es una expresión verdadera en lugar de una declaración de flujo de control y, por lo tanto, se puede usar en otras expresiones. Se evalúa como :mzndef:`<exp-1>` si la expresión booleana :mzndef:`<bool-exp>` es verdadera y :mzndef:`<exp-2>` en caso contrario. El tipo de expresión condicional es el de :mzndef:`<exp-1>` y :mzndef:`<exp-2>` que debe tener el mismo tipo.
+  Es una expresión verdadera en lugar de una declaración de flujo de control y, por lo tanto, se puede usar en otras expresiones. Se evalúa como :mzndef:`<exp-1>` si la expresión booleana :mzndef:`<bool-exp>` es verdadera y :mzndef:`<exp-2>` en caso contrario. El tipo de expresión condicional es el de :mzndef:`<exp-1>` y :mzndef:`<exp-2>` que debe tener el mismo tipo.
 
-Si el :mzndef:`<bool-exp>` contiene variables de decisión, entonces el tipo-instansación (type-inst) de la expresión es :mzndef:`var <T>` donde :mzndef:`<T>` es el tipo de :mzndef:`<exp-1>` y :mzndef:`<exp-2>` incluso si ambas expresiones son correctas.
+  Si el :mzndef:`<bool-exp>` contiene variables de decisión, entonces el tipo-instansación (type-inst) de la expresión es :mzndef:`var <T>` donde :mzndef:`<T>` es el tipo de :mzndef:`<exp-1>` y :mzndef:`<exp-2>` incluso si ambas expresiones son correctas.
 
 .. literalinclude:: examples/sudoku_es.mzn
   :language: minizinc
@@ -632,28 +630,28 @@ Puede resultar en la salida:
   t = red;
 
 
-.. defblock:: Enumerated Type Variable Declarations
+.. defblock:: Declaraciones de variables de Tipo Enumeradas
 
   .. index::
     single: variable; declaration; enum
 
-Un parámetro de tipo enumerado se declara como:
+  Un parámetro de tipo enumerado se declara como:
 
   .. code-block:: minizincdef
 
     <enum-name> : <var-name>
     <l>..<u> : <var-name>
 
-Donde :mzndef:`<enum-name>` es el nombre de un tipo enumerado, :mzndef:`<l>` y :mzndef:`<u>` son expresiones de tipos enumerados fijos del mismo tipo enumerado.
+  Donde :mzndef:`<enum-name>` es el nombre de un tipo enumerado, :mzndef:`<l>` y :mzndef:`<u>` son expresiones de tipos enumerados fijos del mismo tipo enumerado.
 
-Una variable de decisión de tipo enumerada se declara como:
+  Una variable de decisión de tipo enumerada se declara como:
 
   .. code-block:: minizincdef
 
     var <enum-name> : <var-name>
     var <l>..<u> : <var-name>
 
-Donde :mzndef:`<enum-name>` es el nombre de un tipo enumerado, :mzndef:`<l>` y :mzndef:`<u>` son expresiones de tipos enumerados fijos del mismo tipo enumerado.
+  Donde :mzndef:`<enum-name>` es el nombre de un tipo enumerado, :mzndef:`<l>` y :mzndef:`<u>` son expresiones de tipos enumerados fijos del mismo tipo enumerado.
 
 Un comportamiento clave de los tipos enumerados es que son coercionados automáticamente a enteros cuando se usan en una posición que espera un entero. Por ejemplo, esto nos permite usar restricciones globales definidas en enteros, como
 
@@ -664,7 +662,7 @@ Un comportamiento clave de los tipos enumerados es que son coercionados automát
 
 Esto requiere al menos dos estados para colorear cada color y tres para ser de color azul.
 
-.. defblock:: Operaciones de tipo enumeradas
+.. defblock:: Operaciones de Tipo enumeradas
 
   Hay una serie de operaciones integradas en tipos enumerados:
 
@@ -694,7 +692,7 @@ Las restricciones son el núcleo del modelo MiniZinc. Hemos visto expresiones re
 
 Que asegura que las tareas no se superponen.
 
-.. defblock:: Booleans
+.. defblock:: Booleanos
 
   .. index::
     single: Boolean
@@ -704,7 +702,7 @@ Que asegura que las tareas no se superponen.
     single: operator; Boolean
     single: bool2int
 
-Las expresiones booleanas en MiniZinc se pueden escribir usando una sintaxis matemática estándar. Los literales booleanos son :mzn:`true`, :mzn:`false` y los operadores booleanos son conjunción, es decir, (``/\``), disyunción, es decir o (``\/``), only-if (:mzn:`<-`), implica (:mzn:`->`), if-and-only-if (:mzn:`<->`) y negación (:mzn:`not`). Los booleanos se pueden forzar automáticamente a enteros, pero para que esta coerción sea explícita la función incorporada :mzn:`bool2int` se puede usar: devuelve 1 si su argumento es verdadero y 0 en caso contrario.
+  Las expresiones booleanas en MiniZinc se pueden escribir usando una sintaxis matemática estándar. Los literales booleanos son :mzn:`true`, :mzn:`false` y los operadores booleanos son conjunción, es decir, (``/\``), disyunción, es decir o (``\/``), only-if (:mzn:`<-`), implica (:mzn:`->`), if-and-only-if (:mzn:`<->`) y negación (:mzn:`not`). Los booleanos se pueden forzar automáticamente a enteros, pero para que esta coerción sea explícita la función incorporada :mzn:`bool2int` se puede usar: devuelve 1 si su argumento es verdadero y 0 en caso contrario.
 
 .. literalinclude:: examples/jobshop_es.mzn
   :language: minizinc
@@ -799,7 +797,7 @@ Las dos primeras restricciones:
   :language: minizinc
   :lines: 13-14
 
-Asegúrese de que la asignación de esposos y esposas sea consistente: :mzn:`w` es la esposa de :mzn:`m` implica que :mzn:`m` es el esposo de :mzn:`w` y viceversa. Observe cómo en :mzn:`husband[wife[m]]` la expresión de índice: mzn:`wife[m]` es una variable de decisión, no un parámetro.
+Asegúrese de que la asignación de esposos y esposas sea consistente: :mzn:`w` es la esposa de :mzn:`m` implica que :mzn:`m` es el esposo de :mzn:`w` y viceversa. Observe cómo en :mzn:`husband[wife[m]]` la expresión de índice :mzn:`wife[m]` es una variable de decisión, no un parámetro.
 
 Las siguientes dos restricciones son una codificación directa de la condición de estabilidad:
 
@@ -810,14 +808,14 @@ Las siguientes dos restricciones son una codificación directa de la condición 
 
 Este modelado natural del problema del matrimonio estable es posible gracias a la capacidad de usar variables de decisión como índices de matriz y construir restricciones utilizando las conectivas booleanas estándar. El lector puede preguntarse en esta etapa, qué sucede si la variable de índice de matriz toma un valor que está fuera del conjunto de índices de la matriz. MiniZinc lo trata como una falla: un acceso de matriz :mzn:`a[e]` implícitamente agrega la restricción: :mzn:`e in index_set(a)` al contexto booleano circundante más cercano donde :mzn:`index_set(a)` da el conjunto de índices de :mzn:`a`.
 
-.. defblock:: Anonymous Enumerated Types
+.. defblock:: Tipos enumerados anónimos
 
   .. index::
     single: type; enumerated; anonymous
 
-Un *tipo enumerado anónimo* tiene la forma :mzndef:`anon_enum(<n>)` donde :mzndef:`<n>` es una expresión entera fija que define el tamaño del tipo enumerado.
+  Un *tipo enumerado anónimo* tiene la forma :mzndef:`anon_enum(<n>)` donde :mzndef:`<n>` es una expresión entera fija que define el tamaño del tipo enumerado.
 
-Un tipo enumerado anónimo es como cualquier otro tipo enumerado excepto que no tenemos nombres para sus elementos. Cuando se imprimen, reciben nombres únicos basados en el nombre del tipo enumerado.
+  Un tipo enumerado anónimo es como cualquier otro tipo enumerado excepto que no tenemos nombres para sus elementos. Cuando se imprimen, reciben nombres únicos basados en el nombre del tipo enumerado.
 
 Por lo tanto, por ejemplo, considere las declaraciones de variables
 
@@ -841,7 +839,7 @@ En el caso de los accesos de matriz no válida por un parámetro, la semántica 
   single: constraint; higher order
 
 La función de coerción :mzn:`bool2int` se puede invocar con cualquier expresión booleana. Esto permite que el modelador MiniZinc use las llamadas *restricciones de orden superior*. Como un simple ejemplo, considere el problema de *magic series*.
-Encuentre una lista de números :math:`s= [s_0,\ldots,s_{n-1}]` tal que :math:`s_i` es el número de ocurrencias de :math:`i` en: math:`s`. Un ejemplo es :math:`s = [1,2,1,0]`. Un modelo MiniZinc para este problema se muestra en :numref:`ex-magic-series`. El uso de :mzn:`bool2int` nos permite resumir el número de veces que se cumple la restricción: mzn:`s[j]=i`.
+Encuentre una lista de números :math:`s= [s_0,\ldots,s_{n-1}]` tal que :math:`s_i` es el número de ocurrencias de :math:`i` en :math:`s`. Un ejemplo es :math:`s = [1,2,1,0]`. Un modelo MiniZinc para este problema se muestra en :numref:`ex-magic-series`. El uso de :mzn:`bool2int` nos permite resumir el número de veces que se cumple la restricción :mzn:`s[j]=i`.
 
 Ejecutando el comando
 
@@ -877,11 +875,11 @@ Y obtenga resultados idénticos, ya que la expresión booleana :mzn:`s[j] = i` s
     single: coercion; bool2int
     single: coercion; int2float
 
-En MiniZinc uno puede *forzar* un valor booleano a un valor entero usando la función :mzn:`bool2int`. De manera similar, se puede forzar un valor entero a un valor flotante usando :mzn:`int2float`. La instanciación del valor coaccionado es el mismo que el argumento. Por ejemplo, :mzn:`par bool` se fuerza a :mzn:`par int`, mientras que :mzn:`var bool` se fuerza a :mzn:`var int` MiniZinc coacciona automáticamente expresiones booleanas a expresiones enteras y expresiones enteras a expresiones flotantes, insertando :mzn:`bool2int` y :mzn:`int2float` en el modelo de forma apropiada. Tenga en cuenta que también forzará booleanos a flotantes utilizando dos pasos.
+  En MiniZinc uno puede *forzar* un valor booleano a un valor entero usando la función :mzn:`bool2int`. De manera similar, se puede forzar un valor entero a un valor flotante usando :mzn:`int2float`. La instanciación del valor coaccionado es el mismo que el argumento. Por ejemplo, :mzn:`par bool` se fuerza a :mzn:`par int`, mientras que :mzn:`var bool` se fuerza a :mzn:`var int` MiniZinc coacciona automáticamente expresiones booleanas a expresiones enteras y expresiones enteras a expresiones flotantes, insertando :mzn:`bool2int` y :mzn:`int2float` en el modelo de forma apropiada. Tenga en cuenta que también forzará booleanos a flotantes utilizando dos pasos.
 
 
 
-Establecer restricciones
+Establecer Restricciones
 ------------------------
 
 .. index::
@@ -938,7 +936,7 @@ Donde el archivo de datos define un problema con 4 semanas, con 4 grupos de tama
 Observe cómo conjuntos que son rangos pueden salir en formato de rango.
 
 
-Poniendolo todo junto
+Poniendolo Todo Junto
 ---------------------
 
 Terminamos esta sección con un ejemplo complejo que ilustra la mayoría de las características presentadas en este capítulo, incluidos los tipos enumerados, las restricciones complejas, las restricciones globales y los resultados complejos.
@@ -973,20 +971,20 @@ La colocación de la tabla resultante se ilustra en :numref:`fig-wedding` donde 
 
 .. _fig-wedding:
 
-.. figure:: figures/wedding.*
+.. figure:: figures/wedding_es.*
 
-Disposición de los asientos en la mesa de la boda
+  Disposición de los asientos en la mesa de la boda
 
 
 .. \pjs{Move the fix definition elsewhere!}
 
-.. defblock:: Fix
+.. defblock:: Fijar (Fix)
 
   .. index::
     single: fix
     single: fixed
 
-En los elementos de salida, la función incorporada :mzn:`fix` comprueba que el valor de una variable de decisión sea fijo y coacciona la instanciación de la variable de decisión al parámetro.
+  En los elementos de salida, la función incorporada :mzn:`fix` comprueba que el valor de una variable de decisión sea fijo y coacciona la instanciación de la variable de decisión al parámetro.
 
 .. % oil-blending
 .. %arrays floats sum forall

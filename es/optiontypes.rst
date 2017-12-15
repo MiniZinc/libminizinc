@@ -13,23 +13,23 @@ Las deciciones de tipo de opcion son utiles para modelar problemas donde una dec
 Declarando y Utilizando Tipos de Opciones
 -----------------------------------------
 
-.. defblock:: Option type Variables
+.. defblock:: Tipo de Opción de Variables
 
   .. index::
     single: variable; option type
 
-Una variable de tipo de opción se declara como:
+  Una variable de tipo de opción se declara como:
 
   .. code-block:: minizincdef
 
     var opt <type> : <var-name:
 
-Donde :mzndef:`<type>` es uno de :mzn:`int`, :mzn:`float` o :mzn:`bool` o una expresion de rango fijo.
+  Donde :mzndef:`<type>` es uno de :mzn:`int`, :mzn:`float` o :mzn:`bool` o una expresion de rango fijo.
 
-Las variables de tipo de opción pueden ser parámetros, pero esto rara vez es útil.
-Una variable de tipo de opción puede tomar el valor adicional :mzn:`<>` indicando *absent*.
+  Las variables de tipo de opción pueden ser parámetros, pero esto rara vez es útil.
+  Una variable de tipo de opción puede tomar el valor adicional :mzn:`<>` indicando *absent*.
 
-Se proporcionan tres funciones integradas para las variables de tipo de opción: :mzn:`absent(v)` retorna :mzn:`true` si la opción de tipo variable : mzn:`v` toma el valor :mzn:`<>`, :mzn:`occurs(v)` retorna :mzn:`true` si la opción de tipo variable :mzn:`v` no *not* toma el valor :mzn:`<>`, y :mzn:`deopt(v)` devuelve el valor normal de :mzn:`v` o falla si toma el valor :mzn:`<>`.
+  Se proporcionan tres funciones integradas para las variables de tipo de opción: :mzn:`absent(v)` retorna :mzn:`true` si la opción de tipo variable :mzn:`v` toma el valor :mzn:`<>`, :mzn:`occurs(v)` retorna :mzn:`true` si la opción de tipo variable :mzn:`v` no *not* toma el valor :mzn:`<>`, y :mzn:`deopt(v)` devuelve el valor normal de :mzn:`v` o falla si toma el valor :mzn:`<>`.
 
 El uso más común de tipo de opciones es para tareas opcionales en una planificación. En el problema de la planificación de trabajo flexible en una tienda, tenemos :mzn:`n` tarea que ejecutar en la máquina :mzn:`k` ,y el tiempo para completar cada tarea en cada maquina puede ser diferente. El objetivo es minimizar el tiempo requerido para completar todas las tareas. Un modelo usando tipo de opciones para codificar el problema es dado en :numref:`ex-flexible-js`. Nosotros modelamos el problema usando :math:`n \times k` las tareas opcionales aquí representan la posibilidad de que cada tarea sea llevada a cabo en cada maquina. Nosotros requerimos que el tiempo de partida de cada tarea y su duración abarque las tareas optativas que las constituye, y de hecho requerimos que solo una sea ejecutada usando :mzn:`alternative` restricción global. Requerimos que como máximo una tarea sea ejecutada en una maquina usando el :mzn:`disjunctive` restricción global extendida a tareas opcionales. Finalmente restringimos que como máximo :mzn:`k` tareas sean ejecutadas en cualquier momento, una restricción redundante que se mantiene en la tarea actual, no las opcionales.
 

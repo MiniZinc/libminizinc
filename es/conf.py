@@ -79,8 +79,8 @@ release = '2.1.2'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
-#language = 'es'
+#language = None
+language = "es"
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -384,7 +384,7 @@ epub_copyright = copyright
 # The language of the text. It defaults to the language option
 # or 'en' if the language is not set.
 #
-# epub_language = ''
+#epub_language = 'es'
 
 # The scheme of the identifier. Typical schemes are ISBN or URL.
 # epub_scheme = ''

@@ -71,7 +71,7 @@ Definiendo Subexpresiones
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Ahora, ningún solucionador de restricciones maneja directamente expresiones de restricciones complejas como la de :numref:`fig-nonoverlap`. En cambio, cada subexpresión en la expresión es nombrada, y posteriormente creamos una restricción para construir el valor de cada expresión. Examinemos las subexpresiones de la expresión de restricción.
-:mzn:`(x1 - x2)` es una subexpresión, si nombramos :mzn:`FLOAT01` podemos definirlo como :mzn:`constraint FLOAT01 = x1 - x2;`. Observe que esta expresión aparece dos veces en el modelo. Solo necesitamos calcular el valor una vez, luego podemos reutilizarlo. Esto se llama *eliminación de subexpresiones comunes*. La subexpresión :mzn:`(x1 - x2) * (x1 - x2)` se puede llamar :mzn:`FLOAT02` y podemos definirla como :mzn:`constraint FLOAT02 = FLOAT01 * FLOAT01; `Podemos nombrar de forma similar :mzn:`restricción FLOAT03 = y1 - y2;` y :mzn:`restricción FLOAT04 = FLOAT03 * FLOAT03;` y finalmente :mzn:`restricción FLOAT05 = FLOAT02 * FLOAT04;`. La restricción de desigualdad se convierte en :mzn:`restricción FLOAT05> = 25.0;` desde :mzn:`(r1 + r2) * (r1 + r2)` se calcula como :mzn:`25.0`.
+:mzn:`(x1 - x2)` es una subexpresión, si nombramos :mzn:`FLOAT01` podemos definirlo como :mzn:`constraint FLOAT01 = x1 - x2;`. Observe que esta expresión aparece dos veces en el modelo. Solo necesitamos calcular el valor una vez, luego podemos reutilizarlo. Esto se llama *eliminación de subexpresiones comunes*. La subexpresión :mzn:`(x1 - x2) * (x1 - x2)` se puede llamar :mzn:`FLOAT02` y podemos definirla como :mzn:`constraint FLOAT02 = FLOAT01 * FLOAT01;`. Podemos nombrar de forma similar :mzn:`restricción FLOAT03 = y1 - y2;` y :mzn:`restricción FLOAT04 = FLOAT03 * FLOAT03;` y finalmente :mzn:`restricción FLOAT05 = FLOAT02 * FLOAT04;`. La restricción de desigualdad se convierte en :mzn:`restricción FLOAT05> = 25.0;` desde :mzn:`(r1 + r2) * (r1 + r2)` se calcula como :mzn:`25.0`.
 
 La restricción aplanada es por lo tanto:
 
@@ -137,7 +137,7 @@ En donde :math:`a_i` son constantes de coma flotante o entero, y :math:`x_i` son
   :caption: Un modelo MiniZinc para ilustrar el aplanamiento de restricciones lineales (:download:`linear_es.mzn <examples/linear_es.mzn>`).
   :name: fig-lflat
 
-Considere el modelo que se muestra en :numref:`fig-lflat`. En lugar de crear variables para todas las subexpresiones :math:`3 * x`, :math:`3 * x - y`, :math: `x * z`, :math:`3 * x - y + x * z `, :math:`x + y + z`, :math:`d * (x + y + z)`, :math:`19 + d * (x + y + z)`, y :math:`19 + d * (x + y + z) - 4 * d` la traducción intentará crear una restricción lineal grande que capture la mayor cantidad posible de la restricción en una única restricción FlatZinc.
+Considere el modelo que se muestra en :numref:`fig-lflat`. En lugar de crear variables para todas las subexpresiones :math:`3 * x`, :math:`3 * x - y`, :math:`x * z`, :math:`3 * x - y + x * z `, :math:`x + y + z`, :math:`d * (x + y + z)`, :math:`19 + d * (x + y + z)`, y :math:`19 + d * (x + y + z) - 4 * d` la traducción intentará crear una restricción lineal grande que capture la mayor cantidad posible de la restricción en una única restricción FlatZinc.
 
 
 El flatening crea expresiones lineales como una sola unidad en lugar de generar variables intermedias para cada subexpresión. También simboliza la expresión lineal creada. La extracción de la expresión lineal de las restricciones conduce a:
@@ -343,7 +343,7 @@ Reificación
 .. index::
   single: reification
 
-Los modelos FlatZinc implican solo variables y declaraciones de parámetros y una serie de restricciones primitivas. Por lo tanto, cuando modelamos en MiniZinc con conectivas booleanas distintas a la conjunción, algo tiene que hacerse. El enfoque principal para manejar fórmulas complejas que usan conectivos que no sean la conjunción es por *reificación*. Reificar una restricción :math:`c` crea una nueva restricción equivalente a :math:`b \leftrightarrow c` donde la variable booleana: math: `b` es :mzn:`true` si la restricción se cumple y :mzn:`false` si no se sostiene.
+Los modelos FlatZinc implican solo variables y declaraciones de parámetros y una serie de restricciones primitivas. Por lo tanto, cuando modelamos en MiniZinc con conectivas booleanas distintas a la conjunción, algo tiene que hacerse. El enfoque principal para manejar fórmulas complejas que usan conectivos que no sean la conjunción es por *reificación*. Reificar una restricción :math:`c` crea una nueva restricción equivalente a :math:`b \leftrightarrow c` donde la variable booleana :math:`b` es :mzn:`true` si la restricción se cumple y :mzn:`false` si no se sostiene.
 
 Una vez que tenemos la capacidad de *reificar* las restricciones, el tratamiento de fórmulas complejas no es diferente de las expresiones aritméticas. Creamos un nombre para cada subexpresión y una restricción plana para restringir el nombre y tomar el valor de su subexpresión.
 
