@@ -61,7 +61,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'MiniZinc Documentation'
+project = u'Documentación de MiniZinc'
 copyright = '2016, 2017, Peter J. Stuckey, Kim Marriott, Guido Tack'
 author = 'Peter J. Stuckey, Kim Marriott, Guido Tack'
 
@@ -284,7 +284,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'MiniZinc.tex', 'MiniZinc Documentation',
+    (master_doc, 'MiniZinc.tex', u'Documentación de MiniZinc',
      'Peter J. Stuckey, Kim Marriott, Guido Tack', 'manual'),
 ]
 
@@ -326,7 +326,7 @@ latex_show_urls = "footnote"
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'minizinc', 'MiniZinc Documentation',
+    (master_doc, 'minizinc', u'Documentación de MiniZinc',
      [author], 1)
 ]
 

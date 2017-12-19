@@ -60,7 +60,7 @@
 
 <base-ti-expr> ::= <var-par> <base-ti-expr-tail>
 
-<var-par> ::= "var" | "par" | Îµ
+<var-par> ::= "var" | "par" | ε
 
 <base-type> ::= "bool"
               | "int"
@@ -113,7 +113,7 @@
                    | <call-expr>
                    | <gen-call-expr>
 
-<expr-atom-tail> ::= Îµ
+<expr-atom-tail> ::= ε
                    | <array-access-tail> <expr-atom-tail>
 
 % Numeric expressions
@@ -136,7 +136,7 @@
 % Built-in operators
 <builtin-op> ::= <builtin-bin-op> | <builtin-un-op>
 
-<bin-op> ::= <builtin-bin-op> | â€˜<ident>â€˜
+<bin-op> ::= <builtin-bin-op> | ‘<ident>‘
 
 <builtin-bin-op> ::= "<->" | "->" | "<-" | "\/" | "xor" | "/\" | "<" | ">"
                    | "<=" | ">=" | "==" | "=" | "!="
@@ -146,7 +146,7 @@
 <builtin-un-op> ::= "not" | <builtin-num-un-op>
 
 % Built-in numeric operators
-<num-bin-op> ::= <builtin-num-bin-op> | â€˜<ident>â€˜
+<num-bin-op> ::= <builtin-num-bin-op> | ‘<ident>‘
 
 <builtin-num-bin-op> ::= "+" | "-" | "*" | "/" | "div" | "mod"
 
@@ -202,7 +202,7 @@
 
 % If-then-else expressions
 <if-then-else-expr> ::= "if" <expr> "then" <expr>
-          ( "elseif" <expr> "then" <expr> )* "else" <expr> "endif"
+                   ( "elseif" <expr> "then" <expr> )* "else" <expr> "endif"
 
 % Call expressions
 <call-expr> ::= <ident-or-quoted-op> [ "(" <expr> "," ... ")" ]
@@ -219,13 +219,15 @@
 % Miscellaneous
 
 % Identifiers
-<ident> ::= [A-Za-z][A-Za-z0-9_]* | â€™[^â€™\xa\xd\x0]*â€™
+<ident> ::= [A-Za-z][A-Za-z0-9_]* | ’[^’\xa\xd\x0]*’
 
 % Identifiers and quoted operators
 <ident-or-quoted-op> ::= <ident>
-                       | â€™<builtin-op>â€™
+                       | ’<builtin-op>’
 
 % Annotations
 <annotations> ::= ( "::" <annotation> )*
 
 <annotation> ::= <expr-atom-head> <expr-atom-tail>
+
+%

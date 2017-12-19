@@ -582,7 +582,7 @@ También los booleanos se pueden forzar automáticamente a enteros; ver :ref:`sp
 .. _spec-integers:
 
 
-Integers
+Enteros
 ++++++++
 
 |TyOverview|
