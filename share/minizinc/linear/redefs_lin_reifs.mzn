@@ -120,7 +120,7 @@ predicate int_ne__SIMPLE(var int: x, int: y) =
 predicate int_eq_reif(var int: x, var int: y, var bool: b) =
 %%    trace(" int_eq_reif VV: \(x), \(y), \(b) \n") /\
     if is_fixed(b) then
-      if true==fix(b) then x==y else x!=y endif
+      if fix(b) then x==y else x!=y endif
     elseif card(dom(x) intersect dom(y))>0 then
       if is_fixed(x) then
         if is_fixed(y) then
@@ -143,10 +143,12 @@ predicate int_eq_reif(var int: x, var int: y, var bool: b) =
 predicate int_eq_reif(var int: x, int: y, var bool: b) =
 %%  trace(" int_eq_reif VC: \(x), \(y), \(b) \n") /\
   if is_fixed(b) then
-    if true==fix(b) then x==y else x!=y endif
+    if fix(b) then x==y else x!=y endif
   elseif y in dom(x) then
     if is_fixed(x) then
       b <-> y==fix(x)
+    elseif card(dom(x))==2 then
+      x == max(dom(x) diff {y}) + b*(y - max(dom(x) diff {y}))      %% This should directly connect b to var 0..1: x
     elseif fPostprocessDomains then
       int_eq_reif__POST(x, y, b)
 %%%  THIS seems pretty complex, especially for binaries, and does not connect to eq_encoding (/ MIPD?)
@@ -402,13 +404,14 @@ predicate aux_int_eq_iff_1(var int: x, var int: y, var int: p) =
 
 predicate aux_int_eq_iff_1__float(var float: x, float: y, var int: p) =
   if fAuxIntEqOLD00 then
-    let { array[1..2] of var 0..1: q }
+    assert( false, "Don't use aux_int_eq_iff_1__float" )
+/*    let { array[1..2] of var 0..1: q }
     in
     aux_int_le_if_1(x, y, p) /\
     aux_int_ge_if_1(x, y, p) /\
     aux_int_lt_if_0(x, y, q[1]) /\
     aux_int_gt_if_0(x, y, q[2]) /\
-    sum(q) == p + 1
+    sum(q) == p + 1 */
   else
     assert( false, "Don't use aux_int_eq_iff_1__float with fAuxIntEqOLD00" )
   endif;

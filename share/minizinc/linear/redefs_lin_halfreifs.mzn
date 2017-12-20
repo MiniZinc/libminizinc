@@ -32,21 +32,25 @@ predicate aux_float_eq_if_1(var float: x, var float: y, var int: p) =
 predicate aux_int_le_zero_if_0(var int: x, var int: p) =
   if is_fixed(p) then
     if 0==fix(p) then x<=0 else true endif         %% 0==fix !!
-  elseif is_fixed(x) then         %%% Needed to avoid constant domain var
-    if fix(x)>0 then p==1 else true endif
+  elseif lb(x)>0 then
+    p==1
   elseif fPostprocessDomains /\ fPostproDom_AUX then
     aux_int_le_zero_if_1__POST(x, 1-p)
   elseif fMZN__UseIndicators then
     aux_int_le_zero_if_0__IND(x, p)
   else
-      x <= ub(x) * p
+    let {
+      set of int: sDomNonPos = dom(x) intersect -1000000000..0,
+      int: nMaxNonPosUB = if card(sDomNonPos)>0 then max( sDomNonPos ) else -1000000001 endif, 
+    } in
+      x <= nMaxNonPosUB + (ub(x) - nMaxNonPosUB) * p
   endif;
 
 predicate aux_float_le_zero_if_0(var float: x, var int: p) =
   if is_fixed(p) then
     if 0==fix(p) then x<=0.0 else true endif
-  elseif is_fixed(x) then         %%% Needed to avoid constant domain var
-    if fix(x)>0.0 then p==1 else true endif
+  elseif lb(x)>0.0 then
+    p==1
   elseif fPostprocessDomains /\ fPostproDom_AUX then
     aux_float_le_zero_if_1__POST(x, 1-p, 1-p)
   elseif fMZN__UseIndicators then
@@ -58,8 +62,8 @@ predicate aux_float_le_zero_if_0(var float: x, var int: p) =
 predicate aux_float_lt_zero_if_0(var float: x, var int: p) =
   if is_fixed(p) then
     if 0==fix(p) then x<0.0 else true endif
-  elseif is_fixed(x) then         %%% Needed to avoid constant domain var
-    if fix(x)>=0.0 then p==1 else true endif
+  elseif lb(x)>=0.0 then
+    p==1
   elseif fPostprocessDomains /\ fPostproDom_AUX then
     aux_float_lt_zero_if_1__POST(x, 1-p, 1-p, float_lt_EPS)
   elseif fMZN__UseIndicators then
@@ -99,7 +103,7 @@ predicate aux_int_lt_if_1(var int: x, int: y, var int: p) =
     aux_int_le_zero_if_0(x - y + 1, 1 - p);
 
 %% int: switching differences to float to avoid creating integer vars
-
+/*   Used anywhere?
 predicate aux_int_le_if_0(var float: x, var float: y, var int: p) =
     aux_float_le_zero_if_0(x - y, p);
 
@@ -120,7 +124,7 @@ predicate aux_int_gt_if_0(var float: x, var float: y, var int: p) =
 
 predicate aux_int_lt_if_1(var float: x, float: y, var int: p) =
     aux_float_le_zero_if_0(x - y + 1.0, 1 - p);
-
+*/
 
 predicate aux_float_le_if_0(var float: x, var float: y, var int: p) =
     aux_float_le_zero_if_0(x - y, p);
