@@ -568,7 +568,7 @@ if(HAS_OSICBC)
 
                                        # OSICBC_LINKEXTRAS: ArchLinux needs blas, lapack, bz2
   target_link_libraries(minizinc_osicbc minizinc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
-  target_link_libraries(mzn-cbc minizinc_osicbc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
+  target_link_libraries(mzn-cbc minizinc_osicbc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS} ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_osicbc mzn-cbc
     RUNTIME DESTINATION bin

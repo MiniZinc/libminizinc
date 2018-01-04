@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
 ##  Author: Gleb Belov@monash.edu  2017
 ##  This program runs MiniZinc solvers over a set of instances,
@@ -108,7 +108,9 @@ class MZT_Param:
         parser.add_argument('--saveCfg', metavar='<file>', help='save internal config to <file>. Can be useful to modify some parameters and run with --mergeCfg')
         parser.add_argument('--saveSolverCfg', metavar='<file>', help='save the final solver backend config to <file>')
         parser.add_argument('--saveCheckerCfg', metavar='<file>', help='save the final checker backend config to <file>')
-        parser.add_argument('--addOption', action="append", metavar='<text>', type=str, help='add <text> to the call')
+        parser.add_argument('--addOption', action="append", metavar='<text>', type=str, help='add <text> to any solver / checker call')
+        parser.add_argument('--addSolverOption', action="append", metavar='<text>', type=str, help='add <text> to the solver call')
+        parser.add_argument('--addCheckerOption', action="append", metavar='<text>', type=str, help='add <text> to a checker call')
         parser.add_argument('--useJoinedName', action="append", metavar='<...%s...>', type=str, help='add this to the call, with %%s being replaced by'
                             ' a joined filename from all the input filenames, e.g., "--writeModel MODELS/%%s.mps"')
         parser.add_argument('--debug', type=int, help='bit 1: print full solver call commands, bit 2: same for checker')
@@ -668,6 +670,8 @@ class MznTest:
     ### USE smth like
     ## keepcharacters = (' ','.','_')
     ## "".join(c for c in filename if c.isalnum() or c in keepcharacters else 'I').strip()
+    ## PARAMETERS
+    ##   : solList: if not None, we are solving originally ( not checking )
     def solveInstance(self, s_Inst, slvBE, slvName, solList=None):
         resSlv = OrderedDict()
         bChkDZN = True if None!=solList and None!=self.params.args.checkDZN else False
@@ -688,9 +692,17 @@ class MznTest:
             print( slvName, "... ", sep='', end='', flush=True )
             s_Call = slvBE["EXE"]["s_SolverCall"][0] % s_Inst \
               + ' ' + slvBE["EXE"]["s_ExtraCmdline"][0]
-            if solList is not None and self.params.args.addOption is not None:
+            if self.params.args.addOption is not None:
                 for sOpt in self.params.args.addOption:
                     s_Call += ' ' + sOpt
+            if solList is not None:
+                if self.params.args.addSolverOption is not None:
+                    for sOpt in self.params.args.addSolverOption:
+                        s_Call += ' ' + sOpt
+            else:
+                if self.params.args.addCheckerOption is not None:
+                    for sOpt in self.params.args.addCheckerOption:
+                        s_Call += ' ' + sOpt
             s_InstMerged = s_Inst.strip()
             ## s_InstMerged = regex.sub( r"[.\\/:~]", "", s_InstMerged );
             ## s_InstMerged = regex.sub( r"[ ]", "-", s_InstMerged );

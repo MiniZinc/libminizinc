@@ -4046,71 +4046,76 @@ namespace MiniZinc {
           std::vector<Expression*> where;
           GCLock lock;
           for (int i=0; i<c->n_generators(); i++) {
-            if (c->in(i)->type().isvar() && c->in(i)->type().dim()==0) {
-              std::vector<Expression*> args(1);
-              args[0] = c->in(i);
-              Call* ub = new Call(Location().introduce(),"ub",args);
-              ub->type(Type::parsetint());
-              ub->decl(env.orig->matchFn(env, ub, false));
-              in[i] = ub;
-              for (int j=0; j<c->n_decls(i); j++) {
-                BinOp* bo = new BinOp(Location().introduce(),c->decl(i,j)->id(), BOT_IN, c->in(i));
-                bo->type(Type::varbool());
-                where.push_back(bo);
-              }
+            if (c->in(i)==NULL) {
+              in[i] = NULL;
+              orig_where[i] = c->where(i);
             } else {
-              in[i] = c->in(i);
-            }
-            if (c->where(i) && c->where(i)->type().isvar()) {
-              // This is a generalised where clause. Split into par and var part.
-              // The par parts can remain in where clause. The var parts are translated
-              // into optionality constraints.
-              if (c->where(i)->isa<BinOp>() && c->where(i)->cast<BinOp>()->op()==BOT_AND) {
-                std::vector<Expression*> parWhere;
-                std::vector<BinOp*> todo;
-                todo.push_back(c->where(i)->cast<BinOp>());
-                while (!todo.empty()) {
-                  BinOp* bo = todo.back();
-                  todo.pop_back();
-                  if (bo->rhs()->type().ispar()) {
-                    parWhere.push_back(bo->rhs());
-                  } else if (bo->rhs()->isa<BinOp>() && bo->rhs()->cast<BinOp>()->op()==BOT_AND) {
-                    todo.push_back(bo->rhs()->cast<BinOp>());
-                  } else {
-                    where.push_back(bo->rhs());
-                  }
-                  if (bo->lhs()->type().ispar()) {
-                    parWhere.push_back(bo->lhs());
-                  } else if (bo->lhs()->isa<BinOp>() && bo->lhs()->cast<BinOp>()->op()==BOT_AND) {
-                    todo.push_back(bo->lhs()->cast<BinOp>());
-                  } else {
-                    where.push_back(bo->lhs());
-                  }
-                }
-                switch (parWhere.size()) {
-                  case 0:
-                    orig_where[i] = NULL;
-                    break;
-                  case 1:
-                    orig_where[i] = parWhere[0];
-                    break;
-                  case 2:
-                    orig_where[i] = new BinOp(c->where(i)->loc(), parWhere[0], BOT_AND, parWhere[1]);
-                    orig_where[i]->type(Type::parbool());
-                  default:
-                  {
-                    Call* forall = new Call(c->where(i)->loc(), constants().ids.forall, parWhere);
-                    forall->type(Type::parbool());
-                    forall->decl(env.orig->matchFn(env, forall, false));
-                    orig_where[i] = forall;
-                  }
+              if (c->in(i)->type().isvar() && c->in(i)->type().dim()==0) {
+                std::vector<Expression*> args(1);
+                args[0] = c->in(i);
+                Call* ub = new Call(Location().introduce(),"ub",args);
+                ub->type(Type::parsetint());
+                ub->decl(env.orig->matchFn(env, ub, false));
+                in[i] = ub;
+                for (int j=0; j<c->n_decls(i); j++) {
+                  BinOp* bo = new BinOp(Location().introduce(),c->decl(i,j)->id(), BOT_IN, c->in(i));
+                  bo->type(Type::varbool());
+                  where.push_back(bo);
                 }
               } else {
-                orig_where[i] = NULL;
-                where.push_back(c->where(i));
+                in[i] = c->in(i);
               }
-            } else {
-              orig_where[i] = c->where(i);
+              if (c->where(i) && c->where(i)->type().isvar()) {
+                // This is a generalised where clause. Split into par and var part.
+                // The par parts can remain in where clause. The var parts are translated
+                // into optionality constraints.
+                if (c->where(i)->isa<BinOp>() && c->where(i)->cast<BinOp>()->op()==BOT_AND) {
+                  std::vector<Expression*> parWhere;
+                  std::vector<BinOp*> todo;
+                  todo.push_back(c->where(i)->cast<BinOp>());
+                  while (!todo.empty()) {
+                    BinOp* bo = todo.back();
+                    todo.pop_back();
+                    if (bo->rhs()->type().ispar()) {
+                      parWhere.push_back(bo->rhs());
+                    } else if (bo->rhs()->isa<BinOp>() && bo->rhs()->cast<BinOp>()->op()==BOT_AND) {
+                      todo.push_back(bo->rhs()->cast<BinOp>());
+                    } else {
+                      where.push_back(bo->rhs());
+                    }
+                    if (bo->lhs()->type().ispar()) {
+                      parWhere.push_back(bo->lhs());
+                    } else if (bo->lhs()->isa<BinOp>() && bo->lhs()->cast<BinOp>()->op()==BOT_AND) {
+                      todo.push_back(bo->lhs()->cast<BinOp>());
+                    } else {
+                      where.push_back(bo->lhs());
+                    }
+                  }
+                  switch (parWhere.size()) {
+                    case 0:
+                      orig_where[i] = NULL;
+                      break;
+                    case 1:
+                      orig_where[i] = parWhere[0];
+                      break;
+                    case 2:
+                      orig_where[i] = new BinOp(c->where(i)->loc(), parWhere[0], BOT_AND, parWhere[1]);
+                      orig_where[i]->type(Type::parbool());
+                    default:
+                    {
+                      Call* forall = new Call(c->where(i)->loc(), constants().ids.forall, parWhere);
+                      forall->type(Type::parbool());
+                      forall->decl(env.orig->matchFn(env, forall, false));
+                      orig_where[i] = forall;
+                    }
+                  }
+                } else {
+                  orig_where[i] = NULL;
+                  where.push_back(c->where(i));
+                }
+              } else {
+                orig_where[i] = c->where(i);
+              }
             }
           }
           if (where.size() > 0) {

@@ -160,49 +160,27 @@ predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
 % Multiplication and division
 
 predicate int_div(var int: x, var int: y, var int: q) =
-    let { 
-      int: bx = max(abs(lb(x)), abs(ub(x)));
-      constraint -bx<=q /\ q<=bx;
-      int: by = max(abs(lb(y)), abs(ub(y)));
-      var -by+1..by-1: r;
-    }
-    in
-    aux_int_division_modulo(x,y,q,r);
+    q == aux_int_division_modulo_fn(x,y)[1];
 
 
 predicate int_mod(var int: x, var int: y, var int: r) =
-    let { 
+    r == aux_int_division_modulo_fn(x,y)[2];
+
+
+function array[int] of var int: aux_int_division_modulo_fn(var int: x, var int: y) =
+    let {
       int: bx = max(abs(lb(x)), abs(ub(x)));
       var -bx..bx: q;
       int: by = max(abs(lb(y)), abs(ub(y)));
-      constraint -by+1<=r /\ r<=by-1;
-    }
-    in
-    aux_int_division_modulo(x,y,q,r);
-
-
-predicate aux_int_division_modulo(var int: x, var int: y, var int: q,
-        var int: r) =
-    let {
-      int: bx = max(abs(lb(x)), abs(ub(x)));
-      constraint -bx<=q /\ q<=bx;
-      int: by = max(abs(lb(y)), abs(ub(y)));
-      constraint -by+1<=r /\ r<=by-1;
-      var 0..1: p
-    }
-    in
-    x = y * q + r /\
-    % 0 <= x -> 0 <= r    which is    0 > x \/ 0 <= r
-    aux_int_lt_if_1(x, 0, p) /\
-    aux_int_ge_if_0(r, 0, p) /\
-    % x < 0 -> r <= 0    which is    x >= 0 \/ r <= 0
-    aux_int_ge_if_0(x, 0, p) /\
-    aux_int_le_if_1(r, 0, p) /\
+      var -by+1..by-1: r;
+      constraint x = y * q + r,
+      constraint 0 <= x -> 0 <= r,  %%  which is    0 > x \/ 0 <= r
+      constraint x < 0 -> r <= 0,   %%  which is    x >= 0 \/ r <= 0
     % abs(r) < abs(y)
-    let { var 1.. max(abs(lb(y)), abs(ub(y))): w = abs(y) }
-    in
-    w >  r /\
-    w > -r;
+      var 1.. max(abs(lb(y)), abs(ub(y))): w = abs(y),
+      constraint w >  r /\ w > -r,
+    } in
+      [ q, r ];
 
 %% Can also have int_times(var float, var int) ......... TODO
 

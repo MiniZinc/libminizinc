@@ -21,7 +21,8 @@ predicate bool_and(var bool: p, var bool: q, var bool: r) =
   if false then
       int_lin_le_reif__IND( [-1, -1], [p, q], -2, r)
   else
-    bool_and__INT(bool2int(p), bool2int(q), bool2int(r))
+    array_bool_and( [p, q], r )
+%    bool_and__INT(bool2int(p), bool2int(q), bool2int(r))
   endif;
 
 predicate bool_and__INT(var int: x, var int: y, var int: z) =
@@ -33,6 +34,8 @@ predicate bool_and__INT(var int: x, var int: y, var int: z) =
 predicate bool_or(var bool: p, var bool: q, var bool: r) =
   if false then
       int_lin_le_reif__IND( [-1, -1], [p, q], -1, r)
+  elseif true then
+    array_bool_or( [p, q], r )
   else
     let { var int: x = bool2int(p),
           var int: y = bool2int(q),
@@ -43,6 +46,8 @@ predicate bool_or(var bool: p, var bool: q, var bool: r) =
     x <= z /\ y <= z   % strong
   endif;
 
+predicate bool_xor(var bool: p, var bool: q) =
+  1==p+q;
 
 predicate bool_xor(var bool: p, var bool: q, var bool: r) =
   if false then
@@ -121,6 +126,8 @@ predicate array_bool_or(array[int] of var bool: a, var bool: b) =
         else
             forall(i in index_set(a))( not a[i] )
         endif
+    elseif exists( i in index_set( a ) )( is_fixed(a[i]) /\ fix(a[i]) ) then
+      b
     else
     let { var int: x = bool2int(b),
           array[1..length(a)] of var int: c =
@@ -143,6 +150,8 @@ predicate array_bool_and(array[int] of var bool: a, var bool: b) =
         else
             forall(i in index_set(a))( a[i] )
         endif
+    elseif exists( i in index_set( a ) )( is_fixed(a[i]) /\ not fix(a[i]) ) then
+      not b
     else
     let { var int: x = bool2int(b),
           array[1..length(a)] of var int: c =
