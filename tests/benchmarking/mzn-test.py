@@ -41,7 +41,7 @@ s_UsageExamples = (
     "\n(1)  \"mzn-test.py model.mzn data.dzn [--checkDZN stdout.txt [--checkStderr stderr.txt]] [--chkPrf MINIZINC-CHK --chkPrf FZN-GECODE-CHK] [--tCheck 15]\"                  ::: check the instance's solutions, optionally reading them from a DZN-formatted file (otherwise solving first), optionally overriding default checker list etc."
     "\n(2)  \"mzn-test.py --slvPrf MZN-CPLEX -t 300 -l instList1.txt -l instList2.txt --name ChuffedTest_003 --result newLog00.json prevLog1.json prevLog2.json --failed failLog.json\""
     "             ::: solve instances using the specified solver profile and wall time limit 300 seconds. The instances are taken from the list files. The test is aliased ChuffedTest_003. Results are saved to newLog00.json and compared/ranked to those in prevLog's. (Probably) incorrect solutions are saved to failLog.json."
-    "\n(3)  \"mzn-test.py [-l instList1.txt] -c prevLog1.json -c prevLog2.json [--cmpOnly]\"                  ::: only compare existing logs, optionally limited to the given instances. USE SINGLE QUOTES ONLY INSIDE ARGUMENTS PASSED TO THE BACKENDS when running backends through shell."
+    "\n(3)  \"mzn-test.py [-l instList1.txt] -c prevLog1.json -c prevLog2.json [--runAndCmp]\"                  ::: compare existing logs, optionally limited to the given instances, optionally running new tests. USE SINGLE QUOTES ONLY INSIDE ARGUMENTS PASSED TO THE BACKENDS when running backends through shell."
   )
 ##############################################################################################
 ################ Parameters of MZN-Test, including config and command-line
@@ -504,10 +504,9 @@ class MznTest:
         ## Get cmdline filenames or from the --instList arguments
         ## Can compile the list from log files, see below
         self.params.instList = []
-        ## If -l not used, take the pos args
-        if not self.params.args.cmpOnly and 0<len( self.params.args.instanceFiles ) and \
-          ( None==self.params.args.l_InstLists or 0==len( self.params.args.l_InstLists ) ):
-            self.params.instList.append( " ".join( self.params.args.instanceFiles ) )     ## Also if l_InstLists?  TODO
+        ## Even if -l used, take the pos args
+        if 0<len( self.params.args.instanceFiles ):
+            self.params.instList.append( " ".join( self.params.args.instanceFiles ) )
         ## If -l used, compile the inst list files
         if None!=self.params.args.l_InstLists and 0<len( self.params.args.l_InstLists ):
             for sFln in self.params.args.l_InstLists:
@@ -615,6 +614,11 @@ class MznTest:
             print ('='*50)
             stats = self.cmpRes.summarize()
             print (stats)
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, exc_obj, fname, exc_tb.tb_lineno)
+        if not self.bCmpOnly:
             print( "Printing stats log to: ", end="" )
             sFlnSL = sFlnStatLog.format( utils.flnfy(
                 " ".join(self.params.args.l_InstLists if self.params.args.l_InstLists is not None else []) ) )
@@ -624,11 +628,6 @@ class MznTest:
                 wf.write( sys.argv.__str__() )
                 wf.write( "\n" )
                 wf.write( stats )
-        except Exception as e:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            print(exc_type, exc_obj, fname, exc_tb.tb_lineno)
-        if not self.bCmpOnly:
             print( "\nResult logs saved to '",  self.params.args.result,
                "', with the unchecked log in '", self.params.args.resultUnchk, "'; failed solutions saved to '",
                self.params.cfg["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0],
