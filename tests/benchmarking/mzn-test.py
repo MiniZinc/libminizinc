@@ -60,8 +60,8 @@ class MZT_Param:
         parser.add_argument('-l', '--instanceList', dest='l_InstLists', action='append', metavar='<instanceListFile>',
             help='file with a list of instance input files, one instance per line,'
               ' instance file types specified in config')
-        parser.add_argument('--cmpOnly', '--compareOnly', action='store_true',
-                            help='only compare JSON logs, optionally selecting the provided instance (lists)')
+        parser.add_argument('--runAndCmp', '--runAndCompare', '--run', action='store_true',
+                            help='even if other logs are provided by -c, do run the tests and compare')
         parser.add_argument('--chkPrf', '--checkerPrf', '--checkerProfile', metavar='<prf_name>', action='append',
                             help='checker profile from those defined in config section \"CHECKER_PROFILES\", can be a few')
         parser.add_argument('--tCheck',
@@ -532,7 +532,7 @@ class MznTest:
         if None!=self.params.args.compare:     ### If -c used
             cmpFileList += self.params.args.compare
         ## Mode "compare only" if explicit or no instances
-        self.bCmpOnly = True if self.params.args.cmpOnly or \
+        self.bCmpOnly = True if not self.params.args.runAndCmp or \
               0==len( self.params.instList ) else False
         ### If -l used, interpret pos arguments as comparison logs
         if None!=self.params.args.l_InstLists and 0<len( self.params.args.l_InstLists ):
