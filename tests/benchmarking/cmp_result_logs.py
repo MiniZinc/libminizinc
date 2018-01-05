@@ -5,7 +5,7 @@
 
 from collections import OrderedDict
 # import prettytable
-import utils, functools, io
+import utils, io  ## functools
 
 #####################################################################################
 ################### class CompareLogs ##################
@@ -43,7 +43,7 @@ class CompareLogs:
         
     ## Add a method's log
     def addLog( self, sName ):
-        self.lResLogs.append( ( {}, [ sName, '' ] ) )      ## a tuple of dict and list of names ([filename, nick])
+        self.lResLogs.append( ( OrderedDict(), [ sName, '' ] ) )      ## a tuple of dict and list of names ([filename, nick])
         return self.getLastLog()
         
     def getLastLog( self ):
@@ -55,7 +55,11 @@ class CompareLogs:
       
     ## Return the union of all instances in all logs
     def getInstanceUnion( self ):
-        return list( functools.reduce(set.union, (set(d[0].keys()) for d in self.lResLogs)) )
+    ##    return list( functools.reduce(set.union, (set(d[0].keys()) for d in self.lResLogs)) )
+        r0 = OrderedDict()
+        for d in self.lResLogs:
+            r0.update( OrderedDict.fromkeys( d[0] ) )
+        return r0.keys()
 
     ## Return the intersection of all instances in all logs
     def getInstanceIntersection( self ):
