@@ -6,6 +6,7 @@
 from collections import OrderedDict
 # import prettytable
 import utils, io  ## functools
+from utils import strNL
 
 #####################################################################################
 ################### class CompareLogs ##################
@@ -306,14 +307,14 @@ class CompareLogs:
             self.nContrStatus += 1
             self.fContr = True
             print(  "CONTRADICTION of STATUS: instance " + str(sInst) + ": " + \
-                   "\n  OPTIMAL:  " + str(self.lOpt) + \
-                   "\n  FEAS:  " + str(self.lSat) + \
-                   "\n  INFEAS:  " + str(self.lInfeas), file= self.ioContrStatus )
+                   "\n  OPTIMAL:  " + strNL( "\n       ", self.lOpt) + \
+                   "\n  FEAS:  " + strNL( "\n       ", self.lSat) + \
+                   "\n  INFEAS:  " + strNL( "\n       ", self.lInfeas), file= self.ioContrStatus )
         if len(self.mOptVal) > 1:
             self.nContrOptVal += 1
             self.fContr = True
             print( "CONTRADICTION of OPTIMAL VALUES: " + str(sInst) + \
-              ": " + str(self.mOptVal), file=self.ioContrOptVal )
+              ": " + strNL( "\n       ", self.mOptVal), file=self.ioContrOptVal )
         self.nOptSense=0;      ## Take as SAT by default
         if len(self.lPrimBnd)>0 and len(self.lDualBnd)>0 and len(self.lOpt)<self.nReported:
             lKeysP, lValP = zip(*self.lPrimBnd)
@@ -330,15 +331,16 @@ class CompareLogs:
                 self.nContrBounds += 1
                 self.fContr = True
                 print( "CONTRADICTION of BOUNDS: instance " + str(sInst) + \
-                  ":\n  PRIMALS: " + str(self.lPrimBnd) + ",\n  DUALS: " + str(self.lDualBnd),
+                  ":\n  PRIMALS: " + strNL( "\n       ", self.lPrimBnd) + \
+                  ",\n  DUALS: " + strNL( "\n       ", self.lDualBnd),
                   file = self.ioContrBounds )
             else:
                 self.nOptSense=0          ## SAT
             if 1==len(self.sSenses) and self.nOptSense!=0:
                 if self.nOptSense!=self.nOptSenseGiven:     ## access the 'given' opt sense
                     print( "CONTRADICITON of IMPLIED OBJ SENSE:  Instance "+ str(sInst) + \
-                      ": primal bounds " + str(self.lPrimBnd) + \
-                      " and dual bounds "+ str(self.lDualBnd) + \
+                      ": primal bounds " + strNL( "\n       ", self.lPrimBnd) + \
+                      " and dual bounds "+ strNL( "\n       ", self.lDualBnd) + \
                       " together imply opt sense " + str(self.nOptSense) + \
                       ",  while result logs say "+  str(self.nOptSenseGiven), file=self.ioContrBounds )
                 ## else accepting nOptSense as it is
@@ -387,7 +389,7 @@ class CompareLogs:
                 self.matrRanking[dNM[0], "BPri"] += 1
                 self.matrRankingMsg[dNM[0], "BPri"].append( str(sInst) \
                 + ":      the best OBJ VALUE   by " + str(dBetter) \
-                + "\n      PRIMAL BOUNDS AVAILABLE: " + str(self.lPrimBnd))
+                + "\n      PRIMAL BOUNDS AVAILABLE: " + strNL( "\n       ", self.lPrimBnd))
         if not self.fContr \
            and 0==len(self.lInfeas) and 1<len(self.lDualBnd) and 0!=self.nOptSense:
             self.lDualBnd.sort()
@@ -399,6 +401,6 @@ class CompareLogs:
                 self.matrRanking[dNM[0], "BDua"] += 1
                 self.matrRankingMsg[dNM[0], "BDua"].append( str(sInst) \
                 + ":      the best DUAL BOUND   by " + str(dBetter) \
-                + "\n      DUAL BOUNDS AVAILABLE: " + str(self.lDualBnd))
+                + "\n      DUAL BOUNDS AVAILABLE: " + strNL( "\n       ", self.lDualBnd))
       
       

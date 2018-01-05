@@ -63,7 +63,7 @@ class MatrixByStr:          ### Matrix with string keys
             for kc, c in r.items():
                 print( '#'*50, file=resIO )
                 print( rowIntro, kr, file=resIO )
-                print( "   ", colIntro, kc, file=resIO )
+                print( colIntro, "    ", kc, "  / ", len(c), file=resIO )
                 print( '#'*50, file=resIO )
 
                 for el in c:
@@ -117,3 +117,8 @@ def makeDirname( sFln ):
 def openFile_autoDir( sFln, sMode ):
     makeDirname( sFln )
     return open( sFln, sMode )
+
+## stringify a container, inserting a given prefix before each element
+def strNL( prf, cnt ):
+    return prf + prf.join( [ str( el ) for el in cnt ] )
+
