@@ -76,7 +76,8 @@ class MyTab:
     def __init__( self ):
         self.sColSep='  '
       
-    ## Receive table row-wise
+    ## Receive table row-wise (matr)
+    ## hdr is a list of column headers
     def tabulate( self, matr, hdr ):
         res = ""
         ## Compute max width
@@ -91,12 +92,12 @@ class MyTab:
         res =( ("{0:<"+str(nWMax[0])+'}').format(hdr[0]) + self.sColSep )
         for iC in range( 1, len( hdr ) ):
             res += ( ("{0:"+str(nWMax[iC])+'}').format(hdr[iC])
-                  + self.sColSep if iC+1<len(hdr) else '\n' )
+                  + ( self.sColSep if iC+1<len(hdr) else '\n' ) )
         for iR in range( len( matr ) ):
             res += ( ("{0:<"+str(nWMax[0])+'}').format(matr[iR][0] if 0<len( matr[ iR ] ) else '-') + self.sColSep )
             for iC in range( 1, len( matr[iR] ) ):
                 res += ( ("{0:"+str(nWMax[iC])+'}').format(matr[iR][iC] if iC<len( matr[ iR ] ) else '-')
-                       + self.sColSep if iC+1<len(hdr) else '\n' )
+                       + ( self.sColSep if iC+1<len(hdr) else '\n' ) )
         return res
 
 ## change string to be abke to become a filename

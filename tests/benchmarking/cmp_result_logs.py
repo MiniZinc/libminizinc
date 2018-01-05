@@ -21,7 +21,7 @@ class CompareLogs:
             ( "s_MethodName", "logfile/test name" ),
             ( "n_Reported",   "Nout" ),
             ( "n_CheckFailed","Nbad" ),
-            ( "n_ErrorsBackend",     "NerrB" ),
+            ( "n_ErrorsBackend",     "NerrB" ),   ## TODO need still to consider feasible solutions if available
             ( "n_ErrorsLogical",     "NerrL" ),
             ( "n_OPT",        "Nopt" ),
             ( "n_FEAS",       "Nfea" ),
@@ -29,7 +29,8 @@ class CompareLogs:
             ( "n_SAT",        "Nsat" ),
             ( "n_INFEAS",     "Ninfeas" ),
             ( "n_NOFZN",      "NoFZN" ),
-            ( "n_UNKNOWN",    "Nunkn" )
+            ( "n_UNKNOWN",    "Nunkn" ),
+            ( "t_Flatten",    "TFlt" )
           ]
         self.hdrRanking = [       ## These are column headers for ranking analysis
             ## ( "nmMeth", "logfile/test/method name" ),
@@ -213,7 +214,12 @@ class CompareLogs:
                 dObj_MZN = utils.try_float( mSlv.get( "ObjVal_MZN" ) )
                 dObj_SLV = utils.try_float( mSlv.get( "ObjVal_Solver" ) )
                 dBnd_SLV = utils.try_float( mSlv.get( "DualBnd_Solver" ) )
+                dTime_All = utils.try_float( mSlv.get( "TimeReal_All" ) )
                 dTime_Flt = utils.try_float( mSlv.get( "Time_Flt" ) )
+                if dTime_Flt is None:
+                    dTime_Flt = dTime_All
+                if dTime_Flt is not None:
+                    aResultThisInst[ "t_Flatten" ] = dTime_Flt
                 ## Compare obj vals
                 dObj, bObj_MZN = (dObj_MZN, True) if \
                       None!=dObj_MZN and abs( dObj_MZN ) < 1e45 else (mSlv.get("ObjVal_MZN"), False)
