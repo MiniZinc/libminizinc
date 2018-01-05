@@ -21,7 +21,8 @@ class CompareLogs:
             ( "s_MethodName", "logfile/test name" ),
             ( "n_Reported",   "Nout" ),
             ( "n_CheckFailed","Nbad" ),
-            ( "n_Errors",     "Nerr" ),
+            ( "n_ErrorsBackend",     "NerrB" ),
+            ( "n_ErrorsLogical",     "NerrL" ),
             ( "n_OPT",        "Nopt" ),
             ( "n_FEAS",       "Nfea" ),
             ( "n_SATALL",     "NsatA" ),
@@ -206,7 +207,8 @@ class CompareLogs:
                     print( "WARNING: SOLUTION CHECK(S) FAILED for the instance ", sInst,
                            ",  method '", lNames, "'.", sep='', file = self.ioBadChecks )
                     continue                                        ## TODO. Param?
-                aResultThisInst[ "n_Errors" ] = 0
+                aResultThisInst[ "n_ErrorsBackend" ] = 0
+                aResultThisInst[ "n_ErrorsLogical" ] = 0
                 mSlv = mRes[ "__SOLVE__" ]
                 dObj_MZN = utils.try_float( mSlv.get( "ObjVal_MZN" ) )
                 dObj_SLV = utils.try_float( mSlv.get( "ObjVal_Solver" ) )
@@ -220,7 +222,7 @@ class CompareLogs:
                       None!=dObj_SLV and abs( dObj_SLV ) < 1e45 else (dObj, False)
                 if bObj_MZN and bObj_SLV:
                     if abs( dObj_MZN-dObj_SLV ) > 1e-6 * max( abs(dObj_MZN), abs(dObj_SLV) ):
-                        aResultThisInst[ "n_Errors" ] += 1
+                        aResultThisInst[ "n_ErrorsLogical" ] += 1
                         print ( "  WARNING: DIFFERENT MZN / SOLVER OBJ VALUES for the instance ", sInst,
                            ", method '", lNames, "' : ",
                            dObj_MZN, " / ", dObj_SLV, sep-'', file=self.ioContrObjValMZN)
@@ -250,7 +252,7 @@ class CompareLogs:
                         self.lOpt.append( lNames )                   ## Append the optimal method list
                         aResultThisInst[ "n_OPT" ] = 1
                         if None==dObj or abs( dObj ) >= 1e45:
-                            aResultThisInst[ "n_Errors" ] += 1
+                            aResultThisInst[ "n_ErrorsLogical" ] += 1
                             print ( "  WARNING: OPTIMAL STATUS BUT BAD OBJ VALUE, instance ", sInst,
                               ", method '", lNames, "': '",
                               ( "" if None==dObj else str(dObj) ), "', result record: ",   # mRes,
@@ -268,7 +270,7 @@ class CompareLogs:
                         self.lFeas.append( lNames )                   ## Append the optimal method list
                         aResultThisInst[ "n_FEAS" ] = 1
                         if None==dObj or abs( dObj ) >= 1e45:
-                            aResultThisInst[ "n_Errors" ] += 1
+                            aResultThisInst[ "n_ErrorsLogical" ] += 1
                             print ( "  WARNING: feasible status but bad obj value, instance ", sInst,
                                     ", method '", lNames, "' :'",
                               ( "" if None==dObj else str(dObj) ), "', result record: ",  #  mRes,
@@ -283,7 +285,7 @@ class CompareLogs:
                     self.mInfeas[ sInst ].append( lNames )
                 ## Handle ERROR?
                 elif -4==n_SolStatus:
-                    aResultThisInst[ "n_Errors" ] = 1
+                    aResultThisInst[ "n_ErrorsBackend" ] = 1
                     self.mError. setdefault( sInst, [] ).append( lNames )
                     print( "ERROR REPORTED for the instance ", sInst, ", method '", lNames,
                             "',  result record: ",   ## mRes,
