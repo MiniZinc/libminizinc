@@ -103,6 +103,8 @@ class MZT_Param:
         parser.add_argument('--resultUnchk', default=sFlnSolUnchk, metavar='<file>', help='save unchecked result log to <file>')
         parser.add_argument('-c', '--compare', action="append", metavar='<file>',
                             help='compare results to existing <file>. This flag can be omitted if -l is used')
+        ## parser.add_argument('--fullPaths', action='store_true',
+        ##                    help='use full paths in instance identifiers. By default, it\'s the pure base filenames')
         
         parser.add_argument('--mergeCfg', action="append", metavar='<file>', help='merge config from <file>')
         parser.add_argument('--saveCfg', metavar='<file>', help='save internal config to <file>. Can be useful to modify some parameters and run with --mergeCfg')
@@ -488,6 +490,21 @@ class MZT_Param:
 ################### The MZNTest class
 ##############################################################################################
 class MznTest:
+
+    ## Produce a string identifying the instance which is given as a string of the instance files
+    ## By default, keeps paths and file extensions
+    ## the elements are sorted according to the extensions list, then alphabetically
+    def getIName( self, s_Inst, fFullPaths=True, fKeepExt=True ):
+        lId = s_Inst.split()     ## list of instance files
+        if not fFullPaths:
+            lId = [ basename( fln ) for fln in lId ];
+        lExt = self.params.cfg["COMMON_OPTIONS"]["Instance_List"]["InstanceFileExt"]
+        lId = sorted( lId, key = lambda nm:
+                ( lExt.index( os.path.splitext(nm)[1] ) if os.path.splitext(nm)[1] in lExt else len(lExt), nm ) )
+        if not fKeepExt:
+            lId = [ os.path.splitext( fln )[0] for fln in lId ];
+        return ' '.join(lId);
+
     def obtainParams( self ):
         self.params.obtainParams()
         ## TRUNCATING files first, then "a" - better on Win??
@@ -546,8 +563,7 @@ class MznTest:
                     if None==chJ:
                         break
                     try:
-                        logCurrent[
-                          frozenset( chJ["Inst_Files"].split() ) ] = chJ
+                        logCurrent[ self.getIName( chJ["Inst_Files"] ) ] = chJ
                         if "TEST_NAME" in chJ:
                             lLogNames[1] = chJ[ "TEST_NAME" ]
                             print( "  TEST NAME: '", chJ[ "TEST_NAME" ],
@@ -581,7 +597,7 @@ class MznTest:
             ## Saving to the main log:
             self.saveSolution( self.fileSol )
             ## Ranking:
-            sSet_Inst = frozenset( self.result["Inst_Files"].split() )
+            sSet_Inst = self.getIName( self.result["Inst_Files"] )
             logCurrent[ sSet_Inst ] = self.result
             try:
                 self.cmpRes.compareInstance( sSet_Inst )
@@ -594,7 +610,7 @@ class MznTest:
 
     def compareLogs(self):
         self.cmpRes.initListComparison()
-        theList = [ frozenset( lfn.split() ) for lfn in self.params.instList ]
+        theList = [ self.getIName( lfn ) for lfn in self.params.instList ]
         if 0==len( theList ):
             theList = self.cmpRes.getInstanceUnion()
         for sInst in theList:

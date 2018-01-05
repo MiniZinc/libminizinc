@@ -73,6 +73,7 @@ class CompareLogs:
         self.initListComparison()
         for sInst in lInstances:
             self.compareInstance( sInst )
+        self.summarizeCmp()
         self.summarize()
         
     ## Init stats etc.
