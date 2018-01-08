@@ -5,7 +5,8 @@
 
 from collections import OrderedDict
 # import prettytable
-import utils, functools, io
+import utils, io  ## functools
+from utils import strNL
 
 #####################################################################################
 ################### class CompareLogs ##################
@@ -20,14 +21,16 @@ class CompareLogs:
             ( "s_MethodName", "logfile/test name" ),
             ( "n_Reported",   "Nout" ),
             ( "n_CheckFailed","Nbad" ),
-            ( "n_Errors",     "Nerr" ),
+            ( "n_ErrorsBackend",     "NerrB" ),   ## TODO need still to consider feasible solutions if available
+            ( "n_ErrorsLogical",     "NerrL" ),
             ( "n_OPT",        "Nopt" ),
             ( "n_FEAS",       "Nfea" ),
             ( "n_SATALL",     "NsatA" ),
             ( "n_SAT",        "Nsat" ),
             ( "n_INFEAS",     "Ninfeas" ),
             ( "n_NOFZN",      "NoFZN" ),
-            ( "n_UNKNOWN",    "Nunkn" )
+            ( "n_UNKNOWN",    "Nunkn" ),
+            ( "t_Flatten",    "TFlt" )
           ]
         self.hdrRanking = [       ## These are column headers for ranking analysis
             ## ( "nmMeth", "logfile/test/method name" ),
@@ -43,7 +46,7 @@ class CompareLogs:
         
     ## Add a method's log
     def addLog( self, sName ):
-        self.lResLogs.append( ( {}, [ sName, '' ] ) )      ## a tuple of dict and list of names ([filename, nick])
+        self.lResLogs.append( ( OrderedDict(), [ sName, '' ] ) )      ## a tuple of dict and list of names ([filename, nick])
         return self.getLastLog()
         
     def getLastLog( self ):
@@ -55,7 +58,11 @@ class CompareLogs:
       
     ## Return the union of all instances in all logs
     def getInstanceUnion( self ):
-        return list( functools.reduce(set.union, (set(d[0].keys()) for d in self.lResLogs)) )
+    ##    return list( functools.reduce(set.union, (set(d[0].keys()) for d in self.lResLogs)) )
+        r0 = OrderedDict()
+        for d in self.lResLogs:
+            r0.update( OrderedDict.fromkeys( d[0] ) )
+        return r0.keys()
 
     ## Return the intersection of all instances in all logs
     def getInstanceIntersection( self ):
@@ -68,6 +75,7 @@ class CompareLogs:
         self.initListComparison()
         for sInst in lInstances:
             self.compareInstance( sInst )
+        self.summarizeCmp()
         self.summarize()
         
     ## Init stats etc.
@@ -200,12 +208,18 @@ class CompareLogs:
                     print( "WARNING: SOLUTION CHECK(S) FAILED for the instance ", sInst,
                            ",  method '", lNames, "'.", sep='', file = self.ioBadChecks )
                     continue                                        ## TODO. Param?
-                aResultThisInst[ "n_Errors" ] = 0
+                aResultThisInst[ "n_ErrorsBackend" ] = 0
+                aResultThisInst[ "n_ErrorsLogical" ] = 0
                 mSlv = mRes[ "__SOLVE__" ]
                 dObj_MZN = utils.try_float( mSlv.get( "ObjVal_MZN" ) )
                 dObj_SLV = utils.try_float( mSlv.get( "ObjVal_Solver" ) )
                 dBnd_SLV = utils.try_float( mSlv.get( "DualBnd_Solver" ) )
+                dTime_All = utils.try_float( mSlv.get( "TimeReal_All" ) )
                 dTime_Flt = utils.try_float( mSlv.get( "Time_Flt" ) )
+                if dTime_Flt is None:
+                    dTime_Flt = dTime_All
+                if dTime_Flt is not None:
+                    aResultThisInst[ "t_Flatten" ] = dTime_Flt
                 ## Compare obj vals
                 dObj, bObj_MZN = (dObj_MZN, True) if \
                       None!=dObj_MZN and abs( dObj_MZN ) < 1e45 else (mSlv.get("ObjVal_MZN"), False)
@@ -214,7 +228,7 @@ class CompareLogs:
                       None!=dObj_SLV and abs( dObj_SLV ) < 1e45 else (dObj, False)
                 if bObj_MZN and bObj_SLV:
                     if abs( dObj_MZN-dObj_SLV ) > 1e-6 * max( abs(dObj_MZN), abs(dObj_SLV) ):
-                        aResultThisInst[ "n_Errors" ] += 1
+                        aResultThisInst[ "n_ErrorsLogical" ] += 1
                         print ( "  WARNING: DIFFERENT MZN / SOLVER OBJ VALUES for the instance ", sInst,
                            ", method '", lNames, "' : ",
                            dObj_MZN, " / ", dObj_SLV, sep-'', file=self.ioContrObjValMZN)
@@ -244,7 +258,7 @@ class CompareLogs:
                         self.lOpt.append( lNames )                   ## Append the optimal method list
                         aResultThisInst[ "n_OPT" ] = 1
                         if None==dObj or abs( dObj ) >= 1e45:
-                            aResultThisInst[ "n_Errors" ] += 1
+                            aResultThisInst[ "n_ErrorsLogical" ] += 1
                             print ( "  WARNING: OPTIMAL STATUS BUT BAD OBJ VALUE, instance ", sInst,
                               ", method '", lNames, "': '",
                               ( "" if None==dObj else str(dObj) ), "', result record: ",   # mRes,
@@ -262,7 +276,7 @@ class CompareLogs:
                         self.lFeas.append( lNames )                   ## Append the optimal method list
                         aResultThisInst[ "n_FEAS" ] = 1
                         if None==dObj or abs( dObj ) >= 1e45:
-                            aResultThisInst[ "n_Errors" ] += 1
+                            aResultThisInst[ "n_ErrorsLogical" ] += 1
                             print ( "  WARNING: feasible status but bad obj value, instance ", sInst,
                                     ", method '", lNames, "' :'",
                               ( "" if None==dObj else str(dObj) ), "', result record: ",  #  mRes,
@@ -277,7 +291,7 @@ class CompareLogs:
                     self.mInfeas[ sInst ].append( lNames )
                 ## Handle ERROR?
                 elif -4==n_SolStatus:
-                    aResultThisInst[ "n_Errors" ] = 1
+                    aResultThisInst[ "n_ErrorsBackend" ] = 1
                     self.mError. setdefault( sInst, [] ).append( lNames )
                     print( "ERROR REPORTED for the instance ", sInst, ", method '", lNames,
                             "',  result record: ",   ## mRes,
@@ -302,14 +316,14 @@ class CompareLogs:
             self.nContrStatus += 1
             self.fContr = True
             print(  "CONTRADICTION of STATUS: instance " + str(sInst) + ": " + \
-                   "\n  OPTIMAL:  " + str(self.lOpt) + \
-                   "\n  FEAS:  " + str(self.lSat) + \
-                   "\n  INFEAS:  " + str(self.lInfeas), file= self.ioContrStatus )
+                   "\n  OPTIMAL:  " + strNL( "\n       ", self.lOpt) + \
+                   "\n  FEAS:  " + strNL( "\n       ", self.lSat) + \
+                   "\n  INFEAS:  " + strNL( "\n       ", self.lInfeas), file= self.ioContrStatus )
         if len(self.mOptVal) > 1:
             self.nContrOptVal += 1
             self.fContr = True
             print( "CONTRADICTION of OPTIMAL VALUES: " + str(sInst) + \
-              ": " + str(self.mOptVal), file=self.ioContrOptVal )
+              ": " + strNL( "\n       ", self.mOptVal), file=self.ioContrOptVal )
         self.nOptSense=0;      ## Take as SAT by default
         if len(self.lPrimBnd)>0 and len(self.lDualBnd)>0 and len(self.lOpt)<self.nReported:
             lKeysP, lValP = zip(*self.lPrimBnd)
@@ -326,15 +340,16 @@ class CompareLogs:
                 self.nContrBounds += 1
                 self.fContr = True
                 print( "CONTRADICTION of BOUNDS: instance " + str(sInst) + \
-                  ":\n  PRIMALS: " + str(self.lPrimBnd) + ",\n  DUALS: " + str(self.lDualBnd),
+                  ":\n  PRIMALS: " + strNL( "\n       ", self.lPrimBnd) + \
+                  ",\n  DUALS: " + strNL( "\n       ", self.lDualBnd),
                   file = self.ioContrBounds )
             else:
                 self.nOptSense=0          ## SAT
             if 1==len(self.sSenses) and self.nOptSense!=0:
                 if self.nOptSense!=self.nOptSenseGiven:     ## access the 'given' opt sense
                     print( "CONTRADICITON of IMPLIED OBJ SENSE:  Instance "+ str(sInst) + \
-                      ": primal bounds " + str(self.lPrimBnd) + \
-                      " and dual bounds "+ str(self.lDualBnd) + \
+                      ": primal bounds " + strNL( "\n       ", self.lPrimBnd) + \
+                      " and dual bounds "+ strNL( "\n       ", self.lDualBnd) + \
                       " together imply opt sense " + str(self.nOptSense) + \
                       ",  while result logs say "+  str(self.nOptSenseGiven), file=self.ioContrBounds )
                 ## else accepting nOptSense as it is
@@ -383,7 +398,7 @@ class CompareLogs:
                 self.matrRanking[dNM[0], "BPri"] += 1
                 self.matrRankingMsg[dNM[0], "BPri"].append( str(sInst) \
                 + ":      the best OBJ VALUE   by " + str(dBetter) \
-                + "\n      PRIMAL BOUNDS AVAILABLE: " + str(self.lPrimBnd))
+                + "\n      PRIMAL BOUNDS AVAILABLE: " + strNL( "\n       ", self.lPrimBnd))
         if not self.fContr \
            and 0==len(self.lInfeas) and 1<len(self.lDualBnd) and 0!=self.nOptSense:
             self.lDualBnd.sort()
@@ -395,6 +410,6 @@ class CompareLogs:
                 self.matrRanking[dNM[0], "BDua"] += 1
                 self.matrRankingMsg[dNM[0], "BDua"].append( str(sInst) \
                 + ":      the best DUAL BOUND   by " + str(dBetter) \
-                + "\n      DUAL BOUNDS AVAILABLE: " + str(self.lDualBnd))
+                + "\n      DUAL BOUNDS AVAILABLE: " + strNL( "\n       ", self.lDualBnd))
       
       

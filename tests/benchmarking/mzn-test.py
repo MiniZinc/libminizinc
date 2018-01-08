@@ -20,7 +20,7 @@ from collections import OrderedDict
 import utils, json_config, json_log, mzn_exec, cmp_result_logs
 from json_config import s_CommentKey, s_AddKey
 
-s_ProgramDescr = 'MiniZinc testing automation. (c) 2017 Monash University, gleb.belov@monash.edu'
+s_ProgramDescr = 'MiniZinc testing automation. (c) 2018 Monash University, gleb.belov@monash.edu'
 s_ProgramDescrLong = ( "Allows checking of MiniZinc solutions by configurable checker profiles. The solutions can be input or produced by a chosen solver profile, for 1 or several instances, with result comparison and (TODO) ranking.")
 
 ###########################   GENERAL CONFIG. Could be in the JSON config actually    #########################
@@ -41,7 +41,7 @@ s_UsageExamples = (
     "\n(1)  \"mzn-test.py model.mzn data.dzn [--checkDZN stdout.txt [--checkStderr stderr.txt]] [--chkPrf MINIZINC-CHK --chkPrf FZN-GECODE-CHK] [--tCheck 15]\"                  ::: check the instance's solutions, optionally reading them from a DZN-formatted file (otherwise solving first), optionally overriding default checker list etc."
     "\n(2)  \"mzn-test.py --slvPrf MZN-CPLEX -t 300 -l instList1.txt -l instList2.txt --name ChuffedTest_003 --result newLog00.json prevLog1.json prevLog2.json --failed failLog.json\""
     "             ::: solve instances using the specified solver profile and wall time limit 300 seconds. The instances are taken from the list files. The test is aliased ChuffedTest_003. Results are saved to newLog00.json and compared/ranked to those in prevLog's. (Probably) incorrect solutions are saved to failLog.json."
-    "\n(3)  \"mzn-test.py [-l instList1.txt] -c prevLog1.json -c prevLog2.json [--cmpOnly]\"                  ::: only compare existing logs, optionally limited to the given instances. USE SINGLE QUOTES ONLY INSIDE ARGUMENTS PASSED TO THE BACKENDS when running backends through shell."
+    "\n(3)  \"mzn-test.py [-l instList1.txt] -c prevLog1.json -c prevLog2.json [--runAndCmp]\"                  ::: compare existing logs, optionally limited to the given instances, optionally running new tests. USE SINGLE QUOTES ONLY INSIDE ARGUMENTS PASSED TO THE BACKENDS when running backends through shell."
   )
 ##############################################################################################
 ################ Parameters of MZN-Test, including config and command-line
@@ -60,8 +60,8 @@ class MZT_Param:
         parser.add_argument('-l', '--instanceList', dest='l_InstLists', action='append', metavar='<instanceListFile>',
             help='file with a list of instance input files, one instance per line,'
               ' instance file types specified in config')
-        parser.add_argument('--cmpOnly', '--compareOnly', action='store_true',
-                            help='only compare JSON logs, optionally selecting the provided instance (lists)')
+        parser.add_argument('--runAndCmp', '--runAndCompare', '--run', action='store_true',
+                            help='even if other logs are provided by -c, do run the tests and compare')
         parser.add_argument('--chkPrf', '--checkerPrf', '--checkerProfile', metavar='<prf_name>', action='append',
                             help='checker profile from those defined in config section \"CHECKER_PROFILES\", can be a few')
         parser.add_argument('--tCheck',
@@ -103,6 +103,8 @@ class MZT_Param:
         parser.add_argument('--resultUnchk', default=sFlnSolUnchk, metavar='<file>', help='save unchecked result log to <file>')
         parser.add_argument('-c', '--compare', action="append", metavar='<file>',
                             help='compare results to existing <file>. This flag can be omitted if -l is used')
+        ## parser.add_argument('--fullPaths', action='store_true',
+        ##                    help='use full paths in instance identifiers. By default, it\'s the pure base filenames')
         
         parser.add_argument('--mergeCfg', action="append", metavar='<file>', help='merge config from <file>')
         parser.add_argument('--saveCfg', metavar='<file>', help='save internal config to <file>. Can be useful to modify some parameters and run with --mergeCfg')
@@ -488,6 +490,21 @@ class MZT_Param:
 ################### The MZNTest class
 ##############################################################################################
 class MznTest:
+
+    ## Produce a string identifying the instance which is given as a string of the instance files
+    ## By default, keeps paths and file extensions
+    ## the elements are sorted according to the extensions list, then alphabetically
+    def getIName( self, s_Inst, fFullPaths=True, fKeepExt=True ):
+        lId = s_Inst.split()     ## list of instance files
+        if not fFullPaths:
+            lId = [ basename( fln ) for fln in lId ];
+        lExt = self.params.cfg["COMMON_OPTIONS"]["Instance_List"]["InstanceFileExt"]
+        lId = sorted( lId, key = lambda nm:
+                ( lExt.index( os.path.splitext(nm)[1] ) if os.path.splitext(nm)[1] in lExt else len(lExt), nm ) )
+        if not fKeepExt:
+            lId = [ os.path.splitext( fln )[0] for fln in lId ];
+        return ' '.join(lId);
+
     def obtainParams( self ):
         self.params.obtainParams()
         ## TRUNCATING files first, then "a" - better on Win??
@@ -504,10 +521,9 @@ class MznTest:
         ## Get cmdline filenames or from the --instList arguments
         ## Can compile the list from log files, see below
         self.params.instList = []
-        ## If -l not used, take the pos args
-        if not self.params.args.cmpOnly and 0<len( self.params.args.instanceFiles ) and \
-          ( None==self.params.args.l_InstLists or 0==len( self.params.args.l_InstLists ) ):
-            self.params.instList.append( " ".join( self.params.args.instanceFiles ) )     ## Also if l_InstLists?  TODO
+        ## Even if -l used, take the pos args
+        if 0<len( self.params.args.instanceFiles ):
+            self.params.instList.append( " ".join( self.params.args.instanceFiles ) )
         ## If -l used, compile the inst list files
         if None!=self.params.args.l_InstLists and 0<len( self.params.args.l_InstLists ):
             for sFln in self.params.args.l_InstLists:
@@ -532,7 +548,7 @@ class MznTest:
         if None!=self.params.args.compare:     ### If -c used
             cmpFileList += self.params.args.compare
         ## Mode "compare only" if explicit or no instances
-        self.bCmpOnly = True if self.params.args.cmpOnly or \
+        self.bCmpOnly = True if not self.params.args.runAndCmp or \
               0==len( self.params.instList ) else False
         ### If -l used, interpret pos arguments as comparison logs
         if None!=self.params.args.l_InstLists and 0<len( self.params.args.l_InstLists ):
@@ -547,8 +563,7 @@ class MznTest:
                     if None==chJ:
                         break
                     try:
-                        logCurrent[
-                          frozenset( chJ["Inst_Files"].split() ) ] = chJ
+                        logCurrent[ self.getIName( chJ["Inst_Files"] ) ] = chJ
                         if "TEST_NAME" in chJ:
                             lLogNames[1] = chJ[ "TEST_NAME" ]
                             print( "  TEST NAME: '", chJ[ "TEST_NAME" ],
@@ -582,7 +597,7 @@ class MznTest:
             ## Saving to the main log:
             self.saveSolution( self.fileSol )
             ## Ranking:
-            sSet_Inst = frozenset( self.result["Inst_Files"].split() )
+            sSet_Inst = self.getIName( self.result["Inst_Files"] )
             logCurrent[ sSet_Inst ] = self.result
             try:
                 self.cmpRes.compareInstance( sSet_Inst )
@@ -595,7 +610,7 @@ class MznTest:
 
     def compareLogs(self):
         self.cmpRes.initListComparison()
-        theList = [ frozenset( lfn.split() ) for lfn in self.params.instList ]
+        theList = [ self.getIName( lfn ) for lfn in self.params.instList ]
         if 0==len( theList ):
             theList = self.cmpRes.getInstanceUnion()
         for sInst in theList:
@@ -615,6 +630,11 @@ class MznTest:
             print ('='*50)
             stats = self.cmpRes.summarize()
             print (stats)
+        except Exception as e:
+            exc_type, exc_obj, exc_tb = sys.exc_info()
+            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+            print(exc_type, exc_obj, fname, exc_tb.tb_lineno)
+        if not self.bCmpOnly:
             print( "Printing stats log to: ", end="" )
             sFlnSL = sFlnStatLog.format( utils.flnfy(
                 " ".join(self.params.args.l_InstLists if self.params.args.l_InstLists is not None else []) ) )
@@ -624,11 +644,6 @@ class MznTest:
                 wf.write( sys.argv.__str__() )
                 wf.write( "\n" )
                 wf.write( stats )
-        except Exception as e:
-            exc_type, exc_obj, exc_tb = sys.exc_info()
-            fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
-            print(exc_type, exc_obj, fname, exc_tb.tb_lineno)
-        if not self.bCmpOnly:
             print( "\nResult logs saved to '",  self.params.args.result,
                "', with the unchecked log in '", self.params.args.resultUnchk, "'; failed solutions saved to '",
                self.params.cfg["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0],
