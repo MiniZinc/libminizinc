@@ -65,7 +65,7 @@ namespace MiniZinc {
     vector<SyntaxError> syntax_errors;
     Env* fenv = new Env(new_mod);
     //Model* inc_mod = parse(*fenv, include_names, {}, new_includePaths, true, true, verbose, std::cerr);
-    Model* inc_mod = parseFromString(ss.str(), "MultiPassDummy.mzn", new_includePaths, true, true, verbose, std::cerr, syntax_errors);
+    Model* inc_mod = parseFromString(ss.str(), m->filepath().str() + "_Dummy.mzn", new_includePaths, true, true, verbose, std::cerr, syntax_errors);
     if(inc_mod == nullptr) {
         for(const SyntaxError& se : syntax_errors) {
             std::cerr << std::endl;
