@@ -43,7 +43,44 @@ class CompareLogs:
             ( "BDua",   "Number of instances where this method has a better DUAL BOUND" )
             ##  TODO: ranks here ( "n_UNKNOWN",    "Nunkn" )
           ]
-        
+ 
+    hdrTable = {                  ## Possible headers for table printout
+            "stt": "The solver status",  ## TODO an error should be separate flag, not a status
+            "chk": "The solution checking status",
+            "objMZN": "The MZN obj value",
+            "objSLV": "The solver obj value",
+            "bnd": "The solver dual bound",
+            "tAll": "Total running wall time",
+            "tFlt": "Flattening time",
+            "tBest": "A best solution's finding time",
+            "sns": "Model sense (min/max/sat)",
+            "errH": "Solver errors",
+            "errL": "Logical errors"
+            }
+
+    ## which of those to print for each method 
+    hdrTable2P = "stt objMZN bnd tFlt tBest"
+    hdrTable2P_spl = hdrTable2P.split( " " )
+
+    mapStatShort = {              ## Short status names
+            2:  "OPT",
+            1:  "FEAS",
+            4:  "SATA",
+            3:  "SAT",
+            0:  "UNKN",
+            -1: "UNSAT",
+            -2: "UNBND",
+            -3: "UNSorUNB",
+            -4: "ERR_H"
+            }
+
+    mapProblemSense = {
+            1:  "max",
+            0:  "sat",
+            -1: "min",
+            -2: "nosns"
+            }
+
     ## Add a method's log
     def addLog( self, sName ):
         self.lResLogs.append( ( OrderedDict(), [ sName, '' ] ) )      ## a tuple of dict and list of names ([filename, nick])
@@ -69,7 +106,7 @@ class CompareLogs:
         assert False
         return []                      ## TODO
 
-    ## This compares all instances specified in the list
+    ## This compares all instances specified in the list of pairs (full name, short name)
     ## If comparing by-instance from outside, follow this pattern
     def compareAllInstances( self, lInstances ):
         self.initListComparison()
@@ -80,18 +117,24 @@ class CompareLogs:
         
     ## Init stats etc.
     def initListComparison( self ):
+        self.nInstCompared = 0
         self.nInstWithOptSense = 0
         ## Using warning strings...     self.lInstContradOptSense = []
         self.lCmpVecs = []                  # List of summary vectors for each method
         self.mCmpVecVals = {}               # Maps to the "quantity" parts of those
         self.mCmpVecQual = {}               # Maps to the "quality" parts
-        for mLog, lN in self.lResLogs:
-            lNames = " ".join(lN)
+        print( "\nNo.\tinst", end='\t')
+        for mLog, lN in self.lResLogs:                ## Select method and its name list
+            lNames = self.getMethodName(lN)
             av = OrderedDict({ "s_MethodName": lNames })
             aq = OrderedDict({ "s_MethodName": lNames })
             self.lCmpVecs.append( ( lNames, av, aq ) )
             self.mCmpVecVals[ lNames ] = av
             self.mCmpVecQual[ lNames ] = aq
+            for hdr in self.hdrTable2P_spl:                    ## Print table headers
+                print( hdr, end='\t' )
+
+        print( "" )                                        ## Newline
             
         self.mInfeas, self.mNoFZN, self.mFail, self.mError = {}, {}, {}, {}
         self.nContrStatus, self.nContrOptVal, self.nContrBounds = 0, 0, 0
@@ -117,15 +160,16 @@ class CompareLogs:
       
     ## Compare methods on the given instance
     def compareInstance( self, sInst ):
-        self.initInstanceComparison( sInst )
-        self.tryFindProblemSense( sInst )
-        self.compileInstanceResults( sInst )
-        self.checkContradictions( sInst )
-        self.rankPerformance( sInst )
+        self.initInstanceComparison( sInst[0] )
+        self.tryFindProblemSense( sInst[0] )
+        self.compileInstanceResults( sInst[0] )
+        self.checkContradictions( sInst[0] )
+        self.rankPerformance( sInst[0] )
+        self.doInstanceSummary( sInst )
       
     ## Summarize up to current instance
     def summarizeCurrent( self, lLogNames ):
-        lNames = " ".join(lLogNames)
+        lNames = self.getMethodName(lLogNames)
         mCmpVals = self.mCmpVecVals[lNames]
         for hdr in self.hdrSummary:
             print( hdr[1], ":",
@@ -176,7 +220,10 @@ class CompareLogs:
     def initInstanceComparison( self, sInst ):
         self.lOpt, self.lSatAll, self.lFeas, self.lSat, self.lInfeas = [], [], [], [], []
         self.mOptVal, self.lOptVal, self.lPrimBnd, self.lDualBnd = {}, [], [], []
+        self.nInstCompared += 1
         self.nReported = 0               ## How many methods reported for this instances
+        ## Detailed table line for this instance 
+        self.aDetThisInst = { self.getMethodName( ll[1] ) : {} for ll in self.lResLogs  }
 
     def tryFindProblemSense( self, sInst ):
         self.sSenses = {}
@@ -195,31 +242,43 @@ class CompareLogs:
                 
     def compileInstanceResults( self, sInst ):
         for mLog, lN in self.lResLogs:                ## Select method and its name list
-            lNames = " ".join(lN)
+            lNames = self.getMethodName(lN)
+            aDetThis = self.aDetThisInst[ lNames ]    ## Result table line section
             if sInst in mLog:
                 self.nReported += 1
                 aResultThisInst = OrderedDict({ "n_Reported": 1 })
                 aResultThisInst[ "n_CheckFailed" ] = 0
                 mRes = mLog[ sInst ]                      ## The method's entry for this instance
+                aDetThis[ "chk" ] = "ok"
                 if "SOLUTION_CHECKS_FAILED" in mRes and \
                   0<mRes["SOLUTION_CHECKS_FAILED"]:
                     aResultThisInst[ "n_CheckFailed" ] = 1
+                    aDetThis[ "chk" ] = "BAD"
                     utils.addMapValues( self.mCmpVecVals[lNames], aResultThisInst )
                     print( "WARNING: SOLUTION CHECK(S) FAILED for the instance ", sInst,
                            ",  method '", lNames, "'.", sep='', file = self.ioBadChecks )
                     continue                                        ## TODO. Param?
                 aResultThisInst[ "n_ErrorsBackend" ] = 0
                 aResultThisInst[ "n_ErrorsLogical" ] = 0
+                aDetThis [ "errH" ] = 0
+                aDetThis [ "errL" ] = 0
                 mSlv = mRes[ "__SOLVE__" ]
                 dObj_MZN = utils.try_float( mSlv.get( "ObjVal_MZN" ) )
+                aDetThis [ "objMZN" ] = dObj_MZN
                 dObj_SLV = utils.try_float( mSlv.get( "ObjVal_Solver" ) )
+                aDetThis [ "objSLV" ] = dObj_SLV
                 dBnd_SLV = utils.try_float( mSlv.get( "DualBnd_Solver" ) )
+                aDetThis [ "bnd" ] = dBnd_SLV
                 dTime_All = utils.try_float( mSlv.get( "TimeReal_All" ) )
+                aDetThis [ "tAll" ] = dTime_All
                 dTime_Flt = utils.try_float( mSlv.get( "Time_Flt" ) )
                 if dTime_Flt is None:
                     dTime_Flt = dTime_All
                 if dTime_Flt is not None:
                     aResultThisInst[ "t_Flatten" ] = dTime_Flt
+                aDetThis [ "tFlt" ] = dTime_Flt
+                dTime_Last = utils.try_float( mSlv.get( "TimeReal_LastStatus" ) )
+                aDetThis [ "tBest" ] = dTime_Last
                 ## Compare obj vals
                 dObj, bObj_MZN = (dObj_MZN, True) if \
                       None!=dObj_MZN and abs( dObj_MZN ) < 1e45 else (mSlv.get("ObjVal_MZN"), False)
@@ -229,6 +288,7 @@ class CompareLogs:
                 if bObj_MZN and bObj_SLV:
                     if abs( dObj_MZN-dObj_SLV ) > 1e-6 * max( abs(dObj_MZN), abs(dObj_SLV) ):
                         aResultThisInst[ "n_ErrorsLogical" ] += 1
+                        aDetThis [ "errL" ] += 1
                         print ( "  WARNING: DIFFERENT MZN / SOLVER OBJ VALUES for the instance ", sInst,
                            ", method '", lNames, "' : ",
                            dObj_MZN, " / ", dObj_SLV, sep-'', file=self.ioContrObjValMZN)
@@ -247,6 +307,7 @@ class CompareLogs:
                     nSense = next(iter(self.sSenses.keys()))
                 else:
                     nSense = -2  ## ??
+                aDetThis[ "sns" ] = self.mapProblemSense[ nSense ]
                 self.bOptProblem = True if 0!=nSense else False     ## or (None!=dBnd or None!=dObj)
                     ### ... here assumed it's an opt problem by default... why... need to check bounds first??
                 ## Handle optimality / SAT completed
@@ -254,11 +315,14 @@ class CompareLogs:
                     if not self.bOptProblem:
                         self.lSatAll.append( lNames )
                         aResultThisInst[ "n_SATALL" ] = 1
+                        aDetThis[ "stt" ] = self.mapStatShort[ 4 ]
                     else:                                        ## Assume it's an optimization problem????? TODO
                         self.lOpt.append( lNames )                   ## Append the optimal method list
                         aResultThisInst[ "n_OPT" ] = 1
+                        aDetThis[ "stt" ] = self.mapStatShort[ 2 ]
                         if None==dObj or abs( dObj ) >= 1e45:
                             aResultThisInst[ "n_ErrorsLogical" ] += 1
+                            aDetThis [ "errL" ] += 1
                             print ( "  WARNING: OPTIMAL STATUS BUT BAD OBJ VALUE, instance ", sInst,
                               ", method '", lNames, "': '",
                               ( "" if None==dObj else str(dObj) ), "', result record: ",   # mRes,
@@ -272,11 +336,14 @@ class CompareLogs:
                     if not self.bOptProblem:
                         self.lSat.append( lNames )
                         aResultThisInst[ "n_SAT" ] = 1
+                        aDetThis[ "stt" ] = self.mapStatShort[ 3 ]
                     else:                                        ## Assume it's an optimization problem????? TODO
                         self.lFeas.append( lNames )                   ## Append the optimal method list
                         aResultThisInst[ "n_FEAS" ] = 1
+                        aDetThis[ "stt" ] = self.mapStatShort[ 1 ]
                         if None==dObj or abs( dObj ) >= 1e45:
                             aResultThisInst[ "n_ErrorsLogical" ] += 1
+                            aDetThis [ "errL" ] += 1
                             print ( "  WARNING: feasible status but bad obj value, instance ", sInst,
                                     ", method '", lNames, "' :'",
                               ( "" if None==dObj else str(dObj) ), "', result record: ",  #  mRes,
@@ -287,17 +354,21 @@ class CompareLogs:
                 elif -1>=n_SolStatus and -3<=n_SolStatus:
                     self.lInfeas.append( lNames )
                     aResultThisInst[ "n_INFEAS" ] = 1
+                    aDetThis[ "stt" ] = self.mapStatShort[ n_SolStatus ]
                     self.mInfeas. setdefault( sInst, [] )
                     self.mInfeas[ sInst ].append( lNames )
                 ## Handle ERROR?
                 elif -4==n_SolStatus:
                     aResultThisInst[ "n_ErrorsBackend" ] = 1
+                    aDetThis [ "errH" ] += 1
+                    aDetThis[ "stt" ] = self.mapStatShort[ n_SolStatus ]   ## Should not happen TODO
                     self.mError. setdefault( sInst, [] ).append( lNames )
                     print( "ERROR REPORTED for the instance ", sInst, ", method '", lNames,
                             "',  result record: ",   ## mRes,
                             sep='', file=self.ioErrors )
                 else:
                     aResultThisInst[ "n_UNKNOWN" ] = 1
+                    aDetThis[ "stt" ] = self.mapStatShort[ 0 ]
                 ## Handle NOFZN
                 if None==dTime_Flt:
                     aResultThisInst[ "n_NOFZN" ] = 1
@@ -412,4 +483,25 @@ class CompareLogs:
                 + ":      the best DUAL BOUND   by " + str(dBetter) \
                 + "\n      DUAL BOUNDS AVAILABLE: " + strNL( "\n       ", self.lDualBnd))
       
-      
+    ###
+    ### Now print a table line summarizing the instance for different methods
+    ###
+    def doInstanceSummary( self, sInst ):
+        lIL = [ sInst[1] ]                            ## The short instance name
+        print( self.nInstCompared, ".\t", sInst[1], sep='', end='\t' )
+        for mLog, lN in self.lResLogs:                ## Select method and its name list
+            lNames = self.getMethodName(lN)
+            aDetThis = self.aDetThisInst[ lNames ]    ## Result table line section
+            if sInst[0] in mLog:
+                for hdr in self.hdrTable2P_spl:
+                    if hdr not in self.hdrTable:
+                        print( '?', end='\t' )
+                    elif aDetThis.get( hdr ) is None:
+                        print( "-", end='\t' )
+                    else:
+                        print( aDetThis.get(hdr), end='\t' )
+            else:
+                for hdr in self.hdrTable2P_spl:
+                    print( '-' if hdr in self.hdrTable else '?', end='\t' )
+        print( "" )                               ## Newline
+

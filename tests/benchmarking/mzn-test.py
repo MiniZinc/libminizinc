@@ -34,6 +34,7 @@ sFlnStderrBase = sDirResults + "/OUTPUTS/{}.stderr.txt"
 sFlnStatLog = sDirResults + "/STATS/stat_log__{}.txt"              ### The instance list name(s) will be inserted, if any
 
 sDZNOutputAgrs = "--output-mode dzn --output-objective"    ## The flattener arguments to produce DZN-compatible output facilitating solution checking
+                             ## Remove --output-objective in MZN Release <=2.1.7
 sFlatOptChecker = "--allow-multiple-assignments"
 
 s_UsageExamples = ( 
@@ -455,6 +456,7 @@ class MZT_Param:
             if None!=self.args.tCheck:
                 self.chkBEs[-1]["EXE"]["n_TimeoutRealHard"][0] = self.args.tCheck
             print ( "     CHK_CFG: ", json.dumps( self.chkBEs[-1]["EXE"] ) )
+        print( "" )
         ### SAVE THE SOLVER BACKEND
         if None!=self.args.saveSolverCfg:
             with utils.openFile_autoDir( self.args.saveSolverCfg, 'w' ) as wf:
@@ -491,19 +493,17 @@ class MZT_Param:
 ##############################################################################################
 class MznTest:
 
-    ## Produce a string identifying the instance which is given as a string of the instance files
-    ## By default, keeps paths and file extensions
+    ## Produce a pair: first, a string identifying the instance which is given as a string of the instance files
+    ## Second, same without paths and file extensions for short printing
     ## the elements are sorted according to the extensions list, then alphabetically
-    def getIName( self, s_Inst, fFullPaths=True, fKeepExt=True ):
+    def getIName( self, s_Inst ):
         lId = s_Inst.split()     ## list of instance files
-        if not fFullPaths:
-            lId = [ basename( fln ) for fln in lId ];
         lExt = self.params.cfg["COMMON_OPTIONS"]["Instance_List"]["InstanceFileExt"]
         lId = sorted( lId, key = lambda nm:
-                ( lExt.index( os.path.splitext(nm)[1] ) if os.path.splitext(nm)[1] in lExt else len(lExt), nm ) )
-        if not fKeepExt:
-            lId = [ os.path.splitext( fln )[0] for fln in lId ];
-        return ' '.join(lId);
+                ( lExt.index( os.path.splitext(nm)[1] ) \
+                        if os.path.splitext(nm)[1] in lExt else len(lExt), os.path.basename( nm ) ) )
+        lId2 = [ os.path.splitext( os.path.basename( fln ) )[0] for fln in lId ];
+        return ' '.join(lId), ' '.join(lId2);
 
     def obtainParams( self ):
         self.params.obtainParams()
@@ -524,6 +524,10 @@ class MznTest:
         ## Even if -l used, take the pos args
         if 0<len( self.params.args.instanceFiles ):
             self.params.instList.append( " ".join( self.params.args.instanceFiles ) )
+        ## Mode "compare only" if (comparison lists and not run option) or no instances
+        self.bCmpOnly = True if (not self.params.args.runAndCmp and ( \
+                self.params.args.compare is not None and 0<len(self.params.args.compare))) or \
+              0==len( self.params.args.l_InstLists ) else False
         ## If -l used, compile the inst list files
         if None!=self.params.args.l_InstLists and 0<len( self.params.args.l_InstLists ):
             for sFln in self.params.args.l_InstLists:
@@ -547,9 +551,6 @@ class MznTest:
         cmpFileList = []
         if None!=self.params.args.compare:     ### If -c used
             cmpFileList += self.params.args.compare
-        ## Mode "compare only" if explicit or no instances
-        self.bCmpOnly = True if not self.params.args.runAndCmp or \
-              0==len( self.params.instList ) else False
         ### If -l used, interpret pos arguments as comparison logs
         if None!=self.params.args.l_InstLists and 0<len( self.params.args.l_InstLists ):
             cmpFileList += self.params.args.instanceFiles
@@ -563,7 +564,7 @@ class MznTest:
                     if None==chJ:
                         break
                     try:
-                        logCurrent[ self.getIName( chJ["Inst_Files"] ) ] = chJ
+                        logCurrent[ self.getIName( chJ["Inst_Files"] )[0] ] = chJ
                         if "TEST_NAME" in chJ:
                             lLogNames[1] = chJ[ "TEST_NAME" ]
                             print( "  TEST NAME: '", chJ[ "TEST_NAME" ],
@@ -598,7 +599,7 @@ class MznTest:
             self.saveSolution( self.fileSol )
             ## Ranking:
             sSet_Inst = self.getIName( self.result["Inst_Files"] )
-            logCurrent[ sSet_Inst ] = self.result
+            logCurrent[ sSet_Inst[0] ] = self.result
             try:
                 self.cmpRes.compareInstance( sSet_Inst )
                 if i_Inst < len(self.params.instList)-1:
@@ -610,12 +611,12 @@ class MznTest:
 
     def compareLogs(self):
         self.cmpRes.initListComparison()
-        theList = [ self.getIName( lfn ) for lfn in self.params.instList ]
+        theList = [ lfn for lfn in self.params.instList ]
         if 0==len( theList ):
             theList = self.cmpRes.getInstanceUnion()
         for sInst in theList:
             try:
-                self.cmpRes.compareInstance( sInst )
+                self.cmpRes.compareInstance( self.getIName( sInst ) )
             except:
                 print( "  ------  WARNING: failed to compare/rank instance. ",  )
                 traceback.print_exc()
