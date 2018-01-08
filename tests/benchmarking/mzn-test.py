@@ -21,7 +21,7 @@ import utils, json_config, json_log, mzn_exec, cmp_result_logs
 from json_config import s_CommentKey, s_AddKey
 
 s_ProgramDescr = 'MiniZinc testing automation. (c) 2018 Monash University, gleb.belov@monash.edu'
-s_ProgramDescrLong = ( "Allows checking of MiniZinc solutions by configurable checker profiles. The solutions can be input or produced by a chosen solver profile, for 1 or several instances, with result comparison and (TODO) ranking.")
+s_ProgramDescrLong = ( "Allows checking of MiniZinc solutions by configurable checker profiles. The solutions can be input from previous logs or produced by a chosen solver profile, for 1 or several instances, with result comparison and (TODO) ranking. New solutions' summary logs, detailed stdout/err outputs, and statistics are saved in subfolder mzn-test/LOGS, /OUTPUTS, and /STATS, resp.")
 
 ###########################   GENERAL CONFIG. Could be in the JSON config actually    #########################
 sDirResults = "mzn-test"
@@ -39,9 +39,9 @@ sFlatOptChecker = "--allow-multiple-assignments"
 
 s_UsageExamples = ( 
     "\nUSAGE EXAMPLES:"
-    "\n(1)  \"mzn-test.py model.mzn data.dzn [--checkDZN stdout.txt [--checkStderr stderr.txt]] [--chkPrf MINIZINC-CHK --chkPrf FZN-GECODE-CHK] [--tCheck 15]\"                  ::: check the instance's solutions, optionally reading them from a DZN-formatted file (otherwise solving first), optionally overriding default checker list etc."
-    "\n(2)  \"mzn-test.py --slvPrf MZN-CPLEX -t 300 -l instList1.txt -l instList2.txt --name ChuffedTest_003 --result newLog00.json prevLog1.json prevLog2.json --failed failLog.json\""
-    "             ::: solve instances using the specified solver profile and wall time limit 300 seconds. The instances are taken from the list files. The test is aliased ChuffedTest_003. Results are saved to newLog00.json and compared/ranked to those in prevLog's. (Probably) incorrect solutions are saved to failLog.json."
+    "\n(1)  \"mzn-test.py model.mzn data.dzn [--checkDZN stdout.txt [--checkStderr stderr.txt]] [--chkPrf MINIZINC-CHK --chkPrf FZN-GECODE-CHK] [--tCheck 15] [--addSolverOption \"--fzn-flags '-D fPureCircuit=true'\"]\"                  ::: check the instance's solutions, optionally reading them from a DZN-formatted file (otherwise solving first), optionally overriding default checker list etc."
+    "\n(2)  \"mzn-test.py --slvPrf MZN-CPLEX -t 300 -l instList1.txt -l instList2.txt --name CPLEXTest_003 --result newLog00.json prevLog1.json prevLog2.json --failed failLog.json\""
+    "             ::: solve instances using the specified solver profile and wall time limit 300 seconds. The instances are taken from the list files. The test is aliased CPLEXTest_003. Results are saved to newLog00.json and compared/ranked to those in prevLog's. (Probably) incorrect solutions are saved to failLog.json."
     "\n(3)  \"mzn-test.py [-l instList1.txt] -c prevLog1.json -c prevLog2.json [--runAndCmp]\"                  ::: compare existing logs, optionally limited to the given instances, optionally running new tests. USE SINGLE QUOTES ONLY INSIDE ARGUMENTS PASSED TO THE BACKENDS when running backends through shell."
   )
 ##############################################################################################
@@ -54,21 +54,14 @@ class MZT_Param:
           epilog=s_UsageExamples)
         parser.add_argument('instanceFiles', nargs='*', metavar='<instanceFile>',
           help='model instance files, if no instance lists supplied, otherwise existing solution logs to compare with')
-        parser.add_argument('--checkDZN', '--checkStdout', metavar='<stdout_file>',
-                            help='check DZN-formatted solutions from a solver\'s <stdout_file>. The DZN format is produced, e.g., if the model is flattened with \'' + sDZNOutputAgrs + '\'')
-        parser.add_argument('--checkStderr', metavar='<stderr_file>',
-                            help='for checking, read a solver\'s stderr log from <stderr_file> (not essential)')
         parser.add_argument('-l', '--instanceList', dest='l_InstLists', action='append', metavar='<instanceListFile>',
             help='file with a list of instance input files, one instance per line,'
-              ' instance file types specified in config')
+              ' instance file types specified in config. Used for running tests or for instance selection in comparison mode')
+        parser.add_argument('--name', '--testName', metavar='<string>', help='alias of this test run, defaults to result log file name')
+        parser.add_argument('-c', '--compare', action="append", metavar='<logfile>',
+                            help='summarize and compare results to existing <logfile>. Only compares the logs and does not run tests, unless --runAndCmp. The flags -c can be omitted if -l is used')
         parser.add_argument('--runAndCmp', '--runAndCompare', '--run', action='store_true',
                             help='even if other logs are provided by -c, do run the tests and compare')
-        parser.add_argument('--chkPrf', '--checkerPrf', '--checkerProfile', metavar='<prf_name>', action='append',
-                            help='checker profile from those defined in config section \"CHECKER_PROFILES\", can be a few')
-        parser.add_argument('--tCheck',
-                            type=float,
-                            metavar='<sec>', help='checker backend wall-time limit, default: '+
-                              str(self.cfgDefault["BACKEND_DEFS"]["__BE_CHECKER"]["EXE"]["n_TimeoutRealHard"][0]))
         parser.add_argument('--slvPrf', '--solverPrf', '--solverProfile', metavar='<prf_name>',
                             help='solver profile from those defined in config section \"SOLVER_PROFILES\"')
         parser.add_argument('--solver', '--solverCall', metavar='"<exe+flags or shell command(s) if --shellSolve 1>"',
@@ -79,19 +72,15 @@ class MZT_Param:
                             type=float,
                             metavar='<sec>', help='solver backend wall-time limit, default: '+
                               str(self.cfgDefault["BACKEND_DEFS"]["__BE_SOLVER"]["EXE"]["n_TimeoutRealHard"][0]))
-        parser.add_argument('-v', '--verbose', dest='verbose', action='store_true', help='tee backend\'s stderr to screen, in addition to the instance\'s logfile')
-        parser.add_argument('--vc', '--verbose-check', dest='vc', action='store_true', help='same for checking')
-     ## parser.add_argument('--no-feature', dest='feature', action='store_false')
-     ## parser.set_defaults(feature=True)
-        parser.add_argument('--print-call', dest='printcall', action='store_true', help='print final command line when running through os.system()')
-        parser.add_argument('--shellSolve', type=int, metavar='0/1', help='backend call through shell when using psutils`')
-        parser.add_argument('--psutils', type=int, metavar='0/1', help='backend call through psutils (seems buggy in 3.4.2)')
         parser.add_argument('--result', default=sFlnSolCheckBase, metavar='<file>',
                             help='save result log to <file>, default: \''+sFlnSolCheckBase+'\'')
-        parser.add_argument('--name', '--testName', metavar='<string>', help='name of this test run, defaults to result log file name')
-        parser.add_argument('--failed', ## default=self.cfgDefault["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0],
-                            metavar='<file>', help='save failed check reports to <file>, default: \''+
-                              self.cfgDefault["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0]+'\'')
+        parser.add_argument('--resultUnchk', default=sFlnSolUnchk, metavar='<file>', help='save unchecked result log to <file>')
+        parser.add_argument('--chkPrf', '--checkerPrf', '--checkerProfile', metavar='<prf_name>', action='append',
+                            help='checker profile from those defined in config section \"CHECKER_PROFILES\", can be a few')
+        parser.add_argument('--tCheck',
+                            type=float,
+                            metavar='<sec>', help='checker backend wall-time limit, default: '+
+                              str(self.cfgDefault["BACKEND_DEFS"]["__BE_CHECKER"]["EXE"]["n_TimeoutRealHard"][0]))
         parser.add_argument('--nCheckMax', '--nCheck', '--nCheckedMax', ## default=self.cfgDefault["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0],
                             type=int,
                             metavar='<N>', help='max number of solutions checked per instance.'
@@ -101,9 +90,20 @@ class MZT_Param:
                             type=int,
                             metavar='<N>', help='max number of failed solution reports saved per instance, default: '+
                               str(self.cfgDefault["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["n_FailedSaveMax"][0]))
-        parser.add_argument('--resultUnchk', default=sFlnSolUnchk, metavar='<file>', help='save unchecked result log to <file>')
-        parser.add_argument('-c', '--compare', action="append", metavar='<file>',
-                            help='compare results to existing <file>. This flag can be omitted if -l is used')
+        parser.add_argument('--failed', ## default=self.cfgDefault["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0],
+                            metavar='<file>', help='save failed check reports to <file>, default: \''+
+                              self.cfgDefault["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0]+'\'')
+        parser.add_argument('--checkDZN', '--checkStdout', metavar='<stdout_file>',
+                            help='for a single instance, check DZN-formatted solutions from a solver\'s std output dumped to <stdout_file>. The DZN format is produced, e.g., if the model is flattened with \'' + sDZNOutputAgrs + '\'')
+        parser.add_argument('--checkStderr', metavar='<stderr_file>',
+                            help='with --checkDZN, read a solver\'s stderr log from <stderr_file> (not essential)')
+        parser.add_argument('-v', '--verbose', dest='verbose', action='store_true', help='tee backend\'s stderr to screen, in addition to the instance\'s output dumpfile in mzn-test/OUTPUTS. Only works for --shellSolve 1')
+        parser.add_argument('--vc', '--verbose-check', dest='vc', action='store_true', help='same for checking')
+     ## parser.add_argument('--no-feature', dest='feature', action='store_false')
+     ## parser.set_defaults(feature=True)
+        parser.add_argument('--debug', '--printcall', type=int, metavar='<bitfield>', help='bit 1: print full solver call commands, bit 2: same for checker')
+        parser.add_argument('--shellSolve', type=int, metavar='0/1', help='backend call through shell when using psutils')
+        parser.add_argument('--psutils', type=int, metavar='0/1', help='backend call through psutils (seems buggy in 3.4.2)')
         ## parser.add_argument('--fullPaths', action='store_true',
         ##                    help='use full paths in instance identifiers. By default, it\'s the pure base filenames')
         
@@ -116,7 +116,6 @@ class MZT_Param:
         parser.add_argument('--addCheckerOption', action="append", metavar='<text>', type=str, help='add <text> to a checker call')
         parser.add_argument('--useJoinedName', action="append", metavar='<...%s...>', type=str, help='add this to the call, with %%s being replaced by'
                             ' a joined filename from all the input filenames, e.g., "--writeModel MODELS/%%s.mps"')
-        parser.add_argument('--debug', type=int, help='bit 1: print full solver call commands, bit 2: same for checker')
         self.args = parser.parse_args()
         # print( "ARGS:\n", self.args )
         ## Solver backend and checker backend list
