@@ -507,14 +507,6 @@ class MznTest:
 
     def obtainParams( self ):
         self.params.obtainParams()
-        ## TRUNCATING files first, then "a" - better on Win??
-        sNow = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
-        self.sStartTime = sNow
-        self.fileSol00 = utils.openFile_autoDir( self.params.args.resultUnchk, "w" )
-        self.fileSol = utils.openFile_autoDir(self.params.args.result.format(sNow + 
-          ("" if self.params.args.name is None else "__"+utils.flnfy(self.params.args.name))), "w" )
-        self.fileFailName = self.params.cfg["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0].format(sNow)
-        self.fileFail = None      ## Not opening yet
 
     ## If an instance was specified in cmdline, or model list(s) supplied
     def compileExplicitModelLists(self):
@@ -580,6 +572,14 @@ class MznTest:
         logCurrent, lLogNames = self.cmpRes.addLog( self.params.args.result )
         if self.params.sThisName!=lLogNames[0]:
             lLogNames[1] = self.params.sThisName
+        ## TRUNCATING files first, then "a" - better on Win??
+        sNow = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
+        self.sStartTime = sNow
+        self.fileSol00 = utils.openFile_autoDir( self.params.args.resultUnchk, "w" )
+        self.fileSol = utils.openFile_autoDir(self.params.args.result.format(sNow + 
+          ("" if self.params.args.name is None else "__"+utils.flnfy(self.params.args.name))), "w" )
+        self.fileFailName = self.params.cfg["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0].format(sNow)
+        self.fileFail = None      ## Not opening yet
         self.nCheckedInstances = 0
         self.nChecksFailed = 0
         self.cmpRes.initListComparison()
