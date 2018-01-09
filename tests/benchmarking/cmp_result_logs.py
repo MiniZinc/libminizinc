@@ -219,7 +219,7 @@ class CompareLogs:
 ###############################################################################################
     def initInstanceComparison( self, sInst ):
         self.lOpt, self.lSatAll, self.lFeas, self.lSat, self.lInfeas = [], [], [], [], []
-        self.mOptVal, self.lOptVal, self.lPrimBnd, self.lDualBnd = {}, [], [], []
+        self.mOptVal, self.lOptVal, self.lPrimBnd, self.lDualBnd = OrderedDict(), [], [], []
         self.nInstCompared += 1
         self.nReported = 0               ## How many methods reported for this instances
         ## Detailed table line for this instance 
@@ -394,7 +394,7 @@ class CompareLogs:
             self.nContrOptVal += 1
             self.fContr = True
             print( "CONTRADICTION of OPTIMAL VALUES: " + str(sInst) + \
-              ": " + strNL( "\n       ", self.mOptVal), file=self.ioContrOptVal )
+              ": " + strNL( "\n       ", self.mOptVal.items()), file=self.ioContrOptVal )
         self.nOptSense=0;      ## Take as SAT by default
         if len(self.lPrimBnd)>0 and len(self.lDualBnd)>0 and len(self.lOpt)<self.nReported:
             lKeysP, lValP = zip(*self.lPrimBnd)
