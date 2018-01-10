@@ -40,8 +40,10 @@ predicate aux_int_le_zero_if_0(var int: x, var int: p) =
     aux_int_le_zero_if_0__IND(x, p)
   else
     let {
-      set of int: sDomNonPos = dom(x) intersect -1000000000..0,
-      int: nMaxNonPosUB = if card(sDomNonPos)>0 then max( sDomNonPos ) else -1000000001 endif, 
+      set of int: sDomNonPos = dom(x) intersect -infinity..0,
+      constraint assert( card( sDomNonPos ) > 0,
+        "Variable \(x): dom(x) = \(dom(x)), dom(x) intersect -inf..0: \(sDomNonPos)\n" ),
+      int: nMaxNonPosUB = max( sDomNonPos ), 
     } in
       x <= nMaxNonPosUB + (ub(x) - nMaxNonPosUB) * p
   endif;
