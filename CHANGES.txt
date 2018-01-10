@@ -5,6 +5,38 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.1.7
+=============
+
+Changes:
+ - Improved linearisation for some element constraints.
+ - Improve performance of optimisation phase by using a queue instead of a
+   stack.
+ - Add --dll option for Gurobi backend to specify the Gurobi DLL to load.
+ - Add more defines_var annotations.
+
+Bug fixes:
+ - Fix generation of variable names in output model (sometimes could contain
+   duplicates).
+ - Fix enum type inference for array literals with empty sets as their first
+   arguments. Fixes #180.
+ - Fix incorrect simplification of float domain constraints. Fixes #159.
+ - Fix ceil builtin for float values.
+ - Add superset decomposition for solvers that do not support set variables.
+ - Fix three bugs in the garbage collector.
+ - Fix a bug in flattening that would create duplicate variables when a
+   variable declaration referred to another one in its type-inst.
+ - Fix a crash in flattening of partial functions. Fixes #187.
+ - Add missing deopt builtins for all par types.
+ - Fix output for arrays of sets of enums.
+ - Define more functions on par opt types. Fixes #188.
+ - Fix type checker to accept arrays of opt set values.
+ - Support printing of opt enum types. Fixes #189.
+ - Fix evaluation of comprehensions in recursive functions.
+ - Fix output of Gurobi backend when used in conjunction with solns2out.
+ - Fix pthread linking for mzn-cbc.
+ - Catch type error when set literal is declared that contains another set.
+
 Version 2.1.6
 =============
 
