@@ -35,6 +35,7 @@ Bug fixes:
  - Fix evaluation of comprehensions in recursive functions.
  - Fix output of Gurobi backend when used in conjunction with solns2out.
  - Fix pthread linking for mzn-cbc.
+ - Catch type error when set literal is declared that contains another set.
 
 Version 2.1.6
 =============
