@@ -8,6 +8,14 @@ predicate alldifferent_except_0(array[int] of var int: vs) =
 %    );
     if length(vs)<=1 then true
     else
+      forall(d in lb_array(vs)..ub_array(vs) diff {0})(
+        sum(i in index_set(vs))( vs[i]==d ) <= 1
+      )
+    endif;
+
+predicate alldifferent_except_0__eq_encode(array[int] of var int: vs) = 
+    if length(vs)<=1 then true
+    else
     let {
         array[int,int] of var 0..1: x_eq_d = eq_encode(vs)
     } in (
@@ -15,3 +23,4 @@ predicate alldifferent_except_0(array[int] of var int: vs) =
         forall(d in index_set_2of2(x_eq_d) diff {0})( sum(i in index_set_1of2(x_eq_d))( x_eq_d[i,d] ) <= 1 )
     )
     endif;
+
