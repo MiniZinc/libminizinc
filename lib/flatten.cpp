@@ -262,7 +262,7 @@ namespace MiniZinc {
       {
         VarDeclI* vd = i->cast<VarDeclI>();
         toAnnotate = vd->e()->e();
-        vo.add(vd, _flat->size()-1);
+        vo.add_idx(vd, _flat->size()-1);
         toAdd = vd->e();
         break;
       }
@@ -903,6 +903,37 @@ namespace MiniZinc {
       }
     }
     return true;
+  }
+  
+  Expression* createDummyValue(EnvI& env, const Type& t) {
+    if (t.dim()>0) {
+      Expression* ret = new ArrayLit(Location().introduce(), std::vector<Expression*>());
+      Type ret_t = t;
+      ret_t.ti(Type::TI_PAR);
+      ret->type(ret_t);
+      return ret;
+    }
+    if (t.st()==Type::ST_SET) {
+      Expression* ret = new SetLit(Location().introduce(), std::vector<Expression*>());
+      Type ret_t = t;
+      ret_t.ti(Type::TI_PAR);
+      ret->type(ret_t);
+      return ret;
+    }
+    switch (t.bt()) {
+      case Type::BT_INT:
+        return IntLit::a(0);
+      case Type::BT_BOOL:
+        return constants().boollit(false);
+      case Type::BT_FLOAT:
+        return FloatLit::a(0);
+      case Type::BT_STRING:
+        return new StringLit(Location().introduce(), "");
+      case Type::BT_ANN:
+        return constants().ann.promise_total;
+      default:
+        return NULL;
+    }
   }
   
   KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
@@ -3032,6 +3063,7 @@ namespace MiniZinc {
         ret.r = bind(env,ctx,r,eval_par(env,e));
         ret.b = bind(env,Ctx(),b,constants().lit_true);
       } catch (ResultUndefinedError&) {
+        ret.r = createDummyValue(env, e->type());
         ret.b = bind(env,Ctx(),b,constants().lit_false);
       }
       return ret;
@@ -4980,6 +5012,7 @@ namespace MiniZinc {
                   ret.r = bind(env,ctx,r,eval_par(env,cr_c));
                   ret.b = conj(env,b,Ctx(),args_ee);
                 } catch (ResultUndefinedError&) {
+                  ret.r = createDummyValue(env, cr_c->type());
                   ret.b = bind(env,Ctx(),b,constants().lit_false);
                   return ret;
                 }
@@ -5308,15 +5341,18 @@ namespace MiniZinc {
         onlyRangeDomains = eval_bool(e.envi(), check_only_range);
       }
       
-      class ExpandArrayDecls : public ItemVisitor {
+      bool hadSolveItem = false;
+      // Flatten main model
+      class FV : public ItemVisitor {
       public:
         EnvI& env;
-        ExpandArrayDecls(EnvI& env0) : env(env0) {}
+        bool& hadSolveItem;
+        FV(EnvI& env0, bool& hadSolveItem0) : env(env0), hadSolveItem(hadSolveItem0) {}
+        bool enter(Item* i) {
+          return !(i->isa<ConstraintI>()  && env.failed());
+        }
         void vVarDeclI(VarDeclI* v) {
-          if (v->e()->type().isvar() && v->e()->type().dim() > 0 && v->e()->e() == NULL) {
-            (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
-          }
-          if (v->e()->type().ispar() && v->e()->type().dim() > 0 && v->e()->ti()->domain()==NULL
+          if (v->e()->type().ispar() && !v->e()->type().isopt() && v->e()->type().dim() > 0 && v->e()->ti()->domain()==NULL
               && (v->e()->type().bt()==Type::BT_INT || v->e()->type().bt()==Type::BT_FLOAT)) {
             // Compute bounds for array literals
             GCLock lock;
@@ -5345,21 +5381,6 @@ namespace MiniZinc {
               v->e()->ti()->setComputedDomain(true);
             }
           }
-        }
-      } _ead(env);
-      iterItems<ExpandArrayDecls>(_ead,e.model());;
-      
-      bool hadSolveItem = false;
-      // Flatten main model
-      class FV : public ItemVisitor {
-      public:
-        EnvI& env;
-        bool& hadSolveItem;
-        FV(EnvI& env0, bool& hadSolveItem0) : env(env0), hadSolveItem(hadSolveItem0) {}
-        bool enter(Item* i) {
-          return !(i->isa<ConstraintI>()  && env.failed());
-        }
-        void vVarDeclI(VarDeclI* v) {
           if (v->e()->type().isvar() || v->e()->type().isann()) {
             (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
           } else {
@@ -5692,6 +5713,13 @@ namespace MiniZinc {
                     nc->type(Type::varbool());
                     nc->decl(array_bool_and);
                   }
+                } else if (isTrueVar && c->id() == constants().ids.clause && array_bool_clause) {
+                  std::vector<Expression*> args(2);
+                  args[0] = c->args()[0];
+                  args[1] = c->args()[1];
+                  nc = new Call(c->loc().introduce(),array_bool_clause->id(),args);
+                  nc->type(Type::varbool());
+                  nc->decl(array_bool_clause);
                 } else if (c->id() == constants().ids.clause && array_bool_clause_reif) {
                   std::vector<Expression*> args(3);
                   args[0] = c->args()[0];
@@ -5734,6 +5762,10 @@ namespace MiniZinc {
                   CollectDecls cd(env.vo,deletedVarDecls,vdi);
                   topDown(cd,c);
                   vd->e(NULL);
+                  /// TODO: check if removing variables here makes sense:
+//                  if (!isOutput(vd) && env.vo.occurrences(vd)==0) {
+//                    removedItems.push_back(vdi);
+//                  }
                   if (nc != c) {
                     vd->addAnnotation(constants().ann.is_defined_var);
                     nc->addAnnotation(definesVarAnn(vd->id()));

@@ -353,6 +353,9 @@ predicate array_var_float_element(var int: i00, array[int] of var float: a,
           z <= maxUB /\
     if is_fixed(i00) then z==a[fix(i00)]
     elseif minLB==maxUB then true
+    elseif {0,1}==dom(i00) /*ub(i00)-lb(i00)==1*/ /*2==card( dom( i00 ) )*/ then
+      aux_float_eq_if_1(z, a[lb(i00)], (ub(i00)-i00)) /\
+      aux_float_eq_if_1(z, a[ub(i00)], (i00-lb(i00)))
     else
       let {
         array[int] of var int: p = eq_encode(i00),
@@ -427,33 +430,6 @@ predicate array_var_float_element__XBZ_lb(array[int] of var float: x, array[int]
 
 %-----------------------------------------------------------------------------%
 % Set constraints
-
-predicate array_var_set_element(var int: x, array[int] of var set of int: y, var set of int: z) =
-%  let {
-%    int: yLB = min([min(ub[i]]),
-%  } in
-  forall (k in ub(z)) (
-    if k in array_union(y) then
-      set2bools(z)[k] == 
-        [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in index_set(y) ][x]
-    else
-      set2bools(z)[k] == false
-    endif
-  );
-
-predicate array_set_element(var int: x, array[int] of set of int: y, var set of int: z) =
-%  let {
-%    int: yLB = min([min(ub[i]]),
-%  } in
-  forall (k in ub(z)) (
-    if k in array_union(y) then
-      set2bools(z)[k] == 
-        [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in index_set(y) ][x]
-    else
-      set2bools(z)[k] == false
-    endif
-  );
-
 %% ----------------------------------------------- (NO) SETS ----------------------------------------------
 % XXX  only for a fixed set here,  general see below.
 % Normally not called because all plugged into the domain.

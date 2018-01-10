@@ -489,19 +489,25 @@ namespace MiniZinc {
     }
     
     bool fixPrev = false;
+    WeakRef* prevWr = NULL;
     for (WeakRef* wr = _weakRefs; wr != NULL; wr = wr->next()) {
       if (fixPrev) {
         fixPrev = false;
-        WeakRef* p = wr->_p;
-        removeWeakRef(p);
-        p->_n = p;
-        p->_p = p;
+        removeWeakRef(prevWr);
+        prevWr->_n = NULL;
+        prevWr->_p = NULL;
       }
       if ((*wr)() && (*wr)()->_gc_mark==0) {
         wr->_e = NULL;
         wr->_valid = false;
         fixPrev = true;
+        prevWr = wr;
       }
+    }
+    if (fixPrev) {
+      removeWeakRef(prevWr);
+      prevWr->_n = NULL;
+      prevWr->_p = NULL;
     }
     
     for (ASTNodeWeakMap* wr = _nodeWeakMaps; wr != NULL; wr = wr->next()) {
@@ -768,7 +774,7 @@ namespace MiniZinc {
       GC::gc()->addWeakRef(this);
   }
   WeakRef::~WeakRef(void) {
-    if ((_e && !_e->isUnboxedInt()) || !_valid)
+    if (_e && !_e->isUnboxedInt())
       GC::gc()->removeWeakRef(this);
   }
   WeakRef::WeakRef(const WeakRef& e) : _e(e()), _p(NULL), _n(NULL), _valid(true) {
@@ -777,17 +783,22 @@ namespace MiniZinc {
   }
   WeakRef&
   WeakRef::operator =(const WeakRef& e) {
-    if ((_e && !_e->isUnboxedInt()) || !_valid) {
+    // Test if this WeakRef is currently active in the GC
+    bool isActive = (_e && !_e->isUnboxedInt());
+    if (isActive) {
+      // Yes, active WeakRef.
+      // If after assigning WeakRef should be inactive, remove it.
       if (e()==NULL || e()->isUnboxedInt()) {
         GC::gc()->removeWeakRef(this);
         _n = _p = NULL;
       }
-    } else {
-      if (e()!=NULL && !e()->isUnboxedInt())
-        GC::gc()->addWeakRef(this);
     }
     _e = e();
     _valid = true;
+    
+    // If this WeakRef was not active but now should be, add it
+    if (!isActive && _e!=NULL && !_e->isUnboxedInt())
+      GC::gc()->addWeakRef(this);
     return *this;
   }
 

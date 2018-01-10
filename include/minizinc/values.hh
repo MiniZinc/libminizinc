@@ -21,6 +21,7 @@
 #include <vector>
 #include <string>
 #include <limits.h>
+#include <cmath>
 
 namespace MiniZinc {
   class IntVal;

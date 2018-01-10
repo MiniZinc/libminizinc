@@ -100,6 +100,8 @@ namespace MiniZinc {
                 IntVal i, KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
     {
       GCLock lock;
+      GC::mark();
+      e->decl(gen,id)->trail();
       e->decl(gen,id)->e(IntLit::a(i));
     }
     CallStackItem csi(env, e->decl(gen,id)->id(), i);
@@ -133,14 +135,18 @@ namespace MiniZinc {
     } else {
       eval_comp_set<Eval>(env, eval,e,gen,id+1,in,a);
     }
+    GC::untrail();
+    e->decl(gen,id)->flat(NULL);
   }
 
   template<class Eval>
   void
   eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id,
                   IntVal i, KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
-    ArrayLit* al = in()->cast<ArrayLit>();
+    GC::mark();
+    e->decl(gen,id)->trail();
     CallStackItem csi(env, e->decl(gen,id)->id(), i);
+    ArrayLit* al = in()->cast<ArrayLit>();
     e->decl(gen,id)->e(al->v()[i.toInt()]);
     e->rehash();
     if (id == e->n_decls(gen)-1) {
@@ -173,7 +179,7 @@ namespace MiniZinc {
     } else {
       eval_comp_array<Eval>(env, eval,e,gen,id+1,in,a);
     }
-    e->decl(gen,id)->e(NULL);
+    GC::untrail();
     e->decl(gen,id)->flat(NULL);
   }
 

@@ -19,6 +19,7 @@
 #include <ctime>
 #include <memory>
 #include <iomanip>
+#include <unordered_map>
 
 #include <minizinc/model.hh>
 #include <minizinc/parser.hh>
@@ -44,7 +45,7 @@ namespace MiniZinc {
     Model* pOutput=0;
 
     typedef std::pair<VarDecl*, KeepAlive> DE;
-    ASTStringMap<DE>::t declmap;
+    std::unordered_map<std::string, DE> declmap;
     Expression* outputExpr = NULL;
     bool fNewSol2Print = false;     // should be set for evalOutput to work
     

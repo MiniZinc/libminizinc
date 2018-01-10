@@ -27,7 +27,7 @@ endif()
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 1)
-set (libminizinc_VERSION_PATCH 6)
+set (libminizinc_VERSION_PATCH 7)
 
 if (ADDITIONAL_DATE_STRING)
   set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
@@ -556,7 +556,7 @@ if(HAS_OSICBC)  # Tested version 2.9.8. Use svn to get the latest /stable snapsh
 
                                        # OSICBC_LINKEXTRAS: ArchLinux needs blas, lapack, bz2
   target_link_libraries(minizinc_osicbc minizinc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
-  target_link_libraries(mzn-cbc minizinc_osicbc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
+  target_link_libraries(mzn-cbc minizinc_osicbc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS} ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_osicbc mzn-cbc
     RUNTIME DESTINATION bin

@@ -19,14 +19,15 @@
 #include <minizinc/optimize_constraints.hh>
 
 #include <vector>
+#include <deque>
 
 namespace MiniZinc {
 
-  void VarOccurrences::add(VarDeclI *i, int idx_i)
+  void VarOccurrences::add_idx(VarDeclI *i, int idx_i)
   {
     idx.insert(i->e()->id(), idx_i);
   }
-  void VarOccurrences::add(VarDecl *e, int idx_i)
+  void VarOccurrences::add_idx(VarDecl *e, int idx_i)
   {
     assert(find(e) == -1);
     idx.insert(e->id(), idx_i);
@@ -208,10 +209,10 @@ namespace MiniZinc {
       
       // If both variables are output variables, unify them in the output model
       if (isOutput(id0->decl())) {
-        assert(env.output_vo.find(id0->decl()) != -1);
-        VarDecl* id0_output = (*env.output)[env.output_vo.find(id0->decl())]->cast<VarDeclI>()->e();
-        assert(env.output_vo.find(id1->decl()) != -1);
-        VarDecl* id1_output = (*env.output)[env.output_vo.find(id1->decl())]->cast<VarDeclI>()->e();
+        assert(env.output_vo_flat.find(id0->decl()) != -1);
+        VarDecl* id0_output = (*env.output)[env.output_vo_flat.find(id0->decl())]->cast<VarDeclI>()->e();
+        assert(env.output_vo_flat.find(id1->decl()) != -1);
+        VarDecl* id1_output = (*env.output)[env.output_vo_flat.find(id1->decl())]->cast<VarDeclI>()->e();
         if (id0_output->e() == NULL) {
           id0_output->e(id1_output->id());
         }
@@ -223,27 +224,27 @@ namespace MiniZinc {
   
   void substituteFixedVars(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarDecls);
   void simplifyBoolConstraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
-                              std::vector<int>& vardeclQueue,
-                              std::vector<Item*>& constraintQueue,
+                              std::deque<int>& vardeclQueue,
+                              std::deque<Item*>& constraintQueue,
                               std::vector<Item*>& toRemove,
                               UNORDERED_NAMESPACE::unordered_map<Expression*, int>& nonFixedLiteralCount);
 
   bool simplifyConstraint(EnvI& env, Item* ii,
                           std::vector<VarDecl*>& deletedVarDecls,
-                          std::vector<Item*>& constraintQueue,
-                          std::vector<int>& vardeclQueue);
+                          std::deque<Item*>& constraintQueue,
+                          std::deque<int>& vardeclQueue);
   
-  void pushVarDecl(EnvI& env, VarDeclI* vdi, int vd_idx, std::vector<int>& q) {
+  void pushVarDecl(EnvI& env, VarDeclI* vdi, int vd_idx, std::deque<int>& q) {
     if (!vdi->removed() && !vdi->flag()) {
       vdi->flag(true);
       q.push_back(vd_idx);
     }
   }
-  void pushVarDecl(EnvI& env, int vd_idx, std::vector<int>& q) {
+  void pushVarDecl(EnvI& env, int vd_idx, std::deque<int>& q) {
     pushVarDecl(env, (*env.flat())[vd_idx]->cast<VarDeclI>(), vd_idx, q);
   }
   
-  void pushDependentConstraints(EnvI& env, Id* id, std::vector<Item*>& q) {
+  void pushDependentConstraints(EnvI& env, Id* id, std::deque<Item*>& q) {
     IdMap<VarOccurrences::Items>::iterator it = env.vo._m.find(id->decl()->id());
     if (it != env.vo._m.end()) {
       for (VarOccurrences::Items::iterator item = it->second.begin(); item != it->second.end(); ++item) {
@@ -276,8 +277,8 @@ namespace MiniZinc {
       std::vector<int> toRemoveConstraints;
       std::vector<VarDecl*> deletedVarDecls;
 
-      std::vector<Item*> constraintQueue;
-      std::vector<int> vardeclQueue;
+      std::deque<Item*> constraintQueue;
+      std::deque<int> vardeclQueue;
       
       std::vector<int> boolConstraints;
       
@@ -516,8 +517,8 @@ namespace MiniZinc {
       UNORDERED_NAMESPACE::unordered_map<Expression*, int> nonFixedLiteralCount;
       while (!vardeclQueue.empty() || !constraintQueue.empty()) {
         while (!vardeclQueue.empty()) {
-          int var_idx = vardeclQueue.back();
-          vardeclQueue.pop_back();
+          int var_idx = vardeclQueue.front();
+          vardeclQueue.pop_front();
           m[var_idx]->cast<VarDeclI>()->flag(false);
           VarDecl* vd = m[var_idx]->cast<VarDeclI>()->e();
           
@@ -618,8 +619,8 @@ namespace MiniZinc {
         }
         bool handledConstraint = false;
         while (!handledConstraint && !constraintQueue.empty()) {
-          Item* item = constraintQueue.back();
-          constraintQueue.pop_back();
+          Item* item = constraintQueue.front();
+          constraintQueue.pop_front();
           Call* c;
           ArrayLit* al = NULL;
           if (ConstraintI* ci = item->dyn_cast<ConstraintI>()) {
@@ -760,7 +761,7 @@ namespace MiniZinc {
                 }
               }
               if (val) {
-                VarDecl* vd_out = (*envi.output)[envi.output_vo.find(cur)]->cast<VarDeclI>()->e();
+                VarDecl* vd_out = (*envi.output)[envi.output_vo_flat.find(cur)]->cast<VarDeclI>()->e();
                 vd_out->e(val);
                 CollectDecls cd(envi.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
                 topDown(cd,cur->e());
@@ -857,8 +858,9 @@ namespace MiniZinc {
   
   bool simplifyConstraint(EnvI& env, Item* ii,
                           std::vector<VarDecl*>& deletedVarDecls,
-                          std::vector<Item*>& constraintQueue,
-                          std::vector<int>& vardeclQueue) {
+                          std::deque<Item*>& constraintQueue,
+                          std::deque<int>& vardeclQueue) {
+    
     Expression* con_e;
     bool is_true;
     bool is_false;
@@ -1217,8 +1219,8 @@ namespace MiniZinc {
   }
 
   void simplifyBoolConstraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
-                              std::vector<int>& vardeclQueue,
-                              std::vector<Item*>& constraintQueue,
+                              std::deque<int>& vardeclQueue,
+                              std::deque<Item*>& constraintQueue,
                               std::vector<Item*>& toRemove,
                               UNORDERED_NAMESPACE::unordered_map<Expression*, int>& nonFixedLiteralCount) {
     if (ii->isa<SolveI>()) {
