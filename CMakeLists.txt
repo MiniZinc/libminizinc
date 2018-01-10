@@ -52,8 +52,8 @@ include (CheckIncludeFiles)
 
 # -------------------------------------------------------------------------------------------------------------------
 option (BUILD_GUROBI_PLUGIN "Build Gurobi binding as a plugin" OFF)
-if (BUILD_GUROBI_PLUGIN)
-  if(HAS_GUROBI)
+if (BUILD_GUROBI_PLUGIN OR HAS_CPLEX)
+  if(HAS_GUROBI OR HAS_CPLEX)
     CHECK_INCLUDE_FILES (dlfcn.h HAS_DLFCN_H)
     if(HAS_DLFCN_H)
       find_library (NEEDS_LIBDL NAMES dl)
@@ -399,7 +399,7 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
   )
 #  target_include_directories(minizinc_cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
   
-	target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
 
 	add_executable(mzn-cplex minizinc.cpp)
   target_compile_definitions( mzn-cplex PRIVATE HAS_MIP )
@@ -412,7 +412,7 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
   #                             )
   # endif()
   target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
-  target_link_libraries(mzn-cplex minizinc_cplex ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(mzn-cplex minizinc_cplex ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
 
   INSTALL(TARGETS minizinc_cplex mzn-cplex
     RUNTIME DESTINATION bin
