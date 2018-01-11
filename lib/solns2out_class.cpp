@@ -212,7 +212,7 @@ bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
     if ( '\n'!=s_ExtraInfo.back() )                 /// TODO is this enough to check EOL?
       getOutput() << '\n';
   }
-  if (_opt.flag_output_time)
+  if ( fNew && _opt.flag_output_time)
     getOutput() << "% time elapsed: " << stoptime(starttime) << "\n";
   if ( fNew && !_opt.flag_canonicalize && !_opt.solution_separator.empty())
     getOutput() << _opt.solution_separator << '\n';

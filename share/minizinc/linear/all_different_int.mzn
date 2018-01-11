@@ -8,7 +8,17 @@
 
 include "domain_encodings.mzn";
 
+%% Call the reified equality
 predicate all_different_int(array[int] of var int: x) =
+    if length(x)<=1 then true
+    else
+      forall(d in lb_array(x)..ub_array(x))(
+        sum(i in index_set(x))( x[i]==d ) <= 1
+      )
+    endif;
+
+%% Old, uses low-level eq_encode
+predicate all_different_int__eq_encode(array[int] of var int: x) =
     if length(x)<=1 then true
     else
     let {

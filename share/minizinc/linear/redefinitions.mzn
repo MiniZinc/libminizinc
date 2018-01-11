@@ -312,12 +312,7 @@ predicate array_float_element(var int: i00, array[int] of float: a,
       if nMinDist == nMaxDist then               %% The linear case
         z == a[nLBi00] + nMinDist*(i00-nLBi00)
       else
-        let {
-          array[int] of var int: p = eq_encode(i00)    %% this needs i00 in ix
-        }
-        in
-        assert(dom(i00) subset index_set(p), "", true) /\
-        sum(i in dom(i00))( a[i] * int2float(p[i]) ) == z        %% add more hull?
+        sum(i in dom(i00))( a[i] * (i00==i) ) == z        %% add more hull?
       endif
     endif;
 
@@ -336,15 +331,11 @@ predicate array_var_float_element(var int: i00, array[int] of var float: a,
       aux_float_eq_if_1(z, a[lb(i00)], (ub(i00)-i00)) /\
       aux_float_eq_if_1(z, a[ub(i00)], (i00-lb(i00)))
     else
-      let {
-        array[int] of var int: p = eq_encode(i00),
-      } in
-      assert(dom(i00) subset index_set(p), "", true) /\
   %%% The convexified bounds seem slow for ^2 and ^3 equations:
   %    sum(i in dom(i01))( lb(a[i]) * int2float(p[i]) ) <= z /\    %% convexify lower bounds
   %    sum(i in dom(i01))( ub(a[i]) * int2float(p[i]) ) >= z /\    %% convexify upper bounds
       forall (i in dom(i00))(
-          aux_float_eq_if_1(z, a[i], p[i])
+          aux_float_eq_if_1(z, a[i], i00==i)
       )
       %% Cuts:
         /\ 
@@ -354,8 +345,8 @@ predicate array_var_float_element(var int: i00, array[int] of var float: a,
         else true endif
         /\
         if fElementCutsXZB then
-              array_var_float_element__XBZ_lb([  a[i] | i in dom(i00) ],  [  p[i] | i in dom(i00) ],  z)  :: MIP_cut
-          /\    array_var_float_element__XBZ_lb([ -a[i] | i in dom(i00) ],  [  p[i] | i in dom(i00) ], -z)  :: MIP_cut
+              array_var_float_element__XBZ_lb([  a[i] | i in dom(i00) ],  [  bool2int(i00==i) | i in dom(i00) ],  z)  :: MIP_cut
+          /\    array_var_float_element__XBZ_lb([ -a[i] | i in dom(i00) ],  [  bool2int(i00==i) | i in dom(i00) ], -z)  :: MIP_cut
         else true endif
     endif ;
 
@@ -465,10 +456,7 @@ predicate set_in_reif(var int: x, set of int: s__, var bool: b) =
            aux_int_le_if_1(x, max(s), bool2int(b)) /\
            aux_int_ge_if_1(x, min(s), bool2int(b)) /\
             if card(dom(x))<=nMZN__UnaryLenMax_setInReif then               %% PARAM TODO
-              let {
-                array[int] of var int: p = eq_encode(x);
-              } in
-                sum(i in s intersect dom(x))(p[i]) == bool2int(b)
+                sum(i in s intersect dom(x))(x==i) == bool2int(b)
             else
               bool2int(b) == fVarInBigSetOfInt(x, s)
             endif
