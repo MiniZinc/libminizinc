@@ -524,17 +524,9 @@ void Flattener::flatten()
                 std::cerr << "  " << e.msg() << std::endl;
                 exit(EXIT_FAILURE);
               }
-              for (unsigned int i=0; i<env->warnings().size(); i++) {
-                std::cerr << (flag_werror ? "\n  ERROR: " : "\n  WARNING: ") << env->warnings()[i];
-              }
-              if (flag_werror && env->warnings().size() > 0) {
-                exit(EXIT_FAILURE);
-              }
-              env->clearWarnings();
-              //            Model* flat = env.flat();
               if (flag_verbose)
-                std::cerr << " done (" << stoptime(lasttime)
-                << "), max stack depth " << env->maxCallStack() << std::endl;
+                std::cerr << " done (" << stoptime(lasttime) << "),"
+                          << " max stack depth " << env->maxCallStack() << std::endl;
             }
 
             if (flag_statistics) {

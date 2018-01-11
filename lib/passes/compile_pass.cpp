@@ -121,6 +121,7 @@ namespace MiniZinc {
       }
       exit(EXIT_FAILURE);
     }
+
     registerBuiltins(*new_env, new_env->model());
 
     flatten(*new_env, fopts);
@@ -137,15 +138,17 @@ namespace MiniZinc {
       if (compflags.verbose)
         std::cerr << "Optimizing ...";
       optimize(*new_env);
-      for (unsigned int i=0; i<new_env->warnings().size(); i++) {
-        std::cerr << (compflags.werror ? "\n  ERROR: " : "\n  WARNING: ") << new_env->warnings()[i];
-      }
-      if (compflags.werror && new_env->warnings().size() > 0) {
-        exit(EXIT_FAILURE);
-      }
       if (compflags.verbose)
         std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
     }
+
+    for (unsigned int i=0; i<new_env->warnings().size(); i++) {
+      std::cerr << (compflags.werror ? "\n  ERROR: " : "\n  WARNING: ") << new_env->warnings()[i];
+    }
+    if (compflags.werror && new_env->warnings().size() > 0) {
+      exit(EXIT_FAILURE);
+    }
+    new_env->clearWarnings();
 
     if (!compflags.newfzn) {
       if (compflags.verbose)
