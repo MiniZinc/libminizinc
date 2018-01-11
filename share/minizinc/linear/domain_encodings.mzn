@@ -53,9 +53,6 @@ function var int: eq_new_var(var int: x, int: i) ::promise_total =
   } in xi
   else 0 endif;
 
-%% Should not be used directly probably
-%% Only in int_eq_reif or int_ne_reif
-%% Still looking however, especially at regular
 function array[int] of var int: eq_encode(var int: x) ::promise_total =
   let {
     array[int] of var int: y = array1d(lb(x)..ub(x),[eq_new_var(x,i) | i in lb(x)..ub(x)]);
