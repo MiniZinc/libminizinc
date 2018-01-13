@@ -4005,12 +4005,17 @@ namespace MiniZinc {
               Type tt = bo->type();
               tt.ti(Type::TI_PAR);
               parbo->type(tt);
-              Expression* res = eval_par(env,parbo);
-              assert(!res->type().isunknown());
-              ret.r = bind(env,ctx,r,res);
-              std::vector<EE> ees(2);
-              ees[0].b = e0.b; ees[1].b = e1.b;
-              ret.b = conj(env,b,Ctx(),ees);
+              try {
+                Expression* res = eval_par(env,parbo);
+                assert(!res->type().isunknown());
+                ret.r = bind(env,ctx,r,res);
+                std::vector<EE> ees(2);
+                ees[0].b = e0.b; ees[1].b = e1.b;
+                ret.b = conj(env,b,Ctx(),ees);
+              } catch (ResultUndefinedError&) {
+                ret.r = createDummyValue(env, e->type());
+                ret.b = bind(env,Ctx(),b,constants().lit_false);
+              }
               break;
             }
             
