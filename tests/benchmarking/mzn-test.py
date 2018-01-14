@@ -518,7 +518,9 @@ class MznTest:
         ## Mode "compare only" if (comparison lists and not run option) or no instances
         self.bCmpOnly = True if (not self.params.args.runAndCmp and ( \
                 self.params.args.compare is not None and 0<len(self.params.args.compare))) or \
-              0==len( self.params.args.l_InstLists ) else False
+              0==len( self.params.args.l_InstLists ) or \
+              ( 0<len( self.params.args.l_InstLists ) and 0<len( self.params.args.instanceFiles ) ) \
+          else False
         ## If -l used, compile the inst list files
         if None!=self.params.args.l_InstLists and 0<len( self.params.args.l_InstLists ):
             for sFln in self.params.args.l_InstLists:
