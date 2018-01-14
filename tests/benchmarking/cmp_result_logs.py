@@ -18,19 +18,19 @@ class CompareLogs:
     def __init__( self ):
         self.lResLogs = []                                 ## empty list of logs/methods to compare
         self.hdrSummary = [       ## These are column headers for overall per-method summary
-            ( "s_MethodName", "logfile/test name" ),
-            ( "n_Reported",   "Nout" ),
-            ( "n_CheckFailed","Nbad" ),
-            ( "n_ErrorsBackend",     "NerrB" ),   ## TODO need still to consider feasible solutions if available
-            ( "n_ErrorsLogical",     "NerrL" ),
-            ( "n_OPT",        "Nopt" ),
-            ( "n_FEAS",       "Nfea" ),
-            ( "n_SATALL",     "NsatA" ),
-            ( "n_SAT",        "Nsat" ),
-            ( "n_INFEAS",     "Ninfeas" ),
-            ( "n_NOFZN",      "NoFZN" ),
-            ( "n_UNKNOWN",    "Nunkn" ),
-            ( "t_Flatten",    "TFlt" )
+            ( "s_MethodName", "logfile/test name", "Logfile and possibly test alias" ),
+            ( "n_Reported",   "Nout", "Total number of instances" ),
+            ( "n_CheckFailed","Nbad", "Number of failed solution checks" ),
+            ( "n_ErrorsBackend",     "NerrB", "Number of backend errors. TODO need still to consider feasible solutions if ERROR status" ),
+            ( "n_ErrorsLogical",     "NerrL", "Number of logical errors, such as different solver and MZN obj values" ),
+            ( "n_OPT",        "Nopt", "Number of reported optimal" ),
+            ( "n_FEAS",       "Nfea", "Number of reported feasible" ),
+            ( "n_SATALL",     "NsatA", "Number of reported SAT-COMPLETE" ),
+            ( "n_SAT",        "Nsat", "Number of reported SAT" ),
+            ( "n_INFEAS",     "Ninfeas", "Number of reported UNSAT" ),
+            ( "n_NOFZN",      "NoFZN", "Number of failed flattenings" ),
+            ( "n_UNKNOWN",    "Nunkn", "Number of unknown results" ),
+            ( "t_Flatten",    "TFlt", "Total flattening time" )
           ]
         self.hdrRanking = [       ## These are column headers for ranking analysis
             ## ( "nmMeth", "logfile/test/method name" ),
@@ -44,19 +44,19 @@ class CompareLogs:
             ##  TODO: ranks here ( "n_UNKNOWN",    "Nunkn" )
           ]
  
-    hdrTable = {                  ## Possible headers for table printout
-            "stt": "The solver status",  ## TODO an error should be separate flag, not a status
-            "chk": "The solution checking status",
-            "objMZN": "The MZN obj value",
-            "objSLV": "The solver obj value",
-            "bnd": "The solver dual bound",
-            "tAll": "Total running wall time",
-            "tFlt": "Flattening time",
-            "tBest": "A best solution's finding time",
-            "sns": "Model sense (min/max/sat)",
-            "errH": "Solver errors",
-            "errL": "Logical errors"
-            }
+    hdrTable = OrderedDict( [                  ## Possible headers for table printout
+            ( "stt", "The solver status" ),  ## TODO an error should be separate flag, not a status
+            ( "chk", "The solution checking status" ),
+            ( "objMZN", "The MZN obj value" ),
+            ( "objSLV", "The solver obj value" ),
+            ( "bnd", "The solver dual bound" ),
+            ( "tAll", "Total running wall time" ),
+            ( "tFlt", "Flattening time" ),
+            ( "tBest", "A best solution's finding time" ),
+            ( "sns", "Model sense (min/max/sat)" ),
+            ( "errH", "Solver errors" ),
+            ( "errL", "Logical errors" )
+            ] )
 
     ## which of those to print for each method 
     hdrTable2P = "stt objMZN bnd tFlt tBest"
@@ -123,7 +123,12 @@ class CompareLogs:
         self.lCmpVecs = []                  # List of summary vectors for each method
         self.mCmpVecVals = {}               # Maps to the "quantity" parts of those
         self.mCmpVecQual = {}               # Maps to the "quality" parts
-        print( "\nNo.\tinst", end='\t')
+        print( "" )                                        ## Newline
+        print( "=============== PER-INSTANCE RESULTS TABLE, HEADERS: ===============" )
+        for hdrLine in self.hdrTable.items():
+            print( "     ", hdrLine )
+        print( "====================================================================" )
+        print( "No.\tinst", end='\t')
         for mLog, lN in self.lResLogs:                ## Select method and its name list
             lNames = self.getMethodName(lN)
             av = OrderedDict({ "s_MethodName": lNames })
@@ -201,12 +206,16 @@ class CompareLogs:
             "\n\n------------------ ERRORS REPORTED BY SOLVERS ------------------\n\n" + \
             self.ioErrors.getvalue() + "\n" + \
             "\n\n------------------ RANKING ------------------\n\n" + \
+            "\n".join( [ "     " + str( hl ) for hl in self.hdrRanking ] ) + \
+            "\n---------------------------------------------\n" + \
             self.matrRanking.stringify2D()
         )
     
     ## Summarize
     def summarize( self ):
         return \
+            "\n".join( [ "     " + str((hdrLine[1], hdrLine[2])) for hdrLine in self.hdrSummary ] ) + \
+            "\n==================================================\n" + \
             utils.MyTab().tabulate(
               [ [ lcv[1][hdr[0]] if hdr[0] in lcv[1] else 0
                   for hdr in self.hdrSummary ]
