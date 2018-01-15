@@ -188,6 +188,8 @@ predicate float_max(var float: a, var float: b, var float: c);
 predicate float_min(var float: a, var float: b, var float: c);
 /** @group flatzinc Constrains \a a + \a b = \a c */
 predicate float_plus(var float: a, var float: b, var float: c);
+/** @group flatzinc Constrains \a a / \a b = \a c */
+predicate float_div(var float: a, var float: b, var float: c);
 /** @group flatzinc Constrains \a a * \a b = \a c */
 predicate float_times(var float: a, var float: b, var float: c);
 

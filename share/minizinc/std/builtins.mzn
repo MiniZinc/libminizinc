@@ -224,7 +224,9 @@ function var int: 'mod'(var int: x,var int: y) =
 /** @group builtins.arithmetic Return result of floating point division \a x / \a y */
 function     float: '/'(    float: x,    float: y);
 /** @group builtins.arithmetic Return result of floating point division \a x / \a y */
-function var float: '/'(var float: x,var float: y);
+function var float: '/'(var float: x,var float: y) =
+  if mzn_in_root_context(y) \/ lb(y) > 0.0 \/ ub(y) < 0.0 then fldiv_t(x,y) else
+  let { constraint y != 0.0 } in fldiv_mt(x,y) endif;
 
 /** @group builtins.arithmetic Return sum of elements in array \a x */
 function     int:   sum(array[$T] of     int: x);
@@ -2056,7 +2058,18 @@ function var int: div_t(var int: x, var int: y) :: promise_total =
 function var int: div_mt(var int: x, var int: y) :: promise_total =
   let {
     var ((dom(y) diff {0}) union {1}): yy = if y=0 then 1 else y endif;
-  } in div_t(x,yy);  
+  } in div_t(x,yy);
+
+function var float: fldiv_t(var float: x, var float: y) :: promise_total =
+  let {
+    var float: z ::is_defined_var; % TODO: Compute division boundaries
+    constraint y != 0.0;
+    constraint float_div(x, y, z) ::defines_var(z); } in z;
+
+function var float: fldiv_mt(var float: x, var float: y) :: promise_total =
+  let {
+    var (lb(y)..ub(y) diff {0.0}) union {1.0}: yy = if (y = 0.0) then 1.0 else y endif;
+  } in fldiv_t(x, yy);
 
 function var int: mod_t(var int: x, var int: y) :: promise_total =
   let { var -(max(ub(y),-lb(y)))..max(ub(y),-lb(y)): z;

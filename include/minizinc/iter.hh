@@ -491,9 +491,10 @@ namespace MiniZinc { namespace Ranges {
     // Task: find next mi greater than ma
     while (true) {
       if (!i()) break;
+      bool isInfinite = (!MinMax<Val>::ma.isFinite() && MinMax<Val>::ma>0);
       MinMax<Val>::mi = nextHigher(MinMax<Val>::ma);
       MinMax<Val>::ma = i.max();
-      if (MinMax<Val>::mi > i.max()) {
+      if (isInfinite || MinMax<Val>::mi > i.max()) {
         ++i;
         if (!i()) break;
         MinMax<Val>::mi = i.min();
