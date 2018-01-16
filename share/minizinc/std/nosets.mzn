@@ -200,13 +200,13 @@ predicate set_in(var int: x, var set of int: y) ::promise_total =
   } in by[x];
 
 predicate set_in_reif(int: x, var set of int: y, var bool: b) ::promise_total =
-  let {
-    array[int] of var bool: by = set2bools(y);
-  } in b <-> by[x];
+  if x in ub(y) then
+    b <-> set2bools(y)[x]
+  else
+    not b
+  endif;
 predicate set_in_reif(var int: x, var set of int: y, var bool: b) ::promise_total =
-  let {
-    array[int] of var bool: by = set2bools(y);
-  } in b <-> by[x];
+  b <-> ( x in ub(y) /\ set2bools(y)[x] );
 
 function array[int] of var bool: setarray2bools(array[int] of var set of int: x) =
   if length(x)=0 then [] else
