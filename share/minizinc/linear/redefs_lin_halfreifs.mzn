@@ -40,9 +40,11 @@ predicate aux_int_le_zero_if_0(var int: x, var int: p) =
     aux_int_le_zero_if_0__IND(x, p)
   else
     let {
+      constraint assert( ub(x) < infinity,
+        "Variable: dom(\(x)) = \(dom(x)), should have finite upper bound\n" ),
       set of int: sDomNonPos = dom(x) intersect -infinity..0,
       constraint assert( card( sDomNonPos ) > 0,
-        "Variable \(x): dom(x) = \(dom(x)), dom(x) intersect -inf..0: \(sDomNonPos)\n" ),
+        "Variable: dom(\(x)) = \(dom(x)), but dom() intersect -inf..0: \(sDomNonPos)\n" ),
       int: nMaxNonPosUB = max( sDomNonPos ), 
     } in
       x <= nMaxNonPosUB + (ub(x) - nMaxNonPosUB) * p
