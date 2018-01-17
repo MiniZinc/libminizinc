@@ -124,7 +124,16 @@ namespace MiniZinc {
 
     registerBuiltins(*new_env, new_env->model());
 
-    flatten(*new_env, fopts);
+    try {
+      flatten(*new_env, fopts);
+    } catch (LocationException& e) {
+      if (compflags.verbose)
+        std::cerr << std::endl;
+      std::cerr << e.what() << ": " << std::endl;
+      new_env->dumpErrorStack(std::cerr);
+      std::cerr << "  " << e.msg() << std::endl;
+      exit(EXIT_FAILURE);
+    }
 
     if ( ! compflags.noMIPdomains ) {
       if (compflags.verbose)
