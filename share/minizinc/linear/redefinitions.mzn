@@ -426,23 +426,28 @@ predicate array_var_float_element__XBZ_lb(array[int] of var float: x, array[int]
 predicate set_in(var int: x, set of int: s__) =
     let {
       set of int: s = if has_bounds(x) then s__ intersect dom(x) else s__ endif,
-      constraint  min(s) <= x /\ x <= max(s);
+      constraint  min(s) <= x,
+      constraint  x <= max(s),
     } in
     if s = min(s)..max(s) then true
     elseif fPostprocessDomains then
       set_in__POST(x, s)
-    else
-      let {
-        array[int] of int: sL = [ e | e in s where not (e - 1 in s) ];
-        array[int] of int: sR = [ e | e in s where not (e + 1 in s) ];
-        array [index_set(sR)] of var 0..1: B;
-        constraint assert(length(sR)==length(sL), "N of lb and ub of sub-intervals of a set should be equal");
-      } in    
-        sum(B) = 1      %% use indicators
-        /\
-        x >= sum(i in index_set(sL))(B[i]*sL[i])     
-        /\ 
-        x <= sum(i in index_set(sR))(B[i]*sR[i])
+    else                    %% Update eq_encode 
+              let {
+                array[int] of var int: p = eq_encode(x);
+              } in
+                forall(i in dom(x) diff s)(p[i]==0)
+%      let {
+%        array[int] of int: sL = [ e | e in s where not (e - 1 in s) ];
+%        array[int] of int: sR = [ e | e in s where not (e + 1 in s) ];
+%        array [index_set(sR)] of var 0..1: B;
+%        constraint assert(length(sR)==length(sL), "N of lb and ub of sub-intervals of a set should be equal");
+%      } in    
+%        sum(B) = 1      %% use indicators
+%        /\
+%        x >= sum(i in index_set(sL))(B[i]*sL[i])     
+%        /\ 
+%        x <= sum(i in index_set(sR))(B[i]*sR[i])
     endif;
 
 % XXX  only for a fixed set
