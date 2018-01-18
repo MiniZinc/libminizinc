@@ -232,6 +232,7 @@ namespace MiniZinc {
     bool _all_solutions;
     unsigned int _n_max_solutions;
     unsigned int _n_found_solutions;
+    bool _allow_unbounded_vars;
     Model* _flat;
   public:
     /// the Gecode space that will be/has been solved
