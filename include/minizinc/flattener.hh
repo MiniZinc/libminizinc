@@ -82,6 +82,7 @@ namespace MiniZinc {
     bool flag_optimize = true;
     bool flag_werror = false;
     bool flag_only_range_domains = false;
+    bool flag_allow_unbounded_vars = false;
     bool flag_noMIPdomains = false;
     int  opt_MIPDmaxIntvEE = 0;
     double opt_MIPDmaxDensEE = 0.0;

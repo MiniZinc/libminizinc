@@ -170,6 +170,8 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     if (flag_stdinInput)
       goto error;
     datafiles.push_back("cmd:/"+buffer);
+  } else if ( cop.getOption( "--allow-unbounded-vars" ) ) {
+    flag_allow_unbounded_vars = true;
   } else if ( cop.getOption( "--only-range-domains" ) ) {
     flag_only_range_domains = true;
   } else if ( cop.getOption( "--no-MIPdomains" ) ) {   // internal
@@ -476,6 +478,7 @@ void Flattener::flatten()
                 Options gopts;
                 gopts.setBoolParam(std::string("only-range-domains"), flag_only_range_domains);
                 gopts.setBoolParam(std::string("sac"),       flag_sac);
+                gopts.setBoolParam(std::string("allow_unbounded_vars"), flag_allow_unbounded_vars);
                 gopts.setBoolParam(std::string("shave"),     flag_shave);
                 gopts.setBoolParam(std::string("print_stats"),     flag_statistics);
                 gopts.setIntParam(std::string("pre_passes"), flag_pre_passes);
