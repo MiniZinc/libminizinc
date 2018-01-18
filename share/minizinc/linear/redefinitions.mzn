@@ -436,7 +436,7 @@ predicate set_in(var int: x, set of int: s__) =
               let {
                 array[int] of var int: p = eq_encode(x);
               } in
-                forall(i in dom(x) diff s)(p[i]==0)
+                forall(i in index_set(p) diff s)(p[i]==0)
 %      let {
 %        array[int] of int: sL = [ e | e in s where not (e - 1 in s) ];
 %        array[int] of int: sR = [ e | e in s where not (e + 1 in s) ];
