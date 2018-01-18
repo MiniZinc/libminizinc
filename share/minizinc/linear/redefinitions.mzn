@@ -298,13 +298,17 @@ predicate array_var_int_element(var int: x, array[int] of var int: a,
 predicate array_float_element(var int: i00, array[int] of float: a,
                               var float: z) =
     let { set of int: ix = index_set(a),
-          constraint i00 in ix
+          constraint i00 in ix,
+    } in         %%% Finish domain before dMin/dMax
+    let {
+          float: dMin = min(i in dom(i00))(a[i]),
+          float: dMax = max(i in dom(i00))(a[i]),
     } in
-    z >= min(i in dom(i00))(a[i]) /\
-    z <= max(i in dom(i00))(a[i]) /\
-    if card(dom(i00))==1 \/ min(i in dom(i00))(a[i])==max(i in dom(i00))(a[i])
-      then true           %%%% z==a[fix(i00)]
+    if dMin==dMax then
+      z==dMin
     else
+      z >= dMin /\
+      z <= dMax /\
       let {
         int: nUBi00 = max(dom(i00)),
         int: nLBi00 = min(dom(i00)),
@@ -327,28 +331,31 @@ predicate array_var_float_element(var int: i00, array[int] of var float: a,
                                   var float: z) =
     let { set of int: ix = index_set(a),
           constraint i00 in ix,
+    } in                            %% finish domain first
+    let {
           float: minLB=min(i in dom(i00))(lb(a[i])),
           float: maxUB=max(i in dom(i00))(ub(a[i]))
     } in
-          z >= minLB /\
-          z <= maxUB /\
-    if is_fixed(i00) then z==a[fix(i00)]
-    elseif minLB==maxUB then true
-    elseif {0,1}==dom(i00) /*ub(i00)-lb(i00)==1*/ /*2==card( dom( i00 ) )*/ then
-      aux_float_eq_if_1(z, a[lb(i00)], (ub(i00)-i00)) /\
-      aux_float_eq_if_1(z, a[ub(i00)], (i00-lb(i00)))
+    if minLB==maxUB then
+      z==minLB
     else
-      let {
-        array[int] of var int: p = eq_encode(i00),
-      } in
-      assert(dom(i00) subset index_set(p), "", true) /\
+      z >= minLB /\
+      z <= maxUB /\
+      if {0,1}==dom(i00) /*ub(i00)-lb(i00)==1*/ /*2==card( dom( i00 ) )*/ then
+        aux_float_eq_if_1(z, a[lb(i00)], (ub(i00)-i00)) /\
+        aux_float_eq_if_1(z, a[ub(i00)], (i00-lb(i00)))
+      else
+        let {
+          array[int] of var int: p = eq_encode(i00),
+        } in
+        assert(dom(i00) subset index_set(p), "", true) /\
   %%% The convexified bounds seem slow for ^2 and ^3 equations:
   %    sum(i in dom(i01))( lb(a[i]) * int2float(p[i]) ) <= z /\    %% convexify lower bounds
   %    sum(i in dom(i01))( ub(a[i]) * int2float(p[i]) ) >= z /\    %% convexify upper bounds
-      forall (i in dom(i00))(
+        forall (i in dom(i00))(
           aux_float_eq_if_1(z, a[i], p[i])
-      )
-      %% Cuts:
+        )
+        %% Cuts:
         /\ 
         if fElementCutsXZ then
           array_var_float_element__ROOF([  a[i] | i in dom(i00) ],  z)  :: MIP_cut   %% these 2 better as user cuts - too slow
@@ -359,7 +366,8 @@ predicate array_var_float_element(var int: i00, array[int] of var float: a,
               array_var_float_element__XBZ_lb([  a[i] | i in dom(i00) ],  [  p[i] | i in dom(i00) ],  z)  :: MIP_cut
           /\    array_var_float_element__XBZ_lb([ -a[i] | i in dom(i00) ],  [  p[i] | i in dom(i00) ], -z)  :: MIP_cut
         else true endif
-    endif ;
+      endif
+    endif;
 
 %%% Facets on the upper surface of the z-a polytope
 %%% Possible parameter: maximal number of first cuts taken only
