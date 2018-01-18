@@ -46,7 +46,9 @@ namespace MiniZinc {
 
   bool Gecode_SolverFactory::processOption(int& i, int argc, const char** argv)
   {
-    if (string(argv[i])=="--only-range-domains") {
+    if (string(argv[i])=="--allow-unbounded-vars") {
+      _options.setBoolParam(std::string("allow_unbounded_vars"), true);
+    } else if (string(argv[i])=="--only-range-domains") {
       _options.setBoolParam(std::string("only-range-domains"), true);
     } else if (string(argv[i])=="--sac") {
       _options.setBoolParam(std::string("sac"), true);
@@ -87,6 +89,8 @@ namespace MiniZinc {
   {
     os
     << "Gecode solver plugin options:" << std::endl
+    << "  --allow-unbounded-vars" << std::endl
+    << "    give unbounded variables maximum bounds (this may lead to incorrect behaviour)" << std::endl
     << "  --only-range-domains" << std::endl
     << "    only tighten bounds" << std::endl
     << "  --sac" << std ::endl
@@ -378,6 +382,7 @@ namespace MiniZinc {
     _print_stats = _options.getBoolParam(std::string("statistics"), false);
     _all_solutions = _options.getBoolParam(std::string("all_solutions"), false);
     _n_max_solutions = _options.getIntParam(std::string("n_solutions"), 1);
+    _allow_unbounded_vars = _options.getBoolParam(std::string("allow_unbounded_vars"), false);
     _current_space = new FznSpace();
 
     // iterate over VarDecls of the flat model and create variables
@@ -408,9 +413,16 @@ namespace MiniZinc {
               _current_space->iv.push_back(intVar);
               insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE, _current_space->iv.size()-1));
             } else {
-              std::stringstream ssm;
-              ssm << "GecodeSolverInstance::processFlatZinc: Error: Unbounded Variable: " << *vd << std::endl;
-              throw InternalError(ssm.str());
+              if(_allow_unbounded_vars) {
+                IntVar intVar(*this->_current_space, Gecode::Int::Limits::min, Gecode::Int::Limits::max);
+                _current_space->iv.push_back(intVar);
+                insertVar(it->e()->id(), GecodeVariable(GecodeVariable::INT_TYPE, _current_space->iv.size()-1));
+                std::cerr << "% GecodeSolverInstance::processFlatZinc: Warning: Unbounded variable " << *vd->id() << " given maximum integer bounds, this may be incorrect: " << std::endl;
+              } else {
+                std::stringstream ssm;
+                ssm << "GecodeSolverInstance::processFlatZinc: Error: Unbounded variable: " << *vd->id() << ", rerun with --allow-unbounded-vars to add arbitrary bounds."<< std::endl;
+                throw InternalError(ssm.str());
+              }
             }
           } else { // there is an initialisation expression
             Expression* init = it->e()->e();
@@ -486,9 +498,15 @@ namespace MiniZinc {
               lb = fb.l.toDouble();
               ub = fb.u.toDouble();
             } else {
-              std::stringstream ssm;
-              ssm << "GecodeSolverInstance::processFlatZinc: Error: Unbounded Variable: " << *vd << std::endl;
-              throw InternalError(ssm.str());
+              if(_allow_unbounded_vars) {
+                lb = Gecode::Float::Limits::min;
+                ub = Gecode::Float::Limits::max;
+                std::cerr << "%% GecodeSolverInstance::processFlatZinc: Warning: Unbounded variable " << *vd->id() << " given maximum float bounds, this may be incorrect: " << std::endl;
+              } else {
+                std::stringstream ssm;
+                ssm << "GecodeSolverInstance::processFlatZinc: Error: Unbounded variable: " << *vd->id() << ", rerun with --allow-unbounded-vars to add arbitrary bounds."<< std::endl;
+                throw InternalError(ssm.str());
+              }
             }
             FloatVar floatVar(*this->_current_space, lb, ub);
             _current_space->fv.push_back(floatVar);
@@ -948,6 +966,7 @@ namespace MiniZinc {
 
   SolverInstance::Status
   GecodeSolverInstance::next(void) {
+    GCLock lock;
     prepareEngine();
     
     _solution = engine->next();
@@ -1127,6 +1146,7 @@ namespace MiniZinc {
 
   SolverInstanceBase::Status
   GecodeSolverInstance::solve(void) {
+    GCLock lock;
 
     prepareEngine();
 
