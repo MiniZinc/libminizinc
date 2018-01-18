@@ -512,7 +512,7 @@ void Flattener::flatten()
                 }
                 managed_passes.emplace_back(new CompilePass(env, fopts, cfs,
                                                             std_lib_dir+"/"+globals_dir+"/",
-                                                            includePaths, true));
+                                                            includePaths, flag_two_pass));
 
                 fopts.outputObjective = flag_output_objective;
                 Env* out_env = multiPassFlatten(managed_passes);
