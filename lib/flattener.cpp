@@ -77,7 +77,7 @@ void Flattener::printHelp(ostream& os)
   <<                                  "  -O2:    Same as: --use-gecode" << std::endl
   << "    -O3:    Same as: --shave       -O4:    Same as: --sac" << std::endl
 #else
-  << std::endl
+  << "\n    -O2,3,4:    Disabled [Requires MiniZinc with Gecode support]" << std::endl
 #endif
   << std::endl;
   os
@@ -236,8 +236,12 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     flag_two_pass = true;
     flag_gecode = true;
     flag_sac = true;
-    // ozn options must be after the -O<n> optimisation options
+#else
+  } else if (string(argv[i])=="-O2" || string(argv[i])=="-O3" || string(argv[i])=="-O4") {
+    std::cerr << "% Warning: This compiler does not have Gecode builtin, cannot process -O2,-O3,-O4.\n";
+    goto error;
 #endif
+    // ozn options must be after the -O<n> optimisation options
   } else if ( cop.getOption( "-O --ozn --output-ozn-to-file", &flag_output_ozn) ) {
   } else if (string(argv[i])=="--keep-paths") {
     flag_keep_mzn_paths = true;
