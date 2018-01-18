@@ -448,7 +448,7 @@ predicate set_in(var int: x, set of int: s__) =
 % XXX  only for a fixed set
 predicate set_in_reif(var int: x, set of int: s__, var bool: b) =
   if is_fixed(b) then
-    if true==fix(b) then x in s__ else x in dom(x) diff s__ endif
+    if fix(b) then x in s__ else x in dom(x) diff s__ endif
   else
     let {
       set of int: s = if has_bounds(x) then s__ intersect dom(x) else s__ endif,
@@ -456,10 +456,10 @@ predicate set_in_reif(var int: x, set of int: s__, var bool: b) =
     (
          if dom(x) subset s then b==true
          elseif card(dom(x) intersect s)==0 then b==false
-         elseif s = min(s)..max(s) then
-             b <-> (min(s) <= x /\ x <= max(s))
          elseif fPostprocessDomains then
            set_in_reif__POST(x, s, b)
+         elseif s == min(s)..max(s) then
+             b <-> (min(s) <= x /\ x <= max(s))
          else
 %            let {
 %              array[int] of int: sL = [ e | e in s where not (e - 1 in s) ];
@@ -472,8 +472,8 @@ predicate set_in_reif(var int: x, set of int: s__, var bool: b) =
 %              x >= lb(x) + sum(i in index_set(sL))(B[i]*(sL[i]-lb(x)))     
 %              /\ 
 %              x <= ub(x) + sum(i in index_set(sR))(B[i]*(sR[i]-ub(x)))
-           aux_int_le_if_1(x, max(s), bool2int(b)) /\
-           aux_int_ge_if_1(x, min(s), bool2int(b)) /\
+            %  aux_int_le_if_1(x, max(s), bool2int(b)) /\
+            %  aux_int_ge_if_1(x, min(s), bool2int(b)) /\
             if card(dom(x))<=nMZN__UnaryLenMax_setInReif then               %% PARAM TODO
               let {
                 array[int] of var int: p = eq_encode(x);
