@@ -119,8 +119,22 @@ predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
       m == x[min(sActive)]
     else
       let {
-          array[1..n] of var 0..1: p,
-          constraint     m >= lb_array(x) /\   m <= MinUB,
+          array[1..n] of var int: p = [
+            if i in sActive then let { var 0..1: pi } in pi else 0 endif | i in 1..n ],
+          constraint 1==sum(p),
+          constraint m >= lb_array(x),
+          constraint m <= MinUB,
+        } in
+      forall (i in index_set(x))
+        ( 
+          if i in sActive                               %% for at least 1 element
+          then 
+              m<=x[i] /\ aux_float_ge_if_1(m, x[i], p[i])
+          else true endif )
+                                                        %% -- exclude too big x[i]
+      /\
+      if card(sActive)>1 /\ fMinimumCutsXZ then
+        let {
           array[int] of float: AL = [ lb(x[i]) | i in 1..n],
           array[int] of int: srt = sort_by([i | i in 1..n], AL),
                                             %indices of lb in sorted order
@@ -129,18 +143,6 @@ predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
           array[int] of float: AM_srt = AL_srt ++ [MinUB]
                                         %% -- these are z-levels of extreme points
         } in
-%    assert(index_set(x) == index_set(AL),
-%    "array_float_minimum_I: second argument must have index set 1..length()") /\
-      1 == sum(p) /\
-      forall (i in index_set(x))
-        ( 
-          if i in sActive                               %% for at least 1 element
-          then 
-              m<=x[i] /\ aux_float_ge_if_1(m, x[i], p[i])
-          else 0==p[i] endif )
-                                                        %% -- exclude too big x[i]
-      /\
-      if card(sActive)>1 /\ fMinimumCutsXZ then
         forall (i in 2..n+1  where
           AM_srt[i]<=MinUB  /\                          %% this is a new "start level"
           AM_srt[i]!=AM_srt[i-1]    )(                  %% and would produce a new cut
