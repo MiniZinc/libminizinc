@@ -1565,18 +1565,18 @@ namespace MiniZinc {
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s); \
       FloatVar x = gi.arg2floatvar(ce->args()[0]);\
       FloatVar y = gi.arg2floatvar(ce->args()[1]);\
-      Op(gi ,x,y);\
+      Op(*gi._current_space, x, y);\
     }
     P_FLOAT_OP(acos)
-      P_FLOAT_OP(asin)
-      P_FLOAT_OP(atan)
-      P_FLOAT_OP(cos)
-      P_FLOAT_OP(exp)
-      P_FLOAT_OP(sin)
-      P_FLOAT_OP(tan)
-      // P_FLOAT_OP(sinh)
-      // P_FLOAT_OP(tanh)
-      // P_FLOAT_OP(cosh)
+    P_FLOAT_OP(asin)
+    P_FLOAT_OP(atan)
+    P_FLOAT_OP(cos)
+    P_FLOAT_OP(exp)
+    P_FLOAT_OP(sin)
+    P_FLOAT_OP(tan)
+    // P_FLOAT_OP(sinh)
+    // P_FLOAT_OP(tanh)
+    // P_FLOAT_OP(cosh)
 #undef P_FLOAT_OP
 
       void p_float_ln(SolverInstanceBase& s, const Call* ce) {

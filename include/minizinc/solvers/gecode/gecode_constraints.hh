@@ -245,29 +245,21 @@ namespace GecodeConstraints {
       PosterImpl(p_float_lt);
       PosterImpl(p_float_lt_reif);
       PosterImpl(p_float_ne);
-      #ifdef GECODE_HAS_MPFR
-#define P_FLOAT_OP(Op) \
-      PosterImpl(p_float_ ## Op ) {\
-	  GecodeSolverInstance& gi = (GecodeSolverInstance&)s; \
-	  Gecode::FloatVar x = gi.arg2floatvar(ce->args()[0]);\
-	  Gecode::FloatVar y = gi.arg2floatvar(ce->args()[1]);\
-	  Op(gi ,x,y);\
-      }
-      P_FLOAT_OP(acos)
-	  P_FLOAT_OP(asin)
-	  P_FLOAT_OP(atan)
-	  P_FLOAT_OP(cos)
-	  P_FLOAT_OP(exp)
-	  P_FLOAT_OP(sin)
-	  P_FLOAT_OP(tan)         
-#undef P_FLOAT_OP
+#ifdef GECODE_HAS_MPFR
+      PosterImpl(p_float_acos);
+      PosterImpl(p_float_asin);
+      PosterImpl(p_float_atan);
+      PosterImpl(p_float_cos);
+      PosterImpl(p_float_exp);
+      PosterImpl(p_float_sin);
+      PosterImpl(p_float_tan);
       PosterImpl(p_float_ln);
       PosterImpl(p_float_log10);
-      PosterImpl(p_float_log2);	
-      #endif	
-      #endif	
-	
-    }
+      PosterImpl(p_float_log2);
+#endif
+#endif
+
+}
 }
 
 #endif
