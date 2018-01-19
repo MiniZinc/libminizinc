@@ -268,6 +268,12 @@ class MIP_wrapper {
                         LinConType sense, double rhs,
                         std::string rowName = "") { throw std::runtime_error("Indicator constraints not supported. "); }
                 
+    /// 0: model-defined, 1: free
+    virtual int getFreeSearch() { return 1; }
+    /// Return 0 if ignoring searches
+    virtual bool addSearch( const std::vector<VarId>& vars, const std::vector<int> pri ) {
+      return false;
+    }
     /// Return 0 if ignoring warm starts    
     virtual bool addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals ) {
       return false;

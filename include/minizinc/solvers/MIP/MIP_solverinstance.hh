@@ -81,6 +81,7 @@ namespace MiniZinc {
 
       virtual Status next(void) { assert(0); return SolverInstance::UNKNOWN; }
       virtual void processFlatZinc(void);
+      virtual void processWarmstartAnnotations( const Annotation& ann );
       virtual void processSearchAnnotations( const Annotation& ann );
       virtual Status solve(void);
       virtual void resetSolver(void) { }
