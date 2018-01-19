@@ -580,7 +580,9 @@ endif()
 if(HAS_GECODE)
   add_definitions(-DHAS_GECODE)
   include_directories("${GECODE_HOME}/include")
+  include_directories("${GECODE_HOME}")
   link_directories("${GECODE_HOME}/lib")
+  link_directories("${GECODE_HOME}")
 
   add_library(minizinc_gecode
     solvers/gecode/fzn_space.cpp
@@ -594,7 +596,7 @@ if(HAS_GECODE)
     include/minizinc/solvers/gecode/gecode_constraints.hh
     )
 
-  target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include")
+  target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include" "${GECODE_HOME}")
   target_link_libraries(minizinc_gecode
     minizinc
     gecodedriver gecodesearch gecodeminimodel
