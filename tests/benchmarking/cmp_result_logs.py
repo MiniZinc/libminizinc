@@ -113,6 +113,7 @@ class CompareLogs:
         for sInst in lInstances:
             self.compareInstance( sInst )
         self.summarizeCmp()
+        self.summarizeFinalHdr()
         self.summarize()
         
     ## Init stats etc.
@@ -210,12 +211,16 @@ class CompareLogs:
             "\n---------------------------------------------\n" + \
             self.matrRanking.stringify2D()
         )
+
+    ## Summary headers
+    def summarizeFinalHdr( self ):
+        return \
+            "\n".join( [ "     " + str((hdrLine[1], hdrLine[2])) for hdrLine in self.hdrSummary ] ) + \
+            "\n=================================================="
     
     ## Summarize
     def summarize( self ):
         return \
-            "\n".join( [ "     " + str((hdrLine[1], hdrLine[2])) for hdrLine in self.hdrSummary ] ) + \
-            "\n==================================================\n" + \
             utils.MyTab().tabulate(
               [ [ lcv[1][hdr[0]] if hdr[0] in lcv[1] else 0
                   for hdr in self.hdrSummary ]

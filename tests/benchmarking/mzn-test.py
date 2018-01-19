@@ -513,7 +513,8 @@ class MznTest:
         ## Can compile the list from log files, see below
         self.params.instList = []
         ## Only if -l not used, take the pos args
-        if 0==len( self.params.args.l_InstLists ) and 0<len( self.params.args.instanceFiles ):
+        if (self.params.args.l_InstLists is None or 0==len( self.params.args.l_InstLists )) \
+                and self.params.args.instanceFiles is not None and 0<len( self.params.args.instanceFiles ):
             self.params.instList.append( " ".join( self.params.args.instanceFiles ) )
         ## Mode "compare only" if (comparison lists and not run option) or no instances
         self.bCmpOnly = True if (not self.params.args.runAndCmp and ( \
@@ -622,6 +623,7 @@ class MznTest:
                 print( "  ------  WARNING: failed to compare/rank instance. ",  )
                 traceback.print_exc()
         self.cmpRes.summarizeCmp()
+        print( self.cmpRes.summarizeFinalHdr(), end='' )
 
     def summarize(self):
         try:
