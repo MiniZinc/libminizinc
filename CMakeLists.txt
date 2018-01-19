@@ -567,6 +567,7 @@ endif()
 
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_GECODE)
+  link_directories("${GECODE_HOME}")
   link_directories("${GECODE_HOME}/lib")
 
   add_library(minizinc_gecode
@@ -575,7 +576,7 @@ if(HAS_GECODE)
     solvers/gecode/gecode_constraints.cpp
     solvers/gecode/aux_brancher.hh)
 
-  target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include")
+  target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include" "${GECODE_HOME}")
   target_link_libraries(minizinc_gecode
     minizinc
     gecodedriver gecodesearch gecodeminimodel
