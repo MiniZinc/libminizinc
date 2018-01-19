@@ -690,9 +690,7 @@ void MIP_solverinstance::processFlatZinc(void) {
       }
     }
   }
-
-  processSearchAnnotations( solveItem->ann() );
-
+  
   if (mip_wrap->fVerbose) {
     cerr << " done, " << mip_wrap->getNRows() << " rows && "
     << mip_wrap->getNCols() << " columns in total.";
@@ -704,6 +702,11 @@ void MIP_solverinstance::processFlatZinc(void) {
         << mip_wrap->nLitVars << " literals with "
         << mip_wrap-> sLitValues.size() << " values used." << endl;
   }
+
+  processSearchAnnotations( solveItem->ann() );
+
+  processWarmstartAnnotations( solveItem->ann() );
+  
 }  // processFlatZinc
 
 Expression* MIP_solverinstance::getSolutionValue(Id* id) {
@@ -725,6 +728,50 @@ Expression* MIP_solverinstance::getSolutionValue(Id* id) {
 
 void 
 MIP_solverinstance::processSearchAnnotations(const Annotation& ann) {
+    if ( 1==getMIPWrapper()->getFreeSearch() )
+        return;
+    std::vector<Expression*> aAnns;
+    flattenSearchAnnotations( ann, aAnns );
+    vector<MIP_solverinstance::VarId> vars;
+    vector<int> aPri;                                  // priorities
+    int nArrayAnns = 0;
+    for ( auto iA=0; iA<aAnns.size(); ++iA ) {
+        const auto& pE = aAnns[iA];
+        if( pE->isa<Call>() ) {
+            Call* pC = pE->cast<Call>();
+            const auto cId = pC->id().str();
+            if ( "int_search"==cId || "float_search"==cId ) {
+                ArrayLit* alV = nullptr;
+                if ( !pC->args().size() || nullptr == (alV = eval_array_lit(_env.envi(),pC->args()[0])) ) {
+                    std::cerr << "  SEARCH ANN: '" << (*pC)
+                       << "'  is unknown. " << std::endl;
+                    continue;
+                }
+                ++nArrayAnns;
+                for (unsigned int i=0; i<alV->v().size(); i++) {
+                    if (Id* ident = alV->v()[i]->dyn_cast<Id>()) {
+                        vars.push_back( exprToVar( ident ) );
+                        aPri.push_back( aAnns.size()-iA );            // level search by default
+                    } // else ignore
+                }
+            }
+        }
+    }
+    if ( vars.size() ) {
+        if ( 2==getMIPWrapper()->getFreeSearch() ) {
+            for ( int i=0; i<vars.size(); ++i )
+                aPri[i] = 1; //vars.size()-i;                                    // descending
+        }
+        if ( !getMIPWrapper()->addSearch( vars, aPri ) )
+            cerr << "\nWARNING: MIP backend seems to ignore search strategy." << endl;
+        else 
+            cerr << "  MIP: added " << vars.size() << " variable branching priorities from "
+              << nArrayAnns << " arrays." << endl;
+    }
+}
+
+void 
+MIP_solverinstance::processWarmstartAnnotations(const Annotation& ann) {
     int nVal = 0;
     for(ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
         Expression* e = *i;
@@ -735,7 +782,7 @@ MIP_solverinstance::processSearchAnnotations(const Annotation& ann) {
                 for(unsigned int i=0; i<anns->v().size(); i++) {
                     Annotation subann;
                     subann.add(anns->v()[i]);
-                    processSearchAnnotations( subann );
+                    processWarmstartAnnotations( subann );
                 }
             } else
             if ( c->id().str() == "warm_start" ) {

@@ -214,7 +214,7 @@ class MZT_Param:
                   " Then you can do shell tricks but Ctrl+C may not kill all subprocesses etc."],
                 "n_TimeoutRealHard": [300, "/// Real-time timeout per instance, seconds,"
                   " for all solution steps together. Use mzn/backend options for CPU time limit."],
-                "n_VMEMLIMIT_SoftHard": [8000000, 8000000, "/// 2 limits, soft/hard, in KB. Platform-dependent in Python 3.6. Default 8GB = 8388608 KB"],
+                "n_VMEMLIMIT_SoftHard": [16000000, 16000000, "/// 2 limits, soft/hard, in KB. Platform-dependent in Python 3.6. Default 16GB"],
               },
               "Stderr_Keylines": {
                 s_CommentKey: [ "A complete line in stderr will be interpreted accordingly.",
@@ -513,13 +513,14 @@ class MznTest:
         ## Can compile the list from log files, see below
         self.params.instList = []
         ## Only if -l not used, take the pos args
-        if 0==len( self.params.args.l_InstLists ) and 0<len( self.params.args.instanceFiles ):
+        if (self.params.args.l_InstLists is None or 0==len( self.params.args.l_InstLists )) \
+                and self.params.args.instanceFiles is not None and 0<len( self.params.args.instanceFiles ):
             self.params.instList.append( " ".join( self.params.args.instanceFiles ) )
         ## Mode "compare only" if (comparison lists and not run option) or no instances
-        self.bCmpOnly = True if (not self.params.args.runAndCmp and ( \
-                self.params.args.compare is not None and 0<len(self.params.args.compare))) or \
-              0==len( self.params.args.l_InstLists ) or \
-              ( 0<len( self.params.args.l_InstLists ) and 0<len( self.params.args.instanceFiles ) ) \
+        self.bCmpOnly = True if (not self.params.args.runAndCmp and (( \
+                self.params.args.compare is not None and 0<len(self.params.args.compare)) or \
+              ( self.params.args.l_InstLists is not None and 0<len( self.params.args.l_InstLists ) \
+              and self.params.args.instanceFiles is not None and 0<len( self.params.args.instanceFiles ) ))) \
           else False
         ## If -l used, compile the inst list files
         if None!=self.params.args.l_InstLists and 0<len( self.params.args.l_InstLists ):
@@ -622,6 +623,7 @@ class MznTest:
                 print( "  ------  WARNING: failed to compare/rank instance. ",  )
                 traceback.print_exc()
         self.cmpRes.summarizeCmp()
+        print( self.cmpRes.summarizeFinalHdr(), end='' )
 
     def summarize(self):
         try:

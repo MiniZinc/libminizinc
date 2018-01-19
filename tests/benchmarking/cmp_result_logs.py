@@ -113,6 +113,7 @@ class CompareLogs:
         for sInst in lInstances:
             self.compareInstance( sInst )
         self.summarizeCmp()
+        self.summarizeFinalHdr()
         self.summarize()
         
     ## Init stats etc.
@@ -210,12 +211,16 @@ class CompareLogs:
             "\n---------------------------------------------\n" + \
             self.matrRanking.stringify2D()
         )
+
+    ## Summary headers
+    def summarizeFinalHdr( self ):
+        return \
+            "\n".join( [ "     " + str((hdrLine[1], hdrLine[2])) for hdrLine in self.hdrSummary ] ) + \
+            "\n=================================================="
     
     ## Summarize
     def summarize( self ):
         return \
-            "\n".join( [ "     " + str((hdrLine[1], hdrLine[2])) for hdrLine in self.hdrSummary ] ) + \
-            "\n==================================================\n" + \
             utils.MyTab().tabulate(
               [ [ lcv[1][hdr[0]] if hdr[0] in lcv[1] else 0
                   for hdr in self.hdrSummary ]
@@ -281,10 +286,7 @@ class CompareLogs:
                 dTime_All = utils.try_float( mSlv.get( "TimeReal_All" ) )
                 aDetThis [ "tAll" ] = dTime_All
                 dTime_Flt = utils.try_float( mSlv.get( "Time_Flt" ) )
-                if dTime_Flt is None:
-                    dTime_Flt = dTime_All
-                if dTime_Flt is not None:
-                    aResultThisInst[ "t_Flatten" ] = dTime_Flt
+                aResultThisInst[ "t_Flatten" ] = dTime_Flt if dTime_Flt is not None else dTime_All  ##??
                 aDetThis [ "tFlt" ] = dTime_Flt
                 dTime_Last = utils.try_float( mSlv.get( "TimeReal_LastStatus" ) )
                 aDetThis [ "tBest" ] = dTime_Last
