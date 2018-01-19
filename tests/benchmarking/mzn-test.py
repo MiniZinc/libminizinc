@@ -263,7 +263,7 @@ class MZT_Param:
               "EXE": {
                 "s_ExtraCmdline" : ["-a"],
                 "b_ThruShell"  : [True],
-                "n_TimeoutRealHard": [500],
+                "n_TimeoutRealHard": [300],
                 #  "n_VMEMLIMIT_SoftHard": [8000100000, 8100000000]
               }
             },
