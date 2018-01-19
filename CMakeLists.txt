@@ -333,6 +333,7 @@ ${parser_hh}
 if(HAS_GECODE)
   set(GECODE_LIBS minizinc_gecode gecodedriver gecodesearch gecodeminimodel gecodefloat gecodeint gecodeset gecodekernel gecodesupport)
   target_link_libraries(minizinc ${GECODE_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+  link_directories("${GECODE_HOME}")
   link_directories("${GECODE_HOME}/lib")
 endif()
 
