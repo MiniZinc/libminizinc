@@ -728,13 +728,15 @@ Expression* MIP_solverinstance::getSolutionValue(Id* id) {
 
 void 
 MIP_solverinstance::processSearchAnnotations(const Annotation& ann) {
-    if ( getMIPWrapper()->getFreeSearch() )
+    if ( 1==getMIPWrapper()->getFreeSearch() )
         return;
     std::vector<Expression*> aAnns;
     flattenSearchAnnotations( ann, aAnns );
     vector<MIP_solverinstance::VarId> vars;
+    vector<int> aPri;                                  // priorities
     int nArrayAnns = 0;
-    for ( const auto& pE: aAnns ) {
+    for ( auto iA=0; iA<aAnns.size(); ++iA ) {
+        const auto& pE = aAnns[iA];
         if( pE->isa<Call>() ) {
             Call* pC = pE->cast<Call>();
             const auto cId = pC->id().str();
@@ -749,15 +751,17 @@ MIP_solverinstance::processSearchAnnotations(const Annotation& ann) {
                 for (unsigned int i=0; i<alV->v().size(); i++) {
                     if (Id* ident = alV->v()[i]->dyn_cast<Id>()) {
                         vars.push_back( exprToVar( ident ) );
+                        aPri.push_back( aAnns.size()-iA );            // level search by default
                     } // else ignore
                 }
             }
         }
     }
     if ( vars.size() ) {
-        vector<int> aPri(vars.size());                                  // priorities
-        for ( int i=0; i<vars.size(); ++i )
-            aPri[i] = 1; //vars.size()-i;                                    // descending
+        if ( 2==getMIPWrapper()->getFreeSearch() ) {
+            for ( int i=0; i<vars.size(); ++i )
+                aPri[i] = 1; //vars.size()-i;                                    // descending
+        }
         if ( !getMIPWrapper()->addSearch( vars, aPri ) )
             cerr << "\nWARNING: MIP backend seems to ignore search strategy." << endl;
         else 

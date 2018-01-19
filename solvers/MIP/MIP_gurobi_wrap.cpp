@@ -93,7 +93,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
 
             /// SOLVER PARAMS ????
             
- static   bool fFreeSearch=false;
+ static   int nFreeSearch=0;
  static   int nThreads=1;
  static   string sExportModel;
  static   double nTimeout=-1;
@@ -116,7 +116,9 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
       || string(argv[i])=="--all-solutions" ) {
     flag_all_solutions = true;
   } else if (string(argv[i])=="-f") {
-    fFreeSearch = true;
+    nFreeSearch = 1;
+  } else if (string(argv[i])=="--uniform-search") {
+    nFreeSearch = 2;
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
   } else if ( cop.get( "-p", &nThreads ) ) {
   } else if ( cop.get( "--timeout", &nTimeout ) ) {
@@ -398,7 +400,7 @@ bool MIP_gurobi_wrapper::addSearch( const std::vector<VarId>& vars, const std::v
 }
 
 int MIP_gurobi_wrapper::getFreeSearch() {
-    return fFreeSearch;
+    return nFreeSearch;
 }
 
 bool MIP_gurobi_wrapper::addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals ) {
