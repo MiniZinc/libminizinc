@@ -242,7 +242,7 @@ namespace MiniZinc {
     /// The hash value of the expression
     size_t _hash;
   public:
-    /// Identifier of the concrere expression type
+    /// Identifier of the concrete expression type
     enum ExpressionId {
       E_INTLIT = ASTNode::NID_END+1, E_FLOATLIT, E_SETLIT, E_BOOLLIT,
       E_STRINGLIT, E_ID, E_ANON, E_ARRAYLIT,

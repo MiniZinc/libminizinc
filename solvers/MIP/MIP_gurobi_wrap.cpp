@@ -65,8 +65,9 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   //            << "  --readParam <file>  read GUROBI parameters from file
   //               << "--writeParam <file> write GUROBI parameters to file
   //               << "--tuneParam         instruct GUROBI to tune parameters instead of solving
-  << "-f                  free search. Off by default (approximates the model's\n"
-     "                    search annotations by branching ptiorities)" << std::endl
+  << "-f                  free search (default)" << std::endl
+  << "--fixed-search      fixed search (approximation of the model's one by branching priorities)" << std::endl
+  << "--uniform-search    'more fixed' search (all variables in the search anns get priority 1)" << std::endl
   << "--writeModel <file> write model to <file> (.lp, .mps, .sav, ...)" << std::endl
   << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
   << "-p <N>              use N threads, default: 1." << std::endl
@@ -93,7 +94,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
 
             /// SOLVER PARAMS ????
             
- static   int nFreeSearch=0;
+ static   int nFreeSearch=1;
  static   int nThreads=1;
  static   string sExportModel;
  static   double nTimeout=-1;
@@ -116,7 +117,8 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
       || string(argv[i])=="--all-solutions" ) {
     flag_all_solutions = true;
   } else if (string(argv[i])=="-f") {
-    nFreeSearch = 1;
+  } else if (string(argv[i])=="--fixed-search") {
+    nFreeSearch = 0;
   } else if (string(argv[i])=="--uniform-search") {
     nFreeSearch = 2;
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
