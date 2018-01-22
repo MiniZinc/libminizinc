@@ -1193,8 +1193,8 @@ class VarSet(Variable):
 		self.type = minizinc_internal.VarSet
 		self.class_name = 'Var Set'
 
-	'''	Python automatiCally evaluate a __contains__ return object to boolean
-		thus, we have to use seperate In class instead of 
+	'''	Python automatically evaluate a __contains__ return object to boolean
+		thus, we have to use separate In class instead of
 			for i in VarSet
 	def __contains__(self, argopt):
 		return In([argopt, self])
