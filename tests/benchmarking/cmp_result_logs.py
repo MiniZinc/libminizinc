@@ -248,9 +248,8 @@ class CompareLogs:
                 if "Problem_Sense" in mSlv:
                     self.sSenses[ mSlv["Problem_Sense"][0] ] = lNames # mSlv["Problem_Sense"][1]
         if 1<len( self.sSenses ):
-            self.lInstContradOptSense.append( sInst )
             print( "WARNING: DIFFERENT OBJ SENSES REPORTED for the instance ", sInst,
-                   ":  ", self.sSenses, sep='', file=ioContrSense )
+                   ":  ", self.sSenses, sep='', file=self.ioContrSense )
         elif 1==len( self.sSenses ):
             self.nOptSenseGiven = list(self.sSenses.keys())[0]
                 
