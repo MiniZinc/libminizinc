@@ -3328,9 +3328,9 @@ namespace MiniZinc {
           throw InternalError("type of anonymous variable could not be inferred");
         }
         GCLock lock;
-        VarDecl* vd = new VarDecl(Location().introduce(), new TypeInst(Location().introduce(), av->type()),
-                                  env.genId());
-        ret = flat_exp(env,Ctx(),vd,NULL,constants().var_true);
+        VarDecl* vd = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(), av->type()), NULL, NULL, NULL);
+        ret.b = bind(env, Ctx(), b, constants().lit_true);
+        ret.r = bind(env, ctx, r, vd->id());
       }
       break;
     case Expression::E_ARRAYLIT:
