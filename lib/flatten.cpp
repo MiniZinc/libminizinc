@@ -164,7 +164,7 @@ namespace MiniZinc {
       Call* revmap = new Call(Location().introduce(), fi->id(), {vd->id()});
       revmap->decl(fi);
       revmap->type(Type::varbool());
-      (void) flat_exp(env, Ctx(), revmap, constants().var_true, constants().var_true);
+      env.flat_addItem(new ConstraintI(Location().introduce(), revmap));
     }
     
     VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
