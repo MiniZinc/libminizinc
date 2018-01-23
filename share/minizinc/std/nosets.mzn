@@ -7,6 +7,10 @@
 include "lex_less.mzn";
 include "lex_lesseq.mzn";
 
+predicate mzn_reverse_map_var(var set of int: x) = let {
+  array[int] of var bool: b = set2bools(x)
+} in true;
+
 function var set of int: reverse_map(array[int] of var bool: b);
 function set of int: reverse_map(array[int] of bool: b) ::promise_total =
   { i | i in index_set(b) where b[i] };

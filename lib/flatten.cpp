@@ -159,6 +159,14 @@ namespace MiniZinc {
       }
     }
     
+    if (FunctionI* fi = env.orig->matchRevMap(env, vd->type())) {
+      // We need to introduce a reverse mapper
+      Call* revmap = new Call(Location().introduce(), fi->id(), {vd->id()});
+      revmap->decl(fi);
+      revmap->type(Type::varbool());
+      (void) flat_exp(env, Ctx(), revmap, constants().var_true, constants().var_true);
+    }
+    
     VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
     env.flat_addItem(ni);
     EE ee(vd,NULL);
