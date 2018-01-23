@@ -4832,45 +4832,69 @@ namespace MiniZinc {
               break;
             }
             
-            if (ctx.b==C_ROOT && r==constants().var_true && e1.r()->type().ispar() &&
-                e0.r()->isa<Id>() && (bot==BOT_IN || bot==BOT_SUBSET) ) {
-              /// TODO: check for float
+            if (e0.r()->type().bt()==Type::BT_INT && e1.r()->type().ispar() && e0.r()->isa<Id>() && (bot==BOT_IN || bot==BOT_SUBSET)) {
               VarDecl* vd = e0.r()->cast<Id>()->decl();
-              if (vd->ti()->domain()==NULL) {
-                vd->ti()->domain(e1.r());
-              } else {
-                GCLock lock;
-                IntSetVal* newdom = eval_intset(env,e1.r());
-                Id* id = vd->id();
-                while (id != NULL) {
-                  bool changeDom = false;
-                  if (id->decl()->ti()->domain()) {
-                    IntSetVal* domain = eval_intset(env,id->decl()->ti()->domain());
-                    IntSetRanges dr(domain);
-                    IntSetRanges ibr(newdom);
-                    Ranges::Inter<IntVal,IntSetRanges,IntSetRanges> i(dr,ibr);
-                    IntSetVal* newibv = IntSetVal::ai(i);
-                    if (domain->card() != newibv->card()) {
-                      newdom = newibv;
+              Id* ident = vd->id();
+              if (ctx.b==C_ROOT && r==constants().var_true) {
+                if (vd->ti()->domain()==NULL) {
+                  vd->ti()->domain(e1.r());
+                } else {
+                  GCLock lock;
+                  IntSetVal* newdom = eval_intset(env,e1.r());
+                  while (ident != NULL) {
+                    bool changeDom = false;
+                    if (ident->decl()->ti()->domain()) {
+                      IntSetVal* domain = eval_intset(env,ident->decl()->ti()->domain());
+                      IntSetRanges dr(domain);
+                      IntSetRanges ibr(newdom);
+                      Ranges::Inter<IntVal,IntSetRanges,IntSetRanges> i(dr,ibr);
+                      IntSetVal* newibv = IntSetVal::ai(i);
+                      if (domain->card() != newibv->card()) {
+                        newdom = newibv;
+                        changeDom = true;
+                      }
+                    } else {
                       changeDom = true;
                     }
-                  } else {
-                    changeDom = true;
-                  }
-                  if (id->type().st()==Type::ST_PLAIN && newdom->size()==0) {
-                    env.fail();
-                  } else if (changeDom) {
-                    id->decl()->ti()->setComputedDomain(false);
-                    id->decl()->ti()->domain(new SetLit(Location().introduce(),newdom));
-                    if (id->decl()->e()==NULL && newdom->min()==newdom->max()) {
-                      id->decl()->e(IntLit::a(newdom->min()));
+                    if (ident->type().st()==Type::ST_PLAIN && newdom->size()==0) {
+                      env.fail();
+                    } else if (changeDom) {
+                      ident->decl()->ti()->setComputedDomain(false);
+                      ident->decl()->ti()->domain(new SetLit(Location().introduce(),newdom));
+                      if (ident->decl()->e()==NULL && newdom->min()==newdom->max()) {
+                        ident->decl()->e(IntLit::a(newdom->min()));
+                      }
                     }
+                    ident = ident->decl()->e() ? ident->decl()->e()->dyn_cast<Id>() : NULL;
                   }
-                  id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
+                }
+                ret.r = bind(env,ctx,r,constants().lit_true);
+                break;
+              } else if (vd->ti()->domain()!=NULL) {
+                // check if current domain is already subsumed or falsified by this constraint
+                GCLock lock;
+                IntSetVal* check_dom = eval_intset(env,e1.r());
+                IntSetVal* domain = eval_intset(env,ident->decl()->ti()->domain());
+                {
+                  IntSetRanges cdr(check_dom);
+                  IntSetRanges dr(domain);
+                  if (Ranges::subset(dr,cdr)) {
+                    // the constraint is subsumed
+                    ret.r = bind(env,ctx,r,constants().lit_true);
+                    break;
+                  }
+                }
+                if (vd->type().st()==Type::ST_PLAIN) {
+                  // only for var int (for var set of int, subset can never fail because of the domain)
+                  IntSetRanges cdr(check_dom);
+                  IntSetRanges dr(domain);
+                  if (Ranges::disjoint(cdr, dr)) {
+                    // the constraint is false
+                    ret.r = bind(env,ctx,r,constants().lit_false);
+                    break;
+                  }
                 }
               }
-              ret.r = bind(env,ctx,r,constants().lit_true);
-              break;
             }
             
             std::vector<KeepAlive> args;
@@ -5556,7 +5580,9 @@ namespace MiniZinc {
                 addPathAnnotation(env, cr());
                 reif_b->e(cr());
                 if (r != NULL && r->e() != NULL) {
-                  bind(env,Ctx(),r,reif_b->id());
+                  Ctx reif_ctx;
+                  reif_ctx.neg = ctx.neg;
+                  bind(env,reif_ctx,r,reif_b->id());
                 }
                 env.vo_add_exp(reif_b);
                 ret.b = bind(env,Ctx(),b,constants().lit_true);
