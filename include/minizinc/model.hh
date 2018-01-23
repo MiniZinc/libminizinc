@@ -53,6 +53,11 @@ namespace MiniZinc {
     /// Map from identifiers to function declarations
     FnMap fnmap;
 
+    /// Type of map from Type (represented as int) to reverse mapper functions
+    typedef std::unordered_map<int, FunctionI*> RevMapperMap;
+    /// Map from Type (represented as int) to reverse mapper functions
+    RevMapperMap revmapmap;
+    
     /// Filename of the model
     ASTString _filename;
     /// Path of the model
@@ -114,6 +119,8 @@ namespace MiniZinc {
                        bool strictEnums);
     /// Return function declaration matching call \a c
     FunctionI* matchFn(EnvI& env, Call* c, bool strictEnums) const;
+    /// Return function declaration for reverse mapper for type \a t
+    FunctionI* matchRevMap(EnvI& env, const Type& t) const;
     /// Merge all builtin functions into \a m
     void mergeStdLib(EnvI& env, Model* m) const;
 

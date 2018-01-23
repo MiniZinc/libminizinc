@@ -88,7 +88,7 @@ namespace MiniZinc {
   class MIPD {  
   public:
     MIPD(Env* env, bool fV, int nmi, double dmd) :
-      __env(env), nMaxIntv2Bits(nmi), dMaxNValueDensity(dmd) { getEnv(); fVerbose=fV; }
+      nMaxIntv2Bits(nmi), dMaxNValueDensity(dmd), __env(env) { getEnv(); fVerbose=fV; }
     static bool fVerbose;
     const int nMaxIntv2Bits=0;  // Maximal interval length to enforce equality encoding
     const double dMaxNValueDensity=3.0;  // Maximal ratio card_int() / size() of a domain

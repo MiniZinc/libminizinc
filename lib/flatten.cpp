@@ -410,9 +410,16 @@ namespace MiniZinc {
     }
 
     if (!hasBeenAdded) {
+      if (FunctionI* fi = env.orig->matchRevMap(env, vd->type())) {
+        // We need to introduce a reverse mapper
+        Call* revmap = new Call(Location().introduce(), fi->id(), {vd->id()});
+        revmap->decl(fi);
+        revmap->type(Type::varbool());
+        (void) flat_exp(env, Ctx(), revmap, constants().var_true, constants().var_true);
+      }
+
       VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
       env.flat_addItem(ni);
-      //TODO: What should we do with the map?
       EE ee(vd,NULL);
       env.map_insert(vd->id(),ee);
     }
@@ -3734,9 +3741,9 @@ namespace MiniZinc {
           throw InternalError("type of anonymous variable could not be inferred");
         }
         GCLock lock;
-        VarDecl* vd = new VarDecl(e->loc().introduce(), new TypeInst(Location().introduce(), av->type()),
-                                  env.genId());
-        ret = flat_exp(env,Ctx(),vd,NULL,constants().var_true);
+        VarDecl* vd = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(), av->type()), NULL, NULL, NULL);
+        ret.b = bind(env, Ctx(), b, constants().lit_true);
+        ret.r = bind(env, ctx, r, vd->id());
       }
       break;
     case Expression::E_ARRAYLIT:

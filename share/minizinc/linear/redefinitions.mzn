@@ -12,6 +12,10 @@
 function var bool: reverse_map(var int: x) = (x==1);
 function bool: reverse_map(int: x) = (x==1);
 
+predicate mzn_reverse_map_var(var bool: b) = let {
+  var int: x = bool2int(b)
+} in true;
+
 function var int: bool2int(var bool: x) :: promise_total =
  let { var 0..1: b2i;
        constraint (x = reverse_map(b2i)) ::is_reverse_map ;
