@@ -85,4 +85,4 @@ sort, arg_sort, arg_min, arg_max
 ** Bugs **
 
 If you encounter any problems with MiniZinc, please use the MiniZinc bug tracker
-at http://www.minizinc.org/trac to report any issues or feature requests.
+at https://github.com/MiniZinc/libminizinc/issues to report any issues or feature requests.

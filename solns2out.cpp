@@ -152,8 +152,8 @@ namespace MiniZinc {
 
       {
         pEnv = new Env();
-        if (pOutput = parse(*pEnv, filenames, std::vector<std::string>(), includePaths, false, false, false,
-                                  std::cerr)) {
+        if ((pOutput = parse(*pEnv, filenames, std::vector<std::string>(), includePaths, false, false, false,
+                                   std::cerr))) {
           std::vector<TypeError> typeErrors;
           pEnv->model(pOutput);
           MZN_ASSERT_HARD_MSG( pEnv, "solns2out: could not allocate Env" );
