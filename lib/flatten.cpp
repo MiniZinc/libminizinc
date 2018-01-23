@@ -5146,7 +5146,9 @@ namespace MiniZinc {
                 }
                 reif_b->e(cr());
                 if (r != NULL && r->e() != NULL) {
-                  bind(env,Ctx(),r,reif_b->id());
+                  Ctx reif_ctx;
+                  reif_ctx.neg = ctx.neg;
+                  bind(env,reif_ctx,r,reif_b->id());
                 }
                 env.vo_add_exp(reif_b);
                 ret.b = bind(env,Ctx(),b,constants().lit_true);
