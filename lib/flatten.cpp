@@ -415,7 +415,7 @@ namespace MiniZinc {
         Call* revmap = new Call(Location().introduce(), fi->id(), {vd->id()});
         revmap->decl(fi);
         revmap->type(Type::varbool());
-        (void) flat_exp(env, Ctx(), revmap, constants().var_true, constants().var_true);
+        env.flat_addItem(new ConstraintI(Location().introduce(), revmap));
       }
 
       VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
@@ -6477,8 +6477,7 @@ namespace MiniZinc {
       for (unsigned int i=0; i<env.output->size(); i++) {
         if (VarDeclI* vdi = (*env.output)[i]->dyn_cast<VarDeclI>()) {
           IdMap<KeepAlive>::iterator it;
-          if (!vdi->e()->type().ispar() &&
-              vdi->e()->e()==NULL &&
+          if (vdi->e()->e()==NULL &&
               (it = env.reverseMappers.find(vdi->e()->id())) != env.reverseMappers.end()) {
             GCLock lock;
             Call* rhs = copy(env,env.cmap,it->second())->cast<Call>();
