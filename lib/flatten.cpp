@@ -6305,10 +6305,11 @@ namespace MiniZinc {
             args.push_back(vd->id());
             Call * nc = new Call(c->loc().introduce(),cid,args);
             nc->type(c->type());
-            nc->decl(env.orig->matchFn(env, nc, false));
-            if (nc->decl()==NULL) {
+            FunctionI* decl = env.orig->matchFn(env, nc, false);
+            if (decl==NULL) {
               throw FlatteningError(env,c->loc(),"'"+c->id().str()+"' is used in a reified context but no reified version is available");
             }
+            nc->decl(decl);
             nc->addAnnotation(definesVarAnn(vd->id()));
             nc->ann().merge(c->ann());
             clearInternalAnnotations(nc);
