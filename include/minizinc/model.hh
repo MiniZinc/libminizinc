@@ -14,6 +14,7 @@
 
 #include <vector>
 #include <iterator>
+#include <unordered_map>
 
 #include <minizinc/gc.hh>
 #include <minizinc/ast.hh>
