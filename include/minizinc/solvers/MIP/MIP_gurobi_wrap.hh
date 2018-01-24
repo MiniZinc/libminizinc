@@ -141,6 +141,8 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int *rmatind, double* rmatval,
                         LinConType sense, double rhs,
                         std::string rowName = "");
+    virtual int getFreeSearch();
+    virtual bool addSearch( const std::vector<VarId>& vars, const std::vector<int> pri );
     virtual bool addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals );
     int nRows=0;    // to count rows in order tp notice lazy constraints
     std::vector<int> nLazyIdx;

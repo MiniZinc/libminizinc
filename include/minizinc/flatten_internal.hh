@@ -44,7 +44,7 @@ namespace MiniZinc {
     /// Boolen negation flag
     bool neg;
     /// Default constructor (root context)
-    Ctx(void) : b(C_ROOT), i(C_POS), neg(false) {}
+    Ctx(void) : b(C_ROOT), i(C_MIX), neg(false) {}
     /// Copy constructor
     Ctx(const Ctx& ctx) : b(ctx.b), i(ctx.i), neg(ctx.neg) {}
     /// Assignment operator
@@ -121,7 +121,7 @@ namespace MiniZinc {
     void flat_removeItem(int i);
     void flat_removeItem(Item* i);
     void vo_add_exp(VarDecl* vd);
-    void fail(void);
+    void fail(const std::string& msg = std::string());
     bool failed(void) const;
     Model* flat(void);
     void swap();

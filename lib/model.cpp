@@ -261,6 +261,13 @@ namespace MiniZinc {
       FnEntry fe(fi);
       addPolymorphicInstances(fe, v);
     }
+    if (fi->id()=="mzn_reverse_map_var") {
+      if (fi->params().size() != 1 || fi->ti()->type() != Type::varbool()) {
+        throw TypeError(env, fi->loc(), "functions called `mzn_reverse_map_var` must have a single argument and return type var bool");
+      }
+      Type t = fi->params()[0]->type();
+      revmapmap.insert(std::pair<int,FunctionI*>(t.toInt(),fi));
+    }
   }
 
   FunctionI*
@@ -485,6 +492,21 @@ namespace MiniZinc {
     return matched[0];
   }
 
+  FunctionI*
+  Model::matchRevMap(EnvI& env, const Type& t0) const {
+    const Model* m = this;
+    while (m->_parent)
+      m = m->_parent;
+    Type t = t0;
+    t.enumId(0);
+    RevMapperMap::const_iterator it = revmapmap.find(t.toInt());
+    if (it != revmapmap.end()) {
+      return it->second;
+    } else {
+      return NULL;
+    }
+  }
+  
   Item*&
   Model::operator[] (int i) { assert(i < _items.size()); return _items[i]; }
   const Item*

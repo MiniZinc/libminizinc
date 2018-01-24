@@ -27,7 +27,7 @@ endif()
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 1)
-set (libminizinc_VERSION_PATCH 6)
+set (libminizinc_VERSION_PATCH 7)
 
 if (ADDITIONAL_DATE_STRING)
   set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
@@ -52,8 +52,8 @@ include (CheckIncludeFiles)
 
 # -------------------------------------------------------------------------------------------------------------------
 option (BUILD_GUROBI_PLUGIN "Build Gurobi binding as a plugin" OFF)
-if (BUILD_GUROBI_PLUGIN)
-  if(HAS_GUROBI)
+if (BUILD_GUROBI_PLUGIN OR HAS_CPLEX)
+  if(HAS_GUROBI OR HAS_CPLEX)
     CHECK_INCLUDE_FILES (dlfcn.h HAS_DLFCN_H)
     if(HAS_DLFCN_H)
       find_library (NEEDS_LIBDL NAMES dl)
@@ -399,7 +399,7 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
   )
 #  target_include_directories(minizinc_cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
   
-	target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
 
 	add_executable(mzn-cplex minizinc.cpp)
   target_compile_definitions( mzn-cplex PRIVATE HAS_MIP )
@@ -412,7 +412,7 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
   #                             )
   # endif()
   target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
-  target_link_libraries(mzn-cplex minizinc_cplex ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(mzn-cplex minizinc_cplex ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
 
   INSTALL(TARGETS minizinc_cplex mzn-cplex
     RUNTIME DESTINATION bin
@@ -557,7 +557,7 @@ if(HAS_OSICBC)
 
                                        # OSICBC_LINKEXTRAS: ArchLinux needs blas, lapack, bz2
   target_link_libraries(minizinc_osicbc minizinc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
-  target_link_libraries(mzn-cbc minizinc_osicbc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
+  target_link_libraries(mzn-cbc minizinc_osicbc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS} ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_osicbc mzn-cbc
     RUNTIME DESTINATION bin
@@ -567,6 +567,7 @@ endif()
 
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_GECODE)
+  link_directories("${GECODE_HOME}")
   link_directories("${GECODE_HOME}/lib")
 
   add_library(minizinc_gecode
@@ -575,7 +576,7 @@ if(HAS_GECODE)
     solvers/gecode/gecode_constraints.cpp
     solvers/gecode/aux_brancher.hh)
 
-  target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include")
+  target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include" "${GECODE_HOME}")
   target_link_libraries(minizinc_gecode
     minizinc
     gecodedriver gecodesearch gecodeminimodel

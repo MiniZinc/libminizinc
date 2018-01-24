@@ -242,7 +242,7 @@ namespace MiniZinc {
     /// The hash value of the expression
     size_t _hash;
   public:
-    /// Identifier of the concrere expression type
+    /// Identifier of the concrete expression type
     enum ExpressionId {
       E_INTLIT = ASTNode::NID_END+1, E_FLOATLIT, E_SETLIT, E_BOOLLIT,
       E_STRINGLIT, E_ID, E_ANON, E_ARRAYLIT,
@@ -1056,7 +1056,6 @@ namespace MiniZinc {
   };
   /// \brief A variable declaration expression
   class VarDecl : public Expression {
-    friend class Let;
   protected:
     /// Type-inst of the declared variable
     TypeInst* _ti;
@@ -1118,6 +1117,8 @@ namespace MiniZinc {
     int payload(void) const { return _payload; }
     /// Set payload
     void payload(int i) { _payload = i; }
+    /// Put current value on trail
+    void trail(void);
   };
   
   class EnvI;

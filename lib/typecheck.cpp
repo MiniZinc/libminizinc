@@ -1186,9 +1186,6 @@ namespace MiniZinc {
           }
         } else {
           assert(c.where(i) != NULL);
-          if (!c.where(i)->type().ispar()) {
-            throw TypeError(_env,c.where(i)->loc(), "assignment generator must be par");
-          }
           whereMap[c.decl(i,0)].push_back(c.where(i));
         }
       }

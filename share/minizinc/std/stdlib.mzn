@@ -196,7 +196,17 @@ annotation complete;
 
 /***
  @groupdef annotations.warmstart Warm start annotations
+
+ To be put on the solve item, similar to search annotations.
+ A variable can be mentioned several times and in different
+ annotations but only one of the values is taken
 */
+
+/** @group annotations.warmstart Specify an array \a w of warm_start annotations
+ or other warm_start_array annotations. Can be useful to keep the annotation
+ order in FlatZinc for manual updating
+*/
+annotation warm_start_array( array[int] of ann: w );
 
 /** @group annotations.warmstart Specify warm start values for an array of booleans */
 annotation warm_start( array[int] of var bool: x, array[int] of bool: v );
@@ -206,9 +216,6 @@ annotation warm_start( array[int] of var int: x, array[int] of int: v );
 annotation warm_start( array[int] of var float: x, array[int] of float: v );
 /** @group annotations.warmstart Specify warm start values for an array of sets */
 annotation warm_start( array[int] of var set of int: x, array[int] of set of int: v );
-
-/** @group annotations.warmstart Specify warm starts in an array \a w */
-annotation warm_start_array( array[int] of ann: w );
 
 
 /***

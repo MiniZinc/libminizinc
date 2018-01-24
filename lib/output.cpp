@@ -826,6 +826,24 @@ namespace MiniZinc {
     processDeletions(e, deletedFlatVarDecls);
   }
 
+  Expression* isFixedDomain(EnvI& env, VarDecl* vd) {
+    if (vd->type()!=Type::varbool() && vd->type()!=Type::varint() && vd->type()!=Type::varfloat())
+      return NULL;
+    Expression* e = vd->ti()->domain();
+    if (e==constants().lit_true || e==constants().lit_false)
+      return e;
+    if (SetLit* sl = Expression::dyn_cast<SetLit>(e)) {
+      if (sl->type().bt()==Type::BT_INT) {
+        IntSetVal* isv = eval_intset(env, sl);
+        return isv->min()==isv->max() ? IntLit::a(isv->min()) : NULL;
+      } else if (sl->type().bt()==Type::BT_FLOAT) {
+        FloatSetVal* fsv = eval_floatset(env, sl);
+        return fsv->min()==fsv->max() ? FloatLit::a(fsv->min()) : NULL;
+      }
+    }
+    return NULL;
+  }
+  
   void finaliseOutput(EnvI& e, std::vector<VarDecl*>& deletedFlatVarDecls) {
     if (e.output->size() > 0) {
       // Adapt existing output model
@@ -845,12 +863,17 @@ namespace MiniZinc {
             while (reallyFlat && reallyFlat!=reallyFlat->flat())
               reallyFlat=reallyFlat->flat();
             if (vd->e()==NULL) {
-              if (vd->flat()->e() && vd->flat()->e()->type().ispar()) {
+              if ( (vd->flat()->e() && vd->flat()->e()->type().ispar()) || isFixedDomain(e, vd->flat()) ) {
                 VarDecl* reallyFlat = vd->flat();
                 while (reallyFlat!=reallyFlat->flat())
                   reallyFlat=reallyFlat->flat();
                 removeIsOutput(reallyFlat);
-                Expression* flate = copy(e,e.cmap,follow_id(reallyFlat->id()));
+                Expression* flate;
+                if (Expression* fd = isFixedDomain(e, vd->flat())) {
+                  flate = fd;
+                } else {
+                  flate = copy(e,e.cmap,follow_id(reallyFlat->id()));
+                }
                 outputVarDecls(e,item,flate);
                 vd->e(flate);
               } else if ( (it = e.reverseMappers.find(vd->id())) != e.reverseMappers.end()) {

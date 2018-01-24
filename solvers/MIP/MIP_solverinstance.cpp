@@ -129,7 +129,6 @@ namespace SCIPConstraints {
   void p_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType lt) {
     MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
     Env& _env = gi.env();
-    ASTExprVec<Expression> args = call->args();
 //     ArrayLit* al = eval_array_lit(_env.envi(), args[0]);
 //     int nvars = al->v().size();
     vector<double> coefs;
@@ -140,20 +139,20 @@ namespace SCIPConstraints {
     FloatVal fres;
 
     double rhs;
-    if(args[2]->type().isint()) {
-      ires = eval_int(_env.envi(), args[2]);
+    if(call->arg(2)->type().isint()) {
+      ires = eval_int(_env.envi(), call->arg(2));
       rhs = ires.toInt();
-    } else if(args[2]->type().isfloat()) {
-      fres = eval_float(_env.envi(), args[2]);
+    } else if(call->arg(2)->type().isfloat()) {
+      fres = eval_float(_env.envi(), call->arg(2));
       rhs = fres.toDouble();
     } else {
       throw InternalError("p_lin: rhs unknown type");
     }
 
     /// Process coefs & vars together to eliminate literals (problem with Gurobi's updatemodel()'s)
-    ArrayLit* alC = eval_array_lit(_env.envi(), args[0]);
+    ArrayLit* alC = eval_array_lit(_env.envi(), call->arg(0));
     coefs.reserve(alC->size());
-    ArrayLit* alV = eval_array_lit(_env.envi(), args[1]);
+    ArrayLit* alV = eval_array_lit(_env.envi(), call->arg(1));
     vars.reserve(alV->size());
     for (unsigned int i=0; i<alV->size(); i++) {
       const double dCoef = gi.exprToConst( (*alC)[i] );
@@ -202,20 +201,19 @@ namespace SCIPConstraints {
   // The non-_lin constraints happen in a failed model || in a non-optimized one:
   void p_non_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType nCmp) {
     MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
-    ASTExprVec<Expression> args = call->args();
     vector<double> coefs;
     vector<MIP_solver::Variable> vars;
     double rhs = 0.0;
-    if ( args[0]->isa<Id>() ) {
+    if ( call->arg(0)->isa<Id>() ) {
       coefs.push_back( 1.0 );
-      vars.push_back( gi.exprToVar(args[0]) );
+      vars.push_back( gi.exprToVar(call->arg(0)) );
     } else
-      rhs -= gi.exprToConst(args[0]);
-    if ( args[1]->isa<Id>() ) {
+      rhs -= gi.exprToConst(call->arg(0));
+    if ( call->arg(1)->isa<Id>() ) {
       coefs.push_back( -1.0 );
-      vars.push_back( gi.exprToVar(args[1]) );
+      vars.push_back( gi.exprToVar(call->arg(1)) );
     } else
-      rhs += gi.exprToConst(args[1]);
+      rhs += gi.exprToConst(call->arg(1));
     /// Check feas-ty
     if ( coefs.empty() ) {
       if ( (MIP_wrapper::LinConType::EQ==nCmp && 1e-5 < fabs( rhs ))
@@ -245,22 +243,21 @@ namespace SCIPConstraints {
   /// var1<=0 if var2==0
   void p_indicator_le0_if0(SolverInstanceBase& si, const Call* call) {
     MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
-    ASTExprVec<Expression> args = call->args();
     /// Looking at the bounded variable and the flag
     bool f1const=0, f2const=0;
     double val1, val2;
     MIP_solver::Variable var1, var2;
-    if ( args[0]->isa<Id>() ) {
-      var1 = gi.exprToVar(args[0]);
+    if ( call->arg(0)->isa<Id>() ) {
+      var1 = gi.exprToVar(call->arg(0));
     } else {
       f1const = 1;
-      val1 = gi.exprToConst(args[0]);
+      val1 = gi.exprToConst(call->arg(0));
     }
-    if ( args[1]->isa<Id>() ) {
-      var2 = gi.exprToVar(args[1]);
+    if ( call->arg(1)->isa<Id>() ) {
+      var2 = gi.exprToVar(call->arg(1));
     } else {
       f2const = 1;
-      val2 = gi.exprToConst(args[1]);
+      val2 = gi.exprToConst(call->arg(1));
     }
     /// Check feas-ty. 1e-6 ?????????????   TODO
     if ( f1const && f2const ) {
@@ -290,7 +287,6 @@ namespace SCIPConstraints {
   /// var1==var2 if var3==1
   void p_indicator_eq_if1(SolverInstanceBase& si, const Call* call) {
     MIP_solverinstance& gi = dynamic_cast<MIP_solverinstance&>( si );
-    ASTExprVec<Expression> args = call->args();
     vector<double> coefs;
     vector<MIP_solver::Variable> vars;
     double rhs = 0.0;
@@ -298,29 +294,29 @@ namespace SCIPConstraints {
     bool f1const=0, f2const=0, fBconst=0;
     double val1, val2, valB;
     MIP_solver::Variable var1, var2, varB;
-    if ( args[0]->isa<Id>() ) {
-      var1 = gi.exprToVar(args[0]);
+    if ( call->arg(0)->isa<Id>() ) {
+      var1 = gi.exprToVar(call->arg(0));
       coefs.push_back( 1.0 );
       vars.push_back( var1 );
     } else {
       f1const = 1;
-      val1 = gi.exprToConst(args[0]);
+      val1 = gi.exprToConst(call->arg(0));
       rhs -= val1;
     }
-    if ( args[1]->isa<Id>() ) {
-      var2 = gi.exprToVar(args[1]);
+    if ( call->arg(1)->isa<Id>() ) {
+      var2 = gi.exprToVar(call->arg(1));
       coefs.push_back( -1.0 );
       vars.push_back( var2 );
     } else {
       f2const = 1;
-      val2 = gi.exprToConst(args[1]);
+      val2 = gi.exprToConst(call->arg(1));
       rhs += val2;
     }
-    if ( args[2]->isa<Id>() ) {
-      varB = gi.exprToVar(args[2]);
+    if ( call->arg(2)->isa<Id>() ) {
+      varB = gi.exprToVar(call->arg(2));
     } else {
       fBconst = 1;
-      valB = gi.exprToConst(args[2]);
+      valB = gi.exprToConst(call->arg(2));
     }
     /// Check feas-ty. 1e-6 ?????????????   TODO
     if ( f1const && f2const && fBconst ) {
@@ -358,12 +354,11 @@ namespace SCIPConstraints {
 //     auto pCG = make_unique<XBZCutGen>();
     unique_ptr<XBZCutGen> pCG( new XBZCutGen( gi.getMIPWrapper() ) );
     
-    ASTExprVec<Expression> args = call->args();
-    assert( args.size()==3 );
-    gi.exprToVarArray(args[0], pCG->varX);
-    gi.exprToVarArray(args[1], pCG->varB);
+    assert( call->n_args()==3 );
+    gi.exprToVarArray(call->arg(0), pCG->varX);
+    gi.exprToVarArray(call->arg(1), pCG->varB);
     assert(pCG->varX.size() == pCG->varB.size());
-    pCG->varZ = gi.exprToVar(args[2]);
+    pCG->varZ = gi.exprToVar(call->arg(2));
 //     cout << "  NEXT_CUTGEN" << endl;
 //     pCG->print( cout );
     
@@ -585,13 +580,14 @@ void MIP_solverinstance::processFlatZinc(void) {
       } else if (ti->type().isvarfloat() || ti->type().isfloat()) {
       } else {
         std::stringstream ssm;
-        ssm << "This type of var is ! handled by MIP: " << *it << std::endl;
+        ssm << "This type of var is not handled by MIP: " << *it << std::endl;
         ssm << "  VarDecl flags (ti, bt, st, ot): "
           << ti->type().ti()
           << ti->type().bt()
           << ti->type().st()
           << ti->type().ot()
           << ", dim == " << ti->type().dim()
+          << "\nRemove the variable or add a constraint so it is redefined."
           << endl;
         throw InternalError(ssm.str());
       }
@@ -689,9 +685,7 @@ void MIP_solverinstance::processFlatZinc(void) {
       }
     }
   }
-
-  processSearchAnnotations( solveItem->ann() );
-
+  
   if (mip_wrap->fVerbose) {
     cerr << " done, " << mip_wrap->getNRows() << " rows && "
     << mip_wrap->getNCols() << " columns in total.";
@@ -703,6 +697,11 @@ void MIP_solverinstance::processFlatZinc(void) {
         << mip_wrap->nLitVars << " literals with "
         << mip_wrap-> sLitValues.size() << " values used." << endl;
   }
+
+  processSearchAnnotations( solveItem->ann() );
+
+  processWarmstartAnnotations( solveItem->ann() );
+  
 }  // processFlatZinc
 
 Expression* MIP_solverinstance::getSolutionValue(Id* id) {
@@ -724,37 +723,80 @@ Expression* MIP_solverinstance::getSolutionValue(Id* id) {
 
 void 
 MIP_solverinstance::processSearchAnnotations(const Annotation& ann) {
+    if ( 1==getMIPWrapper()->getFreeSearch() )
+        return;
+    std::vector<Expression*> aAnns;
+    flattenSearchAnnotations( ann, aAnns );
+    vector<MIP_solverinstance::VarId> vars;
+    vector<int> aPri;                                  // priorities
+    int nArrayAnns = 0;
+    for ( auto iA=0; iA<aAnns.size(); ++iA ) {
+        const auto& pE = aAnns[iA];
+        if( pE->isa<Call>() ) {
+            Call* pC = pE->cast<Call>();
+            const auto cId = pC->id().str();
+            if ( "int_search"==cId || "float_search"==cId ) {
+                ArrayLit* alV = nullptr;
+                if ( !pC->n_args() || nullptr == (alV = eval_array_lit(_env.envi(),pC->arg(0))) ) {
+                    std::cerr << "  SEARCH ANN: '" << (*pC)
+                       << "'  is unknown. " << std::endl;
+                    continue;
+                }
+                ++nArrayAnns;
+                for (unsigned int i=0; i<alV->size(); i++) {
+                    if (Id* ident = (*alV)[i]->dyn_cast<Id>()) {
+                        vars.push_back( exprToVar( ident ) );
+                        aPri.push_back( aAnns.size()-iA );            // level search by default
+                    } // else ignore
+                }
+            }
+        }
+    }
+    if ( vars.size() ) {
+        if ( 2==getMIPWrapper()->getFreeSearch() ) {
+            for ( int i=0; i<vars.size(); ++i )
+                aPri[i] = 1; //vars.size()-i;                                    // descending
+        }
+        if ( !getMIPWrapper()->addSearch( vars, aPri ) )
+            cerr << "\nWARNING: MIP backend seems to ignore search strategy." << endl;
+        else 
+            cerr << "  MIP: added " << vars.size() << " variable branching priorities from "
+              << nArrayAnns << " arrays." << endl;
+    }
+}
+
+void 
+MIP_solverinstance::processWarmstartAnnotations(const Annotation& ann) {
     int nVal = 0;
     for(ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
         Expression* e = *i;
         if ( e->isa<Call>() ) {
             Call* c = e->cast<Call>();
             if ( c->id().str() == "warm_start_array" ) {
-                ArrayLit* anns = c->args()[0]->cast<ArrayLit>();
-                for(unsigned int i=0; i<anns->v().size(); i++) {
+                ArrayLit* anns = c->arg(0)->cast<ArrayLit>();
+                for(unsigned int i=0; i<anns->size(); i++) {
                     Annotation subann;
-                    subann.add(anns->v()[i]);
-                    processSearchAnnotations( subann );
+                    subann.add((*anns)[i]);
+                    processWarmstartAnnotations( subann );
                 }
             } else
             if ( c->id().str() == "warm_start" ) {
-                auto args = c->args();
-                MZN_ASSERT_HARD_MSG( args.size()>=2, "ERROR: warm_start needs 2 array args" );
+                MZN_ASSERT_HARD_MSG( c->n_args()>=2, "ERROR: warm_start needs 2 array args" );
                 vector<double> coefs;
                 vector<MIP_solverinstance::VarId> vars;
 
     /// Process coefs & vars together to eliminate literals (problem with Gurobi's updatemodel()'s)
-                ArrayLit* alC = eval_array_lit(_env.envi(), args[1]);
+                ArrayLit* alC = eval_array_lit(_env.envi(), c->arg(1));
                 MZN_ASSERT_HARD_MSG( 0!=alC, "ERROR: warm_start needs 2 array args" );
-                coefs.reserve(alC->v().size());
-                ArrayLit* alV = eval_array_lit(_env.envi(), args[0]);
+                coefs.reserve(alC->size());
+                ArrayLit* alV = eval_array_lit(_env.envi(), c->arg(0));
                 MZN_ASSERT_HARD_MSG( 0!=alV, "ERROR: warm_start needs 2 array args" );
-                vars.reserve(alV->v().size());
-                for (unsigned int i=0; i<alV->v().size() && i<alC->v().size(); i++) {
-                  const auto e2c = exprToConstEasy( alC->v()[i] );
+                vars.reserve(alV->size());
+                for (unsigned int i=0; i<alV->size() && i<alC->size(); i++) {
+                  const auto e2c = exprToConstEasy( (*alC)[i] );
                   /// Check if it is not an opt int etc. and a proper variable
                   if (e2c.second) 
-                  if (Id* ident = alV->v()[i]->dyn_cast<Id>()) {
+                  if (Id* ident = (*alV)[i]->dyn_cast<Id>()) {
                     coefs.push_back( e2c.first );
                     vars.push_back( exprToVar( ident ) );
                   } // else ignore

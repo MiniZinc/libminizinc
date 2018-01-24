@@ -65,6 +65,9 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   //            << "  --readParam <file>  read GUROBI parameters from file
   //               << "--writeParam <file> write GUROBI parameters to file
   //               << "--tuneParam         instruct GUROBI to tune parameters instead of solving
+  << "-f                  free search (default)" << std::endl
+  << "--fixed-search      fixed search (approximation of the model's one by branching priorities)" << std::endl
+  << "--uniform-search    'more fixed' search (all variables in the search anns get priority 1)" << std::endl
   << "--writeModel <file> write model to <file> (.lp, .mps, .sav, ...)" << std::endl
   << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
   << "-p <N>              use N threads, default: 1." << std::endl
@@ -90,6 +93,8 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   }
 
             /// SOLVER PARAMS ????
+            
+ static   int nFreeSearch=1;
  static   int nThreads=1;
  static   string sExportModel;
  static   double nTimeout=-1;
@@ -112,7 +117,10 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
       || string(argv[i])=="--all-solutions" ) {
     flag_all_solutions = true;
   } else if (string(argv[i])=="-f") {
-//     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
+  } else if (string(argv[i])=="--fixed-search") {
+    nFreeSearch = 0;
+  } else if (string(argv[i])=="--uniform-search") {
+    nFreeSearch = 2;
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
   } else if ( cop.get( "-p", &nThreads ) ) {
   } else if ( cop.get( "--timeout", &nTimeout ) ) {
@@ -266,11 +274,12 @@ void MIP_gurobi_wrapper::openGUROBI()
   cbui.wrapper = this;
   
    /* Initialize the GUROBI environment */
+   cout << "% " << flush;               // Gurobi 7.5.2 prints "Academic License..."
    error = dll_GRBloadenv (&env, "mzn-gurobi.log");
    wrap_assert ( !error, "Could not open GUROBI environment." );
    error = dll_GRBsetintparam(env, "OutputFlag", 0);  // Switch off output
-//    error = dll_GRBsetintparam(env, "LogToConsole",
-//                             fVerbose ? 1 : 0);  // also when flag_all_solutions?  TODO
+//   error = dll_GRBsetintparam(env, "LogToConsole",
+//                            fVerbose ? 1 : 0);  // also when flag_all_solutions?  TODO
   /* Create the problem. */
    error = dll_GRBnewmodel(env, &model, "mzn_gurobi", 0, NULL, NULL, NULL, NULL, NULL);
    wrap_assert ( model, "Failed to create LP." );
@@ -382,6 +391,18 @@ void MIP_gurobi_wrapper::addIndicatorConstraint(
   error = dll_GRBaddgenconstrIndicator(model, rowName.c_str(), iBVar, bVal,
                                    nnz, rmatind, rmatval, ssense, rhs);    
   wrap_assert( !error,  "Failed to add indicator constraint." );
+}
+
+bool MIP_gurobi_wrapper::addSearch( const std::vector<VarId>& vars, const std::vector<int> pri ) {
+  assert( vars.size()==pri.size() );
+  static_assert( sizeof(VarId)==sizeof(int), "VarId should be (u)int currently" );
+  error = dll_GRBsetintattrlist(model, "BranchPriority", vars.size(), (int*)vars.data(), (int*)pri.data());
+  wrap_assert( !error,  "Failed to add branching priorities" );
+  return true;
+}
+
+int MIP_gurobi_wrapper::getFreeSearch() {
+    return nFreeSearch;
 }
 
 bool MIP_gurobi_wrapper::addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals ) {

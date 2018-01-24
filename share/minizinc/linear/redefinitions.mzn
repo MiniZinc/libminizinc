@@ -12,6 +12,10 @@
 function var bool: reverse_map(var int: x) = (x==1);
 function bool: reverse_map(int: x) = (x==1);
 
+predicate mzn_reverse_map_var(var bool: b) = let {
+  var int: x = bool2int(b)
+} in true;
+
 function var int: bool2int(var bool: x) :: promise_total =
  let { var 0..1: b2i;
        constraint (x = reverse_map(b2i)) ::is_reverse_map ;
@@ -119,8 +123,22 @@ predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
       m == x[min(sActive)]
     else
       let {
-          array[1..n] of var 0..1: p,
-          constraint     m >= lb_array(x) /\   m <= MinUB,
+          array[1..n] of var int: p = [
+            if i in sActive then let { var 0..1: pi } in pi else 0 endif | i in 1..n ],
+          constraint 1==sum(p),
+          constraint m >= lb_array(x),
+          constraint m <= MinUB,
+        } in
+      forall (i in index_set(x))
+        ( 
+          if i in sActive                               %% for at least 1 element
+          then 
+              m<=x[i] /\ aux_float_ge_if_1(m, x[i], p[i])
+          else true endif )
+                                                        %% -- exclude too big x[i]
+      /\
+      if card(sActive)>1 /\ fMinimumCutsXZ then
+        let {
           array[int] of float: AL = [ lb(x[i]) | i in 1..n],
           array[int] of int: srt = sort_by([i | i in 1..n], AL),
                                             %indices of lb in sorted order
@@ -129,18 +147,6 @@ predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
           array[int] of float: AM_srt = AL_srt ++ [MinUB]
                                         %% -- these are z-levels of extreme points
         } in
-%    assert(index_set(x) == index_set(AL),
-%    "array_float_minimum_I: second argument must have index set 1..length()") /\
-      1 == sum(p) /\
-      forall (i in index_set(x))
-        ( 
-          if i in sActive                               %% for at least 1 element
-          then 
-              m<=x[i] /\ aux_float_ge_if_1(m, x[i], p[i])
-          else 0==p[i] endif )
-                                                        %% -- exclude too big x[i]
-      /\
-      if card(sActive)>1 /\ fMinimumCutsXZ then
         forall (i in 2..n+1  where
           AM_srt[i]<=MinUB  /\                          %% this is a new "start level"
           AM_srt[i]!=AM_srt[i-1]    )(                  %% and would produce a new cut
@@ -160,49 +166,27 @@ predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
 % Multiplication and division
 
 predicate int_div(var int: x, var int: y, var int: q) =
-    let { 
-      int: bx = max(abs(lb(x)), abs(ub(x)));
-      constraint -bx<=q /\ q<=bx;
-      int: by = max(abs(lb(y)), abs(ub(y)));
-      var -by+1..by-1: r;
-    }
-    in
-    aux_int_division_modulo(x,y,q,r);
+    q == aux_int_division_modulo_fn(x,y)[1];
 
 
 predicate int_mod(var int: x, var int: y, var int: r) =
-    let { 
+    r == aux_int_division_modulo_fn(x,y)[2];
+
+
+function array[int] of var int: aux_int_division_modulo_fn(var int: x, var int: y) =
+    let {
       int: bx = max(abs(lb(x)), abs(ub(x)));
       var -bx..bx: q;
       int: by = max(abs(lb(y)), abs(ub(y)));
-      constraint -by+1<=r /\ r<=by-1;
-    }
-    in
-    aux_int_division_modulo(x,y,q,r);
-
-
-predicate aux_int_division_modulo(var int: x, var int: y, var int: q,
-        var int: r) =
-    let {
-      int: bx = max(abs(lb(x)), abs(ub(x)));
-      constraint -bx<=q /\ q<=bx;
-      int: by = max(abs(lb(y)), abs(ub(y)));
-      constraint -by+1<=r /\ r<=by-1;
-      var 0..1: p
-    }
-    in
-    x = y * q + r /\
-    % 0 <= x -> 0 <= r    which is    0 > x \/ 0 <= r
-    aux_int_lt_if_1(x, 0, p) /\
-    aux_int_ge_if_0(r, 0, p) /\
-    % x < 0 -> r <= 0    which is    x >= 0 \/ r <= 0
-    aux_int_ge_if_0(x, 0, p) /\
-    aux_int_le_if_1(r, 0, p) /\
+      var -by+1..by-1: r;
+      constraint x = y * q + r,
+      constraint 0 <= x -> 0 <= r,  %%  which is    0 > x \/ 0 <= r
+      constraint x < 0 -> r <= 0,   %%  which is    x >= 0 \/ r <= 0
     % abs(r) < abs(y)
-    let { var 1.. max(abs(lb(y)), abs(ub(y))): w = abs(y) }
-    in
-    w >  r /\
-    w > -r;
+      var 1.. max(abs(lb(y)), abs(ub(y))): w = abs(y),
+      constraint w >  r /\ w > -r,
+    } in
+      [ q, r ];
 
 %% Can also have int_times(var float, var int) ......... TODO
 
@@ -318,13 +302,17 @@ predicate array_var_int_element(var int: x, array[int] of var int: a,
 predicate array_float_element(var int: i00, array[int] of float: a,
                               var float: z) =
     let { set of int: ix = index_set(a),
-          constraint i00 in ix
+          constraint i00 in ix,
+    } in         %%% Finish domain before dMin/dMax
+    let {
+          float: dMin = min(i in dom(i00))(a[i]),
+          float: dMax = max(i in dom(i00))(a[i]),
     } in
-    z >= min(i in dom(i00))(a[i]) /\
-    z <= max(i in dom(i00))(a[i]) /\
-    if card(dom(i00))==1 \/ min(i in dom(i00))(a[i])==max(i in dom(i00))(a[i])
-      then true           %%%% z==a[fix(i00)]
+    if dMin==dMax then
+      z==dMin
     else
+      z >= dMin /\
+      z <= dMax /\
       let {
         int: nUBi00 = max(dom(i00)),
         int: nLBi00 = min(dom(i00)),
@@ -347,28 +335,31 @@ predicate array_var_float_element(var int: i00, array[int] of var float: a,
                                   var float: z) =
     let { set of int: ix = index_set(a),
           constraint i00 in ix,
+    } in                            %% finish domain first
+    let {
           float: minLB=min(i in dom(i00))(lb(a[i])),
           float: maxUB=max(i in dom(i00))(ub(a[i]))
     } in
-          z >= minLB /\
-          z <= maxUB /\
-    if is_fixed(i00) then z==a[fix(i00)]
-    elseif minLB==maxUB then true
-    elseif {0,1}==dom(i00) /*ub(i00)-lb(i00)==1*/ /*2==card( dom( i00 ) )*/ then
-      aux_float_eq_if_1(z, a[lb(i00)], (ub(i00)-i00)) /\
-      aux_float_eq_if_1(z, a[ub(i00)], (i00-lb(i00)))
+    if minLB==maxUB then
+      z==minLB
     else
-      let {
-        array[int] of var int: p = eq_encode(i00),
-      } in
-      assert(dom(i00) subset index_set(p), "", true) /\
+      z >= minLB /\
+      z <= maxUB /\
+      if {0,1}==dom(i00) /*ub(i00)-lb(i00)==1*/ /*2==card( dom( i00 ) )*/ then
+        aux_float_eq_if_1(z, a[lb(i00)], (ub(i00)-i00)) /\
+        aux_float_eq_if_1(z, a[ub(i00)], (i00-lb(i00)))
+      else
+        let {
+          array[int] of var int: p = eq_encode(i00),
+        } in
+        assert(dom(i00) subset index_set(p), "", true) /\
   %%% The convexified bounds seem slow for ^2 and ^3 equations:
   %    sum(i in dom(i01))( lb(a[i]) * int2float(p[i]) ) <= z /\    %% convexify lower bounds
   %    sum(i in dom(i01))( ub(a[i]) * int2float(p[i]) ) >= z /\    %% convexify upper bounds
-      forall (i in dom(i00))(
+        forall (i in dom(i00))(
           aux_float_eq_if_1(z, a[i], p[i])
-      )
-      %% Cuts:
+        )
+        %% Cuts:
         /\ 
         if fElementCutsXZ then
           array_var_float_element__ROOF([  a[i] | i in dom(i00) ],  z)  :: MIP_cut   %% these 2 better as user cuts - too slow
@@ -379,7 +370,8 @@ predicate array_var_float_element(var int: i00, array[int] of var float: a,
               array_var_float_element__XBZ_lb([  a[i] | i in dom(i00) ],  [  p[i] | i in dom(i00) ],  z)  :: MIP_cut
           /\    array_var_float_element__XBZ_lb([ -a[i] | i in dom(i00) ],  [  p[i] | i in dom(i00) ], -z)  :: MIP_cut
         else true endif
-    endif ;
+      endif
+    endif;
 
 %%% Facets on the upper surface of the z-a polytope
 %%% Possible parameter: maximal number of first cuts taken only
@@ -438,29 +430,34 @@ predicate array_var_float_element__XBZ_lb(array[int] of var float: x, array[int]
 predicate set_in(var int: x, set of int: s__) =
     let {
       set of int: s = if has_bounds(x) then s__ intersect dom(x) else s__ endif,
-      constraint  min(s) <= x /\ x <= max(s);
+      constraint  min(s) <= x,
+      constraint  x <= max(s),
     } in
     if s = min(s)..max(s) then true
     elseif fPostprocessDomains then
       set_in__POST(x, s)
-    else
-      let {
-        array[int] of int: sL = [ e | e in s where not (e - 1 in s) ];
-        array[int] of int: sR = [ e | e in s where not (e + 1 in s) ];
-        array [index_set(sR)] of var 0..1: B;
-        constraint assert(length(sR)==length(sL), "N of lb and ub of sub-intervals of a set should be equal");
-      } in    
-        sum(B) = 1      %% use indicators
-        /\
-        x >= sum(i in index_set(sL))(B[i]*sL[i])     
-        /\ 
-        x <= sum(i in index_set(sR))(B[i]*sR[i])
+    else                    %% Update eq_encode 
+              let {
+                array[int] of var int: p = eq_encode(x);
+              } in
+                forall(i in index_set(p) diff s)(p[i]==0)
+%      let {
+%        array[int] of int: sL = [ e | e in s where not (e - 1 in s) ];
+%        array[int] of int: sR = [ e | e in s where not (e + 1 in s) ];
+%        array [index_set(sR)] of var 0..1: B;
+%        constraint assert(length(sR)==length(sL), "N of lb and ub of sub-intervals of a set should be equal");
+%      } in    
+%        sum(B) = 1      %% use indicators
+%        /\
+%        x >= sum(i in index_set(sL))(B[i]*sL[i])     
+%        /\ 
+%        x <= sum(i in index_set(sR))(B[i]*sR[i])
     endif;
 
 % XXX  only for a fixed set
 predicate set_in_reif(var int: x, set of int: s__, var bool: b) =
   if is_fixed(b) then
-    if true==fix(b) then x in s__ else x in dom(x) diff s__ endif
+    if fix(b) then x in s__ else x in dom(x) diff s__ endif
   else
     let {
       set of int: s = if has_bounds(x) then s__ intersect dom(x) else s__ endif,
@@ -468,10 +465,10 @@ predicate set_in_reif(var int: x, set of int: s__, var bool: b) =
     (
          if dom(x) subset s then b==true
          elseif card(dom(x) intersect s)==0 then b==false
-         elseif s = min(s)..max(s) then
-             b <-> (min(s) <= x /\ x <= max(s))
          elseif fPostprocessDomains then
            set_in_reif__POST(x, s, b)
+         elseif s == min(s)..max(s) then
+             b <-> (min(s) <= x /\ x <= max(s))
          else
 %            let {
 %              array[int] of int: sL = [ e | e in s where not (e - 1 in s) ];
@@ -484,8 +481,8 @@ predicate set_in_reif(var int: x, set of int: s__, var bool: b) =
 %              x >= lb(x) + sum(i in index_set(sL))(B[i]*(sL[i]-lb(x)))     
 %              /\ 
 %              x <= ub(x) + sum(i in index_set(sR))(B[i]*(sR[i]-ub(x)))
-           aux_int_le_if_1(x, max(s), bool2int(b)) /\
-           aux_int_ge_if_1(x, min(s), bool2int(b)) /\
+            %  aux_int_le_if_1(x, max(s), bool2int(b)) /\
+            %  aux_int_ge_if_1(x, min(s), bool2int(b)) /\
             if card(dom(x))<=nMZN__UnaryLenMax_setInReif then               %% PARAM TODO
               let {
                 array[int] of var int: p = eq_encode(x);
