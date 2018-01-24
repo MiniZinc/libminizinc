@@ -1288,6 +1288,7 @@ namespace MiniZinc {
                       }
                     }
                   }
+                  vd->ti()->setComputedDomain(true);
                 } else if (e->type().bt()==Type::BT_FLOAT) {
                   FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
                   for (unsigned int i=0; i<al->v().size(); i++) {
@@ -1323,6 +1324,7 @@ namespace MiniZinc {
                       }
                     }
                   }
+                  vd->ti()->setComputedDomain(true);
                 }
               }
             } else if (Id* e_id = e->dyn_cast<Id>()) {
