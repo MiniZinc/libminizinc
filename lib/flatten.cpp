@@ -329,9 +329,9 @@ namespace MiniZinc {
     (*_flat)[i]->remove();
   }
   
-  void EnvI::fail(void) {
+  void EnvI::fail(const std::string& msg) {
     if (!_failed) {
-      addWarning("model inconsistency detected");
+      addWarning(std::string("model inconsistency detected")+(msg.empty() ? std::string() : (": "+msg)));
       _failed = true;
       for (unsigned int i=0; i<_flat->size(); i++) {
         (*_flat)[i]->remove();
@@ -1266,6 +1266,26 @@ namespace MiniZinc {
                           }
                         }
                       }
+                    } else {
+                      // at this point, can only be a constant
+                      assert(al->v()[i]->type().ispar());
+                      if (e->type().st()==Type::ST_PLAIN) {
+                        IntVal iv = eval_int(env, al->v()[i]);
+                        if (!isv->contains(iv)) {
+                          std::ostringstream oss;
+                          oss << "value " << iv << " outside declared array domain " << *isv;
+                          env.fail(oss.str());
+                        }
+                      } else {
+                        IntSetVal* aisv = eval_intset(env, al->v()[i]);
+                        IntSetRanges aisv_r(aisv);
+                        IntSetRanges isv_r(isv);
+                        if (!Ranges::subset(aisv_r,isv_r)) {
+                          std::ostringstream oss;
+                          oss << "value " << *aisv << " outside declared array domain " << *isv;
+                          env.fail(oss.str());
+                        }
+                      }
                     }
                   }
                 } else if (e->type().bt()==Type::BT_FLOAT) {
@@ -1291,6 +1311,15 @@ namespace MiniZinc {
                             vdi->ti()->setComputedDomain(false);
                           }
                         }
+                      }
+                    } else {
+                      // at this point, can only be a constant
+                      assert(al->v()[i]->type().ispar());
+                      FloatVal fv = eval_float(env, al->v()[i]);
+                      if (!fsv->contains(fv)) {
+                        std::ostringstream oss;
+                        oss << "value " << fv << " outside declared array domain " << *fsv;
+                        env.fail(oss.str());
                       }
                     }
                   }
