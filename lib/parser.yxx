@@ -1101,7 +1101,6 @@ set_expr :
           $$ = IntLit::a(-$2->cast<IntLit>()->v());
         } else if ($2 && $2->isa<FloatLit>()) {
           $$ = FloatLit::a(-$2->cast<FloatLit>()->v());
-          $$ = $2;
         } else {
           $$=new UnOp(@$, UOT_MINUS, $2);
         }
