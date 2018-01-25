@@ -603,11 +603,11 @@ namespace MiniZinc {
       throw InternalError(ssm.str());
     }
     ArrayLit* a = arg->isa<Id>() ? arg->cast<Id>()->decl()->e()->cast<ArrayLit>() : arg->cast<ArrayLit>();
-    IntArgs ia(a->v().size()+offset);
+    IntArgs ia(a->size()+offset);
     for (int i=offset; i--;)
         ia[i] = 0;
-    for (int i=a->v().size(); i--;) {
-        ia[i+offset] = a->v()[i]->cast<IntLit>()->v().toInt();
+    for (int i=a->size(); i--;) {
+        ia[i+offset] = (*a)[i]->cast<IntLit>()->v().toInt();
     }
     return ia;
   }
@@ -620,11 +620,11 @@ namespace MiniZinc {
       throw InternalError(ssm.str());
     }
     ArrayLit* a = arg->isa<Id>() ? arg->cast<Id>()->decl()->e()->cast<ArrayLit>() : arg->cast<ArrayLit>();
-    IntArgs ia(a->v().size()+offset);
+    IntArgs ia(a->size()+offset);
     for (int i=offset; i--;)
         ia[i] = 0;
-    for (int i=a->v().size(); i--;)
-        ia[i+offset] = a->v()[i]->cast<BoolLit>()->v();
+    for (int i=a->size(); i--;)
+        ia[i+offset] = (*a)[i]->cast<BoolLit>()->v();
     return ia;
   }
 
@@ -672,15 +672,15 @@ namespace MiniZinc {
   Gecode::IntVarArgs
   GecodeSolverInstance::arg2intvarargs(Expression* arg, int offset) {
     ArrayLit* a = arg2arraylit(arg);
-    if (a->v().size() == 0) {
+    if (a->size() == 0) {
         IntVarArgs emptyIa(0);
         return emptyIa;
     }
-    IntVarArgs ia(a->v().size()+offset);
+    IntVarArgs ia(a->size()+offset);
     for (int i=offset; i--;)
         ia[i] = IntVar(*this->_current_space, 0, 0);
-    for (int i=a->v().size(); i--;) {
-        Expression* e = a->v()[i];
+    for (int i=a->size(); i--;) {
+        Expression* e = (*a)[i];
         if (e->type().isvar()) {
             //ia[i+offset] = _current_space->iv[*(int*)resolveVar(getVarDecl(e))];
             GecodeSolver::Variable var = resolveVar(getVarDecl(e));
@@ -715,7 +715,7 @@ namespace MiniZinc {
     for (int i=0; i<static_cast<int>(a->length()); i++) {
         if (i==siv)
             continue;
-        Expression* e = a->v()[i];
+        Expression* e = (*a)[i];
         if(e->type().isvar()) {
             GecodeVariable var = resolveVar(getVarDecl(e));
             if (e->type().isvarbool()) {
@@ -814,10 +814,10 @@ namespace MiniZinc {
     if (a->length() == 0)
         return true;
     for (int i=a->length(); i--;) {
-        if (a->v()[i]->type().isbool()) {
+        if ((*a)[i]->type().isbool()) {
           continue;
-        } else if ((a->v()[i])->type().isvarint()) {
-          GecodeVariable var = resolveVar(getVarDecl(a->v()[i]));
+        } else if (((*a)[i])->type().isvarint()) {
+          GecodeVariable var = resolveVar(getVarDecl((*a)[i]));
           if (var.hasBoolAlias()) {
             if (singleInt != -1) {
               return false;
@@ -837,11 +837,11 @@ namespace MiniZinc {
   GecodeSolverInstance::arg2floatargs(Expression* arg, int offset) {
     assert(arg->isa<Id>() || arg->isa<ArrayLit>());
     ArrayLit* a = arg->isa<Id>() ? arg->cast<Id>()->decl()->e()->cast<ArrayLit>() : arg->cast<ArrayLit>();
-    FloatValArgs fa(a->v().size()+offset);
+    FloatValArgs fa(a->size()+offset);
     for (int i=offset; i--;)
         fa[i] = 0.0;
-    for (int i=a->v().size(); i--;)
-        fa[i+offset] = a->v()[i]->cast<FloatLit>()->v().toDouble();
+    for (int i=a->size(); i--;)
+        fa[i+offset] = (*a)[i]->cast<FloatLit>()->v().toDouble();
     return fa;
   }
 
@@ -869,15 +869,15 @@ namespace MiniZinc {
   Gecode::FloatVarArgs
   GecodeSolverInstance::arg2floatvarargs(Expression* arg, int offset) {
     ArrayLit* a = arg2arraylit(arg);
-    if (a->v().size() == 0) {
+    if (a->size() == 0) {
         FloatVarArgs emptyFa(0);
         return emptyFa;
     }
-    FloatVarArgs fa(a->v().size()+offset);
+    FloatVarArgs fa(a->size()+offset);
     for (int i=offset; i--;)
         fa[i] = FloatVar(*this->_current_space, 0.0, 0.0);
-    for (int i=a->v().size(); i--;) {
-        Expression* e = a->v()[i];
+    for (int i=a->size(); i--;) {
+        Expression* e = (*a)[i];
         if (e->type().isvar()) {
             GecodeVariable var = resolveVar(getVarDecl(e));
             assert(var.isfloat());
@@ -1403,33 +1403,33 @@ namespace MiniZinc {
         return;
       } 
       else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "int_search") {
-        Call* call = flatAnn[i]->cast<Call>();            
-        ArrayLit *vars = arg2arraylit(call->args()[0]);
-        if(vars->v().size() == 0) { // empty array
+        Call* call = flatAnn[i]->cast<Call>();
+        ArrayLit *vars = arg2arraylit(call->arg(0));
+        if(vars->size() == 0) { // empty array
           std::cerr << "WARNING: trying to branch on empty array in search annotation: " << *call << std::endl;
           continue;
         }
-        int k=vars->v().size();
-        for (int i=vars->v().size();i--;)
-          if (!(vars->v()[i])->type().isvarint())
+        int k=vars->size();
+        for (int i=vars->size();i--;)
+          if (!(*vars)[i]->type().isvarint())
             k--;
         IntVarArgs va(k);
         std::vector<std::string> names;
         k=0;
-        for (unsigned int i=0; i<vars->v().size(); i++) {          
-          if (!(vars->v()[i])->type().isvarint()) {
+        for (unsigned int i=0; i<vars->size(); i++) {
+          if (!(*vars)[i]->type().isvarint()) {
             continue;
-          }          
-          int idx = resolveVar(getVarDecl(vars->v()[i])).index();
+          }
+          int idx = resolveVar(getVarDecl((*vars)[i])).index();
           va[k++] = _current_space->iv[idx];
           iv_searched[idx] = true;
-          names.push_back(getVarDecl(vars->v()[i])->id()->str().str());          
-        }        
+          names.push_back(getVarDecl((*vars)[i])->id()->str().str());
+        }
         std::string r0, r1;
         //BrancherHandle bh = 
         branch(*_current_space, va,
-            ann2ivarsel(call->args()[1]->cast<Id>()->str().str(),rnd,decay),
-            ann2ivalsel(call->args()[2]->cast<Id>()->str().str(),r0,r1,rnd),
+            ann2ivarsel(call->arg(1)->cast<Id>()->str().str(),rnd,decay),
+            ann2ivalsel(call->arg(2)->cast<Id>()->str().str(),r0,r1,rnd),
             NULL
             //,&varValPrint<IntVar>
             );
@@ -1437,52 +1437,52 @@ namespace MiniZinc {
       } // end int_search
       else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "int_assign") {
         Call* call = flatAnn[i]->dyn_cast<Call>();
-        ArrayLit* vars = arg2arraylit(call->args()[0]);
-        int k=vars->v().size();
-        for (int i=vars->v().size(); i--;)
-          if (!(vars->v()[i])->type().isvarint())
+        ArrayLit* vars = arg2arraylit(call->arg(0));
+        int k=vars->size();
+        for (int i=vars->size(); i--;)
+          if (!((*vars)[i])->type().isvarint())
             k--;
         IntVarArgs va(k);
         k=0;
-        for (unsigned int i=0; i<vars->v().size(); i++) {
-          if (!(vars->v()[i])->type().isvarint())
+        for (unsigned int i=0; i<vars->size(); i++) {
+          if (!((*vars)[i])->type().isvarint())
             continue;
-          int idx = resolveVar(getVarDecl(vars->v()[i])).index();
+          int idx = resolveVar(getVarDecl((*vars)[i])).index();
           va[k++] = _current_space->iv[idx];
           iv_searched[idx] = true;
         }
-        assign(*_current_space, va, ann2asnivalsel(call->args()[1]->cast<Id>()->str().str(),rnd), NULL
+        assign(*_current_space, va, ann2asnivalsel(call->arg(1)->cast<Id>()->str().str(),rnd), NULL
                             //&varValPrint<IntVar>
               );
       } 
       else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "bool_search") {
         Call* call = flatAnn[i]->dyn_cast<Call>();
-        ArrayLit* vars = arg2arraylit(call->args()[0]);
-        int k=vars->v().size();
-        for (int i=vars->v().size(); i--;)
-            if (!(vars->v()[i])->type().isvarbool())
+        ArrayLit* vars = arg2arraylit(call->arg(0));
+        int k=vars->size();
+        for (int i=vars->size(); i--;)
+            if (!((*vars)[i])->type().isvarbool())
                 k--;
         BoolVarArgs va(k);
         k=0;
         std::vector<std::string> names;
-        for (unsigned int i=0; i<vars->v().size(); i++) {
-            if (!(vars->v()[i])->type().isvarbool())
+        for (unsigned int i=0; i<vars->size(); i++) {
+            if (!((*vars)[i])->type().isvarbool())
                 continue;
-            int idx = resolveVar(getVarDecl(vars->v()[i])).index();
+            int idx = resolveVar(getVarDecl((*vars)[i])).index();
             va[k++] = _current_space->bv[idx];
             bv_searched[idx] = true;
-            names.push_back(getVarDecl(vars->v()[i])->id()->str().str());
+            names.push_back(getVarDecl((*vars)[i])->id()->str().str());
         }
 
         std::string r0, r1;
         //BrancherHandle bh = 
         branch(*_current_space, va, 
 #ifdef HAS_GECODE_VERSION_5_1
-            ann2bvarsel(call->args()[1]->cast<Id>()->str().str(),rnd,decay),
-            ann2bvalsel(call->args()[2]->cast<Id>()->str().str(),r0,r1,rnd), NULL //,
+            ann2bvarsel(call->arg(1)->cast<Id>()->str().str(),rnd,decay),
+            ann2bvalsel(call->arg(2)->cast<Id>()->str().str(),r0,r1,rnd), NULL //,
 #else
-            ann2ivarsel(call->args()[1]->cast<Id>()->str().str(),rnd,decay),
-            ann2ivalsel(call->args()[2]->cast<Id>()->str().str(),r0,r1,rnd), NULL //,
+            ann2ivarsel(call->arg(1)->cast<Id>()->str().str(),rnd,decay),
+            ann2ivalsel(call->arg(2)->cast<Id>()->str().str(),r0,r1,rnd), NULL //,
 #endif
             //&varValPrint<BoolVar>
             );
@@ -1490,45 +1490,45 @@ namespace MiniZinc {
       } 
       else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "int_default_search") {
         Call* call = flatAnn[i]->dyn_cast<Call>();
-        def_int_varsel = ann2ivarsel(call->args()[0]->cast<Id>()->str().str(),rnd,decay);
+        def_int_varsel = ann2ivarsel(call->arg(0)->cast<Id>()->str().str(),rnd,decay);
         std::string r0;                                                    
-        def_int_valsel = ann2ivalsel(call->args()[1]->cast<Id>()->str().str(),r0,r0,rnd);
+        def_int_valsel = ann2ivalsel(call->arg(1)->cast<Id>()->str().str(),r0,r0,rnd);
       } 
       else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "bool_default_search") {
         Call* call = flatAnn[i]->dyn_cast<Call>();
         std::string r0;
 #ifdef HAS_GECODE_VERSION_5_1
-        def_bool_varsel = ann2bvarsel(call->args()[0]->cast<Id>()->str().str(),rnd,decay);
-        def_bool_valsel = ann2bvalsel(call->args()[1]->cast<Id>()->str().str(),r0,r0,rnd);
+        def_bool_varsel = ann2bvarsel(call->arg(0)->cast<Id>()->str().str(),rnd,decay);
+        def_bool_valsel = ann2bvalsel(call->arg(1)->cast<Id>()->str().str(),r0,r0,rnd);
 #else
-        def_bool_varsel = ann2ivarsel(call->args()[0]->cast<Id>()->str().str(),rnd,decay);
-        def_bool_valsel = ann2ivalsel(call->args()[1]->cast<Id>()->str().str(),r0,r0,rnd);
+        def_bool_varsel = ann2ivarsel(call->arg(0)->cast<Id>()->str().str(),rnd,decay);
+        def_bool_valsel = ann2ivalsel(call->arg(1)->cast<Id>()->str().str(),r0,r0,rnd);
 #endif
       } 
       else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "set_search") {
 #ifdef GECODE_HAS_SET_VARS
         Call* call = flatAnn[i]->dyn_cast<Call>();
-        ArrayLit* vars = arg2arraylit(call->args()[0]);
-        int k=vars->v().size();
-        for (int i=vars->v().size(); i--;)
-            if (!(vars->v()[i])->type().is_set() || !(vars->v()[i])->type().isvar())
+        ArrayLit* vars = arg2arraylit(call->arg(0));
+        int k=vars->size();
+        for (int i=vars->size(); i--;)
+            if (!((*vars)[i])->type().is_set() || !((*vars)[i])->type().isvar())
                 k--;
         SetVarArgs va(k);
         k=0;
         std::vector<std::string> names;
-        for (unsigned int i=0; i<vars->v().size(); i++) {
-          if (!(vars->v()[i])->type().is_set() || !(vars->v()[i])->type().isvar())
+        for (unsigned int i=0; i<vars->size(); i++) {
+          if (!((*vars)[i])->type().is_set() || !((*vars)[i])->type().isvar())
             continue;
-          int idx = resolveVar(getVarDecl(vars->v()[i])).index();
+          int idx = resolveVar(getVarDecl((*vars)[i])).index();
           va[k++] = _current_space->sv[idx];
           sv_searched[idx] = true;
-          names.push_back(getVarDecl(vars->v()[i])->id()->str().str());
+          names.push_back(getVarDecl((*vars)[i])->id()->str().str());
         }
         std::string r0, r1;
         //BrancherHandle bh =
         branch(*_current_space, va, 
-            ann2svarsel(call->args()[1]->cast<Id>()->str().str(),rnd,decay), 
-            ann2svalsel(call->args()[2]->cast<Id>()->str().str(),r0,r1,rnd),
+            ann2svarsel(call->arg(1)->cast<Id>()->str().str(),rnd,decay), 
+            ann2svalsel(call->arg(2)->cast<Id>()->str().str(),r0,r1,rnd),
             NULL//,
             //&varValPrint<SetVar>
             );
@@ -1544,9 +1544,9 @@ namespace MiniZinc {
       else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "set_default_search") {        
 #ifdef GECODE_HAS_SET_VARS
         Call* call = flatAnn[i]->dyn_cast<Call>();
-        def_set_varsel = ann2svarsel(call->args()[0]->cast<Id>()->str().str(),rnd,decay);
+        def_set_varsel = ann2svarsel(call->arg(0)->cast<Id>()->str().str(),rnd,decay);
         std::string r0;
-        def_set_valsel = ann2svalsel(call->args()[1]->cast<Id>()->str().str(),r0,r0,rnd);
+        def_set_valsel = ann2svalsel(call->arg(1)->cast<Id>()->str().str(),r0,r0,rnd);
 #else
         if (!ignoreUnknown) {
             err << "Warning, ignored search annotation: ";
@@ -1558,9 +1558,9 @@ namespace MiniZinc {
       else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "float_default_search") {
 #ifdef GECODE_HAS_FLOAT_VARS
         Call* call = flatAnn[i]->dyn_cast<Call>();
-        def_float_varsel = ann2fvarsel(call->args()[0]->cast<Id>()->str().str(),rnd,decay);
+        def_float_varsel = ann2fvarsel(call->arg(0)->cast<Id>()->str().str(),rnd,decay);
         std::string r0;
-        def_float_valsel = ann2fvalsel(call->args()[1]->cast<Id>()->str().str(),r0,r0);
+        def_float_valsel = ann2fvalsel(call->arg(1)->cast<Id>()->str().str(),r0,r0);
 #else
         if (!ignoreUnknown) {
             err << "Warning, ignored search annotation: float_default_search" << std::endl;
@@ -1569,27 +1569,27 @@ namespace MiniZinc {
       } else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id().str() == "float_search") {
 #ifdef GECODE_HAS_FLOAT_VARS
         Call* call = flatAnn[i]->dyn_cast<Call>();
-        ArrayLit* vars = call->args()[0]->cast<ArrayLit>();
-        int k=vars->v().size();
-        for (int i=vars->v().size(); i--;)
-            if (!(vars->v()[i])->type().isvarfloat())
+        ArrayLit* vars = call->arg(0)->cast<ArrayLit>();
+        int k=vars->size();
+        for (int i=vars->size(); i--;)
+            if (!((*vars)[i])->type().isvarfloat())
                 k--;
         FloatVarArgs va(k);
         k=0;
         std::vector<std::string> names;
-        for (unsigned int i=0; i<vars->v().size(); i++) {
-            if (!(vars->v()[i])->type().isvarfloat())
+        for (unsigned int i=0; i<vars->size(); i++) {
+            if (!((*vars)[i])->type().isvarfloat())
               continue;
-            int idx = resolveVar(getVarDecl(vars->v()[i])).index();
+            int idx = resolveVar(getVarDecl((*vars)[i])).index();
             va[k++] = _current_space->fv[idx];
             fv_searched[idx] = true;
-            names.push_back(getVarDecl(vars->v()[i])->id()->str().str());
+            names.push_back(getVarDecl((*vars)[i])->id()->str().str());
         }
         std::string r0, r1;
         //BrancherHandle bh =
         branch(*_current_space, va,
-            ann2fvarsel(call->args()[2]->cast<Id>()->str().str(),rnd,decay), 
-            ann2fvalsel(call->args()[3]->cast<Id>()->str().str(),r0,r1),
+            ann2fvarsel(call->arg(2)->cast<Id>()->str().str(),rnd,decay), 
+            ann2fvalsel(call->arg(3)->cast<Id>()->str().str(),r0,r1),
             NULL//,
             //&varValPrintF
             );
