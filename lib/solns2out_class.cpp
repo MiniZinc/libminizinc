@@ -151,10 +151,10 @@ void Solns2Out::parseAssignments(string& solution) {
       typecheck(*pEnv, getModel(), ai);
       if (Call* c = ai->e()->dyn_cast<Call>()) {
         // This is an arrayXd call, make sure we get the right builtin
-        assert(c->args()[c->args().size()-1]->isa<ArrayLit>());
-        for (unsigned int i=0; i<c->args().size(); i++)
-          c->args()[i]->type(Type::parsetint());
-        c->args()[c->args().size()-1]->type(de.first->type());
+        assert(c->arg(c->n_args()-1)->isa<ArrayLit>());
+        for (unsigned int i=0; i<c->n_args(); i++)
+          c->arg(i)->type(Type::parsetint());
+        c->arg(c->n_args()-1)->type(de.first->type());
         c->decl(getModel()->matchFn(pEnv->envi(), c, false));
       }
       de.first->e(ai->e());

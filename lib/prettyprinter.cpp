@@ -342,9 +342,9 @@ namespace MiniZinc {
           int n = al.dims();
           if (n == 1 && al.min(0) == 1) {
             os << "[";
-            for (unsigned int i = 0; i < al.v().size(); i++) {
-              p(al.v()[i]);
-              if (i<al.v().size()-1)
+            for (unsigned int i = 0; i < al.size(); i++) {
+              p(al[i]);
+              if (i<al.size()-1)
                 os << ",";
             }
             os << "]";
@@ -352,7 +352,7 @@ namespace MiniZinc {
             os << "[|";
             for (int i = 0; i < al.max(0); i++) {
               for (int j = 0; j < al.max(1); j++) {
-                p(al.v()[i * al.max(1) + j]);
+                p(al[i * al.max(1) + j]);
                 if (j < al.max(1)-1)
                   os << ",";
               }
@@ -367,9 +367,9 @@ namespace MiniZinc {
               os << ",";
             }
             os << "[";
-            for (unsigned int i = 0; i < al.v().size(); i++) {
-              p(al.v()[i]);
-              if (i<al.v().size()-1)
+            for (unsigned int i = 0; i < al.size(); i++) {
+              p(al[i]);
+              if (i<al.size()-1)
                 os << ",";
             }
             os << "])";
@@ -564,9 +564,9 @@ namespace MiniZinc {
         {
           const Call& c = *e->cast<Call>();
           os << c.id() << "(";
-          for (unsigned int i = 0; i < c.args().size(); i++) {
-            p(c.args()[i]);
-            if (i < c.args().size()-1)
+          for (unsigned int i = 0; i < c.n_args(); i++) {
+            p(c.arg(i));
+            if (i < c.n_args()-1)
               os << ",";
           }
           os << ")";
@@ -1204,15 +1204,15 @@ namespace MiniZinc {
       int n = al.dims();
       if (n == 1 && al.min(0) == 1) {
         dl = new DocumentList("[", ", ", "]");
-        for (unsigned int i = 0; i < al.v().size(); i++)
-          dl->addDocumentToList(expressionToDocument(al.v()[i]));
+        for (unsigned int i = 0; i < al.size(); i++)
+          dl->addDocumentToList(expressionToDocument(al[i]));
       } else if (n == 2 && al.min(0) == 1 && al.min(1) == 1) {
         dl = new DocumentList("[| ", " | ", " |]");
         for (int i = 0; i < al.max(0); i++) {
           DocumentList* row = new DocumentList("", ", ", "");
           for (int j = 0; j < al.max(1); j++) {
             row->
-              addDocumentToList(expressionToDocument(al.v()[i * al.max(1) + j]));
+              addDocumentToList(expressionToDocument(al[i * al.max(1) + j]));
           }
           dl->addDocumentToList(row);
           if (i != al.max(0) - 1)
@@ -1231,8 +1231,8 @@ namespace MiniZinc {
           args->addStringToList(oss.str());
         }
         DocumentList* array = new DocumentList("[", ", ", "]");
-        for (unsigned int i = 0; i < al.v().size(); i++)
-          array->addDocumentToList(expressionToDocument(al.v()[i]));
+        for (unsigned int i = 0; i < al.size(); i++)
+          array->addDocumentToList(expressionToDocument(al[i]));
         args->addDocumentToList(array);
         dl->addDocumentToList(args);
       }
@@ -1457,7 +1457,7 @@ namespace MiniZinc {
       return dl;
     }
     ret mapCall(const Call& c) {
-      if (c.args().size() == 1) {
+      if (c.n_args() == 1) {
         /*
          * if we have only one argument, and this is an array comprehension,
          * we convert it into the following syntax
@@ -1466,7 +1466,7 @@ namespace MiniZinc {
          * forall (i in 1..10) (f(i,j))
          */
 
-        const Expression* e = c.args()[0];
+        const Expression* e = c.arg(0);
         if (e->isa<Comprehension>()) {
           const Comprehension* com = e->cast<Comprehension>();
           if (!com->set()) {
@@ -1516,8 +1516,8 @@ namespace MiniZinc {
       }
       std::string beg = c.id().str() + "(";
       DocumentList* dl = new DocumentList(beg, ", ", ")");
-      for (unsigned int i = 0; i < c.args().size(); i++) {
-        dl->addDocumentToList(expressionToDocument(c.args()[i]));
+      for (unsigned int i = 0; i < c.n_args(); i++) {
+        dl->addDocumentToList(expressionToDocument(c.arg(i)));
       }
       return dl;
 

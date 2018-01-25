@@ -1148,6 +1148,26 @@ expr :
       { $$=new BinOp(@$, $1, BOT_DIFF, $3); }
     | expr MZN_SYMDIFF expr
       { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); }
+    | MZN_DOTDOT
+      { $$=new SetLit(@$, IntSetVal::a(-IntVal::infinity(),IntVal::infinity())); }
+    | MZN_DOTDOT expr
+      { if ($2==NULL) {
+        $$ = NULL;
+      } else if ($2->isa<IntLit>()) {
+        $$=new SetLit(@$, IntSetVal::a(-IntVal::infinity(),$2->cast<IntLit>()->v()));
+      } else {
+        $$=new BinOp(@$, IntLit::a(-IntVal::infinity()), BOT_DOTDOT, $2);
+        }
+      }
+    | expr MZN_DOTDOT
+      { if ($1==NULL) {
+          $$ = NULL;
+        } else if ($1->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),IntVal::infinity()));
+        } else {
+          $$=new BinOp(@$, $1, BOT_DOTDOT, IntLit::a(IntVal::infinity()));
+        }
+      }
     | expr MZN_DOTDOT expr
       { if ($1==NULL || $3==NULL) {
           $$ = NULL;

@@ -303,52 +303,71 @@ namespace MiniZinc {
   : Expression(loc,E_ANON,Type()) {
     rehash();
   }
-  
+
+
   inline
   ArrayLit::ArrayLit(const Location& loc,
-                     const std::vector<Expression*>& v,
+                     ArrayLit& v,
                      const std::vector<std::pair<int,int> >& dims)
   : Expression(loc,E_ARRAYLIT,Type()) {
     _flag_1 = false;
-    std::vector<int> d(dims.size()*2);
-    for (unsigned int i=dims.size(); i--;) {
-      d[i*2] = dims[i].first;
-      d[i*2+1] = dims[i].second;
-    }
-    _v = ASTExprVec<Expression>(v);
-    if (d.size()!=2 || d[0]!=1) {
-      // only allocate dims vector if it is not a 1d array indexed from 1
+    _flag_2 = v._flag_2;
+    if (_flag_2) {
+      _u._al = v._u._al;
+      std::vector<int> d(dims.size()*2+v._dims.size()-v.dims()*2);
+      for (unsigned int i=dims.size(); i--;) {
+        d[i*2] = dims[i].first;
+        d[i*2+1] = dims[i].second;
+      }
+      int sliceOffset = dims.size()*2;
+      int origSliceOffset = v.dims()*2;
+      for (unsigned int i=0; i<_u._al->dims()*2; i++) {
+        d[sliceOffset+i] = v._dims[origSliceOffset+i];
+      }
       _dims = ASTIntVec(d);
+    } else {
+      std::vector<int> d(dims.size()*2);
+      for (unsigned int i=dims.size(); i--;) {
+        d[i*2] = dims[i].first;
+        d[i*2+1] = dims[i].second;
+      }
+      if (v._u._v->flag() || d.size()!=2 || d[0]!=1) {
+        // only allocate dims vector if it is not a 1d array indexed from 1
+        _dims = ASTIntVec(d);
+      }
+      _u._v = v._u._v;
     }
     rehash();
   }
 
   inline
   ArrayLit::ArrayLit(const Location& loc,
-                     ASTExprVec<Expression> v,
-                     const std::vector<std::pair<int,int> >& dims)
+                     ArrayLit& v)
   : Expression(loc,E_ARRAYLIT,Type()) {
     _flag_1 = false;
-    std::vector<int> d(dims.size()*2);
-    for (unsigned int i=dims.size(); i--;) {
-      d[i*2] = dims[i].first;
-      d[i*2+1] = dims[i].second;
-    }
-    _v = v;
-    if (d.size()!=2 || d[0]!=1) {
-      // only allocate dims vector if it is not a 1d array indexed from 1
+    _flag_2 = v._flag_2;
+    if (_flag_2) {
+      _u._al = v._u._al;
+      std::vector<int> d(2+v._dims.size()-v.dims()*2);
+      d[0] = 1;
+      d[1] = v.size();
+      int sliceOffset = 2;
+      int origSliceOffset = v.dims()*2;
+      for (unsigned int i=0; i<_u._al->dims()*2; i++) {
+        d[sliceOffset+i] = v._dims[origSliceOffset+i];
+      }
       _dims = ASTIntVec(d);
+    } else {
+      _u._v = v._u._v;
+      if (_u._v->flag()) {
+        std::vector<int> d(2);
+        d[0] = 1;
+        d[1] = v.length();
+        _dims = ASTIntVec(d);
+      } else {
+        // don't allocate dims vector since this is a 1d array indexed from 1
+      }
     }
-    rehash();
-  }
-
-  inline
-  ArrayLit::ArrayLit(const Location& loc,
-                     ASTExprVec<Expression> v)
-  : Expression(loc,E_ARRAYLIT,Type()) {
-    _flag_1 = false;
-    _v = v;
-    // don't allocate dims vector since this is a 1d array indexed from 1
     rehash();
   }
 
@@ -357,8 +376,11 @@ namespace MiniZinc {
                      const std::vector<Expression*>& v)
   : Expression(loc,E_ARRAYLIT,Type()) {
     _flag_1 = false;
-    // don't allocate dims vector since this is a 1d array indexed from 1
-    _v = ASTExprVec<Expression>(v);
+    _flag_2 = false;
+    std::vector<int> d(2);
+    d[0] = 1;
+    d[1] = v.size();
+    compress(v, d);
     rehash();
   }
 
@@ -367,6 +389,7 @@ namespace MiniZinc {
                      const std::vector<std::vector<Expression*> >& v)
   : Expression(loc,E_ARRAYLIT,Type()) {
     _flag_1 = false;
+    _flag_2 = false;
     std::vector<int> dims(4);
     dims[0]=1;
     dims[1]=v.size();
@@ -376,11 +399,10 @@ namespace MiniZinc {
     for (unsigned int i=0; i<v.size(); i++)
       for (unsigned int j=0; j<v[i].size(); j++)
         vv.push_back(v[i][j]);
-    _v = ASTExprVec<Expression>(vv);
-    _dims = ASTIntVec(dims);
+    compress(vv, dims);
     rehash();
   }
-
+  
   inline
   ArrayAccess::ArrayAccess(const Location& loc,
                            Expression* v,
@@ -456,29 +478,64 @@ namespace MiniZinc {
     rehash();
   }
 
+  inline bool
+  Call::hasId(void) const {
+    return (reinterpret_cast<ptrdiff_t>(_u_id._decl) & static_cast<ptrdiff_t>(1)) == 0;
+  }
+  
+  inline ASTString
+  Call::id(void) const {
+    return hasId() ? _u_id._id : decl()->id();
+  }
+  
+  inline void
+  Call::id(const ASTString& i) {
+    _u_id._id = i.aststr();
+    assert(hasId());
+    assert(decl()==NULL);
+  }
 
+  inline FunctionI*
+  Call::decl(void) const {
+    return hasId() ? NULL : reinterpret_cast<FunctionI*>(reinterpret_cast<ptrdiff_t>(_u_id._decl) & ~static_cast<ptrdiff_t>(1));
+  }
+  
+  inline void
+  Call::decl(FunctionI* f) {
+    assert(f != NULL);
+    _u_id._decl = reinterpret_cast<FunctionI*>(reinterpret_cast<ptrdiff_t>(f) | static_cast<ptrdiff_t>(1));
+  }
+  
   inline
   Call::Call(const Location& loc,
-             const std::string& id,
-             const std::vector<Expression*>& args,
-             FunctionI* decl)
+             const std::string& id0,
+             const std::vector<Expression*>& args)
   : Expression(loc, E_CALL,Type()) {
-    _id = ASTString(id);
-    _args = ASTExprVec<Expression>(args);
-    _decl = decl;
+    id(ASTString(id0));
+    if (args.size()==1) {
+      _u._oneArg = args[0]->isUnboxedVal() ? args[0] : args[0]->tag();
+    } else {
+      _u._args = ASTExprVec<Expression>(args).vec();
+    }
     rehash();
+    assert(hasId());
+    assert(decl() == NULL);
   }
 
   inline
   Call::Call(const Location& loc,
-             const ASTString& id,
-             const std::vector<Expression*>& args,
-             FunctionI* decl)
+             const ASTString& id0,
+             const std::vector<Expression*>& args)
   : Expression(loc, E_CALL,Type()) {
-    _id = id;
-    _args = ASTExprVec<Expression>(args);
-    _decl = decl;
+    id(ASTString(id0));
+    if (args.size()==1) {
+      _u._oneArg = args[0]->isUnboxedVal() ? args[0] : args[0]->tag();
+    } else {
+      _u._args = ASTExprVec<Expression>(args).vec();
+    }
     rehash();
+    assert(hasId());
+    assert(decl() == NULL);
   }
 
   inline

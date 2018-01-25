@@ -296,7 +296,7 @@ namespace MiniZinc {
     }
     void vFunctionI(FunctionI* fi) {
       if (Call* docstring = Expression::dyn_cast<Call>(getAnnotation(fi->ann(), constants().ann.doc_comment))) {
-        std::string ds = eval_string(env,docstring->args()[0]);
+        std::string ds = eval_string(env,docstring->arg(0));
         std::string group("main");
         size_t group_idx = ds.find("@group");
         if (group_idx!=std::string::npos) {
@@ -465,7 +465,7 @@ namespace MiniZinc {
     /// Visit variable declaration
     void vVarDeclI(VarDeclI* vdi) {
       if (Call* docstring = Expression::dyn_cast<Call>(getAnnotation(vdi->e()->ann(), constants().ann.doc_comment))) {
-        std::string ds = eval_string(env,docstring->args()[0]);
+        std::string ds = eval_string(env,docstring->arg(0));
         std::string group("main");
         size_t group_idx = ds.find("@group");
         if (group_idx!=std::string::npos) {
@@ -496,7 +496,7 @@ namespace MiniZinc {
     /// Visit function item
     void vFunctionI(FunctionI* fi) {
       if (Call* docstring = Expression::dyn_cast<Call>(getAnnotation(fi->ann(), constants().ann.doc_comment))) {
-        std::string ds = eval_string(env,docstring->args()[0]);
+        std::string ds = eval_string(env,docstring->arg(0));
         std::string group("main");
         size_t group_idx = ds.find("@group");
         if (group_idx!=std::string::npos) {
@@ -587,10 +587,10 @@ namespace MiniZinc {
           do {
             alias = false;
             Call* c = Expression::dyn_cast<Call>(f_body->e());
-            if (c && c->args().size()==f_body->params().size()) {
+            if (c && c->n_args()==f_body->params().size()) {
               bool sameParams = true;
               for (unsigned int i=0; i<f_body->params().size(); i++) {
-                Id* ident = c->args()[i]->dyn_cast<Id>();
+                Id* ident = c->arg(i)->dyn_cast<Id>();
                 if (ident == NULL || ident->decl() != f_body->params()[i] || ident->str() != c->decl()->params()[i]->id()->str()) {
                   sameParams = false;
                   break;

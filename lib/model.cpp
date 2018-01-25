@@ -454,10 +454,10 @@ namespace MiniZinc {
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
       std::cerr << "try " << *v[i].fi;
 #endif
-      if (fi_t.size() == c->args().size()) {
+      if (fi_t.size() == c->n_args()) {
         bool match=true;
-        for (unsigned int j=0; j<c->args().size(); j++) {
-          if (!env.isSubtype(c->args()[j]->type(),fi_t[j],strictEnums)) {
+        for (unsigned int j=0; j<c->n_args(); j++) {
+          if (!env.isSubtype(c->arg(j)->type(),fi_t[j],strictEnums)) {
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
             std::cerr << c->args()[j]->type().toString(env) << " does not match "
             << fi_t[j].toString(env) << "\n";
@@ -466,8 +466,8 @@ namespace MiniZinc {
             match=false;
             break;
           }
-          if (c->args()[j]->type().isbot() && fi_t[j].bt()!=Type::BT_TOP) {
-            botarg = c->args()[j];
+          if (c->arg(j)->type().isbot() && fi_t[j].bt()!=Type::BT_TOP) {
+            botarg = c->arg(j);
           }
         }
         if (match) {

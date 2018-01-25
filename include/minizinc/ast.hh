@@ -687,9 +687,25 @@ namespace MiniZinc {
     friend class Expression;
   protected:
     /// The array
-    ASTExprVec<Expression> _v;
+    union {
+      /// An expression vector (if _flag_2==false)
+      ASTExprVecO<Expression*>* _v;
+      /// Another array literal (if _flag_2==true)
+      ArrayLit* _al;
+    } _u;
     /// The declared array dimensions
+    // If _flag_2 is true, then this is an array view. In that case,
+    // the _dims array holds the sliced dimensions
     ASTIntVec _dims;
+    /// Set compressed vector (initial repetitions are removed)
+    void compress(const std::vector<Expression*>& v, const std::vector<int>& dims);
+  public:
+    /// Index conversion from slice to original
+    int origIdx(int i) const;
+    /// Get element \a i of a sliced array
+    Expression* slice_get(int i) const;
+    /// Set element \a i of a sliced array
+    void slice_set(int i, Expression* e);
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ARRAYLIT;
@@ -699,24 +715,34 @@ namespace MiniZinc {
              const std::vector<std::pair<int,int> >& dims);
     /// Constructor (existing content)
     ArrayLit(const Location& loc,
-             ASTExprVec<Expression> v,
+             ArrayLit& v,
              const std::vector<std::pair<int,int> >& dims);
     /// Constructor (one-dimensional, existing content)
     ArrayLit(const Location& loc,
-             ASTExprVec<Expression> v);
+             ArrayLit& v);
     /// Constructor (one-dimensional)
     ArrayLit(const Location& loc,
              const std::vector<Expression*>& v);
     /// Constructor (two-dimensional)
     ArrayLit(const Location& loc,
              const std::vector<std::vector<Expression*> >& v);
+    /// Constructor for slices
+    ArrayLit(const Location& loc, ArrayLit* v,
+             const std::vector<std::pair<int,int> >& dims,
+             const std::vector<std::pair<int,int> >& slice);
     /// Recompute hash value
     void rehash(void);
+
+    // The following methods are only used for copying
     
     /// Access value
-    ASTExprVec<Expression> v(void) const { return _v; }
+    ASTExprVec<Expression> getVec(void) const { assert(!_flag_2); return _u._v; }
     /// Set value
-    void v(const ASTExprVec<Expression>& val) { _v = val; }
+    void setVec(const ASTExprVec<Expression>& val) { assert(!_flag_2); _u._v = val.vec(); }
+    /// Get underlying array (if this is an array slice) or NULL
+    ArrayLit* getSliceLiteral(void) const { return _flag_2 ? _u._al : NULL; }
+    /// Get underlying _dims vector
+    ASTIntVec dimsInternal(void) const { return _dims; }
 
     /// Return number of dimensions
     int dims(void) const;
@@ -726,12 +752,18 @@ namespace MiniZinc {
     int max(int i) const;
     /// Return the length of the array
     int length(void) const;
-    /// Set dimension vector
-    void setDims(ASTIntVec dims) { _dims = dims; }
+    /// Turn into 1d array (only used at the end of flattening)
+    void make1d(void);
     /// Check if this array was produced by flattening
     bool flat(void) const { return _flag_1; }
     /// Set whether this array was produced by flattening
     void flat(bool b) { _flag_1 = b; }
+    /// Return size of underlying array
+    unsigned int size(void) const { return (_flag_2 || _u._v->flag()) ? length() : _u._v->size(); }
+    /// Access element \a i
+    Expression* operator[](int i) const { return (_flag_2 || _u._v->flag()) ? slice_get(i) : (*_u._v)[i]; }
+    /// Set element \a i
+    void set(int i, Expression* e) { if (_flag_2 || _u._v->flag()) { slice_set(i,e); } else { (*_u._v)[i] = e; } }
   };
   /// \brief Array access expression
   class ArrayAccess : public Expression {
@@ -959,37 +991,68 @@ namespace MiniZinc {
   class Call : public Expression {
     friend class Expression;
   protected:
-    /// Identifier of called predicate or function
-    ASTString _id;
-    /// Arguments to the call
-    ASTExprVec<Expression> _args;
-    /// The predicate or function declaration (or NULL)
-    FunctionI* _decl;
+    union {
+      /// Identifier of called predicate or function
+      ASTStringO* _id;
+      /// The predicate or function declaration (or NULL)
+      FunctionI* _decl;
+    } _u_id;
+    union {
+      /// Single-argument call (tagged pointer)
+      Expression* _oneArg;
+      /// Arguments to the call
+      ASTExprVecO<Expression*>* _args;
+    } _u;
+    /// Check if _u_id contains an id or a decl
+    bool hasId(void) const;
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_CALL;
     /// Constructor
     Call(const Location& loc,
          const std::string& id,
-         const std::vector<Expression*>& args,
-         FunctionI* decl=NULL);
+         const std::vector<Expression*>& args);
     /// Constructor
     Call(const Location& loc,
          const ASTString& id,
-         const std::vector<Expression*>& args,
-         FunctionI* decl=NULL);
+         const std::vector<Expression*>& args);
     /// Access identifier
-    ASTString id(void) const { return _id; }
-    /// Set identifier
-    void id(const ASTString& i) { _id = i; }
-    /// Access arguments
-    ASTExprVec<Expression> args(void) const { return _args; }
+    ASTString id(void) const;
+    /// Set identifier (overwrites decl)
+    void id(const ASTString& i);
+    /// Number of arguments
+    unsigned int n_args(void) const { return _u._oneArg->isUnboxedVal() || _u._oneArg->isTagged() ? 1 : _u._args->size(); }
+    /// Access argument \a i
+    Expression* arg(int i) const {
+      if (_u._oneArg->isUnboxedVal() || _u._oneArg->isTagged()) {
+        assert(i==0);
+        return _u._oneArg->isUnboxedVal() ? _u._oneArg : _u._oneArg->untag();
+      } else {
+        return (*_u._args)[i];
+      }
+    }
+    /// Set argument \a i
+    void arg(int i, Expression* e) {
+      if (_u._oneArg->isUnboxedVal() || _u._oneArg->isTagged()) {
+        assert(i==0);
+        _u._oneArg = e->isUnboxedVal() ? e : e->tag();
+      } else {
+        (*_u._args)[i] = e;
+      }
+    }
     /// Set arguments
-    void args(const ASTExprVec<Expression>& a) { _args = a; }
+    void args(const ASTExprVec<Expression>& a) {
+      if (a.size()==1) {
+        _u._oneArg = a[0]->isUnboxedVal() ? a[0] : a[0]->tag();
+      } else {
+        _u._args = a.vec();
+        assert(!_u._oneArg->isTagged());
+      }
+    }
     /// Access declaration
-    FunctionI* decl(void) const { return _decl; }
-    /// Set declaration
-    void decl(FunctionI* f) { _decl = f; }
+    FunctionI* decl(void) const;
+    /// Set declaration (overwrites id)
+    void decl(FunctionI* f);
     /// Recompute hash value
     void rehash(void);
   };

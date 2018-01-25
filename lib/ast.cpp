@@ -103,7 +103,11 @@ namespace MiniZinc {
           pushstack(cur->cast<Id>()->decl());
           break;
         case Expression::E_ARRAYLIT:
-          pushall(cur->cast<ArrayLit>()->v());
+          if (cur->_flag_2) {
+            pushstack(cur->cast<ArrayLit>()->_u._al);
+          } else {
+            pushall(ASTExprVec<Expression>(cur->cast<ArrayLit>()->_u._v));
+          }
           cur->cast<ArrayLit>()->_dims.mark();
           break;
         case Expression::E_ARRAYACCESS:
@@ -128,8 +132,11 @@ namespace MiniZinc {
           break;
         case Expression::E_CALL:
           cur->cast<Call>()->id().mark();
-          pushall(cur->cast<Call>()->_args);
-          if (FunctionI* fi = cur->cast<Call>()->_decl) {
+          for (unsigned int i=cur->cast<Call>()->n_args(); i--;)
+            pushstack(cur->cast<Call>()->arg(i));
+          if (!cur->cast<Call>()->_u._oneArg->isUnboxedVal() && !cur->cast<Call>()->_u._oneArg->isTagged())
+            cur->cast<Call>()->_u._args->mark();
+          if (FunctionI* fi = cur->cast<Call>()->decl()) {
             fi->mark();
             fi->id().mark();
             pushstack(fi->ti());
@@ -242,7 +249,7 @@ namespace MiniZinc {
 
   int
   ArrayLit::dims(void) const {
-    return _dims.size()==0 ? 1 : _dims.size()/2;
+    return _flag_2 ? ( (_dims.size() - 2*_u._al->dims()) / 2 ) : (_dims.size()==0 ? 1 : _dims.size()/2);
   }
   int
   ArrayLit::min(int i) const {
@@ -256,7 +263,7 @@ namespace MiniZinc {
   ArrayLit::max(int i) const {
     if (_dims.size()==0) {
       assert(i==0);
-      return _v.size();
+      return _u._v->size();
     }
     return _dims[2*i+1];
   }
@@ -269,16 +276,147 @@ namespace MiniZinc {
     return l;
   }
   void
+  ArrayLit::make1d(void) {
+    if (_dims.size()!=0) {
+      GCLock lock;
+      if (_flag_2) {
+        std::vector<int> d(2+_u._al->dims()*2);
+        int dimOffset = dims()*2;
+        d[0] = 1;
+        d[1] = length();
+        for (unsigned int i=2; i<d.size(); i++) {
+          d[i] = _dims[dimOffset+i];
+        }
+        _dims = ASTIntVec(d);
+      } else {
+        std::vector<int> d(2);
+        d[0] = 1;
+        d[1] = length();
+        _dims = ASTIntVec(d);
+      }
+    }
+  }
+  
+  int
+  ArrayLit::origIdx(int i) const {
+    assert(_flag_2);
+    int curIdx = i;
+    int multiplyer = 1;
+    int oIdx = 0;
+    int sliceOffset = dims()*2;
+    for (int curDim = _u._al->dims()-1; curDim >= 0; curDim--) {
+      oIdx += multiplyer * ( ( curIdx % (_dims[sliceOffset+curDim*2+1]-_dims[sliceOffset+curDim*2]+1) ) + (_dims[sliceOffset+curDim*2] - _u._al->min(curDim)) );
+      curIdx = curIdx / (_dims[sliceOffset+curDim*2+1]-_dims[sliceOffset+curDim*2]+1);
+      multiplyer *= (_u._al->max(curDim)-_u._al->min(curDim)+1);
+    }
+    return oIdx;
+  }
+  
+  Expression*
+  ArrayLit::slice_get(int i) const {
+    if (!_flag_2) {
+      assert(_u._v->flag());
+      int off = length()-_u._v->size();
+      return i <= off ? (*_u._v)[0] : (*_u._v)[i-off];
+    } else {
+      assert(_flag_2);
+      return (*_u._al)[origIdx(i)];
+    }
+  }
+  
+  void
+  ArrayLit::slice_set(int i, Expression* e) {
+    if (!_flag_2) {
+      assert(_u._v->flag());
+      int off = length()-_u._v->size();
+      if (i <= off) {
+        (*_u._v)[0] = e;
+      } else {
+        (*_u._v)[i-off] = e;
+      }
+    } else {
+      assert(_flag_2);
+      _u._al->set(origIdx(i), e);
+    }
+  }
+  
+  
+  ArrayLit::ArrayLit(const Location& loc, ArrayLit* v,
+                     const std::vector<std::pair<int,int> >& dims,
+                     const std::vector<std::pair<int,int> >& slice)
+  : Expression(loc,E_ARRAYLIT,Type()) {
+    _flag_1 = false;
+    _flag_2 = true;
+    _u._al = v;
+    assert(slice.size() == v->dims());
+    std::vector<int> d(dims.size()*2+2*slice.size());
+    for (unsigned int i=dims.size(); i--;) {
+      d[i*2  ] = dims[i].first;
+      d[i*2+1] = dims[i].second;
+    }
+    int sliceOffset = 2*dims.size();
+    for (unsigned int i=slice.size(); i--;) {
+      d[sliceOffset+i*2  ] = slice[i].first;
+      d[sliceOffset+i*2+1] = slice[i].second;
+    }
+    _dims = ASTIntVec(d);
+  }
+  
+  void
+  ArrayLit::compress(const std::vector<Expression*>& v, const std::vector<int>& dims) {
+    if (v.size() >= 4 && Expression::equal(v[0], v[1]) && Expression::equal(v[1], v[2]) && Expression::equal(v[2], v[3])) {
+      std::vector<Expression*> compress(v.size());
+      compress[0] = v[0];
+      int k = 4;
+      while (k<v.size() && Expression::equal(v[k],v[0])) {
+        k++;
+      }
+      int i = 1;
+      for (; k<v.size(); k++) {
+        compress[i++] = v[k];
+      }
+      compress.resize(i);
+      _u._v = ASTExprVec<Expression>(compress).vec();
+      _u._v->flag(true);
+      _dims = ASTIntVec(dims);
+    } else {
+      _u._v = ASTExprVec<Expression>(v).vec();
+      if (dims.size()!=2 || dims[0]!=1) {
+        // only allocate dims vector if it is not a 1d array indexed from 1
+        _dims = ASTIntVec(dims);
+      }
+    }
+  }
+  
+  ArrayLit::ArrayLit(const Location& loc,
+                     const std::vector<Expression*>& v,
+                     const std::vector<std::pair<int,int> >& dims)
+  : Expression(loc,E_ARRAYLIT,Type()) {
+    _flag_1 = false;
+    _flag_2 = false;
+    std::vector<int> d(dims.size()*2);
+    for (unsigned int i=dims.size(); i--;) {
+      d[i*2] = dims[i].first;
+      d[i*2+1] = dims[i].second;
+    }
+    compress(v, d);
+    rehash();
+  }
+  
+  void
   ArrayLit::rehash(void) {
     init_hash();
     HASH_NAMESPACE::hash<int> h;
-    for (unsigned int i=0; i<dims(); i+=2) {
-      cmb_hash(h(min(i)));
-      cmb_hash(h(max(i)));
+    for (unsigned int i=0; i<_dims.size(); i++) {
+      cmb_hash(h(_dims[i]));
     }
-    for (unsigned int i=_v.size(); i--;) {
-      cmb_hash(h(i));
-      cmb_hash(Expression::hash(_v[i]));
+    if (_flag_2) {
+      cmb_hash(Expression::hash(_u._al));
+    } else {
+      for (unsigned int i=_u._v->size(); i--;) {
+        cmb_hash(h(i));
+        cmb_hash(Expression::hash((*_u._v)[i]));
+      }
     }
   }
 
@@ -587,13 +725,13 @@ namespace MiniZinc {
   void
   Call::rehash(void) {
     init_hash();
-    cmb_hash(_id.hash());
+    cmb_hash(id().hash());
     HASH_NAMESPACE::hash<FunctionI*> hf;
-    cmb_hash(hf(_decl));
+    cmb_hash(hf(decl()));
     HASH_NAMESPACE::hash<unsigned int> hu;
-    cmb_hash(hu(_args.size()));
-    for (unsigned int i=_args.size(); i--;)
-      cmb_hash(Expression::hash(_args[i]));
+    cmb_hash(hu(n_args()));
+    for (unsigned int i=0; i<n_args(); i++)
+      cmb_hash(Expression::hash(arg(i)));
   }
   
   void
@@ -984,15 +1122,15 @@ namespace MiniZinc {
       {
         const ArrayLit* a0 = e0->cast<ArrayLit>();
         const ArrayLit* a1 = e1->cast<ArrayLit>();
-        if (a0->v().size() != a1->v().size()) return false;
+        if (a0->size() != a1->size()) return false;
         if (a0->_dims.size() != a1->_dims.size()) return false;
         for (unsigned int i=0; i<a0->_dims.size(); i++) {
           if ( a0->_dims[i] != a1->_dims[i] ) {
             return false;
           }
         }
-        for (unsigned int i=0; i<a0->v().size(); i++) {
-          if (!Expression::equal( a0->v()[i], a1->v()[i] )) {
+        for (unsigned int i=0; i<a0->size(); i++) {
+          if (!Expression::equal( (*a0)[i], (*a1)[i] )) {
             return false;
           }
         }
@@ -1061,10 +1199,10 @@ namespace MiniZinc {
         const Call* c0 = e0->cast<Call>();
         const Call* c1 = e1->cast<Call>();
         if (c0->id() != c1->id()) return false;
-        if (c0->_decl != c1->_decl) return false;
-        if (c0->args().size() != c1->args().size()) return false;
-        for (unsigned int i=0; i<c0->args().size(); i++)
-          if (!Expression::equal ( c0->args()[i], c1->args()[i] ))
+        if (c0->decl() != c1->decl()) return false;
+        if (c0->n_args() != c1->n_args()) return false;
+        for (unsigned int i=0; i<c0->n_args(); i++)
+          if (!Expression::equal ( c0->arg(i), c1->arg(i) ))
             return false;
         return true;
       }

@@ -88,14 +88,13 @@ using std::vector;
           ASTString cid = ca->id();
           if(cid == constants().ann.output_array) {
             if(ArrayLit* rhs = e->e()->dyn_cast<ArrayLit>()) {
-              ASTExprVec<Expression> elems = rhs->v();
-              for(unsigned int ind=0; ind<elems.size(); ind++) {
-                if(Id* id = elems[ind]->dyn_cast<Id>()) {
+              for(unsigned int ind=0; ind<rhs->size(); ind++) {
+                if(Id* id = (*rhs)[ind]->dyn_cast<Id>()) {
                   std::stringstream bettername;
                   bettername << *e->id() << "[";
 
                   // Array of sets
-                  ASTExprVec<Expression> dimsets = ca->args()[0]->cast<ArrayLit>()->v();
+                  ArrayLit& dimsets = *ca->arg(0)->cast<ArrayLit>();
                   vector<IntVal> dims(dimsets.size(), 1);
                   for(unsigned int i=0; i<dimsets.size(); i++) {
                     SetLit* sl = dimsets[i]->cast<SetLit>();
@@ -119,7 +118,7 @@ using std::vector;
               }
             }
           } else if(ca->id() == constants().ann.mzn_path) {
-            StringLit* sl = ca->args()[0]->cast<StringLit>();
+            StringLit* sl = ca->arg(0)->cast<StringLit>();
             addBetterName(e->id(), path2name(sl->v().str()), sl->v().str());
           }
         }
@@ -161,7 +160,7 @@ using std::vector;
         if(Call* ca = (*it)->dyn_cast<Call>()) {
           ASTString cid = ca->id();
           if(cid == constants().ann.mzn_path) {
-            sl = ca->args()[0]->cast<StringLit>();
+            sl = ca->arg(0)->cast<StringLit>();
           }
         }
       }

@@ -321,9 +321,9 @@ namespace MiniZinc {
           if ( ipct != mCallTypes.end() ) {
             // No ! here because might be deleted immediately in later versions.
 //             ic->remove();                              // mark removed at once
-            MZN_MIPD__assert_hard( c->args().size() > 1 );
+            MZN_MIPD__assert_hard( c->n_args() > 1 );
             ++MIPD__stats[ N_POSTs__all ];
-            VarDecl* vd0 = expr2VarDecl(c->args()[0]);
+            VarDecl* vd0 = expr2VarDecl(c->arg(0));
             if ( 0==vd0 ) {
               DBGOUT_MIPD__ ( "  Call " << *c
                 << ": 1st arg not a VarDecl, removing if eq_encoding..." );
@@ -391,14 +391,14 @@ namespace MiniZinc {
         if ( lin_exp_int==c->decl() || lin_exp_float==c->decl() ) {
 //             std::cerr << "  !E call " << std::flush;
 //             debugprint(c);
-          MZN_MIPD__assert_hard( c->args().size() == 3 );
+          MZN_MIPD__assert_hard(c->n_args()   == 3 );
 //           ArrayLit* al = c->args()[1]->dyn_cast<ArrayLit>();
-          ArrayLit* al = follow_id(c->args()[1])->cast<ArrayLit>();
+          ArrayLit* al = follow_id(c->arg(1))->cast<ArrayLit>();
           MZN_MIPD__assert_hard( al );
-          MZN_MIPD__assert_hard( al->v().size() >= 1 );
-          if ( al->v().size() == 1 ) {   // 1-term scalar product in the rhs
+          MZN_MIPD__assert_hard( al->size() >= 1 );
+          if ( al->size() == 1 ) {   // 1-term scalar product in the rhs
             LinEq2Vars led;
-            led.vd = { {vd, expr2VarDecl(al->v()[0])} };
+            led.vd = { {vd, expr2VarDecl((*al)[0])} };
 //             const int f1 = ( vd->payload()>=0 );
 //             const int f2 = ( led.vd[1]->payload()>=0 );
             if ( ! fCheckArg || ( led.vd[1]->payload()>=0 ) ) {
@@ -409,9 +409,9 @@ namespace MiniZinc {
               DBGOUT_MIPD__ ( "  REG 1-LINEXP " );
               DBGOUT_MIPD_SELF ( debugprint(vd) );
               std::array<double, 1> coef0;
-              expr2Array(c->args()[0], coef0);
+              expr2Array(c->arg(0), coef0);
               led.coefs = { {-1.0, coef0[0]} };
-              led.rhs = -expr2Const(c->args()[2]);             // MINUS
+              led.rhs = -expr2Const(c->arg(2));             // MINUS
               put2VarsConnection( led, false );
               ++MIPD__stats[ N_POSTs__initexpr1linexp ];
               if ( led.vd[1]->e() )       // no initexpr for initexpr   FAILS  TODO
@@ -483,12 +483,12 @@ namespace MiniZinc {
           if ( fIntLinEq || fFloatLinEq ) {
 //             std::cerr << "  !E call " << std::flush;
 //             debugprint(c);
-            MZN_MIPD__assert_hard( c->args().size() == 3 );
-            ArrayLit* al = follow_id(c->args()[1])->cast<ArrayLit>();
+            MZN_MIPD__assert_hard( c->n_args() == 3 );
+            ArrayLit* al = follow_id(c->arg(1))->cast<ArrayLit>();
             MZN_MIPD__assert_hard( al );
-            if ( al->v().size() == 2 ) {   // 2-term eqn
+            if ( al->size() == 2 ) {   // 2-term eqn
               LinEq2Vars led;
-              expr2DeclArray(c->args()[1], led.vd);
+              expr2DeclArray(c->arg(1), led.vd);
               // At least 1 touched var:
               if ( led.vd[0]->payload() >= 0 || led.vd[1]->payload()>=0 ) {
                 if ( sCallLinEq2.end() != sCallLinEq2.find(c) )
@@ -496,14 +496,14 @@ namespace MiniZinc {
                 sCallLinEq2.insert(c);     // memorize this call
                 DBGOUT_MIPD ( "  REG 2-call " );
                 DBGOUT_MIPD_SELF ( debugprint(c) );
-                led.rhs = expr2Const(c->args()[2]);
-                expr2Array(c->args()[0], led.coefs);
+                led.rhs = expr2Const(c->arg(2));
+                expr2Array(c->arg(0), led.coefs);
                 MZN_MIPD__assert_hard( 2 == led.coefs.size() );
                 fChanges = true;
                 put2VarsConnection( led );
                 ++MIPD__stats[ fIntLinEq ? N_POSTs__eq2intlineq : N_POSTs__eq2floatlineq ];
               }
-            } else if ( al->v().size() == 1 ) {
+            } else if ( al->size() == 1 ) {
               static int nn=0;
               if ( ++nn <= 7 ) {
                 std::cerr << "  MIPD: LIN_EQ with 1 variable::: " << std::flush;
@@ -522,11 +522,11 @@ namespace MiniZinc {
                 DBGOUT_MIPD_SELF ( debugprint(c) );
                 Call* pC = eVD->dyn_cast<Call>();
                 MZN_MIPD__assert_hard( pC );
-                MZN_MIPD__assert_hard( pC->args().size() );
+                MZN_MIPD__assert_hard( pC->n_args() );
                 // Checking all but adding only touched defined vars? Seems too long.
-                VarDecl* vd = expr2VarDecl( pC->args()[0] );
+                VarDecl* vd = expr2VarDecl( pC->arg(0) );
                 if ( vd->payload()>=0 )                    // only if touched
-                  if ( findOrAddDefining( pC->args()[0], c ) )
+                  if ( findOrAddDefining( pC->arg(0), c ) )
                     fChanges = true;
               }
             }
@@ -538,11 +538,11 @@ namespace MiniZinc {
             if ( int2float==c->decl() || constants().var_redef==c->decl() ) {
 //             std::cerr << "  !E call " << std::flush;
 //             debugprint(c);
-              MZN_MIPD__assert_hard( c->args().size() == 2 );
+              MZN_MIPD__assert_hard( c->n_args() == 2 );
               LinEq2Vars led;
   //             led.vd.resize(2);
-              led.vd[0] = expr2VarDecl(c->args()[0]);
-              led.vd[1] = expr2VarDecl(c->args()[1]);
+              led.vd[0] = expr2VarDecl(c->arg(0));
+              led.vd[1] = expr2VarDecl(c->arg(1));
               // At least 1 touched var:
               if ( led.vd[0]->payload() >= 0 || led.vd[1]->payload()>=0 ) {
                 if ( sCallInt2Float.end() != sCallInt2Float.find(c) )
@@ -585,17 +585,17 @@ namespace MiniZinc {
       MZN_MIPD__assert_hard( pId );
       VarDecl* vd = pId->decl();
       MZN_MIPD__assert_hard( vd );
-      MZN_MIPD__assert_hard( pC->args().size()==3 );
+      MZN_MIPD__assert_hard( pC->n_args()==3 );
       
       TLinExpLin rhsLin;
       NViewData nVRest;      
       nVRest.pVarDefined = vd;
-      nVRest.rhs = expr2Const( pC->args()[2] );
+      nVRest.rhs = expr2Const( pC->arg(2) );
       
       std::vector<VarDecl*> vars;
-      expr2DeclArray( pC->args()[1], vars );
+      expr2DeclArray( pC->arg(1), vars );
       std::vector<double> coefs;
-      expr2Array( pC->args()[0], coefs );
+      expr2Array( pC->arg(0), coefs );
       MZN_MIPD__assert_hard( vars.size()==coefs.size() );
       
       int nVD=0;
@@ -1003,7 +1003,7 @@ namespace MiniZinc {
             case CT_SetIn:
             {
               SetOfIntvReal SS;
-              convertIntSet( pCall->args()[1], SS, cls.varRef1, A, B );
+              convertIntSet( pCall->arg(1), SS, cls.varRef1, A, B );
               if ( RIT_Static == dct.nReifType ) {
                 sDomain.intersect(SS);
                 ++MIPD__stats[ N_POSTs__setIn ];
@@ -1019,7 +1019,7 @@ namespace MiniZinc {
                 const double rhs = ( mipd.aux_float_lt_zero_iff_1__POST == pCall->decl() )
                   ? B /* + A*0.0, relating to 0 */
                   // The 2nd argument is constant:
-                  : A * mipd.expr2Const( pCall->args()[1] ) + B;
+                  : A * mipd.expr2Const( pCall->arg(1) ) + B;
                 const double rhsUp = rndUpIfInt( cls.varRef1, rhs );
                 const double rhsDown = rndDownIfInt( cls.varRef1, rhs );
                 const double rhsRnd = rndIfInt( cls.varRef1, rhs );
@@ -1051,7 +1051,7 @@ namespace MiniZinc {
               } else if ( RIT_Static == dct.nReifType ) {
                   // _ne, later maybe static ineq                                 TODO
                 MZN_MIPD__assert_hard( CMPT_NE == dct.nCmpType );
-                const double rhs = A * mipd.expr2Const( pCall->args()[1] ) + B;
+                const double rhs = A * mipd.expr2Const( pCall->arg(1) ) + B;
                 const double rhsRnd = rndIfInt( cls.varRef1, rhs );
                 bool fSkipNE = ( cls.varRef1->type().isint() &&
                   std::fabs( rhs - rhsRnd ) > INT_EPS );
@@ -1126,7 +1126,7 @@ namespace MiniZinc {
         std::vector<Expression*> pp;
         auto bnds = sDomain.getBounds();
         const long long iMin = mipd.expr2ExprArray(
-          mipd.vVarDescr[ cls.varRef1->payload() ].pEqEncoding->e()->dyn_cast<Call>()->args()[1], pp );
+          mipd.vVarDescr[ cls.varRef1->payload() ].pEqEncoding->e()->dyn_cast<Call>()->arg(1), pp );
         MZN_MIPD__assert_hard( pp.size() >= bnds.right-bnds.left+1 );
         MZN_MIPD__assert_hard( iMin<=bnds.left );
         long long vEE = iMin;
@@ -1238,8 +1238,8 @@ namespace MiniZinc {
                 if ( RIT_Reif == dct.nReifType )
                 {
                   SetOfIntvReal SS;
-                  convertIntSet( pCall->args()[1], SS, cls.varRef1, A, B );
-                  relateReifFlag( pCall->args()[2], SS );
+                  convertIntSet( pCall->arg(1), SS, cls.varRef1, A, B );
+                  relateReifFlag( pCall->arg(2), SS );
                 }
                 break;
               case CT_Comparison:
@@ -1247,26 +1247,26 @@ namespace MiniZinc {
                   const double rhs = ( mipd.aux_float_lt_zero_iff_1__POST == pCall->decl() )
                     ? B /* + A*0.0, relating to 0 */
                     // The 2nd argument is constant:
-                    : A * mipd.expr2Const( pCall->args()[1] ) + B;
+                    : A * mipd.expr2Const( pCall->arg(1) ) + B;
                   const double rhsUp = rndUpIfInt( cls.varRef1, rhs );
                   const double rhsDown = rndDownIfInt( cls.varRef1, rhs );
                   const double rhsRnd = rndIfBothInt( cls.varRef1, rhs );  // if the ref var is int, need to round almost-int values
                   const double delta = computeDelta( cls.varRef1, vd, bnds, A, pCall, 3 );
                   switch ( nCmpType_ADAPTED ) {
                     case CMPT_LE:
-                      relateReifFlag( pCall->args()[2], { { IntvReal::infMinus(), rhsDown } } );
+                      relateReifFlag( pCall->arg(2), { { IntvReal::infMinus(), rhsDown } } );
                       break;
                     case CMPT_GE:
-                      relateReifFlag( pCall->args()[2], { { rhsUp, IntvReal::infPlus() } } );
+                      relateReifFlag( pCall->arg(2), { { rhsUp, IntvReal::infPlus() } } );
                       break;
                     case CMPT_LT_0:
-                      relateReifFlag( pCall->args()[1], { { IntvReal::infMinus(), rhsDown-delta } });
+                      relateReifFlag( pCall->arg(1), { { IntvReal::infMinus(), rhsDown-delta } });
                       break;
                     case CMPT_GT_0:
-                      relateReifFlag( pCall->args()[1],  { { rhsUp+delta, IntvReal::infPlus() } } );
+                      relateReifFlag( pCall->arg(1),  { { rhsUp+delta, IntvReal::infPlus() } } );
                       break;
                     case CMPT_EQ:
-                      relateReifFlag( pCall->args()[2], { { rhsRnd, rhsRnd } } );
+                      relateReifFlag( pCall->arg(2), { { rhsRnd, rhsRnd } } );
                       break;  // ... but if the value is sign. fractional for an int var, the flag is set=0
                     default:
                       break;
@@ -1336,11 +1336,11 @@ namespace MiniZinc {
                   }
                   if ( fUseDD ) {               // use sDomain
                     if ( CMPT_EQ_0==nCmpType_ADAPTED ) {
-                      relateReifFlag( pCall->args()[1], { { rhsRnd, rhsRnd } }, RIT_Halfreif );
+                      relateReifFlag( pCall->arg(1), { { rhsRnd, rhsRnd } }, RIT_Halfreif );
                     } else if ( nCmpType_ADAPTED < 0 ) {
-                      relateReifFlag( pCall->args()[1], { { IntvReal::infMinus(), rhsDown } }, RIT_Halfreif );
+                      relateReifFlag( pCall->arg(1), { { IntvReal::infMinus(), rhsDown } }, RIT_Halfreif );
                     } else {
-                      relateReifFlag( pCall->args()[1], { { rhsUp, IntvReal::infPlus() } }, RIT_Halfreif );
+                      relateReifFlag( pCall->arg(1), { { rhsUp, IntvReal::infPlus() } }, RIT_Halfreif );
                     }
                   }  else {                         // use big-M
                     DBGOUT_MIPD( "   AUX BY BIG-Ms: " );
@@ -1350,8 +1350,8 @@ namespace MiniZinc {
                     const int nIdxInd = // (VT_Int==dct.nVarType) ?
 //          No:             vd->ti()->type().isint() ? 1 : 2;
                       cls.varRef1->ti()->type().isint() ? 1 : 2;   // need the type of the variable to be constr
-                    MZN_MIPD__assert_hard( nIdxInd<pCall->args().size() );
-                    Expression* pInd = pCall->args()[ nIdxInd ];
+                    MZN_MIPD__assert_hard( nIdxInd<pCall->n_args() );
+                    Expression* pInd = pCall->arg( nIdxInd );
                     if ( fLE && rhs < bnds.right ) {
                       if ( rhs >= bnds.left ) {
                         std::vector<double> coefs = { 1.0, bnds.right-rhs };
@@ -1397,7 +1397,7 @@ namespace MiniZinc {
           std::vector<Expression*> pp;
           auto bnds = sDomain.getBounds();
           const long long iMin = mipd.expr2ExprArray(
-            mipd.vVarDescr[ cls.varRef1->payload() ].pEqEncoding->e()->dyn_cast<Call>()->args()[1], pp );
+            mipd.vVarDescr[ cls.varRef1->payload() ].pEqEncoding->e()->dyn_cast<Call>()->arg(1), pp );
           MZN_MIPD__assert_hard( pp.size() >= bnds.right-bnds.left+1 );
           MZN_MIPD__assert_hard( iMin<=bnds.left );
           for ( auto& intv : SS ) {
@@ -1619,7 +1619,7 @@ namespace MiniZinc {
       double computeDelta( VarDecl* var, VarDecl* varOrig, IntvReal bnds,
                            double A, Call* pCall, int nArg ) {
         double delta = varOrig->type().isfloat() ? 
-          mipd.expr2Const( pCall->args()[nArg] ) * ( bnds.right-bnds.left )
+          mipd.expr2Const( pCall->arg(nArg) ) * ( bnds.right-bnds.left )
           : std::fabs( A ) ;           // delta should be scaled as well
         if ( var->type().isint() )  // the projected-onto variable
           delta = std::max( 1.0, delta );
@@ -1698,9 +1698,9 @@ namespace MiniZinc {
     template <class Array>
     long long expr2DeclArray(Expression* arg, Array& aVD) {
       ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
-      checkOrResize( aVD, al->v().size() );
-      for (unsigned int i=0; i<al->v().size(); i++)
-        aVD[i] = expr2VarDecl(al->v()[i]);
+      checkOrResize( aVD, al->size() );
+      for (unsigned int i=0; i<al->size(); i++)
+        aVD[i] = expr2VarDecl((*al)[i]);
       return al->min(0);
     }
     
@@ -1708,9 +1708,9 @@ namespace MiniZinc {
     template <class Array>
     long long expr2ExprArray(Expression* arg, Array& aVD) {
       ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
-      checkOrResize( aVD, al->v().size() );
-      for (unsigned int i=0; i<al->v().size(); i++)
-        aVD[i] = ( al->v()[i] );
+      checkOrResize( aVD, al->size() );
+      for (unsigned int i=0; i<al->size(); i++)
+        aVD[i] = ( (*al)[i] );
       return al->min(0);
     }
 
@@ -1746,9 +1746,9 @@ namespace MiniZinc {
 //         MZN_MIPD__assert_hard( vals.size() == al->v().size() );
 //       else
 //         vals.resize( al->v().size() );
-      checkOrResize(vals, al->v().size());
-      for (unsigned int i=0; i<al->v().size(); i++) {
-        vals[i] = expr2Const(al->v()[i]);
+      checkOrResize(vals, al->size());
+      for (unsigned int i=0; i<al->size(); i++) {
+        vals[i] = expr2Const((*al)[i]);
       }
     }
     
