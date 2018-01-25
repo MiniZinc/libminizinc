@@ -146,7 +146,7 @@ namespace MiniZinc {
     void flat_removeItem(int i);
     void flat_removeItem(Item* i);
     void vo_add_exp(VarDecl* vd);
-    void fail(void);
+    void fail(const std::string& msg = std::string());
     bool failed(void) const;
     Model* flat(void);
     void swap();
