@@ -69,6 +69,14 @@ namespace MiniZinc {
     Model* output;
     VarOccurrences vo;
     VarOccurrences output_vo;
+
+    // The current pass number (used for unifying and disabling path construction in final pass)
+    unsigned int current_pass_no;
+    // Used for disabling path construction in final pass
+    unsigned int final_pass_no;
+    // Used for disabling path construction past the maxPathDepth of previous passes
+    unsigned int maxPathDepth;
+
     VarOccurrences output_vo_flat;
     CopyMap cmap;
     IdMap<KeepAlive> reverseMappers;
@@ -87,6 +95,20 @@ namespace MiniZinc {
     bool collect_vardecls;
     std::vector<int> modifiedVarDecls;
     int in_redundant_constraint;
+    FlatteningOptions fopts;
+    unsigned int pathUse;
+
+    struct PathVar {
+      KeepAlive decl;
+      unsigned int pass_no;
+    };
+    // Store mapping from path string to (VarDecl, pass_no) tuples
+    typedef UNORDERED_NAMESPACE::unordered_map<std::string, PathVar> PathMap;
+    // Mapping from arbitrary Expressions to paths
+    typedef KeepAliveMap<std::string> ReversePathMap;
+    // Map from filename to integer (space saving optimisation)
+    typedef UNORDERED_NAMESPACE::unordered_map<std::string, int> FilenameMap;
+
     int in_maybe_partial;
   protected:
     Map map;
@@ -94,6 +116,9 @@ namespace MiniZinc {
     bool _failed;
     unsigned int ids;
     ASTStringMap<ASTString>::t reifyMap;
+    PathMap pathMap;
+    ReversePathMap reversePathMap;
+    FilenameMap filenameMap;
     typedef UNORDERED_NAMESPACE::unordered_map<VarDeclI*,unsigned int> EnumMap;
     EnumMap enumMap;
     std::vector<VarDeclI*> enumVarDecls;
@@ -128,8 +153,14 @@ namespace MiniZinc {
     void swap_output() { std::swap( orig, output ); }
     ASTString reifyId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
+    bool dumpPath(std::ostream& os, bool force = false);
     void addWarning(const std::string& msg);
     void collectVarDecls(bool b);
+    PathMap& getPathMap() { return pathMap; }
+    ReversePathMap& getReversePathMap() { return reversePathMap; }
+    FilenameMap& getFilenameMap() { return filenameMap; }
+
+    void copyPathMapsAndState(EnvI& env);
     /// deprecated, use Solns2Out
     std::ostream& evalOutput(std::ostream& os);
     void createErrorStack(void);

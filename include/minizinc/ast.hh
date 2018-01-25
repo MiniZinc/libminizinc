@@ -399,7 +399,8 @@ namespace MiniZinc {
     
     bool isTagged(void) const {
       // only bit 2 is set
-      assert(!isUnboxedVal());
+      if (isUnboxedVal())
+        return false;
       if (sizeof(double) <= sizeof(FloatVal*))
         return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(7)) == 4;
       else
@@ -415,8 +416,9 @@ namespace MiniZinc {
         return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
                                              static_cast<ptrdiff_t>(2));
     }
-    Expression* untag(void) const {
-      assert(!isUnboxedVal());
+    Expression* untag(void) {
+      if (isUnboxedVal())
+        return this;
       if (sizeof(double) <= sizeof(FloatVal*))
         return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) &
                                              ~static_cast<ptrdiff_t>(4));
@@ -1717,6 +1719,7 @@ namespace MiniZinc {
         Id* promise_total;
         Id* maybe_partial;
         ASTString doc_comment;
+        ASTString mzn_path;
         ASTString is_introduced;
         Id* user_cut;            // MIP
         Id* lazy_constraint;            // MIP

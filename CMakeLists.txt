@@ -267,6 +267,7 @@ ${lexer_cpp}
 lib/model.cpp
 ${parser_cpp}
 lib/prettyprinter.cpp
+lib/pathfileprinter.cpp
 lib/solver.cpp
 lib/solver_instance.cpp
 lib/solver_instance_base.cpp
@@ -284,6 +285,7 @@ lib/solns2out_class.cpp
 lib/statistics.cpp
 lib/lexer.lxx
 lib/values.cpp
+lib/passes/compile_pass.cpp
 include/minizinc/ast.hh
 include/minizinc/ast.hpp
 include/minizinc/astexception.hh
@@ -312,6 +314,7 @@ include/minizinc/options.hh
 include/minizinc/output.hh
 include/minizinc/parser.hh
 include/minizinc/prettyprinter.hh
+include/minizinc/pathfileprinter.hh
 include/minizinc/solver.hh
 include/minizinc/solver_instance.hh
 include/minizinc/solver_instance_base.hh
@@ -323,8 +326,16 @@ include/minizinc/typecheck.hh
 include/minizinc/values.hh
 include/minizinc/stl_map_set.hh
 include/minizinc/thirdparty/SafeInt3.hpp
+include/minizinc/passes/compile_pass.hh
 ${parser_hh}
 )
+
+if(HAS_GECODE)
+  set(GECODE_LIBS minizinc_gecode gecodedriver gecodesearch gecodeminimodel gecodefloat gecodeint gecodeset gecodekernel gecodesupport)
+  target_link_libraries(minizinc ${GECODE_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+  link_directories("${GECODE_HOME}")
+  link_directories("${GECODE_HOME}/lib")
+endif()
 
 # add the executable
 add_executable(mzn2fzn minizinc.cpp)    #mzn2fzn.cpp)
@@ -340,6 +351,7 @@ target_link_libraries(solns2out minizinc)
 find_package ( Threads REQUIRED )
 
 # -------------------------------------------------------------------------------------------------------------------
+
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_GUROBI)  # Version 7.5
 
@@ -567,14 +579,23 @@ endif()
 
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_GECODE)
-  link_directories("${GECODE_HOME}")
+  add_definitions(-DHAS_GECODE)
+  include_directories("${GECODE_HOME}/include")
+  include_directories("${GECODE_HOME}")
   link_directories("${GECODE_HOME}/lib")
+  link_directories("${GECODE_HOME}")
 
   add_library(minizinc_gecode
     solvers/gecode/fzn_space.cpp
     solvers/gecode/gecode_solverinstance.cpp
     solvers/gecode/gecode_constraints.cpp
-    solvers/gecode/aux_brancher.hh)
+    lib/passes/gecode_pass.cpp
+    solvers/gecode/aux_brancher.hh
+    include/minizinc/passes/gecode_pass.hh
+    include/minizinc/solvers/gecode/fzn_space.hh
+    include/minizinc/solvers/gecode_solverinstance.hh
+    include/minizinc/solvers/gecode/gecode_constraints.hh
+    )
 
   target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include" "${GECODE_HOME}")
   target_link_libraries(minizinc_gecode

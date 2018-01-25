@@ -1384,6 +1384,7 @@ namespace MiniZinc {
     ann.maybe_partial = new Id(Location(), ASTString("maybe_partial"), NULL);
     ann.maybe_partial->type(Type::ann());
     ann.doc_comment = ASTString("doc_comment");
+    ann.mzn_path = ASTString("mzn_path");
     ann.is_introduced = ASTString("is_introduced");
     ann.user_cut = new Id(Location(), ASTString("user_cut"), NULL);
     ann.user_cut->type(Type::ann());
@@ -1587,6 +1588,7 @@ namespace MiniZinc {
     v.push_back(ann.promise_total);
     v.push_back(ann.maybe_partial);
     v.push_back(new StringLit(Location(),ann.doc_comment));
+    v.push_back(new StringLit(Location(),ann.mzn_path));
     v.push_back(new StringLit(Location(), ann.is_introduced));
     v.push_back(ann.user_cut);
     v.push_back(ann.lazy_constraint);

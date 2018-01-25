@@ -249,7 +249,6 @@ namespace MiniZinc {
               throw TypeError(env, fi->loc(),
                               "function with the same type already defined in "
                               +v[i].fi->loc().toString());
-              
             } else {
               if (fi->e() || v[i].isPolymorphic)
                 v[i] = fi;

@@ -1353,8 +1353,7 @@ namespace MiniZinc {
             } else {
               FloatNum l = floatvar.min(),
                        u = floatvar.max();
-              nvd->ti()->domain(new SetLit(nvd->loc(),
-                    FloatSetVal::a(l, u)));
+              nvd->ti()->domain(new SetLit(nvd->loc(), FloatSetVal::a(l, u)));
             }
 #endif
           }

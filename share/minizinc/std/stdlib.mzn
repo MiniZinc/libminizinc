@@ -52,6 +52,11 @@ annotation is_reverse_map;
 /** @group annotations.general Document the function or variable declaration item with
   the string \a s. */
 annotation doc_comment(string: s);
+/** @group annotations.general String representation of the call-stack when the annotated item
+  was introduced. Can be used to uniquely identify variables and constraints across different
+  compilations of a model that may have different names. This annotations is introduced into
+  FlatZinc code by the compiler and is retained if --keep-paths argument is used. */
+annotation mzn_path(string: s);
 /** @group annotations.general With debug build of mzn2fzn, call MiniZinc::mzn_break_here when
   flattening this expression to make debugging easier. This annotation is ignored by the
   release build.*/

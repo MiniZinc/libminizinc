@@ -134,7 +134,6 @@ namespace MiniZinc {
     }
   };
 
-
   /// Hash map from KeepAlive to \a T
   template<class T>
   class KeepAliveMap {

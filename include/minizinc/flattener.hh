@@ -34,6 +34,11 @@
 #include <minizinc/solver_instance.hh>
 #include <minizinc/options.hh>
 
+#include <minizinc/passes/compile_pass.hh>
+#ifdef HAS_GECODE
+#include <minizinc/passes/gecode_pass.hh>
+#endif
+
 namespace MiniZinc {
   
   class Flattener;
@@ -62,7 +67,8 @@ namespace MiniZinc {
     SolverInstance::Status status = SolverInstance::UNKNOWN;
     
   private:
-    
+    Env* multiPassFlatten(const std::vector<std::unique_ptr<Pass> >& passes);
+
     bool fOutputByDefault = true;      // if the class is used in mzn2fzn, write .fzn+.ozn by default
     std::vector<std::string> filenames;
     std::vector<std::string> datafiles;
@@ -76,12 +82,19 @@ namespace MiniZinc {
     bool flag_optimize = true;
     bool flag_werror = false;
     bool flag_only_range_domains = false;
+    bool flag_allow_unbounded_vars = false;
     bool flag_noMIPdomains = false;
     int  opt_MIPDmaxIntvEE = 0;
     double opt_MIPDmaxDensEE = 0.0;
     bool flag_statistics = false;
     bool flag_stdinInput = false;
     bool flag_allow_multi_assign = false;
+
+    bool flag_gecode = false;
+    bool flag_two_pass = false;
+    bool flag_sac = false;
+    bool flag_shave = false;
+    unsigned int flag_pre_passes = 1;
 
     std::string std_lib_dir;
     std::string globals_dir;
@@ -90,8 +103,11 @@ namespace MiniZinc {
     std::string flag_output_base;
     std::string flag_output_fzn;
     std::string flag_output_ozn;
+    std::string flag_output_paths;
+    bool flag_keep_mzn_paths = false;
     bool flag_output_fzn_stdout = false;
     bool flag_output_ozn_stdout = false;
+    bool flag_output_paths_stdout = false;
     bool flag_instance_check_only = false;
     bool flag_model_check_only = false;
     bool flag_model_interface_only = false;

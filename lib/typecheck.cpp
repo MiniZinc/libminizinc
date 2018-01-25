@@ -1414,7 +1414,6 @@ namespace MiniZinc {
       if (FunctionI* fi = _model->matchFn(_env,call.id(),args,true)) {
         bool cv = false;
         for (unsigned int i=0; i<args.size(); i++) {
-
           if(Comprehension* c = call.arg(i)->dyn_cast<Comprehension>()) {
             Type t_before = c->e()->type();
             Type t = fi->argtype(_env,args,i);
@@ -1430,7 +1429,6 @@ namespace MiniZinc {
             args[i] = addCoercion(_env, _model,call.arg(i),fi->argtype(_env,args,i))();
             call.arg(i, args[i]);
           }
-
           cv = cv || args[i]->type().cv();
         }
         Type ty = fi->rtype(_env,args,true);
@@ -1973,6 +1971,7 @@ namespace MiniZinc {
                 } else {
                   throw TypeError(env.envi(), vdi->e()->loc(), "Only ranges allowed in FlatZinc type inst");
                 }
+                break;
               }
               case Expression::E_ID:
               {
@@ -1985,6 +1984,14 @@ namespace MiniZinc {
                   throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
                 }
                 vdi->e()->type(t);
+                break;
+              }
+              case Expression::E_SETLIT:
+              {
+                SetLit* sl = vdi->e()->ti()->domain()->cast<SetLit>();
+                t.bt(Type::BT_INT);
+                vdi->e()->type(t);
+                break;
               }
               default:
                 throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
