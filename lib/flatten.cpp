@@ -6620,7 +6620,7 @@ namespace MiniZinc {
     }
   }
   
-  std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDecl* vd) {
+  std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd) {
     std::vector<Expression*> added_constraints;
     
     // In FlatZinc par variables have RHSs, not domains
@@ -6645,6 +6645,7 @@ namespace MiniZinc {
     //   var 1..5: x;
     //   relation(x, y);
     if (vd->type().isvar() && vd->type().isbool()) {
+      bool is_fixed = ( vd->ti()->domain() != NULL );
       if (Expression::equal(vd->ti()->domain(),constants().lit_true)) {
         // Ex: var true: b = e()
         
@@ -6717,7 +6718,8 @@ namespace MiniZinc {
             const Call* c = vd->e()->cast<Call>();
             GCLock lock;
             vd->e(NULL);
-            vd->addAnnotation(constants().ann.is_defined_var);
+            if (!is_fixed)
+              vd->addAnnotation(constants().ann.is_defined_var);
             ASTString cid;
             if (c->id() == constants().ids.exists) {
               cid = constants().ids.array_bool_or;
@@ -6731,7 +6733,11 @@ namespace MiniZinc {
             std::vector<Expression*> args(c->n_args());
             for (unsigned int i=args.size(); i--;)
               args[i] = c->arg(i);
-            args.push_back(vd->id());
+            if (is_fixed) {
+              args.push_back(constants().lit_false);
+            } else {
+              args.push_back(vd->id());
+            }
             Call * nc = new Call(c->loc().introduce(),cid,args);
             nc->type(c->type());
             FunctionI* decl = env.orig->matchFn(env, nc, false);
@@ -6739,7 +6745,8 @@ namespace MiniZinc {
               throw FlatteningError(env,c->loc(),"'"+c->id().str()+"' is used in a reified context but no reified version is available");
             }
             nc->decl(decl);
-            nc->addAnnotation(definesVarAnn(vd->id()));
+            if (!is_fixed)
+              nc->addAnnotation(definesVarAnn(vd->id()));
             nc->ann().merge(c->ann());
             clearInternalAnnotations(nc);
             added_constraints.push_back(nc);
@@ -6752,6 +6759,15 @@ namespace MiniZinc {
           vd->ti()->domain(NULL);
           vd->e(constants().lit_false);
         }
+      }
+      if (vdi != NULL && is_fixed && env.vo.occurrences(vd)==0) {
+        if (isOutput(vd)) {
+          VarDecl* vd_output = (*env.output)[env.output_vo_flat.find(vd)]->cast<VarDeclI>()->e();
+          if (vd_output->e() == NULL) {
+            vd_output->e(vd->e());
+          }
+        }
+        env.flat_removeItem(vdi);
       }
     } else if (vd->type().isvar() && vd->type().dim()==0) {
       // Int or Float var
@@ -6897,7 +6913,7 @@ namespace MiniZinc {
       //   bool_xor([x],[y]) => bool_xor([x],[y],true)
       if (vc->id() == constants().ids.exists) {
         GCLock lock;
-        vc->id(ASTString("array_bool_or"));
+        vc->id(constants().ids.array_bool_or);
         std::vector<Expression*> args(2);
         args[0] = vc->arg(0);
         args[1] = constants().lit_true;
@@ -6906,7 +6922,7 @@ namespace MiniZinc {
         vc->decl(env.orig->matchFn(env, vc, false));
       } else if (vc->id() == constants().ids.forall) {
         GCLock lock;
-        vc->id(ASTString("array_bool_and"));
+        vc->id(constants().ids.array_bool_and);
         std::vector<Expression*> args(2);
         args[0] = vc->arg(0);
         args[1] = constants().lit_true;
@@ -6915,7 +6931,7 @@ namespace MiniZinc {
         vc->decl(env.orig->matchFn(env, vc, false));
       } else if (vc->id() == constants().ids.clause) {
         GCLock lock;
-        vc->id(ASTString("bool_clause"));
+        vc->id(constants().ids.bool_clause);
         vc->decl(env.orig->matchFn(env, vc, false));
       } else if (vc->id() == constants().ids.bool_xor && vc->n_args()==2) {
         GCLock lock;
@@ -6975,8 +6991,6 @@ namespace MiniZinc {
       }
     }
 
-    // Remove items marked for removal
-    m->compact();
     EnvI& env = e.envi();
 
     int msize = m->size();
@@ -6992,7 +7006,7 @@ namespace MiniZinc {
       if (VarDeclI* vdi = (*m)[i]->dyn_cast<VarDeclI>()) {
         GCLock lock;
         VarDecl* vd = vdi->e();
-        std::vector<Expression*> added_constraints = cleanup_vardecl(e.envi(), vd);
+        std::vector<Expression*> added_constraints = cleanup_vardecl(e.envi(), vdi, vd);
         // Record whether this VarDecl is equal to an Id (aliasing)
         if (vd->e() && vd->e()->isa<Id>()) {
           declsWithIds.push_back(i);
@@ -7016,7 +7030,7 @@ namespace MiniZinc {
           for (unsigned int i=0; i<let->let().size(); i++) {
             Expression* let_e = let->let()[i];
             if (VarDecl* vd = let_e->dyn_cast<VarDecl>()) {
-              std::vector<Expression*> added_constraints = cleanup_vardecl(e.envi(), vd);
+              std::vector<Expression*> added_constraints = cleanup_vardecl(e.envi(), NULL, vd);
               new_let.push_back(vd);
               for (auto nc : added_constraints)
                 new_let.push_back(nc);
