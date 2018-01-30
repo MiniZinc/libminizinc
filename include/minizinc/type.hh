@@ -115,6 +115,9 @@ namespace MiniZinc {
     static Type parstring(int dim=0) {
       return Type(TI_PAR,BT_STRING,ST_PLAIN,0,dim);
     }
+    static Type partop(int dim=0) {
+      return Type(TI_PAR,BT_TOP,ST_PLAIN,0,dim);
+    }
     static Type ann(int dim=0) {
       return Type(TI_PAR,BT_ANN,ST_PLAIN,0,dim);
     }
@@ -162,6 +165,11 @@ namespace MiniZinc {
     }
     static Type optvartop(int dim=0) {
       Type t(TI_VAR,BT_TOP,ST_PLAIN,0,dim);
+      t._ot = OT_OPTIONAL;
+      return t;
+    }
+    static Type optpartop(int dim=0) {
+      Type t(TI_PAR,BT_TOP,ST_PLAIN,0,dim);
       t._ot = OT_OPTIONAL;
       return t;
     }

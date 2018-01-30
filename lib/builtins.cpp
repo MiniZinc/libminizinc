@@ -2063,7 +2063,9 @@ namespace MiniZinc {
       IntSetVal* isv = eval_intset(env, call->arg(2+i));
       newDims[i] = std::pair<int,int>(isv->min().toInt(), isv->max().toInt());
     }
-    return new ArrayLit(al->loc(), al, newDims, newSlice);
+    ArrayLit* ret = new ArrayLit(al->loc(), al, newDims, newSlice);
+    ret->type(call->type());
+    return ret;
   }
   
   void registerBuiltins(Env& e, Model* m) {
@@ -2249,19 +2251,65 @@ namespace MiniZinc {
     }
     {
       std::vector<Type> stv(3);
-      stv[0] = Type::parint(-1);
+      stv[0] = Type::partop(-1);
       stv[1] = Type::parsetint(1);
       stv[2] = Type::parsetint();
       rb(env, m, ASTString("slice_1d"), stv, b_slice);
+      stv[0] = Type::vartop(-1);
+      rb(env, m, ASTString("slice_1d"), stv, b_slice);
+      stv[0] = Type::optvartop(-1);
+      rb(env, m, ASTString("slice_1d"), stv, b_slice);
+      stv[0] = Type::optpartop(-1);
+      rb(env, m, ASTString("slice_1d"), stv, b_slice);
+
       stv.push_back(Type::parsetint());
+      stv[0] = Type::partop(-1);
       rb(env, m, ASTString("slice_2d"), stv, b_slice);
+      stv[0] = Type::vartop(-1);
+      rb(env, m, ASTString("slice_2d"), stv, b_slice);
+      stv[0] = Type::optvartop(-1);
+      rb(env, m, ASTString("slice_2d"), stv, b_slice);
+      stv[0] = Type::optpartop(-1);
+      rb(env, m, ASTString("slice_2d"), stv, b_slice);
+
       stv.push_back(Type::parsetint());
+      stv[0] = Type::partop(-1);
       rb(env, m, ASTString("slice_3d"), stv, b_slice);
+      stv[0] = Type::vartop(-1);
+      rb(env, m, ASTString("slice_3d"), stv, b_slice);
+      stv[0] = Type::optvartop(-1);
+      rb(env, m, ASTString("slice_3d"), stv, b_slice);
+      stv[0] = Type::optpartop(-1);
+      rb(env, m, ASTString("slice_3d"), stv, b_slice);
+
       stv.push_back(Type::parsetint());
+      stv[0] = Type::partop(-1);
       rb(env, m, ASTString("slice_4d"), stv, b_slice);
+      stv[0] = Type::vartop(-1);
+      rb(env, m, ASTString("slice_4d"), stv, b_slice);
+      stv[0] = Type::optvartop(-1);
+      rb(env, m, ASTString("slice_4d"), stv, b_slice);
+      stv[0] = Type::optpartop(-1);
+      rb(env, m, ASTString("slice_4d"), stv, b_slice);
+
       stv.push_back(Type::parsetint());
+      stv[0] = Type::partop(-1);
       rb(env, m, ASTString("slice_5d"), stv, b_slice);
+      stv[0] = Type::vartop(-1);
+      rb(env, m, ASTString("slice_5d"), stv, b_slice);
+      stv[0] = Type::optvartop(-1);
+      rb(env, m, ASTString("slice_5d"), stv, b_slice);
+      stv[0] = Type::optpartop(-1);
+      rb(env, m, ASTString("slice_5d"), stv, b_slice);
+
       stv.push_back(Type::parsetint());
+      stv[0] = Type::partop(-1);
+      rb(env, m, ASTString("slice_6d"), stv, b_slice);
+      stv[0] = Type::vartop(-1);
+      rb(env, m, ASTString("slice_6d"), stv, b_slice);
+      stv[0] = Type::optvartop(-1);
+      rb(env, m, ASTString("slice_6d"), stv, b_slice);
+      stv[0] = Type::optpartop(-1);
       rb(env, m, ASTString("slice_6d"), stv, b_slice);
     }
     {
