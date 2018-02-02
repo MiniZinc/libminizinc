@@ -595,6 +595,7 @@ if(HAS_GECODE)
     include/minizinc/solvers/gecode/fzn_space.hh
     include/minizinc/solvers/gecode_solverinstance.hh
     include/minizinc/solvers/gecode/gecode_constraints.hh
+    ${parser_hh}
     )
 
   target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include" "${GECODE_HOME}")
