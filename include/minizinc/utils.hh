@@ -122,8 +122,10 @@ namespace MiniZinc {
           if ( 0==pResult )
             return true;
           i++;
-          if( i>=argc )
+          if( i>=argc ) {
+            --i;
             return fValueOptional;
+          }
           arg = argv[i];
         }
         assert( pResult );

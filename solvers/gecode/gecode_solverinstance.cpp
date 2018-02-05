@@ -81,6 +81,8 @@ namespace MiniZinc {
       int time = atoi(argv[i]);
       if(time >= 0)
         _options.setIntParam(std::string("time"), time);
+    } else {
+      return false;
     }
     return true;
   }

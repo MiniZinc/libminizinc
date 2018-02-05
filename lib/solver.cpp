@@ -184,7 +184,8 @@ bool MznSolver::processOptions(int argc, const char** argv, std::ostream& os)
     } else if ( !ifMzn2Fzn() ? s2out.processOption( i, argc, argv ) : false ) {
     } else if (!getFlt()->processOption(i, argc, argv)) {
       for (auto it = getGlobalSolverRegistry()->getSolverFactories().rbegin();
-           it != getGlobalSolverRegistry()->getSolverFactories().rend(); ++it)
+           i<argc && it != getGlobalSolverRegistry()->getSolverFactories().rend();
+           ++it)
         if ((*it)->processOption(i, argc, argv))
           goto Found;
       goto NotFound;

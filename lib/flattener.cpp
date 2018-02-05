@@ -251,7 +251,7 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
   } else if ( cop.getOption( "--allow-multiple-assignments" ) ) {
     flag_allow_multi_assign = true;
   } else {
-    if (flag_stdinInput)
+    if (flag_stdinInput || '-'==*argv[i])   // unknown option
       goto error;
     std::string input_file(argv[i]);
     if (input_file.length()<=4) {
