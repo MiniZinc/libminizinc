@@ -57,7 +57,8 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   << "-p <N>              use N threads, default: 1" << std::endl
 //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
   << "--timeout <N>       stop search after N seconds" << std::endl
-  << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
+  << "--workmem <N>, --nodefilestart <N>\n"
+     "                    maximal RAM for working memory used before writing to node file, GB, default: 3" << std::endl
   << "--readParam <file>  read CPLEX parameters from file" << std::endl
   << "--writeParam <file> write CPLEX parameters to file" << std::endl
 //   << "--tuneParam         instruct CPLEX to tune parameters instead of solving   NOT IMPL"
@@ -78,7 +79,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
  static   int nThreads=1;
  static   string sExportModel;
  static   double nTimeout=-1;
- static   double nWorkMemLimit=-1;
+ static   double nWorkMemLimit=3;
  static   string sReadParams;
  static   string sWriteParams;
  static   bool flag_all_solutions = false;
@@ -99,7 +100,7 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
   } else if ( cop.get( "-p", &nThreads ) ) {
   } else if ( cop.get( "--timeout", &nTimeout ) ) {
-  } else if ( cop.get( "--workmem", &nWorkMemLimit ) ) {
+  } else if ( cop.get( "--workmem --nodefilestart", &nWorkMemLimit ) ) {
   } else if ( cop.get( "--readParam", &sReadParams ) ) {
   } else if ( cop.get( "--writeParam", &sWriteParams ) ) {
   } else if ( cop.get( "--absGap", &absGap ) ) {
@@ -657,8 +658,10 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
     }
 
     if (nWorkMemLimit>0) {
-     status =  CPXsetdblparam (env, CPXPARAM_MIP_Limits_TreeMemory, nWorkMemLimit);
-     wrap_assert(!status, "Failed to set CPXPARAM_MIP_Limits_TreeMemory.", false);
+     status =  CPXsetintparam (env, CPXPARAM_MIP_Strategy_File, 3);
+     wrap_assert(!status, "Failed to set CPXPARAM_MIP_Strategy_File.", false);
+     status =  CPXsetdblparam (env, CPXPARAM_WorkMem, 1024.0 * nWorkMemLimit);   // MB in CPLEX
+     wrap_assert(!status, "Failed to set CPXPARAM_WorkMem.", false);
     }
 
    if ( absGap>=0.0 ) {
