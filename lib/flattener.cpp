@@ -293,11 +293,12 @@ Flattener::Flattener(bool fOutputByDef_)
 
 Flattener::~Flattener()
 {
-  if (pEnv.get())       // ??? TODO
+  if (pEnv.get()) {      // ??? TODO
     if(is_flatzinc) {
       pEnv->swap();
     }
-  delete pEnv->model();
+    delete pEnv->model();
+  }
 }
 
 Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
