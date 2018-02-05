@@ -321,7 +321,7 @@ namespace MiniZinc {
       }
       int sliceOffset = dims.size()*2;
       int origSliceOffset = v.dims()*2;
-      for (unsigned int i=0; i<_u._al->dims()*2; i++) {
+      for (int i=0; i<_u._al->dims()*2; i++) {
         d[sliceOffset+i] = v._dims[origSliceOffset+i];
       }
       _dims = ASTIntVec(d);
@@ -353,7 +353,7 @@ namespace MiniZinc {
       d[1] = v.size();
       int sliceOffset = 2;
       int origSliceOffset = v.dims()*2;
-      for (unsigned int i=0; i<_u._al->dims()*2; i++) {
+      for (int i=0; i<_u._al->dims()*2; i++) {
         d[sliceOffset+i] = v._dims[origSliceOffset+i];
       }
       _dims = ASTIntVec(d);
