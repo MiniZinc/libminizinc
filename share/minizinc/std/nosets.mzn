@@ -221,7 +221,9 @@ function array[int] of var bool: setarray2bools(array[int] of var set of int: x)
 
 predicate array_var_set_element(var int: x, array[int] of var set of int: y, var set of int: z) ::promise_total =
   let {
-    constraint x in index_set( y );
+    constraint x in { i | i in index_set( y ) where
+      lb(y[i]) subset ub(z) /\ lb(z) subset ub(y[i])
+    };
     set of int: sUB = array_union( [ ub(y[i]) | i in dom(x) ] );
     set of int: sLB = array_intersect( [ lb(y[i]) | i in dom(x) ] );
   } in
@@ -249,7 +251,9 @@ predicate array_var_set_element(var int: x, array[int] of var set of int: y, var
 
 predicate array_set_element(var int: x, array[int] of set of int: y, var set of int: z) ::promise_total =
   let {
-    constraint x in index_set( y );
+    constraint x in { i | i in index_set( y ) where
+      y[i] subset ub(z) /\ lb(z) subset y[i]
+    };
     set of int: sUB = array_union( [ y[i] | i in dom(x) ] );
     set of int: sLB = array_intersect( [ y[i] | i in dom(x) ] );
   } in
