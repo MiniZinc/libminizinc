@@ -289,10 +289,16 @@ predicate array_var_bool_element(var int: x, array[int] of var bool: a,
     array_var_int_element(x, arrayXd(a, [bool2int(a[i]) | i in index_set(a)]), bool2int(z));
 
 predicate array_int_element(var int: x, array[int] of int: a, var int: z) =
+    let {
+      constraint x in { i | i in index_set(a) where a[i] in dom(z) },
+    } in
     array_float_element(x, arrayXd(a, [int2float(a[i]) | i in index_set(a)]), int2float(z));
 
 predicate array_var_int_element(var int: x, array[int] of var int: a,
                                 var int: z) =
+    let {
+      constraint x in { i | i in index_set(a) where 0 < card(dom(a[i]) intersect dom(z)) },
+    } in
    %%%% Relate to the float version:
     array_var_float_element(x, arrayXd(a, [int2float(a[i]) | i in index_set(a)]), int2float(z));
    %%%% Simplistic version:
@@ -302,7 +308,7 @@ predicate array_var_int_element(var int: x, array[int] of var int: a,
 predicate array_float_element(var int: i00, array[int] of float: a,
                               var float: z) =
     let { set of int: ix = index_set(a),
-          constraint i00 in ix,
+          constraint i00 in { i | i in ix where a[i]>=lb(z) /\ a[i]<=ub(z) },
     } in         %%% Finish domain before dMin/dMax
     let {
           float: dMin = min(i in dom(i00))(a[i]),
@@ -334,7 +340,9 @@ predicate array_float_element(var int: i00, array[int] of float: a,
 predicate array_var_float_element(var int: i00, array[int] of var float: a,
                                   var float: z) =
     let { set of int: ix = index_set(a),
-          constraint i00 in ix,
+          constraint i00 in { i | i in ix where
+            lb(a[i])<=ub(z) /\ ub(a[i])>=lb(z)
+          },
     } in                            %% finish domain first
     let {
           float: minLB=min(i in dom(i00))(lb(a[i])),
