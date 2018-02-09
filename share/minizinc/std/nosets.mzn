@@ -226,6 +226,8 @@ predicate array_var_set_element(var int: x, array[int] of var set of int: y, var
     };
     set of int: sUB = array_union( [ ub(y[i]) | i in dom(x) ] );
     set of int: sLB = array_intersect( [ lb(y[i]) | i in dom(x) ] );
+    constraint z subset sUB,
+    constraint sLB subset z,
   } in
   forall (k in ub(z)) (
     set2bools(z)[k] == 
@@ -256,6 +258,8 @@ predicate array_set_element(var int: x, array[int] of set of int: y, var set of 
     };
     set of int: sUB = array_union( [ y[i] | i in dom(x) ] );
     set of int: sLB = array_intersect( [ y[i] | i in dom(x) ] );
+    constraint z subset sUB,
+    constraint sLB subset z,
   } in
   forall (k in ub(z)) (
     set2bools(z)[k] == 
