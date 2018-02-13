@@ -306,9 +306,13 @@ namespace MiniZinc {
         pipe(pipes[2]);
 
         std::string fznFile;
+        int tmpfile_desc = -1;
         if (!_canPipe) {
           char tmpfile[] = "/tmp/fznfileXXXXXX.fzn";
-          mkstemps(tmpfile, 4);
+          tmpfile_desc = mkstemps(tmpfile, 4);
+          if (tmpfile_desc == -1) {
+            throw InternalError("Error occurred when executing FZN solver, could not create temporary file for FlatZinc");
+          }
           fznFile = tmpfile;
           std::ofstream os(tmpfile);
           for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
@@ -380,6 +384,10 @@ namespace MiniZinc {
           if (!_canPipe) {
             //remove(fznFile.c_str());
           }
+          close(pipes[1][0]);
+          close(pipes[2][0]);
+          if (tmpfile_desc != -1)
+            close(tmpfile_desc);
           return result.str();
         }
         else {
