@@ -515,9 +515,14 @@ namespace MiniZinc {
   }
   void EnvI::dump(void) {
     struct EED {
+      static std::string k(Expression* e) {
+        std::ostringstream oss;
+        oss << *e;
+        return oss.str();
+      }
       static std::string d(const WW& ee) {
         std::ostringstream oss;
-        oss << ee.r() << " " << ee.b();
+        oss << *ee.r() << " " << ee.b();
         return oss.str();
       }
     };

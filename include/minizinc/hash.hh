@@ -162,7 +162,7 @@ namespace MiniZinc {
     void clear() { _m.clear(); }
     template <class D> void dump(void) {
       for (iterator i = _m.begin(); i != _m.end(); ++i) {
-        std::cerr << i->first() << ": " << D::d(i->second) << std::endl;
+        std::cerr << D::k(i->first()) << ": " << D::d(i->second) << std::endl;
       }
     }
   };
