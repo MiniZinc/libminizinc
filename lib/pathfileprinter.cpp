@@ -155,7 +155,7 @@ using std::vector;
       }
     } else if (ConstraintI* ci = item->dyn_cast<ConstraintI>()) {
       StringLit* sl = nullptr;
-      Call* e = ci->e()->cast<Call>();
+      Expression* e = ci->e();
       for(ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
         if(Call* ca = (*it)->dyn_cast<Call>()) {
           ASTString cid = ca->id();
