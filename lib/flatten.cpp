@@ -3662,22 +3662,21 @@ namespace MiniZinc {
           VarDecl* vd = id->decl()->flat();
           Expression* rete = NULL;
           if (vd==NULL) {
-            // New top-level id, need to copy into env.m
-            vd = flat_exp(env,Ctx(),id->decl(),NULL,constants().var_true).r()
-                 ->cast<Id>()->decl();
+            if (id->decl()->e()==NULL || id->decl()->e()->type().isvar() || id->decl()->e()->type().dim() > 0) {
+              // New top-level id, need to copy into env.m
+              vd = flat_exp(env,Ctx(),id->decl(),NULL,constants().var_true).r()
+                   ->cast<Id>()->decl();
+            } else {
+              vd = id->decl();
+            }
           }
           ret.b = bind(env,Ctx(),b,constants().lit_true);
-          if (vd && vd->e()!=NULL) {
-            switch (vd->e()->eid()) {
-            case Expression::E_INTLIT:
-            case Expression::E_BOOLLIT:
-            case Expression::E_FLOATLIT:
-            case Expression::E_ID:
+          if (vd->e()!=NULL) {
+            if (vd->e()->type().ispar() && vd->e()->type().dim()==0)
+              rete = eval_par(env, vd->e());
+            if (vd->e()->isa<Id>())
               rete = vd->e();
-              break;
-            default: break;
-            }
-          } else if (vd && vd->ti()->ranges().size() > 0) {
+          } else if (vd->ti()->ranges().size() > 0) {
             // create fresh variables and array literal
             std::vector<std::pair<int,int> > dims;
             IntVal asize = 1;
