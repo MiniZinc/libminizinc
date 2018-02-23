@@ -450,6 +450,21 @@ void Flattener::flatten()
           if (flag_verbose)
             std::cerr << " done parsing (" << stoptime(lasttime) << ")" << std::endl;
 
+          if (flag_instance_check_only || flag_model_check_only || flag_model_interface_only) {
+            GCLock lock;
+            vector<TypeError> typeErrors;
+            MiniZinc::typecheck(*env, m, typeErrors, flag_model_interface_only || flag_model_check_only, flag_allow_multi_assign);
+            if (typeErrors.size() > 0) {
+              for (unsigned int i=0; i<typeErrors.size(); i++) {
+                if (flag_verbose)
+                  std::cerr << std::endl;
+                std::cerr << typeErrors[i].loc() << ":" << std::endl;
+                std::cerr << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
+              }
+              exit(EXIT_FAILURE);
+            }
+          }
+          
           if (flag_model_interface_only) {
             MiniZinc::output_model_interface(*env, m, std::cout);
           }
