@@ -137,6 +137,9 @@ namespace MiniZinc {
   bool updateBounds(EnvI& envi, VarDecl* ovd, VarDecl* vd) {
     bool tighter = false;
     bool fixed = false;
+    if (ovd->ann().contains(constants().ann.mzn_dontcare_var)) {
+      vd->addAnnotation(constants().ann.mzn_dontcare_var);
+    }
     if(ovd->ti()->domain() || ovd->e()) {
       IntVal intval;
       FloatVal doubleval;
@@ -608,10 +611,13 @@ namespace MiniZinc {
   }
   
   void EnvI::flat_removeItem(MiniZinc::Item* i) {
+    if (VarDeclI* vdi = i->dyn_cast<VarDeclI>()) {
+      vdi->e()->addAnnotation(constants().ann.mzn_dontcare_var);
+    }
     i->remove();
   }
   void EnvI::flat_removeItem(int i) {
-    (*_flat)[i]->remove();
+    flat_removeItem((*_flat)[i]);
   }
   
   void EnvI::fail(const std::string& msg) {
@@ -5595,6 +5601,11 @@ namespace MiniZinc {
                 VarDecl* reif_b;
                 if (r==NULL || (r != NULL && r->e() != NULL)) {
                   reif_b = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(),Type::varbool()), NULL, NULL, NULL);
+                  if (reif_b->ann().contains(constants().ann.mzn_dontcare_var)) {
+                    ret.r = bind(env,ctx,r,constants().lit_true);
+                    ret.b = bind(env,ctx,b,constants().lit_true);
+                    return ret;
+                  }
                   if (reif_b->ti()->domain()) {
                     if (reif_b->ti()->domain() == constants().lit_true) {
                       bind(env,ctx,r,constants().lit_true);
@@ -6181,7 +6192,7 @@ namespace MiniZinc {
                 ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->e()->e());
                 if (vdi->e()->introduced()) {
                   removedItems.push_back(vdi);
-                  vdi->remove();
+                  env.flat_removeItem(vdi);
                   keptVariable = false;
                 } else {
                   vdi->e()->e(NULL);
@@ -6193,7 +6204,7 @@ namespace MiniZinc {
               }
             } else {
               removedItems.push_back(vdi);
-              vdi->remove();
+              env.flat_removeItem(vdi);
               keptVariable = false;
             }
           }
@@ -7029,7 +7040,7 @@ namespace MiniZinc {
         if (new_ce) {
           ci->e(new_ce);
         } else {
-          ci->remove();
+          env.flat_removeItem(ci);
         }
       } else if (FunctionI* fi = (*m)[i]->dyn_cast<FunctionI>()) {
         if (Let* let = Expression::dyn_cast<Let>(fi->e())) {

@@ -1394,6 +1394,8 @@ namespace MiniZinc {
     ann.mzn_break_here = new Id(Location(), ASTString("mzn_break_here"), NULL);
     ann.mzn_break_here->type(Type::ann());
 #endif
+    ann.mzn_dontcare_var = new Id(Location(), ASTString("mzn_dontcare_var"), NULL);
+    ann.mzn_dontcare_var->type(Type::ann());
 
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
@@ -1595,6 +1597,7 @@ namespace MiniZinc {
 #ifndef NDEBUG
     v.push_back(ann.mzn_break_here);
 #endif
+    v.push_back(ann.mzn_dontcare_var);
 
     v.push_back(new StringLit(Location(),cli.cmdlineData_short_str));
     v.push_back(new StringLit(Location(),cli.cmdlineData_str));
