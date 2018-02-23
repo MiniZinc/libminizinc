@@ -5063,8 +5063,6 @@ namespace MiniZinc {
                   }
                   ret.r = conj(env,r,ctx,ees);
                 }
-                if (!ctx.neg)
-                  env.map_insert(cc,ret);
               }
             } else {
               ret.r = conj(env,r,ctx,ees);
@@ -5634,6 +5632,7 @@ namespace MiniZinc {
                 ret.b = bind(env,Ctx(),b,constants().lit_true);
                 args_ee.push_back(EE(NULL,reif_b->id()));
                 ret.r = conj(env,NULL,ctx,args_ee);
+                env.map_insert(cr(),ret);
                 return ret;
               }
             }
@@ -6418,6 +6417,10 @@ namespace MiniZinc {
                   CollectDecls cd(env.vo,deletedVarDecls,vdi);
                   topDown(cd,c);
                   vd->e(NULL);
+                  // Need to remove right hand side from CSE map, otherwise
+                  // flattening of nc could assume c has already been flattened
+                  // to vd
+                  env.map_remove(c);
                   /// TODO: check if removing variables here makes sense:
 //                  if (!isOutput(vd) && env.vo.occurrences(vd)==0) {
 //                    removedItems.push_back(vdi);
