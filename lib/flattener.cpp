@@ -612,7 +612,7 @@ void Flattener::flatten()
                 std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
             }
 
-            if (fopts.collect_mzn_paths && !flag_keep_mzn_paths) {
+            if ( (fopts.collect_mzn_paths || flag_two_pass) && !flag_keep_mzn_paths) {
               class RemovePathAnnotations : public ItemVisitor {
               public:
                 void removePath(Annotation& a) const {
