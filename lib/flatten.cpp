@@ -5667,7 +5667,11 @@ namespace MiniZinc {
                 // Do not insert into map, since par results will quickly become
                 // garbage anyway and then disappear from the map
               } else if (decl->_builtins.e) {
-                KeepAlive callres = decl->_builtins.e(env,cr_c);
+                KeepAlive callres;
+                {
+                  GCLock lock;
+                  callres = decl->_builtins.e(env,cr_c);
+                }
                 EE res = flat_exp(env,ctx,callres(),r,b);
                 args_ee.push_back(res);
                 ret.b = conj(env,b,Ctx(),args_ee);
