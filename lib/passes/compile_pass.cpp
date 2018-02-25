@@ -97,7 +97,6 @@ namespace MiniZinc {
   }
 
   Env* CompilePass::run(Env* store) {
-      GCLock lock;
     Timer lasttime;
     if(compflags.verbose)
       std::cerr << "\n\tCompilePass: Flatten with \'" << library << "\' library ...\n";
