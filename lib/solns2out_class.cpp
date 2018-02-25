@@ -135,6 +135,7 @@ void Solns2Out::restoreDefaults() {
     }
   }
   fNewSol2Print = false;
+  GC::trigger();
 }
 
 void Solns2Out::parseAssignments(string& solution) {
