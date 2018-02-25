@@ -49,13 +49,8 @@ namespace MiniZinc {
             /// Construct brancher
             AuxVarBrancher(Gecode::Home home, Gecode::TieBreak<Gecode::IntVarBranch> int_varsel0,
                     Gecode::IntValBranch int_valsel0,
-#ifdef HAS_GECODE_VERSION_5_1
                     Gecode::TieBreak<Gecode::BoolVarBranch> bool_varsel0,
                     Gecode::BoolValBranch bool_valsel0
-#else
-                    Gecode::TieBreak<Gecode::IntVarBranch> bool_varsel0,
-                    Gecode::IntValBranch bool_valsel0
-#endif
 #ifdef GECODE_HAS_SET_VARS
                     ,
                     Gecode::SetVarBranch set_varsel0,
@@ -78,8 +73,8 @@ namespace MiniZinc {
 #endif
                       {}
             /// Copy constructor
-            AuxVarBrancher(Gecode::Space& home, bool share, AuxVarBrancher& b)
-                : Brancher(home, share, b), done(b.done) {}
+            AuxVarBrancher(Gecode::Space& home, AuxVarBrancher& b)
+                : Brancher(home, b), done(b.done) {}
 
             /// %Choice that only signals failure or success
             class Choice : public Gecode::Choice {
@@ -102,13 +97,8 @@ namespace MiniZinc {
 
             Gecode::TieBreak<Gecode::IntVarBranch> int_varsel;
             Gecode::IntValBranch int_valsel;
-#ifdef HAS_GECODE_VERSION_5_1
             Gecode::TieBreak<Gecode::BoolVarBranch> bool_varsel;
             Gecode::BoolValBranch bool_valsel;
-#else
-            Gecode::TieBreak<Gecode::IntVarBranch> bool_varsel;
-            Gecode::IntValBranch bool_valsel;
-#endif
 #ifdef GECODE_HAS_SET_VARS
             Gecode::SetVarBranch set_varsel;
             Gecode::SetValBranch set_valsel;
@@ -178,20 +168,15 @@ namespace MiniZinc {
                     << ")";
             }
             /// Copy brancher
-            virtual Actor* copy(Gecode::Space& home, bool share) {
-                return new (home) AuxVarBrancher(home, share, *this);
+            virtual Actor* copy(Gecode::Space& home) {
+                return new (home) AuxVarBrancher(home, *this);
             }
             /// Post brancher
             static void post(Gecode::Home home,
                     Gecode::TieBreak<Gecode::IntVarBranch> int_varsel,
                     Gecode::IntValBranch int_valsel,
-#ifdef HAS_GECODE_VERSION_5_1
                     Gecode::TieBreak<Gecode::BoolVarBranch> bool_varsel,
                     Gecode::BoolValBranch bool_valsel
-#else
-                    Gecode::TieBreak<Gecode::IntVarBranch> bool_varsel,
-                    Gecode::IntValBranch bool_valsel
-#endif
 #ifdef GECODE_HAS_SET_VARS
                     ,
                     Gecode::SetVarBranch set_varsel,

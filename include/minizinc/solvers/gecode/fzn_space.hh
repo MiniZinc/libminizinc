@@ -77,7 +77,7 @@ namespace MiniZinc {
     MiniZinc::SolveI::SolveType _solveType;
     
     /// copy constructor
-    FznSpace(bool share, FznSpace&);
+    FznSpace(FznSpace&);
     /// standard constructor
     FznSpace(void) : _optVarIsInt(true), _optVarIdx(-1), _copyAuxVars(true) {};
     ~FznSpace(void) {} 
@@ -97,7 +97,7 @@ namespace MiniZinc {
     /// Implement optimization
     virtual void constrain(const Space& s);
     /// Copy function
-    virtual Gecode::Space* copy(bool share);
+    virtual Gecode::Space* copy(void);
   };
   
 }

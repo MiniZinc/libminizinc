@@ -29,31 +29,16 @@
 #include <minizinc/solver.hh>
 #include <minizinc/solvers/gecode/fzn_space.hh>
 
-#if GECODE_VERSION_NUMBER >= 500000
-
-#define HAS_GECODE_VERSION_5
-
-#if GECODE_VERSION_NUMBER >= 500100
-#define HAS_GECODE_VERSION_5_1
+#if GECODE_VERSION_NUMBER < 600000
+#error Gecode versions before 6.0 are not supported
 #endif
 
-#endif
-
-#ifdef HAS_GECODE_VERSION_5
 #define MZ_IntConLevel Gecode::IntPropLevel
 #define MZ_ICL_VAL Gecode::IPL_VAL
 #define MZ_ICL_DOM Gecode::IPL_DOM 
 #define MZ_ICL_BND Gecode::IPL_BND
 #define MZ_ICL_DEF Gecode::IPL_DEF
 #define MZ_EPK_DEF Gecode::IPL_DEF
-#else
-#define MZ_IntConLevel Gecode::IntConLevel
-#define MZ_ICL_VAL Gecode::ICL_VAL
-#define MZ_ICL_DOM Gecode::ICL_DOM 
-#define MZ_ICL_BND Gecode::ICL_BND
-#define MZ_ICL_DEF Gecode::ICL_DEF
-#define MZ_EPK_DEF Gecode::EPK_DEF
-#endif
 
 
 namespace MiniZinc {
@@ -311,13 +296,11 @@ namespace MiniZinc {
     /// convert assign value selection
     Gecode::IntAssign ann2asnivalsel(std::string s, Gecode::Rnd& rnd);
 
-#ifdef HAS_GECODE_VERSION_5_1
     Gecode::TieBreak<Gecode::BoolVarBranch> ann2bvarsel(std::string s, Gecode::Rnd& rnd, double decay);
     /// convert the annotation \a s int value selection to the respectbve Gecode val selection
     Gecode::BoolValBranch ann2bvalsel(std::string s, std::string& r0, std::string& r1, Gecode::Rnd& rnd);
     /// convert assign value selection
     Gecode::BoolAssign ann2asnbvalsel(std::string s, Gecode::Rnd& rnd);
-#endif
 
 
 #ifdef GECODE_HAS_SET_VARS
@@ -354,30 +337,25 @@ namespace MiniZinc {
     void setSearchStrategyFromAnnotation(std::vector<Expression*> flatAnn, 
                                                         std::vector<bool>& iv_searched, 
                                                         std::vector<bool>& bv_searched,
-                                                #ifdef GECODE_HAS_SET_VARS
+#ifdef GECODE_HAS_SET_VARS
                                                         std::vector<bool>& sv_searched,
-                                                #endif
-                                                #ifdef GECODE_HAS_FLOAT_VARS
+#endif
+#ifdef GECODE_HAS_FLOAT_VARS
                                                         std::vector<bool>& fv_searched,
-                                                #endif
+#endif
                                                         Gecode::TieBreak<Gecode::IntVarBranch>& def_int_varsel,
                                                         Gecode::IntValBranch& def_int_valsel,
-                                                #ifdef HAS_GECODE_VERSION_5_1
                                                         Gecode::TieBreak<Gecode::BoolVarBranch>& def_bool_varsel,
                                                         Gecode::BoolValBranch& def_bool_valsel,
-                                                #else
-                                                        Gecode::TieBreak<Gecode::IntVarBranch>& def_bool_varsel,
-                                                        Gecode::IntValBranch& def_bool_valsel,
-                                                #endif
 
-                                                #ifdef GECODE_HAS_SET_VARS
+#ifdef GECODE_HAS_SET_VARS
                                                         Gecode::SetVarBranch& def_set_varsel,
                                                         Gecode::SetValBranch& def_set_valsel,
-                                                #endif
-                                                #ifdef GECODE_HAS_FLOAT_VARS
+#endif
+#ifdef GECODE_HAS_FLOAT_VARS
                                                         Gecode::TieBreak<Gecode::FloatVarBranch>& def_float_varsel,
                                                         Gecode::FloatValBranch& def_float_valsel,
-                                                #endif
+#endif
                                                         Gecode::Rnd& rnd,
                                                         double decay,
                                                         bool ignoreUnknown,

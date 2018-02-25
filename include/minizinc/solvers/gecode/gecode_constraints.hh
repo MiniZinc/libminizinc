@@ -22,32 +22,6 @@ namespace MiniZinc {
 
 namespace GecodeConstraints {
 
-#ifndef HAS_GECODE_VERSION_5_1
-  inline Gecode::IntRelType swap(Gecode::IntRelType irt) {
-    switch (irt) {
-      case Gecode::IRT_LQ: return Gecode::IRT_GQ;
-      case Gecode::IRT_LE: return Gecode::IRT_GR;
-      case Gecode::IRT_GQ: return Gecode::IRT_LQ;
-      case Gecode::IRT_GR: return Gecode::IRT_LE;
-      default:     return irt;
-    }
-  }
-
-  inline Gecode::IntRelType neg(Gecode::IntRelType irt) {
-    switch (irt) {
-      case Gecode::IRT_EQ: return Gecode::IRT_NQ;
-      case Gecode::IRT_NQ: return Gecode::IRT_EQ;
-      case Gecode::IRT_LQ: return Gecode::IRT_GR;
-      case Gecode::IRT_LE: return Gecode::IRT_GQ;
-      case Gecode::IRT_GQ: return Gecode::IRT_LE;
-      case Gecode::IRT_GR:
-      default:
-                           assert(irt == Gecode::IRT_GR);
-    }
-    return Gecode::IRT_LQ;
-  }
-#endif
-
 #define PosterImpl(X) void X(SolverInstanceBase& s, const Call* ce)
 
       PosterImpl(p_distinct);

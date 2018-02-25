@@ -899,7 +899,7 @@ namespace MiniZinc {
       IntArgs cover = gi.arg2intargs(call->arg(1));
       IntVarArgs iv1 = gi.arg2intvarargs(call->arg(2));
 
-      Region re(*gi._current_space);
+      Region re;
       IntSet cover_s(cover);
       Gecode::IntSetRanges cover_r(cover_s);
       Gecode::IntVarRanges* iv0_ri = re.alloc<Gecode::IntVarRanges>(iv0.size());
@@ -951,7 +951,7 @@ namespace MiniZinc {
         y[i] = IntSet(lbound[i],ubound[i]);
 
       IntSet cover_s(cover);
-      Region re(*gi._current_space);
+      Region re;
       IntVarRanges* xrs = re.alloc<IntVarRanges>(x.size());
       for (int i=x.size(); i--;)
         xrs[i].init(x[i]);
@@ -1029,7 +1029,7 @@ namespace MiniZinc {
         }
       }
 
-      Region re(*gi._current_space);
+      Region re;
       DFA::Transition* t = re.alloc<DFA::Transition>(noOfTrans+1);
       noOfTrans = 0;
       for (int i=1; i<=q; i++) {
@@ -1135,11 +1135,7 @@ namespace MiniZinc {
         ts.add(t);
       }
       ts.finalize();
-#ifdef HAS_GECODE_VERSION_5
       extensional(*gi._current_space,x,ts,gi.ann2icl(ann));
-#else
-      extensional(*gi._current_space,x,ts,MZ_EPK_DEF,gi.ann2icl(ann));
-#endif
     }
     void p_table_bool(SolverInstanceBase& s, const Call* call) {
       const Annotation& ann =call->ann();
@@ -1157,11 +1153,7 @@ namespace MiniZinc {
         ts.add(t);
       }
       ts.finalize();
-#ifdef HAS_GECODE_VERSION_5
       extensional(*gi._current_space,x,ts,gi.ann2icl(ann));
-#else
-      extensional(*gi._current_space,x,ts,MZ_EPK_DEF,gi.ann2icl(ann));
-#endif
     }
 
     void p_cumulatives(SolverInstanceBase& s, const Call* call) {
