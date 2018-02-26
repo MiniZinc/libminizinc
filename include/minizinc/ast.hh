@@ -1724,7 +1724,6 @@ namespace MiniZinc {
         Id* user_cut;            // MIP
         Id* lazy_constraint;            // MIP
         Id* mzn_break_here;
-        Id* mzn_dontcare_var;
       } ann;
 
       /// Command line options
