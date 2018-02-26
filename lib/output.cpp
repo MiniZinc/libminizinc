@@ -676,8 +676,10 @@ namespace MiniZinc {
               topDown(ce, decl->params()[i]);
             env.output->registerFn(env, decl);
             env.output->addItem(decl);
-            if (decl->e())
+            if (decl->e()) {
+              makePar(env, decl->e());
               topDown(*this, decl->e());
+            }
           } else {
             decl = origdecl;
           }
