@@ -89,6 +89,9 @@ namespace MiniZinc {
     std::map<int,GCStat> gc_stats;
 #endif
   protected:
+    
+    static const size_t _min_gc_threshold;
+    
     HeapPage* _page;
     Model* _rootset;
     KeepAlive* _roots;
@@ -137,7 +140,7 @@ namespace MiniZinc {
       , _nodeWeakMaps(NULL)
       , _alloced_mem(0)
       , _free_mem(0)
-      , _gc_threshold(10)
+      , _gc_threshold(_min_gc_threshold)
       , _max_alloced_mem(0) {
       for (int i=_max_fl+1; i--;)
         _fl[i] = NULL;
@@ -197,6 +200,11 @@ namespace MiniZinc {
       char* ret = p->data+p->used;
       p->used += size;
       _free_mem -= size;
+      if (p->size-p->used < _fl_size[0]) {
+        _free_mem -= (p->size-p->used);
+        _alloced_mem -= (p->size-p->used);
+        p->size=p->used;
+      }
       assert(_alloced_mem >= _free_mem);
       return ret;
     }
@@ -231,7 +239,9 @@ namespace MiniZinc {
       mark();
       sweep();
       if (static_cast<double>(_free_mem)/_alloced_mem < 0.5) {
-        _gc_threshold = static_cast<size_t>(_alloced_mem * 1.5);
+        _gc_threshold = std::max(_min_gc_threshold,static_cast<size_t>(_alloced_mem * 1.5));
+      } else {
+        _gc_threshold = std::max(_min_gc_threshold,_alloced_mem);
       }
 #ifdef MINIZINC_GC_STATS
       std::cerr << "done\n\talloced " << (_alloced_mem/1024) << "\n\tfree " << (_free_mem/1024) << "\n\tdiff "
@@ -303,6 +313,8 @@ namespace MiniZinc {
 
   };
 
+  const size_t GC::Heap::_min_gc_threshold = 10ll*1024ll;
+  
 #ifdef MINIZINC_GC_STATS
   const char*
   GC::Heap::_nodeid[] = {
@@ -546,7 +558,10 @@ namespace MiniZinc {
     HeapPage* prev = NULL;
     while (p) {
       size_t off = 0;
-      bool wholepage = false;
+      bool wholepage = true;
+      struct NodeInfo { ASTNode* n; size_t ns; NodeInfo(ASTNode* n0, size_t ns0) : n(n0), ns(ns0) {} };
+      std::vector<NodeInfo> freeNodes;
+      freeNodes.reserve(100);
       while (off < p->used) {
         ASTNode* n = reinterpret_cast<ASTNode*>(p->data+off);
         size_t ns = nodesize(n);
@@ -574,23 +589,16 @@ namespace MiniZinc {
               }
           }
           if (ns >= _fl_size[0] && ns <= _fl_size[_max_fl]) {
-            FreeListNode* fln = static_cast<FreeListNode*>(n);
-            new (fln) FreeListNode(ns, _fl[_fl_slot(ns)]);
-            _fl[_fl_slot(ns)] = fln;
-            _free_mem += ns;
-#if defined(MINIZINC_GC_STATS)
-            gc_stats[fln->_id].second++;
-#endif
-            assert(_alloced_mem >= _free_mem);
+            freeNodes.push_back(NodeInfo(n,ns));
           } else {
             assert(off==0);
             assert(p->used==p->size);
-            wholepage = true;
           }
         } else {
 #if defined(MINIZINC_GC_STATS)
           stats.second++;
 #endif
+          wholepage = false;
           if (n->_id != ASTNode::NID_FL)
             n->_gc_mark=0;
         }
@@ -609,9 +617,21 @@ namespace MiniZinc {
         HeapPage* pf = p;
         p = p->next;
         _alloced_mem -= pf->size;
+        if (pf->size-pf->used >= _fl_size[0])
+          _free_mem -= (pf->size-pf->used);
         assert(_alloced_mem >= _free_mem);
         ::free(pf);
       } else {
+        for (auto ni : freeNodes) {
+          FreeListNode* fln = static_cast<FreeListNode*>(ni.n);
+          new (fln) FreeListNode(ni.ns, _fl[_fl_slot(ni.ns)]);
+          _fl[_fl_slot(ni.ns)] = fln;
+          _free_mem += ni.ns;
+#if defined(MINIZINC_GC_STATS)
+          gc_stats[fln->_id].second++;
+#endif
+        }
+        assert(_alloced_mem >= _free_mem);
         prev = p;
         p = p->next;
       }
