@@ -201,9 +201,14 @@ namespace MiniZinc {
                 for (unsigned int j=comp->n_decls(i); j--; ) {
                   stack.push_back(C(comp->decl(i, j)));
                 }
-                stack.push_back(C(comp,i));
-                stack.push_back(C(comp->in(i)));
-                stack.push_back(C(comp->where(i)));
+                if (comp->in(i)) {
+                  stack.push_back(C(comp->where(i)));
+                  stack.push_back(C(comp,i));
+                  stack.push_back(C(comp->in(i)));
+                } else {
+                  stack.push_back(C(comp,i));
+                  stack.push_back(C(comp->where(i)));
+                }
               }
             }
             break;
