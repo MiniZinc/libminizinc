@@ -1616,26 +1616,35 @@ namespace MiniZinc {
     std::vector<FunctionI*> functionItems;
     std::vector<AssignI*> assignItems;
     Model* enumItems = new Model;
-    
+
+    class TSVFuns : public ItemVisitor {
+    public:
+      EnvI& env;
+      Model* model;
+      std::vector<FunctionI*>& fis;
+      TSVFuns(EnvI& env0, Model* model0, std::vector<FunctionI*>& fis0)
+      : env(env0), model(model0), fis(fis0) {}
+      void vFunctionI(FunctionI* i) {
+        model->registerFn(env, i);
+        fis.push_back(i);
+      }
+    } _tsvf(env.envi(),m,functionItems);
+    iterItems(_tsvf,m);
+
     class TSV0 : public ItemVisitor {
     public:
       EnvI& env;
       TopoSorter& ts;
       Model* model;
       bool hadSolveItem;
-      std::vector<FunctionI*>& fis;
       std::vector<AssignI*>& ais;
       VarDeclI* objective;
       Model* enumis;
-      TSV0(EnvI& env0, TopoSorter& ts0, Model* model0, std::vector<FunctionI*>& fis0, std::vector<AssignI*>& ais0,
+      TSV0(EnvI& env0, TopoSorter& ts0, Model* model0, std::vector<AssignI*>& ais0,
            Model* enumis0)
-        : env(env0), ts(ts0), model(model0), hadSolveItem(false), fis(fis0), ais(ais0), objective(NULL), enumis(enumis0) {}
+        : env(env0), ts(ts0), model(model0), hadSolveItem(false), ais(ais0), objective(NULL), enumis(enumis0) {}
       void vAssignI(AssignI* i) { ais.push_back(i); }
       void vVarDeclI(VarDeclI* i) { ts.add(env, i, true, enumis); }
-      void vFunctionI(FunctionI* i) {
-        model->registerFn(env, i);
-        fis.push_back(i);
-      }
       void vSolveI(SolveI* si) {
         if (hadSolveItem)
           throw TypeError(env,si->loc(),"Only one solve item allowed");
@@ -1649,7 +1658,7 @@ namespace MiniZinc {
         }
         
       }
-    } _tsv0(env.envi(),ts,m,functionItems,assignItems,enumItems);
+    } _tsv0(env.envi(),ts,m,assignItems,enumItems);
     iterItems(_tsv0,m);
     if (_tsv0.objective) {
       m->addItem(_tsv0.objective);
