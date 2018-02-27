@@ -1142,8 +1142,8 @@ namespace MiniZinc {
       presolve();
     }
 
-    FznSpace* next_sol = NULL;
-    while (next_sol = engine->next()) {
+    FznSpace* next_sol = engine->next();
+    while (next_sol) {
       if(_solution) delete _solution;
       _solution = next_sol;
       _n_found_solutions++;
@@ -1155,6 +1155,7 @@ namespace MiniZinc {
                  _n_found_solutions == _n_max_solutions) {
         break;
       }
+      next_sol = engine->next();
     }
 
     processSolution(next_sol == NULL);
