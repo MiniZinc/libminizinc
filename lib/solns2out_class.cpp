@@ -296,6 +296,10 @@ bool Solns2Out::__evalStatusMsg( SolverInstance::Status status ) {
   return true;
 }
 
+void Solns2Out::setOutputStream(std::ostream& os) {
+  pOStream = &os;
+}
+
 void Solns2Out::init() {
 //   outputExpr = getModel()->outputItem()->e(); 
   for (unsigned int i=0; i<getModel()->size(); i++) {
@@ -332,6 +336,8 @@ void Solns2Out::init() {
   nLinesIgnore = _opt.flag_ignore_lines;
 }
 
+Solns2Out::Solns2Out() :pOStream(NULL) {}
+
 Solns2Out::~Solns2Out() {
   getOutput() << comments;
   if ( _opt.flag_output_flush )
@@ -339,7 +345,7 @@ Solns2Out::~Solns2Out() {
 }
 
 ostream& Solns2Out::getOutput() {
-  return ( pOut.get() && pOut->good() ) ? *pOut : cout;
+  return (pOStream != NULL ? *pOStream : (( pOut.get() && pOut->good() ) ? *pOut : cout));
 }
 
 bool Solns2Out::feedRawDataChunk(const char* data) {
