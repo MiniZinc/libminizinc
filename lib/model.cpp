@@ -459,9 +459,9 @@ namespace MiniZinc {
         for (unsigned int j=0; j<c->n_args(); j++) {
           if (!env.isSubtype(c->arg(j)->type(),fi_t[j],strictEnums)) {
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
-            std::cerr << c->args()[j]->type().toString(env) << " does not match "
+            std::cerr << c->arg(j)->type().toString(env) << " does not match "
             << fi_t[j].toString(env) << "\n";
-            std::cerr << "Wrong argument is " << *c->args()[j];
+            std::cerr << "Wrong argument is " << *c->arg(j);
 #endif
             match=false;
             break;
