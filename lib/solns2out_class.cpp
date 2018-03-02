@@ -16,6 +16,7 @@
 #endif
 
 #include <minizinc/solns2out.hh>
+#include <minizinc/solver.hh>
 #include <fstream>
 
 using namespace std;
@@ -175,6 +176,8 @@ bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
   ostringstream oss;
   if (!__evalOutput( oss ))
     return false;
+  if ( !checkerModel.empty() )
+    checkSolution(oss);
   bool fNew=true;
   if ( _opt.flag_unique || _opt.flag_canonicalize ) {
     auto res = sSolsCanon.insert( oss.str() );
@@ -221,6 +224,72 @@ bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
     getOutput().flush();
   restoreDefaults();     // cleans data. evalOutput() should not be called again w/o assigning new data.
   return true;
+}
+
+void Solns2Out::checkSolution(std::ostream& os) {
+#ifdef HAS_GECODE
+
+  std::ostringstream checker;
+  checker << checkerModel;
+  {
+    GCLock lock;
+    for (unsigned int i=0; i<getModel()->size(); i++) {
+      if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
+        if (vdi->e()->ann().contains(constants().ann.mzn_check_var)) {
+          checker << vdi->e()->id()->str() << "=" << *eval_par(getEnv()->envi(),vdi->e()->e()) << ";";
+        }
+      }
+    }
+  }
+  
+  unique_ptr<SolverFactory>
+  pFactoryGECODE( SolverFactory::createF_GECODE() );
+
+  std::ostringstream oss_err;
+  MznSolver slv(oss_err,oss_err,false);
+  slv.s2out._opt.solution_separator = "";
+  try {
+    std::vector<std::string> args({"-Ggecode","-"});
+    int argc = args.size();
+    std::vector<const char*> argv(argc);
+    for (unsigned int i=0; i<args.size(); i++)
+      argv[i] = args[i].c_str();
+    if (!slv.processOptions(argc, &argv[0])) {
+      slv.printHelp();
+    } else {
+      slv.flatten(checker.str());
+      
+      if (SolverInstance::UNKNOWN == slv.getFltStatus())
+      {
+        slv.addSolverInterface();
+        slv.solve();
+      } else {
+        slv.s2out.evalStatus( slv.getFltStatus() );
+      }
+    }
+  } catch (const LocationException& e) {
+    oss_err << e.loc() << ":" << std::endl;
+    oss_err << e.what() << ": " << e.msg() << std::endl;
+  } catch (const Exception& e) {
+    std::string what = e.what();
+    oss_err << what << (what.empty() ? "" : ": ") <<e.msg() << std::endl;
+  }
+  catch (const exception& e) {
+    oss_err << e.what() << std::endl;
+  }
+  catch (...) {
+    oss_err << "  UNKNOWN EXCEPTION." << std::endl;
+  }
+  std::istringstream iss(oss_err.str());
+  std::string line;
+  os << "% Solution checker report:\n";
+  while (std::getline(iss,line)) {
+    os << "% " << line << "\n";
+  }
+  
+#else
+  os << "% solution checking not supported (need built-in Gecode)" << std::endl;
+#endif
 }
 
 bool Solns2Out::__evalOutput( ostream& fout ) {
@@ -285,6 +354,15 @@ void Solns2Out::init() {
     if (OutputI* oi = (*getModel())[i]->dyn_cast<OutputI>()) {
       outputExpr = oi->e();
       break;
+    }
+    if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
+      if (vdi->e()->id()->idn()==-1 && vdi->e()->id()->v()=="_mzn_solution_checker") {
+        checkerModel = eval_string(getEnv()->envi(), vdi->e()->e());
+        if (checkerModel.size() > 0 && checkerModel[0]==':') {
+          checkerModel = FileUtils::decodeBase64(checkerModel);
+          FileUtils::inflateString(checkerModel);
+        }
+      }
     }
   }
 

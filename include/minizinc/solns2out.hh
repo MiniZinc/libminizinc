@@ -47,6 +47,7 @@ namespace MiniZinc {
     typedef std::pair<VarDecl*, KeepAlive> DE;
     std::unordered_map<std::string, DE> declmap;
     Expression* outputExpr = NULL;
+    std::string checkerModel;
     bool fNewSol2Print = false;     // should be set for evalOutput to work
     
   public:
@@ -151,7 +152,8 @@ namespace MiniZinc {
     void restoreDefaults();
     /// Parsing fznsolver's complete raw text output
     void parseAssignments( std::string& );
-    
+    /// Checking solution against checker model
+    void checkSolution( std::ostream& os );
     virtual bool __evalOutput( std::ostream& os );
     virtual bool __evalOutputFinal( bool flag_flush );
     virtual bool __evalStatusMsg(SolverInstance::Status status);

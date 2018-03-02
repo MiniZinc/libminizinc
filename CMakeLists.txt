@@ -262,6 +262,9 @@ lib/file_utils.cpp
 lib/gc.cpp
 lib/htmlprinter.cpp
 lib/json_parser.cpp
+lib/miniz.c
+lib/cdecode.c
+lib/cencode.c
 ${lexer_cpp}
 lib/model.cpp
 ${parser_cpp}
@@ -325,6 +328,11 @@ include/minizinc/values.hh
 include/minizinc/stl_map_set.hh
 include/minizinc/thirdparty/SafeInt3.hpp
 include/minizinc/passes/compile_pass.hh
+include/minizinc/thirdparty/miniz.h
+include/minizinc/thirdparty/b64/cdecode.h
+include/minizinc/thirdparty/b64/cencode.h
+include/minizinc/thirdparty/b64/decode.h
+include/minizinc/thirdparty/b64/encode.h
 ${parser_hh}
 )
 

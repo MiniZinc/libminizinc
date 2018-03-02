@@ -86,6 +86,7 @@ void Flattener::printHelp(ostream& os)
   << "  --output-paths-to-stdout\n    Output symbol table to standard output" << std::endl
   << "  --output-mode <item|dzn|json>\n    Create output according to output item (default), or output compatible\n    with dzn or json format" << std::endl
   << "  --output-objective\n    Print value of objective function in dzn or json output" << std::endl
+  << "  --solution-checker <file>.mzc\n    Create output suitable for solution checking" << std::endl
   << "  -Werror\n    Turn warnings into errors" << std::endl
   ;
 }
@@ -143,6 +144,11 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     }
   } else if ( cop.getOption( "--output-objective" ) ) {
     flag_output_objective = true;
+  } else if ( cop.getOption( "--solution-checker", &buffer ) ) {
+    if (buffer.length()<8 || buffer.substr(buffer.length()-8,string::npos) != ".mzc.mzn")
+      if (buffer.length()<=4 || buffer.substr(buffer.length()-4,string::npos) != ".mzc")
+        goto error;
+    flag_solution_check_model = buffer;
   } else if ( cop.getOption( "- --input-from-stdin" ) ) {
       if (datafiles.size() > 0 || filenames.size() > 0)
         goto error;
@@ -411,12 +417,53 @@ void Flattener::flatten(const std::string& modelString)
     Model* m;
     pEnv.reset(new Env());
     Env* env = getEnv();
+
+    if (!flag_solution_check_model.empty()) {
+      // Extract variables to check from solution check model
+      if (flag_verbose)
+        log << "Parsing solution checker model ..." << endl;
+      std::vector<std::string> smm_model({flag_solution_check_model});
+      Model* smm = parse(*env, smm_model, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+      if (flag_verbose)
+        log << " done parsing (" << stoptime(lasttime) << ")" << std::endl;
+      if (smm) {
+        Env smm_env(smm);
+        GCLock lock;
+        vector<TypeError> typeErrors;
+        MiniZinc::typecheck(smm_env, smm, typeErrors, true, false);
+        if (typeErrors.size() > 0) {
+          for (unsigned int i=0; i<typeErrors.size(); i++) {
+            if (flag_verbose)
+              log << std::endl;
+            log << typeErrors[i].loc() << ":" << std::endl;
+            log << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
+          }
+          throw Error("multiple type errors");
+        }
+        for (unsigned int i=0; i<smm->size(); i++) {
+          if (VarDeclI* vdi = (*smm)[i]->dyn_cast<VarDeclI>()) {
+            if (vdi->e()->e()==NULL)
+              env->envi().checkVars.push_back(vdi->e());
+          }
+        }
+        smm->compact();
+        std::ostringstream smm_oss;
+        Printer p(smm_oss,0,false);
+        p.print(smm);
+        std::string smm_compressed = FileUtils::encodeBase64(FileUtils::deflateString(smm_oss.str()));
+        TypeInst* ti = new TypeInst(Location().introduce(),Type::parstring(),NULL);
+        VarDecl* checkString = new VarDecl(Location().introduce(),ti,ASTString("_mzn_solution_checker"),new StringLit(Location().introduce(),smm_compressed));
+        VarDeclI* checkStringI = new VarDeclI(Location().introduce(), checkString);
+        env->output()->addItem(checkStringI);
+      }
+    }
+
     if (!modelString.empty()) {
       if (flag_verbose)
         log << "Parsing model string ..." << endl;
       std::vector<SyntaxError> se;
       m = parseFromString(modelString, "stdin", includePaths, flag_ignoreStdlib, false, flag_verbose, errstream, se);
-    } if (flag_stdinInput) {
+    } else if (flag_stdinInput) {
       if (flag_verbose)
         log << "Parsing standard input ..." << endl;
       std::string input = std::string(istreambuf_iterator<char>(std::cin), istreambuf_iterator<char>());
@@ -567,12 +614,12 @@ void Flattener::flatten(const std::string& modelString)
           SolveI* solveItem = env->flat()->solveItem();
           if (solveItem->st() != SolveI::SolveType::ST_SAT) {
             if (solveItem->st() == SolveI::SolveType::ST_MAX) {
-              cerr << "    This is a maximization problem." << endl;
+              log << "    This is a maximization problem." << endl;
             } else {
-              cerr << "    This is a minimization problem." << endl;
+              log << "    This is a minimization problem." << endl;
             }
           } else {
-            cerr << "    This is a satisfiability problem." << endl;
+            log << "    This is a satisfiability problem." << endl;
           }
         }
 

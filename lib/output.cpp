@@ -414,7 +414,9 @@ namespace MiniZinc {
     std::vector<VarDecl*> deletedVarDecls;
     for (unsigned int i=0; i<e.output->size(); i++) {
       if (VarDeclI* vdi = (*e.output)[i]->dyn_cast<VarDeclI>()) {
-        if (!vdi->removed() && e.output_vo.occurrences(vdi->e())==0) {
+        if (!vdi->removed() && e.output_vo.occurrences(vdi->e())==0 &&
+            !vdi->e()->ann().contains(constants().ann.mzn_check_var) &&
+            !(vdi->e()->id()->idn()==-1 && vdi->e()->id()->v()=="_mzn_solution_checker")) {
           CollectDecls cd(e.output_vo,deletedVarDecls,vdi);
           topDown(cd, vdi->e()->e());
           removeIsOutput(vdi->e()->flat());
@@ -689,6 +691,20 @@ namespace MiniZinc {
     } _cf(e);
     topDown(_cf, outputItem->e());
 
+    // If we are checking solutions using a checker model, all parameters of the checker model
+    // have to be made available in the output model
+    class OV1 : public ItemVisitor {
+    public:
+      EnvI& env;
+      OV1(EnvI& env0) : env(env0) {}
+      void vVarDeclI(VarDeclI* vdi) {
+        if (vdi->e()->ann().contains(constants().ann.mzn_check_var)) {
+          (void) copy(env,env.cmap,vdi->e())->cast<VarDecl>();
+        }
+      }
+    } _ov1(e);
+    iterItems(_ov1, e.orig);
+    
     // Copying the output item and the functions it depends on has created copies
     // of all dependent VarDecls. However the output model does not contain VarDeclIs for
     // these VarDecls yet. This iterator processes all variable declarations of the
@@ -711,7 +727,10 @@ namespace MiniZinc {
           t.ti(Type::TI_PAR);
           vdi_copy->e()->ti()->domain(NULL);
           vdi_copy->e()->flat(vdi->e()->flat());
+          bool isCheckVar = vdi_copy->e()->ann().contains(constants().ann.mzn_check_var);
           vdi_copy->e()->ann().clear();
+          if (isCheckVar)
+            vdi_copy->e()->ann().add(constants().ann.mzn_check_var);
           vdi_copy->e()->introduced(false);
           IdMap<KeepAlive>::iterator it;
           if (!vdi->e()->type().ispar()) {

@@ -1941,6 +1941,24 @@ namespace MiniZinc {
       }
     }
 
+    for (auto vd_k : env.envi().checkVars) {
+      try {
+        VarDecl* vd = ts.get(env.envi(), vd_k()->cast<VarDecl>()->id()->str(), vd_k()->cast<VarDecl>()->loc());
+        vd->ann().add(constants().ann.mzn_check_var);
+        Type vdktype = vd_k()->type();
+        vdktype.ti(Type::TI_VAR);
+        if (!vd_k()->type().isSubtypeOf(vd->type(), false)) {
+          GCLock lock;
+          
+          typeErrors.push_back(TypeError(env.envi(), vd->loc(),
+                                         "Solution checker requires `"+vd->id()->str().str()+"' to be of type `"+
+                                         vdktype.toString(env.envi())+"'"));
+        }
+      } catch (TypeError& e) {
+        typeErrors.push_back(TypeError(env.envi(), e.loc(), e.msg()+" (required by solution checker model)"));
+      }
+    }
+    
   }
   
   void typecheck(Env& env, Model* m, AssignI* ai) {

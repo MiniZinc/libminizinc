@@ -97,6 +97,7 @@ std::string get_file_contents(std::ifstream &in)
     in.seekg(0, std::ios::beg);
     in.read(&contents[0], contents.size());
     in.close();
+    FileUtils::inflateString(contents);
     return(contents);
   }
   throw(errno);
@@ -129,7 +130,8 @@ namespace MiniZinc {
                          ostream& err,
                          std::vector<SyntaxError>& syntaxErrors) {
     GCLock lock;
-
+    std::string modelText = text;
+    FileUtils::inflateString(modelText);
     vector<string> includePaths;
     for (unsigned int i=0; i<ip.size(); i++)
       includePaths.push_back(ip[i]);
@@ -159,7 +161,7 @@ namespace MiniZinc {
       isFzn |= (filename.compare(filename.length()-4,4,".ozn")==0);
       isFzn |= (filename.compare(filename.length()-4,4,".szn")==0);
     }
-    ParserState pp(filename,text, err, files, seenModels, model, false, isFzn, parseDocComments);
+    ParserState pp(filename,modelText, err, files, seenModels, model, false, isFzn, parseDocComments);
     yylex_init(&pp.yyscanner);
     yyset_extra(&pp, pp.yyscanner);
     yyparse(&pp);

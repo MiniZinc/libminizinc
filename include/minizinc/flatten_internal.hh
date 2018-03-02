@@ -110,6 +110,8 @@ namespace MiniZinc {
     typedef UNORDERED_NAMESPACE::unordered_map<std::string, int> FilenameMap;
 
     int in_maybe_partial;
+    
+    std::vector<KeepAlive> checkVars;
   protected:
     Map map;
     Model* _flat;

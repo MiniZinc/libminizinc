@@ -1713,6 +1713,7 @@ namespace MiniZinc {
         Id* output_var;
         ASTString output_array;
         Id* add_to_output;
+        Id* mzn_check_var;
         Id* is_defined_var;
         ASTString defines_var;
         Id* is_reverse_map;

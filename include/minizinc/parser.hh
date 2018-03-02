@@ -35,6 +35,7 @@ extern "C" int isatty(int);
 #include <minizinc/model.hh>
 #include <minizinc/parser.tab.hh>
 #include <minizinc/astexception.hh>
+#include <minizinc/file_utils.hh>
 
 #include <string>
 #include <vector>

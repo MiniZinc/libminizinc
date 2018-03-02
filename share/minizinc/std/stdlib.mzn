@@ -30,6 +30,9 @@ annotation maybe_partial;
 of the model. This annotation only has an effect when the model does not have an output item. */
 annotation add_to_output;
 
+/** @group annotations.general Declare that the annotated variable is required for checking solutions. */
+annotation mzn_check_var;
+
 /** @group annotations.general Declare the annotated variable as being functionally defined.
   This annotation is introduced into FlatZinc code by the compiler. */
 annotation is_defined_var;

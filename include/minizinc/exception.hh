@@ -27,7 +27,14 @@ namespace MiniZinc {
     virtual const char* what(void) const throw()  = 0;
     const std::string& msg(void) const { return _msg; }
   };
-
+  
+  class ParseException : public Exception {
+  public:
+    ParseException(const std::string& msg) : Exception(msg) {}
+    ~ParseException(void) throw() {}
+    virtual const char* what(void) const throw() { return ""; }
+  };
+  
   class InternalError : public Exception {
   public:
     InternalError(const std::string& msg) : Exception(msg) {}

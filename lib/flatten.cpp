@@ -6648,6 +6648,7 @@ namespace MiniZinc {
     vd->ann().remove(constants().ctx.root);
     vd->ann().remove(constants().ann.promise_total);
     vd->ann().remove(constants().ann.add_to_output);
+    vd->ann().remove(constants().ann.mzn_check_var);
     
     // In FlatZinc the RHS of a VarDecl must be a literal, Id or empty
     // Example:

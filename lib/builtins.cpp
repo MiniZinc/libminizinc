@@ -1229,6 +1229,7 @@ namespace MiniZinc {
   }
 
   bool b_abort(EnvI& env, Call* call) {
+    GCLock lock;
     StringLit* err = eval_par(env,call->arg(0))->cast<StringLit>();
     throw EvalError(env, call->arg(0)->loc(),"Abort: "+err->v().str());
   }
