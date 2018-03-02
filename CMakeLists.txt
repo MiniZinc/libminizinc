@@ -256,7 +256,6 @@ lib/astexception.cpp
 lib/aststring.cpp
 lib/astvec.cpp
 lib/builtins.cpp
-lib/cli.cpp
 lib/copy.cpp
 lib/eval_par.cpp
 lib/file_utils.cpp
@@ -293,7 +292,6 @@ include/minizinc/astiterator.hh
 include/minizinc/aststring.hh
 include/minizinc/astvec.hh
 include/minizinc/builtins.hh
-include/minizinc/cli.hh
 include/minizinc/config.hh.in
 include/minizinc/copy.hh
 include/minizinc/eval_par.hh
@@ -341,9 +339,6 @@ endif()
 add_executable(mzn2fzn minizinc.cpp)    #mzn2fzn.cpp)
 target_link_libraries(mzn2fzn minizinc)
 target_compile_definitions(mzn2fzn PRIVATE -DFLATTEN_ONLY)
-
-add_executable(mzn2fzn_test mzn2fzn_test.cpp)
-target_link_libraries(mzn2fzn_test minizinc)
 
 add_executable(solns2out solns2out.cpp)
 target_link_libraries(solns2out minizinc)
@@ -633,16 +628,14 @@ if(HAS_FZN)
 	add_executable( mzn-fzn minizinc.cpp )
   target_compile_definitions( mzn-fzn PRIVATE HAS_FZN )
 	target_link_libraries(mzn-fzn minizinc_fzn)
-#  add_executable(mzn-fzn-test solvers/fzn/mzn-fzn-test.cpp solvers/fzn/fzn_solverinstance.cpp)#
-# target_link_libraries(mzn-fzn-test minizinc)
-	INSTALL(TARGETS minizinc_fzn mzn-fzn #mzn-fzn-test
+	INSTALL(TARGETS minizinc_fzn mzn-fzn
 		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-INSTALL(TARGETS mzn2fzn mzn2fzn_test solns2out mzn2doc minizinc
+INSTALL(TARGETS mzn2fzn solns2out mzn2doc minizinc
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
