@@ -319,7 +319,7 @@ Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
   return pre_env;
 }
 
-void Flattener::flatten()
+void Flattener::flatten(const std::string& modelString)
 {
   starttime01 = std::clock();
   lasttime = starttime01;
@@ -334,8 +334,8 @@ void Flattener::flatten()
 //       cerr << "Assuming a linear programming-based solver (only_range_domains)." << endl;
 //   }
 
-  if ( filenames.empty() && !flag_stdinInput ) {
-    throw runtime_error( "Error: no model file given." );
+  if ( filenames.empty() && !flag_stdinInput && modelString.empty() ) {
+    throw Error( "Error: no model file given." );
   }
 
   if (std_lib_dir=="") {
@@ -369,7 +369,7 @@ void Flattener::flatten()
   }
 
   if (flag_output_base == "") {
-    if (flag_stdinInput) {
+    if (flag_stdinInput || !modelString.empty()) {
       flag_output_base = "mznout";
     } else {
       flag_output_base = filenames[0].substr(0,filenames[0].length()-4);
@@ -411,7 +411,12 @@ void Flattener::flatten()
     Model* m;
     pEnv.reset(new Env());
     Env* env = getEnv();
-    if (flag_stdinInput) {
+    if (!modelString.empty()) {
+      if (flag_verbose)
+        log << "Parsing model string ..." << endl;
+      std::vector<SyntaxError> se;
+      m = parseFromString(modelString, "stdin", includePaths, flag_ignoreStdlib, false, flag_verbose, errstream, se);
+    } if (flag_stdinInput) {
       if (flag_verbose)
         log << "Parsing standard input ..." << endl;
       std::string input = std::string(istreambuf_iterator<char>(std::cin), istreambuf_iterator<char>());

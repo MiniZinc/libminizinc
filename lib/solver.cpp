@@ -190,12 +190,12 @@ NotFound:
   return false;
 }
 
-void MznSolver::flatten()
+void MznSolver::flatten(const std::string& modelString)
 {
   flt.set_flag_verbose(get_flag_verbose());
   flt.set_flag_statistics(get_flag_statistics());
   clock_t tm01 = clock();
-  flt.flatten();
+  flt.flatten(modelString);
   /// The following message tells mzn-test.py that flattening succeeded.
   if (get_flag_verbose())
     log << "  Flattening done, " << timeDiff(clock(), tm01) << std::endl;

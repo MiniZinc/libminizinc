@@ -53,7 +53,7 @@ namespace MiniZinc {
     void printVersion(std::ostream& );
     void printHelp(std::ostream& );
 
-    void flatten();
+    void flatten(const std::string& modelString = std::string());
     void printStatistics(std::ostream& );
     
     void set_flag_verbose(bool f) { flag_verbose = f; }

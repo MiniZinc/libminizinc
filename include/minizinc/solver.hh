@@ -106,7 +106,7 @@ namespace MiniZinc {
     bool processOptions(int argc, const char** argv);
     void printHelp();
     /// Flatten model
-    void flatten();
+    void flatten(const std::string& modelString = std::string());
     size_t getNSolvers() { return getGlobalSolverRegistry()->getSolverFactories().size(); }
     /// If building a flattening exe only.
     bool ifMzn2Fzn();
