@@ -54,6 +54,7 @@ namespace MiniZinc {
   };
 
   class MIP_solverinstance : public SolverInstanceImpl<MIP_solver> {
+    using SolverInstanceBase::_log;
     protected:
       
       const unique_ptr<MIP_wrapper> mip_wrap;
@@ -70,8 +71,8 @@ namespace MiniZinc {
       double dObjVarLB=-1e300, dObjVarUB=1e300;
     public:
 
-      MIP_solverinstance(Env& env) :
-        SolverInstanceImpl(env),
+      MIP_solverinstance(Env& env, std::ostream& log) :
+        SolverInstanceImpl(env,log),
         mip_wrap(GETMIPWRAPPER)
       {
         assert(mip_wrap.get()); 
@@ -90,8 +91,8 @@ namespace MiniZinc {
         ( const MIP_wrapper::Output& , MIP_wrapper::CutInput& , bool fMIPSol);
 
 //       void assignSolutionToOutput();   // needs to be public for the callback?
-      virtual void printStatistics(std::ostream&, bool fLegend=0);
-      virtual void printStatisticsLine(std::ostream& os, bool fLegend=0) { printStatistics(os, fLegend); }
+      virtual void printStatistics(bool fLegend=0);
+      virtual void printStatisticsLine(bool fLegend=0) { printStatistics(fLegend); }
 
     public:
       /// creates a var for a literal, if necessary
@@ -108,7 +109,7 @@ namespace MiniZinc {
   
   class MIP_SolverFactory: public SolverFactory {
   public:
-    SolverInstanceBase* doCreateSI(Env& env)   { return new MIP_solverinstance(env); }
+    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log)   { return new MIP_solverinstance(env,log); }
     
     bool processOption(int& i, int argc, const char** argv)
       { return MIP_WrapperFactory::processOption(i, argc, argv); }

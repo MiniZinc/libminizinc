@@ -45,8 +45,8 @@ namespace MiniZinc {
   Registry::post(Call* c) {
     ASTStringMap<poster>::t::iterator it = _registry.find(c->id());
     if (it == _registry.end()) {
-      std::cerr << "Error: constraint not found: " << c->id() << "\n";
-      exit(EXIT_FAILURE);
+      GCLock lock;
+      throw InternalError("Error: constraint not found: " + c->id().str() + "\n");
     }
     it->second(_base, c);
   }
@@ -54,7 +54,7 @@ namespace MiniZinc {
   void SolverInstanceBase::printSolution() {
     std::ostringstream oss;
     if ( getOptions().getBoolParam(constants().opts.statistics.str()) )
-      printStatistics(oss, 1);             // Insert stats before sol separator
+      printStatistics(1);             // Insert stats before sol separator
     if ( 0==pS2Out ) {
       getEnv()->evalOutput(std::cout);               // deprecated
       std::cout << oss.str();
@@ -128,8 +128,9 @@ namespace MiniZinc {
             } else if(StringLit* strLit = array[j]->dyn_cast<StringLit>()) {
               array_elems.push_back(strLit);
             } else {
-              std::cerr << "Error: array element " << *array[j] << " is ! an id nor a literal" << std::endl;
-              assert(false);
+              std::ostringstream oss;
+              oss << "Error: array element " << *array[j] << " is not an id nor a literal";
+              throw InternalError(oss.str());
             }
           }
           GCLock lock;

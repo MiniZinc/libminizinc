@@ -86,7 +86,7 @@ namespace MiniZinc {
     
   public:
     virtual ~Solns2Out();
-    Solns2Out();
+    Solns2Out(std::ostream& os, std::ostream& log);
     
     virtual bool processOption(int& i, const int argc, const char** argv);
     virtual void printHelp(std::ostream& );
@@ -94,7 +94,7 @@ namespace MiniZinc {
     /// The output model (~.ozn) can be passed in 1 way in this base class:
     /// passing Env* containing output()
     virtual bool initFromEnv(Env* pE);
-    
+
     /// Then, variable assignments can be passed either as text
     /// or put directly into envi()->output() ( latter done externally
     /// by e.g. SolverInstance::assignSolutionToOutput() )
@@ -134,17 +134,17 @@ namespace MiniZinc {
     std::unique_ptr<std::ostream> pOut;  // file output
     std::unique_ptr<std::ostream> pOfs_non_canon;
     std::unique_ptr<std::ostream> pOfs_raw;
-    std::ostream* pOStream;
     int nSolns = 0;
     std::set<std::string> sSolsCanon;
     std::string line_part;   // non-finished line from last chunk
 
   protected:
+    std::ostream& os;
+    std::ostream& log;
     std::vector<std::string> includePaths;
     
     // Basically open output
     virtual void init();
-    void setOutputStream(std::ostream& os);
     void createOutputMap();
     std::map<std::string, SolverInstance::Status> mapInputStatus;
     void createInputMap();

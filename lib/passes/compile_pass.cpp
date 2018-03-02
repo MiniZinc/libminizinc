@@ -96,10 +96,10 @@ namespace MiniZinc {
     change_library(change_lib) {
   }
 
-  Env* CompilePass::run(Env* store) {
+  Env* CompilePass::run(Env* store, std::ostream& log) {
     Timer lasttime;
     if(compflags.verbose)
-      std::cerr << "\n\tCompilePass: Flatten with \'" << library << "\' library ...\n";
+      log << "\n\tCompilePass: Flatten with \'" << library << "\' library ...\n";
 
     Env* new_env;
     if(change_library) {
@@ -113,12 +113,12 @@ namespace MiniZinc {
     vector<TypeError> typeErrors;
     MiniZinc::typecheck(*new_env, new_env->model(), typeErrors, compflags.model_check_only || compflags.model_interface_only, compflags.allow_multi_assign);
     if (typeErrors.size() > 0) {
+      std::ostringstream errstream;
       for (unsigned int i=0; i<typeErrors.size(); i++) {
-        std::cerr << std::endl;
-        std::cerr << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
-        std::cerr << typeErrors[i].loc() << std::endl;
+        errstream << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
+        errstream << typeErrors[i].loc() << std::endl;
       }
-      exit(EXIT_FAILURE);
+      throw Error(errstream.str());
     }
 
     registerBuiltins(*new_env, new_env->model());
@@ -127,50 +127,51 @@ namespace MiniZinc {
       flatten(*new_env, fopts);
     } catch (LocationException& e) {
       if (compflags.verbose)
-        std::cerr << std::endl;
-      std::cerr << e.what() << ": " << std::endl;
-      new_env->dumpErrorStack(std::cerr);
-      std::cerr << "  " << e.msg() << std::endl;
-      exit(EXIT_FAILURE);
+        log << std::endl;
+      std::ostringstream errstream;
+      errstream << e.what() << ": " << std::endl;
+      new_env->dumpErrorStack(errstream);
+      errstream << "  " << e.msg() << std::endl;
+      throw Error(errstream.str());
     }
 
     if ( ! compflags.noMIPdomains ) {
       if (compflags.verbose)
-        std::cerr << "MIP domains ...";
+        log << "MIP domains ...";
       MIPdomains(*new_env, compflags.statistics);
       if (compflags.verbose)
-        std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+        log << " done (" << stoptime(lasttime) << ")" << std::endl;
     }
 
     if (compflags.optimize) {
       if (compflags.verbose)
-        std::cerr << "Optimizing ...";
+        log << "Optimizing ...";
       optimize(*new_env);
       if (compflags.verbose)
-        std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+        log << " done (" << stoptime(lasttime) << ")" << std::endl;
     }
 
     for (unsigned int i=0; i<new_env->warnings().size(); i++) {
-      std::cerr << (compflags.werror ? "\n  ERROR: " : "\n  WARNING: ") << new_env->warnings()[i];
+      log << (compflags.werror ? "\n  ERROR: " : "\n  WARNING: ") << new_env->warnings()[i];
     }
     if (compflags.werror && new_env->warnings().size() > 0) {
-      exit(EXIT_FAILURE);
+      throw Error("errors encountered");
     }
     new_env->clearWarnings();
 
     if (!compflags.newfzn) {
       if (compflags.verbose)
-        std::cerr << "Converting to old FlatZinc ...";
+        log << "Converting to old FlatZinc ...";
       oldflatzinc(*new_env);
       if (compflags.verbose)
-        std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+        log << " done (" << stoptime(lasttime) << ")" << std::endl;
     } else {
       new_env->flat()->compact();
       new_env->output()->compact();
     }
 
     if(compflags.verbose)
-      std::cerr << " done (" << stoptime(lasttime) << ")" << std::endl;
+      log << " done (" << stoptime(lasttime) << ")" << std::endl;
 
     return new_env;
   }

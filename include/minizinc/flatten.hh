@@ -51,10 +51,10 @@ namespace MiniZinc {
   };
 
   class Pass {
-    public:
-      Pass() {};
-      virtual Env* run(Env* env) = 0;
-      virtual ~Pass() {};
+  public:
+    Pass() {};
+    virtual Env* run(Env* env, std::ostream& log) = 0;
+    virtual ~Pass() {};
   };
   
   /// Flatten model \a m

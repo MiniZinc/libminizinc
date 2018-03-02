@@ -140,8 +140,9 @@ void Solns2Out::restoreDefaults() {
 void Solns2Out::parseAssignments(string& solution) {
   std::vector<SyntaxError> se;
   unique_ptr<Model> sm(
-    parseFromString(solution, "solution received from solver", includePaths, true, false, false, cerr, se) );
-  MZN_ASSERT_HARD_MSG( sm.get(), "solns2out_base: could not parse solution" );
+    parseFromString(solution, "solution received from solver", includePaths, true, false, false, log, se) );
+  if (sm.get()==NULL)
+    throw Error("solns2out_base: could not parse solution");
   solution = "";
   for (unsigned int i=0; i<sm->size(); i++) {
     if (AssignI* ai = (*sm)[i]->dyn_cast<AssignI>()) {
@@ -224,24 +225,6 @@ bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
 
 bool Solns2Out::__evalOutput( ostream& fout ) {
   if ( 0!=outputExpr ) {
-//     GCLock lock;
-//     ArrayLit* al = eval_array_lit(pEnv->envi(),outputExpr);
-//     std::string os;
-//     cerr << " al->size() == " << al->v().size() << endl;
-//     for (unsigned int i=0; i<al->v().size(); i++) {
-//       std::string s = eval_string(pEnv->envi(),al->v()[i]);
-//       if (!s.empty()) {
-//         os = s;
-//         cerr << os;
-//         if (flag_output_flush)
-//           fout.flush();
-//       }
-//     }
-//     if (!os.empty() && os[os.size()-1] != '\n') {
-//       cerr << '\n';
-//       if (flag_output_flush)
-//         fout.flush();
-//     }
     pEnv->envi().evalOutput( fout );
   }
   return true;
@@ -296,15 +279,12 @@ bool Solns2Out::__evalStatusMsg( SolverInstance::Status status ) {
   return true;
 }
 
-void Solns2Out::setOutputStream(std::ostream& os) {
-  pOStream = &os;
-}
-
 void Solns2Out::init() {
-//   outputExpr = getModel()->outputItem()->e(); 
+
   for (unsigned int i=0; i<getModel()->size(); i++) {
     if (OutputI* oi = (*getModel())[i]->dyn_cast<OutputI>()) {
       outputExpr = oi->e();
+      break;
     }
   }
 
@@ -336,7 +316,7 @@ void Solns2Out::init() {
   nLinesIgnore = _opt.flag_ignore_lines;
 }
 
-Solns2Out::Solns2Out() :pOStream(NULL) {}
+Solns2Out::Solns2Out(std::ostream& os0, std::ostream& log0) : os(os0), log(log0) {}
 
 Solns2Out::~Solns2Out() {
   getOutput() << comments;
@@ -345,7 +325,7 @@ Solns2Out::~Solns2Out() {
 }
 
 ostream& Solns2Out::getOutput() {
-  return (pOStream != NULL ? *pOStream : (( pOut.get() && pOut->good() ) ? *pOut : cout));
+  return (( pOut.get() && pOut->good() ) ? *pOut : os);
 }
 
 bool Solns2Out::feedRawDataChunk(const char* data) {

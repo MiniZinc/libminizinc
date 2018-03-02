@@ -23,7 +23,7 @@ namespace MiniZinc {
     public:
     GecodePass(Options& gopts);
 
-    Env* run(Env* e);
+    Env* run(Env* e, std::ostream& log);
   };
 
 }

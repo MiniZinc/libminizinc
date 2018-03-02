@@ -235,7 +235,7 @@ namespace MiniZinc {
     GecodeEngine* engine;
     Gecode::Search::Options engine_options;
 
-    GecodeSolverInstance(Env& env, const Options& options);
+    GecodeSolverInstance(Env& env, std::ostream& log, const Options& options);
     virtual ~GecodeSolverInstance(void);
 
     virtual Status next(void);    

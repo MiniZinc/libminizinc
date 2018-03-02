@@ -59,17 +59,16 @@ int main(int argc, const char** argv) {
   clock_t starttime = std::clock(), endTime;
   bool fSuccess = false;
   
-  MznSolver slv(IS_MZN2FZN);
+  MznSolver slv(std::cout,std::cerr,IS_MZN2FZN);
   try {
     
-    slv.addFlattener();
-    if (!slv.processOptions(argc, argv, cerr)) {
-      slv.printHelp(cerr);
+    if (!slv.processOptions(argc, argv)) {
+      slv.printHelp();
       exit(EXIT_FAILURE);
     }
     slv.flatten();
     
-    if (SolverInstance::UNKNOWN == slv.getFlt()->status)
+    if (SolverInstance::UNKNOWN == slv.getFltStatus())
     {
       if ( !slv.ifMzn2Fzn() ) {          // only then
         // GCLock lock;                  // better locally, to enable cleanup after ProcessFlt()
@@ -79,8 +78,8 @@ int main(int argc, const char** argv) {
       fSuccess = true;
     } else {
       if ( !slv.ifMzn2Fzn() )
-        slv.s2out.evalStatus( slv.getFlt()->status );
-      fSuccess = (SolverInstance::ERROR != slv.getFlt()->status);
+        slv.s2out.evalStatus( slv.getFltStatus() );
+      fSuccess = (SolverInstance::ERROR != slv.getFltStatus());
     }                                   //  Add evalOutput() here?   TODO
   } catch (const LocationException& e) {
     if (slv.get_flag_verbose())

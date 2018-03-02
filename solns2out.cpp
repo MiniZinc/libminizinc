@@ -42,7 +42,7 @@ namespace MiniZinc {
   public:
     string filename;
     Solns2OutFull( const int ac, const char** av )
-      : argc(ac), argv(av) { }
+      : Solns2Out(cout, cerr), argc(ac), argv(av) { }
     void printVersion(ostream& os) {
       os << "MiniZinc solution printing tool, version "
          << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;

@@ -51,8 +51,8 @@ namespace MiniZinc {
   class FZN_SolverFactory: public SolverFactory {
     Options _options;
   public:
-    SolverInstanceBase* doCreateSI(Env& env) {
-      return new FZNSolverInstance(env, _options);
+    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log) {
+      return new FZNSolverInstance(env, log, _options);
     }
     string getVersion( );
     bool processOption(int& i, int argc, const char** argv);
@@ -439,8 +439,8 @@ namespace MiniZinc {
     };
   }
 
-  FZNSolverInstance::FZNSolverInstance(Env& env, const Options& options)
-    : SolverInstanceBase(env, options), _fzn(env.flat()), _ozn(env.output()) {}
+  FZNSolverInstance::FZNSolverInstance(Env& env, std::ostream& log, const Options& options)
+    : SolverInstanceBase(env, log, options), _fzn(env.flat()), _ozn(env.output()) {}
 
   FZNSolverInstance::~FZNSolverInstance(void) {}
 

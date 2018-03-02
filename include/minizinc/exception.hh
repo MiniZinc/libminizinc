@@ -37,6 +37,13 @@ namespace MiniZinc {
     }
   };
 
+  class Error : public Exception {
+  public:
+    Error(const std::string& msg) : Exception(msg) {}
+    ~Error(void) throw() {}
+    virtual const char* what(void) const throw() { return ""; }
+  };
+  
   class ArithmeticError : public Exception {
   public:
     ArithmeticError(const std::string& msg)

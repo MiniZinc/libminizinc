@@ -41,28 +41,26 @@
 
 namespace MiniZinc {
   
-  class Flattener;
-  Flattener* getGlobalFlattener(bool fOutputByDefault=true);
-  void cleanupGlobalFlattener(Flattener*);
-  
   class Flattener {
   private:
     std::unique_ptr<Env>   pEnv;
+    std::ostream& os;
+    std::ostream& log;
   public:
-    Flattener(bool fOutputByDefault=true);
-    virtual ~Flattener();
-    virtual bool processOption(int& i, const int argc, const char** argv);
-    virtual void printVersion(std::ostream& );
-    virtual void printHelp(std::ostream& );
+    Flattener(std::ostream& os, std::ostream& log, bool fOutputByDefault);
+    ~Flattener();
+    bool processOption(int& i, const int argc, const char** argv);
+    void printVersion(std::ostream& );
+    void printHelp(std::ostream& );
 
-    virtual void flatten();
-    virtual void printStatistics(std::ostream& );
+    void flatten();
+    void printStatistics(std::ostream& );
     
-    virtual void set_flag_verbose(bool f) { flag_verbose = f; }
-    virtual bool get_flag_verbose() const { return flag_verbose; }
-    virtual void set_flag_statistics(bool f) { flag_statistics = f; }
-    virtual bool get_flag_statistics() const { return flag_statistics; }
-    virtual Env* getEnv() const { assert(pEnv.get()); return pEnv.get(); }
+    void set_flag_verbose(bool f) { flag_verbose = f; }
+    bool get_flag_verbose() const { return flag_verbose; }
+    void set_flag_statistics(bool f) { flag_statistics = f; }
+    bool get_flag_statistics() const { return flag_statistics; }
+    Env* getEnv() const { assert(pEnv.get()); return pEnv.get(); }
     
     SolverInstance::Status status = SolverInstance::UNKNOWN;
     

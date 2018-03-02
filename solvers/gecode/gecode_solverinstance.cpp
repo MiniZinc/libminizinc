@@ -26,8 +26,8 @@ namespace MiniZinc {
   class Gecode_SolverFactory: public SolverFactory {
     Options _options;
   public:
-    SolverInstanceBase* doCreateSI(Env& env) {
-      return new GecodeSolverInstance(env, _options);
+    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log) {
+      return new GecodeSolverInstance(env, log, _options);
     }
     string getVersion( );
     bool processOption(int& i, int argc, const char** argv);
@@ -133,8 +133,8 @@ namespace MiniZinc {
     virtual Gecode::Search::Statistics statistics(void) { return e.statistics(); }
   };
 
-     GecodeSolverInstance::GecodeSolverInstance(Env& env, const Options& options)
-       : SolverInstanceImpl<GecodeSolver>(env,options), _n_found_solutions(0),
+     GecodeSolverInstance::GecodeSolverInstance(Env& env, std::ostream& log, const Options& options)
+       : SolverInstanceImpl<GecodeSolver>(env,log,options), _n_found_solutions(0),
        _current_space(NULL),
        _solution(NULL), engine(NULL) {
        registerConstraints();
