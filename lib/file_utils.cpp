@@ -20,6 +20,7 @@
 #include <minizinc/thirdparty/b64/encode.h>
 #include <minizinc/thirdparty/b64/decode.h>
 #include <sstream>
+#include <cstring>
 
 #ifdef HAS_PIDPATH
 #include <stdio.h>
