@@ -6097,6 +6097,7 @@ namespace MiniZinc {
       iterItems<FV>(_fv,e.model());
     
       if (!hadSolveItem) {
+        GCLock lock;
         e.envi().errorStack.clear();
         Location modelLoc(e.model()->filepath(),0,0,0,0);
         throw FlatteningError(e.envi(),modelLoc, "Model does not have a solve item");
