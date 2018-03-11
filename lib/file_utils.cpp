@@ -138,6 +138,14 @@ namespace MiniZinc { namespace FileUtils {
 #endif
   }
 
+  bool is_absolute(const std::string& path) {
+#ifdef _MSC_VER
+    return !PathIsRelative(path.c_str());
+#else
+    return path.empty() ? false : (path[0]=='/');
+#endif
+  }
+  
   std::vector<std::string> directory_list(const std::string& dir,
                                           const std::string& ext) {
     std::vector<std::string> entries;

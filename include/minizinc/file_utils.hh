@@ -25,6 +25,8 @@ namespace MiniZinc { namespace FileUtils {
   bool directory_exists(const std::string& dirname);
   /// Return full path to file
   std::string file_path(const std::string& filename);
+  /// Check whether path is absolute
+  bool is_absolute(const std::string& path);
   /// Return list of files with extension \a ext in directory \a dir
   std::vector<std::string> directory_list(const std::string& dir,
                                           const std::string& ext=std::string("*"));

@@ -189,8 +189,8 @@ namespace MiniZinc {
       }
       ifstream file;
       string fullname;
-      if (parentPath=="") {
-        fullname = filename;
+      if (FileUtils::is_absolute(f) || parentPath=="") {
+        fullname = f;
         if (FileUtils::file_exists(fullname)) {
           file.open(fullname.c_str(), std::ios::binary);
         }
@@ -316,12 +316,12 @@ namespace MiniZinc {
       }
       ifstream file;
       string fullname;
-      if (parentPath=="") {
+      if (FileUtils::is_absolute(f) || parentPath=="") {
         if (filenames.size() == 0) {
           err << "Internal error." << endl;
           goto error;
         }
-        fullname = parentPath + f;  // filenames[0];
+        fullname = f;
         if (FileUtils::file_exists(fullname)) {
           file.open(fullname.c_str(), std::ios::binary);
         }
