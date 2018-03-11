@@ -2055,30 +2055,45 @@ namespace MiniZinc {
   }
   
   void output_model_interface(Env& env, Model* m, std::ostream& os) {
-    std::ostringstream oss_input;
-    std::ostringstream oss_output;
-    bool had_input = false;
-    bool had_output = false;
-    for (VarDeclIterator vds = m->begin_vardecls(); vds != m->end_vardecls(); ++vds) {
-      if (vds->e()->type().ispar() && (vds->e()->e()==NULL || vds->e()->e()==constants().absent)) {
-        if (had_input) oss_input << ",\n";
-        output_var_desc_json(env, vds->e(), oss_input);
-        had_input = true;
-      } else if (vds->e()->type().isvar() && (vds->e()->e()==NULL || vds->e()->ann().contains(constants().ann.add_to_output))) {
-        if (had_output) oss_output << ",\n";
-        output_var_desc_json(env, vds->e(), oss_output);
-        had_output = true;
+    class IfcVisitor : public ItemVisitor {
+    public:
+      Env& env;
+      bool had_input;
+      bool had_output;
+      std::ostringstream oss_input;
+      std::ostringstream oss_output;
+      std::string method;
+      IfcVisitor(Env& env0) : env(env0), had_input(false), had_output(false) {}
+      bool enter(Item* i) {
+        if (IncludeI* ii = i->dyn_cast<IncludeI>()) {
+          std::string prefix = ii->m()->filepath().str().substr(0,ii->m()->filepath().size()-ii->f().size());
+          return (prefix.empty() || prefix == "./");
+        }
+        return true;
       }
-    }
-    os << "{\n  \"input\" : {\n" << oss_input.str() << "\n  },\n  \"output\" : {\n" << oss_output.str() << "\n  }";
+      void vVarDeclI(VarDeclI* vdi) {
+        if (vdi->e()->type().ispar() && !vdi->e()->type().isann() && (vdi->e()->e()==NULL || vdi->e()->e()==constants().absent)) {
+          if (had_input) oss_input << ",\n";
+          output_var_desc_json(env, vdi->e(), oss_input);
+          had_input = true;
+        } else if (vdi->e()->type().isvar() && (vdi->e()->e()==NULL || vdi->e()->ann().contains(constants().ann.add_to_output))) {
+          if (had_output) oss_output << ",\n";
+          output_var_desc_json(env, vdi->e(), oss_output);
+          had_output = true;
+        }
+      }
+      void vSolveI(SolveI* si) {
+        switch (si->st()) {
+          case SolveI::ST_MIN: method = "min"; break;
+          case SolveI::ST_MAX: method = "max"; break;
+          case SolveI::ST_SAT: method = "sat"; break;
+        }
+      }
+    } _ifc(env);
+    iterItems(_ifc, m);
+    os << "{\n  \"input\" : {\n" << _ifc.oss_input.str() << "\n  },\n  \"output\" : {\n" << _ifc.oss_output.str() << "\n  }";
     os << ",\n  \"method\": \"";
-    if (m->solveItem()) {
-      switch (m->solveItem()->st()) {
-        case SolveI::ST_MIN: os << "min"; break;
-        case SolveI::ST_MAX: os << "max"; break;
-        case SolveI::ST_SAT: os << "sat"; break;
-      }
-    }
+    os << _ifc.method;
     os << "\"";
     os << "\n}\n";
   }
