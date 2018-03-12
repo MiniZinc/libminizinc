@@ -124,7 +124,7 @@ namespace MiniZinc {
               is.read(rest,sizeof(rest));
               column += sizeof(rest);
               if (!is.good() || rest != string("alse"))
-                throw JSONError(env,errLocation(),"unexpected token "+string(rest));
+                throw JSONError(env,errLocation(),"unexpected token `"+string(rest)+"'");
               state = S_NOTHING;
               return Token(false);
             }
@@ -134,7 +134,7 @@ namespace MiniZinc {
                 result = buf[0];
                 state=S_INT;
               } else {
-                throw JSONError(env,errLocation(),"unexpected token "+string(buf));
+                throw JSONError(env,errLocation(),"unexpected token `"+string(1,buf[0])+"'");
               }
               break;
           }
@@ -175,7 +175,7 @@ namespace MiniZinc {
           break;
       }
     }
-    throw JSONError(env,errLocation(),"unexpected token "+string(result));
+    throw JSONError(env,errLocation(),"unexpected token `"+string(result)+"'");
   }
   
   void JSONParser::expectToken(istream& is, JSONParser::TokenT t) {
