@@ -95,6 +95,7 @@ namespace MiniZinc {
               // fall through
             case ' ':
             case '\t':
+            case '\r':
               break;
             case '[': return Token::listOpen();
             case ']': return Token::listClose();
@@ -130,7 +131,7 @@ namespace MiniZinc {
               break;
             default:
               if (buf[0]>='0' && buf[0]<='9') {
-                result = buf;
+                result = buf[0];
                 state=S_INT;
               } else {
                 throw JSONError(env,errLocation(),"unexpected token "+string(buf));
