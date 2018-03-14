@@ -56,8 +56,9 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
   << "-p <N>              use N threads, default: 1" << std::endl
 //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-  << "--timeout <N>       stop search after N seconds" << std::endl
-  << "-n <N>, --num-solutions <N>       stop search after N solutions" << std::endl
+  << "--timeout <N>       stop search after N seconds CPU time" << std::endl
+  << "-n <N>, --num-solutions <N>\n"
+     "                    stop search after N solutions" << std::endl
   << "--workmem <N>, --nodefilestart <N>\n"
      "                    maximal RAM for working memory used before writing to node file, GB, default: 3" << std::endl
   << "--readParam <file>  read CPLEX parameters from file" << std::endl

@@ -72,7 +72,9 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
   << "-p <N>              use N threads, default: 1." << std::endl
 //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-  << "--timeout <N>       stop search after N seconds" << std::endl
+  << "--timeout <N>       stop search after N seconds CPU time" << std::endl
+  << "-n <N>, --num-solutions <N>\n"
+     "                    stop search after N solutions" << std::endl
   << "--workmem <N>, --nodefilestart <N>\n"
      "                    maximal RAM for node tree used before writing to node file, GB, default: 3" << std::endl
   << "--readParam <file>  read GUROBI parameters from file" << std::endl
@@ -99,6 +101,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
  static   int nThreads=1;
  static   string sExportModel;
  static   double nTimeout=-1;
+ static   long int nSolLimit = -1;
  static   double nWorkMemLimit=3;
  static   string sReadParams;
  static   string sWriteParams;
@@ -125,6 +128,7 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
   } else if ( cop.get( "-p", &nThreads ) ) {
   } else if ( cop.get( "--timeout", &nTimeout ) ) {
+  } else if ( cop.get( "-n --num-solutions", &nSolLimit ) ) {
   } else if ( cop.get( "--workmem --nodefilestart", &nWorkMemLimit ) ) {
   } else if ( cop.get( "--readParam", &sReadParams ) ) {
   } else if ( cop.get( "--writeParam", &sWriteParams ) ) {
@@ -632,7 +636,11 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
      wrap_assert(!error, "Failed to set GRB_PARAM_TimeLimit.", false);
     }
 
-
+    if (nSolLimit>0) {
+      error = dll_GRBsetintparam(dll_GRBgetenv(model), GRB_INT_PAR_SOLUTIONLIMIT, nSolLimit);
+      wrap_assert(!error, "Failed to set GRB_INT_PAR_SOLLIMIT.", false);
+    }
+    
     if (nWorkMemLimit>0 && nWorkMemLimit<1e200) {
       error =  dll_GRBsetdblparam (dll_GRBgetenv(model), "NodefileStart", nWorkMemLimit);
       wrap_assert(!error, "Failed to set NodefileStart.", false);
