@@ -611,7 +611,7 @@ namespace MiniZinc {
     i->remove();
   }
   void EnvI::flat_removeItem(int i) {
-    (*_flat)[i]->remove();
+    flat_removeItem((*_flat)[i]);
   }
   
   void EnvI::fail(const std::string& msg) {
@@ -6186,7 +6186,7 @@ namespace MiniZinc {
                 ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->e()->e());
                 if (vdi->e()->introduced()) {
                   removedItems.push_back(vdi);
-                  vdi->remove();
+                  env.flat_removeItem(vdi);
                   keptVariable = false;
                 } else {
                   vdi->e()->e(NULL);
@@ -6198,7 +6198,7 @@ namespace MiniZinc {
               }
             } else {
               removedItems.push_back(vdi);
-              vdi->remove();
+              env.flat_removeItem(vdi);
               keptVariable = false;
             }
           }

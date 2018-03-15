@@ -472,7 +472,7 @@ namespace MiniZinc {
             if (bi->isa<ConstraintI>()) {
               CollectDecls cd(envi.vo,deletedVarDecls,bi);
               topDown(cd,bi->cast<ConstraintI>()->e());
-              bi->remove();
+              env.envi().flat_removeItem(bi);
             } else {
               if (bi->cast<VarDeclI>()->e()->ti()->domain()) {
                 if (!eval_bool(envi, bi->cast<VarDeclI>()->e()->ti()->domain())) {
@@ -497,7 +497,7 @@ namespace MiniZinc {
             finalId->decl()->e(constants().boollit(!finalIdNeg));
           CollectDecls cd(envi.vo,deletedVarDecls,bi);
           topDown(cd,bi->cast<ConstraintI>()->e());
-          bi->remove();
+          env.envi().flat_removeItem(bi);
           pushVarDecl(envi, envi.vo.idx.find(finalId->decl()->id())->second, vardeclQueue);
           pushDependentConstraints(envi, finalId, constraintQueue);
         }
@@ -711,7 +711,7 @@ namespace MiniZinc {
             if (bi->isa<ConstraintI>()) {
               CollectDecls cd(envi.vo,deletedVarDecls,bi);
               topDown(cd,bi->cast<ConstraintI>()->e());
-              bi->remove();
+              env.envi().flat_removeItem(bi);
             } else {
               CollectDecls cd(envi.vo,deletedVarDecls,bi);
               topDown(cd,bi->cast<VarDeclI>()->e()->e());
@@ -1011,7 +1011,7 @@ namespace MiniZinc {
             vdi->e()->e(constants().boollit(is_true));
             pushDependentConstraints(env, vdi->e()->id(), constraintQueue);
             if (env.vo.occurrences(vdi->e())==0) {
-              vdi->remove();
+              env.flat_removeItem(vdi);
             }
           } else {
             env.flat_removeItem(ii);
@@ -1052,7 +1052,7 @@ namespace MiniZinc {
             } else {
               CollectDecls cd(env.vo,deletedVarDecls,ii);
               topDown(cd,c);
-              ii->remove();
+              env.flat_removeItem(ii);
             }
           } else {
             Id* ident = c->arg(0)->cast<Id>();
@@ -1072,10 +1072,10 @@ namespace MiniZinc {
             pushDependentConstraints(env, ident, constraintQueue);
             if (vdi) {
               if (env.vo.occurrences(vd)==0) {
-                vdi->remove();
+                env.flat_removeItem(vdi);
               }
             } else {
-              ii->remove();
+              env.flat_removeItem(ii);
             }
           }
         } else {
