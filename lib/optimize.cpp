@@ -1011,6 +1011,10 @@ namespace MiniZinc {
             vdi->e()->e(constants().boollit(is_true));
             pushDependentConstraints(env, vdi->e()->id(), constraintQueue);
             if (env.vo.occurrences(vdi->e())==0) {
+              if (isOutput(vdi->e())) {
+                VarDecl* vd_out = (*env.output)[env.output_vo_flat.find(vdi->e())]->cast<VarDeclI>()->e();
+                vd_out->e(constants().boollit(is_true));
+              }
               env.flat_removeItem(vdi);
             }
           } else {
