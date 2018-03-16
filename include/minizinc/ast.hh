@@ -1274,6 +1274,8 @@ namespace MiniZinc {
     bool removed(void) const { return _flag_1; }
     /// Set flag to remove item
     void remove(void) { _flag_1 = true; }
+    /// Unset remove item flag (only possible if not already removed by compact())
+    void unremove(void) { _flag_1 = false; }
   };
 
   class Model;
