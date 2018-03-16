@@ -263,7 +263,7 @@ namespace MiniZinc {
       registerConstraint("count_imp", GecodeConstraints::p_count_imp);
       registerConstraint("at_least_int", GecodeConstraints::p_at_least);
       registerConstraint("at_most_int", GecodeConstraints::p_at_most);
-      registerConstraint("gecode_bin_packing_load", GecodeConstraints::p_bin_packing_load);
+      registerConstraint("bin_packing_load", GecodeConstraints::p_bin_packing_load);
       registerConstraint("global_cardinality", GecodeConstraints::p_global_cardinality);
       registerConstraint("global_cardinality_closed", GecodeConstraints::p_global_cardinality_closed);
       registerConstraint("global_cardinality_low_up", GecodeConstraints::p_global_cardinality_low_up);
@@ -282,8 +282,8 @@ namespace MiniZinc {
       registerConstraint("table_int", GecodeConstraints::p_table_int);
       registerConstraint("table_bool", GecodeConstraints::p_table_bool);
       registerConstraint("cumulatives", GecodeConstraints::p_cumulatives);
-      registerConstraint("gecode_among_seq_int", GecodeConstraints::p_among_seq_int);
-      registerConstraint("gecode_among_seq_bool", GecodeConstraints::p_among_seq_bool);
+      registerConstraint("among_seq_int", GecodeConstraints::p_among_seq_int);
+      registerConstraint("among_seq_bool", GecodeConstraints::p_among_seq_bool);
 
 
       registerConstraint("bool_lin_eq", GecodeConstraints::p_bool_lin_eq);
@@ -306,21 +306,21 @@ namespace MiniZinc {
       registerConstraint("bool_lin_gt_reif", GecodeConstraints::p_bool_lin_gt_reif);
       registerConstraint("bool_lin_gt_imp", GecodeConstraints::p_bool_lin_gt_imp);
 
-      registerConstraint("gecode_schedule_unary", GecodeConstraints::p_schedule_unary);
-      registerConstraint("gecode_schedule_unary_optional", GecodeConstraints::p_schedule_unary_optional);
-      registerConstraint("gecode_schedule_cumulative_optional", GecodeConstraints::p_cumulative_opt);
+      registerConstraint("schedule_unary", GecodeConstraints::p_schedule_unary);
+      registerConstraint("schedule_unary_optional", GecodeConstraints::p_schedule_unary_optional);
+      registerConstraint("schedule_cumulative_optional", GecodeConstraints::p_cumulative_opt);
 
-      registerConstraint("gecode_circuit", GecodeConstraints::p_circuit);
-      registerConstraint("gecode_circuit_cost_array", GecodeConstraints::p_circuit_cost_array);
-      registerConstraint("gecode_circuit_cost", GecodeConstraints::p_circuit_cost);
-      registerConstraint("gecode_nooverlap", GecodeConstraints::p_nooverlap);
-      registerConstraint("gecode_precede", GecodeConstraints::p_precede);
+      registerConstraint("circuit", GecodeConstraints::p_circuit);
+      registerConstraint("circuit_cost_array", GecodeConstraints::p_circuit_cost_array);
+      registerConstraint("circuit_cost", GecodeConstraints::p_circuit_cost);
+      registerConstraint("nooverlap", GecodeConstraints::p_nooverlap);
+      registerConstraint("precede", GecodeConstraints::p_precede);
       registerConstraint("nvalue", GecodeConstraints::p_nvalue);
       registerConstraint("among", GecodeConstraints::p_among);
       registerConstraint("member_int", GecodeConstraints::p_member_int);
-      registerConstraint("gecode_member_int_reif", GecodeConstraints::p_member_int_reif);
+      registerConstraint("member_int_reif", GecodeConstraints::p_member_int_reif);
       registerConstraint("member_bool", GecodeConstraints::p_member_bool);
-      registerConstraint("gecode_member_bool_reif", GecodeConstraints::p_member_bool_reif);
+      registerConstraint("member_bool_reif", GecodeConstraints::p_member_bool_reif);
 
 #ifdef GECODE_HAS_FLOAT_VARS
       registerConstraint("int2float",GecodeConstraints::p_int2float);

@@ -34,4 +34,6 @@
 %
 %
 
-predicate table_int(array[int] of var int: x, array[int, int] of int: t);
+predicate table_int(array[int] of var int: x, array[int, int] of int: t) =
+  table_int(x, array1d(t));
+predicate table_int(array[int] of var int: x, array[int] of int: t);
