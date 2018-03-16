@@ -315,10 +315,11 @@ namespace MiniZinc {
           }
           fznFile = tmpfile;
           std::ofstream os(tmpfile);
+          Printer p(os, 0, true);
           for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
             if(!(*it)->removed()) {
               Item* item = *it;
-              os << *item;
+              p.print(item);
             }
           }
         }
@@ -382,7 +383,7 @@ namespace MiniZinc {
           }
 
           if (!_canPipe) {
-            //remove(fznFile.c_str());
+            remove(fznFile.c_str());
           }
           close(pipes[1][0]);
           close(pipes[2][0]);
