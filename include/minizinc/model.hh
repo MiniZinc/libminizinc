@@ -279,23 +279,23 @@ namespace MiniZinc {
   class ItemVisitor {
   public:
     /// Enter model
-    bool enterModel(Model* m) { return true; }
+    virtual bool enterModel(Model* m) { return true; }
     /// Enter item
-    bool enter(Item* m) { return true; }
+    virtual bool enter(Item* m) { return true; }
     /// Visit include item
-    void vIncludeI(IncludeI*) {}
+    virtual void vIncludeI(IncludeI*) {}
     /// Visit variable declaration
-    void vVarDeclI(VarDeclI*) {}
+    virtual void vVarDeclI(VarDeclI*) {}
     /// Visit assign item
-    void vAssignI(AssignI*) {}
+    virtual void vAssignI(AssignI*) {}
     /// Visit constraint item
-    void vConstraintI(ConstraintI*) {}
+    virtual void vConstraintI(ConstraintI*) {}
     /// Visit solve item
-    void vSolveI(SolveI*) {}
+    virtual void vSolveI(SolveI*) {}
     /// Visit output item
-    void vOutputI(OutputI*) {}
+    virtual void vOutputI(OutputI*) {}
     /// Visit function item
-    void vFunctionI(FunctionI*) {}
+    virtual void vFunctionI(FunctionI*) {}
   };
 
   /// Iterator over items in a model and all its included models
