@@ -1126,7 +1126,7 @@ namespace MiniZinc {
       IntArgs tuples = gi.arg2intargs(call->arg(1));
       int noOfVars   = x.size();
       int noOfTuples = tuples.size() == 0 ? 0 : (tuples.size()/noOfVars);
-      TupleSet ts;
+      TupleSet ts(noOfVars);
       for (int i=0; i<noOfTuples; i++) {
         IntArgs t(noOfVars);
         for (int j=0; j<x.size(); j++) {
@@ -1144,7 +1144,7 @@ namespace MiniZinc {
       IntArgs tuples = gi.arg2boolargs(call->arg(1));
       int noOfVars   = x.size();
       int noOfTuples = tuples.size() == 0 ? 0 : (tuples.size()/noOfVars);
-      TupleSet ts;
+      TupleSet ts(noOfVars);
       for (int i=0; i<noOfTuples; i++) {
         IntArgs t(noOfVars);
         for (int j=0; j<x.size(); j++) {
