@@ -1531,47 +1531,47 @@ namespace MiniZinc {
   class EVisitor {
   public:
     /// Visit integer literal
-    void vIntLit(const IntLit&) {}
+    virtual void vIntLit(const IntLit&) {}
     /// Visit floating point literal
-    void vFloatLit(const FloatLit&) {}
+    virtual void vFloatLit(const FloatLit&) {}
     /// Visit Boolean literal
-    void vBoolLit(const BoolLit&) {}
+    virtual void vBoolLit(const BoolLit&) {}
     /// Visit set literal
-    void vSetLit(const SetLit&) {}
+    virtual void vSetLit(const SetLit&) {}
     /// Visit string literal
-    void vStringLit(const StringLit&) {}
+    virtual void vStringLit(const StringLit&) {}
     /// Visit identifier
-    void vId(const Id&) {}
+    virtual void vId(const Id&) {}
     /// Visit anonymous variable
-    void vAnonVar(const AnonVar&) {}
+    virtual void vAnonVar(const AnonVar&) {}
     /// Visit array literal
-    void vArrayLit(const ArrayLit&) {}
+    virtual void vArrayLit(const ArrayLit&) {}
     /// Visit array access
-    void vArrayAccess(const ArrayAccess&) {}
+    virtual void vArrayAccess(const ArrayAccess&) {}
     /// Visit array comprehension
-    void vComprehension(const Comprehension&) {}
+    virtual void vComprehension(const Comprehension&) {}
     /// Visit array comprehension (only generator \a gen_i)
-    void vComprehensionGenerator(const Comprehension&, int gen_i) { (void) gen_i; }
+    virtual void vComprehensionGenerator(const Comprehension&, int gen_i) { (void) gen_i; }
     /// Visit if-then-else
-    void vITE(const ITE&) {}
+    virtual void vITE(const ITE&) {}
     /// Visit binary operator
-    void vBinOp(const BinOp&) {}
+    virtual void vBinOp(const BinOp&) {}
     /// Visit unary operator
-    void vUnOp(const UnOp&) {}
+    virtual void vUnOp(const UnOp&) {}
     /// Visit call
-    void vCall(const Call&) {}
+    virtual void vCall(const Call&) {}
     /// Visit let
-    void vLet(const Let&) {}
+    virtual void vLet(const Let&) {}
     /// Visit variable declaration
-    void vVarDecl(const VarDecl&) {}
+    virtual void vVarDecl(const VarDecl&) {}
     /// Visit type inst
-    void vTypeInst(const TypeInst&) {}
+    virtual void vTypeInst(const TypeInst&) {}
     /// Visit TIId
-    void vTIId(const TIId&) {}
+    virtual void vTIId(const TIId&) {}
     /// Determine whether to enter node
-    bool enter(Expression* e) { return true; }
+    virtual bool enter(Expression* e) { return true; }
     /// Exit node after processing has finished
-    void exit(Expression* e) {}
+    virtual void exit(Expression* e) {}
   };
 
   /// Statically allocated constants
