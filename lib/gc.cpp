@@ -238,11 +238,15 @@ namespace MiniZinc {
 #endif
       mark();
       sweep();
-      if (static_cast<double>(_free_mem)/_alloced_mem < 0.5) {
-        _gc_threshold = std::max(_min_gc_threshold,static_cast<size_t>(_alloced_mem * 1.5));
-      } else {
-        _gc_threshold = std::max(_min_gc_threshold,_alloced_mem);
-      }
+      ///TODO: this is the old strategy, which doesn't free up memory aggressively enough
+      _gc_threshold = static_cast<size_t>(_alloced_mem * 1.5);
+      ///TODO: this was the new strategy, which sometimes leads to massive thrashing
+      ///      when every allocation triggers GC
+//      if (static_cast<double>(_free_mem)/_alloced_mem < 0.5) {
+//        _gc_threshold = std::max(_min_gc_threshold,static_cast<size_t>(_alloced_mem * 1.5));
+//      } else {
+//        _gc_threshold = std::max(_min_gc_threshold,_alloced_mem);
+//      }
 #ifdef MINIZINC_GC_STATS
       std::cerr << "done\n\talloced " << (_alloced_mem/1024) << "\n\tfree " << (_free_mem/1024) << "\n\tdiff "
       << ((_alloced_mem-_free_mem)/1024)
