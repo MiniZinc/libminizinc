@@ -236,17 +236,20 @@ namespace MiniZinc {
       << "\n\tthreshold " << (_gc_threshold/1024)
       << "\n";
 #endif
+      size_t old_free = _free_mem;
       mark();
       sweep();
-      ///TODO: this is the old strategy, which doesn't free up memory aggressively enough
-      _gc_threshold = static_cast<size_t>(_alloced_mem * 1.5);
-      ///TODO: this was the new strategy, which sometimes leads to massive thrashing
-      ///      when every allocation triggers GC
-//      if (static_cast<double>(_free_mem)/_alloced_mem < 0.5) {
-//        _gc_threshold = std::max(_min_gc_threshold,static_cast<size_t>(_alloced_mem * 1.5));
-//      } else {
-//        _gc_threshold = std::max(_min_gc_threshold,_alloced_mem);
-//      }
+      // GC strategy:
+      // increase threshold if either
+      //   a) we haven't been able to put much on the free list (comapred to before GC), or
+      //   b) the free list memory (after GC) is less than 50% of the allocated memory
+      // otherwise (i.e., we have been able to increase the free list, and it is now more
+      // than 50% of overall allocated memory), keep threshold at allocated memory
+      if ( (old_free!= 0 && static_cast<double>(old_free)/static_cast<double>(_free_mem) > 0.9) || static_cast<double>(_free_mem)/_alloced_mem < 0.5) {
+        _gc_threshold = std::max(_min_gc_threshold,static_cast<size_t>(_alloced_mem * 1.5));
+      } else {
+        _gc_threshold = std::max(_min_gc_threshold,_alloced_mem);
+      }
 #ifdef MINIZINC_GC_STATS
       std::cerr << "done\n\talloced " << (_alloced_mem/1024) << "\n\tfree " << (_free_mem/1024) << "\n\tdiff "
       << ((_alloced_mem-_free_mem)/1024)
