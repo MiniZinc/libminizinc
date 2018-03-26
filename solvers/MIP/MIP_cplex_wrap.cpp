@@ -52,7 +52,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   //            << "  --readParam <file>  read CPLEX parameters from file
   //               << "--writeParam <file> write CPLEX parameters to file
   //               << "--tuneParam         instruct CPLEX to tune parameters instead of solving
-  << "--writeModel <file> write model to <file> (.lp, .mps, .sav, ...)" << std::endl
+  << "--mipfocus <n>      1: feasibility, 2: optimality, 3: move bound (default is 0, balanced)" << std::endl
   << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
   << "-p <N>              use N threads, default: 1" << std::endl
 //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
@@ -61,6 +61,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
      "                    stop search after N solutions" << std::endl
   << "--workmem <N>, --nodefilestart <N>\n"
      "                    maximal RAM for working memory used before writing to node file, GB, default: 3" << std::endl
+  << "--writeModel <file> write model to <file> (.lp, .mps, .sav, ...)" << std::endl
   << "--readParam <file>  read CPLEX parameters from file" << std::endl
   << "--writeParam <file> write CPLEX parameters to file" << std::endl
 //   << "--tuneParam         instruct CPLEX to tune parameters instead of solving   NOT IMPL"
@@ -78,6 +79,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   }
 
             /// SOLVER PARAMS ????
+ static int nMIPFocus=0;
  static   int nThreads=1;
  static   string sExportModel;
  static   double nTimeout=-1;
@@ -100,6 +102,7 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
     flag_all_solutions = true;
   } else if (string(argv[i])=="-f") {
 //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
+  } else if ( cop.get( "--mipfocus --mipFocus --MIPFocus --MIPfocus", &nMIPFocus ) ) {
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
   } else if ( cop.get( "-p", &nThreads ) ) {
   } else if ( cop.get( "--timeout", &nTimeout ) ) {
@@ -663,6 +666,10 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
    if (nSolLimit>0) {
      status =  CPXsetintparam (env, CPXPARAM_MIP_Limits_Solutions, nSolLimit);
      wrap_assert(!status, "Failed to set CPXPARAM_MIP_Limits_Solutions.", false);
+   }
+   if (nMIPFocus>0) {
+     status =  CPXsetintparam (env, CPXPARAM_Emphasis_MIP, nMIPFocus);
+     wrap_assert(!status, "Failed to set CPXPARAM_Emphasis_MIP.", false);
    }
    
     

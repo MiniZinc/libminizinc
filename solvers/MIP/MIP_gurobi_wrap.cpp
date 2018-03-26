@@ -68,15 +68,16 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   << "-f                  free search (default)" << std::endl
   << "--fixed-search      fixed search (approximation of the model's one by branching priorities)" << std::endl
   << "--uniform-search    'more fixed' search (all variables in the search anns get priority 1)" << std::endl
-  << "--writeModel <file> write model to <file> (.lp, .mps, .sav, ...)" << std::endl
+  << "--mipfocus <n>      1: feasibility, 2: optimality, 3: move bound (default is 0, balanced)" << std::endl
   << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
   << "-p <N>              use N threads, default: 1." << std::endl
 //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-  << "--timeout <N>       stop search after N seconds CPU time" << std::endl
+  << "--timeout <N>       stop search after N seconds wall time" << std::endl
   << "-n <N>, --num-solutions <N>\n"
      "                    stop search after N solutions" << std::endl
   << "--workmem <N>, --nodefilestart <N>\n"
      "                    maximal RAM for node tree used before writing to node file, GB, default: 3" << std::endl
+  << "--writeModel <file> write model to <file> (.lp, .mps, .sav, ...)" << std::endl
   << "--readParam <file>  read GUROBI parameters from file" << std::endl
   << "--writeParam <file> write GUROBI parameters to file" << std::endl
 //   << "--tuneParam         instruct GUROBI to tune parameters instead of solving   NOT IMPL"
@@ -97,6 +98,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
 
             /// SOLVER PARAMS ????
             
+ static int nMIPFocus=0;
  static   int nFreeSearch=1;
  static   int nThreads=1;
  static   string sExportModel;
@@ -125,6 +127,7 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
     nFreeSearch = 0;
   } else if (string(argv[i])=="--uniform-search") {
     nFreeSearch = 2;
+  } else if ( cop.get( "--mipfocus --mipFocus --MIPFocus --MIPfocus", &nMIPFocus ) ) {
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
   } else if ( cop.get( "-p", &nThreads ) ) {
   } else if ( cop.get( "--timeout", &nTimeout ) ) {
@@ -646,6 +649,10 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
       wrap_assert(!error, "Failed to set NodefileStart.", false);
     }
 
+    if (nMIPFocus>0) {
+      error = dll_GRBsetintparam(dll_GRBgetenv(model), GRB_INT_PAR_MIPFOCUS, nMIPFocus);
+      wrap_assert(!error, "Failed to set GRB_INT_PAR_MIPFOCUS.", false);
+    }
    if ( absGap>=0.0 ) {
      error = dll_GRBsetdblparam( dll_GRBgetenv(model),  "MIPGapAbs", absGap );
      wrap_assert(!error, "Failed to set  MIPGapAbs.", false);
