@@ -95,6 +95,7 @@ namespace MiniZinc {
     bool collect_vardecls;
     std::vector<int> modifiedVarDecls;
     int in_redundant_constraint;
+    int in_maybe_partial;
     FlatteningOptions fopts;
     unsigned int pathUse;
 
@@ -108,9 +109,6 @@ namespace MiniZinc {
     typedef KeepAliveMap<std::string> ReversePathMap;
     // Map from filename to integer (space saving optimisation)
     typedef UNORDERED_NAMESPACE::unordered_map<std::string, int> FilenameMap;
-
-    int in_maybe_partial;
-    
     std::vector<KeepAlive> checkVars;
   protected:
     Map map;
