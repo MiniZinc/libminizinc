@@ -35,46 +35,29 @@ using namespace std;
 using namespace MiniZinc;
 
 #ifdef HAS_GUROBI
-#include <minizinc/solvers/MIP/MIP_solverinstance.hh>
-#include <minizinc/solvers/MIP/MIP_gurobi_wrap.hh>
+#include <minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh>
+namespace {
+  Gurobi_SolverFactoryInitialiser _gurobi_init;
+}
 #endif
 #ifdef HAS_CPLEX
-#include <minizinc/solvers/MIP/MIP_solverinstance.hh>
-#include <minizinc/solvers/MIP/MIP_cplex_wrap.hh>
+#include <minizinc/solvers/MIP/MIP_cplex_solverfactory.hh>
+namespace {
+  Cplex_SolverFactoryInitialiser _cplex_init;
+}
 #endif
 #ifdef HAS_OSICBC
-#include <minizinc/solvers/MIP/MIP_solverinstance.hh>
-#include <minizinc/solvers/MIP/MIP_osicbc_wrap.hh>
+#include <minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh>
+namespace {
+  OSICBC_SolverFactoryInitialiser _osicbc_init;
+}
 #endif
+#ifdef HAS_GECODE
+#include <minizinc/solvers/gecode_solverfactory.hh>
+#endif
+#include <minizinc/solvers/fzn_solverfactory.hh>
 
 int main(int argc, const char** argv) {
-
-  /// Initializing specified solver factories
-  /// Gecode has to be 1st for multi-pass
-#ifdef HAS_GECODE
-  static unique_ptr<SolverFactory>
-    pFactoryGECODE( SolverFactory::createF_GECODE() );
-#endif
-#ifdef HAS_FZN
-  static unique_ptr<SolverFactory>
-    pFactoryFZN( SolverFactory::createF_FZN() );
-#endif
-#ifdef HAS_CHUFFED
-  static unique_ptr<SolverFactory>
-    pFactoryCHUFFED( SolverFactory::createF_CHUFFED() );
-#endif
-#ifdef HAS_GUROBI
-  static unique_ptr<SolverFactory>
-    pFactoryGurobi( new MIP_SolverFactory<MIP_gurobi_wrapper> );
-#endif
-#ifdef HAS_CPLEX
-  static unique_ptr<SolverFactory>
-  pFactoryCPLEX( new MIP_SolverFactory<MIP_cplex_wrapper> );
-#endif
-#ifdef HAS_OSICBC
-  static unique_ptr<SolverFactory>
-  pFactoryOSICBC( new MIP_SolverFactory<MIP_osicbc_wrapper> );
-#endif
 
   clock_t starttime = std::clock(), endTime;
   bool fSuccess = false;

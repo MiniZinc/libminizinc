@@ -47,7 +47,7 @@ namespace MiniZinc {
     MIP_wrapper* pMIP=0;
   public:
     XBZCutGen( MIP_wrapper* pw ) : pMIP(pw) { }
-    vector<MIP_wrapper::VarId> varX, varB;
+    std::vector<MIP_wrapper::VarId> varX, varB;
     MIP_wrapper::VarId varZ;
     void generate(const MIP_wrapper::Output&, MIP_wrapper::CutInput&);
     void print( std::ostream& );
@@ -58,11 +58,11 @@ namespace MiniZinc {
     using SolverInstanceBase::_log;
     protected:
       
-      const unique_ptr<MIP_wrapper> mip_wrap;
-      vector< unique_ptr<CutGen> > cutGenerators;
+      const std::unique_ptr<MIP_wrapper> mip_wrap;
+      std::vector< std::unique_ptr<CutGen> > cutGenerators;
       
     public:
-      void registerCutGenerator( unique_ptr<CutGen>&& pCG ) {
+      void registerCutGenerator( std::unique_ptr<CutGen>&& pCG ) {
         getMIPWrapper()->cbui.cutMask |= pCG->getMask();
         cutGenerators.push_back( move( pCG ) );
       }
@@ -98,8 +98,8 @@ namespace MiniZinc {
     public:
       /// creates a var for a literal, if necessary
       VarId exprToVar(Expression* e);
-      void exprToArray(Expression* e, vector<double> &vals);
-      void exprToVarArray(Expression* e, vector<VarId> &vars);
+      void exprToArray(Expression* e, std::vector<double> &vals);
+      void exprToVarArray(Expression* e, std::vector<VarId> &vars);
       std::pair<double,bool> exprToConstEasy(Expression* e);
       double exprToConst(Expression* e);
 
@@ -108,7 +108,6 @@ namespace MiniZinc {
       void registerConstraints(void);
   };  // MIP_solverinstance
 
-#warning Compiling this
   template<class MIPWrapper>
   class MIP_SolverFactory: public SolverFactory {
   protected:
@@ -117,8 +116,8 @@ namespace MiniZinc {
     SolverInstanceBase* doCreateSI(Env& env, std::ostream& log)   { return new MIP_solverinstance<MIPWrapper>(env,opt,log); }
     bool processOption(int& i, int argc, const char** argv)
       { return opt.processOption(i, argc, argv); }
-    string getVersion( );
-    string getId( );
+    std::string getVersion( );
+    std::string getId( );
     void printHelp(std::ostream& os) { opt.printHelp(os); }
   };
 

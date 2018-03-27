@@ -242,19 +242,17 @@ void Solns2Out::checkSolution(std::ostream& os) {
     }
   }
   
-  unique_ptr<SolverFactory>
-  pFactoryGECODE( SolverFactory::createF_GECODE() );
-
   std::ostringstream oss_err;
   MznSolver slv(oss_err,oss_err,false);
   slv.s2out._opt.solution_separator = "";
   try {
-    std::vector<std::string> args({"-Ggecode","-"});
+    std::vector<std::string> args({"--solver","org.minizinc.gecode","-"});
     int argc = args.size();
     std::vector<const char*> argv(argc);
     for (unsigned int i=0; i<args.size(); i++)
       argv[i] = args[i].c_str();
-    if (!slv.processOptions(argc, &argv[0])) {
+    const char** argv_v = &argv[0];
+    if (!slv.processOptions(argc, argv_v)) {
       slv.printHelp();
     } else {
       slv.flatten(checker.str());

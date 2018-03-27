@@ -31,12 +31,12 @@ class MIP_cplex_wrapper : public MIP_wrapper {
     public:
       int nMIPFocus=0;
       int nThreads=1;
-      string sExportModel;
+      std::string sExportModel;
       double nTimeout=-1;
       long int nSolLimit = -1;
       double nWorkMemLimit=-1;
-      string sReadParams;
-      string sWriteParams;
+      std::string sReadParams;
+      std::string sWriteParams;
       bool flag_all_solutions = false;
       
       double absGap=0.99;
@@ -45,14 +45,14 @@ class MIP_cplex_wrapper : public MIP_wrapper {
       double objDiff=1.0;
 
       bool processOption(int& i, int argc, const char** argv);
-      void printHelp(ostream& );
+      void printHelp(std::ostream& );
     } options;
 
   MIP_cplex_wrapper(const Options& opt) : options(opt) { openCPLEX(); }
     virtual ~MIP_cplex_wrapper() { closeCPLEX(); }
 
-    static string getVersion(void);
-    static string getId(void);
+    static std::string getVersion(void);
+    static std::string getId(void);
 
 //       Statistics& getStatistics() { return _statistics; }
 

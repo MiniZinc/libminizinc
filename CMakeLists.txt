@@ -361,7 +361,8 @@ find_package ( Threads REQUIRED )
 if(HAS_GUROBI)  # Version 7.5
 
 	add_library(minizinc_gurobi
-    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp include/minizinc/solvers/MIP/MIP_gurobi_wrap.hh
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp solvers/MIP/MIP_gurobi_solverfactory.cpp
+    include/minizinc/solvers/MIP/MIP_gurobi_wrap.hh include/minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_solverinstance.hpp
 	)
   target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
@@ -408,6 +409,7 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
 
 	add_library(minizinc_cplex
 		solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
+    solvers/MIP/MIP_cplex_solverfactory.cpp include/minizinc/solvers/MIP/MIP_cplex_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_cplex_wrap.hh
 	)
   SET_TARGET_PROPERTIES(minizinc_cplex
@@ -565,6 +567,7 @@ if(HAS_OSICBC)
 
   add_library(minizinc_osicbc
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp
+    solvers/MIP/MIP_osicbc_solverfactory.cpp include/minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_osicbc_wrap.hh
   )
   add_executable(mzn-cbc minizinc.cpp)
@@ -634,6 +637,7 @@ target_link_libraries(mzn2doc minizinc)
 if(HAS_FZN)
 	add_library(minizinc_fzn
 		solvers/fzn/fzn_solverinstance.cpp
+    include/minizinc/solvers/fzn_solverinstance.hh
 	)
 	target_link_libraries(minizinc_fzn minizinc)
 	add_executable( minizinc-bin minizinc.cpp )

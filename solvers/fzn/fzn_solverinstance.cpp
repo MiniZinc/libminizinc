@@ -17,7 +17,7 @@
 #define NOMINMAX     // Need this before all (implicit) include's of Windows.h
 #endif
 
-#include "minizinc/solvers/fzn_solverinstance.hh"
+#include <minizinc/solvers/fzn_solverinstance.hh>
 const auto SolverInstance__ERROR = MiniZinc::SolverInstance::ERROR;  // before windows.h
 #include <cstdio>
 #include <fstream>
@@ -47,23 +47,7 @@ const auto SolverInstance__ERROR = MiniZinc::SolverInstance::ERROR;  // before w
 using namespace std;
 
 namespace MiniZinc {
-
-  class FZN_SolverFactory: public SolverFactory {
-    Options _options;
-  public:
-    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log) {
-      return new FZNSolverInstance(env, log, _options);
-    }
-    string getVersion(void);
-    string getId(void);
-    bool processOption(int& i, int argc, const char** argv);
-    void printHelp(std::ostream& os);
-  };
   
-  SolverFactory* SolverFactory::createF_FZN() {
-    return new FZN_SolverFactory;
-  }
-
   string FZN_SolverFactory::getVersion()
   {
     string v = "FZN solver plugin, compiled  " __DATE__ "  " __TIME__;

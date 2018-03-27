@@ -18,12 +18,6 @@
 
 namespace MiniZinc {
 
-//   class FZNSolver {
-//     public:
-//       typedef Expression* Variable;
-//       typedef MiniZinc::Statistics Statistics;
-//   };
-
   class FZNSolverInstance : public SolverInstanceBase {
     private:
       std::string _fzn_solver;
@@ -46,6 +40,18 @@ namespace MiniZinc {
 
     protected:
       Expression* getSolutionValue(Id* id);
+  };
+
+  class FZN_SolverFactory: public SolverFactory {
+    Options _options;
+  public:
+    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log) {
+      return new FZNSolverInstance(env, log, _options);
+    }
+    std::string getVersion(void);
+    std::string getId(void);
+    bool processOption(int& i, int argc, const char** argv);
+    void printHelp(std::ostream& os);
   };
 
 }

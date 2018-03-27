@@ -1,15 +1,15 @@
 namespace MiniZinc {
 
   template<class MIPWrapper>
-  string MIP_SolverFactory<MIPWrapper>::getVersion()
+  std::string MIP_SolverFactory<MIPWrapper>::getVersion()
   {
-    string v = "  MIP solver plugin, compiled  " __DATE__ ", using: "
+    std::string v = "  MIP solver plugin, compiled  " __DATE__ ", using: "
       + MIPWrapper::getVersion();
     return v;
   }
 
   template<class MIPWrapper>
-  string MIP_SolverFactory<MIPWrapper>::getId()
+  std::string MIP_SolverFactory<MIPWrapper>::getId()
   {
     return "org.minizinc.mip."+MIPWrapper::getId();
   }
@@ -25,7 +25,7 @@ namespace MiniZinc {
 
   template<class MIPWrapper>
   void
-  MIP_solverinstance<MIPWrapper>::exprToVarArray(Expression* arg, vector<VarId> &vars) {
+  MIP_solverinstance<MIPWrapper>::exprToVarArray(Expression* arg, std::vector<VarId> &vars) {
     ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
     vars.clear();
     vars.reserve(al->size());
@@ -63,7 +63,7 @@ namespace MiniZinc {
   
   template<class MIPWrapper>
   void
-  MIP_solverinstance<MIPWrapper>::exprToArray(Expression* arg, vector<double> &vals) {
+  MIP_solverinstance<MIPWrapper>::exprToArray(Expression* arg, std::vector<double> &vals) {
     ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
     vals.clear();
     vals.reserve(al->size());
@@ -79,8 +79,8 @@ namespace MiniZinc {
       return;
     std::vector<Expression*> aAnns;
     flattenSearchAnnotations( ann, aAnns );
-    vector<MIP_solverinstance::VarId> vars;
-    vector<int> aPri;                                  // priorities
+    std::vector<MIP_solverinstance::VarId> vars;
+    std::vector<int> aPri;                                  // priorities
     int nArrayAnns = 0;
     for ( auto iA=0; iA<aAnns.size(); ++iA ) {
       const auto& pE = aAnns[iA];
@@ -110,10 +110,10 @@ namespace MiniZinc {
           aPri[i] = 1; //vars.size()-i;                                    // descending
       }
       if ( !getMIPWrapper()->addSearch( vars, aPri ) )
-        cerr << "\nWARNING: MIP backend seems to ignore search strategy." << endl;
+        std::cerr << "\nWARNING: MIP backend seems to ignore search strategy." << std::endl;
       else
-        cerr << "  MIP: added " << vars.size() << " variable branching priorities from "
-        << nArrayAnns << " arrays." << endl;
+        std::cerr << "  MIP: added " << vars.size() << " variable branching priorities from "
+        << nArrayAnns << " arrays." << std::endl;
     }
   }
   
@@ -135,8 +135,8 @@ namespace MiniZinc {
         } else
           if ( c->id().str() == "warm_start" ) {
             MZN_ASSERT_HARD_MSG( c->n_args()>=2, "ERROR: warm_start needs 2 array args" );
-            vector<double> coefs;
-            vector<MIP_solverinstance::VarId> vars;
+            std::vector<double> coefs;
+            std::vector<MIP_solverinstance::VarId> vars;
             
             /// Process coefs & vars together to eliminate literals (problem with Gurobi's updatemodel()'s)
             ArrayLit* alC = eval_array_lit(_env.envi(), c->arg(1));
@@ -157,14 +157,14 @@ namespace MiniZinc {
             assert(coefs.size() == vars.size());
             nVal += coefs.size();
             if ( coefs.size() && !getMIPWrapper()->addWarmStart( vars, coefs ) ) {
-              cerr << "\nWARNING: MIP backend seems to ignore warm starts" << endl;
+              std::cerr << "\nWARNING: MIP backend seems to ignore warm starts" << std::endl;
               return;
             }
           }
       }
     }
     if ( nVal && getMIPWrapper()->fVerbose ) {
-      cerr << "  MIP: added " << nVal << " MIPstart values..." << flush;
+      std::cerr << "  MIP: added " << nVal << " MIPstart values..." << std::flush;
     }
   }
   
@@ -220,7 +220,7 @@ namespace MiniZinc {
           << ti->type().ot()
           << ", dim == " << ti->type().dim()
           << "\nRemove the variable or add a constraint so it is redefined."
-          << endl;
+          << std::endl;
           throw InternalError(ssm.str());
         }
         double lb=0.0, ub=1.0;  // for bool
@@ -265,15 +265,15 @@ namespace MiniZinc {
           if ( 0!=vd00->e() ) {
             // Should be a const
             auto dRHS = exprToConst( vd00->e() );
-            lb = max( lb, dRHS );
-            ub = min( ub, dRHS );
+            lb = std::max( lb, dRHS );
+            ub = std::min( ub, dRHS );
           }
           if ( it->e()!=vd00 ) {    // A different vardecl
             res = exprToVar( vd00->id() );                 // Assume FZN is sorted.
             MZN_ASSERT_HARD( !getMIPWrapper()->fPhase1Over ); // Still can change colUB, colObj
             /// Tighten the ini-expr's bounds
-            lb = getMIPWrapper()->colLB.at( res ) = max( getMIPWrapper()->colLB.at( res ), lb );
-            ub = getMIPWrapper()->colUB.at( res ) = min( getMIPWrapper()->colUB.at( res ), ub );
+            lb = getMIPWrapper()->colLB.at( res ) = std::max( getMIPWrapper()->colLB.at( res ), lb );
+            ub = getMIPWrapper()->colUB.at( res ) = std::min( getMIPWrapper()->colUB.at( res ), ub );
             if ( 0.0!=obj ) {
               getMIPWrapper()->colObj.at( res ) = obj;
             }
@@ -285,30 +285,30 @@ namespace MiniZinc {
         if ( lb>ub ) {
           _status = SolverInstance::UNSAT;
           if ( getMIPWrapper()->fVerbose )
-            cerr << "  VarDecl '" << *(it->e())
+            std::cerr << "  VarDecl '" << *(it->e())
             << "' seems infeasible: computed bounds [" << lb << ", " << ub << ']'
-            << endl;
+            << std::endl;
         }
         if ( 0.0!=obj ) {
           dObjVarLB = lb;
           dObjVarUB = ub;
           getMIPWrapper()->output.nObjVarIndex = res;
           if ( getMIPWrapper()->fVerbose )
-            cerr << "  MIP: objective variable index (0-based): " << res << endl;
+            std::cerr << "  MIP: objective variable index (0-based): " << res << std::endl;
         }
         _variableMap.insert(id, res);
         assert( res == _variableMap.get(id) );
       }
     }
     if (mip_wrap->fVerbose && mip_wrap->sLitValues.size())
-      cerr << "  MIP_solverinstance: during Phase 1,  "
+      std::cerr << "  MIP_solverinstance: during Phase 1,  "
       << mip_wrap->nLitVars << " literals with "
-      << mip_wrap-> sLitValues.size() << " values used." << endl;
+      << mip_wrap-> sLitValues.size() << " values used." << std::endl;
     if (! getMIPWrapper()->fPhase1Over)
       getMIPWrapper()->addPhase1Vars();
     
     if (mip_wrap->fVerbose)
-      cerr << "  MIP_solverinstance: adding constraints..." << flush;
+      std::cerr << "  MIP_solverinstance: adding constraints..." << std::flush;
     
     for (ConstraintIterator it = getEnv()->flat()->begin_constraints(); it != getEnv()->flat()->end_constraints(); ++it) {
       if (!it->removed()) {
@@ -319,15 +319,15 @@ namespace MiniZinc {
     }
     
     if (mip_wrap->fVerbose) {
-      cerr << " done, " << mip_wrap->getNRows() << " rows && "
+      std::cerr << " done, " << mip_wrap->getNRows() << " rows && "
       << mip_wrap->getNCols() << " columns in total.";
       if (mip_wrap->nIndicatorConstr)
-        cerr << "  " << mip_wrap->nIndicatorConstr << " indicator constraints." << endl;
-      cerr  << endl;
+        std::cerr << "  " << mip_wrap->nIndicatorConstr << " indicator constraints." << std::endl;
+      std::cerr  << std::endl;
       if (mip_wrap->sLitValues.size())
-        cerr << "  MIP_solverinstance: overall,  "
+        std::cerr << "  MIP_solverinstance: overall,  "
         << mip_wrap->nLitVars << " literals with "
-        << mip_wrap-> sLitValues.size() << " values used." << endl;
+        << mip_wrap-> sLitValues.size() << " values used." << std::endl;
     }
     
     processSearchAnnotations( solveItem->ann() );
@@ -375,12 +375,12 @@ namespace MiniZinc {
       std::ios oldState(nullptr);
       oldState.copyfmt(std::cout);
       _log.precision(12);
-      _log << "  % MIP Status: " << mip_wrap->getStatusName() << endl;
+      _log << "  % MIP Status: " << mip_wrap->getStatusName() << std::endl;
       if (fLegend)
         _log << "  % obj, bound, CPU_time, nodes (left): ";
       _log << mip_wrap->getObjValue() << ",  ";
       _log << mip_wrap->getBestBound() << ",  ";
-      _log.setf( ios::fixed );
+      _log.setf( std::ios::fixed );
       _log.precision( 3 );
       _log << mip_wrap->getCPUTime() << ",  ";
       _log << mip_wrap->getNNodes();
@@ -408,7 +408,7 @@ namespace MiniZinc {
       std::cerr << std::endl;
       std::cerr << "  Error when evaluating an intermediate solution:  " << e.what() << ": " << e.msg() << std::endl;
     }
-    catch (const exception& e) {
+    catch (const std::exception& e) {
       std::cerr << std::endl;
       std::cerr << "  Error when evaluating an intermediate solution:  " << e.what() << std::endl;
     }
@@ -441,22 +441,22 @@ namespace MiniZinc {
         getMIPWrapper()->setProbType(1);
         nProbType=1;
         if (mip_wrap->fVerbose)
-          cerr << "    MIP_solverinstance: this is a MAXimization problem." << endl;
+          std::cerr << "    MIP_solverinstance: this is a MAXimization problem." << std::endl;
       } else {
         getMIPWrapper()->setObjSense(-1);
         getMIPWrapper()->setProbType(-1);
         nProbType=-1;
         if (mip_wrap->fVerbose)
-          cerr << "    MIP_solverinstance: this is a MINimization problem." << endl;
+          std::cerr << "    MIP_solverinstance: this is a MINimization problem." << std::endl;
       }
       if (mip_wrap->fVerbose) {
-        cerr << "    MIP_solverinstance: bounds for the objective function: "
-        << dObjVarLB << ", " << dObjVarUB << endl;
+        std::cerr << "    MIP_solverinstance: bounds for the objective function: "
+        << dObjVarLB << ", " << dObjVarUB << std::endl;
       }
     } else {
       getMIPWrapper()->setProbType(0);
       if (mip_wrap->fVerbose)
-        cerr << "    MIP_solverinstance: this is a SATisfiability problem." << endl;
+        std::cerr << "    MIP_solverinstance: this is a SATisfiability problem." << std::endl;
     }
     
     
@@ -482,7 +482,7 @@ namespace MiniZinc {
       sw = getMIPWrapper()->getStatus();
     } else {
       if ( mip_wrap->fVerbose )
-        cerr << "  MIP_solverinstance: no constraints - skipping actual solution phase." << endl;
+        std::cerr << "  MIP_solverinstance: no constraints - skipping actual solution phase." << std::endl;
       sw = MIP_wrapper::Status::OPT;
     }
     SolverInstance::Status s = SolverInstance::UNKNOWN;
@@ -527,9 +527,9 @@ namespace MiniZinc {
       Env& _env = gi.env();
       //     ArrayLit* al = eval_array_lit(_env.envi(), args[0]);
       //     int nvars = al->v().size();
-      vector<double> coefs;
+      std::vector<double> coefs;
       //     gi.exprToArray(args[0], coefs);
-      vector<typename MIP_solverinstance<MIPWrapper>::VarId> vars;
+      std::vector<typename MIP_solverinstance<MIPWrapper>::VarId> vars;
       //     gi.exprToVarArray(args[1], vars);
       IntVal ires;
       FloatVal fres;
@@ -568,9 +568,9 @@ namespace MiniZinc {
             ) {
           si._status = SolverInstance::UNSAT;
           if ( gi.getMIPWrapper()->fVerbose )
-            cerr << "  Constraint '" << *call
+            std::cerr << "  Constraint '" << *call
             << "' seems infeasible: simplified to 0 (rel) " << rhs
-            << endl;
+            << std::endl;
         }
       } else {
         // See if the solver adds indexation itself: no.
@@ -602,8 +602,8 @@ namespace MiniZinc {
     template<class MIPWrapper>
     void p_non_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType nCmp) {
       MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>( si );
-      vector<double> coefs;
-      vector<MIP_solver::Variable> vars;
+      std::vector<double> coefs;
+      std::vector<MIP_solver::Variable> vars;
       double rhs = 0.0;
       if ( call->arg(0)->isa<Id>() ) {
         coefs.push_back( 1.0 );
@@ -623,9 +623,9 @@ namespace MiniZinc {
             ) {
           si._status = SolverInstance::UNSAT;
           if ( gi.getMIPWrapper()->fVerbose )
-            cerr << "  Constraint '" << *call
+            std::cerr << "  Constraint '" << *call
             << "' seems infeasible: simplified to 0 (rel) " << rhs
-            << endl;
+            << std::endl;
         }
       } else {
         std::stringstream ss;
@@ -668,9 +668,9 @@ namespace MiniZinc {
         if ( val1>1e-6 && val2<1e-6 ) {
           si._status = SolverInstance::UNSAT;
           if ( gi.getMIPWrapper()->fVerbose )
-            cerr << "  Constraint '" << *call
+            std::cerr << "  Constraint '" << *call
             << "' seems infeasible: " << val2 << "==0 -> " << val1 << "<=0"
-            << endl;
+            << std::endl;
         }
       } else if ( f1const ) {
         if ( val1>1e-6 ) // so  var2==1
@@ -692,8 +692,8 @@ namespace MiniZinc {
     template<class MIPWrapper>
     void p_indicator_eq_if1(SolverInstanceBase& si, const Call* call) {
       MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>( si );
-      vector<double> coefs;
-      vector<MIP_solver::Variable> vars;
+      std::vector<double> coefs;
+      std::vector<MIP_solver::Variable> vars;
       double rhs = 0.0;
       /// Looking at the bounded variables and the flag
       bool f1const=0, f2const=0, fBconst=0;
@@ -728,9 +728,9 @@ namespace MiniZinc {
         if ( fabs(val1-val2)>1e-6 && val2>0.999999 ) {
           si._status = SolverInstance::UNSAT;
           if ( gi.getMIPWrapper()->fVerbose )
-            cerr << "  Constraint '" << *call
+            std::cerr << "  Constraint '" << *call
             << "' seems infeasible: " << valB << "==0 -> " << val1 << "==" << val2
-            << endl;
+            << std::endl;
         }
       } else if ( f1const && f2const ) {
         if ( fabs(val1-val2)>1e-6 ) // so  varB=0
@@ -758,7 +758,7 @@ namespace MiniZinc {
       Env& _env = gi.env();
       
       //     auto pCG = make_unique<XBZCutGen>();
-      unique_ptr<XBZCutGen> pCG( new XBZCutGen( gi.getMIPWrapper() ) );
+      std::unique_ptr<XBZCutGen> pCG( new XBZCutGen( gi.getMIPWrapper() ) );
       
       assert( call->n_args()==3 );
       gi.exprToVarArray(call->arg(0), pCG->varX);

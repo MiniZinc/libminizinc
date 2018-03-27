@@ -798,3 +798,4 @@ void MIP_cplex_wrapper::setObjSense(int s)
   wrap_assert(!status, "Failed to set obj sense.");
 }
 
+

@@ -46,13 +46,6 @@ namespace MiniZinc {
   /// An instance of SolverFactory's descendant can be created directly
   /// or by one of the specialized createF_...() functions
   class SolverFactory {
-  public:
-    /// Specialized factory creation funcs, defined in the
-    /// solver instance modules
-    static SolverFactory* createF_FZN();
-    static SolverFactory* createF_GECODE();
-    static SolverFactory* createF_MIP();
-    static SolverFactory* createF_CHUFFED();
   protected:
     /// doCreateSI should be implemented to actually allocate a SolverInstance using new()
     virtual SolverInstanceBase * doCreateSI(Env&, std::ostream&) = 0;

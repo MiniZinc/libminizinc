@@ -24,11 +24,11 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
 #ifdef HAS_GUROBI_PLUGIN
     void          * gurobi_dll;
 #endif
-  int             error;
-    string          gurobi_buffer;   // [GRB_MESSAGEBUFSIZE];
-    string          gurobi_status_buffer; // [GRB_MESSAGEBUFSIZE];
+    int             error;
+    std::string          gurobi_buffer;   // [GRB_MESSAGEBUFSIZE];
+    std::string          gurobi_status_buffer; // [GRB_MESSAGEBUFSIZE];
     
-    vector<double> x;
+    std::vector<double> x;
 
   public:
 
@@ -40,21 +40,21 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
       int nMIPFocus=0;
       int nFreeSearch=1;
       int nThreads=1;
-      string sExportModel;
+      std::string sExportModel;
       double nTimeout=-1;
       long int nSolLimit = -1;
       double nWorkMemLimit=-1;
-      string sReadParams;
-      string sWriteParams;
+      std::string sReadParams;
+      std::string sWriteParams;
       bool flag_all_solutions = false;
       
       double absGap=-1;
       double relGap=1e-8;
       double intTol=1e-6;
       double objDiff=1.0;
-      string sGurobiDLL;
+      std::string sGurobiDLL;
       bool processOption(int& i, int argc, const char** argv);
-      void printHelp(ostream& );
+      void printHelp(std::ostream& );
     } options;
 
     void (__stdcall *dll_GRBversion) (int*, int*, int*);
@@ -139,8 +139,8 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     MIP_gurobi_wrapper( int ) { }
     virtual ~MIP_gurobi_wrapper() { closeGUROBI(); }
 
-    static string getVersion(void);
-    static string getId(void);
+    static std::string getVersion(void);
+    static std::string getId(void);
 //       Statistics& getStatistics() { return _statistics; }
 
 //      IloConstraintArray *userCuts, *lazyConstraints;
@@ -154,13 +154,13 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     
     /// actual adding new variables to the solver
     virtual void doAddVars(size_t n, double *obj, double *lb, double *ub,
-      VarType *vt, string *names);
+      VarType *vt, std::string *names);
 
     /// adding a linear constraint
     virtual void addRow(int nnz, int *rmatind, double* rmatval,
                         LinConType sense, double rhs,
                         int mask = MaskConsType_Normal,
-                        string rowName = "");
+                        std::string rowName = "");
     virtual void setVarBounds( int iVar, double lb, double ub );
     virtual void setVarLB( int iVar, double lb );
     virtual void setVarUB( int iVar, double ub );
@@ -201,7 +201,7 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     virtual double getCPUTime() { return output.dCPUTime; }
     
     virtual Status getStatus()  { return output.status; }
-    virtual string getStatusName() { return output.statusName; }
+    virtual std::string getStatusName() { return output.statusName; }
 
      virtual int getNNodes() { return output.nNodes; }
      virtual int getNOpen() { return output.nOpenNodes; }
@@ -210,7 +210,7 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
 //     virtual double getTime() = 0;
     
   protected:
-    void wrap_assert(bool , string , bool fTerm=true);
+    void wrap_assert(bool , std::string , bool fTerm=true);
     
     /// Need to consider the 100 status codes in GUROBI and change with every version? TODO
     Status convertStatus(int gurobiStatus);

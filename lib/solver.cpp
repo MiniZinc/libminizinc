@@ -189,11 +189,11 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
     if (string(argv[i])=="--solver") {
       ++i;
       if (i==argc) {
-        cerr << "Argument required for --solver" << endl;
+        log << "Argument required for --solver" << endl;
         return false;
       }
       if (solver.size()>0) {
-        cerr << "Only one --solver option allowed" << endl;
+        log << "Only one --solver option allowed" << endl;
         return false;
       }
       solver = argv[i];
@@ -232,7 +232,7 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
               int i=0;
               bool success = sf->processOption(i, 2, additionalArgs);
               if (!success) {
-                cerr << "Solver backend " << solverId << " does not recognise option -f." << endl;
+                log << "Solver backend " << solverId << " does not recognise option -f." << endl;
                 return false;
               }
             }
@@ -243,7 +243,7 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
                 additionalArgs[0] = mznlib.c_str();
                 int i=0;
                 if (!flt.processOption(i, 1, additionalArgs)) {
-                  cerr << "Flattener does not recognise option " << sc.mznlib() << endl;
+                  log << "Flattener does not recognise option " << sc.mznlib() << endl;
                   return false;
                 }
               } else {
@@ -253,7 +253,7 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
                 additionalArgs[1] = mznlib.c_str();
                 int i=0;
                 if (!flt.processOption(i, 2, additionalArgs)) {
-                  cerr << "Flattener does not recognise option -I." << endl;
+                  log << "Flattener does not recognise option -I." << endl;
                   return false;
                 }
               }
@@ -263,13 +263,13 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
         }
         
       } catch (ConfigException& e) {
-        cerr << "Config exception: " << e.what() << endl;
+        log << "Config exception: " << e.what() << endl;
         return false;
       }
     }
     
     if (sf==NULL) {
-      cerr << "Solver " << solver << " not found." << endl;
+      log << "Solver " << solver << " not found." << endl;
       return false;
     }
   }

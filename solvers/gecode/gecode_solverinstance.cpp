@@ -26,16 +26,15 @@ namespace MiniZinc {
   class Gecode_SolverFactory: public SolverFactory {
     Options _options;
   public:
-    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log) {
-      return new GecodeSolverInstance(env, log, _options);
-    }
-    string getVersion( );
+    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log);
+    std::string getVersion( );
+    std::string getId( ) { return "org.minizinc.gecode"; }
     bool processOption(int& i, int argc, const char** argv);
     void printHelp(std::ostream& os);
   };
-  
-  SolverFactory* SolverFactory::createF_GECODE() {
-    return new Gecode_SolverFactory;
+
+  SolverInstanceBase* Gecode_SolverFactory::doCreateSI(Env& env, std::ostream& log) {
+    return new GecodeSolverInstance(env, log, _options);
   }
 
   string Gecode_SolverFactory::getVersion()
@@ -44,6 +43,10 @@ namespace MiniZinc {
     return v;
   }
 
+  namespace {
+    Gecode_SolverFactory _gecode_solver_factory;
+  }
+  
   bool Gecode_SolverFactory::processOption(int& i, int argc, const char** argv)
   {
     if (string(argv[i])=="--allow-unbounded-vars") {
