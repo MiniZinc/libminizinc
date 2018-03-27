@@ -246,7 +246,7 @@ void Solns2Out::checkSolution(std::ostream& os) {
   MznSolver slv(oss_err,oss_err,false);
   slv.s2out._opt.solution_separator = "";
   try {
-    std::vector<std::string> args({"--solver","org.minizinc.gecode","-"});
+    std::vector<std::string> args({"","--solver","org.minizinc.gecode","-"});
     int argc = args.size();
     std::vector<const char*> argv(argc);
     for (unsigned int i=0; i<args.size(); i++)
