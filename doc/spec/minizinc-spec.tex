@@ -55,13 +55,16 @@
 \title{\textbf{Specification of MiniZinc}}
 
 \author{The MiniZinc Team\\[2ex]
-NICTA, Victoria Research Lab, Melbourne, Australia}
+Data61/CSIRO\\
+Monash University\\
+The University of Melbourne\\
+Melbourne, Australia}
 
 % Original authors:
 % Nicholas Nethercote, Kim Marriott, Reza Rafeh, Mark Wallace
 % and Maria Garcia de la Banda
 
-\date{November 2015\\
+\date{November 2016\\
 {\small (MiniZinc version \mznversion)}}
 
 \sloppy
@@ -119,11 +122,7 @@ NICTA, Victoria Research Lab, Melbourne, Australia}
 }
 \newcommand{\RuleEnumCases}{
 \production{enum-cases}
-    \curlies{\commas{\nt{enum-case}}}
-}
-\newcommand{\RuleEnumCase}{
-\production{enum-case}
-    \nt{ident} \maybe{\parens{\commas{\nt{ti-expr-and-id}}}}
+    \curlies{\commas{\nt{ident}}}
 }
 
 \newcommand{\RuleIncludeItem}{
@@ -537,6 +536,7 @@ NICTA, Victoria Research Lab, Melbourne, Australia}
 \newcommand{\RuleIdent}{
 \production{ident}
     \regexp{[A-Za-z][A-Za-z0-9\n{}]*}  \quad\% excluding keywords
+\alt\term{'}\regexp{[\textasciicircum '\textbackslash xa\textbackslash xd\textbackslash x0]*}\term{'}
 }
 
 \newcommand{\RuleIdentOrQuotedOp}{
@@ -633,8 +633,8 @@ language.  It provides:
 \item support for different kinds of problems (satisfaction, explicit
       optimisation);
 \item separation of data from model;
-%\item high-level data structures and data encapsulation (sets,
-%      arrays, tuples, records, enumerated types, constrained type-insts);
+\item high-level data structures and data encapsulation (sets,
+      arrays, enumerated types, constrained type-insts);
 \item extensibility (user-defined functions and predicates);
 \item reliability (type checking, instantiation checking, assertions);
 \item solver-independent modelling;
@@ -781,7 +781,7 @@ If there are no solutions in the output,
 the outcome must indicate that there are no solutions.
 
 If the search is complete the output may state this after the solutions.
-The absence of the completness message indicates that the search is incomplete.
+The absence of the completeness message indicates that the search is incomplete.
 
 Any warnings produced during run-time must be summarised
 after the statement of completeness.
@@ -826,7 +826,7 @@ Solutions end with a sequence of ten dashes followed by a newline.
 \end{productions}
 
 \noindent
-The completness result is printed on a separate line.
+The completeness result is printed on a separate line.
 \Rationale{The strings are designed to clearly indicate
 the end of the solutions.}
 
@@ -889,6 +889,7 @@ For example:
 \begin{verbatim}
     my_name_2
     MyName2
+    'An arbitrary identifier'
 \end{verbatim}
 A number of keywords are reserved and cannot be used as identifiers.  The
 keywords are:
@@ -1005,7 +1006,7 @@ It includes the following names.
 \item All function and predicate names, both built-in and user-defined.
 %\item All user-defined type and type-inst names (type-inst synonyms and
 %      enumerated types).
-%\item All enum case names.
+\item All enumerated type names and enum case names.
 \item All annotation names.
 \end{enumerate}
 
@@ -1046,7 +1047,7 @@ names declared in the local scope overshadow identical global names.
   \label{Types}
 %===========================================================================%
 MiniZinc provides four scalar built-in types:  Booleans, integers, floats, and
-strings;  several compound built-in types:  sets, multi-dimensional arrays;
+strings; enumerated types; two compound built-in types:  sets and multi-dimensional arrays;
 %with arbitrary index types, tuples, and records;  and three kinds of
 %user-defined annotation types: type-inst synonyms, enumerated types, and \texttt{ann},
 %a user-extensible type that represents annotations.  
@@ -1142,7 +1143,7 @@ For example, \texttt{par int} is varified to \texttt{var int}.  We write this
 \varify{\texttt{par int}}{\texttt{var int}}.
 
 Type-insts that are varifiable include the type-insts of the types that can
-be decision variables (Booleans, integers, floats, sets).
+be decision variables (Booleans, integers, floats, sets, enumerated types).
 %, enumerated types), and also tuples and records, 
 %if their constituent elements can be varified.
 Varification is relevant to %type-inst synonyms and 
@@ -1368,6 +1369,45 @@ float variable need not be.
 \coerce{\texttt{par float}}{\texttt{var float}}.
 
 %---------------------------------------------------------------------------%
+\subsubsection{Enumerated Types}
+        \label{Enumerated Types}
+%---------------------------------------------------------------------------%
+\TyOverview
+Enumerated types (or \emph{enums} for short) provide a set of named
+alternatives. Each alternative is identified by its \emph{case name}.
+Enumerated types, like in many other languages, can be used in the place of
+integer types to achieve stricter type checking.
+
+\TyInsts
+Enums can be fixed or unfixed.
+
+\TySyntax
+Variables of an enumerated type named ``X'' are represented by the term
+\texttt{X} or \texttt{par X} if fixed, and \texttt{var X}
+if unfixed.
+
+\TyFiniteType
+Yes.
+
+The domain of an enum is the set containing all of its case names.
+
+\TyVarifiable
+\varify{\texttt{par X}}{\texttt{var X}},
+\varify{\texttt{var X}}{\texttt{var X}}.
+
+\TyOrdering
+When two enum values with different case names are compared, the value with
+the case name that is declared first is considered smaller than the value
+with the case name that is declared second.
+
+\TyInit
+A fixed enum variable must be initialised at instance-time; an unfixed
+enum variable need not be.
+
+\TyCoercions
+\coerce{\texttt{par X}}{\texttt{par int}}, \coerce{\texttt{var X}}{\texttt{var int}}.
+
+%---------------------------------------------------------------------------%
 \subsubsection{Strings}
 %---------------------------------------------------------------------------%
 \TyOverview
@@ -1496,13 +1536,9 @@ Values can be of any type.
 %they act like associative arrays.  Using floats or types containing floats
 %as keys can be dangerous because of their imprecise equality comparison, and
 %an implementation may give a warning in this case.  
-The values can have only have base type-insts.  
+The values can only have base type-insts.  
 Arrays-of-arrays are not allowed.
-
-All arrays are one-dimensional.  
-However, multi-dimensional arrays can be
-simulated using a tuple as the index, and there is some syntactic sugar to
-make this easier (see below and in Section~\ref{Array Access Expressions}).
+Arrays can be multi-dimensional.
 
 MiniZinc arrays can be declared in two different ways.
 \begin{enumerate}
@@ -1511,6 +1547,7 @@ MiniZinc arrays can be declared in two different ways.
     that are finite types.  For example:
 \begin{verbatim}
   array[0..3] of int: a1;
+  array[1..5, 1..10] of var float: a5;
 \end{verbatim}
     For such arrays, the index type specifies exactly the indices that will
     be in the array---the array's index set is the \emph{domain} of the
@@ -1519,18 +1556,33 @@ MiniZinc arrays can be declared in two different ways.
 
     For example, the following assignments cause run-time errors:
 \begin{verbatim}
-  a1 = [4,6,4,3,2];                          % too many elements
-  array[1..5, 1..10] of var float: a5 = [];  % too few elements
+  a1 = [4,6,4,3,2];   % too many elements
+  a5 = [];            % too few elements
 \end{verbatim}
 
 \item
     \emph{Implicitly-indexed} arrays have index types in the declaration
     that are not finite types.  For example:
 \begin{verbatim}
-  array[int] of int: a6;
+  array[int,int] of int: a6;
 \end{verbatim}
     No checking of indices occurs when these variables are assigned.
 \end{enumerate}
+
+In MiniZinc all index sets of an array must be contiguous ranges of integers, or enumerated types. The expression used for initialisation of
+an array must have matching index sets. An array expression with an enum
+index set can be assigned to an array declared with an integer index set,
+but not the other way around. The exception are array literals, which can
+be assigned to arrays declared with enum index sets.
+For example:
+\begin{verbatim}
+  enum X = {A,B,C};
+  enum Y = {D,E,F};
+  array[X] of int: x = array1d(X, [5,6,7]); % correct
+  array[Y] of int: y = x;                   % index set mismatch: Y != X
+  array[int] of int: z = x;                 % correct: assign X index set to int
+  array[X] of int: x2 = [10,11,12];         % correct: automatic coercion for array literals
+\end{verbatim}
 
 The initialisation of an array can be done in a separate assignment
 statement, which may be present in the model or a separate data file.
@@ -1605,9 +1657,8 @@ so that its length and index set is known.
 %This is handy for initialisation but seems a bit dangerous.
 %This means that elements of fixed sets can be accessed like array elements,
 %using square brackets.
-\coerce{\texttt{array[TI0] of TI}}{\texttt{array[TI0] of UI}}
-if \coerce{\texttt{TI}}{\texttt{UI}} (i.e.\ coercion of the element type
-but not the index type).
+\coerce{\texttt{array[TI0] of TI}}{\texttt{array[UI0] of UI}}
+if \coerce{\texttt{TI}}{\texttt{UI}} and \coerce{\texttt{TI0}}{\texttt{UI0}}.
 
 \ignore{
 %---------------------------------------------------------------------------%
@@ -1793,73 +1844,6 @@ As for the pre-existing type-inst.
 
 \TyCoercions
 As for the pre-existing type-inst.
-
-%---------------------------------------------------------------------------%
-\subsubsection{Enumerated Types}
-        \label{Enumerated Types}
-%---------------------------------------------------------------------------%
-\TyOverview
-Enumerated types (or \emph{enums} for short) provide a set of named
-alternatives.  Unlike many languages, Zinc's enumerated types can have
-arguments, and each argument has a field name, so they are more like
-discriminated unions.  However, they cannot be recursive.
-\Rationale{This restriction naturally follows from the decision to disallow
-recursive functions and predicates (see Section~\ref{Basic Properties}).
-Without such capabilities, recursive data structures are of little use as
-there is no general way to traverse them.}
-
-We distinguish between \emph{flat} enums, in which all the alternatives have
-no arguments, and \emph{non-flat} enums, in which some or all alternatives
-have arguments.  Each alternative is identified by its \emph{case name}.
-
-\TyInsts
-Flat enums can be fixed or unfixed.  Non-flat enums cannot be preceded by
-\texttt{var}, but they may contain unfixed elements.
-
-\TySyntax
-Variables of an enumerated type named ``X'' are represented by the term
-\texttt{X} or \texttt{par X} if fixed, and (flat enums only) \texttt{var X}
-if unfixed.
-
-\TyFiniteType
-If flat, yes.  If non-flat, only if all its constituent elements (in all
-alternatives) are finite types;  otherwise, no.
-
-The domain of a flat enum is the set containing all of its case names.  The
-domain of a non-flat enum is the set containing all the possible values of that
-enum.  For example, these two enums:
-\begin{verbatim}
-  enum C = { R, G, B };
-  enum X = { a(1..3:x), b(bool:y), c };
-\end{verbatim}
-have these domains:
-\begin{verbatim}
-  { R, G, B }
-  { a(x:1), a(x:2), a(x:3), b(y:false), b(y:true), c }
-\end{verbatim}
-
-\TyVarifiable
-For flat enums:
-\varify{\texttt{par X}}{\texttt{var X}},
-\varify{\texttt{var X}}{\texttt{var X}}.
-
-For non-flat enums: no.
-
-\TyOrdering
-When two enum values with different case names are compared, the value with
-the case name that is declared first is considered smaller than the value
-with the case name that is declared second.  If the case names are the same,
-the ordering is lexicographic on the case arguments (if there are any).
-
-\TyInit
-A fixed flat enum variable must be initialised at instance-time;  an unfixed
-flat enum variable need not be.
-
-A non-flat enum variable must be initialised at instance-time.
-
-\TyCoercions
-For flat enums:
-\coerce{\texttt{par X}}{\texttt{var X}}.  For non-flat enums: none.
 }
 
 %---------------------------------------------------------------------------%
@@ -1869,7 +1853,7 @@ For flat enums:
 \TyOverview
 Option types defined using the \texttt{opt} type constructor, define types
 that may or may not be there. They are similar to \texttt{Maybe} types of
-Haskell implicity adding a new value \texttt{<>} to the type.
+Haskell implicitly adding a new value \texttt{<>} to the type.
 
 
 \TyInsts
@@ -1877,7 +1861,7 @@ The argument of an option type must be one of the base types
 \texttt{bool}, \texttt{int} or \texttt{float}.
 
 \TySyntax
-The annotation type is written \texttt{opt <T>} where \texttt{<T>} if one of
+The option type is written \texttt{opt <T>} where \texttt{<T>} if one of
 the three base types, or one of their constrained instances.
 
 \TyFiniteType
@@ -1892,11 +1876,11 @@ But beware that overloading of operators like \texttt{<} is different for
 option types.
 
 \TyInit
-A fixed \texttt{opt} type variable must be initialised at instance-time,
-a variable \texttt{opt} type variable need not be.
+An \texttt{opt} type variable does not need to be initialised at instance-time. An uninitialised \texttt{opt} type variable is automatically
+initialised to \texttt{<>}.
 
 \TyCoercions
-None.
+\coerce{\texttt{TI}}{\texttt{opt UI}} if \coerce{\texttt{TI}}{\texttt{UI}}.
 
 %---------------------------------------------------------------------------%
 \subsubsection{The Annotation Type \texttt{ann}}
@@ -2251,8 +2235,8 @@ Again, we syntactically distinguish numeric operators.
     \RuleBuiltinNumUnOp
 \end{productions}
 
-% \pjs{Where do we seay something about the unicode versions of these?}
-Some operators can be written using their unicode symbols, which are listed in Table~\ref{bin-ops-unicode} (recall that MiniZinc input is UTF-8).
+% \pjs{Where do we say something about the Unicode versions of these?}
+Some operators can be written using their Unicode symbols, which are listed in Table~\ref{bin-ops-unicode} (recall that MiniZinc input is UTF-8).
 
 \begin{table}[t]
 \centering
@@ -2660,7 +2644,7 @@ For example:
    var int x;
    array[int] of var opt int: y = [ i | i in 1..10 where i != x ];
 \end{verbatim}
-The length of the array wtill be 10.
+The length of the array will be 10.
 
 The indices of an evaluated simple array comprehension are implicitly
 $1..n$, where $n$ is the length of the evaluated comprehension.
@@ -2719,6 +2703,15 @@ are accessed using comma separated indices.
 \begin{verbatim}
     array[1..3,1..3] of int: a3;
     int: y = a3[1, 2];
+\end{verbatim}
+
+Indices must match the index set type of the array. For example, an array declared with an enum index set can only be accessed using indices from that
+enum.
+\begin{verbatim}
+    enum X = {A,B,C};
+    array[X] of int: a4 = [1,2,3];
+    int: y = a4[1];                  % wrong index type
+    int: z = a4[B];                  % correct
 \end{verbatim}
 
 %Array accesses can be chained to access arrays-of-arrays, and sub-arrays can
@@ -3111,87 +3104,6 @@ Type-inst synonym items can be annotated.
 Section~\ref{Annotations} has more details on annotations.
 
 All type-inst synonyms must be defined at model-time.
-
-%---------------------------------------------------------------------------%
-\subsection{Enum Items}
-     \label{Enum Items}
-%---------------------------------------------------------------------------%
-Enumerated type items have this syntax:
-\begin{productions}
-    \RuleEnumItem \\
-    \RuleEnumCases \\
-    \RuleEnumCase
-\end{productions}
-An example of a flat enum:
-\begin{verbatim}
-     enum country = {Australia, Canada, China, England, USA};
-\end{verbatim}
-
-An example of a non-flat enum:
-\label{multipoint}
-\begin{verbatim}
-    enum multi_point = {
-        int_point(int: ix, int: iy),
-        float_point(float: fx, float: fy)
-    };
-\end{verbatim}
-
-Each alternative is called an \emph{enum case}.  The identifier used to name
-each case (e.g.~\texttt{Australia} and \texttt{float\n{}point}) is
-called the \emph{enum case name}.
-
-Enums can be constrained by using a type-inst synonym
-(Section~\ref{Type-inst Synonym Items}) and a case expression
-(Section~\ref{Case Expressions}).  For example:
-\begin{verbatim}
-    type multi_point2 =
-        (multi_point: p where case p { int_point   --> p.ix > p.iy,
-                                       float_point --> p.fx > p.fy });
-\end{verbatim}
-
-Because enum case names all reside in the top-level namespace
-(Section~\ref{Namespaces}), case names in different enums must be distinct.
-As for field names in non-flat enums, all field names in a single enum must
-be distinct to avoid possible ambiguities.
-
-An enum can be declared but not defined, in which case it must be defined
-elsewhere.  For non-flat enums, ``elsewhere'' must be within the model.
-For flat enums, ``elsewhere'' must be within the model, or in a data file.
-For example, a model file could contain this:
-\begin{verbatim}
-    enum Workers;
-    enum Shifts;
-\end{verbatim}
-and the data file could contain this:
-\begin{verbatim}
-    enum Workers = { welder, driller, stamper };
-    enum Shifts  = { idle, day, night };
-\end{verbatim}
-Sometimes it is useful to be able to refer to one of the enum case names
-within the model.  This can be achieved by using a variable.  The model
-would read:
-\begin{verbatim}
-    enum Shifts;
-    Shifts idle;            % Variable representing the idle constant.
-\end{verbatim}
-and the data file:
-\begin{verbatim}
-    enum Shifts = { idle_const, day, night };
-    idle = idle_const;      % Assignment to the variable.
-\end{verbatim}
-Although the constant \texttt{idle\n{}const} cannot be mentioned in the
-model, the variable \texttt{idle} can be.
-
-All enums must be defined at instance-time.
-
-Enum items can be annotated.
-Section~\ref{Annotations} has more details on annotations.
-
-% For each enumerated type $T$ MiniZinc automatically creates the function
-% \begin{verbatim}
-%     toInt(T):int
-% \end{verbatim}
-% which maps elements to their index in $T$.
 }
 
 %---------------------------------------------------------------------------%
@@ -3248,6 +3160,86 @@ instance-time.
 
 Variables can have one or more annotations.
 Section~\ref{Annotations} has more on annotations.
+
+%---------------------------------------------------------------------------%
+\subsection{Enum Items}
+     \label{Enum Items}
+%---------------------------------------------------------------------------%
+Enumerated type items have this syntax:
+\begin{productions}
+    \RuleEnumItem \\
+    \RuleEnumCases
+\end{productions}
+An example of an enum:
+\begin{verbatim}
+     enum country = {Australia, Canada, China, England, USA};
+\end{verbatim}
+
+Each alternative is called an \emph{enum case}.  The identifier used to name
+each case (e.g.~\texttt{Australia}) is
+called the \emph{enum case name}.
+
+Because enum case names all reside in the top-level namespace
+(Section~\ref{Namespaces}), case names in different enums must be distinct.
+
+An enum can be declared but not defined, in which case it must be defined
+elsewhere within the model, or in a data file.
+For example, a model file could contain this:
+\begin{verbatim}
+    enum Workers;
+    enum Shifts;
+\end{verbatim}
+and the data file could contain this:
+\begin{verbatim}
+    Workers = { welder, driller, stamper };
+    Shifts  = { idle, day, night };
+\end{verbatim}
+Sometimes it is useful to be able to refer to one of the enum case names
+within the model.  This can be achieved by using a variable.  The model
+would read:
+\begin{verbatim}
+    enum Shifts;
+    Shifts: idle;            % Variable representing the idle constant.
+\end{verbatim}
+and the data file:
+\begin{verbatim}
+    enum Shifts = { idle_const, day, night };
+    idle = idle_const;      % Assignment to the variable.
+\end{verbatim}
+Although the constant \texttt{idle\n{}const} cannot be mentioned in the
+model, the variable \texttt{idle} can be.
+
+All enums must be defined at instance-time.
+
+Enum items can be annotated.
+Section~\ref{Annotations} has more details on annotations.
+
+Each case name can be coerced automatically to the integer corresponding to its index in the type.
+\begin{verbatim}
+  int: oz = Australia;  % oz = 1
+\end{verbatim}
+
+For each enumerated type $T$, the following functions exist:
+
+\begin{verbatim}
+  % Return next greater enum value of x in enum type X
+  function T: enum_next(set of T: X, T: x);
+  function var T: enum_next(set of T: X, var T: x);
+  
+  % Return next smaller enum value of x in enum type X
+  function T: enum_prev(set of T: X, T: x);
+  function var T: enum_prev(set of T: X, var T: x);
+
+  % Convert x to enum type X
+  function T: to_enum(set of T: X, int: x);
+  function var T: to_enum(set of T: X, var int: x);
+\end{verbatim}
+
+% For each enumerated type $T$ MiniZinc automatically creates the function
+% \begin{verbatim}
+%     toInt(T):int
+% \end{verbatim}
+% which maps elements to their index in $T$.
 
 %---------------------------------------------------------------------------%
 \subsection{Assignment Items}
@@ -3339,7 +3331,8 @@ can be composed using the built-in operator \texttt{++}
 and the built-in functions \texttt{show}, \texttt{show\_int}, and
 \texttt{show\_float} 
 (Appendix~\ref{builtins}).
-The output is the concatenation of the elements of the array.
+The output is the concatenation of the elements of the array. If multiple output items exist, the output is the concatenation of all of their outputs,
+in the order in which they appear in the model.
 
 If no output item is present,
 the implementation should print all the global variables and their values
@@ -3415,7 +3408,7 @@ Predicate declarations that are natively supported
 in MiniZinc are restricted to using FlatZinc
 types (for instance, multi-dimensional and non-1-based arrays are
 forbidden).
-% \pjs{need to fix this if we allow2d arrays in FlatZinc!}
+% \pjs{need to fix this if we allow 2d arrays in FlatZinc!}
 
 Declarations for user-defined operations can be annotated.
 Section~\ref{Annotations} has more details on annotations.
@@ -3429,7 +3422,7 @@ item'' and ``predicate item'' can be used.
 The return type-inst of a test item is implicitly \texttt{par bool}.  The
 return type-inst of a predicate item is implicitly \texttt{var bool}.
 
-% \pjs{Can predicates and functionsbe recursive now?}
+% \pjs{Can predicates and functions be recursive now?}
 Predicates and functions are allowed to be recursive. Termination of
 a recursive function call depends solely on its fixed arguments, i.e., 
 recursive functions and predicates cannot be used to define recursively 
@@ -3639,7 +3632,7 @@ language.  Annotations do not change the meaning of a model, however, only
 how it is solved.
 
 Annotations can be attached to variables (on their declarations),
-expresssions, type-inst synonyms, enum items, solve items and on user
+expressions, type-inst synonyms, enum items, solve items and on user
 defined operations.
 They have the following syntax:
 %\comment{pjs}{
@@ -4483,7 +4476,7 @@ The number of digits to appear after the decimal point is given by
 the second argument.
 It is a run-time error for the second argument to be negative.
 If the third argument is not fixed, the form of the string is
-implemenation-dependent.
+implementation-dependent.
 \begin{verbatim}
   string: show_float(int, int, var float)
 \end{verbatim}
@@ -4504,8 +4497,8 @@ efficiently.
 \end{verbatim}
 
 \builtin{}
-Concatenate an array of strings, putting a seperator beween adjacent strings.
-Returns the the empty string if the array is empty.
+Concatenate an array of strings, putting a separator between adjacent strings.
+Returns the empty string if the array is empty.
 \begin{verbatim}
    string: join(string, array[$T] of string)
 \end{verbatim}
@@ -5154,6 +5147,42 @@ as described in Section~\ref{Output Items}.
 A newline must be appended if the solution text does not end with a newline.
 
 %-----------------------------------------------------------------------------%
+
+%=============================================================================%
+\clearpage
+\section{JSON support}
+  \label{json}
+%=============================================================================%
+
+MiniZinc can support reading input parameters and providing output formatted
+as JSON objects. A JSON input file needs to have the following structure:
+
+\begin{itemize}
+  \item Consist of a single top-level object
+  \item The members of the object (the key-value pairs) represent model parameters
+  \item Each member key must be a valid MiniZinc identifier (and it supplies the value for the corresponding parameter of the model)
+  \item Each member value can be one of the following:
+  \begin{itemize}
+    \item A string (assigned to a MiniZinc string parameter)
+    \item A number (assigned to a MiniZinc int or float parameter)
+    \item The values \texttt{true} or \texttt{false} (assigned to a MiniZinc bool parameter)
+    \item An array of values. Arrays of arrays are supported only if all inner arrays are of the same length, so that they can be mapped to multi-dimensional MiniZinc arrays.
+    \item A set of values encoded as an object with a single member with key \verb|"set"| and a list of values (the elements of the set).
+  \end{itemize}
+\end{itemize}
+
+This is an example of a JSON parameter file using all of the above features:
+
+\begin{verbatim}
+    {
+      "n" : 3,
+      "distances" : [ [1,2,3],
+                      [4,5,6]],
+      "patterns"  : [ {"set" : [1,3,5]}, {"set" : [2,4,6]} ]
+    }
+\end{verbatim}
+
+The first parameter declares a simple integer \texttt{n}. The \texttt{distances} parameter is a two-dimensional array; note that all inner arrays must be of the same size in order to map to a (rectangular) MiniZinc two-dimensional array. The third parameter is an array of sets of integers.
 
 \end{document}
 

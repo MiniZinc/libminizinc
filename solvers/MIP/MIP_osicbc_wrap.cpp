@@ -37,12 +37,8 @@ using namespace std;
 
 #define WANT_SOLUTION
 
-/// Linking this module provides these functions:
-MIP_wrapper* MIP_WrapperFactory::GetDefaultMIPWrapper() {
-  return new MIP_osicbc_wrapper;
-}
 
-string MIP_WrapperFactory::getVersion( ) {
+string MIP_osicbc_wrapper::getVersion( ) {
   string v = "  MIP wrapper for OSICBC ";
   v += CBC_VERSION;                     // E.g., 2.9 stable or 2.9.7 latest release
   v += ",  using CLP ";
@@ -51,7 +47,7 @@ string MIP_WrapperFactory::getVersion( ) {
   return v;
 }
 
-void MIP_WrapperFactory::printHelp(ostream& os) {
+void MIP_osicbc_wrapper::Options::printHelp(ostream& os) {
   os
   << "OSICBC MIP wrapper options:" << std::endl
   // -s                  print statistics
@@ -64,7 +60,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
   << "--writeModel <file>   write model to <file> (.mps)" << std::endl
   << "-a, --all             print intermediate solutions for optimization problems\n"
      "      (not from FeasPump. Can be slow.)" << std::endl
-//   << "-p <N>              use N threads, default: 1" << std::endl
+   << "-p <N>              use N threads, default: 1. CBC should be configured with --enable-cbc-parallel" << std::endl
 //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
   << "--timeout <N>         stop search after N seconds" << std::endl
 //   << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
@@ -72,8 +68,8 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
 //   << "--writeParam <file> write OSICBC parameters to file" << std::endl
 //   << "--tuneParam         instruct OSICBC to tune parameters instead of solving   NOT IMPL"
 
-  << "--absGap <n>        absolute gap |primal-dual| to stop. Default 0.99" << std::endl
-  << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8" << std::endl
+  << "--absGap <n>        absolute gap |primal-dual| to stop" << std::endl
+  << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
   << "--intTol <n>        integrality tolerance for a variable. Default 1e-6" << std::endl
 //   << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
@@ -84,23 +80,7 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
     return s.compare(0, t.length(), t)==0;
   }
 
-            /// SOLVER PARAMS ????
- static   int nThreads=1;
- static   string sExportModel;
- static   double nTimeout=-1;
- static   double nWorkMemLimit=-1;
- static   string sReadParams;
- static   string sWriteParams;
- static   bool flag_all_solutions = false;
- 
- static   string cbc_cmdOptions;
-
- static   double absGap=0.99;
- static   double relGap=1e-8;
- static   double intTol=1e-6;
- static   double objDiff=1.0;
-
-bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
+bool MIP_osicbc_wrapper::Options::processOption(int& i, int argc, const char** argv) {
   MiniZinc::CLOParser cop( i, argc, argv );
   if ( string(argv[i])=="-a"
       || string(argv[i])=="--all"
@@ -420,10 +400,10 @@ MyEventHandler3::event(CbcEvent whichEvent)
       
       // Trying to obtain solution for the original model:
       assert( model_ && model_->solver() );
-      double objOffset=0;
-      model_->solver()->getDblParam(OsiObjOffset, objOffset);
-      double objVal = (model_->getObjValue() - objOffset);
-      double bestBnd = (model_->getBestPossibleObjValue() - objOffset);
+      // double objOffset=0;
+      // model_->solver()->getDblParam(OsiObjOffset, objOffset);
+      double objVal = (model_->getObjValue() );  //- objOffset);   John Forrest suggested to remove, 17.11.17
+      double bestBnd = (model_->getBestPossibleObjValue() );  //- objOffset);
       if ( 0!=cbcPreProcessPointer ) {
         if ( OsiSolverInterface* cbcPreOrig = cbcPreProcessPointer->originalModel() ) {
           objVal *= cbcPreOrig->getObjSense();
@@ -657,6 +637,8 @@ MIP_osicbc_wrapper::Status MIP_osicbc_wrapper::convertStatus()
 
 
 void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
+  if ( options.flag_all_solutions && 0==nProbType )
+    cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
   try {
     /// Not using CoinPackedMatrix any more, so need to add all constraints at once:
     /// But this gives segf:
@@ -692,13 +674,13 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
       }
       osi.setInteger(integer_vars.data(), integer_vars.size());
     }
-    if(sExportModel.size()) {
+    if(options.sExportModel.size()) {
       // Not implemented for OsiClp:
 //       osi.setColNames(colNames, 0, colObj.size(), 0);
       vector<const char*> colN(colObj.size());
       for (int j=0; j<colNames.size(); ++j)
         colN[j] = colNames[j].c_str();
-      osi.writeMpsNative(sExportModel.c_str(), 0, colN.data());
+      osi.writeMpsNative(options.sExportModel.c_str(), 0, colN.data());
     }
     
     // Tell solver to return fast if presolve or initial solve infeasible
@@ -734,10 +716,12 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 #endif
 //     CbcSolver control(osi);
 //     control.solve();
-    
-    model.setAllowableGap( absGap );
-    model.setAllowableFractionGap( relGap );
-    model.setIntegerTolerance( intTol );
+    if ( options.absGap>=0.0 )
+      model.setAllowableGap( options.absGap );
+    if ( options.relGap>=0.0 )
+      model.setAllowableFractionGap( options.relGap );
+    if ( options.intTol>=0.0 )
+      model.setIntegerTolerance( options.intTol );
 //     model.setCutoffIncrement( objDiff );
     
     CoinMessageHandler msgStderr(stderr);
@@ -771,9 +755,9 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //       osi.setHintParam(OsiDoReducePrint, true, OsiHintTry);
     }
 
-    if(nTimeout > 0.0) {
+    if(options.nTimeout > 0.0) {
 //       osi.setMaximumSeconds(nTimeout);
-      model.setMaximumSeconds(nTimeout);
+      model.setMaximumSeconds(options.nTimeout);
     }
 
    /// TODO
@@ -789,7 +773,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //    output.x = &x[0];
 
 #ifdef WANT_SOLUTION
-   if (flag_all_solutions && cbui.solcbfn) {
+   if (options.flag_all_solutions && cbui.solcbfn) {
      // Event handler. Should be after CbcMain0()?
      EventUserInfo ui;
      ui.pCbui = &cbui;
@@ -799,8 +783,14 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
    }
 #endif
 
-   cbc_cmdOptions += " -solve";
-   cbc_cmdOptions += " -quit";
+   if ( 1<options.nThreads ) {
+    options.cbc_cmdOptions += " -threads ";
+    ostringstream oss;
+    oss << options.nThreads;
+    options.cbc_cmdOptions += oss.str();
+   }
+   options.cbc_cmdOptions += " -solve";
+   options.cbc_cmdOptions += " -quit";
 
    output.dCPUTime = clock();
 
@@ -815,14 +805,14 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //        CbcMain1(3,argv2,model);
 #ifdef __USE_CbcSolver__
   if (fVerbose)
-    cerr << "  Calling control.solve() with options '" << cbc_cmdOptions << "'..." << endl;
-  control.solve (cbc_cmdOptions.c_str(), 1);
+    cerr << "  Calling control.solve() with options '" << options.cbc_cmdOptions << "'..." << endl;
+  control.solve (options.cbc_cmdOptions.c_str(), 1);
 #else
 #define __USE_callCbc1__
 #ifdef __USE_callCbc1__
     if (fVerbose)
-      cerr << "  Calling callCbc with options '" << cbc_cmdOptions << "'..." << endl;
-    callCbc(cbc_cmdOptions, model);
+      cerr << "  Calling callCbc with options '" << options.cbc_cmdOptions << "'..." << endl;
+    callCbc(options.cbc_cmdOptions, model);
 //     callCbc1(cbc_cmdOptions, model, callBack);
     // What is callBack() for?    TODO
 #else

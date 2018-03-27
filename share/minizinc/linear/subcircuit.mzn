@@ -54,8 +54,7 @@ predicate subcircuit(array[int] of var int: x) =
       %%% MTZ model. Note that INTEGER order vars seem better!:
       forall (i,j in S where i!=j) (
         order[i] - order[j] + n*bool2int( x[i]==j /\ i!=lastin )
-  %      + (n-3)*bool2int(x[j]==i)     %% the Desrochers & Laporte '91 term
-  %  --- strangely enough it is much worse on vrp-s2-v2-c7_vrp-v2-c7_det_ADAPT_1_INVERSE.mzn!
+        %  + (n-2)*bool2int(x[j]==i)     %% the Desrochers & Laporte '91 term
         <= n-1 ) /\
 
        % Each node that is not in is numbered after the lastin node.
@@ -63,6 +62,7 @@ predicate subcircuit(array[int] of var int: x) =
     true
 %           (not ins[i]) <-> (n == order[i])
        )
+       
     );
 
 predicate subcircuit_reif(array[int] of var int: x, var bool: b) = 

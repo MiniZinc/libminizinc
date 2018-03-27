@@ -32,7 +32,7 @@ namespace MiniZinc {
       Model* _fzn;
       Model* _ozn;
     public:
-      FZNSolverInstance(Env& env, const Options& options);
+      FZNSolverInstance(Env& env, std::ostream& log, const Options& options);
 
       ~FZNSolverInstance(void);
 

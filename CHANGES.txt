@@ -5,6 +5,212 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.1.7
+=============
+
+Changes:
+ - Improved linearisation for some element constraints.
+ - Improve performance of optimisation phase by using a queue instead of a
+   stack.
+ - Add --dll option for Gurobi backend to specify the Gurobi DLL to load.
+ - Add more defines_var annotations.
+
+Bug fixes:
+ - Fix generation of variable names in output model (sometimes could contain
+   duplicates).
+ - Fix enum type inference for array literals with empty sets as their first
+   arguments. Fixes #180.
+ - Fix incorrect simplification of float domain constraints. Fixes #159.
+ - Fix ceil builtin for float values.
+ - Add superset decomposition for solvers that do not support set variables.
+ - Fix three bugs in the garbage collector.
+ - Fix a bug in flattening that would create duplicate variables when a
+   variable declaration referred to another one in its type-inst.
+ - Fix a crash in flattening of partial functions. Fixes #187.
+ - Add missing deopt builtins for all par types.
+ - Fix output for arrays of sets of enums.
+ - Define more functions on par opt types. Fixes #188.
+ - Fix type checker to accept arrays of opt set values.
+ - Support printing of opt enum types. Fixes #189.
+ - Fix evaluation of comprehensions in recursive functions.
+ - Fix output of Gurobi backend when used in conjunction with solns2out.
+ - Fix pthread linking for mzn-cbc.
+ - Catch type error when set literal is declared that contains another set.
+
+Version 2.1.6
+=============
+
+Bug fixes:
+
+ - Fully evaluate parameters before binding formal arguments when evaluating
+   call expressions. Fixes #177.
+ - Fix incorrect simplification of Boolean constraints assigned to variables
+   that are assigned to false
+ - Fix bug in flattening of linear equations that contain the same variable on
+   both sides
+ - Fix un-trailing for let expressions, which could sometimes cause incorrect
+   code to be emitted when lets are evaluated in nested loops. Fixes #166.   
+ - Fix bug in JSON output of one-dimensional array literals
+ - Fix unification of enum type-inst variables
+
+Version 2.1.5
+=============
+
+Changes:
+ - Some improvements to the linearisation library.
+ - Make parser read multiple .mzn files correctly.
+ - Enable better bounds computation for array access expressions on
+   fixed arrays.
+ - Perform better constant folding during optimisation phase. Fixes #155.
+ - Don't rewrite pow function into multiplication in the case of power of 2.
+ - Save some memory by making certain internal data structures more compact.
+ - Improve source code location of identifiers in generator calls (should give
+   more precise error messages).
+ - Produce an error message when a comprehension attempts to iterate over an
+   infinite set.
+ - Produce better error messages for operations on infinite values (previously
+   some errors did not contain a source code location).
+ - Speed up garbage collection by pre-allocating some memory.
+
+Bug fixes:
+ - Fix range check for float literals in arrays.
+ - Fix a bug where a constraint could be removed incorrectly. Fixes #150.
+ - Include variables for dzn and json output from all included models, not
+   just the main model. Fixes #153.
+ - Produce multi-dimensional arrays in json output. Fixes #156 and #157.
+ - Remove incorrect closing bracket from json output. Fixes #154.
+ - Fix bounds computation of par int and float arrays.
+ - Don't allow var access to arrays of strings or annotations (since that would
+   require an element constraint and var string / var ann types).
+ - Introduce int2float constraints where necessary for some linearisations.
+
+Version 2.1.4
+=============
+
+Changes:
+ - Add warning for MIP solvers that do not support -a option for satisfaction
+   problems.
+ - Print introduced variable names with additional underscore to make
+   debugging FlatZinc easier. Fixes #147.
+ - Add support for pow function in linearisation library.
+ - Add support for parallel solving with CBC.
+ - Flatten top-level conjunctions in the order defined in the model.
+
+Bug fixes:
+ - Fix a garbage collection bug that could cause dangling pointers when
+   expressions were copied.
+ - Fix type checker to allow empty arrays to be assigned to variables
+   declared as arrays of enums.
+ - Fix infeasibility check in MIP translation for some inequality constraints.
+ - Improved defines_var annotations for reified xor constraints. Fixes #146.
+ - Fix output of empty integer sets and deal with empty arrays in output models.
+ - Fix MIP translation when boolean variables were removed due to aliasing.
+ - Improve corner cases for linearisation of cumulative constraint.
+ - Properly report undefinedness in par bool expressions.
+ - Enable some additional constant folding during flattening. Fixes #149.
+
+Version 2.1.3
+=============
+
+Changes:
+ - Remove more internal annotations from the generated FlatZinc.
+ - Detect failure earlier if optimisation pass leads to fixing of variables
+   outside their domains.
+
+Bug fixes:
+ - Fix CBC backend to correctly print UNSAT message for models where the
+   compiler already detected unsatisfiability, and print solution separators
+   even where there is no other output.
+ - Add missing var_dom function for arrays of optional integer variables.
+   Fixes #133.
+ - Fix aliasing for optional integer variables. Fixes #132.
+ - Remove all annotations from output model.
+ - Fix computation of return type for functions that return arrays of enums.
+ - Don't output newline if user-defined solution separator or status message is empty
+ - Fix return type computation for functions where return type contains
+   enums.
+ - Check finiteness of float literals and bounds. Fixes #138.
+ - More checks for function return values. Fixes #136.
+ - Fix var int comprehensions (now triggers error message instead of crash
+   for var set of int comprehensions). Fixes #135.
+ - Fix output of variables with quoted identifiers.
+ - Fix flattening of let expressions that contain variables with undefined
+   (i.e., partial) right hand side.
+ - Make printing of error messages to stdout or stderr more consistent
+   across executables.
+ - Fix type checking of initialisation of enum types.
+ - Improve error messages for array access and index set errors. Fixes #131.
+ - Fix definition of multi-dimensional element constraints to impose
+   correct bounds on index variables.
+ - Fix binding analysis during type checking, which did not handle the
+   shadowing of top-level declarations by comprehension generators correctly.
+   Fixes #129.
+
+Version 2.1.2
+=============
+
+Bug fixes:
+ - Fix a bug in the type checking for generators that iterate over
+   arrays of enums.
+ - Fix a bug in the output handling of arrays of enums.
+ - Fix handling of multiple output items (only the last item was
+   compiled, now the concatenation is used for output as defined
+   in the specification).
+
+Version 2.1.1
+=============
+
+Changes:
+ - Add missing min/max functions for set variables. Can be redefined to solver
+   builtins using the new redefinitions-2.1.1.mzn library file.
+ - Add support for option type expressions as objective functions.
+ - Automatically coerce arrays constructed using ++ to any enum index set
+   (in addition to array literals and comprehensions).
+
+Bug fixes:
+ - Include cmath header to fix compilation issues with some compilers. Fixes #125.
+ - Fix a garbage collection bug in the type checking for enumerated types that would
+   sometimes lead to crashes or incorrect error messages.
+ - Fix type checking of comprehensions that involve enumerated types.
+ - Fix bounds computation for var sets of enumerated types.
+ - Support anon_enum function as documented.
+
+Version 2.1.0
+=============
+
+Changes:
+ - MiniZinc now supports enumerated types.
+ - Solvers can be interfaced directly to the MiniZinc library, and MiniZinc
+   comes with direct support for the CBC, Gurobi and CPLEX MIP solvers.
+ - The linearisation library has been updated, resulting in much better FlatZinc
+   being generated for MIP solvers.
+ - Data files can be in JSON format, and MiniZinc can produce JSON output
+   (using the --output-mode command line option).
+ - Variables can be annotated as ::add_to_output instead of writing an output
+   item.
+ - The compiler can output information about the parameters and output variables
+   of a model (using the --model-interface-only option).
+ - Floats are handled better (detecting infinities and handling sets of floats).
+ - Bounds can be computed for more expressions (instead of failing with an error
+   message).
+
+Bug fixes:
+ - Fix a bug in optimization that could remove variables even if they are used.
+   Fixes #123.
+ - Fix float variable declarations with sets of floats as domains.
+   Fixes #117 and #98.
+ - Fix type checking and evaluation of asserts with array arguments. Fixes #109.
+ - Fix abs(var float) declaration to work on floats without declared bounds.
+   Fixes #106.
+ - Fix a bug in the computation of int and float bounds that could result in
+   incorrect bounds in some cases. Fixes #94.
+ - Fix garbage collection when creating output models. Fixes #77.
+ - Fix binary operators on optional variables (in some cases comparison
+   operators were reversed).
+ - Fix optimization of unconstrained variables (could sometimes lead to
+   constraints being removed although they were not subsumed).
+ 
+
 Version 2.0.14
 ==============
 

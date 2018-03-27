@@ -55,6 +55,7 @@ namespace MiniZinc {
 
   template<class MIPWrapper>
   class MIP_solverinstance : public SolverInstanceImpl<MIP_solver> {
+    using SolverInstanceBase::_log;
     protected:
       
       const unique_ptr<MIP_wrapper> mip_wrap;
@@ -71,8 +72,8 @@ namespace MiniZinc {
       double dObjVarLB=-1e300, dObjVarUB=1e300;
     public:
 
-    MIP_solverinstance(Env& env, const typename MIPWrapper::Options& opt) :
-        SolverInstanceImpl(env),
+      MIP_solverinstance(Env& env, const typename MIPWrapper::Options& opt, std::ostream& log) :
+        SolverInstanceImpl(env,log),
         mip_wrap(new MIPWrapper(opt))
       {
         assert(mip_wrap.get()); 
@@ -82,6 +83,8 @@ namespace MiniZinc {
 
       virtual Status next(void) { assert(0); return SolverInstance::UNKNOWN; }
       virtual void processFlatZinc(void);
+      virtual void processWarmstartAnnotations( const Annotation& ann );
+      virtual void processSearchAnnotations( const Annotation& ann );
       virtual Status solve(void);
       virtual void resetSolver(void) { }
       
@@ -89,27 +92,29 @@ namespace MiniZinc {
         ( const MIP_wrapper::Output& , MIP_wrapper::CutInput& , bool fMIPSol);
 
 //       void assignSolutionToOutput();   // needs to be public for the callback?
-      virtual void printStatistics(std::ostream&, bool fLegend=0);
-      virtual void printStatisticsLine(std::ostream& os, bool fLegend=0) { printStatistics(os, fLegend); }
+      virtual void printStatistics(bool fLegend=0);
+      virtual void printStatisticsLine(bool fLegend=0) { printStatistics(fLegend); }
 
     public:
+      /// creates a var for a literal, if necessary
       VarId exprToVar(Expression* e);
       void exprToArray(Expression* e, vector<double> &vals);
       void exprToVarArray(Expression* e, vector<VarId> &vars);
+      std::pair<double,bool> exprToConstEasy(Expression* e);
       double exprToConst(Expression* e);
 
       Expression* getSolutionValue(Id* id);
 
       void registerConstraints(void);
   };  // MIP_solverinstance
-  
+
+#warning Compiling this
   template<class MIPWrapper>
   class MIP_SolverFactory: public SolverFactory {
   protected:
     typename MIPWrapper::Options opt;
   public:
-    SolverInstanceBase* doCreateSI(Env& env)   { return new MIP_solverinstance<MIPWrapper>(env,opt); }
-
+    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log)   { return new MIP_solverinstance<MIPWrapper>(env,opt,log); }
     bool processOption(int& i, int argc, const char** argv)
       { return opt.processOption(i, argc, argv); }
     string getVersion( );

@@ -43,6 +43,28 @@ function     bool: '!='(    $T: x,     $T: y);
 /** @group builtins.compare Return if \a x is not equal to \a y */
 function var bool: '!='(var $T: x, var $T: y);
 
+% Special case comparison operators for integer variable and float constant
+function var bool: '<='(var int: x, float: y) = (x <= floor(y));
+function var bool: '>='(var int: x, float: y) = (x >= ceil(y));
+function var bool: '<='(float: x, var int: y) = (y >= ceil(x));
+function var bool: '>='(float: x, var int: y) = (y <= floor(x));
+
+function var bool: '<'(var int: x, float: y) = (x <= ceil(y)-1);
+function var bool: '>'(float: x, var int: y) = (y <= ceil(x)-1);
+function var bool: '>'(var int: x, float: y) = (x >= floor(y)+1);
+function var bool: '<'(float: x, var int: y) = (y >= floor(x)+1);
+
+function var bool: '='(var int: x, float: y) =
+  if ceil(y)=floor(y) then x=ceil(y) else false endif;
+function var bool: '='(float: x, var int: y) =
+  if ceil(x)=floor(x) then y=ceil(x) else false endif;
+
+function var bool: '!='(var int: x, float: y) =
+  if ceil(y)=floor(y) then x != ceil(y) else true endif;
+function var bool: '!='(float: x, var int: y) =
+  if ceil(x)=floor(x) then y != ceil(x) else true endif;
+
+
 /** @group builtins.compare Return if array \a x is lexicographically smaller than array \a y */
 function     bool: '<'(array[$U] of     $T: x,array[$U] of     $T: y);
 /** @group builtins.compare Return if array \a x is lexicographically smaller than array \a y */
@@ -202,7 +224,9 @@ function var int: 'mod'(var int: x,var int: y) =
 /** @group builtins.arithmetic Return result of floating point division \a x / \a y */
 function     float: '/'(    float: x,    float: y);
 /** @group builtins.arithmetic Return result of floating point division \a x / \a y */
-function var float: '/'(var float: x,var float: y);
+function var float: '/'(var float: x,var float: y) =
+  if mzn_in_root_context(y) \/ lb(y) > 0.0 \/ ub(y) < 0.0 then fldiv_t(x,y) else
+  let { constraint y != 0.0 } in fldiv_mt(x,y) endif;
 
 /** @group builtins.arithmetic Return sum of elements in array \a x */
 function     int:   sum(array[$T] of     int: x);
@@ -234,14 +258,14 @@ function     $T: max(    $T: x,     $T: y);
 /** @group builtins.arithmetic Return maximum of elements in array \a x */
 function     $T: max(array[$U] of     $T: x);
 /** @group builtins.arithmetic Return minimum of elements in set \a x */
-function int: min(set of int: x);
+function $$E: min(set of $$E: x);
 /** @group builtins.arithmetic Return maximum of elements in set \a x */
-function int: max(set of int: x);
+function $$E: max(set of $$E: x);
 
 /** @group builtins.arithmetic Return maximum of \a x and \a y */
 function var int: max(var int: x, var int: y) :: promise_total =
-  let { var max(lb(x),lb(y))..max(ub(x),ub(y)): m;
-        constraint int_max(x,y,m);
+  let { var max(lb(x),lb(y))..max(ub(x),ub(y)): m ::is_defined_var;
+        constraint int_max(x,y,m) ::defines_var(m);
   } in m;
 
 /** @group builtins.arithmetic Return maximum of elements in array \a x */
@@ -253,8 +277,8 @@ function var int: max(array[$U] of var int: x) =
 
 /** @group builtins.arithmetic Return minimum of \a x and \a y */
 function var int: min(var int: x, var int: y) :: promise_total =
-  let { var min(lb(x),lb(y))..min(ub(x),ub(y)): m;
-        constraint int_min(x,y,m);
+  let { var min(lb(x),lb(y))..min(ub(x),ub(y)): m ::is_defined_var;
+        constraint int_min(x,y,m) ::defines_var(m);
   } in m;
 
 /** @group builtins.arithmetic Return minimum of elements in array \a x */
@@ -269,8 +293,8 @@ function var int: min(array[$U] of var int: x) =
 
 /** @group builtins.arithmetic Return maximum of \a x and \a y */
 function var float: max(var float: x, var float: y) :: promise_total =
-  let { var float: m;
-        constraint float_max(x,y,m);
+  let { var float: m ::is_defined_var;
+        constraint float_max(x,y,m) ::defines_var(m);
   } in m;
 
 /** @group builtins.arithmetic Return maximum of elements in array \a x */
@@ -282,8 +306,8 @@ function var float: max(array[$U] of var float: x) =
 
 /** @group builtins.arithmetic Return minimum of \a x and \a y */
 function var float: min(var float: x, var float: y) :: promise_total =
-  let { var float: m;
-        constraint float_min(x,y,m);
+  let { var float: m ::is_defined_var;
+        constraint float_min(x,y,m) ::defines_var(m);
   } in m;
 
 /** @group builtins.arithmetic Return minimum of elements in array \a x */
@@ -295,13 +319,13 @@ function var float: min(array[$U] of var float: x) =
 
 
 /** @group builtins.arithmetic Return index of minimum of elements in array \a x */
-function int: arg_min(array[int] of int: x);
+function $$E: arg_min(array[$$E] of int: x);
 /** @group builtins.arithmetic Return index of minimum of elements in array \a x */
-function int: arg_min(array[int] of float: x);
+function $$E: arg_min(array[$$E] of float: x);
 /** @group builtins.arithmetic Return index of maximum of elements in array \a x */
-function int: arg_max(array[int] of int: x);
+function $$E: arg_max(array[$$E] of int: x);
 /** @group builtins.arithmetic Return index of maximum of elements in array \a x */
-function int: arg_max(array[int] of float: x);
+function $$E: arg_max(array[$$E] of float: x);
 
 /** @group builtins.arithmetic Return absolute value of \a x */
 function int: abs(int: x);
@@ -309,8 +333,8 @@ function int: abs(int: x);
 /** @group builtins.arithmetic Return absolute value of \a x */
 function var int: abs(var int: x) :: promise_total =
   if has_bounds(x) /\ lb(x) >= 0 then x else
-  let { var 0..max(-lb(x),ub(x)): m;
-        constraint int_abs(x,m);
+  let { var 0..max(-lb(x),ub(x)): m ::is_defined_var;
+        constraint int_abs(x,m) ::defines_var(m);
   } in m
   endif;
 
@@ -320,14 +344,14 @@ function float: abs(float: x);
 function var float: abs(var float: x) :: promise_total =
   if has_bounds(x) then
     if lb(x) >= 0.0 then x else
-    let { var 0.0..max(-lb(x),ub(x)): m;
-          constraint float_abs(x,m);
+    let { var 0.0..max(-lb(x),ub(x)): m ::is_defined_var;
+          constraint float_abs(x,m) ::defines_var(m);
     } in m
     endif
   else
-    let { var float: m;
+    let { var float: m ::is_defined_var;
           constraint m >= 0.0;
-          constraint float_abs(x,m);
+          constraint float_abs(x,m) ::defines_var(m);
     } in m
   endif;
 
@@ -357,10 +381,9 @@ function var int: pow(var int: x, var int: y) =
     int: yy = if is_fixed(y) then fix(y) else -1 endif;
   } in
   if yy = 0 then 1
-  elseif yy = 1 then x
-  elseif yy = 2 then x*x else
-  let { var int: r;
-        constraint int_pow(x,y,r);
+  elseif yy = 1 then x else
+  let { var int: r ::is_defined_var;
+        constraint int_pow(x,y,r) ::defines_var(r);
   } in r
   endif;
 
@@ -374,10 +397,9 @@ function var float: pow(var float: x, var float: y) =
     float: yy = if is_fixed(y) then fix(y) else -1.0 endif
   } in
   if yy = 0.0 then 1.0
-  elseif yy = 1.0 then x
-  elseif yy = 2.0 then x*x else
-  let { var float: r;
-        constraint float_pow(x,y,r);
+  elseif yy = 1.0 then x else
+  let { var float: r ::is_defined_var;
+        constraint float_pow(x,y,r) ::defines_var(r);
   } in r
   endif;
 
@@ -392,8 +414,8 @@ function float: exp(float: x);
 /** @group builtins.explog Return \(e ^ {\a x}\) */
 function var float: exp(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_exp(x,r);
+    var float: r ::is_defined_var;
+    constraint float_exp(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.explog Return \(\ln \a x\) */
@@ -401,8 +423,8 @@ function float: ln(float: x);
 /** @group builtins.explog Return \(\ln \a x\) */
 function var float: ln(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_ln(x,r);
+    var float: r ::is_defined_var;
+    constraint float_ln(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.explog Return \(\log_{10} \a x\) */
@@ -410,8 +432,8 @@ function float: log10(float: x);
 /** @group builtins.explog Return \(\log_{10} \a x\) */
 function var float: log10(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_log10(x,r);
+    var float: r ::is_defined_var;
+    constraint float_log10(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.explog Return \(\log_{2} \a x\) */
@@ -419,8 +441,8 @@ function float: log2(float: x);
 /** @group builtins.explog Return \(\log_{2} \a x\) */
 function var float: log2(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_log2(x,r);
+    var float: r ::is_defined_var;
+    constraint float_log2(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.explog Return \(\log_{\a x} \a y\) */
@@ -437,8 +459,8 @@ function float: sin(float: x);
 /** @group builtins.trigonometric Return \(\sin \a x\) */
 function var float: sin(var float: x) ::promise_total =
   let {
-    var -1.0..1.0: r;
-    constraint float_sin(x,r);
+    var -1.0..1.0: r ::is_defined_var;
+    constraint float_sin(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\cos \a x\) */
@@ -446,8 +468,8 @@ function float: cos(float: x);
 /** @group builtins.trigonometric Return \(\cos \a x\) */
 function var float: cos(var float: x) ::promise_total =
   let {
-    var -1.0..1.0: r;
-    constraint float_cos(x,r);
+    var -1.0..1.0: r ::is_defined_var;
+    constraint float_cos(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\tan \a x\) */
@@ -455,8 +477,8 @@ function float: tan(float: x);
 /** @group builtins.trigonometric Return \(\tan \a x\) */
 function var float: tan(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_tan(x,r);
+    var float: r ::is_defined_var;
+    constraint float_tan(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\mbox{asin}\ \a x\) */
@@ -464,8 +486,8 @@ function float: asin(float: x);
 /** @group builtins.trigonometric Return \(\mbox{asin}\ \a x\) */
 function var float: asin(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_asin(x,r);
+    var float: r ::is_defined_var;
+    constraint float_asin(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\mbox{acos}\ \a x\) */
@@ -473,8 +495,8 @@ function float: acos(float: x);
 /** @group builtins.trigonometric Return \(\mbox{acos}\ \a x\) */
 function var float: acos(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_acos(x,r);
+    var float: r ::is_defined_var;
+    constraint float_acos(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\mbox{atan}\ \a x\) */
@@ -482,8 +504,8 @@ function float: atan(float: x);
 /** @group builtins.trigonometric Return \(\mbox{atan}\ \a x\) */
 function var float: atan(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_atan(x,r);
+    var float: r ::is_defined_var;
+    constraint float_atan(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\sinh \a x\) */
@@ -491,8 +513,8 @@ function float: sinh(float: x);
 /** @group builtins.trigonometric Return \(\sinh \a x\) */
 function var float: sinh(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_sinh(x,r);
+    var float: r ::is_defined_var;
+    constraint float_sinh(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\cosh \a x\) */
@@ -500,8 +522,8 @@ function float: cosh(float: x);
 /** @group builtins.trigonometric Return \(\cosh \a x\) */
 function var float: cosh(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_cosh(x,r);
+    var float: r ::is_defined_var;
+    constraint float_cosh(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\tanh \a x\) */
@@ -509,8 +531,8 @@ function float: tanh(float: x);
 /** @group builtins.trigonometric Return \(\tanh \a x\) */
 function var float: tanh(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_tanh(x,r);
+    var float: r ::is_defined_var;
+    constraint float_tanh(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\mbox{asinh}\ \a x\) */
@@ -518,8 +540,8 @@ function float: asinh(float: x);
 /** @group builtins.trigonometric Return \(\mbox{asinh}\ \a x\) */
 function var float: asinh(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_asinh(x,r);
+    var float: r ::is_defined_var;
+    constraint float_asinh(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\mbox{acosh}\ \a x\) */
@@ -527,8 +549,8 @@ function float: acosh(float: x);
 /** @group builtins.trigonometric Return \(\mbox{acosh}\ \a x\) */
 function var float: acosh(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_acosh(x,r);
+    var float: r ::is_defined_var;
+    constraint float_acosh(x,r) ::defines_var(r);
   } in r;
 
 /** @group builtins.trigonometric Return \(\mbox{atanh}\ \a x\) */
@@ -536,8 +558,8 @@ function float: atanh(float: x);
 /** @group builtins.trigonometric Return \(\mbox{atanh}\ \a x\) */
 function var float: atanh(var float: x) ::promise_total =
   let {
-    var float: r;
-    constraint float_atanh(x,r);
+    var float: r ::is_defined_var;
+    constraint float_atanh(x,r) ::defines_var(r);
   } in r;
 
 
@@ -610,6 +632,11 @@ function     bool: 'in'(    int: x,     set of int: y);
 /** @group builtins.set \a x is an element of the set \a y */
 function var bool: 'in'(var int: x, var set of int: y);
 
+/** @group builtins.set Test if \a x is an element of the set \a y */
+function     bool: 'in'(    float: x,     set of float: y);
+/** @group builtins.set Test if \a x is an element of the set \a y */
+function var bool: 'in'(var float: x,     set of float: y);
+
 /** @group builtins.set Test if \a x is a subset of \a y */
 function     bool: 'subset'(    set of $T: x,      set of $T: y);
 /** @group builtins.set \a x is a subset of \a y */
@@ -637,7 +664,7 @@ function     set of $T:  'symdiff'(    set of $T: x,      set of $T: y);
 function var set of int: 'symdiff'(var set of int: x, var set of int: y);
 
 /** @group builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
-function set of int: '..'(int: a,int: b);
+function set of $$E: '..'($$E: a,$$E: b);
 /** @group builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
 function set of float: '..'(float: a,float: b);
 
@@ -686,6 +713,12 @@ function var set of int: array_intersect(array[int] of var set of int: x) ::prom
       } in y[u-1]
     endif;
 
+/** @group builtins.set Return the minimum of the set \a s */
+function var $$E: min(var set of $$E: s);
+
+/** @group builtins.set Return the maximum of the set \a s */
+function var $$E: max(var set of $$E: s);
+
 /***
   @groupdef builtins.array Array operations
   
@@ -694,6 +727,8 @@ function var set of int: array_intersect(array[int] of var set of int: x) ::prom
 
 /** @group builtins.array Return the concatenation of arrays \a x and \a y */
 function array[int] of $T: '++'(array[int] of $T: x, array[int] of $T: y);
+/** @group builtins.array Return the concatenation of arrays \a x and \a y */
+function array[int] of opt $T: '++'(array[int] of opt $T: x, array[int] of opt $T: y);
 /** @group builtins.array Return the concatenation of arrays \a x and \a y */
 function array[int] of var $T: '++'(array[int] of var $T: x, array[int] of var $T: y);
 /** @group builtins.array Return the concatenation of arrays \a x and \a y */
@@ -710,7 +745,7 @@ function int: length(array[$T] of var opt $U: x);
 
   The resulting array has the same index set as \a x.
 */
-function array[int] of $T: reverse(array[int] of $T: x) =
+function array[$$E] of $T: reverse(array[$$E] of $T: x) =
   let { int: l = max(index_set(x))+min(index_set(x)) } in
   array1d(index_set(x),[x[l-i] | i in index_set(x)]);
 
@@ -718,7 +753,7 @@ function array[int] of $T: reverse(array[int] of $T: x) =
 
   The resulting array has the same index set as \a x.
 */
-function array[int] of var $T: reverse(array[int] of var $T: x) =
+function array[$$E] of opt $T: reverse(array[$$E] of opt $T: x) =
   let { int: l = max(index_set(x))+min(index_set(x)) } in
   array1d(index_set(x),[x[l-i] | i in index_set(x)]);
 
@@ -726,7 +761,15 @@ function array[int] of var $T: reverse(array[int] of var $T: x) =
 
   The resulting array has the same index set as \a x.
 */
-function array[int] of var opt $T: reverse(array[int] of var opt $T: x) =
+function array[$$E] of var $T: reverse(array[$$E] of var $T: x) =
+  let { int: l = max(index_set(x))+min(index_set(x)) } in
+  array1d(index_set(x),[x[l-i] | i in index_set(x)]);
+
+/** @group builtins.array Return the array \a x in reverse order
+
+  The resulting array has the same index set as \a x.
+*/
+function array[$$E] of var opt $T: reverse(array[$$E] of var opt $T: x) =
   let { int: l = max(index_set(x))+min(index_set(x)) } in
   array1d(index_set(x),[x[l-i] | i in index_set(x)]);
 
@@ -734,185 +777,231 @@ function array[int] of var opt $T: reverse(array[int] of var opt $T: x) =
 test index_sets_agree(array[$T] of var opt $U: x, array[$T] of var opt $W: y);
 
 /** @group builtins.array Return index set of one-dimensional array \a x */
-function set of int: index_set(array[int] of var opt $U: x);
+function set of $$E: index_set(array[$$E] of var opt $U: x);
 /** @group builtins.array Return index set of first dimension of two-dimensional array \a x */
-function set of int: index_set_1of2(array[int,int] of var opt $U: x);
+function set of $$E: index_set_1of2(array[$$E,int] of var opt $U: x);
 /** @group builtins.array Return index set of second dimension of two-dimensional array \a x */
-function set of int: index_set_2of2(array[int,int] of var opt $U: x);
+function set of $$E: index_set_2of2(array[int,$$E] of var opt $U: x);
 /** @group builtins.array Return index set of first dimension of 3-dimensional array \a x */
-function set of int: index_set_1of3(array[int,int,int] of var opt $U: x);
+function set of $$E: index_set_1of3(array[$$E,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of second dimension of 3-dimensional array \a x */
-function set of int: index_set_2of3(array[int,int,int] of var opt $U: x);
+function set of $$E: index_set_2of3(array[int,$$E,int] of var opt $U: x);
 /** @group builtins.array Return index set of third dimension of 3-dimensional array \a x */
-function set of int: index_set_3of3(array[int,int,int] of var opt $U: x);
+function set of $$E: index_set_3of3(array[int,int,$$E] of var opt $U: x);
 /** @group builtins.array Return index set of first dimension of 4-dimensional array \a x */
-function set of int: index_set_1of4(array[int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_1of4(array[$$E,int,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of second dimension of 4-dimensional array \a x */
-function set of int: index_set_2of4(array[int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_2of4(array[int,$$E,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of third dimension of 4-dimensional array \a x */
-function set of int: index_set_3of4(array[int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_3of4(array[int,int,$$E,int] of var opt $U: x);
 /** @group builtins.array Return index set of fourth dimension of 4-dimensional array \a x */
-function set of int: index_set_4of4(array[int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_4of4(array[int,int,int,$$E] of var opt $U: x);
 /** @group builtins.array Return index set of first dimension of 5-dimensional array \a x */
-function set of int: index_set_1of5(array[int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_1of5(array[$$E,int,int,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of second dimension of 5-dimensional array \a x */
-function set of int: index_set_2of5(array[int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_2of5(array[int,$$E,int,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of third dimension of 5-dimensional array \a x */
-function set of int: index_set_3of5(array[int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_3of5(array[int,int,$$E,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of fourth dimension of 5-dimensional array \a x */
-function set of int: index_set_4of5(array[int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_4of5(array[int,int,int,$$E,int] of var opt $U: x);
 /** @group builtins.array Return index set of fifth dimension of 5-dimensional array \a x */
-function set of int: index_set_5of5(array[int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_5of5(array[int,int,int,int,$$E] of var opt $U: x);
 /** @group builtins.array Return index set of first dimension of 6-dimensional array \a x */
-function set of int: index_set_1of6(array[int,int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_1of6(array[$$E,int,int,int,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of second dimension of 6-dimensional array \a x */
-function set of int: index_set_2of6(array[int,int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_2of6(array[int,$$E,int,int,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of third dimension of 6-dimensional array \a x */
-function set of int: index_set_3of6(array[int,int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_3of6(array[int,int,$$E,int,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of fourth dimension of 6-dimensional array \a x */
-function set of int: index_set_4of6(array[int,int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_4of6(array[int,int,int,$$E,int,int] of var opt $U: x);
 /** @group builtins.array Return index set of fifth dimension of 6-dimensional array \a x */
-function set of int: index_set_5of6(array[int,int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_5of6(array[int,int,int,int,$$E,int] of var opt $U: x);
 /** @group builtins.array Return index set of sixth dimension of 6-dimensional array \a x */
-function set of int: index_set_6of6(array[int,int,int,int,int,int] of var opt $U: x);
+function set of $$E: index_set_6of6(array[int,int,int,int,int,$$E] of var opt $U: x);
 
 /** @group builtins.array Return array \a x coerced to index set 1..length(\a x) */
 function array[int] of $V: array1d(array[$U] of $V: x);
+/** @group builtins.array Return array \a x coerced to index set 1..length(\a x) */
+function array[int] of opt $V: array1d(array[$U] of opt $V: x);
 /** @group builtins.array Return array \a x coerced to index set 1..length(\a x) */
 function array[int] of var $V: array1d(array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to index set 1..length(\a x) */
 function array[int] of var opt $V: array1d(array[$U] of var opt $V: x);
 
 /** @group builtins.array Return array \a x coerced to one-dimensional array with index set \a S */
-function array[int] of $V: array1d(set of int: S,
+function array[$$E] of $V: array1d(set of $$E: S,
                                    array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to one-dimensional array with index set \a S */
-function array[int] of var $V: array1d(set of int: S,
+function array[$$E] of opt $V: array1d(set of $$E: S,
+                                       array[$U] of opt $V: x);
+/** @group builtins.array Return array \a x coerced to one-dimensional array with index set \a S */
+function array[$$E] of var $V: array1d(set of $$E: S,
                                        array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to one-dimensional array with index set \a S */
-function array[int] of var opt $V: array1d(set of int: S,
+function array[$$E] of var opt $V: array1d(set of $$E: S,
                                            array[$U] of var opt $V: x);
 
 /** @group builtins.array Return array \a x coerced to two-dimensional array with index sets \a S1 and \a S2 */
-function array[int,int] of $V: array2d(set of int: S1, set of int: S2, 
+function array[$$E,$$F] of $V: array2d(set of $$E: S1, set of $$F: S2, 
                                        array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to two-dimensional array with index sets \a S1 and \a S2 */
-function array[int,int] of var $V: array2d(set of int: S1, set of int: S2, 
+function array[$$E,$$F] of opt $V: array2d(set of $$E: S1, set of $$F: S2, 
+                                           array[$U] of opt $V: x);
+/** @group builtins.array Return array \a x coerced to two-dimensional array with index sets \a S1 and \a S2 */
+function array[$$E,$$F] of var $V: array2d(set of $$E: S1, set of $$F: S2, 
                                            array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to two-dimensional array with index sets \a S1 and \a S2 */
-function array[int,int] of var opt $V: array2d(set of int: S1, set of int: S2, 
+function array[$$E,$$F] of var opt $V: array2d(set of $$E: S1, set of $$F: S2, 
                                                array[$U] of var opt $V: x);
 
 /** @group builtins.array Return array \a x coerced to three-dimensional array with
   index sets \a S1, \a S2 and \a S3
 */
-function array[int,int,int] of $V: array3d(set of int: S1,
-                                           set of int: S2,
-                                           set of int: S3,
+function array[$$E,$$F,$$G] of $V: array3d(set of $$E: S1,
+                                           set of $$F: S2,
+                                           set of $$G: S3,
                                            array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to three-dimensional array with
   index sets \a S1, \a S2 and \a S3
 */
-function array[int,int,int] of var $V: array3d(set of int: S1,
-                                               set of int: S2,
-                                               set of int: S3,
+function array[$$E,$$F,$$G] of opt $V: array3d(set of $$E: S1,
+                                               set of $$F: S2,
+                                               set of $$G: S3,
+                                               array[$U] of opt $V: x);
+/** @group builtins.array Return array \a x coerced to three-dimensional array with
+  index sets \a S1, \a S2 and \a S3
+*/
+function array[$$E,$$F,$$G] of var $V: array3d(set of $$E: S1,
+                                               set of $$F: S2,
+                                               set of $$G: S3,
                                                array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to three-dimensional array with
   index sets \a S1, \a S2 and \a S3
 */
-function array[int,int,int] of var opt $V: array3d(set of int: S1,
-                                                   set of int: S2,
-                                                   set of int: S3,
+function array[$$E,$$F,$$G] of var opt $V: array3d(set of $$E: S1,
+                                                   set of $$F: S2,
+                                                   set of $$G: S3,
                                                    array[$U] of var opt $V: x);
 
 /** @group builtins.array Return array \a x coerced to 4-dimensional array with
   index sets \a S1, \a S2, \a S3 and \a S4
 */
-function array[int,int,int,int] of $V: array4d(set of int: S1,
-                                               set of int: S2,
-                                               set of int: S3,
-                                               set of int: S4,
+function array[$$E,$$F,$$G,$$H] of $V: array4d(set of $$E: S1,
+                                               set of $$F: S2,
+                                               set of $$G: S3,
+                                               set of $$H: S4,
                                                array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to 4-dimensional array with
   index sets \a S1, \a S2, \a S3 and \a S4
 */
-function array[int,int,int,int] of var $V: array4d(set of int: S1,
-                                                   set of int: S2,
-                                                   set of int: S3,
-                                                   set of int: S4,
+function array[$$E,$$F,$$G,$$H] of opt $V: array4d(set of $$E: S1,
+                                                   set of $$F: S2,
+                                                   set of $$G: S3,
+                                                   set of $$H: S4,
+                                                   array[$U] of opt $V: x);
+/** @group builtins.array Return array \a x coerced to 4-dimensional array with
+  index sets \a S1, \a S2, \a S3 and \a S4
+*/
+function array[$$E,$$F,$$G,$$H] of var $V: array4d(set of $$E: S1,
+                                                   set of $$F: S2,
+                                                   set of $$G: S3,
+                                                   set of $$H: S4,
                                                    array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to 4-dimensional array with
   index sets \a S1, \a S2, \a S3 and \a S4
 */
-function array[int,int,int,int] of var opt $V: array4d(set of int: S1,
-                                                       set of int: S2,
-                                                       set of int: S3,
-                                                       set of int: S4,
+function array[$$E,$$F,$$G,$$H] of var opt $V: array4d(set of $$E: S1,
+                                                       set of $$F: S2,
+                                                       set of $$G: S3,
+                                                       set of $$H: S4,
                                                        array[$U] of var opt $V: x);
 
 /** @group builtins.array Return array \a x coerced to 5-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4 and \a S5
 */
-function array[int,int,int,int,int] of $V: array5d(set of int: S1,
-                                                   set of int: S2,
-                                                   set of int: S3,
-                                                   set of int: S4,
-                                                   set of int: S5,
+function array[$$E,$$F,$$G,$$H,$$I] of $V: array5d(set of $$E: S1,
+                                                   set of $$F: S2,
+                                                   set of $$G: S3,
+                                                   set of $$H: S4,
+                                                   set of $$I: S5,
                                                    array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to 5-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4 and \a S5
 */
-function array[int,int,int,int,int] of var $V: array5d(set of int: S1,
-                                                       set of int: S2,
-                                                       set of int: S3,
-                                                       set of int: S4,
-                                                       set of int: S5,
+function array[$$E,$$F,$$G,$$H,$$I] of opt $V: array5d(set of $$E: S1,
+                                                       set of $$F: S2,
+                                                       set of $$G: S3,
+                                                       set of $$H: S4,
+                                                       set of $$I: S5,
+                                                       array[$U] of opt $V: x);
+/** @group builtins.array Return array \a x coerced to 5-dimensional array with
+  index sets \a S1, \a S2, \a S3, \a S4 and \a S5
+*/
+function array[$$E,$$F,$$G,$$H,$$I] of var $V: array5d(set of $$E: S1,
+                                                       set of $$F: S2,
+                                                       set of $$G: S3,
+                                                       set of $$H: S4,
+                                                       set of $$I: S5,
                                                        array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to 5-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4 and \a S5
 */
-function array[int,int,int,int,int] of var opt $V: array5d(set of int: S1,
-                                                           set of int: S2,
-                                                           set of int: S3,
-                                                           set of int: S4,
-                                                           set of int: S5,
+function array[$$E,$$F,$$G,$$H,$$I] of var opt $V: array5d(set of $$E: S1,
+                                                           set of $$F: S2,
+                                                           set of $$G: S3,
+                                                           set of $$H: S4,
+                                                           set of $$I: S5,
                                                            array[$U] of var opt $V: x);
 
 /** @group builtins.array Return array \a x coerced to 6-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4, \a S5 and \a S6
 */
-function array[int,int,int,int,int,int] of $V: array6d(set of int: S1,
-                                                       set of int: S2,
-                                                       set of int: S3,
-                                                       set of int: S4,
-                                                       set of int: S5,
-                                                       set of int: S6,
+function array[$$E,$$F,$$G,$$H,$$I,$$J] of $V: array6d(set of $$E: S1,
+                                                       set of $$F: S2,
+                                                       set of $$G: S3,
+                                                       set of $$H: S4,
+                                                       set of $$I: S5,
+                                                       set of $$J: S6,
                                                        array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to 6-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4, \a S5 and \a S6
 */
-function array[int,int,int,int,int,int] of var $V: array6d(set of int: S1,
-                                                           set of int: S2,
-                                                           set of int: S3,
-                                                           set of int: S4,
-                                                           set of int: S5,
-                                                           set of int: S6,
+function array[$$E,$$F,$$G,$$H,$$I,$$J] of opt $V: array6d(set of $$E: S1,
+                                                           set of $$F: S2,
+                                                           set of $$G: S3,
+                                                           set of $$H: S4,
+                                                           set of $$I: S5,
+                                                           set of $$J: S6,
+                                                           array[$U] of opt $V: x);
+/** @group builtins.array Return array \a x coerced to 6-dimensional array with
+  index sets \a S1, \a S2, \a S3, \a S4, \a S5 and \a S6
+*/
+function array[$$E,$$F,$$G,$$H,$$I,$$J] of var $V: array6d(set of $$E: S1,
+                                                           set of $$F: S2,
+                                                           set of $$G: S3,
+                                                           set of $$H: S4,
+                                                           set of $$I: S5,
+                                                           set of $$J: S6,
                                                            array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to 6-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4, \a S5 and \a S6
 */
-function array[int,int,int,int,int,int] of var opt $V: array6d(set of int: S1,
-                                                               set of int: S2,
-                                                               set of int: S3,
-                                                               set of int: S4,
-                                                               set of int: S5,
-                                                               set of int: S6,
+function array[$$E,$$F,$$G,$$H,$$I,$$J] of var opt $V: array6d(set of $$E: S1,
+                                                               set of $$F: S2,
+                                                               set of $$G: S3,
+                                                               set of $$H: S4,
+                                                               set of $$I: S5,
+                                                               set of $$J: S6,
                                                                array[$U] of var opt $V: x);
 
 /** @group builtins.array Return array \a y coerced to array with same number of
   dimensions and same index sets as array \a x
 */
 function array[$T] of $V: arrayXd(array[$T] of var opt $X: x, array[$U] of $V: y);
+/** @group builtins.array Return array \a y coerced to array with same number of
+  dimensions and same index sets as array \a x
+*/
+function array[$T] of opt $V: arrayXd(array[$T] of var opt $X: x, array[$U] of opt $V: y);
 /** @group builtins.array Return array \a y coerced to array with same number of
   dimensions and same index sets as array \a x
 */
@@ -923,31 +1012,84 @@ function array[$T] of var $V: arrayXd(array[$T] of var opt $X: x, array[$U] of v
 function array[$T] of var opt $V: arrayXd(array[$T] of var opt $X: x, array[$U] of var opt $V: y);
 
 /** @group builtins.array Return row \a r of array \a x */
-function array[int] of $T: row(array[int, int] of $T: x, int: r) =
-  array1d(index_set_2of2(x), [x[r,i] | i in index_set_2of2(x)]);
+function array[$$E] of $T: row(array[int, $$E] of $T: x, int: r) = x[r,..];
 /** @group builtins.array Return row \a r of array \a x */
-function array[int] of var $T: row(array[int, int] of var $T: x, int: r) =
-  array1d(index_set_2of2(x), [x[r,i] | i in index_set_2of2(x)]);
+function array[$$E] of opt $T: row(array[int, $$E] of opt $T: x, int: r) = x[r,..];
 /** @group builtins.array Return row \a r of array \a x */
-function array[int] of var opt $T: row(array[int, int] of var opt $T: x, int: r) =
-  array1d(index_set_2of2(x), [x[r,i] | i in index_set_2of2(x)]);
+function array[$$E] of var $T: row(array[int, $$E] of var $T: x, int: r) = x[r,..];
+/** @group builtins.array Return row \a r of array \a x */
+function array[$$E] of var opt $T: row(array[int, $$E] of var opt $T: x, int: r) = x[r,..];
 
 /** @group builtins.array Return column \a c of array \a x */
-function array[int] of $T: col(array[int,int] of $T: x, int: c) =
-  array1d(index_set_1of2(x), [x[i,c] | i in index_set_1of2(x)]);
+function array[$$E] of $T: col(array[$$E,int] of $T: x, int: c) = x[..,c];
 /** @group builtins.array Return column \a c of array \a x */
-function array[int] of var $T: col(array[int,int] of var $T: x, int: c) =
-  array1d(index_set_1of2(x), [x[i,c] | i in index_set_1of2(x)]);
+function array[$$E] of opt $T: col(array[$$E,int] of opt $T: x, int: c) = x[..,c];
 /** @group builtins.array Return column \a c of array \a x */
-function array[int] of var opt $T: col(array[int,int] of var opt $T: x, int: c) =
-  array1d(index_set_1of2(x), [x[i,c] | i in index_set_1of2(x)]);
+function array[$$E] of var $T: col(array[$$E,int] of var $T: x, int: c) = x[..,c];
+/** @group builtins.array Return column \a c of array \a x */
+function array[$$E] of var opt $T: col(array[$$E,int] of var opt $T: x, int: c) = x[..,c];
+
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 1d array with index set \a dims1 */
+function array[int] of $T: slice_1d(array[$E] of $T: x, array[int] of set of int: s, set of int: dims1);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 2d array with index sets \a dims1 and \a dims2 */
+function array[int,int] of $T: slice_2d(array[$E] of $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2 and \a dims3 */
+function array[int,int,int] of $T: slice_3d(array[$E] of $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4 */
+function array[int,int,int] of $T: slice_4d(array[$E] of $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5 */
+function array[int,int,int] of $T: slice_5d(array[$E] of $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4, set of int: dims5);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5, \a dims6 */
+function array[int,int,int] of $T: slice_6d(array[$E] of $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4, set of int: dims5, set of int: dims6);
+
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 1d array with index set \a dims1 */
+function array[int] of opt $T: slice_1d(array[$E] of opt $T: x, array[int] of set of int: s, set of int: dims1);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 2d array with index sets \a dims1 and \a dims2 */
+function array[int,int] of opt $T: slice_2d(array[$E] of opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2 and \a dims3 */
+function array[int,int,int] of opt $T: slice_3d(array[$E] of opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4 */
+function array[int,int,int] of opt $T: slice_4d(array[$E] of opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5 */
+function array[int,int,int] of opt $T: slice_5d(array[$E] of opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4, set of int: dims5);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5, \a dims6 */
+function array[int,int,int] of opt $T: slice_6d(array[$E] of opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4, set of int: dims5, set of int: dims6);
+
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 1d array with index set \a dims1 */
+function array[int] of var $T: slice_1d(array[$E] of var $T: x, array[int] of set of int: s, set of int: dims1);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 2d array with index sets \a dims1 and \a dims2 */
+function array[int,int] of var $T: slice_2d(array[$E] of var $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2 and \a dims3 */
+function array[int,int,int] of var $T: slice_3d(array[$E] of var $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4 */
+function array[int,int,int] of var $T: slice_4d(array[$E] of var $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5 */
+function array[int,int,int] of var $T: slice_5d(array[$E] of var $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4, set of int: dims5);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5, \a dims6 */
+function array[int,int,int] of var $T: slice_6d(array[$E] of var $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4, set of int: dims5, set of int: dims6);
+
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 1d array with index set \a dims1 */
+function array[int] of var opt $T: slice_1d(array[$E] of var opt $T: x, array[int] of set of int: s, set of int: dims1);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 2d array with index sets \a dims1 and \a dims2 */
+function array[int,int] of var opt $T: slice_2d(array[$E] of var opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2 and \a dims3 */
+function array[int,int,int] of var opt $T: slice_3d(array[$E] of var opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4 */
+function array[int,int,int] of var opt $T: slice_4d(array[$E] of var opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5 */
+function array[int,int,int] of var opt $T: slice_5d(array[$E] of var opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4, set of int: dims5);
+/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5, \a dims6 */
+function array[int,int,int] of var opt $T: slice_6d(array[$E] of var opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4, set of int: dims5, set of int: dims6);
+
 
 /** @group builtins.array Test if \a i is in the index set of \a x */
 test has_index(int: i, array[int] of var opt $T: x) = i in index_set(x);
 /** @group builtins.array Test if \a e is an element of array \a x */
 test has_element($T: e, array[int] of $T: x) = exists (i in index_set(x)) (x[i]=e);
 /** @group builtins.array Test if \a e is an element of array \a x */
-predicate has_element($T: e, array[int] of var opt $T: x) = exists (i in index_set(x)) (x[i]=e);
+test has_element($T: e, array[int] of opt $T: x) = exists (i in index_set(x)) (x[i]=e);
+/** @group builtins.array Test if \a e is an element of array \a x */
+predicate has_element($T: e, array[$$E] of var opt $T: x) = exists (i in index_set(x)) (x[i]=e);
 
 /***
   @groupdef builtins.sort Array sorting operations
@@ -958,45 +1100,45 @@ predicate has_element($T: e, array[int] of var opt $T: x) = exists (i in index_s
 The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
 \a x[\p i] will appear in the output before \a x[\p j].
 */
-function array[int] of var opt $T: sort_by(array[int] of var opt $T: x, array[int] of int: y);
+function array[$$E] of var opt $T: sort_by(array[$$E] of var opt $T: x, array[$$E] of int: y);
 /** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order
 
 The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
 \a x[\p i] will appear in the output before \a x[\p j].
 */
-function array[int] of var $T: sort_by(array[int] of var $T: x, array[int] of int: y);
+function array[$$E] of var $T: sort_by(array[$$E] of var $T: x, array[$$E] of int: y);
 /** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order
 
 The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
 \a x[\p i] will appear in the output before \a x[\p j].
 */
-function array[int] of $T: sort_by(array[int] of $T: x, array[int] of int: y);
+function array[$$E] of $T: sort_by(array[$$E] of $T: x, array[$$E] of int: y);
 
 /** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order 
 
 The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
 \a x[\p i] will appear in the output before \a x[\p j].
 */
-function array[int] of var opt $T: sort_by(array[int] of var opt $T: x, array[int] of float: y);
+function array[$$E] of var opt $T: sort_by(array[$$E] of var opt $T: x, array[$$E] of float: y);
 /** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order
 
 The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
 \a x[\p i] will appear in the output before \a x[\p j].
 */
-function array[int] of var $T: sort_by(array[int] of var $T: x, array[int] of float: y);
+function array[$$E] of var $T: sort_by(array[$$E] of var $T: x, array[$$E] of float: y);
 /** @group builtins.sort Return array \a x sorted by the values in \a y in non-decreasing order
 
 The sort is stable, i.e. if \a y[\p i] = \a y[\p j] with \p i < \p j, then
 \a x[\p i] will appear in the output before \a x[\p j].
 */
-function array[int] of $T: sort_by(array[int] of $T: x, array[int] of float: y);
+function array[$$E] of $T: sort_by(array[$$E] of $T: x, array[$$E] of float: y);
 
 /** @group builtins.sort Return values from array \a x sorted in non-decreasing order */
-function array[int] of int: sort(array[int] of int: x);
+function array[$$E] of int: sort(array[$$E] of int: x);
 /** @group builtins.sort Return values from array \a x sorted in non-decreasing order */
-function array[int] of float: sort(array[int] of float: x);
+function array[$$E] of float: sort(array[$$E] of float: x);
 /** @group builtins.sort Return values from array \a x sorted in non-decreasing order */
-function array[int] of bool: sort(array[int] of bool: x);
+function array[$$E] of bool: sort(array[$$E] of bool: x);
 
 /** @group builtins.sort
 Returns the permutation \a p which causes \a x to be in sorted order hence
@@ -1004,7 +1146,7 @@ Returns the permutation \a p which causes \a x to be in sorted order hence
 
 The permutation is the stable sort hence \a x[\a p[\p i]] = \a x[\a p[\p i+1]] \(\rightarrow\) \a p[\p i] < \a p[\p i+1].
 */
-function array[int] of int: arg_sort(array[int] of int:x) =
+function array[int] of $$E: arg_sort(array[$$E] of int:x) =
   sort_by([i | i in index_set(x)], x);
 
 /** @group builtins.sort
@@ -1013,7 +1155,7 @@ Returns the permutation \a p which causes \a x to be in sorted order hence
 
 The permutation is the stable sort hence \a x[\a p[\p i]] = \a x[\a p[\p i+1]] \(\rightarrow\) \a p[\p i] < \a p[\p i+1].
 */
-function array[int] of int: arg_sort(array[int] of float:x) =
+function array[int] of $$E: arg_sort(array[$$E] of float:x) =
   sort_by([i | i in index_set(x)], x);
 
 /***
@@ -1046,7 +1188,7 @@ function array[$T] of var float: bool2float(array[$T] of var bool: x) ::promise_
 /** @group builtins.coercion Return Boolean \a b coerced to an integer  */
 function var int: bool2int(var bool: b);
 /** @group builtins.coercion Return array of Booleans \a b coerced to an array of integers  */
-function array[int] of var int: bool2int(array[int] of var bool: b);
+function array[$$E] of var int: bool2int(array[$$E] of var bool: b);
 /** @group builtins.coercion Return Boolean \a b coerced to a float  */
 function var float: bool2float(var bool: b) = int2float(bool2int(b));
 /** @group builtins.coercion Return integer \a x coerced to a float  */
@@ -1101,7 +1243,7 @@ function array[$T] of var float: int2float(array[$T] of var int: x) ::promise_to
 % Only supported for set of int:
 % function array[int] of $T: set2array(set of $T);
 /** @group builtins.coercion Return a set of integers \a x coerced to an array of integers  */
-function array[int] of int: set2array(set of int: x);
+function array[int] of $$E: set2array(set of $$E: x);
 
 
 /***
@@ -1116,6 +1258,12 @@ function string: show(var opt set of $T: x);
 function string: show(var opt $T: x);
 /** @group builtins.string Convert \a x into a string */
 function string: show(array[$U] of var opt $T: x);
+
+function string: showDzn(var opt set of $T: x);
+function string: showDzn(var opt $T: x);
+function string: showDzn(array[$U] of var opt $T: x);
+
+
 /** @group builtins.string Formatted to-string conversion for integers
 
 Converts the integer \a x into a string right
@@ -1377,20 +1525,17 @@ function bool: abort(string: msg);
   
 */
 
-/** @group builtins.enum Return set of values in enum of \a x  */
-function set of $$E: enum_base_set(var $$E: x);
-
 /** @group builtins.enum Return next greater enum value of \a x */
-function $$E: enum_next($$E: x);
+function $$E: enum_next(set of $$E: e, $$E: x);
 /** @group builtins.enum Return next greater enum value of \a x */
-function var $$E: enum_next(var $$E: x) =
-  let { constraint x < max(enum_base_set(x)) } in x+1;
+function var $$E: enum_next(set of $$E: e, var $$E: x) =
+  let { constraint x < max(e) } in x+1;
 
 /** @group builtins.enum Return next smaller enum value of \a x */
-function $$E: enum_prev($$E: x);
+function $$E: enum_prev(set of $$E: e, $$E: x);
 /** @group builtins.enum Return next smaller enum value of \a x */
-function var $$E: enum_prev(var $$E: x) =
-  let { constraint x > min(enum_base_set(x)) } in x-1;
+function var $$E: enum_prev(set of $$E: e, var $$E: x) =
+  let { constraint x > min(e) } in x-1;
 
 /** @group builtins.enum Convert \a x to enum type \a X */
 function $$E: to_enum(set of $$E: X, int: x);
@@ -1421,8 +1566,12 @@ predicate var_dom(var float:x, float: l, float: u) =
   if has_bounds(x) /\ lb(x) >= l /\ ub(x) <= u then true
   else x >= l /\ x <= u
   endif;
+predicate var_dom(var float:x, set of float: d) =
+  x in d;
 test var_dom(float:x, float: l, float: u) =
   x >= l /\ x <= u;
+test var_dom(float:x, set of float: d) =
+  x in d;
 
 predicate var_dom(array[$T] of var set of int: x, set of int: d) =
     let { array[int] of var set of int: xx = array1d(x) }
@@ -1433,6 +1582,9 @@ predicate var_dom(array[$T] of var int: x, set of int: d) =
 predicate var_dom(array[$T] of var float: x, float: l, float: u) =
     let { array[int] of var float: xx = array1d(x) }
     in forall (i in index_set(xx)) (var_dom(xx[i],l,u));
+predicate var_dom(array[$T] of var float: x, set of float: d) =
+    let { array[int] of var float: xx = array1d(x) }
+    in forall (i in index_set(xx)) (var_dom(xx[i],d));
 
 test var_dom(array[$T] of set of int: x, set of int: d) =
     let { array[int] of set of int: xx = array1d(x) }
@@ -1443,6 +1595,9 @@ test var_dom(array[$T] of int: x, set of int: d) =
 test var_dom(array[$T] of float: x, float: l, float: u) =
     let { array[int] of float: xx = array1d(x) }
     in forall (i in index_set(xx)) (var_dom(xx[i],l,u));
+test var_dom(array[$T] of float: x, set of float: d) =
+    let { array[int] of float: xx = array1d(x) }
+    in forall (i in index_set(xx)) (var_dom(xx[i],d));
 
 function var set of int: array2set(array[int] of var int: x) ::promise_total =
     let {
@@ -1468,7 +1623,7 @@ predicate bool_xor_reif(var bool: a, var bool: b, var bool: c) =
   bool_xor(a,b,c);
 
 predicate xorall_reif(array[int] of var bool: b, var bool: c) =
-  xorall([not c]++b);
+  let { var bool: nc ::is_defined_var; constraint xorall([nc]++b) ::defines_var(nc); } in c = not nc;
 
 function var int: lin_exp(array[int] of int, array[int] of var int, int);
 function var float: lin_exp(array[int] of float, array[int] of var float, float);
@@ -1506,7 +1661,10 @@ function var int: element_mt(var int: idx, array[int] of var int: x) :: promise_
   } in r;
 
 function var int: element(var int: idx, array[int] of var int: x) =
-  if mzn_in_root_context(idx) \/ (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
+  if mzn_in_root_context(idx) then let {
+    constraint idx in index_set(x)
+  } in element_t(idx,x)
+  elseif (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
     element_t(idx,x)
   else let {
     constraint idx in index_set(x)
@@ -1518,7 +1676,12 @@ function var int: element(var int: idx1, var int: idx2,
   let {
     int: dim = card(index_set_2of2(x));
     int: min_flat = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
-  } in if mzn_in_root_context(idx1) \/
+  } in if mzn_in_root_context(idx1) then
+         let {
+           constraint idx1 in index_set_1of2(x);
+           constraint idx2 in index_set_2of2(x);
+         } in element_t( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+       elseif
        ((has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
         /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x))))
        then
@@ -1539,7 +1702,13 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3,
     int: min = min(index_set_1of3(x))*dim2*dim3+
                min(index_set_2of3(x))*dim3+
                min(index_set_3of3(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then
+       let {
+         constraint idx1 in index_set_1of3(x);
+         constraint idx2 in index_set_2of3(x);
+         constraint idx3 in index_set_3of3(x);
+       } in element_t( (idx1*(dim2*dim3)+idx2*dim3+idx3-min)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of3(x)) /\ ub(idx2) <= max(index_set_2of3(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x))))
@@ -1563,7 +1732,14 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3, var int: 
                min(index_set_2of4(x))*dim3*dim4+
                min(index_set_3of4(x))*dim4+
                min(index_set_4of4(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then
+         let {
+           constraint idx1 in index_set_1of4(x);
+           constraint idx2 in index_set_2of4(x);
+           constraint idx3 in index_set_3of4(x);
+           constraint idx4 in index_set_4of4(x);
+         } in element_t( (idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of4(x)) /\ ub(idx2) <= max(index_set_2of4(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of4(x)) /\ ub(idx3) <= max(index_set_3of4(x)))
@@ -1598,7 +1774,10 @@ function var float: element_mt(var int: idx, array[int] of var float: x) :: prom
   } in r;
 
 function var float: element(var int: idx, array[int] of var float: x) =
-  if mzn_in_root_context(idx) \/ (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
+  if mzn_in_root_context(idx) then let {
+    constraint idx in index_set(x)
+  } in element_t(idx,x)
+  elseif (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
     element_t(idx,x)
   else let {
     constraint idx in index_set(x)
@@ -1610,7 +1789,12 @@ function var float: element(var int: idx1, var int: idx2,
   let {
     int: dim = card(index_set_2of2(x));
     int: min_flat = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then
+         let {
+           constraint idx1 in index_set_1of2(x);
+           constraint idx2 in index_set_2of2(x);
+         } in element_t( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x))) )
        then
@@ -1631,7 +1815,12 @@ function var float: element(var int: idx1, var int: idx2, var int: idx3,
     int: min = min(index_set_1of3(x))*dim2*dim3+
                min(index_set_2of3(x))*dim3+
                min(index_set_3of3(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then let {
+         constraint idx1 in index_set_1of3(x);
+         constraint idx2 in index_set_2of3(x);
+         constraint idx3 in index_set_3of3(x);
+       } in element_t( (idx1*(dim2*dim3)+idx2*dim3+idx3-min)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of3(x)) /\ ub(idx2) <= max(index_set_2of3(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x))) )
@@ -1655,7 +1844,13 @@ function var float: element(var int: idx1, var int: idx2, var int: idx3, var int
                min(index_set_2of4(x))*dim3*dim4+
                min(index_set_3of4(x))*dim4+
                min(index_set_4of4(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then let {
+         constraint idx1 in index_set_1of4(x);
+         constraint idx2 in index_set_2of4(x);
+         constraint idx3 in index_set_3of4(x);
+         constraint idx4 in index_set_4of4(x);
+       } in element_t( (idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of4(x)) /\ ub(idx2) <= max(index_set_2of4(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of4(x)) /\ ub(idx3) <= max(index_set_3of4(x)))
@@ -1690,7 +1885,10 @@ function var set of int: element_mt(var int: idx, array[int] of var set of int: 
   } in r;
 
 function var set of int: element(var int: idx, array[int] of var set of int: x) =
-  if mzn_in_root_context(idx) \/ (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
+  if mzn_in_root_context(idx) then let {
+    constraint idx in index_set(x)
+  } in element_t(idx,x)
+  elseif (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
     element_t(idx,x)
   else let {
     constraint idx in index_set(x)
@@ -1702,7 +1900,12 @@ function var set of int: element(var int: idx1, var int: idx2,
   let {
     int: dim = card(index_set_2of2(x));
     int: min_flat = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then
+         let {
+           constraint idx1 in index_set_1of2(x);
+           constraint idx2 in index_set_2of2(x);
+         } in element_t( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x))) )
        then
@@ -1723,7 +1926,13 @@ function var set of int: element(var int: idx1, var int: idx2, var int: idx3,
     int: min = min(index_set_1of3(x))*dim2*dim3+
                min(index_set_2of3(x))*dim3+
                min(index_set_3of3(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then
+       let {
+         constraint idx1 in index_set_1of3(x);
+         constraint idx2 in index_set_2of3(x);
+         constraint idx3 in index_set_3of3(x);
+       } in element_t( (idx1*(dim2*dim3)+idx2*dim3+idx3-min)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of3(x)) /\ ub(idx2) <= max(index_set_2of3(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x))) )
@@ -1747,7 +1956,14 @@ function var set of int: element(var int: idx1, var int: idx2, var int: idx3, va
                min(index_set_2of4(x))*dim3*dim4+
                min(index_set_3of4(x))*dim4+
                min(index_set_4of4(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then
+       let {
+         constraint idx1 in index_set_1of4(x);
+         constraint idx2 in index_set_2of4(x);
+         constraint idx3 in index_set_3of4(x);
+         constraint idx4 in index_set_4of4(x);
+       } in element_t( (idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of4(x)) /\ ub(idx2) <= max(index_set_2of4(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of4(x)) /\ ub(idx3) <= max(index_set_3of4(x)))
@@ -1782,7 +1998,9 @@ function var bool: element_mt(var int: idx, array[int] of var bool: x) :: promis
   } in r;
 
 function var bool: element(var int: idx, array[int] of var bool: x) =
-  if mzn_in_root_context(idx) \/ (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
+  if mzn_in_root_context(idx) then
+    idx in index_set(x) /\ element_t(idx,x)
+  elseif (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
     element_t(idx,x)
   else idx in index_set(x) /\ element_mt(idx,x)
   endif;
@@ -1792,7 +2010,12 @@ function var bool: element(var int: idx1, var int: idx2,
   let {
     int: dim = card(index_set_2of2(x));
     int: min_flat = min(index_set_1of2(x))*dim+min(index_set_2of2(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then
+         let {
+           constraint idx1 in index_set_1of2(x);
+           constraint idx2 in index_set_2of2(x);
+         } in element_t( (idx1*dim+idx2-min_flat)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of2(x)) /\ ub(idx1) <= max(index_set_1of2(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of2(x)) /\ ub(idx2) <= max(index_set_2of2(x))) )
        then
@@ -1813,7 +2036,13 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3,
     int: min = min(index_set_1of3(x))*dim2*dim3+
                min(index_set_2of3(x))*dim3+
                min(index_set_3of3(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then
+       let {
+         constraint idx1 in index_set_1of3(x);
+         constraint idx2 in index_set_2of3(x);
+         constraint idx3 in index_set_3of3(x);
+       } in element_t( (idx1*(dim2*dim3)+idx2*dim3+idx3-min)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of3(x)) /\ ub(idx1) <= max(index_set_1of3(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of3(x)) /\ ub(idx2) <= max(index_set_2of3(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of3(x)) /\ ub(idx3) <= max(index_set_3of3(x))) )
@@ -1837,7 +2066,14 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3, var int:
                min(index_set_2of4(x))*dim3*dim4+
                min(index_set_3of4(x))*dim4+
                min(index_set_4of4(x))-1;
-  } in if mzn_in_root_context(idx1) \/ (
+  } in if mzn_in_root_context(idx1) then
+       let {
+         constraint idx1 in index_set_1of4(x);
+         constraint idx2 in index_set_2of4(x);
+         constraint idx3 in index_set_3of4(x);
+         constraint idx4 in index_set_4of4(x);
+       } in element_t( (idx1*(dim2*dim3*dim4)+idx2*(dim3*dim4)+idx3*dim4+idx4-min)::domain, array1d(x))
+       elseif (
           (has_bounds(idx1) /\ lb(idx1) >= min(index_set_1of4(x)) /\ ub(idx1) <= max(index_set_1of4(x)))
        /\ (has_bounds(idx2) /\ lb(idx2) >= min(index_set_2of4(x)) /\ ub(idx2) <= max(index_set_2of4(x)))
        /\ (has_bounds(idx3) /\ lb(idx3) >= min(index_set_3of4(x)) /\ ub(idx3) <= max(index_set_3of4(x)))
@@ -1867,7 +2103,18 @@ function var int: div_t(var int: x, var int: y) :: promise_total =
 function var int: div_mt(var int: x, var int: y) :: promise_total =
   let {
     var ((dom(y) diff {0}) union {1}): yy = if y=0 then 1 else y endif;
-  } in div_t(x,yy);  
+  } in div_t(x,yy);
+
+function var float: fldiv_t(var float: x, var float: y) :: promise_total =
+  let {
+    var float: z ::is_defined_var; % TODO: Compute division boundaries
+    constraint y != 0.0;
+    constraint float_div(x, y, z) ::defines_var(z); } in z;
+
+function var float: fldiv_mt(var float: x, var float: y) :: promise_total =
+  let {
+    var (lb(y)..ub(y) diff {0.0}) union {1.0}: yy = if (y = 0.0) then 1.0 else y endif;
+  } in fldiv_t(x, yy);
 
 function var int: mod_t(var int: x, var int: y) :: promise_total =
   let { var -(max(ub(y),-lb(y)))..max(ub(y),-lb(y)): z;
@@ -1898,8 +2145,8 @@ function var int: max_t(array[int] of var int: x) :: promise_total =
   elseif length(x)=1 then x[min(index_set(x))]
   elseif length(x)=2 then max(x[1],x[2])
   else let {
-    var lb_array(x)..ub_array(x): m;
-    constraint array_int_maximum(m,x);
+    var lb_array(x)..ub_array(x): m ::is_defined_var;
+    constraint array_int_maximum(m,x) ::defines_var(m);
   } in m
   endif;
 
@@ -1908,8 +2155,8 @@ function var int: min_t(array[int] of var int: x) :: promise_total =
   elseif length(x)=1 then x[1]
   elseif length(x)=2 then min(x[1],x[2])
   else let {
-    var lb_array(x)..ub_array(x): m;
-    constraint array_int_minimum(m,x);
+    var lb_array(x)..ub_array(x): m ::is_defined_var;
+    constraint array_int_minimum(m,x) ::defines_var(m);
   } in m
   endif;
 
@@ -1918,8 +2165,8 @@ function var float: max_t(array[int] of var float: x) :: promise_total =
   elseif length(x)=1 then x[min(index_set(x))]
   elseif length(x)=2 then min(x[1],x[2])
   else let {
-    var float: m;
-    constraint array_float_maximum(m,x);
+    var float: m ::is_defined_var;
+    constraint array_float_maximum(m,x) ::defines_var(m);
   } in m
   endif;
   
@@ -1928,8 +2175,8 @@ function var float: min_t(array[int] of var float: x) :: promise_total =
   elseif length(x)=1 then x[1]
   elseif length(x)=2 then min(x[1],x[2])
   else let {
-    var float: m;
-    constraint array_float_minimum(m,x);
+    var float: m ::is_defined_var;
+    constraint array_float_minimum(m,x) ::defines_var(m);
   } in m
   endif;
   
@@ -2047,7 +2294,7 @@ function set of int: anon_enum(int: n) = 1..n;
 /** @group builtins.language Return MiniZinc version encoded as an integer (major*10000+minor*1000+patch). */
 function int: mzn_compiler_version();
 
-/** @group builtins.language Return string representation given an integer major*10000+minor*1000+patch
+/** @group builtins.language Return string representation of \a v given an integer major*10000+minor*1000+patch
 */
 function string: mzn_version_to_string(int: v) =
   show(v div 10000)++"."++show((v div 100) mod 100)++"."++show(v mod 100);
@@ -2061,6 +2308,7 @@ include "redefinitions.mzn";
 include "redefinitions-2.0.mzn";
 include "redefinitions-2.0.2.mzn";
 include "redefinitions-2.1.mzn";
+include "redefinitions-2.1.1.mzn";
 
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%

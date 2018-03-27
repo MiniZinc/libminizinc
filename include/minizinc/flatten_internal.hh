@@ -44,7 +44,7 @@ namespace MiniZinc {
     /// Boolen negation flag
     bool neg;
     /// Default constructor (root context)
-    Ctx(void) : b(C_ROOT), i(C_POS), neg(false) {}
+    Ctx(void) : b(C_ROOT), i(C_MIX), neg(false) {}
     /// Copy constructor
     Ctx(const Ctx& ctx) : b(ctx.b), i(ctx.i), neg(ctx.neg) {}
     /// Assignment operator
@@ -69,6 +69,15 @@ namespace MiniZinc {
     Model* output;
     VarOccurrences vo;
     VarOccurrences output_vo;
+
+    // The current pass number (used for unifying and disabling path construction in final pass)
+    unsigned int current_pass_no;
+    // Used for disabling path construction in final pass
+    unsigned int final_pass_no;
+    // Used for disabling path construction past the maxPathDepth of previous passes
+    unsigned int maxPathDepth;
+
+    VarOccurrences output_vo_flat;
     CopyMap cmap;
     IdMap<KeepAlive> reverseMappers;
     struct WW {
@@ -87,12 +96,29 @@ namespace MiniZinc {
     std::vector<int> modifiedVarDecls;
     int in_redundant_constraint;
     int in_maybe_partial;
+    FlatteningOptions fopts;
+    unsigned int pathUse;
+
+    struct PathVar {
+      KeepAlive decl;
+      unsigned int pass_no;
+    };
+    // Store mapping from path string to (VarDecl, pass_no) tuples
+    typedef UNORDERED_NAMESPACE::unordered_map<std::string, PathVar> PathMap;
+    // Mapping from arbitrary Expressions to paths
+    typedef KeepAliveMap<std::string> ReversePathMap;
+    // Map from filename to integer (space saving optimisation)
+    typedef UNORDERED_NAMESPACE::unordered_map<std::string, int> FilenameMap;
+    std::vector<KeepAlive> checkVars;
   protected:
     Map map;
     Model* _flat;
     bool _failed;
     unsigned int ids;
     ASTStringMap<ASTString>::t reifyMap;
+    PathMap pathMap;
+    ReversePathMap reversePathMap;
+    FilenameMap filenameMap;
     typedef UNORDERED_NAMESPACE::unordered_map<VarDeclI*,unsigned int> EnumMap;
     EnumMap enumMap;
     std::vector<VarDeclI*> enumVarDecls;
@@ -113,23 +139,34 @@ namespace MiniZinc {
     VarDeclI* getEnum(unsigned int i) const;
     unsigned int registerArrayEnum(const std::vector<unsigned int>& arrayEnum);
     const std::vector<unsigned int>& getArrayEnum(unsigned int i) const;
+    /// Check if \a t1 is a subtype of \a t2 (including enumerated types if \a strictEnum is true)
+    bool isSubtype(const Type& t1, const Type& t2, bool strictEnum);
     
     void flat_addItem(Item* i);
     void flat_removeItem(int i);
     void flat_removeItem(Item* i);
     void vo_add_exp(VarDecl* vd);
-    void fail(void);
+    void fail(const std::string& msg = std::string());
     bool failed(void) const;
     Model* flat(void);
     void swap();
     void swap_output() { std::swap( orig, output ); }
     ASTString reifyId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
+    bool dumpPath(std::ostream& os, bool force = false);
     void addWarning(const std::string& msg);
     void collectVarDecls(bool b);
+    PathMap& getPathMap() { return pathMap; }
+    ReversePathMap& getReversePathMap() { return reversePathMap; }
+    FilenameMap& getFilenameMap() { return filenameMap; }
+
+    void copyPathMapsAndState(EnvI& env);
     /// deprecated, use Solns2Out
     std::ostream& evalOutput(std::ostream& os);
     void createErrorStack(void);
+    Call* surroundingCall(void) const;
+
+    void cleanupExceptOutput();
   };
 
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
@@ -296,8 +333,8 @@ namespace MiniZinc {
     }
     static ASTString id_eq(void) { return constants().ids.float_.eq; }
     typedef FloatBounds Bounds;
-    static bool finite(const FloatBounds& ib) { return true; }
-    static bool finite(const FloatVal&) { return true; }
+    static bool finite(const FloatBounds& ib) { return ib.l.isFinite() && ib.u.isFinite(); }
+    static bool finite(const FloatVal& v) { return v.isFinite(); }
     static Bounds compute_bounds(EnvI& env, Expression* e) { return compute_float_bounds(env,e); }
     typedef FloatSetVal* Domain;
     static Domain eval_domain(EnvI& env, Expression* e) { return eval_floatset(env, e); }
@@ -338,8 +375,7 @@ namespace MiniZinc {
       FloatSetVal* ndomain;
       switch (bot) {
         case BOT_LE:
-          v -= 1;
-          // fall through
+          return NULL;
         case BOT_LQ:
         {
           Ranges::Bounded<FloatVal,FloatSetRanges> b = Ranges::Bounded<FloatVal,FloatSetRanges>::maxiter(dr,v);
@@ -347,8 +383,7 @@ namespace MiniZinc {
         }
           break;
         case BOT_GR:
-          v += 1;
-          // fall through
+          return NULL;
         case BOT_GQ:
         {
           Ranges::Bounded<FloatVal,FloatSetRanges> b = Ranges::Bounded<FloatVal,FloatSetRanges>::miniter(dr,v);

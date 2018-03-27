@@ -134,7 +134,6 @@ namespace MiniZinc {
     }
   };
 
-
   /// Hash map from KeepAlive to \a T
   template<class T>
   class KeepAliveMap {
@@ -160,9 +159,10 @@ namespace MiniZinc {
     void remove(KeepAlive& e) {
       _m.erase(e);
     }
+    void clear() { _m.clear(); }
     template <class D> void dump(void) {
       for (iterator i = _m.begin(); i != _m.end(); ++i) {
-        std::cerr << i->first() << ": " << D::d(i->second) << std::endl;
+        std::cerr << D::k(i->first()) << ": " << D::d(i->second) << std::endl;
       }
     }
   };

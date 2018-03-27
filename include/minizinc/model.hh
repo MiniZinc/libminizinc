@@ -14,6 +14,7 @@
 
 #include <vector>
 #include <iterator>
+#include <unordered_map>
 
 #include <minizinc/gc.hh>
 #include <minizinc/ast.hh>
@@ -37,11 +38,27 @@ namespace MiniZinc {
     /// Next model in root set list
     Model* _roots_next;
 
+    struct FnEntry {
+      std::vector<Type> t;
+      FunctionI* fi;
+      bool isPolymorphic;
+      FnEntry(FunctionI* fi0);
+      bool operator <(const FnEntry&) const;
+    };
+    
+    /// Add all instances of polymorphic entry \a fe to \a entries
+    void addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& entries);
+    
     /// Type of map from identifiers to function declarations
-    typedef ASTStringMap<std::vector<FunctionI*> >::t FnMap;
+    typedef ASTStringMap<std::vector<FnEntry> >::t FnMap;
     /// Map from identifiers to function declarations
     FnMap fnmap;
 
+    /// Type of map from Type (represented as int) to reverse mapper functions
+    typedef std::unordered_map<int, FunctionI*> RevMapperMap;
+    /// Map from Type (represented as int) to reverse mapper functions
+    RevMapperMap revmapmap;
+    
     /// Filename of the model
     ASTString _filename;
     /// Path of the model
@@ -64,14 +81,7 @@ namespace MiniZinc {
     ~Model(void);
     
     /// Add \a i to the model
-    void addItem(Item* i) {
-      _items.push_back(i);
-      if (i->isa<SolveI>()) {
-        _solveItem = i->cast<SolveI>();
-      } else if (i->isa<OutputI>()) {
-        _outputItem = i->cast<OutputI>();
-      }
-    }
+    void addItem(Item* i);
     
     /// Get parent model
     Model* parent(void) const { return _parent; }
@@ -97,13 +107,21 @@ namespace MiniZinc {
     void registerFn(EnvI& env, FunctionI* fi);
     /// Sort functions by type
     void sortFn(void);
+    /// Check that registered functions do not clash wrt overloading
+    void checkFnOverloading(EnvI& env);
+    /// Fix function table after type checking
+    void fixFnMap(void);
     /// Return function declaration for \a id matching \a args
     FunctionI* matchFn(EnvI& env, const ASTString& id,
-                       const std::vector<Expression*>& args) const;
+                       const std::vector<Expression*>& args,
+                       bool strictEnums) const;
     /// Return function declaration for \a id matching types \a t
-    FunctionI* matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t);
+    FunctionI* matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t,
+                       bool strictEnums);
     /// Return function declaration matching call \a c
-    FunctionI* matchFn(EnvI& env, Call* c) const;
+    FunctionI* matchFn(EnvI& env, Call* c, bool strictEnums) const;
+    /// Return function declaration for reverse mapper for type \a t
+    FunctionI* matchRevMap(EnvI& env, const Type& t) const;
     /// Merge all builtin functions into \a m
     void mergeStdLib(EnvI& env, Model* m) const;
 
@@ -134,6 +152,7 @@ namespace MiniZinc {
     SolveI* solveItem(void);
 
     OutputI* outputItem(void);
+    void setOutputItem(OutputI* oi);
 
     
     /// Add a file-level documentation comment

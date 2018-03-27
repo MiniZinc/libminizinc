@@ -21,7 +21,6 @@
 #include <gecode/set.hh>
 #endif
 
-#define GECODE_HAS_FLOAT_VARS
 #ifdef GECODE_HAS_FLOAT_VARS
 #include <gecode/float.hh>
 #endif
@@ -29,6 +28,18 @@
 #include <minizinc/flattener.hh>
 #include <minizinc/solver.hh>
 #include <minizinc/solvers/gecode/fzn_space.hh>
+
+#if GECODE_VERSION_NUMBER < 600000
+#error Gecode versions before 6.0 are not supported
+#endif
+
+#define MZ_IntConLevel Gecode::IntPropLevel
+#define MZ_ICL_VAL Gecode::IPL_VAL
+#define MZ_ICL_DOM Gecode::IPL_DOM 
+#define MZ_ICL_BND Gecode::IPL_BND
+#define MZ_ICL_DEF Gecode::IPL_DEF
+#define MZ_EPK_DEF Gecode::IPL_DEF
+
 
 namespace MiniZinc {
   
@@ -203,8 +214,10 @@ namespace MiniZinc {
     bool _run_sac;
     bool _run_shave;
     unsigned int _pre_passes;
+    bool _all_solutions;
     unsigned int _n_max_solutions;
     unsigned int _n_found_solutions;
+    bool _allow_unbounded_vars;
     Model* _flat;
   public:
     /// the Gecode space that will be/has been solved
@@ -222,7 +235,7 @@ namespace MiniZinc {
     GecodeEngine* engine;
     Gecode::Search::Options engine_options;
 
-    GecodeSolverInstance(Env& env, const Options& options);
+    GecodeSolverInstance(Env& env, std::ostream& log, const Options& options);
     virtual ~GecodeSolverInstance(void);
 
     virtual Status next(void);    
@@ -236,6 +249,7 @@ namespace MiniZinc {
     bool sac(bool toFixedPoint, bool shaving);
     void print_stats();
 
+    void processSolution(bool last_sol = false);
     virtual Expression* getSolutionValue(Id* id);
 
     Gecode::Space* getGecodeModel(void);
@@ -271,7 +285,9 @@ namespace MiniZinc {
     Gecode::FloatVarArgs arg2floatvarargs(Expression* arg, int offset = 0);
 #endif
     /// Convert \a ann to IntConLevel
-    Gecode::IntConLevel ann2icl(const Annotation& ann);
+
+
+    MZ_IntConLevel ann2icl(const Annotation& ann);
 
      /// convert the annotation \a s int variable selection to the respective Gecode var selection
     Gecode::TieBreak<Gecode::IntVarBranch> ann2ivarsel(std::string s, Gecode::Rnd& rnd, double decay);
@@ -279,6 +295,14 @@ namespace MiniZinc {
     Gecode::IntValBranch ann2ivalsel(std::string s, std::string& r0, std::string& r1, Gecode::Rnd& rnd);
     /// convert assign value selection
     Gecode::IntAssign ann2asnivalsel(std::string s, Gecode::Rnd& rnd);
+
+    Gecode::TieBreak<Gecode::BoolVarBranch> ann2bvarsel(std::string s, Gecode::Rnd& rnd, double decay);
+    /// convert the annotation \a s int value selection to the respectbve Gecode val selection
+    Gecode::BoolValBranch ann2bvalsel(std::string s, std::string& r0, std::string& r1, Gecode::Rnd& rnd);
+    /// convert assign value selection
+    Gecode::BoolAssign ann2asnbvalsel(std::string s, Gecode::Rnd& rnd);
+
+
 #ifdef GECODE_HAS_SET_VARS
     Gecode::SetVarBranch ann2svarsel(std::string s, Gecode::Rnd& rnd, double decay);
     Gecode::SetValBranch ann2svalsel(std::string s, std::string r0, std::string r1, Gecode::Rnd& rnd);
@@ -313,20 +337,25 @@ namespace MiniZinc {
     void setSearchStrategyFromAnnotation(std::vector<Expression*> flatAnn, 
                                                         std::vector<bool>& iv_searched, 
                                                         std::vector<bool>& bv_searched,
+#ifdef GECODE_HAS_SET_VARS
                                                         std::vector<bool>& sv_searched,
+#endif
+#ifdef GECODE_HAS_FLOAT_VARS
                                                         std::vector<bool>& fv_searched,
+#endif
                                                         Gecode::TieBreak<Gecode::IntVarBranch>& def_int_varsel,
                                                         Gecode::IntValBranch& def_int_valsel,
-                                                        Gecode::TieBreak<Gecode::IntVarBranch>& def_bool_varsel,
-                                                        Gecode::IntValBranch& def_bool_valsel,
-                                                #ifdef GECODE_HAS_SET_VARS
+                                                        Gecode::TieBreak<Gecode::BoolVarBranch>& def_bool_varsel,
+                                                        Gecode::BoolValBranch& def_bool_valsel,
+
+#ifdef GECODE_HAS_SET_VARS
                                                         Gecode::SetVarBranch& def_set_varsel,
                                                         Gecode::SetValBranch& def_set_valsel,
-                                                #endif
-                                                #ifdef GECODE_HAS_FLOAT_VARS
+#endif
+#ifdef GECODE_HAS_FLOAT_VARS
                                                         Gecode::TieBreak<Gecode::FloatVarBranch>& def_float_varsel,
                                                         Gecode::FloatValBranch& def_float_valsel,
-                                                #endif
+#endif
                                                         Gecode::Rnd& rnd,
                                                         double decay,
                                                         bool ignoreUnknown,

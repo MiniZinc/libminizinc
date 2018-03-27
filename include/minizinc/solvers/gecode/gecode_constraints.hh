@@ -20,33 +20,9 @@
 
 namespace MiniZinc {
 
-    namespace GecodeConstraints {
-      
-      inline Gecode::IntRelType swap(Gecode::IntRelType irt) {
-	    switch (irt) {
-		case Gecode::IRT_LQ: return Gecode::IRT_GQ;
-		case Gecode::IRT_LE: return Gecode::IRT_GR;
-		case Gecode::IRT_GQ: return Gecode::IRT_LQ;
-		case Gecode::IRT_GR: return Gecode::IRT_LE;
-		default:     return irt;
-	    }
-	}
+namespace GecodeConstraints {
 
-      inline Gecode::IntRelType neg(Gecode::IntRelType irt) {
-	  switch (irt) {
-	    case Gecode::IRT_EQ: return Gecode::IRT_NQ;
-	      case Gecode::IRT_NQ: return Gecode::IRT_EQ;
-	      case Gecode::IRT_LQ: return Gecode::IRT_GR;
-	      case Gecode::IRT_LE: return Gecode::IRT_GQ;
-	      case Gecode::IRT_GQ: return Gecode::IRT_LE;
-	      case Gecode::IRT_GR:
-	      default:
-			    assert(irt == Gecode::IRT_GR);
-	  }
-	  return Gecode::IRT_LQ;
-      }
-
-#define PosterImpl(X) void X(SolverInstanceBase&, const Call*)
+#define PosterImpl(X) void X(SolverInstanceBase& s, const Call* ce)
 
       PosterImpl(p_distinct);
       PosterImpl(p_distinctOffset);
@@ -243,29 +219,21 @@ namespace MiniZinc {
       PosterImpl(p_float_lt);
       PosterImpl(p_float_lt_reif);
       PosterImpl(p_float_ne);
-      #ifdef GECODE_HAS_MPFR
-#define P_FLOAT_OP(Op) \
-      PosterImpl(p_float_ ## Op ) {\
-	  GecodeSolverInstance& gi = (GecodeSolverInstance&)s; \
-	  FloatVar x = gi.arg2FloatVar(ce->args()[0]);\
-	  FloatVar y = gi.arg2FloatVar(ce->args()[1]);\
-	  Op(gi ,x,y);\
-      }
-      P_FLOAT_OP(acos)
-	  P_FLOAT_OP(asin)
-	  P_FLOAT_OP(atan)
-	  P_FLOAT_OP(cos)
-	  P_FLOAT_OP(exp)
-	  P_FLOAT_OP(sin)
-	  P_FLOAT_OP(tan)         
-#undef P_FLOAT_OP
+#ifdef GECODE_HAS_MPFR
+      PosterImpl(p_float_acos);
+      PosterImpl(p_float_asin);
+      PosterImpl(p_float_atan);
+      PosterImpl(p_float_cos);
+      PosterImpl(p_float_exp);
+      PosterImpl(p_float_sin);
+      PosterImpl(p_float_tan);
       PosterImpl(p_float_ln);
       PosterImpl(p_float_log10);
-      PosterImpl(p_float_log2);	
-      #endif	
-      #endif	
-	
-    }
+      PosterImpl(p_float_log2);
+#endif
+#endif
+
+}
 }
 
 #endif

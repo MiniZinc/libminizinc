@@ -19,6 +19,7 @@
 #include <ctime>
 #include <memory>
 #include <iomanip>
+#include <unordered_map>
 
 #include <minizinc/model.hh>
 #include <minizinc/parser.hh>
@@ -44,8 +45,9 @@ namespace MiniZinc {
     Model* pOutput=0;
 
     typedef std::pair<VarDecl*, KeepAlive> DE;
-    ASTStringMap<DE>::t declmap;
+    std::unordered_map<std::string, DE> declmap;
     Expression* outputExpr = NULL;
+    std::string checkerModel;
     bool fNewSol2Print = false;     // should be set for evalOutput to work
     
   public:
@@ -59,7 +61,7 @@ namespace MiniZinc {
       bool flag_output_flush = true;
       bool flag_output_time = false;
       int flag_ignore_lines = 0;
-      bool flag_unique = 0;
+      bool flag_unique = 1;
       bool flag_canonicalize = 0;
       std::string flag_output_noncanonical;
       std::string flag_output_raw;
@@ -85,6 +87,7 @@ namespace MiniZinc {
     
   public:
     virtual ~Solns2Out();
+    Solns2Out(std::ostream& os, std::ostream& log);
     
     virtual bool processOption(int& i, const int argc, const char** argv);
     virtual void printHelp(std::ostream& );
@@ -92,7 +95,7 @@ namespace MiniZinc {
     /// The output model (~.ozn) can be passed in 1 way in this base class:
     /// passing Env* containing output()
     virtual bool initFromEnv(Env* pE);
-    
+
     /// Then, variable assignments can be passed either as text
     /// or put directly into envi()->output() ( latter done externally
     /// by e.g. SolverInstance::assignSolutionToOutput() )
@@ -117,7 +120,7 @@ namespace MiniZinc {
     /// until ... exit, eof,  ??   TODO
     /// These functions should only be called explicitly
     /// from SolverInstance
-    virtual bool evalOutput();
+    virtual bool evalOutput( const std::string& s_ExtraInfo = "" );
     /// This means the solver exits
     virtual bool evalStatus(SolverInstance::Status status);
 
@@ -137,6 +140,8 @@ namespace MiniZinc {
     std::string line_part;   // non-finished line from last chunk
 
   protected:
+    std::ostream& os;
+    std::ostream& log;
     std::vector<std::string> includePaths;
     
     // Basically open output
@@ -147,8 +152,9 @@ namespace MiniZinc {
     void restoreDefaults();
     /// Parsing fznsolver's complete raw text output
     void parseAssignments( std::string& );
-    
-    virtual bool __evalOutput(std::ostream& os, bool flag_flush);
+    /// Checking solution against checker model
+    void checkSolution( std::ostream& os );
+    virtual bool __evalOutput( std::ostream& os );
     virtual bool __evalOutputFinal( bool flag_flush );
     virtual bool __evalStatusMsg(SolverInstance::Status status);
     

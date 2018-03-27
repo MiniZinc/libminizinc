@@ -31,15 +31,30 @@ namespace MiniZinc {
   struct FlatteningOptions {
     /// Keep output in resulting flat model
     bool keepOutputInFzn;
+    /// Verbose output during flattening
+    bool verbose;
+    /// Only use paths for variables introduced by file 0 (the MiniZinc model)
+    bool only_toplevel_paths;
+    /// Construct and collect mzn_paths for expressions and VarDeclI during flattening
+    bool collect_mzn_paths;
     /// Only range domains for old linearization. Set from redefs to true if not here
     bool onlyRangeDomains;
-    /// Create JSON output
+    /// Create standard, DZN or JSON output
     enum OutputMode {
       OUTPUT_ITEM, OUTPUT_DZN, OUTPUT_JSON
     } outputMode;
+    /// Output objective value (only for DZN and JSON mode)
+    bool outputObjective;
     /// Default constructor
     FlatteningOptions(void)
-    : keepOutputInFzn(false), onlyRangeDomains(false), outputMode(OUTPUT_ITEM) {}
+    : keepOutputInFzn(false), verbose(false), only_toplevel_paths(false), collect_mzn_paths(false), onlyRangeDomains(false), outputMode(OUTPUT_ITEM), outputObjective(false) {}
+  };
+
+  class Pass {
+  public:
+    Pass() {};
+    virtual Env* run(Env* env, std::ostream& log) = 0;
+    virtual ~Pass() {};
   };
   
   /// Flatten model \a m

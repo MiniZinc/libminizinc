@@ -47,6 +47,7 @@ int main(int argc, char** argv) {
   bool flag_ignoreStdlib = false;
   bool flag_verbose = false;
   bool flag_include_stdlib = false;
+  bool flag_index = true;
   int toplevel_groups = 0;
   string output_base;
   string html_header_file;
@@ -65,9 +66,9 @@ int main(int argc, char** argv) {
     if (string(argv[i])==string("-h") || string(argv[i])==string("--help"))
         goto error;
     if (string(argv[i])==string("--version")) {
-      std::cout << "NICTA MiniZinc documentation generator, version "
+      std::cout << "MiniZinc documentation generator, version "
         << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
-      std::cout << "Copyright (C) 2014, 2015 Monash University and NICTA" << std::endl;
+      std::cout << "Copyright (C) 2014-2017 Monash University, NICTA, Data61" << std::endl;
       std::exit(EXIT_SUCCESS);
     }
     if (beginswith(string(argv[i]),"-I")) {
@@ -118,6 +119,8 @@ int main(int argc, char** argv) {
       html_footer_file = string(argv[i]);
     } else if (string(argv[i])=="--include-stdlib") {
       flag_include_stdlib = true;
+    } else if (string(argv[i])=="--no-index") {
+      flag_index = false;
     } else if (string(argv[i])=="--globals-dir" ||
                string(argv[i])=="--mzn-globals-dir") {
       i++;
@@ -236,7 +239,7 @@ int main(int argc, char** argv) {
         if (flag_verbose)
           std::cerr << "Typechecking ...";
         vector<TypeError> typeErrors;
-        MiniZinc::typecheck(env, m, typeErrors, true);
+        MiniZinc::typecheck(env, m, typeErrors, true, false);
         if (typeErrors.size() > 0) {
           for (unsigned int i=0; i<typeErrors.size(); i++) {
             if (flag_verbose)
@@ -255,7 +258,7 @@ int main(int argc, char** argv) {
           basedir = basename.substr(0, lastSlash)+"/";
           basename = basename.substr(lastSlash+1, std::string::npos);
         }
-        std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(env.envi(),m,basename,toplevel_groups,flag_include_stdlib);
+        std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(env.envi(),m,basename,toplevel_groups,flag_include_stdlib,flag_index);
         for (unsigned int i=0; i<docs.size(); i++) {
           std::ofstream os(basedir+docs[i].filename()+".html");
           std::string header = html_header;
@@ -293,7 +296,9 @@ int main(int argc, char** argv) {
   return 0;
 
 error:
-  std::cerr << "Usage: "<< argv[0]
+  std::string executable_name(argv[0]);
+  executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
+  std::cerr << "Usage: "<< executable_name
             << " [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl
             << std::endl
             << "Options:" << std::endl
@@ -304,6 +309,7 @@ error:
             << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
             << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
             << "  --single-page\n    Print entire documentation on a single HTML page." << std::endl
+            << "  --no-index\n       Do not generate an index of all symbols." << std::endl
             << std::endl
             << "Output options:" << std::endl << std::endl
             << "  --output-base <name>\n    Base name for output files" << std::endl

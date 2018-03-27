@@ -18,8 +18,10 @@ namespace MiniZinc {
 
   class CopyMap {
   protected:
-    typedef UNORDERED_NAMESPACE::unordered_map<void*,void*> MyMap;
-    MyMap m;
+    typedef UNORDERED_NAMESPACE::unordered_map<Model*,Model*> ModelMap;
+    ModelMap model_m;
+    
+    ASTNodeWeakMap node_m;
   public:
     void insert(Expression* e0, Expression* e1);
     Expression* find(Expression* e);
@@ -35,13 +37,16 @@ namespace MiniZinc {
     FloatSetVal* find(FloatSetVal* e);
     template<class T>
     void insert(ASTExprVec<T> e0, ASTExprVec<T> e1) {
-      m.insert(std::pair<void*,void*>(e0.vec(),e1.vec()));
+      node_m.insert(e0.vec(),e1.vec());
     }
     template<class T>
     ASTExprVecO<T*>* find(ASTExprVec<T> e) {
-      MyMap::iterator it = m.find(e.vec());
-      if (it==m.end()) return NULL;
-      return static_cast<ASTExprVecO<T*>*>(it->second);
+      ASTNode* n = node_m.find(e.vec());
+      return static_cast<ASTExprVecO<T*>*>(n);
+    }
+    void clear() {
+      model_m.clear();
+      node_m.clear();
     }
   };
 

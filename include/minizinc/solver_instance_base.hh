@@ -30,14 +30,14 @@ namespace MiniZinc {
     Env& _env;
     Options _options;
     Solns2Out* pS2Out=0;
-    
+    std::ostream& _log;
   public:
     typedef SolverInstance::Status Status;
     typedef SolverInstance::StatusReason StatusReason;
     Status _status;
     StatusReason _status_reason;
     
-    SolverInstanceBase(Env& env, const Options& options) : _env(env), _options(options),
+    SolverInstanceBase(Env& env, std::ostream& log, const Options& options) : _env(env), _options(options), _log(log),
       _status(SolverInstance::UNKNOWN), _status_reason(SolverInstance::SR_OK) {}
     virtual ~SolverInstanceBase() { }
     
@@ -54,13 +54,15 @@ namespace MiniZinc {
     virtual void printSolution();
 //     virtual void printSolution(ostream& );  // deprecated
     /// print statistics in form of comments
-    virtual void printStatistics(std::ostream&, bool fLegend=0) { }
-    virtual void printStatisticsLine(std::ostream&, bool fLegend=0) { }
+    virtual void printStatistics(bool fLegend=0) { }
+    virtual void printStatisticsLine(bool fLegend=0) { }
 
     /// find the next solution
     virtual Status next(void) = 0;
     /// generate the solver-instance-representation from the flatzinc model
     virtual void processFlatZinc(void) = 0;
+    /// clean up input model & flatzinc
+    void cleanupForNonincrementalSolving() { getEnv()->envi().cleanupExceptOutput(); }
     /// solve the problem instance (according to the solve specification in the flatzinc model)
     virtual Status solve(void);
     /// return reason for status given by solve
@@ -101,8 +103,8 @@ namespace MiniZinc {
     std::vector<VarDecl*> _varsWithOutput;    // this is to extract fzn vars. Identical to output()?  TODO
 
   public:
-    SolverInstanceBase2(Env& env, const Options& options=Options())
-      : SolverInstanceBase(env, options) {}
+    SolverInstanceBase2(Env& env, std::ostream& log, const Options& options=Options())
+      : SolverInstanceBase(env, log, options) {}
   };
   
   typedef void (*poster) (SolverInstanceBase&, const Call* call);
@@ -132,8 +134,8 @@ namespace MiniZinc {
     Registry _constraintRegistry;
 
   public:
-    SolverInstanceImpl(Env& env, const Options& options=Options())
-      : SolverInstanceBase2(env, options), _constraintRegistry(*this) {}
+    SolverInstanceImpl(Env& env, std::ostream& log, const Options& options=Options())
+      : SolverInstanceBase2(env, log, options), _constraintRegistry(*this) {}
     
   };
 

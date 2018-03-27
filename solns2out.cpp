@@ -42,15 +42,17 @@ namespace MiniZinc {
   public:
     string filename;
     Solns2OutFull( const int ac, const char** av )
-      : argc(ac), argv(av) { }
+      : Solns2Out(cout, cerr), argc(ac), argv(av) { }
     void printVersion(ostream& os) {
-      os << "NICTA MiniZinc solution printing tool, version "
+      os << "MiniZinc solution printing tool, version "
          << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
       os << "Copyright (C) 2014-" << string(__DATE__).substr(7, 4)
-         << "   Monash University and NICTA" << std::endl;
+         << "   Monash University, NICTA, Data61" << std::endl;
     }
     void printHelp(ostream& os) {
-      os << "Usage: " << argv[0]
+      std::string executable_name(argv[0]);
+      executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
+      os << "Usage: " << executable_name
             << " [<options>] <model>.ozn" << std::endl
             << std::endl
             << "General options:" << std::endl
@@ -90,7 +92,7 @@ namespace MiniZinc {
       }
       return true;
     NotFound:
-      cerr << "  solns2out: unrecognized option: '" << avi << "'" << endl;
+      cerr << "solns2out: unrecognized option `" << avi << "'" << endl;
       return false;
     }
     void run() {
@@ -143,20 +145,20 @@ namespace MiniZinc {
 
       for (unsigned int i=0; i<includePaths.size(); i++) {
         if (!FileUtils::directory_exists(includePaths[i])) {
-          std::cerr << "Cannot access include directory " << includePaths[i] << "\n";
+          std::cerr << "solns2out: cannot access include directory " << includePaths[i] << "\n";
           std::exit(EXIT_FAILURE);
         }
       }
 
       {
         pEnv = new Env();
-        if (pOutput = parse(*pEnv, filenames, std::vector<std::string>(), includePaths, false, false, false,
-                                  std::cerr)) {
+        if ((pOutput = parse(*pEnv, filenames, std::vector<std::string>(), includePaths, false, false, false,
+                                   std::cerr))) {
           std::vector<TypeError> typeErrors;
           pEnv->model(pOutput);
           MZN_ASSERT_HARD_MSG( pEnv, "solns2out: could not allocate Env" );
           pEnv_guard.reset( pEnv );
-          MiniZinc::typecheck(*pEnv,pOutput,typeErrors);
+          MiniZinc::typecheck(*pEnv,pOutput,typeErrors,false,false);
           MiniZinc::registerBuiltins(*pEnv,pOutput);
           pEnv->envi().swap_output();
           return true;

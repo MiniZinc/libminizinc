@@ -28,9 +28,19 @@ namespace MiniZinc { namespace FileUtils {
   std::string file_path(const std::string& filename, const std::string& basePath=std::string());
   /// Return directory name containing \a filename
   std::string dir_name(const std::string& filename);
+  /// Check whether path is absolute
+  bool is_absolute(const std::string& path);
   /// Return list of files with extension \a ext in directory \a dir
   std::vector<std::string> directory_list(const std::string& dir,
                                           const std::string& ext=std::string("*"));
+  /// Inflate string \a s
+  void inflateString(std::string& s);
+  /// Deflate string \a s
+  std::string deflateString(const std::string& s);
+  /// Encode string into base 64
+  std::string encodeBase64(const std::string& s);
+  /// Decode string from base 64
+  std::string decodeBase64(const std::string& s);
 }}
 
 #endif

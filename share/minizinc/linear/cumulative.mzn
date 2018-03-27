@@ -19,17 +19,19 @@ predicate cumulative(array[int] of var int: s,
         if mzn_in_redundant_constraint() /\ fMZN__IgnoreRedundantCumulative then
             true
         else
-                let { 
-                set of int: tasks = 
-                    {i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0 },
-                set of int: times = dom_array( [ s[i] | i in tasks ] )
-                } in
-%        my_trace("  cumul: times = " ++ show(times)) /\
-        if nMZN__UnarySizeMax_cumul>=card(times)*card(tasks) then     %%%   -- Mem overflow on rcmsp. PARAMETER? TODO
-            cumulative_time_decomp(s, d, r, b, times) 
-        else 
-            cumulative_task_decomp(s, d, r, b) 
-        endif
+            let { 
+            set of int: tasks = 
+                {i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0 },
+            set of int: times = dom_array( [ s[i] | i in tasks ] )
+            } in
+                if 0==card(tasks) then /*true*/ 0==card(index_set(s)) \/ b>=0
+                else
+                    if nMZN__UnarySizeMax_cumul>=card(times)*card(tasks) then     %%%   -- Mem overflow on rcmsp. PARAMETER? TODO
+                        cumulative_time_decomp(s, d, r, b, times) 
+                    else 
+                        cumulative_task_decomp(s, d, r, b) 
+                    endif
+                endif
         endif
     ));
 
@@ -71,10 +73,8 @@ in
 %  my_trace("  cumul_time: " ++ show(card(tasks)) ++ " tasks, " ++ show(card(times)) ++ " times\n") /\
   forall( t in times ) ( 
     b >= sum( i in tasks ) ( 
-      if false then            %%          is_fixed(d[i]) then     -- mem overflow on mspsp
-        let { array[int] of var int: p = eq_encode(s[i]) } in          %% should be up to 100
-          sum( t1 in dom(s[i]) where t1>t-d[i] /\ t1<=t )
-            ( p[t1] )                           %% use unary encoding
+      if is_fixed(d[i]) then
+        bool2int( s[i] in t-fix(d[i])+1..t )
       else 
         bool2int( s[i] <= t /\ t < s[i] + d[i] )
       endif

@@ -6,6 +6,11 @@
 %-----------------------------------------------------------------------------%
 %---------- USER and LAZY CUTS -----------------------------------------------%
 /*
+   PLEASE NOTE:
+   If you export FZN file with lazy_constraint/user_cut annotations,
+   their declarations are not exported currently (as of 7.11.17).
+   WORKAROUND: when solving that fzn, add -G linear,
+   e.g., as follows: mzn-cplex -G linear model.fzn
  * For Gurobi, the constraints marked as MIP_cut and/or MIP_lazy are added
  * into the overall model and marked with the foll values of Lazy attribute:
  *   ::MIP_lazy             1
@@ -15,12 +20,17 @@
 ann: user_cut;
 ann: lazy_constraint;
 %%% comment away the below assignments (leaving, e.g., ann: MIP_cut;) to have them as normal constraints  
-ann: MIP_cut = user_cut;     %% seems better on average but wrong LB e.g. on carpet-cutting
+%%% In particular, they may be used by redundant_constraint() and symmetry_breaking_constraint(), see redefs-2.0.2.mzn
+ann: MIP_cut = user_cut;         %% MIP_cut: make sure no feasible solutions are cut off
+                                 %% -- seems better on average but in CPLEX, wrong LB e.g. on carpet-cutting
 ann: MIP_lazy = lazy_constraint;
 
 %-----------------------------------------------------------------------------%
-bool: fMZN__UseIndicators=false;    %% Pass on indicator constraints, CPLEX only.  [DISABLED]
-    %% Reifs give wrong result on 2012/amaze, so using implications only
+opt bool: fIndConstr;
+bool: fMZN__UseIndicators =    %% Pass on indicator constraints
+           if absent( fIndConstr ) then false
+           else deopt( fIndConstr ) endif;
+    %% CPLEX 12.6.2 Concert: reifs give wrong result on 2012/amaze, so using implications only
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% MIPdomains %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --------------------------------------------------------------------------------------- %
@@ -52,6 +62,9 @@ opt bool: fAvoidNewInts;
 bool: fAvoidNI =                  %% Actually this is only for ..._lin_..., not for just x-y
            if absent( fAvoidNewInts ) then false
            else deopt( fAvoidNewInts ) endif;
+opt bool: fNewVarsInAuxEq;
+bool: fAuxIntEqOLD00 = if absent(fNewVarsInAuxEq) then false else deopt(fNewVarsInAuxEq) endif;
+bool: fAuxFloatEqOLD00 = if absent(fNewVarsInAuxEq) then false else deopt(fNewVarsInAuxEq) endif;
 
 %%%%%%%%%%%%%%%%%%%%%  Redundant constraints ---------------------------------------------- %
 bool: fMZN__IgnoreRedundantCumulative=false;
@@ -92,7 +105,11 @@ int: nMZN__UnaryLenMax_setInReif = nMZN__UnaryLenMax__ALL;
 %-----------------------------------------------------------------------------%
 % Strict inequality
 % The relative epsilon
+%%% Has the problem that when relating to upper bound of various differences,
+%%% getting different absolute eps...?
 float: float_lt_EPS_coef__ = 1e-03;
+%%% Absolute one, used, e.g., in MIP domains:
+float: float_lt_EPS = 1e-02;
 
 %-----------------------------------------------------------------------------%
 %%% Set =true to PRINT TRACING messages for some constraints:

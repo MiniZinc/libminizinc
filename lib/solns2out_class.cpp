@@ -16,6 +16,7 @@
 #endif
 
 #include <minizinc/solns2out.hh>
+#include <minizinc/solver.hh>
 #include <fstream>
 
 using namespace std;
@@ -35,7 +36,7 @@ void Solns2Out::printHelp(ostream& os)
   "    Specify solution status messages. The defaults:\n"
   "    \"=====UNSATISFIABLE=====\", \"=====UNSATorUNBOUNDED=====\", \"=====UNBOUNDED=====\",\n"
   "    \"=====UNKNOWN=====\", \"=====ERROR=====\", \"==========\", respectively." << std::endl
-  << "  --unique\n    Avoid duplicate solutions.\n"
+  << "  --non-unique\n    Allow duplicate solutions.\n"
   << "  -c, --canonicalize\n    Canonicalize the output solution stream (i.e., buffer and sort).\n"
   << "  --output-non-canonical <file>\n    Non-buffered solution output file in case of canonicalization.\n"
   << "  --output-raw <file>\n    File to dump the solver's raw output (not for hard-linked solvers)\n"
@@ -69,9 +70,11 @@ bool Solns2Out::processOption(int& i, const int argc, const char** argv)
   } else if ( cop.getOption( "--search-complete-msg", &_opt.search_complete_msg ) ) {
   } else if ( cop.getOption( "--unique") ) {
     _opt.flag_unique = true;
+  } else if ( cop.getOption( "--non-unique") ) {
+    _opt.flag_unique = false;
   } else if ( cop.getOption( "-c --canonicalize") ) {
     _opt.flag_canonicalize = true;
-  } else if ( cop.getOption( "--output-non-canonical", &_opt.flag_output_noncanonical) ) {
+  } else if ( cop.getOption( "--output-non-canonical --output-non-canon", &_opt.flag_output_noncanonical) ) {
   } else if ( cop.getOption( "--output-raw", &_opt.flag_output_raw) ) {
 //   } else if ( cop.getOption( "--number-output", &_opt.flag_number_output ) ) {
   } else {
@@ -104,7 +107,8 @@ bool Solns2Out::initFromEnv(Env* pE) {
 void Solns2Out::createOutputMap() {
   for (unsigned int i=0; i<getModel()->size(); i++) {
     if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
-      declmap.insert(pair<ASTString,DE>(vdi->e()->id()->str(),DE(vdi->e(),vdi->e()->e())));
+      GCLock lock;
+      declmap.insert(pair<std::string,DE>(vdi->e()->id()->str().str(),DE(vdi->e(),vdi->e()->e())));
     } else if (OutputI* oi = (*getModel())[i]->dyn_cast<OutputI>()) {
       MZN_ASSERT_HARD_MSG( outputExpr == oi->e(),
         "solns2out_base: <=1 output items allowed currently  TODO?" );
@@ -116,7 +120,7 @@ Solns2Out::DE& Solns2Out::findOutputVar( ASTString id ) {
   declNewOutput();
   if ( declmap.empty() )
     createOutputMap();
-  auto it = declmap.find( id );
+  auto it = declmap.find( id.str() );
   MZN_ASSERT_HARD_MSG( declmap.end()!=it,
                        "solns2out_base: unexpected id in output: " << id );
   return it->second;
@@ -125,6 +129,7 @@ Solns2Out::DE& Solns2Out::findOutputVar( ASTString id ) {
 void Solns2Out::restoreDefaults() {
   for (unsigned int i=0; i<getModel()->size(); i++) {
     if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
+      GCLock lock;
       auto& de = findOutputVar(vdi->e()->id()->str());
       vdi->e()->e(de.second());
       vdi->e()->evaluated(false);
@@ -136,8 +141,9 @@ void Solns2Out::restoreDefaults() {
 void Solns2Out::parseAssignments(string& solution) {
   std::vector<SyntaxError> se;
   unique_ptr<Model> sm(
-    parseFromString(solution, "solution received from solver", includePaths, true, false, false, cerr, se) );
-  MZN_ASSERT_HARD_MSG( sm.get(), "solns2out_base: could not parse solution" );
+    parseFromString(solution, "solution received from solver", includePaths, true, false, false, log, se) );
+  if (sm.get()==NULL)
+    throw Error("solns2out_base: could not parse solution");
   solution = "";
   for (unsigned int i=0; i<sm->size(); i++) {
     if (AssignI* ai = (*sm)[i]->dyn_cast<AssignI>()) {
@@ -147,11 +153,11 @@ void Solns2Out::parseAssignments(string& solution) {
       typecheck(*pEnv, getModel(), ai);
       if (Call* c = ai->e()->dyn_cast<Call>()) {
         // This is an arrayXd call, make sure we get the right builtin
-        assert(c->args()[c->args().size()-1]->isa<ArrayLit>());
-        for (unsigned int i=0; i<c->args().size(); i++)
-          c->args()[i]->type(Type::parsetint());
-        c->args()[c->args().size()-1]->type(de.first->type());
-        c->decl(getModel()->matchFn(pEnv->envi(), c));
+        assert(c->arg(c->n_args()-1)->isa<ArrayLit>());
+        for (unsigned int i=0; i<c->n_args(); i++)
+          c->arg(i)->type(Type::parsetint());
+        c->arg(c->n_args()-1)->type(de.first->type());
+        c->decl(getModel()->matchFn(pEnv->envi(), c, false));
       }
       de.first->e(ai->e());
     }
@@ -164,68 +170,132 @@ void Solns2Out::declNewOutput() {
   status = SolverInstance::SAT;
 }
 
-bool Solns2Out::evalOutput() {
+bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
   if ( !fNewSol2Print )
     return true;
   ostringstream oss;
-  if (!__evalOutput( oss, false ))
+  if (!__evalOutput( oss ))
     return false;
+  if ( !checkerModel.empty() )
+    checkSolution(oss);
+  bool fNew=true;
   if ( _opt.flag_unique || _opt.flag_canonicalize ) {
     auto res = sSolsCanon.insert( oss.str() );
     if ( !res.second )            // repeated solution
-      return true;
+      fNew = false;
   }
-  ++nSolns;
-  if ( _opt.flag_canonicalize ) {
-    if ( pOfs_non_canon.get() )
-      if ( pOfs_non_canon->good() ) {
-        (*pOfs_non_canon) << oss.str();
-        (*pOfs_non_canon) << comments;
-        if (_opt.flag_output_time)
-          (*pOfs_non_canon) << "% time elapsed: " << stoptime(starttime) << "\n";
-        if ( _opt.flag_output_flush )
-          pOfs_non_canon->flush();
-      }
-  } else {
-    if ( _opt.solution_comma.size() && nSolns>1 )
-      getOutput() << _opt.solution_comma << '\n';
-    getOutput() << oss.str();
-    if ( _opt.flag_output_flush )
-      getOutput().flush();
+  if ( fNew ) {
+    ++nSolns;
+    if ( _opt.flag_canonicalize ) {
+      if ( pOfs_non_canon.get() )
+        if ( pOfs_non_canon->good() ) {
+          (*pOfs_non_canon) << oss.str();
+          (*pOfs_non_canon) << comments;
+          if ( s_ExtraInfo.size() ) {
+            (*pOfs_non_canon) << s_ExtraInfo;
+            if ( '\n'!=s_ExtraInfo.back() )                 /// TODO is this enough to check EOL?
+              (*pOfs_non_canon) << '\n';
+          }
+          if (_opt.flag_output_time)
+            (*pOfs_non_canon) << "% time elapsed: " << stoptime(starttime) << "\n";
+          if (!_opt.solution_separator.empty())
+            (*pOfs_non_canon) << _opt.solution_separator << '\n';
+          if ( _opt.flag_output_flush )
+            pOfs_non_canon->flush();
+        }
+    } else {
+      if ( _opt.solution_comma.size() && nSolns>1 )
+        getOutput() << _opt.solution_comma << '\n';
+      getOutput() << oss.str();
+    }
   }
-  getOutput() << comments;      // should not be sorted
+  getOutput() << comments;                          // print them now ????
   comments = "";
-  if (_opt.flag_output_time)
+  if ( s_ExtraInfo.size() ) {
+    getOutput() << s_ExtraInfo;
+    if ( '\n'!=s_ExtraInfo.back() )                 /// TODO is this enough to check EOL?
+      getOutput() << '\n';
+  }
+  if ( fNew && _opt.flag_output_time)
     getOutput() << "% time elapsed: " << stoptime(starttime) << "\n";
+  if ( fNew && !_opt.flag_canonicalize && !_opt.solution_separator.empty())
+    getOutput() << _opt.solution_separator << '\n';
+  if ( _opt.flag_output_flush )
+    getOutput().flush();
   restoreDefaults();     // cleans data. evalOutput() should not be called again w/o assigning new data.
   return true;
 }
 
-bool Solns2Out::__evalOutput( ostream& fout, bool flag_output_flush ) {
+void Solns2Out::checkSolution(std::ostream& os) {
+#ifdef HAS_GECODE
+
+  std::ostringstream checker;
+  checker << checkerModel;
+  {
+    GCLock lock;
+    for (unsigned int i=0; i<getModel()->size(); i++) {
+      if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
+        if (vdi->e()->ann().contains(constants().ann.mzn_check_var)) {
+          checker << vdi->e()->id()->str() << "=" << *eval_par(getEnv()->envi(),vdi->e()->e()) << ";";
+        }
+      }
+    }
+  }
+  
+  unique_ptr<SolverFactory>
+  pFactoryGECODE( SolverFactory::createF_GECODE() );
+
+  std::ostringstream oss_err;
+  MznSolver slv(oss_err,oss_err,false);
+  slv.s2out._opt.solution_separator = "";
+  try {
+    std::vector<std::string> args({"-Ggecode","-"});
+    int argc = args.size();
+    std::vector<const char*> argv(argc);
+    for (unsigned int i=0; i<args.size(); i++)
+      argv[i] = args[i].c_str();
+    if (!slv.processOptions(argc, &argv[0])) {
+      slv.printHelp();
+    } else {
+      slv.flatten(checker.str());
+      
+      if (SolverInstance::UNKNOWN == slv.getFltStatus())
+      {
+        slv.addSolverInterface();
+        slv.solve();
+      } else {
+        slv.s2out.evalStatus( slv.getFltStatus() );
+      }
+    }
+  } catch (const LocationException& e) {
+    oss_err << e.loc() << ":" << std::endl;
+    oss_err << e.what() << ": " << e.msg() << std::endl;
+  } catch (const Exception& e) {
+    std::string what = e.what();
+    oss_err << what << (what.empty() ? "" : ": ") <<e.msg() << std::endl;
+  }
+  catch (const exception& e) {
+    oss_err << e.what() << std::endl;
+  }
+  catch (...) {
+    oss_err << "  UNKNOWN EXCEPTION." << std::endl;
+  }
+  std::istringstream iss(oss_err.str());
+  std::string line;
+  os << "% Solution checker report:\n";
+  while (std::getline(iss,line)) {
+    os << "% " << line << "\n";
+  }
+  
+#else
+  os << "% solution checking not supported (need built-in Gecode)" << std::endl;
+#endif
+}
+
+bool Solns2Out::__evalOutput( ostream& fout ) {
   if ( 0!=outputExpr ) {
-//     GCLock lock;
-//     ArrayLit* al = eval_array_lit(pEnv->envi(),outputExpr);
-//     std::string os;
-//     cerr << " al->size() == " << al->v().size() << endl;
-//     for (unsigned int i=0; i<al->v().size(); i++) {
-//       std::string s = eval_string(pEnv->envi(),al->v()[i]);
-//       if (!s.empty()) {
-//         os = s;
-//         cerr << os;
-//         if (flag_output_flush)
-//           fout.flush();
-//       }
-//     }
-//     if (!os.empty() && os[os.size()-1] != '\n') {
-//       cerr << '\n';
-//       if (flag_output_flush)
-//         fout.flush();
-//     }
     pEnv->envi().evalOutput( fout );
   }
-  fout << _opt.solution_separator << '\n';
-  if (flag_output_flush)
-    fout.flush();
   return true;
 }
 
@@ -243,6 +313,8 @@ bool Solns2Out::__evalOutputFinal( bool ) {
     if ( _opt.solution_comma.size() && &sol != &*sSolsCanon.begin() )
       getOutput() << _opt.solution_comma << '\n';
     getOutput() << sol;
+    if (!_opt.solution_separator.empty())
+      getOutput() << _opt.solution_separator << '\n';
   }
   return true;
 }
@@ -257,8 +329,9 @@ bool Solns2Out::__evalStatusMsg( SolverInstance::Status status ) {
   stat2msg[ SolverInstance::ERROR ] = _opt.error_msg;
   auto it=stat2msg.find(status);
   if ( stat2msg.end()!=it ) {
-    getOutput() << it->second << '\n';
     getOutput() << comments;
+    if (!it->second.empty())
+      getOutput() << it->second << '\n';
     if ( _opt.flag_output_flush )
       getOutput().flush();
     Solns2Out::status = status;
@@ -276,10 +349,20 @@ bool Solns2Out::__evalStatusMsg( SolverInstance::Status status ) {
 }
 
 void Solns2Out::init() {
-//   outputExpr = getModel()->outputItem()->e(); 
+
   for (unsigned int i=0; i<getModel()->size(); i++) {
     if (OutputI* oi = (*getModel())[i]->dyn_cast<OutputI>()) {
       outputExpr = oi->e();
+      break;
+    }
+    if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
+      if (vdi->e()->id()->idn()==-1 && vdi->e()->id()->v()=="_mzn_solution_checker") {
+        checkerModel = eval_string(getEnv()->envi(), vdi->e()->e());
+        if (checkerModel.size() > 0 && checkerModel[0]==':') {
+          checkerModel = FileUtils::decodeBase64(checkerModel);
+          FileUtils::inflateString(checkerModel);
+        }
+      }
     }
   }
 
@@ -311,6 +394,8 @@ void Solns2Out::init() {
   nLinesIgnore = _opt.flag_ignore_lines;
 }
 
+Solns2Out::Solns2Out(std::ostream& os0, std::ostream& log0) : os(os0), log(log0) {}
+
 Solns2Out::~Solns2Out() {
   getOutput() << comments;
   if ( _opt.flag_output_flush )
@@ -318,7 +403,7 @@ Solns2Out::~Solns2Out() {
 }
 
 ostream& Solns2Out::getOutput() {
-  return ( pOut.get() && pOut->good() ) ? *pOut : cout;
+  return (( pOut.get() && pOut->good() ) ? *pOut : os);
 }
 
 bool Solns2Out::feedRawDataChunk(const char* data) {
@@ -354,10 +439,17 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
     } else {
       solution += line + '\n';
       if ( _opt.flag_output_comments ) {
-        size_t comment_pos = line.find('%');
-        if (comment_pos != string::npos) {
-          comments += line.substr(comment_pos);
-          comments += "\n";
+        std::istringstream iss( line );
+        char c='_';
+        iss >> skipws >> c;
+        if ( iss.good() && '%'==c) {
+          // Feed comments directly
+          getOutput() << line << '\n';
+          if ( _opt.flag_output_flush )
+            getOutput().flush();
+          if ( pOfs_non_canon.get() )
+            if ( pOfs_non_canon->good() )
+              ( *pOfs_non_canon ) << line << '\n';
         }
       }
     }

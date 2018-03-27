@@ -13,6 +13,8 @@
  * linearization module && a flexible flattener-to-solver interface
  */
 
+/// TODO Quadratic terms, even CBC
+
 #ifdef _MSC_VER 
 #define _CRT_SECURE_NO_WARNINGS
 #endif
@@ -28,7 +30,46 @@ using namespace std;
 
 #include <minizinc/solvers/MIP/MIP_solverinstance.hh>
 
+namespace MiniZinc {
+  namespace SCIPConstraints {
+    
+    bool CheckAnnUserCut(const Call* call) {
+      if(!call->ann().isEmpty()) {
+        if(call->ann().contains(constants().ann.user_cut)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    bool CheckAnnLazyConstraint(const Call* call) {
+      if(!call->ann().isEmpty()) {
+        if(call->ann().contains(constants().ann.lazy_constraint)) {
+          return true;
+        }
+      }
+      return false;
+    }
+    int GetMaskConsType(const Call* call) {
+      int mask=0;
+      const bool fUC = CheckAnnUserCut(call);
+      const bool fLC = CheckAnnLazyConstraint(call);
+      if (fUC) {
+        mask |= MIP_wrapper::MaskConsType_Usercut;
+      }
+      if (fLC) {
+        mask |= MIP_wrapper::MaskConsType_Lazy;
+      }
+      if (!fUC && !fLC)
+        mask |= MIP_wrapper::MaskConsType_Normal;
+      return mask;
+      //       return MIP_wrapper::MaskConsType_Normal;    // recognition fails
+    }
+  }
+}
+
 using namespace MiniZinc;
+
+
 
 void XBZCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInput& cutsIn) {
   assert( pMIP );

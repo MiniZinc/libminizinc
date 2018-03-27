@@ -15,6 +15,7 @@
 #include <cstdlib>
 #include <cassert>
 #include <new>
+#include <minizinc/stl_map_set.hh>
 
 namespace MiniZinc {
   
@@ -109,6 +110,8 @@ namespace MiniZinc {
   class KeepAlive;
   class WeakRef;
 
+  class ASTNodeWeakMap;
+  
   /// Garbage collector
   class GC {
     friend class ASTNode;
@@ -116,6 +119,7 @@ namespace MiniZinc {
     friend class ASTChunk;
     friend class KeepAlive;
     friend class WeakRef;
+    friend class ASTNodeWeakMap;
   private:
     class Heap;
     /// The memory controlled by the collector
@@ -134,11 +138,16 @@ namespace MiniZinc {
     static void removeKeepAlive(KeepAlive* e);
     static void addWeakRef(WeakRef* e);
     static void removeWeakRef(WeakRef* e);
+    static void addNodeWeakMap(ASTNodeWeakMap* m);
+    static void removeNodeWeakMap(ASTNodeWeakMap* m);
+    
   public:
     /// Acquire garbage collector lock for this thread
     static void lock(void);
     /// Release garbage collector lock for this thread
     static void unlock(void);
+    /// Manually trigger garbage collector (must be unlocked)
+    static void trigger(void);
     /// Test if garbage collector is locked
     static bool locked(void);
     /// Add model \a m to root set
@@ -201,6 +210,25 @@ namespace MiniZinc {
     WeakRef* next(void) const { return _n; }
   };
 
+  class ASTNodeWeakMap {
+    friend class GC;
+  private:
+    ASTNodeWeakMap(const WeakRef& e);
+    ASTNodeWeakMap& operator =(const ASTNodeWeakMap& e);
+    
+  protected:
+    typedef UNORDERED_NAMESPACE::unordered_map<ASTNode*, ASTNode*> NodeMap;
+    ASTNodeWeakMap* _p;
+    ASTNodeWeakMap* _n;
+    ASTNodeWeakMap* next(void) const { return _n; }
+    NodeMap _m;
+  public:
+    ASTNodeWeakMap(void);
+    ~ASTNodeWeakMap(void);
+    void insert(ASTNode* n0, ASTNode* n1);
+    ASTNode* find(ASTNode* n);
+    void clear() { _m.clear(); }
+  };
 }
 
 #endif

@@ -184,7 +184,10 @@ namespace MiniZinc {
             pushVec(stack, ce->template cast<SetLit>()->v());
             break;
           case Expression::E_ARRAYLIT:
-            pushVec(stack, ce->template cast<ArrayLit>()->v());
+            {
+              for (unsigned int i=0; i<ce->cast<ArrayLit>()->size(); i++)
+                stack.push_back((*ce->cast<ArrayLit>())[i]);
+            }
             break;
           case Expression::E_ARRAYACCESS:
             pushVec(stack, ce->template cast<ArrayAccess>()->idx());
@@ -194,13 +197,18 @@ namespace MiniZinc {
             {
               Comprehension* comp = ce->template cast<Comprehension>();
               stack.push_back(C(comp->e()));
-              stack.push_back(C(comp->where()));
               for (unsigned int i=comp->n_generators(); i--; ) {
                 for (unsigned int j=comp->n_decls(i); j--; ) {
                   stack.push_back(C(comp->decl(i, j)));
                 }
-                stack.push_back(C(comp,i));
-                stack.push_back(C(comp->in(i)));
+                if (comp->in(i)) {
+                  stack.push_back(C(comp->where(i)));
+                  stack.push_back(C(comp,i));
+                  stack.push_back(C(comp->in(i)));
+                } else {
+                  stack.push_back(C(comp,i));
+                  stack.push_back(C(comp->where(i)));
+                }
               }
             }
             break;
@@ -222,7 +230,8 @@ namespace MiniZinc {
             stack.push_back(C(ce->template cast<UnOp>()->e()));
             break;
           case Expression::E_CALL:
-            pushVec(stack, ce->template cast<Call>()->args());
+            for (unsigned int i=0; i<ce->template cast<Call>()->n_args(); i++)
+              stack.push_back(ce->template cast<Call>()->arg(i));
             break;
           case Expression::E_VARDECL:
             stack.push_back(C(ce->template cast<VarDecl>()->e()));
@@ -285,7 +294,8 @@ namespace MiniZinc {
         break;
         case Expression::E_ARRAYLIT:
         _t.vArrayLit(*e->template cast<ArrayLit>());
-        pushVec(stack, e->template cast<ArrayLit>()->v());
+        for (unsigned int i=0; i<e->cast<ArrayLit>()->size(); i++)
+          stack.push_back((*e->cast<ArrayLit>())[i]);
         break;
         case Expression::E_ARRAYACCESS:
         _t.vArrayAccess(*e->template cast<ArrayAccess>());
@@ -296,8 +306,8 @@ namespace MiniZinc {
         _t.vComprehension(*e->template cast<Comprehension>());
         {
           Comprehension* comp = e->template cast<Comprehension>();
-          stack.push_back(comp->where());
           for (unsigned int i=comp->n_generators(); i--; ) {
+            stack.push_back(comp->where(i));
             stack.push_back(comp->in(i));
             for (unsigned int j=comp->n_decls(i); j--; ) {
               stack.push_back(comp->decl(i, j));
@@ -328,7 +338,8 @@ namespace MiniZinc {
         break;
         case Expression::E_CALL:
         _t.vCall(*e->template cast<Call>());
-        pushVec(stack, e->template cast<Call>()->args());
+        for (unsigned int i=0; i<e->template cast<Call>()->n_args(); i++)
+          stack.push_back(e->template cast<Call>()->arg(i));
         break;
         case Expression::E_VARDECL:
         _t.vVarDecl(*e->template cast<VarDecl>());

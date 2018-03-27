@@ -56,12 +56,10 @@ void SolverRegistry::removeSolverFactory(SolverFactory* pSF)
 }
 
 /// Function createSI also adds each SI to the local storage
-SolverInstanceBase * SolverFactory::createSI(Env& env) {
-  SolverInstanceBase *pSI = doCreateSI(env);
+SolverInstanceBase * SolverFactory::createSI(Env& env, std::ostream& log) {
+  SolverInstanceBase *pSI = doCreateSI(env,log);
   if (!pSI) {
-    cerr << "  SolverFactory: failed to initialize solver "
-      << getVersion() << endl;
-    throw InternalError("  SolverFactory: failed to initialize solver");
+    throw InternalError("SolverFactory: failed to initialize solver "+getVersion());
   }
   sistorage.resize(sistorage.size()+1);
   sistorage.back().reset(pSI);
@@ -82,7 +80,8 @@ void SolverFactory::destroySI(SolverInstanceBase * pSI) {
   sistorage.erase(it);
 }
 
-MznSolver::MznSolver(bool ism2f) : is_mzn2fzn(ism2f), solver_configs("") { }
+MznSolver::MznSolver(std::ostream& os0, std::ostream& log0, bool ism2f)
+  : flt(os0,log0,ism2f), is_mzn2fzn(ism2f), solver_configs(""), executable_name("<executable>"), os(os0), log(log0), s2out(os0,log0) {}
 
 MznSolver::~MznSolver()
 {
@@ -90,67 +89,52 @@ MznSolver::~MznSolver()
 //     CleanupSolverInterface(si);
   // TODO cleanup the used solver interfaces
   si=0;
-  if (flt)
-    cleanupGlobalFlattener(flt);
-  flt=0;
+  GC::trigger();
 }
 
 bool MznSolver::ifMzn2Fzn() {
   return is_mzn2fzn;
 }
 
-void MznSolver::addFlattener()
-{
-  flt = getGlobalFlattener(ifMzn2Fzn());
-  assert(flt);
-}
-
-void MznSolver::addSolverInterface()
-{
-  if (sf==NULL) {
-    if ( getGlobalSolverRegistry()->getSolverFactories().empty() ) {
-      cerr << " MznSolver: NO SOLVER FACTORIES LINKED." << endl;
-      assert( 0 );
-    }
-    sf = getGlobalSolverRegistry()->getSolverFactories().back();
-  }
-  si = sf->createSI(*flt->getEnv());
-  assert(si);
-  s2out.initFromEnv( flt->getEnv() );
-  si->setSolns2Out( &s2out );
-  if (get_flag_verbose())
-    cerr
-//     << "  ---------------------------------------------------------------------------\n"
-    << "      % SOLVING PHASE\n"
-    << sf->getVersion() << endl;
-}
-
 void MznSolver::addSolverInterface(SolverFactory* sf)
 {
-  si = sf->createSI(*flt->getEnv());
+  si = sf->createSI(*flt.getEnv(), log);
   assert(si);
-  s2out.initFromEnv( flt->getEnv() );
+  s2out.initFromEnv( flt.getEnv() );
   si->setSolns2Out( &s2out );
   if (get_flag_verbose())
-    cerr
+    log
     //     << "  ---------------------------------------------------------------------------\n"
     << "      % SOLVING PHASE\n"
     << sf->getVersion() << endl;
 }
 
+void MznSolver::addSolverInterface()
+{
+  GCLock lock;
+  if (sf==NULL) {
+    if ( getGlobalSolverRegistry()->getSolverFactories().empty() ) {
+      log << " MznSolver: NO SOLVER FACTORIES LINKED." << endl;
+      assert( 0 );
+    }
+    sf = getGlobalSolverRegistry()->getSolverFactories().back();
+  }
+  addSolverInterface(sf);
+}
+
 void MznSolver::printHelp()
 {
   if ( !ifMzn2Fzn() )
-  cout
+  os
     << "MiniZinc driver.\n"
-    << "Usage: <executable>"  //<< argv[0]
+    << "Usage: "  << executable_name
     << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn" << std::endl;
   else
-  cout
+  os
     << "MiniZinc to FlatZinc converter.\n"
-    << "Usage: <executable>"  //<< argv[0]
+    << "Usage: "  << executable_name
     << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl;
-  cout
+  os
     << "Options:" << std::endl
     << "  --help, -h\n    Print this help message." << std::endl
     << "  --version\n    Print version information." << std::endl
@@ -159,22 +143,24 @@ void MznSolver::printHelp()
     << "  -s, --statistics\n    Print statistics." << std::endl;
 //   if ( getNSolvers() )
   
-  getFlt()->printHelp(cout);
-  cout << endl;
+  flt.printHelp(os);
+  os << endl;
   if ( !ifMzn2Fzn() ) {
-    s2out.printHelp(cout);
-    cout << endl;
+    s2out.printHelp(os);
+    os << endl;
   }
   for (auto it = getGlobalSolverRegistry()->getSolverFactories().rbegin();
         it != getGlobalSolverRegistry()->getSolverFactories().rend(); ++it) {
-       (*it)->printHelp(cout);
-      cout << endl;
+       (*it)->printHelp(os);
+      os << endl;
   }
 }
 
 bool MznSolver::processOptions(int& argc, const char**& argv)
 {
-  int i=1; int j=1;
+  executable_name = argv[0];
+  executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
+  int i=1, j=1;
   if (argc < 2)
     return false;
   string solver;
@@ -184,7 +170,7 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
       std::exit(EXIT_SUCCESS);
     }
     if (string(argv[i])=="--version") {
-      getFlt()->printVersion(cout);
+      flt.printVersion(cout);
       for (auto it = getGlobalSolverRegistry()->getSolverFactories().rbegin();
            it != getGlobalSolverRegistry()->getSolverFactories().rend(); ++it)
         cout << (*it)->getVersion() << endl;
@@ -237,8 +223,6 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
         for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
              it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
           if ((*it)->getId()==solverId) {
-            std::cerr << "select " << solverId << "\n";
-            (*it)->printHelp(std::cerr);
             sf = *it;
             if (!sc.executable().empty()) {
               const char* additionalArgs[2];
@@ -258,7 +242,7 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
                 std::string mznlib = sc.mznlib();
                 additionalArgs[0] = mznlib.c_str();
                 int i=0;
-                if (!getFlt()->processOption(i, 1, additionalArgs)) {
+                if (!flt.processOption(i, 1, additionalArgs)) {
                   cerr << "Flattener does not recognise option " << sc.mznlib() << endl;
                   return false;
                 }
@@ -268,7 +252,7 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
                 std::string mznlib = sc.mznlib();
                 additionalArgs[1] = mznlib.c_str();
                 int i=0;
-                if (!getFlt()->processOption(i, 2, additionalArgs)) {
+                if (!flt.processOption(i, 2, additionalArgs)) {
                   cerr << "Flattener does not recognise option -I." << endl;
                   return false;
                 }
@@ -292,34 +276,39 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
   
   for (i=1; i<argc; ++i) {
     if ( !ifMzn2Fzn() ? s2out.processOption( i, argc, argv ) : false ) {
-    } else if (getFlt()->processOption(i, argc, argv)) {
+    } else if (flt.processOption(i, argc, argv)) {
     } else if (sf->processOption(i, argc, argv)) {
     } else {
-      cerr << "  Unrecognized option or bad format: '" << argv[i] << "'" << endl;
+      std::string executable_name(argv[0]);
+      executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
+      log << executable_name << ": Unrecognized option or bad format `" << argv[i] << "'" << endl;
       return false;
     }
   }
   return true;
 }
 
-void MznSolver::flatten()
+void MznSolver::flatten(const std::string& modelString)
 {
-  getFlt()->set_flag_verbose(get_flag_verbose());
-  getFlt()->set_flag_statistics(get_flag_statistics());
+  flt.set_flag_verbose(get_flag_verbose());
+  flt.set_flag_statistics(get_flag_statistics());
   clock_t tm01 = clock();
-  getFlt()->flatten();
+  flt.flatten(modelString);
+  /// The following message tells mzn-test.py that flattening succeeded.
   if (get_flag_verbose())
-    std::cerr << "  Flattening done, " << timeDiff(clock(), tm01) << std::endl;
-
+    log << "  Flattening done, " << timeDiff(clock(), tm01) << std::endl;
 }
 
 void MznSolver::solve()
 {
-  GCLock lock;
-  getSI()->getOptions().setBoolParam  (constants().opts.verbose.str(),  get_flag_verbose());
-  getSI()->getOptions().setBoolParam  (constants().opts.statistics.str(),  get_flag_statistics());
-  getSI()->processFlatZinc();
+  { // To be able to clean up flatzinc after PrcessFlt()
+    GCLock lock;
+    getSI()->getOptions().setBoolParam  (constants().opts.verbose.str(),  get_flag_verbose());
+    getSI()->getOptions().setBoolParam  (constants().opts.statistics.str(),  get_flag_statistics());
+    getSI()->processFlatZinc();
+  }
   SolverInstance::Status status = getSI()->solve();
+  GCLock lock;
   if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
     getSI()->printSolution();             // What if it's already printed?  TODO
     if ( !getSI()->getSolns2Out()->fStatusPrinted )
@@ -336,7 +325,7 @@ void MznSolver::solve()
 void MznSolver::printStatistics()
 { // from flattener too?   TODO
   if (si)
-    getSI()->printStatisticsLine(cout, 1);
+    getSI()->printStatisticsLine(1);
 }
 
 

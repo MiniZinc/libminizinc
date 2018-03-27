@@ -30,6 +30,9 @@ annotation maybe_partial;
 of the model. This annotation only has an effect when the model does not have an output item. */
 annotation add_to_output;
 
+/** @group annotations.general Declare that the annotated variable is required for checking solutions. */
+annotation mzn_check_var;
+
 /** @group annotations.general Declare the annotated variable as being functionally defined.
   This annotation is introduced into FlatZinc code by the compiler. */
 annotation is_defined_var;
@@ -52,6 +55,15 @@ annotation is_reverse_map;
 /** @group annotations.general Document the function or variable declaration item with
   the string \a s. */
 annotation doc_comment(string: s);
+/** @group annotations.general String representation of the call-stack when the annotated item
+  was introduced. Can be used to uniquely identify variables and constraints across different
+  compilations of a model that may have different names. This annotations is introduced into
+  FlatZinc code by the compiler and is retained if --keep-paths argument is used. */
+annotation mzn_path(string: s);
+/** @group annotations.general With debug build of mzn2fzn, call MiniZinc::mzn_break_here when
+  flattening this expression to make debugging easier. This annotation is ignored by the
+  release build.*/
+annotation mzn_break_here;
 
 /***
  @groupdef annotations.prop Propagation strength annotations
@@ -191,6 +203,81 @@ annotation complete;
 
 
 /***
+ @groupdef annotations.warmstart Warm start annotations
+
+ To be put on the solve item, similar to search annotations.
+ A variable can be mentioned several times and in different
+ annotations but only one of the values is taken
+*/
+
+/** @group annotations.warmstart Specify an array \a w of warm_start annotations
+ or other warm_start_array annotations. Can be useful to keep the annotation
+ order in FlatZinc for manual updating
+*/
+annotation warm_start_array( array[int] of ann: w );
+
+/** @group annotations.warmstart Specify warm start values for an array of booleans */
+annotation warm_start( array[int] of var bool: x, array[int] of bool: v );
+/** @group annotations.warmstart Specify warm start values for an array of integers */
+annotation warm_start( array[int] of var int: x, array[int] of int: v );
+/** @group annotations.warmstart Specify warm start values for an array of floats */
+annotation warm_start( array[int] of var float: x, array[int] of float: v );
+/** @group annotations.warmstart Specify warm start values for an array of sets */
+annotation warm_start( array[int] of var set of int: x, array[int] of set of int: v );
+
+
+/***
+ @groupdef annotations.warmstart.optvals Warm start annotations with optional values
+
+ The value arrays can contain <> elements (absent values).
+ The following decompositions eliminate those elements
+ because FlatZinc 1.6 does not support optionals.
+*/
+
+/** @group annotations.warmstart.optvals Specify warm start values for an array of booleans */
+annotation warm_start( array[int] of var bool: x, array[int] of opt bool: v ) =
+    if 0==length(x) \/ 0==length(v) then
+        warm_start( x, [] )
+    else
+        warm_start( [ x[i] | i in index_set(x) where
+            i-min(index_set(x))+min(index_set(v))>length(v) \/
+            occurs( v[ i-min(index_set(x))+min(index_set(v)) ] ) ],
+            [ deopt(v[i]) | i in index_set(v) where occurs(v[i]) ] )
+    endif;
+/** @group annotations.warmstart.optvals Specify warm start values for an array of integers */
+annotation warm_start( array[int] of var int: x, array[int] of opt int: v ) =
+    if 0==length(x) \/ 0==length(v) then
+        warm_start( x, [] )
+    else
+        warm_start( [ x[i] | i in index_set(x) where
+            i-min(index_set(x))+min(index_set(v))>length(v) \/
+            occurs( v[ i-min(index_set(x))+min(index_set(v)) ] ) ],
+            [ deopt(v[i]) | i in index_set(v) where occurs(v[i]) ] )
+    endif;
+/** @group annotations.warmstart.optvals Specify warm start values for an array of floats */
+annotation warm_start( array[int] of var float: x, array[int] of opt float: v ) =
+    if 0==length(x) \/ 0==length(v) then
+        warm_start( x, [] )
+    else
+        warm_start( [ x[i] | i in index_set(x) where
+            i-min(index_set(x))+min(index_set(v))>length(v) \/
+            occurs( v[ i-min(index_set(x))+min(index_set(v)) ] ) ],
+            [ deopt(v[i]) | i in index_set(v) where occurs(v[i]) ] )
+    endif;
+/** @group annotations.warmstart.optvals Specify warm start values for an array of sets */
+annotation warm_start( array[int] of var set of int: x, array[int] of opt set of int: v ) =
+    if 0==length(x) \/ 0==length(v) then
+        warm_start( x, [] )
+    else
+        warm_start( [ x[i] | i in index_set(x) where
+            i-min(index_set(x))+min(index_set(v))>length(v) \/
+            occurs( v[ i-min(index_set(x))+min(index_set(v)) ] ) ],
+            [ deopt(v[i]) | i in index_set(v) where occurs(v[i]) ] )
+    endif;
+
+
+
+/***
   @groupdef optiontypes Option type support
   
   These functions and predicates implement the standard library for working
@@ -246,6 +333,8 @@ function var opt bool: reverse_map(var bool: occ, var bool: d);
 function opt bool: reverse_map(bool: occ, bool: d) ::promise_total =
   if occ then d else <> endif;
 
+predicate bool_opt_eq(var opt bool: x, var opt bool: y) =
+  deopt(x)=deopt(y) /\ occurs(x)=occurs(y);
 
 /** @group optiontypes.bool True iff both \a b0 and \a b1 are absent or
   both are present and have the same value. */
@@ -340,6 +429,19 @@ function var opt int: reverse_map(var bool: occ, var int: d);
 function opt int: reverse_map(bool: occ, int: d) ::promise_total =
   if occ then d else <> endif;
 
+predicate var_dom(var opt int:x, set of int: s) =
+  let {
+    var int: dx = deopt(x);
+    set of int: new_dom = dom(dx) intersect s;
+  } in if new_dom = {} then absent(x) else dx in new_dom endif;
+
+predicate var_dom(array[$T] of var opt int: x, set of int: d) =
+    let { array[int] of var opt int: xx = array1d(x) }
+    in forall (i in index_set(xx)) (var_dom(xx[i],d));
+
+predicate int_opt_eq(var opt int: x, var opt int: y) =
+  deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
+
 /** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than the value of \a y. */
 function var bool: '>'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
@@ -352,6 +454,19 @@ function var bool: '<'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) 
 /** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is less than or equal to the value of \a y. */
 function var bool: '<='(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
+
+/** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
+  occur and the value of \a x is greater than the value of \a y. */
+function bool: '>'(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
+/** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
+  occur and the value of \a x is greater than or equal to the value of \a y. */
+function bool: '>='(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
+/** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
+  occur and the value of \a x is less than the value of \a y. */
+function bool: '<'(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
+/** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
+  occur and the value of \a x is less than or equal to the value of \a y. */
+function bool: '<='(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
 
 /** @group optiontypes.int Return minimum of elements in \a x that are not absent, or
 absent if all elements in \a x are absent. */
@@ -433,6 +548,10 @@ predicate int_ne(var opt int : x, var opt int : y) =
 function var int: sum(array[int] of var opt int: x) =
   sum (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 0 endif);
 
+/** @group optiontypes.int Return product of non-absent elements of \a x. */
+function var int: product(array[int] of var opt int: x) =
+  sum (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 1 endif);
+
 /** @group optiontypes.int Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt int: element(var opt int: idx, array[int] of var int: x) =
   if absent(idx) then <> else element(deopt(idx),x) endif;
@@ -467,20 +586,27 @@ function var opt int: element(var opt int: idx, array[int] of var opt int: x) =
 function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt int: x) =
   if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
 
+/* Internal function used to optimize over option type objective */
+
+function var int: objective_deopt_(var opt int: x, bool: direction) =
+  let {
+    int: worst = if direction then lb(x)-1 else ub(x)+1 endif;
+  } in if occurs(x) then deopt(x) else worst endif;
+
 /***
  @groupdef options Compiler options
 */
 
-/*** @group options Whether to only generate domains that are contiguous ranges */
+/** @group options Whether to only generate domains that are contiguous ranges */
 opt bool: mzn_opt_only_range_domains;
 
-/*** @group options Check whether to only generate domains that are contiguous ranges */
+/** @group options Check whether to only generate domains that are contiguous ranges */
 
 test mzn_check_only_range_domains() =
   if absent(mzn_opt_only_range_domains) then false
   else deopt(mzn_opt_only_range_domains) endif;
 
-/*** @group options If defined, this can be used to check that the MiniZinc compiler supports all the features used in the model. */
+/** @group options If defined, this can be used to check that the MiniZinc compiler supports all the features used in the model. */
 opt int: mzn_min_version_required;
 
 constraint assert(absent(mzn_min_version_required) \/ deopt(mzn_min_version_required) <= mzn_compiler_version(), "This model requires MiniZinc version "++mzn_version_to_string(deopt(mzn_min_version_required))++" but you are running version "++mzn_version_to_string(mzn_compiler_version()));

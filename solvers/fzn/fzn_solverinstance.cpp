@@ -51,8 +51,8 @@ namespace MiniZinc {
   class FZN_SolverFactory: public SolverFactory {
     Options _options;
   public:
-    SolverInstanceBase* doCreateSI(Env& env) {
-      return new FZNSolverInstance(env, _options);
+    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log) {
+      return new FZNSolverInstance(env, log, _options);
     }
     string getVersion(void);
     string getId(void);
@@ -66,7 +66,7 @@ namespace MiniZinc {
 
   string FZN_SolverFactory::getVersion()
   {
-    string v = "NICTA FZN solver plugin, compiled  " __DATE__ "  " __TIME__;
+    string v = "FZN solver plugin, compiled  " __DATE__ "  " __TIME__;
     return v;
   }
 
@@ -82,7 +82,7 @@ namespace MiniZinc {
     << "  -f, --solver, --flatzinc-cmd <exe>\n     the backend solver filename. The default: flatzinc.\n"
     << "  -b, --backend, --solver-backend <be>\n     the backend codename. Currently passed to the solver.\n"
     << "  --fzn-flags <options>, --flatzinc-flags <options>\n     Specify option to be passed to the FlatZinc interpreter.\n"
-    << "  --fzn-flag <option>, --flatzinc-flag <option>\n     As above, but for options that need to be quoted.\n"
+    << "  --fzn-flag <option>, --flatzinc-flag <option>\n     As above, but for a single option string that need to be quoted in a shell.\n"
     << "  -n <n>, --num-solutions <n>\n     An upper bound on the number of solutions to output. The default should be 1.\n"
     << "  -a, --all, --all-solns, --all-solutions\n     Print all solutions.\n"
     << "  -p <n>, --parallel <n>\n     Use <n> threads during search. The default is solver-dependent.\n"
@@ -312,15 +312,20 @@ namespace MiniZinc {
         pipe(pipes[2]);
 
         std::string fznFile;
+        int tmpfile_desc = -1;
         if (!_canPipe) {
           char tmpfile[] = "/tmp/fznfileXXXXXX.fzn";
-          mkstemps(tmpfile, 4);
+          tmpfile_desc = mkstemps(tmpfile, 4);
+          if (tmpfile_desc == -1) {
+            throw InternalError("Error occurred when executing FZN solver, could not create temporary file for FlatZinc");
+          }
           fznFile = tmpfile;
           std::ofstream os(tmpfile);
+          Printer p(os, 0, true);
           for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
             if(!(*it)->removed()) {
               Item* item = *it;
-              os << *item;
+              p.print(item);
             }
           }
         }
@@ -384,8 +389,12 @@ namespace MiniZinc {
           }
 
           if (!_canPipe) {
-            //remove(fznFile.c_str());
+            remove(fznFile.c_str());
           }
+          close(pipes[1][0]);
+          close(pipes[2][0]);
+          if (tmpfile_desc != -1)
+            close(tmpfile_desc);
           return result.str();
         }
         else {
@@ -404,7 +413,15 @@ namespace MiniZinc {
 
           std::vector<char*> cmd_line;
           for (auto& iCmdl: _fzncmd) {
-            cmd_line.push_back( strdup(iCmdl.c_str()) );
+            std::istringstream iss(iCmdl);
+            while (1) {
+              string sBuf;
+              iss >> std::skipws >> sBuf;
+              if ( sBuf.size() )
+                cmd_line.push_back( strdup(sBuf.c_str()) );
+              else
+                break;
+            }
           }
           cmd_line.push_back(strdup(_canPipe ? "-" : fznFile.c_str()));
 
@@ -412,20 +429,23 @@ namespace MiniZinc {
           for (unsigned int i = 0; i < cmd_line.size(); i++)
             argv[i] = cmd_line[i];
           argv[cmd_line.size()] = 0;
-          int status = execvp(argv[0], argv);
-          assert(status == -1);
+
+          int status = execvp(argv[0], argv); // execvp only returns if an error occurs.
+          assert(status == -1); // the returned value will always be -1
           std::stringstream ssm;
-          ssm << "Error occurred when executing FZN solver with command \"" << argv[0] << " " << argv[1] << " " << argv[2] << "\".";
-          std::cerr << ssm.str() << "\n";
-          std::exit(EXIT_FAILURE);
+          ssm << "Error occurred when executing FZN solver with command \"";
+          for ( auto& s: cmd_line )
+            ssm << s << ' ';
+          ssm << "\".";
+          throw InternalError(ssm.str());
         }
     }
 #endif
     };
   }
 
-  FZNSolverInstance::FZNSolverInstance(Env& env, const Options& options)
-    : SolverInstanceBase(env, options), _fzn(env.flat()), _ozn(env.output()) {}
+  FZNSolverInstance::FZNSolverInstance(Env& env, std::ostream& log, const Options& options)
+    : SolverInstanceBase(env, log, options), _fzn(env.flat()), _ozn(env.output()) {}
 
   FZNSolverInstance::~FZNSolverInstance(void) {}
 
@@ -498,7 +518,7 @@ namespace MiniZinc {
       std::cerr << "Using FZN solver " << cmd_line[0]
         << " for solving, parameters: ";
       for ( int i=1; i<cmd_line.size(); ++i )
-        cerr << cmd_line[i] << ' ';
+        cerr << "" << cmd_line[i] << " ";
       cerr << std::endl;
     }
     

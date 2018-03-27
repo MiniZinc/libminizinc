@@ -55,7 +55,7 @@ namespace MiniZinc {
     static SolverFactory* createF_CHUFFED();
   protected:
     /// doCreateSI should be implemented to actually allocate a SolverInstance using new()
-    virtual SolverInstanceBase * doCreateSI(Env&) = 0;
+    virtual SolverInstanceBase * doCreateSI(Env&, std::ostream&) = 0;
     
     typedef std::vector<std::unique_ptr<SolverInstanceBase> > SIStorage;
     SIStorage sistorage;
@@ -66,7 +66,7 @@ namespace MiniZinc {
     
   public:
     /// Function createSI also adds each SI to the local storage
-    SolverInstanceBase * createSI(Env& env);
+    SolverInstanceBase * createSI(Env& env, std::ostream& log);
     /// also providing a manual destroy function.
     /// there is no need to call it upon overall finish - that is taken care of
     void destroySI(SolverInstanceBase * pSI);
@@ -86,13 +86,18 @@ namespace MiniZinc {
   // Class MznSolver coordinates flattening and solving.
   class MznSolver {
   private:
-    Flattener* flt=0;
+    Flattener flt;
     SolverInstanceBase* si=0;
     SolverFactory* sf=0;
     bool is_mzn2fzn;
 
     /// Solver configurations
     SolverConfigs solver_configs;
+
+    std::string executable_name;
+    std::ostream& os;
+    std::ostream& log;
+
   public:
     Solns2Out s2out;
     
@@ -105,26 +110,25 @@ namespace MiniZinc {
                                      // so unflexible with solver cmdline options  TODO
     
   public:
-    MznSolver(bool ism2f = false);
-    virtual ~MznSolver();
-    virtual void addFlattener();
-    virtual bool processOptions(int& argc, const char**& argv);
-    virtual void printHelp();
-    virtual void flatten();
-    virtual size_t getNSolvers() { return getGlobalSolverRegistry()->getSolverFactories().size(); }
+    MznSolver(std::ostream& os = std::cout, std::ostream& log = std::cerr, bool ism2f = false);
+    ~MznSolver();
+    bool processOptions(int& argc, const char**& argv);
+    void printHelp();
+    /// Flatten model
+    void flatten(const std::string& modelString = std::string());
+    size_t getNSolvers() { return getGlobalSolverRegistry()->getSolverFactories().size(); }
     /// If building a flattening exe only.
-    virtual bool ifMzn2Fzn();
-    virtual void addSolverInterface();
-    virtual void addSolverInterface(SolverFactory* sf);
-    virtual void solve();
-    virtual void printStatistics();
+    bool ifMzn2Fzn();
+    void addSolverInterface();
+    void addSolverInterface(SolverFactory* sf);
+    void solve();
+    void printStatistics();
     
-    virtual Flattener* getFlt() { assert(flt); return flt; }
-    virtual SolverInstanceBase* getSI() { assert(si); return si; }
-    virtual bool get_flag_verbose() { return flag_verbose; /*getFlt()->get_flag_verbose();*/ }
-    virtual bool get_flag_statistics() { return flag_statistics; }
+    SolverInstance::Status getFltStatus() { return flt.status; }
+    SolverInstanceBase* getSI() { assert(si); return si; }
+    bool get_flag_verbose() { return flag_verbose; /*getFlt()->get_flag_verbose();*/ }
+    bool get_flag_statistics() { return flag_statistics; }
     
-  private:
   };
 
 }

@@ -75,6 +75,8 @@ class MIP_wrapper {
   public:
     /// Parameter
     bool fVerbose = false;
+    
+    int nProbType = -2;  // +-1: max/min; 0: sat
 
   public:
     struct Output {
@@ -88,6 +90,7 @@ class MIP_wrapper {
       int nNodes=0;
       int nOpenNodes=0;
       double dCPUTime = 0;
+      std::clock_t cCPUTime0 = 0;
     };      
     Output output;
 
@@ -128,6 +131,7 @@ class MIP_wrapper {
                   bool fMIPSol  // if with a MIP feas sol - lazy cuts only
                                  );
     struct CBUserInfo {
+      MIP_wrapper* wrapper = 0;
       MIP_wrapper::Output* pOutput=0;
       MIP_wrapper::Output* pCutOutput=0;
       bool fVerb = false;              // used in Gurobi
@@ -191,6 +195,8 @@ class MIP_wrapper {
 //     set<double> sLitValues;
     std::unordered_map<double, VarId> sLitValues;
     
+    void setProbType( int t ) { nProbType=t; }
+    
     /// adding a variable, at once to the solver, this is for the 2nd phase
     virtual VarId addVar(double obj, double lb, double ub, 
                              VarType vt, std::string name=0) {
@@ -233,12 +239,33 @@ class MIP_wrapper {
       fPhase1Over = true;    // SCIP needs after adding
     }
 
+    /// var bounds
+    virtual void setVarBounds( int iVar, double lb, double ub )  { throw 0; }
+    virtual void setVarLB( int iVar, double lb )  { throw 0; }
+    virtual void setVarUB( int iVar, double ub )  { throw 0; }
     /// adding a linear constraint
     virtual void addRow(int nnz, int *rmatind, double* rmatval,
                         LinConType sense, double rhs,
                         int mask = MaskConsType_Normal,
                         std::string rowName = "") = 0;
+    /// Indicator constraint: x[iBVar]==bVal -> lin constr
+    virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int *rmatind, double* rmatval,
+                        LinConType sense, double rhs,
+                        std::string rowName = "") { throw std::runtime_error("Indicator constraints not supported. "); }
+                
+    /// 0: model-defined level, 1: free, 2: uniform search
+    virtual int getFreeSearch() { return 1; }
+    /// Return 0 if ignoring searches
+    virtual bool addSearch( const std::vector<VarId>& vars, const std::vector<int> pri ) {
+      return false;
+    }
+    /// Return 0 if ignoring warm starts    
+    virtual bool addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals ) {
+      return false;
+    }
+                        
     int nAddedRows = 0;   // for name counting
+    int nIndicatorConstr = 0;
     /// adding an implication
 //     virtual void addImpl() = 0;
     virtual void setObjSense(int s) = 0;   // +/-1 for max/min

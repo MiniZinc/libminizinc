@@ -69,10 +69,7 @@ namespace MiniZinc {
   
   Location
   JSONParser::errLocation(void) const {
-    Location loc;
-    loc.filename = filename;
-    loc.first_line = line;
-    loc.first_column = column;
+    Location loc(filename,line,column,line,column);
     return loc;
   }
   
@@ -98,6 +95,7 @@ namespace MiniZinc {
               // fall through
             case ' ':
             case '\t':
+            case '\r':
               break;
             case '[': return Token::listOpen();
             case ']': return Token::listClose();
@@ -126,17 +124,17 @@ namespace MiniZinc {
               is.read(rest,sizeof(rest));
               column += sizeof(rest);
               if (!is.good() || rest != string("alse"))
-                throw JSONError(env,errLocation(),"unexpected token "+string(rest));
+                throw JSONError(env,errLocation(),"unexpected token `"+string(rest)+"'");
               state = S_NOTHING;
               return Token(false);
             }
               break;
             default:
               if (buf[0]>='0' && buf[0]<='9') {
-                result = buf;
+                result = buf[0];
                 state=S_INT;
               } else {
-                throw JSONError(env,errLocation(),"unexpected token "+string(buf));
+                throw JSONError(env,errLocation(),"unexpected token `"+string(1,buf[0])+"'");
               }
               break;
           }
@@ -177,7 +175,7 @@ namespace MiniZinc {
           break;
       }
     }
-    throw JSONError(env,errLocation(),"unexpected token "+string(result));
+    throw JSONError(env,errLocation(),"unexpected token `"+string(result)+"'");
   }
   
   void JSONParser::expectToken(istream& is, JSONParser::TokenT t) {
@@ -255,7 +253,7 @@ namespace MiniZinc {
         break;
       case T_FLOAT:
         for (unsigned int i=0; i<elems.size(); i++) {
-          elems_e[i] = new FloatLit(Location().introduce(),elems[i].d);
+          elems_e[i] = FloatLit::a(elems[i].d);
         }
         break;
       case T_STRING:
@@ -307,7 +305,7 @@ namespace MiniZinc {
           exps.push_back(IntLit::a(next.i));
           break;
         case T_FLOAT:
-          exps.push_back(new FloatLit(Location().introduce(),next.d));
+          exps.push_back(FloatLit::a(next.d));
           break;
         case T_STRING:
           exps.push_back(new StringLit(Location().introduce(),next.s));
@@ -336,7 +334,7 @@ namespace MiniZinc {
         return IntLit::a(next.i);
         break;
       case T_FLOAT:
-        return new FloatLit(Location().introduce(),next.d);
+        return FloatLit::a(next.d);
       case T_STRING:
         return new StringLit(Location().introduce(),next.s);
       case T_BOOL:

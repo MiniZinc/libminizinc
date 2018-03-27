@@ -66,7 +66,7 @@ namespace MiniZinc {
   public:
     /** \brief Constructor loading configurations from \a solverpath
      *
-     * Configuration files must be called config.mzc and the path
+     * Configuration files must be called config.msc and the path
      * uses platform specific separators (: on Unix-like systems, ; on Windows).
      */
     SolverConfigs(const std::string& solverpath);

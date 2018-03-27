@@ -34,14 +34,13 @@
 using namespace std;
 using namespace MiniZinc;
 
-#ifdef HAS_MIP
-#include <minizinc/solvers/MIP/MIP_solverinstance.hh>
 #ifdef HAS_GUROBI
+#include <minizinc/solvers/MIP/MIP_solverinstance.hh>
 #include <minizinc/solvers/MIP/MIP_gurobi_wrap.hh>
 #endif
 #ifdef HAS_CPLEX
+#include <minizinc/solvers/MIP/MIP_solverinstance.hh>
 #include <minizinc/solvers/MIP/MIP_cplex_wrap.hh>
-#endif
 #endif
 
 int main(int argc, const char** argv) {
@@ -62,7 +61,7 @@ int main(int argc, const char** argv) {
 #endif
 #ifdef HAS_GUROBI
   static unique_ptr<SolverFactory>
-    pFactoryGurobi( new MIP_SolverFactory<MIP_gurobi_wrapper> );
+    pFactoryGurobi( new MIP_SolverFactory<MIP_gurobi_wrapper>() );
 #endif
 #ifdef HAS_CPLEX
   static unique_ptr<SolverFactory>
@@ -72,52 +71,48 @@ int main(int argc, const char** argv) {
   clock_t starttime = std::clock(), endTime;
   bool fSuccess = false;
   
-  MznSolver slv(IS_MZN2FZN);
+  MznSolver slv(std::cout,std::cerr,IS_MZN2FZN);
   try {
     
-    slv.addFlattener();
     if (!slv.processOptions(argc, argv)) {
       slv.printHelp();
       exit(EXIT_FAILURE);
     }
     slv.flatten();
     
-    if (SolverInstance::UNKNOWN == slv.getFlt()->status)
+    if (SolverInstance::UNKNOWN == slv.getFltStatus())
     {
-      fSuccess = true;
       if ( !slv.ifMzn2Fzn() ) {          // only then
-//        GCLock lock; // TODO: shouldn't lock during the whole solving process
+        // GCLock lock;                  // better locally, to enable cleanup after ProcessFlt()
         slv.addSolverInterface();
         slv.solve();
       }
+      fSuccess = true;
     } else {
-      fSuccess = (SolverInstance::ERROR != slv.getFlt()->status);
       if ( !slv.ifMzn2Fzn() )
-        slv.s2out.evalStatus( slv.getFlt()->status );
+        slv.s2out.evalStatus( slv.getFltStatus() );
+      fSuccess = (SolverInstance::ERROR != slv.getFltStatus());
     }                                   //  Add evalOutput() here?   TODO
   } catch (const LocationException& e) {
     if (slv.get_flag_verbose())
       std::cerr << std::endl;
     std::cerr << e.loc() << ":" << std::endl;
     std::cerr << e.what() << ": " << e.msg() << std::endl;
-    slv.s2out.evalStatus( SolverInstance::ERROR );
   } catch (const Exception& e) {
     if (slv.get_flag_verbose())
       std::cerr << std::endl;
-    std::cerr << e.what() << ": " << e.msg() << std::endl;
-    slv.s2out.evalStatus( SolverInstance::ERROR );
+    std::string what = e.what();
+    std::cerr << what << (what.empty() ? "" : ": ") << e.msg() << std::endl;
   }
   catch (const exception& e) {
     if (slv.get_flag_verbose())
       std::cerr << std::endl;
     std::cerr << e.what() << std::endl;
-    slv.s2out.evalStatus( SolverInstance::ERROR );
   }
   catch (...) {
     if (slv.get_flag_verbose())
       std::cerr << std::endl;
     std::cerr << "  UNKNOWN EXCEPTION." << std::endl;
-    slv.s2out.evalStatus( SolverInstance::ERROR );
   }
   
   if ( !slv.ifMzn2Fzn() ) {

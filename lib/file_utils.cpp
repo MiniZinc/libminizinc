@@ -14,7 +14,13 @@
 #endif
 
 #include <minizinc/file_utils.hh>
+#include <minizinc/exception.hh>
 #include <minizinc/config.hh>
+#include <minizinc/thirdparty/miniz.h>
+#include <minizinc/thirdparty/b64/encode.h>
+#include <minizinc/thirdparty/b64/decode.h>
+#include <sstream>
+#include <cstring>
 
 #ifdef HAS_PIDPATH
 #include <stdio.h>
@@ -154,6 +160,14 @@ namespace MiniZinc { namespace FileUtils {
     return ret;
 #endif
   }
+
+  bool is_absolute(const std::string& path) {
+#ifdef _MSC_VER
+    return !PathIsRelative(path.c_str());
+#else
+    return path.empty() ? false : (path[0]=='/');
+#endif
+  }
   
   std::vector<std::string> directory_list(const std::string& dir,
                                           const std::string& ext) {
@@ -192,5 +206,122 @@ namespace MiniZinc { namespace FileUtils {
 #endif
     return entries;
   }
-  
+
+  void inflateString(std::string& s) {
+    unsigned char* cc = reinterpret_cast<unsigned char*>(&s[0]);
+    // autodetect compressed string
+    if (s.size() >= 2 &&
+        ((cc[0] == 0x1F && cc[1] == 0x8B)         // gzip
+         || (cc[0] == 0x78 && (cc[1] == 0x01      // zlib
+                               || cc[1] == 0x9C
+                               || cc[1] == 0xDA)))) {
+      const int BUF_SIZE=1024;
+      unsigned char s_outbuf[BUF_SIZE];
+      z_stream stream;
+      std::memset(&stream, 0, sizeof(stream));
+      
+      unsigned char* dataStart;
+      int windowBits;
+      size_t dataLen;
+      if (cc[0]==0x1F & cc[1]==0x8B) {
+        dataStart = cc+10;
+        windowBits = -Z_DEFAULT_WINDOW_BITS;
+        if (cc[3] & 0x4) {
+          dataStart += 2;
+          if (dataStart-cc >= s.size())
+            throw(-1);
+        }
+        if (cc[3] & 0x8) {
+          while (*dataStart != '\0') {
+            dataStart++;
+            if (dataStart-cc >= s.size())
+              throw(-1);
+          }
+          dataStart++;
+          if (dataStart-cc >= s.size())
+            throw(-1);
+        }
+        if (cc[3] & 0x10) {
+          while (*dataStart != '\0') {
+            dataStart++;
+            if (dataStart-cc >= s.size())
+              throw(-1);
+          }
+          dataStart++;
+          if (dataStart-cc >= s.size())
+            throw(-1);
+        }
+        if (cc[3] & 0x2) {
+          dataStart += 2;
+          if (dataStart-cc >= s.size())
+            throw(-1);
+        }
+        dataLen = s.size() - (dataStart-cc);
+      } else {
+        dataStart = cc;
+        windowBits = Z_DEFAULT_WINDOW_BITS;
+        dataLen = s.size();
+      }
+      
+      stream.next_in = dataStart;
+      stream.avail_in = dataLen;
+      stream.next_out = &s_outbuf[0];
+      stream.avail_out = BUF_SIZE;
+      int status = inflateInit2(&stream, windowBits);
+      if (status != Z_OK)
+        throw(status);
+      std::ostringstream oss;
+      while (true) {
+        status = inflate(&stream, Z_NO_FLUSH);
+        if (status == Z_STREAM_END || !stream.avail_out) {
+          // output buffer full or compression finished
+          oss << std::string(reinterpret_cast<char*>(s_outbuf),BUF_SIZE - stream.avail_out);
+          stream.next_out = &s_outbuf[0];
+          stream.avail_out = BUF_SIZE;
+        }
+        if (status == Z_STREAM_END)
+          break;
+        if (status != Z_OK)
+          throw(status);
+      }
+      status = inflateEnd(&stream);
+      if (status != Z_OK)
+        throw(status);
+      s = oss.str();
+    }
+  }
+
+  std::string deflateString(const std::string& s) {
+    size_t compressedLength = compressBound(s.size());
+    unsigned char* cmpr = static_cast<unsigned char*>(::malloc(compressedLength*sizeof(unsigned char)));
+    int status = compress(cmpr,&compressedLength,reinterpret_cast<const unsigned char*>(&s[0]),s.size());
+    if (status != Z_OK) {
+      ::free(cmpr);
+      throw(status);
+    }
+    std::string ret(reinterpret_cast<const char*>(cmpr),compressedLength);
+    ::free(cmpr);
+    return ret;
+  }
+
+  std::string encodeBase64(const std::string& s) {
+    base64::encoder E;
+    std::ostringstream oss;
+    oss << ":"; // add leading ":" to distinguish from valid MiniZinc code
+    std::istringstream iss(s);
+    E.encode(iss, oss);
+    return oss.str();
+  }
+
+  std::string decodeBase64(const std::string& s) {
+    if (s.size()==0 || s[0] != ':')
+      throw InternalError("string is not base64 encoded");
+    base64::decoder D;
+    std::ostringstream oss;
+    std::istringstream iss(s);
+    (void) iss.get(); // remove leading ":"
+    D.decode(iss, oss);
+    return oss.str();
+  }
+
 }}

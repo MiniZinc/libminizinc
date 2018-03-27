@@ -320,10 +320,12 @@ namespace MiniZinc {
             os << "<>";
           } else {
             const Id* id = e->cast<Id>();
+            if(id->decl())
+              id = id->decl()->id();
             if (id->idn() == -1) {
               os << id->v();
             } else {
-              os << "X_INTRODUCED_" << id->idn();
+              os << "X_INTRODUCED_" << id->idn() << "_";
             }
           }
         }
@@ -340,9 +342,9 @@ namespace MiniZinc {
           int n = al.dims();
           if (n == 1 && al.min(0) == 1) {
             os << "[";
-            for (unsigned int i = 0; i < al.v().size(); i++) {
-              p(al.v()[i]);
-              if (i<al.v().size()-1)
+            for (unsigned int i = 0; i < al.size(); i++) {
+              p(al[i]);
+              if (i<al.size()-1)
                 os << ",";
             }
             os << "]";
@@ -350,7 +352,7 @@ namespace MiniZinc {
             os << "[|";
             for (int i = 0; i < al.max(0); i++) {
               for (int j = 0; j < al.max(1); j++) {
-                p(al.v()[i * al.max(1) + j]);
+                p(al[i * al.max(1) + j]);
                 if (j < al.max(1)-1)
                   os << ",";
               }
@@ -365,9 +367,9 @@ namespace MiniZinc {
               os << ",";
             }
             os << "[";
-            for (unsigned int i = 0; i < al.v().size(); i++) {
-              p(al.v()[i]);
-              if (i<al.v().size()-1)
+            for (unsigned int i = 0; i < al.size(); i++) {
+              p(al[i]);
+              if (i<al.size()-1)
                 os << ",";
             }
             os << "])";
@@ -399,14 +401,19 @@ namespace MiniZinc {
               if (j < c.n_decls(i)-1)
                 os << ",";
             }
-            os << " in ";
-            p(c.in(i));
+            if (c.in(i)==NULL) {
+              os << " = ";
+              p(c.where(i));
+            } else {
+              os << " in ";
+              p(c.in(i));
+              if (c.where(i) != NULL) {
+                os << " where ";
+                p(c.where(i));
+              }
+            }
             if (i < c.n_generators())
               os << ", ";
-          }
-          if (c.where() != NULL) {
-            os << " where ";
-            p(c.where());
           }
           os << (c.set() ? "}" : "]");
         }
@@ -557,9 +564,9 @@ namespace MiniZinc {
         {
           const Call& c = *e->cast<Call>();
           os << c.id() << "(";
-          for (unsigned int i = 0; i < c.args().size(); i++) {
-            p(c.args()[i]);
-            if (i < c.args().size()-1)
+          for (unsigned int i = 0; i < c.n_args(); i++) {
+            p(c.arg(i));
+            if (i < c.n_args()-1)
               os << ",";
           }
           os << ")";
@@ -570,7 +577,7 @@ namespace MiniZinc {
           const VarDecl& vd = *e->cast<VarDecl>();
           p(vd.ti());
           if (vd.id()->idn() != -1) {
-            os << ": X_INTRODUCED_" << vd.id()->idn();
+            os << ": X_INTRODUCED_" << vd.id()->idn() << "_";
           } else if (vd.id()->v().size() != 0)
             os << ": " << vd.id()->v();
           if (vd.introduced()) {
@@ -1181,7 +1188,7 @@ namespace MiniZinc {
         return new StringDocument(id.v().str());
       else {
         std::ostringstream oss;
-        oss << "X_INTRODUCED_" << id.idn();
+        oss << "X_INTRODUCED_" << id.idn() << "_";
         return new StringDocument(oss.str());
       }
     }
@@ -1197,15 +1204,15 @@ namespace MiniZinc {
       int n = al.dims();
       if (n == 1 && al.min(0) == 1) {
         dl = new DocumentList("[", ", ", "]");
-        for (unsigned int i = 0; i < al.v().size(); i++)
-          dl->addDocumentToList(expressionToDocument(al.v()[i]));
+        for (unsigned int i = 0; i < al.size(); i++)
+          dl->addDocumentToList(expressionToDocument(al[i]));
       } else if (n == 2 && al.min(0) == 1 && al.min(1) == 1) {
         dl = new DocumentList("[| ", " | ", " |]");
         for (int i = 0; i < al.max(0); i++) {
           DocumentList* row = new DocumentList("", ", ", "");
           for (int j = 0; j < al.max(1); j++) {
             row->
-              addDocumentToList(expressionToDocument(al.v()[i * al.max(1) + j]));
+              addDocumentToList(expressionToDocument(al[i * al.max(1) + j]));
           }
           dl->addDocumentToList(row);
           if (i != al.max(0) - 1)
@@ -1224,8 +1231,8 @@ namespace MiniZinc {
           args->addStringToList(oss.str());
         }
         DocumentList* array = new DocumentList("[", ", ", "]");
-        for (unsigned int i = 0; i < al.v().size(); i++)
-          array->addDocumentToList(expressionToDocument(al.v()[i]));
+        for (unsigned int i = 0; i < al.size(); i++)
+          array->addDocumentToList(expressionToDocument(al[i]));
         args->addDocumentToList(array);
         dl->addDocumentToList(args);
       }
@@ -1259,15 +1266,20 @@ namespace MiniZinc {
           idents->addStringToList(c.decl(i, j)->id()->v().str());
         }
         gen->addDocumentToList(idents);
-        gen->addStringToList(" in ");
-        gen->addDocumentToList(expressionToDocument(c.in(i)));
+        if (c.in(i)==NULL) {
+          gen->addStringToList(" = ");
+          gen->addDocumentToList(expressionToDocument(c.where(i)));
+        } else {
+          gen->addStringToList(" in ");
+          gen->addDocumentToList(expressionToDocument(c.in(i)));
+          if (c.where(i) != NULL) {
+            gen->addStringToList(" where ");
+            gen->addDocumentToList(expressionToDocument(c.where(i)));
+          }
+        }
         generators->addDocumentToList(gen);
       }
       head->addDocumentToList(generators);
-      if (c.where() != NULL) {
-        head->addStringToList("where");
-        head->addDocumentToList(expressionToDocument(c.where()));
-      }
       dl->addDocumentToList(head);
 
       return dl;
@@ -1445,7 +1457,7 @@ namespace MiniZinc {
       return dl;
     }
     ret mapCall(const Call& c) {
-      if (c.args().size() == 1) {
+      if (c.n_args() == 1) {
         /*
          * if we have only one argument, and this is an array comprehension,
          * we convert it into the following syntax
@@ -1454,7 +1466,7 @@ namespace MiniZinc {
          * forall (i in 1..10) (f(i,j))
          */
 
-        const Expression* e = c.args()[0];
+        const Expression* e = c.arg(0);
         if (e->isa<Comprehension>()) {
           const Comprehension* com = e->cast<Comprehension>();
           if (!com->set()) {
@@ -1471,17 +1483,22 @@ namespace MiniZinc {
                   com->decl(i,j)->id()->v().str());
               }
               gen->addDocumentToList(idents);
-              gen->addStringToList(" in ");
-              gen->addDocumentToList(expressionToDocument(com->in(i)));
+              if (com->in(i) == NULL) {
+                gen->addStringToList(" = ");
+                gen->addDocumentToList(expressionToDocument(com->where(i)));
+              } else {
+                gen->addStringToList(" in ");
+                gen->addDocumentToList(expressionToDocument(com->in(i)));
+                if (com->where(i) != NULL) {
+                  gen->addStringToList(" where ");
+                  gen->addDocumentToList(expressionToDocument(com->where(i)));
+                }
+              }
               generators->addDocumentToList(gen);
             }
 
             args->addStringToList("(");
             args->addDocumentToList(generators);
-            if (com->where() != NULL) {
-              args->addStringToList("where");
-              args->addDocumentToList(expressionToDocument(com->where()));
-            }
             args->addStringToList(")");
 
             args->addStringToList("(");
@@ -1499,8 +1516,8 @@ namespace MiniZinc {
       }
       std::string beg = c.id().str() + "(";
       DocumentList* dl = new DocumentList(beg, ", ", ")");
-      for (unsigned int i = 0; i < c.args().size(); i++) {
-        dl->addDocumentToList(expressionToDocument(c.args()[i]));
+      for (unsigned int i = 0; i < c.n_args(); i++) {
+        dl->addDocumentToList(expressionToDocument(c.arg(i)));
       }
       return dl;
 
@@ -1515,7 +1532,7 @@ namespace MiniZinc {
         dl->addStringToList(vd.id()->v().str());
       } else {
         std::ostringstream oss;
-        oss << "X_INTRODUCED_" << vd.id()->idn();
+        oss << "X_INTRODUCED_" << vd.id()->idn() << "_";
         dl->addStringToList(oss.str());
       }
         

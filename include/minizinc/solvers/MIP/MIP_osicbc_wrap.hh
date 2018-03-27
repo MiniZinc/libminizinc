@@ -43,9 +43,35 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
       rowlb, rowub;
 
   public:
-    MIP_osicbc_wrapper() { openOSICBC(); }
+
+    class Options {
+    public:
+      int nThreads=1;
+      string sExportModel;
+      double nTimeout=-1;
+      long int nSolLimit = -1;
+      double nWorkMemLimit=-1;
+      string sReadParams;
+      string sWriteParams;
+      bool flag_all_solutions = false;
+      
+      double absGap=0.99;
+      double relGap=1e-8;
+      double intTol=1e-6;
+      double objDiff=1.0;
+      
+      string cbc_cmdOptions;
+      
+      bool processOption(int& i, int argc, const char** argv);
+      void printHelp(ostream& );
+    } options;
+
+    MIP_osicbc_wrapper(const Options& opt) : options(opt) { openOSICBC(); }
     virtual ~MIP_osicbc_wrapper() { closeOSICBC(); }
-    
+  
+    static string getVersion(void);
+    static string getId(void);
+
     bool processOption(int& i, int argc, const char** argv);
     void printVersion(ostream& );
     void printHelp(ostream& );

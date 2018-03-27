@@ -14,6 +14,7 @@
 #include <minizinc/astexception.hh>
 #include <minizinc/iter.hh>
 #include <minizinc/model.hh>
+#include <minizinc/flatten_internal.hh>
 
 #include <minizinc/prettyprinter.hh>
 
@@ -22,43 +23,41 @@ namespace MiniZinc {
   Location Location::nonalloc;
   
   Type Type::unboxedint = Type::parint();
+  Type Type::unboxedfloat = Type::parfloat();
   
   Annotation Annotation::empty;
   
-  Location::Location(void)
-  : first_line(0),
-    first_column(0),
-    last_line(0),
-    last_column(0),
-    is_introduced(0) {}
 
   std::string
   Location::toString(void) const {
     std::ostringstream oss;
-    oss << filename << ":" << first_line << "." << first_column;
+    oss << filename() << ":" << first_line() << "." << first_column();
     return oss.str();
   }
 
   void
   Location::mark(void) const {
-    filename.mark();
+    if (lv())
+      lv()->mark();
   }
   
   Location
   Location::introduce() const {
     Location l = *this;
-    l.is_introduced = 1;
+    if (l._loc_info.lv) {
+      l._loc_info.t |= 1;
+    }
     return l;
   }
 
   void
   Expression::addAnnotation(Expression* ann) {
-    if (!isUnboxedInt())
+    if (!isUnboxedVal())
       _ann.add(ann);
   }
   void
   Expression::addAnnotations(std::vector<Expression*> ann) {
-    if (!isUnboxedInt())
+    if (!isUnboxedVal())
       for (unsigned int i=0; i<ann.size(); i++)
         if (ann[i])
           _ann.add(ann[i]);
@@ -70,12 +69,13 @@ namespace MiniZinc {
 #define pushann(a) do { for (ExpressionSetIter it = a.begin(); it != a.end(); ++it) { pushstack(*it); }} while(0)
   void
   Expression::mark(Expression* e) {
-    if (e==NULL || e->isUnboxedInt()) return;
+    if (e==NULL || e->isUnboxedVal()) return;
     std::vector<const Expression*> stack;
+    stack.reserve(1000);
     stack.push_back(e);
     while (!stack.empty()) {
       const Expression* cur = stack.back(); stack.pop_back();
-      if (!cur->isUnboxedInt() && cur->_gc_mark==0) {
+      if (!cur->isUnboxedVal() && cur->_gc_mark==0) {
         cur->_gc_mark = 1;
         cur->loc().mark();
         pushann(cur->ann());
@@ -103,7 +103,11 @@ namespace MiniZinc {
           pushstack(cur->cast<Id>()->decl());
           break;
         case Expression::E_ARRAYLIT:
-          pushall(cur->cast<ArrayLit>()->v());
+          if (cur->_flag_2) {
+            pushstack(cur->cast<ArrayLit>()->_u._al);
+          } else {
+            pushall(ASTExprVec<Expression>(cur->cast<ArrayLit>()->_u._v));
+          }
           cur->cast<ArrayLit>()->_dims.mark();
           break;
         case Expression::E_ARRAYACCESS:
@@ -112,7 +116,6 @@ namespace MiniZinc {
           break;
         case Expression::E_COMP:
           pushstack(cur->cast<Comprehension>()->_e);
-          pushstack(cur->cast<Comprehension>()->_where);
           pushall(cur->cast<Comprehension>()->_g);
           cur->cast<Comprehension>()->_g_idx.mark();
           break;
@@ -129,8 +132,11 @@ namespace MiniZinc {
           break;
         case Expression::E_CALL:
           cur->cast<Call>()->id().mark();
-          pushall(cur->cast<Call>()->_args);
-          if (FunctionI* fi = cur->cast<Call>()->_decl) {
+          for (unsigned int i=cur->cast<Call>()->n_args(); i--;)
+            pushstack(cur->cast<Call>()->arg(i));
+          if (!cur->cast<Call>()->_u._oneArg->isUnboxedVal() && !cur->cast<Call>()->_u._oneArg->isTagged())
+            cur->cast<Call>()->_u._args->mark();
+          if (FunctionI* fi = cur->cast<Call>()->decl()) {
             fi->mark();
             fi->id().mark();
             pushstack(fi->ti());
@@ -226,7 +232,7 @@ namespace MiniZinc {
     if (idn()==-1)
       return v();
     std::ostringstream oss;
-    oss << "X_INTRODUCED_" << idn();
+    oss << "X_INTRODUCED_" << idn() << "_";
     return oss.str();
   }
   
@@ -241,29 +247,24 @@ namespace MiniZinc {
     init_hash();
   }
 
-  void
-  ArrayLit::rehash(void) {
-    init_hash();
-    HASH_NAMESPACE::hash<int> h;
-    for (unsigned int i=0; i<_dims.size(); i+=2) {
-      cmb_hash(h(_dims[i]));
-      cmb_hash(h(_dims[i+1]));
-    }
-    for (unsigned int i=_v.size(); i--;) {
-      cmb_hash(h(i));
-      cmb_hash(Expression::hash(_v[i]));
-    }
-  }
   int
   ArrayLit::dims(void) const {
-    return _dims.size()/2;
+    return _flag_2 ? ( (_dims.size() - 2*_u._al->dims()) / 2 ) : (_dims.size()==0 ? 1 : _dims.size()/2);
   }
   int
   ArrayLit::min(int i) const {
+    if (_dims.size()==0) {
+      assert(i==0);
+      return 1;
+    }
     return _dims[2*i];
   }
   int
   ArrayLit::max(int i) const {
+    if (_dims.size()==0) {
+      assert(i==0);
+      return _u._v->size();
+    }
     return _dims[2*i+1];
   }
   int
@@ -273,6 +274,150 @@ namespace MiniZinc {
     for(int i=1; i<dims(); i++)
       l *= (max(i) - min(i) + 1);
     return l;
+  }
+  void
+  ArrayLit::make1d(void) {
+    if (_dims.size()!=0) {
+      GCLock lock;
+      if (_flag_2) {
+        std::vector<int> d(2+_u._al->dims()*2);
+        int dimOffset = dims()*2;
+        d[0] = 1;
+        d[1] = length();
+        for (unsigned int i=2; i<d.size(); i++) {
+          d[i] = _dims[dimOffset+i];
+        }
+        _dims = ASTIntVec(d);
+      } else {
+        std::vector<int> d(2);
+        d[0] = 1;
+        d[1] = length();
+        _dims = ASTIntVec(d);
+      }
+    }
+  }
+  
+  int
+  ArrayLit::origIdx(int i) const {
+    assert(_flag_2);
+    int curIdx = i;
+    int multiplyer = 1;
+    int oIdx = 0;
+    int sliceOffset = dims()*2;
+    for (int curDim = _u._al->dims()-1; curDim >= 0; curDim--) {
+      oIdx += multiplyer * ( ( curIdx % (_dims[sliceOffset+curDim*2+1]-_dims[sliceOffset+curDim*2]+1) ) + (_dims[sliceOffset+curDim*2] - _u._al->min(curDim)) );
+      curIdx = curIdx / (_dims[sliceOffset+curDim*2+1]-_dims[sliceOffset+curDim*2]+1);
+      multiplyer *= (_u._al->max(curDim)-_u._al->min(curDim)+1);
+    }
+    return oIdx;
+  }
+  
+  Expression*
+  ArrayLit::slice_get(int i) const {
+    if (!_flag_2) {
+      assert(_u._v->flag());
+      int off = length()-_u._v->size();
+      return i <= off ? (*_u._v)[0] : (*_u._v)[i-off];
+    } else {
+      assert(_flag_2);
+      return (*_u._al)[origIdx(i)];
+    }
+  }
+  
+  void
+  ArrayLit::slice_set(int i, Expression* e) {
+    if (!_flag_2) {
+      assert(_u._v->flag());
+      int off = length()-_u._v->size();
+      if (i <= off) {
+        (*_u._v)[0] = e;
+      } else {
+        (*_u._v)[i-off] = e;
+      }
+    } else {
+      assert(_flag_2);
+      _u._al->set(origIdx(i), e);
+    }
+  }
+  
+  
+  ArrayLit::ArrayLit(const Location& loc, ArrayLit* v,
+                     const std::vector<std::pair<int,int> >& dims,
+                     const std::vector<std::pair<int,int> >& slice)
+  : Expression(loc,E_ARRAYLIT,Type()) {
+    _flag_1 = false;
+    _flag_2 = true;
+    _u._al = v;
+    assert(slice.size() == v->dims());
+    std::vector<int> d(dims.size()*2+2*slice.size());
+    for (unsigned int i=dims.size(); i--;) {
+      d[i*2  ] = dims[i].first;
+      d[i*2+1] = dims[i].second;
+    }
+    int sliceOffset = 2*dims.size();
+    for (unsigned int i=slice.size(); i--;) {
+      d[sliceOffset+i*2  ] = slice[i].first;
+      d[sliceOffset+i*2+1] = slice[i].second;
+    }
+    _dims = ASTIntVec(d);
+  }
+  
+  void
+  ArrayLit::compress(const std::vector<Expression*>& v, const std::vector<int>& dims) {
+    if (v.size() >= 4 && Expression::equal(v[0], v[1]) && Expression::equal(v[1], v[2]) && Expression::equal(v[2], v[3])) {
+      std::vector<Expression*> compress(v.size());
+      compress[0] = v[0];
+      int k = 4;
+      while (k<v.size() && Expression::equal(v[k],v[0])) {
+        k++;
+      }
+      int i = 1;
+      for (; k<v.size(); k++) {
+        compress[i++] = v[k];
+      }
+      compress.resize(i);
+      _u._v = ASTExprVec<Expression>(compress).vec();
+      _u._v->flag(true);
+      _dims = ASTIntVec(dims);
+    } else {
+      _u._v = ASTExprVec<Expression>(v).vec();
+      if (dims.size()!=2 || dims[0]!=1) {
+        // only allocate dims vector if it is not a 1d array indexed from 1
+        _dims = ASTIntVec(dims);
+      }
+    }
+  }
+  
+  ArrayLit::ArrayLit(const Location& loc,
+                     const std::vector<Expression*>& v,
+                     const std::vector<std::pair<int,int> >& dims)
+  : Expression(loc,E_ARRAYLIT,Type()) {
+    _flag_1 = false;
+    _flag_2 = false;
+    std::vector<int> d(dims.size()*2);
+    for (unsigned int i=dims.size(); i--;) {
+      d[i*2] = dims[i].first;
+      d[i*2+1] = dims[i].second;
+    }
+    compress(v, d);
+    rehash();
+  }
+  
+  void
+  ArrayLit::rehash(void) {
+    init_hash();
+    HASH_NAMESPACE::hash<int> h;
+    for (unsigned int i=0; i<_dims.size(); i++) {
+      cmb_hash(h(_dims[i]));
+    }
+    if (_flag_2) {
+      cmb_hash(Expression::hash(_u._al));
+    } else {
+      for (unsigned int i=_u._v->size(); i--;) {
+        cmb_hash(h(i));
+        cmb_hash(Expression::hash((*_u._v)[i]));
+      }
+    }
   }
 
   void
@@ -286,33 +431,55 @@ namespace MiniZinc {
   }
 
   Generator::Generator(const std::vector<ASTString>& v,
-                       Expression* in) {
+                       Expression* in,
+                       Expression* where) {
     std::vector<VarDecl*> vd;
+    Location loc = in == NULL ? where->loc() : in->loc();
     for (unsigned int i=0; i<v.size(); i++) {
-      VarDecl* nvd = new VarDecl(in->loc(),
-                                 new TypeInst(in->loc(),Type::parint()),v[i]);
+      VarDecl* nvd = new VarDecl(loc,
+                                 new TypeInst(loc,Type::parint()),v[i]);
       nvd->toplevel(false);
       vd.push_back(nvd);
     }
     _v = vd;
     _in = in;
+    _where = where;
+  }
+  Generator::Generator(const std::vector<Id*>& v,
+                       Expression* in,
+                       Expression* where) {
+    std::vector<VarDecl*> vd;
+    for (unsigned int i=0; i<v.size(); i++) {
+      VarDecl* nvd = new VarDecl(v[i]->loc(),
+                                 new TypeInst(v[i]->loc(),Type::parint()),v[i]->v());
+      nvd->toplevel(false);
+      vd.push_back(nvd);
+    }
+    _v = vd;
+    _in = in;
+    _where = where;
   }
   Generator::Generator(const std::vector<std::string>& v,
-                       Expression* in) {
+                       Expression* in,
+                       Expression* where) {
     std::vector<VarDecl*> vd;
+    Location loc = in == NULL ? where->loc() : in->loc();
     for (unsigned int i=0; i<v.size(); i++) {
-      VarDecl* nvd = new VarDecl(in->loc(),
-                                 new TypeInst(in->loc(),Type::parint()),ASTString(v[i]));
+      VarDecl* nvd = new VarDecl(loc,
+                                 new TypeInst(loc,Type::parint()),ASTString(v[i]));
       nvd->toplevel(false);
       vd.push_back(nvd);
     }
     _v = vd;
     _in = in;
+    _where = where;
   }
   Generator::Generator(const std::vector<VarDecl*>& v,
-                       Expression* in) {
+                       Expression* in,
+                       Expression* where) {
     _v = v;
     _in = in;
+    _where = where;
   }
 
   bool
@@ -325,7 +492,6 @@ namespace MiniZinc {
     HASH_NAMESPACE::hash<unsigned int> h;
     cmb_hash(h(set()));
     cmb_hash(Expression::hash(_e));
-    cmb_hash(Expression::hash(_where));
     cmb_hash(h(_g_idx.size()));
     for (unsigned int i=_g_idx.size(); i--;) {
       cmb_hash(h(_g_idx[i]));
@@ -348,18 +514,26 @@ namespace MiniZinc {
   Comprehension::in(int i) const {
     return _g[_g_idx[i]];
   }
-
+  const Expression*
+  Comprehension::where(int i) const {
+    return _g[_g_idx[i]+1];
+  }
+  Expression*
+  Comprehension::where(int i) {
+    return _g[_g_idx[i]+1];
+  }
+  
   int
   Comprehension::n_decls(int i) const {
-    return _g_idx[i+1]-_g_idx[i]-1;
+    return _g_idx[i+1]-_g_idx[i]-2;
   }
   VarDecl*
   Comprehension::decl(int gen, int i) {
-    return _g[_g_idx[gen]+1+i]->cast<VarDecl>();
+    return _g[_g_idx[gen]+2+i]->cast<VarDecl>();
   }
   const VarDecl*
   Comprehension::decl(int gen, int i) const {
-    return _g[_g_idx[gen]+1+i]->cast<VarDecl>();
+    return _g[_g_idx[gen]+2+i]->cast<VarDecl>();
   }
 
   void
@@ -551,13 +725,21 @@ namespace MiniZinc {
   void
   Call::rehash(void) {
     init_hash();
-    cmb_hash(_id.hash());
+    cmb_hash(id().hash());
     HASH_NAMESPACE::hash<FunctionI*> hf;
-    cmb_hash(hf(_decl));
+    cmb_hash(hf(decl()));
     HASH_NAMESPACE::hash<unsigned int> hu;
-    cmb_hash(hu(_args.size()));
-    for (unsigned int i=_args.size(); i--;)
-      cmb_hash(Expression::hash(_args[i]));
+    cmb_hash(hu(n_args()));
+    for (unsigned int i=0; i<n_args(); i++)
+      cmb_hash(Expression::hash(arg(i)));
+  }
+  
+  void
+  VarDecl::trail(void) {
+    GC::trail(&_e,e());
+    if (_ti->ranges().size() > 0) {
+      GC::trail(reinterpret_cast<Expression**>(&_ti),_ti);
+    }
   }
 
   void
@@ -602,17 +784,19 @@ namespace MiniZinc {
     GC::mark();
     for (unsigned int i=_let.size(); i--;) {
       if (VarDecl* vd = _let[i]->dyn_cast<VarDecl>()) {
-        GC::trail(&vd->_e,vd->e());
-        if (vd->ti()->ranges().size() > 0) {
-          GC::trail(reinterpret_cast<Expression**>(&vd->_ti),vd->ti());
-        }
+        vd->trail();
         vd->e(_let_orig[i]);
       }
     }
   }
   void
   Let::popbindings(void) {
-    GC::untrail();
+    for (unsigned int i=_let.size(); i--;) {
+      if (VarDecl* vd = _let[i]->dyn_cast<VarDecl>()) {
+        GC::untrail();
+        break;
+      }
+    }
   }
 
   void
@@ -654,8 +838,21 @@ namespace MiniZinc {
     const Location& getLoc(Expression* e, FunctionI*) { return e->loc(); }
     const Location& getLoc(const Type&, FunctionI* fi) { return fi->loc(); }
 
+    bool isaTIId(Expression* e) {
+      if (TIId* t = Expression::dyn_cast<TIId>(e)) {
+        return !t->v().beginsWith("$");
+      }
+      return false;
+    }
+    bool isaEnumTIId(Expression* e) {
+      if (TIId* t = Expression::dyn_cast<TIId>(e)) {
+        return t->v().beginsWith("$");
+      }
+      return false;
+    }
+    
     template<class T>
-    Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta) {
+    Type return_type(EnvI& env, FunctionI* fi, const std::vector<T>& ta, bool strictEnum) {
       if (fi->id()==constants().var_redef->id())
         return Type::varbool();
       Type ret = fi->ti()->type();
@@ -664,7 +861,7 @@ namespace MiniZinc {
         dh = fi->ti()->domain()->cast<TIId>()->v();
       ASTString rh;
       if (fi->ti()->ranges().size()==1 &&
-          fi->ti()->ranges()[0]->domain() && fi->ti()->ranges()[0]->domain()->isa<TIId>())
+          isaTIId(fi->ti()->ranges()[0]->domain()))
         rh = fi->ti()->ranges()[0]->domain()->cast<TIId>()->v();
       
       ASTStringMap<Type>::t tmap;
@@ -673,9 +870,17 @@ namespace MiniZinc {
         if (tii->domain() && tii->domain()->isa<TIId>()) {
           ASTString tiid = tii->domain()->cast<TIId>()->v();
           Type tiit = getType(ta[i]);
+          if (tiit.enumId() != 0 && tiit.dim() > 0) {
+            const std::vector<unsigned int>& enumIds = env.getArrayEnum(tiit.enumId());
+            tiit.enumId(enumIds[enumIds.size()-1]);
+          }
           tiit.dim(0);
-          if (tii->type().st()==Type::ST_SET)
+          if (tii->type().st()==Type::ST_SET) {
             tiit.st(Type::ST_PLAIN);
+          }
+          if (isaEnumTIId(tii->domain())) {
+            tiit.st(Type::ST_SET);
+          }
           ASTStringMap<Type>::t::iterator it = tmap.find(tiid);
           if (it==tmap.end()) {
             tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
@@ -696,10 +901,10 @@ namespace MiniZinc {
               if (its_par.bt()==Type::BT_TOP || its_par.bt()==Type::BT_BOT) {
                 its_par.bt(tiit_par.bt());
               }
-              if (tiit_par.isSubtypeOf(its_par)) {
+              if (env.isSubtype(tiit_par,its_par,strictEnum)) {
                 if (it->second.bt() == Type::BT_TOP)
                   it->second.bt(tiit.bt());
-              } else if (its_par.isSubtypeOf(tiit_par)) {
+              } else if (env.isSubtype(its_par,tiit_par,strictEnum)) {
                 it->second = tiit_par;
               } else {
                 throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
@@ -711,8 +916,7 @@ namespace MiniZinc {
           }
         }
         if (tii->ranges().size()==1 &&
-            tii->ranges()[0]->domain() &&
-            tii->ranges()[0]->domain()->isa<TIId>()) {
+            isaTIId(tii->ranges()[0]->domain())) {
           ASTString tiid = tii->ranges()[0]->domain()->cast<TIId>()->v();
           if (getType(ta[i]).dim()==0) {
             throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+tiid.str()+
@@ -733,39 +937,102 @@ namespace MiniZinc {
                               it->second.toString(env)+")");
             }
           }
+        } else if (tii->ranges().size() > 0) {
+          for (unsigned int j=0; j<tii->ranges().size(); j++) {
+            if (isaEnumTIId(tii->ranges()[j]->domain())) {
+              ASTString enumTIId = tii->ranges()[j]->domain()->cast<TIId>()->v();
+              Type tiit = getType(ta[i]);
+              Type enumIdT;
+              if (tiit.enumId() != 0) {
+                unsigned int enumId = env.getArrayEnum(tiit.enumId())[j];
+                enumIdT = Type::parsetenum(enumId);
+              } else {
+                enumIdT = Type::parsetint();
+              }
+              ASTStringMap<Type>::t::iterator it = tmap.find(enumTIId);
+              // TODO: this may clash if the same enum TIId is used for different types
+              // but the same enum
+              if (it==tmap.end()) {
+                tmap.insert(std::pair<ASTString,Type>(enumTIId,enumIdT));
+              } else {
+                if (it->second.enumId() != enumIdT.enumId()) {
+                  throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
+                                  enumTIId.str()+" used for different enum types");
+                }
+              }
+            }
+          }
         }
       }
       if (dh.size() != 0) {
         ASTStringMap<Type>::t::iterator it = tmap.find(dh);
         if (it==tmap.end())
           throw TypeError(env, fi->loc(),"type-inst variable $"+dh.str()+" used but not defined");
-        ret.bt(it->second.bt());
-        ret.enumId(it->second.enumId());
-        if (ret.st()==Type::ST_PLAIN)
-          ret.st(it->second.st());
+        if (dh.beginsWith("$")) {
+          // this is an enum
+          ret.bt(Type::BT_INT);
+        } else {
+          ret.bt(it->second.bt());
+          if (ret.st()==Type::ST_PLAIN)
+            ret.st(it->second.st());
+        }
+        if (fi->ti()->ranges().size() > 0 && it->second.enumId() != 0) {
+          std::vector<unsigned int> enumIds(fi->ti()->ranges().size()+1);
+          for (unsigned int i=0; i<fi->ti()->ranges().size(); i++) {
+            enumIds[i] = 0;
+          }
+          enumIds[enumIds.size()-1] = it->second.enumId();
+          ret.enumId(env.registerArrayEnum(enumIds));
+        } else {
+          ret.enumId(it->second.enumId());
+        }
       }
       if (rh.size() != 0) {
         ASTStringMap<Type>::t::iterator it = tmap.find(rh);
         if (it==tmap.end())
           throw TypeError(env, fi->loc(),"type-inst variable $"+rh.str()+" used but not defined");
         ret.dim(it->second.dim());
+      } else if (fi->ti()->ranges().size() > 0) {
+        std::vector<unsigned int> enumIds(fi->ti()->ranges().size()+1);
+        bool hadRealEnum = false;
+        if (ret.enumId()==0) {
+          enumIds[enumIds.size()-1] = 0;
+        } else {
+          enumIds[enumIds.size()-1] = env.getArrayEnum(ret.enumId())[enumIds.size()-1];
+          hadRealEnum = true;
+        }
+        
+        for (unsigned int i=0; i<fi->ti()->ranges().size(); i++) {
+          if (isaEnumTIId(fi->ti()->ranges()[i]->domain())) {
+            ASTString enumTIId = fi->ti()->ranges()[i]->domain()->cast<TIId>()->v();
+            ASTStringMap<Type>::t::iterator it = tmap.find(enumTIId);
+            if (it==tmap.end())
+              throw TypeError(env, fi->loc(),"type-inst variable $"+enumTIId.str()+" used but not defined");
+            enumIds[i] = it->second.enumId();
+            hadRealEnum |= (enumIds[i] != 0);
+          } else {
+            enumIds[i] = 0;
+          }
+        }
+        if (hadRealEnum)
+          ret.enumId(env.registerArrayEnum(enumIds));
       }
       return ret;
     }
   }
   
   Type
-  FunctionI::rtype(EnvI& env, const std::vector<Expression*>& ta) {
-    return return_type(env, this, ta);
+  FunctionI::rtype(EnvI& env, const std::vector<Expression*>& ta, bool strictEnums) {
+    return return_type(env, this, ta, strictEnums);
   }
 
   Type
-  FunctionI::rtype(EnvI& env, const std::vector<Type>& ta) {
-    return return_type(env, this, ta);
+  FunctionI::rtype(EnvI& env, const std::vector<Type>& ta, bool strictEnums) {
+    return return_type(env, this, ta, strictEnums);
   }
 
   Type
-  FunctionI::argtype(const std::vector<Expression *>& ta, int n) {
+  FunctionI::argtype(EnvI& env, const std::vector<Expression *>& ta, int n) {
     TypeInst* tii = params()[n]->ti();
     if (tii->domain() && tii->domain()->isa<TIId>()) {
       Type ty = ta[n]->type();
@@ -779,14 +1046,14 @@ namespace MiniZinc {
           toCheck.st(tii->type().st());
           toCheck.dim(tii->type().dim());
           if (toCheck != ty) {
-            if (ty.isSubtypeOf(toCheck)) {
+            if (env.isSubtype(ty,toCheck,true)) {
               ty = toCheck;
             } else {
               Type ty_par = ty;
               ty_par.ti(Type::TI_PAR);
               Type toCheck_par = toCheck;
               toCheck_par.ti(Type::TI_PAR);
-              if (ty_par.isSubtypeOf(toCheck_par)) {
+              if (env.isSubtype(ty_par,toCheck_par,true)) {
                 ty.bt(toCheck.bt());
               }
             }
@@ -855,15 +1122,15 @@ namespace MiniZinc {
       {
         const ArrayLit* a0 = e0->cast<ArrayLit>();
         const ArrayLit* a1 = e1->cast<ArrayLit>();
-        if (a0->v().size() != a1->v().size()) return false;
+        if (a0->size() != a1->size()) return false;
         if (a0->_dims.size() != a1->_dims.size()) return false;
         for (unsigned int i=0; i<a0->_dims.size(); i++) {
           if ( a0->_dims[i] != a1->_dims[i] ) {
             return false;
           }
         }
-        for (unsigned int i=0; i<a0->v().size(); i++) {
-          if (!Expression::equal( a0->v()[i], a1->v()[i] )) {
+        for (unsigned int i=0; i<a0->size(); i++) {
+          if (!Expression::equal( (*a0)[i], (*a1)[i] )) {
             return false;
           }
         }
@@ -886,7 +1153,6 @@ namespace MiniZinc {
         const Comprehension* c1 = e1->cast<Comprehension>();
         if (c0->set() != c1->set()) return false;
         if (!Expression::equal ( c0->_e, c1->_e )) return false;
-        if (!Expression::equal ( c0->_where, c1->_where )) return false;
         if (c0->_g.size() != c1->_g.size()) return false;
         for (unsigned int i=0; i<c0->_g.size(); i++) {
           if (!Expression::equal( c0->_g[i], c1->_g[i] ))
@@ -933,10 +1199,10 @@ namespace MiniZinc {
         const Call* c0 = e0->cast<Call>();
         const Call* c1 = e1->cast<Call>();
         if (c0->id() != c1->id()) return false;
-        if (c0->_decl != c1->_decl) return false;
-        if (c0->args().size() != c1->args().size()) return false;
-        for (unsigned int i=0; i<c0->args().size(); i++)
-          if (!Expression::equal ( c0->args()[i], c1->args()[i] ))
+        if (c0->decl() != c1->decl()) return false;
+        if (c0->n_args() != c1->n_args()) return false;
+        for (unsigned int i=0; i<c0->n_args(); i++)
+          if (!Expression::equal ( c0->arg(i), c1->arg(i) ))
             return false;
         return true;
       }
@@ -1108,6 +1374,8 @@ namespace MiniZinc {
     ann.output_array = ASTString("output_array");
     ann.add_to_output = new Id(Location(), ASTString("add_to_output"), NULL);
     ann.add_to_output->type(Type::ann());
+    ann.mzn_check_var = new Id(Location(), ASTString("mzn_check_var"), NULL);
+    ann.mzn_check_var->type(Type::ann());
     ann.is_defined_var = new Id(Location(), ASTString("is_defined_var"), NULL);
     ann.is_defined_var->type(Type::ann());
     ann.defines_var = ASTString("defines_var");
@@ -1118,12 +1386,17 @@ namespace MiniZinc {
     ann.maybe_partial = new Id(Location(), ASTString("maybe_partial"), NULL);
     ann.maybe_partial->type(Type::ann());
     ann.doc_comment = ASTString("doc_comment");
+    ann.mzn_path = ASTString("mzn_path");
     ann.is_introduced = ASTString("is_introduced");
     ann.user_cut = new Id(Location(), ASTString("user_cut"), NULL);
     ann.user_cut->type(Type::ann());
     ann.lazy_constraint = new Id(Location(), ASTString("lazy_constraint"), NULL);
     ann.lazy_constraint->type(Type::ann());
-    
+#ifndef NDEBUG
+    ann.mzn_break_here = new Id(Location(), ASTString("mzn_break_here"), NULL);
+    ann.mzn_break_here->type(Type::ann());
+#endif
+
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
     
@@ -1310,6 +1583,7 @@ namespace MiniZinc {
     v.push_back(ctx.mix);
     v.push_back(ann.output_var);
     v.push_back(ann.add_to_output);
+    v.push_back(ann.mzn_check_var);
     v.push_back(new StringLit(Location(),ann.output_array));
     v.push_back(ann.is_defined_var);
     v.push_back(new StringLit(Location(),ann.defines_var));
@@ -1317,10 +1591,14 @@ namespace MiniZinc {
     v.push_back(ann.promise_total);
     v.push_back(ann.maybe_partial);
     v.push_back(new StringLit(Location(),ann.doc_comment));
+    v.push_back(new StringLit(Location(),ann.mzn_path));
     v.push_back(new StringLit(Location(), ann.is_introduced));
     v.push_back(ann.user_cut);
     v.push_back(ann.lazy_constraint);
-    
+#ifndef NDEBUG
+    v.push_back(ann.mzn_break_here);
+#endif
+
     v.push_back(new StringLit(Location(),cli.cmdlineData_short_str));
     v.push_back(new StringLit(Location(),cli.cmdlineData_str));
     v.push_back(new StringLit(Location(),cli.datafile_short_str));

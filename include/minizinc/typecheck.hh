@@ -18,17 +18,48 @@
 
 namespace MiniZinc {
 
+  /// Scoped variable declarations
+  class Scopes {
+  protected:
+    typedef IdMap<VarDecl*> DeclMap;
+    struct Scope {
+      /// Whether this scope is toplevel
+      bool toplevel;
+      /// Map from identifiers to declarations
+      DeclMap m;
+      /// Constructor
+      Scope(void) : toplevel(false) {}
+    };
+    /// Stack of scopes
+    std::vector<Scope> s;
+  public:
+
+    /// Constructor
+    Scopes(void);
+    
+    /// Add a variable declaration
+    void add(EnvI& env, VarDecl* vd);
+
+    /// Push a new scope
+    void push(bool toplevel);
+    /// Pop topmost scope
+    void pop(void);
+    
+    /// Return declaration for \a ident, or NULL if not found
+    VarDecl* find(Id* ident);
+    
+  };
+  
   /// Topological sorting of items
   class TopoSorter {
   public:
     typedef std::vector<VarDecl*> Decls;
-    typedef IdMap<Decls> DeclMap;
     typedef UNORDERED_NAMESPACE::unordered_map<VarDecl*,int> PosMap;
     
     /// List of all declarations
     Decls decls;
-    /// Map from identifiers to declarations
-    DeclMap idmap;
+    /// Scoped declarations
+    Scopes scopes;
     /// Map from declarations to positions
     PosMap pos;
     /// The model
@@ -36,24 +67,21 @@ namespace MiniZinc {
     
     TopoSorter(Model* model0) : model(model0) {}
     
-    /// Add a variable declaration
-    void add(EnvI& env, VarDecl* vd, bool unique);
     /// Add a variable declaration item
-    void add(EnvI& env, VarDeclI* vd, bool unique, bool handleEnums, std::vector<Item*>& enumItems);
-    /// Remove a variable declaration
-    void remove(EnvI& env, VarDecl* vd);
+    void add(EnvI& env, VarDeclI* vd, bool handleEnums, Model* enumItems);
     /// Get variable declaration from identifier \a id
     VarDecl* get(EnvI& env, const ASTString& id, const Location& loc);
     
-    VarDecl* checkId(EnvI& env, const ASTString& id, const Location& loc);
-    VarDecl* checkId(EnvI& env, Id* id, const Location& loc);
+    VarDecl* checkId(EnvI& env, const ASTString& ident, const Location& loc);
+    VarDecl* checkId(EnvI& env, Id* ident, const Location& loc);
     /// Run the topological sorting for expression \a e
     void run(EnvI& env, Expression* e);
   };
   
   /// Type check the model \a m
   void typecheck(Env& env, Model* m, std::vector<TypeError>& typeErrors,
-                 bool ignoreUndefinedParameters = false);
+                 bool ignoreUndefinedParameters,
+                 bool allowMultiAssignment);
 
   /// Type check new assign item \a ai in model \a m
   void typecheck(Env& env, Model* m, AssignI* ai);

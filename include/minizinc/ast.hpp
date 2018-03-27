@@ -16,6 +16,12 @@ namespace MiniZinc {
     if (e0==e1) return true;
     if (e0 == NULL || e1 == NULL) return false;
     if (e0->isUnboxedInt() || e1->isUnboxedInt()) return false;
+    if (e0->isUnboxedFloatVal() || e1->isUnboxedFloatVal()) {
+      if (e0->isUnboxedFloatVal() && e1->isUnboxedFloatVal()) {
+        return e0->unboxedFloatToFloatVal()==e1->unboxedFloatToFloatVal();
+      }
+      return false;
+    }
     if (e0->_id != e1->_id) return false;
     if (e0->type() != e1->type()) return false;
     if (e0->hash() != e1->hash()) return false;
@@ -24,8 +30,9 @@ namespace MiniZinc {
 
   inline void
   Expression::type(const Type& t) {
-    if (isUnboxedInt()) {
-      assert(t == Type::parint());
+    if (isUnboxedVal()) {
+      assert(!isUnboxedInt() || t == Type::parint());
+      assert(!isUnboxedFloatVal() || t == Type::parfloat());
       return;
     }
     if (eid()==E_VARDECL) {
@@ -46,17 +53,108 @@ namespace MiniZinc {
   inline IntLit*
   IntLit::a(MiniZinc::IntVal v) {
     
-    if (v > -(LLONG_MAX >> 3) && v < (LLONG_MAX >> 3))
-      return intToUnboxedInt(v.toInt());
+    if (v.isFinite()) {
+      IntLit* ret = intToUnboxedInt(v.toInt());
+      if (ret) {
+        return ret;
+      }
+    }
     
     UNORDERED_NAMESPACE::unordered_map<IntVal, WeakRef>::iterator it = constants().integerMap.find(v);
     if (it==constants().integerMap.end() || it->second()==NULL) {
       IntLit* il = new IntLit(Location().introduce(), v);
-      constants().integerMap.insert(std::make_pair(v, il));
+      if (it==constants().integerMap.end()) {
+        constants().integerMap.insert(std::make_pair(v, il));
+      } else {
+        it->second = il;
+      }
       return il;
     } else {
       return it->second()->cast<IntLit>();
     }
+  }
+  
+  inline IntLit*
+  IntLit::aEnum(IntVal v, unsigned int enumId) {
+    if (enumId==0)
+      return a(v);
+    IntLit* il = new IntLit(Location().introduce(), v);
+    Type tt(il->type());
+    tt.enumId(enumId);
+    il->type(tt);
+    return il;
+  }
+  
+  inline
+  Location::LocVec::LocVec(const ASTString& filename, unsigned int fl,
+                           unsigned int first_column, unsigned int last_line, unsigned int last_column) : ASTVec(3) {
+    *(_data+0) = filename.aststr();
+    long long unsigned int lines = fl;
+    long long unsigned int ll = last_line;
+    lines |= ll << 20;
+    long long unsigned int columns = first_column;
+    long long unsigned int lc = last_column;
+    columns |= lc << 20;
+    
+    union {
+      long long int i;
+      unsigned long long int u;
+    } ui;
+    
+    ui.u = lines;
+    *(_data+1) = IntLit::a(ui.i);
+    
+    ui.u = columns;
+    *(_data+2) = IntLit::a(ui.i);
+    
+    assert(first_line()==fl);
+  }
+
+  inline ASTString
+  Location::LocVec::filename(void) const {
+    return static_cast<ASTStringO*>(_data[0]);
+  }
+  inline unsigned int
+  Location::LocVec::first_line(void) const {
+    IntLit* il = static_cast<IntLit*>(_data[1]);
+    long long unsigned int mask = 0xFFFFF;
+    union {
+      long long int i;
+      unsigned long long int u;
+    } ui;
+    ui.i = il->v().toInt();
+    return ui.u & mask;
+  }
+  inline unsigned int
+  Location::LocVec::last_line(void) const {
+    IntLit* il = static_cast<IntLit*>(_data[1]);
+    union {
+      long long int i;
+      unsigned long long int u;
+    } ui;
+    ui.i = il->v().toInt();
+    return ui.u >> 20;
+  }
+  inline unsigned int
+  Location::LocVec::first_column(void) const {
+    IntLit* il = static_cast<IntLit*>(*(_data+2));
+    long long unsigned int mask = 0xFFFFF;
+    union {
+      long long int i;
+      unsigned long long int u;
+    } ui;
+    ui.i = il->v().toInt();
+    return ui.u & mask;
+  }
+  inline unsigned int
+  Location::LocVec::last_column(void) const {
+    IntLit* il = static_cast<IntLit*>(*(_data+2));
+    union {
+      long long int i;
+      unsigned long long int u;
+    } ui;
+    ui.i = il->v().toInt();
+    return ui.u >> 20;
   }
   
   inline
@@ -67,10 +165,21 @@ namespace MiniZinc {
 
   inline FloatLit*
   FloatLit::a(MiniZinc::FloatVal v) {
+    if (sizeof(double) <= sizeof(FloatLit*) && v.isFinite()) {
+      FloatLit* ret = Expression::doubleToUnboxedFloatVal(v.toDouble());
+      if (ret) {
+        return ret;
+      }
+    }
+    
     UNORDERED_NAMESPACE::unordered_map<FloatVal, WeakRef>::iterator it = constants().floatMap.find(v);
     if (it==constants().floatMap.end() || it->second()==NULL) {
       FloatLit* fl = new FloatLit(Location().introduce(), v);
-      constants().floatMap.insert(std::make_pair(v, fl));
+      if (it==constants().floatMap.end()) {
+        constants().floatMap.insert(std::make_pair(v, fl));
+      } else {
+        it->second = fl;
+      }
       return fl;
     } else {
       return it->second()->cast<FloatLit>();
@@ -194,49 +303,71 @@ namespace MiniZinc {
   : Expression(loc,E_ANON,Type()) {
     rehash();
   }
-  
+
+
   inline
   ArrayLit::ArrayLit(const Location& loc,
-                     const std::vector<Expression*>& v,
+                     ArrayLit& v,
                      const std::vector<std::pair<int,int> >& dims)
   : Expression(loc,E_ARRAYLIT,Type()) {
     _flag_1 = false;
-    std::vector<int> d(dims.size()*2);
-    for (unsigned int i=dims.size(); i--;) {
-      d[i*2] = dims[i].first;
-      d[i*2+1] = dims[i].second;
+    _flag_2 = v._flag_2;
+    if (_flag_2) {
+      _u._al = v._u._al;
+      std::vector<int> d(dims.size()*2+v._dims.size()-v.dims()*2);
+      for (unsigned int i=dims.size(); i--;) {
+        d[i*2] = dims[i].first;
+        d[i*2+1] = dims[i].second;
+      }
+      int sliceOffset = dims.size()*2;
+      int origSliceOffset = v.dims()*2;
+      for (int i=0; i<_u._al->dims()*2; i++) {
+        d[sliceOffset+i] = v._dims[origSliceOffset+i];
+      }
+      _dims = ASTIntVec(d);
+    } else {
+      std::vector<int> d(dims.size()*2);
+      for (unsigned int i=dims.size(); i--;) {
+        d[i*2] = dims[i].first;
+        d[i*2+1] = dims[i].second;
+      }
+      if (v._u._v->flag() || d.size()!=2 || d[0]!=1) {
+        // only allocate dims vector if it is not a 1d array indexed from 1
+        _dims = ASTIntVec(d);
+      }
+      _u._v = v._u._v;
     }
-    _v = ASTExprVec<Expression>(v);
-    _dims = ASTIntVec(d);
     rehash();
   }
 
   inline
   ArrayLit::ArrayLit(const Location& loc,
-                     ASTExprVec<Expression> v,
-                     const std::vector<std::pair<int,int> >& dims)
+                     ArrayLit& v)
   : Expression(loc,E_ARRAYLIT,Type()) {
     _flag_1 = false;
-    std::vector<int> d(dims.size()*2);
-    for (unsigned int i=dims.size(); i--;) {
-      d[i*2] = dims[i].first;
-      d[i*2+1] = dims[i].second;
+    _flag_2 = v._flag_2;
+    if (_flag_2) {
+      _u._al = v._u._al;
+      std::vector<int> d(2+v._dims.size()-v.dims()*2);
+      d[0] = 1;
+      d[1] = v.size();
+      int sliceOffset = 2;
+      int origSliceOffset = v.dims()*2;
+      for (int i=0; i<_u._al->dims()*2; i++) {
+        d[sliceOffset+i] = v._dims[origSliceOffset+i];
+      }
+      _dims = ASTIntVec(d);
+    } else {
+      _u._v = v._u._v;
+      if (_u._v->flag()) {
+        std::vector<int> d(2);
+        d[0] = 1;
+        d[1] = v.length();
+        _dims = ASTIntVec(d);
+      } else {
+        // don't allocate dims vector since this is a 1d array indexed from 1
+      }
     }
-    _v = v;
-    _dims = ASTIntVec(d);
-    rehash();
-  }
-
-  inline
-  ArrayLit::ArrayLit(const Location& loc,
-                     ASTExprVec<Expression> v)
-  : Expression(loc,E_ARRAYLIT,Type()) {
-    _flag_1 = false;
-    std::vector<int> dims(2);
-    dims[0]=1;
-    dims[1]=v.size();
-    _v = v;
-    _dims = ASTIntVec(dims);
     rehash();
   }
 
@@ -245,11 +376,11 @@ namespace MiniZinc {
                      const std::vector<Expression*>& v)
   : Expression(loc,E_ARRAYLIT,Type()) {
     _flag_1 = false;
-    std::vector<int> dims(2);
-    dims[0]=1;
-    dims[1]=v.size();
-    _v = ASTExprVec<Expression>(v);
-    _dims = ASTIntVec(dims);
+    _flag_2 = false;
+    std::vector<int> d(2);
+    d[0] = 1;
+    d[1] = v.size();
+    compress(v, d);
     rehash();
   }
 
@@ -258,6 +389,7 @@ namespace MiniZinc {
                      const std::vector<std::vector<Expression*> >& v)
   : Expression(loc,E_ARRAYLIT,Type()) {
     _flag_1 = false;
+    _flag_2 = false;
     std::vector<int> dims(4);
     dims[0]=1;
     dims[1]=v.size();
@@ -267,11 +399,10 @@ namespace MiniZinc {
     for (unsigned int i=0; i<v.size(); i++)
       for (unsigned int j=0; j<v[i].size(); j++)
         vv.push_back(v[i][j]);
-    _v = ASTExprVec<Expression>(vv);
-    _dims = ASTIntVec(dims);
+    compress(vv, dims);
     rehash();
   }
-
+  
   inline
   ArrayAccess::ArrayAccess(const Location& loc,
                            Expression* v,
@@ -300,6 +431,7 @@ namespace MiniZinc {
     for (unsigned int i=0; i<g._g.size(); i++) {
       idx.push_back(es.size());
       es.push_back(g._g[i]._in);
+      es.push_back(g._g[i]._where);
       for (unsigned int j=0; j<g._g[i]._v.size(); j++) {
         es.push_back(g._g[i]._v[j]);
       }
@@ -307,7 +439,6 @@ namespace MiniZinc {
     idx.push_back(es.size());
     _g = ASTExprVec<Expression>(es);
     _g_idx = ASTIntVec(idx);
-    _where = g._w;
     rehash();
   }
   inline
@@ -347,29 +478,64 @@ namespace MiniZinc {
     rehash();
   }
 
+  inline bool
+  Call::hasId(void) const {
+    return (reinterpret_cast<ptrdiff_t>(_u_id._decl) & static_cast<ptrdiff_t>(1)) == 0;
+  }
+  
+  inline ASTString
+  Call::id(void) const {
+    return hasId() ? _u_id._id : decl()->id();
+  }
+  
+  inline void
+  Call::id(const ASTString& i) {
+    _u_id._id = i.aststr();
+    assert(hasId());
+    assert(decl()==NULL);
+  }
 
+  inline FunctionI*
+  Call::decl(void) const {
+    return hasId() ? NULL : reinterpret_cast<FunctionI*>(reinterpret_cast<ptrdiff_t>(_u_id._decl) & ~static_cast<ptrdiff_t>(1));
+  }
+  
+  inline void
+  Call::decl(FunctionI* f) {
+    assert(f != NULL);
+    _u_id._decl = reinterpret_cast<FunctionI*>(reinterpret_cast<ptrdiff_t>(f) | static_cast<ptrdiff_t>(1));
+  }
+  
   inline
   Call::Call(const Location& loc,
-             const std::string& id,
-             const std::vector<Expression*>& args,
-             FunctionI* decl)
+             const std::string& id0,
+             const std::vector<Expression*>& args)
   : Expression(loc, E_CALL,Type()) {
-    _id = ASTString(id);
-    _args = ASTExprVec<Expression>(args);
-    _decl = decl;
+    id(ASTString(id0));
+    if (args.size()==1) {
+      _u._oneArg = args[0]->isUnboxedVal() ? args[0] : args[0]->tag();
+    } else {
+      _u._args = ASTExprVec<Expression>(args).vec();
+    }
     rehash();
+    assert(hasId());
+    assert(decl() == NULL);
   }
 
   inline
   Call::Call(const Location& loc,
-             const ASTString& id,
-             const std::vector<Expression*>& args,
-             FunctionI* decl)
+             const ASTString& id0,
+             const std::vector<Expression*>& args)
   : Expression(loc, E_CALL,Type()) {
-    _id = id;
-    _args = ASTExprVec<Expression>(args);
-    _decl = decl;
+    id(ASTString(id0));
+    if (args.size()==1) {
+      _u._oneArg = args[0]->isUnboxedVal() ? args[0] : args[0]->tag();
+    } else {
+      _u._args = ASTExprVec<Expression>(args).vec();
+    }
     rehash();
+    assert(hasId());
+    assert(decl() == NULL);
   }
 
   inline
@@ -437,7 +603,7 @@ namespace MiniZinc {
 
   inline Expression*
   VarDecl::e(void) const {
-    return _e->isUnboxedInt() ? _e : _e->untag();
+    return _e->isUnboxedVal() ? _e : _e->untag();
   }
 
   inline void
@@ -463,11 +629,11 @@ namespace MiniZinc {
   }
   inline bool
   VarDecl::evaluated(void) const {
-    return _e->isUnboxedInt() || _e->isTagged();
+    return _e->isUnboxedVal() || _e->isTagged();
   }
   inline void
   VarDecl::evaluated(bool t) {
-    if (!_e->isUnboxedInt()) {
+    if (!_e->isUnboxedVal()) {
       if (t)
         _e = _e->tag();
       else
@@ -566,12 +732,36 @@ namespace MiniZinc {
     _builtins.i = NULL;
     _builtins.s = NULL;
     _builtins.str = NULL;
-    _from_stdlib = (loc.filename == "builtins.mzn" ||
-              loc.filename.endsWith("/builtins.mzn") ||
-              loc.filename == "stdlib.mzn" ||
-              loc.filename.endsWith("/stdlib.mzn") ||
-              loc.filename == "flatzinc_builtins.mzn" ||
-              loc.filename.endsWith("/flatzinc_builtins.mzn"));
+    _from_stdlib = (loc.filename() == "builtins.mzn" ||
+              loc.filename().endsWith("/builtins.mzn") ||
+              loc.filename() == "stdlib.mzn" ||
+              loc.filename().endsWith("/stdlib.mzn") ||
+              loc.filename() == "flatzinc_builtins.mzn" ||
+              loc.filename().endsWith("/flatzinc_builtins.mzn"));
+  }
+
+  inline
+  FunctionI::FunctionI(const Location& loc,
+                       const ASTString& id, TypeInst* ti,
+                       const ASTExprVec<VarDecl>& params,
+                       Expression* e)
+  : Item(loc, II_FUN),
+  _id(id),
+  _ti(ti),
+  _params(params),
+  _e(e) {
+    _builtins.e = NULL;
+    _builtins.b = NULL;
+    _builtins.f = NULL;
+    _builtins.i = NULL;
+    _builtins.s = NULL;
+    _builtins.str = NULL;
+    _from_stdlib = (loc.filename() == "builtins.mzn" ||
+                    loc.filename().endsWith("/builtins.mzn") ||
+                    loc.filename() == "stdlib.mzn" ||
+                    loc.filename().endsWith("/stdlib.mzn") ||
+                    loc.filename() == "flatzinc_builtins.mzn" ||
+                    loc.filename().endsWith("/flatzinc_builtins.mzn"));
   }
 
 }

@@ -100,7 +100,7 @@ namespace MiniZinc {
     while (!solver_path.empty()) {
       size_t next_sep = solver_path.find(PATHSEP);
       string cur_path = solver_path.substr(0,next_sep);
-      std::vector<std::string> configFiles = FileUtils::directory_list(cur_path, "mzc");
+      std::vector<std::string> configFiles = FileUtils::directory_list(cur_path, "msc");
       for (unsigned int i=0; i<configFiles.size(); i++) {
         SolverConfig sc = SolverConfig::load(cur_path+"/"+configFiles[i]);
         SolverMap::iterator it = _solvers.find(sc.id());

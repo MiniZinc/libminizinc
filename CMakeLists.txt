@@ -7,27 +7,27 @@ project (libminizinc CXX C)
 # ---- For example, to produce mzn-gecode run "cd build; cmake -D GECODE_HOME=$GECODE_HOME ..; cmake --build ."  ----
 # -------------------------------------------------------------------------------------------------------------------
 set(HAS_FZN    TRUE)                 ### Always compile the mzn-fzn driver
-if (DEFINED GECODE_HOME)
+if (DEFINED GECODE_HOME AND NOT "${GECODE_HOME} " STREQUAL " ")
   set(HAS_GECODE TRUE)
 endif()
-if (DEFINED CPLEX_STUDIO_DIR)
+if (DEFINED CPLEX_STUDIO_DIR AND NOT "${CPLEX_STUDIO_DIR} " STREQUAL " ")
   set(HAS_CPLEX TRUE)
 endif()
-if(DEFINED GUROBI_HOME)
+if(DEFINED GUROBI_HOME AND NOT "${GUROBI_HOME} " STREQUAL " ")
   set(HAS_GUROBI TRUE)
 endif()
-if (DEFINED SCIP_DIR AND DEFINED SOPLEX_DIR AND DEFINED ZIMPL_DIR)
+if (DEFINED SCIP_DIR AND DEFINED SOPLEX_DIR AND DEFINED ZIMPL_DIR AND NOT "${SCIP_DIR} " STREQUAL " ")
   set(HAS_SCIP TRUE)                     # Can use SCIP w/o ZIMPL too
 endif()
-if (DEFINED OSICBC_HOME)
+if (DEFINED OSICBC_HOME AND NOT "${OSICBC_HOME} " STREQUAL " ")
   set(HAS_OSICBC TRUE)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
-set (libminizinc_VERSION_MINOR 0)
-set (libminizinc_VERSION_PATCH 97)
+set (libminizinc_VERSION_MINOR 1)
+set (libminizinc_VERSION_PATCH 7)
 
 if (ADDITIONAL_DATE_STRING)
   set (libminizinc_VERSION_PATCH "${libminizinc_VERSION_PATCH}.${ADDITIONAL_DATE_STRING}")
@@ -47,6 +47,24 @@ if (BUILD_STATIC_EXECUTABLE)
 #  SET(BUILD_SHARED_LIBRARIES OFF)
   SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 endif()
+
+include (CheckIncludeFiles)
+
+# -------------------------------------------------------------------------------------------------------------------
+option (BUILD_GUROBI_PLUGIN "Build Gurobi binding as a plugin" OFF)
+if (BUILD_GUROBI_PLUGIN OR HAS_CPLEX)
+  if(HAS_GUROBI OR HAS_CPLEX)
+    CHECK_INCLUDE_FILES (dlfcn.h HAS_DLFCN_H)
+    if(HAS_DLFCN_H)
+      find_library (NEEDS_LIBDL NAMES dl)
+    endif()
+    CHECK_INCLUDE_FILES (Windows.h HAS_WINDOWS_H)
+    if(HAS_DLFCN_H OR HAS_WINDOWS_H)
+      set(HAS_GUROBI_PLUGIN TRUE)
+    endif()
+  endif()
+endif()
+
 
 # -------------------------------------------------------------------------------------------------------------------
 
@@ -238,17 +256,20 @@ lib/astexception.cpp
 lib/aststring.cpp
 lib/astvec.cpp
 lib/builtins.cpp
-lib/cli.cpp
 lib/copy.cpp
 lib/eval_par.cpp
 lib/file_utils.cpp
 lib/gc.cpp
 lib/htmlprinter.cpp
 lib/json_parser.cpp
+lib/miniz.c
+lib/cdecode.c
+lib/cencode.c
 ${lexer_cpp}
 lib/model.cpp
 ${parser_cpp}
 lib/prettyprinter.cpp
+lib/pathfileprinter.cpp
 lib/solver.cpp
 lib/solver_config.cpp
 lib/solver_instance.cpp
@@ -267,6 +288,7 @@ lib/solns2out_class.cpp
 lib/statistics.cpp
 lib/lexer.lxx
 lib/values.cpp
+lib/passes/compile_pass.cpp
 include/minizinc/ast.hh
 include/minizinc/ast.hpp
 include/minizinc/astexception.hh
@@ -274,7 +296,6 @@ include/minizinc/astiterator.hh
 include/minizinc/aststring.hh
 include/minizinc/astvec.hh
 include/minizinc/builtins.hh
-include/minizinc/cli.hh
 include/minizinc/config.hh.in
 include/minizinc/copy.hh
 include/minizinc/eval_par.hh
@@ -295,6 +316,7 @@ include/minizinc/options.hh
 include/minizinc/output.hh
 include/minizinc/parser.hh
 include/minizinc/prettyprinter.hh
+include/minizinc/pathfileprinter.hh
 include/minizinc/solver.hh
 include/minizinc/solver_config.hh
 include/minizinc/solver_instance.hh
@@ -307,16 +329,26 @@ include/minizinc/typecheck.hh
 include/minizinc/values.hh
 include/minizinc/stl_map_set.hh
 include/minizinc/thirdparty/SafeInt3.hpp
+include/minizinc/passes/compile_pass.hh
+include/minizinc/thirdparty/miniz.h
+include/minizinc/thirdparty/b64/cdecode.h
+include/minizinc/thirdparty/b64/cencode.h
+include/minizinc/thirdparty/b64/decode.h
+include/minizinc/thirdparty/b64/encode.h
 ${parser_hh}
 )
+
+if(HAS_GECODE)
+  set(GECODE_LIBS minizinc_gecode gecodedriver gecodesearch gecodeminimodel gecodefloat gecodeint gecodeset gecodekernel gecodesupport)
+  target_link_libraries(minizinc ${GECODE_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+  link_directories("${GECODE_HOME}")
+  link_directories("${GECODE_HOME}/lib")
+endif()
 
 # add the executable
 add_executable(mzn2fzn minizinc.cpp)    #mzn2fzn.cpp)
 target_link_libraries(mzn2fzn minizinc)
 target_compile_definitions(mzn2fzn PRIVATE -DFLATTEN_ONLY)
-
-add_executable(mzn2fzn_test mzn2fzn_test.cpp)
-target_link_libraries(mzn2fzn_test minizinc)
 
 add_executable(solns2out solns2out.cpp)
 target_link_libraries(solns2out minizinc)
@@ -324,21 +356,26 @@ target_link_libraries(solns2out minizinc)
 find_package ( Threads REQUIRED )
 
 # -------------------------------------------------------------------------------------------------------------------
+
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_GUROBI)  # Version 6.5
-  link_directories("${GUROBI_HOME}/lib")
+if(HAS_GUROBI)  # Version 7.5
 
 	add_library(minizinc_gurobi
-    solvers/MIP/MIP_solverinstance.cpp include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_solverinstance.hpp
-    solvers/MIP/MIP_gurobi_wrap.cpp include/minizinc/solvers/MIP/MIP_gurobi_wrap.hh
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp include/minizinc/solvers/MIP/MIP_gurobi_wrap.hh
+    include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_solverinstance.hpp
 	)
-  include_directories("${GUROBI_HOME}/include")
-	target_link_libraries(minizinc_gurobi minizinc gurobi65 ${CMAKE_THREAD_LIBS_INIT})
+  target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
+  if(HAS_GUROBI_PLUGIN)
+    target_link_libraries(minizinc_gurobi minizinc ${NEEDS_LIBDL} ${CMAKE_THREAD_LIBS_INIT})
+  else()
+    link_directories("${GUROBI_HOME}/lib")
+    target_link_libraries(minizinc_gurobi minizinc gurobi75 ${CMAKE_THREAD_LIBS_INIT})
+  endif()
 
 	add_executable(mzn-gurobi minizinc.cpp)
   target_compile_definitions( mzn-gurobi PRIVATE HAS_MIP )
   target_include_directories(mzn-gurobi PRIVATE "${GUROBI_HOME}/include")
-	target_link_libraries(mzn-gurobi minizinc_gurobi gurobi65 ${CMAKE_THREAD_LIBS_INIT})
+	target_link_libraries(mzn-gurobi minizinc_gurobi ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_gurobi mzn-gurobi
     RUNTIME DESTINATION bin
@@ -379,7 +416,7 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
   include_directories("${CPLEX_STUDIO_DIR}/cplex/include")
 #  target_include_directories(minizinc_cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
   
-	target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT})
+target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
 
 	add_executable(mzn-cplex minizinc.cpp)
   target_compile_definitions( mzn-cplex PRIVATE HAS_MIP )
@@ -392,7 +429,7 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
   #                             )
   # endif()
   target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
-  target_link_libraries(mzn-cplex minizinc_cplex ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(mzn-cplex minizinc_cplex ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
 
   INSTALL(TARGETS minizinc_cplex mzn-cplex
     RUNTIME DESTINATION bin
@@ -402,7 +439,7 @@ endif()
 
 # ----------------------------------------------------------------------------------------------------------
 if(HAS_SCIP)   # SCIP version tested: 3.2.1
-  link_directories("${SCIP_DIR}/../lib"  )  # For the single library
+  link_directories("${SCIP_DIR}/../lib"  )  # For the single library, use 'make scipoptlib' when building SCIP
 
   if(UNIX)
 #    set(SCIP_OS "linux")
@@ -506,15 +543,21 @@ if(HAS_SCIP_SEPLIBS)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_OSICBC)  # Tested version 2.9.8. Use svn to get the latest /stable snapshot however rev2265 fails to link
+if(HAS_OSICBC)  
+  ### Tested version 2.9.9, rev 2345 on 12.10.17 from the stable snapshot https://projects.coin-or.org/svn/Cbc/stable/2.9
 
-  if (WIN32 AND NOT UNIX)  #  Windows config based on  https://projects.coin-or.org/Cbc/wiki/VSSetup
+  if (EXISTS "${OSICBC_HOME}/include/coin/" AND EXISTS "${OSICBC_HOME}/lib")
+    set(CBC_INCLUDEDIRS "${OSICBC_HOME}/include/coin/")
+    set(LNDIR "${OSICBC_HOME}/lib")
+  else()
     set(CBC_INCLUDEDIRS "${OSICBC_HOME}/Clp/src/" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Cbc/src/" "${OSICBC_HOME}/Cbc/src/OsiCbc" "${OSICBC_HOME}/Cgl/src/CglZeroHalf" "${OSICBC_HOME}/Cgl/src/CglLandP" "${OSICBC_HOME}/Cgl/src/CglTwomir" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding2" "${OSICBC_HOME}/Cgl/src/CglFlowCover" "${OSICBC_HOME}/Cgl/src/CglClique" "${OSICBC_HOME}/Cgl/src/CglOddHole" "${OSICBC_HOME}/Cgl/src/CglKnapsackCover" "${OSICBC_HOME}/Cgl/src/CglGomory" "${OSICBC_HOME}/Cgl/src/CglPreProcess" "${OSICBC_HOME}/Cgl/src/CglDuplicateRow" "${OSICBC_HOME}/Cgl/src/CglRedSplit" "${OSICBC_HOME}/Cgl/src/CglProbing" "${OSICBC_HOME}/Cgl/src" "${OSICBC_HOME}/Clp/src" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Osi/src/Osi" "${OSICBC_HOME}/CoinUtils/src" "${OSICBC_HOME}/BuildTools/headers" "${OSICBC_HOME}/Cgl/src/CglResidualCapacity")
     set(LNDIR "${OSICBC_HOME}/Cbc/MSVisualStudio/v10/x64-v120-Release")
+  endif()
+
+  if (WIN32 AND NOT UNIX)  #  Windows config based on  https://projects.coin-or.org/Cbc/wiki/VSSetup
     set(OSICBC_LIBS "libOsi" "libOsiClp" "libOsiCbc" "libClp" "libCgl" "libCbc" "libCbcSolver" "libCoinUtils")
   else ()
-    set(CBC_INCLUDEDIRS "${OSICBC_HOME}/include/coin/")
-    set(LNDIR "${OSICBC_HOME}/lib") # The order below is important for static versions of cbc libs to link. "z" needed for static
+    # The order below is important for static versions of cbc libs to link. "z" needed for static
     set(OSICBC_LIBS "CbcSolver" "Cbc" "Cgl" "OsiClp"  "Clp" "Osi"  "CoinUtils" "z") # "ClpSolver" after OsiClp;  "OsiCbc" 
 #    set(OSICBC_LIBS "`PKG_CONFIG_PATH=/home/bg/Documents/prj/coin-Cbc-2.9/lib64/pkgconfig:/home/bg/Documents/prj/coin-Cbc-2.9/lib/pkgconfig:/home/bg/Documents/prj/coin-Cbc-2.9/share/pkgconfig: pkg-config --libs cbc`")
   endif()
@@ -522,6 +565,7 @@ if(HAS_OSICBC)  # Tested version 2.9.8. Use svn to get the latest /stable snapsh
 
   add_library(minizinc_osicbc
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp
+    include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_osicbc_wrap.hh
   )
   add_executable(mzn-cbc minizinc.cpp)
   target_compile_definitions( mzn-cbc PRIVATE HAS_MIP )
@@ -531,7 +575,7 @@ if(HAS_OSICBC)  # Tested version 2.9.8. Use svn to get the latest /stable snapsh
 
                                        # OSICBC_LINKEXTRAS: ArchLinux needs blas, lapack, bz2
   target_link_libraries(minizinc_osicbc minizinc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
-  target_link_libraries(mzn-cbc minizinc_osicbc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
+  target_link_libraries(mzn-cbc minizinc_osicbc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS} ${CMAKE_THREAD_LIBS_INIT})
 
   INSTALL(TARGETS minizinc_osicbc mzn-cbc
     RUNTIME DESTINATION bin
@@ -541,15 +585,26 @@ endif()
 
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_GECODE)
+  add_definitions(-DHAS_GECODE)
+  include_directories("${GECODE_HOME}/include")
+  include_directories("${GECODE_HOME}")
   link_directories("${GECODE_HOME}/lib")
+  link_directories("${GECODE_HOME}")
 
   add_library(minizinc_gecode
     solvers/gecode/fzn_space.cpp
     solvers/gecode/gecode_solverinstance.cpp
     solvers/gecode/gecode_constraints.cpp
-    solvers/gecode/aux_brancher.hh)
+    lib/passes/gecode_pass.cpp
+    solvers/gecode/aux_brancher.hh
+    include/minizinc/passes/gecode_pass.hh
+    include/minizinc/solvers/gecode/fzn_space.hh
+    include/minizinc/solvers/gecode_solverinstance.hh
+    include/minizinc/solvers/gecode/gecode_constraints.hh
+    ${parser_hh}
+    )
 
-  target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include")
+  target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include" "${GECODE_HOME}")
   target_link_libraries(minizinc_gecode
     minizinc
     gecodedriver gecodesearch gecodeminimodel
@@ -583,12 +638,12 @@ if(HAS_FZN)
 	target_link_libraries(minizinc_fzn minizinc)
 	add_executable( minizinc-bin minizinc.cpp )
   set_target_properties( minizinc-bin PROPERTIES OUTPUT_NAME minizinc)
-  target_compile_definitions( minizinc-bin PRIVATE HAS_MIP )
   target_compile_definitions( minizinc-bin PRIVATE HAS_FZN )
 	target_link_libraries(minizinc-bin minizinc_fzn)
   if(HAS_GUROBI)
     target_link_libraries(minizinc-bin minizinc_gurobi)
     target_compile_definitions( minizinc-bin PRIVATE HAS_GUROBI )
+    target_include_directories(minizinc-bin PRIVATE "${GUROBI_HOME}/include")
   endif()
   if(HAS_CPLEX)
     target_link_libraries(minizinc-bin minizinc_cplex)
@@ -601,7 +656,7 @@ if(HAS_FZN)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-INSTALL(TARGETS mzn2fzn mzn2fzn_test solns2out mzn2doc minizinc
+INSTALL(TARGETS mzn2fzn solns2out mzn2doc minizinc
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
@@ -625,6 +680,21 @@ if (BUILD_HTML_DOCUMENTATION)
        ${PROJECT_SOURCE_DIR}/doc/html/footer.html
        ${PROJECT_SOURCE_DIR}/doc/html/MiniZn_logo.jpg
        DESTINATION ${PROJECT_BINARY_DIR}/doc/html/)
+  INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION doc)
+endif()
+
+option (BUILD_HTML_DOCUMENTATION_JEKYLL "Build HTML documentation for the MiniZinc library" OFF)
+
+if (BUILD_HTML_DOCUMENTATION_JEKYLL)
+  add_custom_target(doc ALL
+    DEPENDS "mzn2doc"
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    COMMAND mzn2doc --toplevel-groups 2
+    --include-stdlib
+    --html-header ${PROJECT_SOURCE_DIR}/doc/html/header_jekyll.html
+    --html-footer ${PROJECT_SOURCE_DIR}/doc/html/footer_jekyll.html
+      --output-base ${PROJECT_BINARY_DIR}/doc/html/doc share/minizinc/std/globals.mzn
+  )
   INSTALL(DIRECTORY ${PROJECT_BINARY_DIR}/doc/html DESTINATION doc)
 endif()
 

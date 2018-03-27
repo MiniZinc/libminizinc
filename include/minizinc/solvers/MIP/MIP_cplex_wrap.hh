@@ -32,6 +32,7 @@ class MIP_cplex_wrapper : public MIP_wrapper {
       int nThreads=1;
       string sExportModel;
       double nTimeout=-1;
+      long int nSolLimit = -1;
       double nWorkMemLimit=-1;
       string sReadParams;
       string sWriteParams;
@@ -70,6 +71,14 @@ class MIP_cplex_wrapper : public MIP_wrapper {
                         LinConType sense, double rhs,
                         int mask = MaskConsType_Normal,
                         std::string rowName = "");
+    virtual void setVarBounds( int iVar, double lb, double ub );
+    virtual void setVarLB( int iVar, double lb );
+    virtual void setVarUB( int iVar, double ub );
+    /// Indicator constraint: x[iBVar]==bVal -> lin constr
+    virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int *rmatind, double* rmatval,
+                        LinConType sense, double rhs,
+                        std::string rowName = "");
+    virtual bool addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals );
     /// adding an implication
 //     virtual void addImpl() = 0;
     virtual void setObjSense(int s);   // +/-1 for max/min

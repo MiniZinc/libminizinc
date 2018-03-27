@@ -56,14 +56,17 @@ void MIP_cplex_wrapper::Options::printHelp(ostream& os) {
   << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
   << "-p <N>              use N threads, default: 1" << std::endl
 //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-  << "--timeout <N>       stop search after N seconds" << std::endl
-  << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
+  << "--timeout <N>       stop search after N seconds CPU time" << std::endl
+  << "-n <N>, --num-solutions <N>\n"
+     "                    stop search after N solutions" << std::endl
+  << "--workmem <N>, --nodefilestart <N>\n"
+     "                    maximal RAM for working memory used before writing to node file, GB, default: 3" << std::endl
   << "--readParam <file>  read CPLEX parameters from file" << std::endl
   << "--writeParam <file> write CPLEX parameters to file" << std::endl
 //   << "--tuneParam         instruct CPLEX to tune parameters instead of solving   NOT IMPL"
 
-  << "--absGap <n>        absolute gap |primal-dual| to stop. Default 0.99" << std::endl
-  << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8" << std::endl
+  << "--absGap <n>        absolute gap |primal-dual| to stop" << std::endl
+  << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
   << "--intTol <n>        integrality tolerance for a variable. Default 1e-6" << std::endl
 //   << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
@@ -74,8 +77,7 @@ void MIP_cplex_wrapper::Options::printHelp(ostream& os) {
     return s.compare(0, t.length(), t)==0;
   }
 
-
-bool MIP_cplex_wrapper::Options::processOption(int& i, int argc, const char** argv) {
+  bool MIP_cplex_wrapper::Options::processOption(int& i, int argc, const char** argv) {
   MiniZinc::CLOParser cop( i, argc, argv );
   if ( string(argv[i])=="-a"
       || string(argv[i])=="--all"
@@ -86,7 +88,8 @@ bool MIP_cplex_wrapper::Options::processOption(int& i, int argc, const char** ar
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
   } else if ( cop.get( "-p", &nThreads ) ) {
   } else if ( cop.get( "--timeout", &nTimeout ) ) {
-  } else if ( cop.get( "--workmem", &nWorkMemLimit ) ) {
+  } else if ( cop.get( "-n --num-solutions", &nSolLimit ) ) {
+  } else if ( cop.get( "--workmem --nodefilestart", &nWorkMemLimit ) ) {
   } else if ( cop.get( "--readParam", &sReadParams ) ) {
   } else if ( cop.get( "--writeParam", &sWriteParams ) ) {
   } else if ( cop.get( "--absGap", &absGap ) ) {
@@ -223,6 +226,64 @@ void MIP_cplex_wrapper::addRow
   }
 }
 
+void MIP_cplex_wrapper::addIndicatorConstraint(
+  int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
+  MIP_wrapper::LinConType sense, double rhs, string rowName)
+{
+  wrap_assert( 0<=bVal && 1>=bVal, "mzn-cplex: addIndicatorConstraint: bVal not 0/1" );
+  char ssense=getCPLEXConstrSense(sense);
+  status = CPXaddindconstr (env, lp, iBVar, 1-bVal, nnz, rhs,
+      ssense, rmatind, rmatval, rowName.c_str());
+  wrap_assert( !status,  "Failed to add indicator constraint." );
+}
+
+bool MIP_cplex_wrapper::addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals ) {
+  assert( vars.size()==vals.size() );
+  const char* sMSName = "MZNMS";
+  int msindex=-1;
+  const int beg=0;
+  /// Check if we already added a start
+  status = CPXgetmipstartindex (env, lp, sMSName, &msindex);
+  if ( status ) {      // not existent
+    // status = CPXaddmipstarts (env, lp, mcnt, nzcnt, beg, varindices,
+    //                            values, effortlevel, mipstartname);
+    status = CPXaddmipstarts (env, lp, 1, vars.size(), &beg, vars.data(),
+                                 vals.data(), nullptr, (char**)&sMSName);
+    wrap_assert( !status,  "Failed to add warm start." );
+  } else {
+    // status = CPXchgmipstarts (env, lp, mcnt, mipstartindices, nzcnt, beg, varindices, values, effortlevel);
+    status = CPXchgmipstarts (env, lp, 1, &msindex, vars.size(), &beg, vars.data(),
+                                 vals.data(), nullptr);
+    wrap_assert( !status,  "Failed to extend warm start." );
+  }
+  return true;
+}
+
+void MIP_cplex_wrapper::setVarBounds(int iVar, double lb, double ub)
+{
+  wrap_assert( lb<=ub, "mzn-cplex: setVarBounds: lb>ub" );
+  char cl = 'L', cu = 'U';
+  status = CPXchgbds (env, lp, 1, &iVar, &cl, &lb);
+  wrap_assert( !status,  "Failed to set lower bound." );
+  status = CPXchgbds (env, lp, 1, &iVar, &cu, &ub);
+  wrap_assert( !status,  "Failed to set upper bound." );
+}
+
+void MIP_cplex_wrapper::setVarLB(int iVar, double lb)
+{
+  char cl = 'L', cu = 'U';
+  status = CPXchgbds (env, lp, 1, &iVar, &cl, &lb);
+  wrap_assert( !status,  "Failed to set lower bound." );
+}
+
+void MIP_cplex_wrapper::setVarUB(int iVar, double ub)
+{
+  char cl = 'L', cu = 'U';
+  status = CPXchgbds (env, lp, 1, &iVar, &cu, &ub);
+  wrap_assert( !status,  "Failed to set upper bound." );
+}
+
+
 
 /// SolutionCallback ------------------------------------------------------------------------
 /// CPLEX ensures thread-safety
@@ -285,7 +346,7 @@ solcallback (CPXCENVptr env, void *cbdata, int wherefrom, void *cbhandle)
                                         0, info->pOutput->nCols-1);
       if ( status )  goto TERMINATE;
 
-      info->pOutput->dCPUTime = -1;
+      info->pOutput->dCPUTime = double(std::clock() - info->pOutput->cCPUTime0) / CLOCKS_PER_SEC;
 
       /// Call the user function:
       if (info->solcbfn)
@@ -536,12 +597,14 @@ void msgfunction(void *handle, const char *msg_string)
 void MIP_cplex_wrapper::solve() {  // Move into ancestor?
 
   /////////////// Last-minute solver options //////////////////
+  if ( options.flag_all_solutions && 0==nProbType )
+    cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
   // Before all manual params ???
-    if (options.sReadParams.size()) {
-     status = CPXreadcopyparam (env, options.sReadParams.c_str());
-     wrap_assert(!status, "Failed to read CPLEX parameters.", false);
-    }
-    
+  if (options.sReadParams.size()) {
+    status = CPXreadcopyparam (env, options.sReadParams.c_str());
+    wrap_assert(!status, "Failed to read CPLEX parameters.", false);
+  }
+  
   /* Turn on output to the screen */
    if (fVerbose) {
      CPXCHANNELptr chnl[4];
@@ -576,24 +639,35 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
      wrap_assert(!status, "Failed to set CPXPARAM_Threads.", false);
    }
 
-    if (options.nTimeout>0) {
+   if (options.nTimeout>0) {
      status =  CPXsetdblparam (env, CPXPARAM_TimeLimit, options.nTimeout);
      wrap_assert(!status, "Failed to set CPXPARAM_TimeLimit.", false);
-    }
-
+   }
+   if (options.nSolLimit>0) {
+     status =  CPXsetintparam (env, CPXPARAM_MIP_Limits_Solutions, options.nSolLimit);
+     wrap_assert(!status, "Failed to set CPXPARAM_MIP_Limits_Solutions.", false);
+   }
+   
+    
     if (options.nWorkMemLimit>0) {
-     status =  CPXsetdblparam (env, CPXPARAM_MIP_Limits_TreeMemory, options.nWorkMemLimit);
-     wrap_assert(!status, "Failed to set CPXPARAM_MIP_Limits_TreeMemory.", false);
+     status =  CPXsetintparam (env, CPXPARAM_MIP_Strategy_File, 3);
+     wrap_assert(!status, "Failed to set CPXPARAM_MIP_Strategy_File.", false);
+     status =  CPXsetdblparam (env, CPXPARAM_WorkMem, 1024.0 * options.nWorkMemLimit);   // MB in CPLEX
+     wrap_assert(!status, "Failed to set CPXPARAM_WorkMem.", false);
     }
 
-   status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_AbsMIPGap, options.absGap);
-   wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_AbsMIPGap.", false);
-
-   status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_MIPGap, options.relGap);
-   wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_MIPGap.", false);
-
-   status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_Integrality, options.intTol);
-   wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_Integrality.", false);
+   if ( options.absGap>=0.0 ) {
+    status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_AbsMIPGap, options.absGap);
+    wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_AbsMIPGap.", false);
+   }
+   if (options.relGap>=0.0) {
+    status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_MIPGap, options.relGap);
+    wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_MIPGap.", false);
+   }
+   if (options.intTol>=0.0) {
+    status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_Integrality, options.intTol);
+    wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_Integrality.", false);
+   }
 
 //    status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_ObjDifference, objDiff);
 //    wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_ObjDifference.", false);
@@ -669,17 +743,18 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
      wrap_assert(!status, "Failed to write CPLEX parameters.", false);
     }
     
-   status = CPXgettime (env, &output.dCPUTime);
-   wrap_assert(!status, "Failed to get time stamp.", false);
+   // status = CPXgettime (env, &output.dCPUTime);
+   // wrap_assert(!status, "Failed to get time stamp.", false);
+   cbui.pOutput->cCPUTime0 = std::clock();
 
    /* Optimize the problem and obtain solution. */
    status = CPXmipopt (env, lp);
    wrap_assert( !status,  "Failed to optimize MIP." );
 
-   double tmNow;
-   status = CPXgettime (env, &tmNow);
+   double tmNow = std::clock();
+   // status = CPXgettime (env, &tmNow);   Buggy in 12.7.1.0
    wrap_assert(!status, "Failed to get time stamp.", false);
-   output.dCPUTime = tmNow - output.dCPUTime;
+   output.dCPUTime = (tmNow - cbui.pOutput->cCPUTime0) / CLOCKS_PER_SEC;
 
    int solstat = CPXgetstat (env, lp);
    output.status = convertStatus(solstat);

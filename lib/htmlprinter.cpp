@@ -17,6 +17,7 @@
 #include <minizinc/copy.hh>
 
 #include <sstream>
+#include <cctype>
 
 namespace MiniZinc {
 
@@ -25,9 +26,10 @@ namespace MiniZinc {
     class DocItem {
     public:
       enum DocType { T_PAR=0, T_VAR=1, T_FUN=2 };
-      DocItem(const DocType& t0, std::string id0, std::string doc0) : t(t0), id(id0), doc(doc0) {}
+      DocItem(const DocType& t0, std::string id0, std::string sig0, std::string doc0) : t(t0), id(id0), sig(sig0), doc(doc0) {}
       DocType t;
       std::string id;
+      std::string sig;
       std::string doc;
     };
 
@@ -61,7 +63,7 @@ namespace MiniZinc {
         }
       }
       
-      std::string toHTML(int level, int indivFileLevel, Group* parent, int idx, const std::string& basename) {
+      std::string toHTML(int level, int indivFileLevel, Group* parent, int idx, const std::string& basename, bool generateIndex) {
         std::ostringstream oss;
 
         int realLevel = (level < indivFileLevel) ? 0 : level - indivFileLevel;
@@ -81,6 +83,8 @@ namespace MiniZinc {
                 <<"' title='" << parent->subgroups.m[idx+1]->htmlName
                 << "'>&#8658;</a> ";
           }
+          if (generateIndex)
+            oss << "<a href='doc-index.html'>Index</a>\n";
           if (items.size() > 0) {
             oss << "<a href='javascript:void(0)' onclick='revealAll()' class='mzn-nav-text'>reveal all</a>\n";
             oss << "<a href='javascript:void(0)' onclick='hideAll()' class='mzn-nav-text'>hide all</a>\n";
@@ -103,6 +107,9 @@ namespace MiniZinc {
             }
           }
           oss << "</ul>\n";
+          if (parent==NULL && generateIndex) {
+            oss << "<p><a href='doc-index.html'>Index</a></p>\n";
+          }
           if (items.size() > 0)
             oss << "<p>Declarations in this section:</p>\n";
         }
@@ -132,7 +139,7 @@ namespace MiniZinc {
         
         if (level >= indivFileLevel) {
           for (unsigned int i=0; i<subgroups.m.size(); i++) {
-            oss << subgroups.m[i]->toHTML(level+1, indivFileLevel, this, i, basename);
+            oss << subgroups.m[i]->toHTML(level+1, indivFileLevel, this, i, basename, generateIndex);
           }
         }
         
@@ -239,6 +246,41 @@ namespace MiniZinc {
       return ret;
     }
 
+    std::string makeHTMLId(const std::string& ident) {
+      std::ostringstream oss;
+      oss << "I";
+      bool prevWasSym = false;
+      for (size_t i=0; i<ident.size(); i++) {
+        bool isSym = true;
+        switch (ident[i]) {
+          case '!': oss << "-ex"; break;
+          case '=': oss << "-eq"; break;
+          case '*': oss << "-as"; break;
+          case '+': oss << "-pl"; break;
+          case '-': oss << "-mi"; break;
+          case '>' : oss << "-gr"; break;
+          case '<': oss << "-lt"; break;
+          case '/': oss << "-dv"; break;
+          case '\\': oss << "-bs"; break;
+          case '~': oss << "-tl"; break;
+          case '\'': oss << "-tk"; break;
+          case ' ': break;
+          case '\t': break;
+          case '\n': break;
+          case ':': oss << "-cl"; break;
+          case '[': oss << "-bo"; break;
+          case ']': oss << "-bc"; break;
+          case '$': oss << "-dd"; break;
+          case '(': oss << "-po"; break;
+          case ')': oss << "-pc"; break;
+          case ',': oss << "-cm"; break;
+          default: oss << (prevWasSym ? "-" : "") << ident[i]; isSym = false; break;
+        }
+        prevWasSym = isSym;
+      }
+      return oss.str();
+    }
+    
   }
 
   class CollectFunctionsVisitor : public ItemVisitor {
@@ -254,7 +296,7 @@ namespace MiniZinc {
     }
     void vFunctionI(FunctionI* fi) {
       if (Call* docstring = Expression::dyn_cast<Call>(getAnnotation(fi->ann(), constants().ann.doc_comment))) {
-        std::string ds = eval_string(env,docstring->args()[0]);
+        std::string ds = eval_string(env,docstring->arg(0));
         std::string group("main");
         size_t group_idx = ds.find("@group");
         if (group_idx!=std::string::npos) {
@@ -423,7 +465,7 @@ namespace MiniZinc {
     /// Visit variable declaration
     void vVarDeclI(VarDeclI* vdi) {
       if (Call* docstring = Expression::dyn_cast<Call>(getAnnotation(vdi->e()->ann(), constants().ann.doc_comment))) {
-        std::string ds = eval_string(env,docstring->args()[0]);
+        std::string ds = eval_string(env,docstring->arg(0));
         std::string group("main");
         size_t group_idx = ds.find("@group");
         if (group_idx!=std::string::npos) {
@@ -431,7 +473,8 @@ namespace MiniZinc {
         }
         
         std::ostringstream os;
-        os << "<div class='mzn-vardecl'>\n";
+        std::string sig = vdi->e()->type().toString(env)+" "+vdi->e()->id()->str().str();
+        os << "<div class='mzn-vardecl' id='" << HtmlDocOutput::makeHTMLId(sig) << "'>\n";
         os << "<div class='mzn-vardecl-code'>\n";
         if (vdi->e()->ti()->type() == Type::ann()) {
           os << "<span class='mzn-kw'>annotation</span> ";
@@ -444,14 +487,16 @@ namespace MiniZinc {
         os << "</div></div>";
         GCLock lock;
         HtmlDocOutput::DocItem di(vdi->e()->type().ispar() ? HtmlDocOutput::DocItem::T_PAR: HtmlDocOutput::DocItem::T_VAR,
-                                  vdi->e()->type().toString(env)+" "+vdi->e()->id()->str().str(), os.str());
+                                  sig,
+                                  sig,
+                                  os.str());
         HtmlDocOutput::addToGroup(_maingroup, group, di);
       }
     }
     /// Visit function item
     void vFunctionI(FunctionI* fi) {
       if (Call* docstring = Expression::dyn_cast<Call>(getAnnotation(fi->ann(), constants().ann.doc_comment))) {
-        std::string ds = eval_string(env,docstring->args()[0]);
+        std::string ds = eval_string(env,docstring->arg(0));
         std::string group("main");
         size_t group_idx = ds.find("@group");
         if (group_idx!=std::string::npos) {
@@ -480,9 +525,19 @@ namespace MiniZinc {
                       << fi->id() << " at location " << fi->loc() << "\n";
           }
         }
-        
+
+        std::string sig;
+        {
+          GCLock lock;
+          FunctionI* fi_c = new FunctionI(Location(),fi->id(),fi->ti(),fi->params());
+          std::ostringstream oss_sig;
+          oss_sig << *fi_c;
+          sig = oss_sig.str();
+          sig.resize(sig.size()-2);
+        }
+
         std::ostringstream os;
-        os << "<div class='mzn-fundecl'>\n";
+        os << "<div class='mzn-fundecl' id='" << HtmlDocOutput::makeHTMLId(sig) << "'>\n";
         os << "<div class='mzn-fundecl-code'>";
         os << "<a href='javascript:void(0)' onclick='revealMore(this)' class='mzn-fundecl-more'>&#9664;</a>";
 
@@ -532,10 +587,10 @@ namespace MiniZinc {
           do {
             alias = false;
             Call* c = Expression::dyn_cast<Call>(f_body->e());
-            if (c && c->args().size()==f_body->params().size()) {
+            if (c && c->n_args()==f_body->params().size()) {
               bool sameParams = true;
               for (unsigned int i=0; i<f_body->params().size(); i++) {
-                Id* ident = c->args()[i]->dyn_cast<Id>();
+                Id* ident = c->arg(i)->dyn_cast<Id>();
                 if (ident == NULL || ident->decl() != f_body->params()[i] || ident->str() != c->decl()->params()[i]->id()->str()) {
                   sameParams = false;
                   break;
@@ -552,7 +607,7 @@ namespace MiniZinc {
             Printer p(body_os, 70);
             p.print(f_body->e());
 
-            std::string filename = f_body->loc().filename.str();
+            std::string filename = f_body->loc().filename().str();
             size_t lastSlash = filename.find_last_of("/");
             if (lastSlash != std::string::npos) {
               filename = filename.substr(lastSlash+1, std::string::npos);
@@ -562,7 +617,7 @@ namespace MiniZinc {
             os << "<div class='mzn-fundecl-body'>";
             os << body_os.str();
             os << "</div>\n";
-            os << "(standard decomposition from "<<filename << ":" << f_body->loc().first_line<<")";
+            os << "(standard decomposition from "<< filename << ":" << f_body->loc().first_line()<<")";
             os << "</div>";
           }
         }
@@ -594,15 +649,15 @@ namespace MiniZinc {
         }
         os << "</div>";
         os << "</div>";
-
-        HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN, fi->id().str(), os.str());
+        
+        HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN, fi->id().str(), sig, os.str());
         HtmlDocOutput::addToGroup(_maingroup, group, di);
       }
     }
   };
   
   std::vector<HtmlDocument>
-  HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m, const std::string& basename, int splitLevel, bool includeStdLib) {
+  HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m, const std::string& basename, int splitLevel, bool includeStdLib, bool generateIndex) {
     using namespace HtmlDocOutput;
     Group g(basename,basename);
     FunMap funMap;
@@ -621,6 +676,27 @@ namespace MiniZinc {
       SI(Group* g0, Group* p0, int level0, int idx0) : g(g0), p(p0), level(level0), idx(idx0) {}
     };
     
+    struct IndexEntry {
+      std::string id;
+      std::string sig;
+      std::string link;
+      std::string groupName;
+      IndexEntry(const std::string& id0, const std::string& sig0,
+                 const std::string& link0, const std::string& groupName0)
+      : id(id0), sig(sig0), link(link0), groupName(groupName0) {
+        size_t spacepos = id.find_last_of(' ');
+        if (spacepos != std::string::npos) {
+          id = id.substr(spacepos+1);
+        }
+      }
+      bool operator<(const IndexEntry& e) const {
+        if (!isalpha(id[0]) && isalpha(e.id[0]))
+          return true;
+        return id == e.id ? groupName < e.groupName : id < e.id;
+      }
+    };
+    std::vector<IndexEntry> index;
+    
     std::vector<SI> stack;
     stack.push_back(SI(&g,NULL,0,0));
     while (!stack.empty()) {
@@ -629,7 +705,10 @@ namespace MiniZinc {
       int curIdx = stack.back().idx;
       Group* p = stack.back().p;
       stack.pop_back();
-      ret.push_back(HtmlDocument(g.fullPath, g.htmlName, g.toHTML(curLevel, splitLevel, p, curIdx, basename)));
+      for (auto it : g.items) {
+        index.push_back(IndexEntry(it.id,it.sig,g.fullPath,g.htmlName));
+      }
+      ret.push_back(HtmlDocument(g.fullPath, g.htmlName, g.toHTML(curLevel, splitLevel, p, curIdx, basename, generateIndex)));
       if (curLevel < splitLevel) {
         for (unsigned int i=0; i<g.subgroups.m.size(); i++) {
           stack.push_back(SI(g.subgroups.m[i],&g,curLevel+1,i));
@@ -637,6 +716,87 @@ namespace MiniZinc {
       }
     }
     
+    if (generateIndex) {
+      std::sort(index.begin(), index.end());
+      std::ostringstream oss;
+      index.push_back(IndexEntry("","","",""));
+      
+      std::vector<std::string> idxSections;
+      
+      if (index.size() != 0) {
+        if (isalpha(index[0].id[0])) {
+          char idxSec_c = (char)toupper(index[0].id[0]);
+          std::string idxSec(&idxSec_c,1);
+          oss << "<h3 id='Idx" << idxSec << "'>" << idxSec << "</h3>\n";
+          idxSections.push_back(idxSec);
+        } else {
+          oss << "<h3 id='IdxSymbols'>Symbols</h3>\n";
+          idxSections.push_back("Symbols");
+        }
+      }
+      oss << "<ul>\n";
+      std::string prevId = index.size()==0 ? "" : index[0].id;
+      std::vector<IndexEntry> curEntries;
+      for (auto ie : index) {
+        if (ie.id != prevId) {
+          oss << "<li>";
+          assert(curEntries.size() != 0);
+          IndexEntry& cur = curEntries[0];
+          if (curEntries.size()==1) {
+            oss << cur.id << " <a href='"<< cur.link << ".html#" << HtmlDocOutput::makeHTMLId(cur.sig) << "'>" << "(" << cur.groupName << ")</a>";
+          } else {
+            oss << cur.id << " (";
+            bool first = true;
+            for (auto i_ie: curEntries) {
+              if (first) {
+                first = false;
+              } else {
+                oss << ", ";
+              }
+              oss << "<a href='" << i_ie.link << ".html#" << HtmlDocOutput::makeHTMLId(i_ie.sig) << "'>";
+              oss << i_ie.groupName << "</a>";
+            }
+            oss << ")";
+          }
+          oss << "</li>\n";
+          curEntries.clear();
+        }
+        if (isalpha(ie.id[0]) && ie.id[0] != prevId[0]) {
+          char idxSec_c = (char)toupper(ie.id[0]);
+          std::string idxSec(&idxSec_c,1);
+          oss << "</ul>\n<h3 id='Idx" << idxSec << "'>" << idxSec << "</h3><ul>";
+          idxSections.push_back(idxSec);
+        }
+        prevId = ie.id;
+        if (curEntries.size()==0 || curEntries.back().groupName != ie.groupName) {
+          curEntries.push_back(ie);
+        }
+      }
+      oss << "</ul>\n";
+      
+      std::ostringstream oss_header;
+      oss_header << "<div class='mzn-group-level-0'>\n";
+      oss_header << "<div class='mzn-group-nav'>";
+      oss_header << "<a class='mzn-nav-up' href='" << g.getAnchor(0, 1)
+                 << "' title='" << g.htmlName
+                 << "'>&#8679;</a> ";
+      bool first = true;
+      for (auto is : idxSections) {
+        if (first) {
+          first = false;
+        } else {
+          oss_header << " | ";
+        }
+        oss_header << "<a href='#Idx" << is << "'>" << is << "</a>";
+      }
+
+      oss_header << "</div>";
+
+      oss_header << "<div class='mzn-group-name'>Index</div>\n";
+      
+      HtmlDocument idx("doc-index", "Index", oss_header.str()+oss.str());
+      ret.push_back(idx);
+    }
     return ret;
   }
 
