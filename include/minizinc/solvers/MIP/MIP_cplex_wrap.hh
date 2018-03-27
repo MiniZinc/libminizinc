@@ -29,6 +29,7 @@ class MIP_cplex_wrapper : public MIP_wrapper {
 
     class Options {
     public:
+      int nMIPFocus=0;
       int nThreads=1;
       string sExportModel;
       double nTimeout=-1;

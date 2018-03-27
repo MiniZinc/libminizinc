@@ -37,6 +37,7 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     class Options {
     public:
       /// SOLVER PARAMS ????
+      int nMIPFocus=0;
       int nFreeSearch=1;
       int nThreads=1;
       string sExportModel;
