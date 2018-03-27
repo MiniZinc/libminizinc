@@ -597,12 +597,14 @@ if(HAS_GECODE)
   add_library(minizinc_gecode
     solvers/gecode/fzn_space.cpp
     solvers/gecode/gecode_solverinstance.cpp
+    solvers/gecode/gecode_solverfactory.cpp
     solvers/gecode/gecode_constraints.cpp
     lib/passes/gecode_pass.cpp
     solvers/gecode/aux_brancher.hh
     include/minizinc/passes/gecode_pass.hh
     include/minizinc/solvers/gecode/fzn_space.hh
     include/minizinc/solvers/gecode_solverinstance.hh
+    include/minizinc/solvers/gecode_solverfactory.hh
     include/minizinc/solvers/gecode/gecode_constraints.hh
     ${parser_hh}
     )

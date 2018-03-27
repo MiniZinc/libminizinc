@@ -23,16 +23,6 @@ using namespace Gecode;
 
 namespace MiniZinc {
 
-  class Gecode_SolverFactory: public SolverFactory {
-    Options _options;
-  public:
-    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log);
-    std::string getVersion( );
-    std::string getId( ) { return "org.minizinc.gecode"; }
-    bool processOption(int& i, int argc, const char** argv);
-    void printHelp(std::ostream& os);
-  };
-
   SolverInstanceBase* Gecode_SolverFactory::doCreateSI(Env& env, std::ostream& log) {
     return new GecodeSolverInstance(env, log, _options);
   }
@@ -41,10 +31,6 @@ namespace MiniZinc {
   {
     string v = "Gecode solver plugin, compiled  " __DATE__ "  " __TIME__;
     return v;
-  }
-
-  namespace {
-    Gecode_SolverFactory _gecode_solver_factory;
   }
   
   bool Gecode_SolverFactory::processOption(int& i, int argc, const char** argv)

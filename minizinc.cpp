@@ -54,6 +54,9 @@ namespace {
 #endif
 #ifdef HAS_GECODE
 #include <minizinc/solvers/gecode_solverfactory.hh>
+namespace {
+  Gecode_SolverFactoryInitialiser _gecode_init;
+}
 #endif
 #include <minizinc/solvers/fzn_solverfactory.hh>
 
