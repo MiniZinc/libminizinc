@@ -649,6 +649,11 @@ if(HAS_FZN)
     target_link_libraries(minizinc-bin minizinc_cplex)
     target_compile_definitions( minizinc-bin PRIVATE HAS_CPLEX )
   endif()
+  if (HAS_OSICBC)
+    target_link_libraries(minizinc-bin minizinc_osicbc)
+    target_include_directories(minizinc-bin PRIVATE ${CBC_INCLUDEDIRS})
+    target_compile_definitions( minizinc-bin PRIVATE HAS_OSICBC )
+  endif()
 	INSTALL(TARGETS minizinc_fzn minizinc-bin
 		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION lib

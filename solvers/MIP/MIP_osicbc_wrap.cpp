@@ -47,6 +47,10 @@ string MIP_osicbc_wrapper::getVersion( ) {
   return v;
 }
 
+string MIP_osicbc_wrapper::getId() {
+  return "osicbc";
+}
+
 void MIP_osicbc_wrapper::Options::printHelp(ostream& os) {
   os
   << "OSICBC MIP wrapper options:" << std::endl
