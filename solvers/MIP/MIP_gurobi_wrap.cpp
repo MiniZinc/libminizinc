@@ -73,7 +73,10 @@ string MIP_gurobi_wrapper::getId() {
   return "gurobi";
 }
 
-static const vector<string> sGurobiDLLs = { "gurobi75", "gurobi70", "gurobi65" };
+const vector<string>& gurobiDLLs(void) {
+  static const vector<string> sGurobiDLLs = { "gurobi75", "gurobi70", "gurobi65" };
+  return sGurobiDLLs;
+}
 
 void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
   os
@@ -82,7 +85,6 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
   //            << "  --readParam <file>  read GUROBI parameters from file
   //               << "--writeParam <file> write GUROBI parameters to file
   //               << "--tuneParam         instruct GUROBI to tune parameters instead of solving
-       << sGurobiDLLs.front() << " .. " << sGurobiDLLs.back() << std::endl
   << "  -f\n    free search (default)" << std::endl
   << "  --fixed-search\n    fixed search (approximation of the model's one by branching priorities)" << std::endl
   << "  --uniform-search\n    'more fixed' search (all variables in the search anns get priority 1)" << std::endl
@@ -106,6 +108,7 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
 //   << "  --objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
   << "\n  --dll <basename>\n    Gurobi DLL base name, such as gurobi75, when using plugin. Default range tried: "
+       << gurobiDLLs().front() << " .. " << gurobiDLLs().back() << std::endl
   << std::endl;
 }
 
@@ -170,10 +173,13 @@ namespace {
   }
   void* dll_sym(void* dll, const char* sym) {
 #ifdef HAS_DLFCN_H
-    return dlsym(dll, sym);
+    void* ret = dlsym(dll, sym);
 #else
-    return GetProcAddress((HMODULE)dll, sym);
+    void* ret = GetProcAddress((HMODULE)dll, sym);
 #endif
+    if (ret==NULL)
+      throw MiniZinc::InternalError("cannot load symbol "+string(sym)+" from gurobi dll");
+    return ret;
   }
   void dll_close(void* dll) {
 #ifdef HAS_DLFCN_H
@@ -189,21 +195,22 @@ namespace {
 void MIP_gurobi_wrapper::checkDLL()
 {
 #ifdef HAS_GUROBI_PLUGIN
- 
+  gurobi_dll = NULL;
   if ( options.sGurobiDLL.size() ) {
     gurobi_dll = dll_open( options.sGurobiDLL.c_str() );
   } else {
-    for( const auto& s: sGurobiDLLs ) {
+    for( const auto& s: gurobiDLLs() ) {
       gurobi_dll = dll_open( s.c_str() );
-      if ( NULL!=gurobi_dll )
+      if ( NULL!=gurobi_dll ) {
         break;
+      }
     }
   }
 
   if (gurobi_dll==NULL) {
     throw MiniZinc::InternalError("cannot load gurobi dll, specify --dll");
   }
-  
+
   *(void**)(&dll_GRBversion) = dll_sym(gurobi_dll, "GRBversion");
   *(void**)(&dll_GRBaddconstr) = dll_sym(gurobi_dll, "GRBaddconstr");
   *(void**)(&dll_GRBaddgenconstrIndicator) = dll_sym(gurobi_dll, "GRBaddgenconstrIndicator");
