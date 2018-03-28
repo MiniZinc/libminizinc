@@ -125,7 +125,16 @@ namespace MiniZinc {
           configs.push_back(sc);
           _solvers.insert(make_pair(sc.id(), configs));
         } else {
-          it->second.push_back(sc);
+          bool found = false;
+          for (auto s : it->second) {
+            if (s==sc) {
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            it->second.push_back(sc);
+          }
         }
       }
       if (next_sep != string::npos)

@@ -63,6 +63,10 @@ namespace MiniZinc {
     std::string contact(void) const { return _contact; }
     /// Return web site URL
     std::string website(void) const { return _website; }
+    /// Test equality
+    bool operator==(const SolverConfig& sc) const {
+      return _id==sc.id() && _version==sc.version();
+    }
   };
   
   /// A container for solver configurations
