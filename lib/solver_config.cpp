@@ -108,11 +108,18 @@ namespace MiniZinc {
       vector<SolverConfig> configs({sc.second});
       _solvers.insert(make_pair(sc.second.id(), configs));
     }
-    if (solver_path.empty()) {
-      if (char* MZNSOLVERPATH = getenv("MZN_SOLVER_PATH")) {
-        solver_path = string(MZNSOLVERPATH);
-      }
+    if (char* MZNSOLVERPATH = getenv("MZN_SOLVER_PATH")) {
+      if (!solver_path.empty())
+        solver_path += PATHSEP;
+      solver_path += string(MZNSOLVERPATH);
     }
+    std::string shareDirectory = FileUtils::share_directory();
+    if (!shareDirectory.empty()) {
+      if (!solver_path.empty())
+        solver_path += PATHSEP;
+      solver_path += shareDirectory+"/solvers";
+    }
+    
     while (!solver_path.empty()) {
       size_t next_sep = solver_path.find(PATHSEP);
       string cur_path = solver_path.substr(0,next_sep);
