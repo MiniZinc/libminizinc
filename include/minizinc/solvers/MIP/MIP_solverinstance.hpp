@@ -770,7 +770,6 @@ namespace MiniZinc {
     template<class MIPWrapper>
     void p_XBZ_cutgen(SolverInstanceBase& si, const Call* call) {
       MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>( si );
-      Env& _env = gi.env();
       
       //     auto pCG = make_unique<XBZCutGen>();
       std::unique_ptr<XBZCutGen> pCG( new XBZCutGen( gi.getMIPWrapper() ) );
