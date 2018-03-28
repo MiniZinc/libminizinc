@@ -139,6 +139,7 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     MIP_gurobi_wrapper( int ) { }
     virtual ~MIP_gurobi_wrapper() { closeGUROBI(); }
 
+    static std::string getDescription(void);
     static std::string getVersion(void);
     static std::string getId(void);
 //       Statistics& getStatistics() { return _statistics; }

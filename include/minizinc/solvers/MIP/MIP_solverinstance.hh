@@ -113,9 +113,11 @@ namespace MiniZinc {
   protected:
     typename MIPWrapper::Options opt;
   public:
+    MIP_SolverFactory(void);
     SolverInstanceBase* doCreateSI(Env& env, std::ostream& log)   { return new MIP_solverinstance<MIPWrapper>(env,opt,log); }
     bool processOption(int& i, int argc, const char** argv)
       { return opt.processOption(i, argc, argv); }
+    std::string getDescription( );
     std::string getVersion( );
     std::string getId( );
     void printHelp(std::ostream& os) { opt.printHelp(os); }

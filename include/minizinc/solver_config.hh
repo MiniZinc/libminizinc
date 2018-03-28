@@ -41,6 +41,14 @@ namespace MiniZinc {
   public:
     /// Load solver configuration from \a filename
     static SolverConfig load(std::string filename);
+    /// Default constructor
+    SolverConfig() {}
+    /// Constructor
+    SolverConfig(const std::string& id, const std::string& executable, const std::string& mznlib,
+                 const std::string& version, const std::string& description, const std::string& contact,
+                 const std::string& website)
+    : _id(id), _executable(executable), _mznlib(mznlib), _version(version),
+      _description(description), _contact(contact), _website(website) {}
     /// Return identifier
     std::string id(void) const { return _id; }
     /// Return executable path
@@ -72,6 +80,7 @@ namespace MiniZinc {
     SolverConfigs(const std::string& solverpath);
     const SolverConfig& config(std::string solver_id, std::string version=std::string()) const;
     std::vector<std::string> solvers(void) const;
+    static void registerBuiltinSolver(const SolverConfig& sc);
   };
 
   /// An exception thrown when encountering an error in a solver configuration

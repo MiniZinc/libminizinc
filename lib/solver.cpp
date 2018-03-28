@@ -59,7 +59,7 @@ void SolverRegistry::removeSolverFactory(SolverFactory* pSF)
 SolverInstanceBase * SolverFactory::createSI(Env& env, std::ostream& log) {
   SolverInstanceBase *pSI = doCreateSI(env,log);
   if (!pSI) {
-    throw InternalError("SolverFactory: failed to initialize solver "+getVersion());
+    throw InternalError("SolverFactory: failed to initialize solver "+getDescription());
   }
   sistorage.resize(sistorage.size()+1);
   sistorage.back().reset(pSI);
@@ -106,7 +106,7 @@ void MznSolver::addSolverInterface(SolverFactory* sf)
     log
     //     << "  ---------------------------------------------------------------------------\n"
     << "      % SOLVING PHASE\n"
-    << sf->getVersion() << endl;
+    << sf->getDescription() << endl;
 }
 
 void MznSolver::addSolverInterface()
@@ -122,7 +122,7 @@ void MznSolver::addSolverInterface()
   addSolverInterface(sf);
 }
 
-void MznSolver::printHelp()
+void MznSolver::printHelp(const std::string& selectedSolver)
 {
   if ( !ifMzn2Fzn() )
   os
@@ -141,18 +141,32 @@ void MznSolver::printHelp()
     << "  --solvers\n    Print available solvers." << std::endl
     << "  -v, -l, --verbose\n    Print progress/log statements. Note that some solvers may log to stdout." << std::endl
     << "  -s, --statistics\n    Print statistics." << std::endl;
-//   if ( getNSolvers() )
-  
-  flt.printHelp(os);
-  os << endl;
-  if ( !ifMzn2Fzn() ) {
-    s2out.printHelp(os);
+
+  if (selectedSolver.empty()) {
+    flt.printHelp(os);
     os << endl;
-  }
-  for (auto it = getGlobalSolverRegistry()->getSolverFactories().rbegin();
-        it != getGlobalSolverRegistry()->getSolverFactories().rend(); ++it) {
-       (*it)->printHelp(os);
+    if ( !ifMzn2Fzn() ) {
+      s2out.printHelp(os);
       os << endl;
+    }
+    os << "Available solvers (get help using --help <solver id>):" << endl;
+    for (auto it = getGlobalSolverRegistry()->getSolverFactories().rbegin();
+         it != getGlobalSolverRegistry()->getSolverFactories().rend(); ++it) {
+      os << "  " << (*it)->getId() << endl;
+    }
+  } else {
+    bool found = false;
+    for (auto it = getGlobalSolverRegistry()->getSolverFactories().rbegin();
+         it != getGlobalSolverRegistry()->getSolverFactories().rend(); ++it) {
+      if ((*it)->getId()==selectedSolver) {
+        os << endl;
+        (*it)->printHelp(os);
+        found = true;
+      }
+    }
+    if (!found) {
+      os << "No help found for solver " << selectedSolver << endl;
+    }
   }
 }
 
@@ -166,14 +180,18 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
   string solver;
   for (i=1; i<argc; ++i) {
     if (string(argv[i])=="-h" || string(argv[i])=="--help") {
-      printHelp();
+      if (argc > i+1) {
+        printHelp(argv[i+1]);
+      } else {
+        printHelp();
+      }
       std::exit(EXIT_SUCCESS);
     }
     if (string(argv[i])=="--version") {
       flt.printVersion(cout);
       for (auto it = getGlobalSolverRegistry()->getSolverFactories().rbegin();
            it != getGlobalSolverRegistry()->getSolverFactories().rend(); ++it)
-        cout << (*it)->getVersion() << endl;
+        cout << "  " << (*it)->getDescription() << endl;
       std::exit(EXIT_SUCCESS);
     }
     if (string(argv[i])=="--solvers") {

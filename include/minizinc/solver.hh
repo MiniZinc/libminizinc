@@ -71,6 +71,7 @@ namespace MiniZinc {
     /// and it only needs 1 format
     virtual bool processOption(int& i, int argc, const char** argv) { return false; }
 
+    virtual std::string getDescription(void) = 0;
     virtual std::string getVersion(void) = 0;
     virtual std::string getId(void) = 0;
     virtual void printHelp(std::ostream& ) { }
@@ -106,7 +107,7 @@ namespace MiniZinc {
     MznSolver(std::ostream& os = std::cout, std::ostream& log = std::cerr, bool ism2f = false);
     ~MznSolver();
     bool processOptions(int& argc, const char**& argv);
-    void printHelp();
+    void printHelp(const std::string& selectedSolver=std::string());
     /// Flatten model
     void flatten(const std::string& modelString = std::string());
     size_t getNSolvers() { return getGlobalSolverRegistry()->getSolverFactories().size(); }

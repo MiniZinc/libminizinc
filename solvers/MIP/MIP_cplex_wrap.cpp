@@ -28,8 +28,8 @@ using namespace std;
 
 #include <minizinc/solvers/MIP/MIP_cplex_wrap.hh>
 
-string MIP_cplex_wrapper::getVersion( ) {
-  string v = "  MIP wrapper for IBM ILOG CPLEX  ";
+string MIP_cplex_wrapper::getDescription() {
+  string v = "MIP wrapper for IBM ILOG CPLEX  ";
   int status;
   CPXENVptr env = CPXopenCPLEX (&status);
   if (env) {
@@ -38,6 +38,19 @@ string MIP_cplex_wrapper::getVersion( ) {
   } else
     v += "[?? ...cannot open CPLEX env to query version]";
   v += "  Compiled  " __DATE__ "  " __TIME__;
+  return v;
+}
+
+string MIP_cplex_wrapper::getVersion( ) {
+  string v;
+  int status;
+  CPXENVptr env = CPXopenCPLEX (&status);
+  if (env) {
+    v += CPXversion (env);
+    status = CPXcloseCPLEX (&env);
+  } else {
+    v += "<unknown CPLEX version>";
+  }
   return v;
 }
 
@@ -52,24 +65,24 @@ void MIP_cplex_wrapper::Options::printHelp(ostream& os) {
   //            << "  --readParam <file>  read CPLEX parameters from file
   //               << "--writeParam <file> write CPLEX parameters to file
   //               << "--tuneParam         instruct CPLEX to tune parameters instead of solving
-  << "--mipfocus <n>      1: feasibility, 2: optimality, 3: move bound (default is 0, balanced)" << std::endl
-  << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
-  << "-p <N>              use N threads, default: 1" << std::endl
-//   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-  << "--timeout <N>       stop search after N seconds CPU time" << std::endl
-  << "-n <N>, --num-solutions <N>\n"
-     "                    stop search after N solutions" << std::endl
-  << "--workmem <N>, --nodefilestart <N>\n"
-     "                    maximal RAM for working memory used before writing to node file, GB, default: 3" << std::endl
-  << "--writeModel <file> write model to <file> (.lp, .mps, .sav, ...)" << std::endl
-  << "--readParam <file>  read CPLEX parameters from file" << std::endl
-  << "--writeParam <file> write CPLEX parameters to file" << std::endl
-//   << "--tuneParam         instruct CPLEX to tune parameters instead of solving   NOT IMPL"
+  << "  --mipfocus <n>\n    1: feasibility, 2: optimality, 3: move bound (default is 0, balanced)" << std::endl
+  << "  -a\n    print intermediate solutions (use for optimization problems only TODO)" << std::endl
+  << "  -p <N>\n    use N threads, default: 1" << std::endl
+//   << "  --nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
+  << "  --timeout <N>\n    stop search after N seconds CPU time" << std::endl
+  << "  -n <N>, --num-solutions <N>\n"
+     "    stop search after N solutions" << std::endl
+  << "  --workmem <N>, --nodefilestart <N>\n"
+     "    maximal RAM for working memory used before writing to node file, GB, default: 3" << std::endl
+  << "  --writeModel <file>\n    write model to <file> (.lp, .mps, .sav, ...)" << std::endl
+  << "  --readParam <file>\n    read CPLEX parameters from file" << std::endl
+  << "  --writeParam <file>\n    write CPLEX parameters to file" << std::endl
+//   << "  --tuneParam         instruct CPLEX to tune parameters instead of solving   NOT IMPL"
 
-  << "--absGap <n>        absolute gap |primal-dual| to stop" << std::endl
-  << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
-  << "--intTol <n>        integrality tolerance for a variable. Default 1e-6" << std::endl
-//   << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
+  << "  --absGap <n>\n    absolute gap |primal-dual| to stop" << std::endl
+  << "  --relGap <n>\n    relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
+  << "  --intTol <n>\n    integrality tolerance for a variable. Default 1e-6" << std::endl
+//   << "  --objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
   << std::endl;
 }

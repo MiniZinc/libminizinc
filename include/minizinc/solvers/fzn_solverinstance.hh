@@ -48,6 +48,7 @@ namespace MiniZinc {
     SolverInstanceBase* doCreateSI(Env& env, std::ostream& log) {
       return new FZNSolverInstance(env, log, _options);
     }
+    std::string getDescription(void);
     std::string getVersion(void);
     std::string getId(void);
     bool processOption(int& i, int argc, const char** argv);

@@ -23,16 +23,28 @@ using namespace Gecode;
 
 namespace MiniZinc {
 
+  Gecode_SolverFactory::Gecode_SolverFactory(void) {
+    SolverConfig sc("org.minizinc.gecode", "", "-Ggecode",
+                    GECODE_VERSION, "MiniZinc Gecode solver plugin", "",
+                    "");
+    SolverConfigs::registerBuiltinSolver(sc);
+  }
+  
   SolverInstanceBase* Gecode_SolverFactory::doCreateSI(Env& env, std::ostream& log) {
     return new GecodeSolverInstance(env, log, _options);
   }
 
-  string Gecode_SolverFactory::getVersion()
+  string Gecode_SolverFactory::getDescription()
   {
-    string v = "Gecode solver plugin, compiled  " __DATE__ "  " __TIME__;
+    string v = "Gecode solver plugin, compiled " __DATE__ ", using: Gecode version "+string(GECODE_VERSION);
     return v;
   }
-  
+
+  string Gecode_SolverFactory::getVersion()
+  {
+    return string(GECODE_VERSION);
+  }
+
   bool Gecode_SolverFactory::processOption(int& i, int argc, const char** argv)
   {
     if (string(argv[i])=="--allow-unbounded-vars") {

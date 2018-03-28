@@ -48,10 +48,14 @@ using namespace std;
 
 namespace MiniZinc {
   
-  string FZN_SolverFactory::getVersion()
-  {
+  string FZN_SolverFactory::getDescription()  {
     string v = "FZN solver plugin, compiled  " __DATE__ "  " __TIME__;
     return v;
+  }
+
+
+  string FZN_SolverFactory::getVersion() {
+    return MZN_VERSION_MAJOR;
   }
 
   string FZN_SolverFactory::getId()

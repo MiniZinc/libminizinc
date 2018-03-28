@@ -69,6 +69,7 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
     MIP_osicbc_wrapper(const Options& opt) : options(opt) { openOSICBC(); }
     virtual ~MIP_osicbc_wrapper() { closeOSICBC(); }
   
+    static std::string getDescription(void);
     static std::string getVersion(void);
     static std::string getId(void);
 

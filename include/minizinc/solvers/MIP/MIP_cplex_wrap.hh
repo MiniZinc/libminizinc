@@ -51,6 +51,7 @@ class MIP_cplex_wrapper : public MIP_wrapper {
   MIP_cplex_wrapper(const Options& opt) : options(opt) { openCPLEX(); }
     virtual ~MIP_cplex_wrapper() { closeCPLEX(); }
 
+    static std::string getDescription(void);
     static std::string getVersion(void);
     static std::string getId(void);
 

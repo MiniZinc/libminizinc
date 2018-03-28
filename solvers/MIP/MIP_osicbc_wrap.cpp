@@ -38,13 +38,17 @@ using namespace std;
 #define WANT_SOLUTION
 
 
-string MIP_osicbc_wrapper::getVersion( ) {
-  string v = "  MIP wrapper for OSICBC ";
+string MIP_osicbc_wrapper::getDescription() {
+  string v = "MIP wrapper for OSICBC ";
   v += CBC_VERSION;                     // E.g., 2.9 stable or 2.9.7 latest release
   v += ",  using CLP ";
   v += CLP_VERSION;
   v += "  Compiled  " __DATE__ "  " __TIME__;
   return v;
+}
+
+string MIP_osicbc_wrapper::getVersion() {
+  return string(CBC_VERSION)+"/"+string(CLP_VERSION);
 }
 
 string MIP_osicbc_wrapper::getId() {
@@ -58,23 +62,24 @@ void MIP_osicbc_wrapper::Options::printHelp(ostream& os) {
   //            << "  --readParam <file>  read OSICBC parameters from file
   //               << "--writeParam <file> write OSICBC parameters to file
   //               << "--tuneParam         instruct OSICBC to tune parameters instead of solving
-  << "--cbcArgs, --cbcFlags, --cbc-flags \"args\"\n"
-     "      command-line args passed to callCbc, e.g., \"-cuts off -preprocess off -passc 1\"." << std::endl
+  << "  --cbcArgs, --cbcFlags, --cbc-flags \"args\"\n"
+     "    command-line args passed to callCbc, e.g., \"-cuts off -preprocess off -passc 1\"." << std::endl
      //  \"-preprocess off\" recommended in 2.9.6
-  << "--writeModel <file>   write model to <file> (.mps)" << std::endl
-  << "-a, --all             print intermediate solutions for optimization problems\n"
-     "      (not from FeasPump. Can be slow.)" << std::endl
-   << "-p <N>              use N threads, default: 1. CBC should be configured with --enable-cbc-parallel" << std::endl
+  << "  --writeModel <file>" << endl
+  << "    write model to <file> (.mps)" << std::endl
+  << "  -a, --all\n    print intermediate solutions for optimization problems\n"
+     "    (not from FeasPump. Can be slow.)" << std::endl
+   << "  -p <N>\n    use N threads, default: 1. CBC should be configured with --enable-cbc-parallel" << std::endl
 //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-  << "--timeout <N>         stop search after N seconds" << std::endl
+  << "  --timeout <N>\n    stop search after N seconds" << std::endl
 //   << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
 //   << "--readParam <file>  read OSICBC parameters from file" << std::endl
 //   << "--writeParam <file> write OSICBC parameters to file" << std::endl
 //   << "--tuneParam         instruct OSICBC to tune parameters instead of solving   NOT IMPL"
 
-  << "--absGap <n>        absolute gap |primal-dual| to stop" << std::endl
-  << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
-  << "--intTol <n>        integrality tolerance for a variable. Default 1e-6" << std::endl
+  << "  --absGap <n>\n    absolute gap |primal-dual| to stop" << std::endl
+  << "  --relGap <n>\n    relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
+  << "  --intTol <n>\n    integrality tolerance for a variable. Default 1e-6" << std::endl
 //   << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
   << std::endl;

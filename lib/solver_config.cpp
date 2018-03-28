@@ -85,6 +85,16 @@ namespace MiniZinc {
     return sc;
   }
  
+  class BuiltinSolverConfigs {
+  public:
+    std::unordered_map<std::string, SolverConfig> builtinSolvers;
+  };
+  
+  BuiltinSolverConfigs& builtinSolverConfigs(void) {
+    static BuiltinSolverConfigs c;
+    return c;
+  }
+  
   SolverConfigs::SolverConfigs(const string& sp) {
     string solver_path = sp;
 #ifdef _MSC_VER
@@ -92,6 +102,10 @@ namespace MiniZinc {
 #else
     const char* PATHSEP = ":";
 #endif
+    for (auto sc : builtinSolverConfigs().builtinSolvers) {
+      vector<SolverConfig> configs({sc.second});
+      _solvers.insert(make_pair(sc.second.id(), configs));
+    }
     if (solver_path.empty()) {
       if (char* MZNSOLVERPATH = getenv("MZN_SOLVER_PATH")) {
         solver_path = string(MZNSOLVERPATH);
@@ -141,6 +155,11 @@ namespace MiniZinc {
         return it->second[i];
     }
     throw ConfigException("solver version not found");
+  }
+  
+  void
+  SolverConfigs::registerBuiltinSolver(const SolverConfig& sc) {
+    builtinSolverConfigs().builtinSolvers.insert(make_pair(sc.id(),sc));
   }
   
 }
