@@ -33,6 +33,8 @@ namespace MiniZinc { namespace FileUtils {
   /// Return list of files with extension \a ext in directory \a dir
   std::vector<std::string> directory_list(const std::string& dir,
                                           const std::string& ext=std::string("*"));
+  /// Return share/minizinc directory if present anywhere above the executable
+  std::string share_directory(void);
   /// Inflate string \a s
   void inflateString(std::string& s);
   /// Deflate string \a s

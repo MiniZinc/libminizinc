@@ -345,16 +345,7 @@ void Flattener::flatten(const std::string& modelString)
   }
 
   if (std_lib_dir=="") {
-    std::string mypath = FileUtils::progpath();
-    if (!mypath.empty()) {
-      if (FileUtils::file_exists(mypath+"/share/minizinc/std/builtins.mzn")) {
-        std_lib_dir = mypath+"/share/minizinc";
-      } else if (FileUtils::file_exists(mypath+"/../share/minizinc/std/builtins.mzn")) {
-        std_lib_dir = mypath+"/../share/minizinc";
-      } else if (FileUtils::file_exists(mypath+"/../../share/minizinc/std/builtins.mzn")) {
-        std_lib_dir = mypath+"/../../share/minizinc";
-      }
-    }
+    std_lib_dir = FileUtils::share_directory();
   }
 
   if (std_lib_dir=="") {

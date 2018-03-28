@@ -207,6 +207,20 @@ namespace MiniZinc { namespace FileUtils {
     return entries;
   }
 
+  std::string share_directory(void) {
+    std::string mypath = FileUtils::progpath();
+    int depth = 0;
+    for (unsigned int i=0; i<mypath.size(); i++)
+      if (mypath[i]=='/' || mypath[i]=='\\')
+        depth++;
+    for (int i=0; i<=depth; i++) {
+      if (FileUtils::file_exists(mypath+"/share/minizinc/std/builtins.mzn"))
+        return mypath+"/share/minizinc";
+      mypath += "/..";
+    }
+    return "";
+  }
+  
   void inflateString(std::string& s) {
     unsigned char* cc = reinterpret_cast<unsigned char*>(&s[0]);
     // autodetect compressed string
