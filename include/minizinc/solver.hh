@@ -83,7 +83,7 @@ namespace MiniZinc {
     Flattener flt;
     SolverInstanceBase* si=0;
     SolverFactory* sf=0;
-    bool is_mzn2fzn;
+    bool is_mzn2fzn=0;
 
     /// Solver configurations
     SolverConfigs solver_configs;
@@ -104,7 +104,7 @@ namespace MiniZinc {
                                      // so unflexible with solver cmdline options  TODO
     
   public:
-    MznSolver(std::ostream& os = std::cout, std::ostream& log = std::cerr, bool ism2f = false);
+    MznSolver(std::ostream& os = std::cout, std::ostream& log = std::cerr);
     ~MznSolver();
     bool processOptions(int& argc, const char**& argv);
     void printHelp(const std::string& selectedSolver=std::string());

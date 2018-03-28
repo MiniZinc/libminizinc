@@ -243,7 +243,7 @@ void Solns2Out::checkSolution(std::ostream& os) {
   }
   
   std::ostringstream oss_err;
-  MznSolver slv(oss_err,oss_err,false);
+  MznSolver slv(oss_err,oss_err);
   slv.s2out._opt.solution_separator = "";
   try {
     std::vector<std::string> args({"","--solver","org.minizinc.gecode","-"});

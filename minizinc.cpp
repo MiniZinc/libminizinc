@@ -71,7 +71,7 @@ int main(int argc, const char** argv) {
   bool fSuccess = false;
 
   try {
-    MznSolver slv(std::cout,std::cerr,IS_MZN2FZN);
+    MznSolver slv(std::cout,std::cerr);
     try {
       
       if (!slv.processOptions(argc, argv)) {

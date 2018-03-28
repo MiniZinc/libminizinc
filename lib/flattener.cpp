@@ -279,8 +279,8 @@ error:
   return false;
 }
 
-Flattener::Flattener(std::ostream& os_, std::ostream& log_, bool fOutputByDef_)
-  : os(os_), log(log_), fOutputByDefault(fOutputByDef_)
+Flattener::Flattener(std::ostream& os_, std::ostream& log_)
+  : os(os_), log(log_)
 {
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
     std_lib_dir = string(MZNSTDLIBDIR);
