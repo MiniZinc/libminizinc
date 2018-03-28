@@ -71,8 +71,11 @@ namespace MiniZinc {
             throw ConfigException("invalid configuration item");
           }
         }
-        if (!hadId || !hadVersion) {
-          throw ConfigException("invalid solver configuration (missing id or version)");
+        if (!hadId) {
+          throw ConfigException("invalid solver configuration (missing id)");
+        }
+        if (!hadVersion) {
+          throw ConfigException("invalid solver configuration (missing version)");
         }
       } else {
         std::cerr << errstream.str();
