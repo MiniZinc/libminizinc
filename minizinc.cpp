@@ -58,7 +58,12 @@ namespace {
   Gecode_SolverFactoryInitialiser _gecode_init;
 }
 #endif
+#ifdef HAS_FZN
 #include <minizinc/solvers/fzn_solverfactory.hh>
+namespace {
+  FZN_SolverFactoryInitialiser _fzn_init;
+}
+#endif
 
 int main(int argc, const char** argv) {
 
