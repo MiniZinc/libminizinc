@@ -69,57 +69,63 @@ int main(int argc, const char** argv) {
 
   clock_t starttime = std::clock(), endTime;
   bool fSuccess = false;
-  
-  MznSolver slv(std::cout,std::cerr,IS_MZN2FZN);
+
   try {
-    
-    if (!slv.processOptions(argc, argv)) {
-      slv.printHelp();
-      exit(EXIT_FAILURE);
-    }
-    slv.flatten();
-    
-    if (SolverInstance::UNKNOWN == slv.getFltStatus())
-    {
-      if ( !slv.ifMzn2Fzn() ) {          // only then
-        // GCLock lock;                  // better locally, to enable cleanup after ProcessFlt()
-        slv.addSolverInterface();
-        slv.solve();
+    MznSolver slv(std::cout,std::cerr,IS_MZN2FZN);
+    try {
+      
+      if (!slv.processOptions(argc, argv)) {
+        slv.printHelp();
+        exit(EXIT_FAILURE);
       }
-      fSuccess = true;
-    } else {
-      if ( !slv.ifMzn2Fzn() )
-        slv.s2out.evalStatus( slv.getFltStatus() );
-      fSuccess = (SolverInstance::ERROR != slv.getFltStatus());
-    }                                   //  Add evalOutput() here?   TODO
-  } catch (const LocationException& e) {
-    if (slv.get_flag_verbose())
-      std::cerr << std::endl;
-    std::cerr << e.loc() << ":" << std::endl;
-    std::cerr << e.what() << ": " << e.msg() << std::endl;
+      slv.flatten();
+      
+      if (SolverInstance::UNKNOWN == slv.getFltStatus())
+      {
+        if ( !slv.ifMzn2Fzn() ) {          // only then
+          // GCLock lock;                  // better locally, to enable cleanup after ProcessFlt()
+          slv.addSolverInterface();
+          slv.solve();
+        }
+        fSuccess = true;
+      } else {
+        if ( !slv.ifMzn2Fzn() )
+          slv.s2out.evalStatus( slv.getFltStatus() );
+        fSuccess = (SolverInstance::ERROR != slv.getFltStatus());
+      }                                   //  Add evalOutput() here?   TODO
+    } catch (const LocationException& e) {
+      if (slv.get_flag_verbose())
+        std::cerr << std::endl;
+      std::cerr << e.loc() << ":" << std::endl;
+      std::cerr << e.what() << ": " << e.msg() << std::endl;
+    } catch (const Exception& e) {
+      if (slv.get_flag_verbose())
+        std::cerr << std::endl;
+      std::string what = e.what();
+      std::cerr << what << (what.empty() ? "" : ": ") << e.msg() << std::endl;
+    }
+    catch (const exception& e) {
+      if (slv.get_flag_verbose())
+        std::cerr << std::endl;
+      std::cerr << e.what() << std::endl;
+    }
+    catch (...) {
+      if (slv.get_flag_verbose())
+        std::cerr << std::endl;
+      std::cerr << "  UNKNOWN EXCEPTION." << std::endl;
+    }
+    
+    if ( !slv.ifMzn2Fzn() ) {
+      endTime = clock();
+      if (slv.get_flag_verbose()) {
+        std::cerr << "   Done (";
+        cerr << "overall time " << timeDiff(endTime, starttime) << ")." << std::endl;
+      }
+    }
+    return !fSuccess;
   } catch (const Exception& e) {
-    if (slv.get_flag_verbose())
-      std::cerr << std::endl;
     std::string what = e.what();
     std::cerr << what << (what.empty() ? "" : ": ") << e.msg() << std::endl;
+    std::exit(EXIT_FAILURE);
   }
-  catch (const exception& e) {
-    if (slv.get_flag_verbose())
-      std::cerr << std::endl;
-    std::cerr << e.what() << std::endl;
-  }
-  catch (...) {
-    if (slv.get_flag_verbose())
-      std::cerr << std::endl;
-    std::cerr << "  UNKNOWN EXCEPTION." << std::endl;
-  }
-  
-  if ( !slv.ifMzn2Fzn() ) {
-    endTime = clock();
-    if (slv.get_flag_verbose()) {
-      std::cerr << "   Done (";
-      cerr << "overall time " << timeDiff(endTime, starttime) << ")." << std::endl;
-    }
-  }
-  return !fSuccess;
 }   // int main()

@@ -78,6 +78,8 @@ namespace MiniZinc {
         std::cerr << errstream.str();
         throw ConfigException("internal error");
       }
+    } catch (ConfigException& e) {
+      throw;
     } catch (Exception& e) {
       throw ConfigException(e.what());
     }
