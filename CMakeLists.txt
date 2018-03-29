@@ -4,9 +4,10 @@ project (libminizinc CXX C)
 
 # -------------------------------------------------------------------------------------------------------------------
 # -- The below checks if certain solver paths are set in the config call for the corresp. interface to be compiled --
-# ---- For example, to produce mzn-gecode run "cd build; cmake -D GECODE_HOME=$GECODE_HOME ..; cmake --build ."  ----
+# -- For example, to include gecode in the minizinc binary run                                                     --
+# --     "cd build; cmake -D GECODE_HOME=$GECODE_HOME ..; cmake --build ."                                         --
 # -------------------------------------------------------------------------------------------------------------------
-set(HAS_FZN    TRUE)                 ### Always compile the mzn-fzn driver
+set(HAS_FZN    TRUE)                 ### Always compile the FlatZinc (external process) driver
 if (DEFINED GECODE_HOME AND NOT "${GECODE_HOME} " STREQUAL " ")
   set(HAS_GECODE TRUE)
 endif()
@@ -52,7 +53,8 @@ include (CheckIncludeFiles)
 
 # -------------------------------------------------------------------------------------------------------------------
 option (BUILD_GUROBI_PLUGIN "Build Gurobi binding as a plugin" OFF)
-if (BUILD_GUROBI_PLUGIN OR HAS_CPLEX)
+option (BUILD_CPLEX_PLUGIN "Build CPLEX binding as a plugin" OFF)
+if (BUILD_GUROBI_PLUGIN OR BUILD_CPLEX_PLUGIN OR HAS_CPLEX)
   if(HAS_GUROBI OR HAS_CPLEX)
     CHECK_INCLUDE_FILES (dlfcn.h HAS_DLFCN_H)
     if(HAS_DLFCN_H)
@@ -60,7 +62,12 @@ if (BUILD_GUROBI_PLUGIN OR HAS_CPLEX)
     endif()
     CHECK_INCLUDE_FILES (Windows.h HAS_WINDOWS_H)
     if(HAS_DLFCN_H OR HAS_WINDOWS_H)
-      set(HAS_GUROBI_PLUGIN TRUE)
+      if (BUILD_GUROBI_PLUGIN)
+        set(HAS_GUROBI_PLUGIN TRUE)
+      endif()
+      if (BUILD_CPLEX_PLUGIN)
+        set(HAS_CPLEX_PLUGIN TRUE)
+      endif()
     endif()
   endif()
 endif()
@@ -345,11 +352,6 @@ if(HAS_GECODE)
   link_directories("${GECODE_HOME}/lib")
 endif()
 
-# add the executable
-add_executable(mzn2fzn minizinc.cpp)    #mzn2fzn.cpp)
-target_link_libraries(mzn2fzn minizinc)
-target_compile_definitions(mzn2fzn PRIVATE -DFLATTEN_ONLY)
-
 add_executable(solns2out solns2out.cpp)
 target_link_libraries(solns2out minizinc)
 
@@ -373,12 +375,7 @@ if(HAS_GUROBI)  # Version 7.5
     target_link_libraries(minizinc_gurobi minizinc gurobi75 ${CMAKE_THREAD_LIBS_INIT})
   endif()
 
-	add_executable(mzn-gurobi minizinc.cpp)
-  target_compile_definitions( mzn-gurobi PRIVATE HAS_MIP )
-  target_include_directories(mzn-gurobi PRIVATE "${GUROBI_HOME}/include")
-	target_link_libraries(mzn-gurobi minizinc_gurobi ${CMAKE_THREAD_LIBS_INIT})
-
-  INSTALL(TARGETS minizinc_gurobi mzn-gurobi
+  INSTALL(TARGETS minizinc_gurobi
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
@@ -417,23 +414,15 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
                                )
   include_directories("${CPLEX_STUDIO_DIR}/cplex/include")
 #  target_include_directories(minizinc_cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
-  
-target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
 
-	add_executable(mzn-cplex minizinc.cpp)
-  target_compile_definitions( mzn-cplex PRIVATE HAS_MIP )
-  SET_TARGET_PROPERTIES(mzn-cplex
-                               PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD -Wall"
-                               )
-  # if (BUILD_STATIC_EXECUTABLE)
-  #SET_TARGET_PROPERTIES(mzn-cplex
-  #                             PROPERTIES LINK_FLAGS "-static"
-  #                             )
-  # endif()
-  target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
-  target_link_libraries(mzn-cplex minizinc_cplex ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
 
-  INSTALL(TARGETS minizinc_cplex mzn-cplex
+  if(HAS_CPLEX_PLUGIN)
+    target_link_libraries(minizinc_cplex minizinc ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
+  else()
+    target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
+  endif()
+
+  INSTALL(TARGETS minizinc_cplex
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
@@ -570,17 +559,13 @@ if(HAS_OSICBC)
     solvers/MIP/MIP_osicbc_solverfactory.cpp include/minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_osicbc_wrap.hh
   )
-  add_executable(mzn-cbc minizinc.cpp)
-  target_compile_definitions( mzn-cbc PRIVATE HAS_MIP )
 
   target_include_directories(minizinc_osicbc PRIVATE ${CBC_INCLUDEDIRS})
-  target_include_directories(mzn-cbc PRIVATE ${CBC_INCLUDEDIRS})
 
                                        # OSICBC_LINKEXTRAS: ArchLinux needs blas, lapack, bz2
   target_link_libraries(minizinc_osicbc minizinc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
-  target_link_libraries(mzn-cbc minizinc_osicbc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS} ${CMAKE_THREAD_LIBS_INIT})
 
-  INSTALL(TARGETS minizinc_osicbc mzn-cbc
+  INSTALL(TARGETS minizinc_osicbc
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
@@ -616,11 +601,7 @@ if(HAS_GECODE)
     gecodefloat gecodeint gecodeset
     gecodekernel gecodesupport  ${CMAKE_THREAD_LIBS_INIT})
 
-  add_executable(mzn-gecode minizinc.cpp )
-  target_compile_definitions( mzn-gecode PRIVATE HAS_GECODE )
-  target_link_libraries(mzn-gecode minizinc_gecode)
-
-  INSTALL(TARGETS minizinc_gecode mzn-gecode
+  INSTALL(TARGETS minizinc_gecode
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
@@ -651,15 +632,16 @@ if(HAS_FZN)
   if(HAS_GUROBI)
     target_link_libraries(minizinc-bin minizinc_gurobi)
     target_compile_definitions( minizinc-bin PRIVATE HAS_GUROBI )
-    target_include_directories(minizinc-bin PRIVATE "${GUROBI_HOME}/include")
   endif()
   if(HAS_CPLEX)
-    target_link_libraries(minizinc-bin minizinc_cplex)
+    SET_TARGET_PROPERTIES(minizinc-bin
+      PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD -Wall"
+    )
+    target_link_libraries(minizinc-bin minizinc_cplex ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
     target_compile_definitions( minizinc-bin PRIVATE HAS_CPLEX )
   endif()
   if (HAS_OSICBC)
-    target_link_libraries(minizinc-bin minizinc_osicbc)
-    target_include_directories(minizinc-bin PRIVATE ${CBC_INCLUDEDIRS})
+    target_link_libraries(minizinc-bin minizinc_osicbc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS} ${CMAKE_THREAD_LIBS_INIT})
     target_compile_definitions( minizinc-bin PRIVATE HAS_OSICBC )
   endif()
 	INSTALL(TARGETS minizinc_fzn minizinc-bin
@@ -669,7 +651,7 @@ if(HAS_FZN)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-INSTALL(TARGETS mzn2fzn solns2out mzn2doc minizinc
+INSTALL(TARGETS solns2out mzn2doc minizinc
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
