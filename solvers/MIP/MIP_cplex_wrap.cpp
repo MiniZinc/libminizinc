@@ -24,6 +24,7 @@
 
 #include <minizinc/config.hh>
 #include <minizinc/utils.hh>
+#include <minizinc/file_utils.hh>
 
 #ifdef HAS_CPLEX_PLUGIN
 #ifdef HAS_DLFCN_H
@@ -40,11 +41,21 @@ using namespace std;
 #ifdef HAS_CPLEX_PLUGIN
 
 namespace {
-  void* dll_open(const char* file) {
+  void* dll_open(const std::string& file) {
 #ifdef HAS_DLFCN_H
-    return dlopen( (std::string("lib")+file+".jnilib").c_str(), RTLD_NOW);
+    if (MiniZinc::FileUtils::is_absolute(file)) {
+      return dlopen( file.c_str(), RTLD_NOW);
+    }
+    if (void* so = dlopen( ("lib"+file+".so").c_str(), RTLD_NOW)) {
+      return so;
+    }
+    return dlopen( ("lib"+file+".jnilib").c_str(), RTLD_NOW);
 #else
-    return LoadLibrary((std::string(file)+".dll").c_str());
+    if (MiniZinc::FileUtils::is_absolute(file)) {
+      return LoadLibrary(file.c_str());
+    } else {
+      return LoadLibrary((file+".dll").c_str());
+    }
 #endif
   }
   void* dll_sym(void* dll, const char* sym) {
@@ -88,7 +99,11 @@ void MIP_cplex_wrapper::checkDLL() {
   }
   
   if (_cplex_dll==NULL) {
-    throw MiniZinc::InternalError("cannot load cplex dll, specify --dll");
+    if (options.sCPLEXDLL.empty()) {
+      throw MiniZinc::InternalError("cannot load cplex dll, specify --cplex-dll");
+    } else {
+      throw MiniZinc::InternalError("cannot load cplex dll `"+options.sCPLEXDLL+"'");
+    }
   }
 
   *(void**)(&dll_CPXaddfuncdest) = dll_sym(_cplex_dll, "CPXaddfuncdest");
@@ -193,13 +208,17 @@ string MIP_cplex_wrapper::getDescription() {
   string v = "MIP wrapper for IBM ILOG CPLEX  ";
   int status;
   Options options;
-  MIP_cplex_wrapper mcw(options);
-  CPXENVptr env = mcw.dll_CPXopenCPLEX (&status);
-  if (env) {
-    v += mcw.dll_CPXversion (env);
-    status = mcw.dll_CPXcloseCPLEX (&env);
-  } else
+  try {
+    MIP_cplex_wrapper mcw(options);
+    CPXENVptr env = mcw.dll_CPXopenCPLEX (&status);
+    if (env) {
+      v += mcw.dll_CPXversion (env);
+      status = mcw.dll_CPXcloseCPLEX (&env);
+    } else
+      v += "[?? ...cannot open CPLEX env to query version]";
+  } catch (MiniZinc::InternalError&) {
     v += "[?? ...cannot open CPLEX env to query version]";
+  }
   v += "  Compiled  " __DATE__ "  " __TIME__;
   return v;
 }
@@ -208,12 +227,16 @@ string MIP_cplex_wrapper::getVersion( ) {
   string v;
   int status;
   Options options;
-  MIP_cplex_wrapper mcw(options);
-  CPXENVptr env = mcw.dll_CPXopenCPLEX (&status);
-  if (env) {
-    v += mcw.dll_CPXversion (env);
-    status = mcw.dll_CPXcloseCPLEX (&env);
-  } else {
+  try {
+    MIP_cplex_wrapper mcw(options);
+    CPXENVptr env = mcw.dll_CPXopenCPLEX (&status);
+    if (env) {
+      v += mcw.dll_CPXversion (env);
+      status = mcw.dll_CPXcloseCPLEX (&env);
+    } else {
+      v += "<unknown CPLEX version>";
+    }
+  } catch (MiniZinc::InternalError&) {
     v += "<unknown CPLEX version>";
   }
   return v;
@@ -247,16 +270,18 @@ void MIP_cplex_wrapper::Options::printHelp(ostream& os) {
   << "  --absGap <n>\n    absolute gap |primal-dual| to stop" << std::endl
   << "  --relGap <n>\n    relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
   << "  --intTol <n>\n    integrality tolerance for a variable. Default 1e-6" << std::endl
+  << "\n  --cplex-dll <file> or <basename>\n    CPLEX DLL, or base name, such as cplex1280, when using plugin. Default range tried: "
+  << CPLEXDLLs().front() << " .. " << CPLEXDLLs().back() << std::endl
 //   << "  --objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
   << std::endl;
 }
 
-  static inline bool beginswith(string s, string t) {
-    return s.compare(0, t.length(), t)==0;
-  }
+static inline bool beginswith(string s, string t) {
+  return s.compare(0, t.length(), t)==0;
+}
 
-  bool MIP_cplex_wrapper::Options::processOption(int& i, int argc, const char** argv) {
+bool MIP_cplex_wrapper::Options::processOption(int& i, int argc, const char** argv) {
   MiniZinc::CLOParser cop( i, argc, argv );
   if ( string(argv[i])=="-a"
       || string(argv[i])=="--all"
@@ -275,6 +300,7 @@ void MIP_cplex_wrapper::Options::printHelp(ostream& os) {
   } else if ( cop.get( "--absGap", &absGap ) ) {
   } else if ( cop.get( "--relGap", &relGap ) ) {
   } else if ( cop.get( "--intTol", &intTol ) ) {
+  } else if ( cop.get( "--cplex-dll", &sCPLEXDLL ) ) {
 //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
   } else
     return false;
