@@ -11,6 +11,7 @@
 
 #include <minizinc/solver_config.hh>
 #include <minizinc/parser.hh>
+#include <minizinc/json_parser.hh>
 #include <minizinc/file_utils.hh>
 
 #include <sstream>
@@ -33,10 +34,23 @@ namespace MiniZinc {
     ostringstream errstream;
     try {
       Env confenv;
-      vector<string> filenames;
-      filenames.push_back(filename);
-      Model* m = parse(confenv,filenames, vector<string>(), vector<string>(),
-                       true, false, false, errstream);
+      Model* m = NULL;
+      if (JSONParser::fileIsJSON(filename)) {
+        JSONParser jp(confenv.envi());
+        try {
+          m = new Model;
+          GCLock lock;
+          jp.parse(m, filename);
+        } catch (JSONError&) {
+          delete m;
+          m=NULL;
+        }
+      } else {
+        vector<string> filenames;
+        filenames.push_back(filename);
+        m = parse(confenv,filenames, vector<string>(), vector<string>(),
+                  true, false, false, errstream);
+      }
       if (m) {
         bool hadId = false;
         bool hadVersion = false;
