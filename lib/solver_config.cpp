@@ -130,6 +130,53 @@ namespace MiniZinc {
         solver_path += PATHSEP;
       solver_path += string(MZNSOLVERPATH);
     }
+    std::string userConfig = FileUtils::user_config_file();
+    if (FileUtils::file_exists(userConfig)) {
+      ostringstream errstream;
+      try {
+        Env userconfenv;
+        Model* m = NULL;
+        if (JSONParser::fileIsJSON(userConfig)) {
+          JSONParser jp(userconfenv.envi());
+          try {
+            m = new Model;
+            GCLock lock;
+            jp.parse(m, userConfig);
+          } catch (JSONError&) {
+            delete m;
+            m=NULL;
+          }
+        } else {
+          vector<string> filenames;
+          filenames.push_back(userConfig);
+          m = parse(userconfenv,filenames, vector<string>(), vector<string>(),
+                    true, false, false, errstream);
+        }
+        if (m) {
+          for (unsigned int i=0; i<m->size(); i++) {
+            if (AssignI* ai = (*m)[i]->dyn_cast<AssignI>()) {
+              if (ai->id()=="mzn_solver_path") {
+                std::string sp = getString(ai);
+                if (!solver_path.empty())
+                  solver_path += PATHSEP;
+                solver_path += sp;
+              } else {
+                throw ConfigException("invalid configuration item");
+              }
+            } else {
+              throw ConfigException("invalid configuration item");
+            }
+          }
+        } else {
+          std::cerr << errstream.str();
+          throw ConfigException("internal error");
+        }
+      } catch (ConfigException& e) {
+        throw;
+      } catch (Exception& e) {
+        throw ConfigException(e.what());
+      }
+    }
     std::string shareDirectory = FileUtils::share_directory();
     if (!shareDirectory.empty()) {
       if (!solver_path.empty())

@@ -35,6 +35,8 @@ namespace MiniZinc { namespace FileUtils {
                                           const std::string& ext=std::string("*"));
   /// Return share/minizinc directory if present anywhere above the executable
   std::string share_directory(void);
+  /// Get per-user configuration file name (usually in home directory or AppData directory)
+  std::string user_config_file(void);
   /// Inflate string \a s
   void inflateString(std::string& s);
   /// Deflate string \a s

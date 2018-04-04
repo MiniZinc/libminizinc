@@ -221,6 +221,40 @@ namespace MiniZinc { namespace FileUtils {
     return "";
   }
   
+  std::string user_config_file(void) {
+#ifdef _MSC_VER
+    HRESULT hr;
+    PWSTR pszPath = NULL;
+    
+    hr = SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, NULL, &pszPath);
+    if (SUCCEEDED(hr)) {
+      int charsRequired = WideCharToMultiByte(CP_ACP, 0, pszPath, -1, 0, 0, 0, 0);
+      std::string configPath;
+      if (charsRequired > 0) {
+        char* tmp = new char[charsRequired];
+        if (WideCharToMultiByte(CP_ACP, 0, pszPath, -1, tmp, charsRequired, 0, 0) != 0) {
+          tmp[charsRequired-1]=0;
+          configPath=tmp;
+        }
+        delete[] tmp;
+      }
+      CoTaskMemFree(pszPath);
+      if (configPath.empty()) {
+        return "";
+      } else {
+        return configPath+"/MiniZinc/Preferences";
+      }
+    }
+    return "";
+#else
+    std::string homedir(getenv("HOME"));
+    if (homedir.empty()) {
+      return "";
+    }
+    return homedir+"/.minizinc";
+#endif
+  }
+  
   void inflateString(std::string& s) {
     unsigned char* cc = reinterpret_cast<unsigned char*>(&s[0]);
     // autodetect compressed string
