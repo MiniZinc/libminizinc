@@ -53,7 +53,8 @@ namespace MiniZinc {
 
   void SolverInstanceBase::printSolution() {
     std::ostringstream oss;
-    if ( getOptions().getBoolParam(constants().opts.statistics.str()) )
+
+    if ( _options->printStatistics )
       printStatistics(1);             // Insert stats before sol separator
     if ( 0==pS2Out ) {
       getEnv()->evalOutput(std::cout);               // deprecated

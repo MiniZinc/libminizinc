@@ -15,6 +15,7 @@
 
 #include <minizinc/config.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
+#include <minizinc/solver_instance_base.hh>
 #include <ilcplex/cplex.h>     // add -DCPLEX_STUDIO_DIR=/opt/ibm/ILOG/CPLEX_Studio1261 to the 1st call of cmake
 
 class MIP_cplex_wrapper : public MIP_wrapper {
@@ -33,7 +34,7 @@ class MIP_cplex_wrapper : public MIP_wrapper {
 
   public:
 
-    class Options {
+    class Options : public MiniZinc::SolverInstanceBase::Options {
     public:
       int nMIPFocus=0;
       int nThreads=1;
@@ -51,10 +52,13 @@ class MIP_cplex_wrapper : public MIP_wrapper {
       double objDiff=1.0;
       std::string sCPLEXDLL;
       bool processOption(int& i, int argc, const char** argv);
-      void printHelp(std::ostream& );
-    } options;
+      static void printHelp(std::ostream& );
+    };
+  private:
+    Options* options;
+  public:
 
-  MIP_cplex_wrapper(const Options& opt) : options(opt) { openCPLEX(); }
+  MIP_cplex_wrapper(Options* opt) : options(opt) { openCPLEX(); }
     virtual ~MIP_cplex_wrapper() { closeCPLEX(); }
 
     static std::string getDescription(void);

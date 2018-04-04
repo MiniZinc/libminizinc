@@ -14,6 +14,8 @@
 #define __MIP_GUROBI_WRAPPER_H__
 
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
+#include <minizinc/solver_instance_base.hh>
+
 extern "C" {
   #include <gurobi_c.h>     // need GUROBI_HOME defined
 }
@@ -32,11 +34,8 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
 
   public:
 
-  /// SOLVER PARAMS ????
-
-    class Options {
+    class Options : public MiniZinc::SolverInstanceBase::Options {
     public:
-      /// SOLVER PARAMS ????
       int nMIPFocus=0;
       int nFreeSearch=1;
       int nThreads=1;
@@ -54,9 +53,12 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
       double objDiff=1.0;
       std::string sGurobiDLL;
       bool processOption(int& i, int argc, const char** argv);
-      void printHelp(std::ostream& );
-    } options;
-
+      static void printHelp(std::ostream& );
+    };
+  private:
+    Options* options;
+  public:
+  
     void (__stdcall *dll_GRBversion) (int*, int*, int*);
     
     int (__stdcall *dll_GRBaddconstr) (GRBmodel *model, int numnz, int *cind, double *cval,
@@ -132,7 +134,7 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     int (__stdcall *dll_GRBgetintparam) (GRBenv *env, const char *paramname, int *valueP);
     
   public:
-    MIP_gurobi_wrapper(const Options& opt) : options(opt) {
+    MIP_gurobi_wrapper(Options* opt) : options(opt) {
       openGUROBI();
     }
     /// This constructor is to check DLL only, GRBversion does not need a license

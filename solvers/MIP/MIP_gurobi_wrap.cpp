@@ -425,7 +425,7 @@ bool MIP_gurobi_wrapper::addSearch( const std::vector<VarId>& vars, const std::v
 }
 
 int MIP_gurobi_wrapper::getFreeSearch() {
-    return options.nFreeSearch;
+    return options->nFreeSearch;
 }
 
 bool MIP_gurobi_wrapper::addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals ) {
@@ -599,7 +599,7 @@ MIP_gurobi_wrapper::Status MIP_gurobi_wrapper::convertStatus(int gurobiStatus)
 
 
 void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
-  if ( options.flag_all_solutions && 0==nProbType )
+  if ( options->flag_all_solutions && 0==nProbType )
     cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
   
    error = dll_GRBupdatemodel(model);                  // for model export
@@ -630,8 +630,8 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    wrap_assert(!error, "  GUROBI Warning: Failure to switch screen indicator.", false);
 //    error =  dll_GRB_setintparam (env, GRB_PARAM_ClockType, 1);            // CPU time
 //    error =  dll_GRB_setintparam (env, GRB_PARAM_MIP_Strategy_CallbackReducedLP, GRB__OFF);    // Access original model
-   if (options.sExportModel.size()) {
-     error = dll_GRBwrite(model, options.sExportModel.c_str());
+   if (options->sExportModel.size()) {
+     error = dll_GRBwrite(model, options->sExportModel.c_str());
      wrap_assert(!error, "Failed to write LP to disk.", false);
    }
 
@@ -641,44 +641,44 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
 //       _ilogurobi->use(SolutionCallback(_iloenv, lastObjVal, *this));
       // Turn off GUROBI logging
 
-   if (options.nThreads>0) {
-     error = dll_GRBsetintparam(dll_GRBgetenv(model), GRB_INT_PAR_THREADS, options.nThreads);
+   if (options->nThreads>0) {
+     error = dll_GRBsetintparam(dll_GRBgetenv(model), GRB_INT_PAR_THREADS, options->nThreads);
 //      int nn;    // THE SETTING FAILS TO WORK IN 6.0.5.
 //      error = dll_getintparam(env, GRB_INT_PAR_THREADS, &nn);
 //      cerr << "Set " << nThreads << " threads, reported " << nn << endl;
      wrap_assert(!error, "Failed to set GRB_INT_PAR_THREADS.", false);
    }
 
-    if (options.nTimeout>0) {
-     error = dll_GRBsetdblparam(dll_GRBgetenv(model), GRB_DBL_PAR_TIMELIMIT, options.nTimeout);
+    if (options->nTimeout>0) {
+     error = dll_GRBsetdblparam(dll_GRBgetenv(model), GRB_DBL_PAR_TIMELIMIT, options->nTimeout);
      wrap_assert(!error, "Failed to set GRB_PARAM_TimeLimit.", false);
     }
 
-    if (options.nSolLimit>0) {
-      error = dll_GRBsetintparam(dll_GRBgetenv(model), GRB_INT_PAR_SOLUTIONLIMIT, options.nSolLimit);
+    if (options->nSolLimit>0) {
+      error = dll_GRBsetintparam(dll_GRBgetenv(model), GRB_INT_PAR_SOLUTIONLIMIT, options->nSolLimit);
       wrap_assert(!error, "Failed to set GRB_INT_PAR_SOLLIMIT.", false);
     }
     
-    if (options.nWorkMemLimit>0 && options.nWorkMemLimit<1e200) {
-      error =  dll_GRBsetdblparam (dll_GRBgetenv(model), "NodefileStart", options.nWorkMemLimit);
+    if (options->nWorkMemLimit>0 && options->nWorkMemLimit<1e200) {
+      error =  dll_GRBsetdblparam (dll_GRBgetenv(model), "NodefileStart", options->nWorkMemLimit);
       wrap_assert(!error, "Failed to set NodefileStart.", false);
     }
 
-    if ( options.absGap>=0.0 ) {
-      error = dll_GRBsetdblparam( dll_GRBgetenv(model),  "MIPGapAbs", options.absGap );
+    if ( options->absGap>=0.0 ) {
+      error = dll_GRBsetdblparam( dll_GRBgetenv(model),  "MIPGapAbs", options->absGap );
       wrap_assert(!error, "Failed to set  MIPGapAbs.", false);
     }
-    if (options.nMIPFocus>0) {
-      error = dll_GRBsetintparam(dll_GRBgetenv(model), GRB_INT_PAR_MIPFOCUS, options.nMIPFocus);
+    if (options->nMIPFocus>0) {
+      error = dll_GRBsetintparam(dll_GRBgetenv(model), GRB_INT_PAR_MIPFOCUS, options->nMIPFocus);
       wrap_assert(!error, "Failed to set GRB_INT_PAR_MIPFOCUS.", false);
     }
 
-   if ( options.relGap>=0.0 ) {
-     error = dll_GRBsetdblparam( dll_GRBgetenv(model),  "MIPGap", options.relGap );
+   if ( options->relGap>=0.0 ) {
+     error = dll_GRBsetdblparam( dll_GRBgetenv(model),  "MIPGap", options->relGap );
      wrap_assert(!error, "Failed to set  MIPGap.", false);
    }
-   if ( options.intTol>=0.0 ) {
-     error = dll_GRBsetdblparam( dll_GRBgetenv(model),  "IntFeasTol", options.intTol );
+   if ( options->intTol>=0.0 ) {
+     error = dll_GRBsetdblparam( dll_GRBgetenv(model),  "IntFeasTol", options->intTol );
      wrap_assert(!error, "Failed to set   IntFeasTol.", false);
    }
 
@@ -689,7 +689,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    output.x = &x[0];
    if (true) {                 // Need for logging
       cbui.fVerb = fVerbose;
-      if ( !options.flag_all_solutions )
+      if ( !options->flag_all_solutions )
         cbui.solcbfn = 0;
       if ( cbui.cutcbfn ) {
         assert( cbui.cutMask & (MaskConsType_Usercut|MaskConsType_Lazy) );
@@ -713,13 +713,13 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    }
 
    /// after all modifs
-    if (options.sReadParams.size()) {
-     error = dll_GRBreadparams (dll_GRBgetenv(model), options.sReadParams.c_str());
+    if (options->sReadParams.size()) {
+     error = dll_GRBreadparams (dll_GRBgetenv(model), options->sReadParams.c_str());
      wrap_assert(!error, "Failed to read GUROBI parameters.", false);
     }
     
-    if (options.sWriteParams.size()) {
-     error = dll_GRBwriteparams (dll_GRBgetenv(model), options.sWriteParams.c_str());
+    if (options->sWriteParams.size()) {
+     error = dll_GRBwriteparams (dll_GRBgetenv(model), options->sWriteParams.c_str());
      wrap_assert(!error, "Failed to write GUROBI parameters.", false);
     }
 

@@ -56,8 +56,8 @@ void SolverRegistry::removeSolverFactory(SolverFactory* pSF)
 }
 
 /// Function createSI also adds each SI to the local storage
-SolverInstanceBase * SolverFactory::createSI(Env& env, std::ostream& log) {
-  SolverInstanceBase *pSI = doCreateSI(env,log);
+SolverInstanceBase * SolverFactory::createSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt) {
+  SolverInstanceBase *pSI = doCreateSI(env,log,opt);
   if (!pSI) {
     throw InternalError("SolverFactory: failed to initialize solver "+getDescription());
   }
@@ -98,7 +98,7 @@ bool MznSolver::ifMzn2Fzn() {
 
 void MznSolver::addSolverInterface(SolverFactory* sf)
 {
-  si = sf->createSI(*flt.getEnv(), log);
+  si = sf->createSI(*flt.getEnv(), log, si_opt);
   assert(si);
   s2out.initFromEnv( flt.getEnv() );
   si->setSolns2Out( &s2out );
@@ -245,13 +245,14 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
            it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
         if ((*it)->getId()==solverId) {
           sf = *it;
+          si_opt = sf->createOptions();
           if (!sc.executable().empty()) {
             const char* additionalArgs[2];
             additionalArgs[0] = "-f";
             std::string executable = sc.executable();
             additionalArgs[1] = executable.c_str();
             int i=0;
-            bool success = sf->processOption(i, 2, additionalArgs);
+            bool success = sf->processOption(si_opt, i, 2, additionalArgs);
             if (!success) {
               log << "Solver backend " << solverId << " does not recognise option -f." << endl;
               return false;
@@ -297,7 +298,7 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
   for (i=1; i<argc; ++i) {
     if ( !ifMzn2Fzn() ? s2out.processOption( i, argc, argv ) : false ) {
     } else if (flt.processOption(i, argc, argv)) {
-    } else if (sf != NULL && sf->processOption(i, argc, argv)) {
+    } else if (sf != NULL && sf->processOption(si_opt, i, argc, argv)) {
     } else {
       std::string executable_name(argv[0]);
       executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
@@ -323,8 +324,8 @@ void MznSolver::solve()
 {
   { // To be able to clean up flatzinc after PrcessFlt()
     GCLock lock;
-    getSI()->getOptions().setBoolParam  (constants().opts.verbose.str(),  get_flag_verbose());
-    getSI()->getOptions().setBoolParam  (constants().opts.statistics.str(),  get_flag_statistics());
+    getSI()->_options->verbose = get_flag_verbose();
+    getSI()->_options->printStatistics = get_flag_statistics();
     getSI()->processFlatZinc();
   }
   SolverInstance::Status status = getSI()->solve();

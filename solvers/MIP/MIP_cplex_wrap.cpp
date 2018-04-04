@@ -87,8 +87,8 @@ const vector<string>& CPLEXDLLs(void) {
 void MIP_cplex_wrapper::checkDLL() {
 #ifdef HAS_CPLEX_PLUGIN
   _cplex_dll = NULL;
-  if ( options.sCPLEXDLL.size() ) {
-    _cplex_dll = dll_open( options.sCPLEXDLL.c_str() );
+  if ( options->sCPLEXDLL.size() ) {
+    _cplex_dll = dll_open( options->sCPLEXDLL.c_str() );
   } else {
     for( const auto& s: CPLEXDLLs() ) {
       _cplex_dll = dll_open( s.c_str() );
@@ -99,10 +99,10 @@ void MIP_cplex_wrapper::checkDLL() {
   }
   
   if (_cplex_dll==NULL) {
-    if (options.sCPLEXDLL.empty()) {
+    if (options->sCPLEXDLL.empty()) {
       throw MiniZinc::InternalError("cannot load cplex dll, specify --cplex-dll");
     } else {
-      throw MiniZinc::InternalError("cannot load cplex dll `"+options.sCPLEXDLL+"'");
+      throw MiniZinc::InternalError("cannot load cplex dll `"+options->sCPLEXDLL+"'");
     }
   }
 
@@ -209,7 +209,7 @@ string MIP_cplex_wrapper::getDescription() {
   int status;
   Options options;
   try {
-    MIP_cplex_wrapper mcw(options);
+    MIP_cplex_wrapper mcw(&options);
     CPXENVptr env = mcw.dll_CPXopenCPLEX (&status);
     if (env) {
       v += mcw.dll_CPXversion (env);
@@ -228,7 +228,7 @@ string MIP_cplex_wrapper::getVersion( ) {
   int status;
   Options options;
   try {
-    MIP_cplex_wrapper mcw(options);
+    MIP_cplex_wrapper mcw(&options);
     CPXENVptr env = mcw.dll_CPXopenCPLEX (&status);
     if (env) {
       v += mcw.dll_CPXversion (env);
@@ -810,11 +810,11 @@ void msgfunction(void *handle, const char *msg_string)
 void MIP_cplex_wrapper::solve() {  // Move into ancestor?
 
   /////////////// Last-minute solver options //////////////////
-  if ( options.flag_all_solutions && 0==nProbType )
+  if ( options->flag_all_solutions && 0==nProbType )
     cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
   // Before all manual params ???
-  if (options.sReadParams.size()) {
-    status = dll_CPXreadcopyparam (env, options.sReadParams.c_str());
+  if (options->sReadParams.size()) {
+    status = dll_CPXreadcopyparam (env, options->sReadParams.c_str());
     wrap_assert(!status, "Failed to read CPLEX parameters.", false);
   }
   
@@ -836,8 +836,8 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
    wrap_assert(!status, "  CPLEX Warning: Failure to measure CPU time.", false);
    status =  dll_CPXsetintparam (env, CPX_PARAM_MIPCBREDLP, CPX_OFF);    // Access original model
    wrap_assert(!status, "  CPLEX Warning: Failure to set access original model in callbacks.", false);
-   if (options.sExportModel.size()) {
-     status = dll_CPXwriteprob (env, lp, options.sExportModel.c_str(), NULL);
+   if (options->sExportModel.size()) {
+     status = dll_CPXwriteprob (env, lp, options->sExportModel.c_str(), NULL);
      wrap_assert(!status, "Failed to write LP to disk.", false);
    }
 
@@ -847,42 +847,42 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
 //       _ilocplex->use(SolutionCallback(_iloenv, lastObjVal, *this));
       // Turn off CPLEX logging
 
-   if (options.nThreads>0) {
-     status =  dll_CPXsetintparam (env, CPXPARAM_Threads, options.nThreads);
+   if (options->nThreads>0) {
+     status =  dll_CPXsetintparam (env, CPXPARAM_Threads, options->nThreads);
      wrap_assert(!status, "Failed to set CPXPARAM_Threads.", false);
    }
 
-   if (options.nTimeout>0) {
-     status =  dll_CPXsetdblparam (env, CPXPARAM_TimeLimit, options.nTimeout);
+   if (options->nTimeout>0) {
+     status =  dll_CPXsetdblparam (env, CPXPARAM_TimeLimit, options->nTimeout);
      wrap_assert(!status, "Failed to set CPXPARAM_TimeLimit.", false);
    }
-   if (options.nSolLimit>0) {
-     status =  dll_CPXsetintparam (env, CPXPARAM_MIP_Limits_Solutions, options.nSolLimit);
+   if (options->nSolLimit>0) {
+     status =  dll_CPXsetintparam (env, CPXPARAM_MIP_Limits_Solutions, options->nSolLimit);
      wrap_assert(!status, "Failed to set CPXPARAM_MIP_Limits_Solutions.", false);
    }
-   if (options.nMIPFocus>0) {
-     status =  dll_CPXsetintparam (env, CPXPARAM_Emphasis_MIP, options.nMIPFocus);
+   if (options->nMIPFocus>0) {
+     status =  dll_CPXsetintparam (env, CPXPARAM_Emphasis_MIP, options->nMIPFocus);
      wrap_assert(!status, "Failed to set CPXPARAM_Emphasis_MIP.", false);
    }
    
     
-    if (options.nWorkMemLimit>0) {
+    if (options->nWorkMemLimit>0) {
      status =  dll_CPXsetintparam (env, CPXPARAM_MIP_Strategy_File, 3);
      wrap_assert(!status, "Failed to set CPXPARAM_MIP_Strategy_File.", false);
-     status =  dll_CPXsetdblparam (env, CPXPARAM_WorkMem, 1024.0 * options.nWorkMemLimit);   // MB in CPLEX
+     status =  dll_CPXsetdblparam (env, CPXPARAM_WorkMem, 1024.0 * options->nWorkMemLimit);   // MB in CPLEX
      wrap_assert(!status, "Failed to set CPXPARAM_WorkMem.", false);
     }
 
-   if ( options.absGap>=0.0 ) {
-    status =  dll_CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_AbsMIPGap, options.absGap);
+   if ( options->absGap>=0.0 ) {
+    status =  dll_CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_AbsMIPGap, options->absGap);
     wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_AbsMIPGap.", false);
    }
-   if (options.relGap>=0.0) {
-    status =  dll_CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_MIPGap, options.relGap);
+   if (options->relGap>=0.0) {
+    status =  dll_CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_MIPGap, options->relGap);
     wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_MIPGap.", false);
    }
-   if (options.intTol>=0.0) {
-    status =  dll_CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_Integrality, options.intTol);
+   if (options->intTol>=0.0) {
+    status =  dll_CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_Integrality, options->intTol);
     wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_Integrality.", false);
    }
 
@@ -894,7 +894,7 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
    output.nCols = colObj.size();
    x.resize(output.nCols);
    output.x = &x[0];
-   if (options.flag_all_solutions && cbui.solcbfn) {
+   if (options->flag_all_solutions && cbui.solcbfn) {
       status = dll_CPXsetinfocallbackfunc (env, solcallback, &cbui);
       wrap_assert(!status, "Failed to set solution callback", false);
    }
@@ -955,8 +955,8 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
   }
 
   /// after all modifs
-    if (options.sWriteParams.size()) {
-     status = dll_CPXwriteparam (env, options.sWriteParams.c_str());
+    if (options->sWriteParams.size()) {
+     status = dll_CPXwriteparam (env, options->sWriteParams.c_str());
      wrap_assert(!status, "Failed to write CPLEX parameters.", false);
     }
     

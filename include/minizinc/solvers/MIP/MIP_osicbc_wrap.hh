@@ -14,6 +14,7 @@
 #define __MIP_OSICBC_WRAPPER_H__
 
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
+#include <minizinc/solver_instance_base.hh>
                     // CMakeLists.txt needs OSICBC_HOME defined
 // #include <CoinPackedVector.hpp>
 // #include <CoinPackedMatrix.hpp>
@@ -44,7 +45,7 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
 
   public:
 
-    class Options {
+    class Options : public MiniZinc::SolverInstanceBase::Options {
     public:
       int nThreads=1;
       std::string sExportModel;
@@ -63,10 +64,13 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
       std::string cbc_cmdOptions;
       
       bool processOption(int& i, int argc, const char** argv);
-      void printHelp(std::ostream& );
-    } options;
+      static void printHelp(std::ostream& );
+    };
+  private:
+    Options* options;
+  public:
 
-    MIP_osicbc_wrapper(const Options& opt) : options(opt) { openOSICBC(); }
+    MIP_osicbc_wrapper(Options* opt) : options(opt) { openOSICBC(); }
     virtual ~MIP_osicbc_wrapper() { closeOSICBC(); }
   
     static std::string getDescription(void);

@@ -207,6 +207,23 @@ namespace MiniZinc {
   
   class GecodeEngine;
   
+  class GecodeOptions : public SolverInstanceBase::Options {
+  public:
+    bool allow_unbounded_vars = false;
+    bool only_range_domains = false;
+    bool sac = false;
+    bool shave = false;
+    int pre_passes = 0;
+    bool statistics = false;
+    bool all_solutions = false;
+    int n_solutions = 1;
+    int nodes = 0;
+    int fails = 0;
+    int time = 0;
+    int seed = 1;
+    double decay = 0.5;
+  };
+
   class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {   
   private:
     bool _print_stats;
@@ -235,7 +252,7 @@ namespace MiniZinc {
     GecodeEngine* engine;
     Gecode::Search::Options engine_options;
 
-    GecodeSolverInstance(Env& env, std::ostream& log, const Options& options);
+    GecodeSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
     virtual ~GecodeSolverInstance(void);
 
     virtual Status next(void);    
@@ -325,8 +342,6 @@ namespace MiniZinc {
     void insertVar(Id* id, GecodeVariable gv);
 
   protected:
-    /// Flatzinc options // TODO: do we need specific Gecode options? Use MiniZinc::Options instead?
-    // FlatZincOptions* opts;
     void registerConstraints(void);
     void registerConstraint(std::string name, poster p);
 
@@ -364,14 +379,14 @@ namespace MiniZinc {
   };
 
   class Gecode_SolverFactory: public SolverFactory {
-    Options _options;
   public:
     Gecode_SolverFactory(void);
-    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log);
+    SolverInstanceBase::Options* createOptions(void);
+    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
     std::string getDescription( );
     std::string getVersion( );
     std::string getId( ) { return "org.minizinc.gecode"; }
-    bool processOption(int& i, int argc, const char** argv);
+    bool processOption(SolverInstanceBase::Options* opt, int& i, int argc, const char** argv);
     void printHelp(std::ostream& os);
   };
 

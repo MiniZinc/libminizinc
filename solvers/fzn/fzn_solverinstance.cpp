@@ -80,34 +80,43 @@ namespace MiniZinc {
     ;
   }
 
-  bool FZN_SolverFactory::processOption(int& i, int argc, const char** argv)
+  SolverInstanceBase::Options* FZN_SolverFactory::createOptions(void) {
+    return new FZNSolverOptions;
+  }
+
+  SolverInstanceBase* FZN_SolverFactory::doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt) {
+    return new FZNSolverInstance(env, log, opt);
+  }
+
+  bool FZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i, int argc, const char** argv)
   {
+    FZNSolverOptions& _opt = static_cast<FZNSolverOptions&>(*opt);
     CLOParser cop( i, argc, argv );
     string buffer;
     double dd;
     int nn=-1;
     
     if ( cop.getOption( "-f --solver --flatzinc-cmd", &buffer) ) {
-      _options.setStringParam(constants().opts.solver.fzn_solver.str(), buffer);
+      _opt.fzn_solver = buffer;
     } else if ( cop.getOption( "-b --backend --solver-backend", &buffer) ) {
-      _options.setStringParam( "backend", buffer );
+      _opt.backend = buffer;
     } else if ( cop.getOption( "--fzn-flags --flatzinc-flags", &buffer) ) {
-      string old = _options.getStringParam(constants().opts.solver.fzn_flags.str(), "");
+      string old = _opt.fzn_flags;
       old += ' ';
       old += buffer;
-      _options.setStringParam(constants().opts.solver.fzn_flags.str(), old);
+      _opt.fzn_flags = old;
     } else if ( cop.getOption( "--fzn-flag --flatzinc-flag", &buffer) ) {
-      string old = _options.getStringParam(constants().opts.solver.fzn_flag.str(), "");
+      string old = _opt.fzn_flag;
       old += " \"";
       old += buffer;
       old += "\" ";
-      _options.setStringParam(constants().opts.solver.fzn_flag.str(), buffer);
+      _opt.fzn_flag = old;
     } else if ( cop.getOption( "-n --num-solutions", &nn) ) {
-      _options.setIntParam(constants().opts.solver.numSols.str(), nn);
+      _opt.numSols = nn;
     } else if ( cop.getOption( "-a --all --all-solns --all-solutions") ) {
-      _options.setBoolParam(constants().opts.solver.allSols.str(), true);
+      _opt.allSols = true;
     } else if ( cop.getOption( "-p --parallel", &nn) ) {
-      _options.setIntParam(constants().opts.solver.fzn_flag.str(), nn);
+      _opt.parallel = nn;
     } else if ( cop.getOption( "-k --keep-files" ) ) {
     } else if ( cop.getOption( "-r --seed --random-seed", &dd) ) {
     } else {
@@ -432,7 +441,7 @@ namespace MiniZinc {
     };
   }
 
-  FZNSolverInstance::FZNSolverInstance(Env& env, std::ostream& log, const Options& options)
+  FZNSolverInstance::FZNSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* options)
     : SolverInstanceBase(env, log, options), _fzn(env.flat()), _ozn(env.output()) {}
 
   FZNSolverInstance::~FZNSolverInstance(void) {}
@@ -471,37 +480,38 @@ namespace MiniZinc {
 
   SolverInstance::Status
   FZNSolverInstance::solve(void) {
+    FZNSolverOptions& opt = static_cast<FZNSolverOptions&>(*_options);
     /// Passing options to solver
     vector<string> cmd_line;
-    cmd_line.push_back( _options.getStringParam(constants().opts.solver.fzn_solver.str(), "flatzinc") );
-    string sBE = _options.getStringParam("backend", "");
+    cmd_line.push_back( opt.fzn_solver );
+    string sBE = opt.backend;
     if ( sBE.size() ) {
       cmd_line.push_back( "-b" );
       cmd_line.push_back( sBE );
     }
-    string sFlags = _options.getStringParam(constants().opts.solver.fzn_flags.str(), "");
+    string sFlags = opt.fzn_flags;
     if ( sFlags.size() )
       cmd_line.push_back( sFlags );
-    string sFlagQuoted = _options.getStringParam(constants().opts.solver.fzn_flag.str(), "");
+    string sFlagQuoted = opt.fzn_flag;
     if ( sFlagQuoted.size() )
       cmd_line.push_back( sFlagQuoted );
-    if ( _options.hasParam(constants().opts.solver.numSols.str()) ) {
+    if ( opt.numSols != 1 ) {
       ostringstream oss;
-      oss << _options.getIntParam(constants().opts.solver.numSols.str());
-      cmd_line.push_back( "-n "+oss.str() );
+      oss << "-n " << opt.numSols;
+      cmd_line.push_back( oss.str() );
     }
-    if ( _options.getBoolParam(constants().opts.solver.allSols.str(), false) ) {
+    if ( opt.allSols ) {
       cmd_line.push_back( "-a" );
     }
-    if ( _options.hasParam(constants().opts.solver.threads.str()) ) {
+    if ( opt.parallel.size() ) {
       ostringstream oss;
-      oss << _options.getIntParam(constants().opts.solver.threads.str());
-      cmd_line.push_back( "-p "+oss.str() );
+      oss << "-p " << opt.parallel;
+      cmd_line.push_back( oss.str() );
     }
-    if (_options.getBoolParam(constants().opts.statistics.str(), false)) {
+    if (opt.printStatistics) {
       cmd_line.push_back( "-s" );
     }
-    if (_options.getBoolParam(constants().opts.verbose.str(), false)) {
+    if (opt.verbose) {
       cmd_line.push_back( "-v" );
       std::cerr << "Using FZN solver " << cmd_line[0]
         << " for solving, parameters: ";

@@ -72,8 +72,8 @@ namespace MiniZinc {
       double dObjVarLB=-1e300, dObjVarUB=1e300;
     public:
 
-      MIP_solverinstance(Env& env, const typename MIPWrapper::Options& opt, std::ostream& log) :
-        SolverInstanceImpl(env,log),
+      MIP_solverinstance(Env& env, std::ostream& log, typename MIPWrapper::Options* opt) :
+        SolverInstanceImpl(env,log,opt),
         mip_wrap(new MIPWrapper(opt))
       {
         assert(mip_wrap.get()); 
@@ -110,17 +110,18 @@ namespace MiniZinc {
 
   template<class MIPWrapper>
   class MIP_SolverFactory: public SolverFactory {
-  protected:
-    typename MIPWrapper::Options opt;
   public:
     MIP_SolverFactory(void);
-    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log)   { return new MIP_solverinstance<MIPWrapper>(env,opt,log); }
-    bool processOption(int& i, int argc, const char** argv)
-      { return opt.processOption(i, argc, argv); }
+    SolverInstanceBase::Options* createOptions(void) { return new typename MIPWrapper::Options; }
+    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt)   {
+      return new MIP_solverinstance<MIPWrapper>(env,log,static_cast<typename MIPWrapper::Options*>(opt));
+    }
+    bool processOption(SolverInstanceBase::Options* opt, int& i, int argc, const char** argv)
+    { return static_cast<typename MIPWrapper::Options&>(*opt).processOption(i, argc, argv); }
     std::string getDescription( );
     std::string getVersion( );
     std::string getId( );
-    void printHelp(std::ostream& os) { opt.printHelp(os); }
+    void printHelp(std::ostream& os) { MIPWrapper::Options::printHelp(os); }
   };
 
 }

@@ -20,6 +20,10 @@
 #include <minizinc/pathfileprinter.hh>
 #include <fstream>
 
+#ifdef HAS_GECODE
+#include <minizinc/solvers/gecode_solverinstance.hh>
+#endif
+
 using namespace std;
 using namespace MiniZinc;
 
@@ -527,13 +531,13 @@ void Flattener::flatten(const std::string& modelString)
           fopts.verbose = flag_verbose;
           fopts.outputMode = flag_output_mode;
 #ifdef HAS_GECODE
-          Options gopts;
-          gopts.setBoolParam(std::string("only-range-domains"), flag_only_range_domains);
-          gopts.setBoolParam(std::string("sac"),       flag_sac);
-          gopts.setBoolParam(std::string("allow_unbounded_vars"), flag_allow_unbounded_vars);
-          gopts.setBoolParam(std::string("shave"),     flag_shave);
-          gopts.setBoolParam(std::string("print_stats"),     flag_statistics);
-          gopts.setIntParam(std::string("pre_passes"), flag_pre_passes);
+          GecodeOptions gopts;
+          gopts.only_range_domains = flag_only_range_domains;
+          gopts.sac = flag_sac;
+          gopts.allow_unbounded_vars = flag_allow_unbounded_vars;
+          gopts.shave = flag_shave;
+          gopts.printStatistics =  flag_statistics;
+          gopts.pre_passes = flag_pre_passes;
 #endif
           FlatteningOptions pass_opts = fopts;
           CompilePassFlags cfs;
@@ -555,7 +559,7 @@ void Flattener::flatten(const std::string& modelString)
                                                         library, includePaths,  true));
 #ifdef HAS_GECODE
             if(flag_gecode)
-              managed_passes.emplace_back(new GecodePass(gopts));
+              managed_passes.emplace_back(new GecodePass(&gopts));
 #endif
           }
           managed_passes.emplace_back(new CompilePass(env, fopts, cfs,

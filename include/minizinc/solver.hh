@@ -48,8 +48,7 @@ namespace MiniZinc {
   class SolverFactory {
   protected:
     /// doCreateSI should be implemented to actually allocate a SolverInstance using new()
-    virtual SolverInstanceBase * doCreateSI(Env&, std::ostream&) = 0;
-    
+    virtual SolverInstanceBase * doCreateSI(Env&, std::ostream&, SolverInstanceBase::Options* opt) = 0;
     typedef std::vector<std::unique_ptr<SolverInstanceBase> > SIStorage;
     SIStorage sistorage;
   protected:
@@ -58,8 +57,10 @@ namespace MiniZinc {
     virtual ~SolverFactory()   { getGlobalSolverRegistry()->removeSolverFactory(this); }
     
   public:
+    /// Create solver-specific options object
+    virtual SolverInstanceBase::Options* createOptions(void) = 0;
     /// Function createSI also adds each SI to the local storage
-    SolverInstanceBase * createSI(Env& env, std::ostream& log);
+    SolverInstanceBase * createSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
     /// also providing a manual destroy function.
     /// there is no need to call it upon overall finish - that is taken care of
     void destroySI(SolverInstanceBase * pSI);
@@ -69,7 +70,7 @@ namespace MiniZinc {
     /// Leaving this now like this because this seems simpler.
     /// We can also pass options internally between modules in this way
     /// and it only needs 1 format
-    virtual bool processOption(int& i, int argc, const char** argv) { return false; }
+    virtual bool processOption(SolverInstanceBase::Options* opt, int& i, int argc, const char** argv) { return false; }
 
     virtual std::string getDescription(void) = 0;
     virtual std::string getVersion(void) = 0;
@@ -82,6 +83,7 @@ namespace MiniZinc {
   private:
     Flattener flt;
     SolverInstanceBase* si=0;
+    SolverInstanceBase::Options* si_opt=0;
     SolverFactory* sf=0;
     bool is_mzn2fzn=0;
 
@@ -98,11 +100,7 @@ namespace MiniZinc {
     /// global options
     bool flag_verbose=0;
     bool flag_statistics=0;
-    
-    /// solver options, not used    TODO
-    Options options_solver;          // currently can create solver object only after flattening
-                                     // so unflexible with solver cmdline options  TODO
-    
+        
   public:
     MznSolver(std::ostream& os = std::cout, std::ostream& log = std::cerr);
     ~MznSolver();

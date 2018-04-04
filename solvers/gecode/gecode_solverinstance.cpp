@@ -22,7 +22,7 @@ using namespace std;
 using namespace Gecode;
 
 namespace MiniZinc {
-
+  
   Gecode_SolverFactory::Gecode_SolverFactory(void) {
     SolverConfig sc("org.minizinc.gecode", "", "-Ggecode",
                     GECODE_VERSION, "MiniZinc Gecode solver plugin", "",
@@ -30,8 +30,12 @@ namespace MiniZinc {
     SolverConfigs::registerBuiltinSolver(sc);
   }
   
-  SolverInstanceBase* Gecode_SolverFactory::doCreateSI(Env& env, std::ostream& log) {
-    return new GecodeSolverInstance(env, log, _options);
+  SolverInstanceBase::Options* Gecode_SolverFactory::createOptions(void) {
+    return new GecodeOptions;
+  }
+  
+  SolverInstanceBase* Gecode_SolverFactory::doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt) {
+    return new GecodeSolverInstance(env, log, opt);
   }
 
   string Gecode_SolverFactory::getDescription()
@@ -45,43 +49,44 @@ namespace MiniZinc {
     return string(GECODE_VERSION);
   }
 
-  bool Gecode_SolverFactory::processOption(int& i, int argc, const char** argv)
+  bool Gecode_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i, int argc, const char** argv)
   {
+    GecodeOptions& _opt = static_cast<GecodeOptions&>(*opt);
     if (string(argv[i])=="--allow-unbounded-vars") {
-      _options.setBoolParam(std::string("allow_unbounded_vars"), true);
+      _opt.allow_unbounded_vars=true;
     } else if (string(argv[i])=="--only-range-domains") {
-      _options.setBoolParam(std::string("only-range-domains"), true);
+      _opt.only_range_domains=true;
     } else if (string(argv[i])=="--sac") {
-      _options.setBoolParam(std::string("sac"), true);
+      _opt.sac = true;
     } else if (string(argv[i])=="--shave") {
-      _options.setBoolParam(std::string("shave"), true);
+      _opt.shave = true;
     } else if (string(argv[i])=="--pre-passes") {
       if (++i==argc) return false;
       int passes = atoi(argv[i]);
       if(passes >= 0)
-        _options.setIntParam(std::string("pre_passes"), passes);
+        _opt.pre_passes = passes;
     } else if (string(argv[i])=="-a") {
-      _options.setBoolParam(std::string("all_solutions"), true);
+      _opt.all_solutions = true;
     } else if (string(argv[i])=="-n") {
       if (++i==argc) return false;
       int n = atoi(argv[i]);
       if(n >= 0)
-        _options.setIntParam(std::string("n_solutions"), n);
+        _opt.n_solutions = n;
     } else if (string(argv[i])=="--node") {
       if (++i==argc) return false;
       int nodes = atoi(argv[i]);
       if(nodes >= 0)
-        _options.setIntParam(std::string("nodes"), nodes);
+        _opt.nodes = nodes;
     } else if (string(argv[i])=="--fail") {
       if (++i==argc) return false;
       int fails = atoi(argv[i]);
       if(fails >= 0)
-        _options.setIntParam(std::string("fails"), fails);
+        _opt.fails = fails;
     } else if (string(argv[i])=="--time") {
       if (++i==argc) return false;
       int time = atoi(argv[i]);
       if(time >= 0)
-        _options.setIntParam(std::string("time"), time);
+        _opt.time = time;
     } else {
       return false;
     }
@@ -134,8 +139,8 @@ namespace MiniZinc {
     virtual Gecode::Search::Statistics statistics(void) { return e.statistics(); }
   };
 
-     GecodeSolverInstance::GecodeSolverInstance(Env& env, std::ostream& log, const Options& options)
-       : SolverInstanceImpl<GecodeSolver>(env,log,options), _n_found_solutions(0),
+    GecodeSolverInstance::GecodeSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt)
+       : SolverInstanceImpl<GecodeSolver>(env,log,opt), _n_found_solutions(0),
        _current_space(NULL),
        _solution(NULL), engine(NULL) {
        registerConstraints();
@@ -369,14 +374,15 @@ namespace MiniZinc {
   }
 
   void GecodeSolverInstance::processFlatZinc(void) {
-    _only_range_domains = _options.getBoolParam(std::string("only-range-domains"), false);
-    _run_sac = _options.getBoolParam(std::string("sac"), false);
-    _run_shave = _options.getBoolParam(std::string("shave"), false);
-    _pre_passes = _options.getIntParam(std::string("pre_passes"), 1);
-    _print_stats = _options.getBoolParam(std::string("statistics"), false);
-    _all_solutions = _options.getBoolParam(std::string("all_solutions"), false);
-    _n_max_solutions = _options.getIntParam(std::string("n_solutions"), 1);
-    _allow_unbounded_vars = _options.getBoolParam(std::string("allow_unbounded_vars"), false);
+    GecodeOptions& _opt = static_cast<GecodeOptions&>(*_options);
+    _only_range_domains = _opt.only_range_domains;
+    _run_sac = _opt.sac;
+    _run_shave = _opt.shave;
+    _pre_passes = _opt.pre_passes;
+    _print_stats = _opt.statistics;
+    _all_solutions = _opt.all_solutions;
+    _n_max_solutions = _opt.n_solutions;
+    _allow_unbounded_vars = _opt.allow_unbounded_vars;
     _current_space = new FznSpace();
 
     // iterate over VarDecls of the flat model and create variables
@@ -1007,6 +1013,7 @@ namespace MiniZinc {
   void
   GecodeSolverInstance::prepareEngine(void) {
     GCLock lock;
+    GecodeOptions& _opt = static_cast<GecodeOptions&>(*_options);
     if (engine==NULL) {
       // TODO: check what we need to do options-wise
       std::vector<Expression*> branch_vars;
@@ -1042,17 +1049,17 @@ namespace MiniZinc {
           assert(false);
       }
 
-      int seed = _options.getIntParam("seed", 1);
-      double decay = _options.getFloatParam("decay", 0.5);
+      int seed = _opt.seed;
+      double decay = _opt.decay;
       
       createBranchers(_flat->solveItem()->ann(), optSearch,
                       seed, decay,
                       false, /* ignoreUnknown */
                       std::cerr);
       
-      int nodeStop = _options.getIntParam("nodes", 0);
-      int failStop = _options.getIntParam("fails", 0);
-      int timeStop = _options.getIntParam("time", 0);
+      int nodeStop = _opt.nodes;
+      int failStop = _opt.fails;
+      int timeStop = _opt.time;
 
       engine_options.stop = Driver::CombinedStop::create(nodeStop,
                                             failStop,

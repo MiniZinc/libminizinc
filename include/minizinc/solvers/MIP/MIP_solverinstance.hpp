@@ -186,8 +186,6 @@ namespace MiniZinc {
   template<class MIPWrapper>
   void
   MIP_solverinstance<MIPWrapper>::processFlatZinc(void) {
-    /// last-minute solver params
-    mip_wrap->fVerbose = (getOptions().getBoolParam(constants().opts.verbose.str(), false));
     
     SolveI* solveItem = getEnv()->flat()->solveItem();
     VarDecl* objVd = NULL;

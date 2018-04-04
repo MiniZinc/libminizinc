@@ -646,7 +646,7 @@ MIP_osicbc_wrapper::Status MIP_osicbc_wrapper::convertStatus()
 
 
 void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
-  if ( options.flag_all_solutions && 0==nProbType )
+  if ( options->flag_all_solutions && 0==nProbType )
     cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
   try {
     /// Not using CoinPackedMatrix any more, so need to add all constraints at once:
@@ -683,13 +683,13 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
       }
       osi.setInteger(integer_vars.data(), integer_vars.size());
     }
-    if(options.sExportModel.size()) {
+    if(options->sExportModel.size()) {
       // Not implemented for OsiClp:
 //       osi.setColNames(colNames, 0, colObj.size(), 0);
       vector<const char*> colN(colObj.size());
       for (int j=0; j<colNames.size(); ++j)
         colN[j] = colNames[j].c_str();
-      osi.writeMpsNative(options.sExportModel.c_str(), 0, colN.data());
+      osi.writeMpsNative(options->sExportModel.c_str(), 0, colN.data());
     }
     
     // Tell solver to return fast if presolve or initial solve infeasible
@@ -725,12 +725,12 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 #endif
 //     CbcSolver control(osi);
 //     control.solve();
-    if ( options.absGap>=0.0 )
-      model.setAllowableGap( options.absGap );
-    if ( options.relGap>=0.0 )
-      model.setAllowableFractionGap( options.relGap );
-    if ( options.intTol>=0.0 )
-      model.setIntegerTolerance( options.intTol );
+    if ( options->absGap>=0.0 )
+      model.setAllowableGap( options->absGap );
+    if ( options->relGap>=0.0 )
+      model.setAllowableFractionGap( options->relGap );
+    if ( options->intTol>=0.0 )
+      model.setIntegerTolerance( options->intTol );
 //     model.setCutoffIncrement( objDiff );
     
     CoinMessageHandler msgStderr(stderr);
@@ -764,9 +764,9 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //       osi.setHintParam(OsiDoReducePrint, true, OsiHintTry);
     }
 
-    if(options.nTimeout > 0.0) {
+    if(options->nTimeout > 0.0) {
 //       osi.setMaximumSeconds(nTimeout);
-      model.setMaximumSeconds(options.nTimeout);
+      model.setMaximumSeconds(options->nTimeout);
     }
 
    /// TODO
@@ -782,7 +782,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //    output.x = &x[0];
 
 #ifdef WANT_SOLUTION
-   if (options.flag_all_solutions && cbui.solcbfn) {
+   if (options->flag_all_solutions && cbui.solcbfn) {
      // Event handler. Should be after CbcMain0()?
      EventUserInfo ui;
      ui.pCbui = &cbui;
@@ -792,14 +792,14 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
    }
 #endif
 
-   if ( 1<options.nThreads ) {
-    options.cbc_cmdOptions += " -threads ";
+   if ( 1<options->nThreads ) {
+    options->cbc_cmdOptions += " -threads ";
     ostringstream oss;
-    oss << options.nThreads;
-    options.cbc_cmdOptions += oss.str();
+    oss << options->nThreads;
+    options->cbc_cmdOptions += oss.str();
    }
-   options.cbc_cmdOptions += " -solve";
-   options.cbc_cmdOptions += " -quit";
+   options->cbc_cmdOptions += " -solve";
+   options->cbc_cmdOptions += " -quit";
 
    output.dCPUTime = clock();
 
@@ -814,14 +814,14 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //        CbcMain1(3,argv2,model);
 #ifdef __USE_CbcSolver__
   if (fVerbose)
-    cerr << "  Calling control.solve() with options '" << options.cbc_cmdOptions << "'..." << endl;
-  control.solve (options.cbc_cmdOptions.c_str(), 1);
+    cerr << "  Calling control.solve() with options '" << options->cbc_cmdOptions << "'..." << endl;
+  control.solve (options->cbc_cmdOptions.c_str(), 1);
 #else
 #define __USE_callCbc1__
 #ifdef __USE_callCbc1__
     if (fVerbose)
-      cerr << "  Calling callCbc with options '" << options.cbc_cmdOptions << "'..." << endl;
-    callCbc(options.cbc_cmdOptions, model);
+      cerr << "  Calling callCbc with options '" << options->cbc_cmdOptions << "'..." << endl;
+    callCbc(options->cbc_cmdOptions, model);
 //     callCbc1(cbc_cmdOptions, model, callBack);
     // What is callBack() for?    TODO
 #else

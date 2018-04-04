@@ -18,15 +18,25 @@
 
 namespace MiniZinc {
 
+  class FZNSolverOptions : public SolverInstanceBase::Options {
+  public:
+    std::string fzn_solver;
+    std::string backend;
+    std::string fzn_flags;
+    std::string fzn_flag;
+    int numSols = 1;
+    bool allSols = false;
+    std::string parallel;
+  };
+
   class FZNSolverInstance : public SolverInstanceBase {
     private:
       std::string _fzn_solver;
-
     protected:
       Model* _fzn;
       Model* _ozn;
     public:
-      FZNSolverInstance(Env& env, std::ostream& log, const Options& options);
+      FZNSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
 
       ~FZNSolverInstance(void);
 
@@ -43,16 +53,15 @@ namespace MiniZinc {
   };
 
   class FZN_SolverFactory: public SolverFactory {
-    Options _options;
+  protected:
+    virtual SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
   public:
-    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log) {
-      return new FZNSolverInstance(env, log, _options);
-    }
-    std::string getDescription(void);
-    std::string getVersion(void);
-    std::string getId(void);
-    bool processOption(int& i, int argc, const char** argv);
-    void printHelp(std::ostream& os);
+    virtual SolverInstanceBase::Options* createOptions(void);
+    virtual std::string getDescription(void);
+    virtual std::string getVersion(void);
+    virtual std::string getId(void);
+    virtual bool processOption(SolverInstanceBase::Options* opt, int& i, int argc, const char** argv);
+    virtual void printHelp(std::ostream& os);
   };
 
 }
