@@ -25,6 +25,7 @@
 
 #include <minizinc/config.hh>
 #include <minizinc/exception.hh>
+#include <minizinc/file_utils.hh>
 
 #ifdef HAS_GUROBI_PLUGIN
 #ifdef HAS_DLFCN_H
@@ -107,7 +108,7 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
   << "  --intTol <n>\n    integrality tolerance for a variable. Default 1e-6" << std::endl
 //   << "  --objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
-  << "\n  --dll <basename>\n    Gurobi DLL base name, such as gurobi75, when using plugin. Default range tried: "
+  << "\n  --gurobi-dll <file> or <basename>\n    Gurobi DLL, or base name, such as gurobi75, when using plugin. Default range tried: "
        << gurobiDLLs().front() << " .. " << gurobiDLLs().back() << std::endl
   << std::endl;
 }
@@ -138,7 +139,7 @@ bool MIP_gurobi_wrapper::Options::processOption(int& i, int argc, const char** a
   } else if ( cop.get( "--absGap", &absGap ) ) {
   } else if ( cop.get( "--relGap", &relGap ) ) {
   } else if ( cop.get( "--intTol", &intTol ) ) {
-  } else if ( cop.get( "--dll", &sGurobiDLL ) ) {
+  } else if ( cop.get( "--gurobi-dll", &sGurobiDLL ) ) {
 //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
   } else
     return false;
@@ -166,9 +167,17 @@ void MIP_gurobi_wrapper::wrap_assert(bool cond, string msg, bool fTerm)
 namespace {
   void* dll_open(const char* file) {
 #ifdef HAS_DLFCN_H
-    return dlopen( (std::string("lib")+file+".so").c_str(), RTLD_NOW);
+    if (MiniZinc::FileUtils::is_absolute(file)) {
+      return dlopen( file.c_str(), RTLD_NOW);
+    } else {
+      return dlopen( (std::string("lib")+file+".so").c_str(), RTLD_NOW);
+    }
 #else
-    return LoadLibrary((std::string(file)+".dll").c_str());
+    if (MiniZinc::FileUtils::is_absolute(file)) {
+      return LoadLibrary(file.c_str());
+    } else {
+      return LoadLibrary((file+".dll").c_str());
+    }
 #endif
   }
   void* dll_sym(void* dll, const char* sym) {
@@ -208,7 +217,11 @@ void MIP_gurobi_wrapper::checkDLL()
   }
 
   if (gurobi_dll==NULL) {
-    throw MiniZinc::InternalError("cannot load gurobi dll, specify --dll");
+    if (options.sGurobiDLL.empty()) {
+      throw MiniZinc::InternalError("cannot load gurobi dll, specify --gurobi-dll");
+    } else {
+      throw MiniZinc::InternalError("cannot load gurobi dll `"+options.sGurobiDLL+"'");
+    }
   }
 
   *(void**)(&dll_GRBversion) = dll_sym(gurobi_dll, "GRBversion");
