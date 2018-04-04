@@ -38,6 +38,18 @@ namespace MiniZinc {
     std::string _contact;
     /// URL for more information
     std::string _website;
+    /// Whether solver supports MiniZinc input
+    bool _supportsMzn=false;
+    /// Whether solver supports FlatZinc input
+    bool _supportsFzn=true;
+    /// Whether solver requires solutions2out processing
+    bool _needsSolns2Out=true;
+    /// Supported standard command line flags
+    std::vector<std::string> _stdFlags;
+    /// Supported extra command line flags (flag and description)
+    std::vector<std::pair<std::string,std::string> > _extraFlags;
+    /// Tags
+    std::vector<std::string> _tags;
   public:
     /// Load solver configuration from \a filename
     static SolverConfig load(std::string filename);
@@ -45,10 +57,17 @@ namespace MiniZinc {
     SolverConfig() {}
     /// Constructor
     SolverConfig(const std::string& id, const std::string& executable, const std::string& mznlib,
-                 const std::string& version, const std::string& description, const std::string& contact,
-                 const std::string& website)
+                 const std::string& version,
+                 bool mzn, bool fzn, bool s2o,
+                 const std::string& description, const std::string& contact,
+                 const std::string& website,
+                 const std::vector<std::string>& stdFlags = std::vector<std::string>(),
+                 const std::vector<std::pair<std::string,std::string> > extraFlags = std::vector<std::pair<std::string,std::string> >(),
+                 const std::vector<std::string>& tags = std::vector<std::string>())
     : _id(id), _executable(executable), _mznlib(mznlib), _version(version),
-      _description(description), _contact(contact), _website(website) {}
+      _description(description), _contact(contact), _website(website),
+      _supportsMzn(mzn), _supportsFzn(fzn), _needsSolns2Out(s2o),
+      _stdFlags(stdFlags), _extraFlags(extraFlags), _tags(tags) {}
     /// Return identifier
     std::string id(void) const { return _id; }
     /// Return executable path
@@ -57,12 +76,22 @@ namespace MiniZinc {
     std::string mznlib(void) const { return _mznlib; }
     /// Return version string
     std::string version(void) const { return _version; }
+    /// Whether solver supports MiniZinc input
+    bool supportsMzn(void) const { return _supportsMzn; }
+    /// Whether solver supports FlatZinc input
+    bool supportsFzn(void) const { return _supportsFzn; }
+    /// Whether solver requires solutions2out processing
+    bool needsSolns2Out(void) const { return _needsSolns2Out; }
     /// Return short description
     std::string description(void) const { return _description; }
     /// Return contact email
     std::string contact(void) const { return _contact; }
     /// Return web site URL
     std::string website(void) const { return _website; }
+    /// Return supported standard command line flags
+    const std::vector<std::string>& stdFlags(void) const { return _stdFlags; }
+    /// Return supported extra command line flags
+    const std::vector<std::pair<std::string,std::string> >& extraFlags(void) const { return _extraFlags; }
     /// Test equality
     bool operator==(const SolverConfig& sc) const {
       return _id==sc.id() && _version==sc.version();

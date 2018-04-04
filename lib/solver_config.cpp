@@ -27,6 +27,26 @@ namespace MiniZinc {
       }
       throw ConfigException("invalid configuration item (right hand side must be string)");
     }
+    bool getBool(AssignI* ai) {
+      if (BoolLit* bl = ai->e()->dyn_cast<BoolLit>()) {
+        return bl->v();
+      }
+      throw ConfigException("invalid configuration item (right hand side must be bool)");
+    }
+    std::vector<std::string> getStringList(AssignI* ai) {
+      if (ArrayLit* al = ai->e()->dyn_cast<ArrayLit>()) {
+        std::vector<std::string> ret;
+        for (unsigned int i=0; i<al->size(); i++) {
+          if (StringLit* sl = (*al)[i]->dyn_cast<StringLit>()) {
+            ret.push_back(sl->v().str());
+          } else {
+            throw ConfigException("invalid configuration item (right hand side must be a list of strings)");
+          }
+        }
+        return ret;
+      }
+      throw ConfigException("invalid configuration item (right hand side must be a list of strings)");
+    }
   }
   
   SolverConfig SolverConfig::load(string filename) {
@@ -78,6 +98,14 @@ namespace MiniZinc {
               sc._contact = getString(ai);
             } else if (ai->id()=="website") {
               sc._website = getString(ai);
+            } else if (ai->id()=="supportsMzn") {
+              sc._supportsMzn = getBool(ai);
+            } else if (ai->id()=="supportsFzn") {
+              sc._supportsFzn = getBool(ai);
+            } else if (ai->id()=="needsSolns2Out") {
+              sc._needsSolns2Out = getBool(ai);
+            } else if (ai->id()=="tags") {
+              sc._tags = getStringList(ai);
             } else {
               throw ConfigException("invalid configuration item");
             }
