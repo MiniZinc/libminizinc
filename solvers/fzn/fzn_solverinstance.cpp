@@ -78,6 +78,8 @@ namespace MiniZinc {
     << "  --fzn-flags <options>, --flatzinc-flags <options>\n     Specify option to be passed to the FlatZinc interpreter.\n"
     << "  --fzn-flag <option>, --flatzinc-flag <option>\n     As above, but for a single option string that need to be quoted in a shell.\n"
     << "  -n <n>, --num-solutions <n>\n     An upper bound on the number of solutions to output. The default should be 1.\n"
+    << "  --fzn-time-limit <ms>\n     Set a hard timelimit that overrides those set for the solver using --fzn-flag(s).\n"
+    << "  --fzn-sigterm\n     Send SIGTERM instead of SIGKILL.\n"
     << "  -a, --all, --all-solns, --all-solutions\n     Print all solutions.\n"
     << "  -p <n>, --parallel <n>\n     Use <n> threads during search. The default is solver-dependent.\n"
     << "  -k, --keep-files\n     For compatibility only: to produce .ozn and .fzn, use mzn2fzn\n"
@@ -102,6 +104,8 @@ namespace MiniZinc {
       old += ' ';
       old += buffer;
       _options.setStringParam(constants().opts.solver.fzn_flags.str(), old);
+    } else if ( cop.getOption( "--fzn-time-limit", &nn) ) {
+      _options.setIntParam(constants().opts.solver.fzn_time_limit_ms.str(), nn);
     } else if ( cop.getOption( "--fzn-flag --flatzinc-flag", &buffer) ) {
       string old = _options.getStringParam(constants().opts.solver.fzn_flag.str(), "");
       old += " \"";
@@ -156,14 +160,17 @@ namespace MiniZinc {
       bool _canPipe;
       Model* _flat=0;
       Solns2Out* pS2Out=0;
+      int timelimit = 1000000;
+      bool sigterm = false;
     public:
-      FznProcess(vector<string>& fzncmd, bool pipe, Model* flat, Solns2Out* pso)
-        : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat), pS2Out(pso) {
+      FznProcess(vector<string>& fzncmd, bool pipe, Model* flat, Solns2Out* pso, int tl, bool st)
+        : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat), pS2Out(pso), timelimit(tl), sigterm(st) {
         assert( 0!=_flat );
         assert( 0!=pS2Out );
       }
       std::string run(void) {
 #ifdef _WIN32
+        //TODO: implement hard timelimits for windows
         std::stringstream result;
 
         SECURITY_ATTRIBUTES saAttr;
@@ -348,16 +355,44 @@ namespace MiniZinc {
           fd_set fdset;
           FD_ZERO(&fdset);
 
+          struct timeval starttime;
+          gettimeofday(&starttime, NULL);
+
+          struct timeval timeout;
+          timeout.tv_sec = timelimit / 1000;
+          timeout.tv_usec = (timelimit % 1000) * 1000;
+
           bool done = false;
           while (!done) {
             FD_SET(pipes[1][0], &fdset);
             FD_SET(pipes[2][0], &fdset);
-            if ( 0>=select(FD_SETSIZE, &fdset, NULL, NULL, NULL) )
+            if ( 0>=select(FD_SETSIZE, &fdset, NULL, NULL, &timeout) )
             {
               kill(childPID, SIGKILL);
               pS2Out->feedRawDataChunk( "\n" );   // in case last chunk did not end with \n
               done = true;
             } else {
+              timeval currentTime, elapsed;
+              gettimeofday(&currentTime, NULL);
+              elapsed.tv_sec = currentTime.tv_sec - starttime.tv_sec;
+              elapsed.tv_usec = currentTime.tv_usec - starttime.tv_usec;
+              if(elapsed.tv_usec < 0) {
+                elapsed.tv_sec--;
+                elapsed.tv_usec += 1000000;
+              }
+              timeout.tv_sec = timeout.tv_sec - elapsed.tv_sec;
+              if(elapsed.tv_usec > 0)
+                timeout.tv_sec--;
+              timeout.tv_usec = 1000000 - elapsed.tv_usec;
+              if(timeout.tv_sec <= 0 && timeout.tv_usec <= 0) {
+                if(sigterm)
+                  kill(childPID, SIGTERM);
+                else
+                  kill(childPID, SIGKILL);
+                pS2Out->feedRawDataChunk( "\n" );   // in case last chunk did not end with \n
+                done = true;
+              }
+
               for ( int i=1; i<=2; ++i )
                 if ( FD_ISSET( pipes[i][0], &fdset ) )
                 {
@@ -516,8 +551,10 @@ namespace MiniZinc {
         cerr << "" << cmd_line[i] << " ";
       cerr << std::endl;
     }
+    int timelimit = _options.getIntParam(constants().opts.solver.fzn_time_limit_ms.str(), INT_MAX);
+    bool sigterm = _options.getBoolParam(constants().opts.solver.fzn_sigterm.str(), false);
     
-    FznProcess proc(cmd_line, false, _fzn, getSolns2Out());
+    FznProcess proc(cmd_line, false, _fzn, getSolns2Out(), timelimit, sigterm);
     proc.run();
 
 //     std::stringstream result;
