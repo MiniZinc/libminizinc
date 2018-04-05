@@ -81,14 +81,14 @@ namespace MiniZinc {
   // Class MznSolver coordinates flattening and solving.
   class MznSolver {
   private:
+    /// Solver configurations
+    SolverConfigs solver_configs;
     Flattener flt;
     SolverInstanceBase* si=0;
     SolverInstanceBase::Options* si_opt=0;
     SolverFactory* sf=0;
     bool is_mzn2fzn=0;
 
-    /// Solver configurations
-    SolverConfigs solver_configs;
 
     std::string executable_name;
     std::ostream& os;

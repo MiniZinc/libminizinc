@@ -24,14 +24,18 @@ namespace MiniZinc {
    */
   class SolverConfig {
   protected:
-    /// The short name by which the solver can be identified
+    /// The unique identifier for the solver
     std::string _id;
+    /// Name of the solver (used for output)
+    std::string _name;
     /// The path to the executable
     std::string _executable;
     /// The path to the solver's MiniZinc library
     std::string _mznlib;
     /// Version string
     std::string _version;
+    /// MiniZinc library version
+    int _mznlibVersion=1;
     /// Short description
     std::string _description;
     /// Contact email
@@ -56,7 +60,7 @@ namespace MiniZinc {
     /// Default constructor
     SolverConfig() {}
     /// Constructor
-    SolverConfig(const std::string& id, const std::string& executable, const std::string& mznlib,
+    SolverConfig(const std::string& id, const std::string& name, const std::string& executable, const std::string& mznlib, int mznlibVersion,
                  const std::string& version,
                  bool mzn, bool fzn, bool s2o,
                  const std::string& description, const std::string& contact,
@@ -64,18 +68,22 @@ namespace MiniZinc {
                  const std::vector<std::string>& stdFlags = std::vector<std::string>(),
                  const std::vector<std::pair<std::string,std::string> > extraFlags = std::vector<std::pair<std::string,std::string> >(),
                  const std::vector<std::string>& tags = std::vector<std::string>())
-    : _id(id), _executable(executable), _mznlib(mznlib), _version(version),
+    : _id(id), _name(name), _executable(executable), _mznlib(mznlib), _version(version), _mznlibVersion(mznlibVersion),
       _description(description), _contact(contact), _website(website),
       _supportsMzn(mzn), _supportsFzn(fzn), _needsSolns2Out(s2o),
       _stdFlags(stdFlags), _extraFlags(extraFlags), _tags(tags) {}
     /// Return identifier
     std::string id(void) const { return _id; }
+    /// Return name
+    std::string name(void) const { return _name; }
     /// Return executable path
     std::string executable(void) const { return _executable; }
     /// Return MiniZinc library path
     std::string mznlib(void) const { return _mznlib; }
     /// Return version string
     std::string version(void) const { return _version; }
+    /// Return required MiniZinc library version
+    int mznlibVersion(void) const { return _mznlibVersion; }
     /// Whether solver supports MiniZinc input
     bool supportsMzn(void) const { return _supportsMzn; }
     /// Whether solver supports FlatZinc input
@@ -92,6 +100,8 @@ namespace MiniZinc {
     const std::vector<std::string>& stdFlags(void) const { return _stdFlags; }
     /// Return supported extra command line flags
     const std::vector<std::pair<std::string,std::string> >& extraFlags(void) const { return _extraFlags; }
+    /// Return tags
+    const std::vector<std::string>& tags(void) const { return _tags; }
     /// Test equality
     bool operator==(const SolverConfig& sc) const {
       return _id==sc.id() && _version==sc.version();
@@ -101,9 +111,20 @@ namespace MiniZinc {
   /// A container for solver configurations
   class SolverConfigs {
   protected:
-    typedef UNORDERED_NAMESPACE::unordered_map<std::string,std::vector<SolverConfig> > SolverMap;
-    /// The solvers (mapping id to configuration)
-    SolverMap _solvers;
+    /// The solvers
+    std::vector<SolverConfig> _solvers;
+    typedef UNORDERED_NAMESPACE::unordered_map<std::string,std::vector<int> > TagMap;
+    /// Mapping tags to vectors of solvers (indexed into _solvers)
+    TagMap _tags;
+    /// The default solver
+    std::string _defaultSolver;
+    /// The MiniZinc library directory
+    std::string _mznlibDir;
+    typedef UNORDERED_NAMESPACE::unordered_map<std::string,std::string> TagDefaultMap;
+    /// Mapping from tag to default solver for that tag
+    TagDefaultMap _tagDefault;
+    /// Add new solver configuration \a sc
+    void addConfig(const SolverConfig& sc);
   public:
     /** \brief Constructor loading configurations from \a solverpath
      *
@@ -111,9 +132,32 @@ namespace MiniZinc {
      * uses platform specific separators (: on Unix-like systems, ; on Windows).
      */
     SolverConfigs(const std::string& solverpath);
-    const SolverConfig& config(std::string solver_id, std::string version=std::string()) const;
+    /// Return configuration for solver \a s
+    /// The string can be a comma separated list of tags, in which case a
+    /// solver that matches all tags will be returned. The tag can also be
+    /// a solver id. A concrete version can be requested using @<version>.
+    /// Examples:
+    ///   config("gecode@6.1.0") would request a gecode solver of version 6.1.0
+    ///   config("mip,internal") would request a MIP solver that uses the internal API
+    ///   config("org.minizinc.mip.osicbc@2.9/1.16 would request a specific version of OSICBC
+    const SolverConfig& config(const std::string& s) const;
+    /// Return list of all solver ids
     std::vector<std::string> solvers(void) const;
+    /// Return JSON list of all solver configurations
+    std::string solverConfigsJSON(void) const;
+    /// Add a built-in solver
     static void registerBuiltinSolver(const SolverConfig& sc);
+    
+    /// Default solver
+    const std::string& defaultSolver(void) const { return _defaultSolver; }
+    /// Default solver for tag \a t
+    const std::string& defaultSolver(const std::string& t) {
+      static std::string noDefault;
+      std::unordered_map<std::string, std::string>::const_iterator it = _tagDefault.find(t);
+      return it==_tagDefault.end() ? noDefault : it->second;
+    }
+    /// MiniZinc library directory
+    const std::string& mznlibDir(void) const { return _mznlibDir; }
   };
 
   /// An exception thrown when encountering an error in a solver configuration

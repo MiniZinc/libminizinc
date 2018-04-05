@@ -246,6 +246,10 @@ string MIP_cplex_wrapper::getId() {
   return "cplex";
 }
 
+string MIP_cplex_wrapper::getName() {
+  return "CPLEX";
+}
+
 void MIP_cplex_wrapper::Options::printHelp(ostream& os) {
   os
   << "IBM ILOG CPLEX  MIP wrapper options:" << std::endl

@@ -81,7 +81,7 @@ void SolverFactory::destroySI(SolverInstanceBase * pSI) {
 }
 
 MznSolver::MznSolver(std::ostream& os0, std::ostream& log0)
-  : flt(os0,log0), solver_configs(""), executable_name("<executable>"), os(os0), log(log0), s2out(os0,log0) {}
+  : solver_configs(""), flt(os0,log0,solver_configs.mznlibDir()), executable_name("<executable>"), os(os0), log(log0), s2out(os0,log0) {}
 
 MznSolver::~MznSolver()
 {
@@ -202,6 +202,10 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
       for (unsigned int i=0; i<solvers.size(); i++) {
         cout << "  " << solvers[i] << endl;
       }
+      std::exit(EXIT_SUCCESS);
+    }
+    if (string(argv[i])=="--solvers-json") {
+      cout << solver_configs.solverConfigsJSON();
       std::exit(EXIT_SUCCESS);
     }
     if (string(argv[i])=="--solver") {

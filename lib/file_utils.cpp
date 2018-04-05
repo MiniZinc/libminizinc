@@ -208,6 +208,9 @@ namespace MiniZinc { namespace FileUtils {
   }
 
   std::string share_directory(void) {
+    if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
+      return std::string(MZNSTDLIBDIR);
+    }
     std::string mypath = FileUtils::progpath();
     int depth = 0;
     for (unsigned int i=0; i<mypath.size(); i++)

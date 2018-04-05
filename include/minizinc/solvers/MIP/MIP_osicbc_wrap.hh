@@ -76,6 +76,7 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
     static std::string getDescription(void);
     static std::string getVersion(void);
     static std::string getId(void);
+    static std::string getName(void);
 
     bool processOption(int& i, int argc, const char** argv);
     void printVersion(std::ostream& );

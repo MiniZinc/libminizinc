@@ -283,13 +283,8 @@ error:
   return false;
 }
 
-Flattener::Flattener(std::ostream& os_, std::ostream& log_)
-  : os(os_), log(log_)
-{
-  if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
-    std_lib_dir = string(MZNSTDLIBDIR);
-  }
-}
+Flattener::Flattener(std::ostream& os_, std::ostream& log_, const std::string& stdlibDir)
+  : os(os_), log(log_), std_lib_dir(stdlibDir) {}
 
 Flattener::~Flattener()
 {
@@ -346,10 +341,6 @@ void Flattener::flatten(const std::string& modelString)
 
   if ( filenames.empty() && !flag_stdinInput && modelString.empty() ) {
     throw Error( "Error: no model file given." );
-  }
-
-  if (std_lib_dir=="") {
-    std_lib_dir = FileUtils::share_directory();
   }
 
   if (std_lib_dir=="") {

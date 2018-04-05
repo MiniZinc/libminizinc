@@ -74,6 +74,10 @@ string MIP_gurobi_wrapper::getId() {
   return "gurobi";
 }
 
+string MIP_gurobi_wrapper::getName() {
+  return "Gurobi";
+}
+
 const vector<string>& gurobiDLLs(void) {
   static const vector<string> sGurobiDLLs = { "gurobi75", "gurobi70", "gurobi65" };
   return sGurobiDLLs;
