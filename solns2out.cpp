@@ -29,6 +29,7 @@
 // #include <minizinc/timer.hh>
 
 #include <minizinc/solns2out.hh>
+#include <minizinc/solver_config.hh>
 
 using namespace MiniZinc;
 using namespace std;
@@ -39,6 +40,7 @@ namespace MiniZinc {
     const char** argv;
     string std_lib_dir;
     istream& solstream = cin;
+    SolverConfigs solver_configs;
   public:
     string filename;
     Solns2OutFull( const int ac, const char** av )
@@ -116,22 +118,8 @@ namespace MiniZinc {
       std::vector<string> filenames( 1, fileOzn );
       // If set before:
       
-      if (std_lib_dir.empty())
-        if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
-          std_lib_dir = string(MZNSTDLIBDIR);
-        }
-
       if (std_lib_dir.empty()) {
-        std::string mypath = FileUtils::progpath();
-        if (!mypath.empty()) {
-          if (FileUtils::file_exists(mypath+"/share/minizinc/std/builtins.mzn")) {
-            std_lib_dir = mypath+"/share/minizinc";
-          } else if (FileUtils::file_exists(mypath+"/../share/minizinc/std/builtins.mzn")) {
-            std_lib_dir = mypath+"/../share/minizinc";
-          } else if (FileUtils::file_exists(mypath+"/../../share/minizinc/std/builtins.mzn")) {
-            std_lib_dir = mypath+"/../../share/minizinc";
-          }
-        }
+        std_lib_dir = solver_configs.mznlibDir();
       }
 
       if (std_lib_dir.empty()) {

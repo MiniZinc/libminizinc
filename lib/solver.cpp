@@ -81,7 +81,7 @@ void SolverFactory::destroySI(SolverInstanceBase * pSI) {
 }
 
 MznSolver::MznSolver(std::ostream& os0, std::ostream& log0)
-  : solver_configs(""), flt(os0,log0,solver_configs.mznlibDir()), executable_name("<executable>"), os(os0), log(log0), s2out(os0,log0) {}
+  : flt(os0,log0,solver_configs.mznlibDir()), executable_name("<executable>"), os(os0), log(log0), s2out(os0,log0) {}
 
 MznSolver::~MznSolver()
 {
