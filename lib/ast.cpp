@@ -1471,7 +1471,7 @@ namespace MiniZinc {
     opts.solver.fzn_flags = ASTString("fzn_flags");
     opts.solver.fzn_flag = ASTString("fzn_flag");
     opts.solver.fzn_time_limit_ms = ASTString("fzn_time_limit_ms");
-    opts.solver.fzn_sigterm = ASTString("fzn_sigterm");
+    opts.solver.fzn_sigint = ASTString("fzn_sigint");
     
     cli_cat.general = ASTString("General Options");
     cli_cat.io = ASTString("Input/Output Options");
@@ -1672,7 +1672,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),opts.solver.fzn_flags));
     v.push_back(new StringLit(Location(),opts.solver.fzn_flag));
     v.push_back(new StringLit(Location(),opts.solver.fzn_time_limit_ms));
-    v.push_back(new StringLit(Location(),opts.solver.fzn_sigterm));
+    v.push_back(new StringLit(Location(),opts.solver.fzn_sigint));
     
     v.push_back(new StringLit(Location(),cli_cat.general));
     v.push_back(new StringLit(Location(),cli_cat.io));

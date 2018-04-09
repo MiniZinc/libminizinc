@@ -1809,7 +1809,7 @@ namespace MiniZinc {
           ASTString fzn_flags;
           ASTString fzn_flag;
           ASTString fzn_time_limit_ms;
-          ASTString fzn_sigterm;
+          ASTString fzn_sigint;
         } solver;
         
       } opts;

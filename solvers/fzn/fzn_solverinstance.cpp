@@ -79,7 +79,7 @@ namespace MiniZinc {
     << "  --fzn-flag <option>, --flatzinc-flag <option>\n     As above, but for a single option string that need to be quoted in a shell.\n"
     << "  -n <n>, --num-solutions <n>\n     An upper bound on the number of solutions to output. The default should be 1.\n"
     << "  --fzn-time-limit <ms>\n     Set a hard timelimit that overrides those set for the solver using --fzn-flag(s).\n"
-    << "  --fzn-sigterm\n     Send SIGTERM instead of SIGKILL.\n"
+    << "  --fzn-sigint\n     Send SIGINT instead of SIGTERM.\n"
     << "  -a, --all, --all-solns, --all-solutions\n     Print all solutions.\n"
     << "  -p <n>, --parallel <n>\n     Use <n> threads during search. The default is solver-dependent.\n"
     << "  -k, --keep-files\n     For compatibility only: to produce .ozn and .fzn, use mzn2fzn\n"
@@ -106,6 +106,8 @@ namespace MiniZinc {
       _options.setStringParam(constants().opts.solver.fzn_flags.str(), old);
     } else if ( cop.getOption( "--fzn-time-limit", &nn) ) {
       _options.setIntParam(constants().opts.solver.fzn_time_limit_ms.str(), nn);
+    } else if ( cop.getOption( "--fzn-sigint") ) {
+      _options.setBoolParam(constants().opts.solver.fzn_sigint.str(), true);
     } else if ( cop.getOption( "--fzn-flag --flatzinc-flag", &buffer) ) {
       string old = _options.getStringParam(constants().opts.solver.fzn_flag.str(), "");
       old += " \"";
@@ -161,10 +163,10 @@ namespace MiniZinc {
       Model* _flat;
       Solns2Out* pS2Out;
       int timelimit;
-      bool sigterm;
+      bool sigint;
     public:
-      FznProcess(vector<string>& fzncmd, bool pipe, Model* flat, Solns2Out* pso, int tl, bool st)
-        : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat), pS2Out(pso), timelimit(tl), sigterm(st) {
+      FznProcess(vector<string>& fzncmd, bool pipe, Model* flat, Solns2Out* pso, int tl, bool si)
+        : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat), pS2Out(pso), timelimit(tl), sigint(si) {
         assert( 0!=_flat );
         assert( 0!=pS2Out );
       }
@@ -367,15 +369,18 @@ namespace MiniZinc {
           while (!done) {
             FD_SET(pipes[1][0], &fdset);
             FD_SET(pipes[2][0], &fdset);
-            if ( 0>=select(FD_SETSIZE, &fdset, NULL, NULL, timelimit==0 ? NULL : &timeout) )
-            {
-              kill(childPID, SIGKILL);
-              pS2Out->feedRawDataChunk( "\n" );   // in case last chunk did not end with \n
-              done = true;
-            } else {
-              if (timelimit!=0) {
-                timeval currentTime, elapsed;
-                gettimeofday(&currentTime, NULL);
+            int sel = select(FD_SETSIZE, &fdset, NULL, NULL, timelimit==0 ? NULL : &timeout);
+            if (sel==-1) {
+              if (errno != EINTR) {
+                // some error has happened
+                throw InternalError(std::string("Error in communication with solver: ")+strerror(errno));
+              }
+            }
+            if (timelimit!=0) {
+              timeval currentTime;
+              gettimeofday(&currentTime, NULL);
+              if (sel != 0) {
+                timeval elapsed;
                 elapsed.tv_sec = currentTime.tv_sec - starttime.tv_sec;
                 elapsed.tv_usec = currentTime.tv_usec - starttime.tv_usec;
                 if(elapsed.tv_usec < 0) {
@@ -391,37 +396,47 @@ namespace MiniZinc {
                   timeout.tv_usec += 1000000;
                 }
                 timeout.tv_sec = timeout.tv_sec - elapsed.tv_sec;
-                if(timeout.tv_sec <= 0 && timeout.tv_usec <= 0) {
-                  if(sigterm)
-                    kill(childPID, SIGTERM);
-                  else
-                    kill(childPID, SIGKILL);
+              } else {
+                timeout.tv_usec = 0;
+                timeout.tv_sec = 0;
+              }
+              if(timeout.tv_sec <= 0 && timeout.tv_usec <= 0) {
+                if(sigint) {
+                  kill(childPID, SIGINT);
+                  timeout.tv_sec = 0;
+                  timeout.tv_usec = 200000;
+                  timeout_orig = timeout;
+                  starttime = currentTime;
+                  sigint = false;
+                } else {
+                  kill(childPID, SIGTERM);
                   pS2Out->feedRawDataChunk( "\n" );   // in case last chunk did not end with \n
                   done = true;
                 }
               }
+            }
 
-              for ( int i=1; i<=2; ++i )
-                if ( FD_ISSET( pipes[i][0], &fdset ) )
-                {
-                  char buffer[1000];
-                  int count = read(pipes[i][0], buffer, sizeof(buffer) - 1);
-                  if (count > 0) {
-                    buffer[count] = 0;
-                    if ( 1==i ) {
+            for ( int i=1; i<=2; ++i ) {
+              if ( FD_ISSET( pipes[i][0], &fdset ) )
+              {
+                char buffer[1000];
+                int count = read(pipes[i][0], buffer, sizeof(buffer) - 1);
+                if (count > 0) {
+                  buffer[count] = 0;
+                  if ( 1==i ) {
 //                       cerr << "mzn-fzn: raw chunk stdout:::  " << flush;
 //                       cerr << buffer << flush;
-                      pS2Out->feedRawDataChunk( buffer );
-                    }
-                    else {
-                      cerr << buffer << flush;
-                    }
+                    pS2Out->feedRawDataChunk( buffer );
                   }
-                  else if ( 1==i ) {
-                    pS2Out->feedRawDataChunk("\n");   // in case last chunk did not end with \n
-                    done = true;
+                  else {
+                    cerr << buffer << flush;
                   }
                 }
+                else if ( 1==i ) {
+                  pS2Out->feedRawDataChunk("\n");   // in case last chunk did not end with \n
+                  done = true;
+                }
+              }
             }
           }
 
@@ -560,9 +575,9 @@ namespace MiniZinc {
       cerr << std::endl;
     }
     int timelimit = _options.getIntParam(constants().opts.solver.fzn_time_limit_ms.str(), INT_MAX);
-    bool sigterm = _options.getBoolParam(constants().opts.solver.fzn_sigterm.str(), false);
+    bool sigint = _options.getBoolParam(constants().opts.solver.fzn_sigint.str(), false);
     
-    FznProcess proc(cmd_line, false, _fzn, getSolns2Out(), timelimit, sigterm);
+    FznProcess proc(cmd_line, false, _fzn, getSolns2Out(), timelimit, sigint);
     proc.run();
 
 //     std::stringstream result;
