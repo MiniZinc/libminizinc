@@ -158,10 +158,10 @@ namespace MiniZinc {
     protected:
       vector<string> _fzncmd;
       bool _canPipe;
-      Model* _flat=0;
-      Solns2Out* pS2Out=0;
-      int timelimit = 1000000;
-      bool sigterm = false;
+      Model* _flat;
+      Solns2Out* pS2Out;
+      int timelimit;
+      bool sigterm;
     public:
       FznProcess(vector<string>& fzncmd, bool pipe, Model* flat, Solns2Out* pso, int tl, bool st)
         : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat), pS2Out(pso), timelimit(tl), sigterm(st) {
@@ -366,31 +366,36 @@ namespace MiniZinc {
           while (!done) {
             FD_SET(pipes[1][0], &fdset);
             FD_SET(pipes[2][0], &fdset);
-            if ( 0>=select(FD_SETSIZE, &fdset, NULL, NULL, &timeout) )
+            if ( 0>=select(FD_SETSIZE, &fdset, NULL, NULL, timelimit==0 ? NULL : &timeout) )
             {
               kill(childPID, SIGKILL);
               pS2Out->feedRawDataChunk( "\n" );   // in case last chunk did not end with \n
               done = true;
             } else {
-              timeval currentTime, elapsed;
-              gettimeofday(&currentTime, NULL);
-              elapsed.tv_sec = currentTime.tv_sec - starttime.tv_sec;
-              elapsed.tv_usec = currentTime.tv_usec - starttime.tv_usec;
-              if(elapsed.tv_usec < 0) {
-                elapsed.tv_sec--;
-                elapsed.tv_usec += 1000000;
-              }
-              timeout.tv_sec = timeout.tv_sec - elapsed.tv_sec;
-              if(elapsed.tv_usec > 0)
-                timeout.tv_sec--;
-              timeout.tv_usec = 1000000 - elapsed.tv_usec;
-              if(timeout.tv_sec <= 0 && timeout.tv_usec <= 0) {
-                if(sigterm)
-                  kill(childPID, SIGTERM);
-                else
-                  kill(childPID, SIGKILL);
-                pS2Out->feedRawDataChunk( "\n" );   // in case last chunk did not end with \n
-                done = true;
+              if (timelimit!=0) {
+                timeval currentTime, elapsed;
+                gettimeofday(&currentTime, NULL);
+                elapsed.tv_sec = currentTime.tv_sec - starttime.tv_sec;
+                elapsed.tv_usec = currentTime.tv_usec - starttime.tv_usec;
+                starttime = currentTime;
+                if(elapsed.tv_usec < 0) {
+                  elapsed.tv_sec--;
+                  elapsed.tv_usec += 1000000;
+                }
+                timeout.tv_usec = timeout.tv_usec - elapsed.tv_usec;
+                if (timeout.tv_usec < 0) {
+                  timeout.tv_sec--;
+                  timeout.tv_usec += 1000000;
+                }
+                timeout.tv_sec = timeout.tv_sec - elapsed.tv_sec;
+                if(timeout.tv_sec <= 0 && timeout.tv_usec <= 0) {
+                  if(sigterm)
+                    kill(childPID, SIGTERM);
+                  else
+                    kill(childPID, SIGKILL);
+                  pS2Out->feedRawDataChunk( "\n" );   // in case last chunk did not end with \n
+                  done = true;
+                }
               }
 
               for ( int i=1; i<=2; ++i )
