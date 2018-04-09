@@ -358,9 +358,10 @@ namespace MiniZinc {
           struct timeval starttime;
           gettimeofday(&starttime, NULL);
 
-          struct timeval timeout;
-          timeout.tv_sec = timelimit / 1000;
-          timeout.tv_usec = (timelimit % 1000) * 1000;
+          struct timeval timeout_orig;
+          timeout_orig.tv_sec = timelimit / 1000;
+          timeout_orig.tv_usec = (timelimit % 1000) * 1000;
+          struct timeval timeout = timeout_orig;
 
           bool done = false;
           while (!done) {
@@ -377,11 +378,13 @@ namespace MiniZinc {
                 gettimeofday(&currentTime, NULL);
                 elapsed.tv_sec = currentTime.tv_sec - starttime.tv_sec;
                 elapsed.tv_usec = currentTime.tv_usec - starttime.tv_usec;
-                starttime = currentTime;
                 if(elapsed.tv_usec < 0) {
                   elapsed.tv_sec--;
                   elapsed.tv_usec += 1000000;
                 }
+                // Reset timeout to original limit
+                timeout = timeout_orig;
+                // Subtract elapsed time
                 timeout.tv_usec = timeout.tv_usec - elapsed.tv_usec;
                 if (timeout.tv_usec < 0) {
                   timeout.tv_sec--;
