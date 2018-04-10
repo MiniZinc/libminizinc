@@ -131,17 +131,17 @@ namespace MiniZinc {
   namespace {
 
 #ifdef _WIN32
-    mutex mtx;
-    void ReadPipePrint(HANDLE g_hCh, ostream* pOs, Solns2Out* pSo = nullptr) {
+
+    void ReadPipePrint(HANDLE g_hCh, bool* _done, ostream* pOs, Solns2Out* pSo, mutex* mtx) {
+      bool& done = *_done;
       assert( pOs!=0 || pSo!=0 );
-      bool done = false;
       while (!done) {
         char buffer[5255];
         DWORD count = 0;
         bool bSuccess = ReadFile(g_hCh, buffer, sizeof(buffer) - 1, &count, NULL);
         if (bSuccess && count > 0) {
           buffer[count] = 0;
-          lock_guard<mutex> lck(mtx);
+          lock_guard<mutex> lck(*mtx);
           if (pSo)
             pSo->feedRawDataChunk( buffer );
           if (pOs)
@@ -151,6 +151,16 @@ namespace MiniZinc {
           if (pSo)
             pSo->feedRawDataChunk( "\n" );   // in case the last chunk had none
           done = true;
+        }
+      }
+    }
+    void TimeOut(HANDLE hProcess, bool* done, int timeout, timed_mutex* mtx) {
+      if (timeout > 0) {
+        if (!mtx->try_lock_for(std::chrono::milliseconds(timeout))) {
+          if (!*done) {
+            *done = true;
+            TerminateProcess(hProcess,0);
+          }
         }
       }
     }
@@ -270,7 +280,6 @@ namespace MiniZinc {
           throw InternalError(ssm.str());
         }
 
-        CloseHandle(piProcInfo.hProcess);
         CloseHandle(piProcInfo.hThread);
         delete cmdstr;
 
@@ -293,12 +302,19 @@ namespace MiniZinc {
         CloseHandle(g_hChildStd_ERR_Wr);
         // Just close the child's in pipe here
         CloseHandle(g_hChildStd_IN_Rd);
-
+        bool done = false;
         // Threaded solution seems simpler than asyncronous pipe reading
-        thread thrStdout(ReadPipePrint, g_hChildStd_OUT_Rd, nullptr, pS2Out);
-        thread thrStderr(ReadPipePrint, g_hChildStd_ERR_Rd, &cerr, nullptr);
+        mutex pipeMutex;
+        timed_mutex terminateMutex;
+        terminateMutex.lock();
+        thread thrStdout(ReadPipePrint, g_hChildStd_OUT_Rd, &done, nullptr, pS2Out, &pipeMutex);
+        thread thrStderr(ReadPipePrint, g_hChildStd_ERR_Rd, &done, &cerr, nullptr, &pipeMutex);
+        thread thrTimeout(TimeOut, piProcInfo.hProcess, &done, timelimit, &terminateMutex);
         thrStdout.join();
         thrStderr.join();
+        terminateMutex.unlock();
+        thrTimeout.join();
+        CloseHandle(piProcInfo.hProcess);
 
         // Hard timeout: GenerateConsoleCtrlEvent()
 
