@@ -38,6 +38,13 @@ predicate int_le_reif(int: x, var int: y, var bool: b) =
     if true==fix(b) then x<=y else x>y endif
   elseif ub(x)<=lb(y) then b==true
   elseif lb(x)>ub(y) then b==false
+  elseif not (x in dom(y)) then          %% dom(y) has holes
+    let {
+      set of int: sDom2 = dom(y) intersect x+1..infinity,
+      constraint assert( card( sDom2 ) > 0,
+        "Variable: dom(\(y)) = \(dom(y)), but dom() intersect \(x)..inf: \(sDom2)\n" ),
+    } in
+    b <-> min( sDom2 ) <= y
   elseif fPostprocessDomains then
     int_ge_reif__POST(y, x, b)
   else
@@ -52,6 +59,13 @@ predicate int_le_reif(var int: x, int: y, var bool: b) =
     if true==fix(b) then x<=y else x>y endif
   elseif ub(x)<=lb(y) then b==true
   elseif lb(x)>ub(y) then b==false
+  elseif not (y in dom(x)) then          %% dom(x) has holes
+    let {
+      set of int: sDom2 = dom(x) intersect -infinity..y-1,
+      constraint assert( card( sDom2 ) > 0,
+        "Variable: dom(\(x)) = \(dom(x)), but dom() intersect -inf..\(y): \(sDom2)\n" ),
+    } in
+    b <-> x <= max( sDom2 )
   else
     if fPostprocessDomains then
       int_le_reif__POST(x, y, b)

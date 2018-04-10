@@ -466,6 +466,8 @@ predicate set_in(var int: x, set of int: s__) =
 predicate set_in_reif(var int: x, set of int: s__, var bool: b) =
   if is_fixed(b) then
     if fix(b) then x in s__ else x in dom(x) diff s__ endif
+  elseif has_bounds(x) /\ not (s__ subset dom(x)) then
+      b <-> x in s__ intersect dom(x)                     %% Use CSE
   else
     let {
       set of int: s = if has_bounds(x) then s__ intersect dom(x) else s__ endif,

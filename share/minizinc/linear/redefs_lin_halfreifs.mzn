@@ -34,20 +34,21 @@ predicate aux_int_le_zero_if_0(var int: x, var int: p) =
     if 0==fix(p) then x<=0 else true endif         %% 0==fix !!
   elseif lb(x)>0 then
     p==1
+  elseif not (0 in dom(x)) then
+    let {
+      constraint assert( ub(x) < infinity,
+        "aux_int_le_zero_if_0: variable \(x)'s domain: dom(\(x)) = \(dom(x)), should have finite upper bound\n" ),
+      set of int: sDomNeg = dom(x) intersect -infinity..-1,
+      constraint assert( card( sDomNeg ) > 0,
+        "Variable \(x): dom(\(x)) = \(dom(x)), but dom() intersect -inf..-1: \(sDomNeg)\n" ),
+    } in
+    aux_int_le_if_0( x, max( sDomNeg ), p )
   elseif fPostprocessDomains /\ fPostproDom_AUX then
     aux_int_le_zero_if_1__POST(x, 1-p)
   elseif fMZN__UseIndicators then
     aux_int_le_zero_if_0__IND(x, p)
   else
-    let {
-      constraint assert( ub(x) < infinity,
-        "Variable: dom(\(x)) = \(dom(x)), should have finite upper bound\n" ),
-      set of int: sDomNonPos = dom(x) intersect -infinity..0,
-      constraint assert( card( sDomNonPos ) > 0,
-        "Variable: dom(\(x)) = \(dom(x)), but dom() intersect -inf..0: \(sDomNonPos)\n" ),
-      int: nMaxNonPosUB = max( sDomNonPos ), 
-    } in
-      x <= nMaxNonPosUB + (ub(x) - nMaxNonPosUB) * p
+    x <= ub(x) * p
   endif;
 
 predicate aux_float_le_zero_if_0(var float: x, var int: p) =
