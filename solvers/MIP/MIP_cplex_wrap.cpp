@@ -261,7 +261,7 @@ void MIP_cplex_wrapper::Options::printHelp(ostream& os) {
   << "  -a\n    print intermediate solutions (use for optimization problems only TODO)" << std::endl
   << "  -p <N>\n    use N threads, default: 1" << std::endl
 //   << "  --nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-  << "  --timeout <N>\n    stop search after N seconds CPU time" << std::endl
+  << "  --timeout <N>\n    stop search after N seconds wall time" << std::endl
   << "  -n <N>, --num-solutions <N>\n"
      "    stop search after N solutions" << std::endl
   << "  --workmem <N>, --nodefilestart <N>\n"
@@ -836,8 +836,9 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
    status = dll_CPXsetintparam (env, CPXPARAM_MIP_Display,
                             fVerbose ? 2 : 0);  // also when flag_all_solutions?  TODO
    wrap_assert(!status, "  CPLEX Warning: Failure to switch logging.", false);
-   status =  dll_CPXsetintparam (env, CPXPARAM_ClockType, 1);            // CPU time
-   wrap_assert(!status, "  CPLEX Warning: Failure to measure CPU time.", false);
+   /// Make it wall time by default, 12.8
+//    status =  dll_CPXsetintparam (env, CPXPARAM_ClockType, 1);            // CPU time
+//    wrap_assert(!status, "  CPLEX Warning: Failure to measure CPU time.", false);
    status =  dll_CPXsetintparam (env, CPX_PARAM_MIPCBREDLP, CPX_OFF);    // Access original model
    wrap_assert(!status, "  CPLEX Warning: Failure to set access original model in callbacks.", false);
    if (options->sExportModel.size()) {

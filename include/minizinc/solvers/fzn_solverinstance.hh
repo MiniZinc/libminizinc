@@ -27,6 +27,8 @@ namespace MiniZinc {
     int numSols = 1;
     bool allSols = false;
     std::string parallel;
+    int fzn_time_limit_ms = 0;
+    bool fzn_sigint = false;
   };
 
   class FZNSolverInstance : public SolverInstanceBase {

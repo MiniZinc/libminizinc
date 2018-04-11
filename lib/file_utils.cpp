@@ -36,7 +36,10 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
-#ifndef _MSC_VER
+#ifdef _MSC_VER
+#include "Shlwapi.h"
+#pragma comment(lib, "Shlwapi.lib")
+#else
 #include <dirent.h>
 #include <libgen.h>
 #endif
@@ -343,7 +346,7 @@ namespace MiniZinc { namespace FileUtils {
   }
 
   std::string deflateString(const std::string& s) {
-    size_t compressedLength = compressBound(s.size());
+    mz_ulong compressedLength = compressBound(s.size());
     unsigned char* cmpr = static_cast<unsigned char*>(::malloc(compressedLength*sizeof(unsigned char)));
     int status = compress(cmpr,&compressedLength,reinterpret_cast<const unsigned char*>(&s[0]),s.size());
     if (status != Z_OK) {

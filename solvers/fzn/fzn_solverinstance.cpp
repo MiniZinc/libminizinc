@@ -72,6 +72,8 @@ namespace MiniZinc {
     << "  --fzn-flags <options>, --flatzinc-flags <options>\n     Specify option to be passed to the FlatZinc interpreter.\n"
     << "  --fzn-flag <option>, --flatzinc-flag <option>\n     As above, but for a single option string that need to be quoted in a shell.\n"
     << "  -n <n>, --num-solutions <n>\n     An upper bound on the number of solutions to output. The default should be 1.\n"
+    << "  --fzn-time-limit <ms>\n     Set a hard timelimit that overrides those set for the solver using --fzn-flag(s).\n"
+    << "  --fzn-sigint\n     Send SIGINT instead of SIGTERM.\n"
     << "  -a, --all, --all-solns, --all-solutions\n     Print all solutions.\n"
     << "  -p <n>, --parallel <n>\n     Use <n> threads during search. The default is solver-dependent.\n"
     << "  -k, --keep-files\n     For compatibility only: to produce .ozn and .fzn, use mzn2fzn\n"
@@ -105,6 +107,10 @@ namespace MiniZinc {
       old += ' ';
       old += buffer;
       _opt.fzn_flags = old;
+    } else if ( cop.getOption( "--fzn-time-limit", &nn) ) {
+      _opt.fzn_time_limit_ms = nn;
+    } else if ( cop.getOption( "--fzn-sigint") ) {
+      _opt.fzn_sigint = true;
     } else if ( cop.getOption( "--fzn-flag --flatzinc-flag", &buffer) ) {
       string old = _opt.fzn_flag;
       old += " \"";
@@ -128,17 +134,17 @@ namespace MiniZinc {
   namespace {
 
 #ifdef _WIN32
-    mutex mtx;
-    void ReadPipePrint(HANDLE g_hCh, ostream* pOs, Solns2Out* pSo = nullptr) {
+
+    void ReadPipePrint(HANDLE g_hCh, bool* _done, ostream* pOs, Solns2Out* pSo, mutex* mtx) {
+      bool& done = *_done;
       assert( pOs!=0 || pSo!=0 );
-      bool done = false;
       while (!done) {
         char buffer[5255];
         DWORD count = 0;
         bool bSuccess = ReadFile(g_hCh, buffer, sizeof(buffer) - 1, &count, NULL);
         if (bSuccess && count > 0) {
           buffer[count] = 0;
-          lock_guard<mutex> lck(mtx);
+          lock_guard<mutex> lck(*mtx);
           if (pSo)
             pSo->feedRawDataChunk( buffer );
           if (pOs)
@@ -151,22 +157,35 @@ namespace MiniZinc {
         }
       }
     }
+    void TimeOut(HANDLE hProcess, bool* done, int timeout, timed_mutex* mtx) {
+      if (timeout > 0) {
+        if (!mtx->try_lock_for(std::chrono::milliseconds(timeout))) {
+          if (!*done) {
+            *done = true;
+            TerminateProcess(hProcess,0);
+          }
+        }
+      }
+    }
 #endif
 
     class FznProcess {
     protected:
       vector<string> _fzncmd;
       bool _canPipe;
-      Model* _flat=0;
-      Solns2Out* pS2Out=0;
+      Model* _flat;
+      Solns2Out* pS2Out;
+      int timelimit;
+      bool sigint;
     public:
-      FznProcess(vector<string>& fzncmd, bool pipe, Model* flat, Solns2Out* pso)
-        : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat), pS2Out(pso) {
+      FznProcess(vector<string>& fzncmd, bool pipe, Model* flat, Solns2Out* pso, int tl, bool si)
+        : _fzncmd(fzncmd), _canPipe(pipe), _flat(flat), pS2Out(pso), timelimit(tl), sigint(si) {
         assert( 0!=_flat );
         assert( 0!=pS2Out );
       }
       std::string run(void) {
 #ifdef _WIN32
+        //TODO: implement hard timelimits for windows
         std::stringstream result;
 
         SECURITY_ATTRIBUTES saAttr;
@@ -264,7 +283,6 @@ namespace MiniZinc {
           throw InternalError(ssm.str());
         }
 
-        CloseHandle(piProcInfo.hProcess);
         CloseHandle(piProcInfo.hThread);
         delete cmdstr;
 
@@ -287,12 +305,19 @@ namespace MiniZinc {
         CloseHandle(g_hChildStd_ERR_Wr);
         // Just close the child's in pipe here
         CloseHandle(g_hChildStd_IN_Rd);
-
+        bool done = false;
         // Threaded solution seems simpler than asyncronous pipe reading
-        thread thrStdout(ReadPipePrint, g_hChildStd_OUT_Rd, nullptr, pS2Out);
-        thread thrStderr(ReadPipePrint, g_hChildStd_ERR_Rd, &cerr, nullptr);
+        mutex pipeMutex;
+        timed_mutex terminateMutex;
+        terminateMutex.lock();
+        thread thrStdout(ReadPipePrint, g_hChildStd_OUT_Rd, &done, nullptr, pS2Out, &pipeMutex);
+        thread thrStderr(ReadPipePrint, g_hChildStd_ERR_Rd, &done, &cerr, nullptr, &pipeMutex);
+        thread thrTimeout(TimeOut, piProcInfo.hProcess, &done, timelimit, &terminateMutex);
         thrStdout.join();
         thrStderr.join();
+        terminateMutex.unlock();
+        thrTimeout.join();
+        CloseHandle(piProcInfo.hProcess);
 
         // Hard timeout: GenerateConsoleCtrlEvent()
 
@@ -351,37 +376,86 @@ namespace MiniZinc {
           fd_set fdset;
           FD_ZERO(&fdset);
 
+          struct timeval starttime;
+          gettimeofday(&starttime, NULL);
+
+          struct timeval timeout_orig;
+          timeout_orig.tv_sec = timelimit / 1000;
+          timeout_orig.tv_usec = (timelimit % 1000) * 1000;
+          struct timeval timeout = timeout_orig;
+
           bool done = false;
           while (!done) {
             FD_SET(pipes[1][0], &fdset);
             FD_SET(pipes[2][0], &fdset);
-            if ( 0>=select(FD_SETSIZE, &fdset, NULL, NULL, NULL) )
-            {
-              kill(childPID, SIGKILL);
-              pS2Out->feedRawDataChunk( "\n" );   // in case last chunk did not end with \n
-              done = true;
-            } else {
-              for ( int i=1; i<=2; ++i )
-                if ( FD_ISSET( pipes[i][0], &fdset ) )
-                {
-                  char buffer[1000];
-                  int count = read(pipes[i][0], buffer, sizeof(buffer) - 1);
-                  if (count > 0) {
-                    buffer[count] = 0;
-                    if ( 1==i ) {
+            int sel = select(FD_SETSIZE, &fdset, NULL, NULL, timelimit==0 ? NULL : &timeout);
+            if (sel==-1) {
+              if (errno != EINTR) {
+                // some error has happened
+                throw InternalError(std::string("Error in communication with solver: ")+strerror(errno));
+              }
+            }
+            if (timelimit!=0) {
+              timeval currentTime;
+              gettimeofday(&currentTime, NULL);
+              if (sel != 0) {
+                timeval elapsed;
+                elapsed.tv_sec = currentTime.tv_sec - starttime.tv_sec;
+                elapsed.tv_usec = currentTime.tv_usec - starttime.tv_usec;
+                if(elapsed.tv_usec < 0) {
+                  elapsed.tv_sec--;
+                  elapsed.tv_usec += 1000000;
+                }
+                // Reset timeout to original limit
+                timeout = timeout_orig;
+                // Subtract elapsed time
+                timeout.tv_usec = timeout.tv_usec - elapsed.tv_usec;
+                if (timeout.tv_usec < 0) {
+                  timeout.tv_sec--;
+                  timeout.tv_usec += 1000000;
+                }
+                timeout.tv_sec = timeout.tv_sec - elapsed.tv_sec;
+              } else {
+                timeout.tv_usec = 0;
+                timeout.tv_sec = 0;
+              }
+              if(timeout.tv_sec <= 0 && timeout.tv_usec <= 0) {
+                if(sigint) {
+                  kill(childPID, SIGINT);
+                  timeout.tv_sec = 0;
+                  timeout.tv_usec = 200000;
+                  timeout_orig = timeout;
+                  starttime = currentTime;
+                  sigint = false;
+                } else {
+                  kill(childPID, SIGTERM);
+                  pS2Out->feedRawDataChunk( "\n" );   // in case last chunk did not end with \n
+                  done = true;
+                }
+              }
+            }
+
+            for ( int i=1; i<=2; ++i ) {
+              if ( FD_ISSET( pipes[i][0], &fdset ) )
+              {
+                char buffer[1000];
+                int count = read(pipes[i][0], buffer, sizeof(buffer) - 1);
+                if (count > 0) {
+                  buffer[count] = 0;
+                  if ( 1==i ) {
 //                       cerr << "mzn-fzn: raw chunk stdout:::  " << flush;
 //                       cerr << buffer << flush;
-                      pS2Out->feedRawDataChunk( buffer );
-                    }
-                    else {
-                      cerr << buffer << flush;
-                    }
+                    pS2Out->feedRawDataChunk( buffer );
                   }
-                  else if ( 1==i ) {
-                    pS2Out->feedRawDataChunk("\n");   // in case last chunk did not end with \n
-                    done = true;
+                  else {
+                    cerr << buffer << flush;
                   }
                 }
+                else if ( 1==i ) {
+                  pS2Out->feedRawDataChunk("\n");   // in case last chunk did not end with \n
+                  done = true;
+                }
+              }
             }
           }
 
@@ -519,8 +593,10 @@ namespace MiniZinc {
         cerr << "" << cmd_line[i] << " ";
       cerr << std::endl;
     }
+    int timelimit = opt.fzn_time_limit_ms;
+    bool sigint = opt.fzn_sigint;
     
-    FznProcess proc(cmd_line, false, _fzn, getSolns2Out());
+    FznProcess proc(cmd_line, false, _fzn, getSolns2Out(), timelimit, sigint);
     proc.run();
 
 //     std::stringstream result;
