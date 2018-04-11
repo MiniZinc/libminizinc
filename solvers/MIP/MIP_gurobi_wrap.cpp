@@ -172,15 +172,15 @@ namespace {
   void* dll_open(const char* file) {
 #ifdef HAS_DLFCN_H
     if (MiniZinc::FileUtils::is_absolute(file)) {
-      return dlopen( file.c_str(), RTLD_NOW);
+      return dlopen( file, RTLD_NOW);
     } else {
       return dlopen( (std::string("lib")+file+".so").c_str(), RTLD_NOW);
     }
 #else
     if (MiniZinc::FileUtils::is_absolute(file)) {
-      return LoadLibrary(file.c_str());
+      return LoadLibrary(file);
     } else {
-      return LoadLibrary((file+".dll").c_str());
+      return LoadLibrary((std::string(file)+".dll").c_str());
     }
 #endif
   }
@@ -209,8 +209,8 @@ void MIP_gurobi_wrapper::checkDLL()
 {
 #ifdef HAS_GUROBI_PLUGIN
   gurobi_dll = NULL;
-  if ( options.sGurobiDLL.size() ) {
-    gurobi_dll = dll_open( options.sGurobiDLL.c_str() );
+  if ( options && options->sGurobiDLL.size() ) {
+    gurobi_dll = dll_open( options->sGurobiDLL.c_str() );
   } else {
     for( const auto& s: gurobiDLLs() ) {
       gurobi_dll = dll_open( s.c_str() );
@@ -221,10 +221,10 @@ void MIP_gurobi_wrapper::checkDLL()
   }
 
   if (gurobi_dll==NULL) {
-    if (options.sGurobiDLL.empty()) {
+    if (options==NULL || options->sGurobiDLL.empty()) {
       throw MiniZinc::InternalError("cannot load gurobi dll, specify --gurobi-dll");
     } else {
-      throw MiniZinc::InternalError("cannot load gurobi dll `"+options.sGurobiDLL+"'");
+      throw MiniZinc::InternalError("cannot load gurobi dll `"+options->sGurobiDLL+"'");
     }
   }
 
