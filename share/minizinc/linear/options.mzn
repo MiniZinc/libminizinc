@@ -107,9 +107,11 @@ int: nMZN__UnaryLenMax_setInReif = nMZN__UnaryLenMax__ALL;
 % The relative epsilon
 %%% Has the problem that when relating to upper bound of various differences,
 %%% getting different absolute eps...?
-float: float_lt_EPS_coef__ = 1e-03;
-%%% Absolute one, used, e.g., in MIP domains:
-float: float_lt_EPS = 1e-02;
+%% float: float_lt_EPS_coef__ = 1e-03; ABANDONED 12.4.18 due to #207
+%%% Absolute one, used everywhere
+%%% Might make no sense for floats with smaller domains etc.
+opt float: float_EPS;
+float: float_lt_EPS = if absent( float_EPS ) then 1e-6 else deopt( float_EPS ) endif;
 
 %-----------------------------------------------------------------------------%
 %%% Set =true to PRINT TRACING messages for some constraints:
