@@ -108,7 +108,7 @@ class MIP_wrapper {
       double dWallTime = 0.0;
       std::chrono::time_point<std::chrono::steady_clock> dWallTime0;
       double dCPUTime = 0;
-      std::clock_t cCPUTime0 = 0;
+      clock_t cCPUTime0 = 0;
     };      
     Output output;
 
