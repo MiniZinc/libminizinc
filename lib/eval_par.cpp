@@ -2049,6 +2049,9 @@ namespace MiniZinc {
           else
             _bounds.push_back(Bounds(0,std::max(-b0.first,b0.second)));
         }
+      } else if (c.decl() && c.decl()->ti()->domain()) {
+        IntSetVal* isv = eval_intset(env, c.decl()->ti()->domain());
+        _bounds.push_back(Bounds(isv->min(),isv->max()));
       } else {
         valid = false;
         _bounds.push_back(Bounds(0,0));
@@ -2387,6 +2390,9 @@ namespace MiniZinc {
           else
             _bounds.push_back(FBounds(0.0,std::max(-b0.first,b0.second)));
         }
+      } else if (c.decl() && c.decl()->ti()->domain()) {
+        FloatSetVal* fsv = eval_floatset(env, c.decl()->ti()->domain());
+        _bounds.push_back(FBounds(fsv->min(),fsv->max()));
       } else {
         valid = false;
         _bounds.push_back(FBounds(0.0,0.0));
@@ -2611,6 +2617,9 @@ namespace MiniZinc {
         IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
         _bounds.pop_back(); // don't need bounds of right hand side
         _bounds.push_back(b0);
+      } else if (c.decl() && c.decl()->ti()->domain()) {
+        IntSetVal* fsv = eval_intset(env, c.decl()->ti()->domain());
+        _bounds.push_back(fsv);
       } else {
         valid = false;
         _bounds.push_back(NULL);
