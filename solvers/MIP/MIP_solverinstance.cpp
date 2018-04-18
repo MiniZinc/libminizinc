@@ -772,7 +772,7 @@ MIP_solverinstance::processWarmstartAnnotations(const Annotation& ann) {
         Expression* e = *i;
         if ( e->isa<Call>() ) {
             Call* c = e->cast<Call>();
-            if ( c->id().str() == "warm_start_array" ) {
+            if ( c->id().str() == "warm_start_array" || c->id().str() == "seq_search" ) {
                 ArrayLit* anns = c->arg(0)->cast<ArrayLit>();
                 for(unsigned int i=0; i<anns->size(); i++) {
                     Annotation subann;
