@@ -366,6 +366,8 @@ solcallback (CPXCENVptr env, void *cbdata, int wherefrom, void *cbhandle)
                                         0, info->pOutput->nCols-1);
       if ( status )  goto TERMINATE;
 
+      info->pOutput->dWallTime = std::chrono::duration<double>(
+         std::chrono::steady_clock::now() - info->pOutput->dWallTime0).count();
       info->pOutput->dCPUTime = double(std::clock() - info->pOutput->cCPUTime0) / CLOCKS_PER_SEC;
 
       /// Call the user function:
@@ -770,12 +772,16 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
     
    // status = CPXgettime (env, &output.dCPUTime);
    // wrap_assert(!status, "Failed to get time stamp.", false);
+   cbui.pOutput->dWallTime0 = output.dWallTime0 =
+     std::chrono::steady_clock::now();
    cbui.pOutput->cCPUTime0 = std::clock();
 
    /* Optimize the problem and obtain solution. */
    status = CPXmipopt (env, lp);
    wrap_assert( !status,  "Failed to optimize MIP." );
 
+   output.dWallTime = std::chrono::duration<double>(
+     std::chrono::steady_clock::now() - output.dWallTime0).count();
    double tmNow = std::clock();
    // status = CPXgettime (env, &tmNow);   Buggy in 12.7.1.0
    wrap_assert(!status, "Failed to get time stamp.", false);

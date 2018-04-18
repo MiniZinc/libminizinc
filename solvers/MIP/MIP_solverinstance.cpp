@@ -394,25 +394,27 @@ void MIP_solverinstance::registerConstraints() {
 
 void MIP_solverinstance::printStatistics(bool fLegend)
 {
-  auto nn = std::chrono::system_clock::now();
-  auto n_c = std::chrono::system_clock::to_time_t( nn );
+//   auto nn = std::chrono::system_clock::now();
+//   auto n_c = std::chrono::system_clock::to_time_t( nn );
     {
       std::ios oldState(nullptr);
       oldState.copyfmt(std::cout);
       _log.precision(12);
       _log << "  % MIP Status: " << mip_wrap->getStatusName() << endl;
       if (fLegend)
-        _log << "  % obj, bound, CPU_time, nodes (left): ";
+        _log << "  % obj, bound, time wall/CPU, nodes (left): ";
       _log << mip_wrap->getObjValue() << ",  ";
       _log << mip_wrap->getBestBound() << ",  ";
       _log.setf( ios::fixed );
-      _log.precision( 3 );
+      _log.precision( 1 );
+      _log << mip_wrap->getWallTimeElapsed() << "/";
       _log << mip_wrap->getCPUTime() << ",  ";
       _log << mip_wrap->getNNodes();
       if (mip_wrap->getNOpen())
         _log << " ( " << mip_wrap->getNOpen() << " )";
-      _log << "    " << std::ctime( &n_c );
+//       _log << "    " << std::ctime( &n_c );
       //  ctime already adds EOL.     os << endl;
+      _log << endl;
       _log.copyfmt( oldState );
     }
 }

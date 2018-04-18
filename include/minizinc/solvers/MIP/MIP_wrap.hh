@@ -19,6 +19,7 @@
 #include <iostream>
 #include <sstream>
 #include <cassert>
+#include <chrono>
 
 
 /// Facilitate lhs computation of a cut
@@ -104,6 +105,8 @@ class MIP_wrapper {
       const double *x = 0;
       int nNodes=0;
       int nOpenNodes=0;
+      double dWallTime = 0.0;
+      std::chrono::time_point<std::chrono::steady_clock> dWallTime0;
       double dCPUTime = 0;
       std::clock_t cCPUTime0 = 0;
     };      
@@ -316,6 +319,7 @@ class MIP_wrapper {
     virtual const double* getValues() = 0;
     virtual double getObjValue() = 0;
     virtual double getBestBound() = 0;
+    virtual double getWallTimeElapsed() { return output.dWallTime; }
     virtual double getCPUTime() = 0;
     
     virtual Status getStatus() = 0;

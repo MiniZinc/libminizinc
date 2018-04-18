@@ -491,6 +491,8 @@ solcallback(GRBmodel *model,
         assert(info->pOutput->x);
         gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL, (void*)info->pOutput->x);
         
+        info->pOutput->dWallTime = std::chrono::duration<double>(
+          std::chrono::steady_clock::now() - info->pOutput->dWallTime0).count();
         info->pOutput->dCPUTime = double(std::clock() - info->pOutput->cCPUTime0) / CLOCKS_PER_SEC;
 
         /// Call the user function:
@@ -707,12 +709,16 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
      wrap_assert(!error, "Failed to write GUROBI parameters.", false);
     }
 
-   cbui.pOutput->cCPUTime0 = output.dCPUTime = std::clock();
-
+    cbui.pOutput->dWallTime0 = output.dWallTime0 =
+      std::chrono::steady_clock::now();
+    cbui.pOutput->cCPUTime0 = output.dCPUTime = std::clock();
+    
    /* Optimize the problem and obtain solution. */
    error = dll_GRBoptimize(model);
    wrap_assert( !error,  "Failed to optimize MIP." );
 
+   output.dWallTime = std::chrono::duration<double>(
+     std::chrono::steady_clock::now() - output.dWallTime0).count();
    output.dCPUTime = (std::clock() - output.dCPUTime) / CLOCKS_PER_SEC;
 
    int solstat;
