@@ -481,6 +481,8 @@ MyEventHandler3::event(CbcEvent whichEvent)
       ui.pCbui->pOutput->status = MIP_wrapper::SAT;
       ui.pCbui->pOutput->statusName = "feasible from a callback";
       ui.pCbui->pOutput->bestBound = bestBnd;
+      ui.pCbui->pOutput->dWallTime = std::chrono::duration<double>(
+        std::chrono::steady_clock::now() - ui.pCbui->pOutput->dWallTime0).count();
       ui.pCbui->pOutput->dCPUTime = model_->getCurrentSeconds();
       ui.pCbui->pOutput->nNodes = model_->getNodeCount();
       ui.pCbui->pOutput->nOpenNodes = -1; // model_->getNodeCount2();
@@ -812,6 +814,8 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
    cbc_cmdOptions += " -solve";
    cbc_cmdOptions += " -quit";
 
+   cbui.pOutput->dWallTime0 = output.dWallTime0 =
+     std::chrono::steady_clock::now();
    output.dCPUTime = clock();
 
    /* OLD: Optimize the problem and obtain solution. */
@@ -856,6 +860,8 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 #endif
 #endif
   
+    output.dWallTime = std::chrono::duration<double>(
+      std::chrono::steady_clock::now() - output.dWallTime0).count();
     output.dCPUTime = (clock() - output.dCPUTime) / CLOCKS_PER_SEC;
 
     output.status = convertStatus(&model);
