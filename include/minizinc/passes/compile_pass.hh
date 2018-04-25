@@ -37,6 +37,7 @@ namespace MiniZinc {
       std::string library;
       std::vector<std::string> includePaths;
       bool change_library;
+      bool ignore_unknown_ids;
 
     public:
       CompilePass(Env* e,
@@ -44,7 +45,8 @@ namespace MiniZinc {
           CompilePassFlags& cflags,
           std::string globals_library,
           std::vector<std::string> include_paths,
-          bool change_lib);
+          bool change_lib,
+          bool ignore_unknown);
 
       Env* run(Env* env, std::ostream& log);
       ~CompilePass();

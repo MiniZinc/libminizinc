@@ -436,6 +436,7 @@ namespace MiniZinc {
     final_pass_no(1),
     maxPathDepth(0),
     ignorePartial(false),
+    ignoreUnknownIds(false),
     maxCallStack(0),
     collect_vardecls(false),
     in_redundant_constraint(0),

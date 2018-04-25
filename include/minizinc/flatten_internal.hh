@@ -87,6 +87,7 @@ namespace MiniZinc {
     };
     typedef KeepAliveMap<WW> Map;
     bool ignorePartial;
+    bool ignoreUnknownIds;
     std::vector<Expression*> callStack;
     std::vector<std::pair<KeepAlive,bool> > errorStack;
     std::vector<int> idStack;
