@@ -46,8 +46,8 @@ include "nosets.mzn";                %% For set_le, set_lt ... Usind std/nosets
 % (some solutions of the original problem may become invalid).
 
 predicate float_lt(var float: x, var float: y) =
-     (x - y) <= (-float_lt_EPS_coef__)*max(abs(ub(x - y)), abs(ub(y-x)));
-%      x <= y - float_lt_EPS;
+%     (x - y) <= (-float_lt_EPS_coef__)*max(abs(ub(x - y)), abs(ub(y-x)));
+      x <= y - float_lt_EPS;
 
 predicate float_lin_lt(array[int] of float: c, array[int] of var float: x,
                             float: d) =

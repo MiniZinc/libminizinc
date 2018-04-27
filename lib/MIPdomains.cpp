@@ -1619,7 +1619,8 @@ namespace MiniZinc {
       double computeDelta( VarDecl* var, VarDecl* varOrig, IntvReal bnds,
                            double A, Call* pCall, int nArg ) {
         double delta = varOrig->type().isfloat() ? 
-          mipd.expr2Const( pCall->arg(nArg) ) * ( bnds.right-bnds.left )
+          mipd.expr2Const( pCall->arg(nArg) ) 
+            // * ( bnds.right-bnds.left )   ABANDONED 12.4.18 due to #207
           : std::fabs( A ) ;           // delta should be scaled as well
         if ( var->type().isint() )  // the projected-onto variable
           delta = std::max( 1.0, delta );

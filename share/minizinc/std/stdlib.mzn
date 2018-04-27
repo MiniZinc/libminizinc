@@ -212,7 +212,10 @@ annotation complete;
 
 /** @group annotations.warmstart Specify an array \a w of warm_start annotations
  or other warm_start_array annotations. Can be useful to keep the annotation
- order in FlatZinc for manual updating
+ order in FlatZinc for manual updating.
+ 
+ Note: if you have search annotations as well, put warm_starts into seq_search
+ in order to have precedence between both, which may matter.
 */
 annotation warm_start_array( array[int] of ann: w );
 

@@ -19,6 +19,12 @@ or separated flattening+solving - sometimes more stable but slower due to file I
  
       mzn2fzn -G linear model.mzn data.dzn && mzn-gorubi -v -s -a model.fzn | solns2out model.ozn
 
+USEFUL PARAMETERS
+=================
+-D fMIPdomains=true/false        %% See below
+-D float_EPS=1e-6                %% Epsilon for floats' strict comparison
+-D fIndConstr=true/false         %% Use solvers' indicator constraints, see below
+      
 UNIFIED DOMAIN REFINEMENT (MIPdomains)
 ===================================
 The 'MIPdomains' feature of the Flattener aims at reducing the number of binary flags
@@ -26,14 +32,15 @@ encoding linearized domain constraints, see
 
    [1] Belov, Stuckey, Tack, Wallace. Improved Linearization of Constraint Programming Models. CP 2016.
 
-By default it is on, but for some models such as packing problems with CPLEX, it is better off.
+By default it is on, but for some models such as packing problems, it is better off.
 To turn it off, add option -D fMIPdomains=false during flattening.
 Some parameters of the unification are available, run with --help.
 
 INDICATOR CONSTRAINTS
 ===================================
-Some solvers (CPLEX, Gurobi) have indicator constrains.
+Some solvers (CPLEX, Gurobi) have indicator constrains with greater numerical stability.
 Add command-line parameters -D fIndConstr=true -D fMIPdomains=false when flattening
+to use them when (half-)reifying.
 
 USER CUTS and LAZY CONSTRAINTS
 ===================================

@@ -543,11 +543,12 @@ void Flattener::flatten(const std::string& modelString)
           cfs.allow_multi_assign    = flag_allow_multi_assign;
 
           std::vector<unique_ptr<Pass> > managed_passes;
-
+          
           if(flag_two_pass) {
             std::string library = std_lib_dir + (flag_gecode ? "/gecode/" : "/std/");
+            bool differentLibrary = (library!=std_lib_dir+"/"+globals_dir+"/");
             managed_passes.emplace_back(new CompilePass(env, pass_opts, cfs,
-                                                        library, includePaths,  true));
+                                                        library, includePaths,  true, differentLibrary));
 #ifdef HAS_GECODE
             if(flag_gecode)
               managed_passes.emplace_back(new GecodePass(&gopts));
@@ -555,7 +556,7 @@ void Flattener::flatten(const std::string& modelString)
           }
           managed_passes.emplace_back(new CompilePass(env, fopts, cfs,
                                                       std_lib_dir+"/"+globals_dir+"/",
-                                                      includePaths, flag_two_pass));
+                                                      includePaths, flag_two_pass, false));
 
           fopts.outputObjective = flag_output_objective;
           Env* out_env = multiPassFlatten(managed_passes);

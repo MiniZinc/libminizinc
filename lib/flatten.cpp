@@ -436,6 +436,7 @@ namespace MiniZinc {
     final_pass_no(1),
     maxPathDepth(0),
     ignorePartial(false),
+    ignoreUnknownIds(false),
     maxCallStack(0),
     collect_vardecls(false),
     in_redundant_constraint(0),
@@ -3843,7 +3844,12 @@ namespace MiniZinc {
               if (id->decl()->e()==NULL) {
                 throw InternalError("array without initialiser not supported");
               }
-              al = follow_id(id)->cast<ArrayLit>();
+              Expression* id_e = follow_id(id);
+              if (id_e->isa<ArrayLit>()) {
+                al = id_e->cast<ArrayLit>();
+              } else {
+                throw InternalError("builtin function returning array not supported");
+              }
             }
             
             std::vector<KeepAlive> elems;

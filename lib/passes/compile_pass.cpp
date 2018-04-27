@@ -87,13 +87,15 @@ namespace MiniZinc {
                            CompilePassFlags& cflags,
                            string globals_library,
                            vector<string> include_paths,
-                           bool change_lib = true) :
+                           bool change_lib,
+                           bool ignore_unknown) :
     env(e),
     fopts(opts),
     compflags(cflags),
     library(globals_library),
     includePaths(include_paths),
-    change_library(change_lib) {
+    change_library(change_lib),
+    ignore_unknown_ids(ignore_unknown) {
   }
 
   Env* CompilePass::run(Env* store, std::ostream& log) {
@@ -109,7 +111,8 @@ namespace MiniZinc {
     } else {
       new_env = env;
     }
-
+    new_env->envi().ignoreUnknownIds = ignore_unknown_ids;
+    
     vector<TypeError> typeErrors;
     MiniZinc::typecheck(*new_env, new_env->model(), typeErrors, compflags.model_check_only || compflags.model_interface_only, compflags.allow_multi_assign);
     if (typeErrors.size() > 0) {
