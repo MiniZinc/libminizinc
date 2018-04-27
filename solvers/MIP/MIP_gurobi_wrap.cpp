@@ -23,7 +23,7 @@
 #include <cmath>
 #include <stdexcept>
 
-#include <cfg/config.hh>
+#include <minizinc/config.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/file_utils.hh>
 

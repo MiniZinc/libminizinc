@@ -15,7 +15,7 @@
 
 #include <minizinc/file_utils.hh>
 #include <minizinc/exception.hh>
-#include <cfg/config.hh>
+#include <minizinc/config.hh>
 #include <minizinc/thirdparty/miniz.h>
 #include <minizinc/thirdparty/b64/encode.h>
 #include <minizinc/thirdparty/b64/decode.h>

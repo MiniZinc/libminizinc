@@ -13,7 +13,7 @@
 #include <minizinc/ast.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/model.hh>
-#include <cfg/config.hh>
+#include <minizinc/config.hh>
 
 #include <vector>
 #include <cstring>

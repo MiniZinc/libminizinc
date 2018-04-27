@@ -12,7 +12,7 @@
 #ifndef __MINIZINC_STL_MAP_SET_HH__
 #define __MINIZINC_STL_MAP_SET_HH__
 
-#include <cfg/config.hh>
+#include <minizinc/config.hh>
 
 #ifdef MZN_NEED_TR1
 
