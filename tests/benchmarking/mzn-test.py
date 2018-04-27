@@ -759,7 +759,7 @@ class MznTest:
                 print( "STDOUT/ERR: ", len(completed.stdout), '/',
                       len(completed.stderr), " bytes", sep='', end=', ' )
                 mzn_exec.parseStderr( io.StringIO( completed.stderr ), resSlv, slvBE["Stderr_Keylines"], slvBE["Stderr_Keyvalues"] )
-                if "Time_Flt" in resSlv:
+                if "Time_Flt" in resSlv and utils.try_float( resSlv.get( "Time_Flt" ) ) is not None:
                     resSlv["Sol_Status"] = [-50, "   ????? NO STATUS LINE PARSED."]
                 else:
                     resSlv["Sol_Status"] = [-51, "   !!!!! NOFZN"]     ## This can mean a check failed.
