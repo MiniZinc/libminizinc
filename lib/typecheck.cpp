@@ -731,8 +731,22 @@ namespace MiniZinc {
       }
       break;
     }
-    for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it)
-      run(env, *it);
+    if (env.ignoreUnknownIds) {
+      std::vector<Expression*> toDelete;
+      for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
+          try {
+            run(env, *it);
+          } catch (TypeError& e) {
+            toDelete.push_back(*it);
+          }
+          for (Expression* de : toDelete)
+            e->ann().remove(de);
+      }
+    } else {
+      for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
+        run(env, *it);
+      }
+    }
   }
   
   KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) {
@@ -1683,29 +1697,38 @@ namespace MiniZinc {
     
     for (unsigned int i=0; i<assignItems.size(); i++) {
       AssignI* ai = assignItems[i];
-      VarDecl* vd = ts.get(env.envi(),ai->id(),ai->loc());
-      if (vd->e()) {
-        if (allowMultiAssignment) {
-          GCLock lock;
-          m->addItem(new ConstraintI(ai->loc(),
-                                     new BinOp(ai->loc(),
-                                               new Id(Location().introduce(),ai->id(),vd), BOT_EQ, ai->e())));
-        } else {
-          throw TypeError(env.envi(),ai->loc(),"multiple assignment to the same variable");
-        }
+      VarDecl* vd = NULL;
+      if (env.envi().ignoreUnknownIds) {
+        try {
+          vd = ts.get(env.envi(),ai->id(),ai->loc());
+        } catch (TypeError& e) {}
       } else {
-        vd->e(ai->e());
-        
-        if (vd->ti()->isEnum()) {
-          GCLock lock;
-          ASTString name(createEnumToStringName(vd->id(),"_enum_to_string_"));
-          VarDecl* vd_enum = ts.get(env.envi(),name,vd->loc());
-          if (vd_enum->e())
-            throw TypeError(env.envi(),ai->loc(),"multiple definition of the same enum");
-          AssignI* ai_enum = createEnumMapper(env.envi(), m, vd->ti()->type().enumId(), vd, vd_enum, enumItems2);
-          if (ai_enum) {
-            vd_enum->e(ai_enum->e());
-            ai_enum->remove();
+        vd = ts.get(env.envi(),ai->id(),ai->loc());
+      }
+      if (vd) {
+        if (vd->e()) {
+          if (allowMultiAssignment) {
+            GCLock lock;
+            m->addItem(new ConstraintI(ai->loc(),
+                                       new BinOp(ai->loc(),
+                                                 new Id(Location().introduce(),ai->id(),vd), BOT_EQ, ai->e())));
+          } else {
+            throw TypeError(env.envi(),ai->loc(),"multiple assignment to the same variable");
+          }
+        } else {
+          vd->e(ai->e());
+          
+          if (vd->ti()->isEnum()) {
+            GCLock lock;
+            ASTString name(createEnumToStringName(vd->id(),"_enum_to_string_"));
+            VarDecl* vd_enum = ts.get(env.envi(),name,vd->loc());
+            if (vd_enum->e())
+              throw TypeError(env.envi(),ai->loc(),"multiple definition of the same enum");
+            AssignI* ai_enum = createEnumMapper(env.envi(), m, vd->ti()->type().enumId(), vd, vd_enum, enumItems2);
+            if (ai_enum) {
+              vd_enum->e(ai_enum->e());
+              ai_enum->remove();
+            }
           }
         }
       }

@@ -56,7 +56,8 @@ string MIP_WrapperFactory::getVersion( ) {
   return oss.str();
 }
 
-static const vector<string> sGurobiDLLs = { "gurobi75", "gurobi70", "gurobi65" };
+static const vector<string> sGurobiDLLs =
+  { "gurobi90", "gurobi85", "gurobi80", "gurobi75", "gurobi70", "gurobi65" };
 
 void MIP_WrapperFactory::printHelp(ostream& os) {
   os
