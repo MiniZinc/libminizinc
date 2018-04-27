@@ -1,3 +1,5 @@
+#include <chrono>
+
 namespace MiniZinc {
 
   template<class MIPWrapper>

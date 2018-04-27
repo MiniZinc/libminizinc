@@ -184,7 +184,7 @@ int main (int argc, char* argv[]) {
 # -------------------------------------------------------------------------------------------------------------------
 SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
 
-file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/minizinc)
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/include/minizinc)
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/doc/html)
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/doc/pdf)
 
@@ -192,7 +192,7 @@ file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/doc/pdf)
 # to the source code
 configure_file (
   ${PROJECT_SOURCE_DIR}/include/minizinc/config.hh.in
-  ${PROJECT_BINARY_DIR}/minizinc/config.hh
+  ${PROJECT_BINARY_DIR}/include/minizinc/config.hh
   )
 
 configure_file (
@@ -200,7 +200,7 @@ configure_file (
   ${PROJECT_BINARY_DIR}/doc/pdf/version.tex
   )
 
-include_directories(${PROJECT_BINARY_DIR})
+include_directories(${PROJECT_BINARY_DIR}/include)
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
@@ -237,13 +237,13 @@ endif(FLEX_EXEC)
 find_program(BISON_EXEC bison)
 if(BISON_EXEC)
   add_custom_command(
-    OUTPUT ${PROJECT_BINARY_DIR}/parser.tab.cpp ${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh
+    OUTPUT ${PROJECT_BINARY_DIR}/parser.tab.cpp ${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh
     DEPENDS ${lexer_cpp} ${PROJECT_SOURCE_DIR}/lib/parser.yxx
-    COMMAND "${BISON_EXEC}" -l -o ${PROJECT_BINARY_DIR}/parser.tab.cpp --defines=${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh ${PROJECT_SOURCE_DIR}/lib/parser.yxx
+    COMMAND "${BISON_EXEC}" -l -o ${PROJECT_BINARY_DIR}/parser.tab.cpp --defines=${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh ${PROJECT_SOURCE_DIR}/lib/parser.yxx
     )
   set_source_files_properties(${PROJECT_BINARY_DIR}/parser.tab.cpp GENERATED)
   set(parser_cpp ${PROJECT_BINARY_DIR}/parser.tab.cpp)
-  set(parser_hh ${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh)
+  set(parser_hh ${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh)
 else(BISON_EXEC)
   MD5(${PROJECT_SOURCE_DIR}/lib/parser.yxx parser_yxx_md5)
   if(NOT "${parser_yxx_md5}" STREQUAL "${parser_yxx_md5_cached}")
@@ -710,7 +710,7 @@ INSTALL(DIRECTORY include/minizinc
 )
 
 # -------------------------------------------------------------------------------------------------------------------
-INSTALL(FILES ${PROJECT_BINARY_DIR}/minizinc/config.hh DESTINATION include/minizinc)
+INSTALL(FILES ${PROJECT_BINARY_DIR}/include/minizinc/config.hh DESTINATION include/minizinc)
 INSTALL(FILES README.txt INSTALL.txt LICENSE.txt DESTINATION doc/..)
 INSTALL(DIRECTORY doc/pdf DESTINATION doc)
 INSTALL(DIRECTORY share/examples DESTINATION share)
