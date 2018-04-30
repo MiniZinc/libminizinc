@@ -155,6 +155,7 @@ def checkKeyvalues( line, dictVal, result ):
                         s_Val = lSL[ paramArray[2]-1 ]
  ##               d_Val = try_float( s_Val ) 
                         result[key] = s_Val             ### [ d_Val, s_Val ] Need here?
+##                        print( "                checkKeyval: result[{}] = '{}'".format(key, s_Val) )
                     else:
                         print( "ERROR: Parsing output line ", lSL,
                               ": regex key '", paramArray[0],
