@@ -857,7 +857,11 @@ namespace MiniZinc {
         {
           BinOp* bo = e->cast<BinOp>();
           Expression* lhs = bo->lhs();
+          if (lhs->type().bt()==Type::BT_TOP)
+            lhs = eval_par(env,lhs);
           Expression* rhs = bo->rhs();
+          if (rhs->type().bt()==Type::BT_TOP)
+            rhs = eval_par(env,rhs);
           if ( bo->op()==BOT_EQ && (lhs->type().isopt() || rhs->type().isopt()) ) {
             if (lhs == constants().absent || rhs==constants().absent)
               return lhs==rhs;
