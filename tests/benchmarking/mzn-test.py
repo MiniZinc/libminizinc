@@ -232,7 +232,12 @@ class MZT_Param:
                   " { <outvar>: [ <regex search pattern>, <regex to replace by spaces>, <value's pos in the line>] }."
                 ], 
                 "Time_Flt": [ "Flattening done,", "[s]", 3, "/// E.g., 'Flattening done, 3s' produces 3."
-                                " !!! This is interpreted as successful flattening by the checker" ]
+                                " !!! This is interpreted as successful flattening by the checker" ],
+                "ObjVal_Solver":   [ "% obj, bound,", "[,:/]", 9,
+                                        "/// The objval as reported by solver."],
+                "DualBnd_Solver":   [ "% obj, bound,", "[,:/]", 10 ],
+                "CPUTime_Solver":   [ "% obj, bound,", "[,:/]", 12 ],
+                "NNodes_Solver":   [ "% obj, bound,", "[,:/]", 13 ],
               },
               "Stdout_Keylines": {
                 s_CommentKey: [ "Similar to Stderr_Keylines"],
@@ -250,11 +255,6 @@ class MZT_Param:
                 s_CommentKey: ["Similar to Stderr_Keyvalues." ],
                 "ObjVal_MZN":   [ "_objective", "[():=;%]", 2,
                                     "/// The objective value as evaluated by MZN." ],
-                "ObjVal_Solver":   [ "% obj, bound, CPU_time, nodes", "[,:]", 7,
-                                        "/// The objval as reported by solver."],
-                "DualBnd_Solver":   [ "% obj, bound, CPU_time, nodes", "[,:]", 8 ],
-                "CPUTime_Solver":   [ "% obj, bound, CPU_time, nodes", "[,:]", 9 ],
-                "NNodes_Solver":   [ "% obj, bound, CPU_time, nodes", "[,:]", 10 ],
                 "RealTime_Solns2Out": [ "% time elapsed:", " ", 4 ],
               }
             },

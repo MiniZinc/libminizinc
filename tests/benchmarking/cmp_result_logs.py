@@ -59,7 +59,7 @@ class CompareLogs:
             ] )
 
     ## which of those to print for each method 
-    hdrTable2P = "stt objMZN bnd tFlt tBest"
+    hdrTable2P = "stt objMZN objSLV bnd tFlt tBest"
     hdrTable2P_spl = hdrTable2P.split( " " )
 
     mapStatShort = {              ## Short status names
