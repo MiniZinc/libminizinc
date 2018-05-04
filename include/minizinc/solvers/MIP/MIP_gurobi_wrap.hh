@@ -56,7 +56,7 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
       static void printHelp(std::ostream& );
     };
   private:
-    Options* options;
+    Options* options=nullptr;
   public:
   
     void (__stdcall *dll_GRBversion) (int*, int*, int*);

@@ -348,7 +348,7 @@ namespace MiniZinc {
   
   const SolverConfig& SolverConfigs::config(const std::string& _s) const {
     std::string s = _s;
-    s.erase(std::remove(s.begin(),s.end(),' '));
+    std::remove(s.begin(),s.end(),' ');
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);
     std::vector<std::string> tags;
     std::istringstream iss(s);

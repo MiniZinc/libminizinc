@@ -67,7 +67,7 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
       static void printHelp(std::ostream& );
     };
   private:
-    Options* options;
+    Options* options=nullptr;
   public:
 
     MIP_osicbc_wrapper(Options* opt) : options(opt) { openOSICBC(); }

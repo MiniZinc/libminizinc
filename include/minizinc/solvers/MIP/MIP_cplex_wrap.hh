@@ -55,7 +55,7 @@ class MIP_cplex_wrapper : public MIP_wrapper {
       static void printHelp(std::ostream& );
     };
   private:
-    Options* options;
+    Options* options=nullptr;
   public:
 
   MIP_cplex_wrapper(Options* opt) : options(opt) { openCPLEX(); }
