@@ -77,7 +77,7 @@ namespace MiniZinc {
   JSONParser::readToken(istream& is) {
     string result;
     char buf[1];
-    enum { S_NOTHING, S_STRING, S_INT, S_FLOAT } state;
+    enum { S_NOTHING, S_STRING, S_STRING_ESCAPE, S_INT, S_FLOAT } state;
     state = S_NOTHING;
     while (is.good()) {
       is.read(buf, sizeof(buf));
@@ -139,12 +139,26 @@ namespace MiniZinc {
               break;
           }
           break;
+        case S_STRING_ESCAPE:
+          switch (buf[0]) {
+            case 'n': result += "\n"; break;
+            case 't': result += "\t"; break;
+            case '"': result += "\""; break;
+            case '\\': result += "\\"; break;
+            default: result += "\\"; result += buf[0]; break;
+          }
+          state = S_STRING;
+          break;
         case S_STRING:
           if (buf[0]=='"') {
             state=S_NOTHING;
             return Token(result);
           }
-          result += buf[0];
+          if (buf[0]=='\\') {
+            state=S_STRING_ESCAPE;
+          } else {
+            result += buf[0];
+          }
           break;
         case S_INT:
           if (buf[0]=='.') {
