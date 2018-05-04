@@ -208,6 +208,10 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
       cout << solver_configs.solverConfigsJSON();
       std::exit(EXIT_SUCCESS);
     }
+    if (string(argv[i])=="--user-solver-config-dir") {
+      cout << FileUtils::user_config_dir()+"/solvers";
+      std::exit(EXIT_SUCCESS);
+    }
     if (string(argv[i])=="--solver") {
       ++i;
       if (i==argc) {
