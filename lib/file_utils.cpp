@@ -227,7 +227,7 @@ namespace MiniZinc { namespace FileUtils {
     return "";
   }
   
-  std::string user_config_file(void) {
+  std::string user_config_dir(void) {
 #ifdef _MSC_VER
     HRESULT hr;
     PWSTR pszPath = NULL;
@@ -248,7 +248,7 @@ namespace MiniZinc { namespace FileUtils {
       if (configPath.empty()) {
         return "";
       } else {
-        return configPath+"/MiniZinc/Preferences";
+        return configPath+"/MiniZinc";
       }
     }
     return "";
@@ -260,7 +260,11 @@ namespace MiniZinc { namespace FileUtils {
     return homedir+"/.minizinc";
 #endif
   }
-  
+
+  std::string user_config_file(void) {
+    return user_config_dir()+"/Preferences";
+  }
+
   void inflateString(std::string& s) {
     unsigned char* cc = reinterpret_cast<unsigned char*>(&s[0]);
     // autodetect compressed string
