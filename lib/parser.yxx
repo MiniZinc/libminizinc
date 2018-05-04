@@ -364,7 +364,7 @@ namespace MiniZinc {
     for (unsigned int i=0; i<datafiles.size(); i++) {
       GCLock lock;
       string f = datafiles[i];
-      if (f.size()>6 && f.substr(f.size()-5,string::npos)==".json") {
+      if (f.size()>=6 && f.substr(f.size()-5,string::npos)==".json") {
         JSONParser jp(env.envi());
         jp.parse(model, f);
       } else {

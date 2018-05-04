@@ -130,7 +130,7 @@ namespace MiniZinc {
             }
               break;
             default:
-              if (buf[0]>='0' && buf[0]<='9') {
+              if ( (buf[0]>='0' && buf[0]<='9') || (buf[0]=='-') ) {
                 result = buf[0];
                 state=S_INT;
               } else {
