@@ -238,6 +238,7 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
          it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
       if ((*it)->getId()=="org.minizinc.mzn-fzn") {
         sf = *it;
+        si_opt = sf->createOptions();
       }
     }
   } else {
