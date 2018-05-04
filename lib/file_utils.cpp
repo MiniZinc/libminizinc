@@ -287,19 +287,19 @@ namespace MiniZinc { namespace FileUtils {
   std::string encodeBase64(const std::string& s) {
     base64::encoder E;
     std::ostringstream oss;
-    oss << ":"; // add leading ":" to distinguish from valid MiniZinc code
+    oss << "@"; // add leading "@" to distinguish from valid MiniZinc code
     std::istringstream iss(s);
     E.encode(iss, oss);
     return oss.str();
   }
 
   std::string decodeBase64(const std::string& s) {
-    if (s.size()==0 || s[0] != ':')
+    if (s.size()==0 || s[0] != '@')
       throw InternalError("string is not base64 encoded");
     base64::decoder D;
     std::ostringstream oss;
     std::istringstream iss(s);
-    (void) iss.get(); // remove leading ":"
+    (void) iss.get(); // remove leading "@"
     D.decode(iss, oss);
     return oss.str();
   }
