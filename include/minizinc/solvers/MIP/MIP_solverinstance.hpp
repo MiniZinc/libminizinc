@@ -4,8 +4,8 @@ namespace MiniZinc {
 
   template<class MIPWrapper>
   MIP_SolverFactory<MIPWrapper>::MIP_SolverFactory(void) {
-    SolverConfig sc(getId(), MIPWrapper::getName(), "", "-Glinear", 1, MIPWrapper::getVersion(),
-                    true, true, true,
+    SolverConfig sc("", getId(), MIPWrapper::getName(), "", "-Glinear", 1, MIPWrapper::getVersion(),
+                    true, true, true, false,
                     "MiniZinc MIP solver plugin", "",
                     "", {}, {}, {"mip","float","api"});
     SolverConfigs::registerBuiltinSolver(sc);

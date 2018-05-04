@@ -13,6 +13,7 @@
 #include <minizinc/parser.hh>
 #include <minizinc/json_parser.hh>
 #include <minizinc/file_utils.hh>
+#include <minizinc/prettyprinter.hh>
 
 #include <sstream>
 #include <algorithm>
@@ -61,6 +62,7 @@ namespace MiniZinc {
   
   SolverConfig SolverConfig::load(string filename) {
     SolverConfig sc;
+    sc._configFile = FileUtils::file_path(filename);
     ostringstream errstream;
     try {
       Env confenv;
@@ -95,7 +97,8 @@ namespace MiniZinc {
               sc._name = getString(ai);
               hadName = true;
             } else if (ai->id()=="executable") {
-              sc._executable = FileUtils::file_path(getString(ai), basePath);
+              std::string absPath = FileUtils::file_path(getString(ai), basePath);
+              sc._executable = FileUtils::file_exists(absPath) ? absPath : getString(ai);
             } else if (ai->id()=="mznlib") {
               std::string libPath = getString(ai);
               if (!libPath.empty() && libPath[0]=='-') {
@@ -120,10 +123,12 @@ namespace MiniZinc {
               sc._supportsFzn = getBool(ai);
             } else if (ai->id()=="needsSolns2Out") {
               sc._needsSolns2Out = getBool(ai);
+            } else if (ai->id()=="isGUIApplication") {
+              sc._isGUIApplication = getBool(ai);
             } else if (ai->id()=="tags") {
               sc._tags = getStringList(ai);
             } else {
-              throw ConfigException("invalid configuration item");
+              throw ConfigException("invalid configuration item ("+ai->id().str()+")");
             }
           } else {
             throw ConfigException("invalid configuration item");
@@ -193,6 +198,12 @@ namespace MiniZinc {
       if (!solver_path.empty())
         solver_path += PATHSEP;
       solver_path += string(MZNSOLVERPATH);
+    }
+    std::string userConfigDir = FileUtils::user_config_dir();
+    if (FileUtils::directory_exists(userConfigDir+"/solvers")) {
+      if (!solver_path.empty())
+        solver_path += PATHSEP;
+      solver_path += userConfigDir+"/solvers";
     }
     std::string userConfig = FileUtils::user_config_file();
     if (FileUtils::file_exists(userConfig)) {
@@ -294,34 +305,36 @@ namespace MiniZinc {
   }
 
   std::string SolverConfigs::solverConfigsJSON() const {
+    GCLock lock;
     std::ostringstream oss;
     oss << "[\n";
     for (unsigned int i=0; i<_solvers.size(); i++) {
       oss << "  {\n";
       const SolverConfig& sc = _solvers[i];
-      oss << "    \"id\": \"" << sc.id() << "\",\n";
-      oss << "    \"name\": \"" << sc.name() << "\",\n";
-      oss << "    \"version\": \"" << sc.version() << "\",\n";
+      oss << "    \"configFile\": \"" << Printer::escapeStringLit(sc.configFile()) << "\",\n";
+      oss << "    \"id\": \"" << Printer::escapeStringLit(sc.id()) << "\",\n";
+      oss << "    \"name\": \"" << Printer::escapeStringLit(sc.name()) << "\",\n";
+      oss << "    \"version\": \"" << Printer::escapeStringLit(sc.version()) << "\",\n";
       if (sc.mznlib().size()) {
-        oss << "    \"mznlib\": \"" << sc.mznlib() << "\",\n";
+        oss << "    \"mznlib\": \"" << Printer::escapeStringLit(sc.mznlib()) << "\",\n";
       }
       if (sc.executable().size()) {
-        oss << "    \"executable\": \"" << sc.executable() << "\",\n";
+        oss << "    \"executable\": \"" << Printer::escapeStringLit(sc.executable()) << "\",\n";
       }
       oss << "    \"mznlibVersion\": " << sc.mznlibVersion() << ",\n";
       if (sc.description().size()) {
-        oss << "    \"description\": \"" << sc.description() << "\",\n";
+        oss << "    \"description\": \"" << Printer::escapeStringLit(sc.description()) << "\",\n";
       }
       if (sc.contact().size()) {
-        oss << "    \"contact\": \"" << sc.contact() << "\",\n";
+        oss << "    \"contact\": \"" << Printer::escapeStringLit(sc.contact()) << "\",\n";
       }
       if (sc.website().size()) {
-        oss << "    \"website\": \"" << sc.website() << "\",\n";
+        oss << "    \"website\": \"" << Printer::escapeStringLit(sc.website()) << "\",\n";
       }
       if (sc.tags().size()) {
         oss << "    \"tags\": [";
         for (unsigned int j=0; j<sc.tags().size(); j++) {
-          oss << "\"" << sc.tags()[j] << "\"";
+          oss << "\"" << Printer::escapeStringLit(sc.tags()[j]) << "\"";
           if (j<sc.tags().size()-1)
             oss << ",";
         }
@@ -329,7 +342,8 @@ namespace MiniZinc {
       }
       oss << "    \"supportsMzn\": " << (sc.supportsMzn() ? "true" : "false") << ",\n";
       oss << "    \"supportsFzn\": " << (sc.supportsFzn() ? "true" : "false") << ",\n";
-      oss << "    \"needsSolns2Out\": " << (sc.needsSolns2Out()? "true" : "false") << "\n";
+      oss << "    \"needsSolns2Out\": " << (sc.needsSolns2Out()? "true" : "false") << ",\n";
+      oss << "    \"isGUIApplication\": " << (sc.isGUIApplication()? "true" : "false") << "\n";
       oss << "  }" << (i<_solvers.size()-1 ? ",\n" : "\n");
     }
     oss << "]\n";
