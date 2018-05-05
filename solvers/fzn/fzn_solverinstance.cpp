@@ -555,6 +555,9 @@ namespace MiniZinc {
   SolverInstance::Status
   FZNSolverInstance::solve(void) {
     FZNSolverOptions& opt = static_cast<FZNSolverOptions&>(*_options);
+    if (opt.fzn_solver.empty()) {
+      throw InternalError("No FlatZinc solver specified");
+    }
     /// Passing options to solver
     vector<string> cmd_line;
     cmd_line.push_back( opt.fzn_solver );
