@@ -48,6 +48,14 @@ using namespace std;
 
 namespace MiniZinc {
   
+  FZN_SolverFactory::FZN_SolverFactory(void) {
+    SolverConfig sc("","org.minizinc.mzn-fzn", "Generic FlatZinc driver", "", "", 1,
+                    MZN_VERSION_MAJOR "." MZN_VERSION_MINOR "." MZN_VERSION_PATCH, true, true, true, false,
+                    "MiniZinc generic FlatZinc solver plugin", "", "",
+                    {},{},{});
+    SolverConfigs::registerBuiltinSolver(sc);
+  }
+  
   string FZN_SolverFactory::getDescription()  {
     string v = "FZN solver plugin, compiled  " __DATE__ "  " __TIME__;
     return v;

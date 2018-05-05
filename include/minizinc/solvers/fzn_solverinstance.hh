@@ -58,6 +58,7 @@ namespace MiniZinc {
   protected:
     virtual SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
   public:
+    FZN_SolverFactory(void);
     virtual SolverInstanceBase::Options* createOptions(void);
     virtual std::string getDescription(void);
     virtual std::string getVersion(void);
