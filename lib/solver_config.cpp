@@ -376,7 +376,7 @@ namespace MiniZinc {
       throw ConfigException("no solver selected");
     TagMap::const_iterator tag_it = _tags.find(getTag(tags[0]));
     if (tag_it == _tags.end()) {
-      throw ConfigException("no solver with tags "+tags[0]+" found");
+      throw ConfigException("no solver with tag "+tags[0]+" found");
     }
     std::string tv = getVersion(tags[0]);
     for (int sidx: tag_it->second) {

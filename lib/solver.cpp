@@ -294,7 +294,7 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
       }
       
     } catch (ConfigException& e) {
-      log << "Config exception: " << e.what() << endl;
+      log << "Config exception: " << e.msg() << endl;
       return false;
     }
     
