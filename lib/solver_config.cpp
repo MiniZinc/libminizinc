@@ -58,6 +58,22 @@ namespace MiniZinc {
       }
       throw ConfigException("invalid configuration item (right hand side must be a list of strings)");
     }
+    std::vector<std::pair<std::string,std::string> > getStringPairList(AssignI* ai) {
+      if (ArrayLit* al = ai->e()->dyn_cast<ArrayLit>()) {
+        std::vector<std::pair<std::string,std::string> > ret;
+        for (unsigned int i=0; i<al->size(); i+=2) {
+          StringLit* sl1 = (*al)[i]->dyn_cast<StringLit>();
+          StringLit* sl2 = (*al)[i+1]->dyn_cast<StringLit>();
+          if (sl1 && sl2) {
+            ret.push_back(std::pair<std::string,std::string>(sl1->v().str(),sl2->v().str()));
+          } else {
+            throw ConfigException("invalid configuration item (right hand side must be a list of strings)");
+          }
+        }
+        return ret;
+      }
+      throw ConfigException("invalid configuration item (right hand side must be a list of lists of strings)");
+    }
   }
   
   SolverConfig SolverConfig::load(string filename) {
@@ -127,6 +143,10 @@ namespace MiniZinc {
               sc._isGUIApplication = getBool(ai);
             } else if (ai->id()=="tags") {
               sc._tags = getStringList(ai);
+            } else if (ai->id()=="stdFlags") {
+              sc._stdFlags = getStringList(ai);
+            } else if (ai->id()=="extraFlags") {
+              sc._extraFlags = getStringPairList(ai);
             } else {
               throw ConfigException("invalid configuration item ("+ai->id().str()+")");
             }
@@ -331,6 +351,25 @@ namespace MiniZinc {
       if (sc.website().size()) {
         oss << "    \"website\": \"" << Printer::escapeStringLit(sc.website()) << "\",\n";
       }
+      if (sc.stdFlags().size()) {
+        oss << "    \"stdFlags\": [";
+        for (unsigned int j=0; j<sc.stdFlags().size(); j++) {
+          oss << "\"" << sc.stdFlags()[j] << "\"";
+          if (j<sc.stdFlags().size()-1)
+            oss << ",";
+        }
+        oss << "],\n";
+      }
+      if (sc.extraFlags().size()) {
+        oss << "    \"extraFlags\": [";
+        for (unsigned int j=0; j<sc.extraFlags().size(); j++) {
+          oss << "[" << "\"" << sc.extraFlags()[j].first << "\",\"" << sc.extraFlags()[j].second << "\"]";
+          if (j<sc.extraFlags().size()-1)
+            oss << ",";
+        }
+        oss << "],\n";
+      }
+
       if (sc.tags().size()) {
         oss << "    \"tags\": [";
         for (unsigned int j=0; j<sc.tags().size(); j++) {
