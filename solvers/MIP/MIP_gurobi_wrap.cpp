@@ -70,6 +70,16 @@ string MIP_gurobi_wrapper::getVersion( ) {
   }
 }
 
+string MIP_gurobi_wrapper::needDllFlag( ) {
+  MIP_gurobi_wrapper mgw( (int) 5 );
+  try {
+    mgw.checkDLL();
+    return "";
+  } catch (MiniZinc::InternalError& e) {
+    return "--gurobi-dll";
+  }
+}
+
 string MIP_gurobi_wrapper::getId() {
   return "gurobi";
 }

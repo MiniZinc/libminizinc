@@ -145,6 +145,8 @@ namespace MiniZinc {
               sc._tags = getStringList(ai);
             } else if (ai->id()=="stdFlags") {
               sc._stdFlags = getStringList(ai);
+            } else if (ai->id()=="requiredFlags") {
+              sc._requiredFlags = getStringList(ai);
             } else if (ai->id()=="extraFlags") {
               sc._extraFlags = getStringPairList(ai);
             } else {
@@ -350,6 +352,15 @@ namespace MiniZinc {
       }
       if (sc.website().size()) {
         oss << "    \"website\": \"" << Printer::escapeStringLit(sc.website()) << "\",\n";
+      }
+      if (sc.requiredFlags().size()) {
+        oss << "    \"requiredFlags\": [";
+        for (unsigned int j=0; j<sc.requiredFlags().size(); j++) {
+          oss << "\"" << sc.requiredFlags()[j] << "\"";
+          if (j<sc.requiredFlags().size()-1)
+            oss << ",";
+        }
+        oss << "],\n";
       }
       if (sc.stdFlags().size()) {
         oss << "    \"stdFlags\": [";

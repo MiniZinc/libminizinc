@@ -56,6 +56,8 @@ namespace MiniZinc {
     std::vector<std::string> _stdFlags;
     /// Supported extra command line flags (flag and description)
     std::vector<std::pair<std::string,std::string> > _extraFlags;
+    /// Required command line flags
+    std::vector<std::string> _requiredFlags;
     /// Tags
     std::vector<std::string> _tags;
   public:
@@ -73,12 +75,13 @@ namespace MiniZinc {
                  const std::string& website,
                  const std::vector<std::string>& stdFlags = std::vector<std::string>(),
                  const std::vector<std::pair<std::string,std::string> > extraFlags = std::vector<std::pair<std::string,std::string> >(),
+                 const std::vector<std::string>& requiredFlags = std::vector<std::string>(),
                  const std::vector<std::string>& tags = std::vector<std::string>())
     : _configFile(configFile), _id(id), _name(name),
       _executable(executable), _mznlib(mznlib), _version(version), _mznlibVersion(mznlibVersion),
       _description(description), _contact(contact), _website(website),
       _supportsMzn(mzn), _supportsFzn(fzn), _needsSolns2Out(s2o), _isGUIApplication(gui),
-      _stdFlags(stdFlags), _extraFlags(extraFlags), _tags(tags) {}
+      _stdFlags(stdFlags), _extraFlags(extraFlags), _requiredFlags(requiredFlags), _tags(tags) {}
     /// Return configuration file name
     std::string configFile(void) const { return _configFile; }
     /// Return identifier
@@ -111,6 +114,8 @@ namespace MiniZinc {
     const std::vector<std::string>& stdFlags(void) const { return _stdFlags; }
     /// Return supported extra command line flags
     const std::vector<std::pair<std::string,std::string> >& extraFlags(void) const { return _extraFlags; }
+    /// Return supported standard command line flags
+    const std::vector<std::string>& requiredFlags(void) const { return _requiredFlags; }
     /// Return tags
     const std::vector<std::string>& tags(void) const { return _tags; }
     /// Test equality

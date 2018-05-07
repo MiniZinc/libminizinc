@@ -4,12 +4,15 @@ namespace MiniZinc {
 
   template<class MIPWrapper>
   MIP_SolverFactory<MIPWrapper>::MIP_SolverFactory(void) {
+    std::vector<std::string> requiredFlags;
+    std::string dllFlag = MIPWrapper::needDllFlag();
+    if (dllFlag.size())
+      requiredFlags.push_back(dllFlag);
     SolverConfig sc("", getId(), MIPWrapper::getName(), "", "-Glinear", 1, MIPWrapper::getVersion(),
                     true, true, true, false,
                     "MiniZinc MIP solver plugin", "",
-                    "", {}, {}, {"mip","float","api"});
+                    "", {}, {}, requiredFlags, {"mip","float","api"});
     SolverConfigs::registerBuiltinSolver(sc);
-
   }
   
   template<class MIPWrapper>

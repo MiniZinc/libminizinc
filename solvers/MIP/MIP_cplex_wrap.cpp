@@ -242,6 +242,20 @@ string MIP_cplex_wrapper::getVersion( ) {
   return v;
 }
 
+std::string MIP_cplex_wrapper::needDllFlag(void) {
+  int status;
+  Options options;
+  try {
+    MIP_cplex_wrapper mcw(&options);
+    CPXENVptr env = mcw.dll_CPXopenCPLEX (&status);
+    if (env) {
+      return "";
+    }
+  } catch (MiniZinc::InternalError&) {
+  }
+  return "--cplex-dll";
+}
+
 string MIP_cplex_wrapper::getId() {
   return "cplex";
 }

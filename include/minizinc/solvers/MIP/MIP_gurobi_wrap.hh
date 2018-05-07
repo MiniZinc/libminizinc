@@ -145,6 +145,7 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     static std::string getVersion(void);
     static std::string getId(void);
     static std::string getName(void);
+    static std::string needDllFlag(void);
 //       Statistics& getStatistics() { return _statistics; }
 
 //      IloConstraintArray *userCuts, *lazyConstraints;

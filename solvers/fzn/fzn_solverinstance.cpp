@@ -52,7 +52,7 @@ namespace MiniZinc {
     SolverConfig sc("","org.minizinc.mzn-fzn", "Generic FlatZinc driver", "", "", 1,
                     MZN_VERSION_MAJOR "." MZN_VERSION_MINOR "." MZN_VERSION_PATCH, true, true, true, false,
                     "MiniZinc generic FlatZinc solver plugin", "", "",
-                    {},{},{});
+                    {},{},{"-f"},{});
     SolverConfigs::registerBuiltinSolver(sc);
   }
   
