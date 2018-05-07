@@ -150,9 +150,11 @@ void MznSolver::printHelp(const std::string& selectedSolver)
       os << endl;
     }
     os << "Available solvers (get help using --help <solver id>):" << endl;
-    for (auto it = getGlobalSolverRegistry()->getSolverFactories().rbegin();
-         it != getGlobalSolverRegistry()->getSolverFactories().rend(); ++it) {
-      os << "  " << (*it)->getId() << endl;
+    std::vector<std::string> solvers = solver_configs.solvers();
+    if (solvers.size()==0)
+      cout << "  none.\n";
+    for (unsigned int i=0; i<solvers.size(); i++) {
+      cout << "  " << solvers[i] << endl;
     }
   } else {
     bool found = false;
