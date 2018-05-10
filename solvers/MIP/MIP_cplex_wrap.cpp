@@ -342,6 +342,7 @@ void MIP_cplex_wrapper::wrap_assert(bool cond, string msg, bool fTerm)
 void MIP_cplex_wrapper::openCPLEX()
 {
   checkDLL();
+  cbui.wrapper = this;
   /// Cleanup first.
 //   cleanup();
    /* Initialize the CPLEX environment */
