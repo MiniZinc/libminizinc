@@ -11,7 +11,7 @@ build:linux:
     - mkdir build
     - cd build
     - bash ../BUILD.sh
-    - cp mzn2fzn mzn-fzn solns2out ../
+    - mv mzn2fzn mzn-fzn solns2out ../
   artifacts:
      paths:
        - mzn2fzn
@@ -26,7 +26,7 @@ build:osx:
     - mkdir build
     - cd build
     - bash ../BUILD.sh
-    - cp mzn2fzn mzn-fzn solns2out ../
+    - mv mzn2fzn mzn-fzn solns2out ../
   artifacts:
      paths:
        - mzn2fzn
@@ -34,6 +34,22 @@ build:osx:
        - solns2out
   tags:
      - mac
+
+build:windows:
+  stage: build
+  script:
+    - mkdir build
+    - cd build
+    - cmake .. -G"Visual Studio 12 Win64" -DCMAKE_BUILD_TYPE=Release
+    - cmake --build . --config Release
+    - mv Release/mzn2fzn.exe Release/mzn-fzn.exe Release/solns2out.exe ../
+  artifacts:
+     paths:
+       - mzn2fzn.exe
+       - mzn-fzn.exe
+       - solns2out.exe
+  tags:
+     - windows
 
 test:mzn20_fd:linux:
   stage: test
