@@ -85,7 +85,7 @@ namespace MiniZinc {
       WeakRef b;
       WW(WeakRef r0, WeakRef b0) : r(r0), b(b0) {}
     };
-    typedef KeepAliveMap<WW> Map;
+    typedef KeepAliveMap<WW> CSEMap;
     bool ignorePartial;
     bool ignoreUnknownIds;
     std::vector<Expression*> callStack;
@@ -112,7 +112,7 @@ namespace MiniZinc {
     typedef UNORDERED_NAMESPACE::unordered_map<std::string, int> FilenameMap;
     std::vector<KeepAlive> checkVars;
   protected:
-    Map map;
+    CSEMap cse_map;
     Model* _flat;
     bool _failed;
     unsigned int ids;
@@ -130,10 +130,10 @@ namespace MiniZinc {
     EnvI(Model* orig0);
     ~EnvI(void);
     long long int genId(void);
-    void map_insert(Expression* e, const EE& ee);
-    Map::iterator map_find(Expression* e);
-    void map_remove(Expression* e);
-    Map::iterator map_end(void);
+    void cse_map_insert(Expression* e, const EE& ee);
+    CSEMap::iterator cse_map_find(Expression* e);
+    void cse_map_remove(Expression* e);
+    CSEMap::iterator cse_map_end(void);
     void dump(void);
     
     unsigned int registerEnum(VarDeclI* vdi);

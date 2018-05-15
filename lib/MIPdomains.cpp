@@ -1567,7 +1567,7 @@ namespace MiniZinc {
             fDecl = mipd.int_lin_eq;
           }
         }
-        if ( mipd.getEnv()->envi().map_end() != mipd.getEnv()->envi().map_find( args[0] ) ) {
+        if ( mipd.getEnv()->envi().cse_map_end() != mipd.getEnv()->envi().cse_map_find( args[0] ) ) {
           DBGOUT_MIPD__( " Found expr " );
           DBGOUT_MIPD_SELF( debugprint( args[0] ) );
         }
