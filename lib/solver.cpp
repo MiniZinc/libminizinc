@@ -360,4 +360,24 @@ void MznSolver::printStatistics()
     getSI()->printStatisticsLine(1);
 }
 
-
+bool MznSolver::run(int& argc, const char**& argv, const std::string& model) {
+  if (!processOptions(argc, argv)) {
+    printHelp();
+    return false;
+  }
+  flatten(model);
+  
+  if (SolverInstance::UNKNOWN == getFltStatus())
+  {
+    if ( !ifMzn2Fzn() ) {          // only then
+      // GCLock lock;                  // better locally, to enable cleanup after ProcessFlt()
+      addSolverInterface();
+      solve();
+    }
+    return true;
+  } else {
+    if ( !ifMzn2Fzn() )
+      s2out.evalStatus( getFltStatus() );
+    return (SolverInstance::ERROR != getFltStatus());
+  }                                   //  Add evalOutput() here?   TODO
+}

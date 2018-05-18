@@ -252,19 +252,7 @@ void Solns2Out::checkSolution(std::ostream& os) {
     for (unsigned int i=0; i<args.size(); i++)
       argv[i] = args[i].c_str();
     const char** argv_v = &argv[0];
-    if (!slv.processOptions(argc, argv_v)) {
-      slv.printHelp();
-    } else {
-      slv.flatten(checker.str());
-      
-      if (SolverInstance::UNKNOWN == slv.getFltStatus())
-      {
-        slv.addSolverInterface();
-        slv.solve();
-      } else {
-        slv.s2out.evalStatus( slv.getFltStatus() );
-      }
-    }
+    slv.run(argc, argv_v, checker.str());
   } catch (const LocationException& e) {
     oss_err << e.loc() << ":" << std::endl;
     oss_err << e.what() << ": " << e.msg() << std::endl;

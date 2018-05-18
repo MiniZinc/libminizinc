@@ -73,26 +73,7 @@ int main(int argc, const char** argv) {
   try {
     MznSolver slv(std::cout,std::cerr);
     try {
-      
-      if (!slv.processOptions(argc, argv)) {
-        slv.printHelp();
-        exit(EXIT_FAILURE);
-      }
-      slv.flatten();
-      
-      if (SolverInstance::UNKNOWN == slv.getFltStatus())
-      {
-        if ( !slv.ifMzn2Fzn() ) {          // only then
-          // GCLock lock;                  // better locally, to enable cleanup after ProcessFlt()
-          slv.addSolverInterface();
-          slv.solve();
-        }
-        fSuccess = true;
-      } else {
-        if ( !slv.ifMzn2Fzn() )
-          slv.s2out.evalStatus( slv.getFltStatus() );
-        fSuccess = (SolverInstance::ERROR != slv.getFltStatus());
-      }                                   //  Add evalOutput() here?   TODO
+      fSuccess = slv.run(argc,argv);
     } catch (const LocationException& e) {
       if (slv.get_flag_verbose())
         std::cerr << std::endl;
@@ -115,12 +96,10 @@ int main(int argc, const char** argv) {
       std::cerr << "  UNKNOWN EXCEPTION." << std::endl;
     }
     
-    if ( !slv.ifMzn2Fzn() ) {
-      endTime = clock();
-      if (slv.get_flag_verbose()) {
-        std::cerr << "   Done (";
-        cerr << "overall time " << timeDiff(endTime, starttime) << ")." << std::endl;
-      }
+    endTime = clock();
+    if (slv.get_flag_verbose()) {
+      std::cerr << "   Done (";
+      cerr << "overall time " << timeDiff(endTime, starttime) << ")." << std::endl;
     }
     return !fSuccess;
   } catch (const Exception& e) {

@@ -89,7 +89,6 @@ namespace MiniZinc {
     SolverFactory* sf=0;
     bool is_mzn2fzn=0;
 
-
     std::string executable_name;
     std::ostream& os;
     std::ostream& log;
@@ -104,6 +103,10 @@ namespace MiniZinc {
   public:
     MznSolver(std::ostream& os = std::cout, std::ostream& log = std::cerr);
     ~MznSolver();
+    
+    bool run(int& argc, const char**& argv, const std::string& model = std::string());
+    bool get_flag_verbose() { return flag_verbose; /*getFlt()->get_flag_verbose();*/ }
+  private:
     bool processOptions(int& argc, const char**& argv);
     void printHelp(const std::string& selectedSolver=std::string());
     /// Flatten model
@@ -118,7 +121,6 @@ namespace MiniZinc {
     
     SolverInstance::Status getFltStatus() { return flt.status; }
     SolverInstanceBase* getSI() { assert(si); return si; }
-    bool get_flag_verbose() { return flag_verbose; /*getFlt()->get_flag_verbose();*/ }
     bool get_flag_statistics() { return flag_statistics; }
     
   };
