@@ -323,6 +323,7 @@ include/minizinc/options.hh
 include/minizinc/output.hh
 include/minizinc/parser.hh
 include/minizinc/prettyprinter.hh
+include/minizinc/process.hh
 include/minizinc/pathfileprinter.hh
 include/minizinc/solver.hh
 include/minizinc/solver_config.hh
