@@ -243,7 +243,12 @@ namespace MiniZinc {
           fznFile += ".fzn";
           std::ofstream os(fznFile);
           Printer p(os, 0, true);
-          p.print(_flat);
+          for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
+            if(!(*it)->removed() && !(*it)->isa<IncludeI>()) {
+              Item* item = *it;
+              p.print(item);
+            }
+          }
         }
 
         PROCESS_INFORMATION piProcInfo;
@@ -297,7 +302,7 @@ namespace MiniZinc {
         if (_canPipe) {
           DWORD dwWritten;
           for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
-            if(!(*it)->removed()) {
+            if(!(*it)->removed() && !(*it)->isa<IncludeI>()) {
               std::stringstream ss;
               Item* item = *it;
               ss << *item;
@@ -353,7 +358,7 @@ namespace MiniZinc {
           std::ofstream os(tmpfile);
           Printer p(os, 0, true);
           for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
-            if(!(*it)->removed()) {
+            if(!(*it)->removed() && !(*it)->isa<IncludeI>()) {
               Item* item = *it;
               p.print(item);
             }
@@ -369,7 +374,7 @@ namespace MiniZinc {
           close(pipes[2][1]);
           if (_canPipe) {
             for (Model::iterator it = _flat->begin(); it != _flat->end(); ++it) {
-              if(!(*it)->removed()) {
+              if(!(*it)->removed() && !(*it)->isa<IncludeI>()) {
                 std::stringstream ss;
                 Item* item = *it;
                 ss << *item;
