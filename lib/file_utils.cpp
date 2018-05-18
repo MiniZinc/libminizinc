@@ -39,6 +39,7 @@
 #ifdef _MSC_VER
 #include "Shlwapi.h"
 #pragma comment(lib, "Shlwapi.lib")
+#include "Shlobj.h"
 #else
 #include <dirent.h>
 #include <libgen.h>
