@@ -39,6 +39,22 @@ namespace MiniZinc { namespace FileUtils {
   std::string user_config_file(void);
   /// Get per-user configuration directory name (usually in home directory or AppData directory)
   std::string user_config_dir(void);
+  
+  /// Create a temporary file
+  class TmpFile {
+  private:
+    std::string _name;
+#ifndef _WIN32
+    int _tmpfile_desc;
+#endif
+  public:
+    // Constructor for file with extension \a ext
+    TmpFile(const std::string& ext);
+    /// Destructor (removes file)
+    ~TmpFile(void);
+    std::string name(void) const { return _name; }
+  };
+
   /// Inflate string \a s
   void inflateString(std::string& s);
   /// Deflate string \a s

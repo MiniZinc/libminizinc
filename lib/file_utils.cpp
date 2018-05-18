@@ -266,6 +266,39 @@ namespace MiniZinc { namespace FileUtils {
     return user_config_dir()+"/Preferences";
   }
 
+  TmpFile::TmpFile(const std::string& ext) {
+#ifdef _WIN32
+    TCHAR szTempFileName[MAX_PATH];
+    TCHAR lpTempPathBuffer[MAX_PATH];
+    
+    GetTempPath(MAX_PATH, lpTempPathBuffer);
+    GetTempFileName(lpTempPathBuffer,
+                    "tmp_mzn_", 0, szTempFileName);
+    
+    _name = szTempFileName;
+    MoveFile(_name.c_str(), (_name + ext).c_str());
+    _name += ext;
+#else
+    _tmpfile_desc = -1;
+    _name = "/tmp/mznfileXXXXXX"+ext;
+    char* tmpfile = strndup(_name.c_str(), _name.size());
+    _tmpfile_desc = mkstemps(tmpfile, ext.size());
+    if (_tmpfile_desc == -1) {
+      throw InternalError("Error occurred when creating temporary file");
+    }
+    _name = std::string(tmpfile);
+    ::free(tmpfile);
+#endif
+  }
+  
+  TmpFile::~TmpFile(void) {
+    remove(_name.c_str());
+#ifndef _WIN32
+    if (_tmpfile_desc != -1)
+      close(_tmpfile_desc);
+#endif
+  }
+  
   void inflateString(std::string& s) {
     unsigned char* cc = reinterpret_cast<unsigned char*>(&s[0]);
     // autodetect compressed string
