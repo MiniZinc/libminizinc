@@ -24,10 +24,13 @@ using namespace Gecode;
 namespace MiniZinc {
   
   Gecode_SolverFactory::Gecode_SolverFactory(void) {
-    SolverConfig sc("","org.minizinc.gecode", "Gecode", "", "-Ggecode", 1,
-                    GECODE_VERSION, true, true, true, false,
-                    "MiniZinc Gecode solver plugin", "", "",
-                    {},{},{},{"cp","float","api"});
+    SolverConfig sc("org.minizinc.gecode", GECODE_VERSION);
+    sc.name("Gecode");
+    sc.mznlib("-Ggecode");
+    sc.mznlibVersion(1);
+    sc.supportsMzn(true);
+    sc.description("MiniZinc Gecode solver plugin");
+    sc.tags({"cp","float","api"});
     SolverConfigs::registerBuiltinSolver(sc);
   }
   

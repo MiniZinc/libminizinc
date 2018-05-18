@@ -254,7 +254,7 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
       string solverId = sc.executable().empty() ? sc.id() : string("org.minizinc.mzn-fzn");
       for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
            it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
-        if ((*it)->getId()==solverId) {
+        if ((*it)->getId()==solverId) { /// TODO: also check version (currently assumes all ids are unique)
           sf = *it;
           si_opt = sf->createOptions();
           if (!sc.executable().empty()) {

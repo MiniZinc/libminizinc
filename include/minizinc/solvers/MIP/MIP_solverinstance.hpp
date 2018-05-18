@@ -8,10 +8,14 @@ namespace MiniZinc {
     std::string dllFlag = MIPWrapper::needDllFlag();
     if (dllFlag.size())
       requiredFlags.push_back(dllFlag);
-    SolverConfig sc("", getId(), MIPWrapper::getName(), "", "-Glinear", 1, MIPWrapper::getVersion(),
-                    true, true, true, false,
-                    "MiniZinc MIP solver plugin", "",
-                    "", {}, {}, requiredFlags, {"mip","float","api"});
+    SolverConfig sc(getId(), MIPWrapper::getVersion());
+    sc.name(MIPWrapper::getName());
+    sc.mznlib("-Glinear");
+    sc.mznlibVersion(1);
+    sc.supportsMzn(true);
+    sc.description("MiniZinc MIP solver plugin");
+    sc.requiredFlags(requiredFlags);
+    sc.tags({"mip","float","api"});
     SolverConfigs::registerBuiltinSolver(sc);
   }
   

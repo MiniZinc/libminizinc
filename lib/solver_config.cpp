@@ -58,14 +58,14 @@ namespace MiniZinc {
       }
       throw ConfigException("invalid configuration item (right hand side must be a list of strings)");
     }
-    std::vector<std::pair<std::string,std::string> > getStringPairList(AssignI* ai) {
+    std::vector<SolverConfig::ExtraFlag> getExtraFlagList(AssignI* ai) {
       if (ArrayLit* al = ai->e()->dyn_cast<ArrayLit>()) {
-        std::vector<std::pair<std::string,std::string> > ret;
+        std::vector<SolverConfig::ExtraFlag> ret;
         for (unsigned int i=0; i<al->size(); i+=2) {
           StringLit* sl1 = (*al)[i]->dyn_cast<StringLit>();
           StringLit* sl2 = (*al)[i+1]->dyn_cast<StringLit>();
           if (sl1 && sl2) {
-            ret.push_back(std::pair<std::string,std::string>(sl1->v().str(),sl2->v().str()));
+            ret.emplace_back(sl1->v().str(),sl2->v().str());
           } else {
             throw ConfigException("invalid configuration item (right hand side must be a list of strings)");
           }
@@ -141,6 +141,10 @@ namespace MiniZinc {
               sc._needsSolns2Out = getBool(ai);
             } else if (ai->id()=="isGUIApplication") {
               sc._isGUIApplication = getBool(ai);
+            } else if (ai->id()=="needsMznExecutable") {
+              sc._needsMznExecutable = getBool(ai);
+            } else if (ai->id()=="needsStdlibDir") {
+              sc._needsStdlibDir = getBool(ai);
             } else if (ai->id()=="tags") {
               sc._tags = getStringList(ai);
             } else if (ai->id()=="stdFlags") {
@@ -148,7 +152,7 @@ namespace MiniZinc {
             } else if (ai->id()=="requiredFlags") {
               sc._requiredFlags = getStringList(ai);
             } else if (ai->id()=="extraFlags") {
-              sc._extraFlags = getStringPairList(ai);
+              sc._extraFlags = getExtraFlagList(ai);
             } else {
               throw ConfigException("invalid configuration item ("+ai->id().str()+")");
             }
@@ -374,7 +378,7 @@ namespace MiniZinc {
       if (sc.extraFlags().size()) {
         oss << "    \"extraFlags\": [";
         for (unsigned int j=0; j<sc.extraFlags().size(); j++) {
-          oss << "[" << "\"" << sc.extraFlags()[j].first << "\",\"" << sc.extraFlags()[j].second << "\"]";
+          oss << "[" << "\"" << sc.extraFlags()[j].flag << "\",\"" << sc.extraFlags()[j].description << "\"]";
           if (j<sc.extraFlags().size()-1)
             oss << ",";
         }
@@ -393,6 +397,8 @@ namespace MiniZinc {
       oss << "    \"supportsMzn\": " << (sc.supportsMzn() ? "true" : "false") << ",\n";
       oss << "    \"supportsFzn\": " << (sc.supportsFzn() ? "true" : "false") << ",\n";
       oss << "    \"needsSolns2Out\": " << (sc.needsSolns2Out()? "true" : "false") << ",\n";
+      oss << "    \"needsMznExecutable\": " << (sc.needsMznExecutable()? "true" : "false") << ",\n";
+      oss << "    \"needsStdlibDir\": " << (sc.needsStdlibDir()? "true" : "false") << ",\n";
       oss << "    \"isGUIApplication\": " << (sc.isGUIApplication()? "true" : "false") << "\n";
       oss << "  }" << (i<_solvers.size()-1 ? ",\n" : "\n");
     }
