@@ -10,7 +10,8 @@ build:linux:
   script:
     - mkdir build
     - cd build
-    - bash ../BUILD.sh
+    - cmake .. -DCMAKE_BUILD_TYPE=Release
+    - cmake --build . -- -j3
     - mv mzn2fzn mzn-fzn solns2out ../
   artifacts:
      paths:
@@ -25,7 +26,8 @@ build:osx:
   script:
     - mkdir build
     - cd build
-    - bash ../BUILD.sh
+    - cmake .. -DCMAKE_BUILD_TYPE=Release
+    - cmake --build . -- -j3
     - mv mzn2fzn mzn-fzn solns2out ../
   artifacts:
      paths:
