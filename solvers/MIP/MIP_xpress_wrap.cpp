@@ -174,23 +174,17 @@ static void setOutputVariables(MIP_xpress_wrapper::Output *output,
   output->dCPUTime = double(std::clock() - output->cCPUTime0) / CLOCKS_PER_SEC;
 }
 
-static void XPRS_CC userSolNotifyCallback(XPRSprob xprsProblem, void *userData,
-                                          const char *solname, int status) {
-  UserSolutionCallbackData *data = (UserSolutionCallbackData *) userData;
+static void XPRS_CC userSolNotifyCallback(XPRSprob xprsProblem,
+                                          void *userData) {
+  UserSolutionCallbackData *data = (UserSolutionCallbackData *)userData;
   MIP_wrapper::CBUserInfo *info = data->info;
 
-  if (status == 0) {
-    throw XpressException("error while processing solution callback");
-  }
+  setOutputVariables(info->pOutput, xprsProblem, data->problem,
+                     data->variables);
 
-  if (status != 1 || status != 2 || status != 3) {
-    return;
-  }
-
-  setOutputVariables(info->pOutput, xprsProblem, data->problem, data->variables);
-
-  if (info->solcbfn)
+  if (info->solcbfn) {
     (*info->solcbfn)(*info->pOutput, info->ppp);
+  }
 }
 
 void MIP_xpress_wrapper::doAddVars(size_t n, double *obj, double *lb,
@@ -282,10 +276,10 @@ void MIP_xpress_wrapper::setUserSolutionCallback() {
     return;
   }
 
-  UserSolutionCallbackData data = {&cbui, &problem, &variables};
+  UserSolutionCallbackData *data =
+      new UserSolutionCallbackData{&cbui, &problem, &variables};
 
-  XPRSaddcbusersolnotify(problem.getXPRSprob(), userSolNotifyCallback,
-                         (void *)&data, 0);
+  XPRSsetcbintsol(problem.getXPRSprob(), userSolNotifyCallback, data);
 }
 
 void MIP_xpress_wrapper::setObjSense(int s) {
