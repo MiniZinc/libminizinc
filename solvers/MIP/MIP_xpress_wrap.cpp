@@ -23,6 +23,12 @@
 #include "minizinc/solvers/MIP/MIP_xpress_wrap.hh"
 #include "minizinc/utils.hh"
 
+struct UserSolutionCallbackData {
+  MIP_wrapper::CBUserInfo *info;
+  XPRBprob *problem;
+  vector<XPRBvar> *variables;
+};
+
 class XpressException : public runtime_error {
 public:
   XpressException(string msg) : runtime_error(" MIP_xpress_wrapper: " + msg) {}
@@ -137,12 +143,19 @@ static string getStatusName(int xpressStatus) {
 }
 
 static void setOutputVariables(MIP_xpress_wrapper::Output *output,
-                               XPRSprob xprsProblem) {
-  int nCols;
-  XPRSgetintattrib(xprsProblem, XPRS_COLS, &nCols);
+                               XPRSprob xprsProblem, XPRBprob *problem,
+                               vector<XPRBvar> *variables) {
+  problem->beginCB(xprsProblem);
+  problem->sync(XPRB_XPRS_SOL);
+
+  size_t nCols = variables->size();
   double *x = (double *)malloc(nCols * sizeof(double));
-  XPRSgetmipsol(xprsProblem, x, NULL);
+  for (size_t ii = 0; ii < nCols; ii++) {
+    x[ii] = (*variables)[ii].getSol();
+  }
   output->x = x;
+
+  problem->endCB();
 
   int xpressStatus = 0;
   XPRSgetintattrib(xprsProblem, XPRS_MIPSTATUS, &xpressStatus);
@@ -163,9 +176,8 @@ static void setOutputVariables(MIP_xpress_wrapper::Output *output,
 
 static void XPRS_CC userSolNotifyCallback(XPRSprob xprsProblem, void *userData,
                                           const char *solname, int status) {
-  MIP_wrapper::CBUserInfo *info = (MIP_wrapper::CBUserInfo *)userData;
-  MIP_xpress_wrapper *wrapper =
-      static_cast<MIP_xpress_wrapper *>(info->wrapper);
+  UserSolutionCallbackData *data = (UserSolutionCallbackData *) userData;
+  MIP_wrapper::CBUserInfo *info = data->info;
 
   if (status == 0) {
     throw XpressException("error while processing solution callback");
@@ -175,7 +187,7 @@ static void XPRS_CC userSolNotifyCallback(XPRSprob xprsProblem, void *userData,
     return;
   }
 
-  setOutputVariables(info->pOutput, xprsProblem);
+  setOutputVariables(info->pOutput, xprsProblem, data->problem, data->variables);
 
   if (info->solcbfn)
     (*info->solcbfn)(*info->pOutput, info->ppp);
@@ -232,7 +244,22 @@ void MIP_xpress_wrapper::writeModelIfRequested() {
   }
 }
 
+void MIP_xpress_wrapper::addDummyConstraint() {
+  if (getNCols() == 0) {
+    return;
+  }
+
+  XPRBctr constraint = problem.newCtr("dummy_constraint");
+  constraint.setTerm(variables[0], 1);
+  constraint.setType(convertConstraintType(LinConType::LQ));
+  constraint.setTerm(variables[0].getUB());
+}
+
 void MIP_xpress_wrapper::solve() {
+  if (getNRows() == 0) {
+    addDummyConstraint();
+  }
+
   setOptions();
   writeModelIfRequested();
   setUserSolutionCallback();
@@ -247,7 +274,7 @@ void MIP_xpress_wrapper::solve() {
     throw XpressException("error while solving");
   }
 
-  setOutputVariables(&output, problem.getXPRSprob());
+  setOutputVariables(&output, problem.getXPRSprob(), &problem, &variables);
 }
 
 void MIP_xpress_wrapper::setUserSolutionCallback() {
@@ -255,8 +282,10 @@ void MIP_xpress_wrapper::setUserSolutionCallback() {
     return;
   }
 
+  UserSolutionCallbackData data = {&cbui, &problem, &variables};
+
   XPRSaddcbusersolnotify(problem.getXPRSprob(), userSolNotifyCallback,
-                         (void *)&cbui, 0);
+                         (void *)&data, 0);
 }
 
 void MIP_xpress_wrapper::setObjSense(int s) {

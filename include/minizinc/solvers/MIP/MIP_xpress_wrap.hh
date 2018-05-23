@@ -64,6 +64,7 @@ private:
   int convertObjectiveSense(int s);
   XPRBctr addConstraint(int nnz, int *rmatind, double *rmatval,
                         LinConType sense, double rhs, int mask, string rowName);
+  void addDummyConstraint();
 };
 
 #endif // __MIP_XPRESS_WRAPPER_H__
