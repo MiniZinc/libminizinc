@@ -63,7 +63,7 @@ void MIP_WrapperFactory::printHelp(ostream &os) {
      << "--timeout <N>        stop search after N seconds, if negative, it "
         "will only stop if at least one solution was found"
      << std::endl
-     << "--numSolutions <N>   stop search after N solutions" << std::endl
+     << "-n <N>, --numSolutions <N>   stop search after N solutions" << std::endl
      << "--writeModel <file>  write model to <file>" << std::endl
      << "--writeModelFormat [lp|mps] the file format of the written model(lp "
         "or mps), default: "
@@ -73,7 +73,7 @@ void MIP_WrapperFactory::printHelp(ostream &os) {
      << "--relGap <d>         relative gap |primal-dual|/<solver-dep> to stop, "
         "default: "
      << relGap << std::endl
-     << "--printAllSolutions  print intermediate solution, default: "
+     << "-a, --printAllSolutions  print intermediate solution, default: "
      << printAllSolutions << std::endl
      << std::endl;
 }
@@ -83,12 +83,13 @@ bool MIP_WrapperFactory::processOption(int &i, int argc, const char **argv) {
   if (cop.get("--msgLevel", &msgLevel)) {
   } else if (cop.get("--logFile", &logFile)) {
   } else if (cop.get("--timeout", &timeout)) {
-  } else if (cop.get("--numSolutions", &numSolutions)) {
+  } else if (cop.get("-n --numSolutions", &numSolutions)) {
   } else if (cop.get("--writeModel", &writeModelFile)) {
   } else if (cop.get("--writeModelFormat", &writeModelFormat)) {
   } else if (cop.get("--relGap", &relGap)) {
   } else if (cop.get("--absGap", &absGap)) {
-  } else if (string(argv[i]) == "--printAllSolutions") {
+  } else if (string(argv[i]) == "--printAllSolutions" ||
+             string(argv[i]) == "-a") {
     printAllSolutions = true;
   } else
     return false;
