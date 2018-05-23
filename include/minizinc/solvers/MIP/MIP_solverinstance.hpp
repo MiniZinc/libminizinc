@@ -146,7 +146,7 @@ namespace MiniZinc {
       Expression* e = *i;
       if ( e->isa<Call>() ) {
         Call* c = e->cast<Call>();
-        if ( c->id().str() == "warm_start_array" ) {
+        if ( c->id().str() == "warm_start_array" || c->id().str() == "seq_search" ) {
           ArrayLit* anns = c->arg(0)->cast<ArrayLit>();
           for(unsigned int i=0; i<anns->size(); i++) {
             Annotation subann;
@@ -154,7 +154,7 @@ namespace MiniZinc {
             processWarmstartAnnotations( subann );
           }
         } else
-          if ( c->id().str() == "warm_start_array" || c->id().str() == "seq_search" ) {
+          if ( c->id().str() == "warm_start" ) {
             MZN_ASSERT_HARD_MSG( c->n_args()>=2, "ERROR: warm_start needs 2 array args" );
             std::vector<double> coefs;
             std::vector<MIP_solverinstance::VarId> vars;
