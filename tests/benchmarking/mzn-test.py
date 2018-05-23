@@ -148,7 +148,7 @@ class MZT_Param:
                         #"MZN-CPLEX",
                         "/// At the moment only the 1st element is used for solving" ],
             "SOLUTION_CHECKING": {
-              "Checkers": ["FZN-GECODE-CHK", "MINIZINC-CHK", "MZN-CPLEX-CHK" ],
+              "Checkers": ["GECODE-CHK", "GUROBI-CHK", "CPLEX-CHK" ],
               "n_CheckedMax": [ -10, "/// Negative value means it's that many last solutions" ],
               "n_FailedSaveMax": [ 3, "/// After that many failed solutions, stop checking the instance" ],
               "s_FailedSaveFile": [ sFlnSolFailBase, "/// Filename to save failed solutions" ],
@@ -178,6 +178,10 @@ class MZT_Param:
             "FZN-GUROBI": [ "__BE_COMMON", "__BE_SOLVER", "BE_FZN-GUROBI" ],
             "FZN-CPLEX": [ "__BE_COMMON", "__BE_SOLVER", "BE_FZN-CPLEX" ],
             "FZN-CBC": [ "__BE_COMMON", "__BE_SOLVER", "BE_FZN-CBC" ],
+            "GUROBI": [ "__BE_COMMON", "__BE_SOLVER", "BE_GUROBI" ],
+            "CPLEX": [ "__BE_COMMON", "__BE_SOLVER", "BE_CPLEX" ],
+            "CBC": [ "__BE_COMMON", "__BE_SOLVER", "BE_CBC" ],
+            "GECODE": [ "__BE_COMMON", "__BE_SOLVER", "BE_GECODE" ],
             "MZN-GUROBI": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-GUROBI" ],
             "MZN-CPLEX": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-CPLEX" ],
             "MZN-CBC": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-CBC" ],
@@ -191,6 +195,9 @@ class MZT_Param:
               "Adding is only possible if the key is prefixed by '"+s_AddKey+"'"
             ],
             "MINIZINC-CHK": [ "__BE_COMMON", "__BE_CHECKER_OLDMINIZINC", "BE_MINIZINC" ],
+            "GECODE-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_GECODE" ],
+            "GUROBI-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_GUROBI" ],
+            "CPLEX-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_CPLEX" ],
             "MZN-GECODE-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_MZN-GECODE" ],
             "MZN-GUROBI-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_MZN-GUROBI" ],
             "MZN-CPLEX-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_MZN-CPLEX" ],
@@ -304,6 +311,18 @@ class MZT_Param:
                 s_AddKey+"Preslv_Non0": [ "Presolved:", " ", 6 ]
               },
             },
+            "BE_GUROBI": {
+              s_CommentKey: [ "------------------- Specializations for Gurobi solver instance" ],
+              "EXE":{
+                "s_SolverCall" : ["minizinc -v -s --solver gurobi --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
+                #"opt_writeModel": ["--writeModel"]
+              },
+              "Stderr_Keyvalues": {
+                s_AddKey+"Preslv_Rows": [ "Presolved:", " ", 2 ],
+                s_AddKey+"Preslv_Cols": [ "Presolved:", " ", 4 ],
+                s_AddKey+"Preslv_Non0": [ "Presolved:", " ", 6 ]
+              },
+            },
             "BE_MZN-GUROBI": {
               s_CommentKey: [ "------------------- Specializations for Gurobi solver instance" ],
               "EXE":{
@@ -320,6 +339,20 @@ class MZT_Param:
               s_CommentKey: [ "------------------- Specializations for IBM ILOG CPLEX solver instance" ],
               "EXE": {
                 "s_SolverCall" : ["mzn2fzn -v -s -G linear " + sDZNOutputAgrs + " %s --fzn tmp.fzn --ozn tmp.ozn && mzn-cplex -v -s tmp.fzn"]
+                #"s_SolverCall" : ["./run-mzn-cplex.sh %s"],
+                #"b_ThruShell"  : [True],
+                #"opt_writeModel": ["--writeModel"]
+              },
+              "Stderr_Keyvalues": {
+                s_AddKey+"Preslv_Rows": [ "Reduced MIP has [0-9]+ rows,", " ", 4 ],
+                s_AddKey+"Preslv_Cols": [ "Reduced MIP has [0-9]+ rows,", " ", 6 ],
+                s_AddKey+"Preslv_Non0": [ "Reduced MIP has [0-9]+ rows,", " ", 9 ]
+              },
+            },
+            "BE_CPLEX": {
+              s_CommentKey: [ "------------------- Specializations for IBM ILOG CPLEX solver instance" ],
+              "EXE": {
+                "s_SolverCall" : ["minizinc -v -s --solver cplex --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking
                 #"s_SolverCall" : ["./run-mzn-cplex.sh %s"],
                 #"b_ThruShell"  : [True],
                 #"opt_writeModel": ["--writeModel"]
@@ -352,6 +385,14 @@ class MZT_Param:
                 #"b_ThruShell"  : [True],
               },
             },
+            "BE_CBC": {
+              s_CommentKey: [ "------------------- Specializations for COIN-OR Branch&Cut solver instance" ],
+              "EXE": {
+                "s_SolverCall" : ["minizinc -v -s --solver osicbc --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking
+                #"s_SolverCall" : ["./run-mzn-cplex.sh %s"],
+                #"b_ThruShell"  : [True],
+              },
+            },
             "BE_MZN-CBC": {
               s_CommentKey: [ "------------------- Specializations for COIN-OR Branch&Cut solver instance" ],
               "EXE": {
@@ -359,6 +400,15 @@ class MZT_Param:
                 #"s_SolverCall" : ["./run-mzn-cplex.sh %s"],
                 #"b_ThruShell"  : [True],
               },
+            },
+            "BE_GECODE": {
+              s_CommentKey: [ "------------------- Specializations for Gecode FlatZinc interpreter" ],
+              "EXE": {
+#                "s_SolverCall" : ["minizinc -s --solver gecode " + sDZNOutputAgrs + " %s"], # _objective fails for checking TODO
+                "s_SolverCall" : ["minizinc -v -s --solver gecode " + sDZNOutputAgrs
+                     + " %s"],    #  --time 300000
+                "b_ThruShell"  : [True],
+              }
             },
             "BE_MZN-GECODE": {
               s_CommentKey: [ "------------------- Specializations for Gecode FlatZinc interpreter" ],
@@ -652,7 +702,8 @@ class MznTest:
                "', with the unchecked log in '", self.params.args.resultUnchk, "'; failed solutions saved to '",
                self.params.cfg["COMMON_OPTIONS"]["SOLUTION_CHECKING"]["s_FailedSaveFile"][0],
                "' in an \"appendable JSON\" format, cf. https://github.com/pvorb/jsml."
-               "\nSolver/checker stdout(err) outputs saved to '" + sDirResults + "/last_stdout(err)_...txt'.", sep='')
+               ## no more for shell: "\nSolver/checker stdout(err) outputs saved to '" + sDirResults + "/last_stdout(err)_...txt'."
+               , sep='')
 
 ##############################################################################################
 ######################### MZNTest average-level #############################
