@@ -143,21 +143,16 @@ static string getStatusName(int xpressStatus) {
   }
 }
 
-static void setOutputVariables(MIP_xpress_wrapper::Output *output,
-                               XPRSprob xprsProblem, XPRBprob *problem,
-                               vector<XPRBvar> *variables) {
-  problem->beginCB(xprsProblem);
-  problem->sync(XPRB_XPRS_SOL);
-
+static void setOutputVariables(MIP_xpress_wrapper::Output *output, vector<XPRBvar> *variables) {
   size_t nCols = variables->size();
   double *x = (double *)malloc(nCols * sizeof(double));
   for (size_t ii = 0; ii < nCols; ii++) {
     x[ii] = (*variables)[ii].getSol();
   }
   output->x = x;
+}
 
-  problem->endCB();
-
+static void setOutputAttributes(MIP_xpress_wrapper::Output *output, XPRSprob xprsProblem) {
   int xpressStatus = 0;
   XPRSgetintattrib(xprsProblem, XPRS_MIPSTATUS, &xpressStatus);
   output->status = convertStatus(xpressStatus);
@@ -180,8 +175,12 @@ static void XPRS_CC userSolNotifyCallback(XPRSprob xprsProblem,
   UserSolutionCallbackData *data = (UserSolutionCallbackData *)userData;
   MIP_wrapper::CBUserInfo *info = data->info;
 
-  setOutputVariables(info->pOutput, xprsProblem, data->problem,
-                     data->variables);
+  setOutputAttributes(info->pOutput, xprsProblem);
+
+  data->problem->beginCB(xprsProblem);
+  data->problem->sync(XPRB_XPRS_SOL);
+  setOutputVariables(info->pOutput, data->variables);
+  data->problem->endCB();
 
   if (info->solcbfn) {
     (*info->solcbfn)(*info->pOutput, info->ppp);
@@ -269,7 +268,8 @@ void MIP_xpress_wrapper::solve() {
     throw XpressException("error while solving");
   }
 
-  setOutputVariables(&output, problem.getXPRSprob(), &problem, &variables);
+  setOutputVariables(&output, &variables);
+  setOutputAttributes(&output,  problem.getXPRSprob());
 }
 
 void MIP_xpress_wrapper::setUserSolutionCallback() {
