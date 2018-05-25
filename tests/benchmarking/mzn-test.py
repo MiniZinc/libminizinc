@@ -111,9 +111,9 @@ class MZT_Param:
         parser.add_argument('--saveCfg', metavar='<file>', help='save internal config to <file>. Can be useful to modify some parameters and run with --mergeCfg')
         parser.add_argument('--saveSolverCfg', metavar='<file>', help='save the final solver backend config to <file>')
         parser.add_argument('--saveCheckerCfg', metavar='<file>', help='save the final checker backend config to <file>')
-        parser.add_argument('--addOption', action="append", metavar='<text>', type=str, help='add <text> to any solver / checker call')
-        parser.add_argument('--addSolverOption', action="append", metavar='<text>', type=str, help='add <text> to the solver call')
-        parser.add_argument('--addCheckerOption', action="append", metavar='<text>', type=str, help='add <text> to a checker call')
+        parser.add_argument('--addOption', '--addOptions', action="append", metavar='<text>', type=str, help='add <text> to any solver / checker call')
+        parser.add_argument('--addSolverOption', '--addSolverOptions', action="append", metavar='<text>', type=str, help='add <text> to the solver call')
+        parser.add_argument('--addCheckerOption', '--addCheckerOptions', action="append", metavar='<text>', type=str, help='add <text> to a checker call')
         parser.add_argument('--useJoinedName', action="append", metavar='<...%s...>', type=str, help='add this to the call, with %%s being replaced by'
                             ' a joined filename from all the input filenames, e.g., "--writeModel MODELS/%%s.mps"')
         self.args = parser.parse_args()
@@ -182,6 +182,7 @@ class MZT_Param:
             "CPLEX": [ "__BE_COMMON", "__BE_SOLVER", "BE_CPLEX" ],
             "CBC": [ "__BE_COMMON", "__BE_SOLVER", "BE_CBC" ],
             "GECODE": [ "__BE_COMMON", "__BE_SOLVER", "BE_GECODE" ],
+            "CHUFFED": [ "__BE_COMMON", "__BE_SOLVER", "BE_CHUFFED" ],
             "MZN-GUROBI": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-GUROBI" ],
             "MZN-CPLEX": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-CPLEX" ],
             "MZN-CBC": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-CBC" ],
@@ -198,6 +199,7 @@ class MZT_Param:
             "GECODE-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_GECODE" ],
             "GUROBI-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_GUROBI" ],
             "CPLEX-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_CPLEX" ],
+            "CHUFFED-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_CHUFFED" ],
             "MZN-GECODE-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_MZN-GECODE" ],
             "MZN-GUROBI-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_MZN-GUROBI" ],
             "MZN-CPLEX-CHK": [ "__BE_COMMON", "__BE_CHECKER", "BE_MZN-CPLEX" ],
@@ -437,7 +439,14 @@ class MZT_Param:
                 "s_ExtraCmdline" : [""],
               }
             },
-            "BE_FZN-CHUFFED": {
+            "BE_CHUFFED": {
+              s_CommentKey: [ "------------------- Specializations for Chuffed FlatZinc interpreter" ],
+              "EXE": {
+                "s_SolverCall" : ["minizinc -v -s --solver org.minizinc.mzn-fzn -G chuffed -f fzn-chuffed --fzn-flags -f --output-time "
+                                    + sDZNOutputAgrs + " %s"], # _objective fails for checking
+              }  ##  --fzn-flags --time-out --fzn-flags 300
+            }
+            , "BE_FZN-CHUFFED": {
               s_CommentKey: [ "------------------- Specializations for Chuffed FlatZinc interpreter" ],
               "EXE": {
                 "s_SolverCall" : ["mzn-fzn -v -s -G chuffed --solver fzn-chuffed --fzn-flags -f --output-time "
