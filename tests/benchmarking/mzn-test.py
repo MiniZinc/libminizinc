@@ -442,7 +442,7 @@ class MZT_Param:
             "BE_CHUFFED": {
               s_CommentKey: [ "------------------- Specializations for Chuffed FlatZinc interpreter" ],
               "EXE": {
-                "s_SolverCall" : ["minizinc -v -s --solver org.minizinc.mzn-fzn -G chuffed -f fzn-chuffed --fzn-flags -f --output-time "
+                "s_SolverCall" : ["minizinc -v -s --solver org.minizinc.mzn-fzn -G chuffed --fzn-cmd fzn-chuffed --fzn-flags -f --output-time "
                                     + sDZNOutputAgrs + " %s"], # _objective fails for checking
               }  ##  --fzn-flags --time-out --fzn-flags 300
             }
