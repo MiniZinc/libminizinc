@@ -38,7 +38,7 @@ namespace MiniZinc {
     sc.name("Generic FlatZinc driver");
     sc.mznlibVersion(1);
     sc.description("MiniZinc generic FlatZinc solver plugin");
-    sc.requiredFlags({"-f"});
+    sc.requiredFlags({"--flatzinc-cmd"});
     SolverConfigs::registerBuiltinSolver(sc);
   }
   
@@ -61,7 +61,7 @@ namespace MiniZinc {
   {
     os
     << "MZN-FZN plugin options:" << std::endl
-    << "  -f, --solver, --flatzinc-cmd <exe>\n     the backend solver filename. The default: flatzinc.\n"
+    << "  --flatzinc-cmd <exe>\n     the backend solver filename.\n"
     << "  -b, --backend, --solver-backend <be>\n     the backend codename. Currently passed to the solver.\n"
     << "  --fzn-flags <options>, --flatzinc-flags <options>\n     Specify option to be passed to the FlatZinc interpreter.\n"
     << "  --fzn-flag <option>, --flatzinc-flag <option>\n     As above, but for a single option string that need to be quoted in a shell.\n"
@@ -92,7 +92,7 @@ namespace MiniZinc {
     double dd;
     int nn=-1;
     
-    if ( cop.getOption( "-f --solver --flatzinc-cmd", &buffer) ) {
+    if ( cop.getOption( "--flatzinc-cmd", &buffer) ) {
       _opt.fzn_solver = buffer;
     } else if ( cop.getOption( "-b --backend --solver-backend", &buffer) ) {
       _opt.backend = buffer;
