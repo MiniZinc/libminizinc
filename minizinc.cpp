@@ -60,8 +60,10 @@ namespace {
 #endif
 #ifdef HAS_FZN
 #include <minizinc/solvers/fzn_solverfactory.hh>
+#include <minizinc/solvers/mzn_solverfactory.hh>
 namespace {
   FZN_SolverFactoryInitialiser _fzn_init;
+  MZN_SolverFactoryInitialiser _mzn_init;
 }
 #endif
 

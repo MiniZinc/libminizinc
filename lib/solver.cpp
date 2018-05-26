@@ -239,6 +239,8 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
 
   flt.set_flag_output_by_default(ifMzn2Fzn());
 
+  bool isMznMzn = false;
+  
   if (solver.empty()) {
     for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
          it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
@@ -251,22 +253,37 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
 
     try {
       const SolverConfig& sc = solver_configs.config(solver);
-      string solverId = sc.executable().empty() ? sc.id() : string("org.minizinc.mzn-fzn");
+      string solverId = sc.executable().empty() ? sc.id() : (sc.supportsMzn() ?  string("org.minizinc.mzn-mzn") : string("org.minizinc.mzn-fzn"));
       for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
            it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
         if ((*it)->getId()==solverId) { /// TODO: also check version (currently assumes all ids are unique)
           sf = *it;
           si_opt = sf->createOptions();
           if (!sc.executable().empty()) {
-            const char* additionalArgs[2];
-            additionalArgs[0] = "-f";
-            std::string executable = sc.executable();
-            additionalArgs[1] = executable.c_str();
-            int i=0;
-            bool success = sf->processOption(si_opt, i, 2, additionalArgs);
-            if (!success) {
-              log << "Solver backend " << solverId << " does not recognise option -f." << endl;
-              return false;
+            if (sc.supportsMzn()) {
+              isMznMzn = true;
+              const char* additionalArgs[2];
+              additionalArgs[0] = "-m";
+              std::string executable = sc.executable();
+              additionalArgs[1] = executable.c_str();
+              int i=0;
+              bool success = sf->processOption(si_opt, i, 2, additionalArgs);
+              if (!success) {
+                log << "Solver backend " << solverId << " does not recognise option -f." << endl;
+                return false;
+              }
+              std::cerr << "created factory\n";
+            } else {
+              const char* additionalArgs[2];
+              additionalArgs[0] = "-f";
+              std::string executable = sc.executable();
+              additionalArgs[1] = executable.c_str();
+              int i=0;
+              bool success = sf->processOption(si_opt, i, 2, additionalArgs);
+              if (!success) {
+                log << "Solver backend " << solverId << " does not recognise option -f." << endl;
+                return false;
+              }
             }
           }
           if (!sc.mznlib().empty()) {
@@ -308,7 +325,7 @@ bool MznSolver::processOptions(int& argc, const char**& argv)
 
   for (i=1; i<argc; ++i) {
     if ( !ifMzn2Fzn() ? s2out.processOption( i, argc, argv ) : false ) {
-    } else if (flt.processOption(i, argc, argv)) {
+    } else if (!isMznMzn && flt.processOption(i, argc, argv)) {
     } else if (sf != NULL && sf->processOption(si_opt, i, argc, argv)) {
     } else {
       std::string executable_name(argv[0]);
@@ -365,6 +382,19 @@ bool MznSolver::run(int& argc, const char**& argv, const std::string& model) {
     printHelp();
     return false;
   }
+  if (sf->getId() == "org.minizinc.mzn-mzn") {
+    Env env;
+    si = sf->createSI(env, log, si_opt);
+    { // To be able to clean up flatzinc after PrcessFlt()
+      GCLock lock;
+      getSI()->_options->verbose = get_flag_verbose();
+      getSI()->_options->printStatistics = get_flag_statistics();
+      getSI()->processFlatZinc();
+    }
+    getSI()->solve();
+    return 0;
+  }
+  
   flatten(model);
   
   if (SolverInstance::UNKNOWN == getFltStatus())

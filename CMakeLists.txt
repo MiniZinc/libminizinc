@@ -624,6 +624,10 @@ if(HAS_FZN)
     solvers/fzn/fzn_solverfactory.cpp
     include/minizinc/solvers/fzn_solverfactory.hh
     include/minizinc/solvers/fzn_solverinstance.hh
+    solvers/mzn/mzn_solverinstance.cpp
+    solvers/mzn/mzn_solverfactory.cpp
+    include/minizinc/solvers/mzn_solverfactory.hh
+    include/minizinc/solvers/mzn_solverinstance.hh
 	)
 	target_link_libraries(minizinc_fzn minizinc)
 	add_executable( minizinc-bin minizinc.cpp )
