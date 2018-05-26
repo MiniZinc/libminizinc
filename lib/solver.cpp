@@ -157,10 +157,12 @@ void MznSolver::printHelp(const std::string& selectedSolver)
       cout << "  " << solvers[i] << endl;
     }
   } else {
+    const SolverConfig& sc = solver_configs.config(selectedSolver);
+    string solverId = sc.executable().empty() ? sc.id() : (sc.supportsMzn() ?  string("org.minizinc.mzn-mzn") : string("org.minizinc.mzn-fzn"));
     bool found = false;
     for (auto it = getGlobalSolverRegistry()->getSolverFactories().rbegin();
          it != getGlobalSolverRegistry()->getSolverFactories().rend(); ++it) {
-      if ((*it)->getId()==selectedSolver) {
+      if ((*it)->getId()==solverId) {
         os << endl;
         (*it)->printHelp(os);
         found = true;
