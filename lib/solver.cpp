@@ -165,6 +165,13 @@ void MznSolver::printHelp(const std::string& selectedSolver)
       if ((*it)->getId()==solverId) {
         os << endl;
         (*it)->printHelp(os);
+        if (!sc.executable().empty() && !sc.extraFlags().empty()) {
+          os << "Extra solver flags (use with ";
+          os << (sc.supportsMzn() ? "--mzn-flags" : "--fzn-flags") << ")" << endl;
+          for (const SolverConfig::ExtraFlag& ef: sc.extraFlags()) {
+            os << "  " << ef.flag << endl << "    " << ef.description << endl;
+          }
+        }
         found = true;
       }
     }
