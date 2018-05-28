@@ -535,6 +535,7 @@ void Flattener::flatten(const std::string& modelString)
           fopts.onlyRangeDomains = flag_only_range_domains;
           fopts.verbose = flag_verbose;
           fopts.outputMode = flag_output_mode;
+          fopts.outputObjective = flag_output_objective;
 #ifdef HAS_GECODE
           Options gopts;
           gopts.setBoolParam(std::string("only-range-domains"), flag_only_range_domains);
@@ -572,7 +573,6 @@ void Flattener::flatten(const std::string& modelString)
                                                       std_lib_dir+"/"+globals_dir+"/",
                                                       includePaths, flag_two_pass, false));
 
-          fopts.outputObjective = flag_output_objective;
           Env* out_env = multiPassFlatten(managed_passes);
           if(out_env == nullptr) exit(EXIT_FAILURE);
 
