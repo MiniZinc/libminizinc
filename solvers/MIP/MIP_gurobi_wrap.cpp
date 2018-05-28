@@ -50,7 +50,7 @@ string MIP_gurobi_wrapper::getDescription() {
     mgw.dll_GRBversion(&major, &minor, &technical);
     oss << major << '.' << minor << '.' << technical;
   } catch (MiniZinc::InternalError& e) {
-    return "<unknown gurobi version>";
+    return "<unknown version>";
   }
   oss << ".  Compiled  " __DATE__ "  " __TIME__;
   return oss.str();
@@ -66,7 +66,7 @@ string MIP_gurobi_wrapper::getVersion( ) {
     oss << major << '.' << minor << '.' << technical;
     return oss.str();
   } catch (MiniZinc::InternalError& e) {
-    return "<unknown gurobi version>";
+    return "<unknown version>";
   }
 }
 

@@ -234,10 +234,10 @@ string MIP_cplex_wrapper::getVersion( ) {
       v += mcw.dll_CPXversion (env);
       status = mcw.dll_CPXcloseCPLEX (&env);
     } else {
-      v += "<unknown CPLEX version>";
+      v += "<unknown version>";
     }
   } catch (MiniZinc::InternalError&) {
-    v += "<unknown CPLEX version>";
+    v += "<unknown version>";
   }
   return v;
 }
