@@ -313,6 +313,7 @@ bool Solns2Out::__evalStatusMsg( SolverInstance::Status status ) {
   stat2msg[ SolverInstance::UNSATorUNBND ] = _opt.unsatorunbnd_msg;
   stat2msg[ SolverInstance::UNKNOWN ] = _opt.unknown_msg;
   stat2msg[ SolverInstance::ERROR ] = _opt.error_msg;
+  stat2msg[ SolverInstance::NONE ] = "";
   auto it=stat2msg.find(status);
   if ( stat2msg.end()!=it ) {
     getOutput() << comments;
