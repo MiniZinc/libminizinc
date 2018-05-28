@@ -505,13 +505,11 @@ void Flattener::flatten(const std::string& modelString)
           }
           throw Error("multiple type errors");
         }
-      }
-      
-      if (flag_model_interface_only) {
-        MiniZinc::output_model_interface(*env, m, os);
-      }
-      
-      if (!flag_instance_check_only && !flag_model_check_only && !flag_model_interface_only) {
+        if (flag_model_interface_only) {
+          MiniZinc::output_model_interface(*env, m, os);
+        }
+        status = SolverInstance::NONE;
+      } else {
         if (is_flatzinc) {
           GCLock lock;
           vector<TypeError> typeErrors;
