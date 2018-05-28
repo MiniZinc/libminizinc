@@ -580,17 +580,7 @@ namespace MiniZinc {
         break;
     }
     if (toAnnotate && toAnnotate->isa<Call>()) {
-      int prev = idStack.size() > 0 ? idStack.back() : 0;
-      bool allCalls = true;
-      for (int i = callStack.size()-1; i >= prev; i--) {
-        Expression* ee = callStack[i]->untag();
-        allCalls = allCalls && (i==callStack.size()-1 || ee->isa<Call>());
-        for (ExpressionSetIter it = ee->ann().begin(); it != ee->ann().end(); ++it) {
-          EE ee_ann = flat_exp(*this, Ctx(), *it, NULL, constants().var_true);
-          if (allCalls || !isDefinesVarAnn(ee_ann.r()))
-            toAnnotate->addAnnotation(ee_ann.r());
-        }
-      }
+      annotateFromCallStack(toAnnotate);
     }
     if (toAdd) {
       CollectOccurrencesE ce(vo,i);
@@ -598,6 +588,21 @@ namespace MiniZinc {
     }
   }
 
+  void EnvI::annotateFromCallStack(Expression* e) {
+    int prev = idStack.size() > 0 ? idStack.back() : 0;
+    bool allCalls = true;
+    for (int i = callStack.size()-1; i >= prev; i--) {
+      Expression* ee = callStack[i]->untag();
+      allCalls = allCalls && (i==callStack.size()-1 || ee->isa<Call>());
+      for (ExpressionSetIter it = ee->ann().begin(); it != ee->ann().end(); ++it) {
+        EE ee_ann = flat_exp(*this, Ctx(), *it, NULL, constants().var_true);
+        if (allCalls || !isDefinesVarAnn(ee_ann.r()))
+          e->addAnnotation(ee_ann.r());
+      }
+    }
+
+  }
+  
   void EnvI::copyPathMapsAndState(EnvI& env) {
     final_pass_no = env.final_pass_no;
     maxPathDepth = env.maxPathDepth;
@@ -3236,6 +3241,7 @@ namespace MiniZinc {
       Type al_t = bo->type();
       al_t.dim(1);
       al->type(al_t);
+      env.annotateFromCallStack(al);
       c_args[0] = al;
       c = new Call(bo->loc().introduce(), bot==BOT_AND ? constants().ids.forall : constants().ids.exists, c_args);
     } else {
@@ -3243,10 +3249,12 @@ namespace MiniZinc {
       Type al_t = bo->type();
       al_t.dim(1);
       al_pos->type(al_t);
+      env.annotateFromCallStack(al_pos);
       c_args[0] = al_pos;
       if (output_neg.size() > 0) {
         ArrayLit* al_neg = new ArrayLit(bo->loc().introduce(), output_neg);
         al_neg->type(al_t);
+        env.annotateFromCallStack(al_neg);
         c_args.push_back(al_neg);
       }
       c = new Call(bo->loc().introduce(), output_neg.empty() ? constants().ids.exists : constants().ids.clause, c_args);
