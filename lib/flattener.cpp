@@ -95,9 +95,9 @@ void Flattener::printHelp(ostream& os)
   ;
 }
 
-bool Flattener::processOption(int& i, const int argc, const char** argv)
+bool Flattener::processOption(int& i, std::vector<std::string>& argv)
 {
-  CLOParser cop( i, argc, argv );
+  CLOParser cop( i, argv );
   string buffer;
   
   if ( cop.getOption( "-I --search-dir", &buffer ) ) {
@@ -208,15 +208,15 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     flag_two_pass = true;
   } else if (string(argv[i])=="--npass") {
     i++;
-    if (i==argc) goto error;
+    if (i==argv.size()) goto error;
     log << "warning: --npass option is deprecated --two-pass\n";
-    int passes = atoi(argv[i]);
+    int passes = atoi(argv[i].c_str());
     if(passes == 1) flag_two_pass = false;
     else if(passes == 2) flag_two_pass = true;
   } else if (string(argv[i])=="--pre-passes") {
     i++;
-    if (i==argc) goto error;
-    int passes = atoi(argv[i]);
+    if (i==argv.size()) goto error;
+    int passes = atoi(argv[i].c_str());
     if(passes >= 0) {
       flag_pre_passes = static_cast<unsigned int>(passes);
     }
@@ -251,7 +251,7 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
   } else if ( cop.getOption( "--allow-multiple-assignments" ) ) {
     flag_allow_multi_assign = true;
   } else {
-    if (flag_stdinInput || '-'==*argv[i])   // unknown option
+    if (flag_stdinInput || argv[i]=="-")   // unknown option
       goto error;
     std::string input_file(argv[i]);
     if (input_file.length()<=4) {

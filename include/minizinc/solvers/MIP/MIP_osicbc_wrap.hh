@@ -63,7 +63,7 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
       
       std::string cbc_cmdOptions;
       
-      bool processOption(int& i, int argc, const char** argv);
+      bool processOption(int& i, std::vector<std::string>& argv);
       static void printHelp(std::ostream& );
     };
   private:
@@ -79,7 +79,6 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
     static std::string getName(void);
     static std::string needDllFlag(void) { return ""; }
 
-    bool processOption(int& i, int argc, const char** argv);
     void printVersion(std::ostream& );
     void printHelp(std::ostream& );
 //       Statistics& getStatistics() { return _statistics; }

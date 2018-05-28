@@ -48,9 +48,9 @@ void Solns2Out::printHelp(ostream& os)
   ;
 }
 
-bool Solns2Out::processOption(int& i, const int argc, const char** argv)
+bool Solns2Out::processOption(int& i, std::vector<std::string>& argv)
 {
-  CLOParser cop( i, argc, argv );
+  CLOParser cop( i, argv );
   
   if ( cop.getOption( "-o --output-to-file", &_opt.flag_output_file) ) {
   } else if ( cop.getOption( "--no-flush-output" ) ) {

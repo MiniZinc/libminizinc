@@ -53,7 +53,7 @@ namespace MiniZinc {
     return string(GECODE_VERSION);
   }
 
-  bool Gecode_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i, int argc, const char** argv)
+  bool Gecode_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv)
   {
     GecodeOptions& _opt = static_cast<GecodeOptions&>(*opt);
     if (string(argv[i])=="--allow-unbounded-vars") {
@@ -65,30 +65,30 @@ namespace MiniZinc {
     } else if (string(argv[i])=="--shave") {
       _opt.shave = true;
     } else if (string(argv[i])=="--pre-passes") {
-      if (++i==argc) return false;
-      int passes = atoi(argv[i]);
+      if (++i==argv.size()) return false;
+      int passes = atoi(argv[i].c_str());
       if(passes >= 0)
         _opt.pre_passes = passes;
     } else if (string(argv[i])=="-a") {
       _opt.all_solutions = true;
     } else if (string(argv[i])=="-n") {
-      if (++i==argc) return false;
-      int n = atoi(argv[i]);
+      if (++i==argv.size()) return false;
+      int n = atoi(argv[i].c_str());
       if(n >= 0)
         _opt.n_solutions = n;
     } else if (string(argv[i])=="--node") {
-      if (++i==argc) return false;
-      int nodes = atoi(argv[i]);
+      if (++i==argv.size()) return false;
+      int nodes = atoi(argv[i].c_str());
       if(nodes >= 0)
         _opt.nodes = nodes;
     } else if (string(argv[i])=="--fail") {
-      if (++i==argc) return false;
-      int fails = atoi(argv[i]);
+      if (++i==argv.size()) return false;
+      int fails = atoi(argv[i].c_str());
       if(fails >= 0)
         _opt.fails = fails;
     } else if (string(argv[i])=="--time") {
-      if (++i==argc) return false;
-      int time = atoi(argv[i]);
+      if (++i==argv.size()) return false;
+      int time = atoi(argv[i].c_str());
       if(time >= 0)
         _opt.time = time;
     } else {

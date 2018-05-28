@@ -70,7 +70,7 @@ namespace MiniZinc {
     /// Leaving this now like this because this seems simpler.
     /// We can also pass options internally between modules in this way
     /// and it only needs 1 format
-    virtual bool processOption(SolverInstanceBase::Options* opt, int& i, int argc, const char** argv) { return false; }
+    virtual bool processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv) { return false; }
 
     virtual std::string getDescription(void) = 0;
     virtual std::string getVersion(void) = 0;
@@ -107,7 +107,7 @@ namespace MiniZinc {
     bool run(int& argc, const char**& argv, const std::string& model = std::string());
     bool get_flag_verbose() { return flag_verbose; /*getFlt()->get_flag_verbose();*/ }
   private:
-    bool processOptions(int& argc, const char**& argv);
+    bool processOptions(std::vector<std::string>& argv);
     void printHelp(const std::string& selectedSolver=std::string());
     /// Flatten model
     void flatten(const std::string& modelString = std::string());

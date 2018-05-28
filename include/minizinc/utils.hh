@@ -83,12 +83,11 @@ namespace MiniZinc {
   /// A simple per-cmdline option parser
   class CLOParser {
     int& i;              // current item
-    const int argc=0;
-    const char* const* argv=0;
+    std::vector<std::string>& argv;
     
   public:
-    CLOParser( int& ii, const int ac, const char* const* av )
-      : i(ii), argc(ac), argv(av) { }
+    CLOParser( int& ii, std::vector<std::string>& av )
+      : i(ii), argv(av) { }
     template <class Value=int>
     inline bool get(  const char* names, // space-separated option list
                       Value* pResult=nullptr, // pointer to value storage
@@ -103,9 +102,8 @@ namespace MiniZinc {
                 ) {
       assert(0 == strchr(names, ','));
       assert(0 == strchr(names, ';'));
-      if( i>=argc )
+      if( i>=argv.size() )
         return false;
-      assert( argv[i] );
       std::string arg( argv[i] );
       /// Separate keywords
       std::string keyword;
@@ -123,7 +121,7 @@ namespace MiniZinc {
           if ( 0==pResult )
             return true;
           i++;
-          if( i>=argc ) {
+          if( i>=argv.size() ) {
             --i;
             return fValueOptional;
           }

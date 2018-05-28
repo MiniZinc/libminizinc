@@ -49,7 +49,7 @@ namespace MiniZinc {
   public:
     Flattener(std::ostream& os, std::ostream& log, const std::string& stdlibDir);
     ~Flattener();
-    bool processOption(int& i, const int argc, const char** argv);
+    bool processOption(int& i, std::vector<std::string>& argv);
     void printVersion(std::ostream& );
     void printHelp(std::ostream& );
 

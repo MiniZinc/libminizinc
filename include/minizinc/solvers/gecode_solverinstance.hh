@@ -386,7 +386,7 @@ namespace MiniZinc {
     std::string getDescription( );
     std::string getVersion( );
     std::string getId( ) { return "org.minizinc.gecode"; }
-    bool processOption(SolverInstanceBase::Options* opt, int& i, int argc, const char** argv);
+    virtual bool processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv);
     void printHelp(std::ostream& os);
   };
 

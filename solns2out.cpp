@@ -36,15 +36,14 @@ using namespace std;
 
 namespace MiniZinc {
   class Solns2OutFull : public Solns2Out {
-    const int argc;
-    const char** argv;
+    std::vector<std::string>& argv;
     string std_lib_dir;
     istream& solstream = cin;
     SolverConfigs solver_configs;
   public:
     string filename;
-    Solns2OutFull( const int ac, const char** av )
-      : Solns2Out(cout, cerr), argc(ac), argv(av) { }
+    Solns2OutFull( std::vector<std::string>& av )
+      : Solns2Out(cout, cerr), argv(av) { }
     void printVersion(ostream& os) {
       os << "MiniZinc solution printing tool, version "
          << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
@@ -67,12 +66,13 @@ namespace MiniZinc {
     bool processOptions()
     {
       int i=1;
+      int argc = argv.size();
       if (argc < 2)
         return false;
       string avi;
       for (i=1; i<argc; ++i) {
         avi = argv[i];
-        CLOParser cop( i, argc, argv );
+        CLOParser cop( i, argv );
         if (string(argv[i])=="-h" || string(argv[i])=="--help") {
           printHelp(cout);
           std::exit(EXIT_SUCCESS);
@@ -81,7 +81,7 @@ namespace MiniZinc {
           printVersion(cout);
           std::exit(EXIT_SUCCESS);
         } else if (cop.getOption("--stdlib-dir", &std_lib_dir)) {
-        } else if ( Solns2Out::processOption(i, argc, argv)) {
+        } else if ( Solns2Out::processOption(i, argv)) {
         } else {
           filename = argv[i];
           if (filename.length()<=4 ||
@@ -159,8 +159,11 @@ namespace MiniZinc {
 }
 
 int main(int argc, const char** argv) {
-  
-  Solns2OutFull s2out( argc, argv );
+  std::vector<std::string> args;
+  for (unsigned int i=0; i<argc; i++)
+    args.push_back(argv[i]);
+
+  Solns2OutFull s2out( args );
   
   if (!s2out.processOptions()) {
     s2out.printHelp( cout );

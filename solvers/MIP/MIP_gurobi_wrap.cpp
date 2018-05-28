@@ -131,8 +131,8 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
     return s.compare(0, t.length(), t)==0;
   }
 
-bool MIP_gurobi_wrapper::Options::processOption(int& i, int argc, const char** argv) {
-  MiniZinc::CLOParser cop( i, argc, argv );
+bool MIP_gurobi_wrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
+  MiniZinc::CLOParser cop( i, argv );
   if ( string(argv[i])=="-a"
       || string(argv[i])=="--all"
       || string(argv[i])=="--all-solutions" ) {

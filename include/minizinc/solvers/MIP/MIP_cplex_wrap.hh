@@ -51,7 +51,7 @@ class MIP_cplex_wrapper : public MIP_wrapper {
       double intTol=1e-6;
       double objDiff=1.0;
       std::string sCPLEXDLL;
-      bool processOption(int& i, int argc, const char** argv);
+      bool processOption(int& i, std::vector<std::string>& argv);
       static void printHelp(std::ostream& );
     };
   private:

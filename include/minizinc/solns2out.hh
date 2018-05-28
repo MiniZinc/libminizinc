@@ -89,7 +89,7 @@ namespace MiniZinc {
     virtual ~Solns2Out();
     Solns2Out(std::ostream& os, std::ostream& log);
     
-    virtual bool processOption(int& i, const int argc, const char** argv);
+    virtual bool processOption(int& i, std::vector<std::string>& argv);
     virtual void printHelp(std::ostream& );
     
     /// The output model (~.ozn) can be passed in 1 way in this base class:

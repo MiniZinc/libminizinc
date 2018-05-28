@@ -84,10 +84,10 @@ namespace MiniZinc {
     return new FZNSolverInstance(env, log, opt);
   }
 
-  bool FZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i, int argc, const char** argv)
+  bool FZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv)
   {
     FZNSolverOptions& _opt = static_cast<FZNSolverOptions&>(*opt);
-    CLOParser cop( i, argc, argv );
+    CLOParser cop( i, argv );
     string buffer;
     double dd;
     int nn=-1;

@@ -116,8 +116,8 @@ namespace MiniZinc {
     SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt)   {
       return new MIP_solverinstance<MIPWrapper>(env,log,static_cast<typename MIPWrapper::Options*>(opt));
     }
-    bool processOption(SolverInstanceBase::Options* opt, int& i, int argc, const char** argv)
-    { return static_cast<typename MIPWrapper::Options&>(*opt).processOption(i, argc, argv); }
+    bool processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv)
+    { return static_cast<typename MIPWrapper::Options&>(*opt).processOption(i, argv); }
     std::string getDescription( );
     std::string getVersion( );
     std::string getId( );
