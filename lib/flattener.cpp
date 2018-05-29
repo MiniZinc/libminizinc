@@ -332,13 +332,6 @@ void Flattener::flatten(const std::string& modelString)
   if (flag_verbose)
     printVersion(log);
 
-  // controlled from redefs and command line:
-//   if (beginswith(globals_dir, "linear")) {
-//     flag_only_range_domains = true;
-//     if (flag_verbose)
-//       cerr << "Assuming a linear programming-based solver (only_range_domains)." << endl;
-//   }
-
   if ( filenames.empty() && !flag_stdinInput && modelString.empty() ) {
     throw Error( "Error: no model file given." );
   }
