@@ -107,7 +107,8 @@ namespace MiniZinc {
     bool run(int& argc, const char**& argv, const std::string& model = std::string());
     bool get_flag_verbose() { return flag_verbose; /*getFlt()->get_flag_verbose();*/ }
   private:
-    bool processOptions(std::vector<std::string>& argv);
+    enum OptionStatus { OPTION_OK, OPTION_ERROR, OPTION_FINISH };
+    OptionStatus processOptions(std::vector<std::string>& argv);
     void printHelp(const std::string& selectedSolver=std::string());
     /// Flatten model
     void flatten(const std::string& modelString = std::string());

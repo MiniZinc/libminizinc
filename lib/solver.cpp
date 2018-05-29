@@ -135,10 +135,11 @@ void MznSolver::printHelp(const std::string& selectedSolver)
     << "Usage: "  << executable_name
     << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl;
   os
-    << "Options:" << std::endl
+    << "General options:" << std::endl
     << "  --help, -h\n    Print this help message." << std::endl
     << "  --version\n    Print version information." << std::endl
-    << "  --solvers\n    Print available solvers." << std::endl
+    << "  --solvers\n    Print list of available solvers." << std::endl
+    << "  --solver <solver id>\n    Select solver to use." << std::endl
     << "  -v, -l, --verbose\n    Print progress/log statements. Note that some solvers may log to stdout." << std::endl
     << "  -s, --statistics\n    Print statistics." << std::endl;
 
@@ -181,14 +182,14 @@ void MznSolver::printHelp(const std::string& selectedSolver)
   }
 }
 
-bool MznSolver::processOptions(std::vector<std::string>& argv)
+MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv)
 {
   executable_name = argv[0];
   executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
   int i=1, j=1;
   int argc = argv.size();
   if (argc < 2)
-    return false;
+    return OPTION_ERROR;
   string solver;
   for (i=1; i<argc; ++i) {
     if (argv[i]=="-h" || argv[i]=="--help") {
@@ -197,14 +198,11 @@ bool MznSolver::processOptions(std::vector<std::string>& argv)
       } else {
         printHelp();
       }
-      std::exit(EXIT_SUCCESS);
+      return OPTION_FINISH;
     }
     if (argv[i]=="--version") {
       flt.printVersion(cout);
-      for (auto it = getGlobalSolverRegistry()->getSolverFactories().rbegin();
-           it != getGlobalSolverRegistry()->getSolverFactories().rend(); ++it)
-        cout << "  " << (*it)->getDescription() << endl;
-      std::exit(EXIT_SUCCESS);
+      return OPTION_FINISH;
     }
     if (argv[i]=="--solvers") {
       cout << "MiniZinc driver.\nAvailable solver configurations:\n";
@@ -214,25 +212,25 @@ bool MznSolver::processOptions(std::vector<std::string>& argv)
       for (unsigned int i=0; i<solvers.size(); i++) {
         cout << "  " << solvers[i] << endl;
       }
-      std::exit(EXIT_SUCCESS);
+      return OPTION_FINISH;
     }
     if (argv[i]=="--solvers-json") {
       cout << solver_configs.solverConfigsJSON();
-      std::exit(EXIT_SUCCESS);
+      return OPTION_FINISH;
     }
     if (argv[i]=="--user-solver-config-dir") {
       cout << FileUtils::user_config_dir()+"/solvers";
-      std::exit(EXIT_SUCCESS);
+      return OPTION_FINISH;
     }
     if (argv[i]=="--solver") {
       ++i;
       if (i==argc) {
         log << "Argument required for --solver" << endl;
-        return false;
+        return OPTION_ERROR;
       }
       if (solver.size()>0) {
         log << "Only one --solver option allowed" << endl;
-        return false;
+        return OPTION_ERROR;
       }
       solver = argv[i];
     } else if (argv[i]=="-c" || argv[i]=="--compile") {
@@ -288,7 +286,7 @@ bool MznSolver::processOptions(std::vector<std::string>& argv)
               bool success = sf->processOption(si_opt, i, additionalArgs_s);
               if (!success) {
                 log << "Solver backend " << solverId << " does not recognise option -f." << endl;
-                return false;
+                return OPTION_ERROR;
               }
               std::cerr << "created factory\n";
             } else {
@@ -300,7 +298,7 @@ bool MznSolver::processOptions(std::vector<std::string>& argv)
               bool success = sf->processOption(si_opt, i, additionalArgs);
               if (!success) {
                 log << "Solver backend " << solverId << " does not recognise option -f." << endl;
-                return false;
+                return OPTION_ERROR;
               }
             }
           }
@@ -310,14 +308,14 @@ bool MznSolver::processOptions(std::vector<std::string>& argv)
               int i=0;
               if (!flt.processOption(i, additionalArgs)) {
                 log << "Flattener does not recognise option " << sc.mznlib() << endl;
-                return false;
+                return OPTION_ERROR;
               }
             } else {
               std::vector<std::string>  additionalArgs({"-I",sc.mznlib()});
               int i=0;
               if (!flt.processOption(i, additionalArgs)) {
                 log << "Flattener does not recognise option -I." << endl;
-                return false;
+                return OPTION_ERROR;
               }
             }
           }
@@ -327,12 +325,12 @@ bool MznSolver::processOptions(std::vector<std::string>& argv)
       
     } catch (ConfigException& e) {
       log << "Config exception: " << e.msg() << endl;
-      return false;
+      return OPTION_ERROR;
     }
     
     if (sf==NULL) {
       log << "Solver " << solver << " not found." << endl;
-      return false;
+      return OPTION_ERROR;
     }
   }
 
@@ -344,10 +342,10 @@ bool MznSolver::processOptions(std::vector<std::string>& argv)
       std::string executable_name(argv[0]);
       executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
       log << executable_name << ": Unrecognized option or bad format `" << argv[i] << "'" << endl;
-      return false;
+      return OPTION_ERROR;
     }
   }
-  return true;
+  return OPTION_OK;
 }
 
 void MznSolver::flatten(const std::string& modelString)
@@ -394,9 +392,14 @@ bool MznSolver::run(int& argc, const char**& argv, const std::string& model) {
   std::vector<std::string> args;
   for (unsigned int i=0; i<argc; i++)
     args.push_back(argv[i]);
-  if (!processOptions(args)) {
-    printHelp();
-    return false;
+  switch (processOptions(args)) {
+    case OPTION_FINISH:
+      return true;
+    case OPTION_ERROR:
+      printHelp();
+      return false;
+    case OPTION_OK:
+      break;
   }
   if (sf->getId() == "org.minizinc.mzn-mzn") {
     Env env;
@@ -408,7 +411,7 @@ bool MznSolver::run(int& argc, const char**& argv, const std::string& model) {
       getSI()->processFlatZinc();
     }
     getSI()->solve();
-    return 0;
+    return true;
   }
   
   flatten(model);
