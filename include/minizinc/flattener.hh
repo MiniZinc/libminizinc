@@ -62,6 +62,7 @@ namespace MiniZinc {
     bool get_flag_statistics() const { return flag_statistics; }
     void set_flag_output_by_default(bool f) { fOutputByDefault = f; }
     Env* getEnv() const { assert(pEnv.get()); return pEnv.get(); }
+    bool hasInputFiles(void) const { return !filenames.empty() || flag_stdinInput; }
     
     SolverInstance::Status status = SolverInstance::UNKNOWN;
     

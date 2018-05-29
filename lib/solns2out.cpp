@@ -27,6 +27,7 @@ void Solns2Out::printHelp(ostream& os)
 {
   os
   << "Solution output options:" << std::endl
+  << "  --ozn-file <file>\n    Read output specification from ozn file." << std::endl
   << "  -o <file>, --output-to-file <file>\n    Filename for generated output." << std::endl
   << "  -i <n>, --ignore-lines <n>, --ignore-leading-lines <n>\n    Ignore the first <n> lines in the FlatZinc solution stream." << std::endl
   << "  --soln-sep <s>, --soln-separator <s>, --solution-separator <s>\n    Specify the string printed after each solution (as a separate line).\n    The default is to use the same as FlatZinc, \"----------\"." << std::endl
@@ -51,8 +52,10 @@ void Solns2Out::printHelp(ostream& os)
 bool Solns2Out::processOption(int& i, std::vector<std::string>& argv)
 {
   CLOParser cop( i, argv );
-  
-  if ( cop.getOption( "-o --output-to-file", &_opt.flag_output_file) ) {
+  std::string oznfile;
+  if ( cop.getOption( "--ozn-file", &oznfile) ) {
+    initFromOzn(oznfile);
+  } else if ( cop.getOption( "-o --output-to-file", &_opt.flag_output_file) ) {
   } else if ( cop.getOption( "--no-flush-output" ) ) {
     _opt.flag_output_flush = false;
   } else if ( cop.getOption( "--no-output-comments" ) ) {
@@ -86,23 +89,36 @@ bool Solns2Out::processOption(int& i, std::vector<std::string>& argv)
 bool Solns2Out::initFromEnv(Env* pE) {
   assert(pE); pEnv=pE;
   init();
-  /// Trying to register array1d. Also opt elements?
-//       std::vector<Type> t_arrayXd(2);
-//       t_arrayXd[0] = Type::parsetint();
-//       t_arrayXd[1] = Type::top(-1);
-//   FunctionI* pfi = pE->flat()->matchFn( pE->envi(), ASTString("array1d"), t_arrayXd );
-//   if ( !pfi ) {
-//     assert( pE->model() );
-//     pfi = pE->model()->matchFn( pE->envi(), ASTString("array1d"), t_arrayXd );
-//   }
-// //   assert( pfi );
-//   if (pfi)    // else, continue w/o array1d??  TODO
-//     getModel()->registerFn(pE->envi(), pfi);
-//   getModel()->fnmap = pE->flat()->fnmap;
-//   MiniZinc::registerBuiltins(*pEnv, pEnv->output());
   return true;
 }
 
+void Solns2Out::initFromOzn(const std::string& filename) {
+  std::vector<string> filenames( 1, filename );
+  
+  includePaths.push_back(stdlibDir+"/std/");
+  
+  for (unsigned int i=0; i<includePaths.size(); i++) {
+    if (!FileUtils::directory_exists(includePaths[i])) {
+      std::cerr << "solns2out: cannot access include directory " << includePaths[i] << "\n";
+      std::exit(EXIT_FAILURE);
+    }
+  }
+  
+  {
+    pEnv = new Env();
+    if ((pOutput = parse(*pEnv, filenames, std::vector<std::string>(), includePaths, false, false, false,
+                         std::cerr))) {
+      std::vector<TypeError> typeErrors;
+      pEnv->model(pOutput);
+      MZN_ASSERT_HARD_MSG( pEnv, "solns2out: could not allocate Env" );
+      pEnv_guard.reset( pEnv );
+      MiniZinc::typecheck(*pEnv,pOutput,typeErrors,false,false);
+      MiniZinc::registerBuiltins(*pEnv,pOutput);
+      pEnv->envi().swap_output();
+      init();
+    }
+  }
+}
 
 void Solns2Out::createOutputMap() {
   for (unsigned int i=0; i<getModel()->size(); i++) {
@@ -381,7 +397,7 @@ void Solns2Out::init() {
   nLinesIgnore = _opt.flag_ignore_lines;
 }
 
-Solns2Out::Solns2Out(std::ostream& os0, std::ostream& log0) : os(os0), log(log0) {}
+Solns2Out::Solns2Out(std::ostream& os0, std::ostream& log0, const std::string& stdlibDir0) : os(os0), log(log0), stdlibDir(stdlibDir0) {}
 
 Solns2Out::~Solns2Out() {
   getOutput() << comments;

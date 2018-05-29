@@ -87,7 +87,7 @@ namespace MiniZinc {
     
   public:
     virtual ~Solns2Out();
-    Solns2Out(std::ostream& os, std::ostream& log);
+    Solns2Out(std::ostream& os, std::ostream& log, const std::string& stdlibDir);
     
     virtual bool processOption(int& i, std::vector<std::string>& argv);
     virtual void printHelp(std::ostream& );
@@ -126,7 +126,7 @@ namespace MiniZinc {
 
     virtual void printStatistics(std::ostream& );
     
-    virtual Env* getEnv() const { assert(pEnv); return pEnv; }
+    virtual Env* getEnv() const { return pEnv; }
     virtual Model* getModel() const { assert(getEnv()->output()); return getEnv()->output(); }
     
   private:
@@ -139,10 +139,13 @@ namespace MiniZinc {
     std::set<std::string> sSolsCanon;
     std::string line_part;   // non-finished line from last chunk
 
+    /// Initialise from ozn file
+    void initFromOzn(const std::string& filename);
   protected:
     std::ostream& os;
     std::ostream& log;
     std::vector<std::string> includePaths;
+    std::string stdlibDir;
     
     // Basically open output
     virtual void init();

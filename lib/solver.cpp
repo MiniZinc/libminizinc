@@ -81,7 +81,7 @@ void SolverFactory::destroySI(SolverInstanceBase * pSI) {
 }
 
 MznSolver::MznSolver(std::ostream& os0, std::ostream& log0)
-  : flt(os0,log0,solver_configs.mznlibDir()), executable_name("<executable>"), os(os0), log(log0), s2out(os0,log0) {}
+  : flt(os0,log0,solver_configs.mznlibDir()), executable_name("<executable>"), os(os0), log(log0), s2out(os0,log0,solver_configs.mznlibDir()) {}
 
 MznSolver::~MznSolver()
 {
@@ -100,7 +100,8 @@ void MznSolver::addSolverInterface(SolverFactory* sf)
 {
   si = sf->createSI(*flt.getEnv(), log, si_opt);
   assert(si);
-  s2out.initFromEnv( flt.getEnv() );
+  if (s2out.getEnv()==NULL)
+    s2out.initFromEnv( flt.getEnv() );
   si->setSolns2Out( &s2out );
   if (get_flag_verbose())
     log
@@ -141,7 +142,8 @@ void MznSolver::printHelp(const std::string& selectedSolver)
     << "  --solvers\n    Print list of available solvers." << std::endl
     << "  --solver <solver id>\n    Select solver to use." << std::endl
     << "  -v, -l, --verbose\n    Print progress/log statements. Note that some solvers may log to stdout." << std::endl
-    << "  -s, --statistics\n    Print statistics." << std::endl;
+    << "  -s, --statistics\n    Print statistics." << std::endl
+    << "  -c, --compile\n    Compile only (do not run solver)." << std::endl;
 
   if (selectedSolver.empty()) {
     flt.printHelp(os);
@@ -408,9 +410,19 @@ bool MznSolver::run(int& argc, const char**& argv, const std::string& model) {
       GCLock lock;
       getSI()->_options->verbose = get_flag_verbose();
       getSI()->_options->printStatistics = get_flag_statistics();
-      getSI()->processFlatZinc();
     }
     getSI()->solve();
+    return true;
+  }
+  
+  if (!flt.hasInputFiles()) {
+    // We are in solns2out mode
+    while ( std::cin.good() ) {
+      string line;
+      getline( std::cin, line );
+      line += '\n';                // need eols as in t=raw stream
+      s2out.feedRawDataChunk( line.c_str() );
+    }
     return true;
   }
   

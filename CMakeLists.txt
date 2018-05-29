@@ -291,7 +291,7 @@ lib/options.cpp
 lib/optimize_constraints.cpp
 lib/output.cpp
 lib/parser.yxx
-lib/solns2out_class.cpp
+lib/solns2out.cpp
 lib/statistics.cpp
 lib/lexer.lxx
 lib/values.cpp
@@ -325,6 +325,7 @@ include/minizinc/parser.hh
 include/minizinc/prettyprinter.hh
 include/minizinc/process.hh
 include/minizinc/pathfileprinter.hh
+include/minizinc/solns2out.hh
 include/minizinc/solver.hh
 include/minizinc/solver_config.hh
 include/minizinc/solver_instance.hh
@@ -352,9 +353,6 @@ if(HAS_GECODE)
   link_directories("${GECODE_HOME}")
   link_directories("${GECODE_HOME}/lib")
 endif()
-
-add_executable(solns2out solns2out.cpp)
-target_link_libraries(solns2out minizinc)
 
 find_package ( Threads REQUIRED )
 
@@ -656,7 +654,7 @@ if(HAS_FZN)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-INSTALL(TARGETS solns2out mzn2doc minizinc
+INSTALL(TARGETS mzn2doc minizinc
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
