@@ -291,6 +291,7 @@ lib/options.cpp
 lib/optimize_constraints.cpp
 lib/output.cpp
 lib/parser.yxx
+lib/process.cpp
 lib/solns2out.cpp
 lib/statistics.cpp
 lib/lexer.lxx

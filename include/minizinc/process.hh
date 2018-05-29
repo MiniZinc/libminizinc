@@ -12,6 +12,8 @@
 #ifndef __MINIZINC_PROCESS_HH__
 #define __MINIZINC_PROCESS_HH__
 
+#include <minizinc/solver.hh>
+
 const auto SolverInstance__ERROR = MiniZinc::SolverInstance::ERROR;  // before windows.h
 #ifdef _WIN32
 #define NOMINMAX
@@ -34,7 +36,8 @@ namespace MiniZinc {
 
 #ifdef _WIN32
 
-  void ReadPipePrint(HANDLE g_hCh, bool* _done, ostream* pOs, Solns2Out* pSo, mutex* mtx) {
+  template<class S2O>
+  void ReadPipePrint(HANDLE g_hCh, bool* _done, std::ostream* pOs, S2O* pSo, std::mutex* mtx) {
     bool& done = *_done;
     assert( pOs!=0 || pSo!=0 );
     while (!done) {
@@ -43,11 +46,11 @@ namespace MiniZinc {
       bool bSuccess = ReadFile(g_hCh, buffer, sizeof(buffer) - 1, &count, NULL);
       if (bSuccess && count > 0) {
         buffer[count] = 0;
-        lock_guard<mutex> lck(*mtx);
+        std::lock_guard<std::mutex> lck(*mtx);
         if (pSo)
           pSo->feedRawDataChunk( buffer );
         if (pOs)
-          (*pOs) << buffer << flush;
+          (*pOs) << buffer << std::flush;
       }
       else {
         if (pSo)
@@ -56,16 +59,9 @@ namespace MiniZinc {
       }
     }
   }
-  void TimeOut(HANDLE hProcess, bool* done, int timeout, timed_mutex* mtx) {
-    if (timeout > 0) {
-      if (!mtx->try_lock_for(std::chrono::milliseconds(timeout))) {
-        if (!*done) {
-          *done = true;
-          TerminateProcess(hProcess,0);
-        }
-      }
-    }
-  }
+
+  void TimeOut(HANDLE hProcess, bool* done, int timeout, std::timed_mutex* mtx);
+
 #endif
 
   template<class S2O>
@@ -167,11 +163,11 @@ namespace MiniZinc {
       CloseHandle(g_hChildStd_IN_Rd);
       bool done = false;
       // Threaded solution seems simpler than asyncronous pipe reading
-      mutex pipeMutex;
-      timed_mutex terminateMutex;
+      std::mutex pipeMutex;
+      std::timed_mutex terminateMutex;
       terminateMutex.lock();
-      thread thrStdout(ReadPipePrint, g_hChildStd_OUT_Rd, &done, nullptr, pS2Out, &pipeMutex);
-      thread thrStderr(ReadPipePrint, g_hChildStd_ERR_Rd, &done, &cerr, nullptr, &pipeMutex);
+      thread thrStdout(&ReadPipePrint<S2O>, g_hChildStd_OUT_Rd, &done, nullptr, pS2Out, &pipeMutex);
+      thread thrStderr(&ReadPipePrint<S2O>, g_hChildStd_ERR_Rd, &done, &cerr, nullptr, &pipeMutex);
       thread thrTimeout(TimeOut, piProcInfo.hProcess, &done, timelimit, &terminateMutex);
       thrStdout.join();
       thrStderr.join();
