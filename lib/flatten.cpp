@@ -1127,7 +1127,13 @@ namespace MiniZinc {
         if(has_output_ann) {
           std::ostringstream s;
           s << vd->id()->str().str() << " = ";
-          _output->addItem(new VarDeclI(Location().introduce(), vd));
+          
+          VarDecl* vd_output = copy(env.envi(), vd)->cast<VarDecl>();
+          Type vd_t = vd_output->type();
+          vd_t.ti(Type::TI_PAR);
+          vd_output->type(vd_t);
+          vd_output->ti()->type(vd_t);          
+          _output->addItem(new VarDeclI(Location().introduce(), vd_output));
 
           if (dims) {
             s << "array" << dims->size() << "d(";
@@ -1140,7 +1146,7 @@ namespace MiniZinc {
           outputVars.push_back(sl);
 
           std::vector<Expression*> showArgs(1);
-          showArgs[0] = vd->id();
+          showArgs[0] = vd_output->id();
           Call* show = new Call(Location().introduce(),constants().ids.show,showArgs);
           show->type(Type::parstring());
           FunctionI* fi = _flat->matchFn(envi, show, false);
