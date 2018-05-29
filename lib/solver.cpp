@@ -293,7 +293,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               std::cerr << "created factory\n";
             } else {
               std::vector<std::string> additionalArgs(2);
-              additionalArgs[0] = "-f";
+              additionalArgs[0] = "--fzn-cmd";
               std::string executable = sc.executable();
               additionalArgs[1] = executable;
               int i=0;

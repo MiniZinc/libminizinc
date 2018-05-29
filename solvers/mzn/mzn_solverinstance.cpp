@@ -33,7 +33,7 @@ namespace MiniZinc {
     sc.name("Generic MiniZinc driver");
     sc.mznlibVersion(1);
     sc.description("MiniZinc generic MiniZinc solver plugin");
-    sc.requiredFlags({"-f"});
+    sc.requiredFlags({"-m"});
     sc.supportsFzn(false);
     sc.supportsMzn(true);
     sc.needsSolns2Out(false);
