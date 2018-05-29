@@ -204,12 +204,13 @@ void MIP_cplex_wrapper::checkDLL() {
 }
 
 
-string MIP_cplex_wrapper::getDescription() {
+string MIP_cplex_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
   string v = "MIP wrapper for IBM ILOG CPLEX  ";
   int status;
-  Options options;
+  Options def_options;
+  Options* options = opt ? static_cast<Options*>(opt) : &def_options;
   try {
-    MIP_cplex_wrapper mcw(&options);
+    MIP_cplex_wrapper mcw(options);
     CPXENVptr env = mcw.dll_CPXopenCPLEX (&status);
     if (env) {
       v += mcw.dll_CPXversion (env);
@@ -223,12 +224,13 @@ string MIP_cplex_wrapper::getDescription() {
   return v;
 }
 
-string MIP_cplex_wrapper::getVersion( ) {
+string MIP_cplex_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) {
   string v;
   int status;
-  Options options;
+  Options def_options;
+  Options* options = opt ? static_cast<Options*>(opt) : &def_options;
   try {
-    MIP_cplex_wrapper mcw(&options);
+    MIP_cplex_wrapper mcw(options);
     CPXENVptr env = mcw.dll_CPXopenCPLEX (&status);
     if (env) {
       v += mcw.dll_CPXversion (env);

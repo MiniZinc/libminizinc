@@ -20,17 +20,17 @@ namespace MiniZinc {
   }
   
   template<class MIPWrapper>
-  std::string MIP_SolverFactory<MIPWrapper>::getDescription()
+  std::string MIP_SolverFactory<MIPWrapper>::getDescription(SolverInstanceBase::Options* opt)
   {
     std::string v = "MIP solver plugin, compiled " __DATE__ ", using: "
-      + MIPWrapper::getDescription();
+      + MIPWrapper::getDescription(opt);
     return v;
   }
 
   template<class MIPWrapper>
-  std::string MIP_SolverFactory<MIPWrapper>::getVersion()
+  std::string MIP_SolverFactory<MIPWrapper>::getVersion(SolverInstanceBase::Options* opt)
   {
-    return MIPWrapper::getVersion();
+    return MIPWrapper::getVersion(opt);
   }
 
   template<class MIPWrapper>

@@ -40,13 +40,13 @@ namespace MiniZinc {
     SolverConfigs::registerBuiltinSolver(sc);
   }
   
-  string MZN_SolverFactory::getDescription()  {
+  string MZN_SolverFactory::getDescription(SolverInstanceBase::Options*)  {
     string v = "MZN solver plugin, compiled  " __DATE__ "  " __TIME__;
     return v;
   }
 
 
-  string MZN_SolverFactory::getVersion() {
+  string MZN_SolverFactory::getVersion(SolverInstanceBase::Options*) {
     return MZN_VERSION_MAJOR;
   }
 

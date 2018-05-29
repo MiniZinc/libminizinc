@@ -42,13 +42,13 @@ namespace MiniZinc {
     return new GecodeSolverInstance(env, log, opt);
   }
 
-  string Gecode_SolverFactory::getDescription()
+  string Gecode_SolverFactory::getDescription(SolverInstanceBase::Options*)
   {
     string v = "Gecode solver plugin, compiled " __DATE__ ", using: Gecode version "+string(GECODE_VERSION);
     return v;
   }
 
-  string Gecode_SolverFactory::getVersion()
+  string Gecode_SolverFactory::getVersion(SolverInstanceBase::Options*)
   {
     return string(GECODE_VERSION);
   }

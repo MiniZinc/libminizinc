@@ -72,8 +72,8 @@ namespace MiniZinc {
     /// and it only needs 1 format
     virtual bool processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv) { return false; }
 
-    virtual std::string getDescription(void) = 0;
-    virtual std::string getVersion(void) = 0;
+    virtual std::string getDescription(SolverInstanceBase::Options* opt=NULL) = 0;
+    virtual std::string getVersion(SolverInstanceBase::Options* opt=NULL) = 0;
     virtual std::string getId(void) = 0;
     virtual void printHelp(std::ostream& ) { }
   };  // SolverFactory

@@ -40,10 +40,10 @@ using namespace std;
 #include <minizinc/solvers/MIP/MIP_gurobi_wrap.hh>
 #include <minizinc/utils.hh>
 
-string MIP_gurobi_wrapper::getDescription() {
+string MIP_gurobi_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
   oss << "MIP wrapper for Gurobi library ";
-  MIP_gurobi_wrapper mgw( (int) 5 );
+  MIP_gurobi_wrapper mgw( static_cast<Options*>(opt) );
   try {
     mgw.checkDLL();
     int major, minor, technical;
@@ -56,9 +56,9 @@ string MIP_gurobi_wrapper::getDescription() {
   return oss.str();
 }
 
-string MIP_gurobi_wrapper::getVersion( ) {
+string MIP_gurobi_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
-  MIP_gurobi_wrapper mgw( (int) 5 );
+  MIP_gurobi_wrapper mgw( static_cast<Options*>(opt) );
   try {
     mgw.checkDLL();
     int major, minor, technical;
@@ -71,7 +71,7 @@ string MIP_gurobi_wrapper::getVersion( ) {
 }
 
 string MIP_gurobi_wrapper::needDllFlag( ) {
-  MIP_gurobi_wrapper mgw( (int) 5 );
+  MIP_gurobi_wrapper mgw( NULL );
   try {
     mgw.checkDLL();
     return "";

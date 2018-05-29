@@ -135,14 +135,13 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     
   public:
     MIP_gurobi_wrapper(Options* opt) : options(opt) {
-      openGUROBI();
+      if (opt)
+        openGUROBI();
     }
-    /// This constructor is to check DLL only, GRBversion does not need a license
-    MIP_gurobi_wrapper( int ) { }
     virtual ~MIP_gurobi_wrapper() { closeGUROBI(); }
 
-    static std::string getDescription(void);
-    static std::string getVersion(void);
+    static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt=NULL);
+    static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt=NULL);
     static std::string getId(void);
     static std::string getName(void);
     static std::string needDllFlag(void);

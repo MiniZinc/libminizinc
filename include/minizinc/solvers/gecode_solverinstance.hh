@@ -383,8 +383,8 @@ namespace MiniZinc {
     Gecode_SolverFactory(void);
     SolverInstanceBase::Options* createOptions(void);
     SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
-    std::string getDescription( );
-    std::string getVersion( );
+    std::string getDescription(SolverInstanceBase::Options* opt=NULL);
+    std::string getVersion(SolverInstanceBase::Options* opt=NULL);
     std::string getId( ) { return "org.minizinc.gecode"; }
     virtual bool processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv);
     void printHelp(std::ostream& os);

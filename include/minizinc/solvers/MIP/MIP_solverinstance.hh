@@ -118,8 +118,8 @@ namespace MiniZinc {
     }
     bool processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv)
     { return static_cast<typename MIPWrapper::Options&>(*opt).processOption(i, argv); }
-    std::string getDescription( );
-    std::string getVersion( );
+    std::string getDescription(SolverInstanceBase::Options* opt=NULL);
+    std::string getVersion(SolverInstanceBase::Options* opt=NULL);
     std::string getId( );
     void printHelp(std::ostream& os) { MIPWrapper::Options::printHelp(os); }
   };

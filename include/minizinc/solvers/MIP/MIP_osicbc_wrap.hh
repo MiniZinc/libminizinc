@@ -73,8 +73,8 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
     MIP_osicbc_wrapper(Options* opt) : options(opt) { openOSICBC(); }
     virtual ~MIP_osicbc_wrapper() { closeOSICBC(); }
   
-    static std::string getDescription(void);
-    static std::string getVersion(void);
+    static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt=NULL);
+    static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt=NULL);
     static std::string getId(void);
     static std::string getName(void);
     static std::string needDllFlag(void) { return ""; }

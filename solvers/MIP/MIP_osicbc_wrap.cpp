@@ -38,7 +38,7 @@ using namespace std;
 #define WANT_SOLUTION
 
 
-string MIP_osicbc_wrapper::getDescription() {
+string MIP_osicbc_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options*) {
   string v = "MIP wrapper for OSICBC ";
   v += CBC_VERSION;                     // E.g., 2.9 stable or 2.9.7 latest release
   v += ",  using CLP ";
@@ -47,7 +47,7 @@ string MIP_osicbc_wrapper::getDescription() {
   return v;
 }
 
-string MIP_osicbc_wrapper::getVersion() {
+string MIP_osicbc_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options*) {
   return string(CBC_VERSION)+"/"+string(CLP_VERSION);
 }
 

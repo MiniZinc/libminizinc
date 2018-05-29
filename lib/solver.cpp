@@ -107,7 +107,7 @@ void MznSolver::addSolverInterface(SolverFactory* sf)
     log
     //     << "  ---------------------------------------------------------------------------\n"
     << "      % SOLVING PHASE\n"
-    << sf->getDescription() << endl;
+    << sf->getDescription(si_opt) << endl;
 }
 
 void MznSolver::addSolverInterface()
