@@ -136,7 +136,7 @@ namespace MiniZinc {
         std::swap(id0,id1);
       }
       
-      if (id0->decl()->e() != NULL) {
+      if (id0->decl()->e() != NULL && !Expression::equal(id0->decl()->e(),id1->decl()->id())) {
         Expression* rhs = id0->decl()->e();
 
         VarDeclI* vdi1 = (*env.flat())[env.vo.find(id1->decl())]->cast<VarDeclI>();
@@ -150,7 +150,13 @@ namespace MiniZinc {
         CollectDecls cd(env.vo, deletedVarDecls, vdi0);
         topDown(cd, rhs);
       }
-      
+      if (Expression::equal(id1->decl()->e(),id0->decl()->id())) {
+        VarDeclI* vdi1 = (*env.flat())[env.vo.find(id1->decl())]->cast<VarDeclI>();
+        CollectDecls cd(env.vo, deletedVarDecls, vdi1);
+        Expression* rhs = id1->decl()->e();
+        topDown(cd, rhs);
+        id1->decl()->e(NULL);
+      }
       // Compute intersection of domains
       if (id0->decl()->ti()->domain() != NULL) {
         if (id1->decl()->ti()->domain() != NULL) {
