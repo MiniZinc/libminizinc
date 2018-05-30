@@ -34,81 +34,85 @@
 using namespace std;
 using namespace MiniZinc;
 
+#ifdef HAS_GUROBI
+#include <minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh>
+namespace {
+  Gurobi_SolverFactoryInitialiser _gurobi_init;
+}
+#endif
+#ifdef HAS_CPLEX
+#include <minizinc/solvers/MIP/MIP_cplex_solverfactory.hh>
+namespace {
+  Cplex_SolverFactoryInitialiser _cplex_init;
+}
+#endif
+#ifdef HAS_OSICBC
+#include <minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh>
+namespace {
+  OSICBC_SolverFactoryInitialiser _osicbc_init;
+}
+#endif
+#ifdef HAS_XPRESS
+#include <minizinc/solvers/MIP/MIP_xpress_solverfactory.hh>
+namespace {
+  Xpress_SolverFactoryInitialiser _xpress_init;
+}
+#endif
+#ifdef HAS_GECODE
+#include <minizinc/solvers/gecode_solverfactory.hh>
+namespace {
+  Gecode_SolverFactoryInitialiser _gecode_init;
+}
+#endif
+#ifdef HAS_FZN
+#include <minizinc/solvers/fzn_solverfactory.hh>
+#include <minizinc/solvers/mzn_solverfactory.hh>
+namespace {
+  FZN_SolverFactoryInitialiser _fzn_init;
+  MZN_SolverFactoryInitialiser _mzn_init;
+}
+#endif
 
 int main(int argc, const char** argv) {
 
-  /// Initializing specified solver factories
-  /// Gecode has to be 1st for multi-pass
-#ifdef HAS_GECODE
-  static unique_ptr<SolverFactory>
-    pFactoryGECODE( SolverFactory::createF_GECODE() );
-#endif
-#ifdef HAS_FZN
-  static unique_ptr<SolverFactory>
-    pFactoryFZN( SolverFactory::createF_FZN() );
-#endif
-#ifdef HAS_CHUFFED
-  static unique_ptr<SolverFactory>
-    pFactoryCHUFFED( SolverFactory::createF_CHUFFED() );
-#endif
-#ifdef HAS_MIP
-  static unique_ptr<SolverFactory>
-    pFactoryMIP( SolverFactory::createF_MIP() );
-#endif
-
   clock_t starttime = std::clock(), endTime;
   bool fSuccess = false;
-  
-  MznSolver slv(std::cout,std::cerr,IS_MZN2FZN);
+
   try {
-    
-    if (!slv.processOptions(argc, argv)) {
-      slv.printHelp();
-      exit(EXIT_FAILURE);
+    MznSolver slv(std::cout,std::cerr);
+    try {
+      fSuccess = slv.run(argc,argv);
+    } catch (const LocationException& e) {
+      if (slv.get_flag_verbose())
+        std::cerr << std::endl;
+      std::cerr << e.loc() << ":" << std::endl;
+      std::cerr << e.what() << ": " << e.msg() << std::endl;
+    } catch (const Exception& e) {
+      if (slv.get_flag_verbose())
+        std::cerr << std::endl;
+      std::string what = e.what();
+      std::cerr << what << (what.empty() ? "" : ": ") << e.msg() << std::endl;
     }
-    slv.flatten();
+    catch (const exception& e) {
+      if (slv.get_flag_verbose())
+        std::cerr << std::endl;
+      std::cerr << e.what() << std::endl;
+    }
+    catch (...) {
+      if (slv.get_flag_verbose())
+        std::cerr << std::endl;
+      std::cerr << "  UNKNOWN EXCEPTION." << std::endl;
+    }
     
-    if (SolverInstance::UNKNOWN == slv.getFltStatus())
-    {
-      if ( !slv.ifMzn2Fzn() ) {          // only then
-        // GCLock lock;                  // better locally, to enable cleanup after ProcessFlt()
-        slv.addSolverInterface();
-        slv.solve();
-      }
-      fSuccess = true;
-    } else {
-      if ( !slv.ifMzn2Fzn() )
-        slv.s2out.evalStatus( slv.getFltStatus() );
-      fSuccess = (SolverInstance::ERROR != slv.getFltStatus());
-    }                                   //  Add evalOutput() here?   TODO
-  } catch (const LocationException& e) {
-    if (slv.get_flag_verbose())
-      std::cerr << std::endl;
-    std::cerr << e.loc() << ":" << std::endl;
-    std::cerr << e.what() << ": " << e.msg() << std::endl;
-  } catch (const Exception& e) {
-    if (slv.get_flag_verbose())
-      std::cerr << std::endl;
-    std::string what = e.what();
-    std::cerr << what << (what.empty() ? "" : ": ") << e.msg() << std::endl;
-  }
-  catch (const exception& e) {
-    if (slv.get_flag_verbose())
-      std::cerr << std::endl;
-    std::cerr << e.what() << std::endl;
-  }
-  catch (...) {
-    if (slv.get_flag_verbose())
-      std::cerr << std::endl;
-    std::cerr << "  UNKNOWN EXCEPTION." << std::endl;
-  }
-  
-  if ( !slv.ifMzn2Fzn() ) {
     endTime = clock();
     if (slv.get_flag_verbose()) {
       std::cerr << "   Done (";
       cerr << "overall time " << timeDiff(endTime, starttime) << ")." << std::endl;
     }
+    return !fSuccess;
+  } catch (const Exception& e) {
+    std::string what = e.what();
+    std::cerr << what << (what.empty() ? "" : ": ") << e.msg() << std::endl;
+    std::exit(EXIT_FAILURE);
   }
-  return !fSuccess;
 }   // int main()

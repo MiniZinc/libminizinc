@@ -20,6 +20,10 @@
 #include <minizinc/pathfileprinter.hh>
 #include <fstream>
 
+#ifdef HAS_GECODE
+#include <minizinc/solvers/gecode_solverinstance.hh>
+#endif
+
 using namespace std;
 using namespace MiniZinc;
 
@@ -91,9 +95,9 @@ void Flattener::printHelp(ostream& os)
   ;
 }
 
-bool Flattener::processOption(int& i, const int argc, const char** argv)
+bool Flattener::processOption(int& i, std::vector<std::string>& argv)
 {
-  CLOParser cop( i, argc, argv );
+  CLOParser cop( i, argv );
   string buffer;
   
   if ( cop.getOption( "-I --search-dir", &buffer ) ) {
@@ -204,15 +208,15 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
     flag_two_pass = true;
   } else if (string(argv[i])=="--npass") {
     i++;
-    if (i==argc) goto error;
+    if (i==argv.size()) goto error;
     log << "warning: --npass option is deprecated --two-pass\n";
-    int passes = atoi(argv[i]);
+    int passes = atoi(argv[i].c_str());
     if(passes == 1) flag_two_pass = false;
     else if(passes == 2) flag_two_pass = true;
   } else if (string(argv[i])=="--pre-passes") {
     i++;
-    if (i==argc) goto error;
-    int passes = atoi(argv[i]);
+    if (i==argv.size()) goto error;
+    int passes = atoi(argv[i].c_str());
     if(passes >= 0) {
       flag_pre_passes = static_cast<unsigned int>(passes);
     }
@@ -247,7 +251,7 @@ bool Flattener::processOption(int& i, const int argc, const char** argv)
   } else if ( cop.getOption( "--allow-multiple-assignments" ) ) {
     flag_allow_multi_assign = true;
   } else {
-    if (flag_stdinInput || '-'==*argv[i])   // unknown option
+    if (flag_stdinInput || argv[i]=="-")   // unknown option
       goto error;
     std::string input_file(argv[i]);
     if (input_file.length()<=4) {
@@ -279,13 +283,8 @@ error:
   return false;
 }
 
-Flattener::Flattener(std::ostream& os_, std::ostream& log_, bool fOutputByDef_)
-  : os(os_), log(log_), fOutputByDefault(fOutputByDef_)
-{
-  if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
-    std_lib_dir = string(MZNSTDLIBDIR);
-  }
-}
+Flattener::Flattener(std::ostream& os_, std::ostream& log_, const std::string& stdlibDir)
+  : os(os_), log(log_), std_lib_dir(stdlibDir) {}
 
 Flattener::~Flattener()
 {
@@ -333,28 +332,8 @@ void Flattener::flatten(const std::string& modelString)
   if (flag_verbose)
     printVersion(log);
 
-  // controlled from redefs and command line:
-//   if (beginswith(globals_dir, "linear")) {
-//     flag_only_range_domains = true;
-//     if (flag_verbose)
-//       cerr << "Assuming a linear programming-based solver (only_range_domains)." << endl;
-//   }
-
   if ( filenames.empty() && !flag_stdinInput && modelString.empty() ) {
     throw Error( "Error: no model file given." );
-  }
-
-  if (std_lib_dir=="") {
-    std::string mypath = FileUtils::progpath();
-    if (!mypath.empty()) {
-      if (FileUtils::file_exists(mypath+"/share/minizinc/std/builtins.mzn")) {
-        std_lib_dir = mypath+"/share/minizinc";
-      } else if (FileUtils::file_exists(mypath+"/../share/minizinc/std/builtins.mzn")) {
-        std_lib_dir = mypath+"/../share/minizinc";
-      } else if (FileUtils::file_exists(mypath+"/../../share/minizinc/std/builtins.mzn")) {
-        std_lib_dir = mypath+"/../../share/minizinc";
-      }
-    }
   }
 
   if (std_lib_dir=="") {
@@ -535,13 +514,13 @@ void Flattener::flatten(const std::string& modelString)
           fopts.outputMode = flag_output_mode;
           fopts.outputObjective = flag_output_objective;
 #ifdef HAS_GECODE
-          Options gopts;
-          gopts.setBoolParam(std::string("only-range-domains"), flag_only_range_domains);
-          gopts.setBoolParam(std::string("sac"),       flag_sac);
-          gopts.setBoolParam(std::string("allow_unbounded_vars"), flag_allow_unbounded_vars);
-          gopts.setBoolParam(std::string("shave"),     flag_shave);
-          gopts.setBoolParam(std::string("print_stats"),     flag_statistics);
-          gopts.setIntParam(std::string("pre_passes"), flag_pre_passes);
+          GecodeOptions gopts;
+          gopts.only_range_domains = flag_only_range_domains;
+          gopts.sac = flag_sac;
+          gopts.allow_unbounded_vars = flag_allow_unbounded_vars;
+          gopts.shave = flag_shave;
+          gopts.printStatistics =  flag_statistics;
+          gopts.pre_passes = flag_pre_passes;
 #endif
           FlatteningOptions pass_opts = fopts;
           CompilePassFlags cfs;
@@ -564,7 +543,7 @@ void Flattener::flatten(const std::string& modelString)
                                                         library, includePaths,  true, differentLibrary));
 #ifdef HAS_GECODE
             if(flag_gecode)
-              managed_passes.emplace_back(new GecodePass(gopts));
+              managed_passes.emplace_back(new GecodePass(&gopts));
 #endif
           }
           managed_passes.emplace_back(new CompilePass(env, fopts, cfs,

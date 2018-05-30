@@ -23,3 +23,5 @@
 #cmakedefine HAS_WINDOWS_H
 
 #cmakedefine HAS_GUROBI_PLUGIN
+
+#cmakedefine HAS_CPLEX_PLUGIN

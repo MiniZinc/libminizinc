@@ -23,13 +23,38 @@ namespace MiniZinc { namespace FileUtils {
   bool file_exists(const std::string& filename);
   /// Test if \a dirname exists and is a directory
   bool directory_exists(const std::string& dirname);
-  /// Return full path to file
-  std::string file_path(const std::string& filename);
+  /// Return full path to file. If \a basePath is not empty, also try resolving
+  /// relative paths with respect to \a basePath.
+  std::string file_path(const std::string& filename, const std::string& basePath=std::string());
+  /// Return directory name containing \a filename
+  std::string dir_name(const std::string& filename);
   /// Check whether path is absolute
   bool is_absolute(const std::string& path);
   /// Return list of files with extension \a ext in directory \a dir
   std::vector<std::string> directory_list(const std::string& dir,
                                           const std::string& ext=std::string("*"));
+  /// Return share/minizinc directory if present anywhere above the executable
+  std::string share_directory(void);
+  /// Get per-user configuration file name (usually in home directory or AppData directory)
+  std::string user_config_file(void);
+  /// Get per-user configuration directory name (usually in home directory or AppData directory)
+  std::string user_config_dir(void);
+  
+  /// Create a temporary file
+  class TmpFile {
+  private:
+    std::string _name;
+#ifndef _WIN32
+    int _tmpfile_desc;
+#endif
+  public:
+    // Constructor for file with extension \a ext
+    TmpFile(const std::string& ext);
+    /// Destructor (removes file)
+    ~TmpFile(void);
+    std::string name(void) const { return _name; }
+  };
+
   /// Inflate string \a s
   void inflateString(std::string& s);
   /// Deflate string \a s

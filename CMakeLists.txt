@@ -4,9 +4,10 @@ project (libminizinc CXX C)
 
 # -------------------------------------------------------------------------------------------------------------------
 # -- The below checks if certain solver paths are set in the config call for the corresp. interface to be compiled --
-# ---- For example, to produce mzn-gecode run "cd build; cmake -D GECODE_HOME=$GECODE_HOME ..; cmake --build ."  ----
+# -- For example, to include gecode in the minizinc binary run                                                     --
+# --     "cd build; cmake -D GECODE_HOME=$GECODE_HOME ..; cmake --build ."                                         --
 # -------------------------------------------------------------------------------------------------------------------
-set(HAS_FZN    TRUE)                 ### Always compile the mzn-fzn driver
+set(HAS_FZN    TRUE)                 ### Always compile the FlatZinc (external process) driver
 if (DEFINED GECODE_HOME AND NOT "${GECODE_HOME} " STREQUAL " ")
   set(HAS_GECODE TRUE)
 endif()
@@ -15,6 +16,9 @@ if (DEFINED CPLEX_STUDIO_DIR AND NOT "${CPLEX_STUDIO_DIR} " STREQUAL " ")
 endif()
 if(DEFINED GUROBI_HOME AND NOT "${GUROBI_HOME} " STREQUAL " ")
   set(HAS_GUROBI TRUE)
+endif()
+if(DEFINED XPRESS_HOME AND NOT "${XPRESS_HOME} " STREQUAL " ")
+  set(HAS_XPRESS TRUE)
 endif()
 if (DEFINED SCIP_DIR AND DEFINED SOPLEX_DIR AND DEFINED ZIMPL_DIR AND NOT "${SCIP_DIR} " STREQUAL " ")
   set(HAS_SCIP TRUE)                     # Can use SCIP w/o ZIMPL too
@@ -52,7 +56,8 @@ include (CheckIncludeFiles)
 
 # -------------------------------------------------------------------------------------------------------------------
 option (BUILD_GUROBI_PLUGIN "Build Gurobi binding as a plugin" OFF)
-if (BUILD_GUROBI_PLUGIN OR HAS_CPLEX)
+option (BUILD_CPLEX_PLUGIN "Build CPLEX binding as a plugin" OFF)
+if (BUILD_GUROBI_PLUGIN OR BUILD_CPLEX_PLUGIN OR HAS_CPLEX)
   if(HAS_GUROBI OR HAS_CPLEX)
     CHECK_INCLUDE_FILES (dlfcn.h HAS_DLFCN_H)
     if(HAS_DLFCN_H)
@@ -60,7 +65,12 @@ if (BUILD_GUROBI_PLUGIN OR HAS_CPLEX)
     endif()
     CHECK_INCLUDE_FILES (Windows.h HAS_WINDOWS_H)
     if(HAS_DLFCN_H OR HAS_WINDOWS_H)
-      set(HAS_GUROBI_PLUGIN TRUE)
+      if (BUILD_GUROBI_PLUGIN)
+        set(HAS_GUROBI_PLUGIN TRUE)
+      endif()
+      if (BUILD_CPLEX_PLUGIN)
+        set(HAS_CPLEX_PLUGIN TRUE)
+      endif()
     endif()
   endif()
 endif()
@@ -177,7 +187,7 @@ int main (int argc, char* argv[]) {
 # -------------------------------------------------------------------------------------------------------------------
 SET (CMAKE_REQUIRED_DEFINITIONS "${SAFE_CMAKE_REQUIRED_DEFINITIONS}")
 
-file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/minizinc)
+file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/include/minizinc)
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/doc/html)
 file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/doc/pdf)
 
@@ -185,7 +195,7 @@ file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/doc/pdf)
 # to the source code
 configure_file (
   ${PROJECT_SOURCE_DIR}/include/minizinc/config.hh.in
-  ${PROJECT_BINARY_DIR}/minizinc/config.hh
+  ${PROJECT_BINARY_DIR}/include/minizinc/config.hh
   )
 
 configure_file (
@@ -193,7 +203,7 @@ configure_file (
   ${PROJECT_BINARY_DIR}/doc/pdf/version.tex
   )
 
-include_directories(${PROJECT_BINARY_DIR})
+include_directories(${PROJECT_BINARY_DIR}/include)
 
 include_directories(${PROJECT_SOURCE_DIR}/include)
 
@@ -230,13 +240,13 @@ endif(FLEX_EXEC)
 find_program(BISON_EXEC bison)
 if(BISON_EXEC)
   add_custom_command(
-    OUTPUT ${PROJECT_BINARY_DIR}/parser.tab.cpp ${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh
+    OUTPUT ${PROJECT_BINARY_DIR}/parser.tab.cpp ${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh
     DEPENDS ${lexer_cpp} ${PROJECT_SOURCE_DIR}/lib/parser.yxx
-    COMMAND "${BISON_EXEC}" -l -o ${PROJECT_BINARY_DIR}/parser.tab.cpp --defines=${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh ${PROJECT_SOURCE_DIR}/lib/parser.yxx
+    COMMAND "${BISON_EXEC}" -l -o ${PROJECT_BINARY_DIR}/parser.tab.cpp --defines=${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh ${PROJECT_SOURCE_DIR}/lib/parser.yxx
     )
   set_source_files_properties(${PROJECT_BINARY_DIR}/parser.tab.cpp GENERATED)
   set(parser_cpp ${PROJECT_BINARY_DIR}/parser.tab.cpp)
-  set(parser_hh ${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh)
+  set(parser_hh ${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh)
 else(BISON_EXEC)
   MD5(${PROJECT_SOURCE_DIR}/lib/parser.yxx parser_yxx_md5)
   if(NOT "${parser_yxx_md5}" STREQUAL "${parser_yxx_md5_cached}")
@@ -271,6 +281,7 @@ ${parser_cpp}
 lib/prettyprinter.cpp
 lib/pathfileprinter.cpp
 lib/solver.cpp
+lib/solver_config.cpp
 lib/solver_instance.cpp
 lib/solver_instance_base.cpp
 lib/type.cpp
@@ -283,7 +294,8 @@ lib/options.cpp
 lib/optimize_constraints.cpp
 lib/output.cpp
 lib/parser.yxx
-lib/solns2out_class.cpp
+lib/process.cpp
+lib/solns2out.cpp
 lib/statistics.cpp
 lib/lexer.lxx
 lib/values.cpp
@@ -315,8 +327,11 @@ include/minizinc/options.hh
 include/minizinc/output.hh
 include/minizinc/parser.hh
 include/minizinc/prettyprinter.hh
+include/minizinc/process.hh
 include/minizinc/pathfileprinter.hh
+include/minizinc/solns2out.hh
 include/minizinc/solver.hh
+include/minizinc/solver_config.hh
 include/minizinc/solver_instance.hh
 include/minizinc/solver_instance_base.hh
 include/minizinc/statistics.hh
@@ -343,14 +358,6 @@ if(HAS_GECODE)
   link_directories("${GECODE_HOME}/lib")
 endif()
 
-# add the executable
-add_executable(mzn2fzn minizinc.cpp)    #mzn2fzn.cpp)
-target_link_libraries(mzn2fzn minizinc)
-target_compile_definitions(mzn2fzn PRIVATE -DFLATTEN_ONLY)
-
-add_executable(solns2out solns2out.cpp)
-target_link_libraries(solns2out minizinc)
-
 find_package ( Threads REQUIRED )
 
 # -------------------------------------------------------------------------------------------------------------------
@@ -359,7 +366,9 @@ find_package ( Threads REQUIRED )
 if(HAS_GUROBI)  # Version 7.5
 
 	add_library(minizinc_gurobi
-    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp include/minizinc/solvers/MIP/MIP_gurobi_wrap.hh
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp solvers/MIP/MIP_gurobi_solverfactory.cpp
+    include/minizinc/solvers/MIP/MIP_gurobi_wrap.hh include/minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh
+    include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_solverinstance.hpp
 	)
   target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
   if(HAS_GUROBI_PLUGIN)
@@ -369,15 +378,31 @@ if(HAS_GUROBI)  # Version 7.5
     target_link_libraries(minizinc_gurobi minizinc gurobi75 ${CMAKE_THREAD_LIBS_INIT})
   endif()
 
-	add_executable(mzn-gurobi minizinc.cpp)
-  target_compile_definitions( mzn-gurobi PRIVATE HAS_MIP )
-  target_include_directories(mzn-gurobi PRIVATE "${GUROBI_HOME}/include")
-	target_link_libraries(mzn-gurobi minizinc_gurobi ${CMAKE_THREAD_LIBS_INIT})
-
-  INSTALL(TARGETS minizinc_gurobi mzn-gurobi
+  INSTALL(TARGETS minizinc_gurobi
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
+endif()
+
+# -------------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------------
+if(HAS_XPRESS)
+
+	add_library(minizinc_xpress
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_xpress_wrap.cpp solvers/MIP/MIP_xpress_solverfactory.cpp
+    include/minizinc/solvers/MIP/MIP_xpress_wrap.hh include/minizinc/solvers/MIP/MIP_xpress_solverfactory.hh
+    include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_solverinstance.hpp
+	)
+
+  target_include_directories(minizinc_xpress PRIVATE "${XPRESS_HOME}/include")
+  link_directories("${XPRESS_HOME}/lib")
+  target_link_libraries(minizinc_xpress minizinc xprb xprs ${CMAKE_THREAD_LIBS_INIT})
+
+  INSTALL(TARGETS minizinc_xpress
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib)
+
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
@@ -405,31 +430,23 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
 
 	add_library(minizinc_cplex
 		solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
+    solvers/MIP/MIP_cplex_solverfactory.cpp include/minizinc/solvers/MIP/MIP_cplex_solverfactory.hh
+    include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_cplex_wrap.hh
 	)
   SET_TARGET_PROPERTIES(minizinc_cplex
                                PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG"
                                )
-  target_include_directories(minizinc_cplex PRIVATE
-    "${CPLEX_STUDIO_DIR}/cplex/include"
-  )
+  include_directories("${CPLEX_STUDIO_DIR}/cplex/include")
 #  target_include_directories(minizinc_cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
-  
-target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
 
-	add_executable(mzn-cplex minizinc.cpp)
-  target_compile_definitions( mzn-cplex PRIVATE HAS_MIP )
-  SET_TARGET_PROPERTIES(mzn-cplex
-                               PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD -Wall"
-                               )
-  # if (BUILD_STATIC_EXECUTABLE)
-  #SET_TARGET_PROPERTIES(mzn-cplex
-  #                             PROPERTIES LINK_FLAGS "-static"
-  #                             )
-  # endif()
-  target_include_directories(mzn-cplex PRIVATE "${CPLEX_STUDIO_DIR}/cplex/include")
-  target_link_libraries(mzn-cplex minizinc_cplex ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
 
-  INSTALL(TARGETS minizinc_cplex mzn-cplex
+  if(HAS_CPLEX_PLUGIN)
+    target_link_libraries(minizinc_cplex minizinc ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
+  else()
+    target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
+  endif()
+
+  INSTALL(TARGETS minizinc_cplex
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
@@ -563,18 +580,16 @@ if(HAS_OSICBC)
 
   add_library(minizinc_osicbc
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp
+    solvers/MIP/MIP_osicbc_solverfactory.cpp include/minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh
+    include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_osicbc_wrap.hh
   )
-  add_executable(mzn-cbc minizinc.cpp)
-  target_compile_definitions( mzn-cbc PRIVATE HAS_MIP )
 
   target_include_directories(minizinc_osicbc PRIVATE ${CBC_INCLUDEDIRS})
-  target_include_directories(mzn-cbc PRIVATE ${CBC_INCLUDEDIRS})
 
                                        # OSICBC_LINKEXTRAS: ArchLinux needs blas, lapack, bz2
   target_link_libraries(minizinc_osicbc minizinc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
-  target_link_libraries(mzn-cbc minizinc_osicbc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS} ${CMAKE_THREAD_LIBS_INIT})
 
-  INSTALL(TARGETS minizinc_osicbc mzn-cbc
+  INSTALL(TARGETS minizinc_osicbc
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
@@ -591,12 +606,14 @@ if(HAS_GECODE)
   add_library(minizinc_gecode
     solvers/gecode/fzn_space.cpp
     solvers/gecode/gecode_solverinstance.cpp
+    solvers/gecode/gecode_solverfactory.cpp
     solvers/gecode/gecode_constraints.cpp
     lib/passes/gecode_pass.cpp
     solvers/gecode/aux_brancher.hh
     include/minizinc/passes/gecode_pass.hh
     include/minizinc/solvers/gecode/fzn_space.hh
     include/minizinc/solvers/gecode_solverinstance.hh
+    include/minizinc/solvers/gecode_solverfactory.hh
     include/minizinc/solvers/gecode/gecode_constraints.hh
     ${parser_hh}
     )
@@ -608,11 +625,7 @@ if(HAS_GECODE)
     gecodefloat gecodeint gecodeset
     gecodekernel gecodesupport  ${CMAKE_THREAD_LIBS_INIT})
 
-  add_executable(mzn-gecode minizinc.cpp )
-  target_compile_definitions( mzn-gecode PRIVATE HAS_GECODE )
-  target_link_libraries(mzn-gecode minizinc_gecode)
-
-  INSTALL(TARGETS minizinc_gecode mzn-gecode
+  INSTALL(TARGETS minizinc_gecode
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
@@ -631,19 +644,52 @@ target_link_libraries(mzn2doc minizinc)
 if(HAS_FZN)
 	add_library(minizinc_fzn
 		solvers/fzn/fzn_solverinstance.cpp
+    solvers/fzn/fzn_solverfactory.cpp
+    include/minizinc/solvers/fzn_solverfactory.hh
+    include/minizinc/solvers/fzn_solverinstance.hh
+    solvers/mzn/mzn_solverinstance.cpp
+    solvers/mzn/mzn_solverfactory.cpp
+    include/minizinc/solvers/mzn_solverfactory.hh
+    include/minizinc/solvers/mzn_solverinstance.hh
 	)
 	target_link_libraries(minizinc_fzn minizinc)
-	add_executable( mzn-fzn minizinc.cpp )
-  target_compile_definitions( mzn-fzn PRIVATE HAS_FZN )
-	target_link_libraries(mzn-fzn minizinc_fzn)
-	INSTALL(TARGETS minizinc_fzn mzn-fzn
+	add_executable( minizinc-bin minizinc.cpp )
+  set_target_properties( minizinc-bin PROPERTIES OUTPUT_NAME minizinc)
+  target_compile_definitions( minizinc-bin PRIVATE HAS_FZN )
+	target_link_libraries(minizinc-bin minizinc_fzn)
+  if(HAS_GUROBI)
+    target_link_libraries(minizinc-bin minizinc_gurobi)
+    target_compile_definitions( minizinc-bin PRIVATE HAS_GUROBI )
+  endif()
+  if(HAS_XPRESS)
+    target_link_libraries(minizinc-bin minizinc_xpress)
+    target_compile_definitions( minizinc-bin PRIVATE HAS_XPRESS )
+  endif()
+  if(HAS_CPLEX)
+    SET_TARGET_PROPERTIES(minizinc-bin
+      PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD -Wall"
+    )
+    target_link_libraries(minizinc-bin minizinc_cplex ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
+    target_compile_definitions( minizinc-bin PRIVATE HAS_CPLEX )
+  endif()
+  if (HAS_OSICBC)
+    target_link_libraries(minizinc-bin minizinc_osicbc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS} ${CMAKE_THREAD_LIBS_INIT})
+    target_compile_definitions( minizinc-bin PRIVATE HAS_OSICBC )
+  endif()
+
+  add_executable(mzn2fzn minizinc.cpp)
+  target_link_libraries(mzn2fzn minizinc)
+  add_executable(solns2out minizinc.cpp)
+  target_link_libraries(solns2out minizinc)
+
+	INSTALL(TARGETS minizinc_fzn minizinc-bin mzn2fzn solns2out
 		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-INSTALL(TARGETS mzn2fzn solns2out mzn2doc minizinc
+INSTALL(TARGETS mzn2doc minizinc
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
@@ -702,7 +748,7 @@ INSTALL(DIRECTORY include/minizinc
 )
 
 # -------------------------------------------------------------------------------------------------------------------
-INSTALL(FILES ${PROJECT_BINARY_DIR}/minizinc/config.hh DESTINATION include/minizinc)
+INSTALL(FILES ${PROJECT_BINARY_DIR}/include/minizinc/config.hh DESTINATION include/minizinc)
 INSTALL(FILES README.txt INSTALL.txt LICENSE.txt DESTINATION doc/..)
 INSTALL(DIRECTORY doc/pdf DESTINATION doc)
 INSTALL(DIRECTORY share/examples DESTINATION share)

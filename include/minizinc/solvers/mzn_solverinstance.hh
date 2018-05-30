@@ -9,38 +9,32 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MINIZINC_FZN_SOLVER_INSTANCE_HH__
-#define __MINIZINC_FZN_SOLVER_INSTANCE_HH__
+#ifndef __MINIZINC_MZN_SOLVER_INSTANCE_HH__
+#define __MINIZINC_MZN_SOLVER_INSTANCE_HH__
 
-#include <minizinc/flattener.hh>
 #include <minizinc/solver.hh>
-//#include <minizinc/solver_instance_base.hh>
 
 namespace MiniZinc {
 
-  class FZNSolverOptions : public SolverInstanceBase::Options {
+  class MZNSolverOptions : public SolverInstanceBase::Options {
   public:
-    std::string fzn_solver;
-    std::string backend;
-    std::string fzn_flags;
-    std::string fzn_flag;
+    std::string mzn_solver;
+    std::string mzn_flags;
+    std::string mzn_flag;
     int numSols = 1;
     bool allSols = false;
     std::string parallel;
-    int fzn_time_limit_ms = 0;
-    bool fzn_sigint = false;
+    int mzn_time_limit_ms = 0;
+    bool mzn_sigint = false;
   };
 
-  class FZNSolverInstance : public SolverInstanceBase {
+  class MZNSolverInstance : public SolverInstanceBase {
     private:
-      std::string _fzn_solver;
-    protected:
-      Model* _fzn;
-      Model* _ozn;
+      std::string _mzn_solver;
     public:
-      FZNSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
+      MZNSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
 
-      ~FZNSolverInstance(void);
+      ~MZNSolverInstance(void);
 
       Status next(void) {return SolverInstance::ERROR;}
 
@@ -49,16 +43,13 @@ namespace MiniZinc {
       void processFlatZinc(void);
 
       void resetSolver(void);
-
-    protected:
-      Expression* getSolutionValue(Id* id);
   };
 
-  class FZN_SolverFactory: public SolverFactory {
+  class MZN_SolverFactory: public SolverFactory {
   protected:
     virtual SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
   public:
-    FZN_SolverFactory(void);
+    MZN_SolverFactory(void);
     virtual SolverInstanceBase::Options* createOptions(void);
     virtual std::string getDescription(SolverInstanceBase::Options* opt=NULL);
     virtual std::string getVersion(SolverInstanceBase::Options* opt=NULL);

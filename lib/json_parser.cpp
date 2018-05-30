@@ -364,15 +364,9 @@ namespace MiniZinc {
   }
   
   void
-  JSONParser::parse(Model* m, std::string filename0) {
-    filename = filename0;
-    ifstream is;
-    is.open(filename, ios::in);
+  JSONParser::parse(Model* m, std::istream& is) {
     line = 0;
     column = 0;
-    if (!is.good()) {
-      throw JSONError(env,Location().introduce(),"cannot open file "+filename);
-    }
     expectToken(is, T_OBJ_OPEN);
     for (;;) {
       string ident = expectString(is);
@@ -389,5 +383,48 @@ namespace MiniZinc {
         throw JSONError(env,errLocation(),"cannot parse JSON file");
     }
   }
+
+  void
+  JSONParser::parse(Model* m, const std::string& filename0) {
+    filename = filename0;
+    ifstream is;
+    is.open(filename, ios::in);
+    if (!is.good()) {
+      throw JSONError(env,Location().introduce(),"cannot open file "+filename);
+    }
+    parse(m,is);
+  }
   
+  void
+  JSONParser::parseFromString(Model* m, const std::string& data) {
+    istringstream iss(data);
+    line = 0;
+    column = 0;
+    parse(m, iss);
+  }
+  
+  namespace {
+    bool isJSON(std::istream& is) {
+      while (is.good()) {
+        char c = is.get();
+        if (c=='{')
+          return true;
+        if (c!=' ' && c!='\n' && c!='\t' && c!='\r')
+          return false;
+      }
+      return false;
+    }
+  }
+  
+  bool JSONParser::stringIsJSON(const std::string& data) {
+    std::istringstream iss(data);
+    return isJSON(iss);
+  }
+
+  bool JSONParser::fileIsJSON(const std::string& filename) {
+    ifstream is;
+    is.open(filename, ios::in);
+    return isJSON(is);
+  }
+
 }

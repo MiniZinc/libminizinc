@@ -63,6 +63,7 @@ namespace MiniZinc {
       int flag_ignore_lines = 0;
       bool flag_unique = 1;
       bool flag_canonicalize = 0;
+      bool flag_standaloneSolns2Out = false;
       std::string flag_output_noncanonical;
       std::string flag_output_raw;
       int flag_number_output = -1;
@@ -87,9 +88,9 @@ namespace MiniZinc {
     
   public:
     virtual ~Solns2Out();
-    Solns2Out(std::ostream& os, std::ostream& log);
+    Solns2Out(std::ostream& os, std::ostream& log, const std::string& stdlibDir);
     
-    virtual bool processOption(int& i, const int argc, const char** argv);
+    virtual bool processOption(int& i, std::vector<std::string>& argv);
     virtual void printHelp(std::ostream& );
     
     /// The output model (~.ozn) can be passed in 1 way in this base class:
@@ -126,7 +127,7 @@ namespace MiniZinc {
 
     virtual void printStatistics(std::ostream& );
     
-    virtual Env* getEnv() const { assert(pEnv); return pEnv; }
+    virtual Env* getEnv() const { return pEnv; }
     virtual Model* getModel() const { assert(getEnv()->output()); return getEnv()->output(); }
     
   private:
@@ -139,10 +140,13 @@ namespace MiniZinc {
     std::set<std::string> sSolsCanon;
     std::string line_part;   // non-finished line from last chunk
 
+    /// Initialise from ozn file
+    void initFromOzn(const std::string& filename);
   protected:
     std::ostream& os;
     std::ostream& log;
     std::vector<std::string> includePaths;
+    std::string stdlibDir;
     
     // Basically open output
     virtual void init();

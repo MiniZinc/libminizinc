@@ -47,21 +47,22 @@ namespace MiniZinc {
     MIP_wrapper* pMIP=0;
   public:
     XBZCutGen( MIP_wrapper* pw ) : pMIP(pw) { }
-    vector<MIP_wrapper::VarId> varX, varB;
+    std::vector<MIP_wrapper::VarId> varX, varB;
     MIP_wrapper::VarId varZ;
     void generate(const MIP_wrapper::Output&, MIP_wrapper::CutInput&);
     void print( std::ostream& );
   };
 
+  template<class MIPWrapper>
   class MIP_solverinstance : public SolverInstanceImpl<MIP_solver> {
     using SolverInstanceBase::_log;
     protected:
       
-      const unique_ptr<MIP_wrapper> mip_wrap;
-      vector< unique_ptr<CutGen> > cutGenerators;
+      const std::unique_ptr<MIP_wrapper> mip_wrap;
+      std::vector< std::unique_ptr<CutGen> > cutGenerators;
       
     public:
-      void registerCutGenerator( unique_ptr<CutGen>&& pCG ) {
+      void registerCutGenerator( std::unique_ptr<CutGen>&& pCG ) {
         getMIPWrapper()->cbui.cutMask |= pCG->getMask();
         cutGenerators.push_back( move( pCG ) );
       }
@@ -71,9 +72,9 @@ namespace MiniZinc {
       double dObjVarLB=-1e300, dObjVarUB=1e300;
     public:
 
-      MIP_solverinstance(Env& env, std::ostream& log) :
-        SolverInstanceImpl(env,log),
-        mip_wrap(GETMIPWRAPPER)
+      MIP_solverinstance(Env& env, std::ostream& log, typename MIPWrapper::Options* opt) :
+        SolverInstanceImpl(env,log,opt),
+        mip_wrap(new MIPWrapper(opt))
       {
         assert(mip_wrap.get()); 
         registerConstraints();
@@ -97,26 +98,34 @@ namespace MiniZinc {
     public:
       /// creates a var for a literal, if necessary
       VarId exprToVar(Expression* e);
-      void exprToArray(Expression* e, vector<double> &vals);
-      void exprToVarArray(Expression* e, vector<VarId> &vars);
+      void exprToArray(Expression* e, std::vector<double> &vals);
+      void exprToVarArray(Expression* e, std::vector<VarId> &vars);
+      std::pair<double,bool> exprToConstEasy(Expression* e);
       double exprToConst(Expression* e);
-      std::pair<double, bool> exprToConstEasy(Expression* e);
 
       Expression* getSolutionValue(Id* id);
 
       void registerConstraints(void);
   };  // MIP_solverinstance
-  
+
+  template<class MIPWrapper>
   class MIP_SolverFactory: public SolverFactory {
   public:
-    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log)   { return new MIP_solverinstance(env,log); }
-    
-    bool processOption(int& i, int argc, const char** argv)
-      { return MIP_WrapperFactory::processOption(i, argc, argv); }
-    string getVersion( );
-    void printHelp(std::ostream& os) { MIP_WrapperFactory::printHelp(os); }
+    MIP_SolverFactory(void);
+    SolverInstanceBase::Options* createOptions(void) { return new typename MIPWrapper::Options; }
+    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt)   {
+      return new MIP_solverinstance<MIPWrapper>(env,log,static_cast<typename MIPWrapper::Options*>(opt));
+    }
+    bool processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv)
+    { return static_cast<typename MIPWrapper::Options&>(*opt).processOption(i, argv); }
+    std::string getDescription(SolverInstanceBase::Options* opt=NULL);
+    std::string getVersion(SolverInstanceBase::Options* opt=NULL);
+    std::string getId( );
+    void printHelp(std::ostream& os) { MIPWrapper::Options::printHelp(os); }
   };
 
 }
+
+#include <minizinc/solvers/MIP/MIP_solverinstance.hpp>
 
 #endif  // __MINIZINC_MIP_SOLVER_INSTANCE_H__
