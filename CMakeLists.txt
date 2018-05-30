@@ -17,6 +17,9 @@ endif()
 if(DEFINED GUROBI_HOME AND NOT "${GUROBI_HOME} " STREQUAL " ")
   set(HAS_GUROBI TRUE)
 endif()
+if(DEFINED XPRESS_HOME AND NOT "${XPRESS_HOME} " STREQUAL " ")
+  set(HAS_XPRESS TRUE)
+endif()
 if (DEFINED SCIP_DIR AND DEFINED SOPLEX_DIR AND DEFINED ZIMPL_DIR AND NOT "${SCIP_DIR} " STREQUAL " ")
   set(HAS_SCIP TRUE)                     # Can use SCIP w/o ZIMPL too
 endif()
@@ -379,6 +382,30 @@ if(HAS_GUROBI)  # Version 7.5
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
+endif()
+
+# -------------------------------------------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------------------------------------------
+if(HAS_XPRESS)
+
+	add_library(minizinc_xpress
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_xpress_wrap.cpp include/minizinc/solvers/MIP/MIP_xpress_wrap.hh
+	)
+
+  target_include_directories(minizinc_xpress PRIVATE "${XPRESS_HOME}/include")
+  link_directories("${XPRESS_HOME}/lib")
+  target_link_libraries(minizinc_xpress minizinc xprb xprs ${CMAKE_THREAD_LIBS_INIT})
+
+	add_executable(mzn-xpress minizinc.cpp)
+  target_compile_definitions(mzn-xpress PRIVATE HAS_MIP )
+  target_include_directories(mzn-xpress PRIVATE "${XPRESS_HOME}/include")
+	target_link_libraries(mzn-xpress minizinc_xpress ${CMAKE_THREAD_LIBS_INIT})
+
+  INSTALL(TARGETS minizinc_xpress mzn-xpress
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib)
+
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
