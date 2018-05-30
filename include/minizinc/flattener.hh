@@ -62,7 +62,7 @@ namespace MiniZinc {
     bool get_flag_statistics() const { return flag_statistics; }
     void set_flag_output_by_default(bool f) { fOutputByDefault = f; }
     Env* getEnv() const { assert(pEnv.get()); return pEnv.get(); }
-    bool hasInputFiles(void) const { return !filenames.empty() || flag_stdinInput; }
+    bool hasInputFiles(void) const { return !filenames.empty() || flag_stdinInput || !flag_solution_check_model.empty(); }
     
     SolverInstance::Status status = SolverInstance::UNKNOWN;
     
@@ -114,6 +114,7 @@ namespace MiniZinc {
     FlatteningOptions::OutputMode flag_output_mode = FlatteningOptions::OUTPUT_ITEM;
     bool flag_output_objective = false;
     std::string flag_solution_check_model;
+    bool flag_compile_solution_check_model = false;
     FlatteningOptions fopts;
 
     clock_t starttime01;

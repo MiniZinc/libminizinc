@@ -376,7 +376,7 @@ void Solns2Out::init() {
     if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
       if (vdi->e()->id()->idn()==-1 && vdi->e()->id()->v()=="_mzn_solution_checker") {
         checkerModel = eval_string(getEnv()->envi(), vdi->e()->e());
-        if (checkerModel.size() > 0 && checkerModel[0]==':') {
+        if (checkerModel.size() > 0 && checkerModel[0]=='@') {
           checkerModel = FileUtils::decodeBase64(checkerModel);
           FileUtils::inflateString(checkerModel);
         }

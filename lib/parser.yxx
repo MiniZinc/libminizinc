@@ -97,7 +97,10 @@ std::string get_file_contents(std::ifstream &in)
     in.seekg(0, std::ios::beg);
     in.read(&contents[0], contents.size());
     in.close();
-    FileUtils::inflateString(contents);
+    if (contents.size() > 0 && contents[0]=='@') {
+      contents = FileUtils::decodeBase64(contents);
+      FileUtils::inflateString(contents);
+    }
     return(contents);
   }
   throw(errno);
@@ -131,7 +134,10 @@ namespace MiniZinc {
                          std::vector<SyntaxError>& syntaxErrors) {
     GCLock lock;
     std::string modelText = text;
-    FileUtils::inflateString(modelText);
+    if (modelText.size() > 0 && modelText[0]=='@') {
+      modelText = FileUtils::decodeBase64(modelText);
+      FileUtils::inflateString(modelText);
+    }
     vector<string> includePaths;
     for (unsigned int i=0; i<ip.size(); i++)
       includePaths.push_back(ip[i]);

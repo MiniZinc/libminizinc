@@ -56,6 +56,7 @@ void Flattener::printHelp(ostream& os)
   << "  --MIPDMaxDensEE <n>\n    Max domain cardinality to N subintervals ratio\n    to enforce equality encoding, default " << opt_MIPDmaxDensEE << ", either condition triggers" << std::endl
   << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by inequalities" << std::endl
   << "  --allow-multiple-assignments\n    Allow multiple assignments to the same variable (e.g. in dzn)" << std::endl
+  << "  --compile-solution-checker <file>.mzc.mzn\n    Compile solution checker model" << std::endl
   << std::endl
   << "Flattener two-pass options:" << std::endl
   << "  --two-pass\n    Flatten twice to make better flattening decisions for the target" << std::endl
@@ -90,7 +91,6 @@ void Flattener::printHelp(ostream& os)
   << "  --output-paths-to-stdout\n    Output symbol table to standard output" << std::endl
   << "  --output-mode <item|dzn|json>\n    Create output according to output item (default), or output compatible\n    with dzn or json format" << std::endl
   << "  --output-objective\n    Print value of objective function in dzn or json output" << std::endl
-  << "  --solution-checker <file>.mzc\n    Create output suitable for solution checking" << std::endl
   << "  -Werror\n    Turn warnings into errors" << std::endl
   ;
 }
@@ -144,31 +144,26 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
     } else if (buffer == "item") {
       flag_output_mode = FlatteningOptions::OUTPUT_ITEM;
     } else {
-      goto error;
+      return false;
     }
   } else if ( cop.getOption( "--output-objective" ) ) {
     flag_output_objective = true;
-  } else if ( cop.getOption( "--solution-checker", &buffer ) ) {
-    if (buffer.length()<8 || buffer.substr(buffer.length()-8,string::npos) != ".mzc.mzn")
-      if (buffer.length()<=4 || buffer.substr(buffer.length()-4,string::npos) != ".mzc")
-        goto error;
-    flag_solution_check_model = buffer;
   } else if ( cop.getOption( "- --input-from-stdin" ) ) {
       if (datafiles.size() > 0 || filenames.size() > 0)
-        goto error;
+        return false;
       flag_stdinInput = true;
   } else if ( cop.getOption( "-d --data", &buffer ) ) {
     if (flag_stdinInput)
-      goto error;
+      return false;
     if ( buffer.length()<=4 ||
          buffer.substr(buffer.length()-4,string::npos) != ".dzn")
-      goto error;
+      return false;
     datafiles.push_back(buffer);
   } else if ( cop.getOption( "--stdlib-dir", &std_lib_dir ) ) {
   } else if ( cop.getOption( "-G --globals-dir --mzn-globals-dir", &globals_dir ) ) {
   } else if ( cop.getOption( "-D --cmdline-data", &buffer)) {
     if (flag_stdinInput)
-      goto error;
+      return false;
     datafiles.push_back("cmd:/"+buffer);
   } else if ( cop.getOption( "--allow-unbounded-vars" ) ) {
     flag_allow_unbounded_vars = true;
@@ -208,14 +203,14 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
     flag_two_pass = true;
   } else if (string(argv[i])=="--npass") {
     i++;
-    if (i==argv.size()) goto error;
+    if (i==argv.size()) return false;
     log << "warning: --npass option is deprecated --two-pass\n";
     int passes = atoi(argv[i].c_str());
     if(passes == 1) flag_two_pass = false;
     else if(passes == 2) flag_two_pass = true;
   } else if (string(argv[i])=="--pre-passes") {
     i++;
-    if (i==argv.size()) goto error;
+    if (i==argv.size()) return false;
     int passes = atoi(argv[i].c_str());
     if(passes >= 0) {
       flag_pre_passes = static_cast<unsigned int>(passes);
@@ -239,7 +234,7 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
 #else
   } else if (string(argv[i])=="-O2" || string(argv[i])=="-O3" || string(argv[i])=="-O4") {
     log << "% Warning: This compiler does not have Gecode builtin, cannot process -O2,-O3,-O4.\n";
-    goto error;
+    return false;
 #endif
     // ozn options must be after the -O<n> optimisation options
   } else if ( cop.getOption( "-O --ozn --output-ozn-to-file", &flag_output_ozn) ) {
@@ -250,24 +245,34 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
     fopts.only_toplevel_paths = true;
   } else if ( cop.getOption( "--allow-multiple-assignments" ) ) {
     flag_allow_multi_assign = true;
+  } else if ( cop.getOption( "--compile-solution-checker", &buffer) ) {
+    if (buffer.length()>=8 && buffer.substr(buffer.length()-8,string::npos) == ".mzc.mzn") {
+      flag_compile_solution_check_model = true;
+      flag_model_check_only = true;
+      filenames.push_back(buffer);
+    } else {
+      log << "Error: solution checker model must have extension .mzc.mzn" << std::endl;
+      return false;
+    }
   } else {
     if (flag_stdinInput || argv[i]=="-")   // unknown option
-      goto error;
+      return false;
     std::string input_file(argv[i]);
     if (input_file.length()<=4) {
-      // std::cerr << "Error: cannot handle file " << input_file << "." << std::endl;
-      goto error;
+      return false;
     }
     size_t last_dot = input_file.find_last_of('.');
     if (last_dot == string::npos) {
-      goto error;
+      return false;
     }
     std::string extension = input_file.substr(last_dot,string::npos);
-    if (extension == ".mzn" || extension ==  ".mzc" || extension == ".fzn") {
+    if ( extension == ".mzc" || (input_file.length()>=8 && input_file.substr(input_file.length()-8,string::npos) == ".mzc.mzn") ) {
+      flag_solution_check_model = input_file;
+    } else if (extension == ".mzn" || extension == ".fzn") {
       if ( extension == ".fzn" ) {
         is_flatzinc = true;
         if ( fOutputByDefault )        // mzn2fzn mode
-          goto error;
+          return false;
       }
       filenames.push_back(input_file);
     } else if (extension == ".dzn" || extension == ".json") {
@@ -275,12 +280,10 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
     } else {
       if ( fOutputByDefault )
         log << "Error: cannot handle file extension " << extension << "." << std::endl;
-      goto error;
+      return false;
     }
   }
   return true;
-error:
-  return false;
 }
 
 Flattener::Flattener(std::ostream& os_, std::ostream& log_, const std::string& stdlibDir)
@@ -397,10 +400,10 @@ void Flattener::flatten(const std::string& modelString)
     pEnv.reset(new Env());
     Env* env = getEnv();
 
-    if (!flag_solution_check_model.empty()) {
+    if (!flag_compile_solution_check_model && !flag_solution_check_model.empty()) {
       // Extract variables to check from solution check model
       if (flag_verbose)
-        log << "Parsing solution checker model ..." << endl;
+        log << "Parsing solution checker model " << flag_solution_check_model << " ..." << endl;
       std::vector<std::string> smm_model({flag_solution_check_model});
       Model* smm = parse(*env, smm_model, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
       if (flag_verbose)
@@ -437,6 +440,22 @@ void Flattener::flatten(const std::string& modelString)
       }
     }
 
+    if (flag_compile_solution_check_model) {
+      if (!modelString.empty()) {
+        throw Error("Cannot compile solution checker model with additional model inputs.");
+      }
+      if (flag_stdinInput) {
+        throw Error("Cannot compile solution checker model with additional model from standard input.");
+      }
+      if (filenames.size() != 1) {
+        throw Error("Cannot compile solution checker model with more than one model given.");
+      }
+    }
+    
+    if (!flag_solution_check_model.empty() && filenames.size()==0) {
+      throw Error("Cannot run solution checker without model.");
+    }
+    
     if (!modelString.empty()) {
       if (flag_verbose)
         log << "Parsing model string ..." << endl;
@@ -486,6 +505,19 @@ void Flattener::flatten(const std::string& modelString)
         }
         if (flag_model_interface_only) {
           MiniZinc::output_model_interface(*env, m, os);
+        }
+        if (flag_compile_solution_check_model) {
+          std::ostringstream oss;
+          Printer p(oss,0);
+          p.print(m);
+          std::string mzc(FileUtils::deflateString(oss.str()));
+          mzc = FileUtils::encodeBase64(mzc);
+          std::string mzc_filename = filenames[0].substr(0,filenames[0].size()-4);
+          if (flag_verbose)
+            log << "Write solution checker to " << mzc_filename << "\n";
+          std::ofstream mzc_f(mzc_filename);
+          mzc_f << mzc;
+          mzc_f.close();
         }
         status = SolverInstance::NONE;
       } else {
