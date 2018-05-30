@@ -188,6 +188,10 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
 {
   executable_name = argv[0];
   executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
+  if (executable_name=="mzn2fzn")
+    is_mzn2fzn=true;
+  else if (executable_name=="solns2out")
+    s2out._opt.flag_standaloneSolns2Out=true;
   int i=1, j=1;
   int argc = argv.size();
   if (argc < 2)
@@ -403,18 +407,6 @@ bool MznSolver::run(int& argc, const char**& argv, const std::string& model) {
     case OPTION_OK:
       break;
   }
-  if (sf->getId() == "org.minizinc.mzn-mzn") {
-    Env env;
-    si = sf->createSI(env, log, si_opt);
-    { // To be able to clean up flatzinc after PrcessFlt()
-      GCLock lock;
-      getSI()->_options->verbose = get_flag_verbose();
-      getSI()->_options->printStatistics = get_flag_statistics();
-    }
-    getSI()->solve();
-    return true;
-  }
-  
   if (!flt.hasInputFiles()) {
     // We are in solns2out mode
     while ( std::cin.good() ) {
@@ -423,6 +415,18 @@ bool MznSolver::run(int& argc, const char**& argv, const std::string& model) {
       line += '\n';                // need eols as in t=raw stream
       s2out.feedRawDataChunk( line.c_str() );
     }
+    return true;
+  }
+
+  if (!ifMzn2Fzn() && sf->getId() == "org.minizinc.mzn-mzn") {
+    Env env;
+    si = sf->createSI(env, log, si_opt);
+    { // To be able to clean up flatzinc after PrcessFlt()
+      GCLock lock;
+      getSI()->_options->verbose = get_flag_verbose();
+      getSI()->_options->printStatistics = get_flag_statistics();
+    }
+    getSI()->solve();
     return true;
   }
   

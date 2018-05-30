@@ -676,7 +676,13 @@ if(HAS_FZN)
     target_link_libraries(minizinc-bin minizinc_osicbc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS} ${CMAKE_THREAD_LIBS_INIT})
     target_compile_definitions( minizinc-bin PRIVATE HAS_OSICBC )
   endif()
-	INSTALL(TARGETS minizinc_fzn minizinc-bin
+
+  add_executable(mzn2fzn minizinc.cpp)
+  target_link_libraries(mzn2fzn minizinc)
+  add_executable(solns2out minizinc.cpp)
+  target_link_libraries(solns2out minizinc)
+
+	INSTALL(TARGETS minizinc_fzn minizinc-bin mzn2fzn solns2out
 		RUNTIME DESTINATION bin
 		LIBRARY DESTINATION lib
 		ARCHIVE DESTINATION lib)

@@ -80,6 +80,21 @@ bool Solns2Out::processOption(int& i, std::vector<std::string>& argv)
   } else if ( cop.getOption( "--output-non-canonical --output-non-canon", &_opt.flag_output_noncanonical) ) {
   } else if ( cop.getOption( "--output-raw", &_opt.flag_output_raw) ) {
 //   } else if ( cop.getOption( "--number-output", &_opt.flag_number_output ) ) {
+  } else if ( _opt.flag_standaloneSolns2Out ) {
+    std::string oznfile(argv[i]);
+    if (oznfile.length()<=4) {
+      return false;
+    }
+    size_t last_dot = oznfile.find_last_of('.');
+    if (last_dot == string::npos) {
+      return false;
+    }
+    std::string extension = oznfile.substr(last_dot,string::npos);
+    if (extension == ".ozn") {
+      initFromOzn(oznfile);
+      return true;
+    }
+    return false;
   } else {
     return false;
   }

@@ -63,6 +63,7 @@ namespace MiniZinc {
       int flag_ignore_lines = 0;
       bool flag_unique = 1;
       bool flag_canonicalize = 0;
+      bool flag_standaloneSolns2Out = false;
       std::string flag_output_noncanonical;
       std::string flag_output_raw;
       int flag_number_output = -1;
