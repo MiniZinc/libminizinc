@@ -10,6 +10,7 @@
 #ifndef __MIP_XPRESS_WRAPPER_H__
 #define __MIP_XPRESS_WRAPPER_H__
 #include "minizinc/solvers/MIP/MIP_wrap.hh"
+#include <minizinc/solver_instance_base.hh>
 
 #include "xprb_cpp.h"
 #include "xprs.h"
@@ -18,6 +19,25 @@ using namespace std;
 using namespace dashoptimization;
 
 class MIP_xpress_wrapper : public MIP_wrapper {
+public:
+    class Options : public MiniZinc::SolverInstanceBase::Options {
+    public:
+      int msgLevel = 0;
+      int timeout = 0;
+      int numSolutions = 0;
+      std::string logFile = "";
+      std::string writeModelFile = "";
+      std::string writeModelFormat = "lp";
+      double absGap = 0;
+      double relGap = 0.0001;
+      bool printAllSolutions = false;
+      bool processOption(int& i, std::vector<std::string>& argv);
+      static void printHelp(std::ostream& );
+    };
+  private:
+    Options* options=nullptr;
+  public:
+
 public:
   virtual void doAddVars(size_t n, double *obj, double *lb, double *ub,
                          VarType *vt, string *names);
@@ -48,7 +68,14 @@ public:
   virtual int getNNodes() { return output.nNodes; }
   virtual int getNOpen() { return output.nOpenNodes; }
 
+  MIP_xpress_wrapper(Options* opt) : options(opt) {}
   virtual ~MIP_xpress_wrapper() {}
+
+  static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt=NULL);
+  static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt=NULL);
+  static std::string getId(void);
+  static std::string getName(void);
+  static std::string needDllFlag(void);
 
 private:
   XPRBprob problem{};

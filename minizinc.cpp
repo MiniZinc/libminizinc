@@ -52,6 +52,12 @@ namespace {
   OSICBC_SolverFactoryInitialiser _osicbc_init;
 }
 #endif
+#ifdef HAS_XPRESS
+#include <minizinc/solvers/MIP/MIP_xpress_solverfactory.hh>
+namespace {
+  Xpress_SolverFactoryInitialiser _xpress_init;
+}
+#endif
 #ifdef HAS_GECODE
 #include <minizinc/solvers/gecode_solverfactory.hh>
 namespace {

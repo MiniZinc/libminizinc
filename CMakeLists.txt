@@ -389,19 +389,16 @@ endif()
 if(HAS_XPRESS)
 
 	add_library(minizinc_xpress
-    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_xpress_wrap.cpp include/minizinc/solvers/MIP/MIP_xpress_wrap.hh
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_xpress_wrap.cpp solvers/MIP/MIP_xpress_solverfactory.cpp
+    include/minizinc/solvers/MIP/MIP_xpress_wrap.hh include/minizinc/solvers/MIP/MIP_xpress_solverfactory.hh
+    include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_solverinstance.hpp
 	)
 
   target_include_directories(minizinc_xpress PRIVATE "${XPRESS_HOME}/include")
   link_directories("${XPRESS_HOME}/lib")
   target_link_libraries(minizinc_xpress minizinc xprb xprs ${CMAKE_THREAD_LIBS_INIT})
 
-	add_executable(mzn-xpress minizinc.cpp)
-  target_compile_definitions(mzn-xpress PRIVATE HAS_MIP )
-  target_include_directories(mzn-xpress PRIVATE "${XPRESS_HOME}/include")
-	target_link_libraries(mzn-xpress minizinc_xpress ${CMAKE_THREAD_LIBS_INIT})
-
-  INSTALL(TARGETS minizinc_xpress mzn-xpress
+  INSTALL(TARGETS minizinc_xpress
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
     ARCHIVE DESTINATION lib)
@@ -663,6 +660,10 @@ if(HAS_FZN)
   if(HAS_GUROBI)
     target_link_libraries(minizinc-bin minizinc_gurobi)
     target_compile_definitions( minizinc-bin PRIVATE HAS_GUROBI )
+  endif()
+  if(HAS_XPRESS)
+    target_link_libraries(minizinc-bin minizinc_xpress)
+    target_compile_definitions( minizinc-bin PRIVATE HAS_XPRESS )
   endif()
   if(HAS_CPLEX)
     SET_TARGET_PROPERTIES(minizinc-bin

@@ -34,30 +34,32 @@ public:
   XpressException(string msg) : runtime_error(" MIP_xpress_wrapper: " + msg) {}
 };
 
-MIP_wrapper *MIP_WrapperFactory::GetDefaultMIPWrapper() {
-  return new MIP_xpress_wrapper;
-}
-
-string MIP_WrapperFactory::getVersion() {
+string MIP_xpress_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
   oss << "  MIP wrapper for FICO Xpress Optimiser";
   oss << ".  Compiled  " __DATE__ "  " __TIME__;
   return oss.str();
 }
 
-static int msgLevel = 0;
-static int timeout = 0;
-static int numSolutions = 0;
-static string logFile = "";
-static string writeModelFile = "";
-static string writeModelFormat = "lp";
-static double absGap = 0;
-static double relGap = 0.0001;
-static bool printAllSolutions = false;
+string MIP_xpress_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) {
+  return "<unknown version>";
+}
 
-void MIP_WrapperFactory::printHelp(ostream &os) {
+string MIP_xpress_wrapper::needDllFlag( ) {
+  return "";
+}
+
+string MIP_xpress_wrapper::getId() {
+  return "xpress";
+}
+
+string MIP_xpress_wrapper::getName() {
+  return "Xpress";
+}
+
+void MIP_xpress_wrapper::Options::printHelp(ostream &os) {
   os << "XPRESS MIP wrapper options:" << std::endl
-     << "--msgLevel <n>       print solver output, default: " << msgLevel
+     << "--msgLevel <n>       print solver output, default: 0"
      << std::endl
      << "--logFile <file>     log file" << std::endl
      << "--timeout <N>        stop search after N seconds, if negative, it "
@@ -66,20 +68,20 @@ void MIP_WrapperFactory::printHelp(ostream &os) {
      << "-n <N>, --numSolutions <N>   stop search after N solutions" << std::endl
      << "--writeModel <file>  write model to <file>" << std::endl
      << "--writeModelFormat [lp|mps] the file format of the written model(lp "
-        "or mps), default: "
-     << writeModelFormat << std::endl
+        "or mps), default: lp"
+     << std::endl
      << "--absGap <d>         absolute gap |primal-dual| to stop, default: "
-     << absGap << std::endl
+     << 0 << std::endl
      << "--relGap <d>         relative gap |primal-dual|/<solver-dep> to stop, "
         "default: "
-     << relGap << std::endl
-     << "-a, --printAllSolutions  print intermediate solution, default: "
-     << printAllSolutions << std::endl
+     << 0.0001 << std::endl
+     << "-a, --printAllSolutions  print intermediate solution, default: false"
+     << std::endl
      << std::endl;
 }
 
-bool MIP_WrapperFactory::processOption(int &i, int argc, const char **argv) {
-  MiniZinc::CLOParser cop(i, argc, argv);
+bool MIP_xpress_wrapper::Options::processOption(int &i, std::vector<std::string>& argv) {
+  MiniZinc::CLOParser cop(i, argv);
   if (cop.get("--msgLevel", &msgLevel)) {
   } else if (cop.get("--logFile", &logFile)) {
   } else if (cop.get("--timeout", &timeout)) {
@@ -99,13 +101,13 @@ bool MIP_WrapperFactory::processOption(int &i, int argc, const char **argv) {
 void MIP_xpress_wrapper::setOptions() {
   XPRSprob xprsProblem = problem.getXPRSprob();
 
-  problem.setMsgLevel(msgLevel);
+  problem.setMsgLevel(options->msgLevel);
 
-  XPRSsetlogfile(xprsProblem, logFile.c_str());
-  XPRSsetintcontrol(xprsProblem, XPRS_MAXTIME, timeout);
-  XPRSsetintcontrol(xprsProblem, XPRS_MAXMIPSOL, numSolutions);
-  XPRSsetdblcontrol(xprsProblem, XPRS_MIPABSSTOP, absGap);
-  XPRSsetdblcontrol(xprsProblem, XPRS_MIPRELSTOP, relGap);
+  XPRSsetlogfile(xprsProblem, options->logFile.c_str());
+  XPRSsetintcontrol(xprsProblem, XPRS_MAXTIME, options->timeout);
+  XPRSsetintcontrol(xprsProblem, XPRS_MAXMIPSOL, options->numSolutions);
+  XPRSsetdblcontrol(xprsProblem, XPRS_MIPABSSTOP, options->absGap);
+  XPRSsetdblcontrol(xprsProblem, XPRS_MIPRELSTOP, options->relGap);
 }
 
 static MIP_wrapper::Status convertStatus(int xpressStatus) {
@@ -228,13 +230,13 @@ XPRBctr MIP_xpress_wrapper::addConstraint(int nnz, int *rmatind,
 
 void MIP_xpress_wrapper::writeModelIfRequested() {
   int format = XPRB_LP;
-  if (writeModelFormat == "lp") {
+  if (options->writeModelFormat == "lp") {
     format = XPRB_LP;
-  } else if (writeModelFormat == "mps") {
+  } else if (options->writeModelFormat == "mps") {
     format = XPRB_MPS;
   }
-  if (!writeModelFile.empty()) {
-    problem.exportProb(format, writeModelFile.c_str());
+  if (!options->writeModelFile.empty()) {
+    problem.exportProb(format, options->writeModelFile.c_str());
   }
 }
 
@@ -273,7 +275,7 @@ void MIP_xpress_wrapper::solve() {
 }
 
 void MIP_xpress_wrapper::setUserSolutionCallback() {
-  if (!printAllSolutions) {
+  if (!options->printAllSolutions) {
     return;
   }
 
