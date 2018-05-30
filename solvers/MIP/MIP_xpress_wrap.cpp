@@ -35,14 +35,18 @@ public:
 };
 
 string MIP_xpress_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
+  char v[16];
+  XPRSgetversion(v);
   ostringstream oss;
-  oss << "  MIP wrapper for FICO Xpress Optimiser";
+  oss << "  MIP wrapper for FICO Xpress Optimiser version " << v;
   oss << ".  Compiled  " __DATE__ "  " __TIME__;
   return oss.str();
 }
 
 string MIP_xpress_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) {
-  return "<unknown version>";
+  char v[16];
+  XPRSgetversion(v);
+  return v;
 }
 
 string MIP_xpress_wrapper::needDllFlag( ) {
