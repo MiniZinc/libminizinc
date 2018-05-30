@@ -60,7 +60,7 @@ namespace MiniZinc {
     }
   }
 
-  void TimeOut(HANDLE hProcess, bool* done, int timeout, std::timed_mutex* mtx);
+  void TimeOut(HANDLE hProcess, bool* doneStdout, bool* doneStderr, int timeout, std::timed_mutex* mtx);
 
 #endif
 
@@ -161,14 +161,15 @@ namespace MiniZinc {
       CloseHandle(g_hChildStd_ERR_Wr);
       // Just close the child's in pipe here
       CloseHandle(g_hChildStd_IN_Rd);
-      bool done = false;
+      bool doneStdout = false;
+      bool doneStderr = false;
       // Threaded solution seems simpler than asyncronous pipe reading
       std::mutex pipeMutex;
       std::timed_mutex terminateMutex;
       terminateMutex.lock();
-      thread thrStdout(&ReadPipePrint<S2O>, g_hChildStd_OUT_Rd, &done, nullptr, pS2Out, &pipeMutex);
-      thread thrStderr(&ReadPipePrint<S2O>, g_hChildStd_ERR_Rd, &done, &cerr, nullptr, &pipeMutex);
-      thread thrTimeout(TimeOut, piProcInfo.hProcess, &done, timelimit, &terminateMutex);
+      thread thrStdout(&ReadPipePrint<S2O>, g_hChildStd_OUT_Rd, &doneStdout, nullptr, pS2Out, &pipeMutex);
+      thread thrStderr(&ReadPipePrint<S2O>, g_hChildStd_ERR_Rd, &doneStderr, &cerr, nullptr, &pipeMutex);
+      thread thrTimeout(TimeOut, piProcInfo.hProcess, &doneStdout, &doneStderr, timelimit, &terminateMutex);
       thrStdout.join();
       thrStderr.join();
       terminateMutex.unlock();
