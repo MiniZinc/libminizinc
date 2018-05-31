@@ -6125,9 +6125,7 @@ namespace MiniZinc {
     
       if (!hadSolveItem) {
         GCLock lock;
-        e.envi().errorStack.clear();
-        Location modelLoc(e.model()->filepath(),0,0,0,0);
-        throw FlatteningError(e.envi(),modelLoc, "Model does not have a solve item");
+        e.envi().flat_addItem(SolveI::sat(Location().introduce()));
       }
 
       std::vector<VarDecl*> deletedVarDecls;
