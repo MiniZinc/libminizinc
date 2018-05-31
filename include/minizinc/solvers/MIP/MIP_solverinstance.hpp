@@ -196,6 +196,7 @@ namespace MiniZinc {
   template<class MIPWrapper>
   void
   MIP_solverinstance<MIPWrapper>::processFlatZinc(void) {
+    mip_wrap->fVerbose = _options->verbose;
     
     SolveI* solveItem = getEnv()->flat()->solveItem();
     VarDecl* objVd = NULL;
