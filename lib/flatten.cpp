@@ -4166,12 +4166,14 @@ namespace MiniZinc {
                     case 2:
                       orig_where[i] = new BinOp(c->where(i)->loc(), parWhere[0], BOT_AND, parWhere[1]);
                       orig_where[i]->type(Type::parbool());
+                      break;
                     default:
                     {
                       Call* forall = new Call(c->where(i)->loc(), constants().ids.forall, parWhere);
                       forall->type(Type::parbool());
                       forall->decl(env.orig->matchFn(env, forall, false));
                       orig_where[i] = forall;
+                      break;
                     }
                   }
                 } else {
