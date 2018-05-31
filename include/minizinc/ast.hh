@@ -943,6 +943,10 @@ namespace MiniZinc {
     Expression* rhs(void) const { return _e1; }
     /// Set right hand side
     void rhs(Expression* e) { _e1 = e; }
+    /// Access argument \a i
+    Expression* arg(int i) { assert(i==0 || i==1); return i==0 ? _e0 : _e1; }
+    /// Return number of arguments
+    unsigned int n_args(void) const { return 2; }
     /// Access declaration
     FunctionI* decl(void) const { return _decl; }
     /// Set declaration
@@ -976,6 +980,10 @@ namespace MiniZinc {
     Expression* e(void) const { return _e0; }
     /// Set expression
     void e(Expression* e0) { _e0 = e0; }
+    /// Access argument \a i
+    Expression* arg(int i) { assert(i==0); return _e0; }
+    /// Return number of arguments
+    unsigned int n_args(void) const { return 1; }
     /// Access declaration
     FunctionI* decl(void) const { return _decl; }
     /// Set declaration

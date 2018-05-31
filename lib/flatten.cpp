@@ -4888,6 +4888,11 @@ namespace MiniZinc {
             if (e0.r()->type().ispar() && e1.r()->type().ispar()) {
               GCLock lock;
               BinOp* bo_par = new BinOp(e->loc(),e0.r(),bot,e1.r());
+              std::vector<Expression*> args({e0.r(),e1.r()});
+              bo_par->decl(env.orig->matchFn(env,bo_par->opToString(),args,false));
+              if (bo_par->decl()==NULL) {
+                throw FlatteningError(env,bo_par->loc(), "cannot find matching declaration");
+              }
               bo_par->type(Type::parbool());
               bool bo_val = eval_bool(env,bo_par);
               if (doubleNeg)
