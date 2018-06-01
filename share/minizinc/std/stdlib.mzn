@@ -64,6 +64,13 @@ annotation mzn_path(string: s);
   flattening this expression to make debugging easier. This annotation is ignored by the
   release build.*/
 annotation mzn_break_here;
+/** @group annotations.general Used to attach a name to an expression, this should also propagate to
+  any sub-expressions or decomposition of the annotated expression. String annotations on expressions
+  are re-written as expression_name annotations **/
+annotation expression_name(string: s);
+/** @group annotations.general Used to attach a name to a constraint and its decomposition. String
+  annotations on constraint keywords are re-written as constraint_name annotations **/
+annotation constraint_name(string: s);
 
 /***
  @groupdef annotations.prop Propagation strength annotations
