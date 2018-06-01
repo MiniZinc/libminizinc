@@ -365,7 +365,7 @@ void MznSolver::flatten(const std::string& modelString)
     log << "  Flattening done, " << timeDiff(clock(), tm01) << std::endl;
 }
 
-void MznSolver::solve()
+SolverInstance::Status MznSolver::solve()
 {
   { // To be able to clean up flatzinc after PrcessFlt()
     GCLock lock;
@@ -386,6 +386,7 @@ void MznSolver::solve()
     if (get_flag_statistics())    // it's summary in fact
       printStatistics();
   }
+  return status;
 }
 
 void MznSolver::printStatistics()
@@ -394,16 +395,16 @@ void MznSolver::printStatistics()
     getSI()->printStatisticsLine(1);
 }
 
-bool MznSolver::run(int& argc, const char**& argv, const std::string& model) {
+SolverInstance::Status MznSolver::run(int& argc, const char**& argv, const std::string& model) {
   std::vector<std::string> args;
   for (unsigned int i=0; i<argc; i++)
     args.push_back(argv[i]);
   switch (processOptions(args)) {
     case OPTION_FINISH:
-      return true;
+      return SolverInstance::NONE;
     case OPTION_ERROR:
       printHelp();
-      return false;
+      return SolverInstance::ERROR;
     case OPTION_OK:
       break;
   }
@@ -415,7 +416,7 @@ bool MznSolver::run(int& argc, const char**& argv, const std::string& model) {
       line += '\n';                // need eols as in t=raw stream
       s2out.feedRawDataChunk( line.c_str() );
     }
-    return true;
+    return SolverInstance::NONE;
   }
 
   if (!ifMzn2Fzn() && sf->getId() == "org.minizinc.mzn-mzn") {
@@ -427,7 +428,7 @@ bool MznSolver::run(int& argc, const char**& argv, const std::string& model) {
       getSI()->_options->printStatistics = get_flag_statistics();
     }
     getSI()->solve();
-    return true;
+    return SolverInstance::NONE;
   }
   
   flatten(model);
@@ -437,12 +438,12 @@ bool MznSolver::run(int& argc, const char**& argv, const std::string& model) {
     if ( !ifMzn2Fzn() ) {          // only then
       // GCLock lock;                  // better locally, to enable cleanup after ProcessFlt()
       addSolverInterface();
-      solve();
+      return solve();
     }
-    return true;
+    return SolverInstance::NONE;
   } else {
     if ( !ifMzn2Fzn() )
       s2out.evalStatus( getFltStatus() );
-    return (SolverInstance::ERROR != getFltStatus());
+    return getFltStatus();
   }                                   //  Add evalOutput() here?   TODO
 }

@@ -104,7 +104,7 @@ namespace MiniZinc {
     MznSolver(std::ostream& os = std::cout, std::ostream& log = std::cerr);
     ~MznSolver();
     
-    bool run(int& argc, const char**& argv, const std::string& model = std::string());
+    SolverInstance::Status run(int& argc, const char**& argv, const std::string& model = std::string());
     bool get_flag_verbose() { return flag_verbose; /*getFlt()->get_flag_verbose();*/ }
   private:
     enum OptionStatus { OPTION_OK, OPTION_ERROR, OPTION_FINISH };
@@ -117,7 +117,7 @@ namespace MiniZinc {
     bool ifMzn2Fzn();
     void addSolverInterface();
     void addSolverInterface(SolverFactory* sf);
-    void solve();
+    SolverInstance::Status solve();
     void printStatistics();
     
     SolverInstance::Status getFltStatus() { return flt.status; }
