@@ -2086,7 +2086,7 @@ namespace MiniZinc {
       std::ostringstream oss_input;
       std::ostringstream oss_output;
       std::string method;
-      IfcVisitor(Env& env0) : env(env0), had_input(false), had_output(false) {}
+      IfcVisitor(Env& env0) : env(env0), had_input(false), had_output(false), method("sat") {}
       bool enter(Item* i) {
         if (IncludeI* ii = i->dyn_cast<IncludeI>()) {
           std::string prefix = ii->m()->filepath().str().substr(0,ii->m()->filepath().size()-ii->f().size());
