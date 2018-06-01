@@ -2183,7 +2183,7 @@ function var int: min_t(array[int] of var int: x) :: promise_total =
 function var float: max_t(array[int] of var float: x) :: promise_total =
   if length(x)=0 then 0.0
   elseif length(x)=1 then x[min(index_set(x))]
-  elseif length(x)=2 then min(x[1],x[2])
+  elseif length(x)=2 then max(x[1],x[2])
   else let {
     var float: m ::is_defined_var;
     constraint array_float_maximum(m,x) ::defines_var(m);
