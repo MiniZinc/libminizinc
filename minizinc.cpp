@@ -64,6 +64,12 @@ namespace {
   Gecode_SolverFactoryInitialiser _gecode_init;
 }
 #endif
+#ifdef HAS_SCIP
+#include <minizinc/solvers/MIP/MIP_scip_solverfactory.hh>
+namespace {
+  SCIP_SolverFactoryInitialiser _scip_init;
+}
+#endif
 #ifdef HAS_FZN
 #include <minizinc/solvers/fzn_solverfactory.hh>
 #include <minizinc/solvers/mzn_solverfactory.hh>

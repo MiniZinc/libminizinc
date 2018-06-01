@@ -475,6 +475,7 @@ if(HAS_SCIP)   # SCIP version tested: 3.2.1
   
   add_library(minizinc_scip
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
+    solvers/MIP/MIP_scip_solverfactory.cpp
     )
   target_include_directories(minizinc_scip PRIVATE
     "${SCIP_DIR}/src"
@@ -660,6 +661,10 @@ if(HAS_FZN)
   if(HAS_GUROBI)
     target_link_libraries(minizinc-bin minizinc_gurobi)
     target_compile_definitions( minizinc-bin PRIVATE HAS_GUROBI )
+  endif()
+  if(HAS_SCIP)
+    target_link_libraries(minizinc-bin minizinc_scip)
+    target_compile_definitions( minizinc-bin PRIVATE HAS_SCIP )
   endif()
   if(HAS_XPRESS)
     target_link_libraries(minizinc-bin minizinc_xpress)

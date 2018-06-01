@@ -29,23 +29,34 @@ using namespace std;
 
 #include "scip/scipshell.h"
 
-/// Linking this module provides these functions:
-MIP_wrapper* MIP_WrapperFactory::GetDefaultMIPWrapper() {
-  return new MIP_scip_wrapper;
-}
-
-string MIP_WrapperFactory::getVersion( ) {
+string MIP_scip_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
-  oss << "  MIP wrapper for SCIP  ";
-  oss << SCIPmajorVersion() << '.';
-  oss << SCIPminorVersion() << '.';
-  oss << SCIPtechVersion() << '.';
-  oss << SCIPsubversion() << '.';
-  oss << "  Compiled  " __DATE__ "  " __TIME__;
+  oss << "MIP wrapper for SCIP "
+      << getVersion(opt)
+      << ". Compiled  " __DATE__ "  " __TIME__;
   return oss.str();
 }
+string MIP_scip_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) {
+  ostringstream oss;
+  oss << SCIPmajorVersion() << '.'
+      << SCIPminorVersion() << '.'
+      << SCIPtechVersion() << '.'
+      << SCIPsubversion();
+  return oss.str();
+}
+string MIP_scip_wrapper::needDllFlag( ) {
+  return "";
+}
 
-void MIP_WrapperFactory::printHelp(ostream& os) {
+string MIP_scip_wrapper::getId() {
+  return "scip";
+}
+
+string MIP_scip_wrapper::getName() {
+  return "SCIP";
+}
+
+void MIP_scip_wrapper::Options::printHelp(ostream& os) {
   os
   << "SCIP  MIP wrapper options:" << std::endl
   // -s                  print statistics
@@ -74,22 +85,8 @@ void MIP_WrapperFactory::printHelp(ostream& os) {
     return s.compare(0, t.length(), t)==0;
   }
 
-            /// SOLVER PARAMS ????
- static   int nThreads=1;
- static   string sExportModel;
- static   double nTimeout=-1;
- static   double nWorkMemLimit=-1;
- static   string sReadParams;
- static   string sWriteParams;
- static   bool flag_all_solutions = false;
-
- static   double absGap=-1;
- static   double relGap=1e-8;
- static   double intTol=1e-6;
- static   double objDiff=1.0;
-
-bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
-  MiniZinc::CLOParser cop( i, argc, argv );
+bool MIP_scip_wrapper::Options::processOption(int& i, vector<string>& argv) {
+  MiniZinc::CLOParser cop( i, argv );
   if ( string(argv[i])=="-a"
       || string(argv[i])=="--all"
       || string(argv[i])=="--all-solutions" ) {
@@ -102,9 +99,9 @@ bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
   } else if ( cop.get( "--workmem", &nWorkMemLimit ) ) {
   } else if ( cop.get( "--readParam", &sReadParams ) ) {
   } else if ( cop.get( "--writeParam", &sWriteParams ) ) {
-  } else if ( cop.get( "--absGap", &absGap ) ) {
-  } else if ( cop.get( "--relGap", &relGap ) ) {
-  } else if ( cop.get( "--intTol", &intTol ) ) {
+  } else if ( cop.get( "--absGap", &absGap) ) {
+  } else if ( cop.get( "--relGap", &relGap) ) {
+  } else if ( cop.get( "--intTol", &intTol) ) {
 //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
   } else
     return false;
@@ -408,31 +405,31 @@ SCIP_DECL_MESSAGEWARNING(printMsg) {
 SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
 
   /////////////// Last-minute solver options //////////////////
-  if ( flag_all_solutions && 0==nProbType )
+  if ( options->flag_all_solutions && 0==nProbType )
     cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
 
-    if (nThreads>0)
-      SCIP_CALL( SCIPsetIntParam(scip, "lp/threads", nThreads) );
+    if (options->nThreads>0)
+      SCIP_CALL( SCIPsetIntParam(scip, "lp/threads", options->nThreads) );
 
-    if (nTimeout>0)
-      SCIP_CALL( SCIPsetRealParam(scip, "limits/time", nTimeout) );
+    if (options->nTimeout>0)
+      SCIP_CALL( SCIPsetRealParam(scip, "limits/time", options->nTimeout) );
 
-    if (nWorkMemLimit>0)
-      SCIP_CALL( SCIPsetRealParam(scip, "limits/memory", nWorkMemLimit) );
+    if (options->nWorkMemLimit>0)
+      SCIP_CALL( SCIPsetRealParam(scip, "limits/memory", options->nWorkMemLimit) );
 
-    if ( absGap>=0.0 )
-      SCIP_CALL( SCIPsetRealParam( scip, "limits/absgap", absGap ) );
-    if ( relGap>=0.0 )
-      SCIP_CALL( SCIPsetRealParam( scip, "limits/gap", relGap ) );
-    if ( intTol>=0.0 )
-      SCIP_CALL( SCIPsetRealParam( scip, "numerics/feastol", intTol ) );
+    if ( options->absGap>=0.0 )
+      SCIP_CALL( SCIPsetRealParam( scip, "limits/absgap", options->absGap ) );
+    if ( options->relGap>=0.0 )
+      SCIP_CALL( SCIPsetRealParam( scip, "limits/gap", options->relGap ) );
+    if ( options->intTol>=0.0 )
+      SCIP_CALL( SCIPsetRealParam( scip, "numerics/feastol", options->intTol ) );
 
 //    retcode =  SCIP_setintparam (env, SCIP_PARAM_ClockType, 1);            // CPU time
 //    wrap_assert(!retcode, "  SCIP Warning: Failure to measure CPU time.", false);
 
-    if (!sExportModel.empty()) {
+    if (!options->sExportModel.empty()) {
 //       std::cerr <<"  Exporting LP model to "  << sExportModel << " ..." << std::endl;
-      SCIP_CALL( SCIPwriteOrigProblem(scip, sExportModel.c_str(), 0, 0) );
+      SCIP_CALL( SCIPwriteOrigProblem(scip, options->sExportModel.c_str(), 0, 0) );
     }
 
   /* Turn on output to the screen  - after model export */
@@ -454,7 +451,7 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
    output.nCols = colObj.size();
    x.resize(output.nCols);
    output.x = &x[0];
-   if (flag_all_solutions && cbui.solcbfn && !cbuiPtr) {
+   if (options->flag_all_solutions && cbui.solcbfn && !cbuiPtr) {
    /* include event handler for best solution found */
      SCIP_CALL( SCIPincludeEventHdlrBestsol(scip) );
      cbuiPtr = &cbui;   // not thread-safe...         TODO
@@ -463,12 +460,12 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
 //       wrap_assert(!retcode, "Failed to set solution callback", false);
    }
 
-    if (sReadParams.size()) {
-     SCIP_CALL( SCIPreadParams (scip, sReadParams.c_str()) );
+    if (options->sReadParams.size()) {
+     SCIP_CALL( SCIPreadParams (scip, options->sReadParams.c_str()) );
     }
     
-    if (sWriteParams.size()) {
-     SCIP_CALL( SCIPwriteParams (scip, sReadParams.c_str(), TRUE, FALSE) );
+    if (options->sWriteParams.size()) {
+     SCIP_CALL( SCIPwriteParams (scip, options->sReadParams.c_str(), TRUE, FALSE) );
     }
 
    output.dCPUTime = clock();
