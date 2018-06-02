@@ -54,14 +54,9 @@ void yyerror(YYLTYPE* location, void* parm, const string& str) {
     m = m->parent();
     pp->err << "(included from file '" << m->filename() << "')" << endl;
   }
-  pp->err << location->filename() << ":"
-          << location->first_line() << ":" << endl;
-  pp->printCurrentLine();
-  for (int i=0; i<static_cast<int>(location->first_column())-1; i++)
-    pp->err << " ";
-  for (unsigned int i=location->first_column(); i<=location->last_column(); i++)
-    pp->err << "^";
-  pp->err << std::endl << "Error: " << str << std::endl << std::endl;
+  pp->err << location->toString() << ":" << endl;
+  pp->printCurrentLine(location->first_column(),location->last_column());
+  pp->err << "Error: " << str << std::endl;
   pp->hadError = true;
   pp->syntaxErrors.push_back(SyntaxError(Location(*location), str));
 }
@@ -537,6 +532,7 @@ namespace MiniZinc {
 %token MZN_INVALID_INTEGER_LITERAL "invalid integer literal"
 %token MZN_INVALID_FLOAT_LITERAL "invalid float literal"
 %token MZN_UNTERMINATED_STRING "unterminated string"
+%token MZN_END_OF_LINE_IN_STRING "end of line inside string literal"
 %token MZN_INVALID_NULL "null character"
 
 %token END 0 "end of file"

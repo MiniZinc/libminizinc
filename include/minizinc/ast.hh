@@ -68,7 +68,7 @@ namespace MiniZinc {
     unsigned int _last_column;
   public:
     /// Construct empty location
-    ParserLocation(void) : _first_line(0), _last_line(0), _first_column(0), _last_column(0) {}
+    ParserLocation(void) : _first_line(1), _last_line(1), _first_column(0), _last_column(0) {}
     
     /// Construct location
     ParserLocation(const ASTString& filename, unsigned int first_line, unsigned int first_column, unsigned int last_line, unsigned int last_column)
@@ -89,6 +89,16 @@ namespace MiniZinc {
     unsigned int last_column(void) const { return _last_column; }
     void last_column(unsigned int c) { _last_column = c; }
     
+    std::string toString(void) const {
+      std::ostringstream oss;
+      oss << _filename << ":" << _first_line << "." << _first_column;
+      if (_first_line != _last_line) {
+        oss << "-" << _last_line << "." << _last_column-1;
+      } else if (_first_column != _last_column) {
+        oss << "-" << _last_column;
+      }
+      return oss.str();
+    }
   };
 
   /// %Location of an expression in the source code
