@@ -93,7 +93,7 @@ namespace MiniZinc {
       std::ostringstream oss;
       oss << _filename << ":" << _first_line << "." << _first_column;
       if (_first_line != _last_line) {
-        oss << "-" << _last_line << "." << _last_column-1;
+        oss << "-" << _last_line << "." << _last_column;
       } else if (_first_column != _last_column) {
         oss << "-" << _last_column;
       }
@@ -198,8 +198,15 @@ namespace MiniZinc {
     if (loc.filename()=="") {
       s << "unknown file";
     } else {
-      s << loc.filename() << ":" << loc.first_line();
+      s << loc.filename();
     }
+    s << ":" << loc.first_line() << "." << loc.first_column();
+    if (loc.first_line() != loc.last_line()) {
+      s << "-" << loc.last_line() << "." << loc.last_column();
+    } else if (loc.first_column() != loc.last_column()) {
+      s << "-" << loc.last_column();
+    }
+
     return os << s.str();
   }
 
