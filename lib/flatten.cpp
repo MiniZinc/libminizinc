@@ -1233,7 +1233,7 @@ namespace MiniZinc {
           if (tis[i]->domain()==NULL) {
             newtis[i] = new TypeInst(Location().introduce(),Type(),new SetLit(Location().introduce(),IntSetVal::a(al->min(i),al->max(i))));
             needNewTypeInst = true;
-          } else {
+          } else if (i==0 || al->size() != 0) {
             IntSetVal* isv = eval_intset(env,tis[i]->domain());
             assert(isv->size()<=1);
             if ( (isv->size()==0 && al->min(i) <= al->max(i)) ||
