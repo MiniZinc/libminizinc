@@ -660,6 +660,8 @@ item_list_head:
           GC::lock();
         }
       }
+    | item error_item_start
+{ yyerror(&@2, parm, "unexpected item, expecting ';' or end of file"); YYERROR; }
     | error ';' item
 
 doc_file_comments:
@@ -719,6 +721,10 @@ item_tail :
       { $$=notInDatafile(&@$,parm,"predicate") ? $1 : NULL; }
     | annotation_item
       { $$=notInDatafile(&@$,parm,"annotation") ? $1 : NULL; }
+
+error_item_start : MZN_INCLUDE | MZN_ENUM | MZN_IDENTIFIER | MZN_OUTPUT
+    | MZN_CONSTRAINT | MZN_SOLVE | MZN_PREDICATE | MZN_FUNCTION | MZN_TEST
+    | MZN_ANNOTATION | ti_expr_and_id
 
 include_item :
       MZN_INCLUDE MZN_STRING_LITERAL
