@@ -1847,7 +1847,7 @@ namespace MiniZinc {
         void vAssignI(AssignI* i) {
           bu_ty.run(i->e());
           if (!env.isSubtype(i->e()->type(),i->decl()->ti()->type(),true)) {
-            _typeErrors.push_back(TypeError(env, i->e()->loc(),
+            _typeErrors.push_back(TypeError(env, i->loc(),
                                            "assignment value for `"+i->decl()->id()->str().str()+"' has invalid type-inst: expected `"+
                                            i->decl()->ti()->type().toString(env)+"', actual `"+i->e()->type().toString(env)+"'"));
             // Assign to "true" constant to avoid generating further errors that the parameter
@@ -1858,7 +1858,7 @@ namespace MiniZinc {
         void vConstraintI(ConstraintI* i) {
           bu_ty.run(i->e());
           if (!env.isSubtype(i->e()->type(),Type::varbool(),true))
-            throw TypeError(env, i->e()->loc(), "invalid type of constraint, expected `"
+            throw TypeError(env, i->loc(), "invalid type of constraint, expected `"
                             +Type::varbool().toString(env)+"', actual `"+i->e()->type().toString(env)+"'");
         }
         void vSolveI(SolveI* i) {
