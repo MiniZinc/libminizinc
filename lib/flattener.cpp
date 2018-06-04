@@ -44,6 +44,7 @@ void Flattener::printHelp(ostream& os)
   << "  --instance-check-only\n    Check the model instance (including data) for errors, but do not\n    convert to FlatZinc." << std::endl
   << "  -e, --model-check-only\n    Check the model (without requiring data) for errors, but do not\n    convert to FlatZinc." << std::endl
   << "  --model-interface-only\n    Only extract parameters and output variables." << std::endl
+  << "  --model-types-only\n    Only output variable (enum) type information." << std::endl
   << "  --no-optimize\n    Do not optimize the FlatZinc" << std::endl
   << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl
   << "  -D <data>, --cmdline-data <data>\n    Include the given data assignment in the model." << std::endl
@@ -112,6 +113,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
     flag_model_check_only = true;
   } else if ( cop.getOption( "--model-interface-only") ) {
     flag_model_interface_only = true;
+  } else if ( cop.getOption( "--model-types-only") ) {
+    flag_model_types_only = true;
   } else if ( cop.getOption( "-v --verbose") ) {
     flag_verbose = true;
   } else if (string(argv[i])==string("--newfzn")) {
@@ -490,10 +493,11 @@ void Flattener::flatten(const std::string& modelString)
       if (flag_verbose)
         log << " done parsing (" << stoptime(lasttime) << ")" << std::endl;
 
-      if (flag_instance_check_only || flag_model_check_only || flag_model_interface_only) {
+      if (flag_instance_check_only || flag_model_check_only ||
+          flag_model_interface_only || flag_model_types_only ) {
         GCLock lock;
         vector<TypeError> typeErrors;
-        MiniZinc::typecheck(*env, m, typeErrors, flag_model_interface_only || flag_model_check_only, flag_allow_multi_assign);
+        MiniZinc::typecheck(*env, m, typeErrors, flag_model_types_only || flag_model_interface_only || flag_model_check_only, flag_allow_multi_assign);
         if (typeErrors.size() > 0) {
           for (unsigned int i=0; i<typeErrors.size(); i++) {
             if (flag_verbose)
@@ -505,6 +509,9 @@ void Flattener::flatten(const std::string& modelString)
         }
         if (flag_model_interface_only) {
           MiniZinc::output_model_interface(*env, m, os);
+        }
+        if (flag_model_types_only) {
+          MiniZinc::output_model_variable_types(*env, m, os);
         }
         if (flag_compile_solution_check_model) {
           std::ostringstream oss;

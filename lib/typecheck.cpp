@@ -2054,7 +2054,7 @@ namespace MiniZinc {
     }
   }
 
-  void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os) {
+  void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os, bool extra = false) {
     os << "    \"" << *vd->id() << "\" : {";
     os << "\"type\" : ";
     switch (vd->type().bt()) {
@@ -2073,10 +2073,68 @@ namespace MiniZinc {
     }
     if (vd->type().dim() > 0) {
       os << ", \"dim\" : " << vd->type().dim();
+
+      if(extra) {
+        os << ", \"dims\" : [";
+        bool had_dim = false;
+        ASTExprVec<TypeInst> ranges = vd->ti()->ranges();
+        for(int i=0; i<ranges.size(); i++) {
+          if(ranges[i]->type().enumId() > 0) {
+            os << (had_dim ? "," : "")
+               << "\"" << *env.envi().getEnum(ranges[i]->type().enumId())->e()->id() << "\"";
+          } else {
+            os << (had_dim ? "," : "") << "\"int\"";
+          }
+          had_dim = true;
+        }
+        os << "]";
+      }
+
+    }
+    if(extra) {
+      if (vd->type().enumId() > 0) {
+          os << ", \"enum_type\" : \"" << *env.envi().getEnum(vd->type().enumId())->e()->id() << "\"";
+      }
     }
     os << "}";
   }
-  
+
+  void output_model_variable_types(Env& env, Model* m, std::ostream& os) {
+    class VInfVisitor : public ItemVisitor {
+    public:
+      Env& env;
+      bool had_var;
+      bool had_enum;
+      std::ostringstream oss_vars;
+      std::ostringstream oss_enums;
+      VInfVisitor(Env& env0) : env(env0), had_var(false), had_enum(false) {}
+      bool enter(Item* i) {
+        if (IncludeI* ii = i->dyn_cast<IncludeI>()) {
+          std::string prefix = ii->m()->filepath().str().substr(0,ii->m()->filepath().size()-ii->f().size());
+          return (prefix.empty() || prefix == "./");
+        }
+        return true;
+      }
+      void vVarDeclI(VarDeclI* vdi) {
+        if (!vdi->e()->type().isann() && (vdi->e()->e()==NULL || vdi->e()->e()==constants().absent)) {
+          if (had_var) oss_vars << ",\n";
+          output_var_desc_json(env, vdi->e(), oss_vars, true);
+          had_var = true;
+        } else if (vdi->e()->type().st()==Type::ST_SET && vdi->e()->type().enumId() != 0 && !vdi->e()->type().isann()) {
+          if (had_enum) oss_enums << ", ";
+          oss_enums << "\"" << *env.envi().getEnum(vdi->e()->type().enumId())->e()->id() << "\"";
+          had_enum = true;
+        }
+      }
+    } _vinf(env);
+    iterItems(_vinf, m);
+    os << "var_types: {";
+    os << "\n  vars: {\n" << _vinf.oss_vars.str() << "\n  },";
+    os << "\n  enums: [" << _vinf.oss_enums.str() << "]\n";
+    os << "}\n";
+  }
+
+
   void output_model_interface(Env& env, Model* m, std::ostream& os) {
     class IfcVisitor : public ItemVisitor {
     public:
