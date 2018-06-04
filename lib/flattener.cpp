@@ -67,13 +67,14 @@ void Flattener::printHelp(ostream& os)
   << "  --sac\n    Probe values of all variables at the root node (adds --use-gecode)" << std::endl
   << "  --pre-passes <n>\n    Number of times to apply shave/sac pass (0 = fixed-point, 1 = default)" << std::endl
 #endif
-  << "  Two-pass optimisation levels:  -O0:    Disable optimize (--no-optimize)" << std::endl
-  << "    -O1:    Single pass (default)"
+  << "  -O<n>\n    Two-pass optimisation levels:" << std::endl
+  << "    -O0:    Disable optimize (--no-optimize)  -O1:    Single pass (default)" << std::endl
+  << "    -O2:    Same as: --two-pass"
 #ifdef HAS_GECODE
-  <<                                  "  -O2:    Same as: --use-gecode" << std::endl
-  << "    -O3:    Same as: --shave       -O4:    Same as: --sac" << std::endl
+  <<                                "               -O3:    Same as: --use-gecode" << std::endl
+  << "    -O4:    Same as: --shave                  -O5:    Same as: --sac" << std::endl
 #else
-  << "\n    -O2,3,4:    Disabled [Requires MiniZinc with Gecode support]" << std::endl
+  << "\n    -O3,4,5:    Disabled [Requires MiniZinc with built-in Gecode support]" << std::endl
 #endif
   << std::endl;
   os
@@ -222,21 +223,23 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
     flag_optimize = false;
   } else if (string(argv[i])=="-O1") {
     // Default settings
-#ifdef HAS_GECODE
   } else if (string(argv[i])=="-O2") {
     flag_two_pass = true;
-    flag_gecode = true;
+#ifdef HAS_GECODE
   } else if (string(argv[i])=="-O3") {
     flag_two_pass = true;
     flag_gecode = true;
-    flag_shave = true;
   } else if (string(argv[i])=="-O4") {
+    flag_two_pass = true;
+    flag_gecode = true;
+    flag_shave = true;
+  } else if (string(argv[i])=="-O5") {
     flag_two_pass = true;
     flag_gecode = true;
     flag_sac = true;
 #else
-  } else if (string(argv[i])=="-O2" || string(argv[i])=="-O3" || string(argv[i])=="-O4") {
-    log << "% Warning: This compiler does not have Gecode builtin, cannot process -O2,-O3,-O4.\n";
+  } else if (string(argv[i])=="-O3" || string(argv[i])=="-O4" || string(argv[i])=="-O5") {
+    log << "% Warning: This compiler does not have Gecode builtin, cannot process -O3,-O4,-O5.\n";
     return false;
 #endif
     // ozn options must be after the -O<n> optimisation options
