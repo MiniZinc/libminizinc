@@ -112,7 +112,7 @@ namespace MiniZinc {
               char rest[3];
               is.read(rest,sizeof(rest));
               column += sizeof(rest);
-              if (!is.good() || rest != string("rue"))
+              if (!is.good() || std::strncmp(rest, "rue", 3) != 0)
                 throw JSONError(env,errLocation(),"unexpected token `"+string(rest)+"'");
               state = S_NOTHING;
               return Token(true);
@@ -123,7 +123,7 @@ namespace MiniZinc {
               char rest[4];
               is.read(rest,sizeof(rest));
               column += sizeof(rest);
-              if (!is.good() || rest != string("alse"))
+              if (!is.good() || std::strncmp(rest, "alse", 4) != 0)
                 throw JSONError(env,errLocation(),"unexpected token `"+string(rest)+"'");
               state = S_NOTHING;
               return Token(false);
