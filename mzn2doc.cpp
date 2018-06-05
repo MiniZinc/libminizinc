@@ -162,7 +162,7 @@ int main(int argc, char** argv) {
   }
   
   if (std_lib_dir.empty()) {
-    SolverConfigs solver_configs;
+    SolverConfigs solver_configs(std::cerr);
     std_lib_dir = solver_configs.mznlibDir();
   }
   

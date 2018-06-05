@@ -203,7 +203,7 @@ namespace MiniZinc {
      * Configuration files must be called config.msc and the path
      * uses platform specific separators (: on Unix-like systems, ; on Windows).
      */
-    SolverConfigs(const std::string& solverpath=std::string());
+    SolverConfigs(std::ostream& log, const std::string& solverpath=std::string());
     /// Return configuration for solver \a s
     /// The string can be a comma separated list of tags, in which case a
     /// solver that matches all tags will be returned. The tag can also be

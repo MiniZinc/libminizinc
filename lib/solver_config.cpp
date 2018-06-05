@@ -170,8 +170,7 @@ namespace MiniZinc {
           throw ConfigException("invalid solver configuration (missing name)");
         }
       } else {
-        std::cerr << errstream.str();
-        throw ConfigException("internal error");
+        throw ConfigException(errstream.str());
       }
     } catch (ConfigException& e) {
       throw;
@@ -210,7 +209,7 @@ namespace MiniZinc {
     }
   }
   
-  SolverConfigs::SolverConfigs(const string& sp) {
+  SolverConfigs::SolverConfigs(std::ostream& log, const string& sp) {
     string solver_path = sp;
 #ifdef _MSC_VER
     const char* PATHSEP = ";";
@@ -305,8 +304,13 @@ namespace MiniZinc {
       string cur_path = solver_path.substr(0,next_sep);
       std::vector<std::string> configFiles = FileUtils::directory_list(cur_path, "msc");
       for (unsigned int i=0; i<configFiles.size(); i++) {
-        SolverConfig sc = SolverConfig::load(cur_path+"/"+configFiles[i]);
-        addConfig(sc);
+        try {
+          SolverConfig sc = SolverConfig::load(cur_path+"/"+configFiles[i]);
+          addConfig(sc);
+        } catch (ConfigException& e) {
+          log << "Warning: error loading solver configuration from file " << cur_path << "/" << configFiles[i] << "\n";
+          log << "Error was:\n" << e.msg() << "\n";
+        }
       }
       if (next_sep != string::npos)
         solver_path = solver_path.substr(next_sep+1,string::npos);
