@@ -225,7 +225,7 @@ namespace MiniZinc {
     /// Default solver for tag \a t
     const std::string& defaultSolver(const std::string& t) {
       static std::string noDefault;
-      std::unordered_map<std::string, std::string>::const_iterator it = _tagDefault.find(t);
+      auto it = _tagDefault.find(t);
       return it==_tagDefault.end() ? noDefault : it->second;
     }
     /// MiniZinc library directory
