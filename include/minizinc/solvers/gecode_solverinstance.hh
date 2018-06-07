@@ -281,6 +281,8 @@ namespace MiniZinc {
     Gecode::IntArgs arg2boolargs(Expression* arg, int offset = 0);
     /// Convert \a n to IntSet
     Gecode::IntSet arg2intset(EnvI& envi, Expression* sl);
+    /// Convert \a n to IntSetArgs
+    Gecode::IntSetArgs arg2intsetargs(EnvI& envi, Expression* arg, int offset = 0);
     /// Convert \a arg to IntVarArgs
     Gecode::IntVarArgs arg2intvarargs(Expression* arg, int offset = 0);
     /// Convert \a arg to BoolVarArgs
@@ -289,6 +291,11 @@ namespace MiniZinc {
     Gecode::BoolVar arg2boolvar(Expression* e);
     /// Convert \a n to IntVar
     Gecode::IntVar arg2intvar(Expression* e);
+    /// Convert \a n to SetVar
+    Gecode::SetVar arg2setvar(Expression* e);
+    /// Convert \a arg to SetVarArgs
+    Gecode::SetVarArgs arg2setvarargs(Expression* arg, int offset = 0, int doffset = 0,
+                                      const Gecode::IntSet& od=Gecode::IntSet::empty);
      /// convert \a arg to an ArrayLit (throws InternalError if not possible)
     ArrayLit* arg2arraylit(Expression* arg);  
     /// Check if \a b is array of Booleans (or has a single integer)

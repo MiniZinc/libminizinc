@@ -364,7 +364,49 @@ namespace MiniZinc {
       registerConstraint("float_log2",GecodeConstraints::p_float_log2);
       registerConstraint("float_sin",GecodeConstraints::p_float_sin);
       registerConstraint("float_tan",GecodeConstraints::p_float_tan);
-#endif		
+#endif
+#ifdef GECODE_HAS_SET_VARS
+      registerConstraint("set_eq", GecodeConstraints::p_set_eq);
+      registerConstraint("set_le", GecodeConstraints::p_set_le);
+      registerConstraint("set_lt", GecodeConstraints::p_set_lt);
+      registerConstraint("equal", GecodeConstraints::p_set_eq);
+      registerConstraint("set_ne", GecodeConstraints::p_set_ne);
+      registerConstraint("set_union", GecodeConstraints::p_set_union);
+      registerConstraint("array_set_element", GecodeConstraints::p_array_set_element);
+      registerConstraint("array_var_set_element", GecodeConstraints::p_array_set_element);
+      registerConstraint("set_intersect", GecodeConstraints::p_set_intersect);
+      registerConstraint("set_diff", GecodeConstraints::p_set_diff);
+      registerConstraint("set_symdiff", GecodeConstraints::p_set_symdiff);
+      registerConstraint("set_subset", GecodeConstraints::p_set_subset);
+      registerConstraint("set_superset", GecodeConstraints::p_set_superset);
+      registerConstraint("set_card", GecodeConstraints::p_set_card);
+      registerConstraint("set_in", GecodeConstraints::p_set_in);
+      registerConstraint("set_eq_reif", GecodeConstraints::p_set_eq_reif);
+      registerConstraint("set_le_reif", GecodeConstraints::p_set_le_reif);
+      registerConstraint("set_lt_reif", GecodeConstraints::p_set_lt_reif);
+      registerConstraint("equal_reif", GecodeConstraints::p_set_eq_reif);
+      registerConstraint("set_ne_reif", GecodeConstraints::p_set_ne_reif);
+      registerConstraint("set_subset_reif", GecodeConstraints::p_set_subset_reif);
+      registerConstraint("set_superset_reif", GecodeConstraints::p_set_superset_reif);
+      registerConstraint("set_in_reif", GecodeConstraints::p_set_in_reif);
+      registerConstraint("set_in_imp", GecodeConstraints::p_set_in_imp);
+      registerConstraint("disjoint", GecodeConstraints::p_set_disjoint);
+      registerConstraint("link_set_to_booleans", GecodeConstraints::p_link_set_to_booleans);
+      registerConstraint("array_set_union", GecodeConstraints::p_array_set_union);
+      registerConstraint("array_set_partition", GecodeConstraints::p_array_set_partition);
+      registerConstraint("set_convex", GecodeConstraints::p_set_convex);
+      registerConstraint("array_set_seq", GecodeConstraints::p_array_set_seq);
+      registerConstraint("array_set_seq_union", GecodeConstraints::p_array_set_seq_union);
+      registerConstraint("array_set_element_union", GecodeConstraints::p_array_set_element_union);
+      registerConstraint("array_set_element_intersect", GecodeConstraints::p_array_set_element_intersect);
+      registerConstraint("array_set_element_intersect_in", GecodeConstraints::p_array_set_element_intersect_in);
+      registerConstraint("array_set_element_partition", GecodeConstraints::p_array_set_element_partition);
+      registerConstraint("int_set_channel", GecodeConstraints::p_int_set_channel);
+      registerConstraint("range", GecodeConstraints::p_range);
+      registerConstraint("set_weights", GecodeConstraints::p_weights);
+      registerConstraint("inverse_set", GecodeConstraints::p_inverse_set);
+      registerConstraint("precede_set", GecodeConstraints::p_precede_set);
+#endif
     }
 
   inline void GecodeSolverInstance::insertVar(Id* id, GecodeVariable gv) {
@@ -537,6 +579,18 @@ namespace MiniZinc {
           isDefined = MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str().str()) != NULL;
           _current_space->fv_defined.push_back(isDefined);
 #endif
+#ifdef GECODE_HAS_SET_VARS
+        } else if(vd->type().isintset()) {
+          Expression* domain = ti->domain();
+          auto d = arg2intset(_env.envi(), domain);
+          SetVar setVar(*this->_current_space, Gecode::IntSet::empty, d);
+          _current_space->sv.push_back(setVar);
+          isIntroduced = it->e()->introduced() || (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced.str()) != NULL);
+          _current_space->sv_introduced.push_back(isIntroduced);
+          isDefined = MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str().str()) != NULL;
+          _current_space->sv_defined.push_back(isDefined);
+          insertVar(it->e()->id(), GecodeVariable(GecodeVariable::SET_TYPE, _current_space->sv.size()-1));
+#endif
         } else {
           std::stringstream ssm;
           ssm << "Type " << *ti << " is currently not supported by Gecode." << std::endl;
@@ -672,6 +726,21 @@ namespace MiniZinc {
     IntSet d(isr_g);
     return d;
    }
+  IntSetArgs
+  GecodeSolverInstance::arg2intsetargs(EnvI& envi, Expression* arg, int offset) {
+    ArrayLit* a = arg2arraylit(arg);
+    if (a->size() == 0) {
+      IntSetArgs emptyIa(0);
+      return emptyIa;
+    }
+    IntSetArgs ia(a->size()+offset);
+    for (int i=offset; i--;)
+      ia[i] = IntSet::empty;
+    for (int i=a->size(); i--;) {
+      ia[i+offset] = arg2intset(envi, (*a)[i]);
+    }
+    return ia;
+  }
 
   Gecode::IntVarArgs
   GecodeSolverInstance::arg2intvarargs(Expression* arg, int offset) {
@@ -835,7 +904,35 @@ namespace MiniZinc {
     }
     return singleInt==-1 || a->length() > 1;
   }
-
+#ifdef GECODE_HAS_SET_VARS
+  SetVar
+  GecodeSolverInstance::arg2setvar(Expression* e) {
+    SetVar x0;
+    if (!e->type().isvar()) {
+      Gecode::IntSet d = arg2intset(_env.envi(), e);
+      x0 = SetVar(*this->_current_space, d, d);
+    } else {
+      GecodeVariable var = resolveVar(getVarDecl(e));
+      assert(var.isset());
+      x0 = var.setVar(_current_space);
+    }
+    return x0;
+  }
+  Gecode::SetVarArgs
+  GecodeSolverInstance::arg2setvarargs(Expression* arg, int offset, int doffset,
+                                       const Gecode::IntSet& od) {
+    ArrayLit* a = arg2arraylit(arg);
+    SetVarArgs ia(a->size()+offset);
+    for (int i=offset; i--;) {
+      Gecode::IntSet d = i<doffset ? od : Gecode::IntSet::empty;
+      ia[i] = SetVar(*this->_current_space, d, d);
+    }
+    for (int i=a->size(); i--;) {
+      ia[i+offset] = arg2setvar((*a)[i]);
+    }
+    return ia;
+  }
+#endif
 #ifdef GECODE_HAS_FLOAT_VARS
   Gecode::FloatValArgs
   GecodeSolverInstance::arg2floatargs(Expression* arg, int offset) {
@@ -995,6 +1092,30 @@ namespace MiniZinc {
     id = id->decl()->id();
     if(id->type().isvar()) {
       GecodeVariable var = resolveVar(id->decl()->id());
+#ifdef GECODE_HAS_SET_VARS
+      if(id->type().is_set()) {
+        SetVar& sv = var.setVar(_solution);
+        assert(sv.assigned());
+        SetVarGlbRanges svr(sv);
+        assert(svr());
+
+        IntVal mi = svr.min();
+        IntVal ma = svr.max();
+        ++svr;
+        vector<IntVal> vals;
+        if (svr()) {
+          SetVarGlbValues svv(sv);
+          IntVal i = svv.val();
+          vals.push_back(i);
+          ++svv;
+          for (; svv(); ++svv)
+            vals.push_back(svv.val());
+          return new SetLit(Location().introduce(), IntSetVal::a(vals));
+        } else {
+          return new SetLit(Location().introduce(), IntSetVal::a(mi, ma));
+        }
+      }
+#endif
       switch (id->type().bt()) {
         case Type::BT_INT:
           assert(var.intVar(_solution).assigned());
