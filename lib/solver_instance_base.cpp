@@ -38,12 +38,12 @@ namespace MiniZinc {
   }
   
   void
-  Registry::add(const ASTString& name, poster p) {
+  Registry::add(const std::string& name, poster p) {
     _registry.insert(std::make_pair(name, p));
   }
   void
   Registry::post(Call* c) {
-    ASTStringMap<poster>::t::iterator it = _registry.find(c->id());
+    std::unordered_map<std::string,poster>::iterator it = _registry.find(c->id().str());
     if (it == _registry.end()) {
       GCLock lock;
       throw InternalError("Error: constraint not found: " + c->id().str() + "\n");

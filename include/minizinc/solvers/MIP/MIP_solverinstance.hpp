@@ -803,27 +803,27 @@ namespace MiniZinc {
   void
   MIP_solverinstance<MIPWrapper>::registerConstraints() {
     GCLock lock;
-    _constraintRegistry.add(ASTString("int2float"),    SCIPConstraints::p_eq<MIPWrapper>);
-    _constraintRegistry.add(ASTString("bool_eq"),      SCIPConstraints::p_eq<MIPWrapper>);   // for inconsistency reported in fzn
-    _constraintRegistry.add(ASTString("int_eq"),       SCIPConstraints::p_eq<MIPWrapper>);
-    _constraintRegistry.add(ASTString("int_le"),       SCIPConstraints::p_le<MIPWrapper>);
-    _constraintRegistry.add(ASTString("int_lin_eq"),   SCIPConstraints::p_int_lin_eq<MIPWrapper>);
-    _constraintRegistry.add(ASTString("int_lin_le"),   SCIPConstraints::p_int_lin_le<MIPWrapper>);
-    //   _constraintRegistry.add(ASTString("int_plus"),     SCIPConstraints::p_plus<MIPWrapper>);
-    //   _constraintRegistry.add(ASTString("bool2int"),     SCIPConstraints::p_eq<MIPWrapper>);
-    _constraintRegistry.add(ASTString("float_eq"),     SCIPConstraints::p_eq<MIPWrapper>);
-    _constraintRegistry.add(ASTString("float_le"),     SCIPConstraints::p_le<MIPWrapper>);
-    _constraintRegistry.add(ASTString("float_lin_eq"), SCIPConstraints::p_float_lin_eq<MIPWrapper>);
-    _constraintRegistry.add(ASTString("float_lin_le"), SCIPConstraints::p_float_lin_le<MIPWrapper>);
-    //   _constraintRegistry.add(ASTString("float_plus"),   SCIPConstraints::p_plus<MIPWrapper>);
+    _constraintRegistry.add("int2float",    SCIPConstraints::p_eq<MIPWrapper>);
+    _constraintRegistry.add("bool_eq",      SCIPConstraints::p_eq<MIPWrapper>);   // for inconsistency reported in fzn
+    _constraintRegistry.add("int_eq",       SCIPConstraints::p_eq<MIPWrapper>);
+    _constraintRegistry.add("int_le",       SCIPConstraints::p_le<MIPWrapper>);
+    _constraintRegistry.add("int_lin_eq",   SCIPConstraints::p_int_lin_eq<MIPWrapper>);
+    _constraintRegistry.add("int_lin_le",   SCIPConstraints::p_int_lin_le<MIPWrapper>);
+    //   _constraintRegistry.add("int_plus",     SCIPConstraints::p_plus<MIPWrapper>);
+    //   _constraintRegistry.add("bool2int",     SCIPConstraints::p_eq<MIPWrapper>);
+    _constraintRegistry.add("float_eq",     SCIPConstraints::p_eq<MIPWrapper>);
+    _constraintRegistry.add("float_le",     SCIPConstraints::p_le<MIPWrapper>);
+    _constraintRegistry.add("float_lin_eq", SCIPConstraints::p_float_lin_eq<MIPWrapper>);
+    _constraintRegistry.add("float_lin_le", SCIPConstraints::p_float_lin_le<MIPWrapper>);
+    //   _constraintRegistry.add("float_plus",   SCIPConstraints::p_plus<MIPWrapper>);
     
     /// Indicators, if supported by the solver
-    _constraintRegistry.add(ASTString("aux_int_le_zero_if_0__IND"), SCIPConstraints::p_indicator_le0_if0<MIPWrapper>);
-    _constraintRegistry.add(ASTString("aux_float_le_zero_if_0__IND"), SCIPConstraints::p_indicator_le0_if0<MIPWrapper>);
-    _constraintRegistry.add(ASTString("aux_float_eq_if_1__IND"), SCIPConstraints::p_indicator_eq_if1<MIPWrapper>);
+    _constraintRegistry.add("aux_int_le_zero_if_0__IND", SCIPConstraints::p_indicator_le0_if0<MIPWrapper>);
+    _constraintRegistry.add("aux_float_le_zero_if_0__IND", SCIPConstraints::p_indicator_le0_if0<MIPWrapper>);
+    _constraintRegistry.add("aux_float_eq_if_1__IND", SCIPConstraints::p_indicator_eq_if1<MIPWrapper>);
     
     /// XBZ cut generator
-    _constraintRegistry.add(ASTString("array_var_float_element__XBZ_lb__cutgen"),
+    _constraintRegistry.add("array_var_float_element__XBZ_lb__cutgen",
                             SCIPConstraints::p_XBZ_cutgen<MIPWrapper>);
 
   }

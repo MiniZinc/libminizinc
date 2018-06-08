@@ -160,8 +160,8 @@ namespace MiniZinc {
     void GecodeSolverInstance::registerConstraint(std::string name, poster p) {
       std::stringstream ss;
       ss << "gecode_" << name;
-      _constraintRegistry.add(ASTString(ss.str()), p);
-      _constraintRegistry.add(ASTString(name), p);
+      _constraintRegistry.add(ss.str(), p);
+      _constraintRegistry.add(name, p);
     }
 
     void GecodeSolverInstance::registerConstraints(void) {
