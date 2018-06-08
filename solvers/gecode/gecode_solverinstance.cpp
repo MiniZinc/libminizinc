@@ -437,9 +437,29 @@ namespace MiniZinc {
         // check if it has an output-annotation
         VarDecl* vd = it->e();
         if(!vd->ann().isEmpty()) {
-          if(vd->ann().containsCall(constants().ann.output_array.aststr()) ||
-              vd->ann().contains(constants().ann.output_var)
-            ) {
+          if(vd->ann().containsCall(constants().ann.output_array.aststr())) {
+            ArrayLit* al = vd->e()->dyn_cast<ArrayLit>();
+            if(!al) {
+              std::stringstream ssm;
+              ssm << "GecodeSolverInstance::processFlatZinc: Error: Array without right hand side: " << *vd->id() << std::endl;
+              throw InternalError(ssm.str());
+            }
+            for(int i=0; i<al->size(); i++) {
+              if(Id* id = (*al)[i]->dyn_cast<Id>()) {
+                GecodeVariable var = resolveVar(id);
+                if(var.isint()) {
+                    _current_space->iv_introduced[var.index()] = false;
+                } else if(var.isbool()) {
+                    _current_space->bv_introduced[var.index()] = false;
+                } else if(var.isfloat()) {
+                    _current_space->fv_introduced[var.index()] = false;
+                } else if(var.isset()) {
+                    _current_space->sv_introduced[var.index()] = false;
+                }
+              }
+            }
+            _varsWithOutput.push_back(vd);
+          } else if (vd->ann().contains(constants().ann.output_var)) {
             _varsWithOutput.push_back(vd);
           }
         }
