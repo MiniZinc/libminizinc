@@ -117,10 +117,12 @@ namespace MiniZinc {
               sc._executable = FileUtils::file_exists(absPath) ? absPath : getString(ai);
             } else if (ai->id()=="mznlib") {
               std::string libPath = getString(ai);
-              if (!libPath.empty() && libPath[0]=='-') {
-                sc._mznlib = libPath;
-              } else {
-                sc._mznlib = FileUtils::file_path(libPath, basePath);
+              if (!libPath.empty()) {
+                if (libPath[0]=='-') {
+                  sc._mznlib = libPath;
+                } else {
+                  sc._mznlib = FileUtils::file_path(libPath, basePath);
+                }
               }
             } else if (ai->id()=="version") {
               sc._version = getString(ai);
