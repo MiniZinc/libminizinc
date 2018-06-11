@@ -266,6 +266,10 @@ string MIP_cplex_wrapper::getName() {
   return "CPLEX";
 }
 
+vector<string> MIP_cplex_wrapper::getStdFlags() {
+  return {"-a", "-p", "-n"};
+}
+
 void MIP_cplex_wrapper::Options::printHelp(ostream& os) {
   os
   << "IBM ILOG CPLEX  MIP wrapper options:" << std::endl

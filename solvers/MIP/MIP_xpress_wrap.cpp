@@ -61,6 +61,10 @@ string MIP_xpress_wrapper::getName() {
   return "Xpress";
 }
 
+vector<string> MIP_xpress_wrapper::getStdFlags() {
+  return {"-a", "-n"};
+}
+
 void MIP_xpress_wrapper::Options::printHelp(ostream &os) {
   os << "XPRESS MIP wrapper options:" << std::endl
      << "--msgLevel <n>       print solver output, default: 0"

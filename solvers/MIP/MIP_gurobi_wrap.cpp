@@ -88,6 +88,10 @@ string MIP_gurobi_wrapper::getName() {
   return "Gurobi";
 }
 
+vector<string> MIP_gurobi_wrapper::getStdFlags() {
+  return {"-a", "-p", "-n"};
+}
+
 const vector<string>& gurobiDLLs(void) {
   static const vector<string> sGurobiDLLs = { "gurobi90", "gurobi85", "gurobi80", "gurobi75", "gurobi70", "gurobi65" };
   return sGurobiDLLs;

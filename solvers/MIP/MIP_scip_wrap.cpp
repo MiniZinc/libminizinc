@@ -56,6 +56,10 @@ string MIP_scip_wrapper::getName() {
   return "SCIP";
 }
 
+vector<string> MIP_scip_wrapper::getStdFlags() {
+  return {"-a", "-p"};
+}
+
 void MIP_scip_wrapper::Options::printHelp(ostream& os) {
   os
   << "SCIP  MIP wrapper options:" << std::endl

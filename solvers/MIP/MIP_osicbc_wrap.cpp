@@ -59,6 +59,10 @@ string MIP_osicbc_wrapper::getName() {
   return "OSICBC";
 }
 
+vector<string> MIP_osicbc_wrapper::getStdFlags() {
+  return {"-a", "-p", "-s"};
+}
+
 void MIP_osicbc_wrapper::Options::printHelp(ostream& os) {
   os
   << "OSICBC MIP wrapper options:" << std::endl

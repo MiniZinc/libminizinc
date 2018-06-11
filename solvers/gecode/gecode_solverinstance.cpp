@@ -31,6 +31,7 @@ namespace MiniZinc {
     sc.supportsMzn(true);
     sc.description("MiniZinc Gecode solver plugin");
     sc.tags({"cp","float","api"});
+    sc.stdFlags({"-a","-n"});
     SolverConfigs::registerBuiltinSolver(sc);
   }
   
