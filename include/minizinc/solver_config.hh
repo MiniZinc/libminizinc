@@ -28,7 +28,10 @@ namespace MiniZinc {
     struct ExtraFlag {
       std::string flag;
       std::string description;
-      ExtraFlag(const std::string& f, const std::string& d) : flag(f), description(d) {}
+      std::string flag_type;
+      std::string default_value;
+      ExtraFlag(const std::string& f, const std::string& d, const std::string& t="bool", const std::string& v="false")
+      : flag(f), description(d), flag_type(t), default_value(v) {}
     };
   protected:
     /// The configuration file for this solver (or empty string for built-in solvers)

@@ -60,19 +60,30 @@ namespace MiniZinc {
     }
     std::vector<SolverConfig::ExtraFlag> getExtraFlagList(AssignI* ai) {
       if (ArrayLit* al = ai->e()->dyn_cast<ArrayLit>()) {
+        if (al->dims()!=2) {
+          throw ConfigException("invalid configuration item (right hand side must be a 2d array of strings)");
+        }
+        int nCols = al->max(1)-al->min(1)+1;
+        if (nCols < 2 || nCols > 4) {
+          throw ConfigException("invalid configuration item (right hand side must be a 2d array of strings)");
+        }
+        bool haveType = (nCols == 3);
+        bool haveDefault = (nCols == 4);
         std::vector<SolverConfig::ExtraFlag> ret;
-        for (unsigned int i=0; i<al->size(); i+=2) {
+        for (unsigned int i=0; i<al->size(); i+=nCols) {
           StringLit* sl1 = (*al)[i]->dyn_cast<StringLit>();
           StringLit* sl2 = (*al)[i+1]->dyn_cast<StringLit>();
+          StringLit* sl3 = haveType ? (*al)[i+2]->dyn_cast<StringLit>() : NULL;
+          StringLit* sl4 = haveDefault ? (*al)[i+3]->dyn_cast<StringLit>() : NULL;
           if (sl1 && sl2) {
-            ret.emplace_back(sl1->v().str(),sl2->v().str());
+            ret.emplace_back(sl1->v().str(),sl2->v().str(),sl3 ? sl3->v().str() : "bool",sl4 ? sl4->v().str() : "false");
           } else {
-            throw ConfigException("invalid configuration item (right hand side must be a list of strings)");
+            throw ConfigException("invalid configuration item (right hand side must be a 2d array of strings)");
           }
         }
         return ret;
       }
-      throw ConfigException("invalid configuration item (right hand side must be a list of lists of strings)");
+      throw ConfigException("invalid configuration item (right hand side must be a 2d array of strings)");
     }
   }
   
@@ -384,7 +395,8 @@ namespace MiniZinc {
       if (sc.extraFlags().size()) {
         oss << "    \"extraFlags\": [";
         for (unsigned int j=0; j<sc.extraFlags().size(); j++) {
-          oss << "[" << "\"" << sc.extraFlags()[j].flag << "\",\"" << sc.extraFlags()[j].description << "\"]";
+          oss << "[" << "\"" << sc.extraFlags()[j].flag << "\",\"" << sc.extraFlags()[j].description << "\",\"";
+          oss << sc.extraFlags()[j].flag_type  << "\",\"" << sc.extraFlags()[j].default_value << "\"]";
           if (j<sc.extraFlags().size()-1)
             oss << ",";
         }
