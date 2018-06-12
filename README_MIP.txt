@@ -1,23 +1,21 @@
 MIP Solver Interfaces in MiniZinc 2
 ===================================
 
-The executables mzn-cplex, mzn-gurobi, mzn-scip and mzn-cbc use the
-corresponding MIP solver library. They can interpret FlatZinc code compiled with
--Glinear, as well as handle original model files (by flattening + solving).
-
-Please run them with --help to see available functionalities.
+The executables mzn-cplex, -gurobi, -scip, -xpress and -cbc were replaced by the new
+executable minizinc with the option --solver. Please run it with --help <solverId>
+to see available functionalities.
 
 All MIP solvers directly support multi-threading (option -p). For this, CBC needs to be
 configured with --enable-cbc-parallel. Use svn/git to get the latest stable CBC revision,
 see https://projects.coin-or.org/Cbc, currently https://projects.coin-or.org/svn/Cbc/stable/2.9
 
-Calling a solver on a MiniZinc directly:
+Calling a solver on a MiniZinc model directly:
   
-      mzn-gurobi -v -s -a -G linear model.mzn data.dzn
+      minizinc --solver -v -s -a model.mzn data.dzn
 
 or separated flattening+solving - sometimes more stable but slower due to file I/O:
  
-      mzn2fzn -G linear model.mzn data.dzn && mzn-gorubi -v -s -a model.fzn | solns2out model.ozn
+      minizinc --solver osicbc -c model.mzn data.dzn && minizinc --solver osicbc -v -s -a model.fzn | minizinc --ozn-file model.ozn
 
 USEFUL PARAMETERS
 =================
