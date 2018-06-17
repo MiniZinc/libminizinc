@@ -17,7 +17,11 @@ To install the bundled binary packages, simply download the installer, double-cl
 
 After installation is complete, you can find the MiniZinc IDE installed as a Windows application. The file extensions ``.mzn``, ``.dzn`` and ``.fzn`` are linked to the IDE, so double-clicking any MiniZinc file should open it in the IDE.
 
-If you want to use MiniZinc from a command prompt, you need to add the installation directory (typically, this would be similar to ``C:\Program Files\MiniZinc 2.1.2 (bundled)``) to the PATH environment variable.
+If you want to use MiniZinc from a command prompt, you need to add the installation directory to the PATH environment variable. In a Windows command prompt you could use the following command:
+
+.. parsed-literal::
+
+ C:\\>setx PATH "%PATH%;C:\\Program Files\\MiniZinc |release| (bundled)\\"
 
 Linux
 ~~~~~
@@ -26,9 +30,9 @@ The MiniZinc bundled binary distribution for Linux is provided as an archive tha
 
 After downloading, uncompress the archive, for example in your home directory or any other location where you want to install it:
 
-.. code-block:: bash
+.. parsed-literal::
 
-  $ tar xf MiniZincIDE-2.1.2-bundle-linux-x86_64.tgz
+  $ tar xf MiniZincIDE-|release|-bundle-linux-x86_64.tgz
 
 This will unpack MiniZinc into a directory that is called the same as the archive file (without the ``.tgz``). You can run the MiniZinc IDE or any of the command line tools directly from that directory, or add it to your PATH environment variable for easier access. **Note:** the MiniZinc IDE needs to be started using the ``MiniZincIDE.sh`` script, which sets up a number of paths that are required by the IDE.
 
