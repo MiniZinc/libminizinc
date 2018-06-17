@@ -87,7 +87,7 @@ Running the command
 
 gives the output
 
-::
+.. code-block:: none
 
     0.00 100.00 100.00 100.00   0.00
     0.00  42.86  52.68  42.86   0.00
@@ -568,7 +568,7 @@ to create an understandable output. Running
 
 results in the output
 
-::
+.. code-block:: none
 
   BananaCake = 2;
   ChocolateCake = 2;
@@ -726,7 +726,7 @@ or ``--all-solutions``. Running
 
 results in
 
-::
+.. code-block:: none
 
    5 9 3  7 6 2  8 1 4 
    2 6 8  4 3 1  5 7 9 
@@ -782,7 +782,7 @@ Running this program using
 
 might result in output
 
-::
+.. code-block:: none
 
   wa = yellow;
   nt = blue;
@@ -941,7 +941,7 @@ solves a small job shop scheduling problem, and illustrates the behaviour of
 each better solutions as it finds it, rather than all possible optimal
 solutions. The output from this command is:
 
-::
+.. code-block:: none
 
   end = 39
    5  9 13 22 30 
@@ -1121,7 +1121,7 @@ Executing the command
 
 leads to the output
 
-::
+.. code-block:: none
 
   s = [1, 2, 1, 0];
   ----------
@@ -1253,7 +1253,7 @@ Executing the command
 where the data file defines a problem with 4 weeks, with 4 groups
 of size 3 leads to the output
 
-::
+.. code-block:: none
 
   1..3 4..6 7..9 10..12 
   { 1, 4, 7 } { 2, 5, 10 } { 3, 9, 11 } { 6, 8, 12 }
@@ -1303,7 +1303,7 @@ Running
 
 Results in the output
 
-::
+.. code-block:: none
 
   ted bride groom rona ed carol ron alice bob bridesmaid bestman clara 
   ----------

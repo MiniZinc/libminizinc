@@ -41,7 +41,7 @@ The variables are declared unbounded. Running
 
 yields 
 
-::
+.. code-block:: none
 
   =====UNSATISFIABLE=====
   % grocery.fzn:11: warning: model inconsistency detected before search.
@@ -67,7 +67,7 @@ results in a better model, since now MiniZinc can infer bounds on the
 intermediate expressions and use these rather than the default bounds.
 With this modification, executing the model gives
 
-::
+.. code-block:: none
 
   {120,125,150,316}
   ----------
@@ -124,7 +124,7 @@ Running the model as
 
 results in output
 
-::
+.. code-block:: none
 
   mark = [0, 1, 4, 6];
   diffs = [0, 0, 0, 0, 1, 0, 0, 0, 4, 3, 0, 0, 6, 5, 2, 0];
@@ -175,7 +175,7 @@ With this change running
 
 simply results in
 
-::
+.. code-block:: none
 
   mark = [0, 1, 4, 6];
   ----------
@@ -240,7 +240,7 @@ loop for both versions of the calculation.
 
 Produces the output:
 
-::
+.. code-block:: none
 
   ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ----------
@@ -253,7 +253,7 @@ indicating the inner loop is evaluated 64 times while
 
 Produces the output:
 
-::
+.. code-block:: none
 
   ++++++++++++++++
   ----------
@@ -270,7 +270,7 @@ understand what is happening during model creation.
 will print out each of triangles that is found in the calculation.
 It produces the output
 
-::
+.. code-block:: none
 
   (1,2,3)
   ----------
@@ -295,7 +295,7 @@ Running this for :mzn:`n = 16` as follows:
 
 might result in output
 
-::
+.. code-block:: none
 
   s = [12, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0];
   ----------

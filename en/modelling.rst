@@ -271,7 +271,7 @@ our model.
 
 When we run this we obtain the result:
 
-::
+.. code-block:: none
 
   wa=2	 nt=3	 sa=1
   q=2	 nsw=3	 v=2
@@ -369,7 +369,7 @@ by :mzn:`minimize` to specify a minimisation problem.
 
 When we run this we obtain the result:
 
-::
+.. code-block:: none
 
   no. of banana cakes = 2
   no. of chocolate cakes = 2
@@ -430,7 +430,7 @@ The output from running the command
 with an alternate data set defined in
 :numref:`fig-pantry2` is
 
-::
+.. code-block:: none
 
   no. of banana cakes = 3
   no. of chocolate cakes = 8
@@ -441,7 +441,7 @@ If we remove the output statement from :download:`cakes.mzn <examples/cakes.mzn>
 MiniZinc will use a default output. In this case the resulting
 output  will be
 
-::
+.. code-block:: none
 
   b = 3;
   c = 8;
@@ -542,7 +542,7 @@ We can invoke it using the command ``mzn-cbc``:
 
 The output is
 
-::
+.. code-block:: none
 
   Borrowing 1000.00 at 4.0% interest, and repaying 260.00 
   per quarter for 1 year leaves 65.78 owing 
@@ -560,7 +560,7 @@ The output from running the command
 
 is
 
-::
+.. code-block:: none
 
   Borrowing 1000.00 at 4.0% interest, and repaying 275.49
   per quarter for 1 year leaves 0.00 owing
@@ -577,7 +577,7 @@ The output from running the command
 
 is
 
-::
+.. code-block:: none
 
   Borrowing 907.47 at 4.0% interest, and repaying 250.00
   per quarter for 1 year leaves 0.00 owing
