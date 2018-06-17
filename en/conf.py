@@ -62,7 +62,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'MiniZinc Documentation'
+project = 'The MiniZinc Handbook'
 copyright = '2016, 2017, 2018, Peter J. Stuckey, Kim Marriott, Guido Tack'
 author = 'Peter J. Stuckey, Kim Marriott, Guido Tack'
 
@@ -157,7 +157,7 @@ html_theme_options = {
 # The name for this set of Sphinx documents.
 # "<project> v<release> documentation" by default.
 #
-# html_title = 'MiniZinc v2.1.0'
+html_title = project+" "+release
 
 # A shorter title for the navigation bar.  Default is the same as html_title.
 #
@@ -166,7 +166,7 @@ html_theme_options = {
 # The name of an image file (relative to this directory) to place at the top
 # of the sidebar.
 #
-# html_logo = None
+html_logo = 'figures/MiniZn_logo_2.svg'
 
 # The name of an image file (relative to this directory) to use as a favicon of
 # the docs.  This file should be a Windows icon file (.ico) being 16x16 or 32x32
@@ -264,7 +264,7 @@ htmlhelp_basename = 'MiniZincdoc'
 latex_elements = {
      # The paper size ('letterpaper' or 'a4paper').
      #
-     # 'papersize': 'letterpaper',
+     'papersize': 'a4paper',
 
      # The font size ('10pt', '11pt' or '12pt').
      #
@@ -284,7 +284,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'MiniZinc.tex', 'MiniZinc Documentation',
+    (master_doc, 'MiniZinc.tex', 'MiniZinc Handbook',
      'Peter J. Stuckey, Kim Marriott, Guido Tack', 'manual'),
 ]
 
