@@ -38,6 +38,7 @@ extensions = [
     'sphinx.ext.mathjax',
     'defblock',
     'inlinesyntaxhighlight',
+    'sphinxtogithub'
 ]
 
 inline_highlight_respect_highlight = False
@@ -455,6 +456,10 @@ rst_prolog = """
 .. role:: mzndef(code)
   :language: minizincdef
 """
+
+sphinx_to_github = True
+sphinx_to_github_verbose = True
+sphinx_to_github_encoding = "utf-8"
 
 def setup(sphinx):
     from minizinc_lexer import MznLexer, MznDefLexer
