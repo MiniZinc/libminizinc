@@ -448,6 +448,7 @@ epub_exclude_files = ['search.html']
 # epub_use_index = True
 
 numfig = True
+numfig_secnum_depth = 2
 
 rst_prolog = """
 .. role:: mzn(code)
