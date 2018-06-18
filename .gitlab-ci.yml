@@ -2,47 +2,62 @@ stages:
   - build
   - test
 
-build:linux:
-  stage: build
-  image: gcc:latest
-  before_script:
-    - apt-get update && apt-get -y install cmake
-  script:
-    - mkdir build
-    - cd build
-    - cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PWD/..
-    - cmake --build . --target install -- -j4
-  artifacts:
-     paths:
-       - bin/
-  tags:
-     - linux
+# build:linux:
+#   stage: build
+#   image: gcc:latest
+#   before_script:
+#     - apt-get update && apt-get -y install cmake
+#   script:
+#     - mkdir build
+#     - cd build
+#     - cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PWD/..
+#     - cmake --build . --target install -- -j4
+#   artifacts:
+#      paths:
+#        - bin/
+#   tags:
+#      - linux
+#
+# build:osx:
+#   stage: build
+#   script:
+#     - mkdir build
+#     - cd build
+#     - cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PWD/..
+#     - cmake --build . --target install -- -j4
+#   artifacts:
+#      paths:
+#        - bin/
+#   tags:
+#      - mac
 
-build:osx:
+build:win32:
   stage: build
   script:
-    - mkdir build
-    - cd build
-    - cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PWD/..
-    - cmake --build . --target install -- -j4
+    - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0/VC/vcvarsall.bat"
+    - git clone http://%DEPLOY_USER%:%DEPLOY_PASS%@gitlab.com/minizinc/deploy.git
+    - bash deploy/win32/build_compiler.sh .
   artifacts:
      paths:
        - bin/
   tags:
-     - mac
+     - win32
+  cache:
+    key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - build/
 
-build:windows:
-  stage: build
-  script:
-    - mkdir build
-    - cd build
-    - cmake .. -G"Visual Studio 14 2015 Win64" -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=..
-    - cmake --build . --config Release --target install
-  artifacts:
-     paths:
-       - bin/
-  tags:
-     - windows
+# build:win64:
+#  stage: build
+#  script:
+#    - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0/VC/vcvarsall.bat" amd64
+#    - git clone http://%DEPLOY_USER%:%DEPLOY_PASS%@gitlab.com/minizinc/deploy.git
+#    - bash deploy/win64/build_compiler.sh .
+#  artifacts:
+#     paths:
+#       - bin/
+#  tags:
+#     - win64
 
 
 # TODO: Fix tests
