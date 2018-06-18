@@ -93,7 +93,7 @@ Using the data shown in :mzn:`ex-movingd`, the command
 
 .. code-block:: bash
 
-  $ mzn-gecode moving.mzn moving.dzn
+  $ minizinc moving.mzn moving.dzn
 
 may result in the output
 
@@ -237,7 +237,7 @@ Running the command
 
 .. code-block:: bash
 
-  $ mzn-gecode nurse.mzn nurse.dzn
+  $ minizinc nurse.mzn nurse.dzn
 
 finds a 10 day schedule for 7 nurses, requiring 3 on each day shift
 and 2 on each night shift, with a minimum 2 night shifts per nurse.

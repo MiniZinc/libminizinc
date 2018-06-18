@@ -83,7 +83,7 @@ Running the command
 
 .. code-block:: bash
 
-  $ mzn-cbc laplace.mzn
+  $ minizinc --solver osicbc laplace.mzn
 
 gives the output
 
@@ -564,7 +564,7 @@ to create an understandable output. Running
 
 .. code-block:: bash
 
-  $ mzn-gecode simple-prod-planning.mzn simple-prod-planning-data.dzn
+  $ minizinc --solver gecode simple-prod-planning.mzn simple-prod-planning-data.dzn
 
 results in the output
 
@@ -722,7 +722,7 @@ or ``--all-solutions``. Running
 
 .. code-block:: bash
 
-  $ mzn-g12fd --all-solutions sudoku.mzn sudoku.dzn
+  $ minizinc --all-solutions sudoku.mzn sudoku.dzn
 
 results in
 
@@ -778,7 +778,7 @@ Running this program using
 
 .. code-block:: bash
   
-  $ mzn-gecode -D"Color = { red, yellow, blue };" aust-enum.mzn
+  $ minizinc -D"Color = { red, yellow, blue };" aust-enum.mzn
 
 might result in output
 
@@ -934,7 +934,7 @@ The command
 
 .. code-block:: bash
   
-  $ mzn-gecode --all-solutions jobshop.mzn jdata.dzn
+  $ minizinc --all-solutions jobshop.mzn jdata.dzn
 
 solves a small job shop scheduling problem, and illustrates the behaviour of 
 \texttt{all-solutions} for optimisation problems.  Here the solver outputs
@@ -982,7 +982,7 @@ and then executing
 
 .. code-block:: bash
 
-  $ mzn-gecode --all-solutions jobshop.mzn jobshop.dzn
+  $ minizinc --all-solutions jobshop.mzn jobshop.dzn
 
 For this problem there are 3,444,375 optimal solutions.
 
@@ -1117,7 +1117,7 @@ Executing the command
 
 .. code-block:: bash
 
-  $ mzn-gecode --all-solutions magic-series.mzn -D "n=4;"
+  $ minizinc --all-solutions magic-series.mzn -D "n=4;"
 
 leads to the output
 
@@ -1248,7 +1248,7 @@ Executing the command
 
 .. code-block:: bash
 
-  $ mzn-gecode social-golfers.mzn social-golfers.dzn
+  $ minizinc social-golfers.mzn social-golfers.dzn
 
 where the data file defines a problem with 4 weeks, with 4 groups
 of size 3 leads to the output
@@ -1299,7 +1299,7 @@ Running
 
 .. code-block:: bash
 
-  $ mzn-gecode wedding.mzn
+  $ minizinc wedding.mzn
 
 Results in the output
 
