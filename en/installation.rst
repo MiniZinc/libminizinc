@@ -1,3 +1,5 @@
+.. _ch-installation:
+
 Installation
 ============
 
@@ -144,4 +146,8 @@ Required development tools:
 
 Adding Third-party Solvers
 --------------------------
+
+Third party solvers for MiniZinc typically consist of two parts: a solver *executable*, and a solver-specific MiniZinc *library*. MiniZinc must be aware of the location of both the executable and the library in order to compile and run a model with that solver. Each solver therefore needs to provide a *configuration file* in a location where the MiniZinc toolchain can find it.
+
+The easiest way to add a solver to the MiniZinc system is via the MiniZinc IDE. This is explained in :numref:`sec-ide-add-solvers`. You can also add configuration files manually, as explained in :numref:`sec-cmdline-conffiles`.
 
