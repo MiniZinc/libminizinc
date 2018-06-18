@@ -31,7 +31,7 @@
 <assign-item> ::= <ident> "=" <expr>
 
 % Constraint items
-<constraint-item> ::= "constraint" <expr>
+<constraint-item> ::= "constraint" <string-annotation> <expr>
 
 % Solve item
 <solve-item> ::= "solve" <annotations> "satisfy"
@@ -179,7 +179,7 @@
 % Set comprehensions
 <set-comp> ::= "{" <expr> "|" <comp-tail> "}"
 
-<comp-tail> ::= <generator> "," ... [ "where" <expr> ]
+<comp-tail> ::= <generator> [ "where" <expr> ] "," ...
 
 <generator> ::= <ident> "," ... "in" <expr>
 
@@ -226,3 +226,5 @@
 <annotations> ::= ( "::" <annotation> )*
 
 <annotation> ::= <expr-atom-head> <expr-atom-tail>
+
+<string-annotation> ::= "::" <string-literal>
