@@ -1,3 +1,5 @@
+.. _ch-cmdline:
+
 The MiniZinc Command Line Tool
 ==============================
 

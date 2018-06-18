@@ -7,5 +7,4 @@ Overview
 
    intro
    installation
-   ide_basic_steps
-   command_line_basic_steps
+   basic_steps
