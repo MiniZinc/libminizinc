@@ -22,65 +22,76 @@ using namespace std;
 using namespace Gecode;
 
 namespace MiniZinc {
-
-  class Gecode_SolverFactory: public SolverFactory {
-    Options _options;
-  public:
-    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log) {
-      return new GecodeSolverInstance(env, log, _options);
-    }
-    string getVersion( );
-    bool processOption(int& i, int argc, const char** argv);
-    void printHelp(std::ostream& os);
-  };
   
-  SolverFactory* SolverFactory::createF_GECODE() {
-    return new Gecode_SolverFactory;
+  Gecode_SolverFactory::Gecode_SolverFactory(void) {
+    SolverConfig sc("org.minizinc.gecode", GECODE_VERSION);
+    sc.name("Gecode");
+    sc.mznlib("-Ggecode");
+    sc.mznlibVersion(1);
+    sc.supportsMzn(true);
+    sc.description("MiniZinc Gecode solver plugin");
+    sc.tags({"cp","float","api"});
+    sc.stdFlags({"-a","-n"});
+    SolverConfigs::registerBuiltinSolver(sc);
+  }
+  
+  SolverInstanceBase::Options* Gecode_SolverFactory::createOptions(void) {
+    return new GecodeOptions;
+  }
+  
+  SolverInstanceBase* Gecode_SolverFactory::doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt) {
+    return new GecodeSolverInstance(env, log, opt);
   }
 
-  string Gecode_SolverFactory::getVersion()
+  string Gecode_SolverFactory::getDescription(SolverInstanceBase::Options*)
   {
-    string v = "Gecode solver plugin, compiled  " __DATE__ "  " __TIME__;
+    string v = "Gecode solver plugin, compiled " __DATE__ ", using: Gecode version "+string(GECODE_VERSION);
     return v;
   }
 
-  bool Gecode_SolverFactory::processOption(int& i, int argc, const char** argv)
+  string Gecode_SolverFactory::getVersion(SolverInstanceBase::Options*)
   {
+    return string(GECODE_VERSION);
+  }
+
+  bool Gecode_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv)
+  {
+    GecodeOptions& _opt = static_cast<GecodeOptions&>(*opt);
     if (string(argv[i])=="--allow-unbounded-vars") {
-      _options.setBoolParam(std::string("allow_unbounded_vars"), true);
+      _opt.allow_unbounded_vars=true;
     } else if (string(argv[i])=="--only-range-domains") {
-      _options.setBoolParam(std::string("only-range-domains"), true);
+      _opt.only_range_domains=true;
     } else if (string(argv[i])=="--sac") {
-      _options.setBoolParam(std::string("sac"), true);
+      _opt.sac = true;
     } else if (string(argv[i])=="--shave") {
-      _options.setBoolParam(std::string("shave"), true);
+      _opt.shave = true;
     } else if (string(argv[i])=="--pre-passes") {
-      if (++i==argc) return false;
-      int passes = atoi(argv[i]);
+      if (++i==argv.size()) return false;
+      int passes = atoi(argv[i].c_str());
       if(passes >= 0)
-        _options.setIntParam(std::string("pre_passes"), passes);
+        _opt.pre_passes = passes;
     } else if (string(argv[i])=="-a") {
-      _options.setBoolParam(std::string("all_solutions"), true);
+      _opt.all_solutions = true;
     } else if (string(argv[i])=="-n") {
-      if (++i==argc) return false;
-      int n = atoi(argv[i]);
+      if (++i==argv.size()) return false;
+      int n = atoi(argv[i].c_str());
       if(n >= 0)
-        _options.setIntParam(std::string("n_solutions"), n);
+        _opt.n_solutions = n;
     } else if (string(argv[i])=="--node") {
-      if (++i==argc) return false;
-      int nodes = atoi(argv[i]);
+      if (++i==argv.size()) return false;
+      int nodes = atoi(argv[i].c_str());
       if(nodes >= 0)
-        _options.setIntParam(std::string("nodes"), nodes);
+        _opt.nodes = nodes;
     } else if (string(argv[i])=="--fail") {
-      if (++i==argc) return false;
-      int fails = atoi(argv[i]);
+      if (++i==argv.size()) return false;
+      int fails = atoi(argv[i].c_str());
       if(fails >= 0)
-        _options.setIntParam(std::string("fails"), fails);
+        _opt.fails = fails;
     } else if (string(argv[i])=="--time") {
-      if (++i==argc) return false;
-      int time = atoi(argv[i]);
+      if (++i==argv.size()) return false;
+      int time = atoi(argv[i].c_str());
       if(time >= 0)
-        _options.setIntParam(std::string("time"), time);
+        _opt.time = time;
     } else {
       return false;
     }
@@ -133,8 +144,8 @@ namespace MiniZinc {
     virtual Gecode::Search::Statistics statistics(void) { return e.statistics(); }
   };
 
-     GecodeSolverInstance::GecodeSolverInstance(Env& env, std::ostream& log, const Options& options)
-       : SolverInstanceImpl<GecodeSolver>(env,log,options), _n_found_solutions(0),
+    GecodeSolverInstance::GecodeSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt)
+       : SolverInstanceImpl<GecodeSolver>(env,log,opt), _n_found_solutions(0),
        _current_space(NULL),
        _solution(NULL), engine(NULL) {
        registerConstraints();
@@ -150,8 +161,8 @@ namespace MiniZinc {
     void GecodeSolverInstance::registerConstraint(std::string name, poster p) {
       std::stringstream ss;
       ss << "gecode_" << name;
-      _constraintRegistry.add(ASTString(ss.str()), p);
-      _constraintRegistry.add(ASTString(name), p);
+      _constraintRegistry.add(ss.str(), p);
+      _constraintRegistry.add(name, p);
     }
 
     void GecodeSolverInstance::registerConstraints(void) {
@@ -354,7 +365,49 @@ namespace MiniZinc {
       registerConstraint("float_log2",GecodeConstraints::p_float_log2);
       registerConstraint("float_sin",GecodeConstraints::p_float_sin);
       registerConstraint("float_tan",GecodeConstraints::p_float_tan);
-#endif		
+#endif
+#ifdef GECODE_HAS_SET_VARS
+      registerConstraint("set_eq", GecodeConstraints::p_set_eq);
+      registerConstraint("set_le", GecodeConstraints::p_set_le);
+      registerConstraint("set_lt", GecodeConstraints::p_set_lt);
+      registerConstraint("equal", GecodeConstraints::p_set_eq);
+      registerConstraint("set_ne", GecodeConstraints::p_set_ne);
+      registerConstraint("set_union", GecodeConstraints::p_set_union);
+      registerConstraint("array_set_element", GecodeConstraints::p_array_set_element);
+      registerConstraint("array_var_set_element", GecodeConstraints::p_array_set_element);
+      registerConstraint("set_intersect", GecodeConstraints::p_set_intersect);
+      registerConstraint("set_diff", GecodeConstraints::p_set_diff);
+      registerConstraint("set_symdiff", GecodeConstraints::p_set_symdiff);
+      registerConstraint("set_subset", GecodeConstraints::p_set_subset);
+      registerConstraint("set_superset", GecodeConstraints::p_set_superset);
+      registerConstraint("set_card", GecodeConstraints::p_set_card);
+      registerConstraint("set_in", GecodeConstraints::p_set_in);
+      registerConstraint("set_eq_reif", GecodeConstraints::p_set_eq_reif);
+      registerConstraint("set_le_reif", GecodeConstraints::p_set_le_reif);
+      registerConstraint("set_lt_reif", GecodeConstraints::p_set_lt_reif);
+      registerConstraint("equal_reif", GecodeConstraints::p_set_eq_reif);
+      registerConstraint("set_ne_reif", GecodeConstraints::p_set_ne_reif);
+      registerConstraint("set_subset_reif", GecodeConstraints::p_set_subset_reif);
+      registerConstraint("set_superset_reif", GecodeConstraints::p_set_superset_reif);
+      registerConstraint("set_in_reif", GecodeConstraints::p_set_in_reif);
+      registerConstraint("set_in_imp", GecodeConstraints::p_set_in_imp);
+      registerConstraint("disjoint", GecodeConstraints::p_set_disjoint);
+      registerConstraint("link_set_to_booleans", GecodeConstraints::p_link_set_to_booleans);
+      registerConstraint("array_set_union", GecodeConstraints::p_array_set_union);
+      registerConstraint("array_set_partition", GecodeConstraints::p_array_set_partition);
+      registerConstraint("set_convex", GecodeConstraints::p_set_convex);
+      registerConstraint("array_set_seq", GecodeConstraints::p_array_set_seq);
+      registerConstraint("array_set_seq_union", GecodeConstraints::p_array_set_seq_union);
+      registerConstraint("array_set_element_union", GecodeConstraints::p_array_set_element_union);
+      registerConstraint("array_set_element_intersect", GecodeConstraints::p_array_set_element_intersect);
+      registerConstraint("array_set_element_intersect_in", GecodeConstraints::p_array_set_element_intersect_in);
+      registerConstraint("array_set_element_partition", GecodeConstraints::p_array_set_element_partition);
+      registerConstraint("int_set_channel", GecodeConstraints::p_int_set_channel);
+      registerConstraint("range", GecodeConstraints::p_range);
+      registerConstraint("set_weights", GecodeConstraints::p_weights);
+      registerConstraint("inverse_set", GecodeConstraints::p_inverse_set);
+      registerConstraint("precede_set", GecodeConstraints::p_precede_set);
+#endif
     }
 
   inline void GecodeSolverInstance::insertVar(Id* id, GecodeVariable gv) {
@@ -368,14 +421,15 @@ namespace MiniZinc {
   }
 
   void GecodeSolverInstance::processFlatZinc(void) {
-    _only_range_domains = _options.getBoolParam(std::string("only-range-domains"), false);
-    _run_sac = _options.getBoolParam(std::string("sac"), false);
-    _run_shave = _options.getBoolParam(std::string("shave"), false);
-    _pre_passes = _options.getIntParam(std::string("pre_passes"), 1);
-    _print_stats = _options.getBoolParam(std::string("statistics"), false);
-    _all_solutions = _options.getBoolParam(std::string("all_solutions"), false);
-    _n_max_solutions = _options.getIntParam(std::string("n_solutions"), 1);
-    _allow_unbounded_vars = _options.getBoolParam(std::string("allow_unbounded_vars"), false);
+    GecodeOptions& _opt = static_cast<GecodeOptions&>(*_options);
+    _only_range_domains = _opt.only_range_domains;
+    _run_sac = _opt.sac;
+    _run_shave = _opt.shave;
+    _pre_passes = _opt.pre_passes;
+    _print_stats = _opt.statistics;
+    _all_solutions = _opt.all_solutions;
+    _n_max_solutions = _opt.n_solutions;
+    _allow_unbounded_vars = _opt.allow_unbounded_vars;
     _current_space = new FznSpace();
 
     // iterate over VarDecls of the flat model and create variables
@@ -384,9 +438,29 @@ namespace MiniZinc {
         // check if it has an output-annotation
         VarDecl* vd = it->e();
         if(!vd->ann().isEmpty()) {
-          if(vd->ann().containsCall(constants().ann.output_array.aststr()) ||
-              vd->ann().contains(constants().ann.output_var)
-            ) {
+          if(vd->ann().containsCall(constants().ann.output_array.aststr())) {
+            ArrayLit* al = vd->e()->dyn_cast<ArrayLit>();
+            if(!al) {
+              std::stringstream ssm;
+              ssm << "GecodeSolverInstance::processFlatZinc: Error: Array without right hand side: " << *vd->id() << std::endl;
+              throw InternalError(ssm.str());
+            }
+            for(int i=0; i<al->size(); i++) {
+              if(Id* id = (*al)[i]->dyn_cast<Id>()) {
+                GecodeVariable var = resolveVar(id);
+                if(var.isint()) {
+                    _current_space->iv_introduced[var.index()] = false;
+                } else if(var.isbool()) {
+                    _current_space->bv_introduced[var.index()] = false;
+                } else if(var.isfloat()) {
+                    _current_space->fv_introduced[var.index()] = false;
+                } else if(var.isset()) {
+                    _current_space->sv_introduced[var.index()] = false;
+                }
+              }
+            }
+            _varsWithOutput.push_back(vd);
+          } else if (vd->ann().contains(constants().ann.output_var)) {
             _varsWithOutput.push_back(vd);
           }
         }
@@ -526,6 +600,18 @@ namespace MiniZinc {
           isDefined = MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str().str()) != NULL;
           _current_space->fv_defined.push_back(isDefined);
 #endif
+#ifdef GECODE_HAS_SET_VARS
+        } else if(vd->type().isintset()) {
+          Expression* domain = ti->domain();
+          auto d = arg2intset(_env.envi(), domain);
+          SetVar setVar(*this->_current_space, Gecode::IntSet::empty, d);
+          _current_space->sv.push_back(setVar);
+          isIntroduced = it->e()->introduced() || (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced.str()) != NULL);
+          _current_space->sv_introduced.push_back(isIntroduced);
+          isDefined = MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str().str()) != NULL;
+          _current_space->sv_defined.push_back(isDefined);
+          insertVar(it->e()->id(), GecodeVariable(GecodeVariable::SET_TYPE, _current_space->sv.size()-1));
+#endif
         } else {
           std::stringstream ssm;
           ssm << "Type " << *ti << " is currently not supported by Gecode." << std::endl;
@@ -661,6 +747,21 @@ namespace MiniZinc {
     IntSet d(isr_g);
     return d;
    }
+  IntSetArgs
+  GecodeSolverInstance::arg2intsetargs(EnvI& envi, Expression* arg, int offset) {
+    ArrayLit* a = arg2arraylit(arg);
+    if (a->size() == 0) {
+      IntSetArgs emptyIa(0);
+      return emptyIa;
+    }
+    IntSetArgs ia(a->size()+offset);
+    for (int i=offset; i--;)
+      ia[i] = IntSet::empty;
+    for (int i=a->size(); i--;) {
+      ia[i+offset] = arg2intset(envi, (*a)[i]);
+    }
+    return ia;
+  }
 
   Gecode::IntVarArgs
   GecodeSolverInstance::arg2intvarargs(Expression* arg, int offset) {
@@ -824,7 +925,35 @@ namespace MiniZinc {
     }
     return singleInt==-1 || a->length() > 1;
   }
-
+#ifdef GECODE_HAS_SET_VARS
+  SetVar
+  GecodeSolverInstance::arg2setvar(Expression* e) {
+    SetVar x0;
+    if (!e->type().isvar()) {
+      Gecode::IntSet d = arg2intset(_env.envi(), e);
+      x0 = SetVar(*this->_current_space, d, d);
+    } else {
+      GecodeVariable var = resolveVar(getVarDecl(e));
+      assert(var.isset());
+      x0 = var.setVar(_current_space);
+    }
+    return x0;
+  }
+  Gecode::SetVarArgs
+  GecodeSolverInstance::arg2setvarargs(Expression* arg, int offset, int doffset,
+                                       const Gecode::IntSet& od) {
+    ArrayLit* a = arg2arraylit(arg);
+    SetVarArgs ia(a->size()+offset);
+    for (int i=offset; i--;) {
+      Gecode::IntSet d = i<doffset ? od : Gecode::IntSet::empty;
+      ia[i] = SetVar(*this->_current_space, d, d);
+    }
+    for (int i=a->size(); i--;) {
+      ia[i+offset] = arg2setvar((*a)[i]);
+    }
+    return ia;
+  }
+#endif
 #ifdef GECODE_HAS_FLOAT_VARS
   Gecode::FloatValArgs
   GecodeSolverInstance::arg2floatargs(Expression* arg, int offset) {
@@ -984,6 +1113,30 @@ namespace MiniZinc {
     id = id->decl()->id();
     if(id->type().isvar()) {
       GecodeVariable var = resolveVar(id->decl()->id());
+#ifdef GECODE_HAS_SET_VARS
+      if(id->type().is_set()) {
+        SetVar& sv = var.setVar(_solution);
+        assert(sv.assigned());
+        SetVarGlbRanges svr(sv);
+        assert(svr());
+
+        IntVal mi = svr.min();
+        IntVal ma = svr.max();
+        ++svr;
+        vector<IntVal> vals;
+        if (svr()) {
+          SetVarGlbValues svv(sv);
+          IntVal i = svv.val();
+          vals.push_back(i);
+          ++svv;
+          for (; svv(); ++svv)
+            vals.push_back(svv.val());
+          return new SetLit(Location().introduce(), IntSetVal::a(vals));
+        } else {
+          return new SetLit(Location().introduce(), IntSetVal::a(mi, ma));
+        }
+      }
+#endif
       switch (id->type().bt()) {
         case Type::BT_INT:
           assert(var.intVar(_solution).assigned());
@@ -1006,6 +1159,7 @@ namespace MiniZinc {
   void
   GecodeSolverInstance::prepareEngine(void) {
     GCLock lock;
+    GecodeOptions& _opt = static_cast<GecodeOptions&>(*_options);
     if (engine==NULL) {
       // TODO: check what we need to do options-wise
       std::vector<Expression*> branch_vars;
@@ -1041,17 +1195,17 @@ namespace MiniZinc {
           assert(false);
       }
 
-      int seed = _options.getIntParam("seed", 1);
-      double decay = _options.getFloatParam("decay", 0.5);
+      int seed = _opt.seed;
+      double decay = _opt.decay;
       
       createBranchers(_flat->solveItem()->ann(), optSearch,
                       seed, decay,
                       false, /* ignoreUnknown */
                       std::cerr);
       
-      int nodeStop = _options.getIntParam("nodes", 0);
-      int failStop = _options.getIntParam("fails", 0);
-      int timeStop = _options.getIntParam("time", 0);
+      int nodeStop = _opt.nodes;
+      int failStop = _opt.fails;
+      int timeStop = _opt.time;
 
       engine_options.stop = Driver::CombinedStop::create(nodeStop,
                                             failStop,

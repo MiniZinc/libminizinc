@@ -332,8 +332,8 @@ namespace MiniZinc {
     }
   }
   
-  template<class Eval>
-  typename Eval::Val eval_call(EnvI& env, Call* ce) {
+  template<class Eval, class CallClass=Call>
+  typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
     std::vector<Expression*> previousParameters(ce->decl()->params().size());
     std::vector<Expression*> params(ce->decl()->params().size());
     for (unsigned int i=0; i<ce->decl()->params().size(); i++) {
@@ -448,12 +448,21 @@ namespace MiniZinc {
           ret->type(e->type());
           return ret;
         } else {
+          if (bo->decl() && bo->decl()->e()) {
+            return eval_call<EvalArrayLitCopy,BinOp>(env,bo);
+          }
           throw EvalError(env, e->loc(), "not an array expression", bo->opToString());
         }
       }
       break;
     case Expression::E_UNOP:
-      throw EvalError(env, e->loc(), "not an array expression");
+      {
+        UnOp* uo = e->cast<UnOp>();
+        if (uo->decl() && uo->decl()->e()) {
+          return eval_call<EvalArrayLitCopy,UnOp>(env,uo);
+        }
+        throw EvalError(env, e->loc(), "not an array expression");
+      }
     case Expression::E_CALL:
       {
         Call* ce = e->cast<Call>();
@@ -557,7 +566,6 @@ namespace MiniZinc {
     case Expression::E_TIID:
     case Expression::E_VARDECL:
     case Expression::E_TI:
-    case Expression::E_UNOP:
       throw EvalError(env, e->loc(),"not a set of int expression");
       break;
     case Expression::E_ARRAYLIT:
@@ -600,6 +608,9 @@ namespace MiniZinc {
     case Expression::E_BINOP:
       {
         BinOp* bo = e->cast<BinOp>();
+        if (bo->decl() && bo->decl()->e()) {
+          return eval_call<EvalIntSet,BinOp>(env,bo);
+        }
         Expression* lhs = eval_par(env, bo->lhs());
         Expression* rhs = eval_par(env, bo->rhs());
         if (lhs->type().isintset() && rhs->type().isintset()) {
@@ -644,6 +655,14 @@ namespace MiniZinc {
         }
       }
       break;
+    case Expression::E_UNOP:
+      {
+        UnOp* uo = e->cast<UnOp>();
+        if (uo->decl() && uo->decl()->e()) {
+          return eval_call<EvalIntSet,UnOp>(env,uo);
+        }
+        throw EvalError(env, e->loc(),"not a set of int expression");
+      }
     case Expression::E_CALL:
       {
         Call* ce = e->cast<Call>();
@@ -698,7 +717,6 @@ namespace MiniZinc {
       case Expression::E_TIID:
       case Expression::E_VARDECL:
       case Expression::E_TI:
-      case Expression::E_UNOP:
         throw EvalError(env, e->loc(),"not a set of float expression");
         break;
       case Expression::E_ARRAYLIT:
@@ -741,6 +759,9 @@ namespace MiniZinc {
       case Expression::E_BINOP:
       {
         BinOp* bo = e->cast<BinOp>();
+        if (bo->decl() && bo->decl()->e()) {
+          return eval_call<EvalFloatSet,BinOp>(env,bo);
+        }
         Expression* lhs = eval_par(env, bo->lhs());
         Expression* rhs = eval_par(env, bo->rhs());
         if (lhs->type().isfloatset() && rhs->type().isfloatset()) {
@@ -783,6 +804,14 @@ namespace MiniZinc {
         }
       }
         break;
+      case Expression::E_UNOP:
+      {
+        UnOp* uo = e->cast<UnOp>();
+        if (uo->decl() && uo->decl()->e()) {
+          return eval_call<EvalFloatSet,UnOp>(env,uo);
+        }
+        throw EvalError(env, e->loc(),"not a set of float expression");
+      }
       case Expression::E_CALL:
       {
         Call* ce = e->cast<Call>();
@@ -857,11 +886,19 @@ namespace MiniZinc {
         {
           BinOp* bo = e->cast<BinOp>();
           Expression* lhs = bo->lhs();
+          if (lhs->type().bt()==Type::BT_TOP)
+            lhs = eval_par(env,lhs);
           Expression* rhs = bo->rhs();
+          if (rhs->type().bt()==Type::BT_TOP)
+            rhs = eval_par(env,rhs);
           if ( bo->op()==BOT_EQ && (lhs->type().isopt() || rhs->type().isopt()) ) {
             if (lhs == constants().absent || rhs==constants().absent)
               return lhs==rhs;
           }
+          if (bo->decl() && bo->decl()->e()) {
+            return eval_call<EvalBoolVal,BinOp>(env,bo);
+          }
+
           if (lhs->type().isbool() && rhs->type().isbool()) {
             try {
               switch (bo->op()) {
@@ -1014,6 +1051,9 @@ namespace MiniZinc {
       case Expression::E_UNOP:
         {
           UnOp* uo = e->cast<UnOp>();
+          if (uo->decl() && uo->decl()->e()) {
+            return eval_call<EvalBoolVal,UnOp>(env,uo);
+          }
           bool v0 = eval_bool(env,uo->e());
           switch (uo->op()) {
           case UOT_NOT: return !v0;
@@ -1082,7 +1122,6 @@ namespace MiniZinc {
       case Expression::E_TIID:
       case Expression::E_VARDECL:
       case Expression::E_TI:
-      case Expression::E_UNOP:
         throw EvalError(env, e->loc(),"not a set of bool expression");
         break;
       case Expression::E_ARRAYLIT:
@@ -1125,6 +1164,9 @@ namespace MiniZinc {
       case Expression::E_BINOP:
       {
         BinOp* bo = e->cast<BinOp>();
+        if (bo->decl() && bo->decl()->e()) {
+          return eval_call<EvalBoolSet,BinOp>(env,bo);
+        }
         Expression* lhs = eval_par(env, bo->lhs());
         Expression* rhs = eval_par(env, bo->rhs());
         if (lhs->type().isintset() && rhs->type().isintset()) {
@@ -1168,6 +1210,14 @@ namespace MiniZinc {
         }
       }
         break;
+      case Expression::E_UNOP:
+      {
+        UnOp* uo = e->cast<UnOp>();
+        if (uo->decl() && uo->decl()->e()) {
+          return eval_call<EvalBoolSet,UnOp>(env,uo);
+        }
+        throw EvalError(env, e->loc(),"not a set of bool expression");
+      }
       case Expression::E_CALL:
       {
         Call* ce = e->cast<Call>();
@@ -1246,6 +1296,9 @@ namespace MiniZinc {
         case Expression::E_BINOP:
         {
           BinOp* bo = e->cast<BinOp>();
+          if (bo->decl() && bo->decl()->e()) {
+            return eval_call<EvalIntVal,BinOp>(env,bo);
+          }
           IntVal v0 = eval_int(env,bo->lhs());
           IntVal v1 = eval_int(env,bo->rhs());
           switch (bo->op()) {
@@ -1267,6 +1320,9 @@ namespace MiniZinc {
         case Expression::E_UNOP:
         {
           UnOp* uo = e->cast<UnOp>();
+          if (uo->decl() && uo->decl()->e()) {
+            return eval_call<EvalIntVal,UnOp>(env,uo);
+          }
           IntVal v0 = eval_int(env,uo->e());
           switch (uo->op()) {
             case UOT_PLUS: return v0;
@@ -1356,6 +1412,9 @@ namespace MiniZinc {
       case Expression::E_BINOP:
       {
         BinOp* bo = e->cast<BinOp>();
+        if (bo->decl() && bo->decl()->e()) {
+          return eval_call<EvalFloatVal,BinOp>(env,bo);
+        }
         FloatVal v0 = eval_float(env,bo->lhs());
         FloatVal v1 = eval_float(env,bo->rhs());
         switch (bo->op()) {
@@ -1373,6 +1432,9 @@ namespace MiniZinc {
       case Expression::E_UNOP:
       {
         UnOp* uo = e->cast<UnOp>();
+        if (uo->decl() && uo->decl()->e()) {
+          return eval_call<EvalFloatVal,UnOp>(env,uo);
+        }
         FloatVal v0 = eval_float(env,uo->e());
         switch (uo->op()) {
           case UOT_PLUS: return v0;
@@ -1452,6 +1514,9 @@ namespace MiniZinc {
       case Expression::E_BINOP:
       {
         BinOp* bo = e->cast<BinOp>();
+        if (bo->decl() && bo->decl()->e()) {
+          return eval_call<EvalString,BinOp>(env,bo);
+        }
         std::string v0 = eval_string(env,bo->lhs());
         std::string v1 = eval_string(env,bo->rhs());
         switch (bo->op()) {
@@ -1461,7 +1526,13 @@ namespace MiniZinc {
       }
         break;
       case Expression::E_UNOP:
+      {
+        UnOp* uo = e->cast<UnOp>();
+        if (uo->decl() && uo->decl()->e()) {
+          return eval_call<EvalString,UnOp>(env,uo);
+        }
         throw EvalError(env, e->loc(),"not a string expression");
+      }
         break;
       case Expression::E_CALL:
       {

@@ -39,8 +39,10 @@
 #ifdef _MSC_VER
 #include "Shlwapi.h"
 #pragma comment(lib, "Shlwapi.lib")
+#include "Shlobj.h"
 #else
 #include <dirent.h>
+#include <libgen.h>
 #endif
 
 namespace MiniZinc { namespace FileUtils {
@@ -119,7 +121,7 @@ namespace MiniZinc { namespace FileUtils {
 #endif
   }
 
-  std::string file_path(const std::string& filename) {
+  std::string file_path(const std::string& filename, const std::string& basePath) {
 #ifdef _MSC_VER
     LPSTR lpBuffer, lpFilePart;
     DWORD nBufferLength = GetFullPathName(filename.c_str(), 0,0,&lpFilePart);
@@ -127,7 +129,10 @@ namespace MiniZinc { namespace FileUtils {
       return 0;
     std::string ret;
     if (!GetFullPathName(filename.c_str(), nBufferLength, lpBuffer, &lpFilePart)) {
-      ret = "";
+      if (basePath.empty())
+        ret = filename;
+      else
+        ret = file_path(basePath+"/"+filename);
     } else {
       ret = std::string(lpBuffer);
     }
@@ -135,9 +140,28 @@ namespace MiniZinc { namespace FileUtils {
     return ret;
 #else
     char* rp = realpath(filename.c_str(), NULL);
+    if (rp==NULL) {
+      if (basePath.empty())
+        return filename;
+      else
+        return file_path(basePath+"/"+filename);
+    }
     std::string rp_s(rp);
     free(rp);
     return rp_s;
+#endif
+  }
+  
+  std::string dir_name(const std::string& filename) {
+#ifdef _MSC_VER
+    size_t pos = filename.find_last_of("\\/");
+    return (pos==std::string::npos) ? "" : filename.substr(0,pos);
+#else
+    char* fn = strdup(filename.c_str());
+    char* dn = dirname(fn);
+    std::string ret(dn);
+    free(fn);
+    return ret;
 #endif
   }
 
@@ -187,6 +211,94 @@ namespace MiniZinc { namespace FileUtils {
     return entries;
   }
 
+  std::string share_directory(void) {
+    if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
+      return std::string(MZNSTDLIBDIR);
+    }
+    std::string mypath = FileUtils::progpath();
+    int depth = 0;
+    for (unsigned int i=0; i<mypath.size(); i++)
+      if (mypath[i]=='/' || mypath[i]=='\\')
+        depth++;
+    for (int i=0; i<=depth; i++) {
+      if (FileUtils::file_exists(mypath+"/share/minizinc/std/builtins.mzn"))
+        return mypath+"/share/minizinc";
+      mypath += "/..";
+    }
+    return "";
+  }
+  
+  std::string user_config_dir(void) {
+#ifdef _MSC_VER
+    HRESULT hr;
+    PWSTR pszPath = NULL;
+    
+    hr = SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, NULL, &pszPath);
+    if (SUCCEEDED(hr)) {
+      int charsRequired = WideCharToMultiByte(CP_ACP, 0, pszPath, -1, 0, 0, 0, 0);
+      std::string configPath;
+      if (charsRequired > 0) {
+        char* tmp = new char[charsRequired];
+        if (WideCharToMultiByte(CP_ACP, 0, pszPath, -1, tmp, charsRequired, 0, 0) != 0) {
+          tmp[charsRequired-1]=0;
+          configPath=tmp;
+        }
+        delete[] tmp;
+      }
+      CoTaskMemFree(pszPath);
+      if (configPath.empty()) {
+        return "";
+      } else {
+        return configPath+"/MiniZinc";
+      }
+    }
+    return "";
+#else
+    std::string homedir(getenv("HOME"));
+    if (homedir.empty()) {
+      return "";
+    }
+    return homedir+"/.minizinc";
+#endif
+  }
+
+  std::string user_config_file(void) {
+    return user_config_dir()+"/Preferences";
+  }
+
+  TmpFile::TmpFile(const std::string& ext) {
+#ifdef _WIN32
+    TCHAR szTempFileName[MAX_PATH];
+    TCHAR lpTempPathBuffer[MAX_PATH];
+    
+    GetTempPath(MAX_PATH, lpTempPathBuffer);
+    GetTempFileName(lpTempPathBuffer,
+                    "tmp_mzn_", 0, szTempFileName);
+    
+    _name = szTempFileName;
+    MoveFile(_name.c_str(), (_name + ext).c_str());
+    _name += ext;
+#else
+    _tmpfile_desc = -1;
+    _name = "/tmp/mznfileXXXXXX"+ext;
+    char* tmpfile = strndup(_name.c_str(), _name.size());
+    _tmpfile_desc = mkstemps(tmpfile, ext.size());
+    if (_tmpfile_desc == -1) {
+      throw InternalError("Error occurred when creating temporary file");
+    }
+    _name = std::string(tmpfile);
+    ::free(tmpfile);
+#endif
+  }
+  
+  TmpFile::~TmpFile(void) {
+    remove(_name.c_str());
+#ifndef _WIN32
+    if (_tmpfile_desc != -1)
+      close(_tmpfile_desc);
+#endif
+  }
+  
   void inflateString(std::string& s) {
     unsigned char* cc = reinterpret_cast<unsigned char*>(&s[0]);
     // autodetect compressed string
@@ -287,19 +399,19 @@ namespace MiniZinc { namespace FileUtils {
   std::string encodeBase64(const std::string& s) {
     base64::encoder E;
     std::ostringstream oss;
-    oss << ":"; // add leading ":" to distinguish from valid MiniZinc code
+    oss << "@"; // add leading "@" to distinguish from valid MiniZinc code
     std::istringstream iss(s);
     E.encode(iss, oss);
     return oss.str();
   }
 
   std::string decodeBase64(const std::string& s) {
-    if (s.size()==0 || s[0] != ':')
+    if (s.size()==0 || s[0] != '@')
       throw InternalError("string is not base64 encoded");
     base64::decoder D;
     std::ostringstream oss;
     std::istringstream iss(s);
-    (void) iss.get(); // remove leading ":"
+    (void) iss.get(); // remove leading "@"
     D.decode(iss, oss);
     return oss.str();
   }

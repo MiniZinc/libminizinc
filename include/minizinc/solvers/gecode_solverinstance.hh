@@ -207,6 +207,23 @@ namespace MiniZinc {
   
   class GecodeEngine;
   
+  class GecodeOptions : public SolverInstanceBase::Options {
+  public:
+    bool allow_unbounded_vars = false;
+    bool only_range_domains = false;
+    bool sac = false;
+    bool shave = false;
+    int pre_passes = 0;
+    bool statistics = false;
+    bool all_solutions = false;
+    int n_solutions = 1;
+    int nodes = 0;
+    int fails = 0;
+    int time = 0;
+    int seed = 1;
+    double decay = 0.5;
+  };
+
   class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {   
   private:
     bool _print_stats;
@@ -235,7 +252,7 @@ namespace MiniZinc {
     GecodeEngine* engine;
     Gecode::Search::Options engine_options;
 
-    GecodeSolverInstance(Env& env, std::ostream& log, const Options& options);
+    GecodeSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
     virtual ~GecodeSolverInstance(void);
 
     virtual Status next(void);    
@@ -264,6 +281,8 @@ namespace MiniZinc {
     Gecode::IntArgs arg2boolargs(Expression* arg, int offset = 0);
     /// Convert \a n to IntSet
     Gecode::IntSet arg2intset(EnvI& envi, Expression* sl);
+    /// Convert \a n to IntSetArgs
+    Gecode::IntSetArgs arg2intsetargs(EnvI& envi, Expression* arg, int offset = 0);
     /// Convert \a arg to IntVarArgs
     Gecode::IntVarArgs arg2intvarargs(Expression* arg, int offset = 0);
     /// Convert \a arg to BoolVarArgs
@@ -272,6 +291,11 @@ namespace MiniZinc {
     Gecode::BoolVar arg2boolvar(Expression* e);
     /// Convert \a n to IntVar
     Gecode::IntVar arg2intvar(Expression* e);
+    /// Convert \a n to SetVar
+    Gecode::SetVar arg2setvar(Expression* e);
+    /// Convert \a arg to SetVarArgs
+    Gecode::SetVarArgs arg2setvarargs(Expression* arg, int offset = 0, int doffset = 0,
+                                      const Gecode::IntSet& od=Gecode::IntSet::empty);
      /// convert \a arg to an ArrayLit (throws InternalError if not possible)
     ArrayLit* arg2arraylit(Expression* arg);  
     /// Check if \a b is array of Booleans (or has a single integer)
@@ -325,8 +349,6 @@ namespace MiniZinc {
     void insertVar(Id* id, GecodeVariable gv);
 
   protected:
-    /// Flatzinc options // TODO: do we need specific Gecode options? Use MiniZinc::Options instead?
-    // FlatZincOptions* opts;
     void registerConstraints(void);
     void registerConstraint(std::string name, poster p);
 
@@ -362,6 +384,19 @@ namespace MiniZinc {
                                                         std::ostream& err
                                                        );
   };
+
+  class Gecode_SolverFactory: public SolverFactory {
+  public:
+    Gecode_SolverFactory(void);
+    SolverInstanceBase::Options* createOptions(void);
+    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
+    std::string getDescription(SolverInstanceBase::Options* opt=NULL);
+    std::string getVersion(SolverInstanceBase::Options* opt=NULL);
+    std::string getId( ) { return "org.minizinc.gecode"; }
+    virtual bool processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv);
+    void printHelp(std::ostream& os);
+  };
+
 }
 
 #endif

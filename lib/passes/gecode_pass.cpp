@@ -14,11 +14,11 @@
 
 namespace MiniZinc {
 
-  GecodePass::GecodePass(Options& g_opts) : gopts(g_opts) {}
+  GecodePass::GecodePass(GecodeOptions* g_opts) : gopts(g_opts) {}
 
   Env* GecodePass::run(Env* env, std::ostream& log) {
     try {
-      GecodeSolverInstance gecode(*env,log,gopts);
+      GecodeSolverInstance gecode(*env,log,new GecodeOptions(*gopts));
       gecode.processFlatZinc();
       gecode.presolve(env->flat());
     } catch(InternalError e) {

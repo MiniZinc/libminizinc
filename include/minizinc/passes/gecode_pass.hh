@@ -13,15 +13,16 @@
 #define __MINIZINC_GECODE_PASS_HH__
 
 #include <minizinc/flatten.hh>
-#include <minizinc/options.hh>
 
 namespace MiniZinc {
-
+  
+  class GecodeOptions;
+  
   class GecodePass : public Pass {
-    Options gopts;
+    GecodeOptions* gopts;
 
     public:
-    GecodePass(Options& gopts);
+    GecodePass(GecodeOptions* gopts);
 
     Env* run(Env* e, std::ostream& log);
   };

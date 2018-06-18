@@ -23,7 +23,7 @@
 #include <minizinc/htmlprinter.hh>
 #include <minizinc/typecheck.hh>
 #include <minizinc/astexception.hh>
-
+#include <minizinc/solver_config.hh>
 #include <minizinc/file_utils.hh>
 
 using namespace MiniZinc;
@@ -161,20 +161,12 @@ int main(int argc, char** argv) {
     goto error;
   }
   
-  if (std_lib_dir=="") {
-    std::string mypath = FileUtils::progpath();
-    if (!mypath.empty()) {
-      if (FileUtils::file_exists(mypath+"/share/minizinc/std/builtins.mzn")) {
-        std_lib_dir = mypath+"/share/minizinc";
-      } else if (FileUtils::file_exists(mypath+"/../share/minizinc/std/builtins.mzn")) {
-        std_lib_dir = mypath+"/../share/minizinc";
-      } else if (FileUtils::file_exists(mypath+"/../../share/minizinc/std/builtins.mzn")) {
-        std_lib_dir = mypath+"/../../share/minizinc";
-      }
-    }
+  if (std_lib_dir.empty()) {
+    SolverConfigs solver_configs(std::cerr);
+    std_lib_dir = solver_configs.mznlibDir();
   }
   
-  if (std_lib_dir=="") {
+  if (std_lib_dir.empty()) {
     std::cerr << "Error: unknown minizinc standard library directory.\n"
               << "Specify --stdlib-dir on the command line or set the\n"
               << "MZN_STDLIB_DIR environment variable.\n";

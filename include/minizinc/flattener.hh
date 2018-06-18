@@ -47,9 +47,9 @@ namespace MiniZinc {
     std::ostream& os;
     std::ostream& log;
   public:
-    Flattener(std::ostream& os, std::ostream& log, bool fOutputByDefault);
+    Flattener(std::ostream& os, std::ostream& log, const std::string& stdlibDir);
     ~Flattener();
-    bool processOption(int& i, const int argc, const char** argv);
+    bool processOption(int& i, std::vector<std::string>& argv);
     void printVersion(std::ostream& );
     void printHelp(std::ostream& );
 
@@ -60,14 +60,16 @@ namespace MiniZinc {
     bool get_flag_verbose() const { return flag_verbose; }
     void set_flag_statistics(bool f) { flag_statistics = f; }
     bool get_flag_statistics() const { return flag_statistics; }
+    void set_flag_output_by_default(bool f) { fOutputByDefault = f; }
     Env* getEnv() const { assert(pEnv.get()); return pEnv.get(); }
+    bool hasInputFiles(void) const { return !filenames.empty() || flag_stdinInput || !flag_solution_check_model.empty(); }
     
     SolverInstance::Status status = SolverInstance::UNKNOWN;
     
   private:
     Env* multiPassFlatten(const std::vector<std::unique_ptr<Pass> >& passes);
 
-    bool fOutputByDefault = true;      // if the class is used in mzn2fzn, write .fzn+.ozn by default
+    bool fOutputByDefault = false;      // if the class is used in mzn2fzn, write .fzn+.ozn by default
     std::vector<std::string> filenames;
     std::vector<std::string> datafiles;
     std::vector<std::string> includePaths;
@@ -109,9 +111,11 @@ namespace MiniZinc {
     bool flag_instance_check_only = false;
     bool flag_model_check_only = false;
     bool flag_model_interface_only = false;
+    bool flag_model_types_only = false;
     FlatteningOptions::OutputMode flag_output_mode = FlatteningOptions::OUTPUT_ITEM;
     bool flag_output_objective = false;
     std::string flag_solution_check_model;
+    bool flag_compile_solution_check_model = false;
     FlatteningOptions fopts;
 
     clock_t starttime01;

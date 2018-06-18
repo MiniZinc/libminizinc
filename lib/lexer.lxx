@@ -31,14 +31,38 @@ namespace MiniZinc{ class ParserLocation; }
 
 #include <minizinc/parser.hh>
 
+int utf8len(const char* s) {
+  int l=0;
+  for (int i=0; s[i] != '\0'; i++)
+    if ((s[i] & 0xc0) != 0x80)
+      l++;
+  return l;
+}
+
 int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
 #define YY_INPUT(buf, result, max_size) \
   result = yy_input_proc(buf, max_size, yyscanner);
 
 #define YY_USER_ACTION \
   { MiniZinc::ParserState* parm =  \
-    static_cast<MiniZinc::ParserState*>(yyget_extra(yyscanner)); \
-    yylloc->first_line(parm->lineno); yylloc->last_line(parm->lineno); \
+      static_cast<MiniZinc::ParserState*>(yyget_extra(yyscanner)); \
+    yylloc->first_line(yylloc->last_line()); \
+    yylloc->first_column(yylloc->last_column()+1); \
+    if(parm->hadNewline) { \
+      parm->hadNewline=false; \
+      parm->lineStartPos += parm->nTokenNextStart; \
+      parm->nTokenNextStart=1; \
+      yylloc->last_line(yylloc->last_line()+1); \
+      yylloc->first_line(yylloc->last_line()); \
+      yylloc->first_column(1); \
+    } \
+    if(yytext[0] == '\n') { \
+      parm->hadNewline=true; \
+      parm->nTokenNextStart+=0; \
+    } else { \
+      parm->nTokenNextStart+=yyleng; \
+    } \
+    yylloc->last_column(yylloc->first_column()+utf8len(yytext)-1); \
   }
 
 bool hexstrtointval(const char* s, long long int& v) {
@@ -70,15 +94,6 @@ bool strtofloatval(const char* s, double& v) {
   std::istringstream iss(s);
   iss >> v;
   return !iss.fail();
-}
-
-void beginToken(void* parm, YYLTYPE* yyloc, char* t) {
-  MiniZinc::ParserState* pp =
-    static_cast<MiniZinc::ParserState*>(parm);
-  int tokenLength = strlen(t);
-  yyloc->first_column(pp->nTokenNextStart);
-  pp->nTokenNextStart += tokenLength;
-  yyloc->last_column(pp->nTokenNextStart-1);
 }
 
 void clearBuffer(void* parm) {
@@ -117,353 +132,209 @@ char* bufferData(void* parm) {
 
 %%
 
-<*>\x0               { beginToken(yyget_extra(yyscanner), yylloc, yytext); return MZN_INVALID_NULL; }
+<*>\x0               { return MZN_INVALID_NULL; }
 
-\xa               { MiniZinc::ParserState* parm =
-                      static_cast<MiniZinc::ParserState*>(
-                        yyget_extra(yyscanner));
-                    parm->lineno++;
-                    parm->lineStartPos += parm->nTokenNextStart;
-                    parm->nTokenNextStart=1;
-                  }
-[ \f\xd\t]         { /* ignore whitespace */
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                  }
+\xa               { }
+[ \f\xd\t]        { /* ignore whitespace */ }
 
-"/**"             { yy_push_state(doccomment,yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
+"/**"             { yy_push_state(doccomment,yyscanner); clearBuffer(yyget_extra(yyscanner)); }
 <doccomment>{
-  "*/"            { beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
+  "*/"            { yylval->sValue = bufferData(yyget_extra(yyscanner));
                     yy_pop_state(yyscanner); return MZN_DOC_COMMENT; }
-  [^*\xa]+       { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
-  "*"             { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
-  \xa               { MiniZinc::ParserState* parm =
-    static_cast<MiniZinc::ParserState*>(
-    yyget_extra(yyscanner));
-    parm->lineno++;
-    parm->lineStartPos += parm->nTokenNextStart;
-    parm->nTokenNextStart=1;
-    appendBufferString(yyget_extra(yyscanner), yytext);
-  }
+  [^*\xa]+        { appendBufferString(yyget_extra(yyscanner), yytext); }
+  "*"             { appendBufferString(yyget_extra(yyscanner), yytext); }
+  \xa             { appendBufferString(yyget_extra(yyscanner), yytext); }
 }
 
-"/***"             { yy_push_state(doccomment_file,yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
+"/***"             { yy_push_state(doccomment_file,yyscanner); clearBuffer(yyget_extra(yyscanner)); }
 <doccomment_file>{
-  "*/"            { beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
+  "*/"             { yylval->sValue = bufferData(yyget_extra(yyscanner));
     yy_pop_state(yyscanner); return MZN_DOC_FILE_COMMENT; }
-  [^*\xa]+       { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
-  "*"             { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
-  \xa               { MiniZinc::ParserState* parm =
-    static_cast<MiniZinc::ParserState*>(
-    yyget_extra(yyscanner));
-    parm->lineno++;
-    parm->lineStartPos += parm->nTokenNextStart;
-    parm->nTokenNextStart=1;
-    appendBufferString(yyget_extra(yyscanner), yytext);
-  }
+  [^*\xa]+         { appendBufferString(yyget_extra(yyscanner), yytext); }
+  "*"              { appendBufferString(yyget_extra(yyscanner), yytext); }
+  \xa              { appendBufferString(yyget_extra(yyscanner), yytext); }
 }
 
-"/*"              { yy_push_state(multilinecomment,yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); }
+"/*"              { yy_push_state(multilinecomment,yyscanner); }
 <multilinecomment>{
-  "*/"            { beginToken(yyget_extra(yyscanner), yylloc, yytext); yy_pop_state(yyscanner); }
-  [^*\xa]+       { beginToken(yyget_extra(yyscanner), yylloc, yytext); }
-  "*"             { beginToken(yyget_extra(yyscanner), yylloc, yytext); }
-  \xa               { MiniZinc::ParserState* parm =
-    static_cast<MiniZinc::ParserState*>(
-    yyget_extra(yyscanner));
-    parm->lineno++;
-    parm->lineStartPos += parm->nTokenNextStart;
-    parm->nTokenNextStart=1;
-  }
+  "*/"            { yy_pop_state(yyscanner); }
+  [^*\xa]+        { }
+  "*"             { }
+  \xa             { }
 }
 
 
-"["               { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_LEFT_BRACKET; }
-"[|"              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_LEFT_2D_BRACKET; }
-"]"               { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_RIGHT_BRACKET; }
-"|]"              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_RIGHT_2D_BRACKET; }
-%[^\xa]*          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    /* ignore comments */ }
+"["               { return MZN_LEFT_BRACKET; }
+"[|"              { return MZN_LEFT_2D_BRACKET; }
+"]"               { return MZN_RIGHT_BRACKET; }
+"|]"              { return MZN_RIGHT_2D_BRACKET; }
+%[^\xa]*          { /* ignore comments */ }
 
-"true"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->iValue = 1; return MZN_BOOL_LITERAL; }
-"false"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->iValue = 0; return MZN_BOOL_LITERAL; }
+"true"            { yylval->iValue = 1; return MZN_BOOL_LITERAL; }
+"false"           { yylval->iValue = 0; return MZN_BOOL_LITERAL; }
 
-0[xX]([0-9a-fA-F]*\.[0-9a-fA-F]+|[0-9a-fA-F]+\.)([pP][+-]?[0-9]+)|(0[xX][0-9a-fA-F]+[pP][+-]?[0-9]+)  { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+0[xX]([0-9a-fA-F]*\.[0-9a-fA-F]+|[0-9a-fA-F]+\.)([pP][+-]?[0-9]+)|(0[xX][0-9a-fA-F]+[pP][+-]?[0-9]+)  {
                   if (strtofloatval(yytext, yylval->dValue))
                   return MZN_FLOAT_LITERAL;
                   else
                   return MZN_INVALID_FLOAT_LITERAL;
                 }
 
-0[xX][0-9A-Fa-f]+  { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+0[xX][0-9A-Fa-f]+  {
                     if (hexstrtointval(yytext+2, yylval->iValue))
                       return MZN_INTEGER_LITERAL;
                     else
                       return MZN_INVALID_INTEGER_LITERAL;
                 }
-0o[0-7]+        { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+0o[0-7]+        {
                   if (octstrtointval(yytext+2, yylval->iValue))
                     return MZN_INTEGER_LITERAL;
                   else
                     return MZN_INVALID_INTEGER_LITERAL;
                 }
-[0-9]+          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+[0-9]+          {
                   if (fast_strtointval(yytext, yylval->iValue))
                     return MZN_INTEGER_LITERAL;
                   else
                     return MZN_INVALID_INTEGER_LITERAL;
                 }
 
-[0-9]+\.[0-9]+  { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+[0-9]+\.[0-9]+  {
                   if (strtofloatval(yytext, yylval->dValue))
                   return MZN_FLOAT_LITERAL;
                   else
                   return MZN_INVALID_FLOAT_LITERAL;
                 }
 [0-9]+\.[0-9]+[Ee][+-]?[0-9]+  {
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     if (strtofloatval(yytext, yylval->dValue))
                       return MZN_FLOAT_LITERAL;
                     else
                       return MZN_INVALID_FLOAT_LITERAL;
                   }
 [0-9]+[Ee][+-]?[0-9]+  {
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     if (strtofloatval(yytext, yylval->dValue))
                       return MZN_FLOAT_LITERAL;
                     else
                       return MZN_INVALID_FLOAT_LITERAL;
                   }
 [:;|{},\[\]\.]    {
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return *yytext; }
-\.\.              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_DOTDOT; }
-"'\.\.'"          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_DOTDOT_QUOTED; }
-::                { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_COLONCOLON; }
-_                 { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_UNDERSCORE; }
-"ann"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_ANN; }
-"annotation"      { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_ANNOTATION; }
-"any"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_ANY; }
-"array"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_ARRAY; }
-"bool"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_BOOL; }
-"case"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_CASE; }
-"constraint"      { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_CONSTRAINT; }
-"default"         { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_DEFAULT; }
-"div"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_IDIV; }
-"'div'"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_IDIV_QUOTED; }
-"diff"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_DIFF; }
-"'diff'"          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_DIFF_QUOTED; }
-"else"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_ELSE; }
-"elseif"          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_ELSEIF; }
-"endif"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_ENDIF; }
-"enum"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_ENUM; }
-"float"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_FLOAT; }
-"function"        { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_FUNCTION; }
-"if"              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_IF; }
-"include"         { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_INCLUDE; }
-"infinity"        { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_INFINITY;
-                  }
-"intersect"       { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_INTERSECT; }
-"'intersect'"     { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_INTERSECT_QUOTED; }
-"in"              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_IN; }
-"'in'"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_IN_QUOTED; }
-"int"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_INT; }
-"let"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_LET; }
-"list"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_LIST; }
-"maximize"        { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->bValue = false; return MZN_MAXIMIZE; }
-"minimize"        { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->bValue = true; return MZN_MINIMIZE; }
-"mod"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_MOD; }
-"'mod'"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_MOD_QUOTED; }
-"not"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_NOT; }
-"'not'"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_NOT_QUOTED; }
-"of"              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_OF; }
-"output"          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_OUTPUT; }
-"opt"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_OPT; }
-"par"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_PAR; }
-"predicate"       { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_PREDICATE; }
-"record"          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_RECORD; }
-"satisfy"         { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SATISFY; }
-"set"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SET; }
-"solve"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SOLVE; }
-"string"          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_STRING; }
-"subset"          { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SUBSET; }
-"'subset'"        { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SUBSET_QUOTED; }
-"superset"        { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SUPERSET; }
-"'superset'"      { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SUPERSET_QUOTED; }
-"symdiff"         { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SYMDIFF; }
-"'symdiff'"       { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SYMDIFF_QUOTED; }
-"test"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_TEST; }
-"then"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_THEN; }
-"tuple"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_TUPLE; }
-"type"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_TYPE; }
-"union"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_UNION; }
-"'union'"         { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_UNION_QUOTED; }
-"var"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_VAR; }
-"variant_record"  { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_VARIANT_RECORD; }
-"where"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_WHERE; }
-"xor"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_XOR; }
-"'xor'"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_XOR_QUOTED; }
-"+"               { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_PLUS; }
-"'+'"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_PLUS_QUOTED; }
-"-"               { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_MINUS; }
-"'-'"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_MINUS_QUOTED; }
-"*"               { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_MULT; }
-"'*'"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_MULT_QUOTED; }
-"/"               { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_DIV; }
-"'/'"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_DIV_QUOTED; }
-"++"              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_PLUSPLUS; }
-"'++'"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_PLUSPLUS_QUOTED; }
-"<>"              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_ABSENT; }
-"<"               { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_LE; }
-"'<'"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_LE_QUOTED; }
-"<="              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_LQ; }
-"'<='"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_LQ_QUOTED; }
-">"               { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_GR; }
-"'>'"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_GR_QUOTED; }
-">="              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_GQ; }
-"'>='"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_GQ_QUOTED; }
-"=="              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_EQ; }
-"'=='"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_EQ_QUOTED; }
-"="               { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_EQ; }
-"'='"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_EQ_QUOTED; }
-"!="              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_NQ; }
-"'!='"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_NQ_QUOTED; }
-"->"              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_IMPL; }
-"'->'"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_IMPL_QUOTED; }
-"<-"              { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_RIMPL; }
-"'<-'"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_RIMPL_QUOTED; }
-"<->"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_EQUIV; }
-"'<->'"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_EQUIV_QUOTED; }
-"\\/"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_OR; }
-"'\\/'"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_OR_QUOTED; }
-"/\\"             { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_AND; }
-"'/\\'"           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_AND_QUOTED; }
+\.\.              { return MZN_DOTDOT; }
+"'\.\.'"          { return MZN_DOTDOT_QUOTED; }
+::                { return MZN_COLONCOLON; }
+_                 { return MZN_UNDERSCORE; }
+"ann"             { return MZN_ANN; }
+"annotation"      { return MZN_ANNOTATION; }
+"any"             { return MZN_ANY; }
+"array"           { return MZN_ARRAY; }
+"bool"            { return MZN_BOOL; }
+"case"            { return MZN_CASE; }
+"constraint"      { return MZN_CONSTRAINT; }
+"default"         { return MZN_DEFAULT; }
+"div"             { return MZN_IDIV; }
+"'div'"           { return MZN_IDIV_QUOTED; }
+"diff"            { return MZN_DIFF; }
+"'diff'"          { return MZN_DIFF_QUOTED; }
+"else"            { return MZN_ELSE; }
+"elseif"          { return MZN_ELSEIF; }
+"endif"           { return MZN_ENDIF; }
+"enum"            { return MZN_ENUM; }
+"float"           { return MZN_FLOAT; }
+"function"        { return MZN_FUNCTION; }
+"if"              { return MZN_IF; }
+"include"         { return MZN_INCLUDE; }
+"infinity"        { return MZN_INFINITY; }
+"intersect"       { return MZN_INTERSECT; }
+"'intersect'"     { return MZN_INTERSECT_QUOTED; }
+"in"              { return MZN_IN; }
+"'in'"            { return MZN_IN_QUOTED; }
+"int"             { return MZN_INT; }
+"let"             { return MZN_LET; }
+"list"            { return MZN_LIST; }
+"maximize"        { yylval->bValue = false; return MZN_MAXIMIZE; }
+"minimize"        { yylval->bValue = true; return MZN_MINIMIZE; }
+"mod"             { return MZN_MOD; }
+"'mod'"           { return MZN_MOD_QUOTED; }
+"not"             { return MZN_NOT; }
+"'not'"           { return MZN_NOT_QUOTED; }
+"of"              { return MZN_OF; }
+"output"          { return MZN_OUTPUT; }
+"opt"             { return MZN_OPT; }
+"par"             { return MZN_PAR; }
+"predicate"       { return MZN_PREDICATE; }
+"record"          { return MZN_RECORD; }
+"satisfy"         { return MZN_SATISFY; }
+"set"             { return MZN_SET; }
+"solve"           { return MZN_SOLVE; }
+"string"          { return MZN_STRING; }
+"subset"          { return MZN_SUBSET; }
+"'subset'"        { return MZN_SUBSET_QUOTED; }
+"superset"        { return MZN_SUPERSET; }
+"'superset'"      { return MZN_SUPERSET_QUOTED; }
+"symdiff"         { return MZN_SYMDIFF; }
+"'symdiff'"       { return MZN_SYMDIFF_QUOTED; }
+"test"            { return MZN_TEST; }
+"then"            { return MZN_THEN; }
+"tuple"           { return MZN_TUPLE; }
+"type"            { return MZN_TYPE; }
+"union"           { return MZN_UNION; }
+"'union'"         { return MZN_UNION_QUOTED; }
+"var"             { return MZN_VAR; }
+"variant_record"  { return MZN_VARIANT_RECORD; }
+"where"           { return MZN_WHERE; }
+"xor"             { return MZN_XOR; }
+"'xor'"           { return MZN_XOR_QUOTED; }
+"+"               { return MZN_PLUS; }
+"'+'"             { return MZN_PLUS_QUOTED; }
+"-"               { return MZN_MINUS; }
+"'-'"             { return MZN_MINUS_QUOTED; }
+"*"               { return MZN_MULT; }
+"'*'"             { return MZN_MULT_QUOTED; }
+"/"               { return MZN_DIV; }
+"'/'"             { return MZN_DIV_QUOTED; }
+"++"              { return MZN_PLUSPLUS; }
+"'++'"            { return MZN_PLUSPLUS_QUOTED; }
+"<>"              { return MZN_ABSENT; }
+"<"               { return MZN_LE; }
+"'<'"             { return MZN_LE_QUOTED; }
+"<="              { return MZN_LQ; }
+"'<='"            { return MZN_LQ_QUOTED; }
+">"               { return MZN_GR; }
+"'>'"             { return MZN_GR_QUOTED; }
+">="              { return MZN_GQ; }
+"'>='"            { return MZN_GQ_QUOTED; }
+"=="              { return MZN_EQ; }
+"'=='"            { return MZN_EQ_QUOTED; }
+"="               { return MZN_EQ; }
+"'='"             { return MZN_EQ_QUOTED; }
+"!="              { return MZN_NQ; }
+"'!='"            { return MZN_NQ_QUOTED; }
+"->"              { return MZN_IMPL; }
+"'->'"            { return MZN_IMPL_QUOTED; }
+"<-"              { return MZN_RIMPL; }
+"'<-'"            { return MZN_RIMPL_QUOTED; }
+"<->"             { return MZN_EQUIV; }
+"'<->'"           { return MZN_EQUIV_QUOTED; }
+"\\/"             { return MZN_OR; }
+"'\\/'"           { return MZN_OR_QUOTED; }
+"/\\"             { return MZN_AND; }
+"'/\\'"           { return MZN_AND_QUOTED; }
 
-"~"[+*=-]           { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+"~"[+*=-]           {
                     yylval->sValue = strdup(yytext);
                     return MZN_QUOTED_IDENTIFIER; }
-"'~"[+*=-]"'"            { beginToken(yyget_extra(yyscanner), yylloc, yytext);
+"'~"[+*=-]"'"            {
                     yylval->sValue = strdup(yytext+1);
                     yylval->sValue[strlen(yytext)-2] = 0;
                     return MZN_IDENTIFIER; }
 
-"_objective"      {
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->sValue = strdup(yytext); return MZN_IDENTIFIER; }
+"_objective"      { yylval->sValue = strdup(yytext); return MZN_IDENTIFIER; }
 
 [A-Za-z][A-Za-z0-9_]* {
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->sValue = strdup(yytext); return MZN_IDENTIFIER; }
 "'"[^\\'\xa\xd\x0]*"'" {
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->sValue = strdup(yytext); return MZN_IDENTIFIER; }
 _[A-Za-z][A-Za-z0-9_]* {
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     MiniZinc::ParserState* parm =
                     static_cast<MiniZinc::ParserState*>(yyget_extra(yyscanner));
                     if (parm->isFlatZinc) {
@@ -492,43 +363,40 @@ _[A-Za-z][A-Za-z0-9_]* {
 "\xE2\x88\xA9"      { return MZN_INTERSECT; }
 
 $$[A-Za-z][A-Za-z0-9_]* {
-  beginToken(yyget_extra(yyscanner), yylloc, yytext);
   yylval->sValue = strdup(yytext+1); return MZN_TI_ENUM_IDENTIFIER; }
 
 $[A-Za-z][A-Za-z0-9_]* {
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->sValue = strdup(yytext+1); return MZN_TI_IDENTIFIER; }
 
-"(" { yy_push_state(bracket_exp,yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); return *yytext; }
-<bracket_exp>")" { yy_pop_state(yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); return *yytext; }
+"(" { yy_push_state(bracket_exp,yyscanner); return *yytext; }
+<bracket_exp>")" { yy_pop_state(yyscanner); return *yytext; }
 <quoted_exp>")" { yy_pop_state(yyscanner); yy_pop_state(yyscanner); yy_push_state(string_quote,yyscanner);
-                  beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
+                  clearBuffer(yyget_extra(yyscanner)); }
 
-\"                { yy_push_state(string,yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
-<string,string_quote>[^\\"\xa\xd\x0]* { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
-<string,string_quote>\\n         { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), '\n'); }
-<string,string_quote>\\t         { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), '\t'); }
-<string,string_quote>\\[\\']     { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
-<string,string_quote>\\[\\"]     { beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
-<string>\\"("       { beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
+\"                { yy_push_state(string,yyscanner); clearBuffer(yyget_extra(yyscanner)); }
+<string,string_quote>[^\\"\xa\xd\x0]* { appendBufferString(yyget_extra(yyscanner), yytext); }
+<string,string_quote>\\n         { appendBufferChar(yyget_extra(yyscanner), '\n'); }
+<string,string_quote>\\t         { appendBufferChar(yyget_extra(yyscanner), '\t'); }
+<string,string_quote>\\[\\']     { appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
+<string,string_quote>\\[\\"]     { appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
+<string>\\"("       { yylval->sValue = bufferData(yyget_extra(yyscanner));
                       yy_push_state(quoted_exp,yyscanner); return MZN_STRING_QUOTE_START; }
-<string_quote>\\"(" { beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
+<string_quote>\\"(" { yylval->sValue = bufferData(yyget_extra(yyscanner));
                       yy_push_state(quoted_exp,yyscanner); return MZN_STRING_QUOTE_MID; }
-<string>\"          { beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
+<string>\"          { yylval->sValue = bufferData(yyget_extra(yyscanner));
                       yy_pop_state(yyscanner); return MZN_STRING_LITERAL; }
-<string_quote>\"          { beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
+<string_quote>\"          { yylval->sValue = bufferData(yyget_extra(yyscanner));
                             yy_pop_state(yyscanner); return MZN_STRING_QUOTE_END; }
-<string,string_quote>. { beginToken(yyget_extra(yyscanner), yylloc, yytext); return (unsigned char)yytext[0]; }
-<string,string_quote><<EOF>> { yy_pop_state(yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); return MZN_UNTERMINATED_STRING; }
+<string,string_quote>. { return (unsigned char)yytext[0]; }
+<string,string_quote>[\xa\xd\x0] { return MZN_END_OF_LINE_IN_STRING; }
+<string,string_quote><<EOF>> { yy_pop_state(yyscanner); return MZN_UNTERMINATED_STRING; }
 
 `[A-Za-z][A-Za-z0-9_]*` {
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->sValue = strdup(yytext+1);
                     yylval->sValue[strlen(yytext)-2] = 0; 
                     return MZN_QUOTED_IDENTIFIER; }
 
-.                 { beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return (unsigned char)yytext[0]; }
+.                 { return (unsigned char)yytext[0]; }
 
 %%
 int yy_input_proc(char* buf, int size, yyscan_t yyscanner) {

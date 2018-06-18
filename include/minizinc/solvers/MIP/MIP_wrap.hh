@@ -36,21 +36,6 @@ double computeSparse( int n, const int* ind, const double* coef, const double* d
 }
 
 class MIP_wrapper;
-/// Namespace MIP_WrapperFactory providing static service functions
-/// The implementation of a MIP wrapper should define these
-/// !!! Assuming it's always 1 MIP solver in a static module
-namespace MIP_WrapperFactory {
-    /// static functions creating a MIP wrapper, defined in a .cpp
-    MIP_wrapper* GetDefaultMIPWrapper();
-//     MIP_wrapper* GetDefaultMILPWrapper();
-//     MIP_wrapper* GetDefaultMIQPWrapper();
-//     MIP_wrapper* GetCplexMILPWrapper();
-//     Wrap_MIP* GetCplexMIQP();
-
-    bool processOption(int& i, int argc, const char** argv);
-    std::string getVersion( );
-    void printHelp(std::ostream& );
-};
 
 /// An abstract MIP wrapper.
 /// Does not include MZN stuff so can be used independently

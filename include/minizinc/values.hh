@@ -23,6 +23,14 @@
 #include <limits.h>
 #include <cmath>
 
+#ifdef min
+  #undef min
+#endif
+#ifdef max
+  #undef max
+#endif
+
+
 namespace MiniZinc {
   class IntVal;
 }

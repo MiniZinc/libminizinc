@@ -14,6 +14,7 @@
 #define __MIP_OSICBC_WRAPPER_H__
 
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
+#include <minizinc/solver_instance_base.hh>
                     // CMakeLists.txt needs OSICBC_HOME defined
 // #include <CoinPackedVector.hpp>
 // #include <CoinPackedMatrix.hpp>
@@ -31,24 +32,56 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
     OsiClpSolverInterface osi;
 //     CoinPackedMatrix* matrix = 0;
     int             error;
-    string          osicbc_buffer;   // [CBC_MESSAGEBUFSIZE];
+    std::string          osicbc_buffer;   // [CBC_MESSAGEBUFSIZE];
 //     string          osicbc_status_buffer; // [CBC_MESSAGEBUFSIZE];
     
-    vector<double> x;
+    std::vector<double> x;
     
     // To add constraints:
 //     vector<int> rowStarts, columns;
-    vector<CoinPackedVector> rows;
-    vector<double> //element,
+    std::vector<CoinPackedVector> rows;
+    std::vector<double> //element,
       rowlb, rowub;
 
   public:
-    MIP_osicbc_wrapper() { openOSICBC(); }
+
+    class Options : public MiniZinc::SolverInstanceBase::Options {
+    public:
+      int nThreads=1;
+      std::string sExportModel;
+      double nTimeout=-1;
+      long int nSolLimit = -1;
+      double nWorkMemLimit=-1;
+      std::string sReadParams;
+      std::string sWriteParams;
+      bool flag_all_solutions = false;
+      
+      double absGap=0.99;
+      double relGap=1e-8;
+      double intTol=1e-6;
+      double objDiff=1.0;
+      
+      std::string cbc_cmdOptions;
+      
+      bool processOption(int& i, std::vector<std::string>& argv);
+      static void printHelp(std::ostream& );
+    };
+  private:
+    Options* options=nullptr;
+  public:
+
+    MIP_osicbc_wrapper(Options* opt) : options(opt) { openOSICBC(); }
     virtual ~MIP_osicbc_wrapper() { closeOSICBC(); }
-    
-    bool processOption(int& i, int argc, const char** argv);
-    void printVersion(ostream& );
-    void printHelp(ostream& );
+  
+    static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt=NULL);
+    static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt=NULL);
+    static std::string getId(void);
+    static std::string getName(void);
+    static std::vector<std::string> getStdFlags(void);
+    static std::string needDllFlag(void) { return ""; }
+
+    void printVersion(std::ostream& );
+    void printHelp(std::ostream& );
 //       Statistics& getStatistics() { return _statistics; }
 
 //      IloConstraintArray *userCuts, *lazyConstraints;
@@ -60,18 +93,18 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
     
     /// actual adding new variables to the solver
     virtual void doAddVars(size_t n, double *obj, double *lb, double *ub,
-      VarType *vt, string *names);
+      VarType *vt, std::string *names);
     
     void addPhase1Vars() {
       if (fVerbose)
-        cerr << "  MIP_osicbc_wrapper: delaying physical addition of variables..." << endl;
+        std::cerr << "  MIP_osicbc_wrapper: delaying physical addition of variables..." << std::endl;
     }
 
     /// adding a linear constraint
     virtual void addRow(int nnz, int *rmatind, double* rmatval,
                         LinConType sense, double rhs,
                         int mask = MaskConsType_Normal,
-                        string rowName = "");
+                        std::string rowName = "");
     /// adding an implication
 //     virtual void addImpl() = 0;
     virtual void setObjSense(int s);   // +/-1 for max/min
@@ -103,7 +136,7 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
     virtual double getCPUTime() { return output.dCPUTime; }
     
     virtual Status getStatus()  { return output.status; }
-    virtual string getStatusName() { return output.statusName; }
+    virtual std::string getStatusName() { return output.statusName; }
 
      virtual int getNNodes() { return output.nNodes; }
      virtual int getNOpen() { return output.nOpenNodes; }
@@ -114,7 +147,7 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
   protected:
 //     OsiSolverInterface& getOsiSolver(void) { return osi; }
 
-    void wrap_assert(bool , string , bool fTerm=true);
+    void wrap_assert(bool , std::string , bool fTerm=true);
     
     /// Need to consider the 100 status codes in OSICBC and change with every version? TODO
     Status convertStatus(CbcModel *pModel);

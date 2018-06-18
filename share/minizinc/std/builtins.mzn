@@ -64,6 +64,26 @@ function var bool: '!='(var int: x, float: y) =
 function var bool: '!='(float: x, var int: y) =
   if ceil(x)=floor(x) then y != ceil(x) else true endif;
 
+function bool: '<='(int: x, float: y) = (x <= floor(y));
+function bool: '>='(int: x, float: y) = (x >= ceil(y));
+function bool: '<='(float: x, int: y) = (y >= ceil(x));
+function bool: '>='(float: x, int: y) = (y <= floor(x));
+
+function bool: '<'(int: x, float: y) = (x <= ceil(y)-1);
+function bool: '>'(float: x, int: y) = (y <= ceil(x)-1);
+function bool: '>'(int: x, float: y) = (x >= floor(y)+1);
+function bool: '<'(float: x, int: y) = (y >= floor(x)+1);
+
+function bool: '='(int: x, float: y) =
+  if ceil(y)=floor(y) then x=ceil(y) else false endif;
+function bool: '='(float: x, int: y) =
+  if ceil(x)=floor(x) then y=ceil(x) else false endif;
+
+function bool: '!='(int: x, float: y) =
+  if ceil(y)=floor(y) then x != ceil(y) else true endif;
+function bool: '!='(float: x, int: y) =
+  if ceil(x)=floor(x) then y != ceil(x) else true endif;
+
 
 /** @group builtins.compare Return if array \a x is lexicographically smaller than array \a y */
 function     bool: '<'(array[$U] of     $T: x,array[$U] of     $T: y);
@@ -2163,7 +2183,7 @@ function var int: min_t(array[int] of var int: x) :: promise_total =
 function var float: max_t(array[int] of var float: x) :: promise_total =
   if length(x)=0 then 0.0
   elseif length(x)=1 then x[min(index_set(x))]
-  elseif length(x)=2 then min(x[1],x[2])
+  elseif length(x)=2 then max(x[1],x[2])
   else let {
     var float: m ::is_defined_var;
     constraint array_float_maximum(m,x) ::defines_var(m);

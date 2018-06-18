@@ -18,7 +18,7 @@ using namespace Gecode;
 
 
 namespace MiniZinc {
-  namespace GecodeConstraints {        
+  namespace GecodeConstraints {
 
     void p_distinct(SolverInstanceBase& s, const Call* call) {
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
@@ -1591,6 +1591,310 @@ namespace MiniZinc {
     }
 
 #endif
+#endif
+
+#ifdef GECODE_HAS_SET_VARS
+    void p_set_OP(SolverInstanceBase& s, SetOpType op, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      rel(*gi._current_space, gi.arg2setvar(ce->arg(0)), op, gi.arg2setvar(ce->arg(1)),
+          SRT_EQ, gi.arg2setvar(ce->arg(2)));
+    }
+    void p_set_union(SolverInstanceBase& s, const Call* ce) {
+      p_set_OP(s, SOT_UNION, ce);
+    }
+    void p_set_intersect(SolverInstanceBase& s, const Call* ce) {
+      p_set_OP(s, SOT_INTER, ce);
+    }
+    void p_set_diff(SolverInstanceBase& s, const Call* ce) {
+      p_set_OP(s, SOT_MINUS, ce);
+    }
+
+    void p_set_symdiff(SolverInstanceBase& s, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      SetVar x = gi.arg2setvar(ce->arg(0));
+      SetVar y = gi.arg2setvar(ce->arg(1));
+
+      SetVarLubRanges xub(x);
+      IntSet xubs(xub);
+      SetVar x_y(*gi._current_space,IntSet::empty,xubs);
+      rel(*gi._current_space, x, SOT_MINUS, y, SRT_EQ, x_y);
+
+      SetVarLubRanges yub(y);
+      IntSet yubs(yub);
+      SetVar y_x(*gi._current_space,IntSet::empty,yubs);
+      rel(*gi._current_space, y, SOT_MINUS, x, SRT_EQ, y_x);
+
+      rel(*gi._current_space, x_y, SOT_UNION, y_x, SRT_EQ, gi.arg2setvar(ce->arg(2)));
+    }
+
+    void p_array_set_OP(SolverInstanceBase& s, SetOpType op, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      SetVarArgs xs = gi.arg2setvarargs(ce->arg(0));
+      rel(*gi._current_space, op, xs, gi.arg2setvar(ce->arg(1)));
+    }
+    void p_array_set_union(SolverInstanceBase& s, const Call* ce) {
+      p_array_set_OP(s, SOT_UNION, ce);
+    }
+    void p_array_set_partition(SolverInstanceBase& s, const Call* ce) {
+      p_array_set_OP(s, SOT_DUNION, ce);
+    }
+
+
+    void p_set_rel(SolverInstanceBase& s, SetRelType srt, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      rel(*gi._current_space, gi.arg2setvar(ce->arg(0)), srt, gi.arg2setvar(ce->arg(1)));
+    }
+
+    void p_set_eq(SolverInstanceBase& s, const Call* ce) {
+      p_set_rel(s, SRT_EQ, ce);
+    }
+    void p_set_ne(SolverInstanceBase& s, const Call* ce) {
+      p_set_rel(s, SRT_NQ, ce);
+    }
+    void p_set_subset(SolverInstanceBase& s, const Call* ce) {
+      p_set_rel(s, SRT_SUB, ce);
+    }
+    void p_set_superset(SolverInstanceBase& s, const Call* ce) {
+      p_set_rel(s, SRT_SUP, ce);
+    }
+    void p_set_le(SolverInstanceBase& s, const Call* ce) {
+      p_set_rel(s, SRT_LQ, ce);
+    }
+    void p_set_lt(SolverInstanceBase& s, const Call* ce) {
+      p_set_rel(s, SRT_LE, ce);
+    }
+    void p_set_card(SolverInstanceBase& s, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      if (!ce->arg(1)->type().isvar()) {
+        IntVal i = ce->arg(1)->cast<IntLit>()->v().toInt();
+        assert(i<0 || i>Gecode::Int::Limits::max);
+        unsigned int ui = static_cast<unsigned int>(i.toInt());
+        cardinality(*gi._current_space, gi.arg2setvar(ce->arg(0)), ui, ui);
+      } else {
+        cardinality(*gi._current_space, gi.arg2setvar(ce->arg(0)), gi.arg2intvar(ce->arg(1)));
+      }
+    }
+    void p_set_in(SolverInstanceBase& s, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      if (!ce->arg(1)->type().isvar()) {
+        IntSet d = gi.arg2intset(s.env().envi(), ce->arg(1));
+        if (ce->arg(0)->type().isvar()) {
+          Gecode::IntSetRanges dr(d);
+          Iter::Ranges::Singleton sr(0,1);
+          Iter::Ranges::Inter<Gecode::IntSetRanges,Iter::Ranges::Singleton> i(dr,sr);
+          IntSet d01(i);
+          if (d01.size() == 0) {
+            gi._current_space->fail();
+          } else {
+            rel(*gi._current_space, gi.arg2boolvar(ce->arg(0)), IRT_GQ, d01.min());
+            rel(*gi._current_space, gi.arg2boolvar(ce->arg(0)), IRT_LQ, d01.max());
+          }
+        } else {
+          dom(*gi._current_space, gi.arg2intvar(ce->arg(0)), d);
+        }
+      } else {
+        if (!ce->arg(0)->type().isvar()) {
+          dom(*gi._current_space, gi.arg2setvar(ce->arg(1)), SRT_SUP, ce->arg(0)->cast<IntLit>()->v().toInt());
+        } else {
+          rel(*gi._current_space, gi.arg2setvar(ce->arg(1)), SRT_SUP, gi.arg2intvar(ce->arg(0)));
+        }
+      }
+    }
+    void p_set_rel_reif(SolverInstanceBase& s, SetRelType srt, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      rel(*gi._current_space, gi.arg2setvar(ce->arg(0)), srt, gi.arg2setvar(ce->arg(1)),
+          gi.arg2boolvar(ce->arg(2)));
+    }
+
+    void p_set_eq_reif(SolverInstanceBase& s, const Call* ce) {
+      p_set_rel_reif(s,SRT_EQ,ce);
+    }
+    void p_set_le_reif(SolverInstanceBase& s, const Call* ce) {
+      p_set_rel_reif(s,SRT_LQ,ce);
+    }
+    void p_set_lt_reif(SolverInstanceBase& s, const Call* ce) {
+      p_set_rel_reif(s,SRT_LE,ce);
+    }
+    void p_set_ne_reif(SolverInstanceBase& s, const Call* ce) {
+      p_set_rel_reif(s,SRT_NQ,ce);
+    }
+    void p_set_subset_reif(SolverInstanceBase& s, const Call* ce) {
+      p_set_rel_reif(s,SRT_SUB,ce);
+    }
+    void p_set_superset_reif(SolverInstanceBase& s, const Call* ce) {
+      p_set_rel_reif(s,SRT_SUP,ce);
+    }
+    void p_set_in_reif(SolverInstanceBase& s, const Call* ce, ReifyMode rm) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      if (!ce->arg(1)->type().isvar()) {
+        if (rm==RM_EQV) {
+          p_int_in_reif(s,ce);
+        } else {
+          assert(rm==RM_IMP);
+          p_int_in_imp(s,ce);
+        }
+      } else {
+        if (!ce->arg(0)->type().isvar()) {
+          dom(*gi._current_space, gi.arg2setvar(ce->arg(1)), SRT_SUP, ce->arg(0)->cast<IntLit>()->v().toInt(),
+              Reify(gi.arg2boolvar(ce->arg(2)),rm));
+        } else {
+          rel(*gi._current_space, gi.arg2setvar(ce->arg(1)), SRT_SUP, gi.arg2intvar(ce->arg(0)),
+              Reify(gi.arg2boolvar(ce->arg(2)),rm));
+        }
+      }
+    }
+    void p_set_in_reif(SolverInstanceBase& s, const Call* ce) {
+      p_set_in_reif(s,ce,RM_EQV);
+    }
+    void p_set_in_imp(SolverInstanceBase& s, const Call* ce) {
+      p_set_in_reif(s,ce,RM_IMP);
+    }
+    void p_set_disjoint(SolverInstanceBase& s, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      rel(*gi._current_space, gi.arg2setvar(ce->arg(0)), SRT_DISJ, gi.arg2setvar(ce->arg(1)));
+    }
+
+    void p_link_set_to_booleans(SolverInstanceBase& s, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      SetVar x = gi.arg2setvar(ce->arg(0));
+      int idx = ce->arg(2)->cast<IntLit>()->v().toInt();
+      assert(idx >= 0);
+      rel(*gi._current_space, x || IntSet(Set::Limits::min,idx-1));
+      BoolVarArgs y = gi.arg2boolvarargs(ce->arg(1),idx);
+      unshare(*gi._current_space, y);
+      channel(*gi._current_space, y, x);
+    }
+
+    void p_array_set_element(SolverInstanceBase& s, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      bool isConstant = true;
+      ArrayLit* a = gi.arg2arraylit(ce->arg(1));
+      for (int i=a->size(); i--;) {
+        if ((*a)[i]->type().isvar()) {
+          isConstant = false;
+          break;
+        }
+      }
+      IntVar selector = gi.arg2intvar(ce->arg(0));
+      rel(*gi._current_space, selector > 0);
+      if (isConstant) {
+        IntSetArgs sv = gi.arg2intsetargs(gi.env().envi(), ce->arg(1),1);
+        element(*gi._current_space, sv, selector, gi.arg2setvar(ce->arg(2)));
+      } else {
+        SetVarArgs sv = gi.arg2setvarargs(ce->arg(1), 1);
+        element(*gi._current_space, sv, selector, gi.arg2setvar(ce->arg(2)));
+      }
+    }
+
+    void p_array_set_element_op(SolverInstanceBase& s, const Call* ce, SetOpType op,
+                                const IntSet& universe = IntSet(Set::Limits::min,Set::Limits::max)) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      bool isConstant = true;
+      ArrayLit* a = gi.arg2arraylit(ce->arg(1));
+      for (int i=a->size(); i--;) {
+        if ((*a)[i]->type().isvar()) {
+          isConstant = false;
+          break;
+        }
+      }
+      SetVar selector = gi.arg2setvar(ce->arg(0));
+      dom(*gi._current_space, selector, SRT_DISJ, 0);
+      if (isConstant) {
+        IntSetArgs sv = gi.arg2intsetargs(gi.env().envi(), ce->arg(1), 1);
+        element(*gi._current_space, op, sv, selector, gi.arg2setvar(ce->arg(2)), universe);
+      } else {
+        SetVarArgs sv = gi.arg2setvarargs(ce->arg(1), 1);
+        element(*gi._current_space, op, sv, selector, gi.arg2setvar(ce->arg(2)), universe);
+      }
+    }
+
+    void p_array_set_element_union(SolverInstanceBase& s, const Call* ce) {
+      p_array_set_element_op(s, ce, SOT_UNION);
+    }
+
+    void p_array_set_element_intersect(SolverInstanceBase& s, const Call* ce) {
+      p_array_set_element_op(s, ce, SOT_INTER);
+    }
+
+    void p_array_set_element_intersect_in(SolverInstanceBase& s, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      IntSet d = gi.arg2intset(gi.env().envi(), ce->arg(3));
+      p_array_set_element_op(s, ce, SOT_INTER, d);
+    }
+
+    void p_array_set_element_partition(SolverInstanceBase& s, const Call* ce) {
+      p_array_set_element_op(s, ce, SOT_DUNION);
+    }
+
+    void p_set_convex(SolverInstanceBase& s, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      convex(*gi._current_space, gi.arg2setvar(ce->arg(0)));
+    }
+
+    void p_array_set_seq(SolverInstanceBase& s, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      SetVarArgs sv = gi.arg2setvarargs(ce->arg(0));
+      sequence(*gi._current_space, sv);
+    }
+
+    void p_array_set_seq_union(SolverInstanceBase& s, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      SetVarArgs sv = gi.arg2setvarargs(ce->arg(0));
+      sequence(*gi._current_space, sv, gi.arg2setvar(ce->arg(1)));
+    }
+
+    void p_int_set_channel(SolverInstanceBase& s, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      int xoff=ce->arg(1)->cast<IntLit>()->v().toInt();
+      assert(xoff >= 0);
+      int yoff=ce->arg(3)->cast<IntLit>()->v().toInt();
+      assert(yoff >= 0);
+      IntVarArgs xv = gi.arg2intvarargs(ce->arg(0), xoff);
+      SetVarArgs yv = gi.arg2setvarargs(ce->arg(2), yoff, 1, IntSet(0, xoff-1));
+      IntSet xd(yoff,yv.size()-1);
+      for (int i=xoff; i<xv.size(); i++) {
+        dom(*gi._current_space, xv[i], xd);
+      }
+      IntSet yd(xoff,xv.size()-1);
+      for (int i=yoff; i<yv.size(); i++) {
+        dom(*gi._current_space, yv[i], SRT_SUB, yd);
+      }
+      channel(*gi._current_space,xv,yv);
+    }
+
+    void p_range(SolverInstanceBase& s, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      int xoff=ce->arg(1)->cast<IntLit>()->v().toInt();
+      assert(xoff >= 0);
+      IntVarArgs xv = gi.arg2intvarargs(ce->arg(0),xoff);
+      element(*gi._current_space, SOT_UNION, xv, gi.arg2setvar(ce->arg(2)), gi.arg2setvar(ce->arg(3)));
+    }
+
+    void p_weights(SolverInstanceBase& s, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      IntArgs e = gi.arg2intargs(ce->arg(0));
+      IntArgs w = gi.arg2intargs(ce->arg(1));
+      SetVar x = gi.arg2setvar(ce->arg(2));
+      IntVar y = gi.arg2intvar(ce->arg(3));
+      weights(*gi._current_space,e,w,x,y);
+    }
+
+    void p_inverse_set(SolverInstanceBase& s, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      int xoff = ce->arg(2)->cast<IntLit>()->v().toInt();
+      int yoff = ce->arg(3)->cast<IntLit>()->v().toInt();
+      SetVarArgs x = gi.arg2setvarargs(ce->arg(0),xoff);
+      SetVarArgs y = gi.arg2setvarargs(ce->arg(1),yoff);
+      channel(*gi._current_space, x, y);
+    }
+
+    void p_precede_set(SolverInstanceBase& s, const Call* ce) {
+      GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+      SetVarArgs x = gi.arg2setvarargs(ce->arg(0));
+      int p_s = ce->arg(1)->cast<IntLit>()->v().toInt();
+      int p_t = ce->arg(2)->cast<IntLit>()->v().toInt();
+      precede(*gi._current_space,x,p_s,p_t);
+    }
 #endif
 
     }

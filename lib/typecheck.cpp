@@ -1847,7 +1847,7 @@ namespace MiniZinc {
         void vAssignI(AssignI* i) {
           bu_ty.run(i->e());
           if (!env.isSubtype(i->e()->type(),i->decl()->ti()->type(),true)) {
-            _typeErrors.push_back(TypeError(env, i->e()->loc(),
+            _typeErrors.push_back(TypeError(env, i->loc(),
                                            "assignment value for `"+i->decl()->id()->str().str()+"' has invalid type-inst: expected `"+
                                            i->decl()->ti()->type().toString(env)+"', actual `"+i->e()->type().toString(env)+"'"));
             // Assign to "true" constant to avoid generating further errors that the parameter
@@ -1858,7 +1858,7 @@ namespace MiniZinc {
         void vConstraintI(ConstraintI* i) {
           bu_ty.run(i->e());
           if (!env.isSubtype(i->e()->type(),Type::varbool(),true))
-            throw TypeError(env, i->e()->loc(), "invalid type of constraint, expected `"
+            throw TypeError(env, i->loc(), "invalid type of constraint, expected `"
                             +Type::varbool().toString(env)+"', actual `"+i->e()->type().toString(env)+"'");
         }
         void vSolveI(SolveI* i) {
@@ -2054,7 +2054,7 @@ namespace MiniZinc {
     }
   }
 
-  void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os) {
+  void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os, bool extra = false) {
     os << "    \"" << *vd->id() << "\" : {";
     os << "\"type\" : ";
     switch (vd->type().bt()) {
@@ -2073,10 +2073,68 @@ namespace MiniZinc {
     }
     if (vd->type().dim() > 0) {
       os << ", \"dim\" : " << vd->type().dim();
+
+      if(extra) {
+        os << ", \"dims\" : [";
+        bool had_dim = false;
+        ASTExprVec<TypeInst> ranges = vd->ti()->ranges();
+        for(int i=0; i<ranges.size(); i++) {
+          if(ranges[i]->type().enumId() > 0) {
+            os << (had_dim ? "," : "")
+               << "\"" << *env.envi().getEnum(ranges[i]->type().enumId())->e()->id() << "\"";
+          } else {
+            os << (had_dim ? "," : "") << "\"int\"";
+          }
+          had_dim = true;
+        }
+        os << "]";
+      }
+
+    }
+    if(extra) {
+      if (vd->type().enumId() > 0) {
+          os << ", \"enum_type\" : \"" << *env.envi().getEnum(vd->type().enumId())->e()->id() << "\"";
+      }
     }
     os << "}";
   }
-  
+
+  void output_model_variable_types(Env& env, Model* m, std::ostream& os) {
+    class VInfVisitor : public ItemVisitor {
+    public:
+      Env& env;
+      bool had_var;
+      bool had_enum;
+      std::ostringstream oss_vars;
+      std::ostringstream oss_enums;
+      VInfVisitor(Env& env0) : env(env0), had_var(false), had_enum(false) {}
+      bool enter(Item* i) {
+        if (IncludeI* ii = i->dyn_cast<IncludeI>()) {
+          std::string prefix = ii->m()->filepath().str().substr(0,ii->m()->filepath().size()-ii->f().size());
+          return (prefix.empty() || prefix == "./");
+        }
+        return true;
+      }
+      void vVarDeclI(VarDeclI* vdi) {
+        if (!vdi->e()->type().isann() && (vdi->e()->e()==NULL || vdi->e()->e()==constants().absent)) {
+          if (had_var) oss_vars << ",\n";
+          output_var_desc_json(env, vdi->e(), oss_vars, true);
+          had_var = true;
+        } else if (vdi->e()->type().st()==Type::ST_SET && vdi->e()->type().enumId() != 0 && !vdi->e()->type().isann()) {
+          if (had_enum) oss_enums << ", ";
+          oss_enums << "\"" << *env.envi().getEnum(vdi->e()->type().enumId())->e()->id() << "\"";
+          had_enum = true;
+        }
+      }
+    } _vinf(env);
+    iterItems(_vinf, m);
+    os << "var_types: {";
+    os << "\n  vars: {\n" << _vinf.oss_vars.str() << "\n  },";
+    os << "\n  enums: [" << _vinf.oss_enums.str() << "]\n";
+    os << "}\n";
+  }
+
+
   void output_model_interface(Env& env, Model* m, std::ostream& os) {
     class IfcVisitor : public ItemVisitor {
     public:
@@ -2086,7 +2144,7 @@ namespace MiniZinc {
       std::ostringstream oss_input;
       std::ostringstream oss_output;
       std::string method;
-      IfcVisitor(Env& env0) : env(env0), had_input(false), had_output(false) {}
+      IfcVisitor(Env& env0) : env(env0), had_input(false), had_output(false), method("sat") {}
       bool enter(Item* i) {
         if (IncludeI* ii = i->dyn_cast<IncludeI>()) {
           std::string prefix = ii->m()->filepath().str().substr(0,ii->m()->filepath().size()-ii->f().size());

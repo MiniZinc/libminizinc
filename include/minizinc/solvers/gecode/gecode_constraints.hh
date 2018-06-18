@@ -233,6 +233,49 @@ namespace GecodeConstraints {
 #endif
 #endif
 
+#ifdef GECODE_HAS_SET_VARS
+      PosterImpl(p_set_eq);
+      PosterImpl(p_set_le);
+      PosterImpl(p_set_lt);
+      PosterImpl(p_set_eq);
+      PosterImpl(p_set_ne);
+      PosterImpl(p_set_union);
+      PosterImpl(p_array_set_element);
+      PosterImpl(p_array_set_element);
+      PosterImpl(p_set_intersect);
+      PosterImpl(p_set_diff);
+      PosterImpl(p_set_symdiff);
+      PosterImpl(p_set_subset);
+      PosterImpl(p_set_superset);
+      PosterImpl(p_set_card);
+      PosterImpl(p_set_in);
+      PosterImpl(p_set_eq_reif);
+      PosterImpl(p_set_le_reif);
+      PosterImpl(p_set_lt_reif);
+      PosterImpl(p_set_eq_reif);
+      PosterImpl(p_set_ne_reif);
+      PosterImpl(p_set_subset_reif);
+      PosterImpl(p_set_superset_reif);
+      PosterImpl(p_set_in_reif);
+      PosterImpl(p_set_in_imp);
+      PosterImpl(p_set_disjoint);
+      PosterImpl(p_link_set_to_booleans);
+      PosterImpl(p_array_set_union);
+      PosterImpl(p_array_set_partition);
+      PosterImpl(p_set_convex);
+      PosterImpl(p_array_set_seq);
+      PosterImpl(p_array_set_seq_union);
+      PosterImpl(p_array_set_element_union);
+      PosterImpl(p_array_set_element_intersect);
+      PosterImpl(p_array_set_element_intersect_in);
+      PosterImpl(p_array_set_element_partition);
+      PosterImpl(p_int_set_channel);
+      PosterImpl(p_range);
+      PosterImpl(p_weights);
+      PosterImpl(p_inverse_set);
+      PosterImpl(p_precede_set);
+#endif
+
 }
 }
 

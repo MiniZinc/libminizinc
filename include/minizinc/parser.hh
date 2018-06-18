@@ -66,7 +66,7 @@ namespace MiniZinc {
                 MiniZinc::Model* model0,
                 bool isDatafile0, bool isFlatZinc0, bool parseDocComments0)
     : filename(f.c_str()), buf(b.c_str()), pos(0), length(b.size()),
-      lineno(1), lineStartPos(0), nTokenNextStart(1),
+      lineStartPos(0), nTokenNextStart(1), hadNewline(false),
       files(files0), seenModels(seenModels0), model(model0),
       isDatafile(isDatafile0), isFlatZinc(isFlatZinc0), parseDocComments(parseDocComments0),
       hadError(false), err(err0) {}
@@ -77,10 +77,9 @@ namespace MiniZinc {
     const char* buf;
     unsigned int pos, length;
 
-    int lineno;
-
     int lineStartPos;
     int nTokenNextStart;
+    bool hadNewline;
 
     std::vector<ParseWorkItem>& files;
     std::map<std::string,Model*>& seenModels;
@@ -95,13 +94,20 @@ namespace MiniZinc {
     
     std::string stringBuffer;
 
-    void printCurrentLine(void) {
+    void printCurrentLine(int firstCol, int lastCol) {
       const char* eol_c = strchr(buf+lineStartPos,'\n');
       if (eol_c) {
+        if (eol_c==buf+lineStartPos)
+          return;
         err << std::string(buf+lineStartPos,eol_c-(buf+lineStartPos));
       } else {
         err << buf+lineStartPos;
       }
+      err << std::endl;
+      for (int i=0; i<static_cast<int>(firstCol)-1; i++)
+        err << " ";
+      for (unsigned int i=firstCol; i<=lastCol; i++)
+        err << "^";
       err << std::endl;
     }
   

@@ -68,7 +68,7 @@ namespace MiniZinc {
     unsigned int _last_column;
   public:
     /// Construct empty location
-    ParserLocation(void) : _first_line(0), _last_line(0), _first_column(0), _last_column(0) {}
+    ParserLocation(void) : _first_line(1), _last_line(1), _first_column(0), _last_column(0) {}
     
     /// Construct location
     ParserLocation(const ASTString& filename, unsigned int first_line, unsigned int first_column, unsigned int last_line, unsigned int last_column)
@@ -89,6 +89,16 @@ namespace MiniZinc {
     unsigned int last_column(void) const { return _last_column; }
     void last_column(unsigned int c) { _last_column = c; }
     
+    std::string toString(void) const {
+      std::ostringstream oss;
+      oss << _filename << ":" << _first_line << "." << _first_column;
+      if (_first_line != _last_line) {
+        oss << "-" << _last_line << "." << _last_column;
+      } else if (_first_column != _last_column) {
+        oss << "-" << _last_column;
+      }
+      return oss.str();
+    }
   };
 
   /// %Location of an expression in the source code
@@ -188,8 +198,15 @@ namespace MiniZinc {
     if (loc.filename()=="") {
       s << "unknown file";
     } else {
-      s << loc.filename() << ":" << loc.first_line();
+      s << loc.filename();
     }
+    s << ":" << loc.first_line() << "." << loc.first_column();
+    if (loc.first_line() != loc.last_line()) {
+      s << "-" << loc.last_line() << "." << loc.last_column();
+    } else if (loc.first_column() != loc.last_column()) {
+      s << "-" << loc.last_column();
+    }
+
     return os << s.str();
   }
 
@@ -943,6 +960,10 @@ namespace MiniZinc {
     Expression* rhs(void) const { return _e1; }
     /// Set right hand side
     void rhs(Expression* e) { _e1 = e; }
+    /// Access argument \a i
+    Expression* arg(int i) { assert(i==0 || i==1); return i==0 ? _e0 : _e1; }
+    /// Return number of arguments
+    unsigned int n_args(void) const { return 2; }
     /// Access declaration
     FunctionI* decl(void) const { return _decl; }
     /// Set declaration
@@ -976,6 +997,10 @@ namespace MiniZinc {
     Expression* e(void) const { return _e0; }
     /// Set expression
     void e(Expression* e0) { _e0 = e0; }
+    /// Access argument \a i
+    Expression* arg(int i) { assert(i==0); return _e0; }
+    /// Return number of arguments
+    unsigned int n_args(void) const { return 1; }
     /// Access declaration
     FunctionI* decl(void) const { return _decl; }
     /// Set declaration

@@ -18,21 +18,27 @@
 
 namespace MiniZinc {
 
-//   class FZNSolver {
-//     public:
-//       typedef Expression* Variable;
-//       typedef MiniZinc::Statistics Statistics;
-//   };
+  class FZNSolverOptions : public SolverInstanceBase::Options {
+  public:
+    std::string fzn_solver;
+    std::string backend;
+    std::string fzn_flags;
+    std::string fzn_flag;
+    int numSols = 1;
+    bool allSols = false;
+    std::string parallel;
+    int fzn_time_limit_ms = 0;
+    bool fzn_sigint = false;
+  };
 
   class FZNSolverInstance : public SolverInstanceBase {
     private:
       std::string _fzn_solver;
-
     protected:
       Model* _fzn;
       Model* _ozn;
     public:
-      FZNSolverInstance(Env& env, std::ostream& log, const Options& options);
+      FZNSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
 
       ~FZNSolverInstance(void);
 
@@ -46,6 +52,19 @@ namespace MiniZinc {
 
     protected:
       Expression* getSolutionValue(Id* id);
+  };
+
+  class FZN_SolverFactory: public SolverFactory {
+  protected:
+    virtual SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
+  public:
+    FZN_SolverFactory(void);
+    virtual SolverInstanceBase::Options* createOptions(void);
+    virtual std::string getDescription(SolverInstanceBase::Options* opt=NULL);
+    virtual std::string getVersion(SolverInstanceBase::Options* opt=NULL);
+    virtual std::string getId(void);
+    virtual bool processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv);
+    virtual void printHelp(std::ostream& os);
   };
 
 }
