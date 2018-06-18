@@ -127,6 +127,8 @@ import types
 HTMLTranslator.visit_literal  = html_visit_literal
 HTMLTranslator.depart_literal = html_depart_literal
 
+
+import sphinx.builders.latex
 from sphinx.writers.latex import LaTeXTranslator
 
 def latex_visit_literal(self, node):
