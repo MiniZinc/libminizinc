@@ -588,8 +588,8 @@ namespace MiniZinc {
 %type <tiexpr> ti_expr base_ti_expr base_ti_expr_tail
 %type <tiexpr_v> ti_expr_list ti_expr_list_head
 
-%type <expression> expr expr_atom_head
-%type <expression> set_expr string_expr string_quote_rest
+%type <expression> expr expr_atom_head expr_atom_head_nonstring
+%type <expression> set_expr string_expr string_quote_rest annotation_expr
 %type <expression> simple_array_literal simple_array_literal_2d simple_array_comp if_then_else_expr call_expr quoted_op_call let_expr operation_item_tail set_literal set_comp
 
 %type <expression_v> expr_list expr_list_head elseif_list let_vardecl_item_list enum_id_list
@@ -812,6 +812,11 @@ assign_item :
 constraint_item :
       MZN_CONSTRAINT expr
       { $$ = new ConstraintI(@$,$2);}
+    | MZN_CONSTRAINT MZN_COLONCOLON string_expr expr
+      { $$ = new ConstraintI(@$,$4);
+        if ($$ && $3)
+          $$->cast<ConstraintI>()->e()->ann().add(new Call(@2, ASTString("mzn_constraint_name"), {$3}));
+      }
 
 solve_item :
       MZN_SOLVE annotations MZN_SATISFY
@@ -1056,7 +1061,7 @@ expr_list_head :
 
 set_expr :
       expr_atom_head
-    | set_expr MZN_COLONCOLON expr_atom_head
+    | set_expr MZN_COLONCOLON annotation_expr
       { if ($1 && $3) $1->addAnnotation($3); $$=$1; }
     | set_expr MZN_UNION set_expr
       { $$=new BinOp(@$, $1, BOT_UNION, $3); }
@@ -1120,7 +1125,7 @@ set_expr :
 
 expr :
       expr_atom_head
-    | expr MZN_COLONCOLON expr_atom_head
+    | expr MZN_COLONCOLON annotation_expr
       { if ($1 && $3) $1->addAnnotation($3); $$=$1; }
     | expr MZN_EQUIV expr
       { $$=new BinOp(@$, $1, BOT_EQUIV, $3); }
@@ -1237,7 +1242,14 @@ expr :
         }
       }
 
+
 expr_atom_head :
+      expr_atom_head_nonstring
+      { $$=$1; }
+    | string_expr
+      { $$=$1; }
+
+expr_atom_head_nonstring :
       '(' expr ')'
       { $$=$2; }
     | '(' expr ')' array_access_tail
@@ -1260,7 +1272,6 @@ expr_atom_head :
       { $$=IntLit::a(IntVal::infinity()); }
     | MZN_FLOAT_LITERAL
       { $$=FloatLit::a($1); }
-    | string_expr
     | MZN_ABSENT
       { $$=constants().absent; }
     | set_literal
@@ -1750,12 +1761,18 @@ annotations :
       { $$=NULL; }
     | ne_annotations
 
+annotation_expr :
+      expr_atom_head_nonstring
+      { $$ = $1; }
+    | string_expr
+      { $$ = new Call(@1, ASTString("mzn_expression_name"), {$1}); }
+
 ne_annotations :
-      MZN_COLONCOLON expr_atom_head
+      MZN_COLONCOLON annotation_expr
       { $$=new std::vector<Expression*>(1);
         (*$$)[0] = $2;
       }
-    | ne_annotations MZN_COLONCOLON expr_atom_head
+    | ne_annotations MZN_COLONCOLON annotation_expr
       { $$=$1; if ($$) $$->push_back($3); }
 
 id_or_quoted_op :
