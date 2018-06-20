@@ -440,10 +440,10 @@ void MznSolver::printStatistics()
     getSI()->printStatisticsLine(1);
 }
 
-SolverInstance::Status MznSolver::run(int& argc, const char**& argv, const std::string& model) {
-  std::vector<std::string> args;
-  for (unsigned int i=0; i<argc; i++)
-    args.push_back(argv[i]);
+SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, const std::string& model, const std::string& exeName) {
+  std::vector<std::string> args = {exeName};
+  for (auto a : args0)
+    args.push_back(a);
   switch (processOptions(args)) {
     case OPTION_FINISH:
       return SolverInstance::NONE;

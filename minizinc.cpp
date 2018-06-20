@@ -36,7 +36,10 @@ int main(int argc, const char** argv) {
   try {
     MznSolver slv(std::cout,std::cerr);
     try {
-      fSuccess = (slv.run(argc,argv) != SolverInstance::ERROR);
+      std::vector<std::string> args(argc-1);
+      for (int i=1; i<argc; i++)
+        args[i-1] = argv[i];
+      fSuccess = (slv.run(args,"",argv[0]) != SolverInstance::ERROR);
     } catch (const LocationException& e) {
       if (slv.get_flag_verbose())
         std::cerr << std::endl;
