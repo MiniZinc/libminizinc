@@ -70,7 +70,7 @@ namespace MiniZinc {
       int passes = atoi(argv[i].c_str());
       if(passes >= 0)
         _opt.pre_passes = passes;
-    } else if (string(argv[i])=="-a") {
+    } else if (string(argv[i])=="-a" || string(argv[i])=="--all-solutions") {
       _opt.all_solutions = true;
     } else if (string(argv[i])=="-n") {
       if (++i==argv.size()) return false;
@@ -118,7 +118,7 @@ namespace MiniZinc {
     << "    failure cutoff (0 = none, solution mode)" << std::endl
     << "  --time <ms>" << std::endl
     << "    time (in ms) cutoff (0 = none, solution mode)" << std::endl
-    << "  -a" << std::endl
+    << "  -a, --all-solutions" << std::endl
     << "    print intermediate solutions" << std::endl
     << "  -n <sols>" << std::endl
     << "    number of solutions" << std::endl
