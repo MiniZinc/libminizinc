@@ -251,6 +251,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
     fopts.only_toplevel_paths = true;
   } else if ( cop.getOption( "--allow-multiple-assignments" ) ) {
     flag_allow_multi_assign = true;
+  } else if (string(argv[i])=="--input-is-flatzinc") {
+    is_flatzinc = true;
   } else if ( cop.getOption( "--compile-solution-checker", &buffer) ) {
     if (buffer.length()>=8 && buffer.substr(buffer.length()-8,string::npos) == ".mzc.mzn") {
       flag_compile_solution_check_model = true;
