@@ -23,7 +23,8 @@ namespace MiniZinc {
   
   class VarDeclIterator;
   class ConstraintIterator;
-  
+  class FunctionIterator;
+
   class CopyMap;
   class EnvI;
   
@@ -148,6 +149,8 @@ namespace MiniZinc {
     ConstraintIterator end_constraints(void);
     VarDeclIterator begin_vardecls(void);
     VarDeclIterator end_vardecls(void);
+    FunctionIterator begin_functions(void);
+    FunctionIterator end_functions(void);
     
     SolveI* solveItem(void);
 
@@ -239,6 +242,44 @@ namespace MiniZinc {
     
     reference operator*() const { return *(*_it)->cast<ConstraintI>(); }
     pointer operator->() const { return (*_it)->cast<ConstraintI>(); }
+  };
+
+  class FunctionIterator {
+    Model* _model;
+    Model::iterator _it;
+  public:
+    typedef Model::iterator::difference_type difference_type;
+    typedef Model::iterator::value_type value_type;
+    typedef FunctionI& reference;
+    typedef FunctionI* pointer;
+    typedef std::forward_iterator_tag iterator_category;
+    
+    FunctionIterator() {}
+    FunctionIterator(const FunctionIterator& vi) : _it(vi._it) {}
+    FunctionIterator(Model* model, const Model::iterator& it) : _model(model), _it(it) {
+      while (_it != _model->end() && !(*_it)->isa<FunctionI>()) {
+        ++_it;
+      }
+    }
+    ~FunctionIterator() {}
+    
+    FunctionIterator& operator=(const FunctionIterator& vi) {
+      if (this != &vi) {
+        _it = vi._it;
+      }
+      return *this;
+    }
+    bool operator==(const FunctionIterator& vi) const { return _it == vi._it; }
+    bool operator!=(const FunctionIterator& vi) const { return _it != vi._it; }
+    FunctionIterator& operator++() {
+      do {
+        ++_it;
+      } while (_it != _model->end() && !(*_it)->isa<FunctionI>());
+      return *this;
+    }
+    
+    reference operator*() const { return *(*_it)->cast<FunctionI>(); }
+    pointer operator->() const { return (*_it)->cast<FunctionI>(); }
   };
 
   

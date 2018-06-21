@@ -81,7 +81,15 @@ namespace MiniZinc {
   Model::end_constraints(void) {
     return ConstraintIterator(this, end());
   }
-  
+  FunctionIterator
+  Model::begin_functions(void) {
+    return FunctionIterator(this, begin());
+  }
+  FunctionIterator
+  Model::end_functions(void) {
+    return FunctionIterator(this, end());
+  }
+
   SolveI*
   Model::solveItem() {
     return _solveItem;
