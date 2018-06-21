@@ -86,9 +86,6 @@ namespace MiniZinc {
   /// Type check new assign item \a ai in model \a m
   void typecheck(Env& env, Model* m, AssignI* ai);
 
-  /// Typecheck FlatZinc variable declarations
-  void typecheck_fzn(Env& env, Model* m);
-
   /// Output description of parameters and output variables to \a os
   void output_model_interface(Env& env, Model* m, std::ostream& os);
 

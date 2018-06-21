@@ -1799,7 +1799,6 @@ namespace MiniZinc {
       
       std::stable_sort(m->begin(), m->end(), _sbp);
     }
-
     
     {
       Typer<false> ty(env.envi(), m, typeErrors);
@@ -1998,60 +1997,6 @@ namespace MiniZinc {
                       ai->decl()->ti()->type().toString(env.envi())+"', actual `"+ai->e()->type().toString(env.envi())+"'");
     }
     
-  }
-
-  void typecheck_fzn(Env& env, Model* m) {
-    ASTStringMap<int>::t declMap;
-    for (unsigned int i=0; i<m->size(); i++) {
-      if (VarDeclI* vdi = (*m)[i]->dyn_cast<VarDeclI>()) {
-        Type t = vdi->e()->type();
-        declMap.insert(std::pair<ASTString,int>(vdi->e()->id()->v(), i));
-        if (t.isunknown()) {
-          if (vdi->e()->ti()->domain()) {
-            switch (vdi->e()->ti()->domain()->eid()) {
-              case Expression::E_BINOP:
-              {
-                BinOp* bo = vdi->e()->ti()->domain()->cast<BinOp>();
-                if (bo->op()==BOT_DOTDOT) {
-                  t.bt(bo->lhs()->type().bt());
-                  if (t.isunknown()) {
-                    throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
-                  }
-                  vdi->e()->type(t);
-                } else {
-                  throw TypeError(env.envi(), vdi->e()->loc(), "Only ranges allowed in FlatZinc type inst");
-                }
-                break;
-              }
-              case Expression::E_ID:
-              {
-                ASTStringMap<int>::t::iterator it = declMap.find(vdi->e()->ti()->domain()->cast<Id>()->v());
-                if (it == declMap.end()) {
-                  throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
-                }
-                t.bt((*m)[it->second]->cast<VarDeclI>()->e()->type().bt());
-                if (t.isunknown()) {
-                  throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
-                }
-                vdi->e()->type(t);
-                break;
-              }
-              case Expression::E_SETLIT:
-              {
-                SetLit* sl = vdi->e()->ti()->domain()->cast<SetLit>();
-                t.bt(Type::BT_INT);
-                vdi->e()->type(t);
-                break;
-              }
-              default:
-                throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
-            }
-          } else {
-            throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
-          }
-        }
-      }
-    }
   }
 
   void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os, bool extra = false) {
