@@ -2073,10 +2073,10 @@ namespace MiniZinc {
       }
     } _vinf(env);
     iterItems(_vinf, m);
-    os << "var_types: {";
-    os << "\n  vars: {\n" << _vinf.oss_vars.str() << "\n  },";
-    os << "\n  enums: [" << _vinf.oss_enums.str() << "]\n";
-    os << "}\n";
+    os << "{\"var_types\": {";
+    os << "\n  \"vars\": {\n" << _vinf.oss_vars.str() << "\n  },";
+    os << "\n  \"enums\": [" << _vinf.oss_enums.str() << "]\n";
+    os << "}}\n";
   }
 
 
