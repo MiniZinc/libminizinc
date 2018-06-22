@@ -46,6 +46,7 @@ build:win32:
     key: "$CI_COMMIT_REF_SLUG"
     paths:
       - build/
+      - vendor/
 
 # build:win64:
 #  stage: build
