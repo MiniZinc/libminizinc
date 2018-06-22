@@ -34,19 +34,22 @@ stages:
 build:win32:
   stage: build
   script:
-    - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0/VC/vcvarsall.bat"
-    - git clone http://%DEPLOY_USER%:%DEPLOY_PASS%@gitlab.com/minizinc/deploy.git
-    - bash deploy/win32/build_compiler.sh .
+    - curl --silent -o dependencies.zip --location --header "PRIVATE-TOKEN:%DEPLOY_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fdeploy/jobs/artifacts/master/download?job=build:win32"
+    - unzip -q dependencies.zip
+    - if not exist "build" mkdir build
+    - cd build
+    - cmake -G"Visual Studio 14 2015" .. -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DGUROBI_HOME="C:/gurobi701/win32" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX=.
+    - cmake --build . --config Release --target install
+    - mv Release/{minizinc,mzn2doc,mzn2fzn,solns2out} ../bin/
   artifacts:
-     paths:
-       - bin/
+    paths:
+      - bin/
   tags:
      - win32
   cache:
     key: "$CI_COMMIT_REF_SLUG"
     paths:
       - build/
-      - vendor/
 
 # build:win64:
 #  stage: build
@@ -59,51 +62,3 @@ build:win32:
 #       - bin/
 #  tags:
 #     - win64
-
-
-# TODO: Fix tests
-# test:mzn20_fd:linux:
-#   stage: test
-#   image: ubuntu:latest
-#   script:
-#      - cd tests
-#      - export PATH="$(pwd)/../bin":"$(pwd)/scripts":"$PATH"
-#      - bash run-tests mzn20_fd .mzn unit examples
-#   dependencies:
-#      - build:linux
-#   tags:
-#      - linux
-#
-# test:mzn-fzn_fd:linux:
-#   stage: test
-#   image: ubuntu:latest
-#   script:
-#      - cd tests
-#      - export PATH="$(pwd)/../bin":"$(pwd)/scripts":"$PATH"
-#      - bash run-tests mzn-fzn_fd .mzn unit examples
-#   dependencies:
-#      - build:linux
-#   tags:
-#      - linux
-#
-# test:mzn20_fd:osx:
-#   stage: test
-#   script:
-#      - cd tests
-#      - export PATH="$(pwd)/../bin":"$(pwd)/scripts":"$PATH"
-#      - bash run-tests mzn20_fd .mzn unit examples
-#   dependencies:
-#      - build:osx
-#   tags:
-#      - mac
-#
-# test:mzn-fzn_fd:osx:
-#   stage: test
-#   script:
-#      - cd tests
-#      - export PATH="$(pwd)/../bin":"$(pwd)/scripts":"$PATH"
-#      - bash run-tests mzn-fzn_fd .mzn unit examples
-#   dependencies:
-#      - build:osx
-#   tags:
-#      - mac
