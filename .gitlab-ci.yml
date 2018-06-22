@@ -38,9 +38,12 @@ build:win32:
     - unzip -q dependencies.zip
     - if not exist "build" mkdir build
     - cd build
-    - cmake -G"Visual Studio 14 2015" .. -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DGUROBI_HOME="C:/gurobi701/win32" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX=.
+    # -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode"
+    - cmake -G"Visual Studio 14 2015" .. -DGUROBI_HOME="C:/gurobi701/win32" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX=.
     - cmake --build . --config Release --target install
-    - mv Release/{minizinc,mzn2doc,mzn2fzn,solns2out} ../bin/
+    - cd ..
+    - mkdir bin
+    - mv build/Release/{minizinc,mzn2doc,mzn2fzn,solns2out}.exe bin/
   artifacts:
     paths:
       - bin/
