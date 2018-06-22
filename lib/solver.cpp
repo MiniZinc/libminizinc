@@ -188,7 +188,8 @@ void MznSolver::printHelp(const std::string& selectedSolver)
     << "  --help <solver id>\n    Print help for a particular solver." << std::endl
     << "  -v, -l, --verbose\n    Print progress/log statements. Note that some solvers may log to stdout." << std::endl
     << "  -s, --statistics\n    Print statistics." << std::endl
-    << "  -c, --compile\n    Compile only (do not run solver)." << std::endl;
+    << "  -c, --compile\n    Compile only (do not run solver)." << std::endl
+    << "  --config-dirs\n    Output configuration directories." << std::endl;
 
   if (selectedSolver.empty()) {
     flt.printHelp(os);
@@ -269,8 +270,11 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       cout << solver_configs.solverConfigsJSON();
       return OPTION_FINISH;
     }
-    if (argv[i]=="--user-solver-config-dir") {
-      cout << FileUtils::user_config_dir()+"/solvers";
+    if (argv[i]=="--config-dirs") {
+      cout << "{\n";
+      cout << "  \"userSolverConfigDir\" : \"" << FileUtils::user_config_dir() << "/solvers\",\n";
+      cout << "  \"mznStdlibDir\" : \"" << solver_configs.mznlibDir() << "\"\n";
+      cout << "}\n";
       return OPTION_FINISH;
     }
     if (argv[i]=="--solver") {
