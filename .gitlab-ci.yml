@@ -34,8 +34,8 @@ stages:
 build:win32:
   stage: build
   script:
-    - curl --silent -o dependencies.zip --location --header "PRIVATE-TOKEN:%DEPLOY_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fdeploy/jobs/artifacts/master/download?job=build:win32"
-    - unzip -q dependencies.zip
+    - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:%DEPLOY_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fbundler/jobs/artifacts/master/download?job=build:win32"
+    - unzip -q vendor.zip
     - if not exist "build" mkdir build
     - cd build
     # -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode"
