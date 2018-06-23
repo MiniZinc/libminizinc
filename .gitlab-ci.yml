@@ -60,14 +60,31 @@ build:win32:
     paths:
       - build/
 
-# build:win64:
-#  stage: build
-#  script:
-#    - call "C:\Program Files (x86)\Microsoft Visual Studio 14.0/VC/vcvarsall.bat" amd64
-#    - git clone http://%DEPLOY_USER%:%DEPLOY_PASS%@gitlab.com/minizinc/deploy.git
-#    - bash deploy/win64/build_compiler.sh .
-#  artifacts:
-#     paths:
-#       - bin/
-#  tags:
-#     - win64
+build:win64:
+  stage: build
+  variables:
+    CMAKE_ARCH: "Visual Studio 14 2015 Win64"
+    GUROBI_DIR: "C:/gurobi701/win64"
+  script:
+    - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:%DEPLOY_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fbundler/jobs/artifacts/master/download?job=%CI_JOB_NAME%"
+    - unzip -q vendor.zip
+    - if not exist "build" mkdir build
+    - cd build
+    # -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode"
+    - cmake -G"%CMAKE_ARCH%" .. -DGUROBI_HOME="%GUROBI_DIR%" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX=.
+    - cmake --build . --config Release --target install
+    - cd ..
+    - mkdir bin
+    - mv build/Release/{minizinc,mzn2doc,mzn2fzn,solns2out}.exe bin/
+  artifacts:
+    paths:
+      - bin/
+  tags:
+     - win64
+     - cmake
+     - cpp
+     - gurobi
+  cache:
+    key: "win64_$CI_COMMIT_REF_SLUG"
+    paths:
+      - build/
