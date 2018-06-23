@@ -28,7 +28,7 @@ build:osx:
     - unzip -q vendor.zip
     - mkdir -p build
     - cd build
-    - cmake -G"$CMAKE_ARCH" .. -DGUROBI_HOME="$GUROBI_DIR" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="${CI_PROJECT_DIR}/vendor/CBC" -DCMAKE_INSTALL_PREFIX=../minizinc
+    - cmake -G"$CMAKE_ARCH" .. -DGUROBI_HOME="$GUROBI_DIR" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="$CI_PROJECT_DIR/vendor/CBC" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   artifacts:
@@ -55,15 +55,12 @@ build:win32:
     - if not exist "build" mkdir build
     - cd build
     # -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode"
-    - cmake -G"%CMAKE_ARCH%" .. -DGUROBI_HOME="%GUROBI_DIR%" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX=.
+    - cmake -G"%CMAKE_ARCH%" .. -DGUROBI_HOME="%GUROBI_DIR%" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
-    - cd ..
-    - mkdir bin
-    - mv build/Release/{minizinc,mzn2doc,mzn2fzn,solns2out}.exe bin/
   artifacts:
     paths:
-      - bin/
+      - minizinc/
   tags:
      - win32
      - cmake
@@ -85,15 +82,12 @@ build:win64:
     - if not exist "build" mkdir build
     - cd build
     # -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode"
-    - cmake -G"%CMAKE_ARCH%" .. -DGUROBI_HOME="%GUROBI_DIR%" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX=.
+    - cmake -G"%CMAKE_ARCH%" .. -DGUROBI_HOME="%GUROBI_DIR%" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
-    - cd ..
-    - mkdir bin
-    - mv build/Release/{minizinc,mzn2doc,mzn2fzn,solns2out}.exe bin/
   artifacts:
     paths:
-      - bin/
+      - minizinc/
   tags:
      - win64
      - cmake
