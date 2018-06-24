@@ -722,9 +722,9 @@ item_tail :
     | annotation_item
       { $$=notInDatafile(&@$,parm,"annotation") ? $1 : NULL; }
 
-error_item_start : MZN_INCLUDE | MZN_ENUM | MZN_IDENTIFIER | MZN_OUTPUT
+error_item_start : MZN_INCLUDE | MZN_ENUM | MZN_OUTPUT
     | MZN_CONSTRAINT | MZN_SOLVE | MZN_PREDICATE | MZN_FUNCTION | MZN_TEST
-    | MZN_ANNOTATION | ti_expr_and_id
+    | MZN_ANNOTATION
 
 include_item :
       MZN_INCLUDE MZN_STRING_LITERAL
