@@ -138,17 +138,17 @@ namespace MiniZinc {
       EnvI& env = getEnv()->envi();
       GCLock lock;
       
-      int_lin_eq = env.orig->matchFn(env, constants().ids.int_.lin_eq, int_lin_eq_t, false);
+      int_lin_eq = env.model->matchFn(env, constants().ids.int_.lin_eq, int_lin_eq_t, false);
       DBGOUT_MIPD ( "  int_lin_eq = " << int_lin_eq );
 //       MZN_MIPD__assert_hard(fi);
 //       int_lin_eq = (fi && fi->e()) ? fi : NULL;
-      int_lin_le = env.orig->matchFn(env, constants().ids.int_.lin_le, int_lin_eq_t, false);
-      float_lin_eq = env.orig->matchFn(env, constants().ids.float_.lin_eq, float_lin_eq_t, false);
-      float_lin_le = env.orig->matchFn(env, constants().ids.float_.lin_le, float_lin_eq_t, false);
-      int2float = env.orig->matchFn(env, constants().ids.int2float, t_VIVF, false);
+      int_lin_le = env.model->matchFn(env, constants().ids.int_.lin_le, int_lin_eq_t, false);
+      float_lin_eq = env.model->matchFn(env, constants().ids.float_.lin_eq, float_lin_eq_t, false);
+      float_lin_le = env.model->matchFn(env, constants().ids.float_.lin_le, float_lin_eq_t, false);
+      int2float = env.model->matchFn(env, constants().ids.int2float, t_VIVF, false);
 
-      lin_exp_int = env.orig->matchFn(env, constants().ids.lin_exp, int_lin_eq_t, false);
-      lin_exp_float = env.orig->matchFn(env, constants().ids.lin_exp, float_lin_eq_t, false);
+      lin_exp_int = env.model->matchFn(env, constants().ids.lin_exp, int_lin_eq_t, false);
+      lin_exp_float = env.model->matchFn(env, constants().ids.lin_exp, float_lin_eq_t, false);
       
       if ( !(int_lin_eq&&int_lin_le&&float_lin_eq&&float_lin_le) ) {
         // say something...
@@ -164,7 +164,7 @@ namespace MiniZinc {
 //         Call* call_EPS_for_LT =
 //           new Call(Location(),"mzn_float_lt_EPS_coef__", std::vector<Expression*>());
 //         call_EPS_for_LT->type(Type::parfloat());
-//         call_EPS_for_LT->decl(env.orig->matchFn(getEnv()->envi(), call_EPS_for_LT));
+//         call_EPS_for_LT->decl(env.model->matchFn(getEnv()->envi(), call_EPS_for_LT));
 //         float_lt_EPS_coef__ = eval_float(getEnv()->envi(), call_EPS_for_LT);
 //       }
     }
@@ -261,7 +261,7 @@ namespace MiniZinc {
       /// Registering all declared & compatible __POST constraints
       /// (First, cleanup FunctionIs' payload:  -- ! doing now)
       for ( int i=0; i<aCT.size(); ++i ) {
-        FunctionI* fi = env.orig->matchFn(env, ASTString(aCT[i].sFuncName), aCT[i].aParams, false);
+        FunctionI* fi = env.model->matchFn(env, ASTString(aCT[i].sFuncName), aCT[i].aParams, false);
         if (fi) {
           mCallTypes[fi] = aCT.data() + i;
           aCT[i].pfi = fi;

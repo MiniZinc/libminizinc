@@ -143,7 +143,7 @@ namespace MiniZinc {
         toEnumArgs[0] = vd->id();
         toEnumArgs[1] = IntLit::a(i+1);
         Call* toEnum = new Call(sl->v()[i]->loc(), ASTString("to_enum"), toEnumArgs);
-        toEnum->decl(env.orig->matchFn(env, toEnum, false));
+        toEnum->decl(env.model->matchFn(env, toEnum, false));
         VarDecl* vd_id = new VarDecl(ti_id->loc(),ti_id,sl->v()[i]->cast<Id>()->str(),toEnum);
         enumItems->addItem(new VarDeclI(vd_id->loc(),vd_id));
       }
@@ -1624,7 +1624,30 @@ namespace MiniZinc {
     void vTIId(TIId& id) {}
   };
   
-  void typecheck(Env& env, Model* m, std::vector<TypeError>& typeErrors, bool ignoreUndefinedParameters, bool allowMultiAssignment) {
+  void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors, bool ignoreUndefinedParameters, bool allowMultiAssignment) {
+    Model* m;
+    if (origModel==env.model()) {
+      // Combine all items into single model
+      Model* combinedModel = new Model;
+      class Combiner : public ItemVisitor {
+      public:
+        Model* m;
+        Combiner(Model* m0) : m(m0) {}
+        bool enter(Item* i) {
+          if (!i->isa<IncludeI>())
+            m->addItem(i);
+          return true;
+        }
+      } _combiner(combinedModel);
+      iterItems(_combiner, origModel);
+      env.envi().orig_model = origModel;
+      env.envi().model = combinedModel;
+      m=combinedModel;
+    } else {
+      m = origModel;
+    }
+    
+    // Topological sorting
     TopoSorter ts(m);
     
     std::vector<FunctionI*> functionItems;
@@ -1886,7 +1909,7 @@ namespace MiniZinc {
               args[0] = i->e();
               args[1] = constants().boollit(i->st()==SolveI::ST_MAX);
               Call* c = new Call(Location().introduce(), ASTString("objective_deopt_"), args);
-              c->decl(env.orig->matchFn(env, c, false));
+              c->decl(env.model->matchFn(env, c, false));
               assert(c->decl());
               c->type(et);
               i->e(c);
