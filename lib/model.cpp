@@ -173,7 +173,7 @@ namespace MiniZinc {
       std::vector<int> stack;
       for (unsigned int i=0; i<type_ids.size(); i++)
         stack.push_back(i);
-      int final_id = type_ids.size()-1;
+      int final_id = static_cast<int>(type_ids.size())-1;
       
       while (!stack.empty()) {
         
@@ -519,7 +519,7 @@ namespace MiniZinc {
   const Item*
   Model::operator[] (int i) const { assert(i < _items.size()); return _items[i]; }
   unsigned int
-  Model::size(void) const { return _items.size(); }
+  Model::size(void) const { return static_cast<unsigned int>(_items.size()); }
   
   std::vector<Item*>::iterator
   Model::begin(void) { return _items.begin(); }

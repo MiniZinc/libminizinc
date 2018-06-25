@@ -49,7 +49,7 @@ string MIP_gurobi_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options*
     int major, minor, technical;
     mgw.dll_GRBversion(&major, &minor, &technical);
     oss << major << '.' << minor << '.' << technical;
-  } catch (MiniZinc::InternalError& e) {
+  } catch (MiniZinc::InternalError&) {
     return "<unknown version>";
   }
   oss << ".  Compiled  " __DATE__ "  " __TIME__;
@@ -65,7 +65,7 @@ string MIP_gurobi_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt
     mgw.dll_GRBversion(&major, &minor, &technical);
     oss << major << '.' << minor << '.' << technical;
     return oss.str();
-  } catch (MiniZinc::InternalError& e) {
+  } catch (MiniZinc::InternalError&) {
     return "<unknown version>";
   }
 }
@@ -75,7 +75,7 @@ string MIP_gurobi_wrapper::needDllFlag( ) {
   try {
     mgw.checkDLL();
     return "";
-  } catch (MiniZinc::InternalError& e) {
+  } catch (MiniZinc::InternalError&) {
     return "--gurobi-dll";
   }
 }
@@ -323,7 +323,7 @@ void MIP_gurobi_wrapper::openGUROBI()
 //                            fVerbose ? 1 : 0);  // also when flag_all_solutions?  TODO
   /* Create the problem. */
    error = dll_GRBnewmodel(env, &model, "mzn_gurobi", 0, NULL, NULL, NULL, NULL, NULL);
-   wrap_assert ( model, "Failed to create LP." );
+   wrap_assert ( model!=NULL, "Failed to create LP." );
 }
 
 void MIP_gurobi_wrapper::closeGUROBI()
@@ -371,7 +371,7 @@ void MIP_gurobi_wrapper::doAddVars
         throw runtime_error("  MIP_wrapper: unknown variable type");
     }
   }
-  error = dll_GRBaddvars(model, n, 0, NULL, NULL, NULL, obj, lb, ub, &ctype[0], &pcNames[0]);
+  error = dll_GRBaddvars(model, static_cast<int>(n), 0, NULL, NULL, NULL, obj, lb, ub, &ctype[0], &pcNames[0]);
   wrap_assert( !error,  "Failed to declare variables." );
   error = dll_GRBupdatemodel(model);
   wrap_assert( !error,  "Failed to update model." );
@@ -405,8 +405,8 @@ void MIP_gurobi_wrapper::addRow
   error = dll_GRBaddconstr(model, nnz, rmatind, rmatval, ssense, rhs, pRName);
   wrap_assert( !error,  "Failed to add constraint." );
   int nLazyAttr=0;
-  const bool fUser = (MaskConsType_Usercut & mask);
-  const bool fLazy = (MaskConsType_Lazy & mask);
+  const bool fUser = (MaskConsType_Usercut & mask) != 0;
+  const bool fLazy = (MaskConsType_Lazy & mask) != 0;
   /// Gurobi 6.5.2 has lazyness 1-3.
   if (fUser) {
     if (fLazy)
@@ -437,7 +437,7 @@ void MIP_gurobi_wrapper::addIndicatorConstraint(
 bool MIP_gurobi_wrapper::addSearch( const std::vector<VarId>& vars, const std::vector<int> pri ) {
   assert( vars.size()==pri.size() );
   static_assert( sizeof(VarId)==sizeof(int), "VarId should be (u)int currently" );
-  error = dll_GRBsetintattrlist(model, "BranchPriority", vars.size(), (int*)vars.data(), (int*)pri.data());
+  error = dll_GRBsetintattrlist(model, "BranchPriority", static_cast<int>(vars.size()), (int*)vars.data(), (int*)pri.data());
   wrap_assert( !error,  "Failed to add branching priorities" );
   return true;
 }
@@ -450,7 +450,7 @@ bool MIP_gurobi_wrapper::addWarmStart( const std::vector<VarId>& vars, const std
   assert( vars.size()==vals.size() );
   static_assert( sizeof(VarId)==sizeof(int), "VarId should be (u)int currently" );
   // error = GRBsetdblattrelement(model, "Start", 0, 1.0);
-  error = dll_GRBsetdblattrlist(model, "Start", vars.size(), (int*)vars.data(), (double*)vals.data());
+  error = dll_GRBsetdblattrlist(model, "Start", static_cast<int>(vars.size()), (int*)vars.data(), (double*)vals.data());
   wrap_assert( !error,  "Failed to add warm start" );
   return true;
 }
@@ -496,7 +496,7 @@ solcallback(GRBmodel *model,
       /* General MIP callback */
       gw->dll_GRBcbget(cbdata, where, GRB_CB_MIP_OBJBND, &info->pOutput->bestBound);
         gw->dll_GRBcbget(cbdata, where, GRB_CB_MIP_NODLFT, &actnodes);
-      info->pOutput->nOpenNodes = actnodes;
+      info->pOutput->nOpenNodes = static_cast<int>(actnodes);
   } else if ( GRB_CB_MESSAGE==where ) {
     /* Message callback */
     if ( info->fVerb ) {
@@ -507,7 +507,7 @@ solcallback(GRBmodel *model,
   } else if ( GRB_CB_MIPSOL==where ) {
       /* MIP solution callback */
       gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_NODCNT, &nodecnt);
-      info->pOutput->nNodes = nodecnt;
+      info->pOutput->nNodes = static_cast<int>(nodecnt);
       gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &objVal);
       gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOLCNT, &solcnt);
 
@@ -539,7 +539,7 @@ solcallback(GRBmodel *model,
       for ( auto& cd : cutInput ) {
 //         assert( cd.mask & MIP_wrapper::MaskConsType_Lazy );
         if ( cd.mask & MIP_wrapper::MaskConsType_Lazy ) {
-          int error = gw->dll_GRBcblazy(cbdata, cd.rmatind.size(),
+          int error = gw->dll_GRBcblazy(cbdata, static_cast<int>(cd.rmatind.size()),
                   cd.rmatind.data(), cd.rmatval.data(), 
                   getGRBSense(cd.sense), cd.rhs);
           if (error)
@@ -567,14 +567,14 @@ solcallback(GRBmodel *model,
         assert( cd.mask &
           (MIP_wrapper::MaskConsType_Usercut|MIP_wrapper::MaskConsType_Lazy) );
         if ( cd.mask & MIP_wrapper::MaskConsType_Usercut ) {
-          int error = gw->dll_GRBcbcut(cbdata, cd.rmatind.size(),
+          int error = gw->dll_GRBcbcut(cbdata, static_cast<int>(cd.rmatind.size()),
                   cd.rmatind.data(), cd.rmatval.data(), 
                   getGRBSense(cd.sense), cd.rhs);
           if (error)
             cerr << "  GRB_wrapper: failed to add user cut. " << endl;
         }
         if ( cd.mask & MIP_wrapper::MaskConsType_Lazy ) {
-          int error = gw->dll_GRBcblazy(cbdata, cd.rmatind.size(),
+          int error = gw->dll_GRBcblazy(cbdata, static_cast<int>(cd.rmatind.size()),
                   cd.rmatind.data(), cd.rmatval.data(), 
                   getGRBSense(cd.sense), cd.rhs);
           if (error)
@@ -631,7 +631,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
       if ( fVerbose )
          cerr << "  MIP_gurobi_wrapper: marking "<<nLazyIdx.size()
            <<" lazy cuts." << endl;
-      error = dll_GRBsetintattrlist(model, "Lazy", nLazyIdx.size(), nLazyIdx.data(), nLazyValue.data());
+      error = dll_GRBsetintattrlist(model, "Lazy", static_cast<int>(nLazyIdx.size()), nLazyIdx.data(), nLazyValue.data());
       wrap_assert( !error,  "Failed to set constraint attribute." );
       nLazyIdx.clear();
       nLazyValue.clear();
@@ -704,7 +704,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
 
     
        /// Solution callback
-   output.nCols = colObj.size();
+   output.nCols = static_cast<int>(colObj.size());
    x.resize(output.nCols);
    output.x = &x[0];
    if (true) {                 // Need for logging
@@ -745,7 +745,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
 
     cbui.pOutput->dWallTime0 = output.dWallTime0 =
       std::chrono::steady_clock::now();
-    cbui.pOutput->cCPUTime0 = output.dCPUTime = std::clock();
+    output.dCPUTime = cbui.pOutput->cCPUTime0 = std::clock();
     
    /* Optimize the problem and obtain solution. */
    error = dll_GRBoptimize(model);
@@ -779,7 +779,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    wrap_assert(!error, "Failed to get the best bound.", false);
    double nNodes=-1;
    error = dll_GRBgetdblattr(model, GRB_DBL_ATTR_NODECOUNT, &nNodes);
-   output.nNodes = nNodes;
+   output.nNodes = static_cast<int>(nNodes);
    output.nOpenNodes = 0;
 }
 

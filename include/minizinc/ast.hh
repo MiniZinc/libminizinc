@@ -406,7 +406,7 @@ namespace MiniZinc {
           return NULL; // exponent doesn't fit in 10 bits
         exponent -= 512; // make exponent fit in 10 bits, with bias 511
       }
-      bool sign = _u.bits & (static_cast<uint64_t>(1) << 63);
+      bool sign = (_u.bits & (static_cast<uint64_t>(1) << 63)) != 0;
       
       _u.bits = _u.bits & ~(static_cast<uint64_t>(0x7FF) << 52); // mask out top 11 bits (previously exponent)
       _u.bits = (_u.bits << 1) | 1u; // shift by one bit and add tag for double
@@ -446,11 +446,15 @@ namespace MiniZinc {
 
     /// Test if expression is of type \a T
     template<class T> bool isa(void) const {
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wtautological-undefined-compare"
+#endif
       if (nullptr==this)
         throw InternalError("isa: nullptr");
+#ifdef __clang__
 #pragma clang diagnostic pop
+#endif
       return isUnboxedInt() ? T::eid==E_INTLIT : isUnboxedFloatVal() ? T::eid==E_FLOATLIT : _id==T::eid;
     }
     /// Cast expression to type \a T*

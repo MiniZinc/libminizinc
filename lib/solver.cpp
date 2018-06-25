@@ -239,7 +239,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   else if (executable_name=="solns2out")
     s2out._opt.flag_standaloneSolns2Out=true;
   int i=1, j=1;
-  int argc = argv.size();
+  int argc = static_cast<int>(argv.size());
   if (argc < 2)
     return OPTION_ERROR;
   string solver;

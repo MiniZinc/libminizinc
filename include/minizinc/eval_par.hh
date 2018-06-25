@@ -155,7 +155,7 @@ namespace MiniZinc {
       e->rehash();
     } else {
       ArrayLit* al = in()->cast<ArrayLit>();
-      e->decl(gen,id)->e((*al)[i.toInt()]);
+      e->decl(gen,id)->e((*al)[static_cast<int>(i.toInt())]);
       e->rehash();
     }
     if (id == e->n_decls(gen)-1) {

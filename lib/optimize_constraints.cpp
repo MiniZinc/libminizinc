@@ -220,7 +220,7 @@ namespace MiniZinc {
         if (idx < 1 || idx > al->size()) {
           return OptimizeRegistry::CS_FAILED;
         }
-        Expression* result = (*al)[idx.toInt()-1];
+        Expression* result = (*al)[static_cast<int>(idx.toInt())-1];
         std::vector<Expression*> args(2);
         args[0] = result;
         args[1] = c->arg(2);

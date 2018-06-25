@@ -68,9 +68,11 @@ namespace MiniZinc {
   inline void checkIOStatus( bool fOk, std::string msg, bool fHard=1 )
   {
     if ( !fOk ) {
+      char errBuf[1024];
+      strerror_s(errBuf, sizeof(errBuf), errno);
       std::cerr << "\n  " << msg
-        << ":   " << strerror(errno) << "." << std::endl;
-      MZN_ASSERT_HARD_MSG ( !fHard, msg << ": " << strerror(errno) );
+        << ":   " << errBuf << "." << std::endl;
+      MZN_ASSERT_HARD_MSG ( !fHard, msg << ": " << errBuf );
     }
   }
   

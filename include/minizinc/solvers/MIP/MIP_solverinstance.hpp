@@ -64,7 +64,7 @@ namespace MiniZinc {
   MIP_solverinstance<MIPWrapper>::exprToConstEasy(Expression* e) {
     std::pair<double, bool> res { 0.0, true };
     if (IntLit* il = e->dyn_cast<IntLit>()) {
-      res.first = ( il->v().toInt() );
+      res.first = ( static_cast<double>(il->v().toInt()) );
     } else if (FloatLit* fl = e->dyn_cast<FloatLit>()) {
       res.first = ( fl->v().toDouble() );
     } else if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
@@ -124,7 +124,7 @@ namespace MiniZinc {
           for (unsigned int i=0; i<alV->size(); i++) {
             if (Id* ident = (*alV)[i]->dyn_cast<Id>()) {
               vars.push_back( exprToVar( ident ) );
-              aPri.push_back( aAnns.size()-iA );            // level search by default
+              aPri.push_back( static_cast<int>(aAnns.size())-iA );            // level search by default
             } // else ignore
           }
         }
@@ -181,7 +181,7 @@ namespace MiniZinc {
                 } // else ignore
             }
             assert(coefs.size() == vars.size());
-            nVal += coefs.size();
+            nVal += static_cast<int>(coefs.size());
             if ( coefs.size() && !getMIPWrapper()->addWarmStart( vars, coefs ) ) {
               std::cerr << "\nWARNING: MIP backend seems to ignore warm starts" << std::endl;
               return;
@@ -262,8 +262,8 @@ namespace MiniZinc {
           } else if (MIP_wrapper::VarType::INT == vType) {
             IntBounds ib = compute_int_bounds(getEnv()->envi(), it->e()->id());
             if (ib.valid) {  // Normally should be
-              lb = ib.l.toInt();
-              ub = ib.u.toInt();
+              lb = static_cast<double>(ib.l.toInt());
+              ub = static_cast<double>(ib.u.toInt());
             } else {
               lb = 1;
               ub = 0;
@@ -371,7 +371,7 @@ namespace MiniZinc {
       switch (id->type().bt()) {
         case Type::BT_INT: return IntLit::a(round_to_longlong(val));
         case Type::BT_FLOAT: return FloatLit::a(val);
-        case Type::BT_BOOL: return new BoolLit(Location(), round_to_longlong(val));
+        case Type::BT_BOOL: return new BoolLit(Location(), round_to_longlong(val) != 0);
         default: return NULL;
       }
     } else {
@@ -564,7 +564,7 @@ namespace MiniZinc {
       double rhs;
       if(call->arg(2)->type().isint()) {
         ires = eval_int(_env.envi(), call->arg(2));
-        rhs = ires.toInt();
+        rhs = static_cast<double>(ires.toInt());
       } else if(call->arg(2)->type().isfloat()) {
         fres = eval_float(_env.envi(), call->arg(2));
         rhs = fres.toDouble();
@@ -603,7 +603,7 @@ namespace MiniZinc {
         // See if the solver adds indexation itself: no.
         std::stringstream ss;
         ss << "p_lin_" << (gi.getMIPWrapper()->nAddedRows++);
-        gi.getMIPWrapper()->addRow(coefs.size(), &vars[0], &coefs[0], lt, rhs,
+        gi.getMIPWrapper()->addRow(static_cast<int>(coefs.size()), &vars[0], &coefs[0], lt, rhs,
                                    GetMaskConsType(call), ss.str());
       }
     }
@@ -657,7 +657,7 @@ namespace MiniZinc {
       } else {
         std::stringstream ss;
         ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
-        gi.getMIPWrapper()->addRow(vars.size(), &vars[0], &coefs[0], nCmp, rhs,
+        gi.getMIPWrapper()->addRow(static_cast<int>(vars.size()), &vars[0], &coefs[0], nCmp, rhs,
                                    GetMaskConsType(call), ss.str());
       }
     }
@@ -766,13 +766,13 @@ namespace MiniZinc {
         if ( val2>0.999999 ) {          // so  var1<=0
           std::ostringstream ss;
           ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
-          gi.getMIPWrapper()->addRow(vars.size(), &vars[0], &coefs[0], MIP_wrapper::LinConType::EQ, rhs,
+          gi.getMIPWrapper()->addRow(static_cast<int>(vars.size()), &vars[0], &coefs[0], MIP_wrapper::LinConType::EQ, rhs,
                                      MIP_wrapper::MaskConsType_Normal, ss.str());
         }
       } else {
         std::ostringstream ss;
         ss << "p_ind_" << (gi.getMIPWrapper()->nAddedRows++);
-        gi.getMIPWrapper()->addIndicatorConstraint( varB, 1, coefs.size(), vars.data(), coefs.data(),
+        gi.getMIPWrapper()->addIndicatorConstraint( varB, 1, static_cast<int>(coefs.size()), vars.data(), coefs.data(),
                                                    MIP_wrapper::LinConType::EQ, rhs, ss.str() );
         ++gi.getMIPWrapper()->nIndicatorConstr;
       }

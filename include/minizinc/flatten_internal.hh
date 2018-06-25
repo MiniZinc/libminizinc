@@ -414,7 +414,7 @@ namespace MiniZinc {
                     std::vector<KeepAlive>& x,
                     typename LinearTraits<Lit>::Val& d) {
     std::vector<int> idx(c.size());
-    for (unsigned int i=idx.size(); i--;) {
+    for (unsigned int i=static_cast<unsigned int>(idx.size()); i--;) {
       idx[i]=i;
       Expression* e = follow_id_to_decl(x[i]());
       if (VarDecl* vd = e->dyn_cast<VarDecl>()) {

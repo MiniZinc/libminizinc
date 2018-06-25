@@ -297,7 +297,7 @@ namespace MiniZinc {
       dims.push_back(make_pair(1, 0));
       hadDim.push_back(false);
     }
-    int curDim = dims.size()-1;
+    int curDim = static_cast<int>(dims.size())-1;
     for (;;) {
       switch (next.t) {
         case T_LIST_CLOSE:

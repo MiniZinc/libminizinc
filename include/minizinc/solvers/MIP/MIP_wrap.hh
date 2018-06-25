@@ -113,7 +113,7 @@ class MIP_wrapper {
         rmatval.push_back( c );
       }
       double computeViol( const double* x, int nCols ) {
-        double lhs = computeSparse( rmatind.size(), rmatind.data(), rmatval.data(), x, nCols );
+        double lhs = computeSparse( static_cast<int>(rmatind.size()), rmatind.data(), rmatval.data(), x, nCols );
         if ( LQ==sense ) {
           return lhs-rhs;
         } else if ( GQ==sense ) {
@@ -181,7 +181,7 @@ class MIP_wrapper {
       colUB.push_back(ub);
       colTypes.push_back(vt);
       colNames.push_back(name);
-      return colObj.size()-1;
+      return static_cast<VarId>(colObj.size()-1);
     }
     /// add the given var to the solver. Asserts all previous are added. Phase >=2. No direct use
     virtual void addVar(int j) {

@@ -1417,28 +1417,28 @@ simple_array_literal_2d :
     {
       if ($2) {
         std::vector<std::pair<int,int> > dims(3);
-        dims[0] = std::pair<int,int>(1,$2->size());
+        dims[0] = std::pair<int,int>(1,static_cast<int>($2->size()));
         if ($2->size()==0) {
           dims[1] = std::pair<int,int>(1,0);
           dims[2] = std::pair<int,int>(1,0);
         } else {
-          dims[1] = std::pair<int,int>(1,(*$2)[0].size());
+          dims[1] = std::pair<int,int>(1,static_cast<int>((*$2)[0].size()));
           if ((*$2)[0].size()==0) {
             dims[2] = std::pair<int,int>(1,0);
           } else {
-            dims[2] = std::pair<int,int>(1,(*$2)[0][0].size());
+            dims[2] = std::pair<int,int>(1,static_cast<int>((*$2)[0][0].size()));
           }
         }
         std::vector<Expression*> a;
-        for (unsigned int i=0; i<dims[0].second; i++) {
+        for (int i=0; i<dims[0].second; i++) {
           if ((*$2)[i].size() != dims[1].second) {
             yyerror(&@2, parm, "syntax error, all sub-arrays of 3d array literal must have the same length");
           } else {
-            for (unsigned int j=0; j<dims[1].second; j++) {
+            for (int j=0; j<dims[1].second; j++) {
               if ((*$2)[i][j].size() != dims[2].second) {
                 yyerror(&@2, parm, "syntax error, all sub-arrays of 3d array literal must have the same length");
               } else {
-                for (unsigned int k=0; k<dims[2].second; k++) {
+                for (int k=0; k<dims[2].second; k++) {
                   a.push_back((*$2)[i][j][k]);
                 }
               }

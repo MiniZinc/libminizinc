@@ -350,12 +350,12 @@ namespace MiniZinc {
     _u._al = v;
     assert(slice.size() == v->dims());
     std::vector<int> d(dims.size()*2+2*slice.size());
-    for (unsigned int i=dims.size(); i--;) {
+    for (unsigned int i=static_cast<unsigned int>(dims.size()); i--;) {
       d[i*2  ] = dims[i].first;
       d[i*2+1] = dims[i].second;
     }
-    int sliceOffset = 2*dims.size();
-    for (unsigned int i=slice.size(); i--;) {
+    int sliceOffset = static_cast<int>(2*dims.size());
+    for (unsigned int i=static_cast<unsigned int>(slice.size()); i--;) {
       d[sliceOffset+i*2  ] = slice[i].first;
       d[sliceOffset+i*2+1] = slice[i].second;
     }
@@ -395,7 +395,7 @@ namespace MiniZinc {
     _flag_1 = false;
     _flag_2 = false;
     std::vector<int> d(dims.size()*2);
-    for (unsigned int i=dims.size(); i--;) {
+    for (unsigned int i=static_cast<unsigned int>(dims.size()); i--;) {
       d[i*2] = dims[i].first;
       d[i*2+1] = dims[i].second;
     }
@@ -818,7 +818,7 @@ namespace MiniZinc {
         ranges[0]->cast<TypeInst>()->domain()->isa<TIId>())
       _type.dim(-1);
     else
-      _type.dim(ranges.size());
+      _type.dim(static_cast<int>(ranges.size()));
     rehash();
   }
 
@@ -1728,7 +1728,7 @@ namespace MiniZinc {
   Annotation::add(std::vector<Expression*> e) {
     if (_s == NULL)
       _s = new ExpressionSet;
-    for (unsigned int i=e.size(); i--;)
+    for (unsigned int i=static_cast<unsigned int>(e.size()); i--;)
       if (e[i])
         _s->insert(e[i]);
   }
@@ -1751,7 +1751,7 @@ namespace MiniZinc {
           toRemove.push_back(*it);
       }
     }
-    for (unsigned int i=toRemove.size(); i--;)
+    for (unsigned int i=static_cast<unsigned int>(toRemove.size()); i--;)
       _s->remove(toRemove[i]);
   }
   

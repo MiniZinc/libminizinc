@@ -351,7 +351,7 @@ namespace MiniZinc {
         
         m.insert(e,c);
         std::vector<Expression*> args(ca->n_args());
-        for (unsigned int i=args.size(); i--;)
+        for (unsigned int i=static_cast<unsigned int>(args.size()); i--;)
           args[i] = copy(env,m,ca->arg(i),followIds,copyFundecls,isFlatModel);
         c->args(args);
         ret = c;

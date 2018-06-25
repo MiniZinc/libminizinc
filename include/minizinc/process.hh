@@ -43,7 +43,7 @@ namespace MiniZinc {
     while (!done) {
       char buffer[5255];
       DWORD count = 0;
-      bool bSuccess = ReadFile(g_hCh, buffer, sizeof(buffer) - 1, &count, NULL);
+      BOOL bSuccess = ReadFile(g_hCh, buffer, sizeof(buffer) - 1, &count, NULL);
       if (bSuccess && count > 0) {
         buffer[count] = 0;
         std::lock_guard<std::mutex> lck(*mtx);
@@ -136,7 +136,7 @@ namespace MiniZinc {
 
       char* cmdstr = strdup(cmdline.str().c_str());
 
-      bool processStarted = CreateProcess(NULL,
+      BOOL processStarted = CreateProcess(NULL,
         cmdstr,        // command line
         NULL,          // process security attributes
         NULL,          // primary thread security attributes

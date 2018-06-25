@@ -59,7 +59,7 @@ namespace MiniZinc {
   
   VarDecl*
   Scopes::find(Id *ident) {
-    int cur = s.size()-1;
+    int cur = static_cast<int>(s.size())-1;
     for (;;) {
       DeclMap::iterator vdi = s[cur].m.find(ident);
       if (vdi == s[cur].m.end()) {
@@ -688,10 +688,10 @@ namespace MiniZinc {
           pos.insert(std::pair<VarDecl*,int>(ve,-1));
           run(env, ve->ti());
           run(env, ve->e());
-          ve->payload(decls.size());
+          ve->payload(static_cast<int>(decls.size()));
           decls.push_back(ve);
           pi = pos.find(ve);
-          pi->second = decls.size()-1;
+          pi->second = static_cast<int>(decls.size())-1;
         } else {
           assert(pi->second != -1);
         }
@@ -736,7 +736,7 @@ namespace MiniZinc {
       for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
           try {
             run(env, *it);
-          } catch (TypeError& e) {
+          } catch (TypeError&) {
             toDelete.push_back(*it);
           }
           for (Expression* de : toDelete)
@@ -1024,7 +1024,7 @@ namespace MiniZinc {
       }
       if (ty.enumId() != 0) {
         std::vector<unsigned int> enumIds(ty.dim()+1);
-        for (unsigned int i=0; i<ty.dim(); i++)
+        for (int i=0; i<ty.dim(); i++)
           enumIds[i] = 0;
         enumIds[ty.dim()] = ty.enumId();
         ty.enumId(_env.registerArrayEnum(enumIds));
@@ -1423,7 +1423,7 @@ namespace MiniZinc {
     /// Visit call
     void vCall(Call& call) {
       std::vector<Expression*> args(call.n_args());
-      for (unsigned int i=args.size(); i--;)
+      for (unsigned int i=static_cast<unsigned int>(args.size()); i--;)
         args[i] = call.arg(i);
       if (FunctionI* fi = _model->matchFn(_env,call.id(),args,true)) {
         bool cv = false;
@@ -1724,7 +1724,7 @@ namespace MiniZinc {
       if (env.envi().ignoreUnknownIds) {
         try {
           vd = ts.get(env.envi(),ai->id(),ai->loc());
-        } catch (TypeError& e) {}
+        } catch (TypeError&) {}
       } else {
         vd = ts.get(env.envi(),ai->id(),ai->loc());
       }
@@ -2046,7 +2046,7 @@ namespace MiniZinc {
         os << ", \"dims\" : [";
         bool had_dim = false;
         ASTExprVec<TypeInst> ranges = vd->ti()->ranges();
-        for(int i=0; i<ranges.size(); i++) {
+        for(int i=0; i<static_cast<int>(ranges.size()); i++) {
           if(ranges[i]->type().enumId() > 0) {
             os << (had_dim ? "," : "")
                << "\"" << *env.envi().getEnum(ranges[i]->type().enumId())->e()->id() << "\"";

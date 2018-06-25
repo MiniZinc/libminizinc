@@ -73,7 +73,7 @@ using namespace MiniZinc;
 
 void XBZCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInput& cutsIn) {
   assert( pMIP );
-  const int n = varX.size();
+  const int n = static_cast<int>(varX.size());
   assert( n==varB.size() );
   MIP_wrapper::CutDef cut( MIP_wrapper::GQ, MIP_wrapper::MaskConsType_Usercut );
   cut.addVar( varZ, -1.0 );

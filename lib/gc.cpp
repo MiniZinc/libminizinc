@@ -513,7 +513,7 @@ namespace MiniZinc {
       m = m->_roots_next;
     } while (m != _rootset);
     
-    for (unsigned int i=trail.size(); i--;) {
+    for (unsigned int i=static_cast<unsigned int>(trail.size()); i--;) {
       Expression::mark(trail[i].v);
     }
     
