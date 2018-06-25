@@ -27,7 +27,6 @@ namespace MiniZinc {
   NameMap betternames;
   private:
     std::ostream& os;
-    EnvI& ei;
     int constraint_index;
 
     void addBetterName(Id* id, std::string name, std::string path, bool overwrite);

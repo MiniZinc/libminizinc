@@ -131,9 +131,6 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
   << std::endl;
 }
 
-  static inline bool beginswith(string s, string t) {
-    return s.compare(0, t.length(), t)==0;
-  }
 
 bool MIP_gurobi_wrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
   MiniZinc::CLOParser cop( i, argv );
@@ -398,9 +395,6 @@ void MIP_gurobi_wrapper::addRow
   ++ nRows;
   /// Convert var types:
   char ssense=getGRBSense(sense);
-  const int ccnt=0;
-  const int rcnt=1;
-  const int rmatbeg[] = { 0 };
   const char * pRName = rowName.c_str();
   error = dll_GRBaddconstr(model, nnz, rmatind, rmatval, ssense, rhs, pRName);
   wrap_assert( !error,  "Failed to add constraint." );

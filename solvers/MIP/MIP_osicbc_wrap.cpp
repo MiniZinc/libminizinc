@@ -93,10 +93,6 @@ void MIP_osicbc_wrapper::Options::printHelp(ostream& os) {
   << std::endl;
 }
 
-  static inline bool beginswith(string s, string t) {
-    return s.compare(0, t.length(), t)==0;
-  }
-
 bool MIP_osicbc_wrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
   MiniZinc::CLOParser cop( i, argv );
   if ( string(argv[i])=="-a"
@@ -120,8 +116,6 @@ bool MIP_osicbc_wrapper::Options::processOption(int& i, std::vector<std::string>
   } else
     return false;
   return true;
-error:
-  return false;
 }
 
 void MIP_osicbc_wrapper::wrap_assert(bool cond, string msg, bool fTerm)
@@ -157,7 +151,6 @@ void MIP_osicbc_wrapper::addRow
 {
   /// Convert var types:
   double rlb=rhs, rub=rhs;
-  char ssense=0;
     switch (sense) {
       case LQ:
         rlb = -osi.getInfinity();
@@ -238,31 +231,31 @@ Finally it prints solution
    or you can check solver status.
 */
 /* Return non-zero to return quickly */   
-static int callBack(CbcModel * model, int whereFrom)
-{
-  int returnCode=0;
-  switch (whereFrom) {
-  case 1:
-  case 2:
-    if (!model->status()&&model->secondaryStatus())
-      returnCode=1;
-    break;
-  case 3:
-    {
-      //CbcCompareUser compare;
-      //model->setNodeComparison(compare);
-    }
-    break;
-  case 4:
-    // If not good enough could skip postprocessing
-    break;
-  case 5:
-    break;
-  default:
-    abort();
-  }
-  return returnCode;
-}
+//static int callBack(CbcModel * model, int whereFrom)
+//{
+//  int returnCode=0;
+//  switch (whereFrom) {
+//  case 1:
+//  case 2:
+//    if (!model->status()&&model->secondaryStatus())
+//      returnCode=1;
+//    break;
+//  case 3:
+//    {
+//      //CbcCompareUser compare;
+//      //model->setNodeComparison(compare);
+//    }
+//    break;
+//  case 4:
+//    // If not good enough could skip postprocessing
+//    break;
+//  case 5:
+//    break;
+//  default:
+//    abort();
+//  }
+//  return returnCode;
+//}
 static int cancelAsap=0;
 /*
   0 - not yet in Cbc

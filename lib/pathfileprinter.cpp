@@ -19,8 +19,8 @@ namespace MiniZinc {
 using std::string;
 using std::vector;
 
-  PathFilePrinter::PathFilePrinter(std::ostream& o, EnvI& envi) :
-      os(o), ei(envi), constraint_index(0) {}
+  PathFilePrinter::PathFilePrinter(std::ostream& o, EnvI&) :
+      os(o), constraint_index(0) {}
 
   void PathFilePrinter::addBetterName(Id* id, string name, string path, bool overwrite = false) {
     string oname;
