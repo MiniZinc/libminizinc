@@ -2056,12 +2056,20 @@ namespace MiniZinc {
           had_dim = true;
         }
         os << "]";
+
+        if (vd->type().enumId() > 0) {
+          const std::vector<unsigned int>& enumIds = env.envi().getArrayEnum(vd->type().enumId());
+          if(enumIds.back() > 0) {
+            os << ", \"enum_type\" : \"" << *env.envi().getEnum(enumIds.back())->e()->id() << "\"";
+          }
+        }
       }
 
-    }
-    if(extra) {
-      if (vd->type().enumId() > 0) {
+    } else {
+      if(extra) {
+        if (vd->type().enumId() > 0) {
           os << ", \"enum_type\" : \"" << *env.envi().getEnum(vd->type().enumId())->e()->id() << "\"";
+        }
       }
     }
     os << "}";
