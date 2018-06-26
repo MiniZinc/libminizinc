@@ -65,7 +65,8 @@ namespace MiniZinc {
   
   class EnvI {
   public:
-    Model* orig;
+    Model* model;
+    Model* orig_model;
     Model* output;
     VarOccurrences vo;
     VarOccurrences output_vo;
@@ -152,7 +153,7 @@ namespace MiniZinc {
     bool failed(void) const;
     Model* flat(void);
     void swap();
-    void swap_output() { std::swap( orig, output ); }
+    void swap_output() { std::swap( model, output ); }
     ASTString reifyId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
     bool dumpPath(std::ostream& os, bool force = false);
@@ -413,7 +414,7 @@ namespace MiniZinc {
                     std::vector<KeepAlive>& x,
                     typename LinearTraits<Lit>::Val& d) {
     std::vector<int> idx(c.size());
-    for (unsigned int i=idx.size(); i--;) {
+    for (unsigned int i=static_cast<unsigned int>(idx.size()); i--;) {
       idx[i]=i;
       Expression* e = follow_id_to_decl(x[i]());
       if (VarDecl* vd = e->dyn_cast<VarDecl>()) {

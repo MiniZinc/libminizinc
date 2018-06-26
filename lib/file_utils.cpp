@@ -315,37 +315,37 @@ namespace MiniZinc { namespace FileUtils {
       unsigned char* dataStart;
       int windowBits;
       size_t dataLen;
-      if (cc[0]==0x1F & cc[1]==0x8B) {
+      if (cc[0]==0x1F && cc[1]==0x8B) {
         dataStart = cc+10;
         windowBits = -Z_DEFAULT_WINDOW_BITS;
         if (cc[3] & 0x4) {
           dataStart += 2;
-          if (dataStart-cc >= s.size())
+          if (dataStart >= cc+s.size())
             throw(-1);
         }
         if (cc[3] & 0x8) {
           while (*dataStart != '\0') {
             dataStart++;
-            if (dataStart-cc >= s.size())
+            if (dataStart >= cc+s.size())
               throw(-1);
           }
           dataStart++;
-          if (dataStart-cc >= s.size())
+          if (dataStart >= cc+s.size())
             throw(-1);
         }
         if (cc[3] & 0x10) {
           while (*dataStart != '\0') {
             dataStart++;
-            if (dataStart-cc >= s.size())
+            if (dataStart >= cc+s.size())
               throw(-1);
           }
           dataStart++;
-          if (dataStart-cc >= s.size())
+          if (dataStart >= cc+s.size())
             throw(-1);
         }
         if (cc[3] & 0x2) {
           dataStart += 2;
-          if (dataStart-cc >= s.size())
+          if (dataStart >= cc+s.size())
             throw(-1);
         }
         dataLen = s.size() - (dataStart-cc);
@@ -356,7 +356,7 @@ namespace MiniZinc { namespace FileUtils {
       }
       
       stream.next_in = dataStart;
-      stream.avail_in = dataLen;
+      stream.avail_in = static_cast<unsigned int>(dataLen);
       stream.next_out = &s_outbuf[0];
       stream.avail_out = BUF_SIZE;
       int status = inflateInit2(&stream, windowBits);
@@ -384,9 +384,9 @@ namespace MiniZinc { namespace FileUtils {
   }
 
   std::string deflateString(const std::string& s) {
-    mz_ulong compressedLength = compressBound(s.size());
+    mz_ulong compressedLength = compressBound(static_cast<mz_ulong>(s.size()));
     unsigned char* cmpr = static_cast<unsigned char*>(::malloc(compressedLength*sizeof(unsigned char)));
-    int status = compress(cmpr,&compressedLength,reinterpret_cast<const unsigned char*>(&s[0]),s.size());
+    int status = compress(cmpr,&compressedLength,reinterpret_cast<const unsigned char*>(&s[0]),static_cast<mz_ulong>(s.size()));
     if (status != Z_OK) {
       ::free(cmpr);
       throw(status);

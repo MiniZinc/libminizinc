@@ -49,7 +49,7 @@ namespace MiniZinc {
         FunctionI* decl = env.output->matchFn(env,c.id(), tv, false);
         Type t;
         if (decl==NULL) {
-          FunctionI* origdecl = env.orig->matchFn(env, c.id(), tv, false);
+          FunctionI* origdecl = env.model->matchFn(env, c.id(), tv, false);
           if (origdecl == NULL) {
             throw FlatteningError(env,c.loc(),"function "+c.id().str()+" is used in output, par version needed");
           }
@@ -124,7 +124,7 @@ namespace MiniZinc {
       }
     };
     
-    if (OutputI* oi = e.orig->outputItem()) {
+    if (OutputI* oi = e.model->outputItem()) {
       GCLock lock;
       OutputI* noi = copy(e,oi)->cast<OutputI>();
       CopyOutput co(e);
@@ -202,7 +202,7 @@ namespace MiniZinc {
             c.id(constants().ids.show);
           }
         }
-        c.decl(env.orig->matchFn(env,&c,false));
+        c.decl(env.model->matchFn(env,&c,false));
       }
     } _decls(env);
     topDown(_decls, e);
@@ -357,7 +357,7 @@ namespace MiniZinc {
               FunctionI* decl = env.output->matchFn(env, rhs->id(), tv, false);
               Type t;
               if (decl==NULL) {
-                FunctionI* origdecl = env.orig->matchFn(env, rhs->id(), tv, false);
+                FunctionI* origdecl = env.model->matchFn(env, rhs->id(), tv, false);
                 if (origdecl == NULL) {
                   throw FlatteningError(env,rhs->loc(),"function "+rhs->id().str()+" is used in output, par version needed");
                 }
@@ -511,7 +511,7 @@ namespace MiniZinc {
             if (vd->e())
               al = eval_array_lit(e, vd->e());
             s << "array" << vd->type().dim() << "d(";
-            for (unsigned int i=0; i<vd->type().dim(); i++) {
+            for (int i=0; i<vd->type().dim(); i++) {
               unsigned int enumId = (vd->type().enumId() != 0 ? e.getArrayEnum(vd->type().enumId())[i] : 0);
               if (enumId != 0) {
                 s << e.getEnum(enumId)->e()->id()->str() << ",";
@@ -530,7 +530,7 @@ namespace MiniZinc {
           showArgs[0] = vd->id();
           Call* show = new Call(Location().introduce(),ASTString("showDzn"),showArgs);
           show->type(Type::parstring());
-          FunctionI* fi = e.orig->matchFn(e, show, false);
+          FunctionI* fi = e.model->matchFn(e, show, false);
           assert(fi);
           show->decl(fi);
           outputVars.push_back(show);
@@ -545,10 +545,10 @@ namespace MiniZinc {
       }
     } dznov(e, outputObjective, outputVars);
 
-    iterItems(dznov, e.orig);
+    iterItems(dznov, e.model);
     
     OutputI* newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
-    e.orig->addItem(newOutputItem);
+    e.model->addItem(newOutputItem);
   }
 
   void createJSONOutput(EnvI& e, bool outputObjective) {
@@ -600,7 +600,7 @@ namespace MiniZinc {
           showArgs[0] = vd->id();
           Call* show = new Call(Location().introduce(),"showJSON",showArgs);
           show->type(Type::parstring());
-          FunctionI* fi = e.orig->matchFn(e, show, false);
+          FunctionI* fi = e.model->matchFn(e, show, false);
           assert(fi);
           show->decl(fi);
           outputVars.push_back(show);
@@ -611,12 +611,12 @@ namespace MiniZinc {
       }
     } jsonov(e, outputObjective, outputVars);
     
-    iterItems(jsonov, e.orig);
+    iterItems(jsonov, e.model);
 
     outputVars.push_back(new StringLit(Location().introduce(), "\n}\n"));
     
     OutputI* newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
-    e.orig->addItem(newOutputItem);
+    e.model->addItem(newOutputItem);
   }
   
   void createOutput(EnvI& e, std::vector<VarDecl*>& deletedFlatVarDecls,
@@ -632,14 +632,14 @@ namespace MiniZinc {
       case FlatteningOptions::OUTPUT_JSON:
         createJSONOutput(e,outputObjective);
       default:
-        if (e.orig->outputItem()==NULL) {
+        if (e.model->outputItem()==NULL) {
           createDznOutput(e,outputObjective);
         }
         break;
     }
     
     // Copy output item from model into output model
-    outputItem = copy(e,e.cmap, e.orig->outputItem())->cast<OutputI>();
+    outputItem = copy(e,e.cmap, e.model->outputItem())->cast<OutputI>();
     makePar(e,outputItem->e());
     e.output->addItem(outputItem);
     
@@ -665,7 +665,7 @@ namespace MiniZinc {
         FunctionI* decl = env.output->matchFn(env, c.id(), tv, false);
         Type t;
         if (decl==NULL) {
-          FunctionI* origdecl = env.orig->matchFn(env, c.id(), tv, false);
+          FunctionI* origdecl = env.model->matchFn(env, c.id(), tv, false);
           if (origdecl == NULL || !origdecl->rtype(env, tv, false).ispar()) {
             throw FlatteningError(env,c.loc(),"function "+c.id().str()+" is used in output, par version needed");
           }
@@ -703,7 +703,7 @@ namespace MiniZinc {
         }
       }
     } _ov1(e);
-    iterItems(_ov1, e.orig);
+    iterItems(_ov1, e.model);
     
     // Copying the output item and the functions it depends on has created copies
     // of all dependent VarDecls. However the output model does not contain VarDeclIs for
@@ -763,7 +763,7 @@ namespace MiniZinc {
                   }
                   FunctionI* decl = env.output->matchFn(env, rhs->id(), tv, false);
                   if (decl==NULL) {
-                    FunctionI* origdecl = env.orig->matchFn(env, rhs->id(), tv, false);
+                    FunctionI* origdecl = env.model->matchFn(env, rhs->id(), tv, false);
                     if (origdecl == NULL) {
                       throw FlatteningError(env,rhs->loc(),"function "+rhs->id().str()+" is used in output, par version needed");
                     }
@@ -838,12 +838,12 @@ namespace MiniZinc {
         }
       }
     } _ov2(e);
-    iterItems(_ov2,e.orig);
+    iterItems(_ov2,e.model);
     
     CollectOccurrencesE ce(e.output_vo,outputItem);
     topDown(ce, outputItem->e());
   
-    e.orig->mergeStdLib(e, e.output);
+    e.model->mergeStdLib(e, e.output);
     processDeletions(e, deletedFlatVarDecls);
   }
 
@@ -906,7 +906,7 @@ namespace MiniZinc {
                 }
                 FunctionI* decl = e.output->matchFn(e, rhs->id(), tv, false);
                 if (decl==NULL) {
-                  FunctionI* origdecl = e.orig->matchFn(e, rhs->id(), tv, false);
+                  FunctionI* origdecl = e.model->matchFn(e, rhs->id(), tv, false);
                   if (origdecl == NULL) {
                     throw FlatteningError(e,rhs->loc(),"function "+rhs->id().str()+" is used in output, par version needed");
                   }

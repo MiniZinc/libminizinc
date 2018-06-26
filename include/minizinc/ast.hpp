@@ -123,7 +123,7 @@ namespace MiniZinc {
       unsigned long long int u;
     } ui;
     ui.i = il->v().toInt();
-    return ui.u & mask;
+    return static_cast<unsigned int>(ui.u & mask);
   }
   inline unsigned int
   Location::LocVec::last_line(void) const {
@@ -133,7 +133,7 @@ namespace MiniZinc {
       unsigned long long int u;
     } ui;
     ui.i = il->v().toInt();
-    return ui.u >> 20;
+    return static_cast<unsigned int>(ui.u >> 20);
   }
   inline unsigned int
   Location::LocVec::first_column(void) const {
@@ -144,7 +144,7 @@ namespace MiniZinc {
       unsigned long long int u;
     } ui;
     ui.i = il->v().toInt();
-    return ui.u & mask;
+    return static_cast<unsigned int>(ui.u & mask);
   }
   inline unsigned int
   Location::LocVec::last_column(void) const {
@@ -154,7 +154,7 @@ namespace MiniZinc {
       unsigned long long int u;
     } ui;
     ui.i = il->v().toInt();
-    return ui.u >> 20;
+    return static_cast<unsigned int>(ui.u >> 20);
   }
   
   inline
@@ -315,11 +315,11 @@ namespace MiniZinc {
     if (_flag_2) {
       _u._al = v._u._al;
       std::vector<int> d(dims.size()*2+v._dims.size()-v.dims()*2);
-      for (unsigned int i=dims.size(); i--;) {
+      for (unsigned int i=static_cast<unsigned int>(dims.size()); i--;) {
         d[i*2] = dims[i].first;
         d[i*2+1] = dims[i].second;
       }
-      int sliceOffset = dims.size()*2;
+      int sliceOffset = static_cast<int>(dims.size())*2;
       int origSliceOffset = v.dims()*2;
       for (int i=0; i<_u._al->dims()*2; i++) {
         d[sliceOffset+i] = v._dims[origSliceOffset+i];
@@ -327,7 +327,7 @@ namespace MiniZinc {
       _dims = ASTIntVec(d);
     } else {
       std::vector<int> d(dims.size()*2);
-      for (unsigned int i=dims.size(); i--;) {
+      for (unsigned int i=static_cast<unsigned int>(dims.size()); i--;) {
         d[i*2] = dims[i].first;
         d[i*2+1] = dims[i].second;
       }
@@ -379,7 +379,7 @@ namespace MiniZinc {
     _flag_2 = false;
     std::vector<int> d(2);
     d[0] = 1;
-    d[1] = v.size();
+    d[1] = static_cast<int>(v.size());
     compress(v, d);
     rehash();
   }
@@ -392,9 +392,9 @@ namespace MiniZinc {
     _flag_2 = false;
     std::vector<int> dims(4);
     dims[0]=1;
-    dims[1]=v.size();
+    dims[1]=static_cast<int>(v.size());
     dims[2]=1;
-    dims[3]=v.size() > 0 ? v[0].size() : 0;
+    dims[3]=v.size() > 0 ? static_cast<int>(v[0].size()) : 0;
     std::vector<Expression*> vv;
     for (unsigned int i=0; i<v.size(); i++)
       for (unsigned int j=0; j<v[i].size(); j++)
@@ -429,14 +429,14 @@ namespace MiniZinc {
     std::vector<Expression*> es;
     std::vector<int> idx;
     for (unsigned int i=0; i<g._g.size(); i++) {
-      idx.push_back(es.size());
+      idx.push_back(static_cast<int>(es.size()));
       es.push_back(g._g[i]._in);
       es.push_back(g._g[i]._where);
       for (unsigned int j=0; j<g._g[i]._v.size(); j++) {
         es.push_back(g._g[i]._v[j]);
       }
     }
-    idx.push_back(es.size());
+    idx.push_back(static_cast<int>(es.size()));
     _g = ASTExprVec<Expression>(es);
     _g_idx = ASTIntVec(idx);
     rehash();

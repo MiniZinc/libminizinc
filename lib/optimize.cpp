@@ -56,7 +56,7 @@ namespace MiniZinc {
     IdMap<Items>::iterator vi = _m.find(v->id()->decl()->id());
     assert(vi!=_m.end());
     vi->second.erase(i);
-    return vi->second.size();
+    return static_cast<int>(vi->second.size());
   }
   
   void VarOccurrences::unify(EnvI& env, Model* m, Id* id0_0, Id *id1_0) {
@@ -95,7 +95,7 @@ namespace MiniZinc {
   
   int VarOccurrences::occurrences(VarDecl* v) {
     IdMap<Items>::iterator vi = _m.find(v->id()->decl()->id());
-    return (vi==_m.end() ? 0 : vi->second.size());
+    return (vi==_m.end() ? 0 : static_cast<int>(vi->second.size()));
   }
   
   void CollectOccurrencesI::vVarDeclI(VarDeclI* v) {
@@ -383,7 +383,7 @@ namespace MiniZinc {
         }
       }
       
-      for (unsigned int i=boolConstraints.size(); i--;) {
+      for (unsigned int i=static_cast<unsigned int>(boolConstraints.size()); i--;) {
         Item* bi = m[boolConstraints[i]];
         if (bi->removed())
           continue;
@@ -509,7 +509,7 @@ namespace MiniZinc {
         }
       }
       
-      for (unsigned int i=toAssignBoolVars.size(); i--;) {
+      for (unsigned int i=static_cast<int>(toAssignBoolVars.size()); i--;) {
         if (m[toAssignBoolVars[i]]->removed())
           continue;
         VarDeclI* vdi = m[toAssignBoolVars[i]]->cast<VarDeclI>();
@@ -598,7 +598,7 @@ namespace MiniZinc {
                 simplifyBoolConstraint(envi,*item,vd,remove,vardeclQueue,constraintQueue,toRemove,nonFixedLiteralCount);
               }
             }
-            for (unsigned int i=toRemove.size(); i--;) {
+            for (unsigned int i=static_cast<unsigned int>(toRemove.size()); i--;) {
               if (ConstraintI* ci = toRemove[i]->dyn_cast<ConstraintI>()) {
                 CollectDecls cd(envi.vo,deletedVarDecls,ci);
                 topDown(cd,ci->e());
@@ -652,14 +652,14 @@ namespace MiniZinc {
           }
         }
       }
-      for (unsigned int i=toRemoveConstraints.size(); i--;) {
+      for (unsigned int i=static_cast<unsigned int>(toRemoveConstraints.size()); i--;) {
         ConstraintI* ci = m[toRemoveConstraints[i]]->cast<ConstraintI>();
         CollectDecls cd(envi.vo,deletedVarDecls,ci);
         topDown(cd,ci->e());
         envi.flat_removeItem(toRemoveConstraints[i]);
       }
       
-      for (unsigned int i=boolConstraints.size(); i--;) {
+      for (unsigned int i=static_cast<unsigned int>(boolConstraints.size()); i--;) {
         Item* bi = m[boolConstraints[i]];
         if (bi->removed())
           continue;

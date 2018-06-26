@@ -127,7 +127,7 @@ namespace MiniZinc {
     /// Conversion to STL string
     std::string str(void) const { return std::string(c_str()); }
     /// Return size of string
-    unsigned int size(void) const { return _size-sizeof(size_t)-1; }
+    unsigned int size(void) const { return static_cast<unsigned int>(_size)-static_cast<unsigned int>(sizeof(size_t))-1; }
     /// Access character at position \a i
     char operator[](unsigned int i) {
       assert(i<size()); return _data[sizeof(size_t)+i];

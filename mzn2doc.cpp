@@ -274,7 +274,6 @@ int main(int argc, char** argv) {
         std::cerr << e.what() << ": " << e.msg() << std::endl;
         exit(EXIT_FAILURE);
       }
-      delete m;
     } else {
       if (flag_verbose)
         std::cerr << std::endl;

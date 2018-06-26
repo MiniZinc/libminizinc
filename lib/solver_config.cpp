@@ -40,7 +40,7 @@ namespace MiniZinc {
     }
     int getInt(AssignI* ai) {
       if (IntLit* il = ai->e()->dyn_cast<IntLit>()) {
-        return il->v().toInt();
+        return static_cast<int>(il->v().toInt());
       }
       throw ConfigException("invalid configuration item (right hand side must be int)");
     }
@@ -84,6 +84,28 @@ namespace MiniZinc {
         return ret;
       }
       throw ConfigException("invalid configuration item (right hand side must be a 2d array of strings)");
+    }
+
+    std::string getEnv(const char* v) {
+      std::string ret;
+#ifdef _MSC_VER
+      size_t len;
+      getenv_s(&len, NULL, 0, v);
+      if (len > 0) {
+        char* p = static_cast<char*>(malloc(len*sizeof(char)));
+        getenv_s(&len, p, len, v);
+        if (len > 0) {
+          ret = p;
+        }
+        free(p);
+      }
+#else
+      char* p = getenv(v);
+      if (p) {
+        ret = p;
+      }
+#endif
+      return ret;
     }
   }
   
@@ -185,7 +207,7 @@ namespace MiniZinc {
       } else {
         throw ConfigException(errstream.str());
       }
-    } catch (ConfigException& e) {
+    } catch (ConfigException&) {
       throw;
     } catch (Exception& e) {
       throw ConfigException(e.what());
@@ -205,7 +227,7 @@ namespace MiniZinc {
   }
   
   void SolverConfigs::addConfig(const MiniZinc::SolverConfig& sc) {
-    int newIdx = _solvers.size();
+    int newIdx = static_cast<int>(_solvers.size());
     _solvers.push_back(sc);
     std::vector<string> sc_tags = sc.tags();
     sc_tags.push_back(sc.id());
@@ -232,10 +254,11 @@ namespace MiniZinc {
     for (auto sc : builtinSolverConfigs().builtinSolvers) {
       addConfig(sc.second);
     }
-    if (char* MZNSOLVERPATH = getenv("MZN_SOLVER_PATH")) {
+    std::string mzn_solver_path = getEnv("MZN_SOLVER_PATH");
+    if (mzn_solver_path.size() != 0) {
       if (!solver_path.empty())
         solver_path += PATHSEP;
-      solver_path += string(MZNSOLVERPATH);
+      solver_path += mzn_solver_path;
     }
     std::string userConfigDir = FileUtils::user_config_dir();
     if (FileUtils::directory_exists(userConfigDir+"/solvers")) {
@@ -297,7 +320,7 @@ namespace MiniZinc {
           std::cerr << errstream.str();
           throw ConfigException("internal error");
         }
-      } catch (ConfigException& e) {
+      } catch (ConfigException&) {
         throw;
       } catch (Exception& e) {
         throw ConfigException(e.what());

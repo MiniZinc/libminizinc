@@ -301,10 +301,6 @@ void MIP_cplex_wrapper::Options::printHelp(ostream& os) {
   << std::endl;
 }
 
-static inline bool beginswith(string s, string t) {
-  return s.compare(0, t.length(), t)==0;
-}
-
 bool MIP_cplex_wrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
   MiniZinc::CLOParser cop( i, argv );
   if ( string(argv[i])=="-a"
@@ -507,14 +503,14 @@ void MIP_cplex_wrapper::setVarBounds(int iVar, double lb, double ub)
 
 void MIP_cplex_wrapper::setVarLB(int iVar, double lb)
 {
-  char cl = 'L', cu = 'U';
+  char cl = 'L';
   status = dll_CPXchgbds (env, lp, 1, &iVar, &cl, &lb);
   wrap_assert( !status,  "Failed to set lower bound." );
 }
 
 void MIP_cplex_wrapper::setVarUB(int iVar, double ub)
 {
-  char cl = 'L', cu = 'U';
+  char cu = 'U';
   status = dll_CPXchgbds (env, lp, 1, &iVar, &cu, &ub);
   wrap_assert( !status,  "Failed to set upper bound." );
 }
@@ -654,8 +650,8 @@ myusercutcallback (CPXCENVptr env,
 
    CUTINFOptr cutinfo = (CUTINFOptr) cbhandle;
 
-   int      numcols  = cutinfo->numcols;
-   int      numcuts  = cutinfo->num;
+//   int      numcols  = cutinfo->numcols;
+//   int      numcuts  = cutinfo->num;
 //    double   *x       = cutinfo->x;
 //    int      *beg     = cutinfo->beg;
 //    int      *ind     = cutinfo->ind;
@@ -663,9 +659,9 @@ myusercutcallback (CPXCENVptr env,
 //    double   *rhs     = cutinfo->rhs;
 //    int      *cutind  = NULL;
 //    double   *cutval  = NULL;
-   double   cutvio;
+//   double   cutvio;
    int      addedcuts = 0;
-   int      i, j, k, cutnz;
+//   int      i, j, k; //, cutnz;
    MIP_wrapper::CBUserInfo *info = cutinfo->info;
    MIP_cplex_wrapper* cw = static_cast<MIP_cplex_wrapper*>(info->wrapper);
 //    double   *x       = info->pCutOutput->x;

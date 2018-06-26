@@ -65,7 +65,7 @@ namespace MiniZinc {
                 std::map<std::string,Model*>& seenModels0,
                 MiniZinc::Model* model0,
                 bool isDatafile0, bool isFlatZinc0, bool parseDocComments0)
-    : filename(f.c_str()), buf(b.c_str()), pos(0), length(b.size()),
+    : filename(f.c_str()), buf(b.c_str()), pos(0), length(static_cast<unsigned int>(b.size())),
       lineStartPos(0), nTokenNextStart(1), hadNewline(false),
       files(files0), seenModels(seenModels0), model(model0),
       isDatafile(isDatafile0), isFlatZinc(isFlatZinc0), parseDocComments(parseDocComments0),
@@ -104,9 +104,9 @@ namespace MiniZinc {
         err << buf+lineStartPos;
       }
       err << std::endl;
-      for (int i=0; i<static_cast<int>(firstCol)-1; i++)
+      for (int i=0; i<firstCol-1; i++)
         err << " ";
-      for (unsigned int i=firstCol; i<=lastCol; i++)
+      for (int i=firstCol; i<=lastCol; i++)
         err << "^";
       err << std::endl;
     }

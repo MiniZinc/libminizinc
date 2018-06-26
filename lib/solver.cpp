@@ -35,6 +35,50 @@ using namespace std;
 
 using namespace MiniZinc;
 
+#ifdef HAS_GUROBI
+#include <minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh>
+namespace {
+  Gurobi_SolverFactoryInitialiser _gurobi_init;
+}
+#endif
+#ifdef HAS_CPLEX
+#include <minizinc/solvers/MIP/MIP_cplex_solverfactory.hh>
+namespace {
+  Cplex_SolverFactoryInitialiser _cplex_init;
+}
+#endif
+#ifdef HAS_OSICBC
+#include <minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh>
+namespace {
+  OSICBC_SolverFactoryInitialiser _osicbc_init;
+}
+#endif
+#ifdef HAS_XPRESS
+#include <minizinc/solvers/MIP/MIP_xpress_solverfactory.hh>
+namespace {
+  Xpress_SolverFactoryInitialiser _xpress_init;
+}
+#endif
+#ifdef HAS_GECODE
+#include <minizinc/solvers/gecode_solverfactory.hh>
+namespace {
+  Gecode_SolverFactoryInitialiser _gecode_init;
+}
+#endif
+#ifdef HAS_SCIP
+#include <minizinc/solvers/MIP/MIP_scip_solverfactory.hh>
+namespace {
+  SCIP_SolverFactoryInitialiser _scip_init;
+}
+#endif
+
+#include <minizinc/solvers/fzn_solverfactory.hh>
+#include <minizinc/solvers/mzn_solverfactory.hh>
+namespace {
+  FZN_SolverFactoryInitialiser _fzn_init;
+  MZN_SolverFactoryInitialiser _mzn_init;
+}
+
 // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 SolverRegistry* MiniZinc::getGlobalSolverRegistry()
 {
@@ -144,7 +188,8 @@ void MznSolver::printHelp(const std::string& selectedSolver)
     << "  --help <solver id>\n    Print help for a particular solver." << std::endl
     << "  -v, -l, --verbose\n    Print progress/log statements. Note that some solvers may log to stdout." << std::endl
     << "  -s, --statistics\n    Print statistics." << std::endl
-    << "  -c, --compile\n    Compile only (do not run solver)." << std::endl;
+    << "  -c, --compile\n    Compile only (do not run solver)." << std::endl
+    << "  --config-dirs\n    Output configuration directories." << std::endl;
 
   if (selectedSolver.empty()) {
     flt.printHelp(os);
@@ -194,7 +239,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   else if (executable_name=="solns2out")
     s2out._opt.flag_standaloneSolns2Out=true;
   int i=1, j=1;
-  int argc = argv.size();
+  int argc = static_cast<int>(argv.size());
   if (argc < 2)
     return OPTION_ERROR;
   string solver;
@@ -225,8 +270,12 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       cout << solver_configs.solverConfigsJSON();
       return OPTION_FINISH;
     }
-    if (argv[i]=="--user-solver-config-dir") {
-      cout << FileUtils::user_config_dir()+"/solvers";
+    if (argv[i]=="--config-dirs") {
+      GCLock lock;
+      cout << "{\n";
+      cout << "  \"userSolverConfigDir\" : \"" << Printer::escapeStringLit(FileUtils::user_config_dir()) << "/solvers\",\n";
+      cout << "  \"mznStdlibDir\" : \"" << Printer::escapeStringLit(solver_configs.mznlibDir()) << "\"\n";
+      cout << "}\n";
       return OPTION_FINISH;
     }
     if (argv[i]=="--solver") {
@@ -396,10 +445,10 @@ void MznSolver::printStatistics()
     getSI()->printStatisticsLine(1);
 }
 
-SolverInstance::Status MznSolver::run(int& argc, const char**& argv, const std::string& model) {
-  std::vector<std::string> args;
-  for (unsigned int i=0; i<argc; i++)
-    args.push_back(argv[i]);
+SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, const std::string& model, const std::string& exeName) {
+  std::vector<std::string> args = {exeName};
+  for (auto a : args0)
+    args.push_back(a);
   switch (processOptions(args)) {
     case OPTION_FINISH:
       return SolverInstance::NONE;

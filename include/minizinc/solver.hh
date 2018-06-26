@@ -104,7 +104,7 @@ namespace MiniZinc {
     MznSolver(std::ostream& os = std::cout, std::ostream& log = std::cerr);
     ~MznSolver();
     
-    SolverInstance::Status run(int& argc, const char**& argv, const std::string& model = std::string());
+    SolverInstance::Status run(const std::vector<std::string>& args, const std::string& model = std::string(), const std::string& exeName = std::string("minizinc"));
     bool get_flag_verbose() { return flag_verbose; /*getFlt()->get_flag_verbose();*/ }
   private:
     enum OptionStatus { OPTION_OK, OPTION_ERROR, OPTION_FINISH };

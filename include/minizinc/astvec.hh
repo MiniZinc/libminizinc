@@ -102,7 +102,7 @@ namespace MiniZinc {
     /// Allocate and initialise from \a v
     static ASTIntVecO* a(const std::vector<int>& v);
     /// Return size
-    unsigned int size(void) const { return _size/sizeof(int); }
+    unsigned int size(void) const { return static_cast<unsigned int>(_size/sizeof(int)); }
     /// Return element at position \a i
     int& operator[](unsigned int i) {
       assert(i<size());
@@ -130,7 +130,7 @@ namespace MiniZinc {
   public:
     /// Allocate and initialise from \a v
     static ASTExprVecO* a(const std::vector<T>& v);
-    unsigned int size(void) const { return _size; }
+    unsigned int size(void) const { return static_cast<unsigned int>(_size); }
     bool empty(void) const { return size()==0; }
     T& operator[] (int i) {
       assert(i<static_cast<int>(size()));
@@ -156,7 +156,7 @@ namespace MiniZinc {
   ASTExprVecO<T>::ASTExprVecO(const std::vector<T>& v)
     : ASTVec(v.size()) {
     _flag_1 = false;
-    for (unsigned int i=v.size(); i--;)
+    for (unsigned int i=static_cast<unsigned int>(v.size()); i--;)
       (*this)[i] = v[i];
   }
   template<class T>

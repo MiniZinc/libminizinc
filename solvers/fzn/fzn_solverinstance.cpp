@@ -182,12 +182,25 @@ namespace MiniZinc {
     FileUtils::TmpFile fznFile(".fzn");
     std::ofstream os(fznFile.name());
     Printer p(os, 0, true);
-    for (Model::iterator it = _fzn->begin(); it != _fzn->end(); ++it) {
-      if(!(*it)->removed() && !(*it)->isa<IncludeI>()) {
-        Item* item = *it;
-        p.print(item);
+    for (FunctionIterator it = _fzn->begin_functions(); it != _fzn->end_functions(); ++it) {
+      if(!it->removed()) {
+        Item& item = *it;
+        p.print(&item);
       }
     }
+    for (VarDeclIterator it = _fzn->begin_vardecls(); it != _fzn->end_vardecls(); ++it) {
+      if(!it->removed()) {
+        Item& item = *it;
+        p.print(&item);
+      }
+    }
+    for (ConstraintIterator it = _fzn->begin_constraints(); it != _fzn->end_constraints(); ++it) {
+      if(!it->removed()) {
+        Item& item = *it;
+        p.print(&item);
+      }
+    }
+    p.print(_fzn->solveItem());
     cmd_line.push_back(fznFile.name());
     Process<Solns2Out> proc(cmd_line, getSolns2Out(), timelimit, sigint);
     proc.run();

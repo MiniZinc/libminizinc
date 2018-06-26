@@ -33,6 +33,13 @@ annotation add_to_output;
 /** @group annotations.general Declare that the annotated variable is required for checking solutions. */
 annotation mzn_check_var;
 
+/** @group annotations.general Declare a name for the annotated expression. */
+annotation mzn_expression_name(string);
+
+/** @group annotations.general Declare a name for the annotated constraint. */
+annotation mzn_constraint_name(string);
+
+
 /** @group annotations.general Declare the annotated variable as being functionally defined.
   This annotation is introduced into FlatZinc code by the compiler. */
 annotation is_defined_var;

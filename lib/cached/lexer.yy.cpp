@@ -6,7 +6,7 @@
 #define FLEX_SCANNER
 #define YY_FLEX_MAJOR_VERSION 2
 #define YY_FLEX_MINOR_VERSION 6
-#define YY_FLEX_SUBMINOR_VERSION 4
+#define YY_FLEX_SUBMINOR_VERSION 0
 #if YY_FLEX_SUBMINOR_VERSION > 0
 #define FLEX_BETA
 #endif
@@ -105,9 +105,9 @@ typedef unsigned int flex_uint32_t;
 #define UINT32_MAX             (4294967295U)
 #endif
 
-#ifndef SIZE_MAX
-#define SIZE_MAX               (~(size_t)0)
-#endif
+#endif /* ! C99 */
+
+#endif /* ! FLEXINT_H */
 
 #endif /* ! C99 */
 
@@ -346,22 +346,26 @@ typedef int yy_state_type;
 
 #define yytext_ptr yytext_r
 
-static yy_state_type yy_get_previous_state ( yyscan_t yyscanner );
-static yy_state_type yy_try_NUL_trans ( yy_state_type current_state  , yyscan_t yyscanner);
-static int yy_get_next_buffer ( yyscan_t yyscanner );
-static void yynoreturn yy_fatal_error ( const char* msg , yyscan_t yyscanner );
+static yy_state_type yy_get_previous_state (yyscan_t yyscanner );
+static yy_state_type yy_try_NUL_trans (yy_state_type current_state  ,yyscan_t yyscanner);
+static int yy_get_next_buffer (yyscan_t yyscanner );
+#if defined(__GNUC__) && __GNUC__ >= 3
+__attribute__((__noreturn__))
+#endif
+static void yy_fatal_error (yyconst char msg[] ,yyscan_t yyscanner );
 
 /* Done after the current pattern has been matched and before the
  * corresponding action - sets up yytext.
  */
 #define YY_DO_BEFORE_ACTION \
 	yyg->yytext_ptr = yy_bp; \
-	yyleng = (int) (yy_cp - yy_bp); \
+	yyleng = (size_t) (yy_cp - yy_bp); \
 	yyg->yy_hold_char = *yy_cp; \
 	*yy_cp = '\0'; \
 	yyg->yy_c_buf_p = yy_cp;
-#define YY_NUM_RULES 175
-#define YY_END_OF_BUFFER 176
+
+#define YY_NUM_RULES 176
+#define YY_END_OF_BUFFER 177
 /* This struct is not used in this scanner,
    but its presence is necessary. */
 struct yy_trans_info
@@ -369,15 +373,15 @@ struct yy_trans_info
 	flex_int32_t yy_verify;
 	flex_int32_t yy_nxt;
 	};
-static const flex_int16_t yy_accept[494] =
+static yyconst flex_int16_t yy_accept[494] =
     {   0,
         0,    0,  163,  163,  163,  163,    0,    0,    0,    0,
-        0,    0,    0,    0,    0,    0,  176,  174,    3,    2,
-      174,  162,  174,   23,  174,  159,  103,   99,   33,  101,
+        0,    0,    0,    0,    0,    0,  177,  175,    3,    2,
+      175,  162,  175,   23,  175,  159,  103,   99,   33,  101,
        33,  105,   29,   29,   33,  110,  120,  114,  137,   19,
-      174,   21,   37,  174,  137,  137,  137,  137,  137,  137,
+      175,   21,   37,  175,  137,  137,  137,  137,  137,  137,
       137,  137,  137,  137,  137,  137,  137,  137,  137,  137,
-      137,  137,  137,   33,  174,  174,  174,    1,  163,  175,
+      137,  137,  137,   33,  175,  175,  175,    1,  163,  173,
       172,  170,  172,    1,  171,  172,   16,   18,   17,    1,
         6,    8,    7,    1,   11,   13,   12,    1,  160,  161,
       122,    0,  158,   23,    0,    0,  138,    0,    0,    0,
@@ -396,7 +400,7 @@ static const flex_int16_t yy_accept[494] =
         0,  104,  100,    0,  102,    0,    0,  106,    0,  111,
         0,    0,  121,    0,  115,    0,    0,    0,    0,    0,
         0,    0,    0,    0,    0,    0,    4,   30,    0,   32,
-        0,   27,   28,  128,  139,  139,    0,  173,   38,   40,
+        0,   27,   28,  128,  139,  139,    0,  174,   38,   40,
       137,  137,  137,  137,  137,  137,   46,  137,  137,  137,
       137,  137,  137,  137,  137,   63,   64,  137,  137,  137,
        68,   70,   74,  137,   75,  137,  137,  137,   79,  137,
@@ -428,7 +432,7 @@ static const flex_int16_t yy_accept[494] =
 
     } ;
 
-static const YY_CHAR yy_ec[256] =
+static yyconst YY_CHAR yy_ec[256] =
     {   0,
         1,    1,    1,    1,    1,    1,    1,    1,    2,    3,
         1,    2,    4,    1,    1,    1,    1,    1,    1,    1,
@@ -460,7 +464,7 @@ static const YY_CHAR yy_ec[256] =
         1,    1,    1,    1,    1
     } ;
 
-static const YY_CHAR yy_meta[83] =
+static yyconst YY_CHAR yy_meta[83] =
     {   0,
         1,    1,    2,    3,    1,    4,    5,    1,    1,    1,
         1,    6,    1,    1,    1,    7,    1,    8,    8,    8,
@@ -473,7 +477,7 @@ static const YY_CHAR yy_meta[83] =
         1,    3
     } ;
 
-static const flex_int16_t yy_base[515] =
+static yyconst flex_uint16_t yy_base[515] =
     {   0,
         0,    0,   80,   84,   88,   92,   90,   94,   96,   97,
        98,  100,  846,  845,  844,  843,  853,  858,  858,  858,
@@ -534,7 +538,7 @@ static const flex_int16_t yy_base[515] =
       711,  716,  721,  723
     } ;
 
-static const flex_int16_t yy_def[515] =
+static yyconst flex_int16_t yy_def[515] =
     {   0,
       493,    1,  494,  494,  494,  494,  495,  495,  496,  496,
       497,  497,    1,    1,    1,    1,  493,  493,  493,  493,
@@ -595,7 +599,7 @@ static const flex_int16_t yy_def[515] =
       493,  493,  493,  493
     } ;
 
-static const flex_int16_t yy_nxt[941] =
+static yyconst flex_uint16_t yy_nxt[941] =
     {   0,
        18,   19,   20,   19,   21,   22,   23,   24,   25,   26,
        18,   27,   28,   29,   30,   31,   32,   33,   34,   34,
@@ -702,7 +706,7 @@ static const flex_int16_t yy_nxt[941] =
       493,  493,  493,  493,  493,  493,  493,  493,  493,  493
     } ;
 
-static const flex_int16_t yy_chk[941] =
+static yyconst flex_int16_t yy_chk[941] =
     {   0,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
         1,    1,    1,    1,    1,    1,    1,    1,    1,    1,
@@ -840,14 +844,38 @@ namespace MiniZinc{ class ParserLocation; }
 
 #include <minizinc/parser.hh>
 
+int utf8len(const char* s) {
+  int l=0;
+  for (int i=0; s[i] != '\0'; i++)
+    if ((s[i] & 0xc0) != 0x80)
+      l++;
+  return l;
+}
+
 int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
 #define YY_INPUT(buf, result, max_size) \
   result = yy_input_proc(buf, max_size, yyscanner);
 
 #define YY_USER_ACTION \
   { MiniZinc::ParserState* parm =  \
-    static_cast<MiniZinc::ParserState*>(yyget_extra(yyscanner)); \
-    yylloc->first_line(parm->lineno); yylloc->last_line(parm->lineno); \
+      static_cast<MiniZinc::ParserState*>(yyget_extra(yyscanner)); \
+    yylloc->first_line(yylloc->last_line()); \
+    yylloc->first_column(yylloc->last_column()+1); \
+    if(parm->hadNewline) { \
+      parm->hadNewline=false; \
+      parm->lineStartPos += parm->nTokenNextStart; \
+      parm->nTokenNextStart=1; \
+      yylloc->last_line(yylloc->last_line()+1); \
+      yylloc->first_line(yylloc->last_line()); \
+      yylloc->first_column(1); \
+    } \
+    if(yytext[0] == '\n') { \
+      parm->hadNewline=true; \
+      parm->nTokenNextStart+=0; \
+    } else { \
+      parm->nTokenNextStart+=yyleng; \
+    } \
+    yylloc->last_column(yylloc->first_column()+utf8len(yytext)-1); \
   }
 
 bool hexstrtointval(const char* s, long long int& v) {
@@ -879,15 +907,6 @@ bool strtofloatval(const char* s, double& v) {
   std::istringstream iss(s);
   iss >> v;
   return !iss.fail();
-}
-
-void beginToken(void* parm, YYLTYPE* yyloc, char* t) {
-  MiniZinc::ParserState* pp =
-    static_cast<MiniZinc::ParserState*>(parm);
-  int tokenLength = strlen(t);
-  yyloc->first_column(pp->nTokenNextStart);
-  pp->nTokenNextStart += tokenLength;
-  yyloc->last_column(pp->nTokenNextStart-1);
 }
 
 void clearBuffer(void* parm) {
@@ -949,7 +968,7 @@ struct yyguts_t
     YY_BUFFER_STATE * yy_buffer_stack; /**< Stack as an array. */
     char yy_hold_char;
     int yy_n_chars;
-    int yyleng_r;
+    yy_size_t yyleng_r;
     char *yy_c_buf_p;
     int yy_init;
     int yy_start;
@@ -1000,11 +1019,11 @@ void yyset_extra ( YY_EXTRA_TYPE user_defined , yyscan_t yyscanner );
 
 FILE *yyget_in ( yyscan_t yyscanner );
 
-void yyset_in  ( FILE * _in_str , yyscan_t yyscanner );
+void yyset_in  (FILE * _in_str ,yyscan_t yyscanner );
 
 FILE *yyget_out ( yyscan_t yyscanner );
 
-void yyset_out  ( FILE * _out_str , yyscan_t yyscanner );
+void yyset_out  (FILE * _out_str ,yyscan_t yyscanner );
 
 			int yyget_leng ( yyscan_t yyscanner );
 
@@ -1012,9 +1031,13 @@ char *yyget_text ( yyscan_t yyscanner );
 
 int yyget_lineno ( yyscan_t yyscanner );
 
-void yyset_lineno ( int _line_number , yyscan_t yyscanner );
+void yyset_lineno (int _line_number ,yyscan_t yyscanner );
 
-int yyget_column  ( yyscan_t yyscanner );
+int yyget_column  (yyscan_t yyscanner );
+
+void yyset_column (int _column_no ,yyscan_t yyscanner );
+
+YYSTYPE * yyget_lval (yyscan_t yyscanner );
 
 void yyset_column ( int _column_no , yyscan_t yyscanner );
 
@@ -1040,7 +1063,7 @@ extern int yywrap ( yyscan_t yyscanner );
 
 #ifndef YY_NO_UNPUT
     
-    static void yyunput ( int c, char *buf_ptr  , yyscan_t yyscanner);
+    static void yyunput (int c,char *buf_ptr  ,yyscan_t yyscanner);
     
 #endif
 
@@ -1061,7 +1084,7 @@ static int input ( yyscan_t yyscanner );
 
 #endif
 
-    static void yy_push_state ( int _new_state , yyscan_t yyscanner);
+    static void yy_push_state (int _new_state ,yyscan_t yyscanner);
     
     static void yy_pop_state ( yyscan_t yyscanner );
     
@@ -1082,7 +1105,7 @@ static int input ( yyscan_t yyscanner );
 /* This used to be an fputs(), but since the string might contain NUL's,
  * we now use fwrite().
  */
-#define ECHO do { if (fwrite( yytext, (size_t) yyleng, 1, yyout )) {} } while (0)
+#define ECHO do { if (fwrite( yytext, yyleng, 1, yyout )) {} } while (0)
 #endif
 
 /* Gets input and stuffs it into "buf".  number of characters read, or YY_NULL,
@@ -1093,7 +1116,7 @@ static int input ( yyscan_t yyscanner );
 	if ( YY_CURRENT_BUFFER_LVALUE->yy_is_interactive ) \
 		{ \
 		int c = '*'; \
-		int n; \
+		size_t n; \
 		for ( n = 0; n < max_size && \
 			     (c = getc( yyin )) != EOF && c != '\n'; ++n ) \
 			buf[n] = (char) c; \
@@ -1236,7 +1259,7 @@ yy_match:
 				{
 				yy_current_state = (int) yy_def[yy_current_state];
 				if ( yy_current_state >= 494 )
-					yy_c = yy_meta[yy_c];
+					yy_c = yy_meta[(unsigned int) yy_c];
 				}
 			yy_current_state = yy_nxt[yy_base[yy_current_state] + yy_c];
 			++yy_cp;
@@ -1267,154 +1290,119 @@ do_action:	/* This label is used only to access EOF actions. */
 
 case 1:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); return MZN_INVALID_NULL; }
+{ return MZN_INVALID_NULL; }
 	YY_BREAK
 case 2:
 /* rule 2 can match eol */
 YY_RULE_SETUP
-{ MiniZinc::ParserState* parm =
-                      static_cast<MiniZinc::ParserState*>(
-                        yyget_extra(yyscanner));
-                    parm->lineno++;
-                    parm->lineStartPos += parm->nTokenNextStart;
-                    parm->nTokenNextStart=1;
-                  }
+{ }
 	YY_BREAK
 case 3:
 YY_RULE_SETUP
-{ /* ignore whitespace */
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                  }
+{ /* ignore whitespace */ }
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-{ yy_push_state(doccomment,yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
+{ yy_push_state(doccomment,yyscanner); clearBuffer(yyget_extra(yyscanner)); }
 	YY_BREAK
 
 case 5:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
+{ yylval->sValue = bufferData(yyget_extra(yyscanner));
                     yy_pop_state(yyscanner); return MZN_DOC_COMMENT; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
+{ appendBufferString(yyget_extra(yyscanner), yytext); }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
+{ appendBufferString(yyget_extra(yyscanner), yytext); }
 	YY_BREAK
 case 8:
 /* rule 8 can match eol */
 YY_RULE_SETUP
-{ MiniZinc::ParserState* parm =
-    static_cast<MiniZinc::ParserState*>(
-    yyget_extra(yyscanner));
-    parm->lineno++;
-    parm->lineStartPos += parm->nTokenNextStart;
-    parm->nTokenNextStart=1;
-    appendBufferString(yyget_extra(yyscanner), yytext);
-  }
+{ appendBufferString(yyget_extra(yyscanner), yytext); }
 	YY_BREAK
 
 case 9:
 YY_RULE_SETUP
-{ yy_push_state(doccomment_file,yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
+{ yy_push_state(doccomment_file,yyscanner); clearBuffer(yyget_extra(yyscanner)); }
 	YY_BREAK
 
 case 10:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
+{ yylval->sValue = bufferData(yyget_extra(yyscanner));
     yy_pop_state(yyscanner); return MZN_DOC_FILE_COMMENT; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
+{ appendBufferString(yyget_extra(yyscanner), yytext); }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
+{ appendBufferString(yyget_extra(yyscanner), yytext); }
 	YY_BREAK
 case 13:
 /* rule 13 can match eol */
 YY_RULE_SETUP
-{ MiniZinc::ParserState* parm =
-    static_cast<MiniZinc::ParserState*>(
-    yyget_extra(yyscanner));
-    parm->lineno++;
-    parm->lineStartPos += parm->nTokenNextStart;
-    parm->nTokenNextStart=1;
-    appendBufferString(yyget_extra(yyscanner), yytext);
-  }
+{ appendBufferString(yyget_extra(yyscanner), yytext); }
 	YY_BREAK
 
 case 14:
 YY_RULE_SETUP
-{ yy_push_state(multilinecomment,yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); }
+{ yy_push_state(multilinecomment,yyscanner); }
 	YY_BREAK
 
 case 15:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); yy_pop_state(yyscanner); }
+{ yy_pop_state(yyscanner); }
 	YY_BREAK
 case 16:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); }
+{ }
 	YY_BREAK
 case 17:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); }
+{ }
 	YY_BREAK
 case 18:
 /* rule 18 can match eol */
 YY_RULE_SETUP
-{ MiniZinc::ParserState* parm =
-    static_cast<MiniZinc::ParserState*>(
-    yyget_extra(yyscanner));
-    parm->lineno++;
-    parm->lineStartPos += parm->nTokenNextStart;
-    parm->nTokenNextStart=1;
-  }
+{ }
 	YY_BREAK
 
 case 19:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_LEFT_BRACKET; }
+{ return MZN_LEFT_BRACKET; }
 	YY_BREAK
 case 20:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_LEFT_2D_BRACKET; }
+{ return MZN_LEFT_2D_BRACKET; }
 	YY_BREAK
 case 21:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_RIGHT_BRACKET; }
+{ return MZN_RIGHT_BRACKET; }
 	YY_BREAK
 case 22:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_RIGHT_2D_BRACKET; }
+{ return MZN_RIGHT_2D_BRACKET; }
 	YY_BREAK
 case 23:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    /* ignore comments */ }
+{ /* ignore comments */ }
 	YY_BREAK
 case 24:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->iValue = 1; return MZN_BOOL_LITERAL; }
+{ yylval->iValue = 1; return MZN_BOOL_LITERAL; }
 	YY_BREAK
 case 25:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->iValue = 0; return MZN_BOOL_LITERAL; }
+{ yylval->iValue = 0; return MZN_BOOL_LITERAL; }
 	YY_BREAK
 case 26:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
+{
                   if (strtofloatval(yytext, yylval->dValue))
                   return MZN_FLOAT_LITERAL;
                   else
@@ -1423,7 +1411,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 27:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
+{
                     if (hexstrtointval(yytext+2, yylval->iValue))
                       return MZN_INTEGER_LITERAL;
                     else
@@ -1432,7 +1420,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 28:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
+{
                   if (octstrtointval(yytext+2, yylval->iValue))
                     return MZN_INTEGER_LITERAL;
                   else
@@ -1441,7 +1429,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 29:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
+{
                   if (fast_strtointval(yytext, yylval->iValue))
                     return MZN_INTEGER_LITERAL;
                   else
@@ -1450,7 +1438,7 @@ YY_RULE_SETUP
 	YY_BREAK
 case 30:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
+{
                   if (strtofloatval(yytext, yylval->dValue))
                   return MZN_FLOAT_LITERAL;
                   else
@@ -1460,7 +1448,6 @@ YY_RULE_SETUP
 case 31:
 YY_RULE_SETUP
 {
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     if (strtofloatval(yytext, yylval->dValue))
                       return MZN_FLOAT_LITERAL;
                     else
@@ -1470,7 +1457,6 @@ YY_RULE_SETUP
 case 32:
 YY_RULE_SETUP
 {
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     if (strtofloatval(yytext, yylval->dValue))
                       return MZN_FLOAT_LITERAL;
                     else
@@ -1480,545 +1466,438 @@ YY_RULE_SETUP
 case 33:
 YY_RULE_SETUP
 {
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     return *yytext; }
 	YY_BREAK
 case 34:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_DOTDOT; }
+{ return MZN_DOTDOT; }
 	YY_BREAK
 case 35:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_DOTDOT_QUOTED; }
+{ return MZN_DOTDOT_QUOTED; }
 	YY_BREAK
 case 36:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_COLONCOLON; }
+{ return MZN_COLONCOLON; }
 	YY_BREAK
 case 37:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_UNDERSCORE; }
+{ return MZN_UNDERSCORE; }
 	YY_BREAK
 case 38:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_ANN; }
+{ return MZN_ANN; }
 	YY_BREAK
 case 39:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_ANNOTATION; }
+{ return MZN_ANNOTATION; }
 	YY_BREAK
 case 40:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_ANY; }
+{ return MZN_ANY; }
 	YY_BREAK
 case 41:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_ARRAY; }
+{ return MZN_ARRAY; }
 	YY_BREAK
 case 42:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_BOOL; }
+{ return MZN_BOOL; }
 	YY_BREAK
 case 43:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_CASE; }
+{ return MZN_CASE; }
 	YY_BREAK
 case 44:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_CONSTRAINT; }
+{ return MZN_CONSTRAINT; }
 	YY_BREAK
 case 45:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_DEFAULT; }
+{ return MZN_DEFAULT; }
 	YY_BREAK
 case 46:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_IDIV; }
+{ return MZN_IDIV; }
 	YY_BREAK
 case 47:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_IDIV_QUOTED; }
+{ return MZN_IDIV_QUOTED; }
 	YY_BREAK
 case 48:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_DIFF; }
+{ return MZN_DIFF; }
 	YY_BREAK
 case 49:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_DIFF_QUOTED; }
+{ return MZN_DIFF_QUOTED; }
 	YY_BREAK
 case 50:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_ELSE; }
+{ return MZN_ELSE; }
 	YY_BREAK
 case 51:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_ELSEIF; }
+{ return MZN_ELSEIF; }
 	YY_BREAK
 case 52:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_ENDIF; }
+{ return MZN_ENDIF; }
 	YY_BREAK
 case 53:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_ENUM; }
+{ return MZN_ENUM; }
 	YY_BREAK
 case 54:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_FLOAT; }
+{ return MZN_FLOAT; }
 	YY_BREAK
 case 55:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_FUNCTION; }
+{ return MZN_FUNCTION; }
 	YY_BREAK
 case 56:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_IF; }
+{ return MZN_IF; }
 	YY_BREAK
 case 57:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_INCLUDE; }
+{ return MZN_INCLUDE; }
 	YY_BREAK
 case 58:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_INFINITY;
-                  }
+{ return MZN_INFINITY; }
 	YY_BREAK
 case 59:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_INTERSECT; }
+{ return MZN_INTERSECT; }
 	YY_BREAK
 case 60:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_INTERSECT_QUOTED; }
+{ return MZN_INTERSECT_QUOTED; }
 	YY_BREAK
 case 61:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_IN; }
+{ return MZN_IN; }
 	YY_BREAK
 case 62:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_IN_QUOTED; }
+{ return MZN_IN_QUOTED; }
 	YY_BREAK
 case 63:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_INT; }
+{ return MZN_INT; }
 	YY_BREAK
 case 64:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_LET; }
+{ return MZN_LET; }
 	YY_BREAK
 case 65:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_LIST; }
+{ return MZN_LIST; }
 	YY_BREAK
 case 66:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->bValue = false; return MZN_MAXIMIZE; }
+{ yylval->bValue = false; return MZN_MAXIMIZE; }
 	YY_BREAK
 case 67:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->bValue = true; return MZN_MINIMIZE; }
+{ yylval->bValue = true; return MZN_MINIMIZE; }
 	YY_BREAK
 case 68:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_MOD; }
+{ return MZN_MOD; }
 	YY_BREAK
 case 69:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_MOD_QUOTED; }
+{ return MZN_MOD_QUOTED; }
 	YY_BREAK
 case 70:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_NOT; }
+{ return MZN_NOT; }
 	YY_BREAK
 case 71:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_NOT_QUOTED; }
+{ return MZN_NOT_QUOTED; }
 	YY_BREAK
 case 72:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_OF; }
+{ return MZN_OF; }
 	YY_BREAK
 case 73:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_OUTPUT; }
+{ return MZN_OUTPUT; }
 	YY_BREAK
 case 74:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_OPT; }
+{ return MZN_OPT; }
 	YY_BREAK
 case 75:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_PAR; }
+{ return MZN_PAR; }
 	YY_BREAK
 case 76:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_PREDICATE; }
+{ return MZN_PREDICATE; }
 	YY_BREAK
 case 77:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_RECORD; }
+{ return MZN_RECORD; }
 	YY_BREAK
 case 78:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SATISFY; }
+{ return MZN_SATISFY; }
 	YY_BREAK
 case 79:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SET; }
+{ return MZN_SET; }
 	YY_BREAK
 case 80:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SOLVE; }
+{ return MZN_SOLVE; }
 	YY_BREAK
 case 81:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_STRING; }
+{ return MZN_STRING; }
 	YY_BREAK
 case 82:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SUBSET; }
+{ return MZN_SUBSET; }
 	YY_BREAK
 case 83:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SUBSET_QUOTED; }
+{ return MZN_SUBSET_QUOTED; }
 	YY_BREAK
 case 84:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SUPERSET; }
+{ return MZN_SUPERSET; }
 	YY_BREAK
 case 85:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SUPERSET_QUOTED; }
+{ return MZN_SUPERSET_QUOTED; }
 	YY_BREAK
 case 86:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SYMDIFF; }
+{ return MZN_SYMDIFF; }
 	YY_BREAK
 case 87:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_SYMDIFF_QUOTED; }
+{ return MZN_SYMDIFF_QUOTED; }
 	YY_BREAK
 case 88:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_TEST; }
+{ return MZN_TEST; }
 	YY_BREAK
 case 89:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_THEN; }
+{ return MZN_THEN; }
 	YY_BREAK
 case 90:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_TUPLE; }
+{ return MZN_TUPLE; }
 	YY_BREAK
 case 91:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_TYPE; }
+{ return MZN_TYPE; }
 	YY_BREAK
 case 92:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_UNION; }
+{ return MZN_UNION; }
 	YY_BREAK
 case 93:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_UNION_QUOTED; }
+{ return MZN_UNION_QUOTED; }
 	YY_BREAK
 case 94:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_VAR; }
+{ return MZN_VAR; }
 	YY_BREAK
 case 95:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_VARIANT_RECORD; }
+{ return MZN_VARIANT_RECORD; }
 	YY_BREAK
 case 96:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_WHERE; }
+{ return MZN_WHERE; }
 	YY_BREAK
 case 97:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_XOR; }
+{ return MZN_XOR; }
 	YY_BREAK
 case 98:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_XOR_QUOTED; }
+{ return MZN_XOR_QUOTED; }
 	YY_BREAK
 case 99:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_PLUS; }
+{ return MZN_PLUS; }
 	YY_BREAK
 case 100:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_PLUS_QUOTED; }
+{ return MZN_PLUS_QUOTED; }
 	YY_BREAK
 case 101:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_MINUS; }
+{ return MZN_MINUS; }
 	YY_BREAK
 case 102:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_MINUS_QUOTED; }
+{ return MZN_MINUS_QUOTED; }
 	YY_BREAK
 case 103:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_MULT; }
+{ return MZN_MULT; }
 	YY_BREAK
 case 104:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_MULT_QUOTED; }
+{ return MZN_MULT_QUOTED; }
 	YY_BREAK
 case 105:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_DIV; }
+{ return MZN_DIV; }
 	YY_BREAK
 case 106:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_DIV_QUOTED; }
+{ return MZN_DIV_QUOTED; }
 	YY_BREAK
 case 107:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_PLUSPLUS; }
+{ return MZN_PLUSPLUS; }
 	YY_BREAK
 case 108:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_PLUSPLUS_QUOTED; }
+{ return MZN_PLUSPLUS_QUOTED; }
 	YY_BREAK
 case 109:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_ABSENT; }
+{ return MZN_ABSENT; }
 	YY_BREAK
 case 110:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_LE; }
+{ return MZN_LE; }
 	YY_BREAK
 case 111:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_LE_QUOTED; }
+{ return MZN_LE_QUOTED; }
 	YY_BREAK
 case 112:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_LQ; }
+{ return MZN_LQ; }
 	YY_BREAK
 case 113:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_LQ_QUOTED; }
+{ return MZN_LQ_QUOTED; }
 	YY_BREAK
 case 114:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_GR; }
+{ return MZN_GR; }
 	YY_BREAK
 case 115:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_GR_QUOTED; }
+{ return MZN_GR_QUOTED; }
 	YY_BREAK
 case 116:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_GQ; }
+{ return MZN_GQ; }
 	YY_BREAK
 case 117:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_GQ_QUOTED; }
+{ return MZN_GQ_QUOTED; }
 	YY_BREAK
 case 118:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_EQ; }
+{ return MZN_EQ; }
 	YY_BREAK
 case 119:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_EQ_QUOTED; }
+{ return MZN_EQ_QUOTED; }
 	YY_BREAK
 case 120:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_EQ; }
+{ return MZN_EQ; }
 	YY_BREAK
 case 121:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_EQ_QUOTED; }
+{ return MZN_EQ_QUOTED; }
 	YY_BREAK
 case 122:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_NQ; }
+{ return MZN_NQ; }
 	YY_BREAK
 case 123:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_NQ_QUOTED; }
+{ return MZN_NQ_QUOTED; }
 	YY_BREAK
 case 124:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_IMPL; }
+{ return MZN_IMPL; }
 	YY_BREAK
 case 125:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_IMPL_QUOTED; }
+{ return MZN_IMPL_QUOTED; }
 	YY_BREAK
 case 126:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_RIMPL; }
+{ return MZN_RIMPL; }
 	YY_BREAK
 case 127:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_RIMPL_QUOTED; }
+{ return MZN_RIMPL_QUOTED; }
 	YY_BREAK
 case 128:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_EQUIV; }
+{ return MZN_EQUIV; }
 	YY_BREAK
 case 129:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_EQUIV_QUOTED; }
+{ return MZN_EQUIV_QUOTED; }
 	YY_BREAK
 case 130:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_OR; }
+{ return MZN_OR; }
 	YY_BREAK
 case 131:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_OR_QUOTED; }
+{ return MZN_OR_QUOTED; }
 	YY_BREAK
 case 132:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_AND; }
+{ return MZN_AND; }
 	YY_BREAK
 case 133:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return MZN_AND_QUOTED; }
+{ return MZN_AND_QUOTED; }
 	YY_BREAK
 case 134:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
+{
                     yylval->sValue = strdup(yytext);
                     return MZN_QUOTED_IDENTIFIER; }
 	YY_BREAK
 case 135:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
+{
                     yylval->sValue = strdup(yytext+1);
                     yylval->sValue[strlen(yytext)-2] = 0;
                     return MZN_IDENTIFIER; }
 	YY_BREAK
 case 136:
 YY_RULE_SETUP
-{
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    yylval->sValue = strdup(yytext); return MZN_IDENTIFIER; }
+{ yylval->sValue = strdup(yytext); return MZN_IDENTIFIER; }
 	YY_BREAK
 case 137:
 YY_RULE_SETUP
 {
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->sValue = strdup(yytext); return MZN_IDENTIFIER; }
 	YY_BREAK
 case 138:
 YY_RULE_SETUP
 {
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->sValue = strdup(yytext); return MZN_IDENTIFIER; }
 	YY_BREAK
 case 139:
 YY_RULE_SETUP
 {
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     MiniZinc::ParserState* parm =
                     static_cast<MiniZinc::ParserState*>(yyget_extra(yyscanner));
                     if (parm->isFlatZinc) {
@@ -2099,94 +1978,95 @@ YY_RULE_SETUP
 case 157:
 YY_RULE_SETUP
 {
-  beginToken(yyget_extra(yyscanner), yylloc, yytext);
   yylval->sValue = strdup(yytext+1); return MZN_TI_ENUM_IDENTIFIER; }
 	YY_BREAK
 case 158:
 YY_RULE_SETUP
 {
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->sValue = strdup(yytext+1); return MZN_TI_IDENTIFIER; }
-	YY_BREAK
-case 159:
-YY_RULE_SETUP
-{ yy_push_state(bracket_exp,yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); return *yytext; }
-	YY_BREAK
-case 160:
-YY_RULE_SETUP
-{ yy_pop_state(yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); return *yytext; }
 	YY_BREAK
 case 161:
 YY_RULE_SETUP
-{ yy_pop_state(yyscanner); yy_pop_state(yyscanner); yy_push_state(string_quote,yyscanner);
-                  beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
+{ yy_push_state(bracket_exp,yyscanner); return *yytext; }
 	YY_BREAK
 case 162:
 YY_RULE_SETUP
-{ yy_push_state(string,yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); clearBuffer(yyget_extra(yyscanner)); }
+{ yy_pop_state(yyscanner); return *yytext; }
 	YY_BREAK
 case 163:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferString(yyget_extra(yyscanner), yytext); }
+{ yy_pop_state(yyscanner); yy_pop_state(yyscanner); yy_push_state(string_quote,yyscanner);
+                  clearBuffer(yyget_extra(yyscanner)); }
 	YY_BREAK
 case 164:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), '\n'); }
+{ yy_push_state(string,yyscanner); clearBuffer(yyget_extra(yyscanner)); }
 	YY_BREAK
 case 165:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), '\t'); }
+{ appendBufferString(yyget_extra(yyscanner), yytext); }
 	YY_BREAK
 case 166:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
+{ appendBufferChar(yyget_extra(yyscanner), '\n'); }
 	YY_BREAK
 case 167:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
+{ appendBufferChar(yyget_extra(yyscanner), '\t'); }
 	YY_BREAK
 case 168:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
-                      yy_push_state(quoted_exp,yyscanner); return MZN_STRING_QUOTE_START; }
+{ appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
 	YY_BREAK
 case 169:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
-                      yy_push_state(quoted_exp,yyscanner); return MZN_STRING_QUOTE_MID; }
+{ appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
 	YY_BREAK
 case 170:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
+{ yylval->sValue = bufferData(yyget_extra(yyscanner));
+                      yy_push_state(quoted_exp,yyscanner); return MZN_STRING_QUOTE_START; }
+	YY_BREAK
+case 171:
+YY_RULE_SETUP
+{ yylval->sValue = bufferData(yyget_extra(yyscanner));
+                      yy_push_state(quoted_exp,yyscanner); return MZN_STRING_QUOTE_MID; }
+	YY_BREAK
+case 172:
+YY_RULE_SETUP
+{ yylval->sValue = bufferData(yyget_extra(yyscanner));
                       yy_pop_state(yyscanner); return MZN_STRING_LITERAL; }
 	YY_BREAK
 case 171:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); yylval->sValue = bufferData(yyget_extra(yyscanner));
+{ yylval->sValue = bufferData(yyget_extra(yyscanner));
                             yy_pop_state(yyscanner); return MZN_STRING_QUOTE_END; }
 	YY_BREAK
 case 172:
 YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext); return (unsigned char)yytext[0]; }
+{ return (unsigned char)yytext[0]; }
+	YY_BREAK
+case 173:
+/* rule 173 can match eol */
+YY_RULE_SETUP
+{ return MZN_END_OF_LINE_IN_STRING; }
 	YY_BREAK
 case YY_STATE_EOF(string):
 case YY_STATE_EOF(string_quote):
-{ yy_pop_state(yyscanner); beginToken(yyget_extra(yyscanner), yylloc, yytext); return MZN_UNTERMINATED_STRING; }
+{ yy_pop_state(yyscanner); return MZN_UNTERMINATED_STRING; }
 	YY_BREAK
-case 173:
+case 174:
 YY_RULE_SETUP
 {
-                    beginToken(yyget_extra(yyscanner), yylloc, yytext);
                     yylval->sValue = strdup(yytext+1);
                     yylval->sValue[strlen(yytext)-2] = 0; 
                     return MZN_QUOTED_IDENTIFIER; }
 	YY_BREAK
-case 174:
-YY_RULE_SETUP
-{ beginToken(yyget_extra(yyscanner), yylloc, yytext);
-                    return (unsigned char)yytext[0]; }
-	YY_BREAK
 case 175:
+YY_RULE_SETUP
+{ return (unsigned char)yytext[0]; }
+	YY_BREAK
+case 176:
 YY_RULE_SETUP
 ECHO;
 	YY_BREAK
@@ -2340,7 +2220,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
     struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 	char *dest = YY_CURRENT_BUFFER_LVALUE->yy_ch_buf;
 	char *source = yyg->yytext_ptr;
-	int number_to_move, i;
+	yy_size_t number_to_move, i;
 	int ret_val;
 
 	if ( yyg->yy_c_buf_p > &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[yyg->yy_n_chars + 1] )
@@ -2369,7 +2249,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 	/* Try to read more data. */
 
 	/* First move last chars to start of buffer. */
-	number_to_move = (int) (yyg->yy_c_buf_p - yyg->yytext_ptr - 1);
+	number_to_move = (yy_size_t) (yyg->yy_c_buf_p - yyg->yytext_ptr) - 1;
 
 	for ( i = 0; i < number_to_move; ++i )
 		*(dest++) = *(source++);
@@ -2452,11 +2332,10 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 	else
 		ret_val = EOB_ACT_CONTINUE_SCAN;
 
-	if ((yyg->yy_n_chars + number_to_move) > YY_CURRENT_BUFFER_LVALUE->yy_buf_size) {
+	if ((int) (yyg->yy_n_chars + number_to_move) > YY_CURRENT_BUFFER_LVALUE->yy_buf_size) {
 		/* Extend the array by 50%, plus the number we really need. */
 		int new_size = yyg->yy_n_chars + number_to_move + (yyg->yy_n_chars >> 1);
-		YY_CURRENT_BUFFER_LVALUE->yy_ch_buf = (char *) yyrealloc(
-			(void *) YY_CURRENT_BUFFER_LVALUE->yy_ch_buf, (yy_size_t) new_size , yyscanner );
+		YY_CURRENT_BUFFER_LVALUE->yy_ch_buf = (char *) yyrealloc((void *) YY_CURRENT_BUFFER_LVALUE->yy_ch_buf,new_size ,yyscanner );
 		if ( ! YY_CURRENT_BUFFER_LVALUE->yy_ch_buf )
 			YY_FATAL_ERROR( "out of dynamic memory in yy_get_next_buffer()" );
 		/* "- 2" to take care of EOB's */
@@ -2494,7 +2373,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 			{
 			yy_current_state = (int) yy_def[yy_current_state];
 			if ( yy_current_state >= 494 )
-				yy_c = yy_meta[yy_c];
+				yy_c = yy_meta[(unsigned int) yy_c];
 			}
 		yy_current_state = yy_nxt[yy_base[yy_current_state] + yy_c];
 		}
@@ -2523,9 +2402,9 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 		{
 		yy_current_state = (int) yy_def[yy_current_state];
 		if ( yy_current_state >= 494 )
-			yy_c = yy_meta[yy_c];
+			yy_c = yy_meta[(unsigned int) yy_c];
 		}
-	yy_current_state = yy_nxt[yy_base[yy_current_state] + yy_c];
+	yy_current_state = yy_nxt[yy_base[yy_current_state] + (unsigned int) yy_c];
 	yy_is_jam = (yy_current_state == 493);
 
 	(void)yyg;
@@ -2547,7 +2426,7 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 	if ( yy_cp < YY_CURRENT_BUFFER_LVALUE->yy_ch_buf + 2 )
 		{ /* need to shift things up to make room */
 		/* +2 for EOB chars. */
-		int number_to_move = yyg->yy_n_chars + 2;
+		yy_size_t number_to_move = yyg->yy_n_chars + 2;
 		char *dest = &YY_CURRENT_BUFFER_LVALUE->yy_ch_buf[
 					YY_CURRENT_BUFFER_LVALUE->yy_buf_size + 2];
 		char *source =
@@ -2622,8 +2501,8 @@ static int yy_get_next_buffer (yyscan_t yyscanner)
 
 				case EOB_ACT_END_OF_FILE:
 					{
-					if ( yywrap( yyscanner ) )
-						return 0;
+					if ( yywrap(yyscanner ) )
+						return EOF;
 
 					if ( ! yyg->yy_did_buffer_switch_on_eof )
 						YY_NEW_FILE;
@@ -2727,7 +2606,7 @@ static void yy_load_buffer_state  (yyscan_t yyscanner)
 	if ( ! b )
 		YY_FATAL_ERROR( "out of dynamic memory in yy_create_buffer()" );
 
-	b->yy_buf_size = size;
+	b->yy_buf_size = (yy_size_t)size;
 
 	/* yy_ch_buf has to be 2 characters longer than the size given because
 	 * we need to put in 2 end-of-buffer characters.
@@ -2888,7 +2767,7 @@ static void yyensure_buffer_stack (yyscan_t yyscanner)
 		 * scanner will even need a stack. We use 2 instead of 1 to avoid an
 		 * immediate realloc on the next call.
          */
-      num_to_alloc = 1; /* After all that talk, this was set to 1 anyways... */
+		num_to_alloc = 1; /* After all that talk, this was set to 1 anyways... */
 		yyg->yy_buffer_stack = (struct yy_buffer_state**)yyalloc
 								(num_to_alloc * sizeof(struct yy_buffer_state*)
 								, yyscanner);
@@ -2982,7 +2861,7 @@ YY_BUFFER_STATE yy_scan_bytes  (const char * yybytes, int  _yybytes_len , yyscan
 	YY_BUFFER_STATE b;
 	char *buf;
 	yy_size_t n;
-	int i;
+	yy_size_t i;
     
 	/* Get memory for full buffer, including space for trailing EOB's. */
 	n = (yy_size_t) (_yybytes_len + 2);
@@ -3056,7 +2935,7 @@ static void yynoreturn yy_fatal_error (const char* msg , yyscan_t yyscanner)
 {
 	struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 	(void)yyg;
-	fprintf( stderr, "%s\n", msg );
+	(void) fprintf( stderr, "%s\n", msg );
 	exit( YY_EXIT_FAILURE );
 }
 
@@ -3401,7 +3280,7 @@ void *yyalloc (yy_size_t  size , yyscan_t yyscanner)
 {
 	struct yyguts_t * yyg = (struct yyguts_t*)yyscanner;
 	(void)yyg;
-	return malloc(size);
+	return (void *) malloc( size );
 }
 
 void *yyrealloc  (void * ptr, yy_size_t  size , yyscan_t yyscanner)

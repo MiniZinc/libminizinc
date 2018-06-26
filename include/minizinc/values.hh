@@ -317,7 +317,7 @@ namespace MiniZinc {
   public:
     FloatVal(void) : _v(0.0), _infinity(false) {}
     FloatVal(double v) : _v(v), _infinity(false) {}
-    FloatVal(const IntVal& v) : _v(v._v), _infinity(!v.isFinite()) {}
+    FloatVal(const IntVal& v) : _v(static_cast<double>(v._v)), _infinity(!v.isFinite()) {}
     
     double toDouble(void) const {
       if (!isFinite())
@@ -403,8 +403,8 @@ namespace MiniZinc {
     }
     
     size_t hash(void) const {
-      HASH_NAMESPACE::hash<long long int> longhash;
-      return longhash(_v);
+      HASH_NAMESPACE::hash<double> doublehash;
+      return doublehash(_v);
     }
     
   };
@@ -560,7 +560,7 @@ namespace MiniZinc {
     /// Construct set from \a s
     IntSetVal(const std::vector<Range>& s)
       : ASTChunk(sizeof(Range)*s.size()) {
-      for (unsigned int i=s.size(); i--;)
+      for (unsigned int i=static_cast<unsigned int>(s.size()); i--;)
         get(i) = s[i];
     }
 
@@ -570,7 +570,7 @@ namespace MiniZinc {
     IntSetVal& operator =(const IntSetVal& r);
   public:
     /// Return number of ranges
-    int size(void) const { return _size / sizeof(Range); }
+    int size(void) const { return static_cast<int>(_size / sizeof(Range)); }
     /// Return minimum, or infinity if set is empty
     IntVal min(void) const { return size()==0 ? IntVal::infinity() : get(0).min; }
     /// Return maximum, or minus infinity if set is empty
@@ -749,7 +749,7 @@ namespace MiniZinc {
     /// Construct set from \a s
     FloatSetVal(const std::vector<Range>& s)
     : ASTChunk(sizeof(Range)*s.size()) {
-      for (unsigned int i=s.size(); i--;)
+      for (unsigned int i=static_cast<unsigned int>(s.size()); i--;)
         get(i) = s[i];
     }
     
@@ -759,7 +759,7 @@ namespace MiniZinc {
     FloatSetVal& operator =(const FloatSetVal& r);
   public:
     /// Return number of ranges
-    int size(void) const { return _size / sizeof(Range); }
+    int size(void) const { return static_cast<int>(_size / sizeof(Range)); }
     /// Return minimum, or infinity if set is empty
     FloatVal min(void) const { return size()==0 ? FloatVal::infinity() : get(0).min; }
     /// Return maximum, or minus infinity if set is empty

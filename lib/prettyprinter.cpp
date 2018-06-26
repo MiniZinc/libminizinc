@@ -950,7 +950,7 @@ namespace MiniZinc {
   }
   void
   Line::addString(const std::string& s) {
-    lineLength += s.size();
+    lineLength += static_cast<int>(s.size());
     text.push_back(s);
   }
   void
@@ -1798,7 +1798,7 @@ namespace MiniZinc {
   void
   PrettyPrinter::print(std::ostream& os) const {
     std::vector<Line>::const_iterator it;
-    int nItems = items.size();
+    int nItems = static_cast<int>(items.size());
     for (int item = 0; item < nItems; item++) {
       for (it = items[item].begin(); it != items[item].end(); it++) {
         it->print(os);
@@ -1846,7 +1846,7 @@ namespace MiniZinc {
   void PrettyPrinter::printString(const std::string& s, bool alignment,
                                   int alignmentCol) {
     Line& l = items[currentItem][currentLine];
-    int size = s.size();
+    int size = static_cast<int>(s.size());
     if (size <= l.getSpaceLeft(maxwidth)) {
       l.addString(s);
     } else {
@@ -1872,8 +1872,8 @@ namespace MiniZinc {
     int currentCol = items[currentItem][currentLine].getIndentation()
         + items[currentItem][currentLine].getLength();
     int newAlignmentCol =
-        _alignment ? currentCol + beginToken.size() : alignmentCol;
-    int vectorSize = ld.size();
+        _alignment ? currentCol + static_cast<int>(beginToken.size()) : alignmentCol;
+    int vectorSize = static_cast<int>(ld.size());
     int lastVisibleElementIndex;
     for (int i = 0; i < vectorSize; i++) {
       if (!dynamic_cast<BreakPoint*>(ld[i]))

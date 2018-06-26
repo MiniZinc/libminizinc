@@ -11,7 +11,6 @@ set(CMAKE_MODULE_PATH
 # -- For example, to include gecode in the minizinc binary run                                                     --
 # --     "cd build; cmake -D GECODE_HOME=$GECODE_HOME ..; cmake --build ."                                         --
 # -------------------------------------------------------------------------------------------------------------------
-set(HAS_FZN    TRUE)                 ### Always compile the FlatZinc (external process) driver
 if (DEFINED GECODE_HOME AND NOT "${GECODE_HOME} " STREQUAL " ")
   set(HAS_GECODE TRUE)
 endif()
@@ -307,26 +306,20 @@ lib/model.cpp
 ${parser_cpp}
 lib/prettyprinter.cpp
 lib/pathfileprinter.cpp
-lib/solver.cpp
-lib/solver_config.cpp
-lib/solver_instance.cpp
-lib/solver_instance_base.cpp
 lib/type.cpp
 lib/typecheck.cpp
 lib/flatten.cpp
-lib/flattener.cpp
 lib/MIPdomains.cpp
 lib/optimize.cpp
 lib/options.cpp
 lib/optimize_constraints.cpp
 lib/output.cpp
 lib/parser.yxx
-lib/process.cpp
-lib/solns2out.cpp
+lib/solver_instance.cpp
+lib/solver_instance_base.cpp
 lib/statistics.cpp
 lib/lexer.lxx
 lib/values.cpp
-lib/passes/compile_pass.cpp
 include/minizinc/ast.hh
 include/minizinc/ast.hpp
 include/minizinc/astexception.hh
@@ -341,7 +334,6 @@ include/minizinc/exception.hh
 include/minizinc/file_utils.hh
 include/minizinc/flatten.hh
 include/minizinc/flatten_internal.hh
-include/minizinc/flattener.hh
 include/minizinc/gc.hh
 include/minizinc/hash.hh
 include/minizinc/htmlprinter.hh
@@ -354,22 +346,17 @@ include/minizinc/options.hh
 include/minizinc/output.hh
 include/minizinc/parser.hh
 include/minizinc/prettyprinter.hh
-include/minizinc/process.hh
 include/minizinc/pathfileprinter.hh
-include/minizinc/solns2out.hh
-include/minizinc/solver.hh
-include/minizinc/solver_config.hh
-include/minizinc/solver_instance.hh
-include/minizinc/solver_instance_base.hh
 include/minizinc/statistics.hh
 include/minizinc/stl_map_set.hh
 include/minizinc/timer.hh
 include/minizinc/type.hh
 include/minizinc/typecheck.hh
 include/minizinc/values.hh
+include/minizinc/solver_instance.hh
+include/minizinc/solver_instance_base.hh
 include/minizinc/stl_map_set.hh
 include/minizinc/thirdparty/SafeInt3.hpp
-include/minizinc/passes/compile_pass.hh
 include/minizinc/thirdparty/miniz.h
 include/minizinc/thirdparty/b64/cdecode.h
 include/minizinc/thirdparty/b64/cencode.h
@@ -378,12 +365,24 @@ include/minizinc/thirdparty/b64/encode.h
 ${parser_hh}
 )
 
-find_package ( Threads REQUIRED )
+add_library(minizinc_solver
+lib/flattener.cpp
+lib/passes/compile_pass.cpp
+lib/process.cpp
+lib/solns2out.cpp
+lib/solver.cpp
+lib/solver_config.cpp
+include/minizinc/flattener.hh
+include/minizinc/passes/compile_pass.hh
+include/minizinc/process.hh
+include/minizinc/solns2out.hh
+include/minizinc/solver.hh
+include/minizinc/solver_config.hh
+)
 
-if(HAS_GECODE)
-  target_link_libraries(minizinc minizinc_gecode)
-  target_compile_definitions(minizinc PRIVATE HAS_GECODE)
-endif()
+target_link_libraries(minizinc_solver minizinc)
+
+find_package ( Threads REQUIRED )
 
 # -------------------------------------------------------------------------------------------------------------------
 
@@ -402,6 +401,10 @@ if(HAS_GUROBI)  # Version 7.5
     link_directories("${GUROBI_HOME}/lib")
     target_link_libraries(minizinc_gurobi minizinc gurobi75 ${CMAKE_THREAD_LIBS_INIT})
   endif()
+
+  target_link_libraries(minizinc_solver minizinc_gurobi)
+  target_compile_definitions( minizinc_solver PRIVATE HAS_GUROBI )
+  set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_gurobi)
 
   INSTALL(TARGETS minizinc_gurobi
     EXPORT libminizincTargets
@@ -423,6 +426,10 @@ if(HAS_XPRESS)
   target_include_directories(minizinc_xpress PRIVATE "${XPRESS_HOME}/include")
   link_directories("${XPRESS_HOME}/lib")
   target_link_libraries(minizinc_xpress minizinc xprb xprs ${CMAKE_THREAD_LIBS_INIT})
+
+  target_link_libraries(minizinc_solver minizinc_xpress)
+  target_compile_definitions( minizinc_solver PRIVATE HAS_XPRESS )
+  set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_xpress)
 
   INSTALL(TARGETS minizinc_xpress
     EXPORT libminizincTargets
@@ -473,6 +480,13 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
     target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
   endif()
 
+  SET_TARGET_PROPERTIES(minizinc_solver
+    PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD -Wall"
+  )
+  target_link_libraries(minizinc_solver minizinc_cplex ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
+  target_compile_definitions( minizinc_solver PRIVATE HAS_CPLEX )
+  set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_cplex)
+
   INSTALL(TARGETS minizinc_cplex
     EXPORT libminizincTargets
     RUNTIME DESTINATION bin
@@ -514,18 +528,11 @@ if(HAS_SCIP)   # SCIP version tested: 3.2.1
     ${SCIP_LIB_EXTRAS}
     ${CMAKE_THREAD_LIBS_INIT})
 
-  add_executable(mzn-scip minizinc.cpp)
-  target_compile_definitions( mzn-scip PRIVATE HAS_MIP )
-  target_include_directories(mzn-scip PRIVATE
-    "${SCIP_DIR}/src"
-    "${SOPLEX_DIR}/src"
-    "${ZIMPL_DIR}/src")
-  target_link_libraries(mzn-scip minizinc_scip
-    ${SCIP_LIBS}
-    ${SCIP_LIB_EXTRAS}
-    ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(minizinc_solver minizinc_scip)
+  target_compile_definitions( minizinc_solver PRIVATE HAS_SCIP )
+  set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_scip)
 
-  INSTALL(TARGETS minizinc_scip mzn-scip
+  INSTALL(TARGETS minizinc_scip
     EXPORT libminizincTargets
     RUNTIME DESTINATION bin
     LIBRARY DESTINATION lib
@@ -620,6 +627,10 @@ if(HAS_OSICBC)
                                        # OSICBC_LINKEXTRAS: ArchLinux needs blas, lapack, bz2
   target_link_libraries(minizinc_osicbc minizinc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
 
+  target_link_libraries(minizinc_solver minizinc_osicbc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS} ${CMAKE_THREAD_LIBS_INIT})
+  target_compile_definitions( minizinc_solver PRIVATE HAS_OSICBC )
+  set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_osicbc)
+
   INSTALL(TARGETS minizinc_osicbc
     EXPORT libminizincTargets
     RUNTIME DESTINATION bin
@@ -670,6 +681,10 @@ if(HAS_GECODE)
     target_link_libraries(minizinc_gecode ${MPFR_LIBRARIES})
   endif()
 
+  target_link_libraries(minizinc_solver minizinc_gecode)
+  target_compile_definitions( minizinc_solver PRIVATE HAS_GECODE )
+  set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_gecode)
+
   INSTALL(TARGETS minizinc_gecode
     EXPORT libminizincTargets
     RUNTIME DESTINATION bin
@@ -683,82 +698,38 @@ if(HAS_GECODE)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
+add_library(minizinc_fzn
+  solvers/fzn/fzn_solverinstance.cpp
+  solvers/fzn/fzn_solverfactory.cpp
+  include/minizinc/solvers/fzn_solverfactory.hh
+  include/minizinc/solvers/fzn_solverinstance.hh
+  solvers/mzn/mzn_solverinstance.cpp
+  solvers/mzn/mzn_solverfactory.cpp
+  include/minizinc/solvers/mzn_solverfactory.hh
+  include/minizinc/solvers/mzn_solverinstance.hh
+)
+target_link_libraries(minizinc_fzn minizinc)
+
+add_executable(mzn2fzn minizinc.cpp)
+target_link_libraries(mzn2fzn minizinc_solver)
+add_executable(solns2out minizinc.cpp)
+target_link_libraries(solns2out minizinc_solver)
+
+add_executable( minizinc-bin minizinc.cpp )
+set_target_properties( minizinc-bin PROPERTIES OUTPUT_NAME minizinc)
+target_link_libraries(minizinc_solver minizinc_fzn)
+target_link_libraries(minizinc-bin minizinc_solver)
+
 add_executable(mzn2doc mzn2doc.cpp)
-target_link_libraries(mzn2doc minizinc)
+target_link_libraries(mzn2doc minizinc_solver)
 
-# -------------------------------------------------------------------------------------------------------------------
-if(HAS_FZN)
-	add_library(minizinc_fzn
-		solvers/fzn/fzn_solverinstance.cpp
-    solvers/fzn/fzn_solverfactory.cpp
-    include/minizinc/solvers/fzn_solverfactory.hh
-    include/minizinc/solvers/fzn_solverinstance.hh
-    solvers/mzn/mzn_solverinstance.cpp
-    solvers/mzn/mzn_solverfactory.cpp
-    include/minizinc/solvers/mzn_solverfactory.hh
-    include/minizinc/solvers/mzn_solverinstance.hh
-	)
-	target_link_libraries(minizinc_fzn minizinc)
-
-  add_executable(mzn2fzn minizinc.cpp)
-  target_link_libraries(mzn2fzn minizinc)
-  add_executable(solns2out minizinc.cpp)
-  target_link_libraries(solns2out minizinc)
-
-	add_executable( minizinc-bin minizinc.cpp )
-  set_target_properties( minizinc-bin PROPERTIES OUTPUT_NAME minizinc)
-  target_compile_definitions( minizinc-bin PRIVATE HAS_FZN )
-	target_link_libraries(minizinc-bin minizinc_fzn)
-  if(HAS_GUROBI)
-    target_link_libraries(minizinc-bin minizinc_gurobi)
-    target_compile_definitions( minizinc-bin PRIVATE HAS_GUROBI )
-    set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_gurobi)
-  endif()
-  if(HAS_SCIP)
-    target_link_libraries(minizinc-bin minizinc_scip)
-    target_compile_definitions( minizinc-bin PRIVATE HAS_SCIP )
-    set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_scip)
-  endif()
-  if(HAS_XPRESS)
-    target_link_libraries(minizinc-bin minizinc_xpress)
-    target_compile_definitions( minizinc-bin PRIVATE HAS_XPRESS )
-    set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_xpress)
-  endif()
-  if(HAS_CPLEX)
-    SET_TARGET_PROPERTIES(minizinc-bin
-      PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD -Wall"
-    )
-    target_link_libraries(minizinc-bin minizinc_cplex ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
-    target_compile_definitions( minizinc-bin PRIVATE HAS_CPLEX )
-    set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_cplex)
-  endif()
-  if (HAS_OSICBC)
-    target_link_libraries(minizinc-bin minizinc_osicbc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS} ${CMAKE_THREAD_LIBS_INIT})
-    target_compile_definitions( minizinc-bin PRIVATE HAS_OSICBC )
-    set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_osicbc)
-  endif()
-  if (HAS_GECODE)
-    target_compile_definitions( minizinc-bin PRIVATE HAS_GECODE )
-    target_compile_definitions( mzn2fzn      PRIVATE HAS_GECODE )
-    target_compile_definitions( solns2out    PRIVATE HAS_GECODE )
-    set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_gecode)
-  endif()
-
-
-	INSTALL(TARGETS minizinc_fzn minizinc-bin mzn2fzn solns2out
-    EXPORT libminizincTargets
-    RUNTIME DESTINATION bin
-		LIBRARY DESTINATION lib
-		ARCHIVE DESTINATION lib)
-endif()
-
-# -------------------------------------------------------------------------------------------------------------------
-INSTALL(TARGETS mzn2doc minizinc
+INSTALL(TARGETS minizinc minizinc_solver minizinc_fzn minizinc-bin mzn2fzn solns2out mzn2doc
   EXPORT libminizincTargets
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
-)
+  ARCHIVE DESTINATION lib)
+
+# -------------------------------------------------------------------------------------------------------------------
 
 option (BUILD_HTML_DOCUMENTATION "Build HTML documentation for the MiniZinc library" OFF)
 

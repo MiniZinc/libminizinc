@@ -157,6 +157,7 @@ Please read the leading comments before using the class.
 
 #ifndef C_ASSERT
 #define C_ASSERT(e) typedef char __C_ASSERT__[(e)?1:-1] IGNORE_UNUSED_TYPEDEF
+#define SAFEINT_UNDEF_C_ASSERT
 #endif
 
 // Let's test some assumptions
@@ -7064,3 +7065,6 @@ SafeInt< T, E > operator |( U lhs, SafeInt< T, E > rhs ) SAFEINT_NOTHROW
 } // msl
 #endif
 
+#if defined SAFEINT_UNDEF_C_ASSERT
+#undef C_ASSERT
+#endif

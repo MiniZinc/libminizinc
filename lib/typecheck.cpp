@@ -59,7 +59,7 @@ namespace MiniZinc {
   
   VarDecl*
   Scopes::find(Id *ident) {
-    int cur = s.size()-1;
+    int cur = static_cast<int>(s.size())-1;
     for (;;) {
       DeclMap::iterator vdi = s[cur].m.find(ident);
       if (vdi == s[cur].m.end()) {
@@ -143,7 +143,7 @@ namespace MiniZinc {
         toEnumArgs[0] = vd->id();
         toEnumArgs[1] = IntLit::a(i+1);
         Call* toEnum = new Call(sl->v()[i]->loc(), ASTString("to_enum"), toEnumArgs);
-        toEnum->decl(env.orig->matchFn(env, toEnum, false));
+        toEnum->decl(env.model->matchFn(env, toEnum, false));
         VarDecl* vd_id = new VarDecl(ti_id->loc(),ti_id,sl->v()[i]->cast<Id>()->str(),toEnum);
         enumItems->addItem(new VarDeclI(vd_id->loc(),vd_id));
       }
@@ -688,10 +688,10 @@ namespace MiniZinc {
           pos.insert(std::pair<VarDecl*,int>(ve,-1));
           run(env, ve->ti());
           run(env, ve->e());
-          ve->payload(decls.size());
+          ve->payload(static_cast<int>(decls.size()));
           decls.push_back(ve);
           pi = pos.find(ve);
-          pi->second = decls.size()-1;
+          pi->second = static_cast<int>(decls.size())-1;
         } else {
           assert(pi->second != -1);
         }
@@ -736,7 +736,7 @@ namespace MiniZinc {
       for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
           try {
             run(env, *it);
-          } catch (TypeError& e) {
+          } catch (TypeError&) {
             toDelete.push_back(*it);
           }
           for (Expression* de : toDelete)
@@ -1024,7 +1024,7 @@ namespace MiniZinc {
       }
       if (ty.enumId() != 0) {
         std::vector<unsigned int> enumIds(ty.dim()+1);
-        for (unsigned int i=0; i<ty.dim(); i++)
+        for (int i=0; i<ty.dim(); i++)
           enumIds[i] = 0;
         enumIds[ty.dim()] = ty.enumId();
         ty.enumId(_env.registerArrayEnum(enumIds));
@@ -1423,7 +1423,7 @@ namespace MiniZinc {
     /// Visit call
     void vCall(Call& call) {
       std::vector<Expression*> args(call.n_args());
-      for (unsigned int i=args.size(); i--;)
+      for (unsigned int i=static_cast<unsigned int>(args.size()); i--;)
         args[i] = call.arg(i);
       if (FunctionI* fi = _model->matchFn(_env,call.id(),args,true)) {
         bool cv = false;
@@ -1624,7 +1624,30 @@ namespace MiniZinc {
     void vTIId(TIId& id) {}
   };
   
-  void typecheck(Env& env, Model* m, std::vector<TypeError>& typeErrors, bool ignoreUndefinedParameters, bool allowMultiAssignment) {
+  void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors, bool ignoreUndefinedParameters, bool allowMultiAssignment) {
+    Model* m;
+    if (origModel==env.model()) {
+      // Combine all items into single model
+      Model* combinedModel = new Model;
+      class Combiner : public ItemVisitor {
+      public:
+        Model* m;
+        Combiner(Model* m0) : m(m0) {}
+        bool enter(Item* i) {
+          if (!i->isa<IncludeI>())
+            m->addItem(i);
+          return true;
+        }
+      } _combiner(combinedModel);
+      iterItems(_combiner, origModel);
+      env.envi().orig_model = origModel;
+      env.envi().model = combinedModel;
+      m=combinedModel;
+    } else {
+      m = origModel;
+    }
+    
+    // Topological sorting
     TopoSorter ts(m);
     
     std::vector<FunctionI*> functionItems;
@@ -1701,7 +1724,7 @@ namespace MiniZinc {
       if (env.envi().ignoreUnknownIds) {
         try {
           vd = ts.get(env.envi(),ai->id(),ai->loc());
-        } catch (TypeError& e) {}
+        } catch (TypeError&) {}
       } else {
         vd = ts.get(env.envi(),ai->id(),ai->loc());
       }
@@ -1799,7 +1822,6 @@ namespace MiniZinc {
       
       std::stable_sort(m->begin(), m->end(), _sbp);
     }
-
     
     {
       Typer<false> ty(env.envi(), m, typeErrors);
@@ -1887,7 +1909,7 @@ namespace MiniZinc {
               args[0] = i->e();
               args[1] = constants().boollit(i->st()==SolveI::ST_MAX);
               Call* c = new Call(Location().introduce(), ASTString("objective_deopt_"), args);
-              c->decl(env.orig->matchFn(env, c, false));
+              c->decl(env.model->matchFn(env, c, false));
               assert(c->decl());
               c->type(et);
               i->e(c);
@@ -2000,60 +2022,6 @@ namespace MiniZinc {
     
   }
 
-  void typecheck_fzn(Env& env, Model* m) {
-    ASTStringMap<int>::t declMap;
-    for (unsigned int i=0; i<m->size(); i++) {
-      if (VarDeclI* vdi = (*m)[i]->dyn_cast<VarDeclI>()) {
-        Type t = vdi->e()->type();
-        declMap.insert(std::pair<ASTString,int>(vdi->e()->id()->v(), i));
-        if (t.isunknown()) {
-          if (vdi->e()->ti()->domain()) {
-            switch (vdi->e()->ti()->domain()->eid()) {
-              case Expression::E_BINOP:
-              {
-                BinOp* bo = vdi->e()->ti()->domain()->cast<BinOp>();
-                if (bo->op()==BOT_DOTDOT) {
-                  t.bt(bo->lhs()->type().bt());
-                  if (t.isunknown()) {
-                    throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
-                  }
-                  vdi->e()->type(t);
-                } else {
-                  throw TypeError(env.envi(), vdi->e()->loc(), "Only ranges allowed in FlatZinc type inst");
-                }
-                break;
-              }
-              case Expression::E_ID:
-              {
-                ASTStringMap<int>::t::iterator it = declMap.find(vdi->e()->ti()->domain()->cast<Id>()->v());
-                if (it == declMap.end()) {
-                  throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
-                }
-                t.bt((*m)[it->second]->cast<VarDeclI>()->e()->type().bt());
-                if (t.isunknown()) {
-                  throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
-                }
-                vdi->e()->type(t);
-                break;
-              }
-              case Expression::E_SETLIT:
-              {
-                SetLit* sl = vdi->e()->ti()->domain()->cast<SetLit>();
-                t.bt(Type::BT_INT);
-                vdi->e()->type(t);
-                break;
-              }
-              default:
-                throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
-            }
-          } else {
-            throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
-          }
-        }
-      }
-    }
-  }
-
   void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os, bool extra = false) {
     os << "    \"" << *vd->id() << "\" : {";
     os << "\"type\" : ";
@@ -2078,7 +2046,7 @@ namespace MiniZinc {
         os << ", \"dims\" : [";
         bool had_dim = false;
         ASTExprVec<TypeInst> ranges = vd->ti()->ranges();
-        for(int i=0; i<ranges.size(); i++) {
+        for(int i=0; i<static_cast<int>(ranges.size()); i++) {
           if(ranges[i]->type().enumId() > 0) {
             os << (had_dim ? "," : "")
                << "\"" << *env.envi().getEnum(ranges[i]->type().enumId())->e()->id() << "\"";
@@ -2088,12 +2056,20 @@ namespace MiniZinc {
           had_dim = true;
         }
         os << "]";
+
+        if (vd->type().enumId() > 0) {
+          const std::vector<unsigned int>& enumIds = env.envi().getArrayEnum(vd->type().enumId());
+          if(enumIds.back() > 0) {
+            os << ", \"enum_type\" : \"" << *env.envi().getEnum(enumIds.back())->e()->id() << "\"";
+          }
+        }
       }
 
-    }
-    if(extra) {
-      if (vd->type().enumId() > 0) {
+    } else {
+      if(extra) {
+        if (vd->type().enumId() > 0) {
           os << ", \"enum_type\" : \"" << *env.envi().getEnum(vd->type().enumId())->e()->id() << "\"";
+        }
       }
     }
     os << "}";
@@ -2116,7 +2092,7 @@ namespace MiniZinc {
         return true;
       }
       void vVarDeclI(VarDeclI* vdi) {
-        if (!vdi->e()->type().isann() && (vdi->e()->e()==NULL || vdi->e()->e()==constants().absent)) {
+        if (!vdi->e()->type().isann() && !vdi->e()->ti()->isEnum()) {
           if (had_var) oss_vars << ",\n";
           output_var_desc_json(env, vdi->e(), oss_vars, true);
           had_var = true;
@@ -2128,10 +2104,10 @@ namespace MiniZinc {
       }
     } _vinf(env);
     iterItems(_vinf, m);
-    os << "var_types: {";
-    os << "\n  vars: {\n" << _vinf.oss_vars.str() << "\n  },";
-    os << "\n  enums: [" << _vinf.oss_enums.str() << "]\n";
-    os << "}\n";
+    os << "{\"var_types\": {";
+    os << "\n  \"vars\": {\n" << _vinf.oss_vars.str() << "\n  },";
+    os << "\n  \"enums\": [" << _vinf.oss_enums.str() << "]\n";
+    os << "}}\n";
   }
 
 

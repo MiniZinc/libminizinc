@@ -1366,7 +1366,7 @@ namespace MiniZinc {
 
   FloatVal eval_float(EnvI& env, Expression* e) {
     if (e->type().isint()) {
-      return eval_int(env,e).toInt();
+      return static_cast<double>(eval_int(env,e).toInt());
     } else if (e->type().isbool()) {
       return eval_bool(env,e);
     }
@@ -1795,7 +1795,7 @@ namespace MiniZinc {
       if (e->type().isint()) {
         if (ITE* ite = e->dyn_cast<ITE>()) {
           Bounds itebounds(IntVal::infinity(), -IntVal::infinity());
-          for (unsigned int i=0; i<ite->size(); i++) {
+          for (int i=0; i<ite->size(); i++) {
             if (ite->e_if(i)->type().ispar() && ite->e_if(i)->type().cv()==Type::CV_NO) {
               if (eval_bool(env, ite->e_if(i))) {
                 BottomUpIterator<ComputeIntBounds> cbi(*this);
@@ -2037,7 +2037,7 @@ namespace MiniZinc {
         }
           
         IntVal d = le ? c.arg(2)->cast<IntLit>()->v() : 0;
-        int stacktop = _bounds.size();
+        int stacktop = static_cast<int>(_bounds.size());
         for (unsigned int i=al->size(); i--;) {
           BottomUpIterator<ComputeIntBounds> cbi(*this);
           cbi.run((*al)[i]);
@@ -2372,7 +2372,7 @@ namespace MiniZinc {
         }
         ArrayLit* al = eval_array_lit(env,c.arg(le ? 1 : 0));
         FloatVal d = le ? c.arg(2)->cast<FloatLit>()->v() : 0.0;
-        int stacktop = _bounds.size();
+        int stacktop = static_cast<int>(_bounds.size());
         for (unsigned int i=al->size(); i--;) {
           BottomUpIterator<ComputeFloatBounds> cbi(*this);
           cbi.run((*al)[i]);
@@ -2448,7 +2448,7 @@ namespace MiniZinc {
           valid = false;
           _bounds.push_back(FBounds(0.0,0.0));
         } else {
-          _bounds.push_back(FBounds(result.first.toInt(),result.second.toInt()));
+          _bounds.push_back(FBounds(static_cast<double>(result.first.toInt()),static_cast<double>(result.second.toInt())));
         }
       } else if (c.id() == "abs") {
         BottomUpIterator<ComputeFloatBounds> cbi(*this);

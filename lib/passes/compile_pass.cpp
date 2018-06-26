@@ -37,7 +37,7 @@ namespace MiniZinc {
   Env* changeLibrary(Env& e, vector<string>& includePaths, string globals_dir, CompilePassFlags& compflags, bool verbose=false) {
     GCLock lock;
     CopyMap cm;
-    Model* m = e.model();
+    Model* m = e.envi().orig_model ? e.envi().orig_model : e.envi().model;
     Model* new_mod = new Model();
     new_mod->setFilename(m->filename().str());
     new_mod->setFilepath(m->filepath().str());

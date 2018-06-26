@@ -1005,7 +1005,7 @@ namespace MiniZinc {
     }
     ArrayLit* ret = new ArrayLit(al1->loc(), *al1, dims);
     Type t = al1->type();
-    t.dim(dims.size());
+    t.dim(static_cast<int>(dims.size()));
     ret->type(t);
     ret->flat(al1->flat());
     return ret;
@@ -1366,7 +1366,7 @@ namespace MiniZinc {
           dims[0] = al->max(al->dims()-1)-al->min(al->dims()-1)+1;
         }
         
-        for (unsigned int i=1; i<al->dims()-1; i++) {
+        for (int i=1; i<al->dims()-1; i++) {
           dims[i] = dims[i-1] * (al->max(al->dims()-1-i)-al->min(al->dims()-1-i)+1);
         }
 
@@ -1403,12 +1403,12 @@ namespace MiniZinc {
     GCLock lock;
     Expression* e;
     if (call->n_args()>1) {
-      width = eval_int(env,call->arg(0)).toInt();
+      width = static_cast<int>(eval_int(env,call->arg(0)).toInt());
       if (call->n_args()==2) {
         e = eval_par(env,call->arg(1));
       } else {
         assert(call->n_args()==3);
-        prec = eval_int(env,call->arg(1)).toInt();
+        prec = static_cast<int>(eval_int(env,call->arg(1)).toInt());
         if (prec < 0)
           throw EvalError(env, call->arg(1)->loc(),"output precision cannot be negative");
         e = eval_par(env,call->arg(2));
@@ -1450,9 +1450,9 @@ namespace MiniZinc {
         s = s.substr(0,prec);
       std::ostringstream oss;
       if (s.size() < std::abs(width)) {
-        int addLeft = width < 0 ? 0 : (width - s.size());
+        int addLeft = width < 0 ? 0 : (width - static_cast<int>(s.size()));
         if (addLeft < 0) addLeft = 0;
-        int addRight = width < 0 ? (-width-s.size()) : 0;
+        int addRight = width < 0 ? (-width-static_cast<int>(s.size())) : 0;
         if (addRight < 0) addRight = 0;
         for (int i=addLeft; i--;)
           oss << " ";
@@ -1630,7 +1630,7 @@ namespace MiniZinc {
     } _ord(order);
     std::stable_sort(a.begin(), a.end(), _ord);
     std::vector<Expression*> sorted(a.size());
-    for (unsigned int i=sorted.size(); i--;)
+    for (unsigned int i=static_cast<unsigned int>(sorted.size()); i--;)
       sorted[i] = (*al)[a[i]];
     ArrayLit* al_sorted = new ArrayLit(al->loc(), sorted);
     al_sorted->type(al->type());
@@ -1656,7 +1656,7 @@ namespace MiniZinc {
     } _ord(order);
     std::stable_sort(a.begin(), a.end(), _ord);
     std::vector<Expression*> sorted(a.size());
-    for (unsigned int i=sorted.size(); i--;)
+    for (unsigned int i=static_cast<unsigned int>(sorted.size()); i--;)
       sorted[i] = (*al)[a[i]];
     ArrayLit* al_sorted = new ArrayLit(al->loc(), sorted);
     al_sorted->type(al->type());
@@ -1667,7 +1667,7 @@ namespace MiniZinc {
     assert(call->n_args()==1);
     ArrayLit* al = eval_array_lit(env,call->arg(0));
     std::vector<Expression*> sorted(al->size());
-    for (unsigned int i=sorted.size(); i--;)
+    for (unsigned int i=static_cast<unsigned int>(sorted.size()); i--;)
       sorted[i] = (*al)[i];
     struct Ord {
       EnvI& env;
@@ -2052,8 +2052,8 @@ namespace MiniZinc {
       IntSetVal* isv = eval_intset(env, (*slice)[i]);
       if (isv->size()>1)
         throw ResultUndefinedError(env, call->loc(), "array slice must be contiguous");
-      int sl_min = isv->min().isFinite() ? isv->min().toInt() : al->min(i);
-      int sl_max = isv->max().isFinite() ? isv->max().toInt() : al->max(i);
+      int sl_min = isv->min().isFinite() ? static_cast<int>(isv->min().toInt()) : al->min(i);
+      int sl_max = isv->max().isFinite() ? static_cast<int>(isv->max().toInt()) : al->max(i);
       if (sl_min < al->min(i) || sl_max > al->max(i))
         throw ResultUndefinedError(env, call->loc(), "array slice out of bounds");
       newSlice[i] = std::pair<int,int>(sl_min, sl_max);
@@ -2062,7 +2062,7 @@ namespace MiniZinc {
     std::vector<std::pair<int,int>> newDims(call->n_args()-2);
     for (unsigned int i=0; i<newDims.size(); i++) {
       IntSetVal* isv = eval_intset(env, call->arg(2+i));
-      newDims[i] = std::pair<int,int>(isv->min().toInt(), isv->max().toInt());
+      newDims[i] = std::pair<int,int>(static_cast<int>(isv->min().toInt()), static_cast<int>(isv->max().toInt()));
     }
     ArrayLit* ret = new ArrayLit(al->loc(), al, newDims, newSlice);
     ret->type(call->type());

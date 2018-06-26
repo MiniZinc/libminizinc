@@ -251,6 +251,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
     fopts.only_toplevel_paths = true;
   } else if ( cop.getOption( "--allow-multiple-assignments" ) ) {
     flag_allow_multi_assign = true;
+  } else if (string(argv[i])=="--input-is-flatzinc") {
+    is_flatzinc = true;
   } else if ( cop.getOption( "--compile-solution-checker", &buffer) ) {
     if (buffer.length()>=8 && buffer.substr(buffer.length()-8,string::npos) == ".mzc.mzn") {
       flag_compile_solution_check_model = true;
@@ -301,7 +303,6 @@ Flattener::~Flattener()
     if(is_flatzinc) {
       pEnv->swap();
     }
-    delete pEnv->model();
   }
 }
 
@@ -321,7 +322,6 @@ Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
     Env* out_env = passes[i]->run(pre_env,log);
     if(out_env == nullptr) return nullptr;
     if(pre_env != &e && pre_env != out_env) {
-      delete pre_env->model();
       delete pre_env;
     }
     pre_env = out_env;
@@ -596,7 +596,6 @@ void Flattener::flatten(const std::string& modelString)
           if(out_env == nullptr) exit(EXIT_FAILURE);
 
           if(out_env != env) {
-            delete env->model();
             pEnv.reset(out_env);
           }
           env = out_env;

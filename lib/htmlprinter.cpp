@@ -238,7 +238,7 @@ namespace MiniZinc {
         start++;
       while (start < s.size() && (s[start]==' ' || s[start]=='\t'))
         start++;
-      int end = start+1;
+      size_t end = start+1;
       while (end < s.size() && (isalnum(s[end]) || s[end]=='_' || s[end]=='.'))
         end++;
       std::string ret = s.substr(start,end-start);
@@ -330,7 +330,7 @@ namespace MiniZinc {
           start++;
         while (start < s.size() && (s[start]==' ' || s[start]=='\t'))
           start++;
-        int end = start+1;
+        size_t end = start+1;
         while (end < s.size() && (isalnum(s[end]) || s[end]=='_'))
           end++;
         if (s[pos+1]=='a') {
@@ -361,7 +361,7 @@ namespace MiniZinc {
         start++;
       while (start < s.size() && (s[start]==' ' || s[start]=='\t'))
         start++;
-      int end = start+1;
+      size_t end = start+1;
       while (end < s.size() && s[end]!=':')
         end++;
       std::string arg = s.substr(start,end-start);
@@ -572,7 +572,7 @@ namespace MiniZinc {
             os << ",";
             if (splitArgs) {
               os << "\n";
-              for (unsigned int j=align; j--;)
+              for (unsigned int j=static_cast<unsigned int>(align); j--;)
                 os << " ";
             } else {
               os << " ";

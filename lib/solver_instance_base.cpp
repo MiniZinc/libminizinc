@@ -150,7 +150,7 @@ namespace MiniZinc {
             if (isv->size()==0) {
               dims_v.push_back(std::pair<int,int>(1,0));
             } else {
-              dims_v.push_back(std::pair<int,int>(isv->min().toInt(),isv->max().toInt()));
+              dims_v.push_back(std::pair<int,int>(static_cast<int>(isv->min().toInt()),static_cast<int>(isv->max().toInt())));
             }
           }
           ArrayLit* array_solution = new ArrayLit(Location(),array_elems,dims_v);
