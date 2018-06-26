@@ -54,7 +54,7 @@ build:win32:
     - unzip -q vendor.zip
     - if not exist "build" mkdir build
     - cd build
-    - cmake -G"%CMAKE_ARCH%" .. -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DGUROBI_HOME="%GUROBI_DIR%" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake -G"%CMAKE_ARCH%" .. -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DSHARED_GECODE=TRUE -DGUROBI_HOME="%GUROBI_DIR%" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   artifacts:
@@ -80,7 +80,7 @@ build:win64:
     - unzip -q vendor.zip
     - if not exist "build" mkdir build
     - cd build
-    - cmake -G"%CMAKE_ARCH%" .. -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DGUROBI_HOME="%GUROBI_DIR%" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake -G"%CMAKE_ARCH%" .. -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DSHARED_GECODE=TRUE -DGUROBI_HOME="%GUROBI_DIR%" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   artifacts:

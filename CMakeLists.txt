@@ -653,10 +653,16 @@ if(HAS_GECODE)
 
   target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include" "${GECODE_HOME}")
   target_link_libraries(minizinc_gecode
-    minizinc
-    gecodedriver gecodesearch gecodeminimodel
-    gecodefloat gecodeint gecodeset
-    gecodekernel gecodesupport ${CMAKE_THREAD_LIBS_INIT})
+    minizinc ${CMAKE_THREAD_LIBS_INIT}
+  )
+
+  if(NOT (SHARED_GECODE AND WIN32) )
+    target_link_libraries(minizinc_gecode
+      gecodedriver gecodesearch gecodeminimodel
+      gecodefloat gecodeint gecodeset
+      gecodekernel gecodesupport
+    )
+  endif()
 
   find_package(MPFR)
   if(MPFR_FOUND)
