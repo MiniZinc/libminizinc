@@ -271,6 +271,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       return OPTION_FINISH;
     }
     if (argv[i]=="--config-dirs") {
+      GCLock lock;
       cout << "{\n";
       cout << "  \"userSolverConfigDir\" : \"" << Printer::escapeStringLit(FileUtils::user_config_dir()) << "/solvers\",\n";
       cout << "  \"mznStdlibDir\" : \"" << Printer::escapeStringLit(solver_configs.mznlibDir()) << "\"\n";
