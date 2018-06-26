@@ -1,6 +1,10 @@
 cmake_minimum_required (VERSION 3.0.0)
 
 project (libminizinc CXX C)
+set(CMAKE_MODULE_PATH
+  ${CMAKE_MODULE_PATH}
+  ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules
+)
 
 # -------------------------------------------------------------------------------------------------------------------
 # -- The below checks if certain solver paths are set in the config call for the corresp. interface to be compiled --
@@ -155,7 +159,7 @@ if (NOT HAS_CPP11)
     message(FATAL_ERROR "A c++11 compatible C++ standard library is required to build libminizinc.")
   endif()
 endif()
-   
+
 CHECK_CXX_SOURCE_COMPILES("int main(void) { static __thread int x; (void)x; return 0;}" HAS_ATTR_THREAD)
 
 if (NOT HAS_ATTR_THREAD)
@@ -174,7 +178,7 @@ CHECK_CXX_SOURCE_COMPILES("
 
 int main (int argc, char* argv[])
 {
-    pid_t pid = getpid(); 
+    pid_t pid = getpid();
     char path[PROC_PIDPATHINFO_MAXSIZE];
     (void) proc_pidpath (pid, path, sizeof(path));
     return 0;
@@ -439,15 +443,15 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
      set(CPLEX_ARCH "x86-64_osx/static_pic")
 	set(CPLEX_LIB "cplex")
   endif(APPLE)
-  
+
   if(WIN32)
      set(CPLEX_ARCH "x64_windows_vs2013/stat_mda")
 	set(CPLEX_LIB "cplex1263.lib")          # Here 12.6.3
   endif(WIN32)
-  
-  
+
+
 #	add_definitions(-DIL_STD)
-	
+
   link_directories("${CPLEX_STUDIO_DIR}/cplex/lib/${CPLEX_ARCH}")
 #  link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
 
@@ -496,7 +500,7 @@ if(HAS_SCIP)   # SCIP version tested: 3.2.1
   if (WIN32 AND NOT UNIX)
     set(SCIP_LIBS "scip-3.2.1.win.x86_64.msvc.opt.spx.ld")
   endif()
-  
+
   add_library(minizinc_scip
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
     solvers/MIP/MIP_scip_solverfactory.cpp
@@ -545,7 +549,7 @@ if(HAS_SCIP_SEPLIBS)
      set(SCIP_OS "osx")
      set(SCIP_ARCH "ppc")
   endif(APPLE)
-  
+
   set(SCIP_LIB_EXTRAS
     readline
     z zimpl.${SCIP_OS}.${SCIP_ARCH}.gnu.opt gmp)  # if SCIP configured so
@@ -558,7 +562,7 @@ if(HAS_SCIP_SEPLIBS)
     "${SOPLEX_DIR}/src"
     "${ZIMPL_DIR}/src")
   target_link_libraries(minizinc_mip_scip minizinc
-    scip 
+    scip
     nlpi.cppad #objscip
     lpispx soplex
     ${SCIP_LIB_EXTRAS}
@@ -571,7 +575,7 @@ if(HAS_SCIP_SEPLIBS)
     "${SOPLEX_DIR}/src"
     "${ZIMPL_DIR}/src")
   target_link_libraries(mzn-mip-scip minizinc_mip_scip
-    scip 
+    scip
     nlpi.cppad #objscip
     lpispx soplex
     ${SCIP_LIB_EXTRAS}
@@ -585,7 +589,7 @@ if(HAS_SCIP_SEPLIBS)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_OSICBC)  
+if(HAS_OSICBC)
   ### Tested version 2.9.9, rev 2345 on 12.10.17 from the stable snapshot https://projects.coin-or.org/svn/Cbc/stable/2.9
 
   if (EXISTS "${OSICBC_HOME}/include/coin/" AND EXISTS "${OSICBC_HOME}/lib")
@@ -600,7 +604,7 @@ if(HAS_OSICBC)
     set(OSICBC_LIBS "libOsi" "libOsiClp" "libOsiCbc" "libClp" "libCgl" "libCbc" "libCbcSolver" "libCoinUtils")
   else ()
     # The order below is important for static versions of cbc libs to link. "z" needed for static
-    set(OSICBC_LIBS "CbcSolver" "Cbc" "Cgl" "OsiClp"  "Clp" "Osi"  "CoinUtils" "z") # "ClpSolver" after OsiClp;  "OsiCbc" 
+    set(OSICBC_LIBS "CbcSolver" "Cbc" "Cgl" "OsiClp"  "Clp" "Osi"  "CoinUtils" "z") # "ClpSolver" after OsiClp;  "OsiCbc"
 #    set(OSICBC_LIBS "`PKG_CONFIG_PATH=/home/bg/Documents/prj/coin-Cbc-2.9/lib64/pkgconfig:/home/bg/Documents/prj/coin-Cbc-2.9/lib/pkgconfig:/home/bg/Documents/prj/coin-Cbc-2.9/share/pkgconfig: pkg-config --libs cbc`")
   endif()
   link_directories(${LNDIR})
@@ -625,6 +629,7 @@ endif()
 
 # -------------------------------------------------------------------------------------------------------------------
 if(HAS_GECODE)
+
   add_definitions(-DHAS_GECODE)
   include_directories("${GECODE_HOME}/include")
   include_directories("${GECODE_HOME}")
@@ -646,12 +651,18 @@ if(HAS_GECODE)
     ${parser_hh}
     )
 
-  target_include_directories(minizinc_gecode PUBLIC "${GECODE_HOME}/include" "${GECODE_HOME}")
+  target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include" "${GECODE_HOME}")
   target_link_libraries(minizinc_gecode
     minizinc
     gecodedriver gecodesearch gecodeminimodel
     gecodefloat gecodeint gecodeset
-    gecodekernel gecodesupport  ${CMAKE_THREAD_LIBS_INIT})
+    gecodekernel gecodesupport ${CMAKE_THREAD_LIBS_INIT})
+
+  find_package(MPFR)
+  if(MPFR_FOUND)
+    target_include_directories(minizinc_gecode PRIVATE ${MPFR_INCLUDES})
+    target_link_libraries(minizinc_gecode ${MPFR_LIBRARIES})
+  endif()
 
   INSTALL(TARGETS minizinc_gecode
     EXPORT libminizincTargets

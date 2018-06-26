@@ -24,11 +24,11 @@ build:osx:
     CMAKE_ARCH: "Xcode"
     GUROBI_DIR: "/Library/gurobi751/mac64"
   script:
-    - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" "https://gitlab.com/api/v4/projects/minizinc%2Fvendor/jobs/artifacts/master/download?job=$CI_JOB_NAME"
+    - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" "https://gitlab.com/api/v4/projects/minizinc%2Fvendor/jobs/artifacts/master/download?job=vendor:osx"
     - unzip -q vendor.zip
     - mkdir -p build
     - cd build
-    - cmake -G"$CMAKE_ARCH" .. -DGUROBI_HOME="$GUROBI_DIR" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="$CI_PROJECT_DIR/vendor/CBC" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake -G"$CMAKE_ARCH" .. -DGECODE_HOME="$CI_PROJECT_DIR/vendor/gecode" -DGUROBI_HOME="$GUROBI_DIR" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="$CI_PROJECT_DIR/vendor/CBC" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   artifacts:
@@ -50,12 +50,11 @@ build:win32:
     CMAKE_ARCH: "Visual Studio 14 2015"
     GUROBI_DIR: "C:/gurobi701/win32"
   script:
-    - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fvendor/jobs/artifacts/master/download?job=%CI_JOB_NAME%"
+    - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fvendor/jobs/artifacts/master/download?job=vendor:win32"
     - unzip -q vendor.zip
     - if not exist "build" mkdir build
     - cd build
-    # -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode"
-    - cmake -G"%CMAKE_ARCH%" .. -DGUROBI_HOME="%GUROBI_DIR%" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake -G"%CMAKE_ARCH%" .. -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DGUROBI_HOME="%GUROBI_DIR%" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   artifacts:
@@ -77,12 +76,11 @@ build:win64:
     CMAKE_ARCH: "Visual Studio 14 2015 Win64"
     GUROBI_DIR: "C:/gurobi701/win64"
   script:
-    - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fvendor/jobs/artifacts/master/download?job=%CI_JOB_NAME%"
+    - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fvendor/jobs/artifacts/master/download?job=vendor:win64"
     - unzip -q vendor.zip
     - if not exist "build" mkdir build
     - cd build
-    # -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode"
-    - cmake -G"%CMAKE_ARCH%" .. -DGUROBI_HOME="%GUROBI_DIR%" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake -G"%CMAKE_ARCH%" .. -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DGUROBI_HOME="%GUROBI_DIR%" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   artifacts:
