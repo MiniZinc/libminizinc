@@ -2092,7 +2092,7 @@ namespace MiniZinc {
         return true;
       }
       void vVarDeclI(VarDeclI* vdi) {
-        if (!vdi->e()->type().isann() && (vdi->e()->e()==NULL || vdi->e()->e()==constants().absent)) {
+        if (!vdi->e()->type().isann() && !vdi->e()->ti()->isEnum()) {
           if (had_var) oss_vars << ",\n";
           output_var_desc_json(env, vdi->e(), oss_vars, true);
           had_var = true;
