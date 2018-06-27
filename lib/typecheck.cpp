@@ -1624,9 +1624,9 @@ namespace MiniZinc {
     void vTIId(TIId& id) {}
   };
   
-  void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors, bool ignoreUndefinedParameters, bool allowMultiAssignment) {
+  void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors, bool ignoreUndefinedParameters, bool allowMultiAssignment, bool isFlatZinc) {
     Model* m;
-    if (origModel==env.model()) {
+    if (!isFlatZinc && origModel==env.model()) {
       // Combine all items into single model
       Model* combinedModel = new Model;
       class Combiner : public ItemVisitor {

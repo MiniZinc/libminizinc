@@ -534,7 +534,7 @@ void Flattener::flatten(const std::string& modelString)
         if (is_flatzinc) {
           GCLock lock;
           vector<TypeError> typeErrors;
-          MiniZinc::typecheck(*env, m, typeErrors, flag_model_check_only || flag_model_interface_only, flag_allow_multi_assign);
+          MiniZinc::typecheck(*env, m, typeErrors, flag_model_check_only || flag_model_interface_only, flag_allow_multi_assign, true);
           if (typeErrors.size() > 0) {
             for (unsigned int i=0; i<typeErrors.size(); i++) {
               if (flag_verbose)
@@ -544,7 +544,7 @@ void Flattener::flatten(const std::string& modelString)
             }
             throw Error("multiple type errors");
           }
-          MiniZinc::registerBuiltins(*env, m);
+          MiniZinc::registerBuiltins(*env);
           env->swap();
           populateOutput(*env);
         } else {

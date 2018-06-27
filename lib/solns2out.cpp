@@ -128,7 +128,7 @@ void Solns2Out::initFromOzn(const std::string& filename) {
       MZN_ASSERT_HARD_MSG( pEnv, "solns2out: could not allocate Env" );
       pEnv_guard.reset( pEnv );
       MiniZinc::typecheck(*pEnv,pOutput,typeErrors,false,false);
-      MiniZinc::registerBuiltins(*pEnv,pOutput);
+      MiniZinc::registerBuiltins(*pEnv);
       pEnv->envi().swap_output();
       init();
     }
