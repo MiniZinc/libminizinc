@@ -301,7 +301,7 @@ class CompareLogs:
                         aDetThis [ "errL" ] += 1
                         print ( "  WARNING: DIFFERENT MZN / SOLVER OBJ VALUES for the instance ", sInst,
                            ", method '", lNames, "' : ",
-                           dObj_MZN, " / ", dObj_SLV, sep-'', file=self.ioContrObjValMZN)
+                           dObj_MZN, " / ", dObj_SLV, sep='', file=self.ioContrObjValMZN)
                 ## Retrieve solution status
                 if "Sol_Status" in mSlv:
                     n_SolStatus = mSlv[ "Sol_Status" ][0]

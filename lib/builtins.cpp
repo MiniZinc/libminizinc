@@ -2069,8 +2069,9 @@ namespace MiniZinc {
     return ret;
   }
   
-  void registerBuiltins(Env& e, Model* m) {
+  void registerBuiltins(Env& e) {
     EnvI& env = e.envi();
+    Model* m = env.model;
     
     std::vector<Type> t_intint(2);
     t_intint[0] = Type::parint();

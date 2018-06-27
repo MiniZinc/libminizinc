@@ -81,7 +81,8 @@ namespace MiniZinc {
   /// Type check the model \a m
   void typecheck(Env& env, Model* m, std::vector<TypeError>& typeErrors,
                  bool ignoreUndefinedParameters,
-                 bool allowMultiAssignment);
+                 bool allowMultiAssignment,
+                 bool isFlatZinc=false);
 
   /// Type check new assign item \a ai in model \a m
   void typecheck(Env& env, Model* m, AssignI* ai);

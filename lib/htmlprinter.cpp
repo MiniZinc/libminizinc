@@ -22,7 +22,33 @@
 namespace MiniZinc {
 
   namespace HtmlDocOutput {
+
+    std::string trim(const std::string& s0) {
+      std::string s = s0;
+      // remove carriage returns
+      size_t j=0;
+      for (size_t i=0; i<s.size(); i++) {
+        if (s[i]!='\r')
+          s[j++]=s[i];
+      }
+      s.resize(j);
+      size_t leading = s.find_first_not_of(" \t");
+      if (leading==std::string::npos)
+        return "";
+      std::ostringstream oss;
+      size_t pos = s.find("\n");
+      size_t lastpos = leading;
+      while (pos != std::string::npos) {
+        oss << s.substr(lastpos, pos-lastpos) << "\n";
+        lastpos = s.find_first_not_of(" \t", pos+1);
+        pos = (lastpos == std::string::npos ? lastpos : s.find("\n", lastpos));
+      }
+      if (lastpos != std::string::npos)
+        oss << s.substr(lastpos, std::string::npos);
+      return oss.str();
+    }
     
+
     class DocItem {
     public:
       enum DocType { T_PAR=0, T_VAR=1, T_FUN=2 };
@@ -144,6 +170,58 @@ namespace MiniZinc {
         }
         
         oss << "</div>";
+        return oss.str();
+      }
+
+      static std::string rstHeading(std::string s, int level) {
+        std::vector<char> levelChar({'#','=','-','^','+','"'});
+        std::ostringstream oss;
+        oss << s << "\n";
+        for (int i=0; i<s.size(); i++)
+          oss << levelChar[level];
+        oss << "\n\n";
+        return oss.str();
+      }
+      
+      std::string toRST(int level) {
+        std::ostringstream oss;
+        if (!htmlName.empty()) {
+          oss << rstHeading(htmlName, level);
+          oss << HtmlDocOutput::trim(desc) << "\n\n";
+        }
+        for (unsigned int i=0; i<subgroups.m.size(); i++) {
+          oss << subgroups.m[i]->toRST(level+1);
+        }
+        if (items.size() > 0) {
+          if (subgroups.m.size()!=0) {
+            oss << rstHeading("Other declarations", level+1);
+          }
+          struct SortById {
+            bool operator ()(const DocItem& i0, const DocItem& i1) {
+              return i0.t < i1.t || (i0.t==i1.t && i0.id < i1.id);
+            }
+          } _cmp;
+          std::stable_sort(items.begin(), items.end(), _cmp);
+
+          int cur_t = -1;
+          int nHeadings = 0;
+          for (std::vector<DocItem>::const_iterator it = items.begin(); it != items.end(); ++it) {
+            if (it->t != cur_t) {
+              cur_t = it->t;
+              nHeadings++;
+            }
+          }
+          cur_t = -1;
+          const char* dt_desc[] = {"Parameters","Variables","Functions and Predicates"};
+          for (std::vector<DocItem>::const_iterator it = items.begin(); it != items.end(); ++it) {
+            if (it->t != cur_t) {
+              cur_t = it->t;
+              if (nHeadings > 1)
+                oss << rstHeading(dt_desc[cur_t], subgroups.m.size()==0 ? level+1 : level+2);
+            }
+            oss << it->doc;
+          }
+        }
         return oss.str();
       }
       
@@ -800,4 +878,411 @@ namespace MiniZinc {
     return ret;
   }
 
+  class PrintRSTVisitor : public ItemVisitor {
+  protected:
+    EnvI& env;
+    HtmlDocOutput::Group& _maingroup;
+    HtmlDocOutput::FunMap& _funmap;
+    bool _includeStdLib;
+    
+    std::vector<std::string> replaceArgsRST(std::string& s) {
+      std::vector<std::string> replacements;
+      std::ostringstream oss;
+      size_t lastpos = 0;
+      size_t pos = std::min(s.find("\\a"), s.find("\\p"));
+      size_t mathjax_open = s.find("\\(");
+      size_t mathjax_close = s.rfind("\\)");
+      if (pos == std::string::npos)
+        return replacements;
+      while (pos != std::string::npos) {
+        oss << s.substr(lastpos, pos-lastpos);
+        size_t start = pos;
+        while (start < s.size() && s[start]!=' ' && s[start]!='\t')
+          start++;
+        while (start < s.size() && (s[start]==' ' || s[start]=='\t'))
+          start++;
+        size_t end = start+1;
+        while (end < s.size() && (isalnum(s[end]) || s[end]=='_'))
+          end++;
+        if (s[pos+1]=='a') {
+          replacements.push_back(s.substr(start,end-start));
+          if (pos >= mathjax_open && pos <= mathjax_close) {
+            oss << "{\\bf " << replacements.back() << "}";
+          } else {
+            oss << " ``" << replacements.back() << "`` ";
+          }
+        } else {
+          if (pos >= mathjax_open && pos <= mathjax_close) {
+            oss << "{\\bf " << s.substr(start,end-start) << "}";
+          } else {
+            oss << " ``" << s.substr(start,end-start) << "`` ";
+          }
+        }
+        lastpos = end;
+        pos = std::min(s.find("\\a", lastpos), s.find("\\p", lastpos));
+      }
+      oss << s.substr(lastpos, std::string::npos);
+      s = oss.str();
+
+      std::ostringstream oss2;
+      pos = std::min(s.find("\\("), s.find("\\)"));
+      lastpos = 0;
+      while (pos != std::string::npos) {
+        if (s[pos+1]==')') {
+          // remove trailing whitespace
+          std::string t = s.substr(lastpos, pos-lastpos);
+          size_t t_end = t.find_last_not_of(" ");
+          if (t_end != std::string::npos)
+            t_end++;
+          oss2 << t.substr(0, t_end);
+        } else {
+          oss2 << s.substr(lastpos, pos-lastpos);
+        }
+        lastpos = pos+2;
+        if (s[pos+1]=='(') {
+          oss2 << ":math:`";
+          lastpos = s.find_first_not_of(" ", lastpos);
+        } else {
+          oss2 << "`";
+        }
+        pos = std::min(s.find("\\(", lastpos), s.find("\\)", lastpos));
+      }
+      oss2 << s.substr(lastpos, std::string::npos);
+      s = oss2.str();
+      return replacements;
+    }
+
+    std::pair<std::string,std::string> extractArgLine(std::string& s, size_t n) {
+      size_t start = n;
+      while (start < s.size() && s[start]!=' ' && s[start]!='\t')
+        start++;
+      while (start < s.size() && (s[start]==' ' || s[start]=='\t'))
+        start++;
+      size_t end = start+1;
+      while (end < s.size() && s[end]!=':')
+        end++;
+      std::string arg = s.substr(start,end-start);
+      size_t doc_start = end+1;
+      while (end < s.size() && s[end]!='\n')
+        end++;
+      std::string ret = s.substr(doc_start,end-doc_start);
+      replaceArgsRST(ret);
+      s = s.substr(0,n)+s.substr(end,std::string::npos);
+      return make_pair(arg,ret);
+    }
+    
+    std::string addHTML(const std::string& s) {
+      std::ostringstream oss;
+      size_t lastpos = 0;
+      size_t pos = s.find('\n');
+      bool inUl = false;
+      oss << "<p>\n";
+      while (pos != std::string::npos) {
+        oss << s.substr(lastpos, pos-lastpos);
+        size_t next = std::min(s.find('\n', pos+1),s.find('-', pos+1));
+        if (next==std::string::npos) {
+          lastpos = pos+1;
+          break;
+        }
+        bool allwhite = true;
+        for (size_t cur = pos+1; cur < next; cur++) {
+          if (s[cur]!=' ' && s[cur]!='\t') {
+            allwhite = false;
+            break;
+          }
+        }
+        if (allwhite) {
+          if (s[next]=='-') {
+            if (!inUl) {
+              oss << "<ul>\n";
+              inUl = true;
+            }
+            oss << "<li>";
+          } else {
+            if (inUl) {
+              oss << "</ul>\n";
+              inUl = false;
+            } else {
+              oss << "</p><p>\n";
+            }
+          }
+          lastpos = next+1;
+          pos = s.find('\n', lastpos);
+        } else {
+          lastpos = pos+1;
+          if (s[pos]=='\n') {
+            oss << " ";
+          }
+          if (s[next]=='-') {
+            pos = s.find('\n', next+1);
+          } else {
+            pos = next;
+          }
+        }
+      }
+      oss << s.substr(lastpos, std::string::npos);
+      if (inUl)
+        oss << "</ul>\n";
+      oss << "</p>\n";
+      return oss.str();
+    }
+    
+  public:
+    PrintRSTVisitor(EnvI& env0, HtmlDocOutput::Group& mg, HtmlDocOutput::FunMap& fm, bool includeStdLib) : env(env0), _maingroup(mg), _funmap(fm), _includeStdLib(includeStdLib) {}
+    bool enterModel(Model* m) {
+      if (!_includeStdLib && m->filename()=="stdlib.mzn")
+        return false;
+      const std::string& dc = m->docComment();
+      if (!dc.empty()) {
+        size_t gpos = dc.find("@groupdef");
+        while (gpos != std::string::npos) {
+          size_t start = gpos;
+          while (start < dc.size() && dc[start]!=' ' && dc[start]!='\t')
+            start++;
+          while (start < dc.size() && (dc[start]==' ' || dc[start]=='\t'))
+            start++;
+          size_t end = start+1;
+          while (end < dc.size() && (isalnum(dc[end]) || dc[end]=='_' || dc[end]=='.'))
+            end++;
+          std::string groupName = dc.substr(start,end-start);
+          size_t doc_start = end+1;
+          while (end < dc.size() && dc[end]!='\n')
+            end++;
+          std::string groupHTMLName = dc.substr(doc_start,end-doc_start);
+          
+          size_t next = dc.find("@groupdef", gpos+1);
+          HtmlDocOutput::setGroupDesc(_maingroup, groupName, groupHTMLName,
+                                      (dc.substr(end, next == std::string::npos ? next : next-end)));
+          gpos = next;
+        }
+      }
+      return true;
+    }
+    /// Visit variable declaration
+    void vVarDeclI(VarDeclI* vdi) {
+      if (Call* docstring = Expression::dyn_cast<Call>(getAnnotation(vdi->e()->ann(), constants().ann.doc_comment))) {
+        std::string ds = eval_string(env,docstring->arg(0));
+        std::string group("main");
+        size_t group_idx = ds.find("@group");
+        if (group_idx!=std::string::npos) {
+          group = HtmlDocOutput::extractArgWord(ds, group_idx);
+        }
+        std::ostringstream os;
+        std::string sig = vdi->e()->type().toString(env)+" "+vdi->e()->id()->str().str();
+
+        std::string myMainGroup = group.substr(0,group.find_first_of("."));
+        auto it = _maingroup.subgroups.find(myMainGroup);
+        os << ".. index::\n";
+        if (it != _maingroup.subgroups.m.end()) {
+          os << "   pair: " << (*it)->htmlName << "; " << *vdi->e()->id() << "\n\n";
+        } else {
+          std::cerr << "did not find " << myMainGroup << "\n";
+          os << "   single: " << *vdi->e()->id() << "\n\n";
+        }
+
+        os << ".. code-block:: minizinc\n\n";
+        if (vdi->e()->ti()->type() == Type::ann()) {
+          os << "  annotation " << *vdi->e()->id();
+        } else {
+          os << "  " << *vdi->e()->ti() << ": " << *vdi->e()->id();
+        }
+        os << "\n\n";
+        os << HtmlDocOutput::trim(ds) << "\n\n";
+        GCLock lock;
+        HtmlDocOutput::DocItem di(vdi->e()->type().ispar() ? HtmlDocOutput::DocItem::T_PAR: HtmlDocOutput::DocItem::T_VAR,
+                                  sig,
+                                  sig,
+                                  os.str());
+        HtmlDocOutput::addToGroup(_maingroup, group, di);
+      }
+    }
+    /// Visit function item
+    void vFunctionI(FunctionI* fi) {
+      if (Call* docstring = Expression::dyn_cast<Call>(getAnnotation(fi->ann(), constants().ann.doc_comment))) {
+        std::string ds = eval_string(env,docstring->arg(0));
+        std::string group("main");
+        size_t group_idx = ds.find("@group");
+        if (group_idx!=std::string::npos) {
+          group = HtmlDocOutput::extractArgWord(ds, group_idx);
+        }
+        
+        size_t param_idx = ds.find("@param");
+        std::vector<std::pair<std::string,std::string> > params;
+        while (param_idx != std::string::npos) {
+          params.push_back(extractArgLine(ds, param_idx));
+          param_idx = ds.find("@param");
+        }
+        
+        std::vector<std::string> args = replaceArgsRST(ds);
+        
+        UNORDERED_NAMESPACE::unordered_set<std::string> allArgs;
+        for (unsigned int i=0; i<args.size(); i++)
+          allArgs.insert(args[i]);
+        for (unsigned int i=0; i<params.size(); i++)
+          allArgs.insert(params[i].first);
+        
+        GCLock lock;
+        for (unsigned int i=0; i<fi->params().size(); i++) {
+          if (allArgs.find(fi->params()[i]->id()->str().str()) == allArgs.end()) {
+            std::cerr << "Warning: parameter " << *fi->params()[i]->id() << " not documented for function "
+            << fi->id() << " at location " << fi->loc() << "\n";
+          }
+        }
+        
+        std::string sig;
+        {
+          GCLock lock;
+          FunctionI* fi_c = new FunctionI(Location(),fi->id(),fi->ti(),fi->params());
+          std::ostringstream oss_sig;
+          oss_sig << *fi_c;
+          sig = oss_sig.str();
+          sig.resize(sig.size()-2);
+        }
+        
+        std::ostringstream os;
+        std::ostringstream fs;
+        std::string myMainGroup = group.substr(0,group.find_first_of("."));
+        auto it = _maingroup.subgroups.find(myMainGroup);
+        os << ".. index::\n";
+        if (it != _maingroup.subgroups.m.end()) {
+          os << "   pair: " << (*it)->htmlName << "; " << fi->id() << "\n\n";
+        } else {
+          std::cerr << "did not find " << myMainGroup << "\n";
+          os << "   single: " << fi->id() << "\n\n";
+        }
+        os << ".. code-block:: minizinc\n\n";
+        
+        if (fi->ti()->type() == Type::ann()) {
+          fs << "annotation ";
+        } else if (fi->ti()->type() == Type::parbool()) {
+          fs << "test ";
+        } else if (fi->ti()->type() == Type::varbool()) {
+          fs << "predicate ";
+        } else {
+          fs << "function " << *fi->ti() << ": ";
+        }
+        fs << fi->id() << "(";
+        os << "  " << fs.str();
+        size_t align = fs.str().size();
+        for (unsigned int i=0; i<fi->params().size(); i++) {
+          fs << *fi->params()[i]->ti();
+          std::ostringstream fid;
+          fid << *fi->params()[i]->id();
+          if (fid.str().size() != 0)
+            fs << ": " << *fi->params()[i]->id();
+          if (i < fi->params().size()-1) {
+            fs << ", ";
+          }
+        }
+        bool splitArgs = (fs.str().size() > 70);
+        for (unsigned int i=0; i<fi->params().size(); i++) {
+          os << *fi->params()[i]->ti();
+          std::ostringstream fid;
+          fid << *fi->params()[i]->id();
+          if (fid.str().size() != 0)
+            os << ": " << *fi->params()[i]->id();
+          if (i < fi->params().size()-1) {
+            os << ",";
+            if (splitArgs) {
+              os << "\n  ";
+              for (unsigned int j=static_cast<unsigned int>(align); j--;)
+                os << " ";
+            } else {
+              os << " ";
+            }
+          }
+        }
+        os << ")";
+        
+        os << "\n\n";
+        
+        if (fi->id().c_str()[0]=='\'') {
+          std::string op = fi->id().str();
+          op = op.substr(1,op.length()-2);
+          if (fi->params().size()==2) {
+            os << "Usage: ``" << *fi->params()[0]->id() << " "
+            << op << " " << *fi->params()[1]->id() << "``\n\n";
+          } else if (fi->params().size()==1) {
+            os << "Usage: ``" << op << " " << *fi->params()[0]->id() << "``\n\n";
+          }
+        }
+        
+        os << HtmlDocOutput::trim(ds) << "\n\n";
+        
+        if (fi->e()) {
+          FunctionI* f_body = fi;
+          bool alias;
+          do {
+            alias = false;
+            Call* c = Expression::dyn_cast<Call>(f_body->e());
+            if (c && c->n_args()==f_body->params().size()) {
+              bool sameParams = true;
+              for (unsigned int i=0; i<f_body->params().size(); i++) {
+                Id* ident = c->arg(i)->dyn_cast<Id>();
+                if (ident == NULL || ident->decl() != f_body->params()[i] || ident->str() != c->decl()->params()[i]->id()->str()) {
+                  sameParams = false;
+                  break;
+                }
+              }
+              if (sameParams) {
+                alias = true;
+                f_body = c->decl();
+              }
+            }
+          } while (alias);
+          if (f_body->e()) {
+            std::string filename = f_body->loc().filename().str();
+            size_t filePos = filename.find("std/")+4;
+            os << ".. only:: builder_html\n\n";
+            os << "    `More... <https://github.com/MiniZinc/libminizinc/blob/"
+               << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH
+               << "/share/minizinc/std/"
+               << filename.substr(filePos,std::string::npos) << "#L" << f_body->loc().first_line() << "-L" << f_body->loc().last_line()
+               << ">`__\n\n";
+          }
+        }
+
+        if (params.size() > 0) {
+          os << "Parameters:\n\n";
+          for (unsigned int i=0; i<params.size(); i++) {
+            os << "- ``" << params[i].first << "``: " << params[i].second << "\n";
+          }
+          os << "\n";
+        }
+        os << "\n";
+
+        HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN, fi->id().str(), sig, os.str());
+        HtmlDocOutput::addToGroup(_maingroup, group, di);
+      }
+    }
+  };
+  
+  std::vector<HtmlDocument>
+  RSTPrinter::printRST(EnvI& env, MiniZinc::Model* m, const std::string& basename, int splitLevel, bool includeStdLib, bool generateIndex) {
+    using namespace HtmlDocOutput;
+    Group g(basename,basename);
+    FunMap funMap;
+    CollectFunctionsVisitor fv(env,funMap,includeStdLib);
+    iterItems(fv, m);
+    PrintRSTVisitor prv(env,g,funMap,includeStdLib);
+    iterItems(prv, m);
+
+    std::vector<HtmlDocument> ret;
+    
+    std::ostringstream oss;
+    oss << Group::rstHeading(g.htmlName, 0);
+    oss << trim(g.desc) << "\n";
+    oss << ".. toctree::\n\n";
+    for (auto sg : g.subgroups.m) {
+      oss << "  " << sg->fullPath << "\n";
+    }
+    
+    ret.push_back(HtmlDocument(g.fullPath, g.htmlName, oss.str()));
+    
+    for (auto sg : g.subgroups.m) {
+      ret.push_back(HtmlDocument(sg->fullPath, sg->htmlName, sg->toRST(0)));
+    }
+    return ret;
+  }
+  
 }

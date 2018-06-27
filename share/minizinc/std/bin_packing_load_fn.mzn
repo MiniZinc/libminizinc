@@ -6,6 +6,7 @@ include "bin_packing_load.mzn";
   the sum of the weights of the items in each bin.
 
   Assumptions:
+
   - forall \p i, \a w[\p i] >=0
 */
 function array[int] of var int: bin_packing_load(array[int] of var int: bin,

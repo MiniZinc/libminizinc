@@ -16,8 +16,8 @@
 
 namespace MiniZinc {
   
-  /// Add builtins to the functions defined in \a m
-  void registerBuiltins(Env& env, Model* m);
+  /// Add builtins to the functions defined in \a env.model()
+  void registerBuiltins(Env& env);
   
 }
 

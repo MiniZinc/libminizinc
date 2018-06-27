@@ -29,7 +29,7 @@ include "arg_max_int.mzn";
     Constrain \a i to be the index of the maximum value in the array \a x.
     When breaking ties the least index is returned.
     
-    Assumption: |x| > 0
+    Assumption: |\a x| > 0
 */
 predicate maximum_arg(array[int] of var int: x, var int: i) =
           maximum_arg_int(x, i);
@@ -40,7 +40,7 @@ include "arg_max_float.mzn";
     Constrain \a i to be the index of the maximum value in the array \a x.
     When breaking ties the least index is returned.
     
-    Assumption: |x| > 0
+    Assumption: |\a x| > 0
 */
 predicate maximum_arg(array[int] of var float: x, var int: i) =
           maximum_arg_float(x, i);

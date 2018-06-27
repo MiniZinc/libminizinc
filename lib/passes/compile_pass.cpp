@@ -124,7 +124,7 @@ namespace MiniZinc {
       throw Error(errstream.str());
     }
 
-    registerBuiltins(*new_env, new_env->model());
+    registerBuiltins(*new_env);
 
     try {
       flatten(*new_env, fopts);

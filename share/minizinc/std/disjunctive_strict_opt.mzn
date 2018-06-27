@@ -5,6 +5,7 @@
   that absent tasks do not need to be scheduled.
 
   Assumptions:
+
   - forall \p i, \a d[\p i] >= 0
 */
 predicate disjunctive_strict(array[int] of var opt int: s,
