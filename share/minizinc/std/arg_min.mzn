@@ -29,7 +29,7 @@ include "arg_min_int.mzn";
     Constrain \a i to be the index of the minimum value in the array \a x.
     When breaking ties the least index is returned.
     
-    Assumption: |x| > 0
+    Assumption: |\a x| > 0
 */
 predicate minimum_arg(array[int] of var int: x, var int: i) =
           minimum_arg_int(x, i);
@@ -40,7 +40,7 @@ include "arg_min_float.mzn";
     Constrain \a i to be the index of the minimum value in the array \a x.
     When breaking ties the least index is returned.
     
-    Assumption: |x| > 0
+    Assumption: |\a x| > 0
 */
 predicate minimum_arg(array[int] of var float: x, var int: i) =
           minimum_arg_float(x, i);

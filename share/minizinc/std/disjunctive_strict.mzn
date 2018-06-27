@@ -4,6 +4,7 @@
   but only when no other task is running.
 
   Assumptions:
+
   - forall \p i, \a d[\p i] >= 0
 */
 predicate disjunctive_strict(array[int] of var int: s,

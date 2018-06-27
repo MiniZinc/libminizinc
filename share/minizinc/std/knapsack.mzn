@@ -2,6 +2,7 @@
 Requires that items are packed in a knapsack with certain weight and profit restrictions.
 
 Assumptions:
+
   - Weights \a w and profits \a p must be non-negative
   - \a w, \a p and \a x must have the same index sets
 
