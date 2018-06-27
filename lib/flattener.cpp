@@ -579,7 +579,7 @@ void Flattener::flatten(const std::string& modelString)
           std::vector<unique_ptr<Pass> > managed_passes;
           
           if(flag_two_pass) {
-            std::string library = std_lib_dir + (flag_gecode ? "/gecode/" : "/std/");
+            std::string library = std_lib_dir + (flag_gecode ? "/gecode_presolver/" : "/std/");
             bool differentLibrary = (library!=std_lib_dir+"/"+globals_dir+"/");
             managed_passes.emplace_back(new CompilePass(env, pass_opts, cfs,
                                                         library, includePaths,  true, differentLibrary));
