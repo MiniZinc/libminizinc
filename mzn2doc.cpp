@@ -48,10 +48,11 @@ int main(int argc, char** argv) {
   bool flag_verbose = false;
   bool flag_include_stdlib = false;
   bool flag_index = true;
+  bool flag_rst = false;
   int toplevel_groups = 0;
   string output_base;
-  string html_header_file;
-  string html_footer_file;
+  string header_file;
+  string footer_file;
   
   string std_lib_dir;
   if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
@@ -107,16 +108,16 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       toplevel_groups = atoi(argv[i]);
-    } else if (string(argv[i])=="--html-header") {
+    } else if (string(argv[i])=="--html-header" || string(argv[i])=="--rst-header") {
       i++;
       if (i==argc)
         goto error;
-      html_header_file = string(argv[i]);
-    } else if (string(argv[i])=="--html-footer") {
+      header_file = string(argv[i]);
+    } else if (string(argv[i])=="--html-footer" || string(argv[i])=="--rst-footer") {
       i++;
       if (i==argc)
         goto error;
-      html_footer_file = string(argv[i]);
+      footer_file = string(argv[i]);
     } else if (string(argv[i])=="--include-stdlib") {
       flag_include_stdlib = true;
     } else if (string(argv[i])=="--no-index") {
@@ -132,6 +133,9 @@ int main(int argc, char** argv) {
       if (i==argc)
         goto error;
       output_base = argv[i];
+    } else if (string(argv[i])=="--rst-output") {
+      flag_rst = true;
+      toplevel_groups = 0;
     } else {
       std::string input_file(argv[i]);
       if (input_file.length()<=4) {
@@ -139,7 +143,9 @@ int main(int argc, char** argv) {
         goto error;
       }
       size_t last_dot = input_file.find_last_of('.');
-      std::string extension = input_file.substr(last_dot,string::npos);
+      std::string extension;
+      if (last_dot != string::npos)
+        extension = input_file.substr(last_dot,string::npos);
       if (extension == ".mzn") {
         if (filename=="") {
           filename = input_file;
@@ -190,30 +196,30 @@ int main(int argc, char** argv) {
   }
   
   {
-    string html_header;
-    size_t html_header_title = std::string::npos;
+    string header;
+    size_t header_title = std::string::npos;
     size_t title_size = std::string("@TITLE").size();
-    if (!html_header_file.empty()) {
-      std::ifstream hs(html_header_file);
+    if (!header_file.empty()) {
+      std::ifstream hs(header_file);
       if (!hs.good()) {
-        std::cerr << "Cannot open HTML header file " << html_header_file << "\n";
+        std::cerr << "Cannot open header file " << header_file << "\n";
         std::exit(EXIT_FAILURE);
       }
       std::string str((std::istreambuf_iterator<char>(hs)),
                       std::istreambuf_iterator<char>());
-      html_header = str;
-      html_header_title = str.find("@TITLE");
+      header = str;
+      header_title = str.find("@TITLE");
     }
-    string html_footer;
-    if (!html_footer_file.empty()) {
-      std::ifstream hs(html_footer_file);
+    string footer;
+    if (!footer_file.empty()) {
+      std::ifstream hs(footer_file);
       if (!hs.good()) {
-        std::cerr << "Cannot open HTML footer file " << html_footer_file << "\n";
+        std::cerr << "Cannot open footer file " << footer_file << "\n";
         std::exit(EXIT_FAILURE);
       }
       std::string str((std::istreambuf_iterator<char>(hs)),
                       std::istreambuf_iterator<char>());
-      html_footer = str;
+      footer = str;
     }
 
     std::stringstream errstream;
@@ -250,16 +256,22 @@ int main(int argc, char** argv) {
           basedir = basename.substr(0, lastSlash)+"/";
           basename = basename.substr(lastSlash+1, std::string::npos);
         }
-        std::vector<HtmlDocument> docs = HtmlPrinter::printHtml(env.envi(),m,basename,toplevel_groups,flag_include_stdlib,flag_index);
+        std::vector<HtmlDocument> docs;
+        if (flag_rst) {
+          docs = RSTPrinter::printRST(env.envi(),m,basename,toplevel_groups,flag_include_stdlib,flag_index);
+        } else {
+          docs = HtmlPrinter::printHtml(env.envi(),m,basename,toplevel_groups,flag_include_stdlib,flag_index);
+        }
+        
         for (unsigned int i=0; i<docs.size(); i++) {
-          std::ofstream os(basedir+docs[i].filename()+".html");
-          std::string header = html_header;
-          if (html_header_title != std::string::npos) {
-            header = header.replace(html_header_title, title_size, docs[i].title());
+          std::ofstream os(basedir+docs[i].filename()+(flag_rst ? ".rst" : ".html"));
+          std::string header_replace = header;
+          if (header_title != std::string::npos) {
+            header_replace = header_replace.replace(header_title, title_size, docs[i].title());
           }
-          os << header;
+          os << header_replace;
           os << docs[i].document();
-          os << html_footer;
+          os << footer;
           os.close();
         }
       } catch (LocationException& e) {
@@ -301,6 +313,8 @@ error:
             << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl
             << "  --single-page\n    Print entire documentation on a single HTML page." << std::endl
             << "  --no-index\n       Do not generate an index of all symbols." << std::endl
+            << "  --rst-output\n       Generate ReStructuredText rather than HTML." << std::endl
+            << "  --html-header, --html-footer, --rst-header, --rst-footer\n       Header/footer files to include in output." << std::endl
             << std::endl
             << "Output options:" << std::endl << std::endl
             << "  --output-base <name>\n    Base name for output files" << std::endl
