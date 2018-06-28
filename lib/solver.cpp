@@ -400,6 +400,18 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               }
             }
           }
+          if (!sc.defaultFlags().empty()) {
+            std::vector<std::string> addedArgs;
+            addedArgs.push_back(argv[0]); // excutable name
+            for (auto& df : sc.defaultFlags()) {
+              addedArgs.push_back(df);
+            }
+            for (int i=1; i<argv.size(); i++) {
+              addedArgs.push_back(argv[i]);
+            }
+            argv = addedArgs;
+            argc = addedArgs.size();
+          }
           break;
         }
       }

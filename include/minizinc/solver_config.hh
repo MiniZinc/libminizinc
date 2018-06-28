@@ -72,6 +72,8 @@ namespace MiniZinc {
     std::vector<ExtraFlag> _extraFlags;
     /// Required command line flags
     std::vector<std::string> _requiredFlags;
+    /// Default command line flags (imported from global or user configuration)
+    std::vector<std::string> _defaultFlags;
     /// Tags
     std::vector<std::string> _tags;
   public:
@@ -172,6 +174,11 @@ namespace MiniZinc {
     /// Set supported required command line flags
     void requiredFlags(const std::vector<std::string>& f) { _requiredFlags = f; }
 
+    /// Return default command line flags
+    const std::vector<std::string>& defaultFlags(void) const { return _defaultFlags; }
+    /// Set default command line flags
+    void defaultFlags(const std::vector<std::string>& f) { _defaultFlags = f; }
+
     /// Return tags
     const std::vector<std::string>& tags(void) const { return _tags; }
     /// Set tags
@@ -195,9 +202,12 @@ namespace MiniZinc {
     std::string _defaultSolver;
     /// The MiniZinc library directory
     std::string _mznlibDir;
-    typedef UNORDERED_NAMESPACE::unordered_map<std::string,std::string> TagDefaultMap;
+    typedef UNORDERED_NAMESPACE::unordered_map<std::string,std::string> DefaultMap;
     /// Mapping from tag to default solver for that tag
-    TagDefaultMap _tagDefault;
+    DefaultMap _tagDefault;
+    typedef UNORDERED_NAMESPACE::unordered_map<std::string,std::vector<std::string> > SolverDefaultMap;
+    /// Mapping from solver id to default options for that solver
+    SolverDefaultMap _solverDefaultOptions;
     /// Add new solver configuration \a sc
     void addConfig(const SolverConfig& sc);
   public:
