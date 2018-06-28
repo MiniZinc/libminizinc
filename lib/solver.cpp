@@ -346,19 +346,26 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               std::vector<std::string> additionalArgs_s;
               additionalArgs_s.push_back("-m");
               additionalArgs_s.push_back(sc.executable().c_str());
+              std::stringstream m_flags;
+
               if (sc.needsStdlibDir()) {
-                additionalArgs_s.push_back("--stdlib-dir");
-                additionalArgs_s.push_back(FileUtils::share_directory().c_str());
+                m_flags << "--stdlib-dir \"" << FileUtils::share_directory().c_str() << "\"";
               }
               if (sc.needsMznExecutable()) {
-                additionalArgs_s.push_back("--minizinc-exe");
-                additionalArgs_s.push_back(FileUtils::progpath()+"/"+executable_name);
+                if(sc.needsStdlibDir()) m_flags << " ";
+                m_flags << "--minizinc-exe \""  << FileUtils::progpath()+"/"+executable_name << "\"";
               }
-              int i=0;
-              bool success = sf->processOption(si_opt, i, additionalArgs_s);
-              if (!success) {
-                log << "Solver backend " << solverId << " does not recognise option -f." << endl;
-                return OPTION_ERROR;
+              std::string extra_m_flags = m_flags.str();
+              if(!extra_m_flags.empty()) {
+                additionalArgs_s.push_back("--mzn-flags");
+                additionalArgs_s.push_back(extra_m_flags);
+              }
+              for (i=0; i<additionalArgs_s.size(); ++i) {
+                bool success = sf->processOption(si_opt, i, additionalArgs_s);
+                if (!success) {
+                  log << "Solver backend " << solverId << " does not recognise option " << additionalArgs_s[i]  << "." << endl;
+                  return OPTION_ERROR;
+                }
               }
               std::cerr << "created factory\n";
             } else {
@@ -475,7 +482,7 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, con
     case OPTION_OK:
       break;
   }
-  if (!flt.hasInputFiles()) {
+  if (!(!ifMzn2Fzn() && sf->getId() == "org.minizinc.mzn-mzn") && !flt.hasInputFiles()) {
     // We are in solns2out mode
     while ( std::cin.good() ) {
       string line;
