@@ -22,7 +22,7 @@ build:osx:
   stage: build
   variables:
     CMAKE_ARCH: "Xcode"
-    GUROBI_DIR: "/Library/gurobi751/mac64"
+    GUROBI_DIR: "/Library/gurobi801/mac64"
   script:
     - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" "https://gitlab.com/api/v4/projects/minizinc%2Fvendor/jobs/artifacts/master/download?job=vendor:osx"
     - unzip -q vendor.zip
