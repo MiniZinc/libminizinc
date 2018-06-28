@@ -262,8 +262,15 @@ namespace MiniZinc { namespace FileUtils {
 #endif
   }
 
+  std::string global_config_file(void) {
+    std::string sd = share_directory();
+    if (sd.empty())
+      return "";
+    return sd+"/Preferences.json";
+  }
+  
   std::string user_config_file(void) {
-    return user_config_dir()+"/Preferences";
+    return user_config_dir()+"/Preferences.json";
   }
 
   TmpFile::TmpFile(const std::string& ext) {
