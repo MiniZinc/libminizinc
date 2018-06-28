@@ -348,16 +348,33 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               std::vector<std::string> additionalArgs_s;
               additionalArgs_s.push_back("-m");
               additionalArgs_s.push_back(sc.executable().c_str());
-              std::stringstream m_flags;
 
-              if (sc.needsStdlibDir()) {
-                m_flags << "--stdlib-dir \"" << FileUtils::share_directory().c_str() << "\"";
+              std::string extra_m_flags;
+              {
+                std::vector<std::string> m_flags;
+
+                if (sc.needsStdlibDir()) {
+                  m_flags.push_back("--stdlib-dir");
+                  m_flags.push_back("\"" + FileUtils::share_directory() + "\"");
+                }
+                if (sc.needsMznExecutable()) {
+                  m_flags.push_back("--minizinc-exe");
+                  m_flags.push_back("\"" + FileUtils::progpath() + "/" + executable_name + "\"");
+                }
+                if (!sc.mznlib().empty()) {
+                  m_flags.push_back(sc.mznlib());
+                }
+
+                std::stringstream m_flags_ss;
+                bool tail = false;
+                for(const string& fs : m_flags) {
+                  if(tail) m_flags_ss << " ";
+                  m_flags_ss << fs;
+                  tail = true;
+                }
+                extra_m_flags = m_flags_ss.str();
               }
-              if (sc.needsMznExecutable()) {
-                if(sc.needsStdlibDir()) m_flags << " ";
-                m_flags << "--minizinc-exe \""  << FileUtils::progpath()+"/"+executable_name << "\"";
-              }
-              std::string extra_m_flags = m_flags.str();
+
               if(!extra_m_flags.empty()) {
                 additionalArgs_s.push_back("--mzn-flags");
                 additionalArgs_s.push_back(extra_m_flags);
