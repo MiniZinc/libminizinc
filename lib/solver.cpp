@@ -74,6 +74,7 @@ namespace {
 
 #include <minizinc/solvers/fzn_solverfactory.hh>
 #include <minizinc/solvers/mzn_solverfactory.hh>
+#include <minizinc/solvers/mzn_solverinstance.hh>
 namespace {
   FZN_SolverFactoryInitialiser _fzn_init;
   MZN_SolverFactoryInitialiser _mzn_init;
@@ -345,22 +346,23 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
           if (!sc.executable().empty()) {
             if (sc.supportsMzn()) {
               isMznMzn = true;
+              std::vector<MZNSolverFlag> acceptedFlags;
+              for (auto& sf : sc.stdFlags())
+                acceptedFlags.push_back(MZNSolverFlag::std(sf));
+              for (auto& ef : sc.extraFlags())
+                acceptedFlags.push_back(MZNSolverFlag::extra(ef.flag,ef.flag_type));
+              static_cast<MZN_SolverFactory*>(sf)->setAcceptedFlags(si_opt, acceptedFlags);
               std::vector<std::string> additionalArgs_s;
               additionalArgs_s.push_back("-m");
               additionalArgs_s.push_back(sc.executable().c_str());
-              std::stringstream m_flags;
 
               if (sc.needsStdlibDir()) {
-                m_flags << "--stdlib-dir \"" << FileUtils::share_directory().c_str() << "\"";
+                additionalArgs_s.push_back("--stdlib-dir");
+                additionalArgs_s.push_back(FileUtils::share_directory());
               }
               if (sc.needsMznExecutable()) {
-                if(sc.needsStdlibDir()) m_flags << " ";
-                m_flags << "--minizinc-exe \""  << FileUtils::progpath()+"/"+executable_name << "\"";
-              }
-              std::string extra_m_flags = m_flags.str();
-              if(!extra_m_flags.empty()) {
-                additionalArgs_s.push_back("--mzn-flags");
-                additionalArgs_s.push_back(extra_m_flags);
+                additionalArgs_s.push_back("--minizinc-exe");
+                additionalArgs_s.push_back(FileUtils::progpath()+"/"+executable_name);
               }
               for (i=0; i<additionalArgs_s.size(); ++i) {
                 bool success = sf->processOption(si_opt, i, additionalArgs_s);
@@ -369,7 +371,6 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                   return OPTION_ERROR;
                 }
               }
-              std::cerr << "created factory\n";
             } else {
               std::vector<std::string> additionalArgs(2);
               additionalArgs[0] = "--fzn-cmd";
