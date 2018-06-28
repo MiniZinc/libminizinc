@@ -140,6 +140,10 @@ bool MznSolver::ifMzn2Fzn() {
   return is_mzn2fzn;
 }
 
+bool MznSolver::ifSolns2out() {
+  return s2out._opt.flag_standaloneSolns2Out;
+}
+
 void MznSolver::addSolverInterface(SolverFactory* sf)
 {
   si = sf->createSI(*flt.getEnv(), log, si_opt);
@@ -167,18 +171,30 @@ void MznSolver::addSolverInterface()
   addSolverInterface(sf);
 }
 
+void MznSolver::printUsage()
+{
+  os << executable_name << ": ";
+  if ( ifMzn2Fzn() ) {
+    os
+      << "MiniZinc to FlatZinc converter.\n"
+      << "Usage: "  << executable_name
+      << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl;
+  } else if (ifSolns2out()) {
+    os
+      << "Solutions to output translator.\n"
+      << "Usage: "  << executable_name
+      << "  [<options>] <model>.ozn" << std::endl;
+  } else {
+    os
+      << "MiniZinc driver.\n"
+      << "Usage: "  << executable_name
+      << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn" << std::endl;
+  }
+}
+
 void MznSolver::printHelp(const std::string& selectedSolver)
 {
-  if ( !ifMzn2Fzn() )
-  os
-    << "MiniZinc driver.\n"
-    << "Usage: "  << executable_name
-    << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...] or just <flat>.fzn" << std::endl;
-  else
-  os
-    << "MiniZinc to FlatZinc converter.\n"
-    << "Usage: "  << executable_name
-    << "  [<options>] [-I <include path>] <model>.mzn [<data>.dzn ...]" << std::endl;
+  printUsage();
   os
     << "General options:" << std::endl
     << "  --help, -h\n    Print this help message." << std::endl
@@ -453,7 +469,8 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, con
     case OPTION_FINISH:
       return SolverInstance::NONE;
     case OPTION_ERROR:
-      printHelp();
+      printUsage();
+      os << "More info with \"" << (ifMzn2Fzn() ? "mzn2fzn" : "minizinc") << " --help\"\n";
       return SolverInstance::ERROR;
     case OPTION_OK:
       break;

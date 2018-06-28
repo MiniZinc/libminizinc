@@ -106,6 +106,7 @@ namespace MiniZinc {
     
     SolverInstance::Status run(const std::vector<std::string>& args, const std::string& model = std::string(), const std::string& exeName = std::string("minizinc"));
     bool get_flag_verbose() { return flag_verbose; /*getFlt()->get_flag_verbose();*/ }
+    void printUsage();
   private:
     enum OptionStatus { OPTION_OK, OPTION_ERROR, OPTION_FINISH };
     OptionStatus processOptions(std::vector<std::string>& argv);
@@ -115,6 +116,7 @@ namespace MiniZinc {
     size_t getNSolvers() { return getGlobalSolverRegistry()->getSolverFactories().size(); }
     /// If building a flattening exe only.
     bool ifMzn2Fzn();
+    bool ifSolns2out();
     void addSolverInterface();
     void addSolverInterface(SolverFactory* sf);
     SolverInstance::Status solve();
