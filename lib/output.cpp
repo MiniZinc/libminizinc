@@ -514,12 +514,12 @@ namespace MiniZinc {
             for (int i=0; i<vd->type().dim(); i++) {
               unsigned int enumId = (vd->type().enumId() != 0 ? e.getArrayEnum(vd->type().enumId())[i] : 0);
               if (enumId != 0) {
-                s << e.getEnum(enumId)->e()->id()->str() << ",";
+                s << e.getEnum(enumId)->e()->id()->str() << ", ";
               } else if (al != NULL) {
-                s << al->min(i) << ".." << al->max(i) << ",";
+                s << al->min(i) << ".." << al->max(i) << ", ";
               } else {
                 IntSetVal* idxset = eval_intset(e,vd->ti()->ranges()[i]->domain());
-                s << *idxset << ",";
+                s << *idxset << ", ";
               }
             }
           }
