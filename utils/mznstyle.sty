@@ -27,6 +27,13 @@
 
 \DeclareCaptionFont{white}{\color{white}}
 
+
+\RequirePackage{tocloft}
+\PassOptionsToPackage{titles}{tocloft}
+
+\renewcommand*\cftchapnumwidth{2em}
+\renewcommand*\cftsecnumwidth{3em}
+
 \renewenvironment{sphinxadmonition}[2]{
   \begin{tcolorbox}[colbacktitle=UglyBlue,coltitle=white,colframe=UglyBlue,fonttitle=\bfseries\large,title=#2]
 }{\end{tcolorbox}}
