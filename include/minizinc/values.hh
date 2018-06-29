@@ -712,9 +712,22 @@ namespace MiniZinc {
   operator <<(std::basic_ostream<Char,Traits>& os, const IntSetVal& s) {
     if (s.size()==0) {
       os << "1..0";
+    } else if(s.size() == 1) {
+      // Print the range
+      IntSetRanges isr(&s);
+      os << isr.min() << ".." << isr.max();
     } else {
-      for (IntSetRanges isr(&s); isr(); ++isr)
-        os << isr.min() << ".." << isr.max() << " ";
+      // Print each element of the set
+      bool first = true;
+      os << "{";
+      for (IntSetRanges isr(&s); isr(); ++isr) {
+        if(!first) os << ", ";
+        first = false;
+        for(IntVal v = isr.min(); v < isr.max(); ++v) {
+          os << v;
+        }
+      }
+      os << "}";
     }
     return os;
   }

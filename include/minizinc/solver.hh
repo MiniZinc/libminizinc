@@ -81,6 +81,7 @@ namespace MiniZinc {
   // Class MznSolver coordinates flattening and solving.
   class MznSolver {
   private:
+    enum OptionStatus { OPTION_OK, OPTION_ERROR, OPTION_FINISH };
     /// Solver configurations
     SolverConfigs solver_configs;
     Flattener flt;
@@ -99,22 +100,26 @@ namespace MiniZinc {
     /// global options
     bool flag_verbose=0;
     bool flag_statistics=0;
-        
+
   public:
     MznSolver(std::ostream& os = std::cout, std::ostream& log = std::cerr);
     ~MznSolver();
     
     SolverInstance::Status run(const std::vector<std::string>& args, const std::string& model = std::string(), const std::string& exeName = std::string("minizinc"));
-    bool get_flag_verbose() { return flag_verbose; /*getFlt()->get_flag_verbose();*/ }
-  private:
-    enum OptionStatus { OPTION_OK, OPTION_ERROR, OPTION_FINISH };
     OptionStatus processOptions(std::vector<std::string>& argv);
+    SolverFactory* getSF() { assert(sf); return sf; }
+    SolverInstanceBase::Options* getSI_OPT() { assert(si_opt); return si_opt; }
+    bool get_flag_verbose() { return flag_verbose; /*getFlt()->get_flag_verbose();*/ }
+    void printUsage();
+    
+  private:
     void printHelp(const std::string& selectedSolver=std::string());
     /// Flatten model
     void flatten(const std::string& modelString = std::string());
     size_t getNSolvers() { return getGlobalSolverRegistry()->getSolverFactories().size(); }
     /// If building a flattening exe only.
     bool ifMzn2Fzn();
+    bool ifSolns2out();
     void addSolverInterface();
     void addSolverInterface(SolverFactory* sf);
     SolverInstance::Status solve();

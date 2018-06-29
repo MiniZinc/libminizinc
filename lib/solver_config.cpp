@@ -58,6 +58,30 @@ namespace MiniZinc {
       }
       throw ConfigException("invalid configuration item (right hand side must be a list of strings)");
     }
+    std::vector<std::vector<std::string> > getDefaultOptionList(AssignI* ai) {
+      if (ArrayLit* al = ai->e()->dyn_cast<ArrayLit>()) {
+        std::vector<std::vector<std::string> > ret;
+        if (al->dims()!=2) {
+          throw ConfigException("invalid configuration item (right hand side must be a 2d array of strings)");
+        }
+        int nCols = al->max(1)-al->min(1)+1;
+        if (nCols != 3) {
+          throw ConfigException("invalid configuration item (right hand side must be a 2d array of strings with 3 columns)");
+        }
+        for (unsigned int i=0; i<al->size(); i+=nCols) {
+          StringLit* sl0 = (*al)[i]->dyn_cast<StringLit>();
+          StringLit* sl1 = (*al)[i+1]->dyn_cast<StringLit>();
+          StringLit* sl2 = (*al)[i+2]->dyn_cast<StringLit>();
+          if (sl0 && sl1 && sl2) {
+            ret.push_back(std::vector<std::string>({sl0->v().str(),sl1->v().str(),sl2->v().str()}));
+          } else {
+            throw ConfigException("invalid configuration item (right hand side must be a list of strings)");
+          }
+        }
+        return ret;
+      }
+      throw ConfigException("invalid configuration item (right hand side must be a 2d array of strings)");
+    }
     std::vector<SolverConfig::ExtraFlag> getExtraFlagList(AssignI* ai) {
       if (ArrayLit* al = ai->e()->dyn_cast<ArrayLit>()) {
         if (al->dims()!=2) {
@@ -122,9 +146,10 @@ namespace MiniZinc {
           m = new Model;
           GCLock lock;
           jp.parse(m, filename);
-        } catch (JSONError&) {
+        } catch (JSONError& e) {
           delete m;
           m=NULL;
+          throw ConfigException(e.msg());
         }
       } else {
         vector<string> filenames;
@@ -266,66 +291,92 @@ namespace MiniZinc {
         solver_path += PATHSEP;
       solver_path += userConfigDir+"/solvers";
     }
-    std::string userConfig = FileUtils::user_config_file();
-    if (FileUtils::file_exists(userConfig)) {
-      ostringstream errstream;
-      try {
-        Env userconfenv;
-        Model* m = NULL;
-        if (JSONParser::fileIsJSON(userConfig)) {
-          JSONParser jp(userconfenv.envi());
-          try {
-            m = new Model;
-            GCLock lock;
-            jp.parse(m, userConfig);
-          } catch (JSONError&) {
-            delete m;
-            m=NULL;
+    std::vector<std::string> configFiles({FileUtils::global_config_file(),FileUtils::user_config_file()});
+    
+    for (auto& cf : configFiles) {
+      if (!cf.empty() && FileUtils::file_exists(cf)) {
+        ostringstream errstream;
+        try {
+          Env userconfenv;
+          Model* m = NULL;
+          if (JSONParser::fileIsJSON(cf)) {
+            JSONParser jp(userconfenv.envi());
+            try {
+              m = new Model;
+              GCLock lock;
+              jp.parse(m, cf);
+            } catch (JSONError&) {
+              delete m;
+              m=NULL;
+            }
           }
-        } else {
-          vector<string> filenames;
-          filenames.push_back(userConfig);
-          m = parse(userconfenv,filenames, vector<string>(), vector<string>(),
-                    true, false, false, errstream);
-        }
-        if (m) {
-          for (unsigned int i=0; i<m->size(); i++) {
-            if (AssignI* ai = (*m)[i]->dyn_cast<AssignI>()) {
-              if (ai->id()=="mzn_solver_path") {
-                std::string sp = getString(ai);
-                if (!solver_path.empty())
-                  solver_path += PATHSEP;
-                solver_path += sp;
-              } else if (ai->id()=="mzn_lib_dir") {
-                _mznlibDir = getString(ai);
-              } else if (ai->id()=="tagDefaults") {
-                std::vector<std::string> tagDefs = getStringList(ai);
-                for (string td: tagDefs) {
-                  size_t sep = td.find(':');
-                  if (sep==string::npos) {
-                    throw ConfigException("invalid configuration item: tag default without colon");
+          if (m) {
+            for (unsigned int i=0; i<m->size(); i++) {
+              if (AssignI* ai = (*m)[i]->dyn_cast<AssignI>()) {
+                if (ai->id()=="mzn_solver_path") {
+                  std::string sp = getString(ai);
+                  if (!solver_path.empty())
+                    solver_path += PATHSEP;
+                  solver_path += sp;
+                } else if (ai->id()=="mzn_lib_dir") {
+                  _mznlibDir = getString(ai);
+                } else if (ai->id()=="tagDefaults") {
+                  std::vector<std::string> tagDefs = getStringList(ai);
+                  for (string td: tagDefs) {
+                    size_t sep = td.find(':');
+                    if (sep==string::npos) {
+                      throw ConfigException("invalid configuration item: tag default without colon");
+                    }
+                    std::string tag = td.substr(0,sep);
+                    std::string solver_id = td.substr(sep+1);
+                    _tagDefault[tag] = solver_id;
                   }
-                  std::string tag = td.substr(0,sep);
-                  std::string solver_id = td.substr(sep+1);
-                  _tagDefault.insert(std::make_pair(tag,solver_id));
+                } else if (ai->id()=="solverDefaults") {
+                  std::vector<std::vector<std::string> > solverDefs = getDefaultOptionList(ai);
+                  for (auto& sd: solverDefs) {
+                    assert(sd.size()==3);
+                    std::string solver = sd[0];
+                    SolverDefaultMap::iterator it = _solverDefaultOptions.find(solver);
+                    if (it==_solverDefaultOptions.end()) {
+                      std::vector<std::string> solverOptions({sd[1],sd[2]});
+                      _solverDefaultOptions.insert(std::make_pair(solver, solverOptions));
+                    } else {
+                      std::vector<std::string>& opts = it->second;
+                      bool found=false;
+                      for (unsigned int i=0; i<opts.size(); i+=2) {
+                        if (opts[i]==sd[1]) {
+                          // Override existing option value
+                          opts[i+1] = sd[2];
+                          found=true;
+                          break;
+                        }
+                      }
+                      if (!found) {
+                        // Option didn't exist, add to end of list
+                        opts.push_back(sd[1]);
+                        opts.push_back(sd[2]);
+                      }
+                    }
+                  }
+                } else {
+                  throw ConfigException("invalid configuration item");
                 }
               } else {
                 throw ConfigException("invalid configuration item");
               }
-            } else {
-              throw ConfigException("invalid configuration item");
             }
+          } else {
+            std::cerr << errstream.str();
+            throw ConfigException("internal error");
           }
-        } else {
-          std::cerr << errstream.str();
-          throw ConfigException("internal error");
+        } catch (ConfigException&) {
+          throw;
+        } catch (Exception& e) {
+          throw ConfigException(e.what());
         }
-      } catch (ConfigException&) {
-        throw;
-      } catch (Exception& e) {
-        throw ConfigException(e.what());
       }
     }
+    
     if (_mznlibDir.empty()) {
       _mznlibDir = FileUtils::share_directory();
     }
@@ -353,11 +404,25 @@ namespace MiniZinc {
       else
         solver_path = "";
     }
+    
+    // Add default options to loaded solver configurations
+    for (auto& sc : _solvers) {
+      SolverDefaultMap::const_iterator it = _solverDefaultOptions.find(sc.id());
+      if (it != _solverDefaultOptions.end()) {
+        std::vector<std::string> defaultOptions;
+        for (auto& df : it->second) {
+          if (!df.empty()) {
+            defaultOptions.push_back(df);
+          }
+        }
+        sc.defaultFlags(defaultOptions);
+      }
+    }
   }
   
   vector<string> SolverConfigs::solvers() const {
     vector<string> s;
-    for (auto sc: _solvers) {
+    for (auto& sc: _solvers) {
       std::ostringstream oss;
       oss << sc.name() << " " << sc.version() << " (" << sc.id();
       for (std::string t: sc.tags()) {
@@ -377,7 +442,19 @@ namespace MiniZinc {
     for (unsigned int i=0; i<_solvers.size(); i++) {
       oss << "  {\n";
       const SolverConfig& sc = _solvers[i];
-      oss << "    \"configFile\": \"" << Printer::escapeStringLit(sc.configFile()) << "\",\n";
+      oss << "    \"extraInfo\": {\n";
+      oss << "      \"configFile\": \"" << Printer::escapeStringLit(sc.configFile()) << "\"";
+      if (sc.defaultFlags().size()) {
+        oss << ",\n      \"defaultFlags\": [";
+        for (unsigned int j=0; j<sc.defaultFlags().size(); j++) {
+          oss << "\"" << sc.defaultFlags()[j] << "\"";
+          if (j<sc.defaultFlags().size()-1)
+            oss << ",";
+        }
+        oss << "]";
+      }
+      oss << "\n";
+      oss << "    },\n";
       oss << "    \"id\": \"" << Printer::escapeStringLit(sc.id()) << "\",\n";
       oss << "    \"name\": \"" << Printer::escapeStringLit(sc.name()) << "\",\n";
       oss << "    \"version\": \"" << Printer::escapeStringLit(sc.version()) << "\",\n";
@@ -480,7 +557,7 @@ namespace MiniZinc {
       if (tv.empty() || tv==_solvers[sidx].version())
         selectedSolvers.insert(sidx);
     }
-    TagDefaultMap::const_iterator def_it = _tagDefault.find(getTag(tags[0]));
+    DefaultMap::const_iterator def_it = _tagDefault.find(getTag(tags[0]));
     if (def_it != _tagDefault.end()) {
       defaultSolvers.insert(def_it->second);
     }
