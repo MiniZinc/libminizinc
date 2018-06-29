@@ -2,21 +2,29 @@ stages:
   - build
   - test
 
-# build:linux:
-#   stage: build
-#   image: gcc:latest
-#   before_script:
-#     - apt-get update && apt-get -y install cmake
-#   script:
-#     - mkdir build
-#     - cd build
-#     - cmake .. -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=$PWD/..
-#     - cmake --build . --target install -- -j4
-#   artifacts:
-#      paths:
-#        - bin/
-#   tags:
-#      - linux
+build:linux:
+  stage: build
+  image: dekker1/cmake:latest
+  variables:
+    CMAKE_ARCH: "Unix Makefiles"
+  script:
+    - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" "https://gitlab.com/api/v4/projects/minizinc%2Fvendor/jobs/artifacts/master/download?job=vendor:linux"
+    - unzip -q vendor.zip
+    - mkdir -p build
+    - cd build
+    - cmake -G"$CMAKE_ARCH" -v .. -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DGECODE_HOME="$CI_PROJECT_DIR/vendor/gecode" -DOSICBC_HOME="$CI_PROJECT_DIR/vendor/CBC" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake --build .  --config Release
+    - cmake --build .  --config Release --target install
+  artifacts:
+    paths:
+      - minizinc/
+  tags:
+     - linux
+     - docker
+  cache:
+    key: "linux_$CI_COMMIT_REF_SLUG"
+    paths:
+      - build/
 
 build:osx:
   stage: build
