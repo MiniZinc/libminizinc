@@ -186,6 +186,9 @@ namespace MiniZinc {
       std::string toRST(int level) {
         std::ostringstream oss;
         if (!htmlName.empty()) {
+          if (level==0) {
+            oss << ".. _ch-lib-" << name << ":\n\n";
+          }
           oss << rstHeading(htmlName, level);
           oss << HtmlDocOutput::trim(desc) << "\n\n";
         }
@@ -1279,7 +1282,7 @@ namespace MiniZinc {
     
     ret.push_back(HtmlDocument(g.fullPath, g.htmlName, oss.str()));
     
-    for (auto sg : g.subgroups.m) {
+    for (auto& sg : g.subgroups.m) {
       ret.push_back(HtmlDocument(sg->fullPath, sg->htmlName, sg->toRST(0)));
     }
     return ret;
