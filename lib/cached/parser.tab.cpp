@@ -298,22 +298,22 @@ namespace MiniZinc {
              bool parseDocComments,
              bool verbose,
              ostream& err) {
-    
+
     vector<string> includePaths;
     for (unsigned int i=0; i<ip.size(); i++)
       includePaths.push_back(ip[i]);
-    
+
     vector<ParseWorkItem> files;
     map<string,Model*> seenModels;
-    
+
     if (filenames.size() > 0) {
       GCLock lock;
       string fileDirname; string fileBasename;
       filepath(filenames[0], fileDirname, fileBasename);
       model->setFilename(fileBasename);
-      
+
       files.push_back(ParseWorkItem(model,fileDirname,fileBasename));
-      
+
       for (unsigned int i=1; i<filenames.size(); i++) {
         GCLock lock;
         string dirName, baseName;
@@ -334,7 +334,7 @@ namespace MiniZinc {
         }
       }
     }
-    
+
     if (!ignoreStdlib) {
       GCLock lock;
       Model* stdlib = new Model;
@@ -347,7 +347,7 @@ namespace MiniZinc {
       stdlibinc->m(stdlib,true);
       model->addItem(stdlibinc);
     }
-    
+
     while (!files.empty()) {
       GCLock lock;
       ParseWorkItem& np = files.back();
@@ -396,7 +396,7 @@ namespace MiniZinc {
       if (verbose)
         std::cerr << "processing file '" << fullname << "'" << endl;
       std::string s = get_file_contents(file);
-      
+
       if (m->filepath().size() == 0)
         m->setFilepath(fullname);
       bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
@@ -412,7 +412,7 @@ namespace MiniZinc {
         goto error;
       }
     }
-    
+
     for (unsigned int i=0; i<datafiles.size(); i++) {
       GCLock lock;
       string f = datafiles[i];
@@ -434,7 +434,7 @@ namespace MiniZinc {
             std::cerr << "processing data file '" << f << "'" << endl;
           s = get_file_contents(file);
         }
-        
+
         ParserState pp(f, s, err, files, seenModels, model, true, false, parseDocComments);
         yylex_init(&pp.yyscanner);
         yyset_extra(&pp, pp.yyscanner);
@@ -446,13 +446,13 @@ namespace MiniZinc {
         }
       }
     }
-    
+
     return;
   error:
     delete model;
     model = NULL;
   }
-  
+
   Model* parse(Env& env,
                const vector<string>& filenames,
                const vector<string>& datafiles,
@@ -485,7 +485,7 @@ namespace MiniZinc {
                    bool parseDocComments,
                    bool verbose,
                    ostream& err) {
-    
+
     vector<string> filenames;
     parse(env, model, filenames, datafiles, includePaths,
           ignoreStdlib, parseDocComments, verbose, err);
@@ -679,7 +679,7 @@ union YYSTYPE
          std::vector<std::string>* string_v;
          std::vector<std::pair<MiniZinc::Expression*,MiniZinc::Expression*> >* expression_p;
          MiniZinc::Generators* generators;
-       
+
 
 
 };
@@ -1583,15 +1583,6 @@ static const yytype_int16 yytable[] =
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,    35,     0,     0,    36,    37,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,   109,   110,   111,     0,     0,     0,
-       0,     0,   112,     0,     0,     0,    40,    41,    42,    43,
-      44,    45,    46,    47,    48,    49,    50,    51,    52,    53,
-      54,    55,    56,    57,   113,    59,    60,    61,    62,    63,
-      64,    65,    66,     0,    67,     0,    68,     0,    69,     2,
-       3,     4,   108,     0,     6,     7,     0,     0,     0,     0,
-       0,     0,     0,     0,    14,     0,     0,     0,     0,     0,
-       0,     0,     0,     0,     0,     0,     0,     0,     0,    23,
-       0,    25,     0,    27,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,     0,     0,     0,     0,     0,
        0,     0,     0,     0,     0,   110,   111,   112,     0,     0,
        0,     0,     0,   113,     0,     0,     0,    40,    41,    42,
@@ -1962,17 +1953,6 @@ static const yytype_int16 yycheck[] =
       -1,    -1,    -1,    42,    -1,    -1,    -1,    -1,    -1,    -1,
       49,    -1,    -1,    -1,    -1,    54,    -1,    -1,    57,    58,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    85,    86,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    96,    97,    98,    99,   100,   101,   102,   103,
-     104,   105,   106,   107,   108,   109,   110,   111,   112,   113,
-     114,   115,   116,   117,   118,   119,   120,   121,   122,    -1,
-     124,    -1,   126,    -1,   128,     3,     4,     5,     6,    -1,
-       8,     9,    -1,    -1,    12,    13,    -1,    -1,    16,    17,
-      18,    19,    -1,    -1,    22,    23,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    31,    -1,    33,    -1,    35,    36,    37,
-      38,    -1,    -1,    -1,    42,    -1,    -1,    -1,    -1,    47,
-      -1,    49,    -1,    -1,    -1,    -1,    54,    -1,    -1,    57,
-      58,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    86,    87,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    97,    98,
@@ -2216,8 +2196,6 @@ static const yytype_int16 yycheck[] =
       76,    77,    78,    79,    80,    81,    82,    83,    84,    85,
       86,    87,    88,    89,    90,    91,    92,    -1,    94,    95,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
-      -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,     7,   129,
-      -1,    -1,    -1,    -1,    -1,    -1,    51,    -1,    -1,    -1,
       -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,    -1,
       -1,    -1,    68,    69,    70,    71,    72,    73,    74,    75,
       76,    77,    78,    79,    80,    81,    82,    83,    84,    85,
@@ -2350,10 +2328,6 @@ static const yytype_uint8 yyr2[] =
        1,     1,     1,     1,     1,     1,     1,     1
 };
 
-#define yyerrok         (yyerrstatus = 0)
-#define yyclearin       (yychar = YYEMPTY)
-#define YYEMPTY         (-2)
-#define YYEOF           0
 
 #define yyerrok         (yyerrstatus = 0)
 #define yyclearin       (yychar = YYEMPTY)
@@ -4841,7 +4815,7 @@ yyreduce:
 
   case 246:
 
-    { 
+    {
         if ((yyvsp[-1].expression_p)!=NULL) {
           bool hadWhere = false;
           std::vector<Expression*> args;
@@ -4865,7 +4839,7 @@ yyreduce:
 
   case 247:
 
-    { 
+    {
         vector<Generator> gens;
         vector<Id*> ids;
         if ((yyvsp[-4].expression_p)) {
