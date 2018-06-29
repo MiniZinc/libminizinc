@@ -23,12 +23,13 @@ build:osx:
   variables:
     CMAKE_ARCH: "Xcode"
     GUROBI_DIR: "/Library/gurobi801/mac64"
+    CPLEX_DIR: "~/Applications/IBM/ILOG/CPLEX_Studio1271"
   script:
     - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" "https://gitlab.com/api/v4/projects/minizinc%2Fvendor/jobs/artifacts/master/download?job=vendor:osx"
     - unzip -q vendor.zip
     - mkdir -p build
     - cd build
-    - cmake -G"$CMAKE_ARCH" .. -DGECODE_HOME="$CI_PROJECT_DIR/vendor/gecode" -DGUROBI_HOME="$GUROBI_DIR" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="$CI_PROJECT_DIR/vendor/CBC" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake -G"$CMAKE_ARCH" .. -DGECODE_HOME="$CI_PROJECT_DIR/vendor/gecode" -DBUILD_GUROBI_PLUGIN=ON -DGUROBI_HOME="$GUROBI_DIR" -DOSICBC_HOME="$CI_PROJECT_DIR/vendor/CBC" -DBUILD_CPLEX_PLUGIN=ON -DCPLEX_STUDIO_DIR="$CPLEX_DIR" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   artifacts:
@@ -49,12 +50,13 @@ build:win32:
   variables:
     CMAKE_ARCH: "Visual Studio 14 2015"
     GUROBI_DIR: "C:/gurobi701/win32"
+    CPLEX_DIR: "C:/Program Files/IBM/ILOG/CPLEX_Studio127"
   script:
     - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fvendor/jobs/artifacts/master/download?job=vendor:win32"
     - unzip -q vendor.zip
     - if not exist "build" mkdir build
     - cd build
-    - cmake -G"%CMAKE_ARCH%" .. -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DSHARED_GECODE=TRUE -DGUROBI_HOME="%GUROBI_DIR%" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake -G"%CMAKE_ARCH%" .. -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DSHARED_GECODE=TRUE -DBUILD_GUROBI_PLUGIN=ON -DGUROBI_HOME="%GUROBI_DIR%" -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   artifacts:
@@ -75,12 +77,13 @@ build:win64:
   variables:
     CMAKE_ARCH: "Visual Studio 14 2015 Win64"
     GUROBI_DIR: "C:/gurobi701/win64"
+    CPLEX_DIR: "C:/Program Files/IBM/ILOG/CPLEX_Studio127"
   script:
     - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fvendor/jobs/artifacts/master/download?job=vendor:win64"
     - unzip -q vendor.zip
     - if not exist "build" mkdir build
     - cd build
-    - cmake -G"%CMAKE_ARCH%" .. -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DSHARED_GECODE=TRUE -DGUROBI_HOME="%GUROBI_DIR%" -DBUILD_GUROBI_PLUGIN=1 -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake -G"%CMAKE_ARCH%" .. -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DSHARED_GECODE=TRUE -DBUILD_GUROBI_PLUGIN=ON -DGUROBI_HOME="%GUROBI_DIR%" -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DBUILD_CPLEX_PLUGIN=ON -DCPLEX_STUDIO_DIR="%CPLEX_DIR%" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   artifacts:
