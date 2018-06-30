@@ -7,6 +7,7 @@ else
 fi
 echo Setting build type:  $BLD_TYPE
 cmake -DCMAKE_BUILD_TYPE=$BLD_TYPE -DCMAKE_VERBOSE_MAKEFILE=ON \
+           -DXPRESS_HOME=$XPRESSDIR \
            -DCPLEX_STUDIO_DIR=$CPLEX_STUDIO_DIR \
            -DGUROBI_HOME=$GUROBI_HOME -DBUILD_GUROBI_PLUGIN=ON \
            -DOSICBC_HOME=$OSICBC_HOME -DOSICBC_LINKEXTRAS="" '# bz2 lapack blas  necessary on ArchLinux' \
