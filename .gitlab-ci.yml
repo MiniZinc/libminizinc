@@ -12,7 +12,7 @@ build:linux:
     - unzip -q vendor.zip
     - mkdir -p build
     - cd build
-    - cmake -G"$CMAKE_ARCH" -v .. -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DGECODE_HOME="$CI_PROJECT_DIR/vendor/gecode" -DBUILD_GUROBI_PLUGIN=ON -DGUROBI_HOME="$CI_PROJECT_DIR/vendor/gurobi" -DOSICBC_HOME="$CI_PROJECT_DIR/vendor/CBC" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake -G"$CMAKE_ARCH" -v .. -DCMAKE_VERBOSE_MAKEFILE:BOOL=ON -DGECODE_HOME="$CI_PROJECT_DIR/vendor/gecode" -DBUILD_GUROBI_PLUGIN=ON -DGUROBI_HOME="$CI_PROJECT_DIR/vendor/gurobi" -DBUILD_CPLEX_PLUGIN=ON -DCPLEX_STUDIO_DIR="$CI_PROJECT_DIR/vendor" -DOSICBC_HOME="$CI_PROJECT_DIR/vendor/CBC" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   artifacts:
