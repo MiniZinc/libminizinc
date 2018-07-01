@@ -291,10 +291,55 @@ class MznDefLexer(MznLexer):
             (r'"/\\"', String),
             (r'"""', String),
             (r'"\\\("', String),
+            (r'"\\.\\.\\."', Comment.Special),
             (r'\[[^ ]', String.Regex, 'regex'),
             (r'::=', Comment.Special),
             (words(('|',), prefix=r'^\s*'), Comment.Special),
             inherit
+        ],
+        'main__1': [
+            (r'<[0-9a-zA-Z- ]+>', Comment.Special),
+            (r'"/\\"', String),
+            (r'"""', String),
+            (r'"\\\("', String),
+            (r'"\.\.\."', String),
+            (r'\[[^ ]', String.Regex, 'regex'),
+            (r'::=', Comment.Special),
+            (words(('|',), prefix=r'^\s*'), Comment.Special),
+            inherit  
+        ],
+        'main__2': [
+            (r'<[0-9a-zA-Z- ]+>', Comment.Special),
+            (r'"/\\"', String),
+            (r'"""', String),
+            (r'"\\\("', String),
+            (r'"\.\.\."', String),
+            (r'\[[^ ]', String.Regex, 'regex'),
+            (r'::=', Comment.Special),
+            (words(('|',), prefix=r'^\s*'), Comment.Special),
+            inherit  
+        ],
+        'main__3': [
+            (r'<[0-9a-zA-Z- ]+>', Comment.Special),
+            (r'"/\\"', String),
+            (r'"""', String),
+            (r'"\\\("', String),
+            (r'"\.\.\."', String),
+            (r'\[[^ ]', String.Regex, 'regex'),
+            (r'::=', Comment.Special),
+            (words(('|',), prefix=r'^\s*'), Comment.Special),
+            inherit  
+        ],
+        'main__4': [
+            (r'<[0-9a-zA-Z- ]+>', Comment.Special),
+            (r'"/\\"', String),
+            (r'"""', String),
+            (r'"\\\("', String),
+            (r'"\.\.\."', String),
+            (r'\[[^ ]', String.Regex, 'regex'),
+            (r'::=', Comment.Special),
+            (words(('|',), prefix=r'^\s*'), Comment.Special),
+            inherit  
         ],
         'regex': [
             (r'\]', String.Regex, '#pop'),

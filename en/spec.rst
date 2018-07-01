@@ -18,6 +18,7 @@
 
 .. |TyCoercions| replace:: *Coercions.*
 
+.. _ch-mzn-spec:
 
 Specification of MiniZinc
 =========================

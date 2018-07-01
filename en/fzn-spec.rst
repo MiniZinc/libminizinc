@@ -1,3 +1,11 @@
+.. _ch-fzn-interfacing:
+
+===============================
+Interfacing Solvers to Flatzinc
+===============================
+
+This document describes the interface between the MiniZinc system and FlatZinc solvers.
+
 .. _ch-fzn-spec:
 
 Specification of FlatZinc
@@ -32,7 +40,7 @@ Parameter types
 ~~~~~~~~~~~~~~~
 
 Parameters are fixed quantities explicitly specified in the model
-(see rule ``par_type`` in :numref:`ch-fzn-syntax`).
+(see rule :mzndef:`<par-type>` in :numref:`ch-fzn-syntax`).
 
 ============================================ ===========================
 Type                                         Values
@@ -76,7 +84,7 @@ Variable types
 ~~~~~~~~~~~~~~
 
 Variables are quantities decided by the solver
-(see rule ``var_type`` in :numref:`ch-fzn-syntax`).
+(see rules :mzndef:`<basic-var-type>` and :mzndef:`<array-var-type>` in :numref:`ch-fzn-syntax`).
 
 +-----------------------------------------------------------------------------------+
 | Variable type                                                                     |
@@ -146,7 +154,7 @@ Examples:
 Values and expressions
 ----------------------
 
-(See rule ``expr`` in :numref:`ch-fzn-syntax`)
+(See rule :mzndef:`<expr>` in :numref:`ch-fzn-syntax`)
 
 Examples of literal values:
 
@@ -248,24 +256,23 @@ They are reserved because they are keywords in Zinc and MiniZinc.
 FlatZinc syntax is insensitive to whitespace.
 
 Predicate declarations
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
-(See rule ``pred_decl`` in :numref:`ch-fzn-syntax`)
+(See rule :mzndef:`<predicate-item>` in :numref:`ch-fzn-syntax`)
 
 Predicates used in the model that are not standard FlatZinc must be
 declared at the top of a FlatZinc model, before any other lexical items.
 Predicate declarations take the form
 
-.. code-block:: minizincdef
-
-  predicate <predname>(<type>: <argname>, ...);
-
-where :mzndef:`<predname>` and :mzndef:`<argname>` are identifiers.
+.. literalinclude:: fzn-grammar.mzn
+  :language: minizincdef
+  :start-after: % Predicate items
+  :end-before: %
 
 Annotations are not permitted anywhere in predicate declarations.
 
 It is illegal to supply more than one predicate declaration for a given
-:mzndef:`<predname>`.
+:mzndef:`<identifier>`.
 
 Examples:
 
@@ -288,18 +295,19 @@ Examples:
 
 
 Parameter declarations
-~~~~~~~~~~~~~~~~~~~~~~
+----------------------
 
 (See rule ``param_decl`` in :numref:`ch-fzn-syntax`)
 
 Parameters have fixed values and must be assigned values:
 
-.. code-block:: minizincdef
+.. literalinclude:: fzn-grammar.mzn
+  :language: minizincdef
+  :start-after: % Parameter declarations
+  :end-before: %
 
-  <paramtype>: <paramname> = <literal>;
-
-where :mzndef:`<paramtype>` is a parameter type, :mzndef:`<paramname>` is an identifier,
-and :mzndef:`<literal>` is a literal value.
+where :mzndef:`<par-type>` is a parameter type, :mzndef:`<var-par-identifier>` is an identifier,
+and :mzndef:`<par-expr>` is a literal value (either a basic integer, float or bool literal, or a set or array of such literals).
 
 Annotations are not permitted anywhere in parameter declarations.
 
@@ -312,7 +320,7 @@ Examples:
   bool: beer_is_good = true;
 
 Variable declarations
-~~~~~~~~~~~~~~~~~~~~~
+---------------------
 
 (See rule ``var_decl`` in :numref:`ch-fzn-syntax`)
 
@@ -322,15 +330,13 @@ variable. Arrays of variables always have an assignment, defining them in terms 
 that can contain identifiers of variables or constant literals.
 Variables may be declared with zero or more annotations.
 
-.. code-block:: minizincdef
+.. literalinclude:: fzn-grammar.mzn
+  :language: minizincdef
+  :start-after: % Variable declarations
+  :end-before: %
 
-  % Variable declaration of a non-array variable
-  <vartype>: <varname> [:: <annotation>]* [ = <init> ];
-  % Variable declarayion of an array variable
-  array[1..<literal>] of <vartype>: <varname> [:: <annotation>]* = <arrayliteral>;
-
-where :mzndef:`<vartype>` is a variable type, :mzndef:`<varname>` is an identifier,
-:mzndef:`<annotation>` is an annotation, :mzndef:`<init>` is an identifier or a literal, and :mzndef:`<arrayliteral>` is a literal array
+where :mzndef:`<basic-var-type>` and :mzndef:`<array-var-type>` are variable types, :mzndef:`<var-par-identifier>` is an identifier,
+:mzndef:`<annotations>` is a (possibly empty) set of annotations, :mzndef:`<basic-expr>` is an identifier or a literal, and :mzndef:`<array-literal>` is a literal array
 value.
 
 Examples:
@@ -346,21 +352,19 @@ Examples:
 
 
 Constraints
-~~~~~~~~~~~
+-----------
 
-(See rule ``constraint`` in :numref:`ch-fzn-syntax`)
+(See rule :mzndef:`<constraint-item>` in :numref:`ch-fzn-syntax`)
 
 Constraints take the following form and may include zero or more annotations:
 
 
-.. code-block:: minizincdef
+.. literalinclude:: fzn-grammar.mzn
+  :language: minizincdef
+  :start-after: % Constraint items
+  :end-before: %
 
-  constraint <predname>(<arg>, ...) [:: <annotation>]* ;
-
-where :mzndef:`<predname>` is a predicate name, :mzndef:`<annotation>` is an
-annotation,
-and each argument :mzndef:`<arg>` is either
-a literal value or the name of a parameter or variable, ``v``.
+The arguments expressions (:mzndef:`<expr>`) can be literal values or identifiers.
 
 Examples:
 
@@ -373,32 +377,19 @@ Examples:
       % 2x + 3y = 10
   constraint int_lin_eq([2, 3], [x, y], 10) :: domain;
 
-Solve goal
-~~~~~~~~~~
+Solve item
+----------
 
-(See rule ``solve_goal`` in :numref:`ch-fzn-syntax`)
+(See rule :mzndef:`<solve-item>` in :numref:`ch-fzn-syntax`)
 
-A model finishes with a solve goal, taking one of the following forms:
+A model finishes with a solve item, taking one of the following forms:
 
-.. code-block:: minizincdef
-  
-  solve [:: <annotation>]* satisfy;
+.. literalinclude:: fzn-grammar.mzn
+  :language: minizincdef
+  :start-after: % Solve item
+  :end-before: %
 
-(search for any satisfying assignment) or
-
-.. code-block:: minizincdef
-
-  solve [:: <annotation>]* minimize <objfn> ;
-
-
-(search for an assignment minimizing :mzndef:`<objfn>`) or
-
-.. code-block:: minizincdef
-
-  solve [:: <annotation>]* maximize <objfn> ;
-
-(search for an assignment maximizing :mzndef:`<objfn>`) where :mzndef:`<objfn>` is either
-the name of a variable, ``v``, or a literal value (if the objective function is constant).
+The first alternative searches for any satisfying assignment, the second one searches for an assignment minimizing the given expression, and the third one for an assignment maximizing the expression. The :mzndef:`<basic-expr>` can be either a variable identifier or a literal value (if the objective function is constant).
 
 A solution consists of a complete assignment where all variables in the
 model have been given a fixed value.
@@ -423,7 +414,7 @@ Examples:
       maximize x; % Find a solution maximizing x.
 
 Annotations
-~~~~~~~~~~~
+-----------
 
 Annotations are optional suggestions to the solver concerning how
 individual variables and constraints should be handled (e.g., a
@@ -436,28 +427,22 @@ Annotations are unordered and idempotent: annotations can be reordered
 and duplicates can be removed without changing the meaning of the
 annotations.
 
-An annotation is either
 
-.. code-block:: minizincdef
+An annotation is prefixed by ``::``, and either just an identifier or an expression that looks like a predicate call:
 
-  <annotationname>
+.. literalinclude:: fzn-grammar.mzn
+  :language: minizincdef
+  :start-after: % Annotations
+  :end-before: %
 
-or
-
-.. code-block:: minizincdef
-
-  <annotationname>(<annotationarg>, ...)
-
-where :mzndef:`annotationname` is an identifier and :mzndef:`annotationarg` is any
-expression (which may also be another annotation --- that is,
-annotations may be nested inside other annotations).
+The arguments of the second alternative can be any expression or other annotations (without the leading ``::``).
 
 Search annotations
 ++++++++++++++++++
 
 While an implementation is free to ignore any or all annotations in a
 model, it is recommended that implementations at least recognise the
-following standard annotations for solve goals.
+following standard annotations for solve items.
 
 .. code-block:: minizincdef
 
@@ -476,7 +461,7 @@ A :mzndef:`<searchannotation>` is one of the following:
 
   set_search(<vars>, <varchoiceannotation>, <assignmentannotation>, <strategyannotation>)
 
-where :mzndef:`<vars>` is an array variable name or an array literal specifying
+where :mzndef:`<vars>` is the identifier of an array variable or an array literal specifying
 the variables to be assigned (ints, bools, or sets respectively). Note that these arrays may contain literal values.
 
 :mzndef:`<varchoiceannotation>` specifies how the next variable to be assigned is
@@ -546,7 +531,7 @@ Array output variables are annotated with
 where :math:`x_1\` ``..`` :math:`x_2` ``, ...`` are the index set ranges of the
 original MiniZinc array (which
 may have had multiple dimensions and/or index sets that do not start at
-1).
+1). See :numref:`ch-fzn-output` for details on the output format.
 
 Variable definition annotations
 +++++++++++++++++++++++++++++++
@@ -602,13 +587,15 @@ Here are some constraint annotations supported by some solvers:
 |``priority(k)``            | where ``k`` is an integer constant indicating propagator priority.         |
 +---------------------------+----------------------------------------------------------------------------+
 
+.. _ch-fzn-output:
+
 Output
-------
+======
 
 An implementation can produce three types of output: solutions, statistics, and errors.
 
 Solution output
-~~~~~~~~~~~~~~~
+---------------
 
 An implementation must output values for all and only the variables
 annotated with ``output_var`` or ``output_array`` (output
@@ -630,13 +617,13 @@ Output must take the following form:
 
 .. code-block:: minizincdef
 
-  <varname> = <literal>;
+  <var-par-identifier> = <basic-literal-expr> ;
 
 or, for array variables,
 
 .. code-block:: minizincdef
 
-  <varname> = array<N>d(<a>..<b>, ..., [<y1>, <y2>, ... <yk>]);
+  <var-par-identifier> = array<N>d(<a>..<b>, ..., [<y1>, <y2>, ... <yk>]);
 
 where :mzndef:`<N>` is the number of index sets specified in the
 corresponding :mzndef:`output_array` annotation,
@@ -772,7 +759,7 @@ indicating that a complete search was performed and no solutions were
 found (i.e., the problem is unsatisfiable).
 
 Statistics output
-~~~~~~~~~~~~~~~~~
+-----------------
 
 FlatZinc solvers can output statistics in a standard format so that it can be read by scripts, for example, in order to run experiments and automatically aggregate the results. Statistics should be printed to the standard output stream in the form of FlatZinc comments that follow a specific format. Statistics can be output at any time during the solving, i.e., before the first solution, between solutions, and after the search has finished.
 
@@ -806,20 +793,22 @@ Name                     Type   Explanation
 ======================== ====== ================================================
 
 Error and warning output
-~~~~~~~~~~~~~~~~~~~~~~~~
+------------------------
 
 Errors and warnings must be output to the standard error stream. When an error occurs, the implementation should exit with a non-zero exit code, signaling failure.
 
 
-FlatZinc Predicates
--------------------
+Solver-specific Libraries
+=========================
 
 Constraints in FlatZinc can call standard predicates as well as solver-specific predicates. Standard predicates are the ones that the MiniZinc compiler assumes to be present in all solvers. Without further customisation, the compiler will try to compile the entire model into a set of these standard predicates.
 
-Solvers can use custom predicates by supplying a *solver specific library* of predicate declarations. Examples of such libraries can be found in the binary distribution of MiniZinc, inside the ``share/minizinc/gecode`` and ``share/minizinc/chuffed`` directories.
+Solvers can use custom predicates and *redefine* standard predicates by supplying a *solver specific library* of predicate declarations. Examples of such libraries can be found in the binary distribution of MiniZinc, inside the ``share/minizinc/gecode`` and ``share/minizinc/chuffed`` directories.
+
+The solver-specific library needs to be made available to the MiniZinc compiler by specifying its location in the solver's configuration file, see :numref:`sec-cmdline-conffiles`.
 
 Standard predicates
-~~~~~~~~~~~~~~~~~~~
+-------------------
 
 FlatZinc solvers need to support the predicates listed as ``FlatZinc builtins`` in the library reference documentation, see :numref:`ch-lib-flatzinc`.
 
@@ -855,7 +844,7 @@ Example for a ``redefinitions-2.0.mzn`` that declares native support for the pre
 
 
 Solver-specific predicates
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+--------------------------
 
 Many solvers have built-in support for some of the constraints in the MiniZinc standard library. But without declaring which constraints they support, MiniZinc will assume that they don't support any excpect for the standard FlatZinc builtins mentioned in the section above.
 
@@ -877,11 +866,10 @@ A solver, let's call it *OptiSolve*, that supports this constraint natively can 
 
 When a MiniZinc model that contains the ``all_different`` constraint is now compiled with the *OptiSolve* library, it will contain calls to the newly defined predicate ``optisolve_alldifferent``.
 
-
 .. _fzn-cmdline-options:
 
 Command Line Interface
-----------------------
+======================
 
 In order to work with the ``minizinc`` command line driver, a FlatZinc solver must be an executable (which can include e.g. shell scripts) that can be invoked as follows:
 
@@ -923,8 +911,74 @@ where ``<executable-name>`` is the name of the executable. Solvers may support t
   Use ``i`` as the random seed (for any random number generators the solver
   may be using).
 
+.. _sec-cmdline-conffiles:
+
+Solver Configuration Files
+==========================
+
+In order for a solver to be available to MiniZinc, it has to be described in a *solver configuration file*. This is a simple file, in JSON or ``.dzn`` format, that contains some basic information such as the solver's name, version, where its library of global constraints can be found, and a path to its executable.
+
+A solver configuration file must have file extension ``.msc`` (for MiniZinc Solver Configuration), and can be placed in any of the following locations:
+
+- In the ``minizinc/solvers/`` directory of the MiniZinc installation. If you install MiniZinc from the binary distribution, this directory can be found at ``/usr/share/minizinc/solvers`` on Linux systems, inside the MiniZincIDE application on macOS system, and in the ``Program Files\\MiniZinc IDE (bundled)`` folder on Windows.
+- In the directory ``$HOME/.minizinc/solvers`` on Linux and macOS systems, and the Application Data directory on Windows systems.
+- In any directory listed on the ``MZN_SOLVER_PATH`` environment variable (directories are separated by ``:`` on Linux and macOS, and by ``;`` on Windows systems).
+- In any directory listed in the ``mzn_solver_path`` option of the global or user-specific configuration file (see :numref:`ch-user-config`)
+- Alternatively, you can use the MiniZinc IDE to create solver configuration files, see :numref:`sec-ide-add-solvers` for details.
+
+Solver configuration files must be valid JSON or ``.dzn`` files. As a JSON file, it must be an object with certain fields. As a ``.dzn`` file, it must consist of assignment items.
+
+For example, a simple solver configuration in JSON format could look like this:
+
+.. code-block:: json
+
+  {
+    "name" : "My Solver",
+    "version": "1.0",
+    "id": "org.myorg.my_solver",
+    "executable": "fzn-mysolver"
+  }
+
+
+The same configuration in ``.dzn`` format would look like this:
+
+.. code-block:: minizinc
+
+  name = "My Solver";
+  version = "1.0";
+  id = "org.myorg.my_solver";
+  executable = "fzn-mysolver";
+
+Here is a list of all configuration options recognised by the configuration file parser. Any valid configuration file must at least contain the fields ``name``, ``version``, ``id``, and ``executable``.
+
+- ``name`` (string, required): The name of the solver (displayed, together with the version, when you call ``minizinc --solvers``, and in the MiniZinc IDE).
+- ``version`` (string, required): The version of the solver.
+- ``id`` (string, required): A unique identifier for the solver, "reverse domain name" notation.
+- ``executable`` (string, required): The executable for this solver that can run FlatZinc files. This can be just a file name (in which case the solver has to be on the current PATH), or an absolute path to the executable, or a relative path (which is interpreted relative to the location of the configuration file).
+- ``mznlib`` (string, default ``""``): The solver-specific library of global constraints and redefinitions. This should be the name of a directory (either an absolute path or a relative path, interpreted relative to the location of the configuration file). For solvers whose libraries are installed in the same location as the MiniZinc standard library, this can also take the form ``-G<solverlib>``, e.g., ``-Ggecode`` (this is mostly the case for solvers that ship with the MiniZinc binary distribution).
+- ``tags`` (list of strings, default empty): Each solver can have one or more tags that describe its features in an abstract way. Tags can be used for selecting a solver using the ``--solver`` option. There is no fixed list of tags, however we recommend using the following tags if they match the solver's behaviour:
+
+  - ``"cp"``: for Constraint Programming solvers
+  - ``"mip"``: for Mixed Integer Programming solvers
+  - ``"float"``: for solvers that support float variables
+  - ``"api"``: for solvers that use the internal C++ API
+
+- ``stdFlags`` (list of strings, default empty): Which of the standard solver command line flags are supported by this solver. The standard flags are ``-a``, ``-n``, ``-s``, ``-p``, ``-r``, ``-f``.
+
+- ``extraFlags`` (list of list of strings, default empty): Extra command line flags supported by the solver. Each entry should be a list two, three or four strings. The first string is the name of the option (e.g. ``"--special-algorithm"``). The second string is a description that can be used to generate help output (e.g. ``"which special algorithm to use"``). The third string specifies the type of the argument (as a MiniZinc type). The fourth string is the default value. If no type is specified, ``"bool"`` is assumed.
+- ``supportsMzn`` (bool, default ``false``): Whether the solver can run MiniZinc directly (i.e., it implements its own compilation or interpretation of the model).
+- ``supportsFzn`` (bool, default ``true``): Whether the solver can run FlatZinc. This should be the case for most solvers
+- ``needsSolns2Out`` (bool, default ``true``): Whether the output of the solver needs to be passed through the MiniZinc output processor.
+- ``needsMznExecutable`` (bool, default ``false``): Whether the solver needs to know the location of the MiniZinc executable. If true, it will be passed to the solver using the ``mzn-executable`` option.
+- ``needsStdlibDir`` (bool, default ``false``): Whether the solver needs to know the location of the MiniZinc standard library directory. If true, it will be passed to the solver using the ``stdlib-dir`` option.
+- ``isGUIApplication`` (bool, default ``false``): Whether the solver has its own graphical user interface, which means that MiniZinc will detach from the process and not wait for it to finish or to produce any output.
 
 .. _ch-fzn-syntax:
 
-Syntax
-------
+Grammar
+=======
+
+This is the full grammar for FlatZinc. It is a proper subset of the MiniZinc grammar (see :numref:`spec-grammar`). However, instead of specifying all the cases in the MiniZinc grammar that do *not* apply to FlatZinc, the BNF syntax below contains only the relevant syntactic constructs. It uses the same notation as in :numref:`spec-syntax-notation`.
+
+.. literalinclude:: fzn-grammar.mzn
+  :language: minizincdef

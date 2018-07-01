@@ -8,5 +8,4 @@ Reference Manual
    spec
    lib
    fzn-spec
-   fzn-interfacing
-   api_interfacing
+..   api_interfacing

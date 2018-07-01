@@ -7,5 +7,5 @@ User Manual
 
    command_line
    minizinc_ide
-   cpprofiler
-   jupyter
+..   cpprofiler
+..   jupyter
