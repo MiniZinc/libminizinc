@@ -24,6 +24,9 @@ namespace MiniZinc{ class ParserLocation; }
 #define YYLTYPE_IS_DECLARED 1
 #define YYLTYPE_IS_TRIVIAL 0
 
+#define YYMAXDEPTH 10000
+#define YYINITDEPTH 10000
+
 #include <minizinc/parser.hh>
 #include <minizinc/file_utils.hh>
 #include <minizinc/json_parser.hh>
