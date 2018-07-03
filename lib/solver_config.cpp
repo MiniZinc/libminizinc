@@ -427,6 +427,8 @@ namespace MiniZinc {
   vector<string> SolverConfigs::solvers() const {
     vector<string> s;
     for (auto& sc: _solvers) {
+      if (std::find(sc.tags().begin(), sc.tags().end(), "__internal__") != sc.tags().end())
+        continue;
       std::ostringstream oss;
       oss << sc.name() << " " << sc.version() << " (" << sc.id();
       for (std::string t: sc.tags()) {
@@ -444,8 +446,10 @@ namespace MiniZinc {
     std::ostringstream oss;
     oss << "[\n";
     for (unsigned int i=0; i<_solvers.size(); i++) {
-      oss << "  {\n";
       const SolverConfig& sc = _solvers[i];
+      if (std::find(sc.tags().begin(), sc.tags().end(), "__internal__") != sc.tags().end())
+        continue;
+      oss << "  {\n";
       oss << "    \"extraInfo\": {\n";
       oss << "      \"configFile\": \"" << Printer::escapeStringLit(sc.configFile()) << "\"";
       if (sc.defaultFlags().size()) {

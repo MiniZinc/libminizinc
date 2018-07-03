@@ -30,7 +30,7 @@ namespace MiniZinc {
     sc.mznlibVersion(1);
     sc.supportsMzn(false);
     sc.description("Internal Gecode presolver plugin");
-    sc.tags({"cp","float","api","set","gecode_presolver"});
+    sc.tags({"cp","float","api","set","gecode_presolver","__internal__"});
     sc.stdFlags({"-a","-n"});
     SolverConfigs::registerBuiltinSolver(sc);
   }

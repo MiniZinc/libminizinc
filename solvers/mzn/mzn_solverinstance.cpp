@@ -34,6 +34,7 @@ namespace MiniZinc {
     sc.mznlibVersion(1);
     sc.description("MiniZinc generic MiniZinc solver plugin");
     sc.requiredFlags({"-m"});
+    sc.tags({"__internal__"});
     sc.supportsFzn(false);
     sc.supportsMzn(true);
     sc.needsSolns2Out(false);
