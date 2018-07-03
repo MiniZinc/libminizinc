@@ -201,7 +201,7 @@ void MznSolver::printHelp(const std::string& selectedSolver)
     << "  --help, -h\n    Print this help message." << std::endl
     << "  --version\n    Print version information." << std::endl
     << "  --solvers\n    Print list of available solvers." << std::endl
-    << "  --solver <solver id>\n    Select solver to use." << std::endl
+    << "  --solver <solver id>, --solver <solver config file>.msc\n    Select solver to use." << std::endl
     << "  --help <solver id>\n    Print help for a particular solver." << std::endl
     << "  -v, -l, --verbose\n    Print progress/log statements. Note that some solvers may log to stdout." << std::endl
     << "  -s, --statistics\n    Print statistics." << std::endl

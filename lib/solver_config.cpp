@@ -534,8 +534,16 @@ namespace MiniZinc {
     }
   }
   
-  const SolverConfig& SolverConfigs::config(const std::string& _s) const {
-    std::string s = _s;
+  const SolverConfig& SolverConfigs::config(const std::string& _s) {
+    
+    std::string s;
+    if (_s.size() > 4 && _s.substr(_s.size()-4)==".msc") {
+      SolverConfig sc = SolverConfig::load(_s);
+      addConfig(sc);
+      s = sc.id()+"@"+sc.version();
+    } else {
+      s = _s;
+    }
     std::remove(s.begin(),s.end(),' ');
     std::transform(s.begin(), s.end(), s.begin(), ::tolower);
     std::vector<std::string> tags;
