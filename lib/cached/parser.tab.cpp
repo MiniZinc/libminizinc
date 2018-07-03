@@ -75,6 +75,9 @@ namespace MiniZinc{ class ParserLocation; }
 #define YYLTYPE_IS_DECLARED 1
 #define YYLTYPE_IS_TRIVIAL 0
 
+#define YYMAXDEPTH 10000
+#define YYINITDEPTH 10000
+
 #include <minizinc/parser.hh>
 #include <minizinc/file_utils.hh>
 #include <minizinc/json_parser.hh>
@@ -298,22 +301,22 @@ namespace MiniZinc {
              bool parseDocComments,
              bool verbose,
              ostream& err) {
-
+    
     vector<string> includePaths;
     for (unsigned int i=0; i<ip.size(); i++)
       includePaths.push_back(ip[i]);
-
+    
     vector<ParseWorkItem> files;
     map<string,Model*> seenModels;
-
+    
     if (filenames.size() > 0) {
       GCLock lock;
       string fileDirname; string fileBasename;
       filepath(filenames[0], fileDirname, fileBasename);
       model->setFilename(fileBasename);
-
+      
       files.push_back(ParseWorkItem(model,fileDirname,fileBasename));
-
+      
       for (unsigned int i=1; i<filenames.size(); i++) {
         GCLock lock;
         string dirName, baseName;
@@ -334,7 +337,7 @@ namespace MiniZinc {
         }
       }
     }
-
+    
     if (!ignoreStdlib) {
       GCLock lock;
       Model* stdlib = new Model;
@@ -347,7 +350,7 @@ namespace MiniZinc {
       stdlibinc->m(stdlib,true);
       model->addItem(stdlibinc);
     }
-
+    
     while (!files.empty()) {
       GCLock lock;
       ParseWorkItem& np = files.back();
@@ -396,7 +399,7 @@ namespace MiniZinc {
       if (verbose)
         std::cerr << "processing file '" << fullname << "'" << endl;
       std::string s = get_file_contents(file);
-
+      
       if (m->filepath().size() == 0)
         m->setFilepath(fullname);
       bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
@@ -412,7 +415,7 @@ namespace MiniZinc {
         goto error;
       }
     }
-
+    
     for (unsigned int i=0; i<datafiles.size(); i++) {
       GCLock lock;
       string f = datafiles[i];
@@ -434,7 +437,7 @@ namespace MiniZinc {
             std::cerr << "processing data file '" << f << "'" << endl;
           s = get_file_contents(file);
         }
-
+        
         ParserState pp(f, s, err, files, seenModels, model, true, false, parseDocComments);
         yylex_init(&pp.yyscanner);
         yyset_extra(&pp, pp.yyscanner);
@@ -446,13 +449,13 @@ namespace MiniZinc {
         }
       }
     }
-
+    
     return;
   error:
     delete model;
     model = NULL;
   }
-
+  
   Model* parse(Env& env,
                const vector<string>& filenames,
                const vector<string>& datafiles,
@@ -485,7 +488,7 @@ namespace MiniZinc {
                    bool parseDocComments,
                    bool verbose,
                    ostream& err) {
-
+    
     vector<string> filenames;
     parse(env, model, filenames, datafiles, includePaths,
           ignoreStdlib, parseDocComments, verbose, err);
@@ -516,8 +519,8 @@ namespace MiniZinc {
 
 /* In a future release of Bison, this section will be replaced
    by #include "parser.tab.hh".  */
-#ifndef YY_YY_MNT_C_KLEO_REPOSITORIES_LIBMZN_ELFBUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
-# define YY_YY_MNT_C_KLEO_REPOSITORIES_LIBMZN_ELFBUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
+#ifndef YY_YY_C_CYGWIN_HOME_TACK_LIBMZN_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
+# define YY_YY_C_CYGWIN_HOME_TACK_LIBMZN_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -679,7 +682,7 @@ union YYSTYPE
          std::vector<std::string>* string_v;
          std::vector<std::pair<MiniZinc::Expression*,MiniZinc::Expression*> >* expression_p;
          MiniZinc::Generators* generators;
-
+       
 
 
 };
@@ -707,7 +710,7 @@ struct YYLTYPE
 
 int yyparse (void *parm);
 
-#endif /* !YY_YY_MNT_C_KLEO_REPOSITORIES_LIBMZN_ELFBUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED  */
+#endif /* !YY_YY_C_CYGWIN_HOME_TACK_LIBMZN_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED  */
 
 /* Copy the second part of user declarations.  */
 
@@ -1023,36 +1026,36 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint16 yyrline[] =
 {
-       0,   620,   620,   622,   624,   627,   636,   645,   654,   663,
-     665,   668,   676,   685,   685,   687,   703,   707,   709,   711,
-     712,   714,   716,   718,   720,   722,   725,   725,   725,   726,
-     726,   726,   726,   726,   727,   730,   753,   759,   766,   774,
-     784,   798,   799,   803,   807,   813,   815,   822,   827,   832,
-     839,   843,   851,   861,   868,   877,   889,   897,   898,   903,
-     904,   906,   911,   912,   916,   920,   925,   925,   928,   930,
-     934,   939,   943,   945,   949,   950,   956,   965,   968,   976,
-     984,   993,  1002,  1011,  1024,  1025,  1029,  1031,  1033,  1035,
-    1037,  1039,  1041,  1046,  1052,  1055,  1057,  1063,  1064,  1066,
-    1068,  1070,  1072,  1081,  1090,  1092,  1094,  1096,  1098,  1100,
-    1102,  1104,  1106,  1112,  1114,  1127,  1128,  1130,  1132,  1134,
-    1136,  1138,  1140,  1142,  1144,  1146,  1148,  1150,  1152,  1154,
-    1156,  1158,  1160,  1162,  1164,  1166,  1168,  1177,  1186,  1195,
-    1204,  1206,  1208,  1210,  1212,  1214,  1216,  1218,  1220,  1226,
-    1228,  1235,  1247,  1249,  1253,  1255,  1257,  1259,  1262,  1264,
-    1267,  1269,  1271,  1273,  1275,  1277,  1278,  1281,  1282,  1285,
-    1286,  1289,  1290,  1293,  1294,  1297,  1298,  1301,  1302,  1303,
-    1308,  1310,  1316,  1321,  1329,  1336,  1345,  1347,  1352,  1358,
-    1361,  1364,  1366,  1370,  1372,  1374,  1377,  1380,  1382,  1386,
-    1388,  1392,  1394,  1405,  1416,  1456,  1459,  1464,  1471,  1476,
-    1480,  1486,  1493,  1509,  1510,  1514,  1516,  1518,  1520,  1522,
-    1524,  1526,  1528,  1530,  1532,  1534,  1536,  1538,  1540,  1542,
-    1544,  1546,  1548,  1550,  1552,  1554,  1556,  1558,  1560,  1562,
-    1564,  1566,  1570,  1578,  1610,  1612,  1613,  1633,  1689,  1692,
-    1695,  1698,  1700,  1704,  1711,  1720,  1722,  1730,  1732,  1741,
-    1741,  1744,  1750,  1761,  1762,  1765,  1767,  1771,  1775,  1779,
-    1781,  1783,  1785,  1787,  1789,  1791,  1793,  1795,  1797,  1799,
-    1801,  1803,  1805,  1807,  1809,  1811,  1813,  1815,  1817,  1819,
-    1821,  1823,  1825,  1827,  1829,  1831,  1833,  1835
+       0,   623,   623,   625,   627,   630,   639,   648,   657,   666,
+     668,   671,   679,   688,   688,   690,   706,   710,   712,   714,
+     715,   717,   719,   721,   723,   725,   728,   728,   728,   729,
+     729,   729,   729,   729,   730,   733,   756,   762,   769,   777,
+     787,   801,   802,   806,   810,   816,   818,   825,   830,   835,
+     842,   846,   854,   864,   871,   880,   892,   900,   901,   906,
+     907,   909,   914,   915,   919,   923,   928,   928,   931,   933,
+     937,   942,   946,   948,   952,   953,   959,   968,   971,   979,
+     987,   996,  1005,  1014,  1027,  1028,  1032,  1034,  1036,  1038,
+    1040,  1042,  1044,  1049,  1055,  1058,  1060,  1066,  1067,  1069,
+    1071,  1073,  1075,  1084,  1093,  1095,  1097,  1099,  1101,  1103,
+    1105,  1107,  1109,  1115,  1117,  1130,  1131,  1133,  1135,  1137,
+    1139,  1141,  1143,  1145,  1147,  1149,  1151,  1153,  1155,  1157,
+    1159,  1161,  1163,  1165,  1167,  1169,  1171,  1180,  1189,  1198,
+    1207,  1209,  1211,  1213,  1215,  1217,  1219,  1221,  1223,  1229,
+    1231,  1238,  1250,  1252,  1256,  1258,  1260,  1262,  1265,  1267,
+    1270,  1272,  1274,  1276,  1278,  1280,  1281,  1284,  1285,  1288,
+    1289,  1292,  1293,  1296,  1297,  1300,  1301,  1304,  1305,  1306,
+    1311,  1313,  1319,  1324,  1332,  1339,  1348,  1350,  1355,  1361,
+    1364,  1367,  1369,  1373,  1375,  1377,  1380,  1383,  1385,  1389,
+    1391,  1395,  1397,  1408,  1419,  1459,  1462,  1467,  1474,  1479,
+    1483,  1489,  1496,  1512,  1513,  1517,  1519,  1521,  1523,  1525,
+    1527,  1529,  1531,  1533,  1535,  1537,  1539,  1541,  1543,  1545,
+    1547,  1549,  1551,  1553,  1555,  1557,  1559,  1561,  1563,  1565,
+    1567,  1569,  1573,  1581,  1613,  1615,  1616,  1636,  1692,  1695,
+    1698,  1701,  1703,  1707,  1714,  1723,  1725,  1733,  1735,  1744,
+    1744,  1747,  1753,  1764,  1765,  1768,  1770,  1774,  1778,  1782,
+    1784,  1786,  1788,  1790,  1792,  1794,  1796,  1798,  1800,  1802,
+    1804,  1806,  1808,  1810,  1812,  1814,  1816,  1818,  1820,  1822,
+    1824,  1826,  1828,  1830,  1832,  1834,  1836,  1838
 };
 #endif
 
@@ -4815,7 +4818,7 @@ yyreduce:
 
   case 246:
 
-    {
+    { 
         if ((yyvsp[-1].expression_p)!=NULL) {
           bool hadWhere = false;
           std::vector<Expression*> args;
@@ -4839,7 +4842,7 @@ yyreduce:
 
   case 247:
 
-    {
+    { 
         vector<Generator> gens;
         vector<Id*> ids;
         if ((yyvsp[-4].expression_p)) {
