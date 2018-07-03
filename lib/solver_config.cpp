@@ -369,10 +369,10 @@ namespace MiniZinc {
             std::cerr << errstream.str();
             throw ConfigException("internal error");
           }
-        } catch (ConfigException&) {
-          throw;
+        } catch (ConfigException& e) {
+          log << "Warning: invalid configuration file: " << e.msg() << "\n";
         } catch (Exception& e) {
-          throw ConfigException(e.what());
+          log << "Warning: invalid configuration file: " << e.what() << "\n";
         }
       }
     }
