@@ -74,6 +74,7 @@ namespace {
 
 #include <minizinc/solvers/fzn_solverfactory.hh>
 #include <minizinc/solvers/mzn_solverfactory.hh>
+#include <minizinc/solvers/mzn_solverinstance.hh>
 namespace {
   FZN_SolverFactoryInitialiser _fzn_init;
   MZN_SolverFactoryInitialiser _mzn_init;
@@ -345,6 +346,12 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
           if (!sc.executable().empty()) {
             if (sc.supportsMzn()) {
               isMznMzn = true;
+              std::vector<MZNSolverFlag> acceptedFlags;
+              for (auto& sf : sc.stdFlags())
+                acceptedFlags.push_back(MZNSolverFlag::std(sf));
+              for (auto& ef : sc.extraFlags())
+                acceptedFlags.push_back(MZNSolverFlag::extra(ef.flag,ef.flag_type));
+              static_cast<MZN_SolverFactory*>(sf)->setAcceptedFlags(si_opt, acceptedFlags);
               std::vector<std::string> additionalArgs_s;
               additionalArgs_s.push_back("-m");
               additionalArgs_s.push_back(sc.executable().c_str());
@@ -386,7 +393,6 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                   return OPTION_ERROR;
                 }
               }
-              std::cerr << "created factory\n";
             } else {
               std::vector<std::string> additionalArgs(2);
               additionalArgs[0] = "--fzn-cmd";

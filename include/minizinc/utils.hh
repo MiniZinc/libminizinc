@@ -119,9 +119,11 @@ namespace MiniZinc {
           (0!=arg.compare( 0, keyword.size(), keyword )) )           // truncated cmp
           continue;
         /// Process it
+        bool combinedArg = false; // whether arg and value are combined in one string (like -Ggecode)
         if ( keyword.size() < arg.size() ) {
           if ( 0==pResult )
             continue;
+          combinedArg = true;
           arg.erase( 0, keyword.size() );
         } else {
           if ( 0==pResult )
@@ -139,7 +141,8 @@ namespace MiniZinc {
         std::istringstream iss( arg );
         Value tmp;
         if ( !( iss >> tmp ) ) {
-          --i;
+          if (!combinedArg)
+            --i;
           if ( fValueOptional ) {
             return true;
           }

@@ -356,6 +356,7 @@ namespace MiniZinc {
         models.pop_back();
         if (!iter.enterModel(cm))
           continue;
+        std::vector<Model*> includedModels;
         for (unsigned int i=0; i<cm->size(); i++) {
           if ((*cm)[i]->removed())
             continue;
@@ -364,7 +365,7 @@ namespace MiniZinc {
           switch ((*cm)[i]->iid()) {
           case Item::II_INC:
             if (seen.find((*cm)[i]->cast<IncludeI>()->m()) == seen.end()) {
-              models.push_back((*cm)[i]->cast<IncludeI>()->m());
+              includedModels.push_back((*cm)[i]->cast<IncludeI>()->m());
               seen.insert((*cm)[i]->cast<IncludeI>()->m());
             }
             iter.vIncludeI((*cm)[i]->cast<IncludeI>());
@@ -388,6 +389,9 @@ namespace MiniZinc {
             iter.vFunctionI((*cm)[i]->cast<FunctionI>());
             break;      
           }
+        }
+        for (unsigned int i=static_cast<unsigned int>(includedModels.size()); i--;) {
+          models.push_back(includedModels[i]);
         }
       }
     }

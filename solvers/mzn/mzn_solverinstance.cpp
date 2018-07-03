@@ -27,7 +27,19 @@
 using namespace std;
 
 namespace MiniZinc {
-  
+
+
+  MZNSolverFlag MZNSolverFlag::std(const std::string& n0) {
+    const std::string argFlags("-I -n -p -r");
+    if (argFlags.find(n0) != std::string::npos)
+      return MZNSolverFlag(FT_ARG,n0);
+    return MZNSolverFlag(FT_NOARG,n0);
+  }
+
+  MZNSolverFlag MZNSolverFlag::extra(const std::string& n0, const std::string& t0) {
+    return MZNSolverFlag(t0=="bool" ? FT_NOARG : FT_ARG, n0);
+  }
+
   MZN_SolverFactory::MZN_SolverFactory(void) {
     SolverConfig sc("org.minizinc.mzn-mzn",MZN_VERSION_MAJOR "." MZN_VERSION_MINOR "." MZN_VERSION_PATCH);
     sc.name("Generic MiniZinc driver");
@@ -75,6 +87,11 @@ namespace MiniZinc {
     return new MZNSolverInstance(env, log, opt);
   }
 
+  void MZN_SolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt, const std::vector<MZNSolverFlag>& flags) {
+    MZNSolverOptions& _opt = static_cast<MZNSolverOptions&>(*opt);
+    _opt.mzn_solver_flags = flags;
+  }
+  
   bool MZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv)
   {
     MZNSolverOptions& _opt = static_cast<MZNSolverOptions&>(*opt);
@@ -85,10 +102,7 @@ namespace MiniZinc {
     if ( cop.getOption( "-m --minizinc-cmd", &buffer) ) {
       _opt.mzn_solver = buffer;
     } else if ( cop.getOption( "--mzn-flags --minizinc-flags", &buffer) ) {
-      string old = _opt.mzn_flags;
-      old += ' ';
-      old += buffer;
-      _opt.mzn_flags = old;
+      _opt.mzn_flags.push_back(buffer);
     } else if ( cop.getOption( "--mzn-time-limit", &nn) ) {
       _opt.mzn_time_limit_ms = nn;
     } else if ( cop.getOption( "--mzn-sigint") ) {
@@ -100,6 +114,16 @@ namespace MiniZinc {
       old += "\" ";
       _opt.mzn_flag = old;
     } else {
+      for (auto& mznf : _opt.mzn_solver_flags) {
+        if (mznf.t==MZNSolverFlag::FT_ARG && cop.getOption(mznf.n.c_str(), &buffer)) {
+          _opt.mzn_flags.push_back(mznf.n);
+          _opt.mzn_flags.push_back(buffer);
+          return true;
+        } else if (mznf.t==MZNSolverFlag::FT_NOARG && cop.getOption(mznf.n.c_str())) {
+          _opt.mzn_flags.push_back(mznf.n);
+          return true;
+        }
+      }
       std::string input_file(argv[i]);
       if (input_file.length()<=4) {
         // std::cerr << "Error: cannot handle file " << input_file << "." << std::endl;
@@ -111,10 +135,7 @@ namespace MiniZinc {
       }
       std::string extension = input_file.substr(last_dot,string::npos);
       if (extension == ".mzn" || extension ==  ".mzc" || extension == ".fzn" || extension == ".dzn" || extension == ".json") {
-        string old = _opt.mzn_flags;
-        old += ' ';
-        old += input_file;
-        _opt.mzn_flags = old;
+        _opt.mzn_flags.push_back(input_file);
       } else {
         return false;
       }
@@ -146,9 +167,8 @@ namespace MiniZinc {
     /// Passing options to solver
     vector<string> cmd_line;
     cmd_line.push_back( opt.mzn_solver );
-    string sFlags = opt.mzn_flags;
-    if ( sFlags.size() )
-      cmd_line.push_back( sFlags );
+    for ( auto& f : opt.mzn_flags )
+      cmd_line.push_back( f );
     string sFlagQuoted = opt.mzn_flag;
     if ( sFlagQuoted.size() )
       cmd_line.push_back( sFlagQuoted );
