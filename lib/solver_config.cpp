@@ -554,18 +554,29 @@ namespace MiniZinc {
     }
     std::set<std::string> defaultSolvers;
     std::set<int> selectedSolvers;
-    if (tags.empty())
-      throw ConfigException("no solver selected");
-    TagMap::const_iterator tag_it = _tags.find(getTag(tags[0]));
-    if (tag_it == _tags.end()) {
-      throw ConfigException("no solver with tag "+tags[0]+" found");
+    
+    std::string firstTag;
+    if (tags.empty()) {
+      DefaultMap::const_iterator def_it = _tagDefault.find("");
+      if (def_it != _tagDefault.end()) {
+        firstTag = def_it->second;
+      } else {
+        throw ConfigException("no solver selected");
+      }
+    } else {
+      firstTag = tags[0];
     }
-    std::string tv = getVersion(tags[0]);
+    TagMap::const_iterator tag_it = _tags.find(getTag(firstTag));
+
+    if (tag_it == _tags.end()) {
+      throw ConfigException("no solver with tag "+firstTag+" found");
+    }
+    std::string tv = getVersion(firstTag);
     for (int sidx: tag_it->second) {
       if (tv.empty() || tv==_solvers[sidx].version())
         selectedSolvers.insert(sidx);
     }
-    DefaultMap::const_iterator def_it = _tagDefault.find(getTag(tags[0]));
+    DefaultMap::const_iterator def_it = _tagDefault.find(getTag(firstTag));
     if (def_it != _tagDefault.end()) {
       defaultSolvers.insert(def_it->second);
     }

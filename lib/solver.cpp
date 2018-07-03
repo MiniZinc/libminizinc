@@ -303,7 +303,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         log << "Argument required for --solver" << endl;
         return OPTION_ERROR;
       }
-      if (solver.size()>0) {
+      if (solver.size()>0 && solver != argv[i]) {
         log << "Only one --solver option allowed" << endl;
         return OPTION_ERROR;
       }
@@ -315,6 +315,9 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     } else if (argv[i]=="-s" || argv[i]=="--statistics") {
       flag_statistics = true;                  // is this Flattener's option?
     } else {
+      if ((argv[i]=="--fzn-cmd" || argv[i]=="--flatzinz-cmd") && solver.empty()) {
+        solver = "org.minizinc.mzn-fzn";
+      }
       argv[j++] = argv[i];
     }
   }
@@ -325,131 +328,121 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
 
   bool isMznMzn = false;
   
-  if (solver.empty()) {
+  try {
+    const SolverConfig& sc = solver_configs.config(solver);
+    string solverId = sc.executable().empty() ? sc.id() : (sc.supportsMzn() ?  string("org.minizinc.mzn-mzn") : string("org.minizinc.mzn-fzn"));
     for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
          it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
-      if ((*it)->getId()=="org.minizinc.mzn-fzn") {
+      if ((*it)->getId()==solverId) { /// TODO: also check version (currently assumes all ids are unique)
         sf = *it;
         si_opt = sf->createOptions();
-      }
-    }
-  } else {
+        if (!sc.executable().empty()) {
+          if (sc.supportsMzn()) {
+            isMznMzn = true;
+            std::vector<MZNSolverFlag> acceptedFlags;
+            for (auto& sf : sc.stdFlags())
+              acceptedFlags.push_back(MZNSolverFlag::std(sf));
+            for (auto& ef : sc.extraFlags())
+              acceptedFlags.push_back(MZNSolverFlag::extra(ef.flag,ef.flag_type));
+            static_cast<MZN_SolverFactory*>(sf)->setAcceptedFlags(si_opt, acceptedFlags);
+            std::vector<std::string> additionalArgs_s;
+            additionalArgs_s.push_back("-m");
+            additionalArgs_s.push_back(sc.executable().c_str());
 
-    try {
-      const SolverConfig& sc = solver_configs.config(solver);
-      string solverId = sc.executable().empty() ? sc.id() : (sc.supportsMzn() ?  string("org.minizinc.mzn-mzn") : string("org.minizinc.mzn-fzn"));
-      for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
-           it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
-        if ((*it)->getId()==solverId) { /// TODO: also check version (currently assumes all ids are unique)
-          sf = *it;
-          si_opt = sf->createOptions();
-          if (!sc.executable().empty()) {
-            if (sc.supportsMzn()) {
-              isMznMzn = true;
-              std::vector<MZNSolverFlag> acceptedFlags;
-              for (auto& sf : sc.stdFlags())
-                acceptedFlags.push_back(MZNSolverFlag::std(sf));
-              for (auto& ef : sc.extraFlags())
-                acceptedFlags.push_back(MZNSolverFlag::extra(ef.flag,ef.flag_type));
-              static_cast<MZN_SolverFactory*>(sf)->setAcceptedFlags(si_opt, acceptedFlags);
-              std::vector<std::string> additionalArgs_s;
-              additionalArgs_s.push_back("-m");
-              additionalArgs_s.push_back(sc.executable().c_str());
-
-              std::string extra_m_flags;
-              {
-                std::vector<std::string> m_flags;
-
-                if (sc.needsStdlibDir()) {
-                  m_flags.push_back("--stdlib-dir");
-                  m_flags.push_back("\"" + FileUtils::share_directory() + "\"");
-                }
-                if (sc.needsMznExecutable()) {
-                  m_flags.push_back("--minizinc-exe");
-                  m_flags.push_back("\"" + FileUtils::progpath() + "/" + executable_name + "\"");
-                }
-                if (!sc.mznlib().empty()) {
-                  m_flags.push_back(sc.mznlib());
-                }
-
-                std::stringstream m_flags_ss;
-                bool tail = false;
-                for(const string& fs : m_flags) {
-                  if(tail) m_flags_ss << " ";
-                  m_flags_ss << fs;
-                  tail = true;
-                }
-                extra_m_flags = m_flags_ss.str();
+            std::string extra_m_flags;
+            {
+              std::vector<std::string> m_flags;
+              
+              if (sc.needsStdlibDir()) {
+                m_flags.push_back("--stdlib-dir");
+                m_flags.push_back("\"" + FileUtils::share_directory() + "\"");
               }
+              if (sc.needsMznExecutable()) {
+                m_flags.push_back("--minizinc-exe");
+                m_flags.push_back("\"" + FileUtils::progpath() + "/" + executable_name + "\"");
+              }
+              if (!sc.mznlib().empty()) {
+                m_flags.push_back(sc.mznlib());
+              }
+              
+              std::stringstream m_flags_ss;
+              bool tail = false;
+              for(const string& fs : m_flags) {
+                if(tail) m_flags_ss << " ";
+                m_flags_ss << fs;
+                tail = true;
+              }
+              extra_m_flags = m_flags_ss.str();
+            }
+            
+            if(!extra_m_flags.empty()) {
+              additionalArgs_s.push_back("--mzn-flags");
+              additionalArgs_s.push_back(extra_m_flags);
+            }
 
-              if(!extra_m_flags.empty()) {
-                additionalArgs_s.push_back("--mzn-flags");
-                additionalArgs_s.push_back(extra_m_flags);
-              }
-              for (i=0; i<additionalArgs_s.size(); ++i) {
-                bool success = sf->processOption(si_opt, i, additionalArgs_s);
-                if (!success) {
-                  log << "Solver backend " << solverId << " does not recognise option " << additionalArgs_s[i]  << "." << endl;
-                  return OPTION_ERROR;
-                }
-              }
-            } else {
-              std::vector<std::string> additionalArgs(2);
-              additionalArgs[0] = "--fzn-cmd";
-              std::string executable = sc.executable();
-              additionalArgs[1] = executable;
-              int i=0;
-              bool success = sf->processOption(si_opt, i, additionalArgs);
+            for (i=0; i<additionalArgs_s.size(); ++i) {
+              bool success = sf->processOption(si_opt, i, additionalArgs_s);
               if (!success) {
-                log << "Solver backend " << solverId << " does not recognise option -f." << endl;
+                log << "Solver backend " << solverId << " does not recognise option " << additionalArgs_s[i]  << "." << endl;
                 return OPTION_ERROR;
               }
             }
-          }
-          if (!sc.mznlib().empty()) {
-            if (sc.mznlib().substr(0,2)=="-G") {
-              std::vector<std::string> additionalArgs({sc.mznlib()});
-              int i=0;
-              if (!flt.processOption(i, additionalArgs)) {
-                log << "Flattener does not recognise option " << sc.mznlib() << endl;
-                return OPTION_ERROR;
-              }
-            } else {
-              std::vector<std::string>  additionalArgs({"-I",sc.mznlib()});
-              int i=0;
-              if (!flt.processOption(i, additionalArgs)) {
-                log << "Flattener does not recognise option -I." << endl;
-                return OPTION_ERROR;
-              }
+          } else {
+            std::vector<std::string> additionalArgs(2);
+            additionalArgs[0] = "--fzn-cmd";
+            std::string executable = sc.executable();
+            additionalArgs[1] = executable;
+            int i=0;
+            bool success = sf->processOption(si_opt, i, additionalArgs);
+            if (!success) {
+              log << "Solver backend " << solverId << " does not recognise option -f." << endl;
+              return OPTION_ERROR;
             }
           }
-          if (!sc.defaultFlags().empty()) {
-            std::vector<std::string> addedArgs;
-            addedArgs.push_back(argv[0]); // excutable name
-            for (auto& df : sc.defaultFlags()) {
-              addedArgs.push_back(df);
-            }
-            for (int i=1; i<argv.size(); i++) {
-              addedArgs.push_back(argv[i]);
-            }
-            argv = addedArgs;
-            argc = addedArgs.size();
-          }
-          break;
         }
+        if (!sc.mznlib().empty()) {
+          if (sc.mznlib().substr(0,2)=="-G") {
+            std::vector<std::string> additionalArgs({sc.mznlib()});
+            int i=0;
+            if (!flt.processOption(i, additionalArgs)) {
+              log << "Flattener does not recognise option " << sc.mznlib() << endl;
+              return OPTION_ERROR;
+            }
+          } else {
+            std::vector<std::string>  additionalArgs({"-I",sc.mznlib()});
+            int i=0;
+            if (!flt.processOption(i, additionalArgs)) {
+              log << "Flattener does not recognise option -I." << endl;
+              return OPTION_ERROR;
+            }
+          }
+        }
+        if (!sc.defaultFlags().empty()) {
+          std::vector<std::string> addedArgs;
+          addedArgs.push_back(argv[0]); // excutable name
+          for (auto& df : sc.defaultFlags()) {
+            addedArgs.push_back(df);
+          }
+          for (int i=1; i<argv.size(); i++) {
+            addedArgs.push_back(argv[i]);
+          }
+          argv = addedArgs;
+          argc = addedArgs.size();
+        }
+        break;
       }
-      
-    } catch (ConfigException& e) {
-      log << "Config exception: " << e.msg() << endl;
-      return OPTION_ERROR;
     }
     
-    if (sf==NULL) {
-      log << "Solver " << solver << " not found." << endl;
-      return OPTION_ERROR;
-    }
+  } catch (ConfigException& e) {
+    log << "Config exception: " << e.msg() << endl;
+    return OPTION_ERROR;
   }
-
+  
+  if (sf==NULL) {
+    log << "Solver " << solver << " not found." << endl;
+    return OPTION_ERROR;
+  }
+  
   for (i=1; i<argc; ++i) {
     if ( !ifMzn2Fzn() ? s2out.processOption( i, argv ) : false ) {
     } else if (!isMznMzn && flt.processOption(i, argv)) {
@@ -514,7 +507,7 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, con
       return SolverInstance::NONE;
     case OPTION_ERROR:
       printUsage();
-      os << "More info with \"" << (ifMzn2Fzn() ? "mzn2fzn" : "minizinc") << " --help\"\n";
+      os << "More info with \"" << exeName << " --help\"\n";
       return SolverInstance::ERROR;
     case OPTION_OK:
       break;
