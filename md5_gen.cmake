@@ -13,7 +13,7 @@ endmacro(MD5)
 
 file(COPY "${PROJECT_BINARY_DIR}/lexer.yy.cpp" DESTINATION "${PROJECT_SOURCE_DIR}/lib/cached/")
 file(COPY "${PROJECT_BINARY_DIR}/parser.tab.cpp" DESTINATION "${PROJECT_SOURCE_DIR}/lib/cached/")
-file(COPY "${PROJECT_BINARY_DIR}/minizinc/parser.tab.hh" DESTINATION "${PROJECT_SOURCE_DIR}/lib/cached/minizinc/")
+file(COPY "${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh" DESTINATION "${PROJECT_SOURCE_DIR}/lib/cached/minizinc/")
 
 MD5("${PROJECT_SOURCE_DIR}/lib/lexer.lxx" lexer_lxx_md5)
 MD5("${PROJECT_SOURCE_DIR}/lib/parser.yxx" parser_yxx_md5)
