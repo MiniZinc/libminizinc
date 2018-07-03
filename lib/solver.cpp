@@ -73,11 +73,23 @@ namespace {
 #endif
 
 #include <minizinc/solvers/fzn_solverfactory.hh>
+#include <minizinc/solvers/fzn_solverinstance.hh>
 #include <minizinc/solvers/mzn_solverfactory.hh>
 #include <minizinc/solvers/mzn_solverinstance.hh>
 namespace {
   FZN_SolverFactoryInitialiser _fzn_init;
   MZN_SolverFactoryInitialiser _mzn_init;
+}
+
+MZNFZNSolverFlag MZNFZNSolverFlag::std(const std::string& n0) {
+  const std::string argFlags("-I -n -p -r");
+  if (argFlags.find(n0) != std::string::npos)
+    return MZNFZNSolverFlag(FT_ARG,n0);
+  return MZNFZNSolverFlag(FT_NOARG,n0);
+}
+
+MZNFZNSolverFlag MZNFZNSolverFlag::extra(const std::string& n0, const std::string& t0) {
+  return MZNFZNSolverFlag(t0=="bool" ? FT_NOARG : FT_ARG, n0);
 }
 
 // ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -152,7 +164,7 @@ void MznSolver::addSolverInterface(SolverFactory* sf)
   if (s2out.getEnv()==NULL)
     s2out.initFromEnv( flt.getEnv() );
   si->setSolns2Out( &s2out );
-  if (get_flag_verbose())
+  if (flag_compiler_verbose)
     log
     //     << "  ---------------------------------------------------------------------------\n"
     << "      % SOLVING PHASE\n"
@@ -204,7 +216,9 @@ void MznSolver::printHelp(const std::string& selectedSolver)
     << "  --solver <solver id>, --solver <solver config file>.msc\n    Select solver to use." << std::endl
     << "  --help <solver id>\n    Print help for a particular solver." << std::endl
     << "  -v, -l, --verbose\n    Print progress/log statements. Note that some solvers may log to stdout." << std::endl
+    << "  --verbose-compilation\n    Print progress/log statements for compilation." << std::endl
     << "  -s, --statistics\n    Print statistics." << std::endl
+    << "  --compiler-statistics\n    Print statistics for compilation." << std::endl
     << "  -c, --compile\n    Compile only (do not run solver)." << std::endl
     << "  --config-dirs\n    Output configuration directories." << std::endl;
 
@@ -312,8 +326,14 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       is_mzn2fzn = true;
     } else if (argv[i]=="-v" || argv[i]=="--verbose" || argv[i]=="-l") {
       flag_verbose = true;
+      flag_compiler_verbose = true;
+    } else if (argv[i]=="--verbose-compilation") {
+      flag_compiler_verbose = true;
     } else if (argv[i]=="-s" || argv[i]=="--statistics") {
-      flag_statistics = true;                  // is this Flattener's option?
+      flag_statistics = true;
+      flag_compiler_statistics = true;
+    } else if (argv[i]=="--compiler-statistics") {
+      flag_compiler_statistics = true;
     } else {
       if ((argv[i]=="--fzn-cmd" || argv[i]=="--flatzinz-cmd") && solver.empty()) {
         solver = "org.minizinc.mzn-fzn";
@@ -324,6 +344,15 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   argv.resize(j);
   argc = j;
 
+  if (flag_verbose) {
+    argv.push_back("--verbose-solving");
+    argc++;
+  }
+  if (flag_statistics) {
+    argv.push_back("--solver-statistics");
+    argc++;
+  }
+  
   flt.set_flag_output_by_default(ifMzn2Fzn());
 
   bool isMznMzn = false;
@@ -337,13 +366,13 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         sf = *it;
         si_opt = sf->createOptions();
         if (!sc.executable().empty()) {
+          std::vector<MZNFZNSolverFlag> acceptedFlags;
+          for (auto& sf : sc.stdFlags())
+            acceptedFlags.push_back(MZNFZNSolverFlag::std(sf));
+          for (auto& ef : sc.extraFlags())
+            acceptedFlags.push_back(MZNFZNSolverFlag::extra(ef.flag,ef.flag_type));
           if (sc.supportsMzn()) {
             isMznMzn = true;
-            std::vector<MZNSolverFlag> acceptedFlags;
-            for (auto& sf : sc.stdFlags())
-              acceptedFlags.push_back(MZNSolverFlag::std(sf));
-            for (auto& ef : sc.extraFlags())
-              acceptedFlags.push_back(MZNSolverFlag::extra(ef.flag,ef.flag_type));
             static_cast<MZN_SolverFactory*>(sf)->setAcceptedFlags(si_opt, acceptedFlags);
             std::vector<std::string> additionalArgs_s;
             additionalArgs_s.push_back("-m");
@@ -388,6 +417,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               }
             }
           } else {
+            static_cast<FZN_SolverFactory*>(sf)->setAcceptedFlags(si_opt, acceptedFlags);
             std::vector<std::string> additionalArgs(2);
             additionalArgs[0] = "--fzn-cmd";
             std::string executable = sc.executable();
@@ -459,12 +489,12 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
 
 void MznSolver::flatten(const std::string& modelString)
 {
-  flt.set_flag_verbose(get_flag_verbose());
-  flt.set_flag_statistics(get_flag_statistics());
+  flt.set_flag_verbose(flag_compiler_verbose);
+  flt.set_flag_statistics(flag_compiler_statistics);
   clock_t tm01 = clock();
   flt.flatten(modelString);
   /// The following message tells mzn-test.py that flattening succeeded.
-  if (get_flag_verbose())
+  if (flag_compiler_verbose)
     log << "  Flattening done, " << timeDiff(clock(), tm01) << std::endl;
 }
 
@@ -472,8 +502,6 @@ SolverInstance::Status MznSolver::solve()
 {
   { // To be able to clean up flatzinc after PrcessFlt()
     GCLock lock;
-    getSI()->_options->verbose = get_flag_verbose();
-    getSI()->_options->printStatistics = get_flag_statistics();
     getSI()->processFlatZinc();
   }
   SolverInstance::Status status = getSI()->solve();

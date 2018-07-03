@@ -39,6 +39,31 @@ namespace MiniZinc {
 
   /// this function returns the global SolverRegistry object
   SolverRegistry* getGlobalSolverRegistry();
+
+  /// Representation of flags that can be passed to solvers
+  class MZNFZNSolverFlag {
+  public:
+    /// The type of the solver flag
+    enum FlagType { FT_ARG, FT_NOARG } t;
+    /// The name of the solver flag
+    std::string n;
+  protected:
+    MZNFZNSolverFlag(const FlagType& t0, const std::string& n0) : t(t0), n(n0) {}
+  public:
+    /// Create flag that has an argument
+    static MZNFZNSolverFlag arg(const std::string& n) {
+      return MZNFZNSolverFlag(FT_ARG,n);
+    }
+    /// Create flag that has no argument
+    static MZNFZNSolverFlag noarg(const std::string& n) {
+      return MZNFZNSolverFlag(FT_NOARG,n);
+    }
+    /// Create solver flag from standard flag
+    static MZNFZNSolverFlag std(const std::string& n);
+    /// Create solver flag from extra flag with name \a n and type \a t
+    static MZNFZNSolverFlag extra(const std::string& n, const std::string& t);
+  };
+
   
   /// SolverFactory's descendants create, store and destroy SolverInstances
   /// A SolverFactory stores all Instances itself and upon module exit,
@@ -98,8 +123,10 @@ namespace MiniZinc {
     Solns2Out s2out;
     
     /// global options
-    bool flag_verbose=0;
-    bool flag_statistics=0;
+    bool flag_verbose=false;
+    bool flag_statistics=false;
+    bool flag_compiler_verbose=false;
+    bool flag_compiler_statistics=false;
 
   public:
     MznSolver(std::ostream& os = std::cout, std::ostream& log = std::cerr);

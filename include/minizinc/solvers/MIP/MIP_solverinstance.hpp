@@ -21,6 +21,19 @@ namespace MiniZinc {
   }
   
   template<class MIPWrapper>
+  bool MIP_SolverFactory<MIPWrapper>::processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv) {
+    if (argv[i]=="--verbose-solving") {
+      opt->verbose = true;
+      return true;
+    } else if (argv[i]=="--solver-statistics") {
+      opt->printStatistics = true;
+      return true;
+    } else {
+      return static_cast<typename MIPWrapper::Options&>(*opt).processOption(i, argv);
+    }
+  }
+  
+  template<class MIPWrapper>
   std::string MIP_SolverFactory<MIPWrapper>::getDescription(SolverInstanceBase::Options* opt)
   {
     std::string v = "MIP solver plugin, compiled " __DATE__ ", using: "

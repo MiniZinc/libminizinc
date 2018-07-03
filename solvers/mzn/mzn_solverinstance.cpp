@@ -28,18 +28,6 @@ using namespace std;
 
 namespace MiniZinc {
 
-
-  MZNSolverFlag MZNSolverFlag::std(const std::string& n0) {
-    const std::string argFlags("-I -n -p -r");
-    if (argFlags.find(n0) != std::string::npos)
-      return MZNSolverFlag(FT_ARG,n0);
-    return MZNSolverFlag(FT_NOARG,n0);
-  }
-
-  MZNSolverFlag MZNSolverFlag::extra(const std::string& n0, const std::string& t0) {
-    return MZNSolverFlag(t0=="bool" ? FT_NOARG : FT_ARG, n0);
-  }
-
   MZN_SolverFactory::MZN_SolverFactory(void) {
     SolverConfig sc("org.minizinc.mzn-mzn",MZN_VERSION_MAJOR "." MZN_VERSION_MINOR "." MZN_VERSION_PATCH);
     sc.name("Generic MiniZinc driver");
@@ -87,7 +75,7 @@ namespace MiniZinc {
     return new MZNSolverInstance(env, log, opt);
   }
 
-  void MZN_SolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt, const std::vector<MZNSolverFlag>& flags) {
+  void MZN_SolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt, const std::vector<MZNFZNSolverFlag>& flags) {
     MZNSolverOptions& _opt = static_cast<MZNSolverOptions&>(*opt);
     _opt.mzn_solver_flags = flags;
   }
@@ -113,13 +101,17 @@ namespace MiniZinc {
       old += buffer;
       old += "\" ";
       _opt.mzn_flag = old;
+    } else if ( cop.getOption( "--solver-statistics" )) {
+      _opt.printStatistics = true;
+    } else if ( cop.getOption( "--verbose-solving" )) {
+      _opt.verbose = true;
     } else {
       for (auto& mznf : _opt.mzn_solver_flags) {
-        if (mznf.t==MZNSolverFlag::FT_ARG && cop.getOption(mznf.n.c_str(), &buffer)) {
+        if (mznf.t==MZNFZNSolverFlag::FT_ARG && cop.getOption(mznf.n.c_str(), &buffer)) {
           _opt.mzn_flags.push_back(mznf.n);
           _opt.mzn_flags.push_back(buffer);
           return true;
-        } else if (mznf.t==MZNSolverFlag::FT_NOARG && cop.getOption(mznf.n.c_str())) {
+        } else if (mznf.t==MZNFZNSolverFlag::FT_NOARG && cop.getOption(mznf.n.c_str())) {
           _opt.mzn_flags.push_back(mznf.n);
           return true;
         }

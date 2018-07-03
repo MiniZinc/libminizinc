@@ -16,29 +16,6 @@
 
 namespace MiniZinc {
 
-  class MZNSolverFlag {
-  public:
-    /// The type of the solver flag
-    enum FlagType { FT_ARG, FT_NOARG } t;
-    /// The name of the solver flag
-    std::string n;
-  protected:
-    MZNSolverFlag(const FlagType& t0, const std::string& n0) : t(t0), n(n0) {}
-  public:
-    /// Create flag that has an argument
-    static MZNSolverFlag arg(const std::string& n) {
-      return MZNSolverFlag(FT_ARG,n);
-    }
-    /// Create flag that has no argument
-    static MZNSolverFlag noarg(const std::string& n) {
-      return MZNSolverFlag(FT_NOARG,n);
-    }
-    /// Create solver flag from standard flag
-    static MZNSolverFlag std(const std::string& n);
-    /// Create solver flag from extra flag with name \a n and type \a t
-    static MZNSolverFlag extra(const std::string& n, const std::string& t);
-  };
-
   class MZNSolverOptions : public SolverInstanceBase::Options {
   public:
     std::string mzn_solver;
@@ -49,7 +26,7 @@ namespace MiniZinc {
     std::string parallel;
     int mzn_time_limit_ms = 0;
     bool mzn_sigint = false;
-    std::vector<MZNSolverFlag> mzn_solver_flags;
+    std::vector<MZNFZNSolverFlag> mzn_solver_flags;
   };
   
   class MZNSolverInstance : public SolverInstanceBase {
@@ -80,7 +57,7 @@ namespace MiniZinc {
     virtual std::string getId(void);
     virtual bool processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv);
     virtual void printHelp(std::ostream& os);
-    void setAcceptedFlags(SolverInstanceBase::Options* opt, const std::vector<MZNSolverFlag>& flags);
+    void setAcceptedFlags(SolverInstanceBase::Options* opt, const std::vector<MZNFZNSolverFlag>& flags);
   };
 
 }

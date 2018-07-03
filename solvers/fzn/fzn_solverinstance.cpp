@@ -89,7 +89,6 @@ namespace MiniZinc {
     FZNSolverOptions& _opt = static_cast<FZNSolverOptions&>(*opt);
     CLOParser cop( i, argv );
     string buffer;
-    double dd;
     int nn=-1;
     
     if ( cop.getOption( "--fzn-cmd --flatzinc-cmd", &buffer) ) {
@@ -97,10 +96,7 @@ namespace MiniZinc {
     } else if ( cop.getOption( "-b --backend --solver-backend", &buffer) ) {
       _opt.backend = buffer;
     } else if ( cop.getOption( "--fzn-flags --flatzinc-flags", &buffer) ) {
-      string old = _opt.fzn_flags;
-      old += ' ';
-      old += buffer;
-      _opt.fzn_flags = old;
+      _opt.fzn_flags.push_back(buffer);
     } else if ( cop.getOption( "--fzn-time-limit", &nn) ) {
       _opt.fzn_time_limit_ms = nn;
     } else if ( cop.getOption( "--fzn-sigint") ) {
@@ -111,20 +107,68 @@ namespace MiniZinc {
       old += buffer;
       old += "\" ";
       _opt.fzn_flag = old;
-    } else if ( cop.getOption( "-n --num-solutions", &nn) ) {
+    } else if ( _opt.supports_n && cop.getOption( "-n --num-solutions", &nn) ) {
       _opt.numSols = nn;
-    } else if ( cop.getOption( "-a --all --all-solns --all-solutions") ) {
+    } else if ( _opt.supports_a && cop.getOption( "-a --all --all-solns --all-solutions") ) {
       _opt.allSols = true;
     } else if ( cop.getOption( "-p --parallel", &nn) ) {
-      _opt.parallel = nn;
+      if (_opt.supports_p)
+        _opt.parallel = nn;
     } else if ( cop.getOption( "-k --keep-files" ) ) {
-    } else if ( cop.getOption( "-r --seed --random-seed", &dd) ) {
+    } else if ( cop.getOption( "-r --seed --random-seed", &buffer) ) {
+      if (_opt.supports_r) {
+        _opt.fzn_flags.push_back("-r");
+        _opt.fzn_flags.push_back(buffer);
+      }
+    } else if ( cop.getOption( "-s --solver-statistics") ) {
+      if (_opt.supports_s) {
+        _opt.printStatistics = true;
+      }
+    } else if ( cop.getOption( "-v --verbose-solving") ) {
+      _opt.verbose = true;
+    } else if ( cop.getOption( "-f --free-search") ) {
+      if (_opt.supports_f)
+        _opt.fzn_flags.push_back("-f");
     } else {
+      for (auto& fznf : _opt.fzn_solver_flags) {
+        if (fznf.t==MZNFZNSolverFlag::FT_ARG && cop.getOption(fznf.n.c_str(), &buffer)) {
+          _opt.fzn_flags.push_back(fznf.n);
+          _opt.fzn_flags.push_back(buffer);
+          return true;
+        } else if (fznf.t==MZNFZNSolverFlag::FT_NOARG && cop.getOption(fznf.n.c_str())) {
+          _opt.fzn_flags.push_back(fznf.n);
+          return true;
+        }
+      }
+
       return false;
     }
     return true;
   }
   
+  void FZN_SolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt, const std::vector<MZNFZNSolverFlag>& flags) {
+    FZNSolverOptions& _opt = static_cast<FZNSolverOptions&>(*opt);
+    _opt.fzn_solver_flags.clear();
+    for (auto& f : flags) {
+      if (f.n=="-a") {
+        _opt.supports_a = true;
+      } else if (f.n=="-n") {
+        _opt.supports_n = true;
+      } else if (f.n=="-f") {
+        _opt.supports_f = true;
+      } else if (f.n=="-p") {
+        _opt.supports_p = true;
+      } else if (f.n=="-s") {
+        _opt.supports_s = true;
+      } else if (f.n=="-r") {
+        _opt.supports_r = true;
+      } else if (f.n=="-v") {
+        _opt.supports_v = true;
+      } else {
+        _opt.fzn_solver_flags.push_back(f);
+      }
+    }
+  }
 
 
   FZNSolverInstance::FZNSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* options)
@@ -146,9 +190,9 @@ namespace MiniZinc {
       cmd_line.push_back( "-b" );
       cmd_line.push_back( sBE );
     }
-    string sFlags = opt.fzn_flags;
-    if ( sFlags.size() )
-      cmd_line.push_back( sFlags );
+    for (auto& f : opt.fzn_flags) {
+      cmd_line.push_back( f );
+    }
     string sFlagQuoted = opt.fzn_flag;
     if ( sFlagQuoted.size() )
       cmd_line.push_back( sFlagQuoted );
@@ -169,7 +213,8 @@ namespace MiniZinc {
       cmd_line.push_back( "-s" );
     }
     if (opt.verbose) {
-      cmd_line.push_back( "-v" );
+      if (opt.supports_v)
+        cmd_line.push_back( "-v" );
       std::cerr << "Using FZN solver " << cmd_line[0]
         << " for solving, parameters: ";
       for ( int i=1; i<cmd_line.size(); ++i )
