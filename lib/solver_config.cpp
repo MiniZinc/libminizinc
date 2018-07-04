@@ -61,6 +61,8 @@ namespace MiniZinc {
     std::vector<std::vector<std::string> > getDefaultOptionList(AssignI* ai) {
       if (ArrayLit* al = ai->e()->dyn_cast<ArrayLit>()) {
         std::vector<std::vector<std::string> > ret;
+        if (al->size()==0)
+          return ret;
         if (al->dims()!=2) {
           throw ConfigException("invalid configuration item (right hand side must be a 2d array of strings)");
         }
@@ -84,6 +86,9 @@ namespace MiniZinc {
     }
     std::vector<SolverConfig::ExtraFlag> getExtraFlagList(AssignI* ai) {
       if (ArrayLit* al = ai->e()->dyn_cast<ArrayLit>()) {
+        std::vector<SolverConfig::ExtraFlag> ret;
+        if (al->size()==0)
+          return ret;
         if (al->dims()!=2) {
           throw ConfigException("invalid configuration item (right hand side must be a 2d array of strings)");
         }
@@ -93,7 +98,6 @@ namespace MiniZinc {
         }
         bool haveType = (nCols == 3);
         bool haveDefault = (nCols == 4);
-        std::vector<SolverConfig::ExtraFlag> ret;
         for (unsigned int i=0; i<al->size(); i+=nCols) {
           StringLit* sl1 = (*al)[i]->dyn_cast<StringLit>();
           StringLit* sl2 = (*al)[i+1]->dyn_cast<StringLit>();
@@ -423,6 +427,8 @@ namespace MiniZinc {
   vector<string> SolverConfigs::solvers() const {
     vector<string> s;
     for (auto& sc: _solvers) {
+      if (std::find(sc.tags().begin(), sc.tags().end(), "__internal__") != sc.tags().end())
+        continue;
       std::ostringstream oss;
       oss << sc.name() << " " << sc.version() << " (" << sc.id();
       for (std::string t: sc.tags()) {
@@ -440,8 +446,10 @@ namespace MiniZinc {
     std::ostringstream oss;
     oss << "[\n";
     for (unsigned int i=0; i<_solvers.size(); i++) {
-      oss << "  {\n";
       const SolverConfig& sc = _solvers[i];
+      if (std::find(sc.tags().begin(), sc.tags().end(), "__internal__") != sc.tags().end())
+        continue;
+      oss << "  {\n";
       oss << "    \"extraInfo\": {\n";
       oss << "      \"configFile\": \"" << Printer::escapeStringLit(sc.configFile()) << "\"";
       if (sc.defaultFlags().size()) {
