@@ -180,14 +180,15 @@ class MZT_Param:
             "FZN-CBC": [ "__BE_COMMON", "__BE_SOLVER", "BE_FZN-CBC" ],
             "GUROBI": [ "__BE_COMMON", "__BE_SOLVER", "BE_GUROBI" ],
             "CPLEX": [ "__BE_COMMON", "__BE_SOLVER", "BE_CPLEX" ],
+            "XPRESS": [ "__BE_COMMON", "__BE_SOLVER", "BE_XPRESS" ],
             "CBC": [ "__BE_COMMON", "__BE_SOLVER", "BE_CBC" ],
             "GECODE": [ "__BE_COMMON", "__BE_SOLVER", "BE_GECODE" ],
-            "CHUFFED": [ "__BE_COMMON", "__BE_SOLVER", "BE_CHUFFED" ],
-            "MZN-GUROBI": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-GUROBI" ],
-            "MZN-CPLEX": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-CPLEX" ],
-            "MZN-CBC": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-CBC" ],
-            "MZN-GECODE": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-GECODE" ],
-            "FZN-CHUFFED": [ "__BE_COMMON", "__BE_SOLVER", "BE_FZN-CHUFFED" ]
+            "CHUFFED": [ "__BE_COMMON", "__BE_SOLVER", "BE_CHUFFED" ] #,
+            # "MZN-GUROBI": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-GUROBI" ],
+            # "MZN-CPLEX": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-CPLEX" ],
+            # "MZN-CBC": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-CBC" ],
+            # "MZN-GECODE": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-GECODE" ],
+            # "FZN-CHUFFED": [ "__BE_COMMON", "__BE_SOLVER", "BE_FZN-CHUFFED" ]
           },
           "CHECKER_PROFILES": {
             s_CommentKey: [ "Each profile gives a list of backend defs to use.",
@@ -360,6 +361,20 @@ class MZT_Param:
                 #"opt_writeModel": ["--writeModel"]
               },
               "Stderr_Keyvalues": {
+                s_AddKey+"Preslv_Rows": [ "Reduced MIP has [0-9]+ rows,", " ", 4 ],
+                s_AddKey+"Preslv_Cols": [ "Reduced MIP has [0-9]+ rows,", " ", 6 ],
+                s_AddKey+"Preslv_Non0": [ "Reduced MIP has [0-9]+ rows,", " ", 9 ]
+              },
+            },
+            "BE_XPRESS": {
+              s_CommentKey: [ "------------------- Specializations for FICO XPRESS solver instance" ],
+              "EXE": {
+                "s_SolverCall" : ["minizinc -v -s --solver xpress --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking
+                #"s_SolverCall" : ["./run-mzn-cplex.sh %s"],
+                #"b_ThruShell"  : [True],
+                #"opt_writeModel": ["--writeModel"]
+              },
+              "Stderr_Keyvalues": {   ## Is different for XPRESS and -v fails at the moment anyway
                 s_AddKey+"Preslv_Rows": [ "Reduced MIP has [0-9]+ rows,", " ", 4 ],
                 s_AddKey+"Preslv_Cols": [ "Reduced MIP has [0-9]+ rows,", " ", 6 ],
                 s_AddKey+"Preslv_Non0": [ "Reduced MIP has [0-9]+ rows,", " ", 9 ]
