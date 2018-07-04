@@ -168,7 +168,7 @@ namespace MiniZinc {
       std::timed_mutex terminateMutex;
       terminateMutex.lock();
       thread thrStdout(&ReadPipePrint<S2O>, g_hChildStd_OUT_Rd, &doneStdout, nullptr, pS2Out, &pipeMutex);
-      thread thrStderr(&ReadPipePrint<S2O>, g_hChildStd_ERR_Rd, &doneStderr, pS2Out->getLog(), nullptr, &pipeMutex);
+      thread thrStderr(&ReadPipePrint<S2O>, g_hChildStd_ERR_Rd, &doneStderr, &pS2Out->getLog(), nullptr, &pipeMutex);
       thread thrTimeout(TimeOut, piProcInfo.hProcess, &doneStdout, &doneStderr, timelimit, &terminateMutex);
       thrStdout.join();
       thrStderr.join();
