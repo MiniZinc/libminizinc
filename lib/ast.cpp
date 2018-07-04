@@ -172,14 +172,14 @@ namespace MiniZinc {
   void
   IntLit::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<IntVal> h;
+    std::hash<IntVal> h;
     cmb_hash(h(_v));
   }
 
   void
   FloatLit::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<FloatVal> h;
+    std::hash<FloatVal> h;
     cmb_hash(h(_v));
   }
 
@@ -187,13 +187,13 @@ namespace MiniZinc {
   SetLit::rehash(void) {
     init_hash();
     if (isv()) {
-      HASH_NAMESPACE::hash<IntVal> h;
+      std::hash<IntVal> h;
       for (IntSetRanges r0(isv()); r0(); ++r0) {
         cmb_hash(h(r0.min()));
         cmb_hash(h(r0.max()));
       }
     } else if (fsv()) {
-      HASH_NAMESPACE::hash<FloatVal> h;
+      std::hash<FloatVal> h;
       for (FloatSetRanges r0(fsv()); r0(); ++r0) {
         cmb_hash(h(r0.min()));
         cmb_hash(h(r0.max()));
@@ -207,7 +207,7 @@ namespace MiniZinc {
   void
   BoolLit::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<bool> h;
+    std::hash<bool> h;
     cmb_hash(h(_v));
   }
 
@@ -220,7 +220,7 @@ namespace MiniZinc {
   void
   Id::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<long long int> h;
+    std::hash<long long int> h;
     if (idn()==-1)
       cmb_hash(v().hash());
     else
@@ -406,7 +406,7 @@ namespace MiniZinc {
   void
   ArrayLit::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<int> h;
+    std::hash<int> h;
     for (unsigned int i=0; i<_dims.size(); i++) {
       cmb_hash(h(_dims[i]));
     }
@@ -424,7 +424,7 @@ namespace MiniZinc {
   ArrayAccess::rehash(void) {
     init_hash();
     cmb_hash(Expression::hash(_v));
-    HASH_NAMESPACE::hash<unsigned int> h;
+    std::hash<unsigned int> h;
     cmb_hash(h(_idx.size()));
     for (unsigned int i=_idx.size(); i--;)
       cmb_hash(Expression::hash(_idx[i]));
@@ -489,7 +489,7 @@ namespace MiniZinc {
   void
   Comprehension::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<unsigned int> h;
+    std::hash<unsigned int> h;
     cmb_hash(h(set()));
     cmb_hash(Expression::hash(_e));
     cmb_hash(h(_g_idx.size()));
@@ -539,7 +539,7 @@ namespace MiniZinc {
   void
   ITE::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<unsigned int> h;
+    std::hash<unsigned int> h;
     cmb_hash(h(_e_if_then.size()));
     for (unsigned int i=_e_if_then.size(); i--; ) {
       cmb_hash(Expression::hash(_e_if_then[i]));
@@ -554,7 +554,7 @@ namespace MiniZinc {
   void
   BinOp::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<int> h;
+    std::hash<int> h;
     cmb_hash(h(static_cast<int>(op())));
     cmb_hash(Expression::hash(_e0));
     cmb_hash(Expression::hash(_e1));
@@ -707,7 +707,7 @@ namespace MiniZinc {
   void
   UnOp::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<int> h;
+    std::hash<int> h;
     cmb_hash(h(static_cast<int>(_sec_id)));
     cmb_hash(Expression::hash(_e0));
   }
@@ -726,9 +726,9 @@ namespace MiniZinc {
   Call::rehash(void) {
     init_hash();
     cmb_hash(id().hash());
-    HASH_NAMESPACE::hash<FunctionI*> hf;
+    std::hash<FunctionI*> hf;
     cmb_hash(hf(decl()));
-    HASH_NAMESPACE::hash<unsigned int> hu;
+    std::hash<unsigned int> hu;
     cmb_hash(hu(n_args()));
     for (unsigned int i=0; i<n_args(); i++)
       cmb_hash(Expression::hash(arg(i)));
@@ -755,7 +755,7 @@ namespace MiniZinc {
   Let::rehash(void) {
     init_hash();
     cmb_hash(Expression::hash(_in));
-    HASH_NAMESPACE::hash<unsigned int> h;
+    std::hash<unsigned int> h;
     cmb_hash(h(_let.size()));
     for (unsigned int i=_let.size(); i--;)
       cmb_hash(Expression::hash(_let[i]));
@@ -802,7 +802,7 @@ namespace MiniZinc {
   void
   TypeInst::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<unsigned int> h;
+    std::hash<unsigned int> h;
     unsigned int rsize = _ranges.size();
     cmb_hash(h(rsize));
     for (unsigned int i=rsize; i--;)

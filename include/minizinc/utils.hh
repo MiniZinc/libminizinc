@@ -23,6 +23,23 @@
 #include <minizinc/timer.hh>
 #include <minizinc/exception.hh>
 
+#ifdef MZN_HAS_LLROUND
+#include <cmath>
+namespace MiniZinc {
+  inline
+  long long int round_to_longlong(double v) {
+    return ::llround(v);
+  }
+}
+#else
+namespace MiniZinc {
+  inline
+  long long int round_to_longlong(double v) {
+    return static_cast<long long int>(v < 0 ? v-0.5 : v+0.5);
+  }
+}
+#endif
+
 namespace MiniZinc {
   
 // #define __MZN_PRINTATONCE__

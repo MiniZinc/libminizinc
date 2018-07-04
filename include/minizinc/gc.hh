@@ -12,10 +12,13 @@
 #ifndef __MINIZINC_GC_HH__
 #define __MINIZINC_GC_HH__
 
+#include <minizinc/config.hh>
+
 #include <cstdlib>
 #include <cassert>
 #include <new>
-#include <minizinc/stl_map_set.hh>
+
+#include <unordered_map>
 
 namespace MiniZinc {
   
@@ -217,7 +220,7 @@ namespace MiniZinc {
     ASTNodeWeakMap& operator =(const ASTNodeWeakMap& e);
     
   protected:
-    typedef UNORDERED_NAMESPACE::unordered_map<ASTNode*, ASTNode*> NodeMap;
+    typedef std::unordered_map<ASTNode*, ASTNode*> NodeMap;
     ASTNodeWeakMap* _p;
     ASTNodeWeakMap* _n;
     ASTNodeWeakMap* next(void) const { return _n; }

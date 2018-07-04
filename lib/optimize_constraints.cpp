@@ -349,16 +349,18 @@ namespace MiniZinc {
     }
     
     class Register {
+    private:
+      Model* _keepAliveModel;
     public:
       Register(void) {
         GCLock lock;
-        Model* m = new Model;
+        _keepAliveModel = new Model;
         ASTString id_element("array_int_element");
         ASTString id_var_element("array_var_int_element");
         std::vector<Expression*> e;
         e.push_back(new StringLit(Location(),id_element));
         e.push_back(new StringLit(Location(),id_var_element));
-        m->addItem(new ConstraintI(Location(),new ArrayLit(Location(),e)));
+        _keepAliveModel->addItem(new ConstraintI(Location(),new ArrayLit(Location(),e)));
         OptimizeRegistry::registry().reg(constants().ids.int_.lin_eq, o_linear);
         OptimizeRegistry::registry().reg(constants().ids.int_.lin_le, o_linear);
         OptimizeRegistry::registry().reg(constants().ids.int_.lin_ne, o_linear);
@@ -370,6 +372,9 @@ namespace MiniZinc {
         OptimizeRegistry::registry().reg(constants().ids.bool_clause, o_clause);
         OptimizeRegistry::registry().reg(constants().ids.set_in, o_set_in);
         OptimizeRegistry::registry().reg(constants().ids.int_.ne, o_int_ne);
+      }
+      ~Register(void) {
+        delete _keepAliveModel;
       }
     } _r;
     

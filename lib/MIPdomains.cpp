@@ -24,8 +24,6 @@
 #include <minizinc/astexception.hh>
 #include <minizinc/astiterator.hh>
 
-#include <minizinc/stl_map_set.hh>
-
 #include <minizinc/flatten_internal.hh>
 
 // temporary
@@ -33,7 +31,8 @@
 //#include <ostream>
 
 #include <map>
-
+#include <unordered_map>
+#include <unordered_set>
 
 /// TODOs
 /// TODO  Not going to work for float vars because of round-offs in the domain interval sorting...
@@ -195,7 +194,7 @@ namespace MiniZinc {
   //     std::vector<Type> t_intarray(1);
   //     t_intarray[0] = Type::parint(-1);
     
-    typedef UNORDERED_NAMESPACE::unordered_map<FunctionI*, DCT*> M__POSTCallTypes;
+    typedef std::unordered_map<FunctionI*, DCT*> M__POSTCallTypes;
     M__POSTCallTypes mCallTypes;             // actually declared in the input
     std::vector<DCT> aCT;         // all possible
     
@@ -646,7 +645,7 @@ namespace MiniZinc {
     }
   
     /// Could be better to mark the calls instead:
-    UNORDERED_NAMESPACE::unordered_set<Call*> sCallLinEq2, sCallInt2Float, sCallLinEqN;
+    std::unordered_set<Call*> sCallLinEq2, sCallInt2Float, sCallLinEqN;
     
     class TClique : public std::vector<LinEq2Vars> {       // need more info?
     public:
@@ -719,11 +718,11 @@ namespace MiniZinc {
         // an (integer if any) variable with the least rel. factor
       bool fRef1HasEqEncode=false;
       /// This map stores the relations y = ax+b of all the clique's vars to y
-      typedef UNORDERED_NAMESPACE::unordered_map<VarDecl*, std::pair<double, double> >
+      typedef std::unordered_map<VarDecl*, std::pair<double, double> >
         TMapVars;
       TMapVars mRef0, mRef1;   // to the main var 0, 1
       
-      class TMatrixVars : public UNORDERED_NAMESPACE::unordered_map<VarDecl*, TMapVars> {
+      class TMatrixVars : public std::unordered_map<VarDecl*, TMapVars> {
       public:
         /// Check existing connection
         template <class IVarDecl>

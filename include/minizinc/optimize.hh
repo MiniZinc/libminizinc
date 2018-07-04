@@ -14,13 +14,12 @@
 
 #include <minizinc/flatten.hh>
 #include <minizinc/hash.hh>
-#include <minizinc/stl_map_set.hh>
 
 namespace MiniZinc {
 
   class VarOccurrences {
   public:
-    typedef UNORDERED_NAMESPACE::unordered_set<Item*> Items;
+    typedef std::unordered_set<Item*> Items;
     IdMap<Items> _m;
     IdMap<int> idx;
 

@@ -13,7 +13,7 @@
 #define __MINIZINC_PATHPRINTER_HH
 
 #include <minizinc/ast.hh>
-#include <minizinc/stl_map_set.hh>
+#include <unordered_map>
 
 namespace MiniZinc {
 
@@ -22,7 +22,7 @@ namespace MiniZinc {
   class PathFilePrinter {
 
   typedef std::pair<std::string, std::string> NamePair;
-  typedef UNORDERED_NAMESPACE::unordered_map<Id*, NamePair > NameMap;
+  typedef std::unordered_map<Id*, NamePair > NameMap;
 
   NameMap betternames;
   private:

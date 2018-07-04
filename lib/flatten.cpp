@@ -18,9 +18,10 @@
 #include <minizinc/astiterator.hh>
 #include <minizinc/output.hh>
 
-#include <minizinc/stl_map_set.hh>
-
 #include <minizinc/flatten_internal.hh>
+
+#include <unordered_set>
+#include <unordered_map>
 
 namespace MiniZinc {
 
@@ -875,7 +876,7 @@ namespace MiniZinc {
       bool isCompIter = callStack[i]->isTagged();
       Location loc = e->loc();
       int filenameId;
-      UNORDERED_NAMESPACE::unordered_map<std::string, int>::iterator findFilename = filenameMap.find(loc.filename().str());
+      std::unordered_map<std::string, int>::iterator findFilename = filenameMap.find(loc.filename().str());
       if (findFilename == filenameMap.end()) {
         if(!force && current_pass_no >= final_pass_no-1)
           return false;
@@ -6936,7 +6937,7 @@ namespace MiniZinc {
     return added_constraints;
   }
   
-  Expression* cleanup_constraint(EnvI& env, UNORDERED_NAMESPACE::unordered_set<Item*>& globals, Expression* ce) {
+  Expression* cleanup_constraint(EnvI& env, std::unordered_set<Item*>& globals, Expression* ce) {
     clearInternalAnnotations(ce);
     
     if (Call* vc = ce->dyn_cast<Call>()) {
@@ -7038,7 +7039,7 @@ namespace MiniZinc {
     int msize = m->size();
 
     // Predicate declarations of solver builtins
-    UNORDERED_NAMESPACE::unordered_set<Item*> globals;
+    std::unordered_set<Item*> globals;
 
     // Record indices of VarDeclIs with Id RHS for sorting & unification
     std::vector<int> declsWithIds;

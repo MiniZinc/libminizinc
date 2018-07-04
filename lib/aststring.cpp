@@ -26,7 +26,7 @@ namespace MiniZinc {
     : ASTChunk(s.size()+sizeof(size_t)+1) {
     memcpy_s(_data+sizeof(size_t),s.size()+1,s.c_str(),s.size());
     *(_data+sizeof(size_t)+s.size())=0;
-    HASH_NAMESPACE::hash<std::string> h;
+    std::hash<std::string> h;
     reinterpret_cast<size_t*>(_data)[0] = h(s);
   }
 

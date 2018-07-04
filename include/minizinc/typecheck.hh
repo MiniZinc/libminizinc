@@ -54,7 +54,7 @@ namespace MiniZinc {
   class TopoSorter {
   public:
     typedef std::vector<VarDecl*> Decls;
-    typedef UNORDERED_NAMESPACE::unordered_map<VarDecl*,int> PosMap;
+    typedef std::unordered_map<VarDecl*,int> PosMap;
     
     /// List of all declarations
     Decls decls;

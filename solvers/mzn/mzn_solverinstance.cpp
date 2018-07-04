@@ -148,7 +148,7 @@ namespace MiniZinc {
     std::ostream& _err_log;
   public:
     Solns2Log(std::ostream& log, std::ostream& errLog) : _log(log), _err_log(errLog) {}
-    bool feedRawDataChunk(const char* data) { _log << data; return true; }
+    bool feedRawDataChunk(const char* data) { _log << data << std::flush; return true; }
     std::ostream& getLog(void) { return _err_log; }
   };
   

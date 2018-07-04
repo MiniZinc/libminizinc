@@ -21,7 +21,6 @@
 #include <minizinc/parser.hh>
 #include <minizinc/typecheck.hh>
 #include <minizinc/builtins.hh>
-#include <minizinc/stl_map_set.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/timer.hh>
 

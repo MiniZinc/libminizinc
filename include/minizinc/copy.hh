@@ -18,7 +18,7 @@ namespace MiniZinc {
 
   class CopyMap {
   protected:
-    typedef UNORDERED_NAMESPACE::unordered_map<Model*,Model*> ModelMap;
+    typedef std::unordered_map<Model*,Model*> ModelMap;
     ModelMap model_m;
     
     ASTNodeWeakMap node_m;

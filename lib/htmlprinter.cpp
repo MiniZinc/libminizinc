@@ -9,6 +9,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#include <minizinc/config.hh>
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/htmlprinter.hh>
 
@@ -59,7 +60,7 @@ namespace MiniZinc {
       std::string doc;
     };
 
-    typedef UNORDERED_NAMESPACE::unordered_map<FunctionI*,std::string> FunMap;
+    typedef std::unordered_map<FunctionI*,std::string> FunMap;
     
     class Group;
 
@@ -593,7 +594,7 @@ namespace MiniZinc {
         
         std::vector<std::string> args = replaceArgs(ds);
         
-        UNORDERED_NAMESPACE::unordered_set<std::string> allArgs;
+        std::unordered_set<std::string> allArgs;
         for (unsigned int i=0; i<args.size(); i++)
           allArgs.insert(args[i]);
         for (unsigned int i=0; i<params.size(); i++)
@@ -1118,7 +1119,7 @@ namespace MiniZinc {
         
         std::vector<std::string> args = replaceArgsRST(ds);
         
-        UNORDERED_NAMESPACE::unordered_set<std::string> allArgs;
+        std::unordered_set<std::string> allArgs;
         for (unsigned int i=0; i<args.size(); i++)
           allArgs.insert(args[i]);
         for (unsigned int i=0; i<params.size(); i++)
