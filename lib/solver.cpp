@@ -554,6 +554,7 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, con
   if (!ifMzn2Fzn() && sf->getId() == "org.minizinc.mzn-mzn") {
     Env env;
     si = sf->createSI(env, log, si_opt);
+    si->setSolns2Out( &s2out );
     { // To be able to clean up flatzinc after PrcessFlt()
       GCLock lock;
       getSI()->_options->verbose = get_flag_verbose();

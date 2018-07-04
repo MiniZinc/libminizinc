@@ -419,6 +419,10 @@ ostream& Solns2Out::getOutput() {
   return (( pOut.get() && pOut->good() ) ? *pOut : os);
 }
 
+ostream& Solns2Out::getLog() {
+  return log;
+}
+
 bool Solns2Out::feedRawDataChunk(const char* data) {
   istringstream solstream( data );
   while (solstream.good()) {

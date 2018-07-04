@@ -129,7 +129,9 @@ namespace MiniZinc {
     
     virtual Env* getEnv() const { return pEnv; }
     virtual Model* getModel() const { assert(getEnv()->output()); return getEnv()->output(); }
-    
+    virtual std::ostream& getOutput();
+    virtual std::ostream& getLog();
+
   private:
     Timer starttime;
 
@@ -162,7 +164,6 @@ namespace MiniZinc {
     virtual bool __evalOutputFinal( bool flag_flush );
     virtual bool __evalStatusMsg(SolverInstance::Status status);
     
-    virtual std::ostream& getOutput();
   };
 
 }

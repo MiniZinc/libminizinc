@@ -119,7 +119,6 @@ namespace MiniZinc {
       }
       std::string input_file(argv[i]);
       if (input_file.length()<=4) {
-        // std::cerr << "Error: cannot handle file " << input_file << "." << std::endl;
         return false;
       }
       size_t last_dot = input_file.find_last_of('.');
@@ -146,9 +145,11 @@ namespace MiniZinc {
   class Solns2Log {
   private:
     std::ostream& _log;
+    std::ostream& _err_log;
   public:
-    Solns2Log(std::ostream& log) : _log(log) {}
+    Solns2Log(std::ostream& log, std::ostream& errLog) : _log(log), _err_log(errLog) {}
     bool feedRawDataChunk(const char* data) { _log << data; return true; }
+    std::ostream& getLog(void) { return _err_log; }
   };
   
   SolverInstance::Status
@@ -170,16 +171,15 @@ namespace MiniZinc {
     }
     if (opt.verbose) {
       cmd_line.push_back( "-v" );
-      std::cerr << "Using MZN solver " << cmd_line[0]
+      _log << "Using MZN solver " << cmd_line[0]
         << " for solving, parameters: ";
       for ( int i=1; i<cmd_line.size(); ++i )
-        cerr << "" << cmd_line[i] << " ";
-      cerr << std::endl;
+        _log << "" << cmd_line[i] << " ";
+      _log << std::endl;
     }
     int timelimit = opt.mzn_time_limit_ms;
     bool sigint = opt.mzn_sigint;
-    
-    Solns2Log s2l(_log);
+    Solns2Log s2l(getSolns2Out()->getOutput(), _log);
     Process<Solns2Log> proc(cmd_line, &s2l, timelimit, sigint);
     proc.run();
 
