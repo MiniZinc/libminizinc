@@ -22,11 +22,11 @@
 predicate int_abs(var int: a, var int: b);
 /** @group flatzinc.int Constrains \a a to be equal to \a b */
 predicate int_eq(var int: a, var int: b);
-/** @group flatzinc.int Constrains (\a a=\a b) &harr; \a r */
+/** @group flatzinc.int Constrains (\a a=\a b) \( \leftrightarrow \) \a r */
 predicate int_eq_reif(var int: a, var int: b, var bool: r);
 /** @group flatzinc.int Constrains \a a to be less than or equal to \a b */
 predicate int_le(var int: a, var int: b);
-/** @group flatzinc.int Constrains (\a a ≤ \a b) &harr; \a r */
+/** @group flatzinc.int Constrains (\a a ≤ \a b) \( \leftrightarrow \) \a r */
 predicate int_le_reif(var int: a, var int: b, var bool: r);
 /** @group flatzinc.int Constrains \( \a c = \sum_i \a as[i]*\a bs[i] \) */
 predicate int_lin_eq(array[int] of int: as, array[int] of var int: bs, int: c);
@@ -37,13 +37,13 @@ predicate int_lin_ne(array[int] of int: as, array[int] of var int: bs, int: c);
 /** @group flatzinc.int Constrains \( \a r \leftrightarrow (\a c \neq \sum_i \a as[i]*\a bs[i]) \) */
 predicate int_lin_ne_reif(array[int] of int: as, array[int] of var int: bs,int: c, var bool: r);
 
-/** @group flatzinc.int Constrains &Sigma; \a as[\p i]*\a bs[\p i] ≤ \a c */
+/** @group flatzinc.int Constrains \( \sum \) \a as[\p i]*\a bs[\p i] ≤ \a c */
 predicate int_lin_le(array[int] of int: as, array[int] of var int: bs, int: c);
-/** @group flatzinc.int Constrains \a r &harr; (&Sigma; \a as[\p i]*\a bs[\p i] ≤ \a c) */
+/** @group flatzinc.int Constrains \a r \( \leftrightarrow \) (\( \sum \) \a as[\p i]*\a bs[\p i] ≤ \a c) */
 predicate int_lin_le_reif(array[int] of int: as, array[int] of var int: bs,int: c, var bool: r);
 /** @group flatzinc.int Constrains \a a ≠ \a b */
 predicate int_ne(var int: a, var int: b);
-/** @group flatzinc.int \a r &harr; (\a a ≠ \a b) */
+/** @group flatzinc.int \a r \( \leftrightarrow \) (\a a ≠ \a b) */
 predicate int_ne_reif(var int: a, var int: b, var bool: r);
 /** @group flatzinc.int Constrains \a a + \a b = \a c */
 predicate int_plus(var int: a, var int: b, var int: c);
@@ -51,7 +51,7 @@ predicate int_plus(var int: a, var int: b, var int: c);
 predicate int_div(var int: a, var int: b, var int: c);
 /** @group flatzinc.int Constrains \a a < \a b */
 predicate int_lt(var int: a, var int: b);
-/** @group flatzinc.int Constrains \a r &harr; (\a a < \a b) */
+/** @group flatzinc.int Constrains \a r \( \leftrightarrow \) (\a a < \a b) */
 predicate int_lt_reif(var int: a, var int: b, var bool: r);
 /** @group flatzinc.int Constrains max(\a a, \a b) = \a c */
 predicate int_max(var int: a, var int: b, var int: c);
@@ -68,20 +68,20 @@ predicate int_pow(var int: x, var int: y, var int: z);
   @groupdef flatzinc.bool Bool FlatZinc builtins
 */
 
-/** @group flatzinc.bool Constrains \a b &in; {0,1} and \a a &harr; \a b=1 */
+/** @group flatzinc.bool Constrains \( \a b \in \{0,1\} \) and \( \a a \leftrightarrow \a b=1 \) */
 predicate bool2int(var bool: a, var int: b);
-/** @group flatzinc.bool Constrains \a r &harr; \a a &and; \a b */
+/** @group flatzinc.bool Constrains \( \a r \leftrightarrow \a a \land \a b \) */
 predicate bool_and(var bool: a, var bool: b, var bool: r);
 /** @group flatzinc.bool Constrains \( \bigvee_i \a as[i] \lor \bigvee_j \lnot \a bs[j] \) */
 predicate bool_clause(array[int] of var bool: as, array[int] of var bool: bs);
 
 /** @group flatzinc.bool Constrains \a a = \a b */
 predicate bool_eq(var bool: a, var bool: b);
-/** @group flatzinc.bool Constrains \a r &harr; (\a a = \a b) */
+/** @group flatzinc.bool Constrains \a r \( \leftrightarrow \) (\a a = \a b) */
 predicate bool_eq_reif(var bool: a, var bool: b, var bool: r);
 /** @group flatzinc.bool Constrains \a a ≤ \a b */
 predicate bool_le(var bool: a, var bool: b);
-/** @group flatzinc.bool Constrains \a r &harr; (\a a ≤ \a b) */
+/** @group flatzinc.bool Constrains \a r \( \leftrightarrow \) (\a a ≤ \a b) */
 predicate bool_le_reif(var bool: a, var bool: b, var bool: r);
 /** @group flatzinc.bool Constrains \( \a c = \sum_i \a as[i]*\a bs[i] \) */
 predicate bool_lin_eq(array[int] of int: as, array[int] of var bool: bs, var int: c);
@@ -89,34 +89,34 @@ predicate bool_lin_eq(array[int] of int: as, array[int] of var bool: bs, var int
 predicate bool_lin_le(array[int] of int: as, array[int] of var bool: bs, int: c);
 /** @group flatzinc.bool Constrains \a a < \a b */
 predicate bool_lt(var bool: a, var bool: b);
-/** @group flatzinc.bool Constrains \a r &harr; (\a a < \a b) */
+/** @group flatzinc.bool Constrains \a r \( \leftrightarrow \) (\a a < \a b) */
 predicate bool_lt_reif(var bool: a, var bool: b, var bool: r);
 /** @group flatzinc.bool Constrains \a a ≠ \a b */
 predicate bool_not(var bool: a, var bool: b);
-/** @group flatzinc.bool Constrains \a r &harr; \a a &or; \a b */
+/** @group flatzinc.bool Constrains \( \a r \leftrightarrow \a a \lor \a b \) */
 predicate bool_or(var bool: a, var bool: b, var bool: r);
-/** @group flatzinc.bool Constrains \a r &harr; \a a &oplus; \a b */
+/** @group flatzinc.bool Constrains \( \a r \leftrightarrow \a a \oplus \a b \) */
 predicate bool_xor(var bool: a, var bool: b, var bool: r);
-/** @group flatzinc.bool Constrains \a a &oplus; \a b */
+/** @group flatzinc.bool Constrains \a a \( \oplus \) \a b */
 predicate bool_xor(var bool: a, var bool: b);
 
 /***
   @groupdef flatzinc.set Set FlatZinc builtins
 */
 
-/** @group flatzinc.set Constrains \a x &in; \a S */
+/** @group flatzinc.set Constrains \a x \( \in \) \a S */
 predicate set_in(var int: x, set of int: S);
-/** @group flatzinc.set Constrains \a x &in; \a S */
+/** @group flatzinc.set Constrains \a x \( \in \) \a S */
 predicate set_in(var int: x, var set of int: S);
 /** @group flatzinc.set Constrains \a x = |\a S| */
 predicate set_card(var set of int: S, var int: x);
-/** @group flatzinc.set Constrains \a r &harr; (\a x &in; \a S) */
+/** @group flatzinc.set Constrains \( \a r \leftrightarrow (\a x \in \a S) \) */
 predicate set_in_reif(var int: x, set of int: S, var bool: r);
-/** @group flatzinc.set Constrains \a r &harr; (\a x &in; \a S) */
+/** @group flatzinc.set Constrains \( \a r \leftrightarrow (\a x \in \a S) \) */
 predicate set_in_reif(var int: x, var set of int: S, var bool: r);
-/** @group flatzinc.set Constrains \a x &sube; \a y */
+/** @group flatzinc.set Constrains \a x \( \subseteq \) \a y */
 predicate set_subset(var set of int: x, var set of int: y);
-/** @group flatzinc.set Constrains \a r &harr; (\a x &sube; \a y) */
+/** @group flatzinc.set Constrains \( \a r \leftrightarrow (\a x \subseteq \a y) \) */
 predicate set_subset_reif(var set of int: x, var set of int: y, var bool: r);
 /** @group flatzinc.set Constrains \a x ≤ \a y (lexicographic order) */
 predicate set_le(var set of int: x, var set of int: y);
@@ -124,17 +124,17 @@ predicate set_le(var set of int: x, var set of int: y);
 predicate set_lt(var set of int: x, var set of int: y);
 /** @group flatzinc.set Constrains \a x = \a y */
 predicate set_eq(var set of int: x, var set of int: y);
-/** @group flatzinc.set Constrains \a r &harr; (\a x = \a y) */
+/** @group flatzinc.set Constrains \a r \( \leftrightarrow \) (\a x = \a y) */
 predicate set_eq_reif(var set of int: x, var set of int: y, var bool: r);
 /** @group flatzinc.set Constrains \a x ≠ \a y */
 predicate set_ne(var set of int: x, var set of int: y);
-/** @group flatzinc.set Constrains \a r &harr; (\a x ≠ \a y) */
+/** @group flatzinc.set Constrains \a r \( \leftrightarrow \) (\a x ≠ \a y) */
 predicate set_ne_reif(var set of int: x, var set of int: y, var bool: r);
-/** @group flatzinc.set Constrains \a r = x &cap; \a y */
+/** @group flatzinc.set Constrains \a r = \a x \( \cap \) \a y */
 predicate set_intersect(var set of int: x, var set of int: y, var set of int: r);
-/** @group flatzinc.set Constrains \a r = x &cup; \a y */
+/** @group flatzinc.set Constrains \a r = \a x \( \cup \) \a y */
 predicate set_union(var set of int: x, var set of int: y, var set of int: r);
-/** @group flatzinc.set Constrains \a r = x &minus; \a y */
+/** @group flatzinc.set Constrains \a r = \a x \( \setminus \) \a y */
 predicate set_diff(var set of int: x, var set of int: y, var set of int: r);
 /** @group flatzinc.set Constrains \a r to be the symmetric difference of \a x and \a y */
 predicate set_symdiff(var set of int: x, var set of int: y, var set of int: r);
@@ -184,23 +184,23 @@ predicate float_tanh(var float: a, var float: b);
 
 /** @group flatzinc.float Constrains \a a = \a b */
 predicate float_eq(var float: a, var float: b);
-/** @group flatzinc.float Constrains \a r &harr; (\a a = \a b) */
+/** @group flatzinc.float Constrains \a r \( \leftrightarrow \) (\a a = \a b) */
 predicate float_eq_reif(var float: a, var float: b, var bool: r);
 /** @group flatzinc.float Constrains \a a ≤ \a b */
 predicate float_le(var float: a, var float: b);
-/** @group flatzinc.float Constrains \a r &harr; (\a a ≤ \a b) */
+/** @group flatzinc.float Constrains \a r \( \leftrightarrow \) (\a a ≤ \a b) */
 predicate float_le_reif(var float: a, var float: b, var bool: r);
 /** @group flatzinc.float Constrains \a a < \a b */
 predicate float_lt(var float: a, var float: b);
-/** @group flatzinc.float Constrains \a r &harr; (\a a < \a b) */
+/** @group flatzinc.float Constrains \a r \( \leftrightarrow \) (\a a < \a b) */
 predicate float_lt_reif(var float: a, var float: b, var bool: r);
 /** @group flatzinc.float Constrains \a a ≠ \a b */
 predicate float_ne(var float: a, var float: b);
-/** @group flatzinc.float Constrains \a r &harr; (\a a ≠ \a b) */
+/** @group flatzinc.float Constrains \a r \( \leftrightarrow \) (\a a ≠ \a b) */
 predicate float_ne_reif(var float: a, var float: b, var bool: r);
 /** @group flatzinc.float Constrains \( \a a \in\ [ \a b, \a c ] \) */
 predicate float_in(var float: a, float: b, float: c);
-/** @group flatzinc.float Constrains \a r &harr; \( \a a \in\ [ \a b, \a c ] \) */
+/** @group flatzinc.float Constrains \a r \( \leftrightarrow \) \( \a a \in\ [ \a b, \a c ] \) */
 predicate float_in_reif(var float: a, float: b, float: c, var bool: r);
 /** @group flatzinc.float Constrains the domain of \a x using the values in \a as, using each
   pair of values \a as[2*\p i-1]..\a as[2*\p i] for \p i in 1..\p n/2 as a possible range
