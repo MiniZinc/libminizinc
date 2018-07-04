@@ -345,6 +345,7 @@ include/minizinc/statistics.hh
 include/minizinc/timer.hh
 include/minizinc/type.hh
 include/minizinc/typecheck.hh
+include/minizinc/utils.hh
 include/minizinc/values.hh
 include/minizinc/solver_instance.hh
 include/minizinc/solver_instance_base.hh

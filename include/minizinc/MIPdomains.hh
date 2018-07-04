@@ -14,7 +14,6 @@
 
 #include <minizinc/flatten.hh>
 #include <minizinc/hash.hh>
-#include <minizinc/stl_map_set.hh>
 #include <minizinc/utils.hh>
 #include <array>
 #include <set>
