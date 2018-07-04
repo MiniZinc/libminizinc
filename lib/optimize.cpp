@@ -283,24 +283,23 @@ namespace MiniZinc {
       std::vector<int> toRemoveConstraints;
       std::vector<VarDecl*> deletedVarDecls;
 
+      // Queue of constraint and variable items that still need to be optimised
       std::deque<Item*> constraintQueue;
+      // Queue of variable declarations (indexes into the model) that still need to be optimised
       std::deque<int> vardeclQueue;
       
       std::vector<int> boolConstraints;
       
       GCLock lock;
 
-      for (unsigned int i=0; i<m.size(); i++) {
-        if (!m[i]->removed()) {
-          if (ConstraintI* ci = m[i]->dyn_cast<ConstraintI>()) {
-            ci->flag(false);
-          } else if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
-            vdi->flag(false);
-          }
-        }
-      }
-
-      
+      // Phase 1: initialise queues
+      //  - remove equality constraints between identifiers
+      //  - remove toplevel forall constraints
+      //  - collect exists, clauses and reified foralls in boolConstraints
+      //  - remove "constraint x" where x is a bool var
+      //  - unify variables that are assigned to an identifier
+      //  - push bool vars that are fixed and have a RHS (to propagate the RHS constraint)
+      //  - push int vars that are fixed (either have a RHS or a singleton domain)
       for (unsigned int i=0; i<m.size(); i++) {
         if (m[i]->removed())
           continue;
@@ -311,6 +310,9 @@ namespace MiniZinc {
               if ( (c->id() == constants().ids.int_.eq || c->id() == constants().ids.bool_eq || c->id() == constants().ids.float_.eq || c->id() == constants().ids.set_eq) &&
                   c->arg(0)->isa<Id>() && c->arg(1)->isa<Id>() &&
                   (c->arg(0)->cast<Id>()->decl()->e()==NULL || c->arg(1)->cast<Id>()->decl()->e()==NULL) ) {
+
+                // Equality constraint between two identifiers: unify
+
                 unify(envi, deletedVarDecls, c->arg(0)->cast<Id>(), c->arg(1)->cast<Id>());
                 {
                   VarDecl* vd = c->arg(0)->cast<Id>()->decl();
@@ -324,6 +326,9 @@ namespace MiniZinc {
                 ci->e(constants().lit_true);
                 envi.flat_removeItem(i);
               } else if (c->id()==constants().ids.forall) {
+
+                // Remove forall constraints, assign variables inside the forall to true
+                
                 ArrayLit* al = follow_id(c->arg(0))->cast<ArrayLit>();
                 for (unsigned int j=al->size(); j--;) {
                   if (Id* id = (*al)[j]->dyn_cast<Id>()) {
@@ -333,10 +338,13 @@ namespace MiniZinc {
                       env.envi().fail();
                       id->decl()->e(constants().lit_true);
                     }
-                  }
+                  } // todo: check else case (fixed bool inside a forall at this stage)
                 }
                 toRemoveConstraints.push_back(i);
               } else if (c->id()==constants().ids.exists || c->id()==constants().ids.clause) {
+                
+                // Add disjunctive constraints to the boolConstraints list
+                
                 boolConstraints.push_back(i);
               }
             } else if (Id* id = ci->e()->dyn_cast<Id>()) {
@@ -354,6 +362,7 @@ namespace MiniZinc {
         } else if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
           vdi->flag(false);
           if (vdi->e()->e() && vdi->e()->e()->isa<Id>() && vdi->e()->type().dim()==0) {
+            // unify variable with the identifier it's assigned to
             Id* id1 = vdi->e()->e()->cast<Id>();
             vdi->e()->e(NULL);
             unify(envi, deletedVarDecls, vdi->e()->id(), id1);
@@ -361,11 +370,13 @@ namespace MiniZinc {
           }
           if (vdi->e()->type().isbool() && vdi->e()->type().isvar() && vdi->e()->type().dim()==0
               && (vdi->e()->ti()->domain() == constants().lit_true || vdi->e()->ti()->domain() == constants().lit_false)) {
+            // push RHS onto constraint queue since this bool var is fixed
             pushVarDecl(envi, vdi, i, vardeclQueue);
             pushDependentConstraints(envi, vdi->e()->id(), constraintQueue);
           }
           if (Call* c = Expression::dyn_cast<Call>(vdi->e()->e())) {
             if (c->id()==constants().ids.forall || c->id()==constants().ids.exists || c->id()==constants().ids.clause) {
+              // push reified foralls, exists, clauses
               boolConstraints.push_back(i);
             }
           }
@@ -374,6 +385,7 @@ namespace MiniZinc {
                 (vdi->e()->ti()->domain() && vdi->e()->ti()->domain()->isa<SetLit>() &&
                  vdi->e()->ti()->domain()->cast<SetLit>()->isv()->size()==1 &&
                  vdi->e()->ti()->domain()->cast<SetLit>()->isv()->min()==vdi->e()->ti()->domain()->cast<SetLit>()->isv()->max())) {
+                  // Variable is assigned an integer, or has a singleton domain
                   pushVarDecl(envi, vdi, i, vardeclQueue);
                   pushDependentConstraints(envi, vdi->e()->id(), constraintQueue);
             }
@@ -383,6 +395,9 @@ namespace MiniZinc {
         }
       }
       
+      // Phase 2: handle boolean constraints
+      //  - check if any boolean constraint is subsumed (e.g. a fixed false in a forall, or a fixed true in a disjunction)
+      //  - check if any boolean constraint has a single non-fixed literal left, then fix that literal
       for (unsigned int i=static_cast<unsigned int>(boolConstraints.size()); i--;) {
         Item* bi = m[boolConstraints[i]];
         if (bi->removed())
@@ -506,9 +521,11 @@ namespace MiniZinc {
           env.envi().flat_removeItem(bi);
           pushVarDecl(envi, envi.vo.idx.find(finalId->decl()->id())->second, vardeclQueue);
           pushDependentConstraints(envi, finalId, constraintQueue);
-        }
+        } // todo: for var decls, we could unify the variable with the remaining finalId (the RHS)
       }
       
+      
+      // Fix all bool vars in toAssignBoolVars to true and push their declarations and constraints
       for (unsigned int i=static_cast<int>(toAssignBoolVars.size()); i--;) {
         if (m[toAssignBoolVars[i]]->removed())
           continue;
@@ -519,6 +536,8 @@ namespace MiniZinc {
           pushDependentConstraints(envi, vdi->e()->id(), constraintQueue);
         }
       }
+      
+      // Phase 3: fixpoint of constraint and variable simplification
       
       UNORDERED_NAMESPACE::unordered_map<Expression*, int> nonFixedLiteralCount;
       while (!vardeclQueue.empty() || !constraintQueue.empty()) {
@@ -533,6 +552,7 @@ namespace MiniZinc {
             bool remove = false;
             if (vd->e()) {
               if (Id* id = vd->e()->dyn_cast<Id>()) {
+                // Variable assigned to id, so fix id
                 if (id->decl()->ti()->domain()==NULL) {
                   id->decl()->ti()->domain(vd->ti()->domain());
                   pushVarDecl(envi, envi.vo.idx.find(id->decl()->id())->second, vardeclQueue);
@@ -542,6 +562,7 @@ namespace MiniZinc {
                 remove = true;
               } else if (Call* c = vd->e()->dyn_cast<Call>()) {
                 if (isTrue && c->id()==constants().ids.forall) {
+                  // Reified forall is now fixed to true, so make all elements of the conjunction true
                   remove = true;
                   ArrayLit* al = follow_id(c->arg(0))->cast<ArrayLit>();
                   for (unsigned int i=0; i<al->size(); i++) {
@@ -556,6 +577,7 @@ namespace MiniZinc {
                     }
                   }
                 } else if (!isTrue && (c->id()==constants().ids.exists || c->id()==constants().ids.clause)) {
+                  // Reified disjunction is now fixed to false, so make all elements of the disjunction false
                   remove = true;
                   for (unsigned int i=0; i<c->n_args(); i++) {
                     bool ispos = i==0;
@@ -575,16 +597,22 @@ namespace MiniZinc {
                 }
               }
             } else {
+              // If bool variable doesn't have a RHS, just remove it
               remove = true;
             }
             pushDependentConstraints(envi, vd->id(), constraintQueue);
             std::vector<Item*> toRemove;
             IdMap<VarOccurrences::Items>::iterator it = envi.vo._m.find(vd->id()->decl()->id());
+            
+            // Handle all boolean constraints that involve this variable
             if (it != envi.vo._m.end()) {
               for (VarOccurrences::Items::iterator item = it->second.begin(); item != it->second.end(); ++item) {
                 if ((*item)->removed())
                   continue;
                 if (VarDeclI* vdi = (*item)->dyn_cast<VarDeclI>()) {
+                  // The variable occurs in the RHS of another variable, so
+                  // if that is an array variable, simplify all constraints that
+                  // mention the array variable
                   if (vdi->e()->e() && vdi->e()->e()->isa<ArrayLit>()) {
                     IdMap<VarOccurrences::Items>::iterator ait = envi.vo._m.find(vdi->e()->id()->decl()->id());
                     if (ait != envi.vo._m.end()) {
@@ -595,9 +623,11 @@ namespace MiniZinc {
                     continue;
                   }
                 }
+                // Simplify the constraint *item (which depends on this variable)
                 simplifyBoolConstraint(envi,*item,vd,remove,vardeclQueue,constraintQueue,toRemove,nonFixedLiteralCount);
               }
             }
+            // Actually remove all items that have become unnecessary in the step above
             for (unsigned int i=static_cast<unsigned int>(toRemove.size()); i--;) {
               if (ConstraintI* ci = toRemove[i]->dyn_cast<ConstraintI>()) {
                 CollectDecls cd(envi.vo,deletedVarDecls,ci);
@@ -622,7 +652,9 @@ namespace MiniZinc {
               simplifyConstraint(envi,m[var_idx],deletedVarDecls,constraintQueue,vardeclQueue);
             }
           }
-        }
+        } // end of processing of variable queue
+
+        // Now handle all non-boolean constraints (i.e. anything except forall, clause, exists)
         bool handledConstraint = false;
         while (!handledConstraint && !constraintQueue.empty()) {
           Item* item = constraintQueue.front();
@@ -634,6 +666,8 @@ namespace MiniZinc {
             c = Expression::dyn_cast<Call>(ci->e());
           } else {
             if (item->removed()) {
+              // This variable was removed because of unification, so we look up the
+              // variable it was unified to
               item = m[envi.vo.find(item->cast<VarDeclI>()->e()->id()->decl())]->cast<VarDeclI>();
             }
             item->cast<VarDeclI>()->flag(false);
@@ -642,16 +676,22 @@ namespace MiniZinc {
           }
           if (!item->removed()) {
             if (al) {
+              // Substitute all fixed variables by their values in array literals, then
+              // push all constraints that depend on the array
               substituteFixedVars(envi, item, deletedVarDecls);
               pushDependentConstraints(envi, item->cast<VarDeclI>()->e()->id(), constraintQueue);
             } else if (!c || !(c->id()==constants().ids.forall || c->id()==constants().ids.exists ||
                                c->id()==constants().ids.clause) ) {
+              // For any constraint that is not forall, exists or clause,
+              // substitute fixed arguments, then simplify it
               substituteFixedVars(envi, item, deletedVarDecls);
               handledConstraint = simplifyConstraint(envi,item,deletedVarDecls,constraintQueue,vardeclQueue);
             }
           }
         }
       }
+      
+      // Clean up constraints that have been removed in the previous phase
       for (unsigned int i=static_cast<unsigned int>(toRemoveConstraints.size()); i--;) {
         ConstraintI* ci = m[toRemoveConstraints[i]]->cast<ConstraintI>();
         CollectDecls cd(envi.vo,deletedVarDecls,ci);
@@ -659,6 +699,10 @@ namespace MiniZinc {
         envi.flat_removeItem(toRemoveConstraints[i]);
       }
       
+      // Phase 4: handle boolean constraints again (todo: check if we can
+      // refactor this into a separate function)
+      //
+      // Difference to phase 2: constraint argument arrays are actually shortened here if possible
       for (unsigned int i=static_cast<unsigned int>(boolConstraints.size()); i--;) {
         Item* bi = m[boolConstraints[i]];
         if (bi->removed())
@@ -748,12 +792,14 @@ namespace MiniZinc {
 
       }
       
+      // Phase 5: remove deleted variables if possible
       while (!deletedVarDecls.empty()) {
         VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
         if (envi.vo.occurrences(cur) == 0) {
           IdMap<int>::iterator cur_idx = envi.vo.idx.find(cur->id());
           if (cur_idx != envi.vo.idx.end() && !m[cur_idx->second]->removed()) {
             if (isOutput(cur)) {
+              // We have to change the output model if we remove this variable
               Expression* val = NULL;
               if (cur->type().isbool() && cur->ti()->domain()) {
                 val = cur->ti()->domain();
@@ -767,6 +813,7 @@ namespace MiniZinc {
                 }
               }
               if (val) {
+                // Find corresponding variable in output model and fix it
                 VarDecl* vd_out = (*envi.output)[envi.output_vo_flat.find(cur)]->cast<VarDeclI>()->e();
                 vd_out->e(val);
                 CollectDecls cd(envi.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
@@ -785,7 +832,7 @@ namespace MiniZinc {
       
     }
   }
-
+  
   class SubstitutionVisitor : public EVisitor {
   protected:
     std::vector<VarDecl*> removed;
@@ -998,6 +1045,7 @@ namespace MiniZinc {
       } else if ((is_true || is_false) &&
                  c->id()==constants().ids.int_.le && ((c->arg(0)->isa<Id>() && c->arg(1)->type().ispar()) ||
                                                       (c->arg(1)->isa<Id>() && c->arg(0)->type().ispar())) ) {
+        // todo: does this every happen? int_le shouldn't be generated any more
         Id* ident = c->arg(0)->isa<Id>() ? c->arg(0)->cast<Id>() : c->arg(1)->cast<Id>();
         Expression* arg = c->arg(0)->isa<Id>() ? c->arg(1) : c->arg(0);
         IntSetVal* domain = ident->decl()->ti()->domain() ? eval_intset(env,ident->decl()->ti()->domain()) : NULL;
@@ -1113,6 +1161,7 @@ namespace MiniZinc {
         }
 
       } else {
+        // General propagation: call a propagator registered for this constraint type
         Expression* rewrite = NULL;
         GCLock lock;
         switch (OptimizeRegistry::registry().process(env, ii, c, rewrite)) {
