@@ -1852,9 +1852,9 @@ namespace MiniZinc {
       } cli_cat;
       
       /// Keep track of allocated integer literals
-      UNORDERED_NAMESPACE::unordered_map<IntVal, WeakRef> integerMap;
+      std::unordered_map<IntVal, WeakRef> integerMap;
       /// Keep track of allocated float literals
-      UNORDERED_NAMESPACE::unordered_map<FloatVal, WeakRef> floatMap;
+      std::unordered_map<FloatVal, WeakRef> floatMap;
       /// Constructor
       Constants(void);
       /// Return shared BoolLit

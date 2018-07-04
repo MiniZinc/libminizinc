@@ -150,13 +150,7 @@ check_cxx_source_compiles("#include <unordered_set>
 int main(void) { std::unordered_set<int> x; return 0; }" HAS_CPP11)
 
 if (NOT HAS_CPP11)
-  check_cxx_source_compiles("#include <tr1/unordered_set>
-                             int main(void) { std::tr1::unordered_set<int> x; return 0; }" HAS_CPP11_TR1)
-  if (HAS_CPP11_TR1)
-    set(MZN_NEED_TR1 1)
-  else()
-    message(FATAL_ERROR "A c++11 compatible C++ standard library is required to build libminizinc.")
-  endif()
+  message(FATAL_ERROR "A c++11 compatible C++ standard library is required to build libminizinc.")
 endif()
 
 CHECK_CXX_SOURCE_COMPILES("int main(void) { static __thread int x; (void)x; return 0;}" HAS_ATTR_THREAD)
@@ -348,14 +342,12 @@ include/minizinc/parser.hh
 include/minizinc/prettyprinter.hh
 include/minizinc/pathfileprinter.hh
 include/minizinc/statistics.hh
-include/minizinc/stl_map_set.hh
 include/minizinc/timer.hh
 include/minizinc/type.hh
 include/minizinc/typecheck.hh
 include/minizinc/values.hh
 include/minizinc/solver_instance.hh
 include/minizinc/solver_instance_base.hh
-include/minizinc/stl_map_set.hh
 include/minizinc/thirdparty/SafeInt3.hpp
 include/minizinc/thirdparty/miniz.h
 include/minizinc/thirdparty/b64/cdecode.h

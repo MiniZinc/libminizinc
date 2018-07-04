@@ -233,7 +233,7 @@ namespace MiniZinc {
                               std::deque<int>& vardeclQueue,
                               std::deque<Item*>& constraintQueue,
                               std::vector<Item*>& toRemove,
-                              UNORDERED_NAMESPACE::unordered_map<Expression*, int>& nonFixedLiteralCount);
+                              std::unordered_map<Expression*, int>& nonFixedLiteralCount);
 
   bool simplifyConstraint(EnvI& env, Item* ii,
                           std::vector<VarDecl*>& deletedVarDecls,
@@ -539,7 +539,7 @@ namespace MiniZinc {
       
       // Phase 3: fixpoint of constraint and variable simplification
       
-      UNORDERED_NAMESPACE::unordered_map<Expression*, int> nonFixedLiteralCount;
+      std::unordered_map<Expression*, int> nonFixedLiteralCount;
       while (!vardeclQueue.empty() || !constraintQueue.empty()) {
         while (!vardeclQueue.empty()) {
           int var_idx = vardeclQueue.front();
@@ -1282,8 +1282,8 @@ namespace MiniZinc {
     }
   }
 
-  int decrementNonFixedVars(UNORDERED_NAMESPACE::unordered_map<Expression*, int>& nonFixedLiteralCount, Call* c) {
-    UNORDERED_NAMESPACE::unordered_map<Expression*,int>::iterator it = nonFixedLiteralCount.find(c);
+  int decrementNonFixedVars(std::unordered_map<Expression*, int>& nonFixedLiteralCount, Call* c) {
+    std::unordered_map<Expression*,int>::iterator it = nonFixedLiteralCount.find(c);
     if (it==nonFixedLiteralCount.end()) {
       int nonFixedVars = 0;
       for (unsigned int i=0; i<c->n_args(); i++) {
@@ -1307,7 +1307,7 @@ namespace MiniZinc {
                               std::deque<int>& vardeclQueue,
                               std::deque<Item*>& constraintQueue,
                               std::vector<Item*>& toRemove,
-                              UNORDERED_NAMESPACE::unordered_map<Expression*, int>& nonFixedLiteralCount) {
+                              std::unordered_map<Expression*, int>& nonFixedLiteralCount) {
     if (ii->isa<SolveI>()) {
       remove = false;
       return;

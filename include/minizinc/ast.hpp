@@ -60,7 +60,7 @@ namespace MiniZinc {
       }
     }
     
-    UNORDERED_NAMESPACE::unordered_map<IntVal, WeakRef>::iterator it = constants().integerMap.find(v);
+    std::unordered_map<IntVal, WeakRef>::iterator it = constants().integerMap.find(v);
     if (it==constants().integerMap.end() || it->second()==NULL) {
       IntLit* il = new IntLit(Location().introduce(), v);
       if (it==constants().integerMap.end()) {
@@ -172,7 +172,7 @@ namespace MiniZinc {
       }
     }
     
-    UNORDERED_NAMESPACE::unordered_map<FloatVal, WeakRef>::iterator it = constants().floatMap.find(v);
+    std::unordered_map<FloatVal, WeakRef>::iterator it = constants().floatMap.find(v);
     if (it==constants().floatMap.end() || it->second()==NULL) {
       FloatLit* fl = new FloatLit(Location().introduce(), v);
       if (it==constants().floatMap.end()) {

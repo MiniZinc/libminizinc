@@ -14,7 +14,6 @@
 
 #include <minizinc/gc.hh>
 #include <minizinc/exception.hh>
-#include <minizinc/stl_map_set.hh>
 #include <minizinc/thirdparty/SafeInt3.hpp>
 #include <algorithm>
 #include <functional>
@@ -175,7 +174,7 @@ namespace MiniZinc {
     }
     
     size_t hash(void) const {
-      HASH_NAMESPACE::hash<long long int> longhash;
+      std::hash<long long int> longhash;
       return longhash(_v);
     }
     
@@ -290,7 +289,7 @@ namespace std {
   inline MiniZinc::FloatVal abs(const MiniZinc::FloatVal&);
 }
 
-OPEN_HASH_NAMESPACE {
+namespace std {
   template<>
   struct hash<MiniZinc::IntVal> {
   public:
@@ -298,7 +297,7 @@ OPEN_HASH_NAMESPACE {
       return s.hash();
     }
   };
-CLOSE_HASH_NAMESPACE }
+}
 
 namespace MiniZinc {
   
@@ -403,7 +402,7 @@ namespace MiniZinc {
     }
     
     size_t hash(void) const {
-      HASH_NAMESPACE::hash<double> doublehash;
+      std::hash<double> doublehash;
       return doublehash(_v);
     }
     
@@ -515,7 +514,7 @@ namespace std {
   };
 }
 
-OPEN_HASH_NAMESPACE {
+namespace std {
   template<>
   struct hash<MiniZinc::FloatVal> {
   public:
@@ -523,7 +522,7 @@ OPEN_HASH_NAMESPACE {
       return s.hash();
     }
   };
-CLOSE_HASH_NAMESPACE }
+}
 
 
 namespace MiniZinc {

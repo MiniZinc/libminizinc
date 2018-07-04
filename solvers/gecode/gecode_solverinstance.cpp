@@ -1060,7 +1060,7 @@ namespace MiniZinc {
 
   VarDecl*
   GecodeSolverInstance::resolveArrayAccess(VarDecl* vd, int index) {
-    UNORDERED_NAMESPACE::unordered_map<VarDecl*, std::vector<Expression*>* >::iterator it = arrayMap.find(vd);
+    std::unordered_map<VarDecl*, std::vector<Expression*>* >::iterator it = arrayMap.find(vd);
     if(it != arrayMap.end()) {
         std::vector<Expression*>* exprs = it->second;
         Expression* expr = (*exprs)[index-1];
@@ -1420,7 +1420,7 @@ namespace MiniZinc {
 
     if(orig_model != NULL) {
 
-      UNORDERED_NAMESPACE::unordered_map<std::string, VarDecl*> vds;
+      std::unordered_map<std::string, VarDecl*> vds;
       for(VarDeclIterator it = orig_model->begin_vardecls();
           it != orig_model->end_vardecls();
           ++it) {

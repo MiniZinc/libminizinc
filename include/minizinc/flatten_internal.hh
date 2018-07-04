@@ -106,11 +106,11 @@ namespace MiniZinc {
       unsigned int pass_no;
     };
     // Store mapping from path string to (VarDecl, pass_no) tuples
-    typedef UNORDERED_NAMESPACE::unordered_map<std::string, PathVar> PathMap;
+    typedef std::unordered_map<std::string, PathVar> PathMap;
     // Mapping from arbitrary Expressions to paths
     typedef KeepAliveMap<std::string> ReversePathMap;
     // Map from filename to integer (space saving optimisation)
-    typedef UNORDERED_NAMESPACE::unordered_map<std::string, int> FilenameMap;
+    typedef std::unordered_map<std::string, int> FilenameMap;
     std::vector<KeepAlive> checkVars;
   protected:
     CSEMap cse_map;
@@ -121,10 +121,10 @@ namespace MiniZinc {
     PathMap pathMap;
     ReversePathMap reversePathMap;
     FilenameMap filenameMap;
-    typedef UNORDERED_NAMESPACE::unordered_map<VarDeclI*,unsigned int> EnumMap;
+    typedef std::unordered_map<VarDeclI*,unsigned int> EnumMap;
     EnumMap enumMap;
     std::vector<VarDeclI*> enumVarDecls;
-    typedef UNORDERED_NAMESPACE::unordered_map<std::string,unsigned int> ArrayEnumMap;
+    typedef std::unordered_map<std::string,unsigned int> ArrayEnumMap;
     ArrayEnumMap arrayEnumMap;
     std::vector<std::vector<unsigned int> > arrayEnumDecls;
   public:

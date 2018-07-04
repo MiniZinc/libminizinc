@@ -14,8 +14,8 @@
 
 #include <string>
 #include <vector>
-#include <minizinc/stl_map_set.hh>
 #include <minizinc/exception.hh>
+#include <unordered_map>
 
 namespace MiniZinc {
 
@@ -195,17 +195,17 @@ namespace MiniZinc {
   protected:
     /// The solvers
     std::vector<SolverConfig> _solvers;
-    typedef UNORDERED_NAMESPACE::unordered_map<std::string,std::vector<int> > TagMap;
+    typedef std::unordered_map<std::string,std::vector<int> > TagMap;
     /// Mapping tags to vectors of solvers (indexed into _solvers)
     TagMap _tags;
     /// The default solver
     std::string _defaultSolver;
     /// The MiniZinc library directory
     std::string _mznlibDir;
-    typedef UNORDERED_NAMESPACE::unordered_map<std::string,std::string> DefaultMap;
+    typedef std::unordered_map<std::string,std::string> DefaultMap;
     /// Mapping from tag to default solver for that tag
     DefaultMap _tagDefault;
-    typedef UNORDERED_NAMESPACE::unordered_map<std::string,std::vector<std::string> > SolverDefaultMap;
+    typedef std::unordered_map<std::string,std::vector<std::string> > SolverDefaultMap;
     /// Mapping from solver id to default options for that solver
     SolverDefaultMap _solverDefaultOptions;
     /// Add new solver configuration \a sc

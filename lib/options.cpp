@@ -10,12 +10,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 #include <minizinc/options.hh>
-#include <minizinc/stl_map_set.hh>
+
+#include <unordered_map>
 
 namespace MiniZinc {
   
   Expression* Options::getParam(const std::string& name) const {
-    UNORDERED_NAMESPACE::unordered_map<std::string, KeepAlive >::const_iterator it = _options.find(name);
+    std::unordered_map<std::string, KeepAlive >::const_iterator it = _options.find(name);
     if(it == _options.end()) {
       std::stringstream ss;
       ss << "Could not find option: \"" << name << "\"." << std::endl;

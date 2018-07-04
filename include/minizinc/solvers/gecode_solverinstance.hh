@@ -13,6 +13,8 @@
 #ifndef __MINIZINC_GECODE_SOLVER_INSTANCE_HH__
 #define __MINIZINC_GECODE_SOLVER_INSTANCE_HH__
 
+#include <unordered_map>
+
 #include <gecode/kernel.hh>
 #include <gecode/int.hh>
 #include <gecode/driver.hh>
@@ -247,7 +249,7 @@ namespace MiniZinc {
     //typedef std::pair<VarDecl*,Expression*> DE;
     //ASTStringMap<DE>::t _declmap;
     /// TODO: we can probably get rid of this
-    UNORDERED_NAMESPACE::unordered_map<VarDecl*, std::vector<Expression*>* > arrayMap;
+    std::unordered_map<VarDecl*, std::vector<Expression*>* > arrayMap;
     /// The solver engine
     GecodeEngine* engine;
     Gecode::Search::Options engine_options;

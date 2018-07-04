@@ -8,8 +8,6 @@
 
 #cmakedefine HAS_ATTR_THREAD
 
-#cmakedefine MZN_NEED_TR1
-
 #cmakedefine HAS_PIDPATH
 
 #cmakedefine HAS_GETMODULEFILENAME

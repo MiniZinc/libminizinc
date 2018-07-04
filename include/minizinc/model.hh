@@ -15,6 +15,7 @@
 #include <vector>
 #include <iterator>
 #include <unordered_map>
+#include <unordered_set>
 
 #include <minizinc/gc.hh>
 #include <minizinc/ast.hh>
@@ -347,7 +348,7 @@ namespace MiniZinc {
   public:
     ItemIter(I& iter0) : iter(iter0) {}
     void run(Model* m) {
-      UNORDERED_NAMESPACE::unordered_set<Model*> seen;
+      std::unordered_set<Model*> seen;
       std::vector<Model*> models;
       models.push_back(m);
       seen.insert(m);
