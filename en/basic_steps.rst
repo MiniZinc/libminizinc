@@ -1,3 +1,5 @@
+.. _ch-first-steps:
+
 First steps with MiniZinc
 =========================
 

@@ -101,7 +101,7 @@ These options control the general behaviour of the ``minizinc`` tool.
 
 .. option::  --help, -h
 
-    Print this help message.
+    Print a help message.
 
 .. option::  --version
 
@@ -111,21 +111,41 @@ These options control the general behaviour of the ``minizinc`` tool.
 
     Print list of available solvers.
 
-.. option::  --solver <solver id>
+.. option::  --solver <id>, --solver <solver configuration file>.msc
 
-    Select solver to use.
+    Select solver to use. The first form of the command selects one of the
+    solvers known to MiniZinc (that appear in the list of the ``--solvers``
+    command). You can select a solver by name, id, or tag, and add a specific
+    version. For example, to select a mixed-integer programming solver, 
+    identified by the ``mip`` tag, you can use ``--solver mip``. To select
+    a specific version of Gurobi (in case you have two versions installed),
+    use ``--solver Gurobi@7.5.2``. Instead of the name you can also use
+    the solver's identifier, e.g. ``--solver org.gecode.gecode``.
+    
+    The second form of the command selects the solver from the given
+    configuration file (see :numref:`sec-cmdline-conffiles`).
 
-.. option::  --help <solver id>
+.. option::  --help <id>
 
-    Print help for a particular solver.
+    Print help for a particular solver. The scheme for selecting a solver
+    is the same as for the ``--solver`` option.
 
 .. option::  -v, -l, --verbose
 
-    Print progress/log statements. Note that some solvers may log to stdout.
+    Print progress/log statements (for both compilation and solver).
+    Note that some solvers may log to stdout.
+
+.. option::  --verbose-compilation
+
+    Print progress/log statements for compilation only.
 
 .. option::  -s, --statistics
 
-    Print statistics.
+    Print statistics (for both compilation and solving).
+
+.. option::  --compiler-statistics
+
+    Print statistics for compilation.
 
 .. option::  -c, --compile
 
@@ -138,6 +158,45 @@ These options control the general behaviour of the ``minizinc`` tool.
 .. option::  --solvers-json
 
     Print configurations of available solvers as a JSON array.
+
+Solving options
+~~~~~~~~~~~~~~~
+
+Each solver may support specific command line options for controlling its behaviour. These can be queried using the ``--help <id>`` flag, where ``<id>`` is the name or identifier of a particular solver. Most solvers will support some or all of the following options.
+
+
+.. option:: -a, --all-solutions
+
+  Report *all* solutions in the case of satisfaction
+  problems, or print *intermediate* solutions of increasing quality in the case
+  of optimisation problems.
+
+.. option:: -n <i>, --num-solutions <i>
+
+  Stop after reporting ``i`` solutions (only used with satisfaction problems).
+
+.. option:: -f, --free-search
+
+  Instructs the solver to conduct a "free search", i.e., ignore any search 
+  annotations. The solver is not *required* to ignore the annotations, but it
+  is *allowed* to do so.
+
+.. option:: --solver-statistics
+
+  Print statistics during and/or after the search for solutions.
+
+.. option:: --verbose-solving
+
+  Print log messages (verbose solving) to the standard error stream.
+
+.. option:: -p <i>, --parallel <i>
+
+  Run with ``i`` parallel threads (for multi-threded solvers).
+
+.. option:: -r <i>, --random-seed <i>
+
+  Use ``i`` as the random seed (for any random number generators the solver
+  may be using).
 
 Flattener input options
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -217,7 +276,7 @@ These options control aspects of the MiniZinc compiler.
 
 .. option::  --compile-solution-checker <file>.mzc.mzn
 
-    Compile solution checker model
+    Compile solution checker model.
 
 Flattener two-pass options
 ++++++++++++++++++++++++++

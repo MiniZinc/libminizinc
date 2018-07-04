@@ -13,7 +13,7 @@ The MiniZinc Handbook
 
 .. toctree::
    :maxdepth: 2
-   :numbered:
+   :numbered: 4
 
    part_1_overview
    part_2_tutorial

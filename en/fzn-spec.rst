@@ -1,6 +1,5 @@
 .. _ch-fzn-interfacing:
 
-===============================
 Interfacing Solvers to Flatzinc
 ===============================
 
@@ -9,7 +8,7 @@ This document describes the interface between the MiniZinc system and FlatZinc s
 .. _ch-fzn-spec:
 
 Specification of FlatZinc
-=========================
+-------------------------
 
 This document is the specification of the FlatZinc modelling language.
 It also includes a definition of the standard command line options a FlatZinc solver should support
@@ -23,12 +22,12 @@ requiring minimal implementation effort to support.
 Throughout this document: :math:`r_1`, :math:`r_2` denote float literals; :math:`x_1, x_2, \dots, x_k, i, j, k` denote int literals; :math:`y_1, y_2, \dots, y_k, y_i` denote literal array elements.
 
 Comments
---------
+~~~~~~~~
 
 Comments start with a percent sign ``%`` and extend to the end of the line. Comments can appear anywhere in a model.
 
 Types
------
+~~~~~
 
 There are three varieties of types in FlatZinc.
 
@@ -37,7 +36,7 @@ There are three varieties of types in FlatZinc.
 - *Annotations* and *strings*: annotations can appear on variable declarations, constraints, and on the solve goal. They provide information about how a variable or constraint should be treated by the solver (e.g., whether a variable should be output as part of the result or whether a particular constraint should implemented using domain consistency). Strings may appear as arguments to annotations, but nowhere else.
 
 Parameter types
-~~~~~~~~~~~~~~~
++++++++++++++++
 
 Parameters are fixed quantities explicitly specified in the model
 (see rule :mzndef:`<par-type>` in :numref:`ch-fzn-syntax`).
@@ -81,7 +80,7 @@ An array type appearing in a predicate declaration may use just
 in cases where the array argument can be of any length.
 
 Variable types
-~~~~~~~~~~~~~~
+++++++++++++++
 
 Variables are quantities decided by the solver
 (see rules :mzndef:`<basic-var-type>` and :mzndef:`<array-var-type>` in :numref:`ch-fzn-syntax`).
@@ -135,7 +134,7 @@ An array type appearing in a predicate declaration may use just
 in cases where the array argument can be of any length.
 
 The string type
-~~~~~~~~~~~~~~~
++++++++++++++++
 
 String literals and literal arrays of string literals can appear as
 annotation arguments, but not elsewhere.
@@ -152,7 +151,7 @@ Examples:
   "Hello,\nWorld\t\"quoted!\""    % A string with an embedded newline, tab and quotes.
 
 Values and expressions
-----------------------
+~~~~~~~~~~~~~~~~~~~~~~
 
 (See rule :mzndef:`<expr>` in :numref:`ch-fzn-syntax`)
 
@@ -180,7 +179,7 @@ name of a non-array parameter or variable, ``v``. For example:
 syntax for float and int literals.
 
 FlatZinc models
----------------
+~~~~~~~~~~~~~~~
 
 A FlatZinc model consists of:
 
@@ -256,7 +255,7 @@ They are reserved because they are keywords in Zinc and MiniZinc.
 FlatZinc syntax is insensitive to whitespace.
 
 Predicate declarations
-----------------------
+~~~~~~~~~~~~~~~~~~~~~~
 
 (See rule :mzndef:`<predicate-item>` in :numref:`ch-fzn-syntax`)
 
@@ -295,7 +294,7 @@ Examples:
 
 
 Parameter declarations
-----------------------
+~~~~~~~~~~~~~~~~~~~~~~
 
 (See rule ``param_decl`` in :numref:`ch-fzn-syntax`)
 
@@ -320,7 +319,7 @@ Examples:
   bool: beer_is_good = true;
 
 Variable declarations
----------------------
+~~~~~~~~~~~~~~~~~~~~~
 
 (See rule ``var_decl`` in :numref:`ch-fzn-syntax`)
 
@@ -352,7 +351,7 @@ Examples:
 
 
 Constraints
------------
+~~~~~~~~~~~
 
 (See rule :mzndef:`<constraint-item>` in :numref:`ch-fzn-syntax`)
 
@@ -378,7 +377,7 @@ Examples:
   constraint int_lin_eq([2, 3], [x, y], 10) :: domain;
 
 Solve item
-----------
+~~~~~~~~~~
 
 (See rule :mzndef:`<solve-item>` in :numref:`ch-fzn-syntax`)
 
@@ -414,7 +413,7 @@ Examples:
       maximize x; % Find a solution maximizing x.
 
 Annotations
------------
+~~~~~~~~~~~
 
 Annotations are optional suggestions to the solver concerning how
 individual variables and constraints should be handled (e.g., a
@@ -590,12 +589,12 @@ Here are some constraint annotations supported by some solvers:
 .. _ch-fzn-output:
 
 Output
-======
+------
 
 An implementation can produce three types of output: solutions, statistics, and errors.
 
 Solution output
----------------
+~~~~~~~~~~~~~~~
 
 An implementation must output values for all and only the variables
 annotated with ``output_var`` or ``output_array`` (output
@@ -759,7 +758,7 @@ indicating that a complete search was performed and no solutions were
 found (i.e., the problem is unsatisfiable).
 
 Statistics output
------------------
+~~~~~~~~~~~~~~~~~
 
 FlatZinc solvers can output statistics in a standard format so that it can be read by scripts, for example, in order to run experiments and automatically aggregate the results. Statistics should be printed to the standard output stream in the form of FlatZinc comments that follow a specific format. Statistics can be output at any time during the solving, i.e., before the first solution, between solutions, and after the search has finished.
 
@@ -793,13 +792,13 @@ Name                     Type   Explanation
 ======================== ====== ================================================
 
 Error and warning output
-------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~
 
 Errors and warnings must be output to the standard error stream. When an error occurs, the implementation should exit with a non-zero exit code, signaling failure.
 
 
 Solver-specific Libraries
-=========================
+-------------------------
 
 Constraints in FlatZinc can call standard predicates as well as solver-specific predicates. Standard predicates are the ones that the MiniZinc compiler assumes to be present in all solvers. Without further customisation, the compiler will try to compile the entire model into a set of these standard predicates.
 
@@ -808,7 +807,7 @@ Solvers can use custom predicates and *redefine* standard predicates by supplyin
 The solver-specific library needs to be made available to the MiniZinc compiler by specifying its location in the solver's configuration file, see :numref:`sec-cmdline-conffiles`.
 
 Standard predicates
--------------------
+~~~~~~~~~~~~~~~~~~~
 
 FlatZinc solvers need to support the predicates listed as ``FlatZinc builtins`` in the library reference documentation, see :numref:`ch-lib-flatzinc`.
 
@@ -844,7 +843,7 @@ Example for a ``redefinitions-2.0.mzn`` that declares native support for the pre
 
 
 Solver-specific predicates
---------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Many solvers have built-in support for some of the constraints in the MiniZinc standard library. But without declaring which constraints they support, MiniZinc will assume that they don't support any excpect for the standard FlatZinc builtins mentioned in the section above.
 
@@ -869,7 +868,7 @@ When a MiniZinc model that contains the ``all_different`` constraint is now comp
 .. _fzn-cmdline-options:
 
 Command Line Interface
-======================
+----------------------
 
 In order to work with the ``minizinc`` command line driver, a FlatZinc solver must be an executable (which can include e.g. shell scripts) that can be invoked as follows:
 
@@ -902,6 +901,12 @@ where ``<executable-name>`` is the name of the executable. Solvers may support t
   should be printed as FlatZinc comments to the standard output stream.
   See below for a standard format for statistics.
 
+.. option:: -v
+
+  Print log messages (verbose solving) to the standard error stream. If solvers
+  choose to print to standard output instead, all messages must be valid
+  comments (i.e., start with a ``%`` character).
+
 .. option:: -p <i>
 
   Run with ``i`` parallel threads (for multi-threded solvers).
@@ -914,7 +919,7 @@ where ``<executable-name>`` is the name of the executable. Solvers may support t
 .. _sec-cmdline-conffiles:
 
 Solver Configuration Files
-==========================
+--------------------------
 
 In order for a solver to be available to MiniZinc, it has to be described in a *solver configuration file*. This is a simple file, in JSON or ``.dzn`` format, that contains some basic information such as the solver's name, version, where its library of global constraints can be found, and a path to its executable.
 
@@ -963,7 +968,7 @@ Here is a list of all configuration options recognised by the configuration file
   - ``"float"``: for solvers that support float variables
   - ``"api"``: for solvers that use the internal C++ API
 
-- ``stdFlags`` (list of strings, default empty): Which of the standard solver command line flags are supported by this solver. The standard flags are ``-a``, ``-n``, ``-s``, ``-p``, ``-r``, ``-f``.
+- ``stdFlags`` (list of strings, default empty): Which of the standard solver command line flags are supported by this solver. The standard flags are ``-a``, ``-n``, ``-s``, ``-v``, ``-p``, ``-r``, ``-f``.
 
 - ``extraFlags`` (list of list of strings, default empty): Extra command line flags supported by the solver. Each entry should be a list two, three or four strings. The first string is the name of the option (e.g. ``"--special-algorithm"``). The second string is a description that can be used to generate help output (e.g. ``"which special algorithm to use"``). The third string specifies the type of the argument (as a MiniZinc type). The fourth string is the default value. If no type is specified, ``"bool"`` is assumed.
 - ``supportsMzn`` (bool, default ``false``): Whether the solver can run MiniZinc directly (i.e., it implements its own compilation or interpretation of the model).
@@ -976,7 +981,7 @@ Here is a list of all configuration options recognised by the configuration file
 .. _ch-fzn-syntax:
 
 Grammar
-=======
+-------
 
 This is the full grammar for FlatZinc. It is a proper subset of the MiniZinc grammar (see :numref:`spec-grammar`). However, instead of specifying all the cases in the MiniZinc grammar that do *not* apply to FlatZinc, the BNF syntax below contains only the relevant syntactic constructs. It uses the same notation as in :numref:`spec-syntax-notation`.
 
