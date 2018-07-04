@@ -254,11 +254,10 @@ namespace MiniZinc { namespace FileUtils {
     }
     return "";
 #else
-    std::string homedir(getenv("HOME"));
-    if (homedir.empty()) {
-      return "";
+    if (const char* hd = getenv("HOME")) {
+      return std::string(hd)+"/.minizinc";
     }
-    return homedir+"/.minizinc";
+    return "";
 #endif
   }
 
