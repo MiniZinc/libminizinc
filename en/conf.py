@@ -146,7 +146,8 @@ html_theme_path = ["_themes", ]
 # documentation.
 #
 html_theme_options = {
-  'logo_only' : False
+  'logo_only' : False,
+  'canonical_url' : 'http://www.minizinc.org/doc-latest/en/'
 }
 
 # Add any paths that contain custom themes here, relative to this directory.
