@@ -128,7 +128,8 @@ namespace MiniZinc { namespace FileUtils {
     if (!(lpBuffer = (LPTSTR)LocalAlloc(LMEM_FIXED, sizeof(TCHAR) * nBufferLength)))
       return 0;
     std::string ret;
-    if (!GetFullPathName(filename.c_str(), nBufferLength, lpBuffer, &lpFilePart)) {
+    DWORD error = GetFullPathName(filename.c_str(), nBufferLength, lpBuffer, &lpFilePart);
+    if(error == 0 || (INVALID_FILE_ATTRIBUTES == GetFileAttributes(lpBuffer) && GetLastError()==ERROR_FILE_NOT_FOUND)) {
       if (basePath.empty())
         ret = filename;
       else

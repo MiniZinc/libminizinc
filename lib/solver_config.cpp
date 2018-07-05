@@ -165,7 +165,7 @@ namespace MiniZinc {
         bool hadId = false;
         bool hadVersion = false;
         bool hadName = false;
-        string basePath = FileUtils::dir_name(filename);
+        string basePath = FileUtils::dir_name(sc._configFile);
         for (unsigned int i=0; i<m->size(); i++) {
           if (AssignI* ai = (*m)[i]->dyn_cast<AssignI>()) {
             if (ai->id()=="id") {
