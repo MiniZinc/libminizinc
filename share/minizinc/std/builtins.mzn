@@ -1050,56 +1050,56 @@ function array[$$E] of var $T: col(array[$$E,int] of var $T: x, int: c) = x[..,c
 /** @group builtins.array Return column \a c of array \a x */
 function array[$$E] of var opt $T: col(array[$$E,int] of var opt $T: x, int: c) = x[..,c];
 
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 1d array with index set \a dims1 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 1d array with index set \a dims1 */
 function array[int] of $T: slice_1d(array[$E] of $T: x, array[int] of set of int: s, set of int: dims1);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 2d array with index sets \a dims1 and \a dims2 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 2d array with index sets \a dims1 and \a dims2 */
 function array[int,int] of $T: slice_2d(array[$E] of $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2 and \a dims3 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2 and \a dims3 */
 function array[int,int,int] of $T: slice_3d(array[$E] of $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4 */
 function array[int,int,int] of $T: slice_4d(array[$E] of $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5 */
 function array[int,int,int] of $T: slice_5d(array[$E] of $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4, set of int: dims5);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5, \a dims6 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5, \a dims6 */
 function array[int,int,int] of $T: slice_6d(array[$E] of $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4, set of int: dims5, set of int: dims6);
 
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 1d array with index set \a dims1 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 1d array with index set \a dims1 */
 function array[int] of opt $T: slice_1d(array[$E] of opt $T: x, array[int] of set of int: s, set of int: dims1);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 2d array with index sets \a dims1 and \a dims2 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 2d array with index sets \a dims1 and \a dims2 */
 function array[int,int] of opt $T: slice_2d(array[$E] of opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2 and \a dims3 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2 and \a dims3 */
 function array[int,int,int] of opt $T: slice_3d(array[$E] of opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4 */
 function array[int,int,int] of opt $T: slice_4d(array[$E] of opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5 */
 function array[int,int,int] of opt $T: slice_5d(array[$E] of opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4, set of int: dims5);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5, \a dims6 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5, \a dims6 */
 function array[int,int,int] of opt $T: slice_6d(array[$E] of opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4, set of int: dims5, set of int: dims6);
 
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 1d array with index set \a dims1 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 1d array with index set \a dims1 */
 function array[int] of var $T: slice_1d(array[$E] of var $T: x, array[int] of set of int: s, set of int: dims1);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 2d array with index sets \a dims1 and \a dims2 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 2d array with index sets \a dims1 and \a dims2 */
 function array[int,int] of var $T: slice_2d(array[$E] of var $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2 and \a dims3 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2 and \a dims3 */
 function array[int,int,int] of var $T: slice_3d(array[$E] of var $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4 */
 function array[int,int,int] of var $T: slice_4d(array[$E] of var $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5 */
 function array[int,int,int] of var $T: slice_5d(array[$E] of var $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4, set of int: dims5);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5, \a dims6 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5, \a dims6 */
 function array[int,int,int] of var $T: slice_6d(array[$E] of var $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4, set of int: dims5, set of int: dims6);
 
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 1d array with index set \a dims1 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 1d array with index set \a dims1 */
 function array[int] of var opt $T: slice_1d(array[$E] of var opt $T: x, array[int] of set of int: s, set of int: dims1);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 2d array with index sets \a dims1 and \a dims2 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 2d array with index sets \a dims1 and \a dims2 */
 function array[int,int] of var opt $T: slice_2d(array[$E] of var opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2 and \a dims3 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2 and \a dims3 */
 function array[int,int,int] of var opt $T: slice_3d(array[$E] of var opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4 */
 function array[int,int,int] of var opt $T: slice_4d(array[$E] of var opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5 */
 function array[int,int,int] of var opt $T: slice_5d(array[$E] of var opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4, set of int: dims5);
-/** @group builtins.array Return slice of array specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5, \a dims6 */
+/** @group builtins.array Return slice of array \a x specified by sets \a s, coerced to new 3d array with index sets \a dims1, \a dims2, \a dims3, \a dims4, \a dims5, \a dims6 */
 function array[int,int,int] of var opt $T: slice_6d(array[$E] of var opt $T: x, array[int] of set of int: s, set of int: dims1, set of int: dims2, set of int: dims3, set of int: dims4, set of int: dims5, set of int: dims6);
 
 
@@ -1546,15 +1546,15 @@ function bool: abort(string: msg);
   
 */
 
-/** @group builtins.enum Return next greater enum value of \a x */
+/** @group builtins.enum Return next greater enum value of \a x in enum \a e */
 function $$E: enum_next(set of $$E: e, $$E: x);
-/** @group builtins.enum Return next greater enum value of \a x */
+/** @group builtins.enum Return next greater enum value of \a x in enum \a e */
 function var $$E: enum_next(set of $$E: e, var $$E: x) =
   let { constraint x < max(e) } in x+1;
 
-/** @group builtins.enum Return next smaller enum value of \a x */
+/** @group builtins.enum Return next smaller enum value of \a x in enum \a e */
 function $$E: enum_prev(set of $$E: e, $$E: x);
-/** @group builtins.enum Return next smaller enum value of \a x */
+/** @group builtins.enum Return next smaller enum value of \a x in enum \a e */
 function var $$E: enum_prev(set of $$E: e, var $$E: x) =
   let { constraint x > min(e) } in x-1;
 
