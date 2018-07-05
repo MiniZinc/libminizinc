@@ -526,8 +526,8 @@ Model output is specified through variable annotations.
 Non-array output variables are annotated with
 ``output_var``.
 Array output variables are annotated with
-``output_array([``:math:`x_1\` ``..`` :math:`x_2` ``, ... ])``
-where :math:`x_1\` ``..`` :math:`x_2` ``, ...`` are the index set ranges of the
+``output_array([`` :math:`x_1` ``..`` :math:`x_2` ``, ... ])``
+where :math:`x_1` ``..`` :math:`x_2` ``, ...`` are the index set ranges of the
 original MiniZinc array (which
 may have had multiple dimensions and/or index sets that do not start at
 1). See :numref:`ch-fzn-output` for details on the output format.
