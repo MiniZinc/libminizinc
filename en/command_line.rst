@@ -399,11 +399,35 @@ These options control how solutions are output. Some of these options only apply
     Specify the string used to separate solutions.
     The default is the empty string.
 
-.. option::  --unsat-msg (--unsatisfiable-msg), --unbounded-msg, --unsatorunbnd-msg, --unknown-msg, --error-msg, --search-complete-msg <msg>
+.. option::  --unsat-msg (--unsatisfiable-msg)
 
-    Specify solution status messages. The defaults:
-    "=====UNSATISFIABLE=====", "=====UNSATorUNBOUNDED=====", "=====UNBOUNDED=====",
-    "=====UNKNOWN=====", "=====ERROR=====", "==========", respectively.
+    Specify status message for unsatisfiable problems
+    (default: ``"=====UNSATISFIABLE====="``)
+    
+.. option:: --unbounded-msg
+
+    Specify status message for unbounded problems
+    (default: ``"=====UNBOUNDED====="``)
+
+.. option:: --unsatorunbnd-msg
+
+    Specify status message for unsatisfiable or unbounded problems
+    (default: ``"=====UNSATorUNBOUNDED====="``)
+
+.. option:: --unknown-msg
+
+    Specify status message if search finished before determining status
+    (default: ``"=====UNKNOWN====="``)
+
+.. option:: --error-msg
+
+    Specify status message if search resulted in an error
+    (default: ``"=====ERROR====="``)
+
+.. option:: --search-complete-msg <msg>
+
+    Specify status message if when search exhausted the entire search space
+    (default: ``"=========="``)
 
 .. option::  --non-unique
 
