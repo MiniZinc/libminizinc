@@ -223,9 +223,9 @@ configure_file (
   ${PROJECT_BINARY_DIR}/doc/pdf/version.tex
   )
 
-include_directories(PUBLIC ${PROJECT_BINARY_DIR}/include)
+include_directories(${PROJECT_BINARY_DIR}/include)
 
-include_directories(PUBLIC ${PROJECT_SOURCE_DIR}/include)
+include_directories(${PROJECT_SOURCE_DIR}/include)
 
 add_custom_target(MZNParser echo "Creating parser")
 
@@ -391,8 +391,8 @@ if(HAS_GUROBI)  # Version 7.5
   if(HAS_GUROBI_PLUGIN)
     target_link_libraries(minizinc_gurobi minizinc ${NEEDS_LIBDL} ${CMAKE_THREAD_LIBS_INIT})
   else()
-    link_directories("${GUROBI_HOME}/lib")
-    target_link_libraries(minizinc_gurobi minizinc gurobi75 ${CMAKE_THREAD_LIBS_INIT})
+    find_library(GUROBI_LIB2 "${GUROBI_HOME}/lib/gurobi75")
+    target_link_libraries(minizinc_gurobi minizinc ${GUROBI_LIB2} ${CMAKE_THREAD_LIBS_INIT})
   endif()
 
   target_link_libraries(minizinc_solver minizinc_gurobi)
@@ -449,28 +449,28 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
 	set(CPLEX_LIB "cplex1263.lib")          # Here 12.6.3
   endif(WIN32)
 
+  find_library(CPLEX_LIB2 NAMES ${CPLEX_LIB} PATHS "${CPLEX_STUDIO_DIR}/cplex/lib/${CPLEX_ARCH}")
 
-#	add_definitions(-DIL_STD)
+  # add_definitions(-DIL_STD)
 
-  link_directories("${CPLEX_STUDIO_DIR}/cplex/lib/${CPLEX_ARCH}")
-#  link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
+  # link_directories("${CPLEX_STUDIO_DIR}/cplex/lib/${CPLEX_ARCH}")
+  # link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
 
-	add_library(minizinc_cplex
-		solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
+  add_library(minizinc_cplex
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
     solvers/MIP/MIP_cplex_solverfactory.cpp include/minizinc/solvers/MIP/MIP_cplex_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_cplex_wrap.hh
-	)
+  )
   SET_TARGET_PROPERTIES(minizinc_cplex
                                PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG"
                                )
   include_directories("${CPLEX_STUDIO_DIR}/cplex/include")
-#  target_include_directories(minizinc_cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
-
+  # target_include_directories(minizinc_cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
 
   if(HAS_CPLEX_PLUGIN)
     target_link_libraries(minizinc_cplex minizinc ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
   else()
-    target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB} ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
+    target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB2} ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
   endif()
 
   SET_TARGET_PROPERTIES(minizinc_solver
@@ -489,12 +489,12 @@ endif()
 
 # ----------------------------------------------------------------------------------------------------------
 if(HAS_SCIP)   # SCIP version tested: 3.2.1
-  link_directories("${SCIP_DIR}/../lib"  )  # For the single library, use 'make scipoptlib' when building SCIP
+  #link_directories("${SCIP_DIR}/../lib"  )  # For the single library, use 'make scipoptlib' when building SCIP
 
   if(UNIX)
 #    set(SCIP_OS "linux")
 #    set(SCIP_ARCH "x86_64")
-	set(SCIP_LIBS "scipopt-3.2.1.linux.x86_64.gnu.opt")
+   set(SCIP_LIBS "scipopt-3.2.1.linux.x86_64.gnu.opt")
 #    set(SCIP_LIB_EXTRAS readline z zimpl.${SCIP_OS}.${SCIP_ARCH}.gnu.opt gmp)  # if SCIP configured so
    set(SCIP_LIB_EXTRAS readline z gmp)  # if SCIP configured so
   endif(UNIX)
@@ -508,6 +508,9 @@ if(HAS_SCIP)   # SCIP version tested: 3.2.1
     set(SCIP_LIBS "scip-3.2.1.win.x86_64.msvc.opt.spx.ld")
   endif()
 
+  find_library(SCIP_LIBS2 NAMES ${SCIP_LIBS} PATHS ${SCIP_DIR}/../lib)
+  message(SCIPLIBS2 : ${SCIP_LIBS2})
+
   add_library(minizinc_scip
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
     solvers/MIP/MIP_scip_solverfactory.cpp
@@ -517,7 +520,7 @@ if(HAS_SCIP)   # SCIP version tested: 3.2.1
     "${SOPLEX_DIR}/src"
     "${ZIMPL_DIR}/src")
   target_link_libraries(minizinc_scip minizinc
-    ${SCIP_LIBS}
+    ${SCIP_LIBS2}
     ${SCIP_LIB_EXTRAS}
     ${CMAKE_THREAD_LIBS_INIT})
 
