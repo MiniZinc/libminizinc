@@ -261,14 +261,19 @@ htmlhelp_basename = 'MiniZincdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
+
 latex_elements = {
      # The paper size ('letterpaper' or 'a4paper').
      #
      'papersize': 'a4paper',
-
+'fontpkg': r'''
+        \usepackage{charter}
+        \usepackage[defaultsans]{lato}
+        \usepackage{inconsolata}
+''',
      # The font size ('10pt', '11pt' or '12pt').
      #
-     # 'pointsize': '10pt',
+     'pointsize': '11pt',
 
      # Additional stuff for the LaTeX preamble.
      #
