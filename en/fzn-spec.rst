@@ -797,6 +797,8 @@ Error and warning output
 Errors and warnings must be output to the standard error stream. When an error occurs, the implementation should exit with a non-zero exit code, signaling failure.
 
 
+.. _ch-solver-specific-libraries:
+
 Solver-specific Libraries
 -------------------------
 
