@@ -41,12 +41,12 @@ using namespace MiniZinc;
   Current.last_line(Rhs[N].last_line()); \
   Current.last_column(Rhs[N].last_column());
 
-int yyparse(void*);
-int yylex(YYSTYPE*, YYLTYPE*, void* scanner);
-int yylex_init (void** scanner);
-int yylex_destroy (void* scanner);
-int yyget_lineno (void* scanner);
-void yyset_extra (void* user_defined ,void* yyscanner );
+int mzn_yyparse(void*);
+int mzn_yylex(YYSTYPE*, YYLTYPE*, void* scanner);
+int mzn_yylexinit (void** scanner);
+int mzn_yylexdestroy (void* scanner);
+int mzn_yyget_lineno (void* scanner);
+void mzn_yyset_extra (void* user_defined ,void* yyscanner );
 
 extern int yydebug;
 
@@ -166,11 +166,11 @@ namespace MiniZinc {
       isFzn |= (filename.compare(filename.length()-4,4,".szn")==0);
     }
     ParserState pp(filename,modelText, err, files, seenModels, model, false, isFzn, parseDocComments);
-    yylex_init(&pp.yyscanner);
+    mzn_yylexinit(&pp.yyscanner);
     yyset_extra(&pp, pp.yyscanner);
     yyparse(&pp);
     if (pp.yyscanner)
-    yylex_destroy(pp.yyscanner);
+    mzn_yylexdestroy(pp.yyscanner);
     if (pp.hadError) {
       goto error;
     }
@@ -223,11 +223,11 @@ namespace MiniZinc {
       isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
       isFzn |= (fullname.compare(fullname.length()-4,4,".szn")==0);
       ParserState pp(fullname,s, err, files, seenModels, m, false, isFzn, parseDocComments);
-      yylex_init(&pp.yyscanner);
+      mzn_yylexinit(&pp.yyscanner);
       yyset_extra(&pp, pp.yyscanner);
       yyparse(&pp);
       if (pp.yyscanner)
-      yylex_destroy(pp.yyscanner);
+      mzn_yylexdestroy(pp.yyscanner);
       if (pp.hadError) {
         goto error;
       }
@@ -355,11 +355,11 @@ namespace MiniZinc {
       isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
       isFzn |= (fullname.compare(fullname.length()-4,4,".szn")==0);
       ParserState pp(fullname,s, err, files, seenModels, m, false, isFzn, parseDocComments);
-      yylex_init(&pp.yyscanner);
+      mzn_yylexinit(&pp.yyscanner);
       yyset_extra(&pp, pp.yyscanner);
       yyparse(&pp);
       if (pp.yyscanner)
-        yylex_destroy(pp.yyscanner);
+        mzn_yylexdestroy(pp.yyscanner);
       if (pp.hadError) {
         goto error;
       }
@@ -388,11 +388,11 @@ namespace MiniZinc {
         }
         
         ParserState pp(f, s, err, files, seenModels, model, true, false, parseDocComments);
-        yylex_init(&pp.yyscanner);
+        mzn_yylexinit(&pp.yyscanner);
         yyset_extra(&pp, pp.yyscanner);
         yyparse(&pp);
         if (pp.yyscanner)
-          yylex_destroy(pp.yyscanner);
+          mzn_yylexdestroy(pp.yyscanner);
         if (pp.hadError) {
           goto error;
         }

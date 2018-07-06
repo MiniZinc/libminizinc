@@ -243,7 +243,7 @@ if(FLEX_EXEC)
   add_custom_command(
     OUTPUT ${PROJECT_BINARY_DIR}/lexer.yy.cpp
     DEPENDS ${PROJECT_SOURCE_DIR}/lib/lexer.lxx
-    COMMAND ${FLEX_EXEC} -L -o${PROJECT_BINARY_DIR}/lexer.yy.cpp ${PROJECT_SOURCE_DIR}/lib/lexer.lxx
+    COMMAND ${FLEX_EXEC} -P mzn_yy -L -o${PROJECT_BINARY_DIR}/lexer.yy.cpp ${PROJECT_SOURCE_DIR}/lib/lexer.lxx
     )
   set_source_files_properties(${PROJECT_BINARY_DIR}/lexer.yy.cpp GENERATED)
   set(lexer_cpp ${PROJECT_BINARY_DIR}/lexer.yy.cpp)
@@ -262,7 +262,7 @@ if(BISON_EXEC)
   add_custom_command(
     OUTPUT ${PROJECT_BINARY_DIR}/parser.tab.cpp ${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh
     DEPENDS ${lexer_cpp} ${PROJECT_SOURCE_DIR}/lib/parser.yxx
-    COMMAND "${BISON_EXEC}" -l -o ${PROJECT_BINARY_DIR}/parser.tab.cpp --defines=${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh ${PROJECT_SOURCE_DIR}/lib/parser.yxx
+    COMMAND "${BISON_EXEC}" -p mzn_yy -l -o ${PROJECT_BINARY_DIR}/parser.tab.cpp --defines=${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh ${PROJECT_SOURCE_DIR}/lib/parser.yxx
     )
   set_source_files_properties(${PROJECT_BINARY_DIR}/parser.tab.cpp GENERATED)
   set(parser_cpp ${PROJECT_BINARY_DIR}/parser.tab.cpp)
