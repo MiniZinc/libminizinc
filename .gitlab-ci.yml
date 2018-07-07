@@ -1,0 +1,16 @@
+stages:
+  - build
+  - test
+
+build:linux:
+  stage: build
+  image: guidotack/sphinx-doc:latest
+  script:
+    - cd en
+    - make html
+  artifacts:
+    paths:
+      - en/_build
+  tags:
+    - linux
+    - docker
