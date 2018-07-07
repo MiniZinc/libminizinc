@@ -672,7 +672,7 @@ if(HAS_GECODE)
   endif()
 
   find_package(MPFR)
-  if(MPFR_FOUND)
+  if(MPFR_FOUND AND NOT DEFINED GECODE_NO_MPFR)
     target_include_directories(minizinc_gecode PRIVATE ${MPFR_INCLUDES})
     target_link_libraries(minizinc_gecode ${MPFR_LIBRARIES})
   endif()
