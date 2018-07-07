@@ -170,18 +170,20 @@ You will have to enter the assignment-specific login details. By clicking the *R
 Configuration Options
 ---------------------
 
-The MiniZinc IDE can be configured through the *Preferences* dialog in the *MiniZinc* menu (on Windows and Linux) or the *MiniZincIDE* menu (on macOS), see :numref:`fig-ide-preferences`.
+The MiniZinc IDE can be configured through the *Preferences* dialog in the *MiniZinc* menu (on Windows and Linux) or the *MiniZincIDE* menu (on macOS), as shown in :numref:`fig-ide-gurobi`.
 
-.. _fig-ide-preferences:
+.. _fig-ide-gurobi:
 
-.. figure:: figures/ide-preferences.jpg
+.. figure:: figures/ide-gurobi.jpg
     :figwidth: 500px
 
 
 Locating the MiniZinc installation
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The most important configuration option is the path to the ``minizinc`` executable. In the example in :numref:`fig-ide-preferences`, the MiniZinc installation is located in ``/home/me/minizinc-2.2.0/bin``. You can select a directory from a file dialog using the *Select* button, or enter it manually. If you leave the field empty, the IDE will try to run ``minizinc`` from the default ``PATH`` environment variable. Typically, in a bundled binary installation of MiniZinc, this field can be left empty. Clicking the *Check* button will check that ``minizinc`` can in fact be run, and has the right version. The version of ``minizinc`` that was found is displayed below the path input field.
+The most important configuration option is the path to the ``minizinc`` executable. In the example in :numref:`fig-ide-gurobi`, this field has been left empty, in which case ``minizinc`` is assumed to be on the standard search path (usually the ``PATH`` environment variable). Typically, in a bundled binary installation of MiniZinc, this field can therefore be left empty.
+
+If you installed MiniZinc from sources, or want to switch between different versions of the compiler, you can add the path to the directory that contains the ``minizinc`` executable here. You can select a directory from a file dialog using the *Select* button, or enter it manually. Clicking the *Check* button will check that ``minizinc`` can in fact be run, and has the right version. The version of ``minizinc`` that was found is displayed below the path input field. :numref:`fig-ide-preferences` below shows an example where MiniZinc is located at ``/home/me/minizinc-2.2.0/bin``.
 
 You can have the MiniZinc IDE check once a day whether a new version of MiniZinc is available.
 
@@ -190,7 +192,27 @@ You can have the MiniZinc IDE check once a day whether a new version of MiniZinc
 Adding Third-Party Solvers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The *Solver* section of the configuration dialog can be used to inspect the solvers that are currently available to MiniZinc, and to add new solvers to the system. The example in :numref:`fig-ide-preferences` shows a potential configuration for Gecode, which was installed in ``/home/me/gecode``.
+The *Solver* section of the configuration dialog can be used to inspect the solvers that are currently available to MiniZinc, and to add new solvers to the system.
+
+Configuring existing solvers
+++++++++++++++++++++++++++++
+
+You can use the configuration dialog to set up defaults for the installed solvers. In the current version of the MiniZinc IDE, this is limited to configuring the CPLEX and Gurobi backends. The bundled binary version of MiniZinc comes with support for loading CPLEX and Gurobi as *plugins*, i.e., MiniZinc does not ship with the code for these solvers but can load them dynamically if they are installed.
+
+For example, :numref:`fig-ide-gurobi` shows a potential configuration for Gurobi. On Windows, the library is called ``gurobiXX.dll`` (in the same directory as the ``gurobi`` executable), and on Linux and macOS is it ``libgurobiXX.so`` (in the ``lib`` directory of your Gurobi installation), where ``XX`` stands for the version number of Gurobi.
+
+If you select the CPLEX solver, a similar option appears (``--cplex-dll``).
+On Windows, the CPLEX library is called ``cplexXXXX.dll`` and typically found in same directory as the ``cplex`` executable. On Linux it is ``libcplexXXX.so``, and on macOS ``libcplexXXXX.jnilib``, where ``XXX`` and ``XXXX`` stand for the version number of CPLEX.
+
+Adding new solvers
+++++++++++++++++++
+
+The example in :numref:`fig-ide-preferences` shows a potential configuration for Gecode, which was installed in ``/home/me/gecode``.
+
+.. _fig-ide-preferences:
+
+.. figure:: figures/ide-preferences.jpg
+    :figwidth: 500px
 
 Each solver needs to be given 
 
