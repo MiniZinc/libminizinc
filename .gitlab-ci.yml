@@ -7,6 +7,7 @@ stages:
   script:
     - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" "https://gitlab.com/api/v4/projects/minizinc%2Fvendor/jobs/artifacts/master/download?job=vendor:${MZNARCH}"
     - unzip -q vendor.zip
+    - rm -rf build
     - mkdir -p build
     - cd build
     - cmake -G"$CMAKE_ARCH" -v .. -DGECODE_HOME="$CI_PROJECT_DIR/vendor/gecode" -DBUILD_GUROBI_PLUGIN=ON -DGUROBI_HOME="$CI_PROJECT_DIR/vendor/gurobi" -DBUILD_CPLEX_PLUGIN=ON -DCPLEX_STUDIO_DIR="$CI_PROJECT_DIR/vendor/CPLEX_Studio" -DOSICBC_HOME="$CI_PROJECT_DIR/vendor/CBC" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
