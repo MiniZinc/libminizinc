@@ -50,7 +50,7 @@ set(INSTALL_INCLUDE_DIR include CACHE PATH
 if(WIN32 AND NOT CYGWIN)
   set(DEF_INSTALL_CMAKE_DIR CMake)
 else()
-  set(DEF_INSTALL_CMAKE_DIR lib/CMake/libminizinc)
+  set(DEF_INSTALL_CMAKE_DIR lib/cmake)
 endif()
 set(INSTALL_CMAKE_DIR ${DEF_INSTALL_CMAKE_DIR} CACHE PATH
   "Installation directory for CMake files")
@@ -797,6 +797,9 @@ INSTALL(FILES ${parser_hh} DESTINATION include/minizinc)
   export(PACKAGE libminizinc)
 
   # Create the libminizincConfig.cmake and libminizincConfigVersion files¬
+
+  file(RELATIVE_PATH REL_CMAKE_DIR "${CMAKE_INSTALL_PREFIX}"
+     "${INSTALL_CMAKE_DIR}")
   file(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}"
      "${INSTALL_INCLUDE_DIR}")
   # ... for the build tree
@@ -815,12 +818,12 @@ INSTALL(FILES ${parser_hh} DESTINATION include/minizinc)
   INSTALL(FILES
     "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/libminizincConfig.cmake"
     "${PROJECT_BINARY_DIR}/libminizincConfigVersion.cmake"
-    DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
+    DESTINATION ${REL_CMAKE_DIR} COMPONENT dev)
 
   # Install the export set for use with the install-tree
 
   INSTALL(EXPORT libminizincTargets DESTINATION
-    "${INSTALL_CMAKE_DIR}" COMPONENT dev)
+    ${REL_CMAKE_DIR} COMPONENT dev)
 # -------------------------------------------------------------------------------------------------------------------
 SET(CPACK_PACKAGE_VERSION_MAJOR ${libminizinc_VERSION_MAJOR})
 SET(CPACK_PACKAGE_VERSION_MINOR ${libminizinc_VERSION_MINOR})
