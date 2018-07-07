@@ -30,14 +30,14 @@
    This special exception was added by the Free Software Foundation in
    version 2.2 of Bison.  */
 
-#ifndef YY_YY_C_CYGWIN_HOME_TACK_LIBMZN_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
-# define YY_YY_C_CYGWIN_HOME_TACK_LIBMZN_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
+#ifndef YY_MZN_YY_C_CYGWIN_HOME_TACK_LIBMZN_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
+# define YY_MZN_YY_C_CYGWIN_HOME_TACK_LIBMZN_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
 #endif
 #if YYDEBUG
-extern int yydebug;
+extern int mzn_yydebug;
 #endif
 
 /* Token type.  */
@@ -219,6 +219,6 @@ struct YYLTYPE
 
 
 
-int yyparse (void *parm);
+int mzn_yyparse (void *parm);
 
-#endif /* !YY_YY_C_CYGWIN_HOME_TACK_LIBMZN_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED  */
+#endif /* !YY_MZN_YY_C_CYGWIN_HOME_TACK_LIBMZN_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED  */

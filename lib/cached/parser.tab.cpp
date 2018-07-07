@@ -59,6 +59,12 @@
 #define YYPULL 1
 
 
+/* Substitute the variable and function names.  */
+#define yyparse         mzn_yyparse
+#define yylex           mzn_yylex
+#define yyerror         mzn_yyerror
+#define yydebug         mzn_yydebug
+#define yynerrs         mzn_yynerrs
 
 
 /* Copy the first part of user declarations.  */
@@ -92,12 +98,12 @@ using namespace MiniZinc;
   Current.last_line(Rhs[N].last_line()); \
   Current.last_column(Rhs[N].last_column());
 
-int yyparse(void*);
-int yylex(YYSTYPE*, YYLTYPE*, void* scanner);
-int yylex_init (void** scanner);
-int yylex_destroy (void* scanner);
-int yyget_lineno (void* scanner);
-void yyset_extra (void* user_defined ,void* yyscanner );
+int mzn_yyparse(void*);
+int mzn_yylex(YYSTYPE*, YYLTYPE*, void* scanner);
+int mzn_yylex_init (void** scanner);
+int mzn_yylex_destroy (void* scanner);
+int mzn_yyget_lineno (void* scanner);
+void mzn_yyset_extra (void* user_defined ,void* yyscanner );
 
 extern int yydebug;
 
@@ -217,11 +223,11 @@ namespace MiniZinc {
       isFzn |= (filename.compare(filename.length()-4,4,".szn")==0);
     }
     ParserState pp(filename,modelText, err, files, seenModels, model, false, isFzn, parseDocComments);
-    yylex_init(&pp.yyscanner);
-    yyset_extra(&pp, pp.yyscanner);
-    yyparse(&pp);
+    mzn_yylex_init(&pp.yyscanner);
+    mzn_yyset_extra(&pp, pp.yyscanner);
+    mzn_yyparse(&pp);
     if (pp.yyscanner)
-    yylex_destroy(pp.yyscanner);
+    mzn_yylex_destroy(pp.yyscanner);
     if (pp.hadError) {
       goto error;
     }
@@ -274,11 +280,11 @@ namespace MiniZinc {
       isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
       isFzn |= (fullname.compare(fullname.length()-4,4,".szn")==0);
       ParserState pp(fullname,s, err, files, seenModels, m, false, isFzn, parseDocComments);
-      yylex_init(&pp.yyscanner);
-      yyset_extra(&pp, pp.yyscanner);
-      yyparse(&pp);
+      mzn_yylex_init(&pp.yyscanner);
+      mzn_yyset_extra(&pp, pp.yyscanner);
+      mzn_yyparse(&pp);
       if (pp.yyscanner)
-      yylex_destroy(pp.yyscanner);
+      mzn_yylex_destroy(pp.yyscanner);
       if (pp.hadError) {
         goto error;
       }
@@ -406,11 +412,11 @@ namespace MiniZinc {
       isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
       isFzn |= (fullname.compare(fullname.length()-4,4,".szn")==0);
       ParserState pp(fullname,s, err, files, seenModels, m, false, isFzn, parseDocComments);
-      yylex_init(&pp.yyscanner);
-      yyset_extra(&pp, pp.yyscanner);
-      yyparse(&pp);
+      mzn_yylex_init(&pp.yyscanner);
+      mzn_yyset_extra(&pp, pp.yyscanner);
+      mzn_yyparse(&pp);
       if (pp.yyscanner)
-        yylex_destroy(pp.yyscanner);
+        mzn_yylex_destroy(pp.yyscanner);
       if (pp.hadError) {
         goto error;
       }
@@ -439,11 +445,11 @@ namespace MiniZinc {
         }
         
         ParserState pp(f, s, err, files, seenModels, model, true, false, parseDocComments);
-        yylex_init(&pp.yyscanner);
-        yyset_extra(&pp, pp.yyscanner);
-        yyparse(&pp);
+        mzn_yylex_init(&pp.yyscanner);
+        mzn_yyset_extra(&pp, pp.yyscanner);
+        mzn_yyparse(&pp);
         if (pp.yyscanner)
-          yylex_destroy(pp.yyscanner);
+          mzn_yylex_destroy(pp.yyscanner);
         if (pp.hadError) {
           goto error;
         }
@@ -519,14 +525,14 @@ namespace MiniZinc {
 
 /* In a future release of Bison, this section will be replaced
    by #include "parser.tab.hh".  */
-#ifndef YY_YY_C_CYGWIN_HOME_TACK_LIBMZN_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
-# define YY_YY_C_CYGWIN_HOME_TACK_LIBMZN_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
+#ifndef YY_MZN_YY_C_CYGWIN_HOME_TACK_LIBMZN_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
+# define YY_MZN_YY_C_CYGWIN_HOME_TACK_LIBMZN_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
 #endif
 #if YYDEBUG
-extern int yydebug;
+extern int mzn_yydebug;
 #endif
 
 /* Token type.  */
@@ -708,9 +714,9 @@ struct YYLTYPE
 
 
 
-int yyparse (void *parm);
+int mzn_yyparse (void *parm);
 
-#endif /* !YY_YY_C_CYGWIN_HOME_TACK_LIBMZN_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED  */
+#endif /* !YY_MZN_YY_C_CYGWIN_HOME_TACK_LIBMZN_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED  */
 
 /* Copy the second part of user declarations.  */
 
