@@ -349,7 +349,6 @@ include/minizinc/utils.hh
 include/minizinc/values.hh
 include/minizinc/solver_instance.hh
 include/minizinc/solver_instance_base.hh
-include/minizinc/thirdparty/SafeInt3.hpp
 include/minizinc/thirdparty/miniz.h
 include/minizinc/thirdparty/b64/cdecode.h
 include/minizinc/thirdparty/b64/cencode.h
