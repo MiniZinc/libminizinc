@@ -23,6 +23,7 @@
 #include <vector>
 #include <cstddef>
 #include <cstdint>
+#include <limits>
 
 #include <iostream>
 
@@ -1861,7 +1862,7 @@ namespace MiniZinc {
       BoolLit* boollit(bool b) {
         return b ? lit_true : lit_false;
       }
-      static const int max_array_size = INT_MAX / 2;
+      static const int max_array_size = std::numeric_limits<int>::max() / 2;
   };
     
   /// Return static instance
