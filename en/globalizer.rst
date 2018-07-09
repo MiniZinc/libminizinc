@@ -7,7 +7,7 @@ global constraints that can replace or enhance a user's model.
 Basic Usage
 -----------
 
-To use the globalizer simply execute it on a model and set of data files:
+To use Globalizer simply execute it on a model and set of data files:
 
 ``minizinc --solver org.minizinc.globalizer model.mzn data-1.dzn data-2.dzn``
 
@@ -171,7 +171,7 @@ will display a progress bar on the toolbar.
 
 Any discovered global constraints will be listed in the output pane
 of the IDE. Clicking on one of these constraints will highlight in the
-model the expressions that might be replacable strengthend by the
+model the expressions that might be replaceable or strengthened by the
 constraint.
 
 
