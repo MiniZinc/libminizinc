@@ -388,7 +388,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               additionalArgs_s.push_back("--mzn-flags");
               additionalArgs_s.push_back("--minizinc-exe");
               additionalArgs_s.push_back("--mzn-flags");
-              additionalArgs_s.push_back(FileUtils::progpath() + "/" + executable_name);
+              additionalArgs_s.push_back("\"" + FileUtils::progpath() + "/" + executable_name + "\"");
             }
             if (!sc.mznlib().empty()) {
               additionalArgs_s.push_back("--mzn-flags");
