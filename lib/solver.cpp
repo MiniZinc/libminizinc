@@ -376,7 +376,11 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
             static_cast<MZN_SolverFactory*>(sf)->setAcceptedFlags(si_opt, acceptedFlags);
             std::vector<std::string> additionalArgs_s;
             additionalArgs_s.push_back("-m");
-            additionalArgs_s.push_back(sc.executable().c_str());
+            if (sc.executable_resolved().size()) {
+              additionalArgs_s.push_back(sc.executable_resolved());
+            } else {
+              additionalArgs_s.push_back(sc.executable());
+            }
 
             if (sc.needsStdlibDir()) {
               additionalArgs_s.push_back("--mzn-flags");
@@ -391,10 +395,21 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               additionalArgs_s.push_back("\"" + FileUtils::progpath() + "/" + executable_name + "\"");
             }
             if (!sc.mznlib().empty()) {
-              additionalArgs_s.push_back("--mzn-flags");
-              additionalArgs_s.push_back("-I");
-              additionalArgs_s.push_back("--mzn-flags");
-              additionalArgs_s.push_back(sc.mznlib());
+              
+              if (sc.mznlib().substr(0,2)=="-G") {
+                additionalArgs_s.push_back("--mzn-flags");
+                additionalArgs_s.push_back(sc.mznlib());
+              } else {
+                additionalArgs_s.push_back("--mzn-flags");
+                additionalArgs_s.push_back("-I");
+                additionalArgs_s.push_back("--mzn-flags");
+                if (sc.mznlib_resolved().size()) {
+                  additionalArgs_s.push_back(sc.mznlib_resolved());
+                } else {
+                  additionalArgs_s.push_back(sc.mznlib());
+                }
+              }
+
             }
             
             for (i=0; i<additionalArgs_s.size(); ++i) {
@@ -408,8 +423,11 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
             static_cast<FZN_SolverFactory*>(sf)->setAcceptedFlags(si_opt, acceptedFlags);
             std::vector<std::string> additionalArgs(2);
             additionalArgs[0] = "--fzn-cmd";
-            std::string executable = sc.executable();
-            additionalArgs[1] = executable;
+            if (sc.executable_resolved().size()) {
+              additionalArgs[1] = sc.executable_resolved();
+            } else {
+              additionalArgs[1] = sc.executable();
+            }
             int i=0;
             bool success = sf->processOption(si_opt, i, additionalArgs);
             if (!success) {
@@ -427,7 +445,13 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               return OPTION_ERROR;
             }
           } else {
-            std::vector<std::string>  additionalArgs({"-I",sc.mznlib()});
+            std::vector<std::string>  additionalArgs(2);
+            additionalArgs[0] = "-I";
+            if (sc.mznlib_resolved().size()) {
+              additionalArgs[1] = sc.mznlib_resolved();
+            } else {
+              additionalArgs[1] = sc.mznlib();
+            }
             int i=0;
             if (!flt.processOption(i, additionalArgs)) {
               log << "Flattener does not recognise option -I." << endl;
