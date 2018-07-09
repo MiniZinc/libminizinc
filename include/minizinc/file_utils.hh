@@ -23,6 +23,9 @@ namespace MiniZinc { namespace FileUtils {
   bool file_exists(const std::string& filename);
   /// Test if \a dirname exists and is a directory
   bool directory_exists(const std::string& dirname);
+  /// Find executable \a filename anywhere on the path
+  /// On Windows, also check extensions .exe and .bat
+  std::string find_executable(const std::string& filename);
   /// Return full path to file. If \a basePath is not empty, also try resolving
   /// relative paths with respect to \a basePath.
   std::string file_path(const std::string& filename, const std::string& basePath=std::string());

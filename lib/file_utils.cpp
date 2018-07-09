@@ -20,6 +20,7 @@
 #include <minizinc/thirdparty/b64/encode.h>
 #include <minizinc/thirdparty/b64/decode.h>
 #include <sstream>
+#include <string>
 #include <cstring>
 
 #ifdef HAS_PIDPATH
@@ -174,6 +175,31 @@ namespace MiniZinc { namespace FileUtils {
 #endif
   }
   
+  std::string find_executable(const std::string& filename) {
+    if (is_absolute(filename)) {
+      return file_exists(filename) ? filename : "";
+    }
+    char* path_c = getenv("PATH");
+    if (path_c) {
+      std::string pathItem;
+      std::stringstream pathStream(path_c);
+      while (std::getline(pathStream, pathItem, ':')) {
+        std::string fileWithPath = pathItem+"/"+filename;
+        if (file_exists(fileWithPath))
+          return fileWithPath;
+#ifdef _MSC_VER
+        if (FileUtils::file_exists(fileWithPath+".exe")) {
+          return fileWithPath+".exe";
+        } else if (FileUtils::file_exists(fileWithPath+".bat")) {
+          return fileWithPath+".bat";
+        }
+#endif
+      }
+    }
+    return "";
+  }
+  
+
   std::vector<std::string> directory_list(const std::string& dir,
                                           const std::string& ext) {
     std::vector<std::string> entries;
