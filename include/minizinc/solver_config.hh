@@ -42,8 +42,12 @@ namespace MiniZinc {
     std::string _name;
     /// The path to the executable
     std::string _executable;
+    /// The path to the executable, after resolving
+    std::string _executable_resolved;
     /// The path to the solver's MiniZinc library
     std::string _mznlib;
+    /// The path to the solver's MiniZinc library, after resolving
+    std::string _mznlib_resolved;
     /// Version string
     std::string _version;
     /// MiniZinc library version
@@ -103,12 +107,18 @@ namespace MiniZinc {
     std::string executable(void) const { return _executable; }
     /// Set executable path
     void executable(const std::string& s) { _executable = s; }
-    
+
+    /// Return resolved executable path
+    std::string executable_resolved(void) const { return _executable_resolved; }
+
     /// Return MiniZinc library path
     std::string mznlib(void) const { return _mznlib; }
     /// Set MiniZinc library path
     void mznlib(const std::string& s) { _mznlib = s; }
-    
+
+    /// Return resolved MiniZinc library path
+    std::string mznlib_resolved(void) const { return _mznlib_resolved; }
+
     /// Return required MiniZinc library version
     int mznlibVersion(void) const { return _mznlibVersion; }
     /// Set required MiniZinc library version

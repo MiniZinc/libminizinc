@@ -175,15 +175,25 @@ namespace MiniZinc {
               sc._name = getString(ai);
               hadName = true;
             } else if (ai->id()=="executable") {
-              std::string absPath = FileUtils::file_path(getString(ai), basePath);
-              sc._executable = FileUtils::file_exists(absPath) ? absPath : getString(ai);
+              std::string exePath = getString(ai);
+              sc._executable = exePath;
+              std::string exe;
+              if (exePath.size() > 2 && exePath[0]=='.' && (exePath[1]=='/' || (exePath[1]=='.' && exePath[2]=='/'))) {
+                exe = FileUtils::find_executable(FileUtils::file_path(getString(ai), basePath));
+              } else {
+                exe = FileUtils::find_executable(exePath);
+              }
+              if (!exe.empty()) {
+                sc._executable_resolved = exe;
+              }
             } else if (ai->id()=="mznlib") {
               std::string libPath = getString(ai);
+              sc._mznlib = libPath;
               if (!libPath.empty()) {
                 if (libPath[0]=='-') {
-                  sc._mznlib = libPath;
+                  sc._mznlib_resolved = libPath;
                 } else {
-                  sc._mznlib = FileUtils::file_path(libPath, basePath);
+                  sc._mznlib_resolved = FileUtils::file_path(libPath, basePath);
                 }
               }
             } else if (ai->id()=="version") {
@@ -451,6 +461,12 @@ namespace MiniZinc {
         continue;
       oss << "  {\n";
       oss << "    \"extraInfo\": {\n";
+      if (sc.mznlib_resolved().size()) {
+        oss << "      \"mznlib\": \"" << Printer::escapeStringLit(sc.mznlib_resolved()) << "\",\n";
+      }
+      if (sc.executable_resolved().size()) {
+        oss << "      \"executable\": \"" << Printer::escapeStringLit(sc.executable_resolved()) << "\",\n";
+      }
       oss << "      \"configFile\": \"" << Printer::escapeStringLit(sc.configFile()) << "\"";
       if (sc.defaultFlags().size()) {
         oss << ",\n      \"defaultFlags\": [";
