@@ -11,7 +11,7 @@ You need the following tools to build the documentation:
 * Sphinx version 1.8.0. Install it using the command
   `pip install git+https://github.com/sphinx-doc/sphinx`
 * Sphinx Read The Docs html theme. Install it using the command
-  `pip install pip install sphinx_rtd_theme`
+  `pip install sphinx_rtd_theme`
 * If you want to build the PDF documentation, you also need a LaTeX distribution
 
 To build the HTML documentation, simply run `make html`. To build the PDF, run `make latexpdf`.
