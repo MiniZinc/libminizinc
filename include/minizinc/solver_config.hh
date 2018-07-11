@@ -70,6 +70,8 @@ namespace MiniZinc {
     bool _needsMznExecutable=false;
     /// Whether solver needs path to MiniZinc standard library (passed as --stdlib-dir)
     bool _needsStdlibDir=false;
+    /// Whether solver needs path to symbol table (paths file) (passed as --paths)
+    bool _needsPathsFile=false;
     /// Supported standard command line flags
     std::vector<std::string> _stdFlags;
     /// Supported extra command line flags (flag and description)
@@ -154,6 +156,11 @@ namespace MiniZinc {
     /// Set whether solver needs path to MiniZinc standard library
     void needsStdlibDir(bool b) { _needsStdlibDir = b; }
     
+    /// Whether solver needs path to symbol table (paths file) (passed as --paths)
+    bool needsPathsFile(void) const { return _needsPathsFile; }
+    /// Set whether solver needs path to symbol table (paths file)
+    void needsPathsFile(bool b) { _needsPathsFile = b; }
+
     /// Return short description
     std::string description(void) const { return _description; }
     /// Set short description

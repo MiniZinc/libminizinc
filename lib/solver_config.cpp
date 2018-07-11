@@ -219,6 +219,8 @@ namespace MiniZinc {
               sc._needsMznExecutable = getBool(ai);
             } else if (ai->id()=="needsStdlibDir") {
               sc._needsStdlibDir = getBool(ai);
+            } else if (ai->id()=="needsPathsFile") {
+              sc._needsPathsFile = getBool(ai);
             } else if (ai->id()=="tags") {
               sc._tags = getStringList(ai);
             } else if (ai->id()=="stdFlags") {
@@ -541,6 +543,7 @@ namespace MiniZinc {
       oss << "    \"needsSolns2Out\": " << (sc.needsSolns2Out()? "true" : "false") << ",\n";
       oss << "    \"needsMznExecutable\": " << (sc.needsMznExecutable()? "true" : "false") << ",\n";
       oss << "    \"needsStdlibDir\": " << (sc.needsStdlibDir()? "true" : "false") << ",\n";
+      oss << "    \"needsPathsFile\": " << (sc.needsPathsFile()? "true" : "false") << ",\n";
       oss << "    \"isGUIApplication\": " << (sc.isGUIApplication()? "true" : "false") << "\n";
       oss << "  }" << (i<_solvers.size()-1 ? ",\n" : "\n");
     }
