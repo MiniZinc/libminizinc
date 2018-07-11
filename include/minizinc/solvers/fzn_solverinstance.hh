@@ -29,6 +29,9 @@ namespace MiniZinc {
     std::string parallel;
     int fzn_time_limit_ms = 0;
     bool fzn_sigint = false;
+
+    bool fzn_needs_paths = false;
+    bool fzn_output_passthrough = false;
     
     bool supports_a = false;
     bool supports_n = false;

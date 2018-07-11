@@ -166,6 +166,18 @@ namespace MiniZinc {
     
   };
 
+  // Passthrough Solns2Out class
+  class Solns2Log {
+  private:
+    std::ostream& _log;
+    std::ostream& _err_log;
+  public:
+    Solns2Log(std::ostream& log, std::ostream& errLog) : _log(log), _err_log(errLog) {}
+    bool feedRawDataChunk(const char* data) { _log << data << std::flush; return true; }
+    std::ostream& getLog(void) { return _err_log; }
+  };
+  
+
 }
 
 #endif  // __MINIZINC_SOLNS2OUT_H__

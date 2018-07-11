@@ -23,6 +23,7 @@
 
 #include <minizinc/timer.hh>
 #include <minizinc/prettyprinter.hh>
+#include <minizinc/pathfileprinter.hh>
 #include <minizinc/parser.hh>
 #include <minizinc/typecheck.hh>
 #include <minizinc/builtins.hh>
@@ -102,6 +103,10 @@ namespace MiniZinc {
       _opt.fzn_time_limit_ms = nn;
     } else if ( cop.getOption( "--fzn-sigint") ) {
       _opt.fzn_sigint = true;
+    } else if ( cop.getOption( "--fzn-needs-paths") ) {
+      _opt.fzn_needs_paths = true;
+    } else if ( cop.getOption( "--fzn-output-passthrough") ) {
+      _opt.fzn_output_passthrough = true;
     } else if ( cop.getOption( "--fzn-flag --flatzinc-flag", &buffer) ) {
       string old = _opt.fzn_flag;
       old += " \"";
@@ -248,9 +253,27 @@ namespace MiniZinc {
     }
     p.print(_fzn->solveItem());
     cmd_line.push_back(fznFile.name());
-    Process<Solns2Out> proc(cmd_line, getSolns2Out(), timelimit, sigint);
-    proc.run();
 
+    FileUtils::TmpFile* pathsFile = NULL;
+    if(opt.fzn_needs_paths) {
+      pathsFile = new FileUtils::TmpFile(".paths");
+      std::ofstream ofs(pathsFile->name());
+      PathFilePrinter pfp(ofs, _env.envi());
+      pfp.print(_fzn);
+
+      cmd_line.push_back("--paths");
+      cmd_line.push_back(pathsFile->name());
+    }
+
+    if(!opt.fzn_output_passthrough) {
+      Process<Solns2Out> proc(cmd_line, getSolns2Out(), timelimit, sigint);
+      proc.run();
+    } else {
+      Solns2Log s2l(getSolns2Out()->getOutput(), _log);
+      Process<Solns2Log> proc(cmd_line, &s2l, timelimit, sigint);
+      proc.run();
+    }
+    delete pathsFile;
     return getSolns2Out()->status;
   }
 

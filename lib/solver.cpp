@@ -261,6 +261,15 @@ void MznSolver::printHelp(const std::string& selectedSolver)
   }
 }
 
+void addFlags(const std::string& sep,
+              const std::vector<std::string>& in_args,
+              std::vector<std::string>& out_args) {
+  for(const std::string& arg : in_args) {
+    out_args.push_back(sep);
+    out_args.push_back(arg);
+  }
+}
+
 MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv)
 {
   executable_name = argv[0];
@@ -372,6 +381,18 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               acceptedFlags.push_back(MZNFZNSolverFlag::std(sf));
             for (auto& ef : sc.extraFlags())
               acceptedFlags.push_back(MZNFZNSolverFlag::extra(ef.flag,ef.flag_type));
+
+            // Collect arguments required for underlying exe
+            vector<string> fzn_mzn_flags;
+            if (sc.needsStdlibDir()) {
+              fzn_mzn_flags.push_back("--stdlib-dir");
+              fzn_mzn_flags.push_back("\"" + FileUtils::share_directory() + "\"");
+            }
+            if (sc.needsMznExecutable()) {
+              fzn_mzn_flags.push_back("--minizinc-exe");
+              fzn_mzn_flags.push_back("\"" + FileUtils::progpath() + "/" + executable_name + "\"");
+            }
+
             if (sc.supportsMzn()) {
               isMznMzn = true;
               static_cast<MZN_SolverFactory*>(sf)->setAcceptedFlags(si_opt, acceptedFlags);
@@ -383,20 +404,14 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                 additionalArgs_s.push_back(sc.executable());
               }
 
-              if (sc.needsStdlibDir()) {
-                additionalArgs_s.push_back("--mzn-flags");
-                additionalArgs_s.push_back("--stdlib-dir");
-                additionalArgs_s.push_back("--mzn-flags");
-                additionalArgs_s.push_back("\"" + FileUtils::share_directory() + "\"");
+              if(!fzn_mzn_flags.empty()) {
+                addFlags("--mzn-flags", fzn_mzn_flags, additionalArgs_s);
               }
-              if (sc.needsMznExecutable()) {
-                additionalArgs_s.push_back("--mzn-flags");
-                additionalArgs_s.push_back("--minizinc-exe");
-                additionalArgs_s.push_back("--mzn-flags");
-                additionalArgs_s.push_back("\"" + FileUtils::progpath() + "/" + executable_name + "\"");
-              }
+
+              // This should maybe be moved to fill in fzn_mzn_flags when
+              // --find-muses is implemented (these arguments will be passed
+              // through to the subsolver of findMUS)
               if (!sc.mznlib().empty()) {
-                
                 if (sc.mznlib().substr(0,2)=="-G") {
                   additionalArgs_s.push_back("--mzn-flags");
                   additionalArgs_s.push_back(sc.mznlib());
@@ -410,9 +425,8 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                     additionalArgs_s.push_back(sc.mznlib());
                   }
                 }
-
               }
-              
+
               for (i=0; i<additionalArgs_s.size(); ++i) {
                 bool success = sf->processOption(si_opt, i, additionalArgs_s);
                 if (!success) {
@@ -422,18 +436,36 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               }
             } else {
               static_cast<FZN_SolverFactory*>(sf)->setAcceptedFlags(si_opt, acceptedFlags);
-              std::vector<std::string> additionalArgs(2);
-              additionalArgs[0] = "--fzn-cmd";
+              std::vector<std::string> additionalArgs;
+              additionalArgs.push_back("--fzn-cmd");
               if (sc.executable_resolved().size()) {
-                additionalArgs[1] = sc.executable_resolved();
+                additionalArgs.push_back(sc.executable_resolved());
               } else {
-                additionalArgs[1] = sc.executable();
+                additionalArgs.push_back(sc.executable());
+              }
+              if(!fzn_mzn_flags.empty()) {
+                addFlags("--fzn-flags", fzn_mzn_flags, additionalArgs);
+              }
+              if (sc.needsPathsFile()) {
+                // Instruct flattener to hold onto paths
+                int i=0;
+                vector<string> args {"--keep-paths"};
+                flt.processOption(i, args);
+
+                // Instruct FznSolverInstance to write a path file
+                // and pass it to the executable with --paths arg
+                additionalArgs.push_back("--fzn-needs-paths");
+              }
+              if (!sc.needsSolns2Out()) {
+                additionalArgs.push_back("--fzn-output-passthrough");
               }
               int i=0;
-              bool success = sf->processOption(si_opt, i, additionalArgs);
-              if (!success) {
-                log << "Solver backend " << solverId << " does not recognise option -f." << endl;
-                return OPTION_ERROR;
+              for (i=0; i<additionalArgs.size(); ++i) {
+                bool success = sf->processOption(si_opt, i, additionalArgs);
+                if (!success) {
+                  log << "Solver backend " << solverId << " does not recognise option " << additionalArgs[i]  << "." << endl;
+                  return OPTION_ERROR;
+                }
               }
             }
           }

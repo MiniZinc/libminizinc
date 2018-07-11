@@ -134,24 +134,12 @@ namespace MiniZinc {
     }
     return true;
   }
-  
-
 
   MZNSolverInstance::MZNSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* options)
     : SolverInstanceBase(env, log, options) {}
 
   MZNSolverInstance::~MZNSolverInstance(void) {}
 
-  class Solns2Log {
-  private:
-    std::ostream& _log;
-    std::ostream& _err_log;
-  public:
-    Solns2Log(std::ostream& log, std::ostream& errLog) : _log(log), _err_log(errLog) {}
-    bool feedRawDataChunk(const char* data) { _log << data << std::flush; return true; }
-    std::ostream& getLog(void) { return _err_log; }
-  };
-  
   SolverInstance::Status
   MZNSolverInstance::solve(void) {
     MZNSolverOptions& opt = static_cast<MZNSolverOptions&>(*_options);
