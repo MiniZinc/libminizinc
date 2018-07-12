@@ -180,21 +180,32 @@ namespace MiniZinc { namespace FileUtils {
       return file_exists(filename) ? filename : "";
     }
     char* path_c = getenv("PATH");
-    if (path_c) {
-      std::string pathItem;
-      std::stringstream pathStream(path_c);
-      while (std::getline(pathStream, pathItem, ':')) {
-        std::string fileWithPath = pathItem+"/"+filename;
-        if (file_exists(fileWithPath))
-          return fileWithPath;
 #ifdef _MSC_VER
-        if (FileUtils::file_exists(fileWithPath+".exe")) {
-          return fileWithPath+".exe";
-        } else if (FileUtils::file_exists(fileWithPath+".bat")) {
-          return fileWithPath+".bat";
-        }
+    char pathsep = ';';
+#else
+    char pathsep = ':';
 #endif
+    std::string path;
+    if (path_c) {
+      path = path_c;
+      if (path.size()) {
+        path += pathsep;
       }
+    }
+    path += progpath();
+    std::string pathItem;
+    std::stringstream pathStream(path);
+    while (std::getline(pathStream, pathItem, pathsep)) {
+      std::string fileWithPath = pathItem+"/"+filename;
+      if (file_exists(fileWithPath))
+        return fileWithPath;
+#ifdef _MSC_VER
+      if (FileUtils::file_exists(fileWithPath+".exe")) {
+        return fileWithPath+".exe";
+      } else if (FileUtils::file_exists(fileWithPath+".bat")) {
+        return fileWithPath+".bat";
+      }
+#endif
     }
     return "";
   }
