@@ -520,7 +520,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     
     for (i=1; i<argc; ++i) {
       if ( !ifMzn2Fzn() ? s2out.processOption( i, argv ) : false ) {
-      } else if (!isMznMzn && flt.processOption(i, argv)) {
+      } else if ((!isMznMzn || is_mzn2fzn) && flt.processOption(i, argv)) {
       } else if (sf != NULL && sf->processOption(si_opt, i, argv)) {
       } else {
         std::string executable_name(argv[0]);
