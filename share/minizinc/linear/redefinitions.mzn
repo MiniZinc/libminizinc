@@ -30,9 +30,11 @@ predicate bool_eq(var bool: x, var bool: y) =
 
 include "options.mzn";
 include "redefs_bool_reifs.mzn";
-    
+include "redefs_bool_imp.mzn";
+
 include "domain_encodings.mzn";
 include "redefs_lin_reifs.mzn";
+include "redefs_lin_imp.mzn";
 include "redefs_lin_halfreifs.mzn";
 
 include "nosets.mzn";                %% For set_le, set_lt ... Usind std/nosets
