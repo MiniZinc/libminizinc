@@ -43,7 +43,7 @@ build:osx:
     - cmake
     - cpp
 
-build:win32:
+.build:win32:
   <<: *build_definition
   stage: build
   variables:
