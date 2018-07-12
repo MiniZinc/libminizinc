@@ -1207,7 +1207,7 @@ namespace MiniZinc {
         }
       } else if (bound.assigned()) {
         IntArgs machine = IntArgs::create(n,0,0);
-        IntArgs limit(1, bound.val());
+        IntArgs limit({bound.val()});
         IntVarArgs end(n);
         for (int i=n; i--;)
           end[i] = expr(*gi._current_space,start[i]+duration[i]);
