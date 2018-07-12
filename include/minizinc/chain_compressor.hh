@@ -48,9 +48,9 @@ namespace MiniZinc {
     void addItem(Item *i);
   };
 
-  class ImplCompressor : public ChainCompressor {
+  class ImpCompressor : public ChainCompressor {
   public:
-    ImplCompressor(EnvI &env, Model &m, std::vector<VarDecl *> &deletedVarDecls)
+    ImpCompressor(EnvI &env, Model &m, std::vector<VarDecl *> &deletedVarDecls)
         : ChainCompressor(env, m, deletedVarDecls) {};
 
     bool trackItem(Item *i) override;

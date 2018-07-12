@@ -43,7 +43,7 @@ namespace MiniZinc {
     }
   }
 
-  bool ImplCompressor::trackItem(Item *i) {
+  bool ImpCompressor::trackItem(Item *i) {
     if (auto ci = i->dyn_cast<ConstraintI>()) {
       if (auto c = ci->e()->dyn_cast<Call>()) {
         // clause([y], [x]); i.e. x -> y
@@ -55,12 +55,12 @@ namespace MiniZinc {
             storeItem(var->decl(), i);
             return true;
           }
-          // pred_imp(..., b); i.e. b -> pred(...)
         } else if (c->id() == "mzn_reverse_map_var") {
           auto control = c->arg(0)->cast<Id>();
           assert(control->type().isvarbool());
           storeItem(control->decl(), i);
           return true;
+          // pred_imp(..., b); i.e. b -> pred(...)
         } else if (c->id().endsWith("_imp")) {
           auto control = c->arg(c->n_args()-1)->cast<Id>();
           assert(control->type().isvarbool());
@@ -98,7 +98,7 @@ namespace MiniZinc {
     return false;
   }
 
-  void ImplCompressor::compress() {
+  void ImpCompressor::compress() {
     updateCount(); // Should we do this on request?
 
     for (auto it = items.begin(); it != items.end();) {
@@ -161,7 +161,7 @@ namespace MiniZinc {
     }
   }
 
-  bool ImplCompressor::compressItem(Item *i, VarDecl *newLHS) {
+  bool ImpCompressor::compressItem(Item *i, VarDecl *newLHS) {
     GCLock lock;
     if (auto ci = i->dyn_cast<ConstraintI>()) {
       auto c = ci->e()->cast<Call>();
@@ -207,7 +207,7 @@ namespace MiniZinc {
     return false;
   }
 
-  ConstraintI* ImplCompressor::constructClause(Expression *pos, Expression *neg) {
+  ConstraintI* ImpCompressor::constructClause(Expression *pos, Expression *neg) {
     assert(GC::locked());
     std::vector<Expression*> args(2);
     if (pos->dyn_cast<ArrayLit>()) {
@@ -239,7 +239,7 @@ namespace MiniZinc {
     return new ConstraintI(MiniZinc::Location().introduce(), nc);
   }
 
-  void ImplCompressor::replaceCallArgument(Item *i, Call *c, unsigned int n, Expression *e) {
+  void ImpCompressor::replaceCallArgument(Item *i, Call *c, unsigned int n, Expression *e) {
     CollectDecls cd(env.vo, deletedVarDecls, i);
     topDown(cd, c->arg(n));
     c->arg(n, e);
@@ -247,7 +247,7 @@ namespace MiniZinc {
     topDown(ce, e);
   }
 
-  ConstraintI *ImplCompressor::constructHalfReif(Call *call, Id *control) {
+  ConstraintI *ImpCompressor::constructHalfReif(Call *call, Id *control) {
     assert(GC::locked());
     auto cid = env.halfReifyId(call->id());
     std::vector<Expression*> args(call->n_args());
