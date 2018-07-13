@@ -375,7 +375,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         if ((*it)->getId()==solverId) { /// TODO: also check version (currently assumes all ids are unique)
           sf = *it;
           si_opt = sf->createOptions();
-          if (!sc.executable().empty()) {
+          if (!sc.executable().empty() || solverId=="org.minizinc.mzn-fzn") {
             std::vector<MZNFZNSolverFlag> acceptedFlags;
             for (auto& sf : sc.stdFlags())
               acceptedFlags.push_back(MZNFZNSolverFlag::std(sf));

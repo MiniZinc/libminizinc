@@ -40,6 +40,7 @@ namespace MiniZinc {
     sc.mznlibVersion(1);
     sc.description("MiniZinc generic FlatZinc solver plugin");
     sc.requiredFlags({"--fzn-cmd"});
+    sc.stdFlags({"-a","-n","-f","-p","-s","-r","-v"});
     sc.tags({"__internal__"});
     SolverConfigs::registerBuiltinSolver(sc);
   }
