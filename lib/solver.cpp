@@ -419,11 +419,13 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                   additionalArgs_s.push_back("--mzn-flags");
                   additionalArgs_s.push_back("-I");
                   additionalArgs_s.push_back("--mzn-flags");
+                  std::string _mznlib;
                   if (sc.mznlib_resolved().size()) {
-                    additionalArgs_s.push_back(sc.mznlib_resolved());
+                    _mznlib = sc.mznlib_resolved();
                   } else {
-                    additionalArgs_s.push_back(sc.mznlib());
+                    _mznlib = sc.mznlib();
                   }
+                  additionalArgs_s.push_back("\"" + _mznlib + "\"");
                 }
               }
 
