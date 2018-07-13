@@ -181,7 +181,6 @@ namespace MiniZinc {
         return true;
       } else if (c->id().endsWith("_imp")) {
         replaceCallArgument(i, c, c->n_args()-1, newLHS->id());
-        addItem(i);
         return true;
       }
     } else if (auto vdi = i->dyn_cast<VarDeclI>()) {
