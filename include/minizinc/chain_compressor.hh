@@ -24,8 +24,6 @@ namespace MiniZinc {
 
     virtual bool trackItem(Item *i) = 0;
 
-    void trackItems(int start, int end) { for (int i = start; i <= end; ++i) { trackItem(m[i]); } };
-
     virtual void compress() = 0;
 
   protected:
@@ -40,7 +38,7 @@ namespace MiniZinc {
 
     void updateCount();
 
-    unsigned long count(VarDecl* v) {return items.count(v);};
+    unsigned long count(VarDecl *v) { return items.count(v); }
 
     std::pair<iterator, iterator> find(VarDecl *v) {return items.equal_range(v);};
 
@@ -66,7 +64,7 @@ namespace MiniZinc {
 
     // Constructs a clause constraint item with pos and neg as parameters.
     // if pos/neg are not ArrayLit then they will inserted into an ArrayLit.
-    ConstraintI* constructClause(Expression *pos, Expression *neg);
+    ConstraintI *constructClause(Expression *pos, Expression *neg);
 
     // Replaces the Nth argument of a Call c by Expression e, c must be located on Item i
     void replaceCallArgument(Item *i, Call *c, unsigned int n, Expression *e);

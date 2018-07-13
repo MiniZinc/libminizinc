@@ -120,7 +120,8 @@ namespace MiniZinc {
           // - There is one occurrence on the RHS of a clause, that Id is a reification in a positive
           // context, and all other occurrences are on the LHS of a clause
           bool compress = lhs_occurences > 0;
-          if (auto call = var->decl()->e()->dyn_cast<Call>()) {
+          if (var->decl()->e()) {
+            auto call = var->decl()->e()->dyn_cast<Call>();
             if(call->id() == constants().ids.forall) {
               compress = compress && (occurrences == 1 && lhs_occurences == 1);
             } else {
