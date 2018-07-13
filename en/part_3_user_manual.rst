@@ -7,5 +7,7 @@ User Manual
 
    command_line
    minizinc_ide
+   globalizer
+   jupyter
+
 ..   cpprofiler
-..   jupyter
