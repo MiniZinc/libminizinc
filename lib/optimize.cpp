@@ -17,6 +17,7 @@
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/optimize_constraints.hh>
+#include <minizinc/chain_compressor.hh>
 
 #include <vector>
 #include <deque>
@@ -698,8 +699,17 @@ namespace MiniZinc {
         topDown(cd,ci->e());
         envi.flat_removeItem(toRemoveConstraints[i]);
       }
+
+      // Phase 4: Chain Breaking
+      {
+        ImpCompressor imp(envi, m, deletedVarDecls);
+        for (auto &l : m) {
+          imp.trackItem(l);
+        }
+        imp.compress();
+      }
       
-      // Phase 4: handle boolean constraints again (todo: check if we can
+      // Phase 5: handle boolean constraints again (todo: check if we can
       // refactor this into a separate function)
       //
       // Difference to phase 2: constraint argument arrays are actually shortened here if possible
@@ -792,7 +802,7 @@ namespace MiniZinc {
 
       }
       
-      // Phase 5: remove deleted variables if possible
+      // Phase 6: remove deleted variables if possible
       while (!deletedVarDecls.empty()) {
         VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
         if (envi.vo.occurrences(cur) == 0) {
