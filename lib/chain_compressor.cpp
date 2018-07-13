@@ -43,6 +43,14 @@ namespace MiniZinc {
     }
   }
 
+  void ChainCompressor::replaceCallArgument(Item *i, Call *c, unsigned int n, Expression *e) {
+    CollectDecls cd(env.vo, deletedVarDecls, i);
+    topDown(cd, c->arg(n));
+    c->arg(n, e);
+    CollectOccurrencesE ce(env.vo, i);
+    topDown(ce, e);
+  }
+
   bool ImpCompressor::trackItem(Item *i) {
     if (auto ci = i->dyn_cast<ConstraintI>()) {
       if (auto c = ci->e()->dyn_cast<Call>()) {
@@ -236,14 +244,6 @@ namespace MiniZinc {
     assert(nc->decl());
 
     return new ConstraintI(MiniZinc::Location().introduce(), nc);
-  }
-
-  void ImpCompressor::replaceCallArgument(Item *i, Call *c, unsigned int n, Expression *e) {
-    CollectDecls cd(env.vo, deletedVarDecls, i);
-    topDown(cd, c->arg(n));
-    c->arg(n, e);
-    CollectOccurrencesE ce(env.vo, i);
-    topDown(ce, e);
   }
 
   ConstraintI *ImpCompressor::constructHalfReif(Call *call, Id *control) {

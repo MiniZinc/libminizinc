@@ -44,6 +44,9 @@ namespace MiniZinc {
 
     void removeItem(Item *i);
     void addItem(Item *i);
+
+    // Replaces the Nth argument of a Call c by Expression e, c must be located on Item i
+    void replaceCallArgument(Item *i, Call *c, unsigned int n, Expression *e);
   };
 
   class ImpCompressor : public ChainCompressor {
@@ -65,9 +68,6 @@ namespace MiniZinc {
     // Constructs a clause constraint item with pos and neg as parameters.
     // if pos/neg are not ArrayLit then they will inserted into an ArrayLit.
     ConstraintI *constructClause(Expression *pos, Expression *neg);
-
-    // Replaces the Nth argument of a Call c by Expression e, c must be located on Item i
-    void replaceCallArgument(Item *i, Call *c, unsigned int n, Expression *e);
 
     ConstraintI *constructHalfReif(Call *call, Id *control);
   };
