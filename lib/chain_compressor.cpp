@@ -264,4 +264,115 @@ namespace MiniZinc {
     return nullptr;
   }
 
+  bool LECompressor::trackItem(Item *i) {
+    if (auto ci = i->dyn_cast<ConstraintI>()) {
+      if (auto call = ci->e()->dyn_cast<Call>()) {
+        // int_lin_le([1,-1], [x, y], 0); i.e. x <= y
+        if (call->id() == constants().ids.int_.lin_le) {
+          auto as = follow_id(call->arg(0))->cast<ArrayLit>();
+          auto c = follow_id(call->arg(2))->cast<IntLit>();
+          if (c->v() == IntVal(0) && as->size() == 2
+              && follow_id((*as)[0])->cast<IntLit>()->v() == IntVal(1)
+              && follow_id((*as)[1])->cast<IntLit>()->v() == IntVal(-1)) {
+            auto bs = follow_id(call->arg(1))->cast<ArrayLit>();
+            auto decl = follow_id_to_decl((*bs)[0])->cast<VarDecl>();
+            storeItem(decl, i);
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  void LECompressor::compress() {
+    for (auto it = items.begin(); it != items.end();) {
+      VarDecl *lhs = nullptr;
+      VarDecl *rhs = nullptr;
+      // Check if compression is possible
+      if (auto ci = it->second->dyn_cast<ConstraintI>()) {
+        auto call = ci->e()->cast<Call>();
+        assert(call->id() == constants().ids.int_.lin_le);
+        auto bs = follow_id(call->arg(1))->cast<ArrayLit>();
+        assert(bs->size() == 2);
+        auto var = follow_id_to_decl((*bs)[1])->cast<VarDecl>();
+
+        int occurrences = env.vo.occurrences(var);
+        unsigned long lhs_occurences = count(var);
+
+        bool compress = lhs_occurences > 0 && (occurrences == lhs_occurences + 1);
+        if (compress) {
+          rhs = var;
+          lhs = follow_id_to_decl((*bs)[0])->cast<VarDecl>();
+          assert(lhs != rhs);
+        }
+      }
+
+      if(lhs && rhs) {
+        assert(count(rhs) > 0);
+
+        auto range = find(rhs);
+        for (auto match = range.first; match != range.second;) {
+          bool succes = compressItem(match->second, lhs);
+          assert(succes);
+          match = items.erase(match);
+        }
+        if(!rhs->ann().contains(constants().ann.output_var)) {
+          removeItem(it->second);
+          it = items.erase(it);
+        } else {
+          ++it;
+        }
+      } else {
+        ++it;
+      }
+    }
+  }
+
+  bool LECompressor::compressItem(Item *i, VarDecl *newLHS) {
+    GCLock lock;
+
+    auto ci = i->cast<ConstraintI>();
+    auto call = ci->e()->cast<Call>();
+    assert(call->id() == constants().ids.int_.lin_le);
+
+    auto bs = follow_id(call->arg(1))->cast<ArrayLit>();
+    assert(bs->size() == 2);
+    auto rhs = follow_id_to_decl((*bs)[1])->cast<VarDecl>();
+
+    ConstraintI *nci = ConstructLE(newLHS->id(), rhs->id());
+    addItem(nci);
+    removeItem(i);
+
+    return true;
+  }
+
+  ConstraintI *LECompressor::ConstructLE(Expression *lhs, Expression *rhs) {
+    assert(GC::locked());
+    std::vector<Expression*> args(3);
+
+    std::vector<Expression*> as_vec(2);
+    as_vec[0] = IntLit::a(IntVal(1));
+    as_vec[0]->type(Type::parint());
+    as_vec[1] = IntLit::a(IntVal(-1));
+    as_vec[1]->type(Type::parint());
+    args[0] = new ArrayLit(Location().introduce(), as_vec);
+    args[0]->type(Type::parint(1));
+
+    std::vector<Expression*> bs_vec(2);
+    bs_vec[0] = lhs;
+    bs_vec[1] = rhs;
+    args[1] = new ArrayLit(Location().introduce(), bs_vec);
+    args[1]->type(Type::varint(1));
+
+    args[2] = IntLit::a(IntVal(0));
+
+    auto nc = new Call(MiniZinc::Location().introduce(), constants().ids.int_.lin_le, args);
+    nc->type(Type::varbool());
+    nc->decl(env.model->matchFn(env, nc, false));
+    assert(nc->decl());
+
+    return new ConstraintI(MiniZinc::Location().introduce(), nc);
+  }
+
 }

@@ -703,10 +703,13 @@ namespace MiniZinc {
       // Phase 4: Chain Breaking
       {
         ImpCompressor imp(envi, m, deletedVarDecls);
+        LECompressor le(envi, m, deletedVarDecls);
         for (auto &l : m) {
           imp.trackItem(l);
+          le.trackItem(l);
         }
         imp.compress();
+        le.compress();
       }
       
       // Phase 5: handle boolean constraints again (todo: check if we can

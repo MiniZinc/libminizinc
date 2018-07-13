@@ -59,7 +59,7 @@ namespace MiniZinc {
     void compress() override;
 
   protected:
-    // Compress two implication paths. e.g. (x -> y) /\ (y -> z) => x -> z
+    // Compress two implications. e.g. (x -> y) /\ (y -> z) => x -> z
     // In this case i: (y -> z), newLHS: x
     // Function returns true if compression was successful (and the implication that contains newLHS can be removed)
     // Side effect: Item i might be removed.
@@ -70,6 +70,25 @@ namespace MiniZinc {
     ConstraintI *constructClause(Expression *pos, Expression *neg);
 
     ConstraintI *constructHalfReif(Call *call, Id *control);
+  };
+
+  class LECompressor : public ChainCompressor {
+  public:
+    LECompressor(EnvI &env, Model &m, std::vector<VarDecl *> &deletedVarDecls)
+    : ChainCompressor(env, m, deletedVarDecls) {};
+
+    bool trackItem(Item *i) override;
+
+    void compress() override;
+
+  protected:
+    // Compress inequalities. e.g. (x <= y) /\ (y <= z) => x <= z
+    // In this case i: (y <= z), newLHS: x
+    // Function returns true if compression was successful (and the implication that contains newLHS can be removed)
+    // Side effect: Item i might be removed.
+    bool compressItem(Item *i, VarDecl *newLHS);
+
+    ConstraintI *ConstructLE(Expression *lhs, Expression *rhs);
   };
 
 }
