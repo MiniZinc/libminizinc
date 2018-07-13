@@ -99,8 +99,6 @@ namespace MiniZinc {
   }
 
   void ImpCompressor::compress() {
-    updateCount(); // Should we do this on request?
-
     for (auto it = items.begin(); it != items.end();) {
       VarDecl *lhs = nullptr;
       VarDecl *rhs = nullptr;
