@@ -30,7 +30,8 @@ using namespace MiniZinc;
 void Flattener::printVersion(ostream& os)
 {
   os << "MiniZinc to FlatZinc converter, version "
-     << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
+     << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH
+     << ", build " << MZN_BUILD_REF << std::endl;
   os << "Copyright (C) 2014-" << string(__DATE__).substr(7, 4)
      << "   Monash University, NICTA, Data61" << std::endl;
 }

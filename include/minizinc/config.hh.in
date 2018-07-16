@@ -4,6 +4,8 @@
 
 #define MZN_VERSION_PATCH "${libminizinc_VERSION_PATCH}"
 
+#define MZN_BUILD_REF "${BUILD_REF}"
+
 #cmakedefine HAS_DECLSPEC_THREAD
 
 #cmakedefine HAS_ATTR_THREAD

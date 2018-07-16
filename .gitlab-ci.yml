@@ -10,7 +10,7 @@ stages:
     - rm -rf build
     - mkdir -p build
     - cd build
-    - cmake -G"$CMAKE_ARCH" -v .. -DGECODE_NO_MPFR=1 -DGECODE_HOME="$CI_PROJECT_DIR/vendor/gecode" -DBUILD_GUROBI_PLUGIN=ON -DGUROBI_HOME="$CI_PROJECT_DIR/vendor/gurobi" -DBUILD_CPLEX_PLUGIN=ON -DCPLEX_STUDIO_DIR="$CI_PROJECT_DIR/vendor/CPLEX_Studio" -DOSICBC_HOME="$CI_PROJECT_DIR/vendor/CBC" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake -G"$CMAKE_ARCH" -v .. -DBUILD_REF=$CI_PIPELINE_ID -DGECODE_NO_MPFR=1 -DGECODE_HOME="$CI_PROJECT_DIR/vendor/gecode" -DBUILD_GUROBI_PLUGIN=ON -DGUROBI_HOME="$CI_PROJECT_DIR/vendor/gurobi" -DBUILD_CPLEX_PLUGIN=ON -DCPLEX_STUDIO_DIR="$CI_PROJECT_DIR/vendor/CPLEX_Studio" -DOSICBC_HOME="$CI_PROJECT_DIR/vendor/CBC" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   artifacts:
@@ -43,7 +43,7 @@ build:osx:
     - cmake
     - cpp
 
-.build:win32:
+.build:win32: #DISABLED
   <<: *build_definition
   stage: build
   variables:
@@ -54,7 +54,7 @@ build:osx:
     - unzip -q vendor.zip
     - if not exist "build" mkdir build
     - cd build
-    - cmake -G"%CMAKE_ARCH%" .. -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DSHARED_GECODE=TRUE -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DSHARED_GECODE=TRUE -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   tags:
@@ -72,7 +72,7 @@ build:win64:
     - unzip -q vendor.zip
     - if not exist "build" mkdir build
     - cd build
-    - cmake -G"%CMAKE_ARCH%" .. -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DSHARED_GECODE=TRUE -DBUILD_GUROBI_PLUGIN=ON -DGUROBI_HOME="%CI_PROJECT_DIR%/vendor/gurobi" -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DBUILD_CPLEX_PLUGIN=ON -DCPLEX_STUDIO_DIR="%CI_PROJECT_DIR%/vendor/CPLEX_Studio" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DSHARED_GECODE=TRUE -DBUILD_GUROBI_PLUGIN=ON -DGUROBI_HOME="%CI_PROJECT_DIR%/vendor/gurobi" -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DBUILD_CPLEX_PLUGIN=ON -DCPLEX_STUDIO_DIR="%CI_PROJECT_DIR%/vendor/CPLEX_Studio" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   tags:
