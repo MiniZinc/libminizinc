@@ -2318,7 +2318,7 @@ function int: mzn_compiler_version();
 /** @group builtins.language Return string representation of \a v given an integer major*10000+minor*1000+patch
 */
 function string: mzn_version_to_string(int: v) =
-  show(v div 10000)++"."++show((v div 100) mod 100)++"."++show(v mod 100);
+  show(v div 10000)++"."++show((v div 1000) mod 10)++"."++show(v mod 100);
 
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%
