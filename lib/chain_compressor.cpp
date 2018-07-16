@@ -275,9 +275,11 @@ namespace MiniZinc {
               && follow_id((*as)[0])->cast<IntLit>()->v() == IntVal(1)
               && follow_id((*as)[1])->cast<IntLit>()->v() == IntVal(-1)) {
             auto bs = follow_id(call->arg(1))->cast<ArrayLit>();
-            auto decl = follow_id_to_decl((*bs)[0])->cast<VarDecl>();
-            storeItem(decl, i);
-            return true;
+            // Check if left hand side is a variable (could be constant)
+            if (auto decl = follow_id_to_decl((*bs)[0])->dyn_cast<VarDecl>()) {
+              storeItem(decl, i);
+              return true;
+            }
           }
         }
       }
@@ -295,16 +297,17 @@ namespace MiniZinc {
         assert(call->id() == constants().ids.int_.lin_le);
         auto bs = follow_id(call->arg(1))->cast<ArrayLit>();
         assert(bs->size() == 2);
-        auto var = follow_id_to_decl((*bs)[1])->cast<VarDecl>();
+        // Check if right hand side is a variable (could be constant)
+        if (auto var = follow_id_to_decl((*bs)[1])->dyn_cast<VarDecl>()) {
+          int occurrences = env.vo.occurrences(var);
+          unsigned long lhs_occurences = count(var);
 
-        int occurrences = env.vo.occurrences(var);
-        unsigned long lhs_occurences = count(var);
-
-        bool compress = lhs_occurences > 0 && (occurrences == lhs_occurences + 1);
-        if (compress) {
-          rhs = var;
-          lhs = follow_id_to_decl((*bs)[0])->cast<VarDecl>();
-          assert(lhs != rhs);
+          bool compress = lhs_occurences > 0 && (occurrences == lhs_occurences + 1);
+          if (compress) {
+            rhs = var;
+            lhs = follow_id_to_decl((*bs)[0])->cast<VarDecl>();
+            assert(lhs != rhs);
+          }
         }
       }
 
@@ -338,9 +341,7 @@ namespace MiniZinc {
 
     auto bs = follow_id(call->arg(1))->cast<ArrayLit>();
     assert(bs->size() == 2);
-    auto rhs = follow_id_to_decl((*bs)[1])->cast<VarDecl>();
-
-    ConstraintI *nci = ConstructLE(newLHS->id(), rhs->id());
+    ConstraintI *nci = ConstructLE(newLHS->id(), (*bs)[1]);
     addItem(nci);
     removeItem(i);
 
