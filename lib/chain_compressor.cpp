@@ -304,7 +304,7 @@ namespace MiniZinc {
         if (bs->size() == 2 && c->v() == IntVal(0)) {
           auto a0 = follow_id((*as)[0])->cast<IntLit>()->v();
           auto a1 = follow_id((*as)[1])->cast<IntLit>()->v();
-          if (a0 == -a1) {
+          if (a0 == -a1) { // TODO: Check if the domains of b[0] and b[1] allow transformation
             int i = a0 < a1 ? 0 : 1;
             auto neg = follow_id_to_decl((*bs)[i])->cast<VarDecl>();
             int occurrences = env.vo.occurrences(neg);
@@ -326,8 +326,7 @@ namespace MiniZinc {
 
         auto range = find(rhs);
         for (auto match = range.first; match != range.second;) {
-          bool succes = compressItem(match->second, rhs, lhs);
-          assert(succes);
+          LEReplaceVar(match->second, rhs, lhs);
           match = items.erase(match);
         }
         if(!rhs->ann().contains(constants().ann.output_var)) {
@@ -342,7 +341,7 @@ namespace MiniZinc {
     }
   }
 
-  bool LECompressor::compressItem(Item *i, VarDecl *oldVar, VarDecl *newVar) {
+  void LECompressor::LEReplaceVar(Item *i, VarDecl *oldVar, VarDecl *newVar) {
     GCLock lock;
     auto ci = i->cast<ConstraintI>();
 
@@ -366,35 +365,6 @@ namespace MiniZinc {
     // Add new occurences
     CollectOccurrencesE ce(env.vo, i);
     topDown(ce, ci->e());
-    return true;
-  }
-
-  ConstraintI *LECompressor::ConstructLE(Expression *lhs, Expression *rhs) {
-    assert(GC::locked());
-    std::vector<Expression*> args(3);
-
-    std::vector<Expression*> as_vec(2);
-    as_vec[0] = IntLit::a(IntVal(1));
-    as_vec[0]->type(Type::parint());
-    as_vec[1] = IntLit::a(IntVal(-1));
-    as_vec[1]->type(Type::parint());
-    args[0] = new ArrayLit(Location().introduce(), as_vec);
-    args[0]->type(Type::parint(1));
-
-    std::vector<Expression*> bs_vec(2);
-    bs_vec[0] = lhs;
-    bs_vec[1] = rhs;
-    args[1] = new ArrayLit(Location().introduce(), bs_vec);
-    args[1]->type(Type::varint(1));
-
-    args[2] = IntLit::a(IntVal(0));
-
-    auto nc = new Call(MiniZinc::Location().introduce(), constants().ids.int_.lin_le, args);
-    nc->type(Type::varbool());
-    nc->decl(env.model->matchFn(env, nc, false));
-    assert(nc->decl());
-
-    return new ConstraintI(MiniZinc::Location().introduce(), nc);
   }
 
 }

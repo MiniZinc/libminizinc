@@ -82,13 +82,10 @@ namespace MiniZinc {
     void compress() override;
 
   protected:
-    // Compress inequalities. e.g. (x <= y) /\ (y <= z) => x <= z
-    // In this case i: (y <= z), newLHS: x
-    // Function returns true if compression was successful (and the implication that contains newLHS can be removed)
-    // Side effect: Item i might be removed.
-    bool compressItem(Item *i, VarDecl *oldVar, VarDecl *newVar);
-
-    ConstraintI *ConstructLE(Expression *lhs, Expression *rhs);
+    /// Replace the use a variable within an inequality
+    /// e.g. i: int_lin_le([1,2,3], [a,b,c], 10), oldVar: a, newVar d -> int_lin_le([1,2,3], [d,b,c], 10)
+    /// Occurrence count is updated for variables involved.
+    void LEReplaceVar(Item *i, VarDecl *oldVar, VarDecl *newVar);
   };
 
 }
