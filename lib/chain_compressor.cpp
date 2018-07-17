@@ -265,26 +265,28 @@ namespace MiniZinc {
   }
 
   bool LECompressor::trackItem(Item *i) {
+    bool added = false;
     if (auto ci = i->dyn_cast<ConstraintI>()) {
       if (auto call = ci->e()->dyn_cast<Call>()) {
         // int_lin_le([1,-1], [x, y], 0); i.e. x <= y
         if (call->id() == constants().ids.int_.lin_le) {
           auto as = follow_id(call->arg(0))->cast<ArrayLit>();
-          auto c = follow_id(call->arg(2))->cast<IntLit>();
-          if (c->v() == IntVal(0) && as->size() == 2
-              && follow_id((*as)[0])->cast<IntLit>()->v() == IntVal(1)
-              && follow_id((*as)[1])->cast<IntLit>()->v() == IntVal(-1)) {
-            auto bs = follow_id(call->arg(1))->cast<ArrayLit>();
-            // Check if left hand side is a variable (could be constant)
-            if (auto decl = follow_id_to_decl((*bs)[0])->dyn_cast<VarDecl>()) {
-              storeItem(decl, i);
-              return true;
+          auto bs = follow_id(call->arg(1))->cast<ArrayLit>();
+          assert(as->size() == bs->size());
+
+          for (int j = 0; j < as->size(); ++j) {
+            if (follow_id((*as)[j])->cast<IntLit>()->v() > IntVal(0)) {
+              // Check if left hand side is a variable (could be constant)
+              if (auto decl = follow_id_to_decl((*bs)[j])->dyn_cast<VarDecl>()) {
+                storeItem(decl, i);
+                added = true;
+              }
             }
           }
         }
       }
     }
-    return false;
+    return added;
   }
 
   void LECompressor::compress() {
@@ -295,18 +297,26 @@ namespace MiniZinc {
       if (auto ci = it->second->dyn_cast<ConstraintI>()) {
         auto call = ci->e()->cast<Call>();
         assert(call->id() == constants().ids.int_.lin_le);
+        auto as = follow_id(call->arg(0))->cast<ArrayLit>();
         auto bs = follow_id(call->arg(1))->cast<ArrayLit>();
-        assert(bs->size() == 2);
-        // Check if right hand side is a variable (could be constant)
-        if (auto var = follow_id_to_decl((*bs)[1])->dyn_cast<VarDecl>()) {
-          int occurrences = env.vo.occurrences(var);
-          unsigned long lhs_occurences = count(var);
+        auto c = follow_id(call->arg(2))->cast<IntLit>();
 
-          bool compress = lhs_occurences > 0 && (occurrences == lhs_occurences + 1);
-          if (compress) {
-            rhs = var;
-            lhs = follow_id_to_decl((*bs)[0])->cast<VarDecl>();
-            assert(lhs != rhs);
+        if (bs->size() == 2 && c->v() == IntVal(0)) {
+          auto a0 = follow_id((*as)[0])->cast<IntLit>()->v();
+          auto a1 = follow_id((*as)[1])->cast<IntLit>()->v();
+          if (a0 == -a1) {
+            int i = a0 < a1 ? 0 : 1;
+            auto neg = follow_id_to_decl((*bs)[i])->cast<VarDecl>();
+            int occurrences = env.vo.occurrences(neg);
+            unsigned long lhs_occurences = count(neg);
+
+            bool compress = lhs_occurences > 0 && (occurrences == lhs_occurences + 1);
+            auto pos = follow_id_to_decl((*bs)[1 - i])->dyn_cast<VarDecl>();
+            if (pos && compress) {
+              rhs = neg;
+              lhs = follow_id_to_decl((*bs)[1 - i])->cast<VarDecl>();
+              assert(lhs != rhs);
+            }
           }
         }
       }
@@ -316,7 +326,7 @@ namespace MiniZinc {
 
         auto range = find(rhs);
         for (auto match = range.first; match != range.second;) {
-          bool succes = compressItem(match->second, lhs);
+          bool succes = compressItem(match->second, rhs, lhs);
           assert(succes);
           match = items.erase(match);
         }
@@ -332,19 +342,30 @@ namespace MiniZinc {
     }
   }
 
-  bool LECompressor::compressItem(Item *i, VarDecl *newLHS) {
+  bool LECompressor::compressItem(Item *i, VarDecl *oldVar, VarDecl *newVar) {
     GCLock lock;
-
     auto ci = i->cast<ConstraintI>();
+
+    // Remove old occurrences
+    CollectDecls cd(env.vo, deletedVarDecls, i);
+    topDown(cd, ci->e());
+
     auto call = ci->e()->cast<Call>();
     assert(call->id() == constants().ids.int_.lin_le);
-
     auto bs = follow_id(call->arg(1))->cast<ArrayLit>();
-    assert(bs->size() == 2);
-    ConstraintI *nci = ConstructLE(newLHS->id(), (*bs)[1]);
-    addItem(nci);
-    removeItem(i);
 
+    for (int j = 0; j < bs->size(); ++j) {
+      auto decl = follow_id_to_decl((*bs)[j])->dyn_cast<VarDecl>();
+      if (decl == oldVar) {
+        bs->set(j, newVar->id());
+        storeItem(newVar, i);
+        break;
+      }
+    }
+
+    // Add new occurences
+    CollectOccurrencesE ce(env.vo, i);
+    topDown(ce, ci->e());
     return true;
   }
 

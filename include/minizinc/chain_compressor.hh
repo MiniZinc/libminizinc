@@ -86,7 +86,7 @@ namespace MiniZinc {
     // In this case i: (y <= z), newLHS: x
     // Function returns true if compression was successful (and the implication that contains newLHS can be removed)
     // Side effect: Item i might be removed.
-    bool compressItem(Item *i, VarDecl *newLHS);
+    bool compressItem(Item *i, VarDecl *oldVar, VarDecl *newVar);
 
     ConstraintI *ConstructLE(Expression *lhs, Expression *rhs);
   };
