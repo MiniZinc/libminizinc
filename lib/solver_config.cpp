@@ -20,6 +20,7 @@
 #include <iterator>
 #include <string>
 #include <set>
+#include <cctype>
 
 using namespace std;
 
@@ -135,6 +136,32 @@ namespace MiniZinc {
 #endif
       return ret;
     }
+    
+    char charToLower(char c) {
+      return std::tolower(static_cast<unsigned char>(c));
+    }
+    std::string stringToLower(std::string s) {
+      std::transform(s.begin(), s.end(), s.begin(), charToLower);
+      return s;
+    }
+    struct SortByLowercase {
+      bool operator ()(const std::string& n1, const std::string& n2) {
+        for (size_t i=0; i<n1.size() && i<n2.size(); i++) {
+          if (std::tolower(n1[i]) != std::tolower(n2[i]))
+            return std::tolower(n1[i]) < std::tolower(n2[i]);
+        }
+        return n1.size() < n2.size();
+      }
+    };
+    struct SortByName {
+      const std::vector<SolverConfig>& solvers;
+      SortByLowercase sortByLowercase;
+      SortByName(const std::vector<SolverConfig>& solvers0) : solvers(solvers0) {}
+      bool operator ()(int idx1, int idx2) {
+        return sortByLowercase(solvers[idx1].name(), solvers[idx2].name());
+      }
+    };
+
   }
   
   SolverConfig SolverConfig::load(string filename) {
@@ -273,7 +300,7 @@ namespace MiniZinc {
     std::vector<string> sc_tags = sc.tags();
     sc_tags.push_back(sc.id());
     std::string name = sc.name();
-    std::transform(name.begin(), name.end(), name.begin(), ::tolower);
+    name = stringToLower(name);
     sc_tags.push_back(name);
     for (auto t : sc_tags) {
       TagMap::iterator it = _tags.find(t);
@@ -434,26 +461,6 @@ namespace MiniZinc {
         sc.defaultFlags(defaultOptions);
       }
     }
-  }
-  
-  namespace {
-    struct SortByLowercase {
-      bool operator ()(const std::string& n1, const std::string& n2) {
-        for (size_t i=0; i<n1.size() && i<n2.size(); i++) {
-          if (std::tolower(n1[i]) != std::tolower(n2[i]))
-            return std::tolower(n1[i]) < std::tolower(n2[i]);
-        }
-        return n1.size() < n2.size();
-      }
-    };
-    struct SortByName {
-      const std::vector<SolverConfig>& solvers;
-      SortByLowercase sortByLowercase;
-      SortByName(const std::vector<SolverConfig>& solvers0) : solvers(solvers0) {}
-      bool operator ()(int idx1, int idx2) {
-        return sortByLowercase(solvers[idx1].name(), solvers[idx2].name());
-      }
-    };
   }
   
   vector<string> SolverConfigs::solvers() const {
@@ -620,7 +627,7 @@ namespace MiniZinc {
       s = _s;
     }
     std::remove(s.begin(),s.end(),' ');
-    std::transform(s.begin(), s.end(), s.begin(), ::tolower);
+    s = stringToLower(s);
     std::vector<std::string> tags;
     std::istringstream iss(s);
     std::string next_s;
