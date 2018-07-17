@@ -304,7 +304,7 @@ namespace MiniZinc {
         if (bs->size() == 2 && c->v() == IntVal(0)) {
           auto a0 = follow_id((*as)[0])->cast<IntLit>()->v();
           auto a1 = follow_id((*as)[1])->cast<IntLit>()->v();
-          if (a0 == -a1) { // TODO: Check if the domains of b[0] and b[1] allow transformation
+          if (a0 == -a1 && eqBounds((*bs)[0], (*bs)[1])) {
             int i = a0 < a1 ? 0 : 1;
             auto neg = follow_id_to_decl((*bs)[i])->cast<VarDecl>();
             int occurrences = env.vo.occurrences(neg);
@@ -365,6 +365,17 @@ namespace MiniZinc {
     // Add new occurences
     CollectOccurrencesE ce(env.vo, i);
     topDown(ce, ci->e());
+  }
+
+  bool LECompressor::eqBounds(Expression *a, Expression *b) {
+    // TODO: (To optimise) Check lb(lhs) >= lb(rhs) and enforce ub(lhs) <= ub(rhs)
+    assert(follow_id_to_decl(a)->dyn_cast<VarDecl>());
+    assert(follow_id_to_decl(b)->dyn_cast<VarDecl>());
+
+    IntSetVal* a_dom = eval_intset(env, follow_id_to_decl(a)->cast<VarDecl>()->ti()->domain());
+    IntSetVal* b_dom = eval_intset(env, follow_id_to_decl(b)->cast<VarDecl>()->ti()->domain());
+
+    return (a_dom->min() == b_dom->min()) && (a_dom->max() == b_dom->max());
   }
 
 }
