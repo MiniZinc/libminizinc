@@ -436,33 +436,82 @@ namespace MiniZinc {
     }
   }
   
+  namespace {
+    struct SortByLowercase {
+      bool operator ()(const std::string& n1, const std::string& n2) {
+        for (size_t i=0; i<n1.size() && i<n2.size(); i++) {
+          if (std::tolower(n1[i]) != std::tolower(n2[i]))
+            return std::tolower(n1[i]) < std::tolower(n2[i]);
+        }
+        return n1.size() < n2.size();
+      }
+    };
+    struct SortByName {
+      const std::vector<SolverConfig>& solvers;
+      SortByLowercase sortByLowercase;
+      SortByName(const std::vector<SolverConfig>& solvers0) : solvers(solvers0) {}
+      bool operator ()(int idx1, int idx2) {
+        return sortByLowercase(solvers[idx1].name(), solvers[idx2].name());
+      }
+    };
+  }
+  
   vector<string> SolverConfigs::solvers() const {
+    // Find default solver, if present
+    std::string def_id;
+    DefaultMap::const_iterator def_it = _tagDefault.find("");
+    if (def_it != _tagDefault.end()) {
+      def_id = def_it->second;
+    }
+    // Create sorted list of solvers
     vector<string> s;
     for (auto& sc: _solvers) {
       if (std::find(sc.tags().begin(), sc.tags().end(), "__internal__") != sc.tags().end())
         continue;
       std::ostringstream oss;
       oss << sc.name() << " " << sc.version() << " (" << sc.id();
+      if (!def_id.empty() && sc.id()==def_id) {
+        oss << ", default solver";
+      }
       for (std::string t: sc.tags()) {
         oss << ", " << t;
       }
       oss << ")";
       s.push_back(oss.str());
     }
-    std::sort(s.begin(),s.end());
+    SortByLowercase sortByLowercase;
+    std::sort(s.begin(),s.end(), sortByLowercase);
     return s;
   }
 
   std::string SolverConfigs::solverConfigsJSON() const {
     GCLock lock;
     std::ostringstream oss;
+    
+    // Find default solver, if present
+    std::string def_id;
+    DefaultMap::const_iterator def_it = _tagDefault.find("");
+    if (def_it != _tagDefault.end()) {
+      def_id = def_it->second;
+    }
+    
+    SortByName sortByName(_solvers);
+    std::vector<int> solversIdx(_solvers.size());
+    for (unsigned int i=0; i<solversIdx.size(); i++) {
+      solversIdx[i] = i;
+    }
+    std::sort(solversIdx.begin(), solversIdx.end(), sortByName);
+    
     oss << "[\n";
     for (unsigned int i=0; i<_solvers.size(); i++) {
-      const SolverConfig& sc = _solvers[i];
+      const SolverConfig& sc = _solvers[solversIdx[i]];
       if (std::find(sc.tags().begin(), sc.tags().end(), "__internal__") != sc.tags().end())
         continue;
       oss << "  {\n";
       oss << "    \"extraInfo\": {\n";
+      if (!def_id.empty() && def_id==sc.id()) {
+        oss << "      \"isDefault\": true,\n";
+      }
       if (sc.mznlib_resolved().size()) {
         oss << "      \"mznlib\": \"" << Printer::escapeStringLit(sc.mznlib_resolved()) << "\",\n";
       }
@@ -562,7 +611,6 @@ namespace MiniZinc {
   }
   
   const SolverConfig& SolverConfigs::config(const std::string& _s) {
-    
     std::string s;
     if (_s.size() > 4 && _s.substr(_s.size()-4)==".msc") {
       SolverConfig sc = SolverConfig::load(_s);
