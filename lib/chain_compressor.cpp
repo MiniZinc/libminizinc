@@ -375,7 +375,7 @@ namespace MiniZinc {
     IntSetVal* a_dom = eval_intset(env, follow_id_to_decl(a)->cast<VarDecl>()->ti()->domain());
     IntSetVal* b_dom = eval_intset(env, follow_id_to_decl(b)->cast<VarDecl>()->ti()->domain());
 
-    return (a_dom->min() == b_dom->min()) && (a_dom->max() == b_dom->max());
+    return (a && b && (a_dom->min() == b_dom->min()) && (a_dom->max() == b_dom->max())) || (!a && !b);
   }
 
 }
