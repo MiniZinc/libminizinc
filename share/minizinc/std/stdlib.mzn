@@ -215,6 +215,20 @@ annotation outdomain_random;
 /** @group annotations.search.explore Perform a complete search */
 annotation complete;
 
+/***
+ @groupdef annotations.search.restart Restart annotations
+*/
+
+/** @group annotations.search.restart Restart with Luby sequence scaled by \a scale */
+annotation restart_luby(int: scale);
+/** @group annotations.search.restart Restart with geometric sequence with parameters \a base and \a scale */
+annotation restart_geometric(float: base, int: scale);
+/** @group annotations.search.restart Restart with linear sequence scaled by \a scale */
+annotation restart_linear(int: scale);
+/** @group annotations.search.restart Restart after constant number of nodes \a scale */
+annotation restart_constant(int: scale);
+/** @group annotations.search.restart Do not restart */
+annotation restart_none;
 
 /***
  @groupdef annotations.warmstart Warm start annotations
