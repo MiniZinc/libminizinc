@@ -274,15 +274,17 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
 {
   executable_name = argv[0];
   executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
-  if (executable_name=="mzn2fzn")
+  string solver;
+  bool mzn2fzn_exe = (executable_name=="mzn2fzn");
+  if (mzn2fzn_exe) {
     is_mzn2fzn=true;
-  else if (executable_name=="solns2out")
+  } else if (executable_name=="solns2out") {
     s2out._opt.flag_standaloneSolns2Out=true;
+  }
   int i=1, j=1;
   int argc = static_cast<int>(argv.size());
   if (argc < 2)
     return OPTION_ERROR;
-  string solver;
   for (i=1; i<argc; ++i) {
     if (argv[i]=="-h" || argv[i]=="--help") {
       if (argc > i+1) {
@@ -353,6 +355,10 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   argv.resize(j);
   argc = j;
 
+  if (mzn2fzn_exe && solver.empty()) {
+    solver = "org.minizinc.mzn-fzn";
+  }
+  
   if (flag_verbose) {
     argv.push_back("--verbose-solving");
     argc++;
