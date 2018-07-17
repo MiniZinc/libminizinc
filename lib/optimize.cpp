@@ -704,9 +704,9 @@ namespace MiniZinc {
       {
         ImpCompressor imp(envi, m, deletedVarDecls);
         LECompressor le(envi, m, deletedVarDecls);
-        for (auto &l : m) {
-          imp.trackItem(l);
-          le.trackItem(l);
+        for (auto &item : m) {
+          imp.trackItem(item);
+          le.trackItem(item);
         }
         imp.compress();
         le.compress();
