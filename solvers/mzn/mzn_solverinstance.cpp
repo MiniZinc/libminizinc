@@ -91,17 +91,16 @@ namespace MiniZinc {
     if ( cop.getOption( "-m --minizinc-cmd", &buffer) ) {
       _opt.mzn_solver = buffer;
     } else if ( cop.getOption( "--mzn-flags --minizinc-flags", &buffer) ) {
-      _opt.mzn_flags.push_back(buffer);
+      std::vector<std::string> cmdLine = FileUtils::parseCmdLine(buffer);
+      for (auto& s : cmdLine) {
+        _opt.mzn_flags.push_back(s);
+      }
     } else if ( cop.getOption( "--mzn-time-limit", &nn) ) {
       _opt.mzn_time_limit_ms = nn;
     } else if ( cop.getOption( "--mzn-sigint") ) {
       _opt.mzn_sigint = true;
     } else if ( cop.getOption( "--mzn-flag --minizinc-flag", &buffer) ) {
-      string old = _opt.mzn_flag;
-      old += " \"";
-      old += buffer;
-      old += "\" ";
-      _opt.mzn_flag = old;
+      _opt.mzn_flags.push_back(buffer);
     } else if ( cop.getOption( "--solver-statistics" )) {
       _opt.printStatistics = true;
     } else if ( cop.getOption( "--verbose-solving" )) {
@@ -151,9 +150,6 @@ namespace MiniZinc {
     cmd_line.push_back( opt.mzn_solver );
     for ( auto& f : opt.mzn_flags )
       cmd_line.push_back( f );
-    string sFlagQuoted = opt.mzn_flag;
-    if ( sFlagQuoted.size() )
-      cmd_line.push_back( sFlagQuoted );
     if (opt.printStatistics) {
       cmd_line.push_back( "-s" );
     }

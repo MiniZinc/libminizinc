@@ -130,11 +130,8 @@ namespace MiniZinc {
       siStartInfo.hStdInput = g_hChildStd_IN_Rd;
       siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
 
-      std::stringstream cmdline;
-      for (auto& iCmdl: _fzncmd)
-        cmdline << iCmdl << " ";
-
-      char* cmdstr = strdup(cmdline.str().c_str());
+      std::string cmdline = FileUtils::combineCmdLine(_fzncmd);
+      char* cmdstr = strdup(cmdline.c_str());
 
       BOOL processStarted = CreateProcess(NULL,
         cmdstr,        // command line
@@ -302,15 +299,7 @@ namespace MiniZinc {
 
         std::vector<char*> cmd_line;
         for (auto& iCmdl: _fzncmd) {
-          std::istringstream iss(iCmdl);
-          while (1) {
-            std::string sBuf;
-            iss >> std::skipws >> sBuf;
-            if ( sBuf.size() )
-              cmd_line.push_back( strdup(sBuf.c_str()) );
-            else
-              break;
-          }
+          cmd_line.push_back( strdup (iCmdl.c_str()));
         }
 
         char** argv = new char*[cmd_line.size() + 1];

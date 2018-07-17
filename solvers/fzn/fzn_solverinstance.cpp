@@ -99,7 +99,10 @@ namespace MiniZinc {
     } else if ( cop.getOption( "-b --backend --solver-backend", &buffer) ) {
       _opt.backend = buffer;
     } else if ( cop.getOption( "--fzn-flags --flatzinc-flags", &buffer) ) {
-      _opt.fzn_flags.push_back(buffer);
+      std::vector<std::string> cmdLine = FileUtils::parseCmdLine(buffer);
+      for (auto& s : cmdLine) {
+        _opt.fzn_flags.push_back(s);
+      }
     } else if ( cop.getOption( "--fzn-time-limit", &nn) ) {
       _opt.fzn_time_limit_ms = nn;
     } else if ( cop.getOption( "--fzn-sigint") ) {
@@ -109,11 +112,7 @@ namespace MiniZinc {
     } else if ( cop.getOption( "--fzn-output-passthrough") ) {
       _opt.fzn_output_passthrough = true;
     } else if ( cop.getOption( "--fzn-flag --flatzinc-flag", &buffer) ) {
-      string old = _opt.fzn_flag;
-      old += " \"";
-      old += buffer;
-      old += "\" ";
-      _opt.fzn_flag = old;
+      _opt.fzn_flags.push_back(buffer);
     } else if ( _opt.supports_n && cop.getOption( "-n --num-solutions", &nn) ) {
       _opt.numSols = nn;
     } else if ( _opt.supports_a && cop.getOption( "-a --all --all-solns --all-solutions") ) {
@@ -200,9 +199,6 @@ namespace MiniZinc {
     for (auto& f : opt.fzn_flags) {
       cmd_line.push_back( f );
     }
-    string sFlagQuoted = opt.fzn_flag;
-    if ( sFlagQuoted.size() )
-      cmd_line.push_back( sFlagQuoted );
     if ( opt.numSols != 1 ) {
       ostringstream oss;
       oss << "-n " << opt.numSols;

@@ -343,6 +343,105 @@ namespace MiniZinc { namespace FileUtils {
 #endif
   }
   
+  std::vector<std::string> parseCmdLine(const std::string& s) {
+    // Break the string up at whitespace, except inside quotes, but ignore escaped quotes
+    std::vector<std::string> c;
+    size_t cur = 0;
+    size_t l = s.length();
+    std::ostringstream oss;
+    bool inside_quote = false;
+    bool had_escape = false;
+    for (; cur < l; cur++) {
+      if (inside_quote) {
+        if (s[cur]=='"') {
+          if (had_escape) {
+            oss << "\"";
+            had_escape = false;
+          } else {
+            inside_quote = false;
+          }
+        } else if (s[cur]=='\\') {
+          had_escape = true;
+        } else {
+          if (had_escape) {
+            oss << "\\";
+            had_escape = false;
+          }
+          oss << s[cur];
+        }
+      } else {
+        if (s[cur]==' ') {
+          if (had_escape) {
+            oss << " ";
+            had_escape = false;
+          } else {
+            c.push_back(oss.str());
+            oss.str(std::string());
+          }
+        } else if (s[cur]=='\\') {
+          if (had_escape) {
+            oss << "\\";
+            had_escape = false;
+          } else {
+            had_escape = true;
+          }
+        } else if (s[cur]=='"') {
+          if (had_escape) {
+            oss << "\"";
+            had_escape = false;
+          } else {
+            inside_quote = true;
+          }
+        } else {
+          if (had_escape) {
+            switch (s[cur]) {
+              case 'a' : oss << "\a"; break;
+              case 'b' : oss << "\b"; break;
+              case 'f' : oss << "\f"; break;
+              case 'n' : oss << "\n"; break;
+              case 'r' : oss << "\r"; break;
+              case 't' : oss << "\t"; break;
+              case 'v' : oss << "\v"; break;
+              default: oss << "\\" << s[cur]; break;
+            }
+            had_escape = false;
+          } else {
+            oss << s[cur];
+          }
+        }
+      }
+    }
+    c.push_back(oss.str());
+    return c;
+  }
+  
+  std::string combineCmdLine(const std::vector<std::string>& cmd) {
+    std::ostringstream ret;
+    for (unsigned int i=0; i<cmd.size(); i++) {
+      auto& c = cmd[i];
+      ret << "\"";
+      for (size_t i=0; i<c.size(); i++) {
+        switch (c[i]) {
+          case '\a' : ret << "\\a"; break;
+          case '\b' : ret << "\\b"; break;
+          case '\f' : ret << "\\f"; break;
+          case '\n' : ret << "\\n"; break;
+          case '\r' : ret << "\\r"; break;
+          case '\t' : ret << "\\t"; break;
+          case '\v' : ret << "\\v"; break;
+          case '"' :  ret << "\\\""; break;
+          case '\\':  ret << "\\\\"; break;
+          default:    ret << c[i]; break;
+        }
+      }
+      ret << "\"";
+      if (i<cmd.size()-1) {
+        ret << " ";
+      }
+    }
+    return ret.str();
+  }
+  
   void inflateString(std::string& s) {
     unsigned char* cc = reinterpret_cast<unsigned char*>(&s[0]);
     // autodetect compressed string

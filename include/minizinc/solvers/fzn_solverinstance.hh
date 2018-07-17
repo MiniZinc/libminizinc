@@ -23,7 +23,6 @@ namespace MiniZinc {
     std::string fzn_solver;
     std::string backend;
     std::vector<std::string> fzn_flags;
-    std::string fzn_flag;
     int numSols = 1;
     bool allSols = false;
     std::string parallel;

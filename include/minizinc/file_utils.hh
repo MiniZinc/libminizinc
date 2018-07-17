@@ -44,7 +44,11 @@ namespace MiniZinc { namespace FileUtils {
   std::string user_config_file(void);
   /// Get per-user configuration directory name (usually in home directory or AppData directory)
   std::string user_config_dir(void);
-  
+  /// Parse command line \a s into individual arguments
+  std::vector<std::string> parseCmdLine(const std::string& s);
+  /// Combine individual arguments \a cmd into properly quoted command line
+  std::string combineCmdLine(const std::vector<std::string>& cmd);
+
   /// Create a temporary file
   class TmpFile {
   private:

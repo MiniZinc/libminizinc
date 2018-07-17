@@ -386,11 +386,11 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
             vector<string> fzn_mzn_flags;
             if (sc.needsStdlibDir()) {
               fzn_mzn_flags.push_back("--stdlib-dir");
-              fzn_mzn_flags.push_back("\"" + FileUtils::share_directory() + "\"");
+              fzn_mzn_flags.push_back(FileUtils::share_directory());
             }
             if (sc.needsMznExecutable()) {
               fzn_mzn_flags.push_back("--minizinc-exe");
-              fzn_mzn_flags.push_back("\"" + FileUtils::progpath() + "/" + executable_name + "\"");
+              fzn_mzn_flags.push_back(FileUtils::progpath() + "/" + executable_name);
             }
 
             if (sc.supportsMzn()) {
@@ -405,7 +405,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               }
 
               if(!fzn_mzn_flags.empty()) {
-                addFlags("--mzn-flags", fzn_mzn_flags, additionalArgs_s);
+                addFlags("--mzn-flag", fzn_mzn_flags, additionalArgs_s);
               }
 
               // This should maybe be moved to fill in fzn_mzn_flags when
@@ -413,19 +413,19 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               // through to the subsolver of findMUS)
               if (!sc.mznlib().empty()) {
                 if (sc.mznlib().substr(0,2)=="-G") {
-                  additionalArgs_s.push_back("--mzn-flags");
+                  additionalArgs_s.push_back("--mzn-flag");
                   additionalArgs_s.push_back(sc.mznlib());
                 } else {
-                  additionalArgs_s.push_back("--mzn-flags");
+                  additionalArgs_s.push_back("--mzn-flag");
                   additionalArgs_s.push_back("-I");
-                  additionalArgs_s.push_back("--mzn-flags");
+                  additionalArgs_s.push_back("--mzn-flag");
                   std::string _mznlib;
                   if (sc.mznlib_resolved().size()) {
                     _mznlib = sc.mznlib_resolved();
                   } else {
                     _mznlib = sc.mznlib();
                   }
-                  additionalArgs_s.push_back("\"" + _mznlib + "\"");
+                  additionalArgs_s.push_back(_mznlib);
                 }
               }
 
@@ -446,7 +446,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                 additionalArgs.push_back(sc.executable());
               }
               if(!fzn_mzn_flags.empty()) {
-                addFlags("--fzn-flags", fzn_mzn_flags, additionalArgs);
+                addFlags("--fzn-flag", fzn_mzn_flags, additionalArgs);
               }
               if (sc.needsPathsFile()) {
                 // Instruct flattener to hold onto paths
