@@ -267,13 +267,15 @@ namespace MiniZinc {
     if(!opt.fzn_output_passthrough) {
       Process<Solns2Out> proc(cmd_line, getSolns2Out(), timelimit, sigint);
       proc.run();
+      delete pathsFile;
+      return getSolns2Out()->status;
     } else {
       Solns2Log s2l(getSolns2Out()->getOutput(), _log);
       Process<Solns2Log> proc(cmd_line, &s2l, timelimit, sigint);
       proc.run();
+      delete pathsFile;
+      return SolverInstance::NONE;
     }
-    delete pathsFile;
-    return getSolns2Out()->status;
   }
 
   void FZNSolverInstance::processFlatZinc(void) {}
