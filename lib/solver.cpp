@@ -346,7 +346,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     } else if (argv[i]=="--compiler-statistics") {
       flag_compiler_statistics = true;
     } else {
-      if ((argv[i]=="--fzn-cmd" || argv[i]=="--flatzinz-cmd") && solver.empty()) {
+      if ((argv[i]=="--fzn-cmd" || argv[i]=="--flatzinc-cmd") && solver.empty()) {
         solver = "org.minizinc.mzn-fzn";
       }
       argv[j++] = argv[i];
