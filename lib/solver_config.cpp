@@ -511,11 +511,16 @@ namespace MiniZinc {
     }
     std::sort(solversIdx.begin(), solversIdx.end(), sortByName);
     
+    bool hadSolver = false;
     oss << "[\n";
     for (unsigned int i=0; i<_solvers.size(); i++) {
       const SolverConfig& sc = _solvers[solversIdx[i]];
       if (std::find(sc.tags().begin(), sc.tags().end(), "__internal__") != sc.tags().end())
         continue;
+      if (hadSolver) {
+        oss << ",\n";
+      }
+      hadSolver = true;
       oss << "  {\n";
       oss << "    \"extraInfo\": {\n";
       if (!def_id.empty() && def_id==sc.id()) {
@@ -603,9 +608,9 @@ namespace MiniZinc {
       oss << "    \"needsStdlibDir\": " << (sc.needsStdlibDir()? "true" : "false") << ",\n";
       oss << "    \"needsPathsFile\": " << (sc.needsPathsFile()? "true" : "false") << ",\n";
       oss << "    \"isGUIApplication\": " << (sc.isGUIApplication()? "true" : "false") << "\n";
-      oss << "  }" << (i<_solvers.size()-1 ? ",\n" : "\n");
+      oss << "  }";
     }
-    oss << "]\n";
+    oss << "\n]\n";
     return oss.str();
   }
   
