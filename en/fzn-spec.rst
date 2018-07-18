@@ -971,8 +971,7 @@ Here is a list of all configuration options recognised by the configuration file
   - ``"api"``: for solvers that use the internal C++ API
 
 - ``stdFlags`` (list of strings, default empty): Which of the standard solver command line flags are supported by this solver. The standard flags are ``-a``, ``-n``, ``-s``, ``-v``, ``-p``, ``-r``, ``-f``.
-
-- ``extraFlags`` (list of list of strings, default empty): Extra command line flags supported by the solver. Each entry should be a list two, three or four strings. The first string is the name of the option (e.g. ``"--special-algorithm"``). The second string is a description that can be used to generate help output (e.g. ``"which special algorithm to use"``). The third string specifies the type of the argument (as a MiniZinc type). The fourth string is the default value. If no type is specified, ``"bool"`` is assumed.
+- ``extraFlags`` (list of list of strings, default empty): Extra command line flags supported by the solver. Each entry must be a list of four strings. The first string is the name of the option (e.g. ``"--special-algorithm"``). The second string is a description that can be used to generate help output (e.g. ``"which special algorithm to use"``). The third string specifies the type of the argument (``"int"``,``"bool"``,``"float"`` or ``"string"``). The fourth string is the default value.
 - ``supportsMzn`` (bool, default ``false``): Whether the solver can run MiniZinc directly (i.e., it implements its own compilation or interpretation of the model).
 - ``supportsFzn`` (bool, default ``true``): Whether the solver can run FlatZinc. This should be the case for most solvers
 - ``needsSolns2Out`` (bool, default ``true``): Whether the output of the solver needs to be passed through the MiniZinc output processor.
