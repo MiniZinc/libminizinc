@@ -200,16 +200,18 @@ namespace MiniZinc {
       cmd_line.push_back( f );
     }
     if ( opt.numSols != 1 ) {
+      cmd_line.push_back( "-n" );
       ostringstream oss;
-      oss << "-n " << opt.numSols;
+      oss << opt.numSols;
       cmd_line.push_back( oss.str() );
     }
     if ( opt.allSols ) {
       cmd_line.push_back( "-a" );
     }
     if ( opt.parallel.size() ) {
+      cmd_line.push_back( "-p" );
       ostringstream oss;
-      oss << "-p " << opt.parallel;
+      oss << opt.parallel;
       cmd_line.push_back( oss.str() );
     }
     if (opt.printStatistics) {
