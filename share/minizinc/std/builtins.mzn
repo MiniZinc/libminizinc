@@ -670,19 +670,19 @@ function var bool: 'superset'(var set of int: x, var set of int: y);
 /** @group builtins.set Return the union of sets \a x and \a y */
 function     set of $T:  'union'(    set of $T: x,      set of $T: y);
 /** @group builtins.set Return the union of sets \a x and \a y */
-function var set of int: 'union'(var set of int: x, var set of int: y);
+function var set of $$T: 'union'(var set of $$T: x, var set of $$T: y);
 /** @group builtins.set Return the intersection of sets \a x and \a y */
 function     set of $T:  'intersect'(    set of $T: x,      set of $T: y);
 /** @group builtins.set Return the intersection of sets \a x and \a y */
-function var set of int: 'intersect'(var set of int: x, var set of int: y);
+function var set of $$T: 'intersect'(var set of $$T: x, var set of $$T: y);
 /** @group builtins.set Return the set difference of sets \a x &minus; \a y */
 function     set of $T:  'diff'(    set of $T: x,      set of $T: y);
 /** @group builtins.set Return the set difference of sets \a x &minus; \a y */
-function var set of int: 'diff'(var set of int: x, var set of int: y);
+function var set of $$T: 'diff'(var set of $$T: x, var set of $$T: y);
 /** @group builtins.set Return the symmetric set difference of sets \a x and \a y */
 function     set of $T:  'symdiff'(    set of $T: x,      set of $T: y);
 /** @group builtins.set Return the symmetric set difference of sets \a x and \a y */
-function var set of int: 'symdiff'(var set of int: x, var set of int: y);
+function var set of $$T: 'symdiff'(var set of $$T: x, var set of $$T: y);
 
 /** @group builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
 function set of $$E: '..'($$E: a,$$E: b);
@@ -1628,7 +1628,7 @@ function var set of int: array2set(array[int] of var int: x) ::promise_total =
         } in s | i in index_set(x)]);
     } in y;
 
-function set of int: array2set(array[int] of int: x) =
+function set of $$T: array2set(array[int] of $$T: x) =
   { x[i] | i in index_set(x) };
 
 predicate array_var_int_element(var int: x, array[int] of int: y, var int: z) =
