@@ -411,6 +411,7 @@ void Flattener::flatten(const std::string& modelString)
       // Extract variables to check from solution check model
       if (flag_verbose)
         log << "Parsing solution checker model " << flag_solution_check_model << " ..." << endl;
+      bool isCompressedChecker = flag_solution_check_model.size() >= 4 && flag_solution_check_model.substr(flag_solution_check_model.size()-4)==".mzc";
       std::vector<std::string> smm_model({flag_solution_check_model});
       Model* smm = parse(*env, smm_model, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
       if (flag_verbose)
@@ -419,31 +420,48 @@ void Flattener::flatten(const std::string& modelString)
         Env smm_env(smm);
         GCLock lock;
         vector<TypeError> typeErrors;
-        MiniZinc::typecheck(smm_env, smm, typeErrors, true, false);
-        if (typeErrors.size() > 0) {
-          for (unsigned int i=0; i<typeErrors.size(); i++) {
-            if (flag_verbose)
-              log << std::endl;
-            log << typeErrors[i].loc() << ":" << std::endl;
-            log << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
+        try {
+          MiniZinc::typecheck(smm_env, smm, typeErrors, true, false);
+          if (typeErrors.size() > 0) {
+            if (!isCompressedChecker) {
+              for (unsigned int i=0; i<typeErrors.size(); i++) {
+                if (flag_verbose)
+                  log << std::endl;
+                log << typeErrors[i].loc() << ":" << std::endl;
+                log << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
+              }
+            }
+            throw Error("multiple type errors");
           }
-          throw Error("multiple type errors");
-        }
-        for (unsigned int i=0; i<smm->size(); i++) {
-          if (VarDeclI* vdi = (*smm)[i]->dyn_cast<VarDeclI>()) {
-            if (vdi->e()->e()==NULL)
-              env->envi().checkVars.push_back(vdi->e());
+          for (unsigned int i=0; i<smm->size(); i++) {
+            if (VarDeclI* vdi = (*smm)[i]->dyn_cast<VarDeclI>()) {
+              if (vdi->e()->e()==NULL)
+                env->envi().checkVars.push_back(vdi->e());
+            }
+          }
+          smm->compact();
+          std::ostringstream smm_oss;
+          Printer p(smm_oss,0,false);
+          p.print(smm);
+          std::string smm_compressed = FileUtils::encodeBase64(FileUtils::deflateString(smm_oss.str()));
+          TypeInst* ti = new TypeInst(Location().introduce(),Type::parstring(),NULL);
+          VarDecl* checkString = new VarDecl(Location().introduce(),ti,ASTString("_mzn_solution_checker"),new StringLit(Location().introduce(),smm_compressed));
+          VarDeclI* checkStringI = new VarDeclI(Location().introduce(), checkString);
+          env->output()->addItem(checkStringI);
+        } catch (TypeError& e) {
+          if (isCompressedChecker) {
+            log << "Warning: type error in solution checker model\n";
+          } else {
+            throw;
           }
         }
-        smm->compact();
-        std::ostringstream smm_oss;
-        Printer p(smm_oss,0,false);
-        p.print(smm);
-        std::string smm_compressed = FileUtils::encodeBase64(FileUtils::deflateString(smm_oss.str()));
-        TypeInst* ti = new TypeInst(Location().introduce(),Type::parstring(),NULL);
-        VarDecl* checkString = new VarDecl(Location().introduce(),ti,ASTString("_mzn_solution_checker"),new StringLit(Location().introduce(),smm_compressed));
-        VarDeclI* checkStringI = new VarDeclI(Location().introduce(), checkString);
-        env->output()->addItem(checkStringI);
+      } else {
+        if (isCompressedChecker) {
+          log << "Warning: syntax error in solution checker model\n";
+        } else {
+          log << errstream.str();
+          throw Error("parse error");
+        }
       }
     }
 
