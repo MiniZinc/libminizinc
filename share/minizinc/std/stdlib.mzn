@@ -30,6 +30,12 @@ annotation maybe_partial;
 of the model. This annotation only has an effect when the model does not have an output item. */
 annotation add_to_output;
 
+/** @group annotations.general Declare that the annotated variable should be only used for output.
+  This annotation can be used to define variables that are required for solution checkers, or
+  that are necessary for the output item. The annotated variable must be par.
+ */
+annotation output_only;
+
 /** @group annotations.general Declare that the annotated variable is required for checking solutions. */
 annotation mzn_check_var;
 

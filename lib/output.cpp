@@ -696,13 +696,15 @@ namespace MiniZinc {
     class OV1 : public ItemVisitor {
     public:
       EnvI& env;
-      OV1(EnvI& env0) : env(env0) {}
+      CollectFunctions& _cf;
+      OV1(EnvI& env0, CollectFunctions& cf) : env(env0), _cf(cf) {}
       void vVarDeclI(VarDeclI* vdi) {
         if (vdi->e()->ann().contains(constants().ann.mzn_check_var)) {
-          (void) copy(env,env.cmap,vdi->e())->cast<VarDecl>();
+          VarDecl* output_vd = copy(env,env.cmap,vdi->e())->cast<VarDecl>();
+          topDown(_cf, output_vd);
         }
       }
-    } _ov1(e);
+    } _ov1(e, _cf);
     iterItems(_ov1, e.model);
     
     // Copying the output item and the functions it depends on has created copies
