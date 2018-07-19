@@ -261,15 +261,17 @@ htmlhelp_basename = 'MiniZincdoc'
 
 # -- Options for LaTeX output ---------------------------------------------
 
+latex_engine = 'xelatex'
 
 latex_elements = {
      # The paper size ('letterpaper' or 'a4paper').
      #
      'papersize': 'a4paper',
 'fontpkg': r'''
-        \usepackage{charter}
-        \usepackage[defaultsans]{lato}
-        \usepackage{inconsolata}
+\usepackage{fontspec}
+\setmainfont{Charter}
+\setsansfont{Lato}
+\setmonofont{Inconsolata}
 ''',
      # The font size ('10pt', '11pt' or '12pt').
      #
