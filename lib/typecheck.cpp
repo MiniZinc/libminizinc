@@ -1420,6 +1420,16 @@ namespace MiniZinc {
           uop.opToString().str()+"'. No matching operator found with type `"+uop.e()->type().toString(_env)+"'");
       }
     }
+    static std::string createEnumToStringName(Id* ident, std::string prefix) {
+      std::string name = ident->str().str();
+      if (name[0]=='\'') {
+        name = "'"+prefix+name.substr(1);
+      } else {
+        name = prefix+name;
+      }
+      return name;
+    }
+
     /// Visit call
     void vCall(Call& call) {
       std::vector<Expression*> args(call.n_args());
@@ -1445,6 +1455,41 @@ namespace MiniZinc {
           }
           cv = cv || args[i]->type().cv();
         }
+        // Replace par enums with their string versions
+        if (call.id()=="format" || call.id()=="show" || call.id()=="showDzn") {
+          if (call.arg(call.n_args()-1)->type().ispar()) {
+            int enumId = call.arg(call.n_args()-1)->type().enumId();
+            if (enumId != 0 && call.arg(call.n_args()-1)->type().dim() != 0) {
+              const std::vector<unsigned int>& enumIds = _env.getArrayEnum(enumId);
+              enumId = enumIds[enumIds.size()-1];
+            }
+            if (enumId > 0) {
+              Id* ti_id = _env.getEnum(enumId)->e()->id();
+              GCLock lock;
+              std::vector<Expression*> args(2);
+              args[0] = call.arg(call.n_args()-1);
+              if (args[0]->type().dim() > 1) {
+                std::vector<Expression*> a1dargs(1);
+                a1dargs[0] = args[0];
+                Call* array1d = new Call(Location().introduce(),ASTString("array1d"),a1dargs);
+                Type array1dt = args[0]->type();
+                array1dt.dim(1);
+                array1d->type(array1dt);
+                args[0] = array1d;
+              }
+              args[1] = constants().boollit(call.id()=="showDzn");
+              std::string enumName = createEnumToStringName(ti_id, "_toString_");
+              call.id(ASTString(enumName));
+              call.args(args);
+            }
+            if (call.id()=="showDzn") {
+              call.id(constants().ids.show);
+            }
+            fi = _model->matchFn(_env,&call,false);
+          }
+        }
+
+        // Set type and decl
         Type ty = fi->rtype(_env,args,true);
         ty.cv(cv);
         call.type(ty);
