@@ -555,12 +555,12 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   
 }
 
-void MznSolver::flatten(const std::string& modelString)
+void MznSolver::flatten(const std::string& modelString, const std::string& modelName)
 {
   flt.set_flag_verbose(flag_compiler_verbose);
   flt.set_flag_statistics(flag_compiler_statistics);
   clock_t tm01 = clock();
-  flt.flatten(modelString);
+  flt.flatten(modelString, modelName);
   /// The following message tells mzn-test.py that flattening succeeded.
   if (flag_compiler_verbose)
     log << "  Flattening done, " << timeDiff(clock(), tm01) << std::endl;
@@ -594,7 +594,8 @@ void MznSolver::printStatistics()
     getSI()->printStatisticsLine(1);
 }
 
-SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, const std::string& model, const std::string& exeName) {
+SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, const std::string& model,
+                                      const std::string& exeName, const std::string& modelName) {
   std::vector<std::string> args = {exeName};
   for (auto a : args0)
     args.push_back(a);
@@ -632,7 +633,7 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, con
     return SolverInstance::NONE;
   }
   
-  flatten(model);
+  flatten(model,modelName);
   
   if (SolverInstance::UNKNOWN == getFltStatus())
   {

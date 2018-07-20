@@ -334,7 +334,7 @@ Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
   return pre_env;
 }
 
-void Flattener::flatten(const std::string& modelString)
+void Flattener::flatten(const std::string& modelString, const std::string& modelName)
 {
   starttime01 = std::clock();
   lasttime = starttime01;
@@ -427,7 +427,7 @@ void Flattener::flatten(const std::string& modelString)
         GCLock lock;
         vector<TypeError> typeErrors;
         try {
-          MiniZinc::typecheck(smm_env, smm, typeErrors, true, false);
+          MiniZinc::typecheck(smm_env, smm, typeErrors, true, false, true);
           if (typeErrors.size() > 0) {
             if (!isCompressedChecker) {
               for (unsigned int i=0; i<typeErrors.size(); i++) {
@@ -491,7 +491,7 @@ void Flattener::flatten(const std::string& modelString)
       if (flag_verbose)
         log << "Parsing model string ..." << endl;
       std::vector<SyntaxError> se;
-      m = parseFromString(modelString, "stdin", includePaths, flag_ignoreStdlib, false, flag_verbose, errstream, se);
+      m = parseFromString(modelString, modelName, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream, se);
     } else if (flag_stdinInput) {
       if (flag_verbose)
         log << "Parsing standard input ..." << endl;
