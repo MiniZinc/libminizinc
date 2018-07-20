@@ -868,7 +868,8 @@ namespace MiniZinc {
     EnvI& _env;
     Model* _model;
     std::vector<TypeError>& _typeErrors;
-    Typer(EnvI& env, Model* model, std::vector<TypeError>& typeErrors) : _env(env), _model(model), _typeErrors(typeErrors) {}
+    bool _ignoreUndefined;
+    Typer(EnvI& env, Model* model, std::vector<TypeError>& typeErrors, bool ignoreUndefined) : _env(env), _model(model), _typeErrors(typeErrors), _ignoreUndefined(ignoreUndefined) {}
     /// Check annotations when expression is finished
     void exit(Expression* e) {
       for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it)
@@ -1456,7 +1457,7 @@ namespace MiniZinc {
           cv = cv || args[i]->type().cv();
         }
         // Replace par enums with their string versions
-        if (call.id()=="format" || call.id()=="show" || call.id()=="showDzn") {
+        if (!_ignoreUndefined && (call.id()=="format" || call.id()=="show" || call.id()=="showDzn")) {
           if (call.arg(call.n_args()-1)->type().ispar()) {
             int enumId = call.arg(call.n_args()-1)->type().enumId();
             if (enumId != 0 && call.arg(call.n_args()-1)->type().dim() != 0) {
@@ -1478,14 +1479,25 @@ namespace MiniZinc {
                 args[0] = array1d;
               }
               args[1] = constants().boollit(call.id()=="showDzn");
-              std::string enumName = createEnumToStringName(ti_id, "_toString_");
-              call.id(ASTString(enumName));
+              ASTString enumName(createEnumToStringName(ti_id, "_toString_"));
+              call.id(enumName);
               call.args(args);
             }
             if (call.id()=="showDzn") {
               call.id(constants().ids.show);
             }
             fi = _model->matchFn(_env,&call,false);
+            if (fi==NULL) {
+              std::ostringstream oss;
+              oss << "no function or predicate with this signature found: `";
+              oss << call.id() << "(";
+              for (unsigned int i=0; i<call.n_args(); i++) {
+                oss << call.arg(i)->type().toString(_env);
+                if (i<call.n_args()-1) oss << ",";
+              }
+              oss << ")'";
+              throw TypeError(_env,call.loc(), oss.str());
+            }
           }
         }
 
@@ -1869,7 +1881,7 @@ namespace MiniZinc {
     }
     
     {
-      Typer<false> ty(env.envi(), m, typeErrors);
+      Typer<false> ty(env.envi(), m, typeErrors, ignoreUndefinedParameters);
       BottomUpIterator<Typer<false> > bu_ty(ty);
       for (unsigned int i=0; i<ts.decls.size(); i++) {
         ts.decls[i]->payload(0);
@@ -1886,7 +1898,7 @@ namespace MiniZinc {
     m->fixFnMap();
     
     {
-      Typer<true> ty(env.envi(), m, typeErrors);
+      Typer<true> ty(env.envi(), m, typeErrors, ignoreUndefinedParameters);
       BottomUpIterator<Typer<true> > bu_ty(ty);
       
       class TSV2 : public ItemVisitor {
@@ -2056,7 +2068,7 @@ namespace MiniZinc {
   
   void typecheck(Env& env, Model* m, AssignI* ai) {
     std::vector<TypeError> typeErrors;
-    Typer<true> ty(env.envi(), m, typeErrors);
+    Typer<true> ty(env.envi(), m, typeErrors, false);
     BottomUpIterator<Typer<true> > bu_ty(ty);
     bu_ty.run(ai->e());
     if (!typeErrors.empty()) {
