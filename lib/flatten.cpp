@@ -105,14 +105,17 @@ namespace MiniZinc {
     }
   }
 
-  Expression* definesVarAnn(Id* id) {
-    std::vector<Expression*> args(1);
-    args[0] = id;
-    Call* c = new Call(Location().introduce(),constants().ann.defines_var,args);
-    c->type(Type::ann());
-    return c;
+  void makeDefinedVar(VarDecl* vd, Call* c) {
+    if (!vd->ann().contains(constants().ann.is_defined_var)) {
+      std::vector<Expression*> args(1);
+      args[0] = vd->id();
+      Call* dv = new Call(Location().introduce(),constants().ann.defines_var,args);
+      dv->type(Type::ann());
+      vd->addAnnotation(constants().ann.is_defined_var);
+      c->addAnnotation(dv);
+    }
   }
-
+  
   bool isDefinesVarAnn(Expression* e) {
     return e->isa<Call>() && e->cast<Call>()->id()==constants().ann.defines_var;
   }
@@ -1975,8 +1978,7 @@ namespace MiniZinc {
                                     +nc->id().str());
               }
               nc->type(nc->decl()->rtype(env,args,false));
-              nc->addAnnotation(definesVarAnn(vd->id()));
-              vd->addAnnotation(constants().ann.is_defined_var);
+              makeDefinedVar(vd, nc);
               flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
               return vd->id();
             }
@@ -5047,8 +5049,7 @@ namespace MiniZinc {
                   assignTo = le1->cast<Id>();
                 }
                 if (assignTo) {
-                  cc->addAnnotation(definesVarAnn(assignTo));
-                  assignTo->decl()->flat()->addAnnotation(constants().ann.is_defined_var);
+                  makeDefinedVar(assignTo->decl()->flat(), cc);
                 }
               }
 
@@ -6462,8 +6463,7 @@ namespace MiniZinc {
 //                    removedItems.push_back(vdi);
 //                  }
                   if (nc != c) {
-                    vd->addAnnotation(constants().ann.is_defined_var);
-                    nc->addAnnotation(definesVarAnn(vd->id()));
+                    makeDefinedVar(vd, nc);
                   }
                   StringLit* vsl = getLongestMznPathAnnotation(env, vdi->e());
                   StringLit* csl = getLongestMznPathAnnotation(env, c);
@@ -6763,8 +6763,6 @@ namespace MiniZinc {
             const Call* c = vd->e()->cast<Call>();
             GCLock lock;
             vd->e(NULL);
-            if (!is_fixed)
-              vd->addAnnotation(constants().ann.is_defined_var);
             ASTString cid;
             if (c->id() == constants().ids.exists) {
               cid = constants().ids.array_bool_or;
@@ -6790,8 +6788,9 @@ namespace MiniZinc {
               throw FlatteningError(env,c->loc(),"'"+c->id().str()+"' is used in a reified context but no reified version is available");
             }
             nc->decl(decl);
-            if (!is_fixed)
-              nc->addAnnotation(definesVarAnn(vd->id()));
+            if (!is_fixed) {
+              makeDefinedVar(vd, nc);
+            }
             nc->ann().merge(c->ann());
             clearInternalAnnotations(nc);
             added_constraints.push_back(nc);
@@ -6820,7 +6819,6 @@ namespace MiniZinc {
         if (const Call* cc = vd->e()->dyn_cast<Call>()) {
           // Remove RHS from vd
           vd->e(NULL);
-          vd->addAnnotation(constants().ann.is_defined_var);
           
           std::vector<Expression*> args(cc->n_args());
           ASTString cid;
@@ -6873,7 +6871,7 @@ namespace MiniZinc {
           }
           Call* nc = new Call(cc->loc().introduce(),cid,args);
           nc->type(cc->type());
-          nc->addAnnotation(definesVarAnn(vd->id()));
+          makeDefinedVar(vd, nc);
           nc->ann().merge(cc->ann());
           
           clearInternalAnnotations(nc);
