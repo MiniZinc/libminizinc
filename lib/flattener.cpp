@@ -342,6 +342,12 @@ void Flattener::flatten(const std::string& modelString)
   if (flag_verbose)
     printVersion(log);
 
+  if (filenames.empty() && !flag_solution_check_model.empty()) {
+    // Compile solution check model as if it were a normal model
+    filenames.push_back(flag_solution_check_model);
+    flag_solution_check_model = "";
+  }
+  
   if ( filenames.empty() && !flag_stdinInput && modelString.empty() ) {
     throw Error( "Error: no model file given." );
   }
