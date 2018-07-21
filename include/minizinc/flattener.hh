@@ -32,6 +32,7 @@
 #include <minizinc/utils.hh>
 #include <minizinc/file_utils.hh>
 #include <minizinc/solver_instance.hh>
+#include <minizinc/timer.hh>
 #include <minizinc/options.hh>
 
 #include <minizinc/passes/compile_pass.hh>
@@ -118,8 +119,7 @@ namespace MiniZinc {
     bool flag_compile_solution_check_model = false;
     FlatteningOptions fopts;
 
-    clock_t starttime01;
-    clock_t lasttime;
+    Timer starttime;
 
   };
 

@@ -570,11 +570,11 @@ void MznSolver::flatten(const std::string& modelString, const std::string& model
 {
   flt.set_flag_verbose(flag_compiler_verbose);
   flt.set_flag_statistics(flag_compiler_statistics);
-  clock_t tm01 = clock();
+  Timer tm01;
   flt.flatten(modelString, modelName);
   /// The following message tells mzn-test.py that flattening succeeded.
   if (flag_compiler_verbose)
-    log << "  Flattening done, " << timeDiff(clock(), tm01) << std::endl;
+    log << "  Flattening done, " << tm01.stoptime() << std::endl;
 }
 
 SolverInstance::Status MznSolver::solve()

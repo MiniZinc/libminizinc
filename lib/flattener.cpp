@@ -313,7 +313,7 @@ Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
   Env* pre_env = &e;
   size_t npasses = passes.size();
   pre_env->envi().final_pass_no = static_cast<unsigned int>(npasses);
-  Timer lasttime;
+  Timer starttime;
   bool verbose = false;
   for(unsigned int i=0; i<passes.size(); i++) {
     pre_env->envi().current_pass_no = i;
@@ -328,7 +328,7 @@ Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
     pre_env = out_env;
 
     if(verbose)
-      log << "Finish pass " << i << ": " << stoptime(lasttime) << "\n";
+      log << "Finish pass " << i << ": " << starttime.stoptime() << "\n";
   }
 
   return pre_env;
@@ -336,8 +336,7 @@ Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
 
 void Flattener::flatten(const std::string& modelString, const std::string& modelName)
 {
-  starttime01 = std::clock();
-  lasttime = starttime01;
+  starttime.reset();
   
   if (flag_verbose)
     printVersion(log);
@@ -421,7 +420,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
       std::vector<std::string> smm_model({flag_solution_check_model});
       Model* smm = parse(*env, smm_model, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
       if (flag_verbose)
-        log << " done parsing (" << stoptime(lasttime) << ")" << std::endl;
+        log << " done parsing (" << starttime.stoptime() << ")" << std::endl;
       if (smm) {
         Env smm_env(smm);
         GCLock lock;
@@ -519,7 +518,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     env->model(m);
     if (flag_typecheck) {
       if (flag_verbose)
-        log << " done parsing (" << stoptime(lasttime) << ")" << std::endl;
+        log << " done parsing (" << starttime.stoptime() << ")" << std::endl;
 
       if (flag_instance_check_only || flag_model_check_only ||
           flag_model_interface_only || flag_model_types_only ) {
@@ -625,7 +624,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           }
           env = out_env;
           if (flag_verbose)
-            log << " done (" << stoptime(lasttime) << "),"
+            log << " done (" << starttime.stoptime() << "),"
                 << " max stack depth " << env->maxCallStack() << std::endl;
         }
 
@@ -673,7 +672,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           PathFilePrinter pfp(os, env->envi());
           pfp.print(env->flat());
           if (flag_verbose)
-            log << " done (" << stoptime(lasttime) << ")" << std::endl;
+            log << " done (" << starttime.stoptime() << ")" << std::endl;
         } else if (flag_output_paths != "") {
           if (flag_verbose)
             log << "Printing Paths to '"
@@ -686,7 +685,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           checkIOStatus (ofs.good(), " I/O error: cannot write fzn output file. ");
           ofs.close();
           if (flag_verbose)
-            log << " done (" << stoptime(lasttime) << ")" << std::endl;
+            log << " done (" << starttime.stoptime() << ")" << std::endl;
         }
 
         if ( (fopts.collect_mzn_paths || flag_two_pass) && !flag_keep_mzn_paths) {
@@ -711,7 +710,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           Printer p(os,0);
           p.print(env->flat());
           if (flag_verbose)
-            log << " done (" << stoptime(lasttime) << ")" << std::endl;
+            log << " done (" << starttime.stoptime() << ")" << std::endl;
         } else if(flag_output_fzn != "") {
           if (flag_verbose)
             log << "Printing FlatZinc to '"
@@ -724,7 +723,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           checkIOStatus (ofs.good(), " I/O error: cannot write fzn output file. ");
           ofs.close();
           if (flag_verbose)
-            log << " done (" << stoptime(lasttime) << ")" << std::endl;
+            log << " done (" << starttime.stoptime() << ")" << std::endl;
         }
         if (!flag_no_output_ozn) {
           if (flag_output_ozn_stdout) {
@@ -733,7 +732,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             Printer p(os,0);
             p.print(env->output());
             if (flag_verbose)
-              log << " done (" << stoptime(lasttime) << ")" << std::endl;
+              log << " done (" << starttime.stoptime() << ")" << std::endl;
           } else if (flag_output_ozn != "") {
             if (flag_verbose)
               log << "Printing .ozn to '"
@@ -746,7 +745,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             checkIOStatus (ofs.good(), " I/O error: cannot write ozn output file. ");
             ofs.close();
             if (flag_verbose)
-              log << " done (" << stoptime(lasttime) << ")" << std::endl;
+              log << " done (" << starttime.stoptime() << ")" << std::endl;
           }
         }
       }

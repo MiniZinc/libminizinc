@@ -228,7 +228,7 @@ bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
               (*pOfs_non_canon) << '\n';
           }
           if (_opt.flag_output_time)
-            (*pOfs_non_canon) << "% time elapsed: " << stoptime(starttime) << "\n";
+            (*pOfs_non_canon) << "% time elapsed: " << starttime.stoptime() << "\n";
           if (!_opt.solution_separator.empty())
             (*pOfs_non_canon) << _opt.solution_separator << '\n';
           if ( _opt.flag_output_flush )
@@ -248,7 +248,7 @@ bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
       getOutput() << '\n';
   }
   if ( fNew && _opt.flag_output_time)
-    getOutput() << "% time elapsed: " << stoptime(starttime) << "\n";
+    getOutput() << "% time elapsed: " << starttime.stoptime() << "\n";
   if ( fNew && !_opt.flag_canonicalize && !_opt.solution_separator.empty())
     getOutput() << _opt.solution_separator << '\n';
   if ( _opt.flag_output_flush )

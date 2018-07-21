@@ -19,6 +19,8 @@
 #include <limits>
 #include <iomanip>
 #include <cassert>
+#include <chrono>
+#include <ratio>
 
 #include <minizinc/timer.hh>
 #include <minizinc/exception.hh>
@@ -57,26 +59,6 @@ namespace MiniZinc {
    do { if ( !(c) ) { __MZN_PRINT_SRCLOC( #c, e ); \
      std::ostringstream oss; oss << "not " << #c << ":  " << e; \
      throw InternalError( oss.str() ); } } while (0)
-
-  inline std::string stoptime(Timer& timer) {
-    std::ostringstream oss;
-    oss << std::setprecision(0) << std::fixed << timer.ms() << " ms";
-    return oss.str();
-  }
-  
-  inline std::string stoptime(clock_t& start) {
-    std::ostringstream oss;
-    clock_t now = clock();
-    oss << std::setprecision(0) << std::fixed << ((static_cast<double>(now-start) / CLOCKS_PER_SEC) * 1000.0) << " ms";
-    start = now;
-    return oss.str();
-  }
-
-  inline std::string timeDiff(clock_t t2, clock_t t1) {
-    std::ostringstream oss;
-    oss << std::setprecision(2) << std::fixed << ((static_cast<double>(t2-t1) / CLOCKS_PER_SEC)) << " s";
-    return oss.str();
-  }
 
   inline bool beginswith(std::string s, std::string t) {
     return s.compare(0, t.length(), t)==0;

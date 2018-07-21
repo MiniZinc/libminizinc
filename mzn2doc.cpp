@@ -29,14 +29,6 @@
 using namespace MiniZinc;
 using namespace std;
 
-std::string stoptime(clock_t& start) {
-  std::ostringstream oss;
-  clock_t now = clock();
-  oss << std::setprecision(0) << std::fixed << ((static_cast<double>(now-start) / CLOCKS_PER_SEC) * 1000.0) << " ms";
-  start = now;
-  return oss.str();
-}
-
 bool beginswith(string s, string t) {
   return s.compare(0, t.length(), t)==0;
 }

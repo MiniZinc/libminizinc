@@ -142,7 +142,7 @@ namespace MiniZinc {
         log << "MIP domains ...";
       MIPdomains(*new_env, compflags.statistics);
       if (compflags.verbose)
-        log << " done (" << stoptime(lasttime) << ")" << std::endl;
+        log << " done (" << lasttime.stoptime() << ")" << std::endl;
     }
 
     if (compflags.optimize) {
@@ -150,7 +150,7 @@ namespace MiniZinc {
         log << "Optimizing ...";
       optimize(*new_env);
       if (compflags.verbose)
-        log << " done (" << stoptime(lasttime) << ")" << std::endl;
+        log << " done (" << lasttime.stoptime() << ")" << std::endl;
     }
 
     for (unsigned int i=0; i<new_env->warnings().size(); i++) {
@@ -166,14 +166,14 @@ namespace MiniZinc {
         log << "Converting to old FlatZinc ...";
       oldflatzinc(*new_env);
       if (compflags.verbose)
-        log << " done (" << stoptime(lasttime) << ")" << std::endl;
+        log << " done (" << lasttime.stoptime() << ")" << std::endl;
     } else {
       new_env->flat()->compact();
       new_env->output()->compact();
     }
 
     if(compflags.verbose)
-      log << " done (" << stoptime(lasttime) << ")" << std::endl;
+      log << " done (" << lasttime.stoptime() << ")" << std::endl;
 
     return new_env;
   }
