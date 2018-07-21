@@ -69,7 +69,7 @@ namespace MiniZinc {
     << "  --fzn-flags <options>, --flatzinc-flags <options>\n     Specify option to be passed to the FlatZinc interpreter.\n"
     << "  --fzn-flag <option>, --flatzinc-flag <option>\n     As above, but for a single option string that need to be quoted in a shell.\n"
     << "  -n <n>, --num-solutions <n>\n     An upper bound on the number of solutions to output. The default should be 1.\n"
-    << "  -t <ms>, --time-limit <ms>, --fzn-time-limit <ms>\n     Set time limit (in milliseconds) for solving.\n"
+    << "  -t <ms>, --solver-time-limit <ms>, --fzn-time-limit <ms>\n     Set time limit (in milliseconds) for solving.\n"
     << "  --fzn-sigint\n     Send SIGINT instead of SIGTERM.\n"
     << "  -a, --all, --all-solns, --all-solutions\n     Print all solutions.\n"
     << "  -p <n>, --parallel <n>\n     Use <n> threads during search. The default is solver-dependent.\n"
@@ -103,7 +103,7 @@ namespace MiniZinc {
       for (auto& s : cmdLine) {
         _opt.fzn_flags.push_back(s);
       }
-    } else if ( cop.getOption( "-t --time-limit --fzn-time-limit", &nn) ) {
+    } else if ( cop.getOption( "-t --solver-time-limit --fzn-time-limit", &nn) ) {
       _opt.fzn_time_limit_ms = nn;
       if (_opt.supports_t) {
         _opt.solver_time_limit_ms = nn;

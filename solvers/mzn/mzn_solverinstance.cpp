@@ -63,7 +63,7 @@ namespace MiniZinc {
     << "  -m, --minizinc-cmd <exe>\n     the backend solver filename.\n"
     << "  --mzn-flags <options>, --minizinc-flags <options>\n     Specify option to be passed to the MiniZinc interpreter.\n"
     << "  --mzn-flag <option>, --minizinc-flag <option>\n     As above, but for a single option string that need to be quoted in a shell.\n"
-    << "  -t <ms>, --time-limit <ms>, --mzn-time-limit <ms>\n     Set time limit for solving.\n"
+    << "  -t <ms>, --solver-time-limit <ms>, --mzn-time-limit <ms>\n     Set time limit for solving.\n"
     << "  --mzn-sigint\n     Send SIGINT instead of SIGTERM.\n"
     ;
   }
@@ -102,7 +102,7 @@ namespace MiniZinc {
       for (auto& s : cmdLine) {
         _opt.mzn_flags.push_back(s);
       }
-    } else if ( cop.getOption( "-t --time-limit --mzn-time-limit", &nn) ) {
+    } else if ( cop.getOption( "-t --solver-time-limit --mzn-time-limit", &nn) ) {
       _opt.mzn_time_limit_ms = nn;
       if (_opt.supports_t) {
         _opt.solver_time_limit_ms = nn;

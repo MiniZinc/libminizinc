@@ -127,6 +127,7 @@ namespace MiniZinc {
     bool flag_statistics=false;
     bool flag_compiler_verbose=false;
     bool flag_compiler_statistics=false;
+    int flag_overall_time_limit=0;
 
   public:
     MznSolver(std::ostream& os = std::cout, std::ostream& log = std::cerr);

@@ -87,7 +87,7 @@ namespace MiniZinc {
       int fails = atoi(argv[i].c_str());
       if(fails >= 0)
         _opt.fails = fails;
-    } else if (argv[i]=="--time-limit" || argv[i]=="-t") {
+    } else if (argv[i]=="--solver-time-limit" || argv[i]=="-t") {
       if (++i==argv.size()) return false;
       int time = atoi(argv[i].c_str());
       if(time >= 0)

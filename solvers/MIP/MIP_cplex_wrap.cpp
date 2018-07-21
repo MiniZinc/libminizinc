@@ -281,7 +281,7 @@ void MIP_cplex_wrapper::Options::printHelp(ostream& os) {
   << "  -a\n    print intermediate solutions (use for optimization problems only TODO)" << std::endl
   << "  -p <N>\n    use N threads, default: 1" << std::endl
 //   << "  --nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-  << "  --time-limit <N>\n    stop search after N milliseconds wall time" << std::endl
+  << "  --solver-time-limit <N>\n    stop search after N milliseconds wall time" << std::endl
   << "  -n <N>, --num-solutions <N>\n"
      "    stop search after N solutions" << std::endl
   << "  --workmem <N>, --nodefilestart <N>\n"
@@ -312,7 +312,7 @@ bool MIP_cplex_wrapper::Options::processOption(int& i, std::vector<std::string>&
   } else if ( cop.get( "--mipfocus --mipFocus --MIPFocus --MIPfocus", &nMIPFocus ) ) {
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
   } else if ( cop.get( "-p", &nThreads ) ) {
-  } else if ( cop.get( "--time-limit", &nTimeout ) ) {
+  } else if ( cop.get( "--solver-time-limit", &nTimeout ) ) {
   } else if ( cop.get( "-n --num-solutions", &nSolLimit ) ) {
   } else if ( cop.get( "--workmem --nodefilestart", &nWorkMemLimit ) ) {
   } else if ( cop.get( "--readParam", &sReadParams ) ) {

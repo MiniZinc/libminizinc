@@ -71,7 +71,7 @@ void MIP_scip_wrapper::Options::printHelp(ostream& os) {
   << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
   << "-p <N>              use N threads, default: 1" << std::endl
 //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-  << "--time-limit <N>       stop search after N milliseconds" << std::endl
+  << "--solver-time-limit <N>       stop search after N milliseconds" << std::endl
   << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
   << "--readParam <file>  read SCIP parameters from file" << std::endl
   << "--writeParam <file> write SCIP parameters to file" << std::endl
@@ -99,7 +99,7 @@ bool MIP_scip_wrapper::Options::processOption(int& i, vector<string>& argv) {
 //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
   } else if ( cop.get( "-p", &nThreads ) ) {
-  } else if ( cop.get( "--time-limit", &nTimeout ) ) {
+  } else if ( cop.get( "--solver-time-limit", &nTimeout ) ) {
   } else if ( cop.get( "--workmem", &nWorkMemLimit ) ) {
   } else if ( cop.get( "--readParam", &sReadParams ) ) {
   } else if ( cop.get( "--writeParam", &sWriteParams ) ) {
