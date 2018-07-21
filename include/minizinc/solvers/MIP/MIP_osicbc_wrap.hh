@@ -49,7 +49,7 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
     public:
       int nThreads=1;
       std::string sExportModel;
-      double nTimeout=-1;
+      int nTimeout=0;
       long int nSolLimit = -1;
       double nWorkMemLimit=-1;
       std::string sReadParams;

@@ -63,7 +63,7 @@ namespace MiniZinc {
     << "  -m, --minizinc-cmd <exe>\n     the backend solver filename.\n"
     << "  --mzn-flags <options>, --minizinc-flags <options>\n     Specify option to be passed to the MiniZinc interpreter.\n"
     << "  --mzn-flag <option>, --minizinc-flag <option>\n     As above, but for a single option string that need to be quoted in a shell.\n"
-    << "  --mzn-time-limit <ms>\n     Set a hard timelimit that overrides those set for the solver using --mzn-flag(s).\n"
+    << "  -t <ms>, --time-limit <ms>, --mzn-time-limit <ms>\n     Set time limit for solving.\n"
     << "  --mzn-sigint\n     Send SIGINT instead of SIGTERM.\n"
     ;
   }
@@ -78,7 +78,14 @@ namespace MiniZinc {
 
   void MZN_SolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt, const std::vector<MZNFZNSolverFlag>& flags) {
     MZNSolverOptions& _opt = static_cast<MZNSolverOptions&>(*opt);
-    _opt.mzn_solver_flags = flags;
+    _opt.mzn_solver_flags.clear();
+    for (auto& f : flags) {
+      if (f.n=="-t") {
+        _opt.supports_t = true;
+      } else {
+        _opt.mzn_solver_flags.push_back(f);
+      }
+    }
   }
   
   bool MZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv)
@@ -95,8 +102,12 @@ namespace MiniZinc {
       for (auto& s : cmdLine) {
         _opt.mzn_flags.push_back(s);
       }
-    } else if ( cop.getOption( "--mzn-time-limit", &nn) ) {
+    } else if ( cop.getOption( "-t --time-limit --mzn-time-limit", &nn) ) {
       _opt.mzn_time_limit_ms = nn;
+      if (_opt.supports_t) {
+        _opt.solver_time_limit_ms = nn;
+        _opt.mzn_time_limit_ms += 1000; // kill 1 second after solver should have stopped
+      }
     } else if ( cop.getOption( "--mzn-sigint") ) {
       _opt.mzn_sigint = true;
     } else if ( cop.getOption( "--mzn-flag --minizinc-flag", &buffer) ) {
@@ -160,6 +171,12 @@ namespace MiniZinc {
       for ( int i=1; i<cmd_line.size(); ++i )
         _log << "" << cmd_line[i] << " ";
       _log << std::endl;
+    }
+    if (opt.solver_time_limit_ms != 0) {
+      cmd_line.push_back("-t");
+      std::ostringstream oss;
+      oss << opt.solver_time_limit_ms;
+      cmd_line.push_back(oss.str());
     }
     int timelimit = opt.mzn_time_limit_ms;
     bool sigint = opt.mzn_sigint;

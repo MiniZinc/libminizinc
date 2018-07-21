@@ -79,7 +79,7 @@ void MIP_osicbc_wrapper::Options::printHelp(ostream& os) {
      "    (not from FeasPump. Can be slow.)" << std::endl
    << "  -p <N>\n    use N threads, default: 1. CBC should be configured with --enable-cbc-parallel" << std::endl
 //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-  << "  --timeout <N>\n    stop search after N seconds" << std::endl
+  << "  --time-limit <N>\n    stop search after N milliseconds" << std::endl
 //   << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
 //   << "--readParam <file>  read OSICBC parameters from file" << std::endl
 //   << "--writeParam <file> write OSICBC parameters to file" << std::endl
@@ -103,7 +103,7 @@ bool MIP_osicbc_wrapper::Options::processOption(int& i, std::vector<std::string>
 //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
   } else if ( cop.get( "-p", &nThreads ) ) {
-  } else if ( cop.get( "--timeout", &nTimeout ) ) {
+  } else if ( cop.get( "--time-limit", &nTimeout ) ) {
   } else if ( cop.get( "--workmem", &nWorkMemLimit ) ) {
   } else if ( cop.get( "--readParam", &sReadParams ) ) {
   } else if ( cop.get( "--writeParam", &sWriteParams ) ) {
@@ -767,9 +767,9 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //       osi.setHintParam(OsiDoReducePrint, true, OsiHintTry);
     }
 
-    if(options->nTimeout > 0.0) {
+    if(options->nTimeout != 0) {
 //       osi.setMaximumSeconds(nTimeout);
-      model.setMaximumSeconds(options->nTimeout);
+      model.setMaximumSeconds(static_cast<double>(options->nTimeout)/1000.0);
     }
 
    /// TODO

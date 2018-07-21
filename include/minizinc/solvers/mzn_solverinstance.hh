@@ -24,7 +24,9 @@ namespace MiniZinc {
     bool allSols = false;
     std::string parallel;
     int mzn_time_limit_ms = 0;
+    int solver_time_limit_ms = 0;
     bool mzn_sigint = false;
+    bool supports_t = false;
     std::vector<MZNFZNSolverFlag> mzn_solver_flags;
   };
   
