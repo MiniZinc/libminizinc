@@ -648,11 +648,12 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, con
   
   flatten(model,modelName);
 
-  if (flag_overall_time_limit != 0) {
+  if (!ifMzn2Fzn() && flag_overall_time_limit != 0) {
     steady_clock::time_point afterFlattening = steady_clock::now();
     milliseconds passed = duration_cast<milliseconds>(afterFlattening-startTime);
     milliseconds time_limit(flag_overall_time_limit);
     if (passed > time_limit) {
+      s2out.evalStatus( getFltStatus() );
       return SolverInstance::UNKNOWN;
     }
     int time_left = (time_limit-passed).count();
