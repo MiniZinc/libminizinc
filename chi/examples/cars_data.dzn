@@ -1,0 +1,16 @@
+% cars_data.dzn
+n_cars = 10;
+n_options = 5;
+n_classes = 6;
+max_per_block = [1, 2, 1, 2, 1];
+block_size =    [2, 3, 3, 5, 5];
+cars_in_class = [1, 1, 2, 2, 2, 2];
+
+need =  array2d(1..6, 1..5, [
+    1, 0, 1, 1, 0,
+    0, 0, 0, 1, 0,
+    0, 1, 0, 0, 1,
+    0, 1, 0, 1, 0,
+    1, 0, 1, 0, 0,
+    1, 1, 0, 0, 0
+]);

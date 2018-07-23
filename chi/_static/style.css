@@ -1,0 +1,20 @@
+code {
+  background: inherit;
+  padding: 0;  
+}
+.highlight, .highlight .cs {
+  background: inherit;
+  padding: 0;
+}
+.table-nonfluid {
+  width: auto !important;
+}
+div.literal-block-wrapper {
+  padding: 0;
+  width: 100%;
+}
+div.code-block-caption {
+  border: 1px solid #ccc;
+  border-radius: 4px 4px 0px 0px;
+  background-color: #f5f5f5;
+}
