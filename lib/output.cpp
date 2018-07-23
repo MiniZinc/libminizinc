@@ -985,6 +985,11 @@ namespace MiniZinc {
                 }
               }
               vd->flat(NULL);
+              // Remove enum type
+              Type vdt = vd->type();
+              vdt.enumId(0);
+              vd->type(vdt);
+              vd->ti()->type(vdt);
             }
             e.output_vo.add_idx(item->cast<VarDeclI>(), i);
             CollectOccurrencesE ce(e.output_vo,item);
