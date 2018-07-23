@@ -1,4 +1,4 @@
-% Colouring Australia using nc colours
+% 用nc个颜色来涂澳大利亚
 int: nc = 3;
 
 var 1..nc: wa;   var 1..nc: nt;  var 1..nc: sa;   var 1..nc: q;

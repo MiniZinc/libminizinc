@@ -1,174 +1,133 @@
 .. _sec-modelling:
 
-Basic Modelling in MiniZinc
+MiniZinc基本模型
 ===========================
 
 .. highlight:: minizinc
   :linenothreshold: 5
 
-In this section we introduce the basic structure of a MiniZinc model using two simple examples.
+在此节中，我们利用两个简单的例子来介绍一个MiniZinc模型的基本结构。
 
-Our First Example
+第一个实例
 -----------------
 
 .. _fig-aust:
 
 .. figure:: figures/aust.*
   
-  Australian states
+  澳大利亚各州
 
-As our first example, imagine that we wish to colour a map
-of Australia as shown in :numref:`fig-aust`.
-It is made up of seven different states and territories 
-each of which must be given a  colour so that adjacent regions
-have different colours. 
+作为我们的第一个例子，假设我们要去给 :numref:`fig-aust` 中的澳大利亚地图涂色。
+它包含了七个不同的州和地区，而每一块都要被涂一个颜色来保证相邻的区域有不同的颜色。
 
 
 .. literalinclude:: examples/aust.mzn
   :language: minizinc
-  :caption: A MiniZinc model :download:`aust.mzn <examples/aust.mzn>` for colouring the states and territories in Australia
+  :caption: 一个用来给澳大利亚的州和地区涂色的MiniZinc模型 :download:`aust.mzn <examples/aust.mzn>` 
   :name: ex-aust
 
-We can model this problem very easily in MiniZinc. The model is shown in :numref:`ex-aust`.
-The first line in the model is a comment. A comment starts with a  ``%`` which indicates that the rest of the line is a comment.
-MiniZinc also has C-style block comments, 
-which start with ``/*`` and end with ``*/``.
+我们可以很容易的用MiniZinc给此问题建模。此模型在 :numref:`ex-aust` 中给出。
 
-The next part of the model declares the variables in the model.
-The line
+模型中的第一行是注释。注释开始于 ``%``  来表明此行剩下的部分是注释。
+MiniZinc同时也含有C语言风格的由 ``/*`` 开始和 ``*/`` 结束的块注释。
+
+模型中的下一部分声明了模型中的变量。
+此行
 
 ::
 
   int: nc = 3;
 
-specifies a :index:`parameter` in the problem which is the
-number of colours to be used.
-Parameters are similar to (constant) variables in most programming languages.
-They must be
-declared and given a :index:`type`. In this case the type is :mzn:`int`. 
-They are given a value by an :index:`assignment`.
-MiniZinc allows the assignment to be included as part of the declaration
-(as in the line above) or to be a separate assignment statement.
-Thus the following is equivalent to the single line above
+定义了一个问题的 :index:`参数` 来代表可用的颜色个数。
+在很多编程语言中，参数和变量是类似的。它们必须被声明并且指定一个类型 :index:`type`。
+在此例中，类型是 :mzn:`int`。
+通过 :index:`赋值`，它们被设了值。
+MiniZinc允许变量声明时被赋值（就像上面那一行）或者单独给出一个赋值语句。
+因此下面的表示跟上面的只一行表示是相等的
 
 ::
 
   int: nc;
   nc = 3;
 
-Unlike variables in many programming languages a parameter can only be given a
-*single* value, in that sense they are named constants.
-It is an error for a parameter to occur in more than one assignment.
+和很多编程语言中的变量不一样的是，这里的参数只可以被赋 *唯一* 的值。
+如果一个参数出现在了多于一个的赋值中，就会出现错误。
 
-The basic :index:`parameter types <single: type; parameter>`
-are :index:`integers <integer>` (:mzn:`int`), 
-floating point numbers  (:mzn:`float`),
-:index:`Booleans <Boolean>` (:mzn:`bool`) and
-:index:`strings <string>` (:mzn:`string`). 
-Arrays and sets are also supported.
+基本的 :index:`参数类型 <single: type; parameter>` 包括 :index:`整型 <integer>` (:mzn:`int`)，
+浮点型(:mzn:`float`)， :index:`布尔型 <Boolean>` (:mzn:`bool`) 以及 :index:`字符串型 <string>` (:mzn:`string`)。
+同时也支持数组和集合。
 
 .. index::
   see: decision variable; variable
 
-MiniZinc models can also contain another kind of variable called a
-*decision variable*.
-:index:`Decision variables <variable>` are variables in the sense of mathematical or logical
-variables.
-Unlike parameters and variables in a standard programming language, the
-modeller does not need to give them a value.
-Rather the value of a decision variable is unknown and it is only when the
-MiniZinc model is executed that the solving system determines if the
-decision variable can be assigned a value that satisfies the constraints in the
-model and if so what this is.
+MiniZinc模型同时也可能包含另一种类型的变量 *决策变量* 。 :index:`决策变量 <variable>` 是数学的或者逻辑的变量。
+和一般的编程语言中的参数和变量不同，建模者不需要给决策变量一个值。
+而是在开始时，一个决策变量的值是不知道的。只有当MiniZinc模型被执行的时候，
+求解系统才来决定决策变量是否可以被赋值从而满足模型中的约束。若满足，则被赋值。
 
-In our example model  we associate a *decision variable* with each region, 
-``wa``, ``nt``, ``sa``, ``q``, ``nsw``, ``v`` and ``t``,
-which stands for the (unknown) colour to be used to fill the region.
+在我们的模型例子中，我们给每一个区域一个 *决策变量* ``wa``, ``nt``, ``sa``, ``q``, ``nsw``, ``v`` 和 ``t``。
+它们代表了会被用来填充区域的（未知）颜色。
 
 .. index::
   single: domain
 
-For each decision variable we need to give the set of possible values the
-variable can take. This is called the variable's
-*domain*.  
-This can be given as part of the :index:`variable declaration <variable; declaration>` and the
-:index:`type` of the decision variable is inferred from the type of the values in the domain.
+对于每一个决策变量，我们需要给出变量可能的取值集合。这个被称为变量的 *定义域* 。
+定义域部分可以在 :index:`变量声明 <variable; declaration>` 的时候同时给出，
+这时决策变量的 :index:`类型` 就会从定义域中的数值的类型推断出。
 
-In MiniZinc decision variables
-can be Booleans, integers, floating point numbers, 
-or sets. 
-Also supported are arrays whose elements are 
-decision variables.
-In our MiniZinc model we use integers to model the different colours. Thus each of our
-decision variables is declared to have the domain :mzn:`1..nc`
-which is an integer range expression
-indicating the set :math:`\{ 1, 2, \dots, nc \}`
-using the :mzn:`var` declaration.
-The type of the values is integer so all of the variables in the model are integer decision variables.
+MiniZinc中的决策变量的类型可以为布尔型，整型，浮点型或者集合。
+同时也可以是元素为决策变量的数组。
+在我们的MiniZinc模型例子中，我们使用整型去给不用的颜色建模。通过使用 :mzn:`var` 声明，
+我们的每一个决策变量
+被声明为定义域为一个整数类型的范围表示 :mzn:`1..nc` ，
+来表明集合 :math:`\{ 1, 2, \dots, nc \}` 。
+所有数值的类型为整型，所以模型中的所有的变量是整型决策变量。
 
-.. defblock:: Identifiers
+.. defblock:: 标识符
 
-  Identifiers, which are used to name parameters and variables,
-  are sequences of lower and uppercase
-  alphabetic characters, digits and the underscore ``_`` character. They must
-  start with an alphabetic character. Thus ``myName_2`` is a valid
-  identifier.  MiniZinc
-  *keywords* are not allowed to be 
-  used as identifier names, they are listed in :ref:`spec-identifiers`.
-  Neither are MiniZinc *operators*
-  allowed to be used as identifier names;
-  they are listed in :ref:`spec-Operators`.
+  用来命名参数和变量的标识符是一列由大小写字母，数字以及
+  下划线 ``_`` 字符组成的字符串。它们必须开始于一个字母字符。因此 ``myName_2`` 是一个有效的标识符。
+  MiniZinc（和Zinc）的 *关键字* 不允许被用为标识符名字。它们在 :ref:`spec-identifiers` 中被列出。
+  所有的MiniZinc *操作符* 都不能被用做标识符名字。它们在 :ref:`spec-Operators` 中被列出。
 
-MiniZinc carefully 
-distinguishes between the two kinds of model variables:
-parameters and decision variables. The kinds of expressions that can be
-constructed using decision variables are more restricted than those that can
-be built from parameters. However, in any place that a decision variable can be
-used, so can a parameter of the same type.
+MiniZinc仔细地区别了以下两种模型变量：参数和决策变量。利用决策变量创建的表达式类型比利用参数可以创建的表达式类型更局限。
+但是，在任何可以用决策变量的地方，同类型的参数变量也可以被应用。
 
-.. defblock:: Integer Variable Declarations
+.. defblock:: 整型变量声明
 
-  An :index:`integer parameter variable <variable; declaration; integer>` is declared as either:
+  一个 :index:`整型参数变量 <variable; declaration; integer>` 可以被声明为以下两种方式：
 
   .. code-block:: minizincdef
 
-    int : <var-name>
-    <l> .. <u> : <var-name>
+    int : <变量名>
+    <l> .. <u> : <变量名>
 
-  where :mzndef:`<l>` and :mzndef:`<u>` are fixed integer expressions.
+  :mzndef:`<l>` 和 :mzndef:`<u>` 是固定的整型表达式。
 
-  An integer decision variable is declared
-  as either:
+  一个整型决策变量被声明为以下两种方式：
 
   .. code-block:: minizincdef
     
-    var int : <var-name>
-    var <l>..<u> : <var-name>
+    var int : <变量名>
+    var <l>..<u> : <变量名>
 
-  where :mzndef:`<l>` and :mzndef:`<u>` are fixed integer expressions.
+  :mzndef:`<l>` 和 :mzndef:`<u>` 是固定的整型表达式。
 
-
-Formally the distinction between parameters and decision variables is called
-the *instantiation* of the variable.
-The combination of variable instantiation and type is called a
-:index:`type-inst`. 
-As you start to use MiniZinc you will undoubtedly see examples of
-*type-inst* errors.
+参数和决策变量形式上的区别在于对变量的 *实例化*。
+变量的实例化和类型的结合被叫为 :index:`类型-实例化` 。
+既然你已经开始使用MiniZinc，毫无疑问的你会看到很多 *类型-实例化* 的错误例子。
 
 .. index::
   single: constraint
 
-The next component of the model are the *constraints*. 
-These specify the Boolean expressions that the decision variables must satisfy
-to be a valid solution to the model.
-In this case we have a number of not equal constraints between the decision
-variables enforcing that if two states are adjacent then they must have
-different colours.
+模型的下一部分是 *约束* 。
+它们详细说明了决策变量想要组成一个模型的有效解必须要满足的布尔型表达式。
+在这个例子中我们有一些决策变量之间的不等式。它们规定如果两个区域是相邻的，则它们必须有不同的颜色。
 
-.. defblock:: Relational Operators
+.. defblock:: 关系操作符
 
-  MiniZinc provides the :index:`relational operators <operator; relational>`: 
-  
+  MiniZinc提供了以下关系操作符 :index:`关系操作符 <operator; relational>` ：
+
   .. index::
     single: =
     single: ==
@@ -178,103 +137,87 @@ different colours.
     single: >
     single: >=
   
-  equal (``=`` or ``==``), not equal 
+  相等 (``=`` or ``==``), 不等 
   (``!=``), 
-  strictly less than (``<``), 
-  strictly greater than (``>``), 
-  less than or equal to (``<=``), and
-  greater than or equal to (``>=``).
+  小于 (``<``), 
+  大于 (``>``), 
+  小于等于 (``<=``), and
+  和大于等于 (``>=``).
 
-
-The next line in the model:
+模型中的下一行：
 
 ::
 
   solve satisfy;
 
-indicates the kind of problem it is. 
-In this case it is a :index:`satisfaction` problem:
-we wish to find a value for the 
-decision variables that satisfies the constraints but we do not care which one.
+表明了它是什么类型的问题。
+在这个例子中，它是一个 :index:`满足`  问题：
+我们希望给决策变量找到一个值使得约束被满足，但具体是哪一个值却没有所谓。
 
 .. index::
   single: output
 
-The final part of the model is the *output* statement. This tells MiniZinc what to
-print when the model has been run and a :index:`solution` is found.  
+模型的最后一个部分是 *输出* 语句。它告诉MiniZinc当模型被运行并且找到一个解 :index:`解` 的时候，
+要输出什么。 
 
-.. defblock:: Output and Strings
+.. defblock:: 输出和字符串
 
   .. index::
     single: output
     single: string
     single: show
 
-  An output statement is followed by a *list* of strings. These are
-  typically either :index:`string literals <string; literal>`
-  which are written between double quotes and
-  use a C like notation for special characters, 
-  or an expression of the form :mzn:`show(e)`
-  where :mzn:`e` is a MiniZinc expression.
-  In the example ``\n``
-  represents the newline character and ``\t`` a
-  tab.
+  一个输出语句跟着一 *串* 字符。
+  它们通常或者是写在双引号之间的字符串常量 :index:`字符串常量 <string; literal>` 并且
+  对特殊字符用类似C语言的标记法，或者是 :mzn:`show(e)` 格式的表达式，
+  其中 :mzn:`e` 是MiniZinc表达式。例子中的 ``\n`` 代表换行符， ``\t`` 代表制表符。
 
-  There are also formatted varieties of :mzn:`show` for numbers:
-  :mzn:`show_int(n,X)`
-  outputs the value of integer 
-  ``X`` in at least :math:`|n|` characters, right justified
-  if :math:`n > 0` and left justified otherwise;
-  :mzn:`show_float(n,d,X)`
-  outputs the value of float ``X`` in at least :math:`|n|` characters, right justified
-  if :math:`n > 0` and left justified otherwise, with :math`d` characters after the
-  decimal point.
+  数字的 :mzn:`show` 有各种不同方式的表示：
+  :mzn:`show_int(n,X)` 
+  在至少$|n|$个字符里输出整型 ``X`` 的值，若 :math:`n > 0` 则右对齐，否则则左对齐；
+  :mzn:`show_float(n,d,X)` 在至少 :math:`|n|` 个字符里输出
+  浮点型 ``X`` 的值，若 :math:`n > 0` 则右对齐，否则则左对齐，并且小数点后有 :math:`d` 个字符。
 
-  :index:`String literals <string; literal>` must fit on a single line. Longer string literals can be
-  split across multiple lines using the string concatenation operator
-  ``++``.
-  For example, the string literal
-  
+  :index:`字符串常量 <string; literal>` 必须在同一行中。长的字符串常量可以利用字符串连接符 ``++``
+  来分成几行。例如，字符串常量 
+
   ::
   
     "Invalid datafile: Amount of flour is non-negative"
 
-  is equivalent to the string literal expression  
+  和字符串常量表达式  
 
   ::
 
     "Invalid datafile: " ++
     "Amount of flour is non-negative"
 
-  MiniZinc supports 
-  :index:`interpolated strings <string; literal; interpolated>`.
-  Expressions can be embedded directly in string literals, 
-  where a sub string of the form :mzn:`"\(e)"`
-  is replaced by the result of :mzn:`show(e)`.
-  For example :mzn:`"t=\(t)\n"` produces the same string as
-  :mzn:`"t=" ++ show(t) ++ "\n"`.
+  是相等的。
 
-  A model can contain multiple output statements. In that case, all outputs
-  are concatenated in the order they appear in the model.
+  MiniZinc支持内插字符串 :index:`内插字符串 <string; literal; interpolated>` 。
+  表达式可以直接插入字符串常量中。 :mzn:`"\(e)"` 形式的子字符串
+  会被替代为 :mzn:`show(e)` 。例如，:mzn:`"t=\(t)\n"` 产生
+  和 :mzn:`"t=" ++ show(t) ++ "\n"` 一样的字符串。
 
-We can evaluate our model by clicking the *Run* button in the MiniZinc IDE, or by typing
+  一个模型可以包含多个输出语句。在这种情况下,所有输出会根据它们在模型中出现的顺序连接。
+
+我们可以通过点击MiniZinc IDE中的 *Run* 按钮,或者输入
 
 .. code-block:: bash
   
   $ minizinc --solver Gecode aust.mzn
 
-where :download:`aust.mzn <examples/aust.mzn>`
-is the name of the file containing our MiniZinc model.
-We must use the file extension ``.mzn`` to indicate a MiniZinc model.
-The command ``minizinc`` with the option ``--solver Gecode`` uses the Gecode finite domain solver to evaluate
-our model. If you use the MiniZinc binary distribution, this solver is in fact the default, so you can just run ``minizinc aust.mzn`` instead.
+来评估我们的模型。
+其中 :download:`aust.mzn <examples/aust.mzn>` 是包含我们的MiniZinc模型的文件名字。
+我们必须使用文件扩展名 ``.mzn`` 来表明一个MiniZinc模型。
+带有 ``--solver Gecode`` 选项的命令 ``minizinc`` 使用Gecode有限域求解器去评估我们的模型。如果你使用的是MiniZinc二进制发布,这个求解器实际上是预设的,所以你也可以运行 ``minizinc aust.mzn`` 。
 
-When we run this we obtain the result:
+当我们运行上面的命令后，我们得到如下的结果：
 
 .. code-block:: none
 
-  wa=2	 nt=3	 sa=1
-  q=2	 nsw=3	 v=2
+  wa=2   nt=3  sa=1
+  q=2  nsw=3   v=2
   t=1
   ----------
 
@@ -282,38 +225,31 @@ When we run this we obtain the result:
 .. index::
   single: solution; separator ----------
 
-The line of 10 dashes ``----------`` is automatically added
-by the MiniZinc output to indicate a solution has been found. 
+10个破折号 ``----------`` 这行是自动被MiniZinc输出的，用来表明一个解已经被找到。
 
-An Arithmetic Optimisation Example
+算术优化实例
 ----------------------------------
 
-Our second example is motivated by the need to bake some cakes for a fete at
-our local school.
-We know how to make two sorts of cakes.\footnote{WARNING: please don't use
-these recipes at home}
-A banana cake which takes 250g of self-raising flour, 2 mashed bananas, 75g
-sugar and 100g of butter, and a chocolate cake which takes 200g of self-raising
-flour, 75g of cocoa, 150g sugar and 150g of butter.
-We can sell a chocolate cake for $4.50 and a banana cake for $4.00.  And we
-have 4kg self-raising flour, 6 bananas, 2kg of sugar, 500g of butter and 500g
-of cocoa.
-The question is how many of each sort of cake should we bake for the fete to
-maximise the profit.
-A possible
-MiniZinc model is shown in :numref:`ex-cakes`.
+我们的第二个例子来自于要为了本地的校园游乐会烤一些蛋糕的需求。
+我们知道如何制作两种蛋糕。 \footnote{警告: 请不要在家里使用这些配方制作}
+一个香蕉蛋糕的制作需要250克自发酵的面粉，2个捣碎的香蕉，75克糖和100克黄油。
+一个巧克力蛋糕的制作需要200克自发酵的面粉，75克可可粉，150克糖和150克黄油。
+一个巧克力蛋糕可以卖\$4.50，一个香蕉蛋糕可以卖\$4.00。我们一共有4千克的自发酵面粉，
+6个香蕉，2千克的糖，500克的黄油和500克的可可粉。
+问题是对每一种类型的蛋糕，我们需要烤多少给游乐会来得到最大的利润。
+一个可能的MiniZinc模型在 :numref:`ex-cakes` 中给出。
 
 .. literalinclude:: examples/cakes.mzn
   :language: minizinc
-  :caption: Model for determining how many banana and chocolate cakes to bake for the school fete (:download:`cakes.mzn <examples/cakes.mzn>`)
+  :caption: 决定为了校园游乐会要烤多少香蕉和巧克力蛋糕的模型。  (:download:`cakes.mzn <examples/cakes.mzn>`)
   :name: ex-cakes
 
 .. index::
   single: expression; arithmetic
 
-The first new feature is the use of *arithmetic expressions*. 
+第一个新特征是 *arithmetic expressions* 的使用。
 
-.. defblock:: Integer Arithmetic Operators
+.. defblock:: 整数算术操作符
 
   .. index::
     single: operator; integer
@@ -323,29 +259,24 @@ The first new feature is the use of *arithmetic expressions*.
     single: *
     single: mod
 
-  MiniZinc provides the standard integer arithmetic operators.  
-  Addition (``+``),
-  subtraction (``-``),
-  multiplication (``*``),
-  integer division (:mzn:`div`) 
-  and 
-  integer modulus (:mzn:`mod`). 
-  It also provides ``+`` and ``-``
-  as unary operators. 
+  MiniZinc提供了标准的整数算术操作符。  
+  加 (``+``),
+  减 (``-``),
+  乘 (``*``),
+  整数除 (:mzn:`div`) 
+  和 
+  整数模 (:mzn:`mod`). 
+  同时也提供了一元操作符 ``+`` 和 ``-`` 。
 
-  Integer modulus is defined to give a result :math:`a` :mzn:`mod` :math:`b`
-  that has the same sign as the 
-  dividend :math:`a`. Integer division is defined so that
-  :math:`a = b ` ``*`` :math:`(a` :mzn:`div` :math:`b) + (a` :mzn:`mod` :math:`b)`.
+  整数模被定义为输出和被除数 :math:`a` 一样正负的 :math:`a` :mzn:`mod` :math:`b` 值。整数除被定义为使得
+  :math:`a = b ` ``*`` :math:`(a` :mzn:`div` :math:`b) + (a` :mzn:`mod` :math:`b)` 值。
 
-  MiniZinc provides standard integer functions for 
-  absolute value (:mzn:`abs`) and power function (:mzn:`pow`).
-  For example :mzn:`abs(-4)` and :mzn:`pow(2,5)` evaluate to
-  ``4`` and ``32`` respectively.
+  MiniZinc 提供了标准的整数函数用来取绝对值 (:mzn:`abs`) 和幂函数 (:mzn:`pow`).
+  例如 :mzn:`abs(-4)` 和 :mzn:`pow(2,5)` 分别求得数值
+  ``4`` 和 ``32`` 。
 
-  The syntax for arithmetic literals is reasonably standard. Integer literals
-  can be decimal, hexadecimal or octal. For instance ``0``, ``5``,
-  ``123``, ``0x1b7``, ``0o777``.
+  算术常量的语法是相当标准的。整数常量可以是十进制，十六进制或者八进制。例如 ``0``, ``5``,
+  ``123``, ``0x1b7``, ``0o777`` 。
 
 .. index::
   single: optimization
@@ -353,21 +284,17 @@ The first new feature is the use of *arithmetic expressions*.
   single: maximize
   single: minimize
 
-The second new feature shown in the example is optimisation. The line
+例子中的第二个新特征是优化。这行
 
 ::
 
   solve maximize 400 * b + 450 * c;
 
-specifies that we want to find a solution that maximises the expression in
-the solve statement called the 
-*objective*.  
-The objective can be any
-kind of arithmetic expression.  One can replace the keyword 
-:mzn:`maximize`
-by :mzn:`minimize` to specify a minimisation problem.
+指出我们想找一个可以使solve语句中的表达式（我们叫做 *目标* ）最大化的解。
+这个目标可以为任何类型的算术表达式。我们可以把关键字 :mzn:`maximize`
+换为 :mzn:`minimize` 来表明一个最小化问题。
 
-When we run this we obtain the result:
+当我们运行上面这个模型时，我们得到以下的结果：
 
 .. code-block:: none
 
@@ -379,56 +306,46 @@ When we run this we obtain the result:
 .. index::
   single: solution; end `==========`
 
-The line ``==========``
-is output automatically for optimisation problems when the system has proved
-that a solution is optimal.
-
+一旦系统证明了一个解是最优解，这一行 ``==========`` 在最优化问题中会自动被输出。
 
 .. index::
   single: data file
 
-Datafiles and Assertions
+数据文件和谓词
 ------------------------
 
-A drawback of this model is that if we wish to solve a similar problem the
-next time we need to bake cakes for the school (which is often) we need to
-modify the constraints in the model to reflect the ingredients that we have
-in the pantry. If we want to reuse the model then we would be better off to
-make the amount of each ingredient a parameter of the model and then set
-their values at the top of the model.
+此模型的一个缺点是如果下一次我们希望解决一个相似的问题，即我们需要为学校烤蛋糕（这是经常发生的），
+我们需要改变模型中的约束来表明食品间拥有的原料数量。如果我们想重新利用此模型，我们最好使得每个原料的数量作为
+模型的参数，然后在模型的最上层设置它们的值。
 
-Even better would be to set the value of these parameters in a separate
-*data file*. 
-MiniZinc (like most other modelling languages) allows the
-use of data files to set the value of parameters declared in the original
-model. This allows the same model to be easily used with different data by
-running it with different data files.
+更好的办法是在一个单独的 *数据文件* 中设置这些参数的值。
+MiniZinc（就像很多其他的建模语言一样）允许使用数据文件来设置在原始模型中声明的
+参数的值。
+通过运行不同的数据文件，使得同样的模型可以很容易地和不同的数据一起使用。
 
-Data files must have the file extension ``.dzn`` to indicate a MiniZinc data file
-and a model can be run with any number of data files (though a variable/parameter can only be assigned a value in one file). 
+数据文件的文件扩展名必须是 ``.dzn`` ，来表明它是一个MiniZinc数据文件。
+一个模型可以被任何多个数据文件运行（但是每个变量/参数在每个文件中只能被赋一个值）
 
 .. literalinclude:: examples/cakes2.mzn
   :language: minizinc
-  :caption: Data-independent model for determining how many banana and chocolate cakes to bake for the school fete (:download:`cakes2.mzn <examples/cakes2.mzn>`)
+  :caption: 独立于数据的用来决定为了校园游乐会要烤多少香蕉和巧克力蛋糕的模型。(:download:`cakes2.mzn <examples/cakes2.mzn>`)
   :name: ex-cakes2
 
-Our new model is shown in :numref:`ex-cakes2`.
-We can run it using the command
+我们的新模型在 :numref:`ex-cakes2` 中给出。
+我们可以用下面的命令来运行
 
 .. code-block: bash
 
   $ minizinc cakes2.mzn pantry.dzn
 
-where the data file :download:`pantry.dzn <examples/pantry.dzn>` is defined in
-:numref:`fig-pantry1`. This gives the same result as :download:`cakes.mzn <examples/cakes.mzn>`.
-The output from running the command
+数据文件 :download:`pantry.dzn <examples/pantry.dzn>` 在 :numref:`fig-pantry1` 中给出。我们得到和 :download:`cakes.mzn <examples/cakes.mzn>` 同样的结果。
+运行下面的命令
 
 .. code-block:: bash
 
   $ minizinc cakes2.mzn pantry2.dzn
 
-with an alternate data set defined in
-:numref:`fig-pantry2` is
+利用另外一个 :numref:`fig-pantry2` 中定义的数据集，我们得到如下结果
 
 .. code-block:: none
 
@@ -437,9 +354,8 @@ with an alternate data set defined in
   ----------
   ==========
 
-If we remove the output statement from :download:`cakes.mzn <examples/cakes.mzn>` then
-MiniZinc will use a default output. In this case the resulting
-output  will be
+如果我们从 :download:`cakes.mzn <examples/cakes.mzn>` 中去掉输出语句，MiniZinc会使用默认的输出。
+这种情况下得到的输出是
 
 .. code-block:: none
 
@@ -448,65 +364,57 @@ output  will be
   ----------
   ==========
 
-.. defblock:: Default Output
+.. defblock:: 默认输出
 
-  A MiniZinc model with no output will output a line for each
-  decision variable with its value, unless it is assigned an expression
-  on its declaration. Note how the output is in the form of a correct datafile.
+  一个没有输出语句的MiniZinc模型会给每一个决策变量以及它的值一个输出行，除非决策变量已经在声明的时候被赋了一个表达式。
+  注意观察此输出是如何呈现一个正确的数据文件格式的。
 
 .. literalinclude:: examples/pantry.dzn
   :language: minizinc
-  :caption: Example data file for :download:`cakes2.mzn <examples/cakes2.mzn>` (:download:`pantry.dzn <examples/pantry.dzn>`)
+  :caption: :download:`cakes2.mzn <examples/cakes2.mzn>` 的数据文件例子 (:download:`pantry.dzn <examples/pantry.dzn>`)
   :name: fig-pantry1
 
 .. literalinclude:: examples/pantry2.dzn
   :language: minizinc
-  :caption: Example data file for :download:`cakes2.mzn <examples/cakes2.mzn>` (:download:`pantry2.dzn <examples/pantry2.dzn>`)
+  :caption: :download:`cakes2.mzn <examples/cakes2.mzn>` 的数据文件例子 (:download:`pantry2.dzn <examples/pantry2.dzn>`)
   :name: fig-pantry2
 
-Small data files can be entered 
-without directly creating a ``.dzn``
-file, using the :index:`command line flag <data file;command line>`
-``-D`` *string*, 
-where *string* is the contents of the data
-file. For example the command
+通过使用 :index:`命令行标示 <data file;command line>` 
+``-D`` *string* ，
+小的数据文件可以被直接输入而不是必须要创建一个 ``.dzn`` 文件，
+其中 *string* 是数据文件里面的内容。
 
 .. code-block:: bash
 
   $ minizinc cakes2.mzn -D \
        "flour=4000;banana=6;sugar=2000;butter=500;cocoa=500;"
 
-will give identical results to
+会给出和
 
 .. code-block:: bash
 
   $ minizinc cakes2.mzn pantry.dzn
 
-Data files can only contain assignment statements for 
-decision variables and parameters in the model(s) for which they are intended. 
+一模一样的结果。
+
+数据文件只能包含给模型中的决策变量和参数赋值的语句。
 
 .. index::
   single: assert
 
-Defensive programming suggests that we should check that the values in the
-data file are reasonable.  For our example it is sensible to check that the
-quantity of all ingredients is non-negative and generate a run-time error if
-this is not true. MiniZinc provides a built-in Boolean operator for checking
-parameter values. The form is :mzn:`assert(B,S)`. The Boolean expression
-``B`` is evaluated and if it is false execution aborts and the string
-expression ``S`` is evaluated and printed as an error message. To check and
-generate an appropriate error message if the amount of flour is negative we
-can simply add the line
+防御性编程建议我们应该检查数据文件中的数值是否合理。
+在我们的例子中，检查所有原料的份量是否是非负的并且若不正确则产生一个运行错误，这是明智的。
+MiniZinc提供了一个内置的布尔型操作符 *断言* 用来检查参数值。格式是 :mzn:`assert(B,S)` 。
+布尔型表达式 ``B`` 被检测。若它是假的，运行中断。此时字符串表达式 ``S`` 作为错误信息被输出。
+如果我们想当面粉的份量是负值的时候去检测出并且产生合适的错误信息，我们可以直接加入下面的一行
 
 ::
 
   constraint assert(flour >= 0,"Amount of flour is non-negative");
 
-to our model. Notice that the :mzn:`assert` expression is a Boolean
-expression and so is regarded as a type of constraint. We can add similar
-lines to check that the quantity of the other ingredients is non-negative.
+到我们的模型中。注意 *断言* 表达式是一个布尔型表达式，所以它被看做是一种类型的约束。我们可以加入类似的行来检测其他原料的份量是否是非负值。
 
-Real Number Solving
+实数求解
 -------------------
 
 MiniZinc also supports "real number" constraint solving using
@@ -515,29 +423,28 @@ for one year to be repaid in 4 quarterly instalments.
 A model for this is shown in :numref:`ex-loan`. It uses a simple interest
 calculation to calculate the balance after each quarter.
 
+通过使用浮点数求解，MiniZinc也支持“实数”约束求解。考虑一个要在4季度分期偿还的一年短期贷款问题。
+此问题的一个模型在 :numref:`ex-loan` 中给出。它使用了一个简单的计算每季度结束后所欠款的利息计算方式。
+
 .. literalinclude:: examples/loan.mzn
   :language: minizinc
-  :caption: Model for determining relationships between a 1 year loan repaying every quarter (:download:`loan.mzn <examples/loan.mzn>`)
+  :caption: 确定一年借款每季度还款关系的模型(:download:`loan.mzn <examples/loan.mzn>`)
   :name: ex-loan
 
-Note that we declare a float variable ``f``
-similar to an integer variable using the keyword :mzn:`float` instead of
-:mzn:`int`.
+注意我们声明了一个浮点型变量 ``f`` ，它和整型变量很类似。只是这里我们
+使用关键字 :mzn:`float` 而不是 :mzn:`int` 。
 
-We can use the same model to answer a number of different questions.
-The first question is: if I borrow $1000 at 4% and repay $260 per
-quarter, how much do I end up owing? This question is encoded by
-the data file :download:`loan1.dzn <examples/loan1.dzn>`.
+我们可以用同样的模型来回答一系列不同的问题。第一个问题是：如果我以利息
+4\%借款\$1000并且每季度还款\$260，我最终还欠款多少？这个问题在数据文件 :download:`loan1.dzn <examples/loan1.dzn>` 中被编码。
 
-Since we wish to use real number variables and constraint we need to use a solver
-that supports this type of problem. While Gecode (the default solver in the MiniZinc bundled binary distribution) does support floating point variables, a mixed integer linear programming (MIP) solver may be better suited to this particular type of problem.
-The MiniZinc distribution contains such a solver. We can invoke it by selecting ``OSICBC`` from the solver menu in the IDE (the triangle below the *Run* button), or on the command line using the command ``minizinc --solver osicbc``:
+由于我们希望用实数求解，我们需要使用一个可以支持这种问题类型的求解器。Gecode(Minizinc捆绑二进制发布预设的求解器)支持浮点型变量,一个混合整数线性求解器可能更加适合这种类型的问题。
+MiniZinc发布包含了这样的一个求解器。我们可以通过从求解器IDE菜单( *Run* 按钮下面的三角形)选择 ``OSICBC``  来使用, 或者在命令行中运行命令 ``minizinc --solver osicbc`` :
 
 .. code-block:: bash
 
   $ minizinc --solver osicbc loan.mzn loan1.dzn
 
-The output is
+输出是
 
 .. code-block:: none
 
@@ -545,17 +452,15 @@ The output is
   per quarter for 1 year leaves 65.78 owing 
   ----------
 
-The second question is if I want to borrow $1000 at 4% and owe nothing at
-the end, how much do I need to repay?
-This question is encoded by
-the data file :download:`loan2.dzn <examples/loan2.dzn>`.
-The output from running the command
+第二个问题是如果我希望用4\%的利息来借款\$1000并且在最后的时候一点都不欠款，我需要在每季度还款多少？
+这个问题在数据文件 :download:`loan2.dzn <examples/loan2.dzn>` 中被编码。
+运行命令
 
 .. code-block:: bash
 
   $ minizinc --solver osicbc loan.mzn loan2.dzn
 
-is
+后的输出是
 
 .. code-block:: none
 
@@ -563,16 +468,15 @@ is
   per quarter for 1 year leaves 0.00 owing
   ----------
 
-The third question is if I can repay $250 a quarter, how much can I borrow
-at 4% to end up owing nothing? 
-This question is encoded by the data file :download:`loan3.dzn <examples/loan3.dzn>`.
-The output from running the command
+第三个问题是如果我可以每个季度返还\$250, 我可以用4\%的利息来借款多少并且在最后的时候一点都不欠款？
+这个问题在数据文件 :download:`loan3.dzn <examples/loan3.dzn>` 中被编码。
+运行命令
 
 .. code-block:: bash
 
   $ minizinc --solver osicbc loan.mzn loan3.dzn
 
-is
+后的输出是
 
 .. code-block:: none
 
@@ -582,18 +486,18 @@ is
 
 .. literalinclude:: examples/loan1.dzn
   :language: minizinc
-  :caption: Example data file for :download:`loan.mzn <examples/loan.mzn>` (:download:`loan1.dzn <examples/loan1.dzn>`)
+  :caption: :download:`loan.mzn <examples/loan.mzn>` 的数据文件例子(:download:`loan1.dzn <examples/loan1.dzn>`)
 
 .. literalinclude:: examples/loan2.dzn
   :language: minizinc
-  :caption: Example data file for :download:`loan.mzn <examples/loan.mzn>` (:download:`loan2.dzn <examples/loan2.dzn>`)
+  :caption: :download:`loan.mzn <examples/loan.mzn>` 的数据文件例子(:download:`loan2.dzn <examples/loan2.dzn>`)
 
 .. literalinclude:: examples/loan3.dzn
   :language: minizinc
-  :caption: Example data file for :download:`loan.mzn <examples/loan.mzn>` (:download:`loan3.dzn <examples/loan3.dzn>`)
+  :caption: :download:`loan.mzn <examples/loan.mzn>` 的数据文件例子(:download:`loan3.dzn <examples/loan3.dzn>`)
 
 
-.. defblock:: Float Arithmetic Operators
+.. defblock:: 浮点算术操作符
 
   .. index:
     single: operator; float
@@ -621,81 +525,66 @@ is
     single: atanh
     single: pow
 
-  MiniZinc provides the standard floating point arithmetic operators:  
-  addition (``+``), 
-  subtraction (``-``),
-  multiplication (``*``) 
-  and floating point division (``/``). 
-  It also provides ``+`` and ``-`` as unary operators. 
+  MiniZinc提供了标准的浮点算术操作符:  
+  加 (``+``), 
+  减 (``-``),
+  乘 (``*``) 
+  和浮点除 (``/``)。 
+  同时也提供了一元操作符 ``+`` 和 ``-`` 。 
 
-  MiniZinc can automatically coerce integers to 
-  floating point numbers. But to make the coercion explicit, the built-in function
-  :mzn:`int2float`
-  can be used. Note that one consequence of the automatic coercion is that
-  an expression :mzn:`a / b` is always considered a floating point division. If
-  you need an integer division, make sure to use the :mzn:`div` operator!
+  MiniZinc不会自动地强制转换整数为浮点数。内建函数 :mzn:`int2float` 被用来达到此目的。注意强制转换的一个后果是表达式 :mzn:`a / b` 总是被认为是一个浮点除。 如果你需要一个整数除,请确定使用 :mzn:`div` 操作符。
 
-  MiniZinc provides in addition the following floating point functions: 
-  absolute value (``abs``),
-  square root (``sqrt``), 
-  natural logarithm (``ln``),
-  logarithm base 2 (``log2``), 
-  logarithm base 10 (``log10``),
-  exponentiation of $e$ (``exp``), 
-  sine (``sin``), 
-  cosine (``cos``), 
-  tangent (``tan``),
-  arcsine (``asin``), 
-  arc\-cosine (``acos``), 
-  arctangent (``atan``), 
-  hyperbolic sine (``sinh``),
-  hyperbolic cosine (``cosh``),
-  hyperbolic tangent (``tanh``),
-  hyperbolic arcsine (``asinh``),
-  hyperbolic arccosine (``acosh``), 
-  hyperbolic arctangent (``atanh``),
-  and power (``pow``) which is the only binary function, the rest are
-  unary.
+  MiniZinc同时也包含浮点型函数来计算:
+  绝对值 (``abs``),
+  平方根 (``sqrt``), 
+  自然对数 (``ln``),
+  底数为2的对数 (``log2``), 
+  底数为10的对数 (``log10``),
+  $e$的幂 (``exp``), 
+  正弦 (``sin``), 
+  余弦 (``cos``), 
+  正切 (``tan``),
+  反正弦 (``asin``), 
+  反余弦 (``acos``), 
+  反正切 (``atan``), 
+  双曲正弦 (``sinh``),
+  双曲余弦 (``cosh``),
+  双曲正切 (``tanh``),
+  双曲反正弦 (``asinh``),
+  双曲反余弦 (``acosh``), 
+  双曲反正切 (``atanh``),
+  和唯一的二元函数次方 (``pow``)，其余的都是一元函数。
 
-  The syntax for arithmetic literals is reasonably standard. Example float
-  literals are ``1.05``, ``1.3e-5`` and ``1.3E+5``.
+  算术常量的语法是相当标准的。浮点数常量的例子有 ``1.05``， ``1.3e-5`` 和 ``1.3E+5`` 。
 
 .. \pjs{Should do multiple solutions????}
 
-Basic structure of a model
+模型的基本结构
 --------------------------
 
-We are now in a position to summarise the basic structure of a MiniZinc model.
-It consists of multiple *items* each of which has a 
-semicolon ``;`` at its end. 
-Items can occur in any order.
-For example, identifiers need not be declared before they are 
-used. 
+我们现在可以去总结MiniZinc模型的基本结构了。
+它由多个项组成，每一个在其最后都有一个分号 ``;`` 。
+项可以按照任何顺序出现。例如，标识符在被使用之前不需要被声明。
 
-There are 8 kinds of :index:`items <item>`.
+有八种类型的项 :index:`items <item>` 。
 
-- :index:`Include items <item; include>` allow the contents of another file to be inserted into the model.
-  They have the form:
+- :index:`引用项 <item; include>` 允许另外一个文件的内容被插入模型中。
+  它们有以下形式：
   
   .. code-block:: minizincdef
   
-    include <filename>;
+    include <文件名>;
 
-  where :mzndef:`<filename>` is a string literal.
-  They allow large models to be split into smaller sub-models and also the
-  inclusion of constraints defined in library files.
-  We shall see an example in :numref:`ex-smm`.
+  其中 :mzndef:`<文件名>` 是一个字符串常量。
+  它们使得大的模型可以被分为小的子模型以及包含库文件中定义的约束。
+  我们会在 :numref:`ex-smm` 中看到一个例子。
 
-- :index:`Variable declarations <item; variable declaration>` declare new variables.
-  Such variables are global variables and can be referred to from anywhere in the
-  model.
-  Variables come in two kinds.
-  Parameters which are assigned a fixed value in the model or in a data file and
-  decision variables whose value is found only when the model is solved.
-  We say that parameters are :index:`fixed` and decision variables
-  :index:`unfixed`.
-  The variable can be optionally assigned a value as part of the declaration.
-  The form is:
+- :index:`变量声明 <item; variable declaration>` 声明新的变量。
+  这种变量是全局变量，可以在模型中的任何地方被提到。
+  变量有两种。在模型中被赋一个固定值的参数变量以及只有在模型被求解的时候才会
+  被赋值的决策变量。
+  我们称参数是 :index:`固定的` ，决策变量是 :index:`不固定的` 。
+  变量可以选择性地被赋一个值来作为声明的一部分。形式是：
 
   .. index:
     single: expression; type-inst
@@ -704,86 +593,69 @@ There are 8 kinds of :index:`items <item>`.
 
   .. code-block:: minizincdef
 
-    <type inst expr>: <variable> [ = ] <expression>;
+    <类型-实例化 表达式>: <变量> [ = ] <表达式>;
 
-  The :mzndef:`<type-inst expr>`
-  gives the instantiation and type of the
-  variable. These are one of the more complex aspects of MiniZinc.
-  Instantiations are declared using :mzn:`par`
-  for parameters and
-  :mzn:`var` for decision variables. If there is no explicit instantiation
-  declaration then the variable is a parameter.  
-  The type can be a base type,
-  an :index:`integer or float range <range>`
-  or an array or a set.
-  The base types are :mzn:`float`,
+  :mzndef:`<类型-实例化 表达式>`
+  给了变量的类型和实例化。 这些是MiniZinc比较复杂的其中一面。
+  用 :mzn:`par` 来实例化声明
+  参数，用 :mzn:`var` 来实例化声明决策变量。
+  如果没有明确的实例化声明，则变量是一个参数。类型可以为基类型，一个 :index:`整数或者浮点数范围 <range>`，或者一个数组或集合。
+  基类型有
+  :mzn:`float`,
   :mzn:`int`, 
   :mzn:`string`, 
   :mzn:`bool`,
   :mzn:`ann` 
-  of which only
-  :mzn:`float`, :mzn:`int` and :mzn:`bool` can be used for decision
-  variables. 
-  The base type :mzn:`ann` is an :index:`annotation` --
-  we shall discuss
-  annotations in :ref:`sec-search`.
-  :index:`Integer range expressions <range; integer>` can be used
-  instead of the type :mzn:`int`. 
-  Similarly :index:`float range expressions <range; float>`
-  can be used instead of type :mzn:`float`.
-  These are typically used to give the
-  domain of a decision variable but can also be used to restrict the
-  range of a parameter. Another use of variable declarations is to
-  define :index:`enumerated types`, which we discuss in :ref:`sec-enum`.
+  。其中只有
+  :mzn:`float`, :mzn:`int` and :mzn:`bool` 可以被决策变量使用。
+  基类型 :mzn:`ann` 是一个 :index:`注解` --
+  我们会在 :ref:`sec-search` 中讨论注解。
+  :index:`整数范围表达式 <range; integer>` 可以被用来代替类型 :mzn:`int`. 
+  类似的， :index:`浮点数范围表达式 <range; float>` 
+  可以被用来代替类型 :mzn:`float` 。
+  这些通常被用来定义一个整型决策变量的定义域，但也可以被用来限制一个整型参数的范围。
+  变量声明的另外一个用处是定义 :index:`枚举类型`, ---我们会在 :ref:`sec-enum` 中讨论。
 
-- :index:`Assignment items <item; assignment>` assign a value to a variable. They have the form:
+- :index:`赋值项 <item; assignment>` 给一个变量赋一个值。它们有以下形式：
 
   .. code-block:: minizincdef
 
-    <variable> = <expression>;
+    <变量> = <表达式>;
 
-  Values can be assigned to decision variables in which case the assignment is
-  equivalent to writing :mzndef:`constraint <variable> = <expression>`.
+  数值可以被赋给决策变量。在这种情况下，赋值相当于加入 :mzndef:`constraint <变量> = <表达式>` ;
 
-- :index:`Constraint items <item; constraint>` form the heart of the model. They have the form:
+- :index:`约束项 <item; constraint>` 是模型的核心。它们有以下形式：
 
   .. code-block:: minizincdef
   
-    constraint <Boolean expression>;
+    constraint <布尔型表达式>;
 
-  We have already seen examples of simple constraints using arithmetic
-  comparison and the built-in :mzn:`assert` operator. In the next section we
-  shall see examples of more complex constraints.
+  我们已经看到了使用算术比较的简单约束以及内建函数 :mzn:`assert` 操作符。 在下一节我们会看到更加复杂的约束例子。
 
-- :index:`Solve items <item; solve>` specify exactly what kind of solution is being looked for.
-  As we have seen they have one of three forms:
+- :index:`求解项 <item; solve>` 详细说明了到底要找哪种类型的解。
+  正如我们看到的，它们有以下三种形式：
   
   .. code-block:: minizincdef
 
     solve satisfy;
-    solve maximize <arithmetic expression>;
-    solve minimize <arithmetic expression>;
+    solve maximize <算术表达式>;
+    solve minimize <算术表达式>;
 
-  A model is required to have exactly one solve item.
+  一个模型必须有且只有一个求解项。
 
-- :index:`Output items <item; output>` are for nicely presenting the results of the model execution. 
-  They have the form:
+- :index:`输出项 <item; output>` 用来恰当的呈现模型运行后的结果。
+  它们有下面的形式：
   
   .. code-block:: minizincdef
 
-    output [ <string expression>, ..., <string expression> ];
+    output [ <字符串表达式>, ..., <字符串表达式> ];
 
-  If there is no output item, MiniZinc will by default print out the values of
-  all the decision variables which are not optionally assigned a value in the
-  format of assignment items.
+  如果没有输出项，MiniZinc会默认输出所有没有被以赋值项的形式赋值的决策变量值。
 
-- :index:`Enumerated type declarations <item; enum>`.
-  We discuss these in :ref:`sec-arrayset` and :ref:`sec-enum`.
+- :index:`枚举类型声明 <item; enum>`.
+  我们会在 :ref:`sec-arrayset` 和 :ref:`sec-enum` 中讨论。
 
-- :index:`Predicate, function and test items <item; predicate>` are for defining new constraints, 
-  functions and Boolean tests.
-  We discuss these in :ref:`sec-predicates`.
+- :index:`谓词函数和测试项 <item; predicate>` 被用来定义新的约束，函数和布尔测试。我们会在 :ref:`sec-predicates` 中讨论。
 
 
-- The :index:`annotation item <item; annotation>` is used to define a new annotation. We 
-  discuss these in :ref:`sec-search`.
+- :index:`注解项 <item; annotation>` 用来定义一个新的注解。我们会在 :ref:`sec-search` 中讨论。

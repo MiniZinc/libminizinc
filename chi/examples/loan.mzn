@@ -1,13 +1,13 @@
-% variables
-var float: R;        % quarterly repayment
-var float: P;        % principal initially borrowed
-var 0.0 .. 10.0: I;  % interest rate
+% 变量
+var float: R;        % 季度还款
+var float: P;        % 初始借贷本金
+var 0.0 .. 10.0: I;  % 利率
 
-% intermediate variables
-var float: B1; % balance after one quarter
-var float: B2; % balance after two quarters
-var float: B3; % balance after three quarters
-var float: B4; % balance owing at end
+% 中间变量
+var float: B1; % 一个季度后的欠款
+var float: B2; % 两个季度后的欠款
+var float: B3; % 三个季度后的欠款
+var float: B4; % 最后欠款
 
 constraint B1 = P * (1.0 + I) - R;
 constraint B2 = B1 * (1.0 + I) - R;

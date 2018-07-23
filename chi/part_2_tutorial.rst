@@ -1,6 +1,6 @@
 .. _part-tutorial:
 
-A MiniZinc Tutorial
+Minizinc 指南
 +++++++++++++++++++
 
 .. toctree::
