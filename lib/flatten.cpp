@@ -2239,10 +2239,44 @@ namespace MiniZinc {
             decl->loc().filename().endsWith("/flatzinc_builtins.mzn"));
   }
   
-  Call* same_call(Expression* e, const ASTString& id) {
+  KeepAlive same_call(EnvI& env, Expression* e, const ASTString& id) {
     Expression* ce = follow_id(e);
-    if (ce && ce->isa<Call>() && ce->cast<Call>()->id() == id)
-      return ce->cast<Call>();
+    Call* c = Expression::dyn_cast<Call>(ce);
+    if (c) {
+      if (c->id() == id) {
+        return ce->cast<Call>();
+      } else if (c->id() == constants().ids.int2float) {
+        Expression* i2f = follow_id(c->arg(0));
+        Call* i2fc = Expression::dyn_cast<Call>(i2f);
+        if (i2fc && i2fc->id() == id && id==constants().ids.lin_exp) {
+          GCLock lock;
+          ArrayLit* coeffs = eval_array_lit(env, i2fc->arg(0));
+          std::vector<Expression*> ncoeff_v(coeffs->size());
+          for (unsigned int i=0; i<coeffs->size(); i++) {
+            ncoeff_v[i] = FloatLit::a(eval_int(env, (*coeffs)[i]));
+          }
+          ArrayLit* ncoeff = new ArrayLit(coeffs->loc().introduce(), ncoeff_v);
+          ncoeff->type(Type::parfloat(1));
+          ArrayLit* vars = eval_array_lit(env, i2fc->arg(1));
+          std::vector<Expression*> n_vars_v(vars->size());
+          for (unsigned int i=0; i<vars->size(); i++) {
+            Call* f2i = new Call((*vars)[i]->loc().introduce(), constants().ids.int2float, {(*vars)[i]});
+            f2i->decl(env.model->matchFn(env, f2i, false));
+            assert(f2i->decl());
+            f2i->type(Type::varfloat());
+            n_vars_v[i] = f2i;
+          }
+          ArrayLit* nvars = new ArrayLit(vars->loc().introduce(), n_vars_v);
+          nvars->type(Type::varfloat(1));
+          FloatVal c = eval_int(env, i2fc->arg(2));
+          Call* nlinexp = new Call(i2fc->loc().introduce(), constants().ids.lin_exp, {ncoeff, nvars, FloatLit::a(c)});
+          nlinexp->decl(env.model->matchFn(env, nlinexp, false));
+          assert(nlinexp->decl());
+          nlinexp->type(Type::varfloat());
+          return nlinexp;
+        }
+      }
+    }
     return NULL;
   }
   
@@ -3128,9 +3162,12 @@ namespace MiniZinc {
     std::vector<Val> coeffv;
     std::vector<KeepAlive> alv;
     for (unsigned int i=0; i<al->size(); i++) {
-      if (Call* sc = same_call((*al)[i],cid)) {
+      if (Call* sc = same_call(env,(*al)[i],cid)()->cast<Call>()) {
         if (VarDecl* alvi_decl = follow_id_to_decl((*al)[i])->dyn_cast<VarDecl>()) {
           if (alvi_decl->ti()->domain()) {
+            // Test if the variable has tighter declared bounds than what can be inferred
+            // from its RHS. If yes, keep the variable (don't aggregate), because the tighter
+            // bounds are actually a constraint
             typename LinearTraits<Lit>::Domain sc_dom = LinearTraits<Lit>::eval_domain(env,alvi_decl->ti()->domain());
             typename LinearTraits<Lit>::Bounds sc_bounds = LinearTraits<Lit>::compute_bounds(env,sc);
             if (LinearTraits<Lit>::domain_tighter(sc_dom, sc_bounds)) {
@@ -5390,7 +5427,7 @@ namespace MiniZinc {
               ArrayLit* al = follow_id(args_ee[i].r())->cast<ArrayLit>();
               std::vector<KeepAlive> alv;
               for (unsigned int i=0; i<al->size(); i++) {
-                if (Call* sc = same_call((*al)[i],cid)) {
+                if (Call* sc = same_call(env,(*al)[i],cid)()->cast<Call>()) {
                   if (sc->id()==constants().ids.clause) {
                     alv.push_back(sc);
                   } else {
@@ -5406,12 +5443,12 @@ namespace MiniZinc {
               }
 
               for (unsigned int j=0; j<alv.size(); j++) {
-                Call* neg_call = same_call(alv[j](),constants().ids.bool_eq);
+                Call* neg_call = same_call(env,alv[j](),constants().ids.bool_eq)()->cast<Call>();
                 if (neg_call &&
                     Expression::equal(neg_call->arg(1),constants().lit_false)) {
                   local_neg.push_back(neg_call->arg(0));
                 } else {
-                  Call* clause = same_call(alv[j](),constants().ids.clause);
+                  Call* clause = same_call(env,alv[j](),constants().ids.clause)()->cast<Call>();
                   if (clause) {
                     ArrayLit* clause_pos = eval_array_lit(env,clause->arg(0));
                     for (unsigned int k=0; k<clause_pos->size(); k++) {
@@ -5465,7 +5502,7 @@ namespace MiniZinc {
             ArrayLit* al = follow_id(args_ee[0].r())->cast<ArrayLit>();
             std::vector<KeepAlive> alv;
             for (unsigned int i=0; i<al->size(); i++) {
-              if (Call* sc = same_call((*al)[i],cid)) {
+              if (Call* sc = same_call(env,(*al)[i],cid)()->cast<Call>()) {
                 GCLock lock;
                 ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
                 for (unsigned int j=0; j<sc_c->size(); j++) {

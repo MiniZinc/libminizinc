@@ -1215,9 +1215,7 @@ function var float: bool2float(var bool: b) = int2float(bool2int(b));
 /** @group builtins.coercion Return integer \a x coerced to a float  */
 function float: int2float(int: x);
 /** @group builtins.coercion Return integer \a x coerced to a float  */
-function var float: int2float(var int: x) ::promise_total =
-  let { var int2float(lb(x))..int2float(ub(x)): y;
-        constraint int2float(x,y); } in y;
+function var float: int2float(var int: x) ::promise_total;
 
 function set of int: bool2int(set of bool: b) =
   if b={false,true} then {0,1}
