@@ -495,6 +495,8 @@ namespace MiniZinc {
                         break;
                       }
                     }
+                  } else if (vd->ann().contains(constants().ann.rhs_from_assignment)) {
+                    process_var = true;
                   }
                 } else {
                   process_var = true;
@@ -581,7 +583,7 @@ namespace MiniZinc {
             process_var = true;
           } else {
             if (!had_add_to_output) {
-              process_var = vd->type().isvar() && vd->e()==NULL;
+              process_var = vd->type().isvar() && (vd->e()==NULL || vd->ann().contains(constants().ann.rhs_from_assignment));
             }
           }
         }

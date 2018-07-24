@@ -1797,7 +1797,7 @@ namespace MiniZinc {
           }
         } else {
           vd->e(ai->e());
-          
+          vd->ann().add(constants().ann.rhs_from_assignment);
           if (vd->ti()->isEnum()) {
             GCLock lock;
             ASTString name(createEnumToStringName(vd->id(),"_enum_to_string_"));

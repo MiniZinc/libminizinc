@@ -85,6 +85,9 @@ annotation expression_name(string: s);
   annotations on constraint keywords are re-written as constraint_name annotations **/
 annotation constraint_name(string: s);
 
+/** @group annotations.general Used internally by the compiler **/
+annotation mzn_rhs_from_assignment;
+
 /***
  @groupdef annotations.prop Propagation strength annotations
 */
