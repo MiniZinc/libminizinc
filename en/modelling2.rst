@@ -784,12 +784,12 @@ might result in output
 
 .. code-block:: none
 
-  wa = yellow;
-  nt = blue;
+  wa = bluew;
+  nt = yellow;
   sa = red;
-  q = yellow;
-  nsw = blue;
-  v = yellow;
+  q = blue;
+  nsw = yellow;
+  v = blue;
   t = red;
 
 
