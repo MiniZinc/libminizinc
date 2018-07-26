@@ -586,6 +586,7 @@ solcallback (CPXCENVptr env, void *cbdata, int wherefrom, void *cbhandle)
       /// Call the user function:
       if (info->solcbfn)
           (*info->solcbfn)(*info->pOutput, info->ppp);
+     info->printed = true;
    }
    
 
@@ -1023,6 +1024,9 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
       output.x = &x[0];
       status = dll_CPXgetx (env, lp, &x[0], 0, cur_numcols-1);
       wrap_assert(!status, "Failed to get variable values.");
+      if (cbui.solcbfn && (!options->flag_all_solutions || !cbui.printed)) {
+        cbui.solcbfn(output, cbui.ppp);
+      }
    }
    output.bestBound = 1e308;
    status = dll_CPXgetbestobjval (env, lp, &output.bestBound);

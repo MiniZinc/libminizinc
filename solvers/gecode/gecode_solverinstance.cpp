@@ -1296,26 +1296,46 @@ namespace MiniZinc {
       presolve();
     }
 
+    int n_max_solutions = _n_max_solutions;
+    if (n_max_solutions==-1) {
+      if (_all_solutions) {
+        n_max_solutions = 0;
+      } else if (_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
+        n_max_solutions = 1;
+      }
+    }
+    
     FznSpace* next_sol = engine->next();
     while (next_sol) {
       if(_solution) delete _solution;
       _solution = next_sol;
       _n_found_solutions++;
 
-      if(_all_solutions || _n_found_solutions < _n_max_solutions) {
+      if(n_max_solutions==0 || _n_found_solutions <= n_max_solutions) {
         processSolution();
         if (_print_stats) print_stats();
-      } else if (_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT &&
-                 _n_found_solutions == _n_max_solutions) {
+      }
+      if (_n_found_solutions == n_max_solutions) {
         break;
       }
       next_sol = engine->next();
     }
-
-    processSolution(next_sol == NULL);
-    if (_print_stats) print_stats();
-    
-    return _status;
+    if (_current_space->_solveType != MiniZinc::SolveI::SolveType::ST_SAT) {
+      if (n_max_solutions==-1) {
+        // Print last solution
+        processSolution(next_sol == NULL);
+        if (_print_stats) print_stats();
+      }
+    }
+    if (next_sol==NULL) {
+      if (_solution) {
+        return engine->stopped() ? SolverInstance::SAT : SolverInstance::OPT;
+      } else {
+        return engine->stopped() ? SolverInstance::UNKNOWN : SolverInstance::UNSAT;
+      }
+    } else {
+      return SolverInstance::SAT;
+    }
   }
 
   class IntVarComp {

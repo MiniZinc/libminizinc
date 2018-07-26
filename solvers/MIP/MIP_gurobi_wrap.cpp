@@ -499,21 +499,18 @@ solcallback(GRBmodel *model,
       cerr << msg << flush;
     }
   } else if ( GRB_CB_MIPSOL==where ) {
-      /* MIP solution callback */
-      gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_NODCNT, &nodecnt);
-      info->pOutput->nNodes = static_cast<int>(nodecnt);
-      gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &objVal);
-      gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOLCNT, &solcnt);
+    /* MIP solution callback */
+    gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_NODCNT, &nodecnt);
+    info->pOutput->nNodes = static_cast<int>(nodecnt);
+    gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &objVal);
+    gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOLCNT, &solcnt);
 
-      if ( solcnt ) {
-        
-        if ( fabs(info->pOutput->objVal - objVal) > 1e-12*(1.0 + fabs(objVal)) ) {
-          newincumbent = 1;
-          info->pOutput->objVal = objVal;
-          info->pOutput->status = MIP_wrapper::SAT;
-          info->pOutput->statusName = "feasible from a callback";
-        }
-      }
+    if ( solcnt == 0 || fabs(info->pOutput->objVal - objVal) > 1e-12*(1.0 + fabs(objVal)) ) {
+      newincumbent = 1;
+      info->pOutput->objVal = objVal;
+      info->pOutput->status = MIP_wrapper::SAT;
+      info->pOutput->statusName = "feasible from a callback";
+    }
     if ( newincumbent ) {
         assert(info->pOutput->x);
         gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL, (void*)info->pOutput->x);
@@ -701,6 +698,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    output.nCols = static_cast<int>(colObj.size());
    x.resize(output.nCols);
    output.x = &x[0];
+   SolCallbackFn solcbfn = cbui.solcbfn;
    if (true) {                 // Need for logging
       cbui.fVerb = fVerbose;
       if ( !options->flag_all_solutions )
@@ -767,6 +765,9 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
       output.x = &x[0];
       error = dll_GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, cur_numcols, (double*)output.x);
       wrap_assert(!error, "Failed to get variable values.");
+      if ( !options->flag_all_solutions && solcbfn) {
+        solcbfn(output, cbui.ppp);
+      }
    }
    output.bestBound = 1e308;
    error = dll_GRBgetdblattr(model, GRB_DBL_ATTR_OBJBOUNDC, &output.bestBound);

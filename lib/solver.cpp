@@ -586,7 +586,6 @@ SolverInstance::Status MznSolver::solve()
   SolverInstance::Status status = getSI()->solve();
   GCLock lock;
   if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
-    getSI()->printSolution();             // What if it's already printed?  TODO
     if ( !getSI()->getSolns2Out()->fStatusPrinted )
       getSI()->getSolns2Out()->evalStatus( status );
   }

@@ -137,7 +137,6 @@ class MIP_wrapper {
       MIP_wrapper* wrapper = 0;
       MIP_wrapper::Output* pOutput=0;
       MIP_wrapper::Output* pCutOutput=0;
-      bool fVerb = false;              // used in Gurobi
       void *ppp=0;  // external info. Intended to keep MIP_solverinstance
       SolCallbackFn solcbfn=0;
       CutCallbackFn cutcbfn=0;
@@ -145,6 +144,8 @@ class MIP_wrapper {
       /// See MaskConstrType_..
       /// Solvers need to know this
       int cutMask = 0; // can be any combination of User/Lazy
+      bool fVerb = false;              // used in Gurobi
+      bool printed = false;            // whether any solution was output
     };
     CBUserInfo cbui;
 
