@@ -291,8 +291,7 @@ namespace MiniZinc {
   private:
     EnvI* e;
   public:
-    Env(void);
-    Env(Model* m);
+    Env(Model* m=NULL, std::ostream& stdout = std::cout, std::ostream& stderr = std::cerr);
     ~Env(void);
     
     Model* model(void);

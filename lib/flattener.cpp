@@ -409,7 +409,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     std::stringstream errstream;
 
     Model* m;
-    pEnv.reset(new Env());
+    pEnv.reset(new Env(NULL,os,log));
     Env* env = getEnv();
 
     if (!flag_compile_solution_check_model && !flag_solution_check_model.empty()) {

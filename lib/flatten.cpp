@@ -433,10 +433,12 @@ namespace MiniZinc {
 
 #define MZN_FILL_REIFY_MAP(T,ID) reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.T.ID,constants().ids.T ## reif.ID));
 
-  EnvI::EnvI(Model* model0) :
+  EnvI::EnvI(Model* model0, std::ostream& stdout0, std::ostream& stderr0) :
     model(model0),
     orig_model(NULL),
     output(new Model),
+    stdout(stdout0),
+    stderr(stderr0),
     current_pass_no(0),
     final_pass_no(1),
     maxPathDepth(0),
@@ -832,8 +834,7 @@ namespace MiniZinc {
   FlatteningError::FlatteningError(EnvI& env, const Location& loc, const std::string& msg)
   : LocationException(env,loc,msg) {}
   
-  Env::Env(void) : e(new EnvI(NULL)) {}
-  Env::Env(Model* m) : e(new EnvI(m)) {}
+  Env::Env(Model* m, std::ostream& stdout, std::ostream& stderr) : e(new EnvI(m,stdout,stderr)) {}
   Env::~Env(void) {
     delete e;
   }

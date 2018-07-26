@@ -70,6 +70,9 @@ namespace MiniZinc {
     Model* output;
     VarOccurrences vo;
     VarOccurrences output_vo;
+    
+    std::ostream& stdout;
+    std::ostream& stderr;
 
     // The current pass number (used for unifying and disabling path construction in final pass)
     unsigned int current_pass_no;
@@ -128,7 +131,7 @@ namespace MiniZinc {
     ArrayEnumMap arrayEnumMap;
     std::vector<std::vector<unsigned int> > arrayEnumDecls;
   public:
-    EnvI(Model* orig0);
+    EnvI(Model* orig0, std::ostream& stdout0=std::cout, std::ostream& stderr0=std::cerr);
     ~EnvI(void);
     long long int genId(void);
     void cse_map_insert(Expression* e, const EE& ee);
