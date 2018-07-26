@@ -1,60 +1,41 @@
 .. _sec-efficient:
 
-Effective Modelling Practices in MiniZinc
-=========================================
+Prácticas de modelado efectivas en MiniZinc
+===========================================
 
-There are almost always multiple
-ways to model the same problem, some of which generate models which are
-efficient to solve, and some of which are not.
-In general it is very hard to tell a priori which models are the most
-efficient
-for solving a particular problem, and indeed it may critically depend on
-the underlying solver used, and search strategy.  In this chapter we
-concentrate
-on modelling practices that avoid inefficiency in generating models
-and generated models.
+Existen casi siempre múltiples formas de modelar el mismo problema, algunas de las cuales generan modelos que son eficientes de resolver y otros que no son.
+En general, es muy difícil determinar a priori qué modelos son los más eficientes para resolver un problema en particular, y de hecho puede depender críticamente del solver subyacente utilizado y de la estrategia de búsqueda. En este capítulo nos concentramos en las prácticas de modelado que evitan la ineficiencia en la generación de modelos y de los modelos generados.
 
-Variable Bounds
----------------
+Límites de las Variables
+------------------------
 
 .. index::
   single: variable; bound
 
-Finite domain propagation engines, which are the principle type of solver
-targeted by MiniZinc, are more effective the tighter the bounds on the
-variables involved.  They can also behave badly with problems which
-have subexpressions that take large integer values, since they may
-implicitly limit the size of integer variables.
+Los motores de propagación de dominio finito, que son el principal tipo de solución objetivo de MiniZinc, son más efectivos cuanto más estrictos sean los límites de las variables involucradas. También pueden comportarse mal con problemas que tienen subexpresiones que toman valores enteros grandes, ya que pueden limitar implícitamente el tamaño de las variables enteras.
 
-.. literalinclude:: examples/grocery.mzn
+.. literalinclude:: examples/grocery_es.mzn
   :language: minizinc
   :name: ex-grocery
-  :caption: A model with unbounded variables (:download:`grocery.mzn <examples/grocery.mzn>`).
+  :caption: Un modelo con variables no acotadas (:download:`grocery_es.mzn <examples/grocery_es.mzn>`).
 
-The grocery problem shown in :numref:`ex-grocery` finds 4 items
-whose prices in dollars add up to 7.11 and multiply up to 7.11.
-The variables are declared unbounded. Running 
+
+El problema de comestibles que se muestra en :numref:`ex-grocery`, encuentra 4 elementos cuyos precios en dólares suman 7.11 y se multiplican hasta 7.11. Las variables son declaradas no acotadas. Corriendo
 
 .. code-block:: bash
 
-  $ mzn-g12fd grocery.mzn
+  $ mzn-g12fd grocery_es.mzn
 
-yields 
+Salida:
 
 ::
 
   =====UNSATISFIABLE=====
   % grocery.fzn:11: warning: model inconsistency detected before search.
 
-This is because the 
-intermediate expressions in the multiplication
-are also :mzn:`var int` 
-and are given default bounds in the solver
-:math:`-1,000,000 \dots 1,000,000`,
-and these ranges are too small to hold the
-values that the intermediate expressions may need to take.
+Esto se debe a que las expresiones intermedias en la multiplicación también son :mzn:`var int` y tienen límites predeterminados en el solver :math:`-1,000,000 \dots 1,000,000`, y estos rangos son demasiado pequeños para contener los valores que las expresiones intermedias puede necesitar tomar.
 
-Modifying the model so that the items are declared with tight bounds
+Modificar el modelo para que las variables se declaren con límites estrechos.
 
 .. code-block:: minizinc
 
@@ -63,66 +44,54 @@ Modifying the model so that the items are declared with tight bounds
   var 1..711: item3;
   var 1..711: item4;
 
-results in a better model, since now MiniZinc can infer bounds on the
-intermediate expressions and use these rather than the default bounds.
-With this modification, executing the model gives
+da como resultado un mejor modelo, ya que ahora MiniZinc puede inferir los límites en las expresiones intermedias y usar estos en lugar de los límites predeterminados. Con esta modificación, la ejecución del modelo da
 
 ::
 
   {120,125,150,316}
   ----------
- 
-Note however that even the improved model may be too difficult for
-some solvers.
-Running 
+
+Sin embargo, tenga en cuenta que incluso el modelo mejorado puede ser demasiado difícil para algunos solucionadores.
+Corriendo
 
 .. code-block:: bash
 
-  $ mzn-g12lazy grocery.mzn
+  $ mzn-g12lazy grocery_es.mzn
 
-does not return an answer, since the solver builds a huge representation
-for the intermediate product variables.
+no devuelve una respuesta, ya que el solucionador crea una gran representación para las variables intermedias del producto.
 
-.. defblock:: Bounding variables
+.. defblock:: Variables de Delimitación
 
   .. index::
     single: variable; bound
 
-  Always try to use bounded variables in models. 
-  When using :mzn:`let`
-  declarations to introduce new variables, always try to define them 
-  with correct and tight bounds.  This will make your model more efficient,
-  and avoid the possibility of unexpected overflows.
-  One exception is when you introduce a new variable which is 
-  immediately defined as equal to an expression. Usually MiniZinc will be
-  able to infer effective bounds from the expression.
+  Siempre trate de usar variables limitadas en los modelos.
+  Al usar declaraciones :mzn:`let` para introducir nuevas variables, siempre intente definirlas con límites correctos y ajustados. Esto hará que su modelo sea más eficiente y evitará la posibilidad de desbordamientos inesperados.
+  Una excepción es cuando introduce una nueva variable que se define inmediatamente como igual a una expresión. Por lo general, MiniZinc podrá inferir límites efectivos a partir de la expresión.
 
-Unconstrained Variables
------------------------
+Variables sin restricciones
+---------------------------
 
 .. index::
   single: variable; unconstrained
 
-Sometimes when modelling it is easier to introduce more variables than
-actually required to model the problem.
+A veces, cuando se modela, es más fácil introducir más variables de las que realmente se requieren para modelar el problema.
 
-.. literalinclude:: examples/golomb.mzn
+.. literalinclude:: examples/golomb_es.mzn
   :language: minizinc
   :name: ex-unc
-  :caption: A model for Golomb rulers with unconstrained variables (:download:`golomb.mzn <examples/golomb.mzn>`).
+  :caption: Un modelo para los gobernantes de Golomb con variables sin restricciones (:download:`golomb_es.mzn <examples/golomb_es.mzn>`).
 
-Consider the model for Golomb rulers shown in :numref:`ex-unc`.
-A Golomb ruler of :mzn:`n` marks is one where the absolute differences
-between any two marks are different. 
-It creates a two dimensional array of difference variables, but 
-only uses those of the form :mzn:`diff[i,j]` where :mzn:`i > j`.
-Running the model as 
+Considere el modelo de reglas de Golomb que se muestra en :numref:`ex-unc`.
+Una regla Golomb de :mzn:`n` marcas es una donde las diferencias absolutas entre cualesquiera de dos marcas son diferentes
+Crea una matriz bidimensional de variables de diferencia, pero solo usa aquellas de la forma :mzn:`diff[i,j]` donde :mzn:`i > j`.
+Ejecutando el modelo como
 
 .. code-block:: bash
 
-  $ mzn-g12fd golomb.mzn -D "n = 4; m = 6;"
+  $ mzn-g12fd golomb_es.mzn -D "n = 4; m = 6;"
 
-results in output
+resulta en la salida
 
 ::
 
@@ -130,50 +99,43 @@ results in output
   diffs = [0, 0, 0, 0, 1, 0, 0, 0, 4, 3, 0, 0, 6, 5, 2, 0];
   ----------
 
-and everything seems fine with the model.
-But if we ask for all solutions using
+y todo parece estar bien con el modelo.
+
+Pero si requerimos todas las soluciones utilizando:
 
 .. code-block:: bash
 
-  $ mzn-g12fd -a golomb.mzn -D "n = 4; m = 6;"
+  $ mzn-g12fd -a golomb_es.mzn -D "n = 4; m = 6;"
 
-we are presented with a never ending list of the same solution!
+¡Se nos presenta una lista interminable de la misma solución!
 
-What is going on?  In order for the finite domain solver to finish
-it needs to fix all variables, including the variables :mzn:`diff[i,j]`
-where :mzn:`i <= j`, which means there are countless ways of generating a
-solution, simply by changing these variables to take arbitrary values.
+¿Qué está pasando? Para que el solucionador de dominio finito termine, debe de  corregir todas las variables, incluidas las variables :mzn:`diff [i, j]` donde :mzn:`i <= j`, lo que significa que hay innumerables formas de generar un solución, simplemente cambiando estas variables para tomar valores arbitrarios.
 
-We can avoid problems with unconstrained variables, by modifying
-the model so that they are fixed to some value. For example replacing
-the lines marked :mzn:`% (diff}` in :numref:`ex-unc`
-to 
+We can avoid problems with unconstrained variables, by modifying the model so that they are fixed to some value. For example replacing the lines marked :mzn:`%(diff}` in :numref:`ex-unc` to
+
+Podemos evitar problemas con variables no restringidas, modificando el modelo para que se fijen a algún valor. Por ejemplo en :numref:`ex-unc`, reemplazando las líneas marcadas como :mzn:`% (diff}` a
 
 .. code-block:: minizinc
 
-  constraint forall(i,j in 1..n) 
+  constraint forall(i,j in 1..n)
                    (diffs[i,j] = if (i > j) then mark[i] - mark[j]
                                  else 0 endif);
 
-ensures that the extra variables are all fixed to 0. With this change
-the solver returns just one solution.
+asegura que las variables adicionales estén todas fijadas en 0. Con este cambio, el solucionador nos devuelve solo una solución.
 
-MiniZinc will automatically remove variables which are unconstrained
-and not used in the output.  An alternate solution to the above problem is
-simply to remove the output of the :mzn:`diffs` array by changing the
-output statement to
+MiniZinc eliminará automáticamente las variables que no están restringidas y no se utilizan en la salida. Una solución alternativa al problema anterior es simplemente eliminar la salida de la matriz :mzn:`diffs` cambiando la declaración de salida a
 
 .. code-block:: minizinc
 
   output ["mark = \(mark);\n"];
 
-With this change running 
+Con este cambio funcionando
 
 .. code-block:: bash
 
-  $ mzn-g12fd -a golomb.mzn -D "n = 4; m = 6;"
+  $ mzn-g12fd -a golomb_es.mzn -D "n = 4; m = 6;"
 
-simply results in
+Simplemente se traduce en
 
 ::
 
@@ -181,7 +143,7 @@ simply results in
   ----------
   ==========
 
-illustrating the unique solution.
+Ilustrando una solución única.
 
 
 .. defblock:: Unconstrained Variables
@@ -189,111 +151,107 @@ illustrating the unique solution.
   .. index::
     single: variable; unconstrained
 
-  Models should never have unconstrained variables. Sometimes it is
-  difficult to model without unnecessary variables. 
-  If this is the case add
-  constraints to fix the unnecessary variables, 
-  so they cannot influence the
-  solving.
+  Los modelos nunca deben tener variables sin restricciones. Algunas veces es difícil modelar sin variables innecesarias. Si este es el caso, agregue restricciones para corregir las variables innecesarias, de modo que no puedan influir en la resolución.
 
 
-Effective Generators
---------------------
+
+
+Generadores efectivos
+---------------------
 
 .. index::
   single: generator
 
-Imagine we want to count the number of triangles (:math:`K_3` subgraphs)
-appearing in a graph.  Suppose the graph is defined by
-an adjacency matrix: :mzn:`adj[i,j]` is true if nodes :mzn:`i` and :mzn:`j` are
-adjacent.  We might write
+Imagine que queremos contar el número de triángulos (:math:`K_3` subgrafos) que aparecen en un grafo. Supongamos que el grafo está definido por una matriz de adyacencia: :mzn:`adj[i, j]` es verdadero si los nodos :mzn:`i` y :mzn:`j` son adyacentes.
+
+Podríamos escribir
 
 .. code-block:: minizinc
 
-  int: count = sum ([ 1 | i,j,k in NODES where i < j  /\ j < k 
+  int: count = sum ([ 1 | i,j,k in NODES where i < j  /\ j < k
                          /\ adj[i,j] /\ adj[i,k] /\ adj[j,k]]);
 
-which is certainly correct, but it examines all triples of nodes.
-If the graph is sparse we can do better by realising that some
-tests can be applied as soon as we select :mzn:`i` and :mzn:`j`.
+lo cual es ciertamente correcto, pero examina todos los triples de nodos.
+Si el gráfico es escaso, podemos hacerlo mejor al darnos cuenta de que algunas pruebas se pueden aplicar tan pronto como seleccionamos :mzn:`i` y :mzn:`j`.
 
 .. code-block:: minizinc
 
   int: count = sum( i,j in NODES where i < j /\ adj[i,j])
        (sum([1 | k in NODES where j < k /\ adj[i,k] /\ adj[j,k]]));
 
-You can use the builitin :mzn:`trace` :index:`function <trace>` to help
-determine what is happening inside generators. 
+Puedes usar builitin :mzn:`trace` :index:`function <trace>` para ayudar determinar qué está sucediendo dentro de los generadores
 
-.. defblock:: Tracing
+.. defblock:: Rastreo (Tracing)
 
-  The function :mzn:`trace(s,e)` prints the string :mzn:`s` before
-  evaluating the expression :mzn:`e` and returning its value.
-  It can be used in any context.  
+  La función :mzn:`trace(s,e)` imprime la cadena :mzn:`s` antes de evaluar la expresión :mzn:`e` y devuelve su valor.
+  Se puede usar en cualquier contexto.
 
-For example, we can see how many times the test is performed in the inner
-loop for both versions of the calculation.
+Por ejemplo, podemos ver cuántas veces se realiza la prueba en el interior bucle para ambas versiones del cálculo.
 
-.. literalinclude:: examples/count1.mzn
+.. literalinclude:: examples/count1_es.mzn
   :language: minizinc
   :lines: 8-15
 
-Produces the output:
+Produce el resultado:
 
 ::
 
   ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ----------
 
-indicating the inner loop is evaluated 64 times while
+Indicando el bucle interno se evalúa 64 veces mientras
 
-.. literalinclude:: examples/count2.mzn
+.. literalinclude:: examples/count2_es.mzn
   :language: minizinc
   :lines: 13-14
 
-Produces the output:
+Produce el resultado:
 
 ::
 
   ++++++++++++++++
   ----------
 
-indicating the inner loop is evaluated 16 times.
+Indicando el bucle interno se evalúa 16 veces.
 
-Note that you can use the dependent strings in :mzn:`trace` to
-understand what is happening during model creation.
+Tenga en cuenta que puede usar las cadenas dependientes en :mzn:`trace` para comprender lo que está sucediendo durante la creación del modelo.
 
-.. literalinclude:: examples/count3.mzn
+.. literalinclude:: examples/count3_es.mzn
   :language: minizinc
   :lines: 13-15
 
-will print out each of triangles that is found in the calculation.
-It produces the output
+
+imprimirá cada uno de los triángulos que se encuentran en el cálculo.
+
+Produce la salida:
 
 ::
 
   (1,2,3)
   ----------
 
-Redundant Constraints
----------------------
+
+
+
+Restricciones redundantes
+-------------------------
 
 .. index::
   single: constraint; redundant
 
-The form of a model will affect how well the constraint solver can solve it.
-In many cases adding constraints which are redundant, i.e. are logically
-implied by the existing model, may improve the search for
-solutions by making more information available to the solver earlier.
 
-Consider the magic series problem from :ref:`sec-complex`.
-Running this for :mzn:`n = 16` as follows:
+La forma de un modelo afectará qué tan bien puede resolverlo el solucionador de restricciones.
+En muchos casos, la adición de restricciones que son redundantes, es decir, están lógicamente implícitas en el modelo existente, puede mejorar la búsqueda de soluciones al hacer que el solucionador tenga más información antes.
+
+
+Considere el problema de la serie mágica de :ref:`sec-complex`.
+Ingresando para :mzn:`n = 16` de la siguiente manera:
 
 .. code-block:: bash
 
-  $ mzn-g12fd --all-solutions --statistics magic-series.mzn -D "n=16;"
+  $ mzn-g12fd --all-solutions --statistics magic-series_es.mzn -D "n=16;"
 
-might result in output
+puede resultar en la salida
 
 ::
 
@@ -301,248 +259,210 @@ might result in output
   ----------
   ==========
 
-and the statistics showing 174 choice points required.
+y las estadísticas muestran 174 puntos de elección requeridos.
 
-We can add redundant constraints to the model. Since each number
-in the sequence counts the number of occurrences of a number we know
-that they sum up to :mzn:`n`. Similarly we know that the sum of
-:mzn:`s[i] * i` must also add up to :mzn:`n` because the sequence is magic.
-Adding these constraints 
-gives the model in
-:numref:`ex-magic-series2`.
+Podemos agregar restricciones redundantes al modelo. Como cada número en la secuencia cuenta el número de ocurrencias de un número, sabemos que suman :mzn: `n`. Del mismo modo, sabemos que la suma de :mzn:`s[i] * i` también debe sumar hasta :mzn:`n` porque la secuencia es mágica.
 
-.. literalinclude:: examples/magic-series2.mzn
+Agregar estas restricciones dadas al modelo en :numref:`ex-magic-series2`.
+
+.. literalinclude:: examples/magic-series2_es.mzn
   :language: minizinc
   :name: ex-magic-series2
-  :caption: Model solving the magic series problem with redundant constraints (:download:`magic-series2.mzn <examples/magic-series2.mzn>`).
+  :caption: Modelo que resuelve el problema de la serie mágica con restricciones redundantes (:download:`magic-series2_es.mzn <examples/magic-series2_es.mzn>`).
 
-Running the same problem as before
+Ejecutando el mismo problema que antes
 
 .. code-block:: bash
 
-  $ mzn-g12fd --all-solutions --statistics magic-series2.mzn -D "n=16;"
+  $ mzn-g12fd --all-solutions --statistics magic-series2_es.mzn -D "n=16;"
 
-results in the same output, but with statistics showing just 13 choicepoints
-explored. The redundant constraints have allowed the solver to prune the
-search much earlier.
+da como salida el mismo resultado, pero con estadísticas que muestran solo 13 puntos de elección explorados. Las restricciones redundantes han permitido al solucionador podar la búsqueda mucho antes.
 
 
-Modelling Choices
------------------
+Opciones de modelado
+--------------------
 
-There are many ways to model the same problem in MiniZinc, 
-although some may be more natural than others.
-Different models may have very different efficiency of solving, and worse
-yet, different models may be better or worse for different solving backends.
-There are however some guidelines for usually producing better models:
+Hay muchas maneras de modelar el mismo problema en MiniZinc, aunque algunas pueden ser más naturales que otras.
+Los diferentes modelos pueden tener una eficacia de resolución muy diferente, y lo que es peor, diferentes modelos pueden ser mejores o peores para los diferentes backends de resolución.
+Sin embargo, hay algunas pautas para producir generalmente mejores modelos:
 
-.. defblock:: Choosing between models
+.. defblock:: Elegir entre Modelos
 
-  The better model is likely to have some of the following features
+  El mejor modelo es probable que tenga algunas de las siguientes características:
 
-  - smaller number of variables, or at least those that are not
-    functionally defined by other variables
-  - smaller domain sizes of variables
-  - more succinct, or direct, definition of the constraints of the model
-  - uses global constraints as much as possible
+  - Menor número de variables, o al menos aquellas que no están definidas funcionalmente por otras variables.
+  - Tamaños de dominio más pequeños de variables.
+  - Definición más sucinta o directa de las limitaciones del modelo.
+  - Usar restricciones globales tanto como sea posible.
 
-  In reality all this has to be tempered by how effective the search is for
-  the model.  Usually the effectiveness of search is hard to judge except by
-  experimentation.
+  En realidad, todo esto tiene que ser atenuado por cuán efectiva es la búsqueda para el modelo. Por lo general, la efectividad de la búsqueda es difícil de juzgar excepto por experimentación.
 
-Consider the problem of finding permutations of :math:`n` numbers
-from 1 to :math:`n` such that the differences between adjacent numbers
-also form a permutation of numbers 1 to :math:`n-1`.
-Note that the :mzn:`u` variables are functionally defined by
-the :mzn:`x` variables so the raw search space is :math:`n^n`.
-The obvious way to model this problem is shown in :numref:`ex-allint`.
+Considere el problema de encontrar permutaciones de :math:`n` números del 1 al :math:`n`, tal que las diferencias entre números adyacentes también forman una permutación de los números de 1 a :math:`n-1`.
+Tenga en cuenta que las variables :mzn:`u` están definidas funcionalmente por las variables :mzn:`x`, por lo que el espacio de búsqueda sin formato es :math:`n^n`.
+La forma obvia de modelar este problema se muestra en :numref:`ex-allint`.
 
-.. literalinclude:: examples/allinterval.mzn
+.. literalinclude:: examples/allinterval_es.mzn
   :language: minizinc
   :name: ex-allint
-  :caption: A natural model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval.mzn <examples/allinterval.mzn>`).
+  :caption: Un modelo natural para el problema de todas las series de intervalos ``prob007`` en CSPlib (:download:`allinterval_es.mzn <examples/allinterval_es.mzn>`).
 
-In this model the array :mzn:`x` represents the permutation of the :mzn:`n`
-numbers and the constraints are naturally represented using :mzn:`alldifferent`.
+En este modelo, la matriz :mzn:`x` representa la permutación de los números :mzn:`n` y las restricciones se representan naturalmente usando :mzn:`alldifferent`.
 
-Running the model
+Ejecutando el modelo
 
 .. code-block:: bash
 
-  $ mzn-g12fd -all-solutions --statistics allinterval.mzn -D "n=10;"
+  $ mzn-g12fd -all-solutions --statistics allinterval_es.mzn -D "n=10;"
 
-finds all solutions in 84598 choice points and 3s.
+Encuentra todas las soluciones en 84598 puntos de elección y 3s.
 
-An alternate model uses array :mzn:`y` where :mzn:`y[i]` gives the
-position of the number :mzn:`i` in the sequence.  
-We also model the positions of the differences using variables
-:mzn:`v`. :mzn:`v[i]` is the position in the sequence where the absolute difference
-:mzn:`i` occurs.  If the values of :mzn:`y[i]` and :mzn:`y[j]` differ by one 
-where :mzn:`j > i`, meaning the
-positions are adjacent, then :mzn:`v[j-i]` is constrained to be the earliest
-of these positions.
-We can add two redundant constraints to this model:
-since we know that a difference of :mzn:`n-1` must result, we know that
-the positions of 1 and :mzn:`n` must be adjacent (:mzn:`abs( y[1] - y[n] ) = 1`),
-which also tell us that the position of difference :mzn:`n-1` is
-the earlier of :mzn:`y[1]` and :mzn:`y[n]`, i.e.
-:mzn:`v[n-1] = min(y[1], y[n])`.
-With this we can model the problem
-as shown in :numref:`ex-allint2`. The output statement recreates the
-original sequence :mzn:`x` from the array of positions :mzn:`y`.
+Un modelo alternativo usa una matriz :mzn:`y`, donde :mzn:`y[i]` da la posición del número :mzn:`i` en la secuencia.
 
-.. literalinclude:: examples/allinterval2.mzn
+También modelamos las posiciones de las diferencias usando variables :mzn:`v`.
+:mzn:`v[i]` es la posición en la secuencia donde se produce la diferencia absoluta :mzn:`i`. Si los valores de :mzn:`y[i]` y :mzn:`y[j]` difieren en uno donde :mzn:`j > i`, lo que significa que las posiciones son adyacentes, entonces :mzn:`v[j-i]` es la restricción para ser el primero de estos puestos.
+
+Podemos agregar dos restricciones redundantes a este modelo: dado que sabemos que debe producirse una diferencia de :mzn:`n-1`, sabemos que las posiciones de 1 y :mzn:`n` deben ser adyacentes (:mzn:`abs(y [1] - y [n]) = 1`), que también nos dice que la posición de la diferencia :mzn:`n-1` es la anterior de :mzn:`y [1]` y :mzn:`y[n]`, es decir :mzn:`v[n-1] = min (y [1], y [n])`.
+
+Con esto podemos modelar el problema como se muestra en :numref:`ex-allint2`. La instrucción de salida recrea la secuencia original :mzn:`x` de la matriz de posiciones :mzn:`y`.
+
+.. literalinclude:: examples/allinterval2_es.mzn
   :language: minizinc
   :name: ex-allint2
-  :caption: An inverse model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval2.mzn <examples/allinterval2.mzn>`).
+  :caption: Un modelo inverso para el problema de toda la serie de intervalos ``prob007`` en CSPlib (:download:`allinterval2_es.mzn <examples/allinterval2_es.mzn>`).
 
-The inverse model has the same size as the original model, in terms of
-number of variables and domain sizes.  But the inverse model has a much more
-indirect way of modelling the relationship between the :mzn:`y` and :mzn:`v` variables
-as opposed to the relationship between :mzn:`x` and :mzn:`u` variables.
-Hence we might expect the original model to be better.
+El modelo inverso tiene el mismo tamaño que el modelo original, en términos de cantidad de variables y tamaños de dominio. Pero el modelo inverso tiene una forma mucho más indirecta de modelar la relación entre las variables :mzn:`y` y :mzn:`v` en oposición a la relación entre las variables :mzn:`x` y :mzn:`u`.
 
-The command
+Por lo tanto, podemos esperar que el modelo original sea mejor.
+
+El comando
 
 .. code-block:: bash
 
-  $ mzn-g12fd --all-solutions --statistics allinterval2.mzn -D "n=10;"
+  $ mzn-g12fd --all-solutions --statistics allinterval2_es.mzn -D "n=10;"
 
-finds all the solutions in  75536 choice points and 18s.
-Interestingly, although the model is not as succinct here, the search on the
-:mzn:`y` variables is better than searching on the :mzn:`x` variables. 
-The lack of succinctness means that even though the search requires
-less choice it is substantially slower.
+Encuentra todas las soluciones en 75536 puntos de elección y 18s.
+
+Curiosamente, aunque el modelo no es tan breve aquí, la búsqueda en las variables :mzn:`y` es mejor que buscar en las variables :mzn:`x`.
+La falta de concisión significa que, aunque la búsqueda requiere menos opciones, es mucho más lenta.
 
 .. _sec-multiple-modelling-and-channels:
 
-Multiple Modelling and Channels
--------------------------------
 
-When we have two models for the same problem it may be 
-useful to use both models together by tying the variables in the two models
-together, since each can give different information to the solver.
+Múltiples modelos y canales
+---------------------------
 
-.. literalinclude:: examples/allinterval3.mzn
+Cuando tenemos dos modelos para el mismo problema, puede ser útil utilizar ambos modelos juntos al vincular las variables en los dos modelos, ya que cada uno puede proporcionar información diferente al solucionador.
+
+.. literalinclude:: examples/allinterval3_es.mzn
   :language: minizinc
   :name: ex-allint3
-  :caption: A dual model for the all interval series problem ``prob007`` in CSPlib (:download:`allinterval3.mzn <examples/allinterval3.mzn>`).
+  :caption: Un modelo dual para el problema de toda la serie de intervalos ``prob007`` en CSPlib (:download:`allinterval3_es.mzn <examples/allinterval3_es.mzn>`).
 
-:numref:`ex-allint3` gives a dual model combining features of 
-:download:`allinterval.mzn <examples/allinterval.mzn>` and :download:`allinterval2.mzn <examples/allinterval2.mzn>`.
-The beginning of the model is taken from :download:`allinterval.mzn <examples/allinterval.mzn>`.
-We then introduce the :mzn:`y` and :mzn:`v` variables from :download:`allinterval2.mzn <examples/allinterval2.mzn>`.
-We tie the variables together using the 
-global 
-:mzn:`inverse` constraint:
-:mzn:`inverse(x,y)` holds if :mzn:`y` is the inverse function of :mzn:`x` (and vice versa),
-that is :mzn:`x[i] = j <-> y[j] = i`. A definition
-is shown in :numref:`ex-inverse`.
-The model does not include the constraints relating the 
-:mzn:`y` and :mzn:`v` variables, they are redundant (and indeed propagation
-redundant) 
-so they do not add information for a
-propagation solver. The :mzn:`alldifferent` constraints are also missing since
-they are made redundant (and propagation redundant) by the inverse
-constraints.
-The only constraints are the relationships of the :mzn:`x` and :mzn:`u` variables
-and the redundant constraints on :mzn:`y` and :mzn:`v`.
+:numref:`ex-allint3` gives a dual model combining features of :download:`allinterval_es.mzn <examples/allinterval_es.mzn>` and :download:`allinterval2_es.mzn <examples/allinterval2_es.mzn>`.
 
-.. literalinclude:: examples/inverse.mzn
+El comienzo del modelo está tomado de :download:`allinterval_es.mzn <examples/allinterval_es.mzn>`.
+
+Luego presentamos el :mzn:`y` y :mzn:`v` variables de :download:`allinterval2_es.mzn <examples/allinterval2_es.mzn>`.
+
+Vinculamos las variables utilizando la restricción global :mzn:`inverse`, :mzn:`inverse(x,y)` si mantiene :mzn:`y` es la función inversa de :mzn:`x` (y vice versa), esto es :mzn:`x[i] = j <-> y[j] = i`. Una definición se muestra en :numref:`ex-inverse`.
+
+El modelo no incluye las restricciones que relacionan las variables :mzn:`y` y :mzn:`v`, son redundantes (y de hecho la propagación es redundante) por lo que no agregan información para un solucionador de propagación.
+
+Las restricciones :mzn:`alldifferent` también faltan porque se vuelven redundantes (y la propagación es redundante) por las restricciones inversas.
+
+Las únicas restricciones son las relaciones de las variables :mzn:`x` y :mzn:`u` y las restricciones redundantes en :mzn:`y` y :mzn:`v`.
+
+
+.. literalinclude:: examples/inverse_es.mzn
   :language: minizinc
   :name: ex-inverse
-  :caption: A definition of the ``inverse`` global constraint (:download:`inverse.mzn <examples/inverse.mzn>`).
+  :caption: Una definición de la restricción global ``inverse`` (:download:`inverse_es.mzn <examples/inverse_es.mzn>`).
 
-One of the benefits of the dual model is that there is more scope for
-defining different search strategies.
-Running the dual model, 
+Uno de los beneficios del modelo dual es que hay más posibilidades para definir diferentes estrategias de búsqueda.
+
+Ejecutando el modelo dual,
 
 .. code-block:: bash
 
-  $ mzn-g12fd -all-solutions --statistics allinterval3.mzn -D "n=10;"
+  $ mzn-g12fd -all-solutions --statistics allinterval3_es.mzn -D "n=10;"
 
-which uses the search strategy of
-the inverse model, labelling the :mzn:`y` variables, 
-finds all solutions in 1714 choice points and 0.5s.
-Note that running the same model with labelling on the :mzn:`x` variables
-requires 13142 choice points and 1.5s.
+Que usa la estrategia de búsqueda del modelo inverso, etiquetando las variables :mzn:`y`, encuentra todas las soluciones en 1714 puntos de elección y 0.5s.
 
-Symmetry
+Tenga en cuenta que ejecutar el mismo modelo con etiquetado en las variables :mzn:`x` requiere 13142 puntos de elección y 1.5s.
+
+
+Simetría
 --------
 
-Symmetry is very common in constraint satisfaction and optimisation problems. To illustrate this, let us look again at the n-queens problem from :numref:`ex-queens`. The top left chess board in :numref:`fig-queens-sym` shows a solution to the 8-queens problems (labeled "original"). The remaining chess boards show seven symmetric variants of the same solution: rotated by 90, 180 and 270 degrees, and flipped vertically.
+La simetría es muy común en problemas de satisfacción y optimización de restricciones. Para ilustrar esto, veamos nuevamente el problema n-queens en :numref:`ex-queens`. El tablero de ajedrez superior izquierdo en :numref:`fig-queens-sym` muestra una solución a los problemas de 8 reinas (etiquetada como original). Los tableros de ajedrez restantes muestran siete variantes simétricas de la misma solución: rotados por 90, 180 y 270 grados, y volteados verticalmente.
 
 .. _fig-queens-sym:
 
-.. figure:: figures/queens_symm.*
-  
-  Symmetric variants of an 8-queens solution
+.. figure:: figures/queens_symm_es.*
 
+  Variantes simétricas de una solución de 8 reinas.
 
-If we wanted to enumerate *all* solutions to the 8-queens problem, we could obviously save the solver some work by only enumerating *non-symmetric* solutions, and then generating the symmetric variants ourselves. This is one reason why we want to get rid of symmetry in constraint models. The other, much more important reason, is that the solver may also **explore symmetric variants of non-solution states!**
+Si quisiéramos enumerar *todas* las soluciones del problema de las 8 reinas, obviamente podríamos ahorrarle algo de trabajo al solucionador enumerando solo las soluciones *no simétricas* y luego generando las variantes simétricas nosotros mismos. Esta es una de las razones por las que queremos deshacernos de la simetría en los modelos de restricción. La otra razón, mucho más importante, es que el solucionador también puede **explorar variantes simétricas de estados sin solución**.
 
-For example, a typical constraint solver may try to place the queen in column 1 into row 1 (which is fine), and then try to put the column 2 queen into row 3, which, at first sight, does not violate any of the constraints. However, this configuration cannot be completed to a full solution (which the solver finds out after a little search). :numref:`fig-queens-sym-unsat` shows this configuration on the top left chess board. Now nothing prevents the solver from trying, e.g., the second configuration from the left in the bottom row of :numref:`fig-queens-sym-unsat`, where the queen in column 1 is still in row 1, and the queen in column 3 is placed in row 2. Therefore, even when only searching for a single solution, the solver may explore many symmetric states that it has already seen and proven unsatisfiable before!
+Por ejemplo, un solucionador de restricciones típico puede tratar de colocar a la reina en la columna 1 en la fila 1 (lo cual está bien), y luego tratar de poner la reina en la columna 2 y en la fila 3, que, a primera vista, no viola ninguno de los restricciones Sin embargo, esta configuración no se puede completar con una solución completa (que el solucionador descubre después de una pequeña búsqueda). :numref:`fig-queens-sym-unsat` muestra esta configuración en el tablero de ajedrez superior izquierdo. Ahora nada impide que el solucionador intente, por ejemplo, la segunda configuración desde la izquierda en la fila inferior de :numref:`fig-queens-sym-unsat`, donde la reina en la columna 1 todavía está en la fila 1, y la reina en la columna 3 se coloca en la fila 2. Por lo tanto, incluso cuando solo se busca una solución única, el solucionador puede explorar muchos estados simétricos que ya ha visto y probado como insatisfactorios.
 
 .. _fig-queens-sym-unsat:
 
 .. figure:: figures/queens_symm_unsat.*
-  
+
   Symmetric variants of an 8-queens unsatisfiable partial assignment
 
-Static Symmetry Breaking
-~~~~~~~~~~~~~~~~~~~~~~~~
 
-The modelling technique for dealing with symmetry is called *symmetry breaking*, and in its simplest form, involves adding constraints to the model that rule out all symmetric variants of a (partial) assignment to the variables except one. These constraints are called *static symmetry breaking constraints*.
+Rompiendo la simetría estática
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The basic idea behind symmetry breaking is to impose an *order*. For example, to rule out any vertical flips of the chess board, we could simply add the constraint that the queen in the first column must be in the top half of the board:
+La técnica de modelado para tratar con simetría se llama *ruptura de simetría*, y en su forma más simple, implica agregar restricciones al modelo que descarta todas las variantes simétricas de una asignación (parcial) a las variables excepto a uno. Estas restricciones se llaman *restricciones de ruptura de simetría estática*.
+
+La idea básica detrás de la ruptura de simetría es imponer un *orden*. Por ejemplo, para descartar cualquier giro vertical del tablero de ajedrez, simplemente podríamos agregar la restricción de que la dama en la primera columna debe estar en la mitad superior del tablero:
 
 .. code-block:: minizinc
 
   constraint q[1] <= n div 2;
 
-Convince yourself that this would remove exactly half of the symmetric variants in :numref:`fig-queens-sym`. In order to remove *all* symmetry, we need to work a bit harder.
+Convencete de que esto eliminaría exactamente la mitad de las variantes simétricas en :numref:`fig-queens-sym`. Para eliminar *toda* la simetría, tenemos que trabajar un poco más duro.
 
-Whenever we can express all symmetries as permutations of the array of variables, a set of *lexicographic ordering constraints* can be used to break all symmetry. For example, if the array of variables is called :mzn:`x`, and reversing the array is a symmetry of the problem, then the following constraint will break that symmetry:
+Siempre que podamos expresar todas las simetrías como permutaciones de la matriz de variables, se puede usar un conjunto de *restricciones de ordenamiento lexicográfico* para romper toda la simetría. Por ejemplo, si la matriz de variables se llama :mzn:`x`, e invertir la matriz es una simetría del problema, la siguiente restricción romperá esa simetría:
 
 .. code-block:: minizinc
 
   constraint lex_lesseq(x, reverse(x));
 
-How about two-dimensional arrays? Lexicographic ordering works just the same, we only have to coerce the arrays into one dimension. For example, the following breaks the symmetry of flipping the array along one of the diagonals (note the swapped indices in the second comprehension):
+¿Qué hay de arreglos bidimensionales? El orden lexicográfico funciona de la misma manera, solo tenemos que forzar las matrices en una dimensión. Por ejemplo, lo siguiente rompe la simetría de voltear el conjunto a lo largo de una de las diagonales (observe los índices intercambiados en la segunda comprensión):
 
 .. code-block:: minizinc
 
   array[1..n,1..n] of var int: x;
   constraint lex_lesseq([ x[i,j] | i,j in 1..n ], [ x[j,i] | i,j in 1..n ]);
 
-The great thing about using lexicographic ordering constraints is that we can add multiple ones (to break several symmetries simultaneously), without them interfering with each other, as long as we keep the order in the first argument the same.
+Lo mejor del uso de restricciones de ordenamiento lexicográfico es que podemos agregar múltiples (para romper varias simetrías simultáneamente), sin que interfieran entre sí, siempre que mantengamos el mismo orden en el primer argumento.
 
-For the n-queens problem, unfortunately this technique does not immediately apply, because some of its symmetries cannot be described as permutations of the :mzn:`q` array. The trick to overcome this is to express the n-queens problem in terms of Boolean variables that model, for each field of the board, whether it contains a queen or not. Now all the symmetries can be modeled as permutations of this array. Since the main constraints of the n-queens problem are much easier to express with the integer :mzn:`q` array, we simply use both models together and add channeling constraints between them, as explained in :ref:`sec-multiple-modelling-and-channels`.
+Para el problema de n-queens, lamentablemente esta técnica no se aplica de inmediato, porque algunas de sus simetrías no se pueden describir como permutaciones de la matriz :mzn:`q`. El truco para superar esto es expresar el problema de n-queens en términos de variables booleanas que modelan, para cada campo del tablero, si contiene una reina o no.
 
-The full model, with added Boolean variables, channeling constraints and symmetry breaking constraints is shown in :numref:`ex-queens-sym`. We can conduct a little experiment to check whether it successfully breaks all the symmetry. Try running the model with increasing values for :mzn:`n`, e.g. from 1 to 10, counting the number of solutions (e.g., by using the ``-s`` flag with the Gecode solver, or selecting "Print all solutions" as well as "Statistics for solving" in the IDE). You should get the following sequence of numbers of solutions: 1, 0, 0, 1, 2, 1, 6, 12, 46, 92. To verify the sequence, you can search for it in the *On-Line Encyclopedia of Integer Sequences* (http://oeis.org).
+Ahora todas las simetrías se pueden modelar como permutaciones de esta matriz. Dado que las principales restricciones del problema n-queens son mucho más fáciles de expresar con una matriz entera mzn:`q`, simplemente usamos ambos modelos juntos y agregamos restricciones de canal entre ellos, como se explica en :ref:`sec-multiple-modelling-and-channels`.
 
-.. literalinclude:: examples/nqueens_sym.mzn
+El modelo completo, con variables booleanas añadidas, restricciones de canalización y restricciones de ruptura de simetría se muestra en :numref:`ex-queens-sym`. Podemos realizar un pequeño experimento para verificar si rompe con éxito toda la simetría. Intente ejecutar el modelo con valores crecientes para :mzn:`n`. Ejemplo, desde 1 a 10, contando el número de soluciones (por ejemplo, utilizando el indicador ``-s`` con el solucionador Gecode, o seleccionando "Imprimir todas las soluciones", así como también "Estadísticas para resolver" en el IDE). Debe obtener la siguiente secuencia de números de soluciones: 1, 0, 0, 1, 2, 1, 6, 12, 46, 92. Para verificar la secuencia, puede buscarla en la *Enciclopedia en línea de Secuencias Enteras* (http://oeis.org).
+
+.. literalinclude:: examples/nqueens_sym_es.mzn
   :language: minizinc
   :name: ex-queens-sym
-  :start-after: % Alternative
-  :end-before: % search
-  :caption: Partial model for n-queens with symmetry breaking (full model: :download:`nqueens_sym.mzn <examples/nqueens_sym.mzn>`).
+  :start-after: % Modelo booleano alternativo:
+  :end-before: % Búsqueda.
+  :caption: Modelo parcial para n-reinas con ruptura de simetría (full model: :download:`nqueens_sym_es.mzn <examples/nqueens_sym_es.mzn>`).
 
 
-Other Examples of Symmetry
+Otros ejemplos de simetría
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Many other problems have inherent symmetries, and breaking these can often make a significant difference in solving performance. Here is a list of some common cases:
+Muchos otros problemas tienen simetrías inherentes, y romperlos a menudo puede hacer una diferencia significativa en la resolución del rendimiento. Aquí hay una lista de algunos casos comunes:
 
-- Bin packing: when trying to pack items into bins, any two bins that have 
-  the same capacity are symmetric.
-- Graph colouring: When trying to assign colours to nodes in a graph such 
-  that adjacent nodes must have different colours, we typically model 
-  colours as integer numbers. However, any permutation of colours is again a 
-  valid graph colouring.
-- Vehicle routing: if the task is to assign customers to certain vehicles, 
-  any two vehicles with the same capacity may be symmetric (this is similar 
-  to the bin packing example).
-- Rostering/time tabling: two staff members with the same skill set may be 
-  interchangeable, just like two rooms with the same capacity or technical 
-  equipment.
+- Embalaje del contenedor (Bin packing) : Cuando se intenta empacar elementos en contenedores, los dos contenedores que tienen la misma capacidad son simétricos.
+- Coloreado de gráficos (Graph colouring) : Cuando intentamos asignar colores a nodos en un grafo de manera que los nodos adyacentes deben tener diferentes colores. Generalmente modelamos los colores como números enteros. Sin embargo, cualquier permutación de colores es nuevamente un grafo de coloración válida.
+
+- Enrutamiento de vehículos (Vehicle routing) : Si la tarea es asignar clientes a ciertos vehículos, dos vehículos con la misma capacidad pueden ser simétricos (esto es similar al ejemplo de empaque de contenedores).
+
+- Nómina/Lista de horarios (Rostering/time tabling): Dos miembros del personal con el mismo conjunto de habilidades pueden ser intercambiables, al igual que dos salas con la misma capacidad o equipamiento técnico.

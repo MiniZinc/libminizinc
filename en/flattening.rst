@@ -16,9 +16,9 @@ where :math:`c_i` are primitive constraints and :math:`z` is an integer or float
 expression in a restricted form.
 
 .. index::
-  single: mzn2fzn
+  single: minizinc -c
 
-The tool ``mzn2fzn``
+The ``minizinc`` tool includes the MiniZinc *compiler*, which
 takes a MiniZinc model and data files and creates
 a flattened FlatZinc model which is equivalent to the MiniZinc model with
 the given data, and that appears in the restricted form discussed above.  
@@ -29,7 +29,7 @@ its data ``data.dzn`` as follows:
 
 .. code-block:: bash
 
-  mzn2fzn model.mzn data.dzn
+  minizinc -c model.mzn data.dzn
 
 which creates a FlatZinc model called ``model.fzn``.
 
@@ -243,7 +243,7 @@ example of :numref:`ex-prod-planning`.
                                        (capacity[r] div consumption[p,r]));
 
 Since this uses generator call syntax we can rewrite it to equivalent
-form which is processed by ``mzn2fzn``:
+form which is processed by the compiler:
 
 .. code-block:: minizinc
 
@@ -857,7 +857,7 @@ A better flattening will give
   constraint z = x * y;
   constraint x >= 1 -> (y = x - 1 /\ y + z * z < 14);
 
-Currently ``mzn2fzn`` does this by always defining the declared 
+Currently the MiniZinc compiler does this by always defining the declared 
 bounds of an
 introduced variable to be big enough for its defining equation to always 
 hold and then adding bounds constraints in the correct context for the let

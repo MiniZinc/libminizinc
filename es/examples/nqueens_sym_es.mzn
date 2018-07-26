@@ -16,7 +16,8 @@ constraint alldifferent([ q[i] - i | i in 1..n]);
 include "lex_lesseq.mzn";
 
 % Modelo booleano alternativo:
-% Mapa de cada posición i, j a un número booleano señalando si hay una reina en la posición i, j.
+% Mapa de cada posición i, j a un número booleano
+% señalando si hay una reina en la posición i, j.
 array[1..n,1..n] of var bool: qb;
 
 % Coeficiente de canalización.

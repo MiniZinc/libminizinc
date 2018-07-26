@@ -1,7 +1,7 @@
-% Un modelo MiniZinc
+% A MiniZinc model
 <model> ::= [ <item> ";" ... ]
 
-% Elementos
+% Items
 <item>  ::= <include-item>
           | <var-decl-item>
           | <enum-item>
@@ -16,35 +16,35 @@
 
 <ti-expr-and-id> ::= <ti-expr> ":" <ident>
 
-% Incluir elementos
+% Include items
 <include-item> ::= "include" <string-literal>
 
-% Elementos de declaración de variables
+% Variable declaration items
 <var-decl-item> ::= <ti-expr-and-id> <annotations> [ "=" <expr> ]
 
-% Elementos de enumeración
+% Enum items
 <enum-item>  ::= "enum" <ident> <annotations> [ "=" <enum-cases> ]
 
 <enum-cases> ::= "{" <ident> "," ... "}"
 
-% Elementos de asignación
+% Assign items
 <assign-item> ::= <ident> "=" <expr>
 
-% Elementos de restricciones
+% Constraint items
 <constraint-item> ::= "constraint" <expr>
 
-% Elemento del solver
+% Solve item
 <solve-item> ::= "solve" <annotations> "satisfy"
                | "solve" <annotations> "minimize" <expr>
                | "solve" <annotations> "maximize" <expr>
 
-% Elementos de salida
+% Output items
 <output-item> ::= "output" <expr>
 
-% Elementos de anotaciones
+% Annotation items
 <annotation-item> ::= "annotation" <ident> <params>
 
-% Predicado, prueba y elementos de funciones
+% Predicate, test and function items
 <predicate-item> ::= "predicate" <operation-item-tail>
 
 <test-item> ::= "test" <operation-item-tail>
@@ -62,17 +62,23 @@
 
 <var-par> ::= "var" | "par" | ε
 
+<base-type> ::= "bool"
+              | "int"
+              | "float"
+              | "string"
+
 <base-ti-expr-tail> ::= <ident>
-                      | "bool"
-                      | "int"
-                      | "float"
-                      | "string"
+                      | <base-type>
                       | <set-ti-expr-tail>
+                      | <ti-variable-expr-tail>
                       | <array-ti-expr-tail>
                       | "ann"
                       | "opt" <base-ti-expr-tail>
                       | { <expr> "," ... }
                       | <num-expr> ".." <num-expr>
+
+% Type-inst variables
+<ti-variable-expr-tail> ::= $[A-Za-z][A-Za-z0-9_]*
 
 % Set type-inst expressions
 <set-ti-expr-tail> ::= "set" "of" <base-type>
@@ -81,7 +87,7 @@
 <array-ti-expr-tail> ::= "array" [ <ti-expr> "," ... ] "of" <ti-expr>
                        | "list" "of" <ti-expr>
 
-% Expresiones
+% Expressions
 <expr> ::= <expr-atom> <expr-binop-tail>
 
 <expr-atom> ::= <expr-atom-head> <expr-atom-tail> <annotations>
@@ -98,11 +104,9 @@
                    | <string-literal>
                    | <set-literal>
                    | <set-comp>
-                   | <simple-array-literal>
-                   | <simple-array-literal-2d>
-                   | <indexed-array-literal>
-                   | <simple-array-comp>
-                   | <indexed-array-comp>
+                   | <array-literal>
+                   | <array-literal-2d>
+                   | <array-comp>
                    | <ann-literal>
                    | <if-then-else-expr>
                    | <let-expr>
@@ -112,7 +116,7 @@
 <expr-atom-tail> ::= ε
                    | <array-access-tail> <expr-atom-tail>
 
-% Expresiones numéricas
+% Numeric expressions
 <num-expr> ::= <num-expr-atom> <num-expr-binop-tail>
 
 <num-expr-atom> ::= <num-expr-atom-head> <expr-atom-tail> <annotations>
@@ -125,7 +129,6 @@
                        | <int-literal>
                        | <float-literal>
                        | <if-then-else-expr>
-                       | <case-expr>
                        | <let-expr>
                        | <call-expr>
                        | <gen-call-expr>
@@ -135,7 +138,8 @@
 
 <bin-op> ::= <builtin-bin-op> | ‘<ident>‘
 
-<builtin-bin-op> ::= "<->" | "->" | "<-" | "\/" | "xor" | "/\" | "<" | ">" | "<=" | ">=" | "==" | "=" | "!="
+<builtin-bin-op> ::= "<->" | "->" | "<-" | "\/" | "xor" | "/\" | "<" | ">"
+                   | "<=" | ">=" | "==" | "=" | "!="
                    | "in" | "subset" | "superset" | "union" | "diff" | "symdiff"
                    | ".." | "intersect" | "++" | <builtin-num-bin-op>
 
@@ -168,7 +172,8 @@
                    | """ <string-contents> "\(" <string-interpolate-tail>
 
 <string-interpolate-tail> ::= <expr> ")"<string-contents>"""
-                            | <expr> ")"<string-contents>"\(" <string-interpolate-tail>
+                            | <expr> ")"<string-contents>"\("
+                            <string-interpolate-tail>
 
 % Set literals
 <set-literal> ::= "{" [ <expr> "," ... ] "}"
@@ -196,7 +201,8 @@
 <ann-literal> ::= <ident> [ "(" <expr> "," ... ")" ]
 
 % If-then-else expressions
-<if-then-else-expr> ::= "if" <expr> "then" <expr> ( "elseif" <expr> "then" <expr> )* "else" <expr> "endif"
+<if-then-else-expr> ::= "if" <expr> "then" <expr>
+                   ( "elseif" <expr> "then" <expr> )* "else" <expr> "endif"
 
 % Call expressions
 <call-expr> ::= <ident-or-quoted-op> [ "(" <expr> "," ... ")" ]
@@ -223,3 +229,5 @@
 <annotations> ::= ( "::" <annotation> )*
 
 <annotation> ::= <expr-atom-head> <expr-atom-tail>
+
+%

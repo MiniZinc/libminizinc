@@ -7,4 +7,3 @@ Introducción
 
    intro
    installation
-   ide_basic_steps

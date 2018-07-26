@@ -3,8 +3,8 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-The MiniZinc Manual
-===================
+The MiniZinc Handbook
+=====================
 
 .. .. only:: builder_html
 ..
@@ -15,9 +15,10 @@ The MiniZinc Manual
    :maxdepth: 2
    :numbered: 4
 
-   part_1_introduction
+   part_1_overview
    part_2_tutorial
-   part_3_reference
+   part_3_user_manual
+   part_4_reference
 
 .. only:: builder_html
 

@@ -1,10 +1,10 @@
 .. _part-introduction:
 
-Introduction
-++++++++++++
+Overview
+++++++++
 
 .. toctree::
 
    intro
    installation
-   ide_basic_steps
+   basic_steps

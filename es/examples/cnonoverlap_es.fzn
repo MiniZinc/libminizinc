@@ -16,5 +16,5 @@ constraint float_plus(FLOAT03, y2, y1);
 constraint float_plus(FLOAT02, FLOAT04, FLOAT05);
 constraint float_times(FLOAT01, FLOAT01, FLOAT02);
 constraint float_times(FLOAT03, FLOAT03, FLOAT04);
-
+%
 solve satisfy;

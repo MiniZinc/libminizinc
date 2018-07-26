@@ -1,29 +1,28 @@
 # README #
 
-This README would normally document whatever steps are necessary to get your application up and running.
+This repository contains the MiniZinc documentation.
 
-### What is this repository for? ###
+### Building the docs ###
 
-* Quick summary
-* Version
-* [Learn Markdown](https://bitbucket.org/tutorials/markdowndemo)
+You need the following tools to build the documentation:
 
-### How do I get set up? ###
+* Python 3
+* GNU make
+* Sphinx version 1.8.0. Install it using the command
+  `pip install git+https://github.com/sphinx-doc/sphinx`
+* Sphinx Read The Docs html theme. Install it using the command
+  `pip install pip install sphinx_rtd_theme`
+* If you want to build the PDF documentation, you also need a LaTeX distribution
 
-* Summary of set up
-* Configuration
-* Dependencies
-* Database configuration
-* How to run tests
-* Deployment instructions
+To build the HTML documentation, simply run `make html`. To build the PDF, run `make latexpdf`.
 
-### Contribution guidelines ###
+### Including the MiniZinc library reference documentation ###
 
-* Writing tests
-* Code review
-* Other guidelines
+The reference documentation for the MiniZinc library can be generated automatically from the source code.
+For this to work, you need an installation of `libminizinc` (either from a binary distribution or from sources, see http://www.minizinc.org).
+Them run the following command:
 
-### Who do I talk to? ###
+``mzn2doc --rst-output --include-stdlib --output-base $MINIZINC_DOC_SOURCE_DIR/en $LIBMINIZINC_INSTALL_DIR/share/minizinc/std/globals.mzn``
 
-* Repo owner or admin
-* Other community or team contact
+Where `$MINIZINC_DOC_SOURCE_DIR` is your local copy of the MiniZinc documentation repository (the `en` directory should contain the `index.rst` file),
+and `$LIBMINIZINC_INSTALL_DIR` is the directory where MiniZinc is installed.

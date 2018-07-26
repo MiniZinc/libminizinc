@@ -2,25 +2,25 @@
 
 .. |varify| replace:: :math:`\stackrel{v}{\rightarrow}`
 
-.. |TyOverview| replace:: *Overview.*
+.. |TyOverview| replace:: *Visión general.*
 
-.. |TyInsts| replace:: *Allowed Insts.*
+.. |TyInsts| replace:: *Instancias permitidas.*
 
-.. |TySyntax| replace:: *Syntax.*
+.. |TySyntax| replace:: *Sintaxis.*
 
-.. |TyFiniteType| replace:: *Finite?*
+.. |TyFiniteType| replace:: *Finito?*
 
-.. |TyVarifiable| replace:: *Varifiable?*
+.. |TyVarifiable| replace:: *Varificable?*
 
-.. |TyOrdering| replace:: *Ordering.*
+.. |TyOrdering| replace:: *Ordenando.*
 
-.. |TyInit| replace:: *Initialisation.*
+.. |TyInit| replace:: *Inicialización.*
 
-.. |TyCoercions| replace:: *Coercions.*
+.. |TyCoercions| replace:: *Coerciones.*
 
 
 Especificación de MiniZinc
-=========================
+==========================
 
 Introducción
 ------------
@@ -58,22 +58,16 @@ Este documento tiene la siguiente estructura
 :ref:`spec-Content-types` define los tipos de contenido utilizados en esta especificación.
 
 
-This document also provides some explanation of why certain design decisions
-were made.  Such explanations are marked by the word *Rationale* and
-written in italics, and do not constitute part of the specification as such.
-*Rationale: These explanations are present because they are useful to both
-the designers and the users of MiniZinc.*
+Este documento también proporciona una explicación de por qué se tomaron ciertas decisiones de diseño. Dichas explicaciones están marcadas por la palabra *Justificación* y están escritas en cursiva, y no constituyen parte de la especificación como tal.
+*Justificación: estas explicaciones están presentes porque son útiles tanto para los diseñadores como para los usuarios de MiniZinc.*
 
-Original authors.
-~~~~~~~~~~~~~~~~~
 
-The original version of this document was prepared by
-Nicholas Nethercote, Kim Marriott, Reza Rafeh, Mark Wallace
-and Maria Garcia de la Banda.
-MiniZinc is evolving, however, and so is this document.
+Autores originales
+~~~~~~~~~~~~~~~~~~
 
-For a formally published paper on the MiniZinc language
-and the superset Zinc language, please see:
+La versión original de este documento fue preparada por Nicholas Nethercote, Kim Marriott, Reza Rafeh, Mark Wallace y Maria Garcia de la Banda. Sin embargo, MiniZinc está evolucionando, al igual que este documento.
+
+Para ver un documento publicado formalmente sobre el lenguaje MiniZinc y el lenguaje Zinc superconjunto, consulte:
 
 - N. Nethercote, P.J. Stuckey, R. Becket, S. Brand, G.J. Duck, and G. Tack.
   Minizinc: Towards a standard CP modelling language.
@@ -87,251 +81,214 @@ and the superset Zinc language, please see:
 
 .. _spec-syntax-notation:
 
-Notation
+
+
+Notación
 --------
 
-The basics of the EBNF used in this specification are as follows.
+Los conceptos básicos del EBNF utilizados en esta especificación son los siguientes.
 
-- Non-terminals are written between angle brackets, :mzndef:`<item>`.
-- Terminals are written in double quotes, e.g. :mzndef:`"constraint"`.
-  A double quote terminal is written as a sequence of three double quotes: :mzndef:`"""`.
-- Optional items are written in square brackets,
-  e.g. :mzndef:`[ "var" ]`.
-- Sequences of zero or more items are written with parentheses and a
-  star, e.g. :mzndef:`( "," <ident> )*`.
-- Sequences of one or more items are written with parentheses and a
-  plus, e.g. :mzndef:`( <msg> )+`.
-- Non-empty lists are written with an item, a separator/terminator
-  terminal, and three dots.  For example, this:
+- Los no terminales se escriben entre corchetes angulares, :mzndef:`<item>`.
+- Las terminales están escritas entre comillas dobles. Por ejemplo, :mzndef:`"constraint"`. Una terminal de doble cita se escribe como una secuencia de tres comillas dobles :mzndef:`"""`.
+- Los elementos opcionales están escritos entre corchetes, por ejemplo, :mzndef:`[ "var" ]`.
+- Las secuencias de cero o más elementos se escriben con paréntesis y una estrella, por ejemplo :mzndef:`( "," <ident> )*`.
+- Las secuencias de uno o más elementos se escriben con paréntesis y un signo más (+), por ejemplo :mzndef:`( <msg> )+`.
+- Las listas no vacías se escriben con un elemento, un terminal separador/terminador, y tres puntos.  Por ejemplo:
 
-  .. code-block:: minizincdef
+.. code-block:: minizincdef
 
     <expr> "," ...
 
-  is short for this:
+Es la abreviatura de:
 
-  .. code-block:: minizincdef
+.. code-block:: minizincdef
 
     <expr> ( "," <expr> )* [ "," ]
 
-  The final terminal is always optional in non-empty lists.
-- Regular expressions are used in some
-  productions, e.g. :mzndef:`[-+]?[0-9]+`.
 
-MiniZinc's grammar is presented piece-by-piece throughout this document.  It is
-also available as a whole in :ref:`spec-Grammar`.
-The output grammar also includes some details of the use of whitespace.
-The following conventions are used:
+El terminal final siempre es opcional en listas no vacías.
 
-- A newline character or CRLF sequence is written ``\n``.
+- Las expresiones regulares se usan en algunas producciones. Por ejemplo, :mzndef:`[-+]?[0-9]+`.
+
+La gramática de MiniZinc se presenta pieza por pieza a lo largo de este documento. También está disponible como un todo en :ref:`spec-Grammar`.
+
+La gramática de salida también incluye algunos detalles del uso del espacio en blanco.
+Se usan las siguientes convenciones:
+
+- Un carácter de nueva línea o una secuencia CRLF es escrito ``\n``.
+
 
 .. - A sequence of space characters of length :math:`n` is written ``nSP``, e.g., ``2SP``.
 
+
 .. _spec-Overview:
 
-Overview of a Model
--------------------
 
-Conceptually, a MiniZinc problem specification has two parts.
+Descripción general de un modelo
+--------------------------------
 
-1. The *model*: the main part of the problem specification, which
-   describes the structure of a particular class of problems.
-2. The *data*: the input data for the model, which specifies one
-   particular problem within this class of problems.
+Conceptualmente, una especificación de problema MiniZinc tiene dos partes.
 
-The pairing of a model with a particular data set is a *model
-instance* (sometimes abbreviated to *instance*).
+1. El *modelo*: la parte principal de la especificación del problema, que describe la estructura de una clase particular de problemas.
+2. Los *datos*: los datos de entrada para el modelo, que especifica un problema particular dentro de esta clase de problemas.
 
-The model and data may be separated, or the data
-may be "hard-wired" into the model.
-:ref:`spec-Model-Instance-Files` specifies how the model and data can be
-structured within files in a model instance.
+El emparejamiento de un modelo con un conjunto de datos particular es una *instancia de modelo* (a veces abreviado como *instancia*).
 
-There are two broad classes of problems: satisfaction and optimisation.
-In satisfaction problems all solutions are considered equally good,
-whereas in optimisation problems the solutions are
-ordered according to an objective and
-the aim is to find a solution whose objective is optimal.
-:ref:`spec-Solve-Items` specifies how the class of problem is chosen.
+El modelo y los datos pueden estar separados, o los datos pueden estar "cableados" en el modelo.
+:ref:`spec-Model-Instance-Files` especifica cómo el modelo y los datos se pueden estructurar dentro de archivos en una instancia modelo.
 
-Evaluation Phases
-~~~~~~~~~~~~~~~~~
+Hay dos clases amplias de problemas: satisfacción y optimización.
+En los problemas de satisfacción, todas las soluciones se consideran igualmente buenas, mientras que en los problemas de optimización las soluciones se ordenan según un objetivo y el objetivo es encontrar una solución cuyo objetivo sea óptimo.
+:ref:`spec-Solve-Items` especifica cómo se elige la clase de problema.
 
-A MiniZinc model instance is evaluated in two distinct phases.
 
-1. Instance-time: static checking of the model instance.
-2. Run-time: evaluation of the instance (i.e., constraint solving).
+Fases de evaluación
+~~~~~~~~~~~~~~~~~~~
 
-The model instance may not compile due to a problem with the model and/or data,
-detected at instance-time.
-This could be caused by a syntax error, a type-inst error,
-the use of an unsupported feature or operation, etc.
-In this case the outcome of evaluation is a static error;
-this must be reported prior to run-time.
-The form of output for static errors is implementation-dependent,
-although such output should be easily recognisable as a static error.
+Una instancia de modelo MiniZinc se evalúa en dos fases distintas.
 
-An implementation may produce warnings during all evaluation phases.
-For example, an implementation may be able to determine that
-unsatisfiable constraints exist prior to run-time,
-and the resulting warning given to the user may be more helpful than
-if the unsatisfiability is detected at run-time.
+1. Tiempo de instancia: Comprobación estática de la instancia del modelo.
+2. Tiempo de ejecución: Evaluación de la instancia (ejemplo, resolución de restricciones).
 
-An implementation must produce a warning
-if the objective for an optimisation problem is unbounded.
+Es posible que la instancia del modelo no se compile debido a un problema con el modelo y/o los datos que se detectaron en el momento de la instancia.
+Esto podría deberse a un error de sintaxis, a un error de
+instanciación de tipo, al uso de una función u operación no admitida, etc.
+En este caso, el resultado de la evaluación es un error estático, esto se debe informar antes del tiempo de ejecución.
+La forma de salida para los errores estáticos depende de la implementación, aunque dicha salida debería ser fácilmente reconocible como un error estático.
+
+Una implementación puede producir advertencias durante todas las fases de evaluación.
+Por ejemplo, una implementación puede ser capaz de determinar que existen restricciones insatisfactorias antes del tiempo de ejecución, y la advertencia resultante dada al usuario puede ser más útil que si se detecta la insatisfacción en el tiempo de ejecución.
+
+Una implementación debe producir una advertencia si el objetivo para un problema de optimización no tiene límites.
 
 
 .. _spec-run-time-outcomes:
 
-Run-time Outcomes
-~~~~~~~~~~~~~~~~~
+Resultados en tiempo de ejecución
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Assuming there are no static errors,
-the output from the run-time phase has the following abstract form:
+Suponiendo que no hay errores estáticos, el resultado de la fase de tiempo de ejecución tiene la siguiente forma abstracta:
 
 .. literalinclude:: output.mzn
   :language: minizincdef
   :start-after: % Output
   :end-before: %
 
-If a solution occurs in the output
-then it must be feasible.
-For optimisation problems,
-each solution must be strictly better than any preceding solution.
+Si se produce una solución en la salida, entonces debe ser factible.
+Para problemas de optimización, cada solución debe ser estrictamente mejor que cualquier solución anterior.
 
-If there are no solutions in the output,
-the outcome must indicate that there are no solutions.
+Si no hay soluciones en el resultado, el resultado debe indicar que no hay soluciones.
 
-If the search is complete the output may state this after the solutions.
-The absence of the completness message indicates that the search is incomplete.
+Si la búsqueda está completa, la salida puede indicar esto después de las soluciones.
+La ausencia del mensaje de completitud indica que la búsqueda está incompleta.
 
-Any warnings produced during run-time must be summarised
-after the statement of completeness.
-In particular, if there were any warnings at all during run-time
-then the summary must indicate this fact.
+Cualquier advertencia producida durante el tiempo de ejecución se debe resumir después de la declaración de integridad.
+En particular, si hubo advertencias durante el tiempo de ejecución, entonces el resumen debe indicar este hecho.
 
-The implementation may produce text in any format after the warnings.
-For example, it may print
-a summary of benchmarking statistics or resources used.
+La implementación puede producir texto en cualquier formato después de las advertencias.
+Por ejemplo, puede imprimir un resumen de estadísticas de benchmarking o recursos utilizados.
 
 .. _spec-output:
 
-Output
+
+
+
+Salida
 ~~~~~~
 
-Implementations must be capable of producing output of content type
-``application/x-zinc-output``,
-which is described below and also in :ref:`spec-Content-types`.
-Implementations may also produce output in alternative formats.
-Any output should conform to
-the abstract format from the previous section
-and must have the semantics described there.
+Las implementaciones deben ser capaces de producir resultados de tipo de contenido ``application/x-zinc-output``, que se describe a continuación y también en :ref:`spec-Content-types`.
+Las implementaciones también pueden producir resultados en formatos alternativos.
+Cualquier salida debe ajustarse al formato abstracto de la sección anterior y debe tener la semántica descrita allí.
 
-Content type ``application/x-zinc-output`` extends
-the syntax from the previous section as follows:
+Tipo de contenido ``application/x-zinc-output`` extiende la sintaxis de la sección anterior de la siguiente manera:
 
 .. literalinclude:: output.mzn
   :language: minizincdef
   :start-after: % Solutions
   :end-before: %
 
-The solution text for each solution must be
-as described in :ref:`spec-Output-Items`.
-A newline must be appended if the solution text does not end with a newline.
-*Rationale: This allows solutions to be extracted from output
-without necessarily knowing how the solutions are formatted.*
-Solutions end with a sequence of ten dashes followed by a newline.
+El texto de la solución para cada solución debe ser como se describe en :ref:`spec-Output-Items`.
+Se debe agregar una nueva línea si el texto de la solución no finaliza con una nueva línea.
+*Justificación: Esto permite que las soluciones se extraigan de la salida sin saber necesariamente cómo se formatean las soluciones.*
+Las soluciones terminan con una secuencia de diez guiones seguidos de una nueva línea.
 
 .. literalinclude:: output.mzn
   :language: minizincdef
   :start-after: % Unsatisfiable
   :end-before: %
 
-The completness result is printed on a separate line.
-*Rationale: The strings are designed to clearly indicate
-the end of the solutions.*
+El resultado de integridad se imprime en una línea separada. *Justificación: las cadenas están diseñadas para indicar claramente el final de las soluciones.*
 
 .. literalinclude:: output.mzn
   :language: minizincdef
   :start-after: % Complete
   :end-before: %
 
-If the search is complete, a statement corresponding to the outcome is printed.
-For an outcome of no solutions
-the statement is that the model instance is unsatisfiable,
-for an outcome of no more solutions
-the statement is that the solution set is complete,
-and for an outcome of no better solutions
-the statement is that the last solution is optimal.
-*Rationale: These are the logical implications of a search being complete.*
+Si la búsqueda está completa, se imprime una declaración correspondiente al resultado.
+Para un resultado sin soluciones, el enunciado es que la instancia del modelo no es satisfactoria. Para el resultado de no más soluciones, la declaración es que el conjunto de soluciones está completo. Finalmente, para un resultado sin mejores soluciones, la afirmación es que la última solución es óptima .
+*Justificación: estas son las implicaciones lógicas de una búsqueda completa.*
 
 .. literalinclude:: output.mzn
   :language: minizincdef
   :start-after: % Messages
   :end-before: %
 
-If the search is incomplete,
-one or more messages describing reasons for incompleteness may be printed.
-Likewise, if any warnings occurred during search
-they are repeated after the completeness message.
-Both kinds of message should have lines that start with ``%``
-so they are recognized as comments by post-processing.
-*Rationale: This allows individual messages to be easily recognised.*
+Si la búsqueda es incompleta, se pueden imprimir uno o más mensajes que describen los motivos de la falta de cumplimiento.
+Del mismo modo, si se produjeron advertencias durante la búsqueda, se repiten después del mensaje de integridad.
+Ambos tipos de mensajes deben tener líneas que comiencen con ``%`` para que se reconozcan como comentarios por postprocesamiento.
+*Justificación: Esto permite que los mensajes individuales sean fácilmente reconocibles.*
 
-For example, the following may be output for an optimisation problem:
+Por ejemplo, se puede generar lo siguiente para un problema de optimización:
 
 .. code-block:: bash
 
-    =====UNSATISFIABLE=====
-    % trentin.fzn:4: warning: model inconsistency detected before search.
+  =====UNSATISFIABLE=====
+  % trentin.fzn:4: warning: model inconsistency detected before search.
 
-Note that, as in this case,
-an unbounded objective is not regarded as a source of incompleteness.
+Tenga en cuenta que, como en este caso, un objetivo ilimitado no se considera una fuente de incompletud.
 
 .. _spec-syntax-overview:
 
-Syntax Overview
----------------
 
-Character Set
-~~~~~~~~~~~~~
+Descripción general de la sintaxis
+----------------------------------
 
-The input files to MiniZinc must be encoded as UTF-8.
+Conjunto de caracteres
+~~~~~~~~~~~~~~~~~~~~~~
 
-MiniZinc is case sensitive.  There are no places where upper-case or
-lower-case letters must be used.
+Los archivos de entrada a MiniZinc deben codificarse como UTF-8.
 
-MiniZinc has no layout restrictions, i.e., any single piece of whitespace
-(containing spaces, tabs and newlines) is equivalent to any other.
+MiniZinc es sensible a mayúsculas y minúsculas. No hay lugares donde se deben usar letras mayúsculas o minúsculas.
+
+MiniZinc no tiene restricciones de diseño, es decir, cualquier espacio en blanco (que contiene espacios, pestañas y líneas nuevas) es equivalente a cualquier otro.
 
 
-Comments
-~~~~~~~~
+Comentarios
+~~~~~~~~~~~
 
-A ``%`` indicates that the rest of the line is a comment.  MiniZinc
-also has block comments, using symbols ``/*`` and ``*/``
-to mark the beginning and end of a comment.
+Un ``%`` indica que el resto de la línea es un comentario.  MiniZinc también tiene comentarios de bloque, usando los símbolos ``/*`` and ``*/`` para marcar el comienzo y el final de un comentario.
+
 
 .. _spec-identifiers:
 
-Identifiers
-~~~~~~~~~~~
 
-Identifiers have the following syntax:
+Identificadores
+~~~~~~~~~~~~~~~
+
+Los identificadores tienen la siguiente sintaxis:
 
 .. code-block:: minizincdef
 
-  <ident> ::= [A-Za-z][A-Za-z0-9_]*       % excluding keywords
+  <ident> ::= [A-Za-z][A-Za-z0-9_]*       % excluyendo las palabras clave
             | "'" [^'\xa\xd\x0]* "'"
 
 .. code-block:: minizinc
 
-  my_name_2
-  MyName2
-  'An arbitrary identifier'
+  mi_nombre_2
+  MiNombre2
+  'Un identificador arbitrario'
 
-A number of keywords are reserved and cannot be used as identifiers.  The
-keywords are:
+Se reservan varias palabras clave y no se pueden usar como identificadores. Las palabras clave son:
 :mzn:`ann`,
 :mzn:`annotation`,
 :mzn:`any`,
@@ -361,6 +318,7 @@ keywords are:
 :mzn:`not`,
 :mzn:`of`,
 :mzn:`op`,
+:mzn:`opt`,
 :mzn:`output`,
 :mzn:`par`,
 :mzn:`predicate`,
@@ -382,357 +340,272 @@ keywords are:
 :mzn:`where`,
 :mzn:`xor`.
 
-A number of identifiers are used for built-ins;  see :ref:`spec-builtins`
-for details.
+Una serie de identificadores se utilizan para integradas; ver :ref:`spec-builtins` para más detalles.
 
 .. _spec-High-level-Model-Structure:
 
-High-level Model Structure
---------------------------
 
-A MiniZinc model consists of multiple *items*:
+Estructura de modelo de alto nivel
+----------------------------------
+
+Un modelo MiniZinc consta de múltiples *elementos*:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % A MiniZinc model
   :end-before: %
 
-Items can occur in any order; identifiers need not be declared before they are used. Items have the following top-level syntax:
+Los elementos pueden disponerse en cualquier orden; los identificadores no necesitan ser declarados antes de ser usados. Los elementos tienen la siguiente sintaxis de nivel superior:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Items
   :end-before: %
 
-Include items provide a way of combining multiple files into a single
-instance.  This allows a model to be split into multiple files
+Incluir elementos proporciona una forma de combinar múltiples archivos en una sola instancia. Esto permite que un modelo se divida en varios archivos
 (:ref:`spec-Include-Items`).
 
-Variable declaration items introduce new global variables and possibly
-bind them to a value (:ref:`spec-Declarations`).
+Los ítems de declaración variables introducen nuevas variables globales y posiblemente las vinculen a un valor (:ref:`spec-Declarations`).
 
-Assignment items bind values to global variables
-(:ref:`spec-Assignments`).
+Los elementos de asignación vinculan valores a variables globales (:ref:`spec-Assignments`).
 
-Constraint items describe model constraints (:ref:`spec-Constraint-Items`).
+Los elementos de restricción describen las restricciones del modelo (:ref:`spec-Constraint-Items`).
 
-Solve items are the "starting point" of a model, and specify exactly
-what kind of solution is being looked for:  plain satisfaction, or the
-minimization/maximization of an expression.  Each model must have exactly
-one solve item (:ref:`spec-Solve-Items`).
+Los elementos de resolución son el "punto de partida" de un modelo y especifican exactamente qué tipo de solución se está buscando:
+simple satisfacción, o la minimización/maximización de una expresión.  Cada modelo debe tener exactamente un elemento de solución (:ref:`spec-Solve-Items`).
 
-Output items are used for nicely presenting the result of a model
-execution (:ref:`spec-Output-Items`).
+Los elementos de salida se utilizan para presentar muy bien el resultado de una ejecución del modelo (:ref:`spec-Output-Items`).
 
-Predicate items, test items (which are just a special type of predicate)
-and function items introduce new user-defined predicates and
-functions which can be called in expressions (:ref:`spec-preds-and-fns`).
-Predicates, functions, and built-in operators are described collectively as
-*operations*.
+Elementos de predicados, elementos de prueba (que son solo un tipo especial de predicado) y los elementos de función introducen nuevos predicados y funciones definidos por el usuario que pueden invocarse en expresiones (:ref:`spec-preds-and-fns`).
+Los predicados, las funciones y los operadores incorporados se describen colectivamente como *operaciones*.
 
-Annotation items augment the :mzn:`ann` type, values of which can specify
-non-declarative and/or solver-specific information in a model.
+Los elementos de anotación aumentan el tipo :mzn:`ann`, cuyos valores pueden especificar información no declarativa y/o específica del solucionador en un modelo.
 
 .. _spec-model-instance-files:
 
-Model Instance Files
-~~~~~~~~~~~~~~~~~~~~
 
-MiniZinc models can be constructed from multiple files using
-include items (see :ref:`spec-Include-Items`).  MiniZinc has no
-module system as such;  all the included files are simply concatenated and
-processed as a whole, exactly as if they had all been part of a single file.
-*Rationale: We have not found much need for one so far.  If bigger models
-become common and the single global namespace becomes a problem, this should
-be reconsidered.*
 
-Each model may be paired with one or more data files.  Data files are more
-restricted than model files.  They may only contain variable assignments (see
-:ref:`spec-Assignments`).
 
-Data files may not include calls to user-defined operations.
+Archivos de instancias modelo
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Models do not contain the names of data files; doing so would fix the data
-file used by the model and defeat the purpose of allowing separate data
-files.  Instead, an implementation must allow one or more data files to be
-combined with a model for evaluation via a mechanism such as the
-command-line.
+Los modelos en MiniZinc se pueden construir a partir de múltiples archivos utilizando elementos incluidos (ver :ref:`spec-Include-Items`).  MiniZinc no tiene un sistema de módulos como tal; todos los archivos incluidos simplemente se concatenan y procesan como un todo, exactamente como si todos hubieran sido parte de un solo archivo.
+*Razón fundamental: No hemos encontrado mucha necesidad de uno hasta el momento.  Si los modelos más grandes se vuelven comunes y el espacio de nombres global único se convierte en un problema, esto debería reconsiderarse.*
 
-When checking a model with
-data, all global variables with fixed type-insts must be assigned, unless
-they are not used (in which case they can be removed from the model without
-effect).
+Cada modelo puede emparejarse con uno o más archivos de datos. Los archivos de datos son más restringidos que los archivos de modelo. Solo pueden contener asignaciones de variables (ver :ref:`spec-Assignments`).
 
-A data file can only be checked for static errors in conjunction with a
-model, since the model contains the declarations that include the types of
-the variables assigned in the data file.
+Los archivos de datos pueden no incluir llamadas a operaciones definidas por el usuario.
 
-A single data file may be shared between multiple models, so long as the
-definitions are compatible with all the models.
+Los modelos no contienen los nombres de los archivos de datos. Al hacerlo, se corregirá el archivo de datos utilizado por el modelo y se frustrará el propósito de permitir archivos de datos separados. En cambio, una implementación debe permitir que uno o más archivos de datos se combinen con un modelo para su evaluación a través de un mecanismo como la línea de comandos.
+
+Al verificar un modelo con datos, se deben asignar todas las variables globales con inserciones de tipo fijo, a menos que no se utilicen (en cuyo caso pueden eliminarse del modelo sin efecto).
+
+Un archivo de datos solo se puede verificar en busca de errores estáticos junto con un modelo, ya que el modelo contiene las declaraciones que incluyen los tipos de las variables asignadas en el archivo de datos.
+
+Un único archivo de datos puede compartirse entre varios modelos, siempre que las definiciones sean compatibles con todos los modelos.
 
 .. _spec-namespaces:
 
-Namespaces
-~~~~~~~~~~
 
-All names declared at the top-level belong to a single namespace.
-It includes the following names.
+Espacios de nombres (Namespaces)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. All global variable names.
-2. All function and predicate names, both built-in and user-defined.
-3. All enumerated type names and enum case names.
-4. All annotation names.
+Todos los nombres declarados en el nivel superior pertenecen a un solo espacio de nombres.
+Incluye los siguientes nombres.
 
-Because multi-file MiniZinc models are composed via
-concatenation (:ref:`spec-Model-Instance-Files`), all files share
-this top-level namespace.  Therefore a variable ``x`` declared in one
-model file could not be declared with a different type in a different file,
-for example.
+1. Todos los nombres de variables globales.
+2. Todos los nombres de funciones y predicados, tanto integrados como definidos por el usuario.
+3. Todos los nombres de tipos enumerados y nombres de casos de enumeración.
+4. Todos los nombres de anotación.
 
-MiniZinc supports overloading of built-in and user-defined operations.
+Debido a que los modelos MiniZinc de archivos múltiples se componen a través de la concatenación (:ref:`spec-Model-Instance-Files`), todos los archivos comparten este espacio de nombres de nivel superior. Por lo tanto, una variable ``x`` declarado en un archivo de modelo no se pudo declarar con un tipo diferente en un archivo diferente, por ejemplo.
+
+MiniZinc admite la sobrecarga de operaciones integradas y definidas por el usuario.
 
 .. _spec-scopes:
 
-Scopes
-~~~~~~
 
-Within the top-level namespace, there are several kinds of local scope that
-introduce local names:
 
-- Comprehension expressions (:ref:`spec-Set-Comprehensions`).
-- Let expressions (:ref:`spec-Let-Expressions`).
-- Function and predicate argument lists and bodies (:ref:`spec-preds-and-fns`).
+Alcances
+~~~~~~~~
 
-The listed sections specify these scopes in more detail.  In each case, any
-names declared in the local scope overshadow identical global names.
+Dentro del espacio de nombres de nivel superior, hay varios tipos de ámbito local que
+introducir nombres locales:
+
+- Expresiones de Comprensión (:ref:`spec-Set-Comprehensions`).
+- Expresiones Let (:ref:`spec-Let-Expressions`).
+- Listas de funciones y argumentos de predicados y cuerpos (:ref:`spec-preds-and-fns`).
+
+Las secciones enumeradas especifican estos ámbitos con más detalle. En cada caso, cualquier
+los nombres declarados en el ámbito local eclipsan nombres globales idénticos.
+
 
 .. _spec-types:
 
-Types and Type-insts
---------------------
 
-MiniZinc provides four scalar built-in types:  Booleans, integers, floats, and
-strings; enumerated types; two compound built-in types:  sets and multi-dimensional arrays;
-and the user extensible annotation type :mzn:`ann`.
 
-Each type has one or more possible *instantiations*.  The
-instantiation of a variable or value indicates if it is fixed to a known
-value or not.  A pairing of a type and instantiation is called a
-*type-inst*.
+Tipos y Tipos de Instanciación
+------------------------------
 
-We begin by discussing some properties that apply to every type.  We then
-introduce instantiations in more detail.  We then cover each type
-individually, giving:  an overview of the type and its possible
-instantiations, the syntax for its type-insts, whether it is a finite
-type (and if so, its domain), whether it is varifiable, the ordering and
-equality operations, whether its variables must be initialised at
-instance-time, and whether it can be involved in automatic coercions.
+MiniZinc proporciona:
 
-Properties of Types
-~~~~~~~~~~~~~~~~~~~
+- Cuatro tipos de escalar incorporados: Booleanos (Boolean), enteros (Integer), flotantes (Float) y cadenas (Strings);
+- Tipos enumerados;
+- Dos tipos integrados compuestos: conjuntos y matrices multidimensionales;
+- Y el tipo de anotación extensible del usuario :mzn:`ann`.
 
-The following list introduces some general properties of MiniZinc types.
+Cada tipo tiene uno o más posibles de *instanciación*. La instanciación de una variable o valor indica si se ha fijado a un valor conocido o no.  Un emparejamiento de un tipo y creación de instancias se llama *tipo-instanciación*.
 
-- Currently all types are monotypes. In the future we may allow types which
-  are polymorphic in other types and also the associated constraints.
-- We distinguish types which are *finite types*. In MiniZinc, finite types
-  include Booleans, enums, types defined via set expression type-insts such
-  as range types (see :ref:`spec-Set-Expression-Type-insts`), as well as
-  sets and arrays, composed of finite types. Types that are not finite types
-  are unconstrained integers, unconstrained floats, unconstrained strings,
-  and :mzn:`ann`. Finite types are relevant to sets (:mzn:`spec-Sets`) and
-  array indices (:mzn:`spec-Arrays`). Every finite type has a *domain*,
-  which is a set value that holds all the possible values represented by the
-  type.
-- Every first-order type (this excludes :mzn:`ann`) has a built-in total
-  order and a built-in equality; ``>``, ``<``, ``==``/``=``, ``!=``, ``<=``
-  and ``>=`` comparison operators can be applied to any pair of values of
-  the same type. *Rationale: This facilitates the specification of symmetry
-  breaking and of polymorphic predicates and functions.* Note that, as in
-  most languages, using equality on floats or types that contain floats is
-  generally not reliable due to their inexact representation. An
-  implementation may choose to warn about the use of equality with floats or
-  types that contain floats.
+Comenzamos discutiendo algunas propiedades que se aplican a todos los tipos. Luego presentamos instancias con más detalle. Luego cubrimos cada tipo individualmente, dando: una visión general del tipo y sus posibles instancias, la sintaxis para su tipo-instanciación, si es un tipo finito (y si es así, su dominio), si es variable, el orden y operaciones de igualdad, si sus variables deben inicializarse en el momento de la instancia y si puede estar involucrado en coacciones automáticas.
+
+
+Propiedades de los tipos
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+La siguiente lista presenta algunas propiedades generales de los tipos MiniZinc.
+
+- Actualmente, todos los tipos son monotipos. En el futuro, podemos permitir tipos que son polimórficos en otros tipos y también las limitaciones asociadas.
+- Distinguimos tipos que son *tipos finitos*. En MiniZinc, los tipos finitos incluyen booleanos, enumeraciones (enums), tipos definidos via conjunto de expresiones tipo-instanciación como los tipos de rango (ver :ref:`spec-Set-Expression-type-insts`), así como conjuntos y matrices, compuestos de tipos finitos. Los tipos que no son tipos finitos son enteros no restringidos, flotantes no restringidos, cadenas no restringidas y :mzn:`ann`. Los tipos finitos son relevantes para conjuntos (:mzn:`spec-Sets`) y los índices de matriz (:mzn:`spec-Arrays`). Cada tipo finito tiene un *dominio*, que es un valor establecido que contiene todos los valores posibles representados por el tipo.
+- Todos los tipos de primer orden (esto excluye :mzn:`ann`) tiene incorporado un orden total y un sistema incorporado en la igualdad; ``>``, ``<``, ``==``/``=``, ``!=``, ``<=`` and ``>=`` los operadores de comparación se pueden aplicar a cualquier par de valores del mismo tipo. *Razón fundamental: Esto facilita la especificación de ruptura de simetría y de predicados y funciones polimórficos.* Tenga en cuenta que, como en la mayoría de los lenguajes, el uso de igualdad en flotantes o tipos que contienen flotantes generalmente no es confiable debido a su representación inexacta. Una implementación puede optar por advertir sobre el uso de igualdad con flotantes o tipos que contienen flotantes.
 
 .. _spec-instantiations:
 
-Instantiations
-~~~~~~~~~~~~~~
 
-When a MiniZinc model is evaluated, the value of each variable may initially
-be unknown.  As it runs, each variable's *domain* (the set of
-values it may take) may be reduced, possibly to a single value.
+Instanciaciones
+~~~~~~~~~~~~~~~
 
-An *instantiation* (sometimes abbreviated to *inst*) describes
-how fixed or unfixed a variable is at instance-time.  At the most basic
-level, the instantiation system distinguishes between two kinds of
-variables:
+Cuando se evalúa un modelo MiniZinc, el valor de cada variable puede ser inicialmente desconocido. A medida que se ejecuta, el *dominio* de cada variable (el conjunto de valores que puede tomar) puede reducirse, posiblemente hasta un único valor.
 
-#. *Parameters*, whose values are fixed at instance-time (usually written just as "fixed").
-#. *Decision variables* (often abbreviated to *variables*), whose values may
-   be completely unfixed at instance-time, but may become fixed at run-time
-   (indeed, the fixing of decision variables is the whole aim of constraint
-   solving).
+Una *instanciación* (a veces abreviado como *inst*) describe cómo fija o no fija una variable en una tiempo-instancia. En el nivel más básico, el sistema de creación de instancias distingue dos tipos de variables:
 
-In MiniZinc decision variables can have the following types: Booleans,
-integers, floats, and sets of integers, and enums.
-Arrays and :mzn:`ann` can contain decision variables.
+#. *Parametros*, cuyos valores están fijados a tiempo-instancia, usualmente escrito como "fijo" (fixed).
+#. *Variables de decisión* (a menudo abreviado como *variables*), cuyos valores pueden estar completamente sin fijar en tiempo-instancia, pero puede volverse fijo en tiempo de ejecución (de hecho, la fijación de variables de decisión es el objetivo total de la resolución de restricciones).
+
+En las variables de decisión MiniZinc pueden tener los siguientes tipos: Booleanos, enteros, flotantes y conjuntos de enteros, y enumeración.
+Arreglos y :mzn:`ann` puede contener variables de decisión.
 
 .. _spec-type-inst:
 
-Type-insts
-~~~~~~~~~~
 
-Because each variable has both a type and an inst, they are often
-combined into a single *type-inst*.  Type-insts are primarily what
-we deal with when writing models, rather than types.
+Tipo-Instanciación
+~~~~~~~~~~~~~~~~~~
 
-A variable's type-inst *never changes*.  This means a decision
-variable whose value becomes fixed during model evaluation still has its
-original type-inst (e.g. :mzn:`var int`), because that was its
-type-inst at instance-time.
+Como cada variable tiene un tipo y una instancia, a menudo se combinan en un único *tipo-instanciación*. Tipo-instanciación son principalmente lo que tratamos cuando escribimos modelos, en lugar de tipos.
 
-Some type-insts can be automatically coerced to another type-inst.  For
-example, if a :mzn:`par int` value is used in a context where a
-:mzn:`var int` is expected, it is automatically coerced to a
-:mzn:`var int`.  We write this :mzn:`par int` |coerce| :mzn:`var int`.
-Also, any type-inst can be considered coercible to itself.
-MiniZinc allows coercions between some types as well.
+Una variable de tipo-instanciación *nunca cambia*.  Esto significa que una variable de decisión cuyo valor se vuelve fijo durante la evaluación del modelo todavía tiene su original tipo-instanciación (ejemplo :mzn:`var int`), porque ese era su tipo-instanciación a un tiempo-instancia.
 
-Some type-insts can be *varified*, i.e., made unfixed at the top-level.
-For example, :mzn:`par int` is varified to :mzn:`var int`.  We write this
-:mzn:`par int` |varify| :mzn:`var int`.
+Algunos tipos-instanciación puede ser coaccionado automáticamente a otro tipo-instanciación. Por ejmplo, si un :mzn:`par int` valor se usa en un contexto donde :mzn:`var int` se espera, que es forzado automáticamente a una :mzn:`var int`. Escribimos esto :mzn:`par int` |coerce| :mzn:`var int`. Además, cualquier tipo-instanciación puede considerarse coercible a sí mismo.
+MiniZinc permite coerciones entre algunos tipos también.
 
-Type-insts that are varifiable include the type-insts of the types that can
-be decision variables (Booleans, integers, floats, sets, enumerated types).
-Varification is relevant to type-inst synonyms and
-array accesses.
+Algunos tipo-instanciación pueden ser *varificado* (varified). Por ejemplo, hecho sin fijar en el nivel superior.
+Por ejemplo, :mzn:`par int` está varificado a :mzn:`var int`.  Escribimos esto :mzn:`par int` |varify| :mzn:`var int`.
 
-Type-inst expression overview
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Tipo-instanciación que son varificables incluyen el tipo-instanciación de los tipos que pueden ser variables de decisión (Booleanos, enteros, flotantes, conjuntos, tipos enumerados).
+La varificación es relevante para tipo-instanciación sinónimos y accesos a la matriz.
 
-This section partly describes how to write type-insts in MiniZinc models.
-Further details are given for each type as they are described in the
-following sections.
 
-A type-inst expression specifies a type-inst.
-Type-inst expressions may include type-inst constraints.
-Type-inst expressions appear in variable declarations
-(:ref:`spec-Declarations`) and user-defined operation items
-(:ref:`spec-preds-and-fns`)..
 
-Type-inst expressions have this syntax:
+
+
+
+Visión general de expresiones de Tipo-instanciación
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Esta sección describe parcialmente cómo escribir inserciones de tipo en modelos MiniZinc.
+Se proporcionan más detalles para cada tipo tal como se describen en las siguientes secciones.
+
+Una expresión tipo-instanciación especifica un tipo-instanciación.
+Una expresión tipo-instanciación puede incluir un tipo-instanciación constraints.
+Una expresión tipo-instanciación aparece en declaraciones de variables (:ref:`spec-Declarations`) y elementos de operación definidos por el usuario (:ref:`spec-preds-and-fns`).
+
+Una expresión de tipo-instanciación tiene las siguientes sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Type-inst expressions
   :end-before: %
 
-(The final alternative, for range types, uses the numeric-specific
-:mzndef:`<num-expr>` non-terminal, defined in :ref:`spec-Expressions-Overview`,
-rather than the :mzndef:`<expr>` non-terminal.  If this were not the case, the rule
-would never match because the ``..`` operator would always be matched
-by the first :mzndef:`<expr>`.)
+(La alternativa final, para los tipos de rango, usa el numérico específico :mzndef:`<num-expr>` no terminal, definido en :ref:`spec-Expressions-Overview`, en lugar de la :mzndef:`<expr>` no terminal.  Si este no fuera el caso, la regla nunca coincidiría porque el operador ``..`` siempre se correspondería con el primero :mzndef:`<expr>`.)
 
-This fully covers the type-inst expressions for scalar types.  The compound
-type-inst expression syntax is covered in more detail in
-:ref:`spec-Built-in-Compound-Types`.
+Esto cubre completamente las expresiones tipo-instanciación para tipos escalares. El compuesto de las sintaxis de las expresiones de tipo-instanciación está descrita con más detalle en :ref:`spec-Built-in-Compound-Types`.
 
-The :mzn:`par` and :mzn:`var` keywords (or lack of them) determine the
-instantiation.  The :mzn:`par` annotation can be omitted;  the following
-two type-inst expressions are equivalent:
+Las palabras claves :mzn:`par` y :mzn:`var` (o falta de ellos) determina la instanciación. La anotación :mzn:`par` puede ser emitida;  las siguientes dos expresiones de tipo-instanciación son equivalentes:
 
 .. code-block:: minizinc
 
     par int
     int
 
-*Rationale: The use of the explicit* :mzn:`var` *keyword allows an
-implementation to check that all parameters are initialised in the model or
-the instance.  It also clearly documents which variables are parameters, and
-allows more precise type-inst checking.*
+*Razón fundamental: El uso explícito de la palabra clave* :mzn:`var` *permite que una implementación compruebe que todos los parámetros se inicializan en el modelo o la instancia. También documenta claramente qué variables son parámetros y permite una comprobación de tipo-instanciación más precisa.*
 
-A type-inst is fixed if it does not contain :mzn:`var` or :mzn:`any`,
-with the exception of :mzn:`ann`.
+A tipo-instanciación es fijo si no contiene :mzn:`var` o :mzn:`any`, con la excepción de :mzn:`ann`.
 
-Note that several type-inst expressions that are syntactically expressible
-represent illegal type-insts.  For example, although the grammar allows
-:mzn:`var` in front of all these base type-inst expression tails, it is a
-type-inst error to have :mzn:`var` in the front of a string or array
-expression.
+Tenga en cuenta que varias expresoines de tipo-instanciación que son sintácticamente expresables representan una ilegal tipo-instanciación. Por ejemplo, aunque la gramática permite :mzn:`var` frente a todas estas bases de colas de expresión de tipo-instanciación, es un error de tipo-instanciación que tiene una :mzn:`var` en el frente de una expresión de cadena o matriz.
 
 .. _spec-built-in-scalar-types:
 
-Built-in Scalar Types and Type-insts
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Booleans
-++++++++
+
+Tipos escalares incorporados y tipos de instanciación
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Booleanos
++++++++++
 
 |TyOverview|
-Booleans represent truthhood or falsity.  *Rationale: Boolean values are
-not represented by integers.
-Booleans can be explicit converted to
-integers with the* :mzn:`bool2int` *function, which makes the user's intent
-clear.*
+Los booleanos representan la verdad o la falsedad (verdadero o falso, true o false). *Justificación: los valores booleanos no están representados por números enteros.
+Los booleanos se pueden convertir explícitamente a enteros con la función * :mzn:`bool2int` *, lo que hace que la intención del usuario sea clara.*
 
 |TyInsts|
-Booleans can be fixed or unfixed.
+Los booleanos pueden ser fijos o no.
 
 |TySyntax|
-Fixed Booleans are written :mzn:`bool` or :mzn:`par bool`.  Unfixed
-Booleans are written as :mzn:`var bool`.
+Los booleanos fijos son escritos como :mzn:`bool` o :mzn:`par bool`.  Los booleanos no fijos se escriben como :mzn:`var bool`.
 
 |TyFiniteType|
-Yes.  The domain of a Boolean is :mzn:`false, true`.
+Sí. El dominio de un booleano es :mzn:`false, true`.
 
 |TyVarifiable|
 :mzn:`par bool` |varify| :mzn:`var bool`, :mzn:`var bool` |varify| :mzn:`var bool`.
 
 |TyOrdering|
-The value :mzn:`false` is considered smaller than :mzn:`true`.
+El valor :mzn:`false` se considera más pequeño que :mzn:`true`.
 
 |TyInit|
-A fixed Boolean variable must be initialised at instance-time;  an unfixed
-Boolean variable need not be.
+Una variable booleana fija se debe inicializar en el momento de la instancia; una variable booleana sin fijar no tiene que ser.
 
 |TyCoercions|
 :mzn:`par bool` |coerce| :mzn:`var bool`.
 
-Also Booleans can be automatically coerced to integers; see
-:ref:`spec-Integers`.
+También los booleanos se pueden forzar automáticamente a enteros; ver :ref:`spec-Integers`.
 
 .. _spec-integers:
 
-Integers
+
+Enteros
 ++++++++
 
 |TyOverview|
-Integers represent integral numbers.  Integer representations are
-implementation-defined.  This means that the representable range of
-integers is implementation-defined.  However, an implementation should
-abort at run-time if an integer operation overflows.
+Los números enteros representan números enteros. Las representaciones enteras están definidas por la implementación. Esto significa que el rango representable de enteros está definido por la implementación. Sin embargo, una implementación debe abortar en tiempo de ejecución si una operación entera se desborda.
 
 |TyInsts|
-Integers can be fixed or unfixed.
+Los enteros pueden ser fijos o no.
 
 |TySyntax|
-Fixed integers are written :mzn:`int` or :mzn:`par int`.  Unfixed
-integers are written as :mzn:`var int`.
+Los enteros fijos están escritos como :mzn:`int` o :mzn:`par int`.  Los enteros no fijos se escriben como :mzn:`var int`.
 
 |TyFiniteType|
-Not unless constrained by a set expression (see :ref:`spec-Set-Expression-Type-insts`).
+No, a menos que esté limitado por una expresión establecida (ver :ref:`spec-Set-Expression-Type-insts`).
 
 |TyVarifiable|
 :mzn:`par int` |varify| :mzn:`var int`,
 :mzn:`var int` |varify| :mzn:`var int`.
 
 |TyOrdering|
-The ordering on integers is the standard one.
+El orden en enteros es el estándar.
 
 |TyInit|
-A fixed integer variable must be initialised at instance-time;  an unfixed
-integer variable need not be.
+Una variable entera fija se debe inicializar en el momento de la instancia; una variable entera no fijada no lo necesita.
 
 |TyCoercions|
 :mzn:`par int` |coerce| :mzn:`var int`,
@@ -740,42 +613,38 @@ integer variable need not be.
 :mzn:`par bool` |coerce| :mzn:`var int`,
 :mzn:`var bool` |coerce| :mzn:`var int`.
 
-Also, integers can be automatically coerced to floats;  see
-:ref:`spec-Floats`.
-
+Además, los enteros se pueden forzar automáticamente a flotantes; ver :ref:`spec-Floats`.
 
 .. _spec-floats:
 
-Floats
-++++++
+
+
+Punto Flotante (Floats)
++++++++++++++++++++++++
 
 |TyOverview|
-Floats represent real numbers.  Float representations are
-implementation-defined.  This means that the representable range and
-precision of floats is implementation-defined.  However, an
-implementation should abort at run-time on exceptional float operations
-(e.g., those that produce ``NaN``, if using IEEE754 floats).
+Los números de punto flotante representan números reales. Las representaciones de números flotantes están definidas por la implementación. Esto significa que el rango y la precisión representables de los números de punto flotante están definidos por la implementación. Sin embargo, una implementación debe abortar en tiempo de ejecución en operaciones de punto flotante excepcionales
+
+(por ejemplo, aquellos que producen ``NaN``, es decir, Not a Number: No es un número, si usas número de punto flotante IEEE754).
 
 |TyInsts|
-Floats can be fixed or unfixed.
+Los números de punto flotante puede ser arreglado o no.
 
 |TySyntax|
-Fixed floats are written :mzn:`float` or :mzn:`par float`.  Unfixed
-floats are written as :mzn:`var float`.
+Los números de punto flotante son escritos como :mzn:`float` o :mzn:`par float`. Los números de punto flotante no fijos son escritos como :mzn:`var float`.
 
 |TyFiniteType|
-Not unless constrained by a set expression (see :ref:`spec-Set-Expression-Type-insts`).
+No, a menos que esté limitado por una expresión establecida (ver :ref:`spec-Set-Expression-Type-insts`).
 
 |TyVarifiable|
 :mzn:`par float` |varify| :mzn:`var float`,
 :mzn:`var float` |varify| :mzn:`var float`.
 
 |TyOrdering|
-The ordering on floats is the standard one.
+El orden en los número de punto flotante es el estándar.
 
 |TyInit|
-A fixed float variable must be initialised at instance-time;  an unfixed
-float variable need not be.
+Una variable flotante fija se debe inicializar en el momento de la instancia; una variable flotante no fija no lo necesita.
 
 |TyCoercions|
 :mzn:`par int` |coerce| :mzn:`par float`,
@@ -785,40 +654,36 @@ float variable need not be.
 
 .. _spec-enumerated-types:
 
-Enumerated Types
+
+
+
+
+Tipos Enumerados
 ++++++++++++++++
 
 |TyOverview|
-Enumerated types (or *enums* for short) provide a set of named
-alternatives. Each alternative is identified by its *case name*.
-Enumerated types, like in many other languages, can be used in the place of
-integer types to achieve stricter type checking.
+Los tipos enumerados (o *enumerados* para abreviar) proporcionan un conjunto de alternativas nombradas. Cada alternativa se identifica por su *nombre del caso*.
+Los tipos enumerados, como en muchos otros idiomas, se pueden usar en lugar de tipos enteros para lograr una verificación de tipo más estricta.
 
 |TyInsts|
-Enums can be fixed or unfixed.
+Las enumeraciones pueden ser fijas o no.
 
 |TySyntax|
-Variables of an enumerated type named ``X`` are represented by the term
-:mzn:`X` or :mzn:`par X` if fixed, and :mzn:`var X`
-if unfixed.
+Las variables de un tipo enumerado llamado ``X`` están representados por el término :mzn:`X` o :mzn:`par X` si es fija, y :mzn:`var X` si es no fija.
 
 |TyFiniteType|
-Yes.
-
-The domain of an enum is the set containing all of its case names.
+Sí.
+El dominio de una enumeración es el conjunto que contiene todos sus nombres de casos.
 
 |TyVarifiable|
 :mzn:`par X` |varify| :mzn:`var X`,
 :mzn:`var X` |varify| :mzn:`var X`.
 
 |TyOrdering|
-When two enum values with different case names are compared, the value with
-the case name that is declared first is considered smaller than the value
-with the case name that is declared second.
+Cuando se comparan dos valores enumerados con diferentes nombres de casos, el valor con el nombre del caso que se declara primero se considera más pequeño que el valor con el nombre del caso que se declara en segundo lugar.
 
 |TyInit|
-A fixed enum variable must be initialised at instance-time; an unfixed
-enum variable need not be.
+Una variable de enumeración fija se debe inicializar en el momento de la instancia; una variable enumeración no fijada no lo necesita.
 
 |TyCoercions|
 :mzn:`par X` |coerce| :mzn:`par int`,
@@ -826,73 +691,71 @@ enum variable need not be.
 
 .. _spec-strings:
 
-Strings
-+++++++
+
+
+Cadenas (Strings)
++++++++++++++++++
 
 |TyOverview|
-Strings are primitive, i.e., they are not lists of characters.
+Las cadenas son primitivas, es decir, no son listas de caracteres.
 
-String expressions are used in assertions, output items and
-annotations, and string literals are used in include items.
+Las expresiones de cadena se utilizan en aserciones, elementos de salida y anotaciones, y los literales de cadena se utilizan en los elementos de inclusión.
 
 |TyInsts|
-Strings must be fixed.
+Las cadenas deben ser corregidas.
 
 |TySyntax|
-Fixed strings are written :mzn:`string` or :mzn:`par string`.
+Las cadenas fijas están escritas como :mzn:`string` o :mzn:`par string`.
 
 |TyFiniteType|
-Not unless constrained by a set expression (see :ref:`spec-Set-Expression-Type-insts`).
+No, a menos que esté limitado por una expresión establecida (ver :ref:`spec-Set-Expression-Type-insts`).
 
 |TyVarifiable|
 No.
 
 |TyOrdering|
-Strings are ordered lexicographically using the underlying character codes.
+Las cadenas se ordenan lexicográficamente utilizando los códigos de caracteres subyacentes.
 
 |TyInit|
-A string variable (which can only be fixed) must be initialised at
-instance-time.
+Una variable de cadena (que solo se puede arreglar) se debe inicializar en el momento de la instancia.
 
 |TyCoercions|
-None automatic.  However, any non-string value can be manually converted to
-a string using the built-in :mzn:`show` function or using string interpolation
-(see :ref:`spec-String-Interpolation-Expressions`).
+Ninguno automático. Sin embargo, cualquier valor que no sea de cadena se puede convertir manualmente a una cadena usando la función built-in :mzn:`show` o usando la interpolación de cuerdas (ver :ref:`spec-String-Interpolation-Expressions`).
 
 .. _spec-Built-in-Compound-Types:
 
-Built-in Compound Types and Type-insts
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Tipos de compuestos incorporados y Tipo-Instanciación
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. _spec-sets:
 
-Sets
-++++
+
+Conjuntos
++++++++++
 
 |TyOverview|
-A set is a collection with no duplicates.
+Un conjunto es una colección sin duplicados.
 
 |TyInsts|
-The type-inst of a set's elements must be fixed.  *Rationale: This is because
-current solvers are not powerful enough to handle sets containing decision
-variables.*
-Sets may contain any type, and may be fixed or unfixed.
-If a set is unfixed, its elements must be finite, unless it occurs in one
-of the following contexts:
+Un tipo-instanciación de los elementos de un conjunto debe ser fija. *Justificación: Esto se debe a que los solucionadores actuales no son lo suficientemente potentes como para manejar conjuntos que contienen variables de decisión.*
 
-- the argument of a predicate, function or annotation.
-- the declaration of a variable or let local variable with an
-  assigned value.
+Los conjuntos pueden contener cualquier tipo, y pueden ser fijos o no.
+Si un conjunto no está fijado, sus elementos deben ser finitos, a menos que ocurra en uno de los siguientes contextos:
+
+- El argumento de un predicado, función o anotación.
+- La declaración de una variable o una variable local ``let`` con un valor asignado.
 
 |TySyntax|
-A set base type-inst expression tail has this syntax:
+Una base establecida de una expresión de tipo-instanciación tiene la siguiente sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Set type-inst expressions
   :end-before: %
 
-Some example set type-inst expressions:
+Algunos ejemplos de expresiones de conjuntos de tipo-instanciación:
 
 .. code-block:: minizinc
 
@@ -900,205 +763,183 @@ Some example set type-inst expressions:
   var set of bool
 
 |TyFiniteType|
-Yes, if the set elements are finite types.  Otherwise, no.
+Sí, si los elementos establecidos son tipos finitos. De otra manera no.
 
-The domain of a set type that is a finite type is the powerset of the domain
-of its element type.  For example, the domain of :mzn:`set of 1..2` is
-:mzn:`powerset(1..2)`, which is :mzn:`{}, {1}, {1,2}, {2}`.
+El dominio de un tipo de conjunto que es un tipo finito es el conjunto de poder del dominio de su tipo de elemento. Por ejemplo, el dominio de :mzn:`set of 1..2` es :mzn:`powerset(1..2)`, cual es :mzn:`{}, {1}, {1,2}, {2}`.
 
 |TyVarifiable|
 :mzn:`par set of TI` |varify| :mzn:`var set of TI`,
 :mzn:`var set of TI` |varify| :mzn:`var set of TI`.
 
 |TyOrdering|
-The pre-defined ordering on sets is a lexicographic ordering of the
-*sorted set form*, where :mzn:`{1,2}` is in sorted set form, for example,
-but :mzn:`{2,1}` is not.
-This means, for instance, :mzn:`{} < {1,3} < {2}`.
+El orden predefinido en los conjuntos es un ordenamiento lexicográfico del *forma de conjunto ordenado*, donde :mzn:`{1,2}` está en forma de conjunto ordenado, por ejemplo, :mzn:`{2,1}` no es.
+Esto significa, por ejemplo, :mzn:`{} < {1,3} < {2}`.
 
 |TyInit|
-A fixed set variable must be initialised at instance-time;  an unfixed
-set variable need not be.
+Una variable de conjunto fijo se debe inicializar en el momento de la instancia; una variable set no fijada no necesita ser.
 
 |TyCoercions|
-:mzn:`par set of TI` |coerce| :mzn:`par set of UI` and
-:mzn:`par set of TI` |coerce| :mzn:`var set of UI` and
-:mzn:`var set of TI` |coerce| :mzn:`var set of UI`, if
+:mzn:`par set of TI` |coerce| :mzn:`par set of UI` y
+:mzn:`par set of TI` |coerce| :mzn:`var set of UI` y
+:mzn:`var set of TI` |coerce| :mzn:`var set of UI`, si
 :mzn:`TI` |coerce| :mzn:`UI`.
 
-Arrays
-++++++
+
+
+
+Arreglos
+++++++++
 
 |TyOverview|
-MiniZinc arrays are maps from fixed integers to values.
-Values can be of any type.
-The values can only have base type-insts.
-Arrays-of-arrays are not allowed.
-Arrays can be multi-dimensional.
+Los arrays MiniZinc son mapas de enteros fijos a valores.
+Los valores pueden ser de cualquier tipo.
+Los valores solo pueden tener inserciones de base tipo-instanciación.
+Las matrices de matrices no están permitidas.
+Las matrices pueden ser multidimensionales.
 
-MiniZinc arrays can be declared in two different ways.
+Las matrices MiniZinc se pueden declarar de dos maneras diferentes.
 
-- *Explicitly-indexed* arrays have index types in the declaration
-  that are finite types.  For example:
+- *Las matrices explícitamente indexadas* tienen tipos de índice en la declaración que son tipos finitos. Por ejemplo:
 
   .. code-block:: minizinc
 
     array[0..3] of int: a1;
     array[1..5, 1..10] of var float: a5;
 
-  For such arrays, the index type specifies exactly the indices that will
-  be in the array - the array's index set is the *domain* of the
-  index type - and if the indices of the value assigned do not match then
-  it is a run-time error.
+Para tales arrays, el tipo de índice especifica exactamente los índices que estarán en la matriz - el conjunto de índices de la matriz es el *dominio* del tipo de índice - y si los índices del valor asignado no coinciden, entonces es un tiempo de ejecución error.
 
-  For example, the following assignments cause run-time errors:
+Por ejemplo, las siguientes asignaciones causan errores en tiempo de ejecución:
 
   .. code-block:: minizinc
 
-    a1 = [4,6,4,3,2];   % too many elements
-    a5 = [];            % too few elements
-- *Implicitly-indexed* arrays have index types in the declaration
-  that are not finite types.  For example:
+    a1 = [4,6,4,3,2];   % Demasiados elementos.
+    a5 = [];            % Muy pocos elementos.
+
+- *Las matrices implícitamente indexadas* tienen tipos de índice en la declaración que no son tipos finitos. Por ejemplo:
 
   .. code-block:: minizinc
 
     array[int,int] of int: a6;
 
-  No checking of indices occurs when these variables are assigned.
+  No se verifican los índices cuando estas variables están asignadas.
 
-In MiniZinc all index sets of an array must be contiguous ranges of
-integers, or enumerated types. The expression used for initialisation of an
-array must have matching index sets. An array expression with an enum index
-set can be assigned to an array declared with an integer index set, but not
-the other way around. The exception are array literals, which can be
-assigned to arrays declared with enum index sets.
+En MiniZinc, todos los conjuntos de índices de una matriz deben ser rangos contiguos de enteros o tipos enumerados.
+La expresión utilizada para la inicialización de una matriz debe tener conjuntos de índices coincidentes.
+Una expresión de matriz con un conjunto de índices enum se puede asignar a una matriz declarada con un conjunto de índices enteros, pero no al revés.
+La excepción son los literales de matriz, que se pueden asignar a matrices declaradas con conjuntos de índices enumerados.
 
-For example:
+Por ejemplo:
 
 .. code-block:: minizinc
 
   enum X = {A,B,C};
   enum Y = {D,E,F};
-  array[X] of int: x = array1d(X, [5,6,7]); % correct
-  array[Y] of int: y = x;                   % index set mismatch: Y != X
-  array[int] of int: z = x;                 % correct: assign X index set to int
-  array[X] of int: x2 = [10,11,12];         % correct: automatic coercion for array literals
+  array[X] of int: x = array1d(X, [5,6,7]); % Correcto
+  array[Y] of int: y = x;                   % Conjunto de índices no
+                                            % coinciden : Y != X
+  array[int] of int: z = x;                 % Correcto: asigne el índice X
+                                            % establecido en int
+  array[X] of int: x2 = [10,11,12];         % Correcto: coerción automática
+                                            % para literales de matriz
 
-The initialisation of an array can be done in a separate assignment
-statement, which may be present in the model or a separate data file.
+La inicialización de una matriz se puede hacer en una declaración de asignación separada, que puede estar presente en el modelo o en un archivo de datos separado.
 
-Arrays can be accessed.  See :ref:`spec-Array-Access-Expressions` for
-details.
+Las matrices pueden ser accedidos. Ver :ref:`spec-Array-Access-Expressions` para más detalles.
 
 |TyInsts|
-An array's size must be fixed.  Its indices must also have
-fixed type-insts.  Its elements may be fixed or unfixed.
+El tamaño de una matriz debe ser fijo. Sus índices también deben tener inserciones de tipo fijo. Sus elementos pueden ser fijos o no.
 
 |TySyntax|
-An array base type-inst expression tail has this syntax:
+Un arreglo base de una expresión de tipo-instanciación tiene la siguiente sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Array type-inst expressions
   :end-before: %
 
-Some example array type-inst expressions:
+Algunos ejemplos de arreglos de expresiones de tipo-instanciación:
 
 .. code-block:: minizinc
 
   array[1..10] of int
   list of var int
 
-Note that :mzndef:`list of <T>` is just syntactic sugar for
-:mzndef:`array[int] of <T>`.  *Rationale: Integer-indexed arrays of this form
-are very common, and so worthy of special support to make things easier for
-modellers.  Implementing it using syntactic sugar avoids adding an extra
-type to the language, which keeps things simple for implementers.*
+Tenga en cuenta que :mzndef:`list of <T>` es solo sintáctico para :mzndef:`array[int] of <T>`. *Justificación: Las matrices con índices enteros de este formulario son muy comunes y merecen un soporte especial para facilitar las cosas a los modeladores. Implementarlo usando azúcar sintáctico evita agregar un tipo extra al lenguaje, lo que simplifica las cosas para los implementadores.*
 
-Because arrays must be fixed-size it is a type-inst error to precede an
-array type-inst expression with :mzn:`var`.
+Como las matrices deben ser de tamaño fijo, es un error tipo-instanciación que precede a una expresión tipo-instanciación de matriz con :mzn:`var`.
 
 |TyFiniteType|
-Yes, if the index types and element type are all finite types.
-Otherwise, no.
+Sí, si los tipos de índice y el tipo de elemento son todos tipos finitos.
+De otra manera no.
 
-The domain of an array type that is a finite array is the set of all
-distinct arrays whose index set equals the domain of the index type
-and whose elements are of the array element type.
+El dominio de un tipo de matriz que es una matriz finita es el conjunto de todas las matrices distintas cuyo conjunto de índices es igual al dominio del tipo de índice y cuyos elementos son del tipo de elemento de matriz.
 
 |TyVarifiable|
 No.
 
 |TyOrdering|
-Arrays are ordered lexicographically, taking absence of a value for a given key
-to be before any value for that key.  For example,
-:mzn:`[1, 1]` is less than
-:mzn:`[1, 2]`, which is less than :mzn:`[1, 2, 3]` and
-:mzn:`array1d(2..4,[0, 0, 0])` is less than :mzn:`[1, 2, 3]`.
+Las matrices se ordenan lexicográficamente, tomando la ausencia de un valor para una clave dada antes de cualquier valor para esa clave. Por ejemplo,
+:mzn:`[1, 1]` es menor que
+:mzn:`[1, 2]`, que es menor que :mzn:`[1, 2, 3]` y
+:mzn:`array1d(2..4,[0, 0, 0])` que es menor que  :mzn:`[1, 2, 3]`.
 
 |TyInit|
-An explicitly-indexed array variable must be initialised at instance-time
-only if its elements must be initialised at instance time.
-An implicitly-indexed array variable must be initialised at instance-time
-so that its length and index set is known.
+Una variable de matriz indexada explícitamente debe inicializarse en instancia-tiempo solo si sus elementos deben inicializarse en el momento de la instancia.
+Una variable de matriz indexada implícitamente se debe inicializar en el momento de la instancia para que se conozca su longitud y conjunto de índices.
 
 |TyCoercions|
-:mzn:`array[TI0] of TI` |coerce| :mzn:`array[UI0] of UI` if
-:mzn:`TI0` |coerce| :mzn:`UI0` and :mzn:`TI` |coerce| :mzn:`UI`.
+:mzn:`array[TI0] of TI` |coerce| :mzn:`array[UI0] of UI` si
+:mzn:`TI0` |coerce| :mzn:`UI0` y :mzn:`TI` |coerce| :mzn:`UI`.
 
 .. _spec-option-types:
 
-Option Types
-++++++++++++
+
+
+
+Tipos de opciones
++++++++++++++++++
 
 |TyOverview|
-Option types defined using the :mzn:`opt` type constructor, define types
-that may or may not be there. They are similar to ``Maybe`` types of
-Haskell implicity adding a new value :mzn:`<>` to the type.
+Los tipos de opciones definidos usando el constructor de tipo :mzn:`opt`, definen tipos que pueden o no estar allí. Son similares a tipos ``Puede`` (``Maybe``) de la implicidad de Haskell agrega un nuevo valor :mzn:`<>` al tipo.
 
 
 |TyInsts|
-The argument of an option type must be one of the base types
-:mzn:`bool`, :mzn:`int` or :mzn:`float`.
+El argumento de un tipo de opción debe ser uno de los tipos base :mzn:`bool`, :mzn:`int` o :mzn:`float`.
 
 |TySyntax|
-The option type is written :mzndef:`opt <T>` where :mzndef:`<T>` if one of
-the three base types, or one of their constrained instances.
+El tipo de opción está escrito :mzndef:`opt <T>` donde :mzndef:`<T>` si es uno de los tres tipos base, o una de sus instancias restringidas.
 
 |TyFiniteType|
-Yes if the underlying type is finite, otherwise no.
+Sí, si el tipo subyacente es finito, de lo contrario no.
 
 |TyVarifiable|
-Yes.
+Sí.
 
 |TyOrdering|
-:mzn:`<>` is always less than any other value in the type.
-But beware that overloading of operators like :mzn:`<` is different for
-option types.
+:mzn:`<>` siempre es menor que cualquier otro valor en el tipo.
+Pero ten cuidado con la sobrecarga de operadores como :mzn:`<`, que es diferente para los tipos de opciones.
 
 |TyInit|
-An :mzn:`opt` type variable does not need to be initialised at
-instance-time. An uninitialised :mzn:`opt` type variable is automatically
-initialised to :mzn:`<>`.
+Una variable de tipo :mzn:`opt` no necesita ser inicializado en el momento de la instancia. Un tipo de variable sin inicializar :mzn:`opt` se inicializa automáticamente a :mzn:`<>`.
 
 |TyCoercions|
-:mzn:`TI` |coerce| :mzn:`opt UI` if :mzn:`TI` |coerce| :mzn:`UI`..
+:mzn:`TI` |coerce| :mzn:`opt UI` si :mzn:`TI` |coerce| :mzn:`UI`..
 
 .. _spec-the-annotation-type:
 
-The Annotation Type
-+++++++++++++++++++
+
+
+El Tipo de Anotación
+++++++++++++++++++++
 
 |TyOverview|
-The annotation type, :mzn:`ann`, can be used to represent arbitrary term
-structures.  It is augmented by annotation items (:ref:`spec-Annotation-Items`).
+El tipo de anotación, :mzn:`ann`, se puede usar para representar estructuras de términos arbitrarios. Se aumenta con elementos de anotación (:ref:`spec-Annotation-Items`).
 
 |TyInsts|
-:mzn:`ann` is always considered unfixed, because it may contain unfixed
-elements.  It cannot be preceded by :mzn:`var`.
+:mzn:`ann` siempre se considera no fijado, ya que puede contener elementos no fijadas. No puede ser precedido por :mzn:`var`.
 
 |TySyntax|
-The annotation type is written :mzn:`ann`.
+El tipo de anotación está escrito :mzn:`ann`.
 
 |TyFiniteType|
 No.
@@ -1107,85 +948,77 @@ No.
 No.
 
 |TyOrdering|
-N/A.  Annotation types do not have an ordering defined on them.
+N/A.  Los tipos de anotación no tienen un orden definido en ellos.
 
 |TyInit|
-An :mzn:`ann` variable must be initialised at instance-time.
+Una variable :mzn:`ann` debe inicializarse en el momento de la instancia.
 
 |TyCoercions|
-None.
+Ninguna.
 
 
 .. _spec-constrained-type-insts:
 
-Constrained Type-insts
-~~~~~~~~~~~~~~~~~~~~~~
 
-One powerful feature of MiniZinc is *constrained type-insts*.  A
-constrained type-inst is a restricted version of a *base* type-inst,
-i.e., a type-inst with fewer values in its domain.
+
+
+Restricciones de Tipo-instanciación
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Una poderosa característica de MiniZinc es *restricciones de tipo-instanciación*. Una restricción de tipo-instanciación es una versión restringida de *base* tipo-instanciación, ejemplo, un tipo-instanciación con un menor número de valores en su dominio.
 
 .. _spec-set-expression-type-insts:
 
-Set Expression Type-insts
-+++++++++++++++++++++++++
 
-Three kinds of expressions can be used in type-insts.
 
-#. Integer ranges:  e.g. :mzn:`1..3`.
-#. Set literals:  e.g. :mzn:`var {1,3,5}`.
-#. Identifiers:  the name of a set parameter (which can be global,
-   let-local, the argument of a predicate or function, or a generator
-   value) can serve as a type-inst.
+Conjunto de expresiones de Tipo-instanciación
++++++++++++++++++++++++++++++++++++++++++++++
 
-In each case the base type is that of the set's elements, and the values
-within the set serve as the domain.  For example, whereas a variable with
-type-inst :mzn:`var int` can take any integer value, a variable with
-type-inst :mzn:`var 1..3` can only take the value 1, 2 or 3.
+Se pueden usar tres tipos de expresiones en tipo-instanciación.
 
-All set expression type-insts are finite types.  Their domain is equal to
-the set itself.
+#. Rangos enteros:  ejemplos. :mzn:`1..3`.
+#. Conjunto de literales:  ejemplos. :mzn:`var {1,3,5}`.
+#. Identifiers: el nombre de un parámetro establecido (que puede ser global, let-local, el argumento de un predicado o función, o un valor de generador) puede servir como tipo-instanciación.
 
-Float Range Type-insts
-++++++++++++++++++++++
+En cada caso, el tipo de base es el de los elementos del conjunto, y los valores dentro del conjunto sirven como el dominio. Por ejemplo, mientras que una variable con tipo-instanciación :mzn:`var int` puede tomar cualquier valor entero, una variable con tipo-instanciación :mzn:`var 1..3` solo puede tomar el valor 1, 2 o 3.
 
-Float ranges can be used as type-insts, e.g. :mzn:`1.0 .. 3.0`.  These are
-treated similarly to integer range type-insts, although :mzn:`1.0 .. 3.0` is
-not a valid expression whereas :mzn:`1 .. 3` is.
+Todas las expresiones establecidas de tipo-instanciación son tipos finitos. Su dominio es igual al conjunto en sí.
 
-Float ranges are not finite types.
+
+
+Rango de los números de Tipo-instanciación
+++++++++++++++++++++++++++++++++++++++++++
+
+Los rangos de los números de punto flotantes se pueden usar como tipo-instanciación. Por ejemplo, :mzn:`1.0 .. 3.0`.
+Estos se tratan de manera similar al rango entero tipo-instanciación, a pesar de que :mzn:`1.0 .. 3.0` no es una expresión válida mientras es :mzn:`1 .. 3`.
+
+Los rangos de números de punto flotante no son tipos finitos.
 
 .. _spec-expressions:
 
-Expressions
+
+
+Expresiones
 -----------
 
 .. _spec-expressions-overview:
 
-Expressions Overview
-~~~~~~~~~~~~~~~~~~~~
 
-Expressions represent values.  They occur in various kinds of items.  They
-have the following syntax:
+
+Resumen de expresiones
+~~~~~~~~~~~~~~~~~~~~~~
+
+Las expresiones representan valores. Ocurren en varios tipos de artículos. Tienen la siguiente sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Expressions
   :end-before: %
 
-Expressions can be composed from sub-expressions combined with operators.
-All operators (binary and unary) are described in :ref:`spec-Operators`,
-including the precedences of the binary operators.  All unary operators bind
-more tightly than all binary operators.
+Las expresiones se pueden componer a partir de subexpresiones combinadas con operadores.
+Todos los operadores (binarios y unarios) se describen en :ref:`spec-Operators`, incluyendo las precedencias de los operadores binarios. Todos los operadores unarios se unen más estrechamente que todos los operadores binarios.
 
-Expressions can have one or more annotations.  Annotations bind
-more tightly than unary and binary operator applications, but less tightly
-than access operations and non-operator applications.  In some cases this
-binding is non-intuitive.  For example, in the first three of the following
-lines, the annotation :mzn:`a` binds to the identifier expression
-:mzn:`x` rather than the operator application.  However, the fourth
-line features a non-operator application (due to the single quotes around
-the :mzn:`not`) and so the annotation binds to the whole application.
+Las expresiones pueden tener una o más anotaciones. Las anotaciones se vinculan más estrechamente que las aplicaciones de operador unario y binario, pero menos estrechamente que las operaciones de acceso y las aplicaciones que no son de operador. En algunos casos, este enlace no es intuitivo. Por ejemplo, en las primeras tres de las siguientes líneas, la anotación :mzn:`a` se une a la expresión del identificador :mzn:`x` en lugar de la aplicación del operador. Sin embargo, la cuarta línea presenta una aplicación sin operador (debido a las comillas simples alrededor del :mzn:`not`) y entonces la anotación se une a toda la aplicación.
 
 .. code-block:: minizinc
 
@@ -1194,20 +1027,18 @@ the :mzn:`not`) and so the annotation binds to the whole application.
   not(x)::a;
   'not'(x)::a;
 
-:ref:`spec-Annotations` has more on annotations.
+:ref:`spec-Annotations` tiene más en anotaciones.
 
-Expressions can be contained within parentheses.
+Las expresiones se pueden contener entre paréntesis.
 
-The array access operations
-all bind more tightly than unary and binary operators and annotations.
-They are described in more detail in :ref:`spec-Array-Access-Expressions`.
+Las operaciones de acceso a la matriz se unen más estrechamente que las anotaciones y operadores unarios y binarios.
+Se describen con más detalle en :ref:`spec-Array-Access-Expressions`.
 
-The remaining kinds of expression atoms (from :mzndef:`<ident>` to
-:mzndef:`<gen-call-expr>`) are described in
-:ref:`spec-Identifier-Expressions-and-Quoted-Operator-Expressions` to :ref:`spec-Generator-Call-Expressions`.
+Los tipos restantes de átomos de expresión (from :mzndef:`<ident>` a
+:mzndef:`<gen-call-expr>`) están descritos en
+:ref:`spec-Identifier-Expressions-and-Quoted-Operator-Expressions` a :ref:`spec-Generator-Call-Expressions`.
 
-We also distinguish syntactically valid numeric expressions.  This allows
-range types to be parsed correctly.
+También distinguimos expresiones numéricas sintácticamente válidas. Esto permite que los tipos de rango sean analizados correctamente.
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
@@ -1216,34 +1047,28 @@ range types to be parsed correctly.
 
 .. _spec-operators:
 
-Operators
-~~~~~~~~~
 
-Operators are functions that are distinguished by their syntax in one or two
-ways.  First, some of them contain non-alphanumeric characters that normal
-functions do not (e.g. :mzn:`+`).  Second, their application is written
-in a manner different to normal functions.
 
-We distinguish between binary operators, which can be applied in an infix
-manner (e.g. :mzn:`3 + 4`), and unary operators, which can be applied in a
-prefix manner without parentheses (e.g. :mzn:`not x`).  We also
-distinguish between built-in operators and user-defined operators.  The
-syntax is the following:
+Operadores
+~~~~~~~~~~
+
+Los operadores son funciones que se distinguen por su sintaxis de una o dos formas. Primero, algunos de ellos contienen caracteres no alfanuméricos que las funciones normales no (por ejemplo, :mzn:`+`). Segundo, su aplicación está escrita de una manera diferente a las funciones normales.
+
+Distinguimos entre operadores binarios, que se pueden aplicar de manera infija (por ejemplo, :mzn:`3 + 4`), y operadores unarios, que se pueden aplicar de manera prefija sin paréntesis (por ejemplo, :mzn:`not x`). También distinguimos entre operadores integrados y operadores definidos por el usuario. La sintaxis es la siguiente:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Built-in operators
   :end-before: %
 
-Again, we syntactically distinguish numeric operators.
+Nuevamente, distinguimos sintácticamente operadores numéricos.
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Built-in numeric operators
   :end-before: %
 
-Some operators can be written using their unicode symbols, which are listed
-in :numref:`bin-ops-unicode` (recall that MiniZinc input is UTF-8).
+Algunos operadores se pueden escribir utilizando sus símbolos Unicode, que se enumeran en :numref:`bin-ops-unicode` (recuerde que la entrada de MiniZinc es UTF-8).
 
 .. _bin-ops-unicode:
 
@@ -1251,9 +1076,10 @@ in :numref:`bin-ops-unicode` (recall that MiniZinc input is UTF-8).
 
 .. table:: Unicode equivalents of binary operators
 
-  ================  =======================  ==========
-  Operator          Unicode symbol           UTF-8 code
-  ================  =======================  ==========
+
+  ================  =======================  ============
+  Operador          Símbolo Unicode symbol   Código UTF-8
+  ================  =======================  ============
   :mzn:`<->`        :math:`\leftrightarrow`  E2 86 94
   :mzn:`->`         :math:`\rightarrow`      E2 86 92
   :mzn:`<-`         :math:`\leftarrow`       E2 86 90
@@ -1268,16 +1094,9 @@ in :numref:`bin-ops-unicode` (recall that MiniZinc input is UTF-8).
   :mzn:`superset`   :math:`\supseteq`        E2 8A 87
   :mzn:`union`      :math:`\cup`             E2 88 AA
   :mzn:`intersect`  :math:`\cap`             E2 88 A9
-  ================  =======================  ==========
+  ================  =======================  ============
 
-The binary operators are listed in :numref:`bin-ops`. A lower precedence
-number means tighter binding; for example, :mzn:`1+2*3` is parsed as
-:mzn:`1+(2*3)` because :mzn:`*` binds tighter than :mzn:`+`. Associativity
-indicates how chains of operators with equal precedences are handled; for
-example, :mzn:`1+2+3` is parsed as :mzn:`(1+2)+3` because :mzn:`+` is
-left-associative, :mzn:`a++b++c` is parsed as :mzn:`a++(b++c)` because
-:mzn:`++` is right-associative, and :mzn:`1<x<2` is a syntax error because
-:mzn:`<` is non-associative.
+Los operadores binarios se enumeran en :numref:`bin-ops`. Un número de precedencia más bajo significa un enlace más estricto; por ejemplo, :mzn:`1+2*3` es analizado como :mzn:`1+(2*3)` porque :mzn:`*` se une más fuerte que :mzn:`+`. La asociatividad indica cómo se manejan las cadenas de operadores con igual precedencia; por ejemplo, :mzn:`1+2+3` es analizado como :mzn:`(1+2)+3` porque :mzn:`+` es de izquierda asociativo, :mzn:`a++b++c` es analizado como :mzn:`a++(b++c)` porque :mzn:`++` es asociativo por la derecha, y :mzn:`1<x<2` es un error de sintaxis porque :mzn:`<` no es asociativo.
 
 .. _bin-ops:
 
@@ -1285,194 +1104,181 @@ left-associative, :mzn:`a++b++c` is parsed as :mzn:`a++(b++c)` because
 
 .. table:: Binary infix operators
 
-  ===============================  ====== ======
-  Symbol(s)                        Assoc. Prec.
-  ===============================  ====== ======
-  :mzn:`<->`                       left   1200
+  ===============================  ========== ===========
+  Symbolo(s)                       Asociación Precedencia
+  ===============================  ========== ===========
+  :mzn:`<->`                       izquierda  1200
 
-  :mzn:`->`                        left   1100
-  :mzn:`<-`                        left   1100
+  :mzn:`->`                        izquierda  1100
+  :mzn:`<-`                        izquierda  1100
 
-  ``\/``                           left   1000
-  :mzn:`xor`                       left   1000
+  ``\/``                           izquierda  1000
+  :mzn:`xor`                       izquierda  1000
 
-  ``/\``                           left   900
+  ``/\``                           izquierda  900
 
-  :mzn:`<`                         none   800
-  :mzn:`>`                         none   800
-  :mzn:`<=`                        none   800
-  :mzn:`>=`                        none   800
+  :mzn:`<`                         ninguna    800
+  :mzn:`>`                         ninguna    800
+  :mzn:`<=`                        ninguna    800
+  :mzn:`>=`                        ninguna    800
   :mzn:`==`,
-  :mzn:`=`                         none   800
-  :mzn:`!=`                        none   800
+  :mzn:`=`                         ninguna    800
+  :mzn:`!=`                        ninguna    800
 
-  :mzn:`in`                        none   700
-  :mzn:`subset`                    none   700
-  :mzn:`superset`                  none   700
+  :mzn:`in`                        ninguna    700
+  :mzn:`subset`                    ninguna    700
+  :mzn:`superset`                  ninguna    700
 
-  :mzn:`union`                     left   600
-  :mzn:`diff`                      left   600
-  :mzn:`symdiff`                   left   600
+  :mzn:`union`                     izquierda  600
+  :mzn:`diff`                      izquierda  600
+  :mzn:`symdiff`                   izquierda  600
 
-  :mzn:`..`                        none   500
+  :mzn:`..`                        ninguna    500
 
-  :mzn:`+`                         left   400
-  :mzn:`-`                         left   400
+  :mzn:`+`                         izquierda  400
+  :mzn:`-`                         izquierda  400
 
-  :mzn:`*`                         left   300
-  :mzn:`div`                       left   300
-  :mzn:`mod`                       left   300
-  :mzn:`/`                         left   300
-  :mzn:`intersect`                 left   300
+  :mzn:`*`                         izquierda  300
+  :mzn:`div`                       izquierda  300
+  :mzn:`mod`                       izquierda  300
+  :mzn:`/`                         izquierda  300
+  :mzn:`intersect`                 izquierda  300
 
-  :mzn:`++`                        right  200
+  :mzn:`++`                        derecha    200
 
-  `````  :mzndef:`<ident>` `````   left   100
-  ===============================  ====== ======
+  `````  :mzndef:`<ident>` `````   izquierda  100
+  ===============================  ========== ===========
 
 
-A user-defined binary operator is created by backquoting a normal
-identifier, for example:
+Un operador binario definido por el usuario se crea mediante el retroceso de un identificador normal, por ejemplo:
 
 .. code-block:: minizinc
 
   A `min2` B
 
-This is a static error if the identifier is not the name of a binary
-function or predicate.
+Este es un error estático si el identificador no es el nombre de una función o predicado binario.
 
-The unary operators are: :mzn:`+`, :mzn:`-` and :mzn:`not`.
-User-defined unary operators are not possible.
+Los operadores unarios son: :mzn:`+`, :mzn:`-` y :mzn:`not`.
+Los operadores unarios definidos por el usuario no son posibles.
 
-As :ref:`spec-Identifiers` explains, any built-in operator can be used as
-a normal function identifier by quoting it, e.g: :mzn:`'+'(3, 4)` is
-equivalent to :mzn:`3 + 4`.
+Como explica:ref:`spec-Identifiers`, cualquier operador incorporado se puede usar como un identificador de función normal citándolo, por ejemplo: :mzn:`'+'(3, 4)` es equivalente a :mzn:`3 + 4`.
 
-The meaning of each operator is given in :ref:`spec-builtins`.
+El significado de cada operador se da en :ref:`spec-builtins`.
 
-Expression Atoms
-~~~~~~~~~~~~~~~~
+
+
+
+Expresiones atómicas
+~~~~~~~~~~~~~~~~~~~~
 
 .. _spec-Identifier-Expressions-and-Quoted-Operator-Expressions:
 
-Identifier Expressions and Quoted Operator Expressions
-++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Expresiones de identificador y expresiones de operador entrecomilladas
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 
-Identifier expressions and quoted operator expressions have the following
-syntax:
+Las expresiones de identificador y las expresiones de operador entre comillas tienen la siguiente sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Identifiers and quoted operators
   :end-before: %
 
-Examples of identifiers were given in :ref:`spec-Identifiers`.  The
-following are examples of quoted operators:
+Se dieron ejemplos de identificadores en :ref:`spec-Identifiers`.  Los siguientes son ejemplos de operadores cotizados:
 
 .. code-block:: minizinc
 
   '+'
   'union'
 
-In quoted operators, whitespace is not permitted between either quote
-and the operator.  :ref:`spec-Operators` lists MiniZinc's built-in operators.
+En los operadores citados, el espacio en blanco no está permitido entre la cotización y el operador.  :ref:`spec-Operators` enumera los operadores incorporados de MiniZinc.
 
-Syntactically, any identifier or quoted operator can serve as an expression.
-However, in a valid model any identifier or quoted operator serving as an
-expression must be the name of a variable.
+Sintácticamente, cualquier identificador o operador citado puede servir como una expresión.
+Sin embargo, en un modelo válido, cualquier identificador o operador citado que sirva como expresión debe ser el nombre de una variable.
 
 .. _spec-Anonymous-Decision-Variables:
 
-Anonymous Decision Variables
-++++++++++++++++++++++++++++
 
-There is a special identifier, :mzn:`_`, that represents an unfixed,
-anonymous decision variable.  It can take on any type that can be a decision
-variable.  It is particularly useful for initialising decision variables
-within compound types.  For example, in the following array the first and
-third elements are fixed to 1 and 3 respectively and the second and fourth
-elements are unfixed:
+
+Variables de decisión anónimas
+++++++++++++++++++++++++++++++
+
+Hay un identificador especial, :mzn:`_`, que representa una variable de decisión anónima no fija. Puede tomar cualquier tipo que pueda ser una variable de decisión. Es particularmente útil para inicializar variables de decisión dentro de tipos compuestos. Por ejemplo, en la siguiente matriz, los elementos primero y tercero se fijan en 1 y 3, respectivamente, y los elementos segundo y cuarto no están fijos:
 
 .. code-block:: minizinc
 
   array[1..4] of var int: xs = [1, _, 3, _];
 
-Any expression that does not contain :mzn:`_` and does not involve
-decision variables is fixed.
+Cualquier expresión que no contenga :mzn:`_` y no involucra variables de decisión, por lo que es fijo.
 
-Boolean Literals
-++++++++++++++++
 
-Boolean literals have this syntax:
+
+
+Literales booleanos
++++++++++++++++++++
+
+Los literales booleanos tienen esta sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Boolean literals
   :end-before: %
 
-Integer and Float Literals
-++++++++++++++++++++++++++
 
-There are three forms of integer literals - decimal, hexadecimal, and
-octal - with these respective forms:
+
+Entero y Literales de números de punto flotante
++++++++++++++++++++++++++++++++++++++++++++++++
+
+Hay tres formas de literales enteros: decimal, hexadecimal y octal, con estas formas respectivas:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Integer literals
   :end-before: %
 
-For example: :mzn:`0`, :mzn:`005`, :mzn:`123`, :mzn:`0x1b7`,
-:mzn:`0o777`;  but not :mzn:`-1`.
+Por ejemplo: :mzn:`0`, :mzn:`005`, :mzn:`123`, :mzn:`0x1b7`, :mzn:`0o777`;  pero no :mzn:`-1`.
 
-Float literals have the following form:
+Los literales de punto flotante poseen la siguiente forma:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Float literals
   :end-before: %
 
-For example: :mzn:`1.05`, :mzn:`1.3e-5`, :mzn:`1.3+e5`;  but not
-:mzn:`1.`, :mzn:`.5`, :mzn:`1.e5`, :mzn:`.1e5`, :mzn:`-1.0`,
-:mzn:`-1E05`.
-A :mzn:`-` symbol preceding an integer or float literal is parsed as a
-unary minus (regardless of intervening whitespace), not as part of the
-literal.  This is because it is not possible in general to distinguish a
-:mzn:`-` for a negative integer or float literal from a binary minus
-when lexing.
+Por ejemplo: :mzn:`1.05`, :mzn:`1.3e-5`, :mzn:`1.3+e5`;  pero no :mzn:`1.`, :mzn:`.5`, :mzn:`1.e5`, :mzn:`.1e5`, :mzn:`-1.0`, :mzn:`-1E05`.
+
+Un símbolo :mzn:`-` precede a un entero o literal de número flotante se analiza como unario menos (ndependientemente del espacio en blanco intermedio), no como parte del literal.  Esto se debe a que, en general, no es posible distinguir una :mzn:`-` para un entero negativo o literal de número flotante de un binario menos cuando se lee.
 
 .. _spec-String-Interpolation-Expressions:
 
-String Literals and String Interpolation
-++++++++++++++++++++++++++++++++++++++++
 
-String literals are written as in C:
+
+
+Literales de cadenas e interpolación de cadenas
++++++++++++++++++++++++++++++++++++++++++++++++
+
+Los literales de cadena se escriben como en C:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % String literals
   :end-before: %
 
-This includes C-style escape sequences, such as :mzn:`\"` for
-double quotes, :mzn:`\\` for backslash, and
-:mzn:`\n` for newline.
+Esto incluye secuencias de escape estilo C, como :mzn:`\"` para comillas dobles, :mzn:`\\` para la barra invertida, y :mzn:`\n` para nueva línea.
 
-For example: :mzn:`"Hello, world!\n"`.
+Por ejemplo: :mzn:`"Hello, world!\n"`.
 
-String literals must fit on a single line.
+Los literales de cadena deben caber en una sola línea.
 
-Long string literals can be split across multiple lines using string
-concatenation.  For example:
+Los literales de cadena larga se pueden dividir en varias líneas mediante la concatenación de cadenas. Por ejemplo:
 
 .. code-block:: minizinc
 
     string: s = "This is a string literal "
              ++ "split across two lines.";
 
-A string expression can contain an arbitrary MiniZinc expression, which will
-be converted to a string similar to the builtin :mzn:`show` function and
-inserted into the string.
+Una expresión de cadena puede contener una expresión arbitraria de MiniZinc, que se convertirá en una cadena similar a la función builtin :mzn:`show` y se insertará en la cadena.
 
-For example:
+Por ejemplo:
 
 .. code-block:: minizinc
 
@@ -1482,17 +1288,19 @@ For example:
 
 .. _spec-set-literals:
 
-Set Literals
-++++++++++++
 
-Set literals have this syntax:
+
+Establecer Literales
+++++++++++++++++++++
+
+Los literales establecidos tienen esta sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Set literals
   :end-before: %
 
-For example:
+Por ejemplo:
 
 .. code-block:: minizinc
 
@@ -1500,109 +1308,101 @@ For example:
   { }
   { 1, 2.0 }
 
-The type-insts of all elements in a literal set must be the same, or
-coercible to the same type-inst (as in the last example above, where the
-integer :mzn:`1` will be coerced to a :mzn:`float`).
+La instanciación de tipo de todos los elementos en un conjunto literal debe ser la misma, o coercible para la misma instancia de tipo (como en el último ejemplo anterior, donde el entero :mzn:`1` será coaccionado a un :mzn:`float`).
 
 
 .. _spec-set-comprehensions:
 
-Set Comprehensions
-++++++++++++++++++
 
-Set comprehensions have this syntax:
+
+
+
+Establecer comprensiones
+++++++++++++++++++++++++
+
+Las comprensiones establecidas tienen esta sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Set comprehensions
   :end-before: %
 
-For example (with the literal equivalent on the right):
+Por ejemplo (con el equivalente literal a la derecha):
 
 .. code-block:: minizinc
 
     { 2*i | i in 1..5 }     % { 2, 4, 6, 8, 10 }
     {  1  | i in 1..5 }     % { 1 }   (no duplicates in sets)
 
-The expression before the :mzn:`|` is the *head expression*.  The
-expression after the :mzn:`in` is a *generator expression*.
-Generators can be restricted by a *where-expression*.  For example:
+La expresión antes del :mzn:`|` es la *expresión de la cabeza*. La expresión después del :mzn:`in` es una *expresión del generador*.
+Los generadores pueden ser restringidos por una expresión mientras (*where-expression*). Por ejemplo:
 
 .. code-block:: minizinc
 
   { i | i in 1..10 where (i mod 2 = 0) }     % { 2, 4, 6, 8, 10 }
 
-When multiple generators are present, the right-most generator acts as the
-inner-most one.  For example:
+Cuando hay múltiples generadores presentes, el generador que está más a la derecha actúa como el más interno. Por ejemplo:
 
 .. code-block:: minizinc
 
     { 3*i+j | i in 0..2, j in {0, 1} }    % { 0, 1, 3, 4, 6, 7 }
 
-The scope of local generator variables is given by the following rules:
+El alcance de las variables del generador local viene dado por las siguientes reglas:
 
-- They are visible within the head expression (before the :mzn:`|`).
-- They are visible within the where-expression.
-- They are visible within generator expressions in any subsequent
-  generators.
+- Son visibles dentro de la expresión de la cabeza (antes de :mzn:`|`).
+- Son visibles dentro de la expresión mientras (where-expression).
+- Son visibles dentro de las expresiones del generador en cualquier generador posterior.
 
-The last of these rules means that the following set comprehension is allowed:
+La última de estas reglas significa que se permite la siguiente comprensión del conjunto:
 
 .. code-block:: minizinc
 
     { i+j | i in 1..3, j in 1..i }  % { 1+1, 2+1, 2+2, 3+1, 3+2, 3+3 }
 
-A generator expression must be an array or a fixed set.
+Una expresión de generador debe ser una matriz o un conjunto fijo.
 
-*Rationale: For set comprehensions, set generators would suffice, but for
-array comprehensions, array generators are required for full expressivity
-(e.g., to provide control over the order of the elements in the resulting
-array).  Set comprehensions have array generators for consistency with array
-comprehensions, which makes implementations simpler.*
+*Razón fundamental: Para las comprensiones del conjunto, los generadores de conjuntos serían suficientes, pero para las comprensiones de matriz, se requieren generadores de matriz para una expresividad total (ejemplo., para proporcionar control sobre el orden de los elementos en la matriz resultante). Las comprensiones de conjuntos tienen generadores de matriz para coherencia con las comprensiones de matriz, lo que hace que las implementaciones sean más simples.*
 
-The where-expression (if present) must be Boolean.
-It can be var, in which case the type of the comprehension is lifted to an optional type.  Only one
-where-expression per comprehension is allowed.
 
-*Rationale:
-Allowing one where-expression per generator is another possibility, and one
-that could seemingly result in more efficient evaluation in some cases.  For
-example, consider the following comprehension:*
+La expresión mientras (si está presente) debe ser booleano.
+Puede ser ``var``, en cuyo caso el tipo de comprensión se eleva a un tipo opcional. Solo una donde se permite la expresión por comprensión.
+
+*Razón fundamental:
+Permitir una expresión-donde por generador es otra posibilidad, y una que aparentemente podría dar como resultado una evaluación más eficiente en algunos casos. Por ejemplo, considere la siguiente comprensión:*
 
 .. code-block:: minizinc
 
     [f(i, j) | i in A1, j in A2 where p(i) /\ q(i,j)]
 
-*If multiple where-expressions were allowed, this could be expressed more
-efficiently in the following manner, which avoids the fruitless "inner loop
-iterations" for each "outer loop iteration" that does not satisfy*
-:mzn:`p(i)`:
+*Si se permitieran múltiples expresiones-where, esto podría expresarse más eficientemente de la siguiente manera, lo que evita las "iteraciones de bucle interno" infructuosas para cada "iteración de bucle externo" que no satisface* :mzn:`p(i)`:
 
 .. code-block:: minizinc
 
     [f(i, j) | i in A1 where p(i), j in A2 where q(i,j)]
 
-*However, this efficiency can also be achieved with nested comprehensions:*
+*Sin embargo, esta eficiencia también se puede lograr con comprensiones anidadas:*
 
 .. code-block:: minizinc
 
     [f(i, j) | i in [k | k in A1 where p(k)], j in A2 where q(i,j)]
 
-*Therefore, a single where-expression is all that is supported.*
+*Por lo tanto, una sola expresión de dónde es todo lo que es compatible.*
 
 .. _spec-array-literals:
 
-Array Literals
-++++++++++++++
 
-Array literals have this syntax:
+
+Literales de matrices
++++++++++++++++++++++
+
+Los literales de matriz tienen esta sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Array literals
   :end-before: %
 
-For example:
+Por ejemplo:
 
 .. code-block:: minizinc
 
@@ -1611,26 +1411,25 @@ For example:
     [1, _]
 
 
-In a array literal all elements must have the same type-inst, or
-be coercible to the same type-inst (as in the last example above, where the
-fixed integer :mzn:`1` will be coerced to a :mzn:`var int`).
+En una matriz literal, todos los elementos deben tener la misma instancia de tipo, o ser coercibles para la misma instancia de tipo (como en el último ejemplo anterior, donde el entero fijo :mzn:`1` será coaccionado a un :mzn:`var int`).
 
-The indices of a array literal are implicitly :mzn:`1..n`, where :mzn:`n` is
-the length of the literal.
+Los índices de una matriz literal son implícitamente :mzn:`1..n`, donde :mzn:`n` es la longitud del literal.
 
 .. _spec-2d-array-literals:
 
-2d Array Literals
-+++++++++++++++++
 
-Simple 2d array literals have this syntax:
+
+Arreglos literales en 2d
+++++++++++++++++++++++++
+
+Los literales simples de arreglos 2d tienen esta sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % 2D Array literals
   :end-before: %
 
-For example:
+Por ejemplo:
 
 .. code-block:: minizinc
 
@@ -1640,191 +1439,175 @@ For example:
     [| x, y, z |]       % array[1..1, 1..3]
     [| 1 | _ | _ |]     % array[1..3, 1..1]
 
-In a 2d array literal, every sub-array must have the same length.
+En un 2d array literal, cada sub-array debe tener la misma longitud.
 
-In a 2d array literal all elements must have the same type-inst, or
-be coercible to the same type-inst (as in the last example above, where the
-fixed integer :mzn:`1` will be coerced to a :mzn:`var int`).
+En un 2d array literal, todos los elementos deben tener la misma instancia de tipo, o ser coercibles para el mismo tipo de instanciación (como en el último ejemplo anterior, donde el entero fijo :mzn:`1` será coaccionado a un :mzn:`var int`).
 
-The indices of a 2d array literal are implicitly :mzn:`(1,1)..(m,n)`,
-where :mzn:`m` and :mzn:`n` are determined by the shape of the literal.
+Los índices de un 2d array literal están implícitamente :mzn:`(1,1)..(m,n)`, donde :mzn:`m` y :mzn:`n` están determinados por la forma del literal.
 
 
 .. _spec-array-comprehensions:
 
-Array Comprehensions
-++++++++++++++++++++
 
-Array comprehensions have this syntax:
+
+
+Arreglo de Comprensiones
+++++++++++++++++++++++++
+
+Arreglo de Comprensiones tienen la siguiente sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Array comprehensions
   :end-before: %
 
-For example (with the literal equivalents on the right):
+Por ejemplo (con los equivalentes literales a la derecha):
 
 .. code-block:: minizinc
 
     [2*i | i in 1..5]       % [2, 4, 6, 8, 10]
 
-Array comprehensions have more flexible type and inst requirements than set
-comprehensions (see :ref:`spec-Set-Comprehensions`).
+Arreglo de Comprensiones tener requisitos de tipo e instanciación más flexibles que las comprensiones establecidas (see :ref:`spec-Set-Comprehensions`).
 
-Array comprehensions are allowed over a variable set with finite type, the
-result is an array of optional type, with length equal to the
-cardinality of the upper bound of the variable set.
-For example:
+Arreglo de Comprensiones se permiten sobre un conjunto de variables con tipo finito, el resultado es una matriz de tipo opcional, con una longitud igual a la cardinalidad del límite superior del conjunto de variables.
+
+Por ejemplo:
 
 .. code-block:: minizinc
 
     var set of 1..5: x;
     array[int] of var opt int: y = [ i * i | i in x ];
 
-The length of array will be 5.
+La longitud de la matriz será 5.
 
-Array comprehensions are allowed where the where-expression is a :mzn:`var bool`.
-Again the resulting array is of optional type, and of length
-equal to that given by the generator expressions.
-For example:
+Se permiten las comprensiones de matriz donde la expresión mientras es :mzn:`var bool`.
+De nuevo, la matriz resultante es de tipo opcional, y de longitud igual a la dada por las expresiones del generador.
+Por ejemplo:
 
 .. code-block:: minizinc
 
    var int x;
    array[int] of var opt int: y = [ i | i in 1..10 where i != x ];
 
-The length of the array wtill be 10.
+La longitud de la matriz será 10.
 
-The indices of an evaluated simple array comprehension are implicitly
-:mzn:`1..n`, where :mzn:`n` is the length of the evaluated comprehension.
+Los índices de una comprensión de matriz simple evaluada son implícitamente
+:mzn:`1..n`, donde :mzn:`n` es la duración de la comprensión evaluada.
 
 .. _spec-array-access-expressions:
 
-Array Access Expressions
-++++++++++++++++++++++++
 
-Array elements are accessed using square brackets after an expression:
+
+Expresiones de Matriz de Acceso
++++++++++++++++++++++++++++++++
+
+Se accede a los elementos de matriz usando corchetes después de una expresión:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Array access
   :end-before: %
 
-For example:
+Por ejemplo:
 
 .. code-block:: minizinc
 
     int: x = a1[1];
 
-If all the indices used in an array access are fixed, the type-inst of the
-result is the same as the element type-inst.  However, if any
-indices are not fixed, the type-inst of the result is the varified element
-type-inst.  For example, if we have:
+Si todos los índices utilizados en un arreglo de acceso son fijos, la tipo-instanciación del resultado es la misma que el elemento tipo-instanciación. Sin embargo, si los índices no son fijos, la tipo-instanciación del resultado es el elemento varificado tipo-instanciación. Por ejemplo, si tenemos:
 
 .. code-block:: minizinc
 
    array[1..2] of int: a2 = [1, 2];
    var int: i;
 
-then the type-inst of :mzn:`a2[i]` is :mzn:`var int`.  If the element type-inst
-is not varifiable, such an access causes a static error.
+Entonces el tipo-instanciación de :mzn:`a2[i]` es :mzn:`var int`. Si el elemento tipo-instanciación no es variable, tal acceso causa un error estático.
 
-Multi dimensional arrays
-are accessed using comma separated indices.
+Se accede a matrices multidimensionales usando índices separados por comas.
 
 .. code-block:: minizinc
 
     array[1..3,1..3] of int: a3;
     int: y = a3[1, 2];
 
-Indices must match the index set type of the array. For example, an array
-declared with an enum index set can only be accessed using indices from that
-enum.
+Los índices deben coincidir con el tipo de conjunto de índice de la matriz. Por ejemplo, una matriz declarada con un conjunto de índices enum solo se puede acceder usando índices de esa enumeración.
 
 .. code-block:: minizinc
 
     enum X = {A,B,C};
     array[X] of int: a4 = [1,2,3];
-    int: y = a4[1];                  % wrong index type
-    int: z = a4[B];                  % correct
+    int: y = a4[1];                  % tipo de índice incorrecto
+    int: z = a4[B];                  % correcto
 
 
-Annotation Literals
-+++++++++++++++++++
+Literales de Anotación
+++++++++++++++++++++++
 
-Literals of the :mzn:`ann` type have this syntax:
+Literales del tipo :mzn:`ann` tiene la siguiente sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Annotation literals
   :end-before: %
 
-For example:
+Por ejemplo:
 
 .. code-block:: minizinc
 
     foo
     cons(1, cons(2, cons(3, nil)))
 
-There is no way to inspect or deconstruct annotation literals in a MiniZinc
-model;  they are intended to be inspected only by an implementation, e.g., to
-direct compilation.
+No hay forma de inspeccionar o deconstruir literales de anotación en un modelo MiniZinc;  están destinados a ser inspeccionados solo por una implementación, por ejemplo, para dirigir la compilación.
 
-If-then-else Expressions
-++++++++++++++++++++++++
 
-MiniZinc provides if-then-else expressions, which provide selection from two
-alternatives based on a condition.  They have this syntax:
+
+
+
+
+Expresiones Si-Entonces-Sino (If-then-else)
++++++++++++++++++++++++++++++++++++++++++++
+
+MiniZinc proporciona expresiones if-then-else, que proporcionan una selección de dos alternativas basadas en una condición. Ellos tienen esta sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % If-then-else expressions
   :end-before: %
 
-For example:
+Por ejemplo:
 
 .. code-block:: minizinc
 
     if x <= y then x else y endif
     if x < 0 then -1 elseif x > 0 then 1 else 0 endif
 
-The presence of the :mzn:`endif` avoids possible ambiguity when an
-if-then-else expression is part of a larger expression.
+La presencia del :mzn:`endif` evita la posible ambigüedad cuando una expresión if-then-else es parte de una expresión más grande.
 
-The type-inst of the :mzn:`if` expression must be :mzn:`par bool` or
-:mzn:`var bool`.
-The :mzn:`then` and
-:mzn:`else` expressions must have the same type-inst, or be coercible to the
-same type-inst, which is also the type-inst of the whole expression.
+La instanciación de tipo de la :mzn:`if` la expresión debe ser :mzn:`par bool` o :mzn:`var bool`.
+El :mzn:`then` y :mzn:`else` las expresiones deben tener el mismo tipo-instanciación o ser coercibles para el mismo tipo-instanciación, que también es el tipo-instanciación de toda la expresión.
 
-If the :mzn:`if` expression is :mzn:`var bool` then the type-inst of the
-:mzn:`then` and :mzn:`else` expressions must be varifiable.
+Si la expresión :mzn:`if` es :mzn:`var bool` entonces el tipo-instanciación de el :mzn:`then` y la expresión :mzn:`else` debe ser varificable.
 
-If the :mzn:`if` expression is :mzn:`par bool` then
-evaluation of if-then-else expressions is lazy: the condition is evaluated,
-and then only one of the :mzn:`then` and :mzn:`else` branches are evaluated,
-depending on whether the condition succeeded or failed.
-This is not the case if it is :mzn:`var bool`.
+Si la expresión :mzn:`if` es :mzn:`par bool` entonces la evaluación de las expresiones if-then-else es floja (lazy): la condición es evaluada, y luego solo uno de los :mzn:`then` y :mzn:`else` las ramas se evalúan, dependiendo de si la condición tuvo éxito o falló.
+Este no es el caso si es :mzn:`var bool`.
 
 
 .. _spec-let-expressions:
 
-Let Expressions
+
+Expresiones Let
 +++++++++++++++
 
-Let expressions provide a way of introducing local names for one or more
-expressions and local constraints
-that can be used within another expression.  They are
-particularly useful in user-defined operations.
+Las expresiones Let proporcionan una forma de introducir nombres locales para una o más expresiones y restricciones locales que se pueden usar dentro de otra expresión. Son particularmente útiles en operaciones definidas por el usuario.
 
-Let expressions have this syntax:
+Las expresions ``let`` tienen la siguiente sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Let expressions
   :end-before: %
 
-For example:
+Por ejemplo:
 
 .. code-block:: minizinc
 
@@ -1833,17 +1616,14 @@ For example:
           constraint x >= y /\ x >= -y /\ (x = y \/ x = -y); }
     in x
 
-The scope of a let local variable covers:
+El alcance de una variable local ``let`` abarca:
 
-- The type-inst and initialisation expressions of any subsequent variables
-  within the let expression (but not the variable's own initialisation
-  expression).
-- The expression after the :mzn:`in`, which is parsed as greedily as
-  possible.
+- Las expresiones de tipo-instanciación e inicialización de cualquier variable posterior dentro de la expresión let (pero no la expresión de inicialización propia de la variable).
+- La expresión después del :mzn:`in`, que es analizado tan codiciosamente como sea posible.
 
-A variable can only be declared once in a let expression.
+Una variable solo puede declararse una vez en una expresión let.
 
-Thus in the following examples the first is acceptable but the rest are not:
+Por lo tanto, en los siguientes ejemplos, el primero es aceptable, pero el resto no:
 
 .. code-block:: minizinc
 
@@ -1858,187 +1638,162 @@ Thus in the following examples the first is acceptable but the rest are not:
   were present in the function or predicate signature.
   TODO: type-inst variables are currently not fully supported
 
-The initialiser for a let local variable can be omitted only if the variable
-is a decision variable.  For example:
+El inicializador para una variable local let puede omitirse solo si la variable es una variable de decisión. Por ejemplo:
 
 .. code-block:: minizinc
 
     let { var int: x; } in ...;    % ok
     let {     int: x; } in ...;    % illegal
 
-The type-inst of the entire let expression is the type-inst of the expression
-after the :mzn:`in` keyword.
+La tipo-instanciación de toda la expresión let es la tipo-instanciación de la expresión después de la palabra clave :mzn:`in`.
 
-There is a complication involving let expressions in negative contexts.  A
-let expression occurs in a negative context if it occurs in an expression
-of the form :mzn:`not X`, :mzn:`X <-> Y}` or in the sub-expression
-:mzn:`X` in :mzn:`X -> Y` or :mzn:`Y <- X`, or in a subexpression
+Hay una complicación que involucra expresiones de let en contextos negativos.  Una expresión ``let`` ocurre en un contexto negativo si ocurre en una expresión de la forma :mzn:`not X`, :mzn:`X <-> Y}` o en la sub-expresión
+:mzn:`X` en :mzn:`X -> Y` o :mzn:`Y <- X`, o en una subexpresion
 :mzn:`bool2int(X)`.
 
-If a let expression is used in a negative context, then any let-local
-decision variables must be defined only in terms of non-local variables and
-parameters.  This is because local variables are implicitly existentially
-quantified, and if the let expression occurred in a negative context then
-the local variables would be effectively universally quantified which is not
-supported by MiniZinc.
-
-Constraints in let expressions float to the nearest enclosing Boolean
-context.  For example
+Las restricciones en las expresiones de let flotan al contexto booleano circundante más cercano. Por ejemplo
 
 .. code-block:: minizinc
 
      constraint b -> x + let { var 0..2: y; constraint y != -1;} in y >= 4;
 
-is equivalent to
+Es equivalente a:
 
 .. code-block:: minizinc
 
      var 0..2: y;
      constraint b -> (x + y >= 4 /\ y != 1);
 
-Call Expressions
-++++++++++++++++
 
-Call expressions are used to call predicates and functions.
 
-Call expressions have this syntax:
+Expresiones de llamada
+++++++++++++++++++++++
+
+Las expresiones de llamada se usan para llamar predicados y funciones.
+
+Las expresiones de llamada tienen esta sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Call expressions
   :end-before: %
 
-For example:
+Por ejemplo:
 
 .. code-block:: minizinc
 
     x = min(3, 5);
 
-The type-insts of the expressions passed as arguments must match the
-argument types of the called predicate/function.  The return type of the
-predicate/function must also be appropriate for the calling context.
 
-Note that a call to a function or predicate with no arguments is
-syntactically indistinguishable from the use of a variable, and so must be
-determined during type-inst checking.
+El tipo-instanciación de las expresiones pasadas como argumentos debe coincidir con los tipos de argumento de las llamadas predicado/función. El tipo de retorno del predicado/función también debe ser apropiado para el contexto de llamada.
 
-Evaluation of the arguments in call expressions is strict: all arguments
-are evaluated before the call itself is evaluated.  Note that this includes
-Boolean operations such as ``/\``, ``\/``, :mzn:`->` and :mzn:`<-`
-which could be lazy in one argument.  The one exception is :mzn:`assert`,
-which is lazy in its third argument (:ref:`spec-Other-Operations`).
+Tenga en cuenta que una llamada a una función o predicado sin argumentos es sintácticamente indistinguible del uso de una variable, y así debe determinarse durante la comprobación de tipo-instanciación.
 
-*Rationale: Boolean operations are strict because: (a) this minimises
-exceptional cases;  (b) in an expression like* :mzn:`A -> B` *where*
-:mzn:`A` *is not fixed and* :mzn:`B` *causes an abort, the appropriate
-behaviour is unclear if laziness is present;  and (c) if a user needs
-laziness, an if-then-else can be used.*
+La evaluación de los argumentos en las expresiones de llamada es estricta: todos los argumentos se evalúan antes de que se evalúe la llamada. Tenga en cuenta que esto incluye operaciones booleanas como ``/\``, ``\/``, :mzn:`->` y :mzn:`<-` que podría ser flojo (lazy) en un argumento. La única excepción es :mzn:`assert`, que es flojo en su tercer argumento (:ref:`spec-Other-Operations`).
 
-The order of argument evaluation is not specified.  *Rationale: Because MiniZinc
-is declarative, there is no obvious need to specify an evaluation order, and
-leaving it unspecified gives implementors some freedom.*
+*Razón fundamental: Las operaciones booleanas son estrictas porque:
+(a) esto minimiza casos excepcionales;
+(b) en una expresión como* :mzn:`A -> B` *donde* :mzn:`A` *no es fijo y* :mzn:`B` *provoca un aborto, el comportamiento apropiado no está claro si la pereza está presente; y
+(c) si un usuario necesita laziness, un if-then-else puede ser usado.*
+
+El orden de evaluación de los argumentos no está especificado. *Justificación: debido a que MiniZinc es declarativo, no existe una necesidad obvia de especificar una orden de evaluación, y dejarla sin especificar da a los implementadores cierta libertad.*
 
 .. _spec-generator-call-expressions:
 
-Generator Call Expressions
-++++++++++++++++++++++++++
 
-MiniZinc has special syntax for certain kinds of call expressions which makes
-models much more readable.
 
-Generator call expressions have this syntax:
+Expresiones de Generador de llamadas
+++++++++++++++++++++++++++++++++++++
+
+MiniZinc tiene una sintaxis especial para ciertos tipos de expresiones de llamada lo que hace que los modelos sean mucho más legibles.
+
+Las expresiones de llamada del generador tienen esta sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Generator call expressions
   :end-before: %
 
-A generator call expression :mzn:`P(Gs)(E)` is equivalent to the call
-expression :mzn:`P([E | Gs])`.
-For example, the expression:
+Una expresión de llamada del generador :mzn:`P(Gs)(E)` es equivalente a la expresión de llamada :mzn:`P([E | Gs])`.
+Por ejemplo, la expresión:
 
 .. code-block:: minizinc
 
     forall(i,j in Domain where i<j)
         (noattack(i, j, queens[i], queens[j]));
 
-(in a model specifying the N-queens problem) is equivalent to:
+(en un modelo que especifica el problema N-Reinas) es equivalente a:
 
 .. code-block:: minizinc
 
     forall( [ noattack(i, j, queens[i], queens[j])
             | i,j in Domain where i<j ] );
 
-The parentheses around the latter expression are mandatory;  this avoids
-possible confusion when the generator call expression is part of a larger
-expression.
+Los paréntesis alrededor de la última expresión son obligatorios; esto evita una posible confusión cuando la expresión de llamada del generador es parte de una expresión más grande.
 
-The identifier must be the name of a unary predicate or function that takes
-an array argument.
+El identificador debe ser el nombre de un predicado o función unaria que toma un argumento de matriz.
 
-The generators and where-expression (if present) have the same requirements
-as those in array comprehensions (:ref:`spec-Array-Comprehensions`).
+Los generadores y expresión-mientras (si está presente) tienen los mismos requisitos que aquellos en las comprensiones de matriz (:ref:`spec-Array-Comprehensions`).
 
 .. _spec-items:
 
-Items
------
 
-This section describes the top-level program items.
+
+
+Elementos
+---------
+
+Esta sección describe los elementos del programa de nivel superior.
 
 .. _spec-include-items:
 
-Include Items
-~~~~~~~~~~~~~
 
-Include items allow a model to be split across multiple files.  They have
-this syntax:
+
+Incluir elementos
+~~~~~~~~~~~~~~~~~~~~
+
+Incluir elementos permite dividir un modelo en varios archivos. Ellos tienen esta sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Include items
   :end-before: %
 
-For example:
+Por ejemplo:
 
 .. code-block:: minizinc
 
     include "foo.mzn";
 
-includes the file ``foo.mzn``.
+Incluye el archivo ``foo.mzn``.
 
-Include items are particularly useful for accessing libraries or breaking up
-large models into small pieces.  They are not, as :ref:`spec-Model-Instance-Files`
-explains, used for specifying data files.
+Incluir elementos es particularmente útil para acceder a bibliotecas o dividir modelos grandes en piezas pequeñas. Ellos no son, como :ref:`spec-Model-Instance-Files` explica, utilizado para especificar archivos de datos.
 
-If the given name is not a complete path then the file is searched for in an
-implementation-defined set of directories.  The search directories must be
-able to be altered with a command line option.
+Si el nombre de pila no es completo, el archivo se busca en un conjunto de directorios definido por la implementación. Los directorios de búsqueda deben poder modificarse con una opción de línea de comando.
 
 .. _spec-declarations:
 
-Variable Declaration Items
-~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Variable declarations have this syntax:
+
+Elementos de declaración variable
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Las declaraciones de variables tienen esta sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Variable declaration items
   :end-before: %
 
-For example:
+Por ejemplo:
 
 .. code-block:: minizinc
 
     int: A = 10;
 
-It is a type-inst error if a variable is declared and/or defined more than
-once in a model.
+Es un error de instantación de tipo si una variable se declara y/o define más de una vez en un modelo.
 
-A variable whose declaration does not include an assignment can be
-initialised by a separate assignment item (:ref:`spec-Assignments`).  For
-example, the above item can be separated into the following two items:
+Una variable cuya declaración no incluye una asignación se puede inicializar mediante un elemento de asignación por separado (:ref:`spec-Assignments`).  Por ejemplo, el artículo anterior se puede separar en los siguientes dos elementos:
 
 .. code-block:: minizinc
 
@@ -2046,113 +1801,111 @@ example, the above item can be separated into the following two items:
     ...
     A = 10;
 
-All variables that contain a parameter component must be defined at
-instance-time.
+Todas las variables que contienen un componente de parámetro deben definirse en instancia-tiempo.
 
-Variables can have one or more annotations.
-:ref:`spec-Annotations` has more on annotations.
+Las variables pueden tener una o más anotaciones. :ref:`spec-Annotations` tiene más en las anotaciones.
 
 
 .. _spec-enum_items:
 
-Enum Items
-~~~~~~~~~~
 
-Enumerated type items have this syntax:
+
+
+
+
+Elementos de Enumeración
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Los elementos de tipo enumerados tienen esta sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Enum items
   :end-before: %
 
-An example of an enum:
+Un ejemplo de una enumeración:
 
 .. code-block:: minizinc
 
      enum country = {Australia, Canada, China, England, USA};
 
-Each alternative is called an *enum case*.  The identifier used to name
-each case (e.g. :mzn:`Australia`) is
-called the *enum case name*.
+Cada alternativa se llama *caso de enumeración (enum case)*.  El identificador utilizado para nombrar cada caso (por ejemplo, :mzn:`Australia`) se llama el *nombre del caso enum (enum case name)*.
 
-Because enum case names all reside in the top-level namespace
-(:ref:`spec-Namespaces`), case names in different enums must be distinct.
+Debido a que los nombres de casos de enumeraciones residen en el espacio de nombres de nivel superior (:ref:`spec-Namespaces`), los nombres de los casos en diferentes enumeraciones deben ser distintos.
 
-An enum can be declared but not defined, in which case it must be defined
-elsewhere within the model, or in a data file.
-For example, a model file could contain this:
+Una enumeración puede declararse pero no definirse, en cuyo caso debe definirse en otra parte dentro del modelo o en un archivo de datos.
+Por ejemplo, un archivo de modelo podría contener esto:
 
 .. code-block:: minizinc
 
     enum Workers;
     enum Shifts;
 
-and the data file could contain this:
+Y el archivo de datos podría contener esto:
 
 .. code-block:: minizinc
 
     Workers = { welder, driller, stamper };
     Shifts  = { idle, day, night };
 
-Sometimes it is useful to be able to refer to one of the enum case names
-within the model.  This can be achieved by using a variable.  The model
-would read:
+Algunas veces es útil poder referirse a uno de los nombres de las cajas enum dentro del modelo. Esto se puede lograr usando una variable. El modelo leería:
 
 .. code-block:: minizinc
 
     enum Shifts;
     Shifts: idle;            % Variable representing the idle constant.
 
-and the data file:
+Y el archivo de datos:
 
 .. code-block:: minizinc
 
     enum Shifts = { idle_const, day, night };
     idle = idle_const;      % Assignment to the variable.
 
-Although the constant :mzn:`idle_const` cannot be mentioned in the
-model, the variable :mzn:`idle` can be.
+Aunque la constante :mzn:`idle_const` no se puede mencionar en el modelo, la variable :mzn:`idle` puede ser.
 
-All enums must be defined at instance-time.
+Todas las enumeraciones se deben definir en el momento de la instancia.
 
-Enum items can be annotated.
-:ref:`spec-Annotations` has more details on annotations.
+Los elementos de enumeraciones se pueden anotar. :ref:`spec-Annotations` tiene más detalles sobre las anotaciones.
 
-Each case name can be coerced automatically to the integer corresponding to its index in the type.
+Cada nombre de caso se puede forzar automáticamente al entero correspondiente a su índice en el tipo.
 
 .. code-block:: minizinc
 
   int: oz = Australia;  % oz = 1
 
-For each enumerated type :mzn:`T`, the following functions exist:
+Para cada tipo enumerado :mzn:`T`, las siguientes funciones existen:
 
 .. code-block:: minizinc
 
-  % Return next greater enum value of x in enum type X
+  % Devuelve el siguiente valor de enumeración mayor de x en un tipo de enumeración X
   function T: enum_next(set of T: X, T: x);
   function var T: enum_next(set of T: X, var T: x);
 
-  % Return next smaller enum value of x in enum type X
+  % Devuelve el siguiente valor enumeración más pequeño de x en un tipo de enumeración X
   function T: enum_prev(set of T: X, T: x);
   function var T: enum_prev(set of T: X, var T: x);
 
-  % Convert x to enum type X
+  % Convertir x a un tipo de enumeración X
   function T: to_enum(set of T: X, int: x);
   function var T: to_enum(set of T: X, var int: x);
 
 .. _spec-assignments:
 
-Assignment Items
-~~~~~~~~~~~~~~~~
 
-Assignments have this syntax:
+
+
+Artículos de asignación
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Las asignaciones tienen esta sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Assign items
   :end-before: %
 
-For example:
+Por ejemplo:
 
 .. code-block:: minizinc
 
@@ -2162,122 +1915,114 @@ For example:
 
 .. _spec-constraint-items:
 
-Constraint Items
-~~~~~~~~~~~~~~~~
 
-Constraint items form the heart of a model.  Any solutions found for a model
-will satisfy all of its constraints.
 
-Constraint items have this syntax:
+Objetos de restricción
+~~~~~~~~~~~~~~~~~~~~~~
+
+Los elementos de restricción forman el corazón de un modelo. Cualquier solución encontrada para un modelo satisfará todas sus limitaciones.
+Los elementos de restricción tienen esta sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Constraint items
   :end-before: %
 
-For example:
+Por ejemplo:
 
 .. code-block:: minizinc
 
     constraint a*x < b;
 
-The expression in a constraint item must have type-inst :mzn:`par bool` or
-:mzn:`var bool`; note however that constraints with fixed expressions are
-not very useful.
+La expresión en un elemento de restricción debe tener instanciación de tipo :mzn:`par bool` o :mzn:`var bool`; sin embargo, tenga en cuenta que las restricciones con expresiones fijas no son muy útiles.
 
 .. _spec-solve-items:
 
-Solve Items
-~~~~~~~~~~~
 
-Every model must have exactly one solve item.  Solve items have the
-following syntax:
+
+Elementos Solve
+~~~~~~~~~~~~~~~
+
+Cada modelo debe tener exactamente un elemento de solución. Los elementos de resolución tienen la siguiente sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Solve item
   :end-before: %
 
-Example solve items:
+Ejemplo de elmentos solve:
 
 .. code-block:: minizinc
 
     solve satisfy;
     solve maximize a*x + y - 3*z;
 
-The solve item determines whether the model represents a constraint
-satisfaction problem or an optimisation problem.  In the latter case the
-given expression is the one to be minimized/maximized.
+El elemento solve determina si el modelo representa un problema de satisfacción de restricciones o un problema de optimización. En el último caso, la expresión dada es la que se debe minimizar/maximizar.
 
-The expression in a minimize/maximize solve item can have integer or float type.
+La expresión en un elemento de solve de minimizar/maximizar puede tener un tipo entero o flotante
 
 *Rationale: This is possible because all type-insts have a defined order.*
-Note that having an expression with a fixed type-inst in a solve item is not
-very useful as it means that the model requires no optimisation.
+Tenga en cuenta que tener una expresión con una instanciación de tipo fija en un elemento solve no es muy útil, ya que significa que el modelo no requiere optimización.
 
-Solve items can be annotated.  :ref:`spec-Annotations` has more details on
-annotations.
+Elementos solve puede ser anotado. :ref:`spec-Annotations` tiene más detalles sobre las anotaciones.
 
 .. _spec-output-items:
 
-Output Items
-~~~~~~~~~~~~
 
-Output items are used to present the solutions of a model instance.
-They have the following syntax:
+
+Elementos de salida
+~~~~~~~~~~~~~~~~~~~
+
+Los elementos de salida se utilizan para presentar las soluciones de una instancia modelo.
+Tienen la siguiente sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Output items
   :end-before: %
 
-For example:
+Por ejemplo:
 
 .. code-block:: minizinc
 
     output ["The value of x is ", show(x), "!\n"];
 
-The expression must have type-inst :mzn:`array[int] of par string`. It can
-be composed using the built-in operator :mzn:`++` and the built-in functions
-:mzn:`show`, :mzn:`show_int`, and :mzn:`show_float` (:ref:`spec-builtins`),
-as well as string interpolations
-(:ref:`spec-String-Interpolation-Expressions`). The output is the
-concatenation of the elements of the array. If multiple output items exist,
-the output is the concatenation of all of their outputs, in the order in
-which they appear in the model.
+La expresión debe tener un tipo-instanciación de :mzn:`array[int] of par string`. Se puede componer utilizando el operador incorporado :mzn:`++` y las funciones incorporadas :mzn:`show`, :mzn:`show_int`, y :mzn:`show_float` (:ref:`spec-builtins`), así como interpolaciones de cuerdas (:ref:`spec-String-Interpolation-Expressions`). La salida es la concatenación de los elementos de la matriz. Si existen múltiples elementos de salida, la salida es la concatenación de todas sus salidas, en el orden en que aparecen en el modelo.
 
-If no output item is present,
-the implementation should print all the global variables and their values
-in a readable format.
+Si no hay ningún elemento de salida presente, la implementación debe imprimir todas las variables globales y sus valores en un formato legible.
 
 .. _spec-annotation-items:
 
-Annotation Items
-~~~~~~~~~~~~~~~~
 
-Annotation items are used to augment the :mzn:`ann` type.  They have the
-following syntax:
+Artículos de Anotación
+~~~~~~~~~~~~~~~~~~~~~~
+
+Los elementos de anotación se utilizan para aumentar el tipo :mzn:`ann`.  Tienen la siguiente sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Annotation items
   :end-before: %
 
-For example:
+Por ejemplo:
 
 .. code-block:: minizinc
 
     annotation solver(int: kind);
 
-It is a type-inst error if an annotation is declared and/or defined more
-than once in a model.
+Es un error de instanciación de tipo si una anotación se declara y/o define más de una vez en un modelo.
 
-The use of annotations is described in :ref:`spec-Annotations`.
+El uso de anotaciones se describe en :ref:`spec-Annotations`.
 
 .. _spec-preds-and-fns:
 
-User-defined Operations
-~~~~~~~~~~~~~~~~~~~~~~~
+
+
+
+
+
+Operaciones definidas por el usuario
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 ..
   % XXX: not saying if operations need to be defined.  Implementation
@@ -2286,187 +2031,138 @@ User-defined Operations
   % to be defined even if they're not used (like parameters), and make tests
   % like predicates?
 
-MiniZinc models can contain user-defined operations.  They have this syntax:
+Los modelos MiniZinc pueden contener operaciones definidas por el usuario. Ellos tienen esta sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Predicate, test and function items
   :end-before: %
 
-The type-inst expressions can include type-inst variables in
-the function and predicate declaration.
+Las expresiones de instanciación de tipos pueden incluir variables type-inst en la función y declaración de predicado.
 
-For example, predicate :mzn:`even` checks that its argument is an even
-number.
+Por ejemplo, el predicado :mzn:`even` verifica que su argumento sea un número par.
 
 .. code-block:: minizinc
 
     predicate even(var int: x) =
         x mod 2 = 0;
 
-A predicate supported natively by the target solver can be declared as
-follows:
+Un predicado soportado de forma nativa por el solucionador de destino se puede declarar de la siguiente manera:
 
 .. code-block:: minizinc
 
     predicate alldifferent(array [int] of var int: xs);
 
-Predicate declarations that are natively supported
-in MiniZinc are restricted to using FlatZinc
-types (for instance, multi-dimensional and non-1-based arrays are
-forbidden).
+Las declaraciones de predicados que se admiten de forma nativa en MiniZinc están restringidas al uso de tipos de FlatZinc (por ejemplo, las matrices multidimensionales y no basadas en 1 están prohibidas).
+
 .. % \pjs{need to fix this if we allow2d arrays in FlatZinc!}
 
-Declarations for user-defined operations can be annotated.
-:ref:`spec-Annotations` has more details on annotations.
+Las declaraciones para las operaciones definidas por el usuario se pueden anotar. :ref:`spec-Annotations` tiene más detalles sobre las anotaciones.
 
 .. _spec-basic-properties:
 
-Basic Properties
-++++++++++++++++
 
-The term "predicate" is generally used to refer to both test items and
-predicate items.  When the two kinds must be distinguished, the terms
-"test item" and "predicate item" can be used.
 
-The return type-inst of a test item is implicitly :mzn:`par bool`.  The
-return type-inst of a predicate item is implicitly :mzn:`var bool`.
 
-Predicates and functions are allowed to be recursive. Termination of
-a recursive function call depends solely on its fixed arguments, i.e.,
-recursive functions and predicates cannot be used to define recursively
-constrained variables.
-.. % \Rationale{This ensures that the satisfiability of models is decidable.}
 
-Predicates and functions introduce their own local names, being those of the
-formal arguments.  The scope of these names covers the predicate/function
-body.  Argument names cannot be repeated within a predicate/function
-declaration.
 
-Ad-hoc polymorphism
+Propiedades básicas
 +++++++++++++++++++
 
-MiniZinc supports ad-hoc polymorphism via overloading.  Functions
-and predicates (both built-in and user-defined) can be overloaded.  A name
-can be overloaded as both a function and a predicate.
+El término "predicado" generalmente se usa para referirse tanto a elementos de prueba como a elementos predicados. Cuando se deben distinguir los dos tipos, se pueden usar los términos "elemento de prueba" y "elemento predicado".
 
-It is a type-inst error if a single version of an overloaded operation with
-a particular type-inst signature is defined more than once
-in a model.  For example:
+El retorno tipo-instanciación de un elemento de prueba es implícitamente :mzn:`par bool`.  El retorno tipo-instanciación de un elemento predicado es implícitamente :mzn:`var bool`.
+
+Los predicados y las funciones pueden ser recursivos. La terminación de una llamada a función recursiva depende únicamente de sus argumentos fijos, es decir, las funciones recursivas y los predicados no se pueden usar para definir variables restringidas recursivamente.
+
+.. % \Rationale{This ensures that the satisfiability of models is decidable.}
+
+Los predicados y las funciones introducen sus propios nombres locales, siendo los de los argumentos formales. El alcance de estos nombres cubre el predicado/cuerpo de la función. Los nombres de argumento no se pueden repetir dentro de una declaración de predicado/función.
+
+
+Polimorfismo ad-hoc
++++++++++++++++++++
+
+MiniZinc admite polimorfismo ad-hoc mediante sobrecarga. Las funciones y los predicados (tanto integrados como definidos por el usuario) pueden sobrecargarse. Un nombre puede estar sobrecargado como una función y un predicado.
+
+Es un error tipo-instanciación si una sola versión de una operación sobrecargada con una firma particular tipo-instanciación se define más de una vez en un modelo. Por ejemplo:
 
 .. code-block:: minizinc
 
     predicate p(1..5: x);
-    predicate p(1..5: x) = false;       % ok:     first definition
-    predicate p(1..5: x) = true;        % error:  repeated definition
+    predicate p(1..5: x) = false;       % correcto : primera definición
+    predicate p(1..5: x) = true;        % error    : definición repetida
 
-The combination of overloading and coercions can cause problems.
-Two overloadings of an operation are said to *overlap* if they could match
-the same arguments.  For example, the following overloadings of :mzn:`p`
-overlap, as they both match the call :mzn:`p(3)`.
+La combinación de sobrecarga y coacciones puede causar problemas.
+Se dice que dos sobrecargas de una operación * se superponen * si pueden coincidir con los mismos argumentos. Por ejemplo, las siguientes sobrecargas de :mzn:`p` se superponen, ya que ambos coinciden con la llamada :mzn:`p(3)`.
 
 .. code-block:: minizinc
 
     predicate p(par int: x);
     predicate p(var int: x);
 
-However, the following two predicates do not overlap because they cannot
-match the same argument:
+Sin embargo, los siguientes dos predicados no se superponen porque no pueden coincidir con el mismo argumento:
 
 .. code-block:: minizinc
 
     predicate q(int:        x);
     predicate q(set of int: x);
 
-We avoid two potential overloading problems by placing some restrictions on
-overlapping overloadings of operations.
+Evitamos dos posibles problemas de sobrecarga al imponer algunas restricciones a la superposición de sobrecargas de operaciones.
 
-#. The first problem is ambiguity.  Different placement of coercions in
-   operation arguments may allow different choices for the overloaded function.
-   For instance, if a MiniZinc function :mzn:`f` is overloaded like this:
+#. El primer problema es la ambigüedad. La colocación diferente de las coerciones en los argumentos de operación puede permitir diferentes opciones para la función sobrecargada.
+Por ejemplo, si una función MiniZinc :mzn:`f` está sobrecargado así:
 
    .. code-block:: minizinc
 
     function int: f(int: x, float: y) = 0;
     function int: f(float: x, int: y) = 1;
 
-   then :mzn:`f(3,3)` could be either 0 or 1 depending on
-   coercion/overloading choices.
+   Entonces :mzn:`f(3,3)` podría ser 0 o 1 dependiendo de las opciones de coerción/sobrecarga.
 
-   To avoid this problem, any overlapping overloadings of an operation must
-   be semantically equivalent with respect to coercion.  For example, the
-   two overloadings of the predicate :mzn:`p` above must have bodies that are
-   semantically equivalent with respect to overloading.
+   Para evitar este problema, cualquier sobrecarga superpuesta de una operación debe ser semánticamente equivalente con respecto a la coerción.  Por ejemplo, las dos sobrecargas del predicado :mzn:`p` anteriormente debe tener cuerpos que son semánticamente equivalentes con respecto a la sobrecarga.
 
-   Currently, this requirement is not checked and the modeller must satisfy it
-   manually.  In the future, we may require the sharing of bodies among
-   different versions of overloaded operations, which would provide automatic
-   satisfaction of this requirement.
-#. The second problem is that certain combinations of overloadings could
-   require a MiniZinc implementation to perform combinatorial search in
-   order to explore different choices of coercions and overloading.  For
-   example, if function :mzn:`g` is overloaded like this:
+   Actualmente, este requisito no se verifica y el modelador debe satisfacerlo manualmente. En el futuro, es posible que solicitemos compartir los cuerpos entre las diferentes versiones de las operaciones sobrecargadas, lo que proporcionaría la satisfacción automática de este requisito.
+
+#. El segundo problema es que ciertas combinaciones de sobrecargas podrían requerir una implementación de MiniZinc para realizar una búsqueda combinatoria con el fin de explorar diferentes opciones de coerción y sobrecarga. Por ejemplo, si la función :mzn:`g` está sobrecargado así:
 
    .. code-block:: minizinc
 
        function float: g(int: t1, float: t2) = t2;
        function int  : g(float: t1, int: t2) = t1;
 
-   then how the overloading of :mzn:`g(3,4)` is resolved depends upon its
-   context:
+  Entonces, cómo se resuelve la sobrecarga de :mzn:`g(3,4)` depende de su contexto:
 
    .. code-block:: minizinc
 
        float: s = g(3,4);
        int: t = g(3,4);
 
-   In the definition of :mzn:`s` the first overloaded definition must be used
-   while in the definition of :mzn:`t` the second must be used.
+  En la definición de :mzn:`s` la primera definición sobrecargada debe ser utilizada mientras que en la definición de :mzn:`t` el segundo debe ser usado.
 
-   To avoid this problem, all overlapping overloadings of an operation must be
-   closed under intersection of their input type-insts.  That is, if overloaded
-   versions have input type-inst :math:`(S_1,....,S_n)` and :math:`(T_1,...,T_n)` then
-   there must be another overloaded version with input type-inst
-   :math:`(R_1,...,R_n)` where each :math:`R_i` is the greatest lower bound (*glb*) of
-   :math:`S_i` and :math:`T_i`.
+Para evitar este problema, todas las sobrecargas superpuestas de una operación deben cerrarse bajo la intersección de su entrada tipo-instanciación.  Es decir, si las versiones sobrecargadas tienen entrada de tipo-instanciación :math:`(S_1,....,S_n)` y :math:`(T_1,...,T_n)` entonces debe haber otra versión sobrecargada con entrada tipo-instanciación :math:`(R_1,...,R_n)` donde cada :math:`R_i` es el límite inferior más grande (*glb*) de :math:`S_i` y :math:`T_i`.
 
-   Also, all overlapping overloadings of an operation must be monotonic.  That
-   is, if there are overloaded versions with input type-insts :math:`(S_1,....,S_n)`
-   and :math:`(T_1,...,T_n)` and output type-inst :math:`S` and :math:`T`, respectively, then
-   :math:`S_i \preceq T_i` for all :math:`i`, implies :math:`S \preceq T`.  At call sites, the
-   matching overloading that is lowest on the type-inst lattice is always used.
+Además, todas las sobrecargas superpuestas de una operación deben ser monótonas. Es decir, si hay versiones sobrecargadas con entrada tipo-instanciación :math:`(S_1,....,S_n)` y :math:`(T_1,...,T_n)` y salida tipo-instanciación :math:`S` y :math:`T`, respectivamente, entonces :math:`S_i \preceq T_i` para todos :math:`i`, implica :math:`S \preceq T`.  En los sitios de llamadas, siempre se utiliza la sobrecarga de coincidencia que es más baja en el enrejado tipo-instanciación.
 
-   For :mzn:`g` above, the type-inst intersection (or *glb*) of
-   :mzn:`(int,float)`  and :mzn:`(float,int)` is
-   :mzn:`(int,int)`.  Thus, the overloaded versions are not closed under
-   intersection and the user needs to provide another overloading for
-   :mzn:`g` with input type-inst :mzn:`(int,int)`.  The natural
-   definition is:
+Para :mzn:`g` posteriormente, el tipo-instanciación intersection (o *glb*) de :mzn:`(int,float)` y :mzn:`(float,int)` es :mzn:`(int,int)`.  Por lo tanto, las versiones sobrecargadas no se cierran en intersección y el usuario debe proporcionar otra sobrecarga para :mzn:`g` con entrada de tipo-instanciación :mzn:`(int,int)`.  La definición natural es:
 
    .. code-block:: minizinc
 
        function int: g(int: t1, int: t2) = t1;
 
-   Once :mzn:`g` has been augmented with the third overloading, it satisfies
-   the monotonicity requirement because the output type-inst of the third
-   overloading is :mzn:`int` which is less than the output
-   type-inst of the original overloadings.
+Una vez :mzn:`g` se ha aumentado con la tercera sobrecarga, satisface el requisito de monotonicidad porque la salida tipo-instanciación de la tercera sobrecarga es :mzn:`int` que es menor que la salida tipo-instanciación de las sobrecargas originales.
 
-   Monotonicity and closure under type-inst conjunction ensure that whenever an
-   overloaded function or predicate is reached during type-inst checking, there
-   is always a unique and safe "minimal" version to choose, and so the
-   complexity of type-inst checking remains linear.  Thus in our example
-   :mzn:`g(3,4)` is always resolved by choosing the new overloaded
-   definition.
+La monotonicidad y el cierre bajo la conjunción tipo-instanciación aseguran que siempre que se alcanza una función o predicado sobrecargado durante la comprobación de tipo-instanciación, siempre hay una versión "mínima" segura y única para elegir, por lo que la complejidad de la comprobación de tipo-instanciación permanece lineal. Por lo tanto, en nuestro ejemplo :mzn:`g(3,4)` siempre se resuelve eligiendo la nueva definición sobrecargada.
 
 
-Local Variables
-+++++++++++++++
 
-Local variables in operation bodies are introduced using let expressions.
-For example, the predicate :mzn:`have_common_divisor` takes two
-integer values and checks whether they have a common divisor greater than
-one:
+
+
+Variables locales
++++++++++++++++++
+
+Las variables locales en los cuerpos de operación se introducen usando expresiones ``let``.
+Por ejemplo, el predicado :mzn:`have_common_divisor` toma dos valores enteros y comprueba si tienen un divisor común mayor que uno:
 
 .. code-block:: minizinc
 
@@ -2477,9 +2173,7 @@ one:
             A mod C = 0 /\
             B mod C = 0;
 
-However, as :ref:`spec-Let-Expressions` explained, because :mzn:`C` is
-not defined, this predicate cannot be called in a negative context.  The
-following is a version that could be called in a negative context:
+Sin embargo, como :ref:`spec-Let-Expressions` explicado, porque :mzn:`C` no está definido, este predicado no puede ser llamado en un contexto negativo. La siguiente es una versión que podría llamarse en un contexto negativo:
 
 .. code-block:: minizinc
 
@@ -2489,25 +2183,22 @@ following is a version that could be called in a negative context:
 
 .. _spec-annotations:
 
-Annotations
+
+
+Anotaciones
 -----------
 
-Annotations - values of the :mzn:`ann` type - allow a modeller to specify
-non-declarative and solver-specific information that is beyond the core
-language.  Annotations do not change the meaning of a model, however, only
-how it is solved.
+Anotaciones: valores del tipo :mzn:`ann`, permitir que un modelador especifique información no declarativa y específica del solucionador que está más allá del lenguaje central. Las anotaciones no cambian el significado de un modelo, sin embargo, solo cómo se resuelve.
 
-Annotations can be attached to variables (on their declarations),
-expresssions, type-inst synonyms, enum items, solve items and on user
-defined operations.
-They have the following syntax:
+Las anotaciones se pueden adjuntar a variables (en sus declaraciones), expresiones, sinónimos de tipo-instanciación, elementos de enumeraciones, elementos de solución y operaciones definidas por el usuario.
+Tienen la siguiente sintaxis:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Annotations
-  :end-before: %
+.. #  :end-before: %
 
-For example:
+Por ejemplo:
 
 .. code-block:: minizinc
 
@@ -2516,24 +2207,19 @@ For example:
     solve :: blah(4)
         minimize x;
 
-The types of the argument expressions must match the argument types of the
-declared annotation.  Unlike user-defined predicates and functions,
-annotations cannot be overloaded.  *Rationale: There is no particular strong
-reason for this, it just seemed to make things simpler.*
+Los tipos de expresiones de argumento deben coincidir con los tipos de argumento de la anotación declarada. A diferencia de los predicados y funciones definidos por el usuario, las anotaciones no pueden sobrecargarse. *Justificación: no hay una razón particularmente fuerte para esto, simplemente parecía hacer las cosas más simples.*
 
-Annotation signatures can contain type-inst variables.
 
-The order and nesting of annotations do not matter.  For the expression case
-it can be helpful to view the annotation connector :mzn:`::` as an
-overloaded operator:
+Las firmas de anotación pueden contener variables de tipo-instanciación.
+
+El orden y el anidamiento de las anotaciones no importan. Para el caso de expresión, puede ser útil ver el conector de anotación :mzn:`::` como un operador sobrecargado:
 
 .. code-block:: minizinc
 
     ann: '::'(any $T: e, ann: a);       % associative
     ann: '::'(ann:    a, ann: b);       % associative + commutative
 
-Both operators are associative, the second is commutative.  This means that
-the following expressions are all equivalent:
+Ambos operadores son asociativos, el segundo es conmutativo. Esto significa que las siguientes expresiones son todas equivalentes:
 
 .. code-block:: minizinc
 
@@ -2544,122 +2230,94 @@ the following expressions are all equivalent:
     e :: (a :: b)
     e :: (b :: a)
 
-This property also applies to annotations on solve items and variable
-declaration items.  *Rationale: This property make things simple, as it
-allows all nested combinations of annotations to be treated as if they are
-flat, thus avoiding the need to determine what is the meaning of an
-annotated annotation.  It also makes the MiniZinc abstract syntax tree simpler
-by avoiding the need to represent nesting.*
+Esta propiedad también se aplica a las anotaciones sobre elementos de solución y elementos de declaración variable. *Justificación: esta propiedad simplifica las cosas, ya que permite que todas las combinaciones anidadas de anotaciones se traten como si fueran planas, evitando así la necesidad de determinar cuál es el significado de una anotación anotada. También simplifica el árbol de sintaxis abstracta MiniZinc al evitar la necesidad de representar el anidamiento.*
 
 .. _spec-partiality:
 
-Partiality
-----------
 
-The presence of constrained type-insts in MiniZinc means that
-various operations are potentially *partial*, i.e., not clearly defined
-for all possible inputs.  For example, what happens if a function expecting
-a positive argument is passed a negative argument?  What happens if a
-variable is assigned a value that does not satisfy its type-inst constraints?
-What happens if an array index is out of bounds?  This section describes
-what happens in all these cases.
+Parcialidad
+-----------
+
+La presencia de tipo-instanciación restringida en MiniZinc significa que varias operaciones son potencialmente *parciales*, es decir, no están claramente definidas para todas las entradas posibles. Por ejemplo, ¿qué sucede si una función que espera un argumento positivo pasa un argumento negativo? ¿Qué sucede si a una variable se le asigna un valor que no satisface sus restricciones tipo-instanciación? ¿Qué sucede si un índice de matriz está fuera de límites? Esta sección describe lo que sucede en todos estos casos.
 
 .. % \pjs{This is not what seems to happen in the current MiniZinc!}
 
-In general, cases involving fixed values that do not satisfy constraints
-lead to run-time aborts.
-*Rationale: Our experience shows that if a fixed value fails a constraint, it
-is almost certainly due to a programming error.  Furthermore, these cases
-are easy for an implementation to check.*
+En general, los casos que implican valores fijos que no satisfacen las restricciones conducen a abortos en tiempo de ejecución. *Justificación: nuestra experiencia muestra que si un valor fijo falla una restricción, es casi seguro que se debe a un error de programación. Además, estos casos son fáciles de verificar para una implementación.*
 
-But cases involving unfixed values vary, as we will see.
-*Rationale: The best thing to do for unfixed values varies from case to case.
-Also, it is difficult to check constraints on unfixed values, particularly
-because during search a decision variable might become fixed and then
-backtracking will cause this value to be reverted, in which case aborting is
-a bad idea.*
+Pero los casos que involucran valores no fijados varían, como veremos. *Justificación: lo mejor que se puede hacer con los valores no fijados varía de un caso a otro. Además, es difícil verificar las restricciones en los valores no fijados, sobre todo porque durante la búsqueda una variable de decisión puede ser fija y, a continuación, retroceder hará que este valor se revierta, en cuyo caso abortar es una mala idea.*
 
-Partial Assignments
-~~~~~~~~~~~~~~~~~~~
 
-The first operation involving partiality is assignment.  There are four
-distinct cases for assignments.
 
-- A value assigned to a fixed, constrained global variable is checked at
-  run-time;  if the assigned value does not satisfy its constraints, it is
-  a run-time error.  In other words, this:
+
+
+Asignaciones parciales
+~~~~~~~~~~~~~~~~~~~~~~
+
+La primera operación que implica parcialidad es la asignación. Hay cuatro casos distintos para las asignaciones.
+
+- Un valor asignado a una variable global fija, limitada se verifica en tiempo de ejecución; si el valor asignado no satisface sus restricciones, es un error en tiempo de ejecución. En otras palabras, esto:
 
   .. code-block:: minizinc
 
     1..5: x = 3;
 
-  is equivalent to this:
+Es equivalente a esto:
 
-  .. code-block:: minizinc
+.. code-block:: minizinc
 
     int: x = 3;
     constraint assert(x in 1..5,
                       "assignment to global parameter 'x' failed")
 
-- A value assigned to an unfixed, constrained global variable makes the
-  assignment act like a constraint;  if the assigned value does not
-  satisfy the variable's constraints, it causes a run-time model failure.
-  In other words, this:
+- Un valor asignado a una variable global restringida no fija hace que la asignación actúe como una restricción. Si el valor asignado no satisface las restricciones de la variable, causa un error en el modelo en tiempo de ejecución.
 
-  .. code-block:: minizinc
+En otras palabras, esto:
+
+.. code-block:: minizinc
 
     var 1..5: x = 3;
 
-  is equivalent to this:
+Es equivalente a esto:
 
-  .. code-block:: minizinc
+.. code-block:: minizinc
 
     var int: x = 3;
     constraint x in 1..5;
 
-  *Rationale: This behaviour is easy to understand and easy to implement.*
+*Justificación: este comportamiento es fácil de entender y fácil de implementar.*
 
-- A value assigned to a fixed, constrained let-local variable is checked at
-  run-time;  if the assigned value does not satisfy its constraints, it is
-  a run-time error.  In other words, this:
+- Un valor asignado a una variable fija, limitada y localizada se verifica en tiempo de ejecución; si el valor asignado no satisface sus restricciones, es un error en tiempo de ejecución. En otras palabras, esto:
 
-  .. code-block:: minizinc
+.. code-block:: minizinc
 
     let { 1..5: x = 3; } in x+1
 
-  is equivalent to this:
+Es equivalente a esto:
 
-  .. code-block:: minizinc
+.. code-block:: minizinc
 
     let { int: x = 3; } in
         assert(x in 1..5,
                "assignment to let parameter 'x' failed", x+1)
 
-- A value assigned to an unfixed, constrained let-local variable makes the
-  assignment act like a constraint;  if the constraint fails at run-time, the
-  failure "bubbles up" to the nearest enclosing Boolean scope, where it
-  is interpreted as :mzn:`false`.
+- Un valor asignado a una variable localmente limitada y no fijada hace que la asignación actúe como una restricción; si la restricción falla en el tiempo de ejecución, la falla "burbujea" hacia el alcance booleano circundante más cercano, donde se interpreta como :mzn:`false`.
 
-  *Rationale: This behaviour is consistent with assignments to global
-  variables.*
+*Justificación: este comportamiento es coherente con las asignaciones a variables globales.*
 
-Note that in cases where a value is partly fixed and partly unfixed, e.g., some
-arrays, the different elements are checked according to the different cases,
-and fixed elements are checked before unfixed elements.  For example:
+Tenga en cuenta que en los casos en que un valor es parcialmente fijo y parcialmente no fijo, por ejemplo, algunas matrices, los diferentes elementos se verifican según los diferentes casos, y los elementos fijos se comprueban antes de los elementos no fijos. Por ejemplo:
 
 .. code-block:: minizinc
 
     u = [ let { var 1..5: x = 6} in x, let { par 1..5: y = 6; } in y) ];
 
-This causes a run-time abort, because the second, fixed element is checked
-before the first, unfixed element.  This ordering is true for the cases in the
-following sections as well.  *Rationale: This ensures that failures cannot
-mask aborts, which seems desirable.*
+Esto provoca un aborto en tiempo de ejecución, porque el segundo elemento fijo se comprueba antes del primer elemento no fijo. Este orden también es cierto para los casos en las siguientes secciones. *Justificación: esto asegura que las fallas no pueden enmascarar interrupciones, lo que parece deseable.*
 
-Partial Predicate/Function and Annotation Arguments
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The second kind of operation involving partiality is calls and annotations.
+
+Predicados/Funciones parciales y Argumentos de Anotaciones
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+El segundo tipo de operación que implica parcialidad es llamadas y anotaciones.
 
 ..
   % The behaviour for these operations is simple:  constraints on arguments are
@@ -2672,25 +2330,18 @@ The second kind of operation involving partiality is calls and annotations.
   % with a constrained type-inst is declared, any assigned value must clearly
   % respect that constraint.)}
 
-The semantics is similar to assignments:  fixed arguments that fail their constraints
-will cause aborts, and unfixed arguments that fail their constraints will
-cause failure, which bubbles up to the nearest enclosing Boolean scope.
+La semántica es similar a las asignaciones: los argumentos fijos que fallan sus restricciones provocarán abortos, y los argumentos no fijados que fallan sus restricciones causarán fallas, que se disparan hasta el alcance booleano circundante más cercano.
 
 
-Partial Array Accesses
-~~~~~~~~~~~~~~~~~~~~~~
+Accesos parciales de matriz
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The third kind of operation involving partiality is array access.  There
-are two distinct cases.
+El tercer tipo de operación que implica parcialidad es el acceso a la matriz. Hay dos casos distintos.
 
-- A fixed value used as an array index is checked at run-time;  if the
-  index value is not in the index set of the array, it is a run-time
-  error.
+- Un valor fijo utilizado como un índice de matriz se verifica en tiempo de ejecución; si el valor del índice no está en el conjunto de índice de la matriz, es un error en tiempo de ejecución.
 
-- An unfixed value used as an array index makes the access act like a
-  constraint;  if the access fails at run-time, the failure "bubbles up"
-  to the nearest enclosing Boolean scope, where it is interpreted as
-  :mzn:`false`.  For example:
+- Un valor no fijo utilizado como un índice de matriz hace que el acceso actúe como una restricción; si el acceso falla en el tiempo de ejecución, la falla "burbujea" hacia el alcance booleano circundante más cercano, donde se interpreta como :mzn:`false`. Por ejemplo:
+
 
   .. code-block:: minizinc
 
@@ -2698,40 +2349,34 @@ are two distinct cases.
     var int: i;
     constraint (a[i] + 3) > 10 \/ i = 99;
 
-  Here the array access fails, so the failure bubbles up to the
-  disjunction, and :mzn:`i` is constrained to be 99.
-  *Rationale: Unlike predicate/function calls, modellers in practice
-  sometimes do use array accesses that can fail.   In such cases, the
-  "bubbling up" behaviour is a reasonable one.*
+Aquí el acceso a la matriz falla, por lo que la falla sube hasta la disyunción, y :mzn:`i` está obligado a ser 99. *Justificación: a diferencia de las llamadas al predicado/función, los modeladores en la práctica a veces usan accesos de matriz que pueden fallar. En tales casos, el comportamiento de "burbujeo" es razonable.*
 
 .. _spec-builtins:
 
-Built-in Operations
--------------------
-
-This appendix lists built-in operators, functions and
-predicates.  They may be implemented as true built-ins, or in libraries that
-are automatically imported for all models.  Many of them are overloaded.
-
-Operator names are written within single quotes when used in type
-signatures, e.g. :mzn:`bool: '\/'(bool, bool)`.
-
-We use the syntax :mzn:`TI: f(TI1,...,TIn)` to represent an operation
-named :mzn:`f` that takes arguments with type-insts :mzn:`TI,...,TIn`
-and returns a value with type-inst :mzn:`TI`.  This is slightly more
-compact than the usual MiniZinc syntax, in that it omits argument names.
 
 
-Comparison Operations
-~~~~~~~~~~~~~~~~~~~~~
+
+Operaciones incorporadas
+------------------------
+
+Este apéndice enumera los operadores integrados, las funciones y los predicados. Pueden implementarse como integradas verdaderas, o en bibliotecas que se importan automáticamente para todos los modelos. Muchos de ellos están sobrecargados.
+
+Los nombres de los operadores están escritos dentro de comillas simples cuando se usan en firmas de tipo, por ejemplo :mzn:`bool: '\/'(bool, bool)`.
+
+Usamos la sintaxis :mzn:`TI: f(TI1,...,TIn)` para representar una operación llamada :mzn:`f` eso toma argumentos con un tipo-instanciación :mzn:`TI,...,TIn` y devuelve un valor con tipo-instanciación :mzn:`TI`.  Esto es un poco más compacto que la sintaxis MiniZinc habitual, ya que omite los nombres de los argumentos.
 
 
-Less than.  Other comparisons are similar:
-greater than (:mzn:`>`),
-less than or equal (:mzn:`<=`),
-greater than or equal (:mzn:`>=`),
-equality (:mzn:`==`, :mzn:`=`),
-and disequality (:mzn:`!=`).
+
+Operaciones de comparación
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+
+Menos que. Otras comparaciones son similares:
+mayor que (:mzn:`>`),
+menor o igual (:mzn:`<=`),
+mayor que o igual (:mzn:`>=`),
+igual (:mzn:`==`, :mzn:`=`),
+y desigualdad (:mzn:`!=`).
 
 .. % \pjs{Check use of any here!}
 
@@ -2744,13 +2389,11 @@ and disequality (:mzn:`!=`).
 
 
 
-Arithmetic Operations
-~~~~~~~~~~~~~~~~~~~~~
+Operaciones aritmeticas
+~~~~~~~~~~~~~~~~~~~~~~~
 
 
-Addition.  Other numeric operations are similar:
-subtraction (:mzn:`-`), and
-multiplication (:mzn:`*`).
+Adición. Otras operaciones numéricas son similares: resta (:mzn:`-`), y multiplicación (:mzn:`*`).
 
 .. code-block:: minizinc
 
@@ -2763,7 +2406,7 @@ multiplication (:mzn:`*`).
 
 
 
-Unary minus.  Unary plus (:mzn:`+`) is similar.
+Menos unaria (:mzn:`-`).  Suma unaria (:mzn:`+`) es similar.
 
 .. code-block:: minizinc
 
@@ -2776,7 +2419,7 @@ Unary minus.  Unary plus (:mzn:`+`) is similar.
 
 
 
-Integer and floating-point division and modulo.
+Entero y división de punto flotante y módulo.
 
 .. code-block:: minizinc
 
@@ -2789,9 +2432,8 @@ Integer and floating-point division and modulo.
 
 
 
-The result of the modulo operation, if non-zero, always has the same sign as
-its first operand.  The integer division and modulo operations are connected
-by the following identity:
+El resultado de la operación de módulo, si no es cero, siempre tiene el mismo signo que su primer operando. Las operaciones de división entera y módulo están conectadas por la siguiente identidad:
+
 
 .. code-block:: minizinc
 
@@ -2799,7 +2441,7 @@ by the following identity:
 
 
 
-Some illustrative examples:
+Algunos ejemplos ilustrativos:
 
 .. code-block:: minizinc
 
@@ -2812,9 +2454,8 @@ Some illustrative examples:
 
 
 
-Sum multiple numbers.
-Product (:mzn:`product`) is similar.  Note that the sum of an empty array
-is 0, and the product of an empty array is 1.
+Suma de multiples números.
+Producto (:mzn:`product`) es similar. Tenga en cuenta que la suma de una matriz vacía es 0, y el producto de una matriz vacía es 1.
 
 .. code-block:: minizinc
 
@@ -2827,8 +2468,7 @@ is 0, and the product of an empty array is 1.
 
 
 
-Minimum of two values;  maximum (:mzn:`max`) is
-similar.
+Mínimo de dos valores; máximo (:mzn:`max`) es similar.
 
 .. code-block:: minizinc
 
@@ -2838,8 +2478,8 @@ similar.
 
 
 
-Minimum of an array of values;  maximum (:mzn:`max`) is similar.
-Aborts if the array is empty.
+Mínimo de una matriz de valores; máximo (:mzn:`max`) es similar.
+Aborta si el argumento el arreglo esta vacio.
 
 .. code-block:: minizinc
 
@@ -2849,8 +2489,8 @@ Aborts if the array is empty.
 
 
 
-Minimum of a fixed set;  maximum (:mzn:`max`) is similar.
-Aborts if the set is empty.
+Mínimo de un conjunto fijo; máximo (:mzn:`max`) es similar.
+Aborta si el argumento el conjunto esta vacio.
 
 .. code-block:: minizinc
 
@@ -2860,7 +2500,7 @@ Aborts if the set is empty.
 
 
 
-Absolute value of a number.
+Valor absoluto de un número.
 
 .. code-block:: minizinc
 
@@ -2873,7 +2513,7 @@ Absolute value of a number.
 
 
 
-Square root of a float.  Aborts if argument is negative.
+Raíz cuadrada de un número en punto flotante (``float``). Aborta si el argumento es negativo.
 
 .. code-block:: minizinc
 
@@ -2882,9 +2522,7 @@ Square root of a float.  Aborts if argument is negative.
 
 
 
-
-
-Power operator.  E.g. :mzn:`pow(2, 5)` gives :mzn:`32`.
+Operador de energía.  Por ejemplo, :mzn:`pow(2, 5)` da como resultado :mzn:`32`.
 
 .. code-block:: minizinc
 
@@ -2908,8 +2546,8 @@ Natural exponent.
 
 
 
-Natural logarithm.  Logarithm to base 10 (:mzn:`log10`) and logarithm to base
-2 (:mzn:`log2`) are similar.
+Logaritmo natural. Logaritmo en base 10 (:mzn:`log10`) y logaritmo en base
+2 (:mzn:`log2`) son similares.
 
 .. code-block:: minizinc
 
@@ -2918,24 +2556,19 @@ Natural logarithm.  Logarithm to base 10 (:mzn:`log10`) and logarithm to base
 
 
 
-
-
-General logarithm;  the first argument is the base.
+Logaritmo general; el primer argumento es la base.
 
 .. code-block:: minizinc
 
   float: log(float, float)
 
 
-
-
-
-Sine.  Cosine (:mzn:`cos`), tangent (:mzn:`tan`), inverse sine
-(:mzn:`asin`), inverse cosine (:mzn:`acos`), inverse tangent
-(:mzn:`atan`), hyperbolic sine (:mzn:`sinh`), hyperbolic cosine
-(:mzn:`cosh`), hyperbolic tangent (:mzn:`tanh`),
-inverse hyperbolic sine (:mzn:`asinh`), inverse hyperbolic cosine
-(:mzn:`acosh`) and inverse hyperbolic tangent (:mzn:`atanh`) are similar.
+Seno (:mzn:`sin`), Coseno (:mzn:`cos`), tangente (:mzn:`tan`), seno inverso
+(:mzn:`asin`), coseno inverso (:mzn:`acos`), tangente inversa
+(:mzn:`atan`), seno hiperbólico (:mzn:`sinh`), coseno hiperbólico
+(:mzn:`cosh`), tangente hiperbólica (:mzn:`tanh`),
+seno hiperbólico inverso (:mzn:`asinh`), coseno hiperbólico inverso
+(:mzn:`acosh`) y tangente hiperbólica inversa (:mzn:`atanh`) son similares.
 
 .. code-block:: minizinc
 
@@ -2943,25 +2576,18 @@ inverse hyperbolic sine (:mzn:`asinh`), inverse hyperbolic cosine
   var float: sin(var float)
 
 
+Operaciones Lógicas
+~~~~~~~~~~~~~~~~~~~
 
-
-
-Logical Operations
-~~~~~~~~~~~~~~~~~~
-
-
-Conjunction.  Other logical operations are similar:
-disjunction (``\/``)
-reverse implication (:mzn:`<-`),
-forward implication (:mzn:`->`),
-bi-implication (:mzn:`<->`),
+Conjunción. Otras operaciones lógicas son similares:
+disyunción (``\/``)
+implicación inversa (:mzn:`<-`),
+implicación directa (:mzn:`->`),
+bi-implicación (:mzn:`<->`),
 exclusive disjunction (:mzn:`xor`),
-logical negation (:mzn:`not`).
+negación lógica (:mzn:`not`).
 
-Note that the implication operators are not written
-using :mzn:`=>`, :mzn:`<=` and :mzn:`<=>` as is the case in some
-languages.  This allows :mzn:`<=` to instead represent "less than or
-equal".
+Tenga en cuenta que los operadores de implicación no están escritos usando :mzn:`=>`, :mzn:`<=` y :mzn:`<=>` como es el caso en algunos idiomas.  Esto permite :mzn:`<=` para representar en su lugar "menor que o igual".
 
 .. code-block:: minizinc
 
@@ -2970,139 +2596,47 @@ equal".
 
 
 
+Cuantificación universal.
+Cuantificación existencial (:mzn:`exists`) es similar.  Tenga en cuenta que, cuando se aplica a una lista vacía, :mzn:`forall` retorna :mzn:`true`, y :mzn:`exists` retorna :mzn:`false`.
 
+  .. code-block:: minizinc
 
-Universal quantification.
-Existential quantification (:mzn:`exists`) is similar.  Note that, when
-applied to an empty list, :mzn:`forall` returns :mzn:`true`, and
-:mzn:`exists` returns :mzn:`false`.
-
-.. code-block:: minizinc
-
-      bool: forall(array[$T]  of     bool)
-  var bool: forall(array[$T]  of var bool)
+        bool: forall(array[$T]  of     bool)
+    var bool: forall(array[$T]  of var bool)
 
 
 
 
 
-N-ary exclusive disjunction.
-N-ary bi-implication (:mzn:`iffall`) is similar, with :mzn:`true` instead
-of :mzn:`false`.
+N-aria disyunción exclusiva.
+N-aria bi-implicación (:mzn:`iffall`) es similar, con :mzn:`true` en lugar de :mzn:`false`.
 
-.. code-block:: minizinc
+  .. code-block:: minizinc
 
-      bool: xorall(array[$T]  of     bool: bs) = foldl('xor', false, bs)
-  var bool: xorall(array[$T]  of var bool: bs) = foldl('xor', false, bs)
-
+        bool: xorall(array[$T]  of     bool: bs) = foldl('xor', false, bs)
+    var bool: xorall(array[$T]  of var bool: bs) = foldl('xor', false, bs)
 
 
+Operaciones de Matriz
+~~~~~~~~~~~~~~~~~~~~~
 
-
-Set Operations
-~~~~~~~~~~~~~~
-
-
-Set membership.
+Longitud de una matriz.
 
 .. code-block:: minizinc
 
-      bool: 'in'(     $T,       set of $T )
-  var bool: 'in'(var int,   var set of int)
+int: length(array[$T] of any $U)
 
 
+Concatenación de lista Devuelve la lista (matriz indexada entera) que contiene todos los elementos del primer argumento seguidos por todos los elementos del segundo argumento, con elementos que ocurren en el mismo orden que en los argumentos. Los índices resultantes están en el rango :mzn:`1..n`, donde :mzn:`n` es la suma de las longitudes de los argumentos. *Justificación: Esto permite que las matrices en forma de listas se concatenen naturalmente y evita problemas con índices superpuestos. Los índices resultantes son consistentes con los de literales indexados implícitamente.*
 
-
-
-Non-strict subset.  Non-strict superset (:mzn:`superset`) is similar.
-
-.. code-block:: minizinc
-
-      bool: 'subset'(    set of $T ,     set of $T )
-  var bool: 'subset'(var set of int, var set of int)
-
-
-
-
-
-Set union.  Other set operations are similar:
-intersection (:mzn:`intersect`),
-difference (:mzn:`diff`),
-symmetric difference (:mzn:`symdiff`).
-
-.. code-block:: minizinc
-
-      set of  $T: 'union'(    set of  $T,     set of  $T )
-  var set of int: 'union'(var set of int, var set of int )
-
-
-
-
-
-Set range.  If the first argument is larger than the second
-(e.g. :mzn:`1..0`), it returns the empty set.
-
-.. code-block:: minizinc
-
-  set of int: '..'(int, int)
-
-
-
-
-
-Cardinality of a set.
-
-.. code-block:: minizinc
-
-      int: card(    set of  $T)
-  var int: card(var set of int)
-
-
-
-
-
-Union of an array of sets.
-Intersection of multiple sets (:mzn:`array_intersect`) is similar.
-
-.. code-block:: minizinc
-
-      set of  $U:    array_union(array[$T]  of     set of  $U)
-  var set of int:    array_union(array[$T]  of var set of int)
-
-
-Array Operations
-~~~~~~~~~~~~~~~~
-
-
-Length of an array.
-
-.. code-block:: minizinc
-
-  int: length(array[$T] of any $U)
-
-
-
-
-
-List concatenation.  Returns the list (integer-indexed array) containing
-all elements of the first argument followed by all elements of the
-second argument, with elements occurring in the same order as
-in the arguments.  The resulting indices are in the range :mzn:`1..n`,
-where :mzn:`n` is the sum of the lengths of the arguments.
-*Rationale: This allows list-like arrays to be concatenated naturally
-and avoids problems with overlapping indices.  The resulting indices
-are consistent with those of implicitly indexed array literals.*
-Note that :mzn:`'++'` also performs string concatenation.
+Tenga en cuenta que :mzn:`'++'` también realiza la concatenación de cadenas.
 
 .. code-block:: minizinc
 
   array[int] of any $T: '++'(array[int] of any $T, array[int] of any $T)
 
 
-Index sets of arrays.  If the argument is a literal, returns :mzn:`1..n`
-where :mzn:`n` is the (sub-)array length.  Otherwise, returns the declared
-or inferred index set.  This list is only partial, it extends in the obvious
-way, for arrays of higher dimensions.
+Conjuntos de índices de matrices. Si el argumento es un literal, retorna :mzn:`1..n` en donde :mzn:`n` es el largo de la sub-matriz.  De lo contrario, devuelve el conjunto de índices declarado o inferido. Esta lista es solo parcial, se extiende de manera obvia, para matrices de mayores dimensiones.
 
 .. code-block:: minizinc
 
@@ -3111,9 +2645,8 @@ way, for arrays of higher dimensions.
   set of $U:  index_set_2of2(array[$T, $U]  of any $V)
   ...
 
-Replace the indices of the array given by the last argument with the
-Cartesian product of the sets given by the previous arguments.  Similar
-versions exist for arrays up to 6 dimensions.
+Reemplace los índices de la matriz dada por el último argumento con el
+Producto cartesiano de los conjuntos dados por los argumentos anteriores. Existen versiones similares para matrices de hasta 6 dimensiones.
 
 .. code-block:: minizinc
 
@@ -3124,12 +2657,12 @@ versions exist for arrays up to 6 dimensions.
       array3d(set of $T1, set of $T2, set of $T3, array[$U] of any $V)
 
 
-Coercion Operations
-~~~~~~~~~~~~~~~~~~~
 
 
-Round a float towards :math:`+\infty`, :math:`-\infty`, and the nearest integer,
-respectively.
+Operaciones de coerción
+~~~~~~~~~~~~~~~~~~~~~~~
+
+Redondea un número de punto flotante (``float``) hacia :math:`+\infty`, :math:`-\infty`, y el entero más cercano, respectivamente.
 
 .. code-block:: minizinc
 
@@ -3138,7 +2671,7 @@ respectively.
   int: round(float)
 
 
-Explicit casts from one type-inst to another.
+Conversiones explícitas de una instancia de tipo-instanciación.
 
 .. code-block:: minizinc
 
@@ -3149,87 +2682,77 @@ Explicit casts from one type-inst to another.
   array[int] of $T: set2array(set of $T)
 
 
-String Operations
-~~~~~~~~~~~~~~~~~
 
 
-To-string conversion.  Converts any value to a string for output purposes.
-The exact form of the resulting string is implementation-dependent.
+Operaciones de cadena
+~~~~~~~~~~~~~~~~~~~~~
+
+
+Conversión de cadena. Convierte cualquier valor en una cadena para fines de salida. La forma exacta de la cadena resultante depende de la implementación.
 
 .. code-block:: minizinc
 
   string: show(any $T)
 
 
-Formatted to-string conversion for integers.
-Converts the integer given by the second argument into a string right justified
-by the number of characters given by the first argument, or left justified
-if that argument is negative.
-If the second argument is not fixed, the form of the string is
-implementation-dependent.
+Conversión de cadena formateada para enteros.
+Convierte el entero dado por el segundo argumento en una cadena a la derecha justificada por el número de caracteres dados por el primer argumento, o justificado a la izquierda si ese argumento es negativo.
+Si el segundo argumento no es fijo, la forma de la cadena depende de la implementación.
 
 .. code-block:: minizinc
 
   string: show_int(int, var int);
 
 
-Formatted to-string conversion for floats.
-Converts the float given by the third argument into a string right
-justified by the number of characters given by the first argument, or left
-justified if that argument is negative.
-The number of digits to appear after the decimal point is given by
-the second argument.
-It is a run-time error for the second argument to be negative.
-If the third argument is not fixed, the form of the string is
-implemenation-dependent.
+Conversión de cadena formateada para flotadores.
+Convierte la flotación dada por el tercer argumento en una cadena a la derecha justificada por el número de caracteres dados por el primer argumento, o justificada a la izquierda si ese argumento es negativo.
+La cantidad de dígitos que aparecen después del punto decimal viene dada por el segundo argumento.
+Es un error en tiempo de ejecución para que el segundo argumento sea negativo.
+Si el tercer argumento no es fijo, la forma de la cadena depende de la implementación.
 
 .. code-block:: minizinc
 
   string: show_float(int, int, var float)
 
 
-String concatenation.  Note that :mzn:`'++'` also performs array
-concatenation.
+Concatenación de cadenas Tenga en cuenta que :mzn:`'++'` también realiza concatenación de matriz.
 
 .. code-block:: minizinc
 
   string: '++'(string, string)
 
 
-Concatenate an array of strings.
-Equivalent to folding :mzn:`'++'` over the array, but may be implemented more
-efficiently.
+Concatenar una matriz de cadenas.
+Equivalente a :mzn:`'++'` sobre la matriz, pero puede implementarse de manera más eficiente.
 
 .. code-block:: minizinc
 
    string: concat(array[$T] of string)
 
 
-Concatenate an array of strings, putting a seperator beween adjacent strings.
-Returns the the empty string if the array is empty.
+Concatenar una matriz de cadenas, poniendo un separador entre cadenas adyacentes.
+Devuelve la cadena vacía si la matriz está vacía.
 
 .. code-block:: minizinc
 
    string: join(string, array[$T] of string)
 
 
-Bound and Domain Operations
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The bound operations :mzn:`lb` and :mzn:`ub` return fixed, correct lower/upper bounds
-to the expression.
-For numeric types, they return a lower/upper bound value,
-e.g. the lowest/highest value the expression can take.
-For set types, they return a subset/superset,
-e.g. the intersection/union of all possible values of the set expression.
 
-The bound operations abort on expressions that have no corresponding finite bound.
-For example, this would be the case for a variable declared without bounds
-in an implementation that does not assign default bounds.
-(Set expressions always have a finite lower bound of course,
-namely :mzn:`{}`, the empty set.)
+Operaciones vinculadas y de dominio
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Numeric lower/upper bound:
+Las operaciones de límite :mzn:`lb` y :mzn:`ub` devuelve los límites fijos inferiores/superiores corregidos a la expresión.
+
+Para los tipos numéricos, devuelven un valor límite inferior/superior, por ejemplo, el valor más-bajo/más-alto que la expresión puede tomar.
+
+Para los tipos de conjuntos, devuelven un subconjunto/superconjunto, por ejemplo, la intersección/unión de todos los valores posibles de la expresión establecida.
+
+Las operaciones enlazadas abortan en expresiones que no tienen un límite finito correspondiente.
+Por ejemplo, este sería el caso de una variable declarada sin límites en una implementación que no asigna límites predeterminados. Las expresiones set siempre tienen un límite inferior finito de curso, es decir :mzn:`{}`, el conjunto vacío.
+
+Numérico de límite inferior/superior:
 
 .. code-block:: minizinc
 
@@ -3239,16 +2762,14 @@ Numeric lower/upper bound:
   float: ub(var float)
 
 
-Set lower/upper bound:
+Establecer límite inferior/superior:
 
 .. code-block:: minizinc
 
   set of int: lb(var set of int)
   set of int: ub(var set of int)
 
-Versions of the bound operations that operate on arrays are also available,
-they return a safe lower bound or upper bound for all members of the array
-- they abort if the array is empty:
+Las versiones de las operaciones vinculadas que operan en matrices también están disponibles, devuelven un límite inferior seguro o límite superior para todos los miembros de la matriz - abortan si la matriz está vacía:
 
 .. code-block:: minizinc
 
@@ -3262,74 +2783,58 @@ they return a safe lower bound or upper bound for all members of the array
 
 
 
-
-Integer domain:
+Dominio Entero:
 
 .. code-block:: minizinc
 
   set of int: dom(var int)
 
 
+La operación de dominio :mzn:`dom` devuelve un superconjunto fijo de los posibles valores de la expresión.
 
-The domain operation :mzn:`dom` returns a fixed superset
-of the possible values of the expression.
-
-
-Integer array domain, returns a superset of all possible values that may
-appear in the array - this aborts if the array is empty:
+Entero de dominio de matriz, devuelve un superconjunto de todos los valores posibles que pueden aparecer en la matriz; esto se cancela si la matriz está vacía:
 
 .. code-block:: minizinc
 
   set of int: dom_array(array[$T] of var int)
 
-Domain size for integers:
+Tamaño de dominio para enteros:
 
 .. code-block:: minizinc
 
   int: dom_size(var int)
 
-The domain size operation :mzn:`dom_size` is equivalent
-to :mzn:`card(dom(x))`.
+La operación de tamaño de dominio :mzn:`dom_size` es equivalente a :mzn:`card(dom(x))`.
 
-Note that these operations can produce different results depending on when
-they are evaluated and what form the argument takes.  For example, consider
-the numeric lower bound operation.
+Tenga en cuenta que estas operaciones pueden producir resultados diferentes dependiendo de cuándo se evalúan y qué forma toma el argumento. Por ejemplo, considere la operación de límite inferior numérico.
 
-- If the argument is a fixed expression, the result is the argument's
-  value.
 
-- If the argument is a decision variable, then the result depends on
-  the context.
+- Si el argumento es una expresión fija, el resultado es el valor del argumento.
 
-  - If the implementation can determine a lower bound for the variable,
-    the result is that lower bound.
-    The lower bound may be from the variable's declaration,
-    or higher than that due to preprocessing,
-    or lower than that if an implementation-defined lower bound is applied
-    (e.g. if the variable was declared with no lower bound,
-    but the implementation imposes a lowest possible bound).
+- Si el argumento es una variable de decisión, el resultado depende del contexto.
 
-  - If the implementation cannot determine a lower bound for the variable,
-    the operation aborts.
+- Si la implementación puede determinar un límite inferior para la variable, el resultado es ese límite inferior. El límite inferior puede ser de la declaración de la variable, o más alto que debido al preprocesamiento, o menor que si se aplica un límite inferior definido por la implementación (por ejemplo, si la variable se declaró sin límite inferior, pero la implementación impone un límite mínimo ligado).
 
-- If the argument is any other kind of unfixed expression, the
-  lower bound depends on the bounds of unfixed subexpressions
-  and the connecting operators.
+- Si la implementación no puede determinar un límite inferior para la variable, la operación aborta.
+
+- Si el argumento es cualquier otro tipo de expresión no fijada, el límite inferior depende de los límites de las subexpresiones no fijadas y de los operadores de conexión.
+
 
 .. _spec-option-type-operations:
 
-Option Type Operations
-~~~~~~~~~~~~~~~~~~~~~~~
 
-The option type value (:math:`\top`) is written
+
+Operaciones de Tipo de Opción
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+El valor del tipo de opción (:math:`\top`) es escrito
 
 .. code-block:: minizinc
 
   opt $T:  '<>';
 
 
-One can determine if an option type variable actually occurs or not using
-:mzn:`occurs` and :mzn:`absent`
+Uno puede determinar si una variable de tipo de opción realmente ocurre o no usando :mzn:`occurs` y :mzn:`absent`
 
 .. code-block:: minizinc
 
@@ -3339,8 +2844,7 @@ One can determine if an option type variable actually occurs or not using
   var bool: absent(var opt $T);
 
 
-One can return the non-optional value of an option type variable using the
-function :mzn:`deopt`
+Uno puede devolver el valor no opcional de una variable de tipo de opción usando la función :mzn:`deopt`
 
 .. code-block:: minizinc
 
@@ -3355,15 +2859,13 @@ function :mzn:`deopt`
 
 .. _spec-other-operations:
 
-Other Operations
+
+
+Otras operaciones
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-Check a Boolean expression is true, and abort if not, printing the second
-argument as the error message.  The first one returns the third argument, and
-is particularly useful for sanity-checking arguments to predicates and
-functions;  importantly, its third argument is lazy, i.e. it is only evaluated
-if the condition succeeds.  The second one returns :mzn:`true` and is useful
-for global sanity-checks (e.g. of instance data) in constraint items.
+Verifique que una expresión booleana sea verdadera, y aborte si no, imprimiendo el segundo argumento como el mensaje de error. El primero devuelve el tercer argumento, y es particularmente útil para los argumentos de comprobación de formalidad para los predicados y las funciones; importante, su tercer argumento es flojo, es decir, solo se evalúa si la condición tiene éxito. El segundo devuelve :mzn:`true` y es útil para verificaciones de cordura globales (por ejemplo, de datos de instancia) en elementos de restricción.
+
 
 .. code-block:: minizinc
 
@@ -3371,38 +2873,35 @@ for global sanity-checks (e.g. of instance data) in constraint items.
   par bool: assert(bool, string)
 
 
-Abort evaluation, printing the given string.
+Cancelar la evaluación, imprimiendo la cadena dada.
 
 .. code-block:: minizinc
 
   any $T: abort(string)
 
-Return true. As a side-effect, an implementation may print the first argument.
+Devuelve verdadero. Como efecto secundario, una implementación puede imprimir el primer argumento.
 
 .. code-block:: minizinc
 
   bool: trace(string)
 
 
-Return the second argument.
-As a side-effect, an implementation may print the first argument.
+Devuelve el segundo argumento.
+Como efecto secundario, una implementación puede imprimir el primer argumento.
 
 .. code-block:: minizinc
 
   any $T: trace(string, any $T)
 
+Verifique si el valor del argumento está fijo en este punto de la evaluación. Si no, aborta; si es así, devuelve su valor. Esto es más útil en los elementos de salida cuando las variables de decisión deben ser corregidas: permite que se utilicen en lugares donde se necesita un valor fijo, como las condiciones if-then-else.
 
-Check if the argument's value is fixed at this point in evaluation.  If not,
-abort; if so, return its value.  This is most useful in output items when
-decision variables should be fixed: it allows them to be used in places
-where a fixed value is needed, such as if-then-else conditions.
 
 .. code-block:: minizinc
 
   $T: fix(any $T)
 
 
-As above, but return :mzn:`false` if the argument's value is not fixed.
+Como arriba, pero retorna :mzn:`false` si el valor del argumento no es fijo.
 
 .. code-block:: minizinc
 
@@ -3411,51 +2910,53 @@ As above, but return :mzn:`false` if the argument's value is not fixed.
 
 .. _spec-content-types:
 
-Content-types
--------------
 
-The content-type ``application/x-zinc-output`` defines
-a text output format for Zinc.
-The format extends the abstract syntax and semantics
-given in :ref:`spec-Run-time-Outcomes`,
-and is discussed in detail in :ref:`spec-Output`.
 
-The full syntax is as follows:
+Tipos de Contenido
+------------------
+
+El tipo de contenido ``application/x-zinc-output`` define un formato de salida de texto para Zinc.
+El formato amplía la sintaxis abstracta y la semántica dadas en
+
+
+ :ref:`spec-Run-time-Outcomes`, and is discussed in detail in :ref:`spec-Output`.
+
+La sintaxis completa es la siguiente:
 
 .. literalinclude:: output.mzn
   :language: minizincdef
 
-The solution text for each solution must be
-as described in :ref:`spec-Output-Items`.
-A newline must be appended if the solution text does not end with a newline.
+El texto de la solución para cada solución debe ser como se describe en :ref:`spec-Output-Items`.
+Se debe agregar una nueva línea si el texto de la solución no finaliza con una nueva línea.
 
 .. _spec-json:
 
-JSON support
-------------
 
-MiniZinc can support reading input parameters and providing output formatted
-as JSON objects. A JSON input file needs to have the following structure:
 
-- Consist of a single top-level object
+Soporte de JSON
+-----------------------------
 
-- The members of the object (the key-value pairs) represent model parameters
+MiniZinc puede admitir la lectura de parámetros de entrada y proporcionar resultados formateados como objetos JSON. Un archivo de entrada JSON debe tener la siguiente estructura:
 
-- Each member key must be a valid MiniZinc identifier (and it supplies the value for the corresponding parameter of the model)
+- Consiste en un solo objeto de nivel superior
 
-- Each member value can be one of the following:
+- Los miembros del objeto (pares clave-valor) representan parámetros del modelo
 
-  - A string (assigned to a MiniZinc string parameter)
+- Cada clave miembro debe ser un identificador MiniZinc válido (y proporciona el valor para el parámetro correspondiente del modelo)
 
-  - A number (assigned to a MiniZinc int or float parameter)
+- Cada valor de miembro puede ser uno de los siguientes:
 
-  - The values ``true`` or ``false`` (assigned to a MiniZinc bool parameter)
+  - Una cadena (asignado a un parámetro de cadena MiniZinc)
 
-  - An array of values. Arrays of arrays are supported only if all inner arrays are of the same length, so that they can be mapped to multi-dimensional MiniZinc arrays.
+  - Un número (asignado a un parámetro MiniZinc int o float)
 
-  - A set of values encoded as an object with a single member with key ``"set"`` and a list of values (the elements of the set).
+  - Los valores ``true`` o ``false`` (asignado a un parámetro bool MiniZinc)
 
-This is an example of a JSON parameter file using all of the above features:
+  - Una matriz de valores. Las matrices de matrices solo se admiten si todas las matrices internas tienen la misma longitud, por lo que se pueden asignar a matrices multidimensionales MiniZinc.
+
+  - Un conjunto de valores codificados como un objeto con un único miembro con clave ``"set"`` y una lista de valores (los elementos del conjunto).
+
+Este es un ejemplo de un archivo de parámetros JSON que utiliza todas las características anteriores:
 
 .. code-block:: json
 
@@ -3467,32 +2968,31 @@ This is an example of a JSON parameter file using all of the above features:
     }
 
 
-The first parameter declares a simple integer ``n``. The
-``distances`` parameter is a two-dimensional array; note that all inner
-arrays must be of the same size in order to map to a (rectangular) MiniZinc
-two-dimensional array. The third parameter is an array of sets of integers.
+El primer parámetro declara un entero simple ``n``. El parámetro ``distances`` es una matriz bidimensional; tenga en cuenta que todas las matrices internas deben ser del mismo tamaño para mapearse en una matriz bidimensional (rectangular) MiniZinc. El tercer parámetro es una matriz de conjuntos de enteros.
 
 .. _spec-grammar:
 
-Full grammar
-------------
 
-Items
-~~~~~
+
+Gramática completa
+------------------
+
+Elementos
+~~~~~~~~~
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :end-before: % Type-inst expressions
 
-Type-Inst Expressions
-~~~~~~~~~~~~~~~~~~~~~
+Expresiones de Tipo-Instanciación
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Type-inst expressions
   :end-before: % Expressions
 
-Expressions
+Expresiones
 ~~~~~~~~~~~
 
 .. literalinclude:: grammar.mzn
@@ -3500,8 +3000,8 @@ Expressions
   :start-after: % Expressions
   :end-before: % Miscellaneous
 
-Miscellaneous Elements
-~~~~~~~~~~~~~~~~~~~~~~
+Elementos Misceláneos
+~~~~~~~~~~~~~~~~~~~~~~~
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef

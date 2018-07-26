@@ -1,2 +1,0 @@
-Interfacing Solvers to Flatzinc
-===============================

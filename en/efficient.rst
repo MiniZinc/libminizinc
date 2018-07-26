@@ -37,14 +37,14 @@ The variables are declared unbounded. Running
 
 .. code-block:: bash
 
-  $ mzn-g12fd grocery.mzn
+  $ minizinc --solver g12fd grocery.mzn
 
 yields 
 
-::
+.. code-block:: none
 
   =====UNSATISFIABLE=====
-  % grocery.fzn:11: warning: model inconsistency detected before search.
+  % /tmp/mznfile85EWzj.fzn:11: warning: model inconsistency detected before search.
 
 This is because the 
 intermediate expressions in the multiplication
@@ -67,7 +67,7 @@ results in a better model, since now MiniZinc can infer bounds on the
 intermediate expressions and use these rather than the default bounds.
 With this modification, executing the model gives
 
-::
+.. code-block:: none
 
   {120,125,150,316}
   ----------
@@ -78,7 +78,7 @@ Running
 
 .. code-block:: bash
 
-  $ mzn-g12lazy grocery.mzn
+  $ minizinc --solver g12lazy grocery.mzn
 
 does not return an answer, since the solver builds a huge representation
 for the intermediate product variables.
@@ -96,105 +96,6 @@ for the intermediate product variables.
   One exception is when you introduce a new variable which is 
   immediately defined as equal to an expression. Usually MiniZinc will be
   able to infer effective bounds from the expression.
-
-Unconstrained Variables
------------------------
-
-.. index::
-  single: variable; unconstrained
-
-Sometimes when modelling it is easier to introduce more variables than
-actually required to model the problem.
-
-.. literalinclude:: examples/golomb.mzn
-  :language: minizinc
-  :name: ex-unc
-  :caption: A model for Golomb rulers with unconstrained variables (:download:`golomb.mzn <examples/golomb.mzn>`).
-
-Consider the model for Golomb rulers shown in :numref:`ex-unc`.
-A Golomb ruler of :mzn:`n` marks is one where the absolute differences
-between any two marks are different. 
-It creates a two dimensional array of difference variables, but 
-only uses those of the form :mzn:`diff[i,j]` where :mzn:`i > j`.
-Running the model as 
-
-.. code-block:: bash
-
-  $ mzn-g12fd golomb.mzn -D "n = 4; m = 6;"
-
-results in output
-
-::
-
-  mark = [0, 1, 4, 6];
-  diffs = [0, 0, 0, 0, 1, 0, 0, 0, 4, 3, 0, 0, 6, 5, 2, 0];
-  ----------
-
-and everything seems fine with the model.
-But if we ask for all solutions using
-
-.. code-block:: bash
-
-  $ mzn-g12fd -a golomb.mzn -D "n = 4; m = 6;"
-
-we are presented with a never ending list of the same solution!
-
-What is going on?  In order for the finite domain solver to finish
-it needs to fix all variables, including the variables :mzn:`diff[i,j]`
-where :mzn:`i <= j`, which means there are countless ways of generating a
-solution, simply by changing these variables to take arbitrary values.
-
-We can avoid problems with unconstrained variables, by modifying
-the model so that they are fixed to some value. For example replacing
-the lines marked :mzn:`% (diff}` in :numref:`ex-unc`
-to 
-
-.. code-block:: minizinc
-
-  constraint forall(i,j in 1..n) 
-                   (diffs[i,j] = if (i > j) then mark[i] - mark[j]
-                                 else 0 endif);
-
-ensures that the extra variables are all fixed to 0. With this change
-the solver returns just one solution.
-
-MiniZinc will automatically remove variables which are unconstrained
-and not used in the output.  An alternate solution to the above problem is
-simply to remove the output of the :mzn:`diffs` array by changing the
-output statement to
-
-.. code-block:: minizinc
-
-  output ["mark = \(mark);\n"];
-
-With this change running 
-
-.. code-block:: bash
-
-  $ mzn-g12fd -a golomb.mzn -D "n = 4; m = 6;"
-
-simply results in
-
-::
-
-  mark = [0, 1, 4, 6];
-  ----------
-  ==========
-
-illustrating the unique solution.
-
-
-.. defblock:: Unconstrained Variables
-
-  .. index::
-    single: variable; unconstrained
-
-  Models should never have unconstrained variables. Sometimes it is
-  difficult to model without unnecessary variables. 
-  If this is the case add
-  constraints to fix the unnecessary variables, 
-  so they cannot influence the
-  solving.
 
 
 Effective Generators
@@ -219,8 +120,8 @@ tests can be applied as soon as we select :mzn:`i` and :mzn:`j`.
 
 .. code-block:: minizinc
 
-  int: count = sum( i,j in NODES where i < j /\ adj[i,j])
-       (sum([1 | k in NODES where j < k /\ adj[i,k] /\ adj[j,k]]));
+  int: count = sum ([ 1 | i,j in NODES where i < j  /\ adj[i,j],
+                          k in NODES where j < k /\ adj[i,k] /\ adj[j,k]]);
 
 You can use the builitin :mzn:`trace` :index:`function <trace>` to help
 determine what is happening inside generators. 
@@ -240,7 +141,7 @@ loop for both versions of the calculation.
 
 Produces the output:
 
-::
+.. code-block:: none
 
   ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ----------
@@ -253,7 +154,7 @@ indicating the inner loop is evaluated 64 times while
 
 Produces the output:
 
-::
+.. code-block:: none
 
   ++++++++++++++++
   ----------
@@ -270,10 +171,13 @@ understand what is happening during model creation.
 will print out each of triangles that is found in the calculation.
 It produces the output
 
-::
+.. code-block:: none
 
   (1,2,3)
   ----------
+
+We have to admit that we cheated a bit here: In certain circumstances, the MiniZinc compiler is in fact able to re-order the arguments in a ``where`` clause automatically, so that they are evaluated as early as possible. In this case, adding the ``trace`` function in fact *prevented* this optimisation. In general, it is however a good idea to help the compiler get it right, by splitting the ``where`` clauses and placing them as close to the generators as possible.
+
 
 Redundant Constraints
 ---------------------
@@ -291,17 +195,17 @@ Running this for :mzn:`n = 16` as follows:
 
 .. code-block:: bash
 
-  $ mzn-g12fd --all-solutions --statistics magic-series.mzn -D "n=16;"
+  $ minizinc --all-solutions --statistics magic-series.mzn -D "n=16;"
 
 might result in output
 
-::
+.. code-block:: none
 
   s = [12, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0];
   ----------
   ==========
 
-and the statistics showing 174 choice points required.
+and the statistics showing 89 failures required.
 
 We can add redundant constraints to the model. Since each number
 in the sequence counts the number of occurrences of a number we know
@@ -320,9 +224,9 @@ Running the same problem as before
 
 .. code-block:: bash
 
-  $ mzn-g12fd --all-solutions --statistics magic-series2.mzn -D "n=16;"
+  $ minizinc --all-solutions --statistics magic-series2.mzn -D "n=16;"
 
-results in the same output, but with statistics showing just 13 choicepoints
+results in the same output, but with statistics showing just 14 failures
 explored. The redundant constraints have allowed the solver to prune the
 search much earlier.
 
@@ -369,7 +273,7 @@ Running the model
 
 .. code-block:: bash
 
-  $ mzn-g12fd -all-solutions --statistics allinterval.mzn -D "n=10;"
+  $ minizinc --solver g12fd --all-solutions --statistics allinterval.mzn -D "n=10;"
 
 finds all solutions in 84598 choice points and 3s.
 
@@ -406,7 +310,7 @@ The command
 
 .. code-block:: bash
 
-  $ mzn-g12fd --all-solutions --statistics allinterval2.mzn -D "n=10;"
+  $ minizinc --solver g12fd --all-solutions --statistics allinterval2.mzn -D "n=10;"
 
 finds all the solutions in  75536 choice points and 18s.
 Interestingly, although the model is not as succinct here, the search on the
@@ -459,7 +363,7 @@ Running the dual model,
 
 .. code-block:: bash
 
-  $ mzn-g12fd -all-solutions --statistics allinterval3.mzn -D "n=10;"
+  $ minizinc --solver g12fd --all-solutions --statistics allinterval3.mzn -D "n=10;"
 
 which uses the search strategy of
 the inverse model, labelling the :mzn:`y` variables, 

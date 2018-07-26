@@ -1,7 +1,7 @@
 int: w = 4;
 int: h = 4;
 
-% Array.
+% Array declaration.
 set of int: HEIGHT = 0..h;
 set of int: CHEIGHT = 1..h-1;
 set of int: WIDTH = 0..w;
@@ -22,11 +22,11 @@ var float: top;
 % Temperatura del borde inferior.
 var float: bottom;
 
-% Ecuación
+% Ecuación.
 % Ecuación de Laplace: Cada temperatura interna. es la media de sus vecinos.
 constraint forall(i in CHEIGHT, j in CWIDTH)(
               4.0*t[i,j] = t[i-1,j] + t[i,j-1] + t[i+1,j] + t[i,j+1]);
-% Lados
+% Lados.
 % Restricciones de los bordes.
 constraint forall(i in CHEIGHT)(t[i,0] = left);
 constraint forall(i in CHEIGHT)(t[i,w] = right);

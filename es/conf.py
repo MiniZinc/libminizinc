@@ -61,7 +61,7 @@ source_suffix = '.rst'
 master_doc = 'index'
 
 # General information about the project.
-project = 'MiniZinc Documentation'
+project = u'Documentación de MiniZinc'
 copyright = '2016, 2017, Peter J. Stuckey, Kim Marriott, Guido Tack'
 author = 'Peter J. Stuckey, Kim Marriott, Guido Tack'
 
@@ -79,7 +79,8 @@ release = '2.1.2'
 #
 # This is also used if you do content translation via gettext catalogs.
 # Usually you set "language" from the command line for these cases.
-language = None
+#language = None
+language = "es"
 
 # There are two options for replacing |today|: either, you set today to some
 # non-false value, then it is used:
@@ -242,7 +243,7 @@ html_show_sphinx = False
 #   'da', 'de', 'en', 'es', 'fi', 'fr', 'h', 'it', 'ja'
 #   'nl', 'no', 'pt', 'ro', 'r', 'sv', 'tr', 'zh'
 #
-# html_search_language = 'en'
+html_search_language = 'es'
 
 # A dictionary with options for the search language support, empty by default.
 # 'ja' uses this config value.
@@ -283,7 +284,7 @@ latex_elements = {
 # (source start file, target name, title,
 #  author, documentclass [howto, manual, or own class]).
 latex_documents = [
-    (master_doc, 'MiniZinc.tex', 'MiniZinc Documentation',
+    (master_doc, 'MiniZinc.tex', u'Documentación de MiniZinc',
      'Peter J. Stuckey, Kim Marriott, Guido Tack', 'manual'),
 ]
 
@@ -325,7 +326,7 @@ latex_show_urls = "footnote"
 # One entry per manual page. List of tuples
 # (source start file, name, description, authors, manual section).
 man_pages = [
-    (master_doc, 'minizinc', 'MiniZinc Documentation',
+    (master_doc, 'minizinc', u'Documentación de MiniZinc',
      [author], 1)
 ]
 
@@ -383,7 +384,7 @@ epub_copyright = copyright
 # The language of the text. It defaults to the language option
 # or 'en' if the language is not set.
 #
-# epub_language = ''
+#epub_language = 'es'
 
 # The scheme of the identifier. Typical schemes are ISBN or URL.
 # epub_scheme = ''
@@ -457,7 +458,7 @@ rst_prolog = """
 """
 
 def setup(sphinx):
-    from mznlexer import MznLexer, MznDefLexer
+    from minizinc_lexer import MznLexer, MznDefLexer
     sphinx.add_lexer("minizinc", MznLexer())
     sphinx.add_lexer("minizincdef", MznDefLexer())
     sphinx.add_stylesheet("style.css")

@@ -1,17 +1,17 @@
-% Salida
+% Output
 <output> ::= <no-solutions> [ <warnings> ] <free-text>
            | ( <solution> )* [ <complete> ] [ <warnings> ] <free-text>
 
-% Soluciones
+% Solutions
 <solution> ::= <solution-text> [ \n ] "----------" \n
 
-% Insatisfactorio
+% Unsatisfiable
 <no-solutions> ::= "=====UNSATISFIABLE=====" \n
 
-% Completo
+% Complete
 <complete> ::= "==========" \n
 
-% Mensajes
+% Messages
 <warnings> ::= ( <message> )+
 
 <message>  ::= ( <line> )+

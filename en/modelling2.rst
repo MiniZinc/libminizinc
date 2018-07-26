@@ -83,11 +83,11 @@ Running the command
 
 .. code-block:: bash
 
-  $ mzn-cbc laplace.mzn
+  $ minizinc --solver osicbc laplace.mzn
 
 gives the output
 
-::
+.. code-block:: none
 
     0.00 100.00 100.00 100.00   0.00
     0.00  42.86  52.68  42.86   0.00
@@ -564,11 +564,11 @@ to create an understandable output. Running
 
 .. code-block:: bash
 
-  $ mzn-gecode simple-prod-planning.mzn simple-prod-planning-data.dzn
+  $ minizinc --solver gecode simple-prod-planning.mzn simple-prod-planning-data.dzn
 
 results in the output
 
-::
+.. code-block:: none
 
   BananaCake = 2;
   ChocolateCake = 2;
@@ -722,11 +722,11 @@ or ``--all-solutions``. Running
 
 .. code-block:: bash
 
-  $ mzn-gecode --all-solutions sudoku.mzn sudoku.dzn
+  $ minizinc --solver gecode --all-solutions sudoku.mzn sudoku.dzn
 
 results in
 
-::
+.. code-block:: none
 
    5 9 3  7 6 2  8 1 4 
    2 6 8  4 3 1  5 7 9 
@@ -778,11 +778,11 @@ Running this program using
 
 .. code-block:: bash
   
-  $ mzn-gecode -D"Color = { red, yellow, blue };" aust-enum.mzn
+  $ minizinc -D"Color = { red, yellow, blue };" aust-enum.mzn
 
 might result in output
 
-::
+.. code-block:: none
 
   wa = yellow;
   nt = blue;
@@ -934,14 +934,14 @@ The command
 
 .. code-block:: bash
   
-  $ mzn-gecode --all-solutions jobshop.mzn jdata.dzn
+  $ minizinc --all-solutions jobshop.mzn jdata.dzn
 
 solves a small job shop scheduling problem, and illustrates the behaviour of 
 \texttt{all-solutions} for optimisation problems.  Here the solver outputs
 each better solutions as it finds it, rather than all possible optimal
 solutions. The output from this command is:
 
-::
+.. code-block:: none
 
   end = 39
    5  9 13 22 30 
@@ -982,7 +982,7 @@ and then executing
 
 .. code-block:: bash
 
-  $ mzn-gecode --all-solutions jobshop.mzn jobshop.dzn
+  $ minizinc --all-solutions jobshop.mzn jobshop.dzn
 
 For this problem there are 3,444,375 optimal solutions.
 
@@ -1117,11 +1117,11 @@ Executing the command
 
 .. code-block:: bash
 
-  $ mzn-gecode --all-solutions magic-series.mzn -D "n=4;"
+  $ minizinc --all-solutions magic-series.mzn -D "n=4;"
 
 leads to the output
 
-::
+.. code-block:: none
 
   s = [1, 2, 1, 0];
   ----------
@@ -1248,12 +1248,12 @@ Executing the command
 
 .. code-block:: bash
 
-  $ mzn-gecode social-golfers.mzn social-golfers.dzn
+  $ minizinc social-golfers.mzn social-golfers.dzn
 
 where the data file defines a problem with 4 weeks, with 4 groups
 of size 3 leads to the output
 
-::
+.. code-block:: none
 
   1..3 4..6 7..9 10..12 
   { 1, 4, 7 } { 2, 5, 10 } { 3, 9, 11 } { 6, 8, 12 }
@@ -1299,11 +1299,11 @@ Running
 
 .. code-block:: bash
 
-  $ mzn-gecode wedding.mzn
+  $ minizinc wedding.mzn
 
 Results in the output
 
-::
+.. code-block:: none
 
   ted bride groom rona ed carol ron alice bob bridesmaid bestman clara 
   ----------

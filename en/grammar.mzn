@@ -31,7 +31,7 @@
 <assign-item> ::= <ident> "=" <expr>
 
 % Constraint items
-<constraint-item> ::= "constraint" <expr>
+<constraint-item> ::= "constraint" <string-annotation> <expr>
 
 % Solve item
 <solve-item> ::= "solve" <annotations> "satisfy"
@@ -179,7 +179,7 @@
 % Set comprehensions
 <set-comp> ::= "{" <expr> "|" <comp-tail> "}"
 
-<comp-tail> ::= <generator> "," ... [ "where" <expr> ]
+<comp-tail> ::= <generator> [ "where" <expr> ] "," ...
 
 <generator> ::= <ident> "," ... "in" <expr>
 
@@ -199,7 +199,7 @@
 <ann-literal> ::= <ident> [ "(" <expr> "," ... ")" ]
 
 % If-then-else expressions
-<if-then-else-expr> ::= "if" <expr> "then" <expr> ( "elseif" <expr> "then" <expr> )* "else" <expr> "endif"
+<if-then-else-expr> ::= "if" <expr> "then" <expr> [ "elseif" <expr> "then" <expr> ]* "else" <expr> "endif"
 
 % Call expressions
 <call-expr> ::= <ident-or-quoted-op> [ "(" <expr> "," ... ")" ]
@@ -223,6 +223,8 @@
                        | ’<builtin-op>’
 
 % Annotations
-<annotations> ::= ( "::" <annotation> )*
+<annotations> ::= [ "::" <annotation> ]*
 
 <annotation> ::= <expr-atom-head> <expr-atom-tail>
+
+<string-annotation> ::= "::" <string-literal>

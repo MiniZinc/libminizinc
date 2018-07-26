@@ -18,6 +18,7 @@
 
 .. |TyCoercions| replace:: *Coercions.*
 
+.. _ch-mzn-spec:
 
 Specification of MiniZinc
 =========================
@@ -1549,15 +1550,21 @@ inner-most one.  For example:
 The scope of local generator variables is given by the following rules:
 
 - They are visible within the head expression (before the :mzn:`|`).
-- They are visible within the where-expression.
-- They are visible within generator expressions in any subsequent
-  generators.
+- They are visible within the where-expression of their own generator.
+- They are visible within generator expressions and where-expressions in any subsequent generators.
 
 The last of these rules means that the following set comprehension is allowed:
 
 .. code-block:: minizinc
 
     { i+j | i in 1..3, j in 1..i }  % { 1+1, 2+1, 2+2, 3+1, 3+2, 3+3 }
+
+Multiple where-expressions are allowed, as in the following example:
+
+.. code-block:: minizinc
+
+    [f(i, j) | i in A1 where p(i), j in A2 where q(i,j)]
+
 
 A generator expression must be an array or a fixed set.
 
@@ -1568,34 +1575,7 @@ array).  Set comprehensions have array generators for consistency with array
 comprehensions, which makes implementations simpler.*
 
 The where-expression (if present) must be Boolean.  
-It can be var, in which case the type of the comprehension is lifted to an optional type.  Only one
-where-expression per comprehension is allowed.
-
-*Rationale:
-Allowing one where-expression per generator is another possibility, and one
-that could seemingly result in more efficient evaluation in some cases.  For
-example, consider the following comprehension:*
-
-.. code-block:: minizinc
-
-    [f(i, j) | i in A1, j in A2 where p(i) /\ q(i,j)]
-
-*If multiple where-expressions were allowed, this could be expressed more
-efficiently in the following manner, which avoids the fruitless "inner loop
-iterations" for each "outer loop iteration" that does not satisfy*
-:mzn:`p(i)`:
-
-.. code-block:: minizinc
-
-    [f(i, j) | i in A1 where p(i), j in A2 where q(i,j)]
-
-*However, this efficiency can also be achieved with nested comprehensions:*
-
-.. code-block:: minizinc
-
-    [f(i, j) | i in [k | k in A1 where p(k)], j in A2 where q(i,j)]
-
-*Therefore, a single where-expression is all that is supported.*
+It can be var, in which case the type of the comprehension is lifted to an optional type.
 
 .. _spec-array-literals:
 
@@ -1700,7 +1680,7 @@ For example:
    var int x;
    array[int] of var opt int: y = [ i | i in 1..10 where i != x ];
 
-The length of the array wtill be 10.
+The length of the array will be 10.
 
 The indices of an evaluated simple array comprehension are implicitly
 :mzn:`1..n`, where :mzn:`n` is the length of the evaluated comprehension.
@@ -1755,6 +1735,44 @@ enum.
     int: y = a4[1];                  % wrong index type
     int: z = a4[B];                  % correct
 
+Array Slice Expressions
++++++++++++++++++++++++
+
+Arrays can be *sliced* in order to extract individual rows, columns or blocks. The syntax is that of an array access expression (see above), but where one or more of the expressions inside the square brackets are set-valued.
+
+For example, the following extracts row 2 from a two-dimensional array:
+
+.. code-block:: minizinc
+
+    array[1..n,4..8] of int: x;
+    array[int] of int: row_2_of_x = x[2,4..8];
+
+Note that the resulting array ``row_2_of_x`` will have index set ``4..8``.
+
+A short-hand for all indices of a particular dimension is to use just dots:
+
+.. code-block:: minizinc
+
+    array[1..n,4..8] of int: x;
+    array[int] of int: row_2_of_x = x[2,..];
+
+You can also restrict the index set by giving a sub-set of the original index set as the slice:
+
+.. code-block:: minizinc
+
+    array[1..n,4..8] of int: x;
+    array[int] of int: row_2_of_x = x[2,5..6];
+
+The resulting array ``row_2_of_x`` will now have length 2 and index set ``5..6``.
+
+The dots notation also allows for partial bounds, for example:
+
+.. code-block:: minizinc
+
+    array[1..n,4..8] of int: x;
+    array[int] of int: row_2_of_x = x[2,..6];
+
+The resulting array will have length 3 and index set ``4..6``. Of course ``6..`` would also be allowed and result in an array with index set ``6..8``.
 
 Annotation Literals
 +++++++++++++++++++
@@ -1835,7 +1853,7 @@ For example:
 
 .. code-block:: minizinc
 
-    let { int: x = 3, int: y = 4; } in x + y;
+    let { int: x = 3; int: y = 4; } in x + y;
     let { var int: x; 
           constraint x >= y /\ x >= -y /\ (x = y \/ x = -y); } 
     in x 
@@ -1902,6 +1920,8 @@ is equivalent to
 
      var 0..2: y;
      constraint b -> (x + y >= 4 /\ y != 1);
+
+For backwards compatibility with older versions of MiniZinc, items inside the ``let`` can also be separated by commas instead of semicolons.
 
 Call Expressions
 ++++++++++++++++
@@ -2197,7 +2217,7 @@ not very useful.
 Solve Items
 ~~~~~~~~~~~
 
-Every model must have exactly one solve item.  Solve items have the
+Every model must have exactly one or no solve item.  Solve items have the
 following syntax:
 
 .. literalinclude:: grammar.mzn
@@ -2213,10 +2233,10 @@ Example solve items:
     solve maximize a*x + y - 3*z;
 
 The solve item determines whether the model represents a constraint
-satisfaction problem or an optimisation problem.  In the latter case the
-given expression is the one to be minimized/maximized.
+satisfaction problem or an optimisation problem.  If there is no solve item, the model is assumed to be a satisfaction problem.
+For optimisation problems, the given expression is the one to be minimized/maximized.
 
-The expression in a minimize/maximize solve item can have integer or float type.
+The expression in a ``minimize``/``maximize`` solve item can have integer or float type.
 
 *Rationale: This is possible because all type-insts have a defined order.*
 Note that having an expression with a fixed type-inst in a solve item is not
@@ -2499,20 +2519,19 @@ following is a version that could be called in a negative context:
 Annotations
 -----------
 
-Annotations - values of the :mzn:`ann` type - allow a modeller to specify
+Annotations allow a modeller to specify
 non-declarative and solver-specific information that is beyond the core
 language.  Annotations do not change the meaning of a model, however, only
 how it is solved.
 
-Annotations can be attached to variables (on their declarations),
-expresssions, type-inst synonyms, enum items, solve items and on user
+Annotations can be attached to variables (on their declarations), constraints,
+expressions, type-inst synonyms, enum items, solve items and on user
 defined operations.
 They have the following syntax:
 
 .. literalinclude:: grammar.mzn
   :language: minizincdef
   :start-after: % Annotations
-  :end-before: %
 
 For example:
 
@@ -2524,9 +2543,8 @@ For example:
         minimize x;
 
 The types of the argument expressions must match the argument types of the
-declared annotation.  Unlike user-defined predicates and functions,
-annotations cannot be overloaded.  *Rationale: There is no particular strong
-reason for this, it just seemed to make things simpler.*
+declared annotation.  Like user-defined predicates and functions,
+annotations can be overloaded.
 
 Annotation signatures can contain type-inst variables.
 
@@ -2557,6 +2575,19 @@ allows all nested combinations of annotations to be treated as if they are
 flat, thus avoiding the need to determine what is the meaning of an
 annotated annotation.  It also makes the MiniZinc abstract syntax tree simpler
 by avoiding the need to represent nesting.*
+
+Annotations have to be values of the :mzn:`ann` type or string literals. The 
+latter are used for *naming* constraints and expressions, for example
+
+.. code-block:: minizinc
+
+    constraint ::"first constraint" alldifferent(x);
+    constraint ::"second constraint" alldifferent(y);
+    constraint forall (i in 1..n) (my_constraint(x[i],y[i])::"constraint \(i)");
+
+Note that constraint items can *only* be annotated with string literals.
+
+*Rationale: Allowing arbitrary annotations on constraint items makes the grammar ambiguous, and seems unneccessary since we can just as well annotate the constraint expression.*
 
 .. _spec-partiality:
 

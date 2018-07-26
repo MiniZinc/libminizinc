@@ -10,7 +10,8 @@ adj = [| false, true,  true,  false
        | true,  true,  false, true
        | false, false, true,  false |];
 solve satisfy;
-int: count = sum( i,j in NODES where i < j /\ adj[i,j])
-  (sum([1 | k in NODES where trace("+", j < k /\ adj[i,k] /\ adj[j,k])]));
+  int: count = sum ([ 1 | i,j in NODES where i < j  /\ adj[i,j],
+                          k in NODES where trace("+", j < k /\ adj[i,k] /\ adj[j,k])]);
+
 % ignore
 constraint trace("\n",true);

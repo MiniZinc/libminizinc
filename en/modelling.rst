@@ -257,21 +257,21 @@ print when the model has been run and a :index:`solution` is found.
   A model can contain multiple output statements. In that case, all outputs
   are concatenated in the order they appear in the model.
 
-We can evaluate our model by typing
+We can evaluate our model by clicking the *Run* button in the MiniZinc IDE, or by typing
 
 .. code-block:: bash
   
-  $ mzn-gecode aust.mzn
+  $ minizinc --solver Gecode aust.mzn
 
 where :download:`aust.mzn <examples/aust.mzn>`
 is the name of the file containing our MiniZinc model.
 We must use the file extension ``.mzn`` to indicate a MiniZinc model.
-The command ``mzn-gecode`` uses the Gecode finite domain solver to evaluate
-our model. 
+The command ``minizinc`` with the option ``--solver Gecode`` uses the Gecode finite domain solver to evaluate
+our model. If you use the MiniZinc binary distribution, this solver is in fact the default, so you can just run ``minizinc aust.mzn`` instead.
 
 When we run this we obtain the result:
 
-::
+.. code-block:: none
 
   wa=2	 nt=3	 sa=1
   q=2	 nsw=3	 v=2
@@ -369,7 +369,7 @@ by :mzn:`minimize` to specify a minimisation problem.
 
 When we run this we obtain the result:
 
-::
+.. code-block:: none
 
   no. of banana cakes = 2
   no. of chocolate cakes = 2
@@ -417,7 +417,7 @@ We can run it using the command
 
 .. code-block: bash
 
-  $ mzn-gecode cakes2.mzn pantry.dzn
+  $ minizinc cakes2.mzn pantry.dzn
 
 where the data file :download:`pantry.dzn <examples/pantry.dzn>` is defined in
 :numref:`fig-pantry1`. This gives the same result as :download:`cakes.mzn <examples/cakes.mzn>`.
@@ -425,12 +425,12 @@ The output from running the command
 
 .. code-block:: bash
 
-  $ mzn-gecode cakes2.mzn pantry2.dzn
+  $ minizinc cakes2.mzn pantry2.dzn
 
 with an alternate data set defined in
 :numref:`fig-pantry2` is
 
-::
+.. code-block:: none
 
   no. of banana cakes = 3
   no. of chocolate cakes = 8
@@ -441,7 +441,7 @@ If we remove the output statement from :download:`cakes.mzn <examples/cakes.mzn>
 MiniZinc will use a default output. In this case the resulting
 output  will be
 
-::
+.. code-block:: none
 
   b = 3;
   c = 8;
@@ -473,14 +473,14 @@ file. For example the command
 
 .. code-block:: bash
 
-  $ mzn-gecode cakes2.mzn -D \
+  $ minizinc cakes2.mzn -D \
        "flour=4000;banana=6;sugar=2000;butter=500;cocoa=500;"
 
 will give identical results to
 
 .. code-block:: bash
 
-  $ mzn-g12fd cakes2.mzn pantry.dzn
+  $ minizinc cakes2.mzn pantry.dzn
 
 Data files can only contain assignment statements for 
 decision variables and parameters in the model(s) for which they are intended. 
@@ -530,19 +530,16 @@ quarter, how much do I end up owing? This question is encoded by
 the data file :download:`loan1.dzn <examples/loan1.dzn>`.
 
 Since we wish to use real number variables and constraint we need to use a solver
-that supports this type of problem.
-A suitable solver would be one that supports mixed integer linear
-programming.
-The MiniZinc distribution contains such a solver.
-We can invoke it using the command ``mzn-cbc``:
+that supports this type of problem. While Gecode (the default solver in the MiniZinc bundled binary distribution) does support floating point variables, a mixed integer linear programming (MIP) solver may be better suited to this particular type of problem.
+The MiniZinc distribution contains such a solver. We can invoke it by selecting ``OSICBC`` from the solver menu in the IDE (the triangle below the *Run* button), or on the command line using the command ``minizinc --solver osicbc``:
 
 .. code-block:: bash
 
-  $ mzn-cbc loan.mzn loan1.dzn
+  $ minizinc --solver osicbc loan.mzn loan1.dzn
 
 The output is
 
-::
+.. code-block:: none
 
   Borrowing 1000.00 at 4.0% interest, and repaying 260.00 
   per quarter for 1 year leaves 65.78 owing 
@@ -556,11 +553,11 @@ The output from running the command
 
 .. code-block:: bash
 
-  $ mzn-cbc loan.mzn loan2.dzn
+  $ minizinc --solver osicbc loan.mzn loan2.dzn
 
 is
 
-::
+.. code-block:: none
 
   Borrowing 1000.00 at 4.0% interest, and repaying 275.49
   per quarter for 1 year leaves 0.00 owing
@@ -573,11 +570,11 @@ The output from running the command
 
 .. code-block:: bash
 
-  $ mzn-g12mip loan.mzn loan3.dzn
+  $ minizinc --solver osicbc loan.mzn loan3.dzn
 
 is
 
-::
+.. code-block:: none
 
   Borrowing 907.47 at 4.0% interest, and repaying 250.00
   per quarter for 1 year leaves 0.00 owing

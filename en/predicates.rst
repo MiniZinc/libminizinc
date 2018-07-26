@@ -93,11 +93,11 @@ Using the data shown in :mzn:`ex-movingd`, the command
 
 .. code-block:: bash
 
-  $ mzn-gecode moving.mzn moving.dzn
+  $ minizinc moving.mzn moving.dzn
 
 may result in the output
 
-::
+.. code-block:: none
 
   start = [0, 60, 60, 90, 120, 0, 15, 105]
   end = 140
@@ -237,13 +237,13 @@ Running the command
 
 .. code-block:: bash
 
-  $ mzn-gecode nurse.mzn nurse.dzn
+  $ minizinc nurse.mzn nurse.dzn
 
 finds a 10 day schedule for 7 nurses, requiring 3 on each day shift
 and 2 on each night shift, with a minimum 2 night shifts per nurse.
 A possible output is
 
-::
+.. code-block:: none
 
   o d n n o n n d o o
   d o n d o d n n o n
@@ -791,7 +791,7 @@ declared as finite then there is an error.
 For example, the model show in :numref:`ex-reflect`
 may output
 
-::
+.. code-block:: none
 
   y = -10
   D = -10..10
@@ -799,7 +799,7 @@ may output
 
 or
 
-::
+.. code-block:: none
 
   y = 0
   D = {0, 1, 2, 3, 4}

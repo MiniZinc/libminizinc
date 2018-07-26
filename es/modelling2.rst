@@ -17,67 +17,58 @@ Declara el ancho ``w`` y la altura ``h`` del modelo de elementos finitos.
 
 La declaración
 
-.. literalinclude:: examples/laplace.mzn
+.. literalinclude:: examples/laplace_es.mzn
   :language: minizinc
   :lines: 5-9
 
-declares four fixed sets of integers describing the dimensions of the finite element model:
-``HEIGHT`` is the whole height of the model, while ``CHEIGHT`` is the centre of the height omitting the top and bottom,
-``WIDTH`` is the whole width of the model, while ``CWIDTH`` is the centre of the width omitting the left and rightsides,
+declara cuatro conjuntos fijos de enteros que describen las dimensiones del modelo de elementos finitos:
+``HEIGHT`` es toda la altura del modelo, mientras que ``CHEIGHT`` es el centro de la altura omitiendo la parte superior e inferior,
+``WIDTH`` es el ancho total del modelo, mientras que ``CWIDTH`` es el centro de la anchura omitiendo la izquierda y derecha,
 
-Finally a two dimensional array of float variables ``t``
-with rows numbered
-:math:`0` to :math:`h` (``HEIGHT``) and columns :math:`0` to :math:`w` (``WIDTH``),
-to represent the temperatures at each
-point in the metal plate.
-We can access the element of the array in the :math:`i^{th}` row and :math:`j^{th}` column
-using an expression :mzn:`t[i,j]`.
+Finalmente, una matriz bidimensional de variables flotantes ``t`` con filas numeradas :math:`0` to :math:`h` (``HEIGHT``) y columnas :math:`0` to :math:`w` (``WIDTH``), para representar las temperaturas en cada punto de la placa metálica.
+Podemos acceder al elemento de la matriz en la fila :math:`i^{th}` y columna :math:`j^{th}` usando una expresión :mzn:`t[i,j]`.
 
 
-Laplace's
-equation states that when the plate reaches a steady state
-the temperature at each internal point is the average of its orthogonal
-neighbours. The constraint
+La ecuación de Laplace indica que cuando la placa alcanza un estado estacionario la temperatura en cada punto interno es la media de sus vecinos ortogonales.
 
-.. literalinclude:: examples/laplace.mzn
+La restricción
+
+.. literalinclude:: examples/laplace_es.mzn
   :language: minizinc
   :lines: 16-18
 
-ensures that each internal point :math:`(i,j)` is the
-average of its four orthogonal neighbours.
-The constraints
+Asegura que cada punto interno :math:`(i,j)` es el promedio de sus cuatro vecinos ortogonales.
 
-.. literalinclude:: examples/laplace.mzn
+Las restricciones
+
+.. literalinclude:: examples/laplace_es.mzn
   :language: minizinc
   :lines: 20-24
 
-restrict the temperatures on each edge to be equal, and
-gives these temperatures names: ``left``, ``right``, ``top``
-and ``bottom``.
-While the constraints
+Restringir las temperaturas en cada borde para ser iguales, y da estos nombres de las temperaturas: ``left``, ``right``, ``top`` and ``bottom``.
 
-.. literalinclude:: examples/laplace.mzn
+Si bien las limitaciones
+
+.. literalinclude:: examples/laplace_es.mzn
   :language: minizinc
   :lines: 26-30
 
-ensure that the corners (which are irrelevant) are set to 0.0.
-We can determine the temperatures in a plate broken into 5 :math:`\times` 5
-elements with left, right and bottom temperature 0 and top temperature 100
-with the model shown in :numref:`ex-laplace`.
+Asegurarse que las esquinas (que son irrelevantes) se ajustan a 0.0.
+Podemos determinar las temperaturas en una placa dividida en 5 :math:`\times` 5 elementos con temperatura izquierda, derecha e inferior 0 y temperatura superior 100 con el modelo mostrado en:numref:`ex-laplace`.
 
 
-.. literalinclude:: examples/laplace.mzn
+.. literalinclude:: examples/laplace_es.mzn
   :language: minizinc
   :name: ex-laplace
-  :caption: Finite element plate model for determining steady state temperatures (:download:`laplace.mzn <examples/laplace.mzn>`).
+  :caption: Modelo de placa de elementos finitos para determinar las temperaturas en estado estable (:download:`laplace_es.mzn <examples/laplace_es.mzn>`).
 
-Running the command
+Ejecutando el comando
 
 .. code-block:: bash
 
-  $ mzn-cbc laplace.mzn
+  $ mzn-cbc laplace_es.mzn
 
-gives the output
+Da la salida
 
 ::
 
@@ -88,81 +79,66 @@ gives the output
     0.00   0.00   0.00   0.00   0.00
   ----------
 
-.. defblock:: Sets
+.. defblock:: Conjuntos
 
   .. index::
     single: set
 
-  Set variables are declared with a declaration of the form
+  Las variables de conjunto se declaran con una declaración de la forma
 
   .. code-block:: minizincdef
 
     set of <type-inst> : <var-name> ;
 
-  where sets of integers, enums (see later), floats or Booleans are allowed.
-  The only type allowed for decision variable sets are variable sets of
-  integers or enums.
-  Set literals are of the form
+  donde se permiten conjuntos de enteros, enumeraciones (ver más adelante), flotantes o booleanos.
+  El único tipo permitido para conjuntos de variables de decisión son conjuntos variables de enteros o enumeraciones.
+
+  Los literales establecidos son de la forma
 
   .. code-block:: minizincdef
 
     { <expr-1>, ..., <expr-n> }
 
-  or are :index:`range` expressions over either integers, enums or floats of the form
+  o son expresiones :index:`range` sobre enteros, enumeraciones o flotantes de la forma
 
   .. code-block:: minizincdef
 
     <expr-1> .. <expr-2>
 
-  The standard :index:`set operations <operator; set>`
-  are provided: element membership
-  (:mzn:`in`),
-  (non-strict) subset relationship (:mzn:`subset`),
-  (non-strict) superset relationship (:mzn:`superset`), union
-  (:mzn:`union`),
-  intersection (:mzn:`intersect`),
-  set difference (:mzn:`diff`),
-  symmetric set difference (:mzn:`symdiff`)
-  and the number of elements in the
-  set (:mzn:`card`).
+  El estandar :index:`set operations <operator; set>` están provistos por:
+  pertenencia elemento (:mzn:`in`),
+  (no-estricto) relación de subconjuntos (:mzn:`subset`),
+  (no-estricto) relación superconjunto (:mzn:`superset`),
+  union (:mzn:`union`),
+  intersecciñon (:mzn:`intersect`),
+  diferencia de conjuntos (:mzn:`diff`),
+  diferencia de conjunto simétrico (:mzn:`symdiff`)
+  y la cantidad de elementos en el conjunto (:mzn:`card`).
 
-  As we have seen set variables and set literals (including ranges) can be
-  used as an implicit type in variable declarations in which case the variable
-  has the type of the elements in the set and the variable is implicitly
-  constrained to be a member of the set.
+Como hemos visto, las variables establecidas y los literales establecidos (incluidos los rangos), se pueden usar como un tipo implícito en las declaraciones de variables. En cuyo caso la variable tiene el tipo de los elementos en el conjunto y la variable está implícitamente restringida para ser miembro del conjunto.
+
+Nuestro problema de horneado de pastele, es un ejemplo de un tipo muy simple de problema de planificación de la producción. En este tipo de problema, deseamos determinar qué cantidad de cada tipo de producto se debe hacer para maximizar los beneficios cuando la fabricación de un producto consume cantidades variables de algunos recursos fijos. Podemos generalizar el modelo MiniZinc en :numref:`ex-cakes2` para manejar este tipo de problema con un modelo que sea genérico en los tipos de recursos y productos. El modelo se muestra en :numref:`ex-prod-planning` y un archivo de datos de muestra (para el ejemplo de bicarbonato) se muestra en :numref:`fig-prod-planning-data`.
 
 
-Our cake baking problem is an example of a very simple kind of production
-planning problem.  In this kind of problem we wish to determine how much of
-each kind of product to make to maximise the profit where manufacturing a
-product consumes varying amounts of some fixed resources.  We can generalise
-the MiniZinc model in :numref:`ex-cakes2` to handle this kind of problem
-with a model that is generic in the kinds of resources and products.  The
-model is shown in :numref:`ex-prod-planning` and a sample data file (for
-the cake baking example) is shown in :numref:`fig-prod-planning-data`.
-
-
-.. literalinclude:: examples/simple-prod-planning.mzn
+.. literalinclude:: examples/simple-prod-planning_es.mzn
   :language: minizinc
   :name: ex-prod-planning
-  :caption: Model for simple production planning (:download:`simple-prod-planning.mzn <examples/simple-prod-planning.mzn>`).
+  :caption: Modelo para planificación de producción simple (:download:`simple-prod-planning_es.mzn <examples/simple-prod-planning_es.mzn>`).
 
-.. literalinclude:: examples/simple-prod-planning-data.dzn
+.. literalinclude:: examples/simple-prod-planning-data_es.dzn
   :language: minizinc
   :name: fig-prod-planning-data
-  :caption: Example data file for the simple production planning problem (:download:`simple-prod-planning-data.dzn <examples/simple-prod-planning-data.dzn>`).
+  :caption: Archivo de datos de ejemplo para el problema simple de planificación de la producción (:download:`simple-prod-planning-data_es.dzn <examples/simple-prod-planning-data_es.dzn>`).
 
-The new feature in this model is the use of :index:`enumerated
-types <type; enumerated>`.
-These allow us to treat the choice of resources and products as parameters to
-the model.
-The first item in the model
+La nueva característica de este modelo es el uso de :index:`enumerated types <type; enumerated>`.
+Esto nos permite tratar la elección de recursos y productos como parámetros para el modelo.
+El primer artículo en el modelo
 
 .. code-block:: minizinc
 
   enum Products;
 
-declares ``Products`` as an *unknown* set of products.
+Declara ``Products`` como un conjunto de productos *desconocido*.
 
 .. defblock:: Enumerated Types
 
@@ -170,109 +146,89 @@ declares ``Products`` as an *unknown* set of products.
     single: enumerated type
     single enum
 
-  Enumerated types, which we shall refer to as ``enums``,
-  are declared with a declaration of the form
+  Los tipos enumerados, a los que nos referiremos como ``enumeraciones``, se declaran con una declaración de la forma:
 
   .. code-block:: minizincdef
 
     enum <var-name> ;
 
-  An enumerated type is defined by an assignment of the form
+  Un tipo enumerado se define mediante una asignación del formulario
 
 
   .. code-block:: minizincdef
 
     enum <var-name> = { <var-name-1>, ..., <var-name-n> } ;
 
-  where :mzndef:`<var-name-1>`, ..., :mzndef:`<var-name-n>` are the elements of
-  the enumerated type, with name :mzndef:`<var-name>`.
-  Each of the elements of the enumerated type is also effectively declared by
-  this definition as a new constant of that type.
-  The declaration and definition can be combined into one line as usual.
 
-The second item declares an array of integers:
+  Donde :mzndef:`<var-name-1>`, ..., :mzndef:`<var-name-n>` son los elementos del tipo enumerado, con el nombre :mzndef:`<var-name>`.
+  Cada uno de los elementos del tipo enumerado también es declarado efectivamente por esta definición como una nueva constante de ese tipo.
+  La declaración y la definición se pueden combinar en una línea como de costumbre.
+
+El segundo elemento declara una matriz de enteros:
 
 .. code-block:: minizinc
 
   array[Products] of int: profit;
 
-The :index:`index set <array; index set>`
-of the array ``profit`` is ``Products``.
-This means that only elements of the set ``Products``
-can be used to index the array.
+El :index:`index set <array; index set>` del array ``profit`` es ``Products``.
+Esto significa que solo los elementos del conjunto ``Products`` se pueden usar para indexar la matriz.
 
-The elements of an enumerated type of :math:`n` elements
-act very similar to the integers :math:`1\dots n`. They can be compared, they are
-ordered, by the order they appear in the enumerated type definition,
-they can be interated over, they can appear as indices of arrays, in fact
-they can appear anywhere an integer can appear.
+Los elementos de un tipo enumerado de :math:`n` elements actúan de forma muy similar a los enteros :math:`1 \dots n`. Se pueden comparar, están ordenados, por el orden en que aparecen en la definición del tipo enumerado, se pueden volver a procesar, pueden aparecer como índices de matrices, de hecho, pueden aparecer en cualquier lugar donde pueda aparecer un número entero.
 
-In the example data file we have initialized the array using a list of
-integers
+En el archivo de datos de ejemplo, hemos inicializado la matriz usando una lista de enteros
 
 .. code-block:: minizinc
 
   Products = { BananaCake, ChocolateCake };
   profit = [400,450];
 
-meaning the profit for a banana cake is 400, while for a chocolate cake it
-is 450.  Internally ``BananaCake`` will be treated like the integer 1,
-while ``ChocolateCake`` will be treated like the integer 2.
-While MiniZinc does not provide an explicit list type, one-dimensional
-arrays with an index set :mzn:`1..n` behave like lists, and we will sometimes
-refer to them as :index:`lists <list>`.
+Lo que significa que la ganancia de un pastel de plátano es de 400, mientras que para un pastel de chocolate es de 450. Internamente, ``BananaCake`` se tratará como el número entero 1, mientras que ``ChocolateCake`` se tratará como el número entero 2.
 
-In a similar fashion, in the next two items we declare a set of resources
-``Resources``, and an array ``capacity`` which gives the amount of
-each resource that is available.
+Aunque MiniZinc no proporciona un tipo de lista explícito, las matrices unidimensionales con un conjunto de índices :mzn:`1..n` se comportan como listas, y a veces nos referiremos a ellas como :index:`lists <list>`.
 
-More interestingly, the item
+De manera similar, en los siguientes dos elementos declaramos un conjunto de recursos ``Recursos``, y una matriz ``capacidad`` que da la cantidad de
+cada recurso que está disponible.
+
+Más interesante, el artículo
 
 .. code-block:: minizinc
 
   array[Products, Resources] of int: consumption;
 
-declares a 2-D array ``consumption``. The value of
-:mzn:`consumption[p,r]` is the amount of resource :mzn:`r` required to
-produce one unit of product :mzn:`p`. Note that the first index is the row
-and the second is the column.
+Declara una matriz 2-D ``consumption``. El valor de :mzn:`consumption[p, r]` es la cantidad de recurso :mzn:`r` requerido para producir una unidad de producto :mzn:`p`. Tenga en cuenta que el primer índice es la fila y el segundo es la columna.
 
-The data file contains an example initialization of a 2-D array:
+El archivo de datos contiene una inicialización de ejemplo de una matriz 2-D:
 
 .. code-block:: minizinc
 
   consumption= [| 250, 2, 75,  100, 0,
                 | 200, 0, 150, 150, 75 |];
 
-Notice how the delimiter ``|`` is used to separate rows.
+Observe cómo el delimitador ``|`` se usa para separar filas.
 
 .. defblock:: Arrays
 
   .. index:
     single: array
 
-  Thus, MiniZinc provides one- and multi-dimensional arrays
-  which are declared using the type:
+
+  Por lo tanto, MiniZinc proporciona matrices de una y varias dimensiones que se declaran utilizando el tipo:
 
   .. code-block:: minizincdef
 
     array [ <index-set-1>, ..., <index-set-n> ] of <type-inst>
 
-  MiniZinc requires that the array declaration contains the index set of each
-  dimension and that the index set is either an integer range, a set
-  variable initialised to an integer range, or an :index:`enumeration type <enumerated type>`.
-  Arrays can contain any of the base
-  types: integers, enums, Booleans, floats or strings.  These can be fixed or unfixed
-  except for strings which can only be parameters. Arrays can also contain
-  sets but they cannot contain arrays.
+  MiniZinc requiere que la declaración de matriz contenga el conjunto de índices de cada dimensión y que el conjunto de índices sea un rango entero, una variable establecida inicializada a un rango entero, o un :index:`enumeration type <enumerated type>`.
 
-  :index:`One-dimensional array literals <array; literal; 1D>` are of form
+  Las matrices pueden contener cualquiera de los tipos base: enteros, enumeraciones, booleanos, flotantes o cadenas. Estos pueden ser fijos o no, a excepción de cadenas que solo pueden ser parámetros. Las matrices también pueden contener conjuntos, pero no pueden contener matrices.
+
+  :index:`One-dimensional array literals <array; literal; 1D>` son de la forma:
 
   .. code-block:: minizincdef
 
     [ <expr-1>, ..., <expr-n> ]
 
-  while :index:`two-dimensional array literals <array; literal; 2D>` are of form
+  Mientras que :index:`two-dimensional array literals <array; literal; 2D>` son de la forma:
 
   .. code-block:: minizincdef
 
@@ -280,12 +236,11 @@ Notice how the delimiter ``|`` is used to separate rows.
        ...                         |
        <expr-m-1>, ..., <expr-m-n> |]
 
-  where the array has ``m`` rows and ``n`` columns.
+  Donde la matriz tiene columnas ``m`` y ``n``.
 
-  The family of built-in functions :mzn:`array1d`,
-  :mzn:`array2d`, etc,
-  can be used to initialise an array of any dimension from a list (or more
-  exactly a one-dimensional array). The call:
+  La familia de funciones incorporadas :mzn:`array1d`, :mzn:`array2d`, etc., se puede utilizar para inicializar una matriz de cualquier dimensión de una lista (o más exactamente una matriz unidimensional).
+
+  La llamada:
 
   .. code-block:: minizincdef
 
@@ -296,113 +251,72 @@ Notice how the delimiter ``|`` is used to separate rows.
   instance, :mzn:`array2d(1..3, 1..2, [1, 2, 3, 4, 5, 6])` is equivalent to
   :mzn:`[|1, 2 |3, 4 |5, 6|]`.
 
-  Array elements are :index:`accessed <array; access>` in the usual way: :mzn:`a[i,j]` gives the
-  element in the :math:`i^{th}` row and :math:`j^{th}` column.
+  Devuelve una matriz dimensional ``n`` con conjuntos de índices dados por los primeros argumentos ``n`` y el último argumento contiene los elementos de la matriz.
+  Por ejemplo, :mzn:`array2d (1..3, 1..2, [1, 2, 3, 4, 5, 6])` es equivalente a :mzn:`[| 1, 2 | 3, 4 | 5, 6 |]`.
+
+  Los elementos de la matriz son :index:`accessed <array; access>` de la forma habitual: :mzn:`a[i, j]` da el elemento en la fila :math:`i^{th}` y en la columna :math:`j^{th}`.
 
   .. \pjs{New array functions!}
 
+  El operador de concatenación ``++`` se puede usar para concatenar dos matrices unidimensionales juntas. El resultado es una lista, es decir, una matriz unidimensional cuyos elementos están indexados desde 1.
 
-  The concatenation operator ``++``
-  can be used to concatenate two
-  one-dimensional arrays together. The result is a list, i.e. a
-  one-dimensional array whose elements are indexed from 1.  For instance
-  :mzn:`[4000, 6] ++ [2000, 500, 500]` evaluates to :mzn:`[4000, 6, 2000, 500, 500]`.
-  The built-in function
-  :mzn:`length` returns the length
-  of a one-dimensional array.
+  Por ejemplo, :mzn:`[4000, 6] ++ [2000, 500, 500]` evalúa a :mzn:`[4000, 6 , 2000, 500, 500]`.
 
-The next item in the model defines the parameter :mzn:`mproducts`. This is
-set to an upper-bound on the number of products of any type that can be
-produced. This is quite a complex example of nested
-array comprehensions and aggregation operators.  We shall introduce these
-before we try to understand this item and the rest of the model.
+  La función incorporada :mzn:`length` devuelve la longitud de una matriz unidimensional.
 
-First, MiniZinc provides list comprehensions similar to those provided in
-many functional programming languages, or Python. For example, the list comprehension
-:mzn:`[i + j | i, j in 1..3 where j < i]` evaluates to :mzn:`[1 + 2, 1 + 3, 2 + 3]`
-which is :mzn:`[3, 4, 5]`. Of course :mzn:`[3, 4, 5]` is
-simply an array with index set :mzn:`1..3`.
+El siguiente elemento en el modelo define el parámetro :mzn:`mproducts`. Esto se establece en un límite superior en la cantidad de productos de cualquier tipo que se pueden producir. Este es un ejemplo bastante complejo de comprensiones de conjuntos anidados y operadores de agregación. Los presentaremos antes de tratar de entender este artículo y el resto del modelo.
 
-MiniZinc also provides set comprehensions which have a similar syntax: for
-instance, :mzn:`{i + j | i, j in 1..3 where j < i}` evaluates to the set
-:mzn:`{3, 4, 5}`.
+En primer lugar, MiniZinc proporciona comprensiones de listas similares a las provistas en muchos lenguajes de programación funcionales, o Python. Por ejemplo, la lista de comprensión :mzn:`[i + j | i, j in 1..3 where j < i]` evalúa a :mzn:`[1 + 2, 1 + 3, 2 + 3]` que es :mzn:`[3, 4, 5]`. Por supuesto :mzn:`[3, 4, 5]` es simplemente una matriz con conjunto de índices :mzn:`1..3`.
 
-.. defblock:: List and Set Comprehensions
+MiniZinc también proporciona conjuntos de comprensiones que tienen una sintaxis similar: por ejemplo, :mzn:`{i + j | i, j in 1..3 where j < i}` evalúa al conjunto :mzn:`{3, 4, 5}`.
+
+.. defblock:: Enumeraciones y Establecer comprensiones
 
   .. index:
     single: comprehension
     single: comprehension; list
 
-  The generic form of a list comprehension is
+  La forma genérica de una lista de comprensión es
 
   .. code-block:: minizincdef
 
     [ <expr> | <generator-exp> ]
 
-  The expression :mzndef:`<expr>` specifies how to construct elements in the
-  output list from the elements generated by :mzndef:`<generator-exp>`.
-  The generator :mzndef:`<generator-exp>` consists of a comma separated sequence of
-  generator expressions optionally followed by a Boolean expression. The two forms are
+  La expresión :mzndef:`<expr>` especifica cómo construir elementos en la lista de salida a partir de los elementos generados por :mzndef:`<generator-exp>`. El generador :mzndef:`<generator-exp>` consiste en una secuencia separada por comas de expresiones generadoras opcionalmente, seguidas de una expresión booleana. Las dos formas son:
 
   .. code-block:: minizincdef
 
     <generator>, ..., <generator>
     <generator>, ..., <generator> where <bool-exp>
 
-  The optional :mzndef:`<bool-exp>` in the second form acts as a filter on
-  the generator expression: only elements satisfying the Boolean expression
-  are used to construct elements in the output list.  A :index:`generator <comprehension; generator>`
-  :mzndef:`<generator>`
-  has the form
+  El opcional :mzndef:`<bool-exp>` en la segunda forma actúa como un filtro en la expresión del generador. Solo los elementos que satisfacen la expresión booleana se usan para construir elementos en la lista de salida.
+  Un :index:`generator <comprehension; generator>` :mzndef:`<generator>` tiene la forma:
 
   .. code-block:: minizincdef
 
     <identifier>, ..., <identifier> in <array-exp>
 
-  Each identifier is an *iterator*
-  which takes the values
-  of the array expression in turn, with the last identifier varying most rapidly.
+  Cada identificador es un *iterador* que toma los valores de la expresión de la matriz a su vez, con el último identificador que varía más rápidamente.
 
-  The generators of a list comprehension and :mzndef:`<bool-exp>`
-  usually do not involve decision variables.
-  If they do involve decision variables
-  then the list produced is a list of :mzndef:`var opt <T>` where :mzndef:`<T>` is the type
-  of the :mzndef:`<expr>`. See the discussion of :index:`option types <option type>`
-  in :ref:`sec-optiontypes` for more details.
+  Los generadores de una lista de comprensión y :mzndef:`<bool-exp>` generalmente no involucran variables de decisión. Si implican variables de decisión, la lista producida es una lista de :mzndef:`var opt <T>` donde :mzndef:`<T>` es el tipo de :mzndef:`<expr>`. Vea la discusión de :index:`option types <option type>` en :ref:`sec-optiontypes` para más detalles.
 
-  :index:`Set comprehensions <comprehension; set>`
-  are almost identical to list comprehensions: the only
-  difference is the use of ``{`` and ``}`` to enclose the
-  expression rather than ``[`` and ``]``.
-  The elements generated by a set comprehension must be
-  :index:`fixed`, i.e. free of decision variables.
-  Similarly the generators and optional :mzndef:`<bool-exp>`
-  for set comprehensions must be fixed.
-
+  :index:`Conjuntos de comprensiones <comprehension; set>` son casi idénticos a las comprensiones de la lista. La única diferencia es el uso de ``{`` y ``}`` para adjuntar la expresión en lugar de ``[`` y ``]``. Los elementos generados por una comprensión de conjunto deben ser :index:`fixed`, es decir, libre de variables de decisión. Del mismo modo, los generadores y opcional :mzndef:`<bool-exp>` para establecer las comprensiones deben ser corregidos.
 
 .. index::
   single: forall
 
-Second, MiniZinc provides a number of built-in functions that take a
-one-dimensional array and aggregate the elements. Probably the most useful
-of these is :mzn:``forall``.
-This takes an array of Boolean expressions
-(that is, constraints) and returns a single Boolean expression which is the
-logical conjunction of the Boolean expressions in the array.
+En segundo lugar, MiniZinc proporciona una serie de funciones integradas que toman una matriz unidimensional y que agregan los elementos. Probablemente el más útil de estos es :mzn:``forall``. Esto toma una matriz de expresión booleana (es decir, restricciones) y devuelve una única expresión booleana que es la conjunción lógica de las expresiones booleanas en la matriz.
 
-For example, consider the expression
+Por ejemplo, considera la expresión:
 
 .. code-block:: minizinc
 
   forall( [a[i] != a[j] | i,j in 1..3 where i < j])
 
-where ``a`` is an arithmetic array with index set ``1..3``. This
-constrains the elements in ``a`` to be pairwise different. The list
-comprehension evaluates to :mzn:`[ a[1] != a[2], a[1] != a[3], a[2] != a[3] ]`
-and so the :mzn:`forall` function returns the logical
-conjunction :mzn:`a[1] != a[2] /\ a[1] != a[3] /\ a[2] != a[3]`.
+Donde ``a`` es una matriz aritmética con el conjunto de índices ``1..3``.
+Esto limita los elementos en ``a`` para que sean diferentes por pares. La lista de comprensión se evalúa como :mzn:`[a [1] != a[2], a[1] != a[3], a[2] != a[3]]` y entonces el :mzn:`forall` devuelve la conjunción de logica mzn:`a[1] != a[2] /\ a[1] != a[3] /\ a[2] != a[3]`.
 
-.. defblock:: Aggregation functions
+.. defblock:: Funciones de Agregación
 
   .. index::
     single: aggregation function
@@ -423,90 +337,68 @@ conjunction :mzn:`a[1] != a[2] /\ a[1] != a[3] /\ a[2] != a[3]`.
     single: aggregation function; xorall
     single: aggregation function; iffall
 
-  The *aggregation functions* for arithmetic arrays are:
-  :mzn:`sum` which adds the elements, :mzn:`product` which multiplies them together,
-  and :mzn:`min` and :mzn:`max` which respectively return the least and
-  greatest element in the array. When applied to an empty array, :mzn:`min` and
-  :mzn:`max` give a run-time error, :mzn:`sum` returns 0 and :mzn:`product`
-  returns 1.
+  Las *funciones de agregación* para matrices aritméticas son:
+  :mzn:`sum` que agrega los elementos,
+  :mzn:`product` que las multiplica,
+  y :mzn:`min` y :mzn:`max` que devuelven respectivamente el menor y mayor elemento en la matriz.
+  Cuando se aplica a un conjunto vacío, :mzn:`min` y :mzn:`max` dan un error en tiempo de ejecución, :mzn:`sum` devuelve 0 y :mzn:`product` devuelve 1.
 
-  MiniZinc provides four aggregation functions for arrays containing Boolean
-  expressions. As we have seen, the first of these,
-  :mzn:`forall`, returns
-  a single constraint which is the logical conjunction of the
-  constraints.
-  The second function, :mzn:`exists`,
-  returns the logical
-  disjunction of the constraints. Thus, :mzn:`forall` enforces that all
-  constraints in the array hold, while :mzn:`exists` ensures that at least
-  one of the constraints holds.
-  The third function, :mzn:`xorall`,
-  ensures that an odd number of constraints hold.
-  The fourth function, :mzn:`iffall`,
-  ensures that an even number of constraints holds.
+  MiniZinc proporciona cuatro funciones de agregación para matrices que contienen expresiones booleanas. Como hemos visto, el primero de ellos, :mzn:`forall`, devuelve una única restricción que es la conjunción lógica de las restricciones.
+  La segunda función, :mzn:`exists`, devuelve la disyunción lógica de las restricciones. Por lo tanto, :mzn:`forall` impone que todas las restricciones en la matriz se mantengan, mientras que :mzn:`exists` asegura que al menos una de las restricciones se mantenga. La tercera función, :mzn:`xorall`, asegura que se mantenga un número impar de restricciones. La cuarta función, :mzn:`iffall`, garantiza que se mantenga un número par de restricciones.
 
-The third, and final, piece in the puzzle is that MiniZinc allows a special
-syntax for aggregation functions when used with an array
-comprehension. Instead of writing
+
+La tercera y última pieza del rompecabezas es que MiniZinc permite una sintaxis especial para funciones de agregación cuando se usa con una comprensión de matriz. En lugar de escribir:
 
 .. code-block:: minizinc
 
   forall( [a[i] != a[j] | i,j in 1..3 where i < j])
 
-the modeller can instead write the more mathematical looking
+El modelador puede en cambio escribir el aspecto más matemático
 
 .. code-block:: minizinc
 
   forall (i,j in 1..3 where i < j) (a[i] != a[j])
 
-The two expressions are completely equivalent: the modeller is free to use
-whichever they feel looks most natural.
+Las dos expresiones son completamente equivalentes: el modelador es libre de usar el que parezca más natural.
 
-.. defblock:: Generator call expressions
+.. defblock:: Generador de Expresiones de Llamada
 
   .. index::
     single: generator call
     single: expression; generator call
 
-  A *generator call expression* has form
+  Una *expresión de llamada del generador* tiene forma:
 
   .. code-block:: minizincdef
 
     <agg-func> ( <generator-exp> ) ( <exp> )
 
-  The round brackets around the generator expression
-  :mzndef:`<generator-exp>` and the constructor expression
-  :mzndef:`<exp>` are not optional: they must be there.  This is
-  equivalent to writing
+
+  Los corchetes alrededor de la expresión del generador :mzndef:`<generator-exp>` y la expresión del constructor :mzndef:`<exp>` no son opcionales, deben estar allí.
+  Esto es equivalente a escribir:
 
   .. code-block:: minizincdef
 
     <agg-func> ( [ <exp> | <generator-exp> ] )
 
-  The :index:`aggregation function` :mzndef:`<agg-func>` is any MiniZinc
-  function expecting a single array as argument.
+  El :index:`aggregation function` :mzndef:`<agg-func>` es cualquier función de MiniZinc que espera una única matriz como argumento.
 
-
-We are now in a position to understand the rest of the simple production
-planning model shown in :numref:`ex-prod-planning`. For the moment ignore
-the item defining :mzn:`mproducts`.  The item afterwards:
+Ahora estamos en condiciones de comprender el resto del modelo de planificación de producción simple que se muestra en :numref:`ex-prod-planning`. Por el momento, ignore el elemento que define :mzn:`mproducts`. El elemento más tarde:
 
 .. code-block:: minizinc
 
   array[Products] of var 0..mproducts: produce;
 
-defines a one-dimensional array :mzn:`produce` of decision variables.  The
-value of :mzn:`produce[p]` will be set to the amount of product :mzn:`p`
-in the optimal solution.
-The next item
+Define una matriz unidimensional :mzn:`produce` de variables de decisión. El valor de :mzn:`produce[p]` se establecerá en la cantidad de producto :mzn:`p` en la solución óptima.
+
+El siguiente punto
 
 .. code-block:: minizinc
 
   array[Resources] of var 0..max(capacity): used;
 
-defines a set of auxiliary variables that record how much of each resource
-is used.
-The next two constraints
+Define un conjunto de variables auxiliares que registran la cantidad de cada recurso que se utiliza.
+Las siguientes dos restricciones
 
 .. code-block:: minizinc
 
@@ -514,31 +406,27 @@ The next two constraints
              (used[r] = sum (p in Products) (consumption[p, r] * produce[p]));
   constraint forall (r in Resources)(used[r] <= capacity[r] );
 
-compute in :mzn:`used[r]`  the total consumption of the
-resource :mzn:`r` and ensure it is less than the available amount.
-Finally, the item
+
+Calcular en :mzn:`used[r]` el consumo total del recurso :mzn:`r` y garantizar que sea menor que la cantidad disponible.
+Finalmente, el artículo
 
 .. code-block:: minizinc
 
   solve maximize sum (p in Products) (profit[p]*produce[p]);
 
-indicates that this is a maximisation problem and that the objective to be maximised is the total profit.
+Indica que este es un problema de maximización y que el objetivo a maximizar es el beneficio total.
 
-
-We now return to the definition of :mzn:`mproducts`. For each product
-:mzn:`p` the expression
+Ahora volvemos a la definición de :mzn:`mproducts`. Para cada producto
+:mzn:`p` la expresión:
 
 .. code-block:: minizinc
 
   (min (r in Resources where consumption[p,r] > 0)
                                    (capacity[r] div consumption[p,r])
 
-determines the maximum amount of :mzn:`p` that can be produced taking into
-account the amount of each resource :mzn:`r` and how much of :mzn:`r` is
-required to produce the product. Notice the use of the filter
-:mzn:`where consumption[p,r] > 0` to ensure that only resources required to make the
-product are considered so as to avoid a division by zero error.  Thus, the
-complete expression
+Determina la cantidad máxima de :mzn:`p` que se puede producir teniendo en cuenta la cantidad de cada recurso :mzn:`r` y la cantidad de :mzn:`r` que se requiere para producir el producto. Tenga en cuenta el uso del filtro :mzn:`where consumption[p,r] > 0` para garantizar que solo los recursos necesarios para fabricar el producto se consideran a fin de evitar una división por error cero.
+
+Por lo tanto, la expresión completa:
 
 .. code-block:: minizinc
 
@@ -546,19 +434,17 @@ complete expression
                        (min (r in Resources where consumption[p,r] > 0)
                                    (capacity[r] div consumption[p,r]));
 
-computes the maximum amount of *any* product that can be produced, and
-so this can be used as an upper bound on the domain of the decision
-variables in :mzn:`produce`.
+Calcula la cantidad máxima de *cualquier* producto que se puede producir, y así se puede usar como un límite superior en el dominio de las variables de decisión en :mzn:`produce`.
 
-Finally notice the output item is more complex,
-and uses :index:`list comprehensions <comprehension; list>`
-to create an understandable output. Running
+Finalmente observe que el ítem de salida es más complejo y usa :index:`list comprehensions <comprehension; list>` para crear una salida comprensible.
+
+Ejecutando el código:
 
 .. code-block:: bash
 
-  $ mzn-gecode simple-prod-planning.mzn simple-prod-planning-data.dzn
+  $ mzn-gecode simple-prod-planning_es.mzn simple-prod-planning-data_es.dzn
 
-results in the output
+Resulta en la salida:
 
 ::
 
@@ -573,150 +459,118 @@ results in the output
   ==========
 
 
-Global Constraints
-------------------
+Restricciones Globales
+----------------------
 
 .. \index{constraint!global|see{global constraint}}
 .. \index{global constraint}
 
-MiniZinc includes a library of global constraints which can also be used
-to define models. An example is the :mzn:`alldifferent`
-constraint which requires
-all the variables appearing in its argument to be pairwise different.
 
+MiniZinc incluye una biblioteca de restricciones globales que también se puede usar para definir modelos. Un ejemplo es la restricción :mzn:`alldifferent` que requiere que todas las variables que aparecen en su argumento sean diferentes por pares.
 
-.. literalinclude:: examples/send-more-money.mzn
+.. literalinclude:: examples/send-more-money_es.mzn
   :language: minizinc
   :name: ex-smm
-  :caption: Model for the cryptarithmetic problem SEND+MORE=MONEY (:download:`send-more-money.mzn <examples/send-more-money.mzn>`)
+  :caption: Modelo para el problema criptoaritméticos SEND + MORE = MONEY (:download:`send-more-money_es.mzn <examples/send-more-money_es.mzn>`)
 
-The SEND+MORE=MONEY problem requires assigning a different
-digit to each letter so that the arithmetic constraint holds.
-The model shown in :numref:`ex-smm` uses the constraint expression
-:mzn:`alldifferent([S,E,N,D,M,O,R,Y])`
-to ensure that each letter takes a different digit value.
-The global constraint is made available
-in the model using include item
+El problema SEND + MORE = MONEY requiere asignar un dígito diferente a cada letra para que la restricción aritmética se mantenga. El modelo que se muestra en :numref:`ex-smm` usa la expresión de restricción :mzn:`alldifferent([S,E,N,D,M,O,R,Y])` para garantizar que cada letra tome un dígito diferente valor. La restricción global está disponible en el modelo utilizando el elemento *include*
 
 .. code-block:: minizinc
 
   include "alldifferent.mzn";
 
-which makes
-the global constraint :mzn:`alldifferent` usable by the model.
-One could replace this line by
+Lo que hace que la restricción global :mzn:`alldifferent` sea utilizable por el modelo. Uno podría reemplazar esta línea por
 
 .. code-block:: minizinc
 
   include "globals.mzn";
 
-which includes all globals.
+Que incluye todos los globales.
 
-A list of all the global constraints
-defined for MiniZinc is included in the
-release documentation. See :ref:`sec-globals` for
-a description of some important global constraints.
+En la documentación de la versión se incluye una lista de todas las restricciones globales definidas para MiniZinc. Ver :ref:`sec-globals` para una descripción de algunas restricciones globales importantes.
 
 
-Conditional Expressions
------------------------
+
+
+Expresiones condicionales
+-------------------------
 
 .. \index{expression!conditional}
 
-MiniZinc provides a conditional *if-then-else-endif*
-expression.
-An example of its use is
+
+MiniZinc proporciona una expresión condicional *if-then-else-endif*.
+Un ejemplo de su uso es:
 
 .. code-block:: minizinc
 
   int: r = if y != 0 then x div y else 0 endif;
 
-which sets :mzn:`r` to :mzn:`x` divided by :mzn:`y` unless :mzn:`y` is zero in which case
-it sets it to zero.
+Que establece :mzn:`r` a :mzn:`x` dividido por :mzn:`y` a menos que :mzn:`y` sea cero, en cuyo caso lo pone a cero.
 
-.. defblock:: Conditional expressions
+.. defblock:: Expresiones condicionales
 
   .. index::
     single: expression; conditional
 
-  The form of a conditional expression is
+  La forma de una expresión condicional es
 
   .. code-block:: minizincdef
 
     if <bool-exp> then <exp-1> else <exp-2> endif
 
-  It is a true expression rather than a control flow statement and so can be used in other expressions.
-  It evaluates to :mzndef:`<exp-1>` if the Boolean expression :mzndef:`<bool-exp>` is true and
-  :mzndef:`<exp-2>` otherwise. The type of the conditional expression is that of
-  :mzndef:`<exp-1>` and :mzndef:`<exp-2>` which must have the same
-  type.
+  Es una expresión verdadera en lugar de una declaración de flujo de control y, por lo tanto, se puede usar en otras expresiones. Se evalúa como :mzndef:`<exp-1>` si la expresión booleana :mzndef:`<bool-exp>` es verdadera y :mzndef:`<exp-2>` en caso contrario. El tipo de expresión condicional es el de :mzndef:`<exp-1>` y :mzndef:`<exp-2>` que debe tener el mismo tipo.
 
-  If the :mzndef:`<bool-exp>` contains decision variables, then the
-  type-inst
-  of the expression is :mzndef:`var <T>` where :mzndef:`<T>` is the type of
-  :mzndef:`<exp-1>` and :mzndef:`<exp-2>` even if both
-  expressions are fixed.
+  Si el :mzndef:`<bool-exp>` contiene variables de decisión, entonces el tipo-instansación (type-inst) de la expresión es :mzndef:`var <T>` donde :mzndef:`<T>` es el tipo de :mzndef:`<exp-1>` y :mzndef:`<exp-2>` incluso si ambas expresiones son correctas.
 
-.. literalinclude:: examples/sudoku.mzn
+.. literalinclude:: examples/sudoku_es.mzn
   :language: minizinc
   :name: ex-sudoku
-  :caption: Model for generalized Sudoku problem (:download:`sudoku.mzn <examples/sudoku.mzn>`)
+  :caption: Modelo para el problema generalizado de Sudoku (:download:`sudoku_es.mzn <examples/sudoku_es.mzn>`)
 
 
-.. literalinclude:: examples/sudoku.dzn
+.. literalinclude:: examples/sudoku_es.dzn
   :language: minizinc
   :name: ex-sudokud
-  :caption: Example data file for generalised Sudoku problem (:download:`sudoku.dzn <examples/sudoku.dzn>`)
+  :caption: Ejemplo de archivo de datos para el problema generalizado de Sudoku (:download:`sudoku_es.dzn <examples/sudoku_es.dzn>`)
 
 .. _fig-sudoku:
 
 .. figure:: figures/sudoku.*
 
-  The problem represented by data file :download:`sudoku.dzn <examples/sudoku.dzn>`
+  El problema representado por el archivo de datos :download:`sudoku_es.dzn <examples/sudoku_es.dzn>`
 
-Conditional expressions are very useful in building complex models, or
-complex output. Consider the model of Sudoku problems shown in
-:numref:`ex-sudoku`. The initial board positions are given by the
-:mzn:`start` parameter where 0 represents an empty
-board position. This is converted to constraints on the decision variables
-:mzn:`puzzle` using the conditional expression
+Las expresiones condicionales son muy útiles en la creación de modelos complejos, o en resultados complejos. Considere el modelo de problemas de Sudoku que se muestra en :numref:`ex-sudoku`. Las posiciones iniciales de la placa están dadas por el parámetro :mzn:`start`, donde 0 representa una posición de tablero vacío. Esto se convierte en restricciones en las variables de decisión :mzn:`puzzle` utilizando la expresión condicional
 
 .. code-block:: minizinc
 
   constraint forall(i,j in PuzzleRange)(
        if start[i,j] > 0 then puzzle[i,j] = start[i,j] else true endif );
 
-Conditional expressions are also very useful for
-defining complex :index:`output`.
-In the Sudoku model of :numref:`ex-sudoku` the expression
+Las expresiones condicionales también son muy útiles para definir el complejo :index:`output`. En el modelo Sudoku de :numref:`ex-sudoku` la expresión
 
 .. code-block:: minizinc
 
   if j mod S == 0 then " " else "" endif
 
-inserts an extra space between groups of size :mzn:`S`.
-The output expression also uses conditional expressions to
-add blank lines
-after each :mzn:`S` lines. The resulting output is highly readable.
+Inserta un espacio extra entre los grupos de tamaño :mzn:`S`. La expresión de salida también usa expresiones condicionales para agregar líneas en blanco después de cada una :mzn:`S` lines. El resultado resultante es altamente legible.
 
-The remaining constraints ensure that the numbers appearing in each
-row and column and :math:`S \times S` subsquare are all different.
+Las restricciones restantes aseguran que los números que aparecen en cada fila, columna y :math:`S \times S` sub-cuadrado son todos diferentes.
 
 .. index::
   single: runtime flag; -a
   single: runtime flag; --all-solutions
   single: solution; all
 
-One can use MiniZinc to search
-for all solutions to a satisfaction problem (:mzn:`solve satisfy`)
-by using the flag ``-a``
-or ``--all-solutions``. Running
+One can use MiniZinc to search for all solutions to a satisfaction problem (:mzn:`solve satisfy`) by using the flag ``-a`` or ``--all-solutions``. Running
+
+Uno puede usar MiniZinc para buscar todas las soluciones a un problema de satisfacción (:mzn:`solve satisfy`) usando la bandera ``-a`` o ``--all-solutions``.
+Ejecutando
 
 .. code-block:: bash
 
-  $ mzn-g12fd --all-solutions sudoku.mzn sudoku.dzn
+  $ mzn-g12fd --all-solutions sudoku_es.mzn sudoku_es.dzn
 
-results in
+Resulta en:
 
 ::
 
@@ -734,45 +588,36 @@ results in
   ----------
   ==========
 
-The line ``==========``
-is output when the system has output all possible
-solutions, here verifying that there is exactly one.
-
+La línea ``==========`` se emite cuando el sistema ha generado todas las soluciones posibles, y aquí verifica que hay exactamente una.
 
 
 .. _sec-enum:
 
-Enumerated Types
+Tipos enumerados
 ----------------
 
 .. index::
   single: type; enumerated
 
-Enumerated types allows us to build models that depend on a set of objects
-which are part of the data, or are named in the model, and hence make models
-easier to understand and debug.
-We have introduce enumerated types or enums briefly, in this subsection we
-will explore how we can use them more fully, and show some of the built in
-functions for dealing with enumerated types.
+Los tipos enumerados nos permiten construir modelos que dependen de un conjunto de objetos que forman parte de los datos, o se nombran en el modelo, y por lo tanto hacen que los modelos sean más fáciles de comprender y depurar. Hemos introducido tipos enumerados o enumeraciones brevemente, en esta subsección exploraremos cómo podemos usarlos más completamente y mostraremos algunas de las funciones integradas para tratar con tipos enumerados.
 
-Let's revisit the problem of coloring the graph of Australia from :ref:`sec-modelling`.
+Volvamos al problema de colorear el gráfico de Australia en :ref:`sec-modelling`.
 
 
-.. literalinclude:: examples/aust-enum.mzn
+.. literalinclude:: examples/aust-enum_es.mzn
   :language: minizinc
   :name: ex-aust-enum
-  :caption: Model for coloring Australia using enumerated types (:download:`aust-enum.mzn <examples/aust-enum.mzn>`).
+  :caption: Modelo para colorear Australia usando tipos enumerados (:download:`aust-enum_es.mzn <examples/aust-enum_es.mzn>`).
 
-The model shown in :numref:`ex-aust-enum` declares an enumerated type
-:mzn:`Color` which must be defined in the data file.  Each of the state
-variables is declared to take a value from this enumerated type.
-Running this program using
+El modelo que se muestra en :numref:`ex-aust-enum` declara un tipo enumerado :mzn:`Color` que debe definirse en el archivo de datos. Cada una de las variables de estado se declara para tomar un valor de este tipo enumerado.
+
+Ejecutando este programa usando:
 
 .. code-block:: bash
 
-  $ mzn-gecode -D"Color = { red, yellow, blue };" aust-enum.mzn
+  $ mzn-gecode -D "Color = { red, yellow, blue };" aust-enum_es.mzn
 
-might result in output
+Puede resultar en la salida:
 
 ::
 
@@ -785,97 +630,69 @@ might result in output
   t = red;
 
 
-.. defblock:: Enumerated Type Variable Declarations
+.. defblock:: Declaraciones de variables de Tipo Enumeradas
 
   .. index::
     single: variable; declaration; enum
 
-  An enumerated type parameter is declared as either:
+  Un parámetro de tipo enumerado se declara como:
 
   .. code-block:: minizincdef
 
     <enum-name> : <var-name>
     <l>..<u> : <var-name>
 
-  where :mzndef:`<enum-name>` is the name of a enumerated type, and
-  :mzndef:`<l>` and :mzndef:`<u>` are fixed enumerated type expressions of the same
-  enumerated type.
+  Donde :mzndef:`<enum-name>` es el nombre de un tipo enumerado, :mzndef:`<l>` y :mzndef:`<u>` son expresiones de tipos enumerados fijos del mismo tipo enumerado.
 
-  An enumerated type decision variable is declared
-  as either:
+  Una variable de decisión de tipo enumerada se declara como:
 
   .. code-block:: minizincdef
 
     var <enum-name> : <var-name>
     var <l>..<u> : <var-name>
 
-  where :mzndef:`<enum-name>` is the name of a enumerated type, and
-  :mzndef:`<l>` and :mzndef:`<u>` are fixed enumerated type expressions of the same
-  enumerated type.
+  Donde :mzndef:`<enum-name>` es el nombre de un tipo enumerado, :mzndef:`<l>` y :mzndef:`<u>` son expresiones de tipos enumerados fijos del mismo tipo enumerado.
 
-A key behaviour of enumerated types is that they are automatically coerced
-to integers when they are used in a position expecting an integer.
-For example, this allows us to use global constraints defined on integers,
-such as
+Un comportamiento clave de los tipos enumerados es que son coercionados automáticamente a enteros cuando se usan en una posición que espera un entero. Por ejemplo, esto nos permite usar restricciones globales definidas en enteros, como
 
 .. code-block:: minizinc
 
   global_cardinality_low_up([wa,nt,sa,q,nsw,v,t],
                             [red,yellow,blue],[2,2,2],[2,2,3]);
 
-This requires at least two states to be colored each color and three to be
-colored blue.
+Esto requiere al menos dos estados para colorear cada color y tres para ser de color azul.
 
+.. defblock:: Operaciones de Tipo enumeradas
 
-.. defblock:: Enumerated Type Operations
+  Hay una serie de operaciones integradas en tipos enumerados:
 
-  There are a number of built in operations on enumerated types:
+  - :mzn:`enum_next(X, x)`: devuelve el siguiente valor después de :mzn:`x` en el tipo enumerado :mzn:`X`. Esta es una función parcial, si :mzn:`x` es el último valor en el tipo enumerado :mzn:`X` luego la función devuelve :math:`\bot` haciendo que la expresión booleana que contiene la expresión evalúe :mzn:`false`.
+  - :mzn:`enum_prev(X, x)`: devuelve el valor anterior antes de :mzn:`x` en el tipo enumerado :mzn:`X`. Del mismo modo :mzn:`enum_prev` es una función parcial.
+  - :mzn:`to_enum(X, i)`: asigna una expresión entera :mzn:`i` a un valor de tipo enumerado en tipo :mzn:`X` o evalúa a :math:`\bot` si :mzn:`i` es menor o igual que 0 o mayor que la cantidad de elementos en :mzn:`X`.
 
-  - :mzn:`enum_next(X,x)`: returns the next value in after :mzn:`x` in the
-    enumerated type :mzn:`X`. This is a partial function, if :mzn:`x` is the last value in
-    the enumerated type :mzn:`X` then the function returns :math:`\bot` causing the Boolean
-    expression containing the expression to evaluate to :mzn:`false`.
-  - :mzn:`enum_prev(X,x)`:
-    returns the previous value before :mzn:`x` in the
-    enumerated type :mzn:`X`. Similarly :mzn:`enum_prev` is a partial function.
-  - :mzn:`to_enum(X,i)`: maps an integer expression :mzn:`i` to an
-    enumerated type value in type :mzn:`X` or evaluates to :math:`\bot` if :mzn:`i` is less
-    than or equal to 0 or greater than the number of elements in :mzn:`X`.
+Tenga en cuenta también que una serie de funciones estándar son aplicables a los tipos enumerados:
 
-  Note also that a number of standard functions are applicable to enumerated
-  types:
-
-  - :mzn:`card(X)`: returns the cardinality of an enumerated type :mzn:`X`.
-  - :mzn:`min(X)`: returns the minimum element of of an enumerated type :mzn:`X`.
-  - :mzn:`max(X)`: returns the maximum element of of an enumerated type :mzn:`X`.
-
+  - :mzn:`card(X)`: devuelve la cardinalidad de un tipo enumerado :mzn:`X`.
+  - :mzn:`min(X)`: devuelve el elemento mínimo de un tipo enumerado :mzn:`X`.
+  - :mzn:`max(X)`: devuelve el elemento máximo de un tipo enumerado :mzn:`X`.
 
 .. _sec-complex:
 
-Complex Constraints
--------------------
+Restricciones complejas
+-----------------------
 
 .. index::
   single: constraint; complex
 
-Constraints are the core of the MiniZinc model.
-We have seen simple relational expressions but constraints can be considerably more powerful than this.
-A constraint is allowed to be any Boolean expression.
-Imagine a scheduling problem in which we have
-two tasks that cannot overlap in time.
-If :mzn:`s1` and :mzn:`s2` are the corresponding start times
-and :mzn:`d1` and :mzn:`d2` are the corresponding
-durations
-we can express this as:
+Las restricciones son el núcleo del modelo MiniZinc. Hemos visto expresiones relacionales simples, pero las restricciones pueden ser considerablemente más poderosas que esto. Se permite que una restricción sea cualquier expresión booleana. Imagine un problema de programación en el que tenemos dos tareas que no se pueden superponer en el tiempo. Si :mzn:`s1` y :mzn:`s2` son los tiempos de inicio correspondientes y :mzn:`d1` y :mzn:`d2` son las duraciones correspondientes, podemos expresar esto como:
 
 .. code-block:: minizinc
 
   constraint s1 + d1 <= s2  \/ s2 + d2 <= s1;
 
-which ensures that the tasks do not overlap.
+Que asegura que las tareas no se superponen.
 
-
-.. defblock:: Booleans
+.. defblock:: Booleanos
 
   .. index::
     single: Boolean
@@ -885,78 +702,52 @@ which ensures that the tasks do not overlap.
     single: operator; Boolean
     single: bool2int
 
-  Boolean expressions in MiniZinc can be written using a standard mathematical syntax.
-  The Boolean literals are :mzn:`true` and
-  :mzn:`false`
-  and the Boolean
-  operators
-  are
-  conjunction, i.e. and  (``/\``),
-  disjunction, i.e. or  (``\/``),
-  only-if (:mzn:`<-`),
-  implies (:mzn:`->`),
-  if-and-only-if (:mzn:`<->`) and
-  negation (:mzn:`not`).
-  Booleans can be automatically coerced to integers, but to make this
-  coercion explicit the
-  built-in function :mzn:`bool2int` can be used: it
-  returns 1 if its argument is true and 0 otherwise.
+  Las expresiones booleanas en MiniZinc se pueden escribir usando una sintaxis matemática estándar. Los literales booleanos son :mzn:`true`, :mzn:`false` y los operadores booleanos son conjunción, es decir, (``/\``), disyunción, es decir o (``\/``), only-if (:mzn:`<-`), implica (:mzn:`->`), if-and-only-if (:mzn:`<->`) y negación (:mzn:`not`). Los booleanos se pueden forzar automáticamente a enteros, pero para que esta coerción sea explícita la función incorporada :mzn:`bool2int` se puede usar: devuelve 1 si su argumento es verdadero y 0 en caso contrario.
 
-.. literalinclude:: examples/jobshop.mzn
+.. literalinclude:: examples/jobshop_es.mzn
   :language: minizinc
   :name: ex-jobshop
-  :caption: Model for job-shop scheduling problems (:download:`jobshop.mzn <examples/jobshop.mzn>`).
+  :caption: Modelo para problemas de planificación de tiendas de trabajo (:download:`jobshop_es.mzn <examples/jobshop_es.mzn>`).
 
-.. literalinclude:: examples/jdata.dzn
+.. literalinclude:: examples/jdata_es.dzn
   :language: minizinc
   :name: ex-jdata
-  :caption: Data for job-shop scheduling problems (:download:`jdata.dzn <examples/jdata.dzn>`).
+  :caption: Datos para problemas de planificación de tiendas de trabajo (:download:`jdata_es.dzn <examples/jdata_es.dzn>`).
 
-The job shop scheduling model given in :numref:`ex-jobshop`
-gives a realistic example of the use of this disjunctive modelling
-capability. In job shop scheduling we have a set of jobs, each consisting
-of a sequence of tasks on separate machines: so task :mzn:`[i,j]` is the
-task in the :math:`i^{th}` job performed on the :math:`j^{th}` machine.
-Each sequence of tasks must be completed in order,
-and no two tasks on the same machine can overlap in time.
-Even small instances of this problem can be quite challenging to find
-optimal solutions.
+El modelo de planificación de tiendas de trabajo dado en :numref:`ex-jobshop` brinda un ejemplo realista del uso de esta capacidad de modelado disyuntivo. En la planificación de tiendas de trabajo tenemos un conjunto de trabajos, cada uno de los cuales consiste en una secuencia de tareas en máquinas separadas: por lo que la tarea :mzn:`[i, j]` es la tarea en el trabajo :math:`i^{th}` realizado en la máquina :math:`j^{th}`. Cada secuencia de tareas debe completarse en orden, y no hay dos tareas en la misma máquina que puedan superponerse en el tiempo. Incluso pequeñas instancias de este problema pueden ser bastante desafiantes para encontrar soluciones óptimas.
 
-The command
+El comando
 
 .. code-block:: bash
 
-  $ mzn-gecode --all-solutions jobshop.mzn jdata.dzn
+  $ mzn-gecode --all-solutions jobshop_es.mzn jdata_es.dzn
 
-solves a small job shop scheduling problem, and illustrates the behaviour of
-\texttt{all-solutions} for optimisation problems.  Here the solver outputs
-each better solutions as it finds it, rather than all possible optimal
-solutions. The output from this command is:
+Resuelve un pequeño problema de planificación de tiendas de trabajo e ilustra el comportamiento de \texttt{all-solutions} para problemas de optimización. Aquí el solucionador genera cada una de las mejores soluciones tal como la encuentra, en lugar de todas las soluciones óptimas posibles. El resultado de este comando es:
 
 ::
 
-  end = 39
+  Fin = 39
    5  9 13 22 30
    6 13 18 25 36
    0  4  8 12 16
    4  8 12 16 22
    9 16 25 27 38
   ----------
-  end = 37
+  Fin = 37
    4  8 12 17 20
    5 13 18 26 34
    0  4  8 12 16
    8 12 17 20 26
    9 16 25 27 36
   ----------
-  end = 34
+  Fin = 34
    0  1  5 10 13
    6 10 15 23 31
    2  6 11 19 27
    1  5 10 13 19
    9 16 22 24 33
   ----------
-  end = 30
+  Fin = 30
    5  9 13 18 21
    6 13 18 25 27
    1  5  9 13 17
@@ -965,105 +756,68 @@ solutions. The output from this command is:
   ----------
   ==========
 
-indicating an optimal solution with end time 30 is finally found,
-and proved optimal.
-We can generate all *optimal solutions*
-by adding a constraint that
-:mzn:`end = 30` and changing the solve item to :mzn:`solve satisfy`
-and then executing
+Lo que indica que finalmente se encuentra una solución óptima con el tiempo de finalización 30, y resultó ser óptima. Podemos generar todas las *soluciones óptimas* agregando una restricción que :mzn:`end = 30` y cambiando el elemento de resolver a :mzn:`solve satisfy`.
+
+Posteriormente se debe de ejecutar el siguiente comando:
 
 .. code-block:: bash
 
-  $ mzn-gecode --all-solutions jobshop.mzn jobshop.dzn
+  $ mzn-gecode --all-solutions jobshop_es.mzn jobshop_es.dzn
 
-For this problem there are 3,444,375 optimal solutions.
+Para este problema, hay 3,444,375 soluciones óptimas.
 
-.. literalinclude:: examples/stable-marriage.mzn
+.. literalinclude:: examples/stable-marriage_es.mzn
   :language: minizinc
   :name: ex-stable-marriage
-  :caption: Model for the stable marriage problem (:download:`stable-marriage.mzn <examples/stable-marriage.mzn>`).
+  :caption: Modelo para el problema del matrimonio estable (:download:`stable-marriage_es.mzn <examples/stable-marriage_es.mzn>`).
 
-.. literalinclude:: examples/stable-marriage.dzn
+.. literalinclude:: examples/stable-marriage_es.dzn
   :language: minizinc
   :name: ex-sm-data
-  :caption: Example data for the stable marriage problem (:download:`stable-marriage.dzn <examples/stable-marriage.dzn>`).
+  :caption: Datos de ejemplo para el problema de matrimonio estable (:download:`stable-marriage_es.dzn <examples/stable-marriage_es.dzn>`).
 
-Another powerful modelling feature in MiniZinc is
-that decision variables
-can be used for :index:`array access <array; access>`.
-As an example, consider the
-(old-fashioned) *stable marriage problem*. We have :mzn:`n` (straight) women and :mzn:`n` (straight)
-men. Each man has a ranked list of women and vice versa. We want to find a
-husband/wife for each women/man so that all marriages are *stable* in
-the sense that:
+Otra poderosa característica de modelado en MiniZinc es que las variables de decisión se pueden usar para :index:`array access <array; access>`. Como por ejemplo, considere el (anticuado) *problema de matrimonio estable*.
+Tenemos que :mzn:`n` (hétero) mujeres y :mzn:`n` (straight) men. Cada hombre tiene una lista clasificada de mujeres y viceversa. Queremos encontrar un esposo/esposa para cada mujer/hombre para que todos los matrimonios sean *estables* en el sentido de que:
 
-- whenever :mzn:`m` prefers another women :mzn:`o` to his wife :mzn:`w`, :mzn:`o` prefers her husband to :mzn:`m`, and
-- whenever :mzn:`w` prefers another man :mzn:`o` to her husband :mzn:`m`, :mzn:`o` prefers his wife to :mzn:`w`.
+- Siempre que :mzn:`m` prefiera a otra mujer :mzn:`o` a su esposa :mzn:`w`, :mzn:`o` prefiere a su marido a :mzn:`m`.
+- Siempre que :mzn:`w` prefiera a otro hombre :mzn:`o` a su marido :mzn:`m`, :mzn:`o` prefiere a su mujer a :mzn:`w`.
 
-This can be elegantly modelled in
-MiniZinc.
-The model and sample data is shown in :numref:`ex-stable-marriage` and :numref:`ex-sm-data`.
+Esto se puede modelar elegantemente en MiniZinc.
+El modelo y los datos de muestra se muestran en :numref:`ex-stable-marriage` y :numref:`ex-sm-data`.
 
-The first three items in the model declare the number of men/women and the
-set of men and women. Here we introduce the use of *anonymous enumerated types*.
-Both :mzn:`Men` and :mzn:`Women` are sets of size
-:mzn:`n`, but we do not wish to mix them up so we use an anonymous enumerated
-type. This allows MiniZinc to detect modelling errors where we use
-:mzn:`Men` for :mzn:`Women` or vice versa.
+Los tres primeros elementos en el modelo declaran el número de hombres/mujeres y el conjunto de hombres y mujeres. Aquí presentamos el uso de *tipos enumerados anónimos*. Ambos :mzn:`Men` y :mzn:`Women` son conjuntos de tamaño :mzn:`n`, pero no deseamos mezclarlos, así que utilizamos un tipo enumerado anónimo. Esto permite que MiniZinc detecte errores de modelado cuando usamos :mzn:`Men` para :mzn:`Women` o viceversa.
 
+Las matrices :mzn:`rankWomen` y :mzn:`rankMen`, respectivamente, dan el ranking de las mujeres de los hombres y el ranking de las mujeres de los hombres. Por lo tanto, la entrada :mzn:`rankWomen[w, m]` da la clasificación por mujer :mzn: `w` de hombre :mzn:`m`. Cuanto menor sea el número en el ranking, más se prefiere el hombre o la mujer.
 
-The matrices :mzn:`rankWomen` and :mzn:`rankMen`,
-respectively, give the women's ranking  of the men and the men's ranking of the women.
-Thus, the entry  :mzn:`rankWomen[w,m]`
-gives the ranking by woman :mzn:`w` of man :mzn:`m`. The lower the number in the ranking, the more the man or women is preferred.
+Hay dos matrices de variables de decisión :mzn:`wife` y :mzn:`husband`. Estos, respectivamente, contienen la esposa de cada hombre y el esposo de cada mujer.
 
-There are two arrays of decision variables: :mzn:`wife` and
-:mzn:`husband`. These, respectively, contain the wife of each man and the
-husband of each women.
+Las dos primeras restricciones:
 
-The first two constraints
-
-.. literalinclude:: examples/stable-marriage.mzn
+.. literalinclude:: examples/stable-marriage_es.mzn
   :language: minizinc
   :lines: 13-14
 
-ensure that the assignment of husbands and wives is consistent: :mzn:`w` is the
-wife of :mzn:`m` implies :mzn:`m` is the husband of :mzn:`w` and vice versa. Notice how in
-:mzn:`husband[wife[m]]` the index expression :mzn:`wife[m]` is a
-decision variable, not a parameter.
+Asegúrese de que la asignación de esposos y esposas sea consistente: :mzn:`w` es la esposa de :mzn:`m` implica que :mzn:`m` es el esposo de :mzn:`w` y viceversa. Observe cómo en :mzn:`husband[wife[m]]` la expresión de índice :mzn:`wife[m]` es una variable de decisión, no un parámetro.
 
-The next two constraints are a  direct encoding of the stability condition:
+Las siguientes dos restricciones son una codificación directa de la condición de estabilidad:
 
-.. literalinclude:: examples/stable-marriage.mzn
+.. literalinclude:: examples/stable-marriage_es.mzn
   :language: minizinc
   :lines: 16-22
 
-This natural modelling of the stable marriage problem is made possible by
-the ability to use decision variables as array indices and to construct
-constraints using the standard Boolean connectives.
-The alert reader may
-be wondering at this stage, what happens if the array index variable takes a
-value that is outside the index set of the array. MiniZinc treats this as
-failure: an array access :mzn:`a[e]` implicitly adds the constraint
-:mzn:`e in index_set(a)`
-to the closest surrounding Boolean context where
-:mzn:`index_set(a)`
-gives the index set of :mzn:`a`.
 
-.. defblock:: Anonymous Enumerated Types
+Este modelado natural del problema del matrimonio estable es posible gracias a la capacidad de usar variables de decisión como índices de matriz y construir restricciones utilizando las conectivas booleanas estándar. El lector puede preguntarse en esta etapa, qué sucede si la variable de índice de matriz toma un valor que está fuera del conjunto de índices de la matriz. MiniZinc lo trata como una falla: un acceso de matriz :mzn:`a[e]` implícitamente agrega la restricción: :mzn:`e in index_set(a)` al contexto booleano circundante más cercano donde :mzn:`index_set(a)` da el conjunto de índices de :mzn:`a`.
+
+.. defblock:: Tipos enumerados anónimos
 
   .. index::
     single: type; enumerated; anonymous
 
-  An *anonymous enumerated type*
-  is of the form :mzndef:`anon_enum(<n>)` where :mzndef:`<n>` is a fixed integer
-  expression defining the size of the enumerated type.
+  Un *tipo enumerado anónimo* tiene la forma :mzndef:`anon_enum(<n>)` donde :mzndef:`<n>` es una expresión entera fija que define el tamaño del tipo enumerado.
 
-  An anonymous enumerated type is just like any other enumerated type except
-  that we have no names for its elements. When printed out, they are given
-  unique names based on the enumerated type name.
+  Un tipo enumerado anónimo es como cualquier otro tipo enumerado excepto que no tenemos nombres para sus elementos. Cuando se imprimen, reciben nombres únicos basados en el nombre del tipo enumerado.
 
-Thus for example, consider the variable declarations
+Por lo tanto, por ejemplo, considere las declaraciones de variables
 
 .. code-block:: minizinc
 
@@ -1071,47 +825,29 @@ Thus for example, consider the variable declarations
   var 0..2: x;
   var 2..3: y;
 
-The constraint :mzn:`a[x] = y`
-will succeed with :math:`x=1 \wedge y=2` and :math:`x=2 \wedge y=3`.
-And the constraint :mzn:`not a[x] = y` will succeed with
-:math:`x=0 \wedge y=2`, :math:`x=0 \wedge y=3`, :math:`x=1 \wedge y=3` and :math:`x=2 \wedge y=2`.
+La restricción :mzn:`a[x] = y` tendrá éxito con :math:`x=1 \wedge y=2` y :math:`x=2 \wedge y=3`. Y la restricción :mzn:`not a[x] = y` tendrá éxito con :math:`x=0 \wedge y=2`, :math:`x=0 \wedge y=3`, :math:`x=1 \wedge y=3` y :math:`x=2 \wedge y=2`.
 
-In the case of invalid array accesses by a parameter, the formal semantics
-of MiniZinc treats this as failure so as to ensure that the treatment of
-parameters and decision variables is consistent, but a warning is issued
-since it is almost always an error.
+En el caso de los accesos de matriz no válida por un parámetro, la semántica formal de MiniZinc trata esto como un fallo para garantizar que el tratamiento de los parámetros y las variables de decisión sea coherente, pero se emite una advertencia ya que casi siempre es un error.
 
-.. literalinclude:: examples/magic-series.mzn
+.. literalinclude:: examples/magic-series_es.mzn
   :language: minizinc
   :name: ex-magic-series
-  :caption: Model solving the magic series problem (:download:`magic-series.mzn <examples/magic-series.mzn>`).
+  :caption: Modelo que soluciona el problema de la serie mágica (:download:`magic-series_es.mzn <examples/magic-series_es.mzn>`).
 
 .. index::
   single: bool2int
   single: constraint; higher order
 
-The coercion function
-:mzn:`bool2int`
-can be called with any Boolean
-expression. This allows the MiniZinc
-modeller to use so called *higher order constraints*.
-As a simple example consider the *magic series problem*:
-find a list of numbers :math:`s= [s_0,\ldots,s_{n-1}]`
-such that :math:`s_i` is the number
-of occurrences of :math:`i` in :math:`s`. An example is :math:`s = [1,2,1,0]`.
+La función de coerción :mzn:`bool2int` se puede invocar con cualquier expresión booleana. Esto permite que el modelador MiniZinc use las llamadas *restricciones de orden superior*. Como un simple ejemplo, considere el problema de *magic series*.
+Encuentre una lista de números :math:`s= [s_0,\ldots,s_{n-1}]` tal que :math:`s_i` es el número de ocurrencias de :math:`i` en :math:`s`. Un ejemplo es :math:`s = [1,2,1,0]`. Un modelo MiniZinc para este problema se muestra en :numref:`ex-magic-series`. El uso de :mzn:`bool2int` nos permite resumir el número de veces que se cumple la restricción :mzn:`s[j]=i`.
 
-A MiniZinc
-model for this problem
-is shown in :numref:`ex-magic-series`. The use of
-:mzn:`bool2int` allows us to sum up the number of times the constraint
-:mzn:`s[j]=i` is satisfied.
-Executing the command
+Ejecutando el comando
 
 .. code-block:: bash
 
-  $ mzn-gecode --all-solutions magic-series.mzn -D "n=4;"
+  $ mzn-gecode --all-solutions magic-series_es.mzn -D "n=4;"
 
-leads to the output
+Conduce a la salida
 
 ::
 
@@ -1121,22 +857,16 @@ leads to the output
   ----------
   ==========
 
-indicating exactly two solutions to the problem.
+Indicando exactamente dos soluciones al problema.
 
-Note that MiniZinc will automatically coerce Booleans
-to integers and integers to floats when required.
-We could replace the the constraint item in :numref:`ex-magic-series`
-with
+Tenga en cuenta que MiniZinc forzará automáticamente booleanos a enteros y enteros a flotantes cuando sea necesario. Podríamos reemplazar el elemento de restricción en :numref:`ex-magic-series` con:
 
 .. code-block:: minizinc
 
   constraint forall(i in 0..n-1) (
      s[i] = (sum(j in 0..n-1)(s[j]=i)));
 
-and get identical results, since the Boolean expression
-:mzn:`s[j] = i` will be automatically coerced to an
-integer, effectively by the MiniZinc system automatically adding the
-missing :mzn:`bool2int`.
+Y obtenga resultados idénticos, ya que la expresión booleana :mzn:`s[j] = i` se forzará automáticamente a un entero, efectivamente mediante el sistema MiniZinc que agrega automáticamente la falta :mzn:`bool2int`.
 
 .. defblock:: Coercion
 
@@ -1145,105 +875,55 @@ missing :mzn:`bool2int`.
     single: coercion; bool2int
     single: coercion; int2float
 
-  In MiniZinc one can *coerce* a Boolean value to
-  an integer value using the :mzn:`bool2int` function.
-  Similarly one can coerce an integer value to a float value using
-  :mzn:`int2float`.
-  The instantiation of the coerced value is the same as the argument,
-  e.g. :mzn:`par bool` is coerced to :mzn:`par int`, while
-  :mzn:`var bool` is coerced to :mzn:`var int`.
-
-  MiniZinc automatically coerces Boolean expressions to integer
-  expressions and integer expressions to float expressions,
-  by inserting :mzn:`bool2int` and :mzn:`int2float` in the model
-  appropriately.
-  Note that it will also coerce Booleans to floats using two steps.
+  En MiniZinc uno puede *forzar* un valor booleano a un valor entero usando la función :mzn:`bool2int`. De manera similar, se puede forzar un valor entero a un valor flotante usando :mzn:`int2float`. La instanciación del valor coaccionado es el mismo que el argumento. Por ejemplo, :mzn:`par bool` se fuerza a :mzn:`par int`, mientras que :mzn:`var bool` se fuerza a :mzn:`var int` MiniZinc coacciona automáticamente expresiones booleanas a expresiones enteras y expresiones enteras a expresiones flotantes, insertando :mzn:`bool2int` y :mzn:`int2float` en el modelo de forma apropiada. Tenga en cuenta que también forzará booleanos a flotantes utilizando dos pasos.
 
 
-Set Constraints
----------------
+
+Establecer Restricciones
+------------------------
 
 .. index::
   single: constraint; set
 
-Another powerful modelling feature of MiniZinc
-is that it allows sets
-containing integers to be decision variables:
-this means that when the model is evaluated the solver will find which elements are in the set.
+Otra poderosa característica de modelado de MiniZinc es que permite que los conjuntos que contienen enteros sean variables de decisión. Esto significa que cuando se evalúa el modelo, el solucionador encontrará qué elementos están en el conjunto. Como un ejemplo simple, considere el problema *0/1 de la mochila*.
 
-As a simple example, consider the *0/1 knapsack problem*. This is a
-restricted form of the knapsack problem in which we can either choose to
-place the item in the knapsack or not. Each item has a weight and a profit
-and we want to find which choice of items leads to the maximum profit
-subject to the knapsack not being too full.
+Esta es una forma restringida del problema de la mochila en la que podemos elegir colocar el artículo en la mochila o no. Cada artículo tiene un peso y una ganancia y queremos encontrar qué opción de artículos conduce a la ganancia máxima sujeta a que la mochila no esté demasiado llena.
 
-It is natural to model this in MiniZinc with a single decision variable: :mzn:`var set of ITEM: knapsack`
-where :mzn:`ITEM` is the set of possible items. If the arrays
-:mzn:`weight[i]` and :mzn:`profit[i]` respectively give the weight and
-profit of item :mzn:`i`, and the maximum weight the knapsack can carry is
-given by :mzn:`capacity` then a naural model is given in
-:numref:`ex-knapsack-binary`.
+Es natural modelar esto en MiniZinc con una única variable de decisión: :mzn:`var set of ITEM: knapsack` donde :mzn:`ITEM` es el conjunto de elementos posibles. Si los arreglos :mzn:`weight[i]` y :mzn:`profit[i]` respectivamente dan el peso y el beneficio del ítem :mzn:`i`, y el peso máximo que puede llevar la mochila viene dado por :mzn:`capacity` luego se da un modelo naural en :numref:`ex-knapsack-binary`.
 
-.. literalinclude:: examples/knapsack.mzn
+.. literalinclude:: examples/knapsack_es.mzn
   :language: minizinc
   :name: ex-knapsack-binary
-  :caption: Model for the 0/1 knapsack problem (:download:`knapsack.mzn <examples/knapsack.mzn>`).
+  :caption: Modelo para el problema de mochila 0/1 (:download:`knapsack_es.mzn <examples/knapsack_es.mzn>`).
 
-Notice that the :mzn:`var`
-keyword comes before the :mzn:`set`
-declaration indicating that the
-set itself is the decision variable.
-This contrasts with an array in which the :mzn:`var` keyword
-qualifies the elements in the array rather than the array itself since the
-basic structure of the array is fixed, i.e. its index set.
+Observe que la palabra clave :mzn:`var` viene antes de la declaración :mzn:`set` que indica que el conjunto en sí es la variable de decisión.
 
-.. literalinclude:: examples/social-golfers.mzn
+Esto contrasta con una matriz en la que la palabra clave :mzn:`var` califica los elementos en la matriz en lugar de la matriz en sí, ya que la estructura básica de la matriz es fija, es decir, su conjunto de índices.
+
+.. literalinclude:: examples/social-golfers_es.mzn
   :language: minizinc
   :name: ex-social-golfers
-  :caption: Model for the social golfers problems (:download:`social-golfers.mzn <examples/social-golfers.mzn>`).
+  :caption: Modelo para los problemas de los golfistas sociales (:download:`social-golfers_es.mzn <examples/social-golfers_es.mzn>`).
+
+Como un ejemplo más complejo de restricción de conjuntos, considere el problema de los golfistas sociales que se muestra en :numref:`ex-social-golfers`. El objetivo es programar un torneo de golf sobre :mzn:`weeks` usando :mzn:`groups` :math:`\times` :mzn:`size` de golfistas. Cada semana tenemos que programar :mzn:`groups` diferentes grupos cada uno de tamaño :mzn:`size`. No hay dos pares de golfistas que jueguen en dos grupos
+
+Las variables en el modelo son conjuntos de golfistas :mzn:`Sched[i,j]` para el grupo de la semana :math:`i^{th}` del grupo :mzn:`j^{th}`.
 
 
-As a more complex example of set constraint consider the social golfers
-problem shown in :numref:`ex-social-golfers`.
-The aim is to schedule a golf tournament over :mzn:`weeks`
-using :mzn:`groups` :math:`\times` :mzn:`size` golfers. Each week we have to
-schedule :mzn:`groups` different groups each of size :mzn:`size`.
-No two pairs of golfers should ever play in two groups.
-
-The variables in the model are sets of golfers :mzn:`Sched[i,j]`
-for the :math:`i^{th}` week and :mzn:`j^{th}` group.
-
-The constraints shown in lines 11-32
-first enforces an ordering on the first
-set in each week to remove symmetry in swapping weeks. Next they
-enforce an ordering on the sets in each week, and make each set have a
-cardinality of :mzn:`size`.
-They then ensure that each week is a partition of the set of golfers
-using the global constraint
-:mzn:`partition_set`.
-Finally the last constraint ensures that no two players play in two
-groups together (since the cardinality of the intersection of any two groups
-is at most 1).
+Las restricciones que se muestran en las líneas 11-32 primero imponen un orden en el primer conjunto de cada semana para eliminar la simetría en el intercambio de semanas. A continuación, imponen un orden en los conjuntos en cada semana y hacen que cada conjunto tenga una cardinalidad de :mzn:`size`. Luego se aseguran de que cada semana sea una partición del conjunto de golfistas que utilizan la restricción global :mzn:`partition_set`. Finalmente, la última restricción asegura que no hay dos jugadores que jueguen en dos grupos juntos (ya que la cardinalidad de la intersección de dos grupos es como máximo 1).
 
 .. index::
   single: symmetry; breaking
 
-There are also symmetry breaking
-initialisation constraints shown in lines 34-46:
-the first week
-is fixed to have all players in order; the second week is made up of the
-first players of each of the first groups in the first week; finally the
-model forces the first :mzn:`size` players to appear in their corresponding
-group number for the remaining weeks.
+También hay restricciones de inicialización de ruptura de simetría que se muestran en las líneas 34-46: la primera semana se fija para tener todos los jugadores en orden; la segunda semana se compone de los primeros jugadores de cada uno de los primeros grupos en la primera semana; finalmente, el modelo obliga a los primeros jugadores :mzn:`size` a aparecer en su número de grupo correspondiente durante las semanas restantes.
 
-Executing the command
+Ejecutando el comando:
 
 .. code-block:: bash
 
-  $ mzn-gecode social-golfers.mzn social-golfers.dzn
+  $ mzn-gecode social-golfers_es.mzn social-golfers_es.dzn
 
-where the data file defines a problem with 4 weeks, with 4 groups
-of size 3 leads to the output
+Donde el archivo de datos define un problema con 4 semanas, con 4 grupos de tamaño 3 y que conduce a la salida:
 
 ::
 
@@ -1253,47 +933,32 @@ of size 3 leads to the output
   { 1, 6, 9 } { 2, 4, 12 } { 3, 8, 10 } { 5, 7, 11 }
   ----------
 
-Notice hows sets which are ranges may be output in range format.
+Observe cómo conjuntos que son rangos pueden salir en formato de rango.
 
 
-Putting it all together
------------------------
+Poniendolo Todo Junto
+---------------------
 
-We finish this section with a complex example illustrating most
-of the features introduced in this chapter including
-enumerated types, complex constraints, global constraints,
-and complex output.
+Terminamos esta sección con un ejemplo complejo que ilustra la mayoría de las características presentadas en este capítulo, incluidos los tipos enumerados, las restricciones complejas, las restricciones globales y los resultados complejos.
 
-.. literalinclude:: examples/wedding.mzn
+.. literalinclude:: examples/wedding_es.mzn
   :language: minizinc
   :name: ex-wedding
-  :caption: Planning wedding seating using enumerated types (:download:`wedding.mzn <examples/wedding.mzn>`).
+  :caption: Planificación de asientos de bodas utilizando tipos enumerados (:download:`wedding_es.mzn <examples/wedding_es.mzn>`).
 
-The model of :numref:`ex-wedding` arranges seats at the wedding table.
-The table has 12 numbered seats in order around the table, 6 on each side.
-Males must sit in odd numbered seats, and females in even.
-Ed cannot sit at the end of the table because of a phobia,
-and the bride and groom must
-sit next to each other. The aim is to maximize the distance between known
-hatreds. The distance between seats is the difference in seat number
-if on the same side, otherwise its the distance to the opposite seat
-+ 1.
+El modelo de :numref:`ex-wedding` organiza los asientos en la mesa de la boda.
+La mesa tiene 12 asientos numerados en orden alrededor de la mesa, 6 en cada lado. Los hombres deben sentarse en asientos con números impares y las mujeres en parejas. Ed no puede sentarse al final de la mesa debido a una fobia, y la novia y el novio deben sentarse uno al lado del otro. El objetivo es maximizar la distancia entre los odios conocidos. La distancia entre asientos es la diferencia en el número de asiento si está en el mismo lado, de lo contrario es la distancia al asiento opuesto + 1.
 
-Note that in the output statement we consider each seat :mzn:`s` and search for a
-guest :mzn:`g` who is assigned to that seat. We make use of the built in function
-:mzn:`fix` which checks if a decision variable is fixed and returns its
-fixed value, and otherwise aborts.
-This is always safe to use in output statements, since by the
-time the output statement is run all decision variables should be fixed.
+Tenga en cuenta que en la declaración de salida consideramos cada asiento :mzn:`s` y la búsqueda de un invitado :mzn:`g` que está asignado a ese asiento. Hacemos uso de la función incorporada :mzn:`fix` que verifica si una variable de decisión es fija y devuelve su valor fijo, y de lo contrario lo cancela. Esto es siempre seguro de usar en declaraciones de salida, ya que para el momento en que se ejecuta la declaración de salida, todas las variables de decisión deben ser corregidas.
 
 
-Running
+Ejecutando:
 
 .. code-block:: bash
 
-  $ mzn-gecode wedding.mzn
+  $ mzn-gecode wedding_es.mzn
 
-Results in the output
+Resultados en la salida:
 
 ::
 
@@ -1301,28 +966,25 @@ Results in the output
   ----------
   ==========
 
-The resulting table placement is illustrated in :numref:`fig-wedding`
-where the lines indicate hatreds. The total distance is 22.
+
+La colocación de la tabla resultante se ilustra en :numref:`fig-wedding` donde las líneas indican odios. La distancia total es 22.
 
 .. _fig-wedding:
 
-.. figure:: figures/wedding.*
+.. figure:: figures/wedding_es.*
 
-  Seating arrangement at the wedding table
+  Disposición de los asientos en la mesa de la boda
 
 
 .. \pjs{Move the fix definition elsewhere!}
 
-.. defblock:: Fix
+.. defblock:: Fijar (Fix)
 
   .. index::
     single: fix
     single: fixed
 
-  In output items the built-in function :mzn:`fix` checks that
-  the value of a decision variable is fixed
-  and coerces the instantiation from
-  decision variable to parameter.
+  En los elementos de salida, la función incorporada :mzn:`fix` comprueba que el valor de una variable de decisión sea fijo y coacciona la instanciación de la variable de decisión al parámetro.
 
 .. % oil-blending
 .. %arrays floats sum forall
