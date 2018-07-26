@@ -89,11 +89,11 @@ gives the output
 
 .. code-block:: none
 
-    0.00 100.00 100.00 100.00   0.00
-    0.00  42.86  52.68  42.86   0.00
-    0.00  18.75  25.00  18.75   0.00
-    0.00   7.14   9.82   7.14   0.00
-    0.00   0.00   0.00   0.00   0.00
+   -0.00 100.00 100.00 100.00  -0.00
+   -0.00  42.86  52.68  42.86  -0.00
+   -0.00  18.75  25.00  18.75  -0.00
+   -0.00   7.14   9.82   7.14  -0.00
+   -0.00  -0.00  -0.00  -0.00  -0.00
   ----------
 
 .. defblock:: Sets
@@ -150,15 +150,15 @@ model is shown in :numref:`ex-prod-planning` and a sample data file (for
 the cake baking example) is shown in :numref:`fig-prod-planning-data`.
 
 
-.. literalinclude:: examples/simple-prod-planning.mzn
+.. literalinclude:: examples/prod-planning.mzn
   :language: minizinc
   :name: ex-prod-planning
-  :caption: Model for simple production planning (:download:`simple-prod-planning.mzn <examples/simple-prod-planning.mzn>`).
+  :caption: Model for simple production planning (:download:`prod-planning.mzn <examples/prod-planning.mzn>`).
 
-.. literalinclude:: examples/simple-prod-planning-data.dzn
+.. literalinclude:: examples/prod-planning-data.dzn
   :language: minizinc
   :name: fig-prod-planning-data
-  :caption: Example data file for the simple production planning problem (:download:`simple-prod-planning-data.dzn <examples/simple-prod-planning-data.dzn>`).
+  :caption: Example data file for the simple production planning problem (:download:`prod-planning-data.dzn <examples/prod-planning-data.dzn>`).
 
 The new feature in this model is the use of :index:`enumerated
 types <type; enumerated>`. 
@@ -354,8 +354,8 @@ instance, :mzn:`{i + j | i, j in 1..3 where j < i}` evaluates to the set
   
   .. code-block:: minizincdef
   
-    <generator>, ..., <generator>
-    <generator>, ..., <generator> where <bool-exp>
+    <generator>
+    <generator> where <bool-exp>
   
   The optional :mzndef:`<bool-exp>` in the second form acts as a filter on
   the generator expression: only elements satisfying the Boolean expression
@@ -539,7 +539,7 @@ We now return to the definition of :mzn:`mproducts`. For each product
 .. code-block:: minizinc
 
   (min (r in Resources where consumption[p,r] > 0) 
-                                   (capacity[r] div consumption[p,r])
+       (capacity[r] div consumption[p,r]))
 
 determines the maximum amount of :mzn:`p` that can be produced taking into
 account the amount of each resource :mzn:`r` and how much of :mzn:`r` is
@@ -552,7 +552,7 @@ complete expression
 
   int: mproducts = max (p in Products) 
                        (min (r in Resources where consumption[p,r] > 0) 
-                                   (capacity[r] div consumption[p,r]));
+                            (capacity[r] div consumption[p,r]));
 
 computes the maximum amount of *any* product that can be produced, and
 so this can be used as an upper bound on the domain of the decision
@@ -564,7 +564,7 @@ to create an understandable output. Running
 
 .. code-block:: bash
 
-  $ minizinc --solver gecode simple-prod-planning.mzn simple-prod-planning-data.dzn
+  $ minizinc --solver gecode prod-planning.mzn prod-planning-data.dzn
 
 results in the output
 
