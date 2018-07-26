@@ -489,7 +489,7 @@ support the starred options):
 :mzndef:`<assignmentannotation>` specifies how the chosen variable should be
 constrained. 
 Possible choices are as follows (it is recommended that implementations
-support the starred options):
+support at least the starred options):
 
 +---------------------------+---------------+------------------------------------------------------------------------------------------------------+
 | ``indomain_min``          | :math:`\star` | Assign the smallest value in the variable's domain.                                                  |

@@ -261,20 +261,22 @@ We can evaluate our model by clicking the *Run* button in the MiniZinc IDE, or b
 
 .. code-block:: bash
   
-  $ minizinc --solver Gecode aust.mzn
+  $ minizinc --solver gecode aust.mzn
 
 where :download:`aust.mzn <examples/aust.mzn>`
 is the name of the file containing our MiniZinc model.
 We must use the file extension ``.mzn`` to indicate a MiniZinc model.
-The command ``minizinc`` with the option ``--solver Gecode`` uses the Gecode finite domain solver to evaluate
-our model. If you use the MiniZinc binary distribution, this solver is in fact the default, so you can just run ``minizinc aust.mzn`` instead.
+The command ``minizinc`` with the option ``--solver gecode``
+uses the Gecode finite domain solver to evaluate
+our model. If you use the MiniZinc binary distribution,
+this solver is in fact the default, so you can just run ``minizinc aust.mzn`` instead.
 
 When we run this we obtain the result:
 
 .. code-block:: none
 
-  wa=2	 nt=3	 sa=1
-  q=2	 nsw=3	 v=2
+  wa=3	 nt=2	 sa=1
+  q=3	nsw=2	 v=3
   t=1
   ----------
 
@@ -764,7 +766,8 @@ There are 8 kinds of :index:`items <item>`.
     solve maximize <arithmetic expression>;
     solve minimize <arithmetic expression>;
 
-  A model is required to have exactly one solve item.
+  A model is required to have at most one solve item. If its omitted it is
+  treated as :mzn:`solve satisfy`.
 
 - :index:`Output items <item; output>` are for nicely presenting the results of the model execution. 
   They have the form:
