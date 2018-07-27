@@ -13,7 +13,7 @@ El Manual de Minizinc
 
 .. toctree::
    :maxdepth: 2
-   :numbered: 4
+   :numbered:
 
    part_1_introduction
    part_2_tutorial
