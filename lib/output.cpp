@@ -732,9 +732,14 @@ namespace MiniZinc {
           vdi_copy->e()->ti()->domain(NULL);
           vdi_copy->e()->flat(vdi->e()->flat());
           bool isCheckVar = vdi_copy->e()->ann().contains(constants().ann.mzn_check_var);
+          Call* checkVarEnum = vdi_copy->e()->ann().getCall(constants().ann.mzn_check_enum_var);
           vdi_copy->e()->ann().clear();
-          if (isCheckVar)
+          if (isCheckVar) {
             vdi_copy->e()->ann().add(constants().ann.mzn_check_var);
+          }
+          if (checkVarEnum) {
+            vdi_copy->e()->ann().add(checkVarEnum);
+          }
           vdi_copy->e()->introduced(false);
           IdMap<KeepAlive>::iterator it;
           if (!vdi->e()->type().ispar()) {

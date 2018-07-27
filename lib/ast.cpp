@@ -1378,6 +1378,7 @@ namespace MiniZinc {
     ann.add_to_output->type(Type::ann());
     ann.mzn_check_var = new Id(Location(), ASTString("mzn_check_var"), NULL);
     ann.mzn_check_var->type(Type::ann());
+    ann.mzn_check_enum_var = ASTString("mzn_check_enum_var");
     ann.is_defined_var = new Id(Location(), ASTString("is_defined_var"), NULL);
     ann.is_defined_var->type(Type::ann());
     ann.defines_var = ASTString("defines_var");
@@ -1591,6 +1592,7 @@ namespace MiniZinc {
     v.push_back(ann.output_only);
     v.push_back(ann.add_to_output);
     v.push_back(ann.mzn_check_var);
+    v.push_back(new StringLit(Location(),ann.mzn_check_enum_var));
     v.push_back(new StringLit(Location(),ann.output_array));
     v.push_back(ann.is_defined_var);
     v.push_back(new StringLit(Location(),ann.defines_var));
@@ -1759,6 +1761,19 @@ namespace MiniZinc {
     }
     for (unsigned int i=static_cast<unsigned int>(toRemove.size()); i--;)
       _s->remove(toRemove[i]);
+  }
+  
+  Call*
+  Annotation::getCall(const ASTString& id) {
+    if (_s==NULL)
+      return NULL;
+    for (ExpressionSetIter it=_s->begin(); it != _s->end(); ++it) {
+      if (Call* c = (*it)->dyn_cast<Call>()) {
+        if (c->id() == id)
+          return c;
+      }
+    }
+    return NULL;
   }
   
   bool

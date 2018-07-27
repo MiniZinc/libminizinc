@@ -422,6 +422,9 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
       if (flag_verbose)
         log << " done parsing (" << starttime.stoptime() << ")" << std::endl;
       if (smm) {
+        std::ostringstream smm_oss;
+        Printer p(smm_oss,0,false);
+        p.print(smm);
         Env smm_env(smm);
         GCLock lock;
         vector<TypeError> typeErrors;
@@ -445,9 +448,6 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             }
           }
           smm->compact();
-          std::ostringstream smm_oss;
-          Printer p(smm_oss,0,false);
-          p.print(smm);
           std::string smm_compressed = FileUtils::encodeBase64(FileUtils::deflateString(smm_oss.str()));
           TypeInst* ti = new TypeInst(Location().introduce(),Type::parstring(),NULL);
           VarDecl* checkString = new VarDecl(Location().introduce(),ti,ASTString("_mzn_solution_checker"),new StringLit(Location().introduce(),smm_compressed));

@@ -1457,7 +1457,7 @@ namespace MiniZinc {
           cv = cv || args[i]->type().cv();
         }
         // Replace par enums with their string versions
-        if (!_ignoreUndefined && (call.id()=="format" || call.id()=="show" || call.id()=="showDzn")) {
+        if (call.id()=="format" || call.id()=="show" || call.id()=="showDzn") {
           if (call.arg(call.n_args()-1)->type().ispar()) {
             int enumId = call.arg(call.n_args()-1)->type().enumId();
             if (enumId != 0 && call.arg(call.n_args()-1)->type().dim() != 0) {
@@ -1465,38 +1465,41 @@ namespace MiniZinc {
               enumId = enumIds[enumIds.size()-1];
             }
             if (enumId > 0) {
-              Id* ti_id = _env.getEnum(enumId)->e()->id();
-              GCLock lock;
-              std::vector<Expression*> args(2);
-              args[0] = call.arg(call.n_args()-1);
-              if (args[0]->type().dim() > 1) {
-                std::vector<Expression*> a1dargs(1);
-                a1dargs[0] = args[0];
-                Call* array1d = new Call(Location().introduce(),ASTString("array1d"),a1dargs);
-                Type array1dt = args[0]->type();
-                array1dt.dim(1);
-                array1d->type(array1dt);
-                args[0] = array1d;
+              VarDecl* enumDecl = _env.getEnum(enumId)->e();
+              if (enumDecl->e()) {
+                Id* ti_id = _env.getEnum(enumId)->e()->id();
+                GCLock lock;
+                std::vector<Expression*> args(2);
+                args[0] = call.arg(call.n_args()-1);
+                if (args[0]->type().dim() > 1) {
+                  std::vector<Expression*> a1dargs(1);
+                  a1dargs[0] = args[0];
+                  Call* array1d = new Call(Location().introduce(),ASTString("array1d"),a1dargs);
+                  Type array1dt = args[0]->type();
+                  array1dt.dim(1);
+                  array1d->type(array1dt);
+                  args[0] = array1d;
+                }
+                args[1] = constants().boollit(call.id()=="showDzn");
+                ASTString enumName(createEnumToStringName(ti_id, "_toString_"));
+                call.id(enumName);
+                call.args(args);
+                if (call.id()=="showDzn") {
+                  call.id(constants().ids.show);
+                }
+                fi = _model->matchFn(_env,&call,false);
+                if (fi==NULL) {
+                  std::ostringstream oss;
+                  oss << "no function or predicate with this signature found: `";
+                  oss << call.id() << "(";
+                  for (unsigned int i=0; i<call.n_args(); i++) {
+                    oss << call.arg(i)->type().toString(_env);
+                    if (i<call.n_args()-1) oss << ",";
+                  }
+                  oss << ")'";
+                  throw TypeError(_env,call.loc(), oss.str());
+                }
               }
-              args[1] = constants().boollit(call.id()=="showDzn");
-              ASTString enumName(createEnumToStringName(ti_id, "_toString_"));
-              call.id(enumName);
-              call.args(args);
-            }
-            if (call.id()=="showDzn") {
-              call.id(constants().ids.show);
-            }
-            fi = _model->matchFn(_env,&call,false);
-            if (fi==NULL) {
-              std::ostringstream oss;
-              oss << "no function or predicate with this signature found: `";
-              oss << call.id() << "(";
-              for (unsigned int i=0; i<call.n_args(); i++) {
-                oss << call.arg(i)->type().toString(_env);
-                if (i<call.n_args()-1) oss << ",";
-              }
-              oss << ")'";
-              throw TypeError(_env,call.loc(), oss.str());
             }
           }
         }
@@ -2044,12 +2047,31 @@ namespace MiniZinc {
                                          + "' must be defined (did you forget to specify a data file?)"));
         }
       }
+      if (ts.decls[i]->ti()->isEnum()) {
+        ts.decls[i]->ti()->setIsEnum(false);
+        Type vdt = ts.decls[i]->ti()->type();
+        vdt.enumId(0);
+        ts.decls[i]->ti()->type(vdt);
+      }
     }
 
     for (auto vd_k : env.envi().checkVars) {
       try {
         VarDecl* vd = ts.get(env.envi(), vd_k()->cast<VarDecl>()->id()->str(), vd_k()->cast<VarDecl>()->loc());
         vd->ann().add(constants().ann.mzn_check_var);
+        if (vd->type().enumId() != 0) {
+          GCLock lock;
+          int enumId = vd->type().enumId();
+          if (vd->type().dim() > 0) {
+            const std::vector<unsigned int>& arrayEnumIds = env.envi().getArrayEnum(vd->type().enumId());
+            enumId = arrayEnumIds[arrayEnumIds.size()-1];
+          }
+          std::vector<Expression*> args({env.envi().getEnum(enumId)->e()->id()});
+          Call* checkEnum = new Call(Location().introduce(), constants().ann.mzn_check_enum_var, args);
+          checkEnum->type(Type::ann());
+          checkEnum->decl(env.envi().model->matchFn(env.envi(), checkEnum, false));
+          vd->ann().add(checkEnum);
+        }
         Type vdktype = vd_k()->type();
         vdktype.ti(Type::TI_VAR);
         if (!vd_k()->type().isSubtypeOf(vd->type(), false)) {

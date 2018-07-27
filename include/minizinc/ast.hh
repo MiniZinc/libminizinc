@@ -236,6 +236,7 @@ namespace MiniZinc {
     void removeCall(const ASTString& id);
     void clear(void);
     void merge(const Annotation& ann);
+    Call* getCall(const ASTString& id);
     
     static Annotation empty;
   };
@@ -1747,6 +1748,7 @@ namespace MiniZinc {
         Id* add_to_output;
         Id* output_only;
         Id* mzn_check_var;
+        ASTString mzn_check_enum_var;
         Id* is_defined_var;
         ASTString defines_var;
         Id* is_reverse_map;

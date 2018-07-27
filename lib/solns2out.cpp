@@ -267,7 +267,12 @@ void Solns2Out::checkSolution(std::ostream& os) {
     for (unsigned int i=0; i<getModel()->size(); i++) {
       if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
         if (vdi->e()->ann().contains(constants().ann.mzn_check_var)) {
-          checker << vdi->e()->id()->str() << "=" << *eval_par(getEnv()->envi(),vdi->e()->e()) << ";";
+          if (Call* cev = vdi->e()->ann().getCall(constants().ann.mzn_check_enum_var)) {
+            checker << vdi->e()->id()->str() << "= to_enum(" << *cev->arg(0)->cast<Id>() << "," << *eval_par(getEnv()->envi(),vdi->e()->e()) << ");";
+          } else {
+            checker << vdi->e()->id()->str() << "=" << *eval_par(getEnv()->envi(),vdi->e()->e()) << ";";
+          }
+          
         }
       }
     }

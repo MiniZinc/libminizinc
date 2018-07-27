@@ -39,6 +39,9 @@ annotation output_only;
 /** @group annotations.general Declare that the annotated variable is required for checking solutions. */
 annotation mzn_check_var;
 
+/** @group annotations.general Declare that the annotated variable is required for checking solutions and has an enum type. */
+annotation mzn_check_enum_var(set of int);
+
 /** @group annotations.general Declare a name for the annotated expression. */
 annotation mzn_expression_name(string);
 
