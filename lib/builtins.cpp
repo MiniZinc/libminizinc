@@ -1238,14 +1238,14 @@ namespace MiniZinc {
   Expression* b_trace(EnvI& env, Call* call) {
     GCLock lock;
     StringLit* msg = eval_par(env,call->arg(0))->cast<StringLit>();
-    env.stderr << msg->v();
+    env.errstream << msg->v();
     return call->n_args()==1 ? constants().lit_true : call->arg(1);
   }
 
   Expression* b_trace_stdout(EnvI& env, Call* call) {
     GCLock lock;
     StringLit* msg = eval_par(env,call->arg(0))->cast<StringLit>();
-    env.stdout << msg->v();
+    env.outstream << msg->v();
     return call->n_args()==1 ? constants().lit_true : call->arg(1);
   }
   
