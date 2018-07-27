@@ -285,6 +285,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   } else if (executable_name=="solns2out") {
     s2out._opt.flag_standaloneSolns2Out=true;
   }
+  bool compileSolutionChecker = false;
   int i=1, j=1;
   int argc = static_cast<int>(argv.size());
   if (argc < 2)
@@ -360,13 +361,16 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       if ((argv[i]=="--fzn-cmd" || argv[i]=="--flatzinc-cmd") && solver.empty()) {
         solver = "org.minizinc.mzn-fzn";
       }
+      if (argv[i]=="--compile-solution-checker") {
+        compileSolutionChecker = true;
+      }
       argv[j++] = argv[i];
     }
   }
   argv.resize(j);
   argc = j;
 
-  if (mzn2fzn_exe && solver.empty()) {
+  if ( (mzn2fzn_exe || compileSolutionChecker) && solver.empty()) {
     solver = "org.minizinc.mzn-fzn";
   }
   
