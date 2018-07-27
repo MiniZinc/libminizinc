@@ -522,6 +522,11 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
 
       if (flag_instance_check_only || flag_model_check_only ||
           flag_model_interface_only || flag_model_types_only ) {
+        std::ostringstream compiledSolutionCheckModel;
+        if (flag_compile_solution_check_model) {
+          Printer p(compiledSolutionCheckModel,0);
+          p.print(m);
+        }
         GCLock lock;
         vector<TypeError> typeErrors;
         MiniZinc::typecheck(*env, m, typeErrors, flag_model_types_only || flag_model_interface_only || flag_model_check_only, flag_allow_multi_assign);
@@ -541,10 +546,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           MiniZinc::output_model_variable_types(*env, m, os);
         }
         if (flag_compile_solution_check_model) {
-          std::ostringstream oss;
-          Printer p(oss,0);
-          p.print(m);
-          std::string mzc(FileUtils::deflateString(oss.str()));
+          std::string mzc(FileUtils::deflateString(compiledSolutionCheckModel.str()));
           mzc = FileUtils::encodeBase64(mzc);
           std::string mzc_filename = filenames[0].substr(0,filenames[0].size()-4);
           if (flag_verbose)
