@@ -1561,8 +1561,16 @@ function $$E: to_enum(set of $$E: X, int: x);
 /** @group builtins.enum Convert \a x to enum type \a X */
 function var $$E: to_enum(set of $$E: X, var int: x) =
   let { constraint x in X } in x;
+  
+/** @group builtins.enum Convert \a x to enum type \a X */
+function array[$U] of $$E: to_enum(set of $$E: X, array[$U] of int: x) =
+  let { array[int] of int: xx = array1d(x) } in
+  arrayXd(x, [ to_enum(X,xx[i]) | i in index_set(xx)]);
 
-
+/** @group builtins.enum Convert \a x to enum type \a X */
+function array[$U] of var $$E: to_enum(set of $$E: X, array[$U] of var int: x) =
+  let { array[int] of var int: xx = array1d(x) } in
+  arrayXd(x, [ to_enum(X,xx[i]) | i in index_set(xx)]);
 
 
 %-----------------------------------------------------------------------------%
