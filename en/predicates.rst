@@ -245,11 +245,11 @@ A possible output is
 
 .. code-block:: none
 
-  o d n n o n n d o o
-  d o n d o d n n o n
-  o d d o d o d n n o
-  d d d o n n d o n n
-  d o d n n o d o d d
+  d o n o n o d n o o
+  d o d n n o d d n o
+  o d d n o n d n o n
+  o d d d o n n o n n
+  d d n o d d n o d d
   n n o d d d o d d d
   n n o d d d o d d d
   ----------

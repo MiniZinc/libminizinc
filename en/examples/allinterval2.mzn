@@ -17,6 +17,6 @@ constraint abs(y[1] - y[n]) = 1 /\ v[n-1] = min(y[1], y[n]);
 solve :: int_search(y, first_fail, indomain_min, complete)
       satisfy;
 
-output [ "x = [",] ++
-       [ show(i) ++ if j == n then "]\n;" else ", " endif 
-         | j in 1..n, i in 1..n where j == fix(y[i]) ];
+array[1..n] of 1..n: x :: output_only
+  = [ sum(i in 1..n)(i*(fix(y[j]) = i) | j in 1..n ];
+output [ "x = \(x);\n" ]
