@@ -485,11 +485,14 @@ support the starred options):
 +-----------------------+---------------+------------------------------------------------------------------------------------------------------+
 | ``max_regret``        |               | Choose the variable with the largest difference between the two smallest values in its domain.       |
 +-----------------------+---------------+------------------------------------------------------------------------------------------------------+
+| ``dom_w_deg``         |               | Choose the variable with the smallest value of domain size divided by weighted degree,               |
+|                       |               | where the weighted degree is the number of times the variables been in a constraint which failed     |
++-----------------------+---------------+------------------------------------------------------------------------------------------------------+
 
 :mzndef:`<assignmentannotation>` specifies how the chosen variable should be
 constrained. 
 Possible choices are as follows (it is recommended that implementations
-support the starred options):
+support at least the starred options):
 
 +---------------------------+---------------+------------------------------------------------------------------------------------------------------+
 | ``indomain_min``          | :math:`\star` | Assign the smallest value in the variable's domain.                                                  |

@@ -472,3 +472,7 @@ def setup(sphinx):
     sphinx.add_lexer("minizinc", MznLexer())
     sphinx.add_lexer("minizincdef", MznDefLexer())
     sphinx.add_stylesheet("style.css")
+
+def setup(app):
+    import six
+    print('Six version: %s' % six.__version__)

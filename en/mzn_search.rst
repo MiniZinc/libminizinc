@@ -186,12 +186,16 @@ value selection), looking across the entire search tree
     single: input_order
     single: first_fail
     single: smallest
+    single: dom_w_deg
 
   Example variable choice annotations are:
 
   - :mzn:`input_order`: choose in order from the array
   - :mzn:`first_fail`: choose the variable with the smallest domain size, and
   - :mzn:`smallest`: choose the variable with the smallest value in its domain.
+  - :mzn:`dom_w_deg`: choose the variable with the smallest value of domain 
+    size divided by weighted degree, which is the number of times it has been
+    in a constraint that caused failure earlier in the search.
 
   .. index::
     single: search; constrain choice
@@ -308,6 +312,7 @@ we imagine each line is in a separate data file)
   search_ann = int_search(q, input_order, indomain_median, complete);
   search_ann = int_search(q, first_fail, indomain_min, complete);
   search_ann = int_search(q, first_fail, indomain_median, complete);
+  search_ann = int_search(q, input_order, indomain_random, complete);
 
 The first just tries the queens in order setting them to the
 minimum value, the second tries the queens variables in order, but sets
@@ -318,27 +323,233 @@ value.
 
 Different search strategies can make a significant difference in
 how easy it is to find solutions.
-A small comparison of the number of choices made to find the first solution
-of the n-queens problems using the 4 different search strategies
-is shown in the table below (where --- means more than 100,000 choices).
-Clearly the right search strategy can make a significant difference.
+A small comparison of the number of failures made to find the first solution
+of the n-queens problems using the 5 different search strategies
+is shown in the table below (where --- means more than 100,000 failures).
+Clearly the right search strategy can make a significant difference, and variables selection is more important than value selection, except that for this
+problem random value selection is very powerful.
 
 .. cssclass:: table-nonfluid table-bordered
 
-+-----+-----------+--------------+--------+-----------+
-|  n  | input-min | input-median | ff-min | ff-median |
-+=====+===========+==============+========+===========+
-| 10  | 28        |  15          |  16    | 20        |
-+-----+-----------+--------------+--------+-----------+
-| 15  | 248       |  34          |  23    | 15        |
-+-----+-----------+--------------+--------+-----------+
-| 20  | 37330     |  97          |  114   | 43        |
-+-----+-----------+--------------+--------+-----------+
-| 25  | 7271      |  846         |  2637  | 80        |
-+-----+-----------+--------------+--------+-----------+
-| 30  | ---       |  385         |  1095  | 639       |
-+-----+-----------+--------------+--------+-----------+
-| 35  | ---       |  4831        |  ---   | 240       |
-+-----+-----------+--------------+--------+-----------+
-| 40  | ---       |  ---         |  ---   | 236       |
-+-----+-----------+--------------+--------+-----------+
++-----+-----------+--------------+--------+-----------+--------------+
+|  n  | input-min | input-median | ff-min | ff-median | input-random |
++=====+===========+==============+========+===========+==============+
+| 10  | 22        |  2           |  5     | 0         | 6            |
++-----+-----------+--------------+--------+-----------+--------------+
+| 15  | 191       |  4           |  4     | 12        | 39           |
++-----+-----------+--------------+--------+-----------+--------------+
+| 20  | 20511     |  32          |  27    | 16        | 2            |
++-----+-----------+--------------+--------+-----------+--------------+
+| 25  | 2212      |  345         |  51    | 25        | 2            |
++-----+-----------+--------------+--------+-----------+--------------+
+| 30  | ---       |  137         |  22    | 66        | 9            |
++-----+-----------+--------------+--------+-----------+--------------+
+| 35  | ---       |  1722        |  52    | 12        | 12           |
++-----+-----------+--------------+--------+-----------+--------------+
+| 40  | ---       |  ---         |  16    | 44        | 2            |
++-----+-----------+--------------+--------+-----------+--------------+
+| 45  | ---       |  ---         |  41    | 18        | 6            |
++-----+-----------+--------------+--------+-----------+--------------+
+
+.. number of nodes ??
+  Different search strategies can make a significant difference in
+  how easy it is to find solutions.
+  A small comparison of the number of nodes made to find the first solution
+  of the n-queens problems using the 5 different search strategies
+  is shown in the table below (where --- means more than 100,000 nodes).
+  Clearly the right search strategy can make a significant difference, and 
+  variables selection is more important than value selection, except that for this
+  problem random value selection is very powerful.
+
+  +-----+-----------+--------------+--------+-----------+--------------+
+  |  n  | input-min | input-median | ff-min | ff-median | input-random |
+  +=====+===========+==============+========+===========+==============+
+  | 10  | 49        |  11          |  17    | 7         | 17           |
+  +-----+-----------+--------------+--------+-----------+--------------+
+  | 15  | 391       |  20          |  16    | 34        | 89           |
+  +-----+-----------+--------------+--------+-----------+--------------+
+  | 20  | 41033     |  80          |  65    | 46        | 19           |
+  +-----+-----------+--------------+--------+-----------+--------------+
+  | 25  | 4439      |  709         |  120   | 66        | 23           |
+  +-----+-----------+--------------+--------+-----------+--------------+
+  | 30  | ---       |  297         |  67    | 152       | 40           |
+  +-----+-----------+--------------+--------+-----------+--------------+
+  | 35  | ---       |  3470        |  132   | 50        | 50           |
+  +-----+-----------+--------------+--------+-----------+--------------+
+  | 40  | ---       |  ---         |  64    | 116       | 34           |
+  +-----+-----------+--------------+--------+-----------+--------------+
+  | 45  | ---       |  ---         |  120   | 71        | 47           |
+  +-----+-----------+--------------+--------+-----------+--------------+
+  | 50  | ---       |  ---         |  395   | 42        | 90           |
+  +-----+-----------+--------------+--------+-----------+--------------+
+
+
+
+Restart
+-------
+
+.. index::
+  single: search; restart
+
+Any kind of depth first search for solving optimization problems 
+suffers from the problem that wrong decisions made at the top of 
+the search tree can take an exponential amount of search to undo.
+One common way to ameliorate this problem is to restart the search 
+from the top thus having a chance to make different decisions.
+
+MiniZinc includes annotations to control restart behaviour. These 
+annotations, like other search annotations, are attached to the 
+solve item of the model. 
+
+
+.. defblock:: Restart search annotations
+
+  .. index::
+	single: restart_luby
+	single: restart_geometric
+	single: restart_linear
+	single: restart_constant
+	single: restart_none
+
+  The different restart annotations control how frequently a restart occurs. 
+  Restarts occur when a limit in nodes is reached, where search returns to the
+  top of the search tree and begins again. The possibilities are
+
+  - :mzndef:`restart_constant(<scale>)` where :mzndef:`<scale>` is an integer 
+    defining after how many nodes to restart. 
+  - :mzndef:`restart_linear(<scale>)` where :mzndef:`<scale>` is an integer
+    defining the initial number of nodes before the first restart. The second
+    restart gets twice as many nodes, the third gets three times, etc.
+  - :mzndef:`restart_geometric(<base>,<scale>)` where :mzndef:`<base>` is a 
+    float and :mzndef:`<scale>` is an integer. The :mzn:`k` th restart has a
+    node limit of :mzn:`<scale> * <base>^k`.
+  - :mzndef:`restart_luby(<scale>) where :mzndef:`<scale>` is an integer. 
+    The :mzn:`k` th restart gets :mzn:`<scale>*L[k]` where :mzn`L[k]` is the
+    :mzn:`k` th number in the Luby sequence. The Luby sequence looks like 
+    1 1 2 1 1 2 4 1 1 2 1 1 2 4 8 ..., that is it repeats two copies of the 
+    sequence ending in :mzn:`2^i` before adding the number :mzn:`2^{i+1}`.
+  - :mzndef:`restart_none` dont apply any restart
+    (useful for setting a :mzn:`ann` parameter that controls restart).
+
+
+  Solvers behaviour where two or more restart annotations are used is
+  undefined.
+
+Restart search is much more robust in finding solutions, since it can avoid
+getting stuck in a non-productive area of the search.  Note that restart
+search does not make much sense if the underlying search strategy does
+not do something different the next time it starts at the top.
+For example the search annotation
+
+.. code-block:: minizinc
+
+  solve :: int_search(q, input_order, indomain_min, complete);
+        :: restart_linear(1000)
+        satisfy
+
+does not very much sense since the underlying search is deterministic and
+each restart will just redo the same search as the previous search.
+Some solvers record the parts of the search tree that have already been 
+searched and avoid them. This will mean deterministic restarts will simply
+effectively continue the search from the previous position. This gives
+no benefit to restarts, whose aim is to change decisions high in the search
+tree.
+
+The simplest way to ensure that something is different in each restart
+is to use some randomization, either in variable choice or value choice.
+Alternatively some variable selection strategies make use of information
+gathered from earlier search and hence will give different behaviour, for
+example :mzn:`dom_w_deg`. 
+
+To see the effectiveness of restart lets examine the n-queens problem again
+with the underlying search strategy
+
+.. code-block:: minizinc
+
+  int_search(q, first_fail, indomain_random, complete);
+
+with one of four restart strategies
+
+.. code-block:: minizinc
+
+  r1 = restart_constant(100);
+  r2 = restart_linear(100);
+  r3 = restart_geometric(1.5,100);
+  r4 = restart_luby(100);
+  r5 = restart_none;
+
+.. cssclass:: table-nonfluid table-bordered
+
++-----+-----------+--------------+-----------+-----------+------+
+|  n  | constant  | linear       | geometric | luby      | none |
++=====+===========+==============+===========+===========+======+
+| 10  | 35        |  35          |  35       | 35        | 14   |
++-----+-----------+--------------+-----------+-----------+------+
+| 15  | 36        |  36          |  36       | 36        | 22   |
++-----+-----------+--------------+-----------+-----------+------+
+| 20  | 15        |  15          |  15       | 16        |      |
++-----+-----------+--------------+-----------+-----------+------+
+| 25  | 2212      |  345         |  51       | 25        |      |
++-----+-----------+--------------+-----------+-----------+------+
+| 30  | ---       |  137         |  22       | 66        |      |
++-----+-----------+--------------+-----------+-----------+------+
+| 35  | ---       |  1722        |  52       | 12        |      |
++-----+-----------+--------------+-----------+-----------+------+
+| 40  | 148       |  148         |  194      | 148       | 15   |
++-----+-----------+--------------+-----------+-----------+------+
+| 100 | 183       |  183         |  183      | 183       | 103  |
++-----+-----------+--------------+-----------+-----------+------+
+| 500 | 1480      |  1480        |  1480     | 1480      | 1434 |
++-----+-----------+--------------+-----------+-----------+------+
+| 1000| 994       |  994         |  994      | 994       | 994  |
++-----+-----------+--------------+-----------+-----------+------+
+
+THE CURRENT EXPERIMENT IS USELESS!
+
+
+Warm Starts
+-----------
+
+In many cases when solving an optimization or satisfaction
+problem we may have solved a
+previous version of the problem which is very similar.  In this case it
+can be advantageous to use the previous solution found when searching for
+solution to the new problem.
+
+The warm start annotations are attached to the solve item, just like other 
+search annotations.
+
+
+.. defblock:: Warm start search annotations
+
+  .. index::
+        single: warm_start
+
+  The different restart annotations control how frequently a restart occurs.
+  Restarts occur when a limit in nodes is reached, where search returns to the
+  top of the search tree and begins again. The possibilities are
+
+  - :mzndef:`warm_start(<vars>,<vals>)` where :mzndef:`<vars>` is a one 
+    dimensional array of integer variables, and :mzndef:`<vals>` is a 
+    one dimensional array of integer of the same length giving the warm start values
+    for each integer variable in :mzn:`<vars>`.
+  - :mzndef:`warm_start(<vars>,<vals>)` where :mzndef:`<vars>` is a one 
+    dimensional array of float variables, and :mzndef:`<vals>` is a 
+    one dimensional array of floats of the same length giving the warm start values
+    for each float variable in :mzn:`<vars>`.
+  - :mzndef:`warm_start(<vars>,<vals>)` where :mzndef:`<vars>` is a one 
+    dimensional array of Boolean variables, and :mzndef:`<vals>` is a 
+    one dimensional array of Booleans of the same length giving the warm start values
+    for each Boolean variable in :mzn:`<vars>`.
+  - :mzndef:`warm_start(<vars>,<vals>)` where :mzndef:`<vars>` is a one 
+    dimensional array of set variables, and :mzndef:`<vals>` is a 
+    one dimensional array of sets of integers of the same length giving the warm start values
+    for each set variable in :mzn:`<vars>`.
+
+
+The warm start annotation is used by the solver as part of value selection. If the selected
+variable :mzn:`v[i]` has in its current domain the warm start value :mzn:`w[i]` then this is
+the value selected for the variable.  If not the solver uses the existing value selection rule
+applicable to that variable.
+
+ADD AN EXAMPLE OF THEIR USE (jobshop???)
