@@ -405,13 +405,13 @@ namespace MiniZinc {
 
   template<class MIPWrapper>
   void
-  MIP_solverinstance<MIPWrapper>::printStatistics(bool fLegend)
+  MIP_solverinstance<MIPWrapper>::printStatisticsLine(bool fLegend)
   {
     //   auto nn = std::chrono::system_clock::now();
     //   auto n_c = std::chrono::system_clock::to_time_t( nn );
     {
       std::ios oldState(nullptr);
-      oldState.copyfmt(std::cout);
+      oldState.copyfmt(_log);
       _log.precision(12);
       _log << "  % MIP Status: " << mip_wrap->getStatusName() << std::endl;
       if (fLegend)
@@ -429,6 +429,30 @@ namespace MiniZinc {
       //  ctime already adds EOL.     os << endl;
       _log << std::endl;
       _log.copyfmt( oldState );
+    }
+  }
+  
+  template<class MIPWrapper>
+  void
+  MIP_solverinstance<MIPWrapper>::printStatistics(bool fLegend)
+  {
+    //   auto nn = std::chrono::system_clock::now();
+    //   auto n_c = std::chrono::system_clock::to_time_t( nn );
+    {
+      EnvI& env = getEnv()->envi();
+      
+      std::ios oldState(nullptr);
+      oldState.copyfmt(env.outstream);
+      env.outstream.precision(12);
+      env.outstream << "%%mzn-stat objective=" << mip_wrap->getObjValue() << "\n";
+      env.outstream << "%%mzn-stat objectiveBound=" << mip_wrap->getBestBound() << "\n";
+      env.outstream << "%%mzn-stat nodes=" << mip_wrap->getNNodes() << "\n";
+      if (mip_wrap->getNOpen())
+        env.outstream << "%%mzn-stat openNodes=" << mip_wrap->getNOpen() << "\n";
+      env.outstream.setf( std::ios::fixed );
+      env.outstream.precision( 4 );
+      env.outstream << "%%mzn-stat time=" << mip_wrap->getWallTimeElapsed() << "\n";
+      env.outstream.copyfmt( oldState );
     }
   }
 

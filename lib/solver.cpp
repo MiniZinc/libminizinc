@@ -596,16 +596,16 @@ SolverInstance::Status MznSolver::solve()
   else {
     if ( !getSI()->getSolns2Out()->fStatusPrinted )
       getSI()->getSolns2Out()->evalStatus( status );
-    if (get_flag_statistics())    // it's summary in fact
-      printStatistics();
   }
+  if (si_opt->printStatistics)
+    printStatistics();
   return status;
 }
 
 void MznSolver::printStatistics()
 { // from flattener too?   TODO
   if (si)
-    getSI()->printStatisticsLine(1);
+    getSI()->printStatistics();
 }
 
 SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, const std::string& model,
