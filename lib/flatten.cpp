@@ -3163,7 +3163,7 @@ namespace MiniZinc {
     std::vector<Val> coeffv;
     std::vector<KeepAlive> alv;
     for (unsigned int i=0; i<al->size(); i++) {
-      if (Call* sc = same_call(env,(*al)[i],cid)()->cast<Call>()) {
+      if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al)[i],cid)())) {
         if (VarDecl* alvi_decl = follow_id_to_decl((*al)[i])->dyn_cast<VarDecl>()) {
           if (alvi_decl->ti()->domain()) {
             // Test if the variable has tighter declared bounds than what can be inferred
@@ -5428,7 +5428,7 @@ namespace MiniZinc {
               ArrayLit* al = follow_id(args_ee[i].r())->cast<ArrayLit>();
               std::vector<KeepAlive> alv;
               for (unsigned int i=0; i<al->size(); i++) {
-                if (Call* sc = same_call(env,(*al)[i],cid)()->cast<Call>()) {
+                if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al)[i],cid)())) {
                   if (sc->id()==constants().ids.clause) {
                     alv.push_back(sc);
                   } else {
@@ -5444,12 +5444,12 @@ namespace MiniZinc {
               }
 
               for (unsigned int j=0; j<alv.size(); j++) {
-                Call* neg_call = same_call(env,alv[j](),constants().ids.bool_eq)()->cast<Call>();
+                Call* neg_call = Expression::dyn_cast<Call>(same_call(env,alv[j](),constants().ids.bool_eq)());
                 if (neg_call &&
                     Expression::equal(neg_call->arg(1),constants().lit_false)) {
                   local_neg.push_back(neg_call->arg(0));
                 } else {
-                  Call* clause = same_call(env,alv[j](),constants().ids.clause)()->cast<Call>();
+                  Call* clause = Expression::dyn_cast<Call>(same_call(env,alv[j](),constants().ids.clause)());
                   if (clause) {
                     ArrayLit* clause_pos = eval_array_lit(env,clause->arg(0));
                     for (unsigned int k=0; k<clause_pos->size(); k++) {
@@ -5503,7 +5503,7 @@ namespace MiniZinc {
             ArrayLit* al = follow_id(args_ee[0].r())->cast<ArrayLit>();
             std::vector<KeepAlive> alv;
             for (unsigned int i=0; i<al->size(); i++) {
-              if (Call* sc = same_call(env,(*al)[i],cid)()->cast<Call>()) {
+              if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al)[i],cid)())) {
                 GCLock lock;
                 ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
                 for (unsigned int j=0; j<sc_c->size(); j++) {
