@@ -28,7 +28,7 @@ El problema de comestibles que se muestra en :numref:`ex-grocery`, encuentra 4 e
 
 Salida:
 
-::
+.. code-block:: none
 
   =====UNSATISFIABLE=====
   % grocery.fzn:11: warning: model inconsistency detected before search.
@@ -46,7 +46,7 @@ Modificar el modelo para que las variables se declaren con límites estrechos.
 
 da como resultado un mejor modelo, ya que ahora MiniZinc puede inferir los límites en las expresiones intermedias y usar estos en lugar de los límites predeterminados. Con esta modificación, la ejecución del modelo da
 
-::
+.. code-block:: none
 
   {120,125,150,316}
   ----------
@@ -93,7 +93,7 @@ Ejecutando el modelo como
 
 resulta en la salida
 
-::
+.. code-block:: none
 
   mark = [0, 1, 4, 6];
   diffs = [0, 0, 0, 0, 1, 0, 0, 0, 4, 3, 0, 0, 6, 5, 2, 0];
@@ -137,7 +137,7 @@ Con este cambio funcionando
 
 Simplemente se traduce en
 
-::
+.. code-block:: none
 
   mark = [0, 1, 4, 6];
   ----------
@@ -194,7 +194,7 @@ Por ejemplo, podemos ver cuántas veces se realiza la prueba en el interior bucl
 
 Produce el resultado:
 
-::
+.. code-block:: none
 
   ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
   ----------
@@ -207,7 +207,7 @@ Indicando el bucle interno se evalúa 64 veces mientras
 
 Produce el resultado:
 
-::
+.. code-block:: none
 
   ++++++++++++++++
   ----------
@@ -225,7 +225,7 @@ imprimirá cada uno de los triángulos que se encuentran en el cálculo.
 
 Produce la salida:
 
-::
+.. code-block:: none
 
   (1,2,3)
   ----------
@@ -253,7 +253,7 @@ Ingresando para :mzn:`n = 16` de la siguiente manera:
 
 puede resultar en la salida
 
-::
+.. code-block:: none
 
   s = [12, 2, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0];
   ----------
@@ -261,7 +261,7 @@ puede resultar en la salida
 
 y las estadísticas muestran 174 puntos de elección requeridos.
 
-Podemos agregar restricciones redundantes al modelo. Como cada número en la secuencia cuenta el número de ocurrencias de un número, sabemos que suman :mzn: `n`. Del mismo modo, sabemos que la suma de :mzn:`s[i] * i` también debe sumar hasta :mzn:`n` porque la secuencia es mágica.
+Podemos agregar restricciones redundantes al modelo. Como cada número en la secuencia cuenta el número de ocurrencias de un número, sabemos que suman :mzn:`n`. Del mismo modo, sabemos que la suma de :mzn:`s[i] * i` también debe sumar hasta :mzn:`n` porque la secuencia es mágica.
 
 Agregar estas restricciones dadas al modelo en :numref:`ex-magic-series2`.
 

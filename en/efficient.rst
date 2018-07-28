@@ -37,14 +37,13 @@ The variables are declared unbounded. Running
 
 .. code-block:: bash
 
-  $ minizinc --solver g12fd grocery.mzn
+  $ minizinc --solver chuffed grocery.mzn
 
 yields 
 
 .. code-block:: none
 
   =====UNSATISFIABLE=====
-  % /tmp/mznfile85EWzj.fzn:11: warning: model inconsistency detected before search.
 
 This is because the 
 intermediate expressions in the multiplication
@@ -195,7 +194,7 @@ Running this for :mzn:`n = 16` as follows:
 
 .. code-block:: bash
 
-  $ minizinc --all-solutions --statistics magic-series.mzn -D "n=16;"
+  $ minizinc --solver gecode --all-solutions --statistics magic-series.mzn -D "n=16;"
 
 might result in output
 
@@ -224,7 +223,7 @@ Running the same problem as before
 
 .. code-block:: bash
 
-  $ minizinc --all-solutions --statistics magic-series2.mzn -D "n=16;"
+  $ minizinc --solver gecode --all-solutions --statistics magic-series2.mzn -D "n=16;"
 
 results in the same output, but with statistics showing just 14 failures
 explored. The redundant constraints have allowed the solver to prune the
@@ -273,9 +272,9 @@ Running the model
 
 .. code-block:: bash
 
-  $ minizinc --solver g12fd --all-solutions --statistics allinterval.mzn -D "n=10;"
+  $ minizinc --solver gecode --all-solutions --statistics allinterval.mzn -D "n=10;"
 
-finds all solutions in 84598 choice points and 3s.
+finds all solutions in 16077 nodes and 71ms
 
 An alternate model uses array :mzn:`y` where :mzn:`y[i]` gives the
 position of the number :mzn:`i` in the sequence.  
@@ -310,13 +309,30 @@ The command
 
 .. code-block:: bash
 
-  $ minizinc --solver g12fd --all-solutions --statistics allinterval2.mzn -D "n=10;"
+  $ minizinc --solver gecode --all-solutions --statistics allinterval2.mzn -D "n=10;"
 
-finds all the solutions in  75536 choice points and 18s.
-Interestingly, although the model is not as succinct here, the search on the
-:mzn:`y` variables is better than searching on the :mzn:`x` variables. 
-The lack of succinctness means that even though the search requires
-less choice it is substantially slower.
+finds all the solutions in  98343 nodes and 640 ms.
+So the more direct modelling of the constraints is clearly paying off.
+
+Note that the inverse model prints out the answers using the same :mzn:`x` view of 
+the solution.  The way this is managed is using :mzn:`output_only` annotations.
+The array :mzn:`x` is defined as a fixed array and annotated as :mzn:`output_only`.
+This means it will only be evaluated, and can only be used in output statements.
+Once a solution for :mzn:`y` is discovered the value of :mzn:`x` is calculated
+during output processing, and hence can be displayed in the output.
+
+.. defblock:: Output_only annotation
+
+   .. index::
+	single: output_only
+
+   The :mzndef:`output_only` annotation can be applied to variable definitions.
+   The variable defined must not be a :mzn:`var` type, it can only be :mzn:`par`.
+   The variable must also have a right hand side definition giving its value.
+   This right hand side definition can make use of :mzn:`fix` functions to access
+   the values of decision variables, since it is evaluated at solution processing
+   time
+
 
 .. _sec-multiple-modelling-and-channels:
 

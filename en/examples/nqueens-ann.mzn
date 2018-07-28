@@ -3,7 +3,7 @@ annotation bitdomain(int:nwords);
 include "alldifferent.mzn";
 
 int: n;
-array [1..n] of var 1..n: q :: bitdomain(n div 32);
+array [1..n] of var 1..n: q :: bitdomain(n div 32 + 1);
 
 constraint alldifferent(q) :: domain;                      
 constraint alldifferent([ q[i] + i | i in 1..n]) :: domain;

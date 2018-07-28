@@ -11,4 +11,4 @@ constraint forall(i in 1..n-1)(u[i] = abs(x[i+1] - x[i]));
 
 solve :: int_search(x, first_fail, indomain_min, complete)
       satisfy;
-output ["x = ",show(x),"\n"];
+output ["x = \(x);\n"];

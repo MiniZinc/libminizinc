@@ -470,6 +470,8 @@ sphinx_to_github_verbose = True
 sphinx_to_github_encoding = "utf-8"
 
 def setup(sphinx):
+    import six
+    print('Six version: %s' % six.__version__)
     from minizinc_lexer import MznLexer, MznDefLexer
     sphinx.add_lexer("minizinc", MznLexer())
     sphinx.add_lexer("minizincdef", MznDefLexer())
