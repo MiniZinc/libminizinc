@@ -640,7 +640,7 @@ namespace MiniZinc {
           if(_current_space->_optVarIsInt) {
             IntVar intVar = var.intVar(_current_space);
             for(unsigned int i=0; i<_current_space->iv.size(); i++) {
-              if(_current_space->iv[i].operator==(intVar)) {
+              if(_current_space->iv[i].varimp()==intVar.varimp()) {
                 _current_space->_optVarIdx = i;
                 break;
               }
@@ -650,7 +650,7 @@ namespace MiniZinc {
           } else {
             FloatVar floatVar = var.floatVar(_current_space);
             for(unsigned int i=0; i<_current_space->fv.size(); i++) {
-              if(_current_space->fv[i].operator==(floatVar)) {
+              if(_current_space->fv[i].varimp()==floatVar.varimp()) {
                 _current_space->_optVarIdx = i;
                 break;
               }
