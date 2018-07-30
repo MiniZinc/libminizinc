@@ -25,10 +25,8 @@ predicate aux_float_eq_if_1(var float: x, var float: y, var int: p) =
   elseif fMZN__UseIndicators then
     aux_float_eq_if_1__IND(x, y, p)
   else
-    let {
-      var bool: b;
-      constraint p = bool2int(b);
-    } in (b -> x <= y) /\ (b -> x >= y)
+    aux_float_le_if_1(x, y, p) /\
+    aux_float_ge_if_1(x, y, p)
   endif;
 
 predicate aux_int_eq_if_1(var int: x, var int: y, var int: p) =
@@ -43,10 +41,8 @@ predicate aux_int_eq_if_1(var int: x, var int: y, var int: p) =
   % elseif fMZN__UseIndicators then % TODO: Necessary for integers??
   %   aux_float_eq_if_1__IND(x, y, p)
   else
-    let {
-      var bool: b;
-      constraint p = bool2int(b);
-    } in (b -> x <= y) /\ (b -> x >= y)
+    aux_int_le_if_1(x, y, p) /\
+    aux_int_ge_if_1(x, y, p)
   endif;
 
 predicate aux_float_ne_if_1(var float: x, var float: y, var int: p) =
