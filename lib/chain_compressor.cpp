@@ -268,21 +268,43 @@ namespace MiniZinc {
     bool added = false;
     if (auto ci = i->dyn_cast<ConstraintI>()) {
       if (auto call = ci->e()->dyn_cast<Call>()) {
-        // int_lin_le([1,-1], [x, y], 0); i.e. x <= y
-        if (call->id() == constants().ids.int_.lin_le) {
+        // {int,float}_lin_le([c1,c2,...], [x, y,...], 0);
+        if (call->id() == constants().ids.int_.lin_le
+         || call->id() == constants().ids.float_.lin_le) {
           auto as = follow_id(call->arg(0))->cast<ArrayLit>();
           auto bs = follow_id(call->arg(1))->cast<ArrayLit>();
           assert(as->size() == bs->size());
 
           for (int j = 0; j < as->size(); ++j) {
-            if (follow_id((*as)[j])->cast<IntLit>()->v() > IntVal(0)) {
-              // Check if left hand side is a variable (could be constant)
-              if (auto decl = follow_id_to_decl((*bs)[j])->dyn_cast<VarDecl>()) {
-                storeItem(decl, i);
-                added = true;
+            if (as->type().isintarray()) {
+              if (follow_id((*as)[j])->cast<IntLit>()->v() > IntVal(0)) {
+                // Check if left hand side is a variable (could be constant)
+                if (auto decl = follow_id_to_decl((*bs)[j])->dyn_cast<VarDecl>()) {
+                  storeItem(decl, i);
+                  added = true;
+                }
+              }
+            } else {
+              if (follow_id((*as)[j])->cast<FloatLit>()->v() > FloatVal(0)) {
+                // Check if left hand side is a variable (could be constant)
+                if (auto decl = follow_id_to_decl((*bs)[j])->dyn_cast<VarDecl>()) {
+                  storeItem(decl, i);
+                  added = true;
+                }
               }
             }
           }
+        }
+        assert(call->id() != constants().ids.int2float);
+      }
+    } else if(auto vdi = i->dyn_cast<VarDeclI>()) {
+      assert(vdi->e());
+      if (Expression* vde = vdi->e()->e()) {
+        auto call = vde->cast<Call>();
+        if (call->id() == constants().ids.int2float) {
+          auto alias = follow_id_to_decl(vdi->e())->cast<VarDecl>();
+          auto vd = follow_id_to_decl(call->arg(0))->cast<VarDecl>();
+          aliasMap[vd] = alias;
         }
       }
     }
@@ -293,42 +315,93 @@ namespace MiniZinc {
     for (auto it = items.begin(); it != items.end();) {
       VarDecl *lhs = nullptr;
       VarDecl *rhs = nullptr;
+      VarDecl *alias = nullptr;
+
       // Check if compression is possible
       if (auto ci = it->second->dyn_cast<ConstraintI>()) {
         auto call = ci->e()->cast<Call>();
-        assert(call->id() == constants().ids.int_.lin_le);
-        auto as = follow_id(call->arg(0))->cast<ArrayLit>();
-        auto bs = follow_id(call->arg(1))->cast<ArrayLit>();
-        auto c = follow_id(call->arg(2))->cast<IntLit>();
+        if (call->id() == constants().ids.int_.lin_le) {
+          auto as = follow_id(call->arg(0))->cast<ArrayLit>();
+          auto bs = follow_id(call->arg(1))->cast<ArrayLit>();
+          auto c = follow_id(call->arg(2))->cast<IntLit>();
 
-        if (bs->size() == 2 && c->v() == IntVal(0)) {
-          auto a0 = follow_id((*as)[0])->cast<IntLit>()->v();
-          auto a1 = follow_id((*as)[1])->cast<IntLit>()->v();
-          if (a0 == -a1 && eqBounds((*bs)[0], (*bs)[1])) {
-            int i = a0 < a1 ? 0 : 1;
-            auto neg = follow_id_to_decl((*bs)[i])->cast<VarDecl>();
-            int occurrences = env.vo.occurrences(neg);
-            unsigned long lhs_occurences = count(neg);
+          if (bs->size() == 2 && c->v() == IntVal(0)) {
+            auto a0 = follow_id((*as)[0])->cast<IntLit>()->v();
+            auto a1 = follow_id((*as)[1])->cast<IntLit>()->v();
+            if (a0 == -a1 && eqBounds((*bs)[0], (*bs)[1])) {
+              int i = a0 < a1 ? 0 : 1;
+              auto neg = follow_id_to_decl((*bs)[i])->cast<VarDecl>();
 
-            bool compress = lhs_occurences > 0 && (occurrences == lhs_occurences + 1);
-            auto pos = follow_id_to_decl((*bs)[1 - i])->dyn_cast<VarDecl>();
-            if (pos && compress) {
-              rhs = neg;
-              lhs = follow_id_to_decl((*bs)[1 - i])->cast<VarDecl>();
-              assert(lhs != rhs);
+              int occurrences = env.vo.occurrences(neg);
+              unsigned long lhs_occurences = count(neg);
+              bool compress;
+              auto search = aliasMap.find(neg);
+
+              if (search != aliasMap.end()) {
+                alias = search->second;
+                int alias_occ = env.vo.occurrences(alias);
+                unsigned long alias_lhs_occ = count(alias);
+                // neg is only allowed to occur:
+                // - once in the "implication"
+                // - once in the aliasing
+                // - on a lhs of other expressions
+                // alias is only allowed to occur on a lhs of an expression.
+                compress = (lhs_occurences + alias_lhs_occ > 0)
+                           && (occurrences == lhs_occurences + 2)
+                           && (alias_occ == alias_lhs_occ);
+              } else {
+                // neg is only allowed to occur:
+                // - once in the "implication"
+                // - on a lhs of other expressions
+                compress = (lhs_occurences > 0) && (occurrences == lhs_occurences + 1);
+              }
+
+              auto pos = follow_id_to_decl((*bs)[1 - i])->dyn_cast<VarDecl>();
+              if (pos && compress) {
+                rhs = neg;
+                lhs = pos;
+                assert(lhs != rhs);
+              }
             }
           }
         }
       }
 
       if(lhs && rhs) {
-        assert(count(rhs) > 0);
+        assert(count(rhs) + count(alias) > 0);
 
         auto range = find(rhs);
         for (auto match = range.first; match != range.second;) {
           LEReplaceVar(match->second, rhs, lhs);
           match = items.erase(match);
         }
+        if (alias) {
+          VarDecl* i2f_lhs;
+
+          auto search = aliasMap.find(lhs);
+          if (search != aliasMap.end()) {
+            i2f_lhs = search->second;
+          } else {
+            // Create new int2float
+            Call* i2f = new Call(lhs->loc().introduce(), constants().ids.int2float, {lhs->id()});
+            i2f->decl(env.model->matchFn(env, i2f, false));
+            assert(i2f->decl());
+            i2f->type(Type::varfloat());
+            auto domain = new SetLit(lhs->loc().introduce(), eval_floatset(env, lhs->ti()->domain()));
+            auto i2f_ti = new TypeInst(lhs->loc().introduce(), Type::varfloat(), domain);
+            i2f_lhs = new VarDecl(lhs->loc().introduce(), i2f_ti, env.genId(),i2f);
+            i2f_lhs->type(Type::varfloat());
+            addItem(new VarDeclI(lhs->loc().introduce(), i2f_lhs));
+            std::cerr << *i2f_lhs->id() << std::endl;
+          }
+
+          auto arange = find(alias);
+          for (auto match = arange.first; match != arange.second;) {
+            LEReplaceVar(match->second, alias, i2f_lhs);
+            match = items.erase(match);
+          }
+        }
+
         if(!rhs->ann().contains(constants().ann.output_var)) {
           removeItem(it->second);
           it = items.erase(it);
@@ -350,7 +423,7 @@ namespace MiniZinc {
     topDown(cd, ci->e());
 
     auto call = ci->e()->cast<Call>();
-    assert(call->id() == constants().ids.int_.lin_le);
+    assert(call->id() == constants().ids.int_.lin_le || call->id() == constants().ids.float_.lin_le);
     auto bs = follow_id(call->arg(1))->cast<ArrayLit>();
 
     for (int j = 0; j < bs->size(); ++j) {
