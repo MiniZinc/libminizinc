@@ -1371,11 +1371,14 @@ namespace MiniZinc {
     
     ann.output_var = new Id(Location(), ASTString("output_var"), NULL);
     ann.output_var->type(Type::ann());
+    ann.output_only = new Id(Location(), ASTString("output_only"), NULL);
+    ann.output_only->type(Type::ann());
     ann.output_array = ASTString("output_array");
     ann.add_to_output = new Id(Location(), ASTString("add_to_output"), NULL);
     ann.add_to_output->type(Type::ann());
     ann.mzn_check_var = new Id(Location(), ASTString("mzn_check_var"), NULL);
     ann.mzn_check_var->type(Type::ann());
+    ann.mzn_check_enum_var = ASTString("mzn_check_enum_var");
     ann.is_defined_var = new Id(Location(), ASTString("is_defined_var"), NULL);
     ann.is_defined_var->type(Type::ann());
     ann.defines_var = ASTString("defines_var");
@@ -1396,7 +1399,9 @@ namespace MiniZinc {
     ann.mzn_break_here = new Id(Location(), ASTString("mzn_break_here"), NULL);
     ann.mzn_break_here->type(Type::ann());
 #endif
-
+    ann.rhs_from_assignment = new Id(Location(), ASTString("mzn_rhs_from_assignment"), NULL);
+    ann.rhs_from_assignment->type(Type::ann());
+    
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
     
@@ -1584,8 +1589,10 @@ namespace MiniZinc {
     v.push_back(ctx.neg);
     v.push_back(ctx.mix);
     v.push_back(ann.output_var);
+    v.push_back(ann.output_only);
     v.push_back(ann.add_to_output);
     v.push_back(ann.mzn_check_var);
+    v.push_back(new StringLit(Location(),ann.mzn_check_enum_var));
     v.push_back(new StringLit(Location(),ann.output_array));
     v.push_back(ann.is_defined_var);
     v.push_back(new StringLit(Location(),ann.defines_var));
@@ -1600,6 +1607,7 @@ namespace MiniZinc {
 #ifndef NDEBUG
     v.push_back(ann.mzn_break_here);
 #endif
+    v.push_back(ann.rhs_from_assignment);
 
     v.push_back(new StringLit(Location(),cli.cmdlineData_short_str));
     v.push_back(new StringLit(Location(),cli.cmdlineData_str));
@@ -1753,6 +1761,19 @@ namespace MiniZinc {
     }
     for (unsigned int i=static_cast<unsigned int>(toRemove.size()); i--;)
       _s->remove(toRemove[i]);
+  }
+  
+  Call*
+  Annotation::getCall(const ASTString& id) {
+    if (_s==NULL)
+      return NULL;
+    for (ExpressionSetIter it=_s->begin(); it != _s->end(); ++it) {
+      if (Call* c = (*it)->dyn_cast<Call>()) {
+        if (c->id() == id)
+          return c;
+      }
+    }
+    return NULL;
   }
   
   bool

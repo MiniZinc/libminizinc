@@ -27,6 +27,7 @@ namespace MiniZinc {
     bool allSols = false;
     std::string parallel;
     int fzn_time_limit_ms = 0;
+    int solver_time_limit_ms = 0;
     bool fzn_sigint = false;
 
     bool fzn_needs_paths = false;
@@ -39,6 +40,7 @@ namespace MiniZinc {
     bool supports_s = false;
     bool supports_r = false;
     bool supports_v = false;
+    bool supports_t = false;
     std::vector<MZNFZNSolverFlag> fzn_solver_flags;
   };
 

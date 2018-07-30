@@ -28,6 +28,9 @@
 #include <fstream>
 #include <iomanip>
 #include <cstdlib>
+#include <ctime>
+#include <chrono>
+#include <ratio>
 
 using namespace std;
 
@@ -213,6 +216,7 @@ void MznSolver::printHelp(const std::string& selectedSolver)
     << "  --help, -h\n    Print this help message." << std::endl
     << "  --version\n    Print version information." << std::endl
     << "  --solvers\n    Print list of available solvers." << std::endl
+    << "  --time-limit <ms>\n    Stop after <ms> milliseconds (includes compilation and solving)." << std::endl
     << "  --solver <solver id>, --solver <solver config file>.msc\n    Select solver to use." << std::endl
     << "  --help <solver id>\n    Print help for a particular solver." << std::endl
     << "  -v, -l, --verbose\n    Print progress/log statements. Note that some solvers may log to stdout." << std::endl
@@ -281,6 +285,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   } else if (executable_name=="solns2out") {
     s2out._opt.flag_standaloneSolns2Out=true;
   }
+  bool compileSolutionChecker = false;
   int i=1, j=1;
   int argc = static_cast<int>(argv.size());
   if (argc < 2)
@@ -322,7 +327,14 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       cout << "}\n";
       return OPTION_FINISH;
     }
-    if (argv[i]=="--solver") {
+    if (argv[i]=="--time-limit") {
+      ++i;
+      if (i==argc) {
+        log << "Argument required for --time-limit" << endl;
+        return OPTION_ERROR;
+      }
+      flag_overall_time_limit = atoi(argv[i].c_str());
+    } else if (argv[i]=="--solver") {
       ++i;
       if (i==argc) {
         log << "Argument required for --solver" << endl;
@@ -349,13 +361,16 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       if ((argv[i]=="--fzn-cmd" || argv[i]=="--flatzinc-cmd") && solver.empty()) {
         solver = "org.minizinc.mzn-fzn";
       }
+      if (argv[i]=="--compile-solution-checker") {
+        compileSolutionChecker = true;
+      }
       argv[j++] = argv[i];
     }
   }
   argv.resize(j);
   argc = j;
 
-  if (mzn2fzn_exe && solver.empty()) {
+  if ( (mzn2fzn_exe || compileSolutionChecker) && solver.empty()) {
     solver = "org.minizinc.mzn-fzn";
   }
   
@@ -555,15 +570,15 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   
 }
 
-void MznSolver::flatten(const std::string& modelString)
+void MznSolver::flatten(const std::string& modelString, const std::string& modelName)
 {
   flt.set_flag_verbose(flag_compiler_verbose);
   flt.set_flag_statistics(flag_compiler_statistics);
-  clock_t tm01 = clock();
-  flt.flatten(modelString);
+  Timer tm01;
+  flt.flatten(modelString, modelName);
   /// The following message tells mzn-test.py that flattening succeeded.
   if (flag_compiler_verbose)
-    log << "  Flattening done, " << timeDiff(clock(), tm01) << std::endl;
+    log << "  Flattening done, " << tm01.stoptime() << std::endl;
 }
 
 SolverInstance::Status MznSolver::solve()
@@ -575,26 +590,28 @@ SolverInstance::Status MznSolver::solve()
   SolverInstance::Status status = getSI()->solve();
   GCLock lock;
   if (status==SolverInstance::SAT || status==SolverInstance::OPT) {
-    getSI()->printSolution();             // What if it's already printed?  TODO
     if ( !getSI()->getSolns2Out()->fStatusPrinted )
       getSI()->getSolns2Out()->evalStatus( status );
   }
   else {
     if ( !getSI()->getSolns2Out()->fStatusPrinted )
       getSI()->getSolns2Out()->evalStatus( status );
-    if (get_flag_statistics())    // it's summary in fact
-      printStatistics();
   }
+  if (si_opt->printStatistics)
+    printStatistics();
   return status;
 }
 
 void MznSolver::printStatistics()
 { // from flattener too?   TODO
   if (si)
-    getSI()->printStatisticsLine(1);
+    getSI()->printStatistics();
 }
 
-SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, const std::string& model, const std::string& exeName) {
+SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, const std::string& model,
+                                      const std::string& exeName, const std::string& modelName) {
+  using namespace std::chrono;
+  steady_clock::time_point startTime = steady_clock::now();
   std::vector<std::string> args = {exeName};
   for (auto a : args0)
     args.push_back(a);
@@ -632,8 +649,26 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, con
     return SolverInstance::NONE;
   }
   
-  flatten(model);
-  
+  flatten(model,modelName);
+
+  if (!ifMzn2Fzn() && flag_overall_time_limit != 0) {
+    steady_clock::time_point afterFlattening = steady_clock::now();
+    milliseconds passed = duration_cast<milliseconds>(afterFlattening-startTime);
+    milliseconds time_limit(flag_overall_time_limit);
+    if (passed > time_limit) {
+      s2out.evalStatus( getFltStatus() );
+      return SolverInstance::UNKNOWN;
+    }
+    int time_left = (time_limit-passed).count();
+    std::vector<std::string> timeoutArgs(2);
+    timeoutArgs[0] = "--solver-time-limit";
+    std::ostringstream oss;
+    oss << time_left;
+    timeoutArgs[1] = oss.str();
+    int i=0;
+    sf->processOption(si_opt, i, timeoutArgs);
+  }
+
   if (SolverInstance::UNKNOWN == getFltStatus())
   {
     if ( !ifMzn2Fzn() ) {          // only then

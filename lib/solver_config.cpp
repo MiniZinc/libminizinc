@@ -59,6 +59,25 @@ namespace MiniZinc {
       }
       throw ConfigException("invalid configuration item (right hand side must be a list of strings)");
     }
+    std::vector<std::pair<std::string,std::string> > getStringPairList(AssignI* ai) {
+      if (ArrayLit* al = ai->e()->dyn_cast<ArrayLit>()) {
+        std::vector<std::pair<std::string,std::string> > ret;
+        if (al->dims()!=2 || al->min(1)!=1 || al->max(1)!=2) {
+          throw ConfigException("invalid configuration item (right hand side must be a 2d array of strings)");
+        }
+        for (unsigned int i=0; i<al->size(); i+=2) {
+          StringLit* sl1 = (*al)[i]->dyn_cast<StringLit>();
+          StringLit* sl2 = (*al)[i+1]->dyn_cast<StringLit>();
+          if (sl1 && sl2) {
+            ret.push_back(std::make_pair(sl1->v().str(),sl2->v().str()));
+          } else {
+            throw ConfigException("invalid configuration item (right hand side must be a 2d array of strings)");
+          }
+        }
+        return ret;
+      }
+      throw ConfigException("invalid configuration item (right hand side must be a 2d array of strings)");
+    }
     std::vector<std::vector<std::string> > getDefaultOptionList(AssignI* ai) {
       if (ArrayLit* al = ai->e()->dyn_cast<ArrayLit>()) {
         std::vector<std::vector<std::string> > ret;
@@ -366,14 +385,10 @@ namespace MiniZinc {
                 } else if (ai->id()=="mzn_lib_dir") {
                   _mznlibDir = getString(ai);
                 } else if (ai->id()=="tagDefaults") {
-                  std::vector<std::string> tagDefs = getStringList(ai);
-                  for (string td: tagDefs) {
-                    size_t sep = td.find(':');
-                    if (sep==string::npos) {
-                      throw ConfigException("invalid configuration item: tag default without colon");
-                    }
-                    std::string tag = td.substr(0,sep);
-                    std::string solver_id = td.substr(sep+1);
+                  std::vector<std::pair<std::string,std::string> > tagDefs = getStringPairList(ai);
+                  for (auto& td: tagDefs) {
+                    std::string tag = td.first;
+                    std::string solver_id = td.second;
                     _tagDefault[tag] = solver_id;
                   }
                 } else if (ai->id()=="solverDefaults") {

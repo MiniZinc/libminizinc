@@ -111,7 +111,7 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
   << "  -a\n    print intermediate solutions (use for optimization problems only TODO)" << std::endl
   << "  -p <N>\n    use N threads, default: 1." << std::endl
 //   << "  --nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-  << "  --timeout <N>\n    stop search after N seconds wall time" << std::endl
+  << "  --solver-time-limit <N>\n    stop search after N milliseconds wall time" << std::endl
   << "  -n <N>, --num-solutions <N>\n"
      "    stop search after N solutions" << std::endl
   << "  --workmem <N>, --nodefilestart <N>\n"
@@ -146,7 +146,7 @@ bool MIP_gurobi_wrapper::Options::processOption(int& i, std::vector<std::string>
   } else if ( cop.get( "--mipfocus --mipFocus --MIPFocus --MIPfocus", &nMIPFocus ) ) {
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
   } else if ( cop.get( "-p", &nThreads ) ) {
-  } else if ( cop.get( "--timeout", &nTimeout ) ) {
+  } else if ( cop.get( "--solver-time-limit", &nTimeout ) ) {
   } else if ( cop.get( "-n --num-solutions", &nSolLimit ) ) {
   } else if ( cop.get( "--workmem --nodefilestart", &nWorkMemLimit ) ) {
   } else if ( cop.get( "--readParam", &sReadParams ) ) {
@@ -499,21 +499,18 @@ solcallback(GRBmodel *model,
       cerr << msg << flush;
     }
   } else if ( GRB_CB_MIPSOL==where ) {
-      /* MIP solution callback */
-      gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_NODCNT, &nodecnt);
-      info->pOutput->nNodes = static_cast<int>(nodecnt);
-      gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &objVal);
-      gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOLCNT, &solcnt);
+    /* MIP solution callback */
+    gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_NODCNT, &nodecnt);
+    info->pOutput->nNodes = static_cast<int>(nodecnt);
+    gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &objVal);
+    gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOLCNT, &solcnt);
 
-      if ( solcnt ) {
-        
-        if ( fabs(info->pOutput->objVal - objVal) > 1e-12*(1.0 + fabs(objVal)) ) {
-          newincumbent = 1;
-          info->pOutput->objVal = objVal;
-          info->pOutput->status = MIP_wrapper::SAT;
-          info->pOutput->statusName = "feasible from a callback";
-        }
-      }
+    if ( solcnt == 0 || fabs(info->pOutput->objVal - objVal) > 1e-12*(1.0 + fabs(objVal)) ) {
+      newincumbent = 1;
+      info->pOutput->objVal = objVal;
+      info->pOutput->status = MIP_wrapper::SAT;
+      info->pOutput->statusName = "feasible from a callback";
+    }
     if ( newincumbent ) {
         assert(info->pOutput->x);
         gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOL, (void*)info->pOutput->x);
@@ -664,7 +661,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    }
 
     if (options->nTimeout>0) {
-     error = dll_GRBsetdblparam(dll_GRBgetenv(model), GRB_DBL_PAR_TIMELIMIT, options->nTimeout);
+     error = dll_GRBsetdblparam(dll_GRBgetenv(model), GRB_DBL_PAR_TIMELIMIT, static_cast<double>(options->nTimeout)/1000.0);
      wrap_assert(!error, "Failed to set GRB_PARAM_TimeLimit.", false);
     }
 
@@ -701,6 +698,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    output.nCols = static_cast<int>(colObj.size());
    x.resize(output.nCols);
    output.x = &x[0];
+   SolCallbackFn solcbfn = cbui.solcbfn;
    if (true) {                 // Need for logging
       cbui.fVerb = fVerbose;
       if ( !options->flag_all_solutions )
@@ -767,6 +765,9 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
       output.x = &x[0];
       error = dll_GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, cur_numcols, (double*)output.x);
       wrap_assert(!error, "Failed to get variable values.");
+      if ( !options->flag_all_solutions && solcbfn) {
+        solcbfn(output, cbui.ppp);
+      }
    }
    output.bestBound = 1e308;
    error = dll_GRBgetdblattr(model, GRB_DBL_ATTR_OBJBOUNDC, &output.bestBound);

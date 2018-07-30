@@ -495,6 +495,8 @@ namespace MiniZinc {
                         break;
                       }
                     }
+                  } else if (vd->ann().contains(constants().ann.rhs_from_assignment)) {
+                    process_var = true;
                   }
                 } else {
                   process_var = true;
@@ -581,7 +583,7 @@ namespace MiniZinc {
             process_var = true;
           } else {
             if (!had_add_to_output) {
-              process_var = vd->type().isvar() && vd->e()==NULL;
+              process_var = vd->type().isvar() && (vd->e()==NULL || vd->ann().contains(constants().ann.rhs_from_assignment));
             }
           }
         }
@@ -696,13 +698,15 @@ namespace MiniZinc {
     class OV1 : public ItemVisitor {
     public:
       EnvI& env;
-      OV1(EnvI& env0) : env(env0) {}
+      CollectFunctions& _cf;
+      OV1(EnvI& env0, CollectFunctions& cf) : env(env0), _cf(cf) {}
       void vVarDeclI(VarDeclI* vdi) {
         if (vdi->e()->ann().contains(constants().ann.mzn_check_var)) {
-          (void) copy(env,env.cmap,vdi->e())->cast<VarDecl>();
+          VarDecl* output_vd = copy(env,env.cmap,vdi->e())->cast<VarDecl>();
+          topDown(_cf, output_vd);
         }
       }
-    } _ov1(e);
+    } _ov1(e, _cf);
     iterItems(_ov1, e.model);
     
     // Copying the output item and the functions it depends on has created copies
@@ -728,9 +732,14 @@ namespace MiniZinc {
           vdi_copy->e()->ti()->domain(NULL);
           vdi_copy->e()->flat(vdi->e()->flat());
           bool isCheckVar = vdi_copy->e()->ann().contains(constants().ann.mzn_check_var);
+          Call* checkVarEnum = vdi_copy->e()->ann().getCall(constants().ann.mzn_check_enum_var);
           vdi_copy->e()->ann().clear();
-          if (isCheckVar)
+          if (isCheckVar) {
             vdi_copy->e()->ann().add(constants().ann.mzn_check_var);
+          }
+          if (checkVarEnum) {
+            vdi_copy->e()->ann().add(checkVarEnum);
+          }
           vdi_copy->e()->introduced(false);
           IdMap<KeepAlive>::iterator it;
           if (!vdi->e()->type().ispar()) {
@@ -983,6 +992,11 @@ namespace MiniZinc {
                 }
               }
               vd->flat(NULL);
+              // Remove enum type
+              Type vdt = vd->type();
+              vdt.enumId(0);
+              vd->type(vdt);
+              vd->ti()->type(vdt);
             }
             e.output_vo.add_idx(item->cast<VarDeclI>(), i);
             CollectOccurrencesE ce(e.output_vo,item);

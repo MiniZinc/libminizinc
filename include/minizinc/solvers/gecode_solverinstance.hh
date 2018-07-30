@@ -218,7 +218,7 @@ namespace MiniZinc {
     int pre_passes = 0;
     bool statistics = false;
     bool all_solutions = false;
-    int n_solutions = 1;
+    int n_solutions = -1;
     int nodes = 0;
     int fails = 0;
     int time = 0;
@@ -234,8 +234,8 @@ namespace MiniZinc {
     bool _run_shave;
     unsigned int _pre_passes;
     bool _all_solutions;
-    unsigned int _n_max_solutions;
-    unsigned int _n_found_solutions;
+    int _n_max_solutions;
+    int _n_found_solutions;
     bool _allow_unbounded_vars;
     Model* _flat;
   public:

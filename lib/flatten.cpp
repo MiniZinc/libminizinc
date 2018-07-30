@@ -145,14 +145,17 @@ namespace MiniZinc {
     }
   }
 
-  Expression* definesVarAnn(Id* id) {
-    std::vector<Expression*> args(1);
-    args[0] = id;
-    Call* c = new Call(Location().introduce(),constants().ann.defines_var,args);
-    c->type(Type::ann());
-    return c;
+  void makeDefinedVar(VarDecl* vd, Call* c) {
+    if (!vd->ann().contains(constants().ann.is_defined_var)) {
+      std::vector<Expression*> args(1);
+      args[0] = vd->id();
+      Call* dv = new Call(Location().introduce(),constants().ann.defines_var,args);
+      dv->type(Type::ann());
+      vd->addAnnotation(constants().ann.is_defined_var);
+      c->addAnnotation(dv);
+    }
   }
-
+  
   bool isDefinesVarAnn(Expression* e) {
     return e->isa<Call>() && e->cast<Call>()->id()==constants().ann.defines_var;
   }
@@ -470,10 +473,12 @@ namespace MiniZinc {
 
 #define MZN_FILL_REIFY_MAP(T,ID) reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.T.ID,constants().ids.T ## reif.ID));
 
-  EnvI::EnvI(Model* model0) :
+  EnvI::EnvI(Model* model0, std::ostream& outstream0, std::ostream& errstream0) :
     model(model0),
     orig_model(NULL),
     output(new Model),
+    outstream(outstream0),
+    errstream(errstream0),
     current_pass_no(0),
     final_pass_no(1),
     maxPathDepth(0),
@@ -872,8 +877,7 @@ namespace MiniZinc {
   FlatteningError::FlatteningError(EnvI& env, const Location& loc, const std::string& msg)
   : LocationException(env,loc,msg) {}
   
-  Env::Env(void) : e(new EnvI(NULL)) {}
-  Env::Env(Model* m) : e(new EnvI(m)) {}
+  Env::Env(Model* m, std::ostream& outstream, std::ostream& errstream) : e(new EnvI(m,outstream,errstream)) {}
   Env::~Env(void) {
     delete e;
   }
@@ -2025,8 +2029,7 @@ namespace MiniZinc {
                                     +nc->id().str());
               }
               nc->type(nc->decl()->rtype(env,args,false));
-              nc->addAnnotation(definesVarAnn(vd->id()));
-              vd->addAnnotation(constants().ann.is_defined_var);
+              makeDefinedVar(vd, nc);
               flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
               return vd->id();
             }
@@ -2287,10 +2290,44 @@ namespace MiniZinc {
             decl->loc().filename().endsWith("/flatzinc_builtins.mzn"));
   }
   
-  Call* same_call(Expression* e, const ASTString& id) {
+  KeepAlive same_call(EnvI& env, Expression* e, const ASTString& id) {
     Expression* ce = follow_id(e);
-    if (ce && ce->isa<Call>() && ce->cast<Call>()->id() == id)
-      return ce->cast<Call>();
+    Call* c = Expression::dyn_cast<Call>(ce);
+    if (c) {
+      if (c->id() == id) {
+        return ce->cast<Call>();
+      } else if (c->id() == constants().ids.int2float) {
+        Expression* i2f = follow_id(c->arg(0));
+        Call* i2fc = Expression::dyn_cast<Call>(i2f);
+        if (i2fc && i2fc->id() == id && id==constants().ids.lin_exp) {
+          GCLock lock;
+          ArrayLit* coeffs = eval_array_lit(env, i2fc->arg(0));
+          std::vector<Expression*> ncoeff_v(coeffs->size());
+          for (unsigned int i=0; i<coeffs->size(); i++) {
+            ncoeff_v[i] = FloatLit::a(eval_int(env, (*coeffs)[i]));
+          }
+          ArrayLit* ncoeff = new ArrayLit(coeffs->loc().introduce(), ncoeff_v);
+          ncoeff->type(Type::parfloat(1));
+          ArrayLit* vars = eval_array_lit(env, i2fc->arg(1));
+          std::vector<Expression*> n_vars_v(vars->size());
+          for (unsigned int i=0; i<vars->size(); i++) {
+            Call* f2i = new Call((*vars)[i]->loc().introduce(), constants().ids.int2float, {(*vars)[i]});
+            f2i->decl(env.model->matchFn(env, f2i, false));
+            assert(f2i->decl());
+            f2i->type(Type::varfloat());
+            n_vars_v[i] = f2i;
+          }
+          ArrayLit* nvars = new ArrayLit(vars->loc().introduce(), n_vars_v);
+          nvars->type(Type::varfloat(1));
+          FloatVal c = eval_int(env, i2fc->arg(2));
+          Call* nlinexp = new Call(i2fc->loc().introduce(), constants().ids.lin_exp, {ncoeff, nvars, FloatLit::a(c)});
+          nlinexp->decl(env.model->matchFn(env, nlinexp, false));
+          assert(nlinexp->decl());
+          nlinexp->type(Type::varfloat());
+          return nlinexp;
+        }
+      }
+    }
     return NULL;
   }
   
@@ -3176,9 +3213,12 @@ namespace MiniZinc {
     std::vector<Val> coeffv;
     std::vector<KeepAlive> alv;
     for (unsigned int i=0; i<al->size(); i++) {
-      if (Call* sc = same_call((*al)[i],cid)) {
+      if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al)[i],cid)())) {
         if (VarDecl* alvi_decl = follow_id_to_decl((*al)[i])->dyn_cast<VarDecl>()) {
           if (alvi_decl->ti()->domain()) {
+            // Test if the variable has tighter declared bounds than what can be inferred
+            // from its RHS. If yes, keep the variable (don't aggregate), because the tighter
+            // bounds are actually a constraint
             typename LinearTraits<Lit>::Domain sc_dom = LinearTraits<Lit>::eval_domain(env,alvi_decl->ti()->domain());
             typename LinearTraits<Lit>::Bounds sc_bounds = LinearTraits<Lit>::compute_bounds(env,sc);
             if (LinearTraits<Lit>::domain_tighter(sc_dom, sc_bounds)) {
@@ -5098,8 +5138,7 @@ namespace MiniZinc {
                   assignTo = le1->cast<Id>();
                 }
                 if (assignTo) {
-                  cc->addAnnotation(definesVarAnn(assignTo));
-                  assignTo->decl()->flat()->addAnnotation(constants().ann.is_defined_var);
+                  makeDefinedVar(assignTo->decl()->flat(), cc);
                 }
               }
 
@@ -5440,7 +5479,7 @@ namespace MiniZinc {
               ArrayLit* al = follow_id(args_ee[i].r())->cast<ArrayLit>();
               std::vector<KeepAlive> alv;
               for (unsigned int i=0; i<al->size(); i++) {
-                if (Call* sc = same_call((*al)[i],cid)) {
+                if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al)[i],cid)())) {
                   if (sc->id()==constants().ids.clause) {
                     alv.push_back(sc);
                   } else {
@@ -5456,12 +5495,12 @@ namespace MiniZinc {
               }
 
               for (unsigned int j=0; j<alv.size(); j++) {
-                Call* neg_call = same_call(alv[j](),constants().ids.bool_eq);
+                Call* neg_call = Expression::dyn_cast<Call>(same_call(env,alv[j](),constants().ids.bool_eq)());
                 if (neg_call &&
                     Expression::equal(neg_call->arg(1),constants().lit_false)) {
                   local_neg.push_back(neg_call->arg(0));
                 } else {
-                  Call* clause = same_call(alv[j](),constants().ids.clause);
+                  Call* clause = Expression::dyn_cast<Call>(same_call(env,alv[j](),constants().ids.clause)());
                   if (clause) {
                     ArrayLit* clause_pos = eval_array_lit(env,clause->arg(0));
                     for (unsigned int k=0; k<clause_pos->size(); k++) {
@@ -5515,7 +5554,7 @@ namespace MiniZinc {
             ArrayLit* al = follow_id(args_ee[0].r())->cast<ArrayLit>();
             std::vector<KeepAlive> alv;
             for (unsigned int i=0; i<al->size(); i++) {
-              if (Call* sc = same_call((*al)[i],cid)) {
+              if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al)[i],cid)())) {
                 GCLock lock;
                 ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
                 for (unsigned int j=0; j<sc_c->size(); j++) {
@@ -6079,6 +6118,8 @@ namespace MiniZinc {
             return !(i->isa<ConstraintI>()  && env.failed());
         }
         void vVarDeclI(VarDeclI* v) {
+          if (v->e()->ann().contains(constants().ann.output_only))
+            return;
           if (v->e()->type().ispar() && !v->e()->type().isopt() && v->e()->type().dim() > 0 && v->e()->ti()->domain()==NULL
               && (v->e()->type().bt()==Type::BT_INT || v->e()->type().bt()==Type::BT_FLOAT)) {
             // Compute bounds for array literals
@@ -6519,8 +6560,7 @@ namespace MiniZinc {
 //                    removedItems.push_back(vdi);
 //                  }
                   if (nc != c) {
-                    vd->addAnnotation(constants().ann.is_defined_var);
-                    nc->addAnnotation(definesVarAnn(vd->id()));
+                    makeDefinedVar(vd, nc);
                   }
                   StringLit* vsl = getLongestMznPathAnnotation(env, vdi->e());
                   StringLit* csl = getLongestMznPathAnnotation(env, c);
@@ -6707,6 +6747,7 @@ namespace MiniZinc {
     e->ann().remove(constants().ann.promise_total);
     e->ann().remove(constants().ann.maybe_partial);
     e->ann().remove(constants().ann.add_to_output);
+    e->ann().remove(constants().ann.rhs_from_assignment);
     // Remove defines_var(x) annotation where x is par
     std::vector<Expression*> removeAnns;
     for (ExpressionSetIter anns = e->ann().begin(); anns != e->ann().end(); ++anns) {
@@ -6730,7 +6771,7 @@ namespace MiniZinc {
       vd->introduced(false);
       vd->ti()->domain(NULL);
     }
-
+    
     // In FlatZinc the RHS of a VarDecl must be a literal, Id or empty
     // Example:
     //   var 1..5: x = function(y)
@@ -6811,8 +6852,6 @@ namespace MiniZinc {
             const Call* c = vd->e()->cast<Call>();
             GCLock lock;
             vd->e(NULL);
-            if (!is_fixed)
-              vd->addAnnotation(constants().ann.is_defined_var);
             ASTString cid;
             std::vector<Expression*> args(c->n_args());
             for (unsigned int i=args.size(); i--;)
@@ -6846,8 +6885,9 @@ namespace MiniZinc {
               throw FlatteningError(env,c->loc(),"'"+c->id().str()+"' is used in a reified context but no reified version is available");
             }
             nc->decl(decl);
-            if (!is_fixed)
-              nc->addAnnotation(definesVarAnn(vd->id()));
+            if (!is_fixed) {
+              makeDefinedVar(vd, nc);
+            }
             nc->ann().merge(c->ann());
             clearInternalAnnotations(nc);
             added_constraints.push_back(nc);
@@ -6876,7 +6916,6 @@ namespace MiniZinc {
         if (const Call* cc = vd->e()->dyn_cast<Call>()) {
           // Remove RHS from vd
           vd->e(NULL);
-          vd->addAnnotation(constants().ann.is_defined_var);
           
           std::vector<Expression*> args(cc->n_args());
           ASTString cid;
@@ -6929,7 +6968,7 @@ namespace MiniZinc {
           }
           Call* nc = new Call(cc->loc().introduce(),cid,args);
           nc->type(cc->type());
-          nc->addAnnotation(definesVarAnn(vd->id()));
+          makeDefinedVar(vd, nc);
           nc->ann().merge(cc->ann());
           
           clearInternalAnnotations(nc);
@@ -7000,6 +7039,9 @@ namespace MiniZinc {
     vd->ann().remove(constants().ctx.root);
     vd->ann().remove(constants().ann.promise_total);
     vd->ann().remove(constants().ann.add_to_output);
+    vd->ann().remove(constants().ann.mzn_check_var);
+    vd->ann().remove(constants().ann.rhs_from_assignment);
+    vd->ann().removeCall(constants().ann.mzn_check_enum_var);
 
     return added_constraints;
   }

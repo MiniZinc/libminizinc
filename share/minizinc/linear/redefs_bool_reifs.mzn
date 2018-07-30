@@ -69,6 +69,12 @@ predicate bool_eq_reif(var bool: p, var bool: q, var bool: r) =
 %%    trace(" bool_eq_reif: \(p), \(q), \(r) \n") /\
     if is_fixed(r) then   % frequent case
         if fix(r) = true then p = q else bool_not(p,q) endif
+    elseif is_fixed(q) then
+        if fix(q) = true then p = r
+        else bool_not(p,r) endif
+    elseif is_fixed(p) then
+        if fix(p) = true then q = r
+        else bool_not(q,r) endif
     elseif false then
 %      int_lin_eq_reif__IND( [1, -1], [p, q], 0, r) /\
       true

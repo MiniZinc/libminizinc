@@ -40,7 +40,7 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
       int nFreeSearch=1;
       int nThreads=1;
       std::string sExportModel;
-      double nTimeout=-1;
+      int nTimeout=-1;
       long int nSolLimit = -1;
       double nWorkMemLimit=-1;
       std::string sReadParams;

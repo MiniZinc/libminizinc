@@ -164,6 +164,7 @@ namespace MiniZinc {
       isFzn = (filename.compare(filename.length()-4,4,".fzn")==0);
       isFzn |= (filename.compare(filename.length()-4,4,".ozn")==0);
       isFzn |= (filename.compare(filename.length()-4,4,".szn")==0);
+      isFzn |= (filename.compare(filename.length()-4,4,".mzc")==0);
     }
     ParserState pp(filename,modelText, err, files, seenModels, model, false, isFzn, parseDocComments);
     mzn_yylex_init(&pp.yyscanner);
@@ -222,6 +223,7 @@ namespace MiniZinc {
       bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
       isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
       isFzn |= (fullname.compare(fullname.length()-4,4,".szn")==0);
+      isFzn |= (fullname.compare(fullname.length()-4,4,".mzc")==0);
       ParserState pp(fullname,s, err, files, seenModels, m, false, isFzn, parseDocComments);
       mzn_yylex_init(&pp.yyscanner);
       mzn_yyset_extra(&pp, pp.yyscanner);
@@ -354,6 +356,7 @@ namespace MiniZinc {
       bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
       isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
       isFzn |= (fullname.compare(fullname.length()-4,4,".szn")==0);
+      isFzn |= (fullname.compare(fullname.length()-4,4,".mzc")==0);
       ParserState pp(fullname,s, err, files, seenModels, m, false, isFzn, parseDocComments);
       mzn_yylex_init(&pp.yyscanner);
       mzn_yyset_extra(&pp, pp.yyscanner);

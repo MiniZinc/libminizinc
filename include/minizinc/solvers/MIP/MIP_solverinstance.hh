@@ -93,7 +93,7 @@ namespace MiniZinc {
 
 //       void assignSolutionToOutput();   // needs to be public for the callback?
       virtual void printStatistics(bool fLegend=0);
-      virtual void printStatisticsLine(bool fLegend=0) { printStatistics(fLegend); }
+      virtual void printStatisticsLine(bool fLegend=0);
 
     public:
       /// creates a var for a literal, if necessary

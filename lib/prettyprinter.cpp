@@ -181,9 +181,10 @@ namespace MiniZinc {
   
   class PlainPrinter {
   public:
+    EnvI* env;
     std::ostream& os;
     bool _flatZinc;
-    PlainPrinter(std::ostream& os0, bool flatZinc) : os(os0), _flatZinc(flatZinc) {}
+    PlainPrinter(std::ostream& os0, bool flatZinc, EnvI* env0) : env(env0), os(os0), _flatZinc(flatZinc) {}
 
     void p(const Type& type, const Expression* e) {
       switch (type.ti()) {
@@ -573,10 +574,13 @@ namespace MiniZinc {
         {
           const VarDecl& vd = *e->cast<VarDecl>();
           p(vd.ti());
+          if (!vd.ti()->isEnum()) {
+            os << ":";
+          }
           if (vd.id()->idn() != -1) {
-            os << ": X_INTRODUCED_" << vd.id()->idn() << "_";
+            os << " X_INTRODUCED_" << vd.id()->idn() << "_";
           } else if (vd.id()->v().size() != 0)
-            os << ": " << vd.id()->v();
+            os << " " << vd.id()->v();
           if (vd.introduced()) {
             os << " ::var_is_introduced ";
           }
@@ -608,16 +612,22 @@ namespace MiniZinc {
       case Expression::E_TI:
         {
           const TypeInst& ti = *e->cast<TypeInst>();
-          if (ti.isarray()) {
-            os << "array [";
-            for (unsigned int i = 0; i < ti.ranges().size(); i++) {
-              p(Type::parint(), ti.ranges()[i]);
-              if (i < ti.ranges().size()-1)
-                os << ",";
+          if (ti.isEnum()) {
+            os << "enum";
+          } else if (env) {
+            os << ti.type().toString(*env);
+          } else {
+            if (ti.isarray()) {
+              os << "array [";
+              for (unsigned int i = 0; i < ti.ranges().size(); i++) {
+                p(Type::parint(), ti.ranges()[i]);
+                if (i < ti.ranges().size()-1)
+                  os << ",";
+              }
+              os << "] of ";
             }
-            os << "] of ";
+            p(ti.type(),ti.domain());
           }
-          p(ti.type(),ti.domain());
         }
       }
       if (!e->isa<VarDecl>()) {
@@ -1941,8 +1951,8 @@ namespace MiniZinc {
     return true;
   }
 
-  Printer::Printer(std::ostream& os, int width, bool flatZinc)
-  : ism(NULL), printer(NULL), _os(os), _width(width), _flatZinc(flatZinc) {}
+  Printer::Printer(std::ostream& os, int width, bool flatZinc, EnvI* env0)
+  : env(env0), ism(NULL), printer(NULL), _os(os), _width(width), _flatZinc(flatZinc) {}
   void
   Printer::init(void) {
     if (ism==NULL) {
@@ -1995,7 +2005,7 @@ namespace MiniZinc {
   void
   Printer::print(const Expression* e) {
     if (_width==0) {
-      PlainPrinter p(_os,_flatZinc); p.p(e);
+      PlainPrinter p(_os,_flatZinc,env); p.p(e);
     } else {
       init();
       Document* d = expressionToDocument(e);
@@ -2006,7 +2016,7 @@ namespace MiniZinc {
   void
   Printer::print(const Item* i) {
     if (_width==0) {
-      PlainPrinter p(_os,_flatZinc); p.p(i);
+      PlainPrinter p(_os,_flatZinc,env); p.p(i);
     } else {
       init();
       p(i);
@@ -2015,7 +2025,7 @@ namespace MiniZinc {
   void
   Printer::print(const Model* m) {
     if (_width==0) {
-      PlainPrinter p(_os,_flatZinc);
+      PlainPrinter p(_os,_flatZinc,env);
       for (unsigned int i = 0; i < m->size(); i++) {
         p.p((*m)[i]);
       }

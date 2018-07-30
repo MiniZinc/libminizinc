@@ -868,7 +868,8 @@ namespace MiniZinc {
     EnvI& _env;
     Model* _model;
     std::vector<TypeError>& _typeErrors;
-    Typer(EnvI& env, Model* model, std::vector<TypeError>& typeErrors) : _env(env), _model(model), _typeErrors(typeErrors) {}
+    bool _ignoreUndefined;
+    Typer(EnvI& env, Model* model, std::vector<TypeError>& typeErrors, bool ignoreUndefined) : _env(env), _model(model), _typeErrors(typeErrors), _ignoreUndefined(ignoreUndefined) {}
     /// Check annotations when expression is finished
     void exit(Expression* e) {
       for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it)
@@ -1420,6 +1421,16 @@ namespace MiniZinc {
           uop.opToString().str()+"'. No matching operator found with type `"+uop.e()->type().toString(_env)+"'");
       }
     }
+    static std::string createEnumToStringName(Id* ident, std::string prefix) {
+      std::string name = ident->str().str();
+      if (name[0]=='\'') {
+        name = "'"+prefix+name.substr(1);
+      } else {
+        name = prefix+name;
+      }
+      return name;
+    }
+
     /// Visit call
     void vCall(Call& call) {
       std::vector<Expression*> args(call.n_args());
@@ -1445,6 +1456,55 @@ namespace MiniZinc {
           }
           cv = cv || args[i]->type().cv();
         }
+        // Replace par enums with their string versions
+        if (call.id()=="format" || call.id()=="show" || call.id()=="showDzn") {
+          if (call.arg(call.n_args()-1)->type().ispar()) {
+            int enumId = call.arg(call.n_args()-1)->type().enumId();
+            if (enumId != 0 && call.arg(call.n_args()-1)->type().dim() != 0) {
+              const std::vector<unsigned int>& enumIds = _env.getArrayEnum(enumId);
+              enumId = enumIds[enumIds.size()-1];
+            }
+            if (enumId > 0) {
+              VarDecl* enumDecl = _env.getEnum(enumId)->e();
+              if (enumDecl->e()) {
+                Id* ti_id = _env.getEnum(enumId)->e()->id();
+                GCLock lock;
+                std::vector<Expression*> args(2);
+                args[0] = call.arg(call.n_args()-1);
+                if (args[0]->type().dim() > 1) {
+                  std::vector<Expression*> a1dargs(1);
+                  a1dargs[0] = args[0];
+                  Call* array1d = new Call(Location().introduce(),ASTString("array1d"),a1dargs);
+                  Type array1dt = args[0]->type();
+                  array1dt.dim(1);
+                  array1d->type(array1dt);
+                  args[0] = array1d;
+                }
+                args[1] = constants().boollit(call.id()=="showDzn");
+                ASTString enumName(createEnumToStringName(ti_id, "_toString_"));
+                call.id(enumName);
+                call.args(args);
+                if (call.id()=="showDzn") {
+                  call.id(constants().ids.show);
+                }
+                fi = _model->matchFn(_env,&call,false);
+                if (fi==NULL) {
+                  std::ostringstream oss;
+                  oss << "no function or predicate with this signature found: `";
+                  oss << call.id() << "(";
+                  for (unsigned int i=0; i<call.n_args(); i++) {
+                    oss << call.arg(i)->type().toString(_env);
+                    if (i<call.n_args()-1) oss << ",";
+                  }
+                  oss << ")'";
+                  throw TypeError(_env,call.loc(), oss.str());
+                }
+              }
+            }
+          }
+        }
+
+        // Set type and decl
         Type ty = fi->rtype(_env,args,true);
         ty.cv(cv);
         call.type(ty);
@@ -1740,7 +1800,7 @@ namespace MiniZinc {
           }
         } else {
           vd->e(ai->e());
-          
+          vd->ann().add(constants().ann.rhs_from_assignment);
           if (vd->ti()->isEnum()) {
             GCLock lock;
             ASTString name(createEnumToStringName(vd->id(),"_enum_to_string_"));
@@ -1824,7 +1884,7 @@ namespace MiniZinc {
     }
     
     {
-      Typer<false> ty(env.envi(), m, typeErrors);
+      Typer<false> ty(env.envi(), m, typeErrors, ignoreUndefinedParameters);
       BottomUpIterator<Typer<false> > bu_ty(ty);
       for (unsigned int i=0; i<ts.decls.size(); i++) {
         ts.decls[i]->payload(0);
@@ -1841,7 +1901,7 @@ namespace MiniZinc {
     m->fixFnMap();
     
     {
-      Typer<true> ty(env.envi(), m, typeErrors);
+      Typer<true> ty(env.envi(), m, typeErrors, ignoreUndefinedParameters);
       BottomUpIterator<Typer<true> > bu_ty(ty);
       
       class TSV2 : public ItemVisitor {
@@ -1864,6 +1924,9 @@ namespace MiniZinc {
               vdi->ti()->domain()==NULL) {
             _typeErrors.push_back(TypeError(env,vdi->loc(),
                                             "set element type for `"+vdi->id()->str().str()+"' is not finite"));
+          }
+          if (i->e()->ann().contains(constants().ann.output_only) && vdi->e()->type().isvar()) {
+            _typeErrors.push_back(TypeError(env,vdi->loc(),"variables annotated with ::output_only must be par"));
           }
         }
         void vAssignI(AssignI* i) {
@@ -1984,12 +2047,31 @@ namespace MiniZinc {
                                          + "' must be defined (did you forget to specify a data file?)"));
         }
       }
+      if (ts.decls[i]->ti()->isEnum()) {
+        ts.decls[i]->ti()->setIsEnum(false);
+        Type vdt = ts.decls[i]->ti()->type();
+        vdt.enumId(0);
+        ts.decls[i]->ti()->type(vdt);
+      }
     }
 
     for (auto vd_k : env.envi().checkVars) {
       try {
         VarDecl* vd = ts.get(env.envi(), vd_k()->cast<VarDecl>()->id()->str(), vd_k()->cast<VarDecl>()->loc());
         vd->ann().add(constants().ann.mzn_check_var);
+        if (vd->type().enumId() != 0) {
+          GCLock lock;
+          int enumId = vd->type().enumId();
+          if (vd->type().dim() > 0) {
+            const std::vector<unsigned int>& arrayEnumIds = env.envi().getArrayEnum(vd->type().enumId());
+            enumId = arrayEnumIds[arrayEnumIds.size()-1];
+          }
+          std::vector<Expression*> args({env.envi().getEnum(enumId)->e()->id()});
+          Call* checkEnum = new Call(Location().introduce(), constants().ann.mzn_check_enum_var, args);
+          checkEnum->type(Type::ann());
+          checkEnum->decl(env.envi().model->matchFn(env.envi(), checkEnum, false));
+          vd->ann().add(checkEnum);
+        }
         Type vdktype = vd_k()->type();
         vdktype.ti(Type::TI_VAR);
         if (!vd_k()->type().isSubtypeOf(vd->type(), false)) {
@@ -2008,7 +2090,7 @@ namespace MiniZinc {
   
   void typecheck(Env& env, Model* m, AssignI* ai) {
     std::vector<TypeError> typeErrors;
-    Typer<true> ty(env.envi(), m, typeErrors);
+    Typer<true> ty(env.envi(), m, typeErrors, false);
     BottomUpIterator<Typer<true> > bu_ty(ty);
     bu_ty.run(ai->e());
     if (!typeErrors.empty()) {

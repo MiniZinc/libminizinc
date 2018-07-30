@@ -34,7 +34,7 @@ class MIP_scip_wrapper : public MIP_wrapper {
     public:
       int nThreads=1;
       std::string sExportModel;
-      double nTimeout=-1;
+      int nTimeout=-1;
       double nWorkMemLimit=-1;
       std::string sReadParams;
       std::string sWriteParams;

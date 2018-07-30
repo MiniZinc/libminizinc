@@ -22,6 +22,9 @@
 #include <fstream>
 #include <iomanip>
 #include <cstdlib>
+#include <ctime>
+#include <chrono>
+#include <ratio>
 
 #include <minizinc/solver.hh>
 
@@ -29,8 +32,7 @@ using namespace std;
 using namespace MiniZinc;
 
 int main(int argc, const char** argv) {
-
-  clock_t starttime = std::clock(), endTime;
+  Timer starttime;
   bool fSuccess = false;
 
   try {
@@ -62,10 +64,9 @@ int main(int argc, const char** argv) {
       std::cerr << "  UNKNOWN EXCEPTION." << std::endl;
     }
     
-    endTime = clock();
     if (slv.get_flag_verbose()) {
       std::cerr << "   Done (";
-      cerr << "overall time " << timeDiff(endTime, starttime) << ")." << std::endl;
+      cerr << "overall time " << starttime.stoptime() << ")." << std::endl;
     }
     return !fSuccess;
   } catch (const Exception& e) {

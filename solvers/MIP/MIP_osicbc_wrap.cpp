@@ -79,7 +79,7 @@ void MIP_osicbc_wrapper::Options::printHelp(ostream& os) {
      "    (not from FeasPump. Can be slow.)" << std::endl
    << "  -p <N>\n    use N threads, default: 1. CBC should be configured with --enable-cbc-parallel" << std::endl
 //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-  << "  --timeout <N>\n    stop search after N seconds" << std::endl
+  << "  --solver-time-limit <N>\n    stop search after N milliseconds" << std::endl
 //   << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
 //   << "--readParam <file>  read OSICBC parameters from file" << std::endl
 //   << "--writeParam <file> write OSICBC parameters to file" << std::endl
@@ -103,7 +103,7 @@ bool MIP_osicbc_wrapper::Options::processOption(int& i, std::vector<std::string>
 //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
   } else if ( cop.get( "-p", &nThreads ) ) {
-  } else if ( cop.get( "--timeout", &nTimeout ) ) {
+  } else if ( cop.get( "--solver-time-limit", &nTimeout ) ) {
   } else if ( cop.get( "--workmem", &nWorkMemLimit ) ) {
   } else if ( cop.get( "--readParam", &sReadParams ) ) {
   } else if ( cop.get( "--writeParam", &sWriteParams ) ) {
@@ -284,7 +284,7 @@ extern "C" {
 
 struct EventUserInfo {
   MIP_wrapper::CBUserInfo* pCbui=0;
-  CglPreProcess* pPP=0; 
+  CglPreProcess* pPP=0;
 };
 
 extern CglPreProcess * cbcPreProcessPointer;
@@ -331,9 +331,9 @@ MyEventHandler3::MyEventHandler3 (EventUserInfo& u_)
 // Copy constructor 
 //-------------------------------------------------------------------
 MyEventHandler3::MyEventHandler3 (const MyEventHandler3 & rhs) 
-: CbcEventHandler(rhs)
+: CbcEventHandler(rhs), ui(rhs.ui)
 {  
-  ui = rhs.ui;
+  
 }
 
 // Constructor with pointer to model
@@ -379,7 +379,7 @@ MyEventHandler3::event(CbcEvent whichEvent)
     statusOfCbc=1;
   }
   if ( (cancelAsap&2)!=0 ) {
-//     printf("Cbc got cancel\n");
+    //     printf("Cbc got cancel\n");
     // switch off Clp cancel
     cancelAsap &= 2;
     return stop;
@@ -394,101 +394,95 @@ MyEventHandler3::event(CbcEvent whichEvent)
       statusOfCbc=2;
     }
     if (whichEvent==solution||whichEvent==heuristicSolution) {
-#ifdef STOP_EARLY
-      return stop; // say finished
-#else
-#ifdef WANT_SOLUTION
-  // John Forrest  27.2.16:
+      // John Forrest  27.2.16:
       // check not duplicate
       if (model_->getObjValue()<bestSolutionValue_) {
-      bestSolutionValue_ = model_->getObjValue();
-      // If preprocessing was done solution will be to processed model
-      //       int numberColumns = model_->getNumCols();
-      const double * bestSolution = model_->bestSolution();
-      assert (bestSolution);
-      //       printf("value of solution is %g\n",model_->getObjValue());
-      
-      // Trying to obtain solution for the original model:
-      assert( model_ && model_->solver() );
-      // double objOffset=0;
-      // model_->solver()->getDblParam(OsiObjOffset, objOffset);
-      double objVal = (model_->getObjValue() );  //- objOffset);   John Forrest suggested to remove, 17.11.17
-      double bestBnd = (model_->getBestPossibleObjValue() );  //- objOffset);
-      if ( 0!=cbcPreProcessPointer ) {
-        if ( OsiSolverInterface* cbcPreOrig = cbcPreProcessPointer->originalModel() ) {
-          objVal *= cbcPreOrig->getObjSense();
-          bestBnd *= cbcPreOrig->getObjSense();
-        }
-      } else {
-        objVal *= model_->getObjSense();
-        bestBnd *= model_->getObjSense();
-      }
-      OsiSolverInterface* origModel=0;
-      if ( 0!=cbcPreProcessPointer && 0!=model_->continuousSolver() ) {
-    #if 1
-        OsiSolverInterface * solver = (model_->continuousSolver()->clone());
-    //       ? model_->continuousSolver()->clone()
-    //       : model_->continuousSolver()->clone();
-        int numberColumns = solver->getNumCols();
-        for (int i=0;i<numberColumns;i++) {
-          if (solver->isInteger(i)) {
-            solver->setColLower(i,bestSolution[i]);
-            solver->setColUpper(i,bestSolution[i]);
+        bestSolutionValue_ = model_->getObjValue();
+        // If preprocessing was done solution will be to processed model
+        //       int numberColumns = model_->getNumCols();
+        const double * bestSolution = model_->bestSolution();
+        assert (bestSolution);
+        //       printf("value of solution is %g\n",model_->getObjValue());
+        
+        // Trying to obtain solution for the original model:
+        assert( model_ && model_->solver() );
+        // double objOffset=0;
+        // model_->solver()->getDblParam(OsiObjOffset, objOffset);
+        double objVal = (model_->getObjValue() );  //- objOffset);   John Forrest suggested to remove, 17.11.17
+        double bestBnd = (model_->getBestPossibleObjValue() );  //- objOffset);
+        if ( 0!=cbcPreProcessPointer ) {
+          if ( OsiSolverInterface* cbcPreOrig = cbcPreProcessPointer->originalModel() ) {
+            objVal *= cbcPreOrig->getObjSense();
+            bestBnd *= cbcPreOrig->getObjSense();
           }
+        } else {
+          objVal *= model_->getObjSense();
+          bestBnd *= model_->getObjSense();
         }
-        solver->resolve();
-        cbcPreProcessPointer->postProcess( *solver, false );
-        delete solver;
-    #else
-        cbcPreProcessPointer->postProcess( *model_->solver(), false );
-    #endif
-        origModel = cbcPreProcessPointer->originalModel();
-        ui.pCbui->pOutput->x = origModel->getColSolution();
-      } else {
-        origModel = model_->solver();
-        ui.pCbui->pOutput->x = bestSolution;
-      }
-      if ( ui.pCbui->fVerb )
-        cerr 
+        OsiSolverInterface* origModel=0;
+        if ( 0!=cbcPreProcessPointer && 0!=model_->continuousSolver() ) {
+          OsiSolverInterface * solver = (model_->continuousSolver()->clone());
+          //       ? model_->continuousSolver()->clone()
+          //       : model_->continuousSolver()->clone();
+          int numberColumns = solver->getNumCols();
+          for (int i=0;i<numberColumns;i++) {
+            if (solver->isInteger(i)) {
+              solver->setColLower(i,bestSolution[i]);
+              solver->setColUpper(i,bestSolution[i]);
+            }
+          }
+          solver->resolve();
+          cbcPreProcessPointer->postProcess( *solver, false );
+          delete solver;
+          origModel = cbcPreProcessPointer->originalModel();
+          ui.pCbui->pOutput->x = origModel->getColSolution();
+        } else {
+          origModel = model_->solver();
+          ui.pCbui->pOutput->x = bestSolution;
+        }
+        if ( ui.pCbui->fVerb )
+          cerr
           << " % OBJ VAL RAW: " << model_->getObjValue()
           << "  OBJ VAL ORIG(?): " << objVal
           << " % BND RAW: " << model_->getBestPossibleObjValue()
           << "  BND ORIG(?): " << bestBnd
-  //         << "  &prepro: " << cbcPreProcessPointer
-  //         << "  &model_._solver(): " << model_->solver()
+          //         << "  &prepro: " << cbcPreProcessPointer
+          //         << "  &model_._solver(): " << model_->solver()
           << "  orig NCols: " << ui.pCbui->pOutput->nCols
           << "  prepro NCols:  " << model_->getNumCols()
           ;
-      assert( origModel->getNumCols() == ui.pCbui->pOutput->nCols );
-      if ( ui.pCbui->fVerb ) {
-        if ( ui.pCbui->pOutput->nObjVarIndex>=0 )
-          cerr
+        assert( origModel->getNumCols() == ui.pCbui->pOutput->nCols );
+        if ( ui.pCbui->fVerb ) {
+          if ( ui.pCbui->pOutput->nObjVarIndex>=0 )
+            cerr
             << "  objVAR: " << ui.pCbui->pOutput->x[ui.pCbui->pOutput->nObjVarIndex];
-        cerr << endl;
-      }
-      ui.pCbui->pOutput->objVal = objVal;
-//         origModel->getObjValue();
-      ui.pCbui->pOutput->status = MIP_wrapper::SAT;
-      ui.pCbui->pOutput->statusName = "feasible from a callback";
-      ui.pCbui->pOutput->bestBound = bestBnd;
-      ui.pCbui->pOutput->dWallTime = std::chrono::duration<double>(
-        std::chrono::steady_clock::now() - ui.pCbui->pOutput->dWallTime0).count();
-      ui.pCbui->pOutput->dCPUTime = model_->getCurrentSeconds();
-      ui.pCbui->pOutput->nNodes = model_->getNodeCount();
-      ui.pCbui->pOutput->nOpenNodes = -1; // model_->getNodeCount2();
-
-      /// Call the user function:
-      if (ui.pCbui->solcbfn)
+          cerr << endl;
+        }
+        ui.pCbui->pOutput->objVal = objVal;
+        //         origModel->getObjValue();
+        ui.pCbui->pOutput->status = MIP_wrapper::SAT;
+        ui.pCbui->pOutput->statusName = "feasible from a callback";
+        ui.pCbui->pOutput->bestBound = bestBnd;
+        ui.pCbui->pOutput->dWallTime = std::chrono::duration<double>(
+                                                                     std::chrono::steady_clock::now() - ui.pCbui->pOutput->dWallTime0).count();
+        ui.pCbui->pOutput->dCPUTime = model_->getCurrentSeconds();
+        ui.pCbui->pOutput->nNodes = model_->getNodeCount();
+        ui.pCbui->pOutput->nOpenNodes = -1; // model_->getNodeCount2();
+        
+        /// Call the user function:
+        if (ui.pCbui->solcbfn) {
           (*(ui.pCbui->solcbfn))(*(ui.pCbui->pOutput), ui.pCbui->ppp);
-#endif
-      return noAction; // carry on
-#endif
+          ui.pCbui->printed = true;
+        }
+        return noAction; // carry on
+      } else {
+        return noAction; // carry on
+      }
     } else {
-      return noAction; // carry on
-    }
+      return noAction;
     }
   } else {
-      return noAction; // carry on
+    return noAction; // carry on
   }
 }
 
@@ -767,9 +761,9 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //       osi.setHintParam(OsiDoReducePrint, true, OsiHintTry);
     }
 
-    if(options->nTimeout > 0.0) {
+    if(options->nTimeout != 0) {
 //       osi.setMaximumSeconds(nTimeout);
-      model.setMaximumSeconds(options->nTimeout);
+      model.setMaximumSeconds(static_cast<double>(options->nTimeout)/1000.0);
     }
 
    /// TODO
@@ -784,7 +778,6 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //    x.resize(output.nCols);
 //    output.x = &x[0];
 
-#ifdef WANT_SOLUTION
    if (options->flag_all_solutions && cbui.solcbfn) {
      // Event handler. Should be after CbcMain0()?
      EventUserInfo ui;
@@ -793,7 +786,6 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
      MyEventHandler3 eventHandler(&model, ui);
      model.passInEventHandler(&eventHandler);
    }
-#endif
 
    if ( 1<options->nThreads ) {
     options->cbc_cmdOptions += " -threads ";
@@ -875,12 +867,16 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
         x.assign( model.getColSolution(), model.getColSolution() + cur_numcols ); // ColSolution();
         output.x = x.data();
   //       output.x = osi.getColSolution();
+      if (cbui.solcbfn && (!options->flag_all_solutions || !cbui.printed)) {
+        cbui.solcbfn(output, cbui.ppp);
+      }
     }
     output.bestBound = model.getBestPossibleObjValue();
   //    output.bestBound = -1;
     output.nNodes = model.getNodeCount();
   //    output.nNodes = osi.getNodeCount();
     output.nOpenNodes = -1;
+    
   } catch (CoinError& err) {
     err.print(true);
   }

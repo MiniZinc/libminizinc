@@ -228,7 +228,7 @@ bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
               (*pOfs_non_canon) << '\n';
           }
           if (_opt.flag_output_time)
-            (*pOfs_non_canon) << "% time elapsed: " << stoptime(starttime) << "\n";
+            (*pOfs_non_canon) << "% time elapsed: " << starttime.stoptime() << "\n";
           if (!_opt.solution_separator.empty())
             (*pOfs_non_canon) << _opt.solution_separator << '\n';
           if ( _opt.flag_output_flush )
@@ -248,7 +248,7 @@ bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
       getOutput() << '\n';
   }
   if ( fNew && _opt.flag_output_time)
-    getOutput() << "% time elapsed: " << stoptime(starttime) << "\n";
+    getOutput() << "% time elapsed: " << starttime.stoptime() << "\n";
   if ( fNew && !_opt.flag_canonicalize && !_opt.solution_separator.empty())
     getOutput() << _opt.solution_separator << '\n';
   if ( _opt.flag_output_flush )
@@ -267,7 +267,12 @@ void Solns2Out::checkSolution(std::ostream& os) {
     for (unsigned int i=0; i<getModel()->size(); i++) {
       if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
         if (vdi->e()->ann().contains(constants().ann.mzn_check_var)) {
-          checker << vdi->e()->id()->str() << "=" << *eval_par(getEnv()->envi(),vdi->e()->e()) << ";";
+          if (Call* cev = vdi->e()->ann().getCall(constants().ann.mzn_check_enum_var)) {
+            checker << vdi->e()->id()->str() << "= to_enum(" << *cev->arg(0)->cast<Id>() << "," << *eval_par(getEnv()->envi(),vdi->e()->e()) << ");";
+          } else {
+            checker << vdi->e()->id()->str() << "=" << *eval_par(getEnv()->envi(),vdi->e()->e()) << ";";
+          }
+          
         }
       }
     }
@@ -278,7 +283,7 @@ void Solns2Out::checkSolution(std::ostream& os) {
   slv.s2out._opt.solution_separator = "";
   try {
     std::vector<std::string> args({"--solver","org.minizinc.gecode_presolver","-"});
-    slv.run(args, checker.str());
+    slv.run(args, checker.str(), "minizinc", "checker.mzc");
   } catch (const LocationException& e) {
     oss_err << e.loc() << ":" << std::endl;
     oss_err << e.what() << ": " << e.msg() << std::endl;

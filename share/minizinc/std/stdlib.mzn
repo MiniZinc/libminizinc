@@ -30,8 +30,17 @@ annotation maybe_partial;
 of the model. This annotation only has an effect when the model does not have an output item. */
 annotation add_to_output;
 
+/** @group annotations.general Declare that the annotated variable should be only used for output.
+  This annotation can be used to define variables that are required for solution checkers, or
+  that are necessary for the output item. The annotated variable must be par.
+ */
+annotation output_only;
+
 /** @group annotations.general Declare that the annotated variable is required for checking solutions. */
 annotation mzn_check_var;
+
+/** @group annotations.general Declare that the annotated variable is required for checking solutions and has an enum type. */
+annotation mzn_check_enum_var(set of int);
 
 /** @group annotations.general Declare a name for the annotated expression. */
 annotation mzn_expression_name(string);
@@ -78,6 +87,9 @@ annotation expression_name(string: s);
 /** @group annotations.general Used to attach a name \a s to a constraint and its decomposition. String
   annotations on constraint keywords are re-written as constraint_name annotations **/
 annotation constraint_name(string: s);
+
+/** @group annotations.general Used internally by the compiler **/
+annotation mzn_rhs_from_assignment;
 
 /***
  @groupdef annotations.prop Propagation strength annotations

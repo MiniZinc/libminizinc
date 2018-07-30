@@ -313,7 +313,7 @@ Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
   Env* pre_env = &e;
   size_t npasses = passes.size();
   pre_env->envi().final_pass_no = static_cast<unsigned int>(npasses);
-  Timer lasttime;
+  Timer starttime;
   bool verbose = false;
   for(unsigned int i=0; i<passes.size(); i++) {
     pre_env->envi().current_pass_no = i;
@@ -328,20 +328,25 @@ Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
     pre_env = out_env;
 
     if(verbose)
-      log << "Finish pass " << i << ": " << stoptime(lasttime) << "\n";
+      log << "Finish pass " << i << ": " << starttime.stoptime() << "\n";
   }
 
   return pre_env;
 }
 
-void Flattener::flatten(const std::string& modelString)
+void Flattener::flatten(const std::string& modelString, const std::string& modelName)
 {
-  starttime01 = std::clock();
-  lasttime = starttime01;
+  starttime.reset();
   
   if (flag_verbose)
     printVersion(log);
 
+  if (filenames.empty() && !flag_solution_check_model.empty()) {
+    // Compile solution check model as if it were a normal model
+    filenames.push_back(flag_solution_check_model);
+    flag_solution_check_model = "";
+  }
+  
   if ( filenames.empty() && !flag_stdinInput && modelString.empty() ) {
     throw Error( "Error: no model file given." );
   }
@@ -404,46 +409,64 @@ void Flattener::flatten(const std::string& modelString)
     std::stringstream errstream;
 
     Model* m;
-    pEnv.reset(new Env());
+    pEnv.reset(new Env(NULL,os,log));
     Env* env = getEnv();
 
     if (!flag_compile_solution_check_model && !flag_solution_check_model.empty()) {
       // Extract variables to check from solution check model
       if (flag_verbose)
         log << "Parsing solution checker model " << flag_solution_check_model << " ..." << endl;
+      bool isCompressedChecker = flag_solution_check_model.size() >= 4 && flag_solution_check_model.substr(flag_solution_check_model.size()-4)==".mzc";
       std::vector<std::string> smm_model({flag_solution_check_model});
       Model* smm = parse(*env, smm_model, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
       if (flag_verbose)
-        log << " done parsing (" << stoptime(lasttime) << ")" << std::endl;
+        log << " done parsing (" << starttime.stoptime() << ")" << std::endl;
       if (smm) {
-        Env smm_env(smm);
-        GCLock lock;
-        vector<TypeError> typeErrors;
-        MiniZinc::typecheck(smm_env, smm, typeErrors, true, false);
-        if (typeErrors.size() > 0) {
-          for (unsigned int i=0; i<typeErrors.size(); i++) {
-            if (flag_verbose)
-              log << std::endl;
-            log << typeErrors[i].loc() << ":" << std::endl;
-            log << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
-          }
-          throw Error("multiple type errors");
-        }
-        for (unsigned int i=0; i<smm->size(); i++) {
-          if (VarDeclI* vdi = (*smm)[i]->dyn_cast<VarDeclI>()) {
-            if (vdi->e()->e()==NULL)
-              env->envi().checkVars.push_back(vdi->e());
-          }
-        }
-        smm->compact();
         std::ostringstream smm_oss;
         Printer p(smm_oss,0,false);
         p.print(smm);
-        std::string smm_compressed = FileUtils::encodeBase64(FileUtils::deflateString(smm_oss.str()));
-        TypeInst* ti = new TypeInst(Location().introduce(),Type::parstring(),NULL);
-        VarDecl* checkString = new VarDecl(Location().introduce(),ti,ASTString("_mzn_solution_checker"),new StringLit(Location().introduce(),smm_compressed));
-        VarDeclI* checkStringI = new VarDeclI(Location().introduce(), checkString);
-        env->output()->addItem(checkStringI);
+        Env smm_env(smm);
+        GCLock lock;
+        vector<TypeError> typeErrors;
+        try {
+          MiniZinc::typecheck(smm_env, smm, typeErrors, true, false, true);
+          if (typeErrors.size() > 0) {
+            if (!isCompressedChecker) {
+              for (unsigned int i=0; i<typeErrors.size(); i++) {
+                if (flag_verbose)
+                  log << std::endl;
+                log << typeErrors[i].loc() << ":" << std::endl;
+                log << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
+              }
+            }
+            throw Error("multiple type errors");
+          }
+          for (unsigned int i=0; i<smm->size(); i++) {
+            if (VarDeclI* vdi = (*smm)[i]->dyn_cast<VarDeclI>()) {
+              if (vdi->e()->e()==NULL)
+                env->envi().checkVars.push_back(vdi->e());
+            }
+          }
+          smm->compact();
+          std::string smm_compressed = FileUtils::encodeBase64(FileUtils::deflateString(smm_oss.str()));
+          TypeInst* ti = new TypeInst(Location().introduce(),Type::parstring(),NULL);
+          VarDecl* checkString = new VarDecl(Location().introduce(),ti,ASTString("_mzn_solution_checker"),new StringLit(Location().introduce(),smm_compressed));
+          VarDeclI* checkStringI = new VarDeclI(Location().introduce(), checkString);
+          env->output()->addItem(checkStringI);
+        } catch (TypeError& e) {
+          if (isCompressedChecker) {
+            log << "Warning: type error in solution checker model\n";
+          } else {
+            throw;
+          }
+        }
+      } else {
+        if (isCompressedChecker) {
+          log << "Warning: syntax error in solution checker model\n";
+        } else {
+          log << errstream.str();
+          throw Error("parse error");
+        }
       }
     }
 
@@ -467,7 +490,7 @@ void Flattener::flatten(const std::string& modelString)
       if (flag_verbose)
         log << "Parsing model string ..." << endl;
       std::vector<SyntaxError> se;
-      m = parseFromString(modelString, "stdin", includePaths, flag_ignoreStdlib, false, flag_verbose, errstream, se);
+      m = parseFromString(modelString, modelName, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream, se);
     } else if (flag_stdinInput) {
       if (flag_verbose)
         log << "Parsing standard input ..." << endl;
@@ -495,10 +518,15 @@ void Flattener::flatten(const std::string& modelString)
     env->model(m);
     if (flag_typecheck) {
       if (flag_verbose)
-        log << " done parsing (" << stoptime(lasttime) << ")" << std::endl;
+        log << " done parsing (" << starttime.stoptime() << ")" << std::endl;
 
       if (flag_instance_check_only || flag_model_check_only ||
           flag_model_interface_only || flag_model_types_only ) {
+        std::ostringstream compiledSolutionCheckModel;
+        if (flag_compile_solution_check_model) {
+          Printer p(compiledSolutionCheckModel,0);
+          p.print(m);
+        }
         GCLock lock;
         vector<TypeError> typeErrors;
         MiniZinc::typecheck(*env, m, typeErrors, flag_model_types_only || flag_model_interface_only || flag_model_check_only, flag_allow_multi_assign);
@@ -518,10 +546,7 @@ void Flattener::flatten(const std::string& modelString)
           MiniZinc::output_model_variable_types(*env, m, os);
         }
         if (flag_compile_solution_check_model) {
-          std::ostringstream oss;
-          Printer p(oss,0);
-          p.print(m);
-          std::string mzc(FileUtils::deflateString(oss.str()));
+          std::string mzc(FileUtils::deflateString(compiledSolutionCheckModel.str()));
           mzc = FileUtils::encodeBase64(mzc);
           std::string mzc_filename = filenames[0].substr(0,filenames[0].size()-4);
           if (flag_verbose)
@@ -601,7 +626,7 @@ void Flattener::flatten(const std::string& modelString)
           }
           env = out_env;
           if (flag_verbose)
-            log << " done (" << stoptime(lasttime) << "),"
+            log << " done (" << starttime.stoptime() << "),"
                 << " max stack depth " << env->maxCallStack() << std::endl;
         }
 
@@ -649,7 +674,7 @@ void Flattener::flatten(const std::string& modelString)
           PathFilePrinter pfp(os, env->envi());
           pfp.print(env->flat());
           if (flag_verbose)
-            log << " done (" << stoptime(lasttime) << ")" << std::endl;
+            log << " done (" << starttime.stoptime() << ")" << std::endl;
         } else if (flag_output_paths != "") {
           if (flag_verbose)
             log << "Printing Paths to '"
@@ -662,7 +687,7 @@ void Flattener::flatten(const std::string& modelString)
           checkIOStatus (ofs.good(), " I/O error: cannot write fzn output file. ");
           ofs.close();
           if (flag_verbose)
-            log << " done (" << stoptime(lasttime) << ")" << std::endl;
+            log << " done (" << starttime.stoptime() << ")" << std::endl;
         }
 
         if ( (fopts.collect_mzn_paths || flag_two_pass) && !flag_keep_mzn_paths) {
@@ -687,7 +712,7 @@ void Flattener::flatten(const std::string& modelString)
           Printer p(os,0);
           p.print(env->flat());
           if (flag_verbose)
-            log << " done (" << stoptime(lasttime) << ")" << std::endl;
+            log << " done (" << starttime.stoptime() << ")" << std::endl;
         } else if(flag_output_fzn != "") {
           if (flag_verbose)
             log << "Printing FlatZinc to '"
@@ -700,7 +725,7 @@ void Flattener::flatten(const std::string& modelString)
           checkIOStatus (ofs.good(), " I/O error: cannot write fzn output file. ");
           ofs.close();
           if (flag_verbose)
-            log << " done (" << stoptime(lasttime) << ")" << std::endl;
+            log << " done (" << starttime.stoptime() << ")" << std::endl;
         }
         if (!flag_no_output_ozn) {
           if (flag_output_ozn_stdout) {
@@ -709,7 +734,7 @@ void Flattener::flatten(const std::string& modelString)
             Printer p(os,0);
             p.print(env->output());
             if (flag_verbose)
-              log << " done (" << stoptime(lasttime) << ")" << std::endl;
+              log << " done (" << starttime.stoptime() << ")" << std::endl;
           } else if (flag_output_ozn != "") {
             if (flag_verbose)
               log << "Printing .ozn to '"
@@ -722,7 +747,7 @@ void Flattener::flatten(const std::string& modelString)
             checkIOStatus (ofs.good(), " I/O error: cannot write ozn output file. ");
             ofs.close();
             if (flag_verbose)
-              log << " done (" << stoptime(lasttime) << ")" << std::endl;
+              log << " done (" << starttime.stoptime() << ")" << std::endl;
           }
         }
       }

@@ -620,6 +620,7 @@ if(HAS_OSICBC)
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp
     solvers/MIP/MIP_osicbc_solverfactory.cpp include/minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_osicbc_wrap.hh
+    include/minizinc/solvers/MIP/MIP_solverinstance.hpp
   )
 
   target_include_directories(minizinc_osicbc PRIVATE ${CBC_INCLUDEDIRS})

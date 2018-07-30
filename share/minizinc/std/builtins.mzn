@@ -670,19 +670,19 @@ function var bool: 'superset'(var set of int: x, var set of int: y);
 /** @group builtins.set Return the union of sets \a x and \a y */
 function     set of $T:  'union'(    set of $T: x,      set of $T: y);
 /** @group builtins.set Return the union of sets \a x and \a y */
-function var set of int: 'union'(var set of int: x, var set of int: y);
+function var set of $$T: 'union'(var set of $$T: x, var set of $$T: y);
 /** @group builtins.set Return the intersection of sets \a x and \a y */
 function     set of $T:  'intersect'(    set of $T: x,      set of $T: y);
 /** @group builtins.set Return the intersection of sets \a x and \a y */
-function var set of int: 'intersect'(var set of int: x, var set of int: y);
+function var set of $$T: 'intersect'(var set of $$T: x, var set of $$T: y);
 /** @group builtins.set Return the set difference of sets \a x &minus; \a y */
 function     set of $T:  'diff'(    set of $T: x,      set of $T: y);
 /** @group builtins.set Return the set difference of sets \a x &minus; \a y */
-function var set of int: 'diff'(var set of int: x, var set of int: y);
+function var set of $$T: 'diff'(var set of $$T: x, var set of $$T: y);
 /** @group builtins.set Return the symmetric set difference of sets \a x and \a y */
 function     set of $T:  'symdiff'(    set of $T: x,      set of $T: y);
 /** @group builtins.set Return the symmetric set difference of sets \a x and \a y */
-function var set of int: 'symdiff'(var set of int: x, var set of int: y);
+function var set of $$T: 'symdiff'(var set of $$T: x, var set of $$T: y);
 
 /** @group builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
 function set of $$E: '..'($$E: a,$$E: b);
@@ -1215,9 +1215,7 @@ function var float: bool2float(var bool: b) = int2float(bool2int(b));
 /** @group builtins.coercion Return integer \a x coerced to a float  */
 function float: int2float(int: x);
 /** @group builtins.coercion Return integer \a x coerced to a float  */
-function var float: int2float(var int: x) ::promise_total =
-  let { var int2float(lb(x))..int2float(ub(x)): y;
-        constraint int2float(x,y); } in y;
+function var float: int2float(var int: x) ::promise_total;
 
 function set of int: bool2int(set of bool: b) =
   if b={false,true} then {0,1}
@@ -1563,8 +1561,16 @@ function $$E: to_enum(set of $$E: X, int: x);
 /** @group builtins.enum Convert \a x to enum type \a X */
 function var $$E: to_enum(set of $$E: X, var int: x) =
   let { constraint x in X } in x;
+  
+/** @group builtins.enum Convert \a x to enum type \a X */
+function array[$U] of $$E: to_enum(set of $$E: X, array[$U] of int: x) =
+  let { array[int] of int: xx = array1d(x) } in
+  arrayXd(x, [ to_enum(X,xx[i]) | i in index_set(xx)]);
 
-
+/** @group builtins.enum Convert \a x to enum type \a X */
+function array[$U] of var $$E: to_enum(set of $$E: X, array[$U] of var int: x) =
+  let { array[int] of var int: xx = array1d(x) } in
+  arrayXd(x, [ to_enum(X,xx[i]) | i in index_set(xx)]);
 
 
 %-----------------------------------------------------------------------------%
@@ -1628,7 +1634,7 @@ function var set of int: array2set(array[int] of var int: x) ::promise_total =
         } in s | i in index_set(x)]);
     } in y;
 
-function set of int: array2set(array[int] of int: x) =
+function set of $$T: array2set(array[int] of $$T: x) =
   { x[i] | i in index_set(x) };
 
 predicate array_var_int_element(var int: x, array[int] of int: y, var int: z) =
