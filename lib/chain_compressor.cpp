@@ -392,7 +392,6 @@ namespace MiniZinc {
             i2f_lhs = new VarDecl(lhs->loc().introduce(), i2f_ti, env.genId(),i2f);
             i2f_lhs->type(Type::varfloat());
             addItem(new VarDeclI(lhs->loc().introduce(), i2f_lhs));
-            std::cerr << *i2f_lhs->id() << std::endl;
           }
 
           auto arange = find(alias);
