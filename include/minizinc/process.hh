@@ -71,15 +71,24 @@ namespace MiniZinc {
     S2O* pS2Out;
     int timelimit;
     bool sigint;
+#ifndef _WIN32
+    static void handleInterrupt(int signal) {
+      if (signal==SIGINT)
+        hadInterrupt = true;
+      else
+        hadTerm = true;
+    }
+    static bool hadInterrupt;
+    static bool hadTerm;
+#endif
   public:
     Process(std::vector<std::string>& fzncmd, S2O* pso, int tl, bool si)
       : _fzncmd(fzncmd), pS2Out(pso), timelimit(tl), sigint(si) {
       assert( 0!=pS2Out );
     }
-    std::string run(void) {
+    void run(void) {
 #ifdef _WIN32
       //TODO: implement hard timelimits for windows
-      std::stringstream result;
 
       SECURITY_ATTRIBUTES saAttr;
       saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -175,7 +184,7 @@ namespace MiniZinc {
 
       // Hard timeout: GenerateConsoleCtrlEvent()
 
-      return result.str();
+      return;
     }
 #else
       int pipes[3][2];
@@ -191,7 +200,6 @@ namespace MiniZinc {
         close(pipes[1][1]);
         close(pipes[2][1]);
         close(pipes[0][1]);
-        std::stringstream result;
 
         fd_set fdset;
         FD_ZERO(&fdset);
@@ -204,6 +212,17 @@ namespace MiniZinc {
         timeout_orig.tv_usec = (timelimit % 1000) * 1000;
         struct timeval timeout = timeout_orig;
 
+        hadInterrupt = false;
+        hadTerm = false;
+        struct sigaction sa;
+        struct sigaction old_sa_int;
+        struct sigaction old_sa_term;
+        sa.sa_handler = &handleInterrupt;
+        sa.sa_flags = 0;
+        sigfillset(&sa.sa_mask);
+        sigaction(SIGINT, &sa, &old_sa_int);
+        sigaction(SIGTERM, &sa, &old_sa_term);
+        
         bool done = false;
         while (!done) {
           FD_SET(pipes[1][0], &fdset);
@@ -280,8 +299,16 @@ namespace MiniZinc {
         }
 
         close(pipes[1][0]);
-        close(pipes[2][0]);
-        return result.str();
+        close(pipes[2][0]);                  
+        sigaction(SIGINT, &old_sa_int, NULL);
+        sigaction(SIGTERM, &old_sa_term, NULL);
+        if (hadInterrupt) {
+          kill(getpid(), SIGINT);
+        }
+        if (hadTerm) {
+          kill(getpid(), SIGTERM);
+        }
+        return;
       }
       else {
         close(STDOUT_FILENO);
@@ -320,6 +347,11 @@ namespace MiniZinc {
 #endif
   };
 
+#ifndef _WIN32
+  template<class S2O> bool Process<S2O>::hadInterrupt;
+  template<class S2O> bool Process<S2O>::hadTerm;
+#endif
+                  
 }
 #endif
 

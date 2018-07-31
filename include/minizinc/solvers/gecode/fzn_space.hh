@@ -85,7 +85,7 @@ namespace MiniZinc {
     /// get the index of the Boolean variable in bv; return -1 if not exists
     int getBoolAliasIndex(Gecode::BoolVar bvar) {
       for(unsigned int i=0; i<bv.size(); i++) {        
-        if(bv[i].same(bvar)) { 
+        if(bv[i].varimp()==bvar.varimp()) { 
           // std::cout << "DEBUG: settings bool alias of variable to index " << i << std::endl;
           return i;          
         }            
