@@ -121,12 +121,12 @@ predicate int_ne(var int: x, int: y) =
 
 %% var, const. No postprocessing
 predicate int_ne__SIMPLE(var int: x, int: y) =
-  if fAuxIntEqOLD00 then
+  if true then
     let { var 0..1: p }
     in
     aux_int_lt_if_1(x, y, p) /\
     aux_int_gt_if_0(x, y, p)
-  else
+  else %TODO: Why is this not half-reified?
     1 == (x<y) + (x>y)
   endif;
 
@@ -326,12 +326,12 @@ predicate float_ne(var float: x, float: y) =
   endif;
 
 predicate float_ne__SIMPLE(var float: x, var float: y) =
-  if fAuxFloatEqOLD00 then
+  if true then
     let { var 0..1: p }
     in
     aux_float_lt_if_1(x, y, (p)) /\
     aux_float_gt_if_0(x, y, (p))
-  else
+  else %TODO: Why is this not half-reified?
     1 == (x>y) + (x<y)
   endif;
 
