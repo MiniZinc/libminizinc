@@ -1997,6 +1997,12 @@ namespace MiniZinc {
             throw TypeError(env, i->e()->loc(), "return type of function does not match body, declared type is `"
                             +i->ti()->type().toString(env)+
                             "', body type is `"+i->e()->type().toString(env)+"'");
+          if (i->e() && i->e()->type().ispar() && i->ti()->type().isvar()) {
+            // this is a par function declared as var, so change declared return type
+            Type i_t = i->ti()->type();
+            i_t.ti(Type::TI_PAR);
+            i->ti()->type(i_t);
+          }
           if (i->e())
             i->e(addCoercion(env, m, i->e(), i->ti()->type())());
         }
