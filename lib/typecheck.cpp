@@ -2072,11 +2072,13 @@ namespace MiniZinc {
             const std::vector<unsigned int>& arrayEnumIds = env.envi().getArrayEnum(vd->type().enumId());
             enumId = arrayEnumIds[arrayEnumIds.size()-1];
           }
-          std::vector<Expression*> args({env.envi().getEnum(enumId)->e()->id()});
-          Call* checkEnum = new Call(Location().introduce(), constants().ann.mzn_check_enum_var, args);
-          checkEnum->type(Type::ann());
-          checkEnum->decl(env.envi().model->matchFn(env.envi(), checkEnum, false));
-          vd->ann().add(checkEnum);
+          if (enumId > 0) {
+            std::vector<Expression*> args({env.envi().getEnum(enumId)->e()->id()});
+            Call* checkEnum = new Call(Location().introduce(), constants().ann.mzn_check_enum_var, args);
+            checkEnum->type(Type::ann());
+            checkEnum->decl(env.envi().model->matchFn(env.envi(), checkEnum, false));
+            vd->ann().add(checkEnum);
+          }
         }
         Type vdktype = vd_k()->type();
         vdktype.ti(Type::TI_VAR);
