@@ -4,30 +4,25 @@
 
 .. _sec-predicates:
 
-Predicates and Functions
+谓词和函数
 ========================
 
-Predicates in MiniZinc 
-allow us to capture complex constraints of our model
-in a succinct way.  Predicates in MiniZinc 
-are used to model with both predefined global
-constraints, and to capture and define new complex constraints by the
-modeller.
-Functions are used in MiniZinc to capture common structures of models.
-Indeed a predicate is just a function with output type :mzn:`var bool`.
+MiniZinc中的谓词允许我们用简洁的方法来表达模型中的复杂约束。
+MiniZinc中的谓词利用预先定义好的全局约束建模，同时也让建模者
+获取以及定义新的复杂约束。MiniZinc中的函数用来捕捉模型中的共同结构。
+实际上，一个谓词就是一个输出类型为 :mzn:`var bool` 的函数。
 
 .. _sec-globals:
 
-Global Constraints
+全局约束
 ------------------
 
 .. index::
   single: global constraint
 
-There are many global constraints defined in MiniZinc for use in modelling.
-The definitive list is to be found in the documentation for the release, as
-the list is slowly growing.  
-Below we discuss some of the most important global constraints.
+MiniZinc中定义了很多可以在建模中使用的全局约束。
+由于全局约束的列表一直在慢慢增加，最终确定的列表可以在发布的文档中找到。
+下面我们讨论一些最重要的全局约束。
 
 
 Alldifferent
@@ -37,22 +32,17 @@ Alldifferent
   single: alldifferent
   single: global constraint; alldifferent
 
-The :mzn:`alldifferent` constraint takes an array of variables and constrains them
-to take different values.
-A use of the :mzn:`alldifferent` has the form
+约束 :mzn:`alldifferent` 的输入为一个变量数组，它约束了这些变量取不同的值。
+ :mzn:`alldifferent` 的使用有以下格式
 
 .. code-block:: minizinc
 
   alldifferent(array[int] of var int: x)
 
-The argument is an array of integer variables.
+即，参数是一个整型变量数组。
 
-The :mzn:`alldifferent` constraint is one of the most studied and used global constraints in
-constraint programming.  It is used to define assignment subproblems, and
-efficient global propagators for :mzn:`alldifferent` exist.
-The models :download:`send-more-money.mzn <examples/send-more-money.mzn>` (:numref:`ex-smm`)
-and :download:`sudoku.mzn <examples/sudoku.mzn>` (:numref:`ex-sudoku`)
-are examples of models using :mzn:`alldifferent`.
+:mzn:`alldifferent` 是约束规划中被最多研究以及使用的全局约束之一。
+它被用来定义分配子问题，人们也给出了 :mzn:`alldifferent` 的高效全局传播器。 :download:`send-more-money.mzn <examples/send-more-money.mzn>` (:numref:`ex-smm`) 和 :download:`sudoku.mzn <examples/sudoku.mzn>` (:numref:`ex-sudoku`) 是使用 :mzn:`alldifferent` 的模型例子。
 
 Cumulative
 ~~~~~~~~~~
@@ -61,41 +51,32 @@ Cumulative
   single: cumulative
   single: global constraint; cumulative
 
-The :mzn:`cumulative` constraint is used for describing cumulative resource
-usage. 
+约束 :mzn:`cumulative` 被用来描述资源累积使用情况。
 
 .. code-block:: minizinc
 
   cumulative(array[int] of var int: s, array[int] of var int: d, 
              array[int] of var int: r, var int: b)
 
-It requires that a set of tasks given by start times :mzn:`s`, durations :mzn:`d`, 
-and resource requirements :mzn:`r`, never require more 
-than a global resource bound :mzn:`b` at any one time.
+规定对于一个起始时间为 :mzn:`s` ，持续时间为 :mzn:`d` 以及资源需求量为 :mzn:`r` 的任务集合，在任何时间对资源的需求量都不能超过一个全局资源量界限 :mzn:`b` 。
 
 .. literalinclude:: examples/moving.mzn
   :language: minizinc
   :name: ex-moving
-  :caption: Model for moving furniture using ``cumulative`` (:download:`moving.mzn <examples/moving.mzn>`).
+  :caption: 使用 ``cumulative`` 来建模搬运家具问题的模型 (:download:`moving.mzn <examples/moving.mzn>`).
 
 .. literalinclude:: examples/moving.dzn
   :language: minizinc
   :name: ex-movingd
-  :caption: Data for moving furniture using ``cumulative`` (:download:`moving.dzn <examples/moving.dzn>`).
+  :caption: 使用 ``cumulative`` 来建模搬运家具问题的数据   (:download:`moving.dzn <examples/moving.dzn>`).
 
-The model in :numref:`ex-moving` finds a schedule for moving furniture
-so that each piece of furniture has enough handlers (people) and enough trolleys
-available during the move. The available time, handlers 
-and trolleys are given, and the data gives for each object the move
-duration,
-the number of handlers and the number of trolleys required. 
-Using the data shown in :mzn:`ex-movingd`, the command
+:numref:`ex-moving` 中的模型为搬运家具规划一个行程表使得每一份家具在搬运的过程中都有足够的搬用工和足够的手推车可以使用。允许的时间，可以使用的搬运工以及手推车被给出，每个物体的搬运持续时间，需要的搬运工和手推车的数量等数据也被给出。使用 :numref:`ex-movingd` 中的数据，命令 
 
 .. code-block:: bash
 
   $ minizinc moving.mzn moving.dzn
 
-may result in the output
+可能会得到如下输出
 
 .. code-block:: none
 
@@ -105,20 +86,19 @@ may result in the output
   ==========
 
 :numref:`fig-histogram-a` and :numref:`fig-histogram-b` 
-show the requirements for handlers and
-trolleys at each time in the move for this solution.
+给出了这个解中搬运时每个时间点所需要的搬运工和手推车。
 
 .. _fig-histogram-a:
 
 .. figure:: figures/handlers.*
   
-  Histogram of usage of handlers in the move.
+  搬运时搬运工使用量直方图
 
 .. _fig-histogram-b:
 
 .. figure:: figures/trolleys.*
   
-  Histogram of usage of trolleys in the move.
+  搬运时手推车使用量直方图
 
 Table
 ~~~~~
@@ -127,40 +107,28 @@ Table
   single: table
   single: global constraint; table
 
-The :mzn:`table` constraint enforces that a tuple of variables
-takes a value from a set of tuples. Since there are no tuples in MiniZinc
-this is encoded using arrays. The usage of :mzn:`table`
-has one of the forms
+约束 :mzn:`table` 强制变量元组从一个元组集合中取值。由于MiniZinc中没有元组，我们用数组来描述它。
+根据元组是布尔型还是整型， :mzn:`table` 的使用有以下两种格式
 
 .. code-block:: minizinc
 
   table(array[int] of var bool: x, array[int, int] of bool: t)
   table(array[int] of var int:  x, array[int, int] of int:  t)
 
-depending on whether the tuples are Boolean or integer.
-The constraint enforces :math:`x \in t` where we consider :math:`x`
-and each row in :math:`t` to be a tuple,
-and :math:`t` to be a set of tuples.
+强制约束了 :math:`x \in t` ，其中 :math:`x` 和 :math:`t` 中的每一行是元组， :math:`t` 是一个元组集合。
 
 .. literalinclude:: examples/meal.mzn
   :language: minizinc
   :name: ex-meal
-  :caption: Model for meal planning using ``table`` constraint (:download:`meal.mzn <examples/meal.mzn>`).
+  :caption: 使用 ``table`` 约束来建模食物规划问题的模型 (:download:`meal.mzn <examples/meal.mzn>`).
 
 .. literalinclude:: examples/meal.dzn
   :language: minizinc
   :name: ex-meald
-  :caption: Data for meal planning defining the ``table`` used (:download:`meal.dzn <examples/meal.dzn>`).
+  :caption: 定义 ``table`` 的食物规划的数据 (:download:`meal.dzn <examples/meal.dzn>`).
 
-The model in :numref:`ex-meal` searches for balanced meals.
-Each meal item has a name (encoded as an integer), a kilojoule count,
-protein in grams, salt in milligrams, and fat in grams, as well as cost
-in cents.  The relationship between these items is encoded using
-a :mzn:`table` constraint.
-The model searches for a minimal cost meal 
-which has a minimum kilojoule count
-:mzn:`min_energy`, a minimum amount of protein :mzn:`min_protein`,
-maximum amount of salt :mzn:`max_salt` and fat :mzn:`max_fat`.
+:numref:`ex-meal` 中的模型寻找均衡的膳食。每一个食物项都有一个名字（用整数表示），卡路里数，蛋白质克数，盐毫克数，脂肪克数以及单位为分的价钱。这些个项之间的关系用一个 :mzn:`table` 约束来描述。
+模型寻找拥有最小花费，最少卡路里数 :mzn:`min_energy` ，最少蛋白质量 :mzn:`min_protein` ，最大盐分 :mzn:`max_salt` 以及脂肪 :mzn:`max_fat` 的膳食。
 
 Regular
 ~~~~~~~
@@ -169,39 +137,27 @@ Regular
   single: regular
   single: global constraint; regular
 
-
-The :mzn:`regular` constraint is used to enforce that a sequence of
-variables takes a value defined by a finite automaton.
-The usage of :mzn:`regular` has the form
+约束 :mzn:`regular` 用来约束一系列的变量取有限自动机定义的值。 :mzn:`regular` 的使用有以下方式 
 
 .. code-block:: minizinc
 
   regular(array[int] of var int: x, int: Q, int: S,
           array[int,int] of int: d, int: q0, set of int: F)
 
-It constrains that 
-the sequence of values in array :mzn:`x` (which must all be in the :index:`range`
-:mzn:`1..S`)
-is accepted by the :index:`DFA` of :mzn:`Q` states with input :mzn:`1..S`
-and transition function :mzn:`d` (which maps :mzn:`<1..Q, 1..S>` to 
-:mzn:`0..Q`) and initial state
-:mzn:`q0` (which must be in :mzn:`1..Q`) and accepting states :mzn:`F`
-(which all must be in :mzn:`1..Q`). 
-State 0 is reserved to be an always failing state. 
+它约束了 :mzn:`x` 中的一列值（它们必须是在范围 :index:`range`
+:mzn:`1..S` 内）被一个有 :mzn:`Q` 个状态，输入为 :mzn:`1..S` ，转换函数为 :mzn:`d` （ :mzn:`<1..Q, 1..S>` 映射到 :mzn:`0..Q` ），初始状态为 :mzn:`q0` （必须在 :mzn:`1..Q` 中）和接受状态为 :mzn:`F`（必须在 :mzn:`1..Q` 中）的 :index:`DFA` 接受。
+状态0被保留为总是会失败的状态。
+
 
 .. _fig-dfa:
 
 .. figure:: figures/dfa.*
   
-  A DFA determining correct rosters.
+  判定正确排班的DFA。
 
-Consider a nurse rostering problem. Each nurse is scheduled for each day as
-either: (d) on day shift, (n) on night shift, or (o) off.
-In each four day period a nurse must have at least one day off, and
-no nurse can be scheduled for 3 night shifts in a row.
-This can be encoded using the incomplete DFA shown in :numref:`fig-dfa`.
-We can encode this DFA as having start state :mzn:`1`, final states :mzn:`1..6`,
-and transition function 
+我们来看下护士排班问题。每一个护士每一天被安排为以下其中一种：(d)白班(n)夜班或者(o)休息。
+每四天，护士必须有至少一天的休息。每个护士都不可以被安排为连续三天夜班。这个问题可以使用
+:numref:`fig-dfa` 中的不完全DFA来表示。我们可以把这个DFA表示为初始状态是 :mzn:`1` ，结束状态是 :mzn:`1..6` ，转换函数为
 
 .. cssclass:: table-nonfluid table-bordered
 
@@ -221,27 +177,21 @@ and transition function
 | 6 | 0 | 0 | 1 |
 +---+---+---+---+
 
-Note that state 0 in the table indicates an error state.
-The model shown in :numref:`ex-nurse` finds a schedule for
-:mzn:`num_nurses` nurses over :mzn:`num_days` days, where we
-require :mzn:`req_day` nurses on day shift each day, and 
-:mzn:`req_night` nurses on night shift, and that each nurse
-takes at least :mzn:`min_night` night shifts.
+注意状态表中的状态0代表一个错误状态。 :numref:`ex-nurse` 中给出的模型为 :mzn:`num_nurses` 个护士 :mzn:`num_days` 天寻找一个排班，其中我们要求白天有 :mzn:`req_day` 个护士值班，晚上有 :mzn:`req_night` 个护士值班，以及每个护士至少有 :mzn:`min_night` 个夜班。
 
 .. literalinclude:: examples/nurse.mzn
   :language: minizinc
   :name: ex-nurse
-  :caption: Model for nurse rostering using ``regular`` constraint (:download:`nurse.mzn <examples/nurse.mzn>`)
+  :caption: 使用 ``regular`` 约束来建模的护士排班问题模型  (:download:`nurse.mzn <examples/nurse.mzn>`)
 
-Running the command
+运行命令
 
 .. code-block:: bash
 
   $ minizinc nurse.mzn nurse.dzn
 
-finds a 10 day schedule for 7 nurses, requiring 3 on each day shift
-and 2 on each night shift, with a minimum 2 night shifts per nurse.
-A possible output is
+找到一个给7个护士10天的排班，要求白天有3个人值班，夜晚有2个人值班，以及每个护士最少有2个夜班。
+一个可能的结果是
 
 .. code-block:: none
 
@@ -254,68 +204,41 @@ A possible output is
   n n o d d d o d d d
   ----------
 
-There is an alternate form of the regular constraint
-:mzn:`regular_nfa` which specifies the regular
-expression using an NFA (without :mzn:`\epsilon` arcs).
-This constraint has the form
+另外一种regular约束是 :mzn:`regular_nfa` 。它使用NFA（没有 :mzn:`\epsilon` 弧）来定义regular表达式。此约束有以下格式
 
 .. code-block:: minizinc
 
   regular_nfa(array[int] of var int: x, int: Q, int: S,
           array[int,int] of set of int: d, int: q0, set of int: F)
 
-It constrains that 
-the sequence of values in array :mzn:`x` (which must all be in the range
-:mzn:`1..S`)
-is accepted by the :index:`NFA` of :mzn:`Q` states with input :mzn:`1..S`
-and transition function :mzn:`d` (which maps :mzn:`<1..Q, 1..S>` to 
-subsets of :mzn:`1..Q`) and initial state
-:mzn:`q0` (which must be in :mzn:`1..Q`) and accepting states :mzn:`F` 
-(which all must be in :mzn:`1..Q`). 
-There is no need for a failing state 0, since the transition function can
-map to an empty set of states.
+它约束了数组 :mzn:`x` 中的数值序列（必须在范围 :mzn:`1..S` 中）被含有 :mzn:`Q` 个状态，输入为 :mzn:`1..S` ，转换函数为 :mzn:`d` （映射 :mzn:`<1..Q, 1..S>` 到
+:mzn:`1..Q` 的子集），初始状态为 :mzn:`q0` （必须在范围 :mzn:`1..Q` 中）以及接受状态为 :mzn:`F` （必须在范围 :mzn:`1..Q` 中）的 :index:`NFA` 接受。
+在这里，我们没必要再给出失败状态0，因为转换函数可以映射到一个状态的空集。
 
 
-Defining Predicates
+定义谓词
 -------------------
 
 .. index::
   single: predicate; definition
 
-One of the most powerful modelling features 
-of MiniZinc is the ability for
-the modeller to define their own high-level constraints. This allows them to
-abstract and modularise their model. It also allows re-use of constraints in
-different models and allows the development of application specific
-libraries defining the standard constraints and types.
+MiniZinc的其中一个最强大的建模特征是建模者可以定义他们自己的高级约束。这就使得他们可以对模型进行抽象化和模块化。也允许了在不同的模型之间重新利用约束以及促使了用来定义标准约束和类型的特殊库应用的发展。
 
 
 .. literalinclude:: examples/jobshop2.mzn
   :language: minizinc
   :name: ex-jobshop2
-  :caption: Model for job shop scheduling using predicates (:download:`jobshop2.mzn <examples/jobshop2.mzn>`)
+  :caption: 使用谓词的车间作业调度问题模型 (:download:`jobshop2.mzn <examples/jobshop2.mzn>`)
 
-We start with a simple example, revisiting the job shop scheduling problem
-from the previous section.  The model is shown in
-:numref:`ex-jobshop2`. The item of interest is the 
-:mzn:`predicate`
-item:
+我们用一个简单的例子开始，回顾下前面章节中的车间作业调度问题。这个模型在 :numref:`ex-jobshop2` 中给出。我们感兴趣的项是 :mzn:`谓词` 项：
 
 .. literalinclude:: examples/jobshop2.mzn
   :language: minizinc
   :lines: 12-13
 
-This defines a new constraint that enforces that a task with start time
-:mzn:`s1` and duration :mzn:`d1` does not overlap with a task with start
-time :mzn:`s2` and duration :mzn:`d2`.  This can now be used inside the
-model anywhere any other :index:`Boolean expression <expression; Boolean>`
-(involving decision variables)
-can be used.
+它定义了一个新的约束用来约束起始时间为 :mzn:`s1` ，持续时间为 :mzn:`d1` 的任务不能和起始时间为 :mzn:`s2` ，持续时间为 :mzn:`d2` 的任务重叠。它可以在模型的任何（包含决策变量的） :index:`布尔型表达式 <expression; Boolean>` 可以出现的地方使用。
 
-As well as predicates the modeller can define new constraints that only
-involve parameters. These are useful to write fixed tests for a
-conditional expression. These are defined using the keyword :mzn:`test`.
-For example
+和谓词一样，建模者也可以定义只涉及到参数的新的约束。和谓词不一样的是，它们可以被用在条件表达式的测试中。它们被关键字 :mzn:`test` 定义。例如
 
 .. code-block:: minizinc
 
@@ -325,19 +248,18 @@ For example
 .. $ mzn-g12fd jobshop2.mzn jobshop.dzn
 .. } % $
 
-.. defblock:: Predicate definitions
+.. defblock:: 谓词定义
 
   .. index::
     single: predicate; definition
 
-  Predicates are defined by a statement of the form
+  使用以下形式的语句，我们可以定义谓词
 
   .. code-block:: minizincdef
   
-    predicate <pred-name> ( <arg-def>, ..., <arg-def> ) = <bool-exp>
+    predicate <谓词名> ( <参数定义>, ..., <参数定义> ) = <布尔表达式>
 
-  The :mzndef:`<pred-name>` must be a valid MiniZinc identifier, and
-  each :mzndef:`<arg-def>` is a valid MiniZinc :index:`type` declaration.
+  :mzndef:`<谓词名>` 必须是一个合法的MiniZinc标识符，每个 :mzndef:`<参数定义>` 都是一个合法的MiniZinc类型 :index:`type` 声明。
 
   .. \ignore{The type-insts\index{type-inst} 
   .. of arguments may include type-inst variables\index{type-inst!variable} 
@@ -355,35 +277,25 @@ For example
   .. as well as set variables with a
   .. non-finite element type.}
 
-  One relaxation of :index:`argument`
-  definitions is that the index types for arrays
-  can be :index:`unbounded <array; index set; unbounded>`, written :mzn:`int`.
+  :index:`参数` 定义的一个松弛是数组的索引类型可以是 :index:`没有限制地 <array; index set; unbounded>` 写为 :mzn:`int` 。
+
+  类似的，使用以下形式的语句，我们定义测试
 
   .. code-block:: minizincdef
   
-    test <pred-name> ( <arg-def>, ..., <arg-def> ) = <bool-exp>
+    test <谓词名> ( <参数定义>, ..., <参数定义> ) = <布尔表达式>
 
-  The :mzndef:`<bool-exp>` of the body must be fixed.
+  其中的 :mzndef:`<布尔表达式>` 必须是固定的。
 
-  We also introduce a new form of the :mzn:`assert` command for use in
-  predicates. 
+  另外我们介绍一个谓词中使用到的 :mzn:`assert` 命令的新形式。 
 
   .. code-block:: minizincdef
   
-    assert ( <bool-exp>, <string-exp>, <exp> )
+    assert ( <布尔表达式>, <字符串表达式>, <表达式> )
 
-  The type of the :mzn:`assert`
-  :index:`expression <expression; assert>`
-  is the same as the type of the
-  last argument. 
-  The :mzn:`assert` expression checks whether the first argument is false,
-  and if so prints the second argument string. If the first argument is true
-  it returns the third argument.
+  :mzn:`assert` 表达式的类型和最后一个参数的类型一样。 :mzn:`assert` 表达式检测第一个参数是否为假，如果是则输出第二个参数字符串。如果第一个参数是真，则输出第三个参数。
 
-Note that :index:`assert expressions <expression; assert>` 
-are lazy in the third argument, that is if the
-first argument is false they will not be evaluated.
-Hence, they can be used for checking:
+注意 :index:`assert表达式 <expression; assert>` 中的第三个参数是延迟的，即如果第一个参数是假，它就不会被评估。所以它可以被用来检查
 
 .. code-block:: minizinc
 
@@ -392,28 +304,23 @@ Hence, they can be used for checking:
              y = x[i]
       );
 
-This code will not evaluate :mzn:`x[i]` if :mzn:`i` is out of the range of the array
-:mzn:`x`.
+此代码在 :mzn:`i` 超出数组 :mzn:`x` 的范围时不会计算 :mzn:`x[i]` 。
 
-Defining Functions
+定义函数
 ------------------
 
 .. index::
   single: function; definition
 
-Functions are defined in MiniZinc 
-similarly to predicates, but with a more
-general return type.
+MiniZinc中的函数和谓词一样定义，但是它有一个更一般的返回类型。
 
-The function below defines the row in a Sudoku matrix
-of the :math:`a1^{th}` row of the :math:`a^{th}` of subsquares.
+下面的函数定义了一个数独矩阵中的第 :math:`a^{th}` 个子方块的第 :math:`a1^{th}` 行。
 
 .. code-block:: minizinc
 
   function int: posn(int: a, int: a1) = (a-1) * S + a1;
 
-With this definition we can replace the last constraint in the
-Sudoku problem shown in :numref:`ex-sudoku` by
+有了这个定义之后，我们可以把 :numref:`ex-sudoku` 中的数独问题的最后一个约束替换为
 
 .. code-block:: minizinc
 
@@ -421,117 +328,76 @@ Sudoku problem shown in :numref:`ex-sudoku` by
                     alldifferent([ puzzle [ posn(a,a0), posn(o,o1) ] | 
                                            a1,o1 in SubSquareRange ] ) );
 
-Functions are useful for encoding complex expressions that
-are used frequently in the model.  For example, imagine
-placing the numbers 1 to :math:`n` in different positions
-in an :math:`n \times n` grid such that
-the Manhattan distance between any two numbers :math:`i` and :math:`j` 
-is greater than the maximum of the two numbers minus 1.
-The aim is to minimize the total of the Manhattan distances
-between the pairs.  The Manhattan distance function
-can be expressed as:
+函数对于描述模型中经常用到的复杂表达式非常有用。
+例如，想象下在 :math:`n \times n` 的方格的不同位置上放置数字1到 :math:`n` 使得任何两个数字 :math:`i` 和 :math:`j` 之间的曼哈顿距离比这两个数字其中最大的值减一还要大。我们的目的是最小化数组对之间的总的曼哈顿距离。曼哈顿距离函数可以表达为：
 
 .. literalinclude:: examples/manhattan.mzn
   :language: minizinc
   :lines: 12-14
 
-The complete model is shown in :numref:`ex-manhattan`.
+完整的模型在 :numref:`ex-manhattan` 中给出。
 
 
 .. literalinclude:: examples/manhattan.mzn
   :language: minizinc
   :name: ex-manhattan
-  :caption: Model for a number placement problem illustrating the use of functions (:download:`manhattan.mzn <examples/manhattan.mzn>`).
+  :caption: 阐释如何使用函数的数字放置问题模型 (:download:`manhattan.mzn <examples/manhattan.mzn>`).
 
-.. defblock:: Function definitions
+.. defblock:: 函数定义
 
   .. index::
     single: function; definition
 
-  Functions are defined by a statement of the form
+  函数用以下格式的语句定义 
   
   .. code-block:: minizincdef
 
-    function <ret-type> : <func-name> ( <arg-def>, ..., <arg-def> ) = <exp>
+    function <返回类型> : <函数名> ( <参数定义>, ..., <参数定义> ) = <表达式>
 
-  The :mzndef:`<func-name>` must be a valid MiniZinc identifier, and
-  each :mzndef:`<arg-def>` is a valid MiniZinc type declaration.
-  The :mzndef:`<ret-type>` is the return type of the function which must be
-  the type of :mzndef:`<exp>`. Arguments have the same restrictions as in
-  predicate definitions.
+  :mzndef:`<函数名>` 必须是一个合法的MiniZinc标识符。每一个 :mzndef:`<参数定义>` 是一个合法的MiniZinc类型声明。 :mzndef:`<返回类型>` 是函数的返回类型，它必须是 :mzndef:`<表达式>` 的类型。参数和谓词定义中的参数有一样的限制。
 
-Functions in MiniZinc can have any return type, not just fixed
-return types.
-Functions are useful for defining and documenting complex expressions that
-are used mulitple times in a model.
+MiniZinc中的函数可以有任何返回类型，而不只是固定的返回类型。
+在定义和记录多次出现在模型中的复杂表达式时，函数是非常有用的。
 
-
-Reflection Functions
+反射函数
 --------------------
 
-To help write generic tests and predicates, various reflection functions
-return information about array index sets, var set domains and decision
-variable ranges. Those for index sets are
+为了方便写出一般性的测试和谓词，各种反射函数会返回数组的下标集合，var集合的定义域以及决策变量范围的信息。关于下标集合的有以下反射函数
 :mzndef:`index_set(<1-D array>)`,
 :mzndef:`index_set_1of2(<2-D array>)`,
 :mzndef:`index_set_2of2(<2-D array>)`,
-and so on for higher
-dimensional arrays.
+以及关于更高维数组的反射函数。
 
-A better model of the job shop conjoins all the non-overlap constraints for a
-single machine into a single disjunctive constraint.
-An advantage of this approach is that while we may initially model this 
-simply as a conjunction of :mzn:`non-overlap` constraints, if the underlying solver has a
-better approach to solving disjunctive constraints we can use that instead,
-with minimal changes to our model. The model is shown in
-:numref:`ex-jobshop3`. 
-
+车间作业问题的一个更好的模型是把所有的对于同一个机器上的不重叠约束结合为一个单个的析取约束。
+这个方法的一个优点是虽然我们只是初始地把它建模成一个 :mzn:`non-overlap` 约束的连接，但是如果下层的求解器对于解决析取约束有一个更好的方法，在对我们的模型最小改变的情况下，我们可以直接使用它。这个模型在 :numref:`ex-jobshop3` 中给出。
 
 .. literalinclude:: examples/jobshop3.mzn
   :language: minizinc
   :name: ex-jobshop3
-  :caption: Model for job shop scheduling using ``disjunctive`` predicate (:download:`jobshop3.mzn <examples/jobshop3.mzn>`).
+  :caption: 使用 ``disjunctive`` 谓词的车间作业调度问题模型 (:download:`jobshop3.mzn <examples/jobshop3.mzn>`).
 
 .. index::
   single: global constraint; disjunctive
 
-The :mzn:`disjunctive`
-constraint takes an array of start times for each
-task and an array of their durations and makes sure that only one task is
-active at any one
-time. We define the disjunctive constraint as a :index:`predicate <predicate; definition>` with
-signature
+约束 :mzn:`disjunctive` 获取每个任务的开始时间数组以及它们的持续时间数组，确保每次只有一个任务是被激活的。
+我们定义析取约束为一个有以下特征的 :index:`谓词 <predicate; definition>`
 
 .. code-block:: minizinc
 
   predicate disjunctive(array[int] of var int:s, array[int] of int:d);
 
-We can use the disjunctive constraint to define the non-overlap of tasks as
-shown in :numref:`ex-jobshop3`. 
-We assume a definition for the :mzn:`disjunctive` predicate is given
-by the file :download:`disjunctive.mzn <examples/disjunctive.mzn>` which is included in the model.
-If the underlying system
-supports :mzn:`disjunctive` directly, it will include a file
-:download:`disjunctive.mzn <examples/disjunctive.mzn>` in its globals directory (with contents
-just the signature definition above).
-If the system we are using does not support disjunctive directly
-we can give our own definition by creating the file
-:download:`disjunctive.mzn <examples/disjunctive.mzn>`.
-The simplest implementation simply makes use of the :mzn:`no_overlap`
-predicate defined above. 
-A better implementation is to make use of a global :mzn:`cumulative`
-constraint assuming it is supported by the underlying solver.
-:numref:`ex-disj` shows an implementation of :mzn:`disjunctive`.
-Note how we use the :mzn:`index_set` reflection function to
-(a) check that the arguments to :mzn:`disjunctive` make sense,
-and (b) construct the array of resource utilisations of the appropriate
-size for :mzn:`cumulative`.
-Note also that we use a ternary version of :mzn:`assert` here.
+在 :numref:`ex-jobshop3` 中，我们可以用这个析取约束定义任务之间不重叠。
+我们假设 :mzn:`disjunctive` 谓词的定义已经在模型中引用的文件 :download:`disjunctive.mzn <examples/disjunctive.mzn>` 中给出。
+
+如果下层的系统直接支持 :mzn:`disjunctive` ，则会在它的全局目录下包含一个 :download:`disjunctive.mzn <examples/disjunctive.mzn>` 文件（拥有上述特征定义内容）。
+如果我们使用的系统不直接支持析取，通过创建文件 :download:`disjunctive.mzn <examples/disjunctive.mzn>` ，我们可以给出我们自己的定义。最简单的实现是单单使用上面定义的 :mzn:`no_overlap` 谓词。
+一个更好的实现是利用全局约束 :mzn:`cumulative` ，假如下层求解器支持它的话。 :numref:`ex-disj` 给出了一个 :mzn:`disjunctive` 的实现。
+注意我们使用 :mzn:`index_set` 反射函数来（a）检查 :mzn:`disjunctive` 的参数是有意义的，以及（b）构建 :mzn:`cumulative` 的合适大小的资源利用数组。另外注意这里我们使用了 :mzn:`assert` 的三元组版本。
 
 .. literalinclude:: examples/disjunctive.mzn
   :language: minizinc
   :name: ex-disj
-  :caption: Defining a ``disjunctive`` predicate using ``cumulative`` (:download:`disjunctive.mzn <examples/disjunctive.mzn>`).
+  :caption: 使用 ``cumulative`` 来定义一个 ``disjunctive`` 谓词  (:download:`disjunctive.mzn <examples/disjunctive.mzn>`).
 
 .. \ignore{ % for capture for testing!
 .. $ mzn-g12fd jobshop3.mzn jobshop.dzn
@@ -539,54 +405,42 @@ Note also that we use a ternary version of :mzn:`assert` here.
 
 
 
-Local Variables
+局部变量
 ---------------
 
 .. index::
   single: variable; local
   single: let
 
-It is often useful to introduce *local variables* in a predicate,
-function
-or test. 
-The :mzn:`let` expression allows you to do so. 
-It can be used to introduce 
-both decision :index:`variables <variable>`
-and
-:index:`parameters <parameter>`, 
-but parameters must be initialised. For example: 
+在谓词，函数或者测试中，引进 *局部变量* 总是非常有用的。
+表达式 :mzn:`let` 允许你去这样做。
+它可以被用来引进决策变量 :index:`决策变量 <variable>` 和 :index:`参数 <parameter>` ，但是参数必须被初始化。
+例如：
 
 .. code-block:: minizinc
 
   var s..e: x;
   let {int: l = s div 2; int: u = e div 2; var l .. u: y;} in x = 2*y
 
-introduces parameters :mzn:`l` and :mzn:`u` and variable :mzn:`y`. 
-While most useful in :index:`predicate`, :index:`function`
-and test definitions, 
-:mzn:`let` expressions can also be used in other expressions, for example
-for eliminating common subexpressions:
+引进了参数 :mzn:`l` 和 :mzn:`u` 以及变量 :mzn:`y` 。
+:mzn:`let` 表达式虽然在 :index:`谓词` ， :index:`函数` 和测试定义中最有用，它也可以被用在其他的表达式中。例如，来消除共同的子表达式：
 
 .. code-block:: minizinc
 
   constraint let { var int: s = x1 + x2 + x3 + x4 } in
              l <= s /\ s <= u;
 
-Local variables can be used anywhere and can be quite useful
-for simplifying complex expressions.
-:numref:`ex-wedding2`
-gives a revised version of the wedding model, using local variables to
-define the :index:`objective` function, 
-rather than adding lots of variables
-to the model explicitly.
+局部变量可以被用在任何地方，在简化复杂表达式时也很有用。
+通过使用局部变量来定义目标 :index:`objective` 函数而不是显式地加入很多个变量， :numref:`ex-wedding2` 给出了稳定婚姻模型的一个改进版本。
+
 
 .. literalinclude:: examples/wedding2.mzn
   :language: minizinc
   :name: ex-wedding2
-  :caption: Using local variables to define a complex objective function (:download:`wedding2.mzn <examples/wedding2.mzn>`).
+  :caption: 使用局部变量来定义一个复杂的目标函数 (:download:`wedding2.mzn <examples/wedding2.mzn>`).
 
 
-Context
+语境
 -------
 
 .. index::
@@ -595,11 +449,7 @@ Context
   single: predicate
   single: function
 
-One limitation is that predicates and functions 
-containing decision variables that are not
-initialised in the declaration cannot be used inside a negative
-context.
-The following is illegal:
+有一个局限，即含有决策变量并且在声明时没有初始化的谓词和函数不可以被用在一个否定语境下。下面例子是非法的
 
 .. code-block:: minizinc
 
@@ -608,15 +458,9 @@ The following is illegal:
 
   constraint not even(z);
 
-The reason for this is that solvers only solve existentially constrained
-problems, and if we introduce a local variable in a negative context, then
-the variable is *universally quantified* and hence out of scope of the
-underlying solvers. For example the :math:`\neg \mathit{even}(z)` is equivalent to
-:math:`\neg \exists y. z = 2y` which is equivalent to
-:math:`\forall y. z \neq 2y`.
+原因是求解器只解决存在约束的问题。如果我们在否定语境下引入了一个局部变量，则此变量是 *普遍地量化* 了，因此超出下层求解器的解决范围。例如， :math:`\neg \mathit{even}(z)` 等价于 :math:`\neg \exists y. z = 2y` ，然后等价于 :math:`\forall y. z \neq 2y` 。
 
-If local variables are given values, then they can be used in negative 
-contexts. The following is legal
+如果局部变量被赋了值，则它们可以被用在否定语境中。下面的例子是合法的
 
 .. code-block:: minizinc
 
@@ -625,94 +469,53 @@ contexts. The following is legal
 
   constraint not even(z);
 
-Note that the meaning of :mzn:`even` is correct, since if :mzn:`x` is even
-then :math:`x = 2 * (x ~\mbox{div}~ 2)`. Note that for this definition
-:math:`\neg \mathit{even}(z)` is equivalent to
-:math:`\neg \exists y. y = z ~\mbox{div}~ 2 \wedge z = 2y` which is equivalent to
-:math:`\exists y. y = z ~\mbox{div}~ 2 \wedge \neg z \neq 2y`, because :math:`y` is
-functionally defined by :math:`z`.
+注意，现在 :mzn:`even` 的意思是正确的，因为如果 :mzn:`x` 是偶数，则 :math:`x = 2 * (x ~\mbox{div}~ 2)` 。
+由于 math:`y` 被 :math:`z` 功能性定义了， :math:`\neg \mathit{even}(z)` 等价于 :math:`\neg \exists y. y = z ~\mbox{div}~ 2 \wedge z = 2y` ，同时等价于 :math:`\exists y. y = z ~\mbox{div}~ 2 \wedge \neg z \neq 2y`。
 
+MiniZinc中的任意表达式都出现在以下四种 *语境* 中的一种中： :index:`根 <context; !root>` ， :index:`肯定 <context; !positive>` ， :index:`否定 <context; !negative>` ，或者 :index:`混合 <context; !mixed>` 。
+非布尔型表达式的语境直接地为包含其最近的布尔型表达式的语境。唯一的例外是目标表达式出现在一个根语境下（由于它没有包含其的布尔型表达式）。
 
-Every expression in MiniZinc appears in one of the four
-*contexts*: :index:`root <context; !root>`, :index:`positive <context; !positive>`,
-:index:`negative <context; !negative>`,
-or :index:`mixed <context; !mixed>`.
-The context of a non-Boolean expression is simply the context of its nearest
-enclosing Boolean expression. The one exception is that the objective
-expression appears in a root context (since it has no enclosing Boolean expression).
+为了方便定义语境，我们把蕴含表达式 :mzn:`e1 -> e2` 等价地写为 :mzn:`not e1 \/ e2` ， :mzn:`e1 <- e2` 等价地写为 :mzn:`e1 \/ not e2` 。
 
-For the purposes of defining contexts we assume implication expressions
-:mzn:`e1 -> e2` are rewritten equivalently as :mzn:`not e1 \/ e2`,
-and similarly :mzn:`e1 <- e2` is rewritten as  :mzn:`e1 \/ not e2`.
+一个布尔型表达式的语境可能有：
 
-The context for a Boolean expression is given by:
+根
+  根语境是任何作为 :mzn:`constraint` 的参数或者作为一个赋值项 :index:`assignment` 出现的表达式 :math:`e` 的语境，或者作为一个出现在根语境中的 :mzn:`e1 /\ e2` 的子表达式 :mzn:`e1` 或 :mzn:`e2` 的语境。
 
-root
-  root context is the context for any expression $e$ appearing as
-  the argument of :mzn:`constraint` or as an
-  :index:`assignment` item, or appearing as a sub expression :mzn:`e1`
-  or :mzn:`e2` in an expression :mzn:`e1 /\ e2` occuring in a root context.
+  根语境下的布尔型表达式必须在问题的任何模型中都满足。 
 
-  Root context Boolean expressions must hold in any model of the problem.
+肯定
+  肯定语境是任何作为一个出现在根语境或者肯定语境中的 :mzn:`e1 \/ e2` 的子表达式 :mzn:`e1` 或 :mzn:`e2` 的语境，或者是作为一个出现在肯定语境中的 :mzn:`e1 /\ e2` 的子表达式 :mzn:`e1` 或 :mzn:`e2`的语境，或者是作为一个出现在否定语境中的 :mzn:`not e` 的子表达式 :mzn:`e` 的语境。
 
-positive
-  positive context is the context for any expression
-  appearing as a sub expression :mzn:`e1`
-  or :mzn:`e2` in an expression :mzn:`e1 \/ e2` occuring in a root
-  or positive context,
-  appearing as a sub expression :mzn:`e1`
-  or :mzn:`e2` in an expression :mzn:`e1 /\ e2` occuring in a positive context,
-  or appearing as a sub expression :mzn:`e` in an expression
-  :mzn:`not e` appearing in a negative context.
+  肯定语境下的布尔型表达式不是必须要在模型中满足，但是满足它们会增加包含其的约束被满足的可能性。对于一个肯定语境下的表达式，从包含其的根语境到此表达式有偶数个否定。
 
-  Positive context Boolean expressions need not hold in a model, but
-  making them hold will only increase the possibility that the enclosing
-  constraint holds. A positive context expression has an even number of
-  negations in the path from the enclosing root context to the expression.
+否定
+  否定语境是任何作为一个出现在根语境或者否定语境中的 :mzn:`e1 \/ e2` 或 :mzn:`e1 /\ e2` 的子表达式 :mzn:`e1` 或 :mzn:`e2` ，或者是作为一个出现在肯定语境中的 :mzn:`not e` 的子表达式 :mzn:`e` 的语境。
 
-negative
-  negative context is the context for any expression appearing as a sub expression :mzn:`e1`
-  or :mzn:`e2` in an expression :mzn:`e1 \/ e2` or :mzn:`e1 /\ e2` occuring in a negative context,
-  or appearing as a sub expression :mzn:`e` in an expression
-  :mzn:`not e` appearing in a positive context.
+  否定语境下的布尔型表达式不是必须要满足，但是让它们成假会增加包含其的约束被满足的可能性。对于一个否定语境下的表达式，从包含其的根语境到此表达式有奇数个否定。
 
-  Negative context Boolean expressions need not hold in a model, but
-  making them false will increase the possibility that the enclosing
-  constraint holds. A negative context expression has an odd number of
-  negations in the path from the enclosing root context to the expression.
+混合
+  混合语境是任何作为一个出现在 :mzn:`e1 <-> e2` , :mzn:`e1 = e2`  或者 :mzn:`bool2int(e)` 中的子表达式 :mzn:`e1` 或 :mzn:`e2` 的语境。
 
-mixed
-  mixed context is the context for any Boolean expression appearing
-  as a subexpression :mzn:`e1` or :mzn:`e2` in :mzn:`e1 <-> e2`, :mzn:`e1 = e2`, or :mzn:`bool2int(e)`.
+  混合语境下的表达式实际上既是肯定也是否定的。通过以下可以看出：:mzn:`e1 <-> e2` 等价于 :mzn:`(e1 /\ e2) \/ (not e1 /\ not e2)` 以及 :mzn:`x = bool2int(e)` 等价于 :mzn:`(e /\ x=1) \/ (not e /\ x=0)` 。
 
-  Mixed context expression are effectively both positive and
-  negative. This can be seen from the fact that :mzn:`e1 <-> e2` is equivalent
-  to :mzn:`(e1 /\ e2) \/ (not e1 /\ not e2)` and
-  :mzn:`x = bool2int(e)` is equivalent to :mzn:`(e /\ x=1) \/ (not e /\ x=0)`.
-
-Consider the code fragment
+观察以下代码段
 
 .. code-block:: minizinc
 
   constraint x > 0 /\ (i <= 4 -> x + bool2int(x > i) = 5);
 
-then :mzn:`x > 0` is in the root context, :mzn:`i <= 4}` is in a negative
-context,
-:mzn:`x + bool2int(x > i) = 5`
-is in a positive context, and :mzn:`x > i` is in a mixed context.
+其中 :mzn:`x > 0` 在根语境中， :mzn:`i <= 4}` 在否定语境中，
+:mzn:`x + bool2int(x > i) = 5` 在肯定语境中， :mzn:`x > i` 在混合语境中。
 
-
-
-Local Constraints
+局部约束
 -----------------
 
 .. index::
   single: constraint; local
 
-Let expressions can also be used to include local constraints,
-usually to constrain the behaviour of local variables.
-For example, consider defining a square root function making use
-of only multiplication:
+Let表达式也可以被用来引入局部约束，通常用来约束局部变量的行为。
+例如，考虑只利用乘法来定义开根号函数：
 
 .. code-block:: minizinc
 
@@ -721,62 +524,39 @@ of only multiplication:
                  constraint y >= 0;
                  constraint x = y * y; } in y;
 
-The local constraints ensure
-:mzn:`y` takes the correct value; which is then returned
-by the function.    
-
-Local constraints can be used in any let expression, 
-though the most common
-usage is in defining functions.
+局部约束确保了 :mzn:`y` 取正确的值；而此值则会被函数返回。
 
 
-.. defblock:: Let expressions
+局部约束可以在let表达式中使用，尽管最普遍的应用是在定义函数时。
+
+
+.. defblock:: Let表达式
 
   .. index::
     single: expression; let
 
-  :index:`Local variables <variable;local>` 
-  can be introduced in any expression with a *let expression*
-  of the form:
+  :index:`局部变量 <variable;local>` 可以在任何以下格式的\emph{let表达式}中引入：
   
   .. code-block:: minizincdef
   
-    let { <dec>; ... <dec> ; } in <exp>
+    let { <声明>; ... <声明> ; } in <表达式>
   
-  The declarations :mzndef:`<dec>` 
-  can be declarations of decision variables and
-  parameters (which must be initialised) or constraint items.
-  No declaration can make use of a newly declared variable 
-  before it is introduced. 
+  声明 :mzndef:`<dec>` 可以是决策变量或者参数（此时必须被初始化）或者约束项的声明。
+  任何声明都不能在一个新的声明变量还没有引进时使用它。
 
-  Note that local variables and constraints 
-  cannot occur in tests.
-  Local variables cannot occur in predicates 
-  or functions that appear in a
-  :index:`negative <context; negative>` or :index:`mixed <context; mixed>` context,
-  unless the variable is defined by an expression.
+  注意局部变量和约束不可以出现在测试中。局部变量不可以出现在 :index:`否定 <context; negative>` 或者 :index:`混合 <context; mixed>` 语境下的谓词和函数中，除非这个变量是用表达式定义的。 
 
-
-Domain Reflection Functions
+定义域反射函数
 ---------------------------
 
 .. index::
   single: domain; reflection
 
-Other important reflection functions are those that allow us to access
-the domains of variables. The expression :mzn:`lb(x)`
-returns
-a value that is lower than or equal to any value that :mzn:`x` may take in
-a solution of the problem. Usually it will just be the
-declared lower :index:`bound <variable; bound>` of :mzn:`x`.
-If :mzn:`x` is declared as a non-finite type, e.g. 
-simply :mzn:`var int`
-then it is an error. 
-Similarly the expression :mzn:`dom(x)`
-returns a (non-strict) 
-superset of the possible values of :mzn:`x` in any solution of the problem.
-Again it is usually the declared values, and again if it is not
-declared as finite then there is an error.
+其他重要的反射函数有允许我们对变量定义域进行访问的函数。表达式 :mzn:`lb(x)` 返回一个小于等于 :mzn:`x` 在一个问题的解中可能取的值的数值。
+通常它会是 :mzn:`x` 声明的下 :index:`限 <variable; bound>` 。如果 :mzn:`x` 被声明为一个非有限类型，例如，
+只是 :mzn:`var int` ，则它是错误的。
+类似地，表达式 :mzn:`dom(x)` 返回一个$x$在问题的任何解中的可能值的（非严格）超集。
+再次，它通常是声明的值，如果它不是被声明为有限则会出现错误。
 
 .. \ignore{ % for capture for testing!
 .. $ mzn-g12fd reflection.mzn
@@ -786,10 +566,9 @@ declared as finite then there is an error.
 .. literalinclude:: examples/reflection.mzn
   :language: minizinc
   :name: ex-reflect
-  :caption: Using reflection predicates (:download:`reflection.mzn <examples/reflection.mzn>`).
+  :caption: 使用反射谓词 (:download:`reflection.mzn <examples/reflection.mzn>`).
 
-For example, the model show in :numref:`ex-reflect`
-may output
+例如， :numref:`ex-reflect` 中的模型或者输出
 
 .. code-block:: none
 
@@ -797,7 +576,7 @@ may output
   D = -10..10
   ----------
 
-or
+或
 
 .. code-block:: none
 
@@ -805,107 +584,79 @@ or
   D = {0, 1, 2, 3, 4}
   ----------
 
-or any answer with 
-:math:`-10 \leq y \leq 0` and 
-:math:`\{0, \ldots, 4\} \subseteq D \subseteq \{-10, \ldots, 10\}`.
+或任何满足
+:math:`-10 \leq y \leq 0` 和 
+:math:`\{0, \ldots, 4\} \subseteq D \subseteq \{-10, \ldots, 10\}` 的答案。
 
-Variable domain reflection expressions should be used in a manner where they are
-correct for any safe approximations, but note this is not checked!
-For example the additional code
+变量定义域反射表达式应该以在任何安全近似下都正确的的方式使用。但是注意这个是没有被检查的！例如加入额外的代码
 
 .. code-block:: minizinc
 
   var -10..10: z;
   constraint z <= y;
 
-is not a safe usage of the domain information. 
-Since using the tighter (correct) approximation leads to 
-more solutions than the weaker initial approximation.
+不是一个定义域信息的正确应用。因为使用更紧密（正确的）近似会比使用更弱的初始近似产生更多的解。
 
 .. TODO: this sounds wrong!
 
-.. defblock:: Domain reflection
+.. defblock:: 定义域反射
 
   .. index::
     single: domain; reflection
 
-  There are reflection functions to interrogate 
-  the possible values of expressions containing variables:
+  我们有查询包含变量的表达式的可能值的反射函数：
   
-  - :mzndef:`dom(<exp>)`
-    returns a safe approximation to the possible values of the expression. 
-  - :mzndef:`lb(<exp>)`
-    returns a safe approximation to the lower bound value of the expression. 
-  - :mzndef:`ub(<exp>)`
-    returns a safe approximation to the upper bound value of the expression. 
+  - :mzndef:`dom(<表达式>)`
+    返回 :mzndef:`<表达式>` 所有可能值的安全近似。
+  - :mzndef:`lb(<表达式>)`
+    返回 :mzndef:`<表达式>` 下限值的安全近似。
+  - :mzndef:`ub(<表达式>)`
+    返回 :mzndef:`<表达式>` 上限值的安全近似。
 
-  The expressions for :mzn:`lb` and :mzn:`ub`
-  can only be of types :mzn:`int`, :mzn:`bool`,
-  :mzn:`float` or :mzn:`set of int`.
-  For :mzn:`dom` the type cannot be :mzn:`float`.
-  If one of the variables appearing in :mzndef:`<exp>` has a 
-  :index:`non-finite declared type <type; non-finite>`
-  (e.g. :mzn:`var int` or :mzn:`var float`) 
-  then an error can occur.
+  :mzn:`lb` 和 :mzn:`ub` 的表达式必须是 :mzn:`int` ， :mzn:`bool` ，
+  :mzn:`float` 或者 :mzn:`set of int` 类型。
+  :mzn:`dom` 中表达式的类型不能是 :mzn:`float` 。
+  如果 :mzndef:`<表达式>` 中的一个变量有一个 :index:`非有限声明类型 <type; non-finite>` （例如， :mzn:`var int` 或 :mzn:`var float` 类型），则会出现一个错误。
 
-  There are also versions that work directly on arrays of expressions (with
-  similar restrictions):
+  我们也有直接作用于表达式数组的版本（有类似的限制）：
 
-  - :mzndef:`dom_array(<array-exp>)`:
-    returns a safe approximation to the union of all 
-    possible values of the expressions appearing in the array. 
-  - :mzndef:`lb_array(<array-exp>)`
-    returns a safe approximation to the lower bound of all expressions appearing
-    in the array.
-  - :mzndef:`ub_array(<array-exp>)`
-    returns a safe approximation to the upper bound of all expressions appearing
-    in the array.
+  - :mzndef:`dom_array(<数组表达式>)`:
+    返回数组中出现的表达式的所有可能值的并集的一个安全近似。 
+  - :mzndef:`lb_array(<数组表达式>)`
+    返回数组中出现的所有表达式的下限的安全近似。
+  - :mzndef:`ub_array(<数组表达式>)`
+    返回数组中出现的所有表达式的下限的安全近似。
 
-The combinations of predicates, local variables and domain reflection
-allows the definition of complex global constraints by decomposition.
-We can define the time based decomposition 
-of the :mzn:`cumulative`
-constraint using the code shown in :numref:`ex-cumul`.
+谓词，局部变量和定义域反射的结合使得复杂全局约束通过分解定义变为可能。
+利用 :numref:`ex-cumul` 中的代码，我们可以定义 :mzn:`cumulative` 约束的根据时间的分解。
 
 .. literalinclude:: examples/cumulative.mzn
   :language: minizinc
   :name: ex-cumul
-  :caption: Defining a ``cumulative`` predicate by decomposition (:download:`cumulative.mzn <examples/cumulative.mzn>`).
+  :caption: 利用分解来定义一个 ``谓词`` (:download:`cumulative.mzn <examples/cumulative.mzn>`).
 
-The decomposition uses :mzn:`lb` and :mzn:`ub` to determine
-the set of times :mzn:`times` over which tasks could range.
-It then asserts for each time :mzn:`t` in :mzn:`times` that the
-sum of resources for the active tasks at time :mzn:`t` is less than
-the bound :mzn:`b`.
+这个分解利用 :mzn:`lb` 和 :mzn:`ub` 来决定任务可以执行的时间范围集合。
+接下来，它对 :mzn:`times` 中的每个时间 :mzn:`times` 都断言在此时间 :mzn:`t`  激活的所有任务所需要的资源量总和小于界限 :mzn:`b` 。
 
-Scope
------
+作用域
+---------------------------
 
 .. index::
   single: scope
 
-It is worth briefly mentioning the scope of declarations in MiniZinc.
-MiniZinc has a single namespace, so all variables appearing 
-in declarations are visible in every expression in the model.
-MiniZinc introduces locally scoped
-variables in a number of ways:
+MiniZinc中声明的作用域值得我们简单地介绍下。
+MiniZinc只有一个作用域，所以出现在声明中的所有变量都可以在模型中的每个表达式中可见。
+用以下几个方式，MiniZinc引进局部作用域变量：
 
-- as :index:`iterator <variable; iterator>`
-  variables in :index:`comprehension` expressions
-- using :mzn:`let` expressions
-- as predicate and function :index:`arguments <argument>`
+- :index:`推导式表达式 <variable; iterator>` 中的 :index:`迭代器` 
+- 使用 :mzn:`let` 表达式 
+- 谓词和函数中的 :index:`参数 <argument>`
 
-Any local scoped variable overshadows the outer scoped variables
-of the same name.
+任何局部作用域变量都会覆盖同名称的外部作用域变量。
 
 .. literalinclude:: examples/scope.mzn
   :language: minizinc
   :name: ex-scope
-  :caption: A model for illustrating scopes of variables (:download:`scope.mzn <examples/scope.mzn>`).
+  :caption: 阐述变量作用域的模型 (:download:`scope.mzn <examples/scope.mzn>`).
 
-For example, in the model shown in :numref:`ex-scope` 
-the :mzn:`x` in :mzn:`-x <= y` is the global :mzn:`x`,
-the :mzn:`x` in
-:mzn:`smallx(x)` is the iterator :mzn:`x in 1..u`,
-while the :mzn:`y` in the disjunction is the second
-argument of the predicate.
+例如，在 :numref:`ex-scope` 中给出的模型中， :mzn:`-x <= y` 中的 :mzn:`x` 是全局 :mzn:`x` ， :mzn:`smallx(x)` 中的 :mzn:`x` 是迭代器 :mzn:`x in 1..u` ，而析取中的 :mzn:`y` 是谓词的第二个参数。
