@@ -1,9 +1,9 @@
 include "cumulative.mzn";
 
 enum OBJECTS;
-array[OBJECTS] of int: duration; % duration to move
-array[OBJECTS] of int: handlers; % number of handlers required
-array[OBJECTS] of int: trolleys; % number of trolleys required
+array[OBJECTS] of int: duration; % 移动的持续时间
+array[OBJECTS] of int: handlers; % 需要的搬运工的数量
+array[OBJECTS] of int: trolleys; % 需要的手推车的数量
 
 int: available_handlers;
 int: available_trolleys;

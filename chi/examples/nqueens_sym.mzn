@@ -1,5 +1,5 @@
 int: n;
-array [1..n] of var 1..n: q; % queen is column i is in row q[i]
+array [1..n] of var 1..n: q; % 在第i列的皇后在q[i]上
 
 include "alldifferent.mzn";
 
@@ -9,14 +9,14 @@ constraint alldifferent([ q[i] - i | i in 1..n]); % upwards+downwards
 
 include "lex_lesseq.mzn";
 
-% Alternative Boolean model:
-% Map each position i,j to a Boolean telling us whether there is a queen at i,j
+% 可选的布尔模型:
+% 映射每一个位置 i,j到一个布尔上来说明在i,j上是否有一个皇后
 array[1..n,1..n] of var bool: qb;
 
-% Channeling constraint
+% 连通约束
 constraint forall (i,j in 1..n) ( qb[i,j] <-> (q[i]=j) );
 
-% Lexicographic symmetry breaking constraints
+% 字典排序对称性破缺
 constraint
     lex_lesseq(array1d(qb), [ qb[j,i] | i,j in 1..n ])
 /\  lex_lesseq(array1d(qb), [ qb[i,j] | i in reverse(1..n), j in 1..n ])
@@ -27,7 +27,7 @@ constraint
 /\  lex_lesseq(array1d(qb), [ qb[j,i] | i,j in reverse(1..n) ])
 ;
 
-% search
+% 搜索
 solve :: int_search(q, first_fail, indomain_min, complete)
       satisfy;
 output [ if fix(q[j]) == i then "Q" else "." endif ++

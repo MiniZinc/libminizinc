@@ -1,5 +1,5 @@
-% the sum of bits x = s in binary. 
-%            s[0], s[1], ..., s[k] where 2^k >= length(x) > 2^(k-1)
+% 位 x 的的总和 = 二元表示的 s。
+%            s[0], s[1], ..., s[k] 其中 2^k >= length(x) > 2^(k-1)
 predicate binary_sum(array[int] of var bool:x, 
                      array[int] of var bool:s)=
      let { int: l = length(x) } in 
@@ -17,7 +17,7 @@ predicate binary_sum(array[int] of var bool:x,
                 binary_add(fs, ts, b, s)
      endif;
 
-% add two binary numbers x, and y and carry in bit ci to get binary s
+% 把两个二元数值 x 和 y 加起来，位 ci 用来表示进位，来得到二元 s 
 predicate binary_add(array[int] of var bool: x,
                      array[int] of var bool: y,
                      var bool: ci,

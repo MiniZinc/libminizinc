@@ -1,4 +1,4 @@
-% the sum of booleans x = s
+% 布尔型变量 x的总和 = s
 predicate bool_sum_eq(array[int] of var bool:x, int:s) =
      let { int: c = length(x) } in
      if s < 0 then false 

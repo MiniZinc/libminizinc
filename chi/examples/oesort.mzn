@@ -1,5 +1,5 @@
-%% odd-even sort
-%% y is the sorted version of x, all trues before falses
+%% 奇偶排序
+%% y是x的有序版本，所有的真都在假之前
 predicate oesort(array[int] of var bool:x, array[int] of var bool:y)=
   let { int: c = card(index_set(x)) } in
   if c == 1 then x[1] == y[1] 
@@ -13,9 +13,9 @@ predicate oesort(array[int] of var bool:x, array[int] of var bool:y)=
     oesort(xf,tf) /\ oesort(xl,tl) /\ oemerge(tf ++ tl, y)
   endif;
 
-%% odd-even merge
-%% y is the sorted version of x, all trues before falses
-%% assumes first half of x is sorted, and second half of x
+%% 奇偶合并
+%% y 是 x的有序版本，所有的真都在假之前
+%% 假设 x的前一半是有序的，后一半也是
 predicate oemerge(array[int] of var bool:x, array[int] of var bool:y)=
   let { int: c = card(index_set(x)) } in
   if c == 1 then x[1] == y[1] 
@@ -34,6 +34,6 @@ predicate oemerge(array[int] of var bool:x, array[int] of var bool:y)=
       y[c] = te[c div 2]
   endif));
  
-% comparator o1 = max(i1,i2), o2 = min(i1,i2)
+% 比较器 o1 = max(i1,i2), o2 = min(i1,i2)
 predicate comparator(var bool:i1,var bool:i2,var bool:o1,var bool:o2)=
           (o1 = (i1 \/ i2)) /\ (o2 = (i1 /\ i2));

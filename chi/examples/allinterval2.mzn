@@ -2,8 +2,8 @@ include "alldifferent.mzn";
 
 int: n;
 
-array[1..n] of var 1..n: y;  % position of each number
-array[1..n-1] of var 1..n-1: v; % position of difference i
+array[1..n] of var 1..n: y;  % 每个数值的位置
+array[1..n-1] of var 1..n-1: v; % 差值i的位置 
 
 constraint alldifferent(y);
 constraint alldifferent(v);

@@ -2,8 +2,8 @@ include "alldifferent.mzn";
 
 int: n;
 
-array[1..n] of var 1..n: x;      % sequence of numbers
-array[1..n-1] of var 1..n-1: u;  % sequence of differences
+array[1..n] of var 1..n: x;      % 数字的序列
+array[1..n-1] of var 1..n-1: u;  % 差的序列
 
 constraint alldifferent(x);
 constraint alldifferent(u);

@@ -1,6 +1,6 @@
-% Data file for simple production planning model
+% 简单批量生产计划模型的数据文件
 Products = { BananaCake, ChocolateCake };
-profit = [400, 450]; % in cents
+profit = [400, 450]; % 以分为单位
 
 Resources = { Flour, Banana, Sugar, Butter, Cocoa };
 capacity = [4000, 6, 2000, 500, 500];

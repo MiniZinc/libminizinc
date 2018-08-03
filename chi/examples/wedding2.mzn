@@ -7,7 +7,7 @@ array[Hatreds] of Guests: h2 = [clara, bestman, ted, alice, ron];
 set of Guests: Males = {groom, bestman, bob, ted, ron,ed};
 set of Guests: Females = {bride,bridesmaid,carol,alice,rona,clara}; 
 
-array[Guests] of var Seats: pos; % seat of guest
+array[Guests] of var Seats: pos; % 客人的座位
 
 include "alldifferent.mzn";
 constraint alldifferent(pos);

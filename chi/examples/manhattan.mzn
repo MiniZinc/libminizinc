@@ -19,7 +19,7 @@ constraint forall(i,j in NUM where i < j)
 var int: obj = sum(i,j in NUM where i < j)(dist[i,j]);
 solve minimize obj; 
 
-% simply to display result
+% 简单地显示结果
 include "alldifferent_except_0.mzn";
 array[NUM,NUM] of var 0..n: grid;
 constraint forall(i in NUM)(grid[x[i],y[i]] = i);

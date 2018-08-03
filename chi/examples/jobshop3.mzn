@@ -1,23 +1,23 @@
 include "disjunctive.mzn";
 
-int: jobs;                                    % no of jobs
+int: jobs;                                    % 作业的数量
 set of int: JOB = 1..jobs;
-int: tasks;                                   % no of tasks per job
+int: tasks;                                   % 每个作业的任务数量
 set of int: TASK = 1..tasks;
-array [JOB,TASK] of int: d;                   % task durations
-int: total = sum(i in JOB, j in TASK)(d[i,j]);% total duration
-int: digs = ceil(log(10.0,total));            % digits for output
-array [JOB,TASK] of var 0..total: s;          % start times
-var 0..total: end;                            % total end time
+array [JOB,TASK] of int: d;                   % 任务持续时间
+int: total = sum(i in JOB, j in TASK)(d[i,j]);% 总持续时间
+int: digs = ceil(log(10.0,total));            % 输出的数值
+array [JOB,TASK] of var 0..total: s;          % 起始时间
+var 0..total: end;                            % 总结束时间
 
-constraint %% ensure the tasks occur in sequence
+constraint %% 保证任务按照顺序出现
     forall(i in JOB) (
         forall(j in 1..tasks-1) 
             (s[i,j] + d[i,j] <= s[i,j+1]) /\
         s[i,tasks] + d[i,tasks] <= end
     );
 
-constraint %% ensure no overlap of tasks
+constraint %% 保证任务之间没有重叠
     forall(j in TASK) (
         disjunctive([s[i,j] | i in JOB], [d[i,j] | i in JOB])
     );

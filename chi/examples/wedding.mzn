@@ -7,11 +7,11 @@ array[Hatreds] of Guests: h2 = [clara, bestman, ted, alice, ron];
 set of Guests: Males = {groom, bestman, bob, ted, ron,ed};
 set of Guests: Females = {bride,bridesmaid,carol,alice,rona,clara}; 
 
-array[Guests] of var Seats: pos; % seat of guest
-array[Hatreds] of var Seats: p1;  % seat of guest 1 in hatred
-array[Hatreds] of var Seats: p2;  % seat of guest 2 in hatred 
-array[Hatreds] of var 0..1: sameside;  % seats of hatred on same side 
-array[Hatreds] of var Seats: cost;  % penalty of hatred  
+array[Guests] of var Seats: pos; % 客人的座位
+array[Hatreds] of var Seats: p1;  % 互相憎恶的客人1的座位 
+array[Hatreds] of var Seats: p2;  % 互相憎恶的客人2的座位 
+array[Hatreds] of var 0..1: sameside;  % 互相憎恶的客人是否坐在同一边 
+array[Hatreds] of var Seats: cost;  % 互相憎恶的客人的距离
 
 include "alldifferent.mzn";
 constraint alldifferent(pos);

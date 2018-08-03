@@ -1,4 +1,4 @@
-% Simple nurse rostering
+% 简单护士排班问题
 include "regular.mzn";
 enum NURSE;
 enum DAY;
@@ -11,12 +11,12 @@ int: S = card(SHIFT);
 
 int: Q = 6; int: q0 = 1; set of int: STATE = 1..Q;
 array[STATE,SHIFT] of int: t =
-     [| 2, 3, 1    % state 1
-      | 4, 4, 1    % state 2
-      | 4, 5, 1    % state 3
-      | 6, 6, 1    % state 4
-      | 6, 0, 1    % state 5
-      | 0, 0, 1|]; % state 6 
+     [| 2, 3, 1    % 状态1
+      | 4, 4, 1    % 状态2
+      | 4, 5, 1    % 状态3
+      | 6, 6, 1    % 状态4
+      | 6, 0, 1    % 状态5
+      | 0, 0, 1|]; % 状态6
 
 array[NURSE,DAY] of var SHIFT: roster;
 

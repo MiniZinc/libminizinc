@@ -1,15 +1,15 @@
 FOODS = { icecream, banana, chocolatecake, lasagna, 
           steak, rice, chips, brocolli, beans} ;
 
-dd = [| icecream,      1200,  50,  10, 120,  400     % icecream
-      | banana,         800, 120,   5,  20,  120     % banana
-      | chocolatecake, 2500, 400,  20, 100,  600     % chocolate cake
-      | lasagna,       3000, 200, 100, 250,  450     % lasagna
-      | steak,         1800, 800,  50, 100, 1200     % steak
-      | rice,          1200,  50,   5,  20,  100     % rice
-      | chips,         2000,  50, 200, 200,  250     % chips
-      | brocolli,       700, 100,  10,  10,  125     % brocolli
-      | beans,         1900, 250,  60,  90,  150 |]; % beans
+dd = [| icecream,      1200,  50,  10, 120,  400     % 冰淇淋
+      | banana,         800, 120,   5,  20,  120     % 香蕉
+      | chocolatecake, 2500, 400,  20, 100,  600     % 巧克力蛋糕
+      | lasagna,       3000, 200, 100, 250,  450     % 千层面
+      | steak,         1800, 800,  50, 100, 1200     % 牛排
+      | rice,          1200,  50,   5,  20,  100     % 米饭
+      | chips,         2000,  50, 200, 200,  250     % 薯条
+      | brocolli,       700, 100,  10,  10,  125     % 花椰菜
+      | beans,         1900, 250,  60,  90,  150 |]; % 黄豆
 
 min_energy = 3300;
 min_protein = 500;

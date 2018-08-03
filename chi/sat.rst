@@ -1,39 +1,25 @@
 .. _sec-sat:
 
-Boolean Satisfiability Modelling in MiniZinc
+在MiniZinc中对布尔可满足性问题建模
 ============================================
 
-MiniZinc can be used to model Boolean satisfiability
-problems where the variables are restricted to be Boolean (:mzn:`bool`).
-MiniZinc can be used with efficient Boolean satisfiability 
-solvers to solve the resulting models efficiently.
+MiniZinc 可以被用来给布尔可满足性问题建模，这种问题的变量被限制为是布尔型 (:mzn:`bool`)。MiniZinc 可以使用有效率的布尔可满足性求解器来有效地解决求得的模型。
 
-Modelling Integers
+
+整型建模
 ------------------
 
-Many times although we wish to use a Boolean satisfiability solver we may
-need to model some integer parts of our problem. 
+很多时候，尽管我们想要使用一个布尔可满足性求解器，我们可能也需要给问题的 整数部分建模。
+有三种通用的方式使用布尔型变量对定义域为范围 :math:`0 \dots m` 内的整型变量 :math:`I` 建模，其中 :math:`m = 2^{k}-1` 。
 
-There are three common ways of modelling an integer variables
-:math:`I` in the range :math:`0 \dots m` where :math:`m = 2^{k}-1`
-using Boolean
-variables. 
-
-- Binary: :math:`I` is represented by :math:`k` binary variables
-  :math:`i_0, \ldots, i_{k-1}` where
-  :math:`I = 2^{k-1} i_{k-1} + 2^{k-2} i_{k-2} + \cdots + 2 i_1 + i_0`.
-  This can be represented in MiniZinc as
+- 二元： :math:`I` 被表示为 :math:`k` 个二元变量 :math:`i_0, \ldots, i_{k-1}` ，其中 :math:`I = 2^{k-1} i_{k-1} + 2^{k-2} i_{k-2} + \cdots + 2 i_1 + i_0` 。在MiniZinc 中，这可表示为
 
   .. code-block:: minizinc
 
     array[0..k-1]  of var bool: i;
     var 0..pow(2,k)-1: I = sum(j in 0..k-1)(bool2int(i[j])*pow(2,j));
 
-- Unary: where :math:`I` is represented by :math:`m` binary variables
-  :math:`i_1, \ldots, i_m`
-  and :math:`i = \sum_{j=1}^m \mathtt{bool2int}(i_j)`.  Since there is massive redundancy in
-  the unary representation we usually require that
-  :math:`i_j \rightarrow i_{j-1}, 1 < j \leq m`. This can be represented in MiniZinc as
+- 一元: :math:`I` 被表示为 :math:`m` 个二元变量 :math:`i_1, \ldots, i_m` 且 :math:`i = \sum_{j=1}^m \mathtt{bool2int}(i_j)` 。由于在一元表 示中有大量的冗余表示，我们通常要求 :math:`i_j \rightarrow i_{j-1}, 1 < j \leq m` 。在MiniZinc中，这可表示为 
 
   .. code-block:: minizinc
 
@@ -41,10 +27,7 @@ variables.
     constraint forall(j in 2..m)(i[j] -> i[j-1]);
     var 0..m: I = sum(j in 1..m)(bool2int(i[j]);
 
-- Value: where :math:`I` is represented by :math:`m+1` binary variables
-  :math:`i_0, \ldots, i_m` where
-  :math:`i = k \Leftrightarrow i_k`, and at most one of :math:`i_0, \ldots, i_m` is true. 
-  This can be represented in MiniZinc as
+- 值: 其中 :math:`I` 被表示为 :math:`m+1` 个二元变量 :math:`i_0, \ldots, i_m` ，其中 :math:`i = k \Leftrightarrow i_k` 并且 :math:`i_0, \ldots, i_m` 中最多有一个为真。在MiniZinc中，这可表示为
 
   .. code-block:: minizinc
 
@@ -53,150 +36,102 @@ variables.
     var 0..m: I;
     constraint foall(j in 0..m)(I == j <-> i[j]);
 
-There are advantages and disadvantages to each representation.  It depends
-on what operations on integers are to required in the model as to which is
-preferable.
+每种表示都有其优点和缺点。这取决于模型中需要对整数做什么样的操作，而这些 操作在哪一种表示上更为方便。
 
-Modelling Disequality
+非等式建模
 ---------------------
 
-Let us consider modelling a latin squares problem. A latin square
-is an :math:`n \times n` grid of numbers from :math:`1..n` such that 
-each number appears exactly once in every row and column. 
-An integer model for latin squares is shown in :numref:`ex-latin`.
+接下来，让我们考虑如何为一个拉丁方问题建模。一个拉丁方问题是在 :math:`n \times n` 个网 格上放置 :math:`1..n` 之间的数值使得每个数在每行每列都仅出现一次。图 :numref:`ex-latin` 中给出了拉丁方问题的的一个整数模型。
 
 .. literalinclude:: examples/latin.mzn
   :language: minizinc
   :name: ex-latin
-  :caption: Integer model for Latin Squares (:download:`latin.mzn <examples/latin.mzn>`).
+  :caption: 拉丁方问题的整数模型 (:download:`latin.mzn <examples/latin.mzn>`).
 
-The only constraint on the integers is in fact disequality, which is encoded
-in the :mzn:`alldifferent` constraint. 
-The value representation is the best way of representing disequality.
-A Boolean only model for latin squares is shown in
-:numref:`ex-latinbool`.
-Note each integer array element :mzn:`a[i,j]` is replaced by an array of
-Booleans.
-We use the :mzn:`exactlyone` predicate to encode that each value is used
-exactly once in every row and every column, as well as to encode that exactly
-one of the Booleans corresponding to integer array element :mzn:`a[i,j]` is true.
+整型变量直接的唯一的约束实际上是非等式，而它在约束 :mzn:`alldifferent`  中被编码。 数值表示是表达非等式的最佳方式。图 :numref:`ex-latinbool` 给出了一个关于拉丁方问题的只含有布尔型 变量的模型。注意每个整型数组元素 :mzn:`a[i,j]` 被替换为一个布尔型数组。我们使用谓词 :mzn:`exactlyone` 来约束每个数值在每行每列都仅出现一次，也用来约束有且仅有一个布尔型 变量对应于整型数组元素 :mzn:`a[i,j]` 为真。
 
 .. literalinclude:: examples/latinbool.mzn
   :language: minizinc
   :name: ex-latinbool
-  :caption: Boolean model for Latin Squares (:download:`latinbool.mzn <examples/latinbool.mzn>`).
+  :caption: 拉丁方问题的布尔型模型 (:download:`latinbool.mzn <examples/latinbool.mzn>`).
 
-Modelling Cardinality
+势约束建模
 ---------------------
 
-Let us consider modelling the Light Up puzzle. The puzzle consists of a 
-rectangular grid of squares which are blank, or filled. Every filled square
-may contain a number from 1 to 4, or may have no number. The aim is to place
-lights
-in the blank squares so that
+让我们来看下如何对点灯游戏建模。这个游戏由一个矩形网格组成，每个网格为空 白或者被填充。每个被填充的方格可能包含1到4之间的数字，或者没有数字。我们的 目标是放置灯泡在空白网格使得
 
-- Each blank square is "illuminated", that is can see a light through an
-  uninterupted line of blank squares
-- No two lights can see each other
-- The number of lights adjacent to a numbered filled square
-  is exactly the number in the filled square.
+- 每个空白的网格是“被照亮的”，也就是说它可以透过一行没有被打断的空白网格 看到光亮。
+- 任何两个灯泡都不能看到彼此。
+- 一个有数值的填充的网格相邻的灯泡个数必须等于这个网格中的数值。
 
-An example of a Light Up puzzle is shown in :numref:`fig-lightup`
-with its solution in :numref:`fig-lightup-sol`.
+:numref:`fig-lightup` 给出了点灯游戏的一个例子以及 :numref:`fig-lightup-sol` 给出了它的解。
 
 .. _fig-lightup:
 
 .. figure:: figures/lightup.*
   
-  An example of a Light Up puzzle
+  点灯游戏的一个例子展示
 
 .. _fig-lightup-sol:
 
 .. figure:: figures/lightup2.*
   
-  The completed solution of the Light Up puzzle
+  点灯游戏的完整的解
 
-It is natural to model this problem
-using Boolean variables to determine which
-squares contain a light and which do not, but there is some integer
-arithmetic to consider for the filled squares.
+这个问题很自然地可以使用布尔型变量建模。布尔型变量用来决定哪一个网格包含有一个点灯以及哪一个没有。同时我们也有一些作用于填充的网格上的整数算术运算要 考虑。
+
 
 .. literalinclude:: examples/lightup.mzn
   :language: minizinc
   :name: ex-lightup
-  :caption: SAT Model for the Light Up puzzle (:download:`lightup.mzn <examples/lightup.mzn>`).
+  :caption: 点灯游戏的SAT模型 (:download:`lightup.mzn <examples/lightup.mzn>`).
 
-A model for the problem is given in :numref:`ex-lightup`.
-A data file for the problem shown in :numref:`fig-lightup`
-is shown in :numref:`fig-lightupdzn`.
+图 :numref:`ex-lightup` 中给出了这个问题的一个模型。图 :numref:`fig-lightup` 中给出的问题的数据文件在图 :numref:`fig-lightupdzn` 中给出。 
 
 .. literalinclude:: examples/lightup.dzn
   :language: minizinc
   :name: fig-lightupdzn
-  :caption: Datafile for the Light Up puzzle instance shown in :numref:`fig-lightup`.
+  :caption: 点灯游戏的 :numref:`fig-lightup` 中实例的数据文件
 
-The model makes use of a Boolean sum predicate
+模型利用了一个布尔型求和谓词 
 
 .. code-block:: minizinc
 
   predicate bool_sum_eq(array[int] of var bool:x, int:s);
 
-which requires that the sum of an array of Boolean equals some fixed
-integer. There are a number of ways of modelling such
-*cardinality* constraints using Booleans.
+使得一个布尔型数组的和等于一个固定的整数。多种方式都能使用布尔型变量给 *cardinality* 约束建模。
 
-- Adder networks: we can use a network of adders to
-  build a binary Boolean representation of the sum of the Booleans
-- Sorting networks: we can use a sorting network to sort
-  the array of Booleans to create a unary representation of the sum
-  of the Booleans
-- Binary decision diagrams: we can create a binary decision diagram
-  (BDD) that encodes the cardinality constraint.
+- 加法器网络：我们可以使用包含加法器的一个网络给布尔型总和建立一个二元布 尔型表达式
+- 排序网络：我们可以通过使用一个排序网络去分类布尔型数组来创建一个布尔型 总和的一元表达式
+- 二元决策图：我们可以创建一个二维决策图（BDD）来编码势约束。
 
 
 .. literalinclude:: examples/bboolsum.mzn
   :language: minizinc
   :name: ex-bboolsum
-  :caption: Cardinality constraints by binary adder networks (:download:`bboolsum.mzn <examples/bboolsum.mzn>`).
+  :caption: 使用二元加法器网络表示势约束 (:download:`bboolsum.mzn <examples/bboolsum.mzn>`).
 
 .. literalinclude:: examples/binarysum.mzn
   :language: minizinc
   :name: ex-binarysum
-  :caption: Code for building binary addition networks (:download:`binarysum.mzn <examples/binarysum.mzn>`).
+  :caption: 创建二元求和网络的代码 (:download:`binarysum.mzn <examples/binarysum.mzn>`).
 
-We can implement :mzn:`bool_sum_eq` using binary adder networks
-using the code shown in :numref:`ex-bboolsum`.
-The predicate :mzn:`binary_sum`
-defined in :numref:`ex-binarysum`
-creates a binary representation
-of the sum of :mzn:`x` by splitting the list into two,
-summing up each half to create a binary representation
-and then summing these two binary numbers using :mzn:`binary_add`.
-If the list :mzn:`x` is odd the last bit is saved to use as a carry in
-to the binary addition.
+我们可以使用图 :numref:`ex-bboolsum` 给出的二元加法器网络代码实现 :mzn:`bool_sum_eq` 。图 :numref:`ex-binarysum` 中定义的 谓词 :mzn:`binary_sum` 创建了一个 :mzn:`x` 总和的二维表示法。它把列表分为两部分，把每一部分 分别加起来得到它们的一个二元表示，然后用 :mzn:`binary_add` 把这两个二元数值加起来。 如果 :mzn:`x`  列大小是奇数，则最后一位被保存起来作为二元加法时的进位来使用。
 
 .. \pjs{Add a picture of an adding network}
 
 .. literalinclude:: examples/uboolsum.mzn
   :language: minizinc
   :name: ex-uboolsum
-  :caption: Cardinality constraints by sorting networks (:download:`uboolsum.mzn <examples/uboolsum.mzn>`).
+  :caption: 使用二元加法器网络表示势约束 (:download:`uboolsum.mzn <examples/uboolsum.mzn>`).
 
 .. literalinclude:: examples/oesort.mzn
   :language: minizinc
   :name: ex-oesort
-  :caption: Odd-even merge sorting networks (:download:`oesort.mzn <examples/oesort.mzn>`).
+  :caption: 奇偶归并排序网络 (:download:`oesort.mzn <examples/oesort.mzn>`).
 
-We can implement :mzn:`bool_sum_eq` using unary sorting networks
-using the code shown in :numref:`ex-uboolsum`.
-The cardinality constraint is defined by expanding the input
-:mzn:`x` to have length a power of 2, and sorting the resulting bits
-using an odd-even merge sorting network. 
-The odd-even merge sorter shown in :mzn:`ex-oesort` works 
-recursively by splitting
-the input list in 2, sorting each list and merging the two
-sorted lists.  
-
+我们可以使用图 :numref:`ex-uboolsum` 中给出的一元排序网络代码来实现 :mzn:`bool_sum_eq` 。势约束通过扩展输入 :mzn:`x` 长度为2 的次幂，然后使用奇偶归并排序网络给得到的位排序来实现。奇偶归 并排序工作方式在图 :numref:`ex-oesort` 中给出，它递归地把输入列表拆为两部分，给每一部分排序，然 后再把有序的两部分归并起来。
+ 
 .. \pjs{Add much more stuff on sorting networks}
 
 
@@ -206,16 +141,9 @@ sorted lists.
 .. literalinclude:: examples/bddsum.mzn
   :language: minizinc
   :name: ex-bddsum
-  :caption: Cardinality constraints by binary decision diagrams (:download:`bddsum.mzn <examples/bddsum.mzn>`).
+  :caption: 使用二元加法器网络表示势约束 (:download:`bddsum.mzn <examples/bddsum.mzn>`).
 
-We can implement :mzn:`bool_sum_eq` using binary decision diagrams
-using the code shown in :mzn:`ex:bddsum`.
-The cardinality constraint is broken into two cases:
-either the first element :mzn:`x[1]` is :mzn:`true`, 
-and the sum of the remaining bits
-is :mzn:`s-1`, or :mzn:`x[1]` is :mzn:`false` and the sum of the remaining bits
-is :mzn:`s`. For efficiency this relies on common subexpression elimination
-to avoid creating many equivalent constraints.
+我们可以使用图 :numref:`ex-bddsum` 中给出的二元决策图代码来实现 :mzn:`bool_sum_eq` 。势约束被分为两种情况：或者第一个元素 :mzn:`x[1]` 为 :mzn:`true` 并且剩下位的总和是 :mzn:`s-1` ，或者 :mzn:`x[1]` 为 :mzn:`false` 并 且剩下位的总和是 :mzn:`s` 。它的效率的提高依赖于去除共同子表达式来避免产生太多的相同的约束。
 
 
 .. \pjs{Add a picture of a bdd network network}

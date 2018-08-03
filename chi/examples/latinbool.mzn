@@ -1,4 +1,4 @@
-int: n; % size of latin square
+int: n; % 拉丁方的大小
 array[1..n,1..n,1..n] of var bool: a;
 
 predicate atmostone(array[int] of var bool:x) =

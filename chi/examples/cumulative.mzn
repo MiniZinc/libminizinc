@@ -1,9 +1,9 @@
 %--------------------------------------------------------------------%
-% Requires that a set of tasks given by start times 's', 
-% durations 'd', and resource requirements 'r', 
-% never require more than a global 
-% resource bound 'b' at any one time.
-% Assumptions:
+% 需要给出一个任务集合，其中起始时间为's', 
+% 持续时间'd'以及资源需求量'r'，
+% 任何时候需求量都不能超过
+% 一个全局资源界限'b'。
+% 假设：
 % - forall i, d[i] >= 0 and r[i] >= 0
 %--------------------------------------------------------------------%
 predicate cumulative(array[int] of var int: s,

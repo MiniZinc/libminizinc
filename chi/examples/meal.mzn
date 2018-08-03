@@ -1,4 +1,4 @@
-% Planning a balanced meal
+% 规划均衡的膳食
 include "table.mzn";
 int: min_energy;
 int: min_protein;
@@ -9,7 +9,7 @@ set of FOOD: mains;
 set of FOOD: sides;
 enum FEATURE = { name, energy, protein, salt, fat, cost}; 
 enum FOOD; 
-array[FOOD,FEATURE] of int: dd; % food database
+array[FOOD,FEATURE] of int: dd; % 食物数据库
 
 array[FEATURE] of var int: main;
 array[FEATURE] of var int: side;

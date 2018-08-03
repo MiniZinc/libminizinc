@@ -1,27 +1,27 @@
-% Products to be produced
+% 要制造的产品
 enum Products;  
-% profit per unit for each product
+% 每种产品的单位利润
 array[Products] of int: profit;
-% Resources to be used
+% 用到的资源
 enum Resources;
-% amount of each resource available
+% 每种资源可获得的数量
 array[Resources] of int: capacity; 
 
-% units of each resource required to produce 1 unit of product
+% 制造一个单位的产品需要的资源单位量
 array[Products, Resources] of int: consumption; 
 constraint assert(forall (r in Resources, p in Products) 
            (consumption[p,r] >= 0), "Error: negative consumption");
 
-% bound on number of Products
+% 产品数量的界
 int: mproducts = max (p in Products) 
                      (min (r in Resources where consumption[p,r] > 0) 
                           (capacity[r] div consumption[p,r]));
 
-% Variables: how much should we make of each product
+% 变量：每种产品我们需要制造多少
 array[Products] of var 0..mproducts: produce;
 array[Resources] of var 0..max(capacity): used;
 
-% Production cannot use more than the available Resources:
+% 产量不可以使用超过可获得的资源量：
 constraint forall (r in Resources) (     
       used[r] = sum (p in Products)(consumption[p, r] * produce[p]) 
 );
@@ -29,7 +29,7 @@ constraint forall (r in Resources) (
       used[r] <= capacity[r]
 );    
 
-% Maximize profit
+% 最大化利润
 solve maximize sum (p in Products) (profit[p]*produce[p]);
 
 output [ "\(p) = \(produce[p]);\n" | p in Products ] ++
