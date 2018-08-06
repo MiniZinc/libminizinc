@@ -15,7 +15,6 @@
 
 #ifdef _WIN32
 #define NOMINMAX     // Need this before all (implicit) include's of Windows.h
-#undef ERROR
 #endif
 
 #include <minizinc/solvers/mzn_solverinstance.hh>
@@ -24,6 +23,10 @@
 
 #include <minizinc/timer.hh>
 #include <minizinc/process.hh>
+
+#ifdef _WIN32
+#undef ERROR
+#endif
 
 using namespace std;
 
