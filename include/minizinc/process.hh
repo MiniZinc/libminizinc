@@ -24,6 +24,7 @@ const auto SolverInstance__ERROR = MiniZinc::SolverInstance::ERROR;  // before w
 #include <unistd.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 #endif
 #include <sys/types.h>
 #include <signal.h>

@@ -15,6 +15,7 @@
 
 #ifdef _WIN32
 #define NOMINMAX     // Need this before all (implicit) include's of Windows.h
+#undef ERROR
 #endif
 
 #include <minizinc/solvers/fzn_solverinstance.hh>
