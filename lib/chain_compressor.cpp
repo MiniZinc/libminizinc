@@ -442,13 +442,26 @@ namespace MiniZinc {
 
   bool LECompressor::eqBounds(Expression *a, Expression *b) {
     // TODO: (To optimise) Check lb(lhs) >= lb(rhs) and enforce ub(lhs) <= ub(rhs)
-    assert(follow_id_to_decl(a)->dyn_cast<VarDecl>());
-    assert(follow_id_to_decl(b)->dyn_cast<VarDecl>());
+    IntSetVal* dom_a;
+    IntSetVal* dom_b;
 
-    IntSetVal* a_dom = eval_intset(env, follow_id_to_decl(a)->cast<VarDecl>()->ti()->domain());
-    IntSetVal* b_dom = eval_intset(env, follow_id_to_decl(b)->cast<VarDecl>()->ti()->domain());
+    if(auto a_decl = follow_id_to_decl(a)->dyn_cast<VarDecl>()) {
+      dom_a = eval_intset(env, a_decl->ti()->domain());
+    } else {
+      assert(a->dyn_cast<IntLit>());
+      auto a_val = a->cast<IntLit>();
+      dom_a = IntSetVal::a(a_val->v(), a_val->v());
+    }
 
-    return (a && b && (a_dom->min() == b_dom->min()) && (a_dom->max() == b_dom->max())) || (!a && !b);
+    if(auto b_decl = follow_id_to_decl(b)->dyn_cast<VarDecl>()) {
+      dom_b = eval_intset(env, b_decl->ti()->domain());
+    } else {
+      assert(b->dyn_cast<IntLit>());
+      auto b_val = b->cast<IntLit>();
+      dom_b = IntSetVal::a(b_val->v(), b_val->v());
+    }
+
+    return (dom_a && dom_b && (dom_a->min() == dom_b->min()) && (dom_a->max() == dom_b->max())) || (!dom_a && !dom_b);
   }
 
 }
