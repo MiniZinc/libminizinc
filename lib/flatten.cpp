@@ -3164,6 +3164,7 @@ namespace MiniZinc {
     std::vector<Val> coeffv;
     std::vector<KeepAlive> alv;
     for (unsigned int i=0; i<al->size(); i++) {
+      GCLock lock;
       if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al)[i],cid)())) {
         if (VarDecl* alvi_decl = follow_id_to_decl((*al)[i])->dyn_cast<VarDecl>()) {
           if (alvi_decl->ti()->domain()) {
@@ -3181,7 +3182,6 @@ namespace MiniZinc {
         }
         
         Val cd = c_coeff[i];
-        GCLock lock;
         ArrayLit* sc_coeff = eval_array_lit(env,sc->arg(0));
         ArrayLit* sc_al = eval_array_lit(env,sc->arg(1));
         Val sc_d = LinearTraits<Lit>::eval(env,sc->arg(2));
