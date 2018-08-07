@@ -2265,7 +2265,8 @@ namespace MiniZinc {
             f2i->decl(env.model->matchFn(env, f2i, false));
             assert(f2i->decl());
             f2i->type(Type::varfloat());
-            n_vars_v[i] = f2i;
+            EE ee = flat_exp(env, Ctx(), f2i, NULL, constants().var_true);
+            n_vars_v[i] = ee.r();
           }
           ArrayLit* nvars = new ArrayLit(vars->loc().introduce(), n_vars_v);
           nvars->type(Type::varfloat(1));
