@@ -120,6 +120,15 @@ annotation int_search(
 );
 
 /** @group annotations.search Specify search on variables \a x, with variable selection
+  strategy \a select, and value choice strategy \a choice.
+*/
+annotation int_search(
+    array[int] of var int: x,
+    ann: select,
+    ann: choice
+) = int_search(x,select,choice,complete);
+
+/** @group annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, value choice strategy \a choice, and exploration strategy
   \a explore.
 */
@@ -129,6 +138,15 @@ annotation bool_search(
     ann: choice,
     ann: explore
 );
+
+/** @group annotations.search Specify search on variables \a x, with variable selection
+  strategy \a select, and value choice strategy \a choice.
+*/
+annotation bool_search(
+    array[int] of var bool: x,
+    ann: select,
+    ann: choice
+) = bool_search(x,select,choice,complete);
 
 /** @group annotations.search Specify search on variables \a x, 
   with precision \a prec, variable selection
@@ -143,6 +161,17 @@ annotation float_search(
     ann: explore
 );
 
+/** @group annotations.search Specify search on variables \a x, 
+  with precision \a prec, variable selection
+  strategy \a select, and value choice strategy \a choice.
+*/
+annotation float_search(
+    array[int] of var float: x,
+    float: prec,
+    ann: select,
+    ann: choice
+) = float_search(x,prec,select,choice,complete);
+
 /** @group annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, value choice strategy \a choice, and exploration strategy
   \a explore.
@@ -153,6 +182,15 @@ annotation set_search(
     ann: choice,
     ann: explore
 );
+
+/** @group annotations.search Specify search on variables \a x, with variable selection
+  strategy \a select, and value choice strategy \a choice.
+*/
+annotation set_search(
+    array[int] of var set of int: x,
+    ann: select,
+    ann: choice
+) = set_search(x,select,choice,complete);
 
 /***
  @groupdef annotations.search.varsel Variable selection annotations

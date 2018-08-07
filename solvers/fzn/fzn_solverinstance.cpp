@@ -30,6 +30,10 @@
 #include <minizinc/eval_par.hh>
 #include <minizinc/process.hh>
 
+#ifdef _WIN32
+#undef ERROR
+#endif
+
 using namespace std;
 
 namespace MiniZinc {
@@ -278,15 +282,15 @@ namespace MiniZinc {
 
     if(!opt.fzn_output_passthrough) {
       Process<Solns2Out> proc(cmd_line, getSolns2Out(), timelimit, sigint);
-      proc.run();
+      int exitStatus = proc.run();
       delete pathsFile;
-      return getSolns2Out()->status;
+      return exitStatus == 0 ? getSolns2Out()->status : SolverInstance::ERROR;
     } else {
       Solns2Log s2l(getSolns2Out()->getOutput(), _log);
       Process<Solns2Log> proc(cmd_line, &s2l, timelimit, sigint);
-      proc.run();
+      int exitStatus = proc.run();
       delete pathsFile;
-      return SolverInstance::NONE;
+      return exitStatus==0 ? SolverInstance::NONE : SolverInstance::ERROR;
     }
   }
 

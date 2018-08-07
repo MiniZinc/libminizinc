@@ -24,6 +24,7 @@ const auto SolverInstance__ERROR = MiniZinc::SolverInstance::ERROR;  // before w
 #include <unistd.h>
 #include <sys/select.h>
 #include <sys/time.h>
+#include <sys/wait.h>
 #endif
 #include <sys/types.h>
 #include <signal.h>
@@ -86,7 +87,7 @@ namespace MiniZinc {
       : _fzncmd(fzncmd), pS2Out(pso), timelimit(tl), sigint(si) {
       assert( 0!=pS2Out );
     }
-    void run(void) {
+    int run(void) {
 #ifdef _WIN32
       //TODO: implement hard timelimits for windows
 
@@ -180,20 +181,21 @@ namespace MiniZinc {
       thrStderr.join();
       terminateMutex.unlock();
       thrTimeout.join();
+      DWORD exitCode = 0;
+      if (GetExitCodeProcess(piProcInfo.hProcess,&exitCode) == FALSE) {
+        exitCode = 1;
+      }
       CloseHandle(piProcInfo.hProcess);
 
       // Hard timeout: GenerateConsoleCtrlEvent()
 
-      return;
+      return exitCode;
     }
 #else
       int pipes[3][2];
       pipe(pipes[0]);
       pipe(pipes[1]);
       pipe(pipes[2]);
-
-      // Make sure to reap child processes to avoid creating zombies
-      signal(SIGCHLD, SIG_IGN);
     
       if (int childPID = fork()) {
         close(pipes[0][0]);
@@ -299,7 +301,15 @@ namespace MiniZinc {
         }
 
         close(pipes[1][0]);
-        close(pipes[2][0]);                  
+        close(pipes[2][0]);
+        int exitStatus = 1;
+        int childStatus;
+        int pidStatus = waitpid(childPID, &childStatus, 0);
+        if (pidStatus > 0) {
+          if (WIFEXITED(childStatus)) {
+            exitStatus = WEXITSTATUS(childStatus);
+          }
+        }
         sigaction(SIGINT, &old_sa_int, NULL);
         sigaction(SIGTERM, &old_sa_term, NULL);
         if (hadInterrupt) {
@@ -308,7 +318,7 @@ namespace MiniZinc {
         if (hadTerm) {
           kill(getpid(), SIGTERM);
         }
-        return;
+        return exitStatus;
       }
       else {
         close(STDOUT_FILENO);

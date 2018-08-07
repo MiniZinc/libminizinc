@@ -551,7 +551,7 @@ namespace MiniZinc {
       if (sc.defaultFlags().size()) {
         oss << ",\n      \"defaultFlags\": [";
         for (unsigned int j=0; j<sc.defaultFlags().size(); j++) {
-          oss << "\"" << sc.defaultFlags()[j] << "\"";
+          oss << "\"" << Printer::escapeStringLit(sc.defaultFlags()[j]) << "\"";
           if (j<sc.defaultFlags().size()-1)
             oss << ",";
         }

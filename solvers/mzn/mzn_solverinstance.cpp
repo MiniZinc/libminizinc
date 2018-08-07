@@ -24,6 +24,10 @@
 #include <minizinc/timer.hh>
 #include <minizinc/process.hh>
 
+#ifdef _WIN32
+#undef ERROR
+#endif
+
 using namespace std;
 
 namespace MiniZinc {
@@ -182,9 +186,9 @@ namespace MiniZinc {
     bool sigint = opt.mzn_sigint;
     Solns2Log s2l(getSolns2Out()->getOutput(), _log);
     Process<Solns2Log> proc(cmd_line, &s2l, timelimit, sigint);
-    proc.run();
+    int exitCode = proc.run();
 
-    return SolverInstance::UNKNOWN;
+    return exitCode == 0 ? SolverInstance::UNKNOWN : SolverInstance::ERROR;
   }
 
   void MZNSolverInstance::processFlatZinc(void) {}

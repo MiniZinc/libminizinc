@@ -43,7 +43,7 @@ if (ADDITIONAL_DATE_STRING)
 endif()
 
 if (NOT BUILD_REF)
-  set(BUILD_REF "from source")
+  set(BUILD_REF "")
 endif ()
 
 # Offer the user the choice of overriding the installation directories

@@ -2290,7 +2290,8 @@ namespace MiniZinc {
             decl->loc().filename().endsWith("/flatzinc_builtins.mzn"));
   }
   
-  KeepAlive same_call(EnvI& env, Expression* e, const ASTString& id) {
+  Call* same_call(EnvI& env, Expression* e, const ASTString& id) {
+    assert(GC::locked());
     Expression* ce = follow_id(e);
     Call* c = Expression::dyn_cast<Call>(ce);
     if (c) {
@@ -2300,7 +2301,6 @@ namespace MiniZinc {
         Expression* i2f = follow_id(c->arg(0));
         Call* i2fc = Expression::dyn_cast<Call>(i2f);
         if (i2fc && i2fc->id() == id && id==constants().ids.lin_exp) {
-          GCLock lock;
           ArrayLit* coeffs = eval_array_lit(env, i2fc->arg(0));
           std::vector<Expression*> ncoeff_v(coeffs->size());
           for (unsigned int i=0; i<coeffs->size(); i++) {
@@ -2315,7 +2315,8 @@ namespace MiniZinc {
             f2i->decl(env.model->matchFn(env, f2i, false));
             assert(f2i->decl());
             f2i->type(Type::varfloat());
-            n_vars_v[i] = f2i;
+            EE ee = flat_exp(env, Ctx(), f2i, NULL, constants().var_true);
+            n_vars_v[i] = ee.r();
           }
           ArrayLit* nvars = new ArrayLit(vars->loc().introduce(), n_vars_v);
           nvars->type(Type::varfloat(1));
@@ -3213,7 +3214,8 @@ namespace MiniZinc {
     std::vector<Val> coeffv;
     std::vector<KeepAlive> alv;
     for (unsigned int i=0; i<al->size(); i++) {
-      if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al)[i],cid)())) {
+      GCLock lock;
+      if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al)[i],cid))) {
         if (VarDecl* alvi_decl = follow_id_to_decl((*al)[i])->dyn_cast<VarDecl>()) {
           if (alvi_decl->ti()->domain()) {
             // Test if the variable has tighter declared bounds than what can be inferred
@@ -3230,7 +3232,6 @@ namespace MiniZinc {
         }
         
         Val cd = c_coeff[i];
-        GCLock lock;
         ArrayLit* sc_coeff = eval_array_lit(env,sc->arg(0));
         ArrayLit* sc_al = eval_array_lit(env,sc->arg(1));
         Val sc_d = LinearTraits<Lit>::eval(env,sc->arg(2));
@@ -5479,7 +5480,8 @@ namespace MiniZinc {
               ArrayLit* al = follow_id(args_ee[i].r())->cast<ArrayLit>();
               std::vector<KeepAlive> alv;
               for (unsigned int i=0; i<al->size(); i++) {
-                if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al)[i],cid)())) {
+                GCLock lock;
+                if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al)[i],cid))) {
                   if (sc->id()==constants().ids.clause) {
                     alv.push_back(sc);
                   } else {
@@ -5495,12 +5497,13 @@ namespace MiniZinc {
               }
 
               for (unsigned int j=0; j<alv.size(); j++) {
-                Call* neg_call = Expression::dyn_cast<Call>(same_call(env,alv[j](),constants().ids.bool_eq)());
+                GCLock lock;
+                Call* neg_call = Expression::dyn_cast<Call>(same_call(env,alv[j](),constants().ids.bool_eq));
                 if (neg_call &&
                     Expression::equal(neg_call->arg(1),constants().lit_false)) {
                   local_neg.push_back(neg_call->arg(0));
                 } else {
-                  Call* clause = Expression::dyn_cast<Call>(same_call(env,alv[j](),constants().ids.clause)());
+                  Call* clause = Expression::dyn_cast<Call>(same_call(env,alv[j](),constants().ids.clause));
                   if (clause) {
                     ArrayLit* clause_pos = eval_array_lit(env,clause->arg(0));
                     for (unsigned int k=0; k<clause_pos->size(); k++) {
@@ -5554,7 +5557,8 @@ namespace MiniZinc {
             ArrayLit* al = follow_id(args_ee[0].r())->cast<ArrayLit>();
             std::vector<KeepAlive> alv;
             for (unsigned int i=0; i<al->size(); i++) {
-              if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al)[i],cid)())) {
+              GCLock lock;
+              if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al)[i],cid))) {
                 GCLock lock;
                 ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
                 for (unsigned int j=0; j<sc_c->size(); j++) {

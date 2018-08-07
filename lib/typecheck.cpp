@@ -1997,6 +1997,12 @@ namespace MiniZinc {
             throw TypeError(env, i->e()->loc(), "return type of function does not match body, declared type is `"
                             +i->ti()->type().toString(env)+
                             "', body type is `"+i->e()->type().toString(env)+"'");
+          if (i->e() && i->e()->type().ispar() && i->ti()->type().isvar()) {
+            // this is a par function declared as var, so change declared return type
+            Type i_t = i->ti()->type();
+            i_t.ti(Type::TI_PAR);
+            i->ti()->type(i_t);
+          }
           if (i->e())
             i->e(addCoercion(env, m, i->e(), i->ti()->type())());
         }
@@ -2066,11 +2072,13 @@ namespace MiniZinc {
             const std::vector<unsigned int>& arrayEnumIds = env.envi().getArrayEnum(vd->type().enumId());
             enumId = arrayEnumIds[arrayEnumIds.size()-1];
           }
-          std::vector<Expression*> args({env.envi().getEnum(enumId)->e()->id()});
-          Call* checkEnum = new Call(Location().introduce(), constants().ann.mzn_check_enum_var, args);
-          checkEnum->type(Type::ann());
-          checkEnum->decl(env.envi().model->matchFn(env.envi(), checkEnum, false));
-          vd->ann().add(checkEnum);
+          if (enumId > 0) {
+            std::vector<Expression*> args({env.envi().getEnum(enumId)->e()->id()});
+            Call* checkEnum = new Call(Location().introduce(), constants().ann.mzn_check_enum_var, args);
+            checkEnum->type(Type::ann());
+            checkEnum->decl(env.envi().model->matchFn(env.envi(), checkEnum, false));
+            vd->ann().add(checkEnum);
+          }
         }
         Type vdktype = vd_k()->type();
         vdktype.ti(Type::TI_VAR);

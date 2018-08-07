@@ -1572,6 +1572,14 @@ function array[$U] of var $$E: to_enum(set of $$E: X, array[$U] of var int: x) =
   let { array[int] of var int: xx = array1d(x) } in
   arrayXd(x, [ to_enum(X,xx[i]) | i in index_set(xx)]);
 
+/** @group builtins.enum Convert \a x to enum type \a X */
+function set of $$E: to_enum(set of $$E: X, set of int: x) = { to_enum(X,i) | i in x };
+
+%/** @group builtins.enum Convert \a x to enum type \a X */
+function var set of $$E: to_enum(set of $$E: X, var set of int: x) = 
+  let { var set of X: y; constraint x subset X; constraint forall (i in X) (i in x <-> i in y); } in y;
+
+
 
 %-----------------------------------------------------------------------------%
 %
