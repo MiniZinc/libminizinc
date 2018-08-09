@@ -87,6 +87,7 @@ namespace MiniZinc {
     /// Replace the use a variable within an inequality
     /// e.g. i: int_lin_le([1,2,3], [a,b,c], 10), oldVar: a, newVar d -> int_lin_le([1,2,3], [d,b,c], 10)
     /// Occurrence count is updated for variables involved.
+    template <class Lit>
     void LEReplaceVar(Item *i, VarDecl *oldVar, VarDecl *newVar);
 
     /// Check if the bounds of two Variables are equal

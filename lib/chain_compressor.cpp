@@ -331,6 +331,9 @@ namespace MiniZinc {
             auto a1 = follow_id((*as)[1])->cast<IntLit>()->v();
             if (a0 == -a1 && eqBounds((*bs)[0], (*bs)[1])) {
               int i = a0 < a1 ? 0 : 1;
+              if (!(*bs)[i]->isa<Id>()) {
+                break;
+              }
               auto neg = follow_id_to_decl((*bs)[i])->cast<VarDecl>();
 
               int occurrences = env.vo.occurrences(neg);
@@ -373,7 +376,7 @@ namespace MiniZinc {
 
         auto range = find(rhs);
         for (auto match = range.first; match != range.second;) {
-          LEReplaceVar(match->second, rhs, lhs);
+          LEReplaceVar<IntLit>(match->second, rhs, lhs);
           match = items.erase(match);
         }
         if (alias) {
@@ -397,7 +400,7 @@ namespace MiniZinc {
 
           auto arange = find(alias);
           for (auto match = arange.first; match != arange.second;) {
-            LEReplaceVar(match->second, alias, i2f_lhs);
+            LEReplaceVar<FloatLit>(match->second, alias, i2f_lhs);
             match = items.erase(match);
           }
         }
@@ -414,25 +417,62 @@ namespace MiniZinc {
     }
   }
 
+  template <class Lit>
   void LECompressor::LEReplaceVar(Item *i, VarDecl *oldVar, VarDecl *newVar) {
+    typedef typename LinearTraits<Lit>::Val Val;
     GCLock lock;
+
     auto ci = i->cast<ConstraintI>();
+    auto call = ci->e()->cast<Call>();
+    assert(call->id() == constants().ids.int_.lin_le || call->id() == constants().ids.float_.lin_le);
 
     // Remove old occurrences
     CollectDecls cd(env.vo, deletedVarDecls, i);
     topDown(cd, ci->e());
 
-    auto call = ci->e()->cast<Call>();
-    assert(call->id() == constants().ids.int_.lin_le || call->id() == constants().ids.float_.lin_le);
-    auto bs = follow_id(call->arg(1))->cast<ArrayLit>();
-
-    for (int j = 0; j < bs->size(); ++j) {
-      auto decl = follow_id_to_decl((*bs)[j])->dyn_cast<VarDecl>();
-      if (decl == oldVar) {
-        bs->set(j, newVar->id());
-        storeItem(newVar, i);
-        break;
+    ArrayLit* al_c = eval_array_lit(env, call->arg(0));
+    std::vector<Val> coeffs(al_c->size());
+    for (int j = 0; j < al_c->size(); j++) {
+      coeffs[j] = LinearTraits<Lit>::eval(env, (*al_c)[j]);
+    }
+    ArrayLit* al_x = eval_array_lit(env, call->arg(1));
+    std::vector<KeepAlive> x(al_x->size());
+    for (int j = 0; j < al_x->size(); j++) {
+      Expression* decl = follow_id_to_decl((*al_x)[j]);
+      if (decl && decl->cast<VarDecl>() == oldVar) {
+        al_x->set(j, newVar->id());
       }
+      x[j] = (*al_x)[j];
+    }
+    Val d = LinearTraits<Lit>::eval(env, call->arg(2));
+
+    simplify_lin<Lit>(coeffs, x, d);
+    if (coeffs.empty()) {
+      env.flat_removeItem(i);
+      return;
+    } else if (coeffs.size() < al_c->size()) {
+      std::vector<Expression*> coeffs_e(coeffs.size());
+      std::vector<Expression*> x_e(coeffs.size());
+      for (unsigned int j = 0; j < coeffs.size(); j++) {
+        coeffs_e[j] = Lit::a(coeffs[j]);
+        x_e[j] = x[j]();
+        Expression* decl = follow_id_to_decl(x_e[j]);
+        if (decl && decl->cast<VarDecl>() == newVar) {
+          storeItem(newVar, i);
+        }
+      }
+
+      if (call->arg(0)->isa<Id>()) {
+        auto al_c_new = new ArrayLit(al_c->loc(),coeffs_e);
+        al_c_new->type(al_c->type());
+        call->arg(0, al_c_new);
+      } else {
+        al_c->setVec(coeffs_e);
+      }
+      al_x->setVec(x_e);
+      call->arg(2, Lit::a(d));
+    } else {
+      storeItem(newVar, i);
     }
 
     // Add new occurences
