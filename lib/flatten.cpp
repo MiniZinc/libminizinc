@@ -6860,7 +6860,11 @@ namespace MiniZinc {
             std::vector<Expression*> args(c->n_args());
             for (unsigned int i=args.size(); i--;)
               args[i] = c->arg(i);
-            args.push_back(vd->id());
+            if (is_fixed) {
+              args.push_back(constants().lit_false);
+            } else {
+              args.push_back(vd->id());
+            }
             if (c->id() == constants().ids.exists) {
               cid = constants().ids.array_bool_or;
             } else if (c->id() == constants().ids.forall) {
@@ -6876,11 +6880,6 @@ namespace MiniZinc {
               } else {
                 cid = env.reifyId(c->id());
               }
-            }
-            if (is_fixed) {
-              args.push_back(constants().lit_false);
-            } else {
-              args.push_back(vd->id());
             }
             Call * nc = new Call(c->loc().introduce(),cid,args);
             nc->type(c->type());
