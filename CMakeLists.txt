@@ -250,6 +250,7 @@ if(BISON_FOUND)
     COMPILE_FLAGS "-p mzn_yy -l"
   )
 
+  file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/include/minizinc/support/regex/)
   BISON_TARGET(RegExParser
     ${PROJECT_SOURCE_DIR}/lib/support/regex/parser.yxx
     ${PROJECT_BINARY_DIR}/regex_parser.tab.cpp

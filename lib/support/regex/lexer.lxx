@@ -24,12 +24,21 @@
 
 %%
 
-[ \t\n]	{ return R_SEP; }
-[0-9]+	{ regex_yylval.iValue = std::atoi(regex_yytext); return R_INTEGER; }
+[ \t\n] { /* ignore white space */ }
+[0-9]+  { regex_yylval.iValue = std::atoi(regex_yytext); return R_INTEGER; }
 "|"     { return R_UNION; }
-"+"		{ return R_PLUS; }
-"*"		{ return R_STAR; }
-"("		{ return R_GROUP_OPEN; }
-")"		{ return R_GROUP_CLOSE; }
+"+"     { return R_PLUS; }
+"*"     { return R_STAR; }
+"("     { return R_GROUP_OPEN; }
+")"     { return R_GROUP_CLOSE; }
+"?"     { return R_OPTIONAL; }
+"{"     { return R_QUANT_OPEN; }
+"}"     { return R_QUANT_CLOSE; }
+","     { return R_COMMA; }
+"."     { return R_ANY; }
+"["     { return R_CLASS_OPEN; }
+"]"     { return R_CLASS_CLOSE; }
+"-"     { return R_CLASS_RANGE; }
+"^"     { return R_CLASS_NEG; }
 
 %%

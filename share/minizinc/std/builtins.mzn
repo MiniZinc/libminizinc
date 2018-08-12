@@ -2659,10 +2659,23 @@ function string: mzn_version_to_string(int: v) =
   show(v div 10000)++"."++show((v div 1000) mod 10)++"."++show(v mod 100);
 
 /** @group globals.extensional
-The sequence of values in array \a x (which must all be in the range 1..\a S)
-is accepted by the regular expression r. This constraint generates it's DFA
-equivalent.
-TODO: Add accepted regular expression primitives.
+The sequence of values in array \a x  is accepted by the regular
+expression \a r. This constraint generates it's DFA equivalent.
+
+Regular expressions can use the following syntax:
+- Selection:
+  - Concatenation: "12 34", 12 followed by 34.
+    (Characters are assumed to be the part of the same number unless split by syntax or whitespace.)
+  - Union: "7|11", 7 or 11.
+  - Groups: "7(6|8)", 7 followed by 6 or 8.
+- Quantifiers:
+  - Asterisk: "12*", 0 or more times a 12.
+  - Question mark: "5?", 0 or 1 times a 5. (optional)
+  - Plus sign: "42+", 1 or more time a 42.
+  - Exact: "1{3}", exactly 3 times a 1.
+  - At least: "9{5,}", 5 or more times a 9.
+  - Between: "7{3,5}", at least 3 times, but at most 5 times a 7.
+
 */
 predicate regular(array[int] of var int: x, string: r);
 

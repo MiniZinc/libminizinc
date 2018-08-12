@@ -37,19 +37,26 @@ void yyerror(REG* regex, const char* s);
 %}
 
 %union {
-    int iValue;
-    REG* rValue;
+  int iValue;
+  REG* rValue;
 }
 %parse-param {REG* expr}
 
 %token<iValue> R_INTEGER
-%token R_GROUP_OPEN '('
-%token R_GROUP_CLOSE ')'
-%token R_STAR '*'
-%token R_PLUS '+'
-%token R_ANY '.'
-%token R_SEP
-%token R_UNION '|'
+%token R_GROUP_OPEN "("
+%token R_GROUP_CLOSE ")"
+%token R_STAR "*"
+%token R_PLUS "+"
+%token R_ANY "."
+%token R_UNION "|"
+%token R_OPTIONAL "?"
+%token R_QUANT_OPEN "{"
+%token R_QUANT_CLOSE "}"
+%token R_COMMA ","
+%token R_CLASS_OPEN "["
+%token R_CLASS_CLOSE "]"
+%token R_CLASS_RANGE "-"
+%token R_CLASS_NEG "^"
 
 %type<rValue> regex expression term factor atom int_lit
 
@@ -66,7 +73,7 @@ regex:
 
 expression:
     term
-  | term R_UNION expression
+  | term "|" expression
     {
       *$1 = *$1 | *$3;
       delete $3;
@@ -75,38 +82,56 @@ expression:
 
 term:
     factor
-  | factor white_space term
+  | factor term
     {
-      *$1 = *$1 + *$3;
-      delete $3;
+      *$1 = *$1 + *$2;
+      delete $2;
       $$ = $1;
     }
 
 factor:
     atom
-  | atom R_STAR
+  | atom "*"
     {
       *$1 = *(*$1);
       $$ = $1;
     }
-  | atom R_PLUS
+  | atom "+"
     {
       *$1 = +(*$1);
+      $$ = $1;
+    }
+  | atom "?"
+    {
+      *$1 = (*$1)(0, 1);
+      $$ = $1;
+    }
+  | atom "{" R_INTEGER "}"
+    {
+      *$1 = (*$1)($3, $3);
+      $$ = $1;
+    }
+  | atom "{" R_INTEGER "," "}"
+    {
+      *$1 = (*$1)($3);
+      $$ = $1;
+    }
+  | atom "{" R_INTEGER "," R_INTEGER "}"
+    {
+      *$1 = (*$1)($3, $5);
       $$ = $1;
     }
 
 atom:
     int_lit
-  | R_GROUP_OPEN expression R_GROUP_CLOSE
+//  | "[" set_items "]"
+//    { $$ = $2 }
+  | "(" expression ")"
     { $$ = $2; }
 
 int_lit:
     R_INTEGER
     { $$ = new REG($1); }
-
-white_space:
-    /* empty */
-    | R_SEP white_space
 
 %%
 
