@@ -24,6 +24,11 @@
 #include <cmath>
 #include <random>
 
+#ifdef HAS_GECODE
+#include <minizinc/support/regex/parser.tab.hh>
+#include <gecode/minimodel.hh>
+#endif
+
 namespace MiniZinc {
   
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
@@ -2069,6 +2074,52 @@ namespace MiniZinc {
     ret->type(call->type());
     return ret;
   }
+
+  Expression* b_regular_from_string(EnvI& env, Call* call) {
+#ifdef HAS_GECODE
+    using namespace Gecode;
+    // TODO: Ensure var domains 1..n
+    ArrayLit* vars = eval_array_lit(env, call->arg(0));
+    std::string expr = eval_string(env, call->arg(1));
+
+    std::unique_ptr<REG> regex = regex_from_string(expr);
+    DFA dfa = DFA(*regex);
+
+    std::vector< std::vector<Expression*> > reg_trans(
+        dfa.n_states(), std::vector<Expression*>(
+            dfa.n_symbols(), IntLit::a(IntVal(0))
+        )
+    );
+    
+    DFA::Transitions trans(dfa);
+    while (trans()) {
+      reg_trans[trans.i_state()][trans.symbol()-1] = IntLit::a(IntVal(trans.o_state()+1));
+//      std::cout << trans.i_state() + 1 << " -- " << trans.symbol() << " --> " << trans.o_state() + 1 << "\n";
+      ++trans;
+    }
+
+    std::vector<Expression*> args(6);
+    args[0] = vars; // x
+    args[1] = IntLit::a(IntVal(dfa.n_states())); // Q
+    args[1]->type(Type::parint());
+    args[2] = IntLit::a(IntVal(dfa.n_symbols())); // S
+    args[2]->type(Type::parint());
+    args[3] = new ArrayLit(call->loc().introduce(), reg_trans); // d
+    args[3]->type(Type::parint(2));
+    args[4] = IntLit::a(IntVal(1)); // q0
+    args[4]->type(Type::parint());
+    args[5] = new SetLit(call->loc().introduce(), IntSetVal::a(IntVal(dfa.final_fst()+1), IntVal(dfa.final_lst()))); // F
+    args[5]->type(Type::parsetint());
+
+
+    auto nc = new Call(call->loc().introduce(), "regular", args);
+    nc->type(Type::varbool());
+
+    return nc;
+#else
+    throw ResultUndefinedError(env, call->loc(), "cannot parse regular expression without Gecode support");
+#endif
+  }
   
   void registerBuiltins(Env& e) {
     EnvI& env = e.envi();
@@ -2839,6 +2890,12 @@ namespace MiniZinc {
     }
     {
       rb(env, m, ASTString("mzn_compiler_version"), std::vector<Type>(), b_mzn_compiler_version);
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::varint(1);
+      t[1] = Type::parstring();
+      rb(env, m, ASTString("regular"),t,b_regular_from_string);
     }
   }
   

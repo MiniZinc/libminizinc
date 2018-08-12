@@ -249,6 +249,13 @@ if(BISON_FOUND)
     DEFINES_FILE ${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh
     COMPILE_FLAGS "-p mzn_yy -l"
   )
+
+  BISON_TARGET(RegExParser
+    ${PROJECT_SOURCE_DIR}/lib/support/regex/parser.yxx
+    ${PROJECT_BINARY_DIR}/regex_parser.tab.cpp
+    DEFINES_FILE ${PROJECT_BINARY_DIR}/include/minizinc/support/regex/parser.tab.hh
+    COMPILE_FLAGS "-l"
+  )
 else()
   MD5(${PROJECT_SOURCE_DIR}/lib/parser.yxx parser_yxx_md5)
   if(NOT "${parser_yxx_md5}" STREQUAL "${parser_yxx_md5_cached}")
@@ -261,6 +268,8 @@ else()
     ${PROJECT_SOURCE_DIR}/lib/cached/parser.tab.cpp
     ${PROJECT_SOURCE_DIR}/lib/cached/minizinc/parser.tab.hh
   )
+
+  # TODO: Remove support or add RegEx
 endif()
 
 find_package(FLEX)
@@ -271,6 +280,13 @@ if(FLEX_FOUND)
     COMPILE_FLAGS "-P mzn_yy -L"
   )
   ADD_FLEX_BISON_DEPENDENCY(MZNLexer MZNParser)
+
+  FLEX_TARGET(RegExLexer
+    ${PROJECT_SOURCE_DIR}/lib/support/regex/lexer.lxx
+    ${PROJECT_BINARY_DIR}/regex_lexer.yy.cpp
+    COMPILE_FLAGS "-L"
+  )
+  ADD_FLEX_BISON_DEPENDENCY(RegExLexer RegExParser)
 else()
   MD5(${PROJECT_SOURCE_DIR}/lib/lexer.lxx lexer_lxx_md5)
   if(NOT "${lexer_lxx_md5}" STREQUAL "${lexer_lxx_md5_cached}")
@@ -279,6 +295,8 @@ else()
 	  "copy lexer.lxx's md5 md5 ${lexer_lxx_md5} into ${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake")
   endif()
   set(FLEX_MZNLexer_OUTPUTS ${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp)
+
+  # TODO: Remove support or add RegEx
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
@@ -356,6 +374,8 @@ include/minizinc/thirdparty/b64/decode.h
 include/minizinc/thirdparty/b64/encode.h
 ${BISON_MZNParser_OUTPUTS}
 ${FLEX_MZNLexer_OUTPUTS}
+${BISON_RegExParser_OUTPUTS}
+${FLEX_RegExLexer_OUTPUTS}
 )
 
 add_library(minizinc_solver

@@ -1,0 +1,35 @@
+/* -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*- */
+
+/*
+ *  Main authors:
+ *     Jip J. Dekker <jip.dekker@monash.edu>
+ */
+
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+%option noyywrap
+
+%option prefix="regex_yy"
+
+%{
+#include <cstdlib>
+
+#define YY_DECL int yylex()
+
+#include <minizinc/support/regex/parser.tab.hh>
+
+%}
+
+%%
+
+[ \t\n]	{ return R_SEP; }
+[0-9]+	{ regex_yylval.iValue = std::atoi(regex_yytext); return R_INTEGER; }
+"|"     { return R_UNION; }
+"+"		{ return R_PLUS; }
+"*"		{ return R_STAR; }
+"("		{ return R_GROUP_OPEN; }
+")"		{ return R_GROUP_CLOSE; }
+
+%%
