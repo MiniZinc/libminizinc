@@ -241,36 +241,15 @@ macro(MD5 filename md5sum)
   string(MD5 ${md5sum} "${STRIPPED_MD5_FILE}")
 endmacro(MD5)
 
-find_program(FLEX_EXEC flex)
-if(FLEX_EXEC)
-  add_custom_command(
-    OUTPUT ${PROJECT_BINARY_DIR}/lexer.yy.cpp
-    DEPENDS ${PROJECT_SOURCE_DIR}/lib/lexer.lxx
-    COMMAND ${FLEX_EXEC} -P mzn_yy -L -o${PROJECT_BINARY_DIR}/lexer.yy.cpp ${PROJECT_SOURCE_DIR}/lib/lexer.lxx
-    )
-  set_source_files_properties(${PROJECT_BINARY_DIR}/lexer.yy.cpp GENERATED)
-  set(lexer_cpp ${PROJECT_BINARY_DIR}/lexer.yy.cpp)
-else(FLEX_EXEC)
-  MD5(${PROJECT_SOURCE_DIR}/lib/lexer.lxx lexer_lxx_md5)
-  if(NOT "${lexer_lxx_md5}" STREQUAL "${lexer_lxx_md5_cached}")
-    message(FATAL_ERROR "The file lexer.lxx has been modified but flex cannot be run."
-	  "\nIf you are sure ${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp is correct then"
-	  "copy lexer.lxx's md5 md5 ${lexer_lxx_md5} into ${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake")
-  endif()
-  set(lexer_cpp ${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp)
-endif(FLEX_EXEC)
-
-find_program(BISON_EXEC bison)
-if(BISON_EXEC)
-  add_custom_command(
-    OUTPUT ${PROJECT_BINARY_DIR}/parser.tab.cpp ${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh
-    DEPENDS ${lexer_cpp} ${PROJECT_SOURCE_DIR}/lib/parser.yxx
-    COMMAND "${BISON_EXEC}" -p mzn_yy -l -o ${PROJECT_BINARY_DIR}/parser.tab.cpp --defines=${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh ${PROJECT_SOURCE_DIR}/lib/parser.yxx
-    )
-  set_source_files_properties(${PROJECT_BINARY_DIR}/parser.tab.cpp GENERATED)
-  set(parser_cpp ${PROJECT_BINARY_DIR}/parser.tab.cpp)
-  set(parser_hh ${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh)
-else(BISON_EXEC)
+find_package(BISON)
+if(BISON_FOUND)
+  BISON_TARGET(MZNParser
+    ${PROJECT_SOURCE_DIR}/lib/parser.yxx
+    ${PROJECT_BINARY_DIR}/parser.tab.cpp
+    DEFINES_FILE ${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh
+    COMPILE_FLAGS "-p mzn_yy -l"
+  )
+else()
   MD5(${PROJECT_SOURCE_DIR}/lib/parser.yxx parser_yxx_md5)
   if(NOT "${parser_yxx_md5}" STREQUAL "${parser_yxx_md5_cached}")
     message(FATAL_ERROR "The file parser.yxx has been modified but bison cannot be run."
@@ -278,9 +257,29 @@ else(BISON_EXEC)
 	  "copy parser.yxx's md5 ${parser_yxx_md5} into ${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake")
   endif()
   include_directories(${PROJECT_SOURCE_DIR}/lib/cached)
-  set(parser_cpp ${PROJECT_SOURCE_DIR}/lib/cached/parser.tab.cpp)
-  set(parser_hh ${PROJECT_SOURCE_DIR}/lib/cached/minizinc/parser.tab.hh)
-endif(BISON_EXEC)
+  set(BISON_MZNParser_OUTPUTS
+    ${PROJECT_SOURCE_DIR}/lib/cached/parser.tab.cpp
+    ${PROJECT_SOURCE_DIR}/lib/cached/minizinc/parser.tab.hh
+  )
+endif()
+
+find_package(FLEX)
+if(FLEX_FOUND)
+  FLEX_TARGET(MZNLexer
+    ${PROJECT_SOURCE_DIR}/lib/lexer.lxx
+    ${PROJECT_BINARY_DIR}/lexer.yy.cpp
+    COMPILE_FLAGS "-P mzn_yy -L"
+  )
+  ADD_FLEX_BISON_DEPENDENCY(MZNLexer MZNParser)
+else()
+  MD5(${PROJECT_SOURCE_DIR}/lib/lexer.lxx lexer_lxx_md5)
+  if(NOT "${lexer_lxx_md5}" STREQUAL "${lexer_lxx_md5_cached}")
+    message(FATAL_ERROR "The file lexer.lxx has been modified but flex cannot be run."
+	  "\nIf you are sure ${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp is correct then"
+	  "copy lexer.lxx's md5 md5 ${lexer_lxx_md5} into ${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake")
+  endif()
+  set(FLEX_MZNLexer_OUTPUTS ${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp)
+endif()
 
 # -------------------------------------------------------------------------------------------------------------------
 add_library(minizinc
@@ -298,9 +297,7 @@ lib/json_parser.cpp
 lib/miniz.c
 lib/cdecode.c
 lib/cencode.c
-${lexer_cpp}
 lib/model.cpp
-${parser_cpp}
 lib/prettyprinter.cpp
 lib/pathfileprinter.cpp
 lib/type.cpp
@@ -357,7 +354,8 @@ include/minizinc/thirdparty/b64/cdecode.h
 include/minizinc/thirdparty/b64/cencode.h
 include/minizinc/thirdparty/b64/decode.h
 include/minizinc/thirdparty/b64/encode.h
-${parser_hh}
+${BISON_MZNParser_OUTPUTS}
+${FLEX_MZNLexer_OUTPUTS}
 )
 
 add_library(minizinc_solver
