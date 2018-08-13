@@ -2093,31 +2093,41 @@ namespace MiniZinc {
         dom = IntSetVal::ai(u);
       }
     }
-    // TODO: Offset domain to be 1..card
     int card = dom->max().toInt() - dom->min().toInt();
-
+    int offset = 1 - dom->min().toInt();
 
     std::unique_ptr<REG> regex = regex_from_string(expr);
     DFA dfa = DFA(*regex);
 
     std::vector< std::vector<Expression*> > reg_trans(
-        dfa.n_transitions(), std::vector<Expression*>(
+        dfa.n_states(), std::vector<Expression*>(
             card, IntLit::a(IntVal(0))
         )
     );
     
     DFA::Transitions trans(dfa);
     while (trans()) {
-      reg_trans[trans.i_state()][trans.symbol()-1] = IntLit::a(IntVal(trans.o_state()+1));
+      reg_trans[trans.i_state()][trans.symbol()+offset-1] = IntLit::a(IntVal(trans.o_state()+1));
 //      std::cerr << trans.i_state() + 1 << " -- " << trans.symbol() << " --> " << trans.o_state() + 1 << "\n";
       ++trans;
     }
 
     std::vector<Expression*> args(6);
-    args[0] = vars; // x
+    if (offset == 0) {
+      args[0] = vars; // x
+    } else {
+      std::vector<Expression*> nvars(vars->size());
+      IntLit* loffset = IntLit::a(IntVal(offset));
+      for (int i = 0; i < nvars.size(); ++i) {
+        nvars[i] = new BinOp(call->loc().introduce(), (*vars)[i], BOT_PLUS, loffset);
+        nvars[i]->type(Type::varint());
+      }
+      args[0] = new ArrayLit(call->loc().introduce(), nvars); // x
+      args[0]->type(Type::varint(1));
+    }
     args[1] = IntLit::a(IntVal(dfa.n_states())); // Q
     args[1]->type(Type::parint());
-    args[2] = IntLit::a(IntVal(card));// S
+    args[2] = IntLit::a(IntVal(card+1));// S
     args[2]->type(Type::parint());
     args[3] = new ArrayLit(call->loc().introduce(), reg_trans); // d
     args[3]->type(Type::parint(2));
