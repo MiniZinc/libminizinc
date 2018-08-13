@@ -2666,8 +2666,11 @@ Regular expressions can use the following syntax:
 - Selection:
   - Concatenation: "12 34", 12 followed by 34.
     (Characters are assumed to be the part of the same number unless split by syntax or whitespace.)
-  - Union: "7|11", 7 or 11.
-  - Groups: "7(6|8)", 7 followed by 6 or 8.
+  - Union: "7|11", a 7 or 11.
+  - Groups: "7(6|8)", a 7 followed by a 6 or an 8.
+  - Wildcard: ".", any value within the domain.
+  - Classes: "[3-6 7]", a 3,4,5,6, or 7.
+  - Negated classes: "[^3 5]", any value within the domain except for a 3 or a 5.
 - Quantifiers:
   - Asterisk: "12*", 0 or more times a 12.
   - Question mark: "5?", 0 or 1 times a 5. (optional)

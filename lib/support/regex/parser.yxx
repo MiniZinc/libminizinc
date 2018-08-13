@@ -13,19 +13,25 @@
 %define api.prefix {regex_yy}
 
 %code requires {
+#include <set>
 #include <gecode/minimodel.hh>
+#include <minizinc/values.hh>
 
 using namespace Gecode;
+using namespace MiniZinc;
 
-std::unique_ptr<REG> regex_from_string(const std::string& expression);
+std::unique_ptr<REG> regex_from_string(const std::string& expression, const IntSetVal& domain);
 }
 
 %{
 #include <cstdlib>
 #include <cstdio>
+#include <set>
 
 #include <gecode/minimodel.hh>
+#include <minizinc/values.hh>
 using namespace Gecode;
+using namespace MiniZinc;
 
 typedef struct yy_buffer_state *YY_BUFFER_STATE;
 YY_BUFFER_STATE regex_yy_scan_string ( const char* yy_str );
@@ -33,14 +39,15 @@ YY_BUFFER_STATE regex_yy_scan_string ( const char* yy_str );
 extern int yylex();
 extern FILE* yyin;
 
-void yyerror(REG* regex, const char* s);
+void yyerror(REG* expr, const IntSetVal& dom, const char* s);
 %}
 
 %union {
   int iValue;
+  std::set<int>* sValue;
   REG* rValue;
 }
-%parse-param {REG* expr}
+%parse-param {REG* expr} {const IntSetVal& dom}
 
 %token<iValue> R_INTEGER
 %token R_GROUP_OPEN "("
@@ -59,6 +66,7 @@ void yyerror(REG* regex, const char* s);
 %token R_CLASS_NEG "^"
 
 %type<rValue> regex expression term factor atom int_lit
+%type<sValue> set_item set_items
 
 %start regex
 
@@ -124,10 +132,67 @@ factor:
 
 atom:
     int_lit
-//  | "[" set_items "]"
-//    { $$ = $2 }
+  | "."
+    {
+      IntArgs range = IntArgs::create(dom.min().toInt() - dom.max().toInt(), dom.min().toInt());
+      $$ = new REG(range);
+    }
+  | "[" set_items "]"
+    {
+      std::vector<int> v;
+      v.reserve($2->size());
+      for(auto i : *$2) {
+        v.push_back(i);
+      }
+      delete $2;
+      $$ = new REG(IntArgs(v));
+    }
+  | "[" "^" set_items "]"
+    {
+      std::vector<int> diff;
+      std::set<int> domain;
+      for(int i = dom.min().toInt(); i<=dom.max().toInt(); ++i) {
+        domain.insert(i);
+      }
+      std::set_difference(
+        domain.begin(), domain.end(),
+        $3->begin(), $3->end(),
+        std::inserter(diff, diff.begin())
+      );
+      delete $3;
+      $$ = new REG(IntArgs(diff));
+    }
   | "(" expression ")"
     { $$ = $2; }
+
+set_items:
+    set_item
+  | set_item set_items
+    {
+      $$ = $1;
+      for (auto i : *$2) {
+        $1->insert(i);
+      }
+      delete $2;
+    }
+
+set_item:
+    R_INTEGER
+    {
+      $$ = new std::set<int>({$1});
+    }
+  | R_INTEGER "-" R_INTEGER
+    {
+      int from = $1;
+      int to = $3;
+      if (to < from) {
+        std::swap(from,to);
+      }
+      $$ = new std::set<int>;
+      for(int i = from; i<=to; ++i) {
+        $$->insert(i);
+      }
+    }
 
 int_lit:
     R_INTEGER
@@ -135,15 +200,15 @@ int_lit:
 
 %%
 
-void yyerror(REG* regex, const char* s) {
+void yyerror(REG* expr, const IntSetVal& dom, const char* s) {
     // TODO: Make this the correct exception
     throw std::runtime_error("Cannot parse regular expression: " + std::string(s));
 }
 
-std::unique_ptr<REG> regex_from_string(const std::string& regex_str) {
+std::unique_ptr<REG> regex_from_string(const std::string& regex_str, const IntSetVal& domain) {
     REG* expr = new REG();
     regex_yy_scan_string(regex_str.c_str());
-    int err = yyparse(expr);
+    int err = yyparse(expr, domain);
     if (err != 0) {
         throw std::runtime_error("Cannot parse regular expression, error code " + std::to_string(err));
     }

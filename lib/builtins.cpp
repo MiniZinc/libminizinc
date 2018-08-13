@@ -2096,7 +2096,7 @@ namespace MiniZinc {
     int card = dom->max().toInt() - dom->min().toInt();
     int offset = 1 - dom->min().toInt();
 
-    std::unique_ptr<REG> regex = regex_from_string(expr);
+    std::unique_ptr<REG> regex = regex_from_string(expr, *dom);
     DFA dfa = DFA(*regex);
 
     std::vector< std::vector<Expression*> > reg_trans(
