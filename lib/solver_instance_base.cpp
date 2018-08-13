@@ -46,7 +46,7 @@ namespace MiniZinc {
     std::unordered_map<std::string,poster>::iterator it = _registry.find(c->id().str());
     if (it == _registry.end()) {
       GCLock lock;
-      throw InternalError("Error: constraint not found: " + c->id().str() + "\n");
+      throw InternalError("Error: solver backend cannot handle constraint: " + c->id().str() + "\n");
     }
     it->second(_base, c);
   }
