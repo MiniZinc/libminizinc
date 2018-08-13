@@ -2078,23 +2078,38 @@ namespace MiniZinc {
   Expression* b_regular_from_string(EnvI& env, Call* call) {
 #ifdef HAS_GECODE
     using namespace Gecode;
-    // TODO: Ensure var domains 1..n
     ArrayLit* vars = eval_array_lit(env, call->arg(0));
     std::string expr = eval_string(env, call->arg(1));
+
+    IntSetVal* dom;
+    if (vars->size()==0) {
+      dom = IntSetVal::a();
+    } else {
+      dom = b_dom_varint(env,(*vars)[0]);
+      for (unsigned int i=1; i < vars->size(); i++) {
+        IntSetRanges isr(dom);
+        IntSetRanges r(b_dom_varint(env,(*vars)[i]));
+        Ranges::Union<IntVal,IntSetRanges,IntSetRanges> u(isr,r);
+        dom = IntSetVal::ai(u);
+      }
+    }
+    // TODO: Offset domain to be 1..card
+    int card = dom->max().toInt() - dom->min().toInt();
+
 
     std::unique_ptr<REG> regex = regex_from_string(expr);
     DFA dfa = DFA(*regex);
 
     std::vector< std::vector<Expression*> > reg_trans(
-        dfa.n_states(), std::vector<Expression*>(
-            dfa.n_symbols(), IntLit::a(IntVal(0))
+        dfa.n_transitions(), std::vector<Expression*>(
+            card, IntLit::a(IntVal(0))
         )
     );
     
     DFA::Transitions trans(dfa);
     while (trans()) {
       reg_trans[trans.i_state()][trans.symbol()-1] = IntLit::a(IntVal(trans.o_state()+1));
-//      std::cout << trans.i_state() + 1 << " -- " << trans.symbol() << " --> " << trans.o_state() + 1 << "\n";
+//      std::cerr << trans.i_state() + 1 << " -- " << trans.symbol() << " --> " << trans.o_state() + 1 << "\n";
       ++trans;
     }
 
@@ -2102,7 +2117,7 @@ namespace MiniZinc {
     args[0] = vars; // x
     args[1] = IntLit::a(IntVal(dfa.n_states())); // Q
     args[1]->type(Type::parint());
-    args[2] = IntLit::a(IntVal(dfa.n_symbols())); // S
+    args[2] = IntLit::a(IntVal(card));// S
     args[2]->type(Type::parint());
     args[3] = new ArrayLit(call->loc().introduce(), reg_trans); // d
     args[3]->type(Type::parint(2));
@@ -2110,7 +2125,6 @@ namespace MiniZinc {
     args[4]->type(Type::parint());
     args[5] = new SetLit(call->loc().introduce(), IntSetVal::a(IntVal(dfa.final_fst()+1), IntVal(dfa.final_lst()))); // F
     args[5]->type(Type::parsetint());
-
 
     auto nc = new Call(call->loc().introduce(), "regular", args);
     nc->type(Type::varbool());
