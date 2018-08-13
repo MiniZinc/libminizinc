@@ -41,4 +41,10 @@
 "-"     { return R_CLASS_RANGE; }
 "^"     { return R_CLASS_NEG; }
 
+
+.   {
+  /* Catch all */
+  throw std::runtime_error("Illegal token in regular expression: '" + std::string(regex_yytext) + "'");
+}
+
 %%
