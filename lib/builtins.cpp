@@ -2107,8 +2107,10 @@ namespace MiniZinc {
     
     DFA::Transitions trans(dfa);
     while (trans()) {
-      reg_trans[trans.i_state()][trans.symbol()+offset-1] = IntLit::a(IntVal(trans.o_state()+1));
 //      std::cerr << trans.i_state() + 1 << " -- " << trans.symbol() << " --> " << trans.o_state() + 1 << "\n";
+      if (trans.symbol() >= dom->min().toInt() && trans.symbol() <= dom->max().toInt()) {
+        reg_trans[trans.i_state()][trans.symbol()+offset-1] = IntLit::a(IntVal(trans.o_state()+1));
+      }
       ++trans;
     }
 
