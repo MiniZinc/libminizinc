@@ -14,19 +14,21 @@
 
 %code requires {
 #include <set>
+#include <map>
 #include <gecode/minimodel.hh>
 #include <minizinc/values.hh>
 
 using namespace Gecode;
 using namespace MiniZinc;
 
-std::unique_ptr<REG> regex_from_string(const std::string& expression, const IntSetVal& domain);
+std::unique_ptr<REG> regex_from_string(const std::string& expression, const IntSetVal& domain, const std::map<std::string, int>& identifiers);
 }
 
 %{
 #include <cstdlib>
 #include <cstdio>
 #include <set>
+#include <map>
 
 #include <gecode/minimodel.hh>
 #include <minizinc/values.hh>
@@ -39,15 +41,16 @@ YY_BUFFER_STATE regex_yy_scan_string ( const char* yy_str );
 extern int yylex();
 extern FILE* yyin;
 
-void yyerror(REG* expr, const IntSetVal& dom, const char* s);
+void yyerror(REG* expr, const IntSetVal& dom, const std::map<std::string, int>& identifiers, const char* s);
 %}
 
 %union {
   int iValue;
-  std::set<int>* sValue;
+  char* sValue;
+  std::set<int>* setValue;
   REG* rValue;
 }
-%parse-param {REG* expr} {const IntSetVal& dom}
+%parse-param {REG* expr} {const IntSetVal& dom} {const std::map<std::string, int>& identifiers}
 
 %token<iValue> R_INTEGER
 %token R_GROUP_OPEN "("
@@ -64,9 +67,11 @@ void yyerror(REG* expr, const IntSetVal& dom, const char* s);
 %token R_CLASS_CLOSE "]"
 %token R_CLASS_RANGE "-"
 %token R_CLASS_NEG "^"
+%token<sValue> R_IDENTIFIER
 
-%type<rValue> regex expression term factor atom int_lit
-%type<sValue> set_item set_items
+%type<iValue> literal
+%type<rValue> regex expression term factor atom
+%type<setValue> set_item set_items
 
 %start regex
 
@@ -131,7 +136,8 @@ factor:
     }
 
 atom:
-    int_lit
+    literal
+    { $$ = new REG($1); }
   | "."
     {
       IntArgs range = IntArgs::create(dom.min().toInt() - dom.max().toInt(), dom.min().toInt());
@@ -177,11 +183,11 @@ set_items:
     }
 
 set_item:
-    R_INTEGER
+    literal
     {
       $$ = new std::set<int>({$1});
     }
-  | R_INTEGER "-" R_INTEGER
+  | literal "-" literal
     {
       int from = $1;
       int to = $3;
@@ -194,21 +200,29 @@ set_item:
       }
     }
 
-int_lit:
+literal:
     R_INTEGER
-    { $$ = new REG($1); }
+  | R_IDENTIFIER
+    {
+      std::string s($1);
+      auto find = identifiers.find(s);
+      if (find == identifiers.end()) {
+        throw std::runtime_error("Unknown identifier: " + s);
+      }
+      $$ = find->second;
+    }
 
 %%
 
-void yyerror(REG* expr, const IntSetVal& dom, const char* s) {
+void yyerror(REG* expr, const IntSetVal& dom, const std::map<std::string, int>& identifiers, const char* s) {
     // TODO: Make this the correct exception
     throw std::runtime_error("Cannot parse regular expression: " + std::string(s));
 }
 
-std::unique_ptr<REG> regex_from_string(const std::string& regex_str, const IntSetVal& domain) {
+std::unique_ptr<REG> regex_from_string(const std::string& regex_str, const IntSetVal& domain, const std::map<std::string, int>& identifiers) {
     REG* expr = new REG();
     regex_yy_scan_string(regex_str.c_str());
-    int err = yyparse(expr, domain);
+    int err = yyparse(expr, domain, identifiers);
     if (err != 0) {
         throw std::runtime_error("Cannot parse regular expression, error code " + std::to_string(err));
     }

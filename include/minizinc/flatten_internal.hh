@@ -13,6 +13,7 @@
 #define __MINIZINC_FLATTEN_INTERNAL_HH__
 
 #include <cmath>
+#include <map>
 
 #include <minizinc/copy.hh>
 #include <minizinc/flatten.hh>
@@ -103,6 +104,7 @@ namespace MiniZinc {
     int in_maybe_partial;
     FlatteningOptions fopts;
     unsigned int pathUse;
+    std::map<std::string, int> reverseEnum;
 
     struct PathVar {
       KeepAlive decl;

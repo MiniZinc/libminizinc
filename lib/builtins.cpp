@@ -2093,10 +2093,10 @@ namespace MiniZinc {
         dom = IntSetVal::ai(u);
       }
     }
-    int card = dom->max().toInt() - dom->min().toInt();
+    int card = dom->max().toInt() - dom->min().toInt() + 1;
     int offset = 1 - dom->min().toInt();
 
-    std::unique_ptr<REG> regex = regex_from_string(expr, *dom);
+    std::unique_ptr<REG> regex = regex_from_string(expr, *dom, env.reverseEnum);
     DFA dfa = DFA(*regex);
 
     std::vector< std::vector<Expression*> > reg_trans(
@@ -2129,7 +2129,7 @@ namespace MiniZinc {
     }
     args[1] = IntLit::a(IntVal(dfa.n_states())); // Q
     args[1]->type(Type::parint());
-    args[2] = IntLit::a(IntVal(card+1));// S
+    args[2] = IntLit::a(IntVal(card));// S
     args[2]->type(Type::parint());
     args[3] = new ArrayLit(call->loc().introduce(), reg_trans); // d
     args[3]->type(Type::parint(2));

@@ -2665,7 +2665,8 @@ expression \a r. This constraint generates it's DFA equivalent.
 Regular expressions can use the following syntax:
 - Selection:
   - Concatenation: "12 34", 12 followed by 34.
-    (Characters are assumed to be the part of the same number unless split by syntax or whitespace.)
+    (Characters are assumed to be the part of the same number unless split
+     by syntax or whitespace.)
   - Union: "7|11", a 7 or 11.
   - Groups: "7(6|8)", a 7 followed by a 6 or an 8.
   - Wildcard: ".", any value within the domain.
@@ -2679,6 +2680,8 @@ Regular expressions can use the following syntax:
   - At least: "9{5,}", 5 or more times a 9.
   - Between: "7{3,5}", at least 3 times, but at most 5 times a 7.
 
+Members of enumerated types can be used in place of any integer (e.g., "A B",
+A followed by B). Enumerated identifiers still use whitespace for concatenation.
 */
 predicate regular(array[int] of var int: x, string: r);
 
