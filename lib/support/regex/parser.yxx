@@ -215,7 +215,7 @@ literal:
 %%
 
 void yyerror(REG* expr, const IntSetVal& dom, const std::map<std::string, int>& identifiers, const char* s) {
-    // TODO: Make this the correct exception
+    // TODO: Add error location
     throw std::runtime_error("Cannot parse regular expression: " + std::string(s));
 }
 

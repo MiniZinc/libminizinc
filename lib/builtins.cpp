@@ -2096,7 +2096,12 @@ namespace MiniZinc {
     int card = dom->max().toInt() - dom->min().toInt() + 1;
     int offset = 1 - dom->min().toInt();
 
-    std::unique_ptr<REG> regex = regex_from_string(expr, *dom, env.reverseEnum);
+    std::unique_ptr<REG> regex;
+    try {
+      regex = regex_from_string(expr, *dom, env.reverseEnum);
+    } catch (const std::exception& e) {
+      throw SyntaxError(call->arg(1)->loc(), e.what());
+    }
     DFA dfa = DFA(*regex);
 
     std::vector< std::vector<Expression*> > reg_trans(
@@ -2143,7 +2148,7 @@ namespace MiniZinc {
 
     return nc;
 #else
-    throw ResultUndefinedError(env, call->loc(), "cannot parse regular expression without Gecode support");
+    throw FlatteningError(env, call->loc(), "cannot parse regular expression without Gecode support");
 #endif
   }
   
