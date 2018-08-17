@@ -140,7 +140,7 @@ atom:
     { $$ = new REG($1); }
   | "."
     {
-      IntArgs range = IntArgs::create(dom.min().toInt() - dom.max().toInt(), dom.min().toInt());
+      IntArgs range = IntArgs::create(dom.max().toInt() - dom.min().toInt() + 1, dom.min().toInt());
       $$ = new REG(range);
     }
   | "[" set_items "]"
