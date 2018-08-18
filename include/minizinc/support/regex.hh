@@ -29,6 +29,13 @@ extern "C" int isatty(int);
 #endif
 #endif
 
+// The Microsoft C++ compiler marks certain functions as deprecated,
+// so let's take the alternative definitions
+#if defined(_MSC_VER)
+#define strdup _strdup
+#define fileno _fileno
+#endif
+
 //Anonymous struct for when yyparse is exported
 typedef struct REContext REContext;
 // Parser generated header
