@@ -20,6 +20,15 @@
 #include <gecode/minimodel.hh>
 #include <minizinc/values.hh>
 
+// This is a workaround for a bug in flex that only shows up
+// with the Microsoft C++ compiler
+#if defined(_MSC_VER)
+#define YY_NO_UNISTD_H
+#ifdef __cplusplus
+extern "C" int isatty(int);
+#endif
+#endif
+
 //Anonymous struct for when yyparse is exported
 typedef struct REContext REContext;
 // Parser generated header
