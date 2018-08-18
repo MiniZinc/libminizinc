@@ -42,6 +42,7 @@
 "^"     { return R_CLASS_NEG; }
 
 [A-Za-z][A-Za-z0-9_]* { regex_yylval.sValue = strdup(yytext); return R_IDENTIFIER; }
+"'"[^\\'\xa\xd\x0]*"'" { regex_yylval.sValue = strdup(yytext); return R_IDENTIFIER; }
 
 .   {
   /* Catch all */
