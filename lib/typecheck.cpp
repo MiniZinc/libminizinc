@@ -162,7 +162,9 @@ namespace MiniZinc {
       std::string name = createEnumToStringName(ident,"_enum_to_string_");
       std::vector<Expression*> al_args(sl->v().size());
       for (unsigned int i=0; i<sl->v().size(); i++) {
-        al_args[i] = new StringLit(Location().introduce(),sl->v()[i]->cast<Id>()->str());
+        ASTString str = sl->v()[i]->cast<Id>()->str();
+        al_args[i] = new StringLit(Location().introduce(), str);
+        env.reverseEnum[str.str()] = i+1;
       }
       ArrayLit* al = new ArrayLit(Location().introduce(),al_args);
       
@@ -507,10 +509,10 @@ namespace MiniZinc {
                                     ti_fi,fi_params,let);
       enumItems->addItem(fi);
     }
-    
+
     return ret;
   }
-  
+
   void
   TopoSorter::add(EnvI& env, VarDeclI* vdi, bool handleEnums, Model* enumItems) {
     VarDecl* vd = vdi->e();

@@ -18,6 +18,7 @@
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/file_utils.hh>
+#include <minizinc/support/regex.hh>
 
 #include <iomanip>
 #include <climits>
@@ -2069,6 +2070,83 @@ namespace MiniZinc {
     ret->type(call->type());
     return ret;
   }
+
+  Expression* b_regular_from_string(EnvI& env, Call* call) {
+#ifdef HAS_GECODE
+    using namespace Gecode;
+    ArrayLit* vars = eval_array_lit(env, call->arg(0));
+    std::string expr = eval_string(env, call->arg(1));
+
+    IntSetVal* dom;
+    if (vars->size()==0) {
+      dom = IntSetVal::a();
+    } else {
+      dom = b_dom_varint(env,(*vars)[0]);
+      for (unsigned int i=1; i < vars->size(); i++) {
+        IntSetRanges isr(dom);
+        IntSetRanges r(b_dom_varint(env,(*vars)[i]));
+        Ranges::Union<IntVal,IntSetRanges,IntSetRanges> u(isr,r);
+        dom = IntSetVal::ai(u);
+      }
+    }
+    int card = dom->max().toInt() - dom->min().toInt() + 1;
+    int offset = 1 - dom->min().toInt();
+
+    std::unique_ptr<REG> regex;
+    try {
+      regex = regex_from_string(expr, *dom, env.reverseEnum);
+    } catch (const std::exception& e) {
+      throw SyntaxError(call->arg(1)->loc(), e.what());
+    }
+    DFA dfa = DFA(*regex);
+
+    std::vector< std::vector<Expression*> > reg_trans(
+        dfa.n_states(), std::vector<Expression*>(
+            card, IntLit::a(IntVal(0))
+        )
+    );
+    
+    DFA::Transitions trans(dfa);
+    while (trans()) {
+//      std::cerr << trans.i_state() + 1 << " -- " << trans.symbol() << " --> " << trans.o_state() + 1 << "\n";
+      if (trans.symbol() >= dom->min().toInt() && trans.symbol() <= dom->max().toInt()) {
+        reg_trans[trans.i_state()][trans.symbol()+offset-1] = IntLit::a(IntVal(trans.o_state()+1));
+      }
+      ++trans;
+    }
+
+    std::vector<Expression*> args(6);
+    if (offset == 0) {
+      args[0] = vars; // x
+    } else {
+      std::vector<Expression*> nvars(vars->size());
+      IntLit* loffset = IntLit::a(IntVal(offset));
+      for (int i = 0; i < nvars.size(); ++i) {
+        nvars[i] = new BinOp(call->loc().introduce(), (*vars)[i], BOT_PLUS, loffset);
+        nvars[i]->type(Type::varint());
+      }
+      args[0] = new ArrayLit(call->loc().introduce(), nvars); // x
+      args[0]->type(Type::varint(1));
+    }
+    args[1] = IntLit::a(IntVal(dfa.n_states())); // Q
+    args[1]->type(Type::parint());
+    args[2] = IntLit::a(IntVal(card));// S
+    args[2]->type(Type::parint());
+    args[3] = new ArrayLit(call->loc().introduce(), reg_trans); // d
+    args[3]->type(Type::parint(2));
+    args[4] = IntLit::a(IntVal(1)); // q0
+    args[4]->type(Type::parint());
+    args[5] = new SetLit(call->loc().introduce(), IntSetVal::a(IntVal(dfa.final_fst()+1), IntVal(dfa.final_lst()))); // F
+    args[5]->type(Type::parsetint());
+
+    auto nc = new Call(call->loc().introduce(), "regular", args);
+    nc->type(Type::varbool());
+
+    return nc;
+#else
+    throw FlatteningError(env, call->loc(), "cannot parse regular expression without Gecode support");
+#endif
+  }
   
   void registerBuiltins(Env& e) {
     EnvI& env = e.envi();
@@ -2839,6 +2917,12 @@ namespace MiniZinc {
     }
     {
       rb(env, m, ASTString("mzn_compiler_version"), std::vector<Type>(), b_mzn_compiler_version);
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::varint(1);
+      t[1] = Type::parstring();
+      rb(env, m, ASTString("regular"),t,b_regular_from_string);
     }
   }
   

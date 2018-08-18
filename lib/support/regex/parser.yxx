@@ -1,0 +1,222 @@
+/* -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*- */
+
+/*
+ *  Main authors:
+ *     Jip J. Dekker <jip.dekker@monash.edu>
+ */
+
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+%{
+#include <cstdlib>
+#include <cstdio>
+#include <unordered_set>
+#include <unordered_map>
+
+#include <gecode/minimodel.hh>
+#include <minizinc/values.hh>
+using namespace Gecode;
+using namespace MiniZinc;
+
+typedef struct yy_buffer_state *YY_BUFFER_STATE;
+YY_BUFFER_STATE regex_yy_scan_string ( const char* yy_str );
+
+extern int yylex();
+extern FILE* yyin;
+
+typedef struct REContext{
+  REG* expr;
+  const IntSetVal& dom;
+  const std::unordered_map<std::string, int>& idMap;
+} REContext;
+
+void yyerror(REContext& ctx, const char* s);
+%}
+
+%union {
+  int iValue;
+  char* sValue;
+  std::unordered_set<int>* setValue;
+  Gecode::REG* rValue;
+}
+%parse-param {REContext& ctx}
+
+%token<iValue> R_INTEGER
+%token R_GROUP_OPEN "("
+%token R_GROUP_CLOSE ")"
+%token R_STAR "*"
+%token R_PLUS "+"
+%token R_ANY "."
+%token R_UNION "|"
+%token R_OPTIONAL "?"
+%token R_QUANT_OPEN "{"
+%token R_QUANT_CLOSE "}"
+%token R_COMMA ","
+%token R_CLASS_OPEN "["
+%token R_CLASS_CLOSE "]"
+%token R_CLASS_RANGE "-"
+%token R_CLASS_NEG "^"
+%token<sValue> R_IDENTIFIER
+
+%type<iValue> literal
+%type<rValue> regex expression term factor atom
+%type<setValue> set_item set_items
+
+%start regex
+
+%%
+
+regex:
+  expression
+  {
+    *ctx.expr = (*$1);
+    delete $1;
+  }
+
+expression:
+    term
+  | term "|" expression
+    {
+      *$1 = *$1 | *$3;
+      delete $3;
+      $$ = $1;
+    }
+
+term:
+    factor
+  | factor term
+    {
+      *$1 = *$1 + *$2;
+      delete $2;
+      $$ = $1;
+    }
+
+factor:
+    atom
+  | atom "*"
+    {
+      *$1 = *(*$1);
+      $$ = $1;
+    }
+  | atom "+"
+    {
+      *$1 = +(*$1);
+      $$ = $1;
+    }
+  | atom "?"
+    {
+      *$1 = (*$1)(0, 1);
+      $$ = $1;
+    }
+  | atom "{" R_INTEGER "}"
+    {
+      *$1 = (*$1)($3, $3);
+      $$ = $1;
+    }
+  | atom "{" R_INTEGER "," "}"
+    {
+      *$1 = (*$1)($3);
+      $$ = $1;
+    }
+  | atom "{" R_INTEGER "," R_INTEGER "}"
+    {
+      *$1 = (*$1)($3, $5);
+      $$ = $1;
+    }
+
+atom:
+    literal
+    { $$ = new REG($1); }
+  | "."
+    {
+      IntArgs range = IntArgs::create(ctx.dom.max().toInt() - ctx.dom.min().toInt() + 1, ctx.dom.min().toInt());
+      $$ = new REG(range);
+    }
+  | "[" set_items "]"
+    {
+      std::vector<int> v;
+      v.reserve($2->size());
+      for(auto i : *$2) {
+        v.push_back(i);
+      }
+      delete $2;
+      $$ = new REG(IntArgs(v));
+    }
+  | "[" "^" set_items "]"
+    {
+      std::vector<int> diff;
+      std::unordered_set<int> domain;
+      for(int i = ctx.dom.min().toInt(); i<=ctx.dom.max().toInt(); ++i) {
+        domain.insert(i);
+      }
+      std::set_difference(
+        domain.begin(), domain.end(),
+        $3->begin(), $3->end(),
+        std::inserter(diff, diff.begin())
+      );
+      delete $3;
+      $$ = new REG(IntArgs(diff));
+    }
+  | "(" expression ")"
+    { $$ = $2; }
+
+set_items:
+    set_item
+  | set_item set_items
+    {
+      $$ = $1;
+      for (auto i : *$2) {
+        $1->insert(i);
+      }
+      delete $2;
+    }
+
+set_item:
+    literal
+    {
+      $$ = new std::unordered_set<int>({$1});
+    }
+  | literal "-" literal
+    {
+      int from = $1;
+      int to = $3;
+      if (to < from) {
+        std::swap(from,to);
+      }
+      $$ = new std::unordered_set<int>;
+      for(int i = from; i<=to; ++i) {
+        $$->insert(i);
+      }
+    }
+
+literal:
+    R_INTEGER
+  | R_IDENTIFIER
+    {
+      std::string s($1);
+      auto find = ctx.idMap.find(s);
+      if (find == ctx.idMap.end()) {
+        throw std::runtime_error("Unknown identifier: " + s);
+      }
+      $$ = find->second;
+    }
+
+%%
+
+void yyerror(REContext& ctx, const char* s) {
+    // TODO: Add error location
+    throw std::runtime_error("Cannot parse regular expression: " + std::string(s));
+}
+
+std::unique_ptr<REG> regex_from_string(const std::string& regex_str, const IntSetVal& domain, const std::unordered_map<std::string, int>& identifiers) {
+    REG* expr = new REG();
+    regex_yy_scan_string(regex_str.c_str());
+    REContext rctx = REContext{expr, domain, identifiers};
+    int err = yyparse(rctx);
+    if (err != 0) {
+        throw std::runtime_error("Cannot parse regular expression, error code " + std::to_string(err));
+    }
+    return std::unique_ptr<REG>(expr);
+}

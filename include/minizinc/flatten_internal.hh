@@ -103,6 +103,7 @@ namespace MiniZinc {
     int in_maybe_partial;
     FlatteningOptions fopts;
     unsigned int pathUse;
+    std::unordered_map<std::string, int> reverseEnum;
 
     struct PathVar {
       KeepAlive decl;
