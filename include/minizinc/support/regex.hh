@@ -19,6 +19,8 @@
 #include <gecode/minimodel.hh>
 #include <minizinc/values.hh>
 
+//Anonymous struct for when yyparse is exported
+typedef struct REContext REContext;
 // Parser generated header
 #include <minizinc/support/regex_parser.tab.hh>
 
