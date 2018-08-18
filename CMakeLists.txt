@@ -250,12 +250,12 @@ if(BISON_FOUND)
     COMPILE_FLAGS "-p mzn_yy -l"
   )
 
-  file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/include/minizinc/support/regex/)
+  file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/include/minizinc/support/)
   BISON_TARGET(RegExParser
     ${PROJECT_SOURCE_DIR}/lib/support/regex/parser.yxx
     ${PROJECT_BINARY_DIR}/regex_parser.tab.cpp
-    DEFINES_FILE ${PROJECT_BINARY_DIR}/include/minizinc/support/regex/parser.tab.hh
-    COMPILE_FLAGS "-l"
+    DEFINES_FILE ${PROJECT_BINARY_DIR}/include/minizinc/support/regex_parser.tab.hh
+    COMPILE_FLAGS "-p regex_yy -l"
   )
 else()
   MD5(${PROJECT_SOURCE_DIR}/lib/parser.yxx parser_yxx_md5)
@@ -285,7 +285,7 @@ if(FLEX_FOUND)
   FLEX_TARGET(RegExLexer
     ${PROJECT_SOURCE_DIR}/lib/support/regex/lexer.lxx
     ${PROJECT_BINARY_DIR}/regex_lexer.yy.cpp
-    COMPILE_FLAGS "-L"
+    COMPILE_FLAGS "-P regex_yy -L"
   )
   ADD_FLEX_BISON_DEPENDENCY(RegExLexer RegExParser)
 else()
@@ -373,6 +373,7 @@ include/minizinc/thirdparty/b64/cdecode.h
 include/minizinc/thirdparty/b64/cencode.h
 include/minizinc/thirdparty/b64/decode.h
 include/minizinc/thirdparty/b64/encode.h
+include/minizinc/support/regex.hh
 ${BISON_MZNParser_OUTPUTS}
 ${FLEX_MZNLexer_OUTPUTS}
 ${BISON_RegExParser_OUTPUTS}

@@ -18,16 +18,12 @@
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/file_utils.hh>
+#include <minizinc/support/regex.hh>
 
 #include <iomanip>
 #include <climits>
 #include <cmath>
 #include <random>
-
-#ifdef HAS_GECODE
-#include <minizinc/support/regex/parser.tab.hh>
-#include <gecode/minimodel.hh>
-#endif
 
 namespace MiniZinc {
   

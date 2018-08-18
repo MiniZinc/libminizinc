@@ -9,26 +9,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-%require "3.0"
-%define api.prefix {regex_yy}
-
-%code requires {
-#include <set>
-#include <map>
-#include <gecode/minimodel.hh>
-#include <minizinc/values.hh>
-
-using namespace Gecode;
-using namespace MiniZinc;
-
-std::unique_ptr<REG> regex_from_string(const std::string& expression, const IntSetVal& domain, const std::map<std::string, int>& identifiers);
-}
-
 %{
 #include <cstdlib>
 #include <cstdio>
-#include <set>
-#include <map>
+#include <unordered_set>
+#include <unordered_map>
 
 #include <gecode/minimodel.hh>
 #include <minizinc/values.hh>
@@ -41,16 +26,22 @@ YY_BUFFER_STATE regex_yy_scan_string ( const char* yy_str );
 extern int yylex();
 extern FILE* yyin;
 
-void yyerror(REG* expr, const IntSetVal& dom, const std::map<std::string, int>& identifiers, const char* s);
+typedef struct REContext{
+  REG* expr;
+  const IntSetVal& dom;
+  const std::unordered_map<std::string, int>& idMap;
+} REContext;
+
+void yyerror(REContext& ctx, const char* s);
 %}
 
 %union {
   int iValue;
   char* sValue;
-  std::set<int>* setValue;
-  REG* rValue;
+  std::unordered_set<int>* setValue;
+  Gecode::REG* rValue;
 }
-%parse-param {REG* expr} {const IntSetVal& dom} {const std::map<std::string, int>& identifiers}
+%parse-param {REContext& ctx}
 
 %token<iValue> R_INTEGER
 %token R_GROUP_OPEN "("
@@ -80,7 +71,7 @@ void yyerror(REG* expr, const IntSetVal& dom, const std::map<std::string, int>& 
 regex:
   expression
   {
-    *expr = (*$1);
+    *ctx.expr = (*$1);
     delete $1;
   }
 
@@ -140,7 +131,7 @@ atom:
     { $$ = new REG($1); }
   | "."
     {
-      IntArgs range = IntArgs::create(dom.max().toInt() - dom.min().toInt() + 1, dom.min().toInt());
+      IntArgs range = IntArgs::create(ctx.dom.max().toInt() - ctx.dom.min().toInt() + 1, ctx.dom.min().toInt());
       $$ = new REG(range);
     }
   | "[" set_items "]"
@@ -156,8 +147,8 @@ atom:
   | "[" "^" set_items "]"
     {
       std::vector<int> diff;
-      std::set<int> domain;
-      for(int i = dom.min().toInt(); i<=dom.max().toInt(); ++i) {
+      std::unordered_set<int> domain;
+      for(int i = ctx.dom.min().toInt(); i<=ctx.dom.max().toInt(); ++i) {
         domain.insert(i);
       }
       std::set_difference(
@@ -185,7 +176,7 @@ set_items:
 set_item:
     literal
     {
-      $$ = new std::set<int>({$1});
+      $$ = new std::unordered_set<int>({$1});
     }
   | literal "-" literal
     {
@@ -194,7 +185,7 @@ set_item:
       if (to < from) {
         std::swap(from,to);
       }
-      $$ = new std::set<int>;
+      $$ = new std::unordered_set<int>;
       for(int i = from; i<=to; ++i) {
         $$->insert(i);
       }
@@ -205,8 +196,8 @@ literal:
   | R_IDENTIFIER
     {
       std::string s($1);
-      auto find = identifiers.find(s);
-      if (find == identifiers.end()) {
+      auto find = ctx.idMap.find(s);
+      if (find == ctx.idMap.end()) {
         throw std::runtime_error("Unknown identifier: " + s);
       }
       $$ = find->second;
@@ -214,15 +205,16 @@ literal:
 
 %%
 
-void yyerror(REG* expr, const IntSetVal& dom, const std::map<std::string, int>& identifiers, const char* s) {
+void yyerror(REContext& ctx, const char* s) {
     // TODO: Add error location
     throw std::runtime_error("Cannot parse regular expression: " + std::string(s));
 }
 
-std::unique_ptr<REG> regex_from_string(const std::string& regex_str, const IntSetVal& domain, const std::map<std::string, int>& identifiers) {
+std::unique_ptr<REG> regex_from_string(const std::string& regex_str, const IntSetVal& domain, const std::unordered_map<std::string, int>& identifiers) {
     REG* expr = new REG();
     regex_yy_scan_string(regex_str.c_str());
-    int err = yyparse(expr, domain, identifiers);
+    REContext rctx = REContext{expr, domain, identifiers};
+    int err = yyparse(rctx);
     if (err != 0) {
         throw std::runtime_error("Cannot parse regular expression, error code " + std::to_string(err));
     }
