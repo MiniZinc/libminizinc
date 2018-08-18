@@ -74,6 +74,7 @@
 
 #include <cstdlib>
 #include <cstdio>
+#include <memory>
 #include <unordered_set>
 #include <unordered_map>
 
@@ -478,9 +479,9 @@ static const yytype_uint8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    72,    72,    79,    80,    88,    89,    97,    98,   103,
-     108,   113,   118,   123,   130,   132,   137,   147,   162,   166,
-     167,   177,   181,   195,   196
+       0,    73,    73,    80,    81,    89,    90,    98,    99,   104,
+     109,   114,   119,   124,   131,   133,   138,   148,   163,   167,
+     168,   178,   182,   196,   197
 };
 #endif
 
