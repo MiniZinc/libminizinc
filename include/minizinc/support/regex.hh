@@ -14,6 +14,7 @@
 #ifdef HAS_GECODE
 
 // Regex Parser Requirements
+#include <memory>
 #include <unordered_map>
 #include <unordered_set>
 #include <gecode/minimodel.hh>
