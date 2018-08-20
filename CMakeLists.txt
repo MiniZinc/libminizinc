@@ -318,6 +318,11 @@ else()
   set(FLEX_RegExLexer_OUTPUTS ${PROJECT_SOURCE_DIR}/lib/cached/regex_lexer.yy.cpp)
 endif()
 
+if(NOT HAS_GECODE)
+  set(FLEX_RegExLexer_OUTPUTS "")
+  set(BISON_RegExParser_OUTPUTS "")
+endif()
+
 # -------------------------------------------------------------------------------------------------------------------
 add_library(minizinc
 lib/ast.cpp
@@ -706,6 +711,11 @@ if(HAS_GECODE)
 
   if(NOT (SHARED_GECODE AND WIN32) )
     target_link_libraries(minizinc_gecode
+      gecodedriver gecodesearch gecodeminimodel
+      gecodefloat gecodeint gecodeset
+      gecodekernel gecodesupport
+    )
+    target_link_libraries(minizinc
       gecodedriver gecodesearch gecodeminimodel
       gecodefloat gecodeint gecodeset
       gecodekernel gecodesupport
