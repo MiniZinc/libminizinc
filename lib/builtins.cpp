@@ -28,56 +28,56 @@
 namespace MiniZinc {
   
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
-          FunctionI::builtin_e b) {
+          FunctionI::builtin_e b, bool fromGlobals=false) {
     FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.e = b;
-    } else {
+    } else if (!fromGlobals) {
       throw InternalError("no definition found for builtin "+id.str());
     }
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
-          FunctionI::builtin_f b) {
+          FunctionI::builtin_f b, bool fromGlobals=false) {
     FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.f = b;
-    } else {
+    } else if (!fromGlobals)  {
       throw InternalError("no definition found for builtin "+id.str());
     }
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
-          FunctionI::builtin_i b) {
+          FunctionI::builtin_i b, bool fromGlobals=false) {
     FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.i = b;
-    } else {
+    } else if (!fromGlobals)  {
       throw InternalError("no definition found for builtin "+id.str());
     }
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
-          FunctionI::builtin_b b) {
+          FunctionI::builtin_b b, bool fromGlobals=false) {
     FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.b = b;
-    } else {
+    } else if (!fromGlobals)  {
       throw InternalError("no definition found for builtin "+id.str());
     }
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
-          FunctionI::builtin_s b) {
+          FunctionI::builtin_s b, bool fromGlobals=false) {
     FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.s = b;
-    } else {
+    } else if (!fromGlobals)  {
       throw InternalError("no definition found for builtin "+id.str());
     }
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
-          FunctionI::builtin_str b) {
+          FunctionI::builtin_str b, bool fromGlobals=false) {
     FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.str = b;
-    } else {
+    } else if (!fromGlobals)  {
       throw InternalError("no definition found for builtin "+id.str());
     }
   }
@@ -2144,7 +2144,7 @@ namespace MiniZinc {
 
     return nc;
 #else
-    throw FlatteningError(env, call->loc(), "cannot parse regular expression without Gecode support");
+    throw FlatteningError(env, call->loc(), "MiniZinc was compiled without built-in Gecode, cannot parse regular expression");
 #endif
   }
   
@@ -2922,7 +2922,7 @@ namespace MiniZinc {
       std::vector<Type> t(2);
       t[0] = Type::varint(1);
       t[1] = Type::parstring();
-      rb(env, m, ASTString("regular"),t,b_regular_from_string);
+      rb(env, m, ASTString("regular"),t,b_regular_from_string,true);
     }
   }
   
