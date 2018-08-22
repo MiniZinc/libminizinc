@@ -701,7 +701,6 @@ if(HAS_GECODE)
     include/minizinc/solvers/gecode_solverinstance.hh
     include/minizinc/solvers/gecode_solverfactory.hh
     include/minizinc/solvers/gecode/gecode_constraints.hh
-    ${parser_hh}
     )
 
   target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include" "${GECODE_HOME}")
@@ -835,9 +834,7 @@ INSTALL(FILES ${PROJECT_BINARY_DIR}/include/minizinc/config.hh DESTINATION inclu
 INSTALL(FILES README.txt INSTALL.txt LICENSE.txt DESTINATION doc/..)
 INSTALL(DIRECTORY doc/pdf DESTINATION doc)
 INSTALL(DIRECTORY share/examples DESTINATION share)
-INSTALL(DIRECTORY lib/cached DESTINATION lib PATTERN md5_cached.cmake EXCLUDE)
-INSTALL(FILES ${parser_hh} DESTINATION include/minizinc)
-
+INSTALL(DIRECTORY lib/cached/minizinc DESTINATION include)
 
   # Add all targets to the build-tree export set
   export(TARGETS minizinc ${EXTRA_TARGETS}
