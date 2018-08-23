@@ -13,9 +13,10 @@
 #define __MINIZINC_HASH_HH__
 
 #include <minizinc/ast.hh>
-
-#include <minizinc/stl_map_set.hh>
 #include <minizinc/exception.hh>
+
+#include <unordered_set>
+#include <unordered_map>
 
 namespace MiniZinc {
   
@@ -38,10 +39,10 @@ namespace MiniZinc {
   class ExpressionMap {
   protected:
     /// The underlying map implementation
-    UNORDERED_NAMESPACE::unordered_map<Expression*,T,ExpressionHash,ExpressionEq> _m;
+    std::unordered_map<Expression*,T,ExpressionHash,ExpressionEq> _m;
   public:
     /// Iterator type
-    typedef typename UNORDERED_NAMESPACE::unordered_map<Expression*,T,
+    typedef typename std::unordered_map<Expression*,T,
       ExpressionHash,ExpressionEq>::iterator iterator;
     /// Insert mapping from \a e to \a t
     iterator insert(Expression* e, const T& t) {
@@ -81,10 +82,10 @@ namespace MiniZinc {
   class IdMap {
   protected:
     /// The underlying map implementation
-    UNORDERED_NAMESPACE::unordered_map<Id*,T,ExpressionHash,IdEq> _m;
+    std::unordered_map<Id*,T,ExpressionHash,IdEq> _m;
   public:
     /// Iterator type
-    typedef typename UNORDERED_NAMESPACE::unordered_map<Id*,T,
+    typedef typename std::unordered_map<Id*,T,
     ExpressionHash,IdEq>::iterator iterator;
     /// Insert mapping from \a e to \a t
     void insert(Id* e, const T& t) {
@@ -134,16 +135,15 @@ namespace MiniZinc {
     }
   };
 
-
   /// Hash map from KeepAlive to \a T
   template<class T>
   class KeepAliveMap {
   protected:
     /// The underlying map implementation
-    UNORDERED_NAMESPACE::unordered_map<KeepAlive,T,KAHash,KAEq> _m;
+    std::unordered_map<KeepAlive,T,KAHash,KAEq> _m;
   public:
     /// Iterator type
-    typedef typename UNORDERED_NAMESPACE::unordered_map<KeepAlive,T,
+    typedef typename std::unordered_map<KeepAlive,T,
       KAHash,KAEq>::iterator iterator;
     /// Insert mapping from \a e to \a t
     void insert(KeepAlive& e, const T& t) {
@@ -160,17 +160,18 @@ namespace MiniZinc {
     void remove(KeepAlive& e) {
       _m.erase(e);
     }
+    void clear() { _m.clear(); }
     template <class D> void dump(void) {
       for (iterator i = _m.begin(); i != _m.end(); ++i) {
-        std::cerr << i->first() << ": " << D::d(i->second) << std::endl;
+        std::cerr << D::k(i->first()) << ": " << D::d(i->second) << std::endl;
       }
     }
   };
   
-  class ExpressionSetIter : public UNORDERED_NAMESPACE::unordered_set<Expression*,ExpressionHash,ExpressionEq>::iterator {
+  class ExpressionSetIter : public std::unordered_set<Expression*,ExpressionHash,ExpressionEq>::iterator {
   protected:
     bool _empty;
-    typedef UNORDERED_NAMESPACE::unordered_set<Expression*,ExpressionHash,ExpressionEq>::iterator Iter;
+    typedef std::unordered_set<Expression*,ExpressionHash,ExpressionEq>::iterator Iter;
   public:
     ExpressionSetIter(void) : _empty(false) {}
     ExpressionSetIter(bool) : _empty(true) {}
@@ -187,7 +188,7 @@ namespace MiniZinc {
   class ExpressionSet {
   protected:
     /// The underlying set implementation
-    UNORDERED_NAMESPACE::unordered_set<Expression*,ExpressionHash,ExpressionEq> _s;
+    std::unordered_set<Expression*,ExpressionHash,ExpressionEq> _s;
   public:
     /// Insert \a e
     void insert(Expression* e) {

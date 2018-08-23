@@ -30,6 +30,25 @@ annotation maybe_partial;
 of the model. This annotation only has an effect when the model does not have an output item. */
 annotation add_to_output;
 
+/** @group annotations.general Declare that the annotated variable should be only used for output.
+  This annotation can be used to define variables that are required for solution checkers, or
+  that are necessary for the output item. The annotated variable must be par.
+ */
+annotation output_only;
+
+/** @group annotations.general Declare that the annotated variable is required for checking solutions. */
+annotation mzn_check_var;
+
+/** @group annotations.general Declare that the annotated variable is required for checking solutions and has an enum type. */
+annotation mzn_check_enum_var(set of int);
+
+/** @group annotations.general Declare a name for the annotated expression. */
+annotation mzn_expression_name(string);
+
+/** @group annotations.general Declare a name for the annotated constraint. */
+annotation mzn_constraint_name(string);
+
+
 /** @group annotations.general Declare the annotated variable as being functionally defined.
   This annotation is introduced into FlatZinc code by the compiler. */
 annotation is_defined_var;
@@ -52,6 +71,25 @@ annotation is_reverse_map;
 /** @group annotations.general Document the function or variable declaration item with
   the string \a s. */
 annotation doc_comment(string: s);
+/** @group annotations.general Representation of the call-stack when the annotated item
+  was introduced, as a string \a s. Can be used to uniquely identify variables and constraints across different
+  compilations of a model that may have different names. This annotations is introduced into
+  FlatZinc code by the compiler and is retained if --keep-paths argument is used. */
+annotation mzn_path(string: s);
+/** @group annotations.general With debug build of mzn2fzn, call MiniZinc::mzn_break_here when
+  flattening this expression to make debugging easier. This annotation is ignored by the
+  release build.*/
+annotation mzn_break_here;
+/** @group annotations.general Used to attach a name \a s to an expression, this should also propagate to
+  any sub-expressions or decomposition of the annotated expression. String annotations on expressions
+  are re-written as expression_name annotations **/
+annotation expression_name(string: s);
+/** @group annotations.general Used to attach a name \a s to a constraint and its decomposition. String
+  annotations on constraint keywords are re-written as constraint_name annotations **/
+annotation constraint_name(string: s);
+
+/** @group annotations.general Used internally by the compiler **/
+annotation mzn_rhs_from_assignment;
 
 /***
  @groupdef annotations.prop Propagation strength annotations
@@ -82,6 +120,15 @@ annotation int_search(
 );
 
 /** @group annotations.search Specify search on variables \a x, with variable selection
+  strategy \a select, and value choice strategy \a choice.
+*/
+annotation int_search(
+    array[int] of var int: x,
+    ann: select,
+    ann: choice
+) = int_search(x,select,choice,complete);
+
+/** @group annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, value choice strategy \a choice, and exploration strategy
   \a explore.
 */
@@ -91,6 +138,15 @@ annotation bool_search(
     ann: choice,
     ann: explore
 );
+
+/** @group annotations.search Specify search on variables \a x, with variable selection
+  strategy \a select, and value choice strategy \a choice.
+*/
+annotation bool_search(
+    array[int] of var bool: x,
+    ann: select,
+    ann: choice
+) = bool_search(x,select,choice,complete);
 
 /** @group annotations.search Specify search on variables \a x, 
   with precision \a prec, variable selection
@@ -105,6 +161,17 @@ annotation float_search(
     ann: explore
 );
 
+/** @group annotations.search Specify search on variables \a x, 
+  with precision \a prec, variable selection
+  strategy \a select, and value choice strategy \a choice.
+*/
+annotation float_search(
+    array[int] of var float: x,
+    float: prec,
+    ann: select,
+    ann: choice
+) = float_search(x,prec,select,choice,complete);
+
 /** @group annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, value choice strategy \a choice, and exploration strategy
   \a explore.
@@ -115,6 +182,15 @@ annotation set_search(
     ann: choice,
     ann: explore
 );
+
+/** @group annotations.search Specify search on variables \a x, with variable selection
+  strategy \a select, and value choice strategy \a choice.
+*/
+annotation set_search(
+    array[int] of var set of int: x,
+    ann: select,
+    ann: choice
+) = set_search(x,select,choice,complete);
 
 /***
  @groupdef annotations.search.varsel Variable selection annotations
@@ -188,6 +264,98 @@ annotation outdomain_random;
 
 /** @group annotations.search.explore Perform a complete search */
 annotation complete;
+
+/***
+ @groupdef annotations.search.restart Restart annotations
+*/
+
+/** @group annotations.search.restart Restart with Luby sequence scaled by \a scale */
+annotation restart_luby(int: scale);
+/** @group annotations.search.restart Restart with geometric sequence with parameters \a base and \a scale */
+annotation restart_geometric(float: base, int: scale);
+/** @group annotations.search.restart Restart with linear sequence scaled by \a scale */
+annotation restart_linear(int: scale);
+/** @group annotations.search.restart Restart after constant number of nodes \a scale */
+annotation restart_constant(int: scale);
+/** @group annotations.search.restart Do not restart */
+annotation restart_none;
+
+/***
+ @groupdef annotations.warmstart Warm start annotations
+
+ To be put on the solve item, similar to search annotations.
+ A variable can be mentioned several times and in different
+ annotations but only one of the values is taken
+*/
+
+/** @group annotations.warmstart Specify an array \a w of warm_start annotations
+ or other warm_start_array annotations. Can be useful to keep the annotation
+ order in FlatZinc for manual updating.
+ 
+ Note: if you have search annotations as well, put warm_starts into seq_search
+ in order to have precedence between both, which may matter.
+*/
+annotation warm_start_array( array[int] of ann: w );
+
+/** @group annotations.warmstart Specify warm start values \a v for an array of booleans \a x */
+annotation warm_start( array[int] of var bool: x, array[int] of bool: v );
+/** @group annotations.warmstart Specify warm start values \a v for an array of integers \a x */
+annotation warm_start( array[int] of var int: x, array[int] of int: v );
+/** @group annotations.warmstart Specify warm start values \a v for an array of floats \a x */
+annotation warm_start( array[int] of var float: x, array[int] of float: v );
+/** @group annotations.warmstart Specify warm start values \a v for an array of sets \a x */
+annotation warm_start( array[int] of var set of int: x, array[int] of set of int: v );
+
+
+/***
+ @groupdef annotations.warmstart.optvals Warm start annotations with optional values
+
+ The value arrays can contain <> elements (absent values).
+ The following decompositions eliminate those elements
+ because FlatZinc 1.6 does not support optionals.
+*/
+
+/** @group annotations.warmstart.optvals Specify warm start values \a v for an array of booleans \a x */
+annotation warm_start( array[int] of var bool: x, array[int] of opt bool: v ) =
+    if 0==length(x) \/ 0==length(v) then
+        warm_start( x, [] )
+    else
+        warm_start( [ x[i] | i in index_set(x) where
+            i-min(index_set(x))+min(index_set(v))>length(v) \/
+            occurs( v[ i-min(index_set(x))+min(index_set(v)) ] ) ],
+            [ deopt(v[i]) | i in index_set(v) where occurs(v[i]) ] )
+    endif;
+/** @group annotations.warmstart.optvals Specify warm start values \a v for an array of integers \a x */
+annotation warm_start( array[int] of var int: x, array[int] of opt int: v ) =
+    if 0==length(x) \/ 0==length(v) then
+        warm_start( x, [] )
+    else
+        warm_start( [ x[i] | i in index_set(x) where
+            i-min(index_set(x))+min(index_set(v))>length(v) \/
+            occurs( v[ i-min(index_set(x))+min(index_set(v)) ] ) ],
+            [ deopt(v[i]) | i in index_set(v) where occurs(v[i]) ] )
+    endif;
+/** @group annotations.warmstart.optvals Specify warm start values \a v for an array of floats \a x */
+annotation warm_start( array[int] of var float: x, array[int] of opt float: v ) =
+    if 0==length(x) \/ 0==length(v) then
+        warm_start( x, [] )
+    else
+        warm_start( [ x[i] | i in index_set(x) where
+            i-min(index_set(x))+min(index_set(v))>length(v) \/
+            occurs( v[ i-min(index_set(x))+min(index_set(v)) ] ) ],
+            [ deopt(v[i]) | i in index_set(v) where occurs(v[i]) ] )
+    endif;
+/** @group annotations.warmstart.optvals Specify warm start values \a v for an array of sets \a x */
+annotation warm_start( array[int] of var set of int: x, array[int] of opt set of int: v ) =
+    if 0==length(x) \/ 0==length(v) then
+        warm_start( x, [] )
+    else
+        warm_start( [ x[i] | i in index_set(x) where
+            i-min(index_set(x))+min(index_set(v))>length(v) \/
+            occurs( v[ i-min(index_set(x))+min(index_set(v)) ] ) ],
+            [ deopt(v[i]) | i in index_set(v) where occurs(v[i]) ] )
+    endif;
+
 
 
 /***

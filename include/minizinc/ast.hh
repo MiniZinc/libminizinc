@@ -22,6 +22,8 @@
 #include <utility>
 #include <vector>
 #include <cstddef>
+#include <cstdint>
+#include <limits>
 
 #include <iostream>
 
@@ -51,27 +53,128 @@ namespace MiniZinc {
   class ExpressionSet;
   class ExpressionSetIter;
   
+  /// %Location of an expression used during parsing
+  class ParserLocation {
+  protected:
+    
+    /// Source code file name
+    ASTString _filename;
+    /// Line where expression starts
+    unsigned int _first_line;
+    /// Line where expression ends
+    unsigned int _last_line;
+    /// Column where expression starts
+    unsigned int _first_column;
+    /// Column where expression ends
+    unsigned int _last_column;
+  public:
+    /// Construct empty location
+    ParserLocation(void) : _first_line(1), _last_line(1), _first_column(0), _last_column(0) {}
+    
+    /// Construct location
+    ParserLocation(const ASTString& filename, unsigned int first_line, unsigned int first_column, unsigned int last_line, unsigned int last_column)
+    : _filename(filename), _first_line(first_line), _last_line(last_line), _first_column(first_column), _last_column(last_column) {}
+    
+    ASTString filename(void) const { return _filename; }
+    void filename(const ASTString& f) { _filename = f; }
+    
+    unsigned int first_line(void) const { return _first_line; }
+    void first_line(unsigned int l) { _first_line = l; }
+    
+    unsigned int last_line(void) const { return _last_line; }
+    void last_line(unsigned int l) { _last_line = l; }
+    
+    unsigned int first_column(void) const { return _first_column; }
+    void first_column(unsigned int c) { _first_column = c; }
+    
+    unsigned int last_column(void) const { return _last_column; }
+    void last_column(unsigned int c) { _last_column = c; }
+    
+    std::string toString(void) const {
+      std::ostringstream oss;
+      oss << _filename << ":" << _first_line << "." << _first_column;
+      if (_first_line != _last_line) {
+        oss << "-" << _last_line << "." << _last_column;
+      } else if (_first_column != _last_column) {
+        oss << "-" << _last_column;
+      }
+      return oss.str();
+    }
+  };
+
   /// %Location of an expression in the source code
   class Location {
-  public:
-    /// Source code file name
-    ASTString filename;
-    /// Line where expression starts
-    unsigned int first_line;
-    /// Column where expression starts
-    unsigned int first_column;
-    /// Line where expression ends
-    unsigned int last_line;
-    /// Column where expression ends
-    unsigned int last_column : 30;
-    /// Whether the location was introduced during compilation
-    unsigned int is_introduced : 1;
+  protected:
     
+    /// Internal representation of a Location
+    class LocVec : public ASTVec {
+    protected:
+      LocVec(const ASTString& filename, unsigned int first_line, unsigned int first_column, unsigned int last_line, unsigned int last_column);
+    public:
+      static LocVec* a(const ASTString& filename, unsigned int first_line, unsigned int first_column, unsigned int last_line, unsigned int last_column) {
+        LocVec* v = static_cast<LocVec*>(alloc(3));
+        new (v) LocVec(filename,first_line,first_column,last_line,last_column);
+        return v;
+      }
+      void mark(void) {
+        _gc_mark = 1;
+        if (_data[0])
+          static_cast<ASTStringO*>(_data[0])->mark();
+      }
+      
+      ASTString filename(void) const;
+      unsigned int first_line(void) const;
+      unsigned int last_line(void) const;
+      unsigned int first_column(void) const;
+      unsigned int last_column(void) const;
+    };
+    
+    union LI {
+      LocVec* lv;
+      ptrdiff_t t;
+    } _loc_info;
+    
+    LocVec* lv(void) const {
+      LI li = _loc_info;
+      li.t &= ~static_cast<ptrdiff_t>(1);
+      return li.lv;
+    }
+    
+  public:
     /// Construct empty location
-    Location(void);
+    Location(void) { _loc_info.lv = NULL; }
+
+    /// Construct location
+    Location(const ASTString& filename, unsigned int first_line, unsigned int first_column, unsigned int last_line, unsigned int last_column) {
+      _loc_info.lv = LocVec::a(filename,first_line,first_column,last_line,last_column);
+    }
+
+    Location(const ParserLocation& loc) {
+      _loc_info.lv = LocVec::a(loc.filename(),loc.first_line(),loc.first_column(),loc.last_line(),loc.last_column());
+    }
     
     /// Return string representation
     std::string toString(void) const;
+
+    /// Return filename
+    ASTString filename(void) const { return lv() ? lv()->filename() : ASTString(); }
+    
+    /// Return first line number
+    unsigned int first_line(void) const { return lv() ? lv()->first_line() : 0; }
+    
+    /// Return last line number
+    unsigned int last_line(void) const { return lv() ? lv()->last_line() : 0; }
+    
+    /// Return first column number
+    unsigned int first_column(void) const { return lv() ? lv()->first_column() : 0; }
+    
+    /// Return last column number
+    unsigned int last_column(void) const { return lv() ? lv()->last_column() : 0; }
+    
+    /// Return whether location is introduced by the compiler
+    bool is_introduced(void) const {
+      return _loc_info.lv==NULL || ( (_loc_info.t & 1) != 0);
+    }
     
     /// Mark as alive for garbage collection
     void mark(void) const;
@@ -81,6 +184,10 @@ namespace MiniZinc {
     
     /// Location used for un-allocated expressions
     static Location nonalloc;
+    
+    ParserLocation parserLocation(void) const {
+      return ParserLocation(filename(), first_line(), first_column(), last_line(), last_column());
+    }
   };
 
   /// Output operator for locations
@@ -89,11 +196,18 @@ namespace MiniZinc {
   operator <<(std::basic_ostream<Char,Traits>& os, const Location& loc) {
     std::basic_ostringstream<Char,Traits> s;
     s.copyfmt(os); s.width(0);
-    if (loc.filename=="") {
+    if (loc.filename()=="") {
       s << "unknown file";
     } else {
-      s << loc.filename << ":" << loc.first_line;
+      s << loc.filename();
     }
+    s << ":" << loc.first_line() << "." << loc.first_column();
+    if (loc.first_line() != loc.last_line()) {
+      s << "-" << loc.last_line() << "." << loc.last_column();
+    } else if (loc.first_column() != loc.last_column()) {
+      s << "-" << loc.last_column();
+    }
+
     return os << s.str();
   }
 
@@ -122,6 +236,7 @@ namespace MiniZinc {
     void removeCall(const ASTString& id);
     void clear(void);
     void merge(const Annotation& ann);
+    Call* getCall(const ASTString& id);
     
     static Annotation empty;
   };
@@ -146,7 +261,7 @@ namespace MiniZinc {
     /// The hash value of the expression
     size_t _hash;
   public:
-    /// Identifier of the concrere expression type
+    /// Identifier of the concrete expression type
     enum ExpressionId {
       E_INTLIT = ASTNode::NID_END+1, E_FLOATLIT, E_SETLIT, E_BOOLLIT,
       E_STRINGLIT, E_ID, E_ANON, E_ARRAYLIT,
@@ -155,23 +270,46 @@ namespace MiniZinc {
       E_TI, E_TIID, EID_END = E_TIID
     };
 
+    bool isUnboxedVal(void) const {
+      if (sizeof(double) <= sizeof(FloatLit*)) {
+        // bit 1 or bit 0 is set
+        return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) != 0;
+      } else {
+        // bit 0 is set
+        return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) != 0;
+      }
+    }
+    bool isUnboxedInt(void) const {
+      if (sizeof(double) <= sizeof(FloatLit*)) {
+        // bit 1 is set, bit 0 is not set
+        return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
+      } else {
+        // bit 0 is set
+        return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
+      }
+    }
+    bool isUnboxedFloatVal(void) const {
+      // bit 0 is set (and doubles fit inside pointers)
+      return (sizeof(double) <= sizeof(FloatLit*)) && (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
+    }
+
     ExpressionId eid(void) const {
-      return isUnboxedInt() ? E_INTLIT : static_cast<ExpressionId>(_id);
+      return isUnboxedInt() ? E_INTLIT : isUnboxedFloatVal() ? E_FLOATLIT : static_cast<ExpressionId>(_id);
     }
 
     const Location& loc(void) const {
-      return isUnboxedInt() ? Location::nonalloc : _loc;
+      return isUnboxedVal() ? Location::nonalloc : _loc;
     }
     void loc(const Location& l) {
-      if (!isUnboxedInt())
+      if (!isUnboxedVal())
         _loc = l;
     }
     const Type& type(void) const {
-      return isUnboxedInt() ? Type::unboxedint : _type;
+      return isUnboxedInt() ? Type::unboxedint : isUnboxedFloatVal() ? Type::unboxedfloat : _type;
     }
     void type(const Type& t);
     size_t hash(void) const {
-      return isUnboxedInt() ? unboxedIntToIntVal().hash() : _hash;
+      return isUnboxedInt() ? unboxedIntToIntVal().hash() : isUnboxedFloatVal() ? unboxedFloatToFloatVal().hash() : _hash;
     }
   protected:
     /// Combination function for hash values
@@ -195,49 +333,131 @@ namespace MiniZinc {
       : ASTNode(eid), _loc(loc), _type(t) {}
 
   public:
-    bool isUnboxedInt(void) const {
-      // bit 1 is set
-      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
-    }
     IntVal unboxedIntToIntVal(void) const {
       assert(isUnboxedInt());
-      unsigned long long int i = reinterpret_cast<ptrdiff_t>(this) & ~static_cast<ptrdiff_t>(3);
-      bool pos = ((reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(2)) == 0);
-      if (pos) {
-        return i >> 2;
+      if (sizeof(double) <= sizeof(FloatVal*)) {
+        unsigned long long int i = reinterpret_cast<ptrdiff_t>(this) & ~static_cast<ptrdiff_t>(7);
+        bool pos = ((reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(4)) == 0);
+        if (pos) {
+          return i >> 3;
+        } else {
+          return -(static_cast<long long int>(i>>3));
+        }
       } else {
-        return -(static_cast<long long int>(i>>2));
+        unsigned long long int i = reinterpret_cast<ptrdiff_t>(this) & ~static_cast<ptrdiff_t>(3);
+        bool pos = ((reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(2)) == 0);
+        if (pos) {
+          return i >> 2;
+        } else {
+          return -(static_cast<long long int>(i>>2));
+        }
       }
     }
     static IntLit* intToUnboxedInt(long long int i) {
-      long long int j = i < 0 ? -i : i;
-      ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 2) | static_cast<ptrdiff_t>(1);
-      if (i < 0)
-        ubi_p = ubi_p | static_cast<ptrdiff_t>(2);
-      return reinterpret_cast<IntLit*>(ubi_p);
+      static const unsigned int pointerBits = sizeof(IntLit*)*8;
+      if (sizeof(double) <= sizeof(FloatVal*)) {
+        static const long long int maxUnboxedVal = (static_cast<long long int>(1) << (pointerBits - 3)) - static_cast<long long int>(1);
+        if (i < -maxUnboxedVal || i > maxUnboxedVal)
+          return NULL;
+        long long int j = i < 0 ? -i : i;
+        ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 3) | static_cast<ptrdiff_t>(2);
+        if (i < 0)
+          ubi_p = ubi_p | static_cast<ptrdiff_t>(4);
+        return reinterpret_cast<IntLit*>(ubi_p);
+      } else {
+        static const long long int maxUnboxedVal = (static_cast<long long int>(1) << (pointerBits - 2)) - static_cast<long long int>(1);
+        if (i < -maxUnboxedVal || i > maxUnboxedVal)
+          return NULL;
+        long long int j = i < 0 ? -i : i;
+        ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 2) | static_cast<ptrdiff_t>(1);
+        if (i < 0)
+          ubi_p = ubi_p | static_cast<ptrdiff_t>(2);
+        return reinterpret_cast<IntLit*>(ubi_p);
+      }
     }
+    FloatVal unboxedFloatToFloatVal(void) const {
+      assert(isUnboxedFloatVal());
+      union {
+        double d;
+        uint64_t bits;
+        const Expression* p;
+      } _u;
+      _u.p = this;
+      _u.bits = _u.bits >> 1;
+      uint64_t exponent = (_u.bits & (static_cast<uint64_t>(0x3FF) << 52)) >> 52;
+      if (exponent != 0) {
+        exponent += 512; // reconstruct original bias of 1023
+      }
+      uint64_t sign = (_u.bits & (static_cast<uint64_t>(1)<<62) ? 1 : 0);
+      _u.bits = (sign << 63) | (exponent << 52) | ( _u.bits & static_cast<uint64_t>(0xFFFFFFFFFFFFF));
+      return _u.d;
+    }
+    static FloatLit* doubleToUnboxedFloatVal(double d) {
+      if (sizeof(double) > sizeof(FloatLit*))
+        return NULL;
+      union {
+        double d;
+        uint64_t bits;
+        FloatLit* p;
+      } _u;
+      _u.d = d;
+
+      uint64_t exponent = (_u.bits & (static_cast<uint64_t>(0x7FF) << 52)) >> 52;
+      if (exponent != 0) {
+        if (exponent < 513 || exponent > 1534)
+          return NULL; // exponent doesn't fit in 10 bits
+        exponent -= 512; // make exponent fit in 10 bits, with bias 511
+      }
+      bool sign = (_u.bits & (static_cast<uint64_t>(1) << 63)) != 0;
+      
+      _u.bits = _u.bits & ~(static_cast<uint64_t>(0x7FF) << 52); // mask out top 11 bits (previously exponent)
+      _u.bits = (_u.bits << 1) | 1u; // shift by one bit and add tag for double
+      _u.bits = _u.bits | (static_cast<uint64_t>(sign) << 63) | (static_cast<uint64_t>(exponent) << 53);
+      return _u.p;
+    }
+    
     bool isTagged(void) const {
       // only bit 2 is set
-      return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
+      if (isUnboxedVal())
+        return false;
+      if (sizeof(double) <= sizeof(FloatVal*))
+        return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(7)) == 4;
+      else
+        return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
     }
     
     Expression* tag(void) const {
-      return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
-                                           static_cast<ptrdiff_t>(2));
+      assert(!isUnboxedVal());
+      if (sizeof(double) <= sizeof(FloatVal*))
+        return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
+                                             static_cast<ptrdiff_t>(4));
+      else
+        return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
+                                             static_cast<ptrdiff_t>(2));
     }
-    Expression* untag(void) const {
-      return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) &
-                                           ~static_cast<ptrdiff_t>(2));
+    Expression* untag(void) {
+      if (isUnboxedVal())
+        return this;
+      if (sizeof(double) <= sizeof(FloatVal*))
+        return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) &
+                                             ~static_cast<ptrdiff_t>(4));
+      else
+        return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) &
+                                             ~static_cast<ptrdiff_t>(2));
     }
 
     /// Test if expression is of type \a T
     template<class T> bool isa(void) const {
+#ifdef __clang__
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wtautological-undefined-compare"
+#endif
       if (nullptr==this)
         throw InternalError("isa: nullptr");
+#ifdef __clang__
 #pragma clang diagnostic pop
-      return isUnboxedInt() ? T::eid==E_INTLIT : _id==T::eid;
+#endif
+      return isUnboxedInt() ? T::eid==E_INTLIT : isUnboxedFloatVal() ? T::eid==E_FLOATLIT : _id==T::eid;
     }
     /// Cast expression to type \a T*
     template<class T> T* cast(void) {
@@ -282,8 +502,8 @@ namespace MiniZinc {
     /// Add annotation \a ann to the expression
     void addAnnotations(std::vector<Expression*> ann);
 
-    const Annotation& ann(void) const { return isUnboxedInt() ? Annotation::empty : _ann; }
-    Annotation& ann(void) { return isUnboxedInt() ? Annotation::empty : _ann; }
+    const Annotation& ann(void) const { return isUnboxedVal() ? Annotation::empty : _ann; }
+    Annotation& ann(void) { return isUnboxedVal() ? Annotation::empty : _ann; }
     
     /// Return hash value of \a e
     static size_t hash(const Expression* e) {
@@ -323,18 +543,18 @@ namespace MiniZinc {
   protected:
     /// The value of this expression
     FloatVal _v;
+    /// Constructor
+    FloatLit(const Location& loc, FloatVal v);
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_FLOATLIT;
-    /// Constructor
-    FloatLit(const Location& loc, FloatVal v);
     /// Access value
-    FloatVal v(void) const { return _v; }
-    /// Set value
-    void v(FloatVal val) { _v = val; }
+    FloatVal v(void) const {
+      return isUnboxedFloatVal() ? unboxedFloatToFloatVal() : _v;
+    }
     /// Recompute hash value
     void rehash(void);
-    /// Allocate new temporary literal (tries to avoid allocation)
+    /// Allocate literal
     static FloatLit* a(FloatVal v);
   };
   /// \brief Set literal expression
@@ -490,9 +710,25 @@ namespace MiniZinc {
     friend class Expression;
   protected:
     /// The array
-    ASTExprVec<Expression> _v;
+    union {
+      /// An expression vector (if _flag_2==false)
+      ASTExprVecO<Expression*>* _v;
+      /// Another array literal (if _flag_2==true)
+      ArrayLit* _al;
+    } _u;
     /// The declared array dimensions
+    // If _flag_2 is true, then this is an array view. In that case,
+    // the _dims array holds the sliced dimensions
     ASTIntVec _dims;
+    /// Set compressed vector (initial repetitions are removed)
+    void compress(const std::vector<Expression*>& v, const std::vector<int>& dims);
+  public:
+    /// Index conversion from slice to original
+    int origIdx(int i) const;
+    /// Get element \a i of a sliced array
+    Expression* slice_get(int i) const;
+    /// Set element \a i of a sliced array
+    void slice_set(int i, Expression* e);
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_ARRAYLIT;
@@ -502,24 +738,34 @@ namespace MiniZinc {
              const std::vector<std::pair<int,int> >& dims);
     /// Constructor (existing content)
     ArrayLit(const Location& loc,
-             ASTExprVec<Expression> v,
+             ArrayLit& v,
              const std::vector<std::pair<int,int> >& dims);
     /// Constructor (one-dimensional, existing content)
     ArrayLit(const Location& loc,
-             ASTExprVec<Expression> v);
+             ArrayLit& v);
     /// Constructor (one-dimensional)
     ArrayLit(const Location& loc,
              const std::vector<Expression*>& v);
     /// Constructor (two-dimensional)
     ArrayLit(const Location& loc,
              const std::vector<std::vector<Expression*> >& v);
+    /// Constructor for slices
+    ArrayLit(const Location& loc, ArrayLit* v,
+             const std::vector<std::pair<int,int> >& dims,
+             const std::vector<std::pair<int,int> >& slice);
     /// Recompute hash value
     void rehash(void);
+
+    // The following methods are only used for copying
     
     /// Access value
-    ASTExprVec<Expression> v(void) const { return _v; }
+    ASTExprVec<Expression> getVec(void) const { assert(!_flag_2); return _u._v; }
     /// Set value
-    void v(const ASTExprVec<Expression>& val) { _v = val; }
+    void setVec(const ASTExprVec<Expression>& val) { assert(!_flag_2); _u._v = val.vec(); }
+    /// Get underlying array (if this is an array slice) or NULL
+    ArrayLit* getSliceLiteral(void) const { return _flag_2 ? _u._al : NULL; }
+    /// Get underlying _dims vector
+    ASTIntVec dimsInternal(void) const { return _dims; }
 
     /// Return number of dimensions
     int dims(void) const;
@@ -529,12 +775,18 @@ namespace MiniZinc {
     int max(int i) const;
     /// Return the length of the array
     int length(void) const;
-    /// Set dimension vector
-    void setDims(ASTIntVec dims) { _dims = dims; }
+    /// Turn into 1d array (only used at the end of flattening)
+    void make1d(void);
     /// Check if this array was produced by flattening
     bool flat(void) const { return _flag_1; }
     /// Set whether this array was produced by flattening
     void flat(bool b) { _flag_1 = b; }
+    /// Return size of underlying array
+    unsigned int size(void) const { return (_flag_2 || _u._v->flag()) ? length() : _u._v->size(); }
+    /// Access element \a i
+    Expression* operator[](int i) const { return (_flag_2 || _u._v->flag()) ? slice_get(i) : (*_u._v)[i]; }
+    /// Set element \a i
+    void set(int i, Expression* e) { if (_flag_2 || _u._v->flag()) { slice_set(i,e); } else { (*_u._v)[i] = e; } }
   };
   /// \brief Array access expression
   class ArrayAccess : public Expression {
@@ -583,29 +835,29 @@ namespace MiniZinc {
     std::vector<VarDecl*> _v;
     /// in-expression
     Expression* _in;
+    /// where-expression
+    Expression* _where;
   public:
     /// Allocate
     Generator(const std::vector<std::string>& v,
-              Expression* in);
+              Expression* in, Expression* where);
     /// Allocate
     Generator(const std::vector<ASTString>& v,
-              Expression* in);
+              Expression* in, Expression* where);
     /// Allocate
     Generator(const std::vector<Id*>& v,
-              Expression* in);
+              Expression* in, Expression* where);
     /// Allocate
     Generator(const std::vector<VarDecl*>& v,
-              Expression* in);
+              Expression* in, Expression* where);
     
   };
   /// \brief A list of generators with one where-expression
   struct Generators {
     /// %Generators
     std::vector<Generator> _g;
-    /// where-expression
-    Expression* _w;
     /// Constructor
-    Generators(void) : _w(NULL) {}
+    Generators(void) {}
   };
   /// \brief An expression representing an array- or set-comprehension
   class Comprehension : public Expression {
@@ -617,8 +869,6 @@ namespace MiniZinc {
     ASTExprVec<Expression> _g;
     /// A list of indices where generators start
     ASTIntVec _g_idx;
-    /// The where-clause (or NULL)
-    Expression* _where;
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_COMP;
@@ -642,8 +892,10 @@ namespace MiniZinc {
     VarDecl* decl(int gen, int i);
     /// Return declaration \a i for generator \a gen
     const VarDecl* decl(int gen, int i) const;
-    /// Return where clause
-    Expression* where(void) const { return _where; }
+    /// Return where clause for generator \a i
+    Expression* where(int i);
+    /// Return where clause for generator \a i
+    const Expression* where(int i) const;
     /// Return generator body
     Expression* e(void) const { return _e; }
     /// Set generator body
@@ -714,6 +966,10 @@ namespace MiniZinc {
     Expression* rhs(void) const { return _e1; }
     /// Set right hand side
     void rhs(Expression* e) { _e1 = e; }
+    /// Access argument \a i
+    Expression* arg(int i) { assert(i==0 || i==1); return i==0 ? _e0 : _e1; }
+    /// Return number of arguments
+    unsigned int n_args(void) const { return 2; }
     /// Access declaration
     FunctionI* decl(void) const { return _decl; }
     /// Set declaration
@@ -747,6 +1003,10 @@ namespace MiniZinc {
     Expression* e(void) const { return _e0; }
     /// Set expression
     void e(Expression* e0) { _e0 = e0; }
+    /// Access argument \a i
+    Expression* arg(int i) { assert(i==0); return _e0; }
+    /// Return number of arguments
+    unsigned int n_args(void) const { return 1; }
     /// Access declaration
     FunctionI* decl(void) const { return _decl; }
     /// Set declaration
@@ -762,37 +1022,68 @@ namespace MiniZinc {
   class Call : public Expression {
     friend class Expression;
   protected:
-    /// Identifier of called predicate or function
-    ASTString _id;
-    /// Arguments to the call
-    ASTExprVec<Expression> _args;
-    /// The predicate or function declaration (or NULL)
-    FunctionI* _decl;
+    union {
+      /// Identifier of called predicate or function
+      ASTStringO* _id;
+      /// The predicate or function declaration (or NULL)
+      FunctionI* _decl;
+    } _u_id;
+    union {
+      /// Single-argument call (tagged pointer)
+      Expression* _oneArg;
+      /// Arguments to the call
+      ASTExprVecO<Expression*>* _args;
+    } _u;
+    /// Check if _u_id contains an id or a decl
+    bool hasId(void) const;
   public:
     /// The identifier of this expression type
     static const ExpressionId eid = E_CALL;
     /// Constructor
     Call(const Location& loc,
          const std::string& id,
-         const std::vector<Expression*>& args,
-         FunctionI* decl=NULL);
+         const std::vector<Expression*>& args);
     /// Constructor
     Call(const Location& loc,
          const ASTString& id,
-         const std::vector<Expression*>& args,
-         FunctionI* decl=NULL);
+         const std::vector<Expression*>& args);
     /// Access identifier
-    ASTString id(void) const { return _id; }
-    /// Set identifier
-    void id(const ASTString& i) { _id = i; }
-    /// Access arguments
-    ASTExprVec<Expression> args(void) const { return _args; }
+    ASTString id(void) const;
+    /// Set identifier (overwrites decl)
+    void id(const ASTString& i);
+    /// Number of arguments
+    unsigned int n_args(void) const { return _u._oneArg->isUnboxedVal() || _u._oneArg->isTagged() ? 1 : _u._args->size(); }
+    /// Access argument \a i
+    Expression* arg(int i) const {
+      if (_u._oneArg->isUnboxedVal() || _u._oneArg->isTagged()) {
+        assert(i==0);
+        return _u._oneArg->isUnboxedVal() ? _u._oneArg : _u._oneArg->untag();
+      } else {
+        return (*_u._args)[i];
+      }
+    }
+    /// Set argument \a i
+    void arg(int i, Expression* e) {
+      if (_u._oneArg->isUnboxedVal() || _u._oneArg->isTagged()) {
+        assert(i==0);
+        _u._oneArg = e->isUnboxedVal() ? e : e->tag();
+      } else {
+        (*_u._args)[i] = e;
+      }
+    }
     /// Set arguments
-    void args(const ASTExprVec<Expression>& a) { _args = a; }
+    void args(const ASTExprVec<Expression>& a) {
+      if (a.size()==1) {
+        _u._oneArg = a[0]->isUnboxedVal() ? a[0] : a[0]->tag();
+      } else {
+        _u._args = a.vec();
+        assert(!_u._oneArg->isTagged());
+      }
+    }
     /// Access declaration
-    FunctionI* decl(void) const { return _decl; }
-    /// Set declaration
-    void decl(FunctionI* f) { _decl = f; }
+    FunctionI* decl(void) const;
+    /// Set declaration (overwrites id)
+    void decl(FunctionI* f);
     /// Recompute hash value
     void rehash(void);
   };
@@ -1014,6 +1305,8 @@ namespace MiniZinc {
     bool removed(void) const { return _flag_1; }
     /// Set flag to remove item
     void remove(void) { _flag_1 = true; }
+    /// Unset remove item flag (only possible if not already removed by compact())
+    void unremove(void) { _flag_1 = false; }
   };
 
   class Model;
@@ -1218,6 +1511,11 @@ namespace MiniZinc {
     FunctionI(const Location& loc,
               const std::string& id, TypeInst* ti,
               const std::vector<VarDecl*>& params,
+              Expression* e = NULL);
+    /// Constructor
+    FunctionI(const Location& loc,
+              const ASTString& id, TypeInst* ti,
+              const ASTExprVec<VarDecl>& params,
               Expression* e = NULL);
 
     /// Access identifier
@@ -1448,15 +1746,21 @@ namespace MiniZinc {
         Id* output_var;
         ASTString output_array;
         Id* add_to_output;
+        Id* output_only;
+        Id* mzn_check_var;
+        ASTString mzn_check_enum_var;
         Id* is_defined_var;
         ASTString defines_var;
         Id* is_reverse_map;
         Id* promise_total;
         Id* maybe_partial;
         ASTString doc_comment;
+        ASTString mzn_path;
         ASTString is_introduced;
         Id* user_cut;            // MIP
         Id* lazy_constraint;            // MIP
+        Id* mzn_break_here;
+        Id* rhs_from_assignment;
       } ann;
 
       /// Command line options
@@ -1538,6 +1842,8 @@ namespace MiniZinc {
           ASTString fzn_solver;
           ASTString fzn_flags;
           ASTString fzn_flag;
+          ASTString fzn_time_limit_ms;
+          ASTString fzn_sigint;
         } solver;
         
       } opts;
@@ -1551,16 +1857,16 @@ namespace MiniZinc {
       } cli_cat;
       
       /// Keep track of allocated integer literals
-      UNORDERED_NAMESPACE::unordered_map<IntVal, WeakRef> integerMap;
+      std::unordered_map<IntVal, WeakRef> integerMap;
       /// Keep track of allocated float literals
-      UNORDERED_NAMESPACE::unordered_map<FloatVal, WeakRef> floatMap;
+      std::unordered_map<FloatVal, WeakRef> floatMap;
       /// Constructor
       Constants(void);
       /// Return shared BoolLit
       BoolLit* boollit(bool b) {
         return b ? lit_true : lit_false;
       }
-      static const int max_array_size = INT_MAX / 2;
+      static const int max_array_size = std::numeric_limits<int>::max() / 2;
   };
     
   /// Return static instance

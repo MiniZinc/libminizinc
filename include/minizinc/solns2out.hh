@@ -47,6 +47,7 @@ namespace MiniZinc {
     typedef std::pair<VarDecl*, KeepAlive> DE;
     std::unordered_map<std::string, DE> declmap;
     Expression* outputExpr = NULL;
+    std::string checkerModel;
     bool fNewSol2Print = false;     // should be set for evalOutput to work
     
   public:
@@ -60,8 +61,9 @@ namespace MiniZinc {
       bool flag_output_flush = true;
       bool flag_output_time = false;
       int flag_ignore_lines = 0;
-      bool flag_unique = 0;
+      bool flag_unique = 1;
       bool flag_canonicalize = 0;
+      bool flag_standaloneSolns2Out = false;
       std::string flag_output_noncanonical;
       std::string flag_output_raw;
       int flag_number_output = -1;
@@ -86,14 +88,15 @@ namespace MiniZinc {
     
   public:
     virtual ~Solns2Out();
+    Solns2Out(std::ostream& os, std::ostream& log, const std::string& stdlibDir);
     
-    virtual bool processOption(int& i, const int argc, const char** argv);
+    virtual bool processOption(int& i, std::vector<std::string>& argv);
     virtual void printHelp(std::ostream& );
     
     /// The output model (~.ozn) can be passed in 1 way in this base class:
     /// passing Env* containing output()
     virtual bool initFromEnv(Env* pE);
-    
+
     /// Then, variable assignments can be passed either as text
     /// or put directly into envi()->output() ( latter done externally
     /// by e.g. SolverInstance::assignSolutionToOutput() )
@@ -118,15 +121,17 @@ namespace MiniZinc {
     /// until ... exit, eof,  ??   TODO
     /// These functions should only be called explicitly
     /// from SolverInstance
-    virtual bool evalOutput();
+    virtual bool evalOutput( const std::string& s_ExtraInfo = "" );
     /// This means the solver exits
     virtual bool evalStatus(SolverInstance::Status status);
 
     virtual void printStatistics(std::ostream& );
     
-    virtual Env* getEnv() const { assert(pEnv); return pEnv; }
+    virtual Env* getEnv() const { return pEnv; }
     virtual Model* getModel() const { assert(getEnv()->output()); return getEnv()->output(); }
-    
+    virtual std::ostream& getOutput();
+    virtual std::ostream& getLog();
+
   private:
     Timer starttime;
 
@@ -137,8 +142,13 @@ namespace MiniZinc {
     std::set<std::string> sSolsCanon;
     std::string line_part;   // non-finished line from last chunk
 
+    /// Initialise from ozn file
+    void initFromOzn(const std::string& filename);
   protected:
+    std::ostream& os;
+    std::ostream& log;
     std::vector<std::string> includePaths;
+    std::string stdlibDir;
     
     // Basically open output
     virtual void init();
@@ -148,13 +158,25 @@ namespace MiniZinc {
     void restoreDefaults();
     /// Parsing fznsolver's complete raw text output
     void parseAssignments( std::string& );
-    
-    virtual bool __evalOutput(std::ostream& os, bool flag_flush);
+    /// Checking solution against checker model
+    void checkSolution( std::ostream& os );
+    virtual bool __evalOutput( std::ostream& os );
     virtual bool __evalOutputFinal( bool flag_flush );
     virtual bool __evalStatusMsg(SolverInstance::Status status);
     
-    virtual std::ostream& getOutput();
   };
+
+  // Passthrough Solns2Out class
+  class Solns2Log {
+  private:
+    std::ostream& _log;
+    std::ostream& _err_log;
+  public:
+    Solns2Log(std::ostream& log, std::ostream& errLog) : _log(log), _err_log(errLog) {}
+    bool feedRawDataChunk(const char* data) { _log << data << std::flush; return true; }
+    std::ostream& getLog(void) { return _err_log; }
+  };
+  
 
 }
 

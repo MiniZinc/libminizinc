@@ -17,7 +17,7 @@
 namespace MiniZinc {
   class Options {
     protected:
-      UNORDERED_NAMESPACE::unordered_map<std::string, KeepAlive> _options;
+      std::unordered_map<std::string, KeepAlive> _options;
 
       Expression* getParam(const std::string& name) const;
 

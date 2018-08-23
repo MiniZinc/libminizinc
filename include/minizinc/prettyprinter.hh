@@ -25,6 +25,7 @@ namespace MiniZinc {
 
   class Printer {
   private:
+    EnvI* env;
     ItemDocumentMapper* ism;
     PrettyPrinter* printer;
     std::ostream& _os;
@@ -35,7 +36,7 @@ namespace MiniZinc {
     void p(Document* d);
     void p(const Item* i);
   public:
-    Printer(std::ostream& os, int width=80, bool flatZinc=true);
+    Printer(std::ostream& os, int width=80, bool flatZinc=true, EnvI* env=NULL);
     ~Printer(void);
     
     void print(const Expression* e);

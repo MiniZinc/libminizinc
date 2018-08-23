@@ -20,33 +20,9 @@
 
 namespace MiniZinc {
 
-    namespace GecodeConstraints {
-      
-      inline Gecode::IntRelType swap(Gecode::IntRelType irt) {
-	    switch (irt) {
-		case Gecode::IRT_LQ: return Gecode::IRT_GQ;
-		case Gecode::IRT_LE: return Gecode::IRT_GR;
-		case Gecode::IRT_GQ: return Gecode::IRT_LQ;
-		case Gecode::IRT_GR: return Gecode::IRT_LE;
-		default:     return irt;
-	    }
-	}
+namespace GecodeConstraints {
 
-      inline Gecode::IntRelType neg(Gecode::IntRelType irt) {
-	  switch (irt) {
-	    case Gecode::IRT_EQ: return Gecode::IRT_NQ;
-	      case Gecode::IRT_NQ: return Gecode::IRT_EQ;
-	      case Gecode::IRT_LQ: return Gecode::IRT_GR;
-	      case Gecode::IRT_LE: return Gecode::IRT_GQ;
-	      case Gecode::IRT_GQ: return Gecode::IRT_LE;
-	      case Gecode::IRT_GR:
-	      default:
-			    assert(irt == Gecode::IRT_GR);
-	  }
-	  return Gecode::IRT_LQ;
-      }
-
-#define PosterImpl(X) void X(SolverInstanceBase&, const Call*)
+#define PosterImpl(X) void X(SolverInstanceBase& s, const Call* ce)
 
       PosterImpl(p_distinct);
       PosterImpl(p_distinctOffset);
@@ -243,29 +219,64 @@ namespace MiniZinc {
       PosterImpl(p_float_lt);
       PosterImpl(p_float_lt_reif);
       PosterImpl(p_float_ne);
-      #ifdef GECODE_HAS_MPFR
-#define P_FLOAT_OP(Op) \
-      PosterImpl(p_float_ ## Op ) {\
-	  GecodeSolverInstance& gi = (GecodeSolverInstance&)s; \
-	  FloatVar x = gi.arg2FloatVar(ce->args()[0]);\
-	  FloatVar y = gi.arg2FloatVar(ce->args()[1]);\
-	  Op(gi ,x,y);\
-      }
-      P_FLOAT_OP(acos)
-	  P_FLOAT_OP(asin)
-	  P_FLOAT_OP(atan)
-	  P_FLOAT_OP(cos)
-	  P_FLOAT_OP(exp)
-	  P_FLOAT_OP(sin)
-	  P_FLOAT_OP(tan)         
-#undef P_FLOAT_OP
+#ifdef GECODE_HAS_MPFR
+      PosterImpl(p_float_acos);
+      PosterImpl(p_float_asin);
+      PosterImpl(p_float_atan);
+      PosterImpl(p_float_cos);
+      PosterImpl(p_float_exp);
+      PosterImpl(p_float_sin);
+      PosterImpl(p_float_tan);
       PosterImpl(p_float_ln);
       PosterImpl(p_float_log10);
-      PosterImpl(p_float_log2);	
-      #endif	
-      #endif	
-	
-    }
+      PosterImpl(p_float_log2);
+#endif
+#endif
+
+#ifdef GECODE_HAS_SET_VARS
+      PosterImpl(p_set_eq);
+      PosterImpl(p_set_le);
+      PosterImpl(p_set_lt);
+      PosterImpl(p_set_eq);
+      PosterImpl(p_set_ne);
+      PosterImpl(p_set_union);
+      PosterImpl(p_array_set_element);
+      PosterImpl(p_array_set_element);
+      PosterImpl(p_set_intersect);
+      PosterImpl(p_set_diff);
+      PosterImpl(p_set_symdiff);
+      PosterImpl(p_set_subset);
+      PosterImpl(p_set_superset);
+      PosterImpl(p_set_card);
+      PosterImpl(p_set_in);
+      PosterImpl(p_set_eq_reif);
+      PosterImpl(p_set_le_reif);
+      PosterImpl(p_set_lt_reif);
+      PosterImpl(p_set_eq_reif);
+      PosterImpl(p_set_ne_reif);
+      PosterImpl(p_set_subset_reif);
+      PosterImpl(p_set_superset_reif);
+      PosterImpl(p_set_in_reif);
+      PosterImpl(p_set_in_imp);
+      PosterImpl(p_set_disjoint);
+      PosterImpl(p_link_set_to_booleans);
+      PosterImpl(p_array_set_union);
+      PosterImpl(p_array_set_partition);
+      PosterImpl(p_set_convex);
+      PosterImpl(p_array_set_seq);
+      PosterImpl(p_array_set_seq_union);
+      PosterImpl(p_array_set_element_union);
+      PosterImpl(p_array_set_element_intersect);
+      PosterImpl(p_array_set_element_intersect_in);
+      PosterImpl(p_array_set_element_partition);
+      PosterImpl(p_int_set_channel);
+      PosterImpl(p_range);
+      PosterImpl(p_weights);
+      PosterImpl(p_inverse_set);
+      PosterImpl(p_precede_set);
+#endif
+
+}
 }
 
 #endif

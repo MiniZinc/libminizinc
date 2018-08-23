@@ -14,8 +14,9 @@
 #define __MIP_SCIP_WRAPPER_H__
 
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
-  #include <scip/scip.h>
-  #include <scip/scipdefplugins.h>
+#include <minizinc/solver_instance_base.hh>
+#include <scip/scip.h>
+#include <scip/scipdefplugins.h>
 
 class MIP_scip_wrapper : public MIP_wrapper {
     SCIP         *scip = 0;
@@ -23,18 +24,47 @@ class MIP_scip_wrapper : public MIP_wrapper {
 //     char          scip_buffer[SCIP_MESSAGEBUFSIZE];
 //     char          scip_status_buffer[SCIP_MESSAGEBUFSIZE];
     
-    vector<SCIP_VAR*> scipVars;
+    std::vector<SCIP_VAR*> scipVars;
     virtual SCIP_RETCODE delSCIPVars();
     
-    vector<double> x;
+    std::vector<double> x;
 
   public:
-    MIP_scip_wrapper() { wrap_assert( openSCIP() ); }
+    class Options : public MiniZinc::SolverInstanceBase::Options {
+    public:
+      int nThreads=1;
+      std::string sExportModel;
+      int nTimeout=-1;
+      double nWorkMemLimit=-1;
+      std::string sReadParams;
+      std::string sWriteParams;
+      bool flag_all_solutions = false;
+
+      double absGap=-1;
+      double relGap=1e-8;
+      double intTol=1e-6;
+      double objDiff=1.0;
+
+      bool processOption(int& i, std::vector<std::string>& argv);
+      static void printHelp(std::ostream& );
+    };
+  private:
+    Options* options=nullptr;
+  public:
+
+    MIP_scip_wrapper(Options* opt) : options(opt) { wrap_assert( openSCIP() ); }
     virtual ~MIP_scip_wrapper() { wrap_assert( delSCIPVars() ); wrap_assert( closeSCIP() ); }
     
+    static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt=NULL);
+    static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt=NULL);
+    static std::string getId(void);
+    static std::string getName(void);
+    static std::vector<std::string> getStdFlags(void);
+    static std::string needDllFlag(void);
+
     bool processOption(int& i, int argc, const char** argv);
-    void printVersion(ostream& );
-    void printHelp(ostream& );
+    void printVersion(std::ostream& );
+    void printHelp(std::ostream& );
 //       Statistics& getStatistics() { return _statistics; }
 
 //      IloConstraintArray *userCuts, *lazyConstraints;
@@ -46,23 +76,23 @@ class MIP_scip_wrapper : public MIP_wrapper {
     
     /// actual adding new variables to the solver
     virtual void doAddVars(size_t n, double *obj, double *lb, double *ub,
-      VarType *vt, string *names) {
+      VarType *vt, std::string *names) {
         wrap_assert(doAddVars_SCIP(n, obj, lb, ub, vt, names)); 
     }
     virtual SCIP_RETCODE doAddVars_SCIP(size_t n, double *obj, double *lb, double *ub,
-      VarType *vt, string *names);
+      VarType *vt, std::string *names);
 
     /// adding a linear constraint
     virtual void addRow(int nnz, int *rmatind, double* rmatval,
                         LinConType sense, double rhs,
                         int mask = MaskConsType_Normal,
-                        string rowName = "") {
+                        std::string rowName = "") {
       wrap_assert(addRow_SCIP(nnz, rmatind, rmatval, sense, rhs, mask, rowName));
     }
     virtual SCIP_RETCODE addRow_SCIP(int nnz, int *rmatind, double* rmatval,
                         LinConType sense, double rhs,
                         int mask = MaskConsType_Normal,
-                        string rowName = "");
+                        std::string rowName = "");
     /// adding an implication
 //     virtual void addImpl() = 0;
     virtual void setObjSense(int s) {   // +/-1 for max/min
@@ -88,7 +118,7 @@ class MIP_scip_wrapper : public MIP_wrapper {
     virtual double getCPUTime() { return output.dCPUTime; }
     
     virtual Status getStatus()  { return output.status; }
-    virtual string getStatusName() { return output.statusName; }
+    virtual std::string getStatusName() { return output.statusName; }
 
      virtual int getNNodes() { return output.nNodes; }
      virtual int getNOpen() { return output.nOpenNodes; }
@@ -97,7 +127,7 @@ class MIP_scip_wrapper : public MIP_wrapper {
 //     virtual double getTime() = 0;
     
   protected:
-    void wrap_assert(SCIP_RETCODE , string="" , bool fTerm=true);
+    void wrap_assert(SCIP_RETCODE , std::string="" , bool fTerm=true);
     
     /// Need to consider the 100 status codes in SCIP and change with every version? TODO
     Status convertStatus(SCIP_STATUS scipStatus);

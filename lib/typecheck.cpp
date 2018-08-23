@@ -59,7 +59,7 @@ namespace MiniZinc {
   
   VarDecl*
   Scopes::find(Id *ident) {
-    int cur = s.size()-1;
+    int cur = static_cast<int>(s.size())-1;
     for (;;) {
       DeclMap::iterator vdi = s[cur].m.find(ident);
       if (vdi == s[cur].m.end()) {
@@ -78,8 +78,8 @@ namespace MiniZinc {
   }
   
   struct VarDeclCmp {
-    UNORDERED_NAMESPACE::unordered_map<VarDecl*,int>& _pos;
-    VarDeclCmp(UNORDERED_NAMESPACE::unordered_map<VarDecl*,int>& pos) : _pos(pos) {}
+    std::unordered_map<VarDecl*,int>& _pos;
+    VarDeclCmp(std::unordered_map<VarDecl*,int>& pos) : _pos(pos) {}
     bool operator()(Expression* e0, Expression* e1) {
       if (VarDecl* vd0 = Expression::dyn_cast<VarDecl>(e0)) {
         if (VarDecl* vd1 = Expression::dyn_cast<VarDecl>(e1)) {
@@ -93,8 +93,8 @@ namespace MiniZinc {
     }
   };
   struct ItemCmp {
-    UNORDERED_NAMESPACE::unordered_map<VarDecl*,int>& _pos;
-    ItemCmp(UNORDERED_NAMESPACE::unordered_map<VarDecl*,int>& pos) : _pos(pos) {}
+    std::unordered_map<VarDecl*,int>& _pos;
+    ItemCmp(std::unordered_map<VarDecl*,int>& pos) : _pos(pos) {}
     bool operator()(Item* i0, Item* i1) {
       if (VarDeclI* vd0 = i0->cast<VarDeclI>()) {
         if (VarDeclI* vd1 = i1->cast<VarDeclI>()) {
@@ -143,7 +143,7 @@ namespace MiniZinc {
         toEnumArgs[0] = vd->id();
         toEnumArgs[1] = IntLit::a(i+1);
         Call* toEnum = new Call(sl->v()[i]->loc(), ASTString("to_enum"), toEnumArgs);
-        toEnum->decl(env.orig->matchFn(env, toEnum, false));
+        toEnum->decl(env.model->matchFn(env, toEnum, false));
         VarDecl* vd_id = new VarDecl(ti_id->loc(),ti_id,sl->v()[i]->cast<Id>()->str(),toEnum);
         enumItems->addItem(new VarDeclI(vd_id->loc(),vd_id));
       }
@@ -162,7 +162,9 @@ namespace MiniZinc {
       std::string name = createEnumToStringName(ident,"_enum_to_string_");
       std::vector<Expression*> al_args(sl->v().size());
       for (unsigned int i=0; i<sl->v().size(); i++) {
-        al_args[i] = new StringLit(Location().introduce(),sl->v()[i]->cast<Id>()->str());
+        ASTString str = sl->v()[i]->cast<Id>()->str();
+        al_args[i] = new StringLit(Location().introduce(), str);
+        env.reverseEnum[str.str()] = i+1;
       }
       ArrayLit* al = new ArrayLit(Location().introduce(),al_args);
       
@@ -321,7 +323,7 @@ namespace MiniZinc {
       Call* index_set_xx = new Call(Location().introduce(),"index_set",index_set_xx_args);
       std::vector<VarDecl*> gen_exps(1);
       gen_exps[0] = idx_i;
-      Generator gen(gen_exps,index_set_xx);
+      Generator gen(gen_exps,index_set_xx,NULL);
       
       Generators generators;
       generators._g.push_back(gen);
@@ -389,7 +391,7 @@ namespace MiniZinc {
 
       std::vector<VarDecl*> gen_exps(1);
       gen_exps[0] = idx_i;
-      Generator gen(gen_exps,deopt);
+      Generator gen(gen_exps,deopt,NULL);
       
       Generators generators;
       generators._g.push_back(gen);
@@ -478,7 +480,7 @@ namespace MiniZinc {
       Call* index_set_xx = new Call(Location().introduce(),"index_set",index_set_xx_args);
       std::vector<VarDecl*> gen_exps(1);
       gen_exps[0] = idx_i;
-      Generator gen(gen_exps,index_set_xx);
+      Generator gen(gen_exps,index_set_xx,NULL);
       
       Generators generators;
       generators._g.push_back(gen);
@@ -507,10 +509,10 @@ namespace MiniZinc {
                                     ti_fi,fi_params,let);
       enumItems->addItem(fi);
     }
-    
+
     return ret;
   }
-  
+
   void
   TopoSorter::add(EnvI& env, VarDeclI* vdi, bool handleEnums, Model* enumItems) {
     VarDecl* vd = vdi->e();
@@ -608,8 +610,8 @@ namespace MiniZinc {
     case Expression::E_ARRAYLIT:
       {
         ArrayLit* al = e->cast<ArrayLit>();
-        for (unsigned int i=0; i<al->v().size(); i++)
-          run(env, al->v()[i]);
+        for (unsigned int i=0; i<al->size(); i++)
+          run(env, (*al)[i]);
       }
       break;
     case Expression::E_ARRAYACCESS:
@@ -630,9 +632,9 @@ namespace MiniZinc {
             run(env, ce->decl(i,j));
             scopes.add(env, ce->decl(i,j));
           }
+          if (ce->where(i))
+            run(env, ce->where(i));
         }
-        if (ce->where())
-          run(env, ce->where());
         run(env, ce->e());
         scopes.pop();
       }
@@ -676,8 +678,8 @@ namespace MiniZinc {
     case Expression::E_CALL:
       {
         Call* ce = e->cast<Call>();
-        for (unsigned int i=0; i<ce->args().size(); i++)
-          run(env, ce->args()[i]);
+        for (unsigned int i=0; i<ce->n_args(); i++)
+          run(env, ce->arg(i));
       }
       break;
     case Expression::E_VARDECL:
@@ -688,10 +690,10 @@ namespace MiniZinc {
           pos.insert(std::pair<VarDecl*,int>(ve,-1));
           run(env, ve->ti());
           run(env, ve->e());
-          ve->payload(decls.size());
+          ve->payload(static_cast<int>(decls.size()));
           decls.push_back(ve);
           pi = pos.find(ve);
-          pi->second = decls.size()-1;
+          pi->second = static_cast<int>(decls.size())-1;
         } else {
           assert(pi->second != -1);
         }
@@ -731,11 +733,86 @@ namespace MiniZinc {
       }
       break;
     }
-    for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it)
-      run(env, *it);
+    if (env.ignoreUnknownIds) {
+      std::vector<Expression*> toDelete;
+      for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
+          try {
+            run(env, *it);
+          } catch (TypeError&) {
+            toDelete.push_back(*it);
+          }
+          for (Expression* de : toDelete)
+            e->ann().remove(de);
+      }
+    } else {
+      for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
+        run(env, *it);
+      }
+    }
   }
   
   KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) {
+    if (e->isa<ArrayAccess>() && e->type().dim() > 0) {
+      ArrayAccess* aa = e->cast<ArrayAccess>();
+      // Turn ArrayAccess into a slicing operation
+      std::vector<Expression*> args;
+      args.push_back(aa->v());
+      args.push_back(NULL);
+      std::vector<Expression*> slice;
+      GCLock lock;
+      for (unsigned int i=0; i<aa->idx().size(); i++) {
+        if (aa->idx()[i]->type().is_set()) {
+          bool needIdxSet = true;
+          bool needInter = true;
+          if (SetLit* sl = aa->idx()[i]->dyn_cast<SetLit>()) {
+            if (sl->isv() && sl->isv()->size()==1) {
+              if (sl->isv()->min().isFinite() && sl->isv()->max().isFinite()) {
+                args.push_back(sl);
+                needIdxSet = false;
+              } else if (sl->isv()->min()==-IntVal::infinity() && sl->isv()->max()==IntVal::infinity()) {
+                needInter = false;
+              }
+            }
+          }
+          if (needIdxSet) {
+            std::ostringstream oss;
+            oss << "index_set_" << (i+1) << "of" << aa->idx().size();
+            std::vector<Expression*> origIdxsetArgs(1);
+            origIdxsetArgs[0] = aa->v();
+            Call* origIdxset = new Call(aa->v()->loc(), ASTString(oss.str()), origIdxsetArgs);
+            FunctionI* fi = m->matchFn(env, origIdxset, false);
+            if (!fi)
+              throw TypeError(env, e->loc(), "missing builtin "+oss.str());
+            origIdxset->type(fi->rtype(env, origIdxsetArgs, false));
+            origIdxset->decl(fi);
+            if (needInter) {
+              BinOp* inter = new BinOp(aa->idx()[i]->loc(), aa->idx()[i], BOT_INTERSECT, origIdxset);
+              inter->type(Type::parsetint());
+              args.push_back(inter);
+            } else {
+              args.push_back(origIdxset);
+            }
+          }
+          slice.push_back(aa->idx()[i]);
+        } else {
+          BinOp* bo = new BinOp(aa->idx()[i]->loc(),aa->idx()[i],BOT_DOTDOT,aa->idx()[i]);
+          bo->type(Type::parsetint());
+          slice.push_back(bo);
+        }
+      }
+      ArrayLit* a_slice = new ArrayLit(e->loc(), slice);
+      a_slice->type(Type::parsetint(1));
+      args[1] = a_slice;
+      std::ostringstream oss;
+      oss << "slice_" << (args.size()-2) << "d";
+      Call* c = new Call(e->loc(), ASTString(oss.str()), args);
+      FunctionI* fi = m->matchFn(env, c, false);
+      if (!fi)
+        throw TypeError(env, e->loc(), "missing builtin "+oss.str());
+      c->type(fi->rtype(env, args, false));
+      c->decl(fi);
+      return c;
+    }
     if (e->type().dim()==funarg_t.dim() && (funarg_t.bt()==Type::BT_BOT || funarg_t.bt()==Type::BT_TOP || e->type().bt()==funarg_t.bt() || e->type().bt()==Type::BT_BOT))
       return e;
     std::vector<Expression*> args(1);
@@ -793,7 +870,8 @@ namespace MiniZinc {
     EnvI& _env;
     Model* _model;
     std::vector<TypeError>& _typeErrors;
-    Typer(EnvI& env, Model* model, std::vector<TypeError>& typeErrors) : _env(env), _model(model), _typeErrors(typeErrors) {}
+    bool _ignoreUndefined;
+    Typer(EnvI& env, Model* model, std::vector<TypeError>& typeErrors, bool ignoreUndefined) : _env(env), _model(model), _typeErrors(typeErrors), _ignoreUndefined(ignoreUndefined) {}
     /// Check annotations when expression is finished
     void exit(Expression* e) {
       for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it)
@@ -820,8 +898,6 @@ namespace MiniZinc {
       for (unsigned int i=0; i<sl.v().size(); i++) {
         if (sl.v()[i]->type().dim() > 0)
           throw TypeError(_env,sl.v()[i]->loc(),"set literals cannot contain arrays");
-        if (sl.v()[i]->type().is_set())
-          throw TypeError(_env,sl.v()[i]->loc(),"set literals cannot contain sets");
         if (sl.v()[i]->type().isvar())
           ty.ti(Type::TI_VAR);
         if (sl.v()[i]->type().isopt())
@@ -870,8 +946,8 @@ namespace MiniZinc {
       Type ty; ty.dim(al.dims());
       std::vector<AnonVar*> anons;
       bool haveInferredType = false;
-      for (unsigned int i=0; i<al.v().size(); i++) {
-        Expression* vi = al.v()[i];
+      for (unsigned int i=0; i<al.size(); i++) {
+        Expression* vi = al[i];
         if (vi->type().dim() > 0)
           throw TypeError(_env,vi->loc(),"arrays cannot be elements of arrays");
         
@@ -945,13 +1021,13 @@ namespace MiniZinc {
         for (unsigned int i=0; i<anons.size(); i++) {
           anons[i]->type(at);
         }
-        for (unsigned int i=0; i<al.v().size(); i++) {
-          al.v()[i] = addCoercion(_env, _model, al.v()[i], at)();
+        for (unsigned int i=0; i<al.size(); i++) {
+          al.set(i, addCoercion(_env, _model, al[i], at)());
         }
       }
       if (ty.enumId() != 0) {
         std::vector<unsigned int> enumIds(ty.dim()+1);
-        for (unsigned int i=0; i<ty.dim(); i++)
+        for (int i=0; i<ty.dim(); i++)
           enumIds[i] = 0;
         enumIds[ty.dim()] = ty.enumId();
         ty.enumId(_env.registerArrayEnum(enumIds));
@@ -971,6 +1047,8 @@ namespace MiniZinc {
           oss << "array access attempted on expression of type `" << aa.v()->type().toString(_env) << "'";
           throw TypeError(_env,aa.v()->loc(),oss.str());
         }
+      } else if (aa.v()->isa<ArrayAccess>()) {
+        aa.v(addCoercion(_env, _model, aa.v(), aa.v()->type())());
       }
       if (aa.v()->type().dim() != aa.idx().size()) {
         std::ostringstream oss;
@@ -997,25 +1075,42 @@ namespace MiniZinc {
         }
         tt.enumId(arrayEnumIds[arrayEnumIds.size()-1]);
       }
-      tt.dim(0);
+      int n_dimensions = 0;
+      bool isVarAccess = false;
+      bool isSlice = false;
       for (unsigned int i=0; i<aa.idx().size(); i++) {
         Expression* aai = aa.idx()[i];
         if (aai->isa<AnonVar>()) {
           aai->type(Type::varint());
         }
-        if (aai->type().is_set() || (aai->type().bt() != Type::BT_INT && aai->type().bt() != Type::BT_BOOL) || aai->type().dim() != 0) {
-          throw TypeError(_env,aa.loc(),"array index must be `int', but is `"+aai->type().toString(_env)+"'");
+        if ((aai->type().bt() != Type::BT_INT && aai->type().bt() != Type::BT_BOOL) || aai->type().dim() != 0) {
+          throw TypeError(_env,aa.loc(),"array index must be `int' or `set of int', but is `"+aai->type().toString(_env)+"'");
         }
-        aa.idx()[i] = addCoercion(_env, _model, aai, Type::varint())();
+        if (aai->type().is_set()) {
+          if (isVarAccess || aai->type().isvar()) {
+            throw TypeError(_env,aa.loc(),"array slicing with variable range or index not supported");
+          }
+          isSlice = true;
+          aa.idx()[i] = addCoercion(_env, _model, aai, Type::varsetint())();
+          n_dimensions++;
+        } else {
+          aa.idx()[i] = addCoercion(_env, _model, aai, Type::varint())();
+        }
+        
         if (aai->type().isopt()) {
           tt.ot(Type::OT_OPTIONAL);
         }
         if (aai->type().isvar()) {
+          isVarAccess = true;
+          if (isSlice) {
+            throw TypeError(_env,aa.loc(),"array slicing with variable range or index not supported");
+          }
           tt.ti(Type::TI_VAR);
           if (tt.bt()==Type::BT_ANN || tt.bt()==Type::BT_STRING) {
             throw TypeError(_env,aai->loc(),std::string("array access using a variable not supported for array of ")+(tt.bt()==Type::BT_ANN ? "ann" : "string"));
           }
         }
+        tt.dim(n_dimensions);
         if (aai->type().cv())
           tt.cv(true);
       }
@@ -1024,28 +1119,122 @@ namespace MiniZinc {
     /// Visit array comprehension
     void vComprehension(Comprehension& c) {
       Type tt = c.e()->type();
+      typedef std::unordered_map<VarDecl*, std::pair<int,int> > genMap_t;
+      typedef std::unordered_map<VarDecl*, std::vector<Expression*> > whereMap_t;
+      genMap_t generatorMap;
+      whereMap_t whereMap;
+      int declCount = 0;
+      bool didMoveWheres = false;
       for (int i=0; i<c.n_generators(); i++) {
+        for (int j=0; j<c.n_decls(i); j++) {
+          generatorMap[c.decl(i,j)] = std::pair<int,int>(i,declCount++);
+          whereMap[c.decl(i,j)] = std::vector<Expression*>();
+        }
         Expression* g_in = c.in(i);
-        const Type& ty_in = g_in->type();
-        if (ty_in == Type::varsetint()) {
-          tt.ot(Type::OT_OPTIONAL);
-          tt.ti(Type::TI_VAR);
+        if (g_in) {
+          const Type& ty_in = g_in->type();
+          if (ty_in == Type::varsetint()) {
+            tt.ot(Type::OT_OPTIONAL);
+            tt.ti(Type::TI_VAR);
+          }
+          if (ty_in.cv())
+            tt.cv(true);
+          if (c.where(i)) {
+            if (c.where(i)->type() == Type::varbool()) {
+              tt.ot(Type::OT_OPTIONAL);
+              tt.ti(Type::TI_VAR);
+            } else if (c.where(i)->type() != Type::parbool()) {
+              throw TypeError(_env,c.where(i)->loc(),
+                              "where clause must be bool, but is `"+
+                              c.where(i)->type().toString(_env)+"'");
+            }
+            if (c.where(i)->type().cv())
+              tt.cv(true);
+            
+            // Try to move parts of the where clause to earlier generators
+            std::vector<Expression*> wherePartsStack;
+            std::vector<Expression*> whereParts;
+            wherePartsStack.push_back(c.where(i));
+            while (!wherePartsStack.empty()) {
+              Expression* e = wherePartsStack.back();
+              wherePartsStack.pop_back();
+              if (BinOp* bo = e->dyn_cast<BinOp>()) {
+                if (bo->op()==BOT_AND) {
+                  wherePartsStack.push_back(bo->rhs());
+                  wherePartsStack.push_back(bo->lhs());
+                } else {
+                  whereParts.push_back(e);
+                }
+              } else {
+                whereParts.push_back(e);
+              }
+            }
+            
+            for (unsigned int wpi=0; wpi < whereParts.size(); wpi++) {
+              Expression* wp = whereParts[wpi];
+              class FindLatestGen : public EVisitor {
+              public:
+                int decl_idx;
+                VarDecl* decl;
+                const genMap_t& generatorMap;
+                Comprehension* comp;
+                FindLatestGen(const genMap_t& generatorMap0, Comprehension* comp0) : decl_idx(-1), decl(NULL), generatorMap(generatorMap0), comp(comp0) {}
+                void vId(const Id& ident) {
+                  genMap_t::const_iterator it = generatorMap.find(ident.decl());
+                  if (it != generatorMap.end() && it->second.second > decl_idx) {
+                    decl_idx = it->second.second;
+                    decl = ident.decl();
+                    int gen = it->second.first;
+                    while (comp->in(gen) == NULL && gen < comp->n_generators()-1) {
+                      decl_idx++;
+                      gen++;
+                      decl = comp->decl(gen, 0);
+                    }
+                  }
+                }
+              } flg(generatorMap,&c);
+              topDown(flg, wp);
+              whereMap[flg.decl].push_back(wp);
+              
+              if (flg.decl_idx < declCount-1)
+                didMoveWheres = true;
+              
+            }
+          }
+        } else {
+          assert(c.where(i) != NULL);
+          whereMap[c.decl(i,0)].push_back(c.where(i));
         }
-        if (ty_in.cv())
-          tt.cv(true);
       }
-      if (c.where()) {
-        if (c.where()->type() == Type::varbool()) {
-          tt.ot(Type::OT_OPTIONAL);
-          tt.ti(Type::TI_VAR);
-        } else if (c.where()->type() != Type::parbool()) {
-          throw TypeError(_env,c.where()->loc(),
-                          "where clause must be bool, but is `"+
-                          c.where()->type().toString(_env)+"'");
+      
+      if (didMoveWheres) {
+        Generators generators;
+        for (int i=0; i<c.n_generators(); i++) {
+          std::vector<VarDecl*> decls;
+          for (int j=0; j<c.n_decls(i); j++) {
+            decls.push_back(c.decl(i,j));
+            if (whereMap[c.decl(i,j)].size() != 0) {
+              // need a generator for all the decls up to this point
+              Expression* whereExpr = whereMap[c.decl(i,j)][0];
+              for (unsigned int k=1; k<whereMap[c.decl(i,j)].size(); k++) {
+                GCLock lock;
+                BinOp* bo = new BinOp(Location().introduce(), whereExpr, BOT_AND, whereMap[c.decl(i,j)][k]);
+                Type bo_t = whereMap[c.decl(i,j)][k]->type().ispar() && whereExpr->type().ispar() ? Type::parbool() : Type::varbool();
+                bo->type(bo_t);
+                whereExpr = bo;
+              }
+              generators._g.push_back(Generator(decls,c.in(i),whereExpr));
+              decls.clear();
+            } else if (j==c.n_decls(i)-1) {
+              generators._g.push_back(Generator(decls,c.in(i),NULL));
+              decls.clear();
+            }
+          }
         }
-        if (c.where()->type().cv())
-          tt.cv(true);
+        GCLock lock;
+        c.init(c.e(), generators);
       }
+      
       if (c.set()) {
         if (c.e()->type().dim() != 0 || c.e()->type().st() == Type::ST_SET)
           throw TypeError(_env,c.e()->loc(),
@@ -1073,37 +1262,52 @@ namespace MiniZinc {
     /// Visit array comprehension generator
     void vComprehensionGenerator(Comprehension& c, int gen_i) {
       Expression* g_in = c.in(gen_i);
-      const Type& ty_in = g_in->type();
-      if (ty_in != Type::varsetint() && ty_in != Type::parsetint() && ty_in.dim() != 1) {
-        throw TypeError(_env,g_in->loc(),
-                        "generator expression must be (par or var) set of int or one-dimensional array, but is `"
-                        +ty_in.toString(_env)+"'");
-      }
-      Type ty_id;
-      bool needIntLit = false;
-      if (ty_in.dim()==0) {
-        ty_id = Type::parint();
-        ty_id.enumId(ty_in.enumId());
-        needIntLit = true;
+      if (g_in==NULL) {
+        // This is an "assignment generator" (i = expr)
+        assert(c.where(gen_i) != NULL);
+        assert(c.n_decls(gen_i) == 1);
+        const Type& ty_where = c.where(gen_i)->type();
+        c.decl(gen_i,0)->type(ty_where);
+        c.decl(gen_i,0)->ti()->type(ty_where);
       } else {
-        ty_id = ty_in;
-        if (ty_in.enumId() != 0) {
-          const std::vector<unsigned int>& enumIds = _env.getArrayEnum(ty_in.enumId());
-          ty_id.enumId(enumIds.back());
+        const Type& ty_in = g_in->type();
+        if (ty_in != Type::varsetint() && ty_in != Type::parsetint() && ty_in.dim() != 1) {
+          throw TypeError(_env,g_in->loc(),
+                          "generator expression must be (par or var) set of int or one-dimensional array, but is `"
+                          +ty_in.toString(_env)+"'");
         }
-        ty_id.dim(0);
-      }
-      for (int j=0; j<c.n_decls(gen_i); j++) {
-        if (needIntLit) {
-          GCLock lock;
-          c.decl(gen_i,j)->e(IntLit::aEnum(0,ty_id.enumId()));
+        Type ty_id;
+        bool needIntLit = false;
+        if (ty_in.dim()==0) {
+          ty_id = Type::parint();
+          ty_id.enumId(ty_in.enumId());
+          needIntLit = true;
+        } else {
+          ty_id = ty_in;
+          if (ty_in.enumId() != 0) {
+            const std::vector<unsigned int>& enumIds = _env.getArrayEnum(ty_in.enumId());
+            ty_id.enumId(enumIds.back());
+          }
+          ty_id.dim(0);
         }
-        c.decl(gen_i,j)->type(ty_id);
-        c.decl(gen_i,j)->ti()->type(ty_id);
+        for (int j=0; j<c.n_decls(gen_i); j++) {
+          if (needIntLit) {
+            GCLock lock;
+            c.decl(gen_i,j)->e(IntLit::aEnum(0,ty_id.enumId()));
+          }
+          c.decl(gen_i,j)->type(ty_id);
+          c.decl(gen_i,j)->ti()->type(ty_id);
+        }
       }
     }
     /// Visit if-then-else
     void vITE(ITE& ite) {
+      bool mustBeBool = false;
+      if (ite.e_else()==NULL) {
+        // this is an "if <cond> then <expr> endif" so the <expr> must be bool
+        ite.e_else(constants().boollit(true));
+        mustBeBool = true;
+      }
       Type tret = ite.e_else()->type();
       std::vector<AnonVar*> anons;
       bool allpar = !(tret.isvar());
@@ -1112,7 +1316,7 @@ namespace MiniZinc {
           allpar = false;
           anons.push_back(av);
         } else {
-          throw TypeError(_env,ite.e_else()->loc(), "cannot infer type of expression in else branch of conditional");
+          throw TypeError(_env,ite.e_else()->loc(), "cannot infer type of expression in `else' branch of conditional");
         }
       }
       bool allpresent = !(tret.isopt());
@@ -1132,17 +1336,22 @@ namespace MiniZinc {
             allpar = false;
             anons.push_back(av);
           } else {
-            throw TypeError(_env,ethen->loc(), "cannot infer type of expression in then branch of conditional");
+            throw TypeError(_env,ethen->loc(), "cannot infer type of expression in `then' branch of conditional");
           }
         } else {
           if (tret.isbot() || tret.isunknown())
             tret.bt(ethen->type().bt());
+          if (mustBeBool && (ethen->type().bt() != Type::BT_BOOL ||  ethen->type().dim() > 0 ||
+                             ethen->type().st() != Type::ST_PLAIN || ethen->type().ot() != Type::OT_PRESENT)) {
+            throw TypeError(_env,ite.loc(), std::string("conditional without `else' branch must have bool type, ")+
+                            "but `then' branch has type `"+ethen->type().toString(_env)+"'");
+          }
           if ( (!ethen->type().isbot() && !Type::bt_subtype(ethen->type(), tret, true) && !Type::bt_subtype(tret, ethen->type(), true)) ||
               ethen->type().st() != tret.st() ||
               ethen->type().dim() != tret.dim()) {
             throw TypeError(_env,ethen->loc(),
-                            "type mismatch in branches of conditional. Then-branch has type `"+
-                            ethen->type().toString(_env)+"', but else branch has type `"+
+                            "type mismatch in branches of conditional. `then' branch has type `"+
+                            ethen->type().toString(_env)+"', but `else' branch has type `"+
                             tret.toString(_env)+"'");
           }
           if (Type::bt_subtype(tret, ethen->type(), true)) {
@@ -1214,17 +1423,90 @@ namespace MiniZinc {
           uop.opToString().str()+"'. No matching operator found with type `"+uop.e()->type().toString(_env)+"'");
       }
     }
+    static std::string createEnumToStringName(Id* ident, std::string prefix) {
+      std::string name = ident->str().str();
+      if (name[0]=='\'') {
+        name = "'"+prefix+name.substr(1);
+      } else {
+        name = prefix+name;
+      }
+      return name;
+    }
+
     /// Visit call
     void vCall(Call& call) {
-      std::vector<Expression*> args(call.args().size());
-      std::copy(call.args().begin(),call.args().end(),args.begin());
+      std::vector<Expression*> args(call.n_args());
+      for (unsigned int i=static_cast<unsigned int>(args.size()); i--;)
+        args[i] = call.arg(i);
       if (FunctionI* fi = _model->matchFn(_env,call.id(),args,true)) {
         bool cv = false;
         for (unsigned int i=0; i<args.size(); i++) {
-          args[i] = addCoercion(_env, _model,call.args()[i],fi->argtype(_env,args,i))();
-          call.args()[i] = args[i];
+          if(Comprehension* c = call.arg(i)->dyn_cast<Comprehension>()) {
+            Type t_before = c->e()->type();
+            Type t = fi->argtype(_env,args,i);
+            t.dim(0);
+            c->e(addCoercion(_env, _model, c->e(), t)());
+            Type t_after = c->e()->type();
+            if (t_before != t_after) {
+              Type ct = c->type();
+              ct.bt(t_after.bt());
+              c->type(ct);
+            }
+          } else {
+            args[i] = addCoercion(_env, _model,call.arg(i),fi->argtype(_env,args,i))();
+            call.arg(i, args[i]);
+          }
           cv = cv || args[i]->type().cv();
         }
+        // Replace par enums with their string versions
+        if (call.id()=="format" || call.id()=="show" || call.id()=="showDzn") {
+          if (call.arg(call.n_args()-1)->type().ispar()) {
+            int enumId = call.arg(call.n_args()-1)->type().enumId();
+            if (enumId != 0 && call.arg(call.n_args()-1)->type().dim() != 0) {
+              const std::vector<unsigned int>& enumIds = _env.getArrayEnum(enumId);
+              enumId = enumIds[enumIds.size()-1];
+            }
+            if (enumId > 0) {
+              VarDecl* enumDecl = _env.getEnum(enumId)->e();
+              if (enumDecl->e()) {
+                Id* ti_id = _env.getEnum(enumId)->e()->id();
+                GCLock lock;
+                std::vector<Expression*> args(2);
+                args[0] = call.arg(call.n_args()-1);
+                if (args[0]->type().dim() > 1) {
+                  std::vector<Expression*> a1dargs(1);
+                  a1dargs[0] = args[0];
+                  Call* array1d = new Call(Location().introduce(),ASTString("array1d"),a1dargs);
+                  Type array1dt = args[0]->type();
+                  array1dt.dim(1);
+                  array1d->type(array1dt);
+                  args[0] = array1d;
+                }
+                args[1] = constants().boollit(call.id()=="showDzn");
+                ASTString enumName(createEnumToStringName(ti_id, "_toString_"));
+                call.id(enumName);
+                call.args(args);
+                if (call.id()=="showDzn") {
+                  call.id(constants().ids.show);
+                }
+                fi = _model->matchFn(_env,&call,false);
+                if (fi==NULL) {
+                  std::ostringstream oss;
+                  oss << "no function or predicate with this signature found: `";
+                  oss << call.id() << "(";
+                  for (unsigned int i=0; i<call.n_args(); i++) {
+                    oss << call.arg(i)->type().toString(_env);
+                    if (i<call.n_args()-1) oss << ",";
+                  }
+                  oss << ")'";
+                  throw TypeError(_env,call.loc(), oss.str());
+                }
+              }
+            }
+          }
+        }
+
+        // Set type and decl
         Type ty = fi->rtype(_env,args,true);
         ty.cv(cv);
         call.type(ty);
@@ -1233,9 +1515,9 @@ namespace MiniZinc {
         std::ostringstream oss;
         oss << "no function or predicate with this signature found: `";
         oss << call.id() << "(";
-        for (unsigned int i=0; i<call.args().size(); i++) {
-          oss << call.args()[i]->type().toString(_env);
-          if (i<call.args().size()-1) oss << ",";
+        for (unsigned int i=0; i<call.n_args(); i++) {
+          oss << call.arg(i)->type().toString(_env);
+          if (i<call.n_args()-1) oss << ",";
         }
         oss << ")'";
         throw TypeError(_env,call.loc(), oss.str());
@@ -1270,7 +1552,6 @@ namespace MiniZinc {
     /// Visit variable declaration
     void vVarDecl(VarDecl& vd) {
       if (ignoreVarDecl) {
-        assert(!vd.type().isunknown());
         if (vd.e()) {
           Type vdt = vd.ti()->type();
           Type vet = vd.e()->type();
@@ -1295,13 +1576,18 @@ namespace MiniZinc {
             }
           }
           
-          if (! _env.isSubtype(vet,vdt,true)) {
+          if (vd.type().isunknown()) {
+            vd.ti()->type(vet);
+            vd.type(vet);
+          } else if (! _env.isSubtype(vet,vdt,true)) {
             _typeErrors.push_back(TypeError(_env,vd.e()->loc(),
                                             "initialisation value for `"+vd.id()->str().str()+"' has invalid type-inst: expected `"+
                                             vd.ti()->type().toString(_env)+"', actual `"+vd.e()->type().toString(_env)+"'"));
           } else {
             vd.e(addCoercion(_env, _model, vd.e(), vd.ti()->type())());
           }
+        } else {
+          assert(!vd.type().isunknown());
         }
       } else {
         vd.type(vd.ti()->type());
@@ -1361,7 +1647,7 @@ namespace MiniZinc {
                             "type-inst cannot be an array");
         }
       }
-      if (tt.isunknown()) {
+      if (tt.isunknown() && ti.domain()) {
         assert(ti.domain());
         switch (ti.domain()->type().bt()) {
         case Type::BT_INT:
@@ -1400,38 +1686,83 @@ namespace MiniZinc {
     void vTIId(TIId& id) {}
   };
   
-  void typecheck(Env& env, Model* m, std::vector<TypeError>& typeErrors, bool ignoreUndefinedParameters) {
+  void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors, bool ignoreUndefinedParameters, bool allowMultiAssignment, bool isFlatZinc) {
+    Model* m;
+    if (!isFlatZinc && origModel==env.model()) {
+      // Combine all items into single model
+      Model* combinedModel = new Model;
+      class Combiner : public ItemVisitor {
+      public:
+        Model* m;
+        Combiner(Model* m0) : m(m0) {}
+        bool enter(Item* i) {
+          if (!i->isa<IncludeI>())
+            m->addItem(i);
+          return true;
+        }
+      } _combiner(combinedModel);
+      iterItems(_combiner, origModel);
+      env.envi().orig_model = origModel;
+      env.envi().model = combinedModel;
+      m=combinedModel;
+    } else {
+      m = origModel;
+    }
+    
+    // Topological sorting
     TopoSorter ts(m);
     
     std::vector<FunctionI*> functionItems;
     std::vector<AssignI*> assignItems;
     Model* enumItems = new Model;
-    
+
+    class TSVFuns : public ItemVisitor {
+    public:
+      EnvI& env;
+      Model* model;
+      std::vector<FunctionI*>& fis;
+      TSVFuns(EnvI& env0, Model* model0, std::vector<FunctionI*>& fis0)
+      : env(env0), model(model0), fis(fis0) {}
+      void vFunctionI(FunctionI* i) {
+        model->registerFn(env, i);
+        fis.push_back(i);
+      }
+    } _tsvf(env.envi(),m,functionItems);
+    iterItems(_tsvf,m);
+
     class TSV0 : public ItemVisitor {
     public:
       EnvI& env;
       TopoSorter& ts;
       Model* model;
       bool hadSolveItem;
-      std::vector<FunctionI*>& fis;
       std::vector<AssignI*>& ais;
+      VarDeclI* objective;
       Model* enumis;
-      TSV0(EnvI& env0, TopoSorter& ts0, Model* model0, std::vector<FunctionI*>& fis0, std::vector<AssignI*>& ais0,
+      TSV0(EnvI& env0, TopoSorter& ts0, Model* model0, std::vector<AssignI*>& ais0,
            Model* enumis0)
-        : env(env0), ts(ts0), model(model0), hadSolveItem(false), fis(fis0), ais(ais0), enumis(enumis0) {}
+        : env(env0), ts(ts0), model(model0), hadSolveItem(false), ais(ais0), objective(NULL), enumis(enumis0) {}
       void vAssignI(AssignI* i) { ais.push_back(i); }
       void vVarDeclI(VarDeclI* i) { ts.add(env, i, true, enumis); }
-      void vFunctionI(FunctionI* i) {
-        model->registerFn(env, i);
-        fis.push_back(i);
-      }
       void vSolveI(SolveI* si) {
         if (hadSolveItem)
           throw TypeError(env,si->loc(),"Only one solve item allowed");
         hadSolveItem = true;
+        if (si->e()) {
+          GCLock lock;
+          TypeInst* ti = new TypeInst(Location().introduce(), Type());
+          VarDecl* obj = new VarDecl(Location().introduce(), ti, "_objective", si->e());
+          si->e(obj->id());
+          objective = new VarDeclI(Location().introduce(), obj);
+        }
+        
       }
-    } _tsv0(env.envi(),ts,m,functionItems,assignItems,enumItems);
+    } _tsv0(env.envi(),ts,m,assignItems,enumItems);
     iterItems(_tsv0,m);
+    if (_tsv0.objective) {
+      m->addItem(_tsv0.objective);
+      ts.add(env.envi(), _tsv0.objective, true, enumItems);
+    }
 
     for (unsigned int i=0; i<enumItems->size(); i++) {
       if (AssignI* ai = (*enumItems)[i]->dyn_cast<AssignI>()) {
@@ -1451,21 +1782,39 @@ namespace MiniZinc {
     
     for (unsigned int i=0; i<assignItems.size(); i++) {
       AssignI* ai = assignItems[i];
-      VarDecl* vd = ts.get(env.envi(),ai->id(),ai->loc());
-      if (vd->e())
-        throw TypeError(env.envi(),ai->loc(),"multiple assignment to the same variable");
-      vd->e(ai->e());
-      
-      if (vd->ti()->isEnum()) {
-        GCLock lock;
-        ASTString name(createEnumToStringName(vd->id(),"_enum_to_string_"));
-        VarDecl* vd_enum = ts.get(env.envi(),name,vd->loc());
-        if (vd_enum->e())
-          throw TypeError(env.envi(),ai->loc(),"multiple assignment to the same variable");
-        AssignI* ai_enum = createEnumMapper(env.envi(), m, vd->ti()->type().enumId(), vd, vd_enum, enumItems2);
-        if (ai_enum) {
-          vd_enum->e(ai_enum->e());
-          ai_enum->remove();
+      VarDecl* vd = NULL;
+      if (env.envi().ignoreUnknownIds) {
+        try {
+          vd = ts.get(env.envi(),ai->id(),ai->loc());
+        } catch (TypeError&) {}
+      } else {
+        vd = ts.get(env.envi(),ai->id(),ai->loc());
+      }
+      if (vd) {
+        if (vd->e()) {
+          if (allowMultiAssignment) {
+            GCLock lock;
+            m->addItem(new ConstraintI(ai->loc(),
+                                       new BinOp(ai->loc(),
+                                                 new Id(Location().introduce(),ai->id(),vd), BOT_EQ, ai->e())));
+          } else {
+            throw TypeError(env.envi(),ai->loc(),"multiple assignment to the same variable");
+          }
+        } else {
+          vd->e(ai->e());
+          vd->ann().add(constants().ann.rhs_from_assignment);
+          if (vd->ti()->isEnum()) {
+            GCLock lock;
+            ASTString name(createEnumToStringName(vd->id(),"_enum_to_string_"));
+            VarDecl* vd_enum = ts.get(env.envi(),name,vd->loc());
+            if (vd_enum->e())
+              throw TypeError(env.envi(),ai->loc(),"multiple definition of the same enum");
+            AssignI* ai_enum = createEnumMapper(env.envi(), m, vd->ti()->type().enumId(), vd, vd_enum, enumItems2);
+            if (ai_enum) {
+              vd_enum->e(ai_enum->e());
+              ai_enum->remove();
+            }
+          }
         }
       }
       ai->remove();
@@ -1535,10 +1884,9 @@ namespace MiniZinc {
       
       std::stable_sort(m->begin(), m->end(), _sbp);
     }
-
     
     {
-      Typer<false> ty(env.envi(), m, typeErrors);
+      Typer<false> ty(env.envi(), m, typeErrors, ignoreUndefinedParameters);
       BottomUpIterator<Typer<false> > bu_ty(ty);
       for (unsigned int i=0; i<ts.decls.size(); i++) {
         ts.decls[i]->payload(0);
@@ -1552,8 +1900,10 @@ namespace MiniZinc {
       }
     }
     
+    m->fixFnMap();
+    
     {
-      Typer<true> ty(env.envi(), m, typeErrors);
+      Typer<true> ty(env.envi(), m, typeErrors, ignoreUndefinedParameters);
       BottomUpIterator<Typer<true> > bu_ty(ty);
       
       class TSV2 : public ItemVisitor {
@@ -1577,11 +1927,14 @@ namespace MiniZinc {
             _typeErrors.push_back(TypeError(env,vdi->loc(),
                                             "set element type for `"+vdi->id()->str().str()+"' is not finite"));
           }
+          if (i->e()->ann().contains(constants().ann.output_only) && vdi->e()->type().isvar()) {
+            _typeErrors.push_back(TypeError(env,vdi->loc(),"variables annotated with ::output_only must be par"));
+          }
         }
         void vAssignI(AssignI* i) {
           bu_ty.run(i->e());
           if (!env.isSubtype(i->e()->type(),i->decl()->ti()->type(),true)) {
-            _typeErrors.push_back(TypeError(env, i->e()->loc(),
+            _typeErrors.push_back(TypeError(env, i->loc(),
                                            "assignment value for `"+i->decl()->id()->str().str()+"' has invalid type-inst: expected `"+
                                            i->decl()->ti()->type().toString(env)+"', actual `"+i->e()->type().toString(env)+"'"));
             // Assign to "true" constant to avoid generating further errors that the parameter
@@ -1592,7 +1945,7 @@ namespace MiniZinc {
         void vConstraintI(ConstraintI* i) {
           bu_ty.run(i->e());
           if (!env.isSubtype(i->e()->type(),Type::varbool(),true))
-            throw TypeError(env, i->e()->loc(), "invalid type of constraint, expected `"
+            throw TypeError(env, i->loc(), "invalid type of constraint, expected `"
                             +Type::varbool().toString(env)+"', actual `"+i->e()->type().toString(env)+"'");
         }
         void vSolveI(SolveI* i) {
@@ -1621,7 +1974,7 @@ namespace MiniZinc {
               args[0] = i->e();
               args[1] = constants().boollit(i->st()==SolveI::ST_MAX);
               Call* c = new Call(Location().introduce(), ASTString("objective_deopt_"), args);
-              c->decl(env.orig->matchFn(env, c, false));
+              c->decl(env.model->matchFn(env, c, false));
               assert(c->decl());
               c->type(et);
               i->e(c);
@@ -1646,6 +1999,12 @@ namespace MiniZinc {
             throw TypeError(env, i->e()->loc(), "return type of function does not match body, declared type is `"
                             +i->ti()->type().toString(env)+
                             "', body type is `"+i->e()->type().toString(env)+"'");
+          if (i->e() && i->e()->type().ispar() && i->ti()->type().isvar()) {
+            // this is a par function declared as var, so change declared return type
+            Type i_t = i->ti()->type();
+            i_t.ti(Type::TI_PAR);
+            i->ti()->type(i_t);
+          }
           if (i->e())
             i->e(addCoercion(env, m, i->e(), i->ti()->type())());
         }
@@ -1696,13 +2055,52 @@ namespace MiniZinc {
                                          + "' must be defined (did you forget to specify a data file?)"));
         }
       }
+      if (ts.decls[i]->ti()->isEnum()) {
+        ts.decls[i]->ti()->setIsEnum(false);
+        Type vdt = ts.decls[i]->ti()->type();
+        vdt.enumId(0);
+        ts.decls[i]->ti()->type(vdt);
+      }
     }
 
+    for (auto vd_k : env.envi().checkVars) {
+      try {
+        VarDecl* vd = ts.get(env.envi(), vd_k()->cast<VarDecl>()->id()->str(), vd_k()->cast<VarDecl>()->loc());
+        vd->ann().add(constants().ann.mzn_check_var);
+        if (vd->type().enumId() != 0) {
+          GCLock lock;
+          int enumId = vd->type().enumId();
+          if (vd->type().dim() > 0) {
+            const std::vector<unsigned int>& arrayEnumIds = env.envi().getArrayEnum(vd->type().enumId());
+            enumId = arrayEnumIds[arrayEnumIds.size()-1];
+          }
+          if (enumId > 0) {
+            std::vector<Expression*> args({env.envi().getEnum(enumId)->e()->id()});
+            Call* checkEnum = new Call(Location().introduce(), constants().ann.mzn_check_enum_var, args);
+            checkEnum->type(Type::ann());
+            checkEnum->decl(env.envi().model->matchFn(env.envi(), checkEnum, false));
+            vd->ann().add(checkEnum);
+          }
+        }
+        Type vdktype = vd_k()->type();
+        vdktype.ti(Type::TI_VAR);
+        if (!vd_k()->type().isSubtypeOf(vd->type(), false)) {
+          GCLock lock;
+          
+          typeErrors.push_back(TypeError(env.envi(), vd->loc(),
+                                         "Solution checker requires `"+vd->id()->str().str()+"' to be of type `"+
+                                         vdktype.toString(env.envi())+"'"));
+        }
+      } catch (TypeError& e) {
+        typeErrors.push_back(TypeError(env.envi(), e.loc(), e.msg()+" (required by solution checker model)"));
+      }
+    }
+    
   }
   
   void typecheck(Env& env, Model* m, AssignI* ai) {
     std::vector<TypeError> typeErrors;
-    Typer<true> ty(env.envi(), m, typeErrors);
+    Typer<true> ty(env.envi(), m, typeErrors, false);
     BottomUpIterator<Typer<true> > bu_ty(ty);
     bu_ty.run(ai->e());
     if (!typeErrors.empty()) {
@@ -1716,52 +2114,7 @@ namespace MiniZinc {
     
   }
 
-  void typecheck_fzn(Env& env, Model* m) {
-    ASTStringMap<int>::t declMap;
-    for (unsigned int i=0; i<m->size(); i++) {
-      if (VarDeclI* vdi = (*m)[i]->dyn_cast<VarDeclI>()) {
-        Type t = vdi->e()->type();
-        declMap.insert(std::pair<ASTString,int>(vdi->e()->id()->v(), i));
-        if (t.isunknown()) {
-          if (vdi->e()->ti()->domain()) {
-            switch (vdi->e()->ti()->domain()->eid()) {
-              case Expression::E_BINOP:
-              {
-                BinOp* bo = vdi->e()->ti()->domain()->cast<BinOp>();
-                if (bo->op()==BOT_DOTDOT) {
-                  t.bt(bo->lhs()->type().bt());
-                  if (t.isunknown()) {
-                    throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
-                  }
-                  vdi->e()->type(t);
-                } else {
-                  throw TypeError(env.envi(), vdi->e()->loc(), "Only ranges allowed in FlatZinc type inst");
-                }
-              }
-              case Expression::E_ID:
-              {
-                ASTStringMap<int>::t::iterator it = declMap.find(vdi->e()->ti()->domain()->cast<Id>()->v());
-                if (it == declMap.end()) {
-                  throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
-                }
-                t.bt((*m)[it->second]->cast<VarDeclI>()->e()->type().bt());
-                if (t.isunknown()) {
-                  throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
-                }
-                vdi->e()->type(t);
-              }
-              default:
-                throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
-            }
-          } else {
-            throw TypeError(env.envi(), vdi->e()->loc(), "Cannot determine type of variable declaration");
-          }
-        }
-      }
-    }
-  }
-
-  void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os) {
+  void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os, bool extra = false) {
     os << "    \"" << *vd->id() << "\" : {";
     os << "\"type\" : ";
     switch (vd->type().bt()) {
@@ -1780,35 +2133,116 @@ namespace MiniZinc {
     }
     if (vd->type().dim() > 0) {
       os << ", \"dim\" : " << vd->type().dim();
+
+      if(extra) {
+        os << ", \"dims\" : [";
+        bool had_dim = false;
+        ASTExprVec<TypeInst> ranges = vd->ti()->ranges();
+        for(int i=0; i<static_cast<int>(ranges.size()); i++) {
+          if(ranges[i]->type().enumId() > 0) {
+            os << (had_dim ? "," : "")
+               << "\"" << *env.envi().getEnum(ranges[i]->type().enumId())->e()->id() << "\"";
+          } else {
+            os << (had_dim ? "," : "") << "\"int\"";
+          }
+          had_dim = true;
+        }
+        os << "]";
+
+        if (vd->type().enumId() > 0) {
+          const std::vector<unsigned int>& enumIds = env.envi().getArrayEnum(vd->type().enumId());
+          if(enumIds.back() > 0) {
+            os << ", \"enum_type\" : \"" << *env.envi().getEnum(enumIds.back())->e()->id() << "\"";
+          }
+        }
+      }
+
+    } else {
+      if(extra) {
+        if (vd->type().enumId() > 0) {
+          os << ", \"enum_type\" : \"" << *env.envi().getEnum(vd->type().enumId())->e()->id() << "\"";
+        }
+      }
     }
     os << "}";
   }
-  
+
+  void output_model_variable_types(Env& env, Model* m, std::ostream& os) {
+    class VInfVisitor : public ItemVisitor {
+    public:
+      Env& env;
+      bool had_var;
+      bool had_enum;
+      std::ostringstream oss_vars;
+      std::ostringstream oss_enums;
+      VInfVisitor(Env& env0) : env(env0), had_var(false), had_enum(false) {}
+      bool enter(Item* i) {
+        if (IncludeI* ii = i->dyn_cast<IncludeI>()) {
+          std::string prefix = ii->m()->filepath().str().substr(0,ii->m()->filepath().size()-ii->f().size());
+          return (prefix.empty() || prefix == "./");
+        }
+        return true;
+      }
+      void vVarDeclI(VarDeclI* vdi) {
+        if (!vdi->e()->type().isann() && !vdi->e()->ti()->isEnum()) {
+          if (had_var) oss_vars << ",\n";
+          output_var_desc_json(env, vdi->e(), oss_vars, true);
+          had_var = true;
+        } else if (vdi->e()->type().st()==Type::ST_SET && vdi->e()->type().enumId() != 0 && !vdi->e()->type().isann()) {
+          if (had_enum) oss_enums << ", ";
+          oss_enums << "\"" << *env.envi().getEnum(vdi->e()->type().enumId())->e()->id() << "\"";
+          had_enum = true;
+        }
+      }
+    } _vinf(env);
+    iterItems(_vinf, m);
+    os << "{\"var_types\": {";
+    os << "\n  \"vars\": {\n" << _vinf.oss_vars.str() << "\n  },";
+    os << "\n  \"enums\": [" << _vinf.oss_enums.str() << "]\n";
+    os << "}}\n";
+  }
+
+
   void output_model_interface(Env& env, Model* m, std::ostream& os) {
-    std::ostringstream oss_input;
-    std::ostringstream oss_output;
-    bool had_input = false;
-    bool had_output = false;
-    for (VarDeclIterator vds = m->begin_vardecls(); vds != m->end_vardecls(); ++vds) {
-      if (vds->e()->type().ispar() && (vds->e()->e()==NULL || vds->e()->e()==constants().absent)) {
-        if (had_input) oss_input << ",\n";
-        output_var_desc_json(env, vds->e(), oss_input);
-        had_input = true;
-      } else if (vds->e()->type().isvar() && (vds->e()->e()==NULL || vds->e()->ann().contains(constants().ann.add_to_output))) {
-        if (had_output) oss_output << ",\n";
-        output_var_desc_json(env, vds->e(), oss_output);
-        had_output = true;
+    class IfcVisitor : public ItemVisitor {
+    public:
+      Env& env;
+      bool had_input;
+      bool had_output;
+      std::ostringstream oss_input;
+      std::ostringstream oss_output;
+      std::string method;
+      IfcVisitor(Env& env0) : env(env0), had_input(false), had_output(false), method("sat") {}
+      bool enter(Item* i) {
+        if (IncludeI* ii = i->dyn_cast<IncludeI>()) {
+          std::string prefix = ii->m()->filepath().str().substr(0,ii->m()->filepath().size()-ii->f().size());
+          return (prefix.empty() || prefix == "./");
+        }
+        return true;
       }
-    }
-    os << "{\n  \"input\" : {\n" << oss_input.str() << "\n  },\n  \"output\" : {\n" << oss_output.str() << "\n  }";
+      void vVarDeclI(VarDeclI* vdi) {
+        if (vdi->e()->type().ispar() && !vdi->e()->type().isann() && (vdi->e()->e()==NULL || vdi->e()->e()==constants().absent)) {
+          if (had_input) oss_input << ",\n";
+          output_var_desc_json(env, vdi->e(), oss_input);
+          had_input = true;
+        } else if (vdi->e()->type().isvar() && (vdi->e()->e()==NULL || vdi->e()->ann().contains(constants().ann.add_to_output))) {
+          if (had_output) oss_output << ",\n";
+          output_var_desc_json(env, vdi->e(), oss_output);
+          had_output = true;
+        }
+      }
+      void vSolveI(SolveI* si) {
+        switch (si->st()) {
+          case SolveI::ST_MIN: method = "min"; break;
+          case SolveI::ST_MAX: method = "max"; break;
+          case SolveI::ST_SAT: method = "sat"; break;
+        }
+      }
+    } _ifc(env);
+    iterItems(_ifc, m);
+    os << "{\n  \"input\" : {\n" << _ifc.oss_input.str() << "\n  },\n  \"output\" : {\n" << _ifc.oss_output.str() << "\n  }";
     os << ",\n  \"method\": \"";
-    if (m->solveItem()) {
-      switch (m->solveItem()->st()) {
-        case SolveI::ST_MIN: os << "min"; break;
-        case SolveI::ST_MAX: os << "max"; break;
-        case SolveI::ST_SAT: os << "sat"; break;
-      }
-    }
+    os << _ifc.method;
     os << "\"";
     os << "\n}\n";
   }

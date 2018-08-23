@@ -14,8 +14,8 @@
 
 namespace MiniZinc {
   
-  const IntVal IntVal::minint(void) { return IntVal(INT_MIN); }
-  const IntVal IntVal::maxint(void) { return IntVal(INT_MAX); }
+  const IntVal IntVal::minint(void) { return IntVal(std::numeric_limits<long long int>::min()); }
+  const IntVal IntVal::maxint(void) { return IntVal(std::numeric_limits<long long int>::max()); }
   const IntVal IntVal::infinity(void) { return IntVal(1,true); }
  
   IntSetVal::IntSetVal(IntVal m, IntVal n) : ASTChunk(sizeof(Range)) {

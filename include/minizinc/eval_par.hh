@@ -106,30 +106,32 @@ namespace MiniZinc {
     }
     CallStackItem csi(env, e->decl(gen,id)->id(), i);
     if (id == e->n_decls(gen)-1) {
-      if (gen == e->n_generators()-1) {
-        bool where = true;
-        if (e->where() != NULL && !e->where()->type().isvar()) {
-          GCLock lock;
-          where = eval_bool(env, e->where());
-        }
-        if (where) {
+      bool where = true;
+      if (e->where(gen) != NULL) {
+        GCLock lock;
+        where = eval_bool(env, e->where(gen));
+      }
+      if (where) {
+        if (gen == e->n_generators()-1) {
           a.push_back(eval.e(env,e->e()));
-        }
-      } else {
-        KeepAlive nextin;
-        {
-          if (e->in(gen+1)->type().dim()==0) {
-            GCLock lock;
-            nextin = new SetLit(Location(),eval_intset(env, e->in(gen+1)));
-          } else {
-            GCLock lock;
-            nextin = eval_array_lit(env, e->in(gen+1));
-          }
-        }
-        if (e->in(gen+1)->type().dim()==0) {
-          eval_comp_set<Eval>(env, eval,e,gen+1,0,nextin,a);
         } else {
-          eval_comp_array<Eval>(env, eval,e,gen+1,0,nextin,a);
+          if (e->in(gen+1)==NULL) {
+            eval_comp_array<Eval>(env, eval,e,gen+1,0,0,e->in(gen+1),a);
+          } else {
+            KeepAlive nextin;
+            if (e->in(gen+1)->type().dim()==0) {
+              GCLock lock;
+              nextin = new SetLit(Location(),eval_intset(env, e->in(gen+1)));
+            } else {
+              GCLock lock;
+              nextin = eval_array_lit(env, e->in(gen+1));
+            }
+            if (e->in(gen+1)->type().dim()==0) {
+              eval_comp_set<Eval>(env, eval,e,gen+1,0,nextin,a);
+            } else {
+              eval_comp_array<Eval>(env, eval,e,gen+1,0,nextin,a);
+            }
+          }
         }
       }
     } else {
@@ -146,34 +148,43 @@ namespace MiniZinc {
     GC::mark();
     e->decl(gen,id)->trail();
     CallStackItem csi(env, e->decl(gen,id)->id(), i);
-    ArrayLit* al = in()->cast<ArrayLit>();
-    e->decl(gen,id)->e(al->v()[i.toInt()]);
-    e->rehash();
+    if (in()==NULL) {
+      // this is an assignment generator
+      Expression* asn = eval_par(env, e->where(gen));
+      e->decl(gen,id)->e(asn);
+      e->rehash();
+    } else {
+      ArrayLit* al = in()->cast<ArrayLit>();
+      e->decl(gen,id)->e((*al)[static_cast<int>(i.toInt())]);
+      e->rehash();
+    }
     if (id == e->n_decls(gen)-1) {
-      if (gen == e->n_generators()-1) {
-        bool where = true;
-        if (e->where() != NULL) {
-          GCLock lock;
-          where = eval_bool(env, e->where());
-        }
-        if (where) {
+      bool where = true;
+      if (e->in(gen) != NULL && e->where(gen) != NULL) {
+        GCLock lock;
+        where = eval_bool(env, e->where(gen));
+      }
+      if (where) {
+        if (gen == e->n_generators()-1) {
           a.push_back(eval.e(env,e->e()));
-        }
-      } else {
-        KeepAlive nextin;
-        {
-          if (e->in(gen+1)->type().dim()==0) {
-            GCLock lock;
-            nextin = new SetLit(Location(),eval_intset(env,e->in(gen+1)));
-          } else {
-            GCLock lock;
-            nextin = eval_array_lit(env, e->in(gen+1));
-          }
-        }
-        if (e->in(gen+1)->type().dim()==0) {
-          eval_comp_set<Eval>(env, eval,e,gen+1,0,nextin,a);
         } else {
-          eval_comp_array<Eval>(env, eval,e,gen+1,0,nextin,a);
+          if (e->in(gen+1)==NULL) {
+            eval_comp_array<Eval>(env, eval,e,gen+1,0,0,e->in(gen+1),a);
+          } else {
+            KeepAlive nextin;
+            if (e->in(gen+1)->type().dim()==0) {
+              GCLock lock;
+              nextin = new SetLit(Location(),eval_intset(env,e->in(gen+1)));
+            } else {
+              GCLock lock;
+              nextin = eval_array_lit(env, e->in(gen+1));
+            }
+            if (e->in(gen+1)->type().dim()==0) {
+              eval_comp_set<Eval>(env, eval,e,gen+1,0,nextin,a);
+            } else {
+              eval_comp_array<Eval>(env, eval,e,gen+1,0,nextin,a);
+            }
+          }
         }
       }
     } else {
@@ -219,7 +230,7 @@ namespace MiniZinc {
   eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id,
                   KeepAlive in, std::vector<typename Eval::ArrayVal>& a) {
     ArrayLit* al = in()->cast<ArrayLit>();
-    for (unsigned int i=0; i<al->v().size(); i++) {
+    for (unsigned int i=0; i<al->size(); i++) {
       eval_comp_array<Eval>(env, eval,e,gen,id,i,in,a);
     }
   }
@@ -234,23 +245,27 @@ namespace MiniZinc {
   std::vector<typename Eval::ArrayVal>
   eval_comp(EnvI& env, Eval& eval, Comprehension* e) {
     std::vector<typename Eval::ArrayVal> a;
-    KeepAlive in;
-    {
-      GCLock lock;
-      if (e->in(0)->type().dim()==0) {
-        if (e->in(0)->type().isvar()) {
-          in = new SetLit(Location(),compute_intset_bounds(env, e->in(0)));
-        } else {
-          in = new SetLit(Location(),eval_intset(env, e->in(0)));
-        }
-      } else {
-        in = eval_array_lit(env, e->in(0));
-      }
-    }
-    if (e->in(0)->type().dim()==0) {
-      eval_comp_set<Eval>(env, eval,e,0,0,in,a);
+    if (e->in(0)==NULL) {
+      eval_comp_array<Eval>(env, eval,e,0,0,0,e->in(0),a);
     } else {
-      eval_comp_array<Eval>(env, eval,e,0,0,in,a);
+      KeepAlive in;
+      {
+        GCLock lock;
+        if (e->in(0)->type().dim()==0) {
+          if (e->in(0)->type().isvar()) {
+            in = new SetLit(Location(),compute_intset_bounds(env, e->in(0)));
+          } else {
+            in = new SetLit(Location(),eval_intset(env, e->in(0)));
+          }
+        } else {
+          in = eval_array_lit(env, e->in(0));
+        }
+      }
+      if (e->in(0)->type().dim()==0) {
+        eval_comp_set<Eval>(env, eval,e,0,0,in,a);
+      } else {
+        eval_comp_array<Eval>(env, eval,e,0,0,in,a);
+      }
     }
     return a;
   }  

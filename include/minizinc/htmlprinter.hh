@@ -36,9 +36,15 @@ namespace MiniZinc {
   class HtmlPrinter {
   public:
     static std::vector<HtmlDocument> printHtml(EnvI& env, Model* m, const std::string& basename,
-                                               int splitLevel, bool includeStdLib);
+                                               int splitLevel, bool includeStdLib, bool generateIndex);
   };
   
+  class RSTPrinter {
+  public:
+    static std::vector<HtmlDocument> printRST(EnvI& env, Model* m, const std::string& basename,
+                                              int splitLevel, bool includeStdLib, bool generateIndex);
+  };
+
 }
 
 #endif

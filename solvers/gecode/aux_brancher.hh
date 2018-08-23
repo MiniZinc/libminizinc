@@ -21,7 +21,6 @@
 #include <gecode/set.hh>
 #endif
 
-#define GECODE_HAS_FLOAT_VARS
 #ifdef GECODE_HAS_FLOAT_VARS
 #include <gecode/float.hh>
 #endif
@@ -50,8 +49,8 @@ namespace MiniZinc {
             /// Construct brancher
             AuxVarBrancher(Gecode::Home home, Gecode::TieBreak<Gecode::IntVarBranch> int_varsel0,
                     Gecode::IntValBranch int_valsel0,
-                    Gecode::TieBreak<Gecode::IntVarBranch> bool_varsel0,
-                    Gecode::IntValBranch bool_valsel0
+                    Gecode::TieBreak<Gecode::BoolVarBranch> bool_varsel0,
+                    Gecode::BoolValBranch bool_valsel0
 #ifdef GECODE_HAS_SET_VARS
                     ,
                     Gecode::SetVarBranch set_varsel0,
@@ -74,8 +73,8 @@ namespace MiniZinc {
 #endif
                       {}
             /// Copy constructor
-            AuxVarBrancher(Gecode::Space& home, bool share, AuxVarBrancher& b)
-                : Brancher(home, share, b), done(b.done) {}
+            AuxVarBrancher(Gecode::Space& home, AuxVarBrancher& b)
+                : Brancher(home, b), done(b.done) {}
 
             /// %Choice that only signals failure or success
             class Choice : public Gecode::Choice {
@@ -98,8 +97,8 @@ namespace MiniZinc {
 
             Gecode::TieBreak<Gecode::IntVarBranch> int_varsel;
             Gecode::IntValBranch int_valsel;
-            Gecode::TieBreak<Gecode::IntVarBranch> bool_varsel;
-            Gecode::IntValBranch bool_valsel;
+            Gecode::TieBreak<Gecode::BoolVarBranch> bool_varsel;
+            Gecode::BoolValBranch bool_valsel;
 #ifdef GECODE_HAS_SET_VARS
             Gecode::SetVarBranch set_varsel;
             Gecode::SetValBranch set_valsel;
@@ -169,15 +168,15 @@ namespace MiniZinc {
                     << ")";
             }
             /// Copy brancher
-            virtual Actor* copy(Gecode::Space& home, bool share) {
-                return new (home) AuxVarBrancher(home, share, *this);
+            virtual Actor* copy(Gecode::Space& home) {
+                return new (home) AuxVarBrancher(home, *this);
             }
             /// Post brancher
             static void post(Gecode::Home home,
                     Gecode::TieBreak<Gecode::IntVarBranch> int_varsel,
                     Gecode::IntValBranch int_valsel,
-                    Gecode::TieBreak<Gecode::IntVarBranch> bool_varsel,
-                    Gecode::IntValBranch bool_valsel
+                    Gecode::TieBreak<Gecode::BoolVarBranch> bool_varsel,
+                    Gecode::BoolValBranch bool_valsel
 #ifdef GECODE_HAS_SET_VARS
                     ,
                     Gecode::SetVarBranch set_varsel,
@@ -202,7 +201,7 @@ namespace MiniZinc {
             /// Delete brancher and return its size
             virtual size_t dispose(Gecode::Space&) {
                 return sizeof(*this);
-            }      
+            }
     };
 
 } 

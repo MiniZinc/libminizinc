@@ -13,6 +13,8 @@
 #ifndef __MINIZINC_GECODE_SOLVER_INSTANCE_HH__
 #define __MINIZINC_GECODE_SOLVER_INSTANCE_HH__
 
+#include <unordered_map>
+
 #include <gecode/kernel.hh>
 #include <gecode/int.hh>
 #include <gecode/driver.hh>
@@ -21,7 +23,6 @@
 #include <gecode/set.hh>
 #endif
 
-#define GECODE_HAS_FLOAT_VARS
 #ifdef GECODE_HAS_FLOAT_VARS
 #include <gecode/float.hh>
 #endif
@@ -29,6 +30,18 @@
 #include <minizinc/flattener.hh>
 #include <minizinc/solver.hh>
 #include <minizinc/solvers/gecode/fzn_space.hh>
+
+#if GECODE_VERSION_NUMBER < 600000
+#error Gecode versions before 6.0 are not supported
+#endif
+
+#define MZ_IntConLevel Gecode::IntPropLevel
+#define MZ_ICL_VAL Gecode::IPL_VAL
+#define MZ_ICL_DOM Gecode::IPL_DOM 
+#define MZ_ICL_BND Gecode::IPL_BND
+#define MZ_ICL_DEF Gecode::IPL_DEF
+#define MZ_EPK_DEF Gecode::IPL_DEF
+
 
 namespace MiniZinc {
   
@@ -196,6 +209,23 @@ namespace MiniZinc {
   
   class GecodeEngine;
   
+  class GecodeOptions : public SolverInstanceBase::Options {
+  public:
+    bool allow_unbounded_vars = false;
+    bool only_range_domains = false;
+    bool sac = false;
+    bool shave = false;
+    int pre_passes = 0;
+    bool statistics = false;
+    bool all_solutions = false;
+    int n_solutions = -1;
+    int nodes = 0;
+    int fails = 0;
+    int time = 0;
+    int seed = 1;
+    double decay = 0.5;
+  };
+
   class GecodeSolverInstance : public SolverInstanceImpl<GecodeSolver> {   
   private:
     bool _print_stats;
@@ -203,8 +233,10 @@ namespace MiniZinc {
     bool _run_sac;
     bool _run_shave;
     unsigned int _pre_passes;
-    unsigned int _n_max_solutions;
-    unsigned int _n_found_solutions;
+    bool _all_solutions;
+    int _n_max_solutions;
+    int _n_found_solutions;
+    bool _allow_unbounded_vars;
     Model* _flat;
   public:
     /// the Gecode space that will be/has been solved
@@ -217,12 +249,12 @@ namespace MiniZinc {
     //typedef std::pair<VarDecl*,Expression*> DE;
     //ASTStringMap<DE>::t _declmap;
     /// TODO: we can probably get rid of this
-    UNORDERED_NAMESPACE::unordered_map<VarDecl*, std::vector<Expression*>* > arrayMap;
+    std::unordered_map<VarDecl*, std::vector<Expression*>* > arrayMap;
     /// The solver engine
     GecodeEngine* engine;
     Gecode::Search::Options engine_options;
 
-    GecodeSolverInstance(Env& env, const Options& options);
+    GecodeSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
     virtual ~GecodeSolverInstance(void);
 
     virtual Status next(void);    
@@ -236,6 +268,7 @@ namespace MiniZinc {
     bool sac(bool toFixedPoint, bool shaving);
     void print_stats();
 
+    void processSolution(bool last_sol = false);
     virtual Expression* getSolutionValue(Id* id);
 
     Gecode::Space* getGecodeModel(void);
@@ -250,6 +283,8 @@ namespace MiniZinc {
     Gecode::IntArgs arg2boolargs(Expression* arg, int offset = 0);
     /// Convert \a n to IntSet
     Gecode::IntSet arg2intset(EnvI& envi, Expression* sl);
+    /// Convert \a n to IntSetArgs
+    Gecode::IntSetArgs arg2intsetargs(EnvI& envi, Expression* arg, int offset = 0);
     /// Convert \a arg to IntVarArgs
     Gecode::IntVarArgs arg2intvarargs(Expression* arg, int offset = 0);
     /// Convert \a arg to BoolVarArgs
@@ -258,6 +293,11 @@ namespace MiniZinc {
     Gecode::BoolVar arg2boolvar(Expression* e);
     /// Convert \a n to IntVar
     Gecode::IntVar arg2intvar(Expression* e);
+    /// Convert \a n to SetVar
+    Gecode::SetVar arg2setvar(Expression* e);
+    /// Convert \a arg to SetVarArgs
+    Gecode::SetVarArgs arg2setvarargs(Expression* arg, int offset = 0, int doffset = 0,
+                                      const Gecode::IntSet& od=Gecode::IntSet::empty);
      /// convert \a arg to an ArrayLit (throws InternalError if not possible)
     ArrayLit* arg2arraylit(Expression* arg);  
     /// Check if \a b is array of Booleans (or has a single integer)
@@ -271,7 +311,9 @@ namespace MiniZinc {
     Gecode::FloatVarArgs arg2floatvarargs(Expression* arg, int offset = 0);
 #endif
     /// Convert \a ann to IntConLevel
-    Gecode::IntConLevel ann2icl(const Annotation& ann);
+
+
+    MZ_IntConLevel ann2icl(const Annotation& ann);
 
      /// convert the annotation \a s int variable selection to the respective Gecode var selection
     Gecode::TieBreak<Gecode::IntVarBranch> ann2ivarsel(std::string s, Gecode::Rnd& rnd, double decay);
@@ -279,6 +321,14 @@ namespace MiniZinc {
     Gecode::IntValBranch ann2ivalsel(std::string s, std::string& r0, std::string& r1, Gecode::Rnd& rnd);
     /// convert assign value selection
     Gecode::IntAssign ann2asnivalsel(std::string s, Gecode::Rnd& rnd);
+
+    Gecode::TieBreak<Gecode::BoolVarBranch> ann2bvarsel(std::string s, Gecode::Rnd& rnd, double decay);
+    /// convert the annotation \a s int value selection to the respectbve Gecode val selection
+    Gecode::BoolValBranch ann2bvalsel(std::string s, std::string& r0, std::string& r1, Gecode::Rnd& rnd);
+    /// convert assign value selection
+    Gecode::BoolAssign ann2asnbvalsel(std::string s, Gecode::Rnd& rnd);
+
+
 #ifdef GECODE_HAS_SET_VARS
     Gecode::SetVarBranch ann2svarsel(std::string s, Gecode::Rnd& rnd, double decay);
     Gecode::SetValBranch ann2svalsel(std::string s, std::string r0, std::string r1, Gecode::Rnd& rnd);
@@ -301,8 +351,6 @@ namespace MiniZinc {
     void insertVar(Id* id, GecodeVariable gv);
 
   protected:
-    /// Flatzinc options // TODO: do we need specific Gecode options? Use MiniZinc::Options instead?
-    // FlatZincOptions* opts;
     void registerConstraints(void);
     void registerConstraint(std::string name, poster p);
 
@@ -313,26 +361,44 @@ namespace MiniZinc {
     void setSearchStrategyFromAnnotation(std::vector<Expression*> flatAnn, 
                                                         std::vector<bool>& iv_searched, 
                                                         std::vector<bool>& bv_searched,
+#ifdef GECODE_HAS_SET_VARS
                                                         std::vector<bool>& sv_searched,
+#endif
+#ifdef GECODE_HAS_FLOAT_VARS
                                                         std::vector<bool>& fv_searched,
+#endif
                                                         Gecode::TieBreak<Gecode::IntVarBranch>& def_int_varsel,
                                                         Gecode::IntValBranch& def_int_valsel,
-                                                        Gecode::TieBreak<Gecode::IntVarBranch>& def_bool_varsel,
-                                                        Gecode::IntValBranch& def_bool_valsel,
-                                                #ifdef GECODE_HAS_SET_VARS
+                                                        Gecode::TieBreak<Gecode::BoolVarBranch>& def_bool_varsel,
+                                                        Gecode::BoolValBranch& def_bool_valsel,
+
+#ifdef GECODE_HAS_SET_VARS
                                                         Gecode::SetVarBranch& def_set_varsel,
                                                         Gecode::SetValBranch& def_set_valsel,
-                                                #endif
-                                                #ifdef GECODE_HAS_FLOAT_VARS
+#endif
+#ifdef GECODE_HAS_FLOAT_VARS
                                                         Gecode::TieBreak<Gecode::FloatVarBranch>& def_float_varsel,
                                                         Gecode::FloatValBranch& def_float_valsel,
-                                                #endif
+#endif
                                                         Gecode::Rnd& rnd,
                                                         double decay,
                                                         bool ignoreUnknown,
                                                         std::ostream& err
                                                        );
   };
+
+  class Gecode_SolverFactory: public SolverFactory {
+  public:
+    Gecode_SolverFactory(void);
+    SolverInstanceBase::Options* createOptions(void);
+    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
+    std::string getDescription(SolverInstanceBase::Options* opt=NULL);
+    std::string getVersion(SolverInstanceBase::Options* opt=NULL);
+    std::string getId( ) { return "org.minizinc.gecode_presolver"; }
+    virtual bool processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv);
+    void printHelp(std::ostream& os);
+  };
+
 }
 
 #endif

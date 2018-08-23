@@ -23,43 +23,41 @@ namespace MiniZinc {
   Location Location::nonalloc;
   
   Type Type::unboxedint = Type::parint();
+  Type Type::unboxedfloat = Type::parfloat();
   
   Annotation Annotation::empty;
   
-  Location::Location(void)
-  : first_line(0),
-    first_column(0),
-    last_line(0),
-    last_column(0),
-    is_introduced(0) {}
 
   std::string
   Location::toString(void) const {
     std::ostringstream oss;
-    oss << filename << ":" << first_line << "." << first_column;
+    oss << filename() << ":" << first_line() << "." << first_column();
     return oss.str();
   }
 
   void
   Location::mark(void) const {
-    filename.mark();
+    if (lv())
+      lv()->mark();
   }
   
   Location
   Location::introduce() const {
     Location l = *this;
-    l.is_introduced = 1;
+    if (l._loc_info.lv) {
+      l._loc_info.t |= 1;
+    }
     return l;
   }
 
   void
   Expression::addAnnotation(Expression* ann) {
-    if (!isUnboxedInt())
+    if (!isUnboxedVal())
       _ann.add(ann);
   }
   void
   Expression::addAnnotations(std::vector<Expression*> ann) {
-    if (!isUnboxedInt())
+    if (!isUnboxedVal())
       for (unsigned int i=0; i<ann.size(); i++)
         if (ann[i])
           _ann.add(ann[i]);
@@ -71,13 +69,13 @@ namespace MiniZinc {
 #define pushann(a) do { for (ExpressionSetIter it = a.begin(); it != a.end(); ++it) { pushstack(*it); }} while(0)
   void
   Expression::mark(Expression* e) {
-    if (e==NULL || e->isUnboxedInt()) return;
+    if (e==NULL || e->isUnboxedVal()) return;
     std::vector<const Expression*> stack;
     stack.reserve(1000);
     stack.push_back(e);
     while (!stack.empty()) {
       const Expression* cur = stack.back(); stack.pop_back();
-      if (!cur->isUnboxedInt() && cur->_gc_mark==0) {
+      if (!cur->isUnboxedVal() && cur->_gc_mark==0) {
         cur->_gc_mark = 1;
         cur->loc().mark();
         pushann(cur->ann());
@@ -105,7 +103,11 @@ namespace MiniZinc {
           pushstack(cur->cast<Id>()->decl());
           break;
         case Expression::E_ARRAYLIT:
-          pushall(cur->cast<ArrayLit>()->v());
+          if (cur->_flag_2) {
+            pushstack(cur->cast<ArrayLit>()->_u._al);
+          } else {
+            pushall(ASTExprVec<Expression>(cur->cast<ArrayLit>()->_u._v));
+          }
           cur->cast<ArrayLit>()->_dims.mark();
           break;
         case Expression::E_ARRAYACCESS:
@@ -114,7 +116,6 @@ namespace MiniZinc {
           break;
         case Expression::E_COMP:
           pushstack(cur->cast<Comprehension>()->_e);
-          pushstack(cur->cast<Comprehension>()->_where);
           pushall(cur->cast<Comprehension>()->_g);
           cur->cast<Comprehension>()->_g_idx.mark();
           break;
@@ -131,8 +132,11 @@ namespace MiniZinc {
           break;
         case Expression::E_CALL:
           cur->cast<Call>()->id().mark();
-          pushall(cur->cast<Call>()->_args);
-          if (FunctionI* fi = cur->cast<Call>()->_decl) {
+          for (unsigned int i=cur->cast<Call>()->n_args(); i--;)
+            pushstack(cur->cast<Call>()->arg(i));
+          if (!cur->cast<Call>()->_u._oneArg->isUnboxedVal() && !cur->cast<Call>()->_u._oneArg->isTagged())
+            cur->cast<Call>()->_u._args->mark();
+          if (FunctionI* fi = cur->cast<Call>()->decl()) {
             fi->mark();
             fi->id().mark();
             pushstack(fi->ti());
@@ -168,14 +172,14 @@ namespace MiniZinc {
   void
   IntLit::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<IntVal> h;
+    std::hash<IntVal> h;
     cmb_hash(h(_v));
   }
 
   void
   FloatLit::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<FloatVal> h;
+    std::hash<FloatVal> h;
     cmb_hash(h(_v));
   }
 
@@ -183,13 +187,13 @@ namespace MiniZinc {
   SetLit::rehash(void) {
     init_hash();
     if (isv()) {
-      HASH_NAMESPACE::hash<IntVal> h;
+      std::hash<IntVal> h;
       for (IntSetRanges r0(isv()); r0(); ++r0) {
         cmb_hash(h(r0.min()));
         cmb_hash(h(r0.max()));
       }
     } else if (fsv()) {
-      HASH_NAMESPACE::hash<FloatVal> h;
+      std::hash<FloatVal> h;
       for (FloatSetRanges r0(fsv()); r0(); ++r0) {
         cmb_hash(h(r0.min()));
         cmb_hash(h(r0.max()));
@@ -203,7 +207,7 @@ namespace MiniZinc {
   void
   BoolLit::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<bool> h;
+    std::hash<bool> h;
     cmb_hash(h(_v));
   }
 
@@ -216,7 +220,7 @@ namespace MiniZinc {
   void
   Id::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<long long int> h;
+    std::hash<long long int> h;
     if (idn()==-1)
       cmb_hash(v().hash());
     else
@@ -245,7 +249,7 @@ namespace MiniZinc {
 
   int
   ArrayLit::dims(void) const {
-    return _dims.size()==0 ? 1 : _dims.size()/2;
+    return _flag_2 ? ( (_dims.size() - 2*_u._al->dims()) / 2 ) : (_dims.size()==0 ? 1 : _dims.size()/2);
   }
   int
   ArrayLit::min(int i) const {
@@ -259,7 +263,7 @@ namespace MiniZinc {
   ArrayLit::max(int i) const {
     if (_dims.size()==0) {
       assert(i==0);
-      return _v.size();
+      return _u._v->size();
     }
     return _dims[2*i+1];
   }
@@ -272,16 +276,147 @@ namespace MiniZinc {
     return l;
   }
   void
+  ArrayLit::make1d(void) {
+    if (_dims.size()!=0) {
+      GCLock lock;
+      if (_flag_2) {
+        std::vector<int> d(2+_u._al->dims()*2);
+        int dimOffset = dims()*2;
+        d[0] = 1;
+        d[1] = length();
+        for (unsigned int i=2; i<d.size(); i++) {
+          d[i] = _dims[dimOffset+i];
+        }
+        _dims = ASTIntVec(d);
+      } else {
+        std::vector<int> d(2);
+        d[0] = 1;
+        d[1] = length();
+        _dims = ASTIntVec(d);
+      }
+    }
+  }
+  
+  int
+  ArrayLit::origIdx(int i) const {
+    assert(_flag_2);
+    int curIdx = i;
+    int multiplyer = 1;
+    int oIdx = 0;
+    int sliceOffset = dims()*2;
+    for (int curDim = _u._al->dims()-1; curDim >= 0; curDim--) {
+      oIdx += multiplyer * ( ( curIdx % (_dims[sliceOffset+curDim*2+1]-_dims[sliceOffset+curDim*2]+1) ) + (_dims[sliceOffset+curDim*2] - _u._al->min(curDim)) );
+      curIdx = curIdx / (_dims[sliceOffset+curDim*2+1]-_dims[sliceOffset+curDim*2]+1);
+      multiplyer *= (_u._al->max(curDim)-_u._al->min(curDim)+1);
+    }
+    return oIdx;
+  }
+  
+  Expression*
+  ArrayLit::slice_get(int i) const {
+    if (!_flag_2) {
+      assert(_u._v->flag());
+      int off = length()-_u._v->size();
+      return i <= off ? (*_u._v)[0] : (*_u._v)[i-off];
+    } else {
+      assert(_flag_2);
+      return (*_u._al)[origIdx(i)];
+    }
+  }
+  
+  void
+  ArrayLit::slice_set(int i, Expression* e) {
+    if (!_flag_2) {
+      assert(_u._v->flag());
+      int off = length()-_u._v->size();
+      if (i <= off) {
+        (*_u._v)[0] = e;
+      } else {
+        (*_u._v)[i-off] = e;
+      }
+    } else {
+      assert(_flag_2);
+      _u._al->set(origIdx(i), e);
+    }
+  }
+  
+  
+  ArrayLit::ArrayLit(const Location& loc, ArrayLit* v,
+                     const std::vector<std::pair<int,int> >& dims,
+                     const std::vector<std::pair<int,int> >& slice)
+  : Expression(loc,E_ARRAYLIT,Type()) {
+    _flag_1 = false;
+    _flag_2 = true;
+    _u._al = v;
+    assert(slice.size() == v->dims());
+    std::vector<int> d(dims.size()*2+2*slice.size());
+    for (unsigned int i=static_cast<unsigned int>(dims.size()); i--;) {
+      d[i*2  ] = dims[i].first;
+      d[i*2+1] = dims[i].second;
+    }
+    int sliceOffset = static_cast<int>(2*dims.size());
+    for (unsigned int i=static_cast<unsigned int>(slice.size()); i--;) {
+      d[sliceOffset+i*2  ] = slice[i].first;
+      d[sliceOffset+i*2+1] = slice[i].second;
+    }
+    _dims = ASTIntVec(d);
+  }
+  
+  void
+  ArrayLit::compress(const std::vector<Expression*>& v, const std::vector<int>& dims) {
+    if (v.size() >= 4 && Expression::equal(v[0], v[1]) && Expression::equal(v[1], v[2]) && Expression::equal(v[2], v[3])) {
+      std::vector<Expression*> compress(v.size());
+      compress[0] = v[0];
+      int k = 4;
+      while (k<v.size() && Expression::equal(v[k],v[0])) {
+        k++;
+      }
+      int i = 1;
+      for (; k<v.size(); k++) {
+        compress[i++] = v[k];
+      }
+      compress.resize(i);
+      _u._v = ASTExprVec<Expression>(compress).vec();
+      _u._v->flag(true);
+      _dims = ASTIntVec(dims);
+    } else {
+      _u._v = ASTExprVec<Expression>(v).vec();
+      if (dims.size()!=2 || dims[0]!=1) {
+        // only allocate dims vector if it is not a 1d array indexed from 1
+        _dims = ASTIntVec(dims);
+      }
+    }
+  }
+  
+  ArrayLit::ArrayLit(const Location& loc,
+                     const std::vector<Expression*>& v,
+                     const std::vector<std::pair<int,int> >& dims)
+  : Expression(loc,E_ARRAYLIT,Type()) {
+    _flag_1 = false;
+    _flag_2 = false;
+    std::vector<int> d(dims.size()*2);
+    for (unsigned int i=static_cast<unsigned int>(dims.size()); i--;) {
+      d[i*2] = dims[i].first;
+      d[i*2+1] = dims[i].second;
+    }
+    compress(v, d);
+    rehash();
+  }
+  
+  void
   ArrayLit::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<int> h;
-    for (unsigned int i=0; i<dims(); i+=2) {
-      cmb_hash(h(min(i)));
-      cmb_hash(h(max(i)));
+    std::hash<int> h;
+    for (unsigned int i=0; i<_dims.size(); i++) {
+      cmb_hash(h(_dims[i]));
     }
-    for (unsigned int i=_v.size(); i--;) {
-      cmb_hash(h(i));
-      cmb_hash(Expression::hash(_v[i]));
+    if (_flag_2) {
+      cmb_hash(Expression::hash(_u._al));
+    } else {
+      for (unsigned int i=_u._v->size(); i--;) {
+        cmb_hash(h(i));
+        cmb_hash(Expression::hash((*_u._v)[i]));
+      }
     }
   }
 
@@ -289,26 +424,30 @@ namespace MiniZinc {
   ArrayAccess::rehash(void) {
     init_hash();
     cmb_hash(Expression::hash(_v));
-    HASH_NAMESPACE::hash<unsigned int> h;
+    std::hash<unsigned int> h;
     cmb_hash(h(_idx.size()));
     for (unsigned int i=_idx.size(); i--;)
       cmb_hash(Expression::hash(_idx[i]));
   }
 
   Generator::Generator(const std::vector<ASTString>& v,
-                       Expression* in) {
+                       Expression* in,
+                       Expression* where) {
     std::vector<VarDecl*> vd;
+    Location loc = in == NULL ? where->loc() : in->loc();
     for (unsigned int i=0; i<v.size(); i++) {
-      VarDecl* nvd = new VarDecl(in->loc(),
-                                 new TypeInst(in->loc(),Type::parint()),v[i]);
+      VarDecl* nvd = new VarDecl(loc,
+                                 new TypeInst(loc,Type::parint()),v[i]);
       nvd->toplevel(false);
       vd.push_back(nvd);
     }
     _v = vd;
     _in = in;
+    _where = where;
   }
   Generator::Generator(const std::vector<Id*>& v,
-                       Expression* in) {
+                       Expression* in,
+                       Expression* where) {
     std::vector<VarDecl*> vd;
     for (unsigned int i=0; i<v.size(); i++) {
       VarDecl* nvd = new VarDecl(v[i]->loc(),
@@ -318,23 +457,29 @@ namespace MiniZinc {
     }
     _v = vd;
     _in = in;
+    _where = where;
   }
   Generator::Generator(const std::vector<std::string>& v,
-                       Expression* in) {
+                       Expression* in,
+                       Expression* where) {
     std::vector<VarDecl*> vd;
+    Location loc = in == NULL ? where->loc() : in->loc();
     for (unsigned int i=0; i<v.size(); i++) {
-      VarDecl* nvd = new VarDecl(in->loc(),
-                                 new TypeInst(in->loc(),Type::parint()),ASTString(v[i]));
+      VarDecl* nvd = new VarDecl(loc,
+                                 new TypeInst(loc,Type::parint()),ASTString(v[i]));
       nvd->toplevel(false);
       vd.push_back(nvd);
     }
     _v = vd;
     _in = in;
+    _where = where;
   }
   Generator::Generator(const std::vector<VarDecl*>& v,
-                       Expression* in) {
+                       Expression* in,
+                       Expression* where) {
     _v = v;
     _in = in;
+    _where = where;
   }
 
   bool
@@ -344,10 +489,9 @@ namespace MiniZinc {
   void
   Comprehension::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<unsigned int> h;
+    std::hash<unsigned int> h;
     cmb_hash(h(set()));
     cmb_hash(Expression::hash(_e));
-    cmb_hash(Expression::hash(_where));
     cmb_hash(h(_g_idx.size()));
     for (unsigned int i=_g_idx.size(); i--;) {
       cmb_hash(h(_g_idx[i]));
@@ -370,24 +514,32 @@ namespace MiniZinc {
   Comprehension::in(int i) const {
     return _g[_g_idx[i]];
   }
-
+  const Expression*
+  Comprehension::where(int i) const {
+    return _g[_g_idx[i]+1];
+  }
+  Expression*
+  Comprehension::where(int i) {
+    return _g[_g_idx[i]+1];
+  }
+  
   int
   Comprehension::n_decls(int i) const {
-    return _g_idx[i+1]-_g_idx[i]-1;
+    return _g_idx[i+1]-_g_idx[i]-2;
   }
   VarDecl*
   Comprehension::decl(int gen, int i) {
-    return _g[_g_idx[gen]+1+i]->cast<VarDecl>();
+    return _g[_g_idx[gen]+2+i]->cast<VarDecl>();
   }
   const VarDecl*
   Comprehension::decl(int gen, int i) const {
-    return _g[_g_idx[gen]+1+i]->cast<VarDecl>();
+    return _g[_g_idx[gen]+2+i]->cast<VarDecl>();
   }
 
   void
   ITE::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<unsigned int> h;
+    std::hash<unsigned int> h;
     cmb_hash(h(_e_if_then.size()));
     for (unsigned int i=_e_if_then.size(); i--; ) {
       cmb_hash(Expression::hash(_e_if_then[i]));
@@ -402,7 +554,7 @@ namespace MiniZinc {
   void
   BinOp::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<int> h;
+    std::hash<int> h;
     cmb_hash(h(static_cast<int>(op())));
     cmb_hash(Expression::hash(_e0));
     cmb_hash(Expression::hash(_e1));
@@ -555,7 +707,7 @@ namespace MiniZinc {
   void
   UnOp::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<int> h;
+    std::hash<int> h;
     cmb_hash(h(static_cast<int>(_sec_id)));
     cmb_hash(Expression::hash(_e0));
   }
@@ -573,13 +725,13 @@ namespace MiniZinc {
   void
   Call::rehash(void) {
     init_hash();
-    cmb_hash(_id.hash());
-    HASH_NAMESPACE::hash<FunctionI*> hf;
-    cmb_hash(hf(_decl));
-    HASH_NAMESPACE::hash<unsigned int> hu;
-    cmb_hash(hu(_args.size()));
-    for (unsigned int i=_args.size(); i--;)
-      cmb_hash(Expression::hash(_args[i]));
+    cmb_hash(id().hash());
+    std::hash<FunctionI*> hf;
+    cmb_hash(hf(decl()));
+    std::hash<unsigned int> hu;
+    cmb_hash(hu(n_args()));
+    for (unsigned int i=0; i<n_args(); i++)
+      cmb_hash(Expression::hash(arg(i)));
   }
   
   void
@@ -603,7 +755,7 @@ namespace MiniZinc {
   Let::rehash(void) {
     init_hash();
     cmb_hash(Expression::hash(_in));
-    HASH_NAMESPACE::hash<unsigned int> h;
+    std::hash<unsigned int> h;
     cmb_hash(h(_let.size()));
     for (unsigned int i=_let.size(); i--;)
       cmb_hash(Expression::hash(_let[i]));
@@ -650,7 +802,7 @@ namespace MiniZinc {
   void
   TypeInst::rehash(void) {
     init_hash();
-    HASH_NAMESPACE::hash<unsigned int> h;
+    std::hash<unsigned int> h;
     unsigned int rsize = _ranges.size();
     cmb_hash(h(rsize));
     for (unsigned int i=rsize; i--;)
@@ -666,7 +818,7 @@ namespace MiniZinc {
         ranges[0]->cast<TypeInst>()->domain()->isa<TIId>())
       _type.dim(-1);
     else
-      _type.dim(ranges.size());
+      _type.dim(static_cast<int>(ranges.size()));
     rehash();
   }
 
@@ -970,15 +1122,15 @@ namespace MiniZinc {
       {
         const ArrayLit* a0 = e0->cast<ArrayLit>();
         const ArrayLit* a1 = e1->cast<ArrayLit>();
-        if (a0->v().size() != a1->v().size()) return false;
+        if (a0->size() != a1->size()) return false;
         if (a0->_dims.size() != a1->_dims.size()) return false;
         for (unsigned int i=0; i<a0->_dims.size(); i++) {
           if ( a0->_dims[i] != a1->_dims[i] ) {
             return false;
           }
         }
-        for (unsigned int i=0; i<a0->v().size(); i++) {
-          if (!Expression::equal( a0->v()[i], a1->v()[i] )) {
+        for (unsigned int i=0; i<a0->size(); i++) {
+          if (!Expression::equal( (*a0)[i], (*a1)[i] )) {
             return false;
           }
         }
@@ -1001,7 +1153,6 @@ namespace MiniZinc {
         const Comprehension* c1 = e1->cast<Comprehension>();
         if (c0->set() != c1->set()) return false;
         if (!Expression::equal ( c0->_e, c1->_e )) return false;
-        if (!Expression::equal ( c0->_where, c1->_where )) return false;
         if (c0->_g.size() != c1->_g.size()) return false;
         for (unsigned int i=0; i<c0->_g.size(); i++) {
           if (!Expression::equal( c0->_g[i], c1->_g[i] ))
@@ -1048,10 +1199,10 @@ namespace MiniZinc {
         const Call* c0 = e0->cast<Call>();
         const Call* c1 = e1->cast<Call>();
         if (c0->id() != c1->id()) return false;
-        if (c0->_decl != c1->_decl) return false;
-        if (c0->args().size() != c1->args().size()) return false;
-        for (unsigned int i=0; i<c0->args().size(); i++)
-          if (!Expression::equal ( c0->args()[i], c1->args()[i] ))
+        if (c0->decl() != c1->decl()) return false;
+        if (c0->n_args() != c1->n_args()) return false;
+        for (unsigned int i=0; i<c0->n_args(); i++)
+          if (!Expression::equal ( c0->arg(i), c1->arg(i) ))
             return false;
         return true;
       }
@@ -1220,9 +1371,14 @@ namespace MiniZinc {
     
     ann.output_var = new Id(Location(), ASTString("output_var"), NULL);
     ann.output_var->type(Type::ann());
+    ann.output_only = new Id(Location(), ASTString("output_only"), NULL);
+    ann.output_only->type(Type::ann());
     ann.output_array = ASTString("output_array");
     ann.add_to_output = new Id(Location(), ASTString("add_to_output"), NULL);
     ann.add_to_output->type(Type::ann());
+    ann.mzn_check_var = new Id(Location(), ASTString("mzn_check_var"), NULL);
+    ann.mzn_check_var->type(Type::ann());
+    ann.mzn_check_enum_var = ASTString("mzn_check_enum_var");
     ann.is_defined_var = new Id(Location(), ASTString("is_defined_var"), NULL);
     ann.is_defined_var->type(Type::ann());
     ann.defines_var = ASTString("defines_var");
@@ -1233,11 +1389,18 @@ namespace MiniZinc {
     ann.maybe_partial = new Id(Location(), ASTString("maybe_partial"), NULL);
     ann.maybe_partial->type(Type::ann());
     ann.doc_comment = ASTString("doc_comment");
+    ann.mzn_path = ASTString("mzn_path");
     ann.is_introduced = ASTString("is_introduced");
     ann.user_cut = new Id(Location(), ASTString("user_cut"), NULL);
     ann.user_cut->type(Type::ann());
     ann.lazy_constraint = new Id(Location(), ASTString("lazy_constraint"), NULL);
     ann.lazy_constraint->type(Type::ann());
+#ifndef NDEBUG
+    ann.mzn_break_here = new Id(Location(), ASTString("mzn_break_here"), NULL);
+    ann.mzn_break_here->type(Type::ann());
+#endif
+    ann.rhs_from_assignment = new Id(Location(), ASTString("mzn_rhs_from_assignment"), NULL);
+    ann.rhs_from_assignment->type(Type::ann());
     
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
@@ -1312,6 +1475,8 @@ namespace MiniZinc {
     opts.solver.fzn_solver = ASTString("fznsolver");
     opts.solver.fzn_flags = ASTString("fzn_flags");
     opts.solver.fzn_flag = ASTString("fzn_flag");
+    opts.solver.fzn_time_limit_ms = ASTString("fzn_time_limit_ms");
+    opts.solver.fzn_sigint = ASTString("fzn_sigint");
     
     cli_cat.general = ASTString("General Options");
     cli_cat.io = ASTString("Input/Output Options");
@@ -1424,7 +1589,10 @@ namespace MiniZinc {
     v.push_back(ctx.neg);
     v.push_back(ctx.mix);
     v.push_back(ann.output_var);
+    v.push_back(ann.output_only);
     v.push_back(ann.add_to_output);
+    v.push_back(ann.mzn_check_var);
+    v.push_back(new StringLit(Location(),ann.mzn_check_enum_var));
     v.push_back(new StringLit(Location(),ann.output_array));
     v.push_back(ann.is_defined_var);
     v.push_back(new StringLit(Location(),ann.defines_var));
@@ -1432,10 +1600,15 @@ namespace MiniZinc {
     v.push_back(ann.promise_total);
     v.push_back(ann.maybe_partial);
     v.push_back(new StringLit(Location(),ann.doc_comment));
+    v.push_back(new StringLit(Location(),ann.mzn_path));
     v.push_back(new StringLit(Location(), ann.is_introduced));
     v.push_back(ann.user_cut);
     v.push_back(ann.lazy_constraint);
-    
+#ifndef NDEBUG
+    v.push_back(ann.mzn_break_here);
+#endif
+    v.push_back(ann.rhs_from_assignment);
+
     v.push_back(new StringLit(Location(),cli.cmdlineData_short_str));
     v.push_back(new StringLit(Location(),cli.cmdlineData_str));
     v.push_back(new StringLit(Location(),cli.datafile_short_str));
@@ -1506,6 +1679,8 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),opts.solver.fzn_solver));
     v.push_back(new StringLit(Location(),opts.solver.fzn_flags));
     v.push_back(new StringLit(Location(),opts.solver.fzn_flag));
+    v.push_back(new StringLit(Location(),opts.solver.fzn_time_limit_ms));
+    v.push_back(new StringLit(Location(),opts.solver.fzn_sigint));
     
     v.push_back(new StringLit(Location(),cli_cat.general));
     v.push_back(new StringLit(Location(),cli_cat.io));
@@ -1561,7 +1736,7 @@ namespace MiniZinc {
   Annotation::add(std::vector<Expression*> e) {
     if (_s == NULL)
       _s = new ExpressionSet;
-    for (unsigned int i=e.size(); i--;)
+    for (unsigned int i=static_cast<unsigned int>(e.size()); i--;)
       if (e[i])
         _s->insert(e[i]);
   }
@@ -1584,8 +1759,21 @@ namespace MiniZinc {
           toRemove.push_back(*it);
       }
     }
-    for (unsigned int i=toRemove.size(); i--;)
+    for (unsigned int i=static_cast<unsigned int>(toRemove.size()); i--;)
       _s->remove(toRemove[i]);
+  }
+  
+  Call*
+  Annotation::getCall(const ASTString& id) {
+    if (_s==NULL)
+      return NULL;
+    for (ExpressionSetIter it=_s->begin(); it != _s->end(); ++it) {
+      if (Call* c = (*it)->dyn_cast<Call>()) {
+        if (c->id() == id)
+          return c;
+      }
+    }
+    return NULL;
   }
   
   bool

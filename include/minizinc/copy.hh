@@ -18,7 +18,7 @@ namespace MiniZinc {
 
   class CopyMap {
   protected:
-    typedef UNORDERED_NAMESPACE::unordered_map<Model*,Model*> ModelMap;
+    typedef std::unordered_map<Model*,Model*> ModelMap;
     ModelMap model_m;
     
     ASTNodeWeakMap node_m;
@@ -43,6 +43,10 @@ namespace MiniZinc {
     ASTExprVecO<T*>* find(ASTExprVec<T> e) {
       ASTNode* n = node_m.find(e.vec());
       return static_cast<ASTExprVecO<T*>*>(n);
+    }
+    void clear() {
+      model_m.clear();
+      node_m.clear();
     }
   };
 

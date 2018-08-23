@@ -79,9 +79,10 @@ sort, arg_sort, arg_min, arg_max
  - The executables mzn-cplex, mzn-gurobi, mzn-scip and mzn-cbc use the
    corresponding MIP solver. They can interpret FlatZinc code compiled with
    -Glinear, as well as handle original model files (by flattening + solving).
+   Some MIP-specific functionality has been implemented, such as warm starts.
    See README_MIP.txt.
 
 ** Bugs **
 
 If you encounter any problems with MiniZinc, please use the MiniZinc bug tracker
-at http://www.minizinc.org/trac to report any issues or feature requests.
+at https://github.com/MiniZinc/libminizinc/issues to report any issues or feature requests.

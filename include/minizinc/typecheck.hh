@@ -54,7 +54,7 @@ namespace MiniZinc {
   class TopoSorter {
   public:
     typedef std::vector<VarDecl*> Decls;
-    typedef UNORDERED_NAMESPACE::unordered_map<VarDecl*,int> PosMap;
+    typedef std::unordered_map<VarDecl*,int> PosMap;
     
     /// List of all declarations
     Decls decls;
@@ -80,17 +80,19 @@ namespace MiniZinc {
   
   /// Type check the model \a m
   void typecheck(Env& env, Model* m, std::vector<TypeError>& typeErrors,
-                 bool ignoreUndefinedParameters = false);
+                 bool ignoreUndefinedParameters,
+                 bool allowMultiAssignment,
+                 bool isFlatZinc=false);
 
   /// Type check new assign item \a ai in model \a m
   void typecheck(Env& env, Model* m, AssignI* ai);
 
-  /// Typecheck FlatZinc variable declarations
-  void typecheck_fzn(Env& env, Model* m);
-
   /// Output description of parameters and output variables to \a os
   void output_model_interface(Env& env, Model* m, std::ostream& os);
-  
+
+  /// Output information about variable types (enum types) to \a os
+  void output_model_variable_types(Env& env, Model* m, std::ostream& os);
+
 }
 
 #endif

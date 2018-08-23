@@ -781,7 +781,7 @@ If there are no solutions in the output,
 the outcome must indicate that there are no solutions.
 
 If the search is complete the output may state this after the solutions.
-The absence of the completness message indicates that the search is incomplete.
+The absence of the completeness message indicates that the search is incomplete.
 
 Any warnings produced during run-time must be summarised
 after the statement of completeness.
@@ -826,7 +826,7 @@ Solutions end with a sequence of ten dashes followed by a newline.
 \end{productions}
 
 \noindent
-The completness result is printed on a separate line.
+The completeness result is printed on a separate line.
 \Rationale{The strings are designed to clearly indicate
 the end of the solutions.}
 
@@ -1853,7 +1853,7 @@ As for the pre-existing type-inst.
 \TyOverview
 Option types defined using the \texttt{opt} type constructor, define types
 that may or may not be there. They are similar to \texttt{Maybe} types of
-Haskell implicity adding a new value \texttt{<>} to the type.
+Haskell implicitly adding a new value \texttt{<>} to the type.
 
 
 \TyInsts
@@ -2235,8 +2235,8 @@ Again, we syntactically distinguish numeric operators.
     \RuleBuiltinNumUnOp
 \end{productions}
 
-% \pjs{Where do we seay something about the unicode versions of these?}
-Some operators can be written using their unicode symbols, which are listed in Table~\ref{bin-ops-unicode} (recall that MiniZinc input is UTF-8).
+% \pjs{Where do we say something about the Unicode versions of these?}
+Some operators can be written using their Unicode symbols, which are listed in Table~\ref{bin-ops-unicode} (recall that MiniZinc input is UTF-8).
 
 \begin{table}[t]
 \centering
@@ -2644,7 +2644,7 @@ For example:
    var int x;
    array[int] of var opt int: y = [ i | i in 1..10 where i != x ];
 \end{verbatim}
-The length of the array wtill be 10.
+The length of the array will be 10.
 
 The indices of an evaluated simple array comprehension are implicitly
 $1..n$, where $n$ is the length of the evaluated comprehension.
@@ -3408,7 +3408,7 @@ Predicate declarations that are natively supported
 in MiniZinc are restricted to using FlatZinc
 types (for instance, multi-dimensional and non-1-based arrays are
 forbidden).
-% \pjs{need to fix this if we allow2d arrays in FlatZinc!}
+% \pjs{need to fix this if we allow 2d arrays in FlatZinc!}
 
 Declarations for user-defined operations can be annotated.
 Section~\ref{Annotations} has more details on annotations.
@@ -3422,7 +3422,7 @@ item'' and ``predicate item'' can be used.
 The return type-inst of a test item is implicitly \texttt{par bool}.  The
 return type-inst of a predicate item is implicitly \texttt{var bool}.
 
-% \pjs{Can predicates and functionsbe recursive now?}
+% \pjs{Can predicates and functions be recursive now?}
 Predicates and functions are allowed to be recursive. Termination of
 a recursive function call depends solely on its fixed arguments, i.e., 
 recursive functions and predicates cannot be used to define recursively 
@@ -3632,7 +3632,7 @@ language.  Annotations do not change the meaning of a model, however, only
 how it is solved.
 
 Annotations can be attached to variables (on their declarations),
-expresssions, type-inst synonyms, enum items, solve items and on user
+expressions, type-inst synonyms, enum items, solve items and on user
 defined operations.
 They have the following syntax:
 %\comment{pjs}{
@@ -4476,7 +4476,7 @@ The number of digits to appear after the decimal point is given by
 the second argument.
 It is a run-time error for the second argument to be negative.
 If the third argument is not fixed, the form of the string is
-implemenation-dependent.
+implementation-dependent.
 \begin{verbatim}
   string: show_float(int, int, var float)
 \end{verbatim}
@@ -4497,8 +4497,8 @@ efficiently.
 \end{verbatim}
 
 \builtin{}
-Concatenate an array of strings, putting a seperator beween adjacent strings.
-Returns the the empty string if the array is empty.
+Concatenate an array of strings, putting a separator between adjacent strings.
+Returns the empty string if the array is empty.
 \begin{verbatim}
    string: join(string, array[$T] of string)
 \end{verbatim}

@@ -44,7 +44,7 @@ namespace MiniZinc {
     /// Boolen negation flag
     bool neg;
     /// Default constructor (root context)
-    Ctx(void) : b(C_ROOT), i(C_POS), neg(false) {}
+    Ctx(void) : b(C_ROOT), i(C_MIX), neg(false) {}
     /// Copy constructor
     Ctx(const Ctx& ctx) : b(ctx.b), i(ctx.i), neg(ctx.neg) {}
     /// Assignment operator
@@ -65,10 +65,22 @@ namespace MiniZinc {
   
   class EnvI {
   public:
-    Model* orig;
+    Model* model;
+    Model* orig_model;
     Model* output;
     VarOccurrences vo;
     VarOccurrences output_vo;
+    
+    std::ostream& outstream;
+    std::ostream& errstream;
+
+    // The current pass number (used for unifying and disabling path construction in final pass)
+    unsigned int current_pass_no;
+    // Used for disabling path construction in final pass
+    unsigned int final_pass_no;
+    // Used for disabling path construction past the maxPathDepth of previous passes
+    unsigned int maxPathDepth;
+
     VarOccurrences output_vo_flat;
     CopyMap cmap;
     IdMap<KeepAlive> reverseMappers;
@@ -77,8 +89,9 @@ namespace MiniZinc {
       WeakRef b;
       WW(WeakRef r0, WeakRef b0) : r(r0), b(b0) {}
     };
-    typedef KeepAliveMap<WW> Map;
+    typedef KeepAliveMap<WW> CSEMap;
     bool ignorePartial;
+    bool ignoreUnknownIds;
     std::vector<Expression*> callStack;
     std::vector<std::pair<KeepAlive,bool> > errorStack;
     std::vector<int> idStack;
@@ -88,26 +101,44 @@ namespace MiniZinc {
     std::vector<int> modifiedVarDecls;
     int in_redundant_constraint;
     int in_maybe_partial;
+    FlatteningOptions fopts;
+    unsigned int pathUse;
+    std::unordered_map<std::string, int> reverseEnum;
+
+    struct PathVar {
+      KeepAlive decl;
+      unsigned int pass_no;
+    };
+    // Store mapping from path string to (VarDecl, pass_no) tuples
+    typedef std::unordered_map<std::string, PathVar> PathMap;
+    // Mapping from arbitrary Expressions to paths
+    typedef KeepAliveMap<std::string> ReversePathMap;
+    // Map from filename to integer (space saving optimisation)
+    typedef std::unordered_map<std::string, int> FilenameMap;
+    std::vector<KeepAlive> checkVars;
   protected:
-    Map map;
+    CSEMap cse_map;
     Model* _flat;
     bool _failed;
     unsigned int ids;
     ASTStringMap<ASTString>::t reifyMap;
-    typedef UNORDERED_NAMESPACE::unordered_map<VarDeclI*,unsigned int> EnumMap;
+    PathMap pathMap;
+    ReversePathMap reversePathMap;
+    FilenameMap filenameMap;
+    typedef std::unordered_map<VarDeclI*,unsigned int> EnumMap;
     EnumMap enumMap;
     std::vector<VarDeclI*> enumVarDecls;
-    typedef UNORDERED_NAMESPACE::unordered_map<std::string,unsigned int> ArrayEnumMap;
+    typedef std::unordered_map<std::string,unsigned int> ArrayEnumMap;
     ArrayEnumMap arrayEnumMap;
     std::vector<std::vector<unsigned int> > arrayEnumDecls;
   public:
-    EnvI(Model* orig0);
+    EnvI(Model* orig0, std::ostream& outstream0=std::cout, std::ostream& errstream0=std::cerr);
     ~EnvI(void);
     long long int genId(void);
-    void map_insert(Expression* e, const EE& ee);
-    Map::iterator map_find(Expression* e);
-    void map_remove(Expression* e);
-    Map::iterator map_end(void);
+    void cse_map_insert(Expression* e, const EE& ee);
+    CSEMap::iterator cse_map_find(Expression* e);
+    void cse_map_remove(Expression* e);
+    CSEMap::iterator cse_map_end(void);
     void dump(void);
     
     unsigned int registerEnum(VarDeclI* vdi);
@@ -121,18 +152,28 @@ namespace MiniZinc {
     void flat_removeItem(int i);
     void flat_removeItem(Item* i);
     void vo_add_exp(VarDecl* vd);
-    void fail(void);
+    void annotateFromCallStack(Expression* e);
+    void fail(const std::string& msg = std::string());
     bool failed(void) const;
     Model* flat(void);
     void swap();
-    void swap_output() { std::swap( orig, output ); }
+    void swap_output() { std::swap( model, output ); }
     ASTString reifyId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
+    bool dumpPath(std::ostream& os, bool force = false);
     void addWarning(const std::string& msg);
     void collectVarDecls(bool b);
+    PathMap& getPathMap() { return pathMap; }
+    ReversePathMap& getReversePathMap() { return reversePathMap; }
+    FilenameMap& getFilenameMap() { return filenameMap; }
+
+    void copyPathMapsAndState(EnvI& env);
     /// deprecated, use Solns2Out
     std::ostream& evalOutput(std::ostream& os);
     void createErrorStack(void);
+    Call* surroundingCall(void) const;
+
+    void cleanupExceptOutput();
   };
 
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
@@ -377,7 +418,7 @@ namespace MiniZinc {
                     std::vector<KeepAlive>& x,
                     typename LinearTraits<Lit>::Val& d) {
     std::vector<int> idx(c.size());
-    for (unsigned int i=idx.size(); i--;) {
+    for (unsigned int i=static_cast<unsigned int>(idx.size()); i--;) {
       idx[i]=i;
       Expression* e = follow_id_to_decl(x[i]());
       if (VarDecl* vd = e->dyn_cast<VarDecl>()) {

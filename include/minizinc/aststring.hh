@@ -13,7 +13,6 @@
 #define __MINIZINC_ASTSTRING_HH__
 
 #include <minizinc/gc.hh>
-#include <minizinc/stl_map_set.hh>
 #include <string>
 #include <cstring>
 #include <functional>
@@ -78,7 +77,7 @@ namespace MiniZinc {
   template<typename T>
   struct ASTStringMap {
     /// The map type specialised for ASTString
-    typedef UNORDERED_NAMESPACE::unordered_map<ASTString,T> t;
+    typedef std::unordered_map<ASTString,T> t;
   };
 
   /**
@@ -93,13 +92,13 @@ namespace MiniZinc {
 
 }
 
-OPEN_HASH_NAMESPACE {
+namespace std {
   template<>
   struct hash<MiniZinc::ASTString> {
   public:
     size_t operator()(const MiniZinc::ASTString& s) const;
   };
-CLOSE_HASH_NAMESPACE }
+}
 
 namespace std {
   template<>
@@ -127,7 +126,7 @@ namespace MiniZinc {
     /// Conversion to STL string
     std::string str(void) const { return std::string(c_str()); }
     /// Return size of string
-    unsigned int size(void) const { return _size-sizeof(size_t)-1; }
+    unsigned int size(void) const { return static_cast<unsigned int>(_size)-static_cast<unsigned int>(sizeof(size_t))-1; }
     /// Access character at position \a i
     char operator[](unsigned int i) {
       assert(i<size()); return _data[sizeof(size_t)+i];
@@ -198,13 +197,13 @@ namespace MiniZinc {
 
 }
 
-OPEN_HASH_NAMESPACE {
+namespace std {
   inline size_t
   hash<MiniZinc::ASTString>::operator()(
                                         const MiniZinc::ASTString& s) const {
     return s.hash();
   }
-CLOSE_HASH_NAMESPACE }
+}
 
 namespace std {
   inline bool

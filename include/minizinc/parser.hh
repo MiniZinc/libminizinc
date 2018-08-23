@@ -35,6 +35,7 @@ extern "C" int isatty(int);
 #include <minizinc/model.hh>
 #include <minizinc/parser.tab.hh>
 #include <minizinc/astexception.hh>
+#include <minizinc/file_utils.hh>
 
 #include <string>
 #include <vector>
@@ -46,17 +47,26 @@ extern "C" int isatty(int);
 
 namespace MiniZinc {
 
+  struct ParseWorkItem {
+    Model* m;
+    std::string dirName;
+    std::string fileName;
+    ParseWorkItem(Model* m0, const std::string& dirName0, const std::string& fileName0)
+    : m(m0), dirName(dirName0), fileName(fileName0) {}
+  };
+  
+
   /// %State of the %MiniZinc parser
   class ParserState {
   public:
     ParserState(const std::string& f,
                 const std::string& b, std::ostream& err0,
-                std::vector<std::pair<std::string,Model*> >& files0,
+                std::vector<ParseWorkItem>& files0,
                 std::map<std::string,Model*>& seenModels0,
                 MiniZinc::Model* model0,
                 bool isDatafile0, bool isFlatZinc0, bool parseDocComments0)
-    : filename(f.c_str()), buf(b.c_str()), pos(0), length(b.size()),
-      lineno(1), lineStartPos(0), nTokenNextStart(1),
+    : filename(f.c_str()), buf(b.c_str()), pos(0), length(static_cast<unsigned int>(b.size())),
+      lineStartPos(0), nTokenNextStart(1), hadNewline(false),
       files(files0), seenModels(seenModels0), model(model0),
       isDatafile(isDatafile0), isFlatZinc(isFlatZinc0), parseDocComments(parseDocComments0),
       hadError(false), err(err0) {}
@@ -67,12 +77,11 @@ namespace MiniZinc {
     const char* buf;
     unsigned int pos, length;
 
-    int lineno;
-
     int lineStartPos;
     int nTokenNextStart;
+    bool hadNewline;
 
-    std::vector<std::pair<std::string,Model*> >& files;
+    std::vector<ParseWorkItem>& files;
     std::map<std::string,Model*>& seenModels;
     MiniZinc::Model* model;
 
@@ -85,13 +94,20 @@ namespace MiniZinc {
     
     std::string stringBuffer;
 
-    void printCurrentLine(void) {
+    void printCurrentLine(int firstCol, int lastCol) {
       const char* eol_c = strchr(buf+lineStartPos,'\n');
       if (eol_c) {
+        if (eol_c==buf+lineStartPos)
+          return;
         err << std::string(buf+lineStartPos,eol_c-(buf+lineStartPos));
       } else {
         err << buf+lineStartPos;
       }
+      err << std::endl;
+      for (int i=0; i<firstCol-1; i++)
+        err << " ";
+      for (int i=firstCol; i<=lastCol; i++)
+        err << "^";
       err << std::endl;
     }
   

@@ -26,8 +26,8 @@ namespace MiniZinc {
     /// Type-inst
     enum TypeInst { TI_PAR, TI_VAR };
     /// Basic type
-    enum BaseType { BT_TOP, BT_BOOL, BT_INT, BT_FLOAT, BT_STRING, BT_ANN,
-                    BT_BOT, BT_UNKNOWN };
+    enum BaseType { BT_BOOL, BT_INT, BT_FLOAT, BT_STRING, BT_ANN,
+                    BT_TOP, BT_BOT, BT_UNKNOWN };
     /// Whether the expression is plain or set
     enum SetType { ST_PLAIN, ST_SET };
     /// Whether the expression is normal or optional
@@ -115,6 +115,9 @@ namespace MiniZinc {
     static Type parstring(int dim=0) {
       return Type(TI_PAR,BT_STRING,ST_PLAIN,0,dim);
     }
+    static Type partop(int dim=0) {
+      return Type(TI_PAR,BT_TOP,ST_PLAIN,0,dim);
+    }
     static Type ann(int dim=0) {
       return Type(TI_PAR,BT_ANN,ST_PLAIN,0,dim);
     }
@@ -165,8 +168,14 @@ namespace MiniZinc {
       t._ot = OT_OPTIONAL;
       return t;
     }
+    static Type optpartop(int dim=0) {
+      Type t(TI_PAR,BT_TOP,ST_PLAIN,0,dim);
+      t._ot = OT_OPTIONAL;
+      return t;
+    }
 
     static Type unboxedint;
+    static Type unboxedfloat;
     
     bool isunknown(void) const { return _bt==BT_UNKNOWN; }
     bool isplain(void) const {

@@ -22,102 +22,316 @@
 #include <cmath>
 #include <stdexcept>
 
-#include <minizinc/solvers/MIP/MIP_cplex_wrap.hh>
+#include <minizinc/config.hh>
 #include <minizinc/utils.hh>
+#include <minizinc/file_utils.hh>
+
+#ifdef HAS_CPLEX_PLUGIN
+#ifdef HAS_DLFCN_H
+#include <dlfcn.h>
+#elif defined HAS_WINDOWS_H
+#include <Windows.h>
+#endif
+#endif
 
 using namespace std;
 
-/// Linking this module provides these functions:
-MIP_wrapper* MIP_WrapperFactory::GetDefaultMIPWrapper() {
-  return new MIP_cplex_wrapper;
+#include <minizinc/solvers/MIP/MIP_cplex_wrap.hh>
+
+#ifdef HAS_CPLEX_PLUGIN
+
+namespace {
+  void* dll_open(const std::string& file) {
+#ifdef HAS_DLFCN_H
+    if (MiniZinc::FileUtils::is_absolute(file)) {
+      return dlopen( file.c_str(), RTLD_NOW);
+    }
+    if (void* so = dlopen( ("lib"+file+".so").c_str(), RTLD_NOW)) {
+      return so;
+    }
+    return dlopen( ("lib"+file+".jnilib").c_str(), RTLD_NOW);
+#else
+    if (MiniZinc::FileUtils::is_absolute(file)) {
+      return LoadLibrary(file.c_str());
+    } else {
+      return LoadLibrary((file+".dll").c_str());
+    }
+#endif
+  }
+  void* dll_sym(void* dll, const char* sym) {
+#ifdef HAS_DLFCN_H
+    void* ret = dlsym(dll, sym);
+#else
+    void* ret = GetProcAddress((HMODULE)dll, sym);
+#endif
+    if (ret==NULL)
+      throw MiniZinc::InternalError("cannot load symbol "+string(sym)+" from CPLEX dll");
+    return ret;
+  }
+  void dll_close(void* dll) {
+#ifdef HAS_DLFCN_H
+    dlclose(dll);
+#else
+    FreeLibrary((HMODULE)dll);
+#endif
+  }
 }
 
-string MIP_WrapperFactory::getVersion( ) {
-  string v = "  MIP wrapper for IBM ILOG CPLEX  ";
+#endif
+
+const vector<string>& CPLEXDLLs(void) {
+  static const vector<string> sCPLEXDLLs = { "cplex1280", "cplex1270" };
+  return sCPLEXDLLs;
+}
+
+void MIP_cplex_wrapper::checkDLL() {
+#ifdef HAS_CPLEX_PLUGIN
+  _cplex_dll = NULL;
+  if ( options->sCPLEXDLL.size() ) {
+    _cplex_dll = dll_open( options->sCPLEXDLL.c_str() );
+  } else {
+    for( const auto& s: CPLEXDLLs() ) {
+      _cplex_dll = dll_open( s.c_str() );
+      if ( NULL!=_cplex_dll ) {
+        break;
+      }
+    }
+  }
+  
+  if (_cplex_dll==NULL) {
+    if (options->sCPLEXDLL.empty()) {
+      throw MiniZinc::InternalError("cannot load cplex dll, specify --cplex-dll");
+    } else {
+      throw MiniZinc::InternalError("cannot load cplex dll `"+options->sCPLEXDLL+"'");
+    }
+  }
+
+  *(void**)(&dll_CPXaddfuncdest) = dll_sym(_cplex_dll, "CPXaddfuncdest");
+  *(void**)(&dll_CPXaddindconstr) = dll_sym(_cplex_dll, "CPXaddindconstr");
+  *(void**)(&dll_CPXaddlazyconstraints) = dll_sym(_cplex_dll, "CPXaddlazyconstraints");
+  *(void**)(&dll_CPXaddmipstarts) = dll_sym(_cplex_dll, "CPXaddmipstarts");
+  *(void**)(&dll_CPXaddrows) = dll_sym(_cplex_dll, "CPXaddrows");
+  *(void**)(&dll_CPXaddusercuts) = dll_sym(_cplex_dll, "CPXaddusercuts");
+  *(void**)(&dll_CPXchgbds) = dll_sym(_cplex_dll, "CPXchgbds");
+  *(void**)(&dll_CPXchgmipstarts) = dll_sym(_cplex_dll, "CPXchgmipstarts");
+  *(void**)(&dll_CPXchgobjsen) = dll_sym(_cplex_dll, "CPXchgobjsen");
+  *(void**)(&dll_CPXcloseCPLEX) = dll_sym(_cplex_dll, "CPXcloseCPLEX");
+  *(void**)(&dll_CPXcreateprob) = dll_sym(_cplex_dll, "CPXcreateprob");
+  *(void**)(&dll_CPXcutcallbackadd) = dll_sym(_cplex_dll, "CPXcutcallbackadd");
+  *(void**)(&dll_CPXfreeprob) = dll_sym(_cplex_dll, "CPXfreeprob");
+  *(void**)(&dll_CPXgetbestobjval) = dll_sym(_cplex_dll, "CPXgetbestobjval");
+  *(void**)(&dll_CPXgetcallbackincumbent) = dll_sym(_cplex_dll, "CPXgetcallbackincumbent");
+  *(void**)(&dll_CPXgetcallbackinfo) = dll_sym(_cplex_dll, "CPXgetcallbackinfo");
+  *(void**)(&dll_CPXgetcallbacknodeinfo) = dll_sym(_cplex_dll, "CPXgetcallbacknodeinfo");
+  *(void**)(&dll_CPXgetcallbacknodex) = dll_sym(_cplex_dll, "CPXgetcallbacknodex");
+  *(void**)(&dll_CPXgetchannels) = dll_sym(_cplex_dll, "CPXgetchannels");
+  *(void**)(&dll_CPXgetdettime) = dll_sym(_cplex_dll, "CPXgetdettime");
+  *(void**)(&dll_CPXgeterrorstring) = dll_sym(_cplex_dll, "CPXgeterrorstring");
+  *(void**)(&dll_CPXgetmipstartindex) = dll_sym(_cplex_dll, "CPXgetmipstartindex");
+  *(void**)(&dll_CPXgetnodecnt) = dll_sym(_cplex_dll, "CPXgetnodecnt");
+  *(void**)(&dll_CPXgetnodeleftcnt) = dll_sym(_cplex_dll, "CPXgetnodeleftcnt");
+  *(void**)(&dll_CPXgetnumcols) = dll_sym(_cplex_dll, "CPXgetnumcols");
+  *(void**)(&dll_CPXgetnumrows) = dll_sym(_cplex_dll, "CPXgetnumrows");
+  *(void**)(&dll_CPXgetobjsen) = dll_sym(_cplex_dll, "CPXgetobjsen");
+  *(void**)(&dll_CPXgetobjval) = dll_sym(_cplex_dll, "CPXgetobjval");
+  *(void**)(&dll_CPXgetsolnpoolnumsolns) = dll_sym(_cplex_dll, "CPXgetsolnpoolnumsolns");
+  *(void**)(&dll_CPXgetstat) = dll_sym(_cplex_dll, "CPXgetstat");
+  *(void**)(&dll_CPXgetstatstring) = dll_sym(_cplex_dll, "CPXgetstatstring");
+  *(void**)(&dll_CPXgettime) = dll_sym(_cplex_dll, "CPXgettime");
+  *(void**)(&dll_CPXgetx) = dll_sym(_cplex_dll, "CPXgetx");
+  *(void**)(&dll_CPXmipopt) = dll_sym(_cplex_dll, "CPXmipopt");
+  *(void**)(&dll_CPXnewcols) = dll_sym(_cplex_dll, "CPXnewcols");
+  *(void**)(&dll_CPXopenCPLEX) = dll_sym(_cplex_dll, "CPXopenCPLEX");
+  *(void**)(&dll_CPXreadcopyparam) = dll_sym(_cplex_dll, "CPXreadcopyparam");
+  *(void**)(&dll_CPXsetdblparam) = dll_sym(_cplex_dll, "CPXsetdblparam");
+  *(void**)(&dll_CPXsetinfocallbackfunc) = dll_sym(_cplex_dll, "CPXsetinfocallbackfunc");
+  *(void**)(&dll_CPXsetintparam) = dll_sym(_cplex_dll, "CPXsetintparam");
+  *(void**)(&dll_CPXsetlazyconstraintcallbackfunc) = dll_sym(_cplex_dll, "CPXsetlazyconstraintcallbackfunc");
+  *(void**)(&dll_CPXsetusercutcallbackfunc) = dll_sym(_cplex_dll, "CPXsetusercutcallbackfunc");
+  *(void**)(&dll_CPXversion) = dll_sym(_cplex_dll, "CPXversion");
+  *(void**)(&dll_CPXwriteparam) = dll_sym(_cplex_dll, "CPXwriteparam");
+  *(void**)(&dll_CPXwriteprob) = dll_sym(_cplex_dll, "CPXwriteprob");
+  
+#else
+  
+  dll_CPXaddfuncdest = CPXaddfuncdest;
+  dll_CPXaddindconstr = CPXaddindconstr;
+  dll_CPXaddlazyconstraints = CPXaddlazyconstraints;
+  dll_CPXaddmipstarts = CPXaddmipstarts;
+  dll_CPXaddrows = CPXaddrows;
+  dll_CPXaddusercuts = CPXaddusercuts;
+  dll_CPXchgbds = CPXchgbds;
+  dll_CPXchgmipstarts = CPXchgmipstarts;
+  dll_CPXchgobjsen = CPXchgobjsen;
+  dll_CPXcloseCPLEX = CPXcloseCPLEX;
+  dll_CPXcreateprob = CPXcreateprob;
+  dll_CPXcutcallbackadd = CPXcutcallbackadd;
+  dll_CPXfreeprob = CPXfreeprob;
+  dll_CPXgetbestobjval = CPXgetbestobjval;
+  dll_CPXgetcallbackincumbent = CPXgetcallbackincumbent;
+  dll_CPXgetcallbackinfo = CPXgetcallbackinfo;
+  dll_CPXgetcallbacknodeinfo = CPXgetcallbacknodeinfo;
+  dll_CPXgetcallbacknodex = CPXgetcallbacknodex;
+  dll_CPXgetchannels = CPXgetchannels;
+  dll_CPXgetdettime = CPXgetdettime;
+  dll_CPXgeterrorstring = CPXgeterrorstring;
+  dll_CPXgetmipstartindex = CPXgetmipstartindex;
+  dll_CPXgetnodecnt = CPXgetnodecnt;
+  dll_CPXgetnodeleftcnt = CPXgetnodeleftcnt;
+  dll_CPXgetnumcols = CPXgetnumcols;
+  dll_CPXgetnumrows = CPXgetnumrows;
+  dll_CPXgetobjsen = CPXgetobjsen;
+  dll_CPXgetobjval = CPXgetobjval;
+  dll_CPXgetsolnpoolnumsolns = CPXgetsolnpoolnumsolns;
+  dll_CPXgetstat = CPXgetstat;
+  dll_CPXgetstatstring = CPXgetstatstring;
+  dll_CPXgettime = CPXgettime;
+  dll_CPXgetx = CPXgetx;
+  dll_CPXmipopt = CPXmipopt;
+  dll_CPXnewcols = CPXnewcols;
+  dll_CPXopenCPLEX = CPXopenCPLEX;
+  dll_CPXreadcopyparam = CPXreadcopyparam;
+  dll_CPXsetdblparam = CPXsetdblparam;
+  dll_CPXsetinfocallbackfunc = CPXsetinfocallbackfunc;
+  dll_CPXsetintparam = CPXsetintparam;
+  dll_CPXsetlazyconstraintcallbackfunc = CPXsetlazyconstraintcallbackfunc;
+  dll_CPXsetusercutcallbackfunc = CPXsetusercutcallbackfunc;
+  dll_CPXversion = CPXversion;
+  dll_CPXwriteparam = CPXwriteparam;
+  dll_CPXwriteprob = CPXwriteprob;
+  
+#endif
+}
+
+
+string MIP_cplex_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
+  string v = "MIP wrapper for IBM ILOG CPLEX  ";
   int status;
-  CPXENVptr env = CPXopenCPLEX (&status);
-  if (env) {
-    v += CPXversion (env);
-    status = CPXcloseCPLEX (&env);
-  } else
+  Options def_options;
+  Options* options = opt ? static_cast<Options*>(opt) : &def_options;
+  try {
+    MIP_cplex_wrapper mcw(options);
+    CPXENVptr env = mcw.dll_CPXopenCPLEX (&status);
+    if (env) {
+      v += mcw.dll_CPXversion (env);
+      status = mcw.dll_CPXcloseCPLEX (&env);
+    } else
+      v += "[?? ...cannot open CPLEX env to query version]";
+  } catch (MiniZinc::InternalError&) {
     v += "[?? ...cannot open CPLEX env to query version]";
+  }
   v += "  Compiled  " __DATE__ "  " __TIME__;
   return v;
 }
 
-void MIP_WrapperFactory::printHelp(ostream& os) {
+string MIP_cplex_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) {
+  string v;
+  int status;
+  Options def_options;
+  Options* options = opt ? static_cast<Options*>(opt) : &def_options;
+  try {
+    MIP_cplex_wrapper mcw(options);
+    CPXENVptr env = mcw.dll_CPXopenCPLEX (&status);
+    if (env) {
+      v += mcw.dll_CPXversion (env);
+      status = mcw.dll_CPXcloseCPLEX (&env);
+    } else {
+      v += "<unknown version>";
+    }
+  } catch (MiniZinc::InternalError&) {
+    v += "<unknown version>";
+  }
+  return v;
+}
+
+std::string MIP_cplex_wrapper::needDllFlag(void) {
+  int status;
+  Options options;
+  try {
+    MIP_cplex_wrapper mcw(&options);
+    CPXENVptr env = mcw.dll_CPXopenCPLEX (&status);
+    if (env) {
+      return "";
+    }
+  } catch (MiniZinc::InternalError&) {
+  }
+  return "--cplex-dll";
+}
+
+string MIP_cplex_wrapper::getId() {
+  return "cplex";
+}
+
+string MIP_cplex_wrapper::getName() {
+  return "CPLEX";
+}
+
+vector<string> MIP_cplex_wrapper::getStdFlags() {
+  return {"-a", "-p", "-n"};
+}
+
+void MIP_cplex_wrapper::Options::printHelp(ostream& os) {
   os
   << "IBM ILOG CPLEX  MIP wrapper options:" << std::endl
   // -s                  print statistics
   //            << "  --readParam <file>  read CPLEX parameters from file
   //               << "--writeParam <file> write CPLEX parameters to file
   //               << "--tuneParam         instruct CPLEX to tune parameters instead of solving
-  << "--writeModel <file> write model to <file> (.lp, .mps, .sav, ...)" << std::endl
-  << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
-  << "-p <N>              use N threads, default: 1" << std::endl
-//   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-  << "--timeout <N>       stop search after N seconds" << std::endl
-  << "--workmem <N>       maximal amount of RAM used, MB" << std::endl
-  << "--readParam <file>  read CPLEX parameters from file" << std::endl
-  << "--writeParam <file> write CPLEX parameters to file" << std::endl
-//   << "--tuneParam         instruct CPLEX to tune parameters instead of solving   NOT IMPL"
+  << "  --mipfocus <n>\n    1: feasibility, 2: optimality, 3: move bound (default is 0, balanced)" << std::endl
+  << "  -a\n    print intermediate solutions (use for optimization problems only TODO)" << std::endl
+  << "  -p <N>\n    use N threads, default: 1" << std::endl
+//   << "  --nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
+  << "  --solver-time-limit <N>\n    stop search after N milliseconds wall time" << std::endl
+  << "  -n <N>, --num-solutions <N>\n"
+     "    stop search after N solutions" << std::endl
+  << "  --workmem <N>, --nodefilestart <N>\n"
+     "    maximal RAM for working memory used before writing to node file, GB, default: 3" << std::endl
+  << "  --writeModel <file>\n    write model to <file> (.lp, .mps, .sav, ...)" << std::endl
+  << "  --readParam <file>\n    read CPLEX parameters from file" << std::endl
+  << "  --writeParam <file>\n    write CPLEX parameters to file" << std::endl
+//   << "  --tuneParam         instruct CPLEX to tune parameters instead of solving   NOT IMPL"
 
-  << "--absGap <n>        absolute gap |primal-dual| to stop" << std::endl
-  << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
-  << "--intTol <n>        integrality tolerance for a variable. Default 1e-6" << std::endl
-//   << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
+  << "  --absGap <n>\n    absolute gap |primal-dual| to stop" << std::endl
+  << "  --relGap <n>\n    relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
+  << "  --intTol <n>\n    integrality tolerance for a variable. Default 1e-6" << std::endl
+  << "\n  --cplex-dll <file> or <basename>\n    CPLEX DLL, or base name, such as cplex1280, when using plugin. Default range tried: "
+  << CPLEXDLLs().front() << " .. " << CPLEXDLLs().back() << std::endl
+//   << "  --objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
   << std::endl;
 }
 
-  static inline bool beginswith(string s, string t) {
-    return s.compare(0, t.length(), t)==0;
-  }
-
-            /// SOLVER PARAMS ????
- static   int nThreads=1;
- static   string sExportModel;
- static   double nTimeout=-1;
- static   double nWorkMemLimit=-1;
- static   string sReadParams;
- static   string sWriteParams;
- static   bool flag_all_solutions = false;
-
- static   double absGap=-1;
- static   double relGap=1e-8;
- static   double intTol=1e-6;
- static   double objDiff=1.0;
-
-bool MIP_WrapperFactory::processOption(int& i, int argc, const char** argv) {
-  MiniZinc::CLOParser cop( i, argc, argv );
+bool MIP_cplex_wrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
+  MiniZinc::CLOParser cop( i, argv );
   if ( string(argv[i])=="-a"
       || string(argv[i])=="--all"
       || string(argv[i])=="--all-solutions" ) {
     flag_all_solutions = true;
   } else if (string(argv[i])=="-f") {
 //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
+  } else if ( cop.get( "--mipfocus --mipFocus --MIPFocus --MIPfocus", &nMIPFocus ) ) {
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
   } else if ( cop.get( "-p", &nThreads ) ) {
-  } else if ( cop.get( "--timeout", &nTimeout ) ) {
-  } else if ( cop.get( "--workmem", &nWorkMemLimit ) ) {
+  } else if ( cop.get( "--solver-time-limit", &nTimeout ) ) {
+  } else if ( cop.get( "-n --num-solutions", &nSolLimit ) ) {
+  } else if ( cop.get( "--workmem --nodefilestart", &nWorkMemLimit ) ) {
   } else if ( cop.get( "--readParam", &sReadParams ) ) {
   } else if ( cop.get( "--writeParam", &sWriteParams ) ) {
   } else if ( cop.get( "--absGap", &absGap ) ) {
   } else if ( cop.get( "--relGap", &relGap ) ) {
   } else if ( cop.get( "--intTol", &intTol ) ) {
+  } else if ( cop.get( "--cplex-dll", &sCPLEXDLL ) ) {
 //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
   } else
     return false;
   return true;
-error:
-  return false;
 }
 
 void MIP_cplex_wrapper::wrap_assert(bool cond, string msg, bool fTerm)
 {
    if ( !cond ) {
       strcpy(cplex_buffer, "[NO ERROR STRING GIVEN]");
-      CPXgeterrorstring (env, status, cplex_buffer);
+      dll_CPXgeterrorstring (env, status, cplex_buffer);
       string msgAll = ("  MIP_cplex_wrapper runtime error:  " + msg + "  " + cplex_buffer);
       cerr << msgAll << endl;
       if (fTerm) {
@@ -129,10 +343,12 @@ void MIP_cplex_wrapper::wrap_assert(bool cond, string msg, bool fTerm)
 
 void MIP_cplex_wrapper::openCPLEX()
 {
+  checkDLL();
+  cbui.wrapper = this;
   /// Cleanup first.
 //   cleanup();
    /* Initialize the CPLEX environment */
-   env = CPXopenCPLEX (&status);
+   env = dll_CPXopenCPLEX (&status);
    /* If an error occurs, the status value indicates the reason for
       failure.  A call to CPXgeterrorstring will produce the text of
       the error message.  Note that CPXopenCPLEX produces no output,
@@ -141,7 +357,7 @@ void MIP_cplex_wrapper::openCPLEX()
       be seen if the CPXPARAM_ScreenOutput indicator is set to CPX_ON.  */
    wrap_assert ( env, "Could not open CPLEX environment." );
    /* Create the problem. */
-   lp = CPXcreateprob (env, &status, "MIP_cplex_wrapper");
+   lp = dll_CPXcreateprob (env, &status, "MIP_cplex_wrapper");
    /* A returned pointer of NULL may mean that not enough memory
       was available or there was some other problem.  In the case of
       failure, an error message will have been written to the error
@@ -162,11 +378,15 @@ void MIP_cplex_wrapper::closeCPLEX()
   lp = 0;
    /* Free up the CPLEX environment, if necessary */
    if ( env != NULL ) {
-      status = CPXcloseCPLEX (&env);
+      status = dll_CPXcloseCPLEX (&env);
       wrap_assert ( !status, "Could not close CPLEX environment." );
    }
   /// and at last:
 //   MIP_wrapper::cleanup();
+#ifdef HAS_CPLEX_PLUGIN
+//  dll_close(cplex_dll);
+#endif
+
 }
 
 void MIP_cplex_wrapper::doAddVars
@@ -191,7 +411,7 @@ void MIP_cplex_wrapper::doAddVars
         throw runtime_error("  MIP_wrapper: unknown variable type");
     }
   }
-  status = CPXnewcols (env, lp, n, obj, lb, ub, &ctype[0], &pcNames[0]);
+  status = dll_CPXnewcols (env, lp, n, obj, lb, ub, &ctype[0], &pcNames[0]);
   wrap_assert( !status,  "Failed to declare variables." );
 }
 
@@ -219,24 +439,82 @@ void MIP_cplex_wrapper::addRow
   const int rmatbeg[] = { 0 };
   char * pRName = (char*)rowName.c_str();
   if (MaskConsType_Normal & mask) {
-    status = CPXaddrows (env, lp, ccnt, rcnt, nnz, &rhs,
+    status = dll_CPXaddrows (env, lp, ccnt, rcnt, nnz, &rhs,
         &ssense, rmatbeg, rmatind, rmatval,
         NULL, &pRName);
     wrap_assert( !status,  "Failed to add constraint." );
   }
   if (MaskConsType_Usercut & mask) {
-    status = CPXaddusercuts (env, lp, rcnt, nnz, &rhs,
+    status = dll_CPXaddusercuts (env, lp, rcnt, nnz, &rhs,
         &ssense, rmatbeg, rmatind, rmatval,
         &pRName);
     wrap_assert( !status,  "Failed to add usercut." );
   }
   if (MaskConsType_Lazy & mask) {
-    status = CPXaddlazyconstraints (env, lp, rcnt, nnz, &rhs,
+    status = dll_CPXaddlazyconstraints (env, lp, rcnt, nnz, &rhs,
         &ssense, rmatbeg, rmatind, rmatval,
         &pRName);
     wrap_assert( !status,  "Failed to add lazy constraint." );
   }
 }
+
+void MIP_cplex_wrapper::addIndicatorConstraint(
+  int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
+  MIP_wrapper::LinConType sense, double rhs, string rowName)
+{
+  wrap_assert( 0<=bVal && 1>=bVal, "mzn-cplex: addIndicatorConstraint: bVal not 0/1" );
+  char ssense=getCPLEXConstrSense(sense);
+  status = dll_CPXaddindconstr (env, lp, iBVar, 1-bVal, nnz, rhs,
+      ssense, rmatind, rmatval, rowName.c_str());
+  wrap_assert( !status,  "Failed to add indicator constraint." );
+}
+
+bool MIP_cplex_wrapper::addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals ) {
+  assert( vars.size()==vals.size() );
+  const char* sMSName = "MZNMS";
+  int msindex=-1;
+  const int beg=0;
+  /// Check if we already added a start
+  status = dll_CPXgetmipstartindex (env, lp, sMSName, &msindex);
+  if ( status ) {      // not existent
+    // status = dll_CPXaddmipstarts (env, lp, mcnt, nzcnt, beg, varindices,
+    //                            values, effortlevel, mipstartname);
+    status = dll_CPXaddmipstarts (env, lp, 1, vars.size(), &beg, vars.data(),
+                                 vals.data(), nullptr, (char**)&sMSName);
+    wrap_assert( !status,  "Failed to add warm start." );
+  } else {
+    // status = dll_CPXchgmipstarts (env, lp, mcnt, mipstartindices, nzcnt, beg, varindices, values, effortlevel);
+    status = dll_CPXchgmipstarts (env, lp, 1, &msindex, vars.size(), &beg, vars.data(),
+                                 vals.data(), nullptr);
+    wrap_assert( !status,  "Failed to extend warm start." );
+  }
+  return true;
+}
+
+void MIP_cplex_wrapper::setVarBounds(int iVar, double lb, double ub)
+{
+  wrap_assert( lb<=ub, "mzn-cplex: setVarBounds: lb>ub" );
+  char cl = 'L', cu = 'U';
+  status = dll_CPXchgbds (env, lp, 1, &iVar, &cl, &lb);
+  wrap_assert( !status,  "Failed to set lower bound." );
+  status = dll_CPXchgbds (env, lp, 1, &iVar, &cu, &ub);
+  wrap_assert( !status,  "Failed to set upper bound." );
+}
+
+void MIP_cplex_wrapper::setVarLB(int iVar, double lb)
+{
+  char cl = 'L';
+  status = dll_CPXchgbds (env, lp, 1, &iVar, &cl, &lb);
+  wrap_assert( !status,  "Failed to set lower bound." );
+}
+
+void MIP_cplex_wrapper::setVarUB(int iVar, double ub)
+{
+  char cu = 'U';
+  status = dll_CPXchgbds (env, lp, 1, &iVar, &cu, &ub);
+  wrap_assert( !status,  "Failed to set upper bound." );
+}
+
 
 
 /// SolutionCallback ------------------------------------------------------------------------
@@ -247,24 +525,25 @@ solcallback (CPXCENVptr env, void *cbdata, int wherefrom, void *cbhandle)
    int status = 0;
 
    MIP_wrapper::CBUserInfo *info = (MIP_wrapper::CBUserInfo*) cbhandle;
+   MIP_cplex_wrapper* cw = static_cast<MIP_cplex_wrapper*>(info->wrapper);
    int        hasincumbent = 0;
    int        newincumbent = 0;
    double objVal;
 
-   status = CPXgetcallbackinfo (env, cbdata, wherefrom,
+   status = cw->dll_CPXgetcallbackinfo (env, cbdata, wherefrom,
                                 CPX_CALLBACK_INFO_NODE_COUNT, &info->pOutput->nNodes);
    if ( status )  goto TERMINATE;
 
-   status = CPXgetcallbackinfo (env, cbdata, wherefrom,
+   status = cw->dll_CPXgetcallbackinfo (env, cbdata, wherefrom,
                                 CPX_CALLBACK_INFO_NODES_LEFT, &info->pOutput->nOpenNodes);
    if ( status )  goto TERMINATE;
 
-   status = CPXgetcallbackinfo (env, cbdata, wherefrom,
+   status = cw->dll_CPXgetcallbackinfo (env, cbdata, wherefrom,
                                 CPX_CALLBACK_INFO_MIP_FEAS, &hasincumbent);
    if ( status )  goto TERMINATE;
 
    if ( hasincumbent ) {
-      status = CPXgetcallbackinfo (env, cbdata, wherefrom,
+      status = cw->dll_CPXgetcallbackinfo (env, cbdata, wherefrom,
                                    CPX_CALLBACK_INFO_BEST_INTEGER, &objVal);
       if ( status )  goto TERMINATE;
       
@@ -281,30 +560,33 @@ solcallback (CPXCENVptr env, void *cbdata, int wherefrom, void *cbhandle)
 //       double walltime;
 //       double dettime;
 
-      status = CPXgetcallbackinfo (env, cbdata, wherefrom,
+      status = cw->dll_CPXgetcallbackinfo (env, cbdata, wherefrom,
                                    CPX_CALLBACK_INFO_BEST_REMAINING, &info->pOutput->bestBound);
 //       if ( status )  goto TERMINATE;
 
-//       status = CPXgettime (env, &walltime);
+//       status = dll_CPXgettime (env, &walltime);
 //       if ( status )  goto TERMINATE;
 // 
-//       status = CPXgetdettime (env, &dettime);
+//       status = dll_CPXgetdettime (env, &dettime);
 //       if ( status )  goto TERMINATE;
 // 
 //    }
 
    if ( newincumbent ) {
       assert(info->pOutput->x);
-      status = CPXgetcallbackincumbent (env, cbdata, wherefrom,
+      status = cw->dll_CPXgetcallbackincumbent (env, cbdata, wherefrom,
                                         (double*)info->pOutput->x,
                                         0, info->pOutput->nCols-1);
       if ( status )  goto TERMINATE;
 
-      info->pOutput->dCPUTime = -1;
+      info->pOutput->dWallTime = std::chrono::duration<double>(
+         std::chrono::steady_clock::now() - info->pOutput->dWallTime0).count();
+      info->pOutput->dCPUTime = double(std::clock() - info->pOutput->cCPUTime0) / CLOCKS_PER_SEC;
 
       /// Call the user function:
       if (info->solcbfn)
           (*info->solcbfn)(*info->pOutput, info->ppp);
+     info->printed = true;
    }
    
 
@@ -345,11 +627,11 @@ typedef struct cutinfo CUTINFO, *CUTINFOptr;
 /* Init information on the node objval for the user cut callback */
 
 static void 
-initnodeobjvalinfo (CPXENVptr env, CPXLPptr lp, CUTINFOptr cutinfo)
+initnodeobjvalinfo (MIP_cplex_wrapper* cw, CPXENVptr env, CPXLPptr lp, CUTINFOptr cutinfo)
 {
    cutinfo->nodeid = -1;
    cutinfo->nodeobjval = 0.0;
-   cutinfo->objsen = CPXgetobjsen (env, lp);
+   cutinfo->objsen = cw->dll_CPXgetobjsen (env, lp);
    if ( cutinfo->objsen == CPX_MIN )
       cutinfo->objsen = 1;
    else
@@ -369,8 +651,8 @@ myusercutcallback (CPXCENVptr env,
 
    CUTINFOptr cutinfo = (CUTINFOptr) cbhandle;
 
-   int      numcols  = cutinfo->numcols;
-   int      numcuts  = cutinfo->num;
+//   int      numcols  = cutinfo->numcols;
+//   int      numcuts  = cutinfo->num;
 //    double   *x       = cutinfo->x;
 //    int      *beg     = cutinfo->beg;
 //    int      *ind     = cutinfo->ind;
@@ -378,10 +660,11 @@ myusercutcallback (CPXCENVptr env,
 //    double   *rhs     = cutinfo->rhs;
 //    int      *cutind  = NULL;
 //    double   *cutval  = NULL;
-   double   cutvio;
+//   double   cutvio;
    int      addedcuts = 0;
-   int      i, j, k, cutnz;
+//   int      i, j, k; //, cutnz;
    MIP_wrapper::CBUserInfo *info = cutinfo->info;
+   MIP_cplex_wrapper* cw = static_cast<MIP_cplex_wrapper*>(info->wrapper);
 //    double   *x       = info->pCutOutput->x;
 
    *useraction_p = CPX_CALLBACK_DEFAULT; 
@@ -411,7 +694,7 @@ myusercutcallback (CPXCENVptr env,
    
       /* Retrieve nodeid and node objval of the current node */
 
-      status = CPXgetcallbacknodeinfo (env, cbdata, wherefrom, 0,
+      status = cw->dll_CPXgetcallbacknodeinfo (env, cbdata, wherefrom, 0,
                                        CPX_CALLBACK_INFO_NODE_SEQNUM,
                                        &cutinfo->nodeid);
       if ( status ) {
@@ -419,7 +702,7 @@ myusercutcallback (CPXCENVptr env,
          goto TERMINATE;
       }
 
-      status = CPXgetcallbacknodeinfo (env, cbdata, wherefrom, 0,
+      status = cw->dll_CPXgetcallbacknodeinfo (env, cbdata, wherefrom, 0,
                                        CPX_CALLBACK_INFO_NODE_OBJVAL,
                                        &cutinfo->nodeobjval);
       if ( status ) {
@@ -455,7 +738,7 @@ myusercutcallback (CPXCENVptr env,
       outpRlx.x = info->pOutput->x;  // using the sol output storage  TODO?
       outpRlx.nCols = info->pOutput->nCols;
       assert( outpRlx.x && outpRlx.nCols );
-      status = CPXgetcallbacknodex (env, cbdata, wherefrom, (double*)outpRlx.x,
+      status = cw->dll_CPXgetcallbacknodex (env, cbdata, wherefrom, (double*)outpRlx.x,
                                     0, outpRlx.nCols-1); 
       if ( status ) {
           fprintf(stderr, "Cut callback: failed to get node solution.\n");
@@ -472,7 +755,7 @@ myusercutcallback (CPXCENVptr env,
           (MIP_wrapper::MaskConsType_Usercut|MIP_wrapper::MaskConsType_Lazy) );
         /* Use a cut violation tolerance of 0.01 */
         if ( true ) {  //cutvio > 0.01 ) { 
-          status = CPXcutcallbackadd (env, cbdata, wherefrom,
+          status = cw->dll_CPXcutcallbackadd (env, cbdata, wherefrom,
                        cd.rmatind.size(), cd.rhs, getCPLEXConstrSense(cd.sense),
                                       cd.rmatind.data(), cd.rmatval.data(),
                                       CPX_USECUT_PURGE);
@@ -506,7 +789,7 @@ MIP_cplex_wrapper::Status MIP_cplex_wrapper::convertStatus(int cplexStatus)
    switch(cplexStatus) {
      case CPXMIP_OPTIMAL:
        s = Status::OPT;
-       wrap_assert(CPXgetsolnpoolnumsolns(env, lp), "Optimality reported but pool empty?", false);
+       wrap_assert(dll_CPXgetsolnpoolnumsolns(env, lp), "Optimality reported but pool empty?", false);
        break;
      case CPXMIP_INFEASIBLE:
        s = Status::UNSAT;
@@ -523,7 +806,7 @@ MIP_cplex_wrapper::Status MIP_cplex_wrapper::convertStatus(int cplexStatus)
      case CPXMIP_ABORT_FEAS:
      case CPXMIP_FAIL_FEAS_NO_TREE:
        s = Status::SAT;
-       wrap_assert(CPXgetsolnpoolnumsolns(env, lp), "Feasibility reported but pool empty?", false);
+       wrap_assert(dll_CPXgetsolnpoolnumsolns(env, lp), "Feasibility reported but pool empty?", false);
        break;
      case CPXMIP_UNBOUNDED:
        s = Status::UNBND;
@@ -535,7 +818,7 @@ MIP_cplex_wrapper::Status MIP_cplex_wrapper::convertStatus(int cplexStatus)
      default:
 //      case CPXMIP_OPTIMAL_TOL:
 //      case CPXMIP_ABORT_RELAXATION_UNBOUNDED:
-       if (CPXgetsolnpoolnumsolns (env, lp))
+       if (dll_CPXgetsolnpoolnumsolns (env, lp))
          s = Status::SAT;
        else
         s = Status::UNKNOWN;
@@ -551,34 +834,35 @@ void msgfunction(void *handle, const char *msg_string)
 void MIP_cplex_wrapper::solve() {  // Move into ancestor?
 
   /////////////// Last-minute solver options //////////////////
-  if ( flag_all_solutions && 0==nProbType )
+  if ( options->flag_all_solutions && 0==nProbType )
     cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
   // Before all manual params ???
-  if (sReadParams.size()) {
-    status = CPXreadcopyparam (env, sReadParams.c_str());
+  if (options->sReadParams.size()) {
+    status = dll_CPXreadcopyparam (env, options->sReadParams.c_str());
     wrap_assert(!status, "Failed to read CPLEX parameters.", false);
   }
-    
+  
   /* Turn on output to the screen */
    if (fVerbose) {
      CPXCHANNELptr chnl[4];
-     CPXgetchannels(env, &chnl[0], &chnl[1], &chnl[2], &chnl[3]);
+     dll_CPXgetchannels(env, &chnl[0], &chnl[1], &chnl[2], &chnl[3]);
      for (int i = 0; i < 3; ++i) {
-       status = CPXaddfuncdest(env, chnl[i], nullptr, msgfunction);
+       status = dll_CPXaddfuncdest(env, chnl[i], nullptr, msgfunction);
      }
-//     status = CPXsetintparam(env, CPXPARAM_ScreenOutput,
+//     status = dll_CPXsetintparam(env, CPXPARAM_ScreenOutput,
 //       fVerbose ? CPX_ON : CPX_OFF);  // also when flag_all_solutions?  TODO
 //     wrap_assert(!status, "  CPLEX Warning: Failure to switch screen indicator.", false);
    }
-   status = CPXsetintparam (env, CPXPARAM_MIP_Display,
+   status = dll_CPXsetintparam (env, CPXPARAM_MIP_Display,
                             fVerbose ? 2 : 0);  // also when flag_all_solutions?  TODO
    wrap_assert(!status, "  CPLEX Warning: Failure to switch logging.", false);
-   status =  CPXsetintparam (env, CPXPARAM_ClockType, 1);            // CPU time
-   wrap_assert(!status, "  CPLEX Warning: Failure to measure CPU time.", false);
-   status =  CPXsetintparam (env, CPX_PARAM_MIPCBREDLP, CPX_OFF);    // Access original model
+   /// Make it wall time by default, 12.8
+//    status =  dll_CPXsetintparam (env, CPXPARAM_ClockType, 1);            // CPU time
+//    wrap_assert(!status, "  CPLEX Warning: Failure to measure CPU time.", false);
+   status =  dll_CPXsetintparam (env, CPX_PARAM_MIPCBREDLP, CPX_OFF);    // Access original model
    wrap_assert(!status, "  CPLEX Warning: Failure to set access original model in callbacks.", false);
-   if (sExportModel.size()) {
-     status = CPXwriteprob (env, lp, sExportModel.c_str(), NULL);
+   if (options->sExportModel.size()) {
+     status = dll_CPXwriteprob (env, lp, options->sExportModel.c_str(), NULL);
      wrap_assert(!status, "Failed to write LP to disk.", false);
    }
 
@@ -588,35 +872,46 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
 //       _ilocplex->use(SolutionCallback(_iloenv, lastObjVal, *this));
       // Turn off CPLEX logging
 
-   if (nThreads>0) {
-     status =  CPXsetintparam (env, CPXPARAM_Threads, nThreads);
+   if (options->nThreads>0) {
+     status =  dll_CPXsetintparam (env, CPXPARAM_Threads, options->nThreads);
      wrap_assert(!status, "Failed to set CPXPARAM_Threads.", false);
    }
 
-    if (nTimeout>0) {
-     status =  CPXsetdblparam (env, CPXPARAM_TimeLimit, nTimeout);
+   if (options->nTimeout>0) {
+     status =  dll_CPXsetdblparam (env, CPXPARAM_TimeLimit, static_cast<double>(options->nTimeout)/1000.0);
      wrap_assert(!status, "Failed to set CPXPARAM_TimeLimit.", false);
+   }
+   if (options->nSolLimit>0) {
+     status =  dll_CPXsetintparam (env, CPXPARAM_MIP_Limits_Solutions, options->nSolLimit);
+     wrap_assert(!status, "Failed to set CPXPARAM_MIP_Limits_Solutions.", false);
+   }
+   if (options->nMIPFocus>0) {
+     status =  dll_CPXsetintparam (env, CPXPARAM_Emphasis_MIP, options->nMIPFocus);
+     wrap_assert(!status, "Failed to set CPXPARAM_Emphasis_MIP.", false);
+   }
+   
+    
+    if (options->nWorkMemLimit>0) {
+     status =  dll_CPXsetintparam (env, CPXPARAM_MIP_Strategy_File, 3);
+     wrap_assert(!status, "Failed to set CPXPARAM_MIP_Strategy_File.", false);
+     status =  dll_CPXsetdblparam (env, CPXPARAM_WorkMem, 1024.0 * options->nWorkMemLimit);   // MB in CPLEX
+     wrap_assert(!status, "Failed to set CPXPARAM_WorkMem.", false);
     }
 
-    if (nWorkMemLimit>0) {
-     status =  CPXsetdblparam (env, CPXPARAM_MIP_Limits_TreeMemory, nWorkMemLimit);
-     wrap_assert(!status, "Failed to set CPXPARAM_MIP_Limits_TreeMemory.", false);
-    }
-
-   if ( absGap>=0.0 ) {
-    status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_AbsMIPGap, absGap);
+   if ( options->absGap>=0.0 ) {
+    status =  dll_CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_AbsMIPGap, options->absGap);
     wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_AbsMIPGap.", false);
    }
-   if (relGap>=0.0) {
-    status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_MIPGap, relGap);
+   if (options->relGap>=0.0) {
+    status =  dll_CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_MIPGap, options->relGap);
     wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_MIPGap.", false);
    }
-   if (intTol>=0.0) {
-    status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_Integrality, intTol);
+   if (options->intTol>=0.0) {
+    status =  dll_CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_Integrality, options->intTol);
     wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_Integrality.", false);
    }
 
-//    status =  CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_ObjDifference, objDiff);
+//    status =  dll_CPXsetdblparam (env, CPXPARAM_MIP_Tolerances_ObjDifference, objDiff);
 //    wrap_assert(!status, "Failed to set CPXPARAM_MIP_Tolerances_ObjDifference.", false);
 
     
@@ -624,8 +919,8 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
    output.nCols = colObj.size();
    x.resize(output.nCols);
    output.x = &x[0];
-   if (flag_all_solutions && cbui.solcbfn) {
-      status = CPXsetinfocallbackfunc (env, solcallback, &cbui);
+   if (options->flag_all_solutions && cbui.solcbfn) {
+      status = dll_CPXsetinfocallbackfunc (env, solcallback, &cbui);
       wrap_assert(!status, "Failed to set solution callback", false);
    }
   if ( cbui.cutcbfn ) {
@@ -637,23 +932,23 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
       CUTINFO usercutinfo;  // THREADS?  TODO
       usercutinfo.info = &cbui;
       /* Init information on the node objval for the user cut callback */
-      initnodeobjvalinfo (env, lp, &usercutinfo);
+      initnodeobjvalinfo (this, env, lp, &usercutinfo);
       /* Assure linear mappings between the presolved and original
           models */
-      status = CPXsetintparam (env, CPXPARAM_Preprocessing_Linear, 0);
+      status = dll_CPXsetintparam (env, CPXPARAM_Preprocessing_Linear, 0);
       wrap_assert ( !status, "CPLEX: setting prepro_linear" );
       /* Turn on traditional search for use with control callbacks */
-      status = CPXsetintparam (env, CPXPARAM_MIP_Strategy_Search,
+      status = dll_CPXsetintparam (env, CPXPARAM_MIP_Strategy_Search,
                                 CPX_MIPSEARCH_TRADITIONAL);
       wrap_assert ( !status, "CPLEX: setting traditional search" );
       /* Let MIP callbacks work on the original model */
-      status = CPXsetintparam (env, CPXPARAM_MIP_Strategy_CallbackReducedLP,
+      status = dll_CPXsetintparam (env, CPXPARAM_MIP_Strategy_CallbackReducedLP,
                                 CPX_OFF);
       wrap_assert ( !status, "CPLEX: setting callbacks to work on orig model" );
       /// And
       /* Set up to use MIP usercut callback */
 
-      status = CPXsetusercutcallbackfunc (env, myusercutcallback, &usercutinfo);
+      status = dll_CPXsetusercutcallbackfunc (env, myusercutcallback, &usercutinfo);
       wrap_assert ( !status, "CPLEX: setting user cut callback" );
     }
     if ( cbui.cutMask & MaskConsType_Lazy ) {
@@ -663,52 +958,57 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
           No need to initialize the information on the node objval,
           for the lazy constraint callback, because those information are
           used only in the user cut callback. */
-      initnodeobjvalinfo (env, lp, &lazyconinfo);
+      initnodeobjvalinfo (this, env, lp, &lazyconinfo);
       /* Assure linear mappings between the presolved and original
           models */
-      status = CPXsetintparam (env, CPXPARAM_Preprocessing_Linear, 0);
+      status = dll_CPXsetintparam (env, CPXPARAM_Preprocessing_Linear, 0);
       wrap_assert ( !status, "CPLEX: setting prepro_linear" );
       /* Turn on traditional search for use with control callbacks */
-//       status = CPXsetintparam (env, CPXPARAM_MIP_Strategy_Search,
+//       status = dll_CPXsetintparam (env, CPXPARAM_MIP_Strategy_Search,
 //                                 CPX_MIPSEARCH_TRADITIONAL);
 //       wrap_assert ( !status, "CPLEX: setting traditional search" );
       /* Let MIP callbacks work on the original model */
-      status = CPXsetintparam (env, CPXPARAM_MIP_Strategy_CallbackReducedLP,
+      status = dll_CPXsetintparam (env, CPXPARAM_MIP_Strategy_CallbackReducedLP,
                                 CPX_OFF);
       wrap_assert ( !status, "CPLEX: setting callbacks to work on orig model" );
       /* Set up to use MIP lazyconstraint callback. The callback funtion
         * registered is the same, but the data will be different. */
 
-      status = CPXsetlazyconstraintcallbackfunc (env, myusercutcallback, &lazyconinfo);
+      status = dll_CPXsetlazyconstraintcallbackfunc (env, myusercutcallback, &lazyconinfo);
       wrap_assert ( !status, "CPLEX: setting lazy cut callback" );
     }
   }
 
   /// after all modifs
-    if (sWriteParams.size()) {
-     status = CPXwriteparam (env, sWriteParams.c_str());
+    if (options->sWriteParams.size()) {
+     status = dll_CPXwriteparam (env, options->sWriteParams.c_str());
      wrap_assert(!status, "Failed to write CPLEX parameters.", false);
     }
     
-   status = CPXgettime (env, &output.dCPUTime);
-   wrap_assert(!status, "Failed to get time stamp.", false);
+   // status = dll_CPXgettime (env, &output.dCPUTime);
+   // wrap_assert(!status, "Failed to get time stamp.", false);
+   cbui.pOutput->dWallTime0 = output.dWallTime0 =
+     std::chrono::steady_clock::now();
+   cbui.pOutput->cCPUTime0 = std::clock();
 
    /* Optimize the problem and obtain solution. */
-   status = CPXmipopt (env, lp);
+   status = dll_CPXmipopt (env, lp);
    wrap_assert( !status,  "Failed to optimize MIP." );
 
-   double tmNow;
-   status = CPXgettime (env, &tmNow);
+   output.dWallTime = std::chrono::duration<double>(
+     std::chrono::steady_clock::now() - output.dWallTime0).count();
+   double tmNow = std::clock();
+   // status = dll_CPXgettime (env, &tmNow);   Buggy in 12.7.1.0
    wrap_assert(!status, "Failed to get time stamp.", false);
-   output.dCPUTime = tmNow - output.dCPUTime;
+   output.dCPUTime = (tmNow - cbui.pOutput->cCPUTime0) / CLOCKS_PER_SEC;
 
-   int solstat = CPXgetstat (env, lp);
+   int solstat = dll_CPXgetstat (env, lp);
    output.status = convertStatus(solstat);
-   output.statusName = CPXgetstatstring (env, solstat, cplex_status_buffer);
+   output.statusName = dll_CPXgetstatstring (env, solstat, cplex_status_buffer);
 
    /// Continuing to fill the output object:
    if (Status::OPT == output.status || Status::SAT ==output.status) {
-      status = CPXgetobjval (env, lp, &output.objVal);
+      status = dll_CPXgetobjval (env, lp, &output.objVal);
       wrap_assert( !status, "No MIP objective value available." );
 
       /* The size of the problem should be obtained by asking CPLEX what
@@ -716,25 +1016,29 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
           cur_numrows and cur_numcols store the current number of rows and
           columns, respectively.  */   // ?????????????? TODO
 
-    //    int cur_numrows = CPXgetnumrows (env, lp);
-      int cur_numcols = CPXgetnumcols (env, lp);
+    //    int cur_numrows = dll_CPXgetnumrows (env, lp);
+      int cur_numcols = dll_CPXgetnumcols (env, lp);
       assert(cur_numcols == colObj.size());
       
       x.resize(cur_numcols);
       output.x = &x[0];
-      status = CPXgetx (env, lp, &x[0], 0, cur_numcols-1);
+      status = dll_CPXgetx (env, lp, &x[0], 0, cur_numcols-1);
       wrap_assert(!status, "Failed to get variable values.");
+      if (cbui.solcbfn && (!options->flag_all_solutions || !cbui.printed)) {
+        cbui.solcbfn(output, cbui.ppp);
+      }
    }
    output.bestBound = 1e308;
-   status = CPXgetbestobjval (env, lp, &output.bestBound);
+   status = dll_CPXgetbestobjval (env, lp, &output.bestBound);
    wrap_assert(!status, "Failed to get the best bound.", false);
-   output.nNodes = CPXgetnodecnt (env, lp);
-   output.nOpenNodes = CPXgetnodeleftcnt (env, lp);
+   output.nNodes = dll_CPXgetnodecnt (env, lp);
+   output.nOpenNodes = dll_CPXgetnodeleftcnt (env, lp);
 }
 
 void MIP_cplex_wrapper::setObjSense(int s)
 {
-  status = CPXchgobjsen (env, lp, -s);  // +1 for min in CPLEX
+  status = dll_CPXchgobjsen (env, lp, -s);  // +1 for min in CPLEX
   wrap_assert(!status, "Failed to set obj sense.");
 }
+
 

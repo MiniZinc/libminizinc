@@ -69,10 +69,7 @@ namespace MiniZinc {
   
   Location
   JSONParser::errLocation(void) const {
-    Location loc;
-    loc.filename = filename;
-    loc.first_line = line;
-    loc.first_column = column;
+    Location loc(filename,line,column,line,column);
     return loc;
   }
   
@@ -80,7 +77,7 @@ namespace MiniZinc {
   JSONParser::readToken(istream& is) {
     string result;
     char buf[1];
-    enum { S_NOTHING, S_STRING, S_INT, S_FLOAT } state;
+    enum { S_NOTHING, S_STRING, S_STRING_ESCAPE, S_INT, S_FLOAT } state;
     state = S_NOTHING;
     while (is.good()) {
       is.read(buf, sizeof(buf));
@@ -98,6 +95,7 @@ namespace MiniZinc {
               // fall through
             case ' ':
             case '\t':
+            case '\r':
               break;
             case '[': return Token::listOpen();
             case ']': return Token::listClose();
@@ -114,7 +112,7 @@ namespace MiniZinc {
               char rest[3];
               is.read(rest,sizeof(rest));
               column += sizeof(rest);
-              if (!is.good() || rest != string("rue"))
+              if (!is.good() || std::strncmp(rest, "rue", 3) != 0)
                 throw JSONError(env,errLocation(),"unexpected token `"+string(rest)+"'");
               state = S_NOTHING;
               return Token(true);
@@ -125,28 +123,42 @@ namespace MiniZinc {
               char rest[4];
               is.read(rest,sizeof(rest));
               column += sizeof(rest);
-              if (!is.good() || rest != string("alse"))
-                throw JSONError(env,errLocation(),"unexpected token "+string(rest));
+              if (!is.good() || std::strncmp(rest, "alse", 4) != 0)
+                throw JSONError(env,errLocation(),"unexpected token `"+string(rest)+"'");
               state = S_NOTHING;
               return Token(false);
             }
               break;
             default:
-              if (buf[0]>='0' && buf[0]<='9') {
-                result = buf;
+              if ( (buf[0]>='0' && buf[0]<='9') || (buf[0]=='-') ) {
+                result = buf[0];
                 state=S_INT;
               } else {
-                throw JSONError(env,errLocation(),"unexpected token "+string(buf));
+                throw JSONError(env,errLocation(),"unexpected token `"+string(1,buf[0])+"'");
               }
               break;
           }
+          break;
+        case S_STRING_ESCAPE:
+          switch (buf[0]) {
+            case 'n': result += "\n"; break;
+            case 't': result += "\t"; break;
+            case '"': result += "\""; break;
+            case '\\': result += "\\"; break;
+            default: result += "\\"; result += buf[0]; break;
+          }
+          state = S_STRING;
           break;
         case S_STRING:
           if (buf[0]=='"') {
             state=S_NOTHING;
             return Token(result);
           }
-          result += buf[0];
+          if (buf[0]=='\\') {
+            state=S_STRING_ESCAPE;
+          } else {
+            result += buf[0];
+          }
           break;
         case S_INT:
           if (buf[0]=='.') {
@@ -177,7 +189,7 @@ namespace MiniZinc {
           break;
       }
     }
-    throw JSONError(env,errLocation(),"unexpected token "+string(result));
+    throw JSONError(env,errLocation(),"unexpected token `"+string(result)+"'");
   }
   
   void JSONParser::expectToken(istream& is, JSONParser::TokenT t) {
@@ -255,7 +267,7 @@ namespace MiniZinc {
         break;
       case T_FLOAT:
         for (unsigned int i=0; i<elems.size(); i++) {
-          elems_e[i] = new FloatLit(Location().introduce(),elems[i].d);
+          elems_e[i] = FloatLit::a(elems[i].d);
         }
         break;
       case T_STRING:
@@ -285,7 +297,7 @@ namespace MiniZinc {
       dims.push_back(make_pair(1, 0));
       hadDim.push_back(false);
     }
-    int curDim = dims.size()-1;
+    int curDim = static_cast<int>(dims.size())-1;
     for (;;) {
       switch (next.t) {
         case T_LIST_CLOSE:
@@ -307,7 +319,7 @@ namespace MiniZinc {
           exps.push_back(IntLit::a(next.i));
           break;
         case T_FLOAT:
-          exps.push_back(new FloatLit(Location().introduce(),next.d));
+          exps.push_back(FloatLit::a(next.d));
           break;
         case T_STRING:
           exps.push_back(new StringLit(Location().introduce(),next.s));
@@ -336,7 +348,7 @@ namespace MiniZinc {
         return IntLit::a(next.i);
         break;
       case T_FLOAT:
-        return new FloatLit(Location().introduce(),next.d);
+        return FloatLit::a(next.d);
       case T_STRING:
         return new StringLit(Location().introduce(),next.s);
       case T_BOOL:
@@ -352,15 +364,9 @@ namespace MiniZinc {
   }
   
   void
-  JSONParser::parse(Model* m, std::string filename0) {
-    filename = filename0;
-    ifstream is;
-    is.open(filename, ios::in);
+  JSONParser::parse(Model* m, std::istream& is) {
     line = 0;
     column = 0;
-    if (!is.good()) {
-      throw JSONError(env,Location().introduce(),"cannot open file "+filename);
-    }
     expectToken(is, T_OBJ_OPEN);
     for (;;) {
       string ident = expectString(is);
@@ -377,5 +383,48 @@ namespace MiniZinc {
         throw JSONError(env,errLocation(),"cannot parse JSON file");
     }
   }
+
+  void
+  JSONParser::parse(Model* m, const std::string& filename0) {
+    filename = filename0;
+    ifstream is;
+    is.open(filename, ios::in);
+    if (!is.good()) {
+      throw JSONError(env,Location().introduce(),"cannot open file "+filename);
+    }
+    parse(m,is);
+  }
   
+  void
+  JSONParser::parseFromString(Model* m, const std::string& data) {
+    istringstream iss(data);
+    line = 0;
+    column = 0;
+    parse(m, iss);
+  }
+  
+  namespace {
+    bool isJSON(std::istream& is) {
+      while (is.good()) {
+        char c = is.get();
+        if (c=='{')
+          return true;
+        if (c!=' ' && c!='\n' && c!='\t' && c!='\r')
+          return false;
+      }
+      return false;
+    }
+  }
+  
+  bool JSONParser::stringIsJSON(const std::string& data) {
+    std::istringstream iss(data);
+    return isJSON(iss);
+  }
+
+  bool JSONParser::fileIsJSON(const std::string& filename) {
+    ifstream is;
+    is.open(filename, ios::in);
+    return isJSON(is);
+  }
+
 }

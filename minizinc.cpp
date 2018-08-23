@@ -22,97 +22,56 @@
 #include <fstream>
 #include <iomanip>
 #include <cstdlib>
+#include <ctime>
+#include <chrono>
+#include <ratio>
 
 #include <minizinc/solver.hh>
-
-#ifdef FLATTEN_ONLY
-#define IS_MZN2FZN true
-#else
-#define IS_MZN2FZN false
-#endif
 
 using namespace std;
 using namespace MiniZinc;
 
-
 int main(int argc, const char** argv) {
-
-  /// Initializing specified solver factories
-  /// Gecode has to be 1st for multi-pass
-#ifdef HAS_GECODE
-  static unique_ptr<SolverFactory>
-    pFactoryGECODE( SolverFactory::createF_GECODE() );
-#endif
-#ifdef HAS_FZN
-  static unique_ptr<SolverFactory>
-    pFactoryFZN( SolverFactory::createF_FZN() );
-#endif
-#ifdef HAS_CHUFFED
-  static unique_ptr<SolverFactory>
-    pFactoryCHUFFED( SolverFactory::createF_CHUFFED() );
-#endif
-#ifdef HAS_MIP
-  static unique_ptr<SolverFactory>
-    pFactoryMIP( SolverFactory::createF_MIP() );
-#endif
-
-  clock_t starttime = std::clock(), endTime;
+  Timer starttime;
   bool fSuccess = false;
-  
-  MznSolver slv(IS_MZN2FZN);
+
   try {
-    
-    slv.addFlattener();
-    if (!slv.processOptions(argc, argv, cerr)) {
-      slv.printHelp(cerr);
-      exit(EXIT_FAILURE);
+    MznSolver slv(std::cout,std::cerr);
+    try {
+      std::vector<std::string> args(argc-1);
+      for (int i=1; i<argc; i++)
+        args[i-1] = argv[i];
+      fSuccess = (slv.run(args,"",argv[0]) != SolverInstance::ERROR);
+    } catch (const LocationException& e) {
+      if (slv.get_flag_verbose())
+        std::cerr << std::endl;
+      std::cerr << e.loc() << ":" << std::endl;
+      std::cerr << e.what() << ": " << e.msg() << std::endl;
+    } catch (const Exception& e) {
+      if (slv.get_flag_verbose())
+        std::cerr << std::endl;
+      std::string what = e.what();
+      std::cerr << what << (what.empty() ? "" : ": ") << e.msg() << std::endl;
     }
-    slv.flatten();
+    catch (const exception& e) {
+      if (slv.get_flag_verbose())
+        std::cerr << std::endl;
+      std::cerr << e.what() << std::endl;
+    }
+    catch (...) {
+      if (slv.get_flag_verbose())
+        std::cerr << std::endl;
+      std::cerr << "  UNKNOWN EXCEPTION." << std::endl;
+    }
     
-    if (SolverInstance::UNKNOWN == slv.getFlt()->status)
-    {
-      fSuccess = true;
-      if ( !slv.ifMzn2Fzn() ) {          // only then
-        GCLock lock;
-        slv.addSolverInterface();
-        slv.solve();
-      }
-    } else {
-      fSuccess = (SolverInstance::ERROR != slv.getFlt()->status);
-      if ( !slv.ifMzn2Fzn() )
-        slv.s2out.evalStatus( slv.getFlt()->status );
-    }                                   //  Add evalOutput() here?   TODO
-  } catch (const LocationException& e) {
-    if (slv.get_flag_verbose())
-      std::cerr << std::endl;
-    std::cerr << e.loc() << ":" << std::endl;
-    std::cerr << e.what() << ": " << e.msg() << std::endl;
-    slv.s2out.evalStatus( SolverInstance::ERROR );
-  } catch (const Exception& e) {
-    if (slv.get_flag_verbose())
-      std::cerr << std::endl;
-    std::cerr << e.what() << ": " << e.msg() << std::endl;
-    slv.s2out.evalStatus( SolverInstance::ERROR );
-  }
-  catch (const exception& e) {
-    if (slv.get_flag_verbose())
-      std::cerr << std::endl;
-    std::cerr << e.what() << std::endl;
-    slv.s2out.evalStatus( SolverInstance::ERROR );
-  }
-  catch (...) {
-    if (slv.get_flag_verbose())
-      std::cerr << std::endl;
-    std::cerr << "  UNKNOWN EXCEPTION." << std::endl;
-    slv.s2out.evalStatus( SolverInstance::ERROR );
-  }
-  
-  if ( !slv.ifMzn2Fzn() ) {
-    endTime = clock();
     if (slv.get_flag_verbose()) {
       std::cerr << "   Done (";
-      cerr << "overall time " << timeDiff(endTime, starttime) << ")." << std::endl;
+      cerr << "overall time " << starttime.stoptime() << ")." << std::endl;
     }
+    return !fSuccess;
+  } catch (const Exception& e) {
+    std::string what = e.what();
+    std::cerr << what << (what.empty() ? "" : ": ") << e.msg() << std::endl;
+    std::exit(EXIT_FAILURE);
   }
-  return !fSuccess;
 }   // int main()

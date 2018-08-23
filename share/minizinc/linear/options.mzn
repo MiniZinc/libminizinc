@@ -6,6 +6,11 @@
 %-----------------------------------------------------------------------------%
 %---------- USER and LAZY CUTS -----------------------------------------------%
 /*
+   PLEASE NOTE:
+   If you export FZN file with lazy_constraint/user_cut annotations,
+   their declarations are not exported currently (as of 7.11.17).
+   WORKAROUND: when solving that fzn, add -G linear,
+   e.g., as follows: mzn-cplex -G linear model.fzn
  * For Gurobi, the constraints marked as MIP_cut and/or MIP_lazy are added
  * into the overall model and marked with the foll values of Lazy attribute:
  *   ::MIP_lazy             1
@@ -21,8 +26,11 @@ ann: MIP_cut = user_cut;         %% MIP_cut: make sure no feasible solutions are
 ann: MIP_lazy = lazy_constraint;
 
 %-----------------------------------------------------------------------------%
-bool: fMZN__UseIndicators=false;    %% Pass on indicator constraints, CPLEX only.  [DISABLED]
-    %% Reifs give wrong result on 2012/amaze, so using implications only
+opt bool: fIndConstr;
+bool: fMZN__UseIndicators =    %% Pass on indicator constraints
+           if absent( fIndConstr ) then false
+           else deopt( fIndConstr ) endif;
+    %% CPLEX 12.6.2 Concert: reifs give wrong result on 2012/amaze, so using implications only
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% MIPdomains %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --------------------------------------------------------------------------------------- %
@@ -54,6 +62,9 @@ opt bool: fAvoidNewInts;
 bool: fAvoidNI =                  %% Actually this is only for ..._lin_..., not for just x-y
            if absent( fAvoidNewInts ) then false
            else deopt( fAvoidNewInts ) endif;
+opt bool: fNewVarsInAuxEq;
+bool: fAuxIntEqOLD00 = if absent(fNewVarsInAuxEq) then false else deopt(fNewVarsInAuxEq) endif;
+bool: fAuxFloatEqOLD00 = if absent(fNewVarsInAuxEq) then false else deopt(fNewVarsInAuxEq) endif;
 
 %%%%%%%%%%%%%%%%%%%%%  Redundant constraints ---------------------------------------------- %
 bool: fMZN__IgnoreRedundantCumulative=false;
@@ -94,7 +105,13 @@ int: nMZN__UnaryLenMax_setInReif = nMZN__UnaryLenMax__ALL;
 %-----------------------------------------------------------------------------%
 % Strict inequality
 % The relative epsilon
-float: float_lt_EPS_coef__ = 1e-04;
+%%% Has the problem that when relating to upper bound of various differences,
+%%% getting different absolute eps...?
+%% float: float_lt_EPS_coef__ = 1e-03; ABANDONED 12.4.18 due to #207
+%%% Absolute one, used everywhere
+%%% Might make no sense for floats with smaller domains etc.
+opt float: float_EPS;
+float: float_lt_EPS = if absent( float_EPS ) then 1e-6 else deopt( float_EPS ) endif;
 
 %-----------------------------------------------------------------------------%
 %%% Set =true to PRINT TRACING messages for some constraints:

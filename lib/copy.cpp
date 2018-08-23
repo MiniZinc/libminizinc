@@ -15,7 +15,7 @@
 namespace MiniZinc {
 
   void CopyMap::insert(Expression* e0, Expression* e1) {
-    if (!e0->isUnboxedInt() && !e1->isUnboxedInt())
+    if (!e0->isUnboxedVal() && !e1->isUnboxedVal())
       node_m.insert(e0,e1);
   }
   Expression* CopyMap::find(Expression* e) {
@@ -55,24 +55,7 @@ namespace MiniZinc {
   }
 
   Location copy_location(CopyMap& m, const Location& _loc) {
-    Location loc;
-    loc.first_line = _loc.first_line;
-    loc.first_column = _loc.first_column;
-    loc.last_line = _loc.last_line;
-    loc.last_column = _loc.last_column;
-    loc.is_introduced = _loc.is_introduced;
-    if (_loc.filename != "") {
-      if (ASTStringO* f = m.find(ASTString(_loc.filename))) {
-        loc.filename = ASTString(f);
-      } else {
-        ASTString fn(_loc.filename.str());
-        m.insert(ASTString(_loc.filename), fn);
-        loc.filename = fn;
-      }
-    } else {
-      loc.filename = ASTString();
-    }
-    return loc;
+    return _loc;
   }
   Location copy_location(CopyMap& m, Expression* e) {
     return copy_location(m,e->loc());
@@ -98,8 +81,7 @@ namespace MiniZinc {
       break;
     case Expression::E_FLOATLIT:
       {
-        FloatLit* c = new FloatLit(copy_location(m,e),
-                                   e->cast<FloatLit>()->v());
+        FloatLit* c = FloatLit::a(e->cast<FloatLit>()->v());
         m.insert(e,c);
         ret = c;
       }
@@ -237,26 +219,40 @@ namespace MiniZinc {
       {
         ArrayLit* al = e->cast<ArrayLit>();
         std::vector<std::pair<int,int> > dims(al->dims());
-        for (unsigned int i=al->dims(); i--;) {
+        for (unsigned int i=0; i<dims.size(); i++) {
           dims[i].first = al->min(i);
           dims[i].second = al->max(i);
         }
-        ArrayLit* c = new ArrayLit(copy_location(m,e),std::vector<Expression*>(),dims);
-        m.insert(e,c);
-
-        ASTExprVecO<Expression*>* v;
-        if (ASTExprVecO<Expression*>* cv = m.find(al->v())) {
-          v = cv;
+        if (ArrayLit* sliceView = al->getSliceLiteral()) {
+          ASTIntVec dimsInternal = al->dimsInternal();
+          int sliceDims = sliceView->dims();
+          int dimsOffset = al->dims()*2;
+          std::vector<std::pair<int,int>> slice(sliceDims);
+          for (int i=0; i<sliceDims; i++) {
+            slice[i].first = dimsInternal[dimsOffset+i*2];
+            slice[i].second = dimsInternal[dimsOffset+i*2+1];
+          }
+          ArrayLit* c = new ArrayLit(copy_location(m,e),copy(env,m,sliceView,followIds,copyFundecls,isFlatModel)->cast<ArrayLit>(),dims,slice);
+          m.insert(e,c);
+          ret = c;
         } else {
-          std::vector<Expression*> elems(al->v().size());
-          for (unsigned int i=al->v().size(); i--;)
-            elems[i] = copy(env,m,al->v()[i],followIds,copyFundecls,isFlatModel);
-          ASTExprVec<Expression> ce(elems);
-          m.insert(al->v(),ce);
-          v = ce.vec();
+          ArrayLit* c = new ArrayLit(copy_location(m,e),std::vector<Expression*>(),dims);
+          m.insert(e,c);
+
+          ASTExprVecO<Expression*>* v;
+          if (ASTExprVecO<Expression*>* cv = m.find(al->getVec())) {
+            v = cv;
+          } else {
+            std::vector<Expression*> elems(al->size());
+            for (unsigned int i=al->size(); i--;)
+              elems[i] = copy(env,m,(*al)[i],followIds,copyFundecls,isFlatModel);
+            ASTExprVec<Expression> ce(elems);
+            m.insert(al->getVec(),ce);
+            v = ce.vec();
+          }
+          c->setVec(ASTExprVec<Expression>(v));
+          ret = c;
         }
-        c->v(ASTExprVec<Expression>(v));
-        ret = c;
       }
       break;
     case Expression::E_ARRAYACCESS:
@@ -289,12 +285,12 @@ namespace MiniZinc {
           new Comprehension(copy_location(m,e),NULL,g,c->set());
         m.insert(c,cc);
 
-        g._w = copy(env,m,c->where(),followIds,copyFundecls,isFlatModel);
         for (int i=0; i<c->n_generators(); i++) {
           std::vector<VarDecl*> vv;
           for (int j=0; j<c->n_decls(i); j++)
             vv.push_back(static_cast<VarDecl*>(copy(env,m,c->decl(i,j),followIds,copyFundecls,isFlatModel)));
-          g._g.push_back(Generator(vv,copy(env,m,c->in(i),followIds,copyFundecls,isFlatModel)));
+          g._g.push_back(Generator(vv,copy(env,m,c->in(i),followIds,copyFundecls,isFlatModel),
+                                   copy(env,m,c->where(i),followIds,copyFundecls,isFlatModel)));
         }
         cc->init(copy(env,m,c->e(),followIds,copyFundecls,isFlatModel),g);
         ret = cc;
@@ -345,16 +341,18 @@ namespace MiniZinc {
         }
         Call* c = new Call(copy_location(m,e),id_v,std::vector<Expression*>());
 
-        if (copyFundecls) {
-          c->decl(Item::cast<FunctionI>(copy(env,m,ca->decl())));
-        } else {
-          c->decl(ca->decl());
+        if (ca->decl()) {
+          if (copyFundecls) {
+            c->decl(Item::cast<FunctionI>(copy(env,m,ca->decl())));
+          } else {
+            c->decl(ca->decl());
+          }
         }
         
         m.insert(e,c);
-        std::vector<Expression*> args(ca->args().size());
-        for (unsigned int i=ca->args().size(); i--;)
-          args[i] = copy(env,m,ca->args()[i],followIds,copyFundecls,isFlatModel);
+        std::vector<Expression*> args(ca->n_args());
+        for (unsigned int i=static_cast<unsigned int>(args.size()); i--;)
+          args[i] = copy(env,m,ca->arg(i),followIds,copyFundecls,isFlatModel);
         c->args(args);
         ret = c;
       }
@@ -564,7 +562,7 @@ namespace MiniZinc {
 
     for (Model::FnMap::iterator it = m->fnmap.begin(); it != m->fnmap.end(); ++it) {
       for (unsigned int i=0; i<it->second.size(); i++)
-        c->registerFn(env,copy(env,cm,it->second[i],false,true,isFlatModel)->cast<FunctionI>());
+        c->registerFn(env,copy(env,cm,it->second[i].fi,false,true,isFlatModel)->cast<FunctionI>());
     }
     cm.insert(m,c);
     return c;

@@ -18,9 +18,29 @@
 #include <ctime>
 #include <limits>
 #include <iomanip>
+#include <cassert>
+#include <chrono>
+#include <ratio>
 
 #include <minizinc/timer.hh>
 #include <minizinc/exception.hh>
+
+#ifdef MZN_HAS_LLROUND
+#include <cmath>
+namespace MiniZinc {
+  inline
+  long long int round_to_longlong(double v) {
+    return ::llround(v);
+  }
+}
+#else
+namespace MiniZinc {
+  inline
+  long long int round_to_longlong(double v) {
+    return static_cast<long long int>(v < 0 ? v-0.5 : v+0.5);
+  }
+}
+#endif
 
 namespace MiniZinc {
   
@@ -40,26 +60,6 @@ namespace MiniZinc {
      std::ostringstream oss; oss << "not " << #c << ":  " << e; \
      throw InternalError( oss.str() ); } } while (0)
 
-  inline std::string stoptime(Timer& timer) {
-    std::ostringstream oss;
-    oss << std::setprecision(0) << std::fixed << timer.ms() << " ms";
-    return oss.str();
-  }
-  
-  inline std::string stoptime(clock_t& start) {
-    std::ostringstream oss;
-    clock_t now = clock();
-    oss << std::setprecision(0) << std::fixed << ((static_cast<double>(now-start) / CLOCKS_PER_SEC) * 1000.0) << " ms";
-    start = now;
-    return oss.str();
-  }
-
-  inline std::string timeDiff(clock_t t2, clock_t t1) {
-    std::ostringstream oss;
-    oss << std::setprecision(2) << std::fixed << ((static_cast<double>(t2-t1) / CLOCKS_PER_SEC)) << " s";
-    return oss.str();
-  }
-
   inline bool beginswith(std::string s, std::string t) {
     return s.compare(0, t.length(), t)==0;
   }
@@ -67,9 +67,15 @@ namespace MiniZinc {
   inline void checkIOStatus( bool fOk, std::string msg, bool fHard=1 )
   {
     if ( !fOk ) {
+#ifdef _MSC_VER
+      char errBuf[1024];
+      strerror_s(errBuf, sizeof(errBuf), errno);
+#else
+      char* errBuf = strerror(errno);
+#endif
       std::cerr << "\n  " << msg
-        << ":   " << strerror(errno) << "." << std::endl;
-      MZN_ASSERT_HARD_MSG ( !fHard, msg << ": " << strerror(errno) );
+        << ":   " << errBuf << "." << std::endl;
+      MZN_ASSERT_HARD_MSG ( !fHard, msg << ": " << errBuf );
     }
   }
   
@@ -82,12 +88,11 @@ namespace MiniZinc {
   /// A simple per-cmdline option parser
   class CLOParser {
     int& i;              // current item
-    const int argc=0;
-    const char* const* argv=0;
+    std::vector<std::string>& argv;
     
   public:
-    CLOParser( int& ii, const int ac, const char* const* av )
-      : i(ii), argc(ac), argv(av) { }
+    CLOParser( int& ii, std::vector<std::string>& av )
+      : i(ii), argv(av) { }
     template <class Value=int>
     inline bool get(  const char* names, // space-separated option list
                       Value* pResult=nullptr, // pointer to value storage
@@ -102,9 +107,8 @@ namespace MiniZinc {
                 ) {
       assert(0 == strchr(names, ','));
       assert(0 == strchr(names, ';'));
-      if( i>=argc )
+      if( i>=argv.size() )
         return false;
-      assert( argv[i] );
       std::string arg( argv[i] );
       /// Separate keywords
       std::string keyword;
@@ -114,16 +118,20 @@ namespace MiniZinc {
           (0!=arg.compare( 0, keyword.size(), keyword )) )           // truncated cmp
           continue;
         /// Process it
+        bool combinedArg = false; // whether arg and value are combined in one string (like -Ggecode)
         if ( keyword.size() < arg.size() ) {
           if ( 0==pResult )
             continue;
+          combinedArg = true;
           arg.erase( 0, keyword.size() );
         } else {
           if ( 0==pResult )
             return true;
           i++;
-          if( i>=argc )
+          if( i>=argv.size() ) {
+            --i;
             return fValueOptional;
+          }
           arg = argv[i];
         }
         assert( pResult );
@@ -132,7 +140,8 @@ namespace MiniZinc {
         std::istringstream iss( arg );
         Value tmp;
         if ( !( iss >> tmp ) ) {
-          --i;
+          if (!combinedArg)
+            --i;
           if ( fValueOptional ) {
             return true;
           }

@@ -21,7 +21,6 @@
 #include <gecode/set.hh>
 #endif
 
-#define GECODE_HAS_FLOAT_VARS
 #ifdef GECODE_HAS_FLOAT_VARS
 #include <gecode/float.hh>
 #endif
@@ -78,7 +77,7 @@ namespace MiniZinc {
     MiniZinc::SolveI::SolveType _solveType;
     
     /// copy constructor
-    FznSpace(bool share, FznSpace&);
+    FznSpace(FznSpace&);
     /// standard constructor
     FznSpace(void) : _optVarIsInt(true), _optVarIdx(-1), _copyAuxVars(true) {};
     ~FznSpace(void) {} 
@@ -86,7 +85,7 @@ namespace MiniZinc {
     /// get the index of the Boolean variable in bv; return -1 if not exists
     int getBoolAliasIndex(Gecode::BoolVar bvar) {
       for(unsigned int i=0; i<bv.size(); i++) {        
-        if(bv[i].same(bvar)) { 
+        if(bv[i].varimp()==bvar.varimp()) { 
           // std::cout << "DEBUG: settings bool alias of variable to index " << i << std::endl;
           return i;          
         }            
@@ -98,7 +97,7 @@ namespace MiniZinc {
     /// Implement optimization
     virtual void constrain(const Space& s);
     /// Copy function
-    virtual Gecode::Space* copy(bool share);
+    virtual Gecode::Space* copy(void);
   };
   
 }

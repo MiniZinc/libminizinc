@@ -10,6 +10,7 @@ lib/parser.tab.cpp
 core
 build/
 res/
+vendor/
 CMakeCache.txt
 CMakeFiles
 CMakeScripts
@@ -17,6 +18,7 @@ cmake_install.cmake
 install_manifest.txt
 libminizinc.build
 libminizinc.xcodeproj
+CMakeLists.txt.user
 *.bak
 *.out
 *.err

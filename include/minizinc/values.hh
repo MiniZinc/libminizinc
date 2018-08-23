@@ -14,14 +14,20 @@
 
 #include <minizinc/gc.hh>
 #include <minizinc/exception.hh>
-#include <minizinc/stl_map_set.hh>
-#include <minizinc/thirdparty/SafeInt3.hpp>
 #include <algorithm>
 #include <functional>
 #include <vector>
 #include <string>
-#include <limits.h>
+#include <limits>
 #include <cmath>
+
+#ifdef min
+  #undef min
+#endif
+#ifdef max
+  #undef max
+#endif
+
 
 namespace MiniZinc {
   class IntVal;
@@ -29,33 +35,6 @@ namespace MiniZinc {
 namespace std {
   MiniZinc::IntVal abs(const MiniZinc::IntVal& x);
 }
-
-#ifdef _MSC_VER
-#define MZN_NORETURN __declspec(noreturn)
-#define MZN_NORETURN_ATTR
-#else
-#define MZN_NORETURN
-#define MZN_NORETURN_ATTR __attribute__((__noreturn__))
-#endif
-
-namespace MiniZinc {
-  
-  class MiniZincSafeIntExceptionHandler
-  {
-  public:
-    static MZN_NORETURN void SafeIntOnOverflow() MZN_NORETURN_ATTR
-    {
-      throw ArithmeticError( "integer overflow" );
-    }
-    
-    static MZN_NORETURN void SafeIntOnDivZero() MZN_NORETURN_ATTR
-    {
-      throw ArithmeticError( "integer division by zero" );
-    }
-  };
-}
-
-#undef MZN_NORETURN
 
 namespace MiniZinc {
   
@@ -74,9 +53,53 @@ namespace MiniZinc {
     long long int _v;
     bool _infinity;
     IntVal(long long int v, bool infinity) : _v(v), _infinity(infinity) {}
-    typedef SafeInt<long long int, MiniZincSafeIntExceptionHandler> SI;
-    SI toSafeInt(void) const { return _v; }
-    IntVal(SI v) : _v(v), _infinity(false) {}
+    
+    static long long int safePlus(long long int x, long long int y) {
+      if (x < 0) {
+        if (y < std::numeric_limits<long long int>::min() - x)
+          throw ArithmeticError("integer overflow");
+      } else {
+        if (y > std::numeric_limits<long long int>::max() - x)
+          throw ArithmeticError("integer overflow");
+      }
+      return x+y;
+    }
+    static long long int safeMinus(long long int x, long long int y) {
+      if (x < 0) {
+        if (y > x - std::numeric_limits<long long int>::min())
+          throw ArithmeticError("integer overflow");
+      } else {
+        if (y < x - std::numeric_limits<long long int>::max())
+          throw ArithmeticError("integer overflow");
+      }
+      return x-y;
+    }
+    static long long int safeMult(long long int x, long long int y) {
+      if (y==0)
+        return 0;
+      long long unsigned int x_abs = (x < 0 ? 0-x : x);
+      long long unsigned int y_abs = (y < 0 ? 0-y : y);
+      if (x_abs > std::numeric_limits<long long int>::max() / y_abs)
+        throw ArithmeticError("integer overflow");
+      return x*y;
+    }
+    static long long int safeDiv(long long int x, long long int y) {
+      if (y==0)
+        throw ArithmeticError("integer division by zero");
+      if (x==0)
+        return 0;
+      if (x==std::numeric_limits<long long int>::min() && y==-1)
+        throw ArithmeticError("integer overflow");
+      return x/y;
+    }
+    static long long int safeMod(long long int x, long long int y) {
+      if (y==0)
+        throw ArithmeticError("integer division by zero");
+      if (y==-1)
+        return 0;
+      return x%y;
+    }
+
   public:
     IntVal(void) : _v(0), _infinity(false) {}
     IntVal(long long int v) : _v(v), _infinity(false) {}
@@ -95,56 +118,56 @@ namespace MiniZinc {
     IntVal& operator +=(const IntVal& x) {
       if (! (isFinite() && x.isFinite()))
         throw ArithmeticError("arithmetic operation on infinite value");
-      _v = toSafeInt() + x.toSafeInt();
+      _v = safePlus(_v, x._v);
       return *this;
     }
     IntVal& operator -=(const IntVal& x) {
       if (! (isFinite() && x.isFinite()))
         throw ArithmeticError("arithmetic operation on infinite value");
-      _v = toSafeInt() - x.toSafeInt();
+      _v = safeMinus(_v, x._v);
       return *this;
     }
     IntVal& operator *=(const IntVal& x) {
       if (! (isFinite() && x.isFinite()))
         throw ArithmeticError("arithmetic operation on infinite value");
-      _v = toSafeInt() * x.toSafeInt();
+      _v = safeMult(_v, x._v);
       return *this;
     }
     IntVal& operator /=(const IntVal& x) {
       if (! (isFinite() && x.isFinite()))
         throw ArithmeticError("arithmetic operation on infinite value");
-      _v = toSafeInt() / x.toSafeInt();
+      _v = safeDiv(_v, x._v);
       return *this;
     }
     IntVal operator -() const {
       IntVal r = *this;
-      r._v = -r.toSafeInt();
+      r._v = safeMinus(0, _v);
       return r;
     }
     IntVal& operator ++() {
       if (!isFinite())
         throw ArithmeticError("arithmetic operation on infinite value");
-      _v = toSafeInt() + 1;
+      _v = safePlus(_v,1);
       return *this;
     }
     IntVal operator ++(int) {
       if (!isFinite())
         throw ArithmeticError("arithmetic operation on infinite value");
       IntVal ret = *this;
-      _v = toSafeInt() + 1;
+      _v = safePlus(_v,1);
       return ret;
     }
     IntVal& operator --() {
       if (!isFinite())
         throw ArithmeticError("arithmetic operation on infinite value");
-      _v = toSafeInt() - 1;
+      _v = safeMinus(_v,1);
       return *this;
     }
     IntVal operator --(int) {
       if (!isFinite())
         throw ArithmeticError("arithmetic operation on infinite value");
       IntVal ret = *this;
-      _v = toSafeInt() - 1;
+      _v = safeMinus(_v,1);
       return ret;
     }
     static const IntVal minint(void);
@@ -154,20 +177,20 @@ namespace MiniZinc {
     /// Infinity-safe addition
     IntVal plus(int x) const {
       if (isFinite())
-        return toSafeInt()+x;
+        return safePlus(_v,x);
       else
         return *this;
     }
     /// Infinity-safe subtraction
     IntVal minus(int x) const {
       if (isFinite())
-        return toSafeInt()-x;
+        return safeMinus(_v,x);
       else
         return *this;
     }
     
     size_t hash(void) const {
-      HASH_NAMESPACE::hash<long long int> longhash;
+      std::hash<long long int> longhash;
       return longhash(_v);
     }
     
@@ -204,40 +227,40 @@ namespace MiniZinc {
   IntVal operator +(const IntVal& x, const IntVal& y) {
     if (! (x.isFinite() && y.isFinite()))
       throw ArithmeticError("arithmetic operation on infinite value");
-    return x.toSafeInt()+y.toSafeInt();
+    return IntVal::safePlus(x._v,y._v);
   }
   inline
   IntVal operator -(const IntVal& x, const IntVal& y) {
     if (! (x.isFinite() && y.isFinite()))
       throw ArithmeticError("arithmetic operation on infinite value");
-    return x.toSafeInt()-y.toSafeInt();
+    return IntVal::safeMinus(x._v,y._v);
   }
   inline
   IntVal operator *(const IntVal& x, const IntVal& y) {
     if (!x.isFinite()) {
-      if (y.isFinite() && std::abs(y._v)==1)
-        return IntVal(x._v*y._v,!x.isFinite());
+      if (y.isFinite() && (y._v==1 || y._v==-1))
+        return IntVal(IntVal::safeMult(x._v,y._v),!x.isFinite());
     } else if (!y.isFinite()) {
-      if (x.isFinite() && std::abs(x._v)==1)
-        return IntVal(x._v*y._v,true);
+      if (x.isFinite() && (y._v==1 || y._v==-1))
+        return IntVal(IntVal::safeMult(x._v,y._v),true);
     } else {
-      return x.toSafeInt()*y.toSafeInt();
+      return IntVal::safeMult(x._v,y._v);
     }
     throw ArithmeticError("arithmetic operation on infinite value");
   }
   inline
   IntVal operator /(const IntVal& x, const IntVal& y) {
-    if (y.isFinite() && std::abs(y._v)==1)
-      return IntVal(x._v * y._v, !x.isFinite());
+    if (y.isFinite() && (y._v==1 || y._v==-1))
+      return IntVal(IntVal::safeMult(x._v,y._v), !x.isFinite());
     if (! (x.isFinite() && y.isFinite()))
       throw ArithmeticError("arithmetic operation on infinite value");
-    return x.toInt()/y.toInt();
+    return IntVal::safeDiv(x._v,y._v);
   }
   inline
   IntVal operator %(const IntVal& x, const IntVal& y) {
     if (! (x.isFinite() && y.isFinite()))
       throw ArithmeticError("arithmetic operation on infinite value");
-    return x.toInt()%y.toInt();
+    return IntVal::safeMod(x._v,y._v);
   }
   template<class Char, class Traits>
   std::basic_ostream<Char,Traits>&
@@ -257,8 +280,7 @@ namespace std {
   inline
   MiniZinc::IntVal abs(const MiniZinc::IntVal& x) {
     if (!x.isFinite()) return MiniZinc::IntVal::infinity();
-    MiniZinc::IntVal::SI y(x.toInt());
-    return y < 0 ? MiniZinc::IntVal(static_cast<long long int>(-y)) : x;
+    return x < 0 ? MiniZinc::IntVal::safeMinus(0,x._v) : x;
   }
   
   inline
@@ -282,7 +304,7 @@ namespace std {
   inline MiniZinc::FloatVal abs(const MiniZinc::FloatVal&);
 }
 
-OPEN_HASH_NAMESPACE {
+namespace std {
   template<>
   struct hash<MiniZinc::IntVal> {
   public:
@@ -290,7 +312,7 @@ OPEN_HASH_NAMESPACE {
       return s.hash();
     }
   };
-CLOSE_HASH_NAMESPACE }
+}
 
 namespace MiniZinc {
   
@@ -309,7 +331,7 @@ namespace MiniZinc {
   public:
     FloatVal(void) : _v(0.0), _infinity(false) {}
     FloatVal(double v) : _v(v), _infinity(false) {}
-    FloatVal(const IntVal& v) : _v(v._v), _infinity(!v.isFinite()) {}
+    FloatVal(const IntVal& v) : _v(static_cast<double>(v._v)), _infinity(!v.isFinite()) {}
     
     double toDouble(void) const {
       if (!isFinite())
@@ -395,8 +417,8 @@ namespace MiniZinc {
     }
     
     size_t hash(void) const {
-      HASH_NAMESPACE::hash<long long int> longhash;
-      return longhash(_v);
+      std::hash<double> doublehash;
+      return doublehash(_v);
     }
     
   };
@@ -507,7 +529,7 @@ namespace std {
   };
 }
 
-OPEN_HASH_NAMESPACE {
+namespace std {
   template<>
   struct hash<MiniZinc::FloatVal> {
   public:
@@ -515,7 +537,7 @@ OPEN_HASH_NAMESPACE {
       return s.hash();
     }
   };
-CLOSE_HASH_NAMESPACE }
+}
 
 
 namespace MiniZinc {
@@ -552,7 +574,7 @@ namespace MiniZinc {
     /// Construct set from \a s
     IntSetVal(const std::vector<Range>& s)
       : ASTChunk(sizeof(Range)*s.size()) {
-      for (unsigned int i=s.size(); i--;)
+      for (unsigned int i=static_cast<unsigned int>(s.size()); i--;)
         get(i) = s[i];
     }
 
@@ -562,7 +584,7 @@ namespace MiniZinc {
     IntSetVal& operator =(const IntSetVal& r);
   public:
     /// Return number of ranges
-    int size(void) const { return _size / sizeof(Range); }
+    int size(void) const { return static_cast<int>(_size / sizeof(Range)); }
     /// Return minimum, or infinity if set is empty
     IntVal min(void) const { return size()==0 ? IntVal::infinity() : get(0).min; }
     /// Return maximum, or minus infinity if set is empty
@@ -704,9 +726,22 @@ namespace MiniZinc {
   operator <<(std::basic_ostream<Char,Traits>& os, const IntSetVal& s) {
     if (s.size()==0) {
       os << "1..0";
+    } else if(s.size() == 1) {
+      // Print the range
+      IntSetRanges isr(&s);
+      os << isr.min() << ".." << isr.max();
     } else {
-      for (IntSetRanges isr(&s); isr(); ++isr)
-        os << isr.min() << ".." << isr.max() << " ";
+      // Print each element of the set
+      bool first = true;
+      os << "{";
+      for (IntSetRanges isr(&s); isr(); ++isr) {
+        if(!first) os << ", ";
+        first = false;
+        for(IntVal v = isr.min(); v < isr.max(); ++v) {
+          os << v;
+        }
+      }
+      os << "}";
     }
     return os;
   }
@@ -741,7 +776,7 @@ namespace MiniZinc {
     /// Construct set from \a s
     FloatSetVal(const std::vector<Range>& s)
     : ASTChunk(sizeof(Range)*s.size()) {
-      for (unsigned int i=s.size(); i--;)
+      for (unsigned int i=static_cast<unsigned int>(s.size()); i--;)
         get(i) = s[i];
     }
     
@@ -751,7 +786,7 @@ namespace MiniZinc {
     FloatSetVal& operator =(const FloatSetVal& r);
   public:
     /// Return number of ranges
-    int size(void) const { return _size / sizeof(Range); }
+    int size(void) const { return static_cast<int>(_size / sizeof(Range)); }
     /// Return minimum, or infinity if set is empty
     FloatVal min(void) const { return size()==0 ? FloatVal::infinity() : get(0).min; }
     /// Return maximum, or minus infinity if set is empty

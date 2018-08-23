@@ -12,10 +12,13 @@
 #ifndef __MINIZINC_GC_HH__
 #define __MINIZINC_GC_HH__
 
+#include <minizinc/config.hh>
+
 #include <cstdlib>
 #include <cassert>
 #include <new>
-#include <minizinc/stl_map_set.hh>
+
+#include <unordered_map>
 
 namespace MiniZinc {
   
@@ -146,6 +149,8 @@ namespace MiniZinc {
     static void lock(void);
     /// Release garbage collector lock for this thread
     static void unlock(void);
+    /// Manually trigger garbage collector (must be unlocked)
+    static void trigger(void);
     /// Test if garbage collector is locked
     static bool locked(void);
     /// Add model \a m to root set
@@ -215,7 +220,7 @@ namespace MiniZinc {
     ASTNodeWeakMap& operator =(const ASTNodeWeakMap& e);
     
   protected:
-    typedef UNORDERED_NAMESPACE::unordered_map<ASTNode*, ASTNode*> NodeMap;
+    typedef std::unordered_map<ASTNode*, ASTNode*> NodeMap;
     ASTNodeWeakMap* _p;
     ASTNodeWeakMap* _n;
     ASTNodeWeakMap* next(void) const { return _n; }
@@ -225,6 +230,7 @@ namespace MiniZinc {
     ~ASTNodeWeakMap(void);
     void insert(ASTNode* n0, ASTNode* n1);
     ASTNode* find(ASTNode* n);
+    void clear() { _m.clear(); }
   };
 }
 

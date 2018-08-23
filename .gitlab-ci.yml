@@ -2,97 +2,80 @@ stages:
   - build
   - test
 
-build:osx:
+.build_template: &build_definition
   stage: build
   script:
-     - mkdir build
-     - cd build
-     - cmake -GXcode ..
-     - cmake --build . --config Debug
-     - cp Debug/mzn2fzn Debug/mzn-fzn Debug/solns2out ../
+    - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" "https://gitlab.com/api/v4/projects/minizinc%2Fvendor/jobs/artifacts/master/download?job=vendor:${MZNARCH}"
+    - unzip -q vendor.zip
+    - rm -rf build
+    - mkdir -p build
+    - cd build
+    - cmake -G"$CMAKE_ARCH" -v .. -DBUILD_REF=$CI_PIPELINE_ID -DGECODE_NO_MPFR=1 -DGECODE_HOME="$CI_PROJECT_DIR/vendor/gecode" -DBUILD_GUROBI_PLUGIN=ON -DGUROBI_HOME="$CI_PROJECT_DIR/vendor/gurobi" -DBUILD_CPLEX_PLUGIN=ON -DCPLEX_STUDIO_DIR="$CI_PROJECT_DIR/vendor/CPLEX_Studio" -DOSICBC_HOME="$CI_PROJECT_DIR/vendor/CBC" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake --build .  --config Release
+    - cmake --build .  --config Release --target install
   artifacts:
-     paths:
-       - mzn2fzn
-       - mzn-fzn
-       - solns2out
-     expire_in: 2h
-  only:
-     - develop
-  tags:
-     - mac
+    paths:
+      - minizinc/
+  cache:
+    key: "${MZNARCH}_${CI_COMMIT_REF_SLUG}"
+    paths:
+      - build/
+
 
 build:linux:
-  image: guidotack/build-minizinc:1.0
+  <<: *build_definition
+  image: dekker1/cmake:latest
+  variables:
+    MZNARCH: "linux"
+    CMAKE_ARCH: "Unix Makefiles"
+  tags:
+    - linux
+    - docker
+
+build:osx:
+  <<: *build_definition
   stage: build
+  variables:
+    MZNARCH: "osx"
+    CMAKE_ARCH: "Xcode"
+  tags:
+    - osx
+    - cmake
+    - cpp
+
+.build:win32: #DISABLED
+  <<: *build_definition
+  stage: build
+  variables:
+    MZNARCH: "win32"
+    CMAKE_ARCH: "Visual Studio 14 2015"
   script:
-    - mkdir build
+    - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fvendor/jobs/artifacts/master/download?job=vendor:win32"
+    - unzip -q vendor.zip
+    - if not exist "build" mkdir build
     - cd build
-    - cmake ..
-    - cmake --build .
-    - cp mzn2fzn mzn-fzn solns2out ../
-  artifacts:
-     paths:
-       - mzn2fzn
-       - mzn-fzn
-       - solns2out
-     expire_in: 2h
-  only:
-     - develop
+    - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DSHARED_GECODE=TRUE -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake --build .  --config Release
+    - cmake --build .  --config Release --target install
   tags:
-     - linux
+    - win32
+    - cmake
+    - cpp
 
-test:mzn20_fd:osx:
-  stage: test
+build:win64:
+  <<: *build_definition
+  variables:
+    MZNARCH: "win64"
+    CMAKE_ARCH: "Visual Studio 14 2015 Win64"
   script:
-     - cd tests
-     - export PATH="$(pwd)/..":"$(pwd)/scripts":"$PATH"
-     - bash run-tests mzn20_fd .mzn unit examples
-  dependencies:
-     - build:osx
-  only:
-     - develop
+    - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fvendor/jobs/artifacts/master/download?job=vendor:win64"
+    - unzip -q vendor.zip
+    - if not exist "build" mkdir build
+    - cd build
+    - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DSHARED_GECODE=TRUE -DBUILD_GUROBI_PLUGIN=ON -DGUROBI_HOME="%CI_PROJECT_DIR%/vendor/gurobi" -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DBUILD_CPLEX_PLUGIN=ON -DCPLEX_STUDIO_DIR="%CI_PROJECT_DIR%/vendor/CPLEX_Studio" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake --build .  --config Release
+    - cmake --build .  --config Release --target install
   tags:
-     - mac
-
-test:mzn-fzn_fd:osx:
-  stage: test
-  script:
-     - cd tests
-     - export PATH="$(pwd)/..":"$(pwd)/scripts":"$PATH"
-     - bash run-tests mzn-fzn_fd .mzn unit examples
-  dependencies:
-     - build:osx
-  only:
-     - develop
-  tags:
-     - mac
-
-
-test:mzn20_fd:linux:
-  image: guidotack/build-minizinc:1.0
-  stage: test
-  script:
-     - cd tests
-     - export PATH="$(pwd)/..":"$(pwd)/scripts":"$PATH"
-     - bash run-tests mzn20_fd .mzn unit examples
-  dependencies:
-     - build:linux
-  only:
-     - develop
-  tags:
-     - linux
-
-test:mzn-fzn_fd:linux:
-  image: guidotack/build-minizinc:1.0
-  stage: test
-  script:
-     - cd tests
-     - export PATH="$(pwd)/..":"$(pwd)/scripts":"$PATH"
-     - bash run-tests mzn-fzn_fd .mzn unit examples
-  dependencies:
-     - build:linux
-  only:
-     - develop
-  tags:
-     - linux
-
+    - win64
+    - cmake
+    - cpp

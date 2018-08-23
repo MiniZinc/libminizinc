@@ -80,14 +80,14 @@ namespace MiniZinc {
     /// Element access
     T*& operator[](unsigned int i);
     /// Element access
-    const T* operator[](unsigned int i) const;
+    T* operator[](unsigned int i) const;
     /// Iterator begin
     T** begin(void);
     /// Iterator end
     T** end(void);
     
     /// Return vector object
-    ASTExprVecO<T*>* vec(void);
+    ASTExprVecO<T*>* vec(void) const;
     /// Mark as alive for garbage collection
     void mark(void) const;
   };
@@ -102,7 +102,7 @@ namespace MiniZinc {
     /// Allocate and initialise from \a v
     static ASTIntVecO* a(const std::vector<int>& v);
     /// Return size
-    unsigned int size(void) const { return _size/sizeof(int); }
+    unsigned int size(void) const { return static_cast<unsigned int>(_size/sizeof(int)); }
     /// Return element at position \a i
     int& operator[](unsigned int i) {
       assert(i<size());
@@ -130,7 +130,7 @@ namespace MiniZinc {
   public:
     /// Allocate and initialise from \a v
     static ASTExprVecO* a(const std::vector<T>& v);
-    unsigned int size(void) const { return _size; }
+    unsigned int size(void) const { return static_cast<unsigned int>(_size); }
     bool empty(void) const { return size()==0; }
     T& operator[] (int i) {
       assert(i<static_cast<int>(size()));
@@ -146,12 +146,17 @@ namespace MiniZinc {
     T* end(void) { return begin()+size(); }
     /// Mark as alive for garbage collection
     void mark(void) const { _gc_mark = 1; }
+    /// Check if flag is set
+    bool flag(void) const { return _flag_1; }
+    /// Set flag
+    void flag(bool f) { _flag_1 = f; }
   };
 
   template<class T>
   ASTExprVecO<T>::ASTExprVecO(const std::vector<T>& v)
     : ASTVec(v.size()) {
-    for (unsigned int i=v.size(); i--;)
+    _flag_1 = false;
+    for (unsigned int i=static_cast<unsigned int>(v.size()); i--;)
       (*this)[i] = v[i];
   }
   template<class T>
@@ -219,7 +224,7 @@ namespace MiniZinc {
     return (*_v)[i];
   }
   template<class T>
-  inline const T*
+  inline T*
   ASTExprVec<T>::operator[](unsigned int i) const {
     return (*_v)[i];
   }
@@ -235,7 +240,7 @@ namespace MiniZinc {
   }
   template<class T>
   inline ASTExprVecO<T*>*
-  ASTExprVec<T>::vec(void) {
+  ASTExprVec<T>::vec(void) const {
     return _v;
   }
   template<class T>

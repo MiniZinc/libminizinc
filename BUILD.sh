@@ -7,11 +7,12 @@ else
 fi
 echo Setting build type:  $BLD_TYPE
 cmake -DCMAKE_BUILD_TYPE=$BLD_TYPE -DCMAKE_VERBOSE_MAKEFILE=ON \
+           -DXPRESS_HOME=$XPRESSDIR \
            -DCPLEX_STUDIO_DIR=$CPLEX_STUDIO_DIR \
            -DGUROBI_HOME=$GUROBI_HOME -DBUILD_GUROBI_PLUGIN=ON \
            -DOSICBC_HOME=$OSICBC_HOME -DOSICBC_LINKEXTRAS="" '# bz2 lapack blas  necessary on ArchLinux' \
            -DSCIP_DIR=$SCIP_DIR -DSOPLEX_DIR=$SOPLEX_DIR -DZIMPL_DIR=$ZIMPL_DIR \
-           -DGECODE_HOME=/home/bg/Documents/prj/gecode-4.4.0 \
+           -DGECODE_HOME=$GECODE_HOME \
            ..
 #cmake -DCMAKE_BUILD_TYPE=debug  -DCPLEX_STUDIO_DIR=/opt/ibm/ILOG/CPLEX_Studio1261 ..
 cmake --build . -- -j3

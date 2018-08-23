@@ -14,6 +14,8 @@
 
 #include <vector>
 #include <iterator>
+#include <unordered_map>
+#include <unordered_set>
 
 #include <minizinc/gc.hh>
 #include <minizinc/ast.hh>
@@ -22,7 +24,8 @@ namespace MiniZinc {
   
   class VarDeclIterator;
   class ConstraintIterator;
-  
+  class FunctionIterator;
+
   class CopyMap;
   class EnvI;
   
@@ -37,11 +40,27 @@ namespace MiniZinc {
     /// Next model in root set list
     Model* _roots_next;
 
+    struct FnEntry {
+      std::vector<Type> t;
+      FunctionI* fi;
+      bool isPolymorphic;
+      FnEntry(FunctionI* fi0);
+      bool operator <(const FnEntry&) const;
+    };
+    
+    /// Add all instances of polymorphic entry \a fe to \a entries
+    void addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& entries);
+    
     /// Type of map from identifiers to function declarations
-    typedef ASTStringMap<std::vector<FunctionI*> >::t FnMap;
+    typedef ASTStringMap<std::vector<FnEntry> >::t FnMap;
     /// Map from identifiers to function declarations
     FnMap fnmap;
 
+    /// Type of map from Type (represented as int) to reverse mapper functions
+    typedef std::unordered_map<int, FunctionI*> RevMapperMap;
+    /// Map from Type (represented as int) to reverse mapper functions
+    RevMapperMap revmapmap;
+    
     /// Filename of the model
     ASTString _filename;
     /// Path of the model
@@ -92,6 +111,8 @@ namespace MiniZinc {
     void sortFn(void);
     /// Check that registered functions do not clash wrt overloading
     void checkFnOverloading(EnvI& env);
+    /// Fix function table after type checking
+    void fixFnMap(void);
     /// Return function declaration for \a id matching \a args
     FunctionI* matchFn(EnvI& env, const ASTString& id,
                        const std::vector<Expression*>& args,
@@ -101,6 +122,8 @@ namespace MiniZinc {
                        bool strictEnums);
     /// Return function declaration matching call \a c
     FunctionI* matchFn(EnvI& env, Call* c, bool strictEnums) const;
+    /// Return function declaration for reverse mapper for type \a t
+    FunctionI* matchRevMap(EnvI& env, const Type& t) const;
     /// Merge all builtin functions into \a m
     void mergeStdLib(EnvI& env, Model* m) const;
 
@@ -127,6 +150,8 @@ namespace MiniZinc {
     ConstraintIterator end_constraints(void);
     VarDeclIterator begin_vardecls(void);
     VarDeclIterator end_vardecls(void);
+    FunctionIterator begin_functions(void);
+    FunctionIterator end_functions(void);
     
     SolveI* solveItem(void);
 
@@ -220,6 +245,44 @@ namespace MiniZinc {
     pointer operator->() const { return (*_it)->cast<ConstraintI>(); }
   };
 
+  class FunctionIterator {
+    Model* _model;
+    Model::iterator _it;
+  public:
+    typedef Model::iterator::difference_type difference_type;
+    typedef Model::iterator::value_type value_type;
+    typedef FunctionI& reference;
+    typedef FunctionI* pointer;
+    typedef std::forward_iterator_tag iterator_category;
+    
+    FunctionIterator() {}
+    FunctionIterator(const FunctionIterator& vi) : _it(vi._it) {}
+    FunctionIterator(Model* model, const Model::iterator& it) : _model(model), _it(it) {
+      while (_it != _model->end() && !(*_it)->isa<FunctionI>()) {
+        ++_it;
+      }
+    }
+    ~FunctionIterator() {}
+    
+    FunctionIterator& operator=(const FunctionIterator& vi) {
+      if (this != &vi) {
+        _it = vi._it;
+      }
+      return *this;
+    }
+    bool operator==(const FunctionIterator& vi) const { return _it == vi._it; }
+    bool operator!=(const FunctionIterator& vi) const { return _it != vi._it; }
+    FunctionIterator& operator++() {
+      do {
+        ++_it;
+      } while (_it != _model->end() && !(*_it)->isa<FunctionI>());
+      return *this;
+    }
+    
+    reference operator*() const { return *(*_it)->cast<FunctionI>(); }
+    pointer operator->() const { return (*_it)->cast<FunctionI>(); }
+  };
+
   
   class EnvI;
   
@@ -228,8 +291,7 @@ namespace MiniZinc {
   private:
     EnvI* e;
   public:
-    Env(void);
-    Env(Model* m);
+    Env(Model* m=NULL, std::ostream& outstream = std::cout, std::ostream& errstream = std::cerr);
     ~Env(void);
     
     Model* model(void);
@@ -285,7 +347,7 @@ namespace MiniZinc {
   public:
     ItemIter(I& iter0) : iter(iter0) {}
     void run(Model* m) {
-      UNORDERED_NAMESPACE::unordered_set<Model*> seen;
+      std::unordered_set<Model*> seen;
       std::vector<Model*> models;
       models.push_back(m);
       seen.insert(m);
@@ -294,6 +356,7 @@ namespace MiniZinc {
         models.pop_back();
         if (!iter.enterModel(cm))
           continue;
+        std::vector<Model*> includedModels;
         for (unsigned int i=0; i<cm->size(); i++) {
           if ((*cm)[i]->removed())
             continue;
@@ -302,7 +365,7 @@ namespace MiniZinc {
           switch ((*cm)[i]->iid()) {
           case Item::II_INC:
             if (seen.find((*cm)[i]->cast<IncludeI>()->m()) == seen.end()) {
-              models.push_back((*cm)[i]->cast<IncludeI>()->m());
+              includedModels.push_back((*cm)[i]->cast<IncludeI>()->m());
               seen.insert((*cm)[i]->cast<IncludeI>()->m());
             }
             iter.vIncludeI((*cm)[i]->cast<IncludeI>());
@@ -326,6 +389,9 @@ namespace MiniZinc {
             iter.vFunctionI((*cm)[i]->cast<FunctionI>());
             break;      
           }
+        }
+        for (unsigned int i=static_cast<unsigned int>(includedModels.size()); i--;) {
+          models.push_back(includedModels[i]);
         }
       }
     }

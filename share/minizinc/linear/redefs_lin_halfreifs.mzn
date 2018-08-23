@@ -32,21 +32,30 @@ predicate aux_float_eq_if_1(var float: x, var float: y, var int: p) =
 predicate aux_int_le_zero_if_0(var int: x, var int: p) =
   if is_fixed(p) then
     if 0==fix(p) then x<=0 else true endif         %% 0==fix !!
-  elseif is_fixed(x) then         %%% Needed to avoid constant domain var
-    if fix(x)>0 then p==1 else true endif
+  elseif lb(x)>0 then
+    p==1
+  elseif not (0 in dom(x)) then
+    let {
+      constraint assert( ub(x) < infinity,
+        "aux_int_le_zero_if_0: variable \(x)'s domain: dom(\(x)) = \(dom(x)), should have finite upper bound\n" ),
+      set of int: sDomNeg = dom(x) intersect -infinity..-1,
+      constraint assert( card( sDomNeg ) > 0,
+        "Variable \(x): dom(\(x)) = \(dom(x)), but dom() intersect -inf..-1: \(sDomNeg)\n" ),
+    } in
+    aux_int_le_if_0( x, max( sDomNeg ), p )
   elseif fPostprocessDomains /\ fPostproDom_AUX then
     aux_int_le_zero_if_1__POST(x, 1-p)
   elseif fMZN__UseIndicators then
     aux_int_le_zero_if_0__IND(x, p)
   else
-      x <= ub(x) * p
+    x <= ub(x) * p
   endif;
 
 predicate aux_float_le_zero_if_0(var float: x, var int: p) =
   if is_fixed(p) then
     if 0==fix(p) then x<=0.0 else true endif
-  elseif is_fixed(x) then         %%% Needed to avoid constant domain var
-    if fix(x)>0.0 then p==1 else true endif
+  elseif lb(x)>0.0 then
+    p==1
   elseif fPostprocessDomains /\ fPostproDom_AUX then
     aux_float_le_zero_if_1__POST(x, 1-p, 1-p)
   elseif fMZN__UseIndicators then
@@ -58,14 +67,22 @@ predicate aux_float_le_zero_if_0(var float: x, var int: p) =
 predicate aux_float_lt_zero_if_0(var float: x, var int: p) =
   if is_fixed(p) then
     if 0==fix(p) then x<0.0 else true endif
-  elseif is_fixed(x) then         %%% Needed to avoid constant domain var
-    if fix(x)>=0.0 then p==1 else true endif
+  elseif lb(x)>=0.0 then
+    p==1
   elseif fPostprocessDomains /\ fPostproDom_AUX then
-    aux_float_lt_zero_if_1__POST(x, 1-p, 1-p, float_lt_EPS_coef__)
+    aux_float_lt_zero_if_1__POST(x, 1-p, 1-p, float_lt_EPS)
+  elseif fMZN__UseIndicators then
+    aux_float_le_zero_if_0__IND(x+float_lt_EPS, p)       %% Here just absolute EPS,  TODO
   else
-    let { float: rho = float_lt_EPS_coef__ * max(abs(ub(x)), abs(lb(x))) }  % same order of magnitude as ub(x)
+%%    let { float: rho = float_lt_EPS_coef__ * max(abs(ub(x)), abs(lb(x))) }  % same order of magnitude as ub(x)
+    let { float: rho = float_lt_EPS }          % absolute eps
     in
-    x < (ub(x) + rho) * p
+    %%% This one causes 2x- derivation of EPS:
+    %% x < (ub(x) + rho) * p
+    %%% Better?
+       x <= (ub(x) + rho) * p - rho
+    %%% This just uses absolute eps:
+    %% x < (ub(x) + float_lt_EPS) * p
   endif;
 
 
@@ -92,7 +109,7 @@ predicate aux_int_lt_if_1(var int: x, int: y, var int: p) =
     aux_int_le_zero_if_0(x - y + 1, 1 - p);
 
 %% int: switching differences to float to avoid creating integer vars
-
+/*   Used anywhere?
 predicate aux_int_le_if_0(var float: x, var float: y, var int: p) =
     aux_float_le_zero_if_0(x - y, p);
 
@@ -113,7 +130,7 @@ predicate aux_int_gt_if_0(var float: x, var float: y, var int: p) =
 
 predicate aux_int_lt_if_1(var float: x, float: y, var int: p) =
     aux_float_le_zero_if_0(x - y + 1.0, 1 - p);
-
+*/
 
 predicate aux_float_le_if_0(var float: x, var float: y, var int: p) =
     aux_float_le_zero_if_0(x - y, p);

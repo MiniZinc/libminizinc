@@ -5,6 +5,73 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.2.0
+=============
+This is a major release of MiniZinc, introducing many new features and improvements.
+
+Major new features:
+ - New minizinc command line tool
+   Previous releases contained a minizinc command line tool that was not much more
+   than a simple script that could execute the compiler, solver and output processor.
+   The minizinc executable in version 2.2.0 is now the main frontend to compilation and
+   solving and integrates all of the functionality. It has access to all installed MiniZinc
+   solvers (both internal solvers and those interfaced through FlatZinc files), and can
+   automatically select the required options (e.g., to include the solver-specific MiniZinc
+   globals library).
+   You can get a list of available solvers using the --solvers command line option, and
+   select a solver using --solver. The minizinc executable can now also be used as a replacement
+   for mzn2fzn (using -c) and solns2out (using --ozn-file).
+ - Multi-pass compilation
+   The compiler can now perform multiple passes in order to improve the target FlatZinc code.
+   This can be controlled using the -O command line flags (-O0 to -O4). Multi-pass compilation
+   is particularly useful when the target solver requires sophisticated decomposition of
+   global constraints (such as for MIP solvers).
+ - Solution checking
+   You can now supply an additional model that will be used to check each solution produced by
+   your main model. This can be useful for teaching MiniZinc (to give students automatic feedback)
+   and if your main model is very complex but checking that a solution is correct is easy.
+ - MIP solvers: support for FICO Xpress, and loading IBM ILOG CPLEX as a plugin
+   We have added support for FICO Xpress (this requires compiling MiniZinc from sources).
+   CPLEX can now be loaded as a plugin, which means that the binary distribution of
+   MiniZinc has built-in CPLEX support (just bring your own CPLEX dll).
+ - Language extensions
+   The MiniZinc language has been extended with two new features.
+   * Array slicing introduces syntax to conveniently select rows, columns or entire slices
+     of arrays. For example, x[3,..] selects the third row of array x, while x[..,4] selects
+     the fourth column, and x[3..5,2..7] selects a slice of rows 3 to 5 and columns 2 to 7.
+   * Generator expressions can now contain multiple where clauses, e.g.
+     forall (i in S where foo(i), j in T where i<j) (bar(i,j))
+     This enables more efficient compilation compared to evaluating all where clauses in the
+     inner-most generator. In addition to iteration (i in S), generators can now contain
+     assignment expressions (j=foo(i)). This enables intermediate definitions that can then
+     be used in further generators.
+
+Changes and minor features:
+ - The value of the objective can now be added automatically to the
+   output using the --output-objective command line option. Using --output-mode dzn,
+   this allows automatic output of all the free variables of the model.
+ - Models that do not contain a solve item are now accepted and treated as "solve satisfy"
+ - Support for naming constraints and expressions (using ::"name" syntax)
+ - Error messages have been improved, they now contain more accurate location
+   information.
+ - The compiler can be instructed to accept multiple assignments to the same parameter
+   (as long as they are all identical), using the --allow-multiple-assignments
+   command line option.
+ - Annotations for supplying warm start values have been added to the
+   standard library (currently supported by the MIP solvers Gurobi and IBM ILOG CPLEX).
+ - The compiler now accepts multiple .mzn files as input.
+ - Memory consumption and garbage collection performance has been improved.
+ - The conditional expression has been extended to support
+   "if <cond> then <exp> endif" (where <exp> is bool)
+ - Decomposition of one variable type to another (e.g. set into array of bool)
+   has been improved.
+ - MIP solvers Gurobi and IBM ILOG CPLEX use node files when over 3GB working memory
+ - Gurobi and CPLEX support the MIPfocus parameter
+ - Gurobi supports MiniZinc search annotations by setting fixed branching priorities
+ 
+Bug fixes:
+ - Consult the bug tracker at https://github.com/MiniZinc/libminizinc/issues
+
 Version 2.1.7
 =============
 

@@ -19,6 +19,7 @@
 #include <iostream>
 #include <sstream>
 #include <cassert>
+#include <chrono>
 
 
 /// Facilitate lhs computation of a cut
@@ -35,21 +36,6 @@ double computeSparse( int n, const int* ind, const double* coef, const double* d
 }
 
 class MIP_wrapper;
-/// Namespace MIP_WrapperFactory providing static service functions
-/// The implementation of a MIP wrapper should define these
-/// !!! Assuming it's always 1 MIP solver in a static module
-namespace MIP_WrapperFactory {
-    /// static functions creating a MIP wrapper, defined in a .cpp
-    MIP_wrapper* GetDefaultMIPWrapper();
-//     MIP_wrapper* GetDefaultMILPWrapper();
-//     MIP_wrapper* GetDefaultMIQPWrapper();
-//     MIP_wrapper* GetCplexMILPWrapper();
-//     Wrap_MIP* GetCplexMIQP();
-
-    bool processOption(int& i, int argc, const char** argv);
-    std::string getVersion( );
-    void printHelp(std::ostream& );
-};
 
 /// An abstract MIP wrapper.
 /// Does not include MZN stuff so can be used independently
@@ -104,7 +90,10 @@ class MIP_wrapper {
       const double *x = 0;
       int nNodes=0;
       int nOpenNodes=0;
+      double dWallTime = 0.0;
+      std::chrono::time_point<std::chrono::steady_clock> dWallTime0;
       double dCPUTime = 0;
+      std::clock_t cCPUTime0 = 0;
     };      
     Output output;
 
@@ -124,7 +113,7 @@ class MIP_wrapper {
         rmatval.push_back( c );
       }
       double computeViol( const double* x, int nCols ) {
-        double lhs = computeSparse( rmatind.size(), rmatind.data(), rmatval.data(), x, nCols );
+        double lhs = computeSparse( static_cast<int>(rmatind.size()), rmatind.data(), rmatval.data(), x, nCols );
         if ( LQ==sense ) {
           return lhs-rhs;
         } else if ( GQ==sense ) {
@@ -148,7 +137,6 @@ class MIP_wrapper {
       MIP_wrapper* wrapper = 0;
       MIP_wrapper::Output* pOutput=0;
       MIP_wrapper::Output* pCutOutput=0;
-      bool fVerb = false;              // used in Gurobi
       void *ppp=0;  // external info. Intended to keep MIP_solverinstance
       SolCallbackFn solcbfn=0;
       CutCallbackFn cutcbfn=0;
@@ -156,6 +144,8 @@ class MIP_wrapper {
       /// See MaskConstrType_..
       /// Solvers need to know this
       int cutMask = 0; // can be any combination of User/Lazy
+      bool fVerb = false;              // used in Gurobi
+      bool printed = false;            // whether any solution was output
     };
     CBUserInfo cbui;
 
@@ -192,7 +182,7 @@ class MIP_wrapper {
       colUB.push_back(ub);
       colTypes.push_back(vt);
       colNames.push_back(name);
-      return colObj.size()-1;
+      return static_cast<VarId>(colObj.size()-1);
     }
     /// add the given var to the solver. Asserts all previous are added. Phase >=2. No direct use
     virtual void addVar(int j) {
@@ -253,12 +243,33 @@ class MIP_wrapper {
       fPhase1Over = true;    // SCIP needs after adding
     }
 
+    /// var bounds
+    virtual void setVarBounds( int iVar, double lb, double ub )  { throw 0; }
+    virtual void setVarLB( int iVar, double lb )  { throw 0; }
+    virtual void setVarUB( int iVar, double ub )  { throw 0; }
     /// adding a linear constraint
     virtual void addRow(int nnz, int *rmatind, double* rmatval,
                         LinConType sense, double rhs,
                         int mask = MaskConsType_Normal,
                         std::string rowName = "") = 0;
+    /// Indicator constraint: x[iBVar]==bVal -> lin constr
+    virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int *rmatind, double* rmatval,
+                        LinConType sense, double rhs,
+                        std::string rowName = "") { throw std::runtime_error("Indicator constraints not supported. "); }
+                
+    /// 0: model-defined level, 1: free, 2: uniform search
+    virtual int getFreeSearch() { return 1; }
+    /// Return 0 if ignoring searches
+    virtual bool addSearch( const std::vector<VarId>& vars, const std::vector<int> pri ) {
+      return false;
+    }
+    /// Return 0 if ignoring warm starts    
+    virtual bool addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals ) {
+      return false;
+    }
+                        
     int nAddedRows = 0;   // for name counting
+    int nIndicatorConstr = 0;
     /// adding an implication
 //     virtual void addImpl() = 0;
     virtual void setObjSense(int s) = 0;   // +/-1 for max/min
@@ -294,6 +305,7 @@ class MIP_wrapper {
     virtual const double* getValues() = 0;
     virtual double getObjValue() = 0;
     virtual double getBestBound() = 0;
+    virtual double getWallTimeElapsed() { return output.dWallTime; }
     virtual double getCPUTime() = 0;
     
     virtual Status getStatus() = 0;

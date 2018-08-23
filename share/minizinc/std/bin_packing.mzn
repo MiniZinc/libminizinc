@@ -4,6 +4,7 @@
   capacity \a c.
 
   Assumptions:
+
   - forall \p i, \a w[\p i] >=0
   - \a c >=0
 */

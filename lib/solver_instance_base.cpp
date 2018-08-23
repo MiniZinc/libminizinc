@@ -38,31 +38,37 @@ namespace MiniZinc {
   }
   
   void
-  Registry::add(const ASTString& name, poster p) {
+  Registry::add(const std::string& name, poster p) {
     _registry.insert(std::make_pair(name, p));
   }
   void
   Registry::post(Call* c) {
-    ASTStringMap<poster>::t::iterator it = _registry.find(c->id());
+    std::unordered_map<std::string,poster>::iterator it = _registry.find(c->id().str());
     if (it == _registry.end()) {
-      std::cerr << "Error: constraint not found: " << c->id() << "\n";
-      exit(EXIT_FAILURE);
+      GCLock lock;
+      throw InternalError("Error: solver backend cannot handle constraint: " + c->id().str() + "\n");
     }
     it->second(_base, c);
   }
 
   void SolverInstanceBase::printSolution() {
+    std::ostringstream oss;
+
+    if ( _options->printStatistics )
+      printStatistics(1);             // Insert stats before sol separator
     if ( 0==pS2Out ) {
       getEnv()->evalOutput(std::cout);               // deprecated
+      std::cout << oss.str();
+      if ( oss.str().size() && '\n'!=oss.str().back() )
+        std::cout << '\n';
       std::cout << "----------" << std::endl;
     }
     else
-      getSolns2Out()->evalOutput();
-    if ( getOptions().getBoolParam(constants().opts.statistics.str()) )
-      printStatistics(std::cout, 1);
+      getSolns2Out()->evalOutput( oss.str() );
   }
 
   void SolverInstanceBase2::printSolution() {
+    GCLock lock;
     assignSolutionToOutput();
     SolverInstanceBase::printSolution();
   }
@@ -77,6 +83,7 @@ namespace MiniZinc {
 //   }
   
   void SolverInstanceBase2::assignSolutionToOutput() {
+    GCLock lock;
     
     MZN_ASSERT_HARD_MSG( 0!=pS2Out, "Setup a Solns2Out object to use default solution extraction/reporting procs" );
     
@@ -106,7 +113,7 @@ namespace MiniZinc {
 
         if(ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
           std::vector<Expression*> array_elems;
-          ASTExprVec<Expression> array = al->v();
+          ArrayLit& array = *al;
           for(unsigned int j=0; j<array.size(); j++) {
             if(Id* id = array[j]->dyn_cast<Id>()) {
               //std::cout << "DEBUG: getting solution value from " << *id  << " : " << id->v() << std::endl;
@@ -122,13 +129,14 @@ namespace MiniZinc {
             } else if(StringLit* strLit = array[j]->dyn_cast<StringLit>()) {
               array_elems.push_back(strLit);
             } else {
-              std::cerr << "Error: array element " << *array[j] << " is ! an id nor a literal" << std::endl;
-              assert(false);
+              std::ostringstream oss;
+              oss << "Error: array element " << *array[j] << " is not an id nor a literal";
+              throw InternalError(oss.str());
             }
           }
           GCLock lock;
           ArrayLit* dims;
-          Expression* e = output_array_ann->args()[0];
+          Expression* e = output_array_ann->arg(0);
           if(ArrayLit* al = e->dyn_cast<ArrayLit>()) {
             dims = al;
           } else if(Id* id = e->dyn_cast<Id>()) {
@@ -138,11 +146,11 @@ namespace MiniZinc {
           }
           std::vector<std::pair<int,int> > dims_v;
           for( int i=0;i<dims->length();i++) {
-            IntSetVal* isv = eval_intset(getEnv()->envi(), dims->v()[i]);
+            IntSetVal* isv = eval_intset(getEnv()->envi(), (*dims)[i]);
             if (isv->size()==0) {
               dims_v.push_back(std::pair<int,int>(1,0));
             } else {
-              dims_v.push_back(std::pair<int,int>(isv->min().toInt(),isv->max().toInt()));
+              dims_v.push_back(std::pair<int,int>(static_cast<int>(isv->min().toInt()),static_cast<int>(isv->max().toInt())));
             }
           }
           ArrayLit* array_solution = new ArrayLit(Location(),array_elems,dims_v);
@@ -166,10 +174,10 @@ namespace MiniZinc {
         Expression* e = *i;
         if(e->isa<Call>() && e->cast<Call>()->id().str() == "seq_search") {
             Call* c = e->cast<Call>();
-            ArrayLit* anns = c->args()[0]->cast<ArrayLit>();
-            for(unsigned int i=0; i<anns->v().size(); i++) {
+            ArrayLit* anns = c->arg(0)->cast<ArrayLit>();
+            for(unsigned int i=0; i<anns->size(); i++) {
                 Annotation subann;
-                subann.add(anns->v()[i]);
+                subann.add((*anns)[i]);
                 flattenSearchAnnotations(subann, out);
             }
         } else {
