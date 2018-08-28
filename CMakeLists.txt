@@ -24,9 +24,7 @@ endif()
 # -- For example, to include gecode in the minizinc binary run                                                     --
 # --     "cd build; cmake -D GECODE_HOME=$GECODE_HOME ..; cmake --build ."                                         --
 # -------------------------------------------------------------------------------------------------------------------
-if (DEFINED GECODE_HOME AND NOT "${GECODE_HOME} " STREQUAL " ")
-  set(HAS_GECODE TRUE)
-endif()
+find_package(Gecode)
 if (DEFINED CPLEX_STUDIO_DIR AND NOT "${CPLEX_STUDIO_DIR} " STREQUAL " ")
   set(HAS_CPLEX TRUE)
 endif()
@@ -303,7 +301,7 @@ else()
   set(FLEX_RegExLexer_OUTPUTS ${PROJECT_SOURCE_DIR}/lib/cached/regex_lexer.yy.cpp)
 endif()
 
-if(NOT HAS_GECODE)
+if(NOT GECODE_FOUND)
   set(FLEX_RegExLexer_OUTPUTS "")
   set(BISON_RegExParser_OUTPUTS "")
 endif()
@@ -673,13 +671,7 @@ if(HAS_OSICBC)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_GECODE)
-
-  add_definitions(-DHAS_GECODE)
-  include_directories("${GECODE_HOME}/include")
-  include_directories("${GECODE_HOME}")
-  link_directories("${GECODE_HOME}/lib")
-  link_directories("${GECODE_HOME}")
+if(GECODE_FOUND)
 
   add_library(minizinc_gecode
     solvers/gecode/fzn_space.cpp
@@ -694,24 +686,14 @@ if(HAS_GECODE)
     include/minizinc/solvers/gecode_solverfactory.hh
     include/minizinc/solvers/gecode/gecode_constraints.hh
     )
+  target_link_libraries(minizinc_gecode minizinc ${CMAKE_THREAD_LIBS_INIT})
 
-  target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include" "${GECODE_HOME}")
-  target_link_libraries(minizinc_gecode
-    minizinc ${CMAKE_THREAD_LIBS_INIT}
-  )
-
-  if(NOT (SHARED_GECODE AND WIN32) )
-    target_link_libraries(minizinc_gecode
-      gecodedriver gecodesearch gecodeminimodel
-      gecodefloat gecodeint gecodeset
-      gecodekernel gecodesupport
-    )
-    target_link_libraries(minizinc
-      gecodedriver gecodesearch gecodeminimodel
-      gecodefloat gecodeint gecodeset
-      gecodekernel gecodesupport
-    )
-  endif()
+  target_include_directories(minizinc PRIVATE ${GECODE_INCLUDES})
+  target_include_directories(minizinc_gecode PRIVATE ${GECODE_INCLUDES})
+  target_include_directories(minizinc_solver PRIVATE ${GECODE_INCLUDES})
+  target_link_libraries(minizinc ${GECODE_LIBRARIES})
+  target_link_libraries(minizinc_gecode ${GECODE_LIBRARIES})
+  target_compile_definitions(minizinc PRIVATE HAS_GECODE)
 
   find_package(MPFR)
   if(MPFR_FOUND AND NOT DEFINED GECODE_NO_MPFR)
@@ -720,7 +702,7 @@ if(HAS_GECODE)
   endif()
 
   target_link_libraries(minizinc_solver minizinc_gecode)
-  target_compile_definitions( minizinc_solver PRIVATE HAS_GECODE )
+  target_compile_definitions(minizinc_solver PRIVATE HAS_GECODE)
   set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_gecode)
 
   INSTALL(TARGETS minizinc_gecode
