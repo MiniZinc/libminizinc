@@ -1,4 +1,4 @@
-cmake_minimum_required (VERSION 3.0.0)
+cmake_minimum_required (VERSION 3.4.0)
 
 project (libminizinc CXX C)
 set(CMAKE_MODULE_PATH
@@ -138,39 +138,9 @@ if (HAS_WERROR)
   SET(CMAKE_REQUIRED_FLAGS "${CMAKE_REQUIRED_FLAGS} -Werror")
 endif()
 
-if ( (CMAKE_VERSION VERSION_GREATER 3.1.0) OR (CMAKE_VERSION VERSION_EQUAL 3.1.0) )
-  set (CMAKE_CXX_STANDARD 11)
-endif()
-check_cxx_compiler_flag(-std=c++11 HAS_STDCPP11)
-if (HAS_STDCPP11)
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
-else()
-  check_cxx_compiler_flag(-std=c++0x HAS_STDCPP0X)
-  if (HAS_STDCPP0X)
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x")
-  else()
-    message("Warning: Initial check for C++11 unsuccessful. This is fine if HAS_CPP11 test below succeeds.")
-  endif()
-endif()
+set (CMAKE_CXX_STANDARD 11)
 
 # -------------------------------------------------------------------------------------------------------------------
-if (USE_STDLIBCPP)
-  set(MZN_LIBCPP libstdc++)
-  set(SAFE_CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=${MZN_LIBCPP}")
-  check_cxx_source_compiles("int main(void) {return 0;}" LINKS_STDLIBLIBCPP)
-  if (NOT LINKS_STDLIBLIBCPP)
-    set(CMAKE_CXX_FLAGS "${SAFE_CMAKE_CXX_FLAGS}")
-  endif()
-endif()
-
-check_cxx_source_compiles("#include <unordered_set>
-int main(void) { std::unordered_set<int> x; return 0; }" HAS_CPP11)
-
-if (NOT HAS_CPP11)
-  message(FATAL_ERROR "A c++11 compatible C++ standard library is required to build libminizinc.")
-endif()
-
 CHECK_CXX_SOURCE_COMPILES("int main(void) { static __thread int x; (void)x; return 0;}" HAS_ATTR_THREAD)
 
 if (NOT HAS_ATTR_THREAD)
