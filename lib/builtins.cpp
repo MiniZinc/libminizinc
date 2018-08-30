@@ -1467,6 +1467,30 @@ namespace MiniZinc {
       }
     }
   }
+
+  std::string b_format_justify_string(EnvI& env, Call* call) {
+    int width = 0;
+    GCLock lock;
+    Expression* e;
+    width = static_cast<int>(eval_int(env,call->arg(0)).toInt());
+    e = eval_par(env,call->arg(1));
+    std::string s = eval_string(env,e);
+    std::ostringstream oss;
+    if (s.size() < std::abs(width)) {
+      int addLeft = width < 0 ? 0 : (width - static_cast<int>(s.size()));
+      if (addLeft < 0) addLeft = 0;
+      int addRight = width < 0 ? (-width-static_cast<int>(s.size())) : 0;
+      if (addRight < 0) addRight = 0;
+      for (int i=addLeft; i--;)
+        oss << " ";
+      oss << s;
+      for (int i=addRight; i--;)
+        oss << " ";
+      return oss.str();
+    } else {
+      return s;
+    }
+  }
   
   std::string b_show_int(EnvI& env, Call* call) {
     assert(call->n_args()==2);
@@ -2686,6 +2710,8 @@ namespace MiniZinc {
       rb(env, m, ASTString("format"), t, b_format);
       t[1] = Type::vartop(-1);
       rb(env, m, ASTString("format"), t, b_format);
+      t[1] = Type::parstring();
+      rb(env, m, ASTString("format_justify_string"), t, b_format_justify_string);
     }
     {
       std::vector<Type> t(2);

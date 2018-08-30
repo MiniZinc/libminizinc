@@ -1307,7 +1307,7 @@ function string: show2d(array[int,int] of var opt $T: x) =
         int: max_length = max([string_length(s[i]) | i in index_set(s)])
   } in
   "[| "++
-  concat([format(max_length,s[(i-1)*cols+j])++
+  concat([format_justify_string(max_length,s[(i-1)*cols+j])++
    if j<cols then ", "
    elseif i<rows then " |\n   " else " |]\n"
    endif | i in 1..rows, j in 1..cols
@@ -1324,7 +1324,7 @@ function string: show3d(array[int,int,int] of var opt $T: x) =
         int: max_length = max([string_length(s[i]) | i in index_set(s)])
   } in
   "[| | "++
-  concat([format(max_length,s[(i-1)*len2*len3+(j-1)*len3+k])++
+  concat([format_justify_string(max_length,s[(i-1)*len2*len3+(j-1)*len3+k])++
    if k<len3 then ", "
    elseif j<len2 then " |\n     "
    elseif i<len1 then " |,\n\n   | "
@@ -1408,6 +1408,13 @@ justified by the number of characters given by \a w, or left
 justified if \a w is negative.
 */
 function string: format(int: w, array[$U] of var opt $T: x);
+/** @group builtins.string String justification
+
+Returns the string \a x right
+justified by the number of characters given by \a w, or left
+justified if \a w is negative.
+*/
+function string: format_justify_string(int: w, string: x);
 
 /** @group builtins.string Return path of file where this function is called */
 function string: file_path();
