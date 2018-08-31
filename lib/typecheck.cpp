@@ -776,7 +776,10 @@ namespace MiniZinc {
           }
           if (needIdxSet) {
             std::ostringstream oss;
-            oss << "index_set_" << (i+1) << "of" << aa->idx().size();
+            oss << "index_set";
+            if (aa->idx().size()>1) {
+              oss << "_" << (i+1) << "of" << aa->idx().size();
+            }
             std::vector<Expression*> origIdxsetArgs(1);
             origIdxsetArgs[0] = aa->v();
             Call* origIdxset = new Call(aa->v()->loc(), ASTString(oss.str()), origIdxsetArgs);
