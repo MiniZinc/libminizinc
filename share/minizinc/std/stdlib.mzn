@@ -110,7 +110,8 @@ annotation seq_search(array[int] of ann: s);
 
 /** @group annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, value choice strategy \a choice, and exploration strategy
-  \a explore.
+  \a explore. If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
 */
 annotation int_search(
     array[$X] of var int: x,
@@ -121,6 +122,8 @@ annotation int_search(
 
 /** @group annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, and value choice strategy \a choice.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
 */
 annotation int_search(
     array[$X] of var int: x,
@@ -131,6 +134,8 @@ annotation int_search(
 /** @group annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, value choice strategy \a choice, and exploration strategy
   \a explore.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
 */
 annotation bool_search(
     array[$X] of var bool: x,
@@ -141,6 +146,8 @@ annotation bool_search(
 
 /** @group annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, and value choice strategy \a choice.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
 */
 annotation bool_search(
     array[$X] of var bool: x,
@@ -152,6 +159,8 @@ annotation bool_search(
   with precision \a prec, variable selection
   strategy \a select, value choice strategy \a choice, and exploration strategy
   \a explore.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
 */
 annotation float_search(
     array[$X] of var float: x,
@@ -164,6 +173,8 @@ annotation float_search(
 /** @group annotations.search Specify search on variables \a x, 
   with precision \a prec, variable selection
   strategy \a select, and value choice strategy \a choice.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
 */
 annotation float_search(
     array[$X] of var float: x,
@@ -175,6 +186,8 @@ annotation float_search(
 /** @group annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, value choice strategy \a choice, and exploration strategy
   \a explore.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
 */
 annotation set_search(
     array[$X] of var set of int: x,
@@ -185,6 +198,8 @@ annotation set_search(
 
 /** @group annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, and value choice strategy \a choice.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
 */
 annotation set_search(
     array[$X] of var set of int: x,
