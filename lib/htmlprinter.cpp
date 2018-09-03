@@ -24,6 +24,10 @@ namespace MiniZinc {
 
   namespace HtmlDocOutput {
 
+    
+    // Trim leading space:
+    // - always trim first line completely
+    // - second line defines the base indentation
     std::string trim(const std::string& s0) {
       std::string s = s0;
       // remove carriage returns
@@ -33,15 +37,43 @@ namespace MiniZinc {
           s[j++]=s[i];
       }
       s.resize(j);
-      size_t leading = s.find_first_not_of(" \t");
-      if (leading==std::string::npos)
+      size_t first_line_indent = s.find_first_not_of(" \t");
+      if (first_line_indent==std::string::npos)
         return "";
+      size_t first_nl = s.find("\n");
       std::ostringstream oss;
-      size_t pos = s.find("\n");
-      size_t lastpos = leading;
+      if (first_line_indent==first_nl) {
+        // first line is empty
+        oss << "\n";
+        std::cerr << "--empty first line\n";
+      } else {
+        // strip first line
+        size_t end_of_first_line = first_nl==std::string::npos ? std::string::npos : first_nl-first_line_indent+1;
+        oss << s.substr(first_line_indent, end_of_first_line);
+        std::cerr << "--" << first_line_indent << ", " << first_nl << "\n";
+        std::cerr << "'" << s.substr(first_line_indent, end_of_first_line) << "'\n";
+      }
+      if (first_nl==std::string::npos)
+        return oss.str();
+      size_t unindent = s.find_first_not_of(" \t", first_nl+1);
+      if (unindent==std::string::npos)
+        return oss.str();
+      size_t pos = s.find("\n", first_nl+1);
+      if (unindent==0 || unindent > pos) {
+        oss << s.substr(first_nl+1,std::string::npos);
+        return oss.str();
+      }
+      size_t lastpos = unindent;
       while (pos != std::string::npos) {
         oss << s.substr(lastpos, pos-lastpos) << "\n";
-        lastpos = s.find_first_not_of(" \t", pos+1);
+        size_t next_indent = s.find_first_not_of(" \t", pos+1);
+        if (next_indent==std::string::npos) {
+          lastpos = next_indent;
+        } else if (next_indent-(pos+1) < unindent) {
+          lastpos = next_indent;
+        } else {
+          lastpos = pos+1+unindent;
+        }
         pos = (lastpos == std::string::npos ? lastpos : s.find("\n", lastpos));
       }
       if (lastpos != std::string::npos)
@@ -324,7 +356,7 @@ namespace MiniZinc {
       while (end < s.size() && (isalnum(s[end]) || s[end]=='_' || s[end]=='.'))
         end++;
       std::string ret = s.substr(start,end-start);
-      s = s.substr(0,n)+s.substr(end,std::string::npos);
+      s = s.substr(end,std::string::npos);
       return ret;
     }
 
@@ -908,18 +940,19 @@ namespace MiniZinc {
         size_t end = start+1;
         while (end < s.size() && (isalnum(s[end]) || s[end]=='_'))
           end++;
+        bool needSpace = pos != 0 && s[pos-1] != ' ' && s[pos-1] != '\n';
         if (s[pos+1]=='a') {
           replacements.push_back(s.substr(start,end-start));
           if (pos >= mathjax_open && pos <= mathjax_close) {
             oss << "{\\bf " << replacements.back() << "}";
           } else {
-            oss << " ``" << replacements.back() << "`` ";
+            oss << (needSpace ? " " : "") << "``" << replacements.back() << "`` ";
           }
         } else {
           if (pos >= mathjax_open && pos <= mathjax_close) {
             oss << "{\\bf " << s.substr(start,end-start) << "}";
           } else {
-            oss << " ``" << s.substr(start,end-start) << "`` ";
+            oss << (needSpace ? " " : "") << "``" << s.substr(start,end-start) << "`` ";
           }
         }
         lastpos = end;
@@ -974,62 +1007,7 @@ namespace MiniZinc {
       s = s.substr(0,n)+s.substr(end,std::string::npos);
       return make_pair(arg,ret);
     }
-    
-    std::string addHTML(const std::string& s) {
-      std::ostringstream oss;
-      size_t lastpos = 0;
-      size_t pos = s.find('\n');
-      bool inUl = false;
-      oss << "<p>\n";
-      while (pos != std::string::npos) {
-        oss << s.substr(lastpos, pos-lastpos);
-        size_t next = std::min(s.find('\n', pos+1),s.find('-', pos+1));
-        if (next==std::string::npos) {
-          lastpos = pos+1;
-          break;
-        }
-        bool allwhite = true;
-        for (size_t cur = pos+1; cur < next; cur++) {
-          if (s[cur]!=' ' && s[cur]!='\t') {
-            allwhite = false;
-            break;
-          }
-        }
-        if (allwhite) {
-          if (s[next]=='-') {
-            if (!inUl) {
-              oss << "<ul>\n";
-              inUl = true;
-            }
-            oss << "<li>";
-          } else {
-            if (inUl) {
-              oss << "</ul>\n";
-              inUl = false;
-            } else {
-              oss << "</p><p>\n";
-            }
-          }
-          lastpos = next+1;
-          pos = s.find('\n', lastpos);
-        } else {
-          lastpos = pos+1;
-          if (s[pos]=='\n') {
-            oss << " ";
-          }
-          if (s[next]=='-') {
-            pos = s.find('\n', next+1);
-          } else {
-            pos = next;
-          }
-        }
-      }
-      oss << s.substr(lastpos, std::string::npos);
-      if (inUl)
-        oss << "</ul>\n";
-      oss << "</p>\n";
-      return oss.str();
-    }
+
     
   public:
     PrintRSTVisitor(EnvI& env0, HtmlDocOutput::Group& mg, HtmlDocOutput::FunMap& fm, bool includeStdLib) : env(env0), _maingroup(mg), _funmap(fm), _includeStdLib(includeStdLib) {}
