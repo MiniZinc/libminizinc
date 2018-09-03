@@ -1351,7 +1351,7 @@ function string: show2d(array[int,int] of var opt $T: x) =
    if j<cols then ", "
    elseif i<rows then " |\n   " else " |]\n"
    endif | i in 1..rows, j in 1..cols
-  ]);
+  ])++if rows=0 then "|]" else "" endif;
 
 /** @group builtins.string Convert three-dimensional array \a x into a string */
 function string: show3d(array[int,int,int] of var opt $T: x) =
@@ -1370,7 +1370,7 @@ function string: show3d(array[int,int,int] of var opt $T: x) =
    elseif i<len1 then " |,\n\n   | "
    else " | |]\n"
    endif | i in 1..len1, j in 1..len2, k in 1..len3
-  ]);
+  ])++if len1=0 then "| |]" else "" endif;
 
 /** @group builtins.string Convert \a x into JSON string */
 function string: showJSON(var opt $T: x);
