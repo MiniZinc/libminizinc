@@ -82,13 +82,13 @@ annotation mzn_path(string: s);
 annotation mzn_break_here;
 /** @group annotations.general Used to attach a name \a s to an expression, this should also propagate to
   any sub-expressions or decomposition of the annotated expression. String annotations on expressions
-  are re-written as expression_name annotations **/
+  are re-written as expression_name annotations */
 annotation expression_name(string: s);
 /** @group annotations.general Used to attach a name \a s to a constraint and its decomposition. String
-  annotations on constraint keywords are re-written as constraint_name annotations **/
+  annotations on constraint keywords are re-written as constraint_name annotations */
 annotation constraint_name(string: s);
 
-/** @group annotations.general Used internally by the compiler **/
+/** @group annotations.general Used internally by the compiler */
 annotation mzn_rhs_from_assignment;
 
 /***
