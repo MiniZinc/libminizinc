@@ -1061,6 +1061,34 @@ namespace MiniZinc {
         const std::vector<unsigned int>& arrayEnumIds = _env.getArrayEnum(tt.enumId());
         
         for (unsigned int i=0; i<arrayEnumIds.size()-1; i++) {
+          Expression* aai = aa.idx()[i];
+          // Check if index is slice operator, and convert to correct enum type
+          if (SetLit* aai_sl = aai->dyn_cast<SetLit>()) {
+            if (IntSetVal* aai_isv = aai_sl->isv()) {
+              if (aai_isv->min()==-IntVal::infinity() && aai_isv->max()==IntVal::infinity()) {
+                Type aai_sl_t = aai_sl->type();
+                aai_sl_t.enumId(arrayEnumIds[i]);
+                aai_sl->type(aai_sl_t);
+              }
+            }
+          } else if (BinOp* aai_bo = aai->dyn_cast<BinOp>()) {
+            if (aai_bo->op()==BOT_DOTDOT) {
+              Type aai_bo_t = aai_bo->type();
+              if (IntLit* il = aai_bo->lhs()->dyn_cast<IntLit>()) {
+                if (il->v()==-IntVal::infinity()) {
+                  // Expression is ..X, so result gets enum type of X
+                  aai_bo_t.enumId(aai_bo->rhs()->type().enumId());
+                }
+              } else if (IntLit* il = aai_bo->rhs()->dyn_cast<IntLit>()) {
+                if (il->v()==IntVal::infinity()) {
+                  // Expression is X.., so result gets enum type of X
+                  aai_bo_t.enumId(aai_bo->lhs()->type().enumId());
+                }
+              }
+              aai_bo->type(aai_bo_t);
+            }
+          }
+
           if (arrayEnumIds[i] != 0) {
             if (aa.idx()[i]->type().enumId() != arrayEnumIds[i]) {
               std::ostringstream oss;
