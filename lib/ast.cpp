@@ -572,6 +572,7 @@ namespace MiniZinc {
       Id* sBOT_DIV;
       Id* sBOT_IDIV;
       Id* sBOT_MOD;
+      Id* sBOT_POW;
       Id* sBOT_LE;
       Id* sBOT_LQ;
       Id* sBOT_GR;
@@ -611,6 +612,8 @@ namespace MiniZinc {
         rootSet.push_back(sBOT_IDIV);
         sBOT_MOD = new Id(Location(),"'mod'",NULL);
         rootSet.push_back(sBOT_MOD);
+        sBOT_POW = new Id(Location(),"'^'",NULL);
+        rootSet.push_back(sBOT_POW);
         sBOT_LE = new Id(Location(),"'<'",NULL);
         rootSet.push_back(sBOT_LE);
         sBOT_LQ = new Id(Location(),"'<='",NULL);
@@ -675,6 +678,7 @@ namespace MiniZinc {
     case BOT_DIV: return OpToString::o().sBOT_DIV->v();
     case BOT_IDIV: return OpToString::o().sBOT_IDIV->v();
     case BOT_MOD: return OpToString::o().sBOT_MOD->v();
+    case BOT_POW: return OpToString::o().sBOT_POW->v();
     case BOT_LE: return OpToString::o().sBOT_LE->v();
     case BOT_LQ: return OpToString::o().sBOT_LQ->v();
     case BOT_GR: return OpToString::o().sBOT_GR->v();
@@ -1357,6 +1361,7 @@ namespace MiniZinc {
     ids.set_eq = ASTString("set_eq");
     ids.set_in = ASTString("set_in");
     ids.set_card = ASTString("set_card");
+    ids.pow = ASTString("pow");
     
     ids.introduced_var = ASTString("__INTRODUCED");
 
@@ -1580,6 +1585,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.set_eq));
     v.push_back(new StringLit(Location(),ids.set_in));
     v.push_back(new StringLit(Location(),ids.set_card));
+    v.push_back(new StringLit(Location(),ids.pow));
 
     v.push_back(new StringLit(Location(),ids.assert));
     v.push_back(new StringLit(Location(),ids.trace));

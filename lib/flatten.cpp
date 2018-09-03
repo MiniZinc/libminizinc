@@ -2121,6 +2121,7 @@ namespace MiniZinc {
         case BOT_PLUS: return constants().ids.int_.plus;
         case BOT_MINUS: return constants().ids.int_.minus;
         case BOT_MULT: return constants().ids.int_.times;
+        case BOT_POW: return constants().ids.pow;
         case BOT_IDIV: return constants().ids.int_.div;
         case BOT_MOD: return constants().ids.int_.mod;
         case BOT_LE: return constants().ids.int_.lt;
@@ -2143,6 +2144,7 @@ namespace MiniZinc {
         case BOT_PLUS: return constants().ids.float_.plus;
         case BOT_MINUS: return constants().ids.float_.minus;
         case BOT_MULT: return constants().ids.float_.times;
+        case BOT_POW: return constants().ids.pow;
         case BOT_DIV: return constants().ids.float_.div;
         case BOT_MOD: return constants().ids.float_.mod;
         case BOT_LE: return constants().ids.float_.lt;
@@ -4507,6 +4509,7 @@ namespace MiniZinc {
           case BOT_MULT:
           case BOT_IDIV:
           case BOT_MOD:
+          case BOT_POW:
           case BOT_DIV:
           case BOT_UNION:
           case BOT_DIFF:

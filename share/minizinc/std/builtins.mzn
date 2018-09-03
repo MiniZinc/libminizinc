@@ -212,10 +212,18 @@ function var float: '-'(var float: x,var float: y);
 function     int:   '*'(    int: x,     int: y);
 /** @group builtins.arithmetic Return \a x * \a y */
 function var int:   '*'(var int: x,  var int: y);
+/** @group builtins.arithmetic Return \a x ^ \a y */
+function     int:   '^'(    int: x,     int: y);
+/** @group builtins.arithmetic Return \a x ^ \a y */
+function var int:   '^'(var int: x,  var int: y);
 /** @group builtins.arithmetic Return \a x * \a y */
 function     float: '*'(    float: x,    float: y);
 /** @group builtins.arithmetic Return \a x * \a y */
 function var float: '*'(var float: x,var float: y);
+/** @group builtins.arithmetic Return \a x ^ \a y */
+function     float: '^'(    float: x,    float: y);
+/** @group builtins.arithmetic Return \a x ^ \a y */
+function var float: '^'(var float: x,var float: y);
 /** @group builtins.arithmetic Return negative \a x */
 function     int:   '-'(    int: x);
 /** @group builtins.arithmetic Return negative \a x */
@@ -404,7 +412,7 @@ function var int: pow(var int: x, var int: y) =
   if yy = 0 then 1
   elseif yy = 1 then x else
   let { var int: r ::is_defined_var;
-        constraint int_pow(x,y,r) ::defines_var(r);
+        constraint if is_fixed(y) then int_pow_fixed(x,fix(y),r) ::defines_var(r) else int_pow(x,y,r) ::defines_var(r) endif;
   } in r
   endif;
 
@@ -2675,6 +2683,7 @@ include "redefinitions-2.0.mzn";
 include "redefinitions-2.0.2.mzn";
 include "redefinitions-2.1.mzn";
 include "redefinitions-2.1.1.mzn";
+include "redefinitions-2.2.1.mzn";
 
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%

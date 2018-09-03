@@ -17,6 +17,8 @@
 #include <minizinc/astiterator.hh>
 #include <minizinc/flatten.hh>
 
+#include <cmath>
+
 namespace MiniZinc {
 
   template<class E>
@@ -1305,6 +1307,7 @@ namespace MiniZinc {
             case BOT_PLUS: return v0+v1;
             case BOT_MINUS: return v0-v1;
             case BOT_MULT: return v0*v1;
+            case BOT_POW: return v0.pow(v1);
             case BOT_IDIV:
               if (v1==0)
                 throw ResultUndefinedError(env, e->loc(),"division by zero");
@@ -1421,6 +1424,7 @@ namespace MiniZinc {
           case BOT_PLUS: return v0+v1;
           case BOT_MINUS: return v0-v1;
           case BOT_MULT: return v0*v1;
+          case BOT_POW: return std::pow(v0.toDouble(),v1.toDouble());
           case BOT_DIV:
             if (v1==0.0)
               throw ResultUndefinedError(env, e->loc(),"division by zero");
@@ -1980,6 +1984,20 @@ namespace MiniZinc {
             _bounds.push_back(Bounds(m,n));
           }
             break;
+          case BOT_POW:
+          {
+            IntVal exp_min = std::min(0,b1.first);
+            IntVal exp_max = std::min(0,b1.second);
+            
+            IntVal x0 = b0.first.pow(exp_min);
+            IntVal x1 = b0.first.pow(exp_max);
+            IntVal x2 = b0.second.pow(exp_min);
+            IntVal x3 = b0.second.pow(exp_max);
+            IntVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
+            IntVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
+            _bounds.push_back(Bounds(m,n));
+          }
+            break;
           case BOT_DIV:
           case BOT_LE:
           case BOT_LQ:
@@ -2309,6 +2327,17 @@ namespace MiniZinc {
             FloatVal x1 = b0.first*b1.second;
             FloatVal x2 = b0.second*b1.first;
             FloatVal x3 = b0.second*b1.second;
+            FloatVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
+            FloatVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
+            _bounds.push_back(FBounds(m,n));
+          }
+            break;
+          case BOT_POW:
+          {
+            FloatVal x0 = std::pow(b0.first.toDouble(),b1.first.toDouble());
+            FloatVal x1 = std::pow(b0.first.toDouble(),b1.second.toDouble());
+            FloatVal x2 = std::pow(b0.second.toDouble(),b1.first.toDouble());
+            FloatVal x3 = std::pow(b0.second.toDouble(),b1.second.toDouble());
             FloatVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
             FloatVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
             _bounds.push_back(FBounds(m,n));
@@ -2645,6 +2674,7 @@ namespace MiniZinc {
         case BOT_PLUS:
         case BOT_MINUS:
         case BOT_MULT:
+        case BOT_POW:
         case BOT_DIV:
         case BOT_IDIV:
         case BOT_MOD:

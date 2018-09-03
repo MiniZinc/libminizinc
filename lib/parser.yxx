@@ -553,6 +553,7 @@ namespace MiniZinc {
 %token MZN_DOTDOT ".."
 %token MZN_PLUS "+" MZN_MINUS "-"
 %token MZN_MULT "*" MZN_DIV "/" MZN_IDIV "div" MZN_MOD "mod" MZN_INTERSECT "intersect"
+%token MZN_POW "^"
 %token MZN_NOT "not"
 %token MZN_PLUSPLUS "++"
 %token MZN_COLONCOLON "::"
@@ -568,6 +569,7 @@ namespace MiniZinc {
 %nonassoc MZN_DOTDOT
 %left MZN_PLUS MZN_MINUS
 %left MZN_MULT MZN_DIV MZN_IDIV MZN_MOD
+%left MZN_POW
 %nonassoc MZN_NOT
 %left MZN_PLUSPLUS
 %left MZN_QUOTED_IDENTIFIER
@@ -583,6 +585,7 @@ namespace MiniZinc {
 %token MZN_DOTDOT_QUOTED "'..'"
 %token MZN_PLUS_QUOTED "'+'" MZN_MINUS_QUOTED "'-'"
 %token MZN_MULT_QUOTED "'*'" MZN_DIV_QUOTED "'/'" MZN_IDIV_QUOTED "'div'" MZN_MOD_QUOTED "'mod'" MZN_INTERSECT_QUOTED "'intersect'"
+%token MZN_POW_QUOTED "'^'"
 %token MZN_NOT_QUOTED "'not'"
 %token MZN_COLONCOLON_QUOTED "'::'"
 %token MZN_PLUSPLUS_QUOTED "'++'"
@@ -1142,6 +1145,8 @@ set_expr :
       { $$=new BinOp(@$, $1, BOT_IDIV, $3); }
     | set_expr MZN_MOD set_expr
       { $$=new BinOp(@$, $1, BOT_MOD, $3); }
+    | set_expr MZN_POW set_expr
+      { $$=new BinOp(@$, $1, BOT_POW, $3); }
     | set_expr MZN_QUOTED_IDENTIFIER set_expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
@@ -1236,6 +1241,8 @@ expr :
       { $$=new BinOp(@$, $1, BOT_IDIV, $3); }
     | expr MZN_MOD expr
       { $$=new BinOp(@$, $1, BOT_MOD, $3); }
+    | expr MZN_POW expr
+      { $$=new BinOp(@$, $1, BOT_POW, $3); }
     | expr MZN_QUOTED_IDENTIFIER expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
@@ -1572,6 +1579,8 @@ quoted_op :
       { $$=BOT_MINUS; }
     | MZN_MULT_QUOTED
       { $$=BOT_MULT; }
+    | MZN_POW_QUOTED
+      { $$=BOT_POW; }
     | MZN_DIV_QUOTED
       { $$=BOT_DIV; }
     | MZN_IDIV_QUOTED
@@ -1841,6 +1850,8 @@ id_or_quoted_op :
       { $$=strdup("'-'"); }
     | MZN_MULT_QUOTED
       { $$=strdup("'*'"); }
+    | MZN_POW_QUOTED
+      { $$=strdup("'^'"); }
     | MZN_DIV_QUOTED
       { $$=strdup("'/'"); }
     | MZN_IDIV_QUOTED

@@ -292,6 +292,8 @@ _                 { return MZN_UNDERSCORE; }
 "'*'"             { return MZN_MULT_QUOTED; }
 "/"               { return MZN_DIV; }
 "'/'"             { return MZN_DIV_QUOTED; }
+"^"               { return MZN_POW; }
+"'^'"             { return MZN_POW_QUOTED; }
 "++"              { return MZN_PLUSPLUS; }
 "'++'"            { return MZN_PLUSPLUS_QUOTED; }
 "<>"              { return MZN_ABSENT; }

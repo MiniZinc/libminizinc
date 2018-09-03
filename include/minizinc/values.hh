@@ -170,6 +170,20 @@ namespace MiniZinc {
       _v = safeMinus(_v,1);
       return ret;
     }
+    IntVal pow(const IntVal& exponent) {
+      if (!exponent.isFinite() || !isFinite())
+        throw ArithmeticError("arithmetic operation on infinite value");
+      if (exponent==0)
+        return 1;
+      if (exponent==1)
+        return *this;
+      IntVal result = 1;
+      for (int i=0; i<exponent.toInt(); i++) {
+        result *= *this;
+      }
+      return result;
+    }
+    
     static const IntVal minint(void);
     static const IntVal maxint(void);
     static const IntVal infinity(void);
