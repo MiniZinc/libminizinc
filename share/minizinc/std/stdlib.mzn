@@ -113,7 +113,7 @@ annotation seq_search(array[int] of ann: s);
   \a explore.
 */
 annotation int_search(
-    array[int] of var int: x,
+    array[$X] of var int: x,
     ann: select,
     ann: choice,
     ann: explore,
@@ -123,7 +123,7 @@ annotation int_search(
   strategy \a select, and value choice strategy \a choice.
 */
 annotation int_search(
-    array[int] of var int: x,
+    array[$X] of var int: x,
     ann: select,
     ann: choice
 ) = int_search(x,select,choice,complete);
@@ -133,7 +133,7 @@ annotation int_search(
   \a explore.
 */
 annotation bool_search(
-    array[int] of var bool: x,
+    array[$X] of var bool: x,
     ann: select,
     ann: choice,
     ann: explore
@@ -143,7 +143,7 @@ annotation bool_search(
   strategy \a select, and value choice strategy \a choice.
 */
 annotation bool_search(
-    array[int] of var bool: x,
+    array[$X] of var bool: x,
     ann: select,
     ann: choice
 ) = bool_search(x,select,choice,complete);
@@ -154,7 +154,7 @@ annotation bool_search(
   \a explore.
 */
 annotation float_search(
-    array[int] of var float: x,
+    array[$X] of var float: x,
     float: prec,
     ann: select,
     ann: choice,
@@ -166,7 +166,7 @@ annotation float_search(
   strategy \a select, and value choice strategy \a choice.
 */
 annotation float_search(
-    array[int] of var float: x,
+    array[$X] of var float: x,
     float: prec,
     ann: select,
     ann: choice
@@ -177,7 +177,7 @@ annotation float_search(
   \a explore.
 */
 annotation set_search(
-    array[int] of var set of int: x,
+    array[$X] of var set of int: x,
     ann: select,
     ann: choice,
     ann: explore
@@ -187,7 +187,7 @@ annotation set_search(
   strategy \a select, and value choice strategy \a choice.
 */
 annotation set_search(
-    array[int] of var set of int: x,
+    array[$X] of var set of int: x,
     ann: select,
     ann: choice
 ) = set_search(x,select,choice,complete);
