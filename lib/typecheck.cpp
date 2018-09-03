@@ -1611,9 +1611,14 @@ namespace MiniZinc {
             vd.ti()->type(vet);
             vd.type(vet);
           } else if (! _env.isSubtype(vet,vdt,true)) {
-            _typeErrors.push_back(TypeError(_env,vd.e()->loc(),
-                                            "initialisation value for `"+vd.id()->str().str()+"' has invalid type-inst: expected `"+
-                                            vd.ti()->type().toString(_env)+"', actual `"+vd.e()->type().toString(_env)+"'"));
+            if (vet == Type::bot(1) && vd.e()->isa<ArrayLit>() && vd.e()->cast<ArrayLit>()->size()==0 &&
+                vdt.dim() != 0) {
+              // this is okay: assigning an empty array (one-dimensional) to an array variable
+            } else {
+              _typeErrors.push_back(TypeError(_env,vd.e()->loc(),
+                                              "initialisation value for `"+vd.id()->str().str()+"' has invalid type-inst: expected `"+
+                                              vd.ti()->type().toString(_env)+"', actual `"+vd.e()->type().toString(_env)+"'"));
+            }
           } else {
             vd.e(addCoercion(_env, _model, vd.e(), vd.ti()->type())());
           }
