@@ -10,7 +10,7 @@ constraint alldifferent([ q[i] - i | i in 1..n]); % upwards+downwards
 include "lex_lesseq.mzn";
 
 % 可选的布尔模型:
-% 映射每一个位置 i,j到一个布尔上来说明在i,j上是否有一个皇后
+% 映射每一个位置 i,j到一个布尔变量上来表示在i,j上是否有一个皇后
 array[1..n,1..n] of var bool: qb;
 
 % 连通约束
