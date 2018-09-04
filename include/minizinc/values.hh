@@ -813,18 +813,18 @@ namespace MiniZinc {
     FloatVal width(int i) const {
       assert(i<size());
       if (min(i).isFinite() && max(i).isFinite() && min(i)==max(i))
-        return max(i)-min(i)+1;
+        return 1;
       else
         return IntVal::infinity();
     }
     /// Return cardinality
     FloatVal card(void) const {
-      IntVal c = 0;
+      FloatVal c = 0;
       for (unsigned int i=size(); i--;) {
         if (width(i).isFinite())
           c += width(i);
         else
-          return IntVal::infinity();
+          return FloatVal::infinity();
       }
       return c;
     }
