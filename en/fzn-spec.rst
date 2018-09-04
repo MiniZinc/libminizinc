@@ -771,6 +771,12 @@ Each value should be output on a line of its own in the following format:
 
   %%%mzn-stat: <name>=<value>
 
+Each block of statistics is terminated by a line of its own with the following format:
+
+.. code-block:: minizincdef
+
+  %%%mzn-stat-end
+
 The :mzndef:`<name>` describes the kind of statistics gathered, and the :mzndef:`<value>` can be any value of a MiniZinc type. The following names are considered standard statistics:
 
 ======================== ====== ================================================
