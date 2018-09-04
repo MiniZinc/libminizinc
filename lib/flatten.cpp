@@ -1859,6 +1859,43 @@ namespace MiniZinc {
                   (void) flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
                 }
               }
+            } else if (vd->e() && vd->e()->type().bt()==Type::BT_FLOAT && vd->e()->type().dim()==0) {
+              GCLock lock;
+              FloatSetVal* fbv = NULL;
+              FloatBounds fb = compute_float_bounds(env,vd->e());
+              if (fb.valid) {
+                fbv = FloatSetVal::a(fb.l,fb.u);
+              }
+              if (fbv) {
+                if (vd->ti()->domain()) {
+                  FloatSetVal* domain = eval_floatset(env,vd->ti()->domain());
+                  FloatSetRanges dr(domain);
+                  FloatSetRanges fbr(fbv);
+                  Ranges::Inter<FloatVal,FloatSetRanges,FloatSetRanges> i(dr,fbr);
+                  FloatSetVal* newfbv = FloatSetVal::ai(i);
+                  
+                  FloatSetRanges dr_eq(domain);
+                  FloatSetRanges newfbv_eq(newfbv);
+                  if (Ranges::equal(dr_eq, newfbv_eq)) {
+                    vd->ti()->setComputedDomain(true);
+                  } else {
+                    fbv = newfbv;
+                  }
+                } else {
+                  vd->ti()->setComputedDomain(true);
+                }
+                SetLit* fbv_l = new SetLit(Location().introduce(),fbv);
+                vd->ti()->domain(fbv_l);
+                if (vd->type().isopt()) {
+                  std::vector<Expression*> args(2);
+                  args[0] = vd->id();
+                  args[1] = fbv_l;
+                  Call* c = new Call(Location().introduce(), "var_dom", args);
+                  c->type(Type::varbool());
+                  c->decl(env.model->matchFn(env, c, false));
+                  (void) flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+                }
+              }
             }
           }
           return ret;
