@@ -1733,6 +1733,7 @@ namespace MiniZinc {
         ASTString pow;
         
         ASTString introduced_var;
+        ASTString anonEnumFromStrings;
       } ids;
     
       /// Identifiers for Boolean contexts

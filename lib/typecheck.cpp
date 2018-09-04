@@ -121,17 +121,41 @@ namespace MiniZinc {
   AssignI* createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, VarDecl* vd_enumToString, Model* enumItems) {
 
     Id* ident = vd->id();
-    SetLit* sl = NULL;
-    
+    SetLit* sl = vd->e()->dyn_cast<SetLit>();
+    ArrayLit* enum_init_al = NULL;
     AssignI* ret = NULL;
     
     GCLock lock;
-    if (Call* c = vd->e()->dyn_cast<Call>()) {
+    if (ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
+      enum_init_al = al;
+    } else if (Call* c = vd->e()->dyn_cast<Call>()) {
       if (c->id()!="anon_enum") {
         throw TypeError(env, c->loc(),
                         "invalid initialisation for enum `"+ident->v().str()+"'");
       }
-    } else if ( (sl = vd->e()->dyn_cast<SetLit>()) ) {
+      if (c->n_args()==1 && c->arg(0)->isa<ArrayLit>()) {
+        enum_init_al = c->arg(0)->cast<ArrayLit>();
+      }
+    }
+    if (enum_init_al) {
+      std::vector<Expression*> enumIds(enum_init_al->size());
+      for (unsigned int i=0; i<enum_init_al->size(); i++) {
+        if (StringLit* sli = (*enum_init_al)[i]->dyn_cast<StringLit>()) {
+          std::string sli_s = sli->v().str();
+          size_t nonIdChar = sli_s.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_");
+          size_t nonIdBegin = sli_s.find_first_of("0123456789_");
+          if (nonIdChar!=std::string::npos || nonIdBegin==0) {
+            sli_s = "'"+sli_s+"'";
+          }
+          enumIds[i] = new Id(sli->loc(),ASTString(sli_s),NULL);
+        } else {
+          throw TypeError(env, vd->e()->loc(),
+                          "invalid initialisation for enum `"+ident->v().str()+"'");
+        }
+      }
+      sl = new SetLit(vd->e()->loc(), enumIds);
+    }
+    if (sl) {
       for (unsigned int i=0; i<sl->v().size(); i++) {
         if (!sl->v()[i]->isa<Id>()) {
           throw TypeError(env, sl->v()[i]->loc(),
@@ -152,7 +176,7 @@ namespace MiniZinc {
       tt.enumId(vd->type().enumId());
       nsl->type(tt);
       vd->e(nsl);
-    } else {
+    } else if (!vd->e()->isa<Call>()) {
       throw TypeError(env, vd->e()->loc(),
                       "invalid initialisation for enum `"+ident->v().str()+"'");
     }

@@ -1364,7 +1364,8 @@ namespace MiniZinc {
     ids.pow = ASTString("pow");
     
     ids.introduced_var = ASTString("__INTRODUCED");
-
+    ids.anonEnumFromStrings = ASTString("anon_enum");
+    
     ctx.root = new Id(Location(),ASTString("ctx_root"),NULL);
     ctx.root->type(Type::ann());
     ctx.pos = new Id(Location(),ASTString("ctx_pos"),NULL);
@@ -1590,6 +1591,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.assert));
     v.push_back(new StringLit(Location(),ids.trace));
     v.push_back(new StringLit(Location(),ids.introduced_var));
+    v.push_back(new StringLit(Location(),ids.anonEnumFromStrings));
     v.push_back(ctx.root);
     v.push_back(ctx.pos);
     v.push_back(ctx.neg);

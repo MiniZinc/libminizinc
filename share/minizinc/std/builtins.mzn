@@ -2691,6 +2691,8 @@ predicate implied_constraint(var bool: b) = redundant_constraint(b);
 
 function set of int: anon_enum(int: n) = 1..n;
 
+function set of int: anon_enum(array[int] of string: x);
+
 /***
   @groupdef builtins.language Language information
   
