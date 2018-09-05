@@ -935,7 +935,7 @@ namespace MiniZinc {
 
   /// Type of binary operators
   enum BinOpType {
-    BOT_PLUS, BOT_MINUS, BOT_MULT, BOT_DIV, BOT_IDIV, BOT_MOD,
+    BOT_PLUS, BOT_MINUS, BOT_MULT, BOT_DIV, BOT_IDIV, BOT_MOD, BOT_POW,
     BOT_LE, BOT_LQ, BOT_GR, BOT_GQ, BOT_EQ, BOT_NQ,
     BOT_IN, BOT_SUBSET, BOT_SUPERSET, BOT_UNION, BOT_DIFF, BOT_SYMDIFF,
     BOT_INTERSECT,
@@ -1730,8 +1730,10 @@ namespace MiniZinc {
         ASTString set_eq;
         ASTString set_in;
         ASTString set_card;
+        ASTString pow;
         
         ASTString introduced_var;
+        ASTString anonEnumFromStrings;
       } ids;
     
       /// Identifiers for Boolean contexts

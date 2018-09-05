@@ -226,6 +226,7 @@ namespace MiniZinc {
         sigaction(SIGTERM, &sa, &old_sa_term);
         
         bool done = false;
+        bool timed_out = false;
         while (!done) {
           FD_SET(pipes[1][0], &fdset);
           FD_SET(pipes[2][0], &fdset);
@@ -261,6 +262,7 @@ namespace MiniZinc {
               timeout.tv_sec = 0;
             }
             if(timeout.tv_sec <= 0 && timeout.tv_usec <= 0) {
+              timed_out = true;
               if(sigint) {
                 kill(childPID, SIGINT);
                 timeout.tv_sec = 0;
@@ -302,10 +304,10 @@ namespace MiniZinc {
 
         close(pipes[1][0]);
         close(pipes[2][0]);
-        int exitStatus = 1;
+        int exitStatus = timed_out ? 0 : 1;
         int childStatus;
         int pidStatus = waitpid(childPID, &childStatus, 0);
-        if (pidStatus > 0) {
+        if (!timed_out && pidStatus > 0) {
           if (WIFEXITED(childStatus)) {
             exitStatus = WEXITSTATUS(childStatus);
           }

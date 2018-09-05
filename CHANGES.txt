@@ -5,6 +5,32 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.2.1
+=============
+
+Changes:
+ - all_different, all_equal, {int,set,float,bool}_search now accept
+   multi-dimensional arrays.
+ - Add exponentiation operator (^).
+ - Improve layout of generated library documentation for some constraints.
+ - Relax typechecking to allow assignment of empty array ([]) to
+   multi-dimensional array variables. This is required to make empty
+   arrays work in JSON data files.
+ - Enumerated types can now be initialised using lists of strings.
+   This enables enumerated type support in JSON.
+
+Bug fixes:
+ - Cumulative constraint for linear solvers now accepts empty arrays.
+ - show2d/show3d functions now do not add quotes around array elements and
+   work for empty arrays.
+ - Add support for slicing of arrays with enumerated types. Fixes #229.
+ - Fix slicing of 1d arrays.
+ - Fix bounds computation for float variable declarations. Fixes #225.
+ - When FlatZinc solver is terminated due to a timeout, do not report this
+   as an error.
+ - Fix pretty-printing of multi-dimensional arrays where dimensions other than
+   the first one are empty. Fixes #236.
+
 Version 2.2.0
 =============
 This is a major release of MiniZinc, introducing many new features and improvements.

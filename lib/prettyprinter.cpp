@@ -79,6 +79,8 @@ namespace MiniZinc {
         return 300;
       case BOT_INTERSECT:
         return 300;
+      case BOT_POW:
+        return 200;
       case BOT_PLUSPLUS:
         return 200;
       default:
@@ -346,7 +348,7 @@ namespace MiniZinc {
                 os << ",";
             }
             os << "]";
-          } else if (n == 2 && al.min(0) == 1 && al.min(1) == 1) {
+          } else if (n == 2 && al.min(0) == 1 && al.min(1) == 1 && al.max(1) != 0) {
             os << "[|";
             for (int i = 0; i < al.max(0); i++) {
               for (int j = 0; j < al.max(1); j++) {
@@ -448,6 +450,9 @@ namespace MiniZinc {
             break;
           case BOT_MULT:
             os<<"*";
+            break;
+          case BOT_POW:
+            os<<"^";
             break;
           case BOT_DIV:
             os<<"/";
@@ -1340,6 +1345,9 @@ namespace MiniZinc {
         break;
       case BOT_MULT:
         op = "*";
+        break;
+      case BOT_POW:
+        op = "^";
         break;
       case BOT_DIV:
         op = "/";

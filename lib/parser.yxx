@@ -553,6 +553,7 @@ namespace MiniZinc {
 %token MZN_DOTDOT ".."
 %token MZN_PLUS "+" MZN_MINUS "-"
 %token MZN_MULT "*" MZN_DIV "/" MZN_IDIV "div" MZN_MOD "mod" MZN_INTERSECT "intersect"
+%token MZN_POW "^"
 %token MZN_NOT "not"
 %token MZN_PLUSPLUS "++"
 %token MZN_COLONCOLON "::"
@@ -568,6 +569,7 @@ namespace MiniZinc {
 %nonassoc MZN_DOTDOT
 %left MZN_PLUS MZN_MINUS
 %left MZN_MULT MZN_DIV MZN_IDIV MZN_MOD
+%left MZN_POW
 %nonassoc MZN_NOT
 %left MZN_PLUSPLUS
 %left MZN_QUOTED_IDENTIFIER
@@ -583,6 +585,7 @@ namespace MiniZinc {
 %token MZN_DOTDOT_QUOTED "'..'"
 %token MZN_PLUS_QUOTED "'+'" MZN_MINUS_QUOTED "'-'"
 %token MZN_MULT_QUOTED "'*'" MZN_DIV_QUOTED "'/'" MZN_IDIV_QUOTED "'div'" MZN_MOD_QUOTED "'mod'" MZN_INTERSECT_QUOTED "'intersect'"
+%token MZN_POW_QUOTED "'^'"
 %token MZN_NOT_QUOTED "'not'"
 %token MZN_COLONCOLON_QUOTED "'::'"
 %token MZN_PLUSPLUS_QUOTED "'++'"
@@ -594,11 +597,11 @@ namespace MiniZinc {
 %type <tiexpr> ti_expr base_ti_expr base_ti_expr_tail
 %type <tiexpr_v> ti_expr_list ti_expr_list_head
 
-%type <expression> expr expr_atom_head expr_atom_head_nonstring
+%type <expression> expr expr_atom_head expr_atom_head_nonstring array_access_expr
 %type <expression> set_expr string_expr string_quote_rest annotation_expr
 %type <expression> simple_array_literal simple_array_literal_2d simple_array_comp if_then_else_expr call_expr quoted_op_call let_expr operation_item_tail set_literal set_comp
 
-%type <expression_v> expr_list expr_list_head elseif_list let_vardecl_item_list enum_id_list
+%type <expression_v> expr_list expr_list_head array_access_expr_list array_access_expr_list_head elseif_list let_vardecl_item_list enum_id_list string_lit_list
 %type <expression_vv> simple_array_literal_2d_list array_access_tail
 %type <expression_vvv> simple_array_literal_3d_list
 
@@ -787,6 +790,18 @@ vardecl_item :
         delete $5;
         $$ = new VarDeclI(@$,vd);
       }
+    | MZN_ENUM MZN_IDENTIFIER MZN_EQ MZN_LEFT_BRACKET string_lit_list MZN_RIGHT_BRACKET
+      {
+        TypeInst* ti = new TypeInst(@$,Type::parsetint());
+        ti->setIsEnum(true);
+        vector<Expression*> args;
+        args.push_back(new ArrayLit(@$,*$5));
+        Call* sl = new Call(@$, constants().ids.anonEnumFromStrings, args);
+        VarDecl* vd = new VarDecl(@$,ti,$2,sl);
+        free($2);
+        delete $5;
+        $$ = new VarDeclI(@$,vd);
+      }
     | MZN_ENUM MZN_IDENTIFIER MZN_EQ MZN_IDENTIFIER '(' expr ')'
       {
         TypeInst* ti = new TypeInst(@$,Type::parsetint());
@@ -796,7 +811,21 @@ vardecl_item :
         Call* sl = new Call(@$, ASTString($4), args);
         VarDecl* vd = new VarDecl(@$,ti,$2,sl);
         free($2);
+        free($4);
         $$ = new VarDeclI(@$,vd);
+      }
+
+string_lit_list :
+    | // empty
+      { $$ = new std::vector<Expression*>(); }
+    | MZN_STRING_LITERAL
+      { $$ = new std::vector<Expression*>();
+        $$->push_back(new StringLit(@$, $1)); free($1);
+      }
+    | string_lit_list ',' MZN_STRING_LITERAL
+      { $$ = $1;
+        if ($$) $$->push_back(new StringLit(@$, $3));
+        free($3);
       }
 
 enum_id_list :
@@ -1055,6 +1084,39 @@ base_ti_expr_tail :
           free($1);
       }
 
+array_access_expr_list : array_access_expr_list_head comma_or_none
+
+array_access_expr_list_head :
+      array_access_expr
+      { $$=new std::vector<MiniZinc::Expression*>; $$->push_back($1); }
+    | array_access_expr_list_head ',' array_access_expr
+      { $$=$1; if ($$ && $3) $$->push_back($3); }
+
+array_access_expr :
+      expr
+      { $$ = $1; }
+    | MZN_DOTDOT
+      { $$=new SetLit(@$, IntSetVal::a(-IntVal::infinity(),IntVal::infinity())); }
+    | MZN_DOTDOT expr
+      { if ($2==NULL) {
+          $$ = NULL;
+        } else if ($2->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a(-IntVal::infinity(),$2->cast<IntLit>()->v()));
+        } else {
+          $$=new BinOp(@$, IntLit::a(-IntVal::infinity()), BOT_DOTDOT, $2);
+        }
+      }
+    | expr MZN_DOTDOT
+      { if ($1==NULL) {
+          $$ = NULL;
+        } else if ($1->isa<IntLit>()) {
+          $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),IntVal::infinity()));
+        } else {
+          $$=new BinOp(@$, $1, BOT_DOTDOT, IntLit::a(IntVal::infinity()));
+        }
+      }
+
+
 expr_list : expr_list_head comma_or_none
 
 expr_list_head :
@@ -1109,6 +1171,8 @@ set_expr :
       { $$=new BinOp(@$, $1, BOT_IDIV, $3); }
     | set_expr MZN_MOD set_expr
       { $$=new BinOp(@$, $1, BOT_MOD, $3); }
+    | set_expr MZN_POW set_expr
+      { $$=new BinOp(@$, $1, BOT_POW, $3); }
     | set_expr MZN_QUOTED_IDENTIFIER set_expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
@@ -1169,26 +1233,6 @@ expr :
       { $$=new BinOp(@$, $1, BOT_DIFF, $3); }
     | expr MZN_SYMDIFF expr
       { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); }
-    | MZN_DOTDOT
-      { $$=new SetLit(@$, IntSetVal::a(-IntVal::infinity(),IntVal::infinity())); }
-    | MZN_DOTDOT expr
-      { if ($2==NULL) {
-        $$ = NULL;
-      } else if ($2->isa<IntLit>()) {
-        $$=new SetLit(@$, IntSetVal::a(-IntVal::infinity(),$2->cast<IntLit>()->v()));
-      } else {
-        $$=new BinOp(@$, IntLit::a(-IntVal::infinity()), BOT_DOTDOT, $2);
-        }
-      }
-    | expr MZN_DOTDOT
-      { if ($1==NULL) {
-          $$ = NULL;
-        } else if ($1->isa<IntLit>()) {
-          $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),IntVal::infinity()));
-        } else {
-          $$=new BinOp(@$, $1, BOT_DOTDOT, IntLit::a(IntVal::infinity()));
-        }
-      }
     | expr MZN_DOTDOT expr
       { if ($1==NULL || $3==NULL) {
           $$ = NULL;
@@ -1223,6 +1267,8 @@ expr :
       { $$=new BinOp(@$, $1, BOT_IDIV, $3); }
     | expr MZN_MOD expr
       { $$=new BinOp(@$, $1, BOT_MOD, $3); }
+    | expr MZN_POW expr
+      { $$=new BinOp(@$, $1, BOT_POW, $3); }
     | expr MZN_QUOTED_IDENTIFIER expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
@@ -1332,14 +1378,14 @@ string_quote_rest:
       }
 
 array_access_tail :
-      MZN_LEFT_BRACKET expr_list MZN_RIGHT_BRACKET
+      MZN_LEFT_BRACKET array_access_expr_list MZN_RIGHT_BRACKET
       { $$=new std::vector<std::vector<Expression*> >();
         if ($2) {
           $$->push_back(*$2);
           delete $2;
         }
       }
-    | array_access_tail MZN_LEFT_BRACKET expr_list MZN_RIGHT_BRACKET
+    | array_access_tail MZN_LEFT_BRACKET array_access_expr_list MZN_RIGHT_BRACKET
       { $$=$1;
         if ($$ && $3) {
           $$->push_back(*$3);
@@ -1559,6 +1605,8 @@ quoted_op :
       { $$=BOT_MINUS; }
     | MZN_MULT_QUOTED
       { $$=BOT_MULT; }
+    | MZN_POW_QUOTED
+      { $$=BOT_POW; }
     | MZN_DIV_QUOTED
       { $$=BOT_DIV; }
     | MZN_IDIV_QUOTED
@@ -1828,6 +1876,8 @@ id_or_quoted_op :
       { $$=strdup("'-'"); }
     | MZN_MULT_QUOTED
       { $$=strdup("'*'"); }
+    | MZN_POW_QUOTED
+      { $$=strdup("'^'"); }
     | MZN_DIV_QUOTED
       { $$=strdup("'/'"); }
     | MZN_IDIV_QUOTED

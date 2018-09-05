@@ -1859,6 +1859,43 @@ namespace MiniZinc {
                   (void) flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
                 }
               }
+            } else if (vd->e() && vd->e()->type().bt()==Type::BT_FLOAT && vd->e()->type().dim()==0) {
+              GCLock lock;
+              FloatSetVal* fbv = NULL;
+              FloatBounds fb = compute_float_bounds(env,vd->e());
+              if (fb.valid) {
+                fbv = FloatSetVal::a(fb.l,fb.u);
+              }
+              if (fbv) {
+                if (vd->ti()->domain()) {
+                  FloatSetVal* domain = eval_floatset(env,vd->ti()->domain());
+                  FloatSetRanges dr(domain);
+                  FloatSetRanges fbr(fbv);
+                  Ranges::Inter<FloatVal,FloatSetRanges,FloatSetRanges> i(dr,fbr);
+                  FloatSetVal* newfbv = FloatSetVal::ai(i);
+                  
+                  FloatSetRanges dr_eq(domain);
+                  FloatSetRanges newfbv_eq(newfbv);
+                  if (Ranges::equal(dr_eq, newfbv_eq)) {
+                    vd->ti()->setComputedDomain(true);
+                  } else {
+                    fbv = newfbv;
+                  }
+                } else {
+                  vd->ti()->setComputedDomain(true);
+                }
+                SetLit* fbv_l = new SetLit(Location().introduce(),fbv);
+                vd->ti()->domain(fbv_l);
+                if (vd->type().isopt()) {
+                  std::vector<Expression*> args(2);
+                  args[0] = vd->id();
+                  args[1] = fbv_l;
+                  Call* c = new Call(Location().introduce(), "var_dom", args);
+                  c->type(Type::varbool());
+                  c->decl(env.model->matchFn(env, c, false));
+                  (void) flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+                }
+              }
             }
           }
           return ret;
@@ -2121,6 +2158,7 @@ namespace MiniZinc {
         case BOT_PLUS: return constants().ids.int_.plus;
         case BOT_MINUS: return constants().ids.int_.minus;
         case BOT_MULT: return constants().ids.int_.times;
+        case BOT_POW: return constants().ids.pow;
         case BOT_IDIV: return constants().ids.int_.div;
         case BOT_MOD: return constants().ids.int_.mod;
         case BOT_LE: return constants().ids.int_.lt;
@@ -2143,6 +2181,7 @@ namespace MiniZinc {
         case BOT_PLUS: return constants().ids.float_.plus;
         case BOT_MINUS: return constants().ids.float_.minus;
         case BOT_MULT: return constants().ids.float_.times;
+        case BOT_POW: return constants().ids.pow;
         case BOT_DIV: return constants().ids.float_.div;
         case BOT_MOD: return constants().ids.float_.mod;
         case BOT_LE: return constants().ids.float_.lt;
@@ -3723,7 +3762,7 @@ namespace MiniZinc {
           VarDecl* vd = id->decl()->flat();
           Expression* rete = NULL;
           if (vd==NULL) {
-            if (id->decl()->e()==NULL || id->decl()->e()->type().isvar() || id->decl()->e()->type().dim() > 0) {
+            if (id->decl()->e()==NULL || id->decl()->e()->type().isann() || id->decl()->e()->type().isvar() || id->decl()->e()->type().dim() > 0) {
               // New top-level id, need to copy into env.m
               vd = flat_exp(env,Ctx(),id->decl(),NULL,constants().var_true).r()
                    ->cast<Id>()->decl();
@@ -3733,10 +3772,11 @@ namespace MiniZinc {
           }
           ret.b = bind(env,Ctx(),b,constants().lit_true);
           if (vd->e()!=NULL) {
-            if (vd->e()->type().ispar() && vd->e()->type().dim()==0)
+            if (vd->e()->type().ispar() && vd->e()->type().dim()==0) {
               rete = eval_par(env, vd->e());
-            if (vd->e()->isa<Id>())
+            } else if (vd->e()->isa<Id>()) {
               rete = vd->e();
+            }
           } else if (vd->ti()->ranges().size() > 0) {
             // create fresh variables and array literal
             std::vector<std::pair<int,int> > dims;
@@ -4506,6 +4546,7 @@ namespace MiniZinc {
           case BOT_MULT:
           case BOT_IDIV:
           case BOT_MOD:
+          case BOT_POW:
           case BOT_DIV:
           case BOT_UNION:
           case BOT_DIFF:
