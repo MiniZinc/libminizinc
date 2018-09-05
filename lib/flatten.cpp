@@ -721,13 +721,16 @@ namespace MiniZinc {
     collect_vardecls = b;
   }
   void EnvI::vo_add_exp(VarDecl* vd) {
-    if (vd->e() && vd->e()->isa<Call>()) {
+    if (vd->e() && vd->e()->isa<Call>() && !vd->e()->type().isann()) {
       int prev = idStack.size() > 0 ? idStack.back() : 0;
       for (int i = static_cast<int>(callStack.size())-1; i >= prev; i--) {
         Expression* ee = callStack[i]->untag();
         for (ExpressionSetIter it = ee->ann().begin(); it != ee->ann().end(); ++it) {
-          EE ee_ann = flat_exp(*this, Ctx(), *it, NULL, constants().var_true);
-          vd->e()->addAnnotation(ee_ann.r());
+          Expression* ann = *it;
+          if (ann != constants().ann.add_to_output && ann != constants().ann.rhs_from_assignment) {
+            EE ee_ann = flat_exp(*this, Ctx(), *it, NULL, constants().var_true);
+            vd->e()->addAnnotation(ee_ann.r());
+          }
         }
       }
     }
