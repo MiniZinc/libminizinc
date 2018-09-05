@@ -529,8 +529,8 @@ Model output is specified through variable annotations.
 Non-array output variables are annotated with
 ``output_var``.
 Array output variables are annotated with
-``output_array([``:math:`x_1\` ``..`` :math:`x_2` ``, ... ])``
-where :math:`x_1\` ``..`` :math:`x_2` ``, ...`` are the index set ranges of the
+``output_array([`` :math:`x_1` ``..`` :math:`x_2` ``, ... ])``
+where :math:`x_1` ``..`` :math:`x_2` ``, ...`` are the index set ranges of the
 original MiniZinc array (which
 may have had multiple dimensions and/or index sets that do not start at
 1). See :numref:`ch-fzn-output` for details on the output format.
@@ -771,6 +771,12 @@ Each value should be output on a line of its own in the following format:
 
   %%%mzn-stat: <name>=<value>
 
+Each block of statistics is terminated by a line of its own with the following format:
+
+.. code-block:: minizincdef
+
+  %%%mzn-stat-end
+
 The :mzndef:`<name>` describes the kind of statistics gathered, and the :mzndef:`<value>` can be any value of a MiniZinc type. The following names are considered standard statistics:
 
 ======================== ====== ================================================
@@ -799,6 +805,8 @@ Error and warning output
 
 Errors and warnings must be output to the standard error stream. When an error occurs, the implementation should exit with a non-zero exit code, signaling failure.
 
+
+.. _ch-solver-specific-libraries:
 
 Solver-specific Libraries
 -------------------------
@@ -972,8 +980,7 @@ Here is a list of all configuration options recognised by the configuration file
   - ``"api"``: for solvers that use the internal C++ API
 
 - ``stdFlags`` (list of strings, default empty): Which of the standard solver command line flags are supported by this solver. The standard flags are ``-a``, ``-n``, ``-s``, ``-v``, ``-p``, ``-r``, ``-f``.
-
-- ``extraFlags`` (list of list of strings, default empty): Extra command line flags supported by the solver. Each entry should be a list two, three or four strings. The first string is the name of the option (e.g. ``"--special-algorithm"``). The second string is a description that can be used to generate help output (e.g. ``"which special algorithm to use"``). The third string specifies the type of the argument (as a MiniZinc type). The fourth string is the default value. If no type is specified, ``"bool"`` is assumed.
+- ``extraFlags`` (list of list of strings, default empty): Extra command line flags supported by the solver. Each entry must be a list of four strings. The first string is the name of the option (e.g. ``"--special-algorithm"``). The second string is a description that can be used to generate help output (e.g. ``"which special algorithm to use"``). The third string specifies the type of the argument (``"int"``,``"bool"``,``"float"`` or ``"string"``). The fourth string is the default value.
 - ``supportsMzn`` (bool, default ``false``): Whether the solver can run MiniZinc directly (i.e., it implements its own compilation or interpretation of the model).
 - ``supportsFzn`` (bool, default ``true``): Whether the solver can run FlatZinc. This should be the case for most solvers
 - ``needsSolns2Out`` (bool, default ``true``): Whether the output of the solver needs to be passed through the MiniZinc output processor.

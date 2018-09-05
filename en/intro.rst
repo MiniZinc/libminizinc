@@ -21,7 +21,7 @@ In particular, MiniZinc allows the specification of *global constraints* by
 Structure
 ---------
 
-This documentation consists of three parts. :ref:`The first part <part-reference>` includes this introduction and then describes how to download and install MiniZinc and how to make your first steps using the MiniZinc IDE and the command line tools. :ref:`The second part <part-tutorial>` is a tutorial introduction to modelling with MiniZinc, from basic syntax and simple modelling techniques to more advanced topics. It also explains how MiniZinc is compiled to FlatZinc. :ref:`The third part <part-reference>` contains the reference documentation for MiniZinc, including a definition of the MiniZinc language, documentation on how to interface a solver to FlatZinc, and an annotated list of all predicates and functions in the MiniZinc standard library.
+This documentation consists of four parts. :ref:`The first part <part-introduction>` includes this introduction and then describes how to download and install MiniZinc and how to make your first steps using the MiniZinc IDE and the command line tools. :ref:`The second part <part-tutorial>` is a tutorial introduction to modelling with MiniZinc, from basic syntax and simple modelling techniques to more advanced topics. It also explains how MiniZinc is compiled to FlatZinc. :ref:`The third part <part-manual>` is a user manual for the tools that make up the MiniZinc tool chain. Finally, :ref:`The fourth part <part-reference>` contains the reference documentation for MiniZinc, including a definition of the MiniZinc language, documentation on how to interface a solver to FlatZinc, and an annotated list of all predicates and functions in the MiniZinc standard library.
 
 How to Read This
 ----------------
