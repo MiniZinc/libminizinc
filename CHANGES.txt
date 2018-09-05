@@ -28,6 +28,8 @@ Bug fixes:
  - Fix bounds computation for float variable declarations. Fixes #225.
  - When FlatZinc solver is terminated due to a timeout, do not report this
    as an error.
+ - Fix pretty-printing of multi-dimensional arrays where dimensions other than
+   the first one are empty. Fixes #236.
 
 Version 2.2.0
 =============
