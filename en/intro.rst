@@ -38,7 +38,7 @@ If you are new to MiniZinc, follow the installation instructions and the introdu
 
   Some of the code examples are shown in boxes like the one below. If a code 
   box has a heading, it usually lists the name of a file that can be
-  downloaded from http://minizinc.org/tutorial/examples.
+  downloaded from http://minizinc.org/doc-latest/en/downloads/index.html.
 
 .. literalinclude:: examples/dummy.mzn
   :language: minizinc
