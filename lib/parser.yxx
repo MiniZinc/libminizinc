@@ -606,7 +606,7 @@ namespace MiniZinc {
 %type <expression_vvv> simple_array_literal_3d_list
 
 %type <generators> comp_tail
-%type <generator> generator
+%type <generator> generator generator_eq
 %type <generator_v> generator_list generator_list_head
 %type <string_v> id_list id_list_head
 
@@ -1415,15 +1415,32 @@ generator_list : generator_list_head comma_or_none
 generator_list_head :
       generator
       { $$=new std::vector<Generator>; if ($1) $$->push_back(*$1); delete $1; }
+    | generator_eq
+      { $$=new std::vector<Generator>; if ($1) $$->push_back(*$1); delete $1; }
+    | generator_eq MZN_WHERE expr
+      { $$=new std::vector<Generator>;
+        if ($1) $$->push_back(*$1);
+        if ($1 && $3) $$->push_back(Generator($$->size(),$3));
+        delete $1;
+      }
     | generator_list_head ',' generator
       { $$=$1; if ($$ && $3) $$->push_back(*$3); delete $3; }
+    | generator_list_head ',' generator_eq
+      { $$=$1; if ($$ && $3) $$->push_back(*$3); delete $3; }
+    | generator_list_head ',' generator_eq MZN_WHERE expr
+      { $$=$1;
+        if ($$ && $3) $$->push_back(*$3);
+        if ($$ && $3 && $5) $$->push_back(Generator($$->size(),$5));
+        delete $3;
+      }
 
 generator : 
       id_list MZN_IN expr
       { if ($1 && $3) $$=new Generator(*$1,$3,NULL); else $$=NULL; delete $1; }
     | id_list MZN_IN expr MZN_WHERE expr
       { if ($1 && $3) $$=new Generator(*$1,$3,$5); else $$=NULL; delete $1; }
-    | MZN_IDENTIFIER MZN_EQ expr
+generator_eq :
+      MZN_IDENTIFIER MZN_EQ expr
       { if ($3) $$=new Generator({$1},NULL,$3); else $$=NULL; free($1); }
 
 id_list : id_list_head comma_or_none
@@ -1705,12 +1722,11 @@ call_expr :
                     gens.push_back(Generator(ids,boe->rhs(),(*$3)[i].second));
                     ids = vector<Id*>();
                   } else if (id && boe->op() == BOT_EQ && ids.empty()) {
-                    if ((*$3)[i].second) {
-                      ParserLocation loc = (*$3)[i].second->loc().parserLocation();
-                      yyerror(&loc, parm, "illegal where expression in generator call");
-                    }
                     ids.push_back(id);
                     gens.push_back(Generator(ids,NULL,boe->rhs()));
+                    if ((*$3)[i].second) {
+                      gens.push_back(Generator(gens.size(),(*$3)[i].second));
+                    }
                     ids = vector<Id*>();
                   } else {
                     ParserLocation loc = (*$3)[i].first->loc().parserLocation();

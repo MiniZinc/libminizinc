@@ -850,7 +850,9 @@ namespace MiniZinc {
     /// Allocate
     Generator(const std::vector<VarDecl*>& v,
               Expression* in, Expression* where);
-    
+    /// Allocate single where clause (without generator) at position \a pos
+    Generator(int pos, Expression* where);
+
   };
   /// \brief A list of generators with one where-expression
   struct Generators {
