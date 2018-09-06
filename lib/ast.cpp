@@ -481,6 +481,18 @@ namespace MiniZinc {
     _in = in;
     _where = where;
   }
+  Generator::Generator(int pos, Expression* where) {
+    std::vector<VarDecl*> vd;
+    std::ostringstream oss;
+    oss << "__dummy" << pos;
+    VarDecl* nvd = new VarDecl(Location().introduce(),
+                               new TypeInst(Location().introduce(),Type::parint()),ASTString(oss.str()));
+    nvd->toplevel(false);
+    vd.push_back(nvd);
+    _v = vd;
+    _in = new ArrayLit(Location().introduce(), std::vector<Expression*>({IntLit::a(0)}));
+    _where = where;
+  }
 
   bool
   Comprehension::set(void) const {
