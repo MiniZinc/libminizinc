@@ -816,7 +816,7 @@ vardecl_item :
       }
 
 string_lit_list :
-    | // empty
+      // empty
       { $$ = new std::vector<Expression*>(); }
     | MZN_STRING_LITERAL
       { $$ = new std::vector<Expression*>();
