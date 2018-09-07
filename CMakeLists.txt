@@ -34,7 +34,7 @@ endif()
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 2)
-set (libminizinc_VERSION_PATCH 1)
+set (libminizinc_VERSION_PATCH 2)
 set (libminizinc_VERSION
   ${libminizinc_VERSION_MAJOR}.${libminizinc_VERSION_MINOR}.${libminizinc_VERSION_PATCH})
 
