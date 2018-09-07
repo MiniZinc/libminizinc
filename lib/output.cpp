@@ -16,15 +16,16 @@ namespace MiniZinc {
 
   void outputVarDecls(EnvI& env, Item* ci, Expression* e);
   
-  bool cannotUseRHSForOutput(EnvI& env, Expression* e) {
+  bool cannotUseRHSForOutput(EnvI& env, Expression* e, std::unordered_set<FunctionI*>& seen_functions) {
     if (e==NULL)
       return true;
     
     class V : public EVisitor {
     public:
       EnvI& env;
+      std::unordered_set<FunctionI*>& seen_functions;
       bool success;
-      V(EnvI& env0) : env(env0), success(true) {}
+      V(EnvI& env0, std::unordered_set<FunctionI*>& seen_functions0) : env(env0), seen_functions(seen_functions0), success(true) {}
       /// Visit anonymous variable
       void vAnonVar(const AnonVar&) { success = false; }
       /// Visit array literal
@@ -53,25 +54,30 @@ namespace MiniZinc {
           if (origdecl == NULL) {
             throw FlatteningError(env,c.loc(),"function "+c.id().str()+" is used in output, par version needed");
           }
-          
-          if (origdecl->e() && cannotUseRHSForOutput(env, origdecl->e())) {
+          bool seen = (seen_functions.find(origdecl) != seen_functions.end());
+          if (seen) {
             success = false;
           } else {
-            if (!origdecl->from_stdlib()) {
-              decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
-              CollectOccurrencesE ce(env.output_vo,decl);
-              topDown(ce, decl->e());
-              topDown(ce, decl->ti());
-              for (unsigned int i = decl->params().size(); i--;)
-                topDown(ce, decl->params()[i]);
-              env.output->registerFn(env, decl);
-              env.output->addItem(decl);
-              outputVarDecls(env,origdecl,decl->e());
-              outputVarDecls(env,origdecl,decl->ti());
+            seen_functions.insert(origdecl);
+            if (origdecl->e() && cannotUseRHSForOutput(env, origdecl->e(), seen_functions)) {
+              success = false;
             } else {
-              decl = origdecl;
+              if (!origdecl->from_stdlib()) {
+                decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
+                CollectOccurrencesE ce(env.output_vo,decl);
+                topDown(ce, decl->e());
+                topDown(ce, decl->ti());
+                for (unsigned int i = decl->params().size(); i--;)
+                  topDown(ce, decl->params()[i]);
+                env.output->registerFn(env, decl);
+                env.output->addItem(decl);
+                outputVarDecls(env,origdecl,decl->e());
+                outputVarDecls(env,origdecl,decl->ti());
+              } else {
+                decl = origdecl;
+              }
+              c.decl(decl);
             }
-            c.decl(decl);
           }
         }
         if (success) {
@@ -91,12 +97,17 @@ namespace MiniZinc {
       void vTIId(const TIId&) {}
       /// Determine whether to enter node
       bool enter(Expression* e) { return success; }
-    } _v(env);
+    } _v(env, seen_functions);
     topDown(_v, e);
     
     return !_v.success;
   }
   
+  bool cannotUseRHSForOutput(EnvI& env, Expression* e) {
+    std::unordered_set<FunctionI*> seen_functions;
+    return cannotUseRHSForOutput(env, e, seen_functions);
+  }
+
   void removeIsOutput(VarDecl* vd) {
     if (vd==NULL)
       return;
