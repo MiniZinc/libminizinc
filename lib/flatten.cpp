@@ -7147,7 +7147,10 @@ namespace MiniZinc {
           vdi->e()->payload(i);
         }
         for (auto nc : added_constraints) {
-          e.envi().flat_addItem(new ConstraintI(Location().introduce(),nc));
+          Expression* new_ce = cleanup_constraint(e.envi(), globals, nc);
+          if (new_ce) {
+            e.envi().flat_addItem(new ConstraintI(Location().introduce(),new_ce));
+          }
         }
       } else if (ConstraintI* ci = (*m)[i]->dyn_cast<ConstraintI>()) {
         Expression* new_ce = cleanup_constraint(e.envi(), globals, ci->e());
