@@ -378,10 +378,12 @@ namespace MiniZinc {
             for (unsigned int i=0; i<m->size(); i++) {
               if (AssignI* ai = (*m)[i]->dyn_cast<AssignI>()) {
                 if (ai->id()=="mzn_solver_path") {
-                  std::string sp = getString(ai);
-                  if (!solver_path.empty())
-                    solver_path += PATHSEP;
-                  solver_path += sp;
+                  std::vector<std::string> sp = getStringList(ai);
+                  for (auto s : sp) {
+                    if (!solver_path.empty())
+                      solver_path += PATHSEP;
+                    solver_path += s;
+                  }
                 } else if (ai->id()=="mzn_lib_dir") {
                   _mznlibDir = getString(ai);
                 } else if (ai->id()=="tagDefaults") {
