@@ -972,12 +972,14 @@ namespace MiniZinc {
     void vArrayLit(ArrayLit& al) {
       Type ty; ty.dim(al.dims());
       std::vector<AnonVar*> anons;
+      bool haveAbsents = false;
       bool haveInferredType = false;
       for (unsigned int i=0; i<al.size(); i++) {
         Expression* vi = al[i];
         if (vi->type().dim() > 0)
           throw TypeError(_env,vi->loc(),"arrays cannot be elements of arrays");
-        
+        if (vi == constants().absent)
+          haveAbsents = true;
         AnonVar* av = vi->dyn_cast<AnonVar>();
         if (av) {
           ty.ti(Type::TI_VAR);
@@ -1034,6 +1036,8 @@ namespace MiniZinc {
         ty.bt(Type::BT_BOT);
         if (!anons.empty())
           throw TypeError(_env,al.loc(),"array literal must contain at least one non-anonymous variable");
+        if (haveAbsents)
+          throw TypeError(_env,al.loc(),"array literal must contain at least one non-absent value");
       } else {
         Type at = ty;
         at.dim(0);
