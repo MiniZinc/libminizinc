@@ -763,10 +763,17 @@ namespace MiniZinc {
             } else {
               vd = follow_id_to_decl(vd->id())->cast<VarDecl>();
               VarDecl* reallyFlat = vd->flat();
-              
-              while (reallyFlat!=reallyFlat->flat())
+              while (reallyFlat && reallyFlat!=reallyFlat->flat())
                 reallyFlat=reallyFlat->flat();
-              if (vd->flat()->e() && vd->flat()->e()->type().ispar()) {
+              if (reallyFlat==NULL) {
+                // The variable doesn't have a flat version. This can only happen if
+                // the original variable had type-inst var, but a right-hand-side that
+                // was par, so follow_id_to_decl lead to a par variable.
+                assert(vd->e() && vd->e()->type().ispar());
+                Expression* flate = eval_par(env, vd->e());
+                outputVarDecls(env, vdi_copy, flate);
+                vd->e(flate);
+              } else if (vd->flat()->e() && vd->flat()->e()->type().ispar()) {
                 // We can use the right hand side of the flat version of this variable
                 Expression* flate = copy(env,env.cmap,follow_id(reallyFlat->id()));
                 outputVarDecls(env,vdi_copy,flate);
@@ -846,7 +853,7 @@ namespace MiniZinc {
                   }
                 }
               }
-              if (env.output_vo_flat.find(reallyFlat) == -1)
+              if (reallyFlat && env.output_vo_flat.find(reallyFlat) == -1)
                 env.output_vo_flat.add_idx(reallyFlat, env.output->size());
             }
           }
