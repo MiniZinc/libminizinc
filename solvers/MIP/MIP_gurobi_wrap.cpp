@@ -518,6 +518,7 @@ solcallback(GRBmodel *model,
         info->pOutput->dWallTime = std::chrono::duration<double>(
           std::chrono::steady_clock::now() - info->pOutput->dWallTime0).count();
         info->pOutput->dCPUTime = double(std::clock() - info->pOutput->cCPUTime0) / CLOCKS_PER_SEC;
+    }
 
     /// Callback for lazy cuts
     /// Before printing
