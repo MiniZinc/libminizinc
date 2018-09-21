@@ -748,17 +748,18 @@ myusercutcallback (CPXCENVptr env,
       info->cutcbfn( outpRlx, cutInput, info->ppp, fMIPSol );
       static int nCuts=0;
       nCuts += cutInput.size();
-      if ( cutInput.size() )
-        cerr << "\n   N CUTS:  " << nCuts << endl;
+      // if ( cutInput.size() )
+      //  cerr << "\n   N CUTS:  " << nCuts << endl;
       for ( auto& cd : cutInput ) {
-        assert( cd.mask &
-          (MIP_wrapper::MaskConsType_Usercut|MIP_wrapper::MaskConsType_Lazy) );
+        if ( ! ( cd.mask &
+          (MIP_wrapper::MaskConsType_Usercut|MIP_wrapper::MaskConsType_Lazy) ) )
+          throw runtime_error( "Cut callback: should be user/lazy" );
         /* Use a cut violation tolerance of 0.01 */
         if ( true ) {  //cutvio > 0.01 ) { 
           status = cw->dll_CPXcutcallbackadd (env, cbdata, wherefrom,
                        cd.rmatind.size(), cd.rhs, getCPLEXConstrSense(cd.sense),
                                       cd.rmatind.data(), cd.rmatval.data(),
-                                      CPX_USECUT_PURGE);
+                                      CPX_USECUT_FORCE);   // PURGE?
           if ( status ) {
               fprintf (stderr, "CPLEX callback: failed to add cut.\n");
               goto TERMINATE;
@@ -952,6 +953,8 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
       wrap_assert ( !status, "CPLEX: setting user cut callback" );
     }
     if ( cbui.cutMask & MaskConsType_Lazy ) {
+      if ( fVerbose )
+        cerr << "  MIP_cplex_wrapper: lazy cut callback enabled, setting params" << endl;
       CUTINFO lazyconinfo;
       lazyconinfo.info = &cbui;
       /* Init information on the node objval for the user cut callback.

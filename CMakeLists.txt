@@ -431,6 +431,7 @@ if(HAS_GUROBI)  # Version 7.5
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp solvers/MIP/MIP_gurobi_solverfactory.cpp
     include/minizinc/solvers/MIP/MIP_gurobi_wrap.hh include/minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_solverinstance.hpp
+    lib/algorithms/min_cut.cpp
 	)
   target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
   if(HAS_GUROBI_PLUGIN)
@@ -502,7 +503,7 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
   # link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
 
   add_library(minizinc_cplex
-    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp lib/algorithms/min_cut.cpp
     solvers/MIP/MIP_cplex_solverfactory.cpp include/minizinc/solvers/MIP/MIP_cplex_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_cplex_wrap.hh
   )
@@ -558,7 +559,7 @@ if(HAS_SCIP)   # SCIP version tested: 3.2.1
 
   add_library(minizinc_scip
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
-    solvers/MIP/MIP_scip_solverfactory.cpp
+    solvers/MIP/MIP_scip_solverfactory.cpp lib/algorithms/min_cut.cpp
     )
   target_include_directories(minizinc_scip PRIVATE
     "${SCIP_DIR}/src"
@@ -603,7 +604,7 @@ if(HAS_SCIP_SEPLIBS)
     z zimpl.${SCIP_OS}.${SCIP_ARCH}.gnu.opt gmp)  # if SCIP configured so
 
   add_library(minizinc_mip_scip
-    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp lib/algorithms/min_cut.cpp
     )
   target_include_directories(minizinc_mip_scip PRIVATE
     "${SCIP_DIR}/src"
@@ -658,7 +659,7 @@ if(HAS_OSICBC)
   link_directories(${LNDIR})
 
   add_library(minizinc_osicbc
-    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp lib/algorithms/min_cut.cpp
     solvers/MIP/MIP_osicbc_solverfactory.cpp include/minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_osicbc_wrap.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hpp
