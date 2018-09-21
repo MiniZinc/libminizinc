@@ -17,12 +17,21 @@ or separated flattening+solving - sometimes more stable but slower due to file I
  
       minizinc --solver osicbc -c model.mzn data.dzn && minizinc --solver osicbc -v -s -a model.fzn | minizinc --ozn-file model.ozn
 
-USEFUL PARAMETERS
-=================
+USEFUL FLATTENING PARAMETERS
+============================
+-D nSECcuts=0/1/2                %% Subtour Elimination Constraints, see below
 -D fMIPdomains=true/false        %% See below
 -D float_EPS=1e-6                %% Epsilon for floats' strict comparison
 -D fIndConstr=true/false         %% Use solvers' indicator constraints, see below
-      
+
+SUBTOUR ELIMINATION CONSTRAINTS
+===============================
+Optionally use the SEC cuts for the circuit global constraint.
+Currently only Gurobi and CPLEX. (2018/09)
+This needs boost and #define define __COMPILE_BOOST_MINCUT in lib/algorithms/min_cut.cpp.
+Values: 0,1: use MTZ formulation; 1,2: pass on circuit constraints
+to the SEC cut generator, so 1 would use both (seems best)
+
 UNIFIED DOMAIN REFINEMENT (MIPdomains)
 ===================================
 The 'MIPdomains' feature of the Flattener aims at reducing the number of binary flags
@@ -63,9 +72,9 @@ constraint b+sum(x)==1;
 constraint b+sum(xf)==2.4;
 constraint 5==sum( [ card(xs[i]) | i in index_set(xs) ] );
 solve
-  :: warm_start( [b], [<>] )                         %%% Use <> for missing values
+  :: warm_start( [b], [true] )
   :: warm_start_array( [
-       warm_start( x, [<>,8,4] ),
+       warm_start( x, [<>,8,4] ),               %%% Use <> for missing values
        warm_start( xf, array1d(-5..-3, [5.6,<>,4.7] ) ),
        warm_start( xs, array1d( -3..-2, [ 6..8, 5..7 ] ) )
      ] )

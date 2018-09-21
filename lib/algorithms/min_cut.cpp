@@ -16,7 +16,8 @@
 
 void Algorithms::MinCut::solve() {
 #ifndef __COMPILE_BOOST_MINCUT
-  throw std::runtime_error( "MinCut::solve not compiled" );
+  throw std::runtime_error( "MIP/circuit: Subtour Elimination Constraints: MinCut::solve not compiled. "
+  "Compile with __COMPILE_BOOST_MINCUT (needs boost), or use -D nSECcuts=0 for flattening." );
 #else
 //   struct edge_t
 //   {
