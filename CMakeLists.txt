@@ -203,6 +203,29 @@ int main (int argc, char* argv[]) {
   return 0;
 }" HAS_MEMCPY_S)
 
+CHECK_CXX_SOURCE_COMPILES("
+#include <vector>
+#include <algorithm>
+#include <boost/graph/adjacency_list.hpp>
+#include <boost/graph/graph_traits.hpp>
+#include <boost/graph/one_bit_color_map.hpp>
+#include <boost/graph/stoer_wagner_min_cut.hpp>
+#include <boost/property_map/property_map.hpp>
+#include <boost/typeof/typeof.hpp>
+
+typedef std::pair< unsigned long, unsigned long > edge_t;
+
+typedef boost::adjacency_list<boost::vecS, boost::vecS, boost::undirectedS,
+  boost::no_property, boost::property<boost::edge_weight_t, double> > undirected_graph;
+typedef boost::property_map<undirected_graph, boost::edge_weight_t>::type weight_map_type;
+typedef boost::property_traits<weight_map_type>::value_type weight_type;
+
+std::vector< edge_t > edges_array;
+
+int main (int argc, char* argv[]) {
+  return 0;
+}" COMPILE_BOOST_MINCUT)
+
 #check_cxx_source_compiles("#include <sstream>
 ##include <iomanip>
 #int main(void) { std::ostringstream oss; std::hexfloat(oss); return 0; }" HAS_HEXFLOAT)

@@ -1,11 +1,9 @@
 #include <minizinc/algorithms/min_cut.h>
-#include <exception>
+#include <stdexcept>
 
-#ifndef __COMPILE_BOOST_MINCUT
-  #define __COMPILE_BOOST_MINCUT    // default
-#endif
+#include <minizinc/config.hh>
 
-#ifdef __COMPILE_BOOST_MINCUT
+#ifdef COMPILE_BOOST_MINCUT
   #include <boost/graph/adjacency_list.hpp>
   #include <boost/graph/graph_traits.hpp>
   #include <boost/graph/one_bit_color_map.hpp>
@@ -15,15 +13,10 @@
 #endif
 
 void Algorithms::MinCut::solve() {
-#ifndef __COMPILE_BOOST_MINCUT
+#ifndef COMPILE_BOOST_MINCUT
   throw std::runtime_error( "MIP/circuit: Subtour Elimination Constraints: MinCut::solve not compiled. "
-  "Compile with __COMPILE_BOOST_MINCUT (needs boost), or use -D nSECcuts=0 for flattening." );
+  "Compile with COMPILE_BOOST_MINCUT (needs boost), or use -D nSECcuts=0 for flattening." );
 #else
-//   struct edge_t
-//   {
-//     unsigned long first;
-//     unsigned long second;
-//   };
   typedef std::pair< unsigned long, unsigned long > edge_t;
 
   // A graphic of the min-cut is available at <http://www.boost.org/doc/libs/release/libs/graph/doc/stoer_wagner_imgs/stoer_wagner.cpp.gif>
