@@ -153,7 +153,7 @@ void SECCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInpu
   }
   mc.solve();
   /// Check if violation
-  if ( mc.wMinCut <= 1.98 ) {
+  if ( mc.wMinCut <= 1.999 ) {
     MIP_wrapper::CutDef cut( MIP_wrapper::GQ, MIP_wrapper::MaskConsType_Lazy | MIP_wrapper::MaskConsType_Usercut );
     cut.rhs = 1.0;
     int nCutSize=0;
@@ -173,14 +173,16 @@ void SECCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInpu
     }
     // cerr << "]. " << flush;
     double dViol = cut.computeViol( slvOut.x, slvOut.nCols );
-    if ( dViol > 0.01 ) {   // ?? PARAM?  TODO
+    if ( dViol > 0.0001 ) {   // ?? PARAM?  TODO. See also min cut value required
       cutsIn.push_back( cut );
       /* cerr << "  SEC: viol=" << dViol
         << "  N NODES: " << nN
         << "  |X|: : " << nCutSize
         << flush; */
     } else {
-      MZN_ASSERT_HARD_MSG( 0, "  SEC cut: N nodes = " << nN << ": violation = " << dViol );
+      MZN_ASSERT_HARD_MSG( 0, "  SEC cut: N nodes = " << nN << ": violation = " << dViol
+        << ": too small compared to the min-cut value " << (2.0-mc.wMinCut)
+      );
     }
   }
 }
