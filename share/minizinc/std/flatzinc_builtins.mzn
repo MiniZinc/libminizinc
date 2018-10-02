@@ -116,6 +116,8 @@ predicate set_in_reif(var int: x, set of int: S, var bool: r);
 predicate set_in_reif(var int: x, var set of int: S, var bool: r);
 /** @group flatzinc.set Constrains \a x \( \subseteq \) \a y */
 predicate set_subset(var set of int: x, var set of int: y);
+/** @group flatzinc.set Constrains \a x \( \supseteq \) \a y */
+predicate set_superset(var set of int: x, var set of int: y);
 /** @group flatzinc.set Constrains \( \a r \leftrightarrow (\a x \subseteq \a y) \) */
 predicate set_subset_reif(var set of int: x, var set of int: y, var bool: r);
 /** @group flatzinc.set Constrains \a x ≤ \a y (lexicographic order) */
