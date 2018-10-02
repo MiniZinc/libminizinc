@@ -10,7 +10,7 @@ stages:
     - rm -rf build
     - mkdir -p build
     - cd build
-    - cmake -G"$CMAKE_ARCH" -v .. -DBUILD_REF=$CI_PIPELINE_ID -DGECODE_NO_MPFR=1 -DGECODE_HOME="$CI_PROJECT_DIR/vendor/gecode" -DBUILD_GUROBI_PLUGIN=ON -DGUROBI_HOME="$CI_PROJECT_DIR/vendor/gurobi" -DBUILD_CPLEX_PLUGIN=ON -DCPLEX_STUDIO_DIR="$CI_PROJECT_DIR/vendor/CPLEX_Studio" -DOSICBC_HOME="$CI_PROJECT_DIR/vendor/CBC" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=Release -v .. -DBUILD_REF=$CI_PIPELINE_ID -DGECODE_NO_MPFR=1 -DGECODE_HOME="$CI_PROJECT_DIR/vendor/gecode" -DBUILD_GUROBI_PLUGIN=ON -DGUROBI_HOME="$CI_PROJECT_DIR/vendor/gurobi" -DBUILD_CPLEX_PLUGIN=ON -DCPLEX_STUDIO_DIR="$CI_PROJECT_DIR/vendor/CPLEX_Studio" -DOSICBC_HOME="$CI_PROJECT_DIR/vendor/CBC" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   artifacts:
