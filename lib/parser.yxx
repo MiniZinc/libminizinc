@@ -547,12 +547,12 @@ namespace MiniZinc {
 %token MZN_IMPL "->" MZN_RIMPL "<-"
 %token MZN_OR "\\/" MZN_XOR "xor"
 %token MZN_AND "/\\"
-%token MZN_LE "<" MZN_GR ">" MZN_LQ "<=" MZN_GQ ">=" MZN_EQ "=" MZN_NQ "!="
+%token MZN_LE "<" MZN_GR ">" MZN_LQ "<=" MZN_GQ ">=" MZN_EQ "=" MZN_NQ "!=" MZN_WEAK_EQ "~="
 %token MZN_IN "in" MZN_SUBSET "subset" MZN_SUPERSET "superset"
 %token MZN_UNION "union" MZN_DIFF "diff" MZN_SYMDIFF "symdiff"
 %token MZN_DOTDOT ".."
-%token MZN_PLUS "+" MZN_MINUS "-"
-%token MZN_MULT "*" MZN_DIV "/" MZN_IDIV "div" MZN_MOD "mod" MZN_INTERSECT "intersect"
+%token MZN_PLUS "+" MZN_MINUS "-" MZN_WEAK_PLUS "~+" MZN_WEAK_MINUS "~-"
+%token MZN_MULT "*" MZN_DIV "/" MZN_IDIV "div" MZN_MOD "mod" MZN_INTERSECT "intersect" MZN_WEAK_MULT "~*"
 %token MZN_POW "^"
 %token MZN_NOT "not"
 %token MZN_PLUSPLUS "++"
@@ -563,12 +563,12 @@ namespace MiniZinc {
 %left MZN_IMPL MZN_RIMPL
 %left MZN_OR MZN_XOR
 %left MZN_AND
-%nonassoc MZN_LE MZN_GR MZN_LQ MZN_GQ MZN_EQ MZN_NQ
+%nonassoc MZN_LE MZN_GR MZN_LQ MZN_GQ MZN_EQ MZN_NQ MZN_WEAK_EQ
 %nonassoc MZN_IN MZN_SUBSET MZN_SUPERSET
 %left MZN_UNION MZN_DIFF MZN_SYMDIFF MZN_INTERSECT 
 %nonassoc MZN_DOTDOT
-%left MZN_PLUS MZN_MINUS
-%left MZN_MULT MZN_DIV MZN_IDIV MZN_MOD
+%left MZN_PLUS MZN_MINUS MZN_WEAK_PLUS MZN_WEAK_MINUS
+%left MZN_MULT MZN_DIV MZN_IDIV MZN_MOD MZN_WEAK_MULT
 %left MZN_POW
 %nonassoc MZN_NOT
 %left MZN_PLUSPLUS
@@ -1173,6 +1173,26 @@ set_expr :
       { $$=new BinOp(@$, $1, BOT_MOD, $3); }
     | set_expr MZN_POW set_expr
       { $$=new BinOp(@$, $1, BOT_POW, $3); }
+    | set_expr MZN_WEAK_PLUS set_expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~+"), args);
+      }
+    | set_expr MZN_WEAK_MINUS set_expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~-"), args);
+      }
+    | set_expr MZN_WEAK_MULT set_expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~*"), args);
+      }
+    | set_expr MZN_WEAK_EQ set_expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~="), args);
+      }
     | set_expr MZN_QUOTED_IDENTIFIER set_expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
@@ -1269,6 +1289,26 @@ expr :
       { $$=new BinOp(@$, $1, BOT_MOD, $3); }
     | expr MZN_POW expr
       { $$=new BinOp(@$, $1, BOT_POW, $3); }
+    | expr MZN_WEAK_PLUS expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~+"), args);
+      }
+    | expr MZN_WEAK_MINUS expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~-"), args);
+      }
+    | expr MZN_WEAK_MULT expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~*"), args);
+      }
+    | expr MZN_WEAK_EQ expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~="), args);
+      }
     | expr MZN_QUOTED_IDENTIFIER expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
