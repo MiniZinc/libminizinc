@@ -569,7 +569,8 @@ absent if all elements in \a x are absent. */
 function var opt int: min(array[int] of var opt int: x) ::promise_total =
     let {
         var opt lb_array(x)..ub_array(x): m;
-        int: xmax = ub_array(x);
+        var lb_array(x)..ub_array(x): xmax;
+        constraint if ub(xmax) != infinity then xmax = ub(xmax) else forall (i in index_set(x)) (xmax >= deopt(x[i])) endif;
         constraint occurs(m) <-> exists (i in index_set(x)) (occurs(x[i]));
         constraint occurs(m) ->
             deopt(m) = min([if occurs(xi) then deopt(xi) else xmax endif | xi in x]);
@@ -580,7 +581,8 @@ absent if all elements in \a x are absent. */
 function var opt int: max(array[int] of var opt int: x) ::promise_total =
     let {
         var opt lb_array(x)..ub_array(x): m;
-        int: xmin = lb_array(x);
+        var lb_array(x)..ub_array(x): xmin;
+        constraint if lb(xmin) != -infinity then xmin = lb(xmin) else forall (i in index_set(x)) (xmin <= deopt(x[i])) endif;
         constraint occurs(m) <-> exists (i in index_set(x)) (occurs(x[i]));
         constraint occurs(m) ->
             deopt(m) = max([if occurs(xi) then deopt(xi) else xmin endif | xi in x]);
