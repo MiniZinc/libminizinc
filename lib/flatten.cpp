@@ -6114,6 +6114,8 @@ namespace MiniZinc {
             return !(i->isa<ConstraintI>()  && env.failed());
         }
         void vVarDeclI(VarDeclI* v) {
+          v->e()->ann().remove(constants().ann.output_var);
+          v->e()->ann().removeCall(constants().ann.output_array);
           if (v->e()->ann().contains(constants().ann.output_only))
             return;
           if (v->e()->type().ispar() && !v->e()->type().isopt() && v->e()->type().dim() > 0 && v->e()->ti()->domain()==NULL
