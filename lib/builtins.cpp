@@ -19,6 +19,7 @@
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/file_utils.hh>
 #include <minizinc/support/regex.hh>
+#include <minizinc/output.hh>
 
 #include <iomanip>
 #include <climits>
@@ -1399,6 +1400,51 @@ namespace MiniZinc {
     }
   }
   
+  Expression* b_outputJSON(EnvI& env, Call* call) {
+    return createJSONOutput(env, false);
+  }
+  Expression* b_outputJSONParameters(EnvI& env, Call* call) {
+    std::vector<Expression*> outputVars;
+    outputVars.push_back(new StringLit(Location().introduce(), "{\n"));
+    
+    class JSONParVisitor : public ItemVisitor {
+    protected:
+      EnvI& e;
+      std::vector<Expression*>& outputVars;
+      bool first_var;
+    public:
+      JSONParVisitor(EnvI& e0, std::vector<Expression*>& outputVars0)
+      : e(e0), outputVars(outputVars0), first_var(true) {}
+      void vVarDeclI(VarDeclI* vdi) {
+        VarDecl* vd = vdi->e();
+        if (vd->ann().contains(constants().ann.rhs_from_assignment)) {
+          std::ostringstream s;
+          if (first_var) {
+            first_var = false;
+          } else {
+            s << ",\n";
+          }
+          s << "  \"" << vd->id()->str().str() << "\"" << " : ";
+          StringLit* sl = new StringLit(Location().introduce(),s.str());
+          outputVars.push_back(sl);
+          
+          std::vector<Expression*> showArgs(1);
+          showArgs[0] = vd->id();
+          Call* show = new Call(Location().introduce(),"showJSON",showArgs);
+          show->type(Type::parstring());
+          FunctionI* fi = e.model->matchFn(e, show, false);
+          assert(fi);
+          show->decl(fi);
+          outputVars.push_back(show);
+        }
+      }
+    } jsonov(env, outputVars);
+    
+    iterItems(jsonov, env.model);
+    outputVars.push_back(new StringLit(Location().introduce(), "\n}\n"));
+    return new ArrayLit(Location().introduce(),outputVars);
+  }
+
   std::string b_format(EnvI& env, Call* call) {
     int width = 0;
     int prec = -1;
@@ -2712,6 +2758,11 @@ namespace MiniZinc {
       rb(env, m, ASTString("format"), t, b_format);
       t[1] = Type::parstring();
       rb(env, m, ASTString("format_justify_string"), t, b_format_justify_string);
+    }
+    {
+      std::vector<Type> t;
+      rb(env, m, ASTString("outputJSON"), t, b_outputJSON);
+      rb(env, m, ASTString("outputJSONParameters"), t, b_outputJSONParameters);
     }
     {
       std::vector<Type> t(2);

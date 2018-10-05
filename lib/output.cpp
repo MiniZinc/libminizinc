@@ -184,6 +184,13 @@ namespace MiniZinc {
       EnvI& env;
       Decls(EnvI& env0) : env(env0) {}
       void vCall(Call& c) {
+        if (c.id()=="outputJSON") {
+          c.id(ASTString("array1d"));
+          Expression* json = copy(env, env.cmap, createJSONOutput(env, false));
+          std::vector<Expression*> new_args({json});
+          new_args[0]->type(Type::parstring(1));
+          c.args(new_args);
+        }
         if (c.id()=="format" || c.id()=="show" || c.id()=="showDzn") {
           int enumId = c.arg(c.n_args()-1)->type().enumId();
           if (enumId != 0 && c.arg(c.n_args()-1)->type().dim() != 0) {
@@ -470,7 +477,7 @@ namespace MiniZinc {
     }
   }
   
-  void createDznOutput(EnvI& e, bool outputObjective) {
+  void createDznOutputItem(EnvI& e, bool outputObjective) {
     std::vector<Expression*> outputVars;
     
     class DZNOVisitor : public ItemVisitor {
@@ -564,7 +571,7 @@ namespace MiniZinc {
     e.model->addItem(newOutputItem);
   }
 
-  void createJSONOutput(EnvI& e, bool outputObjective) {
+  ArrayLit* createJSONOutput(EnvI& e, bool outputObjective) {
     std::vector<Expression*> outputVars;
     outputVars.push_back(new StringLit(Location().introduce(), "{\n"));
 
@@ -627,11 +634,13 @@ namespace MiniZinc {
     iterItems(jsonov, e.model);
 
     outputVars.push_back(new StringLit(Location().introduce(), "\n}\n"));
-    
-    OutputI* newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
+    return new ArrayLit(Location().introduce(),outputVars);
+  }
+  void createJSONOutputItem(EnvI& e, bool outputObjective) {
+    OutputI* newOutputItem = new OutputI(Location().introduce(), createJSONOutput(e, outputObjective));
     e.model->addItem(newOutputItem);
   }
-  
+
   void createOutput(EnvI& e, std::vector<VarDecl*>& deletedFlatVarDecls,
                     FlatteningOptions::OutputMode outputMode, bool outputObjective) {
     // Create new output model
@@ -640,13 +649,13 @@ namespace MiniZinc {
     
     switch (outputMode) {
       case FlatteningOptions::OUTPUT_DZN:
-        createDznOutput(e,outputObjective);
+        createDznOutputItem(e,outputObjective);
         break;
       case FlatteningOptions::OUTPUT_JSON:
-        createJSONOutput(e,outputObjective);
+        createJSONOutputItem(e,outputObjective);
       default:
         if (e.model->outputItem()==NULL) {
-          createDznOutput(e,outputObjective);
+          createDznOutputItem(e,outputObjective);
         }
         break;
     }

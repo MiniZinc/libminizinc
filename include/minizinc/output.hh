@@ -34,6 +34,8 @@ namespace MiniZinc {
   /// Remove all links to variables in flat model from output model in \a env
   void cleanupOutput(EnvI& env);
 
+  ArrayLit* createJSONOutput(EnvI& env, bool outputObjective);
+  
 }
 
 #endif
