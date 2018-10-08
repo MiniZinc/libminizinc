@@ -3532,6 +3532,18 @@ namespace MiniZinc {
         if (c->id()=="mzn_in_root_context") {
           return constants().boollit(ctx.b==C_ROOT);
         }
+        if (ctx.b==C_ROOT && c->decl()->e() && c->decl()->e()->isa<BoolLit>()) {
+          bool allBool = true;
+          for (unsigned int i=0; i<c->n_args(); i++) {
+            if (c->arg(i)->type().bt()!=Type::BT_BOOL) {
+              allBool = false;
+              break;
+            }
+          }
+          if (allBool) {
+            return c->decl()->e();
+          }
+        }
         std::vector<Expression*> args(c->n_args());
         GCLock lock;
         for (unsigned int i=0; i<c->n_args(); i++) {
