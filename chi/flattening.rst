@@ -1,6 +1,6 @@
 .. _sec-flattening:
 
-FlatZinc和平整
+FlatZinc和展平
 =======================
 
 .. \pjs{Maybe show the toolset at this point?}
@@ -8,15 +8,15 @@ FlatZinc和平整
 约束求解器不会直接支持MiniZinc模型.为了运行一个MiniZinc模型,它被翻译成一个MiniZinc的简单子集叫FlatZinc. 
 FlatZinc反映了大多数约束求解器只会求解具有 :math:`\bar{exists} c_1 \wedge \cdots \wedge c_m` 的满足问题
 或者有 :math:`\text{minimize } z \text{ subject to }  c_1 \wedge \cdots \wedge c_m` 的优化问题, 其中
-:math:`c_i` 是基本的约束而 :math:`z` 是一个整型或者浮点表达式形式的受限制形式.
+:math:`c_i` 是基本的约束而 :math:`z` 是一个具有某些限定形式的整型或者浮点表达式.
 
 .. index::
   single: minizinc -c
 
 ``minizinc`` 工具包含了MiniZinc *编译器* ,它可以用一个MiniZinc模型和数据文件来创建
-一个平整后的FlatZinc模型,它等价于给定数据的MiniZinc模型表现成之前提到的受限制的形式. 
-通常来说构建一个给求解器的FlatZinc模型是对用户隐藏的,不过你可以看作是通过以下命令结合
-数据 ``data.dzn`` 来平整一个模型 ``model.mzn`` 的结果:
+一个展平后的FlatZinc模型,它等价于给定数据的MiniZinc模型表达为之前提到的受限制的形式. 
+通常来说构建一个给求解器的FlatZinc模型是对用户隐藏的,不过你也可以通过以下命令查看结合
+数据 ``data.dzn`` 来展平一个模型 ``model.mzn`` 的结果:
 
 .. code-block:: bash
 
@@ -26,10 +26,10 @@ FlatZinc反映了大多数约束求解器只会求解具有 :math:`\bar{exists} 
 
 在这一章中我们探索把MiniZinc翻译成FlatZinc的过程.
 
-平整表达式
+展平表达式
 ----------------------
 
-底层求解器的限制意味着复杂的MiniZinc表达式需要被 *平整* 为只使用不具有结构项的基本约束的连接.
+底层求解器的限制意味着复杂的MiniZinc表达式需要被 *展平* 为内部不具有更复杂结构项的基本约束的合取式.
 
 思考以下保证两个在长方形箱子的两个圆不会重叠的模型:
 
@@ -50,11 +50,11 @@ FlatZinc反映了大多数约束求解器只会求解具有 :math:`\bar{exists} 
   r1 = 2.0;
   r2 = 3.0;
 
-转换到FlatZinc首先通过替换所有参数为它们的值来简化模型, 然后求得任意固定的表达式的值. 
+转换到FlatZinc首先通过替换所有参数为它们的值来简化模型, 然后求出所有取值已经固定的表达式的值. 
 在这步简化后参数的值将不再需要.
 一个例外是大型数组的参数值.如果它们被适用多于一次,那么为了避免重复大的表达式这个参数会被保留.
 
-在简化变量和参数声明部分之后 :numref:`fig-nonoverlap` 的模型变为
+在简化后, :numref:`fig-nonoverlap` 的模型的变量和参数声明部分变为
 
 .. literalinclude:: examples/cnonoverlap.fzn
   :language: minizinc
@@ -67,7 +67,7 @@ FlatZinc反映了大多数约束求解器只会求解具有 :math:`\bar{exists} 
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 现在没有约束求解器可以直接处理像在 :numref:`fig-nonoverlap` 里复杂的约束表达式.
-作为替代,表达式中的每一个子表达式被命名,我们创建一个约束来构建子表达式的数值.
+作为替代,我们可以命名表达式中的每一个子表达式,我们创建约束来构建及代表子表达式的数值.
 让我们来看看约束表达式的子表达式. :mzn:`(x1 - x2)` 是一个子表达式, 如果我们将它命名为
 :mzn:`FLOAT01` 我们可以定义它为 :mzn:`constraint FLOAT01 = x1 - x2;` . 注意到这个表达式
 只在模型中出现两次. 我们只需要构建这个值一次,然后我们可以重复使用它. 这就是 *共同子表达式消除* .
@@ -75,7 +75,7 @@ FlatZinc反映了大多数约束求解器只会求解具有 :math:`\bar{exists} 
 :mzn:`constraint FLOAT02 = FLOAT01 * FLOAT01;` . 我们可以命名 :mzn:`constraint FLOAT03 = y1 - y2;` 
 和 :mzn:`constraint FLOAT04 = FLOAT03 * FLOAT03;` 最后 :mzn:`constraint FLOAT05 = FLOAT02 * FLOAT04;` .
 不等约束本身则变成 :mzn:`constraint FLOAT05 >= 25.0;` 因为 :mzn:`(r1+r2)*(r1 + r2)` 计算出结果为 :mzn:`25.0` .
-这个平整的约束于是
+于是这个约束被展平为
 
 .. code-block:: minizinc
 
@@ -91,10 +91,10 @@ FlatZinc反映了大多数约束求解器只会求解具有 :math:`\bar{exists} 
 FlatZinc约束形式
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-平整的最后步骤是把约束的形式转换成标准的FlatZinc形式,它总是 :math:`p(a_1, \ldots, a_n)` . 
-其中的 :mzn:`p` 是基础约束, :math:`a_1, \ldots, a_n` 是参数. FlatZinc尝试使用最少的
+展平的最后步骤是把约束的形式转换成标准的FlatZinc形式,它总是以 :math:`p(a_1, \ldots, a_n)` 的形式出现. 
+其中的 :mzn:`p` 是某个基础约束, :math:`a_1, \ldots, a_n` 是参数. FlatZinc尝试使用最少的
 不同约束形式. 所以 :mzn:`FLOAT01 = x1 - x2` 首先尝试重写为 :mzn:`FLOAT01 + x2 = x1` 
-然后使用 :mzn:`float_plus` 输出基础的约束. 得出的约束形式如下: 
+然后使用 :mzn:`float_plus` 输出基本的约束. 得出的约束形式如下: 
 
 .. literalinclude:: examples/cnonoverlap.fzn
   :language: minizinc
@@ -107,13 +107,13 @@ FlatZinc约束形式
 我们仍然缺少一项,声明引入的变量 :mzn:`FLOAT01` , ...,
 :mzn:`FLOAT05` . 这些可以被声明为 :mzn:`var float` . 不过为了令求解器的任务更简单,
 MiniZinc尝试通过简单的分析确定新引入变量的上界和下界. 比如因为 :mzn:`FLOAT01 = x1 - x2` 
-和 :math:`2.0 \leq` :mzn:`x1` :math:`\leq 8.0` 还有 :math:`3.0 \leq` :mzn:`x2` :math:`\leq 7.0`
+和 :math:`2.0 \leq` :mzn:`x1` :math:`\leq 8.0` 还有 :math:`3.0 \leq` :mzn:`x2` :math:`\leq 7.0`, 所以可以得出 :math:`- 5.0 \leq` :mzn:`FLOAT01` :math:`\leq 5.0`
 然后我们可以看到 :math:`-25.0 \leq` :mzn:`FLOAT02` :math:`\leq 25.0` (尽管注意到如果我们发现
 相乘实际上是平方,我们可以给出更精确的边界 :math:`0.0 \leq` :mzn:`FLOAT02` :math:`\leq 25.0` ).
 
-细心的读者会发现在 :ref:`sec-flat-sub` 和 :ref:`sec-flat-fzn` 里约束的平整形式的一点不同. 
+细心的读者会发现在 :ref:`sec-flat-sub` 和 :ref:`sec-flat-fzn` 里约束的展平形式的一点不同. 
 在后面没有非等约束. 因为一元的不等式可以完全被一个变量的边界表示出来,不等关系可以令 :mzn:`FLOAT05`
-的下界变为 :mzn:`25.0` , 然后这会变得冗余. 最后 :numref:`fig-nonoverlap` 的平整后形式是:
+的下界变为 :mzn:`25.0` , 然后这会变得冗余. 最后 :numref:`fig-nonoverlap` 的展平后形式是:
 
 .. literalinclude:: examples/cnonoverlap.fzn
   :language: minizinc
@@ -121,8 +121,8 @@ MiniZinc尝试通过简单的分析确定新引入变量的上界和下界. 比�
 目标函数
 ~~~~~~~~~~
 
-MiniZinc 平整最小化和最大化目标函数就像约束. 跟其他表达式一样, 目标表达式
-被平整时创建一个变量. 在FlatZinc输出求解项永远是单一变量. 看一下例子 :ref:`sec-let` .
+MiniZinc 就像展平约束一样, 展平最小化和最大化目标函数. 跟其他表达式一样, 目标表达式
+被展平时创建一个变量. 在FlatZinc输出求解项永远是单一变量. 看一下例子 :ref:`sec-let` .
 
 .. \pjs{Do we need an example here?}
 
@@ -141,15 +141,14 @@ MiniZinc 平整最小化和最大化目标函数就像约束. 跟其他表达式
 
 .. literalinclude:: examples/linear.mzn
   :language: minizinc
-  :caption: 说明线性约束平整的MiniZinc模型 (:download:`linear.mzn <examples/linear.mzn>`).
+  :caption: 说明线性约束展平的MiniZinc模型 (:download:`linear.mzn <examples/linear.mzn>`).
   :name: fig-lflat
 
 考虑在 :numref:`fig-lflat` 中的模型. 这里并没有为所有子表达式 :math:`3*x`, :math:`3*x - y` , :math:`x * z` , :math:`3*x - y + x*z` ,
 :math:`x + y + z` , :math:`d * (x + y + z)` , :math:`19 + d * (x + y + z)` ,
-和 :math:`19 + d * (x + y + z) - 4*d` 创建一个变量. 这里的转换会尝试在一个FlatZinc约束里创建一个大的
-可以记录尽可能多的约束线性约束. 
+和 :math:`19 + d * (x + y + z) - 4*d` 创建一个变量. 这里的翻译在创建一个FlatZinc约束时, 会尝试创建一个尽可能记录大部分原约束内容的线性约束. 
 
-平整会创建线性表达式作为一个单位而不是为每个子表达式组成中间变量.这也使创建的表达式简单化. 
+展平会创建线性表达式并将其视为一个单位, 而不视为每个字表达是构建中间变量.这也使创建的表达式简单化. 
 从约束中抽取出线性表达式为
 
 .. code-block:: minizinc
@@ -161,7 +160,7 @@ MiniZinc 平整最小化和最大化目标函数就像约束. 跟其他表达式
 注意到 *非线性表达式* :math:`x \times z` 是如何被抽取出来作为一个新的子表达式并赋予名字的,
 与此同时剩下的项会被收集起来从而使每个变量只出现一次 (的确变量 :math:`y` 的项被移除了)
 
-最后每个约束被写到FlatZinc形式获得:
+最后每个约束被写到FlatZinc形式, 从而得到:
 
 .. code-block:: minizinc
 
@@ -174,7 +173,7 @@ MiniZinc 平整最小化和最大化目标函数就像约束. 跟其他表达式
 展开表达式
 ---------------------
 
-大多数的模型需要创建一些独立于输入数据的约束. 
+大多数的模型需要创建一些基于输入数据的约束. 
 MiniZinc通过数组类型,列表和列生成解析还有聚合函数来支持这些模型.
 
 考虑以下从生产调度例子 :numref:`ex-prod-planning` 中出现的聚合函数表达式
@@ -312,8 +311,8 @@ MiniZinc通过数组类型,列表和列生成解析还有聚合函数来支持�
   constraint int_lin_eq([-1, 1], [INT01, p], -3);
 
 MiniZinc支持多维数组,但是(目前来说)FlatZinc只支持单维度数组.
-这意味着多维度数组必须映射到单维度数组上,而且多维度数组存取必须映射到
-单维度数组存取.
+这意味着多维度数组必须映射到单维度数组上,而且多维度数组访问必须映射到
+单维度数组访问.
   
 考虑在有限元平面模型 :numref:`ex-laplace`: 的Laplace等式约束:
 
@@ -361,19 +360,18 @@ MiniZinc支持多维数组,但是(目前来说)FlatZinc只支持单维度数组.
   single: reification
 
 FlatZinc模型包含了只有变量和参数声明,和一系列原始的约束. 所以当我们在MiniZinc用
-布尔连接符而不是析取式建模,有些东西已经完成了. 
-处理复杂公式的核心的方法是通过具体化使用连接符而不是析取式. 
-具体一个约束 :math:`c` 创建新的约束等价于 :math:`b \leftrightarrow c` ,
-其中如果约束满足则布尔变量 :math:`b` 是 :mzn:`true` , 否则是 :mzn:`false` .
+布尔连接符而不是析取式来建模时,需要进行一些处理. 
+处理使用连接符而不只是析取式来构建的复杂公式,其核心的方法是具体化. 
+具体化一个约束 :math:`c` 创建新的约束等价于 :math:`b \leftrightarrow c` ,
+即如果约束满足则布尔变量 :math:`b` 的值是 :mzn:`true` , 否则为 :mzn:`false` .
 
-当我们有能力 *具体化* 约束,对待复杂公式的方式跟数学表达式并无不同. 我们创建了
-一个名为子表达式和一个平整的约束来约束子表达式的数值. 
+当我们有能力 *具体化* 约束,对待复杂公式的方式跟数学表达式并无不同. 我们为子表达式创建了一个名称和一个展平的约束来约束子表达式的数值. 
 
 考虑以下任务调度例子 :numref:`ex-jobshop` 中出现在约束表达式:
 
 .. code-block:: minizinc
 
-  constraint %% 保证人物之间没有重叠
+  constraint %% 保证任务之间没有重叠
       forall(j in 1..tasks) (
           forall(i,k in 1..jobs where i < k) ( 
               s[i,j] + d[i,j] <= s[k,j] \/ 
@@ -434,9 +432,8 @@ FlatZinc模型包含了只有变量和参数声明,和一系列原始的约束. 
 定义像 :mzn:`int_plus` 和 :mzn:`int_plus` 的函数式关系的FlatZinc基本约束
 不需要支持具体化. 反而,有结果的函数的等式被具体化了. 
 
-具体化的另外一个重要作用出现在当我们使用强制转换函数 :mzn:`bool2int` (可能是明确地
-或者含蓄地通过把布尔表达式使用成整数表达式). 展开创建一个布尔变量来保存一个布尔表达式参数,
-同时一个整型变量 (限制到 :mzn:`0..1` )来保存这个数值. 
+具体化的另外一个重要作用出现在当我们使用强制转换函数 :mzn:`bool2int` (可能是显式地或者隐式地把布尔表达式使用成整数表达式使用). 平整过程将创建一个布尔变量来保存一个布尔表达式参数,
+以及一个整型变量 (限制到 :mzn:`0..1` )来保存这个数值. 
 
 考虑 :numref:`ex-magic-series` 中的魔术序列问题.
 
@@ -444,14 +441,14 @@ FlatZinc模型包含了只有变量和参数声明,和一系列原始的约束. 
   :language: minizinc
   :end-before: solve satisfy
 
-给定:mzn:`n = 2` , 展开创造了
+给定 :mzn:`n = 2` , 展开创造了
 
 .. code-block:: minizinc
 
   constraint s[0] = bool2int(s[0] = 0) + bool2int(s[1] = 0);
   constraint s[1] = bool2int(s[0] = 1) + bool2int(s[1] = 1);
 
-和平整创造了
+和展平创造了
 
 .. code-block:: minizinc
 
@@ -497,7 +494,7 @@ FlatZinc模型包含了只有变量和参数声明,和一系列原始的约束. 
 MiniZinc支持许多不同求解器的的一个重要的因素是全局约束 (还有真正的FlatZinc约束)可以根据不同的
 求解器专业化. 
 
-每一个求解器要么不需要定义来具体声明一个谓词,或者有一个定义. 举个例子一个求解器有一个
+每一个求解器生命一个谓词有时会,但有时并不会提供具体的定义. 举个例子一个求解器有一个
 内建的全局 :mzn:`alldifferent` 谓词,会包含定义
 
 .. code-block:: minizinc
@@ -511,10 +508,9 @@ MiniZinc支持许多不同求解器的的一个重要的因素是全局约束 (�
   predicate alldifferent(array[int] of var int:x) =
       forall(i,j in index_set(x) where i < j)(x[i] != x[j]);
 
-谓词调用 :math:`p(\bar{t})` 会被平整为首先为每个参数项 :math:`t_i` 创建的变量 :math:`v_i` . 
+谓词调用 :math:`p(\bar{t})` 在平整时, 首先为每个参数项 :math:`t_i` 创建对应变量 :math:`v_i` . 
 如果谓词没有定义我们只需要使用创建的参数 :math:`p(\bar{v})` 来调用谓词. 如果一个谓词
-有一个定义 :math:`p(\bar{x}) = \phi(\bar{x})` 然后我们用正式的参数和谓词的正文来
-替换这个谓词调用 :math:`p(\bar{t})` . 
+有一个定义 :math:`p(\bar{x}) = \phi(\bar{x})` 然后我们将用谓词的定义来替换这个谓词调用 :math:`p(\bar{t})` 当中形式参数被替换为对应的参数变量, 即 :math:`\phi(\bar{v})`. 
 注意到如果一个谓词调用 :math:`p(\bar{t})` 出现在具体化位置而且它没有定义,我们则
 检查我们适用这个谓词的具体化版本 :math:`\mathit{p\_reif}(\bar{x},b)` .
 
@@ -535,7 +531,7 @@ MiniZinc支持许多不同求解器的的一个重要的因素是全局约束 (�
 相同的数组两次,FlatZinc求解器不会创建它两次. 在这种情况下因为它不是使用两次,后面的转换会把 :mzn:`v` 替换成它的定义. 
 
 如果求解器使用预设的定义 :mzn:`alldifferent` 呢? 
-然后变量 :mzn:`v` 会正常地定义,谓词调用会被替换为一个重新命名的版本,其中 :mzn:`v` 替换了正式的参数 :mzn:`x`. 
+然后变量 :mzn:`v` 会正常地定义,谓词调用会被替换为一个当中变量被重命名的版本, 其中 :mzn:`v` 替换了形式参数 :mzn:`x`. 
 结果的程序是
 
 .. code-block:: minizinc
@@ -551,7 +547,7 @@ MiniZinc支持许多不同求解器的的一个重要的因素是全局约束 (�
 
   constraint alldifferent([A,B,C]) \/ alldifferent([B,C,D]);
 
-如果求解器有 :mzn:`alldifferent` 的具体化形式, 这将会被平整为 
+如果求解器有 :mzn:`alldifferent` 的具体化形式, 这将会被展平为 
 
 .. code-block:: minizinc
 
@@ -568,7 +564,7 @@ MiniZinc支持许多不同求解器的的一个重要的因素是全局约束 (�
   constraint forall(i,j in 1..3 where i<j)(v1[i] != v1[j]) \/
              forall(i,j in 1..3 where i<j)(v2[i] != v2[j]);
 
-它最终会平整成FlatZinc形式
+它最终会展平成FlatZinc形式
 
 .. code-block:: minizinc
 
@@ -582,19 +578,19 @@ MiniZinc支持许多不同求解器的的一个重要的因素是全局约束 (�
   constraint array_bool_or([BOOL04,BOOL07],true);
 
 注意到共同子表达式消除是如何利用具体化不等式 :mzn:`B != C` 的. 
-(虽然有一个更好的转换把共同约束提升到连接的最顶层)
+(虽然有一个更好的转换把共同约束提升到最顶层的合取式中)
 
 .. _sec-let:
 
 Let表达式
 ---------------
 
-Let表达式是MiniZinc非常强力的能力来引入新的变量.这在创造共同子表达式和定义局部变量是有用的. 
-在平整时,let表达式被转换成变量和约束声明. 这个MiniZinc的关联语意意味着这些约束必须像在第一个包含的布尔表达式中出现.
+Let表达式是MiniZinc中可用于引入新的变量的非常强大的工具. 
+在展平时,let表达式被转换成变量和约束声明. 这个MiniZinc的关系语义意味着这些约束必须像在第一个包含的布尔表达式中出现.
 
 let表达式的一个重要特征是每一次它们被使用时它们都创建新的变量. 
 
-考虑一下平整的代码
+考虑一下展平的代码
 
 .. code-block:: minizinc
 
@@ -624,10 +620,10 @@ let表达式的一个重要特征是每一次它们被使用时它们都创建�
   var int: y2;
   constraint u = 2 * y1 \/ v = 2 * y2;   
 
-一旦let表达式被清除我们可以像之前那样平整.
+一旦let表达式被清除我们可以像之前那样展平.
 
 记住let表达式可以定义新引入的变量 (对某些参数的确需要这样做). 
-这些含蓄地定义了必须满足的约束.
+这些隐式地定义了必须满足的约束.
 
 考虑婚礼座位问题 :numref:`ex-wedding2` 的复杂的目标函数.
 
@@ -647,7 +643,7 @@ let表达式的一个重要特征是每一次它们被使用时它们都创建�
   array[Hatreds] of Guests: h1 = [groom, carol];
   array[Hatreds] of Guests: h2 = [clara, bestman];
 
-平整的第一步是展开 :mzn:`sum` 表达式,给定(为了简洁我们保留客人名字和参数 :mzn:`Seats` , 
+展平的第一步是展开 :mzn:`sum` 表达式,给定(为了简洁我们保留客人名字和参数 :mzn:`Seats` , 
 在实际中他们会被他们的定义取代):
 
 .. code-block:: minizinc
@@ -699,9 +695,9 @@ let表达式的一个重要特征是每一次它们被使用时它们都创建�
         +
         same2 * abs(p12 - p22) + (1-same2) * (abs(13 - p12 - p22) + 1)); 
 
-现在我们已经构成不需要适用let表达式的等价的MiniZinc代码,和平整可以正常进行. 
+现在我们已经构成不需要使用let表达式的等价的MiniZinc代码,和展平可以正常进行. 
 
-作为说明没有出现在最顶层的let表达式,看看以下模型
+为了说明没有出现在最顶层的let表达式的情况,看看以下模型
 
 .. code-block:: minizinc
 
@@ -718,11 +714,11 @@ let表达式的一个重要特征是每一次它们被使用时它们都创建�
   var int: z;
   constraint x >= 1 -> (y = x - 1 /\ z = x * y /\ y + z * z < 14);
 
-注意到如果我们知道定义一个变量的等式不能失败,我们可以抽取它到最顶层. 这通常可以是求解大幅加快. 
+注意到如果我们知道定义一个变量的等式的真值不会为假,我们可以抽取它到最顶层. 这通常可以是求解大幅加快. 
 
-对于上面的例子,因为 :mzn:`y` 的值域对于 :mzn:`x - 1` 并不够大, 所以约束 :mzn:`y = x - 1` 会失败. 
+对于上面的例子,因为 :mzn:`y` 的值域对于 :mzn:`x - 1` 并不够大, 所以约束 :mzn:`y = x - 1` 可能失败. 
 不过约束 :mzn:`z = x * y` 不可以(实际上边界分析会给予 :mzn:`z` 足够大的边界来包含 :mzn:`x * y` 所有的可能值).
-一个更好的平整可以给出
+一个更好的展平可以给出
 
 .. code-block:: minizinc
 
@@ -746,7 +742,7 @@ let表达式的一个重要特征是每一次它们被使用时它们都创建�
 
 这个转换可以使求解更加高效,因为let变量的所有可能的复杂计算并没有被具体化. 
 
-这种方法的另外一个原因是在引入变量出现在负语境的时候它也可以被使用(只要它们有一个定义). 考虑一下与之前相似的这个例子:
+这种方法的另外一个原因是在引入变量出现在取反语境的时候它也可以被使用(只要它们有一个定义). 考虑一下与之前相似的这个例子:
 
 .. code-block:: minizinc
 
@@ -754,7 +750,7 @@ let表达式的一个重要特征是每一次它们被使用时它们都创建�
   constraint (let { var 2..9: y = x - 1 } in 
              y + (let { var int: z = x * y } in z * z) > 14) -> x >= 5;
 
-这个let表达式出现在否定语境中,不过每个引入变量都被定义了.平整后的代码是
+这个let表达式出现在否定语境中,不过每个引入变量都被定义了.展平后的代码是
 
 .. code-block:: minizinc
 
@@ -776,7 +772,7 @@ let表达式的一个重要特征是每一次它们被使用时它们都创建�
 
 以上转换对于所有 :mzn:`x` 的可能值给出结果,而原来的约束除掉了 :mzn:`x = 4` 的可能性. 
 
-对于 *约束项* 在let表达式的处理跟定义变量是相似的. 你可以认为一个约束等价于定义一个新的布尔变量. 
+对于在let表达式中的处理跟对定义的变量的处理是相似的. 你可以认为一个约束等价于定义一个新的布尔变量. 
 新的布尔变量定义可以从最顶层中抽取出来, 而布尔保存在正确的语境下. 
 
 .. code-block:: minizinc
@@ -796,7 +792,7 @@ let表达式的一个重要特征是每一次它们被使用时它们都创建�
                             constraint b1 /\ b2
                       } in y * (y - 2) >= z;
 
-然后平整成
+然后展平成
 
 .. code-block:: minizinc
 
