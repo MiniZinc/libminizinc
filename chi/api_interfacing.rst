@@ -1,2 +1,1 @@
-Interfacing to MiniZinc via its API
-===================================
+.. include:: ../en/api_interfacing.rst
