@@ -728,8 +728,21 @@ namespace MiniZinc {
         for (ExpressionSetIter it = ee->ann().begin(); it != ee->ann().end(); ++it) {
           Expression* ann = *it;
           if (ann != constants().ann.add_to_output && ann != constants().ann.rhs_from_assignment) {
-            EE ee_ann = flat_exp(*this, Ctx(), *it, NULL, constants().var_true);
-            vd->e()->addAnnotation(ee_ann.r());
+            bool needAnnotation = true;
+            if (Call* ann_c = ann->dyn_cast<Call>()) {
+              if (ann_c->id()==constants().ann.defines_var) {
+                // only add defines_var annotation if vd is the defined variable
+                if (Id* defined_var = ann_c->arg(0)->dyn_cast<Id>()) {
+                  if (defined_var->decl() != vd->id()->decl()) {
+                    needAnnotation = false;
+                  }
+                }
+              }
+            }
+            if (needAnnotation) {
+              EE ee_ann = flat_exp(*this, Ctx(), *it, NULL, constants().var_true);
+              vd->e()->addAnnotation(ee_ann.r());
+            }
           }
         }
       }
