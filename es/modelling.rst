@@ -226,7 +226,7 @@ El comando ``mzn-gecode`` utiliza el *solver* de dominios finitos Gecode para ev
 
 Cuando ejecutamos esto obtenemos el resultado:
 
-::
+.. code-block:: none
 
   wa=2	 nt=3	 sa=1
   q=2	 nsw=3	 v=2
@@ -312,7 +312,7 @@ por :mzn:`minimize` para especificar un problema de minimización.
 
 Cuando ejecutamos esto obtenemos el resultado:
 
-::
+.. code-block:: none
 
   Número de tortas de plátano = 2
   Número de tortas de chocolate = 2
@@ -363,7 +363,7 @@ El resultado de la ejecución del comando
 con un conjunto de datos alternativo definido en
 :numref:`fig-pantry2` is
 
-::
+.. code-block:: none
 
   Número de tortas de plátano = 3
   Número de tortas de chocolate = 8
@@ -372,7 +372,7 @@ con un conjunto de datos alternativo definido en
 
 Si eliminamos la instrucción de salida de :download:`cakes_es.mzn <examples/cakes_es.mzn>` entonces MiniZinc utilizará una salida predeterminada. En este caso, la salida resultante será
 
-::
+.. code-block:: none
 
   b = 3;
   c = 8;
@@ -457,7 +457,7 @@ La salida al ejecutar el comando ``mzn-cbc``:
 
 La salida es
 
-::
+.. code-block:: none
 
   Préstamo 1000.00 al 4.0% interés y reembolso 260.00
   por trimestre para 1 año deja 65.78 debido
@@ -473,7 +473,7 @@ La salida al ejecutar el comando
 
 La salida es
 
-::
+.. code-block:: none
 
   Préstamo 1000.00 al 4.0% interés y reembolso 275.49
   por trimestre para 1 año deja 0.00 debido
@@ -489,7 +489,7 @@ La salida al ejecutar el comando
 
 La salida es:
 
-::
+.. code-block:: none
 
   Préstamo 907.47 at 4.0% interés y reembolso 250.00
   por trimestre para 1 año deja 0.00 debido

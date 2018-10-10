@@ -70,7 +70,7 @@ Ejecutando el comando
 
 Da la salida
 
-::
+.. code-block:: none
 
     0.00 100.00 100.00 100.00   0.00
     0.00  42.86  52.68  42.86   0.00
@@ -446,7 +446,7 @@ Ejecutando el código:
 
 Resulta en la salida:
 
-::
+.. code-block:: none
 
   BananaCake = 2;
   ChocolateCake = 2;
@@ -572,7 +572,7 @@ Ejecutando
 
 Resulta en:
 
-::
+.. code-block:: none
 
    5 9 3  7 6 2  8 1 4
    2 6 8  4 3 1  5 7 9
@@ -619,7 +619,7 @@ Ejecutando este programa usando:
 
 Puede resultar en la salida:
 
-::
+.. code-block:: none
 
   wa = yellow;
   nt = blue;
@@ -724,7 +724,7 @@ El comando
 
 Resuelve un pequeño problema de planificación de tiendas de trabajo e ilustra el comportamiento de \texttt{all-solutions} para problemas de optimización. Aquí el solucionador genera cada una de las mejores soluciones tal como la encuentra, en lugar de todas las soluciones óptimas posibles. El resultado de este comando es:
 
-::
+.. code-block:: none
 
   Fin = 39
    5  9 13 22 30
@@ -787,7 +787,7 @@ El modelo y los datos de muestra se muestran en :numref:`ex-stable-marriage` y :
 
 Los tres primeros elementos en el modelo declaran el número de hombres/mujeres y el conjunto de hombres y mujeres. Aquí presentamos el uso de *tipos enumerados anónimos*. Ambos :mzn:`Men` y :mzn:`Women` son conjuntos de tamaño :mzn:`n`, pero no deseamos mezclarlos, así que utilizamos un tipo enumerado anónimo. Esto permite que MiniZinc detecte errores de modelado cuando usamos :mzn:`Men` para :mzn:`Women` o viceversa.
 
-Las matrices :mzn:`rankWomen` y :mzn:`rankMen`, respectivamente, dan el ranking de las mujeres de los hombres y el ranking de las mujeres de los hombres. Por lo tanto, la entrada :mzn:`rankWomen[w, m]` da la clasificación por mujer :mzn: `w` de hombre :mzn:`m`. Cuanto menor sea el número en el ranking, más se prefiere el hombre o la mujer.
+Las matrices :mzn:`rankWomen` y :mzn:`rankMen`, respectivamente, dan el ranking de las mujeres de los hombres y el ranking de las mujeres de los hombres. Por lo tanto, la entrada :mzn:`rankWomen[w, m]` da la clasificación por mujer :mzn:`w` de hombre :mzn:`m`. Cuanto menor sea el número en el ranking, más se prefiere el hombre o la mujer.
 
 Hay dos matrices de variables de decisión :mzn:`wife` y :mzn:`husband`. Estos, respectivamente, contienen la esposa de cada hombre y el esposo de cada mujer.
 
@@ -849,7 +849,7 @@ Ejecutando el comando
 
 Conduce a la salida
 
-::
+.. code-block:: none
 
   s = [1, 2, 1, 0];
   ----------
@@ -925,7 +925,7 @@ Ejecutando el comando:
 
 Donde el archivo de datos define un problema con 4 semanas, con 4 grupos de tamaño 3 y que conduce a la salida:
 
-::
+.. code-block:: none
 
   1..3 4..6 7..9 10..12
   { 1, 4, 7 } { 2, 5, 10 } { 3, 9, 11 } { 6, 8, 12 }
@@ -960,7 +960,7 @@ Ejecutando:
 
 Resultados en la salida:
 
-::
+.. code-block:: none
 
   ted bride groom rona ed carol ron alice bob bridesmaid bestman clara
   ----------

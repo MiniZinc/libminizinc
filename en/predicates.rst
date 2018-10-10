@@ -245,18 +245,18 @@ A possible output is
 
 .. code-block:: none
 
-  o d n n o n n d o o
-  d o n d o d n n o n
-  o d d o d o d n n o
-  d d d o n n d o n n
-  d o d n n o d o d d
+  d o n o n o d n o o
+  d o d n n o d d n o
+  o d d n o n d n o n
+  o d d d o n n o n n
+  d d n o d d n o d d
   n n o d d d o d d d
   n n o d d d o d d d
   ----------
 
 There is an alternate form of the regular constraint
 :mzn:`regular_nfa` which specifies the regular
-expression using an NFA (without :mzn:`\epsilon` arcs).
+expression using an NFA (without :math:`\epsilon` arcs).
 This constraint has the form
 
 .. code-block:: minizinc
@@ -648,7 +648,7 @@ and similarly :mzn:`e1 <- e2` is rewritten as  :mzn:`e1 \/ not e2`.
 The context for a Boolean expression is given by:
 
 root
-  root context is the context for any expression $e$ appearing as
+  root context is the context for any expression :mzn:`e` appearing as
   the argument of :mzn:`constraint` or as an
   :index:`assignment` item, or appearing as a sub expression :mzn:`e1`
   or :mzn:`e2` in an expression :mzn:`e1 /\ e2` occuring in a root context.

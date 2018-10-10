@@ -5,7 +5,7 @@ set of int: Hatreds = 1..5;
 array[Hatreds] of Guests: h1 = [groom, carol, ed, bride, ted];
 array[Hatreds] of Guests: h2 = [clara, bestman, ted, alice, ron];
 set of Guests: Males = {groom, bestman, bob, ted, ron,ed};
-set of Guests: Females = {bride,bridesmaid,carol,alice,rona,clara};
+set of Guests: Females = {bride, bridesmaid, carol, alice, rona, clara};
 
 % Asientos de los huéspedes.
 array[Guests] of var Seats: pos;
@@ -38,5 +38,5 @@ constraint forall(h in Hatreds)(
 
 solve maximize sum(h in Hatreds)(cost[h]);
 
-output [ show(g)++" " | s in Seats,g in Guests where fix(pos[g]) == s]
+output [ show(g)++" " | s in Seats, g in Guests where fix(pos[g]) == s]
        ++ ["\n"];

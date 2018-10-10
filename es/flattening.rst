@@ -92,7 +92,7 @@ Forma de restricciones FlatZinc
 
 El flatening como su paso final, convierte la forma de la restricción en una forma estándar de FlatZinc que siempre es :math:`p(a_1, \ldots, a_n)`, donde
 :mzn:`p` es el nombre de la restricción primitiva y :math:`a_1, \ldots, a_n` son los argumentos.
-FlatZinc intenta usar un mínimo de diferentes formas de restricción, por ejemplo, la restricción :mzn:`FLOAT01 = x1 - x2` se reescribe primero como :mzn:` FLOAT01 + x2 = x1` y luego se genera usando la restricción primitiva:mzn:`float_plus`.
+FlatZinc intenta usar un mínimo de diferentes formas de restricción, por ejemplo, la restricción :mzn:`FLOAT01 = x1 - x2` se reescribe primero como :mzn:`FLOAT01 + x2 = x1` y luego se genera usando la restricción primitiva:mzn:`float_plus`.
 La forma de restricción resultante es la siguiente:
 
 .. literalinclude:: examples/cnonoverlap_es.fzn
@@ -414,8 +414,6 @@ El :mzn:`int_lin_le_reif` es la forma reificada de la restricción lineal :mzn:`
 
 
 La mayoría de las restricciones primitivas de FlatZinc :math:`p(\bar{x})` tiene una forma reificada :math:`\mathit{p\_reif}(\bar{x},b)` que toma un argumento final adicional :math:`b` y define la restricción :math:`b \leftrightarrow p(\bar{x})`. Las restricciones primitivas de FlatZinc que definen relaciones funcionales, como :mzn:`int_plus` y :mzn:`int_plus`, no necesitan admitir la reificación. En cambio, la igualdad con el resultado de la función se reifica.
-
-Another important use of reification arises when we use the coercion function :mzn:`bool2int` (either explicitly, or implicitly by using a Boolean expression as an integer expression). Flattening creates a Boolean variable to hold the value of the Boolean expression argument, as well as an integer variable (restricted to :mzn:`0..1`) to hold this value.
 
 Otro uso importante de la reificación surge cuando usamos la función de coerción :mzn:`bool2int` (explícita o implícitamente usando una expresión booleana como una expresión entera). El aplanamiento crea una variable booleana para contener el valor del argumento de expresión booleana, así como una variable entera (restringida a :mzn:`0..1`) para mantener este valor.
 

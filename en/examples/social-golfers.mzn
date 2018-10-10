@@ -9,22 +9,14 @@ array[WEEK,GROUP] of var set of GOLFER: Sched;
 
 % constraints
 constraint 
-    forall (i in 1..weeks-1) (
-               Sched[i,1] < Sched[i+1,1]
-    ) /\
     forall (i in WEEK, j in GROUP) (
            card(Sched[i,j]) = size
         /\ forall (k in j+1..groups) (
-%                Sched[i,j] < Sched[i,k]
-%             /\ 
                 Sched[i,j] intersect Sched[i,k] = {}
            )
     ) /\
     forall (i in WEEK) (
           partition_set([Sched[i,j] | j in GROUP], GOLFER)
-%       /\ forall (j in 1..groups-1) (
-%              Sched[i,j] < Sched[i,j+1]
-%          )
     ) /\
     forall (i in 1..weeks-1, j in i+1..weeks) (
         forall (x,y in GROUP) (

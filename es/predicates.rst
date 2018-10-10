@@ -83,7 +83,7 @@ Usando los datos mostrados en :mzn:`ex-movingd`, el comando
 
 Puede dar como resultado la salida
 
-::
+.. code-block:: none
 
   start = [0, 60, 60, 90, 120, 0, 15, 105]
   end = 140
@@ -208,7 +208,7 @@ Ejecutando el comando
 Encuentra un horario de 10 días para 7 enfermeras, que requiere 3 en cada turno de día y 2 en cada turno de noche, con un mínimo de 2 turnos de noche por enfermera.
 Un posible resultado es:
 
-::
+.. code-block:: none
 
   o d n n o n n d o o
   d o n d o d n n o n
@@ -619,7 +619,7 @@ De nuevo, generalmente son los valores declarados, y de nuevo si no se declara c
 
 Por ejemplo, el modelo descrito en :numref:`ex-reflect` puede mostrar:
 
-::
+.. code-block:: none
 
   y = -10
   D = -10..10
@@ -627,7 +627,7 @@ Por ejemplo, el modelo descrito en :numref:`ex-reflect` puede mostrar:
 
 O
 
-::
+.. code-block:: none
 
   y = 0
   D = {0, 1, 2, 3, 4}

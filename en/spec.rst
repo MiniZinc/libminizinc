@@ -3510,6 +3510,8 @@ The first parameter declares a simple integer ``n``. The
 arrays must be of the same size in order to map to a (rectangular) MiniZinc
 two-dimensional array. The third parameter is an array of sets of integers.
 
+**Note**: The JSON input and output currently does not support enumerated types. This will be added in a future release.
+
 .. _spec-grammar:
 
 Full grammar
