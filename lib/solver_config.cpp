@@ -440,14 +440,26 @@ namespace MiniZinc {
     }
     
     if (_mznlibDir.empty()) {
-      _mznlibDir = FileUtils::share_directory();
+      _mznlibDir = FileUtils::file_path(FileUtils::share_directory());
     }
     if (!_mznlibDir.empty()) {
       if (!solver_path.empty())
         solver_path += PATHSEP;
       solver_path += _mznlibDir+"/solvers";
     }
-    
+#ifndef _MSC_VER
+    if (_mznlibDir != "/usr/local/share/minizinc") {
+      if (!solver_path.empty())
+        solver_path += PATHSEP;
+      solver_path += "/usr/local/share/minizinc/solvers";
+    }
+    if (_mznlibDir != "/usr/share/minizinc") {
+      if (!solver_path.empty())
+        solver_path += PATHSEP;
+      solver_path += "/usr/share/minizinc/solvers";
+    }
+#endif
+    std::cerr << "solver path " << solver_path << "\n";
     while (!solver_path.empty()) {
       size_t next_sep = solver_path.find(PATHSEP);
       string cur_path = solver_path.substr(0,next_sep);
