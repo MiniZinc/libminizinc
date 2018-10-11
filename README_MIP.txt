@@ -28,8 +28,8 @@ SUBTOUR ELIMINATION CONSTRAINTS
 ===============================
 Optionally use the SEC cuts for the circuit global constraint.
 Currently only Gurobi and CPLEX. (2018/09)
-If compiling from source, this needs boost and #define COMPILE_BOOST_MINCUT
-in lib/algorithms/min_cut.cpp (cmake determines automatically).
+If compiling from source, this needs boost and cmake flag -DCOMPILE_BOOST_MINCUT=ON
+(or #define it in lib/algorithms/min_cut.cpp).
 Values of nSECcuts: 0,1: use MTZ formulation; 1,2: pass on circuit constraints
 to the SEC cut generator, so 1 would use both (seems best)
 
