@@ -459,7 +459,6 @@ namespace MiniZinc {
       solver_path += "/usr/share/minizinc/solvers";
     }
 #endif
-    std::cerr << "solver path " << solver_path << "\n";
     while (!solver_path.empty()) {
       size_t next_sep = solver_path.find(PATHSEP);
       string cur_path = solver_path.substr(0,next_sep);
