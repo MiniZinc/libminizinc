@@ -2849,19 +2849,22 @@ namespace MiniZinc {
           (void) flat_exp(env, Ctx(), clause, constants().var_true, constants().var_true);
         }
         pos.pop_back();
-        pos.push_back(b->id());
-        neg[1] = defined[i];
-        clauseArgs[0] = new ArrayLit(Location().introduce(),pos);
-        clauseArgs[0]->type(Type::varbool(1));
-        clauseArgs[1] = new ArrayLit(Location().introduce(),neg);
-        clauseArgs[1]->type(Type::varbool(1));
-        {
-          // b[i] /\ c -> b
-          Call* clause = new Call(Location().introduce(), constants().ids.clause, clauseArgs);
-          clause->decl(env.model->matchFn(env, clause, false));
-          clause->type(clause->decl()->rtype(env, clauseArgs, false));
-          clause->ann().add(constants().ann.promise_total);
-          (void) flat_exp(env, Ctx(), clause, constants().var_true, constants().var_true);
+        if (b != constants().var_true) {
+          pos.push_back(b->id());
+          neg[1] = defined[i];
+          clauseArgs[0] = new ArrayLit(Location().introduce(),pos);
+          clauseArgs[0]->type(Type::varbool(1));
+          clauseArgs[1] = new ArrayLit(Location().introduce(),neg);
+          clauseArgs[1]->type(Type::varbool(1));
+          {
+            // b[i] /\ c -> b
+            Call* clause = new Call(Location().introduce(), constants().ids.clause, clauseArgs);
+            clause->decl(env.model->matchFn(env, clause, false));
+            clause->type(clause->decl()->rtype(env, clauseArgs, false));
+            clause->ann().add(constants().ann.promise_total);
+            (void) flat_exp(env, Ctx(), clause, constants().var_true, constants().var_true);
+          }
+          pos.pop_back();
         }
         pos.push_back(conditions[i]);
       }
@@ -6046,7 +6049,14 @@ namespace MiniZinc {
         } else {
           Ctx nctx = ctx;
           nctx.neg = false;
-          EE ee = flat_exp(env,nctx,let->in(),NULL,NULL);
+          VarDecl* bb = b;
+          for (EE& ee : cs) {
+            if (ee.b() != constants().lit_true) {
+              bb = NULL;
+              break;
+            }
+          }
+          EE ee = flat_exp(env,nctx,let->in(),NULL,bb);
           if (let->type().isbool() && !let->type().isopt()) {
             ee.b = ee.r;
             cs.push_back(ee);
