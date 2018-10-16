@@ -5382,8 +5382,13 @@ namespace MiniZinc {
         if (ctx.b==C_ROOT && decl->e()==NULL &&
             cid == constants().ids.forall && r==constants().var_true) {
           ret.b = bind(env,ctx,b,constants().lit_true);
-          EE flat_al = flat_exp(env,Ctx(),c->arg(0),constants().var_ignore,constants().var_true);
-          ArrayLit* al = follow_id(flat_al.r())->cast<ArrayLit>();
+          ArrayLit* al;
+          if (c->arg(0)->isa<ArrayLit>()) {
+            al = c->arg(0)->cast<ArrayLit>();
+          } else {
+            EE flat_al = flat_exp(env,Ctx(),c->arg(0),constants().var_ignore,constants().var_true);
+            al = follow_id(flat_al.r())->cast<ArrayLit>();
+          }
           nctx.b = C_ROOT;
           for (unsigned int i=0; i<al->size(); i++)
             (void) flat_exp(env,nctx,(*al)[i],r,b);
