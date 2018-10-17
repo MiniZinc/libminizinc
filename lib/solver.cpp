@@ -311,6 +311,10 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       for (unsigned int i=0; i<solvers.size(); i++) {
         cout << "  " << solvers[i] << endl;
       }
+      cout << "Search path for solver configurations:\n";
+      for (const string& p : solver_configs.solverConfigsPath()) {
+        cout << "  " << p << endl;
+      }
       return OPTION_FINISH;
     }
     if (argv[i]=="--solvers-json") {
