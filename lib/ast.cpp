@@ -20,6 +20,57 @@
 
 namespace MiniZinc {
 
+  Location::LocVec*
+  Location::LocVec::a(const ASTString& filename, unsigned int first_line, unsigned int first_column, unsigned int last_line, unsigned int last_column) {
+    static const unsigned int pointerBits = sizeof(IntLit*)*8;
+    if (pointerBits<=32) {
+      if (first_line < (1<<8) &&
+          last_line-first_line < (1<<7) &&
+          first_column < (1<<6) &&
+          last_column < (1<<7)) {
+        long long int combined = first_line;
+        combined |= (last_line-first_line)<<8;
+        combined |= (first_column)<<(8+7);
+        combined |= (last_column)<<(8+7+6);
+        LocVec* v = static_cast<LocVec*>(alloc(2));
+        new (v) LocVec(filename,combined);
+        return v;
+      }
+    } else if (pointerBits>=64) {
+      if (first_line < (1<<20) &&
+          last_line-first_line < (1<<20) &&
+          first_column < (1<<10) &&
+          last_column < (1<<10)) {
+        long long int combined = first_line;
+        combined |= (static_cast<unsigned long long int>(last_line-first_line))<<20;
+        combined |= (static_cast<unsigned long long int>(first_column))<<(20+20);
+        combined |= (static_cast<unsigned long long int>(last_column))<<(20+20+10);
+        LocVec* v = static_cast<LocVec*>(alloc(2));
+        new (v) LocVec(filename,combined);
+        return v;
+      }
+    }
+    
+    LocVec* v = static_cast<LocVec*>(alloc(5));
+    new (v) LocVec(filename,first_line,first_column,last_line,last_column);
+    return v;
+  }
+
+  Location::LocVec::LocVec(const ASTString& filename, IntVal combined) : ASTVec(2) {
+    *(_data+0) = filename.aststr();
+    *(_data+1) = IntLit::a(combined);
+  }
+
+  Location::LocVec::LocVec(const ASTString& filename, unsigned int fl,
+                           unsigned int first_column, unsigned int last_line, unsigned int last_column) : ASTVec(5) {
+    *(_data+0) = filename.aststr();
+    *(_data+1) = IntLit::a(fl);
+    *(_data+2) = IntLit::a(last_line);
+    *(_data+3) = IntLit::a(first_column);
+    *(_data+4) = IntLit::a(last_column);
+  }
+
+  
   Location Location::nonalloc;
   
   Type Type::unboxedint = Type::parint();
