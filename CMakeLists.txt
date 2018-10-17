@@ -41,6 +41,8 @@ if (DEFINED SCIP_DIR AND DEFINED SOPLEX_DIR AND DEFINED ZIMPL_DIR AND NOT "${SCI
 endif()
 if (DEFINED OSICBC_HOME AND NOT "${OSICBC_HOME} " STREQUAL " ")
   set(HAS_OSICBC TRUE)
+elseif (DEFINED OSICBC_INCLUDEDIR AND DEFINED OSICBC_LIBDIR AND NOT "${OSICBC_INCLUDEDIR} " STREQUAL " " AND NOT "${OSICBC_LIBDIR} " STREQUAL " ")
+  set(HAS_OSICBC TRUE)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
@@ -654,12 +656,17 @@ endif()
 if(HAS_OSICBC)
   ### Tested version 2.9.9, rev 2345 on 12.10.17 from the stable snapshot https://projects.coin-or.org/svn/Cbc/stable/2.9
 
-  if (EXISTS "${OSICBC_HOME}/include/coin/" AND EXISTS "${OSICBC_HOME}/lib")
-    set(CBC_INCLUDEDIRS "${OSICBC_HOME}/include/coin/")
-    set(LNDIR "${OSICBC_HOME}/lib")
+  if (DEFINED OSICBC_INCLUDEDIR AND DEFINED OSICBC_LIBDIR AND NOT "${OSICBC_INCLUDEDIR} " STREQUAL " " AND NOT "${OSICBC_LIBDIR} " STREQUAL " ")
+    set(CBC_INCLUDEDIRS "${OSICBC_INCLUDEDIR}/coin/")
+    set(LNDIR "${OSICBC_LIBDIR}")    
   else()
-    set(CBC_INCLUDEDIRS "${OSICBC_HOME}/Clp/src/" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Cbc/src/" "${OSICBC_HOME}/Cbc/src/OsiCbc" "${OSICBC_HOME}/Cgl/src/CglZeroHalf" "${OSICBC_HOME}/Cgl/src/CglLandP" "${OSICBC_HOME}/Cgl/src/CglTwomir" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding2" "${OSICBC_HOME}/Cgl/src/CglFlowCover" "${OSICBC_HOME}/Cgl/src/CglClique" "${OSICBC_HOME}/Cgl/src/CglOddHole" "${OSICBC_HOME}/Cgl/src/CglKnapsackCover" "${OSICBC_HOME}/Cgl/src/CglGomory" "${OSICBC_HOME}/Cgl/src/CglPreProcess" "${OSICBC_HOME}/Cgl/src/CglDuplicateRow" "${OSICBC_HOME}/Cgl/src/CglRedSplit" "${OSICBC_HOME}/Cgl/src/CglProbing" "${OSICBC_HOME}/Cgl/src" "${OSICBC_HOME}/Clp/src" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Osi/src/Osi" "${OSICBC_HOME}/CoinUtils/src" "${OSICBC_HOME}/BuildTools/headers" "${OSICBC_HOME}/Cgl/src/CglResidualCapacity")
-    set(LNDIR "${OSICBC_HOME}/Cbc/MSVisualStudio/v10/x64-v120-Release")
+    if (EXISTS "${OSICBC_HOME}/include/coin/" AND EXISTS "${OSICBC_HOME}/lib")
+      set(CBC_INCLUDEDIRS "${OSICBC_HOME}/include/coin/")
+      set(LNDIR "${OSICBC_HOME}/lib")
+    else()
+      set(CBC_INCLUDEDIRS "${OSICBC_HOME}/Clp/src/" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Cbc/src/" "${OSICBC_HOME}/Cbc/src/OsiCbc" "${OSICBC_HOME}/Cgl/src/CglZeroHalf" "${OSICBC_HOME}/Cgl/src/CglLandP" "${OSICBC_HOME}/Cgl/src/CglTwomir" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding2" "${OSICBC_HOME}/Cgl/src/CglFlowCover" "${OSICBC_HOME}/Cgl/src/CglClique" "${OSICBC_HOME}/Cgl/src/CglOddHole" "${OSICBC_HOME}/Cgl/src/CglKnapsackCover" "${OSICBC_HOME}/Cgl/src/CglGomory" "${OSICBC_HOME}/Cgl/src/CglPreProcess" "${OSICBC_HOME}/Cgl/src/CglDuplicateRow" "${OSICBC_HOME}/Cgl/src/CglRedSplit" "${OSICBC_HOME}/Cgl/src/CglProbing" "${OSICBC_HOME}/Cgl/src" "${OSICBC_HOME}/Clp/src" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Osi/src/Osi" "${OSICBC_HOME}/CoinUtils/src" "${OSICBC_HOME}/BuildTools/headers" "${OSICBC_HOME}/Cgl/src/CglResidualCapacity")
+      set(LNDIR "${OSICBC_HOME}/Cbc/MSVisualStudio/v10/x64-v120-Release")
+    endif()
   endif()
 
   if (WIN32 AND NOT UNIX)  #  Windows config based on  https://projects.coin-or.org/Cbc/wiki/VSSetup
