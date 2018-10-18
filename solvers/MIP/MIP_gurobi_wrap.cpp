@@ -93,7 +93,7 @@ vector<string> MIP_gurobi_wrapper::getStdFlags() {
 }
 
 const vector<string>& gurobiDLLs(void) {
-  static const vector<string> sGurobiDLLs = { "gurobi90", "gurobi85", "gurobi80", "gurobi75", "gurobi70", "gurobi65" };
+  static const vector<string> sGurobiDLLs = { "gurobi90", "gurobi85", "gurobi81", "gurobi80", "gurobi75", "gurobi70", "gurobi65" };
   return sGurobiDLLs;
 }
 
