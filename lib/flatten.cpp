@@ -4329,11 +4329,11 @@ namespace MiniZinc {
             Call* surround = env.surroundingCall();
             
             Type ntype = c->type();
-            if (surround->id()==constants().ids.forall) {
+            if (surround && surround->id()==constants().ids.forall) {
               new_e = new BinOp(Location().introduce(), cond, BOT_IMPL, c->e());
               new_e->type(Type::varbool());
               ntype.ot(Type::OT_PRESENT);
-            } else if (surround->id()==constants().ids.exists) {
+            } else if (surround && surround->id()==constants().ids.exists) {
               new_e = new BinOp(Location().introduce(), cond, BOT_AND, c->e());
               new_e->type(Type::varbool());
               ntype.ot(Type::OT_PRESENT);
