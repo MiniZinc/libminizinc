@@ -204,7 +204,7 @@ namespace MiniZinc {
       } else {
         vector<string> filenames;
         filenames.push_back(filename);
-        m = parse(confenv,filenames, vector<string>(), vector<string>(),
+        m = parse(confenv,filenames, vector<string>(), "", "", vector<string>(),
                   true, false, false, errstream);
       }
       if (m) {

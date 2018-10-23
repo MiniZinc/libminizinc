@@ -51,8 +51,9 @@ namespace MiniZinc {
     Model* m;
     std::string dirName;
     std::string fileName;
-    ParseWorkItem(Model* m0, const std::string& dirName0, const std::string& fileName0)
-    : m(m0), dirName(dirName0), fileName(fileName0) {}
+    bool isModelString;
+    ParseWorkItem(Model* m0, const std::string& dirName0, const std::string& fileName0, bool isModelString0=false)
+    : m(m0), dirName(dirName0), fileName(fileName0), isModelString(isModelString0) {}
   };
   
 
@@ -125,11 +126,14 @@ namespace MiniZinc {
   Model* parse(Env& env,
                const std::vector<std::string>& filename,
                const std::vector<std::string>& datafiles,
+               const std::string& textModel,
+               const std::string& textModelName,
                const std::vector<std::string>& includePaths,
                bool ignoreStdlib, bool parseDocComments, bool verbose,
                std::ostream& err);
 
-  Model* parseFromString(const std::string& model,
+  Model* parseFromString(Env& env,
+                         const std::string& model,
                          const std::string& filename,
                          const std::vector<std::string>& includePaths,
                          bool ignoreStdlib, bool parseDocComments, bool verbose,

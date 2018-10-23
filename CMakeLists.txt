@@ -366,6 +366,7 @@ lib/options.cpp
 lib/optimize_constraints.cpp
 lib/output.cpp
 lib/parser.yxx
+lib/parser.cpp
 lib/solver_instance.cpp
 lib/solver_instance_base.cpp
 lib/statistics.cpp

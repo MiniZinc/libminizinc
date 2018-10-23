@@ -167,6 +167,19 @@ namespace MiniZinc { namespace FileUtils {
 #endif
   }
 
+  std::string base_name(const std::string& filename) {
+#ifdef _MSC_VER
+    size_t pos = filename.find_last_of("\\/");
+    return (pos==std::string::npos) ? filename : filename.substr(pos+1);
+#else
+    char* fn = strdup(filename.c_str());
+    char* dn = basename(fn);
+    std::string ret(dn);
+    free(fn);
+    return ret;
+#endif
+  }
+
   bool is_absolute(const std::string& path) {
 #ifdef _MSC_VER
     return !PathIsRelative(path.c_str());
