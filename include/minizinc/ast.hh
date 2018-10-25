@@ -107,15 +107,19 @@ namespace MiniZinc {
   protected:
     
     /// Internal representation of a Location
+    /// Layout depends on sizeof pointer and arguments
+    /// 32 bit pointers:
+    ///   Layout 1: filename (32 bit), first line (8 bit), last line-first line (7 bit), first column (6 bit), last column (7 bit)
+    ///   Layout 2: filename (32 bit), 4 IntLit for the lines/columns
+    /// 64 bit pointers:
+    ///   Layout 1: filename (64 bit), first line (20 bit), last line-first line (20 bit), first column (10 bit), last column (10 bit)
+    ///   Layout 2: filename (64 bit), 4 IntLit for the lines/columns
     class LocVec : public ASTVec {
     protected:
       LocVec(const ASTString& filename, unsigned int first_line, unsigned int first_column, unsigned int last_line, unsigned int last_column);
+      LocVec(const ASTString& filename, IntVal combined);
     public:
-      static LocVec* a(const ASTString& filename, unsigned int first_line, unsigned int first_column, unsigned int last_line, unsigned int last_column) {
-        LocVec* v = static_cast<LocVec*>(alloc(3));
-        new (v) LocVec(filename,first_line,first_column,last_line,last_column);
-        return v;
-      }
+      static LocVec* a(const ASTString& filename, unsigned int first_line, unsigned int first_column, unsigned int last_line, unsigned int last_column);
       void mark(void) {
         _gc_mark = 1;
         if (_data[0])
@@ -146,6 +150,8 @@ namespace MiniZinc {
 
     /// Construct location
     Location(const ASTString& filename, unsigned int first_line, unsigned int first_column, unsigned int last_line, unsigned int last_column) {
+      if (last_line < first_line)
+        throw InternalError("invalid location");
       _loc_info.lv = LocVec::a(filename,first_line,first_column,last_line,last_column);
     }
 

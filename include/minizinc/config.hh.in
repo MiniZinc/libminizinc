@@ -18,6 +18,8 @@
 
 #cmakedefine HAS_MEMCPY_S
 
+#cmakedefine COMPILE_BOOST_MINCUT
+
 #cmakedefine HAS_DLFCN_H
 
 #cmakedefine HAS_WINDOWS_H

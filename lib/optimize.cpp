@@ -292,6 +292,19 @@ namespace MiniZinc {
       
       GCLock lock;
 
+      // Phase 0: clean up
+      // - clear flags for all constraint and variable declaration items
+      //   (flags are used to indicate whether an item is already queued or not)
+      for (unsigned int i=0; i<m.size(); i++) {
+        if (!m[i]->removed()) {
+          if (ConstraintI* ci = m[i]->dyn_cast<ConstraintI>()) {
+            ci->flag(false);
+          } else if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
+            vdi->flag(false);
+          }
+        }
+      }
+
       // Phase 1: initialise queues
       //  - remove equality constraints between identifiers
       //  - remove toplevel forall constraints

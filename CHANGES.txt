@@ -30,6 +30,7 @@ Bug fixes:
    as an error.
  - Fix pretty-printing of multi-dimensional arrays where dimensions other than
    the first one are empty. Fixes #236.
+ - Add support for where clauses on generator assignment expressions. Fixes #237.
 
 Version 2.2.0
 =============

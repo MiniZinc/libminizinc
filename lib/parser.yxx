@@ -29,7 +29,6 @@ namespace MiniZinc{ class ParserLocation; }
 
 #include <minizinc/parser.hh>
 #include <minizinc/file_utils.hh>
-#include <minizinc/json_parser.hh>
 
 using namespace std;
 using namespace MiniZinc;
@@ -73,37 +72,6 @@ bool notInDatafile(YYLTYPE* location, void* parm, const string& item) {
   return true;
 }
 
-void filepath(const string& f, string& dirname, string& basename) {
-  dirname = ""; basename = f;
-  for (size_t p=basename.find_first_of('/');
-       p!=string::npos;
-       dirname+=basename.substr(0,p+1),
-       basename=basename.substr(p+1),
-       p=basename.find_first_of('/')
-       ) {}
-}
-
-// fastest way to read a file into a string (especially big files)
-// see: http://insanecoding.blogspot.be/2011/11/how-to-read-in-file-in-c.html
-std::string get_file_contents(std::ifstream &in)
-{
-  if (in)
-  {
-    std::string contents;
-    in.seekg(0, std::ios::end);
-    contents.resize(static_cast<unsigned int>(in.tellg()));
-    in.seekg(0, std::ios::beg);
-    in.read(&contents[0], contents.size());
-    in.close();
-    if (contents.size() > 0 && contents[0]=='@') {
-      contents = FileUtils::decodeBase64(contents);
-      FileUtils::inflateString(contents);
-    }
-    return(contents);
-  }
-  throw(errno);
-}
-
 Expression* createDocComment(const ParserLocation& loc, const std::string& s) {
   std::vector<Expression*> args(1);
   args[0] = new StringLit(loc, s);
@@ -120,335 +88,7 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
   return ret;
 }
 
-namespace MiniZinc {
 
-  Model* parseFromString(const string& text,
-                         const string& filename,
-                         const vector<string>& ip,
-                         bool ignoreStdlib,
-                         bool parseDocComments,
-                         bool verbose,
-                         ostream& err,
-                         std::vector<SyntaxError>& syntaxErrors) {
-    GCLock lock;
-    std::string modelText = text;
-    if (modelText.size() > 0 && modelText[0]=='@') {
-      modelText = FileUtils::decodeBase64(modelText);
-      FileUtils::inflateString(modelText);
-    }
-    vector<string> includePaths;
-    for (unsigned int i=0; i<ip.size(); i++)
-      includePaths.push_back(ip[i]);
-
-    vector<ParseWorkItem> files;
-    map<string,Model*> seenModels;
-
-    Model* model = new Model();
-    model->setFilename(filename);
-
-    if (!ignoreStdlib) {
-      Model* stdlib = new Model;
-      stdlib->setFilename("stdlib.mzn");
-      files.push_back(ParseWorkItem(stdlib,"./","stdlib.mzn"));
-      seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
-      IncludeI* stdlibinc = new IncludeI(Location(),stdlib->filename());
-      stdlibinc->m(stdlib,true);
-      model->addItem(stdlibinc);
-    }
-
-    model->setFilepath(filename);
-    bool isFzn;
-    if (filename=="") {
-      isFzn = false;
-    } else {
-      isFzn = (filename.compare(filename.length()-4,4,".fzn")==0);
-      isFzn |= (filename.compare(filename.length()-4,4,".ozn")==0);
-      isFzn |= (filename.compare(filename.length()-4,4,".szn")==0);
-      isFzn |= (filename.compare(filename.length()-4,4,".mzc")==0);
-    }
-    ParserState pp(filename,modelText, err, files, seenModels, model, false, isFzn, parseDocComments);
-    mzn_yylex_init(&pp.yyscanner);
-    mzn_yyset_extra(&pp, pp.yyscanner);
-    mzn_yyparse(&pp);
-    if (pp.yyscanner)
-    mzn_yylex_destroy(pp.yyscanner);
-    if (pp.hadError) {
-      goto error;
-    }
-
-    while (!files.empty()) {
-      ParseWorkItem& np = files.back();
-      string parentPath = np.dirName;
-      Model* m = np.m;
-      files.pop_back();
-      string f(m->filename().str());
-
-      for (Model* p=m->parent(); p; p=p->parent()) {
-        if (f == p->filename().c_str()) {
-          err << "Error: cyclic includes: " << std::endl;
-          for (Model* pe=m; pe; pe=pe->parent()) {
-            err << "  " << pe->filename() << std::endl;
-          }
-          goto error;
-        }
-      }
-      ifstream file;
-      string fullname;
-      if (FileUtils::is_absolute(f) || parentPath=="") {
-        fullname = f;
-        if (FileUtils::file_exists(fullname)) {
-          file.open(fullname.c_str(), std::ios::binary);
-        }
-      } else {
-        includePaths.push_back(parentPath);
-        for (unsigned int i=0; i<includePaths.size(); i++) {
-          fullname = includePaths[i]+f;
-          if (FileUtils::file_exists(fullname)) {
-            file.open(fullname.c_str(), std::ios::binary);
-            if (file.is_open())
-              break;
-          }
-        }
-        includePaths.pop_back();
-      }
-      if (!file.is_open()) {
-        err << "Error: cannot open file '" << f << "'." << endl;
-        goto error;
-      }
-      if (verbose)
-        std::cerr << "processing file '" << fullname << "'" << endl;
-      std::string s = get_file_contents(file);
-
-      m->setFilepath(fullname);
-      bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
-      isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
-      isFzn |= (fullname.compare(fullname.length()-4,4,".szn")==0);
-      isFzn |= (fullname.compare(fullname.length()-4,4,".mzc")==0);
-      ParserState pp(fullname,s, err, files, seenModels, m, false, isFzn, parseDocComments);
-      mzn_yylex_init(&pp.yyscanner);
-      mzn_yyset_extra(&pp, pp.yyscanner);
-      mzn_yyparse(&pp);
-      if (pp.yyscanner)
-      mzn_yylex_destroy(pp.yyscanner);
-      if (pp.hadError) {
-        goto error;
-      }
-    }
-
-    return model;
-  error:
-    for (unsigned int i=0; i<pp.syntaxErrors.size(); i++)
-      syntaxErrors.push_back(pp.syntaxErrors[i]);
-    delete model;
-    return NULL;
-  }
-
-  void parse(Env& env,
-             Model*& model,
-             const vector<string>& filenames,
-             const vector<string>& datafiles,
-             const vector<string>& ip,
-             bool ignoreStdlib,
-             bool parseDocComments,
-             bool verbose,
-             ostream& err) {
-    
-    vector<string> includePaths;
-    for (unsigned int i=0; i<ip.size(); i++)
-      includePaths.push_back(ip[i]);
-    
-    vector<ParseWorkItem> files;
-    map<string,Model*> seenModels;
-    
-    if (filenames.size() > 0) {
-      GCLock lock;
-      string fileDirname; string fileBasename;
-      filepath(filenames[0], fileDirname, fileBasename);
-      model->setFilename(fileBasename);
-      
-      files.push_back(ParseWorkItem(model,fileDirname,fileBasename));
-      
-      for (unsigned int i=1; i<filenames.size(); i++) {
-        GCLock lock;
-        string dirName, baseName;
-        filepath(filenames[i], dirName, baseName);
-
-        bool isFzn = (baseName.compare(baseName.length()-4,4,".fzn")==0);
-        if (isFzn) {
-          files.push_back(ParseWorkItem(model,dirName,baseName));
-        } else {
-          Model* includedModel = new Model;
-          includedModel->setFilename(baseName);
-          files.push_back(ParseWorkItem(includedModel,dirName,baseName));
-          seenModels.insert(pair<string,Model*>(baseName,includedModel));
-          Location loc(ASTString(filenames[i]),0,0,0,0);
-          IncludeI* inc = new IncludeI(loc,includedModel->filename());
-          inc->m(includedModel,true);
-          model->addItem(inc);
-        }
-      }
-    }
-    
-    if (!ignoreStdlib) {
-      GCLock lock;
-      Model* stdlib = new Model;
-      stdlib->setFilename("stdlib.mzn");
-      files.push_back(ParseWorkItem(stdlib,"./","stdlib.mzn"));
-      seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
-      Location stdlibloc(ASTString(model->filename()),0,0,0,0);
-      IncludeI* stdlibinc =
-      new IncludeI(stdlibloc,stdlib->filename());
-      stdlibinc->m(stdlib,true);
-      model->addItem(stdlibinc);
-    }
-    
-    while (!files.empty()) {
-      GCLock lock;
-      ParseWorkItem& np = files.back();
-      string parentPath = np.dirName;
-      Model* m = np.m;
-      //      string f(m->filename().str());
-      string f(np.fileName);
-      files.pop_back();
-
-      for (Model* p=m->parent(); p; p=p->parent()) {
-        if (f == p->filename().c_str()) {
-          err << "Error: cyclic includes: " << std::endl;
-          for (Model* pe=m; pe; pe=pe->parent()) {
-            err << "  " << pe->filename() << std::endl;
-          }
-          goto error;
-        }
-      }
-      ifstream file;
-      string fullname;
-      if (FileUtils::is_absolute(f) || parentPath=="") {
-        if (filenames.size() == 0) {
-          err << "Internal error." << endl;
-          goto error;
-        }
-        fullname = f;
-        if (FileUtils::file_exists(fullname)) {
-          file.open(fullname.c_str(), std::ios::binary);
-        }
-      } else {
-        includePaths.push_back(parentPath);
-        for (unsigned int i=0; i<includePaths.size(); i++) {
-          fullname = includePaths[i]+f;
-          if (FileUtils::file_exists(fullname)) {
-            file.open(fullname.c_str(), std::ios::binary);
-            if (file.is_open())
-              break;
-          }
-        }
-        includePaths.pop_back();
-      }
-      if (!file.is_open()) {
-        err << "Error: cannot open file '" << f << "'." << endl;
-        goto error;
-      }
-      if (verbose)
-        std::cerr << "processing file '" << fullname << "'" << endl;
-      std::string s = get_file_contents(file);
-      
-      if (m->filepath().size() == 0)
-        m->setFilepath(fullname);
-      bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
-      isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
-      isFzn |= (fullname.compare(fullname.length()-4,4,".szn")==0);
-      isFzn |= (fullname.compare(fullname.length()-4,4,".mzc")==0);
-      ParserState pp(fullname,s, err, files, seenModels, m, false, isFzn, parseDocComments);
-      mzn_yylex_init(&pp.yyscanner);
-      mzn_yyset_extra(&pp, pp.yyscanner);
-      mzn_yyparse(&pp);
-      if (pp.yyscanner)
-        mzn_yylex_destroy(pp.yyscanner);
-      if (pp.hadError) {
-        goto error;
-      }
-    }
-    
-    for (unsigned int i=0; i<datafiles.size(); i++) {
-      GCLock lock;
-      string f = datafiles[i];
-      if (f.size()>=6 && f.substr(f.size()-5,string::npos)==".json") {
-        JSONParser jp(env.envi());
-        jp.parse(model, f);
-      } else {
-        string s;
-        if (f.size() > 5 && f.substr(0,5)=="cmd:/") {
-          s = f.substr(5);
-        } else {
-          std::ifstream file;
-          file.open(f.c_str(), std::ios::binary);
-          if (!FileUtils::file_exists(f) || !file.is_open()) {
-            err << "Error: cannot open data file '" << f << "'." << endl;
-            goto error;
-          }
-          if (verbose)
-            std::cerr << "processing data file '" << f << "'" << endl;
-          s = get_file_contents(file);
-        }
-        
-        ParserState pp(f, s, err, files, seenModels, model, true, false, parseDocComments);
-        mzn_yylex_init(&pp.yyscanner);
-        mzn_yyset_extra(&pp, pp.yyscanner);
-        mzn_yyparse(&pp);
-        if (pp.yyscanner)
-          mzn_yylex_destroy(pp.yyscanner);
-        if (pp.hadError) {
-          goto error;
-        }
-      }
-    }
-    
-    return;
-  error:
-    delete model;
-    model = NULL;
-  }
-  
-  Model* parse(Env& env,
-               const vector<string>& filenames,
-               const vector<string>& datafiles,
-               const vector<string>& ip,
-               bool ignoreStdlib,
-               bool parseDocComments,
-               bool verbose,
-               ostream& err) {
-
-    if (filenames.empty()) {
-      err << "Error: no model given" << std::endl;
-      return NULL;
-    }
-
-    Model* model;
-    {
-      GCLock lock;
-      model = new Model();
-    }
-    parse(env, model, filenames, datafiles,
-          ip, ignoreStdlib, parseDocComments, verbose, err);
-    return model;
-  }
-
-  Model* parseData(Env& env,
-                   Model* model,
-                   const vector<string>& datafiles,
-                   const vector<string>& includePaths,
-                   bool ignoreStdlib,
-                   bool parseDocComments,
-                   bool verbose,
-                   ostream& err) {
-    
-    vector<string> filenames;
-    parse(env, model, filenames, datafiles, includePaths,
-          ignoreStdlib, parseDocComments, verbose, err);
-    return model;
-  }
-
-
-}
 
 %}
 
@@ -547,12 +187,12 @@ namespace MiniZinc {
 %token MZN_IMPL "->" MZN_RIMPL "<-"
 %token MZN_OR "\\/" MZN_XOR "xor"
 %token MZN_AND "/\\"
-%token MZN_LE "<" MZN_GR ">" MZN_LQ "<=" MZN_GQ ">=" MZN_EQ "=" MZN_NQ "!="
+%token MZN_LE "<" MZN_GR ">" MZN_LQ "<=" MZN_GQ ">=" MZN_EQ "=" MZN_NQ "!=" MZN_WEAK_EQ "~="
 %token MZN_IN "in" MZN_SUBSET "subset" MZN_SUPERSET "superset"
 %token MZN_UNION "union" MZN_DIFF "diff" MZN_SYMDIFF "symdiff"
 %token MZN_DOTDOT ".."
-%token MZN_PLUS "+" MZN_MINUS "-"
-%token MZN_MULT "*" MZN_DIV "/" MZN_IDIV "div" MZN_MOD "mod" MZN_INTERSECT "intersect"
+%token MZN_PLUS "+" MZN_MINUS "-" MZN_WEAK_PLUS "~+" MZN_WEAK_MINUS "~-"
+%token MZN_MULT "*" MZN_DIV "/" MZN_IDIV "div" MZN_MOD "mod" MZN_INTERSECT "intersect" MZN_WEAK_MULT "~*"
 %token MZN_POW "^"
 %token MZN_NOT "not"
 %token MZN_PLUSPLUS "++"
@@ -563,12 +203,12 @@ namespace MiniZinc {
 %left MZN_IMPL MZN_RIMPL
 %left MZN_OR MZN_XOR
 %left MZN_AND
-%nonassoc MZN_LE MZN_GR MZN_LQ MZN_GQ MZN_EQ MZN_NQ
+%nonassoc MZN_LE MZN_GR MZN_LQ MZN_GQ MZN_EQ MZN_NQ MZN_WEAK_EQ
 %nonassoc MZN_IN MZN_SUBSET MZN_SUPERSET
 %left MZN_UNION MZN_DIFF MZN_SYMDIFF MZN_INTERSECT 
 %nonassoc MZN_DOTDOT
-%left MZN_PLUS MZN_MINUS
-%left MZN_MULT MZN_DIV MZN_IDIV MZN_MOD
+%left MZN_PLUS MZN_MINUS MZN_WEAK_PLUS MZN_WEAK_MINUS
+%left MZN_MULT MZN_DIV MZN_IDIV MZN_MOD MZN_WEAK_MULT
 %left MZN_POW
 %nonassoc MZN_NOT
 %left MZN_PLUSPLUS
@@ -745,7 +385,8 @@ include_item :
           Model* im = new Model;
           im->setParent(pp->model);
           im->setFilename($2);
-          string fpath, fbase; filepath(pp->filename, fpath, fbase);
+          string fpath = FileUtils::dir_name(pp->filename);
+          string fbase = FileUtils::base_name(pp->filename);
           if (fpath=="")
             fpath="./";
           ParseWorkItem pm(im, fpath, $2);
@@ -1173,6 +814,26 @@ set_expr :
       { $$=new BinOp(@$, $1, BOT_MOD, $3); }
     | set_expr MZN_POW set_expr
       { $$=new BinOp(@$, $1, BOT_POW, $3); }
+    | set_expr MZN_WEAK_PLUS set_expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~+"), args);
+      }
+    | set_expr MZN_WEAK_MINUS set_expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~-"), args);
+      }
+    | set_expr MZN_WEAK_MULT set_expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~*"), args);
+      }
+    | set_expr MZN_WEAK_EQ set_expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~="), args);
+      }
     | set_expr MZN_QUOTED_IDENTIFIER set_expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);
@@ -1269,6 +930,26 @@ expr :
       { $$=new BinOp(@$, $1, BOT_MOD, $3); }
     | expr MZN_POW expr
       { $$=new BinOp(@$, $1, BOT_POW, $3); }
+    | expr MZN_WEAK_PLUS expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~+"), args);
+      }
+    | expr MZN_WEAK_MINUS expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~-"), args);
+      }
+    | expr MZN_WEAK_MULT expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~*"), args);
+      }
+    | expr MZN_WEAK_EQ expr
+      { vector<Expression*> args;
+        args.push_back($1); args.push_back($3);
+        $$=new Call(@$, ASTString("~="), args);
+      }
     | expr MZN_QUOTED_IDENTIFIER expr
       { vector<Expression*> args;
         args.push_back($1); args.push_back($3);

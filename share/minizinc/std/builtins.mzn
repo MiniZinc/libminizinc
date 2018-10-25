@@ -1395,6 +1395,11 @@ function string: format(var opt set of $T: x) = show(x);
 /** @group builtins.string Convert \a x into a string */
 function string: format(array[$U] of var opt $T: x) = show(x);
 
+/** @group builtins.string Return array for output of all variables in JSON format */
+function array[int] of string: outputJSON();
+/** @group builtins.string Return array for output of all parameters in JSON format */
+function array[int] of string: outputJSONParameters();
+
 /** @group builtins.string Formatted to-string conversion
 
 Converts the value \a x into a string right

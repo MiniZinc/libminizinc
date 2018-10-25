@@ -53,9 +53,9 @@ void Flattener::printHelp(ostream& os)
   << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl
   << "  -D <data>, --cmdline-data <data>\n    Include the given data assignment in the model." << std::endl
   << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
-  << "  -G --globals-dir --mzn-globals-dir <dir>\n    Search for included globals in <stdlib>/<dir>." << std::endl
-  << "  - --input-from-stdin\n    Read problem from standard input" << std::endl
-  << "  -I --search-dir\n    Additionally search for included files in <dir>." << std::endl
+  << "  -G <dir>, --globals-dir <dir>, --mzn-globals-dir <dir>\n    Search for included globals in <stdlib>/<dir>." << std::endl
+  << "  -, --input-from-stdin\n    Read problem from standard input" << std::endl
+  << "  -I <dir>, --search-dir <dir>\n    Additionally search for included files in <dir>." << std::endl
   << "  -D \"fMIPdomains=false\"\n    No domain unification for MIP" << std::endl
   << "  --MIPDMaxIntvEE <n>\n    Max integer domain subinterval length to enforce equality encoding, default " << opt_MIPDmaxIntvEE << std::endl
   << "  --MIPDMaxDensEE <n>\n    Max domain cardinality to N subintervals ratio\n    to enforce equality encoding, default " << opt_MIPDmaxDensEE << ", either condition triggers" << std::endl
@@ -157,12 +157,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
   } else if ( cop.getOption( "--output-objective" ) ) {
     flag_output_objective = true;
   } else if ( cop.getOption( "- --input-from-stdin" ) ) {
-      if (datafiles.size() > 0 || filenames.size() > 0)
-        return false;
       flag_stdinInput = true;
   } else if ( cop.getOption( "-d --data", &buffer ) ) {
-    if (flag_stdinInput)
-      return false;
     if ( buffer.length()<=4 ||
          buffer.substr(buffer.length()-4,string::npos) != ".dzn")
       return false;
@@ -170,8 +166,6 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
   } else if ( cop.getOption( "--stdlib-dir", &std_lib_dir ) ) {
   } else if ( cop.getOption( "-G --globals-dir --mzn-globals-dir", &globals_dir ) ) {
   } else if ( cop.getOption( "-D --cmdline-data", &buffer)) {
-    if (flag_stdinInput)
-      return false;
     datafiles.push_back("cmd:/"+buffer);
   } else if ( cop.getOption( "--allow-unbounded-vars" ) ) {
     flag_allow_unbounded_vars = true;
@@ -267,8 +261,6 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
       return false;
     }
   } else {
-    if (flag_stdinInput || argv[i]=="-")   // unknown option
-      return false;
     std::string input_file(argv[i]);
     if (input_file.length()<=4) {
       return false;
@@ -372,7 +364,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
   }
 
   if (flag_output_base == "") {
-    if (flag_stdinInput || !modelString.empty()) {
+    if (filenames.empty()) {
       flag_output_base = "mznout";
     } else {
       flag_output_base = filenames[0].substr(0,filenames[0].length()-4);
@@ -421,7 +413,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         log << "Parsing solution checker model " << flag_solution_check_model << " ..." << endl;
       bool isCompressedChecker = flag_solution_check_model.size() >= 4 && flag_solution_check_model.substr(flag_solution_check_model.size()-4)==".mzc";
       std::vector<std::string> smm_model({flag_solution_check_model});
-      Model* smm = parse(*env, smm_model, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+      Model* smm = parse(*env, smm_model, datafiles, "", "", includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
       if (flag_verbose)
         log << " done parsing (" << starttime.stoptime() << ")" << std::endl;
       if (smm) {
@@ -489,31 +481,23 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
       throw Error("Cannot run solution checker without model.");
     }
     
-    if (!modelString.empty()) {
-      if (flag_verbose)
-        log << "Parsing model string ..." << endl;
-      std::vector<SyntaxError> se;
-      m = parseFromString(modelString, modelName, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream, se);
-    } else if (flag_stdinInput) {
-      if (flag_verbose)
-        log << "Parsing standard input ..." << endl;
+    std::string modelText = modelString;
+    if (flag_stdinInput) {
       std::string input = std::string(istreambuf_iterator<char>(std::cin), istreambuf_iterator<char>());
-      std::vector<SyntaxError> se;
-      m = parseFromString(input, "stdin", includePaths, flag_ignoreStdlib, false, flag_verbose, errstream, se);
-    } else {
-      if (flag_verbose) {
-        MZN_ASSERT_HARD_MSG( filenames.size(), "at least one model file needed" );
-        log << "Parsing file(s) '" << filenames[0] << '\'';
-        for ( int i=1; i<filenames.size(); ++i )
-          log << ", '" << filenames[i] << '\'';
-        for ( const auto& sFln: datafiles )
-          log << ", '" << sFln << '\'';
-        log << " ..." << std::endl;
-      }
-      m = parse(*env, filenames, datafiles, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
-      if (globals_dir != "") {
-        includePaths.erase(includePaths.begin());
-      }
+      modelText += input;
+    }
+    
+    if (flag_verbose) {
+      log << "Parsing file(s) ";
+      for ( int i=0; i<filenames.size(); ++i )
+        log << (i==0 ? "" : ", '") << filenames[i] << '\'';
+      for ( const auto& sFln: datafiles )
+        log << ", '" << sFln << '\'';
+      log << " ..." << std::endl;
+    }
+    m = parse(*env, filenames, datafiles, modelText, modelName.empty() ? "stdin" : modelName, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+    if (globals_dir != "") {
+      includePaths.erase(includePaths.begin());
     }
     if (m==NULL)
       throw Error(errstream.str());

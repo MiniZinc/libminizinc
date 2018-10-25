@@ -31,6 +31,8 @@ namespace MiniZinc { namespace FileUtils {
   std::string file_path(const std::string& filename, const std::string& basePath=std::string());
   /// Return directory name containing \a filename
   std::string dir_name(const std::string& filename);
+  /// Return base name of \a filename (without dir_name)
+  std::string base_name(const std::string& filename);
   /// Check whether path is absolute
   bool is_absolute(const std::string& path);
   /// Return list of files with extension \a ext in directory \a dir

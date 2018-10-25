@@ -219,6 +219,8 @@ namespace MiniZinc {
     std::string _defaultSolver;
     /// The MiniZinc library directory
     std::string _mznlibDir;
+    /// The solver configurations path
+    std::vector<std::string> _solver_path;
     typedef std::unordered_map<std::string,std::string> DefaultMap;
     /// Mapping from tag to default solver for that tag
     DefaultMap _tagDefault;
@@ -233,7 +235,7 @@ namespace MiniZinc {
      * Configuration files must be called config.msc and the path
      * uses platform specific separators (: on Unix-like systems, ; on Windows).
      */
-    SolverConfigs(std::ostream& log, const std::string& solverpath=std::string());
+    SolverConfigs(std::ostream& log);
     /// Return configuration for solver \a s
     /// The string can be a comma separated list of tags, in which case a
     /// solver that matches all tags will be returned. The tag can also be
@@ -245,6 +247,8 @@ namespace MiniZinc {
     const SolverConfig& config(const std::string& s);
     /// Return list of all solver ids
     std::vector<std::string> solvers(void) const;
+    /// Return search path for solver configs
+    std::vector<std::string> solverConfigsPath(void) const;
     /// Return JSON list of all solver configurations
     std::string solverConfigsJSON(void) const;
     /// Add a built-in solver

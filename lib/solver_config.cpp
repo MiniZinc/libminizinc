@@ -204,7 +204,7 @@ namespace MiniZinc {
       } else {
         vector<string> filenames;
         filenames.push_back(filename);
-        m = parse(confenv,filenames, vector<string>(), vector<string>(),
+        m = parse(confenv,filenames, vector<string>(), "", "", vector<string>(),
                   true, false, false, errstream);
       }
       if (m) {
@@ -333,8 +333,12 @@ namespace MiniZinc {
     }
   }
   
-  SolverConfigs::SolverConfigs(std::ostream& log, const string& sp) {
-    string solver_path = sp;
+  std::vector<std::string>
+  SolverConfigs::solverConfigsPath(void) const {
+    return _solver_path;
+  }
+  
+  SolverConfigs::SolverConfigs(std::ostream& log) {
 #ifdef _MSC_VER
     const char* PATHSEP = ";";
 #else
@@ -344,16 +348,18 @@ namespace MiniZinc {
       addConfig(sc.second);
     }
     std::string mzn_solver_path = getEnv("MZN_SOLVER_PATH");
-    if (mzn_solver_path.size() != 0) {
-      if (!solver_path.empty())
-        solver_path += PATHSEP;
-      solver_path += mzn_solver_path;
+    while (!mzn_solver_path.empty()) {
+      size_t next_sep = mzn_solver_path.find(PATHSEP);
+      string cur_path = mzn_solver_path.substr(0,next_sep);
+      _solver_path.push_back(cur_path);
+      if (next_sep != string::npos)
+        mzn_solver_path = mzn_solver_path.substr(next_sep+1,string::npos);
+      else
+        mzn_solver_path = "";
     }
     std::string userConfigDir = FileUtils::user_config_dir();
     if (FileUtils::directory_exists(userConfigDir+"/solvers")) {
-      if (!solver_path.empty())
-        solver_path += PATHSEP;
-      solver_path += userConfigDir+"/solvers";
+      _solver_path.push_back(userConfigDir+"/solvers");
     }
     std::vector<std::string> configFiles({FileUtils::global_config_file(),FileUtils::user_config_file()});
     
@@ -378,10 +384,10 @@ namespace MiniZinc {
             for (unsigned int i=0; i<m->size(); i++) {
               if (AssignI* ai = (*m)[i]->dyn_cast<AssignI>()) {
                 if (ai->id()=="mzn_solver_path") {
-                  std::string sp = getString(ai);
-                  if (!solver_path.empty())
-                    solver_path += PATHSEP;
-                  solver_path += sp;
+                  std::vector<std::string> sp = getStringList(ai);
+                  for (auto s : sp) {
+                    _solver_path.push_back(s);
+                  }
                 } else if (ai->id()=="mzn_lib_dir") {
                   _mznlibDir = getString(ai);
                 } else if (ai->id()=="tagDefaults") {
@@ -438,17 +444,20 @@ namespace MiniZinc {
     }
     
     if (_mznlibDir.empty()) {
-      _mznlibDir = FileUtils::share_directory();
+      _mznlibDir = FileUtils::file_path(FileUtils::share_directory());
     }
     if (!_mznlibDir.empty()) {
-      if (!solver_path.empty())
-        solver_path += PATHSEP;
-      solver_path += _mznlibDir+"/solvers";
+      _solver_path.push_back(_mznlibDir+"/solvers");
     }
-    
-    while (!solver_path.empty()) {
-      size_t next_sep = solver_path.find(PATHSEP);
-      string cur_path = solver_path.substr(0,next_sep);
+#ifndef _MSC_VER
+    if (_mznlibDir != "/usr/local/share/minizinc" && FileUtils::directory_exists("/usr/local/share")) {
+      _solver_path.push_back("/usr/local/share/minizinc/solvers");
+    }
+    if (_mznlibDir != "/usr/share/minizinc" && FileUtils::directory_exists("/usr/share")) {
+      _solver_path.push_back("/usr/share/minizinc/solvers");
+    }
+#endif
+    for (const string& cur_path: _solver_path) {
       std::vector<std::string> configFiles = FileUtils::directory_list(cur_path, "msc");
       for (unsigned int i=0; i<configFiles.size(); i++) {
         try {
@@ -459,10 +468,6 @@ namespace MiniZinc {
           log << "Error was:\n" << e.msg() << "\n";
         }
       }
-      if (next_sep != string::npos)
-        solver_path = solver_path.substr(next_sep+1,string::npos);
-      else
-        solver_path = "";
     }
     
     // Add default options to loaded solver configurations

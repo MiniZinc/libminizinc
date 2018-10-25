@@ -6,6 +6,19 @@ set(CMAKE_MODULE_PATH
   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules
 )
 
+set(DEFAULT_BUILD_TYPE "Release")
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to '${DEFAULT_BUILD_TYPE}' as none was specified.")
+  set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE STRING "Choose the type of build." FORCE)
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+    "Debug"
+    "Release"
+    "MinSizeRel"
+    "RelWithDebInfo"
+  )
+endif()
+
 # -------------------------------------------------------------------------------------------------------------------
 # -- The below checks if certain solver paths are set in the config call for the corresp. interface to be compiled --
 # -- For example, to include gecode in the minizinc binary run                                                     --
@@ -28,13 +41,15 @@ if (DEFINED SCIP_DIR AND DEFINED SOPLEX_DIR AND DEFINED ZIMPL_DIR AND NOT "${SCI
 endif()
 if (DEFINED OSICBC_HOME AND NOT "${OSICBC_HOME} " STREQUAL " ")
   set(HAS_OSICBC TRUE)
+elseif (DEFINED OSICBC_INCLUDEDIR AND DEFINED OSICBC_LIBDIR AND NOT "${OSICBC_INCLUDEDIR} " STREQUAL " " AND NOT "${OSICBC_LIBDIR} " STREQUAL " ")
+  set(HAS_OSICBC TRUE)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 2)
-set (libminizinc_VERSION_PATCH 1)
+set (libminizinc_VERSION_PATCH 2)
 set (libminizinc_VERSION
   ${libminizinc_VERSION_MAJOR}.${libminizinc_VERSION_MINOR}.${libminizinc_VERSION_PATCH})
 
@@ -351,6 +366,7 @@ lib/options.cpp
 lib/optimize_constraints.cpp
 lib/output.cpp
 lib/parser.yxx
+lib/parser.cpp
 lib/solver_instance.cpp
 lib/solver_instance_base.cpp
 lib/statistics.cpp
@@ -431,6 +447,7 @@ if(HAS_GUROBI)  # Version 7.5
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp solvers/MIP/MIP_gurobi_solverfactory.cpp
     include/minizinc/solvers/MIP/MIP_gurobi_wrap.hh include/minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_solverinstance.hpp
+    lib/algorithms/min_cut.cpp
 	)
   target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
   if(HAS_GUROBI_PLUGIN)
@@ -502,7 +519,7 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
   # link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
 
   add_library(minizinc_cplex
-    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp lib/algorithms/min_cut.cpp
     solvers/MIP/MIP_cplex_solverfactory.cpp include/minizinc/solvers/MIP/MIP_cplex_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_cplex_wrap.hh
   )
@@ -558,7 +575,7 @@ if(HAS_SCIP)   # SCIP version tested: 3.2.1
 
   add_library(minizinc_scip
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
-    solvers/MIP/MIP_scip_solverfactory.cpp
+    solvers/MIP/MIP_scip_solverfactory.cpp lib/algorithms/min_cut.cpp
     )
   target_include_directories(minizinc_scip PRIVATE
     "${SCIP_DIR}/src"
@@ -603,7 +620,7 @@ if(HAS_SCIP_SEPLIBS)
     z zimpl.${SCIP_OS}.${SCIP_ARCH}.gnu.opt gmp)  # if SCIP configured so
 
   add_library(minizinc_mip_scip
-    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp lib/algorithms/min_cut.cpp
     )
   target_include_directories(minizinc_mip_scip PRIVATE
     "${SCIP_DIR}/src"
@@ -640,12 +657,17 @@ endif()
 if(HAS_OSICBC)
   ### Tested version 2.9.9, rev 2345 on 12.10.17 from the stable snapshot https://projects.coin-or.org/svn/Cbc/stable/2.9
 
-  if (EXISTS "${OSICBC_HOME}/include/coin/" AND EXISTS "${OSICBC_HOME}/lib")
-    set(CBC_INCLUDEDIRS "${OSICBC_HOME}/include/coin/")
-    set(LNDIR "${OSICBC_HOME}/lib")
+  if (DEFINED OSICBC_INCLUDEDIR AND DEFINED OSICBC_LIBDIR AND NOT "${OSICBC_INCLUDEDIR} " STREQUAL " " AND NOT "${OSICBC_LIBDIR} " STREQUAL " ")
+    set(CBC_INCLUDEDIRS "${OSICBC_INCLUDEDIR}/coin/")
+    set(LNDIR "${OSICBC_LIBDIR}")    
   else()
-    set(CBC_INCLUDEDIRS "${OSICBC_HOME}/Clp/src/" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Cbc/src/" "${OSICBC_HOME}/Cbc/src/OsiCbc" "${OSICBC_HOME}/Cgl/src/CglZeroHalf" "${OSICBC_HOME}/Cgl/src/CglLandP" "${OSICBC_HOME}/Cgl/src/CglTwomir" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding2" "${OSICBC_HOME}/Cgl/src/CglFlowCover" "${OSICBC_HOME}/Cgl/src/CglClique" "${OSICBC_HOME}/Cgl/src/CglOddHole" "${OSICBC_HOME}/Cgl/src/CglKnapsackCover" "${OSICBC_HOME}/Cgl/src/CglGomory" "${OSICBC_HOME}/Cgl/src/CglPreProcess" "${OSICBC_HOME}/Cgl/src/CglDuplicateRow" "${OSICBC_HOME}/Cgl/src/CglRedSplit" "${OSICBC_HOME}/Cgl/src/CglProbing" "${OSICBC_HOME}/Cgl/src" "${OSICBC_HOME}/Clp/src" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Osi/src/Osi" "${OSICBC_HOME}/CoinUtils/src" "${OSICBC_HOME}/BuildTools/headers" "${OSICBC_HOME}/Cgl/src/CglResidualCapacity")
-    set(LNDIR "${OSICBC_HOME}/Cbc/MSVisualStudio/v10/x64-v120-Release")
+    if (EXISTS "${OSICBC_HOME}/include/coin/" AND EXISTS "${OSICBC_HOME}/lib")
+      set(CBC_INCLUDEDIRS "${OSICBC_HOME}/include/coin/")
+      set(LNDIR "${OSICBC_HOME}/lib")
+    else()
+      set(CBC_INCLUDEDIRS "${OSICBC_HOME}/Clp/src/" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Cbc/src/" "${OSICBC_HOME}/Cbc/src/OsiCbc" "${OSICBC_HOME}/Cgl/src/CglZeroHalf" "${OSICBC_HOME}/Cgl/src/CglLandP" "${OSICBC_HOME}/Cgl/src/CglTwomir" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding2" "${OSICBC_HOME}/Cgl/src/CglFlowCover" "${OSICBC_HOME}/Cgl/src/CglClique" "${OSICBC_HOME}/Cgl/src/CglOddHole" "${OSICBC_HOME}/Cgl/src/CglKnapsackCover" "${OSICBC_HOME}/Cgl/src/CglGomory" "${OSICBC_HOME}/Cgl/src/CglPreProcess" "${OSICBC_HOME}/Cgl/src/CglDuplicateRow" "${OSICBC_HOME}/Cgl/src/CglRedSplit" "${OSICBC_HOME}/Cgl/src/CglProbing" "${OSICBC_HOME}/Cgl/src" "${OSICBC_HOME}/Clp/src" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Osi/src/Osi" "${OSICBC_HOME}/CoinUtils/src" "${OSICBC_HOME}/BuildTools/headers" "${OSICBC_HOME}/Cgl/src/CglResidualCapacity")
+      set(LNDIR "${OSICBC_HOME}/Cbc/MSVisualStudio/v10/x64-v120-Release")
+    endif()
   endif()
 
   if (WIN32 AND NOT UNIX)  #  Windows config based on  https://projects.coin-or.org/Cbc/wiki/VSSetup
@@ -658,7 +680,7 @@ if(HAS_OSICBC)
   link_directories(${LNDIR})
 
   add_library(minizinc_osicbc
-    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp lib/algorithms/min_cut.cpp
     solvers/MIP/MIP_osicbc_solverfactory.cpp include/minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_osicbc_wrap.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hpp
