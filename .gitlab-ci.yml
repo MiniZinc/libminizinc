@@ -24,7 +24,7 @@ stages:
 
 build:linux:
   <<: *build_definition
-  image: dekker1/cmake:latest
+  image: dekker1/minibuild:cpp
   variables:
     MZNARCH: "linux"
     CMAKE_ARCH: "Unix Makefiles"
