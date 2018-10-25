@@ -5,6 +5,49 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.2.2
+=============
+
+Changes:
+ - Some changes to the optimisation phase of the compiler, to take into account
+   more variables and constraints.
+ - Preliminary support for MIP cuts based on graph algorithms (only available
+   when compiled with boost C++ libraries; not part of the binary distribution).
+ - Set Release as default build type when nothing is specified (for CMake
+   platforms that do not support multiple build types, like Makefiles).
+ - Add builtins outputJSON() and outputJSONParameters() for creating an
+   array of strings that capture the output and parameters of the model as JSON.
+ - On Linux and macOS, add /usr/share/minizinc/solvers and
+   /usr/local/share/minizinc/solvers to list of paths where solver configuration files
+   can be placed.
+ - Add OSICBC_INCLUDEDIR and OSICBC_LIBDIR cmake flags. Fixes #247.
+ - Output search paths for solver configurations using --solvers command line option.
+ - Add support for Gurobi 8.1
+ - Support parsing from stdin and files at the same time. Fixes #242.
+
+Bug fixes:
+ - Fix crash when flattening top-level array comprehensions with var where
+   clauses. Fixes #250.
+ - Support input files with more than 1M lines. Fixes #245.
+ - Special case handling for array literals in top-level foralls: flatten in root context.
+ - Fix translation of if-then-else for branches with undefined right hand sides.
+ - Only propagate defines_var annotation to the variable that's actually being defined
+   (not others that arise from the same decomposition).
+ - Don't flatten arguments of predicates like symmetry_breaking_constraint.
+ - Remove output_var and output_array annotations from user models (these
+   could cause crashes).
+ - Fix precedences for weak operators (~+, ~-, ~=, ~*).
+ - Fix min and max for opt var arrays to work when the bounds of the arrays are unknown.
+ - Fix a bug in bounds computations for function calls.
+ - Add missing superset FlatZinc builtin.
+ - Fix includes in file values.hh for some platforms.
+ - Fix a garbage collection issue when printing solutions.
+ - Deal with the case that a variable that's required for output is assigned to a par variable.
+ - Throw type error when an array has only absent values. Fixes #239.
+ - Flatten all arrays in FlatZinc, also those coming from functional definitions. Fixes #240.
+ - Use list of strings as mzn_solver_path entry in the preferences json file. Fixes #241.
+ - Fix crash when output variable is defined using recursive function
+
 Version 2.2.1
 =============
 
