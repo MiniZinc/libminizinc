@@ -92,8 +92,9 @@ namespace MiniZinc {
   inline unsigned int
   Location::LocVec::first_line(void) const {
     if (_size==2) {
+      static const unsigned int pointerBits = sizeof(IntLit*)*8;
       IntLit* il = static_cast<IntLit*>(_data[1]);
-      long long unsigned int mask = 0xFF;
+      long long unsigned int mask = pointerBits<=32 ? 0xFF : 0xFFFFF;
       union {
         long long int i;
         unsigned long long int u;
