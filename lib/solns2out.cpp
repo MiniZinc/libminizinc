@@ -282,7 +282,7 @@ void Solns2Out::checkSolution(std::ostream& os) {
   MznSolver slv(oss_err,oss_err);
   slv.s2out._opt.solution_separator = "";
   try {
-    std::vector<std::string> args({"--solver","org.minizinc.gecode_presolver","-"});
+    std::vector<std::string> args({"--solver","org.minizinc.gecode_presolver"});
     slv.run(args, checker.str(), "minizinc", "checker.mzc");
   } catch (const LocationException& e) {
     oss_err << e.loc() << ":" << std::endl;
