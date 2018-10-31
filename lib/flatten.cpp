@@ -4286,7 +4286,9 @@ namespace MiniZinc {
                       break;
                     default:
                     {
-                      Call* forall = new Call(c->where(i)->loc(), constants().ids.forall, parWhere);
+                      ArrayLit* parWhereAl = new ArrayLit(c->where(i)->loc(), parWhere);
+                      parWhereAl->type(Type::parbool(1));
+                      Call* forall = new Call(c->where(i)->loc(), constants().ids.forall, {parWhereAl});
                       forall->type(Type::parbool());
                       forall->decl(env.model->matchFn(env, forall, false));
                       orig_where[i] = forall;

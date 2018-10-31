@@ -629,7 +629,7 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, con
     case OPTION_OK:
       break;
   }
-  if (!(!ifMzn2Fzn() && sf!=NULL && sf->getId() == "org.minizinc.mzn-mzn") && !flt.hasInputFiles()) {
+  if (!(!ifMzn2Fzn() && sf!=NULL && sf->getId() == "org.minizinc.mzn-mzn") && !flt.hasInputFiles() && model.empty()) {
     // We are in solns2out mode
     while ( std::cin.good() ) {
       string line;

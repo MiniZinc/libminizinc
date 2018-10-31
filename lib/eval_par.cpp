@@ -2138,10 +2138,12 @@ namespace MiniZinc {
           else
             _bounds.push_back(Bounds(0,std::max(-b0.first,b0.second)));
         }
-      } else if (c.decl() && c.decl()->ti()->domain()) {
-        assert(_bounds.size() >= c.n_args());
+      } else if (c.decl() && c.decl()->ti()->domain() && !c.decl()->ti()->domain()->isa<TIId>()) {
         for (int i=0; i<c.n_args(); i++) {
-          _bounds.pop_back();
+          if (c.arg(i)->type().isint()) {
+            assert(_bounds.size() > 0);
+            _bounds.pop_back();
+          }
         }
         IntSetVal* isv = eval_intset(env, c.decl()->ti()->domain());
         _bounds.push_back(Bounds(isv->min(),isv->max()));
@@ -2494,10 +2496,12 @@ namespace MiniZinc {
           else
             _bounds.push_back(FBounds(0.0,std::max(-b0.first,b0.second)));
         }
-      } else if (c.decl() && c.decl()->ti()->domain()) {
-        assert(_bounds.size() >= c.n_args());
+      } else if (c.decl() && c.decl()->ti()->domain() && !c.decl()->ti()->domain()->isa<TIId>()) {
         for (int i=0; i<c.n_args(); i++) {
-          _bounds.pop_back();
+          if (c.arg(i)->type().isfloat()) {
+            assert(_bounds.size() > 0);
+            _bounds.pop_back();
+          }
         }
         FloatSetVal* fsv = eval_floatset(env, c.decl()->ti()->domain());
         _bounds.push_back(FBounds(fsv->min(),fsv->max()));
@@ -2726,10 +2730,12 @@ namespace MiniZinc {
         IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
         _bounds.pop_back(); // don't need bounds of right hand side
         _bounds.push_back(b0);
-      } else if (c.decl() && c.decl()->ti()->domain()) {
-        assert(_bounds.size() >= c.n_args());
+      } else if (c.decl() && c.decl()->ti()->domain() && !c.decl()->ti()->domain()->isa<TIId>()) {
         for (int i=0; i<c.n_args(); i++) {
-          _bounds.pop_back();
+          if (c.arg(i)->type().isintset()) {
+            assert(_bounds.size() > 0);
+            _bounds.pop_back();
+          }
         }
         IntSetVal* fsv = eval_intset(env, c.decl()->ti()->domain());
         _bounds.push_back(fsv);
