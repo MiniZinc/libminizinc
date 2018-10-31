@@ -256,7 +256,7 @@ A possible output is
 
 There is an alternate form of the regular constraint
 :mzn:`regular_nfa` which specifies the regular
-expression using an NFA (without :mzn:`\epsilon` arcs).
+expression using an NFA (without :math:`\epsilon` arcs).
 This constraint has the form
 
 .. code-block:: minizinc

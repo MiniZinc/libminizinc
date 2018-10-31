@@ -478,7 +478,9 @@ The configuration files are simple JSON files that can contain the following con
 
 - ``mzn_solver_path`` (list of strings): Additional directories to scan for solver configuration files.
 - ``mzn_lib_dir`` (string): Location of the MiniZinc standard library.
-- ``tagDefaults`` (list of lists of strings): Each entry maps a tag to the default solver for that tag. For example, ``[["cp","org.chuffed.chuffed"],["mip","org.minizinc.gurobi"]]`` would declare that whenever a solver with tag ``"cp"`` is requested, Chuffed should be used, and for the ``"mip"`` tag, Gurobi is the default.
+- ``tagDefaults`` (list of lists of strings): Each entry maps a tag to the default solver for that tag. For example, ``[["cp","org.chuffed.chuffed"],["mip","org.minizinc.gurobi"]]`` would declare that whenever a solver with tag ``"cp"`` is requested, Chuffed should be used, and for the ``"mip"`` tag, Gurobi is the default. The empty tag (``""``) can
+be used to define the system-wide default solver (i.e., the solver that is
+chosen when running ``minizinc`` without the ``--solver`` argument).
 - ``solverDefaults`` (list of lists of strings): Each entry consists of a list of three strings: a solver identifier, a command line option, and a value for that command line option.For example, ``[["org.minizinc.gurobi","--gurobi-dll", "/Library/gurobi752/mac64/lib/libgurobi75.so"]]`` would specify the Gurobi shared library to use (on a macOS system with Gurobi 7.5.2). For command line options that don't take a value, you have to specify an empty string, e.g. ``[["org.minizinc.gurobi","--uniform-search",""]]``.
 
 Here is a sample configuration file:
@@ -487,7 +489,7 @@ Here is a sample configuration file:
 
   {
     "mzn_solver_path": ["/usr/share/choco"],
-    "tagDefaults": [["cp","org.choco-solver.choco"],["mip","org.minizinc.cplex"]],
+    "tagDefaults": [["cp","org.choco-solver.choco"],["mip","org.minizinc.cplex"],["","org.gecode.gecode"]],
     "solverDefaults": [["org.minizinc.cplex","--cplex-dll","/opt/CPLEX_Studio128/cplex/bin/x86-64_sles10_4.1/libcplex128.so"]] 
   }
 

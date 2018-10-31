@@ -784,7 +784,7 @@ might result in output
 
 .. code-block:: none
 
-  wa = bluew;
+  wa = blue;
   nt = yellow;
   sa = red;
   q = blue;

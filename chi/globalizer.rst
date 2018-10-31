@@ -1,0 +1,1 @@
+.. include:: ../en/globalizer.rst
