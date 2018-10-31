@@ -16,10 +16,6 @@ stages:
   artifacts:
     paths:
       - minizinc/
-  cache:
-    key: "${MZNARCH}_${CI_COMMIT_REF_SLUG}"
-    paths:
-      - build/
 
 
 build:linux:
