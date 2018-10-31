@@ -710,3 +710,9 @@ opt int: mzn_min_version_required;
 constraint assert(absent(mzn_min_version_required) \/ deopt(mzn_min_version_required) <= mzn_compiler_version(), "This model requires MiniZinc version "++mzn_version_to_string(deopt(mzn_min_version_required))++" but you are running version "++mzn_version_to_string(mzn_compiler_version()));
 
 include "builtins.mzn";
+
+predicate set_in(array[int] of var int: X, set of int: s) = forall(x in X) (x in s);
+predicate set_in(array[int,int] of var int: X, set of int: s) = set_in(array1d(X), s);
+predicate set_in(array[int,int,int] of var int: X, set of int: s) = set_in(array1d(X), s);
+predicate set_in(array[int,int,int,int] of var int: X, set of int: s) = set_in(array1d(X), s);
+

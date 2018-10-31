@@ -36,8 +36,15 @@ namespace MiniZinc {
       args[0] = vd->id();
       args[1] = new SetLit(Location().introduce(), eval_intset(envi, domain));
       Call* new_call = new Call(Location().introduce(), constants().ids.set_in, args);
-      ConstraintI* ii = new ConstraintI(Location().introduce(), new_call);
-      envi.flat_addItem(ii);
+      //std::cout << "New call: " << *new_call << "\n";
+      //std::cout << "      vd: " << *vd << "\n";
+      //std::cout << "  domain: " << *domain << "\n";
+      //std::cout << "    eval: " << *eval_intset(envi, domain) << "\n";
+
+      new_call->type(Type::varbool());
+      new_call->decl(envi.model->matchFn(envi, new_call, true));
+      flat_exp(envi, Ctx(), new_call, constants().var_true, constants().var_true);
+
       if (option_use_first_domain_change &&
         vd->ti()->domain() == nullptr) {
         vd->ti()->domain(domain);
@@ -3033,16 +3040,18 @@ namespace MiniZinc {
           typename LinearTraits<Lit>::Domain domain = LinearTraits<Lit>::eval_domain(env,vd->ti()->domain());
           if (LinearTraits<Lit>::domain_contains(domain,d)) {
             if (!LinearTraits<Lit>::domain_equals(domain,d)) {
-              vd->ti()->setComputedDomain(false);
-              vd->ti()->domain(LinearTraits<Lit>::new_domain(d));
+              //vd->ti()->setComputedDomain(false);
+              //vd->ti()->domain(LinearTraits<Lit>::new_domain(d));
+              setComputedDomain(env, vd, LinearTraits<Lit>::new_domain(d), false);
             }
             ret.r = bind(env,ctx,r,constants().lit_true);
           } else {
             ret.r = bind(env,ctx,r,constants().lit_false);
           }
         } else {
-          vd->ti()->setComputedDomain(false);
-          vd->ti()->domain(LinearTraits<Lit>::new_domain(d));
+          //vd->ti()->setComputedDomain(false);
+          //vd->ti()->domain(LinearTraits<Lit>::new_domain(d));
+          setComputedDomain(env, vd, LinearTraits<Lit>::new_domain(d), false);
           ret.r = bind(env,ctx,r,constants().lit_true);
         }
       } else {
@@ -6257,6 +6266,7 @@ namespace MiniZinc {
           }
         }
         void vConstraintI(ConstraintI* ci) {
+          std::cout << "Processing: " <<  *ci << "\n";
           (void) flat_exp(env,Ctx(),ci->e(),constants().var_true,constants().var_true);
         }
         void vSolveI(SolveI* si) {
