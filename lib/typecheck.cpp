@@ -121,17 +121,41 @@ namespace MiniZinc {
   AssignI* createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, VarDecl* vd_enumToString, Model* enumItems) {
 
     Id* ident = vd->id();
-    SetLit* sl = NULL;
-    
+    SetLit* sl = vd->e()->dyn_cast<SetLit>();
+    ArrayLit* enum_init_al = NULL;
     AssignI* ret = NULL;
     
     GCLock lock;
-    if (Call* c = vd->e()->dyn_cast<Call>()) {
+    if (ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
+      enum_init_al = al;
+    } else if (Call* c = vd->e()->dyn_cast<Call>()) {
       if (c->id()!="anon_enum") {
         throw TypeError(env, c->loc(),
                         "invalid initialisation for enum `"+ident->v().str()+"'");
       }
-    } else if ( (sl = vd->e()->dyn_cast<SetLit>()) ) {
+      if (c->n_args()==1 && c->arg(0)->isa<ArrayLit>()) {
+        enum_init_al = c->arg(0)->cast<ArrayLit>();
+      }
+    }
+    if (enum_init_al) {
+      std::vector<Expression*> enumIds(enum_init_al->size());
+      for (unsigned int i=0; i<enum_init_al->size(); i++) {
+        if (StringLit* sli = (*enum_init_al)[i]->dyn_cast<StringLit>()) {
+          std::string sli_s = sli->v().str();
+          size_t nonIdChar = sli_s.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_");
+          size_t nonIdBegin = sli_s.find_first_of("0123456789_");
+          if (nonIdChar!=std::string::npos || nonIdBegin==0) {
+            sli_s = "'"+sli_s+"'";
+          }
+          enumIds[i] = new Id(sli->loc(),ASTString(sli_s),NULL);
+        } else {
+          throw TypeError(env, vd->e()->loc(),
+                          "invalid initialisation for enum `"+ident->v().str()+"'");
+        }
+      }
+      sl = new SetLit(vd->e()->loc(), enumIds);
+    }
+    if (sl) {
       for (unsigned int i=0; i<sl->v().size(); i++) {
         if (!sl->v()[i]->isa<Id>()) {
           throw TypeError(env, sl->v()[i]->loc(),
@@ -152,7 +176,7 @@ namespace MiniZinc {
       tt.enumId(vd->type().enumId());
       nsl->type(tt);
       vd->e(nsl);
-    } else {
+    } else if (!vd->e()->isa<Call>()) {
       throw TypeError(env, vd->e()->loc(),
                       "invalid initialisation for enum `"+ident->v().str()+"'");
     }
@@ -162,7 +186,9 @@ namespace MiniZinc {
       std::string name = createEnumToStringName(ident,"_enum_to_string_");
       std::vector<Expression*> al_args(sl->v().size());
       for (unsigned int i=0; i<sl->v().size(); i++) {
-        al_args[i] = new StringLit(Location().introduce(),sl->v()[i]->cast<Id>()->str());
+        ASTString str = sl->v()[i]->cast<Id>()->str();
+        al_args[i] = new StringLit(Location().introduce(), str);
+        env.reverseEnum[str.str()] = i+1;
       }
       ArrayLit* al = new ArrayLit(Location().introduce(),al_args);
       
@@ -507,10 +533,10 @@ namespace MiniZinc {
                                     ti_fi,fi_params,let);
       enumItems->addItem(fi);
     }
-    
+
     return ret;
   }
-  
+
   void
   TopoSorter::add(EnvI& env, VarDeclI* vdi, bool handleEnums, Model* enumItems) {
     VarDecl* vd = vdi->e();
@@ -774,7 +800,10 @@ namespace MiniZinc {
           }
           if (needIdxSet) {
             std::ostringstream oss;
-            oss << "index_set_" << (i+1) << "of" << aa->idx().size();
+            oss << "index_set";
+            if (aa->idx().size()>1) {
+              oss << "_" << (i+1) << "of" << aa->idx().size();
+            }
             std::vector<Expression*> origIdxsetArgs(1);
             origIdxsetArgs[0] = aa->v();
             Call* origIdxset = new Call(aa->v()->loc(), ASTString(oss.str()), origIdxsetArgs);
@@ -943,12 +972,14 @@ namespace MiniZinc {
     void vArrayLit(ArrayLit& al) {
       Type ty; ty.dim(al.dims());
       std::vector<AnonVar*> anons;
+      bool haveAbsents = false;
       bool haveInferredType = false;
       for (unsigned int i=0; i<al.size(); i++) {
         Expression* vi = al[i];
         if (vi->type().dim() > 0)
           throw TypeError(_env,vi->loc(),"arrays cannot be elements of arrays");
-        
+        if (vi == constants().absent)
+          haveAbsents = true;
         AnonVar* av = vi->dyn_cast<AnonVar>();
         if (av) {
           ty.ti(Type::TI_VAR);
@@ -1005,6 +1036,8 @@ namespace MiniZinc {
         ty.bt(Type::BT_BOT);
         if (!anons.empty())
           throw TypeError(_env,al.loc(),"array literal must contain at least one non-anonymous variable");
+        if (haveAbsents)
+          throw TypeError(_env,al.loc(),"array literal must contain at least one non-absent value");
       } else {
         Type at = ty;
         at.dim(0);
@@ -1059,6 +1092,34 @@ namespace MiniZinc {
         const std::vector<unsigned int>& arrayEnumIds = _env.getArrayEnum(tt.enumId());
         
         for (unsigned int i=0; i<arrayEnumIds.size()-1; i++) {
+          Expression* aai = aa.idx()[i];
+          // Check if index is slice operator, and convert to correct enum type
+          if (SetLit* aai_sl = aai->dyn_cast<SetLit>()) {
+            if (IntSetVal* aai_isv = aai_sl->isv()) {
+              if (aai_isv->min()==-IntVal::infinity() && aai_isv->max()==IntVal::infinity()) {
+                Type aai_sl_t = aai_sl->type();
+                aai_sl_t.enumId(arrayEnumIds[i]);
+                aai_sl->type(aai_sl_t);
+              }
+            }
+          } else if (BinOp* aai_bo = aai->dyn_cast<BinOp>()) {
+            if (aai_bo->op()==BOT_DOTDOT) {
+              Type aai_bo_t = aai_bo->type();
+              if (IntLit* il = aai_bo->lhs()->dyn_cast<IntLit>()) {
+                if (il->v()==-IntVal::infinity()) {
+                  // Expression is ..X, so result gets enum type of X
+                  aai_bo_t.enumId(aai_bo->rhs()->type().enumId());
+                }
+              } else if (IntLit* il = aai_bo->rhs()->dyn_cast<IntLit>()) {
+                if (il->v()==IntVal::infinity()) {
+                  // Expression is X.., so result gets enum type of X
+                  aai_bo_t.enumId(aai_bo->lhs()->type().enumId());
+                }
+              }
+              aai_bo->type(aai_bo_t);
+            }
+          }
+
           if (arrayEnumIds[i] != 0) {
             if (aa.idx()[i]->type().enumId() != arrayEnumIds[i]) {
               std::ostringstream oss;
@@ -1578,9 +1639,14 @@ namespace MiniZinc {
             vd.ti()->type(vet);
             vd.type(vet);
           } else if (! _env.isSubtype(vet,vdt,true)) {
-            _typeErrors.push_back(TypeError(_env,vd.e()->loc(),
-                                            "initialisation value for `"+vd.id()->str().str()+"' has invalid type-inst: expected `"+
-                                            vd.ti()->type().toString(_env)+"', actual `"+vd.e()->type().toString(_env)+"'"));
+            if (vet == Type::bot(1) && vd.e()->isa<ArrayLit>() && vd.e()->cast<ArrayLit>()->size()==0 &&
+                vdt.dim() != 0) {
+              // this is okay: assigning an empty array (one-dimensional) to an array variable
+            } else {
+              _typeErrors.push_back(TypeError(_env,vd.e()->loc(),
+                                              "initialisation value for `"+vd.id()->str().str()+"' has invalid type-inst: expected `"+
+                                              vd.ti()->type().toString(_env)+"', actual `"+vd.e()->type().toString(_env)+"'"));
+            }
           } else {
             vd.e(addCoercion(_env, _model, vd.e(), vd.ti()->type())());
           }

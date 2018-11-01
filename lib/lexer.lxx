@@ -292,6 +292,8 @@ _                 { return MZN_UNDERSCORE; }
 "'*'"             { return MZN_MULT_QUOTED; }
 "/"               { return MZN_DIV; }
 "'/'"             { return MZN_DIV_QUOTED; }
+"^"               { return MZN_POW; }
+"'^'"             { return MZN_POW_QUOTED; }
 "++"              { return MZN_PLUSPLUS; }
 "'++'"            { return MZN_PLUSPLUS_QUOTED; }
 "<>"              { return MZN_ABSENT; }
@@ -320,9 +322,11 @@ _                 { return MZN_UNDERSCORE; }
 "/\\"             { return MZN_AND; }
 "'/\\'"           { return MZN_AND_QUOTED; }
 
-"~"[+*=-]           {
-                    yylval->sValue = strdup(yytext);
-                    return MZN_QUOTED_IDENTIFIER; }
+"~+"              { return MZN_WEAK_PLUS; }
+"~*"              { return MZN_WEAK_MULT; }
+"~="              { return MZN_WEAK_EQ; }
+"~-"              { return MZN_WEAK_MINUS; }
+
 "'~"[+*=-]"'"            {
                     yylval->sValue = strdup(yytext+1);
                     yylval->sValue[strlen(yytext)-2] = 0;

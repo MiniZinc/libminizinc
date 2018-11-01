@@ -1,5 +1,0 @@
-name="g12-fd";
-id="org.minizinc.g12-fd";
-version="1.6";
-mznlib="-Gg12_fd";
-executable="flatzinc";

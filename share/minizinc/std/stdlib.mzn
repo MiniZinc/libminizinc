@@ -82,13 +82,13 @@ annotation mzn_path(string: s);
 annotation mzn_break_here;
 /** @group annotations.general Used to attach a name \a s to an expression, this should also propagate to
   any sub-expressions or decomposition of the annotated expression. String annotations on expressions
-  are re-written as expression_name annotations **/
+  are re-written as expression_name annotations */
 annotation expression_name(string: s);
 /** @group annotations.general Used to attach a name \a s to a constraint and its decomposition. String
-  annotations on constraint keywords are re-written as constraint_name annotations **/
+  annotations on constraint keywords are re-written as constraint_name annotations */
 annotation constraint_name(string: s);
 
-/** @group annotations.general Used internally by the compiler **/
+/** @group annotations.general Used internally by the compiler */
 annotation mzn_rhs_from_assignment;
 
 /***
@@ -110,10 +110,11 @@ annotation seq_search(array[int] of ann: s);
 
 /** @group annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, value choice strategy \a choice, and exploration strategy
-  \a explore.
+  \a explore. If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
 */
 annotation int_search(
-    array[int] of var int: x,
+    array[$X] of var int: x,
     ann: select,
     ann: choice,
     ann: explore,
@@ -121,9 +122,11 @@ annotation int_search(
 
 /** @group annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, and value choice strategy \a choice.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
 */
 annotation int_search(
-    array[int] of var int: x,
+    array[$X] of var int: x,
     ann: select,
     ann: choice
 ) = int_search(x,select,choice,complete);
@@ -131,9 +134,11 @@ annotation int_search(
 /** @group annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, value choice strategy \a choice, and exploration strategy
   \a explore.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
 */
 annotation bool_search(
-    array[int] of var bool: x,
+    array[$X] of var bool: x,
     ann: select,
     ann: choice,
     ann: explore
@@ -141,9 +146,11 @@ annotation bool_search(
 
 /** @group annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, and value choice strategy \a choice.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
 */
 annotation bool_search(
-    array[int] of var bool: x,
+    array[$X] of var bool: x,
     ann: select,
     ann: choice
 ) = bool_search(x,select,choice,complete);
@@ -152,9 +159,11 @@ annotation bool_search(
   with precision \a prec, variable selection
   strategy \a select, value choice strategy \a choice, and exploration strategy
   \a explore.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
 */
 annotation float_search(
-    array[int] of var float: x,
+    array[$X] of var float: x,
     float: prec,
     ann: select,
     ann: choice,
@@ -164,9 +173,11 @@ annotation float_search(
 /** @group annotations.search Specify search on variables \a x, 
   with precision \a prec, variable selection
   strategy \a select, and value choice strategy \a choice.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
 */
 annotation float_search(
-    array[int] of var float: x,
+    array[$X] of var float: x,
     float: prec,
     ann: select,
     ann: choice
@@ -175,9 +186,11 @@ annotation float_search(
 /** @group annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, value choice strategy \a choice, and exploration strategy
   \a explore.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
 */
 annotation set_search(
-    array[int] of var set of int: x,
+    array[$X] of var set of int: x,
     ann: select,
     ann: choice,
     ann: explore
@@ -185,9 +198,11 @@ annotation set_search(
 
 /** @group annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, and value choice strategy \a choice.
+  If \a x is a multi-dimensional array, it is coerced to one-dimensional
+  in row-major order (as with the array1d function).
 */
 annotation set_search(
-    array[int] of var set of int: x,
+    array[$X] of var set of int: x,
     ann: select,
     ann: choice
 ) = set_search(x,select,choice,complete);
@@ -554,7 +569,8 @@ absent if all elements in \a x are absent. */
 function var opt int: min(array[int] of var opt int: x) ::promise_total =
     let {
         var opt lb_array(x)..ub_array(x): m;
-        int: xmax = ub_array(x);
+        var lb_array(x)..ub_array(x): xmax;
+        constraint if ub(xmax) != infinity then xmax = ub(xmax) else forall (i in index_set(x)) (xmax >= deopt(x[i])) endif;
         constraint occurs(m) <-> exists (i in index_set(x)) (occurs(x[i]));
         constraint occurs(m) ->
             deopt(m) = min([if occurs(xi) then deopt(xi) else xmax endif | xi in x]);
@@ -565,7 +581,8 @@ absent if all elements in \a x are absent. */
 function var opt int: max(array[int] of var opt int: x) ::promise_total =
     let {
         var opt lb_array(x)..ub_array(x): m;
-        int: xmin = lb_array(x);
+        var lb_array(x)..ub_array(x): xmin;
+        constraint if lb(xmin) != -infinity then xmin = lb(xmin) else forall (i in index_set(x)) (xmin <= deopt(x[i])) endif;
         constraint occurs(m) <-> exists (i in index_set(x)) (occurs(x[i]));
         constraint occurs(m) ->
             deopt(m) = max([if occurs(xi) then deopt(xi) else xmin endif | xi in x]);

@@ -311,6 +311,10 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       for (unsigned int i=0; i<solvers.size(); i++) {
         cout << "  " << solvers[i] << endl;
       }
+      cout << "Search path for solver configurations:\n";
+      for (const string& p : solver_configs.solverConfigsPath()) {
+        cout << "  " << p << endl;
+      }
       return OPTION_FINISH;
     }
     if (argv[i]=="--solvers-json") {
@@ -625,7 +629,7 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, con
     case OPTION_OK:
       break;
   }
-  if (!(!ifMzn2Fzn() && sf!=NULL && sf->getId() == "org.minizinc.mzn-mzn") && !flt.hasInputFiles()) {
+  if (!(!ifMzn2Fzn() && sf!=NULL && sf->getId() == "org.minizinc.mzn-mzn") && !flt.hasInputFiles() && model.empty()) {
     // We are in solns2out mode
     while ( std::cin.good() ) {
       string line;

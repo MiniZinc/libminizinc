@@ -18,6 +18,8 @@
 #include <minizinc/prettyprinter.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/file_utils.hh>
+#include <minizinc/support/regex.hh>
+#include <minizinc/output.hh>
 
 #include <iomanip>
 #include <climits>
@@ -27,56 +29,56 @@
 namespace MiniZinc {
   
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
-          FunctionI::builtin_e b) {
+          FunctionI::builtin_e b, bool fromGlobals=false) {
     FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.e = b;
-    } else {
+    } else if (!fromGlobals) {
       throw InternalError("no definition found for builtin "+id.str());
     }
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
-          FunctionI::builtin_f b) {
+          FunctionI::builtin_f b, bool fromGlobals=false) {
     FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.f = b;
-    } else {
+    } else if (!fromGlobals)  {
       throw InternalError("no definition found for builtin "+id.str());
     }
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
-          FunctionI::builtin_i b) {
+          FunctionI::builtin_i b, bool fromGlobals=false) {
     FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.i = b;
-    } else {
+    } else if (!fromGlobals)  {
       throw InternalError("no definition found for builtin "+id.str());
     }
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
-          FunctionI::builtin_b b) {
+          FunctionI::builtin_b b, bool fromGlobals=false) {
     FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.b = b;
-    } else {
+    } else if (!fromGlobals)  {
       throw InternalError("no definition found for builtin "+id.str());
     }
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
-          FunctionI::builtin_s b) {
+          FunctionI::builtin_s b, bool fromGlobals=false) {
     FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.s = b;
-    } else {
+    } else if (!fromGlobals)  {
       throw InternalError("no definition found for builtin "+id.str());
     }
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
-          FunctionI::builtin_str b) {
+          FunctionI::builtin_str b, bool fromGlobals=false) {
     FunctionI* fi = m->matchFn(env,id,t,false);
     if (fi) {
       fi->_builtins.str = b;
-    } else {
+    } else if (!fromGlobals)  {
       throw InternalError("no definition found for builtin "+id.str());
     }
   }
@@ -1398,6 +1400,51 @@ namespace MiniZinc {
     }
   }
   
+  Expression* b_outputJSON(EnvI& env, Call* call) {
+    return createJSONOutput(env, false);
+  }
+  Expression* b_outputJSONParameters(EnvI& env, Call* call) {
+    std::vector<Expression*> outputVars;
+    outputVars.push_back(new StringLit(Location().introduce(), "{\n"));
+    
+    class JSONParVisitor : public ItemVisitor {
+    protected:
+      EnvI& e;
+      std::vector<Expression*>& outputVars;
+      bool first_var;
+    public:
+      JSONParVisitor(EnvI& e0, std::vector<Expression*>& outputVars0)
+      : e(e0), outputVars(outputVars0), first_var(true) {}
+      void vVarDeclI(VarDeclI* vdi) {
+        VarDecl* vd = vdi->e();
+        if (vd->ann().contains(constants().ann.rhs_from_assignment)) {
+          std::ostringstream s;
+          if (first_var) {
+            first_var = false;
+          } else {
+            s << ",\n";
+          }
+          s << "  \"" << vd->id()->str().str() << "\"" << " : ";
+          StringLit* sl = new StringLit(Location().introduce(),s.str());
+          outputVars.push_back(sl);
+          
+          std::vector<Expression*> showArgs(1);
+          showArgs[0] = vd->id();
+          Call* show = new Call(Location().introduce(),"showJSON",showArgs);
+          show->type(Type::parstring());
+          FunctionI* fi = e.model->matchFn(e, show, false);
+          assert(fi);
+          show->decl(fi);
+          outputVars.push_back(show);
+        }
+      }
+    } jsonov(env, outputVars);
+    
+    iterItems(jsonov, env.model);
+    outputVars.push_back(new StringLit(Location().introduce(), "\n}\n"));
+    return new ArrayLit(Location().introduce(),outputVars);
+  }
+
   std::string b_format(EnvI& env, Call* call) {
     int width = 0;
     int prec = -1;
@@ -1464,6 +1511,30 @@ namespace MiniZinc {
       } else {
         return s;
       }
+    }
+  }
+
+  std::string b_format_justify_string(EnvI& env, Call* call) {
+    int width = 0;
+    GCLock lock;
+    Expression* e;
+    width = static_cast<int>(eval_int(env,call->arg(0)).toInt());
+    e = eval_par(env,call->arg(1));
+    std::string s = eval_string(env,e);
+    std::ostringstream oss;
+    if (s.size() < std::abs(width)) {
+      int addLeft = width < 0 ? 0 : (width - static_cast<int>(s.size()));
+      if (addLeft < 0) addLeft = 0;
+      int addRight = width < 0 ? (-width-static_cast<int>(s.size())) : 0;
+      if (addRight < 0) addRight = 0;
+      for (int i=addLeft; i--;)
+        oss << " ";
+      oss << s;
+      for (int i=addRight; i--;)
+        oss << " ";
+      return oss.str();
+    } else {
+      return s;
     }
   }
   
@@ -2069,6 +2140,83 @@ namespace MiniZinc {
     ret->type(call->type());
     return ret;
   }
+
+  Expression* b_regular_from_string(EnvI& env, Call* call) {
+#ifdef HAS_GECODE
+    using namespace Gecode;
+    ArrayLit* vars = eval_array_lit(env, call->arg(0));
+    std::string expr = eval_string(env, call->arg(1));
+
+    IntSetVal* dom;
+    if (vars->size()==0) {
+      dom = IntSetVal::a();
+    } else {
+      dom = b_dom_varint(env,(*vars)[0]);
+      for (unsigned int i=1; i < vars->size(); i++) {
+        IntSetRanges isr(dom);
+        IntSetRanges r(b_dom_varint(env,(*vars)[i]));
+        Ranges::Union<IntVal,IntSetRanges,IntSetRanges> u(isr,r);
+        dom = IntSetVal::ai(u);
+      }
+    }
+    int card = dom->max().toInt() - dom->min().toInt() + 1;
+    int offset = 1 - dom->min().toInt();
+
+    std::unique_ptr<REG> regex;
+    try {
+      regex = regex_from_string(expr, *dom, env.reverseEnum);
+    } catch (const std::exception& e) {
+      throw SyntaxError(call->arg(1)->loc(), e.what());
+    }
+    DFA dfa = DFA(*regex);
+
+    std::vector< std::vector<Expression*> > reg_trans(
+        dfa.n_states(), std::vector<Expression*>(
+            card, IntLit::a(IntVal(0))
+        )
+    );
+    
+    DFA::Transitions trans(dfa);
+    while (trans()) {
+//      std::cerr << trans.i_state() + 1 << " -- " << trans.symbol() << " --> " << trans.o_state() + 1 << "\n";
+      if (trans.symbol() >= dom->min().toInt() && trans.symbol() <= dom->max().toInt()) {
+        reg_trans[trans.i_state()][trans.symbol()+offset-1] = IntLit::a(IntVal(trans.o_state()+1));
+      }
+      ++trans;
+    }
+
+    std::vector<Expression*> args(6);
+    if (offset == 0) {
+      args[0] = vars; // x
+    } else {
+      std::vector<Expression*> nvars(vars->size());
+      IntLit* loffset = IntLit::a(IntVal(offset));
+      for (int i = 0; i < nvars.size(); ++i) {
+        nvars[i] = new BinOp(call->loc().introduce(), (*vars)[i], BOT_PLUS, loffset);
+        nvars[i]->type(Type::varint());
+      }
+      args[0] = new ArrayLit(call->loc().introduce(), nvars); // x
+      args[0]->type(Type::varint(1));
+    }
+    args[1] = IntLit::a(IntVal(dfa.n_states())); // Q
+    args[1]->type(Type::parint());
+    args[2] = IntLit::a(IntVal(card));// S
+    args[2]->type(Type::parint());
+    args[3] = new ArrayLit(call->loc().introduce(), reg_trans); // d
+    args[3]->type(Type::parint(2));
+    args[4] = IntLit::a(IntVal(1)); // q0
+    args[4]->type(Type::parint());
+    args[5] = new SetLit(call->loc().introduce(), IntSetVal::a(IntVal(dfa.final_fst()+1), IntVal(dfa.final_lst()))); // F
+    args[5]->type(Type::parsetint());
+
+    auto nc = new Call(call->loc().introduce(), "regular", args);
+    nc->type(Type::varbool());
+
+    return nc;
+#else
+    throw FlatteningError(env, call->loc(), "MiniZinc was compiled without built-in Gecode, cannot parse regular expression");
+#endif
+  }
   
   void registerBuiltins(Env& e) {
     EnvI& env = e.envi();
@@ -2608,6 +2756,13 @@ namespace MiniZinc {
       rb(env, m, ASTString("format"), t, b_format);
       t[1] = Type::vartop(-1);
       rb(env, m, ASTString("format"), t, b_format);
+      t[1] = Type::parstring();
+      rb(env, m, ASTString("format_justify_string"), t, b_format_justify_string);
+    }
+    {
+      std::vector<Type> t;
+      rb(env, m, ASTString("outputJSON"), t, b_outputJSON);
+      rb(env, m, ASTString("outputJSONParameters"), t, b_outputJSONParameters);
     }
     {
       std::vector<Type> t(2);
@@ -2839,6 +2994,12 @@ namespace MiniZinc {
     }
     {
       rb(env, m, ASTString("mzn_compiler_version"), std::vector<Type>(), b_mzn_compiler_version);
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::varint(1);
+      t[1] = Type::parstring();
+      rb(env, m, ASTString("regular"),t,b_regular_from_string,true);
     }
   }
   

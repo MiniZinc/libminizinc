@@ -14,6 +14,7 @@ predicate cumulative(array[int] of var int: s,
                      array[int] of var int: r, var int: b) =
     assert(index_set(s) == index_set(d) /\ index_set(s) == index_set(r),
         "cumulative: the 3 array arguments must have identical index sets",
+      if 0==length(s) then true else
         assert(lb_array(d) >= 0 /\ lb_array(r) >= 0,
             "cumulative: durations and resource usages must be non-negative",
         if mzn_in_redundant_constraint() /\ fMZN__IgnoreRedundantCumulative then
@@ -33,7 +34,7 @@ predicate cumulative(array[int] of var int: s,
                     endif
                 endif
         endif
-    ));
+    ) endif );
 
 %% Can be called with a given set of times:
 predicate cumulative_set_times(array[int] of var int: s, 

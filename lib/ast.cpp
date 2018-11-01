@@ -20,6 +20,57 @@
 
 namespace MiniZinc {
 
+  Location::LocVec*
+  Location::LocVec::a(const ASTString& filename, unsigned int first_line, unsigned int first_column, unsigned int last_line, unsigned int last_column) {
+    static const unsigned int pointerBits = sizeof(IntLit*)*8;
+    if (pointerBits<=32) {
+      if (first_line < (1<<8) &&
+          last_line-first_line < (1<<7) &&
+          first_column < (1<<6) &&
+          last_column < (1<<7)) {
+        long long int combined = first_line;
+        combined |= (last_line-first_line)<<8;
+        combined |= (first_column)<<(8+7);
+        combined |= (last_column)<<(8+7+6);
+        LocVec* v = static_cast<LocVec*>(alloc(2));
+        new (v) LocVec(filename,combined);
+        return v;
+      }
+    } else if (pointerBits>=64) {
+      if (first_line < (1<<20) &&
+          last_line-first_line < (1<<20) &&
+          first_column < (1<<10) &&
+          last_column < (1<<10)) {
+        long long int combined = first_line;
+        combined |= (static_cast<unsigned long long int>(last_line-first_line))<<20;
+        combined |= (static_cast<unsigned long long int>(first_column))<<(20+20);
+        combined |= (static_cast<unsigned long long int>(last_column))<<(20+20+10);
+        LocVec* v = static_cast<LocVec*>(alloc(2));
+        new (v) LocVec(filename,combined);
+        return v;
+      }
+    }
+    
+    LocVec* v = static_cast<LocVec*>(alloc(5));
+    new (v) LocVec(filename,first_line,first_column,last_line,last_column);
+    return v;
+  }
+
+  Location::LocVec::LocVec(const ASTString& filename, IntVal combined) : ASTVec(2) {
+    *(_data+0) = filename.aststr();
+    *(_data+1) = IntLit::a(combined);
+  }
+
+  Location::LocVec::LocVec(const ASTString& filename, unsigned int fl,
+                           unsigned int first_column, unsigned int last_line, unsigned int last_column) : ASTVec(5) {
+    *(_data+0) = filename.aststr();
+    *(_data+1) = IntLit::a(fl);
+    *(_data+2) = IntLit::a(last_line);
+    *(_data+3) = IntLit::a(first_column);
+    *(_data+4) = IntLit::a(last_column);
+  }
+
+  
   Location Location::nonalloc;
   
   Type Type::unboxedint = Type::parint();
@@ -481,6 +532,18 @@ namespace MiniZinc {
     _in = in;
     _where = where;
   }
+  Generator::Generator(int pos, Expression* where) {
+    std::vector<VarDecl*> vd;
+    std::ostringstream oss;
+    oss << "__dummy" << pos;
+    VarDecl* nvd = new VarDecl(Location().introduce(),
+                               new TypeInst(Location().introduce(),Type::parint()),ASTString(oss.str()));
+    nvd->toplevel(false);
+    vd.push_back(nvd);
+    _v = vd;
+    _in = new ArrayLit(Location().introduce(), std::vector<Expression*>({IntLit::a(0)}));
+    _where = where;
+  }
 
   bool
   Comprehension::set(void) const {
@@ -572,6 +635,7 @@ namespace MiniZinc {
       Id* sBOT_DIV;
       Id* sBOT_IDIV;
       Id* sBOT_MOD;
+      Id* sBOT_POW;
       Id* sBOT_LE;
       Id* sBOT_LQ;
       Id* sBOT_GR;
@@ -611,6 +675,8 @@ namespace MiniZinc {
         rootSet.push_back(sBOT_IDIV);
         sBOT_MOD = new Id(Location(),"'mod'",NULL);
         rootSet.push_back(sBOT_MOD);
+        sBOT_POW = new Id(Location(),"'^'",NULL);
+        rootSet.push_back(sBOT_POW);
         sBOT_LE = new Id(Location(),"'<'",NULL);
         rootSet.push_back(sBOT_LE);
         sBOT_LQ = new Id(Location(),"'<='",NULL);
@@ -675,6 +741,7 @@ namespace MiniZinc {
     case BOT_DIV: return OpToString::o().sBOT_DIV->v();
     case BOT_IDIV: return OpToString::o().sBOT_IDIV->v();
     case BOT_MOD: return OpToString::o().sBOT_MOD->v();
+    case BOT_POW: return OpToString::o().sBOT_POW->v();
     case BOT_LE: return OpToString::o().sBOT_LE->v();
     case BOT_LQ: return OpToString::o().sBOT_LQ->v();
     case BOT_GR: return OpToString::o().sBOT_GR->v();
@@ -1357,9 +1424,11 @@ namespace MiniZinc {
     ids.set_eq = ASTString("set_eq");
     ids.set_in = ASTString("set_in");
     ids.set_card = ASTString("set_card");
+    ids.pow = ASTString("pow");
     
     ids.introduced_var = ASTString("__INTRODUCED");
-
+    ids.anonEnumFromStrings = ASTString("anon_enum");
+    
     ctx.root = new Id(Location(),ASTString("ctx_root"),NULL);
     ctx.root->type(Type::ann());
     ctx.pos = new Id(Location(),ASTString("ctx_pos"),NULL);
@@ -1580,10 +1649,12 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.set_eq));
     v.push_back(new StringLit(Location(),ids.set_in));
     v.push_back(new StringLit(Location(),ids.set_card));
+    v.push_back(new StringLit(Location(),ids.pow));
 
     v.push_back(new StringLit(Location(),ids.assert));
     v.push_back(new StringLit(Location(),ids.trace));
     v.push_back(new StringLit(Location(),ids.introduced_var));
+    v.push_back(new StringLit(Location(),ids.anonEnumFromStrings));
     v.push_back(ctx.root);
     v.push_back(ctx.pos);
     v.push_back(ctx.neg);

@@ -17,6 +17,8 @@
 #include <minizinc/astiterator.hh>
 #include <minizinc/flatten.hh>
 
+#include <cmath>
+
 namespace MiniZinc {
 
   template<class E>
@@ -1305,6 +1307,7 @@ namespace MiniZinc {
             case BOT_PLUS: return v0+v1;
             case BOT_MINUS: return v0-v1;
             case BOT_MULT: return v0*v1;
+            case BOT_POW: return v0.pow(v1);
             case BOT_IDIV:
               if (v1==0)
                 throw ResultUndefinedError(env, e->loc(),"division by zero");
@@ -1421,6 +1424,7 @@ namespace MiniZinc {
           case BOT_PLUS: return v0+v1;
           case BOT_MINUS: return v0-v1;
           case BOT_MULT: return v0*v1;
+          case BOT_POW: return std::pow(v0.toDouble(),v1.toDouble());
           case BOT_DIV:
             if (v1==0.0)
               throw ResultUndefinedError(env, e->loc(),"division by zero");
@@ -1980,6 +1984,20 @@ namespace MiniZinc {
             _bounds.push_back(Bounds(m,n));
           }
             break;
+          case BOT_POW:
+          {
+            IntVal exp_min = std::min(0,b1.first);
+            IntVal exp_max = std::min(0,b1.second);
+            
+            IntVal x0 = b0.first.pow(exp_min);
+            IntVal x1 = b0.first.pow(exp_max);
+            IntVal x2 = b0.second.pow(exp_min);
+            IntVal x3 = b0.second.pow(exp_max);
+            IntVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
+            IntVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
+            _bounds.push_back(Bounds(m,n));
+          }
+            break;
           case BOT_DIV:
           case BOT_LE:
           case BOT_LQ:
@@ -2120,7 +2138,13 @@ namespace MiniZinc {
           else
             _bounds.push_back(Bounds(0,std::max(-b0.first,b0.second)));
         }
-      } else if (c.decl() && c.decl()->ti()->domain()) {
+      } else if (c.decl() && c.decl()->ti()->domain() && !c.decl()->ti()->domain()->isa<TIId>()) {
+        for (int i=0; i<c.n_args(); i++) {
+          if (c.arg(i)->type().isint()) {
+            assert(_bounds.size() > 0);
+            _bounds.pop_back();
+          }
+        }
         IntSetVal* isv = eval_intset(env, c.decl()->ti()->domain());
         _bounds.push_back(Bounds(isv->min(),isv->max()));
       } else {
@@ -2314,6 +2338,17 @@ namespace MiniZinc {
             _bounds.push_back(FBounds(m,n));
           }
             break;
+          case BOT_POW:
+          {
+            FloatVal x0 = std::pow(b0.first.toDouble(),b1.first.toDouble());
+            FloatVal x1 = std::pow(b0.first.toDouble(),b1.second.toDouble());
+            FloatVal x2 = std::pow(b0.second.toDouble(),b1.first.toDouble());
+            FloatVal x3 = std::pow(b0.second.toDouble(),b1.second.toDouble());
+            FloatVal m = std::min(x0,std::min(x1,std::min(x2,x3)));
+            FloatVal n = std::max(x0,std::max(x1,std::max(x2,x3)));
+            _bounds.push_back(FBounds(m,n));
+          }
+            break;
           case BOT_DIV:
           case BOT_IDIV:
           case BOT_MOD:
@@ -2461,7 +2496,13 @@ namespace MiniZinc {
           else
             _bounds.push_back(FBounds(0.0,std::max(-b0.first,b0.second)));
         }
-      } else if (c.decl() && c.decl()->ti()->domain()) {
+      } else if (c.decl() && c.decl()->ti()->domain() && !c.decl()->ti()->domain()->isa<TIId>()) {
+        for (int i=0; i<c.n_args(); i++) {
+          if (c.arg(i)->type().isfloat()) {
+            assert(_bounds.size() > 0);
+            _bounds.pop_back();
+          }
+        }
         FloatSetVal* fsv = eval_floatset(env, c.decl()->ti()->domain());
         _bounds.push_back(FBounds(fsv->min(),fsv->max()));
       } else {
@@ -2645,6 +2686,7 @@ namespace MiniZinc {
         case BOT_PLUS:
         case BOT_MINUS:
         case BOT_MULT:
+        case BOT_POW:
         case BOT_DIV:
         case BOT_IDIV:
         case BOT_MOD:
@@ -2688,7 +2730,13 @@ namespace MiniZinc {
         IntSetVal* b0 = _bounds.back(); _bounds.pop_back();
         _bounds.pop_back(); // don't need bounds of right hand side
         _bounds.push_back(b0);
-      } else if (c.decl() && c.decl()->ti()->domain()) {
+      } else if (c.decl() && c.decl()->ti()->domain() && !c.decl()->ti()->domain()->isa<TIId>()) {
+        for (int i=0; i<c.n_args(); i++) {
+          if (c.arg(i)->type().isintset()) {
+            assert(_bounds.size() > 0);
+            _bounds.pop_back();
+          }
+        }
         IntSetVal* fsv = eval_intset(env, c.decl()->ti()->domain());
         _bounds.push_back(fsv);
       } else {

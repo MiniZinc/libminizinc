@@ -32,13 +32,22 @@ bool: fMZN__UseIndicators =    %% Pass on indicator constraints
            else deopt( fIndConstr ) endif;
     %% CPLEX 12.6.2 Concert: reifs give wrong result on 2012/amaze, so using implications only
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Subtour elimination in circuit %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --------------------------------------------------------------------------------------- %
+opt int: nSECcuts;       %% 0,1: use MTZ formulation
+int: nMZN__fSECcuts =    %% 1,2: pass on circuit constraints to the MIP_solverinstance's cut gen
+           if absent( nSECcuts ) then 0
+           else deopt( nSECcuts ) endif;
+
+    
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% MIPdomains %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --------------------------------------------------------------------------------------- %
+%% Paper: %   Belov, Stuckey, Tack, Wallace. Improved Linearization of Constraint Programming Models. CP 2016 Proceedings.
   %%% The below option enables translation of domain constraints into the ...POST predicates.
   %%% The code in MIPdomains.cpp processes them and also non-contiguous domains
   %%% (only-range-domains is then standardly off). MIPdomains.cpp needs all the required
   %%% __POST predicates to be declared to kick in.
-opt bool: fMIPDomains;           %% unary decomposition constraints (...__POST) to FlatZinc
+opt bool: fMIPDomains;           %% unified decomposition constraints (...__POST) to FlatZinc
 opt bool: fMIPdomains;           %% Can be defined from cmdline: -D "fMIPdomains=false"
 bool: fPostprocessDomains =      %% True to pass all domain-related
            if absent( fMIPdomains ) /\ absent( fMIPDomains ) then true     %% seems best for Gurobi & CBC
@@ -54,7 +63,7 @@ bool: fPostproDom_DIFF =         %% Specialized for differences: x<y <-> z=x-y<0
            if absent( fMIPdomDiff ) then false                             %% seems best for Gurobi, worse for CBC
            else deopt( fMIPdomDiff ) endif;
 
-mzn_opt_only_range_domains = not fPostprocessDomains;
+mzn_opt_only_range_domains = not fPostprocessDomains;   %% currently unused
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Avoid creating new int vars %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --------------------------------------------------------------------------------------- %

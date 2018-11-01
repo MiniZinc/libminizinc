@@ -121,7 +121,7 @@ void Solns2Out::initFromOzn(const std::string& filename) {
   
   {
     pEnv = new Env();
-    if ((pOutput = parse(*pEnv, filenames, std::vector<std::string>(), includePaths, false, false, false,
+    if ((pOutput = parse(*pEnv, filenames, std::vector<std::string>(), "", "", includePaths, false, false, false,
                          std::cerr))) {
       std::vector<TypeError> typeErrors;
       pEnv->model(pOutput);
@@ -172,7 +172,7 @@ void Solns2Out::restoreDefaults() {
 void Solns2Out::parseAssignments(string& solution) {
   std::vector<SyntaxError> se;
   unique_ptr<Model> sm(
-    parseFromString(solution, "solution received from solver", includePaths, true, false, false, log, se) );
+    parseFromString(*pEnv, solution, "solution received from solver", includePaths, true, false, false, log, se) );
   if (sm.get()==NULL)
     throw Error("solns2out_base: could not parse solution");
   solution = "";
@@ -282,7 +282,7 @@ void Solns2Out::checkSolution(std::ostream& os) {
   MznSolver slv(oss_err,oss_err);
   slv.s2out._opt.solution_separator = "";
   try {
-    std::vector<std::string> args({"--solver","org.minizinc.gecode_presolver","-"});
+    std::vector<std::string> args({"--solver","org.minizinc.gecode_presolver"});
     slv.run(args, checker.str(), "minizinc", "checker.mzc");
   } catch (const LocationException& e) {
     oss_err << e.loc() << ":" << std::endl;

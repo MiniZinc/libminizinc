@@ -833,6 +833,25 @@ namespace MiniZinc {
       
       gi.registerCutGenerator( move( pCG ) );
     }
+
+    /// Initialize the SEC cut generator
+    template<class MIPWrapper>
+    void p_SEC_cutgen(SolverInstanceBase& si, const Call* call) {
+      MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>( si );
+      
+      std::unique_ptr<SECCutGen> pCG( new SECCutGen( gi.getMIPWrapper() ) );
+      
+      assert( call->n_args()==1 );
+      gi.exprToVarArray(call->arg(0), pCG->varXij);            // WHAT ABOUT CONSTANTS?
+      const double dN = sqrt( pCG->varXij.size() );
+      MZN_ASSERT_HARD( fabs( dN - round(dN) ) < 1e-6 );   // should be a square matrix
+      pCG->nN = round(dN);
+  //     cout << "  NEXT_CUTGEN" << endl;
+  //     pCG->print( cout );
+      
+      gi.registerCutGenerator( move( pCG ) );
+    }
+    
   }
 
   
@@ -863,6 +882,7 @@ namespace MiniZinc {
     /// XBZ cut generator
     _constraintRegistry.add("array_var_float_element__XBZ_lb__cutgen",
                             SCIPConstraints::p_XBZ_cutgen<MIPWrapper>);
+    _constraintRegistry.add("circuit__SECcuts", SCIPConstraints::p_SEC_cutgen<MIPWrapper>);
 
   }
   

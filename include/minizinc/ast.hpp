@@ -85,76 +85,84 @@ namespace MiniZinc {
     return il;
   }
   
-  inline
-  Location::LocVec::LocVec(const ASTString& filename, unsigned int fl,
-                           unsigned int first_column, unsigned int last_line, unsigned int last_column) : ASTVec(3) {
-    *(_data+0) = filename.aststr();
-    long long unsigned int lines = fl;
-    long long unsigned int ll = last_line;
-    lines |= ll << 20;
-    long long unsigned int columns = first_column;
-    long long unsigned int lc = last_column;
-    columns |= lc << 20;
-    
-    union {
-      long long int i;
-      unsigned long long int u;
-    } ui;
-    
-    ui.u = lines;
-    *(_data+1) = IntLit::a(ui.i);
-    
-    ui.u = columns;
-    *(_data+2) = IntLit::a(ui.i);
-    
-    assert(first_line()==fl);
-  }
-
   inline ASTString
   Location::LocVec::filename(void) const {
     return static_cast<ASTStringO*>(_data[0]);
   }
   inline unsigned int
   Location::LocVec::first_line(void) const {
-    IntLit* il = static_cast<IntLit*>(_data[1]);
-    long long unsigned int mask = 0xFFFFF;
-    union {
-      long long int i;
-      unsigned long long int u;
-    } ui;
-    ui.i = il->v().toInt();
-    return static_cast<unsigned int>(ui.u & mask);
+    if (_size==2) {
+      static const unsigned int pointerBits = sizeof(IntLit*)*8;
+      IntLit* il = static_cast<IntLit*>(_data[1]);
+      long long unsigned int mask = pointerBits<=32 ? 0xFF : 0xFFFFF;
+      union {
+        long long int i;
+        unsigned long long int u;
+      } ui;
+      ui.i = il->v().toInt();
+      return static_cast<unsigned int>(ui.u & mask);
+    } else {
+      IntLit* il = static_cast<IntLit*>(_data[1]);
+      return il->v().toInt();
+    }
   }
   inline unsigned int
   Location::LocVec::last_line(void) const {
-    IntLit* il = static_cast<IntLit*>(_data[1]);
-    union {
-      long long int i;
-      unsigned long long int u;
-    } ui;
-    ui.i = il->v().toInt();
-    return static_cast<unsigned int>(ui.u >> 20);
+    if (_size==2) {
+      static const unsigned int pointerBits = sizeof(IntLit*)*8;
+      IntLit* il = static_cast<IntLit*>(_data[1]);
+      long long unsigned int first_line_size = pointerBits<=32 ? 8 : 20;
+      long long unsigned int mask = pointerBits<=32 ? 0xFF : 0xFFFFF;
+      long long unsigned int offsetmask = pointerBits<=32 ? 0x7F : 0xFFFFF;
+      union {
+        long long int i;
+        unsigned long long int u;
+      } ui;
+      ui.i = il->v().toInt();
+      // return first line (8 bit) + offset (7 bit)
+      return static_cast<unsigned int>( (ui.u & mask) + ((ui.u >> first_line_size) & offsetmask));
+    } else {
+      IntLit* il = static_cast<IntLit*>(_data[2]);
+      return il->v().toInt();
+    }
   }
   inline unsigned int
   Location::LocVec::first_column(void) const {
-    IntLit* il = static_cast<IntLit*>(*(_data+2));
-    long long unsigned int mask = 0xFFFFF;
-    union {
-      long long int i;
-      unsigned long long int u;
-    } ui;
-    ui.i = il->v().toInt();
-    return static_cast<unsigned int>(ui.u & mask);
+    if (_size==2) {
+      static const unsigned int pointerBits = sizeof(IntLit*)*8;
+      IntLit* il = static_cast<IntLit*>(_data[1]);
+      long long unsigned int first_col_offset = pointerBits<=32 ? 8+7 : 20+20;
+      long long unsigned int mask = pointerBits<=32 ? 0x3F : 0x3FF;
+      union {
+        long long int i;
+        unsigned long long int u;
+      } ui;
+      ui.i = il->v().toInt();
+      // return first line (8 bit) + offset (7 bit)
+      return static_cast<unsigned int>( (ui.u >> first_col_offset) & mask);
+    } else {
+      IntLit* il = static_cast<IntLit*>(_data[3]);
+      return il->v().toInt();
+    }
   }
   inline unsigned int
   Location::LocVec::last_column(void) const {
-    IntLit* il = static_cast<IntLit*>(*(_data+2));
-    union {
-      long long int i;
-      unsigned long long int u;
-    } ui;
-    ui.i = il->v().toInt();
-    return static_cast<unsigned int>(ui.u >> 20);
+    if (_size==2) {
+      static const unsigned int pointerBits = sizeof(IntLit*)*8;
+      IntLit* il = static_cast<IntLit*>(_data[1]);
+      long long unsigned int last_col_offset = pointerBits<=32 ? 8+7+6 : 20+20+10;
+      long long unsigned int mask = pointerBits<=32 ? 0x7F : 0x3FF;
+      union {
+        long long int i;
+        unsigned long long int u;
+      } ui;
+      ui.i = il->v().toInt();
+      // return first line (8 bit) + offset (7 bit)
+      return static_cast<unsigned int>( (ui.u >> last_col_offset) & mask);
+    } else {
+      IntLit* il = static_cast<IntLit*>(_data[4]);
+      return il->v().toInt();
+    }
   }
   
   inline

@@ -6,6 +6,19 @@ set(CMAKE_MODULE_PATH
   ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules
 )
 
+set(DEFAULT_BUILD_TYPE "Release")
+if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
+  message(STATUS "Setting build type to '${DEFAULT_BUILD_TYPE}' as none was specified.")
+  set(CMAKE_BUILD_TYPE "${DEFAULT_BUILD_TYPE}" CACHE STRING "Choose the type of build." FORCE)
+  # Set the possible values of build type for cmake-gui
+  set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+    "Debug"
+    "Release"
+    "MinSizeRel"
+    "RelWithDebInfo"
+  )
+endif()
+
 # -------------------------------------------------------------------------------------------------------------------
 # -- The below checks if certain solver paths are set in the config call for the corresp. interface to be compiled --
 # -- For example, to include gecode in the minizinc binary run                                                     --
@@ -28,13 +41,15 @@ if (DEFINED SCIP_DIR AND DEFINED SOPLEX_DIR AND DEFINED ZIMPL_DIR AND NOT "${SCI
 endif()
 if (DEFINED OSICBC_HOME AND NOT "${OSICBC_HOME} " STREQUAL " ")
   set(HAS_OSICBC TRUE)
+elseif (DEFINED OSICBC_INCLUDEDIR AND DEFINED OSICBC_LIBDIR AND NOT "${OSICBC_INCLUDEDIR} " STREQUAL " " AND NOT "${OSICBC_LIBDIR} " STREQUAL " ")
+  set(HAS_OSICBC TRUE)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
 # The version number.
 set (libminizinc_VERSION_MAJOR 2)
 set (libminizinc_VERSION_MINOR 2)
-set (libminizinc_VERSION_PATCH 0)
+set (libminizinc_VERSION_PATCH 3)
 set (libminizinc_VERSION
   ${libminizinc_VERSION_MAJOR}.${libminizinc_VERSION_MINOR}.${libminizinc_VERSION_PATCH})
 
@@ -241,46 +256,87 @@ macro(MD5 filename md5sum)
   string(MD5 ${md5sum} "${STRIPPED_MD5_FILE}")
 endmacro(MD5)
 
-find_program(FLEX_EXEC flex)
-if(FLEX_EXEC)
-  add_custom_command(
-    OUTPUT ${PROJECT_BINARY_DIR}/lexer.yy.cpp
-    DEPENDS ${PROJECT_SOURCE_DIR}/lib/lexer.lxx
-    COMMAND ${FLEX_EXEC} -P mzn_yy -L -o${PROJECT_BINARY_DIR}/lexer.yy.cpp ${PROJECT_SOURCE_DIR}/lib/lexer.lxx
-    )
-  set_source_files_properties(${PROJECT_BINARY_DIR}/lexer.yy.cpp GENERATED)
-  set(lexer_cpp ${PROJECT_BINARY_DIR}/lexer.yy.cpp)
-else(FLEX_EXEC)
-  MD5(${PROJECT_SOURCE_DIR}/lib/lexer.lxx lexer_lxx_md5)
-  if(NOT "${lexer_lxx_md5}" STREQUAL "${lexer_lxx_md5_cached}")
-    message(FATAL_ERROR "The file lexer.lxx has been modified but flex cannot be run."
-	  "\nIf you are sure ${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp is correct then"
-	  "copy lexer.lxx's md5 md5 ${lexer_lxx_md5} into ${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake")
-  endif()
-  set(lexer_cpp ${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp)
-endif(FLEX_EXEC)
+find_package(BISON)
+if(BISON_FOUND)
+  BISON_TARGET(MZNParser
+    ${PROJECT_SOURCE_DIR}/lib/parser.yxx
+    ${PROJECT_BINARY_DIR}/parser.tab.cpp
+    DEFINES_FILE ${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh
+    COMPILE_FLAGS "-p mzn_yy -l"
+  )
 
-find_program(BISON_EXEC bison)
-if(BISON_EXEC)
-  add_custom_command(
-    OUTPUT ${PROJECT_BINARY_DIR}/parser.tab.cpp ${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh
-    DEPENDS ${lexer_cpp} ${PROJECT_SOURCE_DIR}/lib/parser.yxx
-    COMMAND "${BISON_EXEC}" -p mzn_yy -l -o ${PROJECT_BINARY_DIR}/parser.tab.cpp --defines=${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh ${PROJECT_SOURCE_DIR}/lib/parser.yxx
-    )
-  set_source_files_properties(${PROJECT_BINARY_DIR}/parser.tab.cpp GENERATED)
-  set(parser_cpp ${PROJECT_BINARY_DIR}/parser.tab.cpp)
-  set(parser_hh ${PROJECT_BINARY_DIR}/include/minizinc/parser.tab.hh)
-else(BISON_EXEC)
+  file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/include/minizinc/support/)
+  BISON_TARGET(RegExParser
+    ${PROJECT_SOURCE_DIR}/lib/support/regex/parser.yxx
+    ${PROJECT_BINARY_DIR}/regex_parser.tab.cpp
+    DEFINES_FILE ${PROJECT_BINARY_DIR}/include/minizinc/support/regex_parser.tab.hh
+    COMPILE_FLAGS "-p regex_yy -l"
+  )
+else()
   MD5(${PROJECT_SOURCE_DIR}/lib/parser.yxx parser_yxx_md5)
   if(NOT "${parser_yxx_md5}" STREQUAL "${parser_yxx_md5_cached}")
-    message(FATAL_ERROR "The file parser.yxx has been modified but bison cannot be run."
-	  "\nIf you are sure parser.tab.cpp and minizinc/parser.tab.hh in ${PROJECT_SOURCE_DIR}/lib/cached/ are correct then"
-	  "copy parser.yxx's md5 ${parser_yxx_md5} into ${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake")
+    message(FATAL_ERROR "The file parser.yxx has been modified but bison cannot be run.\n"
+	  "If you are sure parser.tab.cpp and minizinc/parser.tab.hh in ${PROJECT_SOURCE_DIR}/lib/cached/ are correct "
+	  "then copy parser.yxx's md5 ${parser_yxx_md5} into ${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake")
   endif()
+
+  MD5(${PROJECT_SOURCE_DIR}/lib/support/regex/parser.yxx regex_parser_yxx_md5)
+  if(NOT "${regex_parser_yxx_md5}" STREQUAL "${regex_parser_yxx_md5_cached}")
+    message(FATAL_ERROR "The file regex/parser.yxx has been modified but bison cannot be run.\n"
+	  "If you are sure regex_parser.tab.cpp and minizinc/support/regex_parser.tab.hh in "
+	  "${PROJECT_SOURCE_DIR}/lib/cached/ are correct then copy regex_parser.yxx's md5 ${regex_parser_yxx_md5} into "
+      "${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake")
+  endif()
+
   include_directories(${PROJECT_SOURCE_DIR}/lib/cached)
-  set(parser_cpp ${PROJECT_SOURCE_DIR}/lib/cached/parser.tab.cpp)
-  set(parser_hh ${PROJECT_SOURCE_DIR}/lib/cached/minizinc/parser.tab.hh)
-endif(BISON_EXEC)
+  set(BISON_MZNParser_OUTPUTS
+    ${PROJECT_SOURCE_DIR}/lib/cached/parser.tab.cpp
+    ${PROJECT_SOURCE_DIR}/lib/cached/minizinc/parser.tab.hh
+  )
+  set(BISON_RegExParser_OUTPUTS
+    ${PROJECT_SOURCE_DIR}/lib/cached/regex_parser.tab.cpp
+    ${PROJECT_SOURCE_DIR}/lib/cached/minizinc/support/regex_parser.tab.hh
+  )
+endif()
+
+find_package(FLEX)
+if(FLEX_FOUND)
+  FLEX_TARGET(MZNLexer
+    ${PROJECT_SOURCE_DIR}/lib/lexer.lxx
+    ${PROJECT_BINARY_DIR}/lexer.yy.cpp
+    COMPILE_FLAGS "-P mzn_yy -L"
+  )
+  ADD_FLEX_BISON_DEPENDENCY(MZNLexer MZNParser)
+
+  FLEX_TARGET(RegExLexer
+    ${PROJECT_SOURCE_DIR}/lib/support/regex/lexer.lxx
+    ${PROJECT_BINARY_DIR}/regex_lexer.yy.cpp
+    COMPILE_FLAGS "-P regex_yy -L"
+  )
+  ADD_FLEX_BISON_DEPENDENCY(RegExLexer RegExParser)
+else()
+  MD5(${PROJECT_SOURCE_DIR}/lib/lexer.lxx lexer_lxx_md5)
+  if(NOT "${lexer_lxx_md5}" STREQUAL "${lexer_lxx_md5_cached}")
+    message(FATAL_ERROR "The file lexer.lxx has been modified but flex cannot be run.\n"
+	  "If you are sure ${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp is correct then "
+	  "copy lexer.lxx's md5 ${lexer_lxx_md5} into ${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake")
+  endif()
+
+  MD5(${PROJECT_SOURCE_DIR}/lib/support/regex/lexer.lxx regex_lexer_lxx_md5)
+  if(NOT "${regex_lexer_lxx_md5}" STREQUAL "${regex_lexer_lxx_md5_cached}")
+    message(FATAL_ERROR "The file regex/lexer.lxx has been modified but flex cannot be run.\n"
+	  "If you are sure ${PROJECT_SOURCE_DIR}/lib/cached/regex_lexer.yy.cpp is correct then "
+	  "copy regex/lexer.lxx's md5 ${regex_lexer_lxx_md5} into ${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake")
+  endif()
+
+  set(FLEX_MZNLexer_OUTPUTS ${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp)
+  set(FLEX_RegExLexer_OUTPUTS ${PROJECT_SOURCE_DIR}/lib/cached/regex_lexer.yy.cpp)
+endif()
+
+if(NOT HAS_GECODE)
+  set(FLEX_RegExLexer_OUTPUTS "")
+  set(BISON_RegExParser_OUTPUTS "")
+endif()
 
 # -------------------------------------------------------------------------------------------------------------------
 add_library(minizinc
@@ -299,9 +355,7 @@ lib/json_parser.cpp
 lib/miniz.c
 lib/cdecode.c
 lib/cencode.c
-${lexer_cpp}
 lib/model.cpp
-${parser_cpp}
 lib/prettyprinter.cpp
 lib/pathfileprinter.cpp
 lib/type.cpp
@@ -313,6 +367,7 @@ lib/options.cpp
 lib/optimize_constraints.cpp
 lib/output.cpp
 lib/parser.yxx
+lib/parser.cpp
 lib/solver_instance.cpp
 lib/solver_instance_base.cpp
 lib/statistics.cpp
@@ -359,7 +414,11 @@ include/minizinc/thirdparty/b64/cdecode.h
 include/minizinc/thirdparty/b64/cencode.h
 include/minizinc/thirdparty/b64/decode.h
 include/minizinc/thirdparty/b64/encode.h
-${parser_hh}
+include/minizinc/support/regex.hh
+${BISON_MZNParser_OUTPUTS}
+${FLEX_MZNLexer_OUTPUTS}
+${BISON_RegExParser_OUTPUTS}
+${FLEX_RegExLexer_OUTPUTS}
 )
 
 add_library(minizinc_solver
@@ -390,6 +449,7 @@ if(HAS_GUROBI)  # Version 7.5
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp solvers/MIP/MIP_gurobi_solverfactory.cpp
     include/minizinc/solvers/MIP/MIP_gurobi_wrap.hh include/minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_solverinstance.hpp
+    lib/algorithms/min_cut.cpp
 	)
   target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
   if(HAS_GUROBI_PLUGIN)
@@ -461,7 +521,7 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
   # link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
 
   add_library(minizinc_cplex
-    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp lib/algorithms/min_cut.cpp
     solvers/MIP/MIP_cplex_solverfactory.cpp include/minizinc/solvers/MIP/MIP_cplex_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_cplex_wrap.hh
   )
@@ -517,7 +577,7 @@ if(HAS_SCIP)   # SCIP version tested: 3.2.1
 
   add_library(minizinc_scip
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
-    solvers/MIP/MIP_scip_solverfactory.cpp
+    solvers/MIP/MIP_scip_solverfactory.cpp lib/algorithms/min_cut.cpp
     )
   target_include_directories(minizinc_scip PRIVATE
     "${SCIP_DIR}/src"
@@ -562,7 +622,7 @@ if(HAS_SCIP_SEPLIBS)
     z zimpl.${SCIP_OS}.${SCIP_ARCH}.gnu.opt gmp)  # if SCIP configured so
 
   add_library(minizinc_mip_scip
-    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp lib/algorithms/min_cut.cpp
     )
   target_include_directories(minizinc_mip_scip PRIVATE
     "${SCIP_DIR}/src"
@@ -599,12 +659,17 @@ endif()
 if(HAS_OSICBC)
   ### Tested version 2.9.9, rev 2345 on 12.10.17 from the stable snapshot https://projects.coin-or.org/svn/Cbc/stable/2.9
 
-  if (EXISTS "${OSICBC_HOME}/include/coin/" AND EXISTS "${OSICBC_HOME}/lib")
-    set(CBC_INCLUDEDIRS "${OSICBC_HOME}/include/coin/")
-    set(LNDIR "${OSICBC_HOME}/lib")
+  if (DEFINED OSICBC_INCLUDEDIR AND DEFINED OSICBC_LIBDIR AND NOT "${OSICBC_INCLUDEDIR} " STREQUAL " " AND NOT "${OSICBC_LIBDIR} " STREQUAL " ")
+    set(CBC_INCLUDEDIRS "${OSICBC_INCLUDEDIR}/coin/")
+    set(LNDIR "${OSICBC_LIBDIR}")    
   else()
-    set(CBC_INCLUDEDIRS "${OSICBC_HOME}/Clp/src/" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Cbc/src/" "${OSICBC_HOME}/Cbc/src/OsiCbc" "${OSICBC_HOME}/Cgl/src/CglZeroHalf" "${OSICBC_HOME}/Cgl/src/CglLandP" "${OSICBC_HOME}/Cgl/src/CglTwomir" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding2" "${OSICBC_HOME}/Cgl/src/CglFlowCover" "${OSICBC_HOME}/Cgl/src/CglClique" "${OSICBC_HOME}/Cgl/src/CglOddHole" "${OSICBC_HOME}/Cgl/src/CglKnapsackCover" "${OSICBC_HOME}/Cgl/src/CglGomory" "${OSICBC_HOME}/Cgl/src/CglPreProcess" "${OSICBC_HOME}/Cgl/src/CglDuplicateRow" "${OSICBC_HOME}/Cgl/src/CglRedSplit" "${OSICBC_HOME}/Cgl/src/CglProbing" "${OSICBC_HOME}/Cgl/src" "${OSICBC_HOME}/Clp/src" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Osi/src/Osi" "${OSICBC_HOME}/CoinUtils/src" "${OSICBC_HOME}/BuildTools/headers" "${OSICBC_HOME}/Cgl/src/CglResidualCapacity")
-    set(LNDIR "${OSICBC_HOME}/Cbc/MSVisualStudio/v10/x64-v120-Release")
+    if (EXISTS "${OSICBC_HOME}/include/coin/" AND EXISTS "${OSICBC_HOME}/lib")
+      set(CBC_INCLUDEDIRS "${OSICBC_HOME}/include/coin/")
+      set(LNDIR "${OSICBC_HOME}/lib")
+    else()
+      set(CBC_INCLUDEDIRS "${OSICBC_HOME}/Clp/src/" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Cbc/src/" "${OSICBC_HOME}/Cbc/src/OsiCbc" "${OSICBC_HOME}/Cgl/src/CglZeroHalf" "${OSICBC_HOME}/Cgl/src/CglLandP" "${OSICBC_HOME}/Cgl/src/CglTwomir" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding2" "${OSICBC_HOME}/Cgl/src/CglFlowCover" "${OSICBC_HOME}/Cgl/src/CglClique" "${OSICBC_HOME}/Cgl/src/CglOddHole" "${OSICBC_HOME}/Cgl/src/CglKnapsackCover" "${OSICBC_HOME}/Cgl/src/CglGomory" "${OSICBC_HOME}/Cgl/src/CglPreProcess" "${OSICBC_HOME}/Cgl/src/CglDuplicateRow" "${OSICBC_HOME}/Cgl/src/CglRedSplit" "${OSICBC_HOME}/Cgl/src/CglProbing" "${OSICBC_HOME}/Cgl/src" "${OSICBC_HOME}/Clp/src" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Osi/src/Osi" "${OSICBC_HOME}/CoinUtils/src" "${OSICBC_HOME}/BuildTools/headers" "${OSICBC_HOME}/Cgl/src/CglResidualCapacity")
+      set(LNDIR "${OSICBC_HOME}/Cbc/MSVisualStudio/v10/x64-v120-Release")
+    endif()
   endif()
 
   if (WIN32 AND NOT UNIX)  #  Windows config based on  https://projects.coin-or.org/Cbc/wiki/VSSetup
@@ -617,7 +682,7 @@ if(HAS_OSICBC)
   link_directories(${LNDIR})
 
   add_library(minizinc_osicbc
-    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp
+    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp lib/algorithms/min_cut.cpp
     solvers/MIP/MIP_osicbc_solverfactory.cpp include/minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_osicbc_wrap.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hpp
@@ -660,7 +725,6 @@ if(HAS_GECODE)
     include/minizinc/solvers/gecode_solverinstance.hh
     include/minizinc/solvers/gecode_solverfactory.hh
     include/minizinc/solvers/gecode/gecode_constraints.hh
-    ${parser_hh}
     )
 
   target_include_directories(minizinc_gecode PRIVATE "${GECODE_HOME}/include" "${GECODE_HOME}")
@@ -670,6 +734,11 @@ if(HAS_GECODE)
 
   if(NOT (SHARED_GECODE AND WIN32) )
     target_link_libraries(minizinc_gecode
+      gecodedriver gecodesearch gecodeminimodel
+      gecodefloat gecodeint gecodeset
+      gecodekernel gecodesupport
+    )
+    target_link_libraries(minizinc
       gecodedriver gecodesearch gecodeminimodel
       gecodefloat gecodeint gecodeset
       gecodekernel gecodesupport
@@ -789,9 +858,7 @@ INSTALL(FILES ${PROJECT_BINARY_DIR}/include/minizinc/config.hh DESTINATION inclu
 INSTALL(FILES README.txt INSTALL.txt LICENSE.txt DESTINATION doc/..)
 INSTALL(DIRECTORY doc/pdf DESTINATION doc)
 INSTALL(DIRECTORY share/examples DESTINATION share)
-INSTALL(DIRECTORY lib/cached DESTINATION lib PATTERN md5_cached.cmake EXCLUDE)
-INSTALL(FILES ${parser_hh} DESTINATION include/minizinc)
-
+INSTALL(DIRECTORY lib/cached/minizinc DESTINATION include)
 
   # Add all targets to the build-tree export set
   export(TARGETS minizinc ${EXTRA_TARGETS}
