@@ -39,7 +39,12 @@ namespace MiniZinc {
             constants().ids.float_.eq,
             {vd->id(), FloatLit::a(fsv->min())}));
         } else {
-          FloatSetVal* cfsv = eval_floatset(envi, vd->ti()->domain());
+          FloatSetVal* cfsv;
+          if(vd->ti()->domain()) {
+            cfsv = eval_floatset(envi, vd->ti()->domain());
+          } else {
+            cfsv = FloatSetVal::a(-FloatVal::infinity(), FloatVal::infinity());
+          }
           if(cfsv->min() < fsv->min()) {
             calls.push_back(new Call(iloc,
               constants().ids.float_.le,
@@ -64,7 +69,12 @@ namespace MiniZinc {
             constants().ids.int_.eq,
             {vd->id(), IntLit::a(isv->min())}));
         } else {
-          IntSetVal* cisv = eval_intset(envi, vd->ti()->domain());
+          IntSetVal* cisv;
+          if(vd->ti()->domain()) {
+            cisv = eval_intset(envi, vd->ti()->domain());
+          } else {
+            cisv = IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
+          }
           if(cisv->min() < isv->min()) {
             calls.push_back(new Call(iloc,
               constants().ids.int_.le,
