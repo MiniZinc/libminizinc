@@ -716,3 +716,33 @@ predicate set_in(array[int,int] of var int: X, set of int: s) = set_in(array1d(X
 predicate set_in(array[int,int,int] of var int: X, set of int: s) = set_in(array1d(X), s);
 predicate set_in(array[int,int,int,int] of var int: X, set of int: s) = set_in(array1d(X), s);
 
+predicate int_eq(array[int] of var int: X, set of int: s) = forall(x in X) (x = s);
+predicate int_eq(array[int,int] of var int: X, set of int: s) = int_eq(array1d(X), s);
+predicate int_eq(array[int,int,int] of var int: X, set of int: s) = int_eq(array1d(X), s);
+predicate int_eq(array[int,int,int,int] of var int: X, set of int: s) = int_eq(array1d(X), s);
+
+predicate float_eq(array[int] of var int: X, set of int: s) = forall(x in X) (x = s);
+predicate float_eq(array[int,int] of var int: X, set of int: s) = float_eq(array1d(X), s);
+predicate float_eq(array[int,int,int] of var int: X, set of int: s) = float_eq(array1d(X), s);
+predicate float_eq(array[int,int,int,int] of var int: X, set of int: s) = float_eq(array1d(X), s);
+
+predicate int_le(array[int] of var int: X, int: s) = forall(x in X) (x <= s);
+predicate int_le(array[int,int] of var int: X, int: s) = int_le(array1d(X), s);
+predicate int_le(array[int,int,int] of var int: X, int: s) = int_le(array1d(X), s);
+predicate int_le(array[int,int,int,int] of var int: X, int: s) = int_le(array1d(X), s);
+
+predicate int_le(int:s, array[int] of var int: X) = forall(x in X) (x >= s);
+predicate int_le(int:s, array[int,int] of var int: X) = int_le(s, array1d(X));
+predicate int_le(int:s, array[int,int,int] of var int: X) = int_le(s, array1d(X));
+predicate int_le(int:s, array[int,int,int,int] of var int: X) = int_le(s, array1d(X));
+
+predicate float_le(array[int] of var float: X, float: s) = forall(x in X) (x <= s);
+predicate float_le(array[int,int] of var float: X, float: s) = float_le(array1d(X), s);
+predicate float_le(array[int,int,int] of var float: X, float: s) = float_le(array1d(X), s);
+predicate float_le(array[int,int,int,int] of var float: X, float: s) = float_le(array1d(X), s);
+
+predicate float_le(float:s, array[int] of var float: X) = forall(x in X) (x >= s);
+predicate float_le(float:s, array[int,int] of var float: X) = float_le(s, array1d(X));
+predicate float_le(float:s, array[int,int,int] of var float: X) = float_le(s, array1d(X));
+predicate float_le(float:s, array[int,int,int,int] of var float: X) = float_le(s, array1d(X));
+

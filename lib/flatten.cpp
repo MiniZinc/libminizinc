@@ -26,30 +26,80 @@
 namespace MiniZinc {
 
   bool option_record_domain_changes = true;
-  bool option_use_first_domain_change = false;
 
-  void setComputedDomain(EnvI& envi,
-    VarDecl* vd, Expression* domain,
-    bool is_computed) {
-    if (option_record_domain_changes) {
-      std::vector<Expression*> args(2);
-      args[0] = vd->id();
-      args[1] = new SetLit(Location().introduce(), eval_intset(envi, domain));
-      Call* new_call = new Call(Location().introduce(), constants().ids.set_in, args);
-      //std::cout << "New call: " << *new_call << "\n";
-      //std::cout << "      vd: " << *vd << "\n";
-      //std::cout << "  domain: " << *domain << "\n";
-      //std::cout << "    eval: " << *eval_intset(envi, domain) << "\n";
+  void createExplicitDomainConstraints(EnvI& envi, VarDecl* vd, Expression* domain) {
+    std::vector<Call*> calls;
+    Location iloc = Location().introduce();
 
-      new_call->type(Type::varbool());
-      new_call->decl(envi.model->matchFn(envi, new_call, true));
-      flat_exp(envi, Ctx(), new_call, constants().var_true, constants().var_true);
-
-      if (option_use_first_domain_change &&
-        vd->ti()->domain() == nullptr) {
-        vd->ti()->domain(domain);
-        vd->ti()->setComputedDomain(is_computed);
+    if(domain->type().isfloat() || domain->type().isfloatset()) {
+      FloatSetVal* fsv = eval_floatset(envi, domain);
+      if(fsv->size() == 1) { // Range based
+        if(fsv->min() == fsv->max()) {
+          calls.push_back(new Call(iloc,
+            constants().ids.float_.eq,
+            {vd->id(), FloatLit::a(fsv->min())}));
+        } else {
+          FloatSetVal* cfsv = eval_floatset(envi, vd->ti()->domain());
+          if(cfsv->min() < fsv->min()) {
+            calls.push_back(new Call(iloc,
+              constants().ids.float_.le,
+              {FloatLit::a(fsv->min()), vd->id()}));
+          }
+          if(cfsv->max() > fsv->max()) {
+            calls.push_back(new Call(iloc,
+              constants().ids.float_.le,
+              {vd->id(), FloatLit::a(fsv->max())}));
+          }
+        }
+      } else {
+        calls.push_back(new Call(iloc,
+          constants().ids.set_in,
+          {vd->id(), new SetLit(iloc, fsv)}));
       }
+    } else if(domain->type().isint() || domain->type().isintset()) {
+      IntSetVal* isv = eval_intset(envi, domain);
+      if(isv->size() == 1) { // Range based
+        if(isv->min() == isv->max()) {
+          calls.push_back(new Call(iloc,
+            constants().ids.int_.eq,
+            {vd->id(), IntLit::a(isv->min())}));
+        } else {
+          IntSetVal* cisv = eval_intset(envi, vd->ti()->domain());
+          if(cisv->min() < isv->min()) {
+            calls.push_back(new Call(iloc,
+              constants().ids.int_.le,
+              {IntLit::a(isv->min()), vd->id()}));
+          }
+          if(cisv->max() > isv->max()) {
+            calls.push_back(new Call(iloc,
+              constants().ids.int_.le,
+              {vd->id(), IntLit::a(isv->max())}));
+          }
+        }
+      } else {
+        calls.push_back(new Call(iloc,
+          constants().ids.set_in,
+          {vd->id(), new SetLit(iloc, isv)}));
+      }
+    } else {
+      std::cout << "Unknown!!!!\n";
+    }
+
+    int counter = 0;
+    for (Call* c : calls) {
+    CallStackItem csi(envi, IntLit::a(++counter));
+      c->type(Type::varbool());
+      std::cout << "Adding: " << *c << "\n";
+      c->decl(envi.model->matchFn(envi, c, true));
+      flat_exp(envi, Ctx(), c, constants().var_true, constants().var_true);
+    }
+
+  }
+
+
+  void setComputedDomain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed) {
+    if (option_record_domain_changes) {
+      createExplicitDomainConstraints(envi, vd, domain);
     } else {
       vd->ti()->domain(domain);
       vd->ti()->setComputedDomain(is_computed);
