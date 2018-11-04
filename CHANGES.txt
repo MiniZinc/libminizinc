@@ -5,6 +5,17 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.2.3
+=============
+
+Bug fixes:
+ - Fix some typos in the library documentation.
+ - Fix solution checking.
+ - Fix line numbers in parsed locations on 64 bit platforms. Fixes #255.
+ - Fix bounds computation for calls. Partially fixes #255.
+ - Fix translation of var where clauses with more than 3 par components.
+   Fixes #253.
+
 Version 2.2.2
 =============
 
