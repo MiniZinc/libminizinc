@@ -99,7 +99,6 @@ namespace MiniZinc {
     for (Call* c : calls) {
     CallStackItem csi(envi, IntLit::a(++counter));
       c->type(Type::varbool());
-      std::cout << "Adding: " << *c << "\n";
       c->decl(envi.model->matchFn(envi, c, true));
       flat_exp(envi, Ctx(), c, constants().var_true, constants().var_true);
     }
@@ -6326,7 +6325,6 @@ namespace MiniZinc {
           }
         }
         void vConstraintI(ConstraintI* ci) {
-          std::cout << "Processing: " <<  *ci << "\n";
           (void) flat_exp(env,Ctx(),ci->e(),constants().var_true,constants().var_true);
         }
         void vSolveI(SolveI* si) {
