@@ -118,6 +118,7 @@ namespace MiniZinc {
           auto var = (*positive)[0]->cast<Id>();
           int occurrences = env.vo.occurrences(var->decl());
           unsigned long lhs_occurences = count(var->decl());
+          bool output_var = var->decl()->ann().contains(constants().ann.output_var);
 
           // Compress if:
           // - There is one occurrence on the RHS of a clause and the others are on the LHS of a clause
@@ -125,7 +126,7 @@ namespace MiniZinc {
           // other occurrences
           // - There is one occurrence on the RHS of a clause, that Id is a reification in a positive
           // context, and all other occurrences are on the LHS of a clause
-          bool compress = lhs_occurences > 0;
+          bool compress = !output_var && lhs_occurences > 0;
           if (var->decl()->e() && var->decl()->e()->dyn_cast<Call>()) {
             auto call = var->decl()->e()->cast<Call>();
             if(call->id() == constants().ids.forall) {
@@ -144,6 +145,7 @@ namespace MiniZinc {
               continue;
             }
           }
+          // TODO: Detect equivalences for output variables.
         }
       }
 
@@ -156,12 +158,10 @@ namespace MiniZinc {
           assert(succes);
           match = items.erase(match);
         }
-        if(!rhs->ann().contains(constants().ann.output_var)) {
-          removeItem(it->second);
-          it = items.erase(it);
-        } else {
-          ++it;
-        }
+
+        assert(!rhs->ann().contains(constants().ann.output_var));
+        removeItem(it->second);
+        it = items.erase(it);
       } else {
         ++it;
       }
@@ -335,10 +335,11 @@ namespace MiniZinc {
                 break;
               }
               auto neg = follow_id_to_decl((*bs)[i])->cast<VarDecl>();
+              bool output_var = neg->ann().contains(constants().ann.output_var);
 
               int occurrences = env.vo.occurrences(neg);
               unsigned long lhs_occurences = count(neg);
-              bool compress;
+              bool compress = !output_var;
               auto search = aliasMap.find(neg);
 
               if (search != aliasMap.end()) {
@@ -350,14 +351,15 @@ namespace MiniZinc {
                 // - once in the aliasing
                 // - on a lhs of other expressions
                 // alias is only allowed to occur on a lhs of an expression.
-                compress = (lhs_occurences + alias_lhs_occ > 0)
-                           && (occurrences == lhs_occurences + 2)
-                           && (alias_occ == alias_lhs_occ);
+                compress = compress && (lhs_occurences + alias_lhs_occ > 0)
+                                    && (occurrences == lhs_occurences + 2)
+                                    && (alias_occ == alias_lhs_occ);
               } else {
                 // neg is only allowed to occur:
                 // - once in the "implication"
                 // - on a lhs of other expressions
-                compress = (lhs_occurences > 0) && (occurrences == lhs_occurences + 1);
+                compress = compress && (lhs_occurences > 0)
+                                    && (occurrences == lhs_occurences + 1);
               }
 
               auto pos = follow_id_to_decl((*bs)[1 - i])->dyn_cast<VarDecl>();
@@ -366,6 +368,7 @@ namespace MiniZinc {
                 lhs = pos;
                 assert(lhs != rhs);
               }
+              // TODO: Detect equivalences for output variables.
             }
           }
         }
@@ -405,12 +408,9 @@ namespace MiniZinc {
           }
         }
 
-        if(!rhs->ann().contains(constants().ann.output_var)) {
-          removeItem(it->second);
-          it = items.erase(it);
-        } else {
-          ++it;
-        }
+        assert(!rhs->ann().contains(constants().ann.output_var));
+        removeItem(it->second);
+        it = items.erase(it);
       } else {
         ++it;
       }
