@@ -25,7 +25,8 @@
 
 namespace MiniZinc {
 
-  void createExplicitDomainConstraints(EnvI& envi, VarDecl* vd, Expression* domain) {
+  // Create domain constraints. Return true if successful.
+  bool createExplicitDomainConstraints(EnvI& envi, VarDecl* vd, Expression* domain) {
     std::vector<Call*> calls;
     Location iloc = Location().introduce();
 
@@ -90,24 +91,28 @@ namespace MiniZinc {
           {vd->id(), new SetLit(iloc, isv)}));
       }
     } else {
-      std::cout << "Unknown!!!!\n";
+      std::cerr << "Warning: domain change not handled by -g mode: " << *vd->id() << " = " << *domain << std::endl;
+      return false;
     }
 
     int counter = 0;
     for (Call* c : calls) {
-    CallStackItem csi(envi, IntLit::a(++counter));
+      CallStackItem csi(envi, IntLit::a(counter++));
       c->type(Type::varbool());
       c->decl(envi.model->matchFn(envi, c, true));
       flat_exp(envi, Ctx(), c, constants().var_true, constants().var_true);
     }
-
+    return true;
   }
 
 
   void setComputedDomain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed) {
+    bool change_domain = !envi.fopts.record_domain_changes;
     if (envi.fopts.record_domain_changes) {
-      createExplicitDomainConstraints(envi, vd, domain);
-    } else {
+      change_domain = !createExplicitDomainConstraints(envi, vd, domain);
+    }
+
+    if (change_domain) {
       vd->ti()->domain(domain);
       vd->ti()->setComputedDomain(is_computed);
     }
