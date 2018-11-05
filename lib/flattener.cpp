@@ -80,6 +80,7 @@ void Flattener::printHelp(ostream& os)
 #else
   << "\n    -O3,4,5:    Disabled [Requires MiniZinc with built-in Gecode support]" << std::endl
 #endif
+  << "  -g\n    Debug mode: Forces -O0 and records all domain changes as constraints instead of applying them" << std::endl
   << std::endl;
   os
   << "Flattener output options:" << std::endl
@@ -242,6 +243,13 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
 #endif
     // ozn options must be after the -O<n> optimisation options
   } else if ( cop.getOption( "-O --ozn --output-ozn-to-file", &flag_output_ozn) ) {
+  } else if (string(argv[i])=="-g") {
+    flag_optimize = false;
+    flag_two_pass = false;
+    flag_gecode = false;
+    flag_shave = false;
+    flag_sac = false;
+    fopts.record_domain_changes = true;
   } else if (string(argv[i])=="--keep-paths") {
     flag_keep_mzn_paths = true;
     fopts.collect_mzn_paths = true;

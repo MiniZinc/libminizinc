@@ -25,8 +25,6 @@
 
 namespace MiniZinc {
 
-  bool option_record_domain_changes = true;
-
   void createExplicitDomainConstraints(EnvI& envi, VarDecl* vd, Expression* domain) {
     std::vector<Call*> calls;
     Location iloc = Location().introduce();
@@ -107,7 +105,7 @@ namespace MiniZinc {
 
 
   void setComputedDomain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed) {
-    if (option_record_domain_changes) {
+    if (envi.fopts.record_domain_changes) {
       createExplicitDomainConstraints(envi, vd, domain);
     } else {
       vd->ti()->domain(domain);
@@ -1372,7 +1370,7 @@ namespace MiniZinc {
   /// Turn \a c into domain constraints if possible.
   /// Return whether \a c is still required in the model.
   bool checkDomainConstraints(EnvI& env, Call* c) {
-    if (option_record_domain_changes) return true;
+    if (env.fopts.record_domain_changes) return true;
     if (c->id()==constants().ids.int_.le) {
       Expression* e0 = c->arg(0);
       Expression* e1 = c->arg(1);
