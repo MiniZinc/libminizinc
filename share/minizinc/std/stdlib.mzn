@@ -731,6 +731,11 @@ predicate int_le(array[int,int] of var int: X, int: s) = int_le(array1d(X), s);
 predicate int_le(array[int,int,int] of var int: X, int: s) = int_le(array1d(X), s);
 predicate int_le(array[int,int,int,int] of var int: X, int: s) = int_le(array1d(X), s);
 
+predicate int_ge(array[int] of var int: X, int: s) = forall(x in X) (x >= s);
+predicate int_ge(array[int,int] of var int: X, int: s) = int_ge(array1d(X), s);
+predicate int_ge(array[int,int,int] of var int: X, int: s) = int_ge(array1d(X), s);
+predicate int_ge(array[int,int,int,int] of var int: X, int: s) = int_ge(array1d(X), s);
+
 predicate int_le(int:s, var int: x);
 predicate int_le(int:s, array[int] of var int: X) = forall(x in X) (x >= s);
 predicate int_le(int:s, array[int,int] of var int: X) = int_le(s, array1d(X));

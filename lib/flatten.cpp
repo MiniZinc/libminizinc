@@ -107,8 +107,10 @@ namespace MiniZinc {
 
 
   void setComputedDomain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed) {
-    bool change_domain = !envi.fopts.record_domain_changes;
-    if (envi.fopts.record_domain_changes) {
+    bool forceChange = vd->ann().contains(constants().ann.is_defined_var) || vd->introduced();
+
+    bool change_domain = forceChange || !envi.fopts.record_domain_changes;
+    if (!forceChange && envi.fopts.record_domain_changes) {
       change_domain = !createExplicitDomainConstraints(envi, vd, domain);
     }
 
