@@ -52,6 +52,9 @@ namespace MiniZinc {
   }
 
   bool ImpCompressor::trackItem(Item *i) {
+    if (i->removed()) {
+      return false;
+    }
     if (auto ci = i->dyn_cast<ConstraintI>()) {
       if (auto c = ci->e()->dyn_cast<Call>()) {
         // clause([y], [x]); i.e. x -> y
@@ -265,6 +268,9 @@ namespace MiniZinc {
   }
 
   bool LECompressor::trackItem(Item *i) {
+    if (i->removed()) {
+      return false;
+    }
     bool added = false;
     if (auto ci = i->dyn_cast<ConstraintI>()) {
       if (auto call = ci->e()->dyn_cast<Call>()) {
