@@ -28,6 +28,16 @@ build:linux:
     - linux
     - docker
 
+build:musl:
+  <<: *build_definition
+  image: dekker1/minibuild:alpine
+  variables:
+    MZNARCH: "musl"
+    CMAKE_ARCH: "Unix Makefiles"
+  tags:
+    - linux
+    - docker
+
 build:osx:
   <<: *build_definition
   stage: build
