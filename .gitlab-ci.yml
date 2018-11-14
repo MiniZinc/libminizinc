@@ -49,25 +49,6 @@ build:osx:
     - cmake
     - cpp
 
-.build:win32: #DISABLED
-  <<: *build_definition
-  stage: build
-  variables:
-    MZNARCH: "win32"
-    CMAKE_ARCH: "Visual Studio 14 2015"
-  script:
-    - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fvendor/jobs/artifacts/master/download?job=vendor:win32"
-    - unzip -q vendor.zip
-    - if not exist "build" mkdir build
-    - cd build
-    - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DSHARED_GECODE=TRUE -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/cbc" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
-    - cmake --build .  --config Release
-    - cmake --build .  --config Release --target install
-  tags:
-    - win32
-    - cmake
-    - cpp
-
 build:win64:
   <<: *build_definition
   variables:
