@@ -1,6 +1,6 @@
 stages:
   - build
-  - test
+  - trigger
 
 .build_template: &build_definition
   stage: build
@@ -66,3 +66,14 @@ build:win64:
     - win64
     - cmake
     - cpp
+
+# ----------- Trigger FindMUS pipeline -----------
+
+trigger:findmus:
+  stage: trigger
+  image: dekker1/minibuild:package
+  script:
+  - "curl --request POST --form token=$TRIGGER --form ref=master https://gitlab.com/api/v4/projects/minizinc%2FFindMUS/trigger/pipeline"
+  dependencies: []
+  tags: [linux, docker]
+  only: [develop]
