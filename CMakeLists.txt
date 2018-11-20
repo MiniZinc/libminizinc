@@ -25,6 +25,7 @@ endif()
 # --     "cd build; cmake -D GECODE_HOME=$GECODE_HOME ..; cmake --build ."                                         --
 # -------------------------------------------------------------------------------------------------------------------
 find_package(Gecode)
+find_package(OsiCBC)
 if (DEFINED CPLEX_STUDIO_DIR AND NOT "${CPLEX_STUDIO_DIR} " STREQUAL " ")
   set(HAS_CPLEX TRUE)
 endif()
@@ -36,11 +37,6 @@ if(DEFINED XPRESS_HOME AND NOT "${XPRESS_HOME} " STREQUAL " ")
 endif()
 if (DEFINED SCIP_DIR AND DEFINED SOPLEX_DIR AND DEFINED ZIMPL_DIR AND NOT "${SCIP_DIR} " STREQUAL " ")
   set(HAS_SCIP TRUE)                     # Can use SCIP w/o ZIMPL too
-endif()
-if (DEFINED OSICBC_HOME AND NOT "${OSICBC_HOME} " STREQUAL " ")
-  set(HAS_OSICBC TRUE)
-elseif (DEFINED OSICBC_INCLUDEDIR AND DEFINED OSICBC_LIBDIR AND NOT "${OSICBC_INCLUDEDIR} " STREQUAL " " AND NOT "${OSICBC_LIBDIR} " STREQUAL " ")
-  set(HAS_OSICBC TRUE)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
@@ -622,30 +618,8 @@ if(HAS_SCIP_SEPLIBS)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_OSICBC)
+if(OSICBC_FOUND)
   ### Tested version 2.9.9, rev 2345 on 12.10.17 from the stable snapshot https://projects.coin-or.org/svn/Cbc/stable/2.9
-
-  if (DEFINED OSICBC_INCLUDEDIR AND DEFINED OSICBC_LIBDIR AND NOT "${OSICBC_INCLUDEDIR} " STREQUAL " " AND NOT "${OSICBC_LIBDIR} " STREQUAL " ")
-    set(CBC_INCLUDEDIRS "${OSICBC_INCLUDEDIR}/coin/")
-    set(LNDIR "${OSICBC_LIBDIR}")    
-  else()
-    if (EXISTS "${OSICBC_HOME}/include/coin/" AND EXISTS "${OSICBC_HOME}/lib")
-      set(CBC_INCLUDEDIRS "${OSICBC_HOME}/include/coin/")
-      set(LNDIR "${OSICBC_HOME}/lib")
-    else()
-      set(CBC_INCLUDEDIRS "${OSICBC_HOME}/Clp/src/" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Cbc/src/" "${OSICBC_HOME}/Cbc/src/OsiCbc" "${OSICBC_HOME}/Cgl/src/CglZeroHalf" "${OSICBC_HOME}/Cgl/src/CglLandP" "${OSICBC_HOME}/Cgl/src/CglTwomir" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding" "${OSICBC_HOME}/Cgl/src/CglMixedIntegerRounding2" "${OSICBC_HOME}/Cgl/src/CglFlowCover" "${OSICBC_HOME}/Cgl/src/CglClique" "${OSICBC_HOME}/Cgl/src/CglOddHole" "${OSICBC_HOME}/Cgl/src/CglKnapsackCover" "${OSICBC_HOME}/Cgl/src/CglGomory" "${OSICBC_HOME}/Cgl/src/CglPreProcess" "${OSICBC_HOME}/Cgl/src/CglDuplicateRow" "${OSICBC_HOME}/Cgl/src/CglRedSplit" "${OSICBC_HOME}/Cgl/src/CglProbing" "${OSICBC_HOME}/Cgl/src" "${OSICBC_HOME}/Clp/src" "${OSICBC_HOME}/Clp/src/OsiClp" "${OSICBC_HOME}/Osi/src/Osi" "${OSICBC_HOME}/CoinUtils/src" "${OSICBC_HOME}/BuildTools/headers" "${OSICBC_HOME}/Cgl/src/CglResidualCapacity")
-      set(LNDIR "${OSICBC_HOME}/Cbc/MSVisualStudio/v10/x64-v120-Release")
-    endif()
-  endif()
-
-  if (WIN32 AND NOT UNIX)  #  Windows config based on  https://projects.coin-or.org/Cbc/wiki/VSSetup
-    set(OSICBC_LIBS "libOsi" "libOsiClp" "libOsiCbc" "libClp" "libCgl" "libCbc" "libCbcSolver" "libCoinUtils")
-  else ()
-    # The order below is important for static versions of cbc libs to link. "z" needed for static
-    set(OSICBC_LIBS "CbcSolver" "Cbc" "Cgl" "OsiClp"  "Clp" "Osi"  "CoinUtils" "z") # "ClpSolver" after OsiClp;  "OsiCbc"
-#    set(OSICBC_LIBS "`PKG_CONFIG_PATH=/home/bg/Documents/prj/coin-Cbc-2.9/lib64/pkgconfig:/home/bg/Documents/prj/coin-Cbc-2.9/lib/pkgconfig:/home/bg/Documents/prj/coin-Cbc-2.9/share/pkgconfig: pkg-config --libs cbc`")
-  endif()
-  link_directories(${LNDIR})
 
   add_library(minizinc_osicbc
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_osicbc_wrap.cpp lib/algorithms/min_cut.cpp
@@ -654,13 +628,11 @@ if(HAS_OSICBC)
     include/minizinc/solvers/MIP/MIP_solverinstance.hpp
   )
 
-  target_include_directories(minizinc_osicbc PRIVATE ${CBC_INCLUDEDIRS})
+  target_include_directories(minizinc_osicbc PRIVATE ${OSICBC_INCLUDES})
+  target_link_libraries(minizinc_osicbc minizinc ${OSICBC_LIBRARIES})
 
-                                       # OSICBC_LINKEXTRAS: ArchLinux needs blas, lapack, bz2
-  target_link_libraries(minizinc_osicbc minizinc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS})
-
-  target_link_libraries(minizinc_solver minizinc_osicbc ${OSICBC_LIBS} ${OSICBC_LINKEXTRAS} ${CMAKE_THREAD_LIBS_INIT})
-  target_compile_definitions( minizinc_solver PRIVATE HAS_OSICBC )
+  target_link_libraries(minizinc_solver minizinc_osicbc ${OSICBC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+  target_compile_definitions(minizinc_solver PRIVATE HAS_OSICBC)
   set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_osicbc)
 
   INSTALL(TARGETS minizinc_osicbc
