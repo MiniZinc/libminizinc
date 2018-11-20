@@ -4,8 +4,23 @@
 #  OSICBC_INCLUDES - The CBC include directories
 #  OSICBC_LIBRARIES - The libraries needed to use CBC
 
-find_path(OSICBC_INCLUDE coin/CbcSolver.hpp
-          HINTS ${OSICBC_HOME} ${OSICBC_HOME}/include ${OSICBC_INCLUDEDIR})
+set(OSICBC_FIND_FILES coin/CbcSolver.hpp coin/CglPreProcess.hpp coin/ClpConfig.h coin/CoinSignal.hpp coin/OsiClpSolverInterface.hpp)
+
+foreach(OSICBC_FILE ${OSICBC_FIND_FILES})
+  set(OSICBC_FILE_LOC "OSICBC_LIB_LOC-NOTFOUND")
+  find_path(OSICBC_FILE_LOC ${OSICBC_FILE}
+            HINTS ${OSICBC_HOME} ${OSICBC_HOME}/include ${OSICBC_INCLUDEDIR}
+            PATH_SUFFIXES cbc cgl clp coinutils osi)
+  if("${OSICBC_FILE_LOC}" STREQUAL "OSICBC_FILE_LOC-NOTFOUND")
+    message(STATUS "OsiCBC: Could not find library `${OSICBC_FILE_LOC}`")
+    set(OSICBC_INCLUDE "")
+    break()
+  endif()
+  list(APPEND OSICBC_INCLUDE ${OSICBC_FILE_LOC})
+endforeach(OSICBC_FILE)
+
+list(REMOVE_DUPLICATES OSICBC_INCLUDE)
+unset(OSICBC_FIND_FILES)
 
 if(WIN32 AND NOT UNIX)
   set(OSICBC_REQ_LIBS libOsi libOsiClp libOsiCbc libClp libCgl libCbc libCbcSolver libCoinUtils)
