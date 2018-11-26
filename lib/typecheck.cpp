@@ -1608,7 +1608,7 @@ namespace MiniZinc {
       }
       Type ty = let.in()->type();
       ty.cv(cv);
-      if (isVar)
+      if (isVar && ty.bt()==Type::BT_BOOL && ty.dim()==0)
         ty.ti(Type::TI_VAR);
       let.type(ty);
     }
