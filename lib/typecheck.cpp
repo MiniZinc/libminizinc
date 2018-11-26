@@ -1585,6 +1585,7 @@ namespace MiniZinc {
     /// Visit let
     void vLet(Let& let) {
       bool cv = false;
+      bool isVar = false;
       for (unsigned int i=0; i<let.let().size(); i++) {
         Expression* li = let.let()[i];
         cv = cv || li->type().cv();
@@ -1603,9 +1604,12 @@ namespace MiniZinc {
           }
           let.let_orig()[i] = vdi->e();
         }
+        isVar |= li->type().isvar();
       }
       Type ty = let.in()->type();
       ty.cv(cv);
+      if (isVar && ty.bt()==Type::BT_BOOL && ty.dim()==0)
+        ty.ti(Type::TI_VAR);
       let.type(ty);
     }
     /// Visit variable declaration

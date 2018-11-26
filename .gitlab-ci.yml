@@ -1,6 +1,6 @@
 stages:
   - build
-  - test
+  - trigger
 
 .build_template: &build_definition
   stage: build
@@ -28,6 +28,16 @@ build:linux:
     - linux
     - docker
 
+build:musl:
+  <<: *build_definition
+  image: dekker1/minibuild:alpine
+  variables:
+    MZNARCH: "musl"
+    CMAKE_ARCH: "Unix Makefiles"
+  tags:
+    - linux
+    - docker
+
 build:osx:
   <<: *build_definition
   stage: build
@@ -36,25 +46,6 @@ build:osx:
     CMAKE_ARCH: "Xcode"
   tags:
     - osx
-    - cmake
-    - cpp
-
-.build:win32: #DISABLED
-  <<: *build_definition
-  stage: build
-  variables:
-    MZNARCH: "win32"
-    CMAKE_ARCH: "Visual Studio 14 2015"
-  script:
-    - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fvendor/jobs/artifacts/master/download?job=vendor:win32"
-    - unzip -q vendor.zip
-    - if not exist "build" mkdir build
-    - cd build
-    - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DSHARED_GECODE=TRUE -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/cbc" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
-    - cmake --build .  --config Release
-    - cmake --build .  --config Release --target install
-  tags:
-    - win32
     - cmake
     - cpp
 
@@ -75,3 +66,14 @@ build:win64:
     - win64
     - cmake
     - cpp
+
+# ----------- Trigger FindMUS pipeline -----------
+
+trigger:findmus:
+  stage: trigger
+  image: dekker1/minibuild:package
+  script:
+  - "curl --request POST --form token=$TRIGGER --form ref=master https://gitlab.com/api/v4/projects/minizinc%2FFindMUS/trigger/pipeline"
+  dependencies: []
+  tags: [linux, docker]
+  only: [develop]
