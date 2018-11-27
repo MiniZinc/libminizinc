@@ -1,26 +1,30 @@
 # - Try to find CBC
 # Once done this will define
-#  OSICBC_FOUND - System has CBC
-#  OSICBC_INCLUDES - The CBC include directories
-#  OSICBC_LIBRARIES - The libraries needed to use CBC
+#  OSICBC_FOUND        - System has CBC
+#  OSICBC_INCLUDE_DIRS - The CBC include directories
+#  OSICBC_LIBRARIES    - The libraries needed to use CBC
+# User can set OSICBC_ROOT to the preferred installation prefix
 
-set(OSICBC_FIND_FILES coin/CbcSolver.hpp coin/CglPreProcess.hpp coin/ClpConfig.h coin/CoinSignal.hpp coin/OsiClpSolverInterface.hpp)
+set(OSICBC_FIND_FILES coin/CbcSolver.hpp coin/CglPreProcess.hpp coin/ClpConfig.h coin/CoinSignal.hpp coin/OsiClpSolverInterface.hpp coin/OsiSolverInterface.hpp)
 
 foreach(OSICBC_FILE ${OSICBC_FIND_FILES})
   set(OSICBC_FILE_LOC "OSICBC_LIB_LOC-NOTFOUND")
   find_path(OSICBC_FILE_LOC ${OSICBC_FILE}
-            HINTS ${OSICBC_HOME} ${OSICBC_HOME}/include ${OSICBC_INCLUDEDIR}
+            HINTS ${OSICBC_ROOT} ${OSICBC_ROOT}/include $ENV{OSICBC_ROOT} $ENV{OSICBC_ROOT}/include
             PATH_SUFFIXES cbc cgl clp coinutils osi)
   if("${OSICBC_FILE_LOC}" STREQUAL "OSICBC_FILE_LOC-NOTFOUND")
-    message(STATUS "OsiCBC: Could not find library `${OSICBC_FILE_LOC}`")
+    message(STATUS "OsiCBC: Could not find library `${OSICBC_FILE}`")
     set(OSICBC_INCLUDE "")
     break()
   endif()
   list(APPEND OSICBC_INCLUDE ${OSICBC_FILE_LOC})
+  # Add "/coin" for CBC internal dependencies
+  list(APPEND OSICBC_INCLUDE ${OSICBC_FILE_LOC}/coin)
 endforeach(OSICBC_FILE)
 
 list(REMOVE_DUPLICATES OSICBC_INCLUDE)
 unset(OSICBC_FIND_FILES)
+unset(OSICBC_FILE_LOC)
 
 if(WIN32 AND NOT UNIX)
   set(OSICBC_REQ_LIBS libOsi libOsiClp libOsiCbc libClp libCgl libCbc libCbcSolver libCoinUtils)
@@ -31,7 +35,7 @@ endif()
 foreach(OSICBC_LIB ${OSICBC_REQ_LIBS})
   set(OSICBC_LIB_LOC "OSICBC_LIB_LOC-NOTFOUND")
   find_library(OSICBC_LIB_LOC NAMES ${OSICBC_LIB} lib${OSICBC_LIB}
-               HINTS ${OSICBC_HOME} ${OSICBC_HOME}/lib)
+               HINTS ${OSICBC_ROOT} ${OSICBC_ROOT}/lib $ENV{OSICBC_ROOT} $ENV{OSICBC_ROOT}/lib)
   if("${OSICBC_LIB_LOC}" STREQUAL "OSICBC_LIB_LOC-NOTFOUND")
     message(STATUS "OsiCBC: Could not find library `${OSICBC_LIB}`")
     set(OSICBC_LIBRARY "")
@@ -41,6 +45,7 @@ foreach(OSICBC_LIB ${OSICBC_REQ_LIBS})
 endforeach(OSICBC_LIB)
 
 unset(OSICBC_REQ_LIBS)
+unset(OSICBC_LIB_LOC)
 
 if(UNIX AND NOT WIN32)
   find_package(ZLIB)
@@ -61,4 +66,4 @@ find_package_handle_standard_args(OSICBC DEFAULT_MSG
 mark_as_advanced(OSICBC_INCLUDE OSICBC_LIBRARY)
 
 set(OSICBC_LIBRARIES ${OSICBC_LIBRARY})
-set(OSICBC_INCLUDES ${OSICBC_INCLUDE})
+set(OSICBC_INCLUDE_DIRS ${OSICBC_INCLUDE})

@@ -628,7 +628,7 @@ if(OSICBC_FOUND)
     include/minizinc/solvers/MIP/MIP_solverinstance.hpp
   )
 
-  target_include_directories(minizinc_osicbc PRIVATE ${OSICBC_INCLUDES})
+  target_include_directories(minizinc_osicbc PRIVATE ${OSICBC_INCLUDE_DIRS})
   target_link_libraries(minizinc_osicbc minizinc ${OSICBC_LIBRARIES})
 
   target_link_libraries(minizinc_solver minizinc_osicbc ${OSICBC_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
@@ -660,9 +660,9 @@ if(GECODE_FOUND)
     )
   target_link_libraries(minizinc_gecode minizinc ${CMAKE_THREAD_LIBS_INIT})
 
-  target_include_directories(minizinc PRIVATE ${GECODE_INCLUDES})
-  target_include_directories(minizinc_gecode PRIVATE ${GECODE_INCLUDES})
-  target_include_directories(minizinc_solver PRIVATE ${GECODE_INCLUDES})
+  target_include_directories(minizinc PRIVATE ${GECODE_INCLUDE_DIRS})
+  target_include_directories(minizinc_gecode PRIVATE ${GECODE_INCLUDE_DIRS})
+  target_include_directories(minizinc_solver PRIVATE ${GECODE_INCLUDE_DIRS})
   target_link_libraries(minizinc ${GECODE_LIBRARIES})
   target_link_libraries(minizinc_gecode ${GECODE_LIBRARIES})
   target_compile_definitions(minizinc PRIVATE HAS_GECODE)

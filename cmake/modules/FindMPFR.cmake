@@ -1,8 +1,8 @@
 ### Try to find MPFR
 # Once done this will define
-#  MPFR_FOUND     - System has MPFR
-#  MPFR_INCLUDES  - The MPFR include directories
-#  MPFR_LIBRARIES - The libraries needed to use MPFR
+#  MPFR_FOUND         - System has MPFR
+#  MPFR_INCLUDE_DIRS  - The MPFR include directories
+#  MPFR_LIBRARIES     - The libraries needed to use MPFR
 
 find_path(MPFR_INCLUDE NAMES mpfr.h
           PATHS $ENV{GMPDIR} $ENV{MPFRDIR} ${INCLUDE_INSTALL_DIR})
