@@ -10,8 +10,8 @@ set(OSICBC_FIND_FILES coin/CbcSolver.hpp coin/CglPreProcess.hpp coin/ClpConfig.h
 foreach(OSICBC_FILE ${OSICBC_FIND_FILES})
   set(OSICBC_FILE_LOC "OSICBC_LIB_LOC-NOTFOUND")
   find_path(OSICBC_FILE_LOC ${OSICBC_FILE}
-            HINTS ${OSICBC_ROOT} ${OSICBC_ROOT}/include $ENV{OSICBC_ROOT} $ENV{OSICBC_ROOT}/include
-            PATH_SUFFIXES cbc cgl clp coinutils osi)
+            HINTS ${OSICBC_ROOT} $ENV{OSICBC_ROOT}
+            PATH_SUFFIXES cbc cgl clp coinutils osi include)
   if("${OSICBC_FILE_LOC}" STREQUAL "OSICBC_FILE_LOC-NOTFOUND")
     message(STATUS "OsiCBC: Could not find library `${OSICBC_FILE}`")
     set(OSICBC_INCLUDE "")
@@ -35,7 +35,8 @@ endif()
 foreach(OSICBC_LIB ${OSICBC_REQ_LIBS})
   set(OSICBC_LIB_LOC "OSICBC_LIB_LOC-NOTFOUND")
   find_library(OSICBC_LIB_LOC NAMES ${OSICBC_LIB} lib${OSICBC_LIB}
-               HINTS ${OSICBC_ROOT} ${OSICBC_ROOT}/lib $ENV{OSICBC_ROOT} $ENV{OSICBC_ROOT}/lib)
+               HINTS ${OSICBC_ROOT} $ENV{OSICBC_ROOT}
+               PATH_SUFFIXES lib)
   if("${OSICBC_LIB_LOC}" STREQUAL "OSICBC_LIB_LOC-NOTFOUND")
     message(STATUS "OsiCBC: Could not find library `${OSICBC_LIB}`")
     set(OSICBC_LIBRARY "")

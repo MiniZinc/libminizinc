@@ -6,14 +6,16 @@
 # User can set GECODE_ROOT to the preferred installation prefix
 
 find_path(GECODE_INCLUDE gecode/kernel.hh
-          HINTS ${GECODE_ROOT} ${GECODE_ROOT}/include $ENV{GECODE_ROOT} $ENV{GECODE_ROOT}/include)
+          HINTS ${GECODE_ROOT} $ENV{GECODE_ROOT}
+          PATH_SUFFIXES include)
 
 set(GECODE_REQ_LIBS gecodedriver gecodefloat gecodeint gecodekernel gecodeminimodel gecodesearch gecodeset gecodesupport)
 
 foreach(GECODE_LIB ${GECODE_REQ_LIBS})
   set(GECODE_LIB_LOC "GECODE_LIB_LOC-NOTFOUND")
   find_library(GECODE_LIB_LOC NAMES ${GECODE_LIB} lib${GECODE_LIB}
-               HINTS ${GECODE_ROOT} ${GECODE_ROOT}/lib $ENV{GECODE_ROOT} $ENV{GECODE_ROOT}/lib)
+               HINTS ${GECODE_ROOT} $ENV{GECODE_ROOT}
+               PATH_SUFFIXES lib)
   if ("${GECODE_LIB_LOC}" STREQUAL "GECODE_LIB_LOC-NOTFOUND")
     message(STATUS "Gecode: Could not find library `${GECODE_LIB}`")
     set(GECODE_LIBRARY "")
