@@ -27,7 +27,7 @@
 #include <minizinc/exception.hh>
 #include <minizinc/file_utils.hh>
 
-#ifdef HAS_GUROBI_PLUGIN
+#ifdef GUROBI_PLUGIN
 #ifdef HAS_DLFCN_H
 #include <dlfcn.h>
 #elif defined HAS_WINDOWS_H
@@ -177,7 +177,7 @@ void MIP_gurobi_wrapper::wrap_assert(bool cond, string msg, bool fTerm)
    }
 }
 
-#ifdef HAS_GUROBI_PLUGIN
+#ifdef GUROBI_PLUGIN
 
 namespace {
   void* dll_open(const char* file) {
@@ -218,7 +218,7 @@ namespace {
 
 void MIP_gurobi_wrapper::checkDLL()
 {
-#ifdef HAS_GUROBI_PLUGIN
+#ifdef GUROBI_PLUGIN
   gurobi_dll = NULL;
   if ( options && options->sGurobiDLL.size() ) {
     gurobi_dll = dll_open( options->sGurobiDLL.c_str() );
@@ -341,7 +341,7 @@ void MIP_gurobi_wrapper::closeGUROBI()
     dll_GRBfreeenv(env);
   /// and at last:
 //   MIP_wrapper::cleanup();
-#ifdef HAS_GUROBI_PLUGIN
+#ifdef GUROBI_PLUGIN
   dll_close(gurobi_dll);
 #endif
 }

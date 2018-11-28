@@ -27,9 +27,7 @@ endif()
 find_package(Gecode)
 find_package(OsiCBC)
 find_package(CPlex)
-if(DEFINED GUROBI_HOME AND NOT "${GUROBI_HOME} " STREQUAL " ")
-  set(HAS_GUROBI TRUE)
-endif()
+find_package(Gurobi)
 if(DEFINED XPRESS_HOME AND NOT "${XPRESS_HOME} " STREQUAL " ")
   set(HAS_XPRESS TRUE)
 endif()
@@ -88,30 +86,6 @@ if (BUILD_STATIC_EXECUTABLE)
 #  SET(BUILD_SHARED_LIBRARIES OFF)
   SET(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -static")
 endif()
-
-include (CheckIncludeFiles)
-
-# -------------------------------------------------------------------------------------------------------------------
-option (BUILD_GUROBI_PLUGIN "Build Gurobi binding as a plugin" OFF)
-option (BUILD_CPLEX_PLUGIN "Build CPLEX binding as a plugin" OFF)
-if (BUILD_GUROBI_PLUGIN OR BUILD_CPLEX_PLUGIN OR HAS_CPLEX)
-  if(HAS_GUROBI OR HAS_CPLEX)
-    CHECK_INCLUDE_FILES (dlfcn.h HAS_DLFCN_H)
-    if(HAS_DLFCN_H)
-      find_library (NEEDS_LIBDL NAMES dl)
-    endif()
-    CHECK_INCLUDE_FILES (Windows.h HAS_WINDOWS_H)
-    if(HAS_DLFCN_H OR HAS_WINDOWS_H)
-      if (BUILD_GUROBI_PLUGIN)
-        set(HAS_GUROBI_PLUGIN TRUE)
-      endif()
-      if (BUILD_CPLEX_PLUGIN)
-        set(HAS_CPLEX_PLUGIN TRUE)
-      endif()
-    endif()
-  endif()
-endif()
-
 
 # -------------------------------------------------------------------------------------------------------------------
 
@@ -403,24 +377,18 @@ find_package (Threads REQUIRED)
 # -------------------------------------------------------------------------------------------------------------------
 
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_GUROBI)  # Version 7.5
-
+if(GUROBI_FOUND)
 	add_library(minizinc_gurobi
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp solvers/MIP/MIP_gurobi_solverfactory.cpp
     include/minizinc/solvers/MIP/MIP_gurobi_wrap.hh include/minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_solverinstance.hpp
     lib/algorithms/min_cut.cpp
 	)
-  target_include_directories(minizinc_gurobi PRIVATE "${GUROBI_HOME}/include")
-  if(HAS_GUROBI_PLUGIN)
-    target_link_libraries(minizinc_gurobi minizinc ${NEEDS_LIBDL} ${CMAKE_THREAD_LIBS_INIT})
-  else()
-    find_library(GUROBI_LIB2 "${GUROBI_HOME}/lib/gurobi75")
-    target_link_libraries(minizinc_gurobi minizinc ${GUROBI_LIB2} ${CMAKE_THREAD_LIBS_INIT})
-  endif()
+  target_include_directories(minizinc_gurobi PRIVATE ${GUROBI_INCLUDE_DIRS})
+    target_link_libraries(minizinc_gurobi minizinc ${GUROBI_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
   target_link_libraries(minizinc_solver minizinc_gurobi)
-  target_compile_definitions( minizinc_solver PRIVATE HAS_GUROBI )
+  target_compile_definitions(minizinc_solver PRIVATE HAS_GUROBI)
   set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_gurobi)
 
   INSTALL(TARGETS minizinc_gurobi
