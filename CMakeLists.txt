@@ -26,9 +26,7 @@ endif()
 # -------------------------------------------------------------------------------------------------------------------
 find_package(Gecode)
 find_package(OsiCBC)
-if (DEFINED CPLEX_STUDIO_DIR AND NOT "${CPLEX_STUDIO_DIR} " STREQUAL " ")
-  set(HAS_CPLEX TRUE)
-endif()
+find_package(CPlex)
 if(DEFINED GUROBI_HOME AND NOT "${GUROBI_HOME} " STREQUAL " ")
   set(HAS_GUROBI TRUE)
 endif()
@@ -400,7 +398,7 @@ include/minizinc/solver_config.hh
 
 target_link_libraries(minizinc_solver minizinc)
 
-find_package ( Threads REQUIRED )
+find_package (Threads REQUIRED)
 
 # -------------------------------------------------------------------------------------------------------------------
 
@@ -459,51 +457,20 @@ if(HAS_XPRESS)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
-if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G"Visual Studio 12 Win64")
-  if(UNIX)
-    set(CPLEX_ARCH "x86-64_linux/static_pic")
-	set(CPLEX_LIB "cplex")
-  endif(UNIX)
-
-  if(APPLE)
-     set(CPLEX_ARCH "x86-64_osx/static_pic")
-	set(CPLEX_LIB "cplex")
-  endif(APPLE)
-
-  if(WIN32)
-     set(CPLEX_ARCH "x64_windows_vs2013/stat_mda")
-	set(CPLEX_LIB "cplex1263.lib")          # Here 12.6.3
-  endif(WIN32)
-
-  find_library(CPLEX_LIB2 NAMES ${CPLEX_LIB} PATHS "${CPLEX_STUDIO_DIR}/cplex/lib/${CPLEX_ARCH}")
-
-  # add_definitions(-DIL_STD)
-
-  # link_directories("${CPLEX_STUDIO_DIR}/cplex/lib/${CPLEX_ARCH}")
-  # link_directories("${CPLEX_STUDIO_DIR}/concert/lib/x86-64_${CPLEX_ARCH}/static_pic")
-
+if(CPLEX_FOUND)
   add_library(minizinc_cplex
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_cplex_wrap.cpp lib/algorithms/min_cut.cpp
     solvers/MIP/MIP_cplex_solverfactory.cpp include/minizinc/solvers/MIP/MIP_cplex_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_cplex_wrap.hh
   )
-  SET_TARGET_PROPERTIES(minizinc_cplex
-                               PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG"
-                               )
-  include_directories("${CPLEX_STUDIO_DIR}/cplex/include")
-  # target_include_directories(minizinc_cplex PRIVATE "${CPLEX_STUDIO_DIR}/concert/include")
 
-  if(HAS_CPLEX_PLUGIN)
-    target_link_libraries(minizinc_cplex minizinc ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
-  else()
-    target_link_libraries(minizinc_cplex minizinc ${CPLEX_LIB2} ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
-  endif()
+  set_target_properties(minizinc_cplex PROPERTIES COMPILE_FLAGS ${CPLEX_COMPILE_FLAGS})
+  target_include_directories(minizinc_cplex PRIVATE ${CPLEX_INCLUDE_DIRS})
+  target_link_libraries(minizinc_cplex minizinc ${CMAKE_THREAD_LIBS_INIT} ${CPLEX_LIBRARIES})
 
-  SET_TARGET_PROPERTIES(minizinc_solver
-    PROPERTIES COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG -DIL_STD -Wall"
-  )
-  target_link_libraries(minizinc_solver minizinc_cplex ${CMAKE_THREAD_LIBS_INIT} ${NEEDS_LIBDL})
-  target_compile_definitions( minizinc_solver PRIVATE HAS_CPLEX )
+  set_target_properties(minizinc_solver PROPERTIES COMPILE_FLAGS ${CPLEX_COMPILE_FLAGS})
+  target_link_libraries(minizinc_solver minizinc_cplex ${CMAKE_THREAD_LIBS_INIT} ${CPLEX_LIBRARIES})
+  target_compile_definitions(minizinc_solver PRIVATE HAS_CPLEX)
   set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_cplex)
 
   INSTALL(TARGETS minizinc_cplex

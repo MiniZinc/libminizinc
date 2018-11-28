@@ -26,4 +26,4 @@
 
 #cmakedefine HAS_GUROBI_PLUGIN
 
-#cmakedefine HAS_CPLEX_PLUGIN
+#cmakedefine CPLEX_PLUGIN
