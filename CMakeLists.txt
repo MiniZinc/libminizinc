@@ -24,9 +24,6 @@ endif()
 # -- For example, to include gecode in the minizinc binary run                                                     --
 # --     "cd build; cmake -D GECODE_HOME=$GECODE_HOME ..; cmake --build ."                                         --
 # -------------------------------------------------------------------------------------------------------------------
-if(DEFINED XPRESS_HOME AND NOT "${XPRESS_HOME} " STREQUAL " ")
-  set(HAS_XPRESS TRUE)
-endif()
 if (DEFINED SCIP_DIR AND DEFINED SOPLEX_DIR AND DEFINED ZIMPL_DIR AND NOT "${SCIP_DIR} " STREQUAL " ")
   set(HAS_SCIP TRUE)                     # Can use SCIP w/o ZIMPL too
 endif()
@@ -182,30 +179,6 @@ include(cmake/targets/libminizinc.cmake)
 # -------------------------------------------------------------------------------------------------------------------
 find_package(Threads REQUIRED)
 
-# -------------------------------------------------------------------------------------------------------------------
-if(HAS_XPRESS)
-
-	add_library(minizinc_xpress
-    solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_xpress_wrap.cpp solvers/MIP/MIP_xpress_solverfactory.cpp
-    include/minizinc/solvers/MIP/MIP_xpress_wrap.hh include/minizinc/solvers/MIP/MIP_xpress_solverfactory.hh
-    include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_solverinstance.hpp
-	)
-
-  target_include_directories(minizinc_xpress PRIVATE "${XPRESS_HOME}/include")
-  link_directories("${XPRESS_HOME}/lib")
-  target_link_libraries(minizinc_xpress minizinc xprb xprs ${CMAKE_THREAD_LIBS_INIT})
-
-  target_link_libraries(minizinc_solver minizinc_xpress)
-  target_compile_definitions( minizinc_solver PRIVATE HAS_XPRESS )
-  set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_xpress)
-
-  INSTALL(TARGETS minizinc_xpress
-    EXPORT libminizincTargets
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib)
-
-endif()
 
 # ----------------------------------------------------------------------------------------------------------
 if(HAS_SCIP)   # SCIP version tested: 6.0.0
@@ -317,6 +290,7 @@ include(cmake/targets/libminizinc_cplex.cmake)
 include(cmake/targets/libminizinc_gecode.cmake)
 include(cmake/targets/libminizinc_gurobi.cmake)
 include(cmake/targets/libminizinc_osicbc.cmake)
+include(cmake/targets/libminizinc_xpress.cmake)
 
 include(cmake/targets/libminizinc_fzn.cmake)
 
