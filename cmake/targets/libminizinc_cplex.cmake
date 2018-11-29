@@ -1,6 +1,6 @@
 ### MiniZinc CPLEX Solver Target
 
-find_package(CPlex)
+find_package(cplex)
 
 if(CPLEX_FOUND)
   find_package(Threads REQUIRED)
