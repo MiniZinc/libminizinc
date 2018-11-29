@@ -16,7 +16,7 @@ foreach(GECODE_LIB ${GECODE_REQ_LIBS})
   find_library(GECODE_LIB_LOC NAMES ${GECODE_LIB} lib${GECODE_LIB}
                HINTS ${GECODE_ROOT} $ENV{GECODE_ROOT}
                PATH_SUFFIXES lib)
-  if ("${GECODE_LIB_LOC}" STREQUAL "GECODE_LIB_LOC-NOTFOUND")
+  if("${GECODE_LIB_LOC}" STREQUAL "GECODE_LIB_LOC-NOTFOUND")
     message(STATUS "Gecode: Could not find library `${GECODE_LIB}`")
     set(GECODE_LIBRARY "")
     break()
