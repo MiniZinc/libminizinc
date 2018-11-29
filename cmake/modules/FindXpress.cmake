@@ -5,11 +5,12 @@
 #  XPRESS_LIBRARIES    - The libraries needed to use FICO Xpress
 # User can set XPRESS_ROOT to the preferred installation prefix
 
+
+#TODO: Check default installation locations
 find_path(XPRESS_INCLUDE xprs.h
           HINTS ${XPRESS_ROOT} $ENV{XPRESS_ROOT}
           PATH $ENV{XPRESS_DIR} /opt/xpressmp
           PATH_SUFFIXES include)
-
 
 foreach(XPRESS_LIB xprb xprs)
   set(XPRESS_LIB_LOC "XPRESS_LIB_LOC-NOTFOUND")
