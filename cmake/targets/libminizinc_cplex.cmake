@@ -17,7 +17,7 @@ if(CPLEX_FOUND)
 
   set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_cplex)
 
-  INSTALL(
+  install(
     TARGETS minizinc_cplex
     EXPORT libminizincTargets
     RUNTIME DESTINATION bin

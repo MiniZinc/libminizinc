@@ -13,7 +13,7 @@ if(GUROBI_FOUND)
   target_link_libraries(minizinc_gurobi minizinc ${GUROBI_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
   set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_gurobi)
-  INSTALL(
+  install(
     TARGETS minizinc_gurobi
     EXPORT libminizincTargets
     RUNTIME DESTINATION bin

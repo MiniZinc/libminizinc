@@ -33,7 +33,7 @@ if(GECODE_FOUND)
   endif()
 
   set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_gecode)
-  INSTALL(
+  install(
     TARGETS minizinc_gecode
     EXPORT libminizincTargets
     RUNTIME DESTINATION bin
@@ -41,7 +41,7 @@ if(GECODE_FOUND)
     ARCHIVE DESTINATION lib
   )
 
-  INSTALL(
+  install(
     DIRECTORY solvers/gecode
     DESTINATION include/minizinc/solvers
   )

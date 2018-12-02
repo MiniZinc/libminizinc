@@ -13,9 +13,11 @@ if(XPRESS_FOUND)
   target_link_libraries(minizinc_xpress minizinc xprb xprs ${CMAKE_THREAD_LIBS_INIT})
 
   set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_xpress)
-  INSTALL(TARGETS minizinc_xpress
-          EXPORT libminizincTargets
-          RUNTIME DESTINATION bin
-          LIBRARY DESTINATION lib
-          ARCHIVE DESTINATION lib)
+  install(
+    TARGETS minizinc_xpress
+    EXPORT libminizincTargets
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+  )
 endif()

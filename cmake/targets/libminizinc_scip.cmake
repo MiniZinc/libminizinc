@@ -10,9 +10,11 @@ if(SCIP_FOUND)
   target_link_libraries(minizinc_scip minizinc ${SCIP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
   set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_scip)
-  INSTALL(TARGETS minizinc_scip
-          EXPORT libminizincTargets
-          RUNTIME DESTINATION bin
-          LIBRARY DESTINATION lib
-          ARCHIVE DESTINATION lib)
+  install(
+    TARGETS minizinc_scip
+    EXPORT libminizincTargets
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+  )
 endif()

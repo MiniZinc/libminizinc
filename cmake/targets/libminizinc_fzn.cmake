@@ -12,3 +12,11 @@ add_library(minizinc_fzn
 )
 
 target_link_libraries(minizinc_fzn minizinc)
+
+install(
+    TARGETS minizinc_fzn
+    EXPORT libminizincTargets
+    RUNTIME DESTINATION bin
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+)

@@ -185,3 +185,12 @@ add_library(minizinc
   ${BISON_RegExParser_OUTPUTS}
   ${FLEX_RegExLexer_OUTPUTS}
 )
+
+install(
+  TARGETS minizinc
+  EXPORT libminizincTargets
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
+install(DIRECTORY lib/cached/minizinc DESTINATION include)

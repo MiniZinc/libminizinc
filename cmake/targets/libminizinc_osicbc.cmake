@@ -15,7 +15,7 @@ if(OSICBC_FOUND)
   target_link_libraries(minizinc_osicbc minizinc ${OSICBC_LIBRARIES})
 
   set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_osicbc)
-  INSTALL(
+  install(
     TARGETS minizinc_osicbc
     EXPORT libminizincTargets
     RUNTIME DESTINATION bin
