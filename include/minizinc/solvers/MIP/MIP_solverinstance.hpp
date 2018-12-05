@@ -548,6 +548,7 @@ namespace MiniZinc {
       if ( mip_wrap->fVerbose )
         std::cerr << "  MIP_solverinstance: no constraints - skipping actual solution phase." << std::endl;
       sw = MIP_wrapper::Status::OPT;
+      printSolution();
     }
     SolverInstance::Status s = SolverInstance::UNKNOWN;
     switch(sw) {
