@@ -181,6 +181,7 @@ class MZT_Param:
             "GUROBI": [ "__BE_COMMON", "__BE_SOLVER", "BE_GUROBI" ],
             "CPLEX": [ "__BE_COMMON", "__BE_SOLVER", "BE_CPLEX" ],
             "XPRESS": [ "__BE_COMMON", "__BE_SOLVER", "BE_XPRESS" ],
+            "SCIP": [ "__BE_COMMON", "__BE_SOLVER", "BE_SCIP" ],
             "CBC": [ "__BE_COMMON", "__BE_SOLVER", "BE_CBC" ],
             "GECODE": [ "__BE_COMMON", "__BE_SOLVER", "BE_GECODE" ],
             "CHUFFED": [ "__BE_COMMON", "__BE_SOLVER", "BE_CHUFFED" ] #,
@@ -398,6 +399,14 @@ class MZT_Param:
               s_CommentKey: [ "------------------- Specializations for COIN-OR Branch&Cut solver instance" ],
               "EXE": {
                 "s_SolverCall" : ["mzn-cbc -v -s -G linear --output-time " + sDZNOutputAgrs + " %s --fzn tmp.fzn --ozn tmp.ozn && mzn-cplex -v -s tmp.fzn"], 
+                #"s_SolverCall" : ["./run-mzn-cplex.sh %s"],
+                #"b_ThruShell"  : [True],
+              },
+            },
+            "BE_SCIP": {
+              s_CommentKey: [ "------------------- Specializations for SCIP solver instance" ],
+              "EXE": {
+                "s_SolverCall" : ["minizinc -v -s --solver scip --output-time " + sDZNOutputAgrs + " %s"], # _objective fails for checking
                 #"s_SolverCall" : ["./run-mzn-cplex.sh %s"],
                 #"b_ThruShell"  : [True],
               },

@@ -550,28 +550,27 @@ if(HAS_CPLEX)  # Windows: version 12.6.2 with MSVC 2013, 64-bit (run cmake .. -G
 endif()
 
 # ----------------------------------------------------------------------------------------------------------
-if(HAS_SCIP)   # SCIP version tested: 3.2.1
-  #link_directories("${SCIP_DIR}/../lib"  )  # For the single library, use 'make scipoptlib' when building SCIP
+if(HAS_SCIP)   # SCIP version tested: 6.0.0
+  # Do 'make scipoptlib' when building SCIP
+  # NOTE SCIP 6.0.0 requires both (lib)scipopt and (lib)soplex on UNIX
+  # NOTE Mac / Win currently untested
 
   if(UNIX)
-#    set(SCIP_OS "linux")
-#    set(SCIP_ARCH "x86_64")
-   set(SCIP_LIBS "scipopt-3.2.1.linux.x86_64.gnu.opt")
-#    set(SCIP_LIB_EXTRAS readline z zimpl.${SCIP_OS}.${SCIP_ARCH}.gnu.opt gmp)  # if SCIP configured so
+##   set(SCIP_LIBS "scipopt soplex")
    set(SCIP_LIB_EXTRAS readline z gmp)  # if SCIP configured so
   endif(UNIX)
   if(APPLE)
-#   set(SCIP_OS "osx")
-#    set(SCIP_ARCH "ppc")
-    set(SCIP_LIBS "scipopt-3.2.1.osx.ppc.gnu.opt")
+##   set(SCIP_LIBS "scipopt soplex")
    set(SCIP_LIB_EXTRAS readline z gmp)  # if SCIP configured so
   endif(APPLE)
   if (WIN32 AND NOT UNIX)
-    set(SCIP_LIBS "scip-3.2.1.win.x86_64.msvc.opt.spx.ld")
+    set(SCIP_LIBS "scip.ld")
   endif()
 
-  find_library(SCIP_LIBS2 NAMES ${SCIP_LIBS} PATHS ${SCIP_DIR}/../lib)
+  find_library(SCIP_LIBS2 NAMES scipopt PATHS ${SCIP_DIR}/../lib)
   message(SCIPLIBS2 : ${SCIP_LIBS2})
+  find_library(SCIP_LIBS3 NAMES soplex PATHS ${SOPLEX_DIR}/lib)
+  message(SCIPLIBS3 : ${SCIP_LIBS3})
 
   add_library(minizinc_scip
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
@@ -583,6 +582,7 @@ if(HAS_SCIP)   # SCIP version tested: 3.2.1
     "${ZIMPL_DIR}/src")
   target_link_libraries(minizinc_scip minizinc
     ${SCIP_LIBS2}
+    ${SCIP_LIBS3}
     ${SCIP_LIB_EXTRAS}
     ${CMAKE_THREAD_LIBS_INIT})
 
