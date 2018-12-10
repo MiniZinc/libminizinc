@@ -23,21 +23,14 @@ find_library(SOPLEX_LIBRARY soplex libsoplex
              HINTS ${SOPLEX_ROOT} $ENV{SOPLEX_ROOT} ${SCIP_ROOT} $ENV{SCIP_ROOT}
              PATH_SUFFIXES lib)
 
-find_path(ZIMPL_INCLUDE zimpl/mme.h
-          HINTS ${ZIMPL_ROOT} $ENV{ZIMPL_ROOT} ${SCIP_ROOT} $ENV{SCIP_ROOT}
-          PATH_SUFFIXES include)
-
-find_library(ZIMPL_LIBRARY zimpl libzimpl
-             HINTS ${ZIMPL_ROOT} $ENV{ZIMPL_ROOT} ${SCIP_ROOT} $ENV{SCIP_ROOT}
-             PATH_SUFFIXES lib)
-
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set SCIP_FOUND to TRUE
 # if all listed variables are TRUE
 find_package_handle_standard_args(Scip DEFAULT_MSG
                                   SCIP_INCLUDE SCIP_LIBRARY SOPLEX_INCLUDE SOPLEX_LIBRARY)
 
-mark_as_advanced(SCIP_INCLUDE SCIP_LIBRARY)
+mark_as_advanced(SCIP_INCLUDE SCIP_LIBRARY SOPLEX_INCLUDE SOPLEX_LIBRARY)
 
-set(SCIP_LIBRARIES ${SCIP_LIBRARY} ${SOPLEX_LIBRARY} ${ZIMPL_LIBRARY})
-set(SCIP_INCLUDE_DIRS ${SCIP_INCLUDE} ${SOPLEX_INCLUDE} ${ZIMPL_INCLUDE})
+set(SCIP_LIBRARIES ${SCIP_LIBRARY} ${SOPLEX_LIBRARY})
+set(SCIP_INCLUDE_DIRS ${SCIP_INCLUDE} ${SOPLEX_INCLUDE})
+list(REMOVE_DUPLICATES SCIP_INCLUDE_DIRS)

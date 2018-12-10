@@ -19,7 +19,7 @@ option(USE_CPLEX "Enable the CPLEX solving target" ON)
 option(USE_GECODE "Enable the Gecode solving target" ON)
 option(USE_GUROBI "Enable the Gurobi solving target" ON)
 option(USE_OSICBC "Enable the Osi CBC solving target" ON)
-option(USE_SCIP "Enable the SCIP solving target" OFF) #TODO: Fix the SCIP solving target
+option(USE_SCIP "Enable the SCIP solving target" ON)
 option(USE_XPRESS "Enable the Xpress solving target" ON)
 
 # Static vs. Dynamic linking
