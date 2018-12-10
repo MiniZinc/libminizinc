@@ -97,7 +97,6 @@ else()
   set(FLEX_RegExLexer_OUTPUTS ${PROJECT_SOURCE_DIR}/lib/cached/regex_lexer.yy.cpp)
 endif()
 
-find_package(Gecode)
 if(NOT GECODE_FOUND)
   set(FLEX_RegExLexer_OUTPUTS "")
   set(BISON_RegExParser_OUTPUTS "")

@@ -1,7 +1,5 @@
 ### MiniZinc Gecode Solver Target
 
-find_package(Gecode)
-
 if(GECODE_FOUND AND USE_GECODE)
   find_package(Threads REQUIRED)
 

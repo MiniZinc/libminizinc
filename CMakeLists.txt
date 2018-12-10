@@ -37,8 +37,16 @@ endif()
 # -------------------------------------------------------------------------------------------------------------------
 #  -- CMake initialisation
 
+# Try to find possible dependencies
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+find_package(CPLEX)
+find_package(Gecode)
+find_package(Gurobi)
+find_package(OsiCBC)
+find_package(SCIP)
+find_package(Xpress)
 
+# Set build type when none is selected
 set(DEFAULT_BUILD_TYPE "Release")
 if(NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES)
   message(STATUS "Setting build type to '${DEFAULT_BUILD_TYPE}' as none was specified.")

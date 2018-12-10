@@ -1,7 +1,5 @@
 ### MiniZinc SCIP Solver Target
 
-find_package(scip)
-
 if(SCIP_FOUND AND USE_SCIP)
   add_library(minizinc_scip
               solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp

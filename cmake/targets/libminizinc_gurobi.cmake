@@ -1,7 +1,5 @@
 ### MiniZinc Gurobi Solver Target
 
-find_package(Gurobi)
-
 if(GUROBI_FOUND)
   add_library(minizinc_gurobi
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp solvers/MIP/MIP_gurobi_solverfactory.cpp

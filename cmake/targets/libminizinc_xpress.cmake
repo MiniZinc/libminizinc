@@ -1,7 +1,5 @@
 ### MiniZinc FICO Xpress Solver Target
 
-find_package(Xpress)
-
 if(XPRESS_FOUND AND USE_XPRESS)
 
   add_library(minizinc_xpress
