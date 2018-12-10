@@ -192,4 +192,16 @@ install(
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
 )
-install(DIRECTORY lib/cached/minizinc DESTINATION include)
+install(
+  DIRECTORY share/minizinc
+  DESTINATION share
+)
+install(
+  DIRECTORY include/minizinc
+  DESTINATION include
+  PATTERN config.hh.in EXCLUDE
+)
+install(
+  DIRECTORY lib/cached/minizinc
+  DESTINATION include
+)
