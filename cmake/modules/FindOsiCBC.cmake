@@ -26,7 +26,11 @@ list(REMOVE_DUPLICATES OSICBC_INCLUDE)
 unset(OSICBC_FIND_FILES)
 unset(OSICBC_FILE_LOC)
 
-set(OSICBC_REQ_LIBS CbcSolver Cbc Cgl OsiClp Clp Osi CoinUtils)
+if(WIN32 AND NOT UNIX)
+  set(OSICBC_REQ_LIBS libOsi libOsiClp libOsiCbc libClp libCgl libCbc libCbcSolver libCoinUtils)
+else()
+  set(OSICBC_REQ_LIBS CbcSolver Cbc Cgl OsiClp Clp Osi CoinUtils)
+endif()
 
 foreach(OSICBC_LIB ${OSICBC_REQ_LIBS})
   set(OSICBC_LIB_LOC "OSICBC_LIB_LOC-NOTFOUND")
