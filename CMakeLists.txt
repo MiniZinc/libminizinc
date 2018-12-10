@@ -15,12 +15,12 @@ endif()
 #  -- Project build options
 
 # Driver compilation selection
-option(USE_CPLEX "Enable the CPLEX solving target" ON)
-option(USE_GECODE "Enable the Gecode solving target" ON)
-option(USE_GUROBI "Enable the Gurobi solving target" ON)
-option(USE_OSICBC "Enable the Osi CBC solving target" ON)
-option(USE_SCIP "Enable the SCIP solving target" ON)
-option(USE_XPRESS "Enable the Xpress solving target" ON)
+option(USE_CPLEX "Enable the CPLEX solving target" TRUE)
+option(USE_GECODE "Enable the Gecode solving target" TRUE)
+option(USE_GUROBI "Enable the Gurobi solving target" TRUE)
+option(USE_OSICBC "Enable the Osi CBC solving target" TRUE)
+option(USE_SCIP "Enable the SCIP solving target" TRUE)
+option(USE_XPRESS "Enable the Xpress solving target" TRUE)
 
 # Static vs. Dynamic linking
 option(USE_PROPRIETARY "Enable static linking of proprietary solvers" OFF)

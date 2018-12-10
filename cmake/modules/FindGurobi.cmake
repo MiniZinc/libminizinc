@@ -24,7 +24,7 @@ foreach(VERSION ${GUROBI_VERSIONS})
 endforeach(VERSION)
 
 find_path(GUROBI_INCLUDE gurobi_c.h
-          HINTS ${GUROBI_ROOT} $ENV{GUROBI_ROOT}
+          HINTS ${GUROBI_ROOT} ENV GUROBI_ROOT
           PATHS ${GUROBI_DEFAULT_LOC}
           PATH_SUFFIXES include)
 
@@ -41,7 +41,7 @@ if(GUROBI_PLUGIN)
 else()
   foreach(GUROBI_LIB ${GUROBI_LIB_NAMES})
     find_library(GUROBI_LIBRARY NAMES ${GUROBI_LIB}
-                 HINTS ${GUROBI_ROOT} $ENV{GUROBI_ROOT}
+                 HINTS ${GUROBI_ROOT} ENV GUROBI_ROOT
                  PATHS ${GUROBI_DEFAULT_LOC}
                  PATH_SUFFIXES lib)
     if(NOT "${GUROBI_LIBRARY}" STREQUAL "GUROBI_LIBRARY-NOTFOUND")
