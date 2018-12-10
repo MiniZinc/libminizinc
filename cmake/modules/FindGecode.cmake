@@ -23,12 +23,14 @@ foreach(GECODE_LIB ${GECODE_REQ_LIBS})
   find_library(GECODE_LIB_LOC NAMES ${GECODE_LIB} ${GECODE_LIB_WIN}
                HINTS ${GECODE_ROOT} $ENV{GECODE_ROOT}
                PATH_SUFFIXES lib)
-  if("${GECODE_LIB_LOC}" STREQUAL "GECODE_LIB_LOC-NOTFOUND")
+  if("${GECODE_LIB_LOC}" STREQUAL "GECODE_LIB_LOC-NOTFOUND" AND NOT "${GECODE_LIB}" STREQUAL "gecodegist")
 #    message(STATUS "Gecode: Could not find library `${GECODE_LIB}`")
     set(GECODE_LIBRARY "")
     break()
   endif()
-  list(APPEND GECODE_LIBRARY ${GECODE_LIB_LOC})
+  if(NOT "${GECODE_LIB_LOC}" STREQUAL "GECODE_LIB_LOC-NOTFOUND")
+    list(APPEND GECODE_LIBRARY ${GECODE_LIB_LOC})
+  endif()
 endforeach(GECODE_LIB)
 
 unset(GECODE_REQ_LIBS)
