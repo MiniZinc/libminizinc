@@ -2,7 +2,7 @@
 
 find_package(Xpress)
 
-if(XPRESS_FOUND)
+if(XPRESS_FOUND AND USE_XPRESS)
 
   add_library(minizinc_xpress
               solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_xpress_wrap.cpp solvers/MIP/MIP_xpress_solverfactory.cpp

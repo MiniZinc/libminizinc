@@ -6,7 +6,7 @@ variables:
   GECODE_ROOT: "$CI_PROJECT_DIR/vendor/gecode"
   GUROBI_ROOT: "$CI_PROJECT_DIR/vendor/gurobi"
   CPLEX_ROOT: "$CI_PROJECT_DIR/vendor/CPLEX_Studio"
-  OSICBC_HOME: "$CI_PROJECT_DIR/vendor/cbc"
+  OSICBC_ROOT: "$CI_PROJECT_DIR/vendor/cbc"
 
 .build_template: &build_definition
   stage: build
@@ -16,7 +16,7 @@ variables:
     - rm -rf build
     - mkdir -p build
     - cd build
-    - cmake -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=Release -v .. -DBUILD_REF=$CI_PIPELINE_ID -DGECODE_NO_MPFR=1 -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=Release -v .. -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DGECODE_NO_MPFR=ON -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   artifacts:
@@ -69,7 +69,7 @@ build:win64:
     - unzip -q vendor.zip
     - if not exist "build" mkdir build
     - cd build
-    - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DSHARED_GECODE=TRUE -DBUILD_GUROBI_PLUGIN=ON -DBUILD_CPLEX_PLUGIN=ON -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DSHARED_GECODE=TRUE -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   tags:

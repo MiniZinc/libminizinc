@@ -2,7 +2,7 @@
 
 find_package(OsiCBC)
 
-if(OSICBC_FOUND)
+if(OSICBC_FOUND AND USE_OSICBC)
   find_package(Threads REQUIRED)
 
   add_library(minizinc_osicbc

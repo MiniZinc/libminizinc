@@ -25,7 +25,6 @@ find_path(CPLEX_INCLUDE ilcplex/cplex.h
           PATHS ${CPLEX_DEFAULT_LOC}
           PATH_SUFFIXES include cplex/include)
 
-option(CPLEX_PLUGIN "Build CPLEX binding as a plugin" ON)
 if(CPLEX_PLUGIN)
   include(CheckIncludeFiles)
   # TODO: Cleanup this mess

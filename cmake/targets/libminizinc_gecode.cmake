@@ -2,7 +2,7 @@
 
 find_package(Gecode)
 
-if(GECODE_FOUND)
+if(GECODE_FOUND AND USE_GECODE)
   find_package(Threads REQUIRED)
 
   add_library(minizinc_gecode

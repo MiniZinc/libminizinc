@@ -12,6 +12,29 @@ if(NOT BUILD_REF)
 endif()
 
 # -------------------------------------------------------------------------------------------------------------------
+#  -- Project build options
+
+# Driver compilation selection
+option(USE_CPLEX "Enable the CPLEX solving target" ON)
+option(USE_GECODE "Enable the Gecode solving target" ON)
+option(USE_GUROBI "Enable the Gurobi solving target" ON)
+option(USE_OSICBC "Enable the Osi CBC solving target" ON)
+option(USE_SCIP "Enable the SCIP solving target" OFF) #TODO: Fix the SCIP solving target
+option(USE_XPRESS "Enable the Xpress solving target" ON)
+
+# Static vs. Dynamic linking
+option(USE_PROPRIETARY "Enable static linking of proprietary solvers" OFF)
+option(CPLEX_PLUGIN "Build CPLEX binding as a plugin" ON)
+option(GUROBI_PLUGIN "Build Gurobi binding as a plugin" ON)
+
+# Enforce non_proprietary build
+if(NOT USE_PROPRIETARY)
+  set(CPLEX_PLUGIN ON)
+  set(GUROBI_PLUGIN ON)
+  set(USE_SCIP OFF)
+endif()
+
+# -------------------------------------------------------------------------------------------------------------------
 #  -- CMake initialisation
 
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)

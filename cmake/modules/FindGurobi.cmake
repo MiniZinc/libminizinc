@@ -6,6 +6,8 @@
 #  GUROBI_COMPILE_FLAGS  - The definitions required to compile with GUROBI
 # User can set GUROBI_ROOT to the preferred installation prefix
 
+option(GUROBI_PLUGIN "Build Gurobi binding as a plugin" ON)
+
 set(GUROBI_COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG")
 
 set(GUROBI_VERSIONS 810 801 752 702)
@@ -26,7 +28,6 @@ find_path(GUROBI_INCLUDE gurobi_c.h
           PATHS ${GUROBI_DEFAULT_LOC}
           PATH_SUFFIXES include)
 
-option(GUROBI_PLUGIN "Build Gurobi binding as a plugin" ON)
 if(GUROBI_PLUGIN)
   include(CheckIncludeFiles)
   # TODO: Cleanup this mess

@@ -2,7 +2,7 @@
 
 find_package(cplex)
 
-if(CPLEX_FOUND)
+if(CPLEX_FOUND AND USE_CPLEX)
   find_package(Threads REQUIRED)
 
   add_library(minizinc_cplex
