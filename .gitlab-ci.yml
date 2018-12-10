@@ -60,16 +60,12 @@ build:win64:
   variables:
     MZNARCH: "win64"
     CMAKE_ARCH: "Visual Studio 14 2015 Win64"
-    GECODE_ROOT: "%CI_PROJECT_DIR%/vendor/gecode"
-    GUROBI_ROOT: "%CI_PROJECT_DIR%/vendor/gurobi"
-    CPLEX_ROOT: "%CI_PROJECT_DIR%/vendor/CPLEX_Studio"
-    OSICBC_HOME: "%CI_PROJECT_DIR%/vendor/cbc"
   script:
     - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fvendor/jobs/artifacts/master/download?job=vendor:win64"
     - unzip -q vendor.zip
     - if not exist "build" mkdir build
     - cd build
-    - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DSHARED_GECODE=TRUE -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   tags:

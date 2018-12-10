@@ -12,8 +12,15 @@ find_path(GECODE_INCLUDE gecode/kernel.hh
 set(GECODE_REQ_LIBS gecodedriver gecodefloat gecodeint gecodekernel gecodeminimodel gecodesearch gecodeset gecodesupport)
 
 foreach(GECODE_LIB ${GECODE_REQ_LIBS})
+  # Determine windows library name
+  file(GLOB_RECURSE GECODE_LIB_WIN RELATIVE "${GECODE_INCLUDE}/../lib" "${GECODE_LIB}*.lib")
+  if(GECODE_LIB_WIN)
+    get_filename_component(GECODE_LIB_WIN ${GECODE_LIB_WIN} NAME_WE)
+  endif()
+
+  # Try to find gecode library
   set(GECODE_LIB_LOC "GECODE_LIB_LOC-NOTFOUND")
-  find_library(GECODE_LIB_LOC NAMES ${GECODE_LIB} lib${GECODE_LIB}
+  find_library(GECODE_LIB_LOC NAMES ${GECODE_LIB} lib${GECODE_LIB} ${GECODE_LIB_WIN}
                HINTS ${GECODE_ROOT} $ENV{GECODE_ROOT}
                PATH_SUFFIXES lib)
   if("${GECODE_LIB_LOC}" STREQUAL "GECODE_LIB_LOC-NOTFOUND")
