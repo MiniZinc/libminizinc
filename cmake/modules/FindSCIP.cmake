@@ -34,8 +34,8 @@ find_library(ZIMPL_LIBRARY zimpl libzimpl
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set SCIP_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(SCIP DEFAULT_MSG
-                                  SCIP_INCLUDE SCIP_LIBRARY SOPLEX_INCLUDE SOPLEX_LIBRARY ZIMPL_INCLUDE ZIMPL_LIBRARY)
+find_package_handle_standard_args(Scip DEFAULT_MSG
+                                  SCIP_INCLUDE SCIP_LIBRARY SOPLEX_INCLUDE SOPLEX_LIBRARY)
 
 mark_as_advanced(SCIP_INCLUDE SCIP_LIBRARY)
 

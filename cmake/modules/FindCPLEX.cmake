@@ -50,7 +50,7 @@ endif()
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set CBC_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(CPLEX DEFAULT_MSG
+find_package_handle_standard_args(CPlex DEFAULT_MSG
                                   CPLEX_INCLUDE CPLEX_LIBRARY)
 
 if(CPLEX_PLUGIN AND HAS_WINDOWS_H AND NOT HAS_DLFCN_H)
