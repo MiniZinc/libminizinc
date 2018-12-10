@@ -44,6 +44,16 @@ endforeach(OSICBC_LIB)
 unset(OSICBC_REQ_LIBS)
 unset(OSICBC_LIB_LOC)
 
+if(UNIX AND NOT WIN32)
+  find_package(ZLIB)
+  if(NOT ZLIB_FOUND)
+    message(STATUS "OsiCBC: Missing dependency `Zlib`")
+    set(OSICBC_LIBRARY "")
+  else()
+    list(APPEND OSICBC_LIBRARY ${ZLIB_LIBRARIES})
+  endif()
+endif()
+
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set CBC_FOUND to TRUE
 # if all listed variables are TRUE
