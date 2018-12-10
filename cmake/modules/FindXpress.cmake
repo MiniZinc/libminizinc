@@ -19,7 +19,7 @@ foreach(XPRESS_LIB xprb xprs)
                PATH $ENV{XPRESS_DIR} /opt/xpressmp
                PATH_SUFFIXES lib)
   if("${XPRESS_LIB_LOC}" STREQUAL "XPRESS_LIB_LOC-NOTFOUND")
-    message(STATUS "FICO Xpres: Could not find library `${XPRESS_LIB}`")
+#    message(STATUS "FICO Xpres: Could not find library `${XPRESS_LIB}`")
     set(XPRESS_LIBRARY "")
     break()
   endif()
