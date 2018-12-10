@@ -26,11 +26,7 @@ list(REMOVE_DUPLICATES OSICBC_INCLUDE)
 unset(OSICBC_FIND_FILES)
 unset(OSICBC_FILE_LOC)
 
-if(WIN32 AND NOT UNIX)
-  set(OSICBC_REQ_LIBS libOsi libOsiClp libOsiCbc libClp libCgl libCbc libCbcSolver libCoinUtils)
-else()
-  set(OSICBC_REQ_LIBS CbcSolver Cbc Cgl OsiClp Clp Osi CoinUtils) #TODO: Handle ZLib
-endif()
+set(OSICBC_REQ_LIBS CbcSolver Cbc Cgl OsiClp Clp Osi CoinUtils)
 
 foreach(OSICBC_LIB ${OSICBC_REQ_LIBS})
   set(OSICBC_LIB_LOC "OSICBC_LIB_LOC-NOTFOUND")
@@ -47,16 +43,6 @@ endforeach(OSICBC_LIB)
 
 unset(OSICBC_REQ_LIBS)
 unset(OSICBC_LIB_LOC)
-
-if(UNIX AND NOT WIN32)
-  find_package(ZLIB)
-  if(NOT ZLIB_FOUND)
-    message(STATUS "OsiCBC: Missing dependency `Zlib`")
-    set(OSICBC_LIBRARY "")
-  else()
-    list(APPEND OSICBC_LIBRARY ${ZLIB_LIBRARIES})
-  endif()
-endif()
 
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set CBC_FOUND to TRUE
