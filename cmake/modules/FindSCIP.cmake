@@ -11,7 +11,7 @@ find_path(SCIP_INCLUDE scip/scip.h
           HINTS ${SCIP_ROOT} $ENV{SCIP_ROOT}
           PATH_SUFFIXES include)
 
-find_library(SCIP_LIBRARY scip libscip
+find_library(SCIP_LIBRARY scip
           HINTS ${SCIP_ROOT} $ENV{SCIP_ROOT}
           PATH_SUFFIXES lib)
 
@@ -19,7 +19,7 @@ find_path(SOPLEX_INCLUDE soplex.h
           HINTS ${SOPLEX_ROOT} $ENV{SOPLEX_ROOT} ${SCIP_ROOT} $ENV{SCIP_ROOT}
           PATH_SUFFIXES include)
 
-find_library(SOPLEX_LIBRARY soplex libsoplex
+find_library(SOPLEX_LIBRARY soplex
              HINTS ${SOPLEX_ROOT} $ENV{SOPLEX_ROOT} ${SCIP_ROOT} $ENV{SCIP_ROOT}
              PATH_SUFFIXES lib)
 
