@@ -25,7 +25,7 @@ export(PACKAGE libminizinc)
 file(RELATIVE_PATH REL_CMAKE_DIR "${CMAKE_INSTALL_PREFIX}"
      "${INSTALL_CMAKE_DIR}")
 file(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}"
-     "${PROJECT_BINARY_DIR}/include")
+     "${CMAKE_INSTALL_PREFIX}/include")
 # ... for the build tree
 set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
 configure_file(
