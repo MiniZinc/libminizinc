@@ -23,7 +23,7 @@ extern "C" {
 class MIP_gurobi_wrapper : public MIP_wrapper {
     GRBenv        * env = 0;
     GRBmodel      * model = 0;
-#ifdef HAS_GUROBI_PLUGIN
+#ifdef GUROBI_PLUGIN
     void          * gurobi_dll;
 #endif
     int             error;

@@ -28,12 +28,12 @@ using namespace std;
 #include <minizinc/solvers/MIP/MIP_osicbc_wrap.hh>
 #include <minizinc/utils.hh>
 
-#include <CbcSolver.hpp>
-#include <CbcConfig.h>
-#include <ClpConfig.h>
-#include <CbcEventHandler.hpp>
-#include <CglPreProcess.hpp>
-#include <CoinSignal.hpp>
+#include <coin/CbcSolver.hpp>
+#include <coin/CbcConfig.h>
+#include <coin/ClpConfig.h>
+#include <coin/CbcEventHandler.hpp>
+#include <coin/CglPreProcess.hpp>
+#include <coin/CoinSignal.hpp>
 
 #define WANT_SOLUTION
 

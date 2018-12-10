@@ -28,7 +28,7 @@ class MIP_cplex_wrapper : public MIP_wrapper {
     
     std::vector<double> x;
 
-#ifdef HAS_CPLEX_PLUGIN
+#ifdef CPLEX_PLUGIN
       void*         _cplex_dll;
 #endif
 
