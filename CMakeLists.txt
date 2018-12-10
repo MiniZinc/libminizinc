@@ -94,3 +94,4 @@ include(cmake/targets/mzn2doc.cmake)
 #  -- CMake configuration generation
 
 include(cmake/support/config_export.cmake)
+include(cmake/support/config_output.cmake)
