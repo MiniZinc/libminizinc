@@ -20,8 +20,8 @@ if(GECODE_FOUND AND USE_GECODE)
 
   target_include_directories(minizinc PRIVATE ${GECODE_INCLUDE_DIRS})
   target_include_directories(minizinc_gecode PRIVATE ${GECODE_INCLUDE_DIRS})
-  target_link_libraries(minizinc ${GECODE_TARGETS})
-  target_link_libraries(minizinc_gecode ${GECODE_TARGETS})
+  target_link_libraries(minizinc ${GECODE_LIBRARIES})
+  target_link_libraries(minizinc_gecode ${GECODE_LIBRARIES})
   target_compile_definitions(minizinc PRIVATE HAS_GECODE)
 
   find_package(MPFR)
