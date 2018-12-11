@@ -1,8 +1,9 @@
 # - Try to find CBC
 # Once done this will define
-#  OSICBC_FOUND        - System has CBC
-#  OSICBC_INCLUDE_DIRS - The CBC include directories
-#  OSICBC_LIBRARIES    - The libraries needed to use CBC
+#  OSICBC_FOUND           - System has CBC
+#  OSICBC_INCLUDE_DIRS    - The CBC include directories
+#  OSICBC_LIBRARIES       - The libraries needed to use CBC
+#  GOSICBC_TARGETS        - The names of imported targets created for CBC
 # User can set OSICBC_ROOT to the preferred installation prefix
 
 set(OSICBC_FIND_FILES coin/CbcSolver.hpp coin/CglPreProcess.hpp coin/ClpConfig.h coin/CoinSignal.hpp coin/OsiClpSolverInterface.hpp coin/OsiSolverInterface.hpp)
@@ -43,6 +44,11 @@ foreach(OSICBC_LIB ${OSICBC_REQ_LIBS})
     break()
   endif()
   list(APPEND OSICBC_LIBRARY ${OSICBC_LIB_LOC})
+  add_library(${OSICBC_LIB} UNKNOWN IMPORTED)
+  set_target_properties(${OSICBC_LIB} PROPERTIES
+                        IMPORTED_LOCATION ${OSICBC_LIB_LOC}
+                        INTERFACE_INCLUDE_DIRECTORIES "${OSICBC_INCLUDE}")
+  list(APPEND OSICBC_TARGETS ${OSICBC_LIB})
 endforeach(OSICBC_LIB)
 
 unset(OSICBC_REQ_LIBS)
@@ -55,6 +61,7 @@ if(UNIX AND NOT WIN32)
     set(OSICBC_LIBRARY "")
   else()
     list(APPEND OSICBC_LIBRARY ${ZLIB_LIBRARIES})
+    list(APPEND OSICBC_TARGETS ${ZLIB_LIBRARIES})
   endif()
 endif()
 
