@@ -23,11 +23,12 @@ option(USE_SCIP "Enable the SCIP solving target" TRUE)
 option(USE_XPRESS "Enable the Xpress solving target" TRUE)
 
 # Static vs. Dynamic linking
-option(USE_PROPRIETARY "Enable static linking of proprietary solvers" OFF)
 option(CPLEX_PLUGIN "Build CPLEX binding as a plugin" ON)
 option(GUROBI_PLUGIN "Build Gurobi binding as a plugin" ON)
+option(SHARED_GECODE "Signal that the gecode library is shared" FALSE)
 
 # Enforce non_proprietary build
+option(USE_PROPRIETARY "Enable static linking of proprietary solvers" OFF)
 if(NOT USE_PROPRIETARY)
   set(CPLEX_PLUGIN ON)
   set(GUROBI_PLUGIN ON)
