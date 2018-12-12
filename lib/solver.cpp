@@ -278,6 +278,10 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
 {
   executable_name = argv[0];
   executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
+  size_t lastdot = executable_name.find_last_of('.');
+  if (lastdot != std::string::npos) {
+    executable_name = executable_name.substr(0, lastdot);
+  }
   string solver;
   bool mzn2fzn_exe = (executable_name=="mzn2fzn");
   if (mzn2fzn_exe) {

@@ -26,7 +26,7 @@
 #include <minizinc/utils.hh>
 #include <minizinc/file_utils.hh>
 
-#ifdef HAS_CPLEX_PLUGIN
+#ifdef CPLEX_PLUGIN
 #ifdef HAS_DLFCN_H
 #include <dlfcn.h>
 #elif defined HAS_WINDOWS_H
@@ -38,7 +38,7 @@ using namespace std;
 
 #include <minizinc/solvers/MIP/MIP_cplex_wrap.hh>
 
-#ifdef HAS_CPLEX_PLUGIN
+#ifdef CPLEX_PLUGIN
 
 namespace {
   void* dll_open(const std::string& file) {
@@ -85,7 +85,7 @@ const vector<string>& CPLEXDLLs(void) {
 }
 
 void MIP_cplex_wrapper::checkDLL() {
-#ifdef HAS_CPLEX_PLUGIN
+#ifdef CPLEX_PLUGIN
   _cplex_dll = NULL;
   if ( options->sCPLEXDLL.size() ) {
     _cplex_dll = dll_open( options->sCPLEXDLL.c_str() );
@@ -383,7 +383,7 @@ void MIP_cplex_wrapper::closeCPLEX()
    }
   /// and at last:
 //   MIP_wrapper::cleanup();
-#ifdef HAS_CPLEX_PLUGIN
+#ifdef CPLEX_PLUGIN
 //  dll_close(cplex_dll);
 #endif
 

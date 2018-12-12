@@ -271,6 +271,9 @@ predicate int_times_unary__NOFN(var int: x, set of int: domx__, var int: y, var 
           ( pY[valY[j]] == sum(i in index_set(valX))( pp[i, j] ) )
     endif;
 
+predicate float_times(var float: a, var float: b, var float: c) =
+    abort("Unable to create linear formulation for the `float_times` constraint. This model instance cannot be solved using a linear solver.");
+
 %%%Define int_pow
 predicate int_pow( var int: x, var int: y, var int: r ) =
     let {
