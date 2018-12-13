@@ -446,9 +446,10 @@ namespace MiniZinc {
     for (int j = 0; j < al_x->size(); j++) {
       Expression* decl = follow_id_to_decl((*al_x)[j]);
       if (decl && decl->cast<VarDecl>() == oldVar) {
-        al_x->set(j, newVar->id());
+        x[j] = newVar->id();
+      } else {
+        x[j] = (*al_x)[j];
       }
-      x[j] = (*al_x)[j];
     }
     Val d = LinearTraits<Lit>::eval(env, call->arg(2));
 
@@ -456,7 +457,7 @@ namespace MiniZinc {
     if (coeffs.empty()) {
       env.flat_removeItem(i);
       return;
-    } else if (coeffs.size() < al_c->size()) {
+    } else {
       std::vector<Expression*> coeffs_e(coeffs.size());
       std::vector<Expression*> x_e(coeffs.size());
       for (unsigned int j = 0; j < coeffs.size(); j++) {
@@ -468,17 +469,23 @@ namespace MiniZinc {
         }
       }
 
-      if (call->arg(0)->isa<Id>()) {
-        auto al_c_new = new ArrayLit(al_c->loc(),coeffs_e);
+      if (auto arg0 = call->arg(0)->dyn_cast<ArrayLit>()) {
+        arg0->setVec(coeffs_e);
+      } else {
+        auto al_c_new = new ArrayLit(al_c->loc().introduce(),coeffs_e);
         al_c_new->type(al_c->type());
         call->arg(0, al_c_new);
-      } else {
-        al_c->setVec(coeffs_e);
       }
-      al_x->setVec(x_e);
+
+      if (auto arg1 = call->arg(1)->dyn_cast<ArrayLit>()) {
+        arg1->setVec(x_e);
+      } else {
+        auto al_x_new = new ArrayLit(al_x->loc().introduce(),x_e);
+        al_x_new->type(al_x->type());
+        call->arg(1, al_x_new);
+      }
+
       call->arg(2, Lit::a(d));
-    } else {
-      storeItem(newVar, i);
     }
 
     // Add new occurences
