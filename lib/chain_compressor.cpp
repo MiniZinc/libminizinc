@@ -119,7 +119,7 @@ namespace MiniZinc {
         if (c->id() == constants().ids.clause) {
           auto positive = c->arg(0)->cast<ArrayLit>();
           auto var = (*positive)[0]->cast<Id>();
-          int occurrences = env.vo.occurrences(var->decl());
+          int occurrences = env.vo.usages(var->decl());
           unsigned long lhs_occurences = count(var->decl());
           bool output_var = var->decl()->ann().contains(constants().ann.output_var);
 
@@ -343,14 +343,14 @@ namespace MiniZinc {
               auto neg = follow_id_to_decl((*bs)[i])->cast<VarDecl>();
               bool output_var = neg->ann().contains(constants().ann.output_var);
 
-              int occurrences = env.vo.occurrences(neg);
+              int occurrences = env.vo.usages(neg);
               unsigned long lhs_occurences = count(neg);
               bool compress = !output_var;
               auto search = aliasMap.find(neg);
 
               if (search != aliasMap.end()) {
                 alias = search->second;
-                int alias_occ = env.vo.occurrences(alias);
+                int alias_occ = env.vo.usages(alias);
                 unsigned long alias_lhs_occ = count(alias);
                 // neg is only allowed to occur:
                 // - once in the "implication"

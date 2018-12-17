@@ -98,6 +98,23 @@ namespace MiniZinc {
     IdMap<Items>::iterator vi = _m.find(v->id()->decl()->id());
     return (vi==_m.end() ? 0 : static_cast<int>(vi->second.size()));
   }
+
+  int VarOccurrences::usages(VarDecl* v) {
+    auto vi = _m.find(v->id()->decl()->id());
+    if (vi == _m.end()) {
+      return 0;
+    }
+    int count = 0;
+    for (Item* i : vi->second) {
+      auto vd = i->dyn_cast<VarDeclI>();
+      if (vd && vd->e() && vd->e() && vd->e()->e() && (vd->e()->e()->isa<ArrayLit>() || vd->e()->e()->isa<SetLit>())) {
+        count += usages(vd->e());
+      } else {
+        count++;
+      }
+    }
+    return count;
+  }
   
   void CollectOccurrencesI::vVarDeclI(VarDeclI* v) {
     CollectOccurrencesE ce(vo,v);
