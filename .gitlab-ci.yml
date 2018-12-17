@@ -35,7 +35,7 @@ build:linux:
   image: dekker1/minibuild:cpp
   variables:
     MZNARCH: "linux"
-    CMAKE_ARCH: "Unix Makefiles"
+    CMAKE_ARCH: "Ninja"
   tags: [linux, docker]
 
 build:musl:
@@ -43,7 +43,7 @@ build:musl:
   image: dekker1/minibuild:alpine
   variables:
     MZNARCH: "musl"
-    CMAKE_ARCH: "Unix Makefiles"
+    CMAKE_ARCH: "Ninja"
   tags: [linux, docker]
 
 build:osx:
@@ -51,7 +51,7 @@ build:osx:
   stage: build
   variables:
     MZNARCH: "osx"
-    CMAKE_ARCH: "Xcode"
+    CMAKE_ARCH: "Ninja"
   tags: [osx, cmake, cpp]
 
 build:win64:
