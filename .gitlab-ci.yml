@@ -58,7 +58,7 @@ build:win64:
   stage: build
   variables:
     MZNARCH: "win64"
-    CMAKE_ARCH: "Visual Studio 14 2015 Win64"
+    CMAKE_ARCH: "Visual Studio 15 2017 Win64"
   script:
     - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fvendor/jobs/artifacts/master/download?job=vendor:win64"
     - unzip -q vendor.zip
