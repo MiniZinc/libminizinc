@@ -24,12 +24,6 @@ if(GECODE_FOUND AND USE_GECODE)
   target_link_libraries(minizinc_gecode ${GECODE_TARGETS})
   target_compile_definitions(minizinc PRIVATE HAS_GECODE)
 
-  find_package(MPFR)
-  if(MPFR_FOUND AND NOT DEFINED GECODE_NO_MPFR)
-    target_include_directories(minizinc_gecode PRIVATE ${MPFR_INCLUDES})
-    target_link_libraries(minizinc_gecode ${MPFR_LIBRARIES})
-  endif()
-
   set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_gecode)
   install(
     TARGETS minizinc_gecode

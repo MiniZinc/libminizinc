@@ -20,7 +20,7 @@ variables:
     - rm -rf build
     - mkdir -p build
     - cd build
-    - cmake -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=Release -v .. -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DGECODE_NO_MPFR=ON -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=Release -v .. -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   artifacts:
@@ -64,7 +64,7 @@ build:win64:
     - unzip -q vendor.zip
     - if not exist "build" mkdir build
     - cd build
-    - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DUSE_PROPRIETARY=OFF -DSHARED_GECODE=TRUE -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   artifacts:
