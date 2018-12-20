@@ -3,10 +3,14 @@ stages:
   - trigger
 
 variables:
+  # Vendor solver locations
   GECODE_ROOT: "$CI_PROJECT_DIR/vendor/gecode"
   GUROBI_ROOT: "$CI_PROJECT_DIR/vendor/gurobi"
   CPLEX_ROOT: "$CI_PROJECT_DIR/vendor/CPLEX_Studio"
   OSICBC_ROOT: "$CI_PROJECT_DIR/vendor/cbc"
+  # CCache settings
+  CCACHE_DIR: "$CI_PROJECT_DIR/.ccache"
+  CCACHE_MAXSIZE: "100M"
 
 .build_template: &build_definition
   stage: build
@@ -20,8 +24,10 @@ variables:
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   artifacts:
-    paths:
-      - minizinc/
+    paths: [minizinc/]
+  cache:
+    key: "$CI_JOB_NAME"
+    paths: [.ccache]
 
 
 build:linux:
@@ -29,49 +35,41 @@ build:linux:
   image: dekker1/minibuild:cpp
   variables:
     MZNARCH: "linux"
-    CMAKE_ARCH: "Unix Makefiles"
-  tags:
-    - linux
-    - docker
+    CMAKE_ARCH: "Ninja"
+  tags: [linux, docker]
 
 build:musl:
   <<: *build_definition
   image: dekker1/minibuild:alpine
   variables:
     MZNARCH: "musl"
-    CMAKE_ARCH: "Unix Makefiles"
-  tags:
-    - linux
-    - docker
+    CMAKE_ARCH: "Ninja"
+  tags: [linux, docker]
 
 build:osx:
   <<: *build_definition
   stage: build
   variables:
     MZNARCH: "osx"
-    CMAKE_ARCH: "Xcode"
-  tags:
-    - osx
-    - cmake
-    - cpp
+    CMAKE_ARCH: "Ninja"
+  tags: [osx, cmake, cpp]
 
 build:win64:
-  <<: *build_definition
+  stage: build
   variables:
     MZNARCH: "win64"
-    CMAKE_ARCH: "Visual Studio 14 2015 Win64"
+    CMAKE_ARCH: "Visual Studio 15 2017 Win64"
   script:
     - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fvendor/jobs/artifacts/master/download?job=vendor:win64"
     - unzip -q vendor.zip
     - if not exist "build" mkdir build
     - cd build
-    - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DUSE_PROPRIETARY=OFF -DSHARED_GECODE=TRUE -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
-  tags:
-    - win64
-    - cmake
-    - cpp
+  artifacts:
+    paths: [minizinc/]
+  tags: [win64, cmake, cpp]
 
 # ----------- Trigger FindMUS pipeline -----------
 

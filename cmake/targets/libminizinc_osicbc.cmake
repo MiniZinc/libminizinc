@@ -10,7 +10,7 @@ if(OSICBC_FOUND AND USE_OSICBC)
   include/minizinc/solvers/MIP/MIP_solverinstance.hpp)
 
   target_include_directories(minizinc_osicbc PRIVATE ${OSICBC_INCLUDE_DIRS})
-  target_link_libraries(minizinc_osicbc minizinc ${OSICBC_LIBRARIES})
+  target_link_libraries(minizinc_osicbc minizinc ${OSICBC_TARGETS})
 
   set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_osicbc)
   install(

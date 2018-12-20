@@ -40,6 +40,7 @@ namespace MiniZinc {
     static Token comma() { return Token(T_COMMA); }
     static Token colon() { return Token(T_COLON); }
     static Token eof() { return Token(T_EOF); }
+    static Token null() { return Token(T_NULL); }
     string toString(void) {
       switch (t) {
         case T_LIST_OPEN: return "[";
@@ -61,6 +62,8 @@ namespace MiniZinc {
         }
         case T_BOOL:
           return b ? "true" : "false";
+        case T_NULL:
+          return "null";
         case T_EOF:
           return "eof";
       }
@@ -127,6 +130,17 @@ namespace MiniZinc {
                 throw JSONError(env,errLocation(),"unexpected token `"+string(rest)+"'");
               state = S_NOTHING;
               return Token(false);
+            }
+              break;
+            case 'n':
+            {
+              char rest[3];
+              is.read(rest,sizeof(rest));
+              column += sizeof(rest);
+              if (!is.good() || std::strncmp(rest, "ull", 3) != 0)
+                throw JSONError(env,errLocation(),"unexpected token `"+string(rest)+"'");
+              state = S_NOTHING;
+              return Token::null();
             }
               break;
             default:
@@ -327,6 +341,9 @@ namespace MiniZinc {
         case T_BOOL:
           exps.push_back(new BoolLit(Location().introduce(),next.b));
           break;
+        case T_NULL:
+          exps.push_back(new AnonVar(Location().introduce()));
+          break;
         case T_OBJ_OPEN:
           exps.push_back(parseSetLit(is));
           break;
@@ -353,6 +370,8 @@ namespace MiniZinc {
         return new StringLit(Location().introduce(),next.s);
       case T_BOOL:
         return new BoolLit(Location().introduce(),next.b);
+      case T_NULL:
+        return new AnonVar(Location().introduce());
       case T_OBJ_OPEN:
         return parseSetLit(is);
       case T_LIST_OPEN:
