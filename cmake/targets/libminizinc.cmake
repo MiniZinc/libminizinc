@@ -185,6 +185,12 @@ add_library(minizinc
   ${FLEX_RegExLexer_OUTPUTS}
 )
 
+if(GECODE_FOUND)
+  target_include_directories(minizinc PRIVATE ${GECODE_INCLUDE_DIRS})
+  target_link_libraries(minizinc Gecode::Minimodel Gecode::Support)
+  target_compile_definitions(minizinc PRIVATE HAS_GECODE)
+endif()
+
 install(
   TARGETS minizinc
   EXPORT libminizincTargets
