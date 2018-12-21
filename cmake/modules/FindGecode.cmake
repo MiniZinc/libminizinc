@@ -48,7 +48,7 @@ endforeach(GECODE_COMP)
 if(WIN32 AND GECODE_HAS_GIST AND GECODE_STATIC_LIBS)
   find_package(Qt5 QUIET COMPONENTS Core Gui Widgets PrintSupport)
   set_target_properties(Gecode::Gist PROPERTIES
-                        INTERFACE_LINK_LIBRARIES "Qt5::Core Qt5::Gui Qt5::Widgets Qt5::PrintSupport")
+                        INTERFACE_LINK_LIBRARIES "Qt5::Core;Qt5::Gui;Qt5::Widgets;Qt5::PrintSupport")
 endif()
 
 unset(GECODE_REQ_LIBS)

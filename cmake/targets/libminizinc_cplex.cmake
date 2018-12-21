@@ -11,7 +11,7 @@ if(CPLEX_FOUND AND USE_CPLEX)
 
   set_target_properties(minizinc_cplex PROPERTIES COMPILE_FLAGS ${CPLEX_COMPILE_FLAGS})
   target_include_directories(minizinc_cplex PRIVATE ${CPLEX_INCLUDE_DIRS})
-  target_link_libraries(minizinc_cplex minizinc ${CMAKE_THREAD_LIBS_INIT} ${CPLEX_LIBRARIES})
+  target_link_libraries(minizinc_cplex minizinc_compiler ${CMAKE_THREAD_LIBS_INIT} ${CPLEX_LIBRARIES})
 
   set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_cplex)
 
