@@ -17,9 +17,12 @@ if(GECODE_FOUND AND USE_GECODE)
     include/minizinc/solvers/gecode/gecode_constraints.hh
   )
 
-  target_link_libraries(minizinc_gecode minizinc ${CMAKE_THREAD_LIBS_INIT})
-  target_include_directories(minizinc_gecode PRIVATE ${GECODE_INCLUDE_DIRS})
+  target_link_libraries(minizinc_gecode minizinc_compiler ${CMAKE_THREAD_LIBS_INIT})
   target_link_libraries(minizinc_gecode Gecode::Driver Gecode::Float Gecode::Int Gecode::Kernel Gecode::Search Gecode::Set)
+  if(WIN32 AND GECODE_HAS_GIST)
+    target_link_libraries(minizinc_gecode Gecode::Gist)
+  endif()
+
 
   set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_gecode)
   install(
