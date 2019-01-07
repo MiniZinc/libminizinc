@@ -41,7 +41,7 @@ endif()
 # Try to find possible dependencies
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 find_package(CPlex)
-find_package(Gecode)
+find_package(Gecode 6.0 COMPONENTS Driver Float Int Kernel Minimodel Search Set Support)
 find_package(Gurobi)
 find_package(OsiCBC)
 find_package(Scip)

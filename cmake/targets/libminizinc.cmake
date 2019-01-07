@@ -105,7 +105,7 @@ endif()
 # -------------------------------------------------------------------------------------------------------------------
 ## MiniZinc Library definitions
 
-add_library(minizinc
+add_library(minizinc_compiler
   lib/ast.cpp
   lib/astexception.cpp
   lib/aststring.cpp
@@ -185,8 +185,13 @@ add_library(minizinc
   ${FLEX_RegExLexer_OUTPUTS}
 )
 
+if(GECODE_FOUND)
+  target_link_libraries(minizinc_compiler Gecode::Minimodel Gecode::Support)
+  target_compile_definitions(minizinc_compiler PRIVATE HAS_GECODE)
+endif()
+
 install(
-  TARGETS minizinc
+  TARGETS minizinc_compiler
   EXPORT libminizincTargets
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
