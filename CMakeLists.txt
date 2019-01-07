@@ -34,6 +34,9 @@ if(NOT USE_PROPRIETARY)
   set(USE_SCIP OFF)
 endif()
 
+# Export compile commands (useful when working with visual studio code)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # -------------------------------------------------------------------------------------------------------------------
 #  -- CMake initialisation
 
