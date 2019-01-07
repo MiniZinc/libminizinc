@@ -356,7 +356,7 @@ namespace MiniZinc {
           if (!hadDim[curDim]) {
             dims[curDim].second++;
           }
-          exps.push_back(new AnonVar(Location().introduce()));
+          exps.push_back(constants().absent);
           break;
         case T_OBJ_OPEN:
           if (!hadDim[curDim]) {
@@ -388,7 +388,7 @@ namespace MiniZinc {
       case T_BOOL:
         return new BoolLit(Location().introduce(),next.b);
       case T_NULL:
-        return new AnonVar(Location().introduce());
+        return constants().absent;
       case T_OBJ_OPEN:
         return parseSetLit(is);
       case T_LIST_OPEN:
