@@ -8,7 +8,7 @@ if(XPRESS_FOUND AND USE_XPRESS)
               include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_solverinstance.hpp)
 
   target_include_directories(minizinc_xpress PRIVATE ${XPRESS_INCLUDE_DIRS})
-  target_link_libraries(minizinc_xpress minizinc xprb xprs ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(minizinc_xpress minizinc_compiler xprb xprs ${CMAKE_THREAD_LIBS_INIT})
 
   set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_xpress)
   install(

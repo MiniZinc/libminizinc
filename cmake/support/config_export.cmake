@@ -12,8 +12,34 @@ if(NOT IS_ABSOLUTE "${INSTALL_CMAKE_DIR}")
   set(INSTALL_CMAKE_DIR "${CMAKE_INSTALL_PREFIX}/${INSTALL_CMAKE_DIR}")
 endif()
 
+file(RELATIVE_PATH REL_CMAKE_DIR "${CMAKE_INSTALL_PREFIX}"
+     "${INSTALL_CMAKE_DIR}")
+file(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}"
+     "${CMAKE_INSTALL_PREFIX}/include")
+
+# Add external dependencies
+if(TARGET minizinc_gecode)
+  install(
+    FILES cmake/modules/FindGecode.cmake cmake/modules/FindMPFR.cmake
+    DESTINATION ${REL_CMAKE_DIR}
+    COMPONENT dev
+  )
+  if(GECODE_HAS_GIST)
+    set(_CONF_GIST " Gist")
+  endif()
+  set(CONF_DEPENDENCIES "${CONF_DEPENDENCIES}find_dependency(Gecode 6.0 COMPONENTS Driver Float Int Kernel Minimodel Search Set Support${_CONF_GIST})\n")
+endif()
+if(TARGET minizinc_osicbc)
+  install(
+    FILES cmake/modules/FindOsiCBC.cmake
+    DESTINATION ${REL_CMAKE_DIR}
+    COMPONENT dev
+  )
+  set(CONF_DEPENDENCIES "${CONF_DEPENDENCIES}find_dependency(OsiCBC)\n")
+endif()
+
 # Add all targets to the build-tree export set
-export(TARGETS minizinc ${EXTRA_TARGETS}
+export(TARGETS minizinc_compiler ${EXTRA_TARGETS}
        FILE "${PROJECT_BINARY_DIR}/libminizincTargets.cmake")
 
 # Export the package for use from the build-tree
@@ -21,11 +47,6 @@ export(TARGETS minizinc ${EXTRA_TARGETS}
 export(PACKAGE libminizinc)
 
 # Create the libminizincConfig.cmake and libminizincConfigVersion files
-
-file(RELATIVE_PATH REL_CMAKE_DIR "${CMAKE_INSTALL_PREFIX}"
-     "${INSTALL_CMAKE_DIR}")
-file(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}"
-     "${CMAKE_INSTALL_PREFIX}/include")
 # ... for the build tree
 set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}" "${PROJECT_BINARY_DIR}")
 configure_file(

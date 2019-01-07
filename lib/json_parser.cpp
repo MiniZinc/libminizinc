@@ -40,6 +40,7 @@ namespace MiniZinc {
     static Token comma() { return Token(T_COMMA); }
     static Token colon() { return Token(T_COLON); }
     static Token eof() { return Token(T_EOF); }
+    static Token null() { return Token(T_NULL); }
     string toString(void) {
       switch (t) {
         case T_LIST_OPEN: return "[";
@@ -61,6 +62,8 @@ namespace MiniZinc {
         }
         case T_BOOL:
           return b ? "true" : "false";
+        case T_NULL:
+          return "null";
         case T_EOF:
           return "eof";
       }
@@ -127,6 +130,17 @@ namespace MiniZinc {
                 throw JSONError(env,errLocation(),"unexpected token `"+string(rest)+"'");
               state = S_NOTHING;
               return Token(false);
+            }
+              break;
+            case 'n':
+            {
+              char rest[3];
+              is.read(rest,sizeof(rest));
+              column += sizeof(rest);
+              if (!is.good() || std::strncmp(rest, "ull", 3) != 0)
+                throw JSONError(env,errLocation(),"unexpected token `"+string(rest)+"'");
+              state = S_NOTHING;
+              return Token::null();
             }
               break;
             default:
@@ -286,7 +300,7 @@ namespace MiniZinc {
     // precondition: opening parenthesis has been read
     vector<Expression*> exps;
     vector<pair<int,int> > dims;
-    dims.push_back(make_pair(1, 0));
+    dims.emplace_back(1, 0);
     vector<bool> hadDim;
     hadDim.push_back(false);
     Token next;
@@ -294,40 +308,60 @@ namespace MiniZinc {
       next = readToken(is);
       if (next.t!=T_LIST_OPEN)
         break;
-      dims.push_back(make_pair(1, 0));
+      dims.emplace_back(1, 0);
       hadDim.push_back(false);
     }
     int curDim = static_cast<int>(dims.size())-1;
     for (;;) {
       switch (next.t) {
         case T_LIST_CLOSE:
-          if (!hadDim[curDim] && dims[curDim].second>0)
-            dims[curDim].second++;
           hadDim[curDim] = true;
           curDim--;
-          if (curDim<0)
+          if (curDim<0) {
             goto list_done;
+          } else if (!hadDim[curDim]) {
+            dims[curDim].second++;
+          }
           break;
         case T_LIST_OPEN:
           curDim++;
           break;
         case T_COMMA:
-          if (!hadDim[curDim])
-            dims[curDim].second++;
           break;
         case T_INT:
+          if (!hadDim[curDim]) {
+            dims[curDim].second++;
+          }
           exps.push_back(IntLit::a(next.i));
           break;
         case T_FLOAT:
+          if (!hadDim[curDim]) {
+            dims[curDim].second++;
+          }
           exps.push_back(FloatLit::a(next.d));
           break;
         case T_STRING:
+          if (!hadDim[curDim]) {
+            dims[curDim].second++;
+          }
           exps.push_back(new StringLit(Location().introduce(),next.s));
           break;
         case T_BOOL:
+          if (!hadDim[curDim]) {
+            dims[curDim].second++;
+          }
           exps.push_back(new BoolLit(Location().introduce(),next.b));
           break;
+        case T_NULL:
+          if (!hadDim[curDim]) {
+            dims[curDim].second++;
+          }
+          exps.push_back(constants().absent);
+          break;
         case T_OBJ_OPEN:
+          if (!hadDim[curDim]) {
+            dims[curDim].second++;
+          }
           exps.push_back(parseSetLit(is));
           break;
         default:
@@ -353,6 +387,8 @@ namespace MiniZinc {
         return new StringLit(Location().introduce(),next.s);
       case T_BOOL:
         return new BoolLit(Location().introduce(),next.b);
+      case T_NULL:
+        return constants().absent;
       case T_OBJ_OPEN:
         return parseSetLit(is);
       case T_LIST_OPEN:
