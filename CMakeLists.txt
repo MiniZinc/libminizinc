@@ -94,6 +94,7 @@ include(cmake/targets/libminizinc_osicbc.cmake)
 include(cmake/targets/libminizinc_xpress.cmake)
 
 include(cmake/targets/libminizinc_fzn.cmake)
+include(cmake/targets/libminizinc_nl.cmake)
 
 include(cmake/targets/libminizinc_solver.cmake)
 
