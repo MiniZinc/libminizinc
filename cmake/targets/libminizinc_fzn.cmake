@@ -11,7 +11,7 @@ add_library(minizinc_fzn
   include/minizinc/solvers/mzn_solverinstance.hh
 )
 
-target_link_libraries(minizinc_fzn minizinc)
+target_link_libraries(minizinc_fzn minizinc_compiler)
 
 install(
     TARGETS minizinc_fzn

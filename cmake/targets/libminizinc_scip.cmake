@@ -5,7 +5,7 @@ if(SCIP_FOUND AND USE_SCIP)
               solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_scip_wrap.cpp
               solvers/MIP/MIP_scip_solverfactory.cpp lib/algorithms/min_cut.cpp)
   target_include_directories(minizinc_scip PRIVATE ${SCIP_INCLUDE_DIRS})
-  target_link_libraries(minizinc_scip minizinc ${SCIP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(minizinc_scip minizinc_compiler ${SCIP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
   set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_scip)
   install(

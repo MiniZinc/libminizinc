@@ -8,7 +8,7 @@ if(GUROBI_FOUND)
     lib/algorithms/min_cut.cpp
   )
   target_include_directories(minizinc_gurobi PRIVATE ${GUROBI_INCLUDE_DIRS})
-  target_link_libraries(minizinc_gurobi minizinc ${GUROBI_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(minizinc_gurobi minizinc_compiler ${GUROBI_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
   set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_gurobi)
   install(

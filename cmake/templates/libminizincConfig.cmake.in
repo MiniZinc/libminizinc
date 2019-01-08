@@ -8,6 +8,11 @@
 get_filename_component(libminizinc_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 set(libminizinc_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
 
-# Our library dependencies (contains definitions for IMPORTED targets)
+# Our library dependencies
+list(APPEND CMAKE_MODULE_PATH ${libminizinc_CMAKE_DIR})
+include(CMakeFindDependencyMacro)
+@CONF_DEPENDENCIES@
+
+# Our library targets (contains definitions for IMPORTED targets)
 include("${libminizinc_CMAKE_DIR}/libminizincTargets.cmake")
 
