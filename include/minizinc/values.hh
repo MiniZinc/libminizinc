@@ -341,10 +341,14 @@ namespace MiniZinc {
   private:
     double _v;
     bool _infinity;
-    FloatVal(double v, bool infinity) : _v(v), _infinity(infinity) {}
+    void checkOverflow(void) {
+      if (!std::isfinite(_v))
+        throw ArithmeticError("overflow in floating point operation");
+    }
+    FloatVal(double v, bool infinity) : _v(v), _infinity(infinity) { checkOverflow(); }
   public:
     FloatVal(void) : _v(0.0), _infinity(false) {}
-    FloatVal(double v) : _v(v), _infinity(false) {}
+    FloatVal(double v) : _v(v), _infinity(false) { checkOverflow(); }
     FloatVal(const IntVal& v) : _v(static_cast<double>(v._v)), _infinity(!v.isFinite()) {}
     
     double toDouble(void) const {
@@ -361,24 +365,28 @@ namespace MiniZinc {
       if (! (isFinite() && x.isFinite()))
         throw ArithmeticError("arithmetic operation on infinite value");
       _v += x._v;
+      checkOverflow();
       return *this;
     }
     FloatVal& operator -=(const FloatVal& x) {
       if (! (isFinite() && x.isFinite()))
         throw ArithmeticError("arithmetic operation on infinite value");
       _v -= x._v;
+      checkOverflow();
       return *this;
     }
     FloatVal& operator *=(const FloatVal& x) {
       if (! (isFinite() && x.isFinite()))
         throw ArithmeticError("arithmetic operation on infinite value");
       _v *= x._v;
+      checkOverflow();
       return *this;
     }
     FloatVal& operator /=(const FloatVal& x) {
       if (! (isFinite() && x.isFinite()))
         throw ArithmeticError("arithmetic operation on infinite value");
       _v = _v / x._v;
+      checkOverflow();
       return *this;
     }
     FloatVal operator -() const {
@@ -390,6 +398,7 @@ namespace MiniZinc {
       if (!isFinite())
         throw ArithmeticError("arithmetic operation on infinite value");
       _v = _v + 1;
+      checkOverflow();
       return *this;
     }
     FloatVal operator ++(int) {
@@ -397,12 +406,14 @@ namespace MiniZinc {
         throw ArithmeticError("arithmetic operation on infinite value");
       FloatVal ret = *this;
       _v = _v + 1;
+      checkOverflow();
       return ret;
     }
     FloatVal& operator --() {
       if (!isFinite())
         throw ArithmeticError("arithmetic operation on infinite value");
       _v = _v - 1;
+      checkOverflow();
       return *this;
     }
     FloatVal operator --(int) {
@@ -410,6 +421,7 @@ namespace MiniZinc {
         throw ArithmeticError("arithmetic operation on infinite value");
       FloatVal ret = *this;
       _v = _v - 1;
+      checkOverflow();
       return ret;
     }
 
