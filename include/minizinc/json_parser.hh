@@ -33,7 +33,7 @@ namespace MiniZinc {
   class JSONParser {
   protected:
     enum TokenT { T_LIST_OPEN, T_LIST_CLOSE, T_OBJ_OPEN, T_OBJ_CLOSE, T_COMMA, T_COLON,
-      T_STRING, T_INT, T_FLOAT, T_BOOL, T_EOF } t;
+      T_STRING, T_INT, T_FLOAT, T_BOOL, T_NULL, T_EOF } t;
 
     class Token;
     EnvI& env;

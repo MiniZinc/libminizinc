@@ -15,7 +15,7 @@ add_library(minizinc_solver
   include/minizinc/solver.hh
   include/minizinc/solver_config.hh
 )
-target_link_libraries(minizinc_solver minizinc)
+target_link_libraries(minizinc_solver minizinc_compiler)
 
 if(TARGET minizinc_cplex)
   set_target_properties(minizinc_solver PROPERTIES COMPILE_FLAGS ${CPLEX_COMPILE_FLAGS})

@@ -1368,112 +1368,116 @@ namespace MiniZinc {
   }
 
   FloatVal eval_float(EnvI& env, Expression* e) {
-    if (e->type().isint()) {
-      return static_cast<double>(eval_int(env,e).toInt());
-    } else if (e->type().isbool()) {
-      return eval_bool(env,e);
-    }
-    if (FloatLit* fl = e->dyn_cast<FloatLit>()) {
-      return fl->v();
-    }
-    CallStackItem csi(env,e);
-    switch (e->eid()) {
-      case Expression::E_INTLIT:
-      case Expression::E_BOOLLIT:
-      case Expression::E_STRINGLIT:
-      case Expression::E_ANON:
-      case Expression::E_TIID:
-      case Expression::E_SETLIT:
-      case Expression::E_ARRAYLIT:
-      case Expression::E_COMP:
-      case Expression::E_VARDECL:
-      case Expression::E_TI:
-        throw EvalError(env, e->loc(),"not a float expression");
-        break;
-      case Expression::E_ID:
-      {
-        GCLock lock;
-        return eval_id<EvalFloatLit>(env,e)->v();
+    try {
+      if (e->type().isint()) {
+        return FloatVal(eval_int(env,e).toInt());
+      } else if (e->type().isbool()) {
+        return eval_bool(env,e);
       }
-        break;
-      case Expression::E_ARRAYACCESS:
-      {
-        GCLock lock;
-        return eval_float(env,eval_arrayaccess(env,e->cast<ArrayAccess>()));
+      if (FloatLit* fl = e->dyn_cast<FloatLit>()) {
+        return fl->v();
       }
-        break;
-      case Expression::E_ITE:
-      {
-        ITE* ite = e->cast<ITE>();
-        for (int i=0; i<ite->size(); i++) {
-          if (eval_bool(env,ite->e_if(i)))
-            return eval_float(env,ite->e_then(i));
+      CallStackItem csi(env,e);
+      switch (e->eid()) {
+        case Expression::E_INTLIT:
+        case Expression::E_BOOLLIT:
+        case Expression::E_STRINGLIT:
+        case Expression::E_ANON:
+        case Expression::E_TIID:
+        case Expression::E_SETLIT:
+        case Expression::E_ARRAYLIT:
+        case Expression::E_COMP:
+        case Expression::E_VARDECL:
+        case Expression::E_TI:
+          throw EvalError(env, e->loc(),"not a float expression");
+          break;
+        case Expression::E_ID:
+        {
+          GCLock lock;
+          return eval_id<EvalFloatLit>(env,e)->v();
         }
-        return eval_float(env,ite->e_else());
-      }
-        break;
-      case Expression::E_BINOP:
-      {
-        BinOp* bo = e->cast<BinOp>();
-        if (bo->decl() && bo->decl()->e()) {
-          return eval_call<EvalFloatVal,BinOp>(env,bo);
+          break;
+        case Expression::E_ARRAYACCESS:
+        {
+          GCLock lock;
+          return eval_float(env,eval_arrayaccess(env,e->cast<ArrayAccess>()));
         }
-        FloatVal v0 = eval_float(env,bo->lhs());
-        FloatVal v1 = eval_float(env,bo->rhs());
-        switch (bo->op()) {
-          case BOT_PLUS: return v0+v1;
-          case BOT_MINUS: return v0-v1;
-          case BOT_MULT: return v0*v1;
-          case BOT_POW: return std::pow(v0.toDouble(),v1.toDouble());
-          case BOT_DIV:
-            if (v1==0.0)
-              throw ResultUndefinedError(env, e->loc(),"division by zero");
-            return v0 / v1;
-          default: throw EvalError(env, e->loc(),"not a float expression", bo->opToString());
+          break;
+        case Expression::E_ITE:
+        {
+          ITE* ite = e->cast<ITE>();
+          for (int i=0; i<ite->size(); i++) {
+            if (eval_bool(env,ite->e_if(i)))
+              return eval_float(env,ite->e_then(i));
+          }
+          return eval_float(env,ite->e_else());
         }
-      }
-        break;
-      case Expression::E_UNOP:
-      {
-        UnOp* uo = e->cast<UnOp>();
-        if (uo->decl() && uo->decl()->e()) {
-          return eval_call<EvalFloatVal,UnOp>(env,uo);
+          break;
+        case Expression::E_BINOP:
+        {
+          BinOp* bo = e->cast<BinOp>();
+          if (bo->decl() && bo->decl()->e()) {
+            return eval_call<EvalFloatVal,BinOp>(env,bo);
+          }
+          FloatVal v0 = eval_float(env,bo->lhs());
+          FloatVal v1 = eval_float(env,bo->rhs());
+          switch (bo->op()) {
+            case BOT_PLUS: return v0+v1;
+            case BOT_MINUS: return v0-v1;
+            case BOT_MULT: return v0*v1;
+            case BOT_POW: return std::pow(v0.toDouble(),v1.toDouble());
+            case BOT_DIV:
+              if (v1==0.0)
+                throw ResultUndefinedError(env, e->loc(),"division by zero");
+              return v0 / v1;
+            default: throw EvalError(env, e->loc(),"not a float expression", bo->opToString());
+          }
         }
-        FloatVal v0 = eval_float(env,uo->e());
-        switch (uo->op()) {
-          case UOT_PLUS: return v0;
-          case UOT_MINUS: return -v0;
-          default: throw EvalError(env, e->loc(),"not a float expression", uo->opToString());
+          break;
+        case Expression::E_UNOP:
+        {
+          UnOp* uo = e->cast<UnOp>();
+          if (uo->decl() && uo->decl()->e()) {
+            return eval_call<EvalFloatVal,UnOp>(env,uo);
+          }
+          FloatVal v0 = eval_float(env,uo->e());
+          switch (uo->op()) {
+            case UOT_PLUS: return v0;
+            case UOT_MINUS: return -v0;
+            default: throw EvalError(env, e->loc(),"not a float expression", uo->opToString());
+          }
         }
-      }
-        break;
-      case Expression::E_CALL:
-      {
-        Call* ce = e->cast<Call>();
-        if (ce->decl()==NULL)
-          throw EvalError(env, e->loc(), "undeclared function", ce->id());
-        if (ce->decl()->_builtins.f)
-          return ce->decl()->_builtins.f(env,ce);
-        
-        if (ce->decl()->_builtins.e)
-          return eval_float(env,ce->decl()->_builtins.e(env,ce));
+          break;
+        case Expression::E_CALL:
+        {
+          Call* ce = e->cast<Call>();
+          if (ce->decl()==NULL)
+            throw EvalError(env, e->loc(), "undeclared function", ce->id());
+          if (ce->decl()->_builtins.f)
+            return ce->decl()->_builtins.f(env,ce);
+          
+          if (ce->decl()->_builtins.e)
+            return eval_float(env,ce->decl()->_builtins.e(env,ce));
 
-        if (ce->decl()->e()==NULL)
-          throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+          if (ce->decl()->e()==NULL)
+            throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
 
-        return eval_call<EvalFloatVal>(env,ce);
+          return eval_call<EvalFloatVal>(env,ce);
+        }
+          break;
+        case Expression::E_LET:
+        {
+          Let* l = e->cast<Let>();
+          l->pushbindings();
+          FloatVal ret = eval_float(env,l->in());
+          l->popbindings();
+          return ret;
+        }
+          break;
+        default: assert(false); return 0.0;
       }
-        break;
-      case Expression::E_LET:
-      {
-        Let* l = e->cast<Let>();
-        l->pushbindings();
-        FloatVal ret = eval_float(env,l->in());
-        l->popbindings();
-        return ret;
-      }
-        break;
-      default: assert(false); return 0.0;
+    } catch(ArithmeticError& err) {
+      throw EvalError(env, e->loc(), err.msg());
     }
   }
 

@@ -2576,7 +2576,7 @@ function var float: max_t(array[int] of var float: x) :: promise_total =
   elseif length(x)=1 then x[min(index_set(x))]
   elseif length(x)=2 then max(x[1],x[2])
   else let {
-    var float: m ::is_defined_var;
+    var lb_array(x)..ub_array(x): m ::is_defined_var;
     constraint array_float_maximum(m,x) ::defines_var(m);
   } in m
   endif;
@@ -2586,7 +2586,7 @@ function var float: min_t(array[int] of var float: x) :: promise_total =
   elseif length(x)=1 then x[1]
   elseif length(x)=2 then min(x[1],x[2])
   else let {
-    var float: m ::is_defined_var;
+    var lb_array(x)..ub_array(x): m ::is_defined_var;
     constraint array_float_minimum(m,x) ::defines_var(m);
   } in m
   endif;
