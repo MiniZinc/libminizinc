@@ -1,5 +1,5 @@
-#include <minizinc/solvers/nl_solverfactory.hh>
-#include <minizinc/solvers/nl_solverinstance.hh>
+#include <minizinc/solvers/nl/nl_solverfactory.hh>
+#include <minizinc/solvers/nl/nl_solverinstance.hh>
 
 namespace MiniZinc {
   namespace {

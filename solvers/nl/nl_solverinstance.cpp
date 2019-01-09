@@ -13,7 +13,8 @@
 #define NOMINMAX     // Need this before all (implicit) include's of Windows.h
 #endif
 
-#include <minizinc/solvers/nl_solverinstance.hh>
+#include <minizinc/solvers/nl/nl_solverinstance.hh>
+#include <minizinc/solvers/nl/nl_file.hh>
 #include <cstdio>
 #include <fstream>
 
@@ -41,7 +42,7 @@ namespace MiniZinc {
     sc.description("MiniZinc generic Non Linear solver plugin");
     sc.requiredFlags({"--nl-cmd"});
     //sc.stdFlags({"-a","-n","-f","-p","-s","-r","-v"});
-    //sc.tags({"__internal__"});
+    sc.tags({"__internal__"});
     SolverConfigs::registerBuiltinSolver(sc);
   }
   
@@ -49,7 +50,6 @@ namespace MiniZinc {
     string v = "NL solver plugin, compiled  " __DATE__ "  " __TIME__;
     return v;
   }
-
 
   string NL_SolverFactory::getVersion(SolverInstanceBase::Options*) {
     return MZN_VERSION_MAJOR;
@@ -63,7 +63,7 @@ namespace MiniZinc {
   void NL_SolverFactory::printHelp(ostream& os)
   {
     os
-    << "MZN-NL plugin options:" << std::endl
+    << "MZN-NL plugin options: NL_SolverFactory::printHelp TODO" << std::endl
     // << "  --nl-cmd , --nonlinear-cmd <exe>\n     the backend solver filename.\n"
     // << "  -b, --backend, --solver-backend <be>\n     the backend codename. Currently passed to the solver.\n"
     // << "  --fzn-flags <options>, --flatzinc-flags <options>\n     Specify option to be passed to the FlatZinc interpreter.\n"
@@ -89,101 +89,9 @@ namespace MiniZinc {
 
   bool NL_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv)
   {
+    cerr << "NL_SolverFactory::processOption TODO: does not process any option for now" << endl;
     return true;
-  }
-  //
-  //  NLSolverOptions& _opt = static_cast<NLSolverOptions&>(*opt);
-  //  CLOParser cop( i, argv );
-  //  string buffer;
-  //  int nn=-1;
-  //  
-  //  if ( cop.getOption( "--nl-cmd --nonlinear-cmd", &buffer) ) {
-  //    _opt.fzn_solver = buffer;
-  //  } else if ( cop.getOption( "-b --backend --solver-backend", &buffer) ) {
-  //    _opt.backend = buffer;
-  //  } else if ( cop.getOption( "--fzn-flags --flatzinc-flags", &buffer) ) {
-  //    std::vector<std::string> cmdLine = FileUtils::parseCmdLine(buffer);
-  //    for (auto& s : cmdLine) {
-  //      _opt.fzn_flags.push_back(s);
-  //    }
-  //  } else if ( cop.getOption( "-t --solver-time-limit --fzn-time-limit", &nn) ) {
-  //    _opt.fzn_time_limit_ms = nn;
-  //    if (_opt.supports_t) {
-  //      _opt.solver_time_limit_ms = nn;
-  //      _opt.fzn_time_limit_ms += 1000; // kill 1 second after solver should have stopped
-  //    }
-  //  } else if ( cop.getOption( "--fzn-sigint") ) {
-  //    _opt.fzn_sigint = true;
-  //  } else if ( cop.getOption( "--fzn-needs-paths") ) {
-  //    _opt.fzn_needs_paths = true;
-  //  } else if ( cop.getOption( "--fzn-output-passthrough") ) {
-  //    _opt.fzn_output_passthrough = true;
-  //  } else if ( cop.getOption( "--fzn-flag --flatzinc-flag", &buffer) ) {
-  //    _opt.fzn_flags.push_back(buffer);
-  //  } else if ( _opt.supports_n && cop.getOption( "-n --num-solutions", &nn) ) {
-  //    _opt.numSols = nn;
-  //  } else if ( _opt.supports_a && cop.getOption( "-a --all --all-solns --all-solutions") ) {
-  //    _opt.allSols = true;
-  //  } else if ( cop.getOption( "-p --parallel", &nn) ) {
-  //    if (_opt.supports_p)
-  //      _opt.parallel = nn;
-  //  } else if ( cop.getOption( "-k --keep-files" ) ) {
-  //  } else if ( cop.getOption( "-r --seed --random-seed", &buffer) ) {
-  //    if (_opt.supports_r) {
-  //      _opt.fzn_flags.push_back("-r");
-  //      _opt.fzn_flags.push_back(buffer);
-  //    }
-  //  } else if ( cop.getOption( "-s --solver-statistics") ) {
-  //    if (_opt.supports_s) {
-  //      _opt.printStatistics = true;
-  //    }
-  //  } else if ( cop.getOption( "-v --verbose-solving") ) {
-  //    _opt.verbose = true;
-  //  } else if ( cop.getOption( "-f --free-search") ) {
-  //    if (_opt.supports_f)
-  //      _opt.fzn_flags.push_back("-f");
-  //  } else {
-  //    for (auto& fznf : _opt.fzn_solver_flags) {
-  //      if (fznf.t==MZNFZNSolverFlag::FT_ARG && cop.getOption(fznf.n.c_str(), &buffer)) {
-  //        _opt.fzn_flags.push_back(fznf.n);
-  //        _opt.fzn_flags.push_back(buffer);
-  //        return true;
-  //      } else if (fznf.t==MZNFZNSolverFlag::FT_NOARG && cop.getOption(fznf.n.c_str())) {
-  //        _opt.fzn_flags.push_back(fznf.n);
-  //        return true;
-  //      }
-  //    }
-//
-  //    return false;
-  //  }
-  //  return true;
-  //}
-  
-  //void NL_SolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt, const std::vector<MZNFZNSolverFlag>& flags) {
-  //  NLSolverOptions& _opt = static_cast<NLSolverOptions&>(*opt);
-  //  _opt.fzn_solver_flags.clear();
-  //  for (auto& f : flags) {
-  //    if (f.n=="-a") {
-  //      _opt.supports_a = true;
-  //    } else if (f.n=="-n") {
-  //      _opt.supports_n = true;
-  //    } else if (f.n=="-f") {
-  //      _opt.supports_f = true;
-  //    } else if (f.n=="-p") {
-  //      _opt.supports_p = true;
-  //    } else if (f.n=="-s") {
-  //      _opt.supports_s = true;
-  //    } else if (f.n=="-r") {
-  //      _opt.supports_r = true;
-  //    } else if (f.n=="-v") {
-  //      _opt.supports_v = true;
-  //    } else if (f.n=="-t") {
-  //      _opt.supports_t = true;
-  //    } else {
-  //      _opt.fzn_solver_flags.push_back(f);
-  //    }
-  //  }
-  //}
+  }  
 
 
   NLSolverInstance::NLSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* options)
@@ -193,6 +101,19 @@ namespace MiniZinc {
 
   SolverInstance::Status
   NLSolverInstance::solve(void) {
+    cerr << "Launching NLSolverInstance::solve" << endl;
+    // --- --- --- 1) Check options
+    // --- --- --- 2) Prepare for the translation
+    NL_File* file = new NL_File();
+    file->write(std::cout);
+    
+    // --- --- --- 3)
+    cerr << "End of NLSolverInstance::solve" << endl;
+    return SolverInstance::NONE;
+  }
+
+
+  /*
     NLSolverOptions& opt = static_cast<NLSolverOptions&>(*_options);
     if (opt.fzn_solver.empty()) {
       throw InternalError("No FlatZinc solver specified");
@@ -292,6 +213,7 @@ namespace MiniZinc {
       return exitStatus==0 ? SolverInstance::NONE : SolverInstance::ERROR;
     }
   }
+  */
 
   void NLSolverInstance::processFlatZinc(void) {}
 
