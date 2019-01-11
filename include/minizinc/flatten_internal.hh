@@ -159,6 +159,7 @@ namespace MiniZinc {
     void swap();
     void swap_output() { std::swap( model, output ); }
     ASTString reifyId(const ASTString& id);
+    ASTString halfReifyId(const ASTString& id);
     std::ostream& dumpStack(std::ostream& os, bool errStack);
     bool dumpPath(std::ostream& os, bool force = false);
     void addWarning(const std::string& msg);

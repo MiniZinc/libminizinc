@@ -319,7 +319,9 @@ namespace MiniZinc {
     int newIdx = static_cast<int>(_solvers.size());
     _solvers.push_back(sc);
     std::vector<string> sc_tags = sc.tags();
-    sc_tags.push_back(sc.id());
+    std::string id = sc.id();
+    id = stringToLower(id);
+    sc_tags.push_back(id);
     std::string name = sc.name();
     name = stringToLower(name);
     sc_tags.push_back(name);
@@ -678,7 +680,7 @@ namespace MiniZinc {
     TagMap::const_iterator tag_it = _tags.find(getTag(firstTag));
 
     if (tag_it == _tags.end()) {
-      throw ConfigException("no solver with tag "+firstTag+" found");
+      throw ConfigException("no solver with tag "+getTag(firstTag)+" found");
     }
     std::string tv = getVersion(firstTag);
     for (int sidx: tag_it->second) {

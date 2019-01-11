@@ -40,6 +40,9 @@ namespace MiniZinc {
     
     /// Return number of occurrences of \a v
     int occurrences(VarDecl* v);
+
+    /// Return number of constraint usages of \a v
+    int usages(VarDecl* v);
     
     /// Unify \a v0 and \a v1 (removing \a v0)
     void unify(EnvI& env, Model* m, Id* id0, Id* id1);

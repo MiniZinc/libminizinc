@@ -16,15 +16,15 @@
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 #include <minizinc/solver_instance_base.hh>
                     // CMakeLists.txt needs OSICBC_HOME defined
-// #include <CoinPackedVector.hpp>
-// #include <CoinPackedMatrix.hpp>
-// #include <CoinShallowPackedVector.hpp>
-// #include <CoinTime.hpp>
-// #include <OsiSolverInterface.hpp>
-//  #include <OsiCbcSolverInterface.hpp>
-#include <OsiClpSolverInterface.hpp>
-#include <CbcModel.hpp>
-// #include <CbcSolver.hpp>
+// #include <coin/CoinPackedVector.hpp>
+// #include <coin/CoinPackedMatrix.hpp>
+// #include <coin/CoinShallowPackedVector.hpp>
+// #include <coin/CoinTime.hpp>
+// #include <coin/OsiSolverInterface.hpp>
+//  #include <coin/OsiCbcSolverInterface.hpp>
+#include <coin/OsiClpSolverInterface.hpp>
+#include <coin/CbcModel.hpp>
+// #include <coin/CbcSolver.hpp>
 
 
 class MIP_osicbc_wrapper : public MIP_wrapper {

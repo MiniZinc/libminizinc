@@ -186,15 +186,55 @@ namespace MiniZinc {
     return r;
   }
 
+  std::tuple<BCtx, bool> ann2Ctx(VarDecl* vd) {
+    if (vd->ann().contains(constants().ctx.root)) {
+      return std::make_tuple(C_ROOT, true);
+    } else if (vd->ann().contains(constants().ctx.mix)) {
+      return std::make_tuple(C_MIX, true);
+    } else if (vd->ann().contains(constants().ctx.pos)) {
+      return std::make_tuple(C_POS, true);
+    } else if (vd->ann().contains(constants().ctx.neg)) {
+      return std::make_tuple(C_NEG, true);
+    } else {
+      return std::make_tuple(C_MIX, false);
+    }
+  }
+
   void addCtxAnn(VarDecl* vd, BCtx& c) {
     if (vd) {
       Id* ctx_id = NULL;
-      switch (c) {
+      BCtx nc;
+      bool annotated;
+      std::tie(nc, annotated) = ann2Ctx(vd);
+      // If previously annotated
+      if (annotated) {
+        // Early exit
+        if (nc == c || nc == C_ROOT || (nc == C_MIX && c != C_ROOT)){
+          return;
+        }
+        // Remove old annotation
+        switch (nc) {
+          case C_ROOT: vd->ann().remove(constants().ctx.root); break;
+          case C_MIX: vd->ann().remove(constants().ctx.mix); break;
+          case C_POS: vd->ann().remove(constants().ctx.pos); break;
+          case C_NEG: vd->ann().remove(constants().ctx.neg); break;
+          default: assert(false); break;
+        }
+        // Determine new context
+        if (c == C_ROOT) {
+          nc = C_ROOT;
+        } else {
+          nc = C_MIX;
+        }
+      } else {
+        nc = c;
+      }
+      switch (nc) {
         case C_ROOT: ctx_id=constants().ctx.root; break;
         case C_POS: ctx_id=constants().ctx.pos; break;
         case C_NEG: ctx_id=constants().ctx.neg; break;
         case C_MIX: ctx_id=constants().ctx.mix; break;
-        default: assert(false);;
+        default: assert(false); break;
       }
       vd->addAnnotation(ctx_id);
     }
@@ -865,7 +905,10 @@ namespace MiniZinc {
     }
   }
 #undef MZN_FILL_REIFY_MAP
-  
+  ASTString EnvI::halfReifyId(const ASTString& id) {
+    return id.str() + "_imp";
+  }
+
   void EnvI::addWarning(const std::string& msg) {
     if (warnings.size()>20)
       return;
@@ -2118,7 +2161,14 @@ namespace MiniZinc {
                 } else if (c->id() == constants().ids.forall) {
                   nid = constants().ids.array_bool_and;
                 } else if (vd->type().isbool()) {
-                  nid = env.reifyId(c->id());
+                  if (vd->ann().contains(constants().ctx.pos)) {
+                    nid = env.halfReifyId(c->id());
+                    if (env.model->matchFn(env, nid, args, false) == NULL) {
+                      nid = env.reifyId(c->id());
+                    }
+                  } else {
+                    nid = env.reifyId(c->id());
+                  }
                 }
                 nc = new Call(c->loc().introduce(), nid, args);
               }
@@ -4963,6 +5013,7 @@ namespace MiniZinc {
                     Id* id = e0.r()->cast<Id>();
                     ctx1.b = C_MIX;
                     (void) flat_exp(env,ctx1,boe1,id->decl(),constants().var_true);
+                    addCtxAnn(id->decl(), ctx1.b);
                     ret.b = bind(env,Ctx(),b,constants().lit_true);
                     ret.r = bind(env,Ctx(),r,constants().lit_true);
                   }
@@ -5851,6 +5902,7 @@ namespace MiniZinc {
                 VarDecl* reif_b;
                 if (r==NULL || (r != NULL && r->e() != NULL)) {
                   reif_b = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(),Type::varbool()), NULL, NULL, NULL);
+                  addCtxAnn(reif_b, ctx.b);
                   if (reif_b->ti()->domain()) {
                     if (reif_b->ti()->domain() == constants().lit_true) {
                       bind(env,ctx,r,constants().lit_true);
@@ -6672,7 +6724,14 @@ namespace MiniZinc {
                       nc->decl(array_bool_clause_reif);
                     } else {
                       if (c->type().isbool() && vd->type().isbool()) {
-                        cid = env.reifyId(c->id());
+                        if (vd->ann().contains(constants().ctx.pos)) {
+                          cid = env.halfReifyId(c->id());
+                          if (env.model->matchFn(env, cid, args, false) == NULL) {
+                            cid = env.reifyId(c->id());
+                          }
+                        } else {
+                          cid = env.reifyId(c->id());
+                        }
                       }
                       FunctionI* decl = env.model->matchFn(env,cid,args,false);
                       if (decl && decl->e()) {
@@ -6909,17 +6968,6 @@ namespace MiniZinc {
       vd->ti()->domain(NULL);
     }
     
-    // Remove boolean context annotations used only on compilation
-    vd->ann().remove(constants().ctx.mix);
-    vd->ann().remove(constants().ctx.pos);
-    vd->ann().remove(constants().ctx.neg);
-    vd->ann().remove(constants().ctx.root);
-    vd->ann().remove(constants().ann.promise_total);
-    vd->ann().remove(constants().ann.add_to_output);
-    vd->ann().remove(constants().ann.mzn_check_var);
-    vd->ann().remove(constants().ann.rhs_from_assignment);
-    vd->ann().removeCall(constants().ann.mzn_check_enum_var);
-    
     // In FlatZinc the RHS of a VarDecl must be a literal, Id or empty
     // Example:
     //   var 1..5: x = function(y)
@@ -7001,6 +7049,14 @@ namespace MiniZinc {
             GCLock lock;
             vd->e(NULL);
             ASTString cid;
+            std::vector<Expression*> args(c->n_args());
+            for (unsigned int i=args.size(); i--;)
+              args[i] = c->arg(i);
+            if (is_fixed) {
+              args.push_back(constants().lit_false);
+            } else {
+              args.push_back(vd->id());
+            }
             if (c->id() == constants().ids.exists) {
               cid = constants().ids.array_bool_or;
             } else if (c->id() == constants().ids.forall) {
@@ -7008,15 +7064,14 @@ namespace MiniZinc {
             } else if (c->id() == constants().ids.clause) {
               cid = constants().ids.bool_clause_reif;
             } else {
-              cid = env.reifyId(c->id());
-            }
-            std::vector<Expression*> args(c->n_args());
-            for (unsigned int i=static_cast<unsigned int>(args.size()); i--;)
-              args[i] = c->arg(i);
-            if (is_fixed) {
-              args.push_back(constants().lit_false);
-            } else {
-              args.push_back(vd->id());
+              if (vd->ann().contains(constants().ctx.pos)) {
+                cid = env.halfReifyId(c->id());
+                if (env.model->matchFn(env, cid, args, false) == NULL) {
+                  cid = env.reifyId(c->id());
+                }
+              } else {
+                cid = env.reifyId(c->id());
+              }
             }
             Call * nc = new Call(c->loc().introduce(),cid,args);
             nc->type(c->type());
@@ -7171,6 +7226,18 @@ namespace MiniZinc {
         vd->ti(ti);
       }
     }
+
+    // Remove boolean context annotations used only on compilation
+    vd->ann().remove(constants().ctx.mix);
+    vd->ann().remove(constants().ctx.pos);
+    vd->ann().remove(constants().ctx.neg);
+    vd->ann().remove(constants().ctx.root);
+    vd->ann().remove(constants().ann.promise_total);
+    vd->ann().remove(constants().ann.add_to_output);
+    vd->ann().remove(constants().ann.mzn_check_var);
+    vd->ann().remove(constants().ann.rhs_from_assignment);
+    vd->ann().removeCall(constants().ann.mzn_check_enum_var);
+
     return added_constraints;
   }
   
