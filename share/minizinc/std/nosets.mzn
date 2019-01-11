@@ -79,7 +79,21 @@ predicate set_eq_reif(var set of int: x, var set of int: y, var bool: b) ::promi
     )
   endif;
 
-predicate set_ne(var set of int: x, var set of int: y) ::promise_total =
+predicate set_eq_imp(var set of int: x, var set of int: y, var bool: b) =
+  if is_fixed(b) then
+    if fix(b) then (x = y) else true endif
+  else
+  let {
+    array[int] of var bool: bx = set2bools(x);
+    array[int] of var bool: by = set2bools(y);
+  } in b -> forall (i in index_set(bx) union index_set(by)) (
+    if not (i in index_set(bx)) then not by[i]
+    elseif not (i in index_set(by)) then not bx[i]
+    else bx[i]=by[i] endif
+  )
+  endif;
+
+  predicate set_ne(var set of int: x, var set of int: y) ::promise_total =
   let {
     array[int] of var bool: bx = set2bools(x);
     array[int] of var bool: by = set2bools(y);
@@ -92,7 +106,20 @@ predicate set_ne(var set of int: x, var set of int: y) ::promise_total =
 predicate set_ne_reif(var set of int: x, var set of int: y, var bool: b) ::promise_total =
   set_eq_reif( x, y, not b );
 
-  
+predicate set_ne_imp(var set of int: x, var set of int: y, var bool: b) =
+  if is_fixed(b) then
+    if fix(b) then (x != y) else true endif
+  else
+  let {
+    array[int] of var bool: bx = set2bools(x);
+    array[int] of var bool: by = set2bools(y);
+  } in b -> exists (i in index_set(bx) union index_set(by)) (
+    if not (i in index_set(bx)) then by[i]
+    elseif not (i in index_set(by)) then bx[i]
+    else (bx[i] != by[i]) endif
+  )
+  endif;
+
 % Set comparisons are often used just to avoid symmetries.
 % Reifs/imps are done automatically from these templates
 predicate set_le(var set of int: x, var set of int: y) ::promise_total =
@@ -130,10 +157,21 @@ predicate set_subset_reif(var set of int: x, var set of int: y, var bool: b) ::p
     else bx[i] -> by[i] endif
   );
 
+predicate set_subset_imp(var set of int: x, var set of int: y, var bool: b) =
+  let {
+    array[int] of var bool: bx = set2bools(x);
+    array[int] of var bool: by = set2bools(y);
+  } in b -> forall (i in index_set(bx)) (
+    if not (i in index_set(by)) then not bx[i]
+    else bx[i] -> by[i] endif
+  );
+
 %%% Map the subset operation to superset
 predicate set_superset(var set of int: x, var set of int: y) ::promise_total = set_subset( y, x );
 predicate set_superset_reif(var set of int: x, var set of int: y, var bool: b) ::promise_total =
     set_subset_reif( y, x, b );
+predicate set_superset_imp(var set of int: x, var set of int: y, var bool: b) =
+  set_subset_imp(y,x,b);
 
 function var set of int: set_intersect(var set of int: x, var set of int: y) ::promise_total =
   let {

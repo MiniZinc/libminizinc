@@ -29,6 +29,59 @@ predicate aux_float_eq_if_1(var float: x, var float: y, var int: p) =
     aux_float_ge_if_1(x, y, p)
   endif;
 
+predicate aux_int_eq_if_1(var int: x, var int: y, var int: p) =
+  if is_fixed(p) then
+    if fix(p) = 1 then (x = y) else true endif
+  elseif is_fixed(x) /\ is_fixed(y) then
+    if fix(x) != fix(y) then (p = 0) else true endif
+  % elseif is_fixed(x-y) then % TODO: Necessary for integers??
+  %   if 0.0!=fix(x-y) then p==0 else true endif
+  % elseif fPostprocessDomains /\ fPostproDom_AUX /\ fPostproDom_DIFF then
+  % % TODO MIPDomains
+  % elseif fMZN__UseIndicators then % TODO: Necessary for integers??
+  %   aux_float_eq_if_1__IND(x, y, p)
+  else
+    aux_int_le_if_1(x, y, p) /\
+    aux_int_ge_if_1(x, y, p)
+  endif;
+
+predicate aux_float_ne_if_1(var float: x, var float: y, var int: p) =
+  if is_fixed(p) then
+    if fix(p) = 1 then (x = y) else true endif
+  elseif is_fixed(x) /\ is_fixed(y) then         %%% Needed to avoid constant domain var
+    if (fix(x) = fix(y)) then (p = 0) else true endif
+  elseif is_fixed(x-y) then                      %%% Hypothetically possible to land here
+    if (0.0 = fix(x-y)) then (p = 0) else true endif
+  % TODO: What is necessary for not equals?
+  % elseif fPostprocessDomains /\ fPostproDom_AUX /\ fPostproDom_DIFF then
+  %   aux_float_ne_zero_if_1__POST(x - y, p, p)
+  % elseif fMZN__UseIndicators then
+  %   aux_float_ne_if_1__IND(x, y, p)
+  else
+    let { array[1..2] of var bool: q } in
+      ( q[1] -> (x < y) ) /\
+      ( q[2] -> (x > y) ) /\
+      (sum(q) = p)
+  endif;
+
+predicate aux_int_ne_if_1(var int: x, var int: y, var int: p) =
+  if is_fixed(p) then
+    if fix(p) = 1 then (x != y) else true endif
+  elseif is_fixed(x) /\ is_fixed(y) then
+    if fix(x) = fix(y) then (p = 0) else true endif
+  % elseif is_fixed(x-y) then % TODO: Necessary for integers??
+  %   if 0.0!=fix(x-y) then p==0 else true endif
+  % elseif fPostprocessDomains /\ fPostproDom_AUX /\ fPostproDom_DIFF then
+  % % TODO MIPDomains
+  % elseif fMZN__UseIndicators then % TODO: Necessary for integers??
+  %   aux_float_eq_if_1__IND(x, y, p)
+  else
+    let { array[1..2] of var bool: q } in
+      ( q[1] -> (x < y) ) /\
+      ( q[2] -> (x > y) ) /\
+      (sum(q) = p)
+  endif;
+
 predicate aux_int_le_zero_if_0(var int: x, var int: p) =
   if is_fixed(p) then
     if 0==fix(p) then x<=0 else true endif         %% 0==fix !!
@@ -105,8 +158,11 @@ predicate aux_int_lt_if_0(var int: x, var int: y, var int: p) =
 predicate aux_int_gt_if_0(var int: x, var int: y, var int: p) =
     aux_int_le_zero_if_0(y - x + 1, p);
 
-predicate aux_int_lt_if_1(var int: x, int: y, var int: p) =
+predicate aux_int_lt_if_1(var int: x, var int: y, var int: p) =
     aux_int_le_zero_if_0(x - y + 1, 1 - p);
+
+predicate aux_int_gt_if_1(var int: x, var int: y, var int: p) =
+    aux_int_le_zero_if_0(y - x + 1, 1 - p);
 
 %% int: switching differences to float to avoid creating integer vars
 /*   Used anywhere?
@@ -153,8 +209,11 @@ predicate aux_float_gt_if_0(var float: x, var float: y, var int: p) =
 predicate aux_float_lt_if_1(var float: x, var float: y, var int: p) =
     aux_float_lt_zero_if_0(x - y, 1 - p);
 
-    
-% -------------------------- Domains postpro ---------------------------    
+predicate aux_float_gt_if_1(var float: x, var float: y, var int: p) =
+    aux_float_lt_zero_if_0(y - x, 1 - p);
+
+
+% -------------------------- Domains postpro ---------------------------
     %% To avoid looking if an original int var x-y exists and has eq_encode:
     %% Passing both int and float version of the indicator for flexibility:
 predicate aux_float_eq_zero_if_1__POST(var float: x, var int: pI, var float: p);
@@ -162,4 +221,3 @@ predicate aux_float_eq_zero_if_1__POST(var float: x, var int: pI, var float: p);
 predicate aux_int_le_zero_if_1__POST(var int: x, var int: p);
 predicate aux_float_le_zero_if_1__POST(var float: x, var int: pI, var float: p);
 predicate aux_float_lt_zero_if_1__POST(var float: x, var int: pI, var float: p, float: eps);
-

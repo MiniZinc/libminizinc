@@ -17,6 +17,7 @@
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/optimize_constraints.hh>
+#include <minizinc/chain_compressor.hh>
 
 #include <vector>
 #include <deque>
@@ -96,6 +97,23 @@ namespace MiniZinc {
   int VarOccurrences::occurrences(VarDecl* v) {
     IdMap<Items>::iterator vi = _m.find(v->id()->decl()->id());
     return (vi==_m.end() ? 0 : static_cast<int>(vi->second.size()));
+  }
+
+  int VarOccurrences::usages(VarDecl* v) {
+    auto vi = _m.find(v->id()->decl()->id());
+    if (vi == _m.end()) {
+      return 0;
+    }
+    int count = 0;
+    for (Item* i : vi->second) {
+      auto vd = i->dyn_cast<VarDeclI>();
+      if (vd && vd->e() && vd->e() && vd->e()->e() && (vd->e()->e()->isa<ArrayLit>() || vd->e()->e()->isa<SetLit>())) {
+        count += usages(vd->e());
+      } else {
+        count++;
+      }
+    }
+    return count;
   }
   
   void CollectOccurrencesI::vVarDeclI(VarDeclI* v) {
@@ -711,8 +729,20 @@ namespace MiniZinc {
         topDown(cd,ci->e());
         envi.flat_removeItem(toRemoveConstraints[i]);
       }
+
+      // Phase 4: Chain Breaking
+      {
+        ImpCompressor imp(envi, m, deletedVarDecls);
+        LECompressor le(envi, m, deletedVarDecls);
+        for (auto &item : m) {
+          imp.trackItem(item);
+          le.trackItem(item);
+        }
+        imp.compress();
+        le.compress();
+      }
       
-      // Phase 4: handle boolean constraints again (todo: check if we can
+      // Phase 5: handle boolean constraints again (todo: check if we can
       // refactor this into a separate function)
       //
       // Difference to phase 2: constraint argument arrays are actually shortened here if possible
@@ -805,7 +835,7 @@ namespace MiniZinc {
 
       }
       
-      // Phase 5: remove deleted variables if possible
+      // Phase 6: remove deleted variables if possible
       while (!deletedVarDecls.empty()) {
         VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
         if (envi.vo.occurrences(cur) == 0) {
