@@ -21,7 +21,7 @@ import utils, json_config, json_log, mzn_exec, cmp_result_logs
 from json_config import s_CommentKey, s_AddKey
 
 s_ProgramDescr = 'MiniZinc testing automation. (c) 2018 Monash University, gleb.belov@monash.edu'
-s_ProgramDescrLong = ( "Allows checking of MiniZinc solutions by configurable checker profiles. The solutions can be input from previous logs or produced by a chosen solver profile, for 1 or several instances, with result comparison and (TODO) ranking. New solutions' summary logs, detailed stdout/err outputs, and statistics are saved in subfolder mzn-test/LOGS, /OUTPUTS, and /STATS, resp.")
+s_ProgramDescrLong = ( "Allows checking of MiniZinc solutions by configurable checker profiles. The solutions can be input from previous logs or produced by a chosen solver profile, for 1 or several instances, with result comparison and some ranking. New solutions' summary logs, detailed stdout/err outputs, and statistics are saved in subfolder mzn-test/LOGS, /OUTPUTS, and /STATS, resp.")
 
 ###########################   GENERAL CONFIG. Could be in the JSON config actually    #########################
 sDirResults = "mzn-test"

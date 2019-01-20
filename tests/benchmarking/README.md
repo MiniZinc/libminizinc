@@ -1,11 +1,12 @@
-MiniZinc testing automation. (c) 2018 Monash University, gleb.belov@monash.edu
+# MiniZinc benchmarking automation
+
 Allows checking of MiniZinc solutions by configurable checker profiles. The
 solutions can be input from previous logs or produced by a chosen solver
-profile, for 1 or several instances, with result comparison and (TODO)    
+profile, for 1 or several instances, with result comparison and some    
 ranking. New solutions' summary logs, detailed stdout/err outputs, and      
 statistics are saved in subfolder mzn-test/LOGS, /OUTPUTS, and /STATS, resp.
 
-USAGE EXAMPLES:
+## USAGE EXAMPLES
 
 (1) "mzn-test.py model.mzn data.dzn [--checkDZN stdout.txt
 [--checkStderr stderr.txt]] [--chkPrf MINIZINC-CHK --chkPrf FZN-GECODE-CHK]
