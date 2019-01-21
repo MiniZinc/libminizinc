@@ -127,7 +127,7 @@ namespace MiniZinc {
       _opt.allSols = true;
     } else if ( cop.getOption( "-p --parallel", &nn) ) {
       if (_opt.supports_p)
-        _opt.parallel = nn;
+        _opt.parallel = to_string(nn);
     } else if ( cop.getOption( "-k --keep-files" ) ) {
     } else if ( cop.getOption( "-r --seed --random-seed", &buffer) ) {
       if (_opt.supports_r) {
