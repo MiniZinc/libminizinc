@@ -223,14 +223,17 @@ namespace MiniZinc {
             } else if (ai->id()=="executable") {
               std::string exePath = getString(ai);
               sc._executable = exePath;
-              std::string exe;
-              if (exePath.size() > 2 && exePath[0]=='.' && (exePath[1]=='/' || (exePath[1]=='.' && exePath[2]=='/'))) {
-                exe = FileUtils::find_executable(FileUtils::file_path(basePath+"/"+getString(ai), basePath));
-              } else {
-                exe = FileUtils::find_executable(exePath);
-              }
-              if (!exe.empty()) {
+              std::string exe = FileUtils::find_executable(FileUtils::file_path(basePath+"/"+exePath, basePath));
+              int nr_found = (int) (! exe.empty());
+              std::string tmp = FileUtils::find_executable(exePath);
+              nr_found += (int) (! tmp.empty());
+              exe = exe.empty() ? tmp : exe;
+              if (nr_found > 0) {
                 sc._executable_resolved = exe;
+                if (nr_found > 1) {
+                  std::cerr << "Warning: multiple executables '" << exePath << "' found on the system, using '"
+                            <<  exe << "'" << std::endl;
+                }
               }
             } else if (ai->id()=="mznlib") {
               std::string libPath = getString(ai);
