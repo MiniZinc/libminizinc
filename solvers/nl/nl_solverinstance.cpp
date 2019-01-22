@@ -18,14 +18,14 @@
 #include <cstdio>
 #include <fstream>
 
-#include <minizinc/timer.hh>
-#include <minizinc/prettyprinter.hh>
-#include <minizinc/pathfileprinter.hh>
-#include <minizinc/parser.hh>
-#include <minizinc/typecheck.hh>
-#include <minizinc/builtins.hh>
-#include <minizinc/eval_par.hh>
-#include <minizinc/process.hh>
+// #include <minizinc/timer.hh>
+// #include <minizinc/prettyprinter.hh>
+// #include <minizinc/pathfileprinter.hh>
+// #include <minizinc/parser.hh>
+// #include <minizinc/typecheck.hh>
+// #include <minizinc/builtins.hh>
+// #include <minizinc/eval_par.hh>
+// #include <minizinc/process.hh>
 
 #ifdef _WIN32
 #undef ERROR
@@ -104,68 +104,24 @@ namespace MiniZinc {
     cerr << "Launching NLSolverInstance::solve" << endl;
     // --- --- --- 1) Check options
     // --- --- --- 2) Prepare for the translation
-    NL_File* file = new NL_File();
-    file->write(std::cout);
+    NLFile file; // = new NLFile();
+    file.print_on(cout);
     
-    // --- --- --- 3)
+    // --- --- --- 3) Testing of the AST
+    cerr << "AST tests" << endl;
+
+    for (VarDeclIterator it = _fzn->begin_vardecls(); it != _fzn->end_vardecls(); ++it) {
+      if(!it->removed()) {
+        Item& item = *it;
+        analyse(&item);
+      }
+    } // END FOR
+
     cerr << "End of NLSolverInstance::solve" << endl;
     return SolverInstance::NONE;
   }
 
-
-  /*
-    NLSolverOptions& opt = static_cast<NLSolverOptions&>(*_options);
-    if (opt.fzn_solver.empty()) {
-      throw InternalError("No FlatZinc solver specified");
-    }
-    /// Passing options to solver
-    vector<string> cmd_line;
-    cmd_line.push_back( opt.fzn_solver );
-    string sBE = opt.backend;
-    if ( sBE.size() ) {
-      cmd_line.push_back( "-b" );
-      cmd_line.push_back( sBE );
-    }
-    for (auto& f : opt.fzn_flags) {
-      cmd_line.push_back( f );
-    }
-    if ( opt.numSols != 1 ) {
-      cmd_line.push_back( "-n" );
-      ostringstream oss;
-      oss << opt.numSols;
-      cmd_line.push_back( oss.str() );
-    }
-    if ( opt.allSols ) {
-      cmd_line.push_back( "-a" );
-    }
-    if ( opt.parallel.size() ) {
-      cmd_line.push_back( "-p" );
-      ostringstream oss;
-      oss << opt.parallel;
-      cmd_line.push_back( oss.str() );
-    }
-    if (opt.printStatistics) {
-      cmd_line.push_back( "-s" );
-    }
-    if (opt.solver_time_limit_ms != 0) {
-      cmd_line.push_back( "-t" );
-      std::ostringstream oss;
-      oss << opt.solver_time_limit_ms;
-      cmd_line.push_back( oss.str() );
-    }
-    if (opt.verbose) {
-      if (opt.supports_v)
-        cmd_line.push_back( "-v" );
-      std::cerr << "Using FZN solver " << cmd_line[0]
-        << " for solving, parameters: ";
-      for ( int i=1; i<cmd_line.size(); ++i )
-        cerr << "" << cmd_line[i] << " ";
-      cerr << std::endl;
-    }
-    int timelimit = opt.fzn_time_limit_ms;
-    bool sigint = opt.fzn_sigint;
-    
-    FileUtils::TmpFile fznFile(".fzn");
+/*  FileUtils::TmpFile fznFile(".fzn");
     std::ofstream os(fznFile.name());
     Printer p(os, 0, true);
     for (FunctionIterator it = _fzn->begin_functions(); it != _fzn->end_functions(); ++it) {
@@ -214,6 +170,218 @@ namespace MiniZinc {
     }
   }
   */
+
+  void NLSolverInstance::analyse(const Item* i) {
+    // Guard
+    if (i==NULL) return;
+
+    // Switch on the id of item
+    switch (i->iid()) {
+      case Item::II_INC: {
+        cerr << "Inclusion not implemented. (include \"" << i->cast<IncludeI>()->f() << "\")" << endl;
+        assert(false);
+      } break;
+
+      case Item::II_VD: {
+        Expression* e = i->cast<VarDeclI>()->e();
+        analyse(e);
+      } break;
+
+      case Item::II_ASN:{
+        cerr << "Assignement not implemented." << endl;
+        assert(false);
+      } break;
+
+      case Item::II_CON: {
+        cerr << "Constraint not implemented." << endl;
+        assert(false);
+      } break;
+
+      case Item::II_SOL: {
+        cerr << "Solve not implemented." << endl;
+        assert(false);
+      } break;
+
+      case Item::II_OUT: {
+        cerr << "Output not implemented." << endl;
+        assert(false);
+      } break;
+
+      case Item::II_FUN: {
+        cerr << "Function/predicate/test not implemented." << endl;
+        assert(false);        
+      } break;
+    }// END OF SWITCH
+  }
+
+
+  void NLSolverInstance::analyse(const Expression* e) {
+    // Guard
+    if (e==NULL) return;
+
+    // Dispatch on expression type
+    switch (e->eid()) {
+
+      // --- --- --- Literals
+      case Expression::E_INTLIT: {
+        cerr << "case " << e->eid() << " not implemented." << endl;
+        assert(false);
+      } break;
+
+      case Expression::E_FLOATLIT: {
+        cerr << "case " << e->eid() << " not implemented." << endl;
+        assert(false);
+      } break;
+
+      case Expression::E_SETLIT: {
+        cerr << "case " << e->eid() << " not implemented." << endl;
+        assert(false);        
+      } break;
+
+      case Expression::E_BOOLLIT: {
+        cerr << "case " << e->eid() << " not implemented." << endl;
+        assert(false);        
+      } break;
+
+      case Expression::E_STRINGLIT: {
+        cerr << "case " << e->eid() << " not implemented." << endl;
+        assert(false);        
+      } break;
+
+      /// --- --- --- Expressions
+
+      case Expression::E_ID: { // Identifier
+        cerr << "case " << e->eid() << " not implemented." << endl;
+        assert(false);      
+      } break;
+
+      case Expression::E_TIID: { // Type-inst identifier
+        cerr << "case " << e->eid() << " not implemented." << endl;
+        assert(false);      
+      } break;
+
+      case Expression::E_ANON: { // Annotation
+        cerr << "case " << e->eid() << " not implemented." << endl;
+        assert(false);      
+      } break;
+
+      case Expression::E_ARRAYLIT: {
+        cerr << "case " << e->eid() << " not implemented." << endl;
+        assert(false);        
+      } break;
+
+      case Expression::E_ARRAYACCESS: {
+        cerr << "case " << e->eid() << " not implemented." << endl;
+        assert(false);        
+      } break;
+
+      case Expression::E_COMP:{ // Comprehension
+        cerr << "case " << e->eid() << " not implemented." << endl;
+        assert(false);      
+      } break;
+
+      case Expression::E_ITE:{ // If-then-else expression
+        cerr << "case " << e->eid() << " not implemented." << endl;
+        assert(false);      
+      } break;
+
+      case Expression::E_BINOP: {
+        cerr << "case " << e->eid() << " not implemented." << endl;
+        assert(false);        
+      } break;
+      
+      case Expression::E_UNOP: {
+        cerr << "case " << e->eid() << " not implemented." << endl;
+        assert(false);        
+      } break;
+
+      case Expression::E_CALL: {
+        cerr << "case " << e->eid() << " not implemented." << endl;
+        assert(false);        
+      } break;
+
+
+      case Expression::E_VARDECL: {
+        // --- --- ---
+        const VarDecl &vd = *e->cast<VarDecl>();
+        const TypeInst &ti = *vd.ti()->cast<TypeInst>();
+        const Expression &rhs = *vd.e();
+
+        // --- --- --- Get the name
+        stringstream os; 
+        if (vd.id()->idn() != -1) {
+          os << " X_INTRODUCED_" << vd.id()->idn() << "_";
+        } else if (vd.id()->v().size() != 0){
+          os << " " << vd.id()->v();
+        } 
+        string name = os.str();     
+
+        // --- --- --- Switch accoring to the type/kind of declaration
+        if (ti.isEnum()){
+          nl_file->add_vdecl_enum();
+          cerr << "vdecl enum not implemented" << endl;
+          assert(false);
+        /*} else if(env) {
+          nl_file->add_vdecl_tystr();
+          cerr << "vdecl tystr not implemented" << endl;
+          assert(false);*/
+        } else {
+          if(ti.isarray()){
+            // Array
+            nl_file->add_vdecl_array(name, ti.ranges(), ti.type(), ti.domain() );
+            cerr << "vedcl array not implemented" << endl;
+            assert(false);
+          } else {
+            // "Normal" var
+            nl_file->add_vdecl(name, ti.type(), ti.domain() );
+            cerr << "vedcl array not implemented" << endl;
+            assert(false);
+          }
+        } 
+
+        
+/*  // VDECL
+                
+          p(vd.ti());
+          if (!vd.ti()->isEnum()) {
+            os << ":";
+          }
+
+          if (vd.id()->idn() != -1) {
+            os << " X_INTRODUCED_" << vd.id()->idn() << "_";
+          } else if (vd.id()->v().size() != 0)
+            os << " " << vd.id()->v();
+          if (vd.introduced()) {
+            os << " ::var_is_introduced ";
+          }
+          p(vd.ann());
+          if (vd.e()) {
+            os << " = ";
+            p(vd.e());
+          }
+          */
+
+     
+      } break;
+
+
+      case Expression::E_LET: {
+        cerr << "case " << e->eid() << " not implemented." << endl;
+        assert(false);        
+      } break;
+
+      case Expression::E_TI: {  // TypeInst
+        cerr << "case " << e->eid() << " not implemented." << endl;
+        assert(false);      
+      } break;
+
+    } // END OF SWITCH
+  } // END OF FUN
+
+
+
+
+
 
   void NLSolverInstance::processFlatZinc(void) {}
 

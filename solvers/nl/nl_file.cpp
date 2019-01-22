@@ -11,13 +11,19 @@
 
 namespace MiniZinc {
 
+    // ostream& operator<<( ostream& o, Printable& p ) {
+    //     p.print_on(o);
+    //     return o;
+    // }
+
+
     // --- --- --- Header
 
     // --- Write the header
     // The header is composed of then lines.
     // We describe them belove as we proceed.
     // '#' starts a comment until the end of line.
-    void NL_File::Header::write(ostream& os){
+    ostream& NLHeader::print_on(ostream& os) const {
         
         // 1st line:
         // 'g': file will be in text format
@@ -87,10 +93,41 @@ namespace MiniZinc {
             << nb_common_exprs_in_single_constraint_only << " "
             << nb_common_exprs_in_single_objectives_only << " "
             << "# Nb of common expressions in: both, constraints only, objectives only, single constraint, single objective.\n";
+
+        return os;
     }
 
-    // --- --- --- NL_File
-    void NL_File::write(ostream& os){
-        header.write(os);
+
+
+
+    // --- --- --- Segments
+
+
+
+
+
+    // --- --- --- NLFile
+
+    ostream& NLFile::print_on(ostream& os) const{
+        header.print_on(os);
+        return os;
     }
+    
+
+    // --- --- --- --- --- --- VDECL
+
+    void NLFile::add_vdecl_enum(){}
+
+    void NLFile::add_vdecl_tystr(){}
+
+    void NLFile::add_vdecl_array(string name, ASTExprVec<TypeInst> range, const Type& type, const Expression* domain){}
+
+    void NLFile::add_vdecl(string name, const Type& type, const Expression* domain){
+        // Ensure that the variable is not in the map, then insert it.
+        assert(variable_index.find(name) != variable_index.end());
+        int index = variable_index.size();
+        variable_index[name]=index;
+        // Check the type
+    }
+
 }

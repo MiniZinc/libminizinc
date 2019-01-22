@@ -9,6 +9,9 @@
 
 #include <minizinc/flattener.hh>
 #include <minizinc/solver.hh>
+#include <minizinc/ast.hh>
+
+#include <minizinc/solvers/nl/nl_file.hh>
 
 namespace MiniZinc {
 
@@ -45,6 +48,8 @@ namespace MiniZinc {
     protected:
       Model* _fzn;
       Model* _ozn;
+      NLFile* nl_file;
+
     public:
       NLSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
 
@@ -60,7 +65,23 @@ namespace MiniZinc {
 
     protected:
       Expression* getSolutionValue(Id* id);
+
+
+      void analyse(const Item* i);
+
+      void analyse(const Expression* e);
   };
+
+
+
+
+
+
+
+
+
+
+
 
   class NL_SolverFactory: public SolverFactory {
   protected:
