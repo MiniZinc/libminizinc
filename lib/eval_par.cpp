@@ -406,6 +406,7 @@ namespace MiniZinc {
   }
   
   ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
+    CallStackItem csi(env,e);
     switch (e->eid()) {
     case Expression::E_INTLIT:
     case Expression::E_FLOATLIT:
@@ -843,6 +844,7 @@ namespace MiniZinc {
   }
   
   bool eval_bool(EnvI& env, Expression* e) {
+    CallStackItem csi(env,e);
     try {
       if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
         return bl->v();
@@ -1105,6 +1107,7 @@ namespace MiniZinc {
   }
 
   IntSetVal* eval_boolset(EnvI& env, Expression* e) {
+    CallStackItem csi(env,e);
     switch (e->eid()) {
       case Expression::E_SETLIT:
       {
@@ -1368,6 +1371,7 @@ namespace MiniZinc {
   }
 
   FloatVal eval_float(EnvI& env, Expression* e) {
+    CallStackItem csi(env,e);
     try {
       if (e->type().isint()) {
         return FloatVal(eval_int(env,e).toInt());
@@ -1482,6 +1486,7 @@ namespace MiniZinc {
   }
 
   std::string eval_string(EnvI& env, Expression* e) {
+    CallStackItem csi(env,e);
     switch (e->eid()) {
       case Expression::E_STRINGLIT:
         return e->cast<StringLit>()->v().str();
