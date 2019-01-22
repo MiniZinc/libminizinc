@@ -48,7 +48,7 @@ namespace MiniZinc {
     protected:
       Model* _fzn;
       Model* _ozn;
-      NLFile* nl_file;
+      NLFile nl_file;
 
     public:
       NLSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);

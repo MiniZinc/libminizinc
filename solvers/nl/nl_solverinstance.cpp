@@ -104,8 +104,7 @@ namespace MiniZinc {
     cerr << "Launching NLSolverInstance::solve" << endl;
     // --- --- --- 1) Check options
     // --- --- --- 2) Prepare for the translation
-    NLFile file; // = new NLFile();
-    file.print_on(cout);
+    cout << nl_file;
     
     // --- --- --- 3) Testing of the AST
     cerr << "AST tests" << endl;
@@ -183,8 +182,10 @@ namespace MiniZinc {
       } break;
 
       case Item::II_VD: {
+        cerr << "II_VD...";
         Expression* e = i->cast<VarDeclI>()->e();
         analyse(e);
+        cerr << " done!" << endl;
       } break;
 
       case Item::II_ASN:{
@@ -318,7 +319,7 @@ namespace MiniZinc {
 
         // --- --- --- Switch accoring to the type/kind of declaration
         if (ti.isEnum()){
-          nl_file->add_vdecl_enum();
+          nl_file.add_vdecl_enum();
           cerr << "vdecl enum not implemented" << endl;
           assert(false);
         /*} else if(env) {
@@ -327,15 +328,10 @@ namespace MiniZinc {
           assert(false);*/
         } else {
           if(ti.isarray()){
-            // Array
-            nl_file->add_vdecl_array(name, ti.ranges(), ti.type(), ti.domain() );
-            cerr << "vedcl array not implemented" << endl;
-            assert(false);
+            nl_file.add_vdecl_array(name, ti.ranges(), ti.type(), ti.domain() );
           } else {
             // "Normal" var
-            nl_file->add_vdecl(name, ti.type(), ti.domain() );
-            cerr << "vedcl array not implemented" << endl;
-            assert(false);
+            nl_file.add_vdecl(name, ti.type(), ti.domain() );
           }
         } 
 

@@ -31,14 +31,20 @@ namespace MiniZinc {
     class Printable {
         public:
         virtual ostream& print_on( ostream& o ) const =0;
-        friend std::ostream& operator<< (std::ostream& stream, const Printable& p);
     };
+
+    template<class Char, class Traits>
+    std::basic_ostream<Char,Traits>&
+    operator <<(std::basic_ostream<Char,Traits>& o, const Printable& p){
+        p.print_on(o);
+        return o;
+    }
 
 
 
 
     // --- --- --- Header
-    class NLHeader:Printable{
+    class NLHeader: public Printable{
 
         public:
 
@@ -153,7 +159,7 @@ namespace MiniZinc {
     // Adding items in the nl file is done through adding segment (or adding item in a segment).
     // In turn, segments are supposed to update the header accordingly, hence they need a reference to it.
     // As for the header, segment are printable.
-    class NLSegment: Printable {
+    class NLSegment: public Printable {
 
         public:
 
@@ -186,7 +192,7 @@ namespace MiniZinc {
     // --- --- --- Segments specialisation
     
     // "b   bounds on variable"
-    class NLSBounds: NLSegment {
+    class NLSBounds: public NLSegment {
         public:
         // --- --- --- --- --- --- --- --- --- Fields
         
@@ -198,19 +204,43 @@ namespace MiniZinc {
     };
 
 
+    // --- --- --- Variable Declaration Reord
+    class VDecl {
+        public:
+            // --- --- --- --- --- --- --- --- --- Fields
+            bool is_integer;
+            const string& name;
+            int index;
+
+            // --- --- --- Integer case
+            long llb, lub;
+            
+            // --- --- --- Float case (!is_integer)
+            double dlb, dub;
+
+            // --- --- --- --- --- --- --- --- --- Methods
+            VDecl(const string& n, int i, long lb, long ub):
+                is_integer(true), name(n), index(i), llb(lb), lub(ub) { }
+
+            VDecl(const string& n, int i, double lb, double ub):
+                is_integer(false), name(n), index(i), dlb(lb), dub(ub) { }
+
+    };
+
+
     // --- --- --- NL Files
 
-    class NLFile: Printable {
+    class NLFile: public Printable {
 
         public:
 
         // --- --- --- --- --- --- --- --- --- Fields
-        NLHeader header={};                     // 0-init
-        std::map<string,int> variable_index;    // Mapping variable name -> variable index
+        NLHeader header={};                         // 0-init
+        std::map<string,int> variable_index={};     // Mapping variable name -> variable index
         
 
         // --- --- --- --- --- --- --- --- --- Methods
-
+        
         ostream& print_on( ostream& o ) const override ;
 
         // --- --- --- --- --- --- VDECL
@@ -218,9 +248,9 @@ namespace MiniZinc {
             
         void add_vdecl_tystr();
 
-        void add_vdecl_array(string name, ASTExprVec<TypeInst> range, const Type& type, const Expression* domain);
+        void add_vdecl_array(const string& name, ASTExprVec<TypeInst> range, const Type& type, const Expression* domain);
 
-        void add_vdecl(string name, const Type& type, const Expression* domain);
+        void add_vdecl(const string& name, const Type& type, const Expression* domain);
 
     };
 

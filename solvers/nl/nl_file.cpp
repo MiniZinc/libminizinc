@@ -11,12 +11,6 @@
 
 namespace MiniZinc {
 
-    // ostream& operator<<( ostream& o, Printable& p ) {
-    //     p.print_on(o);
-    //     return o;
-    // }
-
-
     // --- --- --- Header
 
     // --- Write the header
@@ -120,14 +114,64 @@ namespace MiniZinc {
 
     void NLFile::add_vdecl_tystr(){}
 
-    void NLFile::add_vdecl_array(string name, ASTExprVec<TypeInst> range, const Type& type, const Expression* domain){}
+    void NLFile::add_vdecl_array(const string& name, ASTExprVec<TypeInst> range, const Type& type, const Expression* domain){
+        // In flatzinc, array always have a rhs: they can alway be replaced by their definition.
+        // Follows the pointer starting at the ID to do so. 
+        cerr << "Definition of array " << name << " is not reproduced in nl." << endl;
+    }
 
-    void NLFile::add_vdecl(string name, const Type& type, const Expression* domain){
+    void NLFile::add_vdecl(const string& name, const Type& type, const Expression* domain){
         // Ensure that the variable is not in the map, then insert it.
-        assert(variable_index.find(name) != variable_index.end());
+        assert(variable_index.find(name) == variable_index.end());
+        cerr << "Declaration of variable " << name << endl;
         int index = variable_index.size();
         variable_index[name]=index;
         // Check the type
+        assert(type.isvarint()||type.isvarfloat());
+        bool isvarint = type.isvarint();
+        // Check the domain
+        assert(domain != NULL);
+        assert(domain->eid() == Expression::E_SETLIT);
+        long llb, lub;
+        double dlb, dub;
+        const SetLit& sl = *domain->cast<SetLit>();
+        // Check integer domain.
+        if(sl.isv()){
+            assert(isvarint);
+            auto intSet = sl.isv();
+            if(intSet->size() == 0){
+                cerr << "Variable " << name << ": empty domain not implemented" << endl;
+                assert(false);      
+            } else if (intSet->size() == 1){
+                llb = intSet->min(0).toInt();
+                lub = intSet->max(0).toInt();
+            } else {
+                cerr << "Variable " << name << ": infinite/set domain not implemented" << endl;
+                assert(false);
+            }
+        }
+        // Check float domain
+        else if (sl.fsv()) {
+            assert(!isvarint);
+            auto floatSet = sl.fsv();
+            if(floatSet->size() == 0){
+                cerr << "Variable " << name << ": empty domain not implemented" << endl;
+                assert(false);      
+            } else if (floatSet->size() == 1){
+                dlb = floatSet->min(0).toDouble();
+                dub = floatSet->max(0).toDouble();
+            } else {
+                cerr << "Variable " << name << ": infinite/set domain not implemented" << endl;
+                assert(false);
+            }
+        }
+        // Else is a set 
+        else {
+            cerr << "Variable " << name << ": infinite/set domain not implemented" << endl;
+            assert(false);
+        }
+
+        // Update the header
     }
 
 }
