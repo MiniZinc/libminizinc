@@ -882,7 +882,8 @@ namespace MiniZinc {
     _ranges = ASTExprVec<TypeInst>(ranges);
     if (ranges.size()==1 && ranges[0] && ranges[0]->isa<TypeInst>() &&
         ranges[0]->cast<TypeInst>()->domain() &&
-        ranges[0]->cast<TypeInst>()->domain()->isa<TIId>())
+        ranges[0]->cast<TypeInst>()->domain()->isa<TIId>() &&
+        !ranges[0]->cast<TypeInst>()->domain()->cast<TIId>()->v().beginsWith("$"))
       _type.dim(-1);
     else
       _type.dim(static_cast<int>(ranges.size()));
