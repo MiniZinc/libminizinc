@@ -986,11 +986,21 @@ namespace MiniZinc {
         if (tii->ranges().size()==1 &&
             isaTIId(tii->ranges()[0]->domain())) {
           ASTString tiid = tii->ranges()[0]->domain()->cast<TIId>()->v();
-          if (getType(ta[i]).dim()==0) {
+          Type orig_tiit = getType(ta[i]);
+          if (orig_tiit.dim()==0) {
             throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+tiid.str()+
                             " must be an array index");
           }
-          Type tiit = Type::top(getType(ta[i]).dim());
+          Type tiit = Type::top(orig_tiit.dim());
+          if (orig_tiit.enumId() != 0) {
+            std::vector<unsigned int> enumIds(tiit.dim()+1);
+            const std::vector<unsigned int>& orig_enumIds = env.getArrayEnum(orig_tiit.enumId());
+            for (unsigned int i=0; i<enumIds.size()-1; i++) {
+              enumIds[i] = orig_enumIds[i];
+            }
+            enumIds[enumIds.size()-1] = 0;
+            tiit.enumId(env.registerArrayEnum(enumIds));
+          }
           ASTStringMap<Type>::t::iterator it = tmap.find(tiid);
           if (it==tmap.end()) {
             tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
@@ -1060,6 +1070,16 @@ namespace MiniZinc {
         if (it==tmap.end())
           throw TypeError(env, fi->loc(),"type-inst variable $"+rh.str()+" used but not defined");
         ret.dim(it->second.dim());
+        if (it->second.enumId() != 0) {
+          std::vector<unsigned int> enumIds(it->second.dim()+1);
+          const std::vector<unsigned int>& orig_enumIds = env.getArrayEnum(it->second.enumId());
+          for (unsigned int i=0; i<enumIds.size()-1; i++) {
+            enumIds[i] = orig_enumIds[i];
+          }
+          enumIds[enumIds.size()-1] = ret.enumId() == 0 ? 0 : env.getArrayEnum(ret.enumId())[enumIds.size()-1];
+          ret.enumId(env.registerArrayEnum(enumIds));
+        }
+
       } else if (fi->ti()->ranges().size() > 0) {
         std::vector<unsigned int> enumIds(fi->ti()->ranges().size()+1);
         bool hadRealEnum = false;
