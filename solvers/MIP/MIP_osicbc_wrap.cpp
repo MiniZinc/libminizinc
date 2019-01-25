@@ -59,7 +59,7 @@ string MIP_osicbc_wrapper::getName() {
   return "COIN-BC";
 }
 
-vector<string> MIP_gurobi_wrapper::getTags() {
+vector<string> MIP_osicbc_wrapper::getTags() {
   return {"mip","float","api","osicbc"};
 }
 
