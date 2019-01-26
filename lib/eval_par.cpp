@@ -484,6 +484,19 @@ namespace MiniZinc {
       {
         Let* l = e->cast<Let>();
         l->pushbindings();
+        for (unsigned int i=0; i<l->let().size(); i++) {
+          // Evaluate all variable declarations
+          if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+            vdi->e(eval_par(env, vdi->e()));
+          } else {
+            // This is a constraint item. Since the let is par,
+            // it can only be a par bool expression. If it evaluates
+            // to false, it means that the value of this let is undefined.
+            if (!eval_bool(env, l->let()[i])) {
+              throw ResultUndefinedError(env, l->let()[i]->loc(),"constraint in let failed");
+            }
+          }
+        }
         ArrayLit* l_in = eval_array_lit(env,l->in());
         ArrayLit* ret = copy(env,l_in,true)->cast<ArrayLit>();
         ret->flat(l_in->flat());
@@ -688,6 +701,19 @@ namespace MiniZinc {
       {
         Let* l = e->cast<Let>();
         l->pushbindings();
+        for (unsigned int i=0; i<l->let().size(); i++) {
+          // Evaluate all variable declarations
+          if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+            vdi->e(eval_par(env, vdi->e()));
+          } else {
+            // This is a constraint item. Since the let is par,
+            // it can only be a par bool expression. If it evaluates
+            // to false, it means that the value of this let is undefined.
+            if (!eval_bool(env, l->let()[i])) {
+              throw ResultUndefinedError(env, l->let()[i]->loc(),"constraint in let failed");
+            }
+          }
+        }
         IntSetVal* ret = eval_intset(env,l->in());
         l->popbindings();
         return ret;
@@ -834,6 +860,19 @@ namespace MiniZinc {
       {
         Let* l = e->cast<Let>();
         l->pushbindings();
+        for (unsigned int i=0; i<l->let().size(); i++) {
+          // Evaluate all variable declarations
+          if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+            vdi->e(eval_par(env, vdi->e()));
+          } else {
+            // This is a constraint item. Since the let is par,
+            // it can only be a par bool expression. If it evaluates
+            // to false, it means that the value of this let is undefined.
+            if (!eval_bool(env, l->let()[i])) {
+              throw ResultUndefinedError(env, l->let()[i]->loc(),"constraint in let failed");
+            }
+          }
+        }
         FloatSetVal* ret = eval_floatset(env,l->in());
         l->popbindings();
         return ret;
@@ -1093,7 +1132,21 @@ namespace MiniZinc {
         {
           Let* l = e->cast<Let>();
           l->pushbindings();
-          bool ret = eval_bool(env,l->in());
+          bool ret = true;
+          for (unsigned int i=0; i<l->let().size(); i++) {
+            // Evaluate all variable declarations
+            if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+              vdi->e(eval_par(env, vdi->e()));
+            } else {
+              // This is a constraint item. Since the let is par,
+              // it can only be a par bool expression. If it evaluates
+              // to false, it means that the value of this let is false.
+              if (!eval_bool(env, l->let()[i])) {
+                ret = false;
+              }
+            }
+          }
+          ret = ret && eval_bool(env,l->in());
           l->popbindings();
           return ret;
         }
@@ -1245,6 +1298,19 @@ namespace MiniZinc {
       {
         Let* l = e->cast<Let>();
         l->pushbindings();
+        for (unsigned int i=0; i<l->let().size(); i++) {
+          // Evaluate all variable declarations
+          if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+            vdi->e(eval_par(env, vdi->e()));
+          } else {
+            // This is a constraint item. Since the let is par,
+            // it can only be a par bool expression. If it evaluates
+            // to false, it means that the value of this let is undefined.
+            if (!eval_bool(env, l->let()[i])) {
+              throw ResultUndefinedError(env, l->let()[i]->loc(),"constraint in let failed");
+            }
+          }
+        }
         IntSetVal* ret = eval_boolset(env,l->in());
         l->popbindings();
         return ret;
@@ -1358,6 +1424,19 @@ namespace MiniZinc {
         {
           Let* l = e->cast<Let>();
           l->pushbindings();
+          for (unsigned int i=0; i<l->let().size(); i++) {
+            // Evaluate all variable declarations
+            if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+              vdi->e(eval_par(env, vdi->e()));
+            } else {
+              // This is a constraint item. Since the let is par,
+              // it can only be a par bool expression. If it evaluates
+              // to false, it means that the value of this let is undefined.
+              if (!eval_bool(env, l->let()[i])) {
+                throw ResultUndefinedError(env, l->let()[i]->loc(),"constraint in let failed");
+              }
+            }
+          }
           IntVal ret = eval_int(env,l->in());
           l->popbindings();
           return ret;
@@ -1473,6 +1552,19 @@ namespace MiniZinc {
         {
           Let* l = e->cast<Let>();
           l->pushbindings();
+          for (unsigned int i=0; i<l->let().size(); i++) {
+            // Evaluate all variable declarations
+            if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+              vdi->e(eval_par(env, vdi->e()));
+            } else {
+              // This is a constraint item. Since the let is par,
+              // it can only be a par bool expression. If it evaluates
+              // to false, it means that the value of this let is undefined.
+              if (!eval_bool(env, l->let()[i])) {
+                throw ResultUndefinedError(env, l->let()[i]->loc(),"constraint in let failed");
+              }
+            }
+          }
           FloatVal ret = eval_float(env,l->in());
           l->popbindings();
           return ret;
@@ -1568,6 +1660,19 @@ namespace MiniZinc {
       {
         Let* l = e->cast<Let>();
         l->pushbindings();
+        for (unsigned int i=0; i<l->let().size(); i++) {
+          // Evaluate all variable declarations
+          if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+            vdi->e(eval_par(env, vdi->e()));
+          } else {
+            // This is a constraint item. Since the let is par,
+            // it can only be a par bool expression. If it evaluates
+            // to false, it means that the value of this let is undefined.
+            if (!eval_bool(env, l->let()[i])) {
+              throw ResultUndefinedError(env, l->let()[i]->loc(),"constraint in let failed");
+            }
+          }
+        }
         std::string ret = eval_string(env,l->in());
         l->popbindings();
         return ret;
