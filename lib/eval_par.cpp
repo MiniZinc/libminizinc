@@ -21,6 +21,33 @@
 
 namespace MiniZinc {
 
+  bool checkParDomain(EnvI& env, Expression* e, Expression* domain) {
+    if (e->type()==Type::parint()) {
+      IntSetVal* isv = eval_intset(env,domain);
+      if (!isv->contains(eval_int(env,e)))
+        return false;
+    } else if (e->type()==Type::parfloat()) {
+      FloatSetVal* fsv = eval_floatset(env,domain);
+      if (!fsv->contains(eval_float(env, e)))
+        return false;
+    } else if (e->type()==Type::parsetint()) {
+      IntSetVal* isv = eval_intset(env,domain);
+      IntSetRanges ir(isv);
+      IntSetVal* rsv = eval_intset(env,e);
+      IntSetRanges rr(rsv);
+      if (!Ranges::subset(rr, ir))
+        return false;
+    } else if (e->type()==Type::parsetfloat()) {
+      FloatSetVal* fsv = eval_floatset(env,domain);
+      FloatSetRanges fr(fsv);
+      FloatSetVal* rsv = eval_floatset(env,e);
+      FloatSetRanges rr(rsv);
+      if (!Ranges::subset(rr, fr))
+        return false;
+    }
+    return true;
+  }
+
   template<class E>
   typename E::Val eval_id(EnvI& env, Expression* e) {
     Id* id = e->cast<Id>();
@@ -488,6 +515,11 @@ namespace MiniZinc {
           // Evaluate all variable declarations
           if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
             vdi->e(eval_par(env, vdi->e()));
+            if (vdi->ti()->domain()) {
+              if (!checkParDomain(env, vdi->e(), vdi->ti()->domain())) {
+                throw ResultUndefinedError(env, l->let()[i]->loc(),"domain constraint in let failed");
+              }
+            }
           } else {
             // This is a constraint item. Since the let is par,
             // it can only be a par bool expression. If it evaluates
@@ -705,6 +737,11 @@ namespace MiniZinc {
           // Evaluate all variable declarations
           if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
             vdi->e(eval_par(env, vdi->e()));
+            if (vdi->ti()->domain()) {
+              if (!checkParDomain(env, vdi->e(), vdi->ti()->domain())) {
+                throw ResultUndefinedError(env, l->let()[i]->loc(),"domain constraint in let failed");
+              }
+            }
           } else {
             // This is a constraint item. Since the let is par,
             // it can only be a par bool expression. If it evaluates
@@ -864,6 +901,11 @@ namespace MiniZinc {
           // Evaluate all variable declarations
           if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
             vdi->e(eval_par(env, vdi->e()));
+            if (vdi->ti()->domain()) {
+              if (!checkParDomain(env, vdi->e(), vdi->ti()->domain())) {
+                throw ResultUndefinedError(env, l->let()[i]->loc(),"domain constraint in let failed");
+              }
+            }
           } else {
             // This is a constraint item. Since the let is par,
             // it can only be a par bool expression. If it evaluates
@@ -1137,12 +1179,25 @@ namespace MiniZinc {
             // Evaluate all variable declarations
             if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
               vdi->e(eval_par(env, vdi->e()));
+              if (vdi->ti()->domain()) {
+                if (!checkParDomain(env, vdi->e(), vdi->ti()->domain())) {
+                  if (vdi->ann().contains(constants().ann.maybe_partial)) {
+                    ret = false;
+                  } else {
+                    throw ResultUndefinedError(env, l->let()[i]->loc(),"domain constraint in let failed");
+                  }
+                }
+              }
             } else {
               // This is a constraint item. Since the let is par,
               // it can only be a par bool expression. If it evaluates
               // to false, it means that the value of this let is false.
               if (!eval_bool(env, l->let()[i])) {
-                ret = false;
+                if (l->let()[i]->ann().contains(constants().ann.maybe_partial)) {
+                  ret = false;
+                } else {
+                  throw ResultUndefinedError(env, l->let()[i]->loc(),"domain constraint in let failed");
+                }
               }
             }
           }
@@ -1302,6 +1357,11 @@ namespace MiniZinc {
           // Evaluate all variable declarations
           if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
             vdi->e(eval_par(env, vdi->e()));
+            if (vdi->ti()->domain()) {
+              if (!checkParDomain(env, vdi->e(), vdi->ti()->domain())) {
+                throw ResultUndefinedError(env, l->let()[i]->loc(),"domain constraint in let failed");
+              }
+            }
           } else {
             // This is a constraint item. Since the let is par,
             // it can only be a par bool expression. If it evaluates
@@ -1428,6 +1488,11 @@ namespace MiniZinc {
             // Evaluate all variable declarations
             if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
               vdi->e(eval_par(env, vdi->e()));
+              if (vdi->ti()->domain()) {
+                if (!checkParDomain(env, vdi->e(), vdi->ti()->domain())) {
+                  throw ResultUndefinedError(env, l->let()[i]->loc(),"domain constraint in let failed");
+                }
+              }
             } else {
               // This is a constraint item. Since the let is par,
               // it can only be a par bool expression. If it evaluates
@@ -1556,6 +1621,11 @@ namespace MiniZinc {
             // Evaluate all variable declarations
             if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
               vdi->e(eval_par(env, vdi->e()));
+              if (vdi->ti()->domain()) {
+                if (!checkParDomain(env, vdi->e(), vdi->ti()->domain())) {
+                  throw ResultUndefinedError(env, l->let()[i]->loc(),"domain constraint in let failed");
+                }
+              }
             } else {
               // This is a constraint item. Since the let is par,
               // it can only be a par bool expression. If it evaluates
@@ -1664,6 +1734,11 @@ namespace MiniZinc {
           // Evaluate all variable declarations
           if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
             vdi->e(eval_par(env, vdi->e()));
+            if (vdi->ti()->domain()) {
+              if (!checkParDomain(env, vdi->e(), vdi->ti()->domain())) {
+                throw ResultUndefinedError(env, l->let()[i]->loc(),"domain constraint in let failed");
+              }
+            }
           } else {
             // This is a constraint item. Since the let is par,
             // it can only be a par bool expression. If it evaluates

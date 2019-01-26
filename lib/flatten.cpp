@@ -2376,33 +2376,6 @@ namespace MiniZinc {
     }
     throw InternalError("internal error");    
   }
-
-  bool checkParDomain(EnvI& env, Expression* e, Expression* domain) {
-    if (e->type()==Type::parint()) {
-      IntSetVal* isv = eval_intset(env,domain);
-      if (!isv->contains(eval_int(env,e)))
-        return false;
-    } else if (e->type()==Type::parfloat()) {
-      FloatSetVal* fsv = eval_floatset(env,domain);
-      if (!fsv->contains(eval_float(env, e)))
-        return false;
-    } else if (e->type()==Type::parsetint()) {
-      IntSetVal* isv = eval_intset(env,domain);
-      IntSetRanges ir(isv);
-      IntSetVal* rsv = eval_intset(env,e);
-      IntSetRanges rr(rsv);
-      if (!Ranges::subset(rr, ir))
-        return false;
-    } else if (e->type()==Type::parsetfloat()) {
-      FloatSetVal* fsv = eval_floatset(env,domain);
-      FloatSetRanges fr(fsv);
-      FloatSetVal* rsv = eval_floatset(env,e);
-      FloatSetRanges rr(rsv);
-      if (!Ranges::subset(rr, fr))
-        return false;
-    }
-    return true;
-  }
   
   void flatten(Env& e, FlatteningOptions opt) {
     try {
