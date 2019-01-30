@@ -16,6 +16,7 @@
 #include <minizinc/solvers/nl/nl_solverinstance.hh>
 #include <minizinc/solvers/nl/nl_file.hh>
 #include <cstdio>
+#include <cstring>
 #include <fstream>
 
 // #include <minizinc/timer.hh>
@@ -34,7 +35,7 @@
 using namespace std;
 
 namespace MiniZinc {
-  
+
   NL_SolverFactory::NL_SolverFactory(void) {
     SolverConfig sc("org.minizinc.mzn-nl",MZN_VERSION_MAJOR "." MZN_VERSION_MINOR "." MZN_VERSION_PATCH);
     sc.name("Generic Non Linear driver");
@@ -45,7 +46,7 @@ namespace MiniZinc {
     sc.tags({"__internal__"});
     SolverConfigs::registerBuiltinSolver(sc);
   }
-  
+
   string NL_SolverFactory::getDescription(SolverInstanceBase::Options*)  {
     string v = "NL solver plugin, compiled  " __DATE__ "  " __TIME__;
     return v;
@@ -59,7 +60,7 @@ namespace MiniZinc {
   {
     return "org.minizinc.mzn-nl";
   }
-  
+
   void NL_SolverFactory::printHelp(ostream& os)
   {
     os
@@ -91,7 +92,7 @@ namespace MiniZinc {
   {
     cerr << "NL_SolverFactory::processOption TODO: does not process any option for now" << endl;
     return true;
-  }  
+  }
 
 
   NLSolverInstance::NLSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* options)
@@ -239,7 +240,7 @@ namespace MiniZinc {
 
       case Item::II_FUN: {
         cerr << "Function/predicate/test not implemented." << endl;
-        assert(false);        
+        assert(false);
       } break;
     }// END OF SWITCH
   }
@@ -265,87 +266,87 @@ namespace MiniZinc {
 
       case Expression::E_SETLIT: {
         cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);        
+        assert(false);
       } break;
 
       case Expression::E_BOOLLIT: {
         cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);        
+        assert(false);
       } break;
 
       case Expression::E_STRINGLIT: {
         cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);        
+        assert(false);
       } break;
 
       /// --- --- --- Expressions
 
       case Expression::E_ID: { // Identifier
         cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);      
+        assert(false);
       } break;
 
       case Expression::E_TIID: { // Type-inst identifier
         cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);      
+        assert(false);
       } break;
 
       case Expression::E_ANON: { // Annotation
         cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);      
+        assert(false);
       } break;
 
       case Expression::E_ARRAYLIT: {
         cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);        
+        assert(false);
       } break;
 
       case Expression::E_ARRAYACCESS: {
         cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);        
+        assert(false);
       } break;
 
       case Expression::E_COMP:{ // Comprehension
         cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);      
+        assert(false);
       } break;
 
       case Expression::E_ITE:{ // If-then-else expression
         cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);      
+        assert(false);
       } break;
 
       case Expression::E_BINOP: {
         cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);        
+        assert(false);
       } break;
-      
+
       case Expression::E_UNOP: {
         cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);        
+        assert(false);
       } break;
 
 
       case Expression::E_CALL: {
         cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);        
+        assert(false);
       } break;
 
 
       case Expression::E_VARDECL: {
         cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);        
+        assert(false);
       } break;
 
 
       case Expression::E_LET: {
         cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);        
+        assert(false);
       } break;
 
       case Expression::E_TI: {  // TypeInst
         cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);      
+        assert(false);
       } break;
 
     } // END OF SWITCH
@@ -355,27 +356,29 @@ namespace MiniZinc {
 
   void NLSolverInstance::analyse_vdecl(const VarDecl &vd, const TypeInst &ti, const Expression &rhs){
     // --- --- --- Get the name
-    stringstream os; 
+    stringstream os;
     if (vd.id()->idn() != -1) {
       os << " X_INTRODUCED_" << vd.id()->idn() << "_";
     } else if (vd.id()->v().size() != 0){
       os << " " << vd.id()->v();
-    } 
-    string name = os.str();     
+    }
+    string name = os.str();
 
     // --- --- --- Switch accoring to the type/kind of declaration
     if (ti.isEnum()){
       nl_file.add_vdecl_enum();
       cerr << "vdecl enum not implemented" << endl;
       assert(false);
-    } /* else if(env) {
+    }
+    // TODO: question: what is env ? (see pretty printer line 622)
+     /* else if(env) {
       nl_file.add_vdecl_tystr();
       cerr << "vdecl tystr not implemented" << endl;
       assert(false);
     } */ else {
       if(ti.isarray()){
         // In flatzinc, array always have a rhs: they can alway be replaced by their definition.
-        // Follows the pointer starting at the ID to do so. 
+        // Follows the pointer starting at the ID to do so.
         cerr << "Definition of array " << name << " is not reproduced in nl.";
       } else {
         // Variable declaration
@@ -396,7 +399,7 @@ namespace MiniZinc {
         else if(sl.fsv()){
           assert(!isvarint);
           nl_file.vdecl_fp(name, sl.fsv());
-        }// Else is a set 
+        }// Else is a set
         else {
           cerr << "Variable " << name << ": infinite/set domain not implemented" << endl;
           assert(false);
@@ -412,66 +415,58 @@ namespace MiniZinc {
       cerr << "Undeclared function " << c.id();
       assert(false);
     }
-    // We have a declaration:
-    if(c.decl()->_builtins.b){
-      cerr << "boolean contraint not implemented";
-      assert(false);
-    } else if (c.decl()->_builtins.i){
-      cerr << "integer contraint not implemented";
-      assert(false);
-    } else if (c.decl()->_builtins.f){
-      cerr << "floating point contraint not implemented";
-      assert(false);
-    } else if (c.decl()->_builtins.s){
-      cerr << "set-valued contraint not implemented";
-      assert(false);
-    } else if (c.decl()->_builtins.str){
-      cerr << "string contraint not implemented";
-      assert(false);
-    } else if (c.decl()->_builtins.e){
-      cerr << "expression contraint not implemented";
-      assert(false);
-    } else {
-      cerr << "Internal error: missing builtin '" << c.id() << "'";
+
+    auto id = c.id();
+    auto consint = constants().ids.int_;
+    auto consfp = constants().ids.float_;
+
+    // Integer constants.
+    // TODO: question: which are constraint ?
+    // TODO: question: how to deal with reif ?
+    if(id == consint.lin_eq){       cerr << "constraint 'int lin_eq'  not implemented"; assert(false); }
+    else if(id == consint.lin_le){  cerr << "constraint 'int lin_le'  not implemented"; assert(false); }
+    else if(id == consint.lin_ne){  cerr << "constraint 'int lin_ne'  not implemented"; assert(false); }
+    else if(id == consint.plus){    cerr << "constraint 'int plus'    not implemented"; assert(false); }
+    else if(id == consint.minus){   cerr << "constraint 'int minus'   not implemented"; assert(false); }
+    else if(id == consint.times){   cerr << "constraint 'int times'   not implemented"; assert(false); }
+    else if(id == consint.div){     cerr << "constraint 'int div'     not implemented"; assert(false); }
+    else if(id == consint.mod){     cerr << "constraint 'int mod'     not implemented"; assert(false); }
+    else if(id == consint.lt){      cerr << "constraint 'int lt'      not implemented"; assert(false); }
+    else if(id == consint.le){      cerr << "constraint 'int le'      not implemented"; assert(false); }
+    else if(id == consint.gt){      cerr << "constraint 'int gt'      not implemented"; assert(false); }
+    else if(id == consint.ge){      cerr << "constraint 'int ge'      not implemented"; assert(false); }
+    else if(id == consint.eq){      cerr << "constraint 'int eq'      not implemented"; assert(false); }
+    else if(id == consint.ne){      cerr << "constraint 'int ne'      not implemented"; assert(false); }
+
+    // Floating Point constants.
+    // TODO: question: which are constraint ?
+    // TODO: question: how to deal with reif ?
+    else if(id == consfp.lin_eq){   cerr << "constraint 'float lin_eq' not implemented"; assert(false); }
+    else if(id == consfp.lin_le){   cerr << "constraint 'float lin_le' not implemented"; assert(false); }
+    else if(id == consfp.lin_lt){   cerr << "constraint 'float lin_lt' not implemented"; assert(false); }
+    else if(id == consfp.lin_ne){   cerr << "constraint 'float lin_ne' not implemented"; assert(false); }
+    else if(id == consfp.plus){     cerr << "constraint 'float plus  ' not implemented"; assert(false); }
+    else if(id == consfp.minus){    cerr << "constraint 'float minus ' not implemented"; assert(false); }
+    else if(id == consfp.times){    cerr << "constraint 'float times ' not implemented"; assert(false); }
+    else if(id == consfp.div){      cerr << "constraint 'float div   ' not implemented"; assert(false); }
+    else if(id == consfp.mod){      cerr << "constraint 'float mod   ' not implemented"; assert(false); }
+    else if(id == consfp.lt){       cerr << "constraint 'float lt    ' not implemented"; assert(false); }
+    else if(id == consfp.le){       cerr << "constraint 'float le    ' not implemented"; assert(false); }
+    else if(id == consfp.gt){       cerr << "constraint 'float gt    ' not implemented"; assert(false); }
+    else if(id == consfp.ge){       cerr << "constraint 'float ge    ' not implemented"; assert(false); }
+    else if(id == consfp.eq){       cerr << "constraint 'float eq    ' not implemented"; assert(false); }
+    else if(id == consfp.ne){       cerr << "constraint 'float ne    ' not implemented"; assert(false); }
+    else if(id == consfp.in){       cerr << "constraint 'float in    ' not implemented"; assert(false); }
+    else if(id == consfp.dom){      cerr << "constraint 'float dom   ' not implemented"; assert(false); }
+
+
+
+
+     else {
+      cerr << "Unrecognized builtins " << c.id() << " not implemented";
       assert(false);
     }
-
-    /*
-        /// Type of builtin expression-valued functions
-    typedef Expression* (*builtin_e) (EnvI&, Call*);
-    /// Type of builtin int-valued functions
-    typedef IntVal (*builtin_i) (EnvI&, Call*);
-    /// Type of builtin bool-valued functions
-    typedef bool (*builtin_b) (EnvI&, Call*);
-    /// Type of builtin float-valued functions
-    typedef FloatVal (*builtin_f) (EnvI&, Call*);
-    /// Type of builtin set-valued functions
-    typedef IntSetVal* (*builtin_s) (EnvI&, Call*);
-    /// Type of builtin string-valued functions
-    typedef std::string (*builtin_str) (EnvI&, Call*);
-
-    /// Builtin functions (or NULL)
-    struct {
-      builtin_e e;
-      builtin_i i;
-      builtin_f f;
-      builtin_b b;
-      builtin_s s;
-      builtin_str str;
-    } _builtins;
-*/
-    
-    
   }
-
-
-
-
-
-
-
-
-
 
 
 
