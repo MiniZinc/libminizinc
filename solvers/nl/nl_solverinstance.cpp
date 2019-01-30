@@ -104,10 +104,7 @@ namespace MiniZinc {
     cerr << "Launching NLSolverInstance::solve" << endl;
     // --- --- --- 1) Check options
     // --- --- --- 2) Prepare for the translation
-    cout << nl_file;
-    
     // --- --- --- 3) Testing of the AST
-    cerr << "AST tests" << endl;
 
     for (VarDeclIterator it = _fzn->begin_vardecls(); it != _fzn->end_vardecls(); ++it) {
       if(!it->removed()) {
@@ -116,7 +113,7 @@ namespace MiniZinc {
       }
     } // END FOR
 
-    cerr << "End of NLSolverInstance::solve" << endl;
+    cout << nl_file;
     return SolverInstance::NONE;
   }
 
@@ -304,9 +301,9 @@ namespace MiniZinc {
 
       case Expression::E_VARDECL: {
         // --- --- ---
-        const VarDecl &vd = *e->cast<VarDecl>();
-        const TypeInst &ti = *vd.ti()->cast<TypeInst>();
-        const Expression &rhs = *vd.e();
+        const VarDecl &vd         = *e->cast<VarDecl>();
+        const TypeInst &ti        = *vd.ti()->cast<TypeInst>();
+        const Expression &rhs     = *vd.e();
 
         // --- --- --- Get the name
         stringstream os; 
@@ -328,36 +325,35 @@ namespace MiniZinc {
           assert(false);*/
         } else {
           if(ti.isarray()){
-            nl_file.add_vdecl_array(name, ti.ranges(), ti.type(), ti.domain() );
+            // In flatzinc, array always have a rhs: they can alway be replaced by their definition.
+            // Follows the pointer starting at the ID to do so. 
+            cerr << "Definition of array " << name << " is not reproduced in nl." << endl;
           } else {
-            // "Normal" var
-            nl_file.add_vdecl(name, ti.type(), ti.domain() );
+            // Variable declaration
+            const Type& type          = ti.type();
+            const Expression* domain  = ti.domain();
+            // Check the type
+            assert(type.isvarint()||type.isvarfloat());
+            bool isvarint = type.isvarint();
+            // Check the domain
+            assert(domain != NULL);
+            assert(domain->eid() == Expression::E_SETLIT);
+            const SetLit& sl = *domain->cast<SetLit>();
+            // Integer?
+            if(sl.isv()){
+              assert(isvarint);
+              nl_file.vdecl_integer(name, sl.isv());
+            } // Floating Point?
+            else if(sl.fsv()){
+              assert(!isvarint);
+              nl_file.vdecl_fp(name, sl.fsv());
+            }// Else is a set 
+            else {
+              cerr << "Variable " << name << ": infinite/set domain not implemented" << endl;
+              assert(false);
+            }
           }
-        } 
-
-        
-/*  // VDECL
-                
-          p(vd.ti());
-          if (!vd.ti()->isEnum()) {
-            os << ":";
-          }
-
-          if (vd.id()->idn() != -1) {
-            os << " X_INTRODUCED_" << vd.id()->idn() << "_";
-          } else if (vd.id()->v().size() != 0)
-            os << " " << vd.id()->v();
-          if (vd.introduced()) {
-            os << " ::var_is_introduced ";
-          }
-          p(vd.ann());
-          if (vd.e()) {
-            os << " = ";
-            p(vd.e());
-          }
-          */
-
-     
+        }      
       } break;
 
 

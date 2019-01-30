@@ -11,99 +11,13 @@
 
 namespace MiniZinc {
 
-    // --- --- --- Header
-
-    // --- Write the header
-    // The header is composed of then lines.
-    // We describe them belove as we proceed.
-    // '#' starts a comment until the end of line.
-    ostream& NLHeader::print_on(ostream& os) const {
-        
-        // 1st line:
-        // 'g': file will be in text format
-        // other numbers: as given in the doc (no other explanation... we can probably go with g0)
-        os  << "g3 1 1 0" << " # problem " << problem_name << '\n';
-
-        // 2nd line:
-        os  << nb_vars << " "
-            << nb_algebraic_constraints << " "
-            << nb_objectives << " "
-            << nb_range_constraints << " "
-            << nb_equality_constraints << " "
-            << nb_logical_constraints << " "
-            << "# Nb of: variable, algebraic constraints (inc. range & equality constraints), objectives. "
-            << "Nb of contraints: range, equality, logical.\n";
-
-        // 3rd line: Nonlinear and complementary information
-        os  << nb_nonlinear_constraints << " "
-            << nb_nonlinear_objectives << " "
-            << nb_complementarity_linear_conditions << " "
-            << nb_complementarity_nonlinear_conditions << " "
-            << nb_complementarity_items_double_inequalities << " "
-            << nb_complemented_vars_non_zero_lowerbound << " "
-            << "# Nb of nonlinear: constraints, objectives. "
-            << "Nb of complementary: linear & nonlinear conditions, double inequalities, vars with non-0 lower bound.\n";
-
-        // 4th line: Network constraints
-        os  << nb_nonlinear_network_constraints << " "
-            << nb_linear_network_constraints << " "
-            << "# Nb of network constraints: nonlinear, linear.\n";
-
-        // 5th line: nonlinear variables:
-        os  << nb_nonlinear_vars_in_constraints << " "
-            << nb_nonlinear_vars_in_objectives << " "
-            << nb_nonlinear_vars_in_both << " "
-            << "# Nb of non linear vars in: only constraints, only objectives, both.\n";
-
-        // 6th line:
-        os  << nb_linear_network_vars << " "
-            << nb_functions << " "
-            << "0 1 "
-            << "# Nb of: linear network vars, functions. Floating point arithmetic mode (TEXT == 0). Flag: if 1, add .sol suffixe.\n";
-
-        // 7th line: discrete variables
-        os  << nb_linear_binary_vars << " "
-            << nb_linear_integer_vars << " "
-            << nb_nonlinear_integer_vars_in_both << " "
-            << nb_nonlinear_integer_vars_in_constraints_only << " "
-            << nb_nonlinear_integer_vars_in_objectives_only << " "
-            << "# Nb of linear vars: binary, integer (non binary). "
-            << "Nb of nonlinear integer vars in: constraints only, objectives only, both.\n";
-
-        // 8th line: non zeros
-        os  << nb_nonzero_jacobian << " "
-            << nb_nonzero_objective_gradients << " "
-            << "# Nb of non zeros in: jacobian, objective gradients.\n";
-
-        // 9th line: name length
-        os  << max_constraint_name_length << " "
-            << max_vars_name_length << " "
-            << "# Longest name among: contraints' name, vars' name.\n";
-
-        // 10th line: common expressions
-        os  << nb_common_exprs_in_both << " "
-            << nb_common_exprs_in_constraints_only << " "
-            << nb_common_exprs_in_objectives_only << " "
-            << nb_common_exprs_in_single_constraint_only << " "
-            << nb_common_exprs_in_single_objectives_only << " "
-            << "# Nb of common expressions in: both, constraints only, objectives only, single constraint, single objective.\n";
-
-        return os;
-    }
-
-
-
-
-    // --- --- --- Segments
-
-
-
-
-
     // --- --- --- NLFile
 
     ostream& NLFile::print_on(ostream& os) const{
-        header.print_on(os);
+        os << header << endl << "# --- END OF HEADER" << endl << endl;
+        os << NLS_BoundSeg(this) << endl << endl;
+        //header.print_on(os);
+
         return os;
     }
     
@@ -114,64 +28,59 @@ namespace MiniZinc {
 
     void NLFile::add_vdecl_tystr(){}
 
-    void NLFile::add_vdecl_array(const string& name, ASTExprVec<TypeInst> range, const Type& type, const Expression* domain){
-        // In flatzinc, array always have a rhs: they can alway be replaced by their definition.
-        // Follows the pointer starting at the ID to do so. 
-        cerr << "Definition of array " << name << " is not reproduced in nl." << endl;
-    }
 
-    void NLFile::add_vdecl(const string& name, const Type& type, const Expression* domain){
-        // Ensure that the variable is not in the map, then insert it.
-        assert(variable_index.find(name) == variable_index.end());
-        cerr << "Declaration of variable " << name << endl;
-        int index = variable_index.size();
-        variable_index[name]=index;
-        // Check the type
-        assert(type.isvarint()||type.isvarfloat());
-        bool isvarint = type.isvarint();
+    /** Adding a new integer variable declaration */
+    void NLFile::vdecl_integer(const string& name, const IntSetVal* intSet){
+        // Ensure that the variable name is available, then insert it.
+        assert(variables.find(name) == variables.end());
+        // Get the GLOBAL index of the variable
+        int index = variables.size();
         // Check the domain
-        assert(domain != NULL);
-        assert(domain->eid() == Expression::E_SETLIT);
         long llb, lub;
-        double dlb, dub;
-        const SetLit& sl = *domain->cast<SetLit>();
-        // Check integer domain.
-        if(sl.isv()){
-            assert(isvarint);
-            auto intSet = sl.isv();
-            if(intSet->size() == 0){
-                cerr << "Variable " << name << ": empty domain not implemented" << endl;
-                assert(false);      
-            } else if (intSet->size() == 1){
-                llb = intSet->min(0).toInt();
-                lub = intSet->max(0).toInt();
-            } else {
-                cerr << "Variable " << name << ": infinite/set domain not implemented" << endl;
-                assert(false);
-            }
-        }
-        // Check float domain
-        else if (sl.fsv()) {
-            assert(!isvarint);
-            auto floatSet = sl.fsv();
-            if(floatSet->size() == 0){
-                cerr << "Variable " << name << ": empty domain not implemented" << endl;
-                assert(false);      
-            } else if (floatSet->size() == 1){
-                dlb = floatSet->min(0).toDouble();
-                dub = floatSet->max(0).toDouble();
-            } else {
-                cerr << "Variable " << name << ": infinite/set domain not implemented" << endl;
-                assert(false);
-            }
-        }
-        // Else is a set 
-        else {
+        if(intSet->size() == 0){
+            cerr << "Variable " << name << ": empty domain not implemented" << endl;
+            assert(false);      
+        } else if (intSet->size() == 1){
+            llb = intSet->min(0).toInt();
+            lub = intSet->max(0).toInt();
+        } else {
             cerr << "Variable " << name << ": infinite/set domain not implemented" << endl;
             assert(false);
         }
-
-        // Update the header
+        // Create the variable
+        cerr << "Integer variable declaration " << llb << ".." << name << ".." << lub << ", index=" << index << endl;
+        Var v = Var(name, index, true, NLS_BoundItem::make_bounded(llb, lub, index));
+        // Update Internal structure & Header
+        variables[name] = v;
+        name_vars.push_back(name);
+        header.nb_vars++;
     }
+
+    /** Adding a new floating point variable declaration */
+    void NLFile::vdecl_fp(const string& name, const FloatSetVal* floatSet){
+        // Ensure that the variable name is available, then insert it.
+        assert(variables.find(name) == variables.end());
+        // Get the GLOBAL index of the variable
+        int index = variables.size();
+        // Check the domain
+        double dlb, dub;
+        if(floatSet->size() == 0){
+            cerr << "Variable " << name << ": empty domain not implemented" << endl;
+            assert(false);      
+        } else if (floatSet->size() == 1){
+            dlb = floatSet->min(0).toDouble();
+            dub = floatSet->max(0).toDouble();
+        } else {
+            cerr << "Variable " << name << ": infinite/set domain not implemented" << endl;
+            assert(false);
+        }
+        // Create the variable
+        cerr << "Floating Point variable declaration " << dlb << ".." << name << ".." << dub << ", index=" << index << endl;
+        Var v = Var(name, index, false, NLS_BoundItem::make_bounded(dlb, dub, index));
+        // Update Internal structure & Header
+        variables[name] = v;
+        name_vars.push_back(name);
+        header.nb_vars++;
+    }   
 
 }

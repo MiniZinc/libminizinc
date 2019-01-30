@@ -1,10 +1,15 @@
 ### MiniZinc NonLinear Executable Solver Target
 
 add_library(minizinc_nl
+  solvers/nl/segments/bseg.cpp
   solvers/nl/nl_file.cpp
+  solvers/nl/nl_header.cpp
   solvers/nl/nl_solverinstance.cpp
   solvers/nl/nl_solverfactory.cpp
+  include/minizinc/solvers/nl/nl_segments.hh
   include/minizinc/solvers/nl/nl_file.hh
+  include/minizinc/solvers/nl/nl_header.hh
+  include/minizinc/solvers/nl/nl_printable.hh
   include/minizinc/solvers/nl/nl_solverfactory.hh
   include/minizinc/solvers/nl/nl_solverinstance.hh
   solvers/mzn/mzn_solverinstance.cpp
