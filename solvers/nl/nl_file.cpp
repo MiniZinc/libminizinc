@@ -48,7 +48,7 @@ namespace MiniZinc {
             assert(false);
         }
         // Create the variable
-        cerr << "Integer variable declaration " << llb << ".." << name << ".." << lub << ", index=" << index << endl;
+        cerr << "Integer variable declaration " << llb << ".." << name << ".." << lub << ", index=" << index << " ";
         Var v = Var(name, index, true, NLS_BoundItem::make_bounded(llb, lub, index));
         // Update Internal structure & Header
         variables[name] = v;
@@ -75,7 +75,7 @@ namespace MiniZinc {
             assert(false);
         }
         // Create the variable
-        cerr << "Floating Point variable declaration " << dlb << ".." << name << ".." << dub << ", index=" << index << endl;
+        cerr << "Floating Point variable declaration " << dlb << ".." << name << ".." << dub << ", index=" << index << " ";
         Var v = Var(name, index, false, NLS_BoundItem::make_bounded(dlb, dub, index));
         // Update Internal structure & Header
         variables[name] = v;

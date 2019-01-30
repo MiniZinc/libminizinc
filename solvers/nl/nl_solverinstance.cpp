@@ -106,12 +106,28 @@ namespace MiniZinc {
     // --- --- --- 2) Prepare for the translation
     // --- --- --- 3) Testing of the AST
 
+    // Note: copy the structure of the pretty printer
+
+    for (FunctionIterator it = _fzn->begin_functions(); it != _fzn->end_functions(); ++it) {
+      if(!it->removed()) {
+        Item& item = *it;
+        analyse(&item);
+      }
+    }
+
     for (VarDeclIterator it = _fzn->begin_vardecls(); it != _fzn->end_vardecls(); ++it) {
       if(!it->removed()) {
         Item& item = *it;
         analyse(&item);
       }
-    } // END FOR
+    }
+
+    for (ConstraintIterator it = _fzn->begin_constraints(); it != _fzn->end_constraints(); ++it) {
+      if(!it->removed()) {
+        Item& item = *it;
+        analyse(&item);
+      }
+    }
 
     cout << nl_file;
     return SolverInstance::NONE;
@@ -179,10 +195,18 @@ namespace MiniZinc {
       } break;
 
       case Item::II_VD: {
-        cerr << "II_VD...";
+        cerr << "II_VD: Variable Declaration. [";
         Expression* e = i->cast<VarDeclI>()->e();
-        analyse(e);
-        cerr << " done!" << endl;
+        if(e->eid() == Expression::E_VARDECL){
+          const VarDecl &vd         = *e->cast<VarDecl>();
+          const TypeInst &ti        = *vd.ti()->cast<TypeInst>();
+          const Expression &rhs     = *vd.e();
+          analyse_vdecl(vd, ti, rhs);
+        } else {
+          cerr << "Expression is not a variable declaration." << endl;
+          assert(false);
+        }
+        cerr << "]OK." << endl;
       } break;
 
       case Item::II_ASN:{
@@ -191,8 +215,16 @@ namespace MiniZinc {
       } break;
 
       case Item::II_CON: {
-        cerr << "Constraint not implemented." << endl;
-        assert(false);
+        cerr << "II_CON: Constraint. [";
+        Expression* e = i->cast<ConstraintI>()->e();
+        if(e->eid() == Expression::E_CALL){
+          const Call& c = *e->cast<Call>();
+          analyse_constraint(c);
+        } else {
+          cerr << "Contraint is not a builtin call." << endl;
+          assert(false);
+        }
+        cerr << "]OK." << endl;
       } break;
 
       case Item::II_SOL: {
@@ -293,6 +325,7 @@ namespace MiniZinc {
         assert(false);        
       } break;
 
+
       case Expression::E_CALL: {
         cerr << "case " << e->eid() << " not implemented." << endl;
         assert(false);        
@@ -300,60 +333,8 @@ namespace MiniZinc {
 
 
       case Expression::E_VARDECL: {
-        // --- --- ---
-        const VarDecl &vd         = *e->cast<VarDecl>();
-        const TypeInst &ti        = *vd.ti()->cast<TypeInst>();
-        const Expression &rhs     = *vd.e();
-
-        // --- --- --- Get the name
-        stringstream os; 
-        if (vd.id()->idn() != -1) {
-          os << " X_INTRODUCED_" << vd.id()->idn() << "_";
-        } else if (vd.id()->v().size() != 0){
-          os << " " << vd.id()->v();
-        } 
-        string name = os.str();     
-
-        // --- --- --- Switch accoring to the type/kind of declaration
-        if (ti.isEnum()){
-          nl_file.add_vdecl_enum();
-          cerr << "vdecl enum not implemented" << endl;
-          assert(false);
-        /*} else if(env) {
-          nl_file->add_vdecl_tystr();
-          cerr << "vdecl tystr not implemented" << endl;
-          assert(false);*/
-        } else {
-          if(ti.isarray()){
-            // In flatzinc, array always have a rhs: they can alway be replaced by their definition.
-            // Follows the pointer starting at the ID to do so. 
-            cerr << "Definition of array " << name << " is not reproduced in nl." << endl;
-          } else {
-            // Variable declaration
-            const Type& type          = ti.type();
-            const Expression* domain  = ti.domain();
-            // Check the type
-            assert(type.isvarint()||type.isvarfloat());
-            bool isvarint = type.isvarint();
-            // Check the domain
-            assert(domain != NULL);
-            assert(domain->eid() == Expression::E_SETLIT);
-            const SetLit& sl = *domain->cast<SetLit>();
-            // Integer?
-            if(sl.isv()){
-              assert(isvarint);
-              nl_file.vdecl_integer(name, sl.isv());
-            } // Floating Point?
-            else if(sl.fsv()){
-              assert(!isvarint);
-              nl_file.vdecl_fp(name, sl.fsv());
-            }// Else is a set 
-            else {
-              cerr << "Variable " << name << ": infinite/set domain not implemented" << endl;
-              assert(false);
-            }
-          }
-        }      
+        cerr << "case " << e->eid() << " not implemented." << endl;
+        assert(false);        
       } break;
 
 
@@ -369,6 +350,127 @@ namespace MiniZinc {
 
     } // END OF SWITCH
   } // END OF FUN
+
+
+
+  void NLSolverInstance::analyse_vdecl(const VarDecl &vd, const TypeInst &ti, const Expression &rhs){
+    // --- --- --- Get the name
+    stringstream os; 
+    if (vd.id()->idn() != -1) {
+      os << " X_INTRODUCED_" << vd.id()->idn() << "_";
+    } else if (vd.id()->v().size() != 0){
+      os << " " << vd.id()->v();
+    } 
+    string name = os.str();     
+
+    // --- --- --- Switch accoring to the type/kind of declaration
+    if (ti.isEnum()){
+      nl_file.add_vdecl_enum();
+      cerr << "vdecl enum not implemented" << endl;
+      assert(false);
+    } /* else if(env) {
+      nl_file.add_vdecl_tystr();
+      cerr << "vdecl tystr not implemented" << endl;
+      assert(false);
+    } */ else {
+      if(ti.isarray()){
+        // In flatzinc, array always have a rhs: they can alway be replaced by their definition.
+        // Follows the pointer starting at the ID to do so. 
+        cerr << "Definition of array " << name << " is not reproduced in nl.";
+      } else {
+        // Variable declaration
+        const Type& type          = ti.type();
+        const Expression* domain  = ti.domain();
+        // Check the type
+        assert(type.isvarint()||type.isvarfloat());
+        bool isvarint = type.isvarint();
+        // Check the domain
+        assert(domain != NULL);
+        assert(domain->eid() == Expression::E_SETLIT);
+        const SetLit& sl = *domain->cast<SetLit>();
+        // Integer?
+        if(sl.isv()){
+          assert(isvarint);
+          nl_file.vdecl_integer(name, sl.isv());
+        } // Floating Point?
+        else if(sl.fsv()){
+          assert(!isvarint);
+          nl_file.vdecl_fp(name, sl.fsv());
+        }// Else is a set 
+        else {
+          cerr << "Variable " << name << ": infinite/set domain not implemented" << endl;
+          assert(false);
+        }
+      }
+    }
+  }
+
+
+  void NLSolverInstance::analyse_constraint(const Call& c){
+    // Guard
+    if(c.decl() == NULL){
+      cerr << "Undeclared function " << c.id();
+      assert(false);
+    }
+    // We have a declaration:
+    if(c.decl()->_builtins.b){
+      cerr << "boolean contraint not implemented";
+      assert(false);
+    } else if (c.decl()->_builtins.i){
+      cerr << "integer contraint not implemented";
+      assert(false);
+    } else if (c.decl()->_builtins.f){
+      cerr << "floating point contraint not implemented";
+      assert(false);
+    } else if (c.decl()->_builtins.s){
+      cerr << "set-valued contraint not implemented";
+      assert(false);
+    } else if (c.decl()->_builtins.str){
+      cerr << "string contraint not implemented";
+      assert(false);
+    } else if (c.decl()->_builtins.e){
+      cerr << "expression contraint not implemented";
+      assert(false);
+    } else {
+      cerr << "Internal error: missing builtin '" << c.id() << "'";
+      assert(false);
+    }
+
+    /*
+        /// Type of builtin expression-valued functions
+    typedef Expression* (*builtin_e) (EnvI&, Call*);
+    /// Type of builtin int-valued functions
+    typedef IntVal (*builtin_i) (EnvI&, Call*);
+    /// Type of builtin bool-valued functions
+    typedef bool (*builtin_b) (EnvI&, Call*);
+    /// Type of builtin float-valued functions
+    typedef FloatVal (*builtin_f) (EnvI&, Call*);
+    /// Type of builtin set-valued functions
+    typedef IntSetVal* (*builtin_s) (EnvI&, Call*);
+    /// Type of builtin string-valued functions
+    typedef std::string (*builtin_str) (EnvI&, Call*);
+
+    /// Builtin functions (or NULL)
+    struct {
+      builtin_e e;
+      builtin_i i;
+      builtin_f f;
+      builtin_b b;
+      builtin_s s;
+      builtin_str str;
+    } _builtins;
+*/
+    
+    
+  }
+
+
+
+
+
+
+
+
 
 
 
