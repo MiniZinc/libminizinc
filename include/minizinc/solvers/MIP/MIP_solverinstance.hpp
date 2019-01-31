@@ -15,7 +15,7 @@ namespace MiniZinc {
     sc.supportsMzn(true);
     sc.description("MiniZinc MIP solver plugin");
     sc.requiredFlags(requiredFlags);
-    sc.tags({"mip","float","api"});
+    sc.tags(MIPWrapper::getTags());
     sc.stdFlags(MIPWrapper::getStdFlags());
     SolverConfigs::registerBuiltinSolver(sc);
   }

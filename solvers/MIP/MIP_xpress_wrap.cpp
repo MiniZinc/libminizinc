@@ -61,6 +61,10 @@ string MIP_xpress_wrapper::getName() {
   return "Xpress";
 }
 
+vector<string> MIP_xpress_wrapper::getTags() {
+  return {"mip","float","api"};
+}
+
 vector<string> MIP_xpress_wrapper::getStdFlags() {
   return {"-a", "-n"};
 }

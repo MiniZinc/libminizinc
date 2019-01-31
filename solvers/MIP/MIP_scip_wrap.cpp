@@ -56,6 +56,10 @@ string MIP_scip_wrapper::getName() {
   return "SCIP";
 }
 
+vector<string> MIP_scip_wrapper::getTags() {
+  return {"mip","float","api"};
+}
+
 vector<string> MIP_scip_wrapper::getStdFlags() {
   return {"-a", "-p"};
 }

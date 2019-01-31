@@ -88,6 +88,10 @@ string MIP_gurobi_wrapper::getName() {
   return "Gurobi";
 }
 
+vector<string> MIP_gurobi_wrapper::getTags() {
+  return {"mip","float","api"};
+}
+
 vector<string> MIP_gurobi_wrapper::getStdFlags() {
   return {"-a", "-p", "-n"};
 }

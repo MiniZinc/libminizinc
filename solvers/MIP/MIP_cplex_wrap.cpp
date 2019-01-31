@@ -266,6 +266,10 @@ string MIP_cplex_wrapper::getName() {
   return "CPLEX";
 }
 
+vector<string> MIP_cplex_wrapper::getTags() {
+  return {"mip","float","api"};
+}
+
 vector<string> MIP_cplex_wrapper::getStdFlags() {
   return {"-a", "-p", "-n"};
 }

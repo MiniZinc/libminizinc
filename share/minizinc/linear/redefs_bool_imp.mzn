@@ -42,12 +42,8 @@ predicate bool_xor_imp(var bool: p, var bool: q, var bool: r) =
 
 % BOOLEAN ARRAY OPERATIONS
 predicate array_bool_or_imp(array[int] of var bool: a, var bool: b) =
-  if is_fixed(b) then
-    if fix(b) then
-      sum(i in index_set(a))( bool2int(a[i]) ) >= 1
-    else
-      true
-    endif
+  if forall( i in index_set( a ) )( is_fixed(a[i]) /\ not fix(a[i]) ) then
+    not b
   elseif exists( i in index_set( a ) )( is_fixed(a[i]) /\ fix(a[i]) ) then
     true
   else
@@ -64,8 +60,8 @@ predicate array_bool_and_imp(array[int] of var bool: a, var bool: b) =
     else
       true
     endif
-  elseif exists( i in index_set( a ) )( is_fixed(a[i]) /\ not fix(a[i]) ) then
-    not b
+  elseif forall( i in index_set( a ) )( is_fixed(a[i]) /\ fix(a[i]) ) then
+    true
   else
     let {
       var int: x = bool2int(b),
