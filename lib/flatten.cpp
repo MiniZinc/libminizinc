@@ -106,7 +106,6 @@ namespace MiniZinc {
     return true;
   }
 
-
   void setComputedDomain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed) {
     bool forceChange = vd->ann().contains(constants().ann.is_defined_var) || vd->introduced();
 
