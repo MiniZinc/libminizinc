@@ -243,7 +243,7 @@ namespace MiniZinc {
     /// Examples:
     ///   config("gecode@6.1.0") would request a gecode solver of version 6.1.0
     ///   config("mip,internal") would request a MIP solver that uses the internal API
-    ///   config("org.minizinc.mip.osicbc@2.9/1.16 would request a specific version of OSICBC
+    ///   config("org.minizinc.mip.coin-bc@2.9/1.16 would request a specific version of OSICBC
     const SolverConfig& config(const std::string& s);
     /// Return list of all solver ids
     std::vector<std::string> solvers(void) const;

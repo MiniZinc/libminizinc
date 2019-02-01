@@ -52,7 +52,7 @@ string MIP_osicbc_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options*) {
 }
 
 string MIP_osicbc_wrapper::getId() {
-  return "coinbc";
+  return "coin-bc";
 }
 
 string MIP_osicbc_wrapper::getName() {
@@ -60,7 +60,7 @@ string MIP_osicbc_wrapper::getName() {
 }
 
 vector<string> MIP_osicbc_wrapper::getTags() {
-  return {"mip","float","api","osicbc"};
+  return {"mip","float","api","osicbc","coinbc","cbc"};
 }
 
 vector<string> MIP_osicbc_wrapper::getStdFlags() {
