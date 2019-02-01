@@ -83,7 +83,7 @@ Running the command
 
 .. code-block:: bash
 
-  $ minizinc --solver osicbc laplace.mzn
+  $ minizinc --solver cbc laplace.mzn
 
 gives the output
 

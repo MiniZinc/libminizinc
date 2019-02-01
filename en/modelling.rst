@@ -533,11 +533,11 @@ the data file :download:`loan1.dzn <examples/loan1.dzn>`.
 
 Since we wish to use real number variables and constraint we need to use a solver
 that supports this type of problem. While Gecode (the default solver in the MiniZinc bundled binary distribution) does support floating point variables, a mixed integer linear programming (MIP) solver may be better suited to this particular type of problem.
-The MiniZinc distribution contains such a solver. We can invoke it by selecting ``OSICBC`` from the solver menu in the IDE (the triangle below the *Run* button), or on the command line using the command ``minizinc --solver osicbc``:
+The MiniZinc distribution contains such a solver. We can invoke it by selecting ``COIN-BC`` from the solver menu in the IDE (the triangle below the *Run* button), or on the command line using the command ``minizinc --solver cbc``:
 
 .. code-block:: bash
 
-  $ minizinc --solver osicbc loan.mzn loan1.dzn
+  $ minizinc --solver cbc loan.mzn loan1.dzn
 
 The output is
 
@@ -555,7 +555,7 @@ The output from running the command
 
 .. code-block:: bash
 
-  $ minizinc --solver osicbc loan.mzn loan2.dzn
+  $ minizinc --solver cbc loan.mzn loan2.dzn
 
 is
 
@@ -572,7 +572,7 @@ The output from running the command
 
 .. code-block:: bash
 
-  $ minizinc --solver osicbc loan.mzn loan3.dzn
+  $ minizinc --solver cbc loan.mzn loan3.dzn
 
 is
 
