@@ -38,13 +38,13 @@ namespace MiniZinc {
         // Check the domain
         long llb, lub;
         if(intSet->size() == 0){
-            cerr << "Variable " << name << ": empty domain not implemented" << endl;
+            cerr << "Should not happen" << endl;
             assert(false);      
         } else if (intSet->size() == 1){
             llb = intSet->min(0).toInt();
             lub = intSet->max(0).toInt();
         } else {
-            cerr << "Variable " << name << ": infinite/set domain not implemented" << endl;
+            cerr << "Should not happen: switch on mzn_opt_only_range_domains" << endl;
             assert(false);
         }
         // Create the variable
@@ -65,13 +65,13 @@ namespace MiniZinc {
         // Check the domain
         double dlb, dub;
         if(floatSet->size() == 0){
-            cerr << "Variable " << name << ": empty domain not implemented" << endl;
+            cerr << "Should not happen" << endl;
             assert(false);      
         } else if (floatSet->size() == 1){
             dlb = floatSet->min(0).toDouble();
             dub = floatSet->max(0).toDouble();
         } else {
-            cerr << "Variable " << name << ": infinite/set domain not implemented" << endl;
+            cerr << "Should not happen: switch on mzn_opt_only_range_domains" << endl;
             assert(false);
         }
         // Create the variable

@@ -191,27 +191,21 @@ namespace MiniZinc {
     // Switch on the id of item
     switch (i->iid()) {
       case Item::II_INC: {
-        cerr << "Inclusion not implemented. (include \"" << i->cast<IncludeI>()->f() << "\")" << endl;
+        cerr << "Should not happen. (include \"" << i->cast<IncludeI>()->f() << "\")" << endl;
         assert(false);
       } break;
 
       case Item::II_VD: {
         cerr << "II_VD: Variable Declaration. [";
-        Expression* e = i->cast<VarDeclI>()->e();
-        if(e->eid() == Expression::E_VARDECL){
-          const VarDecl &vd         = *e->cast<VarDecl>();
-          const TypeInst &ti        = *vd.ti()->cast<TypeInst>();
-          const Expression &rhs     = *vd.e();
-          analyse_vdecl(vd, ti, rhs);
-        } else {
-          cerr << "Expression is not a variable declaration." << endl;
-          assert(false);
-        }
+        const VarDecl& vd = *i->cast<VarDeclI>()->e();
+        const TypeInst &ti        = *vd.ti()->cast<TypeInst>();
+        const Expression &rhs     = *vd.e();
+        analyse_vdecl(vd, ti, rhs);
         cerr << "]OK." << endl;
       } break;
 
       case Item::II_ASN:{
-        cerr << "Assignement not implemented." << endl;
+        cerr << "Should not happen." << endl;
         assert(false);
       } break;
 
@@ -229,23 +223,23 @@ namespace MiniZinc {
       } break;
 
       case Item::II_SOL: {
-        cerr << "Solve not implemented." << endl;
+        cerr << "Should have exactly one." << endl;
         assert(false);
       } break;
 
       case Item::II_OUT: {
-        cerr << "Output not implemented." << endl;
+        cerr << "Should not happen." << endl;
         assert(false);
       } break;
 
       case Item::II_FUN: {
-        cerr << "Function/predicate/test not implemented." << endl;
-        assert(false);
+        cerr << "'FUN' item are ignored." << endl;
       } break;
     }// END OF SWITCH
   }
 
 
+  // FOR THE CALL
   void NLSolverInstance::analyse(const Expression* e) {
     // Guard
     if (e==NULL) return;
@@ -265,17 +259,17 @@ namespace MiniZinc {
       } break;
 
       case Expression::E_SETLIT: {
-        cerr << "case " << e->eid() << " not implemented." << endl;
+        cerr << "Set literal should not happen (use -Glinear)." << endl;
         assert(false);
       } break;
 
       case Expression::E_BOOLLIT: {
-        cerr << "case " << e->eid() << " not implemented." << endl;
+        cerr << "Bool literal should not happen (use -Glinear)." << endl;
         assert(false);
       } break;
 
       case Expression::E_STRINGLIT: {
-        cerr << "case " << e->eid() << " not implemented." << endl;
+        cerr << "String literal should not happen." << endl;
         assert(false);
       } break;
 
@@ -287,12 +281,12 @@ namespace MiniZinc {
       } break;
 
       case Expression::E_TIID: { // Type-inst identifier
-        cerr << "case " << e->eid() << " not implemented." << endl;
+        cerr << "Type identifier should not happen in flatzinc call." << endl;
         assert(false);
       } break;
 
-      case Expression::E_ANON: { // Annotation
-        cerr << "case " << e->eid() << " not implemented." << endl;
+      case Expression::E_ANON: {
+        cerr << "Anonymous variable should not happen in flatzinc call." << endl;
         assert(false);
       } break;
 
@@ -302,50 +296,50 @@ namespace MiniZinc {
       } break;
 
       case Expression::E_ARRAYACCESS: {
-        cerr << "case " << e->eid() << " not implemented." << endl;
+        cerr << "Array access should not happen in flatzinc call." << endl;
         assert(false);
       } break;
 
       case Expression::E_COMP:{ // Comprehension
-        cerr << "case " << e->eid() << " not implemented." << endl;
+        cerr << "Comprehension should not happen in flatzinc call." << endl;
         assert(false);
       } break;
 
       case Expression::E_ITE:{ // If-then-else expression
-        cerr << "case " << e->eid() << " not implemented." << endl;
+        cerr << "If then else should not happen in flatzinc call." << endl;
         assert(false);
       } break;
 
       case Expression::E_BINOP: {
-        cerr << "case " << e->eid() << " not implemented." << endl;
+        cerr << "Binary Op should not happen in flatzinc call." << endl;
         assert(false);
       } break;
 
       case Expression::E_UNOP: {
-        cerr << "case " << e->eid() << " not implemented." << endl;
+        cerr << "Unary Op should not happen in flatzinc call." << endl;
         assert(false);
       } break;
 
 
       case Expression::E_CALL: {
-        cerr << "case " << e->eid() << " not implemented." << endl;
+        cerr << "Call should not happen in flatzinc call." << endl;
         assert(false);
       } break;
 
 
       case Expression::E_VARDECL: {
-        cerr << "case " << e->eid() << " not implemented." << endl;
+        cerr << "Var Decl should not happen in flatzinc call." << endl;
         assert(false);
       } break;
 
 
       case Expression::E_LET: {
-        cerr << "case " << e->eid() << " not implemented." << endl;
+        cerr << "Let should not happen in flatzinc call." << endl;
         assert(false);
       } break;
 
-      case Expression::E_TI: {  // TypeInst
-        cerr << "case " << e->eid() << " not implemented." << endl;
+      case Expression::E_TI: {
+        cerr << "TI should not happen in flatzinc call." << endl;
         assert(false);
       } break;
 
@@ -367,7 +361,7 @@ namespace MiniZinc {
     // --- --- --- Switch accoring to the type/kind of declaration
     if (ti.isEnum()){
       nl_file.add_vdecl_enum();
-      cerr << "vdecl enum not implemented" << endl;
+      cerr << "Should not happen" << endl;
       assert(false);
     }
     // TODO: question: what is env ? (see pretty printer line 622)
@@ -388,8 +382,19 @@ namespace MiniZinc {
         assert(type.isvarint()||type.isvarfloat());
         bool isvarint = type.isvarint();
         // Check the domain
-        assert(domain != NULL);
-        assert(domain->eid() == Expression::E_SETLIT);
+        // TODO: can be null see below
+        //assert(domain != NULL);
+if(domain == NULL){
+  int index = nl_file.variables.size();
+     Var v = Var(name, index, true, NLS_BoundItem::make_nobound(index));
+        // Update Internal structure & Header
+        nl_file.variables[name] = v;
+        nl_file.name_vars.push_back(name);
+        nl_file.header.nb_vars++;
+        return;
+}
+
+        //assert(domain->eid() == Expression::E_SETLIT);
         const SetLit& sl = *domain->cast<SetLit>();
         // Integer?
         if(sl.isv()){
@@ -401,9 +406,14 @@ namespace MiniZinc {
           nl_file.vdecl_fp(name, sl.fsv());
         }// Else is a set
         else {
-          cerr << "Variable " << name << ": infinite/set domain not implemented" << endl;
+          cerr << "Should not happen" << endl;
           assert(false);
         }
+        // domain:
+        // null -> unrestricted: var int, var float...
+        // boolean constant: true or false
+        // or a setlit
+        // 
       }
     }
   }
@@ -423,16 +433,85 @@ namespace MiniZinc {
     // Integer constants.
     // TODO: question: which are constraint ?
     // TODO: question: how to deal with reif ?
-    if(id == consint.lin_eq){       cerr << "constraint 'int lin_eq'  not implemented"; assert(false); }
+    if(id == consint.lin_eq){  
+
+      // Always array
+      Expression* arg0 = c.arg(0);
+      Expression* arg1 = c.arg(1);
+      long long integer_constant = c.arg(2)->cast<IntLit>()->v().toInt();
+
+      
+           cerr << "constraint 'int lin_eq'  not implemented"; assert(false); }
     else if(id == consint.lin_le){  cerr << "constraint 'int lin_le'  not implemented"; assert(false); }
     else if(id == consint.lin_ne){  cerr << "constraint 'int lin_ne'  not implemented"; assert(false); }
-    else if(id == consint.plus){    cerr << "constraint 'int plus'    not implemented"; assert(false); }
-    else if(id == consint.minus){   cerr << "constraint 'int minus'   not implemented"; assert(false); }
-    else if(id == consint.times){   cerr << "constraint 'int times'   not implemented"; assert(false); }
-    else if(id == consint.div){     cerr << "constraint 'int div'     not implemented"; assert(false); }
-    else if(id == consint.mod){     cerr << "constraint 'int mod'     not implemented"; assert(false); }
-    else if(id == consint.lt){      cerr << "constraint 'int lt'      not implemented"; assert(false); }
-    else if(id == consint.le){      cerr << "constraint 'int le'      not implemented"; assert(false); }
+    else if(id == consint.plus){    cerr << "Should not happen - Non linear to be implementeed constraint 'int plus'    not implemented"; assert(false); }
+    else if(id == consint.minus){   cerr << "Should not happen - Non linear to be implementeed constraint 'int minus'   not implemented"; assert(false); }
+    else if(id == consint.times){   cerr << "Non linear to be implementeed constraint 'int times'   not implemented"; assert(false); }
+    else if(id == consint.div){     cerr << "Non linear to be implementeed constraint 'int div'     not implemented"; assert(false); }
+    else if(id == consint.mod){     cerr << "Non linear to be implemented 'int mod'     not implemented"; assert(false); }
+    else if(id == consint.lt){      cerr << "Should not happen 'int lt'"; assert(false); }
+    else if(id == consint.le){// 2 args
+      Expression* arg0 = c.arg(0);
+      Expression* arg1 = c.arg(1);
+      // --- --- --- Bound constraints
+      if(arg0->type().ispar()){
+        IntVal lowerBound = arg0->cast<IntLit>()->v();
+
+         int lb = lowerBound.toInt();
+        VarDecl& vd = *(arg1->cast<Id>()->decl());
+            stringstream os;
+    if (vd.id()->idn() != -1) {
+      os << " X_INTRODUCED_" << vd.id()->idn() << "_";
+    } else if (vd.id()->v().size() != 0){
+      os << " " << vd.id()->v();
+    }
+    string name = os.str();
+
+      Var v1 = nl_file.variables[name];
+      NLS_BoundItem newBound = v1.bound;
+      switch(v1.bound.tag){
+            case NLS_BoundItem::LB_UB:{
+                if(lb>v1.bound.lb){
+                  newBound = NLS_BoundItem::make_bounded(lb, v1.bound.ub, v1.index);
+                }
+                break;
+            }
+            case  NLS_BoundItem::UB:{
+                newBound = NLS_BoundItem::make_bounded(lb, v1.bound.ub, v1.index);
+                
+                break;
+            }
+            case  NLS_BoundItem::LB:{
+                if(lb>v1.bound.lb){
+                  newBound = NLS_BoundItem::make_lb_bounded(lb, v1.index);
+                }
+                break;
+            }
+            case  NLS_BoundItem::NONE:{
+              newBound = NLS_BoundItem::make_lb_bounded(lb, v1.index);
+                
+                break;
+            }
+            case  NLS_BoundItem::EQ:{
+                cerr << "Should not happen" << endl;
+                assert(false);
+            }
+      }
+
+      Var new_v = Var(name, v1.index, v1.is_integer, newBound);
+      nl_file.variables[name] = new_v;
+
+
+
+        
+           }
+      else if(arg1->type().ispar()){
+
+      } else {}
+      // --- --- --- Actual constraint
+      
+      
+    }
     else if(id == consint.gt){      cerr << "constraint 'int gt'      not implemented"; assert(false); }
     else if(id == consint.ge){      cerr << "constraint 'int ge'      not implemented"; assert(false); }
     else if(id == consint.eq){      cerr << "constraint 'int eq'      not implemented"; assert(false); }
