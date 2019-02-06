@@ -30,7 +30,14 @@ namespace MiniZinc {
 
     class NLFile;
 
-    // --- --- --- Variable record
+    /** Variable Record
+     *  The variable record contains the name, index and type (is_integer -> integer or floating point)
+     *  of the a variable. It also contains the variable bound as describe into nl_segment.hh.
+     *  Note that in flatzinc, the bound are eigher absent ot present on both side.
+     *  In contrast, nl support partial bounds.
+     *  Partial bounds in flatzinc are expressed through contraints: while analysing constraints, we reconstruct
+     *  partial bound at the variable level.
+     */
     class Var {
         public:
         string const*   name;
@@ -49,27 +56,36 @@ namespace MiniZinc {
     class NLFile: public Printable {
 
         public:
-
-        // --- --- --- --- --- --- --- --- --- Fields
+        /** *** *** *** Fields *** *** *** **/
+        
         NLHeader                header={};              // 0-init the header
         map<string, Var>        variables={};           // Mapping variable name
         vector<string>          name_vars={};           // Retro Mapping index -> name
         
+        /** *** *** *** Printable Interface *** *** *** **/
 
-        // --- --- --- --- --- --- --- --- --- Methods
-        
         ostream& print_on( ostream& o ) const override ;
 
-        // --- --- --- --- --- --- VDECL
+        /** *** *** *** Helpers *** *** *** **/
+
+        static string get_vname(const VarDecl &vd);
+
+        /** *** *** Variable declaration methods *** *** *** **/
+
+        void analyse_vdecl(const VarDecl &vd, const TypeInst &ti, const Expression &rhs);
+
         void vdecl_integer(const string& name, const IntSetVal* isv);
 
         void vdecl_fp(const string& name, const FloatSetVal* fsv);
 
-        void add_vdecl_enum();
-            
-        void add_vdecl_tystr();
+        /** *** *** Constraints methods *** *** *** **/
 
-        // void add_vdecl(const string& name, const Type& type, const Expression* domain);
+        void analyse_constraint(const Call& c);
+
+        /** *** *** Integer Constraint methods *** *** *** **/
+
+        void consint_lin_eq(const Call& c);
+        void consint_le(const Call& c);
 
     };
 

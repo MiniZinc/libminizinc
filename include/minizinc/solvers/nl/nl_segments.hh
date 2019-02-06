@@ -73,6 +73,9 @@ namespace MiniZinc {
         static NLS_BoundItem make_nobound(int index);
         static NLS_BoundItem make_equal(double val, int index);
 
+        void update_lb(double new_lb);
+        void update_ub(double new_lb);
+
         private:
         NLS_BoundItem(Bound tag, double lb, double ub, int index);
 

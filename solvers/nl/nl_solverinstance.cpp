@@ -19,15 +19,6 @@
 #include <cstring>
 #include <fstream>
 
-// #include <minizinc/timer.hh>
-// #include <minizinc/prettyprinter.hh>
-// #include <minizinc/pathfileprinter.hh>
-// #include <minizinc/parser.hh>
-// #include <minizinc/typecheck.hh>
-// #include <minizinc/builtins.hh>
-// #include <minizinc/eval_par.hh>
-// #include <minizinc/process.hh>
-
 #ifdef _WIN32
 #undef ERROR
 #endif
@@ -35,6 +26,9 @@
 using namespace std;
 
 namespace MiniZinc {
+
+  /** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** **/
+  // Solver Factory
 
   NL_SolverFactory::NL_SolverFactory(void) {
     SolverConfig sc("org.minizinc.mzn-nl",MZN_VERSION_MAJOR "." MZN_VERSION_MINOR "." MZN_VERSION_PATCH);
@@ -56,13 +50,9 @@ namespace MiniZinc {
     return MZN_VERSION_MAJOR;
   }
 
-  string NL_SolverFactory::getId()
-  {
-    return "org.minizinc.mzn-nl";
-  }
+  string NL_SolverFactory::getId() { return "org.minizinc.mzn-nl"; }
 
-  void NL_SolverFactory::printHelp(ostream& os)
-  {
+  void NL_SolverFactory::printHelp(ostream& os) {
     os
     << "MZN-NL plugin options: NL_SolverFactory::printHelp TODO" << std::endl
     // << "  --nl-cmd , --nonlinear-cmd <exe>\n     the backend solver filename.\n"
@@ -88,17 +78,23 @@ namespace MiniZinc {
     return new NLSolverInstance(env, log, opt);
   }
 
-  bool NL_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv)
-  {
+  bool NL_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv) {
     cerr << "NL_SolverFactory::processOption TODO: does not process any option for now" << endl;
     return true;
   }
 
 
+  /** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** **/
+  // Solver Instance
+
   NLSolverInstance::NLSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* options)
     : SolverInstanceBase(env, log, options), _fzn(env.flat()), _ozn(env.output()) {}
 
   NLSolverInstance::~NLSolverInstance(void) {}
+
+  void NLSolverInstance::processFlatZinc(void) {}
+
+  void NLSolverInstance::resetSolver(void) {}
 
   SolverInstance::Status
   NLSolverInstance::solve(void) {
@@ -134,73 +130,35 @@ namespace MiniZinc {
     return SolverInstance::NONE;
   }
 
-/*  FileUtils::TmpFile fznFile(".fzn");
-    std::ofstream os(fznFile.name());
-    Printer p(os, 0, true);
-    for (FunctionIterator it = _fzn->begin_functions(); it != _fzn->end_functions(); ++it) {
-      if(!it->removed()) {
-        Item& item = *it;
-        p.print(&item);
-      }
-    }
-    for (VarDeclIterator it = _fzn->begin_vardecls(); it != _fzn->end_vardecls(); ++it) {
-      if(!it->removed()) {
-        Item& item = *it;
-        p.print(&item);
-      }
-    }
-    for (ConstraintIterator it = _fzn->begin_constraints(); it != _fzn->end_constraints(); ++it) {
-      if(!it->removed()) {
-        Item& item = *it;
-        p.print(&item);
-      }
-    }
-    p.print(_fzn->solveItem());
-    cmd_line.push_back(fznFile.name());
+  // TODO later
+  Expression* NLSolverInstance::getSolutionValue(Id* id) { assert(false); return NULL; }
 
-    FileUtils::TmpFile* pathsFile = NULL;
-    if(opt.fzn_needs_paths) {
-      pathsFile = new FileUtils::TmpFile(".paths");
-      std::ofstream ofs(pathsFile->name());
-      PathFilePrinter pfp(ofs, _env.envi());
-      pfp.print(_fzn);
-
-      cmd_line.push_back("--paths");
-      cmd_line.push_back(pathsFile->name());
-    }
-
-    if(!opt.fzn_output_passthrough) {
-      Process<Solns2Out> proc(cmd_line, getSolns2Out(), timelimit, sigint);
-      int exitStatus = proc.run();
-      delete pathsFile;
-      return exitStatus == 0 ? getSolns2Out()->status : SolverInstance::ERROR;
-    } else {
-      Solns2Log s2l(getSolns2Out()->getOutput(), _log);
-      Process<Solns2Log> proc(cmd_line, &s2l, timelimit, sigint);
-      int exitStatus = proc.run();
-      delete pathsFile;
-      return exitStatus==0 ? SolverInstance::NONE : SolverInstance::ERROR;
-    }
-  }
-  */
-
+  /** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** **/
+  /** Analyse an item
+   * An item is a "top node" in the ast.
+   * In flatzinc, we can only have the cases 'variable declaration' and 'constraint'.
+   */
   void NLSolverInstance::analyse(const Item* i) {
     // Guard
     if (i==NULL) return;
 
     // Switch on the id of item
     switch (i->iid()) {
+
       case Item::II_INC: {
         cerr << "Should not happen. (include \"" << i->cast<IncludeI>()->f() << "\")" << endl;
         assert(false);
       } break;
 
+      // Case of the variable declaration.
+      // Because it is a variable declaration, the expression associated to the item is necessary a VarDecl.
+      // From the VarDecl, we can obtain the type and the RHS expression. Use this to analyse further.
       case Item::II_VD: {
         cerr << "II_VD: Variable Declaration. [";
         const VarDecl& vd = *i->cast<VarDeclI>()->e();
         const TypeInst &ti        = *vd.ti()->cast<TypeInst>();
         const Expression &rhs     = *vd.e();
-        analyse_vdecl(vd, ti, rhs);
+        nl_file.analyse_vdecl(vd, ti, rhs);
         cerr << "]OK." << endl;
       } break;
 
@@ -209,12 +167,15 @@ namespace MiniZinc {
         assert(false);
       } break;
 
+      // Case of the constraint.
+      // Constraint are expressed through builtin calls.
+      // Hence, the expression associated to the item must be a E_CALL.
       case Item::II_CON: {
         cerr << "II_CON: Constraint. [";
         Expression* e = i->cast<ConstraintI>()->e();
         if(e->eid() == Expression::E_CALL){
           const Call& c = *e->cast<Call>();
-          analyse_constraint(c);
+          nl_file.analyse_constraint(c);
         } else {
           cerr << "Contraint is not a builtin call." << endl;
           assert(false);
@@ -238,326 +199,4 @@ namespace MiniZinc {
     }// END OF SWITCH
   }
 
-
-  // FOR THE CALL
-  void NLSolverInstance::analyse(const Expression* e) {
-    // Guard
-    if (e==NULL) return;
-
-    // Dispatch on expression type
-    switch (e->eid()) {
-
-      // --- --- --- Literals
-      case Expression::E_INTLIT: {
-        cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_FLOATLIT: {
-        cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_SETLIT: {
-        cerr << "Set literal should not happen (use -Glinear)." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_BOOLLIT: {
-        cerr << "Bool literal should not happen (use -Glinear)." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_STRINGLIT: {
-        cerr << "String literal should not happen." << endl;
-        assert(false);
-      } break;
-
-      /// --- --- --- Expressions
-
-      case Expression::E_ID: { // Identifier
-        cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_TIID: { // Type-inst identifier
-        cerr << "Type identifier should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_ANON: {
-        cerr << "Anonymous variable should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_ARRAYLIT: {
-        cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_ARRAYACCESS: {
-        cerr << "Array access should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_COMP:{ // Comprehension
-        cerr << "Comprehension should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_ITE:{ // If-then-else expression
-        cerr << "If then else should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_BINOP: {
-        cerr << "Binary Op should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_UNOP: {
-        cerr << "Unary Op should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-
-      case Expression::E_CALL: {
-        cerr << "Call should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-
-      case Expression::E_VARDECL: {
-        cerr << "Var Decl should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-
-      case Expression::E_LET: {
-        cerr << "Let should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_TI: {
-        cerr << "TI should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-    } // END OF SWITCH
-  } // END OF FUN
-
-
-
-  void NLSolverInstance::analyse_vdecl(const VarDecl &vd, const TypeInst &ti, const Expression &rhs){
-    // --- --- --- Get the name
-    stringstream os;
-    if (vd.id()->idn() != -1) {
-      os << " X_INTRODUCED_" << vd.id()->idn() << "_";
-    } else if (vd.id()->v().size() != 0){
-      os << " " << vd.id()->v();
-    }
-    string name = os.str();
-
-    // --- --- --- Switch accoring to the type/kind of declaration
-    if (ti.isEnum()){
-      nl_file.add_vdecl_enum();
-      cerr << "Should not happen" << endl;
-      assert(false);
-    }
-    // TODO: question: what is env ? (see pretty printer line 622)
-     /* else if(env) {
-      nl_file.add_vdecl_tystr();
-      cerr << "vdecl tystr not implemented" << endl;
-      assert(false);
-    } */ else {
-      if(ti.isarray()){
-        // In flatzinc, array always have a rhs: they can alway be replaced by their definition.
-        // Follows the pointer starting at the ID to do so.
-        cerr << "Definition of array " << name << " is not reproduced in nl.";
-      } else {
-        // Variable declaration
-        const Type& type          = ti.type();
-        const Expression* domain  = ti.domain();
-        // Check the type
-        assert(type.isvarint()||type.isvarfloat());
-        bool isvarint = type.isvarint();
-        // Check the domain
-        // TODO: can be null see below
-        //assert(domain != NULL);
-if(domain == NULL){
-  int index = nl_file.variables.size();
-     Var v = Var(name, index, true, NLS_BoundItem::make_nobound(index));
-        // Update Internal structure & Header
-        nl_file.variables[name] = v;
-        nl_file.name_vars.push_back(name);
-        nl_file.header.nb_vars++;
-        return;
-}
-
-        //assert(domain->eid() == Expression::E_SETLIT);
-        const SetLit& sl = *domain->cast<SetLit>();
-        // Integer?
-        if(sl.isv()){
-          assert(isvarint);
-          nl_file.vdecl_integer(name, sl.isv());
-        } // Floating Point?
-        else if(sl.fsv()){
-          assert(!isvarint);
-          nl_file.vdecl_fp(name, sl.fsv());
-        }// Else is a set
-        else {
-          cerr << "Should not happen" << endl;
-          assert(false);
-        }
-        // domain:
-        // null -> unrestricted: var int, var float...
-        // boolean constant: true or false
-        // or a setlit
-        // 
-      }
-    }
-  }
-
-
-  void NLSolverInstance::analyse_constraint(const Call& c){
-    // Guard
-    if(c.decl() == NULL){
-      cerr << "Undeclared function " << c.id();
-      assert(false);
-    }
-
-    auto id = c.id();
-    auto consint = constants().ids.int_;
-    auto consfp = constants().ids.float_;
-
-    // Integer constants.
-    // TODO: question: which are constraint ?
-    // TODO: question: how to deal with reif ?
-    if(id == consint.lin_eq){  
-
-      // Always array
-      Expression* arg0 = c.arg(0);
-      Expression* arg1 = c.arg(1);
-      long long integer_constant = c.arg(2)->cast<IntLit>()->v().toInt();
-
-      
-           cerr << "constraint 'int lin_eq'  not implemented"; assert(false); }
-    else if(id == consint.lin_le){  cerr << "constraint 'int lin_le'  not implemented"; assert(false); }
-    else if(id == consint.lin_ne){  cerr << "constraint 'int lin_ne'  not implemented"; assert(false); }
-    else if(id == consint.plus){    cerr << "Should not happen - Non linear to be implementeed constraint 'int plus'    not implemented"; assert(false); }
-    else if(id == consint.minus){   cerr << "Should not happen - Non linear to be implementeed constraint 'int minus'   not implemented"; assert(false); }
-    else if(id == consint.times){   cerr << "Non linear to be implementeed constraint 'int times'   not implemented"; assert(false); }
-    else if(id == consint.div){     cerr << "Non linear to be implementeed constraint 'int div'     not implemented"; assert(false); }
-    else if(id == consint.mod){     cerr << "Non linear to be implemented 'int mod'     not implemented"; assert(false); }
-    else if(id == consint.lt){      cerr << "Should not happen 'int lt'"; assert(false); }
-    else if(id == consint.le){// 2 args
-      Expression* arg0 = c.arg(0);
-      Expression* arg1 = c.arg(1);
-      // --- --- --- Bound constraints
-      if(arg0->type().ispar()){
-        IntVal lowerBound = arg0->cast<IntLit>()->v();
-
-         int lb = lowerBound.toInt();
-        VarDecl& vd = *(arg1->cast<Id>()->decl());
-            stringstream os;
-    if (vd.id()->idn() != -1) {
-      os << " X_INTRODUCED_" << vd.id()->idn() << "_";
-    } else if (vd.id()->v().size() != 0){
-      os << " " << vd.id()->v();
-    }
-    string name = os.str();
-
-      Var v1 = nl_file.variables[name];
-      NLS_BoundItem newBound = v1.bound;
-      switch(v1.bound.tag){
-            case NLS_BoundItem::LB_UB:{
-                if(lb>v1.bound.lb){
-                  newBound = NLS_BoundItem::make_bounded(lb, v1.bound.ub, v1.index);
-                }
-                break;
-            }
-            case  NLS_BoundItem::UB:{
-                newBound = NLS_BoundItem::make_bounded(lb, v1.bound.ub, v1.index);
-                
-                break;
-            }
-            case  NLS_BoundItem::LB:{
-                if(lb>v1.bound.lb){
-                  newBound = NLS_BoundItem::make_lb_bounded(lb, v1.index);
-                }
-                break;
-            }
-            case  NLS_BoundItem::NONE:{
-              newBound = NLS_BoundItem::make_lb_bounded(lb, v1.index);
-                
-                break;
-            }
-            case  NLS_BoundItem::EQ:{
-                cerr << "Should not happen" << endl;
-                assert(false);
-            }
-      }
-
-      Var new_v = Var(name, v1.index, v1.is_integer, newBound);
-      nl_file.variables[name] = new_v;
-
-
-
-        
-           }
-      else if(arg1->type().ispar()){
-
-      } else {}
-      // --- --- --- Actual constraint
-      
-      
-    }
-    else if(id == consint.gt){      cerr << "constraint 'int gt'      not implemented"; assert(false); }
-    else if(id == consint.ge){      cerr << "constraint 'int ge'      not implemented"; assert(false); }
-    else if(id == consint.eq){      cerr << "constraint 'int eq'      not implemented"; assert(false); }
-    else if(id == consint.ne){      cerr << "constraint 'int ne'      not implemented"; assert(false); }
-
-    // Floating Point constants.
-    // TODO: question: which are constraint ?
-    // TODO: question: how to deal with reif ?
-    else if(id == consfp.lin_eq){   cerr << "constraint 'float lin_eq' not implemented"; assert(false); }
-    else if(id == consfp.lin_le){   cerr << "constraint 'float lin_le' not implemented"; assert(false); }
-    else if(id == consfp.lin_lt){   cerr << "constraint 'float lin_lt' not implemented"; assert(false); }
-    else if(id == consfp.lin_ne){   cerr << "constraint 'float lin_ne' not implemented"; assert(false); }
-    else if(id == consfp.plus){     cerr << "constraint 'float plus  ' not implemented"; assert(false); }
-    else if(id == consfp.minus){    cerr << "constraint 'float minus ' not implemented"; assert(false); }
-    else if(id == consfp.times){    cerr << "constraint 'float times ' not implemented"; assert(false); }
-    else if(id == consfp.div){      cerr << "constraint 'float div   ' not implemented"; assert(false); }
-    else if(id == consfp.mod){      cerr << "constraint 'float mod   ' not implemented"; assert(false); }
-    else if(id == consfp.lt){       cerr << "constraint 'float lt    ' not implemented"; assert(false); }
-    else if(id == consfp.le){       cerr << "constraint 'float le    ' not implemented"; assert(false); }
-    else if(id == consfp.gt){       cerr << "constraint 'float gt    ' not implemented"; assert(false); }
-    else if(id == consfp.ge){       cerr << "constraint 'float ge    ' not implemented"; assert(false); }
-    else if(id == consfp.eq){       cerr << "constraint 'float eq    ' not implemented"; assert(false); }
-    else if(id == consfp.ne){       cerr << "constraint 'float ne    ' not implemented"; assert(false); }
-    else if(id == consfp.in){       cerr << "constraint 'float in    ' not implemented"; assert(false); }
-    else if(id == consfp.dom){      cerr << "constraint 'float dom   ' not implemented"; assert(false); }
-
-
-
-
-     else {
-      cerr << "Unrecognized builtins " << c.id() << " not implemented";
-      assert(false);
-    }
-  }
-
-
-
-
-
-  void NLSolverInstance::processFlatZinc(void) {}
-
-  void NLSolverInstance::resetSolver(void) {}
-
-  Expression*
-  NLSolverInstance::getSolutionValue(Id* id) {
-    assert(false);
-    return NULL;
-  }
 }

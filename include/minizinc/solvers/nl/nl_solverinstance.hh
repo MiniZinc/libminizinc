@@ -66,14 +66,8 @@ namespace MiniZinc {
     protected:
       Expression* getSolutionValue(Id* id);
 
-
       void analyse(const Item* i);
 
-      void analyse(const Expression* e);
-
-      void analyse_vdecl(const VarDecl &vd, const TypeInst &ti, const Expression &rhs);
-
-      void analyse_constraint(const Call& c);
   };
 
 
