@@ -91,6 +91,10 @@ annotation constraint_name(string: s);
 /** @group annotations.general Used internally by the compiler */
 annotation mzn_rhs_from_assignment;
 
+/** @group annotations.general Marks a constraint as a recorded domain changing constraint (when mzn2fzn
+  called with -g flag */
+annotation domain_change_constraint;
+
 /***
  @groupdef annotations.prop Propagation strength annotations
 */

@@ -99,6 +99,7 @@ namespace MiniZinc {
     int counter = 0;
     for (Call* c : calls) {
       CallStackItem csi(envi, IntLit::a(counter++));
+      c->ann().add(constants().ann.domain_change_constraint);
       c->type(Type::varbool());
       c->decl(envi.model->matchFn(envi, c, true));
       flat_exp(envi, Ctx(), c, constants().var_true, constants().var_true);
