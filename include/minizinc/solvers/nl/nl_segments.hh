@@ -93,6 +93,33 @@ namespace MiniZinc {
         NLS_BoundSeg(NLFile const* nl_file):nl_file(nl_file){}
         ostream& print_on( ostream& o ) const override;
     };
+
+
+
+    /* Bound on constraint: the 'r' segment.
+     * Works as the 'b' segment, but for constraints.
+     * In principle, the 'r' segment can have 'complementary constraints' tagged by the integer '5'.
+     * However, this should not be needed in our case, so we can reuse the NLS_BoundItem class.
+     * The total number of constraint is made of the number of range cosntraint and equalit
+     *             << nb_range_constraints << " "
+            << nb_equality_constraints << " "
+     * Hence, variables are represented positionnaly in that list (first line for the first variable, etc...).
+     * Each line starts with a tag (integer 0=<tag=<4) followed by some floating point numbers.
+     * Those numbers are bounds, and the tag tells us how to interpret them with respect to the variable.
+     * In the following, 'V' represent the position of the variable
+     * 
+     * b 5          # Starting the segment  # Variable          # Tag in enum NLS_Bounditem::Bound
+     * 0 1.1 3.4    # 1.1 =< V =< 3.4       First variable      LB_UB
+     * 1 2.5        # V =< 2.5              Second variable     UB
+     * 2 7          # 7 =< V                etc...              LB
+     * 3            # no constraint                             NONE
+     * 4 9.4        # V = 9.4                                   EQ
+     *
+     * This segment can only appears once. 
+     */
+
+
+
 }
 
 #endif
