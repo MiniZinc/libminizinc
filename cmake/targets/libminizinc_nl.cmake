@@ -7,6 +7,10 @@ add_library(minizinc_nl
   solvers/nl/nl_solverfactory.cpp
   solvers/nl/nl_solverinstance.cpp
   solvers/nl/segments/bseg.cpp
+  solvers/nl/segments/rseg.cpp
+  solvers/nl/segments/cseg.cpp
+  solvers/nl/segments/jseg.cpp
+  solvers/nl/segments/oseg.cpp
 
   include/minizinc/solvers/nl/nl_expressions.hh
   include/minizinc/solvers/nl/nl_file.hh

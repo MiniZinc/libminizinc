@@ -15,7 +15,23 @@ namespace MiniZinc {
 
     ostream& NLFile::print_on(ostream& os) const{
         os << header << endl << "# --- END OF HEADER" << endl << endl;
-        os << NLS_BoundSeg(this) << endl << endl;
+
+        os << b_segment << endl << endl;
+
+        os << r_segment << endl << endl;
+
+        for(auto &cseg: c_segments){
+            os << cseg << endl;
+        }
+
+        os << o_segment << endl;
+
+        // k segment must be here before the J segments
+        // TODO: k segment
+        for(auto &jseg: j_segments){
+            os << jseg << endl;
+        }
+
         return os;
     }
     
@@ -30,7 +46,53 @@ namespace MiniZinc {
         return name;
     }
 
-    /** *** *** Variable declaration methods *** *** *** **/
+    /** Obtain the vector of an array, either from an identifier or an array litteral */
+    ASTExprVec<Expression> NLFile::get_vec(const Expression* e){
+        switch(e->eid()){
+            case Expression::E_ID: {
+                // Follow the pointer to the expression of the declaration
+                return get_vec( e->cast<Id>()->decl()->e() );
+            }
+
+            case Expression::E_ARRAYLIT: {
+                const ArrayLit& al = *e->cast<ArrayLit>();
+                return al.getVec();
+            }
+        }
+        cerr << "Could not read array from expression." << endl;
+        assert(false);
+        return {}; // never reached
+    }
+
+
+
+    /** *** *** *** Solve analysis *** *** *** **/
+    void NLFile::analyse_solve(SolveI::SolveType st, const Expression* e){
+        header.nb_objectives++;
+        
+        switch(st){
+            case SolveI::SolveType::ST_SAT:{
+                // Satisfy: implemented by minimizing 0
+                o_segment.minmax = o_segment.MINIMIZE;
+                o_segment.expression_graph.push_back(NLToken::n(0));
+                break;
+            }
+            case SolveI::SolveType::ST_MIN:{
+                cerr << "solve min not implemented (todo: checking expression)" << endl;
+                assert(false);
+                break;
+            }
+            case SolveI::SolveType::ST_MAX:{
+                cerr << "solve max not implemented (todo: checking expression)" << endl;
+                assert(false);                
+                break;
+            }
+        }
+    }
+
+
+
+    /** *** *** *** Variable declaration methods *** *** *** **/
 
     /** Analyse a variable declaration vd of type ti with an ths
      * TODO: check rhs with Guido
@@ -129,14 +191,11 @@ namespace MiniZinc {
 
 
 
-    /** *** *** Constraint methods *** *** *** **/
+    /** *** *** *** Constraint methods *** *** *** **/
 
     void NLFile::analyse_constraint(const Call& c){
         // Guard
-        if(c.decl() == NULL){
-            cerr << "Undeclared function " << c.id();
-            assert(false);
-        }
+        if(c.decl() == NULL){ cerr << "Undeclared function " << c.id(); assert(false); }
 
         // ID of the call
         auto id = c.id();
@@ -147,7 +206,7 @@ namespace MiniZinc {
 
         // Dispatch among integer builtins
         if(id == consint.lin_eq){       cerr << "constraint 'int lin_eq' not implemented"; assert(false); }
-        else if(id == consint.lin_le){  cerr << "constraint 'int lin_le' not implemented"; assert(false); }
+        else if(id == consint.lin_le){ consint_lin_le(c); }
         else if(id == consint.lin_ne){  cerr << "constraint 'int lin_ne' not implemented"; assert(false); }
         else if(id == consint.times){   cerr << "Non linear to be implementeed constraint 'int times'   not implemented"; assert(false); }
         else if(id == consint.div){     cerr << "Non linear to be implementeed constraint 'int div'     not implemented"; assert(false); }
@@ -186,13 +245,80 @@ namespace MiniZinc {
         }
     }
 
-    /** *** *** Integer Constraint methods *** *** *** **/
 
+
+    /** *** *** *** Integer Constraint methods *** *** *** **/
+
+    // TODO: question: coeffs always in array 0 ?
     void NLFile::consint_lin_eq(const Call& c){
         Expression* arg0 = c.arg(0);    // Always an array
         Expression* arg1 = c.arg(1);    // Always an array
         long long integer_constant = c.arg(2)->cast<IntLit>()->v().toInt();
+
+        ASTExprVec<Expression> coeff    = get_vec(arg0);
+        ASTExprVec<Expression> array1   = get_vec(arg1);
+
+         for(unsigned int i=0; i<coeff.size(); ++i){
+             cerr << coeff[i]->cast<IntLit>()->v();
+         }
+
         cerr << "constraint 'int lin_eq'  not implemented"; assert(false);
+    }
+
+    // TODO: question: coeffs always in array 0 ?
+    void NLFile::consint_lin_le(const Call& c){
+        Expression* arg0 = c.arg(0);    // Always an array
+        Expression* arg1 = c.arg(1);    // Always an array
+        long long upper_bound_int_constant = c.arg(2)->cast<IntLit>()->v().toInt();
+
+        ASTExprVec<Expression> coeffs   = get_vec(arg0);
+        ASTExprVec<Expression> vars     = get_vec(arg1);
+
+        // New constraint: what number is it?
+        // Also increases the number of constraint.
+        // Note: not a range nor an equality, so only increases the "main counter".
+        int considx = header.nb_algebraic_constraints;
+        header.nb_algebraic_constraints++;
+
+        // Constraint segment: the constraint and the linear part.
+        NLS_CSeg cseg(this, considx);
+        NLS_JSeg jseg(this, considx);
+
+
+        // The constraint non linear part is 0
+        // cseg.expression_graph.push_back(NLToken::n(0));
+        // TEST: creating the non linear expression
+        // 1) Push the comparison  "=< operand1 operand2"
+        cseg.expression_graph.push_back(NLToken::o(NLToken::OpCode::LE));
+        // 2) Operand1 = sum of product
+        // All the sums in one go
+        cseg.expression_graph.push_back(NLToken::mo(NLToken::MOpCode::OPSUMLIST, coeffs.size()));
+        for(unsigned int i=0; i<coeffs.size(); ++i){
+            double co       = coeffs[i]->cast<IntLit>()->v().toInt();
+            string vname    = get_vname(*(vars[i]->cast<Id>()->decl()));
+            int    vidx     = variables[vname].index;
+            // Product
+            cseg.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPMULT));
+            cseg.expression_graph.push_back(NLToken::n(co));
+            cseg.expression_graph.push_back(NLToken::v(vidx, vname));
+        }
+        // 3) Operand 2 = value
+        cseg.expression_graph.push_back(NLToken::n(upper_bound_int_constant));
+
+        c_segments.push_back(cseg);
+
+        // The constraint linear part is built here:
+        for(unsigned int i=0; i<coeffs.size(); ++i){
+             double co      = coeffs[i]->cast<IntLit>()->v().toInt();
+             int    vidx    = variables[get_vname(*(vars[i]->cast<Id>()->decl()))].index;
+             jseg.var_coeff.push_back(pair<int, double>(vidx, co));
+        }
+        j_segments.push_back(jseg);
+        
+        // Bound over the constraint: extends the r segment
+        AlgebraicCons ac = AlgebraicCons(considx, NLS_BoundItem::make_ub_bounded(upper_bound_int_constant, considx));
+        r_segment.addConstraint(ac);
+
     }
 
     void NLFile::consint_le(const Call& c){
@@ -232,25 +358,31 @@ namespace MiniZinc {
 
 
 
-
-
-    // FOR THE CALL
-  void analyse(const Expression* e) {
+  /** Check expression within a flatzinc call.
+   * Can only contain:
+   *    Expression::E_INTLIT
+   *    Expression::E_FLOATLIT
+   *    Expression::E_ID
+   *    Expression::E_ARRAYLIT
+   */
+  const Expression* check_expression(const Expression* e) {
     // Guard
-    if (e==NULL) return;
+    if (e==NULL){assert(false);}
 
     // Dispatch on expression type
     switch (e->eid()) {
 
       // --- --- --- Literals
       case Expression::E_INTLIT: {
-        cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);
+        // cerr << "case " << e->eid() << " not implemented." << endl;
+        // assert(false);
+        return e;
       } break;
 
       case Expression::E_FLOATLIT: {
-        cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);
+        // cerr << "case " << e->eid() << " not implemented." << endl;
+        // assert(false);
+        return e;
       } break;
 
       case Expression::E_SETLIT: {
@@ -271,8 +403,9 @@ namespace MiniZinc {
       /// --- --- --- Expressions
 
       case Expression::E_ID: { // Identifier
-        cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);
+        // cerr << "case " << e->eid() << " not implemented." << endl;
+        // assert(false);
+        return e;
       } break;
 
       case Expression::E_TIID: { // Type-inst identifier
@@ -286,8 +419,9 @@ namespace MiniZinc {
       } break;
 
       case Expression::E_ARRAYLIT: {
-        cerr << "case " << e->eid() << " not implemented." << endl;
-        assert(false);
+        // cerr << "case " << e->eid() << " not implemented." << endl;
+        // assert(false);
+        return e;
       } break;
 
       case Expression::E_ARRAYACCESS: {
@@ -337,8 +471,8 @@ namespace MiniZinc {
         cerr << "TI should not happen in flatzinc call." << endl;
         assert(false);
       } break;
-
     } // END OF SWITCH
+    return NULL;
   } // END OF FUN
 
 

@@ -126,6 +126,8 @@ namespace MiniZinc {
       }
     }
 
+    analyse(_fzn->solveItem());
+
     cout << nl_file;
     return SolverInstance::NONE;
   }
@@ -183,9 +185,10 @@ namespace MiniZinc {
         cerr << "]OK." << endl;
       } break;
 
+      // Case of the 'solve' directive
       case Item::II_SOL: {
-        cerr << "Should have exactly one." << endl;
-        assert(false);
+        const SolveI& si = *i->cast<SolveI>();
+        nl_file.analyse_solve(si.st(), si.e());
       } break;
 
       case Item::II_OUT: {

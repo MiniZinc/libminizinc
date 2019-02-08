@@ -16,6 +16,7 @@
 #include <minizinc/solvers/nl/nl_printable.hh>
 #include <minizinc/solvers/nl/nl_header.hh>
 #include <minizinc/solvers/nl/nl_segments.hh>
+#include <minizinc/solvers/nl/nl_expressions.hh>
 
 using namespace std;
 
@@ -28,30 +29,6 @@ using namespace std;
 
 namespace MiniZinc {
 
-    class NLFile;
-
-    /** Variable Record
-     *  The variable record contains the name, index and type (is_integer -> integer or floating point)
-     *  of the a variable. It also contains the variable bound as describe into nl_segment.hh.
-     *  Note that in flatzinc, the bound are eigher absent ot present on both side.
-     *  In contrast, nl support partial bounds.
-     *  Partial bounds in flatzinc are expressed through contraints: while analysing constraints, we reconstruct
-     *  partial bound at the variable level.
-     */
-    class Var {
-        public:
-        string const*   name;
-        int             index;
-        bool            is_integer;
-        NLS_BoundItem   bound;
-
-        public:
-        Var() = default;
-        Var(const string& name, int index, bool is_integer, NLS_BoundItem bound):
-            name(&name), index(index), is_integer(is_integer), bound(bound){}
-    };
-
-
     // --- --- --- NL Files
     class NLFile: public Printable {
 
@@ -59,8 +36,23 @@ namespace MiniZinc {
         /** *** *** *** Fields *** *** *** **/
         
         NLHeader                header={};              // 0-init the header
+
         map<string, Var>        variables={};           // Mapping variable name
         vector<string>          name_vars={};           // Retro Mapping index -> name
+
+        vector<AlgebraicCons>   algcons={};             // Algebraic constraint
+
+        /** *** *** *** Segments *** *** *** **/
+        NLS_Bound           b_segment;
+        NLS_Range           r_segment;
+        NLS_OSeg            o_segment;
+        vector<NLS_CSeg>    c_segments = {};                // Constraint segments
+        vector<NLS_JSeg>    j_segments = {};                // Constraint segments: linear part
+        
+        /** *** *** *** Constructor *** *** *** **/
+        NLFile():
+            b_segment(this), r_segment(this), o_segment(this) {}
+
         
         /** *** *** *** Printable Interface *** *** *** **/
 
@@ -70,7 +62,12 @@ namespace MiniZinc {
 
         static string get_vname(const VarDecl &vd);
 
-        /** *** *** Variable declaration methods *** *** *** **/
+        static ASTExprVec<Expression> get_vec(const Expression* e);
+
+        /** *** *** *** Solve analysis *** *** *** **/
+        void analyse_solve(SolveI::SolveType st, const Expression* e);
+
+        /** *** *** *** Variable declaration methods *** *** *** **/
 
         void analyse_vdecl(const VarDecl &vd, const TypeInst &ti, const Expression &rhs);
 
@@ -78,13 +75,15 @@ namespace MiniZinc {
 
         void vdecl_fp(const string& name, const FloatSetVal* fsv);
 
-        /** *** *** Constraints methods *** *** *** **/
+        /** *** *** *** Constraints methods *** *** *** **/
 
         void analyse_constraint(const Call& c);
 
-        /** *** *** Integer Constraint methods *** *** *** **/
+        /** *** *** *** Integer Constraint methods *** *** *** **/
 
         void consint_lin_eq(const Call& c);
+        void consint_lin_le(const Call& c);
+        
         void consint_le(const Call& c);
 
     };

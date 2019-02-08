@@ -125,13 +125,19 @@ namespace MiniZinc {
         return os;
     }
 
+
+    /*** *** *** Segment *** *** ***/
+
+
+    size_t NLS_Bound::length(){return nl_file->variables.size();}
+
     // Print the 'b' segment
-    ostream& NLS_BoundSeg::print_on(ostream& os) const {
+    ostream& NLS_Bound::print_on(ostream& os) const {
         os << "b # Bounds on variable (" << nl_file->header.nb_vars << ")" << endl;
 
         for (auto & name : nl_file->name_vars) {
             auto &v = nl_file->variables.at(name);
-            os << v.bound << endl;
+            os << v.bound << " # " << name << endl;
         }
         
         return os;
