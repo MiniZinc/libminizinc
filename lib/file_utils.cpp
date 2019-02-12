@@ -190,7 +190,17 @@ namespace MiniZinc { namespace FileUtils {
   
   std::string find_executable(const std::string& filename) {
     if (is_absolute(filename)) {
-      return file_exists(filename) ? filename : "";
+      if (file_exists(filename)) {
+        return filename;
+      }
+#ifdef _MSC_VER
+      if (FileUtils::file_exists(filename+".exe")) {
+        return filename+".exe";
+      } else if (FileUtils::file_exists(filename+".bat")) {
+        return filename+".bat";
+      }
+#endif
+      return "";
     }
     char* path_c = getenv("PATH");
 #ifdef _MSC_VER
