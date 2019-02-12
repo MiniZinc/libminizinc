@@ -223,7 +223,7 @@ namespace MiniZinc {
             } else if (ai->id()=="executable") {
               std::string exePath = getString(ai);
               sc._executable = exePath;
-              std::string exe = FileUtils::find_executable(FileUtils::file_path(basePath+"/"+exePath, basePath));
+              std::string exe = FileUtils::find_executable(FileUtils::file_path(exePath, basePath));
               int nr_found = (int) (! exe.empty());
               std::string tmp = FileUtils::find_executable(exePath);
               nr_found += (int) (! tmp.empty());
@@ -242,7 +242,7 @@ namespace MiniZinc {
                 if (libPath[0]=='-') {
                   sc._mznlib_resolved = libPath;
                 } else if (libPath.size() > 2 && libPath[0]=='.' && (libPath[1]=='/' || (libPath[1]=='.' && libPath[2]=='/'))) {
-                  sc._mznlib_resolved = FileUtils::file_path(basePath+"/"+libPath, basePath);
+                  sc._mznlib_resolved = FileUtils::file_path(libPath, basePath);
                 } else {
                   sc._mznlib_resolved = FileUtils::file_path(libPath, basePath);
                 }
