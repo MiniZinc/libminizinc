@@ -36,6 +36,7 @@ namespace MiniZinc {
     sc.mznlibVersion(1);
     sc.description("MiniZinc generic Non Linear solver plugin");
     sc.requiredFlags({"--nl-cmd"});
+    sc.mznlib("-Glinear");
     //sc.stdFlags({"-a","-n","-f","-p","-s","-r","-v"});
     sc.tags({"__internal__"});
     SolverConfigs::registerBuiltinSolver(sc);
@@ -129,6 +130,21 @@ namespace MiniZinc {
     analyse(_fzn->solveItem());
 
     cout << nl_file;
+
+    // Back to minizinc with the result
+    // var = value;
+    // 10 dashes marks: the end of a solution
+    // 10 equals signs: the end of the search if successful
+    // See sols2out.hh
+    getSolns2Out()->feedRawDataChunk("text");
+
+  /*
+        Process<Solns2Out> proc(cmd_line, getSolns2Out(), timelimit, sigint);
+      int exitStatus = proc.run();
+      delete pathsFile;
+      return exitStatus == 0 ? getSolns2Out()->status : SolverInstance::ERROR;
+      */
+
     return SolverInstance::NONE;
   }
 

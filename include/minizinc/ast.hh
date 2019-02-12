@@ -232,7 +232,7 @@ namespace MiniZinc {
     Annotation(void) : _s(NULL) {}
     ~Annotation(void);
     bool contains(Expression* e) const;
-    bool containsCall(const ASTString& id);
+    bool containsCall(const ASTString& id) const;
     bool isEmpty(void) const;
     ExpressionSetIter begin(void) const;
     ExpressionSetIter end(void) const;

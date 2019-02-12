@@ -1848,7 +1848,7 @@ namespace MiniZinc {
   }
   
   bool
-  Annotation::containsCall(const MiniZinc::ASTString& id) {
+  Annotation::containsCall(const MiniZinc::ASTString& id) const {
     if (_s==NULL)
       return false;
     for (ExpressionSetIter it=_s->begin(); it != _s->end(); ++it) {

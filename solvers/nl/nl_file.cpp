@@ -95,12 +95,13 @@ namespace MiniZinc {
     /** *** *** *** Variable declaration methods *** *** *** **/
 
     /** Analyse a variable declaration vd of type ti with an ths
-     * TODO: check rhs with Guido
      * The variable declaration gives us access to the variable name while the type
      * allows us to discriminate between integer, floating point value and arrays.
      * Array are ignored (not declared): if we encouter an array in a constraint,
      * we can find the array through the variable (ot it is a litteral).
      * Note that we use -Glinear, so we do not have boolean.
+     * 
+     * RHS is for arrays: contain the definition of the array
      * 
      * The type also gives us the domain, which can be:
      *  NULL:       no restriction over the variable
@@ -112,12 +113,22 @@ namespace MiniZinc {
         // Get the name
         string name = get_vname(vd);
 
+
         if(ti.isEnum()){ cerr << "Should not happen" << endl; assert(false); }
         else if(ti.isarray()){
             // In flatzinc, array always have a rhs: they can alway be replaced by their definition.
             // Follows the pointer starting at the ID to do so.
             cerr << "Definition of array " << name << " is not reproduced in nl.";
+                    // Gather output variable
+        if(vd.ann().containsCall(constants().ann.output_array)){
+            // For now, just x = [ list... ]
+            // todo
+        }
         } else {
+                    // Gather output variable
+        if(vd.ann().contains(constants().ann.add_to_output)){
+            // todo
+        }
             // variable declaration
             const Type& type          = ti.type();
             const Expression* domain  = ti.domain();
@@ -205,18 +216,18 @@ namespace MiniZinc {
         auto consfp = constants().ids.float_;
 
         // Dispatch among integer builtins
-        if(id == consint.lin_eq){       cerr << "constraint 'int lin_eq' not implemented"; assert(false); }
+        if(id == consint.lin_eq){    consint_lin_eq(c); }
         else if(id == consint.lin_le){ consint_lin_le(c); }
         else if(id == consint.lin_ne){  cerr << "constraint 'int lin_ne' not implemented"; assert(false); }
         else if(id == consint.times){   cerr << "Non linear to be implementeed constraint 'int times'   not implemented"; assert(false); }
         else if(id == consint.div){     cerr << "Non linear to be implementeed constraint 'int div'     not implemented"; assert(false); }
         else if(id == consint.mod){     cerr << "Non linear to be implemented 'int mod'     not implemented"; assert(false); }
-        else if(id == consint.plus){    cerr << "Should not happen - Non linear to be implemented constraint 'int plus'    not implemented"; assert(false); }
-        else if(id == consint.minus){   cerr << "Should not happen - Non linear to be implemented constraint 'int minus'   not implemented"; assert(false); }
+        else if(id == consint.plus){    cerr << "Should not happen 'int plus'"; assert(false); }
+        else if(id == consint.minus){   cerr << "Should not happen 'int minus'"; assert(false); }
         else if(id == consint.lt){      cerr << "Should not happen 'int lt'"; assert(false); }
         else if(id == consint.le){ consint_le(c); }
-        else if(id == consint.gt){      cerr << "constraint 'int gt'      not implemented"; assert(false); }
-        else if(id == consint.ge){      cerr << "constraint 'int ge'      not implemented"; assert(false); }
+        else if(id == consint.gt){      cerr << "Should not happen 'int gt'"; assert(false); }
+        else if(id == consint.ge){      cerr << "Should not happen 'int ge'"; assert(false); }
         else if(id == consint.eq){      cerr << "constraint 'int eq'      not implemented"; assert(false); }
         else if(id == consint.ne){      cerr << "constraint 'int ne'      not implemented"; assert(false); }
 
@@ -232,12 +243,12 @@ namespace MiniZinc {
         else if(id == consfp.mod){      cerr << "constraint 'float mod   ' not implemented"; assert(false); }
         else if(id == consfp.lt){       cerr << "constraint 'float lt    ' not implemented"; assert(false); }
         else if(id == consfp.le){       cerr << "constraint 'float le    ' not implemented"; assert(false); }
-        else if(id == consfp.gt){       cerr << "constraint 'float gt    ' not implemented"; assert(false); }
-        else if(id == consfp.ge){       cerr << "constraint 'float ge    ' not implemented"; assert(false); }
+        else if(id == consfp.gt){       cerr << "Should not happen 'float gt'"; assert(false); }
+        else if(id == consfp.ge){       cerr << "Should not happen 'float ge'"; assert(false); }
         else if(id == consfp.eq){       cerr << "constraint 'float eq    ' not implemented"; assert(false); }
         else if(id == consfp.ne){       cerr << "constraint 'float ne    ' not implemented"; assert(false); }
-        else if(id == consfp.in){       cerr << "constraint 'float in    ' not implemented"; assert(false); }
-        else if(id == consfp.dom){      cerr << "constraint 'float dom   ' not implemented"; assert(false); }
+        else if(id == consfp.in){       cerr << "Ignore for now: constraint 'float in    ' not implemented"; assert(false); }
+        else if(id == consfp.dom){      cerr << "Ignore for now: constraint 'float dom   ' not implemented"; assert(false); }
         
         else {
             cerr << "Unrecognized builtins " << c.id() << " not implemented";
@@ -253,16 +264,55 @@ namespace MiniZinc {
     void NLFile::consint_lin_eq(const Call& c){
         Expression* arg0 = c.arg(0);    // Always an array
         Expression* arg1 = c.arg(1);    // Always an array
-        long long integer_constant = c.arg(2)->cast<IntLit>()->v().toInt();
+        long long int_constant = c.arg(2)->cast<IntLit>()->v().toInt();
 
-        ASTExprVec<Expression> coeff    = get_vec(arg0);
-        ASTExprVec<Expression> array1   = get_vec(arg1);
+        ASTExprVec<Expression> coeffs   = get_vec(arg0);
+        ASTExprVec<Expression> vars     = get_vec(arg1);
 
-         for(unsigned int i=0; i<coeff.size(); ++i){
-             cerr << coeff[i]->cast<IntLit>()->v();
-         }
+        // New constraint: what number is it?
+        // Also increases the number of constraint.
+        // Note:  An equality, so only increases the "main counter". Also increases the equality constraint counter.
+        int considx = header.nb_algebraic_constraints;
+        header.nb_algebraic_constraints++;
+        header.nb_equality_constraints++;
 
-        cerr << "constraint 'int lin_eq'  not implemented"; assert(false);
+        // Constraint segment: the constraint and the linear part.
+        NLS_CSeg cseg(this, considx);
+        NLS_JSeg jseg(this, considx);
+
+        // The constraint non linear part is 0
+        // cseg.expression_graph.push_back(NLToken::n(0));
+        // TEST: creating the non linear expression
+        // 1) Push the comparison  "= operand1 operand2"
+        cseg.expression_graph.push_back(NLToken::o(NLToken::OpCode::EQ));
+        // 2) Operand1 = sum of product
+        // All the sums in one go
+        cseg.expression_graph.push_back(NLToken::mo(NLToken::MOpCode::OPSUMLIST, coeffs.size()));
+        for(unsigned int i=0; i<coeffs.size(); ++i){
+            double co       = coeffs[i]->cast<IntLit>()->v().toInt();
+            string vname    = get_vname(*(vars[i]->cast<Id>()->decl()));
+            int    vidx     = variables[vname].index;
+            // Product
+            cseg.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPMULT));
+            cseg.expression_graph.push_back(NLToken::n(co));
+            cseg.expression_graph.push_back(NLToken::v(vidx, vname));
+        }
+        // 3) Operand 2 = value
+        cseg.expression_graph.push_back(NLToken::n(int_constant));
+
+        c_segments.push_back(cseg);
+
+        // The constraint linear part is built here:
+        for(unsigned int i=0; i<coeffs.size(); ++i){
+             double co      = coeffs[i]->cast<IntLit>()->v().toInt();
+             int    vidx    = variables[get_vname(*(vars[i]->cast<Id>()->decl()))].index;
+             jseg.var_coeff.push_back(pair<int, double>(vidx, co));
+        }
+        j_segments.push_back(jseg);
+        
+        // Bound over the constraint: extends the r segment
+        AlgebraicCons ac = AlgebraicCons(considx, NLS_BoundItem::make_equal(int_constant, considx));
+        r_segment.addConstraint(ac);
     }
 
     // TODO: question: coeffs always in array 0 ?
