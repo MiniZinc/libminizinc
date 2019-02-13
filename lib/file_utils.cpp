@@ -130,7 +130,10 @@ namespace MiniZinc { namespace FileUtils {
       return 0;
     std::string ret;
     DWORD error = GetFullPathName(filename.c_str(), nBufferLength, lpBuffer, &lpFilePart);
-    if(error == 0 || (INVALID_FILE_ATTRIBUTES == GetFileAttributes(lpBuffer) && GetLastError()==ERROR_FILE_NOT_FOUND)) {
+    DWORD fileAttr = GetFileAttributes(lpBuffer);
+    DWORD lastError = GetLastError();
+
+    if(error == 0 || (fileAttr == INVALID_FILE_ATTRIBUTES && lastError != NO_ERROR)) {
       if (basePath.empty())
         ret = filename;
       else
