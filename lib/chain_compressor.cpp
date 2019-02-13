@@ -495,8 +495,8 @@ namespace MiniZinc {
 
   bool LECompressor::eqBounds(Expression *a, Expression *b) {
     // TODO: (To optimise) Check lb(lhs) >= lb(rhs) and enforce ub(lhs) <= ub(rhs)
-    IntSetVal* dom_a;
-    IntSetVal* dom_b;
+    IntSetVal* dom_a = nullptr;
+    IntSetVal* dom_b = nullptr;
 
     if(auto a_decl = follow_id_to_decl(a)->dyn_cast<VarDecl>()) {
       if (a_decl->ti()->domain()) {
