@@ -96,11 +96,12 @@ namespace MiniZinc {
         int             index;
         bool            is_integer;
         NLS_BoundItem   bound;
+        int             jacobian_count;
 
         public:
         Var() = default;
         Var(const string& name, int index, bool is_integer, NLS_BoundItem bound):
-            name(&name), index(index), is_integer(is_integer), bound(bound){}
+            name(&name), index(index), is_integer(is_integer), bound(bound), jacobian_count(0){}
     };
 
     /** An algebraic constraint */
@@ -195,6 +196,21 @@ namespace MiniZinc {
 
         public:
         NLS_JSeg(NLFile* nl_file, int constraint_idx): nl_file(nl_file), constraint_idx(constraint_idx){}
+        ostream& print_on( ostream& o ) const override;
+    };
+
+
+    /** A Logical constrain 'L' Segment.
+     * Can have several, so NLFile contains a vector of those.
+     */
+    class NLS_LSeg: public Printable {
+        public:
+        NLFile* nl_file;
+        int constraint_idx;
+        vector<NLToken> expression_graph = {};
+
+        public:
+        NLS_LSeg(NLFile* nl_file, int constraint_idx): nl_file(nl_file), constraint_idx(constraint_idx){}
         ostream& print_on( ostream& o ) const override;
     };
 

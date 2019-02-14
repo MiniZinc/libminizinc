@@ -10,6 +10,7 @@ add_library(minizinc_nl
   solvers/nl/segments/rseg.cpp
   solvers/nl/segments/cseg.cpp
   solvers/nl/segments/jseg.cpp
+  solvers/nl/segments/lseg.cpp
   solvers/nl/segments/oseg.cpp
 
   include/minizinc/solvers/nl/nl_expressions.hh

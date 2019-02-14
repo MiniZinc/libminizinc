@@ -102,23 +102,23 @@ namespace MiniZinc {
     ostream& NLS_BoundItem::print_on(ostream& os) const {
         switch(tag){
             case LB_UB:{
-                os << "0 " << lb << " " << ub;
+                os << "0 " << lb << " " << ub << " # " << lb << " =< body =< " << ub;
                 break;
             }
             case UB:{
-                os << "1 " << ub;
+                os << "1 " << ub << " # body =< " << ub;
                 break;
             }
             case LB:{
-                os << "2 " << lb;
+                os << "2 " << lb << " # " << lb << " =< body";
                 break;
             }
             case NONE:{
-                os << "3";
+                os << "3" << " # No constraint";
                 break;
             }
             case EQ:{
-                os << "4 " << lb;
+                os << "4 " << lb << " # body = " << lb;
                 break;
             }
         }

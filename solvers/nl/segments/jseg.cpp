@@ -5,7 +5,7 @@ namespace MiniZinc {
 
     // Print a 'J' segment
     ostream& NLS_JSeg::print_on(ostream& os) const {
-        os  << "J" << constraint_idx << " " << " " << var_coeff.size() << " # Linear part of the contraint " << constraint_idx << endl;
+        os  << "J" << constraint_idx << " " << " " << var_coeff.size() << " # Linear part of the constraint " << constraint_idx << endl;
             
         for (auto & v_c : var_coeff) {
             os << v_c.first << " " << v_c.second << " # " << nl_file->name_vars[v_c.first] << endl;

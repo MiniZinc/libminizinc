@@ -128,8 +128,9 @@ namespace MiniZinc {
     }
 
     analyse(_fzn->solveItem());
-
-    cout << nl_file;
+    std::ofstream outfile("test.nl");
+    outfile << nl_file;
+    outfile.close();
 
     // Back to minizinc with the result
     // var = value;

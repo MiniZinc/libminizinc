@@ -48,6 +48,7 @@ namespace MiniZinc {
         NLS_OSeg            o_segment;
         vector<NLS_CSeg>    c_segments = {};                // Constraint segments
         vector<NLS_JSeg>    j_segments = {};                // Constraint segments: linear part
+        vector<NLS_LSeg>    l_segments = {};                // Logical constraint segments
         
         /** *** *** *** Constructor *** *** *** **/
         NLFile():
@@ -63,6 +64,11 @@ namespace MiniZinc {
         static string get_vname(const VarDecl &vd);
 
         static ASTExprVec<Expression> get_vec(const Expression* e);
+
+        NLS_JSeg make_jseg_int(int considx, const ASTExprVec<Expression> &coeffs, const ASTExprVec<Expression> &vars);
+
+        NLS_JSeg make_jseg_fp(int considx, const ASTExprVec<Expression> &coeffs, const ASTExprVec<Expression> &vars);
+        
 
         /** *** *** *** Solve analysis *** *** *** **/
         void analyse_solve(SolveI::SolveType st, const Expression* e);
@@ -83,8 +89,32 @@ namespace MiniZinc {
 
         void consint_lin_eq(const Call& c);
         void consint_lin_le(const Call& c);
-        
+        void consint_lin_ne(const Call& c);
+
+        void consint_times(const Call& c);
+        void consint_div(const Call& c);
+        void consint_mod(const Call& c);
+
         void consint_le(const Call& c);
+        void consint_eq(const Call& c);
+        void consint_ne(const Call& c);
+
+        /** *** *** *** Floating Point Constraint methods *** *** *** **/
+        void consfp_lin_eq(const Call& c);
+        void consfp_lin_le(const Call& c);
+        void consfp_lin_lt(const Call& c);
+        void consfp_lin_ne(const Call& c);
+        void consfp_plus(const Call& c);
+        void consfp_minus(const Call& c);
+        void consfp_times(const Call& c);
+        void consfp_div(const Call& c);
+        void consfp_mod(const Call& c);
+        void consfp_lt(const Call& c);
+        void consfp_le(const Call& c);
+        void consfp_eq(const Call& c);
+        void consfp_ne(const Call& c);
+
+        
 
     };
 
