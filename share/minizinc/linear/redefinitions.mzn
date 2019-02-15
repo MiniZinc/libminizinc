@@ -282,6 +282,28 @@ predicate int_pow( var int: x, var int: y, var int: r ) =
     } in
       r == x2y[ x, y ];
 
+%%% Adding a version returning float for efficiency
+/** @group builtins.arithmetic Return \(\a x ^ {\a y}\) */
+function var float: pow_float(var int: x, var int: y) =
+  let {
+    int: yy = if is_fixed(y) then fix(y) else -1 endif;
+  } in
+  if yy = 0 then 1
+  elseif yy = 1 then x else
+  let { var float: r ::is_defined_var;
+        constraint int_pow_float(x,y,r) ::defines_var(r);
+  } in r
+  endif;
+%%%Define int_pow_float
+predicate int_pow_float( var int: x, var int: y, var float: r ) =
+    let {
+      array[ int, int ] of float: x2y = array2d( lb(x)..ub(x), lb(y)..ub(y),
+        [ pow( X, Y ) | X in lb(x)..ub(x), Y in lb(y)..ub(y) ] )
+    } in
+      r == x2y[ x, y ];
+
+
+      
 %-----------------------------------------------------------------------------%
 % Array 'element' constraints
 
