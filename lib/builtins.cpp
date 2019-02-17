@@ -2122,19 +2122,27 @@ namespace MiniZinc {
     std::vector<std::pair<int,int>> newSlice(slice->size());
     for (unsigned int i=0; i<slice->size(); i++) {
       IntSetVal* isv = eval_intset(env, (*slice)[i]);
-      if (isv->size()>1)
-        throw ResultUndefinedError(env, call->loc(), "array slice must be contiguous");
-      int sl_min = isv->min().isFinite() ? static_cast<int>(isv->min().toInt()) : al->min(i);
-      int sl_max = isv->max().isFinite() ? static_cast<int>(isv->max().toInt()) : al->max(i);
-      if (sl_min < al->min(i) || sl_max > al->max(i))
-        throw ResultUndefinedError(env, call->loc(), "array slice out of bounds");
-      newSlice[i] = std::pair<int,int>(sl_min, sl_max);
+      if (isv->size()==0) {
+        newSlice[i] = std::pair<int,int>(1,0);
+      } else {
+        if (isv->size()>1)
+          throw ResultUndefinedError(env, call->loc(), "array slice must be contiguous");
+        int sl_min = isv->min().isFinite() ? static_cast<int>(isv->min().toInt()) : al->min(i);
+        int sl_max = isv->max().isFinite() ? static_cast<int>(isv->max().toInt()) : al->max(i);
+        if (sl_min < al->min(i) || sl_max > al->max(i))
+          throw ResultUndefinedError(env, call->loc(), "array slice out of bounds");
+        newSlice[i] = std::pair<int,int>(sl_min, sl_max);
+      }
     }
     
     std::vector<std::pair<int,int>> newDims(call->n_args()-2);
     for (unsigned int i=0; i<newDims.size(); i++) {
       IntSetVal* isv = eval_intset(env, call->arg(2+i));
-      newDims[i] = std::pair<int,int>(static_cast<int>(isv->min().toInt()), static_cast<int>(isv->max().toInt()));
+      if (isv->size()==0) {
+        newDims[i] = std::pair<int,int>(1,0);
+      } else {
+        newDims[i] = std::pair<int,int>(static_cast<int>(isv->min().toInt()), static_cast<int>(isv->max().toInt()));
+      }
     }
     ArrayLit* ret = new ArrayLit(al->loc(), al, newDims, newSlice);
     ret->type(call->type());
