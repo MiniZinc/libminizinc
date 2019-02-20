@@ -92,7 +92,7 @@
 
 <expr-atom> ::= <expr-atom-head> <expr-atom-tail> <annotations>
 
-<expr-binop-tail> ::= "[" <bin-op> <expr> "]"
+<expr-binop-tail> ::= [ <bin-op> <expr> ]
 
 <expr-atom-head> ::= <builtin-un-op> <expr-atom>
                    | "(" <expr> ")"
@@ -121,7 +121,7 @@
 
 <num-expr-atom> ::= <num-expr-atom-head> <expr-atom-tail> <annotations>
 
-<num-expr-binop-tail> ::= "[" <num-bin-op> <num-expr> "]"
+<num-expr-binop-tail> ::= [ <num-bin-op> <num-expr> ]
 
 <num-expr-atom-head> ::= <builtin-num-un-op> <num-expr-atom>
                        | "(" <num-expr> ")"
