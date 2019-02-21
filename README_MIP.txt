@@ -63,7 +63,8 @@ For Gurobi, see share/minizinc/linear/options.mzn for their exact meaning.
 WARM STARTS
 ===================================
 Annotations warm_start and warm_start_array for the solve item can provide 'hint' values
-for the solver. Example:
+for the solver. The order of warm_starts, relative to other search annotations, can be
+important, so they all might need to be put into a seq_search as below:
 
 array[1..3] of var 0..10: x;
 array[1..3] of var 0.0..10.5: xf;
@@ -73,13 +74,20 @@ constraint b+sum(x)==1;
 constraint b+sum(xf)==2.4;
 constraint 5==sum( [ card(xs[i]) | i in index_set(xs) ] );
 solve
-  :: warm_start( [b], [true] )
-  :: warm_start_array( [
-       warm_start( x, [<>,8,4] ),               %%% Use <> for missing values
-       warm_start( xf, array1d(-5..-3, [5.6,<>,4.7] ) ),
-       warm_start( xs, array1d( -3..-2, [ 6..8, 5..7 ] ) )
-     ] )
-  :: seq_search( [ int_search(x, first_fail, indomain_min, complete)  ] )
+  :: warm_start_array( [                     %%% Can be on the upper level
+    warm_start( x, [<>,8,4] ),               %%% Use <> for missing values
+    warm_start( xf, array1d(-5..-3, [5.6,<>,4.7] ) ),
+    warm_start( xs, array1d( -3..-2, [ 6..8, 5..7 ] ) )
+  ] )
+  :: seq_search( [
+    warm_start_array( [                      %%% Now included in seq_search to keep order
+      warm_start( x, [<>,5,2] ),             %%% Repeated warm_starts allowed but not specified
+      warm_start( xf, array1d(-5..-3, [5.6,<>,4.7] ) ),
+      warm_start( xs, array1d( -3..-2, [ 6..8, 5..7 ] ) )
+    ] ),
+    warm_start( [b], [true] ),
+    int_search(x, first_fail, indomain_min, complete)
+  ] )
   minimize x[1] + b + xf[2] + card( xs[1] intersect xs[3] );
 
 If you'd like to provide a most complete warmstart information, please provide values for all
