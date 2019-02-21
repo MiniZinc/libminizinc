@@ -22,7 +22,6 @@
 using namespace std;
 using namespace MiniZinc;
 
-
 void Solns2Out::printHelp(ostream& os)
 {
   os
