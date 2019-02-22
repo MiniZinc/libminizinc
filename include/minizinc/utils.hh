@@ -200,5 +200,5 @@ namespace MiniZinc {
 
 }
 
-#endif  // __MINIZINC_FLATTENER_H__
+#endif  // __MINIZINC_UTILS_H__
 

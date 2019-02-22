@@ -26,6 +26,7 @@
 #include <minizinc/config.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/file_utils.hh>
+#include <minizinc/utils_savestream.hh>
 
 #ifdef GUROBI_PLUGIN
 #ifdef HAS_DLFCN_H
@@ -316,8 +317,11 @@ void MIP_gurobi_wrapper::openGUROBI()
   cbui.wrapper = this;
   
    /* Initialize the GUROBI environment */
-   cout << "% " << flush;               // Gurobi 7.5.2 prints "Academic License..."
-   error = dll_GRBloadenv (&env, "mzn-gurobi.log");
+  {
+    //   cout << "% " << flush;               // Gurobi 7.5.2 prints "Academic License..."
+    MiniZinc::StreamRedir redirStdout(stdout, stderr);
+    error = dll_GRBloadenv (&env, "mzn-gurobi.log");
+  }
    wrap_assert ( !error, "Could not open GUROBI environment." );
    error = dll_GRBsetintparam(env, "OutputFlag", 0);  // Switch off output
 //   error = dll_GRBsetintparam(env, "LogToConsole",
