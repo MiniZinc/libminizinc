@@ -101,10 +101,13 @@ predicate aux_int_le_zero_if_0(var int: x, var int: p) =
   elseif fMZN__UseIndicators then
     aux_int_le_zero_if_0__IND(x, p)
   else
+    assert( ub(x)<infinity, "Variable \(x) needs finite upper bound for a big-M constraint, current domain \(dom(x))" ) /\
     x <= ub(x) * p
   endif;
 
 predicate aux_float_le_zero_if_0(var float: x, var int: p) =
+  %% TODO actually only need has_ub(x) in ub(x)*p but lb/ub fail on var float (not on var -infinity..const)  22.2.19
+  assert( has_bounds(x), "Variable \(x) needs finite bounds for a big-M constraint" ) /\
   if is_fixed(p) then
     if 0==fix(p) then x<=0.0 else true endif
   elseif lb(x)>0.0 then
@@ -118,6 +121,7 @@ predicate aux_float_le_zero_if_0(var float: x, var int: p) =
   endif;
 
 predicate aux_float_lt_zero_if_0(var float: x, var int: p) =
+  assert( has_bounds(x), "Variable \(x) needs finite bounds for a big-M constraint" ) /\
   if is_fixed(p) then
     if 0==fix(p) then x<0.0 else true endif
   elseif lb(x)>=0.0 then

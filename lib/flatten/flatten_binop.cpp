@@ -231,7 +231,10 @@ namespace MiniZinc {
       std::vector<Expression*> coeffs_e(coeffs.size());
       for (unsigned int i=static_cast<unsigned int>(coeffs.size()); i--;) {
         if (!LinearTraits<Lit>::finite(coeffs[i])) {
-          throw FlatteningError(env,e0->loc(), "unbounded coefficient in linear expression");
+          throw FlatteningError(env,e0->loc(),
+              "unbounded coefficient in linear expression."
+              " Make sure variables involved in non-linear/logical expressions have finite bounds"
+              " in their definition or via constraints" );
         }
         coeffs_e[i] = LinearTraits<Lit>::newLit(coeffs[i]);
       }
