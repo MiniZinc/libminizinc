@@ -45,7 +45,6 @@
 
 ///  TODO use integer division instead of INT_EPS
 #define INT_EPS 1e-5    // the absolute epsilon for integrality of integer vars.
-#define EPS_INTERVAL 1e-6   // To check if interval void
 
 #define __MZN__MIPDOMAINS__PRINTMORESTATS
 #define MZN_DBG_CHECK_ITER_CUTOUT
@@ -157,8 +156,9 @@ public:
   N max_interval() const;
   /// Special insert function: check if interval is ok
   iterator insert(const Interval<N>& iv) {
-    if (iv.left > iv.right + EPS_INTERVAL) {
-      DBGOUT_MIPD( "Interval " << iv.left << ".." << iv.right << " is empty. Skipping" );
+    if (iv.left > iv.right) {
+      DBGOUT_MIPD( "Interval " << iv.left << ".." << iv.right
+                   << " is empty, difference: " << (iv.right-iv.left) << ". Skipping" );
       return Base::end();
     }
     return Base::insert(iv);
