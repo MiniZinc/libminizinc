@@ -38,17 +38,30 @@ FindMUS's enumeration algorithm HierMUS.
 The enumeration algorithm (HierMUS) explores the constraint hierarchy provided
 in the user's model, proposes potential MUSes to the sub-solver. The default
 algorithm is internally referred to as ``stackMUS``. This algorithm can be
-replaced with either ``MARCO`` or ``ReMUS`` which have their own strengths.
-Our implementation of these algorithms in turn utilizes a simple linear deletion
-based 'shrink' method. This can be replaced with the binary-splitting
-``QuickXplain`` which can be much quicker.
+replaced with either ``MARCO`` or ``ReMUS`` by using the following arguments.
+NOTE: Due to limitations of the implementation, ``MARCO`` and ``ReMUS``
+cannot be applied in a hierarchical way. Use these in conjunction with
+``--structure flat``. This should be fixed in future.
 
 ``--marco``   Use the ``MARCO`` [3]_ algorithm as sub-enumerator
 
 ``--remus``   Use the ``ReMUS`` [4]_ algorithm as sub-enumerator (not
 compatible with Hierarchical Search)
 
-``--qx``   Use ``QuickXplain`` [5]_ for ``shrink`` step of MARCO or ReMUS
+Both ``MARCO`` and ``ReMUS`` use a ``shrink`` algorithm to reduce found
+unsat subsets to MUSes. There are currently three available shrink algorithms
+available with FindMUS.
+
+``--shrink-alg lin,map_lin,qx``
+  Select shrink algorithm (Default: lin)
+
+    ``lin`` simple linear shrink algorithm.
+
+    ``map_lin`` alternative implementation of the linear algorithm that
+    updates a global map of explored subsets while shrinking the subset.
+
+    ``qx`` use the ``QuickXplain`` [5]_ algorithm to shrink the subset
+    to a MUS.
 
 ``--depth mzn,fzn,&lt;n&gt``
   How deep in the tree should search explore. (Default: 1)
