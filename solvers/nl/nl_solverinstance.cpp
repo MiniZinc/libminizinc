@@ -147,7 +147,7 @@ namespace MiniZinc {
     cmd_line.push_back("gecode out.nl -AMPL && cat out.sol");
     Process<NLSolns2Out> proc(cmd_line, &s2o, 0, true);
     int exitStatus = proc.run();
-    return exitStatus == 0 ? out->status : SolverInstance::ERROR;
+    return exitStatus == 0 ? out->status : SolverInstance::Status::ERROR;
 
 
 

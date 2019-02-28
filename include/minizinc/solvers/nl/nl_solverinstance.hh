@@ -31,7 +31,7 @@ namespace MiniZinc {
 
       ~NLSolverInstance(void);
 
-      Status next(void) {return SolverInstance::ERROR;}
+      Status next(void) {return SolverInstance::Status::ERROR;}
 
       Status solve(void);
 
