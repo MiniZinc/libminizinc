@@ -77,9 +77,9 @@ namespace MiniZinc {
 
         void analyse_vdecl(const VarDecl &vd, const TypeInst &ti, const Expression &rhs);
 
-        void vdecl_integer(const string& name, const IntSetVal* isv);
+        void vdecl_integer(const string& name, const IntSetVal* isv, bool to_report);
 
-        void vdecl_fp(const string& name, const FloatSetVal* fsv);
+        void vdecl_fp(const string& name, const FloatSetVal* fsv, bool to_report);
 
         /** *** *** *** Constraints methods *** *** *** **/
 

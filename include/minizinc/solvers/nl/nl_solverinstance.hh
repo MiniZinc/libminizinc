@@ -16,30 +16,6 @@
 namespace MiniZinc {
 
   class NLSolverOptions : public SolverInstanceBase::Options {
-  public:
-    // NL solver configuration
-    std::string fzn_solver;
-    std::string backend;
-    std::vector<std::string> fzn_flags;
-    int numSols = 1;
-    bool allSols = false;
-    std::string parallel;
-    int fzn_time_limit_ms = 0;
-    int solver_time_limit_ms = 0;
-    bool fzn_sigint = false;
-
-    bool fzn_needs_paths = false;
-    bool fzn_output_passthrough = false;
-    
-    bool supports_a = false;
-    bool supports_n = false;
-    bool supports_f = false;
-    bool supports_p = false;
-    bool supports_s = false;
-    bool supports_r = false;
-    bool supports_v = false;
-    bool supports_t = false;
-    std::vector<MZNFZNSolverFlag> fzn_solver_flags;
   };
 
   class NLSolverInstance : public SolverInstanceBase {

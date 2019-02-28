@@ -92,16 +92,20 @@ namespace MiniZinc {
      */
     class Var {
         public:
-        string const*   name;
+        // string const*   name;
+        string          name;
         int             index;
         bool            is_integer;
         NLS_BoundItem   bound;
         int             jacobian_count;
+        bool            to_report;
 
         public:
         Var() = default;
-        Var(const string& name, int index, bool is_integer, NLS_BoundItem bound):
-            name(&name), index(index), is_integer(is_integer), bound(bound), jacobian_count(0){}
+        Var(const string& name, int index, bool is_integer, NLS_BoundItem bound, bool to_report):
+            name(name), index(index), is_integer(is_integer), bound(bound), jacobian_count(0), to_report(to_report){}
+
+        Var copy_with_bound(NLS_BoundItem bound) const;
     };
 
     /** An algebraic constraint */

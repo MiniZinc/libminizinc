@@ -180,10 +180,11 @@ namespace MiniZinc {
             // todo
         }
         } else {
-                    // Gather output variable
-        if(vd.ann().contains(constants().ann.add_to_output)){
-            // todo
-        }
+
+            // Gather output variable
+            bool to_report = vd.ann().contains(constants().ann.output_var);
+            cerr << "'" << name << "' to be reported? " << to_report << " ";
+
             // variable declaration
             const Type& type          = ti.type();
             const Expression* domain  = ti.domain();
@@ -197,18 +198,18 @@ namespace MiniZinc {
                 // Integer
                 IntSetVal* isv = NULL;
                 if(domain!=NULL){isv = domain->cast<SetLit>()->isv();}
-                vdecl_integer(name, isv);
+                vdecl_integer(name, isv, to_report);
             } else {
                 // Floating point
                 FloatSetVal* fsv = NULL;
                 if(domain!=NULL){fsv = domain->cast<SetLit>()->fsv();}
-                vdecl_fp(name, fsv);
+                vdecl_fp(name, fsv, to_report);
             }
         }
     }
 
     /** Declare a new integer variable, maybe bounded if intSet!=NULL **/
-    void NLFile::vdecl_integer(const string& name, const IntSetVal* intSet){
+    void NLFile::vdecl_integer(const string& name, const IntSetVal* intSet, bool to_report){
         // Check that the name is available. Get variable GLOBAL index (0-base => number of vars before insertion).
         assert(variables.find(name) == variables.end());
         int index = variables.size();
@@ -225,7 +226,7 @@ namespace MiniZinc {
             assert(false);
         }
         // Create the variable and update the internal structure & header
-        Var v = Var(name, index, true, bound);  // true == integer
+        Var v = Var(name, index, true, bound, to_report);  // true == integer
         variables[name] = v;
         name_vars.push_back(name);
         header.nb_vars++;
@@ -233,7 +234,7 @@ namespace MiniZinc {
     }
 
     /** Declare a new floating point variable, maybe bounded if floatSet!=NULL **/
-    void NLFile::vdecl_fp(const string& name, const FloatSetVal* intSet){
+    void NLFile::vdecl_fp(const string& name, const FloatSetVal* intSet, bool to_report){
         // Check that the name is available. Get variable GLOBAL index (0-base => number of vars before insertion).
         assert(variables.find(name) == variables.end());
         int index = variables.size();
@@ -250,7 +251,7 @@ namespace MiniZinc {
             assert(false);
         }
         // Create the variable and update the internal structure & header
-        Var v = Var(name, index, false, bound);  // false == floating point
+        Var v = Var(name, index, false, bound, to_report);  // false == floating point
         variables[name] = v;
         name_vars.push_back(name);
         header.nb_vars++;
@@ -465,7 +466,8 @@ namespace MiniZinc {
             // New bound as a copy. Update the copy, create an updated var and put it in the map
             NLS_BoundItem newBound = v1.bound;
             newBound.update_lb(lb);         // param <= var: lower bound
-            Var new_v = Var(name, v1.index, v1.is_integer, newBound);
+            Var new_v = Var(name, v1.index, v1.is_integer, newBound, v1.to_report);
+            //Var new_v = v1.copy_with_bound(newBound);
             variables[name] = new_v;
         } else if(arg1->type().ispar()){
             // Symmetric, with an upper bound var <= param
@@ -475,7 +477,8 @@ namespace MiniZinc {
             Var v0 = variables[name];
             NLS_BoundItem newBound = v0.bound;
             newBound.update_ub(ub);         // var <= param: upper bound
-            Var new_v = Var(name, v0.index, v0.is_integer, newBound);
+            Var new_v = Var(name, v0.index, v0.is_integer, newBound, v0.to_report);
+            //Var new_v = v0.copy_with_bound(newBound);
             variables[name] = new_v;
         } else {
             // --- --- --- Actual constraint
@@ -507,14 +510,15 @@ namespace MiniZinc {
           Var v1 = variables[name];
           // New bound as a copy. Update the copy, create an updated var and put it in the map
           NLS_BoundItem newBound = NLS_BoundItem::make_equal(value, v1.index);
-          Var new_v = Var(name, v1.index, v1.is_integer, newBound);
+          Var new_v = Var(name, v1.index, v1.is_integer, newBound, v1.to_report);
+          //Var new_v = v1.copy_with_bound(newBound);
           variables[name] = new_v;
         }else{
           // Create the constraint:
           VarDecl& v0 = *(arg0->cast<Id>()->decl());
           VarDecl& v1 = *(arg0->cast<Id>()->decl());
 
-
+          cerr << "wip" <<endl; assert(false);
         }
     }
 

@@ -6,18 +6,15 @@ add_library(minizinc_nl
   solvers/nl/nl_header.cpp
   solvers/nl/nl_solverfactory.cpp
   solvers/nl/nl_solverinstance.cpp
-  solvers/nl/segments/bseg.cpp
-  solvers/nl/segments/rseg.cpp
-  solvers/nl/segments/cseg.cpp
-  solvers/nl/segments/jseg.cpp
-  solvers/nl/segments/lseg.cpp
-  solvers/nl/segments/oseg.cpp
-
+  solvers/nl/nl_segments.cpp
+  solvers/nl/nl_solreader.cpp
+  
   include/minizinc/solvers/nl/nl_expressions.hh
   include/minizinc/solvers/nl/nl_file.hh
   include/minizinc/solvers/nl/nl_header.hh
   include/minizinc/solvers/nl/nl_printable.hh
   include/minizinc/solvers/nl/nl_segments.hh
+  include/minizinc/solvers/nl/nl_solreader.hh
   include/minizinc/solvers/nl/nl_solverfactory.hh
   include/minizinc/solvers/nl/nl_solverinstance.hh
   
@@ -25,6 +22,9 @@ add_library(minizinc_nl
   solvers/mzn/mzn_solverfactory.cpp
   include/minizinc/solvers/mzn_solverfactory.hh
   include/minizinc/solvers/mzn_solverinstance.hh
+
+  include/minizinc/process.hh
+  include/minizinc/solns2out.hh
 )
 
 target_link_libraries(minizinc_nl minizinc_compiler)

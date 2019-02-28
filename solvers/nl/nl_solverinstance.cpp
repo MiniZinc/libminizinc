@@ -13,11 +13,16 @@
 #define NOMINMAX     // Need this before all (implicit) include's of Windows.h
 #endif
 
-#include <minizinc/solvers/nl/nl_solverinstance.hh>
-#include <minizinc/solvers/nl/nl_file.hh>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
+
+#include <minizinc/process.hh>
+
+#include <minizinc/solvers/nl/nl_solverinstance.hh>
+#include <minizinc/solvers/nl/nl_file.hh>
+#include <minizinc/solvers/nl/nl_solreader.hh>
+
 
 #ifdef _WIN32
 #undef ERROR
@@ -127,17 +132,34 @@ namespace MiniZinc {
       }
     }
 
+    // --- --- --- Write the file
     analyse(_fzn->solveItem());
-    std::ofstream outfile("test.nl");
+    std::ofstream outfile("out.nl");
     outfile << nl_file;
     outfile.close();
+
+    // --- --- --- Call the solver
+    auto* out = getSolns2Out();
+    NLSolns2Out s2o = NLSolns2Out(out, nl_file);
+    vector<string> cmd_line;
+    cmd_line.push_back("bash");
+    cmd_line.push_back("-c");
+    cmd_line.push_back("gecode out.nl -AMPL && cat out.sol");
+    Process<NLSolns2Out> proc(cmd_line, &s2o, 0, true);
+    int exitStatus = proc.run();
+    return exitStatus == 0 ? out->status : SolverInstance::ERROR;
+
+
+
+    // --- --- --- Interpret the result, and feed it back to minizinc
+   
 
     // Back to minizinc with the result
     // var = value;
     // 10 dashes marks: the end of a solution
     // 10 equals signs: the end of the search if successful
     // See sols2out.hh
-    getSolns2Out()->feedRawDataChunk("text");
+    // getSolns2Out()->feedRawDataChunk("text");
 
   /*
         Process<Solns2Out> proc(cmd_line, getSolns2Out(), timelimit, sigint);
@@ -146,7 +168,8 @@ namespace MiniZinc {
       return exitStatus == 0 ? getSolns2Out()->status : SolverInstance::ERROR;
       */
 
-    return SolverInstance::NONE;
+
+    // return SolverInstance::NONE;
   }
 
   // TODO later
