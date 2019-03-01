@@ -72,6 +72,9 @@ find_package_handle_standard_args(OsiCBC DEFAULT_MSG
                                   OSICBC_INCLUDE OSICBC_LIBRARY)
 
 mark_as_advanced(OSICBC_INCLUDE OSICBC_LIBRARY)
+if(NOT OSICBC_INCLUDE)
+    message("\t\tUse OSICBC_ROOT as hint for CBC root folder.")
+endif()
 
 set(OSICBC_LIBRARIES ${OSICBC_LIBRARY})
 set(OSICBC_INCLUDE_DIRS ${OSICBC_INCLUDE})

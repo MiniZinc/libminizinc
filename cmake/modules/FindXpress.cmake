@@ -33,6 +33,9 @@ find_package_handle_standard_args(Xpres DEFAULT_MSG
                                   XPRESS_INCLUDE XPRESS_LIBRARY)
 
 mark_as_advanced(XPRESS_INCLUDE XPRESS_LIBRARY)
+if(NOT XPRESS_INCLUDE OR NOT XPRESS_LIBRARY)
+    message("\t\tUse XPRESS_ROOT as hint.")
+endif()
 
 set(XPRESS_LIBRARIES ${XPRESS_LIBRARY})
 set(XPRESS_INCLUDE_DIRS ${XPRESS_INCLUDE})
