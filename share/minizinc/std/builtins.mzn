@@ -1249,7 +1249,7 @@ function array[$T] of var float: bool2float(array[$T] of var bool: x) ::promise_
 /** @group builtins.coercion Return Boolean \a b coerced to an integer  */
 function var int: bool2int(var bool: b);
 /** @group builtins.coercion Return array of Booleans \a b coerced to an array of integers  */
-function array[$$E] of var int: bool2int(array[$$E] of var bool: b);
+function array[$T] of var int: bool2int(array[$T] of var bool: b);
 /** @group builtins.coercion Return Boolean \a b coerced to a float  */
 function var float: bool2float(var bool: b) = int2float(bool2int(b));
 /** @group builtins.coercion Return integer \a x coerced to a float  */

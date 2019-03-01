@@ -135,6 +135,8 @@ namespace MiniZinc {
     EnvI(Model* orig0, std::ostream& outstream0=std::cout, std::ostream& errstream0=std::cerr);
     ~EnvI(void);
     long long int genId(void);
+    /// Set minimum new temporary id to \a i+1
+    void minId(unsigned int i) { ids = std::max(ids, i+1); }
     void cse_map_insert(Expression* e, const EE& ee);
     CSEMap::iterator cse_map_find(Expression* e);
     void cse_map_remove(Expression* e);

@@ -585,6 +585,25 @@ namespace MiniZinc {
     bool CheckAnnUserCut(const Call* call);
     bool CheckAnnLazyConstraint(const Call* call);
     int GetMaskConsType(const Call* call);
+
+    /// Gurobi 8.1.0 complains about duplicates, CPLEX 12.8.0 just ignores repeats
+    /// An example for duplicated indices was on 72a9b64f with two floats equated
+    template <class Idx>
+    void removeDuplicates(std::vector<Idx>& rmi, std::vector<double>& rmv) {
+      std::unordered_map<Idx, double> linExp;
+      for (int i=rmi.size(); i--; )
+        linExp[rmi[i]] += rmv[i];
+      if (rmi.size()==linExp.size())
+        return;
+      rmi.resize(linExp.size());
+      rmv.resize(linExp.size());
+      int i=0;
+      for (const auto& iv: linExp) {
+        rmi[i] = iv.first;
+        rmv[i] = iv.second;
+        ++i;
+      }
+    }
     
     template<class MIPWrapper>
     void p_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType lt) {
@@ -641,6 +660,7 @@ namespace MiniZinc {
         // See if the solver adds indexation itself: no.
         std::stringstream ss;
         ss << "p_lin_" << (gi.getMIPWrapper()->nAddedRows++);
+        removeDuplicates(vars, coefs);
         gi.getMIPWrapper()->addRow(static_cast<int>(coefs.size()), &vars[0], &coefs[0], lt, rhs,
                                    GetMaskConsType(call), ss.str());
       }
@@ -695,6 +715,7 @@ namespace MiniZinc {
       } else {
         std::stringstream ss;
         ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
+        removeDuplicates(vars, coefs);
         gi.getMIPWrapper()->addRow(static_cast<int>(vars.size()), &vars[0], &coefs[0], nCmp, rhs,
                                    GetMaskConsType(call), ss.str());
       }
@@ -804,6 +825,7 @@ namespace MiniZinc {
         if ( val2>0.999999 ) {          // so  var1<=0
           std::ostringstream ss;
           ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
+          removeDuplicates(vars, coefs);
           gi.getMIPWrapper()->addRow(static_cast<int>(vars.size()), &vars[0], &coefs[0], MIP_wrapper::LinConType::EQ, rhs,
                                      MIP_wrapper::MaskConsType_Normal, ss.str());
         }

@@ -26,8 +26,11 @@ find_library(SOPLEX_LIBRARY soplex
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set SCIP_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(Scip DEFAULT_MSG
-                                  SCIP_INCLUDE SCIP_LIBRARY SOPLEX_INCLUDE SOPLEX_LIBRARY)
+find_package_handle_standard_args(Scip
+  FOUND_VAR SCIP_FOUND
+  REQUIRED_VARS SCIP_INCLUDE SCIP_LIBRARY SOPLEX_INCLUDE SOPLEX_LIBRARY
+  FAIL_MESSAGE "Could NOT find Scip, use SCIP_ROOT and SOPLEX_ROOT to hint its location"
+)
 
 mark_as_advanced(SCIP_INCLUDE SCIP_LIBRARY SOPLEX_INCLUDE SOPLEX_LIBRARY)
 

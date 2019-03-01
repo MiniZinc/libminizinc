@@ -40,50 +40,56 @@ using namespace MiniZinc;
 
 #ifdef HAS_GUROBI
 #include <minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh>
-namespace {
-  Gurobi_SolverFactoryInitialiser _gurobi_init;
-}
 #endif
 #ifdef HAS_CPLEX
 #include <minizinc/solvers/MIP/MIP_cplex_solverfactory.hh>
-namespace {
-  Cplex_SolverFactoryInitialiser _cplex_init;
-}
 #endif
 #ifdef HAS_OSICBC
 #include <minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh>
-namespace {
-  OSICBC_SolverFactoryInitialiser _osicbc_init;
-}
 #endif
 #ifdef HAS_XPRESS
 #include <minizinc/solvers/MIP/MIP_xpress_solverfactory.hh>
-namespace {
-  Xpress_SolverFactoryInitialiser _xpress_init;
-}
 #endif
 #ifdef HAS_GECODE
 #include <minizinc/solvers/gecode_solverfactory.hh>
-namespace {
-  Gecode_SolverFactoryInitialiser _gecode_init;
-}
 #endif
 #ifdef HAS_SCIP
 #include <minizinc/solvers/MIP/MIP_scip_solverfactory.hh>
-namespace {
-  SCIP_SolverFactoryInitialiser _scip_init;
-}
 #endif
-
 #include <minizinc/solvers/fzn_solverfactory.hh>
 #include <minizinc/solvers/fzn_solverinstance.hh>
 #include <minizinc/solvers/mzn_solverfactory.hh>
 #include <minizinc/solvers/mzn_solverinstance.hh>
-namespace {
-  FZN_SolverFactoryInitialiser _fzn_init;
-  MZN_SolverFactoryInitialiser _mzn_init;
-}
 
+SolverInitialiser::SolverInitialiser(void) {
+  #ifdef HAS_GUROBI
+  #include <minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh>
+  Gurobi_SolverFactoryInitialiser _gurobi_init;
+  #endif
+  #ifdef HAS_CPLEX
+  #include <minizinc/solvers/MIP/MIP_cplex_solverfactory.hh>
+  static Cplex_SolverFactoryInitialiser _cplex_init;
+  #endif
+  #ifdef HAS_OSICBC
+  #include <minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh>
+  static OSICBC_SolverFactoryInitialiser _osicbc_init;
+  #endif
+  #ifdef HAS_XPRESS
+  #include <minizinc/solvers/MIP/MIP_xpress_solverfactory.hh>
+  static Xpress_SolverFactoryInitialiser _xpress_init;
+  #endif
+  #ifdef HAS_GECODE
+  #include <minizinc/solvers/gecode_solverfactory.hh>
+  static Gecode_SolverFactoryInitialiser _gecode_init;
+  #endif
+  #ifdef HAS_SCIP
+  #include <minizinc/solvers/MIP/MIP_scip_solverfactory.hh>
+  static SCIP_SolverFactoryInitialiser _scip_init;
+  #endif
+  static FZN_SolverFactoryInitialiser _fzn_init;
+  static MZN_SolverFactoryInitialiser _mzn_init;
+}
+  
 MZNFZNSolverFlag MZNFZNSolverFlag::std(const std::string& n0) {
   const std::string argFlags("-I -n -p -r");
   if (argFlags.find(n0) != std::string::npos)

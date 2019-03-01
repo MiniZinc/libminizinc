@@ -29,8 +29,11 @@ endforeach(XPRESS_LIB)
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set XPRESS_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(Xpres DEFAULT_MSG
-                                  XPRESS_INCLUDE XPRESS_LIBRARY)
+find_package_handle_standard_args(Xpress
+  FOUND_VAR XPRESS_FOUND
+  REQUIRED_VARS XPRESS_INCLUDE XPRESS_LIBRARY
+  FAIL_MESSAGE "Could NOT find Xpress, use XPRESS_ROOT to hint its location"
+)
 
 mark_as_advanced(XPRESS_INCLUDE XPRESS_LIBRARY)
 

@@ -68,8 +68,11 @@ endif()
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set CBC_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(OsiCBC DEFAULT_MSG
-                                  OSICBC_INCLUDE OSICBC_LIBRARY)
+find_package_handle_standard_args(OsiCBC
+  FOUND_VAR OSICBC_FOUND
+  REQUIRED_VARS OSICBC_INCLUDE OSICBC_LIBRARY
+  FAIL_MESSAGE "Could NOT find OsiCBC, use OSICBC_ROOT to hint its location"
+)
 
 mark_as_advanced(OSICBC_INCLUDE OSICBC_LIBRARY)
 

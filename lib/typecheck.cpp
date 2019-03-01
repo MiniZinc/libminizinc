@@ -1811,7 +1811,26 @@ namespace MiniZinc {
            Model* enumis0)
         : env(env0), ts(ts0), model(model0), hadSolveItem(false), ais(ais0), objective(NULL), enumis(enumis0) {}
       void vAssignI(AssignI* i) { ais.push_back(i); }
-      void vVarDeclI(VarDeclI* i) { ts.add(env, i, true, enumis); }
+      void vVarDeclI(VarDeclI* i) {
+        ts.add(env, i, true, enumis);
+        // initialise new identifier counter to be larger than existing identifier
+        if (i->e()->id()->idn() >= 0) {
+          env.minId(i->e()->id()->idn());
+        } else if (i->e()->id()->v().beginsWith("X_INTRODUCED_") && i->e()->id()->v().endsWith("_")) {
+          std::string numId = i->e()->id()->v().str().substr(std::string("X_INTRODUCED_").size());
+          if (numId.size() > 0) {
+            numId = numId.substr(0,numId.size()-1);
+            if (numId.size() > 0) {
+              int vId = -1;
+              try {
+                vId = std::stoi(numId);
+              } catch(std::exception&) {}
+              if (vId >= 0)
+                env.minId(vId);
+            }
+          }
+        }
+      }
       void vSolveI(SolveI* si) {
         if (hadSolveItem)
           throw TypeError(env,si->loc(),"Only one solve item allowed");

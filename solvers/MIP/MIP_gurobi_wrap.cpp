@@ -173,8 +173,9 @@ void MIP_gurobi_wrapper::wrap_assert(bool cond, string msg, bool fTerm)
       if (error) {
          gurobi_buffer = dll_GRBgeterrormsg(env);
       }
-      string msgAll = ("  MIP_gurobi_wrapper runtime error:  " + msg + "  " + gurobi_buffer);
-      cerr << msgAll << endl;
+      string msgAll = ("  MIP_gurobi_wrapper runtime error:  " + gurobi_buffer
+                       + "\nMessage from caller: " + msg);
+      cerr << msgAll << "\nGurobi error code: " << error << endl;
       if (fTerm) {
         cerr << "TERMINATING." << endl;
         throw runtime_error(msgAll);
