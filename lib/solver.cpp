@@ -53,6 +53,9 @@ using namespace MiniZinc;
 #ifdef HAS_GECODE
 #include <minizinc/solvers/gecode_solverfactory.hh>
 #endif
+#ifdef HAS_GEAS
+#include <minizinc/solvers/geas_solverfactory.hh>
+#endif
 #ifdef HAS_SCIP
 #include <minizinc/solvers/MIP/MIP_scip_solverfactory.hh>
 #endif
@@ -81,6 +84,10 @@ SolverInitialiser::SolverInitialiser(void) {
   #ifdef HAS_GECODE
   #include <minizinc/solvers/gecode_solverfactory.hh>
   static Gecode_SolverFactoryInitialiser _gecode_init;
+  #endif
+  #ifdef HAS_GECODE
+  #include <minizinc/solvers/geas_solverfactory.hh>
+    static Geas_SolverFactoryInitialiser _geas_init;
   #endif
   #ifdef HAS_SCIP
   #include <minizinc/solvers/MIP/MIP_scip_solverfactory.hh>

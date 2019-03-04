@@ -16,6 +16,7 @@ endif()
 
 # Driver compilation selection
 option(USE_CPLEX "Enable the CPLEX solving target" TRUE)
+option(USE_GEAS "Enable the Geas solving target" TRUE)
 option(USE_GECODE "Enable the Gecode solving target" TRUE)
 option(USE_GUROBI "Enable the Gurobi solving target" TRUE)
 option(USE_OSICBC "Enable the Osi CBC solving target" TRUE)
@@ -41,6 +42,7 @@ endif()
 # Try to find possible dependencies
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 find_package(CPlex)
+find_package(Geas)
 find_package(Gecode 6.0 COMPONENTS Driver Float Int Kernel Minimodel Search Set Support)
 find_package(Gurobi)
 find_package(OsiCBC)
@@ -87,6 +89,7 @@ include_directories(${PROJECT_BINARY_DIR}/include)
 include(cmake/targets/libminizinc.cmake)
 
 include(cmake/targets/libminizinc_cplex.cmake)
+include(cmake/targets/libminizinc_geas.cmake)
 include(cmake/targets/libminizinc_gecode.cmake)
 include(cmake/targets/libminizinc_gurobi.cmake)
 include(cmake/targets/libminizinc_osicbc.cmake)
