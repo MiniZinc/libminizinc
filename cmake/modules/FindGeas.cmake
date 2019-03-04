@@ -7,7 +7,7 @@
 # Imported target Geas will be created for linking purposes
 
 find_path(
-  GEAS_INCLUDE c/geas.h
+  GEAS_INCLUDE geas/c/geas.h
   HINTS ${GEAS_ROOT} ENV GEAS_ROOT
   PATH_SUFFIXES include
 )
