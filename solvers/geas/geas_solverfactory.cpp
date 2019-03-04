@@ -15,7 +15,7 @@
 namespace MiniZinc {
   namespace {
     void getWrapper() {
-      static Geas_SolverFactory _gecode_solverfactory;
+      static Geas_SolverFactory _geas_solverfactory;
     }
   }
   Geas_SolverFactoryInitialiser::Geas_SolverFactoryInitialiser() {

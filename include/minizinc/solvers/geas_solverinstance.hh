@@ -23,27 +23,29 @@ namespace MiniZinc {
   public:
     GeasSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
 
-    ~GeasSolverInstance();
+    ~GeasSolverInstance() override = default;
 
-    Status next() { return SolverInstance::ERROR; }
+    Status next() override { return SolverInstance::ERROR; }
 
-    Status solve();
+    Status solve() override;
 
-    void processFlatZinc();
+    void processFlatZinc() override;
 
-    void resetSolver();
+    void resetSolver() override;
   };
 
   class Geas_SolverFactory: public SolverFactory {
   public:
     Geas_SolverFactory();
-    SolverInstanceBase::Options* createOptions();
-    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
-    std::string getDescription(SolverInstanceBase::Options* opt=NULL);
-    std::string getVersion(SolverInstanceBase::Options* opt=NULL);
-    std::string getId() { return "org.minizinc.geas"; }
-    virtual bool processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv);
-    void printHelp(std::ostream& os);
+    SolverInstanceBase::Options* createOptions() override;
+    SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt) override;
+
+    std::string getDescription(SolverInstanceBase::Options* opt=nullptr) override { return "Elsie Geas - Another Lazy Clause Generation Solver"; };
+    std::string getVersion(SolverInstanceBase::Options* opt=nullptr) override { return "0.0.1"; }
+    std::string getId() override { return "org.minizinc.geas"; }
+
+    bool processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv) override;
+    void printHelp(std::ostream& os) override;
   };
 
 }
