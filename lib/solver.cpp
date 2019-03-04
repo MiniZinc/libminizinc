@@ -85,7 +85,7 @@ SolverInitialiser::SolverInitialiser(void) {
   #include <minizinc/solvers/gecode_solverfactory.hh>
   static Gecode_SolverFactoryInitialiser _gecode_init;
   #endif
-  #ifdef HAS_GECODE
+  #ifdef HAS_GEAS
   #include <minizinc/solvers/geas_solverfactory.hh>
     static Geas_SolverFactoryInitialiser _geas_init;
   #endif

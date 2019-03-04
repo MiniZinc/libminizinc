@@ -37,21 +37,83 @@ namespace MiniZinc{
       if (!it->removed() && it->e()->type().isvar() && it->e()->type().dim() == 0) {
         VarDecl* vd = it->e();
 
-        if (vd->type().isint()) {
+        if(vd->type().isbool()) {
+          if(!vd->e()) {
+            Expression* domain = vd->ti()->domain();
+            long long int lb, ub;
+            if(domain) {
+              IntBounds ib = compute_int_bounds(_env.envi(), domain);
+              lb = ib.l.toInt();
+              ub = ib.u.toInt();
+            } else {
+              lb = 0;
+              ub = 1;
+            }
+            // TODO: Deal with actual domain
+            auto var = _solver.new_boolvar();
+            _variableMap.insert(vd->id(), GeasVariable(GeasVariable::BOOL_TYPE, new geas::patom_t(var)));
+          } else {
+            Expression* init = vd->e();
+            if (init->isa<Id>() || init->isa<ArrayAccess>()) {
+              GeasVariable var = resolveVar(init);
+              assert(var.isBool());
+              _variableMap.insert(vd->id(), GeasVariable(GeasVariable::BOOL_TYPE, new geas::patom_t(var.boolVar())));
+            } else {
+              auto b = (double) init->cast<BoolLit>()->v();
+              // TODO: Deal with actual domain
+              auto var = _solver.new_boolvar();
+              _variableMap.insert(vd->id(), GeasVariable(GeasVariable::BOOL_TYPE, new geas::patom_t(var)));
+            }
+          }
+        } else if(vd->type().isfloat()) {
+          if(!vd->e()) {
+            Expression* domain = vd->ti()->domain();
+            double lb, ub;
+            if (domain) {
+              FloatBounds fb = compute_float_bounds(_env.envi(), vd->id());
+              lb = fb.l.toDouble();
+              ub = fb.u.toDouble();
+            } else {
+              throw Error("GeasSolverInstance::processFlatZinc: Error: Unbounded variable: " + vd->id()->str().str());
+            }
+            // TODO: Error correction from double to float??
+            auto var = _solver.new_floatvar(static_cast<geas::fp::val_t>(lb), static_cast<geas::fp::val_t>(ub));
+            _variableMap.insert(vd->id(), GeasVariable(GeasVariable::FLOAT_TYPE, new geas::fp::fpvar(var)));
+          } else {
+            Expression* init = vd->e();
+            if (init->isa<Id>() || init->isa<ArrayAccess>()) {
+              GeasVariable var = resolveVar(init);
+              assert(var.isFloat());
+              _variableMap.insert(vd->id(), GeasVariable(GeasVariable::FLOAT_TYPE, new geas::fp::fpvar(var.floatVar())));
+            } else {
+              double fl = init->cast<FloatLit>()->v().toDouble();
+              auto var = _solver.new_floatvar(static_cast<geas::fp::val_t>(fl), static_cast<geas::fp::val_t>(fl));
+              _variableMap.insert(vd->id(), GeasVariable(GeasVariable::FLOAT_TYPE, new geas::fp::fpvar(var)));
+            }
+          }
+        } else if (vd->type().isint()) {
           if (!vd->e()) {
             Expression* domain = vd->ti()->domain();
             if (domain) {
               IntSetVal* isv = eval_intset(env().envi(), domain);
-              auto var = _solver.new_intvar(static_cast<int64_t>(isv->min().toInt()), static_cast<int64_t>(isv->min().toInt()));
+              // TODO: Deal with domain gaps
+              auto var = _solver.new_intvar(static_cast<geas::intvar::val_t>(isv->min().toInt()), static_cast<geas::intvar::val_t>(isv->min().toInt()));
               _variableMap.insert(vd->id(), GeasVariable(GeasVariable::INT_TYPE, new geas::intvar(var)));
             } else {
-              throw("GeasSolverInstance::processFlatZinc: Error: Unbounded variable: " + vd->id()->str().str());
+              throw Error("GeasSolverInstance::processFlatZinc: Error: Unbounded variable: " + vd->id()->str().str());
             }
           } else {
-            // TODO: Lookup expressions
+            Expression* init = vd->e();
+            if (init->isa<Id>() || init->isa<ArrayAccess>()) {
+              GeasVariable var = resolveVar(init);
+              assert(var.isInt());
+              _variableMap.insert(vd->id(), GeasVariable(GeasVariable::INT_TYPE, new geas::intvar(var.intVar())));
+            } else {
+              auto il = init->cast<IntLit>()->v().toInt();
+              auto var = _solver.new_intvar(static_cast<geas::intvar::val_t>(il), static_cast<geas::intvar::val_t>(il));
+              _variableMap.insert(vd->id(), GeasVariable(GeasVariable::INT_TYPE, new geas::intvar(var)));
+            }
           }
-        } else if(vd->type().isbool()) {
-          // TODO: Add boolean variable
         } else {
           std::stringstream ssm;
           ssm << "Type " << *vd->ti() << " is currently not supported by Geas.";
@@ -105,15 +167,16 @@ namespace MiniZinc{
     assert(false);
   }
 
-  GeasTypes::Variable
-  GeasSolverInstance::resolveVar(Expression* e) {
+  GeasTypes::Variable GeasSolverInstance::resolveVar(Expression* e) {
     if (Id* id = e->dyn_cast<Id>()) {
       return _variableMap.get(id->decl()->id());
     } else if (auto vd = e->dyn_cast<VarDecl>()) {
       return _variableMap.get(vd->id()->decl()->id());
     } else if (auto aa = e->dyn_cast<ArrayAccess>()) {
-      // TODO: Deal with ArrayAccess
-//      return _variableMap.get(resolveArrayAccess(aa)->id()->decl()->id());
+      auto ad = aa->v()->cast<Id>()->decl();
+      auto idx = aa->idx()[0]->cast<IntLit>()->v().toInt();
+      auto al = eval_array_lit(_env.envi(), ad->e());
+      return _variableMap.get((*al)[idx]->cast<Id>());
     } else {
       std::stringstream ssm;
       ssm << "Expected Id, VarDecl or ArrayAccess instead of \"" << *e << "\"";
