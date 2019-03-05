@@ -25,18 +25,31 @@ namespace MiniZinc {
     enum Type {BOOL_TYPE, FLOAT_TYPE, INT_TYPE};
   protected:
     Type _t; // Type of the variable
-    void* _p; // Pointer to the variable
+    union {
+      geas::patom_t _bv;
+      geas::fp::fpvar _fv;
+      geas::intvar _iv;
+    };
   public:
-    GeasVariable(Type t, void* p) : _t(t), _p(p) {};
-    // TODO: Destroy copy of variable
+    explicit GeasVariable(const geas::patom_t& bv) : _t(BOOL_TYPE), _bv(bv) {};
+    explicit GeasVariable(const geas::fp::fpvar& fv) : _t(FLOAT_TYPE), _fv(fv) {};
+    explicit GeasVariable(const geas::intvar &iv) : _t(INT_TYPE), _iv(iv) {};
+
+    GeasVariable(const GeasVariable& gv) : _t(gv._t) {
+      switch (_t) {
+        case BOOL_TYPE: _bv = gv._bv; break;
+        case FLOAT_TYPE: _fv = gv._fv; break;
+        case INT_TYPE: _iv = gv._iv; break;
+      }
+    }
 
     bool isBool() const { return _t == BOOL_TYPE; }
     bool isFloat() const { return _t == FLOAT_TYPE; }
     bool isInt() const { return _t == INT_TYPE; }
 
-    geas::patom_t& boolVar() { return *static_cast<geas::patom_t*>(_p); }
-    geas::fp::fpvar& floatVar() { return *static_cast<geas::fp::fpvar*>(_p); }
-    geas::intvar& intVar() { return *static_cast<geas::intvar*>(_p); }
+    geas::patom_t boolVar() { return _bv; }
+    geas::fp::fpvar floatVar() { return _fv; }
+    geas::intvar intVar() { return _iv; }
   };
 
   class GeasTypes {
@@ -50,19 +63,26 @@ namespace MiniZinc {
     GeasSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
     ~GeasSolverInstance() override = default;
     void processFlatZinc() override;
+    geas::solver_data* solver_data() { return _solver.data; }
 
-    Status next() override { return SolverInstance::ERROR; }
     Status solve() override;
+    Status next() override { return SolverInstance::ERROR; } // TODO: Implement
+    void resetSolver() override;
 
     Expression* getSolutionValue(Id* id) override;
 
-    void resetSolver() override;
+
+    geas::patom_t arg2boolvar(Expression* e);
+    geas::intvar arg2intvar(Expression* e);
 
   protected:
     geas::solver _solver;
     Model* _flat;
 
-    GeasTypes::Variable resolveVar(Expression* e);
+    GeasTypes::Variable& resolveVar(Expression* e);
+
+    void registerConstraint(std::string name, poster p);
+    void registerConstraints();
   };
 
   class Geas_SolverFactory: public SolverFactory {

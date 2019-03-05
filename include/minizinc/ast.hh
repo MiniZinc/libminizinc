@@ -1063,6 +1063,7 @@ namespace MiniZinc {
     unsigned int n_args(void) const { return _u._oneArg->isUnboxedVal() || _u._oneArg->isTagged() ? 1 : _u._args->size(); }
     /// Access argument \a i
     Expression* arg(int i) const {
+      assert(i < n_args());
       if (_u._oneArg->isUnboxedVal() || _u._oneArg->isTagged()) {
         assert(i==0);
         return _u._oneArg->isUnboxedVal() ? _u._oneArg : _u._oneArg->untag();
@@ -1072,6 +1073,7 @@ namespace MiniZinc {
     }
     /// Set argument \a i
     void arg(int i, Expression* e) {
+      assert(i < n_args());
       if (_u._oneArg->isUnboxedVal() || _u._oneArg->isTagged()) {
         assert(i==0);
         _u._oneArg = e->isUnboxedVal() ? e : e->tag();
