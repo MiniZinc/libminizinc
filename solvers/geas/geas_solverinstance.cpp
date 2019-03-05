@@ -38,12 +38,12 @@ namespace MiniZinc{
     registerConstraint("int_lin_eq", GeasConstraints::p_int_lin_eq);
     registerConstraint("int_lin_ne", GeasConstraints::p_int_lin_ne);
     registerConstraint("int_lin_le", GeasConstraints::p_int_lin_le);
-//    registerConstraint("int_lin_eq_imp", GeasConstraints::p_int_lin_eq_imp);
-//    registerConstraint("int_lin_ne_imp", GeasConstraints::p_int_lin_ne_imp);
-//    registerConstraint("int_lin_le_imp", GeasConstraints::p_int_lin_le_imp);
-//    registerConstraint("int_lin_eq_reif", GeasConstraints::p_int_lin_eq_reif);
-//    registerConstraint("int_lin_ne_reif", GeasConstraints::p_int_lin_ne_reif);
-//    registerConstraint("int_lin_le_reif", GeasConstraints::p_int_lin_le_reif);
+    registerConstraint("int_lin_eq_imp", GeasConstraints::p_int_lin_eq_imp);
+    registerConstraint("int_lin_ne_imp", GeasConstraints::p_int_lin_ne_imp);
+    registerConstraint("int_lin_le_imp", GeasConstraints::p_int_lin_le_imp);
+    registerConstraint("int_lin_eq_reif", GeasConstraints::p_int_lin_eq_reif);
+    registerConstraint("int_lin_ne_reif", GeasConstraints::p_int_lin_ne_reif);
+    registerConstraint("int_lin_le_reif", GeasConstraints::p_int_lin_le_reif);
 
 //    registerConstraint("bool_eq", GeasConstraints::p_bool_eq);
 //    registerConstraint("bool_eq_reif", GeasConstraints::p_bool_eq_reif);
@@ -381,7 +381,7 @@ namespace MiniZinc{
 
   geas::patom_t GeasSolverInstance::arg2boolvar(Expression* e) {
     if (e->type().isvar()) {
-      GeasVariable& var = resolveVar(follow_id(e));
+      GeasVariable& var = resolveVar(follow_id_to_decl(e));
       assert(var.isBool());
       return var.boolVar();
     } else {

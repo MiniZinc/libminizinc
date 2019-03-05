@@ -31,12 +31,12 @@ namespace MiniZinc {
     PosterImpl(p_int_lin_eq);
     PosterImpl(p_int_lin_ne);
     PosterImpl(p_int_lin_le);
-//    PosterImpl(p_int_lin_eq_imp);
-//    PosterImpl(p_int_lin_ne_imp);
-//    PosterImpl(p_int_lin_le_imp);
-//    PosterImpl(p_int_lin_eq_reif);
-//    PosterImpl(p_int_lin_ne_reif);
-//    PosterImpl(p_int_lin_le_reif);
+    PosterImpl(p_int_lin_eq_imp);
+    PosterImpl(p_int_lin_ne_imp);
+    PosterImpl(p_int_lin_le_imp);
+    PosterImpl(p_int_lin_eq_reif);
+    PosterImpl(p_int_lin_ne_reif);
+    PosterImpl(p_int_lin_le_reif);
 
 //    PosterImpl(p_bool_lin_eq);
 //    PosterImpl(p_bool_lin_eq_reif);

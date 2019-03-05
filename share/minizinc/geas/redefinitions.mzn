@@ -41,6 +41,14 @@ annotation int_priority(array[int] of var int: xs,
 annotation bool_priority(array[int] of var bool: xs,
   array[int] of ann: br, ann: sel);
 
+%% Half Reifications
+predicate int_lin_eq_imp(array [int] of int: as, array [int] of var int: bs,
+                         int: c, var bool: r);
+predicate int_lin_ne_imp(array [int] of int: as, array [int] of var int: bs,
+                         int: c, var bool: r);
+predicate int_lin_le_imp(array [int] of int: as, array [int] of var int: bs,
+                         int: c, var bool: r);
+
 %predicate cumulative(array[int] of var int: s,
 %  array[int] of var int: d,
 %  array[int] of var int: r,
