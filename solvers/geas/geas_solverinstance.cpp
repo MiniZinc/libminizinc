@@ -214,9 +214,13 @@ namespace MiniZinc{
               lb = 0;
               ub = 1;
             }
-            // TODO: Deal with actual domain
-            auto var = _solver.new_boolvar();
-            _variableMap.insert(vd->id(), GeasVariable(var));
+            if (lb == ub) {
+              geas::patom_t val = (lb == 0) ? geas::at_False : geas::at_True;
+              _variableMap.insert(vd->id(), GeasVariable(val));
+            } else {
+              auto var = _solver.new_boolvar();
+              _variableMap.insert(vd->id(), GeasVariable(var));
+            }
           } else {
             Expression* init = vd->e();
             if (init->isa<Id>() || init->isa<ArrayAccess>()) {
@@ -224,10 +228,9 @@ namespace MiniZinc{
               assert(var.isBool());
               _variableMap.insert(vd->id(), GeasVariable(var.boolVar()));
             } else {
-              auto b = (double) init->cast<BoolLit>()->v();
-              // TODO: Deal with actual domain
-              auto var = _solver.new_boolvar();
-              _variableMap.insert(vd->id(), GeasVariable(var));
+              auto b = init->cast<BoolLit>()->v();
+              geas::patom_t val = b ? geas::at_True : geas::at_False;
+              _variableMap.insert(vd->id(), GeasVariable(val));
             }
           }
         } else if(vd->type().isfloat()) {
@@ -261,8 +264,19 @@ namespace MiniZinc{
             Expression* domain = vd->ti()->domain();
             if (domain) {
               IntSetVal* isv = eval_intset(env().envi(), domain);
-              // TODO: Deal with domain gaps
               auto var = _solver.new_intvar(static_cast<geas::intvar::val_t>(isv->min().toInt()), static_cast<geas::intvar::val_t>(isv->max().toInt()));
+              if (isv->size() > 1) {
+                vec<int> vals(static_cast<int>(isv->card().toInt()));
+                int i = 0;
+                for (int j = 0; j < isv->size(); ++j) {
+                  for (auto k = isv->min(i).toInt(); k <= isv->max(j).toInt(); ++k) {
+                    vals[i++] = static_cast<int>(k);
+                  }
+                }
+                assert(i == isv->card().toInt());
+                auto res = geas::make_sparse(var, vals);
+                assert(res);
+              }
               _variableMap.insert(vd->id(), GeasVariable(var));
             } else {
               throw Error("GeasSolverInstance::processFlatZinc: Error: Unbounded variable: " + vd->id()->str().str());
@@ -372,9 +386,7 @@ namespace MiniZinc{
       return var.boolVar();
     } else {
       if(auto bl = e->dyn_cast<BoolLit>()) {
-        IntVal i = bl->v();
-        // TODO: ACTUAL DOMAIN!!!
-        return _solver.new_boolvar();
+        return bl->v() ? geas::at_True : geas::at_False;
       } else {
         std::stringstream ssm; ssm << "Expected bool or int literal instead of: " << *e;
         throw InternalError(ssm.str());
