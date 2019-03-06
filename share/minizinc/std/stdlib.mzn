@@ -713,46 +713,12 @@ opt int: mzn_min_version_required;
 
 constraint assert(absent(mzn_min_version_required) \/ deopt(mzn_min_version_required) <= mzn_compiler_version(), "This model requires MiniZinc version "++mzn_version_to_string(deopt(mzn_min_version_required))++" but you are running version "++mzn_version_to_string(mzn_compiler_version()));
 
+predicate set_in(array[$T] of var int: X, set of int: s) = forall(x in array1d(X)) (x in s);
+predicate int_eq(array[$T] of var int: X, int: s) = forall(x in array1d(X)) (x = s);
+predicate float_eq(array[$T] of var int: X, float: s) = forall(x in array1d(X)) (x = s);
+predicate int_le(array[$T] of var int: X, int: s) = forall(x in array1d(X)) (x <= s);
+predicate int_le(int:s, array[$T] of var int: X) = forall(x in array1d(X)) (x >= s);
+predicate float_le(array[$T] of var float: X, float: s) = forall(x in array1d(X)) (x <= s);
+predicate float_le(float:s, array[$T] of var float: X) = forall(x in array1d(X)) (x >= s);
+
 include "builtins.mzn";
-
-predicate set_in(array[int] of var int: X, set of int: s) = forall(x in X) (x in s);
-predicate set_in(array[int,int] of var int: X, set of int: s) = set_in(array1d(X), s);
-predicate set_in(array[int,int,int] of var int: X, set of int: s) = set_in(array1d(X), s);
-predicate set_in(array[int,int,int,int] of var int: X, set of int: s) = set_in(array1d(X), s);
-
-predicate int_eq(array[int] of var int: X, int: s) = forall(x in X) (x = s);
-predicate int_eq(array[int,int] of var int: X, int: s) = int_eq(array1d(X), s);
-predicate int_eq(array[int,int,int] of var int: X, int: s) = int_eq(array1d(X), s);
-predicate int_eq(array[int,int,int,int] of var int: X, int: s) = int_eq(array1d(X), s);
-
-predicate float_eq(array[int] of var int: X, float: s) = forall(x in X) (x = s);
-predicate float_eq(array[int,int] of var int: X, float: s) = float_eq(array1d(X), s);
-predicate float_eq(array[int,int,int] of var int: X, float: s) = float_eq(array1d(X), s);
-predicate float_eq(array[int,int,int,int] of var int: X, float: s) = float_eq(array1d(X), s);
-
-predicate int_le(array[int] of var int: X, int: s) = forall(x in X) (x <= s);
-predicate int_le(array[int,int] of var int: X, int: s) = int_le(array1d(X), s);
-predicate int_le(array[int,int,int] of var int: X, int: s) = int_le(array1d(X), s);
-predicate int_le(array[int,int,int,int] of var int: X, int: s) = int_le(array1d(X), s);
-
-predicate int_ge(array[int] of var int: X, int: s) = forall(x in X) (x >= s);
-predicate int_ge(array[int,int] of var int: X, int: s) = int_ge(array1d(X), s);
-predicate int_ge(array[int,int,int] of var int: X, int: s) = int_ge(array1d(X), s);
-predicate int_ge(array[int,int,int,int] of var int: X, int: s) = int_ge(array1d(X), s);
-
-predicate int_le(int:s, var int: x);
-predicate int_le(int:s, array[int] of var int: X) = forall(x in X) (x >= s);
-predicate int_le(int:s, array[int,int] of var int: X) = int_le(s, array1d(X));
-predicate int_le(int:s, array[int,int,int] of var int: X) = int_le(s, array1d(X));
-predicate int_le(int:s, array[int,int,int,int] of var int: X) = int_le(s, array1d(X));
-
-predicate float_le(array[int] of var float: X, float: s) = forall(x in X) (x <= s);
-predicate float_le(array[int,int] of var float: X, float: s) = float_le(array1d(X), s);
-predicate float_le(array[int,int,int] of var float: X, float: s) = float_le(array1d(X), s);
-predicate float_le(array[int,int,int,int] of var float: X, float: s) = float_le(array1d(X), s);
-
-predicate float_le(float:s, array[int] of var float: X) = forall(x in X) (x >= s);
-predicate float_le(float:s, array[int,int] of var float: X) = float_le(s, array1d(X));
-predicate float_le(float:s, array[int,int,int] of var float: X) = float_le(s, array1d(X));
-predicate float_le(float:s, array[int,int,int,int] of var float: X) = float_le(s, array1d(X));
-
