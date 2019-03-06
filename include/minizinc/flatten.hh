@@ -37,6 +37,8 @@ namespace MiniZinc {
     bool only_toplevel_paths;
     /// Construct and collect mzn_paths for expressions and VarDeclI during flattening
     bool collect_mzn_paths;
+    /// Do not apply domain changes but insert them as constraints (useful for debugging)
+    bool record_domain_changes;
     /// Only range domains for old linearization. Set from redefs to true if not here
     bool onlyRangeDomains;
     /// Create standard, DZN or JSON output
@@ -47,7 +49,7 @@ namespace MiniZinc {
     bool outputObjective;
     /// Default constructor
     FlatteningOptions(void)
-    : keepOutputInFzn(false), verbose(false), only_toplevel_paths(false), collect_mzn_paths(false), onlyRangeDomains(false), outputMode(OUTPUT_ITEM), outputObjective(false) {}
+    : keepOutputInFzn(false), verbose(false), only_toplevel_paths(false), collect_mzn_paths(false), record_domain_changes(false), onlyRangeDomains(false), outputMode(OUTPUT_ITEM), outputObjective(false) {}
   };
 
   class Pass {

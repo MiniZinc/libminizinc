@@ -26,6 +26,97 @@
 
 namespace MiniZinc {
 
+  // Create domain constraints. Return true if successful.
+  bool createExplicitDomainConstraints(EnvI& envi, VarDecl* vd, Expression* domain) {
+    std::vector<Call*> calls;
+    Location iloc = Location().introduce();
+
+    if(domain->type().isfloat() || domain->type().isfloatset()) {
+      FloatSetVal* fsv = eval_floatset(envi, domain);
+      if(fsv->size() == 1) { // Range based
+        if(fsv->min() == fsv->max()) {
+          calls.push_back(new Call(iloc,
+            constants().ids.float_.eq,
+            {vd->id(), FloatLit::a(fsv->min())}));
+        } else {
+          FloatSetVal* cfsv;
+          if(vd->ti()->domain()) {
+            cfsv = eval_floatset(envi, vd->ti()->domain());
+          } else {
+            cfsv = FloatSetVal::a(-FloatVal::infinity(), FloatVal::infinity());
+          }
+          if(cfsv->min() < fsv->min()) {
+            calls.push_back(new Call(iloc,
+              constants().ids.float_.le,
+              {FloatLit::a(fsv->min()), vd->id()}));
+          }
+          if(cfsv->max() > fsv->max()) {
+            calls.push_back(new Call(iloc,
+              constants().ids.float_.le,
+              {vd->id(), FloatLit::a(fsv->max())}));
+          }
+        }
+      } else {
+        calls.push_back(new Call(iloc,
+          constants().ids.set_in,
+          {vd->id(), new SetLit(iloc, fsv)}));
+      }
+    } else if(domain->type().isint() || domain->type().isintset()) {
+      IntSetVal* isv = eval_intset(envi, domain);
+      if(isv->size() == 1) { // Range based
+        if(isv->min() == isv->max()) {
+          calls.push_back(new Call(iloc,
+            constants().ids.int_.eq,
+            {vd->id(), IntLit::a(isv->min())}));
+        } else {
+          IntSetVal* cisv;
+          if(vd->ti()->domain()) {
+            cisv = eval_intset(envi, vd->ti()->domain());
+          } else {
+            cisv = IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
+          }
+          if(cisv->min() < isv->min()) {
+            calls.push_back(new Call(iloc,
+              constants().ids.int_.le,
+              {IntLit::a(isv->min()), vd->id()}));
+          }
+          if(cisv->max() > isv->max()) {
+            calls.push_back(new Call(iloc,
+              constants().ids.int_.le,
+              {vd->id(), IntLit::a(isv->max())}));
+          }
+        }
+      } else {
+        calls.push_back(new Call(iloc,
+          constants().ids.set_in,
+          {vd->id(), new SetLit(iloc, isv)}));
+      }
+    } else {
+      std::cerr << "Warning: domain change not handled by -g mode: " << *vd->id() << " = " << *domain << std::endl;
+      return false;
+    }
+
+    int counter = 0;
+    for (Call* c : calls) {
+      CallStackItem csi(envi, IntLit::a(counter++));
+      c->ann().add(constants().ann.domain_change_constraint);
+      c->type(Type::varbool());
+      c->decl(envi.model->matchFn(envi, c, true));
+      flat_exp(envi, Ctx(), c, constants().var_true, constants().var_true);
+    }
+    return true;
+  }
+
+  void setComputedDomain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed) {
+    if (!envi.fopts.record_domain_changes ||
+        vd->ann().contains(constants().ann.is_defined_var) ||
+        vd->introduced() ||
+        !createExplicitDomainConstraints(envi, vd, domain)) {
+      vd->ti()->domain(domain);
+      vd->ti()->setComputedDomain(is_computed);
+    }
+  }
+
   /// Output operator for contexts
   template<class Char, class Traits>
   std::basic_ostream<Char,Traits>&
@@ -874,6 +965,7 @@ namespace MiniZinc {
     env.callStack.pop_back();
   }
   
+  
   FlatteningError::FlatteningError(EnvI& env, const Location& loc, const std::string& msg)
   : LocationException(env,loc,msg) {}
   
@@ -1247,6 +1339,7 @@ namespace MiniZinc {
     return envi().maxCallStack;
   }
   
+
   void checkIndexSets(EnvI& env, VarDecl* vd, Expression* e) {
     ASTExprVec<TypeInst> tis = vd->ti()->ranges();
     std::vector<TypeInst*> newtis(tis.size());
@@ -1301,6 +1394,7 @@ namespace MiniZinc {
   /// Turn \a c into domain constraints if possible.
   /// Return whether \a c is still required in the model.
   bool checkDomainConstraints(EnvI& env, Call* c) {
+    if (env.fopts.record_domain_changes) return true;
     if (c->id()==constants().ids.int_.le) {
       Expression* e0 = c->arg(0);
       Expression* e1 = c->arg(1);
@@ -1388,6 +1482,7 @@ namespace MiniZinc {
     }
     return true;
   }
+  
   
   KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
     assert(e==NULL || !e->isa<VarDecl>());
@@ -2425,8 +2520,9 @@ namespace MiniZinc {
                 ub = std::max(ub, vi);
               }
               GCLock lock;
-              v->e()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(lb, ub)));
-              v->e()->ti()->setComputedDomain(true);
+              //v->e()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(lb, ub)));
+              //v->e()->ti()->setComputedDomain(true);
+              setComputedDomain(env, v->e(), new SetLit(Location().introduce(), IntSetVal::a(lb, ub)), true);
             } else if (v->e()->type().bt()==Type::BT_FLOAT && v->e()->type().st()==Type::ST_PLAIN) {
               FloatVal lb = FloatVal::infinity();
               FloatVal ub = -FloatVal::infinity();
@@ -2436,8 +2532,9 @@ namespace MiniZinc {
                 ub = std::max(ub, vi);
               }
               GCLock lock;
-              v->e()->ti()->domain(new SetLit(Location().introduce(), FloatSetVal::a(lb, ub)));
-              v->e()->ti()->setComputedDomain(true);
+              //v->e()->ti()->domain(new SetLit(Location().introduce(), FloatSetVal::a(lb, ub)));
+              //v->e()->ti()->setComputedDomain(true);
+              setComputedDomain(env, v->e(), new SetLit(Location().introduce(), FloatSetVal::a(lb, ub)), true);
             }
           }
           if (v->e()->type().isvar() || v->e()->type().isann()) {

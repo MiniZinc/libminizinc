@@ -490,16 +490,18 @@ namespace MiniZinc {
           typename LinearTraits<Lit>::Domain domain = LinearTraits<Lit>::eval_domain(env,vd->ti()->domain());
           if (LinearTraits<Lit>::domain_contains(domain,d)) {
             if (!LinearTraits<Lit>::domain_equals(domain,d)) {
-              vd->ti()->setComputedDomain(false);
-              vd->ti()->domain(LinearTraits<Lit>::new_domain(d));
+              //vd->ti()->setComputedDomain(false);
+              //vd->ti()->domain(LinearTraits<Lit>::new_domain(d));
+              setComputedDomain(env, vd, LinearTraits<Lit>::new_domain(d), false);
             }
             ret.r = bind(env,ctx,r,constants().lit_true);
           } else {
             ret.r = bind(env,ctx,r,constants().lit_false);
           }
         } else {
-          vd->ti()->setComputedDomain(false);
-          vd->ti()->domain(LinearTraits<Lit>::new_domain(d));
+          //vd->ti()->setComputedDomain(false);
+          //vd->ti()->domain(LinearTraits<Lit>::new_domain(d));
+          setComputedDomain(env, vd, LinearTraits<Lit>::new_domain(d), false);
           ret.r = bind(env,ctx,r,constants().lit_true);
         }
       } else {
@@ -547,8 +549,9 @@ namespace MiniZinc {
               return;
             } else if (!LinearTraits<Lit>::domain_equals(domain,ndomain)) {
               ret.r = bind(env,ctx,r,constants().lit_true);
-              vd->ti()->setComputedDomain(false);
-              vd->ti()->domain(LinearTraits<Lit>::new_domain(ndomain));
+              //vd->ti()->setComputedDomain(false);
+              //vd->ti()->domain(LinearTraits<Lit>::new_domain(ndomain));
+              setComputedDomain(env, vd, LinearTraits<Lit>::new_domain(ndomain), false);
               
               if (r==constants().var_true) {
                 BinOp* bo = new BinOp(Location().introduce(), e0, bot, e1);
@@ -632,15 +635,17 @@ namespace MiniZinc {
             if (LinearTraits<Lit>::domain_intersects(domain,bounds.l,bounds.u)) {
               typename LinearTraits<Lit>::Domain new_domain = LinearTraits<Lit>::intersect_domain(domain,bounds.l,bounds.u);
               if (!LinearTraits<Lit>::domain_equals(domain,new_domain)) {
-                vd->ti()->setComputedDomain(false);
-                vd->ti()->domain(LinearTraits<Lit>::new_domain(new_domain));
+                //vd->ti()->setComputedDomain(false);
+                //vd->ti()->domain(LinearTraits<Lit>::new_domain(new_domain));
+                setComputedDomain(env, vd, LinearTraits<Lit>::new_domain(new_domain), false);
               }
             } else {
               ret.r = bind(env,ctx,r,constants().lit_false);
             }
           } else {
-            vd->ti()->setComputedDomain(true);
-            vd->ti()->domain(LinearTraits<Lit>::new_domain(bounds.l,bounds.u));
+            //vd->ti()->setComputedDomain(true);
+            //vd->ti()->domain(LinearTraits<Lit>::new_domain(bounds.l,bounds.u));
+            setComputedDomain(env, vd, LinearTraits<Lit>::new_domain(bounds.l, bounds.u), true);
           }
         }
       }
@@ -1260,8 +1265,9 @@ namespace MiniZinc {
                 if (ident->type().st()==Type::ST_PLAIN && newdom->size()==0) {
                   env.fail();
                 } else if (changeDom) {
-                  ident->decl()->ti()->setComputedDomain(false);
-                  ident->decl()->ti()->domain(new SetLit(Location().introduce(),newdom));
+                  //ident->decl()->ti()->setComputedDomain(false);
+                  //ident->decl()->ti()->domain(new SetLit(Location().introduce(),newdom));
+                  setComputedDomain(env, ident->decl(), new SetLit(Location().introduce(), newdom), false);
                   if (ident->decl()->e()==NULL && newdom->min()==newdom->max()) {
                     ident->decl()->e(IntLit::a(newdom->min()));
                   }
