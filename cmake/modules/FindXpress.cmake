@@ -23,7 +23,7 @@ foreach(XPRESS_LIB xprb xprs)
     set(XPRESS_LIBRARY "")
     break()
   endif()
-  list(APPEND XPRESS_LIBRARY ${GECODE_LIB_LOC})
+  list(APPEND XPRESS_LIBRARY ${XPRESS_LIB_LOC})
 endforeach(XPRESS_LIB)
 
 include(FindPackageHandleStandardArgs)
