@@ -101,18 +101,18 @@ namespace MiniZinc {
     }
 
     // Printer
-    ostream& NLS_BoundItem::print_on(ostream& os) const {
+    ostream& NLS_BoundItem::print_on(ostream& os, string vname) const {
         switch(tag){
             case LB_UB:{
-                os << "0 " << lb << " " << ub << " # " << lb << " =< body =< " << ub;
+                os << "0 " << lb << " " << ub << " # " << lb << " =< " << vname << " =< " << ub;
                 break;
             }
             case UB:{
-                os << "1 " << ub << " # body =< " << ub;
+                os << "1 " << ub << " # " << vname << " =< " << ub;
                 break;
             }
             case LB:{
-                os << "2 " << lb << " # " << lb << " =< body";
+                os << "2 " << lb << " # " << lb << " =< " << vname;
                 break;
             }
             case NONE:{
@@ -120,10 +120,15 @@ namespace MiniZinc {
                 break;
             }
             case EQ:{
-                os << "4 " << lb << " # body = " << lb;
+                os << "4 " << lb << " # " << vname << " = " << lb;
                 break;
             }
         }
+        return os;
+    }
+
+    ostream& NLS_BoundItem::print_on(ostream& os) const {
+        print_on(os, "body");
         return os;
     }
 
@@ -150,7 +155,9 @@ namespace MiniZinc {
 
         for (auto & name : nl_file->name_vars) {
             auto &v = nl_file->variables.at(name);
-            os << v.bound << " # " << name << endl;
+            v.bound.print_on(os, name);
+            os << endl;
+            // os << v.bound << " # " << name << endl;
         }
         
         return os;

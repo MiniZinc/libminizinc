@@ -79,7 +79,10 @@ namespace MiniZinc {
 
         public:
         NLS_BoundItem() = default;
-        ostream& print_on( ostream& o ) const override;
+
+        ostream& print_on( ostream& o, string vnmae) const;
+
+        ostream& print_on( ostream& o) const override;
     };
 
      /** Variable Record

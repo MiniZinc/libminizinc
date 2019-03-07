@@ -143,7 +143,7 @@ namespace MiniZinc {
           string s = sb.str();
           out->feedRawDataChunk(s.c_str());
           out->feedRawDataChunk(out->_opt.solution_separator_00);
-          if(nl_file.optimisation){
+          if(nl_file.is_optimisation){
             out->feedRawDataChunk("\n");
             out->feedRawDataChunk(out->_opt.search_complete_msg_00);
           }

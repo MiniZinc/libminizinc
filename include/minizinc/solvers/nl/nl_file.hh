@@ -49,6 +49,9 @@ namespace MiniZinc {
         vector<NLS_CSeg>    c_segments = {};                // Constraint segments
         vector<NLS_JSeg>    j_segments = {};                // Constraint segments: linear part
         vector<NLS_LSeg>    l_segments = {};                // Logical constraint segments
+
+        /** *** *** *** Other info *** *** *** **/
+        bool is_optimisation = false;                       // Is an optimisation problem ?
         
         /** *** *** *** Constructor *** *** *** **/
         NLFile():

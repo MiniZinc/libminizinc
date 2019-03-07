@@ -125,17 +125,20 @@ namespace MiniZinc {
         
         switch(st){
             case SolveI::SolveType::ST_SAT:{
+                this->is_optimisation = false;
                 // Satisfy: implemented by minimizing 0
                 o_segment.minmax = o_segment.MINIMIZE;
                 o_segment.expression_graph.push_back(NLToken::n(0));
                 break;
             }
             case SolveI::SolveType::ST_MIN:{
+                this->is_optimisation = true;
                 cerr << "solve min not implemented (todo: checking expression)" << endl;
                 assert(false);
                 break;
             }
             case SolveI::SolveType::ST_MAX:{
+                this->is_optimisation = true;
                 cerr << "solve max not implemented (todo: checking expression)" << endl;
                 assert(false);                
                 break;

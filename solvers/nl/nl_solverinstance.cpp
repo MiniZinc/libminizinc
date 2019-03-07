@@ -86,6 +86,7 @@ namespace MiniZinc {
 
   bool NL_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv) {
     cerr << "NL_SolverFactory::processOption TODO: does not process any option for now" << endl;
+    assert(false);
     return true;
   }
 
@@ -134,8 +135,11 @@ namespace MiniZinc {
 
     // --- --- --- Write the file
     analyse(_fzn->solveItem());
-    cerr << "ooooooooooooo   "  <<  _env.envi().orig_model->filename() << endl; //    _env.model()->filename() << endl;
-    std::ofstream outfile("out.nl");
+    string file_mzn = _env.envi().orig_model->filepath().str();
+    string file_sub = file_mzn.substr(0,file_mzn.find_last_of('.'));
+    string file_nl  = file_sub+".nl";
+    string file_sol = file_sub+".sol";
+    std::ofstream outfile(file_nl);
     outfile << nl_file;
     outfile.close();
 
@@ -145,7 +149,7 @@ namespace MiniZinc {
     vector<string> cmd_line;
     cmd_line.push_back("bash");
     cmd_line.push_back("-c");
-    cmd_line.push_back("gecode out.nl -AMPL && cat out.sol");
+    cmd_line.push_back("gecode "+file_nl+" -AMPL && cat "+file_sol);
     Process<NLSolns2Out> proc(cmd_line, &s2o, 0, true);
     int exitStatus = proc.run();
     return exitStatus == 0 ? out->status : SolverInstance::Status::ERROR;
