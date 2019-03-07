@@ -40,20 +40,30 @@ namespace MiniZinc {
         return NLSol("Error reading the solver Options", NL_Solver_Status::PARSE_ERROR, {});
       }
 
-      // Check the dual: we simply ignore them for now
+      // Check the dual: we ignore the first, read the second. If non zero, some lines are to be skipped
       (getline(in, buffer) && getline(in, buffer));
-
       if(in.bad()){
         return NLSol("Error reading the number of dual", NL_Solver_Status::PARSE_ERROR, {});
       }
+      int nb_duals = stoi(buffer);
 
       // Check the primal: we ignore the first, read the second
       getline(in, buffer) && getline(in, buffer);
       if (in.bad()){
         return NLSol("Error reading the number of primal", NL_Solver_Status::PARSE_ERROR, {});
       }
-
       int nb_vars = stoi(buffer);
+
+      // Skip the duals
+      while(nb_duals>0 && getline(in, buffer)){
+        nb_duals--;
+      }
+
+      if (in.bad()){
+        return NLSol("Error reading the dual values", NL_Solver_Status::PARSE_ERROR, {});
+      }
+
+      // Read the vars
       while(nb_vars>0 && getline(in, buffer)){
         double d = stod(buffer);
         vec.push_back(d);
@@ -125,7 +135,7 @@ namespace MiniZinc {
           stringstream sb;
           for(int i=0; i<nl_file.header.nb_vars; ++i){
 
-            string n = nl_file.name_vars[i];
+            string n = nl_file.vnames[i];
             Var v = nl_file.variables[n];   
             if(v.to_report){
                 sb << v.name << " = ";

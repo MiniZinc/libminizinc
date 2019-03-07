@@ -33,14 +33,100 @@ namespace MiniZinc {
     class NLFile: public Printable {
 
         public:
-        /** *** *** *** Fields *** *** *** **/
-        
-        NLHeader                header={};              // 0-init the header
+        /** *** *** *** Phase 1 main fields *** *** *** **/
 
         map<string, Var>        variables={};           // Mapping variable name
-        vector<string>          name_vars={};           // Retro Mapping index -> name
 
         vector<AlgebraicCons>   algcons={};             // Algebraic constraint
+
+
+        /** *** *** *** Phase 2 main fields *** *** *** **/
+
+        // Ordering of variables according to "hooking your solver"
+        /*  Meaning of the names (total, then by appearance order in the tables below)
+                n_var               total number of variables
+                nlvc                number of variables appearing nonlinearly in constraints
+                nlvo                number of variables appearing nonlinearly in objectives
+                nwv                 number of linear arcs
+                niv                 number of "other" integer variables
+                nbv                 number of binary variables
+
+
+            Order of variables:
+            Category            Count
+            --- --- --- --- |   --- --- --- --- ---
+            nonlinear           max(nlvc, nlvo)                                 // See below for order on non linear variables
+            linear arcs         nwv                                             // Not implemented
+            other linear        n_var − (max {nlvc, nlvo} + niv + nbv + nwv)    // Linear Continuous
+            binary              nbv                                             // Booleans
+            other integer       niv                                             // Linear Integer
+
+
+
+            Order of non linear variables (see 'nonlinear' above)
+            Meaning of the names:
+                nlvb            number of variables appearing nonlinearly in both constraints and objectives
+                nlvbi           number of integer variables appearing nonlinearly in both constraints and objectives
+                nlvc            number of variables appearing nonlinearly in constraints
+                nlvci           number of integer variables appearing nonlinearly in constraints **only**
+                nlvo            number of number of variables appearing nonlinearly in objectives
+                nlvoi           number of integer variables appearing nonlinearly in onjectives **only**
+
+            Category                                                Count
+            --- --- --- --- --- --- --- --- --- --- --- --- --- |   --- --- --- --- ---
+            Continuous in BOTH an objective AND a constraint    |   nlvb - nlvbi
+            Integer, in BOTH an objective AND a constraint      |   nlvbi
+            Continuous, in constraints only                     |   nlvc − (nlvb + nlvci)
+            Integer, in constraints only                        |   nlvci
+            Continous, in objectives only                       |   nlvo − (nlvc + nlvoi)
+            Integer, in objectives only                         |   nlvoi
+        */
+
+        // Non Linear Continuous Variables in BOTH an objective and a constraint
+        vector<string>  vname_nlcv_both = {};
+        // Non Linear Integer Variables in BOTH an objective and a constraint
+        vector<string>  vname_nliv_both = {};
+        // Non Linear Continuous Variables in CONStraints only
+        vector<string>  vname_nlcv_cons = {};
+        // Non Linear Integer Variables in CONStraints only
+        vector<string>  vname_nliv_cons = {};
+        // Non Linear Continuous Variables in OBJectives only
+        vector<string>  vname_nlcv_obj = {};
+        // Non Linear Integer Variables in OBJectives only
+        vector<string>  vname_nliv_obj = {};
+        // Linear Continuous Variables (ALL of them)
+        vector<string>  vname_lcv_all = {};
+        // Binary Variables (ALL of them)
+        vector<string>  vname_bv_all = {};
+        // Linear Integer Variables (ALL of them)
+        vector<string>  vname_liv_all = {};
+
+        // End of phase 2: this vector contains all the variables names, in a sorted order (also gives the retro mapping index -> name)
+        vector<string>  vnames={};       
+
+
+
+
+
+
+
+
+
+
+
+        // The header fields. TODO: create the header based on the above data
+        NLHeader                header={};              // 0-init the header
+
+
+
+
+        // Ordering of constraints according to "hooking your solver"
+        /* Meaning of te names:
+            n_con               total number of constraints
+            --- --- --- --- |   --- --- --- --- ---
+        */
+
+
 
         /** *** *** *** Segments *** *** *** **/
         NLS_Bound           b_segment;

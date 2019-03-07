@@ -95,11 +95,16 @@ namespace MiniZinc {
      */
     class Var {
         public:
-        // string const*   name;
+        /** *** *** *** Phase 1 fields *** *** *** **/
         string          name;
-        int             index;
         bool            is_integer;
+        bool            is_in_constraint;
+        bool            is_in_objective;
         NLS_BoundItem   bound;
+
+        /** *** *** *** Phase 2 fields *** *** *** **/
+        int             index;
+
         int             jacobian_count;
         bool            to_report;
 

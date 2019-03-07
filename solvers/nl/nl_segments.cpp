@@ -153,7 +153,7 @@ namespace MiniZinc {
     ostream& NLS_Bound::print_on(ostream& os) const {
         os << "b # Bounds on variable (" << nl_file->header.nb_vars << ")" << endl;
 
-        for (auto & name : nl_file->name_vars) {
+        for (auto & name : nl_file->vnames) {
             auto &v = nl_file->variables.at(name);
             v.bound.print_on(os, name);
             os << endl;
@@ -188,7 +188,7 @@ namespace MiniZinc {
             << " # Linear part of the constraint " << constraint_idx << endl;
             
         for (auto & v_c : var_coeff) {
-            os << v_c.first << " " << v_c.second << " # " << nl_file->name_vars[v_c.first] << endl;
+            os << v_c.first << " " << v_c.second << " # " << nl_file->vnames[v_c.first] << endl;
         }
         
         return os;

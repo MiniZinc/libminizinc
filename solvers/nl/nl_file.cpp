@@ -29,12 +29,12 @@ namespace MiniZinc {
         // K segment here if we have some j_segments
         if(!j_segments.empty()){
 
-          if(!name_vars.empty()){
+          if(!vnames.empty()){
             os << "k" << (header.nb_vars-1) << " # Cumulative Sum of non-zero in the jacobian matrix's (nbvar-1) columns." << endl;
             int acc=0;
             // Note: stop before the last var. Total count will be in the header
-            for(int i=0; i<name_vars.size()-1; ++i){
-              string name = name_vars[i];
+            for(int i=0; i<vnames.size()-1; ++i){
+              string name = vnames[i];
               acc += variables.at(name).jacobian_count;
               os << acc << " # " << name << endl;
             }
@@ -231,7 +231,7 @@ namespace MiniZinc {
         // Create the variable and update the internal structure & header
         Var v = Var(name, index, true, bound, to_report);  // true == integer
         variables[name] = v;
-        name_vars.push_back(name);
+        vnames.push_back(name);
         header.nb_vars++;
         header.nb_linear_integer_vars++;        // Also update that one!
     }
@@ -256,7 +256,7 @@ namespace MiniZinc {
         // Create the variable and update the internal structure & header
         Var v = Var(name, index, false, bound, to_report);  // false == floating point
         variables[name] = v;
-        name_vars.push_back(name);
+        vnames.push_back(name);
         header.nb_vars++;
     }   
 
