@@ -64,6 +64,7 @@ namespace MiniZinc {
     ~GeasSolverInstance() override = default;
     void processFlatZinc() override;
     geas::solver_data* solver_data() { return _solver.data; }
+    geas::solver& solver() { return _solver; }
 
     Status solve() override;
     Status next() override { return SolverInstance::ERROR; } // TODO: Implement
@@ -74,7 +75,7 @@ namespace MiniZinc {
 
     geas::patom_t arg2boolvar(Expression* e);
     geas::intvar arg2intvar(Expression* e);
-
+    geas::intvar zero;
   protected:
     geas::solver _solver;
     Model* _flat;

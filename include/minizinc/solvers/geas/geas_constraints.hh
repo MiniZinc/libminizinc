@@ -23,20 +23,14 @@ namespace MiniZinc {
     /* Integer Comparisons Constraints */
     PosterImpl(p_int_eq);
     PosterImpl(p_int_ne);
-    PosterImpl(p_int_ge);
-    PosterImpl(p_int_gt);
     PosterImpl(p_int_le);
     PosterImpl(p_int_lt);
     PosterImpl(p_int_eq_imp);
     PosterImpl(p_int_ne_imp);
-    PosterImpl(p_int_ge_imp);
-    PosterImpl(p_int_gt_imp);
     PosterImpl(p_int_le_imp);
     PosterImpl(p_int_lt_imp);
     PosterImpl(p_int_eq_reif);
     PosterImpl(p_int_ne_reif);
-    PosterImpl(p_int_ge_reif);
-    PosterImpl(p_int_gt_reif);
     PosterImpl(p_int_le_reif);
     PosterImpl(p_int_lt_reif);
 
@@ -58,66 +52,52 @@ namespace MiniZinc {
     PosterImpl(p_int_lin_ne_reif);
     PosterImpl(p_int_lin_le_reif);
 
-//    PosterImpl(p_bool_lin_eq);
-//    PosterImpl(p_bool_lin_eq_reif);
-//    PosterImpl(p_bool_lin_eq_imp) ;
-//    PosterImpl(p_bool_lin_ne);
-//    PosterImpl(p_bool_lin_ne_reif) ;
-//    PosterImpl(p_bool_lin_ne_imp) ;
-//    PosterImpl(p_bool_lin_le);
-//    PosterImpl(p_bool_lin_le_reif) ;
-//    PosterImpl(p_bool_lin_le_imp) ;
-//    PosterImpl(p_bool_lin_lt) ;
-//    PosterImpl(p_bool_lin_lt_reif);
-//    PosterImpl(p_bool_lin_lt_imp) ;
-//    PosterImpl(p_bool_lin_ge);
-//    PosterImpl(p_bool_lin_ge_reif) ;
-//    PosterImpl(p_bool_lin_ge_imp) ;
-//    PosterImpl(p_bool_lin_gt) ;
-//    PosterImpl(p_bool_lin_gt_reif) ;
-//    PosterImpl(p_bool_lin_gt_imp) ;
+    /* Boolean Comparison Constraints */
+    PosterImpl(p_bool_eq);
+    PosterImpl(p_bool_ne);
+    PosterImpl(p_bool_le);
+    PosterImpl(p_bool_lt);
+    PosterImpl(p_bool_eq_imp);
+    PosterImpl(p_bool_ne_imp);
+    PosterImpl(p_bool_le_imp);
+    PosterImpl(p_bool_lt_imp);
+    PosterImpl(p_bool_eq_reif);
+    PosterImpl(p_bool_ne_reif);
+    PosterImpl(p_bool_le_reif);
+    PosterImpl(p_bool_lt_reif);
 
-    /* Boolean constraints */
-//    PosterImpl(p_bool_eq);
-//    PosterImpl(p_bool_eq_reif) ;
-//    PosterImpl(p_bool_eq_imp);
-//    PosterImpl(p_bool_ne);
-//    PosterImpl(p_bool_ne_reif);
-//    PosterImpl(p_bool_ne_imp);
-//    PosterImpl(p_bool_ge);
-//    PosterImpl(p_bool_ge_reif);
-//    PosterImpl(p_bool_ge_imp);
-//    PosterImpl(p_bool_le);
-//    PosterImpl(p_bool_le_reif);
-//    PosterImpl(p_bool_le_imp);
-//    PosterImpl(p_bool_gt);
-//    PosterImpl(p_bool_gt_reif);
-//    PosterImpl(p_bool_gt_imp);
-//    PosterImpl(p_bool_lt);
-//    PosterImpl(p_bool_lt_reif);
-//    PosterImpl(p_bool_lt_imp);
-//    PosterImpl(p_bool_or) ;
-//    PosterImpl(p_bool_or_imp);
-//    PosterImpl(p_bool_and);
-//    PosterImpl(p_bool_and_imp);
-//    PosterImpl(p_array_bool_and);
-//    PosterImpl(p_array_bool_and_imp);
-//    PosterImpl(p_array_bool_or);
-//    PosterImpl(p_array_bool_or_imp);
+    /* Boolean Arithmetic Constraints */
+    PosterImpl(p_bool_or) ;
+    PosterImpl(p_bool_and);
+    PosterImpl(p_bool_xor);
+    PosterImpl(p_bool_not);
+    PosterImpl(p_bool_or_imp);
+    PosterImpl(p_bool_and_imp);
+    PosterImpl(p_bool_xor_imp);
+
+    PosterImpl(p_bool_clause);
+    PosterImpl(p_array_bool_or);
+    PosterImpl(p_array_bool_and);
 //    PosterImpl(p_array_bool_xor);
+    PosterImpl(p_bool_clause_imp);
+    PosterImpl(p_array_bool_and_imp);
+    PosterImpl(p_array_bool_or_imp);
 //    PosterImpl(p_array_bool_xor_imp);
-//    PosterImpl(p_array_bool_clause);
-//    PosterImpl(p_array_bool_clause_reif);
-//    PosterImpl(p_array_bool_clause_imp);
-//    PosterImpl(p_bool_xor);
-//    PosterImpl(p_bool_xor_imp);
-//    PosterImpl(p_bool_l_imp);
-//    PosterImpl(p_bool_r_imp);
-//    PosterImpl(p_bool_not);
+    PosterImpl(p_bool_clause_reif);
 
+      /* Boolean Linear Constraints */
+    PosterImpl(p_bool_lin_eq);
+    PosterImpl(p_bool_lin_ne);
+    PosterImpl(p_bool_lin_le);
+    PosterImpl(p_bool_lin_eq_imp);
+    PosterImpl(p_bool_lin_ne_imp);
+    PosterImpl(p_bool_lin_le_imp);
+    PosterImpl(p_bool_lin_lt_imp);
+    PosterImpl(p_bool_lin_eq_reif);
+    PosterImpl(p_bool_lin_ne_reif);
+    PosterImpl(p_bool_lin_le_reif);
 
     /* Floating point constraints */
-//    PosterImpl(p_int2float);
 //    PosterImpl(p_float_lin_eq);
 //    PosterImpl(p_float_lin_eq_reif);
 //    PosterImpl(p_float_lin_le);
@@ -147,21 +127,19 @@ namespace MiniZinc {
 //    PosterImpl(p_float_log10);
 //    PosterImpl(p_float_log2);
 
-    /* element constraints */
+    /* Element Constraints */
 //    PosterImpl(p_array_int_element);
 //    PosterImpl(p_array_bool_element);
 
-    /* coercion constraints */
+    /* Coercion Constraints */
+//    PosterImpl(p_int2float);
 //    PosterImpl(p_bool2int);
-//    PosterImpl(p_int_in);
-//    PosterImpl(p_int_in_reif);
-//    PosterImpl(p_int_in_imp);
-//
+
 //    PosterImpl(p_distinct);
 //    PosterImpl(p_distinctOffset);
 //    PosterImpl(p_all_equal);
 
-    /* constraints from the standard library */
+    /* Global Constraints */
 //    PosterImpl(p_array_int_lt);
 //    PosterImpl(p_array_int_lq);
 //    PosterImpl(p_array_bool_lt);
