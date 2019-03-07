@@ -20,14 +20,34 @@ namespace MiniZinc {
 
 #define PosterImpl(X) void X(SolverInstanceBase& s, const Call* ce)
 
-    /* arithmetic constraints */
+    /* Integer Comparisons Constraints */
+    PosterImpl(p_int_eq);
+    PosterImpl(p_int_ne);
+    PosterImpl(p_int_ge);
+    PosterImpl(p_int_gt);
+    PosterImpl(p_int_le);
+    PosterImpl(p_int_lt);
+    PosterImpl(p_int_eq_imp);
+    PosterImpl(p_int_ne_imp);
+    PosterImpl(p_int_ge_imp);
+    PosterImpl(p_int_gt_imp);
+    PosterImpl(p_int_le_imp);
+    PosterImpl(p_int_lt_imp);
+    PosterImpl(p_int_eq_reif);
+    PosterImpl(p_int_ne_reif);
+    PosterImpl(p_int_ge_reif);
+    PosterImpl(p_int_gt_reif);
+    PosterImpl(p_int_le_reif);
+    PosterImpl(p_int_lt_reif);
+
+    /* Integer Arithmetic Constraints */
     PosterImpl(p_int_abs);
     PosterImpl(p_int_times);
     PosterImpl(p_int_div);
     PosterImpl(p_int_max);
     PosterImpl(p_int_min);
 
-      /* Linear Constraints */
+    /* Integer Linear Constraints */
     PosterImpl(p_int_lin_eq);
     PosterImpl(p_int_lin_ne);
     PosterImpl(p_int_lin_le);

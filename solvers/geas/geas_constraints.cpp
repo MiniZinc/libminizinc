@@ -17,6 +17,234 @@
 namespace MiniZinc {
   namespace GeasConstraints {
 
+    void p_int_eq(SolverInstanceBase& s, const Call* call) {
+      auto& gi = static_cast<GeasSolverInstance&>(s);
+      Expression* lhs = call->arg(0);
+      Expression* rhs = call->arg(1);
+      geas::int_eq(gi.solver_data(), gi.arg2intvar(lhs), gi.arg2intvar(rhs));
+    }
+
+    void p_int_ne(SolverInstanceBase& s, const Call* call) {
+      auto& gi = static_cast<GeasSolverInstance&>(s);
+      Expression* lhs = call->arg(0);
+      Expression* rhs = call->arg(1);
+      geas::int_ne(gi.solver_data(), gi.arg2intvar(lhs), gi.arg2intvar(rhs));
+    }
+
+    void p_int_ge(SolverInstanceBase& s, const Call* call) {
+      auto& gi = static_cast<GeasSolverInstance&>(s);
+      Expression* lhs = call->arg(0);
+      Expression* rhs = call->arg(1);
+      geas::int_le(gi.solver_data(), gi.arg2intvar(rhs), gi.arg2intvar(lhs), 0);
+    }
+
+    void p_int_gt(SolverInstanceBase& s, const Call* call) {
+      auto& gi = static_cast<GeasSolverInstance&>(s);
+      Expression* lhs = call->arg(0);
+      Expression* rhs = call->arg(1);
+      geas::int_le(gi.solver_data(), gi.arg2intvar(rhs), gi.arg2intvar(lhs), -1);
+    }
+
+    void p_int_le(SolverInstanceBase& s, const Call* call) {
+      auto& gi = static_cast<GeasSolverInstance&>(s);
+      Expression* lhs = call->arg(0);
+      Expression* rhs = call->arg(1);
+      geas::int_le(gi.solver_data(), gi.arg2intvar(lhs), gi.arg2intvar(rhs), 0);
+    }
+
+    void p_int_lt(SolverInstanceBase& s, const Call* call) {
+      auto& gi = static_cast<GeasSolverInstance&>(s);
+      Expression* lhs = call->arg(0);
+      Expression* rhs = call->arg(1);
+      geas::int_le(gi.solver_data(), gi.arg2intvar(lhs), gi.arg2intvar(rhs), -1);
+    }
+
+    void p_int_eq_imp(SolverInstanceBase& s, const Call* call) {
+      if (!call->arg(2)->type().isvar()) {
+        if (call->arg(2)->cast<BoolLit>()->v()) {
+          p_int_eq(s, call);
+        }
+      } else {
+        auto& gi = static_cast<GeasSolverInstance&>(s);
+        Expression* lhs = call->arg(0);
+        Expression* rhs = call->arg(1);
+        Expression* r = call->arg(2);
+        geas::int_eq(gi.solver_data(), gi.arg2intvar(lhs), gi.arg2intvar(rhs), gi.arg2boolvar(r));
+      }
+    }
+
+    void p_int_ne_imp(SolverInstanceBase& s, const Call* call) {
+      if (!call->arg(2)->type().isvar()) {
+        if (call->arg(2)->cast<BoolLit>()->v()) {
+          p_int_ne(s, call);
+        }
+      } else {
+        auto& gi = static_cast<GeasSolverInstance&>(s);
+        Expression* lhs = call->arg(0);
+        Expression* rhs = call->arg(1);
+        Expression* r = call->arg(2);
+        geas::int_ne(gi.solver_data(), gi.arg2intvar(lhs), gi.arg2intvar(rhs), gi.arg2boolvar(r));
+      }
+    }
+
+    void p_int_ge_imp(SolverInstanceBase& s, const Call* call) {
+      if (!call->arg(2)->type().isvar()) {
+        if (call->arg(2)->cast<BoolLit>()->v()) {
+          p_int_ge(s, call);
+        }
+      } else {
+        auto& gi = static_cast<GeasSolverInstance&>(s);
+        Expression* lhs = call->arg(0);
+        Expression* rhs = call->arg(1);
+        Expression* r = call->arg(2);
+        geas::int_le(gi.solver_data(), gi.arg2intvar(rhs),  gi.arg2intvar(lhs), 0, gi.arg2boolvar(r));
+      }
+    }
+
+    void p_int_gt_imp(SolverInstanceBase& s, const Call* call) {
+      if (!call->arg(2)->type().isvar()) {
+        if (call->arg(2)->cast<BoolLit>()->v()) {
+          p_int_gt(s, call);
+        }
+      } else {
+        auto& gi = static_cast<GeasSolverInstance&>(s);
+        Expression* lhs = call->arg(0);
+        Expression* rhs = call->arg(1);
+        Expression* r = call->arg(2);
+        geas::int_le(gi.solver_data(), gi.arg2intvar(rhs),  gi.arg2intvar(lhs), -1, gi.arg2boolvar(r));
+      }
+    }
+
+    void p_int_le_imp(SolverInstanceBase& s, const Call* call) {
+      if (!call->arg(2)->type().isvar()) {
+        if (call->arg(2)->cast<BoolLit>()->v()) {
+          p_int_le(s, call);
+        }
+      } else {
+        auto& gi = static_cast<GeasSolverInstance&>(s);
+        Expression* lhs = call->arg(0);
+        Expression* rhs = call->arg(1);
+        Expression* r = call->arg(2);
+        geas::int_le(gi.solver_data(), gi.arg2intvar(lhs),  gi.arg2intvar(rhs), 0, gi.arg2boolvar(r));
+      }
+    }
+
+    void p_int_lt_imp(SolverInstanceBase& s, const Call* call) {
+      if (!call->arg(2)->type().isvar()) {
+        if (call->arg(2)->cast<BoolLit>()->v()) {
+          p_int_lt(s, call);
+        }
+      } else {
+        auto& gi = static_cast<GeasSolverInstance&>(s);
+        Expression* lhs = call->arg(0);
+        Expression* rhs = call->arg(1);
+        Expression* r = call->arg(2);
+        geas::int_le(gi.solver_data(), gi.arg2intvar(lhs),  gi.arg2intvar(rhs), -1, gi.arg2boolvar(r));
+      }
+    }
+
+    void p_int_eq_reif(SolverInstanceBase& s, const Call* call) {
+      if (!call->arg(2)->type().isvar()) {
+        if (call->arg(2)->cast<BoolLit>()->v()) {
+          p_int_eq(s, call);
+        } else {
+          p_int_ne(s, call);
+        }
+      } else {
+        auto& gi = static_cast<GeasSolverInstance&>(s);
+        Expression* lhs = call->arg(0);
+        Expression* rhs = call->arg(1);
+        Expression* r = call->arg(2);
+        geas::int_eq(gi.solver_data(), gi.arg2intvar(lhs), gi.arg2intvar(rhs), gi.arg2boolvar(r));
+        geas::int_ne(gi.solver_data(), gi.arg2intvar(lhs), gi.arg2intvar(rhs), ~gi.arg2boolvar(r));
+      }
+    }
+
+    void p_int_ne_reif(SolverInstanceBase& s, const Call* call) {
+      if (!call->arg(2)->type().isvar()) {
+        if (call->arg(2)->cast<BoolLit>()->v()) {
+          p_int_ne(s, call);
+        } else {
+          p_int_eq(s, call);
+        }
+      } else {
+        auto& gi = static_cast<GeasSolverInstance&>(s);
+        Expression* lhs = call->arg(0);
+        Expression* rhs = call->arg(1);
+        Expression* r = call->arg(2);
+        geas::int_ne(gi.solver_data(), gi.arg2intvar(lhs), gi.arg2intvar(rhs), gi.arg2boolvar(r));
+        geas::int_eq(gi.solver_data(), gi.arg2intvar(lhs), gi.arg2intvar(rhs), ~gi.arg2boolvar(r));
+      }
+    }
+
+    void p_int_ge_reif(SolverInstanceBase& s, const Call* call) {
+      if (!call->arg(2)->type().isvar()) {
+        if (call->arg(2)->cast<BoolLit>()->v()) {
+          p_int_ge(s, call);
+        } else {
+          p_int_lt(s, call);
+        }
+      } else {
+        auto& gi = static_cast<GeasSolverInstance&>(s);
+        Expression* lhs = call->arg(0);
+        Expression* rhs = call->arg(1);
+        Expression* r = call->arg(2);
+        geas::int_le(gi.solver_data(), gi.arg2intvar(rhs),  gi.arg2intvar(lhs), 0, gi.arg2boolvar(r));
+        geas::int_le(gi.solver_data(), gi.arg2intvar(lhs), gi.arg2intvar(rhs), -1, ~gi.arg2boolvar(r));
+      }
+    }
+
+    void p_int_gt_reif(SolverInstanceBase& s, const Call* call) {
+      if (!call->arg(2)->type().isvar()) {
+        if (call->arg(2)->cast<BoolLit>()->v()) {
+          p_int_gt(s, call);
+        } else {
+          p_int_le(s, call);
+        }
+      } else {
+        auto& gi = static_cast<GeasSolverInstance&>(s);
+        Expression* lhs = call->arg(0);
+        Expression* rhs = call->arg(1);
+        Expression* r = call->arg(2);
+        geas::int_le(gi.solver_data(), gi.arg2intvar(rhs),  gi.arg2intvar(lhs), -1, gi.arg2boolvar(r));
+        geas::int_le(gi.solver_data(), gi.arg2intvar(lhs),  gi.arg2intvar(rhs), 0, ~gi.arg2boolvar(r));
+      }
+    }
+
+    void p_int_le_reif(SolverInstanceBase& s, const Call* call) {
+      if (!call->arg(2)->type().isvar()) {
+        if (call->arg(2)->cast<BoolLit>()->v()) {
+          p_int_le(s, call);
+        } else {
+          p_int_gt(s, call);
+        }
+      } else {
+        auto& gi = static_cast<GeasSolverInstance&>(s);
+        Expression* lhs = call->arg(0);
+        Expression* rhs = call->arg(1);
+        Expression* r = call->arg(2);
+        geas::int_le(gi.solver_data(), gi.arg2intvar(lhs),  gi.arg2intvar(rhs), 0, gi.arg2boolvar(r));
+        geas::int_le(gi.solver_data(), gi.arg2intvar(rhs),  gi.arg2intvar(lhs), -1, ~gi.arg2boolvar(r));
+      }
+    }
+
+    void p_int_lt_reif(SolverInstanceBase& s, const Call* call) {
+      if (!call->arg(2)->type().isvar()) {
+        if (call->arg(2)->cast<BoolLit>()->v()) {
+          p_int_lt(s, call);
+        } else {
+          p_int_ge(s, call);
+        }
+      } else {
+        auto& gi = static_cast<GeasSolverInstance&>(s);
+        Expression* lhs = call->arg(0);
+        Expression* rhs = call->arg(1);
+        Expression* r = call->arg(2);
+        geas::int_le(gi.solver_data(), gi.arg2intvar(lhs),  gi.arg2intvar(rhs), -1, gi.arg2boolvar(r));
+        geas::int_le(gi.solver_data(), gi.arg2intvar(rhs),  gi.arg2intvar(lhs), 0, ~gi.arg2boolvar(r));
+      }
+    }
+
     void p_int_abs(SolverInstanceBase& s, const Call* call) {
       auto& gi = static_cast<GeasSolverInstance&>(s);
       Expression* org = call->arg(0);

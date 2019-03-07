@@ -26,7 +26,27 @@ namespace MiniZinc{
   void GeasSolverInstance::registerConstraints() {
     GCLock lock;
 
-    /* arithmetic constraints */
+    /* Integer Comparisons */
+    registerConstraint("int_eq", GeasConstraints::p_int_eq);
+    registerConstraint("int_ne", GeasConstraints::p_int_ne);
+    registerConstraint("int_ge", GeasConstraints::p_int_ge);
+    registerConstraint("int_gt", GeasConstraints::p_int_gt);
+    registerConstraint("int_le", GeasConstraints::p_int_le);
+    registerConstraint("int_lt", GeasConstraints::p_int_lt);
+    registerConstraint("int_eq_imp", GeasConstraints::p_int_eq_imp);
+    registerConstraint("int_ne_imp", GeasConstraints::p_int_ne_imp);
+    registerConstraint("int_ge_imp", GeasConstraints::p_int_ge_imp);
+    registerConstraint("int_gt_imp", GeasConstraints::p_int_gt_imp);
+    registerConstraint("int_le_imp", GeasConstraints::p_int_le_imp);
+    registerConstraint("int_lt_imp", GeasConstraints::p_int_lt_imp);
+    registerConstraint("int_eq_reif", GeasConstraints::p_int_eq_reif);
+    registerConstraint("int_ne_reif", GeasConstraints::p_int_ne_reif);
+    registerConstraint("int_ge_reif", GeasConstraints::p_int_ge_reif);
+    registerConstraint("int_gt_reif", GeasConstraints::p_int_gt_reif);
+    registerConstraint("int_le_reif", GeasConstraints::p_int_le_reif);
+    registerConstraint("int_lt_reif", GeasConstraints::p_int_lt_reif);
+
+    /* Integer Arithmetic Constraints */
     registerConstraint("int_abs", GeasConstraints::p_int_abs);
     registerConstraint("int_times", GeasConstraints::p_int_times);
     registerConstraint("int_div", GeasConstraints::p_int_div);
@@ -34,7 +54,7 @@ namespace MiniZinc{
     registerConstraint("int_min", GeasConstraints::p_int_min);
     registerConstraint("int_max", GeasConstraints::p_int_max);
 
-    /* Linear Constraints */
+    /* Integer Linear Constraints */
     registerConstraint("int_lin_eq", GeasConstraints::p_int_lin_eq);
     registerConstraint("int_lin_ne", GeasConstraints::p_int_lin_ne);
     registerConstraint("int_lin_le", GeasConstraints::p_int_lin_le);
