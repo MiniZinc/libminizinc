@@ -127,8 +127,8 @@ namespace MiniZinc {
 
             string n = nl_file.name_vars[i];
             Var v = nl_file.variables[n];   
-            sb << v.name << " = ";
             if(v.to_report){
+                sb << v.name << " = ";
                 if(v.is_integer){
                   long value = (long)sol.values[i];
                   sb << value;
@@ -143,8 +143,11 @@ namespace MiniZinc {
           string s = sb.str();
           out->feedRawDataChunk(s.c_str());
           out->feedRawDataChunk(out->_opt.solution_separator_00);
-          out->feedRawDataChunk("\n");
-          out->feedRawDataChunk(out->_opt.search_complete_msg_00);
+          if(nl_file.optimisation){
+            out->feedRawDataChunk("\n");
+            out->feedRawDataChunk(out->_opt.search_complete_msg_00);
+          }
+
           break;
         }
 

@@ -134,6 +134,7 @@ namespace MiniZinc {
 
     // --- --- --- Write the file
     analyse(_fzn->solveItem());
+    cerr << "ooooooooooooo   "  <<  _env.envi().orig_model->filename() << endl; //    _env.model()->filename() << endl;
     std::ofstream outfile("out.nl");
     outfile << nl_file;
     outfile.close();
