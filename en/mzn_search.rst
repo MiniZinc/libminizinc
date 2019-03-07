@@ -514,7 +514,7 @@ In many cases when solving an optimization or satisfaction
 problem we may have solved a
 previous version of the problem which is very similar.  In this case it
 can be advantageous to use the previous solution found when searching for
-solution to the new problem.
+solution to the new problem. This is currently supported by some MIP backends.
 
 The warm start annotations are attached to the solve item, just like other 
 search annotations.
@@ -547,9 +547,54 @@ search annotations.
     for each set variable in :mzn:`<vars>`.
 
 
-The warm start annotation is used by the solver as part of value selection. If the selected
+The warm start annotation can be used by the solver as part of value selection. For example, if the selected
 variable :mzn:`v[i]` has in its current domain the warm start value :mzn:`w[i]` then this is
 the value selected for the variable.  If not the solver uses the existing value selection rule
 applicable to that variable.
+The order of warm_starts, relative to other search annotations, can be
+important (especially for CP), so they all might need to be put into a ``seq_search`` as below:
 
-ADD AN EXAMPLE OF THEIR USE (jobshop???)
+.. code-block:: minizinc
+
+    array[1..3] of var 0..10: x;
+    array[1..3] of var 0.0..10.5: xf;
+    var bool: b;
+    array[1..3] of var set of 5..9: xs;
+    constraint b+sum(x)==1;
+    constraint b+sum(xf)==2.4;
+    constraint 5==sum( [ card(xs[i]) | i in index_set(xs) ] );
+    solve
+      :: warm_start_array( [                     %%% Can be on the upper level
+        warm_start( x, [<>,8,4] ),               %%% Use <> for missing values
+        warm_start( xf, array1d(-5..-3, [5.6,<>,4.7] ) ),
+        warm_start( xs, array1d( -3..-2, [ 6..8, 5..7 ] ) )
+      ] )
+      :: seq_search( [
+        warm_start_array( [                      %%% Now included in seq_search to keep order
+          warm_start( x, [<>,5,2] ),             %%% Repeated warm_starts allowed but not specified
+          warm_start( xf, array1d(-5..-3, [5.6,<>,4.7] ) ),
+          warm_start( xs, array1d( -3..-2, [ 6..8, 5..7 ] ) )
+        ] ),
+        warm_start( [b], [true] ),
+        int_search(x, first_fail, indomain_min, complete)
+      ] )
+      minimize x[1] + b + xf[2] + card( xs[1] intersect xs[3] );
+
+If you'd like to provide a most complete warmstart information, please provide values for all
+variables which are output when there is no output item or when compiled with ``--output-mode dzn``.
+Still, this excludes auxiliary variables introduced by ``let``'s. To capture them, you can customize
+the output item, or try the FlatZinc level, see below.
+
+Using Warm Starts At The FlatZinc Level
++++++++++++++++++++++++++++++++++++++++
+
+You can insert warm start information in the FlatZinc in the same way for all non-fixed variables.
+Just make sure the fzn interpreter outputs their values by annotating them as ``output_var(_array)``
+and capture the fzn output by, e.g., piping to ``solns2out --output-raw <file_raw.dzn>``.
+You can also insert high-level output into FZN warm start. When compiling the initial model, add
+empty warm start annotations for all important variables - they will be kept in FZN. In the next solve,
+fill the values. To fix the order of annotations, put them into a ``warm_start_array``.
+
+AUTOMATE, e.g., adding a solution in dzn format as a warm start during parsing?
+
+A MORE REALISTIC EXAMPLE OF THEIR USE (jobshop???)
