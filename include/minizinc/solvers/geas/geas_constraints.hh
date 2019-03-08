@@ -20,7 +20,7 @@ namespace MiniZinc {
 
 #define PosterImpl(X) void X(SolverInstanceBase& s, const Call* ce)
 
-    /* Integer Comparisons Constraints */
+    /* Integer Comparison Constraints */
     PosterImpl(p_int_eq);
     PosterImpl(p_int_ne);
     PosterImpl(p_int_le);
@@ -97,49 +97,19 @@ namespace MiniZinc {
     PosterImpl(p_bool_lin_ne_reif);
     PosterImpl(p_bool_lin_le_reif);
 
-    /* Floating point constraints */
-//    PosterImpl(p_float_lin_eq);
-//    PosterImpl(p_float_lin_eq_reif);
-//    PosterImpl(p_float_lin_le);
-//    PosterImpl(p_float_lin_le_reif);
-//    PosterImpl(p_float_times);
-//    PosterImpl(p_float_div);
-//    PosterImpl(p_float_plus) ;
-//    PosterImpl(p_float_sqrt);
-//    PosterImpl(p_float_abs);
-//    PosterImpl(p_float_eq);
-//    PosterImpl(p_float_eq_reif);
-//    PosterImpl(p_float_le);
-//    PosterImpl(p_float_le_reif);
-//    PosterImpl(p_float_max);
-//    PosterImpl(p_float_min);
-//    PosterImpl(p_float_lt);
-//    PosterImpl(p_float_lt_reif);
-//    PosterImpl(p_float_ne);
-//    PosterImpl(p_float_acos);
-//    PosterImpl(p_float_asin);
-//    PosterImpl(p_float_atan);
-//    PosterImpl(p_float_cos);
-//    PosterImpl(p_float_exp);
-//    PosterImpl(p_float_sin);
-//    PosterImpl(p_float_tan);
-//    PosterImpl(p_float_ln);
-//    PosterImpl(p_float_log10);
-//    PosterImpl(p_float_log2);
+    /* Coercion Constraints */
+    PosterImpl(p_bool2int);
 
     /* Element Constraints */
-//    PosterImpl(p_array_int_element);
-//    PosterImpl(p_array_bool_element);
+    PosterImpl(p_array_int_element);
+    PosterImpl(p_array_bool_element);
+    PosterImpl(p_array_var_int_element);
+    PosterImpl(p_array_var_bool_element);
 
-    /* Coercion Constraints */
-//    PosterImpl(p_int2float);
-//    PosterImpl(p_bool2int);
-
+    /* Global Constraints */
 //    PosterImpl(p_distinct);
 //    PosterImpl(p_distinctOffset);
 //    PosterImpl(p_all_equal);
-
-    /* Global Constraints */
 //    PosterImpl(p_array_int_lt);
 //    PosterImpl(p_array_int_lq);
 //    PosterImpl(p_array_bool_lt);
@@ -184,6 +154,44 @@ namespace MiniZinc {
 //    PosterImpl(p_member_int_reif);
 //    PosterImpl(p_member_bool);
 //    PosterImpl(p_member_bool_reif);
+
+    /**** NOT YET SUPPORTED: ****/
+    /* Floating Point Comparison Constraints */
+//    PosterImpl(p_float_eq);
+//    PosterImpl(p_float_ne);
+//    PosterImpl(p_float_le);
+//    PosterImpl(p_float_lt);
+//    PosterImpl(p_float_eq_reif);
+//    PosterImpl(p_float_le_reif)
+//    PosterImpl(p_float_lt_reif);
+
+    /* Floating Point Arithmetic Constraints */
+//    PosterImpl(p_float_times);
+//    PosterImpl(p_float_div);
+//    PosterImpl(p_float_plus) ;
+//    PosterImpl(p_float_sqrt);
+//    PosterImpl(p_float_abs);;
+//    PosterImpl(p_float_max);
+//    PosterImpl(p_float_min);
+//    PosterImpl(p_float_acos);
+//    PosterImpl(p_float_asin);
+//    PosterImpl(p_float_atan);
+//    PosterImpl(p_float_cos);
+//    PosterImpl(p_float_exp);
+//    PosterImpl(p_float_sin);
+//    PosterImpl(p_float_tan);
+//    PosterImpl(p_float_ln);
+//    PosterImpl(p_float_log10);
+//    PosterImpl(p_float_log2);
+
+    /* Floating Linear Constraints */
+//    PosterImpl(p_float_lin_eq);
+//    PosterImpl(p_float_lin_eq_reif);
+//    PosterImpl(p_float_lin_le);
+//    PosterImpl(p_float_lin_le_reif);
+
+    /* Coercion Constraints */
+//    PosterImpl(p_int2float);
 
   }
 }

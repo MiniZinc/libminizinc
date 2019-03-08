@@ -26,7 +26,7 @@ namespace MiniZinc{
   void GeasSolverInstance::registerConstraints() {
     GCLock lock;
 
-    /* Integer Comparisons */
+    /* Integer Comparison Constraints */
     registerConstraint("int_eq", GeasConstraints::p_int_eq);
     registerConstraint("int_ne", GeasConstraints::p_int_ne);
     registerConstraint("int_le", GeasConstraints::p_int_le);
@@ -103,19 +103,19 @@ namespace MiniZinc{
     registerConstraint("bool_lin_ne_reif", GeasConstraints::p_bool_lin_ne_reif);
     registerConstraint("bool_lin_le_reif", GeasConstraints::p_bool_lin_le_reif);
 
+    /* Coercion Constraints */
+    registerConstraint("bool2int", GeasConstraints::p_bool2int);
 
-//    registerConstraint("bool2int", GeasConstraints::p_bool2int);
-//    registerConstraint("int2float", GeasConstraints::p_int2float);
+    /* Element Constraints */
+    registerConstraint("array_int_element", GeasConstraints::p_array_int_element);
+    registerConstraint("array_bool_element", GeasConstraints::p_array_bool_element);
+    registerConstraint("array_var_int_element", GeasConstraints::p_array_var_int_element);
+    registerConstraint("array_var_bool_element", GeasConstraints::p_array_var_bool_element);
 
-//    registerConstraint("array_int_element", GeasConstraints::p_array_int_element);
-//    registerConstraint("array_var_int_element", GeasConstraints::p_array_int_element);
-//    registerConstraint("array_bool_element", GeasConstraints::p_array_bool_element);
-//    registerConstraint("array_var_bool_element", GeasConstraints::p_array_bool_element);
-
+    /* Global Constraints */
 //    registerConstraint("all_different_int", GeasConstraints::p_distinct);
 //    registerConstraint("all_different_offset", GeasConstraints::p_distinctOffset);
 //    registerConstraint("all_equal_int", GeasConstraints::p_all_equal);
-//
 //    registerConstraint("array_int_lt", GeasConstraints::p_array_int_lt);
 //    registerConstraint("array_int_lq", GeasConstraints::p_array_int_lq);
 //    registerConstraint("array_bool_lt", GeasConstraints::p_array_bool_lt);
@@ -146,12 +146,9 @@ namespace MiniZinc{
 //    registerConstraint("cumulatives", GeasConstraints::p_cumulatives);
 //    registerConstraint("among_seq_int", GeasConstraints::p_among_seq_int);
 //    registerConstraint("among_seq_bool", GeasConstraints::p_among_seq_bool);
-//
-//
 //    registerConstraint("schedule_unary", GeasConstraints::p_schedule_unary);
 //    registerConstraint("schedule_unary_optional", GeasConstraints::p_schedule_unary_optional);
 //    registerConstraint("schedule_cumulative_optional", GeasConstraints::p_cumulative_opt);
-//
 //    registerConstraint("circuit", GeasConstraints::p_circuit);
 //    registerConstraint("circuit_cost_array", GeasConstraints::p_circuit_cost_array);
 //    registerConstraint("circuit_cost", GeasConstraints::p_circuit_cost);
@@ -163,25 +160,25 @@ namespace MiniZinc{
 //    registerConstraint("member_int_reif", GeasConstraints::p_member_int_reif);
 //    registerConstraint("member_bool", GeasConstraints::p_member_bool);
 //    registerConstraint("member_bool_reif", GeasConstraints::p_member_bool_reif);
-//
+
+    /**** NOT YET SUPPORTED: ****/
+    /* Floating Point Comparison Constraints */
+//    registerConstraint("float_eq", GeasConstraints::p_float_eq);
+//    registerConstraint("float_le", GeasConstraints::p_float_le);
+//    registerConstraint("float_lt", GeasConstraints::p_float_lt);
+//    registerConstraint("float_ne", GeasConstraints::p_float_ne);
+//    registerConstraint("float_eq_reif", GeasConstraints::p_float_eq_reif);
+//    registerConstraint("float_le_reif", GeasConstraints::p_float_le_reif);
+//    registerConstraint("float_lt_reif", GeasConstraints::p_float_lt_reif);
+
+    /* Floating Point Arithmetic Constraints */
 //    registerConstraint("float_abs", GeasConstraints::p_float_abs);
 //    registerConstraint("float_sqrt", GeasConstraints::p_float_sqrt);
-//    registerConstraint("float_eq", GeasConstraints::p_float_eq);
-//    registerConstraint("float_eq_reif", GeasConstraints::p_float_eq_reif);
-//    registerConstraint("float_le", GeasConstraints::p_float_le);
-//    registerConstraint("float_le_reif", GeasConstraints::p_float_le_reif);
-//    registerConstraint("float_lt", GeasConstraints::p_float_lt);
-//    registerConstraint("float_lt_reif", GeasConstraints::p_float_lt_reif);
-//    registerConstraint("float_ne", GeasConstraints::p_float_ne);
 //    registerConstraint("float_times", GeasConstraints::p_float_times);
 //    registerConstraint("float_div", GeasConstraints::p_float_div);
 //    registerConstraint("float_plus", GeasConstraints::p_float_plus);
 //    registerConstraint("float_max", GeasConstraints::p_float_max);
 //    registerConstraint("float_min", GeasConstraints::p_float_min);
-//    registerConstraint("float_lin_eq", GeasConstraints::p_float_lin_eq);
-//    registerConstraint("float_lin_eq_reif", GeasConstraints::p_float_lin_eq_reif);
-//    registerConstraint("float_lin_le", GeasConstraints::p_float_lin_le);
-//    registerConstraint("float_lin_le_reif", GeasConstraints::p_float_lin_le_reif);
 //    registerConstraint("float_acos", GeasConstraints::p_float_acos);
 //    registerConstraint("float_asin", GeasConstraints::p_float_asin);
 //    registerConstraint("float_atan", GeasConstraints::p_float_atan);
@@ -192,6 +189,15 @@ namespace MiniZinc{
 //    registerConstraint("float_log2", GeasConstraints::p_float_log2);
 //    registerConstraint("float_sin", GeasConstraints::p_float_sin);
 //    registerConstraint("float_tan", GeasConstraints::p_float_tan);
+
+    /* Floating Linear Constraints */
+//    registerConstraint("float_lin_eq", GeasConstraints::p_float_lin_eq);
+//    registerConstraint("float_lin_eq_reif", GeasConstraints::p_float_lin_eq_reif);
+//    registerConstraint("float_lin_le", GeasConstraints::p_float_lin_le);
+//    registerConstraint("float_lin_le_reif", GeasConstraints::p_float_lin_le_reif);
+
+    /* Coercion Constraints */
+//    registerConstraint("int2float", GeasConstraints::p_int2float);
   }
 
   void GeasSolverInstance::processFlatZinc() {

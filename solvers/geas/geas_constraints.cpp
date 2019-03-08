@@ -908,5 +908,159 @@ namespace MiniZinc {
       geas::bool_linear_ge(gi.solver_data(), ~gi.arg2boolvar(r), gi.zero, cons, vars, -static_cast<int>(c.toInt())-1);
     }
 
+    void p_bool2int(SolverInstanceBase& s, const Call* call) {
+      auto& gi = static_cast<GeasSolverInstance&>(s);
+      Expression* b = call->arg(0);
+      Expression* i = call->arg(1);
+      geas::add_clause(gi.solver_data(), gi.arg2boolvar(b), gi.arg2intvar(i) <= 0);
+      geas::add_clause(gi.solver_data(), ~gi.arg2boolvar(b), gi.arg2intvar(i) >= 1);
+    }
+
+    void p_array_int_element(SolverInstanceBase& s, const Call* call) {
+      auto& gi = static_cast<GeasSolverInstance&>(s);
+      Expression* i = call->arg(0);
+      ArrayLit* array = eval_array_lit(gi.env().envi(), call->arg(1));
+      assert(array->min(0) == 1 && array->max(0) == array->size()+1);
+      Expression* res = call->arg(1);
+      if (!i->type().isvar()) {
+        int ival = static_cast<int>(eval_int(gi.env().envi(), i).toInt());
+        int elem = static_cast<int>(eval_int(gi.env().envi(), (*array)[ival-1]).toInt());
+        gi.solver().post(gi.arg2intvar(res)==elem);
+      } else if (!res->type().isvar()) {
+        IntVal resval = eval_int(gi.env().envi(), res);
+        geas::intvar ivar = gi.arg2intvar(i);
+        for (int j = 0; j < array->size(); ++j) {
+          if (eval_int(gi.env().envi(), (*array)[j]) != resval) {
+            gi.solver().post(ivar != j+1);
+          }
+        }
+      } else {
+        vec<int> vals;
+        for (int j = 0; j < array->size(); ++j) {
+          int val = static_cast<int>(eval_int(gi.env().envi(), (*array)[j]).toInt());
+          vals.push(val);
+        }
+        geas::int_element(gi.solver_data(), gi.arg2intvar(res), gi.arg2intvar(i), vals);
+      }
+    }
+
+    void p_array_bool_element(SolverInstanceBase& s, const Call* call) {
+      auto& gi = static_cast<GeasSolverInstance&>(s);
+      Expression* i = call->arg(0);
+      ArrayLit* array = eval_array_lit(gi.env().envi(), call->arg(1));
+      assert(array->min(0) == 1 && array->max(0) == array->size()+1);
+      Expression* res = call->arg(1);
+      if (!i->type().isvar()) {
+        int ival = static_cast<int>(eval_int(gi.env().envi(), i).toInt());
+        bool elem = eval_bool(gi.env().envi(), (*array)[ival-1]);
+        gi.solver().post(elem ? gi.arg2boolvar(res) : ~gi.arg2boolvar(res));
+      } else if (!res->type().isvar()) {
+        bool resval = eval_bool(gi.env().envi(), res);
+        geas::intvar ivar = gi.arg2intvar(i);
+        for (int j = 0; j < array->size(); ++j) {
+          if (eval_bool(gi.env().envi(), (*array)[j]) != resval) {
+            gi.solver().post(ivar != j+1);
+          }
+        }
+      } else {
+        geas::intvar ivar = gi.arg2intvar(i);
+        geas::patom_t resvar = gi.arg2boolvar(res);
+        for (int j = 0; j < array->size(); ++j) {
+          bool b = eval_bool(gi.env().envi(), (*array)[j]);
+          geas::add_clause(gi.solver_data(), ivar != j+1, b ? resvar : ~resvar);
+        }
+      }
+    }
+
+    void p_array_var_int_element(SolverInstanceBase& s, const Call* call) {
+      auto& gi = static_cast<GeasSolverInstance&>(s);
+      Expression* i = call->arg(0);
+      ArrayLit* array = eval_array_lit(gi.env().envi(), call->arg(1));
+      assert(array->min(0) == 1 && array->max(0) == array->size()+1);
+      Expression* res = call->arg(1);
+      if (!array->type().isvar()) {
+        return p_array_int_element(s, call);
+      }
+      if (!i->type().isvar() && !res->type().isvar()) {
+        int ival = static_cast<int>(eval_int(gi.env().envi(), i).toInt());
+        int resval = static_cast<int>(eval_int(gi.env().envi(), res).toInt());
+        gi.solver().post(gi.arg2intvar((*array)[ival-1]) == resval);
+      } else if (!i->type().isvar()) {
+        int ival = static_cast<int>(eval_int(gi.env().envi(), i).toInt());
+        Expression* elem = (*array)[ival-1];
+        if (!elem->type().isvar()) {
+          return p_array_int_element(s, call);
+        } else {
+          geas::int_eq(gi.solver_data(), gi.arg2intvar(elem), gi.arg2intvar(res));
+        }
+      } else if (!res->type().isvar()) {
+        IntVal resval = eval_int(gi.env().envi(), res);
+        geas::intvar ivar = gi.arg2intvar(i);
+        for (int j = 0; j < array->size(); ++j) {
+          Expression* elem = (*array)[j];
+          if (elem->type().isvar()) {
+            geas::add_clause(gi.solver_data(), ivar != j+1, gi.arg2intvar(elem) == resval.toInt());
+          } else {
+            if (eval_int(gi.env().envi(), elem) != resval) {
+              gi.solver().post(ivar != j+1);
+            }
+          }
+        }
+      } else {
+        vec<geas::intvar> vals;
+        for (int j = 0; j < array->size(); ++j) {
+          geas::intvar val = gi.arg2intvar((*array)[j]);
+          vals.push(val);
+        }
+        geas::var_int_element(gi.solver_data(), gi.arg2intvar(res), gi.arg2intvar(i), vals);
+      }
+    }
+
+    void p_array_var_bool_element(SolverInstanceBase& s, const Call* call) {
+      auto& gi = static_cast<GeasSolverInstance&>(s);
+      Expression* i = call->arg(0);
+      ArrayLit* array = eval_array_lit(gi.env().envi(), call->arg(1));
+      assert(array->min(0) == 1 && array->max(0) == array->size()+1);
+      Expression* res = call->arg(1);
+      if (!array->type().isvar()) {
+        return p_array_bool_element(s, call);
+      }
+      if (!i->type().isvar() && !res->type().isvar()) {
+        int ival = static_cast<int>(eval_int(gi.env().envi(), i).toInt());
+        bool resval = eval_bool(gi.env().envi(), res);
+        gi.solver().post(resval ? gi.arg2boolvar((*array)[ival-1]) : ~gi.arg2boolvar((*array)[ival-1]));
+      } else if (!i->type().isvar()) {
+        int ival = static_cast<int>(eval_int(gi.env().envi(), i).toInt());
+        Expression* elem = (*array)[ival-1];
+        if (!elem->type().isvar()) {
+          return p_array_bool_element(s, call);
+        } else {
+          geas::add_clause(gi.solver_data(), gi.arg2boolvar(res), ~gi.arg2boolvar(elem));
+          geas::add_clause(gi.solver_data(), ~gi.arg2boolvar(res), gi.arg2boolvar(elem));
+        }
+      } else if (!res->type().isvar()) {
+        bool resval = eval_bool(gi.env().envi(), res);
+        geas::intvar ivar = gi.arg2intvar(i);
+        for (int j = 0; j < array->size(); ++j) {
+          Expression* elem = (*array)[j];
+          if (elem->type().isvar()) {
+            geas::add_clause(gi.solver_data(), ivar != j+1, resval ? gi.arg2boolvar(elem) : ~gi.arg2boolvar(elem));
+          } else {
+            if (eval_bool(gi.env().envi(), elem) != resval) {
+              gi.solver().post(ivar != j+1);
+            }
+          }
+        }
+      } else {
+        geas::intvar ivar = gi.arg2intvar(i);
+        geas::patom_t resvar = gi.arg2boolvar(res);
+        for (int j = 0; j < array->size(); ++j) {
+          geas::patom_t bvar = gi.arg2boolvar((*array)[j]);
+          geas::add_clause(gi.solver_data(), ivar != j+1, ~bvar, resvar);
+          geas::add_clause(gi.solver_data(), ivar != j+1, bvar, ~resvar);
+        }
+      }
+    }
+
   }
 }
