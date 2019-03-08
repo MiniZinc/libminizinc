@@ -73,8 +73,17 @@ namespace MiniZinc {
     Expression* getSolutionValue(Id* id) override;
 
 
-    geas::patom_t arg2boolvar(Expression* e);
-    geas::intvar arg2intvar(Expression* e);
+    // MiniZinc to Geas conversions
+    bool asBool(Expression* e) { return eval_bool(env().envi(), e); }
+    vec<bool> asBool(ArrayLit* al);
+    geas::patom_t asBoolVar(Expression* e);
+    vec<geas::patom_t> asBoolVar(ArrayLit* al);
+    vec<int> asInt(ArrayLit* al);
+    int asInt(Expression* e) { return static_cast<int>(eval_int(env().envi(), e).toInt()); }
+    geas::intvar asIntVar(Expression* e);
+    vec<geas::intvar> asIntVar(ArrayLit* al);
+
+    // TODO: create only when necessary or use Geas internal
     geas::intvar zero;
   protected:
     geas::solver _solver;
