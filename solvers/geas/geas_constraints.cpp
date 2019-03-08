@@ -9,6 +9,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+#pragma clang diagnostic push
+#pragma ide diagnostic ignored "cppcoreguidelines-pro-type-static-cast-downcast"
+
 #include <minizinc/solvers/geas/geas_constraints.hh>
 #include <minizinc/solvers/geas_solverinstance.hh>
 
@@ -18,595 +21,392 @@
 namespace MiniZinc {
   namespace GeasConstraints {
 
-#define ARG(X) call->arg(X)
+#define SI static_cast<GeasSolverInstance&>(s)
+#define SD SI.solver_data()
+#define SOL SI.solver()
+#define EXPR(X) call->arg(X)
+#define BOOL(X) SI.asBool(EXPR(X))
+#define BOOLARRAY(X) SI.asBool(ARRAY(X))
+#define BOOLVAR(X) SI.asBoolVar(EXPR(X))
+#define BOOLVARARRAY(X) SI.asBoolVar(ARRAY(X))
+#define INT(X) SI.asInt(EXPR(X))
+#define INTARRAY(X) SI.asInt(ARRAY(X))
+#define INTVAR(X) SI.asIntVar(EXPR(X))
+#define INTVARARRAY(X) SI.asIntVar(ARRAY(X))
 #define PAR(X) call->arg(X)->type().ispar()
 #define ARRAY(X) eval_array_lit(s.env().envi(), call->arg(X))
 
     void p_int_eq(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* lhs = call->arg(0);
-      Expression* rhs = call->arg(1);
-      geas::int_eq(gi.solver_data(), gi.asIntVar(lhs), gi.asIntVar(rhs));
+      geas::int_eq(SD, INTVAR(0), INTVAR(1));
     }
 
     void p_int_ne(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* lhs = call->arg(0);
-      Expression* rhs = call->arg(1);
-      geas::int_ne(gi.solver_data(), gi.asIntVar(lhs), gi.asIntVar(rhs));
+      geas::int_ne(SD, INTVAR(0), INTVAR(1));
     }
 
     void p_int_le(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* lhs = call->arg(0);
-      Expression* rhs = call->arg(1);
-      geas::int_le(gi.solver_data(), gi.asIntVar(lhs), gi.asIntVar(rhs), 0);
+      geas::int_le(SD, INTVAR(0), INTVAR(1), 0);
     }
 
     void p_int_lt(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* lhs = call->arg(0);
-      Expression* rhs = call->arg(1);
-      geas::int_le(gi.solver_data(), gi.asIntVar(lhs), gi.asIntVar(rhs), -1);
+      geas::int_le(SD, INTVAR(0), INTVAR(1), -1);
     }
 
     void p_int_eq_imp(SolverInstanceBase& s, const Call* call) {
-      if (!call->arg(2)->type().isvar()) {
-        if (call->arg(2)->cast<BoolLit>()->v()) {
+      if (PAR(2)) {
+        if (BOOL(2)) {
           p_int_eq(s, call);
         }
       } else {
-        auto& gi = static_cast<GeasSolverInstance&>(s);
-        Expression* lhs = call->arg(0);
-        Expression* rhs = call->arg(1);
-        Expression* r = call->arg(2);
-        geas::int_eq(gi.solver_data(), gi.asIntVar(lhs), gi.asIntVar(rhs), gi.asBoolVar(r));
+        geas::int_eq(SD, INTVAR(0), INTVAR(1), BOOLVAR(2));
       }
     }
 
     void p_int_ne_imp(SolverInstanceBase& s, const Call* call) {
-      if (!call->arg(2)->type().isvar()) {
-        if (call->arg(2)->cast<BoolLit>()->v()) {
+      if (PAR(2)) {
+        if (BOOL(2)) {
           p_int_ne(s, call);
         }
       } else {
-        auto& gi = static_cast<GeasSolverInstance&>(s);
-        Expression* lhs = call->arg(0);
-        Expression* rhs = call->arg(1);
-        Expression* r = call->arg(2);
-        geas::int_ne(gi.solver_data(), gi.asIntVar(lhs), gi.asIntVar(rhs), gi.asBoolVar(r));
+        geas::int_ne(SD, INTVAR(0), INTVAR(1), BOOLVAR(2));
       }
     }
 
     void p_int_le_imp(SolverInstanceBase& s, const Call* call) {
-      if (!call->arg(2)->type().isvar()) {
-        if (call->arg(2)->cast<BoolLit>()->v()) {
+      if (PAR(2)) {
+        if (BOOL(2)) {
           p_int_le(s, call);
         }
       } else {
-        auto& gi = static_cast<GeasSolverInstance&>(s);
-        Expression* lhs = call->arg(0);
-        Expression* rhs = call->arg(1);
-        Expression* r = call->arg(2);
-        geas::int_le(gi.solver_data(), gi.asIntVar(lhs), gi.asIntVar(rhs), 0, gi.asBoolVar(r));
+        geas::int_le(SD, INTVAR(0), INTVAR(1), 0, BOOLVAR(2));
       }
     }
 
     void p_int_lt_imp(SolverInstanceBase& s, const Call* call) {
-      if (!call->arg(2)->type().isvar()) {
-        if (call->arg(2)->cast<BoolLit>()->v()) {
+      if (PAR(2)) {
+        if (BOOL(2)) {
           p_int_lt(s, call);
         }
       } else {
-        auto& gi = static_cast<GeasSolverInstance&>(s);
-        Expression* lhs = call->arg(0);
-        Expression* rhs = call->arg(1);
-        Expression* r = call->arg(2);
-        geas::int_le(gi.solver_data(), gi.asIntVar(lhs), gi.asIntVar(rhs), -1, gi.asBoolVar(r));
+        geas::int_le(SD, INTVAR(0), INTVAR(1), -1, BOOLVAR(2));
       }
     }
 
     void p_int_eq_reif(SolverInstanceBase& s, const Call* call) {
-      if (!call->arg(2)->type().isvar()) {
-        if (call->arg(2)->cast<BoolLit>()->v()) {
+      if (PAR(2)) {
+        if (BOOL(2)) {
           p_int_eq(s, call);
         } else {
           p_int_ne(s, call);
         }
       } else {
-        auto& gi = static_cast<GeasSolverInstance&>(s);
-        Expression* lhs = call->arg(0);
-        Expression* rhs = call->arg(1);
-        Expression* r = call->arg(2);
-        geas::int_eq(gi.solver_data(), gi.asIntVar(lhs), gi.asIntVar(rhs), gi.asBoolVar(r));
-        geas::int_ne(gi.solver_data(), gi.asIntVar(lhs), gi.asIntVar(rhs), ~gi.asBoolVar(r));
+        geas::int_eq(SD, INTVAR(0), INTVAR(1), BOOLVAR(2));
+        geas::int_ne(SD, INTVAR(0), INTVAR(1), ~BOOLVAR(2));
       }
     }
 
     void p_int_ne_reif(SolverInstanceBase& s, const Call* call) {
-      if (!call->arg(2)->type().isvar()) {
-        if (call->arg(2)->cast<BoolLit>()->v()) {
+      if (PAR(2)) {
+        if (BOOL(2)) {
           p_int_ne(s, call);
         } else {
           p_int_eq(s, call);
         }
       } else {
-        auto& gi = static_cast<GeasSolverInstance&>(s);
-        Expression* lhs = call->arg(0);
-        Expression* rhs = call->arg(1);
-        Expression* r = call->arg(2);
-        geas::int_ne(gi.solver_data(), gi.asIntVar(lhs), gi.asIntVar(rhs), gi.asBoolVar(r));
-        geas::int_eq(gi.solver_data(), gi.asIntVar(lhs), gi.asIntVar(rhs), ~gi.asBoolVar(r));
+        geas::int_ne(SD, INTVAR(0), INTVAR(1), BOOLVAR(2));
+        geas::int_eq(SD, INTVAR(0), INTVAR(1), ~BOOLVAR(2));
       }
     }
 
     void p_int_le_reif(SolverInstanceBase& s, const Call* call) {
-      if (!call->arg(2)->type().isvar()) {
-        if (call->arg(2)->cast<BoolLit>()->v()) {
+      if (PAR(2)) {
+        if (BOOL(2)) {
           p_int_le(s, call);
         } else {
           auto nc = new Call(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
           p_int_lt(s, nc);
         }
       } else {
-        auto& gi = static_cast<GeasSolverInstance&>(s);
-        Expression* lhs = call->arg(0);
-        Expression* rhs = call->arg(1);
-        Expression* r = call->arg(2);
-        geas::int_le(gi.solver_data(), gi.asIntVar(lhs), gi.asIntVar(rhs), 0, gi.asBoolVar(r));
-        geas::int_le(gi.solver_data(), gi.asIntVar(rhs), gi.asIntVar(lhs), -1, ~gi.asBoolVar(r));
+        geas::int_le(SD, INTVAR(0), INTVAR(1), 0, BOOLVAR(2));
+        geas::int_le(SD, INTVAR(1), INTVAR(0), -1, ~BOOLVAR(2));
       }
     }
 
     void p_int_lt_reif(SolverInstanceBase& s, const Call* call) {
-      if (!call->arg(2)->type().isvar()) {
-        if (call->arg(2)->cast<BoolLit>()->v()) {
+      if (PAR(2)) {
+        if (BOOL(2)) {
           p_int_lt(s, call);
         } else {
           auto nc = new Call(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
           p_int_le(s, nc);
         }
       } else {
-        auto& gi = static_cast<GeasSolverInstance&>(s);
-        Expression* lhs = call->arg(0);
-        Expression* rhs = call->arg(1);
-        Expression* r = call->arg(2);
-        geas::int_le(gi.solver_data(), gi.asIntVar(lhs), gi.asIntVar(rhs), -1, gi.asBoolVar(r));
-        geas::int_le(gi.solver_data(), gi.asIntVar(rhs), gi.asIntVar(lhs), 0, ~gi.asBoolVar(r));
+        geas::int_le(SD, INTVAR(0), INTVAR(1), -1, BOOLVAR(2));
+        geas::int_le(SD, INTVAR(1), INTVAR(0), 0, ~BOOLVAR(2));
       }
     }
 
     void p_int_abs(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* org = call->arg(0);
-      Expression* res = call->arg(1);
-      geas::int_abs(gi.solver_data(), gi.asIntVar(res), gi.asIntVar(org));
+      geas::int_abs(SD, INTVAR(1), INTVAR(0));
     }
 
     void p_int_times(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* lhs = call->arg(0);
-      Expression* rhs = call->arg(1);
-      Expression* res = call->arg(2);
-      geas::int_mul(gi.solver_data(), gi.asIntVar(lhs), gi.asIntVar(rhs), gi.asIntVar(res));
+      geas::int_mul(SD, INTVAR(0), INTVAR(1), INTVAR(2));
     }
 
     void p_int_div(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* lhs = call->arg(0);
-      Expression* rhs = call->arg(1);
-      Expression* res = call->arg(2);
-      geas::int_div(gi.solver_data(), gi.asIntVar(res), gi.asIntVar(lhs), gi.asIntVar(rhs));
+      geas::int_div(SD, INTVAR(2), INTVAR(0), INTVAR(1));
     }
 
     void p_int_max(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* lhs = call->arg(0);
-      Expression* rhs = call->arg(1);
-      vec<geas::intvar> vars = {gi.asIntVar(lhs), gi.asIntVar(rhs)};
-      Expression* res = call->arg(2);
-      geas::int_max(gi.solver_data(), gi.asIntVar(res), vars);
+      vec<geas::intvar> vars = {INTVAR(0), INTVAR(1)};
+      geas::int_max(SD, INTVAR(2), vars);
     }
 
     void p_int_min(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* lhs = call->arg(0);
-      Expression* rhs = call->arg(1);
-      vec<geas::intvar> vars = {-gi.asIntVar(lhs), -gi.asIntVar(rhs)};
-      Expression* res = call->arg(2);
-      geas::int_max(gi.solver_data(), -gi.asIntVar(res), vars);
+      vec<geas::intvar> vars = {-INTVAR(0), -INTVAR(1)};
+      geas::int_max(SD, -INTVAR(2), vars);
     }
 
     void p_int_lin_eq(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* as = eval_array_lit(gi.env().envi(), call->arg(0));
-      ArrayLit* bs = eval_array_lit(gi.env().envi(), call->arg(1));
-      IntVal c = eval_int(gi.env().envi(), call->arg(2));
-      vec<int> pos(as->size());
-      vec<int> neg(as->size());
-      for (int i = 0; i < as->size(); ++i) {
-        IntVal iv = eval_int(gi.env().envi(), (*as)[i]);
-        pos[i] = static_cast<int>(iv.toInt());
-        neg[i] = -static_cast<int>(iv.toInt());
+      vec<int> pos = INTARRAY(0);
+      vec<int> neg(pos.size());
+      for (int i = 0; i < neg.size(); ++i) {
+        neg[i] = -pos[i];
       }
-      vec<geas::intvar> vars(bs->size());
-      for (int i = 0; i < bs->size(); ++i) {
-        vars[i] = gi.asIntVar((*bs)[i]);
-      }
+      vec<geas::intvar> vars = INTVARARRAY(1);
       // TODO: Rewrite using MiniZinc Library??
-      geas::linear_le(gi.solver_data(), pos, vars, static_cast<int>(c.toInt()));
-      geas::linear_le(gi.solver_data(), neg, vars, -static_cast<int>(c.toInt()));
+      geas::linear_le(SD, pos, vars, INT(2));
+      geas::linear_le(SD, neg, vars, -INT(2));
     }
 
     void p_int_lin_ne(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* as = eval_array_lit(gi.env().envi(), call->arg(0));
-      ArrayLit* bs = eval_array_lit(gi.env().envi(), call->arg(1));
-      IntVal c = eval_int(gi.env().envi(), call->arg(2));
-      vec<int> cons(as->size());
-      for (int i = 0; i < as->size(); ++i) {
-        IntVal iv = eval_int(gi.env().envi(), (*as)[i]);
-        cons[i] = static_cast<int>(iv.toInt());
-      }
-      vec<geas::intvar> vars(bs->size());
-      for (int i = 0; i < bs->size(); ++i) {
-        vars[i] = gi.asIntVar((*bs)[i]);
-      }
-      geas::linear_ne(gi.solver_data(), cons, vars, static_cast<int>(c.toInt()));
+      vec<int> cons = INTARRAY(0);
+      vec<geas::intvar> vars = INTVARARRAY(1);
+      geas::linear_ne(SD, cons, vars, INT(2));
     }
 
     void p_int_lin_le(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* as = eval_array_lit(gi.env().envi(), call->arg(0));
-      ArrayLit* bs = eval_array_lit(gi.env().envi(), call->arg(1));
-      IntVal c = eval_int(gi.env().envi(), call->arg(2));
-      vec<int> cons(as->size());
-      for (int i = 0; i < as->size(); ++i) {
-        IntVal iv = eval_int(gi.env().envi(), (*as)[i]);
-        cons[i] = static_cast<int>(iv.toInt());
-      }
-
-      vec<geas::intvar> vars(bs->size());
-      for (int i = 0; i < bs->size(); ++i) {
-        vars[i] = gi.asIntVar((*bs)[i]);
-      }
-      geas::linear_le(gi.solver_data(), cons, vars, static_cast<int>(c.toInt()));
+      vec<int> cons = INTARRAY(0);
+      vec<geas::intvar> vars = INTVARARRAY(1);
+      geas::linear_le(SD, cons, vars, INT(2));
     }
 
     void p_int_lin_eq_imp(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* as = eval_array_lit(gi.env().envi(), call->arg(0));
-      ArrayLit* bs = eval_array_lit(gi.env().envi(), call->arg(1));
-      IntVal c = eval_int(gi.env().envi(), call->arg(2));
-      Expression* r = call->arg(3);
-      vec<int> pos(as->size());
-      vec<int> neg(as->size());
-      for (int i = 0; i < as->size(); ++i) {
-        IntVal iv = eval_int(gi.env().envi(), (*as)[i]);
-        pos[i] = static_cast<int>(iv.toInt());
-        neg[i] = -static_cast<int>(iv.toInt());
+      vec<int> pos = INTARRAY(0);
+      vec<int> neg(pos.size());
+      for (int i = 0; i < neg.size(); ++i) {
+        neg[i] = -pos[i];
       }
-      vec<geas::intvar> vars(bs->size());
-      for (int i = 0; i < bs->size(); ++i) {
-        vars[i] = gi.asIntVar((*bs)[i]);
-      }
+      vec<geas::intvar> vars = INTVARARRAY(1);
       // TODO: Rewrite using MiniZinc Library??
-      geas::linear_le(gi.solver_data(), pos, vars, static_cast<int>(c.toInt()), gi.asBoolVar(r));
-      geas::linear_le(gi.solver_data(), neg, vars, -static_cast<int>(c.toInt()), gi.asBoolVar(r));
+      geas::linear_le(SD, pos, vars, INT(2), BOOLVAR(3));
+      geas::linear_le(SD, neg, vars, -INT(2), BOOLVAR(3));
     }
 
     void p_int_lin_ne_imp(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* as = eval_array_lit(gi.env().envi(), call->arg(0));
-      ArrayLit* bs = eval_array_lit(gi.env().envi(), call->arg(1));
-      IntVal c = eval_int(gi.env().envi(), call->arg(2));
-      Expression* r = call->arg(3);
-      vec<int> cons(as->size());
-      for (int i = 0; i < as->size(); ++i) {
-        IntVal iv = eval_int(gi.env().envi(), (*as)[i]);
-        cons[i] = static_cast<int>(iv.toInt());
-      }
-      vec<geas::intvar> vars(bs->size());
-      for (int i = 0; i < bs->size(); ++i) {
-        vars[i] = gi.asIntVar((*bs)[i]);
-      }
-      geas::linear_ne(gi.solver_data(), cons, vars, static_cast<int>(c.toInt()), gi.asBoolVar(r));
+      vec<int> cons = INTARRAY(0);
+      vec<geas::intvar> vars = INTVARARRAY(1);
+      geas::linear_ne(SD, cons, vars, INT(2), BOOLVAR(3));
     }
 
     void p_int_lin_le_imp(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* as = eval_array_lit(gi.env().envi(), call->arg(0));
-      ArrayLit* bs = eval_array_lit(gi.env().envi(), call->arg(1));
-      IntVal c = eval_int(gi.env().envi(), call->arg(2));
-      Expression* r = call->arg(3);
-      vec<int> cons(as->size());
-      for (int i = 0; i < as->size(); ++i) {
-        IntVal iv = eval_int(gi.env().envi(), (*as)[i]);
-        cons[i] = static_cast<int>(iv.toInt());
-      }
-      vec<geas::intvar> vars(bs->size());
-      for (int i = 0; i < bs->size(); ++i) {
-        vars[i] = gi.asIntVar((*bs)[i]);
-      }
-      geas::linear_le(gi.solver_data(), cons, vars, static_cast<int>(c.toInt()), gi.asBoolVar(r));
+      vec<int> cons = INTARRAY(0);
+      vec<geas::intvar> vars = INTVARARRAY(1);
+      geas::linear_le(SD, cons, vars, INT(2), BOOLVAR(3));
     }
 
     void p_int_lin_eq_reif(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* as = eval_array_lit(gi.env().envi(), call->arg(0));
-      ArrayLit* bs = eval_array_lit(gi.env().envi(), call->arg(1));
-      IntVal c = eval_int(gi.env().envi(), call->arg(2));
-      Expression* r = call->arg(3);
-      vec<int> pos(as->size());
-      vec<int> neg(as->size());
-      for (int i = 0; i < as->size(); ++i) {
-        IntVal iv = eval_int(gi.env().envi(), (*as)[i]);
-        pos[i] = static_cast<int>(iv.toInt());
-        neg[i] = -static_cast<int>(iv.toInt());
+      vec<int> pos = INTARRAY(0);
+      vec<int> neg(pos.size());
+      for (int i = 0; i < neg.size(); ++i) {
+        neg[i] = -pos[i];
       }
-      vec<geas::intvar> vars(bs->size());
-      for (int i = 0; i < bs->size(); ++i) {
-        vars[i] = gi.asIntVar((*bs)[i]);
-      }
+      vec<geas::intvar> vars = INTVARARRAY(1);
       // TODO: Rewrite using MiniZinc Library??
-      geas::linear_le(gi.solver_data(), pos, vars, static_cast<int>(c.toInt()), gi.asBoolVar(r));
-      geas::linear_le(gi.solver_data(), neg, vars, -static_cast<int>(c.toInt()), gi.asBoolVar(r));
-      geas::linear_ne(gi.solver_data(), pos, vars, static_cast<int>(c.toInt()), ~gi.asBoolVar(r));
+      geas::linear_le(SD, pos, vars, INT(2), BOOLVAR(3));
+      geas::linear_le(SD, neg, vars, -INT(2), BOOLVAR(3));
+      geas::linear_ne(SD, pos, vars, INT(2), ~BOOLVAR(3));
     }
 
     void p_int_lin_ne_reif(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* as = eval_array_lit(gi.env().envi(), call->arg(0));
-      ArrayLit* bs = eval_array_lit(gi.env().envi(), call->arg(1));
-      IntVal c = eval_int(gi.env().envi(), call->arg(2));
-      Expression* r = call->arg(3);
-      vec<int> pos(as->size());
-      vec<int> neg(as->size());
-      for (int i = 0; i < as->size(); ++i) {
-        IntVal iv = eval_int(gi.env().envi(), (*as)[i]);
-        pos[i] = static_cast<int>(iv.toInt());
-        neg[i] = -static_cast<int>(iv.toInt());
+      vec<int> pos = INTARRAY(0);
+      vec<int> neg(pos.size());
+      for (int i = 0; i < neg.size(); ++i) {
+        neg[i] = -pos[i];
       }
-      vec<geas::intvar> vars(bs->size());
-      for (int i = 0; i < bs->size(); ++i) {
-        vars[i] = gi.asIntVar((*bs)[i]);
-      }
-      geas::linear_ne(gi.solver_data(), pos, vars, static_cast<int>(c.toInt()), gi.asBoolVar(r));
-      geas::linear_le(gi.solver_data(), pos, vars, static_cast<int>(c.toInt()), ~gi.asBoolVar(r));
-      geas::linear_le(gi.solver_data(), neg, vars, -static_cast<int>(c.toInt()), ~gi.asBoolVar(r));
+      vec<geas::intvar> vars = INTVARARRAY(1);
+      // TODO: Rewrite using MiniZinc Library??
+      geas::linear_ne(SD, pos, vars, INT(2), BOOLVAR(3));
+      geas::linear_le(SD, pos, vars, INT(2), ~BOOLVAR(3));
+      geas::linear_le(SD, neg, vars, -INT(2), ~BOOLVAR(3));
     }
 
     void p_int_lin_le_reif(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* as = eval_array_lit(gi.env().envi(), call->arg(0));
-      ArrayLit* bs = eval_array_lit(gi.env().envi(), call->arg(1));
-      IntVal c = eval_int(gi.env().envi(), call->arg(2));
-      Expression* r = call->arg(3);
-      vec<int> pos(as->size());
-      vec<int> neg(as->size());
-      for (int i = 0; i < as->size(); ++i) {
-        IntVal iv = eval_int(gi.env().envi(), (*as)[i]);
-        pos[i] = static_cast<int>(iv.toInt());
-        neg[i] = -static_cast<int>(iv.toInt());
+      vec<int> pos = INTARRAY(0);
+      vec<int> neg(pos.size());
+      for (int i = 0; i < neg.size(); ++i) {
+        neg[i] = -pos[i];
       }
-      vec<geas::intvar> vars(bs->size());
-      for (int i = 0; i < bs->size(); ++i) {
-        vars[i] = gi.asIntVar((*bs)[i]);
-      }
-      geas::linear_le(gi.solver_data(), pos, vars, static_cast<int>(c.toInt()), gi.asBoolVar(r));
-      geas::linear_le(gi.solver_data(), neg, vars, -static_cast<int>(c.toInt())-1, ~gi.asBoolVar(r));
+      vec<geas::intvar> vars = INTVARARRAY(1);
+      geas::linear_le(SD, pos, vars, INT(2), BOOLVAR(3));
+      geas::linear_le(SD, neg, vars, -INT(2)-1, ~BOOLVAR(3));
     }
 
     void p_bool_eq(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* lhs = call->arg(0);
-      Expression* rhs = call->arg(1);
-      if(!lhs->type().isvarbool()) {
-        std::swap(lhs, rhs);
-      }
-      if (!rhs->type().isvarbool()) {
-        bool b = eval_bool(gi.env().envi(), rhs);
-        gi.solver().post(b ? gi.asBoolVar(lhs) : ~gi.asBoolVar(lhs));
+      if(PAR(0)) {
+        SOL.post(BOOL(0) ? BOOLVAR(1) : ~BOOLVAR(1));
+      } else if (PAR(2)) {
+        SOL.post(BOOL(1) ? BOOLVAR(0) : ~BOOLVAR(0));
       } else {
-        geas::add_clause(gi.solver_data(), gi.asBoolVar(lhs), ~gi.asBoolVar(rhs));
-        geas::add_clause(gi.solver_data(), ~gi.asBoolVar(lhs), gi.asBoolVar(rhs));
+        geas::add_clause(SD, BOOLVAR(0), ~BOOLVAR(1));
+        geas::add_clause(SD, ~BOOLVAR(0), BOOLVAR(1));
       }
     }
 
     void p_bool_ne(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* lhs = call->arg(0);
-      Expression* rhs = call->arg(1);
-      if(!lhs->type().isvarbool()) {
-        std::swap(lhs, rhs);
-      }
-      if (!rhs->type().isvarbool()) {
-        bool b = eval_bool(gi.env().envi(), rhs);
-        gi.solver().post(b ? ~gi.asBoolVar(lhs) : gi.asBoolVar(lhs));
+      if(PAR(0)) {
+        SOL.post(BOOL(0) ? ~BOOLVAR(1) : BOOLVAR(1));
+      } else if (PAR(1)) {
+        SOL.post(BOOL(1) ? ~BOOLVAR(0) : BOOLVAR(0));
       } else {
-        geas::add_clause(gi.solver_data(), gi.asBoolVar(lhs), gi.asBoolVar(rhs));
-        geas::add_clause(gi.solver_data(), ~gi.asBoolVar(lhs), ~gi.asBoolVar(rhs));
+        geas::add_clause(SD, BOOLVAR(0), BOOLVAR(1));
+        geas::add_clause(SD, ~BOOLVAR(0), ~BOOLVAR(1));
       }
     }
 
     void p_bool_le(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* lhs = call->arg(0);
-      Expression* rhs = call->arg(1);
-      if(!lhs->type().isvarbool()) {
-        if (eval_bool(gi.env().envi(), lhs)) {
-          gi.solver().post(gi.asBoolVar(rhs));
+      if(PAR(0)) {
+        if (BOOL(0)) {
+          SOL.post(BOOLVAR(1));
         }
-      } else if (!rhs->type().isvarbool()) {
-        if (!eval_bool(gi.env().envi(), rhs)) {
-          gi.solver().post(~gi.asBoolVar(lhs));
+      } else if (PAR(1)) {
+        if (!BOOL(1)) {
+          SOL.post(~BOOLVAR(0));
         }
       } else {
-        geas::add_clause(gi.solver_data(), ~gi.asBoolVar(lhs), gi.asBoolVar(rhs));
+        geas::add_clause(SD, ~BOOLVAR(0), BOOLVAR(1));
       }
     }
 
     void p_bool_lt(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* lhs = call->arg(0);
-      Expression* rhs = call->arg(1);
-      gi.solver().post(~gi.asBoolVar(lhs));
-      gi.solver().post(gi.asBoolVar(rhs));
+      SOL.post(~BOOLVAR(0));
+      SOL.post(BOOLVAR(1));
     }
 
     void p_bool_eq_imp(SolverInstanceBase& s, const Call* call) {
-      if (!call->arg(2)->type().isvar()) {
-        if (call->arg(2)->cast<BoolLit>()->v()) {
+      if (PAR(2)) {
+        if (BOOL(2)) {
           p_bool_eq(s, call);
         }
       } else {
-        auto& gi = static_cast<GeasSolverInstance&>(s);
-        Expression* lhs = call->arg(0);
-        Expression* rhs = call->arg(1);
-        Expression* r = call->arg(2);
-        geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), ~gi.asBoolVar(lhs), gi.asBoolVar(rhs));
-        geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), gi.asBoolVar(lhs), ~gi.asBoolVar(rhs));
+        geas::add_clause(SD, ~BOOLVAR(2), ~BOOLVAR(0), BOOLVAR(1));
+        geas::add_clause(SD, ~BOOLVAR(2), BOOLVAR(0), ~BOOLVAR(1));
       }
     }
 
     void p_bool_ne_imp(SolverInstanceBase& s, const Call* call) {
-      if (!call->arg(2)->type().isvar()) {
-        if (call->arg(2)->cast<BoolLit>()->v()) {
+      if (PAR(2)) {
+        if (BOOL(2)) {
           p_bool_ne(s, call);
         }
       } else {
-        auto& gi = static_cast<GeasSolverInstance&>(s);
-        Expression* lhs = call->arg(0);
-        Expression* rhs = call->arg(1);
-        Expression* r = call->arg(2);
-        geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), gi.asBoolVar(lhs), gi.asBoolVar(rhs));
-        geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), ~gi.asBoolVar(lhs), ~gi.asBoolVar(rhs));
+        geas::add_clause(SD, ~BOOLVAR(2), BOOLVAR(0), BOOLVAR(1));
+        geas::add_clause(SD, ~BOOLVAR(2), ~BOOLVAR(0), ~BOOLVAR(1));
       }
     }
 
     void p_bool_le_imp(SolverInstanceBase& s, const Call* call) {
-      if (!call->arg(2)->type().isvar()) {
-        if (call->arg(2)->cast<BoolLit>()->v()) {
+      if (PAR(2)) {
+        if (BOOL(2)) {
           p_bool_le(s, call);
         }
       } else {
-        auto& gi = static_cast<GeasSolverInstance&>(s);
-        Expression* lhs = call->arg(0);
-        Expression* rhs = call->arg(1);
-        Expression* r = call->arg(2);
-        geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), ~gi.asBoolVar(lhs), gi.asBoolVar(rhs));
+        geas::add_clause(SD, ~BOOLVAR(2), ~BOOLVAR(0), BOOLVAR(1));
       }
     }
 
     void p_bool_lt_imp(SolverInstanceBase& s, const Call* call) {
-      if (!call->arg(2)->type().isvar()) {
-        if (call->arg(2)->cast<BoolLit>()->v()) {
+      if (PAR(2)) {
+        if (BOOL(2)) {
           p_bool_lt(s, call);
         }
       } else {
-        auto& gi = static_cast<GeasSolverInstance&>(s);
-        Expression* lhs = call->arg(0);
-        Expression* rhs = call->arg(1);
-        Expression* r = call->arg(2);
-        geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), ~gi.asBoolVar(lhs));
-        geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), gi.asBoolVar(rhs));
+        geas::add_clause(SD, ~BOOLVAR(2), ~BOOLVAR(0));
+        geas::add_clause(SD, ~BOOLVAR(2), BOOLVAR(1));
       }
     }
 
     void p_bool_eq_reif(SolverInstanceBase& s, const Call* call) {
-      if (!call->arg(2)->type().isvar()) {
-        if (call->arg(2)->cast<BoolLit>()->v()) {
+      if (PAR(2)) {
+        if (BOOL(2)) {
           p_bool_eq(s, call);
         } else {
           p_bool_ne(s, call);
         }
       } else {
-        auto& gi = static_cast<GeasSolverInstance&>(s);
-        Expression* lhs = call->arg(0);
-        Expression* rhs = call->arg(1);
-        Expression* r = call->arg(2);
-        geas::add_clause(gi.solver_data(), gi.asBoolVar(r), gi.asBoolVar(lhs), gi.asBoolVar(rhs));
-        geas::add_clause(gi.solver_data(), gi.asBoolVar(r), ~gi.asBoolVar(lhs), ~gi.asBoolVar(rhs));
-        geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), ~gi.asBoolVar(lhs), gi.asBoolVar(rhs));
-        geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), gi.asBoolVar(lhs), ~gi.asBoolVar(rhs));
+        geas::add_clause(SD, BOOLVAR(2), BOOLVAR(0), BOOLVAR(1));
+        geas::add_clause(SD, BOOLVAR(2), ~BOOLVAR(0), ~BOOLVAR(1));
+        geas::add_clause(SD, ~BOOLVAR(2), ~BOOLVAR(0), BOOLVAR(1));
+        geas::add_clause(SD, ~BOOLVAR(2), BOOLVAR(0), ~BOOLVAR(1));
       }
     }
 
     void p_bool_ne_reif(SolverInstanceBase& s, const Call* call) {
-      if (!call->arg(2)->type().isvar()) {
-        if (call->arg(2)->cast<BoolLit>()->v()) {
+      if (PAR(2)) {
+        if (BOOL(2)) {
           p_bool_ne(s, call);
         } else {
           p_bool_eq(s, call);
         }
       } else {
-        auto& gi = static_cast<GeasSolverInstance&>(s);
-        Expression* lhs = call->arg(0);
-        Expression* rhs = call->arg(1);
-        Expression* r = call->arg(2);
-        geas::add_clause(gi.solver_data(), gi.asBoolVar(r), ~gi.asBoolVar(lhs), gi.asBoolVar(rhs));
-        geas::add_clause(gi.solver_data(), gi.asBoolVar(r), gi.asBoolVar(lhs), ~gi.asBoolVar(rhs));
-        geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), gi.asBoolVar(lhs), gi.asBoolVar(rhs));
-        geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), ~gi.asBoolVar(lhs), ~gi.asBoolVar(rhs));
+        geas::add_clause(SD, BOOLVAR(2), ~BOOLVAR(0), BOOLVAR(1));
+        geas::add_clause(SD, BOOLVAR(2), BOOLVAR(0), ~BOOLVAR(1));
+        geas::add_clause(SD, ~BOOLVAR(2), BOOLVAR(0), BOOLVAR(1));
+        geas::add_clause(SD, ~BOOLVAR(2), ~BOOLVAR(0), ~BOOLVAR(1));
       }
     }
 
     void p_bool_le_reif(SolverInstanceBase& s, const Call* call) {
-      if (!call->arg(2)->type().isvar()) {
-        if (call->arg(2)->cast<BoolLit>()->v()) {
+      if (PAR(2)) {
+        if (BOOL(2)) {
           p_bool_le(s, call);
         } else {
           auto nc = new Call(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
           p_bool_lt(s, nc);
         }
       } else {
-        auto& gi = static_cast<GeasSolverInstance&>(s);
-        Expression* lhs = call->arg(0);
-        Expression* rhs = call->arg(1);
-        Expression* r = call->arg(2);
-        geas::add_clause(gi.solver_data(), gi.asBoolVar(r), ~gi.asBoolVar(rhs));
-        geas::add_clause(gi.solver_data(), gi.asBoolVar(r), gi.asBoolVar(lhs));
-        geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), ~gi.asBoolVar(lhs), gi.asBoolVar(rhs));
+        geas::add_clause(SD, BOOLVAR(2), ~BOOLVAR(1));
+        geas::add_clause(SD, BOOLVAR(2), BOOLVAR(0));
+        geas::add_clause(SD, ~BOOLVAR(2), ~BOOLVAR(0), BOOLVAR(1));
       }
     }
 
     void p_bool_lt_reif(SolverInstanceBase& s, const Call* call) {
-      if (!call->arg(2)->type().isvar()) {
-        if (call->arg(2)->cast<BoolLit>()->v()) {
+      if (PAR(2)) {
+        if (BOOL(2)) {
           p_int_lt(s, call);
         } else {
           auto nc = new Call(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
           p_int_le(s, nc);
         }
       } else {
-        auto& gi = static_cast<GeasSolverInstance&>(s);
-        Expression* lhs = call->arg(0);
-        Expression* rhs = call->arg(1);
-        Expression* r = call->arg(2);
-        geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), ~gi.asBoolVar(lhs));
-        geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), gi.asBoolVar(rhs));
-        geas::add_clause(gi.solver_data(), gi.asBoolVar(r), gi.asBoolVar(lhs), ~gi.asBoolVar(rhs));
+        geas::add_clause(SD, ~BOOLVAR(2), ~BOOLVAR(0));
+        geas::add_clause(SD, ~BOOLVAR(2), BOOLVAR(1));
+        geas::add_clause(SD, BOOLVAR(2), BOOLVAR(0), ~BOOLVAR(1));
       }
     }
 
     void p_bool_or(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* lhs = call->arg(0);
-      Expression* rhs = call->arg(1);
-      Expression* r = call->arg(2);
-      geas::add_clause(gi.solver_data(), gi.asBoolVar(r), ~gi.asBoolVar(lhs));
-      geas::add_clause(gi.solver_data(), gi.asBoolVar(r), ~gi.asBoolVar(rhs));
-      geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), gi.asBoolVar(lhs), gi.asBoolVar(rhs));
+      geas::add_clause(SD, BOOLVAR(2), ~BOOLVAR(0));
+      geas::add_clause(SD, BOOLVAR(2), ~BOOLVAR(1));
+      geas::add_clause(SD, ~BOOLVAR(2), BOOLVAR(0), BOOLVAR(1));
     }
 
     void p_bool_and(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* lhs = call->arg(0);
-      Expression* rhs = call->arg(1);
-      Expression* r = call->arg(2);
-      geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), gi.asBoolVar(lhs));
-      geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), gi.asBoolVar(rhs));
-      geas::add_clause(gi.solver_data(), gi.asBoolVar(r), ~gi.asBoolVar(lhs), ~gi.asBoolVar(rhs));
+      geas::add_clause(SD, ~BOOLVAR(2), BOOLVAR(0));
+      geas::add_clause(SD, ~BOOLVAR(2), BOOLVAR(1));
+      geas::add_clause(SD, BOOLVAR(2), ~BOOLVAR(0), ~BOOLVAR(1));
     }
 
     void p_bool_xor(SolverInstanceBase& s, const Call* call) {
@@ -622,20 +422,12 @@ namespace MiniZinc {
     }
 
     void p_bool_or_imp(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* lhs = call->arg(0);
-      Expression* rhs = call->arg(1);
-      Expression* r = call->arg(2);
-      geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), gi.asBoolVar(lhs), gi.asBoolVar(rhs));
+      geas::add_clause(SD, ~BOOLVAR(2), BOOLVAR(0), BOOLVAR(1));
     }
 
     void p_bool_and_imp(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* lhs = call->arg(0);
-      Expression* rhs = call->arg(1);
-      Expression* r = call->arg(2);
-      geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), gi.asBoolVar(lhs));
-      geas::add_clause(gi.solver_data(), ~gi.asBoolVar(r), gi.asBoolVar(rhs));
+      geas::add_clause(SD, ~BOOLVAR(2), BOOLVAR(0));
+      geas::add_clause(SD, ~BOOLVAR(2), BOOLVAR(1));
     }
 
     void p_bool_xor_imp(SolverInstanceBase& s, const Call* call) {
@@ -644,530 +436,341 @@ namespace MiniZinc {
 
     void p_bool_clause(SolverInstanceBase& s, const Call* call) {
       auto& gi = static_cast<GeasSolverInstance&>(s);
-      auto pos = eval_array_lit(gi.env().envi(), call->arg(0));
-      auto neg = eval_array_lit(gi.env().envi(), call->arg(1));
+      auto pos = ARRAY(0);
+      auto neg = ARRAY(1);
       vec<geas::clause_elt> clause;
       for (int i = 0; i < pos->size(); ++i) {
-        clause.push(gi.asBoolVar((*pos)[i]));
+        clause.push(SI.asBoolVar((*pos)[i]));
       }
       for (int j = 0; j < neg->size(); ++j) {
-        clause.push(~gi.asBoolVar((*neg)[j]));
+        clause.push(~SI.asBoolVar((*neg)[j]));
       }
-      geas::add_clause(*gi.solver_data(), clause);
+      geas::add_clause(*SD, clause);
     }
 
     void p_array_bool_or(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      auto arr = eval_array_lit(gi.env().envi(), call->arg(0));
-      geas::patom_t r = gi.asBoolVar(call->arg(1));
+      auto arr = ARRAY(0);
       vec<geas::clause_elt> clause;
-      clause.push(~r);
+      clause.push(~BOOLVAR(1));
       for (int i = 0; i < arr->size(); ++i) {
-        geas::patom_t elem = gi.asBoolVar((*arr)[i]);
-        geas::add_clause(gi.solver_data(), r, ~elem);
+        geas::patom_t elem = SI.asBoolVar((*arr)[i]);
+        geas::add_clause(SD, BOOLVAR(1), ~elem);
         clause.push(elem);
       }
-      geas::add_clause(*gi.solver_data(), clause);
+      geas::add_clause(*SD, clause);
     }
 
     void p_array_bool_and(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      auto arr = eval_array_lit(gi.env().envi(), call->arg(0));
-      geas::patom_t r = gi.asBoolVar(call->arg(1));
+      auto arr = ARRAY(0);
       vec<geas::clause_elt> clause;
-      clause.push(r);
+      clause.push(BOOLVAR(1));
       for (int i = 0; i < arr->size(); ++i) {
-        geas::patom_t elem = gi.asBoolVar((*arr)[i]);
-        geas::add_clause(gi.solver_data(), ~r, elem);
+        geas::patom_t elem = SI.asBoolVar((*arr)[i]);
+        geas::add_clause(SD, ~BOOLVAR(1), elem);
         clause.push(~elem);
       }
-      geas::add_clause(*gi.solver_data(), clause);
+      geas::add_clause(*SD, clause);
     }
 
     void p_bool_clause_imp(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      auto pos = eval_array_lit(gi.env().envi(), call->arg(0));
-      auto neg = eval_array_lit(gi.env().envi(), call->arg(1));
-      geas::patom_t r = gi.asBoolVar(call->arg(2));
+      auto pos = ARRAY(0);
+      auto neg = ARRAY(1);
       vec<geas::clause_elt> clause;
-      clause.push(~r);
+      clause.push(~BOOLVAR(2));
       for (int i = 0; i < pos->size(); ++i) {
-        clause.push(gi.asBoolVar((*pos)[i]));
+        clause.push(SI.asBoolVar((*pos)[i]));
       }
       for (int j = 0; j < neg->size(); ++j) {
-        clause.push(~gi.asBoolVar((*neg)[j]));
+        clause.push(~SI.asBoolVar((*neg)[j]));
       }
-      geas::add_clause(*gi.solver_data(), clause);
+      geas::add_clause(*SD, clause);
     }
 
     void p_array_bool_or_imp(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      auto arr = eval_array_lit(gi.env().envi(), call->arg(0));
-      geas::patom_t r = gi.asBoolVar(call->arg(1));
+      auto arr = ARRAY(0);
       vec<geas::clause_elt> clause;
-      clause.push(~r);
+      clause.push(~BOOLVAR(1));
       for (int i = 0; i < arr->size(); ++i) {
-        geas::patom_t elem = gi.asBoolVar((*arr)[i]);
+        geas::patom_t elem = SI.asBoolVar((*arr)[i]);
         clause.push(elem);
       }
-      geas::add_clause(*gi.solver_data(), clause);
+      geas::add_clause(*SD, clause);
     }
 
     void p_array_bool_and_imp(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      auto arr = eval_array_lit(gi.env().envi(), call->arg(0));
-      geas::patom_t r = gi.asBoolVar(call->arg(1));
+      auto arr = ARRAY(0);
       for (int i = 0; i < arr->size(); ++i) {
-        geas::add_clause(gi.solver_data(), ~r, gi.asBoolVar((*arr)[i]));
+        geas::add_clause(SD, ~BOOLVAR(1), SI.asBoolVar((*arr)[i]));
       }
     }
 
     void p_bool_clause_reif(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      auto pos = eval_array_lit(gi.env().envi(), call->arg(0));
-      auto neg = eval_array_lit(gi.env().envi(), call->arg(1));
-      geas::patom_t r = gi.asBoolVar(call->arg(2));
+      auto pos = ARRAY(0);
+      auto neg = ARRAY(1);
       vec<geas::clause_elt> clause;
-      clause.push(~r);
+      clause.push(~BOOLVAR(2));
       for (int i = 0; i < pos->size(); ++i) {
-        geas::patom_t elem = gi.asBoolVar((*pos)[i]);
-        geas::add_clause(gi.solver_data(), r, ~elem);
+        geas::patom_t elem = SI.asBoolVar((*pos)[i]);
+        geas::add_clause(SD, BOOLVAR(2), ~elem);
         clause.push(elem);
       }
       for (int j = 0; j < neg->size(); ++j) {
-        geas::patom_t elem = gi.asBoolVar((*neg)[j]);
-        geas::add_clause(gi.solver_data(), r, elem);
+        geas::patom_t elem = SI.asBoolVar((*neg)[j]);
+        geas::add_clause(SD, BOOLVAR(2), elem);
         clause.push(~elem);
       }
-      geas::add_clause(*gi.solver_data(), clause);
+      geas::add_clause(*SD, clause);
     }
 
     void p_bool_lin_eq(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* as = eval_array_lit(gi.env().envi(), call->arg(0));
-      ArrayLit* bs = eval_array_lit(gi.env().envi(), call->arg(1));
-      IntVal c = eval_int(gi.env().envi(), call->arg(2));
-      vec<int> cons(as->size());
-      for (int i = 0; i < as->size(); ++i) {
-        IntVal iv = eval_int(gi.env().envi(), (*as)[i]);
-        cons[i] = static_cast<int>(iv.toInt());
-      }
-      vec<geas::patom_t> vars(bs->size());
-      for (int i = 0; i < bs->size(); ++i) {
-        vars[i] = gi.asBoolVar((*bs)[i]);
-      }
+      vec<int> cons = INTARRAY(0);
+      vec<geas::patom_t> vars = BOOLVARARRAY(1);
       // TODO: Rewrite using MiniZinc Library??
-      geas::bool_linear_le(gi.solver_data(), geas::at_True, gi.zero, cons, vars, -static_cast<int>(c.toInt()));
-      geas::bool_linear_ge(gi.solver_data(), geas::at_True, gi.zero, cons, vars, -static_cast<int>(c.toInt()));
+      geas::bool_linear_le(SD, geas::at_True, SI.zero, cons, vars, -INT(2));
+      geas::bool_linear_ge(SD, geas::at_True, SI.zero, cons, vars, -INT(2));
     }
 
     void p_bool_lin_ne(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* as = eval_array_lit(gi.env().envi(), call->arg(0));
-      ArrayLit* bs = eval_array_lit(gi.env().envi(), call->arg(1));
-      IntVal c = eval_int(gi.env().envi(), call->arg(2));
-      vec<int> cons(as->size());
-      for (int i = 0; i < as->size(); ++i) {
-        IntVal iv = eval_int(gi.env().envi(), (*as)[i]);
-        cons[i] = static_cast<int>(iv.toInt());
-      }
-      vec<geas::patom_t> vars(bs->size());
-      for (int i = 0; i < bs->size(); ++i) {
-        vars[i] = gi.asBoolVar((*bs)[i]);
-      }
-      geas::bool_linear_ne(gi.solver_data(), cons, vars, static_cast<int>(c.toInt()));
+      vec<int> cons = INTARRAY(0);
+      vec<geas::patom_t> vars = BOOLVARARRAY(1);
+      geas::bool_linear_ne(SD, cons, vars, INT(2));
     }
 
     void p_bool_lin_le(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* as = eval_array_lit(gi.env().envi(), call->arg(0));
-      ArrayLit* bs = eval_array_lit(gi.env().envi(), call->arg(1));
-      IntVal c = eval_int(gi.env().envi(), call->arg(2));
-      vec<int> cons(as->size());
-      for (int i = 0; i < as->size(); ++i) {
-        IntVal iv = eval_int(gi.env().envi(), (*as)[i]);
-        cons[i] = static_cast<int>(iv.toInt());
-      }
-      vec<geas::patom_t> vars(bs->size());
-      for (int i = 0; i < bs->size(); ++i) {
-        vars[i] = gi.asBoolVar((*bs)[i]);
-      }
-      geas::bool_linear_le(gi.solver_data(), geas::at_True, gi.zero, cons, vars, -static_cast<int>(c.toInt()));
+      vec<int> cons = INTARRAY(0);
+      vec<geas::patom_t> vars = BOOLVARARRAY(1);
+      geas::bool_linear_le(SD, geas::at_True, SI.zero, cons, vars, -INT(2));
     }
 
     void p_bool_lin_eq_imp(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* as = eval_array_lit(gi.env().envi(), call->arg(0));
-      ArrayLit* bs = eval_array_lit(gi.env().envi(), call->arg(1));
-      IntVal c = eval_int(gi.env().envi(), call->arg(2));
-      Expression* r = call->arg(3);
-      vec<int> cons(as->size());
-      for (int i = 0; i < as->size(); ++i) {
-        IntVal iv = eval_int(gi.env().envi(), (*as)[i]);
-        cons[i] = static_cast<int>(iv.toInt());
-      }
-      vec<geas::patom_t> vars(bs->size());
-      for (int i = 0; i < bs->size(); ++i) {
-        vars[i] = gi.asBoolVar((*bs)[i]);
-      }
+      vec<int> cons = INTARRAY(0);
+      vec<geas::patom_t> vars = BOOLVARARRAY(1);
       // TODO: Rewrite using MiniZinc Library??
-      geas::bool_linear_le(gi.solver_data(), gi.asBoolVar(r), gi.zero, cons, vars, -static_cast<int>(c.toInt()));
-      geas::bool_linear_ge(gi.solver_data(), gi.asBoolVar(r), gi.zero, cons, vars, -static_cast<int>(c.toInt()));
+      geas::bool_linear_le(SD, BOOLVAR(3), SI.zero, cons, vars, -INT(2));
+      geas::bool_linear_ge(SD, BOOLVAR(3), SI.zero, cons, vars, -INT(2));
     }
 
     void p_bool_lin_ne_imp(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* as = eval_array_lit(gi.env().envi(), call->arg(0));
-      ArrayLit* bs = eval_array_lit(gi.env().envi(), call->arg(1));
-      IntVal c = eval_int(gi.env().envi(), call->arg(2));
-      Expression* r = call->arg(3);
-      vec<int> cons(as->size());
-      for (int i = 0; i < as->size(); ++i) {
-        IntVal iv = eval_int(gi.env().envi(), (*as)[i]);
-        cons[i] = static_cast<int>(iv.toInt());
-      }
-      vec<geas::patom_t> vars(bs->size());
-      for (int i = 0; i < bs->size(); ++i) {
-        vars[i] = gi.asBoolVar((*bs)[i]);
-      }
-      geas::bool_linear_ne(gi.solver_data(), cons, vars, static_cast<int>(c.toInt()), gi.asBoolVar(r));
+      vec<int> cons = INTARRAY(0);
+      vec<geas::patom_t> vars = BOOLVARARRAY(1);
+      geas::bool_linear_ne(SD, cons, vars, INT(2), BOOLVAR(3));
     }
 
     void p_bool_lin_le_imp(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* as = eval_array_lit(gi.env().envi(), call->arg(0));
-      ArrayLit* bs = eval_array_lit(gi.env().envi(), call->arg(1));
-      IntVal c = eval_int(gi.env().envi(), call->arg(2));
-      Expression* r = call->arg(3);
-      vec<int> cons(as->size());
-      for (int i = 0; i < as->size(); ++i) {
-        IntVal iv = eval_int(gi.env().envi(), (*as)[i]);
-        cons[i] = static_cast<int>(iv.toInt());
-      }
-      vec<geas::patom_t> vars(bs->size());
-      for (int i = 0; i < bs->size(); ++i) {
-        vars[i] = gi.asBoolVar((*bs)[i]);
-      }
-      geas::bool_linear_le(gi.solver_data(), gi.asBoolVar(r), gi.zero, cons, vars, -static_cast<int>(c.toInt()));
+      vec<int> cons = INTARRAY(0);
+      vec<geas::patom_t> vars = BOOLVARARRAY(1);
+      geas::bool_linear_le(SD, BOOLVAR(3), SI.zero, cons, vars, -INT(2));
     }
 
     void p_bool_lin_eq_reif(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* as = eval_array_lit(gi.env().envi(), call->arg(0));
-      ArrayLit* bs = eval_array_lit(gi.env().envi(), call->arg(1));
-      IntVal c = eval_int(gi.env().envi(), call->arg(2));
-      Expression* r = call->arg(3);
-      vec<int> cons(as->size());
-      for (int i = 0; i < as->size(); ++i) {
-        IntVal iv = eval_int(gi.env().envi(), (*as)[i]);
-        cons[i] = static_cast<int>(iv.toInt());
-      }
-      vec<geas::patom_t> vars(bs->size());
-      for (int i = 0; i < bs->size(); ++i) {
-        vars[i] = gi.asBoolVar((*bs)[i]);
-      }
+      vec<int> cons = INTARRAY(0);
+      vec<geas::patom_t> vars = BOOLVARARRAY(1);
       // TODO: Rewrite using MiniZinc Library??
-      geas::bool_linear_le(gi.solver_data(), gi.asBoolVar(r), gi.zero, cons, vars, -static_cast<int>(c.toInt()));
-      geas::bool_linear_ge(gi.solver_data(), gi.asBoolVar(r), gi.zero, cons, vars, -static_cast<int>(c.toInt()));
-      geas::bool_linear_ne(gi.solver_data(), cons, vars, static_cast<int>(c.toInt()), ~gi.asBoolVar(r));
+      geas::bool_linear_le(SD, BOOLVAR(3), SI.zero, cons, vars, -INT(2));
+      geas::bool_linear_ge(SD, BOOLVAR(3), SI.zero, cons, vars, -INT(2));
+      geas::bool_linear_ne(SD, cons, vars, INT(2), ~BOOLVAR(3));
     }
 
     void p_bool_lin_ne_reif(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* as = eval_array_lit(gi.env().envi(), call->arg(0));
-      ArrayLit* bs = eval_array_lit(gi.env().envi(), call->arg(1));
-      IntVal c = eval_int(gi.env().envi(), call->arg(2));
-      Expression* r = call->arg(3);
-      vec<int> cons(as->size());
-      for (int i = 0; i < as->size(); ++i) {
-        IntVal iv = eval_int(gi.env().envi(), (*as)[i]);
-        cons[i] = static_cast<int>(iv.toInt());
-      }
-      vec<geas::patom_t> vars(bs->size());
-      for (int i = 0; i < bs->size(); ++i) {
-        vars[i] = gi.asBoolVar((*bs)[i]);
-      }
+      vec<int> cons = INTARRAY(0);
+      vec<geas::patom_t> vars = BOOLVARARRAY(1);
       // TODO: Rewrite using MiniZinc Library??
-      geas::bool_linear_ne(gi.solver_data(), cons, vars, static_cast<int>(c.toInt()), gi.asBoolVar(r));
-      geas::bool_linear_le(gi.solver_data(), ~gi.asBoolVar(r), gi.zero, cons, vars, -static_cast<int>(c.toInt()));
-      geas::bool_linear_ge(gi.solver_data(), ~gi.asBoolVar(r), gi.zero, cons, vars, -static_cast<int>(c.toInt()));
+      geas::bool_linear_ne(SD, cons, vars, INT(2), BOOLVAR(3));
+      geas::bool_linear_le(SD, ~BOOLVAR(3), SI.zero, cons, vars, -INT(2));
+      geas::bool_linear_ge(SD, ~BOOLVAR(3), SI.zero, cons, vars, -INT(2));
     }
 
     void p_bool_lin_le_reif(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* as = eval_array_lit(gi.env().envi(), call->arg(0));
-      ArrayLit* bs = eval_array_lit(gi.env().envi(), call->arg(1));
-      IntVal c = eval_int(gi.env().envi(), call->arg(2));
-      Expression* r = call->arg(3);
-      vec<int> cons(as->size());
-      for (int i = 0; i < as->size(); ++i) {
-        IntVal iv = eval_int(gi.env().envi(), (*as)[i]);
-        cons[i] = static_cast<int>(iv.toInt());
-      }
-      vec<geas::patom_t> vars(bs->size());
-      for (int i = 0; i < bs->size(); ++i) {
-        vars[i] = gi.asBoolVar((*bs)[i]);
-      }
+      vec<int> cons = INTARRAY(0);
+      vec<geas::patom_t> vars = BOOLVARARRAY(1);
       // TODO: Rewrite using MiniZinc Library??
-      geas::bool_linear_le(gi.solver_data(), gi.asBoolVar(r), gi.zero, cons, vars, -static_cast<int>(c.toInt()));
-      geas::bool_linear_ge(gi.solver_data(), ~gi.asBoolVar(r), gi.zero, cons, vars, -static_cast<int>(c.toInt())-1);
+      geas::bool_linear_le(SD, BOOLVAR(3), SI.zero, cons, vars, -INT(2));
+      geas::bool_linear_ge(SD, ~BOOLVAR(3), SI.zero, cons, vars, -INT(2)-1);
     }
 
     void p_bool2int(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* b = call->arg(0);
-      Expression* i = call->arg(1);
-      geas::add_clause(gi.solver_data(), gi.asBoolVar(b), gi.asIntVar(i) <= 0);
-      geas::add_clause(gi.solver_data(), ~gi.asBoolVar(b), gi.asIntVar(i) >= 1);
+      geas::add_clause(SD, BOOLVAR(0), INTVAR(1) <= 0);
+      geas::add_clause(SD, ~BOOLVAR(0), INTVAR(1) >= 1);
     }
 
     void p_array_int_element(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* i = call->arg(0);
-      ArrayLit* array = eval_array_lit(gi.env().envi(), call->arg(1));
-      assert(array->min(0) == 1 && array->max(0) == array->size()+1);
-      Expression* res = call->arg(1);
-      if (!i->type().isvar()) {
-        int ival = static_cast<int>(eval_int(gi.env().envi(), i).toInt());
-        int elem = static_cast<int>(eval_int(gi.env().envi(), (*array)[ival-1]).toInt());
-        gi.solver().post(gi.asIntVar(res)==elem);
-      } else if (!res->type().isvar()) {
-        IntVal resval = eval_int(gi.env().envi(), res);
-        geas::intvar ivar = gi.asIntVar(i);
-        for (int j = 0; j < array->size(); ++j) {
-          if (eval_int(gi.env().envi(), (*array)[j]) != resval) {
-            gi.solver().post(ivar != j+1);
+      assert(ARRAY(1)->min(0) == 1 && ARRAY(1)->max(0) == ARRAY(1)->size()+1);
+      vec<int> vals = INTARRAY(1);
+      if (PAR(0)) {
+        SOL.post(INTVAR(2) == vals[INT(0)-1]);
+      } else if (PAR(2)) {
+        for (int j = 0; j < vals.size(); ++j) {
+          if (vals[j] != INT(2)) {
+            SOL.post(INTVAR(0) != j+1);
           }
         }
       } else {
-        vec<int> vals;
-        for (int j = 0; j < array->size(); ++j) {
-          int val = static_cast<int>(eval_int(gi.env().envi(), (*array)[j]).toInt());
-          vals.push(val);
-        }
-        geas::int_element(gi.solver_data(), gi.asIntVar(res), gi.asIntVar(i), vals);
+        geas::int_element(SD, INTVAR(2), INTVAR(0), vals);
       }
     }
 
     void p_array_bool_element(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* i = call->arg(0);
-      ArrayLit* array = eval_array_lit(gi.env().envi(), call->arg(1));
-      assert(array->min(0) == 1 && array->max(0) == array->size()+1);
-      Expression* res = call->arg(1);
-      if (!i->type().isvar()) {
-        int ival = static_cast<int>(eval_int(gi.env().envi(), i).toInt());
-        bool elem = eval_bool(gi.env().envi(), (*array)[ival-1]);
-        gi.solver().post(elem ? gi.asBoolVar(res) : ~gi.asBoolVar(res));
-      } else if (!res->type().isvar()) {
-        bool resval = eval_bool(gi.env().envi(), res);
-        geas::intvar ivar = gi.asIntVar(i);
-        for (int j = 0; j < array->size(); ++j) {
-          if (eval_bool(gi.env().envi(), (*array)[j]) != resval) {
-            gi.solver().post(ivar != j+1);
+      assert(ARRAY(1)->min(0) == 1 && ARRAY(1)->max(0) == ARRAY(1)->size()+1);
+      vec<bool> vals = BOOLARRAY(1);
+      if (PAR(0)) {
+        SOL.post(vals[INT(0)-1] ? BOOLVAR(2) : ~BOOLVAR(2));
+      } else if (PAR(2)) {
+        for (int j = 0; j < vals.size(); ++j) {
+          if (vals[j] != BOOL(2)) {
+            SOL.post(INTVAR(0) != j+1);
           }
         }
       } else {
-        geas::intvar ivar = gi.asIntVar(i);
-        geas::patom_t resvar = gi.asBoolVar(res);
-        for (int j = 0; j < array->size(); ++j) {
-          bool b = eval_bool(gi.env().envi(), (*array)[j]);
-          geas::add_clause(gi.solver_data(), ivar != j+1, b ? resvar : ~resvar);
+        for (int j = 0; j < vals.size(); ++j) {
+          geas::add_clause(SD, INTVAR(0) != j+1, vals[j] ? BOOLVAR(2) : ~BOOLVAR(2));
         }
       }
     }
 
     void p_array_var_int_element(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* i = call->arg(0);
-      ArrayLit* array = eval_array_lit(gi.env().envi(), call->arg(1));
-      assert(array->min(0) == 1 && array->max(0) == array->size()+1);
-      Expression* res = call->arg(1);
-      if (!array->type().isvar()) {
+      assert(ARRAY(1)->min(0) == 1 && ARRAY(1)->max(0) == ARRAY(1)->size()+1);
+      if (PAR(1)) {
         return p_array_int_element(s, call);
       }
-      if (!i->type().isvar() && !res->type().isvar()) {
-        int ival = static_cast<int>(eval_int(gi.env().envi(), i).toInt());
-        int resval = static_cast<int>(eval_int(gi.env().envi(), res).toInt());
-        gi.solver().post(gi.asIntVar((*array)[ival - 1]) == resval);
-      } else if (!i->type().isvar()) {
-        int ival = static_cast<int>(eval_int(gi.env().envi(), i).toInt());
-        Expression* elem = (*array)[ival-1];
-        if (!elem->type().isvar()) {
+      if (PAR(0) && PAR(2)) {
+        SOL.post(SI.asIntVar((*ARRAY(1))[INT(0) - 1]) == INT(2));
+      } else if (PAR(0)) {
+        Expression* elem = (*ARRAY(1))[INT(0)-1];
+        if (elem->type().ispar()) {
           return p_array_int_element(s, call);
         } else {
-          geas::int_eq(gi.solver_data(), gi.asIntVar(elem), gi.asIntVar(res));
+          geas::int_eq(SD, SI.asIntVar(elem), INTVAR(2));
         }
-      } else if (!res->type().isvar()) {
-        IntVal resval = eval_int(gi.env().envi(), res);
-        geas::intvar ivar = gi.asIntVar(i);
-        for (int j = 0; j < array->size(); ++j) {
-          Expression* elem = (*array)[j];
+      } else if (PAR(2)) {
+        for (int j = 0; j < ARRAY(1)->size(); ++j) {
+          Expression* elem = (*ARRAY(1))[j];
           if (elem->type().isvar()) {
-            geas::add_clause(gi.solver_data(), ivar != j+1, gi.asIntVar(elem) == resval.toInt());
+            geas::add_clause(SD, INTVAR(0) != j+1, SI.asIntVar(elem) == INT(2));
           } else {
-            if (eval_int(gi.env().envi(), elem) != resval) {
-              gi.solver().post(ivar != j+1);
+            if (SI.asInt(elem) != INT(2)) {
+              SOL.post(INTVAR(0) != j+1);
             }
           }
         }
       } else {
-        vec<geas::intvar> vals;
-        for (int j = 0; j < array->size(); ++j) {
-          geas::intvar val = gi.asIntVar((*array)[j]);
-          vals.push(val);
-        }
-        geas::var_int_element(gi.solver_data(), gi.asIntVar(res), gi.asIntVar(i), vals);
+        vec<geas::intvar> vals = INTVARARRAY(1);
+        geas::var_int_element(SD, INTVAR(2), INTVAR(0), vals);
       }
     }
 
     void p_array_var_bool_element(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      Expression* i = call->arg(0);
-      ArrayLit* array = eval_array_lit(gi.env().envi(), call->arg(1));
-      assert(array->min(0) == 1 && array->max(0) == array->size()+1);
-      Expression* res = call->arg(1);
-      if (!array->type().isvar()) {
+      assert(ARRAY(1)->min(0) == 1 && ARRAY(1)->max(0) == ARRAY(1)->size()+1);
+      if (PAR(1)) {
         return p_array_bool_element(s, call);
       }
-      if (!i->type().isvar() && !res->type().isvar()) {
-        int ival = static_cast<int>(eval_int(gi.env().envi(), i).toInt());
-        bool resval = eval_bool(gi.env().envi(), res);
-        gi.solver().post(resval ? gi.asBoolVar((*array)[ival - 1]) : ~gi.asBoolVar((*array)[ival - 1]));
-      } else if (!i->type().isvar()) {
-        int ival = static_cast<int>(eval_int(gi.env().envi(), i).toInt());
-        Expression* elem = (*array)[ival-1];
-        if (!elem->type().isvar()) {
+      if (PAR(0) && PAR(2)) {
+        SOL.post(BOOL(2) ? SI.asBoolVar((*ARRAY(1))[INT(0) - 1]) : ~SI.asBoolVar((*ARRAY(1))[INT(0) - 1]));
+      } else if (PAR(0)) {
+        Expression* elem = (*ARRAY(1))[INT(0)-1];
+        if (elem->type().ispar()) {
           return p_array_bool_element(s, call);
         } else {
-          geas::add_clause(gi.solver_data(), gi.asBoolVar(res), ~gi.asBoolVar(elem));
-          geas::add_clause(gi.solver_data(), ~gi.asBoolVar(res), gi.asBoolVar(elem));
+          geas::add_clause(SD, BOOLVAR(2), ~SI.asBoolVar(elem));
+          geas::add_clause(SD, ~BOOLVAR(2), SI.asBoolVar(elem));
         }
-      } else if (!res->type().isvar()) {
-        bool resval = eval_bool(gi.env().envi(), res);
-        geas::intvar ivar = gi.asIntVar(i);
-        for (int j = 0; j < array->size(); ++j) {
-          Expression* elem = (*array)[j];
+      } else if (PAR(2)) {
+        for (int j = 0; j < ARRAY(1)->size(); ++j) {
+          Expression* elem = (*ARRAY(1))[j];
           if (elem->type().isvar()) {
-            geas::add_clause(gi.solver_data(), ivar != j+1, resval ? gi.asBoolVar(elem) : ~gi.asBoolVar(elem));
+            geas::add_clause(SD, INTVAR(0) != j+1, INT(2) ? SI.asBoolVar(elem) : ~SI.asBoolVar(elem));
           } else {
-            if (eval_bool(gi.env().envi(), elem) != resval) {
-              gi.solver().post(ivar != j+1);
+            if (SI.asBool(elem) != INT(2)) {
+              SOL.post(INTVAR(0) != j+1);
             }
           }
         }
       } else {
-        geas::intvar ivar = gi.asIntVar(i);
-        geas::patom_t resvar = gi.asBoolVar(res);
-        for (int j = 0; j < array->size(); ++j) {
-          geas::patom_t bvar = gi.asBoolVar((*array)[j]);
-          geas::add_clause(gi.solver_data(), ivar != j+1, ~bvar, resvar);
-          geas::add_clause(gi.solver_data(), ivar != j+1, bvar, ~resvar);
+        auto vars = BOOLVARARRAY(1);
+        for (int j = 0; j < vars.size(); ++j) {
+          geas::add_clause(SD, INTVAR(0) != j+1, ~vars[j], BOOLVAR(2));
+          geas::add_clause(SD, INTVAR(0) != j+1, vars[j], ~BOOLVAR(2));
         }
       }
     }
 
     void p_all_different(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* array = eval_array_lit(gi.env().envi(), call->arg(0));
-      vec<geas::intvar> vals;
-      for (int i = 0; i < array->size(); ++i) {
-        geas::intvar val = gi.asIntVar((*array)[i]);
-        vals.push(val);
-      }
-      geas::all_different_int(gi.solver_data(), vals);
+      vec<geas::intvar> vars = INTVARARRAY(0);
+      geas::all_different_int(SD, vars);
     }
 
     void p_all_different_except_0(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* array = eval_array_lit(gi.env().envi(), call->arg(0));
-      vec<geas::intvar> vars;
-      for (int i = 0; i < array->size(); ++i) {
-        geas::intvar val = gi.asIntVar((*array)[i]);
-        vars.push(val);
-      }
-      geas::all_different_except_0(gi.solver_data(), vars);
+      vec<geas::intvar> vars = INTVARARRAY(0);
+      geas::all_different_except_0(SD, vars);
     }
 
     void p_at_most(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      int n = static_cast<int>(eval_int(gi.env().envi(), call->arg(0)).toInt());
-      ArrayLit* array = eval_array_lit(gi.env().envi(), call->arg(1));
-      int v = static_cast<int>(eval_int(gi.env().envi(), call->arg(2)).toInt());
-      vec<geas::patom_t> vars;
-      for (int i = 0; i < array->size(); ++i) {
-        geas::intvar var = gi.asIntVar((*array)[i]);
-        vars.push(var == v);
+      vec<geas::intvar> ivars = INTVARARRAY(1);
+      vec<geas::patom_t> bvars;
+      for (auto &ivar : ivars) {
+        bvars.push(ivar == INT(2));
       }
-      if (n == 1) {
-        geas::atmost_1(gi.solver_data(), vars);
+
+      if (INT(0) == 1) {
+        geas::atmost_1(SD, bvars);
       } else {
-        geas::atmost_k(gi.solver_data(), vars, n);
+        geas::atmost_k(SD, bvars, INT(0));
       }
     }
 
     void p_at_most1(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      ArrayLit* array = eval_array_lit(gi.env().envi(), call->arg(1));
-      int v = static_cast<int>(eval_int(gi.env().envi(), call->arg(2)).toInt());
-      vec<geas::patom_t> vars;
-      for (int i = 0; i < array->size(); ++i) {
-        geas::intvar var = gi.asIntVar((*array)[i]);
-        vars.push(var == v);
+      vec<geas::intvar> ivars = INTVARARRAY(0);
+      vec<geas::patom_t> bvars;
+      for (auto &ivar : ivars) {
+        bvars.push(ivar == INT(1));
       }
-      geas::atmost_1(gi.solver_data(), vars);
+      geas::atmost_1(SD, bvars);
     }
 
     void p_cumulative(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      vec<geas::intvar> st = gi.asIntVar(eval_array_lit(gi.env().envi(), call->arg(0)));
+      vec<geas::intvar> st = INTVARARRAY(0);
       if (PAR(1) && PAR(2) && PAR(3)) {
-        vec<int> d = gi.asInt(eval_array_lit(gi.env().envi(), call->arg(1)));
-        vec<int> r = gi.asInt(eval_array_lit(gi.env().envi(), call->arg(2)));
-        int b = gi.asInt(call->arg(3));
-        geas::cumulative(gi.solver_data(), st, d, r, b);
+        vec<int> d = INTARRAY(1);
+        vec<int> r = INTARRAY(2);
+        geas::cumulative(SD, st, d, r, INT(3));
       } else {
-        vec<geas::intvar> d = gi.asIntVar(eval_array_lit(gi.env().envi(), call->arg(1)));
-        vec<geas::intvar> r = gi.asIntVar(eval_array_lit(gi.env().envi(), call->arg(2)));
-        geas::intvar b = gi.asIntVar(call->arg(3));
-        geas::cumulative_var(gi.solver_data(), st, d, r, b);
+        vec<geas::intvar> d = INTVARARRAY(1);
+        vec<geas::intvar> r = INTVARARRAY(2);
+        geas::cumulative_var(SD, st, d, r, INTVAR(3));
       }
     }
 
     void p_disjunctive(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      vec<geas::intvar> st = gi.asIntVar(ARRAY(0));
+      vec<geas::intvar> st = INTVARARRAY(0);
       if (PAR(1)) {
-        vec<int> d = gi.asInt(ARRAY(1));
-        geas::disjunctive_int(gi.solver_data(), st, d);
+        vec<int> d = INTARRAY(1);
+        geas::disjunctive_int(SD, st, d);
       } else {
-        vec<geas::intvar> d = gi.asIntVar(ARRAY(1));
-        geas::disjunctive_var(gi.solver_data(), st, d);
+        vec<geas::intvar> d = INTVARARRAY(1);
+        geas::disjunctive_var(SD, st, d);
       }
     }
 
     void p_global_cardinality(SolverInstanceBase& s, const Call* call) {
-      auto& gi = static_cast<GeasSolverInstance&>(s);
-      vec<geas::intvar> x = gi.asIntVar(ARRAY(0));
-      vec<int> cover = gi.asInt(ARRAY(1));
-      vec<int> count = gi.asInt(ARRAY(2));
+      vec<geas::intvar> x = INTVARARRAY(0);
+      vec<int> cover = INTARRAY(1);
+      vec<int> count = INTARRAY(2);
 
       vec<int> srcs(x.size(), 1);
       vec<geas::bflow> flows;
       for (int i = 0; i < x.size(); ++i) {
         for (int j = 0; j < cover.size(); ++j) {
-          if (x[i].lb(gi.solver_data()) <= cover[j] && cover[j] <= x[i].ub(gi.solver_data())) {
+          if (x[i].lb(SD) <= cover[j] && cover[j] <= x[i].ub(SD)) {
             flows.push({i, j, x[i] == cover[j]});
           }
         }
       }
-      geas::bipartite_flow(gi.solver_data(), srcs, count, flows);
+      geas::bipartite_flow(SD, srcs, count, flows);
     }
 
     void p_table_int(SolverInstanceBase& s, const Call* call) {
       auto& gi = static_cast<GeasSolverInstance&>(s);
-      vec<geas::intvar> vars = gi.asIntVar(ARRAY(0));
-      vec<int> tmp = gi.asInt(ARRAY(1));
+      vec<geas::intvar> vars = INTVARARRAY(0);
+      vec<int> tmp = INTARRAY(1);
       assert(tmp.size() % vars.size() == 0);
       vec<vec<int>> table(tmp.size()/vars.size());
       for (int i = 0; i < table.size(); ++i) {
@@ -1177,10 +780,12 @@ namespace MiniZinc {
         }
         table.push(row);
       }
-      geas::table_id id = geas::table::build(gi.solver_data(), table);
+      geas::table_id id = geas::table::build(SD, table);
       // TODO: Annotations for table versions
-      geas::table::post(gi.solver_data(), id, vars);
+      geas::table::post(SD, id, vars);
     }
 
   }
 }
+
+#pragma clang diagnostic pop
