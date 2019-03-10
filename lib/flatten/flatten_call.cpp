@@ -397,6 +397,34 @@ namespace MiniZinc {
         bool mixContext = decl->e()!=NULL ||
         (cid != constants().ids.forall && cid != constants().ids.exists && cid != constants().ids.bool2int &&
          cid != constants().ids.sum && cid != "assert");
+        if (cid == constants().ids.clause && c->arg(0)->isa<ArrayLit>() && c->arg(1)->isa<ArrayLit>()) {
+          GCLock lock;
+          // try to make negative arguments positive
+          std::vector<Expression*> newPositives;
+          std::vector<Expression*> newNegatives;
+          ArrayLit* al_neg = c->arg(1)->cast<ArrayLit>();
+          for (unsigned int i=0; i<al_neg->size(); i++) {
+            BinOp* bo = (*al_neg)[i]->dyn_cast<BinOp>();
+            Call* co = (*al_neg)[i]->dyn_cast<Call>();
+            if (bo || (co && (co->id()==constants().ids.forall || co->id()==constants().ids.exists || co->id()==constants().ids.clause))) {
+              UnOp* notBoe0 = new UnOp(Location().introduce(), UOT_NOT, (*al_neg)[i]);
+              notBoe0->type(Type::varbool());
+              newPositives.push_back(notBoe0);
+            } else {
+              newNegatives.push_back((*al_neg)[i]);
+            }
+          }
+          if (!newPositives.empty()) {
+            ArrayLit* al_pos = c->arg(0)->cast<ArrayLit>();
+            for (unsigned int i=0; i<al_pos->size(); i++) {
+              newPositives.push_back((*al_pos)[i]);
+            }
+            c->arg(0, new ArrayLit(Location().introduce(), newPositives));
+            c->arg(1, new ArrayLit(Location().introduce(), newNegatives));
+            c->arg(0)->type(Type::varbool(1));
+            c->arg(1)->type(Type::varbool(1));
+          }
+        }
         for (unsigned int i=c->n_args(); i--;) {
           Ctx argctx = nctx;
           if (mixContext) {
@@ -426,54 +454,61 @@ namespace MiniZinc {
       
       std::vector<KeepAlive> args;
       if (decl->e()==NULL && (cid == constants().ids.exists || cid == constants().ids.clause)) {
-        
         std::vector<KeepAlive> pos_alv;
         std::vector<KeepAlive> neg_alv;
-        for (unsigned int i=0; i<args_ee.size(); i++) {
-          std::vector<KeepAlive>& local_pos = i==0 ? pos_alv : neg_alv;
-          std::vector<KeepAlive>& local_neg = i==1 ? pos_alv : neg_alv;
-          ArrayLit* al = follow_id(args_ee[i].r())->cast<ArrayLit>();
-          std::vector<KeepAlive> alv;
-          for (unsigned int i=0; i<al->size(); i++) {
+        
+        ArrayLit* al_pos = follow_id(args_ee[0].r())->cast<ArrayLit>();
+        for (unsigned int i=0; i<al_pos->size(); i++) {
+          GCLock lock;
+          if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al_pos)[i],constants().ids.exists))) {
             GCLock lock;
-            if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al)[i],cid))) {
-              if (sc->id()==constants().ids.clause) {
-                alv.push_back(sc);
-              } else {
-                GCLock lock;
-                ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
-                for (unsigned int j=0; j<sc_c->size(); j++) {
-                  alv.push_back((*sc_c)[j]);
-                }
-              }
-            } else {
-              alv.push_back((*al)[i]);
+            ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
+            for (unsigned int j=0; j<sc_c->size(); j++) {
+              pos_alv.push_back((*sc_c)[j]);
             }
-          }
-          
-          for (unsigned int j=0; j<alv.size(); j++) {
+          } else if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al_pos)[i],constants().ids.clause))) {
             GCLock lock;
-            Call* neg_call = Expression::dyn_cast<Call>(same_call(env,alv[j](),constants().ids.bool_eq));
+            ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
+            for (unsigned int j=0; j<sc_c->size(); j++) {
+              pos_alv.push_back((*sc_c)[j]);
+            }
+            sc_c = eval_array_lit(env,sc->arg(1));
+            for (unsigned int j=0; j<sc_c->size(); j++) {
+              neg_alv.push_back((*sc_c)[j]);
+            }
+          } else {
+            Call* neg_call = Expression::dyn_cast<Call>(same_call(env,(*al_pos)[i],constants().ids.bool_eq));
             if (neg_call &&
                 Expression::equal(neg_call->arg(1),constants().lit_false)) {
-              local_neg.push_back(neg_call->arg(0));
+              neg_alv.push_back(neg_call->arg(0));
             } else {
-              Call* clause = Expression::dyn_cast<Call>(same_call(env,alv[j](),constants().ids.clause));
-              if (clause) {
-                ArrayLit* clause_pos = eval_array_lit(env,clause->arg(0));
-                for (unsigned int k=0; k<clause_pos->size(); k++) {
-                  local_pos.push_back((*clause_pos)[k]);
-                }
-                ArrayLit* clause_neg = eval_array_lit(env,clause->arg(1));
-                for (unsigned int k=0; k<clause_neg->size(); k++) {
-                  local_neg.push_back((*clause_neg)[k]);
-                }
+              pos_alv.push_back((*al_pos)[i]);
+            }
+          }
+        }
+
+        if (cid == constants().ids.clause) {
+          ArrayLit* al_neg = follow_id(args_ee[1].r())->cast<ArrayLit>();
+          for (unsigned int i=0; i<al_neg->size(); i++) {
+            GCLock lock;
+            if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al_neg)[i],constants().ids.forall))) {
+              GCLock lock;
+              ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
+              for (unsigned int j=0; j<sc_c->size(); j++) {
+                neg_alv.push_back((*sc_c)[j]);
+              }
+            } else {
+              Call* neg_call = Expression::dyn_cast<Call>(same_call(env,(*al_neg)[i],constants().ids.bool_eq));
+              if (neg_call &&
+                  Expression::equal(neg_call->arg(1),constants().lit_false)) {
+                pos_alv.push_back(neg_call->arg(0));
               } else {
-                local_pos.push_back(alv[j]);
+                neg_alv.push_back((*al_neg)[i]);
               }
             }
           }
         }
+
         bool subsumed = remove_dups(pos_alv,false);
         subsumed = subsumed || remove_dups(neg_alv,true);
         subsumed = subsumed || contains_dups(pos_alv, neg_alv);
