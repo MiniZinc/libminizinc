@@ -20,13 +20,13 @@ namespace MiniZinc {
 
   class GeasOptions : public SolverInstanceBase::Options {
   public:
-    bool all_solutions = false; // TODO
-    int conflicts = 0; // TODO
+    bool all_solutions = false;
+    int conflicts = 0;
     bool free_search = false; // TODO
-    int nr_solutions = 1; // TODO
-    int obj_probe_limit = 0; // TODO
+    int nr_solutions = 1;
+    int obj_probe_limit = 0;
     bool statistics = false; // TODO
-    int time = 0; // TODO
+    std::chrono::milliseconds time = std::chrono::milliseconds(0);
     int verbose = 0; // TODO
   };
 

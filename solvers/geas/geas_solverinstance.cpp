@@ -332,11 +332,20 @@ namespace MiniZinc{
 
   SolverInstanceBase::Status MiniZinc::GeasSolverInstance::solve() {
     auto _opt = static_cast<GeasOptions&>(*_options);
+    auto remaining_time = [_opt] {
+      if (_opt.time == std::chrono::milliseconds(0)) {
+        return 0.0;
+      } else {
+        using geas_time = std::chrono::duration<double>;
+        static auto timeout = std::chrono::high_resolution_clock::now() + _opt.time;
+        return geas_time(timeout - std::chrono::high_resolution_clock::now()).count();
+      }
+    };
     if (_obj_type == SolveI::ST_SAT) {
       int nr_solutions = 0;
       geas::solver::result res = geas::solver::UNKNOWN;
-      while (_opt.all_solutions || nr_solutions < _opt.nr_solutions) {
-        res = _solver.solve();
+      while ((_opt.all_solutions || nr_solutions < _opt.nr_solutions) && remaining_time() >= 0.0) {
+        res = _solver.solve({remaining_time(), _opt.conflicts - _solver.data->stats.conflicts});
         nr_solutions++;
         printSolution();
         if (res != geas::solver::SAT) {
@@ -359,7 +368,11 @@ namespace MiniZinc{
             return SolverInstance::UNSAT;
           }
         case geas::solver::UNKNOWN:
-          return SolverInstance::UNKNOWN;
+          if (nr_solutions > 0) {
+            return SolverInstance::SAT;
+          } else {
+            return SolverInstance::UNKNOWN;
+          }
         default:
           return SolverInstance::ERROR;
       }
@@ -370,7 +383,7 @@ namespace MiniZinc{
       SolverInstanceBase::Status status = SolverInstance::ERROR;
       geas::solver::result res;
       while (true) {
-        res = _solver.solve();
+        res = _solver.solve({remaining_time(), _opt.conflicts - _solver.data->stats.conflicts});
         geas::intvar::val_t obj_val;
         if (res != geas::solver::SAT) {
           break;
@@ -382,8 +395,7 @@ namespace MiniZinc{
         obj_val = _solver.get_model()[obj];
 
         int step = 1;
-        // TODO: Only when probing is enabled
-        while (true) {
+        while (_opt.obj_probe_limit > 0) {
           geas::intvar::val_t assumed_obj;
           if (_obj_type == SolveI::ST_MIN) {
             assumed_obj = obj_val - step;
@@ -396,7 +408,7 @@ namespace MiniZinc{
             _solver.retract();
             break;
           }
-          res = _solver.solve({0.0, 50}); // TODO: Use probing limits flag
+          res = _solver.solve({remaining_time(), _opt.obj_probe_limit});
           _solver.retract();
           if (res != geas::solver::SAT) {
             break;
@@ -601,7 +613,7 @@ namespace MiniZinc{
       if (++i==argv.size()) return false;
       int time = atoi(argv[i].c_str());
       if(time >= 0)
-        _opt->time = time;
+        _opt->time = std::chrono::milliseconds(time);
     } else if (argv[i]=="-v") {
       _opt->verbose += 1;
     } else {
