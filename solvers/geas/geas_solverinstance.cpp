@@ -487,7 +487,7 @@ namespace MiniZinc{
     sc.supportsMzn(false);
     sc.description(getDescription(nullptr));
     sc.tags({"api","cp","float","int","lcg",});
-    sc.stdFlags({});
+    sc.stdFlags({"-a", "-f", "-n", "-s", "-t", "-v"});
     SolverConfigs::registerBuiltinSolver(sc);
   };
 
@@ -500,7 +500,45 @@ namespace MiniZinc{
   }
 
   bool Geas_SolverFactory::processOption(SolverInstanceBase::Options* opt, int &i, std::vector<std::string> &argv) {
-    return false;
+    auto _opt = static_cast<GeasOptions&>(*opt);
+    if (argv[i]=="-a" || argv[i]=="--all-solutions") {
+      _opt.all_solutions = true;
+    } else if (argv[i]=="--conflicts") {
+      if (++i==argv.size()) return false;
+      int nodes = atoi(argv[i].c_str());
+      if(nodes >= 0)
+        _opt.conflicts = nodes;
+    } else if (argv[i]=="-f") {
+      _opt.free_search = true;
+    } else if (argv[i]=="-n") {
+      if (++i==argv.size()) {
+        return false;
+      }
+      int n = atoi(argv[i].c_str());
+      if(n >= 0) {
+        _opt.nr_solutions = n;
+      }
+    } else if (argv[i]=="--obj-probe") {
+      if (++i==argv.size()) {
+        return false;
+      }
+      int limit = atoi(argv[i].c_str());
+      if(limit >= 0) {
+        _opt.obj_probe_limit = limit;
+      }
+    } else if (argv[i]=="-s") {
+      _opt.statistics = true;
+    } else if (argv[i]=="--solver-time-limit" || argv[i]=="-t") {
+      if (++i==argv.size()) return false;
+      int time = atoi(argv[i].c_str());
+      if(time >= 0)
+        _opt.time = time;
+    } else if (argv[i]=="-v") {
+      _opt.verbose += 1;
+    } else {
+      return false;
+    }
+    return true;
   }
 
   void Geas_SolverFactory::printHelp(std::ostream &os) {

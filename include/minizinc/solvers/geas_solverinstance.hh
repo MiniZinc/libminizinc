@@ -18,7 +18,17 @@
 
 namespace MiniZinc {
 
-  class GeasOptions : public SolverInstanceBase::Options {};
+  class GeasOptions : public SolverInstanceBase::Options {
+  public:
+    bool all_solutions = false; // TODO
+    int conflicts = 0; // TODO
+    bool free_search = false; // TODO
+    int nr_solutions = 1; // TODO
+    int obj_probe_limit = 0; // TODO
+    bool statistics = false; // TODO
+    int time = 0; // TODO
+    int verbose = 0; // TODO
+  };
 
   class GeasVariable {
   public:
