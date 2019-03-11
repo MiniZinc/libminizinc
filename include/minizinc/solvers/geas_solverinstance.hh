@@ -103,6 +103,7 @@ namespace MiniZinc {
     std::unique_ptr<GeasTypes::Variable> _obj_var;
 
     GeasTypes::Variable& resolveVar(Expression* e);
+    bool addSolutionNoGood();
 
     void registerConstraint(std::string name, poster p);
     void registerConstraints();

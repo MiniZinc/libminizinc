@@ -288,16 +288,76 @@ namespace MiniZinc{
     }
   }
 
+  bool GeasSolverInstance::addSolutionNoGood() {
+    assert(!_varsWithOutput.empty());
+    geas::model solution = _solver.get_model();
+    vec<geas::clause_elt> clause;
+    for (auto &var : _varsWithOutput) {
+      if (Expression::dyn_cast<Call>(getAnnotation(var->ann(), constants().ann.output_array.aststr()))) {
+        if (auto al = var->e()->dyn_cast<ArrayLit>()) {
+          for(unsigned int j=0; j<al->size(); j++) {
+            if(Id* id = (*al)[j]->dyn_cast<Id>()) {
+              auto geas_var = resolveVar(id);
+              if (geas_var.isBool()) {
+                geas::patom_t bv = geas_var.boolVar();
+                clause.push(solution.value(bv) ? ~bv : bv);
+              } else if (geas_var.isFloat()) {
+                geas::fp::fpvar fv = geas_var.floatVar();
+                clause.push(fv < solution[fv]);
+                clause.push(fv > solution[fv]);
+              } else {
+                geas::intvar iv = geas_var.intVar();
+                clause.push(~(iv == solution[iv]));
+              }
+            }
+          }
+        }
+      } else {
+        auto geas_var = resolveVar(var);
+        if (geas_var.isBool()) {
+          geas::patom_t bv = geas_var.boolVar();
+          clause.push(solution.value(bv) ? ~bv : bv);
+        } else if (geas_var.isFloat()) {
+          geas::fp::fpvar fv = geas_var.floatVar();
+          clause.push(fv < solution[fv]);
+          clause.push(fv > solution[fv]);
+        } else {
+          geas::intvar iv = geas_var.intVar();
+          clause.push(iv != solution[iv]);
+        }
+      }
+    }
+    return geas::add_clause(*_solver.data, clause);
+  }
+
   SolverInstanceBase::Status MiniZinc::GeasSolverInstance::solve() {
+    auto _opt = static_cast<GeasOptions&>(*_options);
     if (_obj_type == SolveI::ST_SAT) {
-      // TODO: Handle -a flag
-      geas::solver::result res = _solver.solve();
-      printSolution();
+      int nr_solutions = 0;
+      geas::solver::result res = geas::solver::UNKNOWN;
+      while (_opt.all_solutions || nr_solutions < _opt.nr_solutions) {
+        res = _solver.solve();
+        nr_solutions++;
+        printSolution();
+        if (res != geas::solver::SAT) {
+          break;
+        } else {
+          _solver.restart();
+          if(!addSolutionNoGood()) {
+            res = geas::solver::UNSAT;
+            break;
+          }
+        }
+      }
       switch (res) {
         case geas::solver::SAT:
           return SolverInstance::SAT;
         case geas::solver::UNSAT:
-          return SolverInstance::UNSAT;
+          if (nr_solutions > 0) {
+            return SolverInstance::OPT;
+          } else {
+            return SolverInstance::UNSAT;
+          }
         case geas::solver::UNKNOWN:
           return SolverInstance::UNKNOWN;
         default:
@@ -316,7 +376,9 @@ namespace MiniZinc{
           break;
         }
         status = SolverInstance::SAT;
-        printSolution();
+        if(_opt.all_solutions) {
+          printSolution();
+        }
         obj_val = _solver.get_model()[obj];
 
         int step = 1;
@@ -340,7 +402,9 @@ namespace MiniZinc{
             break;
           }
           step *= 2;
-          printSolution();
+          if(_opt.all_solutions) {
+            printSolution();
+          }
           obj_val = _solver.get_model()[obj];
         }
         _solver.post(_obj_type == SolveI::ST_MIN ? obj < obj_val : obj > obj_val );
@@ -358,8 +422,13 @@ namespace MiniZinc{
             status = SolverInstance::ERROR;
             break;
         }
-      } else if (res == geas::solver::UNSAT) {
-        status = SolverInstance::OPT;
+      } else {
+        if (res == geas::solver::UNSAT) {
+          status = SolverInstance::OPT;
+        }
+        if(!_opt.all_solutions) {
+          printSolution();
+        }
       }
       return status;
     }
@@ -500,23 +569,23 @@ namespace MiniZinc{
   }
 
   bool Geas_SolverFactory::processOption(SolverInstanceBase::Options* opt, int &i, std::vector<std::string> &argv) {
-    auto _opt = static_cast<GeasOptions&>(*opt);
+    auto _opt = static_cast<GeasOptions*>(opt);
     if (argv[i]=="-a" || argv[i]=="--all-solutions") {
-      _opt.all_solutions = true;
+      _opt->all_solutions = true;
     } else if (argv[i]=="--conflicts") {
       if (++i==argv.size()) return false;
       int nodes = atoi(argv[i].c_str());
       if(nodes >= 0)
-        _opt.conflicts = nodes;
+        _opt->conflicts = nodes;
     } else if (argv[i]=="-f") {
-      _opt.free_search = true;
+      _opt->free_search = true;
     } else if (argv[i]=="-n") {
       if (++i==argv.size()) {
         return false;
       }
       int n = atoi(argv[i].c_str());
       if(n >= 0) {
-        _opt.nr_solutions = n;
+        _opt->nr_solutions = n;
       }
     } else if (argv[i]=="--obj-probe") {
       if (++i==argv.size()) {
@@ -524,17 +593,17 @@ namespace MiniZinc{
       }
       int limit = atoi(argv[i].c_str());
       if(limit >= 0) {
-        _opt.obj_probe_limit = limit;
+        _opt->obj_probe_limit = limit;
       }
     } else if (argv[i]=="-s") {
-      _opt.statistics = true;
+      _opt->statistics = true;
     } else if (argv[i]=="--solver-time-limit" || argv[i]=="-t") {
       if (++i==argv.size()) return false;
       int time = atoi(argv[i].c_str());
       if(time >= 0)
-        _opt.time = time;
+        _opt->time = time;
     } else if (argv[i]=="-v") {
-      _opt.verbose += 1;
+      _opt->verbose += 1;
     } else {
       return false;
     }
