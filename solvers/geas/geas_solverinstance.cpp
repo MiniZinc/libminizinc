@@ -331,6 +331,7 @@ namespace MiniZinc{
   }
 
   SolverInstanceBase::Status MiniZinc::GeasSolverInstance::solve() {
+    SolverInstanceBase::Status status = SolverInstance::ERROR;
     auto _opt = static_cast<GeasOptions&>(*_options);
     auto remaining_time = [_opt] {
       if (_opt.time == std::chrono::milliseconds(0)) {
@@ -360,27 +361,30 @@ namespace MiniZinc{
       }
       switch (res) {
         case geas::solver::SAT:
-          return SolverInstance::SAT;
+          status = SolverInstance::SAT;
+          break;
         case geas::solver::UNSAT:
           if (nr_solutions > 0) {
-            return SolverInstance::OPT;
+            status = SolverInstance::OPT;
           } else {
-            return SolverInstance::UNSAT;
+            status = SolverInstance::UNSAT;
           }
+          break;
         case geas::solver::UNKNOWN:
           if (nr_solutions > 0) {
-            return SolverInstance::SAT;
+            status = SolverInstance::SAT;
           } else {
-            return SolverInstance::UNKNOWN;
+            status = SolverInstance::UNKNOWN;
           }
+          break;
         default:
-          return SolverInstance::ERROR;
+          status = SolverInstance::ERROR;
+          break;
       }
     } else {
       // TODO: Add float objectives
       assert(_obj_var->isInt());
       geas::intvar obj = _obj_var->intVar();
-      SolverInstanceBase::Status status = SolverInstance::ERROR;
       geas::solver::result res;
       while (true) {
         res = _solver.solve({remaining_time(), _opt.conflicts - _solver.data->stats.conflicts});
@@ -442,8 +446,11 @@ namespace MiniZinc{
           printSolution();
         }
       }
-      return status;
     }
+    if (_opt.statistics) {
+      printStatistics(true);
+    }
+    return status;
   }
 
   Expression* GeasSolverInstance::getSolutionValue(Id* id) {
@@ -560,6 +567,18 @@ namespace MiniZinc{
     return vec;
   }
 
+  void GeasSolverInstance::printStatistics(bool fLegend) {
+    auto& st = _solver.data->stats;
+    auto& out = getSolns2Out()->getOutput();
+
+    out << "%%%mzn-stat: failures=" << st.conflicts << std::endl; // TODO: Statistic name
+    out << "%%%mzn-stat: solveTime=" << st.time << std::endl;
+    out << "%%%mzn-stat: solutions=" << st.solutions << std::endl;
+    out << "%%%mzn-stat: restarts=" << st.restarts << std::endl;
+    out << "%%%mzn-stat: nogoods=" << st.num_learnts << std::endl; // TODO: Statistic name
+    out << "%%%mzn-stat: learntLiterals=" << st.num_learnt_lits << std::endl; // TODO: Statistic name
+  }
+
   Geas_SolverFactory::Geas_SolverFactory() {
     SolverConfig sc("org.minizinc.geas", getVersion(nullptr));
     sc.name("Geas");
@@ -607,7 +626,7 @@ namespace MiniZinc{
       if(limit >= 0) {
         _opt->obj_probe_limit = limit;
       }
-    } else if (argv[i]=="-s") {
+    } else if (argv[i]=="--solver-statistics" || argv[i]=="-s") {
       _opt->statistics = true;
     } else if (argv[i]=="--solver-time-limit" || argv[i]=="-t") {
       if (++i==argv.size()) return false;

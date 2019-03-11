@@ -25,7 +25,7 @@ namespace MiniZinc {
     bool free_search = false; // TODO
     int nr_solutions = 1;
     int obj_probe_limit = 0;
-    bool statistics = false; // TODO
+    bool statistics = false;
     std::chrono::milliseconds time = std::chrono::milliseconds(0);
     int verbose = 0; // TODO
   };
@@ -81,7 +81,7 @@ namespace MiniZinc {
     void resetSolver() override;
 
     Expression* getSolutionValue(Id* id) override;
-
+    void printStatistics(bool fLegend) override;
 
     // MiniZinc to Geas conversions
     bool asBool(Expression* e) { return eval_bool(env().envi(), e); }
