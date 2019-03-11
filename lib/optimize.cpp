@@ -356,6 +356,29 @@ namespace MiniZinc {
                 topDown(cd,c);
                 ci->e(constants().lit_true);
                 envi.flat_removeItem(i);
+              } else if ( c->id() == constants().ids.int_.lin_eq &&
+                         Expression::equal(c->arg(2), IntLit::a(0))) {
+                ArrayLit* al_c = follow_id(c->arg(0))->cast<ArrayLit>();
+                if (al_c->size()==2 && (*al_c)[0]->cast<IntLit>()->v() == -(*al_c)[1]->cast<IntLit>()->v()) {
+                  ArrayLit* al_x = follow_id(c->arg(1))->cast<ArrayLit>();
+                  if ((*al_x)[0]->isa<Id>() && (*al_x)[1]->isa<Id>() &&
+                      ((*al_x)[0]->cast<Id>()->decl()->e()==NULL || (*al_x)[1]->cast<Id>()->decl()->e()==NULL)) {
+                    // Equality constraint between two identifiers: unify
+                    
+                    unify(envi, deletedVarDecls, (*al_x)[0]->cast<Id>(), (*al_x)[1]->cast<Id>());
+                    {
+                      VarDecl* vd = (*al_x)[0]->cast<Id>()->decl();
+                      int v0idx = envi.vo.find(vd);
+                      pushVarDecl(envi, m[v0idx]->cast<VarDeclI>(), v0idx, vardeclQueue);
+                    }
+                    
+                    pushDependentConstraints(envi, (*al_x)[0]->cast<Id>(), constraintQueue);
+                    CollectDecls cd(envi.vo,deletedVarDecls,ci);
+                    topDown(cd,c);
+                    ci->e(constants().lit_true);
+                    envi.flat_removeItem(i);
+                  }
+                }
               } else if (c->id()==constants().ids.forall) {
 
                 // Remove forall constraints, assign variables inside the forall to true
