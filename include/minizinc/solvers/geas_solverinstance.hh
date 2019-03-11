@@ -89,6 +89,9 @@ namespace MiniZinc {
     geas::solver _solver;
     Model* _flat;
 
+    SolveI::SolveType _obj_type = SolveI::ST_SAT;
+    std::unique_ptr<GeasTypes::Variable> _obj_var;
+
     GeasTypes::Variable& resolveVar(Expression* e);
 
     void registerConstraint(std::string name, poster p);

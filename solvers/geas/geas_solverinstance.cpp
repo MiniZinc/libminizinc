@@ -282,26 +282,62 @@ namespace MiniZinc{
     // Set objective
     SolveI* si = _flat->solveItem();
     if(si->e()) {
-      auto id = si->e()->dyn_cast<Id>();
-      assert(id); // The solve expression has to be a variable/id
-      auto type = si->st();
-      // TODO: Actually do something with the objective
+      _obj_type = si->st();
+      _obj_var = std::unique_ptr<GeasTypes::Variable>(new GeasTypes::Variable(resolveVar(si->e())));
+      // TODO: Branching annotations
     }
   }
 
   SolverInstanceBase::Status MiniZinc::GeasSolverInstance::solve() {
-    // TODO: Other types of solving types
-    geas::solver::result res = _solver.solve();
-    printSolution();
-    switch (res) {
-      case geas::solver::SAT:
-        return SolverInstance::SAT;
-      case geas::solver::UNSAT:
-        return SolverInstance::UNSAT;
-      case geas::solver::UNKNOWN:
-        return SolverInstance::UNKNOWN;
-      default:
-        return SolverInstance::ERROR;
+    if (_obj_type == SolveI::ST_SAT) {
+      // TODO: Handle -a flag
+      geas::solver::result res = _solver.solve();
+      printSolution();
+      switch (res) {
+        case geas::solver::SAT:
+          return SolverInstance::SAT;
+        case geas::solver::UNSAT:
+          return SolverInstance::UNSAT;
+        case geas::solver::UNKNOWN:
+          return SolverInstance::UNKNOWN;
+        default:
+          return SolverInstance::ERROR;
+      }
+    } else {
+      // TODO: Add float objectives
+      assert(_obj_var->isInt());
+      geas::intvar obj = _obj_var->intVar();
+      SolverInstanceBase::Status status = SolverInstance::ERROR;
+      geas::solver::result res;
+      while (true) {
+        res = _solver.solve();
+        geas::intvar::val_t obj_val;
+        if (res != geas::solver::SAT) {
+          break;
+        } else {
+          status = SolverInstance::SAT;
+          printSolution();
+          obj_val = _solver.get_model()[obj];
+          _solver.post(_obj_type == SolveI::ST_MIN ? obj < obj_val : obj > obj_val );
+        }
+      }
+      if (status == SolverInstance::ERROR) {
+        switch (res) {
+          case geas::solver::UNSAT:
+            status = SolverInstance::UNSAT;
+            break;
+          case geas::solver::UNKNOWN:
+            status = SolverInstance::UNKNOWN;
+            break;
+          default:
+            assert(false);
+            status = SolverInstance::ERROR;
+            break;
+        }
+      } else if (res == geas::solver::UNSAT) {
+        status = SolverInstance::OPT;
+      }
+      return status;
     }
   }
 
