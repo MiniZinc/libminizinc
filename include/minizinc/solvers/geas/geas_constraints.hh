@@ -79,8 +79,8 @@ namespace MiniZinc {
     PosterImpl(p_array_bool_or);
     PosterImpl(p_array_bool_and);
     PosterImpl(p_bool_clause_imp);
-    PosterImpl(p_array_bool_and_imp);
     PosterImpl(p_array_bool_or_imp);
+    PosterImpl(p_array_bool_and_imp);
     PosterImpl(p_bool_clause_reif);
 
       /* Boolean Linear Constraints */

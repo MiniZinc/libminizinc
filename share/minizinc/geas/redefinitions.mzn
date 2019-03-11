@@ -6,12 +6,40 @@ annotation bool_priority(array[int] of var bool: xs,
   array[int] of ann: br, ann: sel);
 
 %% Half Reifications
+predicate int_eq_imp(var int: a, var int: b, var bool: r);
+predicate int_ne_imp(var int: a, var int: b, var bool: r);
+predicate int_le_imp(var int: a, var int: b, var bool: r);
+predicate int_lt_imp(var int: a, var int: b, var bool: r);
+
 predicate int_lin_eq_imp(array [int] of int: as, array [int] of var int: bs,
                          int: c, var bool: r);
 predicate int_lin_ne_imp(array [int] of int: as, array [int] of var int: bs,
                          int: c, var bool: r);
 predicate int_lin_le_imp(array [int] of int: as, array [int] of var int: bs,
                          int: c, var bool: r);
+
+predicate bool_eq_imp(var bool: a, var bool: b, var bool: r);
+predicate bool_ne_imp(var bool: a, var bool: b, var bool: r);
+predicate bool_le_imp(var bool: a, var bool: b, var bool: r);
+predicate bool_lt_imp(var bool: a, var bool: b, var bool: r);
+
+predicate bool_or_imp(var bool: a, var bool: b, var bool: r);
+predicate bool_and_imp(var bool: a, var bool: b, var bool: r);
+predicate bool_xor_imp(var bool: a, var bool: b, var bool: r);
+
+predicate bool_clause_imp(array [int] of var bool: as, array [int] of var bool: bs,
+                          var bool: b);
+predicate array_bool_or_imp(array [int] of var bool: as, var bool: r);
+predicate array_bool_and_imp(array [int] of var bool: as, var bool: r);
+
+predicate bool_lin_eq_imp(array [int] of int: as, array [int] of var bool: bs,
+                          var int: c, var bool: r);
+predicate bool_lin_le_imp(array [int] of int: as, array [int] of var bool: bs,
+                          var int: c, var bool: r);
+predicate bool_lin_lt_imp(array [int] of int: as, array [int] of var bool: bs,
+                          var int: c, var bool: r);
+predicate bool_lin_ne_imp(array [int] of int: as, array [int] of var bool: bs,
+                          var int: c, var bool: r);
 
 %% Special cases for binary-ish x, y.
 predicate int_lin_eq_reif(
