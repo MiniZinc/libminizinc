@@ -314,12 +314,36 @@ namespace MiniZinc{
         geas::intvar::val_t obj_val;
         if (res != geas::solver::SAT) {
           break;
-        } else {
-          status = SolverInstance::SAT;
+        }
+        status = SolverInstance::SAT;
+        printSolution();
+        obj_val = _solver.get_model()[obj];
+
+        int step = 1;
+        // TODO: Only when probing is enabled
+        while (true) {
+          geas::intvar::val_t assumed_obj;
+          if (_obj_type == SolveI::ST_MIN) {
+            assumed_obj = obj_val - step;
+            assumed_obj = obj.lb(_solver.data) > assumed_obj ? obj.lb(_solver.data) : assumed_obj;
+          } else {
+            assumed_obj = obj_val + step;
+            assumed_obj = obj.ub(_solver.data) < assumed_obj ? obj.ub(_solver.data) : assumed_obj;
+          }
+          if (!_solver.assume(obj == assumed_obj)) {
+            _solver.retract();
+            break;
+          }
+          res = _solver.solve({0.0, 50}); // TODO: Use probing limits flag
+          _solver.retract();
+          if (res != geas::solver::SAT) {
+            break;
+          }
+          step *= 2;
           printSolution();
           obj_val = _solver.get_model()[obj];
-          _solver.post(_obj_type == SolveI::ST_MIN ? obj < obj_val : obj > obj_val );
         }
+        _solver.post(_obj_type == SolveI::ST_MIN ? obj < obj_val : obj > obj_val );
       }
       if (status == SolverInstance::ERROR) {
         switch (res) {
