@@ -283,7 +283,12 @@ namespace MiniZinc{
     SolveI* si = _flat->solveItem();
     if(si->e()) {
       _obj_type = si->st();
-      _obj_var = std::unique_ptr<GeasTypes::Variable>(new GeasTypes::Variable(resolveVar(si->e())));
+      if (_obj_type == SolveI::ST_MIN) {
+        _obj_var = std::unique_ptr<GeasTypes::Variable>(new GeasTypes::Variable(resolveVar(si->e())));
+      } else if (_obj_type == SolveI::ST_MAX) {
+        _obj_type = SolveI::ST_MIN;
+        _obj_var = std::unique_ptr<GeasTypes::Variable>(new GeasTypes::Variable(-asIntVar(si->e())));
+      }
       // TODO: Branching annotations
     }
   }
@@ -382,6 +387,7 @@ namespace MiniZinc{
           break;
       }
     } else {
+      assert(_obj_type == SolveI::ST_MIN);
       // TODO: Add float objectives
       assert(_obj_var->isInt());
       geas::intvar obj = _obj_var->intVar();
@@ -401,13 +407,8 @@ namespace MiniZinc{
         int step = 1;
         while (_opt.obj_probe_limit > 0) {
           geas::intvar::val_t assumed_obj;
-          if (_obj_type == SolveI::ST_MIN) {
-            assumed_obj = obj_val - step;
-            assumed_obj = obj.lb(_solver.data) > assumed_obj ? obj.lb(_solver.data) : assumed_obj;
-          } else {
-            assumed_obj = obj_val + step;
-            assumed_obj = obj.ub(_solver.data) < assumed_obj ? obj.ub(_solver.data) : assumed_obj;
-          }
+          assumed_obj = obj_val - step;
+          assumed_obj = obj.lb(_solver.data) > assumed_obj ? obj.lb(_solver.data) : assumed_obj;
           if (!_solver.assume(obj == assumed_obj)) {
             _solver.retract();
             break;
@@ -423,7 +424,7 @@ namespace MiniZinc{
           }
           obj_val = _solver.get_model()[obj];
         }
-        _solver.post(_obj_type == SolveI::ST_MIN ? obj < obj_val : obj > obj_val );
+        _solver.post(obj < obj_val);
       }
       if (status == SolverInstance::ERROR) {
         switch (res) {
