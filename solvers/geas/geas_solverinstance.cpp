@@ -588,7 +588,7 @@ namespace MiniZinc{
     sc.supportsMzn(false);
     sc.description(getDescription(nullptr));
     sc.tags({"api","cp","float","int","lcg",});
-    sc.stdFlags({"-a", "-f", "-n", "-s", "-t", "-v"});
+    sc.stdFlags({"-a", "-f", "-n", "-s", "-t"});
     SolverConfigs::registerBuiltinSolver(sc);
   };
 
@@ -634,8 +634,6 @@ namespace MiniZinc{
       int time = atoi(argv[i].c_str());
       if(time >= 0)
         _opt->time = std::chrono::milliseconds(time);
-    } else if (argv[i]=="-v") {
-      _opt->verbose += 1;
     } else {
       return false;
     }

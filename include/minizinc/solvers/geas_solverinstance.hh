@@ -27,7 +27,6 @@ namespace MiniZinc {
     int obj_probe_limit = 0;
     bool statistics = false;
     std::chrono::milliseconds time = std::chrono::milliseconds(0);
-    int verbose = 0; // TODO
   };
 
   class GeasVariable {
