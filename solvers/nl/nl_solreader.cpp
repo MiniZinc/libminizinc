@@ -133,10 +133,10 @@ namespace MiniZinc {
           cerr << "NL msg: SOLVED" << endl;
 
           stringstream sb;
-          for(int i=0; i<nl_file.header.nb_vars; ++i){
+          for(int i=0; i<nl_file.variables.size(); ++i){
 
             string n = nl_file.vnames[i];
-            Var v = nl_file.variables[n];   
+            NLVar v = nl_file.variables[n];   
             if(v.to_report){
                 sb << v.name << " = ";
                 if(v.is_integer){
@@ -153,7 +153,7 @@ namespace MiniZinc {
           string s = sb.str();
           out->feedRawDataChunk(s.c_str());
           out->feedRawDataChunk(out->_opt.solution_separator_00);
-          if(nl_file.is_optimisation){
+          if(nl_file.segment_O.is_optimisation){
             out->feedRawDataChunk("\n");
             out->feedRawDataChunk(out->_opt.search_complete_msg_00);
           }

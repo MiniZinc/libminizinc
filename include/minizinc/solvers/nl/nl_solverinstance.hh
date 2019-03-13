@@ -24,6 +24,13 @@ namespace MiniZinc {
     protected:
       Model* _fzn;
       Model* _ozn;
+
+      // Info about the files and problem name
+      string file_mzn;
+      string file_sub;
+      string file_nl;
+      string file_sol;
+
       NLFile nl_file;
 
     public:

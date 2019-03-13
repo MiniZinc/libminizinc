@@ -95,7 +95,16 @@ namespace MiniZinc {
   // Solver Instance
 
   NLSolverInstance::NLSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* options)
-    : SolverInstanceBase(env, log, options), _fzn(env.flat()), _ozn(env.output()) {}
+    : SolverInstanceBase(env, log, options), _fzn(env.flat()), _ozn(env.output()) {
+      
+      file_mzn = _env.envi().orig_model->filepath().str();
+      file_sub = file_mzn.substr(0,file_mzn.find_last_of('.'));
+      file_nl  = file_sub+".nl";
+      file_sol = file_sub+".sol";
+
+      nl_file = NLFile(env.envi().orig_model->filename().str());
+
+    }
 
   NLSolverInstance::~NLSolverInstance(void) {}
 
@@ -140,7 +149,7 @@ namespace MiniZinc {
     string file_nl  = file_sub+".nl";
     string file_sol = file_sub+".sol";
     std::ofstream outfile(file_nl);
-    outfile << nl_file;
+    nl_file.print_on(outfile);
     outfile.close();
 
     // --- --- --- Call the solver
@@ -205,7 +214,7 @@ namespace MiniZinc {
         const VarDecl& vd = *i->cast<VarDeclI>()->e();
         const TypeInst &ti        = *vd.ti()->cast<TypeInst>();
         const Expression &rhs     = *vd.e();
-        nl_file.analyse_vdecl(vd, ti, rhs);
+        nl_file.add_vdecl(vd, ti, rhs);
         cerr << "]OK." << endl;
       } break;
 
@@ -233,7 +242,7 @@ namespace MiniZinc {
       // Case of the 'solve' directive
       case Item::II_SOL: {
         const SolveI& si = *i->cast<SolveI>();
-        nl_file.analyse_solve(si.st(), si.e());
+        nl_file.add_solve(si.st(), si.e());
       } break;
 
       case Item::II_OUT: {

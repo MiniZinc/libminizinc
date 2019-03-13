@@ -11,11 +11,686 @@
 
 namespace MiniZinc {
 
+  /** *** *** *** Helpers *** *** *** **/
+  
+  /** Create a string representing the name (and unique identifier) of a variable from a variable declaration. */
+  string NLFile::get_vname(const VarDecl &vd){
+      stringstream os;
+      if (vd.id()->idn() != -1) {  os << " X_INTRODUCED_" << vd.id()->idn() << "_"; }
+      else if (vd.id()->v().size() != 0){ os << " " << vd.id()->v(); }
+      string name = os.str();
+      return name;
+  }
+
+  /** Create a string representing the name (and unique identifier) of a constraint from a specific call expression. */
+  string NLFile::get_cname(const Call& c){
+      stringstream os;
+      os << c.id() << "_" << c.loc().parserLocation().toString();
+      string name = os.str();
+      return name;
+  }
+
+  /** Obtain the vector of an array, either from an identifier or an array litteral */
+  ASTExprVec<Expression> NLFile::get_vec(const Expression* e){
+      switch(e->eid()){
+          case Expression::E_ID: {
+              return get_vec( e->cast<Id>()->decl()->e() ); // Follow the pointer to the expression of the declaration
+          }
+
+          case Expression::E_ARRAYLIT: {
+              const ArrayLit& al = *e->cast<ArrayLit>();
+              return al.getVec();
+          }
+      }
+      cerr << "Could not read array from expression." << endl;
+      assert(false);
+      return {}; // never reached
+  }
+
+  /** Create a vector of double from a vector containing Expression being IntLit. */
+  vector<double> NLFile::from_vec_int(const ASTExprVec<Expression>& v_int){
+    vector<double> v = {};
+    for(unsigned int i=0; i<v_int.size(); ++i){
+      double d  = v_int[i]->cast<IntLit>()->v().toInt();
+      v.push_back(d);
+    }
+    return v;
+  }
+
+  /** Create a vector of double from a vector containing Expression being FloatLit. */
+  vector<double> NLFile::from_vec_fp(const ASTExprVec<Expression>& v_fp){
+    vector<double> v = {};
+    for(unsigned int i=0; i<v_fp.size(); ++i){
+      double d  = v_fp[i]->cast<FloatLit>()->v().toDouble();
+      v.push_back(d);
+    }
+    return v;
+  }
+
+  /** Create a vector of variable names from a vector containing Expression being identifier Id. */
+  vector<string> NLFile::from_vec_id(const ASTExprVec<Expression>& v_id){
+    vector<string> v = {};
+    for(unsigned int i=0; i<v_id.size(); ++i){
+      string s  = get_vname(*(v_id[i]->cast<Id>()->decl()));
+      v.push_back(s);
+    }
+    return v;
+  }
+
+
+
+
+  /** *** *** *** Phase 1: collecting data from MZN *** *** *** **/
+
+  /** Add a solve goal in the NL File. In our case, we can only have one and only one solve goal. */
+  void NLFile::add_solve(SolveI::SolveType st, const Expression* e){
+
+      // We can only have one objective. Prevent override.
+      assert(!segment_O.is_defined());
+      
+      switch(st){
+          case SolveI::SolveType::ST_SAT:{
+              // Satisfy: implemented by minimizing 0
+              segment_O.minmax = segment_O.MINIMIZE;
+              segment_O.expression_graph.push_back(NLToken::n(0));
+              break;
+          }
+          case SolveI::SolveType::ST_MIN:{
+              segment_O.is_optimisation = true;
+              cerr << "solve min not implemented (todo: checking expression)" << endl;
+              assert(false);
+              break;
+          }
+          case SolveI::SolveType::ST_MAX:{
+              segment_O.is_optimisation = true;
+              cerr << "solve max not implemented (todo: checking expression)" << endl;
+              assert(false);                
+              break;
+          }
+      }
+
+      // Ensure that the obejctive is now defined.
+      assert(segment_O.is_defined());
+  }
+
+
+  /** Add a variable declaration in the NL File.
+   *  This function pre-analyse the declaration VarDecl, then delegate to add_vdecl_integer or add_vdecl_fp.
+   *  In flatzinc, arrays always have a rhs: the can always be replaced by their definition (following the pointer starting at the ID)
+   *  Hence, we do not reproduce arrays in the NL file.
+   *  However, we have to take into account the output variables (TODO) */
+  void NLFile::add_vdecl(const VarDecl &vd, const TypeInst &ti, const Expression &rhs){      
+    // Get the name
+    string name = get_vname(vd);
+    // Discriminate according to the type:
+    if(ti.isEnum()){
+      cerr << "Should not happen" << endl;
+      assert(false);
+    }
+    else if(ti.isarray()){
+      cerr << "Definition of array " << name << " is not reproduced in nl.";
+      // Gather output variable
+      if(vd.ann().containsCall(constants().ann.output_array)){
+        // TODO : For now, just x = [ list... ]
+      }
+    } else {
+      // Check if the variable needs to be reported
+      bool to_report = vd.ann().contains(constants().ann.output_var);
+      cerr << "'" << name << "' to be reported? " << to_report << " ";
+
+      // variable declaration
+      const Type& type          = ti.type();
+      const Expression* domain  = ti.domain();
+
+      // Check the type: integer or floatin point
+      assert(type.isvarint()||type.isvarfloat());
+      bool isvarint = type.isvarint();
+
+      // Call the declaration function according to the type
+      // Check the domain and convert if not null.
+      // Note: we directly jump to the specialized Int/Float set, going through the set literal
+      if(isvarint){
+          // Integer
+          IntSetVal* isv = NULL;
+          if(domain!=NULL){isv = domain->cast<SetLit>()->isv();}
+          add_vdecl_integer(name, isv, to_report);
+      } else {
+          // Floating point
+          FloatSetVal* fsv = NULL;
+          if(domain!=NULL){fsv = domain->cast<SetLit>()->fsv();}
+          add_vdecl_fp(name, fsv, to_report);
+      }
+    }
+  }
+
+  /** Add an integer variable declaration to the NL File. */
+  void NLFile::add_vdecl_integer(const string& name, const IntSetVal* isv, bool to_report){
+    // Check that we do not have naming conflict
+    assert(variables.find(name) == variables.end());
+    // Check the domain.
+    NLBound bound;
+    if(isv == NULL){
+      bound = NLBound::make_nobound();
+    } else if (isv->size()==1){
+      long long lb = isv->min(0).toInt();
+      long long ub = isv->max(0).toInt();
+      bound = NLBound::make_bounded(lb, ub);
+    } else {
+      cerr << "Should not happen: switch on mzn_opt_only_range_domains" << endl; assert(false);
+    }
+    // Create the variable and update the NLFile
+    NLVar v = NLVar(name, true, to_report, bound);
+    variables[name] = v;
+  }
+
+  /** Add a floating point variable declaration to the NL File. */
+  void NLFile::add_vdecl_fp(const string& name, const FloatSetVal* fsv, bool to_report) {
+    // Check that we do not have naming conflict
+    assert(variables.find(name) == variables.end());
+    // Check the domain.
+    NLBound bound;
+    if(fsv == NULL){
+      bound = NLBound::make_nobound();
+    } else if (fsv->size()==1){
+      double lb = fsv->min(0).toDouble();
+      double ub = fsv->max(0).toDouble();
+      bound = NLBound::make_bounded(lb, ub);
+    } else {
+      cerr << "Should not happen: switch on mzn_opt_only_range_domains" << endl; assert(false);
+    }
+    // Create the variable and update the NLFile
+    NLVar v = NLVar(name, false, to_report, bound);
+    variables[name] = v;
+  }
+
+  /** Dispatcher for constraint analysis. */
+  void NLFile::analyse_constraint(const Call& c){
+      // Guard
+      if(c.decl() == NULL){ cerr << "Undeclared function " << c.id(); assert(false); }
+
+      // ID of the call
+      auto id = c.id();
+      // Constants for integer builtins
+      auto consint = constants().ids.int_;
+      // Constants for floating point builtins
+      auto consfp = constants().ids.float_;
+
+      // Dispatch among integer builtins
+      if(id == consint.lin_eq){       consint_lin_eq(c); }
+      else if(id == consint.lin_le){  consint_lin_le(c); }
+      else if(id == consint.lin_ne){  consint_lin_ne(c); }
+      else if(id == consint.times){   consint_times(c); }
+      else if(id == consint.div){     consint_div(c); }
+      else if(id == consint.mod){     consint_mod(c); }
+      else if(id == consint.plus){    cerr << "Should not happen 'int plus'"; assert(false); }
+      else if(id == consint.minus){   cerr << "Should not happen 'int minus'"; assert(false); }
+      else if(id == consint.lt){      cerr << "Should not happen 'int lt'"; assert(false); }
+      else if(id == consint.le){      consint_le(c); }
+      else if(id == consint.gt){      cerr << "Should not happen 'int gt'"; assert(false); }
+      else if(id == consint.ge){      cerr << "Should not happen 'int ge'"; assert(false); }
+      else if(id == consint.eq){      consint_eq(c); }
+      else if(id == consint.ne){      consint_ne(c); }
+
+      // Dispatch among floating point builtins
+      else if(id == consfp.lin_eq){   consfp_lin_eq(c); }
+      else if(id == consfp.lin_le){   consfp_lin_le(c); }
+      else if(id == consfp.lin_lt){   consfp_lin_lt(c); }
+      else if(id == consfp.lin_ne){   consfp_lin_ne(c); }
+      else if(id == consfp.plus){     consfp_plus(c); }
+      else if(id == consfp.minus){    consfp_minus(c); }
+      else if(id == consfp.times){    consfp_times(c); }
+      else if(id == consfp.div){      consfp_div(c); }
+      else if(id == consfp.mod){      consfp_mod(c); }
+      else if(id == consfp.lt){       consfp_lt(c); }
+      else if(id == consfp.le){       consfp_le(c); }
+      else if(id == consfp.gt){       cerr << "Should not happen 'float gt'"; assert(false); }
+      else if(id == consfp.ge){       cerr << "Should not happen 'float ge'"; assert(false); }
+      else if(id == consfp.eq){       consfp_eq(c); }
+      else if(id == consfp.ne){       consfp_ne(c); }
+      else if(id == consfp.in){       cerr << "Ignore for now: constraint 'float in    ' not implemented"; assert(false); }
+      else if(id == consfp.dom){      cerr << "Ignore for now: constraint 'float dom   ' not implemented"; assert(false); }
+      
+      else {
+          cerr << "Unrecognized builtins " << c.id() << " not implemented";
+          assert(false);
+      }
+  }
+
+
+  /* *** *** *** Integer Constraint methods *** *** *** */
+  // WARGNING: when building expression graph in the constraints below, create the variable with vc and not vo!
+  // 'vc' will update the internal flag of variable for non linear constraints, while 'vo' is doing the same for the objective.
+
+
+  // --- --- --- Linear Constraints
+  // flatzinc:
+  // For a call c, we have 3 arguments:
+  // c.arg(0) and c.arg(1) are always arrays: array0 = coefficients and array1 = variables.
+  // c.arg(2) is the 'value'.
+  //
+  // nl:
+  // Update the header, taking specific cases (range/equality/logical) into account
+  //
+  // Algebraic Cases: = and =<
+  // C segment: non linear part of the contraint. Will be 0. Update the number of algebraic contraints
+  // J segment: linear part of the contraint: list of couple (variable index, coefficient)
+  // update of the r segment: the "range' constraint over the body (constraint number 'i' matches the ith line of the segment)
+  //
+  // Logical Case: !=
+  // L segment: logical constraint. Update the number of logical constraints
+  // The constraint is built with an expression graph, just as a non linear constraint.
+
+  /** Linar constraint: [array0] *+ [array1] = value **/
+  void NLFile::consint_lin_eq(const Call& c){
+    // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
+    vector<double>  coeffs  = from_vec_int(get_vec(c.arg(0)));
+    vector<string>  vars    = from_vec_id(get_vec(c.arg(1)));
+    long long       value   = c.arg(2)->cast<IntLit>()->v().toInt();
+
+    // Create the Algebraic Constraint and set the data
+    NLAlgCons cons;
+    // Get the name of the constraint
+    string cname = get_cname(c);
+    cons.name = cname;
+    // Create the bound of the constraint
+    NLBound bound = NLBound::make_equal(value);
+    cons.range = bound;
+    // No non linear part: leave the expression graph empty.
+    // Linear part: set the jacobian
+    cons.set_jacobian(vars, coeffs, this);
+
+    // Add the constraint in our mapping
+    constraints[cname] = cons;
+  }
+
+
+  /** Linar constraint: [array0] *+ [array1] =< value **/
+  void NLFile::consint_lin_le(const Call& c){
+    // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
+    vector<double>  coeffs  = from_vec_int(get_vec(c.arg(0)));
+    vector<string>  vars    = from_vec_id(get_vec(c.arg(1)));
+    long long       value   = c.arg(2)->cast<IntLit>()->v().toInt();
+
+    // Create the Algebraic Constraint and set the data
+    NLAlgCons cons;
+    // Get the name of the constraint
+    string cname = get_cname(c);
+    cons.name = cname;
+    // Create the bound of the constraint
+    NLBound bound = NLBound::make_ub_bounded(value);
+    cons.range = bound;
+    // No non linear part: leave the expression graph empty.
+    // Linear part: set the jacobian
+    cons.set_jacobian(vars, coeffs, this);
+
+    // Add the constraint in our mapping
+    constraints[cname] = cons;
+  }
+
+  /** Linar constraint: [array0] *+ [array1] != value
+   *  Translated into a logical constraint, not an algebraic one!
+   */
+  void NLFile::consint_lin_ne(const Call& c){
+    // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
+    vector<double>  coeffs  = from_vec_int(get_vec(c.arg(0)));
+    vector<string>  vars    = from_vec_id(get_vec(c.arg(1)));
+    long long       value   = c.arg(2)->cast<IntLit>()->v().toInt();
+
+    // Create the Logical Constraint and set the data
+    NLLogicalCons cons;
+    // Get the name of the constraint
+    string cname = get_cname(c);
+    cons.name = cname;
+    // Set the index
+    cons.index = logical_constraints.size();
+    // Create the expression graph
+    // 1) Push the comparison  "!= operand1 operand2"
+    cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::NE));
+    // 2) Operand1 := sum of product
+    // All the sums in one go
+    cons.expression_graph.push_back(NLToken::mo(NLToken::MOpCode::OPSUMLIST, coeffs.size()));
+    for(unsigned int i=0; i<coeffs.size(); ++i){
+        // Product
+        cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPMULT));
+        cons.expression_graph.push_back(NLToken::n(coeffs[i]));
+        cons.expression_graph.push_back(NLToken::vc(vars[i], this));  // Use 'vc' here !
+    }
+    // 3) Operand 2 := value
+    cons.expression_graph.push_back(NLToken::n(value));
+
+    // Store the constraint
+    logical_constraints.push_back(cons);
+  }
+
+  // --- --- --- Non Linear Constraints: operations
+  // Flatzinc:
+  // For a call c, we have 3 arguments:
+  // c.arg(0) and c.arg(1) are the operands
+  // c.arg(2) is the value to which it is compared.
+  // The arguments are either variable or parameter
+
+  /** Non linear constraint: x * y = z **/
+  void NLFile::consint_times(const Call& c){
+    cerr << "Non linear to be implementeed constraint 'int times'   not implemented"; assert(false);
+  }
+
+  /** Non linear constraint: x / y = z **/
+  void NLFile::consint_div(const Call& c){
+    cerr << "Non linear to be implementeed constraint 'int div'   not implemented"; assert(false);
+  }
+
+  /** Non linear constraint: x mod y = z **/
+  void NLFile::consint_mod(const Call& c){
+    cerr << "Non linear to be implementeed constraint 'int mod'   not implemented"; assert(false);
+  }
+
+
+
+  // --- --- --- Non Linear Constraints: comparisons
+  // Flatzinc:
+  // For a call c, we have 2 arguments, c.arg(0) and c.arg(1), being then operands of the comparison.
+  // The arguments are either variable or parameter
+
+  /** Non linear constraint x =< y **/
+  void NLFile::consint_le(const Call& c){
+      assert(false);
+      Expression* arg0 = c.arg(0);
+      Expression* arg1 = c.arg(1);
+      /*
+
+      // Bound checking: if arg0 is a parameter, its value is fixed.
+      // We have a constraint that create a partial a partial bound (or update a bound)
+      if(arg0->type().ispar()){
+          // Get the lower bound, the variable declaration and the associated name
+          long long lb = arg0->cast<IntLit>()->v().toInt();
+          VarDecl& vd = *(arg1->cast<Id>()->decl());
+          // Get the variable itself and its bound
+          string name = get_vname(vd);
+          Var v1 = variables[name];
+          // New bound as a copy. Update the copy, create an updated var and put it in the map
+          NLS_BoundItem newBound = v1.bound;
+          newBound.update_lb(lb);         // param <= var: lower bound
+          Var new_v = Var(name, v1.index, v1.is_integer, newBound, v1.to_report);
+          //Var new_v = v1.copy_with_bound(newBound);
+          variables[name] = new_v;
+      } else if(arg1->type().ispar()){
+          // Symmetric, with an upper bound var <= param
+          VarDecl& vd = *(arg0->cast<Id>()->decl());
+          long long ub = arg1->cast<IntLit>()->v().toInt();            
+          string name = get_vname(vd);
+          Var v0 = variables[name];
+          NLS_BoundItem newBound = v0.bound;
+          newBound.update_ub(ub);         // var <= param: upper bound
+          Var new_v = Var(name, v0.index, v0.is_integer, newBound, v0.to_report);
+          //Var new_v = v0.copy_with_bound(newBound);
+          variables[name] = new_v;
+      } else {
+          // --- --- --- Actual constraint
+          cerr << "not implemented" << endl;
+          assert(false);
+      }
+      */
+  }
+
+
+  /** Non linear constraint x = y
+   *  arg(0) should be variable
+   *  arg(1) could be a var or a constant
+   ***/
+  void NLFile::consint_eq(const Call& c){
+      Expression* arg0 = c.arg(0);
+      Expression* arg1 = c.arg(1);
+      assert(false);
+      /*
+
+      // Get fist arg
+      if(arg0->type().ispar()){
+        cerr << "Comparison: first argument shoud be a variable"; assert(false);
+      }
+      
+      // Get second arg.
+      // If constant, update the bound on the variable, else create a constraint.
+      if(arg1->type().ispar()){
+        VarDecl& vd = *(arg0->cast<Id>()->decl());
+        long long value = arg1->cast<IntLit>()->v().toInt();
+        string name = get_vname(vd);
+        NLVar v1 = variables[name];
+        // New bound as a copy. Update the copy, create an updated var and put it in the map
+        NLBound newBound = NLBound::make_equal(value, v1.index);
+        Var new_v = v1.copy_with_bound(newBound);
+        variables[name] = new_v;
+      }else{
+        // Create the constraint:
+        VarDecl& v0 = *(arg0->cast<Id>()->decl());
+        VarDecl& v1 = *(arg0->cast<Id>()->decl());
+
+        cerr << "wip" <<endl; assert(false);
+      }
+      */
+  }
+
+
+  /** Non linear constraint x != y **/
+  void NLFile::consint_ne(const Call& c){
+    cerr << "constraint 'int ne' not implemented"; assert(false);
+  }
+
+
+
+
+  /** *** *** *** Floating Point Constraint methods *** *** *** **/
+
+  void NLFile::consfp_lin_eq(const Call& c){
+    cerr << "constraint 'float lin_eq' not implemented"; assert(false);
+  }
+
+  void NLFile::consfp_lin_le(const Call& c){
+    cerr << "constraint 'float lin_le' not implemented"; assert(false);
+  }
+
+  void NLFile::consfp_lin_lt(const Call& c){
+    cerr << "constraint 'float lin_lt' not implemented"; assert(false);
+  }
+
+  void NLFile::consfp_lin_ne(const Call& c){
+    cerr << "constraint 'float lin_ne' not implemented"; assert(false);
+  }
+
+  void NLFile::consfp_plus(const Call& c){
+    cerr << "constraint 'float plus  ' not implemented"; assert(false);
+  }
+
+  void NLFile::consfp_minus(const Call& c){
+    cerr << "constraint 'float minus ' not implemented"; assert(false);
+  }
+
+  void NLFile::consfp_times(const Call& c){
+    cerr << "constraint 'float times ' not implemented"; assert(false);
+  }
+
+  void NLFile::consfp_div(const Call& c){
+    cerr << "constraint 'float div   ' not implemented"; assert(false);
+  }
+
+  void NLFile::consfp_mod(const Call& c){
+    cerr << "constraint 'float mod   ' not implemented"; assert(false);
+  }
+
+  void NLFile::consfp_lt(const Call& c){
+    cerr << "constraint 'float lt    ' not implemented"; assert(false);
+  }
+
+  void NLFile::consfp_le(const Call& c){
+    cerr << "constraint 'float le    ' not implemented"; assert(false);
+  }
+
+  void NLFile::consfp_eq(const Call& c){
+    cerr << "constraint 'float eq    ' not implemented"; assert(false);
+  }
+
+  void NLFile::consfp_ne(const Call& c){
+    cerr << "constraint 'float ne    ' not implemented"; assert(false);
+  }
+
+
+
+  /* *** *** *** Phase 2: processing *** *** *** */
+
+  void NLFile::phase_2(){
+
+    // --- --- --- Variables ordering and indexing
+    for (auto const& name_var : variables){
+      const NLVar &v = name_var.second;
+
+
+      // First check non linear variables in BOTH objective and constraint.
+      if(v.is_in_nl_objective && v.is_in_nl_constraint){
+        if(v.is_integer){
+          vname_nliv_both.push_back(v.name);
+        } else {
+          vname_nlcv_both.push_back(v.name);
+        }
+      }
+
+      // Variables in non linear constraint ONLY
+      else if(!v.is_in_nl_objective && v.is_in_nl_constraint){
+        if(v.is_integer){
+          vname_nliv_cons.push_back(v.name);
+        } else {
+          vname_nlcv_cons.push_back(v.name);
+        }
+      }
+
+      // Variables in non linear objective ONLY
+      else if(v.is_in_nl_objective && !v.is_in_nl_constraint){
+        if(v.is_integer){
+          vname_nliv_obj.push_back(v.name);
+        } else {
+          vname_nlcv_obj.push_back(v.name);
+        }
+      }
+
+      // Variables not appearing nonlinearly
+      else if(!v.is_in_nl_objective && !v.is_in_nl_constraint){
+        if(v.is_integer){
+          vname_liv_all.push_back(v.name);
+        } else {
+          vname_lcv_all.push_back(v.name);
+        }
+      }
+
+      // Should not happen
+      else { cerr << "Should not happen" << endl; assert(false);}
+    }
+
+
+    // --- --- --- Constraint ordering, couting, and indexing
+    for (auto const& name_cons : constraints){
+      const NLAlgCons &c = name_cons.second;
+
+      // Sort by linearity. We do not have network constraint.
+      if(c.is_linear()){
+        cnames_lin_general.push_back(c.name);
+      } else {
+        cnames_nl_general.push_back(c.name);
+      }
+
+      // Count the number of ranges and eqns constraints
+      switch(c.range.tag){
+        case NLBound::LB_UB:{ ++nb_alg_cons_range; }
+        case NLBound::EQ:{ ++nb_alg_cons_eq; }
+      }
+    }
+  }
+
+
+
+  // --- --- --- Counts
+
+  /** Jacobian count. */
+  int NLFile::jacobian_count() const {
+    return _jacobian_count;
+  }
+
+  /** Total number of variables. */
+  int NLFile::n_var() const {
+    return variables.size();
+  }
+
+  /** Number of variables appearing nonlinearly in constraints. */
+  int NLFile::nlvc() const {
+    // Variables in both + variables in constraint only (integer+continuous)
+    return nlvb()+vname_nliv_cons.size()+vname_nlcv_cons.size();
+  }
+
+  /** Number of variables appearing nonlinearly in objectives. */
+  int NLFile::nlvo() const {
+    // Variables in both + variables in objective only (integer+continuous)
+    return nlvb()+vname_nliv_obj.size()+vname_nlcv_obj.size();
+  }
+
+  /** Number of variables appearing nonlinearly in both constraints and objectives.*/
+  int NLFile::nlvb() const { return vname_nlcv_both.size() + vname_nliv_both.size();  }
+
+  /** Number of integer variables appearing nonlinearly in both constraints and objectives.*/        
+  int NLFile::nlvbi() const { return vname_nliv_both.size(); }
+
+  /** Number of integer variables appearing nonlinearly in constraints **only**.*/        
+  int NLFile::nlvci() const { return vname_nliv_cons.size(); }
+
+  /** Number of integer variables appearing nonlinearly in objectives **only**.*/        
+  int NLFile::nlvoi() const { return vname_nliv_obj.size(); }
+
+  /** Number of linear arcs. Network nor implemented, so always 0.*/
+  int NLFile::nwv() const { return vname_larc_all.size(); }
+
+  /** Number of "other" integer variables.*/
+  int NLFile::niv() const { return vname_liv_all.size();}
+
+  /** Number of binary variables.*/        
+  int NLFile::nbv() const { return vname_bv_all.size(); }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
     /** *** *** *** Printable Interface *** *** *** **/
 
     // Note:  * empty line not allowed
     //        * comment only not allowed
     ostream& NLFile::print_on(ostream& os) const{
+      return os;
+    }
+
+
+      /*
         os << header << endl;
 
         os << b_segment;
@@ -44,7 +719,8 @@ namespace MiniZinc {
             acc += variables.at(name).jacobian_count;
             os << "# " << acc << " # " << name << " Equivalent to the last column. NL format use the header to determine this value." << endl;
             */
-          }
+/*          }
+
 
           // J segments here
           for(auto &jseg: j_segments){
@@ -60,543 +736,7 @@ namespace MiniZinc {
 
         return os;
     }
-    
-    /** *** *** *** Helpers *** *** *** **/
-    
-    /** Obtain the name of the variable */
-    string NLFile::get_vname(const VarDecl &vd){
-        stringstream os;
-        if (vd.id()->idn() != -1) {  os << " X_INTRODUCED_" << vd.id()->idn() << "_"; }
-        else if (vd.id()->v().size() != 0){ os << " " << vd.id()->v(); }
-        string name = os.str();
-        return name;
-    }
-
-    /** Obtain the vector of an array, either from an identifier or an array litteral */
-    ASTExprVec<Expression> NLFile::get_vec(const Expression* e){
-        switch(e->eid()){
-            case Expression::E_ID: {
-                // Follow the pointer to the expression of the declaration
-                return get_vec( e->cast<Id>()->decl()->e() );
-            }
-
-            case Expression::E_ARRAYLIT: {
-                const ArrayLit& al = *e->cast<ArrayLit>();
-                return al.getVec();
-            }
-        }
-        cerr << "Could not read array from expression." << endl;
-        assert(false);
-        return {}; // never reached
-    }
-
-    /** Create the J segment for integer values **/
-    NLS_JSeg NLFile::make_jseg_int(int considx, const ASTExprVec<Expression> &coeffs, const ASTExprVec<Expression> &vars){
-        NLS_JSeg jseg(this, considx);
-        for(unsigned int i=0; i<coeffs.size(); ++i){
-              double co      = coeffs[i]->cast<IntLit>()->v().toInt();
-              Var* v         = &variables[get_vname(*(vars[i]->cast<Id>()->decl()))];
-              int vidx       = v->index;
-              v->jacobian_count++;
-              header.nb_nonzero_jacobian++;
-              jseg.var_coeff.push_back(pair<int, double>(vidx, co));
-        }
-        return jseg;
-    }
-
-    /** Create the J segment for floating point values **/
-    NLS_JSeg NLFile::make_jseg_fp(int considx, const ASTExprVec<Expression> &coeffs, const ASTExprVec<Expression> &vars){
-        NLS_JSeg jseg(this, considx);
-        for(unsigned int i=0; i<coeffs.size(); ++i){
-              double co      = coeffs[i]->cast<FloatLit>()->v().toDouble();
-              Var* v         = &variables[get_vname(*(vars[i]->cast<Id>()->decl()))];
-              int vidx       = v->index;
-              v->jacobian_count++;
-              header.nb_nonzero_jacobian++;
-              jseg.var_coeff.push_back(pair<int, double>(vidx, co));
-        }
-        return jseg;
-    }        
-
-
-    /** *** *** *** Solve analysis *** *** *** **/
-    void NLFile::analyse_solve(SolveI::SolveType st, const Expression* e){
-        header.nb_objectives++;
-        
-        switch(st){
-            case SolveI::SolveType::ST_SAT:{
-                this->is_optimisation = false;
-                // Satisfy: implemented by minimizing 0
-                o_segment.minmax = o_segment.MINIMIZE;
-                o_segment.expression_graph.push_back(NLToken::n(0));
-                break;
-            }
-            case SolveI::SolveType::ST_MIN:{
-                this->is_optimisation = true;
-                cerr << "solve min not implemented (todo: checking expression)" << endl;
-                assert(false);
-                break;
-            }
-            case SolveI::SolveType::ST_MAX:{
-                this->is_optimisation = true;
-                cerr << "solve max not implemented (todo: checking expression)" << endl;
-                assert(false);                
-                break;
-            }
-        }
-    }
-
-    
-
-
-
-    /** *** *** *** Variable declaration methods *** *** *** **/
-
-    /** Analyse a variable declaration vd of type ti with an ths
-     * The variable declaration gives us access to the variable name while the type
-     * allows us to discriminate between integer, floating point value and arrays.
-     * Array are ignored (not declared): if we encouter an array in a constraint,
-     * we can find the array through the variable (ot it is a litteral).
-     * Note that we use -Glinear, so we do not have boolean.
-     * 
-     * RHS is for arrays: contain the definition of the array
-     * 
-     * The type also gives us the domain, which can be:
-     *  NULL:       no restriction over the variable
-     *  SetLit:     Gives us a lower and upper bound
-     *  If a variable is bounded only on one side, then the domain is NULL and the bound is expressed through a constraint.
-     * 
-     */
-    void NLFile::analyse_vdecl(const VarDecl &vd, const TypeInst &ti, const Expression &rhs){
-        // Get the name
-        string name = get_vname(vd);
-
-
-        if(ti.isEnum()){ cerr << "Should not happen" << endl; assert(false); }
-        else if(ti.isarray()){
-            // In flatzinc, array always have a rhs: they can alway be replaced by their definition.
-            // Follows the pointer starting at the ID to do so.
-            cerr << "Definition of array " << name << " is not reproduced in nl.";
-                    // Gather output variable
-        if(vd.ann().containsCall(constants().ann.output_array)){
-            // For now, just x = [ list... ]
-            // todo
-        }
-        } else {
-
-            // Gather output variable
-            bool to_report = vd.ann().contains(constants().ann.output_var);
-            cerr << "'" << name << "' to be reported? " << to_report << " ";
-
-            // variable declaration
-            const Type& type          = ti.type();
-            const Expression* domain  = ti.domain();
-            // Check the type: integer or floatin point
-            assert(type.isvarint()||type.isvarfloat());
-            bool isvarint = type.isvarint();
-            // Call the declaration function according to the type
-            // Check the domain and convert if not null.
-            // Note: we directly jump to the specialized Int/Float set, going through the set literal
-            if(isvarint){
-                // Integer
-                IntSetVal* isv = NULL;
-                if(domain!=NULL){isv = domain->cast<SetLit>()->isv();}
-                vdecl_integer(name, isv, to_report);
-            } else {
-                // Floating point
-                FloatSetVal* fsv = NULL;
-                if(domain!=NULL){fsv = domain->cast<SetLit>()->fsv();}
-                vdecl_fp(name, fsv, to_report);
-            }
-        }
-    }
-
-    /** Declare a new integer variable, maybe bounded if intSet!=NULL **/
-    void NLFile::vdecl_integer(const string& name, const IntSetVal* intSet, bool to_report){
-        // Check that the name is available. Get variable GLOBAL index (0-base => number of vars before insertion).
-        assert(variables.find(name) == variables.end());
-        int index = variables.size();
-        // Check the domain
-        NLS_BoundItem bound;
-        if(intSet == NULL){
-            bound = NLS_BoundItem::make_nobound(index);
-        } else if(intSet->size()==1){
-            long long lb = intSet->min(0).toInt();
-            long long ub = intSet->max(0).toInt();
-            bound = NLS_BoundItem::make_bounded(lb, ub, index);
-        } else {
-            cerr << "Should not happen: switch on mzn_opt_only_range_domains" << endl;
-            assert(false);
-        }
-        // Create the variable and update the internal structure & header
-        Var v = Var(name, index, true, bound, to_report);  // true == integer
-        variables[name] = v;
-        vnames.push_back(name);
-        header.nb_vars++;
-        header.nb_linear_integer_vars++;        // Also update that one!
-    }
-
-    /** Declare a new floating point variable, maybe bounded if floatSet!=NULL **/
-    void NLFile::vdecl_fp(const string& name, const FloatSetVal* intSet, bool to_report){
-        // Check that the name is available. Get variable GLOBAL index (0-base => number of vars before insertion).
-        assert(variables.find(name) == variables.end());
-        int index = variables.size();
-        // Check the domain
-        NLS_BoundItem bound;
-        if(intSet == NULL){
-            bound = NLS_BoundItem::make_nobound(index);
-        } else if(intSet->size()==1){
-            double lb = intSet->min(0).toDouble();
-            double ub = intSet->max(0).toDouble();
-            bound = NLS_BoundItem::make_bounded(lb, ub, index);
-        } else {
-            cerr << "Should not happen: switch on mzn_opt_only_range_domains" << endl;
-            assert(false);
-        }
-        // Create the variable and update the internal structure & header
-        Var v = Var(name, index, false, bound, to_report);  // false == floating point
-        variables[name] = v;
-        vnames.push_back(name);
-        header.nb_vars++;
-    }   
-
-
-
-    /** *** *** *** Constraint methods *** *** *** **/
-
-    void NLFile::analyse_constraint(const Call& c){
-        // Guard
-        if(c.decl() == NULL){ cerr << "Undeclared function " << c.id(); assert(false); }
-
-        // ID of the call
-        auto id = c.id();
-        // Constants for integer builtins
-        auto consint = constants().ids.int_;
-        // Constants for floating point builtins
-        auto consfp = constants().ids.float_;
-
-        // Dispatch among integer builtins
-        if(id == consint.lin_eq){       consint_lin_eq(c); }
-        else if(id == consint.lin_le){  consint_lin_le(c); }
-        else if(id == consint.lin_ne){  consint_lin_ne(c); }
-        else if(id == consint.times){   consint_times(c); }
-        else if(id == consint.div){     consint_div(c); }
-        else if(id == consint.mod){     consint_mod(c); }
-        else if(id == consint.plus){    cerr << "Should not happen 'int plus'"; assert(false); }
-        else if(id == consint.minus){   cerr << "Should not happen 'int minus'"; assert(false); }
-        else if(id == consint.lt){      cerr << "Should not happen 'int lt'"; assert(false); }
-        else if(id == consint.le){      consint_le(c); }
-        else if(id == consint.gt){      cerr << "Should not happen 'int gt'"; assert(false); }
-        else if(id == consint.ge){      cerr << "Should not happen 'int ge'"; assert(false); }
-        else if(id == consint.eq){      consint_eq(c); }
-        else if(id == consint.ne){      consint_ne(c); }
-
-        // Dispatch among floating point builtins
-        else if(id == consfp.lin_eq){   consfp_lin_eq(c); }
-        else if(id == consfp.lin_le){   consfp_lin_le(c); }
-        else if(id == consfp.lin_lt){   consfp_lin_lt(c); }
-        else if(id == consfp.lin_ne){   consfp_lin_ne(c); }
-        else if(id == consfp.plus){     consfp_plus(c); }
-        else if(id == consfp.minus){    consfp_minus(c); }
-        else if(id == consfp.times){    consfp_times(c); }
-        else if(id == consfp.div){      consfp_div(c); }
-        else if(id == consfp.mod){      consfp_mod(c); }
-        else if(id == consfp.lt){       consfp_lt(c); }
-        else if(id == consfp.le){       consfp_le(c); }
-        else if(id == consfp.gt){       cerr << "Should not happen 'float gt'"; assert(false); }
-        else if(id == consfp.ge){       cerr << "Should not happen 'float ge'"; assert(false); }
-        else if(id == consfp.eq){       consfp_eq(c); }
-        else if(id == consfp.ne){       consfp_ne(c); }
-        else if(id == consfp.in){       cerr << "Ignore for now: constraint 'float in    ' not implemented"; assert(false); }
-        else if(id == consfp.dom){      cerr << "Ignore for now: constraint 'float dom   ' not implemented"; assert(false); }
-        
-        else {
-            cerr << "Unrecognized builtins " << c.id() << " not implemented";
-            assert(false);
-        }
-    }
-
-
-
-    /** *** *** *** Integer Constraint methods *** *** *** **/
-
-    // --- --- --- Linear Constraints
-    // flatzinc:
-    // For a call c, we have 3 arguments:
-    // c.arg(0) and c.arg(1) are always arrays: array0 = coefficients and array1 = variables.
-    // c.arg(2) is the 'value'.
-    //
-    // nl:
-    // Update the header, taking specific cases (range/equality/logical) into account
-    //
-    // Algebraic Cases: = and =<
-    // C segment: non linear part of the contraint. Will be 0. Update the number of algebraic contraints
-    // J segment: linear part of the contraint: list of couple (variable index, coefficient)
-    // update of the r segment: the "range' constraint over the body (constraint number 'i' matches the ith line of the segment)
-    //
-    // Logical Case: !=
-    // L segment: logical constraint. Update the number of logical constraints
-    // The constraint is built with an expression graph, just as a non linear constraint.
-
-    /** Linar constraint: [array0] *+ [array1] = value **/
-    void NLFile::consint_lin_eq(const Call& c){
-        // Get the arg
-        ASTExprVec<Expression> coeffs = get_vec(c.arg(0));
-        ASTExprVec<Expression> vars   = get_vec(c.arg(1));
-        long long value               =  c.arg(2)->cast<IntLit>()->v().toInt();
-
-        // Get the constraint index and increase the number of algebraic constraint.
-        // Note: Also include the "equality constraint" counter;
-        int considx = header.nb_algebraic_constraints;
-        header.nb_algebraic_constraints++;
-        header.nb_equality_constraints++;
-
-        // C segment: only contains 'n0' (all the constraint in the J seg)
-        NLS_CSeg cseg(this, considx);
-        cseg.expression_graph.push_back(NLToken::n(0));
-        c_segments.push_back(cseg);
-
-        // J segment: the linear part of the constraint.
-        NLS_JSeg jseg = make_jseg_int(considx, coeffs, vars);
-        j_segments.push_back(jseg);
-        
-        // r segment: equal constraint
-        AlgebraicCons ac = AlgebraicCons(considx, NLS_BoundItem::make_equal(value, considx));
-        r_segment.addConstraint(ac);
-    }
-
-    /** Linar constraint: [array0] *+ [array1] =< value **/
-    void NLFile::consint_lin_le(const Call& c){
-        // Get the arg
-        ASTExprVec<Expression> coeffs = get_vec(c.arg(0));
-        ASTExprVec<Expression> vars   = get_vec(c.arg(1));
-        long long value               =  c.arg(2)->cast<IntLit>()->v().toInt();
-
-        // Get the constraint index and increase the number of algebraic constraint.
-        // Note: this is not a range constraint, even if it has a 'range segment' line.
-        int considx = header.nb_algebraic_constraints;
-        header.nb_algebraic_constraints++;
-
-        // C segment: only contains 'n0' (all the constraint in the J seg)
-        NLS_CSeg cseg(this, considx);
-        cseg.expression_graph.push_back(NLToken::n(0));
-        c_segments.push_back(cseg);
-
-        // J segment: the linear part of the constraint.
-        NLS_JSeg jseg = make_jseg_int(considx, coeffs, vars);
-        j_segments.push_back(jseg);
-        
-        // r segment: range constraint
-        AlgebraicCons ac = AlgebraicCons(considx, NLS_BoundItem::make_ub_bounded(value, considx));
-        r_segment.addConstraint(ac);
-    }
-
-    /** Linar constraint: [array0] *+ [array1] != value **/
-    void NLFile::consint_lin_ne(const Call& c){
-        // Get the arg
-        ASTExprVec<Expression> coeffs = get_vec(c.arg(0));
-        ASTExprVec<Expression> vars   = get_vec(c.arg(1));
-        long long value               =  c.arg(2)->cast<IntLit>()->v().toInt();
-
-        // This is a logical constraint: get the constraint index and increase the number of logical constraint.
-        int considx = header.nb_logical_constraints;
-        header.nb_logical_constraints++;
-
-        // L segment:
-        NLS_LSeg lseg(this, considx);
-        // 1) Push the comparison  "!= operand1 operand2"
-        lseg.expression_graph.push_back(NLToken::o(NLToken::OpCode::NE));
-        // 2) Operand1 = sum of product
-        // All the sums in one go
-        lseg.expression_graph.push_back(NLToken::mo(NLToken::MOpCode::OPSUMLIST, coeffs.size()));
-        for(unsigned int i=0; i<coeffs.size(); ++i){
-            double co       = coeffs[i]->cast<IntLit>()->v().toInt();
-            string vname    = get_vname(*(vars[i]->cast<Id>()->decl()));
-            int    vidx     = variables[vname].index;
-            // Product
-            lseg.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPMULT));
-            lseg.expression_graph.push_back(NLToken::n(co));
-            lseg.expression_graph.push_back(NLToken::v(vidx, vname));
-        }
-        // 3) Operand 2 = value
-        lseg.expression_graph.push_back(NLToken::n(value));
-        l_segments.push_back(lseg);
-    }
-
-    // --- --- --- Non Linear Constraints: operations
-    // Flatzinc:
-    // For a call c, we have 3 arguments:
-    // c.arg(0) and c.arg(1) are the operands
-    // c.arg(2) is the value to which it is compared.
-    // The arguments are either variable or parameter
-
-    /** Non linear constraint: x * y = z **/
-    void NLFile::consint_times(const Call& c){
-      cerr << "Non linear to be implementeed constraint 'int times'   not implemented"; assert(false);
-    }
-
-    /** Non linear constraint: x / y = z **/
-    void NLFile::consint_div(const Call& c){
-      cerr << "Non linear to be implementeed constraint 'int div'   not implemented"; assert(false);
-    }
-
-    /** Non linear constraint: x mod y = z **/
-    void NLFile::consint_mod(const Call& c){
-      cerr << "Non linear to be implementeed constraint 'int mod'   not implemented"; assert(false);
-    }
-
-
-
-    // --- --- --- Non Linear Constraints: comparisons
-    // Flatzinc:
-    // For a call c, we have 2 arguments, c.arg(0) and c.arg(1), being then operands of the comparison.
-    // The arguments are either variable or parameter
-
-    /** Non linear constraint x =< y **/
-    void NLFile::consint_le(const Call& c){
-        Expression* arg0 = c.arg(0);
-        Expression* arg1 = c.arg(1);
-
-        // Bound checking: if arg0 is a parameter, its value is fixed.
-        // We have a constraint that create a partial a partial bound (or update a bound)
-        if(arg0->type().ispar()){
-            // Get the lower bound, the variable declaration and the associated name
-            long long lb = arg0->cast<IntLit>()->v().toInt();
-            VarDecl& vd = *(arg1->cast<Id>()->decl());
-            // Get the variable itself and its bound
-            string name = get_vname(vd);
-            Var v1 = variables[name];
-            // New bound as a copy. Update the copy, create an updated var and put it in the map
-            NLS_BoundItem newBound = v1.bound;
-            newBound.update_lb(lb);         // param <= var: lower bound
-            Var new_v = Var(name, v1.index, v1.is_integer, newBound, v1.to_report);
-            //Var new_v = v1.copy_with_bound(newBound);
-            variables[name] = new_v;
-        } else if(arg1->type().ispar()){
-            // Symmetric, with an upper bound var <= param
-            VarDecl& vd = *(arg0->cast<Id>()->decl());
-            long long ub = arg1->cast<IntLit>()->v().toInt();            
-            string name = get_vname(vd);
-            Var v0 = variables[name];
-            NLS_BoundItem newBound = v0.bound;
-            newBound.update_ub(ub);         // var <= param: upper bound
-            Var new_v = Var(name, v0.index, v0.is_integer, newBound, v0.to_report);
-            //Var new_v = v0.copy_with_bound(newBound);
-            variables[name] = new_v;
-        } else {
-            // --- --- --- Actual constraint
-            cerr << "not implemented" << endl;
-            assert(false);
-        }
-    }
-
-
-    /** Non linear constraint x = y
-     *  arg(0) should be variable
-     *  arg(1) could be a var or a constant
-     ***/
-    void NLFile::consint_eq(const Call& c){
-        Expression* arg0 = c.arg(0);
-        Expression* arg1 = c.arg(1);
-
-        // Get fist arg
-        if(arg0->type().ispar()){
-          cerr << "Comparison: first argument shoud be a variable"; assert(false);
-        }
-        
-        // Get second arg.
-        // If constant, update the bound on the variable, else create a constraint.
-        if(arg1->type().ispar()){
-          VarDecl& vd = *(arg0->cast<Id>()->decl());
-          long long value = arg1->cast<IntLit>()->v().toInt();
-          string name = get_vname(vd);
-          Var v1 = variables[name];
-          // New bound as a copy. Update the copy, create an updated var and put it in the map
-          NLS_BoundItem newBound = NLS_BoundItem::make_equal(value, v1.index);
-          Var new_v = Var(name, v1.index, v1.is_integer, newBound, v1.to_report);
-          //Var new_v = v1.copy_with_bound(newBound);
-          variables[name] = new_v;
-        }else{
-          // Create the constraint:
-          VarDecl& v0 = *(arg0->cast<Id>()->decl());
-          VarDecl& v1 = *(arg0->cast<Id>()->decl());
-
-          cerr << "wip" <<endl; assert(false);
-        }
-    }
-
-
-    /** Non linear constraint x != y **/
-    void NLFile::consint_ne(const Call& c){
-      cerr << "constraint 'int ne' not implemented"; assert(false);
-    }
-
-
-
-
-    /** *** *** *** Floating Point Constraint methods *** *** *** **/
-
-    void NLFile::consfp_lin_eq(const Call& c){
-      cerr << "constraint 'float lin_eq' not implemented"; assert(false);
-    }
-
-    void NLFile::consfp_lin_le(const Call& c){
-      cerr << "constraint 'float lin_le' not implemented"; assert(false);
-    }
-
-    void NLFile::consfp_lin_lt(const Call& c){
-      cerr << "constraint 'float lin_lt' not implemented"; assert(false);
-    }
-
-    void NLFile::consfp_lin_ne(const Call& c){
-      cerr << "constraint 'float lin_ne' not implemented"; assert(false);
-    }
-
-    void NLFile::consfp_plus(const Call& c){
-      cerr << "constraint 'float plus  ' not implemented"; assert(false);
-    }
-
-    void NLFile::consfp_minus(const Call& c){
-      cerr << "constraint 'float minus ' not implemented"; assert(false);
-    }
-
-    void NLFile::consfp_times(const Call& c){
-      cerr << "constraint 'float times ' not implemented"; assert(false);
-    }
-
-    void NLFile::consfp_div(const Call& c){
-      cerr << "constraint 'float div   ' not implemented"; assert(false);
-    }
-
-    void NLFile::consfp_mod(const Call& c){
-      cerr << "constraint 'float mod   ' not implemented"; assert(false);
-    }
-
-    void NLFile::consfp_lt(const Call& c){
-      cerr << "constraint 'float lt    ' not implemented"; assert(false);
-    }
-
-    void NLFile::consfp_le(const Call& c){
-      cerr << "constraint 'float le    ' not implemented"; assert(false);
-    }
-
-    void NLFile::consfp_eq(const Call& c){
-      cerr << "constraint 'float eq    ' not implemented"; assert(false);
-    }
-
-    void NLFile::consfp_ne(const Call& c){
-      cerr << "constraint 'float ne    ' not implemented"; assert(false);
-    }
-
-
-
-
-
-
-
-
-
-
+    */     
 
 
 
@@ -717,12 +857,5 @@ namespace MiniZinc {
     } // END OF SWITCH
     return NULL;
   } // END OF FUN
-
-
-
-
-
-
-
 
 }

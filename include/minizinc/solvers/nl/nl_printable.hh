@@ -6,20 +6,18 @@ using namespace std;
 
 namespace MiniZinc {
     
-    // --- --- --- Interface
-    // Our components (header and segments) are "printable":
-    // they can output themselves as ASCII text in a ostream.
+    class NLFile;
+
+    /** Printable interface.
+     *  Objects implementing this interface can output themselves as ASCII text in a ostream given a reference on the NL_FILE they are living in.
+     *  This reference may be used for several purposes, such as resolving a name into an indexes,
+     *  or gathering some information prior to printing.
+     */ 
     class Printable {
         public:
-        virtual ostream& print_on( ostream& o ) const =0;
+        virtual ostream& print_on( ostream& o, const NLFile& nl_file) const =0;
     };
 
-    template<class Char, class Traits>
-    std::basic_ostream<Char,Traits>&
-    operator <<(std::basic_ostream<Char,Traits>& o, const Printable& p){
-        p.print_on(o);
-        return o;
-    }
 }
 
 #endif
