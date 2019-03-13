@@ -817,6 +817,8 @@ namespace MiniZinc {
         }
       }
       e = vd->e();
+      if (e==NULL)
+        e = vd->flat()->e();
     }
 
     if (foundBounds) {
@@ -863,10 +865,18 @@ namespace MiniZinc {
           Id* id = ae->cast<Id>();
           if (id->decl()==NULL)
             throw EvalError(env, id->loc(),"undefined identifier");
-          if (id->decl()->e()==NULL)
-            throw EvalError(env, id->loc(),"array without initialiser");
-          else
+          if (id->decl()->e()==NULL) {
+            if (id->decl()->flat()==NULL) {
+              throw EvalError(env, id->loc(),"array without initialiser");
+            } else {
+              if (id->decl()->flat()->e()==NULL) {
+                throw EvalError(env, id->loc(),"array without initialiser");
+              }
+              ae = id->decl()->flat()->e();
+            }
+          } else {
             ae = id->decl()->e();
+          }
         }
         break;
       default:
