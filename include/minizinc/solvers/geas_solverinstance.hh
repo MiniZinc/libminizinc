@@ -22,7 +22,7 @@ namespace MiniZinc {
   public:
     bool all_solutions = false;
     int conflicts = 0;
-    bool free_search = false; // TODO
+    bool free_search = false;
     int nr_solutions = 1;
     int obj_probe_limit = 0;
     bool statistics = false;

@@ -166,6 +166,7 @@ namespace MiniZinc{
   }
 
   void GeasSolverInstance::processFlatZinc() {
+    auto _opt = static_cast<GeasOptions&>(*_options);
     // Create variables
     zero = _solver.new_intvar(0, 0);
     for(auto it = _flat->begin_vardecls(); it != _flat->end_vardecls(); ++it) {
@@ -289,7 +290,65 @@ namespace MiniZinc{
         _obj_type = SolveI::ST_MIN;
         _obj_var = std::unique_ptr<GeasTypes::Variable>(new GeasTypes::Variable(-asIntVar(si->e())));
       }
-      // TODO: Branching annotations
+    }
+    if (!si->ann().isEmpty()) {
+      std::vector<Expression*> flatAnn;
+      flattenSearchAnnotations(si->ann(), flatAnn);
+
+      for (auto &ann : flatAnn) {
+        if (ann->isa<Call>()) {
+          Call* call = ann->cast<Call>();
+          vec<geas::pid_t> pids;
+          geas::VarChoice select = geas::Var_FirstFail;
+          geas::ValChoice choice = geas::Val_Min;
+          if (call->id().str() == "int_search") {
+            vec<geas::intvar> iv = asIntVar(eval_array_lit(env().envi(), call->arg(0)));
+            pids.growTo(iv.size());
+            for (int i = 0; i < iv.size(); ++i) {
+              pids[i] = iv[i].p;
+            }
+          } else if (call->id().str() == "bool_search") {
+            vec<geas::patom_t> bv = asBoolVar(eval_array_lit(env().envi(), call->arg(0)));
+            pids.growTo(bv.size());
+            for (int i = 0; i < bv.size(); ++i) {
+              pids[i] = bv[i].pid;
+            }
+          } else {
+            std::cerr << "WARNING Geas: ignoring unknown search annotation: " << ann << std::endl;
+            break;
+          }
+          const std::string& select_str = call->arg(1)->cast<Id>()->str().str();
+          if (select_str == "input_order") {
+            select = geas::Var_InputOrder;
+          } else if (select_str == "first_fail") {
+            select = geas::Var_FirstFail;
+          } else if (select_str == "largest") {
+            select = geas::Var_Largest;
+          } else if (select_str == "smallest") {
+            select = geas::Var_Smallest;
+          } else {
+            std::cerr << "WARNING Geas: unknown variable selection '" << select_str << "', using default value First Fail." << std::endl;
+          }
+          const std::string& choice_str = call->arg(2)->cast<Id>()->str().str();
+          if (choice_str == "indomain_max") {
+            choice = geas::Val_Max;
+          } else if (choice_str == "indomain_min") {
+            choice = geas::Val_Min;
+          } else if (choice_str == "indomain_split") {
+            choice = geas::Val_Split;
+          } else {
+            std::cerr << "WARNING Geas: unknown value selection '" << choice_str << "', using Indomain Min." << std::endl;
+          }
+
+          geas::brancher* b = geas::basic_brancher(select, choice, pids);
+          if (_opt.free_search) {
+            vec<geas::brancher*> brv({b,_solver.data->last_branch});
+            _solver.data->branchers.push(geas::toggle_brancher(brv));
+          } else {
+            _solver.data->branchers.push(b);
+          }
+        }
+      }
     }
   }
 
@@ -589,6 +648,10 @@ namespace MiniZinc{
     sc.description(getDescription(nullptr));
     sc.tags({"api","cp","float","int","lcg",});
     sc.stdFlags({"-a", "-f", "-n", "-s", "-t"});
+    sc.extraFlags({
+      SolverConfig::ExtraFlag("--conflicts", "Limit the maximum number of conflicts to be used during solving.", "int", "0"),
+      SolverConfig::ExtraFlag("--obj-probe", "Number of conflicts to use to probe for better solutions after a new solution is found.", "int", "0"),
+    });
     SolverConfigs::registerBuiltinSolver(sc);
   };
 
@@ -641,7 +704,12 @@ namespace MiniZinc{
   }
 
   void Geas_SolverFactory::printHelp(std::ostream &os) {
-    os  << "Geas solver does not yet support any solver specific options." << std::endl;
+    os  << "Geas solver plugin options:" << std::endl
+        << "  --conflicts <int>" << std::endl
+        << "    Limit the maximum number of conflicts to be used during solving." << std::endl
+        << "  --obj-probe <int>" << std::endl
+        << "    Number of conflicts to use to probe for better solutions after a new solution is found." << std::endl
+        << std::endl;
   }
 }
 
