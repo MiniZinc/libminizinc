@@ -16,8 +16,8 @@ namespace MiniZinc {
   /** Create a string representing the name (and unique identifier) of a variable from a variable declaration. */
   string NLFile::get_vname(const VarDecl &vd){
       stringstream os;
-      if (vd.id()->idn() != -1) {  os << " X_INTRODUCED_" << vd.id()->idn() << "_"; }
-      else if (vd.id()->v().size() != 0){ os << " " << vd.id()->v(); }
+      if (vd.id()->idn() != -1) {  os << "X_INTRODUCED_" << vd.id()->idn() << "_"; }
+      else if (vd.id()->v().size() != 0){ os << vd.id()->v(); }
       string name = os.str();
       return name;
   }
@@ -34,11 +34,14 @@ namespace MiniZinc {
   ASTExprVec<Expression> NLFile::get_vec(const Expression* e){
       switch(e->eid()){
           case Expression::E_ID: {
+              cerr << "Following " << get_vname(*e->cast<Id>()->decl()) << endl;
               return get_vec( e->cast<Id>()->decl()->e() ); // Follow the pointer to the expression of the declaration
           }
 
           case Expression::E_ARRAYLIT: {
               const ArrayLit& al = *e->cast<ArrayLit>();
+              cerr << "Size array lit = " << al.size() << endl;
+              cerr << "Size array lit get vec = " << al.getVec().size() << endl;
               return al.getVec();
           }
       }
@@ -542,6 +545,10 @@ namespace MiniZinc {
     for (auto const& name_var : variables){
       const NLVar &v = name_var.second;
 
+      // Accumulate jacobian count
+      _jacobian_count += v.jacobian_count;
+
+
 
       // First check non linear variables in BOTH objective and constraint.
       if(v.is_in_nl_objective && v.is_in_nl_constraint){
@@ -551,7 +558,6 @@ namespace MiniZinc {
           vname_nlcv_both.push_back(v.name);
         }
       }
-
       // Variables in non linear constraint ONLY
       else if(!v.is_in_nl_objective && v.is_in_nl_constraint){
         if(v.is_integer){
@@ -560,7 +566,6 @@ namespace MiniZinc {
           vname_nlcv_cons.push_back(v.name);
         }
       }
-
       // Variables in non linear objective ONLY
       else if(v.is_in_nl_objective && !v.is_in_nl_constraint){
         if(v.is_integer){
@@ -569,7 +574,6 @@ namespace MiniZinc {
           vname_nlcv_obj.push_back(v.name);
         }
       }
-
       // Variables not appearing nonlinearly
       else if(!v.is_in_nl_objective && !v.is_in_nl_constraint){
         if(v.is_integer){
@@ -578,11 +582,32 @@ namespace MiniZinc {
           vname_lcv_all.push_back(v.name);
         }
       }
-
       // Should not happen
       else { cerr << "Should not happen" << endl; assert(false);}
+
     }
 
+    // Note:  In the above, we dealt with all 'vname_*' vectors BUT 'vname_larc_all' and 'vname_bv_all'
+    //        networks and boolean are not implemented. Nevertheless, we keep the vectors and deal with
+    //        them below to ease further implementations.
+
+    vnames.reserve(variables.size());
+
+    vnames.insert(vnames.end(), vname_nlcv_both.begin(),  vname_nlcv_both.end());
+    vnames.insert(vnames.end(), vname_nliv_both.begin(),  vname_nliv_both.end());
+    vnames.insert(vnames.end(), vname_nlcv_cons.begin(),  vname_nlcv_cons.end());
+    vnames.insert(vnames.end(), vname_nliv_cons.begin(),  vname_nliv_cons.end());
+    vnames.insert(vnames.end(), vname_nlcv_obj.begin(),   vname_nlcv_obj.end());
+    vnames.insert(vnames.end(), vname_nliv_obj.begin(),   vname_nliv_obj.end());
+    vnames.insert(vnames.end(), vname_larc_all.begin(),   vname_larc_all.end());
+    vnames.insert(vnames.end(), vname_lcv_all.begin(),    vname_lcv_all.end());
+    vnames.insert(vnames.end(), vname_bv_all.begin(),     vname_bv_all.end());
+    vnames.insert(vnames.end(), vname_liv_all.begin(),    vname_liv_all.end());
+
+    // Create the mapping name->index
+    for(int i=0; i<vnames.size(); ++i){
+      variable_indexes[vnames[i]] = i;
+    }
 
     // --- --- --- Constraint ordering, couting, and indexing
     for (auto const& name_cons : constraints){
@@ -601,6 +626,19 @@ namespace MiniZinc {
         case NLBound::EQ:{ ++nb_alg_cons_eq; }
       }
     }
+
+    cnames.reserve(constraints.size());
+    cnames.insert(cnames.end(), cnames_nl_general.begin(), cnames_nl_general.end());
+    cnames.insert(cnames.end(), cnames_nl_network.begin(), cnames_nl_network.end());
+    cnames.insert(cnames.end(), cnames_lin_network.begin(), cnames_lin_network.end());
+    cnames.insert(cnames.end(), cnames_lin_general.begin(), cnames_lin_general.end());
+
+    // Create the mapping name->index
+    for(int i=0; i<cnames.size(); ++i){
+      constraint_indexes[cnames[i]] = i;
+    }
+
+
   }
 
 
@@ -686,6 +724,57 @@ namespace MiniZinc {
     // Note:  * empty line not allowed
     //        * comment only not allowed
     ostream& NLFile::print_on(ostream& os) const{
+      // Print the header
+      {NLHeader header; header.print_on(os, *this);}
+      os << endl;
+      
+      // Print the unique segments about the variables
+      if(n_var()>1){
+
+        // Print the 'k' segment Maybe to adjust with the presence of 'J' segments
+        os << "k" << (n_var()-1) << "   # Cumulative Sum of non-zero in the jacobian matrix's (nbvar-1) columns." << endl;
+        int acc = 0;
+        // Note stop before the last var. Total jacobian count is in the header.
+        for(int i=0; i<n_var()-1; ++i){
+          string name = vnames[i];
+          acc += variables.at(name).jacobian_count;
+          os << acc << "   # " << name << endl;
+        }
+
+        // Print the 'b' segment
+        os << "b   # Bounds on variables (" << n_var() << ")" << endl;
+        for(auto n: vnames){
+          NLVar v = variables.at(n);
+          v.bound.print_on(os, n);
+          os << endl;
+        }
+      }
+
+      // Print the unique segments about the constraints
+      if(!cnames.empty()){
+        // Create the 'r' range segment per constraint
+        // For now, it is NOT clear if the network constraint should appear in the range constraint or not.
+        // To be determine if later implemented.
+        os << "r   # Bounds on algebraic constraint bodies (" << cnames.size() << ")" << endl;
+        for(auto n: cnames){
+          NLAlgCons c = constraints.at(n);
+          c.range.print_on(os, n);
+          os << endl;
+        }
+      }
+
+      // Print the Algebraic Constraints
+      int idx=0;
+      for(auto n:cnames){
+        NLAlgCons c = constraints.at(n);
+        c.print_on(os, *this);
+      }
+
+      // Print the goal
+
+
+
+
       return os;
     }
 

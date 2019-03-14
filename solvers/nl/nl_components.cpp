@@ -92,23 +92,23 @@ namespace MiniZinc {
     ostream& NLBound::print_on(ostream& os, string vname) const {
         switch(tag){
             case LB_UB:{
-                os << "0 " << lb << " " << ub << " # " << lb << " =< " << vname << " =< " << ub;
+                os << "0 " << lb << " " << ub << "   # " << lb << " =< " << vname << " =< " << ub;
                 break;
             }
             case UB:{
-                os << "1 " << ub << " # " << vname << " =< " << ub;
+                os << "1 " << ub << "   # " << vname << " =< " << ub;
                 break;
             }
             case LB:{
-                os << "2 " << lb << " # " << lb << " =< " << vname;
+                os << "2 " << lb << "   # " << lb << " =< " << vname;
                 break;
             }
             case NONE:{
-                os << "3" << " # No constraint";
+                os << "3" << "   # No constraint";
                 break;
             }
             case EQ:{
-                os << "4 " << lb << " # " << vname << " = " << lb;
+                os << "4 " << lb << "   # " << vname << " = " << lb;
                 break;
             }
         }
@@ -305,6 +305,7 @@ namespace MiniZinc {
     
     /** Method to build the var_coeff vector. */
      void NLAlgCons::set_jacobian(const vector<string>& vnames, const vector<double>& coeffs, NLFile* nl_file){
+         cerr << name << " " << vnames.size() << "   " << coeffs.size() << endl;
          assert(vnames.size()==coeffs.size());
          for(int i=0; i<vnames.size(); ++i){
              string vn  = vnames[i];
@@ -319,9 +320,27 @@ namespace MiniZinc {
     }
     
     /** Printing. */
-    ostream& NLAlgCons::print_on( ostream& os, const NLFile& nl_file) const {
-        cerr << "print TODO: C segment and J segment with correct index according to ordering." << endl;
-        assert(false);
+    ostream& NLAlgCons::print_on(ostream& os, const NLFile& nl_file) const {
+        int idx = nl_file.constraint_indexes.at(name);
+
+        // Print the 'C' segment: if no expression graph, print "n0".
+        os << "C" << idx << "   # Non linear part of " << name << endl;
+        if(expression_graph.empty()){
+            os << "n0   # No non linear part coded as the value '0'" << endl;
+        } else {
+            for(auto t:expression_graph){
+                t.print_on(os, nl_file);
+            }
+        }
+
+        // Print the 'J' segment if present.
+        if(!jacobian.empty()){
+            os << "J" << idx << " " << jacobian.size() << "   # Linear part of " << name << endl;
+            for (auto & vn_coef : jacobian) {
+                os << nl_file.variable_indexes.at(vn_coef.first) << " " << vn_coef.second << "   # " << vn_coef.first << endl;
+            }
+        }
+
         return os;
     }
 
@@ -430,14 +449,6 @@ namespace MiniZinc {
 
         return os;
     }
-
-
-
-    /* *** *** *** NLSeg_b *** *** *** */
-
-
-
-    /* *** *** *** NLSeg_r *** *** *** */
 
 
 

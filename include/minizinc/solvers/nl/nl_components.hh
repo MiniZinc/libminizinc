@@ -342,9 +342,6 @@ namespace MiniZinc {
          */
         vector<NLToken> expression_graph = {};
 
-
-
-
         /* *** *** *** Printable interface *** *** *** */
 
         ostream& print_on( ostream& o, const NLFile& nl_file) const override;

@@ -71,9 +71,11 @@ namespace MiniZinc {
         /* *** *** *** Phase 1: collecting data from MZN *** *** *** */
 
         // Variables collection, identified by name
+        // Needs ordering, see phase 2
         map<string, NLVar> variables={};
 
         // Algebraic constraints collection, identified by name
+        // Needs ordering, see phase 2
         map<string, NLAlgCons> constraints={};
 
         // Logical constraints do not need ordering:
@@ -165,6 +167,8 @@ namespace MiniZinc {
 
         void phase_2();
 
+
+
         // Ordering of variables according to "hooking your solver"
         /*  Meaning of the names (total, then by appearance order in the tables below)
                 n_var               total number of variables
@@ -235,13 +239,50 @@ namespace MiniZinc {
         /** Linear Integer Variables (ALL of them). */
         vector<string>  vname_liv_all = {};
 
-        // End of phase 2: this vector contains all the variables names, in a sorted order (also gives the retro mapping index -> name)
-
-        /** Mapping variable index -> variable name */
+        /** Contained all ordered variable names. Mapping variable index -> variable name */
         vector<string>  vnames={};
 
         /** Mapping variable name -> variable index */
         map<string, int> variable_indexes={};
+
+        // --- --- --- Variables  counts
+        
+        // When the phase 2 is done, all the following counts should be available.
+        // taken from "hooking your solver" and used in the above explanatios
+
+        /** Total number of variables. */
+        int n_var() const;
+
+        /** Number of variables appearing nonlinearly in constraints. */
+        int nlvc() const;
+
+        /** Number of variables appearing nonlinearly in objectives. */
+        int nlvo() const;
+
+        /** Number of variables appearing nonlinearly in both constraints and objectives.*/
+        int nlvb() const;
+
+        /** Number of integer variables appearing nonlinearly in both constraints and objectives.*/        
+        int nlvbi() const;
+
+        /** Number of integer variables appearing nonlinearly in constraints **only**.*/        
+        int nlvci() const;
+
+        /** Number of integer variables appearing nonlinearly in objectives **only**.*/        
+        int nlvoi() const;
+
+        /** Number of linear arcs .*/
+        int nwv() const;
+
+        /** Number of "other" integer variables.*/
+        int niv() const;
+
+        /** Number of binary variables.*/        
+        int nbv() const;
+
+        /** Accumulation of Jacobian counts. */
+        int jacobian_count() const;
+        int _jacobian_count = 0;
 
 
 
@@ -273,6 +314,14 @@ namespace MiniZinc {
         /** Linear general constraints. */
         vector<string> cnames_lin_general = {};
 
+        /** Contained all ordered algebraic (and network if they were implemented) constraints names.
+         *  Mapping constraint index -> constraint name
+         */
+        vector<string>  cnames={};
+
+        /** Mapping constraint name -> contraint index */
+        map<string, int> constraint_indexes={};
+
         // Count of algebraic constraints:
         // The header needs to know how many range algebraic constraints and equality algebraic constraints we have.
         /** Number of range algebraic constraints */
@@ -281,46 +330,11 @@ namespace MiniZinc {
         int nb_alg_cons_eq = 0;
 
 
-        /* *** *** *** Counts *** *** *** */
-        // When the phase 2 is done, all the following counts should be available.
-        // taken from "hooking your solver" and used in the above explanatios
-
-        // --- --- --- Jacobian count
-        int _jacobian_count = 0;
-        int jacobian_count() const;
 
 
-        // --- --- --- Variable counts
 
-        /** Total number of variables. */
-        int n_var() const;
 
-        /** Number of variables appearing nonlinearly in constraints. */
-        int nlvc() const;
 
-        /** Number of variables appearing nonlinearly in objectives. */
-        int nlvo() const;
-
-        /** Number of variables appearing nonlinearly in both constraints and objectives.*/
-        int nlvb() const;
-
-        /** Number of integer variables appearing nonlinearly in both constraints and objectives.*/        
-        int nlvbi() const;
-
-        /** Number of integer variables appearing nonlinearly in constraints **only**.*/        
-        int nlvci() const;
-
-        /** Number of integer variables appearing nonlinearly in objectives **only**.*/        
-        int nlvoi() const;
-
-        /** Number of linear arcs .*/
-        int nwv() const;
-
-        /** Number of "other" integer variables.*/
-        int niv() const;
-
-        /** Number of binary variables.*/        
-        int nbv() const;
 
 
 

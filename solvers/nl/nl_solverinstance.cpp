@@ -121,6 +121,7 @@ namespace MiniZinc {
 
     // Note: copy the structure of the pretty printer
 
+    // Analyse the function declarations: should not happen ?
     for (FunctionIterator it = _fzn->begin_functions(); it != _fzn->end_functions(); ++it) {
       if(!it->removed()) {
         Item& item = *it;
@@ -128,6 +129,7 @@ namespace MiniZinc {
       }
     }
 
+    // Analyse the variable declarations
     for (VarDeclIterator it = _fzn->begin_vardecls(); it != _fzn->end_vardecls(); ++it) {
       if(!it->removed()) {
         Item& item = *it;
@@ -135,6 +137,7 @@ namespace MiniZinc {
       }
     }
 
+    // Analyse the contraints
     for (ConstraintIterator it = _fzn->begin_constraints(); it != _fzn->end_constraints(); ++it) {
       if(!it->removed()) {
         Item& item = *it;
@@ -142,8 +145,15 @@ namespace MiniZinc {
       }
     }
 
-    // --- --- --- Write the file
+    // Analyse the goal
     analyse(_fzn->solveItem());
+
+    // Phase 2
+    nl_file.phase_2();
+
+
+
+    // --- --- --- Write the file
     string file_mzn = _env.envi().orig_model->filepath().str();
     string file_sub = file_mzn.substr(0,file_mzn.find_last_of('.'));
     string file_nl  = file_sub+".nl";
