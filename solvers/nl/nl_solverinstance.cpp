@@ -41,7 +41,7 @@ namespace MiniZinc {
     sc.mznlibVersion(1);
     sc.description("MiniZinc generic Non Linear solver plugin");
     sc.requiredFlags({"--nl-cmd"});
-    sc.mznlib("-Glinear");
+    //sc.mznlib("-Glinear");
     //sc.stdFlags({"-a","-n","-f","-p","-s","-r","-v"});
     sc.tags({"__internal__"});
     SolverConfigs::registerBuiltinSolver(sc);
@@ -85,8 +85,8 @@ namespace MiniZinc {
   }
 
   bool NL_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv) {
-    cerr << "NL_SolverFactory::processOption TODO: does not process any option for now" << endl;
-    assert(false);
+   //  cerr << "NL_SolverFactory::processOption TODO: does not process any option for now" << endl;
+   //  assert(false);
     return true;
   }
 

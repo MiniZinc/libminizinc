@@ -305,7 +305,6 @@ namespace MiniZinc {
     
     /** Method to build the var_coeff vector. */
      void NLAlgCons::set_jacobian(const vector<string>& vnames, const vector<double>& coeffs, NLFile* nl_file){
-         cerr << name << " " << vnames.size() << "   " << coeffs.size() << endl;
          assert(vnames.size()==coeffs.size());
          for(int i=0; i<vnames.size(); ++i){
              string vn  = vnames[i];
@@ -330,6 +329,7 @@ namespace MiniZinc {
         } else {
             for(auto t:expression_graph){
                 t.print_on(os, nl_file);
+                os << endl;
             }
         }
 
@@ -350,8 +350,12 @@ namespace MiniZinc {
     
     /** Printing. */
     ostream& NLLogicalCons::print_on( ostream& os, const NLFile& nl_file) const {
-        cerr << "print TODO: L segment with correct index according to ordering." << endl;
-        assert(false);
+        os << "L" << index << "   # Logical constraint " << name << endl;
+        for(auto t:expression_graph){
+            t.print_on(os, nl_file);
+            os << endl;
+        }
+        
         return os;
     }
 
@@ -365,8 +369,7 @@ namespace MiniZinc {
      *  The header is composed of then lines that we describe as we proceed.
      *  A '#' starts a comment until the end of the line. However, it cannot be a line on its own!*/
     ostream& NLHeader::print_on(ostream& os, const NLFile& nl_file) const {
-        assert(nl_file.segment_O.is_defined());
-        
+
         // 1st line:
         // 'g': file will be in text format
         // other numbers: as given in the doc (no other explanation...)
@@ -385,8 +388,8 @@ namespace MiniZinc {
 
         // 3rd line: Nonlinear and complementary information
         os  << nl_file.cnames_nl_general.size()         << " "  // Non linear constraints
-            << (nl_file.segment_O.is_linear()? 0 : 1)   << " "  // Non linear objective
-            << "# Nb of nonlinear constraints,  nonlinar objectives. " << endl;
+            << (nl_file.objective.is_linear()? 0 : 1)   << " "  // Non linear objective
+            << "# Nb of nonlinear constraints,  nonlinar objectives." << endl;
             /* This was found in the online source of the ASL parser, but is not produce in our ampl tests.
              * If needed, should be put on the same line
             << nb_complementarity_linear_conditions << " "
@@ -429,7 +432,7 @@ namespace MiniZinc {
 
         // 8th line: non zeros
         os  << nl_file.jacobian_count()             << " "  // Nb of nonzero in jacobian
-            << nl_file.segment_O.gradient_count()   << " "  // Nb of nonzero in gradient
+            << nl_file.objective.gradient_count()   << " "  // Nb of nonzero in gradient
             << "# Nb of non zeros in: jacobian, objective gradients."
             << endl;
 
@@ -452,36 +455,45 @@ namespace MiniZinc {
 
 
 
-    /* *** *** *** NLSeg_O *** *** *** */
+    /* *** *** *** NLObjective *** *** *** */
 
     /** Gradient count. */
-    int NLSeg_O::gradient_count() const {
+    int NLObjective::gradient_count() const {
         return _gradient_count;
     }
 
     /** A objective is considered as linear if its expression graph is non empty. */
-    bool NLSeg_O::is_defined() const {
+    bool NLObjective::is_defined() const {
         return minmax != UNDEF;
     }
 
-    bool NLSeg_O::is_linear() const {
+    bool NLObjective::is_linear() const {
         return expression_graph.empty();
     }
 
-    /** Printing. */
-    ostream& NLSeg_O::print_on( ostream& os, const NLFile& nl_file) const {
-        cerr << "print TODO: O segment." << endl;
-        assert(false);
-        return os;
+    bool NLObjective::is_optimisation() const {
+        return minmax >= MINIMIZE;
     }
 
-
-
-
-
-
-
-
-
-
+    /** Printing. */
+    ostream& NLObjective::print_on( ostream& os, const NLFile& nl_file) const {
+        if(minmax != UNDEF){
+            if(minmax == SATISFY){
+                os  << "O0 0   # Satisfy objectif implemented as 'minimize 0'" << endl;
+                os  << "n0" << endl;
+            } else {
+                os  << "O0 " << minmax << "   # Objectif (0: minimize, 1: maximize)" << endl;
+                if(expression_graph.empty()){
+                    os << "n0  # No expression graph" << endl;
+                } else {
+                    for(auto &tok : expression_graph){
+                        tok.print_on(os, nl_file) << endl; 
+                    }
+                }
+                // Print gradient
+            }
+        }
+        
+        return os;
+    }
 }

@@ -25,33 +25,29 @@ namespace MiniZinc {
   /** Create a string representing the name (and unique identifier) of a constraint from a specific call expression. */
   string NLFile::get_cname(const Call& c){
       stringstream os;
-      os << c.id() << "_" << c.loc().parserLocation().toString();
+      os << c.id() << "_" << static_cast<const void*>(&c); // use the memory address as unique ID.
       string name = os.str();
       return name;
   }
 
   /** Obtain the vector of an array, either from an identifier or an array litteral */
-  ASTExprVec<Expression> NLFile::get_vec(const Expression* e){
+  const ArrayLit& NLFile::get_arraylit(const Expression* e){
       switch(e->eid()){
           case Expression::E_ID: {
-              cerr << "Following " << get_vname(*e->cast<Id>()->decl()) << endl;
-              return get_vec( e->cast<Id>()->decl()->e() ); // Follow the pointer to the expression of the declaration
+              return get_arraylit( e->cast<Id>()->decl()->e() ); // Follow the pointer to the expression of the declaration
           }
 
           case Expression::E_ARRAYLIT: {
               const ArrayLit& al = *e->cast<ArrayLit>();
-              cerr << "Size array lit = " << al.size() << endl;
-              cerr << "Size array lit get vec = " << al.getVec().size() << endl;
-              return al.getVec();
+              return al;
           }
       }
       cerr << "Could not read array from expression." << endl;
       assert(false);
-      return {}; // never reached
   }
 
   /** Create a vector of double from a vector containing Expression being IntLit. */
-  vector<double> NLFile::from_vec_int(const ASTExprVec<Expression>& v_int){
+  vector<double> NLFile::from_vec_int(const ArrayLit& v_int){
     vector<double> v = {};
     for(unsigned int i=0; i<v_int.size(); ++i){
       double d  = v_int[i]->cast<IntLit>()->v().toInt();
@@ -61,7 +57,7 @@ namespace MiniZinc {
   }
 
   /** Create a vector of double from a vector containing Expression being FloatLit. */
-  vector<double> NLFile::from_vec_fp(const ASTExprVec<Expression>& v_fp){
+  vector<double> NLFile::from_vec_fp(const ArrayLit& v_fp){
     vector<double> v = {};
     for(unsigned int i=0; i<v_fp.size(); ++i){
       double d  = v_fp[i]->cast<FloatLit>()->v().toDouble();
@@ -71,13 +67,29 @@ namespace MiniZinc {
   }
 
   /** Create a vector of variable names from a vector containing Expression being identifier Id. */
-  vector<string> NLFile::from_vec_id(const ASTExprVec<Expression>& v_id){
+  vector<string> NLFile::from_vec_id(const ArrayLit& v_id){
     vector<string> v = {};
     for(unsigned int i=0; i<v_id.size(); ++i){
       string s  = get_vname(*(v_id[i]->cast<Id>()->decl()));
       v.push_back(s);
     }
     return v;
+  }
+
+  /** Create a token from an expression representing either a variable or an integer numeric value.
+   * ONLY USE FOR CONSTRAINT, NOT OBJECTIVE!
+   */
+  NLToken NLFile::get_tok_var_int(const Expression* e, NLFile* nl_file){
+    if(e->type().ispar()){
+      // Constant
+      long long value = e->cast<IntLit>()->v().toInt();
+      return NLToken::n(value);
+    } else {
+      // Variable
+      VarDecl& vd = *(e->cast<Id>()->decl());
+      string n = get_vname(vd);
+      return NLToken::vc(n, nl_file);
+    }
   }
 
 
@@ -89,23 +101,20 @@ namespace MiniZinc {
   void NLFile::add_solve(SolveI::SolveType st, const Expression* e){
 
       // We can only have one objective. Prevent override.
-      assert(!segment_O.is_defined());
+      assert(!objective.is_defined());
       
       switch(st){
           case SolveI::SolveType::ST_SAT:{
-              // Satisfy: implemented by minimizing 0
-              segment_O.minmax = segment_O.MINIMIZE;
-              segment_O.expression_graph.push_back(NLToken::n(0));
+              // Satisfy: implemented by minimizing 0 (print n0 for an empty expression graph)
+              objective.minmax = objective.SATISFY;
               break;
           }
           case SolveI::SolveType::ST_MIN:{
-              segment_O.is_optimisation = true;
               cerr << "solve min not implemented (todo: checking expression)" << endl;
               assert(false);
               break;
           }
           case SolveI::SolveType::ST_MAX:{
-              segment_O.is_optimisation = true;
               cerr << "solve max not implemented (todo: checking expression)" << endl;
               assert(false);                
               break;
@@ -113,7 +122,7 @@ namespace MiniZinc {
       }
 
       // Ensure that the obejctive is now defined.
-      assert(segment_O.is_defined());
+      assert(objective.is_defined());
   }
 
 
@@ -208,8 +217,6 @@ namespace MiniZinc {
 
   /** Dispatcher for constraint analysis. */
   void NLFile::analyse_constraint(const Call& c){
-      // Guard
-      if(c.decl() == NULL){ cerr << "Undeclared function " << c.id(); assert(false); }
 
       // ID of the call
       auto id = c.id();
@@ -286,8 +293,8 @@ namespace MiniZinc {
   /** Linar constraint: [array0] *+ [array1] = value **/
   void NLFile::consint_lin_eq(const Call& c){
     // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-    vector<double>  coeffs  = from_vec_int(get_vec(c.arg(0)));
-    vector<string>  vars    = from_vec_id(get_vec(c.arg(1)));
+    vector<double>  coeffs  = from_vec_int(get_arraylit(c.arg(0)));
+    vector<string>  vars    = from_vec_id(get_arraylit(c.arg(1)));
     long long       value   = c.arg(2)->cast<IntLit>()->v().toInt();
 
     // Create the Algebraic Constraint and set the data
@@ -310,8 +317,8 @@ namespace MiniZinc {
   /** Linar constraint: [array0] *+ [array1] =< value **/
   void NLFile::consint_lin_le(const Call& c){
     // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-    vector<double>  coeffs  = from_vec_int(get_vec(c.arg(0)));
-    vector<string>  vars    = from_vec_id(get_vec(c.arg(1)));
+    vector<double>  coeffs  = from_vec_int(get_arraylit(c.arg(0)));
+    vector<string>  vars    = from_vec_id(get_arraylit(c.arg(1)));
     long long       value   = c.arg(2)->cast<IntLit>()->v().toInt();
 
     // Create the Algebraic Constraint and set the data
@@ -335,28 +342,35 @@ namespace MiniZinc {
    */
   void NLFile::consint_lin_ne(const Call& c){
     // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
-    vector<double>  coeffs  = from_vec_int(get_vec(c.arg(0)));
-    vector<string>  vars    = from_vec_id(get_vec(c.arg(1)));
+    vector<double>  coeffs  = from_vec_int(get_arraylit(c.arg(0)));
+    vector<string>  vars    = from_vec_id(get_arraylit(c.arg(1)));
     long long       value   = c.arg(2)->cast<IntLit>()->v().toInt();
 
     // Create the Logical Constraint and set the data
-    NLLogicalCons cons;
+    NLLogicalCons cons(logical_constraints.size());
     // Get the name of the constraint
     string cname = get_cname(c);
     cons.name = cname;
-    // Set the index
-    cons.index = logical_constraints.size();
     // Create the expression graph
     // 1) Push the comparison  "!= operand1 operand2"
     cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::NE));
     // 2) Operand1 := sum of product
-    // All the sums in one go
-    cons.expression_graph.push_back(NLToken::mo(NLToken::MOpCode::OPSUMLIST, coeffs.size()));
+    // WARNING: OPSUMLIST needs 3 operands and more!
+    // 2.1) With two operands
+    if(coeffs.size()==2){
+      cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPPLUS));
+    } else {
+      // 2.2) With more operands
+      cons.expression_graph.push_back(NLToken::mo(NLToken::MOpCode::OPSUMLIST, coeffs.size()));
+    }
+    // 2.3) All the sums in one go
     for(unsigned int i=0; i<coeffs.size(); ++i){
-        // Product
+      // Product if coeff !=1
+      if(coeffs[i]!=1){
         cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPMULT));
         cons.expression_graph.push_back(NLToken::n(coeffs[i]));
-        cons.expression_graph.push_back(NLToken::vc(vars[i], this));  // Use 'vc' here !
+      }
+      cons.expression_graph.push_back(NLToken::vc(vars[i], this));  // Use 'vc' here !
     }
     // 3) Operand 2 := value
     cons.expression_graph.push_back(NLToken::n(value));
@@ -374,7 +388,25 @@ namespace MiniZinc {
 
   /** Non linear constraint: x * y = z **/
   void NLFile::consint_times(const Call& c){
-    cerr << "Non linear to be implementeed constraint 'int times'   not implemented"; assert(false);
+    NLToken t0     = get_tok_var_int(c.arg(0), this);
+    NLToken t1     = get_tok_var_int(c.arg(1), this);
+    NLToken tvalue = get_tok_var_int(c.arg(2), this);
+    // Create the Algebraic Constraint and set the data
+    NLAlgCons cons;
+    // Get the name of the constraint
+    string cname = get_cname(c);
+    cons.name = cname;
+    // Create the bound of the constraint
+    NLBound bound = NLBound::make_equal(0);
+    cons.range = bound;
+    // Create the expression graph: multiply the tokens t0 and t1 and substract tvalue
+    cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPMINUS));
+    cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPMULT));
+    cons.expression_graph.push_back(t0);
+    cons.expression_graph.push_back(t1);
+    cons.expression_graph.push_back(tvalue);
+    // Store the constraint
+    constraints[cname] = cons;
   }
 
   /** Non linear constraint: x / y = z **/
@@ -394,45 +426,24 @@ namespace MiniZinc {
   // For a call c, we have 2 arguments, c.arg(0) and c.arg(1), being then operands of the comparison.
   // The arguments are either variable or parameter
 
-  /** Non linear constraint x =< y **/
+  /** Non linear constraint x =< y translated as x-y =< 0 **/
   void NLFile::consint_le(const Call& c){
-      assert(false);
-      Expression* arg0 = c.arg(0);
-      Expression* arg1 = c.arg(1);
-      /*
-
-      // Bound checking: if arg0 is a parameter, its value is fixed.
-      // We have a constraint that create a partial a partial bound (or update a bound)
-      if(arg0->type().ispar()){
-          // Get the lower bound, the variable declaration and the associated name
-          long long lb = arg0->cast<IntLit>()->v().toInt();
-          VarDecl& vd = *(arg1->cast<Id>()->decl());
-          // Get the variable itself and its bound
-          string name = get_vname(vd);
-          Var v1 = variables[name];
-          // New bound as a copy. Update the copy, create an updated var and put it in the map
-          NLS_BoundItem newBound = v1.bound;
-          newBound.update_lb(lb);         // param <= var: lower bound
-          Var new_v = Var(name, v1.index, v1.is_integer, newBound, v1.to_report);
-          //Var new_v = v1.copy_with_bound(newBound);
-          variables[name] = new_v;
-      } else if(arg1->type().ispar()){
-          // Symmetric, with an upper bound var <= param
-          VarDecl& vd = *(arg0->cast<Id>()->decl());
-          long long ub = arg1->cast<IntLit>()->v().toInt();            
-          string name = get_vname(vd);
-          Var v0 = variables[name];
-          NLS_BoundItem newBound = v0.bound;
-          newBound.update_ub(ub);         // var <= param: upper bound
-          Var new_v = Var(name, v0.index, v0.is_integer, newBound, v0.to_report);
-          //Var new_v = v0.copy_with_bound(newBound);
-          variables[name] = new_v;
-      } else {
-          // --- --- --- Actual constraint
-          cerr << "not implemented" << endl;
-          assert(false);
-      }
-      */
+    NLToken t0     = get_tok_var_int(c.arg(0), this);
+    NLToken t1     = get_tok_var_int(c.arg(1), this);
+    // Create the Algebraic Constraint and set the data
+    NLAlgCons cons;
+    // Get the name of the constraint
+    string cname = get_cname(c);
+    cons.name = cname;
+    // Create the bound of the constraint: equal 0
+    NLBound bound = NLBound::make_ub_bounded(0);
+    cons.range = bound;
+    // Create the expression graph: substract the two variables
+    cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPMINUS));
+    cons.expression_graph.push_back(t0);
+    cons.expression_graph.push_back(t1);
+    // Store the constraint
+    constraints[cname] = cons;
   }
 
 
@@ -440,46 +451,62 @@ namespace MiniZinc {
    *  arg(0) should be variable
    *  arg(1) could be a var or a constant
    ***/
-  void NLFile::consint_eq(const Call& c){
-      Expression* arg0 = c.arg(0);
-      Expression* arg1 = c.arg(1);
-      assert(false);
-      /*
+  void NLFile::consint_eq(const Call& c){    
+    Expression* arg0 = c.arg(0);
+    Expression* arg1 = c.arg(1);
 
-      // Get fist arg
-      if(arg0->type().ispar()){
-        cerr << "Comparison: first argument shoud be a variable"; assert(false);
-      }
-      
-      // Get second arg.
-      // If constant, update the bound on the variable, else create a constraint.
-      if(arg1->type().ispar()){
-        VarDecl& vd = *(arg0->cast<Id>()->decl());
-        long long value = arg1->cast<IntLit>()->v().toInt();
-        string name = get_vname(vd);
-        NLVar v1 = variables[name];
-        // New bound as a copy. Update the copy, create an updated var and put it in the map
-        NLBound newBound = NLBound::make_equal(value, v1.index);
-        Var new_v = v1.copy_with_bound(newBound);
-        variables[name] = new_v;
-      }else{
-        // Create the constraint:
-        VarDecl& v0 = *(arg0->cast<Id>()->decl());
-        VarDecl& v1 = *(arg0->cast<Id>()->decl());
+    // Get first arg
+    if(arg0->type().ispar()){
+      cerr << "Comparison: first argument shoud be a variable"; assert(false);
+    }
+    VarDecl& vd0 = *(arg0->cast<Id>()->decl());
+    string n0 = get_vname(vd0);
 
-        cerr << "wip" <<endl; assert(false);
-      }
-      */
+    // Get second arg. If constant, update the bound on the variable, else create a constraint.
+    if(arg1->type().ispar()){
+      // Update the bound of the variable represented by arg0  
+      long long value = arg1->cast<IntLit>()->v().toInt();
+      NLVar& v = variables.at(n0);
+      v.bound = NLBound::make_equal(value);
+    } else {
+      // Create a constraint between variables: soustraction of the two members=0
+      VarDecl& vd1 = *(arg1->cast<Id>()->decl());
+      string n1 = get_vname(vd1);
+      // Create the Algebraic Constraint and set the data
+      NLAlgCons cons;
+      // Get the name of the constraint
+      string cname = get_cname(c);
+      cons.name = cname;
+      // Create the bound of the constraint: equal 0
+      NLBound bound = NLBound::make_equal(0);
+      cons.range = bound;
+      // Create the expression graph: substract the two variables
+      cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPMINUS));
+      cons.expression_graph.push_back(NLToken::vc(n0, this));
+      cons.expression_graph.push_back(NLToken::vc(n1, this));
+      // Store the constraint
+      constraints[cname] = cons;
+    }
   }
-
 
   /** Non linear constraint x != y **/
   void NLFile::consint_ne(const Call& c){
-    cerr << "constraint 'int ne' not implemented"; assert(false);
+    NLToken t0     = get_tok_var_int(c.arg(0), this);
+    NLToken t1     = get_tok_var_int(c.arg(1), this);
+
+    // Create the Logical Constraint and set the data
+    NLLogicalCons cons(logical_constraints.size());
+    // Get the name of the constraint
+    string cname = get_cname(c);
+    cons.name = cname;
+    // Create the expression graph
+    cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::NE));
+    cons.expression_graph.push_back(t0);
+    cons.expression_graph.push_back(t1);
+
+    // Store the constraint
+    logical_constraints.push_back(cons);
   }
-
-
-
 
   /** *** *** *** Floating Point Constraint methods *** *** *** **/
 
@@ -764,68 +791,29 @@ namespace MiniZinc {
       }
 
       // Print the Algebraic Constraints
-      int idx=0;
       for(auto n:cnames){
         NLAlgCons c = constraints.at(n);
         c.print_on(os, *this);
       }
 
-      // Print the goal
+      // Print the Logical constraint
+      for(auto& lc: logical_constraints){
+        lc.print_on(os, *this);
+      }
 
-
-
+      // Print the objective
+      objective.print_on(os, *this);
 
       return os;
     }
 
 
-      /*
-        os << header << endl;
-
-        os << b_segment;
-
-        os << r_segment;
-
-        for(auto &cseg: c_segments){
-            os << cseg;
-        }
-
-        // K segment here if we have some j_segments
-        if(!j_segments.empty()){
-
-          if(!vnames.empty()){
-            os << "k" << (header.nb_vars-1) << " # Cumulative Sum of non-zero in the jacobian matrix's (nbvar-1) columns." << endl;
-            int acc=0;
-            // Note: stop before the last var. Total count will be in the header
-            for(int i=0; i<vnames.size()-1; ++i){
-              string name = vnames[i];
-              acc += variables.at(name).jacobian_count;
-              os << acc << " # " << name << endl;
-            }
-            /*  Line "comment only" not allowed (tested with gecode)!!!! For real...
-            // Last variable in comments. NL format use the header to complete the information (non zero in jacobian)
-            string name = name_vars[name_vars.size()-1];
-            acc += variables.at(name).jacobian_count;
-            os << "# " << acc << " # " << name << " Equivalent to the last column. NL format use the header to determine this value." << endl;
-            */
-/*          }
 
 
-          // J segments here
-          for(auto &jseg: j_segments){
-            os << jseg;
-          }
-        }
 
-        for(auto &lseg: l_segments){
-            os << lseg;
-        }
 
-        os << o_segment;
 
-        return os;
-    }
-    */     
+
 
 
 

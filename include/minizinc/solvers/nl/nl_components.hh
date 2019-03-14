@@ -342,6 +342,9 @@ namespace MiniZinc {
          */
         vector<NLToken> expression_graph = {};
 
+        /* *** *** *** Constructor *** *** *** */
+        NLLogicalCons(int idx):index(idx){}
+
         /* *** *** *** Printable interface *** *** *** */
 
         ostream& print_on( ostream& o, const NLFile& nl_file) const override;
@@ -364,38 +367,24 @@ namespace MiniZinc {
 
 
 
-    /* *** *** *** SEGMENTS *** *** *** */
-
-
-
-   /** Segment 'b'. Bounds on variables. */
-   class NLSeg_b: public Printable {
-
-   };
-
-   /** Segment 'r'. Bounds on algebraic constraint. */
-   class NLSeg_r: public Printable {
-
-   };
-
-    /** An Objective segment 'O'.
+    /** An Objective
     * In an NL file, we can have several of those.
     * However, in flatzinc, only one is allowed, so we only have one.
     * Note that in NL, we do not have a "satisfy" objective, only a minimize or maximize one.
     * We translate the "satisfy" with "minimize n0".
     */
-    class NLSeg_O: public Printable {
+    class NLObjective: public Printable {
         public:
             enum MinMax{
-                UNDEF = -1,
-                MINIMIZE = 0,
-                MAXIMIZE = 1,
+                UNDEF       = -2,
+                SATISFY     = -1,
+                MINIMIZE    = 0,
+                MAXIMIZE    = 1,
             };
 
         /* *** *** *** Fields *** *** *** */
         MinMax minmax                       = UNDEF;
         vector<NLToken> expression_graph    = {};       // If empty, produce a 'n0' when printing
-        bool is_optimisation                = false;    // If we did, is it an optimisation problem?
 
         /* *** *** *** Gradient *** *** *** */
         int _gradient_count = 0;
@@ -406,9 +395,11 @@ namespace MiniZinc {
         bool is_defined() const;
 
         bool is_linear() const;
+
+        bool is_optimisation() const;
         
         /* *** *** *** Constructor *** *** *** */
-        NLSeg_O() = default;
+        NLObjective() = default;
 
         /* *** *** *** Printable Interface *** *** *** */
         ostream& print_on( ostream& o, const NLFile& nl_file ) const override;

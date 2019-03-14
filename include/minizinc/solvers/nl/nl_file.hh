@@ -50,18 +50,22 @@ namespace MiniZinc {
         /** Create a string representing the name (and unique identifier) of a constraint from a specific call expression. */
         static string get_cname(const Call& c);
 
-        /** Extract a vector of expression from an expression. Used when working with arrays. */
-        static ASTExprVec<Expression> get_vec(const Expression* e);
+        /** Extract an array literal from an expression. */
+        static const ArrayLit& get_arraylit(const Expression* e);
 
         /** Create a vector of double from a vector containing Expression being integer literal IntLit. */
-        static vector<double> from_vec_int(const ASTExprVec<Expression>& v_int);
+        static vector<double> from_vec_int(const ArrayLit& v_int);
 
         /** Create a vector of double from a vector containing Expression being float literal FloatLit. */
-        static vector<double> from_vec_fp(const ASTExprVec<Expression>& v_fp);
+        static vector<double> from_vec_fp(const ArrayLit& v_fp);
 
         /** Create a vector of variable names from a vector containing Expression being identifier Id. */
-        static vector<string> from_vec_id(const ASTExprVec<Expression>& v_id);
+        static vector<string> from_vec_id(const ArrayLit& v_id);
 
+        /** Create a token from an expression representing either a variable or an integer numeric value.
+         * ONLY USE FOR CONSTRAINT, NOT OBJECTIVE! UPDATE VARIABLES FLAG FOR CONSTRAINT
+         */
+        static NLToken get_tok_var_int(const Expression* e, NLFile* nl_file);
 
 
         /* *** *** *** Phase 0: constructor data *** *** *** */
@@ -83,7 +87,7 @@ namespace MiniZinc {
 
 
         // Objective field. Only one, so we do not need ordering.
-        NLSeg_O segment_O = {};
+        NLObjective objective = {};
 
 
         /** Add a solve goal in the NL File. In our case, we can only have one and only one solve goal. */
