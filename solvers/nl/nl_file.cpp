@@ -76,23 +76,6 @@ namespace MiniZinc {
     return v;
   }
 
-  /** Create a token from an expression representing either a variable or an integer numeric value.
-   * ONLY USE FOR CONSTRAINT, NOT OBJECTIVE!
-   */
-  NLToken NLFile::get_tok_var_int(const Expression* e, NLFile* nl_file){
-    if(e->type().ispar()){
-      // Constant
-      long long value = e->cast<IntLit>()->v().toInt();
-      return NLToken::n(value);
-    } else {
-      // Variable
-      VarDecl& vd = *(e->cast<Id>()->decl());
-      string n = get_vname(vd);
-      return NLToken::vc(n, nl_file);
-    }
-  }
-
-
 
 
   /** *** *** *** Phase 1: collecting data from MZN *** *** *** **/
@@ -267,6 +250,132 @@ namespace MiniZinc {
   }
 
 
+
+  /* *** *** *** Helpers for constraints *** *** *** */
+
+  /** Create a token from an expression representing either a variable.
+   * ONLY USE FOR CONSTRAINT, NOT OBJECTIVE!
+   */
+  NLToken NLFile::get_tok_var(const Expression* e){
+      assert(e->type().isvar());
+      // Variable
+      VarDecl& vd = *(e->cast<Id>()->decl());
+      string n = get_vname(vd);
+      return NLToken::vc(n, this);
+  }
+
+  /** Create a token from an expression representing either a variable or an integer numeric value.
+   * ONLY USE FOR CONSTRAINT, NOT OBJECTIVE!
+   */
+  NLToken NLFile::get_tok_var_int(const Expression* e){
+    if(e->type().ispar()){
+      // Constant
+      long long value = e->cast<IntLit>()->v().toInt();
+      return NLToken::n(value);
+    } else {
+      // Variable
+      VarDecl& vd = *(e->cast<Id>()->decl());
+      string n = get_vname(vd);
+      return NLToken::vc(n, this);
+    }
+  }
+
+  /** Create a token from an expression representing either a variable or a floating point numeric value.
+   * ONLY USE FOR CONSTRAINT, NOT OBJECTIVE!
+   */ 
+  NLToken NLFile::get_tok_var_fp(const Expression* e){
+    if(e->type().ispar()){
+      // Constant
+      double value = e->cast<FloatLit>()->v().toDouble();
+      return NLToken::n(value);
+    } else {
+      // Variable
+      VarDecl& vd = *(e->cast<Id>()->decl());
+      string n = get_vname(vd);
+      return NLToken::vc(n, this);
+    }
+  }
+
+  /** Create a non linear constraint with an operator: v0 OP v1 = vres.
+   *  v0, v1 and vres are supposed to be variables.
+   */
+  void NLFile::nlcons_var_operator(const Call& c, NLToken::OpCode oc){
+    NLToken v0    = get_tok_var(c.arg(0));
+    NLToken v1    = get_tok_var(c.arg(1));
+    NLToken vres  = get_tok_var(c.arg(2));
+
+    // Create the Algebraic Constraint and set the data
+    NLAlgCons cons;
+
+    // Get the name of the constraint
+    string cname = get_cname(c);
+    cons.name = cname;
+    
+    // Use a constraint bound = 0 and use tje jacobian to "substract tvalue".
+    // Create the bound of the constraint to 0
+    NLBound bound = NLBound::make_equal(0);
+    cons.range = bound;
+
+    // Use the jacobian
+    vector<double>  coeffs  = {};
+    vector<string>  vars    = {};
+
+    // Check that v0 is not v1 or vres
+    if(v0.str!=v1.str && v0.str!=vres.str){
+      coeffs.push_back(0);
+      vars.push_back(v0.str);
+    }
+    // Check that v1 is not vres
+    if(v1.str!=vres.str){
+      coeffs.push_back(0);
+      vars.push_back(v1.str);
+    }
+    // tvalue is a variable whose value is substracted from the result
+    coeffs.push_back(-1);
+    vars.push_back(vres.str);
+    
+    // Finish jacobian
+    cons.set_jacobian(vars, coeffs, this);
+
+    // Create the expression graph using the operand code 'oc'
+    cons.expression_graph.push_back(NLToken::o(oc));
+    cons.expression_graph.push_back(v0);
+    cons.expression_graph.push_back(v1);
+
+    // Store the constraint
+    constraints[cname] = cons;
+  }
+
+  /** Create a non linear constraint with a predicate: v0 PR v1
+   *  NOTE: do NOT use with '=' and '<='! Specialized the code in thoses cases.
+   *  v0 and v1 are supposed to be variables.
+   *  This will create a Logical Constraint, which might no be supported by all solvers.
+   */
+  void NLFile::nlcons_var_predicate(const Call& c, NLToken::OpCode oc){
+    NLToken v0    = get_tok_var(c.arg(0));
+    NLToken v1    = get_tok_var(c.arg(1));
+
+    // Create the Logical Constraint and set the data
+    NLLogicalCons cons(logical_constraints.size());
+
+    // Get the name of the constraint
+    string cname = get_cname(c);
+    cons.name = cname;
+
+    // Create the expression graph
+    cons.expression_graph.push_back(NLToken::o(oc));
+    cons.expression_graph.push_back(v0);
+    cons.expression_graph.push_back(v1);
+
+    // Store the constraint
+    logical_constraints.push_back(cons);
+  }
+
+
+
+
+
+
   /* *** *** *** Integer Constraint methods *** *** *** */
   // WARGNING: when building expression graph in the constraints below, create the variable with vc and not vo!
   // 'vc' will update the internal flag of variable for non linear constraints, while 'vo' is doing the same for the objective.
@@ -313,7 +422,6 @@ namespace MiniZinc {
     constraints[cname] = cons;
   }
 
-
   /** Linar constraint: [array0] *+ [array1] =< value **/
   void NLFile::consint_lin_le(const Call& c){
     // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
@@ -336,6 +444,9 @@ namespace MiniZinc {
     // Add the constraint in our mapping
     constraints[cname] = cons;
   }
+
+
+  // --- Comparison with logical constraints
 
   /** Linar constraint: [array0] *+ [array1] != value
    *  Translated into a logical constraint, not an algebraic one!
@@ -380,43 +491,17 @@ namespace MiniZinc {
   }
 
   // --- --- --- Non Linear Constraints: operations
-  // Flatzinc:
-  // For a call c, we have 3 arguments:
-  // c.arg(0) and c.arg(1) are the operands
-  // c.arg(2) is the value to which it is compared.
-  // The arguments are either variable or parameter
 
-  /** Non linear constraint: x * y = z **/
   void NLFile::consint_times(const Call& c){
-    NLToken t0     = get_tok_var_int(c.arg(0), this);
-    NLToken t1     = get_tok_var_int(c.arg(1), this);
-    NLToken tvalue = get_tok_var_int(c.arg(2), this);
-    // Create the Algebraic Constraint and set the data
-    NLAlgCons cons;
-    // Get the name of the constraint
-    string cname = get_cname(c);
-    cons.name = cname;
-    // Create the bound of the constraint
-    NLBound bound = NLBound::make_equal(0);
-    cons.range = bound;
-    // Create the expression graph: multiply the tokens t0 and t1 and substract tvalue
-    cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPMINUS));
-    cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPMULT));
-    cons.expression_graph.push_back(t0);
-    cons.expression_graph.push_back(t1);
-    cons.expression_graph.push_back(tvalue);
-    // Store the constraint
-    constraints[cname] = cons;
+    nlcons_var_operator(c, NLToken::OpCode::OPPLUS);
   }
 
-  /** Non linear constraint: x / y = z **/
   void NLFile::consint_div(const Call& c){
-    cerr << "Non linear to be implementeed constraint 'int div'   not implemented"; assert(false);
+    nlcons_var_operator(c, NLToken::OpCode::OPDIV);
   }
 
-  /** Non linear constraint: x mod y = z **/
   void NLFile::consint_mod(const Call& c){
-    cerr << "Non linear to be implementeed constraint 'int mod'   not implemented"; assert(false);
+    nlcons_var_operator(c, NLToken::OpCode::OPREM);
   }
 
 
@@ -428,8 +513,8 @@ namespace MiniZinc {
 
   /** Non linear constraint x =< y translated as x-y =< 0 **/
   void NLFile::consint_le(const Call& c){
-    NLToken t0     = get_tok_var_int(c.arg(0), this);
-    NLToken t1     = get_tok_var_int(c.arg(1), this);
+    NLToken t0     = get_tok_var_int(c.arg(0));
+    NLToken t1     = get_tok_var_int(c.arg(1));
     // Create the Algebraic Constraint and set the data
     NLAlgCons cons;
     // Get the name of the constraint
@@ -445,7 +530,6 @@ namespace MiniZinc {
     // Store the constraint
     constraints[cname] = cons;
   }
-
 
   /** Non linear constraint x = y
    *  arg(0) should be variable
@@ -489,10 +573,46 @@ namespace MiniZinc {
     }
   }
 
+
+  // --- Comparison with logical constraints
+
   /** Non linear constraint x != y **/
   void NLFile::consint_ne(const Call& c){
-    NLToken t0     = get_tok_var_int(c.arg(0), this);
-    NLToken t1     = get_tok_var_int(c.arg(1), this);
+    nlcons_var_predicate(c, NLToken::OpCode::NE);
+  }
+
+
+
+
+  /** *** *** *** Floating Point Constraint methods *** *** *** **/
+
+  void NLFile::consfp_lin_eq(const Call& c){
+    // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
+    vector<double>  coeffs  = from_vec_fp(get_arraylit(c.arg(0)));
+    vector<string>  vars    = from_vec_id(get_arraylit(c.arg(1)));
+    double          value   = c.arg(2)->cast<FloatLit>()->v().toDouble();
+
+    // Create the Algebraic Constraint and set the data
+    NLAlgCons cons;
+    // Get the name of the constraint
+    string cname = get_cname(c);
+    cons.name = cname;
+    // Create the bound of the constraint
+    NLBound bound = NLBound::make_equal(value);
+    cons.range = bound;
+    // No non linear part: leave the expression graph empty.
+    // Linear part: set the jacobian
+    cons.set_jacobian(vars, coeffs, this);
+
+    // Add the constraint in our mapping
+    constraints[cname] = cons;
+  }
+
+  void NLFile::consfp_lin_le(const Call& c){
+    // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
+    vector<double>  coeffs  = from_vec_fp(get_arraylit(c.arg(0)));
+    vector<string>  vars    = from_vec_id(get_arraylit(c.arg(1)));
+    double          value   = c.arg(2)->cast<FloatLit>()->v().toDouble();
 
     // Create the Logical Constraint and set the data
     NLLogicalCons cons(logical_constraints.size());
@@ -500,67 +620,225 @@ namespace MiniZinc {
     string cname = get_cname(c);
     cons.name = cname;
     // Create the expression graph
-    cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::NE));
-    cons.expression_graph.push_back(t0);
-    cons.expression_graph.push_back(t1);
+    // 1) Push the comparison  "=< operand1 operand2"
+    cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::LE));
+    // 2) Operand1 := sum of product
+    // WARNING: OPSUMLIST needs 3 operands and more!
+    // 2.1) With two operands
+    if(coeffs.size()==2){
+      cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPPLUS));
+    } else {
+      // 2.2) With more operands
+      cons.expression_graph.push_back(NLToken::mo(NLToken::MOpCode::OPSUMLIST, coeffs.size()));
+    }
+    // 2.3) All the sums in one go
+    for(unsigned int i=0; i<coeffs.size(); ++i){
+      // Product if coeff !=1
+      if(coeffs[i]!=1){
+        cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPMULT));
+        cons.expression_graph.push_back(NLToken::n(coeffs[i]));
+      }
+      cons.expression_graph.push_back(NLToken::vc(vars[i], this));  // Use 'vc' here !
+    }
+    // 3) Operand 2 := value
+    cons.expression_graph.push_back(NLToken::n(value));
 
     // Store the constraint
     logical_constraints.push_back(cons);
   }
 
-  /** *** *** *** Floating Point Constraint methods *** *** *** **/
 
-  void NLFile::consfp_lin_eq(const Call& c){
-    cerr << "constraint 'float lin_eq' not implemented"; assert(false);
-  }
+  // --- Comparison with logical constraints
 
-  void NLFile::consfp_lin_le(const Call& c){
-    cerr << "constraint 'float lin_le' not implemented"; assert(false);
-  }
 
   void NLFile::consfp_lin_lt(const Call& c){
-    cerr << "constraint 'float lin_lt' not implemented"; assert(false);
+    // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
+    vector<double>  coeffs  = from_vec_fp(get_arraylit(c.arg(0)));
+    vector<string>  vars    = from_vec_id(get_arraylit(c.arg(1)));
+    double          value   = c.arg(2)->cast<FloatLit>()->v().toDouble();
+
+    // Create the Logical Constraint and set the data
+    NLLogicalCons cons(logical_constraints.size());
+    // Get the name of the constraint
+    string cname = get_cname(c);
+    cons.name = cname;
+    // Create the expression graph
+    // 1) Push the comparison  "< operand1 operand2"
+    cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::LT));
+    // 2) Operand1 := sum of product
+    // WARNING: OPSUMLIST needs 3 operands and more!
+    // 2.1) With two operands
+    if(coeffs.size()==2){
+      cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPPLUS));
+    } else {
+      // 2.2) With more operands
+      cons.expression_graph.push_back(NLToken::mo(NLToken::MOpCode::OPSUMLIST, coeffs.size()));
+    }
+    // 2.3) All the sums in one go
+    for(unsigned int i=0; i<coeffs.size(); ++i){
+      // Product if coeff !=1
+      if(coeffs[i]!=1){
+        cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPMULT));
+        cons.expression_graph.push_back(NLToken::n(coeffs[i]));
+      }
+      cons.expression_graph.push_back(NLToken::vc(vars[i], this));  // Use 'vc' here !
+    }
+    // 3) Operand 2 := value
+    cons.expression_graph.push_back(NLToken::n(value));
+
+    // Store the constraint
+    logical_constraints.push_back(cons);
   }
 
   void NLFile::consfp_lin_ne(const Call& c){
-    cerr << "constraint 'float lin_ne' not implemented"; assert(false);
+    // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
+    vector<double>  coeffs  = from_vec_fp(get_arraylit(c.arg(0)));
+    vector<string>  vars    = from_vec_id(get_arraylit(c.arg(1)));
+    double          value   = c.arg(2)->cast<FloatLit>()->v().toDouble();
+
+    // Create the Logical Constraint and set the data
+    NLLogicalCons cons(logical_constraints.size());
+    // Get the name of the constraint
+    string cname = get_cname(c);
+    cons.name = cname;
+    // Create the expression graph
+    // 1) Push the comparison  "!= operand1 operand2"
+    cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::NE));
+    // 2) Operand1 := sum of product
+    // WARNING: OPSUMLIST needs 3 operands and more!
+    // 2.1) With two operands
+    if(coeffs.size()==2){
+      cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPPLUS));
+    } else {
+      // 2.2) With more operands
+      cons.expression_graph.push_back(NLToken::mo(NLToken::MOpCode::OPSUMLIST, coeffs.size()));
+    }
+    // 2.3) All the sums in one go
+    for(unsigned int i=0; i<coeffs.size(); ++i){
+      // Product if coeff !=1
+      if(coeffs[i]!=1){
+        cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPMULT));
+        cons.expression_graph.push_back(NLToken::n(coeffs[i]));
+      }
+      cons.expression_graph.push_back(NLToken::vc(vars[i], this));  // Use 'vc' here !
+    }
+    // 3) Operand 2 := value
+    cons.expression_graph.push_back(NLToken::n(value));
+
+    // Store the constraint
+    logical_constraints.push_back(cons);
   }
 
+
+
+
+
+  // --- --- --- Non Linear Constraints: operations
+
   void NLFile::consfp_plus(const Call& c){
-    cerr << "constraint 'float plus  ' not implemented"; assert(false);
+    nlcons_var_operator(c, NLToken::OpCode::OPPLUS);
   }
 
   void NLFile::consfp_minus(const Call& c){
-    cerr << "constraint 'float minus ' not implemented"; assert(false);
+    nlcons_var_operator(c, NLToken::OpCode::OPMINUS);
   }
 
   void NLFile::consfp_times(const Call& c){
-    cerr << "constraint 'float times ' not implemented"; assert(false);
+    nlcons_var_operator(c, NLToken::OpCode::OPMULT);
   }
 
   void NLFile::consfp_div(const Call& c){
-    cerr << "constraint 'float div   ' not implemented"; assert(false);
+    nlcons_var_operator(c, NLToken::OpCode::OPDIV);
   }
 
   void NLFile::consfp_mod(const Call& c){
-    cerr << "constraint 'float mod   ' not implemented"; assert(false);
+    nlcons_var_operator(c, NLToken::OpCode::OPREM);
   }
 
-  void NLFile::consfp_lt(const Call& c){
-    cerr << "constraint 'float lt    ' not implemented"; assert(false);
-  }
+
+
+  // --- --- --- Non Linear Constraints: comparisons
+
 
   void NLFile::consfp_le(const Call& c){
-    cerr << "constraint 'float le    ' not implemented"; assert(false);
+    NLToken t0     = get_tok_var_fp(c.arg(0));
+    NLToken t1     = get_tok_var_fp(c.arg(1));
+    // Create the Algebraic Constraint and set the data
+    NLAlgCons cons;
+    // Get the name of the constraint
+    string cname = get_cname(c);
+    cons.name = cname;
+    // Create the bound of the constraint: equal 0
+    NLBound bound = NLBound::make_ub_bounded(0);
+    cons.range = bound;
+    // Create the expression graph: substract the two variables
+    cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPMINUS));
+    cons.expression_graph.push_back(t0);
+    cons.expression_graph.push_back(t1);
+    // Store the constraint
+    constraints[cname] = cons;
   }
 
   void NLFile::consfp_eq(const Call& c){
-    cerr << "constraint 'float eq    ' not implemented"; assert(false);
+    Expression* arg0 = c.arg(0);
+    Expression* arg1 = c.arg(1);
+
+    // Get first arg
+    if(arg0->type().ispar()){
+      cerr << "Comparison: first argument shoud be a variable"; assert(false);
+    }
+    VarDecl& vd0 = *(arg0->cast<Id>()->decl());
+    string n0 = get_vname(vd0);
+
+    // Get second arg. If constant, update the bound on the variable, else create a constraint.
+    if(arg1->type().ispar()){
+      // Update the bound of the variable represented by arg0  
+      double value = arg1->cast<FloatLit>()->v().toDouble();
+      NLVar& v = variables.at(n0);
+      v.bound = NLBound::make_equal(value);
+    } else {
+      // Create a constraint between variables: soustraction of the two members=0
+      VarDecl& vd1 = *(arg1->cast<Id>()->decl());
+      string n1 = get_vname(vd1);
+      // Create the Algebraic Constraint and set the data
+      NLAlgCons cons;
+      // Get the name of the constraint
+      string cname = get_cname(c);
+      cons.name = cname;
+      // Create the bound of the constraint: equal 0
+      NLBound bound = NLBound::make_equal(0);
+      cons.range = bound;
+      // Create the expression graph: substract the two variables
+      cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPMINUS));
+      cons.expression_graph.push_back(NLToken::vc(n0, this));
+      cons.expression_graph.push_back(NLToken::vc(n1, this));
+      // Store the constraint
+      constraints[cname] = cons;
+    }
+  }
+
+
+
+  // --- Comparisons with logical constraints
+
+
+  void NLFile::consfp_lt(const Call& c){
+    nlcons_var_predicate(c, NLToken::OpCode::LT);
   }
 
   void NLFile::consfp_ne(const Call& c){
-    cerr << "constraint 'float ne    ' not implemented"; assert(false);
+    nlcons_var_predicate(c, NLToken::OpCode::NE);
   }
+
+
+
+
+
+
+
+
+
+
 
 
 

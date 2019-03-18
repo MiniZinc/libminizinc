@@ -62,10 +62,6 @@ namespace MiniZinc {
         /** Create a vector of variable names from a vector containing Expression being identifier Id. */
         static vector<string> from_vec_id(const ArrayLit& v_id);
 
-        /** Create a token from an expression representing either a variable or an integer numeric value.
-         * ONLY USE FOR CONSTRAINT, NOT OBJECTIVE! UPDATE VARIABLES FLAG FOR CONSTRAINT
-         */
-        static NLToken get_tok_var_int(const Expression* e, NLFile* nl_file);
 
 
         /* *** *** *** Phase 0: constructor data *** *** *** */
@@ -120,9 +116,40 @@ namespace MiniZinc {
 
 
 
+
         /** Add a constraint to the NL File.
          * This method is a dispatcher for all the other constraints methods below. */
         void analyse_constraint(const Call& c);
+
+        /* *** *** *** Helper methods to create constraints *** *** *** */
+
+        /** Create a token from an expression representing either a variable or an integer numeric value.
+         * ONLY USE FOR CONSTRAINT, NOT OBJECTIVE! UPDATE VARIABLES FLAG FOR CONSTRAINT
+         */
+        NLToken get_tok_var(const Expression* e);
+
+        /** Create a token from an expression representing either a variable or an integer numeric value.
+         * ONLY USE FOR CONSTRAINT, NOT OBJECTIVE! UPDATE VARIABLES FLAG FOR CONSTRAINT
+         */
+        NLToken get_tok_var_int(const Expression* e);
+
+        /** Create a token from an expression representing either a variable or a floating point numeric value.
+         * ONLY USE FOR CONSTRAINT, NOT OBJECTIVE!
+         */ 
+        NLToken get_tok_var_fp(const Expression* e);
+
+        /** Create a non linear constraint with an operator: v0 OP v1 = vres.
+         *  v0, v1 and vres are supposed to be variables.
+         */
+        void nlcons_var_operator(const Call& c, NLToken::OpCode oc);
+
+        /** Create a non linear constraint with a predicate: v0 PR v1  (PR being '=', '!=', '<', '<=', etc..)
+         *  NOTE: do NOT use with '=' and '<='! Specialized the code in thoses cases.
+         *  v0 and v1 are supposed to be variables.
+         *  This will create a Logical Constraint, which might no be supported by all solvers.
+         */
+        void nlcons_var_predicate(const Call& c, NLToken::OpCode oc);
+
 
         /* *** *** *** Integer Constraint methods *** *** *** */
 

@@ -257,6 +257,10 @@ namespace MiniZinc {
         return tok;
     }
 
+    bool NLToken::is_variable(){
+        return kind == VARIABLE;
+    }
+
     ostream& NLToken::print_on(ostream& os, const NLFile& nl_file) const {
         switch (kind) {
 
@@ -298,6 +302,7 @@ namespace MiniZinc {
 
         return os;
     }
+
 
 
 

@@ -268,6 +268,9 @@ namespace MiniZinc {
 
         static NLToken mo(MOpCode mopc, int nb);
 
+        /* *** *** *** Query *** *** *** */
+        bool is_variable();
+
 
         /* *** *** *** Printable interface *** *** *** */
 
