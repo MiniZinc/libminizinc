@@ -298,6 +298,34 @@ namespace MiniZinc{
       for (auto &ann : flatAnn) {
         if (ann->isa<Call>()) {
           Call* call = ann->cast<Call>();
+          if (call->id().str() == "warm_start") {
+            auto vars = eval_array_lit(env().envi(), call->arg(0));
+            auto vals = eval_array_lit(env().envi(), call->arg(1));
+            assert(vars->size() == vals->size());
+            vec<geas::patom_t> ws(vars->size());
+
+            if (vars->type().isintarray()) {
+              assert(vals->type().isintarray());
+              for (int i = 0; i < vars->size(); ++i) {
+                geas::intvar var = asIntVar((*vars)[i]);
+                int val = asInt((*vals)[i]);
+                ws.push(var == val);
+              }
+            } else if (vars->type().isboolarray()) {
+              assert(vals->type().isboolarray());
+              for (int i = 0; i < vars->size(); ++i) {
+                geas::patom_t var = asBoolVar((*vars)[i]);
+                bool val = asBool((*vals)[i]);
+                ws.push(val ? var : ~var);
+              }
+            } else {
+              std::cerr << "WARNING Geas: ignoring warm start annotation of invalid type: " << *ann << std::endl;
+              continue;
+            }
+            _solver.data->branchers.push(geas::warmstart_brancher(ws));
+            continue;
+          }
+
           vec<geas::pid_t> pids;
           geas::VarChoice select = geas::Var_FirstFail;
           geas::ValChoice choice = geas::Val_Min;
@@ -314,8 +342,8 @@ namespace MiniZinc{
               pids[i] = bv[i].pid;
             }
           } else {
-            std::cerr << "WARNING Geas: ignoring unknown search annotation: " << ann << std::endl;
-            break;
+            std::cerr << "WARNING Geas: ignoring unknown search annotation: " << *ann << std::endl;
+            continue;
           }
           const std::string& select_str = call->arg(1)->cast<Id>()->str().str();
           if (select_str == "input_order") {
