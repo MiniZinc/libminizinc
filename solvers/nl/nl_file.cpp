@@ -332,7 +332,7 @@ namespace MiniZinc {
   // --- --- --- Linear Builders
 
   /** Create a linear constraint [coeffs] *+ [vars] = value. */
-  void NLFile::lincons_eq(const Call& c, const vector<double>& coeffs, const vector<string>& vars, double value){
+  void NLFile::lincons_eq(const Call& c, const vector<double>& coeffs, const vector<string>& vars, NLToken value){
     // Create the Algebraic Constraint and set the data
     NLAlgCons cons;
 
@@ -340,20 +340,32 @@ namespace MiniZinc {
     string cname = get_cname(c);
     cons.name = cname;
 
-    // Create the bound of the constraint
-    NLBound bound = NLBound::make_equal(value);
-    cons.range = bound;
-
-    // No non linear part: leave the expression graph empty.
-    // Linear part: set the jacobian
-    cons.set_jacobian(vars, coeffs, this);
+    if(value.is_constant()){
+      // Create the bound of the constraint
+      NLBound bound = NLBound::make_equal(value.numeric_value);
+      cons.range = bound;
+      // No non linear part: leave the expression graph empty.
+      // Linear part: set the jacobian
+      cons.set_jacobian(vars, coeffs, this);
+    } else {
+      // Create the bound of the constraint = 0 and change the Jacobian to incorporate a -1 on the variable in 'value'
+      NLBound bound = NLBound::make_equal(0);
+      cons.range = bound;
+      // No non linear part: leave the expression graph empty.
+      // Linear part: set the jacobian
+      vector<double>  coeffs_(coeffs);
+      coeffs_.push_back(-1);
+      vector<string>  vars_(vars);
+      vars_.push_back(value.str);
+      cons.set_jacobian(vars_, coeffs_, this);
+    }
 
     // Add the constraint in our mapping
     constraints[cname] = cons;
   }
 
   /** Create a linear constraint [coeffs] *+ [vars] <= value. */
-  void NLFile::lincons_le(const Call& c, const vector<double>& coeffs, const vector<string>& vars, double value){
+  void NLFile::lincons_le(const Call& c, const vector<double>& coeffs, const vector<string>& vars, NLToken value){
     // Create the Algebraic Constraint and set the data
     NLAlgCons cons;
 
@@ -361,13 +373,25 @@ namespace MiniZinc {
     string cname = get_cname(c);
     cons.name = cname;
 
-    // Create the bound of the constraint
-    NLBound bound = NLBound::make_ub_bounded(value);
-    cons.range = bound;
-
-    // No non linear part: leave the expression graph empty.
-    // Linear part: set the jacobian
-    cons.set_jacobian(vars, coeffs, this);
+    if(value.is_constant()){
+      // Create the bound of the constraint
+      NLBound bound = NLBound::make_ub_bounded(value.numeric_value);
+      cons.range = bound;
+      // No non linear part: leave the expression graph empty.
+      // Linear part: set the jacobian
+      cons.set_jacobian(vars, coeffs, this);
+    } else {
+      // Create the bound of the constraint = 0 and change the Jacobian to incorporate a -1 on the variable in 'value'
+      NLBound bound = NLBound::make_ub_bounded(0);
+      cons.range = bound;
+      // No non linear part: leave the expression graph empty.
+      // Linear part: set the jacobian
+      vector<double>  coeffs_(coeffs);
+      coeffs_.push_back(-1);
+      vector<string>  vars_(vars);
+      vars_.push_back(value.str);
+      cons.set_jacobian(vars_, coeffs_, this);
+    }
 
     // Add the constraint in our mapping
     constraints[cname] = cons;
@@ -379,7 +403,7 @@ namespace MiniZinc {
    *              - Only use for conmparisons that cannot be expressed with '=' xor '<='.
    */
   void NLFile::lincons_predicate(const Call& c, NLToken::OpCode oc,
-    const vector<double>& coeffs, const vector<string>& vars, double value){
+    const vector<double>& coeffs, const vector<string>& vars, NLToken value){
 
     // Create the Logical Constraint and set the data
     NLLogicalCons cons(logical_constraints.size());
@@ -396,7 +420,7 @@ namespace MiniZinc {
     make_SigmaMult(cons.expression_graph, coeffs, vars);
 
     // 3) Operand 2 := value
-    cons.expression_graph.push_back(NLToken::n(value));
+    cons.expression_graph.push_back(value);
 
     // Store the constraint
     logical_constraints.push_back(cons);
@@ -408,7 +432,7 @@ namespace MiniZinc {
   // For predicates, uses 2 variables or literals: x := c.arg(0), y := c.arg(1)
   // x PREDICATE y
 
-  // For operations, uses 3 variables: x := c.arg(0), y := c.arg(1), and z := c.arg(2).
+  // For operations, uses 3 variables or literals: x := c.arg(0), y := c.arg(1), and z := c.arg(2).
   // x OPERATOR y = z
 
   /** Create a non linear constraint x = y
@@ -573,7 +597,7 @@ namespace MiniZinc {
     // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
     vector<double>  coeffs  = from_vec_int(get_arraylit(c.arg(0)));
     vector<string>  vars    = from_vec_id(get_arraylit(c.arg(1)));
-    double          value   = c.arg(2)->cast<IntLit>()->v().toInt();
+    NLToken         value   = get_tok_var_int(c.arg(2));
     // Create the constraint
     lincons_eq(c, coeffs, vars, value);
   }
@@ -583,7 +607,7 @@ namespace MiniZinc {
     // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
     vector<double>  coeffs  = from_vec_int(get_arraylit(c.arg(0)));
     vector<string>  vars    = from_vec_id(get_arraylit(c.arg(1)));
-    double         value   = c.arg(2)->cast<IntLit>()->v().toInt();
+    NLToken         value   = get_tok_var_int(c.arg(2));
     // Create the constraint
     lincons_le(c, coeffs, vars, value);
   }
@@ -593,7 +617,7 @@ namespace MiniZinc {
     // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
     vector<double>  coeffs  = from_vec_int(get_arraylit(c.arg(0)));
     vector<string>  vars    = from_vec_id(get_arraylit(c.arg(1)));
-    double          value   = c.arg(2)->cast<IntLit>()->v().toInt();
+    NLToken         value   = get_tok_var_int(c.arg(2));
     // Create the constraint
     lincons_predicate(c, NLToken::OpCode::NE, coeffs, vars, value);
   }
@@ -645,7 +669,7 @@ namespace MiniZinc {
     // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
     vector<double>  coeffs  = from_vec_fp(get_arraylit(c.arg(0)));
     vector<string>  vars    = from_vec_id(get_arraylit(c.arg(1)));
-    double          value   = c.arg(2)->cast<FloatLit>()->v().toDouble();
+    NLToken         value   = get_tok_var_fp(c.arg(2));
     // Create the constraint
     lincons_eq(c, coeffs, vars, value);
   }
@@ -655,7 +679,7 @@ namespace MiniZinc {
     // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
     vector<double>  coeffs  = from_vec_fp(get_arraylit(c.arg(0)));
     vector<string>  vars    = from_vec_id(get_arraylit(c.arg(1)));
-    double          value   = c.arg(2)->cast<FloatLit>()->v().toDouble();
+    NLToken         value   = get_tok_var_fp(c.arg(2));
     // Create the constraint
     lincons_le(c, coeffs, vars, value);
   }
@@ -665,7 +689,7 @@ namespace MiniZinc {
     // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
     vector<double>  coeffs  = from_vec_fp(get_arraylit(c.arg(0)));
     vector<string>  vars    = from_vec_id(get_arraylit(c.arg(1)));
-    double          value   = c.arg(2)->cast<FloatLit>()->v().toDouble();
+    NLToken         value   = get_tok_var_fp(c.arg(2));
     // Create the constraint
     lincons_predicate(c, NLToken::OpCode::NE, coeffs, vars, value);
   }
@@ -675,7 +699,7 @@ namespace MiniZinc {
     // Get the arguments arg0 (array0 = coeffs), arg1 (array = variables) and arg2 (value)
     vector<double>  coeffs  = from_vec_fp(get_arraylit(c.arg(0)));
     vector<string>  vars    = from_vec_id(get_arraylit(c.arg(1)));
-    double          value   = c.arg(2)->cast<FloatLit>()->v().toDouble();
+    NLToken         value   = get_tok_var_fp(c.arg(2));
     // Create the constraint
     lincons_predicate(c, NLToken::OpCode::LT, coeffs, vars, value);
   }  

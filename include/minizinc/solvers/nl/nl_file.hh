@@ -151,17 +151,17 @@ namespace MiniZinc {
 
         // --- --- --- Linear Builders
         // Use an array of literals 'coeffs' := c.arg(0), an array of variables 'vars' := c.arg(1),
-        // and a literal 'value' := c.arg(2).
+        // and a variable or literal 'value' := c.arg(2).
         // [coeffs] and value are fixed (no variable allowed).
         // The call is needed to create the name. However, the extraction of the coefficients and the value
         // is left to the calling function as this could be use with both integer and floating point
         // (we only have floating point in NL)
 
         /** Create a linear constraint [coeffs] *+ [vars] = value. */
-        void lincons_eq(const Call& c, const vector<double>& coeffs, const vector<string>& vars, double value);
+        void lincons_eq(const Call& c, const vector<double>& coeffs, const vector<string>& vars, NLToken value);
 
         /** Create a linear constraint [coeffs] *+ [vars] <= value. */
-        void lincons_le(const Call& c, const vector<double>& coeffs, const vector<string>& vars, double value);
+        void lincons_le(const Call& c, const vector<double>& coeffs, const vector<string>& vars, NLToken value);
 
         /** Create a linear logical constraint [coeffs] *+ [vars] PREDICATE value.
          *  Use a generic comparison operator.
@@ -169,7 +169,7 @@ namespace MiniZinc {
          *              - Only use for conmparisons that cannot be expressed with '=' xor '<='.
          */
         void lincons_predicate(const Call& c, NLToken::OpCode oc,
-            const vector<double>& coeffs, const vector<string>& vars, double value);
+            const vector<double>& coeffs, const vector<string>& vars, NLToken value);
 
 
 
@@ -177,7 +177,7 @@ namespace MiniZinc {
         // For predicates, uses 2 variables or literals: x := c.arg(0), y := c.arg(1)
         // x PREDICATE y
 
-        // For operations, uses 3 variables: x := c.arg(0), y := c.arg(1), and z := c.arg(2).
+        // For operations, uses 3 variables or literals: x := c.arg(0), y := c.arg(1), and z := c.arg(2).
         // x OPERATOR y = z
 
         /** Create a non linear constraint x = y
@@ -468,7 +468,7 @@ namespace MiniZinc {
             problem_name(problem_name){}
 
 
-        
+
         /* *** *** *** Printable *** *** *** */
 
         /** Print the NLFile on a stream.
