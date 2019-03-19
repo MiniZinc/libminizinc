@@ -79,7 +79,8 @@ namespace MiniZinc {
         /** *** *** *** Update the lower or upper bound *** *** *** **/
         // Note: this method are "additive only": we cannot use them to remove a a bound.
         void update_lb(double new_lb);
-        void update_ub(double new_lb);
+        void update_ub(double new_ub);
+        void update_eq(double new_eq);
 
 
         /** *** *** *** Printing Methods *** *** *** **/
@@ -270,6 +271,8 @@ namespace MiniZinc {
 
         /* *** *** *** Query *** *** *** */
         bool is_variable();
+
+        bool is_constant();
 
 
         /* *** *** *** Printable interface *** *** *** */

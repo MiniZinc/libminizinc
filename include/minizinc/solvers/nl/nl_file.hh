@@ -116,89 +116,187 @@ namespace MiniZinc {
 
 
 
+        // --- --- --- Constraints analysis
 
         /** Add a constraint to the NL File.
          * This method is a dispatcher for all the other constraints methods below. */
         void analyse_constraint(const Call& c);
 
-        /* *** *** *** Helper methods to create constraints *** *** *** */
+        
 
-        /** Create a token from an expression representing either a variable or an integer numeric value.
-         * ONLY USE FOR CONSTRAINT, NOT OBJECTIVE! UPDATE VARIABLES FLAG FOR CONSTRAINT
+        // --- --- --- Helpers
+
+        /** Create a token from an expression representing a variable.
+         * ONLY USE FOR CONSTRAINT, NOT OBJECTIVES! (UPDATE VARIABLES FLAG FOR CONSTRAINTS)
          */
         NLToken get_tok_var(const Expression* e);
 
         /** Create a token from an expression representing either a variable or an integer numeric value.
-         * ONLY USE FOR CONSTRAINT, NOT OBJECTIVE! UPDATE VARIABLES FLAG FOR CONSTRAINT
+         * ONLY USE FOR CONSTRAINT, NOT OBJECTIVES!
          */
         NLToken get_tok_var_int(const Expression* e);
 
         /** Create a token from an expression representing either a variable or a floating point numeric value.
-         * ONLY USE FOR CONSTRAINT, NOT OBJECTIVE!
+         * ONLY USE FOR CONSTRAINT, NOT OBJECTIVES!
          */ 
         NLToken get_tok_var_fp(const Expression* e);
 
-        /** Create a non linear constraint with an operator: v0 OP v1 = vres.
-         *  v0, v1 and vres are supposed to be variables.
+        /** Update an expression graph (only by appending token) with a linear combination
+         *  of coefficients and variables.
+         *  ONLY USE FOR CONSTRAINTS, NOT OBJECTIVES!
          */
-        void nlcons_var_operator(const Call& c, NLToken::OpCode oc);
+        void make_SigmaMult(vector<NLToken>& expression_graph, const vector<double>& coeffs, const vector<string>& vars);
 
-        /** Create a non linear constraint with a predicate: v0 PR v1  (PR being '=', '!=', '<', '<=', etc..)
-         *  NOTE: do NOT use with '=' and '<='! Specialized the code in thoses cases.
-         *  v0 and v1 are supposed to be variables.
-         *  This will create a Logical Constraint, which might no be supported by all solvers.
+
+
+        // --- --- --- Linear Builders
+        // Use an array of literals 'coeffs' := c.arg(0), an array of variables 'vars' := c.arg(1),
+        // and a literal 'value' := c.arg(2).
+        // [coeffs] and value are fixed (no variable allowed).
+        // The call is needed to create the name. However, the extraction of the coefficients and the value
+        // is left to the calling function as this could be use with both integer and floating point
+        // (we only have floating point in NL)
+
+        /** Create a linear constraint [coeffs] *+ [vars] = value. */
+        void lincons_eq(const Call& c, const vector<double>& coeffs, const vector<string>& vars, double value);
+
+        /** Create a linear constraint [coeffs] *+ [vars] <= value. */
+        void lincons_le(const Call& c, const vector<double>& coeffs, const vector<string>& vars, double value);
+
+        /** Create a linear logical constraint [coeffs] *+ [vars] PREDICATE value.
+         *  Use a generic comparison operator.
+         *  Warnings:   - Creates a logical constraint
+         *              - Only use for conmparisons that cannot be expressed with '=' xor '<='.
          */
-        void nlcons_var_predicate(const Call& c, NLToken::OpCode oc);
+        void lincons_predicate(const Call& c, NLToken::OpCode oc,
+            const vector<double>& coeffs, const vector<string>& vars, double value);
 
 
-        /* *** *** *** Integer Constraint methods *** *** *** */
 
+        // --- --- --- Non Linear Builders
+        // For predicates, uses 2 variables or literals: x := c.arg(0), y := c.arg(1)
+        // x PREDICATE y
+
+        // For operations, uses 3 variables: x := c.arg(0), y := c.arg(1), and z := c.arg(2).
+        // x OPERATOR y = z
+
+        /** Create a non linear constraint x = y
+         *  Use the jacobian and the bound on constraint to translate into x - y = 0
+         *  Simply update the bound if one is a constant.
+         */
+        void nlcons_eq(const Call& c, NLToken x, NLToken y);
+
+        /** Create a non linear constraint x <= y
+         *  Use the jacobian and the bound on constraint to translate into x - y <= 0
+         *  Simply update the bound if one is a constant.
+         */
+        void nlcons_le(const Call& c, NLToken x, NLToken y);
+
+        /** Create a non linear constraint with a predicate: x PREDICATE y
+         *  Use a generic comparison operator.
+         *  Warnings:   - Creates a logical constraint
+         *              - Only use for conmparisons that cannot be expressed with '=' xor '<='.
+         */
+        void nlcons_predicate(const Call& c, NLToken::OpCode oc, NLToken x, NLToken y);
+
+        /** Create a non linear constraint with an operator: x OPERATOR y = z */
+        void nlcons_operator(const Call& c, NLToken::OpCode oc);
+
+
+
+        // --- --- --- Integer Linear Constraints
+
+        /** Linar constraint: [coeffs] *+ [vars] = value */
         void consint_lin_eq(const Call& c);
+
+        /** Linar constraint: [coeffs] *+ [vars] =< value */
         void consint_lin_le(const Call& c);
+
+        /** Linar constraint: [coeffs] *+ [vars] != value */
         void consint_lin_ne(const Call& c);
 
-        void consint_times(const Call& c);
-        void consint_div(const Call& c);
-        void consint_mod(const Call& c);
 
-        void consint_le(const Call& c);
+
+        // --- --- --- Integer Non Linear Predicate Constraints
+
+        /** Non linear constraint x = y */
         void consint_eq(const Call& c);
+
+        /** Non linear constraint x <= y */
+        void consint_le(const Call& c);
+
+        /** Non linear constraint x != y */
         void consint_ne(const Call& c);
 
-        /* *** *** *** Floating Point Constraint methods *** *** *** */
 
+
+        // --- --- --- Integer Non Linear Operator Constraints
+
+        /** Non linear constraint x * y = z */
+        void consint_times(const Call& c);
+
+        /** Non linear constraint x / y = z */
+        void consint_div(const Call& c);
+
+        /** Non linear constraint x mod y = z */
+        void consint_mod(const Call& c);
+
+
+
+        // --- --- --- Floating Point Linear Constraints
+
+        /** Linar constraint: [coeffs] *+ [vars] = value */
         void consfp_lin_eq(const Call& c);
+
+        /** Linar constraint: [coeffs] *+ [vars] = value */
         void consfp_lin_le(const Call& c);
-        void consfp_lin_lt(const Call& c);
+
+        /** Linar constraint: [coeffs] *+ [vars] != value */
         void consfp_lin_ne(const Call& c);
 
-        void consfp_plus(const Call& c);
-        void consfp_minus(const Call& c);
-        void consfp_times(const Call& c);
-        void consfp_div(const Call& c);
-        void consfp_mod(const Call& c);
+        /** Linar constraint: [coeffs] *+ [vars] < value */
+        void consfp_lin_lt(const Call& c);
 
-        void consfp_lt(const Call& c);
-        void consfp_le(const Call& c);
+
+
+        // --- --- --- Floating Point Non Linear Predicate Constraints
+
+        /** Non linear constraint x = y */
         void consfp_eq(const Call& c);
+
+        /** Non linear constraint x <= y */
+        void consfp_le(const Call& c);
+
+        /** Non linear constraint x != y */
         void consfp_ne(const Call& c);
 
+        /** Non linear constraint x < y */
+        void consfp_lt(const Call& c);
 
 
 
+        // --- --- --- Floating Point Non Linear Operator Constraints
 
+        /** Non linear constraint x + y = z */
+        void consfp_plus(const Call& c);
 
+        /** Non linear constraint x - y = z */
+        void consfp_minus(const Call& c);
 
+        /** Non linear constraint x * y = z */
+        void consfp_times(const Call& c);
 
+        /** Non linear constraint x / y = z */
+        void consfp_div(const Call& c);
 
+        /** Non linear constraint x mod y = z */
+        void consfp_mod(const Call& c);
 
 
 
         /* *** *** *** Phase 2: processing *** *** *** */
 
         void phase_2();
-
-
 
         // Ordering of variables according to "hooking your solver"
         /*  Meaning of the names (total, then by appearance order in the tables below)
@@ -361,27 +459,6 @@ namespace MiniZinc {
         int nb_alg_cons_eq = 0;
 
 
-
-
-
-
-
-
-
-
-
-        /** *** *** *** Segments *** *** *** **/
-        /*
-        NLS_Bound           b_segment;
-        NLS_Range           r_segment;
-        NLS_OSeg            o_segment;
-        vector<NLS_CSeg>    c_segments = {};                // Constraint segments
-        vector<NLS_JSeg>    j_segments = {};                // Constraint segments: linear part
-        vector<NLS_LSeg>    l_segments = {};                // Logical constraint segments
-        */
-
-        /* *** *** *** Other info *** *** *** */
-        
         
         /* *** *** *** Constructor *** *** *** */
         
@@ -390,9 +467,6 @@ namespace MiniZinc {
         NLFile(string problem_name):
             problem_name(problem_name){}
 
-            /*
-            b_segment(this), r_segment(this), o_segment(this) {}
-            */
 
         
         /* *** *** *** Printable *** *** *** */

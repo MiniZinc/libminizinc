@@ -8,7 +8,14 @@ namespace MiniZinc {
     // Constructors
     NLBound::NLBound(Bound tag, double lb, double ub): tag(tag), lb(lb), ub(ub){}
 
-    NLBound NLBound::make_bounded(double lb, double ub){ return NLBound(LB_UB, lb, ub); }
+    NLBound NLBound::make_bounded(double lb, double ub){
+        if(lb == ub){
+            return make_equal(lb);
+        } else {
+            assert(lb < ub);
+            return NLBound(LB_UB, lb, ub);
+        }
+    }
 
     NLBound NLBound::make_ub_bounded(double ub){ return NLBound(UB, 0, ub); }
 
@@ -84,6 +91,43 @@ namespace MiniZinc {
             case NLBound::EQ:{
                 cerr << "Should not happen" << endl;
                 assert(false);
+            }
+        }
+    }
+
+    /** Update equal bound */
+    void NLBound::update_eq(double new_eq){
+        switch(tag){
+            // LB <= var <= UB. Update tag
+            case NLBound::LB_UB:{
+                assert(lb<=new_eq && new_eq <=ub);
+                tag=EQ;
+                lb = new_eq;
+                ub = new_eq;
+            }
+            // var <= UB. Update tag
+            case NLBound::UB:{
+                assert(new_eq <=ub);
+                tag=EQ;
+                lb = new_eq;
+                ub = new_eq;
+            }
+            // LB <= var. Update tag
+            case NLBound::LB:{
+                assert(lb<=new_eq);
+                tag=EQ;
+                lb = new_eq;
+                ub = new_eq;
+            }
+            // No bound. Update tag
+            case NLBound::NONE:{
+                tag=EQ;
+                lb = new_eq;
+                ub = new_eq;
+            }
+            // LB = var = UB. Can happen only if we "update" with the same bound.
+            case NLBound::EQ:{
+                assert(lb == new_eq);
             }
         }
     }
@@ -259,6 +303,10 @@ namespace MiniZinc {
 
     bool NLToken::is_variable(){
         return kind == VARIABLE;
+    }
+
+    bool NLToken::is_constant(){
+        return kind == NUMERIC;
     }
 
     ostream& NLToken::print_on(ostream& os, const NLFile& nl_file) const {
