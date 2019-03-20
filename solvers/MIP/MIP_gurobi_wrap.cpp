@@ -154,8 +154,8 @@ bool MIP_gurobi_wrapper::Options::processOption(int& i, std::vector<std::string>
   } else if ( cop.get( "--mipfocus --mipFocus --MIPFocus --MIPfocus", &nMIPFocus ) ) {
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
   } else if ( cop.get( "-p", &nThreads ) ) {
-  } else if ( cop.get( "--solver-time-limit --solver-time", &nTimeout ) ) {
-  } else if ( cop.get( "--solver-time-limit-feas --solver-tlf", &nTimeoutFeas ) ) {
+  } else if ( cop.get( "--solver-time-limit --solver-time", &nTimeout1000 ) ) {
+  } else if ( cop.get( "--solver-time-limit-feas --solver-tlf", &nTimeoutFeas1000 ) ) {
   } else if ( cop.get( "-n --num-solutions", &nSolLimit ) ) {
   } else if ( cop.get( "--workmem --nodefilestart", &nWorkMemLimit ) ) {
   } else if ( cop.get( "--readParam", &sReadParams ) ) {
@@ -710,8 +710,8 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
      wrap_assert(!error, "Failed to set GRB_INT_PAR_THREADS.", false);
    }
 
-    if (options->nTimeout>0) {
-     error = dll_GRBsetdblparam(dll_GRBgetenv(model), GRB_DBL_PAR_TIMELIMIT, static_cast<double>(options->nTimeout)/1000.0);
+    if (options->nTimeout1000>0) {
+     error = dll_GRBsetdblparam(dll_GRBgetenv(model), GRB_DBL_PAR_TIMELIMIT, static_cast<double>(options->nTimeout1000)/1000.0);
      wrap_assert(!error, "Failed to set GRB_PARAM_TimeLimit.", false);
     }
 
@@ -751,7 +751,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    SolCallbackFn solcbfn = cbui.solcbfn;
    if (true) {                 // Need for logging
       cbui.fVerb = fVerbose;
-      cbui.nTimeoutFeas = options->nTimeoutFeas;
+      cbui.nTimeoutFeas = options->nTimeoutFeas1000/1000.0;
       if ( !options->flag_all_solutions )
         cbui.solcbfn = 0;
       if ( cbui.cutcbfn ) {
