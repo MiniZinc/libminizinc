@@ -748,7 +748,9 @@ namespace MiniZinc {
             ret.b = bind(env,Ctx(),b,constants().lit_true);
             args_ee.push_back(EE(NULL,reif_b->id()));
             ret.r = conj(env,NULL,ctx,args_ee);
-            env.cse_map_insert(cr(),ret);
+            if (!ctx.neg && !cr()->type().isann()) {
+              env.cse_map_insert(cr(),ret);
+            }
             return ret;
           }
         }
