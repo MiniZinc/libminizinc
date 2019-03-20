@@ -116,7 +116,10 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
   << "  -a\n    print intermediate solutions (use for optimization problems only TODO)" << std::endl
   << "  -p <N>\n    use N threads, default: 1." << std::endl
 //   << "  --nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-  << "  --solver-time-limit <N>\n    stop search after N milliseconds wall time" << std::endl
+  << "  --solver-time-limit <N>, --solver-time\n"
+     "    stop search after N milliseconds wall time" << std::endl
+  << "  --solver-time-limit-feas <N>, --solver-tlf\n"
+     "    stop search after N milliseconds wall time after the first feasible solution" << std::endl
   << "  -n <N>, --num-solutions <N>\n"
      "    stop search after N solutions" << std::endl
   << "  --workmem <N>, --nodefilestart <N>\n"
@@ -151,7 +154,8 @@ bool MIP_gurobi_wrapper::Options::processOption(int& i, std::vector<std::string>
   } else if ( cop.get( "--mipfocus --mipFocus --MIPFocus --MIPfocus", &nMIPFocus ) ) {
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
   } else if ( cop.get( "-p", &nThreads ) ) {
-  } else if ( cop.get( "--solver-time-limit", &nTimeout ) ) {
+  } else if ( cop.get( "--solver-time-limit --solver-time", &nTimeout ) ) {
+  } else if ( cop.get( "--solver-time-limit-feas --solver-tlf", &nTimeoutFeas ) ) {
   } else if ( cop.get( "-n --num-solutions", &nSolLimit ) ) {
   } else if ( cop.get( "--workmem --nodefilestart", &nWorkMemLimit ) ) {
   } else if ( cop.get( "--readParam", &sReadParams ) ) {
@@ -271,6 +275,7 @@ void MIP_gurobi_wrapper::checkDLL()
   *(void**)(&dll_GRBsetdblattrlist) = dll_sym(gurobi_dll, "GRBsetdblattrlist");
   *(void**)(&dll_GRBsetintparam) = dll_sym(gurobi_dll, "GRBsetintparam");
   *(void**)(&dll_GRBsetstrparam) = dll_sym(gurobi_dll, "GRBsetstrparam");
+  *(void**)(&dll_GRBterminate) = dll_sym(gurobi_dll, "GRBterminate");
   *(void**)(&dll_GRBupdatemodel) = dll_sym(gurobi_dll, "GRBupdatemodel");
   *(void**)(&dll_GRBwrite) = dll_sym(gurobi_dll, "GRBwrite");
   *(void**)(&dll_GRBwriteparams) = dll_sym(gurobi_dll, "GRBwriteparams");
@@ -303,6 +308,7 @@ void MIP_gurobi_wrapper::checkDLL()
   dll_GRBsetdblattrlist = GRBsetdblattrlist;
   dll_GRBsetintparam = GRBsetintparam;
   dll_GRBsetstrparam = GRBsetstrparam;
+  dll_GRBterminate = GRBterminate;
   dll_GRBupdatemodel = GRBupdatemodel;
   dll_GRBwrite = GRBwrite;
   dll_GRBwriteparams = GRBwriteparams;
@@ -500,6 +506,13 @@ solcallback(GRBmodel *model,
       gw->dll_GRBcbget(cbdata, where, GRB_CB_MIP_OBJBND, &info->pOutput->bestBound);
         gw->dll_GRBcbget(cbdata, where, GRB_CB_MIP_NODLFT, &actnodes);
       info->pOutput->nOpenNodes = static_cast<int>(actnodes);
+      /// Check time after the 1st feas
+      if (-1e100!=info->nTime1Feas) {
+        double tNow;
+        gw->dll_GRBcbget(cbdata, where, GRB_CB_RUNTIME, (void*)&tNow);
+        if (tNow-info->nTime1Feas >= info->nTimeoutFeas)
+          gw->dll_GRBterminate(model);
+      }
   } else if ( GRB_CB_MESSAGE==where ) {
     /* Message callback */
     if ( info->fVerb ) {
@@ -514,11 +527,12 @@ solcallback(GRBmodel *model,
     gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &objVal);
     gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOLCNT, &solcnt);
 
-    if ( solcnt == 0 || fabs(info->pOutput->objVal - objVal) > 1e-12*(1.0 + fabs(objVal)) ) {
+    if ( fabs(info->pOutput->objVal - objVal) > 1e-12*(1.0 + fabs(objVal)) ) {
       newincumbent = 1;
-      info->pOutput->objVal = objVal;
-      info->pOutput->status = MIP_wrapper::SAT;
-      info->pOutput->statusName = "feasible from a callback";
+      // Not confirmed yet, see lazy cuts
+//      info->pOutput->objVal = objVal;
+//      info->pOutput->status = MIP_wrapper::SAT;
+//      info->pOutput->statusName = "feasible from a callback";
     }
     if ( newincumbent ) {
         assert(info->pOutput->x);
@@ -561,9 +575,16 @@ solcallback(GRBmodel *model,
         
         info->pOutput->dCPUTime = double(std::clock() - info->pOutput->cCPUTime0) / CLOCKS_PER_SEC;
 
+        /// Set time for the 1st feas
+        if (0<=info->nTimeoutFeas && -1e100==info->nTime1Feas)
+          gw->dll_GRBcbget(cbdata, where, GRB_CB_RUNTIME, (void*)&info->nTime1Feas);
+
         /// Call the user function:
         if (info->solcbfn)
             (*info->solcbfn)(*info->pOutput, info->ppp);
+
+        if (0==info->nTimeoutFeas)
+          gw->dll_GRBterminate(model);        // Straight after feas
     }
   } else if ( GRB_CB_MIPNODE==where  ) {
     int status;
@@ -730,6 +751,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    SolCallbackFn solcbfn = cbui.solcbfn;
    if (true) {                 // Need for logging
       cbui.fVerb = fVerbose;
+      cbui.nTimeoutFeas = options->nTimeoutFeas;
       if ( !options->flag_all_solutions )
         cbui.solcbfn = 0;
       if ( cbui.cutcbfn ) {

@@ -41,6 +41,7 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
       int nThreads=1;
       std::string sExportModel;
       int nTimeout=-1;
+      int nTimeoutFeas=-1;
       long int nSolLimit = -1;
       double nWorkMemLimit=-1;
       std::string sReadParams;
@@ -124,6 +125,8 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
                     int len, int *ind, double *newvalues);
 
     int (__stdcall *dll_GRBsetstrparam) (GRBenv *env, const char *paramname, const char *value);
+
+    void (__stdcall *dll_GRBterminate) (GRBmodel* model);
 
     int (__stdcall *dll_GRBupdatemodel) (GRBmodel *model);
 

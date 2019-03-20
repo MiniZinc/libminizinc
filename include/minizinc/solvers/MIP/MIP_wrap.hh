@@ -147,6 +147,8 @@ class MIP_wrapper {
       int cutMask = 0; // can be any combination of User/Lazy
       bool fVerb = false;              // used in Gurobi
       bool printed = false;            // whether any solution was output
+      double nTimeoutFeas = -1.0;      // >=0 => stop that long after 1st feas
+      double nTime1Feas = -1e100;      // time of the 1st feas
     };
     CBUserInfo cbui;
 
