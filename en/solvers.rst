@@ -36,10 +36,40 @@ or separated flattening+solving - sometimes more stable but slower due to file I
 Useful Flattening Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
+The following parameters can be given on the command line or modified in ``share/minizinc/linear/options.mzn``:
+
 .. option::  -D nSECcuts=0/1/2                %% Subtour Elimination Constraints, see below
 .. option::  -D fMIPdomains=true/false        %% The unified domains feature
 .. option::  -D float_EPS=1e-6                %% Epsilon for floats' strict comparison
 .. option::  -D fIndConstr=true/false         %% Use solvers' indicator constraints, see below
+
+Some Solver Options and Changed Default Values
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The following command-line options affect the backend or invoke extra functionality. Note that some of them have default values which may be different from the backend's ones.
+For example, tolerances have been tightened to enable more precise solving with integer variables and objective. This deteriorates performance on average, so when your model has moderate constant and bound magnitudes, you may want to pass negative values to use solver's defaults.
+
+.. option::  --relGap <n>
+
+    relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default
+
+.. option::    --intTol <n>
+
+    integrality tolerance for a variable. Default 1e-6
+
+.. option::    --writeModel <file>
+
+    write model to <file> (.lp, .mps, .sav, ...)
+
+.. option::  --readParam <file>
+
+    read backend-specific parameters from file
+
+.. option::  --writeParam <file>
+
+    write backend-specific parameters to file
+
+For other command-line options, run ``minizinc -h <solver-id>``.
 
 Subtour Elimination Constraints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -71,9 +101,10 @@ Moreover, they can be applied to decompose logical constraints on *unbounded var
 Add command-line parameters ``-D fIndConstr=true -D fMIPdomains=false`` when flattening
 to use them.
 
-User Cuts and Lazy Constraints
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-Apply annotations ``::MIP_cut`` and/or ``::MIP_lazy`` after a constraint.
+Pools of User Cuts and Lazy Constraints
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Some constraints in the model can be declared as user and/or lazy cuts and they will be added to the corresponding pools
+for the solvers supporting them. For that, apply annotations ``::MIP_cut`` and/or ``::MIP_lazy`` after a constraint.
 For Gurobi and IBM ILOG CPLEX, see ``share/minizinc/linear/options.mzn`` for their exact meaning.
 
 Warm Starts
