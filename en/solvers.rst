@@ -57,6 +57,10 @@ For example, tolerances have been tightened to enable more precise solving with 
 
     integrality tolerance for a variable. Default 1e-6
 
+.. option::    --solver-time-limit-feas <n>, --solver-tlf <n>
+
+    stop after <n> milliseconds after the first feasible solution (some backends)
+
 .. option::    --writeModel <file>
 
     write model to <file> (.lp, .mps, .sav, ...)
