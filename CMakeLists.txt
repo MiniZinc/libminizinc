@@ -93,6 +93,7 @@ include(cmake/targets/libminizinc_geas.cmake)
 include(cmake/targets/libminizinc_gecode.cmake)
 include(cmake/targets/libminizinc_gurobi.cmake)
 include(cmake/targets/libminizinc_osicbc.cmake)
+include(cmake/targets/libminizinc_scip.cmake)
 include(cmake/targets/libminizinc_xpress.cmake)
 
 include(cmake/targets/libminizinc_fzn.cmake)

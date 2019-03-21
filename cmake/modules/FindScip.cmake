@@ -16,11 +16,11 @@ find_library(SCIP_LIBRARY scip
              PATH_SUFFIXES lib)
 
 find_path(SOPLEX_INCLUDE soplex.h
-          HINTS ${SOPLEX_ROOT} ${SCIP_ROOT} ENV SOPLEX_ROOT SCIP_ROOT
+          HINTS ${SOPLEX_ROOT} ${SCIP_ROOT} $ENV{SOPLEX_ROOT} ENV SCIP_ROOT
           PATH_SUFFIXES include)
 
 find_library(SOPLEX_LIBRARY soplex
-             HINTS ${SOPLEX_ROOT} ${SCIP_ROOT} ENV SOPLEX_ROOT SCIP_ROOT
+             HINTS ${SOPLEX_ROOT} ${SCIP_ROOT} $ENV{SOPLEX_ROOT} ENV SCIP_ROOT
              PATH_SUFFIXES lib)
 
 include(FindPackageHandleStandardArgs)
