@@ -259,21 +259,16 @@ namespace MiniZinc {
 
         static NLToken n(double value);
 
-        /** Create a variable and update its internal flag is_in_nl_constraint to true, through the nl_file. */
-        static NLToken vc(string vname, NLFile* nl_file);
-
-        /** Create a variable and update its internal flag is_in_nl_objective to true, through the nl_file. */
-        static NLToken vo(string vname, NLFile* nl_file);
+        static NLToken v(string vname);
 
         static NLToken o(OpCode opc);
 
         static NLToken mo(MOpCode mopc, int nb);
 
         /* *** *** *** Query *** *** *** */
-        bool is_variable();
+        bool is_variable() const;
 
-        bool is_constant();
-
+        bool is_constant() const;
 
         /* *** *** *** Printable interface *** *** *** */
 
@@ -393,7 +388,14 @@ namespace MiniZinc {
         vector<NLToken> expression_graph    = {};       // If empty, produce a 'n0' when printing
 
         /* *** *** *** Gradient *** *** *** */
-        int _gradient_count = 0;
+
+        /** Gradient, used for the linear part. Identify a variable by its name and associate a coefficent.
+         *  Used to produce a new, standalone, G segment.
+         */
+        vector<pair<string, double>> gradient = {};
+
+        /** Method to build the var_coeff vector. */
+        void set_gradient(const vector<string>& vnames, const vector<double>& coeffs);
         
         int gradient_count() const;
 

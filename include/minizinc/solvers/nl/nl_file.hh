@@ -308,7 +308,7 @@ namespace MiniZinc {
                 nbv                 number of binary variables
 
 
-            Order of variables (yes, the way things are counted is CRAZY!!!!)
+            Order of variables (yes, the way things are counted is... "special".)
             Category            Count
             --- --- --- --- |   --- --- --- --- ---
             nonlinear           max(nlvc, nlvo)                                 // See below for order on non linear variables

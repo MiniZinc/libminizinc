@@ -80,34 +80,6 @@ namespace MiniZinc {
 
   /** *** *** *** Phase 1: collecting data from MZN *** *** *** **/
 
-  /** Add a solve goal in the NL File. In our case, we can only have one and only one solve goal. */
-  void NLFile::add_solve(SolveI::SolveType st, const Expression* e){
-
-      // We can only have one objective. Prevent override.
-      assert(!objective.is_defined());
-      
-      switch(st){
-          case SolveI::SolveType::ST_SAT:{
-              // Satisfy: implemented by minimizing 0 (print n0 for an empty expression graph)
-              objective.minmax = objective.SATISFY;
-              break;
-          }
-          case SolveI::SolveType::ST_MIN:{
-              cerr << "solve min not implemented (todo: checking expression)" << endl;
-              assert(false);
-              break;
-          }
-          case SolveI::SolveType::ST_MAX:{
-              cerr << "solve max not implemented (todo: checking expression)" << endl;
-              assert(false);                
-              break;
-          }
-      }
-
-      // Ensure that the obejctive is now defined.
-      assert(objective.is_defined());
-  }
-
   /** Add a variable declaration in the NL File.
    *  This function pre-analyse the declaration VarDecl, then delegate to add_vdecl_integer or add_vdecl_fp.
    *  In flatzinc, arrays always have a rhs: the can always be replaced by their definition (following the pointer starting at the ID)
@@ -256,9 +228,7 @@ namespace MiniZinc {
 
   // --- --- --- Helpers
 
-  /** Create a token from an expression representing a variable
-   * ONLY USE FOR CONSTRAINT, NOT OBJECTIVES!
-   */
+  /** Create a token from an expression representing a variable */
   NLToken NLFile::get_tok_var_int(const Expression* e){
     if(e->type().ispar()){
       // Constant
@@ -268,13 +238,11 @@ namespace MiniZinc {
       // Variable
       VarDecl& vd = *(e->cast<Id>()->decl());
       string n = get_vname(vd);
-      return NLToken::vc(n, this);
+      return NLToken::v(n);
     }
   }
 
-  /** Create a token from an expression representing either a variable or a floating point numeric value.
-   * ONLY USE FOR CONSTRAINT, NOT OBJECTIVES!
-   */ 
+  /** Create a token from an expression representing either a variable or a floating point numeric value. */ 
   NLToken NLFile::get_tok_var_fp(const Expression* e){
     if(e->type().ispar()){
       // Constant
@@ -284,24 +252,21 @@ namespace MiniZinc {
       // Variable
       VarDecl& vd = *(e->cast<Id>()->decl());
       string n = get_vname(vd);
-      return NLToken::vc(n, this);
+      return NLToken::v(n);
     }
   }
 
-  /** Create a token from an expression representing either a variable.
-   *  ONLY USE FOR CONSTRAINTS, NOT OBJECTIVES!
-   */
+  /** Create a token from an expression representing either a variable. */
   NLToken NLFile::get_tok_var(const Expression* e){
       assert(!e->type().ispar());
       // Variable
       VarDecl& vd = *(e->cast<Id>()->decl());
       string n = get_vname(vd);
-      return NLToken::vc(n, this);
+      return NLToken::v(n);
   }
 
   /** Update an expression graph (only by appending token) with a linear combination
-   *  of coefficients and variables.
-   *  ONLY USE FOR CONSTRAINTS, NOT OBJECTIVES!
+   *  of coefficients and variables. Count as "non linear" for the variables occuring here.
    */
   void NLFile::make_SigmaMult(vector<NLToken>& expression_graph, const vector<double>& coeffs, const vector<string>& vars){
     assert(coeffs.size()==vars.size());
@@ -322,7 +287,8 @@ namespace MiniZinc {
         expression_graph.push_back(NLToken::o(NLToken::OpCode::OPMULT));
         expression_graph.push_back(NLToken::n(coeffs[i]));
       }
-      expression_graph.push_back(NLToken::vc(vars[i], this));  // Use 'vc' here !
+      // Set the variable as "non linear"
+      expression_graph.push_back(NLToken::v(vars[i]));
     }
 
   }
@@ -419,7 +385,7 @@ namespace MiniZinc {
     // 2) Operand1 := sum of product
     make_SigmaMult(cons.expression_graph, coeffs, vars);
 
-    // 3) Operand 2 := value
+    // 3) Operand 2 := value.
     cons.expression_graph.push_back(value);
 
     // Store the constraint
@@ -760,9 +726,80 @@ namespace MiniZinc {
 
 
 
+  // --- --- --- Objective
+
+
+  /** Add a solve goal in the NL File. In our case, we can only have one and only one solve goal. */
+  void NLFile::add_solve(SolveI::SolveType st, const Expression* e){
+
+      // We can only have one objective. Prevent override.
+      assert(!objective.is_defined());
+      
+      switch(st){
+          case SolveI::SolveType::ST_SAT:{
+              // Satisfy: implemented by minimizing 0 (print n0 for an empty expression graph)
+              objective.minmax = objective.SATISFY;
+              break;
+          }
+          case SolveI::SolveType::ST_MIN:{
+              // Maximize an objective represented by a variable
+              objective.minmax = objective.MINIMIZE;
+              string v = get_tok_var(e).str;
+              // Use the gradient
+              vector<double>  coeffs  = {1};
+              vector<string>  vars    = {v};
+              objective.set_gradient(vars, coeffs);
+              break;
+              break;
+          }
+          case SolveI::SolveType::ST_MAX:{
+              // Maximize an objective represented by a variable
+              objective.minmax = objective.MAXIMIZE;
+              string v = get_tok_var(e).str;
+              // Use the gradient
+              vector<double>  coeffs  = {1};
+              vector<string>  vars    = {v};
+              objective.set_gradient(vars, coeffs);
+              break;
+          }
+      }
+
+
+      // Ensure that the obejctive is now defined.
+      assert(objective.is_defined());
+  }
+
+
+
+
   /* *** *** *** Phase 2: processing *** *** *** */
 
   void NLFile::phase_2(){
+
+    // --- --- --- Go over all constraint (algebraic AND logical) and mark non linear variables
+    for(auto const& n_c: constraints){
+      for(auto const& tok: n_c.second.expression_graph){
+        if(tok.is_variable()){
+          variables.at(tok.str).is_in_nl_constraint = true;
+        }
+      }
+    }
+
+    for(auto const& c: logical_constraints){
+      for(auto const& tok: c.expression_graph){
+        if(tok.is_variable()){
+          variables.at(tok.str).is_in_nl_constraint = true;
+        }
+      }
+    }
+
+    // --- --- --- Go over the objective abd mark non linear variables
+    for(auto const& tok: objective.expression_graph){
+        if(tok.is_variable()){
+          variables.at(tok.str).is_in_nl_objective = true;
+        }
+    }
+
 
     // --- --- --- Variables ordering and indexing
     for (auto const& name_var : variables){

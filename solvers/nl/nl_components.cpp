@@ -268,21 +268,10 @@ namespace MiniZinc {
         return tok;
     }
 
-    NLToken NLToken::vc(string vname, NLFile* nl_file){
+    NLToken NLToken::v(string vname){
         NLToken tok;
         tok.kind = Kind::VARIABLE;
         tok.str = vname;
-        // Update the variable's internal flag
-        nl_file->variables.at(vname).is_in_nl_constraint = true;
-        return tok;
-    }
-
-    NLToken NLToken::vo(string vname, NLFile* nl_file){
-        NLToken tok;
-        tok.kind = Kind::VARIABLE;
-        tok.str = vname;
-        // Update the variable's internal flag
-        nl_file->variables.at(vname).is_in_nl_objective = true;
         return tok;
     }
 
@@ -301,11 +290,11 @@ namespace MiniZinc {
         return tok;
     }
 
-    bool NLToken::is_variable(){
+    bool NLToken::is_variable() const{
         return kind == VARIABLE;
     }
 
-    bool NLToken::is_constant(){
+    bool NLToken::is_constant() const {
         return kind == NUMERIC;
     }
 
@@ -512,8 +501,17 @@ namespace MiniZinc {
 
     /** Gradient count. */
     int NLObjective::gradient_count() const {
-        return _gradient_count;
+        return gradient.size();
     }
+
+    /** Set the gradient. */
+    void NLObjective::set_gradient(const vector<string>& vnames, const vector<double>& coeffs){
+        assert(vnames.size()==coeffs.size());
+        for(int i=0; i<vnames.size(); ++i){
+            string vn  = vnames[i];
+            gradient.push_back(pair<string, double>(vn, coeffs[i]));
+        }
+     }
 
     /** A objective is considered as linear if its expression graph is non empty. */
     bool NLObjective::is_defined() const {
@@ -544,6 +542,12 @@ namespace MiniZinc {
                     }
                 }
                 // Print gradient
+                if(!gradient.empty()){
+                    os << "G0 " << gradient.size() << "   # Objective Linear part" << endl;
+                    for (auto & vn_coef : gradient) {
+                        os << nl_file.variable_indexes.at(vn_coef.first) << " " << vn_coef.second << "   # " << vn_coef.first << endl;
+                    }
+                }                
             }
         }
         
