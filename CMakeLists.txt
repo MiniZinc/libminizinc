@@ -26,9 +26,8 @@ option(USE_XPRESS "Enable the Xpress solving target" TRUE)
 # Static vs. Dynamic linking
 option(CPLEX_PLUGIN "Build CPLEX binding as a plugin" ON)
 option(GUROBI_PLUGIN "Build Gurobi binding as a plugin" ON)
-option(SHARED_GECODE "Signal that the gecode library is shared" FALSE)
 
-# Enforce non_proprietary build
+# Enforce non proprietary build
 option(USE_PROPRIETARY "Enable static linking of proprietary solvers" OFF)
 if(NOT USE_PROPRIETARY)
   set(CPLEX_PLUGIN ON)
