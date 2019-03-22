@@ -41,7 +41,7 @@ The following parameters can be given on the command line or modified in ``share
 .. option::  -D nSECcuts=0/1/2                %% Subtour Elimination Constraints, see below
 .. option::  -D fMIPdomains=true/false        %% The unified domains feature
 .. option::  -D float_EPS=1e-6                %% Epsilon for floats' strict comparison
-.. option::  -D fIndConstr=true/false         %% Use solvers' indicator constraints, see below
+.. option::  -DfIndConstr=true -DfMIPdomains=false        %% Use solver's indicator constraints, see below
 
 Some Solver Options and Changed Default Values
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -100,7 +100,7 @@ Some parameters of the unification are available, run with ``--help``.
 Indicator Constraints
 ~~~~~~~~~~~~~~~~~~~~~
 
-Some solvers (IBM ILOG CPLEX, Gurobi) have indicator constrains with greater numerical stability than big-M decomposition.
+Some solvers (IBM ILOG CPLEX, Gurobi, SCIP) have indicator constrains with greater numerical stability than big-M decomposition.
 Moreover, they can be applied to decompose logical constraints on *unbounded variables*.
 Add command-line parameters ``-D fIndConstr=true -D fMIPdomains=false`` when flattening
 to use them.
