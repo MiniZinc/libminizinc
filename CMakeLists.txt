@@ -46,7 +46,7 @@ find_package(Geas)
 find_package(Gecode 6.0 COMPONENTS Driver Float Int Kernel Minimodel Search Set Support)
 find_package(Gurobi)
 find_package(OsiCBC)
-find_package(Scip)
+find_package(SCIP CONFIG)
 find_package(Xpress)
 
 # Set build type when none is selected
