@@ -96,6 +96,10 @@ class MIP_scip_wrapper : public MIP_wrapper {
                         std::string rowName = "");
     /// adding an implication
 //     virtual void addImpl() = 0;
+    /// Indicator constraint: x[iBVar]==bVal -> lin constr
+    virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int *rmatind, double* rmatval,
+                        LinConType sense, double rhs,
+                        std::string rowName = "");
     virtual void setObjSense(int s) {   // +/-1 for max/min
       wrap_assert( setObjSense_SCIP(s) );
     }

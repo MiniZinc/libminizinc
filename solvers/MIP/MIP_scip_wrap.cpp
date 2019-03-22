@@ -232,6 +232,41 @@ SCIP_RETCODE MIP_scip_wrapper::addRow_SCIP
 //   wrap_assert( !retcode,  "Failed to add constraint." );
 }
 
+void MIP_scip_wrapper::addIndicatorConstraint(
+    int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
+    MIP_wrapper::LinConType sense, double rhs, string rowName) {
+  MZN_ASSERT_HARD_MSG( 0<=bVal && 1>=bVal, "SCIP: addIndicatorConstraint: bVal not 0/1" );
+  //// Make sure in order to notice the indices of lazy constr: also here?   TODO
+//  ++ nRows;
+
+  SCIP_CONS* cons;
+  vector<SCIP_VAR*> ab(nnz);
+  SCIP_VAR* indicator_var; // SCIP 6.0.1 requires that the implication is active for indicator_x == 1
+
+  for (int j=0; j<nnz; ++j)
+    ab[j] = scipVars[rmatind[j]];
+
+  indicator_var = scipVars[iBVar];
+  if (0==bVal)
+  {
+    wrap_assert(SCIPgetNegatedVar(scip, indicator_var, &indicator_var));
+  }
+
+  if (LQ==sense || EQ==sense) {
+    wrap_assert( SCIPcreateConsBasicIndicator(scip, &cons, rowName.c_str(), indicator_var, nnz, ab.data(), rmatval, rhs ) );
+    wrap_assert( SCIPaddCons(scip, cons) );
+    wrap_assert( SCIPreleaseCons(scip, &cons) );
+  }
+  if (GQ==sense || EQ==sense) {
+    std::vector<double> rmatvalNEG(nnz);
+    for (int i=nnz; i--;)
+      rmatvalNEG[i] = -rmatval[i];
+    wrap_assert( SCIPcreateConsBasicIndicator(scip, &cons, rowName.c_str(), indicator_var, nnz, ab.data(), rmatvalNEG.data(), -rhs ) );
+    wrap_assert( SCIPaddCons(scip, cons) );
+    wrap_assert( SCIPreleaseCons(scip, &cons) );
+  }
+}
+
 
 /// SolutionCallback ------------------------------------------------------------------------
 
@@ -451,7 +486,7 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
     }
     
 //     assert(scipVars.size() == colObj.size());
-    int cur_numcols = getNCols();
+    int cur_numcols = scipVars.size();    // No, we create negated indicators: getNCols();
     assert(cur_numcols == colObj.size());
     assert(cur_numcols == scipVars.size());
 

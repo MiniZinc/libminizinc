@@ -258,7 +258,7 @@ namespace MiniZinc {
     nctx.neg = false;
     ASTString cid = c->id();
     CallStackItem _csi(env,e);
-    
+
     if (decl->e()==NULL) {
       if (cid == constants().ids.forall) {
         nctx.b = +nctx.b;
