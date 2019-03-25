@@ -168,9 +168,15 @@ namespace MiniZinc {
     vector<string> cmd_line;
     cmd_line.push_back("bash");
     cmd_line.push_back("-c");
-    cmd_line.push_back("gecode "+file_nl+" -AMPL && cat "+file_sol);
+    // cmd_line.push_back("/home/matthieu/bin/gecode "+file_nl+" -AMPL");
+    cmd_line.push_back("ipopt "+file_nl+" -AMPL");
+    cerr << "BEFORE BEFORE" << endl;
     Process<NLSolns2Out> proc(cmd_line, &s2o, 0, true);
+    cerr << "BEFORE " << endl;
     int exitStatus = proc.run();
+    cerr << "AFTER " << endl;
+
+    s2o.parse_sol(file_sol);
     return exitStatus == 0 ? out->status : Status::ERROR;
 
 

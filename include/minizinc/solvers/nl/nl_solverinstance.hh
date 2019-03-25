@@ -13,6 +13,10 @@
 
 #include <minizinc/solvers/nl/nl_file.hh>
 
+#ifdef _WIN32
+#undef ERROR
+#endif
+
 namespace MiniZinc {
 
   class NLSolverOptions : public SolverInstanceBase::Options {

@@ -209,6 +209,7 @@ namespace MiniZinc {
       else if(id == consfp.times){    consfp_times(c); }
       else if(id == consfp.div){      consfp_div(c); }
       else if(id == consfp.mod){      consfp_mod(c); }
+     // else if(id == consfp.sin)
       else if(id == consfp.lt){       consfp_lt(c); }
       else if(id == consfp.le){       consfp_le(c); }
       else if(id == consfp.gt){       cerr << "Should not happen 'float gt'"; assert(false); }
@@ -722,6 +723,11 @@ namespace MiniZinc {
   void NLFile::consfp_mod(const Call& c){
     nlcons_operator(c, NLToken::OpCode::OPREM);
   }
+
+    /** Non linear constraint x mod y = z */
+  /*void NLFile::consfp_sin(const Call& c){
+    nlcons_operator(c, NLToken::OpCode::OP_sin);
+  }*/
 
 
 

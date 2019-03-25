@@ -106,19 +106,22 @@ namespace MiniZinc {
   // *** *** *** NLSolns2Out *** *** ***
 
   bool NLSolns2Out::feedRawDataChunk(const char* data) {
+    // TODO break line by lin and add a '%' as a comment
+    // feed to feedRawDataCunk
+        getLog() << "%" << data;
+        return true;
+  }
 
-    if(done){return true;}
 
-    if(strcmp(data, "\n")==0){
+  void  NLSolns2Out::parse_sol(const string& filename){
 
-      done = true;
-      ss.flush();
-      NLSol sol = NLSol::parse_sol(ss);
+    ifstream  f(filename);
+    NLSol sol = NLSol::parse_sol(f);
 
       switch(sol.status){
 
         case NL_Solver_Status::PARSE_ERROR:{
-          cerr << "NL msg: PARSE ERROR" << endl;
+          getLog() << "NL msg: PARSE ERROR" << endl;
           out->feedRawDataChunk(out->_opt.error_msg_00);
           break;
         }
@@ -195,12 +198,7 @@ namespace MiniZinc {
       } 
 
       // "Finish" the feed
-      return out->feedRawDataChunk("\n");
-
-    } else {
-      ss << data;
-      return true;
-    }
+      out->feedRawDataChunk("\n");
 
   }
 

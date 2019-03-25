@@ -4,6 +4,7 @@
 #include <string>
 #include <cstring>
 #include <vector>
+#include <fstream>
 
 #include <minizinc/solns2out.hh>
 #include <minizinc/solvers/nl/nl_file.hh>
@@ -105,6 +106,8 @@ namespace MiniZinc {
 
         public:
         NLSolns2Out(Solns2Out* out, NLFile& nl_file): out(out), nl_file(nl_file), done(false){}
+
+        void  parse_sol(const string& filename);
 
         bool feedRawDataChunk(const char* data);
         std::ostream& getLog(void);
