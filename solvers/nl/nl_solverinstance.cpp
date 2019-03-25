@@ -159,6 +159,7 @@ namespace MiniZinc {
     string file_nl  = file_sub+".nl";
     string file_sol = file_sub+".sol";
     std::ofstream outfile(file_nl);
+    outfile.precision(numeric_limits<double>::digits10 + 2);
     nl_file.print_on(outfile);
     outfile.close();
 
@@ -166,41 +167,18 @@ namespace MiniZinc {
     auto* out = getSolns2Out();
     NLSolns2Out s2o = NLSolns2Out(out, nl_file);
     vector<string> cmd_line;
-    cmd_line.push_back("bash");
-    cmd_line.push_back("-c");
-    // cmd_line.push_back("/home/matthieu/bin/gecode "+file_nl+" -AMPL");
-    cmd_line.push_back("ipopt "+file_nl+" -AMPL");
-    cerr << "BEFORE BEFORE" << endl;
+    cmd_line.push_back("ipopt");
+    cmd_line.push_back(file_nl);
+    cmd_line.push_back("-AMPL");
     Process<NLSolns2Out> proc(cmd_line, &s2o, 0, true);
-    cerr << "BEFORE " << endl;
     int exitStatus = proc.run();
-    cerr << "AFTER " << endl;
 
     s2o.parse_sol(file_sol);
     return exitStatus == 0 ? out->status : Status::ERROR;
-
-
-
-    // --- --- --- Interpret the result, and feed it back to minizinc
-   
-
-    // Back to minizinc with the result
-    // var = value;
-    // 10 dashes marks: the end of a solution
-    // 10 equals signs: the end of the search if successful
-    // See sols2out.hh
-    // getSolns2Out()->feedRawDataChunk("text");
-
-  /*
-        Process<Solns2Out> proc(cmd_line, getSolns2Out(), timelimit, sigint);
-      int exitStatus = proc.run();
-      delete pathsFile;
-      return exitStatus == 0 ? getSolns2Out()->status : SolverInstance::ERROR;
-      */
-
-
-    // return SolverInstance::NONE;
   }
+
+
+
 
   // TODO later
   Expression* NLSolverInstance::getSolutionValue(Id* id) { assert(false); return NULL; }
@@ -247,6 +225,7 @@ namespace MiniZinc {
         Expression* e = i->cast<ConstraintI>()->e();
         if(e->eid() == Expression::E_CALL){
           const Call& c = *e->cast<Call>();
+          cerr << c.id() << " ";
           nl_file.analyse_constraint(c);
         } else {
           cerr << "Contraint is not a builtin call." << endl;

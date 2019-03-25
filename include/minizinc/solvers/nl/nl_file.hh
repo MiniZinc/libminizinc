@@ -176,8 +176,11 @@ namespace MiniZinc {
         // --- --- --- Non Linear Builders
         // For predicates, uses 2 variables or literals: x := c.arg(0), y := c.arg(1)
         // x PREDICATE y
+        
+        // For unary operations, uses 2 variables or literals: x := c.arg(0), y := c.arg(1)
+        // OPEARTOR x = y
 
-        // For operations, uses 3 variables or literals: x := c.arg(0), y := c.arg(1), and z := c.arg(2).
+        // For binary operations, uses 3 variables or literals: x := c.arg(0), y := c.arg(1), and z := c.arg(2).
         // x OPERATOR y = z
 
         /** Create a non linear constraint x = y
@@ -199,8 +202,18 @@ namespace MiniZinc {
          */
         void nlcons_predicate(const Call& c, NLToken::OpCode oc, NLToken x, NLToken y);
 
-        /** Create a non linear constraint with an operator: x OPERATOR y = z */
-        void nlcons_operator(const Call& c, NLToken::OpCode oc);
+        /** Create a non linear constraint with a binary operator: x OPERATOR y = z */
+        void nlcons_operator_binary(const Call& c, NLToken::OpCode oc, NLToken x, NLToken y, NLToken z);
+
+        /** Create a non linear constraint with a binary operator: x OPERATOR y = z.
+         *  OPERATOR is now a Multiop, with a count of 2 (so the choice of the method to use depends on the LN implementation) */
+        void nlcons_operator_binary(const Call& c, NLToken::MOpCode moc, NLToken x, NLToken y, NLToken z);
+
+        /** Create a non linear constraint with an unary operator: OPERATOR x = y */
+        void nlcons_operator_unary(const Call& c, NLToken::OpCode oc, NLToken x, NLToken y);
+
+        /** Create a non linear constraint, specialized for log2 unary operator: Log2(x) = y */
+        void nlcons_operator_unary_log2(const Call& c, NLToken x, NLToken y);
 
 
 
@@ -230,7 +243,10 @@ namespace MiniZinc {
 
 
 
-        // --- --- --- Integer Non Linear Operator Constraints
+        // --- --- --- Integer Non Linear Binary Operator Constraints
+
+        /** Non linear constraint x + y = z */
+        void consint_plus(const Call& c);
 
         /** Non linear constraint x * y = z */
         void consint_times(const Call& c);
@@ -240,6 +256,21 @@ namespace MiniZinc {
 
         /** Non linear constraint x mod y = z */
         void consint_mod(const Call& c);
+
+        /** Non linear constraint x pow y = z */
+        void int_pow(const Call& c);
+
+        /** Non linear constraint max(x, y) = z */
+        void int_max(const Call& c);
+
+        /** Non linear constraint min(x, y) = z */
+        void int_min(const Call& c);
+
+
+
+        // --- --- --- Integer Non Linear Unary Operator Constraints
+
+        void int_abs(const Call& c);
 
 
 
@@ -275,7 +306,7 @@ namespace MiniZinc {
 
 
 
-        // --- --- --- Floating Point Non Linear Operator Constraints
+        // --- --- --- Floating Point Non Linear Binary Operator Constraints
 
         /** Non linear constraint x + y = z */
         void consfp_plus(const Call& c);
@@ -291,6 +322,81 @@ namespace MiniZinc {
 
         /** Non linear constraint x mod y = z */
         void consfp_mod(const Call& c);
+
+        /** Non linear constraint x pow y = z */
+        void float_pow(const Call& c);
+
+        /** Non linear constraint max(x, y) = z */
+        void float_max(const Call& c);
+
+        /** Non linear constraint min(x, y) = z */
+        void float_min(const Call& c);
+
+
+
+        // --- --- --- Floating Point Non Linear Unary Operator Constraints
+
+        /** Non linear constraint abs x = y */
+        void float_abs(const Call& c);
+
+        /** Non linear constraint acos x = y */
+        void float_acos(const Call& c);
+
+        /** Non linear constraint acosh x = y */
+        void float_acosh(const Call& c);
+
+        /** Non linear constraint asin x = y */
+        void float_asin(const Call& c);
+
+        /** Non linear constraint asinh x = y */
+        void float_asinh(const Call& c);
+
+        /** Non linear constraint atan x = y */
+        void float_atan(const Call& c);
+
+        /** Non linear constraint atanh x = y */
+        void float_atanh(const Call& c);
+
+        /** Non linear constraint cos x = y */
+        void float_cos(const Call& c);
+
+        /** Non linear constraint cosh x = y */
+        void float_cosh(const Call& c);
+
+        /** Non linear constraint exp x = y */
+        void float_exp(const Call& c);
+
+        /** Non linear constraint ln x = y */
+        void float_ln(const Call& c);
+
+        /** Non linear constraint log10 x = y */
+        void float_log10(const Call& c);
+
+        /** Non linear constraint log2 x = y */
+        void float_log2(const Call& c);
+
+        /** Non linear constraint sqrt x = y */
+        void float_sqrt(const Call& c);
+
+        /** Non linear constraint sin x = y */
+        void float_sin(const Call& c);
+
+        /** Non linear constraint sinh x = y */
+        void float_sinh(const Call& c);
+
+        /** Non linear constraint tan x = y */
+        void float_tan(const Call& c);
+
+        /** Non linear constraint tanh x = y */
+        void float_tanh(const Call& c);
+
+
+
+        // --- --- --- Other
+
+        /** Integer x to floating point y. Constraint x = y translated into x - y = 0. */
+        void int2float(const Call& c);
+
 
 
 

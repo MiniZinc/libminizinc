@@ -183,44 +183,89 @@ namespace MiniZinc {
       // Constants for floating point builtins
       auto consfp = constants().ids.float_;
 
-      // Dispatch among integer builtins
-      if(id == consint.lin_eq){       consint_lin_eq(c); }
-      else if(id == consint.lin_le){  consint_lin_le(c); }
-      else if(id == consint.lin_ne){  consint_lin_ne(c); }
-      else if(id == consint.times){   consint_times(c); }
-      else if(id == consint.div){     consint_div(c); }
-      else if(id == consint.mod){     consint_mod(c); }
-      else if(id == consint.plus){    cerr << "Should not happen 'int plus'"; assert(false); }
-      else if(id == consint.minus){   cerr << "Should not happen 'int minus'"; assert(false); }
-      else if(id == consint.lt){      cerr << "Should not happen 'int lt'"; assert(false); }
-      else if(id == consint.le){      consint_le(c); }
-      else if(id == consint.gt){      cerr << "Should not happen 'int gt'"; assert(false); }
-      else if(id == consint.ge){      cerr << "Should not happen 'int ge'"; assert(false); }
-      else if(id == consint.eq){      consint_eq(c); }
-      else if(id == consint.ne){      consint_ne(c); }
+      // Integer linear predicates
+      if(id == consint.lin_eq){       consint_lin_eq(c);  }
+      else if(id == consint.lin_le){  consint_lin_le(c);  }
+      else if(id == consint.lin_ne){  consint_lin_ne(c);  }
+      
+      // Integer predicates
+      else if(id == consint.le){      consint_le(c);      }
+      else if(id == consint.eq){      consint_eq(c);      }
+      else if(id == consint.ne){      consint_ne(c);      }
 
-      // Dispatch among floating point builtins
-      else if(id == consfp.lin_eq){   consfp_lin_eq(c); }
-      else if(id == consfp.lin_le){   consfp_lin_le(c); }
-      else if(id == consfp.lin_lt){   consfp_lin_lt(c); }
-      else if(id == consfp.lin_ne){   consfp_lin_ne(c); }
-      else if(id == consfp.plus){     consfp_plus(c); }
-      else if(id == consfp.minus){    consfp_minus(c); }
-      else if(id == consfp.times){    consfp_times(c); }
-      else if(id == consfp.div){      consfp_div(c); }
-      else if(id == consfp.mod){      consfp_mod(c); }
-     // else if(id == consfp.sin)
-      else if(id == consfp.lt){       consfp_lt(c); }
-      else if(id == consfp.le){       consfp_le(c); }
-      else if(id == consfp.gt){       cerr << "Should not happen 'float gt'"; assert(false); }
-      else if(id == consfp.ge){       cerr << "Should not happen 'float ge'"; assert(false); }
-      else if(id == consfp.eq){       consfp_eq(c); }
-      else if(id == consfp.ne){       consfp_ne(c); }
+      // Integer binary operators
+      else if(id == consint.times){   consint_times(c);   }
+      else if(id == consint.div){     consint_div(c);     }
+      else if(id == consint.mod){     consint_mod(c);     }
+      else if(id == consint.plus){    consint_plus(c);    }
+      else if(id == "int_pow"){       int_pow(c);         }
+      else if(id == "int_max"){       int_max(c);         }
+      else if(id == "int_min"){       int_min(c);         }
+
+      // Integer unary operators
+      else if(id == "int_abs"){       int_abs(c);         }
+
+      // Floating point linear predicates
+      else if(id == consfp.lin_eq){   consfp_lin_eq(c);   }
+      else if(id == consfp.lin_le){   consfp_lin_le(c);   }
+      else if(id == consfp.lin_lt){   consfp_lin_lt(c);   }
+      else if(id == consfp.lin_ne){   consfp_lin_ne(c);   }
+
+      // Floating point predicates
+      else if(id == consfp.lt){       consfp_lt(c);       }
+      else if(id == consfp.le){       consfp_le(c);       }
+      else if(id == consfp.eq){       consfp_eq(c);       }
+      else if(id == consfp.ne){       consfp_ne(c);       }
+
+      // Floating point binary operators
+      else if(id == consfp.plus){     consfp_plus(c);     }
+      else if(id == consfp.minus){    consfp_minus(c);    }
+      else if(id == consfp.div){      consfp_div(c);      }
+      else if (id =="float_pow"){     float_pow(c);       }
+      else if (id =="float_max"){     float_max(c);       }
+      else if (id =="float_min"){     float_min(c);       }
+
+      // Floating point unary operators
+      else if (id =="float_abs"){     float_abs(c);       }
+      else if (id =="float_acos"){    float_acos(c);      }
+      else if (id =="float_acosh"){   float_acosh(c);     }
+      else if (id =="float_asin"){    float_asin(c);      }
+      else if (id =="float_asinh"){   float_asinh(c);     }
+      else if (id =="float_atan"){    float_atan(c);      }
+      else if (id =="float_atanh"){   float_atanh(c);     }
+      else if (id =="float_cos"){     float_cos(c);       }
+      else if (id =="float_cosh"){    float_cosh(c);      }
+      else if (id =="float_exp"){     float_exp(c);       }
+      else if (id =="float_ln"){      float_ln(c);        }
+      else if (id =="float_log10"){   float_log10(c);     }
+      else if (id =="float_log2"){    float_log2(c);      }
+      else if (id =="float_sqrt"){    float_sqrt(c);      }
+      else if (id =="float_sin"){     float_sin(c);       }
+      else if (id =="float_sinh"){    float_sinh(c);      }
+      else if (id =="float_tan"){     float_tan(c);       }
+      else if (id =="float_tanh"){    float_tanh(c);      }
+
+      // Other
+      else if(id == "int2float"){     int2float(c);       }
+
+      // Domain
       else if(id == consfp.in){       cerr << "Ignore for now: constraint 'float in    ' not implemented"; assert(false); }
       else if(id == consfp.dom){      cerr << "Ignore for now: constraint 'float dom   ' not implemented"; assert(false); }
-      
+
+      // Grey area
+      else if(id == consint.lt){      cerr << "Should not happen 'int lt'";     assert(false); }
+      else if(id == consint.gt){      cerr << "Should not happen 'int gt'";     assert(false); }
+      else if(id == consint.ge){      cerr << "Should not happen 'int ge'";     assert(false); }
+      else if(id == consint.minus){   cerr << "Should not happen 'int minus'";  assert(false); }
+
+      else if(id == consfp.gt){       cerr << "Should not happen 'float gt'";   assert(false); }
+      else if(id == consfp.ge){       cerr << "Should not happen 'float ge'";   assert(false); }
+      else if(id == consfp.times){    consfp_times(c);    } // Should not happen?
+      else if(id == consfp.mod){      consfp_mod(c);      } // Should not happen?
+
+      // Not implemented
       else {
-          cerr << "Unrecognized builtins " << c.id() << " not implemented";
+          cerr << "Builtins " << c.id() << " not implemented";
           assert(false);
       }
   }
@@ -506,53 +551,200 @@ namespace MiniZinc {
     logical_constraints.push_back(cons);
   }
 
-  /** Create a non linear constraint with an operator: x OPERATOR y = z */
-  void NLFile::nlcons_operator(const Call& c, NLToken::OpCode oc){
-    NLToken v0    = get_tok_var(c.arg(0));
-    NLToken v1    = get_tok_var(c.arg(1));
-    NLToken vres  = get_tok_var(c.arg(2));
-
+  /** Create a non linear constraint with a binary operator: x OPERATOR y = z */
+  void NLFile::nlcons_operator_binary(const Call& c, NLToken::OpCode oc, NLToken x, NLToken y, NLToken z){
     // Create the Algebraic Constraint and set the data
     NLAlgCons cons;
 
     // Get the name of the constraint
     string cname = get_cname(c);
     cons.name = cname;
-    
-    // Use a constraint bound = 0 and use the jacobian to substract vres from the result.
-    // Create the bound of the constraint to 0
-    NLBound bound = NLBound::make_equal(0);
-    cons.range = bound;
 
-    // Use the jacobian
-    vector<double>  coeffs  = {};
-    vector<string>  vars    = {};
+    // If z is a constant, use the bound, else use the jacobian
+    if(z.is_constant()){
+      // Create the bound of the constraint with the numeric value of z
+      NLBound bound = NLBound::make_equal(z.numeric_value);
+      cons.range = bound;
+    } else {
+      // Else, use a constraint bound = 0 and use the jacobian to substract vres from the result.
+      // Create the bound of the constraint to 0
+      NLBound bound = NLBound::make_equal(0);
+      cons.range = bound;
 
-    // Check that v0 is not v1 or vres
-    if(v0.str!=v1.str && v0.str!=vres.str){
-      coeffs.push_back(0);
-      vars.push_back(v0.str);
+      vector<double>  coeffs  = {};
+      vector<string>  vars    = {};
+
+      // Check that x is not y or z
+      if(x.str!=y.str && x.str!=y.str){
+        coeffs.push_back(0);
+        vars.push_back(x.str);
+      }
+      // Check that y is not z
+      if(y.str!=z.str){
+        coeffs.push_back(0);
+        vars.push_back(y.str);
+      }
+      // z is a variable whose value is substracted from the result
+      coeffs.push_back(-1);
+      vars.push_back(z.str);
+      
+      // Finish jacobian
+      cons.set_jacobian(vars, coeffs, this);
     }
-    // Check that v1 is not vres
-    if(v1.str!=vres.str){
-      coeffs.push_back(0);
-      vars.push_back(v1.str);
-    }
-    // tvalue is a variable whose value is substracted from the result
-    coeffs.push_back(-1);
-    vars.push_back(vres.str);
-    
-    // Finish jacobian
-    cons.set_jacobian(vars, coeffs, this);
 
     // Create the expression graph using the operand code 'oc'
     cons.expression_graph.push_back(NLToken::o(oc));
-    cons.expression_graph.push_back(v0);
-    cons.expression_graph.push_back(v1);
+    cons.expression_graph.push_back(x);
+    cons.expression_graph.push_back(y);
 
     // Store the constraint
     constraints[cname] = cons;
   }
+
+  /** Create a non linear constraint with a binary operator: x OPERATOR y = z.
+   *  OPERATOR is now a Multiop, with a count of 2 (so the choice of the method to use depends on the LN implementation) */
+  void NLFile::nlcons_operator_binary(const Call& c, NLToken::MOpCode moc, NLToken x, NLToken y, NLToken z){
+    // Create the Algebraic Constraint and set the data
+    NLAlgCons cons;
+
+    // Get the name of the constraint
+    string cname = get_cname(c);
+    cons.name = cname;
+
+    // If z is a constant, use the bound, else use the jacobian
+    if(z.is_constant()){
+      // Create the bound of the constraint with the numeric value of z
+      NLBound bound = NLBound::make_equal(z.numeric_value);
+      cons.range = bound;
+    } else {
+      // Else, use a constraint bound = 0 and use the jacobian to substract vres from the result.
+      // Create the bound of the constraint to 0
+      NLBound bound = NLBound::make_equal(0);
+      cons.range = bound;
+
+      vector<double>  coeffs  = {};
+      vector<string>  vars    = {};
+
+      // Check that x is not y or z
+      if(x.str!=y.str && x.str!=y.str){
+        coeffs.push_back(0);
+        vars.push_back(x.str);
+      }
+      // Check that y is not z
+      if(y.str!=z.str){
+        coeffs.push_back(0);
+        vars.push_back(y.str);
+      }
+      // z is a variable whose value is substracted from the result
+      coeffs.push_back(-1);
+      vars.push_back(z.str);
+      
+      // Finish jacobian
+      cons.set_jacobian(vars, coeffs, this);
+    }
+
+    // Create the expression graph using the operand code 'oc'
+    cons.expression_graph.push_back(NLToken::mo(moc, 2));
+    cons.expression_graph.push_back(x);
+    cons.expression_graph.push_back(y);
+
+    // Store the constraint
+    constraints[cname] = cons;
+  }
+
+
+  /** Create a non linear constraint with an unary operator: OPERATOR x = y */
+  void NLFile::nlcons_operator_unary(const Call& c, NLToken::OpCode oc, NLToken x, NLToken y){
+    // Create the Algebraic Constraint and set the data
+    NLAlgCons cons;
+
+    // Get the name of the constraint
+    string cname = get_cname(c);
+    cons.name = cname;
+
+    // If y is a constant, use the bound, else use the jacobian
+    if(y.is_constant()){
+      // Create the bound of the constraint with the numeric value of y
+      NLBound bound = NLBound::make_equal(y.numeric_value);
+      cons.range = bound;
+    } else {
+      // Else, use a constraint bound = 0 and use the jacobian to substract vres from the result.
+      // Create the bound of the constraint to 0
+      NLBound bound = NLBound::make_equal(0);
+      cons.range = bound;
+
+      vector<double>  coeffs  = {};
+      vector<string>  vars    = {};
+
+      // Check that x is not y
+      if(x.str!=y.str){
+        coeffs.push_back(0);
+        vars.push_back(x.str);
+      }
+      // z is a variable whose value is substracted from the result
+      coeffs.push_back(-1);
+      vars.push_back(y.str);
+      
+      // Finish jacobian
+      cons.set_jacobian(vars, coeffs, this);
+    }
+
+    // Create the expression graph using the operand code 'oc'
+    cons.expression_graph.push_back(NLToken::o(oc));
+    cons.expression_graph.push_back(x);
+
+    // Store the constraint
+    constraints[cname] = cons;
+  }
+
+  /** Create a non linear constraint, specialized for log2 unary operator: Log2(x) = y */
+  void NLFile::nlcons_operator_unary_log2(const Call& c, NLToken x, NLToken y){
+    // Create the Algebraic Constraint and set the data
+    NLAlgCons cons;
+
+    // Get the name of the constraint
+    string cname = get_cname(c);
+    cons.name = cname;
+
+    // If y is a constant, use the bound, else use the jacobian
+    if(y.is_constant()){
+      // Create the bound of the constraint with the numeric value of y
+      NLBound bound = NLBound::make_equal(y.numeric_value);
+      cons.range = bound;
+    } else {
+      // Else, use a constraint bound = 0 and use the jacobian to substract vres from the result.
+      // Create the bound of the constraint to 0
+      NLBound bound = NLBound::make_equal(0);
+      cons.range = bound;
+
+      vector<double>  coeffs  = {};
+      vector<string>  vars    = {};
+
+      // Check that x is not y
+      if(x.str!=y.str){
+        coeffs.push_back(0);
+        vars.push_back(x.str);
+      }
+      // z is a variable whose value is substracted from the result
+      coeffs.push_back(-1);
+      vars.push_back(y.str);
+      
+      // Finish jacobian
+      cons.set_jacobian(vars, coeffs, this);
+    }
+
+    // Create the expression graph with log2(x) = ln(x)/ln(2) with ln(2) = 0.693147180559945309417232121458176568075
+    // For a double, the number of significant number is between 15 and 17, so we use 17...
+    cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPDIV));
+    cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OP_log));
+    cons.expression_graph.push_back(x);
+    cons.expression_graph.push_back(NLToken::n(0.69314718055994530));
+
+
+    // Store the constraint
+    constraints[cname] = cons;
+  }
+
 
 
 
@@ -610,21 +802,51 @@ namespace MiniZinc {
 
 
 
-  // --- --- --- Integer Non Linear Operator Constraints
+  // --- --- --- Integer Non Linear Binary Operator Constraints
+
+  /** Non linear constraint x + y = z */
+  void NLFile::consint_plus(const Call& c){
+    nlcons_operator_binary(c, NLToken::OpCode::OPPLUS, get_tok_var_int(c.arg(0)), get_tok_var_int(c.arg(1)), get_tok_var_int(c.arg(2)));
+  }
 
   /** Non linear constraint x * y = z */
   void NLFile::consint_times(const Call& c){
-    nlcons_operator(c, NLToken::OpCode::OPPLUS);
+    nlcons_operator_binary(c, NLToken::OpCode::OPMULT, get_tok_var_int(c.arg(0)), get_tok_var_int(c.arg(1)), get_tok_var_int(c.arg(2)));
   }
 
   /** Non linear constraint x / y = z */
   void NLFile::consint_div(const Call& c){
-    nlcons_operator(c, NLToken::OpCode::OPDIV);
+    nlcons_operator_binary(c, NLToken::OpCode::OPDIV, get_tok_var_int(c.arg(0)), get_tok_var_int(c.arg(1)), get_tok_var_int(c.arg(2)));
   }
 
   /** Non linear constraint x mod y = z */
   void NLFile::consint_mod(const Call& c){
-    nlcons_operator(c, NLToken::OpCode::OPREM);
+    nlcons_operator_binary(c, NLToken::OpCode::OPREM, get_tok_var_int(c.arg(0)), get_tok_var_int(c.arg(1)), get_tok_var_int(c.arg(2)));
+  }
+
+  /** Non linear constraint x pow y = z */
+  void NLFile::int_pow(const Call& c){
+    nlcons_operator_binary(c, NLToken::OpCode::OPPOW, get_tok_var_int(c.arg(0)), get_tok_var_int(c.arg(1)), get_tok_var_int(c.arg(2)));
+  }
+
+  /** Non linear constraint max(x, y) = z */
+  void NLFile::int_max(const Call& c){
+    nlcons_operator_binary(c, NLToken::MOpCode::MAXLIST, get_tok_var_int(c.arg(0)), get_tok_var_int(c.arg(1)), get_tok_var_int(c.arg(2)));
+  }
+
+  /** Non linear constraint min(x, y) = z */
+  void NLFile::int_min(const Call& c){
+    nlcons_operator_binary(c, NLToken::MOpCode::MINLIST, get_tok_var_int(c.arg(0)), get_tok_var_int(c.arg(1)), get_tok_var_int(c.arg(2)));
+  }
+
+
+
+
+  // --- --- --- Integer Non Linear Unary Operator Constraints
+
+  /** Non linear constraint abs x = y */
+  void NLFile::int_abs(const Call& c){
+    nlcons_operator_unary(c, NLToken::OpCode::ABS, get_tok_var_int(c.arg(0)), get_tok_var_int(c.arg(1)));
   }
 
 
@@ -697,37 +919,160 @@ namespace MiniZinc {
 
 
 
-  // --- --- --- Floating Point Non Linear Operator Constraints
+  // --- --- --- Floating Point Non Linear Binary Operator Constraints
 
   /** Non linear constraint x + y = z */
   void NLFile::consfp_plus(const Call& c){
-    nlcons_operator(c, NLToken::OpCode::OPPLUS);
+    nlcons_operator_binary(c, NLToken::OpCode::OPPLUS, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)), get_tok_var_fp(c.arg(2)));
   }
 
   /** Non linear constraint x - y = z */
   void NLFile::consfp_minus(const Call& c){
-    nlcons_operator(c, NLToken::OpCode::OPMINUS);
+    nlcons_operator_binary(c, NLToken::OpCode::OPMINUS, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)), get_tok_var_fp(c.arg(2)));
   }
 
   /** Non linear constraint x * y = z */
   void NLFile::consfp_times(const Call& c){
-    nlcons_operator(c, NLToken::OpCode::OPMULT);
+    nlcons_operator_binary(c, NLToken::OpCode::OPMULT, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)), get_tok_var_fp(c.arg(2)));
   }
 
   /** Non linear constraint x / y = z */
   void NLFile::consfp_div(const Call& c){
-    nlcons_operator(c, NLToken::OpCode::OPDIV);
+    nlcons_operator_binary(c, NLToken::OpCode::OPDIV, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)), get_tok_var_fp(c.arg(2)));
   }
 
   /** Non linear constraint x mod y = z */
   void NLFile::consfp_mod(const Call& c){
-    nlcons_operator(c, NLToken::OpCode::OPREM);
+    nlcons_operator_binary(c, NLToken::OpCode::OPREM, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)), get_tok_var_fp(c.arg(2)));
   }
 
-    /** Non linear constraint x mod y = z */
-  /*void NLFile::consfp_sin(const Call& c){
-    nlcons_operator(c, NLToken::OpCode::OP_sin);
-  }*/
+  /** Non linear constraint x pow y = z */
+  void NLFile::float_pow(const Call& c){
+    nlcons_operator_binary(c, NLToken::OpCode::OPPOW, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)), get_tok_var_fp(c.arg(2)));
+  }
+
+  /** Non linear constraint max(x, y) = z */
+  void NLFile::float_max(const Call& c){
+    nlcons_operator_binary(c, NLToken::MOpCode::MAXLIST, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)), get_tok_var_fp(c.arg(2)));
+  }
+
+  /** Non linear constraint min(x, y) = z */
+  void NLFile::float_min(const Call& c){
+    nlcons_operator_binary(c, NLToken::MOpCode::MINLIST, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)), get_tok_var_fp(c.arg(2)));
+  }
+
+
+
+
+  // --- --- --- Floating Point Non Linear Unary operator Constraints
+
+  /** Non linear constraint abs x = y */
+  void NLFile::float_abs(const Call& c){
+    nlcons_operator_unary(c, NLToken::OpCode::ABS, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  }
+
+  /** Non linear constraint acos x = y */
+  void NLFile::float_acos(const Call& c){
+    nlcons_operator_unary(c, NLToken::OpCode::OP_acos, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  }
+
+  /** Non linear constraint acosh x = y */
+  void NLFile::float_acosh(const Call& c){
+    nlcons_operator_unary(c, NLToken::OpCode::OP_acosh, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  }
+
+  /** Non linear constraint asin x = y */
+  void NLFile::float_asin(const Call& c){
+    nlcons_operator_unary(c, NLToken::OpCode::OP_asin, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  }
+
+  /** Non linear constraint asinh x = y */
+  void NLFile::float_asinh(const Call& c){
+    nlcons_operator_unary(c, NLToken::OpCode::OP_asinh, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  }
+
+  /** Non linear constraint atan x = y */
+  void NLFile::float_atan(const Call& c){
+    nlcons_operator_unary(c, NLToken::OpCode::OP_atan, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  }
+
+  /** Non linear constraint atanh x = y */
+  void NLFile::float_atanh(const Call& c){
+    nlcons_operator_unary(c, NLToken::OpCode::OP_atanh, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  }
+
+  /** Non linear constraint cos x = y */
+  void NLFile::float_cos(const Call& c){
+    nlcons_operator_unary(c, NLToken::OpCode::OP_cos, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  }
+
+  /** Non linear constraint cosh x = y */
+  void NLFile::float_cosh(const Call& c){
+    nlcons_operator_unary(c, NLToken::OpCode::OP_cosh, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  }
+
+  /** Non linear constraint exp x = y */
+  void NLFile::float_exp(const Call& c){
+    nlcons_operator_unary(c, NLToken::OpCode::OP_exp, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  }
+
+  /** Non linear constraint ln x = y */
+  void NLFile::float_ln(const Call& c){
+    nlcons_operator_unary(c, NLToken::OpCode::OP_log, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  }
+
+  /** Non linear constraint log10 x = y */
+  void NLFile::float_log10(const Call& c){
+    nlcons_operator_unary(c, NLToken::OpCode::OP_log10, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  }
+
+  /** Non linear constraint log2 x = y */
+  void NLFile::float_log2(const Call& c){
+    nlcons_operator_unary_log2(c, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  }
+
+  /** Non linear constraint sqrt x = y */
+  void NLFile::float_sqrt(const Call& c){
+    nlcons_operator_unary(c, NLToken::OpCode::OP_sqrt, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  }
+
+  /** Non linear constraint sin x = y */
+  void NLFile::float_sin(const Call& c){
+    nlcons_operator_unary(c, NLToken::OpCode::OP_sin, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  }
+
+  /** Non linear constraint sinh x = y */
+  void NLFile::float_sinh(const Call& c){
+    nlcons_operator_unary(c, NLToken::OpCode::OP_sinh, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  }
+
+  /** Non linear constraint tan x = y */
+  void NLFile::float_tan(const Call& c){
+    nlcons_operator_unary(c, NLToken::OpCode::OP_tan, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  }
+
+  /** Non linear constraint tanh x = y */
+  void NLFile::float_tanh(const Call& c){
+    nlcons_operator_unary(c, NLToken::OpCode::OP_tanh, get_tok_var_fp(c.arg(0)), get_tok_var_fp(c.arg(1)));
+  }
+
+
+
+  // --- --- --- Other
+
+  /** Integer x to floating point y. Constraint x = y translated into x - y = 0.
+   *  Simulate a linear constraint [1, -1]+*[x, y] = 0
+   */
+  void NLFile::int2float(const Call& c){
+    vector<double> coeffs = {1, -1};
+    vector<string> vars = {};
+    vars.push_back(get_tok_var(c.arg(0)).str);
+    vars.push_back(get_tok_var(c.arg(1)).str);
+    // Create the constraint
+    lincons_eq(c, coeffs, vars, NLToken::n(0));
+  }
+
+
 
 
 

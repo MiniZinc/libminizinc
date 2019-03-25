@@ -108,7 +108,7 @@ namespace MiniZinc {
   bool NLSolns2Out::feedRawDataChunk(const char* data) {
     // TODO break line by lin and add a '%' as a comment
     // feed to feedRawDataCunk
-        getLog() << "%" << data;
+        getLog() << data;
         return true;
   }
 
@@ -136,6 +136,8 @@ namespace MiniZinc {
           cerr << "NL msg: SOLVED" << endl;
 
           stringstream sb;
+          sb << std::showpoint; // Always shows the decimal point, so we have e.g. '256.0' when 256 is the answer for a fp value.
+          sb.precision(numeric_limits<double>::digits10 + 2);
           for(int i=0; i<nl_file.variables.size(); ++i){
 
             string n = nl_file.vnames[i];
@@ -143,7 +145,7 @@ namespace MiniZinc {
             if(v.to_report){
                 sb << v.name << " = ";
                 if(v.is_integer){
-                  long value = (long)sol.values[i];
+                  long value = std::round(sol.values[i]);
                   sb << value;
                 } else {
                   double value = sol.values[i];
