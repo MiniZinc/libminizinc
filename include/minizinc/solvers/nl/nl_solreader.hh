@@ -100,12 +100,14 @@ namespace MiniZinc {
     class NLSolns2Out {
         private:
         Solns2Out*      out;
-        stringstream    ss;
         NLFile&         nl_file;
-        bool            done;
+        
+        // Controls for feedRawDataChunk
+        bool            in_line;
+
 
         public:
-        NLSolns2Out(Solns2Out* out, NLFile& nl_file): out(out), nl_file(nl_file), done(false){}
+        NLSolns2Out(Solns2Out* out, NLFile& nl_file): out(out), nl_file(nl_file), in_line(false){}
 
         void  parse_sol(const string& filename);
 

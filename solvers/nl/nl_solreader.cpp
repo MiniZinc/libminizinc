@@ -105,11 +105,36 @@ namespace MiniZinc {
 
   // *** *** *** NLSolns2Out *** *** ***
 
+  /** Our "feedrawdatachunk" directly gets the solver's output, which is not the result.
+   *  The result is written in the .sol file.
+   *  Get the solver output and add a comment % in front of the lines
+   *  We may be in a middle of a line!
+   */
   bool NLSolns2Out::feedRawDataChunk(const char* data) {
-    // TODO break line by lin and add a '%' as a comment
-    // feed to feedRawDataCunk
-        getLog() << data;
-        return true;
+    if(data != NULL){
+      std::stringstream ss(data);
+      string to;
+
+      while(getline(ss, to)){
+        if(ss.eof()){
+          if(in_line){ // Must complete a line, and the line is not over yet
+            getLog() << to << endl;
+          } else {  // Start an incomple line
+            getLog() << "% " << to;
+            in_line = true;
+          }
+        } else {
+          if(in_line){ // Must complete a line, and the line is over.
+            getLog() << to << endl;
+            in_line = false;
+          } else { // Full line
+            getLog() << "% " << to << endl;
+          }
+        }
+      }
+
+    }
+    return true;
   }
 
 
@@ -204,7 +229,7 @@ namespace MiniZinc {
 
   }
 
-  ostream&  NLSolns2Out::getLog(void) {
+  ostream& NLSolns2Out::getLog(void) {
     return out->getLog();
   }
 
