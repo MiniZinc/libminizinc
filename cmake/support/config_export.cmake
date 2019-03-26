@@ -17,7 +17,15 @@ file(RELATIVE_PATH REL_CMAKE_DIR "${CMAKE_INSTALL_PREFIX}"
 file(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}"
      "${CMAKE_INSTALL_PREFIX}/include")
 
-# Add external dependencies
+# Add external (static) dependencies
+if(TARGET minizinc_geas)
+  install(
+    FILES cmake/modules/FindGeas.cmake
+    DESTINATION ${REL_CMAKE_DIR}
+    COMPONENT dev
+  )
+  set(CONF_DEPENDENCIES "${CONF_DEPENDENCIES}find_dependency(Geas)\n")
+endif()
 if(TARGET minizinc_gecode)
   install(
     FILES cmake/modules/FindGecode.cmake cmake/modules/FindMPFR.cmake
