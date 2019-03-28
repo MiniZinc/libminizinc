@@ -177,6 +177,10 @@ namespace MiniZinc {
 
 
 
+    /* *** *** *** NLArray *** *** *** */
+
+
+
     /* *** *** *** NLToken *** *** *** */
 
     const char* NLToken::get_name(OpCode oc){

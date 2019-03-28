@@ -44,6 +44,9 @@ namespace MiniZinc {
 
         /* *** *** *** Helpers *** *** *** */
 
+        /** Create a string representing the name (and unique identifier) from an identifier. */
+        static string get_vname(const Id *id);
+
         /** Create a string representing the name (and unique identifier) of a variable from a variable declaration. */
         static string get_vname(const VarDecl &vd);
 
@@ -84,6 +87,10 @@ namespace MiniZinc {
 
         // Objective field. Only one, so we do not need ordering.
         NLObjective objective = {};
+
+
+        // Output arrays
+        vector<NLArray> output_arrays = {};
 
 
         /** Add a solve goal in the NL File. In our case, we can only have one and only one solve goal. */

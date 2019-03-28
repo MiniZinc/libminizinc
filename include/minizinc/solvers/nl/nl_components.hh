@@ -119,7 +119,7 @@ namespace MiniZinc {
         bool is_in_nl_objective = false;
 
         /** Number of occurrences in Jacobian. */
-        int jacobian_count = 0;
+        long jacobian_count = 0;
 
         /** The bound over this variable.
          *  Used when producing the unique 'b' segment of the NL file.
@@ -136,6 +136,36 @@ namespace MiniZinc {
 
         /** Copy constructor, with update on bound */
         NLVar copy_with_bound(NLBound bound) const;
+
+    };
+
+
+
+    /** A NLArray:
+     * We do not use "real" array.
+     * This type only serves when sending the result back to minizinc
+     */
+    class NLArray{
+        public:
+
+        /** Array item; if the string is empty, use the value. */
+        class Item {
+            public:
+            string variable;
+            double value;
+        };
+
+        /** Array name */
+        string name;
+
+        /** Dimensions part, e.g. array2d( '0..4', '0..5' [ .... ]) */
+        vector<string> dimensions;
+
+        /** Related variables */
+        vector<Item> items;
+
+        /** Is this an array or integers or floats? */
+        bool is_integer = false;
 
     };
 

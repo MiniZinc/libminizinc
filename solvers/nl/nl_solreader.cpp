@@ -163,14 +163,14 @@ namespace MiniZinc {
           stringstream sb;
           sb << std::showpoint; // Always shows the decimal point, so we have e.g. '256.0' when 256 is the answer for a fp value.
           sb.precision(numeric_limits<double>::digits10 + 2);
-          for(int i=0; i<nl_file.variables.size(); ++i){
 
+          for(int i=0; i<nl_file.variables.size(); ++i){
             string n = nl_file.vnames[i];
             NLVar v = nl_file.variables[n];   
             if(v.to_report){
                 sb << v.name << " = ";
                 if(v.is_integer){
-                  long value = std::round(sol.values[i]);
+                  long value = sol.values[i];
                   sb << value;
                 } else {
                   double value = sol.values[i];
@@ -179,6 +179,49 @@ namespace MiniZinc {
                 sb << ";\n";
             }
           }
+
+          // Output the arrays
+          for(int i=0; i<nl_file.output_arrays.size(); ++i){
+            NLArray &a = nl_file.output_arrays.at(i);
+            sb << a.name << " = array" << a.dimensions.size() << "d( ";
+            for(const string& s: a.dimensions){
+              sb << s << ", ";
+            }
+            sb << "[";
+            for(int j=0; j<a.items.size(); ++j){
+              const NLArray::Item &item = a.items.at(j);
+
+              // Case of the literals
+              if(item.variable.empty()){
+                if(a.is_integer){
+                  long value = item.value;
+                  sb << value;
+                } else {
+                  double value = item.value;
+                  sb << value;
+                }
+              } else {
+                int index = nl_file.variable_indexes.at(item.variable);
+                if(a.is_integer){
+                  long value = sol.values[index];
+                  sb << value;
+                } else {
+                  double value = sol.values[index];
+                  sb << value;
+                }
+              }
+
+              if(j<a.items.size()-1){
+                sb << ", ";
+              }
+
+            }
+
+            sb << "]);\n";
+          }
+
+
+
 
           string s = sb.str();
           out->feedRawDataChunk(s.c_str());

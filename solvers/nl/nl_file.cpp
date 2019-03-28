@@ -1,4 +1,5 @@
 #include <minizinc/solvers/nl/nl_file.hh>
+#include <minizinc/hash.hh>
 
 /**
  *  A NL File reprensentation.
@@ -12,14 +13,19 @@
 namespace MiniZinc {
 
   /** *** *** *** Helpers *** *** *** **/
+
+  /** Create a string representing the name (and unique identifier) from an identifier. */
+  string NLFile::get_vname(const Id *id){
+      stringstream os;
+      if (id->idn() != -1) {  os << "X_INTRODUCED_" << id->idn() << "_"; }
+      else if (id->v().size() != 0){ os << id->v(); }
+      string name = os.str();
+      return name;
+  }
   
   /** Create a string representing the name (and unique identifier) of a variable from a variable declaration. */
   string NLFile::get_vname(const VarDecl &vd){
-      stringstream os;
-      if (vd.id()->idn() != -1) {  os << "X_INTRODUCED_" << vd.id()->idn() << "_"; }
-      else if (vd.id()->v().size() != 0){ os << vd.id()->v(); }
-      string name = os.str();
-      return name;
+    return get_vname(vd.id());
   }
 
   /** Create a string representing the name (and unique identifier) of a constraint from a specific call expression. */
@@ -95,9 +101,46 @@ namespace MiniZinc {
     }
     else if(ti.isarray()){
       cerr << "Definition of array " << name << " is not reproduced in nl.";
-      // Gather output variable
-      if(vd.ann().containsCall(constants().ann.output_array)){
-        // TODO : For now, just x = [ list... ]
+      // Look for the annotation "output_array"
+      for (ExpressionSetIter it= vd.ann().begin(); it != vd.ann().end(); ++it) {
+        Call* c = (*it)->dyn_cast<Call>();
+        if ( c!=NULL && c->id() == (constants().ann.output_array) ){          
+          NLArray array;
+          array.name = name;
+          array.is_integer = ti.type().bt() == Type::BT_INT;
+
+
+          // Search the 'annotation' array
+          const ArrayLit& aa = get_arraylit(c->arg(0));
+          for(int i=0; i<aa.size(); ++i){
+            IntSetVal* r = aa[i]->cast<SetLit>()->isv();
+            stringstream ss;
+            ss << r->min().toInt() << ".." << r->max().toInt();
+            array.dimensions.push_back(ss.str());
+          }
+
+          // Search the 'real' array. Items can be an identifier or a litteral.
+          const ArrayLit& ra = get_arraylit(&rhs);
+          for(int i=0; i<ra.size(); ++i){
+            NLArray::Item item;
+            
+            if(ra[i]->isa<Id>()){
+              item.variable = get_vname(ra[i]->cast<Id>());
+            } else if (ra[i]->isa<IntLit>()){
+              assert(array.is_integer);
+              item.value = ra[i]->cast<IntLit>()->v().toInt();
+            } else {
+              assert(!array.is_integer); // Floating point
+              item.value = ra[i]->cast<FloatLit>()->v().toDouble();
+            }
+
+            array.items.push_back(item);
+          }
+
+          output_arrays.push_back(array);
+
+          break;
+        }  
       }
     } else {
       // Check if the variable needs to be reported
@@ -1101,7 +1144,6 @@ namespace MiniZinc {
               vector<string>  vars    = {v};
               objective.set_gradient(vars, coeffs);
               break;
-              break;
           }
           case SolveI::SolveType::ST_MAX:{
               // Maximize an objective represented by a variable
@@ -1363,12 +1405,14 @@ namespace MiniZinc {
 
   
   /** Check expression within a flatzinc call.
+   * Kept as documentation
    * Can only contain:
    *    Expression::E_INTLIT
    *    Expression::E_FLOATLIT
    *    Expression::E_ID
    *    Expression::E_ARRAYLIT
    */
+  /*
   const Expression* check_expression(const Expression* e) {
     // Guard
     if (e==NULL){assert(false);}
@@ -1478,6 +1522,7 @@ namespace MiniZinc {
     } // END OF SWITCH
     return NULL;
   } // END OF FUN
+  */
 
 }
 
