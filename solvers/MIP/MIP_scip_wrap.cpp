@@ -558,7 +558,9 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
       x.resize(cur_numcols);
       output.x = &x[0];
       SCIP_CALL( SCIPgetSolVals(scip, SCIPgetBestSol(scip), cur_numcols, &scipVars[0], (double*)output.x) );
-//       wrap_assert(!retcode, "Failed to get variable values.");
+      if (cbui.solcbfn && (!options->flag_all_solutions || !cbui.printed)) {
+        cbui.solcbfn(output, cbui.ppp);
+      }
    }
    output.nNodes = SCIPgetNNodes (scip);
    output.nOpenNodes = SCIPgetNNodesLeft(scip);  // SCIP_getnodeleftcnt (env, lp);
