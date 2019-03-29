@@ -1881,6 +1881,10 @@ namespace MiniZinc {
                   Call* c = new Call(Location().introduce(),cid,args);
                   c->decl(env.model->matchFn(env,c,false));
                   c->type(c->decl()->rtype(env,args,false));
+                  if (c->type().isbool()) {
+                    addCtxAnn(vd, ctx.b);
+                    addCtxAnn(e_id->decl(), ctx.b);
+                  }
                   if (c->decl()->e()) {
                     flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
                     ret = vd->id();
