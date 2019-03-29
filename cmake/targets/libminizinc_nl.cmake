@@ -9,7 +9,6 @@ add_library(minizinc_nl
   
   include/minizinc/solvers/nl/nl_components.hh
   include/minizinc/solvers/nl/nl_file.hh
-  include/minizinc/solvers/nl/nl_printable.hh
   include/minizinc/solvers/nl/nl_solreader.hh
   include/minizinc/solvers/nl/nl_solverfactory.hh
   include/minizinc/solvers/nl/nl_solverinstance.hh

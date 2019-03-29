@@ -146,19 +146,19 @@ namespace MiniZinc {
       switch(sol.status){
 
         case NL_Solver_Status::PARSE_ERROR:{
-          getLog() << "NL msg: PARSE ERROR" << endl;
+          DEBUG_MSG("NL msg: PARSE ERROR" << endl);
           out->feedRawDataChunk(out->_opt.error_msg_00);
           break;
         }
 
         case NL_Solver_Status::UNKNOWN:{
-          cerr << "NL msg: UNKNOWN" << endl;
+          DEBUG_MSG("NL msg: UNKNOWN" << endl);
           out->feedRawDataChunk(out->_opt.unknown_msg_00);
           break;
         }
 
         case NL_Solver_Status::SOLVED:{
-          cerr << "NL msg: SOLVED" << endl;
+           DEBUG_MSG("NL msg: SOLVED" << endl);
 
           stringstream sb;
           sb << std::showpoint; // Always shows the decimal point, so we have e.g. '256.0' when 256 is the answer for a fp value.
@@ -220,9 +220,6 @@ namespace MiniZinc {
             sb << "]);\n";
           }
 
-
-
-
           string s = sb.str();
           out->feedRawDataChunk(s.c_str());
           out->feedRawDataChunk(out->_opt.solution_separator_00);
@@ -235,36 +232,36 @@ namespace MiniZinc {
         }
 
         case NL_Solver_Status::UNCERTAIN:{
-          cerr << "NL msg: UNCERTAIN" << endl;
+          DEBUG_MSG("NL msg: UNCERTAIN" << endl);
           out->feedRawDataChunk(out->_opt.unknown_msg_00);
           break;
         }
 
         case NL_Solver_Status::INFEASIBLE:{
-          cerr << "NL msg: INFEASIBLE" << endl;
+          DEBUG_MSG("NL msg: INFEASIBLE" << endl);
           out->feedRawDataChunk(out->_opt.unsatisfiable_msg_00);
           break;
         }
 
         case NL_Solver_Status::UNBOUNDED:{
-          cerr << "NL msg: UNBOUNDED" << endl;
+          DEBUG_MSG("NL msg: UNBOUNDED" << endl);
           out->feedRawDataChunk(out->_opt.unbounded_msg_00);
           break;
         }
 
         case NL_Solver_Status::LIMIT:{
-          cerr << "NL msg: LIMIT" << endl;
+         DEBUG_MSG("NL msg: LIMIT" << endl);
           out->feedRawDataChunk(out->_opt.unknown_msg_00);
           break;
         }
 
         case NL_Solver_Status::INTERRUPTED:{
-          cerr << "NL msg: INTERRUPTED" << endl;
+         DEBUG_MSG("NL msg: INTERRUPTED" << endl);
           out->feedRawDataChunk(out->_opt.unknown_msg_00);
           break;
         }
 
-        default: cerr << "should not happen"; assert(false);
+        default: should_not_happen("parse_sol: switch on status with unknown code: " << sol.status);
       } 
 
       // "Finish" the feed

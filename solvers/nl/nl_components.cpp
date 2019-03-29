@@ -54,8 +54,7 @@ namespace MiniZinc {
             }
             // LB = var = UB. Should not happen
             case NLBound::EQ:{
-                cerr << "Should not happen" << endl;
-                assert(false);
+                should_not_happen("Updating a bound already set to \"equals\". We only allow tightening update.");
             }
         }
     }
@@ -89,8 +88,7 @@ namespace MiniZinc {
             }
             // LB = var = UB. Should not happen
             case NLBound::EQ:{
-                cerr << "Should not happen" << endl;
-                assert(false);
+                should_not_happen("Updating a bound already set to \"equals\". We only allow tightening update.");
             }
         }
     }
@@ -316,15 +314,11 @@ namespace MiniZinc {
             }
 
             case Kind::STRING:{
-                cerr << "Kind::STRING not implemented" << endl;
-                assert(false);
-                break;
+                should_not_happen("NL string token (Kind::STRING) not implemented");
             }
 
             case Kind::FUNCALL:{
-                cerr << "Kind::FUNCALL not implemented" << endl;
-                assert(false);
-                break;
+                should_not_happen("NL function call token (Kind::FUNCALL) not implemented");
             }
 
             case Kind::OP:{
@@ -338,7 +332,7 @@ namespace MiniZinc {
                 break;
             }
 
-            default: assert(false);
+            default: should_not_happen("Unknown token kind: " << kind);
         }
 
         return os;

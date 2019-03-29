@@ -48,8 +48,7 @@ namespace MiniZinc {
               return al;
           }
       }
-      cerr << "Could not read array from expression." << endl;
-      assert(false);
+      should_not_happen("Could not read array from expression.");
   }
 
   /** Create a vector of double from a vector containing Expression being IntLit. */
@@ -96,11 +95,11 @@ namespace MiniZinc {
     string name = get_vname(vd);
     // Discriminate according to the type:
     if(ti.isEnum()){
-      cerr << "Should not happen" << endl;
-      assert(false);
+      should_not_happen("Enum type in the flatzinc");
     }
     else if(ti.isarray()){
-      cerr << "Definition of array " << name << " is not reproduced in nl.";
+      DEBUG_MSG("Definition of array " << name << " is not reproduced in nl.");
+
       // Look for the annotation "output_array"
       for (ExpressionSetIter it= vd.ann().begin(); it != vd.ann().end(); ++it) {
         Call* c = (*it)->dyn_cast<Call>();
@@ -145,7 +144,7 @@ namespace MiniZinc {
     } else {
       // Check if the variable needs to be reported
       bool to_report = vd.ann().contains(constants().ann.output_var);
-      cerr << "'" << name << "' to be reported? " << to_report << " ";
+      DEBUG_MSG("'" << name << "' to be reported? " << to_report << " ");
 
       // variable declaration
       const Type& type          = ti.type();
@@ -176,6 +175,7 @@ namespace MiniZinc {
   void NLFile::add_vdecl_integer(const string& name, const IntSetVal* isv, bool to_report){
     // Check that we do not have naming conflict
     assert(variables.find(name) == variables.end());
+
     // Check the domain.
     NLBound bound;
     if(isv == NULL){
@@ -185,7 +185,7 @@ namespace MiniZinc {
       long long ub = isv->max(0).toInt();
       bound = NLBound::make_bounded(lb, ub);
     } else {
-      cerr << "Should not happen: switch on mzn_opt_only_range_domains" << endl; assert(false);
+      should_not_happen("Range: switch on mzn_opt_only_range_domains" << endl);
     }
     // Create the variable and update the NLFile
     NLVar v = NLVar(name, true, to_report, bound);
@@ -205,7 +205,7 @@ namespace MiniZinc {
       double ub = fsv->max(0).toDouble();
       bound = NLBound::make_bounded(lb, ub);
     } else {
-      cerr << "Should not happen: switch on mzn_opt_only_range_domains" << endl; assert(false);
+      should_not_happen("Range: switch on mzn_opt_only_range_domains" << std::endl);
     }
     // Create the variable and update the NLFile
     NLVar v = NLVar(name, false, to_report, bound);
@@ -292,24 +292,23 @@ namespace MiniZinc {
       else if(id == "int2float"){     int2float(c);       }
 
       // Domain
-      else if(id == consfp.in){       cerr << "Ignore for now: constraint 'float in    ' not implemented"; assert(false); }
-      else if(id == consfp.dom){      cerr << "Ignore for now: constraint 'float dom   ' not implemented"; assert(false); }
+      else if(id == consfp.in){       should_not_happen("Ignore for now: constraint 'float in    ' not implemented"); }
+      else if(id == consfp.dom){      should_not_happen("Ignore for now: constraint 'float dom   ' not implemented"); }
 
       // Grey area
-      else if(id == consint.lt){      cerr << "Should not happen 'int lt'";     assert(false); }
-      else if(id == consint.gt){      cerr << "Should not happen 'int gt'";     assert(false); }
-      else if(id == consint.ge){      cerr << "Should not happen 'int ge'";     assert(false); }
-      else if(id == consint.minus){   cerr << "Should not happen 'int minus'";  assert(false); }
+      else if(id == consint.lt){      should_not_happen("'int lt'");    }
+      else if(id == consint.gt){      should_not_happen("'int gt'");    }
+      else if(id == consint.ge){      should_not_happen("'int ge'");    }
+      else if(id == consint.minus){   should_not_happen("'int minus'"); }
 
-      else if(id == consfp.gt){       cerr << "Should not happen 'float gt'";   assert(false); }
-      else if(id == consfp.ge){       cerr << "Should not happen 'float ge'";   assert(false); }
-      else if(id == consfp.times){    consfp_times(c);    } // Should not happen?
-      else if(id == consfp.mod){      consfp_mod(c);      } // Should not happen?
+      else if(id == consfp.gt){       should_not_happen("float gt'");   }
+      else if(id == consfp.ge){       should_not_happen("float ge'");   }
+      else if(id == consfp.times){    consfp_times(c);                  } // Should not happen?
+      else if(id == consfp.mod){      consfp_mod(c);                    } // Should not happen?
 
       // Not implemented
       else {
-          cerr << "Builtins " << c.id() << " not implemented";
-          assert(false);
+          should_not_happen("Builtins " << c.id() << " not implemented or not recognized.");
       }
   }
 
@@ -1186,7 +1185,7 @@ namespace MiniZinc {
       }
     }
 
-    // --- --- --- Go over the objective abd mark non linear variables
+    // --- --- --- Go over the objective and mark non linear variables
     for(auto const& tok: objective.expression_graph){
         if(tok.is_variable()){
           variables.at(tok.str).is_in_nl_objective = true;
@@ -1200,7 +1199,6 @@ namespace MiniZinc {
 
       // Accumulate jacobian count
       _jacobian_count += v.jacobian_count;
-
 
 
       // First check non linear variables in BOTH objective and constraint.
@@ -1236,8 +1234,7 @@ namespace MiniZinc {
         }
       }
       // Should not happen
-      else { cerr << "Should not happen" << endl; assert(false);}
-
+      else { should_not_happen("Dispatching variables in phase2"); }
     }
 
     // Note:  In the above, we dealt with all 'vname_*' vectors BUT 'vname_larc_all' and 'vname_bv_all'
@@ -1296,6 +1293,18 @@ namespace MiniZinc {
 
 
 
+  // --- --- --- Simple tests
+
+  bool NLFile::has_integer_vars() const{
+    return  ( nlvbi() + nlvci() + nlvoi() + niv() ) > 0;
+  }
+
+  bool NLFile::has_continous_vars() const{
+    return !has_integer_vars();
+  }
+
+
+
   // --- --- --- Counts
 
   /** Jacobian count. */
@@ -1343,7 +1352,7 @@ namespace MiniZinc {
 
 
 
-  /** *** *** *** Printable Interface *** *** *** **/
+  /** *** *** *** Printable *** *** *** **/
   // Note:  * empty line not allowed
   //        * comment only not allowed
   ostream& NLFile::print_on(ostream& os) const{
@@ -1401,128 +1410,6 @@ namespace MiniZinc {
     objective.print_on(os, *this);
     return os;
   }
-
-
-  
-  /** Check expression within a flatzinc call.
-   * Kept as documentation
-   * Can only contain:
-   *    Expression::E_INTLIT
-   *    Expression::E_FLOATLIT
-   *    Expression::E_ID
-   *    Expression::E_ARRAYLIT
-   */
-  /*
-  const Expression* check_expression(const Expression* e) {
-    // Guard
-    if (e==NULL){assert(false);}
-
-    // Dispatch on expression type
-    switch (e->eid()) {
-
-      // --- --- --- Literals
-      case Expression::E_INTLIT: {
-        // cerr << "case " << e->eid() << " not implemented." << endl;
-        // assert(false);
-        return e;
-      } break;
-
-      case Expression::E_FLOATLIT: {
-        // cerr << "case " << e->eid() << " not implemented." << endl;
-        // assert(false);
-        return e;
-      } break;
-
-      case Expression::E_SETLIT: {
-        cerr << "Set literal should not happen (use -Glinear)." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_BOOLLIT: {
-        cerr << "Bool literal should not happen (use -Glinear)." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_STRINGLIT: {
-        cerr << "String literal should not happen." << endl;
-        assert(false);
-      } break;
-
-      /// --- --- --- Expressions
-
-      case Expression::E_ID: { // Identifier
-        // cerr << "case " << e->eid() << " not implemented." << endl;
-        // assert(false);
-        return e;
-      } break;
-
-      case Expression::E_TIID: { // Type-inst identifier
-        cerr << "Type identifier should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_ANON: {
-        cerr << "Anonymous variable should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_ARRAYLIT: {
-        // cerr << "case " << e->eid() << " not implemented." << endl;
-        // assert(false);
-        return e;
-      } break;
-
-      case Expression::E_ARRAYACCESS: {
-        cerr << "Array access should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_COMP:{ // Comprehension
-        cerr << "Comprehension should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_ITE:{ // If-then-else expression
-        cerr << "If then else should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_BINOP: {
-        cerr << "Binary Op should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_UNOP: {
-        cerr << "Unary Op should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-
-      case Expression::E_CALL: {
-        cerr << "Call should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-
-      case Expression::E_VARDECL: {
-        cerr << "Var Decl should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-
-      case Expression::E_LET: {
-        cerr << "Let should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-
-      case Expression::E_TI: {
-        cerr << "TI should not happen in flatzinc call." << endl;
-        assert(false);
-      } break;
-    } // END OF SWITCH
-    return NULL;
-  } // END OF FUN
-  */
 
 }
 

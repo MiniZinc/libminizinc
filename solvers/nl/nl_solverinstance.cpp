@@ -85,8 +85,7 @@ namespace MiniZinc {
   }
 
   bool NL_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv) {
-   //  cerr << "NL_SolverFactory::processOption TODO: does not process any option for now" << endl;
-   //  assert(false);
+    DEBUG_MSG("NL_SolverFactory::processOption TODO: does not process any option for now" << endl);
     return true;
   }
 
@@ -114,7 +113,9 @@ namespace MiniZinc {
 
   SolverInstance::Status
   NLSolverInstance::solve(void) {
-    cerr << "Launching NLSolverInstance::solve" << endl;
+
+    DEBUG_MSG("Launching NLSolverInstance::solve" << endl);  
+
     // --- --- --- 1) Check options
     // --- --- --- 2) Prepare for the translation
     // --- --- --- 3) Testing of the AST
@@ -145,35 +146,49 @@ namespace MiniZinc {
       }
     }
 
-    // Analyse the goal
-    analyse(_fzn->solveItem());
 
-    // Phase 2
-    nl_file.phase_2();
-
-
-
-    // --- --- --- Write the file
-    string file_mzn = _env.envi().orig_model->filepath().str();
-    string file_sub = file_mzn.substr(0,file_mzn.find_last_of('.'));
-    string file_nl  = file_sub+".nl";
-    string file_sol = file_sub+".sol";
+    // --- --- --- Prepare the files
     std::ofstream outfile(file_nl);
     outfile.precision(numeric_limits<double>::digits10 + 2);
-    nl_file.print_on(outfile);
+
+    // Use to talk back to minizinc
+    auto* out = getSolns2Out();
+
+    // Manage status
+    int exitStatus = -1;
+
+    // All the NL iperations in one try/catch
+    try {
+
+      // Analyse the goal
+      analyse(_fzn->solveItem());
+
+      // Phase 2
+      nl_file.phase_2();
+
+      // Print to the files
+      nl_file.print_on(outfile);
+
+      // --- --- --- Call the solver
+      NLSolns2Out s2o = NLSolns2Out(out, nl_file);
+      vector<string> cmd_line;
+      cmd_line.push_back("ipopt");
+      cmd_line.push_back(file_nl);
+      cmd_line.push_back("-AMPL");
+      Process<NLSolns2Out> proc(cmd_line, &s2o, 0, true);
+      exitStatus = proc.run();
+
+      // Parse the result
+      s2o.parse_sol(file_sol);
+
+    } catch (const NLException e){
+      out->getLog() << e.what();
+      exitStatus = -2;
+    }
+
     outfile.close();
 
-    // --- --- --- Call the solver
-    auto* out = getSolns2Out();
-    NLSolns2Out s2o = NLSolns2Out(out, nl_file);
-    vector<string> cmd_line;
-    cmd_line.push_back("ipopt");
-    cmd_line.push_back(file_nl);
-    cmd_line.push_back("-AMPL");
-    Process<NLSolns2Out> proc(cmd_line, &s2o, 0, true);
-    int exitStatus = proc.run();
 
-    s2o.parse_sol(file_sol);
     return exitStatus == 0 ? out->status : Status::ERROR;
   }
 
@@ -196,42 +211,42 @@ namespace MiniZinc {
     switch (i->iid()) {
 
       case Item::II_INC: {
-        cerr << "Should not happen. (include \"" << i->cast<IncludeI>()->f() << "\")" << endl;
-        assert(false);
+        should_not_happen("include \"" << i->cast<IncludeI>()->f() << "\")");
       } break;
 
       // Case of the variable declaration.
       // Because it is a variable declaration, the expression associated to the item is necessary a VarDecl.
       // From the VarDecl, we can obtain the type and the RHS expression. Use this to analyse further.
       case Item::II_VD: {
-        cerr << "II_VD: Variable Declaration. [";
+        DEBUG_MSG("II_VD: Variable Declaration. [");
+
         const VarDecl& vd = *i->cast<VarDeclI>()->e();
         const TypeInst &ti        = *vd.ti()->cast<TypeInst>();
         const Expression &rhs     = *vd.e();
         nl_file.add_vdecl(vd, ti, rhs);
-        cerr << "]OK." << endl;
+
+        DEBUG_MSG("]OK." << endl);
       } break;
 
       case Item::II_ASN:{
-        cerr << "Should not happen." << endl;
-        assert(false);
+        should_not_happen("item II_ASN should not be present in flatzinc.");
       } break;
 
       // Case of the constraint.
       // Constraint are expressed through builtin calls.
       // Hence, the expression associated to the item must be a E_CALL.
       case Item::II_CON: {
-        cerr << "II_CON: Constraint. [";
+        DEBUG_MSG("II_CON: Constraint. [");
         Expression* e = i->cast<ConstraintI>()->e();
         if(e->eid() == Expression::E_CALL){
           const Call& c = *e->cast<Call>();
-          cerr << c.id() << " ";
+          DEBUG_MSG(c.id() << " ");
           nl_file.analyse_constraint(c);
         } else {
-          cerr << "Contraint is not a builtin call." << endl;
+          DEBUG_MSG("Contraint is not a builtin call." << endl);
           assert(false);
         }
-        cerr << "]OK." << endl;
+        DEBUG_MSG("]OK." << endl);
       } break;
 
       // Case of the 'solve' directive
@@ -241,12 +256,12 @@ namespace MiniZinc {
       } break;
 
       case Item::II_OUT: {
-        cerr << "Should not happen." << endl;
-        assert(false);
+        should_not_happen("Item II_OUT should not be present in flatzinc.");
       } break;
 
       case Item::II_FUN: {
-        cerr << "'FUN' item are ignored." << endl;
+        // TODO
+        DEBUG_MSG("'FUN' item are ignored." << endl);
       } break;
     }// END OF SWITCH
   }

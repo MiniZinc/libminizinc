@@ -14,7 +14,6 @@
 #include <minizinc/astvec.hh>
 #include <minizinc/ast.hh>
 
-#include <minizinc/solvers/nl/nl_printable.hh>
 #include <minizinc/solvers/nl/nl_components.hh>
 
 using namespace std;
@@ -486,6 +485,16 @@ namespace MiniZinc {
 
         /** Mapping variable name -> variable index */
         map<string, int> variable_indexes={};
+
+
+
+        // --- --- --- Simple tests
+
+        bool has_integer_vars() const;
+
+        bool has_continous_vars() const;
+
+
 
         // --- --- --- Variables  counts
         

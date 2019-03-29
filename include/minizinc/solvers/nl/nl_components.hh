@@ -1,12 +1,13 @@
 #ifndef __MINIZINC_NL_COMPONENTS_HH__
 #define __MINIZINC_NL_COMPONENTS_HH__
 
-#include <assert.h>
+//#include <assert.h>
 
-#include <string>
 #include <vector>
-
-#include <minizinc/solvers/nl/nl_printable.hh>
+#include <string>
+#include <sstream>
+#include <iostream>
+#include <exception>
 
 using namespace std;
 
@@ -31,6 +32,88 @@ Segment are identified by a prefix, which should be one of (taken from table 13 
 
 
 namespace MiniZinc {
+
+
+    // --- --- --- Tooling
+
+
+    /** Exception when translating
+     *  Code mostly taken from https://www.softwariness.com/articles/assertions-in-cpp/
+     */
+    class NLException: public exception {
+
+        public:
+
+            // --- --- --- Fields
+            const char* expression;
+            const char* file;
+            int         line;
+            string      message;
+            string      report;
+
+            /** Exception constructor. Use with the macro assert/should_not_happen.
+             * If not, WARNING: stream must be a std::ostringstream&
+             * We only use a ostreamé so we can use the standard "<<" operator, which is returning a ostream&
+             */
+            NLException(const char* expression, const char* file, int line, ostream& stream):
+                expression(expression), file(file), line(line) {
+                message = static_cast<std::ostringstream&>(stream).str();
+                std::ostringstream outputStream;
+
+                if(expression==NULL){
+                    outputStream << "Something should not have happen in file '" << file << "' line " << line << ". Message:" << endl;
+                    if (!message.empty()){ outputStream  << message << endl; }
+                    else { outputStream << "No message provided..." << endl;}
+                } else {
+                    string expressionString = expression;
+                    if (expressionString == "false" || expressionString == "0" || expressionString == "FALSE"){
+                        outputStream << "Unreachable code assertion";
+                    } else {
+                        outputStream << "Assertion '" << expression << "'";
+                    }
+                    outputStream << " failed in file '" << file << "' line " << line << endl;
+
+                }
+                outputStream << "Note: the NL component is still in development!" << endl;
+                report = outputStream.str();
+            }
+            
+            /** Exception interface */
+            virtual const char* what() const noexcept {
+                return report.c_str();
+            }
+ 
+            ~NLException() noexcept = default;
+    };
+
+    #ifdef assert
+        #undef assert
+    #endif
+
+    
+
+    /** Should not happen macro */
+    #define should_not_happen(MESSAGE) do{ throw NLException(NULL, __FILE__, __LINE__, (ostringstream() << MESSAGE)); }while(false)
+
+    /* CMake febug build flag: double negation... because... ? */
+    #ifndef NDEBUG
+    #define DEBUG_MSG(STR) do { std::cerr << STR; } while( false )
+    #define assert(EXPRESSION) do{ if(!(EXPRESSION)) { throw NLException(#EXPRESSION, __FILE__, __LINE__, (ostringstream() << "")); } }while(false)
+    #else
+    #define DEBUG_MSG(STR) do { } while ( false )
+    #define assert(EXPRESSION) do { } while ( false )
+    #endif
+
+
+
+    // --- --- --- Components
+
+
+
+    // Declaration
+    class NLFile;
+
+
 
     /** A Bound.
      *  A bound can represent various constraint on a variable or a constraint.
@@ -176,7 +259,7 @@ namespace MiniZinc {
      *  A token represent an operator or an operand.
      *  See the definition of the various enum.
      */
-    class NLToken: public Printable {
+    class NLToken {
         public:
         
         /** Kind of token. */
@@ -300,9 +383,9 @@ namespace MiniZinc {
 
         bool is_constant() const;
 
-        /* *** *** *** Printable interface *** *** *** */
+        /* *** *** *** Printable *** *** *** */
 
-        ostream& print_on( ostream& o, const NLFile& nl_file) const override;
+        ostream& print_on( ostream& o, const NLFile& nl_file) const;
 
     };
 
@@ -312,7 +395,7 @@ namespace MiniZinc {
      *  Contains both a linear and a non linear part.
      *  We do not handle network constraints.
      */
-    class NLAlgCons: public Printable {
+    class NLAlgCons {
         public:
 
         /** Constraint name, also acts as identifier. */
@@ -345,9 +428,9 @@ namespace MiniZinc {
         bool is_linear() const;
 
 
-        /* *** *** *** Printable interface *** *** *** */
+        /* *** *** *** Printable *** *** *** */
 
-        ostream& print_on( ostream& o, const NLFile& nl_file) const override;
+        ostream& print_on( ostream& o, const NLFile& nl_file) const;
 
     };
 
@@ -358,7 +441,7 @@ namespace MiniZinc {
      *  Logical constraint stands on their own and do not need any identifier.
      *  However, for consistency sake, we still keep their name.
      */
-    class NLLogicalCons: public Printable {
+    class NLLogicalCons {
         public:
 
         /** Constraint name, also acts as identifier. */
@@ -376,23 +459,21 @@ namespace MiniZinc {
         /* *** *** *** Constructor *** *** *** */
         NLLogicalCons(int idx):index(idx){}
 
-        /* *** *** *** Printable interface *** *** *** */
+        /* *** *** *** Printable *** *** *** */
 
-        ostream& print_on( ostream& o, const NLFile& nl_file) const override;
+        ostream& print_on( ostream& o, const NLFile& nl_file) const;
 
     };
 
 
-    /** The header.
-     * 
-     */
-    class NLHeader: public Printable{
+    /** The header. */
+    class NLHeader {
 
         public:
 
-        /* *** *** *** Printable interface *** *** *** */
+        /* *** *** *** Printable *** *** *** */
 
-        ostream& print_on( ostream& o, const NLFile& nl_file) const override;
+        ostream& print_on( ostream& o, const NLFile& nl_file) const;
 
     };
 
@@ -404,7 +485,7 @@ namespace MiniZinc {
     * Note that in NL, we do not have a "satisfy" objective, only a minimize or maximize one.
     * We translate the "satisfy" with "minimize n0".
     */
-    class NLObjective: public Printable {
+    class NLObjective {
         public:
             enum MinMax{
                 UNDEF       = -2,
@@ -439,8 +520,8 @@ namespace MiniZinc {
         /* *** *** *** Constructor *** *** *** */
         NLObjective() = default;
 
-        /* *** *** *** Printable Interface *** *** *** */
-        ostream& print_on( ostream& o, const NLFile& nl_file ) const override;
+        /* *** *** *** Printable *** *** *** */
+        ostream& print_on( ostream& o, const NLFile& nl_file ) const;
     };
 
 
