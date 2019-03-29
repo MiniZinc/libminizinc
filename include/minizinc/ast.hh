@@ -258,12 +258,12 @@ namespace MiniZinc {
    */
   class Expression : public ASTNode {
   protected:
+    /// The %MiniZinc type of the expression
+    Type _type;
     /// The annotations
     Annotation _ann;
     /// The location of the expression
     Location _loc;
-    /// The %MiniZinc type of the expression
-    Type _type;
     /// The hash value of the expression
     size_t _hash;
   public:
@@ -336,7 +336,7 @@ namespace MiniZinc {
 
     /// Constructor
     Expression(const Location& loc, const ExpressionId& eid, const Type& t)
-      : ASTNode(eid), _loc(loc), _type(t) {}
+      : ASTNode(eid), _type(t), _loc(loc) {}
 
   public:
     IntVal unboxedIntToIntVal(void) const {
