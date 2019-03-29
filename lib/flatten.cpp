@@ -1492,6 +1492,8 @@ namespace MiniZinc {
       if (ident->decl()) {
         VarDecl* e_vd = follow_id_to_decl(ident)->cast<VarDecl>();
         e = e_vd->id();
+        addCtxAnn(e_vd, ctx.b);
+        addCtxAnn(ident->decl(), ctx.b);
       }
     }
     if (ctx.neg) {
