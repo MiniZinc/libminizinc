@@ -82,6 +82,9 @@ class MIP_scip_wrapper : public MIP_wrapper {
     }
     virtual SCIP_RETCODE doAddVars_SCIP(size_t n, double *obj, double *lb, double *ub,
       VarType *vt, std::string *names);
+    virtual void setVarBounds( int iVar, double lb, double ub );
+    virtual void setVarLB( int iVar, double lb );
+    virtual void setVarUB( int iVar, double ub );
 
     /// adding a linear constraint
     virtual void addRow(int nnz, int *rmatind, double* rmatval,

@@ -232,6 +232,28 @@ SCIP_RETCODE MIP_scip_wrapper::addRow_SCIP
 //   wrap_assert( !retcode,  "Failed to add constraint." );
 }
 
+void MIP_scip_wrapper::setVarBounds(int iVar, double lb, double ub)
+{
+  wrap_assert( lb<=ub ? SCIP_OKAY : SCIP_ERROR,
+               "scip interface: setVarBounds: lb>ub" );
+  setVarLB(iVar, lb);
+  setVarUB(iVar, ub);
+}
+
+void MIP_scip_wrapper::setVarLB(int iVar, double lb)
+{
+  auto res = SCIPchgVarLbGlobal(scip,scipVars[iVar],lb);
+  wrap_assert( res,  "scip interface: failed to set var lb." );
+}
+
+void MIP_scip_wrapper::setVarUB(int iVar, double ub)
+{
+  auto res = SCIPchgVarUbGlobal(scip,scipVars[iVar],ub);
+  wrap_assert( res,  "scip interface: failed to set var ub." );
+}
+
+
+
 void MIP_scip_wrapper::addIndicatorConstraint(
     int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
     MIP_wrapper::LinConType sense, double rhs, string rowName) {
