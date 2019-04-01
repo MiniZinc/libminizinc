@@ -768,8 +768,9 @@ namespace MiniZinc {
       vector<double>  coeffs  = {};
       vector<string>  vars    = {};
 
-      // Check that x is not y
-      if(x.str!=y.str){
+      // If x is a variable (must be different from y), give it '0' for the linear part
+      if(x.is_variable()){
+        assert(x.str!=y.str);
         coeffs.push_back(0);
         vars.push_back(x.str);
       }
