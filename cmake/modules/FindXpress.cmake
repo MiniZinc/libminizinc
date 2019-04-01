@@ -8,7 +8,7 @@
 
 #TODO: Check default installation locations
 find_path(XPRESS_INCLUDE xprs.h
-          HINTS ${XPRESS_ROOT} ENV XPRESS_ROOT
+          HINTS ${XPRESS_ROOT} ENV XPRESS_ROOT ENV XPRESS_HOME
           PATH /opt/xpressmp ENV XPRESS_DIR
           PATH_SUFFIXES include)
 
@@ -16,7 +16,7 @@ foreach(XPRESS_LIB xprb xprs)
   set(XPRESS_LIB_LOC "XPRESS_LIB_LOC-NOTFOUND")
   find_library(XPRESS_LIB_LOC NAMES ${XPRESS_LIB} lib${XPRESS_LIB}
                HINTS ${XPRESS_ROOT} ENV XPRESS_ROOT
-               PATH /opt/xpressmp ENV XPRESS_DIR
+               PATH /opt/xpressmp ENV XPRESS_DIR ENV XPRESS_HOME
                PATH_SUFFIXES lib)
   if("${XPRESS_LIB_LOC}" STREQUAL "XPRESS_LIB_LOC-NOTFOUND")
 #    message(STATUS "FICO Xpres: Could not find library `${XPRESS_LIB}`")
