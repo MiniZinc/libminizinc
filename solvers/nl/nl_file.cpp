@@ -507,7 +507,7 @@ namespace MiniZinc {
         v.bound.update_eq(value);
       }
     } else if(x.str != y.str){ // both must be variables anyway.
-      assert(x.is_variable());
+      assert(x.is_variable() && y.is_variable());
       // Create the Algebraic Constraint and set the data
       NLAlgCons cons;
 
@@ -547,7 +547,7 @@ namespace MiniZinc {
         v.bound.update_ub(value);
       }
     } else if(x.str != y.str){ // both must be variables anyway.
-      assert(x.is_variable());
+      assert(x.is_variable() && y.is_variable());
 
       // Create the Algebraic Constraint and set the data
       NLAlgCons cons;
@@ -608,7 +608,7 @@ namespace MiniZinc {
       NLBound bound = NLBound::make_equal(z.numeric_value);
       cons.range = bound;
     } else {
-      // Else, use a constraint bound = 0 and use the jacobian to substract vres from the result.
+      // Else, use a constraint bound = 0 and use the jacobian to substract z from the result.
       // Create the bound of the constraint to 0
       NLBound bound = NLBound::make_equal(0);
       cons.range = bound;
@@ -616,13 +616,15 @@ namespace MiniZinc {
       vector<double>  coeffs  = {};
       vector<string>  vars    = {};
 
-      // Check that x is not y or z
-      if(x.str!=y.str && x.str!=y.str){
+      // If x is a variable different from y (and must be different from z), give it 0 for the linear part
+      if(x.is_variable() && x.str!=y.str){
+        assert(x.str!=z.str);
         coeffs.push_back(0);
         vars.push_back(x.str);
       }
-      // Check that y is not z
-      if(y.str!=z.str){
+      // Same as above for y.
+      if(y.is_variable()){
+        assert(y.str!=z.str);
         coeffs.push_back(0);
         vars.push_back(y.str);
       }
@@ -667,13 +669,15 @@ namespace MiniZinc {
       vector<double>  coeffs  = {};
       vector<string>  vars    = {};
 
-      // Check that x is not y or z
-      if(x.str!=y.str && x.str!=y.str){
+      // If x is a variable different from y (and must be different from z), give it 0 for the linear part
+      if(x.is_variable() && x.str!=y.str){
+        assert(x.str!=z.str);
         coeffs.push_back(0);
         vars.push_back(x.str);
       }
-      // Check that y is not z
-      if(y.str!=z.str){
+      // Same as above for y.
+      if(y.is_variable()){
+        assert(y.str!=z.str);
         coeffs.push_back(0);
         vars.push_back(y.str);
       }
@@ -710,7 +714,7 @@ namespace MiniZinc {
       NLBound bound = NLBound::make_equal(y.numeric_value);
       cons.range = bound;
     } else {
-      // Else, use a constraint bound = 0 and use the jacobian to substract vres from the result.
+      // Else, use a constraint bound = 0 and use the jacobian to substract y from the result.
       // Create the bound of the constraint to 0
       NLBound bound = NLBound::make_equal(0);
       cons.range = bound;
@@ -718,11 +722,13 @@ namespace MiniZinc {
       vector<double>  coeffs  = {};
       vector<string>  vars    = {};
 
-      // Check that x is not y
-      if(x.str!=y.str){
+      // If x is a variable (must be different from y), give it '0' for the linear part
+      if(x.is_variable()){
+        assert(x.str!=y.str);
         coeffs.push_back(0);
         vars.push_back(x.str);
       }
+
       // z is a variable whose value is substracted from the result
       coeffs.push_back(-1);
       vars.push_back(y.str);
