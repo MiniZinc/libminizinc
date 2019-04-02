@@ -66,31 +66,24 @@ using namespace MiniZinc;
 
 SolverInitialiser::SolverInitialiser(void) {
   #ifdef HAS_GUROBI
-  #include <minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh>
   Gurobi_SolverFactoryInitialiser _gurobi_init;
   #endif
   #ifdef HAS_CPLEX
-  #include <minizinc/solvers/MIP/MIP_cplex_solverfactory.hh>
   static Cplex_SolverFactoryInitialiser _cplex_init;
   #endif
   #ifdef HAS_OSICBC
-  #include <minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh>
   static OSICBC_SolverFactoryInitialiser _osicbc_init;
   #endif
   #ifdef HAS_XPRESS
-  #include <minizinc/solvers/MIP/MIP_xpress_solverfactory.hh>
   static Xpress_SolverFactoryInitialiser _xpress_init;
   #endif
   #ifdef HAS_GECODE
-  #include <minizinc/solvers/gecode_solverfactory.hh>
   static Gecode_SolverFactoryInitialiser _gecode_init;
   #endif
   #ifdef HAS_GEAS
-  #include <minizinc/solvers/geas_solverfactory.hh>
-    static Geas_SolverFactoryInitialiser _geas_init;
+  static Geas_SolverFactoryInitialiser _geas_init;
   #endif
   #ifdef HAS_SCIP
-  #include <minizinc/solvers/MIP/MIP_scip_solverfactory.hh>
   static SCIP_SolverFactoryInitialiser _scip_init;
   #endif
   static FZN_SolverFactoryInitialiser _fzn_init;
