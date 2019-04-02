@@ -838,7 +838,7 @@ namespace MiniZinc {
         throw TypeError(env, e->loc(), "missing builtin "+oss.str());
       c->type(fi->rtype(env, args, false));
       c->decl(fi);
-      return c;
+      e = c;
     }
     if (e->type().dim()==funarg_t.dim() && (funarg_t.bt()==Type::BT_BOT || funarg_t.bt()==Type::BT_TOP || e->type().bt()==funarg_t.bt() || e->type().bt()==Type::BT_BOT))
       return e;
