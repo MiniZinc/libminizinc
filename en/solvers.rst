@@ -33,6 +33,37 @@ or separated flattening+solving - sometimes more stable but slower due to file I
   
   $ minizinc --solver coin-bc -c model.mzn data.dzn && minizinc --solver cbc -v -s -a model.fzn | minizinc --ozn-file model.ozn
 
+Installation of MIP Backends
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+SCIP (as of 6.0.1.0): you can also install into another location as the default ``make install``,
+but then use minizinc's ``-DCMAKE_PREFIX_PATH=...`` to let CMake find that location.
+
+.. code-block:: bash
+  $ tar xvfz scipoptsuite-6.0.1.tgz
+  $ cd scipoptsuite-6.0.1
+  $ cd soplex
+  $ mkdir build
+  $ cd build
+  $ cmake ..
+  $ make -j5
+  $ cd ../scip
+  $ mdkir build
+  $ cd build
+  $ cmake .. -DSOPLEX_DIR=~/Downloads/Software/scipoptsuite-6.0.1/soplex/build
+  $ make -j5
+  $ sudo make install                    ## Now MZN should find it
+
+COIN-OR CBC (as of 2.10/stable. Prefer stable or even trunk):
+
+.. code-block:: bash
+  $ svn checkout https://projects.coin-or.org/svn/Cbc/stable/2.10/ Cbc-stable
+  $ cd Cbc-stable
+  $ ./configure <--enable-cbc-parallel>
+  $ make && make install
+  $ export CBC_HOME=$(pwd)               ## put this into .profile with $(pwd) expanded
+
+
 Useful Flattening Parameters
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
