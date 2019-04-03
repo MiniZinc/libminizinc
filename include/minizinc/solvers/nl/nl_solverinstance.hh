@@ -20,6 +20,10 @@
 namespace MiniZinc {
 
   class NLSolverOptions : public SolverInstanceBase::Options {
+  public:
+    std::string nl_solver;
+    std::vector<std::string> nl_flags;
+    std::vector<MZNFZNSolverFlag> nl_solver_flags;
   };
 
   class NLSolverInstance : public SolverInstanceBase {

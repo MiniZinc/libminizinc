@@ -341,6 +341,7 @@ namespace MiniZinc { namespace FileUtils {
     char* tmpfile = strndup(_name.c_str(), _name.size());
     _tmpfile_desc = mkstemps(tmpfile, ext.size());
     if (_tmpfile_desc == -1) {
+      ::free(tmpfile);
       throw InternalError("Error occurred when creating temporary file");
     }
     _name = std::string(tmpfile);
@@ -355,7 +356,27 @@ namespace MiniZinc { namespace FileUtils {
       close(_tmpfile_desc);
 #endif
   }
+
+  TmpDir::TmpDir(void) {
+#ifdef _WIN32
+    assert(false);
+#else
+    _name = "/tmp/mzndirXXXXXX";
+    char* tmpfile = strndup(_name.c_str(), _name.size());
+    
+    if (mkdtemp(tmpfile) == NULL) {
+      ::free(tmpfile);
+      throw InternalError("Error occurred when creating temporary directory");
+    }
+    _name = std::string(tmpfile);
+    ::free(tmpfile);
+#endif
+  }
   
+  TmpDir::~TmpDir(void) {
+    std::cerr << "TODO: remove directory " << _name << "\n";
+  }
+
   std::vector<std::string> parseCmdLine(const std::string& s) {
     // Break the string up at whitespace, except inside quotes, but ignore escaped quotes
     std::vector<std::string> c;

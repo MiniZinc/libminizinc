@@ -66,6 +66,18 @@ namespace MiniZinc { namespace FileUtils {
     std::string name(void) const { return _name; }
   };
 
+  /// Create a temporary directory
+  class TmpDir {
+  private:
+    std::string _name;
+  public:
+    // Constructor for difrectory
+    TmpDir(void);
+    /// Destructor (removes directory)
+    ~TmpDir(void);
+    std::string name(void) const { return _name; }
+  };
+
   /// Inflate string \a s
   void inflateString(std::string& s);
   /// Deflate string \a s

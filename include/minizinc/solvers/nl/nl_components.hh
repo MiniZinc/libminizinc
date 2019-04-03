@@ -93,12 +93,12 @@ namespace MiniZinc {
     
 
     /** Should not happen macro */
-    #define should_not_happen(MESSAGE) do{ throw NLException(NULL, __FILE__, __LINE__, (ostringstream() << MESSAGE)); }while(false)
+#define should_not_happen(MESSAGE) do{ ostringstream oss; oss << MESSAGE; throw NLException(NULL, __FILE__, __LINE__, oss); }while(false)
 
     /* CMake febug build flag: double negation... because... ? */
     #ifndef NDEBUG
     #define DEBUG_MSG(STR) do { std::cerr << STR; } while( false )
-    #define assert(EXPRESSION) do{ if(!(EXPRESSION)) { throw NLException(#EXPRESSION, __FILE__, __LINE__, (ostringstream() << "")); } }while(false)
+    #define assert(EXPRESSION) do{ if(!(EXPRESSION)) { ostringstream oss; throw NLException(#EXPRESSION, __FILE__, __LINE__, oss); } }while(false)
     #else
     #define DEBUG_MSG(STR) do { } while ( false )
     #define assert(EXPRESSION) do { } while ( false )

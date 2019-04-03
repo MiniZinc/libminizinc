@@ -18,6 +18,7 @@
 #include <fstream>
 
 #include <minizinc/process.hh>
+#include <minizinc/file_utils.hh>
 
 #include <minizinc/solvers/nl/nl_solverinstance.hh>
 #include <minizinc/solvers/nl/nl_file.hh>
@@ -62,16 +63,11 @@ namespace MiniZinc {
     os
     << "MZN-NL plugin options: NL_SolverFactory::printHelp TODO" << std::endl
     // << "  --nl-cmd , --nonlinear-cmd <exe>\n     the backend solver filename.\n"
-    // << "  -b, --backend, --solver-backend <be>\n     the backend codename. Currently passed to the solver.\n"
-    // << "  --fzn-flags <options>, --flatzinc-flags <options>\n     Specify option to be passed to the FlatZinc interpreter.\n"
-    // << "  --fzn-flag <option>, --flatzinc-flag <option>\n     As above, but for a single option string that need to be quoted in a shell.\n"
-    // << "  -n <n>, --num-solutions <n>\n     An upper bound on the number of solutions to output. The default should be 1.\n"
+    // << "  --nl-flags <options>\n     Specify option to be passed to the NL solver.\n"
+    // << "  --nl-flag <option>\n     As above, but for a single option string that need to be quoted in a shell.\n"
     // << "  -t <ms>, --solver-time-limit <ms>, --fzn-time-limit <ms>\n     Set time limit (in milliseconds) for solving.\n"
-    // << "  --fzn-sigint\n     Send SIGINT instead of SIGTERM.\n"
-    // << "  -a, --all, --all-solns, --all-solutions\n     Print all solutions.\n"
+    // << "  --nl-sigint\n     Send SIGINT instead of SIGTERM.\n"
     // << "  -p <n>, --parallel <n>\n     Use <n> threads during search. The default is solver-dependent.\n"
-    // << "  -k, --keep-files\n     For compatibility only: to produce .ozn and .fzn, use mzn2fzn\n"
-    //                        "     or <this_exe> --fzn ..., --ozn ...\n"
     // << "  -r <n>, --seed <n>, --random-seed <n>\n     For compatibility only: use solver flags instead.\n"
     ;
   }
@@ -85,7 +81,25 @@ namespace MiniZinc {
   }
 
   bool NL_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv) {
-    DEBUG_MSG("NL_SolverFactory::processOption TODO: does not process any option for now" << endl);
+    NLSolverOptions& _opt = static_cast<NLSolverOptions&>(*opt);
+    CLOParser cop( i, argv );
+    string buffer;
+    int nn=-1;
+    if ( cop.getOption( "--nl-cmd --nonlinear-cmd", &buffer) ) {
+      _opt.nl_solver = buffer;
+    } else {
+      for (auto& fznf : _opt.nl_solver_flags) {
+        if (fznf.t==MZNFZNSolverFlag::FT_ARG && cop.getOption(fznf.n.c_str(), &buffer)) {
+          _opt.nl_flags.push_back(fznf.n);
+          _opt.nl_flags.push_back(buffer);
+          return true;
+        } else if (fznf.t==MZNFZNSolverFlag::FT_NOARG && cop.getOption(fznf.n.c_str())) {
+          _opt.nl_flags.push_back(fznf.n);
+          return true;
+        }
+      }
+      return false;
+    }
     return true;
   }
 
@@ -96,12 +110,12 @@ namespace MiniZinc {
   NLSolverInstance::NLSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* options)
     : SolverInstanceBase(env, log, options), _fzn(env.flat()), _ozn(env.output()) {
       
-      file_mzn = _env.envi().orig_model->filepath().str();
+      file_mzn = _env.envi().orig_model ? _env.envi().orig_model->filepath().str() : _env.envi().model->filepath().str();
       file_sub = file_mzn.substr(0,file_mzn.find_last_of('.'));
       file_nl  = file_sub+".nl";
       file_sol = file_sub+".sol";
 
-      nl_file = NLFile(env.envi().orig_model->filename().str());
+      nl_file = NLFile(env.envi().orig_model ? env.envi().orig_model->filename().str() : env.envi().model->filename().str());
 
     }
 
@@ -113,7 +127,12 @@ namespace MiniZinc {
 
   SolverInstance::Status
   NLSolverInstance::solve(void) {
-
+    
+    FileUtils::TmpDir tmpdir;
+    file_nl = tmpdir.name()+"/model.nl";
+    file_sol = tmpdir.name()+"/model.sol";
+    
+    NLSolverOptions& opt = static_cast<NLSolverOptions&>(*_options);
     DEBUG_MSG("Launching NLSolverInstance::solve" << endl);  
 
     // --- --- --- 1) Check options
@@ -121,14 +140,6 @@ namespace MiniZinc {
     // --- --- --- 3) Testing of the AST
 
     // Note: copy the structure of the pretty printer
-
-    // Analyse the function declarations: should not happen ?
-    for (FunctionIterator it = _fzn->begin_functions(); it != _fzn->end_functions(); ++it) {
-      if(!it->removed()) {
-        Item& item = *it;
-        analyse(&item);
-      }
-    }
 
     // Analyse the variable declarations
     for (VarDeclIterator it = _fzn->begin_vardecls(); it != _fzn->end_vardecls(); ++it) {
@@ -172,7 +183,10 @@ namespace MiniZinc {
       // --- --- --- Call the solver
       NLSolns2Out s2o = NLSolns2Out(out, nl_file);
       vector<string> cmd_line;
-      cmd_line.push_back("ipopt");
+      if (opt.nl_solver.empty()) {
+        throw InternalError("No NL solver specified");
+      }
+      cmd_line.push_back(opt.nl_solver);
       cmd_line.push_back(file_nl);
       cmd_line.push_back("-AMPL");
       Process<NLSolns2Out> proc(cmd_line, &s2o, 0, true);
