@@ -321,9 +321,15 @@ function var int: min(array[$U] of var int: x) =
 
 /** @group builtins.arithmetic Return maximum of \a x and \a y */
 function var float: max(var float: x, var float: y) :: promise_total =
+  if has_bounds(x) /\ has_bounds(y) then
+  let { var max(lb(x),lb(y))..max(ub(x),ub(y)): m ::is_defined_var;
+        constraint float_max(x,y,m) ::defines_var(m);
+  } in m
+  else
   let { var float: m ::is_defined_var;
         constraint float_max(x,y,m) ::defines_var(m);
-  } in m;
+  } in m
+  endif;
 
 /** @group builtins.arithmetic Return maximum of elements in array \a x */
 function var float: max(array[$U] of var float: x) =
@@ -334,9 +340,15 @@ function var float: max(array[$U] of var float: x) =
 
 /** @group builtins.arithmetic Return minimum of \a x and \a y */
 function var float: min(var float: x, var float: y) :: promise_total =
+  if has_bounds(x) /\ has_bounds(y) then
+  let { var min(lb(x),lb(y))..min(ub(x),ub(y)): m ::is_defined_var;
+        constraint float_min(x,y,m) ::defines_var(m);
+  } in m
+  else
   let { var float: m ::is_defined_var;
         constraint float_min(x,y,m) ::defines_var(m);
-  } in m;
+  } in m
+  endif;
 
 /** @group builtins.arithmetic Return minimum of elements in array \a x */
 function var float: min(array[$U] of var float: x) =
