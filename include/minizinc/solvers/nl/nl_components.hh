@@ -97,7 +97,7 @@ namespace MiniZinc {
 
     /* CMake febug build flag: double negation... because... ? */
     #ifndef NDEBUG
-    #define DEBUG_MSG(STR) do { std::cerr << STR; } while( false )
+    #define DEBUG_MSG(STR) do { std::cerr << "%[NL DEBUG] " << STR << endl;} while( false )
     #define assert(EXPRESSION) do{ if(!(EXPRESSION)) { ostringstream oss; throw NLException(#EXPRESSION, __FILE__, __LINE__, oss); } }while(false)
     #else
     #define DEBUG_MSG(STR) do { } while ( false )

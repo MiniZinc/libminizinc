@@ -42,8 +42,6 @@ namespace MiniZinc {
     sc.mznlibVersion(1);
     sc.description("MiniZinc generic Non Linear solver plugin");
     sc.requiredFlags({"--nl-cmd"});
-    //sc.mznlib("-Glinear");
-    //sc.stdFlags({"-a","-n","-f","-p","-s","-r","-v"});
     sc.tags({"__internal__"});
     SolverConfigs::registerBuiltinSolver(sc);
   }
@@ -61,14 +59,16 @@ namespace MiniZinc {
 
   void NL_SolverFactory::printHelp(ostream& os) {
     os
-    << "MZN-NL plugin options: NL_SolverFactory::printHelp TODO" << std::endl
-    // << "  --nl-cmd , --nonlinear-cmd <exe>\n     the backend solver filename.\n"
-    // << "  --nl-flags <options>\n     Specify option to be passed to the NL solver.\n"
-    // << "  --nl-flag <option>\n     As above, but for a single option string that need to be quoted in a shell.\n"
-    // << "  -t <ms>, --solver-time-limit <ms>, --fzn-time-limit <ms>\n     Set time limit (in milliseconds) for solving.\n"
-    // << "  --nl-sigint\n     Send SIGINT instead of SIGTERM.\n"
-    // << "  -p <n>, --parallel <n>\n     Use <n> threads during search. The default is solver-dependent.\n"
-    // << "  -r <n>, --seed <n>, --random-seed <n>\n     For compatibility only: use solver flags instead.\n"
+    << "MZN-NL plugin options" << std::endl
+    << "  --nl-cmd , --nonlinear-cmd <exe>\n     The backend solver filename.\n"
+    << "  --nl-flags <options>\n     Specify option to be passed to the NL solver.\n"
+    << "  --nl-flag <option>\n     As above, but for a single option string that need to be quoted in a shell.\n"
+    << "  --hexafloat\n     Use hexadecimal format when communicating floating points with the solver.\n"
+    << "  --keepfile\n     Write the nl and sol files next to the input file and don't remove them.\n"
+   // << "  --nl-sigint\n     Send SIGINT instead of SIGTERM.\n"
+   // << "  -t <ms>, --solver-time-limit <ms>, --fzn-time-limit <ms>\n     Set time limit (in milliseconds) for solving.\n"
+   // << "  -p <n>, --parallel <n>\n     Use <n> threads during search. The default is solver-dependent.\n"
+   // << "  -r <n>, --seed <n>, --random-seed <n>\n     For compatibility only: use solver flags instead.\n"
     ;
   }
 
@@ -84,9 +84,14 @@ namespace MiniZinc {
     NLSolverOptions& _opt = static_cast<NLSolverOptions&>(*opt);
     CLOParser cop( i, argv );
     string buffer;
+
     int nn=-1;
     if ( cop.getOption( "--nl-cmd --nonlinear-cmd", &buffer) ) {
       _opt.nl_solver = buffer;
+    } else if ( cop.getOption( "--hexafloat") ) {
+      _opt.do_hexafloat = true;
+    } else if ( cop.getOption( "--keepfile") ) {
+      _opt.do_keepfile = true;
     } else {
       for (auto& fznf : _opt.nl_solver_flags) {
         if (fznf.t==MZNFZNSolverFlag::FT_ARG && cop.getOption(fznf.n.c_str(), &buffer)) {
@@ -100,6 +105,7 @@ namespace MiniZinc {
       }
       return false;
     }
+
     return true;
   }
 
@@ -109,83 +115,91 @@ namespace MiniZinc {
 
   NLSolverInstance::NLSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* options)
     : SolverInstanceBase(env, log, options), _fzn(env.flat()), _ozn(env.output()) {
-      
-      file_mzn = _env.envi().orig_model ? _env.envi().orig_model->filepath().str() : _env.envi().model->filepath().str();
-      file_sub = file_mzn.substr(0,file_mzn.find_last_of('.'));
-      file_nl  = file_sub+".nl";
-      file_sol = file_sub+".sol";
-
-      nl_file = NLFile(env.envi().orig_model ? env.envi().orig_model->filename().str() : env.envi().model->filename().str());
-
     }
 
   NLSolverInstance::~NLSolverInstance(void) {}
 
-  void NLSolverInstance::processFlatZinc(void) {}
+  void NLSolverInstance::processFlatZinc(void) { }
 
-  void NLSolverInstance::resetSolver(void) {}
+  void NLSolverInstance::resetSolver(void) { }
 
-  SolverInstance::Status
-  NLSolverInstance::solve(void) {
-    
-    FileUtils::TmpDir tmpdir;
-    file_nl = tmpdir.name()+"/model.nl";
-    file_sol = tmpdir.name()+"/model.sol";
-    
+  SolverInstance::Status NLSolverInstance::solve(void) {
+    // Get the options
     NLSolverOptions& opt = static_cast<NLSolverOptions&>(*_options);
-    DEBUG_MSG("Launching NLSolverInstance::solve" << endl);  
-
-    // --- --- --- 1) Check options
-    // --- --- --- 2) Prepare for the translation
-    // --- --- --- 3) Testing of the AST
-
-    // Note: copy the structure of the pretty printer
-
-    // Analyse the variable declarations
-    for (VarDeclIterator it = _fzn->begin_vardecls(); it != _fzn->end_vardecls(); ++it) {
-      if(!it->removed()) {
-        Item& item = *it;
-        analyse(&item);
-      }
-    }
-
-    // Analyse the contraints
-    for (ConstraintIterator it = _fzn->begin_constraints(); it != _fzn->end_constraints(); ++it) {
-      if(!it->removed()) {
-        Item& item = *it;
-        analyse(&item);
-      }
-    }
-
 
     // --- --- --- Prepare the files
-    std::ofstream outfile(file_nl);
-    outfile.precision(numeric_limits<double>::digits10 + 2);
+    string file_nl;   // Output for the NL, will be the input for the solver
+    string file_sol;  // Ouput of the solver
+    FileUtils::TmpDir* tmpdir = NULL;
 
+    if(opt.do_keepfile){
+      // Keep file: output next to original file
+      string file_mzn = _env.envi().orig_model ? _env.envi().orig_model->filepath().str() : _env.envi().model->filepath().str();
+      string file_sub = file_mzn.substr(0,file_mzn.find_last_of('.'));
+      file_nl  = file_sub+".nl";
+      file_sol = file_sub+".sol";
+    } else {
+      // Don't keep file: create a temp directory
+      tmpdir = new FileUtils::TmpDir();
+      file_nl = tmpdir->name()+"/model.nl";
+      file_sol = tmpdir->name()+"/model.sol";
+    }
+    std::ofstream outfile(file_nl);
+    // Configure floating point output
+    if(opt.do_hexafloat){
+      outfile << hexfloat;
+    } else {
+      outfile.precision(numeric_limits<double>::digits10 + 2);
+    }
+
+
+
+    // --- --- --- Result of the try/catch block
     // Use to talk back to minizinc
     auto* out = getSolns2Out();
-
     // Manage status
     int exitStatus = -1;
 
-    // All the NL iperations in one try/catch
+
+    // --- --- --- All the NL operations in one try/catch
     try {
 
+      // --- --- --- Create the NL data
+      // Analyse the variable declarations
+      for (VarDeclIterator it = _fzn->begin_vardecls(); it != _fzn->end_vardecls(); ++it) {
+        if(!it->removed()) {
+          Item& item = *it;
+          analyse(&item);
+        }
+      }
+      // Analyse the contraints
+      for (ConstraintIterator it = _fzn->begin_constraints(); it != _fzn->end_constraints(); ++it) {
+        if(!it->removed()) {
+          Item& item = *it;
+          analyse(&item);
+        }
+      }
       // Analyse the goal
       analyse(_fzn->solveItem());
-
       // Phase 2
       nl_file.phase_2();
-
       // Print to the files
       nl_file.print_on(outfile);
+
 
       // --- --- --- Call the solver
       NLSolns2Out s2o = NLSolns2Out(out, nl_file);
       vector<string> cmd_line;
+      
       if (opt.nl_solver.empty()) {
+        if(tmpdir != NULL){
+          delete tmpdir;
+          tmpdir = NULL;
+        }
+        outfile.close();
         throw InternalError("No NL solver specified");
       }
+
       cmd_line.push_back(opt.nl_solver);
       cmd_line.push_back(file_nl);
       cmd_line.push_back("-AMPL");
@@ -200,9 +214,14 @@ namespace MiniZinc {
       exitStatus = -2;
     }
 
+
+
+    // --- --- --- Cleanup and exit
+    if(tmpdir != NULL){
+      delete tmpdir;
+      tmpdir = NULL;
+    }
     outfile.close();
-
-
     return exitStatus == 0 ? out->status : Status::ERROR;
   }
 
@@ -211,6 +230,10 @@ namespace MiniZinc {
 
   // TODO later
   Expression* NLSolverInstance::getSolutionValue(Id* id) { assert(false); return NULL; }
+
+
+
+
 
   /** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** *** **/
   /** Analyse an item
@@ -232,35 +255,32 @@ namespace MiniZinc {
       // Because it is a variable declaration, the expression associated to the item is necessary a VarDecl.
       // From the VarDecl, we can obtain the type and the RHS expression. Use this to analyse further.
       case Item::II_VD: {
-        DEBUG_MSG("II_VD: Variable Declaration. [");
+        DEBUG_MSG("II_VD: Variable Declaration.");
 
         const VarDecl& vd = *i->cast<VarDeclI>()->e();
         const TypeInst &ti        = *vd.ti()->cast<TypeInst>();
         const Expression &rhs     = *vd.e();
         nl_file.add_vdecl(vd, ti, rhs);
-
-        DEBUG_MSG("]OK." << endl);
       } break;
 
       case Item::II_ASN:{
-        should_not_happen("item II_ASN should not be present in flatzinc.");
+        should_not_happen("item II_ASN should not be present in NL's input.");
       } break;
 
       // Case of the constraint.
       // Constraint are expressed through builtin calls.
       // Hence, the expression associated to the item must be a E_CALL.
       case Item::II_CON: {
-        DEBUG_MSG("II_CON: Constraint. [");
+        DEBUG_MSG("II_CON: Constraint.");
         Expression* e = i->cast<ConstraintI>()->e();
         if(e->eid() == Expression::E_CALL){
           const Call& c = *e->cast<Call>();
-          DEBUG_MSG(c.id() << " ");
+          DEBUG_MSG("     " << c.id() << " ");
           nl_file.analyse_constraint(c);
         } else {
-          DEBUG_MSG("Contraint is not a builtin call." << endl);
+          DEBUG_MSG("     Contraint is not a builtin call.");
           assert(false);
         }
-        DEBUG_MSG("]OK." << endl);
       } break;
 
       // Case of the 'solve' directive
@@ -270,12 +290,11 @@ namespace MiniZinc {
       } break;
 
       case Item::II_OUT: {
-        should_not_happen("Item II_OUT should not be present in flatzinc.");
+        should_not_happen("Item II_OUT should not be present in NL's input.");
       } break;
 
       case Item::II_FUN: {
-        // TODO
-        DEBUG_MSG("'FUN' item are ignored." << endl);
+        should_not_happen("Item II_FUN should not be present in NL's input.");
       } break;
     }// END OF SWITCH
   }

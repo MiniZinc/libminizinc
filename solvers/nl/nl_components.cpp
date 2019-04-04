@@ -413,8 +413,7 @@ namespace MiniZinc {
         // 1st line:
         // 'g': file will be in text format
         // other numbers: as given in the doc (no other explanation...)
-        os  << "g3 1 1 0" << " # problem " << nl_file.problem_name
-            << endl;
+        os  << "g3 1 1 0" << endl;
 
         // 2nd line:
         os  << nl_file.variables.size()             << " "      // Total number of variables

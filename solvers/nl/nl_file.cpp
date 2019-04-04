@@ -98,7 +98,7 @@ namespace MiniZinc {
       should_not_happen("Enum type in the flatzinc");
     }
     else if(ti.isarray()){
-      DEBUG_MSG("Definition of array " << name << " is not reproduced in nl.");
+      DEBUG_MSG("     Definition of array " << name << " is not reproduced in nl.");
 
       // Look for the annotation "output_array"
       for (ExpressionSetIter it= vd.ann().begin(); it != vd.ann().end(); ++it) {
@@ -144,7 +144,7 @@ namespace MiniZinc {
     } else {
       // Check if the variable needs to be reported
       bool to_report = vd.ann().contains(constants().ann.output_var);
-      DEBUG_MSG("'" << name << "' to be reported? " << to_report << " ");
+      DEBUG_MSG("     '" << name << "' to be reported? " << to_report);
 
       // variable declaration
       const Type& type          = ti.type();
@@ -782,12 +782,12 @@ namespace MiniZinc {
       cons.set_jacobian(vars, coeffs, this);
     }
 
-    // Create the expression graph with log2(x) = ln(x)/ln(2) with ln(2) = 0.693147180559945309417232121458176568075
-    // For a double, the number of significant number is between 15 and 17, so we use 17...
+    // Create the expression graph with log2(x) = ln(x)/ln(2)
     cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OPDIV));
     cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OP_log));
     cons.expression_graph.push_back(x);
-    cons.expression_graph.push_back(NLToken::n(0.69314718055994530));
+    cons.expression_graph.push_back(NLToken::o(NLToken::OpCode::OP_log));
+    cons.expression_graph.push_back(NLToken::n(2));
 
 
     // Store the constraint

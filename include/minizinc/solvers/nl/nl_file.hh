@@ -66,10 +66,6 @@ namespace MiniZinc {
 
 
 
-        /* *** *** *** Phase 0: constructor data *** *** *** */
-        string problem_name;
-
-
         /* *** *** *** Phase 1: collecting data from MZN *** *** *** */
 
         // Variables collection, identified by name
@@ -585,10 +581,6 @@ namespace MiniZinc {
         /* *** *** *** Constructor *** *** *** */
         
         NLFile() = default;
-
-        NLFile(string problem_name):
-            problem_name(problem_name){}
-
 
 
         /* *** *** *** Printable *** *** *** */

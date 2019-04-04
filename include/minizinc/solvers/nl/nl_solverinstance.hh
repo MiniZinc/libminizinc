@@ -24,6 +24,8 @@ namespace MiniZinc {
     std::string nl_solver;
     std::vector<std::string> nl_flags;
     std::vector<MZNFZNSolverFlag> nl_solver_flags;
+    bool do_hexafloat = false;
+    bool do_keepfile = false;
   };
 
   class NLSolverInstance : public SolverInstanceBase {
@@ -32,12 +34,6 @@ namespace MiniZinc {
     protected:
       Model* _fzn;
       Model* _ozn;
-
-      // Info about the files and problem name
-      string file_mzn;
-      string file_sub;
-      string file_nl;
-      string file_sol;
 
       NLFile nl_file;
 

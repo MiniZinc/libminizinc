@@ -146,23 +146,24 @@ namespace MiniZinc {
       switch(sol.status){
 
         case NL_Solver_Status::PARSE_ERROR:{
-          DEBUG_MSG("NL msg: PARSE ERROR" << endl);
+          DEBUG_MSG("NL_Solver_Status: PARSE ERROR" << endl);
           out->feedRawDataChunk(out->_opt.error_msg_00);
           break;
         }
 
         case NL_Solver_Status::UNKNOWN:{
-          DEBUG_MSG("NL msg: UNKNOWN" << endl);
+          DEBUG_MSG("NL_Solver_Status: UNKNOWN" << endl);
           out->feedRawDataChunk(out->_opt.unknown_msg_00);
           break;
         }
 
         case NL_Solver_Status::SOLVED:{
-           DEBUG_MSG("NL msg: SOLVED" << endl);
+           DEBUG_MSG("NL_Solver_Status: SOLVED" << endl);
 
           stringstream sb;
-          sb << std::showpoint; // Always shows the decimal point, so we have e.g. '256.0' when 256 is the answer for a fp value.
-          sb.precision(numeric_limits<double>::digits10 + 2);
+          //sb << std::showpoint; // Always shows the decimal point, so we have e.g. '256.0' when 256 is the answer for a fp value.
+          sb << std::hexfloat;  // Use hexadecimal format for FP
+          // sb.precision(numeric_limits<double>::digits10 + 2);
 
           for(int i=0; i<nl_file.variables.size(); ++i){
             string n = nl_file.vnames[i];
@@ -175,6 +176,7 @@ namespace MiniZinc {
                 } else {
                   double value = sol.values[i];
                   sb << value;
+                  cerr << v.name << " = " << std::hexfloat << value << endl;
                 }
                 sb << ";\n";
             }
@@ -232,31 +234,31 @@ namespace MiniZinc {
         }
 
         case NL_Solver_Status::UNCERTAIN:{
-          DEBUG_MSG("NL msg: UNCERTAIN" << endl);
+          DEBUG_MSG("NL_Solver_Status: UNCERTAIN" << endl);
           out->feedRawDataChunk(out->_opt.unknown_msg_00);
           break;
         }
 
         case NL_Solver_Status::INFEASIBLE:{
-          DEBUG_MSG("NL msg: INFEASIBLE" << endl);
+          DEBUG_MSG("NL_Solver_Status: INFEASIBLE" << endl);
           out->feedRawDataChunk(out->_opt.unsatisfiable_msg_00);
           break;
         }
 
         case NL_Solver_Status::UNBOUNDED:{
-          DEBUG_MSG("NL msg: UNBOUNDED" << endl);
+          DEBUG_MSG("NL_Solver_Status: UNBOUNDED" << endl);
           out->feedRawDataChunk(out->_opt.unbounded_msg_00);
           break;
         }
 
         case NL_Solver_Status::LIMIT:{
-         DEBUG_MSG("NL msg: LIMIT" << endl);
+         DEBUG_MSG("NL_Solver_Status: LIMIT" << endl);
           out->feedRawDataChunk(out->_opt.unknown_msg_00);
           break;
         }
 
         case NL_Solver_Status::INTERRUPTED:{
-         DEBUG_MSG("NL msg: INTERRUPTED" << endl);
+         DEBUG_MSG("NL_Solver_Status: INTERRUPTED" << endl);
           out->feedRawDataChunk(out->_opt.unknown_msg_00);
           break;
         }
