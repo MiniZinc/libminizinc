@@ -22,7 +22,7 @@ foreach(VERSION ${CPLEX_VERSIONS})
 endforeach(VERSION)
 
 find_path(CPLEX_INCLUDE ilcplex/cplex.h
-          HINTS ${CPLEX_ROOT} ENV CPLEX_ROOT ENV CPLEX_HOME ENV CPLEX_STUDIO_DIR
+          HINTS ${CPLEX_ROOT} ENV CPLEX_ROOT
           PATHS ${CPLEX_DEFAULT_LOC}
           PATH_SUFFIXES include cplex/include)
 
@@ -39,7 +39,7 @@ if(CPLEX_PLUGIN)
 else()
   foreach(CPLEX_LIB ${CPLEX_LIB_NAMES})
     find_library(CPLEX_LIBRARY NAMES cplex ${CPLEX_LIB}
-                 HINTS ${CPLEX_ROOT} ENV CPLEX_ROOT ENV CPLEX_HOME ENV CPLEX_STUDIO_DIR
+                 HINTS ${CPLEX_ROOT} ENV CPLEX_ROOT
                  PATHS ${CPLEX_DEFAULT_LOC}
                  PATH_SUFFIXES lib/x86-64_linux/static_pic lib/x86-64_osx/static_pic lib/x64_windows_vs2013/stat_mda cplex/lib/x86-64_linux/static_pic cplex/lib/x86-64_osx/static_pic cplex/lib/x64_windows_vs2013/stat_mda)
     if(NOT "${CPLEX_LIBRARY}" STREQUAL "CPLEX_LIBRARY-NOTFOUND")
