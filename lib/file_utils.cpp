@@ -44,6 +44,7 @@
 #else
 #include <dirent.h>
 #include <libgen.h>
+#include <ftw.h>
 #endif
 
 namespace MiniZinc { namespace FileUtils {
@@ -372,9 +373,22 @@ namespace MiniZinc { namespace FileUtils {
     ::free(tmpfile);
 #endif
   }
+
+#ifndef _WIN32
+  namespace {
+    int remove_file(const char *fpath, const struct stat *, int, struct FTW *) {
+      return unlink(fpath);
+    }
+  }
+#endif
   
   TmpDir::~TmpDir(void) {
-    std::cerr << "TODO: remove directory " << _name << "\n";
+#ifdef _WIN32
+    assert(false);
+#else
+    nftw(_name.c_str(), remove_file, 64, FTW_DEPTH | FTW_PHYS);
+    rmdir(_name.c_str());
+#endif
   }
 
   std::vector<std::string> parseCmdLine(const std::string& s) {
