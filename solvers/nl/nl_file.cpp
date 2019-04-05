@@ -89,7 +89,7 @@ namespace MiniZinc {
    *  This function pre-analyse the declaration VarDecl, then delegate to add_vdecl_integer or add_vdecl_fp.
    *  In flatzinc, arrays always have a rhs: the can always be replaced by their definition (following the pointer starting at the ID)
    *  Hence, we do not reproduce arrays in the NL file.
-   *  However, we have to take into account the output variables (TODO) */
+   */
   void NLFile::add_vdecl(const VarDecl &vd, const TypeInst &ti, const Expression &rhs){      
     // Get the name
     string name = get_vname(vd);
@@ -264,6 +264,7 @@ namespace MiniZinc {
       else if(id == consfp.plus){     consfp_plus(c);     }
       else if(id == consfp.minus){    consfp_minus(c);    }
       else if(id == consfp.div){      consfp_div(c);      }
+      else if(id == consfp.times){    consfp_times(c);    }
       else if (id =="float_pow"){     float_pow(c);       }
       else if (id =="float_max"){     float_max(c);       }
       else if (id =="float_min"){     float_min(c);       }
@@ -300,11 +301,8 @@ namespace MiniZinc {
       else if(id == consint.gt){      should_not_happen("'int gt'");    }
       else if(id == consint.ge){      should_not_happen("'int ge'");    }
       else if(id == consint.minus){   should_not_happen("'int minus'"); }
-
       else if(id == consfp.gt){       should_not_happen("float gt'");   }
       else if(id == consfp.ge){       should_not_happen("float ge'");   }
-      else if(id == consfp.times){    consfp_times(c);                  } // Should not happen?
-      else if(id == consfp.mod){      consfp_mod(c);                    } // Should not happen?
 
       // Not implemented
       else {

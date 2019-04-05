@@ -228,7 +228,7 @@ namespace MiniZinc {
 
 
 
-  // TODO later
+  // Unused
   Expression* NLSolverInstance::getSolutionValue(Id* id) { assert(false); return NULL; }
 
 

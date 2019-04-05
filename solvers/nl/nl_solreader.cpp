@@ -161,9 +161,9 @@ namespace MiniZinc {
            DEBUG_MSG("NL_Solver_Status: SOLVED" << endl);
 
           stringstream sb;
-          //sb << std::showpoint; // Always shows the decimal point, so we have e.g. '256.0' when 256 is the answer for a fp value.
-          sb << std::hexfloat;  // Use hexadecimal format for FP
-          // sb.precision(numeric_limits<double>::digits10 + 2);
+          // sb << std::hexfloat;  // Use hexadecimal format for FP
+          sb << std::showpoint; // Always shows the decimal point, so we have e.g. '256.0' when 256 is the answer for a fp value.
+          sb.precision(numeric_limits<double>::digits10 + 2);
 
           for(int i=0; i<nl_file.variables.size(); ++i){
             string n = nl_file.vnames[i];
@@ -176,7 +176,6 @@ namespace MiniZinc {
                 } else {
                   double value = sol.values[i];
                   sb << value;
-                  cerr << v.name << " = " << std::hexfloat << value << endl;
                 }
                 sb << ";\n";
             }
