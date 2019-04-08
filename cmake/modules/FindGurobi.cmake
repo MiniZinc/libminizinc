@@ -24,7 +24,7 @@ foreach(VERSION ${GUROBI_VERSIONS})
 endforeach(VERSION)
 
 find_path(GUROBI_INCLUDE gurobi_c.h
-          HINTS ${GUROBI_ROOT} ENV GUROBI_ROOT
+          HINTS ${GUROBI_ROOT} $ENV{GUROBI_HOME} ENV GUROBI_ROOT
           PATHS ${GUROBI_DEFAULT_LOC}
           PATH_SUFFIXES include)
 
