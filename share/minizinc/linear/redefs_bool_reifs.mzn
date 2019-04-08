@@ -125,52 +125,44 @@ predicate bool_lt_reif(var bool: p, var bool: q, var bool: r) =
 
 %-----------------------------------------------------------------------------%
 
+%% Reified disjunction
 predicate array_bool_or(array[int] of var bool: a, var bool: b) =
-    if is_fixed(b) then   % frequent case
+    if exists( i in index_set( a ) )( is_fixed(a[i]) /\ fix(a[i]) ) then
+      b
+    elseif is_fixed(b) then   % frequent case
         if fix(b) = true then
-            sum(i in index_set(a))( bool2int(a[i]) ) >= 1
+            sum(i in index_set(a))( bool2int(a[i]) ) >= 1       %% >=1 seems better for MIPDomains... 5.4.19
         else
             forall(i in index_set(a))( not a[i] )
         endif
-    elseif exists( i in index_set( a ) )( is_fixed(a[i]) /\ fix(a[i]) ) then
-      b
     else
-    let { var int: x = bool2int(b),
+      let { var int: x = bool2int(b),
           array[1..length(a)] of var int: c =
               [ bool2int(a[i]) | i in index_set(a) ] }
     in
-  if false then
-%      int_lin_le_reif__IND( [ -1 | i in index_set(a) ], c, -1, b) /\
-    true
-  else
-    sum(c) >= x /\
-    %  sum(c) <= x * length(a)                     % weak
-    forall (i in index_set(a)) (x >= c[i])        % strong 
-  endif
+        sum(c) >= x /\
+          %  sum(c) <= x * length(a)                     % weak
+        forall (i in index_set(a)) (x >= c[i])        % strong 
     endif;
 
+%% Reified conjunction
 predicate array_bool_and(array[int] of var bool: a, var bool: b) =
-    if is_fixed(b) then            % frequent case
+    if exists( i in index_set( a ) )( is_fixed(a[i]) /\ not fix(a[i]) ) then
+      not b
+    elseif is_fixed(b) then            % frequent case
         if fix(b) = false then
             sum(i in index_set(a))( bool2int(a[i]) ) <= length(a)-1
         else
             forall(i in index_set(a))( a[i] )
         endif
-    elseif exists( i in index_set( a ) )( is_fixed(a[i]) /\ not fix(a[i]) ) then
-      not b
     else
-    let { var int: x = bool2int(b),
+      let { var int: x = bool2int(b),
           array[1..length(a)] of var int: c =
               [ bool2int(a[i]) | i in index_set(a) ] }
-    in
-  if false then
-%      int_lin_le_reif__IND( [ -1 | i in index_set(a) ], c, -length(a), b) /\
-    true
-  else
-    length(a) - sum(c) >=  1 - x /\
-    % length(a) - sum(c) <= (1 - x) * length(a);     % weak
-    forall (i in index_set(a)) (x <= c[i])        % strong
-  endif
+      in
+      length(a) - sum(c) >=  1 - x /\
+        % length(a) - sum(c) <= (1 - x) * length(a);     % weak
+      forall (i in index_set(a)) (x <= c[i])        % strong
     endif;
 
 % predicate array_bool_xor(array[int] of var bool: a) = .. sum(a) is odd ..
