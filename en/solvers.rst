@@ -98,11 +98,15 @@ For example, tolerances have been tightened to enable more precise solving with 
 
 .. option::  --readParam <file>
 
-    read backend-specific parameters from file
+    read backend-specific parameters from file (some backends)
 
 .. option::  --writeParam <file>
 
-    write backend-specific parameters to file
+    write backend-specific parameters to file (some backends)
+
+.. option::  --cbcArgs '-guess -cuts off -preprocess off -passc 1'
+
+    parameters for the COIN-OR CBC backend
 
 For other command-line options, run ``minizinc -h <solver-id>``.
 
