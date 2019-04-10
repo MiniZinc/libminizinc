@@ -54,6 +54,9 @@ but then use minizinc's ``-DCMAKE_PREFIX_PATH=...`` to let CMake find that locat
   $ make -j5
   $ sudo make install                    ## Now MZN should find it
 
+Moreover, for MiniZinc's CMake config to actually compile SCIP module (which is currently statically linked),
+you need to configure MiniZinc as follows: ``cmake .. -DUSE_PROPRIETARY=ON``
+  
 COIN-OR CBC (as of 2.10/stable. Prefer stable or even trunk):
 
 .. code-block:: bash
@@ -62,6 +65,7 @@ COIN-OR CBC (as of 2.10/stable. Prefer stable or even trunk):
   $ ./configure <--enable-cbc-parallel>
   $ make && make install
   $ export CBC_HOME=$(pwd)               ## put this into .profile with $(pwd) expanded
+                                         ## Or use -DOSICBC_ROOT=<absolute path> for MZN's CMake config
 
 
 Useful Flattening Parameters
@@ -150,5 +154,5 @@ Warm Starts
 ~~~~~~~~~~~
 
 For general information of warm start annotations, see Tutorial.
-Warm starts are currently implemented for Gurobi and IBM ILOG CPLEX.
+Warm starts are currently implemented for Gurobi, IBM ILOG CPLEX, and XPRESS.
 
