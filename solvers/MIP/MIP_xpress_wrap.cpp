@@ -286,6 +286,10 @@ void MIP_xpress_wrapper::solve() {
 
   setOutputVariables(&output, &variables);
   setOutputAttributes(&output,  problem.getXPRSprob());
+
+  if ( !options->printAllSolutions && cbui.solcbfn) {
+    cbui.solcbfn(output, cbui.ppp);
+  }
 }
 
 void MIP_xpress_wrapper::setUserSolutionCallback() {
