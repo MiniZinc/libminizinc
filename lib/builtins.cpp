@@ -1356,6 +1356,8 @@ namespace MiniZinc {
         }
       }
       oss << "]}";
+    } else if (e == constants().absent) {
+      oss << "null";
     } else {
       p.print(e);
     }
