@@ -258,42 +258,40 @@ namespace MiniZinc {
     nctx.neg = false;
     ASTString cid = c->id();
     CallStackItem _csi(env,e);
-
-    if (decl->e()==NULL) {
-      if (cid == constants().ids.forall) {
-        nctx.b = +nctx.b;
-        if (ctx.neg) {
-          ctx.neg = false;
-          nctx.neg = true;
-          cid = constants().ids.exists;
-        }
-      } else if (cid == constants().ids.exists) {
-        nctx.b = +nctx.b;
-        if (ctx.neg) {
-          ctx.neg = false;
-          nctx.neg = true;
-          cid = constants().ids.forall;
-        }
-      } else if (cid == constants().ids.bool2int) {
-        if (ctx.neg) {
-          ctx.neg = false;
-          nctx.neg = true;
-          nctx.b = -ctx.i;
-        } else {
-          nctx.b = ctx.i;
-        }
-      } else if (cid == constants().ids.assert || cid == constants().ids.trace) {
-        if (cid == constants().ids.assert && c->n_args()==2) {
-          (void) decl->_builtins.b(env,c);
-          ret = flat_exp(env,ctx,constants().lit_true,r,b);
-        } else {
-          KeepAlive callres = decl->_builtins.e(env,c);
-          ret = flat_exp(env,ctx,callres(),r,b);
-          // This is all we need to do for assert, so break out of the E_CALL
-        }
-        return ret;
+    
+    if (cid == constants().ids.bool2int && c->type().dim()==0) {
+      if (ctx.neg) {
+        ctx.neg = false;
+        nctx.neg = true;
+        nctx.b = -ctx.i;
+      } else {
+        nctx.b = ctx.i;
       }
-    } else if (ctx.b==C_ROOT && decl->e()->isa<BoolLit>() && eval_bool(env,decl->e())) {
+    } else if (cid == constants().ids.forall) {
+      nctx.b = +nctx.b;
+      if (ctx.neg) {
+        ctx.neg = false;
+        nctx.neg = true;
+        cid = constants().ids.exists;
+      }
+    } else if (cid == constants().ids.exists) {
+      nctx.b = +nctx.b;
+      if (ctx.neg) {
+        ctx.neg = false;
+        nctx.neg = true;
+        cid = constants().ids.forall;
+      }
+    } else if (decl->e()==NULL && (cid == constants().ids.assert || cid == constants().ids.trace)) {
+      if (cid == constants().ids.assert && c->n_args()==2) {
+        (void) decl->_builtins.b(env,c);
+        ret = flat_exp(env,ctx,constants().lit_true,r,b);
+      } else {
+        KeepAlive callres = decl->_builtins.e(env,c);
+        ret = flat_exp(env,ctx,callres(),r,b);
+        // This is all we need to do for assert, so break out of the E_CALL
+      }
+      return ret;
+    } else if (decl->e() && ctx.b==C_ROOT && decl->e()->isa<BoolLit>() && eval_bool(env,decl->e())) {
       bool allBool = true;
       for (unsigned int i=0; i<c->n_args(); i++) {
         if (c->arg(i)->type().bt()!=Type::BT_BOOL) {
@@ -394,8 +392,9 @@ namespace MiniZinc {
         }
         
       } else {
-        bool mixContext = decl->e()!=NULL ||
-        (cid != constants().ids.forall && cid != constants().ids.exists && cid != constants().ids.bool2int &&
+        bool mixContext =
+        (cid != constants().ids.forall && cid != constants().ids.exists &&
+         (cid != constants().ids.bool2int || c->type().dim()>0) &&
          cid != constants().ids.sum && cid != "assert");
         if (cid == constants().ids.clause && c->arg(0)->isa<ArrayLit>() && c->arg(1)->isa<ArrayLit>()) {
           GCLock lock;
