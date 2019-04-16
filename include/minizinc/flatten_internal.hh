@@ -101,6 +101,7 @@ namespace MiniZinc {
     std::vector<int> modifiedVarDecls;
     int in_redundant_constraint;
     int in_maybe_partial;
+    bool in_reverse_map_var;
     FlatteningOptions fopts;
     unsigned int pathUse;
     std::unordered_map<std::string, int> reverseEnum;

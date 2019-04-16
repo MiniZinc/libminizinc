@@ -574,6 +574,7 @@ namespace MiniZinc {
     collect_vardecls(false),
     in_redundant_constraint(0),
     in_maybe_partial(0),
+    in_reverse_map_var(false),
     pathUse(0),
     _flat(new Model),
     _failed(false),
@@ -1492,8 +1493,12 @@ namespace MiniZinc {
       if (ident->decl()) {
         VarDecl* e_vd = follow_id_to_decl(ident)->cast<VarDecl>();
         e = e_vd->id();
-        addCtxAnn(e_vd, ctx.b);
-        addCtxAnn(ident->decl(), ctx.b);
+        if (!env.in_reverse_map_var && ctx.b != C_ROOT && e->type()==Type::varbool()) {
+          addCtxAnn(e_vd, ctx.b);
+          if (e_vd != ident->decl()) {
+            addCtxAnn(ident->decl(), ctx.b);
+          }
+        }
       }
     }
     if (ctx.neg) {
@@ -1883,7 +1888,7 @@ namespace MiniZinc {
                   Call* c = new Call(Location().introduce(),cid,args);
                   c->decl(env.model->matchFn(env,c,false));
                   c->type(c->decl()->rtype(env,args,false));
-                  if (c->type().isbool()) {
+                  if (c->type().isbool() && ctx.b != C_ROOT) {
                     addCtxAnn(vd, ctx.b);
                     addCtxAnn(e_id->decl(), ctx.b);
                   }

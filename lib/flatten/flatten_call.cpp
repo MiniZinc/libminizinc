@@ -395,7 +395,12 @@ namespace MiniZinc {
         bool mixContext =
         (cid != constants().ids.forall && cid != constants().ids.exists &&
          (cid != constants().ids.bool2int || c->type().dim()>0) &&
-         cid != constants().ids.sum && cid != "assert");
+         cid != constants().ids.sum && cid != "assert" &&
+         cid != constants().var_redef->id() &&
+         cid != "mzn_reverse_map_var");
+        if (cid == "mzn_reverse_map_var") {
+          env.in_reverse_map_var = true;
+        }
         if (cid == constants().ids.clause && c->arg(0)->isa<ArrayLit>() && c->arg(1)->isa<ArrayLit>()) {
           GCLock lock;
           // try to make negative arguments positive
@@ -887,6 +892,9 @@ namespace MiniZinc {
           }
         }
       }
+    }
+    if (cid == "mzn_reverse_map_var") {
+      env.in_reverse_map_var = false;
     }
     return ret;
   }
