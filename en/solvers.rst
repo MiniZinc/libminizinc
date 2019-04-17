@@ -25,21 +25,21 @@ Calling a solver on a MiniZinc model directly:
 
 .. code-block:: bash
   
-  $ minizinc --solver -v -s -a model.mzn data.dzn
+  $ minizinc --solver mip -v -s -a model.mzn data.dzn
 
 or separated flattening+solving - sometimes more stable but slower due to file I/O:
 
 .. code-block:: bash
   
-  $ minizinc --solver coin-bc -c model.mzn data.dzn && minizinc --solver cbc -v -s -a model.fzn | minizinc --ozn-file model.ozn
+  $ minizinc --solver cbc -c model.mzn data.dzn && minizinc --solver cbc -v -s -a model.fzn | minizinc --ozn-file model.ozn
 
 Installation of MIP Backends
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-SCIP (as of 6.0.1.0): you can also install into another location as the default ``make install``,
-but then use minizinc's ``-DCMAKE_PREFIX_PATH=...`` to let CMake find that location.
+For *SCIP (as of 6.0.1.0)*, the installation commands should be as follows:
 
 .. code-block:: bash
+
   $ tar xvfz scipoptsuite-6.0.1.tgz
   $ cd scipoptsuite-6.0.1
   $ cd soplex
@@ -54,12 +54,15 @@ but then use minizinc's ``-DCMAKE_PREFIX_PATH=...`` to let CMake find that locat
   $ make -j5
   $ sudo make install                    ## Now MZN should find it
 
+You can also install into another location as the default ``make install``,
+but then use minizinc's ``-DCMAKE_PREFIX_PATH=...`` to let CMake find that location.
 Moreover, for MiniZinc's CMake config to actually compile SCIP module (which is currently statically linked),
 you need to configure MiniZinc as follows: ``cmake .. -DUSE_PROPRIETARY=ON``
   
-COIN-OR CBC (as of 2.10/stable. Prefer stable or even trunk):
+*COIN-OR CBC* (as of 2.10/stable. Prefer stable or even trunk):
 
-.. code-block:: bash
+.. code-block:: 
+
   $ svn checkout https://projects.coin-or.org/svn/Cbc/stable/2.10/ Cbc-stable
   $ cd Cbc-stable
   $ ./configure <--enable-cbc-parallel>
@@ -73,10 +76,12 @@ Useful Flattening Parameters
 
 The following parameters can be given on the command line or modified in ``share/minizinc/linear/options.mzn``:
 
-.. option::  -D nSECcuts=0/1/2                %% Subtour Elimination Constraints, see below
-.. option::  -D fMIPdomains=true/false        %% The unified domains feature
-.. option::  -D float_EPS=1e-6                %% Epsilon for floats' strict comparison
-.. option::  -DfIndConstr=true -DfMIPdomains=false        %% Use solver's indicator constraints, see below
+::
+
+  -D nSECcuts=0/1/2                            %% Subtour Elimination Constraints, see below
+  -D fMIPdomains=true/false                    %% The unified domains feature
+  -D float_EPS=1e-6                            %% Epsilon for floats' strict comparison
+  -DfIndConstr=true -DfMIPdomains=false        %% Use solver's indicator constraints, see below
 
 Some Solver Options and Changed Default Values
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -84,33 +89,20 @@ Some Solver Options and Changed Default Values
 The following command-line options affect the backend or invoke extra functionality. Note that some of them have default values which may be different from the backend's ones.
 For example, tolerances have been tightened to enable more precise solving with integer variables and objective. This deteriorates performance on average, so when your model has moderate constant and bound magnitudes, you may want to pass negative values to use solver's defaults.
 
-.. option::  --relGap <n>
+::
 
-    relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default
-
-.. option::    --intTol <n>
-
-    integrality tolerance for a variable. Default 1e-6
-
-.. option::    --solver-time-limit-feas <n>, --solver-tlf <n>
-
-    stop after <n> milliseconds after the first feasible solution (some backends)
-
-.. option::    --writeModel <file>
-
-    write model to <file> (.lp, .mps, .sav, ...)
-
-.. option::  --readParam <file>
-
-    read backend-specific parameters from file (some backends)
-
-.. option::  --writeParam <file>
-
-    write backend-specific parameters to file (some backends)
-
-.. option::  --cbcArgs '-guess -cuts off -preprocess off -passc 1'
-
-    parameters for the COIN-OR CBC backend
+  --relGap <n>       relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default
+  --intTol <n>       integrality tolerance for a variable. Default 1e-6
+  --solver-time-limit-feas <n>, --solver-tlf <n>
+                     stop after <n> milliseconds after the first feasible solution (some backends)
+  --writeModel <file>
+                     write model to <file> (.lp, .mps, .sav, ...)
+  --readParam <file>
+                     read backend-specific parameters from file (some backends)
+  --writeParam <file>
+                     write backend-specific parameters to file (some backends)
+  --cbcArgs '-guess -cuts off -preprocess off -passc 1'
+                  parameters for the COIN-OR CBC backend
 
 For other command-line options, run ``minizinc -h <solver-id>``.
 
@@ -128,9 +120,8 @@ Unified Domains (MIPdomains)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The 'MIPdomains' feature of the Flattener aims at reducing the number of binary flags
-encoding linearized domain constraints, see
-
-    Belov, Stuckey, Tack, Wallace. Improved Linearization of Constraint Programming Models. CP 2016.
+encoding linearized domain constraints, see the paper
+*Belov, Stuckey, Tack, Wallace. Improved Linearization of Constraint Programming Models. CP 2016.*
 
 By default it is on, but for some models such as packing problems, it is better off.
 To turn it off, add option ``-D fMIPdomains=false`` during flattening.
