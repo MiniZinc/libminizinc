@@ -225,7 +225,7 @@ class MZT_Param:
                   " Then you can do shell tricks but Ctrl+C may not kill all subprocesses etc."],
                 "n_TimeoutRealHard": [300, "/// Real-time timeout per instance, seconds,"
                   " for all solution steps together. Use mzn/backend options for CPU time limit."],
-                "n_VMEMLIMIT_SoftHard": [16000000, 16000000, "/// 2 limits, soft/hard, in KB. Platform-dependent in Python 3.6. Default 16GB"],
+                "n_VMEMLIMIT_SoftHard": [8000000, 8000000, "/// 2 limits, soft/hard, in KB. Platform-dependent in Python 3.6. Default 8 GB"],
               },
               "Stderr_Keylines": {
                 s_CommentKey: [ "A complete line in stderr will be interpreted accordingly.",
