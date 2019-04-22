@@ -42,7 +42,7 @@ class MIP_scip_wrapper : public MIP_wrapper {
 
       double absGap=-1;
       double relGap=1e-8;
-      double intTol=1e-6;
+      double intTol=1e-8;
       double objDiff=1.0;
 
       bool processOption(int& i, std::vector<std::string>& argv);

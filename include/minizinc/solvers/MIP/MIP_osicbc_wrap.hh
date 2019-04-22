@@ -58,7 +58,7 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
       
       double absGap=0.99;
       double relGap=1e-8;
-      double intTol=1e-6;
+      double intTol=1e-8;
       double objDiff=1.0;
       
       std::string cbc_cmdOptions;
