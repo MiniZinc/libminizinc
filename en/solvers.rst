@@ -33,6 +33,32 @@ or separated flattening+solving - sometimes more stable but slower due to file I
   
   $ minizinc --solver cbc -c model.mzn data.dzn && minizinc --solver cbc -v -s -a model.fzn | minizinc --ozn-file model.ozn
 
+MIP-Aware Modeling
+~~~~~~~~~~~~~~~~~~~
+
+Avoid mixing positive and negative coefficients in the objective. Use 'complementing' variables to revert sense.
+
+To avoid *numerical issues*, make variable domains as tight as possible (compiler can deduce bounds in certain cases but explicit bounding can be stronger). Especially for variables involved in logical constraints, if you cannot reduce the domains to be in +/-1e4, consider indicator constraints (available for some solvers, see below). Avoid large coefficients too, as well as large values in the objective function. See more on tolerances in a below section.
+
+Example 1, simple: *implication*. Instead of :mzn:`x <= 1000000*y` given :mzn:`var 0..1: y`, prefer :mzn:`y=0 -> x<=0`.
+
+Example 2: *cost-based choice*. Assume you want the model to make a certain decision, e.g., constructing a road, but then its cost should be minimal among some others, otherwise not considered. This can be modeled as follows:
+
+.. code-block:: minizinc
+
+  var 0..1: c;                                             %% Whether we construct the road
+  var int: cost_road = 286*c + 1000000*(1-c);
+  var int: cost_final = min( [ cost_road, cost1, cost2 ] );
+
+Note the big coefficient in the definition of of :mzn:`cost_road`. It can lead to numerical issues and a wrong answer: when the solver's integrality tolerance is 1e-6, it can assume :mzn:`c=0.999999` as equivalent to :mzn:`c=1` leading to :mzn:`cost_road=287` after rounding.
+
+A better solution, given reasonable bounds on ``cost1`` and ``cost2``, is to replace the definition as follows:
+
+.. code-block:: minizinc
+
+  int: cost_others_ub = 1+2*ub_array( [cost1, cost2] );    %% Multiply by 2 for a stronger LP relaxation      
+  var int: cost_road = 286*c + cost_others_ub*(1-c);
+
 Installation of MIP Backends
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
@@ -92,7 +118,7 @@ For example, tolerances have been tightened to enable more precise solving with 
 ::
 
   --relGap <n>       relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default
-  --intTol <n>       integrality tolerance for a variable. Default 1e-6
+  --intTol <n>       integrality tolerance for a variable. Default 1e-8
   --solver-time-limit-feas <n>, --solver-tlf <n>
                      stop after <n> milliseconds after the first feasible solution (some backends)
   --writeModel <file>
@@ -138,7 +164,7 @@ to use them.
 Pools of User Cuts and Lazy Constraints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Some constraints in the model can be declared as user and/or lazy cuts and they will be added to the corresponding pools
-for the solvers supporting them. For that, apply annotations ``::MIP_cut`` and/or ``::MIP_lazy`` after a constraint.
+for the solvers supporting them. For that, apply annotations :mzn:`::MIP_cut` and/or :mzn:`::MIP_lazy` after a constraint.
 For Gurobi and IBM ILOG CPLEX, see ``share/minizinc/linear/options.mzn`` for their exact meaning.
 
 Warm Starts
