@@ -17,11 +17,7 @@ Constraint Programming Solvers
 Mixed-Integer Programming Solvers
 ---------------------------------
 
-All MIP solvers directly support multi-threading (option ``-p``). For this, COIN-BC needs to be
-configured with ``--enable-cbc-parallel``. Use ``svn/git`` to get the latest stable CBC revision,
-see ``https://projects.coin-or.org/Cbc``, currently ``https://projects.coin-or.org/svn/Cbc/stable/2.10``.
-
-Calling a solver on a MiniZinc model directly:
+Calling a MIP solver on a MiniZinc model directly:
 
 .. code-block:: bash
   
@@ -38,9 +34,9 @@ MIP-Aware Modeling
 
 Avoid mixing positive and negative coefficients in the objective. Use 'complementing' variables to revert sense.
 
-To avoid *numerical issues*, make variable domains as tight as possible (compiler can deduce bounds in certain cases but explicit bounding can be stronger). Especially for variables involved in logical constraints, if you cannot reduce the domains to be in +/-1e4, consider indicator constraints (available for some solvers, see below). Avoid large coefficients too, as well as large values in the objective function. See more on tolerances in a below section.
+To avoid *numerical issues*, make variable domains as tight as possible (compiler can deduce bounds in certain cases but explicit bounding can be stronger). Especially for variables involved in logical constraints, if you cannot reduce the domains to be in +/-1e4, consider indicator constraints (available for some solvers, see below). Especially for integer variables, the domain size of 1e4 should be an upper bound if possible -- what is the value of integrality otherwise? Avoid large coefficients too, as well as large values in the objective function. See more on tolerances in a below section.
 
-Example 1, simple: *implication*. Instead of :mzn:`x <= 1000000*y` given :mzn:`var 0..1: y`, prefer :mzn:`y=0 -> x<=0`.
+Example 1: *basic big-M constraint vs implication*. Instead of :mzn:`<expr> <= 1000000*y` given :mzn:`var 0..1: y` and where you use the 'big-M' value of 1000000 because you don't know a good upper bound on :mzn:`<expr>`, prefer :mzn:`y=0 -> <expr> <= 0` so that MiniZinc computes a possibly tighter bound.
 
 Example 2: *cost-based choice*. Assume you want the model to make a certain decision, e.g., constructing a road, but then its cost should be minimal among some others, otherwise not considered. This can be modeled as follows:
 
@@ -50,9 +46,9 @@ Example 2: *cost-based choice*. Assume you want the model to make a certain deci
   var int: cost_road = 286*c + 1000000*(1-c);
   var int: cost_final = min( [ cost_road, cost1, cost2 ] );
 
-Note the big coefficient in the definition of of :mzn:`cost_road`. It can lead to numerical issues and a wrong answer: when the solver's integrality tolerance is 1e-6, it can assume :mzn:`c=0.999999` as equivalent to :mzn:`c=1` leading to :mzn:`cost_road=287` after rounding.
+Note the big coefficient in the definition of :mzn:`cost_road`. It can lead to numerical issues and a wrong answer: when the solver's integrality tolerance is 1e-6, it can assume :mzn:`c=0.999999` as equivalent to :mzn:`c=1` leading to :mzn:`cost_road=287` after rounding.
 
-A better solution, given reasonable bounds on ``cost1`` and ``cost2``, is to replace the definition as follows:
+A better solution, given reasonable bounds on :mzn:`cost1` and :mzn:`cost2`, is to replace the definition as follows:
 
 .. code-block:: minizinc
 
@@ -105,7 +101,7 @@ The following parameters can be given on the command line or modified in ``share
 ::
 
   -D nSECcuts=0/1/2                            %% Subtour Elimination Constraints, see below
-  -D fMIPdomains=true/false                    %% The unified domains feature
+  -D fMIPdomains=true/false                    %% The unified domains feature, see below
   -D float_EPS=1e-6                            %% Epsilon for floats' strict comparison
   -DfIndConstr=true -DfMIPdomains=false        %% Use solver's indicator constraints, see below
 
@@ -113,7 +109,7 @@ Some Solver Options and Changed Default Values
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The following command-line options affect the backend or invoke extra functionality. Note that some of them have default values which may be different from the backend's ones.
-For example, tolerances have been tightened to enable more precise solving with integer variables and objective. This deteriorates performance on average, so when your model has moderate constant and bound magnitudes, you may want to pass negative values to use solver's defaults.
+For example, tolerances have been tightened to enable more precise solving with integer variables and objective. This slightly deteriorates performance on average, so when your model has moderate constant and bound magnitudes, you may want to pass negative values to use solver's defaults.
 
 ::
 
@@ -130,6 +126,8 @@ For example, tolerances have been tightened to enable more precise solving with 
   --cbcArgs '-guess -cuts off -preprocess off -passc 1'
                   parameters for the COIN-OR CBC backend
 
+All MIP solvers directly support multi-threading (option ``-p``). For COIN-BC to use it, it needs to be
+configured with ``--enable-cbc-parallel``.
 For other command-line options, run ``minizinc -h <solver-id>``.
 
 Subtour Elimination Constraints
