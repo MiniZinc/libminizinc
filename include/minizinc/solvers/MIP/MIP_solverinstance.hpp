@@ -838,6 +838,25 @@ namespace MiniZinc {
       }
     }
     
+    /// Cumulative
+    template<class MIPWrapper>
+    void p_cumulative(SolverInstanceBase& si, const Call* call) {
+      MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>( si );
+
+      std::unique_ptr<SECCutGen> pCG( new SECCutGen( gi.getMIPWrapper() ) );
+
+      assert( call->n_args()==4 );
+
+      std::vector<MIP_solver::Variable> startTimes;
+      gi.exprToVarArray(call->arg(0), startTimes);
+      std::vector<double> durations, demands;
+      gi.exprToArray(call->arg(1), durations);
+      gi.exprToArray(call->arg(2), demands);
+      double b = gi.exprToConst(call->arg(3));
+
+      gi.getMIPWrapper()->addCumulative(startTimes.size(), startTimes.data(), durations.data(), demands.data(), b);
+    }
+
     /// The XBZ cut generator
     template<class MIPWrapper>
     void p_XBZ_cutgen(SolverInstanceBase& si, const Call* call) {
@@ -902,6 +921,8 @@ namespace MiniZinc {
     _constraintRegistry.add("aux_float_le_zero_if_0__IND", SCIPConstraints::p_indicator_le0_if0<MIPWrapper>);
     _constraintRegistry.add("aux_float_eq_if_1__IND", SCIPConstraints::p_indicator_eq_if1<MIPWrapper>);
     
+    _constraintRegistry.add("cumulative", SCIPConstraints::p_cumulative<MIPWrapper>);
+
     /// XBZ cut generator
     _constraintRegistry.add("array_var_float_element__XBZ_lb__cutgen",
                             SCIPConstraints::p_XBZ_cutgen<MIPWrapper>);

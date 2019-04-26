@@ -103,6 +103,8 @@ class MIP_scip_wrapper : public MIP_wrapper {
     virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int *rmatind, double* rmatval,
                         LinConType sense, double rhs,
                         std::string rowName = "");
+    /// Cumulative, currently SCIP only
+    virtual void addCumulative(int nnz, int *rmatind, double* d, double* r, double b, std::string rowName="");
     virtual void setObjSense(int s) {   // +/-1 for max/min
       wrap_assert( setObjSense_SCIP(s) );
     }
