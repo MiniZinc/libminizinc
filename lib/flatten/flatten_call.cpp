@@ -232,6 +232,82 @@ namespace MiniZinc {
     args.push_back(il);
   }
   
+  /// Special form of disjunction for SCIP
+  bool addBoundsDisj(EnvI& env, Expression* arg, Call* c_orig) {
+    auto pArrayLit = arg->dyn_cast<ArrayLit>();
+    if (nullptr == pArrayLit)
+      return false;
+    std::vector<Expression*>
+        isUBI, bndI, varI,         // integer bounds and vars
+        isUBF, bndF, varF;         // float bounds and vars
+    for (int i=pArrayLit->size(); i--; ) {
+      auto pId=pArrayLit->operator [](i)->dyn_cast<Id>();
+      if (nullptr==pId)
+        return false;
+      auto pDecl=follow_id_to_decl(pId)->dyn_cast<VarDecl>();
+      /// Checking the rhs
+      auto pRhs=pDecl->e();
+      if (nullptr==pRhs)
+        return false;              // not checking this boolean
+      auto pCall=pRhs->dyn_cast<Call>();
+      if (nullptr==pCall)
+        return false;
+      if (constants().ids.int_.le!=pCall->id() && constants().ids.float_.le!=pCall->id())
+        return false;
+      /// See if one is a constant and one a variable
+      Expression *pConst=nullptr, *pVar=nullptr;
+      bool fFloat=false;
+      bool isUB=false;
+      for (int j=pCall->n_args(); j--; ) {
+        if (auto pF=pCall->arg(j)->dyn_cast<FloatLit>()) {
+          pConst=pF;
+          fFloat=true;
+          isUB = (1==j);
+        } else
+          if (auto pF=pCall->arg(j)->dyn_cast<IntLit>()) {
+            pConst=pF;
+            fFloat=false;
+            isUB = (1==j);
+          } else
+            if (auto pId=pCall->arg(j)->dyn_cast<Id>()) {
+              if (nullptr!=pVar)
+                return false;                   // 2 variables, exit
+              pVar = pId;
+            }
+      }
+      /// All good, add them
+      if (fFloat) {
+        isUBF.push_back( constants().boollit(isUB) );
+        bndF.push_back(pConst);
+        varF.push_back(pVar);
+      } else {
+        isUBI.push_back( constants().boollit(isUB) );
+        bndI.push_back(pConst);
+        varI.push_back(pVar);
+      }
+    }
+    /// Create new call
+    GCLock lock;
+    auto loc = c_orig->loc().introduce();
+    std::vector<Expression*> args =
+    {
+      new ArrayLit(loc, isUBI),
+      new ArrayLit(loc, bndI),
+      new ArrayLit(loc, varI),
+      new ArrayLit(loc, isUBF),
+      new ArrayLit(loc, bndF),
+      new ArrayLit(loc, varF)
+    };
+
+    Call* c = new Call(c_orig->loc().introduce(),
+                       env.model->getFnDecls().bounds_disj.second->id(),
+                       args);
+    c->type(Type::varbool());
+    c->decl(env.model->getFnDecls().bounds_disj.second);
+    env.flat_addItem(new ConstraintI(c_orig->loc().introduce(), c));
+    return true;
+  }
+
   EE flatten_call(EnvI& env,Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     EE ret;
     Call* c = e->cast<Call>();
@@ -546,7 +622,31 @@ namespace MiniZinc {
           args.push_back(pos_al);
           args.push_back(neg_al);
         }
-        
+        if (cid == constants().ids.exists) {
+          /// Check the special bounds disjunction for SCIP
+          if (!env.model->getFnDecls().bounds_disj.first) {
+            env.model->getFnDecls().bounds_disj.first = true;
+            std::vector<Type> bj_t =
+            { Type::parbool(1), Type::parint(1), Type::varint(1),
+              Type::parbool(1), Type::parfloat(1), Type::varfloat(1) };
+            GCLock lock;
+            env.model->getFnDecls().bounds_disj.second =
+                env.model->matchFn(env, ASTString("bounds_disj"), bj_t, false);
+          }
+          /// When the SCIP predicate is declared only
+          /// Only in root context
+          bool fBoundsDisj_Maybe =
+              ( nullptr != env.model->getFnDecls().bounds_disj.second &&
+              C_ROOT==ctx.b );
+          if (fBoundsDisj_Maybe) {
+            if (addBoundsDisj(env, args[0](), c)) {
+              ret.b = bind(env,Ctx(),b,constants().lit_true);
+              ret.r = bind(env,ctx,r,constants().lit_true);
+              return ret;
+            }
+          }
+        }
+
       } else if (decl->e()==NULL && cid == constants().ids.forall) {
         ArrayLit* al = follow_id(args_ee[0].r())->cast<ArrayLit>();
         std::vector<KeepAlive> alv;

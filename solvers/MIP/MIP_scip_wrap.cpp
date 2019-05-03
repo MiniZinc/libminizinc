@@ -289,6 +289,30 @@ void MIP_scip_wrapper::addIndicatorConstraint(
   }
 }
 
+void MIP_scip_wrapper::addBoundsDisj(int n, double *fUB, double *bnd, int *vars,
+                                     int nF, double *fUBF, double *bndF, int *varsF, string rowName) {
+  SCIP_CONS* cons;
+  std::vector<SCIP_VAR*> v(n+nF);
+  std::vector<SCIP_BOUNDTYPE> bt(n+nF);
+  std::vector<SCIP_Real> bs(n+nF);
+
+  for (int j=0; j<n; ++j) {
+    v[j] = scipVars[vars[j]];
+    bt[j] = fUB[j] ? SCIP_BOUNDTYPE_UPPER : SCIP_BOUNDTYPE_LOWER;
+    bs[j] = bnd[j];
+  }
+  for (int j=0; j<nF; ++j) {
+    v[n+j] = scipVars[varsF[j]];
+    bt[n+j] = fUBF[j] ? SCIP_BOUNDTYPE_UPPER : SCIP_BOUNDTYPE_LOWER;
+    bs[n+j] = bndF[j];
+  }
+
+  wrap_assert( SCIPcreateConsBasicBounddisjunction(scip, &cons, rowName.c_str(),
+                                                   v.size(), v.data(), bt.data(), bs.data() ) );
+  wrap_assert( SCIPaddCons(scip, cons) );
+  wrap_assert( SCIPreleaseCons(scip, &cons) );
+
+}
 
 /// SolutionCallback ------------------------------------------------------------------------
 

@@ -260,6 +260,11 @@ class MIP_wrapper {
                         LinConType sense, double rhs,
                         std::string rowName = "") { throw std::runtime_error("Indicator constraints not supported. "); }
                 
+    /// Bounds disj for SCIP
+    virtual void addBoundsDisj(int n, double *fUB, double *bnd, int* vars,
+                               int nF, double *fUBF, double *bndF, int* varsF,
+                        std::string rowName = "") { throw std::runtime_error("Bounds disjunctions not supported. "); }
+
     /// 0: model-defined level, 1: free, 2: uniform search
     virtual int getFreeSearch() { return 1; }
     /// Return 0 if ignoring searches

@@ -875,6 +875,26 @@ namespace MiniZinc {
       gi.registerCutGenerator( move( pCG ) );
     }
     
+    /// SCIP's bound disj
+    template<class MIPWrapper>
+    void p_bounds_disj(SolverInstanceBase& si, const Call* call) {
+      MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>( si );
+      assert(6==call->n_args());
+      std::vector<double> fUB, fUBF, bnd, bndF;
+      std::vector<MIP_solver::Variable> vars, varsF;
+      gi.exprToArray(call->arg(0), fUB);
+      gi.exprToArray(call->arg(3), fUBF);
+      gi.exprToArray(call->arg(1), bnd);
+      gi.exprToArray(call->arg(4), bndF);
+      gi.exprToVarArray(call->arg(2), vars);
+      gi.exprToVarArray(call->arg(5), varsF);
+      std::ostringstream ss;
+      ss << "p_bounds_disj_" << (gi.getMIPWrapper()->nAddedRows++);
+      double coef = 1.0;
+      gi.getMIPWrapper()->addBoundsDisj( fUB.size(), fUB.data(), bnd.data(), vars.data(),
+                                         fUBF.size(), fUBF.data(), bndF.data(), varsF.data(), ss.str() );
+    }
+
   }
 
   
@@ -907,6 +927,7 @@ namespace MiniZinc {
                             SCIPConstraints::p_XBZ_cutgen<MIPWrapper>);
     _constraintRegistry.add("circuit__SECcuts", SCIPConstraints::p_SEC_cutgen<MIPWrapper>);
 
+    _constraintRegistry.add("bounds_disj", SCIPConstraints::p_bounds_disj<MIPWrapper>);
   }
   
 
