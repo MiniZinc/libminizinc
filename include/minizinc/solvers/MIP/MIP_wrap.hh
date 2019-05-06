@@ -265,6 +265,9 @@ class MIP_wrapper {
                                int nF, double *fUBF, double *bndF, int* varsF,
                         std::string rowName = "") { throw std::runtime_error("Bounds disjunctions not supported. "); }
 
+    /// Cumulative, currently SCIP only
+    virtual void addCumulative(int nnz, int *rmatind, double* d, double* r, double b, std::string rowName="")
+    { throw std::runtime_error("Cumulative constraints not supported. "); }
     /// 0: model-defined level, 1: free, 2: uniform search
     virtual int getFreeSearch() { return 1; }
     /// Return 0 if ignoring searches

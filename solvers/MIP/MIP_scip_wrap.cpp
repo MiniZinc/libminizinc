@@ -314,6 +314,27 @@ void MIP_scip_wrapper::addBoundsDisj(int n, double *fUB, double *bnd, int *vars,
 
 }
 
+void MIP_scip_wrapper::addCumulative(int nnz, int *rmatind, double *d, double *r, double b, string rowName)
+{
+
+  SCIP_CONS* cons;
+  vector<SCIP_VAR*> ab(nnz);
+  vector<int> nd(nnz), nr(nnz);
+
+  for (int j=0; j<nnz; ++j) {
+    ab[j] = scipVars[rmatind[j]];
+    nd[j] = (int)round(d[j]);
+    nr[j] = (int)round(r[j]);
+  }
+
+  wrap_assert( SCIPcreateConsBasicCumulative( scip, &cons,rowName.c_str(),
+                                              nnz, ab.data(), nd.data(), nr.data(), (int)round(b)) );
+
+  wrap_assert( SCIPaddCons(scip, cons) );
+  wrap_assert( SCIPreleaseCons(scip, &cons) );
+}
+
+
 /// SolutionCallback ------------------------------------------------------------------------
 
 /// From event_bestsol.c:
