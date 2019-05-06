@@ -43,23 +43,14 @@ using namespace std;
 
 string MIP_gurobi_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
-  oss << "MIP wrapper for Gurobi library ";
-  MIP_gurobi_wrapper mgw( static_cast<Options*>(opt) );
-  try {
-    mgw.checkDLL();
-    int major, minor, technical;
-    mgw.dll_GRBversion(&major, &minor, &technical);
-    oss << major << '.' << minor << '.' << technical;
-  } catch (MiniZinc::InternalError&) {
-    return "<unknown version>";
-  }
+  oss << "MIP wrapper for Gurobi library " << getVersion();
   oss << ".  Compiled  " __DATE__ "  " __TIME__;
   return oss.str();
 }
 
 string MIP_gurobi_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
-  MIP_gurobi_wrapper mgw( static_cast<Options*>(opt) );
+  MIP_gurobi_wrapper mgw( nullptr );               // to avoid opening the env
   try {
     mgw.checkDLL();
     int major, minor, technical;
@@ -340,24 +331,24 @@ void MIP_gurobi_wrapper::openGUROBI()
 
 void MIP_gurobi_wrapper::closeGUROBI()
 {
-  /// Freeing the problem can be slow both in C and C++, see IBM forums. Skipping.
-     /* Free up the problem as allocated by GRB_createprob, if necessary */
   /* Free model */
 
   // If not allocated, skip
-  if (0==model)
-    return;
-  dll_GRBfreemodel(model);
-  model = 0;
+  if (nullptr!=model) {
+    /// Freeing the problem can be slow both in C and C++, see IBM forums. Skipping.
+       /* Free up the problem as allocated by GRB_createprob, if necessary */
+    // dll_GRBfreemodel(model);
+    model = 0;
+  }
 
   /* Free environment */
 
-  if (env)
+  if (nullptr!=env)
     dll_GRBfreeenv(env);
   /// and at last:
 //   MIP_wrapper::cleanup();
 #ifdef GUROBI_PLUGIN
-  dll_close(gurobi_dll);
+  // dll_close(gurobi_dll);    // Is called too many times, disabling. 2019-05-06
 #endif
 }
 
