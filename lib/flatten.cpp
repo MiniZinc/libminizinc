@@ -2517,11 +2517,12 @@ namespace MiniZinc {
           v->e()->ann().removeCall(constants().ann.output_array);
           if (v->e()->ann().contains(constants().ann.output_only))
             return;
-          if (v->e()->type().ispar() && !v->e()->type().isopt() && v->e()->type().dim() > 0 && v->e()->ti()->domain()==NULL
+          if (v->e()->type().ispar() && !v->e()->type().isopt() && !v->e()->type().cv() && v->e()->type().dim() > 0 && v->e()->ti()->domain()==NULL
               && (v->e()->type().bt()==Type::BT_INT || v->e()->type().bt()==Type::BT_FLOAT)) {
             // Compute bounds for array literals
             GCLock lock;
             ArrayLit* al = eval_array_lit(env, v->e()->e());
+            v->e()->e(al);
             if (v->e()->type().bt()==Type::BT_INT && v->e()->type().st()==Type::ST_PLAIN) {
               IntVal lb = IntVal::infinity();
               IntVal ub = -IntVal::infinity();
@@ -2547,8 +2548,7 @@ namespace MiniZinc {
               //v->e()->ti()->setComputedDomain(true);
               setComputedDomain(env, v->e(), new SetLit(Location().introduce(), FloatSetVal::a(lb, ub)), true);
             }
-          }
-          if (v->e()->type().isvar() || v->e()->type().isann()) {
+          } else if (v->e()->type().isvar() || v->e()->type().isann()) {
             (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
           } else {
             if (v->e()->e()==NULL) {
