@@ -325,6 +325,9 @@ class MIP_wrapper {
      virtual int getNNodes() = 0;
      virtual int getNOpen() = 0;
 
-  }; 
+    /// Default MZN library for MIP
+    static std::string getMznLib();
+
+  };
 
 #endif  // __MIP_WRAPPER__

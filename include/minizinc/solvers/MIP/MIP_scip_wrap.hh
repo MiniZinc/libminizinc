@@ -146,6 +146,10 @@ class MIP_scip_wrapper : public MIP_wrapper {
     
     /// Need to consider the 100 status codes in SCIP and change with every version? TODO
     Status convertStatus(SCIP_STATUS scipStatus);
+
+  public:
+    /// Default MZN library for SCIP
+    static std::string getMznLib();
 };
 
 #endif  // __MIP_SCIP_WRAPPER_H__

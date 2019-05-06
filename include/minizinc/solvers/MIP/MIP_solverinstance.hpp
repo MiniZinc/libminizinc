@@ -10,7 +10,7 @@ namespace MiniZinc {
       requiredFlags.push_back(dllFlag);
     SolverConfig sc(getId(), MIPWrapper::getVersion());
     sc.name(MIPWrapper::getName());
-    sc.mznlib("-Glinear");
+    sc.mznlib(MIPWrapper::getMznLib());
     sc.mznlibVersion(1);
     sc.supportsMzn(true);
     sc.description("MiniZinc MIP solver plugin");
