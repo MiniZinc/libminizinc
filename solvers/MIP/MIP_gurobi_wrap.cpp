@@ -335,9 +335,8 @@ void MIP_gurobi_wrapper::closeGUROBI()
 
   // If not allocated, skip
   if (nullptr!=model) {
-    /// Freeing the problem can be slow both in C and C++, see IBM forums. Skipping.
        /* Free up the problem as allocated by GRB_createprob, if necessary */
-    // dll_GRBfreemodel(model);
+    dll_GRBfreemodel(model);
     model = 0;
   }
 
