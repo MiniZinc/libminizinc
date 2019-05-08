@@ -349,6 +349,8 @@ bool Solns2Out::__evalStatusMsg( SolverInstance::Status status ) {
     getOutput() << comments;
     if (!it->second.empty())
       getOutput() << it->second << '\n';
+    if ( _opt.flag_output_time)
+      getOutput() << "% time elapsed: " << starttime.stoptime() << "\n";
     if ( _opt.flag_output_flush )
       getOutput().flush();
     Solns2Out::status = status;
