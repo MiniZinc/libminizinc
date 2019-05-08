@@ -34,7 +34,7 @@ MIP-Aware Modeling
 
 Avoid mixing positive and negative coefficients in the objective. Use 'complementing' variables to revert sense.
 
-To avoid *numerical issues*, make variable domains as tight as possible (compiler can deduce bounds in certain cases but explicit bounding can be stronger). Especially for variables involved in logical constraints, if you cannot reduce the domains to be in +/-1e4, consider indicator constraints (available for some solvers, see below). Especially for integer variables, the domain size of 1e4 should be an upper bound if possible -- what is the value of integrality otherwise? Avoid large coefficients too, as well as large values in the objective function. See more on tolerances in a below section.
+To avoid numerical issues, make variable domains as tight as possible (compiler can deduce bounds in certain cases but explicit bounding can be stronger). Especially for variables involved in logical constraints, if you cannot reduce the domains to be in +/-1e4, consider indicator constraints (available for some solvers, see below). Especially for integer variables, the domain size of 1e4 should be an upper bound if possible -- what is the value of integrality otherwise? Avoid large coefficients too, as well as large values in the objective function. See more on tolerances in a below section.
 
 Example 1: *basic big-M constraint vs implication*. Instead of :mzn:`<expr> <= 1000000*y` given :mzn:`var 0..1: y` and where you use the 'big-M' value of 1000000 because you don't know a good upper bound on :mzn:`<expr>`, prefer :mzn:`y=0 -> <expr> <= 0` so that MiniZinc computes a possibly tighter bound.
 
@@ -58,7 +58,39 @@ A better solution, given reasonable bounds on :mzn:`cost1` and :mzn:`cost2`, is 
 Installation of MIP Backends
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-For *SCIP (as of 6.0.1.0)*, the installation commands should be as follows:
+For *SCIP (as of 6.0.1.0)*, if you download the Optimization Suite, the installation commands should be as follows.
+
+1. Download the SCIP Optimization Suite 6.0.1 (or higher) source code: https://scip.zib.de/download.php?fname=scipoptsuite-6.0.1.tgz
+
+2. Untar it and change directories into scipoptsuite-6.0.1
+
+3. create a build directory and change directories there
+
+4. Execute 
+
+.. code-block:: bash
+
+    cmake .. -DCMAKE_BUILD_TYPE=Release [-DCMAKE_INSTALL_PREFIX=/home/user/local/scip/installation]
+
+The first flag is necessary, the second one is optional in order to install SCIP and SoPlex non-systemwide.
+
+5. Compile and install SoPlex, SCIP, and its optional components:
+
+.. code-block:: bash
+
+    make && make install
+
+6. Configure minizinc:
+
+.. code-block:: bash
+
+    cmake .. -DUSE_PROPRIETARY=on [-DCMAKE_PREFIX_PATH=/home/user/local/scip/installation] 
+
+The optional prefix path variable is only necessary if you installed SCIP in a non-systemwide directory.
+
+7. Compile Minizinc and enjoy SCIP as a solver.
+
+If you have folders for SCIP and SoPlex separately, follow these steps.
 
 .. code-block:: bash
 
@@ -76,11 +108,7 @@ For *SCIP (as of 6.0.1.0)*, the installation commands should be as follows:
   $ make -j5
   $ sudo make install                    ## Now MZN should find it
 
-You can also install into another location as the default ``make install``,
-but then use minizinc's ``-DCMAKE_PREFIX_PATH=...`` to let CMake find that location.
-Moreover, for MiniZinc's CMake config to actually compile SCIP module (which is currently statically linked),
-you need to configure MiniZinc as follows: ``cmake .. -DUSE_PROPRIETARY=ON``
-  
+
 *COIN-OR CBC* (as of 2.10/stable. Prefer stable or even trunk):
 
 .. code-block:: 
