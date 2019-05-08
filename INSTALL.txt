@@ -15,7 +15,7 @@ Compilation instructions:
 -------------------------
 
 Prerequisite software:
-- cmake
+- cmake, ZLIB (on some platforms)
 - A recent C++ compiler, libminizinc has been tested with recent versions of
   clang, g++, and Microsoft Visual C++.
 - If you intend to change lexer/parser templates or checkout development
@@ -33,10 +33,15 @@ To perform the build:
 > cmake ..
 > cmake --build .
 
-This will compile the mzn-fzn driver by default. To enable other solvers, 
-set their paths e.g. as 'cmake -DGECODE_HOME="___" ..', see the example BUILD.*
-scripts and CMakeLists.txt for available interfaces. In Windows, when using
-64-bit versions of solver libraries, add -G"Visual Studio 12 2013 Win64".
+CMake configuration will try to find Gecode, CBC, Gurobi, and CPLEX in their
+standard locations (see Documentation on how to compile open-source solvers).
+You can point to alternative locations using flags such as -DGECODE_ROOT=...
+with the configuration call `cmake ..`. Standard environment variables, such as
+GUROBI_HOME, are checked as well. See CMakeLists.txt for the
+current list of solvers.
+
+This will compile the minizinc driver with the available solvers. To configure
+even more solvers, such as Chuffed, see Solver Configuration in Documentation.
 
 To install MiniZinc:
 > cmake --build . --target install
@@ -53,15 +58,13 @@ Running
 The build produces the mzn2fzn and
 solns2out tools. These are drop-in replacements for the MiniZinc 1.6 versions.
 
-Add the bin directory in the installation path to your PATH environment variable if necessary,
-or (if you did not install) add the "build" directory to your PATH.
+Add the bin directory in the installation path to your PATH environment variable
+if necessary, or (if you did not install) add the "build" directory to your PATH.
 
 If you have both MiniZinc 1.6 and 2 installed (and MiniZinc 2.0
 occurs on the PATH before 1.6), you can use the old minizinc driver
 with the new versions of mzn2fzn and solns2out.
 
-Useful options: -v to print progress log and -s for
-solution statistics. Alternatively, most targets support -a for continuous printing of new
-solutions. Note that the solver backends are expected to print solutions on stdout
-and other messages either on stderr or as comments (%...\n).
-Each specialized solver backend might have individual options.
+Useful options: -v to print progress log and -s for solution statistics.
+Most targets support -a for continuous printing of new solutions.
+Run minizinc -h <solver> for more information.
