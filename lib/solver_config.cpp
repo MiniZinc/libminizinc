@@ -226,7 +226,7 @@ namespace MiniZinc {
               std::string exe = FileUtils::find_executable(FileUtils::file_path(exePath, basePath));
               int nr_found = (int) (! exe.empty());
               std::string tmp = FileUtils::find_executable(exePath);
-              nr_found += (int) (! tmp.empty());
+              nr_found += (int) ( (! tmp.empty()) && tmp != exe);
               exe = exe.empty() ? tmp : exe;
               if (nr_found > 0) {
                 sc._executable_resolved = exe;
