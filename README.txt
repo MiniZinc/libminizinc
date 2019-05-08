@@ -7,7 +7,9 @@ it is a complete re-write of the MiniZinc-to-FlatZinc
 compiler, based on the new libminizinc C++ library.
 
 For installation and compilation instructions, as well as a small
-start-up guide, please refer to the file INSTALL.txt.
+start-up guide, please refer to the file INSTALL.txt. Full documentation is
+available under https://www.minizinc.org/resources.html (its development
+shapshot is in a separate repository minizinc-doc).
 
 Changes from version 1.6
 ------------------------
@@ -81,5 +83,6 @@ sort, arg_sort, arg_min, arg_max
 
 ** Bugs **
 
-If you encounter any problems with MiniZinc, please use the MiniZinc bug tracker
-at https://github.com/MiniZinc/libminizinc/issues to report any issues or feature requests.
+If you encounter any problems with MiniZinc, please use the MiniZinc discussion
+forum https://www.minizinc.org/forum.html and the bug tracker at
+https://github.com/MiniZinc/libminizinc/issues to report any issues or feature requests.
