@@ -33,15 +33,16 @@ To perform the build:
 > cmake ..
 > cmake --build .
 
-CMake configuration will try to find Gecode, CBC, Gurobi, and CPLEX in their
-standard locations (see Documentation on how to compile open-source solvers).
-You can point to alternative locations using flags such as -DGECODE_ROOT=...
-with the configuration call `cmake ..`. Standard environment variables, such as
-GUROBI_HOME, are checked as well. See CMakeLists.txt for the
+CMake configuration will try to find Gecode, CBC, SCIP, Gurobi, XPRESS,
+and CPLEX in their standard locations (see Documentation on how to compile
+open-source solvers). You can point to alternative locations using flags such as
+-DGECODE_ROOT=... with the configuration call `cmake ..`. Standard environment
+variables, such as GUROBI_HOME, are checked as well. See CMakeLists.txt for the
 current list of solvers.
 
 This will compile the minizinc driver with the available solvers. To configure
-even more solvers, such as Chuffed, see Solver Configuration in Documentation.
+even more solvers, such as Chuffed or Google OR-Tools, see Solver Configuration
+in Documentation.
 
 To install MiniZinc:
 > cmake --build . --target install
