@@ -308,9 +308,10 @@ namespace MiniZinc {
       if (Expression* vde = vdi->e()->e()) {
         if (auto call = vde->dyn_cast<Call>()) {
           if (call->id() == constants().ids.int2float) {
-            auto alias = follow_id_to_decl(vdi->e())->cast<VarDecl>();
-            auto vd = follow_id_to_decl(call->arg(0))->cast<VarDecl>();
-            aliasMap[vd] = alias;
+            if (auto vd = follow_id_to_decl(call->arg(0))->dyn_cast<VarDecl>()) {
+              auto alias = follow_id_to_decl(vdi->e())->cast<VarDecl>();
+              aliasMap[vd] = alias;  
+            }
           }
         }
       }
