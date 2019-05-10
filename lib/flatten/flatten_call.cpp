@@ -622,8 +622,9 @@ namespace MiniZinc {
           args.push_back(pos_al);
           args.push_back(neg_al);
         }
-        if (cid == constants().ids.exists) {
+        if (C_ROOT==ctx.b && cid == constants().ids.exists) {
           /// Check the special bounds disjunction for SCIP
+          /// Only in root context
           if (!env.model->getFnDecls().bounds_disj.first) {
             env.model->getFnDecls().bounds_disj.first = true;
             std::vector<Type> bj_t =
@@ -634,10 +635,8 @@ namespace MiniZinc {
                 env.model->matchFn(env, ASTString("bounds_disj"), bj_t, false);
           }
           /// When the SCIP predicate is declared only
-          /// Only in root context
           bool fBoundsDisj_Maybe =
-              ( nullptr != env.model->getFnDecls().bounds_disj.second &&
-              C_ROOT==ctx.b );
+              ( nullptr != env.model->getFnDecls().bounds_disj.second );
           if (fBoundsDisj_Maybe) {
             if (addBoundsDisj(env, args[0](), c)) {
               ret.b = bind(env,Ctx(),b,constants().lit_true);
