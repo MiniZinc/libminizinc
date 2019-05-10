@@ -2699,29 +2699,53 @@ namespace MiniZinc {
           int i=agenda[ai];
           VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>();
           bool keptVariable = true;
-          if (vdi!=NULL && !isOutput(vdi->e()) && env.vo.occurrences(vdi->e())==0 ) {
-            if (vdi->e()->e() && vdi->e()->ti()->domain()) {
-              if (vdi->e()->type().isvar() && vdi->e()->type().isbool() &&
-                  !vdi->e()->type().isopt() &&
-                  Expression::equal(vdi->e()->ti()->domain(),constants().lit_true)) {
-                GCLock lock;
-                ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->e()->e());
-                if (vdi->e()->introduced()) {
+          /// Look at constraints
+          if (vdi!=NULL && !isOutput(vdi->e())) {
+            if (0<env.vo.occurrences(vdi->e())) {
+              const auto it = env.vo._m.find(vdi->e()->id());
+              if (env.vo._m.end()!=it) {
+                bool hasRedundantOccurrenciesOnly = true;
+                for (const auto& c: it->second) {
+                  if (auto constrI=c->dyn_cast<ConstraintI>())
+                    if (auto call=constrI->e()->dyn_cast<Call>())
+                      if (call->id()=="mzn_reverse_map_var")
+                        continue;           // all good
+                  hasRedundantOccurrenciesOnly = false;
+                  break;
+                }
+                if (hasRedundantOccurrenciesOnly) {
                   removedItems.push_back(vdi);
                   env.flat_removeItem(vdi);
                   keptVariable = false;
-                } else {
-                  vdi->e()->e(NULL);
+                  for (const auto& c: it->second) {
+                    env.flat_removeItem(c);
+                  }
                 }
-                env.flat_addItem(ci);
-              } else if (vdi->e()->type().ispar() || vdi->e()->ti()->computedDomain()) {
+              }
+            } else {                // 0 occurrencies
+              if (vdi->e()->e() && vdi->e()->ti()->domain()) {
+                if (vdi->e()->type().isvar() && vdi->e()->type().isbool() &&
+                    !vdi->e()->type().isopt() &&
+                    Expression::equal(vdi->e()->ti()->domain(),constants().lit_true)) {
+                  GCLock lock;
+                  ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->e()->e());
+                  if (vdi->e()->introduced()) {
+                    removedItems.push_back(vdi);
+                    env.flat_removeItem(vdi);
+                    keptVariable = false;
+                  } else {
+                    vdi->e()->e(NULL);
+                  }
+                  env.flat_addItem(ci);
+                } else if (vdi->e()->type().ispar() || vdi->e()->ti()->computedDomain()) {
+                  removedItems.push_back(vdi);
+                  keptVariable = false;
+                }
+              } else {
                 removedItems.push_back(vdi);
+                env.flat_removeItem(vdi);
                 keptVariable = false;
               }
-            } else {
-              removedItems.push_back(vdi);
-              env.flat_removeItem(vdi);
-              keptVariable = false;
             }
           }
           if (vdi && keptVariable && vdi->e()->type().dim() > 0 && vdi->e()->type().isvar()) {
