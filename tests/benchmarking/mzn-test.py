@@ -40,7 +40,7 @@ sFlatOptChecker = "--allow-multiple-assignments"
 s_UsageExamples = ( 
     "\nUSAGE EXAMPLES:"
     "\n(1)  \"mzn-test.py model.mzn data.dzn [--checkDZN stdout.txt [--checkStderr stderr.txt]] [--chkPrf MINIZINC-CHK --chkPrf FZN-GECODE-CHK] [--tCheck 15] [--addSolverOption \"--fzn-flags '-D fPureCircuit=true'\"]\"                  ::: check the instance's solutions, optionally reading them from a DZN-formatted file (otherwise solving first), optionally overriding default checker list etc."
-    "\n(2)  \"mzn-test.py --slvPrf MZN-CPLEX -t 300 -l instList1.txt -l instList2.txt --name CPLEXTest_003 --result newLog00.json prevLog1.json prevLog2.json --failed failLog.json\""
+    "\n(2)  \"mzn-test.py --solver CPLEX -t 300 -l instList1.txt -l instList2.txt --name CPLEXTest_003 --result newLog00.json prevLog1.json prevLog2.json --failed failLog.json\""
     "             ::: solve instances using the specified solver profile and wall time limit 300 seconds. The instances are taken from the list files. The test is aliased CPLEXTest_003. Results are saved to newLog00.json and compared/ranked to those in prevLog's. (Probably) incorrect solutions are saved to failLog.json."
     "\n(3)  \"mzn-test.py [-l instList1.txt] -c prevLog1.json -c prevLog2.json [--runAndCmp]\"                  ::: compare existing logs, optionally limited to the given instances, optionally running new tests. USE SINGLE QUOTES ONLY INSIDE ARGUMENTS PASSED TO THE BACKENDS when running backends through shell."
   )
@@ -62,9 +62,9 @@ class MZT_Param:
                             help='summarize and compare results to existing <logfile>. Only compares the logs and does not run tests, unless --runAndCmp. The flags -c can be omitted if -l is used')
         parser.add_argument('--runAndCmp', '--runAndCompare', '--run', action='store_true',
                             help='even if other logs are provided by -c, do run the tests and compare')
-        parser.add_argument('--slvPrf', '--solverPrf', '--solverProfile', metavar='<prf_name>',
+        parser.add_argument('--solver', '--solverPrf', '--solverProfile', metavar='<prf_name>',
                             help='solver profile from those defined in config section \"SOLVER_PROFILES\"')
-        parser.add_argument('--solver', '--solverCall', metavar='"<exe+flags or shell command(s) if --shellSolve 1>"',
+        parser.add_argument('--call', '--solverCall', metavar='"<exe+flags or shell command(s) if --shellSolve 1>"',
                             help='solver backend call, should be quoted. Insert %%s where instance files need to be. Flatten with \''
                              + sDZNOutputAgrs + '\' to enable solution checking, unless the model has a suitable output definition.'
                              " Pass '--output-time' to the output filter (e.g., solns2out) to enable ranking by time")
@@ -508,8 +508,8 @@ class MZT_Param:
                 print( "Saving final config to", self.args.saveCfg )
                 json.dump( self.cfg, wf, sort_keys=True, indent=json_config.n_JSON_Indent )
         ### COMPILE THE SOLVER BACKEND
-        if None!=self.args.slvPrf:
-            self.cfg["COMMON_OPTIONS"]["Solvers"][0] = self.args.slvPrf
+        if None!=self.args.solver:
+            self.cfg["COMMON_OPTIONS"]["Solvers"][0] = self.args.solver
         slvPrfName = self.cfg["COMMON_OPTIONS"]["Solvers"][0]
         slvPrf = self.cfg["SOLVER_PROFILES"][slvPrfName]
         assert len(slvPrf)>0, "Solver profile '%s' should use at least a basic backend" % slvPrfName
@@ -518,9 +518,9 @@ class MZT_Param:
             self.slvBE = json_config.mergeJSON( self.slvBE, self.cfg["BACKEND_DEFS"][slvPrf[i]] )
         if None!=self.args.tSolve:
             self.slvBE["EXE"]["n_TimeoutRealHard"][0] = self.args.tSolve
-        assert None==self.args.solver or None==self.args.slvPrf, "ERROR: both solver call and a solver profile specified."
-        if None!=self.args.solver:    ## After the compilation
-            self.slvBE["EXE"]["s_SolverCall"][0] = self.args.solver
+        assert None==self.args.solver or None==self.args.call, "ERROR: both solver call and a solver profile specified."
+        if None!=self.args.call:    ## After the compilation
+            self.slvBE["EXE"]["s_SolverCall"][0] = self.args.call
         if None!=self.args.shellSolve:
             self.slvBE["EXE"]["b_ThruShell"][0] = self.args.shellSolve!=0
         print ( "\nSolver/checker configurations:\n     SLV_CFG: ", json.dumps( self.slvBE["EXE"] ) )
