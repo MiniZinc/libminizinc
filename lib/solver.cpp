@@ -591,6 +591,7 @@ void MznSolver::flatten(const std::string& modelString, const std::string& model
   Timer tm01;
   flt.flatten(modelString, modelName);
   /// The following message tells mzn-test.py that flattening succeeded.
+  // TODO: Remove once flatTime statistic is used by mzn-test.py
   if (flag_compiler_verbose)
     log << "  Flattening done, " << tm01.stoptime() << std::endl;
 }

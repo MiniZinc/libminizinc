@@ -444,15 +444,17 @@ namespace MiniZinc {
       std::ios oldState(nullptr);
       oldState.copyfmt(env.outstream);
       env.outstream.precision(12);
-      env.outstream << "%%mzn-stat objective=" << mip_wrap->getObjValue() << "\n";
-      env.outstream << "%%mzn-stat objectiveBound=" << mip_wrap->getBestBound() << "\n";
-      env.outstream << "%%mzn-stat nodes=" << mip_wrap->getNNodes() << "\n";
+      env.outstream << "%%%mzn-stat objective=" << mip_wrap->getObjValue() << std::endl;;
+      env.outstream << "%%%mzn-stat objectiveBound=" << mip_wrap->getBestBound() << std::endl;;
+      env.outstream << "%%%mzn-stat nodes=" << mip_wrap->getNNodes() << std::endl;;
       if (mip_wrap->getNOpen())
-        env.outstream << "%%mzn-stat openNodes=" << mip_wrap->getNOpen() << "\n";
+        env.outstream << "%%%mzn-stat openNodes=" << mip_wrap->getNOpen() << std::endl;;
       env.outstream.setf( std::ios::fixed );
       env.outstream.precision( 4 );
-      env.outstream << "%%mzn-stat time=" << mip_wrap->getWallTimeElapsed() << "\n";
+      env.outstream << "%%%mzn-stat solveTime=" << mip_wrap->getWallTimeElapsed() << std::endl;;
       env.outstream.copyfmt( oldState );
+
+      env.outstream << "%%%mzn-stat-end" << std::endl;
     }
   }
 

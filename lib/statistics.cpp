@@ -15,19 +15,12 @@
 namespace MiniZinc {
 
   void Statistics::print(std::ostream& os) {
-    os << "Time(ms):\t"  << _time      << std::endl
-    << "Nodes:\t"     << _nodes     << std::endl
-    << "Failures:\t"  << _failures  << std::endl
-    << "Objective:\t" << _objective << std::endl;
+    os << "%%%mzn-stat: solveTime="  << _time      << std::endl
+    << "%%%mzn-stat: nodes:\t"     << _nodes     << std::endl
+    << "%%%mzn-stat: failures:\t"  << _failures  << std::endl
+    << "%%%mzn-stat: objective:\t" << _objective << std::endl;
   };
-  
-  void Statistics::printLine(std::ostream& os) {
-    os << _time     << '\t'
-    << _nodes    << '\t'
-    << _failures << '\t'
-    << _objective << std::endl;
-  }
-  
+
   void Statistics::time(unsigned long long t) { _time = t; }
   void Statistics::nodes(unsigned long long n) { _nodes = n; }
   void Statistics::failures(unsigned long long f) { _failures = f; }

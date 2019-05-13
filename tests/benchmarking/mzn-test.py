@@ -231,12 +231,7 @@ class MZT_Param:
                 s_CommentKey: [ "A complete line in stderr will be interpreted accordingly.",
                   " Format: <outvar> : { <line>: <value>, ... }"
                   " You can add own things here (use '"+s_AddKey+"' before new var name)",
-                  " which will be transferred into results" ],
-                "Problem_Sense": {
-                  "This is a maximization problem.": 1,
-                  "This is a minimization problem.": -1,
-                  "This is a satisfiability problem.": 0,
-                }
+                  " which will be transferred into results" ]
               },
               "Stderr_Keyvalues": {
                 s_CommentKey: [ "Numerical values to be extracted from a line in stderr.",
@@ -260,6 +255,11 @@ class MZT_Param:
                   "=====UNKNOWN=====": 0,
                   "=====UNSATorUNBOUNDED=====": -3,
                   "=====ERROR=====": -4
+                },
+                "Problem_Sense": {
+                  "%%%mzn-stat: method=\"maximize\"": 1,
+                  "%%%mzn-stat: method=\"minimize\"": -1,
+                  "%%%mzn-stat: method=\"satisfy\"": 0,
                 }
               },
               "Stdout_Keyvalues": {

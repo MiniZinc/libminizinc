@@ -339,6 +339,7 @@ Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
 
 void Flattener::flatten(const std::string& modelString, const std::string& modelName)
 {
+  Timer flatten_time;
   starttime.reset();
   
   if (flag_verbose)
@@ -627,40 +628,34 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
 
         if (flag_statistics) {
           FlatModelStatistics stats = statistics(*env);
-          log << "Generated FlatZinc statistics:\n";
+          os << "% Generated FlatZinc statistics:\n";
 
-          log << "Paths: ";
-          log << env->envi().getPathMap().size() << std::endl;
+          os << "%%%mzn-stat: paths=" << env->envi().getPathMap().size() << endl;
 
-          log << "Variables: ";
-          HadOne ho;
-          log << ho(stats.n_bool_vars, " bool");
-          log << ho(stats.n_int_vars, " int");
-          log << ho(stats.n_float_vars, " float");
-          log << ho(stats.n_set_vars, " set");
-          if (!ho)
-            log << "none";
-          log << "\n";
-          ho.reset();
-          log << "Constraints: ";
-          log << ho(stats.n_bool_ct, " bool");
-          log << ho(stats.n_int_ct, " int");
-          log << ho(stats.n_float_ct, " float");
-          log << ho(stats.n_set_ct, " set");
-          if (!ho)
-            log << "none";
-          log << "\n";
+          if (stats.n_bool_vars) { os << "%%%mzn-stat: flatBoolVars=" << stats.n_bool_vars << endl; }
+          if (stats.n_int_vars) { os << "%%%mzn-stat: flatIntVars=" << stats.n_int_vars << endl; }
+          if (stats.n_float_vars) { os << "%%%mzn-stat: flatFloatVars=" << stats.n_float_vars << endl; }
+          if (stats.n_set_vars) { os << "%%%mzn-stat: flatSetVars=" << stats.n_set_vars << endl; }
+
+          if (stats.n_bool_ct) { os << "%%%mzn-stat: flatBoolConstraints=" << stats.n_bool_ct << endl; }
+          if (stats.n_int_ct) { os << "%%%mzn-stat: flatIntConstraints=" << stats.n_int_ct << endl; }
+          if (stats.n_float_ct) { os << "%%%mzn-stat: flatFloatConstraints=" << stats.n_float_ct << endl; }
+          if (stats.n_set_ct) { os << "%%%mzn-stat: flatSetConstraints=" << stats.n_set_ct << endl; }
+
           /// Objective / SAT. These messages are used by mzn-test.py.
           SolveI* solveItem = env->flat()->solveItem();
           if (solveItem->st() != SolveI::SolveType::ST_SAT) {
             if (solveItem->st() == SolveI::SolveType::ST_MAX) {
-              log << "    This is a maximization problem." << endl;
+              os << "%%%mzn-stat: method=\"maximize\"" << endl;
             } else {
-              log << "    This is a minimization problem." << endl;
+              os << "%%%mzn-stat: method=\"minimize\"" << endl;
             }
           } else {
-            log << "    This is a satisfiability problem." << endl;
+            os << "%%%mzn-stat: method=\"satisfy\"" << endl;
           }
+
+          os << "%%%mzn-stat: flatTime=" << flatten_time.s() << endl;
+          os << "%%%mzn-stat-end" << endl << endl;
         }
 
         if (flag_output_paths_stdout) {
