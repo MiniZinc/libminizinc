@@ -122,7 +122,8 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
 
   << "\n  --absGap <n>\n    absolute gap |primal-dual| to stop" << std::endl
   << "  --relGap <n>\n    relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
-  << "  --intTol <n>\n    integrality tolerance for a variable. Default 1e-8" << std::endl
+  << "  --feasTol <n>\n   primal feasibility tolerance. Default 1e-8" << std::endl
+  << "  --intTol <n>\n    integrality tolerance for a variable. Gurobi recommends at least feasTol. Default 1e-8" << std::endl
 //   << "  --objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
   << "\n  --gurobi-dll <file> or <basename>\n    Gurobi DLL, or base name, such as gurobi75, when using plugin. Default range tried: "
@@ -153,6 +154,7 @@ bool MIP_gurobi_wrapper::Options::processOption(int& i, std::vector<std::string>
   } else if ( cop.get( "--writeParam", &sWriteParams ) ) {
   } else if ( cop.get( "--absGap", &absGap ) ) {
   } else if ( cop.get( "--relGap", &relGap ) ) {
+  } else if ( cop.get( "--feasTol", &feasTol ) ) {
   } else if ( cop.get( "--intTol", &intTol ) ) {
   } else if ( cop.get( "--gurobi-dll", &sGurobiDLL ) ) {
 //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
@@ -731,6 +733,10 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    if ( options->intTol>=0.0 ) {
      error = dll_GRBsetdblparam( dll_GRBgetenv(model),  "IntFeasTol", options->intTol );
      wrap_assert(!error, "Failed to set   IntFeasTol.", false);
+   }
+   if ( options->feasTol>=0.0 ) {
+     error = dll_GRBsetdblparam( dll_GRBgetenv(model),  "FeasibilityTol", options->feasTol );
+     wrap_assert(!error, "Failed to set   FeasTol.", false);
    }
 
     
