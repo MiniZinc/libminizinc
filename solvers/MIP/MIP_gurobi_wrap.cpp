@@ -553,7 +553,7 @@ solcallback(GRBmodel *model,
         }
       }
     }
-    if ( solcnt && newincumbent>=0 ) {
+    if ( solcnt>=0 /*This is solution number for Gurobi*/ && newincumbent>=0 ) {
       if ( fabs(info->pOutput->objVal - objVal) > 1e-12*(1.0 + fabs(objVal)) ) {
         newincumbent = 1;
         info->pOutput->objVal = objVal;
