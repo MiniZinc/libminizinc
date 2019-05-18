@@ -237,13 +237,14 @@ class MZT_Param:
                 s_CommentKey: [ "Numerical values to be extracted from a line in stderr.",
                   " { <outvar>: [ <regex search pattern>, <regex to replace by spaces>, <value's pos in the line>] }."
                 ], 
-                "Time_Flt": [ "Flattening done,", "[s]", 3, "/// E.g., 'Flattening done, 3s' produces 3."
+                ### The %%%mzn-stat values appear in stdout (as of May 2019) but leave them here just in case
+                "Time_Flt": [ "%%%mzn-stat: flatTime", "[:=]", 3, "/// E.g., 'Flattening done, 3s' produces 3."
                                 " !!! This is interpreted as successful flattening by the checker" ],
-                "ObjVal_Solver":   [ "% obj, bound,", "[,:/]", 9,
+                "ObjVal_Solver":   [ "%%%mzn-stat objective", "[,:/=]", 3,
                                         "/// The objval as reported by solver."],
-                "DualBnd_Solver":   [ "% obj, bound,", "[,:/]", 10 ],
-                "CPUTime_Solver":   [ "% obj, bound,", "[,:/]", 12 ],
-                "NNodes_Solver":   [ "% obj, bound,", "[,:/]", 13 ],
+                "DualBnd_Solver":   [ "%%%mzn-stat objectiveBound", "[,:/=]", 3 ],
+                "CPUTime_Solver":   [ "%%%mzn-stat solveTime", "[,:/=]", 3 ],
+                "NNodes_Solver":   [ "%%%mzn-stat nodes", "[,:/=]", 3 ],
               },
               "Stdout_Keylines": {
                 s_CommentKey: [ "Similar to Stderr_Keylines"],
@@ -264,6 +265,13 @@ class MZT_Param:
               },
               "Stdout_Keyvalues": {
                 s_CommentKey: ["Similar to Stderr_Keyvalues." ],
+                "Time_Flt": [ "%%%mzn-stat: flatTime", "[:=]", 3, "/// E.g., 'Flattening done, 3s' produces 3."
+                                " !!! This is interpreted as successful flattening by the checker" ],
+                "ObjVal_Solver":   [ "%%%mzn-stat objective", "[,:/=]", 3,
+                                        "/// The objval as reported by solver."],
+                "DualBnd_Solver":   [ "%%%mzn-stat objectiveBound", "[,:/=]", 3 ],
+                "CPUTime_Solver":   [ "%%%mzn-stat solveTime", "[,:/=]", 3 ],
+                "NNodes_Solver":   [ "%%%mzn-stat nodes", "[,:/=]", 3 ],
                 "ObjVal_MZN":   [ "_objective", "[():=;%]", 2,
                                     "/// The objective value as evaluated by MZN." ],
                 "RealTime_Solns2Out": [ "% time elapsed:", " ", 4 ],
