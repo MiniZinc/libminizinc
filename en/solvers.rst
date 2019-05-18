@@ -142,6 +142,7 @@ For example, tolerances have been tightened to enable more precise solving with 
 ::
 
   --relGap <n>       relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default
+  --feasTol <n>      primal feasibility tolerance (Gurobi). Default 1e-8
   --intTol <n>       integrality tolerance for a variable. Default 1e-8
   --solver-time-limit-feas <n>, --solver-tlf <n>
                      stop after <n> milliseconds after the first feasible solution (some backends)
