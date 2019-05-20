@@ -9,7 +9,7 @@ compiler, based on the new libminizinc C++ library.
 For installation and compilation instructions, as well as a small
 start-up guide, please refer to the file INSTALL.txt. Full documentation is
 available under https://www.minizinc.org/resources.html (its development
-shapshot is in a separate repository minizinc-doc).
+shapshot is in a separate repository github.com/MiniZinc/minizinc-doc).
 
 Changes from version 1.6
 ------------------------
@@ -66,20 +66,20 @@ sort, arg_sort, arg_min, arg_max
 ** New tool chain **
 
  - There are a few new builtins that solvers can reimplement, these are listed
-   in the redefinitions-2.0 file.
+   in the redefinitions-2.x files.
  - Include items use a different method for finding included files. Paths are
    now interpreted as relative to the file that has the include item. That
    way, the mzn2fzn compiler can be called from a different working directory.
  - A new tool, mzn2doc, can produce html output from the documentation
    comments. The MiniZinc distribution contains the documentation for global
    constraints and builtins generated directly from the library source code.
- - Executable mzn-fzn is a replacement for the minizinc driver: option --solver
-   can define a different flatzinc interpreter (default: 'flatzinc')
+ - The minizinc driver has been reimplemented and extended: option --solver
+   can choose a backend (FlatZinc interpreter), e.g., gecode, cbc, gurobi.
    
 ** New MIP solver interfaces **
 
  - The backends cplex, gurobi, xpress, scip, and cbc (option --solver) use
-   the corresponding MIP solver. See documentation.
+   the corresponding MIP solver.
 
 ** Bugs **
 
