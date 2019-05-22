@@ -80,7 +80,7 @@ namespace {
 #endif
 
 const vector<string>& CPLEXDLLs(void) {
-  static const vector<string> sCPLEXDLLs = { "cplex1280", "cplex1270" };
+  static const vector<string> sCPLEXDLLs = { "cplex1290", "cplex1280", "cplex1270" };
   return sCPLEXDLLs;
 }
 
