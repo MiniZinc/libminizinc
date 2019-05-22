@@ -56,7 +56,7 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
       std::string sWriteParams;
       bool flag_all_solutions = false;
       
-      double absGap=0.99;
+      double absGap=-1;
       double relGap=1e-8;
       double intTol=1e-8;
       double objDiff=1.0;
