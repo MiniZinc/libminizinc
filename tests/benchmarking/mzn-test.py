@@ -240,7 +240,7 @@ class MZT_Param:
                 ### The %%%mzn-stat values appear in stdout (as of May 2019) but leave them here just in case
                 "Time_Flt": [ "%%%mzn-stat: flatTime", "[:=]", 3, "/// E.g., 'Flattening done, 3s' produces 3."
                                 " !!! This is interpreted as successful flattening by the checker" ],
-                "ObjVal_Solver":   [ "%%%mzn-stat objective", "[,:/=]", 3,
+                "ObjVal_Solver":   [ "%%%mzn-stat objective=", "[,:/=]", 3,        ## Need = to avoid mixup witht the bound
                                         "/// The objval as reported by solver."],
                 "DualBnd_Solver":   [ "%%%mzn-stat objectiveBound", "[,:/=]", 3 ],
                 "CPUTime_Solver":   [ "%%%mzn-stat solveTime", "[,:/=]", 3 ],
@@ -267,7 +267,7 @@ class MZT_Param:
                 s_CommentKey: ["Similar to Stderr_Keyvalues." ],
                 "Time_Flt": [ "%%%mzn-stat: flatTime", "[:=]", 3, "/// E.g., 'Flattening done, 3s' produces 3."
                                 " !!! This is interpreted as successful flattening by the checker" ],
-                "ObjVal_Solver":   [ "%%%mzn-stat objective", "[,:/=]", 3,
+                "ObjVal_Solver":   [ "%%%mzn-stat objective=", "[,:/=]", 3,        ## Need = to avoid mixup witht the bound
                                         "/// The objval as reported by solver."],
                 "DualBnd_Solver":   [ "%%%mzn-stat objectiveBound", "[,:/=]", 3 ],
                 "CPUTime_Solver":   [ "%%%mzn-stat solveTime", "[,:/=]", 3 ],
