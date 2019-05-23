@@ -9,7 +9,7 @@ compiler, based on the new libminizinc C++ library.
 For installation and compilation instructions, as well as a small
 start-up guide, please refer to the file INSTALL.txt. Full documentation is
 available under https://www.minizinc.org/resources.html (its development
-shapshot is in a separate repository github.com/MiniZinc/minizinc-doc).
+snapshot is in a separate repository github.com/MiniZinc/minizinc-doc).
 
 Changes from version 1.6
 ------------------------
