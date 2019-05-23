@@ -1031,7 +1031,7 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
       output.x = &x[0];
       status = dll_CPXgetx (env, lp, &x[0], 0, cur_numcols-1);
       wrap_assert(!status, "Failed to get variable values.");
-      if (cbui.solcbfn && (!options->flag_all_solutions || !cbui.printed)) {
+      if (cbui.solcbfn /*&& (!options->flag_all_solutions || !cbui.printed)*/) {
         cbui.solcbfn(output, cbui.ppp);
       }
    }
