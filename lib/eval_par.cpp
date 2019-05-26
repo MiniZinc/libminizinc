@@ -177,7 +177,8 @@ namespace MiniZinc {
       for (unsigned int i=0; i<fi->ti()->ranges().size(); i++) {
         if (fi->ti()->ranges()[i]->domain() && !fi->ti()->ranges()[i]->domain()->isa<TIId>()) {
           IntSetVal* isv = eval_intset(env, fi->ti()->ranges()[i]->domain());
-          if (v->min(i) != isv->min() || v->max(i) != isv->max()) {
+          bool bothEmpty = isv->min() > isv->max() && v->min(i) > v->max(i);
+          if (!bothEmpty && (v->min(i) != isv->min() || v->max(i) != isv->max())) {
             std::ostringstream oss;
             oss << "array index set " << (i+1) << " of function result violates function type-inst";
             throw ResultUndefinedError(env, fi->e()->loc(), oss.str());
