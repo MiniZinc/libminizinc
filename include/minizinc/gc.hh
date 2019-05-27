@@ -13,6 +13,7 @@
 #define __MINIZINC_GC_HH__
 
 #include <minizinc/config.hh>
+#include <minizinc/timer.hh>
 
 #include <cstdlib>
 #include <cassert>
@@ -129,6 +130,12 @@ namespace MiniZinc {
     Heap* _heap;
     /// Count how many locks are currently active
     unsigned int _lock_count;
+    /// Timeout in milliseconds
+    unsigned long long int _timeout;
+    /// Counter for timeout
+    int _timeout_counter;
+    /// Timer for timeout
+    Timer _timeout_timer;
     /// Return thread-local GC object
     static GC*& gc(void);
     /// Constructor
@@ -164,6 +171,9 @@ namespace MiniZinc {
     static void trail(Expression**,Expression*);
     /// Untrail to previous mark
     static void untrail(void);
+    
+    /// Set timeout of \a t milliseconds, 0 means disable
+    static void setTimeout(unsigned long long int t);
     
     /// Return maximum allocated memory (high water mark)
     static size_t maxMem(void);

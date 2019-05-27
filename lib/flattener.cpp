@@ -337,8 +337,19 @@ Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
   return pre_env;
 }
 
+class FlattenTimeout {
+public:
+  FlattenTimeout(unsigned long long int t) {
+    GC::setTimeout(t);
+  }
+  ~FlattenTimeout(void) {
+    GC::setTimeout(0);
+  }
+};
+
 void Flattener::flatten(const std::string& modelString, const std::string& modelName)
 {
+  FlattenTimeout flatten_timeout(fopts.timeout);
   Timer flatten_time;
   starttime.reset();
   

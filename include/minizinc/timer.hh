@@ -16,6 +16,7 @@
 #include <chrono>
 #include <ratio>
 #include <iomanip>
+#include <sstream>
 
 namespace MiniZinc {
   

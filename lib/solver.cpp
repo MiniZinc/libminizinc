@@ -588,6 +588,7 @@ void MznSolver::flatten(const std::string& modelString, const std::string& model
 {
   flt.set_flag_verbose(flag_compiler_verbose);
   flt.set_flag_statistics(flag_compiler_statistics);
+  flt.set_flag_timelimit(flag_overall_time_limit);
   flt.flatten(modelString, modelName);
 }
 
@@ -659,7 +660,12 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, con
     return SolverInstance::NONE;
   }
   
-  flatten(model,modelName);
+  try {
+    flatten(model,modelName);
+  } catch (Timeout&) {
+    s2out.evalStatus( SolverInstance::UNKNOWN );
+    return SolverInstance::UNKNOWN;
+  }
 
   if (!ifMzn2Fzn() && flag_overall_time_limit != 0) {
     steady_clock::time_point afterFlattening = steady_clock::now();

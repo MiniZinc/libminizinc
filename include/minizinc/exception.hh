@@ -51,6 +51,13 @@ namespace MiniZinc {
     virtual const char* what(void) const throw() { return ""; }
   };
   
+  class Timeout : public Exception {
+  public:
+    Timeout(void) : Exception("time limit reached") {}
+    ~Timeout(void) throw() {}
+    virtual const char* what(void) const throw() { return "MiniZinc: time out"; }
+  };
+  
   class ArithmeticError : public Exception {
   public:
     ArithmeticError(const std::string& msg)

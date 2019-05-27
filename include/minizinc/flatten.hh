@@ -41,6 +41,8 @@ namespace MiniZinc {
     bool record_domain_changes;
     /// Only range domains for old linearization. Set from redefs to true if not here
     bool onlyRangeDomains;
+    /// Timeout for flattening in milliseconds (0 means no timeout)
+    unsigned long long int timeout;
     /// Create standard, DZN or JSON output
     enum OutputMode {
       OUTPUT_ITEM, OUTPUT_DZN, OUTPUT_JSON
@@ -49,7 +51,7 @@ namespace MiniZinc {
     bool outputObjective;
     /// Default constructor
     FlatteningOptions(void)
-    : keepOutputInFzn(false), verbose(false), only_toplevel_paths(false), collect_mzn_paths(false), record_domain_changes(false), onlyRangeDomains(false), outputMode(OUTPUT_ITEM), outputObjective(false) {}
+    : keepOutputInFzn(false), verbose(false), only_toplevel_paths(false), collect_mzn_paths(false), record_domain_changes(false), onlyRangeDomains(false), timeout(0), outputMode(OUTPUT_ITEM), outputObjective(false) {}
   };
 
   class Pass {
