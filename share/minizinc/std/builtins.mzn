@@ -1333,7 +1333,7 @@ function string: show(array[$U] of var opt $T: x);
 function string: showDzn(var opt set of $T: x);
 function string: showDzn(var opt $T: x);
 function string: showDzn(array[$U] of var opt $T: x);
-
+function string: showDznId(string: x);
 
 /** @group builtins.string Formatted to-string conversion for integers
 

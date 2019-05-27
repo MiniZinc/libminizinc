@@ -44,10 +44,10 @@ namespace MiniZinc {
     Token readToken(std::istream& is);
     void expectToken(std::istream& is, TokenT t);
     std::string expectString(std::istream& is);
+    Token parseEnumString(std::istream& is);
     Expression* parseExp(std::istream& is);
     ArrayLit* parseArray(std::istream& is);
-    
-    SetLit* parseSetLit(std::istream& is);
+    Expression* parseObject(std::istream& is);
     
     void parse(Model*m, std::istream& is);
   public:
