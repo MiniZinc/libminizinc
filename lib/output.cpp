@@ -693,17 +693,17 @@ namespace MiniZinc {
           }
           if (!origdecl->from_stdlib()) {
             decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
-            CollectOccurrencesE ce(env.output_vo,decl);
-            topDown(ce, decl->e());
-            topDown(ce, decl->ti());
-            for (unsigned int i = decl->params().size(); i--;)
-              topDown(ce, decl->params()[i]);
             env.output->registerFn(env, decl);
             env.output->addItem(decl);
             if (decl->e()) {
               makePar(env, decl->e());
               topDown(*this, decl->e());
             }
+            CollectOccurrencesE ce(env.output_vo,decl);
+            topDown(ce, decl->e());
+            topDown(ce, decl->ti());
+            for (unsigned int i = decl->params().size(); i--;)
+              topDown(ce, decl->params()[i]);
           } else {
             decl = origdecl;
           }
