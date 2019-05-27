@@ -1237,7 +1237,7 @@ namespace MiniZinc {
                 VarDecl* decl;
                 const genMap_t& generatorMap;
                 Comprehension* comp;
-                FindLatestGen(const genMap_t& generatorMap0, Comprehension* comp0) : decl_idx(-1), decl(NULL), generatorMap(generatorMap0), comp(comp0) {}
+                FindLatestGen(const genMap_t& generatorMap0, Comprehension* comp0) : decl_idx(-1), decl(comp0->decl(0,0)), generatorMap(generatorMap0), comp(comp0) {}
                 void vId(const Id& ident) {
                   genMap_t::const_iterator it = generatorMap.find(ident.decl());
                   if (it != generatorMap.end() && it->second.second > decl_idx) {
