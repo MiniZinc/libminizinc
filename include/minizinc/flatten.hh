@@ -88,10 +88,19 @@ namespace MiniZinc {
     int n_float_ct;
     /// Number of set constraints
     int n_set_ct;
+    /// Number of reified constraints evaluated
+    int n_reif_ct;
+    /// Number of half-reified constraints evaluated
+    int n_imp_ct;
+    /// Number of implications eliminated using path compression
+    int n_imp_del;
+    /// Number of linear expressions eliminated using path compression
+    int n_lin_del;
     /// Constructor
     FlatModelStatistics(void)
     : n_int_vars(0), n_bool_vars(0), n_float_vars(0), n_set_vars(0),
-      n_bool_ct(0), n_int_ct(0), n_float_ct(0), n_set_ct(0) {}
+      n_bool_ct(0), n_int_ct(0), n_float_ct(0), n_set_ct(0),
+      n_reif_ct(0), n_imp_ct(0), n_imp_del(0), n_lin_del(0) {}
   };
   
   /// Compute statistics for flat model in \a m

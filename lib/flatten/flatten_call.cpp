@@ -311,6 +311,11 @@ namespace MiniZinc {
   EE flatten_call(EnvI& env,Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     EE ret;
     Call* c = e->cast<Call>();
+    if (c->id().endsWith("_reif")) {
+      env.n_reif_ct++;
+    } else if (c->id().endsWith("_imp")) {
+      env.n_imp_ct++;
+    }
     FunctionI* decl = env.model->matchFn(env,c,false);
     if (decl == NULL) {
       throw InternalError("undeclared function or predicate "

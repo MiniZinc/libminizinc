@@ -101,6 +101,10 @@ namespace MiniZinc {
     std::vector<int> modifiedVarDecls;
     int in_redundant_constraint;
     int in_maybe_partial;
+    int n_reif_ct;
+    int n_imp_ct;
+    int n_imp_del;
+    int n_lin_del;
     bool in_reverse_map_var;
     FlatteningOptions fopts;
     unsigned int pathUse;

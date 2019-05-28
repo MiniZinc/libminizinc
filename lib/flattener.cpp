@@ -653,6 +653,12 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           if (stats.n_float_ct) { os << "%%%mzn-stat: flatFloatConstraints=" << stats.n_float_ct << endl; }
           if (stats.n_set_ct) { os << "%%%mzn-stat: flatSetConstraints=" << stats.n_set_ct << endl; }
 
+          if (stats.n_reif_ct) { os << "%%%mzn-stat: evaluatedReifiedConstraints=" << stats.n_reif_ct << endl; }
+          if (stats.n_imp_ct) { os << "%%%mzn-stat: evaluatedHalfReifiedConstraints=" << stats.n_imp_ct << endl; }
+
+          if (stats.n_imp_del) { os << "%%%mzn-stat: eliminatedImplications=" << stats.n_imp_del << endl; }
+          if (stats.n_lin_del) { os << "%%%mzn-stat: eliminatedLinearConstraints=" << stats.n_lin_del << endl; }
+
           /// Objective / SAT. These messages are used by mzn-test.py.
           SolveI* solveItem = env->flat()->solveItem();
           if (solveItem->st() != SolveI::SolveType::ST_SAT) {

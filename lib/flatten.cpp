@@ -575,6 +575,10 @@ namespace MiniZinc {
     in_redundant_constraint(0),
     in_maybe_partial(0),
     in_reverse_map_var(false),
+    n_reif_ct(0),
+    n_imp_ct(0),
+    n_imp_del(0),
+    n_lin_del(0),
     pathUse(0),
     _flat(new Model),
     _failed(false),
@@ -3725,6 +3729,10 @@ namespace MiniZinc {
   FlatModelStatistics statistics(Env& m) {
     Model* flat = m.flat();
     FlatModelStatistics stats;
+    stats.n_reif_ct = m.envi().n_reif_ct;
+    stats.n_imp_ct = m.envi().n_imp_ct;
+    stats.n_imp_del = m.envi().n_imp_del;
+    stats.n_lin_del = m.envi().n_lin_del;
     for (unsigned int i=0; i<flat->size(); i++) {
       if (!(*flat)[i]->removed()) {
         if (VarDeclI* vdi = (*flat)[i]->dyn_cast<VarDeclI>()) {
@@ -3741,6 +3749,11 @@ namespace MiniZinc {
           }
         } else if (ConstraintI* ci = (*flat)[i]->dyn_cast<ConstraintI>()) {
           if (Call* call = ci->e()->dyn_cast<Call>()) {
+            if (call->id().endsWith("_reif")) {
+              stats.n_reif_ct++;
+            } else if (call->id().endsWith("_imp")) {
+              stats.n_imp_ct++;
+            }
             if (call->n_args() > 0) {
               Type all_t;
               for (unsigned int i=0; i<call->n_args(); i++) {

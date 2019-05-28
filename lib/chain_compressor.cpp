@@ -159,6 +159,7 @@ namespace MiniZinc {
         for (auto match = range.first; match != range.second;) {
           bool succes = compressItem(match->second, lhs);
           assert(succes);
+          env.n_imp_del++;
           match = items.erase(match);
         }
 
@@ -417,6 +418,7 @@ namespace MiniZinc {
 
         assert(!rhs->ann().contains(constants().ann.output_var));
         removeItem(it->second);
+        env.n_lin_del++;
         it = items.erase(it);
       } else {
         ++it;
@@ -457,6 +459,7 @@ namespace MiniZinc {
     simplify_lin<Lit>(coeffs, x, d);
     if (coeffs.empty()) {
       env.flat_removeItem(i);
+      env.n_lin_del++;
       return;
     } else {
       std::vector<Expression*> coeffs_e(coeffs.size());
