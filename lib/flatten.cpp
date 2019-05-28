@@ -2120,7 +2120,7 @@ namespace MiniZinc {
                 } else if (c->id() == constants().ids.forall) {
                   nid = constants().ids.array_bool_and;
                 } else if (vd->type().isbool()) {
-                  if (vd->ann().contains(constants().ctx.pos)) {
+                  if (env.fopts.enable_imp && vd->ann().contains(constants().ctx.pos)) {
                     nid = env.halfReifyId(c->id());
                     if (env.model->matchFn(env, nid, args, false) == NULL) {
                       nid = env.reifyId(c->id());
@@ -2955,7 +2955,7 @@ namespace MiniZinc {
                       nc->decl(array_bool_clause_reif);
                     } else {
                       if (c->type().isbool() && vd->type().isbool()) {
-                        if (vd->ann().contains(constants().ctx.pos)) {
+                        if (env.fopts.enable_imp && vd->ann().contains(constants().ctx.pos)) {
                           cid = env.halfReifyId(c->id());
                           if (env.model->matchFn(env, cid, args, false) == NULL) {
                             cid = env.reifyId(c->id());
@@ -3295,7 +3295,7 @@ namespace MiniZinc {
             } else if (c->id() == constants().ids.clause) {
               cid = constants().ids.bool_clause_reif;
             } else {
-              if (vd->ann().contains(constants().ctx.pos)) {
+              if (env.fopts.enable_imp && vd->ann().contains(constants().ctx.pos)) {
                 cid = env.halfReifyId(c->id());
                 if (env.model->matchFn(env, cid, args, false) == NULL) {
                   cid = env.reifyId(c->id());

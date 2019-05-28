@@ -61,6 +61,7 @@ void Flattener::printHelp(ostream& os)
   << "  --MIPDMaxDensEE <n>\n    MIPD: max domain cardinality to N subintervals ratio\n    to enforce equality encoding, default " << opt_MIPDmaxDensEE << ", either condition triggers" << std::endl
   << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by inequalities" << std::endl
   << "  --allow-multiple-assignments\n    Allow multiple assignments to the same variable (e.g. in dzn)" << std::endl
+  << "  --no-half-reifications\n    Only use fully reified constraints, even when a half reified constraint is defined." << std::endl
   << "  --compile-solution-checker <file>.mzc.mzn\n    Compile solution checker model" << std::endl
   << std::endl
   << "Flattener two-pass options:" << std::endl
@@ -257,6 +258,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
     fopts.only_toplevel_paths = true;
   } else if ( cop.getOption( "--allow-multiple-assignments" ) ) {
     flag_allow_multi_assign = true;
+  } else if ( cop.getOption( "--no-half-reifications" ) ) {
+    fopts.enable_imp = false;
   } else if (string(argv[i])=="--input-is-flatzinc") {
     is_flatzinc = true;
   } else if ( cop.getOption( "--compile-solution-checker", &buffer) ) {

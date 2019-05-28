@@ -87,7 +87,7 @@ namespace MiniZinc {
             storeItem(vdi->e(), i);
             return true;
           // x ::ctx_pos = pred(...); potentially: pred_imp(..., x); i.e. x -> pred(...)
-          } else if (vdi->e()->ann().contains(constants().ctx.pos)) {
+          } else if (env.fopts.enable_imp && vdi->e()->ann().contains(constants().ctx.pos)) {
             GCLock lock;
             auto cid = env.halfReifyId(c->id());
             std::vector<Type> args;
@@ -251,6 +251,7 @@ namespace MiniZinc {
   }
 
   ConstraintI *ImpCompressor::constructHalfReif(Call *call, Id *control) {
+    assert(env.fopts.enable_imp);
     assert(GC::locked());
     auto cid = env.halfReifyId(call->id());
     std::vector<Expression*> args(call->n_args());
