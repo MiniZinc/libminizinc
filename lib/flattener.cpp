@@ -56,9 +56,9 @@ void Flattener::printHelp(ostream& os)
   << "  -G <dir>, --globals-dir <dir>, --mzn-globals-dir <dir>\n    Search for included globals in <stdlib>/<dir>." << std::endl
   << "  -, --input-from-stdin\n    Read problem from standard input" << std::endl
   << "  -I <dir>, --search-dir <dir>\n    Additionally search for included files in <dir>." << std::endl
-  << "  -D \"fMIPdomains=false\"\n    No domain unification for MIP" << std::endl
-  << "  --MIPDMaxIntvEE <n>\n    Max integer domain subinterval length to enforce equality encoding, default " << opt_MIPDmaxIntvEE << std::endl
-  << "  --MIPDMaxDensEE <n>\n    Max domain cardinality to N subintervals ratio\n    to enforce equality encoding, default " << opt_MIPDmaxDensEE << ", either condition triggers" << std::endl
+  << "  -D \"fMIPdomains=true\"\n    Switch on MIPDomain Unification" << std::endl
+  << "  --MIPDMaxIntvEE <n>\n    MIPD: max integer domain subinterval length to enforce equality encoding, default " << opt_MIPDmaxIntvEE << std::endl
+  << "  --MIPDMaxDensEE <n>\n    MIPD: max domain cardinality to N subintervals ratio\n    to enforce equality encoding, default " << opt_MIPDmaxDensEE << ", either condition triggers" << std::endl
   << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by inequalities" << std::endl
   << "  --allow-multiple-assignments\n    Allow multiple assignments to the same variable (e.g. in dzn)" << std::endl
   << "  --compile-solution-checker <file>.mzc.mzn\n    Compile solution checker model" << std::endl
