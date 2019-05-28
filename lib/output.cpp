@@ -159,8 +159,9 @@ namespace MiniZinc {
       OutputJSON(EnvI& env0) : env(env0) {}
       void vCall(Call& c) {
         if (c.id()=="outputJSON") {
+          bool outputObjective = (c.n_args()==1 && eval_bool(env,c.arg(0)));
           c.id(ASTString("array1d"));
-          Expression* json = copy(env, env.cmap, createJSONOutput(env, false));
+          Expression* json = copy(env, env.cmap, createJSONOutput(env, outputObjective));
           std::vector<Expression*> new_args({json});
           new_args[0]->type(Type::parstring(1));
           c.args(new_args);

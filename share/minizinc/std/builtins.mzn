@@ -1409,6 +1409,10 @@ function string: format(array[$U] of var opt $T: x) = show(x);
 
 /** @group builtins.string Return array for output of all variables in JSON format */
 function array[int] of string: outputJSON();
+/** @group builtins.string Return array for output of all variables in JSON format,
+    including objective if \a b is true
+*/
+function array[int] of string: outputJSON(bool: b);
 /** @group builtins.string Return array for output of all parameters in JSON format */
 function array[int] of string: outputJSONParameters();
 
