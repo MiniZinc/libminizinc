@@ -112,7 +112,7 @@ namespace MiniZinc {
   bool isOutput(VarDecl* vd);
   
   /// Simplyfy models in \a env
-  void optimize(Env& env);
+  void optimize(Env& env, bool chain_compression = true);
   
 }
 

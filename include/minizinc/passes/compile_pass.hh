@@ -22,6 +22,7 @@ namespace MiniZinc {
     bool verbose;
     bool statistics;
     bool optimize;
+    bool chain_compression;
     bool newfzn;
     bool werror;
     bool model_check_only;

@@ -83,6 +83,7 @@ namespace MiniZinc {
     bool flag_verbose = false;
     bool flag_newfzn = false;
     bool flag_optimize = true;
+    bool flag_chain_compression = true;
     bool flag_werror = false;
     bool flag_only_range_domains = false;
     bool flag_allow_unbounded_vars = false;

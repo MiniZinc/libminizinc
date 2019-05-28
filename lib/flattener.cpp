@@ -50,6 +50,7 @@ void Flattener::printHelp(ostream& os)
   << "  --model-interface-only\n    Only extract parameters and output variables." << std::endl
   << "  --model-types-only\n    Only output variable (enum) type information." << std::endl
   << "  --no-optimize\n    Do not optimize the FlatZinc" << std::endl
+  << "  --no-chain-compression\n    Do not simplify chains of implication constraints." << std::endl
   << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl
   << "  -D <data>, --cmdline-data <data>\n    Include the given data assignment in the model." << std::endl
   << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
@@ -128,6 +129,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
     flag_newfzn = true;
   } else if ( cop.getOption( "--no-optimize --no-optimise") ) {
     flag_optimize = false;
+  } else if ( cop.getOption( "--no-chain-compression") ) {
+    flag_chain_compression = false;
   } else if ( cop.getOption( "--no-output-ozn -O-") ) {
     flag_no_output_ozn = true;
   } else if ( cop.getOption( "--output-base", &flag_output_base ) ) {
@@ -606,6 +609,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           cfs.verbose      = flag_verbose;
           cfs.statistics   = flag_statistics;
           cfs.optimize     = flag_optimize;
+          cfs.chain_compression = flag_chain_compression;
           cfs.newfzn       = flag_newfzn;
           cfs.werror       = flag_werror;
           cfs.model_check_only = flag_model_check_only;

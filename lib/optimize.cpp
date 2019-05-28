@@ -291,7 +291,7 @@ namespace MiniZinc {
     
   }
   
-  void optimize(Env& env) {
+  void optimize(Env& env, bool chain_compression) {
     if (env.envi().failed())
       return;
     try {
@@ -754,7 +754,7 @@ namespace MiniZinc {
       }
 
       // Phase 4: Chain Breaking
-      {
+      if (chain_compression) {
         ImpCompressor imp(envi, m, deletedVarDecls);
         LECompressor le(envi, m, deletedVarDecls);
         for (auto &item : m) {
