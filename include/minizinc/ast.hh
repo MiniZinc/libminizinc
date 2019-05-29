@@ -759,6 +759,9 @@ namespace MiniZinc {
     ArrayLit(const Location& loc, ArrayLit* v,
              const std::vector<std::pair<int,int> >& dims,
              const std::vector<std::pair<int,int> >& slice);
+    /// Constructor (one-dimensional)
+    ArrayLit(const Location& loc,
+             const std::vector<KeepAlive>& v);
     /// Recompute hash value
     void rehash(void);
 
