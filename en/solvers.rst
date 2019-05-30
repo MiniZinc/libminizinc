@@ -14,6 +14,65 @@ The help text of ``minizinc`` shows a list of configured solver backends and the
 Constraint Programming Solvers
 ------------------------------
 
+Gecode
+~~~~~~
+
+To compile from source, run ``./configure --disable-qt && make -j8 && sudo make install`` which installs in the standard location. 
+For ``minizinc`` to see it, add ``gecode.msc`` in an appropriate location (see Solver Config Files) containing the following:
+
+.. code-block:: json
+
+ {
+  "id": "org.gecode.gecode",
+  "name": "Gecode",
+  "description": "Gecode FlatZinc executable",
+  "version": "6.2.0",
+  "mznlib": "/usr/local/share/gecode/mznlib",
+  "executable": "fzn-gecode",
+  "tags": ["cp","int", "float", "set", "restart"],
+  "stdFlags": ["-a","-f","-n","-p","-r","-s","-t"],
+  "supportsMzn": false,
+  "supportsFzn": true,
+  "needsSolns2Out": true,
+  "needsMznExecutable": false,
+  "needsStdlibDir": false,
+  "isGUIApplication": false
+ }
+
+
+Chuffed
+~~~~~~~
+
+Chuffed's performance is usually much better with option ``-f`` (free search).
+
+You can obtain Chuffed's source from https://github.com/chuffed/chuffed. After compiling and installing it by 
+
+.. code-block:: bash
+
+  $ mkdir build && cd build && cmake .. && cmake --build . -- -j8 && sudo cmake --build . --target install
+
+you can configure it for ``minizinc`` using the file ``chuffed.msc`` with the following content:
+
+.. code-block:: json
+
+ {
+  "id": "org.chuffed.chuffed",
+  "name": "Chuffed",
+  "description": "Chuffed FlatZinc executable",
+  "version": "${chuffed_VERSION_MAJOR}.${chuffed_VERSION_MINOR}.${chuffed_VERSION_PATCH}",
+  "mznlib": "/usr/local/share/chuffed/mznlib",
+  "executable": "fzn-chuffed",
+  "tags": ["cp","lcg","int"],
+  "stdFlags": ["-a","-f","-n","-r","-s","-t","-v"],
+  "supportsMzn": false,
+  "supportsFzn": true,
+  "needsSolns2Out": true,
+  "needsMznExecutable": false,
+  "needsStdlibDir": false,
+  "isGUIApplication": false
+ }
+
+
 Mixed-Integer Programming Solvers
 ---------------------------------
 
@@ -30,7 +89,7 @@ or separated flattening+solving - sometimes more stable but slower due to file I
   $ minizinc --solver cbc -c model.mzn data.dzn && minizinc --solver cbc -v -s -a model.fzn | minizinc --ozn-file model.ozn
 
 MIP-Aware Modeling
-~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~
 
 Avoid mixing positive and negative coefficients in the objective. Use 'complementing' variables to revert sense.
 
