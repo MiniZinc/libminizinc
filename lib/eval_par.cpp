@@ -371,6 +371,21 @@ namespace MiniZinc {
     }
     for (unsigned int i=ce->decl()->params().size(); i--;) {
       VarDecl* vd = ce->decl()->params()[i];
+      if (vd->type().dim() > 0) {
+        // Check array index sets
+        ArrayLit* al = params[i]->cast<ArrayLit>();
+        for (unsigned int j=0; j<vd->ti()->ranges().size(); j++) {
+          TypeInst* range_ti = vd->ti()->ranges()[j];
+          if (range_ti->domain() && !range_ti->domain()->isa<TIId>()) {
+            IntSetVal* isv = eval_intset(env, range_ti->domain());
+            if (isv->min() != al->min(j) || isv->max() != al->max(j)) {
+              std::ostringstream oss;
+              oss << "array index set " << (j+1) << " of argument " << (i+1) << " does not match declared index set";
+              throw EvalError(env, ce->loc(), oss.str());
+            }
+          }
+        }
+      }
       previousParameters[i] = vd->e();
       vd->flat(vd);
       vd->e(params[i]);

@@ -716,6 +716,22 @@ namespace MiniZinc {
         ret.r = bind(env,ctx,r,cit->second.r());
       } else {
         for (unsigned int i=0; i<decl->params().size(); i++) {
+          if (decl->params()[i]->type().dim() > 0) {
+            // Check array index sets
+            ArrayLit* al = follow_id(args[i]())->cast<ArrayLit>();
+            VarDecl* pi = decl->params()[i];
+            for (unsigned int j=0; j<pi->ti()->ranges().size(); j++) {
+              TypeInst* range_ti = pi->ti()->ranges()[j];
+              if (range_ti->domain() && !range_ti->domain()->isa<TIId>()) {
+                IntSetVal* isv = eval_intset(env, range_ti->domain());
+                if (isv->min() != al->min(j) || isv->max() != al->max(j)) {
+                  std::ostringstream oss;
+                  oss << "array index set " << (j+1) << " of argument " << (i+1) << " does not match declared index set";
+                  throw FlatteningError(env, e->loc(), oss.str());
+                }
+              }
+            }
+          }
           if (Expression* dom = decl->params()[i]->ti()->domain()) {
             if (!dom->isa<TIId>()) {
               // May have to constrain actual argument
