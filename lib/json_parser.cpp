@@ -414,6 +414,14 @@ namespace MiniZinc {
       next = readToken(is);
     }
   list_done:
+    unsigned int expectedSize = 1;
+    for (auto& d : dims) {
+      expectedSize *= d.second;
+    }
+    if (exps.size() != expectedSize) {
+      throw JSONError(env,errLocation(),"mismatch in array dimensions");
+      /// TODO: check each individual sub-array
+    }
     return new ArrayLit(Location().introduce(),exps,dims);
   }
   
