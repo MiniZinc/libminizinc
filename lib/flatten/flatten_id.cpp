@@ -68,7 +68,7 @@ namespace MiniZinc {
       VarDecl* vd = id->decl()->flat();
       Expression* rete = NULL;
       if (vd==NULL) {
-        if (id->decl()->e()==NULL || id->decl()->e()->type().isann() || id->decl()->e()->type().isvar() || id->decl()->e()->type().dim() > 0) {
+        if (id->decl()->e()==NULL || id->decl()->e()->type().isann() || id->decl()->e()->type().isvar() || id->decl()->e()->type().cv() || id->decl()->e()->type().dim() > 0) {
           // New top-level id, need to copy into env.m
           vd = flat_exp(env,Ctx(),id->decl(),NULL,constants().var_true).r()
           ->cast<Id>()->decl();

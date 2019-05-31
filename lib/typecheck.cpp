@@ -1249,6 +1249,7 @@ namespace MiniZinc {
           if (ty_in == Type::varsetint()) {
             tt.ot(Type::OT_OPTIONAL);
             tt.ti(Type::TI_VAR);
+            tt.cv(true);
           }
           if (ty_in.cv())
             tt.cv(true);
@@ -1256,6 +1257,7 @@ namespace MiniZinc {
             if (c.where(i)->type() == Type::varbool()) {
               tt.ot(Type::OT_OPTIONAL);
               tt.ti(Type::TI_VAR);
+              tt.cv(true);
             } else if (c.where(i)->type() != Type::parbool()) {
               throw TypeError(_env,c.where(i)->loc(),
                               "where clause must be bool, but is `"+
