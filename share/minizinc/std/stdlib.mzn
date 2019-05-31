@@ -542,6 +542,14 @@ predicate var_dom(array[$T] of var opt int: x, set of int: d) =
 predicate int_opt_eq(var opt int: x, var opt int: y) =
   deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
 
+/** @group optiontypes.bool Search annotation for optional Boolean variables */
+annotation bool_search(array[int] of var opt bool: x, ann: a1, ann: a2, ann: a3) =
+  bool_search([if occurs(x[i]) then deopt(x[i]) else false endif | i in index_set(x)],a1,a2,a3);
+
+/** @group optiontypes.bool Search annotation for optional Boolean variables */
+annotation bool_search(array[int] of var opt bool: x, ann: a1, ann: a2) =
+  bool_search([if occurs(x[i]) then deopt(x[i]) else false endif | i in index_set(x)],a1,a2);
+
 /** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than the value of \a y. */
 function var bool: '>'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
@@ -735,6 +743,14 @@ function var opt int: element(var opt int: idx, array[int] of var opt int: x) =
 /** @group optiontypes.int Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
 function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt int: x) =
   if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
+
+/** @group optiontypes.int Search annotation for optional integer variables */
+annotation int_search(array[int] of var opt int: x, ann: a1, ann: a2, ann: a3) =
+  int_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],a1,a2,a3);
+
+/** @group optiontypes.int Search annotation for optional integer variables */
+annotation int_search(array[int] of var opt int: x, ann: a1, ann: a2) =
+  int_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],a1,a2);
 
 /* Internal function used to optimize over option type objective */
 
