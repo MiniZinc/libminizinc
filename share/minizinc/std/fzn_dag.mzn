@@ -1,4 +1,3 @@
-
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given directed graph to be a DAG.
 
@@ -22,6 +21,3 @@ predicate fzn_dag(array[int] of $$N: from, array[int] of $$N: to,
    forall(n in index_set(ns))
          (dist[n] = max( [0] ++ [ (dist[from[e]] + 1)*es[e] | e in EDGE where to[e] = n ]))  
    ;
-   
-
-         

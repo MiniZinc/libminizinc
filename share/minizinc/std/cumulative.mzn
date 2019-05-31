@@ -1,4 +1,4 @@
-include "alldifferent.mzn";
+include "all_different.mzn";
 include "disjunctive.mzn";
 include "fzn_cumulative.mzn";
 
@@ -23,7 +23,7 @@ predicate cumulative(array[int] of var int: s,
     then
          if forall(i in index_set(d))(is_fixed(d[i]) /\ fix(d[i]) == 1)
          then
-            alldifferent(s)
+            all_different(s)
          else
             disjunctive(s, d)
          endif

@@ -1,3 +1,4 @@
+include "fzn_dag.mzn";
 
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given directed graph to be a DAG.
@@ -14,8 +15,3 @@ predicate dag(array[int] of $$N: from, array[int] of $$N: to,
    assert(dom_array(from) subset index_set(ns),"dreachable: nodes in from must be in index set of ns") /\
    assert(dom_array(from) subset index_set(ns),"dreachable: nodes in to must be in index set of ns") /\
    fzn_dag(from,to,ns,es);
-   
-include "fzn_dag.mzn";
-   
-
-         

@@ -6,10 +6,9 @@ include "fzn_subcircuit.mzn";
   is not in the circuit.
 */
 predicate subcircuit(array[int] of var int: x) = 
-	fzn_subcircuit(x);
+    fzn_subcircuit(x);
 
 predicate subcircuit_reif(array[int] of var int: x, var bool: b) = 
-    abort("Reified subcircuit/1 is not supported.");
+    fzn_subcircuit_reif(x, b);
 
-%-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%

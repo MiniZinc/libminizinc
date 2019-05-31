@@ -15,7 +15,6 @@ predicate fzn_diffn_nonstrict_k(array[int,int] of var int: box_posn,
            )
      ;
 
-
 predicate fzn_diffn_nonstrict_nonoverlap_k(array[int] of var int: x1, 
                                        array[int] of var int: w1, 
                                        array[int] of var int: x2, 

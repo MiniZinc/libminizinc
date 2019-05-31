@@ -1,3 +1,5 @@
+include "fzn_cost_regular.mzn";
+
 /** @group globals.extensional
   The sequence of values in array \a x (which must all be in the range 1..\a S)
   is accepted by the DFA of \a Q states with input 1..\a S and transition
@@ -32,8 +34,6 @@ predicate cost_regular(array[int] of var int: x, int: Q, int: S,
     assert(F subset 1..Q,
         "cost_regular: final states in 'F' contain states outside 1..Q",
 
-	fzn_cost_regular(x,Q,S,d,q0,F,c,C)
+        fzn_cost_regular(x,Q,S,d,q0,F,c,C)
 
      )))))));
-
-include "fzn_cost_regular.mzn";

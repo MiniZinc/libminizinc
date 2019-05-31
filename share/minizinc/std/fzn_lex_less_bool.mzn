@@ -4,7 +4,7 @@
 %-----------------------------------------------------------------------------%
 
 predicate fzn_lex_less_bool(array[int] of var bool: x,
-                        array[int] of var bool: y) =
+                            array[int] of var bool: y) =
     let { int: lx = min(index_set(x)),
           int: ux = max(index_set(x)),
           int: ly = min(index_set(y)),
@@ -23,8 +23,8 @@ predicate fzn_lex_less_bool(array[int] of var bool: x,
     b[size + 1] = (ux - lx < uy - ly);
 
 predicate fzn_lex_less_bool_reif(array[int] of var bool: x,
-                             array[int] of var bool: y,
-                             var bool: c) =
+                                 array[int] of var bool: y,
+                                 var bool: c) =
     let { int: lx = min(index_set(x)),
           int: ux = max(index_set(x)),
           int: ly = min(index_set(y)),
@@ -41,6 +41,5 @@ predicate fzn_lex_less_bool_reif(array[int] of var bool: x,
     )
     /\
     b[size + 1] = (ux - lx < uy - ly);
-
 
 %-----------------------------------------------------------------------------%

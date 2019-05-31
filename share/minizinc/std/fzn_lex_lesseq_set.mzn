@@ -4,7 +4,7 @@
 %-----------------------------------------------------------------------------%
 
 predicate fzn_lex_lesseq_set(array[int] of var set of int: x,
-                         array[int] of var set of int: y) =
+                             array[int] of var set of int: y) =
     let { int: lx = min(index_set(x)),
           int: ux = max(index_set(x)),
           int: ly = min(index_set(y)),
@@ -22,6 +22,5 @@ predicate fzn_lex_lesseq_set(array[int] of var set of int: x,
                  else x[lx + i] <  y[ly + i] \/ b[i+1] endif
                )
     );
-
 
 %-----------------------------------------------------------------------------%

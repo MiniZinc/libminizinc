@@ -1,4 +1,5 @@
 include "disjunctive_strict_opt.mzn";
+include "fzn_disjunctive_opt.mzn";
 
 /** @group globals.scheduling
   Requires that a set of tasks given by start times \a s and durations \a d
@@ -17,11 +18,6 @@ predicate disjunctive(array[int] of var opt int: s,
         if (lb_array(d) > 0) then
           disjunctive_strict(s,d)
         else
-          forall (i,j in index_set(d) where i<j) (
-            absent(s[i]) \/ absent(s[j]) \/
-            d[i]=0 \/ d[j]=0 \/
-            deopt(s[i])+d[i] <= deopt(s[j]) \/
-            deopt(s[j])+d[j] <= deopt(s[i])
-          )
+          fzn_disjunctive(s, d);
         endif
     );

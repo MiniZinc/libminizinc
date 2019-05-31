@@ -14,4 +14,3 @@ predicate fzn_inverse_set(array[int] of var set of int: f,
     forall(i in index_set(f), j in index_set(invf)) (
         (j in f[i] <-> i in invf[j])
     );
-

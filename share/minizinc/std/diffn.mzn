@@ -1,3 +1,5 @@
+include "fzn_diffn.mzn";
+
 /** @group globals.packing
   Constrains rectangles \p i, given by their origins (\a x[\p i], \a y[\p i])
   and sizes (\a dx[\p i], \a dy[\p i]), to be non-overlapping. Zero-width
@@ -12,9 +14,7 @@ predicate diffn(array[int] of var int: x,
         index_set(x) = index_set(dx) /\
         index_set(x) = index_set(dy),
         "diffn: index set mismatch",
-    fzn_diffn(x,y,dx,dy)
+        fzn_diffn(x,y,dx,dy)
     );
-
-include "fzn_diffn.mzn";
 
 %-----------------------------------------------------------------------------%

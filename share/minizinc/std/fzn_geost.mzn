@@ -177,4 +177,3 @@ test fzn_geost_nonoverlap_k(
             x1[j] + w1[j] <= x2[j] \/ x2[j] + w2[j] <= x1[j]
         )
     );
-

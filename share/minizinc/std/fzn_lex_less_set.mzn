@@ -4,7 +4,7 @@
 %-----------------------------------------------------------------------------%
 
 predicate fzn_lex_less_set(array[int] of var set of int: x,
-                       array[int] of var set of int: y) =
+                           array[int] of var set of int: y) =
     let { int: lx = min(index_set(x)),
           int: ux = max(index_set(x)),
           int: ly = min(index_set(y)),
@@ -23,7 +23,8 @@ predicate fzn_lex_less_set(array[int] of var set of int: x,
     b[size + 1] = (ux - lx < uy - ly);
 
 predicate fzn_lex_less_set_reif(array[int] of var set of int: x,
-                       array[int] of var set of int: y, var bool: c) =
+                                array[int] of var set of int: y,
+                                var bool: c) =
     let { int: lx = min(index_set(x)),
           int: ux = max(index_set(x)),
           int: ly = min(index_set(y)),
@@ -40,7 +41,5 @@ predicate fzn_lex_less_set_reif(array[int] of var set of int: x,
     )
     /\
     b[size + 1] = (ux - lx < uy - ly);
-
-
 
 %-----------------------------------------------------------------------------%

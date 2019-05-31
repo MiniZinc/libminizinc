@@ -1,3 +1,5 @@
+include "fzn_path.mzn";
+   
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given directed graph to be a path from \a s to \a t.
 
@@ -36,10 +38,6 @@ predicate dpath(array[int] of $$N: from, array[int] of $$N: to,
    assert(dom_array(from) subset index_set(ns),"dpath: nodes in to must be in index set of ns") /\
    fzn_dpath(from,to,s,t,ns,es);
 
-   
-include "fzn_path.mzn";
-   
-%-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%
 
 /** @group globals.graph

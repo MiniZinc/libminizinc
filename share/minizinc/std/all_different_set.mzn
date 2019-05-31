@@ -1,6 +1,8 @@
+include "fzn_all_different_set.mzn";
+
 %-----------------------------------------------------------------------------%
 % Constrains the array of objects 'x' to be all different.
 %-----------------------------------------------------------------------------%
 
-predicate fzn_all_different_set(array[int] of var set of int: x) =
-    forall(i,j in index_set(x) where i < j) ( x[i] != x[j] );
+predicate all_different_set(array[int] of var set of int: x) =
+    fzn_all_different_set(x);

@@ -10,4 +10,3 @@ predicate fzn_distribute(array[int] of var int: card,
                             bool2int(value[i] = base[j])
                        )
         );
-

@@ -1,3 +1,5 @@
+include "fzn_regular_regexp.mzn";
+
 /** @group globals.extensional
   The sequence of values in array \a x  is accepted by the regular
   expression \a r. This constraint generates it's DFA equivalent.
@@ -29,5 +31,3 @@
 */
 predicate regular(array[int] of var int: x, string: r) = 
           fzn_regular(array[int] of var int: x, string: r);
-
-include "fzn_regular_regexp.mzn";

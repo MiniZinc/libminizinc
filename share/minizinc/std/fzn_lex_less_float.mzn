@@ -4,7 +4,7 @@
 %-----------------------------------------------------------------------------%
 
 predicate fzn_lex_less_float(array[int] of var float: x,
-                         array[int] of var float: y) =
+                             array[int] of var float: y) =
     let { int: lx = min(index_set(x)),
           int: ux = max(index_set(x)),
           int: ly = min(index_set(y)),
@@ -23,8 +23,8 @@ predicate fzn_lex_less_float(array[int] of var float: x,
     b[size + 1] = (ux - lx < uy - ly);
 
 predicate fzn_lex_less_float_reif(array[int] of var float: x,
-                              array[int] of var float: y,
-                              var bool: c) =
+                                  array[int] of var float: y,
+                                  var bool: c) =
     let { int: lx = min(index_set(x)),
           int: ux = max(index_set(x)),
           int: ly = min(index_set(y)),
@@ -41,6 +41,5 @@ predicate fzn_lex_less_float_reif(array[int] of var float: x,
     )
     /\
     b[size + 1] = (ux - lx < uy - ly);
-
 
 %-----------------------------------------------------------------------------%

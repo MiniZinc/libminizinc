@@ -1,4 +1,4 @@
-include "alldifferent.mzn";
+include "fzn_circuit.mzn";
 
 /** @group globals
   Constrains the elements of \a x to define a circuit where \a x[\p i] = \p j means
@@ -8,8 +8,6 @@ predicate circuit(array[int] of var int: x) =
     fzn_circuit(x);
 
 predicate circuit_reif(array[int] of var int: x, var bool: b) = 
-    abort("Reified circuit/1 is not supported.");
+    fzn_circuit_reif(x, b);
 
-include "fzn_circuit.mzn";
-%-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%

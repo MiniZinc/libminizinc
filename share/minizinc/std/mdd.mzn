@@ -35,8 +35,7 @@ predicate mdd(array[int] of var int: x,    % variables constrained by MDD
         forall(e in EDGE)(assert(level[from[e]]+1 = levele[to[e]],
                                  "mdd level of from[\(e)] = \(level[from[e]])" ++
                                  "must be 1 less than level of to[\(e)] = \(levele[to[e]])")) /\
-	fzn_mdd(x, N, level, E, from, label, to)
-	;
+	fzn_mdd(x, N, level, E, from, label, to);
                              
 % Example consider an MDD over 3 variables
 % 5 nodes and 12 edges

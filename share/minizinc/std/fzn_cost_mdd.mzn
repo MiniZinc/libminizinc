@@ -1,4 +1,3 @@
-
 predicate fzn_cost_mdd(array[int] of var int: x,      % variables constrained by MDD
               int: N,                             % number of nodes    root is node 1
               array[int] of int: level,           % level of each node root is level 1, T is level length(x)+1

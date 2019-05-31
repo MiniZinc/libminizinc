@@ -1,3 +1,5 @@
+include "fzn_bin_packing_capa.mzn";
+
 /**  @group globals.packing
   Requires that each item \p i with weight \a w[\p i], be put into \a bin[\p i] such 
   that the sum of the weights of the items in each bin \p b does not exceed the 
@@ -16,8 +18,7 @@ predicate bin_packing_capa(array[int] of int: c,
         "bin_packing_capa: the weights must be non-negative",
     assert(lb_array(c) >= 0,
         "bin_packing_capa: the capacities must be non-negative",
-      fzn_bin_packing_capa(c, bin, w)    
+        fzn_bin_packing_capa(c, bin, w)    
     )));
 
-include "fzn_bin_packing_capa.mzn";
 %-----------------------------------------------------------------------------%

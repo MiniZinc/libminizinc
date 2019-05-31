@@ -9,6 +9,5 @@ predicate set_less(var set of int: x,
     fzn_set_less(x, y);
 
 % Alternative names for the above.
-%
 predicate set_lt(var set of int: x, var set of int: y) =
-	set_less(x, y);
+    set_less(x, y);

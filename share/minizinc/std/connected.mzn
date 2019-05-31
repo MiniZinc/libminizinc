@@ -1,3 +1,4 @@
+include "fzn_connected.mzn";
 
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given directed graph to be connected.
@@ -15,9 +16,6 @@ predicate dconnected(array[int] of $$N: from, array[int] of $$N: to,
    assert(dom_array(from) subset index_set(ns),"dconnected: nodes in to must be in index set of ns") /\
    fzn_dconnected(from,to,ns,es);
    
-include "fzn_connected.mzn";
-   
-%-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%
 
 /** @group globals.graph

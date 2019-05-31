@@ -14,11 +14,9 @@ predicate fzn_diffn_k(array[int,int] of var int: box_posn,
                                [ box_size[b2,j] | j in DIMS ] ) 
     	   );
 
-
 predicate fzn_diffn_nonoverlap_k(array[int] of var int: x1, 
                              array[int] of var int: w1, 
                              array[int] of var int: x2, 
                              array[int] of var int: w2) = 
     exists(j in index_set(x1))
         (x1[j] + w1[j] <= x2[j] \/ x2[j] + w2[j] <= x1[j]);
-

@@ -11,8 +11,6 @@ Assumptions:
 @param W: sum of sizes of all items in the knapsack
 @param P: sum of profits of all items in the knapsack
 */
-
-
 predicate fzn_knapsack(array[int] of int: w, array[int] of int:p, 
                    array[int] of var int:x, var int: W, var int: P) =
 	  %% define big M bigger than any possible profit	   
@@ -27,4 +25,4 @@ var int: fzn_knapsack(array[int] of int: w, array[int] of int:p,
 	      max( [ p[i]*j + fzn_knapsack(w,p,x,W - w[i]*j,i+1,M)
 	             - M*((x[i]!= j) + (W-w[i]*j < 0))
 		   | j in dom(x[i]) ]
-	 endif;	   
+	 endif;

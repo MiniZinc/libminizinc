@@ -1,4 +1,4 @@
-include "alldifferent.mzn";
+include "all_different.mzn";
 
 /** @group globals
   Constrains the elements of \a x to define a circuit where \a x[\p i] = \p j means
@@ -10,8 +10,8 @@ predicate fzn_circuit(array[int] of var int: x) =
 	  int: n = card(S),
 	  array[S] of var 1..n: order
         } in
-    alldifferent(x) /\	
-    alldifferent(order) /\
+    all_different(x) /\	
+    all_different(order) /\
     forall(i in S)(x[i] != i) /\ 
     order[l] = 1 /\
     forall(i in S)(order[i] != n -> order[x[i]] = order[i] + 1) /\
@@ -20,5 +20,4 @@ predicate fzn_circuit(array[int] of var int: x) =
 predicate fzn_circuit_reif(array[int] of var int: x, var bool: b) = 
     abort("Reified circuit/1 is not supported.");
 
-%-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%

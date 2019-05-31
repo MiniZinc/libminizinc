@@ -1,3 +1,5 @@
+include "fzn_cost_mdd.mzn";   
+   
 /** @group globals.extensional
    Requires that \a x defines a path in the cost MDD with total edge weight \a totalcost.
 
@@ -50,8 +52,19 @@ predicate cost_mdd(array[int] of var int: x,      % variables constrained by MDD
                       "cost_mdd: Two edges \(e1) and \(e2) leaving node \(from[e1]) with overlapping labels")) /\
         fzn_cost_mdd(x,N,level,E,from,label,cost,to,totalcost);
 
-include "fzn_cost_mdd.mzn";   
-   
+predicate cost_mdd_reif(array[int] of var int: x,      % variables constrained by MDD
+              int: N,                             % number of nodes    root is node 1
+              array[int] of int: level,           % level of each node root is level 1, T is level length(x)+1
+              int: E,                             % number of edges
+              array[int] of int: from,            % edge leaving node  1..N
+              array[int] of set of int: label,    % values of variable on edge
+              array[int] of int: cost,            % cost of using edge
+              array[int] of int: to,              % edge entering node 0..N where 0 = T node
+              var int: totalcost,                 % total cost of path
+              var bool: b                         % reification variable
+             ) = 
+        fzn_cost_mdd_reif(x, N, level, E, from, label, cost, to, totalcost, b);
+
 % Example consider an MDD over 3 variables
 % 5 nodes and 8 edges
 % level 1 root = 1

@@ -1,3 +1,5 @@
+include "fzn_regular.mzn";
+
 /** @group globals.extensional
   The sequence of values in array \a x (which must all be in the range 1..\a S)
   is accepted by the DFA of \a Q states with input 1..\a S and transition
@@ -26,11 +28,9 @@ predicate regular(array[int] of var int: x, int: Q, int: S,
     assert(F subset 1..Q,
         "regular: final states in 'F' contain states outside 1..Q",
 
-	fzn_regular(x,Q,S,d,q0,F)
+        fzn_regular(x,Q,S,d,q0,F)
 
      ))))));
-
-include "fzn_regular.mzn";
 
 /** @group globals.extensional
   The sequence of values in array \a x (which must all be in the set \a S)
@@ -60,6 +60,6 @@ predicate regular(array[int] of var int: x, int: Q, set of int: S,
     assert(F subset 1..Q,
         "regular: final states in 'F' contain states outside 1..Q",
 
-	fzn_regular(x,Q,S,d,q0,F)
+        fzn_regular(x,Q,S,d,q0,F)
 
      ))))));

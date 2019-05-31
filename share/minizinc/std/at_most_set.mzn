@@ -3,5 +3,5 @@
 %-----------------------------------------------------------------------------%
 
 predicate at_most_set(int: n, array[int] of var set of int: x, set of int: v) =
-    sum(i in index_set(x)) ( bool2int(x[i] == v) ) <= n;
+    fzn_at_most_set(n, x, v);
 

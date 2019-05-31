@@ -1,7 +1,9 @@
+include "fzn_element_set.mzn";
+
 %-----------------------------------------------------------------------------%
 % Requires that 'y' is the ith element of the array 'x'.
 %-----------------------------------------------------------------------------%
 
 predicate element_set(var int: i, array[int] of var set of int: x,
-        var set of int: y) =
-    y = x[i];
+                      var set of int: y) =
+    fzn_element_set(i, x, y);

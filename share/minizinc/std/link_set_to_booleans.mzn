@@ -9,4 +9,3 @@ predicate link_set_to_booleans(var set of int: s, array[int] of var bool: b) =
         "link_set_to_booleans: the index set of b must be a superset of the possible values of s",
         forall(i in index_set(b)) ( b[i] <-> i in s )
     );
-
