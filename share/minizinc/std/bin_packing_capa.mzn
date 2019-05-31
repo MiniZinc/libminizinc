@@ -4,7 +4,6 @@
   capacity \a c[\p b].
 
   Assumptions:
-
   - forall \p i, \a w[\p i] >=0
   - forall \p b, \a c[\p b] >=0
 */
@@ -17,16 +16,8 @@ predicate bin_packing_capa(array[int] of int: c,
         "bin_packing_capa: the weights must be non-negative",
     assert(lb_array(c) >= 0,
         "bin_packing_capa: the capacities must be non-negative",
-    
-      forall( i in index_set(bin) ) (
-            min(index_set(c)) <= bin[i] /\ bin[i] <= max(index_set(c))
-      )
-    /\
-      forall( b in index_set(c) ) (
-            c[b] >= sum ( i in index_set(bin) ) (
-                w[i] * bool2int( bin[i] = b )
-            )
-      )
+      fzn_bin_packing_capa(c, bin, w)    
     )));
 
+include "fzn_bin_packing_capa.mzn";
 %-----------------------------------------------------------------------------%

@@ -5,8 +5,18 @@
 */
 predicate inverse(array[int] of var int: f,
                   array[int] of var int: invf) =
-    forall(i in index_set(f), j in index_set(invf)) (
-           f[i] in index_set(invf) /\
-        invf[j] in index_set(f   ) /\
-        (j == f[i] <-> i == invf[j])
-    );
+    analyse_alldifferent(f) /\
+    analyse_alldifferent(invf) /\
+    fzn_inverse(f, invf);
+
+include "fzn_inverse.mzn";
+include "analyse_alldifferent.mzn";
+
+/** @group globals.channeling
+  Given a function \a f represented as an array, return the inverse function.
+*/
+function array[int] of var int: inverse(array[int] of var int: f) =
+    let {
+      array[lb_array(f)..ub_array(f)] of var index_set(f): invf;
+      constraint inverse(f,invf);
+    } in invf;

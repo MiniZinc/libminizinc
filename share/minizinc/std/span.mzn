@@ -7,8 +7,7 @@ predicate span(var opt int: s0, var int: d0,
                array[int] of var int: d) =
           assert(index_set(s) = index_set(d),
                  "span: index sets of third and fourth argument must be identical",
-              (occurs(s0) <-> exists(i in index_set(s))(occurs(s[i]))) /\ 
-              s0 = min(s) /\
-              (absent(s0) -> d0 = 0) /\
-              s0 ~+ d0 = max([s[i] ~+ d[i] | i in index_set(s)])
+		fzn_span(s0,d0,s,d)
           );
+
+include "fzn_span.mzn";

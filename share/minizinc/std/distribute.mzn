@@ -7,10 +7,17 @@ predicate distribute(array[int] of var int: card,
                      array[int] of var int: base) =
     assert(index_set(card) == index_set(value),
         "distribute: card and value arrays must have identical index sets",
-        forall (i in index_set(card)) (
-            card[i] == sum(j in index_set(base)) (
-                            bool2int(value[i] = base[j])
-                       )
-        )
+	fzn_distribute(card, value, base)
     );
 
+/** @group globals.counting
+  Returns an array of the number of occurences of \a value[\p i] in
+  \a base. The values in \a value need not be distinct.
+*/
+function array[int] of var int: distribute(array[int] of var int: value,
+                                           array[int] of var int: base) :: promise_total =
+  let { array[index_set(value)] of var 0..length(base): card;
+        constraint fzn_distribute(card, value, base); } 
+  in card;
+
+include "fzn_distribute.mzn";

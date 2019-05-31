@@ -1,0 +1,1 @@
+predicate analyse_alldifferent(array[int] of var int: x) = true;

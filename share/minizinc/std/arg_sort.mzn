@@ -10,7 +10,8 @@ function array[int] of var int: arg_sort(array[int] of var int:x) :: promise_tot
             let { int: l = min(index_set(x));
                   int: u = max(index_set(x));
                   array[1..u-l+1] of var l..u: p;
-                  constraint arg_sort_int(x,p); }
+		  constraint analyse_alldifferent(p);
+                  constraint fzn_arg_sort_int(x,p); }
             in  p
          endif;
 
@@ -27,7 +28,8 @@ function array[int] of var int: arg_sort(array[int] of var float:x) :: promise_t
             let { int: l = min(index_set(x));
                   int: u = max(index_set(x));
                   array[1..u-l+1] of var l..u: p;
-                  constraint arg_sort_float(x,p); }
+		  constraint analyse_alldifferent(p);
+                  constraint fzn_arg_sort_float(x,p); }
             in  p
          endif;
 
@@ -38,7 +40,7 @@ Constrains \a p to be the permutation which causes \a x to be in sorted order he
 The permutation is the stable sort hence \a x[\a p[\p i]] = \a x[\a p[\p i+1]] \(\rightarrow\) \a p[\p i] < \a p[\p i+1].
 */
 predicate arg_sort(array[int] of var int:x,
-                   array[int] of var int:p) = arg_sort_int(x,p);
+                   array[int] of var int:p) = fzn_arg_sort_int(x,p);
 
 /** @group globals.sort
 Constrains \a p to be the permutation which causes \a x to be in sorted order hence
@@ -47,11 +49,12 @@ Constrains \a p to be the permutation which causes \a x to be in sorted order he
 The permutation is the stable sort hence \a x[\a p[\p i]] = \a x[\a p[\p i+1]] \(\rightarrow\) \a p[\p i] < \a p[\p i+1].
 */
 predicate arg_sort(array[int] of var float:x,
-                   array[int] of var int:p) = arg_sort_float(x,p);
+                   array[int] of var int:p) = fzn_arg_sort_float(x,p);
 
 
-include "arg_sort_int.mzn";
-include "arg_sort_float.mzn";
+include "fzn_arg_sort_int.mzn";
+include "fzn_arg_sort_float.mzn";
+include "analyse_alldifferent.mzn";
          
 
 

@@ -8,4 +8,6 @@
 
 predicate sum_pred(var int: i, array[int] of set of int: sets,
                    array[int] of int: cs, var int: s) =
-    s == sum(j in index_set(cs)) ( bool2int(j in sets[i]) * cs[j] );
+	fzn_sum_pred(i, sets, cs, s);
+
+include "fzn_sum_pred.mzn";

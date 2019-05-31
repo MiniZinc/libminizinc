@@ -12,10 +12,9 @@ predicate diffn(array[int] of var int: x,
         index_set(x) = index_set(dx) /\
         index_set(x) = index_set(dy),
         "diffn: index set mismatch",
-    forall(i,j in index_set(x) where i < j)(
-        x[i] + dx[i] <= x[j] \/ y[i] + dy[i] <= y[j] \/
-        x[j] + dx[j] <= x[i] \/ y[j] + dy[j] <= y[i]
-    )
+    fzn_diffn(x,y,dx,dy)
     );
+
+include "fzn_diffn.mzn";
 
 %-----------------------------------------------------------------------------%

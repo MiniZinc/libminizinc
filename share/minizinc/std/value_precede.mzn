@@ -1,5 +1,5 @@
-include "value_precede_int.mzn";
-include "value_precede_set.mzn";
+include "fzn_value_precede_int.mzn";
+include "fzn_value_precede_set.mzn";
 
 /** @group globals.lexicographic
   Requires that \a s precede \a t in the array \a x.
@@ -9,7 +9,7 @@ include "value_precede_set.mzn";
   to \a s.
 */
 predicate value_precede(int: s, int: t, array[int] of var int: x) =
-    value_precede_int(s, t, x);
+    fzn_value_precede_int(s, t, x);
 
 /** @group globals.lexicographic
   Requires that \a s precede \a t in the array \a x.
@@ -19,4 +19,4 @@ predicate value_precede(int: s, int: t, array[int] of var int: x) =
   \a s but not \a t.
 */
 predicate value_precede(int: s, int: t, array[int] of var set of int: x) =
-    value_precede_set(s, t, x);
+    fzn_value_precede_set(s, t, x);

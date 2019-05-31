@@ -91,10 +91,6 @@ annotation constraint_name(string: s);
 /** @group annotations.general Used internally by the compiler */
 annotation mzn_rhs_from_assignment;
 
-/** @group annotations.general Marks a constraint as a recorded domain changing constraint (when mzn2fzn
-  called with -g flag */
-annotation domain_change_constraint;
-
 /***
  @groupdef annotations.prop Propagation strength annotations
 */
@@ -776,13 +772,5 @@ test mzn_check_only_range_domains() =
 opt int: mzn_min_version_required;
 
 constraint assert(absent(mzn_min_version_required) \/ deopt(mzn_min_version_required) <= mzn_compiler_version(), "This model requires MiniZinc version "++mzn_version_to_string(deopt(mzn_min_version_required))++" but you are running version "++mzn_version_to_string(mzn_compiler_version()));
-
-predicate set_in(array[$T] of var int: X, set of int: s) = forall(x in array1d(X)) (x in s);
-predicate int_eq(array[$T] of var int: X, int: s) = forall(x in array1d(X)) (x = s);
-predicate float_eq(array[$T] of var int: X, float: s) = forall(x in array1d(X)) (x = s);
-predicate int_le(array[$T] of var int: X, int: s) = forall(x in array1d(X)) (x <= s);
-predicate int_le(int:s, array[$T] of var int: X) = forall(x in array1d(X)) (x >= s);
-predicate float_le(array[$T] of var float: X, float: s) = forall(x in array1d(X)) (x <= s);
-predicate float_le(float:s, array[$T] of var float: X) = forall(x in array1d(X)) (x >= s);
 
 include "builtins.mzn";

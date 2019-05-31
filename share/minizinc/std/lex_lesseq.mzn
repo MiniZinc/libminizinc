@@ -1,7 +1,7 @@
-include "lex_lesseq_bool.mzn";
-include "lex_lesseq_float.mzn";
-include "lex_lesseq_int.mzn";
-include "lex_lesseq_set.mzn";
+include "fzn_lex_lesseq_bool.mzn";
+include "fzn_lex_lesseq_float.mzn";
+include "fzn_lex_lesseq_int.mzn";
+include "fzn_lex_lesseq_set.mzn";
 
 /** @group globals.lexicographic
   Requires that the array \a x is lexicographically less than or equal to
@@ -9,7 +9,7 @@ include "lex_lesseq_set.mzn";
 */
 predicate lex_lesseq(array[int] of var bool: x,
                      array[int] of var bool: y) = 
-    lex_lesseq_bool(x, y);
+    fzn_lex_lesseq_bool(x, y);
 
 /** @group globals.lexicographic
   Requires that the array \a x is lexicographically less than or equal to
@@ -17,7 +17,7 @@ predicate lex_lesseq(array[int] of var bool: x,
 */
 predicate lex_lesseq(array[int] of var float: x,
                      array[int] of var float: y) =
-    lex_lesseq_float(x, y);
+    fzn_lex_lesseq_float(x, y);
 
 /** @group globals.lexicographic
   Requires that the array \a x is lexicographically less than or equal to
@@ -25,7 +25,7 @@ predicate lex_lesseq(array[int] of var float: x,
 */
 predicate lex_lesseq(array[int] of var int: x,
                      array[int] of var int: y) =
-    lex_lesseq_int(x, y);
+    fzn_lex_lesseq_int(x, y);
 
 /** @group globals.lexicographic
   Requires that the array \a x is lexicographically less than or equal to
@@ -33,7 +33,7 @@ predicate lex_lesseq(array[int] of var int: x,
 */
 predicate lex_lesseq(array[int] of var set of int: x,
                      array[int] of var set of int: y) =
-    lex_lesseq_set(x, y);
+    fzn_lex_lesseq_set(x, y);
 
 % Alternative names for the above.
 %
