@@ -933,6 +933,7 @@ Solver Configuration Files
 --------------------------
 
 In order for a solver to be available to MiniZinc, it has to be described in a *solver configuration file*. This is a simple file, in JSON or ``.dzn`` format, that contains some basic information such as the solver's name, version, where its library of global constraints can be found, and a path to its executable.
+Examples are given in section Solver Backends in User Manual.
 
 A solver configuration file must have file extension ``.msc`` (for MiniZinc Solver Configuration), and can be placed in any of the following locations:
 
