@@ -111,7 +111,7 @@ namespace MiniZinc {
       bool where = true;
       if (e->where(gen) != NULL) {
         GCLock lock;
-        where = eval_bool(env, e->where(gen));
+        where = e->where(gen)->type().isvar() ? true : eval_bool(env, e->where(gen));
       }
       if (where) {
         if (gen == e->n_generators()-1) {
@@ -164,7 +164,7 @@ namespace MiniZinc {
       bool where = true;
       if (e->in(gen) != NULL && e->where(gen) != NULL) {
         GCLock lock;
-        where = eval_bool(env, e->where(gen));
+        where = e->where(gen)->type().isvar() ? true : eval_bool(env, e->where(gen));
       }
       if (where) {
         if (gen == e->n_generators()-1) {
