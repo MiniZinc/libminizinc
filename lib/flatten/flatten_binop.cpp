@@ -766,29 +766,30 @@ namespace MiniZinc {
     }
     Expression* boe0 = bo->lhs();
     Expression* boe1 = bo->rhs();
+    bool isBuiltin = bo->decl()==NULL || bo->decl()->e()==NULL;
     switch (bot) {
       case BOT_PLUS:
-      {
-        KeepAlive ka;
-        if (boe0->type().isint()) {
-          ka = mklinexp<IntLit>(env,1,1,boe0,boe1);
-        } else {
-          ka = mklinexp<FloatLit>(env,1.0,1.0,boe0,boe1);
+        if (isBuiltin) {
+          KeepAlive ka;
+          if (boe0->type().isint()) {
+            ka = mklinexp<IntLit>(env,1,1,boe0,boe1);
+          } else {
+            ka = mklinexp<FloatLit>(env,1.0,1.0,boe0,boe1);
+          }
+          ret = flat_exp(env,ctx,ka(),r,b);
+          break;
         }
-        ret = flat_exp(env,ctx,ka(),r,b);
-      }
-        break;
       case BOT_MINUS:
-      {
-        KeepAlive ka;
-        if (boe0->type().isint()) {
-          ka = mklinexp<IntLit>(env,1,-1,boe0,boe1);
-        } else {
-          ka = mklinexp<FloatLit>(env,1.0,-1.0,boe0,boe1);
+        if (isBuiltin) {
+          KeepAlive ka;
+          if (boe0->type().isint()) {
+            ka = mklinexp<IntLit>(env,1,-1,boe0,boe1);
+          } else {
+            ka = mklinexp<FloatLit>(env,1.0,-1.0,boe0,boe1);
+          }
+          ret = flat_exp(env,ctx,ka(),r,b);
+          break;
         }
-        ret = flat_exp(env,ctx,ka(),r,b);
-      }
-        break;
       case BOT_MULT:
       case BOT_IDIV:
       case BOT_MOD:
@@ -825,7 +826,7 @@ namespace MiniZinc {
           break;
         }
         
-        if (bot==BOT_MULT) {
+        if (isBuiltin && bot==BOT_MULT) {
           Expression* e0r = e0.r();
           Expression* e1r = e1.r();
           if (e0r->type().ispar())
@@ -841,7 +842,7 @@ namespace MiniZinc {
             ret = flat_exp(env,ctx,ka(),r,b);
             break;
           }
-        } else if (bot==BOT_DIV || bot==BOT_IDIV) {
+        } else if (isBuiltin && (bot==BOT_DIV || bot==BOT_IDIV)) {
           Expression* e0r = e0.r();
           Expression* e1r = e1.r();
           if (e1r->type().ispar() && e1r->type().isint()) {
@@ -863,7 +864,6 @@ namespace MiniZinc {
           }
         }
         
-        
         GC::lock();
         std::vector<Expression*> args(2);
         args[0] = e0.r(); args[1] = e1.r();
@@ -874,7 +874,6 @@ namespace MiniZinc {
           cc = new Call(bo->loc().introduce(),opToBuiltin(bo,bot),args);
         }
         cc->type(bo->type());
-        
         EnvI::CSEMap::iterator cit;
         if ( (cit = env.cse_map_find(cc)) != env.cse_map_end()) {
           ret.b = bind(env,Ctx(),b,env.ignorePartial ? constants().lit_true : cit->second.b());
