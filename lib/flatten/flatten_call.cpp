@@ -308,9 +308,24 @@ namespace MiniZinc {
     return true;
   }
 
+  class IgnorePartial {
+  public:
+    EnvI& env;
+    bool ignorePartial;
+    IgnorePartial(EnvI& env0, Call* c) : env(env0), ignorePartial(env.ignorePartial) {
+      if (c->id().endsWith("_reif") || c->id().endsWith("_imp")) {
+        env.ignorePartial = true;
+      }
+    }
+    ~IgnorePartial(void) {
+      env.ignorePartial = ignorePartial;
+    }
+  };
+  
   EE flatten_call(EnvI& env,Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     EE ret;
     Call* c = e->cast<Call>();
+    IgnorePartial ignorePartial(env,c);
     if (c->id().endsWith("_reif")) {
       env.n_reif_ct++;
     } else if (c->id().endsWith("_imp")) {
