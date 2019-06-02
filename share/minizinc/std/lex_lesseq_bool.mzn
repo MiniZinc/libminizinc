@@ -1,4 +1,3 @@
-include "lex_lesseq.mzn";
 include "fzn_lex_lesseq_bool.mzn";
 
 %-----------------------------------------------------------------------------%
@@ -17,6 +16,6 @@ predicate lex_lesseq_bool_reif(array[int] of var bool: x,
 
 predicate lex_leq_bool(array[int] of var bool: x,
                        array[int] of var bool: y) =
-    lex_lesseq(x, y);
+    lex_lesseq_bool(x, y);
 
 %-----------------------------------------------------------------------------%

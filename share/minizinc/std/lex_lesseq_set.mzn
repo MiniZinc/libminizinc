@@ -1,4 +1,3 @@
-include "lex_lesseq.mzn";
 include "fzn_lex_lesseq_set.mzn";
 
 %-----------------------------------------------------------------------------%
@@ -12,6 +11,6 @@ predicate lex_lesseq_set(array[int] of var set of int: x,
 
 predicate lex_leq_set(array[int] of var set of int: x,
                       array[int] of var set of int: y) =
-    lex_lesseq(x, y);
+    lex_lesseq_set(x, y);
 
 %-----------------------------------------------------------------------------%

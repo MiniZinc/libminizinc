@@ -1,4 +1,3 @@
-include "lex_lesseq.mzn";
 include "fzn_lex_lesseq_float.mzn";
 
 %-----------------------------------------------------------------------------%
@@ -17,6 +16,6 @@ predicate lex_lesseq_float_reif(array[int] of var float: x,
 
 predicate lex_leq_float(array[int] of var float: x,
                         array[int] of var float: y) =
-    lex_lesseq(x, y);
+    lex_lesseq_float(x, y);
 
 %-----------------------------------------------------------------------------%

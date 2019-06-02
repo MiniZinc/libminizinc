@@ -116,7 +116,7 @@ predicate fzn_table_int_reif(array[int] of var int: x,
 
                     endif endif endif ) }
         in
-        table(x ++ [bool2int(b)], t_b)
+        fzn_table_int(x ++ [bool2int(b)], t_b)
 
     endif
     );

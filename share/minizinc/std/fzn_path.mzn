@@ -85,7 +85,7 @@ predicate fzn_path(int: N, int: E, array[int] of int: from, array[int] of int: t
         /* ensure that the directed edges selected agree with undirected edges */
         forall(e in 1..E)(es[e] <-> (des[e] \/ des[e+E])) /\
         /* duplicate the edges so that the we can use directed graph path */
-        dpath(N,2*E,dfrom,dto,s,t,ns,des);
+        fzn_dpath(N,2*E,dfrom,dto,s,t,ns,des);
    
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given undirected graph to be a path from \a s to \a t.
@@ -107,6 +107,6 @@ predicate fzn_path(array[int] of $$N: from, array[int] of $$N: to,
         /* ensure that the directed edges selected agree with undirected edges */
         forall(e in 1..E)(es[e-1+min(index_set(es))] <-> (des[e] \/ des[e+E])) /\
         /* duplicate the edges so that the we can use directed graph path */
-        dpath(dfrom,dto,s,t,ns,des);
+        fzn_dpath(dfrom,dto,s,t,ns,des);
 
 %-----------------------------------------------------------------------------%

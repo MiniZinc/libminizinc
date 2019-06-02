@@ -118,7 +118,7 @@ predicate fzn_geost_smallest_bb(
         set of int: OBJECTS = index_set(kind); 
     } in (
         % Posting the geost constraint
-        geost_bb(k, rect_size, rect_offset, shape, x, kind, l, u)
+        fzn_geost_bb(k, rect_size, rect_offset, shape, x, kind, l, u)
         /\ % Posting the smallest bounding box constraints
         forall(j in DIMS)(
             % Lower boundary

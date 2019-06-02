@@ -6,7 +6,7 @@ predicate fzn_value_precede_chain_int(array[int] of int: c, array[int] of var in
     );
 
 
-/*** alternate formulation using sequential precede chain
+/* alternate formulation using sequential precede chain
 predicate fzn_value_precede_chain ( array [ int] of int : T , array [ int] of var int : X)
 =        if min( index_set (T)) = 1 /\ forall (i in index_set (T))( T[i] = i)
             /\ max (T) = ub_array (X) then seq_precede_chain (X)
@@ -22,4 +22,4 @@ predicate fzn_value_precede_chain ( array [ int] of int : T , array [ int] of va
                      ( element (X[i ] - l + 1, p , Y[i ]) ) /\
               seq_precede_chain ( Y)
          endif ;
-**/
+*/
