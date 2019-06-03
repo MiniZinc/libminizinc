@@ -6,15 +6,13 @@
     \a P is an array of index values in \a I
     \a V is an array of integer values 
 */
-predicate fzn_writes_seq(array[int] of var int: I, var int: i, var int: v,
-                         array[int] of var int: O) =
-    forall(i in index_set(I))
-          (if forall(j in index_set(P))(P[j] != i) then
-              O[i] = I[i]
-          else true endif) /\
-    forall(j in index_set(P))
-          (if forall(k in index_set(P) where k > j)(P[k] != P[j]) then
-              O[P[j]] = V[j]
-          else true endif);
+predicate fzn_writes_seq(array[int] of var int: I, array[int] of var int: P,
+                         array[int] of var int: V, array[int] of var int: O) =
+    forall (i in index_set(I)) (
+        let {
+            array ... of var int: Vi = reverse(V) ++ I[i];
+            array ... of var bool: Pi = reverse([P[j] == i | j in index_set(V)]) ++ [true]; 
+        } in O[i] = Vi[arg_max(Pi)]
+    );
 
 %-----------------------------------------------------------------------------%
