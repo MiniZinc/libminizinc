@@ -787,9 +787,6 @@ class MznTest:
         resSlv = OrderedDict()
         bChkDZN = True if None!=solList and None!=self.params.args.checkDZN else False
         if bChkDZN:
-#        print( "Running '", slvBE["EXE"]["s_SolverCall"][0] \
-#          + ' ' + slvBE["EXE"]["s_ExtraCmdline"][0], "'... ", sep='', end='', flush=True )
-            resSlv["Sol_Status"] = [-50, "   ????? NO STATUS LINE PARSED."]
             print( "_PARSING '", self.params.args.checkDZN, sep='', end="'... " )
             with open( self.params.args.checkDZN, 'r' ) as ro:
                 mzn_exec.parseStdout( ro, resSlv, slvBE["Stdout_Keylines"], slvBE["Stdout_Keyvalues"], solList )
@@ -851,10 +848,6 @@ class MznTest:
                 print( "STDOUT/ERR: ", len(completed.stdout), '/',
                       len(completed.stderr), " bytes", sep='', end=', ' )
                 mzn_exec.parseStderr( io.StringIO( completed.stderr ), resSlv, slvBE["Stderr_Keylines"], slvBE["Stderr_Keyvalues"] )
-                if "Time_Flt" in resSlv and utils.try_float( resSlv.get( "Time_Flt" ) ) is not None:
-                    resSlv["Sol_Status"] = [-50, "   ????? NO STATUS LINE PARSED."]
-                else:
-                    resSlv["Sol_Status"] = [-51, "   !!!!! NOFZN"]     ## This can mean a check failed.
                 mzn_exec.parseStdout( io.StringIO( completed.stdout ), resSlv, slvBE["Stdout_Keylines"], slvBE["Stdout_Keyvalues"], solList )
                 ## Adding the outputs to the log
                 ## resSlv["StdErr"] = completed.stderr
@@ -874,10 +867,6 @@ class MznTest:
                 )
                 with open( sFlnStderr, "r" ) as rf:
                     mzn_exec.parseStderr( rf, resSlv, slvBE["Stderr_Keylines"], slvBE["Stderr_Keyvalues"] )
-                if "Time_Flt" in resSlv:
-                    resSlv["Sol_Status"] = [-50, "   ????? NO STATUS LINE PARSED."]
-                else:
-                    resSlv["Sol_Status"] = [-51, "   !!!!! NOFZN"]     ## This can mean a check failed.
                 with open( sFlnStdout, "r" ) as rf:
                     mzn_exec.parseStdout( rf, resSlv, slvBE["Stdout_Keylines"], slvBE["Stdout_Keyvalues"], solList )
 
@@ -886,6 +875,11 @@ class MznTest:
             resSlv["TimeReal_All"] = tmAll
             resSlv["TimeReal_LastStatus"] = 0
             resSlv["Hostname"] = platform.uname()[1]
+        ### For all cases, some postprocessing #############################
+        if "Sol_Status" not in resSlv:
+            resSlv["Sol_Status"] = [-50, "   !!!!!  STATUS TOTALLY UNKNOWN - NO STATUS LINE PARSED."]
+        if "Time_Flt" not in resSlv or utils.try_float( resSlv.get( "Time_Flt" ) ) is None:
+            resSlv["NOFZN"] = ["      !!!!! No flattening finish time registered or successfully parsed"]
         dTmLast = utils.try_float( resSlv.get( "RealTime_Solns2Out" ) )
         if None!=dTmLast:
             resSlv["TimeReal_LastStatus"] = dTmLast / 1000.0

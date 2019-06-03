@@ -285,7 +285,7 @@ class CompareLogs:
                 dTime_All = utils.try_float( mSlv.get( "TimeReal_All" ) )
                 aDetThis [ "tAll" ] = dTime_All
                 dTime_Flt = utils.try_float( mSlv.get( "Time_Flt" ) )
-                aResultThisInst[ "t_Flatten" ] = dTime_Flt if dTime_Flt is not None else dTime_All  ##??
+                aResultThisInst[ "t_Flatten" ] = dTime_Flt if dTime_Flt is not None else dTime_All  ##?? Assume flattening stopped
                 aDetThis [ "tFlt" ] = dTime_Flt
                 dTime_Last = utils.try_float( mSlv.get( "TimeReal_LastStatus" ) )
                 aDetThis [ "tBest" ] = dTime_Last
