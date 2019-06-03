@@ -1,4 +1,4 @@
-predicate if_then_else_partiality(array[int] of var bool: c, array[int] of var bool: def, var bool: b) =
+predicate fzn_if_then_else_partiality(array[int] of var bool: c, array[int] of var bool: def, var bool: b) =
   let { array[index_set(c)] of var bool: d; } in
   forall(i in index_set(c))
         (if i > min(index_set(c)) then

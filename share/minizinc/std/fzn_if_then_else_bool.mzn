@@ -1,4 +1,4 @@
-predicate if_then_else(array[int] of var bool: c, array[int] of bool: x, bool: y) =
+predicate fzn_if_then_else_bool(array[int] of var bool: c, array[int] of bool: x, bool: y) =
   let { array[index_set(c)] of var bool: d; } in
   forall(i in index_set(c))
         (if i > min(index_set(c)) then
