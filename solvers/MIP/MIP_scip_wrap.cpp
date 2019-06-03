@@ -581,12 +581,16 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
      SCIP_CALL( SCIPwriteParams (scip, options->sReadParams.c_str(), TRUE, FALSE) );
     }
 
+    cbui.pOutput->dWallTime0 = output.dWallTime0 =
+      std::chrono::steady_clock::now();
    output.dCPUTime = clock();
 
    /* Optimize the problem and obtain solution. */
    SCIP_CALL( SCIPsolve (scip) );
 //    wrap_assert( !retcode,  "Failed to optimize MIP." );
 
+   output.dWallTime = std::chrono::duration<double>(
+     std::chrono::steady_clock::now() - output.dWallTime0).count();
    output.dCPUTime = (clock() - output.dCPUTime) / CLOCKS_PER_SEC;
    
    cbuiPtr = 0;                             /// cleanup
