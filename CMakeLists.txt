@@ -108,3 +108,5 @@ include(cmake/targets/mzn2doc.cmake)
 
 include(cmake/support/config_export.cmake)
 include(cmake/support/config_output.cmake)
+
+include(cmake/support/config_emscripten.cmake)
