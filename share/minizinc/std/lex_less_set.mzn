@@ -13,10 +13,10 @@ predicate lex_less_set(array[int] of var set of int: x,
 predicate lex_less_set_reif(array[int] of var set of int: x,
                             array[int] of var set of int: y,
                             var bool: c) =
-    fzn_lex_less_set(x, y, c);
+    fzn_lex_less_set_reif(x, y, c);
 
 predicate lex_lt_set(array[int] of var set of int: x,
                      array[int] of var set of int: y) =
-          lex_less(x, y);
+    lex_less(x, y);
 
 %-----------------------------------------------------------------------------%

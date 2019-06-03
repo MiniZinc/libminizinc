@@ -1,4 +1,4 @@
-include "fzn_minimum_arg_bool";
+include "fzn_arg_min_bool.mzn";
 
 predicate minimum_arg_bool(array[int] of var bool: x, var int: i) =
      fzn_minimum_arg_bool(x, i);

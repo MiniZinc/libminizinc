@@ -1,4 +1,4 @@
-predicate minimum_arg_bool(array[int] of var bool: x, var int: i) =
+predicate fzn_minimum_arg_bool(array[int] of var bool: x, var int: i) =
     let { int: l = min(index_set(x));
           int: u = max(index_set(x));
           array[l..u] of var bool: y; 

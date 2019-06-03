@@ -51,10 +51,10 @@ predicate regular_nfa(array[int] of var int: x, int: Q, set of int: S,
     assert(S = min(S)..max(S),
         "regular_nfa: 'S' must be a range",
 
-    assert(index_set_1of2(d) = 1..Q /\ index_set_2of2(d) == 1..S,
-        "regular_nfa: the transition function 'd' must be [1..Q,1..S]",
+    assert(index_set_1of2(d) = 1..Q /\ index_set_2of2(d) == S,
+        "regular_nfa: the transition function 'd' must be [1..Q,S]",
 
-    assert(forall([d[i, j] subset 1..Q | i in 1..Q, j in 1..S]),
+    assert(forall([d[i, j] subset 1..Q | i in 1..Q, j in S]),
         "regular_nfa: transition function 'd' points to states outside 1..Q",
 
         % Nb: we need the parentheses around the expression otherwise the
