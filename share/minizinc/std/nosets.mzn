@@ -4,9 +4,6 @@
 % Gleb Belov <gleb.belov@monash.edu>
 %
 
-include "lex_less.mzn";
-include "lex_lesseq.mzn";
-
 predicate mzn_reverse_map_var(var set of int: x) = let {
   array[int] of var bool: b = set2bools(x)
 } in true;
@@ -124,20 +121,37 @@ predicate set_ne_imp(var set of int: x, var set of int: y, var bool: b) =
 % Reifs/imps are done automatically from these templates
 predicate set_le(var set of int: x, var set of int: y) ::promise_total =
   let {
-    set of int: ubxy = ub(x) union ub(y),
-    array[int] of var bool: bx = set2bools(x, ubxy);
-    array[int] of var bool: by = set2bools(y, ubxy);
-  } in
-    lex_lesseq( by, bx );
+    set of int: U = ub(x) union ub(y);
+    int: l = min(U);
+    int: u = max(U);
+    array[U] of var bool: xb = [i in x | i in U];
+    var l-1..u: xmax = max(x union {l-1});
+    array[U] of var bool: yb = [i in y | i in U];
+    var l-1..u: ymax = max(y union {l-1});
+    array[U] of var bool: b; 
+    constraint forall(i in l..u-1) (
+        b[i] = let {var 1..4: cmp = 2*xb[i] + yb[i] + 1} in
+                   [b[i+1], xmax < i, ymax > i, b[i+1]][cmp]
+    );
+    constraint b[u] = (xb[u] -> yb[u]);
+  } in b[l];
 
 predicate set_lt(var set of int: x, var set of int: y) ::promise_total =
   let {
-    set of int: ubxy = ub(x) union ub(y),
-    array[int] of var bool: bx = set2bools(x, ubxy);
-    array[int] of var bool: by = set2bools(y, ubxy);
-  } in
-    lex_less( by, bx );
-
+    set of int: U = ub(x) union ub(y);
+    int: l = min(U);
+    int: u = max(U);
+    array[U] of var bool: xb = [i in x | i in U];
+    var l-1..u: xmax = max(x union {l-1});
+    array[U] of var bool: yb = [i in y | i in U];
+    var l-1..u: ymax = max(y union {l-1});
+    array[U] of var bool: b; 
+    constraint forall(i in l..u-1) (
+        b[i] = let {var 1..4: cmp = 2*xb[i] + yb[i] + 1} in
+                   [b[i+1], xmax < i, ymax > i, b[i+1]][cmp]
+    );
+    constraint b[u] = (not xb[u] /\ yb[u]);
+  } in b[l];
 
 predicate set_subset(var set of int: x, var set of int: y) ::promise_total =
   let {
