@@ -1,12 +1,12 @@
 include "all_different_int.mzn";
 include "all_different_set.mzn";
-include "analyse_alldifferent.mzn";   
+include "analyse_all_different.mzn";
 
 /** @group globals.alldifferent
   Constrain the array of integers \a x to be all different.
 */
 predicate all_different(array[$X] of var int: x) =
-   analyse_alldifferent(array1d(x)) /\  
+   analyse_all_different(array1d(x)) /\
    all_different_int(array1d(x));
 
 /**  @group globals.alldifferent
