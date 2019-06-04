@@ -62,6 +62,8 @@ namespace MiniZinc {
     bool _supportsMzn=false;
     /// Whether solver supports FlatZinc input
     bool _supportsFzn=true;
+    /// Whether solver supports NL input
+    bool _supportsNL=false;
     /// Whether solver requires solutions2out processing
     bool _needsSolns2Out=true;
     /// Whether solver is a GUI application
@@ -135,6 +137,11 @@ namespace MiniZinc {
     bool supportsFzn(void) const { return _supportsFzn; }
     /// Set whether solver supports FlatZinc input
     void supportsFzn(bool b) { _supportsFzn = b; }
+
+    /// Whether solver supports NL input
+    bool supportsNL(void) const { return _supportsNL; }
+    /// Set whether solver supports NL input
+    void supportsNL(bool b) { _supportsNL = b; }
 
     /// Whether solver requires solutions2out processing
     bool needsSolns2Out(void) const { return _needsSolns2Out; }
