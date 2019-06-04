@@ -1,3 +1,8 @@
+include "arg_min_int.mzn";
+include "arg_min_bool.mzn";
+include "arg_min_float.mzn";
+
+
 /** @group globals
     Returns the index of the minimum value in the array \a x.
     When breaking ties the least index is returned.
@@ -35,8 +40,6 @@ function var int: arg_min_total(array[int] of var float: x) :: promise_total =
                         constraint minimum_arg_float(x, i); }
                   in i endif;
 
-include "arg_min_int.mzn";
-
 /** @group globals
     Constrain \a i to be the index of the minimum value in the array \a x.
     When breaking ties the least index is returned.
@@ -46,8 +49,6 @@ include "arg_min_int.mzn";
 predicate minimum_arg(array[int] of var int: x, var int: i) =
           minimum_arg_int(x, i);
 
-include "arg_min_bool.mzn";
-
 /** @group globals
     Constrain \a i to be the index of the minimum value in the array \a x.
     When breaking ties the least index is returned.
@@ -56,8 +57,6 @@ include "arg_min_bool.mzn";
 */
 predicate minimum_arg(array[int] of var bool: x, var int: i) =
           minimum_arg_bool(x, i);
-
-include "arg_min_float.mzn";
 
 /** @group globals
     Constrain \a i to be the index of the minimum value in the array \a x.

@@ -1,3 +1,5 @@
+include "fzn_regular_regexp.mzn";
+
 /** @group globals.extensional
   The sequence of values in array \a x  is accepted by the regular
   expression \a r. This constraint generates it's DFA equivalent.
@@ -27,4 +29,5 @@
   Members of enumerated types can be used in place of any integer (e.g., "A B",
   A followed by B). Enumerated identifiers still use whitespace for concatenation.
 */
-predicate regular(array[int] of var int: x, string: r);
+predicate regular(array[int] of var int: x, string: r) = 
+          fzn_regular(array[int] of var int: x, string: r);
