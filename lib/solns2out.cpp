@@ -498,6 +498,7 @@ void Solns2Out::createInputMap() {
   mapInputStatus[ _opt.error_msg ] = SolverInstance::ERROR;
 }
 
-void Solns2Out::printStatistics(ostream&)
+void Solns2Out::printStatistics(ostream& os)
 {
+  os << "%%%mzn-stat: nSolutions=" << nSolns << "\n";
 }

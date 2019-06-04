@@ -160,7 +160,6 @@ namespace MiniZinc {
     void addSolverInterface();
     void addSolverInterface(SolverFactory* sf);
     SolverInstance::Status solve();
-    void printStatistics();
     
     SolverInstance::Status getFltStatus() { return flt.status; }
     SolverInstanceBase* getSI() { assert(si); return si; }

@@ -638,14 +638,10 @@ SolverInstance::Status MznSolver::solve()
       getSI()->getSolns2Out()->evalStatus( status );
   }
   if (si_opt->printStatistics)
-    printStatistics();
+      getSI()->printStatistics();
+  if (flag_statistics)
+    getSI()->getSolns2Out()->printStatistics(log);
   return status;
-}
-
-void MznSolver::printStatistics()
-{ // from flattener too?   TODO
-  if (si)
-    getSI()->printStatistics();
 }
 
 SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, const std::string& model,
