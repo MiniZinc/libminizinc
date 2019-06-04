@@ -346,10 +346,6 @@ namespace MiniZinc {
           argv[i] = cmd_line[i];
         argv[cmd_line.size()] = 0;
 
-        for(unsigned int i = 0; i < cmd_line.size(); ++i){
-          std::cerr << argv[i] << std::endl;
-        }
-
         int status = execvp(argv[0], argv); // execvp only returns if an error occurs.
         assert(status == -1); // the returned value will always be -1
         std::stringstream ssm;
