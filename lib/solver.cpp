@@ -294,6 +294,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     is_mzn2fzn=true;
   } else if (executable_name=="solns2out") {
     s2out._opt.flag_standaloneSolns2Out=true;
+    flag_is_solns2out=true;
   }
   bool compileSolutionChecker = false;
   int i=1, j=1;
@@ -378,6 +379,9 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       if (argv[i]=="--compile-solution-checker") {
         compileSolutionChecker = true;
       }
+      if (argv[i]=="--ozn-file") {
+        flag_is_solns2out = true;
+      }
       argv[j++] = argv[i];
     }
   }
@@ -401,7 +405,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
 
   bool isMznMzn = false;
   
-  if (!ifSolns2out()) {
+  if (!flag_is_solns2out) {
     try {
       const SolverConfig& sc = solver_configs.config(solver);
       string solverId = sc.executable().empty() ? sc.id() : (sc.supportsMzn() ?  string("org.minizinc.mzn-mzn") : string("org.minizinc.mzn-fzn"));
@@ -636,7 +640,7 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, con
     case OPTION_OK:
       break;
   }
-  if (!(!ifMzn2Fzn() && sf!=NULL && sf->getId() == "org.minizinc.mzn-mzn") && !flt.hasInputFiles() && model.empty()) {
+  if (flag_is_solns2out && (ifMzn2Fzn() || sf==NULL || sf->getId() != "org.minizinc.mzn-mzn") && !flt.hasInputFiles() && model.empty()) {
     // We are in solns2out mode
     while ( std::cin.good() ) {
       string line;

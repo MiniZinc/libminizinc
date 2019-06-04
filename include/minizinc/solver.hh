@@ -133,6 +133,7 @@ namespace MiniZinc {
     bool flag_statistics=false;
     bool flag_compiler_verbose=false;
     bool flag_compiler_statistics=false;
+    bool flag_is_solns2out=false;
     int flag_overall_time_limit=0;
 
   public:
