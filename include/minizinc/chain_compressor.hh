@@ -43,7 +43,7 @@ namespace MiniZinc {
     std::pair<iterator, iterator> find(VarDecl *v) {return items.equal_range(v);};
 
     void removeItem(Item *i);
-    void addItem(Item *i);
+    int addItem(Item *i);
 
     // Replaces the Nth argument of a Call c by Expression e, c must be located on Item i
     void replaceCallArgument(Item *i, Call *c, unsigned int n, Expression *e);
@@ -51,14 +51,16 @@ namespace MiniZinc {
 
   class ImpCompressor : public ChainCompressor {
   public:
-    ImpCompressor(EnvI &env, Model &m, std::vector<VarDecl *> &deletedVarDecls)
-        : ChainCompressor(env, m, deletedVarDecls) {};
+    ImpCompressor(EnvI &env, Model &m, std::vector<VarDecl *> &deletedVarDecls, std::vector<int> &boolConstraints0)
+        : ChainCompressor(env, m, deletedVarDecls), boolConstraints(boolConstraints0) {};
 
     bool trackItem(Item *i) override;
 
     void compress() override;
 
   protected:
+    std::vector<int> &boolConstraints;
+    
     // Compress two implications. e.g. (x -> y) /\ (y -> z) => x -> z
     // In this case i: (y -> z), newLHS: x
     // Function returns true if compression was successful (and the implication that contains newLHS can be removed)

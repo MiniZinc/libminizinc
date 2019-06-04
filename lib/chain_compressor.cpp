@@ -28,9 +28,11 @@ namespace MiniZinc {
     env.flat_removeItem(i);
   }
 
-  void ChainCompressor::addItem(Item *i) {
+  int ChainCompressor::addItem(Item *i) {
     env.flat_addItem(i);
+    int item_idx = env.flat()->size()-1;
     trackItem(i);
+    return item_idx;
   }
 
   void ChainCompressor::updateCount() {
@@ -182,7 +184,7 @@ namespace MiniZinc {
         auto rhs = (*positive)[0]->cast<Id>();
         if (rhs->decl() != newLHS) {
           ConstraintI *nci = constructClause(positive, newLHS->id());
-          addItem(nci);
+          boolConstraints.push_back(addItem(nci));
         }
         removeItem(i);
         return true;
@@ -203,7 +205,7 @@ namespace MiniZinc {
           auto rhs = (*exprs)[j]->cast<Id>();
           if (rhs->decl() != newLHS) {
             ConstraintI *nci = constructClause(rhs, newLHS->id());
-            addItem(nci);
+            boolConstraints.push_back(addItem(nci));
           }
         }
         return true;
