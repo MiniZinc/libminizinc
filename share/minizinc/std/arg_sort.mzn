@@ -1,6 +1,6 @@
 include "arg_sort_int.mzn";
 include "arg_sort_float.mzn";
-include "analyse_alldifferent.mzn";
+include "analyse_all_different.mzn";
 
 /** @group globals.sort
 Returns the permutation \a p which causes \a x to be in sorted order hence
@@ -14,7 +14,7 @@ function array[int] of var int: arg_sort(array[int] of var int:x) :: promise_tot
             let { int: l = min(index_set(x));
                   int: u = max(index_set(x));
                   array[1..u-l+1] of var l..u: p;
-		              constraint analyse_alldifferent(p);
+		              constraint analyse_all_different(p);
                   constraint arg_sort_int(x,p); }
             in  p
          endif;
@@ -32,7 +32,7 @@ function array[int] of var int: arg_sort(array[int] of var float:x) :: promise_t
             let { int: l = min(index_set(x));
                   int: u = max(index_set(x));
                   array[1..u-l+1] of var l..u: p;
-		              constraint analyse_alldifferent(p);
+		              constraint analyse_all_different(p);
                   constraint arg_sort_float(x,p); }
             in  p
          endif;

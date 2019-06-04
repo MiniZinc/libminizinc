@@ -1,4 +1,4 @@
-include "analyse_alldifferent.mzn";
+include "analyse_all_different.mzn";
 include "fzn_symmetric_all_different.mzn";
 
 /** @group globals.alldifferent
@@ -6,5 +6,5 @@ include "fzn_symmetric_all_different.mzn";
   \a x[\p i]=j \(\rightarrow\) \a x[\p j]=\p i.
 */
 predicate symmetric_all_different(array[int] of var int:x) =
-    analyse_alldifferent(x) /\
+    analyse_all_different(x) /\
     fzn_symmetric_all_different(x);

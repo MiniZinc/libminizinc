@@ -1,5 +1,5 @@
 include "fzn_inverse.mzn";
-include "analyse_alldifferent.mzn";
+include "analyse_all_different.mzn";
 
 /** @group globals.channeling
   Constrains two arrays of int variables, \a f and \a invf, to represent
@@ -8,6 +8,6 @@ include "analyse_alldifferent.mzn";
 */
 predicate inverse(array[int] of var int: f,
                   array[int] of var int: invf) =
-    analyse_alldifferent(f) /\
-    analyse_alldifferent(invf) /\
+    analyse_all_different(f) /\
+    analyse_all_different(invf) /\
     fzn_inverse(f, invf);
