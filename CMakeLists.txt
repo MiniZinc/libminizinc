@@ -35,6 +35,9 @@ if(NOT USE_PROPRIETARY)
   set(USE_SCIP OFF)
 endif()
 
+# Export compile commands (useful when working with visual studio code)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # -------------------------------------------------------------------------------------------------------------------
 #  -- CMake initialisation
 
@@ -96,6 +99,7 @@ include(cmake/targets/libminizinc_scip.cmake)
 include(cmake/targets/libminizinc_xpress.cmake)
 
 include(cmake/targets/libminizinc_fzn.cmake)
+include(cmake/targets/libminizinc_nl.cmake)
 
 include(cmake/targets/libminizinc_solver.cmake)
 

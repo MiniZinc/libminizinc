@@ -63,6 +63,8 @@ using namespace MiniZinc;
 #include <minizinc/solvers/fzn_solverinstance.hh>
 #include <minizinc/solvers/mzn_solverfactory.hh>
 #include <minizinc/solvers/mzn_solverinstance.hh>
+#include <minizinc/solvers/nl/nl_solverfactory.hh>
+#include <minizinc/solvers/nl/nl_solverinstance.hh>
 
 SolverInitialiser::SolverInitialiser(void) {
   #ifdef HAS_GUROBI
@@ -88,6 +90,7 @@ SolverInitialiser::SolverInitialiser(void) {
   #endif
   static FZN_SolverFactoryInitialiser _fzn_init;
   static MZN_SolverFactoryInitialiser _mzn_init;
+  static NL_SolverFactoryInitialiser _nl_init;
 }
   
 MZNFZNSolverFlag MZNFZNSolverFlag::std(const std::string& n0) {
@@ -408,13 +411,25 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   if (!flag_is_solns2out) {
     try {
       const SolverConfig& sc = solver_configs.config(solver);
-      string solverId = sc.executable().empty() ? sc.id() : (sc.supportsMzn() ?  string("org.minizinc.mzn-mzn") : string("org.minizinc.mzn-fzn"));
+      string solverId;
+      if (sc.executable().empty()) {
+        solverId = sc.id();
+      } else if (sc.supportsMzn()) {
+        solverId = "org.minizinc.mzn-mzn";
+      } else if (sc.supportsFzn()) {
+        solverId = "org.minizinc.mzn-fzn";
+      } else if (sc.supportsNL()) {
+        solverId = "org.minizinc.mzn-nl";
+      } else {
+        log << "Selected solver does not support MiniZinc, FlatZinc or NL input." << endl;
+        return OPTION_ERROR;
+      }
       for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
            it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
         if ((*it)->getId()==solverId) { /// TODO: also check version (currently assumes all ids are unique)
           sf = *it;
           si_opt = sf->createOptions();
-          if (!sc.executable().empty() || solverId=="org.minizinc.mzn-fzn") {
+          if (!sc.executable().empty() || solverId=="org.minizinc.mzn-fzn" || solverId=="org.minizinc.mzn-nl") {
             std::vector<MZNFZNSolverFlag> acceptedFlags;
             for (auto& sf : sc.stdFlags())
               acceptedFlags.push_back(MZNFZNSolverFlag::std(sf));
@@ -476,16 +491,26 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                 }
               }
             } else {
-              static_cast<FZN_SolverFactory*>(sf)->setAcceptedFlags(si_opt, acceptedFlags);
+              // supports fzn or nl
               std::vector<std::string> additionalArgs;
-              additionalArgs.push_back("--fzn-cmd");
+              if (sc.supportsFzn()) {
+                static_cast<FZN_SolverFactory*>(sf)->setAcceptedFlags(si_opt, acceptedFlags);
+                additionalArgs.push_back("--fzn-cmd");
+              } else {
+                // supports nl
+                additionalArgs.push_back("--nl-cmd");
+              }
               if (sc.executable_resolved().size()) {
                 additionalArgs.push_back(sc.executable_resolved());
               } else {
                 additionalArgs.push_back(sc.executable());
               }
               if(!fzn_mzn_flags.empty()) {
-                addFlags("--fzn-flag", fzn_mzn_flags, additionalArgs);
+                if (sc.supportsFzn()) {
+                  addFlags("--fzn-flag", fzn_mzn_flags, additionalArgs);
+                } else {
+                  addFlags("--nl-flag", fzn_mzn_flags, additionalArgs);
+                }
               }
               if (sc.needsPathsFile()) {
                 // Instruct flattener to hold onto paths

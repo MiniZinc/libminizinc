@@ -45,6 +45,7 @@
 #else
 #include <dirent.h>
 #include <libgen.h>
+#include <ftw.h>
 #endif
 
 namespace MiniZinc { namespace FileUtils {
@@ -367,6 +368,7 @@ namespace MiniZinc { namespace FileUtils {
     char* tmpfile = strndup(_name.c_str(), _name.size());
     _tmpfile_desc = mkstemps(tmpfile, ext.size());
     if (_tmpfile_desc == -1) {
+      ::free(tmpfile);
       throw InternalError("Error occurred when creating temporary file");
     }
     _name = std::string(tmpfile);
@@ -381,7 +383,75 @@ namespace MiniZinc { namespace FileUtils {
       close(_tmpfile_desc);
 #endif
   }
+
+  TmpDir::TmpDir(void) {
+#ifdef _WIN32
+    TCHAR szTempFileName[MAX_PATH];
+    TCHAR lpTempPathBuffer[MAX_PATH];
+    
+    GetTempPath(MAX_PATH, lpTempPathBuffer);
+    GetTempFileName(lpTempPathBuffer,
+                    "tmp_mzn_", 0, szTempFileName);
+    
+    _name = szTempFileName;
+    DeleteFile(_name.c_str());
+    CreateDirectory(_name.c_str(),NULL);
+#else
+    _name = "/tmp/mzndirXXXXXX";
+    char* tmpfile = strndup(_name.c_str(), _name.size());
+    
+    if (mkdtemp(tmpfile) == NULL) {
+      ::free(tmpfile);
+      throw InternalError("Error occurred when creating temporary directory");
+    }
+    _name = std::string(tmpfile);
+    ::free(tmpfile);
+#endif
+  }
+
+#ifdef _WIN32
+  namespace {
+    void remove_dir(const std::string& d) {
+      HANDLE dh;
+      WIN32_FIND_DATA info;
+      
+      std::string pattern = d+"\\*.*";
+      dh = ::FindFirstFile(pattern.c_str(), &info);
+      if (dh != INVALID_HANDLE_VALUE) {
+        do {
+          if (info.cFileName[0] != '.') {
+            std::string fp = d+"\\"+info.cFileName;
+            if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+              remove_dir(fp);
+            } else {
+              ::SetFileAttributes(fp.c_str(), FILE_ATTRIBUTE_NORMAL);
+              ::DeleteFile(fp.c_str());
+            }
+          }
+        } while (::FindNextFile(dh, &info) == TRUE);
+      }
+      ::FindClose(dh);
+      ::SetFileAttributes(d.c_str(), FILE_ATTRIBUTE_NORMAL);
+      ::RemoveDirectory(d.c_str());
+    }
+  }
+#else
+  namespace {
+    int remove_file(const char *fpath, const struct stat *, int, struct FTW *) {
+      return unlink(fpath);
+    }
+  }
+#endif
   
+  TmpDir::~TmpDir(void) {
+#ifdef _WIN32
+    remove_dir(_name);
+#else
+    nftw(_name.c_str(), remove_file, 64, FTW_DEPTH | FTW_PHYS);
+    rmdir(_name.c_str());
+#endif
+  }
+
   std::vector<std::string> parseCmdLine(const std::string& s) {
     // Break the string up at whitespace, except inside quotes, but ignore escaped quotes
     std::vector<std::string> c;

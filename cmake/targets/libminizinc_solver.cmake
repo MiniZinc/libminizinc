@@ -47,7 +47,7 @@ if(TARGET minizinc_xpress)
   target_link_libraries(minizinc_solver minizinc_xpress)
   target_compile_definitions(minizinc_solver PRIVATE HAS_XPRESS)
 endif()
-target_link_libraries(minizinc_solver minizinc_fzn)
+target_link_libraries(minizinc_solver minizinc_fzn minizinc_nl)
 
 install(
   TARGETS minizinc_solver

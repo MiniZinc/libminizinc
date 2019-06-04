@@ -273,6 +273,8 @@ namespace MiniZinc {
               sc._supportsMzn = getBool(ai);
             } else if (ai->id()=="supportsFzn") {
               sc._supportsFzn = getBool(ai);
+            } else if (ai->id()=="supportsNL") {
+              sc._supportsNL = getBool(ai);
             } else if (ai->id()=="needsSolns2Out") {
               sc._needsSolns2Out = getBool(ai);
             } else if (ai->id()=="isGUIApplication") {
@@ -639,6 +641,7 @@ namespace MiniZinc {
       }
       oss << "    \"supportsMzn\": " << (sc.supportsMzn() ? "true" : "false") << ",\n";
       oss << "    \"supportsFzn\": " << (sc.supportsFzn() ? "true" : "false") << ",\n";
+      oss << "    \"supportsNL\": " << (sc.supportsNL() ? "true" : "false") << ",\n";
       oss << "    \"needsSolns2Out\": " << (sc.needsSolns2Out()? "true" : "false") << ",\n";
       oss << "    \"needsMznExecutable\": " << (sc.needsMznExecutable()? "true" : "false") << ",\n";
       oss << "    \"needsStdlibDir\": " << (sc.needsStdlibDir()? "true" : "false") << ",\n";
