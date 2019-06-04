@@ -386,10 +386,16 @@ namespace MiniZinc { namespace FileUtils {
 
   TmpDir::TmpDir(void) {
 #ifdef _WIN32
-    do {
-      _name = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
-    } while (file_exists(_name));
-    Directory.CreateDirectory(_name);
+    TCHAR szTempFileName[MAX_PATH];
+    TCHAR lpTempPathBuffer[MAX_PATH];
+    
+    GetTempPath(MAX_PATH, lpTempPathBuffer);
+    GetTempFileName(lpTempPathBuffer,
+                    "tmp_mzn_", 0, szTempFileName);
+    
+    _name = szTempFileName;
+    DeleteFile(_name);
+    CreateDirectory(_name);
 #else
     _name = "/tmp/mzndirXXXXXX";
     char* tmpfile = strndup(_name.c_str(), _name.size());
