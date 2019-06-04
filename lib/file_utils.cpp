@@ -41,6 +41,7 @@
 #include "Shlwapi.h"
 #pragma comment(lib, "Shlwapi.lib")
 #include "Shlobj.h"
+#include <direct.h>
 #else
 #include <dirent.h>
 #include <libgen.h>
@@ -275,6 +276,18 @@ namespace MiniZinc { namespace FileUtils {
     return entries;
   }
 
+  std::string working_directory(void) {
+    char wd[FILENAME_MAX];
+#ifdef _MSC_VER
+    if (!_getcwd(wd,sizeof(wd)))
+      return "";
+#else
+    if (!getcwd(wd,sizeof(wd)))
+      return "";
+#endif
+    return wd;
+  }
+  
   std::string share_directory(void) {
     if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
       return std::string(MZNSTDLIBDIR);
