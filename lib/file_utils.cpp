@@ -394,8 +394,8 @@ namespace MiniZinc { namespace FileUtils {
                     "tmp_mzn_", 0, szTempFileName);
     
     _name = szTempFileName;
-    DeleteFile(_name);
-    CreateDirectory(_name,NULL);
+    DeleteFile(_name.c_str());
+    CreateDirectory(_name.c_str(),NULL);
 #else
     _name = "/tmp/mzndirXXXXXX";
     char* tmpfile = strndup(_name.c_str(), _name.size());
