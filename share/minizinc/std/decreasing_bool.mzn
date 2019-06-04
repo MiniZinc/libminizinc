@@ -1,3 +1,5 @@
+include "fzn_decreasing_bool.mzn";
+
 %-----------------------------------------------------------------------------%
 % Requires that the array 'x' is in decreasing order (duplicates are allowed).
 %-----------------------------------------------------------------------------%
