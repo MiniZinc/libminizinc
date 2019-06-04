@@ -386,7 +386,10 @@ namespace MiniZinc { namespace FileUtils {
 
   TmpDir::TmpDir(void) {
 #ifdef _WIN32
-    assert(false);
+    do {
+      _name = Path.Combine(Path.GetTempPath(), Path.GetRandomFileName());
+    } while (file_exists(_name));
+    Directory.CreateDirectory(_name);
 #else
     _name = "/tmp/mzndirXXXXXX";
     char* tmpfile = strndup(_name.c_str(), _name.size());
@@ -400,7 +403,33 @@ namespace MiniZinc { namespace FileUtils {
 #endif
   }
 
-#ifndef _WIN32
+#ifdef _WIN32
+  namespace {
+    void remove_dir(const std::string& d) {
+      HANDLE dh;
+      WIN32_FIND_DATA info;
+      
+      std::string pattern = d+"\\*.*";
+      dh = ::FindFirstFile(pattern.c_str(), &info);
+      if (dh != INVALID_HANDLE_VALUE) {
+        do {
+          if (info.cFileName[0] != '.') {
+            std::string fp = d+"\\"+info.cFileName;
+            if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
+              remove_dir(fp);
+            } else {
+              ::SetFileAttributes(fp.c_str(), FILE_ATTRIBUTE_NORMAL);
+              ::DeleteFile(fp.c_str());
+            }
+          }
+        } while (::FindNextFile(dh, &info) == TRUE);
+      }
+      ::FindClose(dh);
+      ::SetFileAttributes(d.c_str(), FILE_ATTRIBUTE_NORMAL);
+      ::RemoveDirectory(d.c_str());
+    }
+  }
+#else
   namespace {
     int remove_file(const char *fpath, const struct stat *, int, struct FTW *) {
       return unlink(fpath);
@@ -410,7 +439,7 @@ namespace MiniZinc { namespace FileUtils {
   
   TmpDir::~TmpDir(void) {
 #ifdef _WIN32
-    assert(false);
+    remove_dir(_name);
 #else
     nftw(_name.c_str(), remove_file, 64, FTW_DEPTH | FTW_PHYS);
     rmdir(_name.c_str());
