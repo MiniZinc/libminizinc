@@ -79,19 +79,26 @@ namespace MiniZinc {
       // ........
       // 8 char
       getline(in, buffer);
-      string sub = buffer.substr(8, buffer.length()-8); 
-
-      switch(stoi(sub)){
-        //Not this case, this one is our own: case -2: st = NL_Solver_Status::PARSE_ERROR;
-        case -1: st = NL_Solver_Status::UNKNOWN; break;
-        case 0: st = NL_Solver_Status::SOLVED; break;
-        case 100: st = NL_Solver_Status::UNCERTAIN; break;
-        case 200: st = NL_Solver_Status::INFEASIBLE; break;
-        case 300: st = NL_Solver_Status::UNBOUNDED; break;
-        case 400: st = NL_Solver_Status::LIMIT; break;
-        case 500: st = NL_Solver_Status::FAILURE; break;
-        case 600: st = NL_Solver_Status::INTERRUPTED; break;
-        default: st = NL_Solver_Status::UNKNOWN; break;
+      string sub = buffer.substr(8, buffer.length()-8);
+      int resultCode = stoi(sub);
+      st = NL_Solver_Status::UNKNOWN;
+      //Not this case, this one is our own: case -2: st = NL_Solver_Status::PARSE_ERROR;
+      if (resultCode==-1) {
+        st = NL_Solver_Status::UNKNOWN;
+      } else if (resultCode>=0 && resultCode<100) {
+        st = NL_Solver_Status::SOLVED;
+      } else if (resultCode>=100 && resultCode<200) {
+        st = NL_Solver_Status::UNCERTAIN;
+      } else if (resultCode>=200 && resultCode<300) {
+        st = NL_Solver_Status::INFEASIBLE;
+      } else if (resultCode>=300 && resultCode<400) {
+        st = NL_Solver_Status::UNBOUNDED;
+      } else if (resultCode>=400 && resultCode<500) {
+        st = NL_Solver_Status::LIMIT;
+      } else if (resultCode>=500 && resultCode<600) {
+        st = NL_Solver_Status::FAILURE;
+      } else if (resultCode==600) {
+        st = NL_Solver_Status::INTERRUPTED;
       }
 
 
