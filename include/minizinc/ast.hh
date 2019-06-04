@@ -258,12 +258,12 @@ namespace MiniZinc {
    */
   class Expression : public ASTNode {
   protected:
+    /// The %MiniZinc type of the expression
+    Type _type;
     /// The annotations
     Annotation _ann;
     /// The location of the expression
     Location _loc;
-    /// The %MiniZinc type of the expression
-    Type _type;
     /// The hash value of the expression
     size_t _hash;
   public:
@@ -336,7 +336,7 @@ namespace MiniZinc {
 
     /// Constructor
     Expression(const Location& loc, const ExpressionId& eid, const Type& t)
-      : ASTNode(eid), _loc(loc), _type(t) {}
+      : ASTNode(eid), _type(t), _loc(loc) {}
 
   public:
     IntVal unboxedIntToIntVal(void) const {
@@ -759,6 +759,9 @@ namespace MiniZinc {
     ArrayLit(const Location& loc, ArrayLit* v,
              const std::vector<std::pair<int,int> >& dims,
              const std::vector<std::pair<int,int> >& slice);
+    /// Constructor (one-dimensional)
+    ArrayLit(const Location& loc,
+             const std::vector<KeepAlive>& v);
     /// Recompute hash value
     void rehash(void);
 
@@ -1063,6 +1066,7 @@ namespace MiniZinc {
     unsigned int n_args(void) const { return _u._oneArg->isUnboxedVal() || _u._oneArg->isTagged() ? 1 : _u._args->size(); }
     /// Access argument \a i
     Expression* arg(int i) const {
+      assert(i < n_args());
       if (_u._oneArg->isUnboxedVal() || _u._oneArg->isTagged()) {
         assert(i==0);
         return _u._oneArg->isUnboxedVal() ? _u._oneArg : _u._oneArg->untag();
@@ -1072,6 +1076,7 @@ namespace MiniZinc {
     }
     /// Set argument \a i
     void arg(int i, Expression* e) {
+      assert(i < n_args());
       if (_u._oneArg->isUnboxedVal() || _u._oneArg->isTagged()) {
         assert(i==0);
         _u._oneArg = e->isUnboxedVal() ? e : e->tag();
@@ -1771,6 +1776,7 @@ namespace MiniZinc {
         Id* lazy_constraint;            // MIP
         Id* mzn_break_here;
         Id* rhs_from_assignment;
+        Id* domain_change_constraint;
       } ann;
 
       /// Command line options

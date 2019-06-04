@@ -21,6 +21,33 @@
 
 namespace MiniZinc {
 
+  bool checkParDomain(EnvI& env, Expression* e, Expression* domain) {
+    if (e->type()==Type::parint()) {
+      IntSetVal* isv = eval_intset(env,domain);
+      if (!isv->contains(eval_int(env,e)))
+        return false;
+    } else if (e->type()==Type::parfloat()) {
+      FloatSetVal* fsv = eval_floatset(env,domain);
+      if (!fsv->contains(eval_float(env, e)))
+        return false;
+    } else if (e->type()==Type::parsetint()) {
+      IntSetVal* isv = eval_intset(env,domain);
+      IntSetRanges ir(isv);
+      IntSetVal* rsv = eval_intset(env,e);
+      IntSetRanges rr(rsv);
+      if (!Ranges::subset(rr, ir))
+        return false;
+    } else if (e->type()==Type::parsetfloat()) {
+      FloatSetVal* fsv = eval_floatset(env,domain);
+      FloatSetRanges fr(fsv);
+      FloatSetVal* rsv = eval_floatset(env,e);
+      FloatSetRanges rr(rsv);
+      if (!Ranges::subset(rr, fr))
+        return false;
+    }
+    return true;
+  }
+
   template<class E>
   typename E::Val eval_id(EnvI& env, Expression* e) {
     Id* id = e->cast<Id>();
@@ -150,7 +177,8 @@ namespace MiniZinc {
       for (unsigned int i=0; i<fi->ti()->ranges().size(); i++) {
         if (fi->ti()->ranges()[i]->domain() && !fi->ti()->ranges()[i]->domain()->isa<TIId>()) {
           IntSetVal* isv = eval_intset(env, fi->ti()->ranges()[i]->domain());
-          if (v->min(i) != isv->min() || v->max(i) != isv->max()) {
+          bool bothEmpty = isv->min() > isv->max() && v->min(i) > v->max(i);
+          if (!bothEmpty && (v->min(i) != isv->min() || v->max(i) != isv->max())) {
             std::ostringstream oss;
             oss << "array index set " << (i+1) << " of function result violates function type-inst";
             throw ResultUndefinedError(env, fi->e()->loc(), oss.str());
@@ -343,6 +371,21 @@ namespace MiniZinc {
     }
     for (unsigned int i=ce->decl()->params().size(); i--;) {
       VarDecl* vd = ce->decl()->params()[i];
+      if (vd->type().dim() > 0) {
+        // Check array index sets
+        ArrayLit* al = params[i]->cast<ArrayLit>();
+        for (unsigned int j=0; j<vd->ti()->ranges().size(); j++) {
+          TypeInst* range_ti = vd->ti()->ranges()[j];
+          if (range_ti->domain() && !range_ti->domain()->isa<TIId>()) {
+            IntSetVal* isv = eval_intset(env, range_ti->domain());
+            if (isv->min() != al->min(j) || isv->max() != al->max(j)) {
+              std::ostringstream oss;
+              oss << "array index set " << (j+1) << " of argument " << (i+1) << " does not match declared index set";
+              throw EvalError(env, ce->loc(), oss.str());
+            }
+          }
+        }
+      }
       previousParameters[i] = vd->e();
       vd->flat(vd);
       vd->e(params[i]);
@@ -406,6 +449,7 @@ namespace MiniZinc {
   }
   
   ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
+    CallStackItem csi(env,e);
     switch (e->eid()) {
     case Expression::E_INTLIT:
     case Expression::E_FLOATLIT:
@@ -483,6 +527,24 @@ namespace MiniZinc {
       {
         Let* l = e->cast<Let>();
         l->pushbindings();
+        for (unsigned int i=0; i<l->let().size(); i++) {
+          // Evaluate all variable declarations
+          if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+            vdi->e(eval_par(env, vdi->e()));
+            if (vdi->ti()->domain()) {
+              if (!checkParDomain(env, vdi->e(), vdi->ti()->domain())) {
+                throw ResultUndefinedError(env, l->let()[i]->loc(),"domain constraint in let failed");
+              }
+            }
+          } else {
+            // This is a constraint item. Since the let is par,
+            // it can only be a par bool expression. If it evaluates
+            // to false, it means that the value of this let is undefined.
+            if (!eval_bool(env, l->let()[i])) {
+              throw ResultUndefinedError(env, l->let()[i]->loc(),"constraint in let failed");
+            }
+          }
+        }
         ArrayLit* l_in = eval_array_lit(env,l->in());
         ArrayLit* ret = copy(env,l_in,true)->cast<ArrayLit>();
         ret->flat(l_in->flat());
@@ -687,6 +749,24 @@ namespace MiniZinc {
       {
         Let* l = e->cast<Let>();
         l->pushbindings();
+        for (unsigned int i=0; i<l->let().size(); i++) {
+          // Evaluate all variable declarations
+          if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+            vdi->e(eval_par(env, vdi->e()));
+            if (vdi->ti()->domain()) {
+              if (!checkParDomain(env, vdi->e(), vdi->ti()->domain())) {
+                throw ResultUndefinedError(env, l->let()[i]->loc(),"domain constraint in let failed");
+              }
+            }
+          } else {
+            // This is a constraint item. Since the let is par,
+            // it can only be a par bool expression. If it evaluates
+            // to false, it means that the value of this let is undefined.
+            if (!eval_bool(env, l->let()[i])) {
+              throw ResultUndefinedError(env, l->let()[i]->loc(),"constraint in let failed");
+            }
+          }
+        }
         IntSetVal* ret = eval_intset(env,l->in());
         l->popbindings();
         return ret;
@@ -833,6 +913,24 @@ namespace MiniZinc {
       {
         Let* l = e->cast<Let>();
         l->pushbindings();
+        for (unsigned int i=0; i<l->let().size(); i++) {
+          // Evaluate all variable declarations
+          if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+            vdi->e(eval_par(env, vdi->e()));
+            if (vdi->ti()->domain()) {
+              if (!checkParDomain(env, vdi->e(), vdi->ti()->domain())) {
+                throw ResultUndefinedError(env, l->let()[i]->loc(),"domain constraint in let failed");
+              }
+            }
+          } else {
+            // This is a constraint item. Since the let is par,
+            // it can only be a par bool expression. If it evaluates
+            // to false, it means that the value of this let is undefined.
+            if (!eval_bool(env, l->let()[i])) {
+              throw ResultUndefinedError(env, l->let()[i]->loc(),"constraint in let failed");
+            }
+          }
+        }
         FloatSetVal* ret = eval_floatset(env,l->in());
         l->popbindings();
         return ret;
@@ -843,6 +941,7 @@ namespace MiniZinc {
   }
   
   bool eval_bool(EnvI& env, Expression* e) {
+    CallStackItem csi(env,e);
     try {
       if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
         return bl->v();
@@ -1091,7 +1190,34 @@ namespace MiniZinc {
         {
           Let* l = e->cast<Let>();
           l->pushbindings();
-          bool ret = eval_bool(env,l->in());
+          bool ret = true;
+          for (unsigned int i=0; i<l->let().size(); i++) {
+            // Evaluate all variable declarations
+            if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+              vdi->e(eval_par(env, vdi->e()));
+              if (vdi->ti()->domain()) {
+                if (!checkParDomain(env, vdi->e(), vdi->ti()->domain())) {
+                  if (vdi->ann().contains(constants().ann.maybe_partial)) {
+                    ret = false;
+                  } else {
+                    throw ResultUndefinedError(env, l->let()[i]->loc(),"domain constraint in let failed");
+                  }
+                }
+              }
+            } else {
+              // This is a constraint item. Since the let is par,
+              // it can only be a par bool expression. If it evaluates
+              // to false, it means that the value of this let is false.
+              if (!eval_bool(env, l->let()[i])) {
+                if (l->let()[i]->ann().contains(constants().ann.maybe_partial)) {
+                  ret = false;
+                } else {
+                  throw ResultUndefinedError(env, l->let()[i]->loc(),"domain constraint in let failed");
+                }
+              }
+            }
+          }
+          ret = ret && eval_bool(env,l->in());
           l->popbindings();
           return ret;
         }
@@ -1105,6 +1231,7 @@ namespace MiniZinc {
   }
 
   IntSetVal* eval_boolset(EnvI& env, Expression* e) {
+    CallStackItem csi(env,e);
     switch (e->eid()) {
       case Expression::E_SETLIT:
       {
@@ -1242,6 +1369,24 @@ namespace MiniZinc {
       {
         Let* l = e->cast<Let>();
         l->pushbindings();
+        for (unsigned int i=0; i<l->let().size(); i++) {
+          // Evaluate all variable declarations
+          if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+            vdi->e(eval_par(env, vdi->e()));
+            if (vdi->ti()->domain()) {
+              if (!checkParDomain(env, vdi->e(), vdi->ti()->domain())) {
+                throw ResultUndefinedError(env, l->let()[i]->loc(),"domain constraint in let failed");
+              }
+            }
+          } else {
+            // This is a constraint item. Since the let is par,
+            // it can only be a par bool expression. If it evaluates
+            // to false, it means that the value of this let is undefined.
+            if (!eval_bool(env, l->let()[i])) {
+              throw ResultUndefinedError(env, l->let()[i]->loc(),"constraint in let failed");
+            }
+          }
+        }
         IntSetVal* ret = eval_boolset(env,l->in());
         l->popbindings();
         return ret;
@@ -1355,6 +1500,24 @@ namespace MiniZinc {
         {
           Let* l = e->cast<Let>();
           l->pushbindings();
+          for (unsigned int i=0; i<l->let().size(); i++) {
+            // Evaluate all variable declarations
+            if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+              vdi->e(eval_par(env, vdi->e()));
+              if (vdi->ti()->domain()) {
+                if (!checkParDomain(env, vdi->e(), vdi->ti()->domain())) {
+                  throw ResultUndefinedError(env, l->let()[i]->loc(),"domain constraint in let failed");
+                }
+              }
+            } else {
+              // This is a constraint item. Since the let is par,
+              // it can only be a par bool expression. If it evaluates
+              // to false, it means that the value of this let is undefined.
+              if (!eval_bool(env, l->let()[i])) {
+                throw ResultUndefinedError(env, l->let()[i]->loc(),"constraint in let failed");
+              }
+            }
+          }
           IntVal ret = eval_int(env,l->in());
           l->popbindings();
           return ret;
@@ -1368,116 +1531,140 @@ namespace MiniZinc {
   }
 
   FloatVal eval_float(EnvI& env, Expression* e) {
-    if (e->type().isint()) {
-      return static_cast<double>(eval_int(env,e).toInt());
-    } else if (e->type().isbool()) {
-      return eval_bool(env,e);
-    }
-    if (FloatLit* fl = e->dyn_cast<FloatLit>()) {
-      return fl->v();
-    }
     CallStackItem csi(env,e);
-    switch (e->eid()) {
-      case Expression::E_INTLIT:
-      case Expression::E_BOOLLIT:
-      case Expression::E_STRINGLIT:
-      case Expression::E_ANON:
-      case Expression::E_TIID:
-      case Expression::E_SETLIT:
-      case Expression::E_ARRAYLIT:
-      case Expression::E_COMP:
-      case Expression::E_VARDECL:
-      case Expression::E_TI:
-        throw EvalError(env, e->loc(),"not a float expression");
-        break;
-      case Expression::E_ID:
-      {
-        GCLock lock;
-        return eval_id<EvalFloatLit>(env,e)->v();
+    try {
+      if (e->type().isint()) {
+        return FloatVal(eval_int(env,e).toInt());
+      } else if (e->type().isbool()) {
+        return eval_bool(env,e);
       }
-        break;
-      case Expression::E_ARRAYACCESS:
-      {
-        GCLock lock;
-        return eval_float(env,eval_arrayaccess(env,e->cast<ArrayAccess>()));
+      if (FloatLit* fl = e->dyn_cast<FloatLit>()) {
+        return fl->v();
       }
-        break;
-      case Expression::E_ITE:
-      {
-        ITE* ite = e->cast<ITE>();
-        for (int i=0; i<ite->size(); i++) {
-          if (eval_bool(env,ite->e_if(i)))
-            return eval_float(env,ite->e_then(i));
+      CallStackItem csi(env,e);
+      switch (e->eid()) {
+        case Expression::E_INTLIT:
+        case Expression::E_BOOLLIT:
+        case Expression::E_STRINGLIT:
+        case Expression::E_ANON:
+        case Expression::E_TIID:
+        case Expression::E_SETLIT:
+        case Expression::E_ARRAYLIT:
+        case Expression::E_COMP:
+        case Expression::E_VARDECL:
+        case Expression::E_TI:
+          throw EvalError(env, e->loc(),"not a float expression");
+          break;
+        case Expression::E_ID:
+        {
+          GCLock lock;
+          return eval_id<EvalFloatLit>(env,e)->v();
         }
-        return eval_float(env,ite->e_else());
-      }
-        break;
-      case Expression::E_BINOP:
-      {
-        BinOp* bo = e->cast<BinOp>();
-        if (bo->decl() && bo->decl()->e()) {
-          return eval_call<EvalFloatVal,BinOp>(env,bo);
+          break;
+        case Expression::E_ARRAYACCESS:
+        {
+          GCLock lock;
+          return eval_float(env,eval_arrayaccess(env,e->cast<ArrayAccess>()));
         }
-        FloatVal v0 = eval_float(env,bo->lhs());
-        FloatVal v1 = eval_float(env,bo->rhs());
-        switch (bo->op()) {
-          case BOT_PLUS: return v0+v1;
-          case BOT_MINUS: return v0-v1;
-          case BOT_MULT: return v0*v1;
-          case BOT_POW: return std::pow(v0.toDouble(),v1.toDouble());
-          case BOT_DIV:
-            if (v1==0.0)
-              throw ResultUndefinedError(env, e->loc(),"division by zero");
-            return v0 / v1;
-          default: throw EvalError(env, e->loc(),"not a float expression", bo->opToString());
+          break;
+        case Expression::E_ITE:
+        {
+          ITE* ite = e->cast<ITE>();
+          for (int i=0; i<ite->size(); i++) {
+            if (eval_bool(env,ite->e_if(i)))
+              return eval_float(env,ite->e_then(i));
+          }
+          return eval_float(env,ite->e_else());
         }
-      }
-        break;
-      case Expression::E_UNOP:
-      {
-        UnOp* uo = e->cast<UnOp>();
-        if (uo->decl() && uo->decl()->e()) {
-          return eval_call<EvalFloatVal,UnOp>(env,uo);
+          break;
+        case Expression::E_BINOP:
+        {
+          BinOp* bo = e->cast<BinOp>();
+          if (bo->decl() && bo->decl()->e()) {
+            return eval_call<EvalFloatVal,BinOp>(env,bo);
+          }
+          FloatVal v0 = eval_float(env,bo->lhs());
+          FloatVal v1 = eval_float(env,bo->rhs());
+          switch (bo->op()) {
+            case BOT_PLUS: return v0+v1;
+            case BOT_MINUS: return v0-v1;
+            case BOT_MULT: return v0*v1;
+            case BOT_POW: return std::pow(v0.toDouble(),v1.toDouble());
+            case BOT_DIV:
+              if (v1==0.0)
+                throw ResultUndefinedError(env, e->loc(),"division by zero");
+              return v0 / v1;
+            default: throw EvalError(env, e->loc(),"not a float expression", bo->opToString());
+          }
         }
-        FloatVal v0 = eval_float(env,uo->e());
-        switch (uo->op()) {
-          case UOT_PLUS: return v0;
-          case UOT_MINUS: return -v0;
-          default: throw EvalError(env, e->loc(),"not a float expression", uo->opToString());
+          break;
+        case Expression::E_UNOP:
+        {
+          UnOp* uo = e->cast<UnOp>();
+          if (uo->decl() && uo->decl()->e()) {
+            return eval_call<EvalFloatVal,UnOp>(env,uo);
+          }
+          FloatVal v0 = eval_float(env,uo->e());
+          switch (uo->op()) {
+            case UOT_PLUS: return v0;
+            case UOT_MINUS: return -v0;
+            default: throw EvalError(env, e->loc(),"not a float expression", uo->opToString());
+          }
         }
-      }
-        break;
-      case Expression::E_CALL:
-      {
-        Call* ce = e->cast<Call>();
-        if (ce->decl()==NULL)
-          throw EvalError(env, e->loc(), "undeclared function", ce->id());
-        if (ce->decl()->_builtins.f)
-          return ce->decl()->_builtins.f(env,ce);
-        
-        if (ce->decl()->_builtins.e)
-          return eval_float(env,ce->decl()->_builtins.e(env,ce));
+          break;
+        case Expression::E_CALL:
+        {
+          Call* ce = e->cast<Call>();
+          if (ce->decl()==NULL)
+            throw EvalError(env, e->loc(), "undeclared function", ce->id());
+          if (ce->decl()->_builtins.f)
+            return ce->decl()->_builtins.f(env,ce);
+          
+          if (ce->decl()->_builtins.e)
+            return eval_float(env,ce->decl()->_builtins.e(env,ce));
 
-        if (ce->decl()->e()==NULL)
-          throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+          if (ce->decl()->e()==NULL)
+            throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
 
-        return eval_call<EvalFloatVal>(env,ce);
+          return eval_call<EvalFloatVal>(env,ce);
+        }
+          break;
+        case Expression::E_LET:
+        {
+          Let* l = e->cast<Let>();
+          l->pushbindings();
+          for (unsigned int i=0; i<l->let().size(); i++) {
+            // Evaluate all variable declarations
+            if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+              vdi->e(eval_par(env, vdi->e()));
+              if (vdi->ti()->domain()) {
+                if (!checkParDomain(env, vdi->e(), vdi->ti()->domain())) {
+                  throw ResultUndefinedError(env, l->let()[i]->loc(),"domain constraint in let failed");
+                }
+              }
+            } else {
+              // This is a constraint item. Since the let is par,
+              // it can only be a par bool expression. If it evaluates
+              // to false, it means that the value of this let is undefined.
+              if (!eval_bool(env, l->let()[i])) {
+                throw ResultUndefinedError(env, l->let()[i]->loc(),"constraint in let failed");
+              }
+            }
+          }
+          FloatVal ret = eval_float(env,l->in());
+          l->popbindings();
+          return ret;
+        }
+          break;
+        default: assert(false); return 0.0;
       }
-        break;
-      case Expression::E_LET:
-      {
-        Let* l = e->cast<Let>();
-        l->pushbindings();
-        FloatVal ret = eval_float(env,l->in());
-        l->popbindings();
-        return ret;
-      }
-        break;
-      default: assert(false); return 0.0;
+    } catch(ArithmeticError& err) {
+      throw EvalError(env, e->loc(), err.msg());
     }
   }
 
   std::string eval_string(EnvI& env, Expression* e) {
+    CallStackItem csi(env,e);
     switch (e->eid()) {
       case Expression::E_STRINGLIT:
         return e->cast<StringLit>()->v().str();
@@ -1559,6 +1746,24 @@ namespace MiniZinc {
       {
         Let* l = e->cast<Let>();
         l->pushbindings();
+        for (unsigned int i=0; i<l->let().size(); i++) {
+          // Evaluate all variable declarations
+          if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+            vdi->e(eval_par(env, vdi->e()));
+            if (vdi->ti()->domain()) {
+              if (!checkParDomain(env, vdi->e(), vdi->ti()->domain())) {
+                throw ResultUndefinedError(env, l->let()[i]->loc(),"domain constraint in let failed");
+              }
+            }
+          } else {
+            // This is a constraint item. Since the let is par,
+            // it can only be a par bool expression. If it evaluates
+            // to false, it means that the value of this let is undefined.
+            if (!eval_bool(env, l->let()[i])) {
+              throw ResultUndefinedError(env, l->let()[i]->loc(),"constraint in let failed");
+            }
+          }
+        }
         std::string ret = eval_string(env,l->in());
         l->popbindings();
         return ret;

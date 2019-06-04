@@ -77,25 +77,31 @@ namespace MiniZinc {
     vector<ParseWorkItem> files;
     map<string,Model*> seenModels;
     
+    string workingDir = FileUtils::working_directory();
+
     if (filenames.size() > 0) {
       GCLock lock;
-      string fileDirname = FileUtils::dir_name(filenames[0]);
-      string fileBasename = FileUtils::base_name(filenames[0]);
-      model->setFilename(fileBasename);
+      model->setFilename(FileUtils::base_name(filenames[0]));
+      if (FileUtils::is_absolute(filenames[0])) {
+        files.push_back(ParseWorkItem(model,"",filenames[0]));
+      } else {
+        files.push_back(ParseWorkItem(model,"",workingDir+"/"+filenames[0]));
+      }
       
-      files.push_back(ParseWorkItem(model,fileDirname,fileBasename));
       
       for (unsigned int i=1; i<filenames.size(); i++) {
         GCLock lock;
-        string dirName = FileUtils::dir_name(filenames[i]);
+        string fullName = filenames[i];
         string baseName = FileUtils::base_name(filenames[i]);
+        if (!FileUtils::is_absolute(fullName))
+          fullName = workingDir+"/"+fullName;
         bool isFzn = (baseName.compare(baseName.length()-4,4,".fzn")==0);
         if (isFzn) {
-          files.push_back(ParseWorkItem(model,dirName,baseName));
+          files.push_back(ParseWorkItem(model,"",fullName));
         } else {
           Model* includedModel = new Model;
           includedModel->setFilename(baseName);
-          files.push_back(ParseWorkItem(includedModel,dirName,baseName));
+          files.push_back(ParseWorkItem(includedModel,"",fullName));
           seenModels.insert(pair<string,Model*>(baseName,includedModel));
           Location loc(ASTString(filenames[i]),0,0,0,0);
           IncludeI* inc = new IncludeI(loc,includedModel->filename());
@@ -166,13 +172,20 @@ namespace MiniZinc {
           }
         } else {
           includePaths.push_back(parentPath);
-          for (unsigned int i=0; i<includePaths.size(); i++) {
+          unsigned int i=0;
+          for (; i<includePaths.size(); i++) {
             fullname = includePaths[i]+"/"+f;
             if (FileUtils::file_exists(fullname)) {
               file.open(fullname.c_str(), std::ios::binary);
               if (file.is_open())
                 break;
             }
+          }
+          if (file.is_open() && i<includePaths.size()-1 &&
+              parentPath==workingDir &&
+              FileUtils::file_path(includePaths[i],workingDir)!=FileUtils::file_path(workingDir) &&
+              FileUtils::file_exists(workingDir+"/"+f)) {
+            err << "Warning: file " << f << " included from library, but also exists in current working directory" << endl;
           }
           includePaths.pop_back();
         }

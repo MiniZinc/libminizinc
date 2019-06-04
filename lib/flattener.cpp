@@ -50,17 +50,19 @@ void Flattener::printHelp(ostream& os)
   << "  --model-interface-only\n    Only extract parameters and output variables." << std::endl
   << "  --model-types-only\n    Only output variable (enum) type information." << std::endl
   << "  --no-optimize\n    Do not optimize the FlatZinc" << std::endl
+  << "  --no-chain-compression\n    Do not simplify chains of implication constraints." << std::endl
   << "  -d <file>, --data <file>\n    File named <file> contains data used by the model." << std::endl
   << "  -D <data>, --cmdline-data <data>\n    Include the given data assignment in the model." << std::endl
   << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
   << "  -G <dir>, --globals-dir <dir>, --mzn-globals-dir <dir>\n    Search for included globals in <stdlib>/<dir>." << std::endl
   << "  -, --input-from-stdin\n    Read problem from standard input" << std::endl
   << "  -I <dir>, --search-dir <dir>\n    Additionally search for included files in <dir>." << std::endl
-  << "  -D \"fMIPdomains=false\"\n    No domain unification for MIP" << std::endl
-  << "  --MIPDMaxIntvEE <n>\n    Max integer domain subinterval length to enforce equality encoding, default " << opt_MIPDmaxIntvEE << std::endl
-  << "  --MIPDMaxDensEE <n>\n    Max domain cardinality to N subintervals ratio\n    to enforce equality encoding, default " << opt_MIPDmaxDensEE << ", either condition triggers" << std::endl
+  << "  -D \"fMIPdomains=true\"\n    Switch on MIPDomain Unification" << std::endl
+  << "  --MIPDMaxIntvEE <n>\n    MIPD: max integer domain subinterval length to enforce equality encoding, default " << opt_MIPDmaxIntvEE << std::endl
+  << "  --MIPDMaxDensEE <n>\n    MIPD: max domain cardinality to N subintervals ratio\n    to enforce equality encoding, default " << opt_MIPDmaxDensEE << ", either condition triggers" << std::endl
   << "  --only-range-domains\n    When no MIPdomains: all domains contiguous, holes replaced by inequalities" << std::endl
   << "  --allow-multiple-assignments\n    Allow multiple assignments to the same variable (e.g. in dzn)" << std::endl
+  << "  --no-half-reifications\n    Only use fully reified constraints, even when a half reified constraint is defined." << std::endl
   << "  --compile-solution-checker <file>.mzc.mzn\n    Compile solution checker model" << std::endl
   << std::endl
   << "Flattener two-pass options:" << std::endl
@@ -80,6 +82,7 @@ void Flattener::printHelp(ostream& os)
 #else
   << "\n    -O3,4,5:    Disabled [Requires MiniZinc with built-in Gecode support]" << std::endl
 #endif
+  << "  -g\n    Debug mode: Forces -O0 and records all domain changes as constraints instead of applying them" << std::endl
   << std::endl;
   os
   << "Flattener output options:" << std::endl
@@ -126,6 +129,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
     flag_newfzn = true;
   } else if ( cop.getOption( "--no-optimize --no-optimise") ) {
     flag_optimize = false;
+  } else if ( cop.getOption( "--no-chain-compression") ) {
+    flag_chain_compression = false;
   } else if ( cop.getOption( "--no-output-ozn -O-") ) {
     flag_no_output_ozn = true;
   } else if ( cop.getOption( "--output-base", &flag_output_base ) ) {
@@ -242,6 +247,13 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
 #endif
     // ozn options must be after the -O<n> optimisation options
   } else if ( cop.getOption( "-O --ozn --output-ozn-to-file", &flag_output_ozn) ) {
+  } else if (string(argv[i])=="-g") {
+    flag_optimize = false;
+    flag_two_pass = false;
+    flag_gecode = false;
+    flag_shave = false;
+    flag_sac = false;
+    fopts.record_domain_changes = true;
   } else if (string(argv[i])=="--keep-paths") {
     flag_keep_mzn_paths = true;
     fopts.collect_mzn_paths = true;
@@ -249,6 +261,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
     fopts.only_toplevel_paths = true;
   } else if ( cop.getOption( "--allow-multiple-assignments" ) ) {
     flag_allow_multi_assign = true;
+  } else if ( cop.getOption( "--no-half-reifications" ) ) {
+    fopts.enable_imp = false;
   } else if (string(argv[i])=="--input-is-flatzinc") {
     is_flatzinc = true;
   } else if ( cop.getOption( "--compile-solution-checker", &buffer) ) {
@@ -329,8 +343,20 @@ Env* Flattener::multiPassFlatten(const vector<unique_ptr<Pass> >& passes) {
   return pre_env;
 }
 
+class FlattenTimeout {
+public:
+  FlattenTimeout(unsigned long long int t) {
+    GC::setTimeout(t);
+  }
+  ~FlattenTimeout(void) {
+    GC::setTimeout(0);
+  }
+};
+
 void Flattener::flatten(const std::string& modelString, const std::string& modelName)
 {
+  FlattenTimeout flatten_timeout(fopts.timeout);
+  Timer flatten_time;
   starttime.reset();
   
   if (flag_verbose)
@@ -417,6 +443,8 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
       if (flag_verbose)
         log << " done parsing (" << starttime.stoptime() << ")" << std::endl;
       if (smm) {
+        log << errstream.str();
+        errstream.str("");
         std::ostringstream smm_oss;
         Printer p(smm_oss,0,false);
         p.print(smm);
@@ -495,13 +523,14 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         log << ", '" << sFln << '\'';
       log << " ..." << std::endl;
     }
+    errstream.str("");
     m = parse(*env, filenames, datafiles, modelText, modelName.empty() ? "stdin" : modelName, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
     if (globals_dir != "") {
       includePaths.erase(includePaths.begin());
     }
     if (m==NULL)
       throw Error(errstream.str());
-    
+    log << errstream.str();
     env->model(m);
     if (flag_typecheck) {
       if (flag_verbose)
@@ -583,6 +612,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           cfs.verbose      = flag_verbose;
           cfs.statistics   = flag_statistics;
           cfs.optimize     = flag_optimize;
+          cfs.chain_compression = flag_chain_compression;
           cfs.newfzn       = flag_newfzn;
           cfs.werror       = flag_werror;
           cfs.model_check_only = flag_model_check_only;
@@ -619,40 +649,40 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
 
         if (flag_statistics) {
           FlatModelStatistics stats = statistics(*env);
-          log << "Generated FlatZinc statistics:\n";
+          os << "% Generated FlatZinc statistics:\n";
 
-          log << "Paths: ";
-          log << env->envi().getPathMap().size() << std::endl;
+          os << "%%%mzn-stat: paths=" << env->envi().getPathMap().size() << endl;
 
-          log << "Variables: ";
-          HadOne ho;
-          log << ho(stats.n_bool_vars, " bool");
-          log << ho(stats.n_int_vars, " int");
-          log << ho(stats.n_float_vars, " float");
-          log << ho(stats.n_set_vars, " set");
-          if (!ho)
-            log << "none";
-          log << "\n";
-          ho.reset();
-          log << "Constraints: ";
-          log << ho(stats.n_bool_ct, " bool");
-          log << ho(stats.n_int_ct, " int");
-          log << ho(stats.n_float_ct, " float");
-          log << ho(stats.n_set_ct, " set");
-          if (!ho)
-            log << "none";
-          log << "\n";
+          if (stats.n_bool_vars) { os << "%%%mzn-stat: flatBoolVars=" << stats.n_bool_vars << endl; }
+          if (stats.n_int_vars) { os << "%%%mzn-stat: flatIntVars=" << stats.n_int_vars << endl; }
+          if (stats.n_float_vars) { os << "%%%mzn-stat: flatFloatVars=" << stats.n_float_vars << endl; }
+          if (stats.n_set_vars) { os << "%%%mzn-stat: flatSetVars=" << stats.n_set_vars << endl; }
+
+          if (stats.n_bool_ct) { os << "%%%mzn-stat: flatBoolConstraints=" << stats.n_bool_ct << endl; }
+          if (stats.n_int_ct) { os << "%%%mzn-stat: flatIntConstraints=" << stats.n_int_ct << endl; }
+          if (stats.n_float_ct) { os << "%%%mzn-stat: flatFloatConstraints=" << stats.n_float_ct << endl; }
+          if (stats.n_set_ct) { os << "%%%mzn-stat: flatSetConstraints=" << stats.n_set_ct << endl; }
+
+          if (stats.n_reif_ct) { os << "%%%mzn-stat: evaluatedReifiedConstraints=" << stats.n_reif_ct << endl; }
+          if (stats.n_imp_ct) { os << "%%%mzn-stat: evaluatedHalfReifiedConstraints=" << stats.n_imp_ct << endl; }
+
+          if (stats.n_imp_del) { os << "%%%mzn-stat: eliminatedImplications=" << stats.n_imp_del << endl; }
+          if (stats.n_lin_del) { os << "%%%mzn-stat: eliminatedLinearConstraints=" << stats.n_lin_del << endl; }
+
           /// Objective / SAT. These messages are used by mzn-test.py.
           SolveI* solveItem = env->flat()->solveItem();
           if (solveItem->st() != SolveI::SolveType::ST_SAT) {
             if (solveItem->st() == SolveI::SolveType::ST_MAX) {
-              log << "    This is a maximization problem." << endl;
+              os << "%%%mzn-stat: method=\"maximize\"" << endl;
             } else {
-              log << "    This is a minimization problem." << endl;
+              os << "%%%mzn-stat: method=\"minimize\"" << endl;
             }
           } else {
-            log << "    This is a satisfiability problem." << endl;
+            os << "%%%mzn-stat: method=\"satisfy\"" << endl;
           }
+
+          os << "%%%mzn-stat: flatTime=" << flatten_time.s() << endl;
+          os << "%%%mzn-stat-end" << endl << endl;
         }
 
         if (flag_output_paths_stdout) {

@@ -41,6 +41,7 @@
 #include "Shlwapi.h"
 #pragma comment(lib, "Shlwapi.lib")
 #include "Shlobj.h"
+#include <direct.h>
 #else
 #include <dirent.h>
 #include <libgen.h>
@@ -131,7 +132,10 @@ namespace MiniZinc { namespace FileUtils {
       return 0;
     std::string ret;
     DWORD error = GetFullPathName(filename.c_str(), nBufferLength, lpBuffer, &lpFilePart);
-    if(error == 0 || (INVALID_FILE_ATTRIBUTES == GetFileAttributes(lpBuffer) && GetLastError()==ERROR_FILE_NOT_FOUND)) {
+    DWORD fileAttr = GetFileAttributes(lpBuffer);
+    DWORD lastError = GetLastError();
+
+    if(error == 0 || (fileAttr == INVALID_FILE_ATTRIBUTES && lastError != NO_ERROR)) {
       if (basePath.empty())
         ret = filename;
       else
@@ -191,7 +195,17 @@ namespace MiniZinc { namespace FileUtils {
   
   std::string find_executable(const std::string& filename) {
     if (is_absolute(filename)) {
-      return file_exists(filename) ? filename : "";
+      if (file_exists(filename)) {
+        return filename;
+      }
+#ifdef _MSC_VER
+      if (FileUtils::file_exists(filename+".exe")) {
+        return filename+".exe";
+      } else if (FileUtils::file_exists(filename+".bat")) {
+        return filename+".bat";
+      }
+#endif
+      return "";
     }
     char* path_c = getenv("PATH");
 #ifdef _MSC_VER
@@ -263,6 +277,18 @@ namespace MiniZinc { namespace FileUtils {
     return entries;
   }
 
+  std::string working_directory(void) {
+    char wd[FILENAME_MAX];
+#ifdef _MSC_VER
+    if (!_getcwd(wd,sizeof(wd)))
+      return "";
+#else
+    if (!getcwd(wd,sizeof(wd)))
+      return "";
+#endif
+    return wd;
+  }
+  
   std::string share_directory(void) {
     if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
       return std::string(MZNSTDLIBDIR);

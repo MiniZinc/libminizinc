@@ -285,7 +285,7 @@ class CompareLogs:
                 dTime_All = utils.try_float( mSlv.get( "TimeReal_All" ) )
                 aDetThis [ "tAll" ] = dTime_All
                 dTime_Flt = utils.try_float( mSlv.get( "Time_Flt" ) )
-                aResultThisInst[ "t_Flatten" ] = dTime_Flt if dTime_Flt is not None else dTime_All  ##??
+                aResultThisInst[ "t_Flatten" ] = dTime_Flt if dTime_Flt is not None else dTime_All  ##?? Assume flattening stopped
                 aDetThis [ "tFlt" ] = dTime_Flt
                 dTime_Last = utils.try_float( mSlv.get( "TimeReal_LastStatus" ) )
                 aDetThis [ "tBest" ] = dTime_Last
@@ -393,12 +393,14 @@ class CompareLogs:
     ###
     def checkContradictions( self, sInst ):
         self.fContr = False
-        if len(self.lOpt)+len(self.lSat) > 0 and len(self.lInfeas) > 0:
+        if len(self.lOpt)+len(self.lFeas)+len(self.lSatAll)+len(self.lSat) > 0 and len(self.lInfeas) > 0:
             self.nContrStatus += 1
             self.fContr = True
             print(  "CONTRADICTION of STATUS: instance " + str(sInst) + ": " + \
                    "\n  OPTIMAL:  " + strNL( "\n       ", self.lOpt) + \
-                   "\n  FEAS:  " + strNL( "\n       ", self.lSat) + \
+                   "\n  FEAS:  " + strNL( "\n       ", self.lFeas) + \
+                   "\n  SAT_COMPLETE:  " + strNL( "\n       ", self.lSatAll) + \
+                   "\n  SAT:  " + strNL( "\n       ", self.lSat) + \
                    "\n  INFEAS:  " + strNL( "\n       ", self.lInfeas), file= self.ioContrStatus )
         if len(self.mOptVal) > 1:
             self.nContrOptVal += 1

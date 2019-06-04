@@ -490,7 +490,7 @@ constraint_item :
       { $$ = new ConstraintI(@$,$2);}
     | MZN_CONSTRAINT MZN_COLONCOLON string_expr expr
       { $$ = new ConstraintI(@$,$4);
-        if ($$ && $3)
+        if ($4 && $3)
           $$->cast<ConstraintI>()->e()->ann().add(new Call(@2, ASTString("mzn_constraint_name"), {$3}));
       }
 

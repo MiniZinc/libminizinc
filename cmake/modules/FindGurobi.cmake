@@ -10,7 +10,7 @@ option(GUROBI_PLUGIN "Build Gurobi binding as a plugin" ON)
 
 set(GUROBI_COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG")
 
-set(GUROBI_VERSIONS 810 801 752 702)
+set(GUROBI_VERSIONS 811 810 801 752 702)
 
 foreach(VERSION ${GUROBI_VERSIONS})
   list(APPEND GUROBI_DEFAULT_LOC "/opt/gurobi${VERSION}/linux64")
@@ -24,8 +24,8 @@ foreach(VERSION ${GUROBI_VERSIONS})
 endforeach(VERSION)
 
 find_path(GUROBI_INCLUDE gurobi_c.h
-          HINTS ${GUROBI_ROOT} ENV GUROBI_ROOT
-          PATHS ${GUROBI_DEFAULT_LOC}
+          PATHS ${GUROBI_ROOT} $ENV{GUROBI_HOME} ENV GUROBI_ROOT
+          HINTS ${GUROBI_DEFAULT_LOC}
           PATH_SUFFIXES include)
 
 if(GUROBI_PLUGIN)
@@ -41,7 +41,7 @@ if(GUROBI_PLUGIN)
 else()
   foreach(GUROBI_LIB ${GUROBI_LIB_NAMES})
     find_library(GUROBI_LIBRARY NAMES ${GUROBI_LIB}
-                 HINTS ${GUROBI_ROOT} ENV GUROBI_ROOT
+                 HINTS ${GUROBI_ROOT} $ENV{GUROBI_HOME} ENV GUROBI_ROOT
                  PATHS ${GUROBI_DEFAULT_LOC}
                  PATH_SUFFIXES lib)
     if(NOT "${GUROBI_LIBRARY}" STREQUAL "GUROBI_LIBRARY-NOTFOUND")

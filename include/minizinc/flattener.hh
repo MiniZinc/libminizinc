@@ -61,6 +61,8 @@ namespace MiniZinc {
     bool get_flag_verbose() const { return flag_verbose; }
     void set_flag_statistics(bool f) { flag_statistics = f; }
     bool get_flag_statistics() const { return flag_statistics; }
+    void set_flag_timelimit(unsigned long long int t) { fopts.timeout = t; }
+    unsigned long long int get_flag_timelimit(void) { return fopts.timeout; }
     void set_flag_output_by_default(bool f) { fOutputByDefault = f; }
     Env* getEnv() const { assert(pEnv.get()); return pEnv.get(); }
     bool hasInputFiles(void) const { return !filenames.empty() || flag_stdinInput || !flag_solution_check_model.empty(); }
@@ -81,6 +83,7 @@ namespace MiniZinc {
     bool flag_verbose = false;
     bool flag_newfzn = false;
     bool flag_optimize = true;
+    bool flag_chain_compression = true;
     bool flag_werror = false;
     bool flag_only_range_domains = false;
     bool flag_allow_unbounded_vars = false;

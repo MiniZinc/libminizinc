@@ -58,7 +58,7 @@ namespace MiniZinc {
 #define MZN_ASSERT_HARD_MSG( c, e ) \
    do { if ( !(c) ) { __MZN_PRINT_SRCLOC( #c, e ); \
      std::ostringstream oss; oss << "not " << #c << ":  " << e; \
-     throw InternalError( oss.str() ); } } while (0)
+     throw MiniZinc::InternalError( oss.str() ); } } while (0)
 
   inline bool beginswith(std::string s, std::string t) {
     return s.compare(0, t.length(), t)==0;
@@ -200,5 +200,5 @@ namespace MiniZinc {
 
 }
 
-#endif  // __MINIZINC_FLATTENER_H__
+#endif  // __MINIZINC_UTILS_H__
 

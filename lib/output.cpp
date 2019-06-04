@@ -153,6 +153,22 @@ namespace MiniZinc {
   }
   
   void makePar(EnvI& env, Expression* e) {
+    class OutputJSON : public EVisitor {
+    public:
+      EnvI& env;
+      OutputJSON(EnvI& env0) : env(env0) {}
+      void vCall(Call& c) {
+        if (c.id()=="outputJSON") {
+          bool outputObjective = (c.n_args()==1 && eval_bool(env,c.arg(0)));
+          c.id(ASTString("array1d"));
+          Expression* json = copy(env, env.cmap, createJSONOutput(env, outputObjective));
+          std::vector<Expression*> new_args({json});
+          new_args[0]->type(Type::parstring(1));
+          c.args(new_args);
+        }
+      }
+    } _outputJSON(env);
+    topDown(_outputJSON, e);
     class Par : public EVisitor {
     public:
       /// Visit variable declaration
@@ -184,14 +200,7 @@ namespace MiniZinc {
       EnvI& env;
       Decls(EnvI& env0) : env(env0) {}
       void vCall(Call& c) {
-        if (c.id()=="outputJSON") {
-          c.id(ASTString("array1d"));
-          Expression* json = copy(env, env.cmap, createJSONOutput(env, false));
-          std::vector<Expression*> new_args({json});
-          new_args[0]->type(Type::parstring(1));
-          c.args(new_args);
-        }
-        if (c.id()=="format" || c.id()=="show" || c.id()=="showDzn") {
+        if (c.id()=="format" || c.id()=="show" || c.id()=="showDzn" || c.id()=="showJSON") {
           int enumId = c.arg(c.n_args()-1)->type().enumId();
           if (enumId != 0 && c.arg(c.n_args()-1)->type().dim() != 0) {
             const std::vector<unsigned int>& enumIds = env.getArrayEnum(enumId);
@@ -200,7 +209,7 @@ namespace MiniZinc {
           if (enumId > 0) {
             Id* ti_id = env.getEnum(enumId)->e()->id();
             GCLock lock;
-            std::vector<Expression*> args(2);
+            std::vector<Expression*> args(3);
             args[0] = c.arg(c.n_args()-1);
             if (args[0]->type().dim() > 1) {
               std::vector<Expression*> a1dargs(1);
@@ -212,11 +221,12 @@ namespace MiniZinc {
               args[0] = array1d;
             }
             args[1] = constants().boollit(c.id()=="showDzn");
+            args[2] = constants().boollit(c.id()=="showJSON");
             std::string enumName = createEnumToStringName(ti_id, "_toString_");
             c.id(ASTString(enumName));
             c.args(args);
           }
-          if (c.id()=="showDzn") {
+          if (c.id()=="showDzn" || c.id()=="showJSON") {
             c.id(constants().ids.show);
           }
         }
@@ -693,17 +703,17 @@ namespace MiniZinc {
           }
           if (!origdecl->from_stdlib()) {
             decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
-            CollectOccurrencesE ce(env.output_vo,decl);
-            topDown(ce, decl->e());
-            topDown(ce, decl->ti());
-            for (unsigned int i = decl->params().size(); i--;)
-              topDown(ce, decl->params()[i]);
             env.output->registerFn(env, decl);
             env.output->addItem(decl);
             if (decl->e()) {
               makePar(env, decl->e());
               topDown(*this, decl->e());
             }
+            CollectOccurrencesE ce(env.output_vo,decl);
+            topDown(ce, decl->e());
+            topDown(ce, decl->ti());
+            for (unsigned int i = decl->params().size(); i--;)
+              topDown(ce, decl->params()[i]);
           } else {
             decl = origdecl;
           }

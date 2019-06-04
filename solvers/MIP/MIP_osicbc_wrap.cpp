@@ -39,7 +39,7 @@ using namespace std;
 
 
 string MIP_osicbc_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options*) {
-  string v = "MIP wrapper for OSICBC ";
+  string v = "MIP wrapper for COIN-BC ";
   v += CBC_VERSION;                     // E.g., 2.9 stable or 2.9.7 latest release
   v += ",  using CLP ";
   v += CLP_VERSION;
@@ -52,11 +52,15 @@ string MIP_osicbc_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options*) {
 }
 
 string MIP_osicbc_wrapper::getId() {
-  return "osicbc";
+  return "coin-bc";
 }
 
 string MIP_osicbc_wrapper::getName() {
-  return "OSICBC";
+  return "COIN-BC";
+}
+
+vector<string> MIP_osicbc_wrapper::getTags() {
+  return {"mip","float","api","osicbc","coinbc","cbc"};
 }
 
 vector<string> MIP_osicbc_wrapper::getStdFlags() {
@@ -65,7 +69,7 @@ vector<string> MIP_osicbc_wrapper::getStdFlags() {
 
 void MIP_osicbc_wrapper::Options::printHelp(ostream& os) {
   os
-  << "OSICBC MIP wrapper options:" << std::endl
+  << "COIN-BC MIP wrapper options:" << std::endl
   // -s                  print statistics
   //            << "  --readParam <file>  read OSICBC parameters from file
   //               << "--writeParam <file> write OSICBC parameters to file
@@ -87,7 +91,7 @@ void MIP_osicbc_wrapper::Options::printHelp(ostream& os) {
 
   << "  --absGap <n>\n    absolute gap |primal-dual| to stop" << std::endl
   << "  --relGap <n>\n    relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
-  << "  --intTol <n>\n    integrality tolerance for a variable. Default 1e-6" << std::endl
+  << "  --intTol <n>\n    integrality tolerance for a variable. Default 1e-8" << std::endl
 //   << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
   << std::endl;

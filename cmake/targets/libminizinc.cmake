@@ -112,6 +112,7 @@ add_library(minizinc_compiler
   lib/astvec.cpp
   lib/builtins.cpp
   lib/copy.cpp
+  lib/chain_compressor.cpp
   lib/eval_par.cpp
   lib/file_utils.cpp
   lib/gc.cpp
@@ -126,6 +127,20 @@ add_library(minizinc_compiler
   lib/type.cpp
   lib/typecheck.cpp
   lib/flatten.cpp
+  lib/flatten/flat_exp.cpp
+  lib/flatten/flatten_setlit.cpp
+  lib/flatten/flatten_id.cpp
+  lib/flatten/flatten_anon.cpp
+  lib/flatten/flatten_arraylit.cpp
+  lib/flatten/flatten_arrayaccess.cpp
+  lib/flatten/flatten_comp.cpp
+  lib/flatten/flatten_ite.cpp
+  lib/flatten/flatten_binop.cpp
+  lib/flatten/flatten_unop.cpp
+  lib/flatten/flatten_call.cpp
+  lib/flatten/flatten_vardecl.cpp
+  lib/flatten/flatten_let.cpp
+  lib/flatten/flatten_par.cpp
   lib/MIPdomains.cpp
   lib/optimize.cpp
   lib/options.cpp
@@ -146,11 +161,13 @@ add_library(minizinc_compiler
   include/minizinc/astvec.hh
   include/minizinc/builtins.hh
   include/minizinc/config.hh.in
+  include/minizinc/chain_compressor.hh
   include/minizinc/copy.hh
   include/minizinc/eval_par.hh
   include/minizinc/exception.hh
   include/minizinc/file_utils.hh
   include/minizinc/flatten.hh
+  include/minizinc/flat_exp.hh
   include/minizinc/flatten_internal.hh
   include/minizinc/gc.hh
   include/minizinc/hash.hh

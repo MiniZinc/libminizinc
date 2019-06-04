@@ -168,21 +168,21 @@ namespace MiniZinc {
 
   }
 
- void 
+  void
   SolverInstanceBase::flattenSearchAnnotations(const Annotation& ann, std::vector<Expression*>& out) {
     for(ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
-        Expression* e = *i;
-        if(e->isa<Call>() && e->cast<Call>()->id().str() == "seq_search") {
-            Call* c = e->cast<Call>();
-            ArrayLit* anns = c->arg(0)->cast<ArrayLit>();
-            for(unsigned int i=0; i<anns->size(); i++) {
-                Annotation subann;
-                subann.add((*anns)[i]);
-                flattenSearchAnnotations(subann, out);
-            }
-        } else {
-            out.push_back(*i);
+      Expression* e = *i;
+      if(e->isa<Call>() && (e->cast<Call>()->id().str() == "seq_search" || e->cast<Call>()->id().str() == "warm_start_array")) {
+        Call* c = e->cast<Call>();
+        auto* anns = c->arg(0)->cast<ArrayLit>();
+        for(unsigned int i=0; i<anns->size(); i++) {
+          Annotation subann;
+          subann.add((*anns)[i]);
+          flattenSearchAnnotations(subann, out);
         }
+      } else {
+        out.push_back(*i);
+      }
     }
   }
 

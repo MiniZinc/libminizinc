@@ -817,6 +817,8 @@ namespace MiniZinc {
         }
       }
       e = vd->e();
+      if (e==NULL)
+        e = vd->flat()->e();
     }
 
     if (foundBounds) {
@@ -863,10 +865,18 @@ namespace MiniZinc {
           Id* id = ae->cast<Id>();
           if (id->decl()==NULL)
             throw EvalError(env, id->loc(),"undefined identifier");
-          if (id->decl()->e()==NULL)
-            throw EvalError(env, id->loc(),"array without initialiser");
-          else
+          if (id->decl()->e()==NULL) {
+            if (id->decl()->flat()==NULL) {
+              throw EvalError(env, id->loc(),"array without initialiser");
+            } else {
+              if (id->decl()->flat()->e()==NULL) {
+                throw EvalError(env, id->loc(),"array without initialiser");
+              }
+              ae = id->decl()->flat()->e();
+            }
+          } else {
             ae = id->decl()->e();
+          }
         }
         break;
       default:
@@ -1300,7 +1310,17 @@ namespace MiniZinc {
   std::string b_show(EnvI& env, Call* call) {
     return show(env,call->arg(0));
   }
-  
+  std::string b_showDznId(EnvI& env, Call* call) {
+    GCLock lock;
+    std::string s = eval_string(env, call->arg(0));
+    size_t nonIdChar = s.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_");
+    size_t nonIdBegin = s.find_first_of("0123456789_");
+    if (nonIdChar!=std::string::npos || nonIdBegin==0) {
+      s = "'"+s+"'";
+    }
+    return s;
+  }
+
   std::string b_show_json_basic(EnvI& env, Expression* e) {
     std::ostringstream oss;
     Printer p(oss,0,false);
@@ -1346,6 +1366,8 @@ namespace MiniZinc {
         }
       }
       oss << "]}";
+    } else if (e == constants().absent) {
+      oss << "null";
     } else {
       p.print(e);
     }
@@ -2122,19 +2144,27 @@ namespace MiniZinc {
     std::vector<std::pair<int,int>> newSlice(slice->size());
     for (unsigned int i=0; i<slice->size(); i++) {
       IntSetVal* isv = eval_intset(env, (*slice)[i]);
-      if (isv->size()>1)
-        throw ResultUndefinedError(env, call->loc(), "array slice must be contiguous");
-      int sl_min = isv->min().isFinite() ? static_cast<int>(isv->min().toInt()) : al->min(i);
-      int sl_max = isv->max().isFinite() ? static_cast<int>(isv->max().toInt()) : al->max(i);
-      if (sl_min < al->min(i) || sl_max > al->max(i))
-        throw ResultUndefinedError(env, call->loc(), "array slice out of bounds");
-      newSlice[i] = std::pair<int,int>(sl_min, sl_max);
+      if (isv->size()==0) {
+        newSlice[i] = std::pair<int,int>(1,0);
+      } else {
+        if (isv->size()>1)
+          throw ResultUndefinedError(env, call->loc(), "array slice must be contiguous");
+        int sl_min = isv->min().isFinite() ? static_cast<int>(isv->min().toInt()) : al->min(i);
+        int sl_max = isv->max().isFinite() ? static_cast<int>(isv->max().toInt()) : al->max(i);
+        if (sl_min < al->min(i) || sl_max > al->max(i))
+          throw ResultUndefinedError(env, call->loc(), "array slice out of bounds");
+        newSlice[i] = std::pair<int,int>(sl_min, sl_max);
+      }
     }
     
     std::vector<std::pair<int,int>> newDims(call->n_args()-2);
     for (unsigned int i=0; i<newDims.size(); i++) {
       IntSetVal* isv = eval_intset(env, call->arg(2+i));
-      newDims[i] = std::pair<int,int>(static_cast<int>(isv->min().toInt()), static_cast<int>(isv->max().toInt()));
+      if (isv->size()==0) {
+        newDims[i] = std::pair<int,int>(1,0);
+      } else {
+        newDims[i] = std::pair<int,int>(static_cast<int>(isv->min().toInt()), static_cast<int>(isv->max().toInt()));
+      }
     }
     ArrayLit* ret = new ArrayLit(al->loc(), al, newDims, newSlice);
     ret->type(call->type());
@@ -2732,6 +2762,11 @@ namespace MiniZinc {
       t[0] = Type::vartop(-1);
       rb(env, m, ASTString("show"), t, b_show);
       rb(env, m, ASTString("showJSON"), t, b_show_json);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parstring();
+      rb(env, m, ASTString("showDznId"), t, b_showDznId);
     }
     {
       std::vector<Type> t(3);

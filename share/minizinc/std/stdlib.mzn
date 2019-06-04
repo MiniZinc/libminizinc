@@ -91,6 +91,10 @@ annotation constraint_name(string: s);
 /** @group annotations.general Used internally by the compiler */
 annotation mzn_rhs_from_assignment;
 
+/** @group annotations.general Marks a constraint as a recorded domain changing constraint (when mzn2fzn
+  called with -g flag */
+annotation domain_change_constraint;
+
 /***
  @groupdef annotations.prop Propagation strength annotations
 */
@@ -538,6 +542,14 @@ predicate var_dom(array[$T] of var opt int: x, set of int: d) =
 predicate int_opt_eq(var opt int: x, var opt int: y) =
   deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
 
+/** @group optiontypes.bool Search annotation for optional Boolean variables */
+annotation bool_search(array[int] of var opt bool: x, ann: a1, ann: a2, ann: a3) =
+  bool_search([if occurs(x[i]) then deopt(x[i]) else false endif | i in index_set(x)],a1,a2,a3);
+
+/** @group optiontypes.bool Search annotation for optional Boolean variables */
+annotation bool_search(array[int] of var opt bool: x, ann: a1, ann: a2) =
+  bool_search([if occurs(x[i]) then deopt(x[i]) else false endif | i in index_set(x)],a1,a2);
+
 /** @group optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
   occur and the value of \a x is greater than the value of \a y. */
 function var bool: '>'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
@@ -642,13 +654,61 @@ predicate int_ne(var opt int : x, var opt int : y) =
      (absent(x) != absent(y))
   \/ (occurs(x) /\ occurs(y) /\ (deopt(x)!=deopt(y))::maybe_partial);
 
+/** @group optiontypes.int Optional addition. Return sum of \a x and \a y, with absent replaced by 0. */
+function var int: '+'(var opt int: x, var opt int: y) ::promise_total =
+  if occurs(x) then deopt(x) else 0 endif + if occurs(y) then deopt(y) else 0 endif;
+
+/** @group optiontypes.int Optional addition. Return sum of \a x and \a y, with absent replaced by 0. */
+function int: '+'(opt int: x, opt int: y) ::promise_total =
+  if occurs(x) then deopt(x) else 0 endif + if occurs(y) then deopt(y) else 0 endif;
+
+/** @group optiontypes.int Optional subtraction. Return difference of \a x and \a y, with absent replaced by 0. */
+function var int: '-'(var opt int: x, var opt int: y) ::promise_total =
+  if occurs(x) then deopt(x) else 0 endif - if occurs(y) then deopt(y) else 0 endif;
+
+/** @group optiontypes.int Optional subtraction. Return difference of \a x and \a y, with absent replaced by 0. */
+function int: '-'(opt int: x, opt int: y) ::promise_total =
+  if occurs(x) then deopt(x) else 0 endif - if occurs(y) then deopt(y) else 0 endif;
+
+/** @group optiontypes.int Optional multiplication. Return product of \a x and \a y, with absent replaced by 1. */
+function var int: '*'(var opt int: x, var opt int: y) ::promise_total =
+  if occurs(x) then deopt(x) else 1 endif * if occurs(y) then deopt(y) else 1 endif;
+
+/** @group optiontypes.int Optional multiplication. Return product of \a x and \a y, with absent replaced by 1. */
+function int: '*'(opt int: x, opt int: y) ::promise_total =
+  if occurs(x) then deopt(x) else 1 endif * if occurs(y) then deopt(y) else 1 endif;
+
+/** @group optiontypes.int Optional division. Return \a x div \a y, with absent replaced by 1. */
+function var int: 'div'(var opt int: x, var opt int: y) ::promise_total =
+  if occurs(x) then deopt(x) else 1 endif div if occurs(y) then deopt(y) else 1 endif;
+
+/** @group optiontypes.int Optional division. Return \a x div \a y, with absent replaced by 1. */
+function int: 'div'(opt int: x, opt int: y) ::promise_total =
+  if occurs(x) then deopt(x) else 1 endif div if occurs(y) then deopt(y) else 1 endif;
+
+/** @group optiontypes.int Optional modulo. Return \a x mod \a y, with absent replaced by 1. */
+function var int: 'mod'(var opt int: x, var opt int: y) ::promise_total =
+  if occurs(x) then deopt(x) else 1 endif mod if occurs(y) then deopt(y) else 1 endif;
+
+/** @group optiontypes.int Optional modulo. Return \a x mod \a y, with absent replaced by 1. */
+function int: 'mod'(opt int: x, opt int: y) ::promise_total =
+  if occurs(x) then deopt(x) else 1 endif mod if occurs(y) then deopt(y) else 1 endif;
+
 /** @group optiontypes.int Return sum of non-absent elements of \a x. */
 function var int: sum(array[int] of var opt int: x) =
   sum (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 0 endif);
 
+/** @group optiontypes.int Return sum of non-absent elements of \a x. */
+function int: sum(array[int] of opt int: x) =
+  sum (i in index_set(x)) (if occurs(x[i]) then deopt(x[i]) else 0 endif);
+
 /** @group optiontypes.int Return product of non-absent elements of \a x. */
 function var int: product(array[int] of var opt int: x) =
-  sum (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 1 endif);
+  product (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 1 endif);
+
+/** @group optiontypes.int Return product of non-absent elements of \a x. */
+function int: product(array[int] of opt int: x) =
+  product (i in index_set(x)) (if occurs(x[i]) then deopt(x[i]) else 1 endif);
 
 /** @group optiontypes.int Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt int: element(var opt int: idx, array[int] of var int: x) =
@@ -684,6 +744,14 @@ function var opt int: element(var opt int: idx, array[int] of var opt int: x) =
 function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt int: x) =
   if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
 
+/** @group optiontypes.int Search annotation for optional integer variables */
+annotation int_search(array[int] of var opt int: x, ann: a1, ann: a2, ann: a3) =
+  int_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],a1,a2,a3);
+
+/** @group optiontypes.int Search annotation for optional integer variables */
+annotation int_search(array[int] of var opt int: x, ann: a1, ann: a2) =
+  int_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],a1,a2);
+
 /* Internal function used to optimize over option type objective */
 
 function var int: objective_deopt_(var opt int: x, bool: direction) =
@@ -708,5 +776,13 @@ test mzn_check_only_range_domains() =
 opt int: mzn_min_version_required;
 
 constraint assert(absent(mzn_min_version_required) \/ deopt(mzn_min_version_required) <= mzn_compiler_version(), "This model requires MiniZinc version "++mzn_version_to_string(deopt(mzn_min_version_required))++" but you are running version "++mzn_version_to_string(mzn_compiler_version()));
+
+predicate set_in(array[$T] of var int: X, set of int: s) = forall(x in array1d(X)) (x in s);
+predicate int_eq(array[$T] of var int: X, int: s) = forall(x in array1d(X)) (x = s);
+predicate float_eq(array[$T] of var int: X, float: s) = forall(x in array1d(X)) (x = s);
+predicate int_le(array[$T] of var int: X, int: s) = forall(x in array1d(X)) (x <= s);
+predicate int_le(int:s, array[$T] of var int: X) = forall(x in array1d(X)) (x >= s);
+predicate float_le(array[$T] of var float: X, float: s) = forall(x in array1d(X)) (x <= s);
+predicate float_le(float:s, array[$T] of var float: X) = forall(x in array1d(X)) (x >= s);
 
 include "builtins.mzn";

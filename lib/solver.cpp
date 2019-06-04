@@ -40,53 +40,59 @@ using namespace MiniZinc;
 
 #ifdef HAS_GUROBI
 #include <minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh>
-namespace {
-  Gurobi_SolverFactoryInitialiser _gurobi_init;
-}
 #endif
 #ifdef HAS_CPLEX
 #include <minizinc/solvers/MIP/MIP_cplex_solverfactory.hh>
-namespace {
-  Cplex_SolverFactoryInitialiser _cplex_init;
-}
 #endif
 #ifdef HAS_OSICBC
 #include <minizinc/solvers/MIP/MIP_osicbc_solverfactory.hh>
-namespace {
-  OSICBC_SolverFactoryInitialiser _osicbc_init;
-}
 #endif
 #ifdef HAS_XPRESS
 #include <minizinc/solvers/MIP/MIP_xpress_solverfactory.hh>
-namespace {
-  Xpress_SolverFactoryInitialiser _xpress_init;
-}
 #endif
 #ifdef HAS_GECODE
 #include <minizinc/solvers/gecode_solverfactory.hh>
-namespace {
-  Gecode_SolverFactoryInitialiser _gecode_init;
-}
+#endif
+#ifdef HAS_GEAS
+#include <minizinc/solvers/geas_solverfactory.hh>
 #endif
 #ifdef HAS_SCIP
 #include <minizinc/solvers/MIP/MIP_scip_solverfactory.hh>
-namespace {
-  SCIP_SolverFactoryInitialiser _scip_init;
-}
 #endif
-
 #include <minizinc/solvers/fzn_solverfactory.hh>
 #include <minizinc/solvers/fzn_solverinstance.hh>
 #include <minizinc/solvers/mzn_solverfactory.hh>
 #include <minizinc/solvers/mzn_solverinstance.hh>
 #include <minizinc/solvers/nl/nl_solverfactory.hh>
 #include <minizinc/solvers/nl/nl_solverinstance.hh>
-namespace {
-  FZN_SolverFactoryInitialiser _fzn_init;
-  MZN_SolverFactoryInitialiser _mzn_init;
-  NL_SolverFactoryInitialiser _nl_init;
-}
 
+SolverInitialiser::SolverInitialiser(void) {
+  #ifdef HAS_GUROBI
+  Gurobi_SolverFactoryInitialiser _gurobi_init;
+  #endif
+  #ifdef HAS_CPLEX
+  static Cplex_SolverFactoryInitialiser _cplex_init;
+  #endif
+  #ifdef HAS_OSICBC
+  static OSICBC_SolverFactoryInitialiser _osicbc_init;
+  #endif
+  #ifdef HAS_XPRESS
+  static Xpress_SolverFactoryInitialiser _xpress_init;
+  #endif
+  #ifdef HAS_GECODE
+  static Gecode_SolverFactoryInitialiser _gecode_init;
+  #endif
+  #ifdef HAS_GEAS
+  static Geas_SolverFactoryInitialiser _geas_init;
+  #endif
+  #ifdef HAS_SCIP
+  static SCIP_SolverFactoryInitialiser _scip_init;
+  #endif
+  static FZN_SolverFactoryInitialiser _fzn_init;
+  static MZN_SolverFactoryInitialiser _mzn_init;
+  static NL_SolverFactoryInitialiser _nl_init;
+}
+  
 MZNFZNSolverFlag MZNFZNSolverFlag::std(const std::string& n0) {
   const std::string argFlags("-I -n -p -r");
   if (argFlags.find(n0) != std::string::npos)
@@ -291,6 +297,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     is_mzn2fzn=true;
   } else if (executable_name=="solns2out") {
     s2out._opt.flag_standaloneSolns2Out=true;
+    flag_is_solns2out=true;
   }
   bool compileSolutionChecker = false;
   int i=1, j=1;
@@ -375,6 +382,9 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       if (argv[i]=="--compile-solution-checker") {
         compileSolutionChecker = true;
       }
+      if (argv[i]=="--ozn-file") {
+        flag_is_solns2out = true;
+      }
       argv[j++] = argv[i];
     }
   }
@@ -398,7 +408,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
 
   bool isMznMzn = false;
   
-  if (!ifSolns2out()) {
+  if (!flag_is_solns2out) {
     try {
       const SolverConfig& sc = solver_configs.config(solver);
       string solverId = sc.executable().empty() ? sc.id() : (sc.supportsMzn() ?  string("org.minizinc.mzn-mzn") : string("org.minizinc.mzn-fzn"));
@@ -585,11 +595,8 @@ void MznSolver::flatten(const std::string& modelString, const std::string& model
 {
   flt.set_flag_verbose(flag_compiler_verbose);
   flt.set_flag_statistics(flag_compiler_statistics);
-  Timer tm01;
+  flt.set_flag_timelimit(flag_overall_time_limit);
   flt.flatten(modelString, modelName);
-  /// The following message tells mzn-test.py that flattening succeeded.
-  if (flag_compiler_verbose)
-    log << "  Flattening done, " << tm01.stoptime() << std::endl;
 }
 
 SolverInstance::Status MznSolver::solve()
@@ -636,7 +643,7 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, con
     case OPTION_OK:
       break;
   }
-  if (!(!ifMzn2Fzn() && sf!=NULL && sf->getId() == "org.minizinc.mzn-mzn") && !flt.hasInputFiles() && model.empty()) {
+  if (flag_is_solns2out && (ifMzn2Fzn() || sf==NULL || sf->getId() != "org.minizinc.mzn-mzn") && !flt.hasInputFiles() && model.empty()) {
     // We are in solns2out mode
     while ( std::cin.good() ) {
       string line;
@@ -660,7 +667,12 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, con
     return SolverInstance::NONE;
   }
   
-  flatten(model,modelName);
+  try {
+    flatten(model,modelName);
+  } catch (Timeout&) {
+    s2out.evalStatus( SolverInstance::UNKNOWN );
+    return SolverInstance::UNKNOWN;
+  }
 
   if (!ifMzn2Fzn() && flag_overall_time_limit != 0) {
     steady_clock::time_point afterFlattening = steady_clock::now();

@@ -21,7 +21,7 @@ import utils, json_config, json_log, mzn_exec, cmp_result_logs
 from json_config import s_CommentKey, s_AddKey
 
 s_ProgramDescr = 'MiniZinc testing automation. (c) 2018 Monash University, gleb.belov@monash.edu'
-s_ProgramDescrLong = ( "Allows checking of MiniZinc solutions by configurable checker profiles. The solutions can be input from previous logs or produced by a chosen solver profile, for 1 or several instances, with result comparison and (TODO) ranking. New solutions' summary logs, detailed stdout/err outputs, and statistics are saved in subfolder mzn-test/LOGS, /OUTPUTS, and /STATS, resp.")
+s_ProgramDescrLong = ( "Allows checking of MiniZinc solutions by configurable checker profiles. The solutions can be input from previous logs or produced by a chosen solver profile, for 1 or several instances, with result comparison and some ranking. New solutions' summary logs, detailed stdout/err outputs, and statistics are saved in subfolder mzn-test/LOGS, /OUTPUTS, and /STATS, resp.")
 
 ###########################   GENERAL CONFIG. Could be in the JSON config actually    #########################
 sDirResults = "mzn-test"
@@ -40,7 +40,7 @@ sFlatOptChecker = "--allow-multiple-assignments"
 s_UsageExamples = ( 
     "\nUSAGE EXAMPLES:"
     "\n(1)  \"mzn-test.py model.mzn data.dzn [--checkDZN stdout.txt [--checkStderr stderr.txt]] [--chkPrf MINIZINC-CHK --chkPrf FZN-GECODE-CHK] [--tCheck 15] [--addSolverOption \"--fzn-flags '-D fPureCircuit=true'\"]\"                  ::: check the instance's solutions, optionally reading them from a DZN-formatted file (otherwise solving first), optionally overriding default checker list etc."
-    "\n(2)  \"mzn-test.py --slvPrf MZN-CPLEX -t 300 -l instList1.txt -l instList2.txt --name CPLEXTest_003 --result newLog00.json prevLog1.json prevLog2.json --failed failLog.json\""
+    "\n(2)  \"mzn-test.py --solver CPLEX -t 300 -l instList1.txt -l instList2.txt --name CPLEXTest_003 --result newLog00.json prevLog1.json prevLog2.json --failed failLog.json\""
     "             ::: solve instances using the specified solver profile and wall time limit 300 seconds. The instances are taken from the list files. The test is aliased CPLEXTest_003. Results are saved to newLog00.json and compared/ranked to those in prevLog's. (Probably) incorrect solutions are saved to failLog.json."
     "\n(3)  \"mzn-test.py [-l instList1.txt] -c prevLog1.json -c prevLog2.json [--runAndCmp]\"                  ::: compare existing logs, optionally limited to the given instances, optionally running new tests. USE SINGLE QUOTES ONLY INSIDE ARGUMENTS PASSED TO THE BACKENDS when running backends through shell."
   )
@@ -62,9 +62,9 @@ class MZT_Param:
                             help='summarize and compare results to existing <logfile>. Only compares the logs and does not run tests, unless --runAndCmp. The flags -c can be omitted if -l is used')
         parser.add_argument('--runAndCmp', '--runAndCompare', '--run', action='store_true',
                             help='even if other logs are provided by -c, do run the tests and compare')
-        parser.add_argument('--slvPrf', '--solverPrf', '--solverProfile', metavar='<prf_name>',
+        parser.add_argument('--solver', '--solverPrf', '--solverProfile', metavar='<prf_name>',
                             help='solver profile from those defined in config section \"SOLVER_PROFILES\"')
-        parser.add_argument('--solver', '--solverCall', metavar='"<exe+flags or shell command(s) if --shellSolve 1>"',
+        parser.add_argument('--call', '--solverCall', metavar='"<exe+flags or shell command(s) if --shellSolve 1>"',
                             help='solver backend call, should be quoted. Insert %%s where instance files need to be. Flatten with \''
                              + sDZNOutputAgrs + '\' to enable solution checking, unless the model has a suitable output definition.'
                              " Pass '--output-time' to the output filter (e.g., solns2out) to enable ranking by time")
@@ -225,30 +225,26 @@ class MZT_Param:
                   " Then you can do shell tricks but Ctrl+C may not kill all subprocesses etc."],
                 "n_TimeoutRealHard": [300, "/// Real-time timeout per instance, seconds,"
                   " for all solution steps together. Use mzn/backend options for CPU time limit."],
-                "n_VMEMLIMIT_SoftHard": [16000000, 16000000, "/// 2 limits, soft/hard, in KB. Platform-dependent in Python 3.6. Default 16GB"],
+                "n_VMEMLIMIT_SoftHard": [8000000, 8000000, "/// 2 limits, soft/hard, in KB. Platform-dependent in Python 3.6. Default 8 GB"],
               },
               "Stderr_Keylines": {
                 s_CommentKey: [ "A complete line in stderr will be interpreted accordingly.",
                   " Format: <outvar> : { <line>: <value>, ... }"
                   " You can add own things here (use '"+s_AddKey+"' before new var name)",
-                  " which will be transferred into results" ],
-                "Problem_Sense": {
-                  "This is a maximization problem.": 1,
-                  "This is a minimization problem.": -1,
-                  "This is a satisfiability problem.": 0,
-                }
+                  " which will be transferred into results" ]
               },
               "Stderr_Keyvalues": {
                 s_CommentKey: [ "Numerical values to be extracted from a line in stderr.",
                   " { <outvar>: [ <regex search pattern>, <regex to replace by spaces>, <value's pos in the line>] }."
                 ], 
-                "Time_Flt": [ "Flattening done,", "[s]", 3, "/// E.g., 'Flattening done, 3s' produces 3."
+                ### The %%%mzn-stat values appear in stdout (as of May 2019) but leave them here just in case
+                "Time_Flt": [ "%%%mzn-stat: flatTime", "[:=]", 3, "/// E.g., 'Flattening done, 3s' produces 3."
                                 " !!! This is interpreted as successful flattening by the checker" ],
-                "ObjVal_Solver":   [ "% obj, bound,", "[,:/]", 9,
+                "ObjVal_Solver":   [ "%%%mzn-stat objective=", "[,:/=]", 3,        ## Need = to avoid mixup witht the bound
                                         "/// The objval as reported by solver."],
-                "DualBnd_Solver":   [ "% obj, bound,", "[,:/]", 10 ],
-                "CPUTime_Solver":   [ "% obj, bound,", "[,:/]", 12 ],
-                "NNodes_Solver":   [ "% obj, bound,", "[,:/]", 13 ],
+                "DualBnd_Solver":   [ "%%%mzn-stat objectiveBound", "[,:/=]", 3 ],
+                "CPUTime_Solver":   [ "%%%mzn-stat solveTime", "[,:/=]", 3 ],
+                "NNodes_Solver":   [ "%%%mzn-stat nodes", "[,:/=]", 3 ],
               },
               "Stdout_Keylines": {
                 s_CommentKey: [ "Similar to Stderr_Keylines"],
@@ -260,10 +256,22 @@ class MZT_Param:
                   "=====UNKNOWN=====": 0,
                   "=====UNSATorUNBOUNDED=====": -3,
                   "=====ERROR=====": -4
+                },
+                "Problem_Sense": {
+                  "%%%mzn-stat: method=\"maximize\"": 1,
+                  "%%%mzn-stat: method=\"minimize\"": -1,
+                  "%%%mzn-stat: method=\"satisfy\"": 0,
                 }
               },
               "Stdout_Keyvalues": {
                 s_CommentKey: ["Similar to Stderr_Keyvalues." ],
+                "Time_Flt": [ "%%%mzn-stat: flatTime", "[:=]", 3, "/// E.g., 'Flattening done, 3s' produces 3."
+                                " !!! This is interpreted as successful flattening by the checker" ],
+                "ObjVal_Solver":   [ "%%%mzn-stat objective=", "[,:/=]", 3,        ## Need = to avoid mixup witht the bound
+                                        "/// The objval as reported by solver."],
+                "DualBnd_Solver":   [ "%%%mzn-stat objectiveBound", "[,:/=]", 3 ],
+                "CPUTime_Solver":   [ "%%%mzn-stat solveTime", "[,:/=]", 3 ],
+                "NNodes_Solver":   [ "%%%mzn-stat nodes", "[,:/=]", 3 ],
                 "ObjVal_MZN":   [ "_objective", "[():=;%]", 2,
                                     "/// The objective value as evaluated by MZN." ],
                 "RealTime_Solns2Out": [ "% time elapsed:", " ", 4 ],
@@ -466,7 +474,7 @@ class MZT_Param:
             "BE_CHUFFED": {
               s_CommentKey: [ "------------------- Specializations for Chuffed FlatZinc interpreter" ],
               "EXE": {
-                "s_SolverCall" : ["minizinc -v -s --solver org.minizinc.mzn-fzn -G chuffed --fzn-cmd fzn-chuffed --fzn-flags -f --output-time "
+                "s_SolverCall" : ["minizinc -v -s --solver chuffed -f --output-time "
                                     + sDZNOutputAgrs + " %s"], # _objective fails for checking
               }  ##  --fzn-flags --time-out --fzn-flags 300
             }
@@ -508,8 +516,8 @@ class MZT_Param:
                 print( "Saving final config to", self.args.saveCfg )
                 json.dump( self.cfg, wf, sort_keys=True, indent=json_config.n_JSON_Indent )
         ### COMPILE THE SOLVER BACKEND
-        if None!=self.args.slvPrf:
-            self.cfg["COMMON_OPTIONS"]["Solvers"][0] = self.args.slvPrf
+        if None!=self.args.solver:
+            self.cfg["COMMON_OPTIONS"]["Solvers"][0] = self.args.solver
         slvPrfName = self.cfg["COMMON_OPTIONS"]["Solvers"][0]
         slvPrf = self.cfg["SOLVER_PROFILES"][slvPrfName]
         assert len(slvPrf)>0, "Solver profile '%s' should use at least a basic backend" % slvPrfName
@@ -518,9 +526,9 @@ class MZT_Param:
             self.slvBE = json_config.mergeJSON( self.slvBE, self.cfg["BACKEND_DEFS"][slvPrf[i]] )
         if None!=self.args.tSolve:
             self.slvBE["EXE"]["n_TimeoutRealHard"][0] = self.args.tSolve
-        assert None==self.args.solver or None==self.args.slvPrf, "ERROR: both solver call and a solver profile specified."
-        if None!=self.args.solver:    ## After the compilation
-            self.slvBE["EXE"]["s_SolverCall"][0] = self.args.solver
+        assert None==self.args.solver or None==self.args.call, "ERROR: both solver call and a solver profile specified."
+        if None!=self.args.call:    ## After the compilation
+            self.slvBE["EXE"]["s_SolverCall"][0] = self.args.call
         if None!=self.args.shellSolve:
             self.slvBE["EXE"]["b_ThruShell"][0] = self.args.shellSolve!=0
         print ( "\nSolver/checker configurations:\n     SLV_CFG: ", json.dumps( self.slvBE["EXE"] ) )
@@ -779,9 +787,6 @@ class MznTest:
         resSlv = OrderedDict()
         bChkDZN = True if None!=solList and None!=self.params.args.checkDZN else False
         if bChkDZN:
-#        print( "Running '", slvBE["EXE"]["s_SolverCall"][0] \
-#          + ' ' + slvBE["EXE"]["s_ExtraCmdline"][0], "'... ", sep='', end='', flush=True )
-            resSlv["Sol_Status"] = [-50, "   ????? NO STATUS LINE PARSED."]
             print( "_PARSING '", self.params.args.checkDZN, sep='', end="'... " )
             with open( self.params.args.checkDZN, 'r' ) as ro:
                 mzn_exec.parseStdout( ro, resSlv, slvBE["Stdout_Keylines"], slvBE["Stdout_Keyvalues"], solList )
@@ -843,10 +848,6 @@ class MznTest:
                 print( "STDOUT/ERR: ", len(completed.stdout), '/',
                       len(completed.stderr), " bytes", sep='', end=', ' )
                 mzn_exec.parseStderr( io.StringIO( completed.stderr ), resSlv, slvBE["Stderr_Keylines"], slvBE["Stderr_Keyvalues"] )
-                if "Time_Flt" in resSlv and utils.try_float( resSlv.get( "Time_Flt" ) ) is not None:
-                    resSlv["Sol_Status"] = [-50, "   ????? NO STATUS LINE PARSED."]
-                else:
-                    resSlv["Sol_Status"] = [-51, "   !!!!! NOFZN"]     ## This can mean a check failed.
                 mzn_exec.parseStdout( io.StringIO( completed.stdout ), resSlv, slvBE["Stdout_Keylines"], slvBE["Stdout_Keyvalues"], solList )
                 ## Adding the outputs to the log
                 ## resSlv["StdErr"] = completed.stderr
@@ -866,10 +867,6 @@ class MznTest:
                 )
                 with open( sFlnStderr, "r" ) as rf:
                     mzn_exec.parseStderr( rf, resSlv, slvBE["Stderr_Keylines"], slvBE["Stderr_Keyvalues"] )
-                if "Time_Flt" in resSlv:
-                    resSlv["Sol_Status"] = [-50, "   ????? NO STATUS LINE PARSED."]
-                else:
-                    resSlv["Sol_Status"] = [-51, "   !!!!! NOFZN"]     ## This can mean a check failed.
                 with open( sFlnStdout, "r" ) as rf:
                     mzn_exec.parseStdout( rf, resSlv, slvBE["Stdout_Keylines"], slvBE["Stdout_Keyvalues"], solList )
 
@@ -878,6 +875,11 @@ class MznTest:
             resSlv["TimeReal_All"] = tmAll
             resSlv["TimeReal_LastStatus"] = 0
             resSlv["Hostname"] = platform.uname()[1]
+        ### For all cases, some postprocessing #############################
+        if "Sol_Status" not in resSlv:
+            resSlv["Sol_Status"] = [-50, "   !!!!!  STATUS TOTALLY UNKNOWN - NO STATUS LINE PARSED."]
+        if "Time_Flt" not in resSlv or utils.try_float( resSlv.get( "Time_Flt" ) ) is None:
+            resSlv["NOFZN"] = ["      !!!!! No flattening finish time registered or successfully parsed"]
         dTmLast = utils.try_float( resSlv.get( "RealTime_Solns2Out" ) )
         if None!=dTmLast:
             resSlv["TimeReal_LastStatus"] = dTmLast / 1000.0

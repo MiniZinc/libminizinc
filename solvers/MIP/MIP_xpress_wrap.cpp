@@ -61,6 +61,10 @@ string MIP_xpress_wrapper::getName() {
   return "Xpress";
 }
 
+vector<string> MIP_xpress_wrapper::getTags() {
+  return {"mip","float","api"};
+}
+
 vector<string> MIP_xpress_wrapper::getStdFlags() {
   return {"-a", "-n"};
 }
@@ -282,6 +286,10 @@ void MIP_xpress_wrapper::solve() {
 
   setOutputVariables(&output, &variables);
   setOutputAttributes(&output,  problem.getXPRSprob());
+
+  if ( !options->printAllSolutions && cbui.solcbfn) {
+    cbui.solcbfn(output, cbui.ppp);
+  }
 }
 
 void MIP_xpress_wrapper::setUserSolutionCallback() {

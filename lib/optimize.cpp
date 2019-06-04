@@ -17,6 +17,7 @@
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/eval_par.hh>
 #include <minizinc/optimize_constraints.hh>
+#include <minizinc/chain_compressor.hh>
 
 #include <vector>
 #include <deque>
@@ -96,6 +97,23 @@ namespace MiniZinc {
   int VarOccurrences::occurrences(VarDecl* v) {
     IdMap<Items>::iterator vi = _m.find(v->id()->decl()->id());
     return (vi==_m.end() ? 0 : static_cast<int>(vi->second.size()));
+  }
+
+  int VarOccurrences::usages(VarDecl* v) {
+    auto vi = _m.find(v->id()->decl()->id());
+    if (vi == _m.end()) {
+      return 0;
+    }
+    int count = 0;
+    for (Item* i : vi->second) {
+      auto vd = i->dyn_cast<VarDeclI>();
+      if (vd && vd->e() && vd->e() && vd->e()->e() && (vd->e()->e()->isa<ArrayLit>() || vd->e()->e()->isa<SetLit>())) {
+        count += usages(vd->e());
+      } else {
+        count++;
+      }
+    }
+    return count;
   }
   
   void CollectOccurrencesI::vVarDeclI(VarDeclI* v) {
@@ -273,7 +291,7 @@ namespace MiniZinc {
     
   }
   
-  void optimize(Env& env) {
+  void optimize(Env& env, bool chain_compression) {
     if (env.envi().failed())
       return;
     try {
@@ -338,6 +356,29 @@ namespace MiniZinc {
                 topDown(cd,c);
                 ci->e(constants().lit_true);
                 envi.flat_removeItem(i);
+              } else if ( c->id() == constants().ids.int_.lin_eq &&
+                         Expression::equal(c->arg(2), IntLit::a(0))) {
+                ArrayLit* al_c = follow_id(c->arg(0))->cast<ArrayLit>();
+                if (al_c->size()==2 && (*al_c)[0]->cast<IntLit>()->v() == -(*al_c)[1]->cast<IntLit>()->v()) {
+                  ArrayLit* al_x = follow_id(c->arg(1))->cast<ArrayLit>();
+                  if ((*al_x)[0]->isa<Id>() && (*al_x)[1]->isa<Id>() &&
+                      ((*al_x)[0]->cast<Id>()->decl()->e()==NULL || (*al_x)[1]->cast<Id>()->decl()->e()==NULL)) {
+                    // Equality constraint between two identifiers: unify
+                    
+                    unify(envi, deletedVarDecls, (*al_x)[0]->cast<Id>(), (*al_x)[1]->cast<Id>());
+                    {
+                      VarDecl* vd = (*al_x)[0]->cast<Id>()->decl();
+                      int v0idx = envi.vo.find(vd);
+                      pushVarDecl(envi, m[v0idx]->cast<VarDeclI>(), v0idx, vardeclQueue);
+                    }
+                    
+                    pushDependentConstraints(envi, (*al_x)[0]->cast<Id>(), constraintQueue);
+                    CollectDecls cd(envi.vo,deletedVarDecls,ci);
+                    topDown(cd,c);
+                    ci->e(constants().lit_true);
+                    envi.flat_removeItem(i);
+                  }
+                }
               } else if (c->id()==constants().ids.forall) {
 
                 // Remove forall constraints, assign variables inside the forall to true
@@ -711,8 +752,20 @@ namespace MiniZinc {
         topDown(cd,ci->e());
         envi.flat_removeItem(toRemoveConstraints[i]);
       }
+
+      // Phase 4: Chain Breaking
+      if (chain_compression) {
+        ImpCompressor imp(envi, m, deletedVarDecls, boolConstraints);
+        LECompressor le(envi, m, deletedVarDecls);
+        for (auto &item : m) {
+          imp.trackItem(item);
+          le.trackItem(item);
+        }
+        imp.compress();
+        le.compress();
+      }
       
-      // Phase 4: handle boolean constraints again (todo: check if we can
+      // Phase 5: handle boolean constraints again (todo: check if we can
       // refactor this into a separate function)
       //
       // Difference to phase 2: constraint argument arrays are actually shortened here if possible
@@ -805,7 +858,7 @@ namespace MiniZinc {
 
       }
       
-      // Phase 5: remove deleted variables if possible
+      // Phase 6: remove deleted variables if possible
       while (!deletedVarDecls.empty()) {
         VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
         if (envi.vo.occurrences(cur) == 0) {

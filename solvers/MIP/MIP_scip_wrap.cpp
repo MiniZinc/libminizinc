@@ -29,6 +29,8 @@ using namespace std;
 
 #include "scip/scipshell.h"
 
+std::string MIP_scip_wrapper::getMznLib() { return "-Glinear_scip"; }
+
 string MIP_scip_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
   oss << "MIP wrapper for SCIP "
@@ -56,6 +58,10 @@ string MIP_scip_wrapper::getName() {
   return "SCIP";
 }
 
+vector<string> MIP_scip_wrapper::getTags() {
+  return {"mip","float","api"};
+}
+
 vector<string> MIP_scip_wrapper::getStdFlags() {
   return {"-a", "-p"};
 }
@@ -79,7 +85,7 @@ void MIP_scip_wrapper::Options::printHelp(ostream& os) {
 
   << "--absGap <n>        absolute gap |primal-dual| to stop" << std::endl
   << "--relGap <n>        relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
-  << "--intTol <n>        integrality tolerance for a variable. Default 1e-6" << std::endl
+  << "--intTol <n>        integrality tolerance for a variable. Default 1e-8" << std::endl
 //   << "--objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
   << std::endl;
@@ -228,6 +234,108 @@ SCIP_RETCODE MIP_scip_wrapper::addRow_SCIP
 //   wrap_assert( !retcode,  "Failed to add constraint." );
 }
 
+void MIP_scip_wrapper::setVarBounds(int iVar, double lb, double ub)
+{
+  wrap_assert( lb<=ub ? SCIP_OKAY : SCIP_ERROR,
+               "scip interface: setVarBounds: lb>ub" );
+  setVarLB(iVar, lb);
+  setVarUB(iVar, ub);
+}
+
+void MIP_scip_wrapper::setVarLB(int iVar, double lb)
+{
+  auto res = SCIPchgVarLbGlobal(scip,scipVars[iVar],lb);
+  wrap_assert( res,  "scip interface: failed to set var lb." );
+}
+
+void MIP_scip_wrapper::setVarUB(int iVar, double ub)
+{
+  auto res = SCIPchgVarUbGlobal(scip,scipVars[iVar],ub);
+  wrap_assert( res,  "scip interface: failed to set var ub." );
+}
+
+
+
+void MIP_scip_wrapper::addIndicatorConstraint(
+    int iBVar, int bVal, int nnz, int* rmatind, double* rmatval,
+    MIP_wrapper::LinConType sense, double rhs, string rowName) {
+  MZN_ASSERT_HARD_MSG( 0<=bVal && 1>=bVal, "SCIP: addIndicatorConstraint: bVal not 0/1" );
+  //// Make sure in order to notice the indices of lazy constr: also here?   TODO
+//  ++ nRows;
+
+  SCIP_CONS* cons;
+  vector<SCIP_VAR*> ab(nnz);
+  SCIP_VAR* indicator_var; // SCIP 6.0.1 requires that the implication is active for indicator_x == 1
+
+  for (int j=0; j<nnz; ++j)
+    ab[j] = scipVars[rmatind[j]];
+
+  indicator_var = scipVars[iBVar];
+  if (0==bVal)
+  {
+    wrap_assert(SCIPgetNegatedVar(scip, indicator_var, &indicator_var));
+  }
+
+  if (LQ==sense || EQ==sense) {
+    wrap_assert( SCIPcreateConsBasicIndicator(scip, &cons, rowName.c_str(), indicator_var, nnz, ab.data(), rmatval, rhs ) );
+    wrap_assert( SCIPaddCons(scip, cons) );
+    wrap_assert( SCIPreleaseCons(scip, &cons) );
+  }
+  if (GQ==sense || EQ==sense) {
+    std::vector<double> rmatvalNEG(nnz);
+    for (int i=nnz; i--;)
+      rmatvalNEG[i] = -rmatval[i];
+    wrap_assert( SCIPcreateConsBasicIndicator(scip, &cons, rowName.c_str(), indicator_var, nnz, ab.data(), rmatvalNEG.data(), -rhs ) );
+    wrap_assert( SCIPaddCons(scip, cons) );
+    wrap_assert( SCIPreleaseCons(scip, &cons) );
+  }
+}
+
+void MIP_scip_wrapper::addBoundsDisj(int n, double *fUB, double *bnd, int *vars,
+                                     int nF, double *fUBF, double *bndF, int *varsF, string rowName) {
+  SCIP_CONS* cons;
+  std::vector<SCIP_VAR*> v(n+nF);
+  std::vector<SCIP_BOUNDTYPE> bt(n+nF);
+  std::vector<SCIP_Real> bs(n+nF);
+
+  for (int j=0; j<n; ++j) {
+    v[j] = scipVars[vars[j]];
+    bt[j] = fUB[j] ? SCIP_BOUNDTYPE_UPPER : SCIP_BOUNDTYPE_LOWER;
+    bs[j] = bnd[j];
+  }
+  for (int j=0; j<nF; ++j) {
+    v[n+j] = scipVars[varsF[j]];
+    bt[n+j] = fUBF[j] ? SCIP_BOUNDTYPE_UPPER : SCIP_BOUNDTYPE_LOWER;
+    bs[n+j] = bndF[j];
+  }
+
+  wrap_assert( SCIPcreateConsBasicBounddisjunction(scip, &cons, rowName.c_str(),
+                                                   v.size(), v.data(), bt.data(), bs.data() ) );
+  wrap_assert( SCIPaddCons(scip, cons) );
+  wrap_assert( SCIPreleaseCons(scip, &cons) );
+
+}
+
+void MIP_scip_wrapper::addCumulative(int nnz, int *rmatind, double *d, double *r, double b, string rowName)
+{
+
+  SCIP_CONS* cons;
+  vector<SCIP_VAR*> ab(nnz);
+  vector<int> nd(nnz), nr(nnz);
+
+  for (int j=0; j<nnz; ++j) {
+    ab[j] = scipVars[rmatind[j]];
+    nd[j] = (int)round(d[j]);
+    nr[j] = (int)round(r[j]);
+  }
+
+  wrap_assert( SCIPcreateConsBasicCumulative( scip, &cons,rowName.c_str(),
+                                              nnz, ab.data(), nd.data(), nr.data(), (int)round(b)) );
+
+  wrap_assert( SCIPaddCons(scip, cons) );
+  wrap_assert( SCIPreleaseCons(scip, &cons) );
+}
+
 
 /// SolutionCallback ------------------------------------------------------------------------
 
@@ -349,7 +457,8 @@ SCIP_RETCODE SCIPincludeEventHdlrBestsol(
    SCIP_CALL( SCIPincludeEventhdlrBasic(scip, &eventhdlr, EVENTHDLR_NAME, EVENTHDLR_DESC, eventExecBestsol, eventhdlrdata) );
    assert(eventhdlr != NULL);
 
-   SCIP_CALL( SCIPsetEventhdlrCopy(scip, eventhdlr, eventCopyBestsol) );
+   /// Not for sub-SCIPs
+   // SCIP_CALL( SCIPsetEventhdlrCopy(scip, eventhdlr, eventCopyBestsol) );
    SCIP_CALL( SCIPsetEventhdlrInit(scip, eventhdlr, eventInitBestsol) );
    SCIP_CALL( SCIPsetEventhdlrExit(scip, eventhdlr, eventExitBestsol) );
    
@@ -447,7 +556,7 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
     }
     
 //     assert(scipVars.size() == colObj.size());
-    int cur_numcols = getNCols();
+    int cur_numcols = scipVars.size();    // No, we create negated indicators: getNCols();
     assert(cur_numcols == colObj.size());
     assert(cur_numcols == scipVars.size());
 
@@ -472,12 +581,16 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
      SCIP_CALL( SCIPwriteParams (scip, options->sReadParams.c_str(), TRUE, FALSE) );
     }
 
+    cbui.pOutput->dWallTime0 = output.dWallTime0 =
+      std::chrono::steady_clock::now();
    output.dCPUTime = clock();
 
    /* Optimize the problem and obtain solution. */
    SCIP_CALL( SCIPsolve (scip) );
 //    wrap_assert( !retcode,  "Failed to optimize MIP." );
 
+   output.dWallTime = std::chrono::duration<double>(
+     std::chrono::steady_clock::now() - output.dWallTime0).count();
    output.dCPUTime = (clock() - output.dCPUTime) / CLOCKS_PER_SEC;
    
    cbuiPtr = 0;                             /// cleanup
@@ -497,7 +610,9 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
       x.resize(cur_numcols);
       output.x = &x[0];
       SCIP_CALL( SCIPgetSolVals(scip, SCIPgetBestSol(scip), cur_numcols, &scipVars[0], (double*)output.x) );
-//       wrap_assert(!retcode, "Failed to get variable values.");
+      if (cbui.solcbfn && (!options->flag_all_solutions || !cbui.printed)) {
+        cbui.solcbfn(output, cbui.ppp);
+      }
    }
    output.nNodes = SCIPgetNNodes (scip);
    output.nOpenNodes = SCIPgetNNodesLeft(scip);  // SCIP_getnodeleftcnt (env, lp);

@@ -9,6 +9,13 @@ function var int: arg_min(array[int] of var int: x)  =
     Returns the index of the minimum value in the array \a x.
     When breaking ties the least index is returned.
 */
+function var int: arg_min(array[int] of var bool: x)  = 
+                  let { constraint length(x) > 0; } in arg_min_total(x);
+
+/** @group globals
+    Returns the index of the minimum value in the array \a x.
+    When breaking ties the least index is returned.
+*/
 function var int: arg_min(array[int] of var float: x)  = 
                   let { constraint length(x) > 0; } in arg_min_total(x);
 
@@ -16,6 +23,11 @@ function var int: arg_min_total(array[int] of var int: x) :: promise_total =
                   if length(x) = 0 then 0 else
                   let { var min(index_set(x)) .. max(index_set(x)): i;
                         constraint minimum_arg_int(x, i); }
+                  in i endif;
+function var int: arg_min_total(array[int] of var bool: x) :: promise_total = 
+                  if length(x) = 0 then 0 else
+                  let { var min(index_set(x)) .. max(index_set(x)): i;
+                        constraint minimum_arg_bool(x, i); }
                   in i endif;
 function var int: arg_min_total(array[int] of var float: x) :: promise_total = 
                   if length(x) = 0 then 0 else
@@ -33,6 +45,17 @@ include "arg_min_int.mzn";
 */
 predicate minimum_arg(array[int] of var int: x, var int: i) =
           minimum_arg_int(x, i);
+
+include "arg_min_bool.mzn";
+
+/** @group globals
+    Constrain \a i to be the index of the minimum value in the array \a x.
+    When breaking ties the least index is returned.
+    
+    Assumption: |\a x| > 0
+*/
+predicate minimum_arg(array[int] of var bool: x, var int: i) =
+          minimum_arg_bool(x, i);
 
 include "arg_min_float.mzn";
 

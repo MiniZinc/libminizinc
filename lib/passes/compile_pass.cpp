@@ -148,7 +148,7 @@ namespace MiniZinc {
     if (compflags.optimize) {
       if (compflags.verbose)
         log << "Optimizing ...";
-      optimize(*new_env);
+      optimize(*new_env, compflags.chain_compression);
       if (compflags.verbose)
         log << " done (" << lasttime.stoptime() << ")" << std::endl;
     }

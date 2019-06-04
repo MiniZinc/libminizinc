@@ -24,6 +24,11 @@
 
 namespace MiniZinc {
   
+  class SolverInitialiser {
+  public:
+    SolverInitialiser(void);
+  };
+  
   class SolverFactory;
   
   /// SolverRegistry is a storage for all SolverFactories in linked modules
@@ -106,6 +111,7 @@ namespace MiniZinc {
   // Class MznSolver coordinates flattening and solving.
   class MznSolver {
   private:
+    SolverInitialiser _solver_init;
     enum OptionStatus { OPTION_OK, OPTION_ERROR, OPTION_FINISH };
     /// Solver configurations
     SolverConfigs solver_configs;
@@ -127,6 +133,7 @@ namespace MiniZinc {
     bool flag_statistics=false;
     bool flag_compiler_verbose=false;
     bool flag_compiler_statistics=false;
+    bool flag_is_solns2out=false;
     int flag_overall_time_limit=0;
 
   public:

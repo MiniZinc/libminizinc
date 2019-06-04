@@ -31,6 +31,8 @@ using namespace std;
 #include <minizinc/solvers/MIP/MIP_solverinstance.hh>
 #include <minizinc/algorithms/min_cut.h>
 
+std::string MIP_wrapper::getMznLib() { return "-Glinear"; }
+
 namespace MiniZinc {
   namespace SCIPConstraints {
     

@@ -5,7 +5,7 @@ if(GUROBI_FOUND)
     solvers/MIP/MIP_solverinstance.cpp solvers/MIP/MIP_gurobi_wrap.cpp solvers/MIP/MIP_gurobi_solverfactory.cpp
     include/minizinc/solvers/MIP/MIP_gurobi_wrap.hh include/minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh include/minizinc/solvers/MIP/MIP_solverinstance.hpp
-    lib/algorithms/min_cut.cpp
+    lib/algorithms/min_cut.cpp lib/utils_savestream.cpp
   )
   target_include_directories(minizinc_gurobi PRIVATE ${GUROBI_INCLUDE_DIRS})
   target_link_libraries(minizinc_gurobi minizinc_compiler ${GUROBI_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})

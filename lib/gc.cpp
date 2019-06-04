@@ -14,6 +14,7 @@
 #include <minizinc/hash.hh>
 #include <minizinc/model.hh>
 #include <minizinc/config.hh>
+#include <minizinc/timer.hh>
 
 #include <vector>
 #include <cstring>
@@ -357,12 +358,33 @@ namespace MiniZinc {
 #endif
   
   void
+  GC::setTimeout(unsigned long long int t) {
+    if (gc()==NULL) {
+      gc() = new GC();
+    }
+    gc()->_timeout = t;
+    gc()->_timeout_timer.reset();
+  }
+  
+  void
   GC::lock(void) {
     if (gc()==NULL) {
       gc() = new GC();
     }
-    if (gc()->_lock_count==0)
+    // If a timeout has been specified, first check counter
+    // before checking timer (counter is much cheaper, introduces
+    // less overhead)
+    if (gc()->_timeout > 0 && gc()->_timeout_counter++ > 500) {
+      gc()->_timeout_counter = 0;
+      if (gc()->_timeout_timer.ms() > gc()->_timeout) {
+        gc()->_timeout = 0;
+        gc()->_timeout_counter = 0;
+        throw Timeout();
+      }
+    }
+    if (gc()->_lock_count==0) {
       gc()->_heap->rungc();
+    }
     gc()->_lock_count++;
   }
   void
@@ -388,7 +410,7 @@ namespace MiniZinc {
     sizeof(Item)+6*sizeof(void*),
   };
 
-  GC::GC(void) : _heap(new Heap()), _lock_count(0) {}
+  GC::GC(void) : _heap(new Heap()), _lock_count(0), _timeout(0), _timeout_counter(0) {}
 
   void
   GC::add(Model* m) {
