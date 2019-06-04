@@ -443,6 +443,8 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
       if (flag_verbose)
         log << " done parsing (" << starttime.stoptime() << ")" << std::endl;
       if (smm) {
+        log << errstream.str();
+        errstream.str("");
         std::ostringstream smm_oss;
         Printer p(smm_oss,0,false);
         p.print(smm);
@@ -521,13 +523,14 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         log << ", '" << sFln << '\'';
       log << " ..." << std::endl;
     }
+    errstream.str("");
     m = parse(*env, filenames, datafiles, modelText, modelName.empty() ? "stdin" : modelName, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
     if (globals_dir != "") {
       includePaths.erase(includePaths.begin());
     }
     if (m==NULL)
       throw Error(errstream.str());
-    
+    log << errstream.str();
     env->model(m);
     if (flag_typecheck) {
       if (flag_verbose)
