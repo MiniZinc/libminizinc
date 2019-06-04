@@ -278,7 +278,7 @@ namespace MiniZinc {
   }
 
   ostream& NLSolns2Out::getLog(void) {
-    return out->getLog();
+    return verbose ? out->getLog() : dummy_ofstream;
   }
 
 }

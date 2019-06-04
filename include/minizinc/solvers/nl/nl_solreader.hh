@@ -101,13 +101,15 @@ namespace MiniZinc {
         private:
         Solns2Out*      out;
         NLFile&         nl_file;
+        std::ofstream   dummy_ofstream;
         
         // Controls for feedRawDataChunk
         bool            in_line;
-
+        bool            verbose;
 
         public:
-        NLSolns2Out(Solns2Out* out, NLFile& nl_file): out(out), nl_file(nl_file), in_line(false){}
+        NLSolns2Out(Solns2Out* out0, NLFile& nl_file0, bool verbose0)
+        : out(out0), nl_file(nl_file0), in_line(false), verbose(verbose0) {}
 
         void  parse_sol(const string& filename);
 

@@ -92,6 +92,10 @@ namespace MiniZinc {
       _opt.do_hexafloat = true;
     } else if ( cop.getOption( "--keepfile") ) {
       _opt.do_keepfile = true;
+    } else if ( cop.getOption( "-s --solver-statistics") ) {
+      // ignore statistics flags for now
+    } else if ( cop.getOption( "-v --verbose-solving") ) {
+      _opt.verbose = true;
     } else {
       for (auto& fznf : _opt.nl_solver_flags) {
         if (fznf.t==MZNFZNSolverFlag::FT_ARG && cop.getOption(fznf.n.c_str(), &buffer)) {
@@ -188,7 +192,7 @@ namespace MiniZinc {
 
 
       // --- --- --- Call the solver
-      NLSolns2Out s2o = NLSolns2Out(out, nl_file);
+      NLSolns2Out s2o = NLSolns2Out(out, nl_file,opt.verbose);
       vector<string> cmd_line;
       
       if (opt.nl_solver.empty()) {
