@@ -88,20 +88,12 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_BINARY_DIR}/include)
 
 # Libraries
-include(cmake/targets/libminizinc.cmake)
-
-include(cmake/targets/libminizinc_cplex.cmake)
-include(cmake/targets/libminizinc_geas.cmake)
-include(cmake/targets/libminizinc_gecode.cmake)
-include(cmake/targets/libminizinc_gurobi.cmake)
-include(cmake/targets/libminizinc_osicbc.cmake)
-include(cmake/targets/libminizinc_scip.cmake)
-include(cmake/targets/libminizinc_xpress.cmake)
+include(cmake/targets/libminizinc_core.cmake)
 
 include(cmake/targets/libminizinc_fzn.cmake)
 include(cmake/targets/libminizinc_nl.cmake)
 
-include(cmake/targets/libminizinc_solver.cmake)
+include(cmake/targets/libminizinc.cmake)
 
 # Executables
 include(cmake/targets/minizinc.cmake)

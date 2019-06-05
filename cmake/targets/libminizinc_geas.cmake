@@ -1,7 +1,9 @@
 ### MiniZinc Geas Solver Target
 
 if(GEAS_FOUND AND USE_GEAS)
-  add_library(minizinc_geas
+
+  ### Compile target for the Geas interface
+  add_library(minizinc_geas OBJECT
     solvers/geas/geas_constraints.cpp
     solvers/geas/geas_solverfactory.cpp
     solvers/geas/geas_solverinstance.cpp
@@ -9,14 +11,11 @@ if(GEAS_FOUND AND USE_GEAS)
     include/minizinc/solvers/geas_solverinstance.hh
     include/minizinc/solvers/geas/geas_constraints.hh
   )
-  target_link_libraries(minizinc_geas minizinc_compiler Geas)
+  target_include_directories(minizinc_geas PRIVATE "${GEAS_INCLUDE_DIRS}")
 
-  set(EXTRA_TARGETS ${EXTRA_TARGETS} minizinc_geas)
-  install(
-    TARGETS minizinc_geas
-    EXPORT libminizincTargets
-    RUNTIME DESTINATION bin
-    LIBRARY DESTINATION lib
-    ARCHIVE DESTINATION lib
-  )
+  ### Setup correct compilation into the MiniZinc library
+  target_compile_definitions(minizinc PRIVATE HAS_GEAS)
+  target_sources(minizinc PRIVATE $<TARGET_OBJECTS:minizinc_geas>)
+  target_link_libraries(minizinc Geas)
+
 endif()
