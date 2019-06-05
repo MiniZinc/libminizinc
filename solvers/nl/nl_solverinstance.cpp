@@ -210,8 +210,10 @@ namespace MiniZinc {
       Process<NLSolns2Out> proc(cmd_line, &s2o, 0, true);
       exitStatus = proc.run();
 
-      // Parse the result
-      s2o.parse_sol(file_sol);
+      if (exitStatus == 0) {
+        // Parse the result
+        s2o.parse_sol(file_sol);
+      }
 
     } catch (const NLException e){
       out->getLog() << e.what();
