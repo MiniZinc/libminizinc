@@ -322,9 +322,8 @@ namespace MiniZinc {
       GCLock lock;
       model = new Model();
     }
-    std::vector<SyntaxError> se;
     parse(env, model, filenames, datafiles, text, filename,
-          ip, ignoreStdlib, parseDocComments, verbose, err, se);
+          ip, ignoreStdlib, parseDocComments, verbose, err, syntaxErrors);
     return model;
   }
   
