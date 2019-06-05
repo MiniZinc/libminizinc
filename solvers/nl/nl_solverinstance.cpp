@@ -41,6 +41,8 @@ namespace MiniZinc {
     sc.name("Generic Non Linear driver");
     sc.mznlibVersion(1);
     sc.description("MiniZinc generic Non Linear solver plugin");
+    sc.supportsFzn(false);
+    sc.supportsNL(true);
     sc.requiredFlags({"--nl-cmd"});
     sc.tags({"__internal__"});
     SolverConfigs::registerBuiltinSolver(sc);
