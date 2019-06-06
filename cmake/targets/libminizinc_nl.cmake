@@ -3,9 +3,9 @@
 add_library(minizinc_nl OBJECT
   solvers/nl/nl_components.cpp
   solvers/nl/nl_file.cpp
+  solvers/nl/nl_solreader.cpp
   solvers/nl/nl_solverfactory.cpp
   solvers/nl/nl_solverinstance.cpp
-  solvers/nl/nl_solreader.cpp
 
   include/minizinc/solvers/nl/nl_components.hh
   include/minizinc/solvers/nl/nl_file.hh
@@ -13,3 +13,4 @@ add_library(minizinc_nl OBJECT
   include/minizinc/solvers/nl/nl_solverfactory.hh
   include/minizinc/solvers/nl/nl_solverinstance.hh
 )
+add_dependencies(minizinc_nl minizinc_parser)

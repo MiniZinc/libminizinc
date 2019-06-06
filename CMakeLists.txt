@@ -88,11 +88,6 @@ include_directories(${PROJECT_SOURCE_DIR}/include)
 include_directories(${PROJECT_BINARY_DIR}/include)
 
 # Libraries
-include(cmake/targets/libminizinc_core.cmake)
-
-include(cmake/targets/libminizinc_fzn.cmake)
-include(cmake/targets/libminizinc_nl.cmake)
-
 include(cmake/targets/libminizinc.cmake)
 
 # Executables

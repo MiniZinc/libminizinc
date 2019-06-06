@@ -7,11 +7,13 @@ if(GEAS_FOUND AND USE_GEAS)
     solvers/geas/geas_constraints.cpp
     solvers/geas/geas_solverfactory.cpp
     solvers/geas/geas_solverinstance.cpp
+
+    include/minizinc/solvers/geas/geas_constraints.hh
     include/minizinc/solvers/geas_solverfactory.hh
     include/minizinc/solvers/geas_solverinstance.hh
-    include/minizinc/solvers/geas/geas_constraints.hh
   )
   target_include_directories(minizinc_geas PRIVATE "${GEAS_INCLUDE_DIRS}")
+  add_dependencies(minizinc_geas minizinc_parser)
 
   ### Setup correct compilation into the MiniZinc library
   target_compile_definitions(minizinc PRIVATE HAS_GEAS)

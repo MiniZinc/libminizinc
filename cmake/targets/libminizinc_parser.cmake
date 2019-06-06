@@ -1,5 +1,3 @@
-### Main MiniZinc Library containing the compiler
-
 # -------------------------------------------------------------------------------------------------------------------
 ## Parser Generation Targets
 
@@ -97,105 +95,12 @@ else()
   set(FLEX_RegExLexer_OUTPUTS ${PROJECT_SOURCE_DIR}/lib/cached/regex_lexer.yy.cpp)
 endif()
 
-if(NOT GECODE_FOUND)
+if(NOT (GECODE_FOUND AND USE_GECODE))
   set(FLEX_RegExLexer_OUTPUTS "")
   set(BISON_RegExParser_OUTPUTS "")
 endif()
 
-# -------------------------------------------------------------------------------------------------------------------
-## MiniZinc Core Library definitions
-
-add_library(minizinc_core OBJECT
-  lib/ast.cpp
-  lib/astexception.cpp
-  lib/aststring.cpp
-  lib/astvec.cpp
-  lib/builtins.cpp
-  lib/copy.cpp
-  lib/chain_compressor.cpp
-  lib/eval_par.cpp
-  lib/file_utils.cpp
-  lib/gc.cpp
-  lib/htmlprinter.cpp
-  lib/json_parser.cpp
-  lib/miniz.c
-  lib/cdecode.c
-  lib/cencode.c
-  lib/model.cpp
-  lib/prettyprinter.cpp
-  lib/pathfileprinter.cpp
-  lib/type.cpp
-  lib/typecheck.cpp
-  lib/flatten.cpp
-  lib/flatten/flat_exp.cpp
-  lib/flatten/flatten_setlit.cpp
-  lib/flatten/flatten_id.cpp
-  lib/flatten/flatten_anon.cpp
-  lib/flatten/flatten_arraylit.cpp
-  lib/flatten/flatten_arrayaccess.cpp
-  lib/flatten/flatten_comp.cpp
-  lib/flatten/flatten_ite.cpp
-  lib/flatten/flatten_binop.cpp
-  lib/flatten/flatten_unop.cpp
-  lib/flatten/flatten_call.cpp
-  lib/flatten/flatten_vardecl.cpp
-  lib/flatten/flatten_let.cpp
-  lib/flatten/flatten_par.cpp
-  lib/MIPdomains.cpp
-  lib/optimize.cpp
-  lib/options.cpp
-  lib/optimize_constraints.cpp
-  lib/output.cpp
-  lib/parser.yxx
-  lib/parser.cpp
-  lib/solver_instance.cpp
-  lib/solver_instance_base.cpp
-  lib/statistics.cpp
-  lib/lexer.lxx
-  lib/values.cpp
-  include/minizinc/ast.hh
-  include/minizinc/ast.hpp
-  include/minizinc/astexception.hh
-  include/minizinc/astiterator.hh
-  include/minizinc/aststring.hh
-  include/minizinc/astvec.hh
-  include/minizinc/builtins.hh
-  include/minizinc/config.hh.in
-  include/minizinc/chain_compressor.hh
-  include/minizinc/copy.hh
-  include/minizinc/eval_par.hh
-  include/minizinc/exception.hh
-  include/minizinc/file_utils.hh
-  include/minizinc/flatten.hh
-  include/minizinc/flat_exp.hh
-  include/minizinc/flatten_internal.hh
-  include/minizinc/gc.hh
-  include/minizinc/hash.hh
-  include/minizinc/htmlprinter.hh
-  include/minizinc/iter.hh
-  include/minizinc/json_parser.hh
-  include/minizinc/model.hh
-  include/minizinc/optimize.hh
-  include/minizinc/optimize_constraints.hh
-  include/minizinc/options.hh
-  include/minizinc/output.hh
-  include/minizinc/parser.hh
-  include/minizinc/prettyprinter.hh
-  include/minizinc/pathfileprinter.hh
-  include/minizinc/statistics.hh
-  include/minizinc/timer.hh
-  include/minizinc/type.hh
-  include/minizinc/typecheck.hh
-  include/minizinc/utils.hh
-  include/minizinc/values.hh
-  include/minizinc/solver_instance.hh
-  include/minizinc/solver_instance_base.hh
-  include/minizinc/thirdparty/miniz.h
-  include/minizinc/thirdparty/b64/cdecode.h
-  include/minizinc/thirdparty/b64/cencode.h
-  include/minizinc/thirdparty/b64/decode.h
-  include/minizinc/thirdparty/b64/encode.h
-  include/minizinc/support/regex.hh
+add_library(minizinc_parser OBJECT
   ${BISON_MZNParser_OUTPUTS}
   ${FLEX_MZNLexer_OUTPUTS}
   ${BISON_RegExParser_OUTPUTS}
@@ -203,20 +108,6 @@ add_library(minizinc_core OBJECT
 )
 
 if(GECODE_FOUND AND USE_GECODE)
-  target_include_directories(minizinc_core PRIVATE "${GECODE_INCLUDE_DIRS}")
-  target_compile_definitions(minizinc_core PRIVATE HAS_GECODE)
+  target_include_directories(minizinc_parser PRIVATE "${GECODE_INCLUDE_DIRS}")
+  target_compile_definitions(minizinc_parser PRIVATE HAS_GECODE)
 endif()
-
-install(
-  DIRECTORY share/minizinc
-  DESTINATION share
-)
-install(
-  DIRECTORY include/minizinc
-  DESTINATION include
-  PATTERN config.hh.in EXCLUDE
-)
-install(
-  DIRECTORY lib/cached/minizinc
-  DESTINATION include
-)
