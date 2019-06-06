@@ -46,6 +46,7 @@ namespace MiniZinc {
       bool isPolymorphic;
       FnEntry(FunctionI* fi0);
       bool operator <(const FnEntry&) const;
+      static bool compare(const FnEntry& e1, const FnEntry& e2);
     };
     
     /// Add all instances of polymorphic entry \a fe to \a entries
