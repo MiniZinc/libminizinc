@@ -74,6 +74,8 @@ build:win64:
     - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
+    # TODO: Renaming using CMake gives a linker error with MVSC
+    - mv %CI_PROJECT_DIR%/minizinc/bin/minizinc_exe.exe %CI_PROJECT_DIR%/minizinc/bin/minizinc.exe
   artifacts:
     paths: [minizinc/]
   cache:
