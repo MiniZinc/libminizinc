@@ -5,7 +5,7 @@ include(cmake/targets/libminizinc_parser.cmake)
 include(cmake/targets/libminizinc_fzn.cmake)
 include(cmake/targets/libminizinc_nl.cmake)
 
-add_library(minizinc
+add_library(mzn
   lib/MIPdomains.cpp
   lib/ast.cpp
   lib/astexception.cpp
@@ -125,13 +125,13 @@ include(cmake/targets/libminizinc_scip.cmake)
 include(cmake/targets/libminizinc_xpress.cmake)
 
 if(GECODE_FOUND AND USE_GECODE)
-  target_link_libraries(minizinc Gecode::Minimodel Gecode::Support)
+  target_link_libraries(mzn Gecode::Minimodel Gecode::Support)
 endif()
 
 
 ### Add all necessary files to the install target
 install(
-  TARGETS minizinc
+  TARGETS mzn
   EXPORT libminizincTargets
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib

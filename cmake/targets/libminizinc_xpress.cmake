@@ -21,8 +21,8 @@ if(XPRESS_FOUND AND USE_XPRESS)
   add_dependencies(minizinc_xpress minizinc_parser)
 
   ### Setup correct compilation into the MiniZinc library
-  target_compile_definitions(minizinc PRIVATE HAS_XPRESS)
-  target_sources(minizinc PRIVATE $<TARGET_OBJECTS:minizinc_xpress>)
-  target_link_libraries(minizinc xprb xprs ${CMAKE_THREAD_LIBS_INIT})
+  target_compile_definitions(mzn PRIVATE HAS_XPRESS)
+  target_sources(mzn PRIVATE $<TARGET_OBJECTS:minizinc_xpress>)
+  target_link_libraries(mzn xprb xprs ${CMAKE_THREAD_LIBS_INIT})
 
 endif()

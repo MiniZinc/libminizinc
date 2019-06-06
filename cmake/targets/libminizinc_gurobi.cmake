@@ -20,8 +20,8 @@ if(GUROBI_FOUND)
   add_dependencies(minizinc_gurobi minizinc_parser)
 
   ### Setup correct compilation into the MiniZinc library
-  target_compile_definitions(minizinc PRIVATE HAS_GUROBI)
-  target_sources(minizinc PRIVATE $<TARGET_OBJECTS:minizinc_gurobi>)
-  target_link_libraries(minizinc ${GUROBI_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+  target_compile_definitions(mzn PRIVATE HAS_GUROBI)
+  target_sources(mzn PRIVATE $<TARGET_OBJECTS:minizinc_gurobi>)
+  target_link_libraries(mzn ${GUROBI_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 endif()

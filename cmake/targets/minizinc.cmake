@@ -1,14 +1,10 @@
 #### MiniZinc Executable Target
 
-add_executable(minizinc_exe minizinc.cpp)
-target_link_libraries(minizinc_exe minizinc)
-
-if(NOT WIN32) # TODO: Output name being the same as a library name gives a linker error with MVSC
-  set_target_properties(minizinc_exe PROPERTIES OUTPUT_NAME "minizinc")
-endif()
+add_executable(minizinc minizinc.cpp)
+target_link_libraries(minizinc mzn)
 
 install(
-  TARGETS minizinc_exe
+  TARGETS minizinc
   EXPORT libminizincTargets
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib

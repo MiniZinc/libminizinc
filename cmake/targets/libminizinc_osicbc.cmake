@@ -19,7 +19,8 @@ if(OSICBC_FOUND AND USE_OSICBC)
   add_dependencies(minizinc_osicbc minizinc_parser)
 
   ### Setup correct compilation into the MiniZinc library
-  target_compile_definitions(minizinc PRIVATE HAS_OSICBC)
-  target_sources(minizinc PRIVATE $<TARGET_OBJECTS:minizinc_osicbc>)
-  target_link_libraries(minizinc ${OSICBC_TARGETS})
+  target_compile_definitions(mzn PRIVATE HAS_OSICBC)
+  target_sources(mzn PRIVATE $<TARGET_OBJECTS:minizinc_osicbc>)
+  target_link_libraries(mzn ${OSICBC_TARGETS})
+
 endif()

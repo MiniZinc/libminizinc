@@ -19,8 +19,8 @@ if(CPLEX_FOUND AND USE_CPLEX)
   add_dependencies(minizinc_cplex minizinc_parser)
 
   ### Setup correct compilation into the MiniZinc library
-  target_compile_definitions(minizinc PRIVATE HAS_CPLEX)
-  target_sources(minizinc PRIVATE $<TARGET_OBJECTS:minizinc_cplex>)
-  set_target_properties(minizinc PROPERTIES COMPILE_FLAGS ${CPLEX_COMPILE_FLAGS})
-  target_link_libraries(minizinc ${CMAKE_THREAD_LIBS_INIT} ${CPLEX_LIBRARIES})
+  target_compile_definitions(mzn PRIVATE HAS_CPLEX)
+  target_sources(mzn PRIVATE $<TARGET_OBJECTS:minizinc_cplex>)
+  set_target_properties(mzn PROPERTIES COMPILE_FLAGS ${CPLEX_COMPILE_FLAGS})
+  target_link_libraries(mzn ${CMAKE_THREAD_LIBS_INIT} ${CPLEX_LIBRARIES})
 endif()

@@ -19,8 +19,8 @@ if(SCIP_FOUND AND USE_SCIP)
   add_dependencies(minizinc_scip minizinc_parser)
 
   ### Setup correct compilation into the MiniZinc library
-  target_compile_definitions(minizinc PRIVATE HAS_SCIP)
-  target_sources(minizinc PRIVATE $<TARGET_OBJECTS:minizinc_scip>)
-  target_link_libraries(minizinc ${SCIP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+  target_compile_definitions(mzn PRIVATE HAS_SCIP)
+  target_sources(mzn PRIVATE $<TARGET_OBJECTS:minizinc_scip>)
+  target_link_libraries(mzn ${SCIP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
 
 endif()

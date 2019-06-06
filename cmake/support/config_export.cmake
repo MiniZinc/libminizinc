@@ -47,7 +47,7 @@ if(TARGET minizinc_osicbc)
 endif()
 
 # Add all targets to the build-tree export set
-export(TARGETS minizinc
+export(TARGETS mzn
        FILE "${PROJECT_BINARY_DIR}/libminizincTargets.cmake")
 
 # Export the package for use from the build-tree

@@ -16,8 +16,8 @@ if(GEAS_FOUND AND USE_GEAS)
   add_dependencies(minizinc_geas minizinc_parser)
 
   ### Setup correct compilation into the MiniZinc library
-  target_compile_definitions(minizinc PRIVATE HAS_GEAS)
-  target_sources(minizinc PRIVATE $<TARGET_OBJECTS:minizinc_geas>)
-  target_link_libraries(minizinc Geas)
+  target_compile_definitions(mzn PRIVATE HAS_GEAS)
+  target_sources(mzn PRIVATE $<TARGET_OBJECTS:minizinc_geas>)
+  target_link_libraries(mzn Geas)
 
 endif()
