@@ -93,9 +93,17 @@ MIP-Aware Modeling
 
 Avoid mixing positive and negative coefficients in the objective. Use 'complementing' variables to revert sense.
 
-To avoid numerical issues, make variable domains as tight as possible (compiler can deduce bounds in certain cases but explicit bounding can be stronger). Especially for variables involved in logical constraints, if you cannot reduce the domains to be in +/-1e4, consider indicator constraints (available for some solvers, see below). Especially for integer variables, the domain size of 1e4 should be an upper bound if possible -- what is the value of integrality otherwise? Avoid large coefficients too, as well as large values in the objective function. See more on tolerances in a below section.
+To avoid numerical issues, make variable domains as tight as possible (compiler can deduce bounds in certain cases but explicit bounding can be stronger).
+Try to keep magnitude difference in each constraint below 1e4.
+Especially for variables involved in logical constraints, if you cannot reduce the domains to be in +/-1e4,
+consider indicator constraints (available for some solvers, see below), or use the following trick:
+instead of saying :mzn:`b=1 -> x<=0` where x can become very big, use e.e. :mzn:`b=1 -> 0.001*x<=0.0`.
+Especially for integer variables, the domain size of 1e4 should be an upper bound if possible -- what is the value of integrality otherwise?
+Avoid large coefficients too, as well as large values in the objective function. See more on tolerances in a below section.
 
-Example 1: *basic big-M constraint vs implication*. Instead of :mzn:`<expr> <= 1000000*y` given :mzn:`var 0..1: y` and where you use the 'big-M' value of 1000000 because you don't know a good upper bound on :mzn:`<expr>`, prefer :mzn:`y=0 -> <expr> <= 0` so that MiniZinc computes a possibly tighter bound.
+Example 1: *basic big-M constraint vs implication*. Instead of :mzn:`<expr> <= 1000000*y` given :mzn:`var 0..1: y`
+and where you use the 'big-M' value of 1000000 because you don't know a good upper bound on :mzn:`<expr>`, prefer :mzn:`y=0 -> <expr> <= 0`
+so that MiniZinc computes a possibly tighter bound, and consider the above trick: :mzn:`y=0 -> 0.0001*<expr> <= 0.0` to reduce magnitudes.
 
 Example 2: *cost-based choice*. Assume you want the model to make a certain decision, e.g., constructing a road, but then its cost should be minimal among some others, otherwise not considered. This can be modeled as follows:
 
@@ -114,8 +122,8 @@ A better solution, given reasonable bounds on :mzn:`cost1` and :mzn:`cost2`, is 
   int: cost_others_ub = 1+2*ub_array( [cost1, cost2] );    %% Multiply by 2 for a stronger LP relaxation      
   var int: cost_road = 286*c + cost_others_ub*(1-c);
 
-Installation of MIP Backends
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Installation of MIP Backends: *SCIP*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For *SCIP (as of 6.0.1.0)*, if you download the Optimization Suite, the installation commands should be as follows.
 
@@ -168,7 +176,12 @@ If you have folders for SCIP and SoPlex separately, follow these steps.
   $ sudo make install                    ## Now MZN should find it
 
 
-*COIN-OR CBC* (as of 2.10/stable. Prefer stable or even trunk):
+Installation of MIP Backends: *COIN-OR CBC*
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+(CBC as of 2.10/stable. Prefer stable or even trunk).
+
+**UNIX / Linux**:
 
 .. code-block:: 
 
@@ -178,6 +191,49 @@ If you have folders for SCIP and SoPlex separately, follow these steps.
   $ make && make install
   $ export CBC_HOME=$(pwd)               ## put this into .profile with $(pwd) expanded
                                          ## Or use -DOSICBC_ROOT=<absolute path> for MZN's CMake config
+
+**Windows**, especially if you want the parallel version of CBC. Thanks to David Catteeuw.
+
+1. OBTAIN AND BUILD CBC
+
+  CBC is on github, but has many dependencies: https://github.com/coin-or/Cbc
+
+  AMPL provides a CBC binary and has the entire project with dependencies on github: https://github.com/ampl/coin
+
+  Building Couenne fails, but we don't need. Remove couenne, ipopt, and bonmin directories.
+  
+  Install zlib and bzip2, e.g., using vcpkg. Its CMake integration does not work as of vcpkg 2018.11.23 so you need to use its install folder manually,
+  e.g., by adding the following to CBC's CMakeLists.txt:
+  
+    ::
+     
+       include_directories(...vcpkg/installed/x86-windows/include)
+       link_libraries(...vcpkg/installed/x86-windows/lib/zlib.lib)
+       link_libraries(...vcpkg/installed/x86-windows/lib/bz2.lib)
+   
+  Then 
+
+  .. code-block:: bash
+  
+    $ cd C:\dev
+    $ git clone https://github.com/ampl/coin.git
+    $ cd coin
+    $ rmdir /s Bonmin
+    $ rmdir /s Couenne
+    $ rmdir /s Ipopt
+    $ mkdir build
+    $ cd build
+    $ cmake .. -G "Visual Studio 15 2017" -A x64 -DCMAKE_INSTALL_PREFIX=C:\dev\Cbc_install
+    $ cmake --build . --target install
+ 
+  => successfully builds ``Cbc.lib``, debug version in ``C:\dev\coin\build\Debug``.
+
+
+2. BUILD MINIZINC WITH CBC
+
+  Copy ``C:\dev\coin\build\Debug\*.lib`` to ``C:\dev\Cbc_install\lib``
+
+  Configure MiniZinc's CMake with ``-DOSICBC_ROOT=C:\dev\cbc_install``.
 
 
 Useful Flattening Parameters
