@@ -115,10 +115,6 @@ add_library(minizinc
   $<TARGET_OBJECTS:minizinc_nl>
 )
 
-if(GECODE_FOUND AND USE_GECODE)
-  target_link_libraries(minizinc Gecode::Minimodel Gecode::Support)
-endif()
-
 ### Add Solver Interfaces to the MiniZinc library when available
 include(cmake/targets/libminizinc_cplex.cmake)
 include(cmake/targets/libminizinc_geas.cmake)
@@ -127,6 +123,11 @@ include(cmake/targets/libminizinc_gurobi.cmake)
 include(cmake/targets/libminizinc_osicbc.cmake)
 include(cmake/targets/libminizinc_scip.cmake)
 include(cmake/targets/libminizinc_xpress.cmake)
+
+if(GECODE_FOUND AND USE_GECODE)
+  target_link_libraries(minizinc Gecode::Minimodel Gecode::Support)
+endif()
+
 
 ### Add all necessary files to the install target
 install(
