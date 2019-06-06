@@ -28,7 +28,7 @@ unset(OSICBC_FIND_FILES)
 unset(OSICBC_FILE_LOC)
 
 if(WIN32 AND NOT UNIX)
-  set(OSICBC_REQ_LIBS libOsi libOsiClp libOsiCbc libClp libCgl libCbc libCbcSolver libCoinUtils)
+  set(OSICBC_REQ_LIBS Osi OsiClp OsiCbc Clp Cgl Cbc CbcSolver CoinUtils)
 else()
   set(OSICBC_REQ_LIBS CbcSolver Cbc Cgl OsiClp Clp Osi CoinUtils)
 endif()
