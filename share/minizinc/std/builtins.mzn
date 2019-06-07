@@ -2648,6 +2648,8 @@ function var int: div_mt(var int: x, var int: y) :: promise_total =
     var ((dom(y) diff {0}) union {1}): yy = if y=0 then 1 else y endif;
   } in div_t(x,yy);
 
+function var float: fldiv_t(var float: x, float: y) :: promise_total = x*(1.0/y);
+
 function var float: fldiv_t(var float: x, var float: y) :: promise_total =
   let {
     var float: z ::is_defined_var; % TODO: Compute division boundaries
