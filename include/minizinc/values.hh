@@ -651,6 +651,7 @@ namespace MiniZinc {
       if (m>n) {
         return a();
       } else {
+        GCLock lock;
         IntSetVal* r =
           static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range)));
         new (r) IntSetVal(m,n);
