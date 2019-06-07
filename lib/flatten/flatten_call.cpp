@@ -738,6 +738,7 @@ namespace MiniZinc {
             for (unsigned int j=0; j<pi->ti()->ranges().size(); j++) {
               TypeInst* range_ti = pi->ti()->ranges()[j];
               if (range_ti->domain() && !range_ti->domain()->isa<TIId>()) {
+                GCLock lock;
                 IntSetVal* isv = eval_intset(env, range_ti->domain());
                 if (isv->min() != al->min(j) || isv->max() != al->max(j)) {
                   std::ostringstream oss;
