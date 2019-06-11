@@ -557,58 +557,95 @@ namespace MiniZinc {
         std::vector<KeepAlive> pos_alv;
         std::vector<KeepAlive> neg_alv;
         
+        std::vector<Expression*> pos_stack;
+        std::vector<Expression*> neg_stack;
+        
         ArrayLit* al_pos = follow_id(args_ee[0].r())->cast<ArrayLit>();
         for (unsigned int i=0; i<al_pos->size(); i++) {
-          GCLock lock;
-          if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al_pos)[i],constants().ids.exists))) {
-            GCLock lock;
-            ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
-            for (unsigned int j=0; j<sc_c->size(); j++) {
-              pos_alv.push_back((*sc_c)[j]);
-            }
-          } else if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al_pos)[i],constants().ids.clause))) {
-            GCLock lock;
-            ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
-            for (unsigned int j=0; j<sc_c->size(); j++) {
-              pos_alv.push_back((*sc_c)[j]);
-            }
-            sc_c = eval_array_lit(env,sc->arg(1));
-            for (unsigned int j=0; j<sc_c->size(); j++) {
-              neg_alv.push_back((*sc_c)[j]);
-            }
-          } else {
-            Call* neg_call = Expression::dyn_cast<Call>(same_call(env,(*al_pos)[i],constants().ids.bool_eq));
-            if (neg_call &&
-                Expression::equal(neg_call->arg(1),constants().lit_false)) {
-              neg_alv.push_back(neg_call->arg(0));
-            } else {
-              pos_alv.push_back((*al_pos)[i]);
-            }
-          }
+          pos_stack.push_back((*al_pos)[i]);
         }
-
         if (cid == constants().ids.clause) {
           ArrayLit* al_neg = follow_id(args_ee[1].r())->cast<ArrayLit>();
           for (unsigned int i=0; i<al_neg->size(); i++) {
+            neg_stack.push_back((*al_neg)[i]);
+          }
+        }
+        
+        while (!pos_stack.empty() || !neg_stack.empty()) {
+          
+          while (!pos_stack.empty()) {
+            Expression* cur = pos_stack.back();
+            pos_stack.pop_back();
             GCLock lock;
-            if (Call* sc = Expression::dyn_cast<Call>(same_call(env,(*al_neg)[i],constants().ids.forall))) {
+            if (Call* sc = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.exists))) {
               GCLock lock;
               ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
               for (unsigned int j=0; j<sc_c->size(); j++) {
-                neg_alv.push_back((*sc_c)[j]);
+                pos_stack.push_back((*sc_c)[j]);
+              }
+            } else if (Call* sc = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.clause))) {
+              GCLock lock;
+              ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
+              for (unsigned int j=0; j<sc_c->size(); j++) {
+                pos_stack.push_back((*sc_c)[j]);
+              }
+              sc_c = eval_array_lit(env,sc->arg(1));
+              for (unsigned int j=0; j<sc_c->size(); j++) {
+                neg_stack.push_back((*sc_c)[j]);
               }
             } else {
-              Call* neg_call = Expression::dyn_cast<Call>(same_call(env,(*al_neg)[i],constants().ids.bool_eq));
-              if (neg_call &&
-                  Expression::equal(neg_call->arg(1),constants().lit_false)) {
-                pos_alv.push_back(neg_call->arg(0));
+              Call* eq_call = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.bool_eq));
+              if (eq_call && Expression::equal(eq_call->arg(1),constants().lit_false)) {
+                neg_stack.push_back(eq_call->arg(0));
+              } else if (eq_call && Expression::equal(eq_call->arg(0),constants().lit_false)) {
+                neg_stack.push_back(eq_call->arg(1));
+              } else if (eq_call && Expression::equal(eq_call->arg(1),constants().lit_true)) {
+                pos_stack.push_back(eq_call->arg(0));
+              } else if (eq_call && Expression::equal(eq_call->arg(0),constants().lit_true)) {
+                pos_stack.push_back(eq_call->arg(1));
+              } else if (Id* ident = cur->dyn_cast<Id>()) {
+                if (ident->decl()->ti()->domain()!=constants().lit_false) {
+                  pos_alv.push_back(ident);
+                }
               } else {
-                neg_alv.push_back((*al_neg)[i]);
+                pos_alv.push_back(cur);
               }
             }
           }
-        }
+          
+          while (!neg_stack.empty()) {
+            GCLock lock;
+            Expression* cur = neg_stack.back();
+            neg_stack.pop_back();
+            if (Call* sc = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.forall))) {
+              GCLock lock;
+              ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
+              for (unsigned int j=0; j<sc_c->size(); j++) {
+                neg_stack.push_back((*sc_c)[j]);
+              }
+            } else {
+              Call* eq_call = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.bool_eq));
+              if (eq_call && Expression::equal(eq_call->arg(1),constants().lit_false)) {
+                pos_stack.push_back(eq_call->arg(0));
+              } else if (eq_call && Expression::equal(eq_call->arg(0),constants().lit_false)) {
+                pos_stack.push_back(eq_call->arg(1));
+              } else if (eq_call && Expression::equal(eq_call->arg(1),constants().lit_true)) {
+                neg_stack.push_back(eq_call->arg(0));
+              } else if (eq_call && Expression::equal(eq_call->arg(0),constants().lit_true)) {
+                neg_stack.push_back(eq_call->arg(1));
+              } else if (Id* ident = cur->dyn_cast<Id>()) {
+                if (ident->decl()->ti()->domain()!=constants().lit_true) {
+                  neg_alv.push_back(ident);
+                }
+              } else {
+                neg_alv.push_back(cur);
+              }
+            }
 
+          }
+          
+        }
+        
         bool subsumed = remove_dups(pos_alv,false);
         subsumed = subsumed || remove_dups(neg_alv,true);
         subsumed = subsumed || contains_dups(pos_alv, neg_alv);
