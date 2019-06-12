@@ -81,6 +81,27 @@ build:win64:
     paths: [vendor.zip*]
   tags: [win64, cmake, cpp]
 
+build:wasm:
+  image: trzeci/emscripten
+  stage: build
+  variables:
+    MZNARCH: "wasm"
+    CMAKE_ARCH: "Ninja"
+  tags: [docker]
+  before_script: *download_script
+  script:
+    - rm -rf build
+    - mkdir -p build
+    - cd build
+    - emconfigure cmake -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=MinSizeRel -DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1 -v .. -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake --build .  --config MinSizeRel
+    - cmake --build .  --config MinSizeRel --target install
+  artifacts:
+    paths: [minizinc/]
+  cache:
+    key: "$CI_JOB_NAME"
+    paths: [.ccache, vendor.zip*]
+
 # ----------- Trigger FindMUS pipeline -----------
 
 trigger:findmus:
