@@ -22,7 +22,7 @@ endif()
 # ASM.js version
 if (DEFINED EMSCRIPTEN)
   add_executable(minizinc_asm minizinc.cpp)
-  target_link_libraries(minizinc_asm minizinc_solver)
+  target_link_libraries(minizinc_asm mzn)
 
   em_link_pre_js(minizinc_asm ${PROJECT_SOURCE_DIR}/cmake/support/emscripten_file_packager_patch.js)
   em_link_pre_js(minizinc_asm ${PROJECT_BINARY_DIR}/CMakeFiles/file_packager.js)
@@ -35,7 +35,7 @@ endif()
 # Emscripten Interpreter version
 # if (DEFINED EMSCRIPTEN)
 #   add_executable(minizinc_in minizinc.cpp)
-#   target_link_libraries(minizinc_in minizinc_solver)
+#   target_link_libraries(minizinc_in mzn)
 
 #   em_link_pre_js(minizinc_in ${PROJECT_SOURCE_DIR}/cmake/support/emscripten_file_packager_patch.js)
 #   em_link_pre_js(minizinc_in ${PROJECT_BINARY_DIR}/CMakeFiles/file_packager.js)
@@ -57,7 +57,7 @@ endif()
 
 if (DEFINED EMSCRIPTEN)
   add_executable(mzn2doc_asm mzn2doc.cpp)
-  target_link_libraries(mzn2doc_asm minizinc_solver)
+  target_link_libraries(mzn2doc_asm mzn)
 
   em_link_pre_js(mzn2doc_asm ${PROJECT_SOURCE_DIR}/cmake/support/emscripten_file_packager_patch.js)
   em_link_pre_js(mzn2doc_asm ${PROJECT_BINARY_DIR}/CMakeFiles/file_packager.js)
