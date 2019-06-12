@@ -189,6 +189,12 @@ namespace MiniZinc {
       }
     } else {
       noOtherBranches = false;
+      results.push_back(r);
+      e_then.push_back(std::vector<Expression*>());
+      for (int i=0; i<ite->size(); i++) {
+        e_then.back().push_back(ite->e_then(i));
+      }
+      e_else.push_back(ite->e_else());
     }
     allBranchesPar.resize(results.size());
     r_bounds_valid_int.resize(results.size());
