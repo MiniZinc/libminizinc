@@ -10,6 +10,6 @@ predicate table_int(array[int] of var int: x, array[int, int] of int: t) =
 
 predicate table_int_reif(array[int] of var int: x, array[int, int] of int: t,
                          var bool: b) =
-    fzn_table_int_reif(x, t, c);
+    fzn_table_int_reif(x, t, b);
 
 %-----------------------------------------------------------------------------%
