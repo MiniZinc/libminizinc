@@ -86,7 +86,7 @@ build:wasm:
   stage: build
   variables:
     MZNARCH: "wasm"
-    CMAKE_ARCH: "Ninja"
+    CMAKE_ARCH: "Unix Makefiles"
   tags: [docker]
   before_script: *download_script
   script:
