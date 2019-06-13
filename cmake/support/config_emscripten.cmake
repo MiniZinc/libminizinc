@@ -16,7 +16,10 @@ if (DEFINED EMSCRIPTEN)
 
   set_target_properties(minizinc PROPERTIES CXX_FLAGS ${EMSCRIPTEN_MINZINC_CXX_FLAGS})
   # Enable exception catching (required by MiniZinc)
-  set_target_properties(minizinc PROPERTIES LINK_FLAGS "-s DISABLE_EXCEPTION_CATCHING=0 ${EMSCRIPTEN_MINZINC_LINK_FLAGS}")
+  set_target_properties(minizinc PROPERTIES LINK_FLAGS "-s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 ${EMSCRIPTEN_MINZINC_LINK_FLAGS}")
+  
+  install(FILES ${PROJECT_BINARY_DIR}/minizinc.wasm DESTINATION bin)
+  install(FILES ${PROJECT_BINARY_DIR}/minizinc.data DESTINATION bin)
 endif()
 
 # ASM.js version
@@ -30,6 +33,9 @@ if (DEFINED EMSCRIPTEN)
   set_target_properties(minizinc_asm PROPERTIES CXX_FLAGS ${EMSCRIPTEN_MINZINC_CXX_FLAGS})
   # Enable exception catching (required by MiniZinc)
   set_target_properties(minizinc_asm PROPERTIES LINK_FLAGS "-s WASM=0 -s DISABLE_EXCEPTION_CATCHING=0 ${EMSCRIPTEN_MINZINC_LINK_FLAGS}")
+
+  install(TARGETS minizinc_asm RUNTIME DESTINATION bin)
+  install(FILES $<TARGET_FILE_NAME:minizinc_asm>.mem DESTINATION bin)
 endif()
 
 # Emscripten Interpreter version
@@ -51,7 +57,8 @@ if (DEFINED EMSCRIPTEN)
 
   set_target_properties(mzn2doc PROPERTIES CXX_FLAGS ${EMSCRIPTEN_MINZINC_CXX_FLAGS})
   # Enable exception catching (required by MiniZinc)
-  set_target_properties(mzn2doc PROPERTIES LINK_FLAGS "-s DISABLE_EXCEPTION_CATCHING=0 -s EXPORT_NAME=\"'MZN2DOC'\" ${EMSCRIPTEN_MINZINC_COMMON_LINK_FLAGS}")
+  set_target_properties(mzn2doc PROPERTIES LINK_FLAGS "-s WASM=1 -s DISABLE_EXCEPTION_CATCHING=0 -s EXPORT_NAME=\"'MZN2DOC'\" ${EMSCRIPTEN_MINZINC_COMMON_LINK_FLAGS}")
+  install(FILES ${PROJECT_BINARY_DIR}/mzn2doc.wasm DESTINATION bin)
 endif()
 
 
@@ -65,4 +72,7 @@ if (DEFINED EMSCRIPTEN)
   set_target_properties(mzn2doc_asm PROPERTIES CXX_FLAGS ${EMSCRIPTEN_MINZINC_CXX_FLAGS})
   # Enable exception catching (required by MiniZinc)
   set_target_properties(mzn2doc_asm PROPERTIES LINK_FLAGS "-s WASM=0 -s DISABLE_EXCEPTION_CATCHING=0 -s EXPORT_NAME=\"'MZN2DOC'\" ${EMSCRIPTEN_MINZINC_COMMON_LINK_FLAGS}")
+
+  install(TARGETS mzn2doc_asm RUNTIME DESTINATION bin)
+  install(FILES $<TARGET_FILE_NAME:mzn2doc_asm>.mem DESTINATION bin)
 endif()
