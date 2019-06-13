@@ -90,7 +90,7 @@ build:wasm:
   tags: [docker]
   before_script: *download_script
   script:
-    - sh download.sh vendor master vendor:%MZNARCH% vendor.zip
+    - sh download.sh vendor master vendor:${MZNARCH} vendor.zip
     - unzip -q vendor.zip
     - rm -rf build
     - mkdir -p build
