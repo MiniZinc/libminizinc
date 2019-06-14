@@ -100,6 +100,7 @@ include "neural_net.mzn";
 include "nvalue.mzn";
 include "nvalue_fn.mzn";
 include "partition_set.mzn";
+include "pwl.mzn";
 include "range.mzn";
 include "range_fn.mzn";
 include "reachable.mzn";   
