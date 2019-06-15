@@ -3069,7 +3069,7 @@ yyreduce:
           string fbase = FileUtils::base_name(pp->filename);
           if (fpath=="")
             fpath="./";
-          ParseWorkItem pm(im, fpath, (yyvsp[0].sValue));
+          ParseWorkItem pm(im, ii, fpath, (yyvsp[0].sValue));
           pp->files.push_back(pm);
           ii->m(im);
           pp->seenModels.insert(pair<string,Model*>((yyvsp[0].sValue),im));
