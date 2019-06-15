@@ -49,11 +49,12 @@ namespace MiniZinc {
 
   struct ParseWorkItem {
     Model* m;
+    IncludeI* ii;
     std::string dirName;
     std::string fileName;
     bool isModelString;
-    ParseWorkItem(Model* m0, const std::string& dirName0, const std::string& fileName0, bool isModelString0=false)
-    : m(m0), dirName(dirName0), fileName(fileName0), isModelString(isModelString0) {}
+    ParseWorkItem(Model* m0, IncludeI* ii0, const std::string& dirName0, const std::string& fileName0, bool isModelString0=false)
+    : m(m0), ii(ii0), dirName(dirName0), fileName(fileName0), isModelString(isModelString0) {}
   };
   
 

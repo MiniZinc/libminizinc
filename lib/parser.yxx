@@ -389,7 +389,7 @@ include_item :
           string fbase = FileUtils::base_name(pp->filename);
           if (fpath=="")
             fpath="./";
-          ParseWorkItem pm(im, fpath, $2);
+          ParseWorkItem pm(im, ii, fpath, $2);
           pp->files.push_back(pm);
           ii->m(im);
           pp->seenModels.insert(pair<string,Model*>($2,im));
