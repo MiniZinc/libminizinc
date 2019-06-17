@@ -405,8 +405,8 @@ Functions are defined in MiniZinc
 similarly to predicates, but with a more
 general return type.
 
-The function below defines the row in a Sudoku matrix
-of the :math:`a1^{th}` row of the :math:`a^{th}` of subsquares.
+The function below defines the index in a Sudoku matrix
+of the :math:`a1^{th}` row (or column) of the :math:`a^{th}` subsquare.
 
 .. code-block:: minizinc
 
@@ -418,8 +418,8 @@ Sudoku problem shown in :numref:`ex-sudoku` by
 .. code-block:: minizinc
 
   constraint forall(a, o in SubSquareRange)( 
-                    alldifferent([ puzzle [ posn(a,a0), posn(o,o1) ] | 
-                                           a1,o1 in SubSquareRange ] ) );
+                    alldifferent([ puzzle [ posn(a,a1), posn(o,o1) ] | 
+                                           a1, o1 in SubSquareRange ] ) );
 
 Functions are useful for encoding complex expressions that
 are used frequently in the model.  For example, imagine
@@ -585,6 +585,21 @@ to the model explicitly.
   :name: ex-wedding2
   :caption: Using local variables to define a complex objective function (:download:`wedding2.mzn <examples/wedding2.mzn>`).
 
+Using :mzn:`let` expressions, it is possible to define a function whose result is not well-defined. For example, we could write the following:
+
+.. code-block:: minizinc
+
+  function var int: x_or_x_plus_1(var int: x) = let {
+    var 0..1: y;
+  } in x+y; % result is not well-defined!
+
+The result, :mzn:`x+y`, is indeed not functionally defined by the argument of the function, :mzn:`x`. The MiniZinc compiler does not detect this, and **the behaviour of the resulting model is undefined**. In particular, calling this function twice with the same argument may or may not return the same result. It is therefore important to make sure that any function you define is indeed a function! **If you need non-deterministic behaviour, use a predicate:**
+
+.. code-block:: minizinc
+
+  predicate x_or_x_plus_1(var int: x, var int: z) = let {
+    var 0..1: y;
+  } in z=x+y;
 
 Context
 -------
@@ -711,24 +726,41 @@ Local Constraints
 
 Let expressions can also be used to include local constraints,
 usually to constrain the behaviour of local variables.
-For example, consider defining a square root function making use
+For example, consider defining an integer square root function making use
 of only multiplication:
 
 .. code-block:: minizinc
 
-  function var float: mysqrt(var float:x) = 
-           let { var float: y;
-                 constraint y >= 0;
+  function var int: mysqrt(var int:x) = 
+           let { var 0..infinity: y;
                  constraint x = y * y; } in y;
 
 The local constraints ensure
 :mzn:`y` takes the correct value; which is then returned
-by the function.    
+by the function.
 
 Local constraints can be used in any let expression, 
 though the most common
 usage is in defining functions.
+A function with local constraints is often *partial*, which means that it is not defined for all possible inputs. For example, the :mzn:`mysqrt` function above constrains its argument :mzn:`x` to take a value that is in fact the square of an integer. The MiniZinc compiler handles these cases according to the *relational semantics*, which means that the result of applying a partial function may become false in its enclosing Boolean context. For example, consider the following model:
 
+.. code-block:: minizinc
+
+  var 1..9: x;
+  var 0..9: y;
+  constraint (x=3 /\ y=0) \/ y = mysqrt(x);
+  
+Clearly, the intention of the modeller is that :mzn:`x=3, y=0` should be a solution. This requires the compiler to take care not to "lift" the constraint :mzn:`x=y*y` out of the context of the function, because that would prevent it from finding any solution with :mzn:`x=3`. You can verify that the set of solutions contains :mzn:`x=3, y=0` as well as the expected :mzn:`x=1, y=1`, :mzn:`x=4, y=2` and :mzn:`x=9, y=3`.
+
+If you define a *total* function using local constraints, you can give the compiler a hint that allows it to produce more efficient code. For example, you could write the square function (not square root, note the subtle difference) as follows:
+
+.. code-block:: minizinc
+
+  function var int: mysqr(var int:x) ::promise_total = 
+           let { var 0..infinity: y;
+                 constraint y = x * x; } in y;
+
+This function is indeed defined for any input value :mzn:`x`. The :mzn:`::promise_total` annotation tells the compiler that it can safely lift all local constraints out of the context of the function call.
 
 .. defblock:: Let expressions
 
