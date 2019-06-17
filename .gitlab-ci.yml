@@ -95,7 +95,7 @@ build:wasm:
     - rm -rf build
     - mkdir -p build
     - cd build
-    - emconfigure cmake -G"$CMAKE_ARCH" -DCMAKE_FIND_ROOT_PATH="$CI_PROJECT_DIR/vendor" -DGECODE_ROOT="$GECODE_ROOT" -DOSICBC_ROOT="$OSICBC_ROOT" -DCMAKE_BUILD_TYPE=MinSizeRel -DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1 -v .. -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc/complete"
+    - emconfigure cmake -G"$CMAKE_ARCH" -DCMAKE_FIND_ROOT_PATH="/" -DGECODE_ROOT="$GECODE_ROOT" -DOSICBC_ROOT="$OSICBC_ROOT" -DCMAKE_BUILD_TYPE=MinSizeRel -DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1 -v .. -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc/complete"
     - cmake --build .  --config MinSizeRel
     - cmake --build .  --config MinSizeRel --target install
     - cd ..
