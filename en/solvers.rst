@@ -97,7 +97,7 @@ To avoid numerical issues, make variable domains as tight as possible (compiler 
 Try to keep magnitude difference in each constraint below 1e4.
 Especially for variables involved in logical constraints, if you cannot reduce the domains to be in +/-1e4,
 consider indicator constraints (available for some solvers, see below), or use the following trick:
-instead of saying :mzn:`b=1 -> x<=0` where x can become very big, use e.e. :mzn:`b=1 -> 0.001*x<=0.0`.
+instead of saying :mzn:`b=1 -> x<=0` where x can become very big, use e.g. :mzn:`b=1 -> 0.001*x<=0.0`.
 Especially for integer variables, the domain size of 1e4 should be an upper bound if possible -- what is the value of integrality otherwise?
 Avoid large coefficients too, as well as large values in the objective function. See more on tolerances in a below section.
 
@@ -123,7 +123,7 @@ A better solution, given reasonable bounds on :mzn:`cost1` and :mzn:`cost2`, is 
   var int: cost_road = 286*c + cost_others_ub*(1-c);
 
 Installation of MIP Backends: *SCIP*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For *SCIP (as of 6.0.1.0)*, if you download the Optimization Suite, the installation commands should be as follows.
 
@@ -183,7 +183,7 @@ Installation of MIP Backends: *COIN-OR CBC*
 
 **UNIX / Linux**:
 
-.. code-block:: 
+.. code-block:: bash
 
   $ svn checkout https://projects.coin-or.org/svn/Cbc/stable/2.10/ Cbc-stable
   $ cd Cbc-stable
