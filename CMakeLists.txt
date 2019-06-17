@@ -41,10 +41,11 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # -------------------------------------------------------------------------------------------------------------------
 #  -- CMake initialisation
 
-# Try to find possible dependencies
-list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
+# Fix library suffixes for Web Assembly platform
 include(cmake/support/emscripten_setup.cmake)
 
+# Try to find possible dependencies
+list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
 find_package(CPlex)
 find_package(Geas)
 find_package(Gecode 6.0 COMPONENTS Driver Float Int Kernel Minimodel Search Set Support)
@@ -97,9 +98,11 @@ include(cmake/targets/minizinc.cmake)
 include(cmake/targets/mzn2doc.cmake)
 
 # -------------------------------------------------------------------------------------------------------------------
+#  -- Platform Specific configuration
+include(cmake/support/config_emscripten.cmake)
+
+# -------------------------------------------------------------------------------------------------------------------
 #  -- CMake configuration generation
 
 include(cmake/support/config_export.cmake)
 include(cmake/support/config_output.cmake)
-
-include(cmake/support/config_emscripten.cmake)
