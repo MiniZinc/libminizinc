@@ -4,7 +4,7 @@
   
   The formulation follows "Modeling SOS2 constraints in GLPK", 2008.
 */
-predicate fzn_pwl(var float: x, var float: y,
+predicate fzn_piecewise_linear(var float: x, var float: y,
               array[int] of float: xi, array[int] of float: vi) = 
     let {
         set of int: is = index_set(xi),

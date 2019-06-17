@@ -447,10 +447,10 @@ function var float: pow(var float: x, var float: y) =
 /** @group builtins.arithmetic Return a piecewise-linear interpolation
 *   of the given point sequence as a function of \a x
 */
-function var float: pwl(var float: x, array[int] of float: xi, array[int] of float: vi) =
+function var float: piecewise_linear(var float: x, array[int] of float: xi, array[int] of float: vi) =
   let {
     var float: res,
-    constraint pwl(x,res,xi,vi),
+    constraint piecewise_linear(x,res,xi,vi),
   } in res;
 
 /***
