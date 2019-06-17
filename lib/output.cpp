@@ -226,7 +226,7 @@ namespace MiniZinc {
             c.id(ASTString(enumName));
             c.args(args);
           }
-          if (c.id()=="showDzn" || c.id()=="showJSON") {
+          if (c.id()=="showDzn" || (c.id()=="showJSON" && enumId > 0)) {
             c.id(constants().ids.show);
           }
         }
