@@ -6,6 +6,8 @@
 #  GUROBI_COMPILE_FLAGS  - The definitions required to compile with GUROBI
 # User can set GUROBI_ROOT to the preferred installation prefix
 
+list(INSERT CMAKE_PREFIX_PATH 0 "${GUROBI_ROOT}" "$ENV{GUROBI_ROOT}")
+
 option(GUROBI_PLUGIN "Build Gurobi binding as a plugin" ON)
 
 set(GUROBI_COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG")
@@ -24,7 +26,7 @@ foreach(VERSION ${GUROBI_VERSIONS})
 endforeach(VERSION)
 
 find_path(GUROBI_INCLUDE gurobi_c.h
-          PATHS ${GUROBI_ROOT} $ENV{GUROBI_HOME} ENV GUROBI_ROOT
+          PATHS $ENV{GUROBI_HOME}
           HINTS ${GUROBI_DEFAULT_LOC}
           PATH_SUFFIXES include)
 
@@ -41,7 +43,7 @@ if(GUROBI_PLUGIN)
 else()
   foreach(GUROBI_LIB ${GUROBI_LIB_NAMES})
     find_library(GUROBI_LIBRARY NAMES ${GUROBI_LIB}
-                 HINTS ${GUROBI_ROOT} $ENV{GUROBI_HOME} ENV GUROBI_ROOT
+                 HINTS $ENV{GUROBI_HOME}
                  PATHS ${GUROBI_DEFAULT_LOC}
                  PATH_SUFFIXES lib)
     if(NOT "${GUROBI_LIBRARY}" STREQUAL "GUROBI_LIBRARY-NOTFOUND")
@@ -61,6 +63,7 @@ if(GUROBI_PLUGIN AND HAS_WINDOWS_H AND NOT HAS_DLFCN_H)
 endif()
 
 mark_as_advanced(GUROBI_INCLUDE GUROBI_LIBRARY)
+list(REMOVE_AT CMAKE_PREFIX_PATH 1 0)
 
 set(GUROBI_LIBRARIES ${GUROBI_LIBRARY})
 set(GUROBI_INCLUDE_DIRS ${GUROBI_INCLUDE})

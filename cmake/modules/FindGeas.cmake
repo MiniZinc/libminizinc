@@ -6,15 +6,15 @@
 # User can set GEAS_ROOT to the preferred installation prefix
 # Imported target Geas will be created for linking purposes
 
+list(INSERT CMAKE_PREFIX_PATH 0 "${GEAS_ROOT}" "$ENV{GEAS_ROOT}")
+
 find_path(
   GEAS_INCLUDE geas/c/geas.h
-  PATHS ${GEAS_ROOT} ENV GEAS_ROOT
   PATH_SUFFIXES include
 )
 
 find_library(
   GEAS_LIBRARY NAMES geas libgeas
-  PATHS ${GEAS_ROOT} ENV GEAS_ROOT
   PATH_SUFFIXES lib
 )
 
@@ -28,6 +28,7 @@ find_package_handle_standard_args(Geas
 )
 
 mark_as_advanced(GEAS_INCLUDE GEAS_LIBRARY)
+list(REMOVE_AT CMAKE_PREFIX_PATH 1 0)
 
 if(GEAS_FOUND)
   add_library(Geas UNKNOWN IMPORTED)

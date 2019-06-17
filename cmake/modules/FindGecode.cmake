@@ -6,12 +6,12 @@
 #  GECODE_TARGETS        - The names of imported targets created for gecode
 # User can set GECODE_ROOT to the preferred installation prefix
 
+list(INSERT CMAKE_PREFIX_PATH 0 "${GECODE_ROOT}" "$ENV{GECODE_ROOT}")
+
 find_path(GECODE_INCLUDE gecode/kernel.hh
-          PATHS ${GECODE_ROOT} ENV GECODE_ROOT
           PATH_SUFFIXES include)
 
 find_file(GECODE_CONFIG_LOC gecode/support/config.hpp
-          PATHS ${GECODE_ROOT} ENV GECODE_ROOT
           HINTS ${GECODE_INCLUDE}
           PATH_SUFFIXES include)
 
@@ -36,8 +36,8 @@ foreach(GECODE_COMP ${GECODE_COMPONENTS})
   # Try to find gecode library
   string(TOLOWER "gecode${GECODE_COMP}" GECODE_LIB)
   set(GECODE_LIB_LOC "GECODE_LIB_LOC-NOTFOUND")
-  find_library(GECODE_LIB_LOC NAMES ${GECODE_LIB} ${GECODE_LIB}-${GECODE_LIBRARY_VERSION}-r-x64 ${GECODE_LIB}-${GECODE_LIBRARY_VERSION}-d-x64
-               PATHS ${GECODE_ROOT} ENV GECODE_ROOT
+  find_library(GECODE_LIB_LOC NAMES ${GECODE_LIB} lib${GECODE_LIB} ${GECODE_LIB}-${GECODE_LIBRARY_VERSION}-r-x64 ${GECODE_LIB}-${GECODE_LIBRARY_VERSION}-d-x64
+               HINTS ${GECODE_INCLUDE}
                PATH_SUFFIXES lib)
   if(NOT "${GECODE_LIB_LOC}" STREQUAL "GECODE_LIB_LOC-NOTFOUND")
       list(APPEND GECODE_LIBRARY ${GECODE_LIB_LOC})
@@ -77,6 +77,7 @@ find_package_handle_standard_args(
 )
 
 mark_as_advanced(GECODE_INCLUDE GECODE_LIBRARY)
+list(REMOVE_AT CMAKE_PREFIX_PATH 1 0)
 
 set(GECODE_LIBRARIES ${GECODE_LIBRARY})
 set(GECODE_INCLUDE_DIRS ${GECODE_INCLUDE})

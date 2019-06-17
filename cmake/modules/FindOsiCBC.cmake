@@ -6,12 +6,13 @@
 #  GOSICBC_TARGETS        - The names of imported targets created for CBC
 # User can set OSICBC_ROOT to the preferred installation prefix
 
+list(INSERT CMAKE_PREFIX_PATH 0 "${OSICBC_ROOT}" "$ENV{OSICBC_ROOT}")
+
 set(OSICBC_FIND_FILES coin/CbcSolver.hpp coin/CglPreProcess.hpp coin/ClpConfig.h coin/CoinSignal.hpp coin/OsiClpSolverInterface.hpp coin/OsiSolverInterface.hpp)
 
 foreach(OSICBC_FILE ${OSICBC_FIND_FILES})
   set(OSICBC_FILE_LOC "OSICBC_LIB_LOC-NOTFOUND")
   find_path(OSICBC_FILE_LOC ${OSICBC_FILE}
-            PATHS ${OSICBC_ROOT} ENV OSICBC_ROOT
             PATH_SUFFIXES cbc cgl clp coinutils osi include)
   if("${OSICBC_FILE_LOC}" STREQUAL "OSICBC_FILE_LOC-NOTFOUND")
 #    message(STATUS "OsiCBC: Could not find library `${OSICBC_FILE}`")
@@ -36,7 +37,6 @@ endif()
 foreach(OSICBC_LIB ${OSICBC_REQ_LIBS})
   set(OSICBC_LIB_LOC "OSICBC_LIB_LOC-NOTFOUND")
   find_library(OSICBC_LIB_LOC NAMES ${OSICBC_LIB} lib${OSICBC_LIB}
-               PATHS ${OSICBC_ROOT} ENV OSICBC_ROOT
                PATH_SUFFIXES lib)
   if("${OSICBC_LIB_LOC}" STREQUAL "OSICBC_LIB_LOC-NOTFOUND")
 #    message(STATUS "OsiCBC: Could not find library `${OSICBC_LIB}`")
@@ -75,6 +75,7 @@ find_package_handle_standard_args(OsiCBC
 )
 
 mark_as_advanced(OSICBC_INCLUDE OSICBC_LIBRARY)
+list(REMOVE_AT CMAKE_PREFIX_PATH 1 0)
 
 set(OSICBC_LIBRARIES ${OSICBC_LIBRARY})
 set(OSICBC_INCLUDE_DIRS ${OSICBC_INCLUDE})

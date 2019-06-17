@@ -6,6 +6,8 @@
 #  CPLEX_COMPILE_FLAGS  - The definitions required to compile with CPLEX
 # User can set CPLEX_ROOT to the preferred installation prefix
 
+list(INSERT CMAKE_PREFIX_PATH 0 "${CPLEX_ROOT}" "$ENV{CPLEX_ROOT}")
+
 set(CPLEX_COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG")
 
 set(CPLEX_VERSIONS 129 128 1271 127 1263 1262 1261 126)
@@ -22,7 +24,6 @@ foreach(VERSION ${CPLEX_VERSIONS})
 endforeach(VERSION)
 
 find_path(CPLEX_INCLUDE ilcplex/cplex.h
-          PATHS ${CPLEX_ROOT} ENV CPLEX_ROOT
           HINTS ${CPLEX_DEFAULT_LOC}
           PATH_SUFFIXES include cplex/include)
 
@@ -39,7 +40,6 @@ if(CPLEX_PLUGIN)
 else()
   foreach(CPLEX_LIB ${CPLEX_LIB_NAMES})
     find_library(CPLEX_LIBRARY NAMES cplex ${CPLEX_LIB}
-                 PATHS ${CPLEX_ROOT} ENV CPLEX_ROOT
                  HINTS ${CPLEX_DEFAULT_LOC}
                  PATH_SUFFIXES lib/x86-64_linux/static_pic lib/x86-64_osx/static_pic lib/x64_windows_vs2013/stat_mda cplex/lib/x86-64_linux/static_pic cplex/lib/x86-64_osx/static_pic cplex/lib/x64_windows_vs2013/stat_mda)
     if(NOT "${CPLEX_LIBRARY}" STREQUAL "CPLEX_LIBRARY-NOTFOUND")
@@ -59,6 +59,7 @@ if(CPLEX_PLUGIN AND HAS_WINDOWS_H AND NOT HAS_DLFCN_H)
 endif()
 
 mark_as_advanced(CPLEX_INCLUDE CPLEX_LIBRARY)
+list(REMOVE_AT CMAKE_PREFIX_PATH 1 0)
 
 set(CPLEX_LIBRARIES ${CPLEX_LIBRARY})
 set(CPLEX_INCLUDE_DIRS ${CPLEX_INCLUDE})
