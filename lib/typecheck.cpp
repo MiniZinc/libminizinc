@@ -911,10 +911,11 @@ namespace MiniZinc {
       set2a_args[0] = e;
       Call* set2a = new Call(e->loc(), ASTString("set2array"), set2a_args);
       FunctionI* fi = m->matchFn(env, set2a, false);
-      assert(fi);
-      set2a->type(fi->rtype(env, args, false));
-      set2a->decl(fi);
-      e = set2a;
+      if (fi) {
+        set2a->type(fi->rtype(env, args, false));
+        set2a->decl(fi);
+        e = set2a;
+      }
     }
     if (funarg_t.bt()==Type::BT_TOP || e->type().bt()==funarg_t.bt() || e->type().bt()==Type::BT_BOT) {
       KeepAlive ka(e);
