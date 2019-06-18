@@ -46,7 +46,9 @@ include(cmake/support/emscripten_setup.cmake)
 
 # Try to find possible dependencies
 list(APPEND CMAKE_MODULE_PATH ${CMAKE_CURRENT_SOURCE_DIR}/cmake/modules)
-cmake_policy(SET CMP0074 NEW)
+if(POLICY CMP0074)
+  cmake_policy(SET CMP0074 NEW)
+endif(POLICY CMP0074)
 find_package(CPlex)
 find_package(Geas)
 find_package(Gecode 6.0 COMPONENTS Driver Float Int Kernel Minimodel Search Set Support)
