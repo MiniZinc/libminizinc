@@ -423,7 +423,7 @@ solve item of the model.
   - :mzndef:`restart_geometric(<base>,<scale>)` where :mzndef:`<base>` is a 
     float and :mzndef:`<scale>` is an integer. The :mzn:`k` th restart has a
     node limit of :mzn:`<scale> * <base>^k`.
-  - :mzndef:`restart_luby(<scale>) where :mzndef:`<scale>` is an integer. 
+  - :mzndef:`restart_luby(<scale>)` where :mzndef:`<scale>` is an integer. 
     The :mzn:`k` th restart gets :mzn:`<scale>*L[k]` where :mzn`L[k]` is the
     :mzn:`k` th number in the Luby sequence. The Luby sequence looks like 
     1 1 2 1 1 2 4 1 1 2 1 1 2 4 8 ..., that is it repeats two copies of the 
@@ -506,6 +506,7 @@ with one of four restart strategies
 
 THE CURRENT EXPERIMENT IS USELESS!
 
+.. _sec_warm_starts:
 
 Warm Starts
 -----------
@@ -582,19 +583,20 @@ important (especially for CP), so they all might need to be put into a ``seq_sea
 
 If you'd like to provide a most complete warmstart information, please provide values for all
 variables which are output when there is no output item or when compiled with ``--output-mode dzn``.
-Still, this excludes auxiliary variables introduced by ``let``'s. To capture them, you can customize
+.. Still, this excludes auxiliary variables introduced by ``let`` expressions. To capture them, you can customize
 the output item, or try the FlatZinc level, see below.
 
-Using Warm Starts At The FlatZinc Level
-+++++++++++++++++++++++++++++++++++++++
+..
+  Using Warm Starts At The FlatZinc Level
+  +++++++++++++++++++++++++++++++++++++++
 
-You can insert warm start information in the FlatZinc in the same way for all non-fixed variables.
-Just make sure the fzn interpreter outputs their values by annotating them as ``output_var(_array)``
-and capture the fzn output by, e.g., piping to ``solns2out --output-raw <file_raw.dzn>``.
-You can also insert high-level output into FZN warm start. When compiling the initial model, add
-empty warm start annotations for all important variables - they will be kept in FZN. In the next solve,
-fill the values. To fix the order of annotations, put them into a ``warm_start_array``.
+  You can insert warm start information in the FlatZinc in the same way for all non-fixed variables.
+  Just make sure the fzn interpreter outputs their values by annotating them as ``output_var(_array)``
+  and capture the fzn output by, e.g., piping to ``solns2out --output-raw <file_raw.dzn>``.
+  You can also insert high-level output into FZN warm start. When compiling the initial model, add
+  empty warm start annotations for all important variables - they will be kept in FZN. In the next solve,
+  fill the values. To fix the order of annotations, put them into a ``warm_start_array``.
 
-AUTOMATE, e.g., adding a solution in dzn format as a warm start during parsing?
+  AUTOMATE, e.g., adding a solution in dzn format as a warm start during parsing?
 
-A MORE REALISTIC EXAMPLE OF THEIR USE (jobshop???)
+  A MORE REALISTIC EXAMPLE OF THEIR USE (jobshop???)
