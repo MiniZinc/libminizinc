@@ -88,8 +88,8 @@ or separated flattening+solving - sometimes more stable but slower due to file I
   
   $ minizinc --solver cbc -c model.mzn data.dzn && minizinc --solver cbc -v -s -a model.fzn | minizinc --ozn-file model.ozn
 
-MIP-Aware Modeling
-~~~~~~~~~~~~~~~~~~
+MIP-Aware Modeling (But Mostly Useful for All Backends)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Avoid mixing positive and negative coefficients in the objective. Use 'complementing' variables to revert sense.
 
@@ -291,8 +291,8 @@ The 'MIPdomains' feature of the Flattener aims at reducing the number of binary 
 encoding linearized domain constraints, see the paper
 *Belov, Stuckey, Tack, Wallace. Improved Linearization of Constraint Programming Models. CP 2016.*
 
-By default it is on, but for some models such as packing problems, it is better off.
-To turn it off, add option ``-D fMIPdomains=false`` during flattening.
+By default it is off.
+To turn it on, add option ``-D fMIPdomains=true`` during flattening.
 Some parameters of the unification are available, run with ``--help``.
 
 Indicator Constraints
