@@ -17,29 +17,34 @@ Constraint Programming Solvers
 Gecode
 ~~~~~~
 
+Gecode is an open-source constraint programming system (see https://www.gecode.org). It supports many of MiniZinc's global constraints natively, and has support for set and float variables.
+
+Gecode supports a number of constraints and search annotations that are not part of the MiniZinc standard library. You can get access to these by adding :mzn:`include "gecode.mzn";` to your model.
 
 
 Chuffed
 ~~~~~~~
 
-Chuffed's performance is usually much better with option ``-f`` (free search).
+Chuffed is a constraint solver based on *lazy clause generation* (see https://github.com/chuffed/chuffed). This type of solver adapts techniques from SAT solving, such as conflict clause learning, watched literal propagation and activity-based search heuristics, and can often be much faster than traditional CP solvers.
+
+In order to take full advantage of Chuffed's performance, it is often useful to add a search annotation to the model (see :ref:`sec-search`), but allow Chuffed to switch between this defined search and its activity-based search. In order to enable this behaviour, use the ``-f`` (free search) command line option or select *Free search* in the solver configuration pane of the MiniZinc IDE.
 
 
 
 Mixed-Integer Programming Solvers
 ---------------------------------
 
-Calling a MIP solver on a MiniZinc model directly:
+MiniZinc has built-in support for Mixed Integer Programing solvers. If you have any MIP solver installed (and MiniZinc was compiled with MIP support), you can run a model using MIP like this on the command line:
 
 .. code-block:: bash
   
-  $ minizinc --solver mip -v -s -a model.mzn data.dzn
+  minizinc --solver mip -v -s -a model.mzn data.dzn
 
-or separated flattening+solving - sometimes more stable but slower due to file I/O:
+Of course, you can also select a particular solver, e.g. Gurobi (in case it is available):
 
 .. code-block:: bash
   
-  $ minizinc --solver cbc -c model.mzn data.dzn && minizinc --solver cbc -v -s -a model.fzn | minizinc --ozn-file model.ozn
+  minizinc --solver gurobi -v -s -a model.mzn data.dzn
 
 MIP-Aware Modeling (But Mostly Useful for All Backends)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
