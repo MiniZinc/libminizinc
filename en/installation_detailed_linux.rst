@@ -81,6 +81,42 @@ In order to use Gecode as a *solver* with MiniZinc (as opposed to an internal pr
  }
 
 
+OR Tools
+~~~~~~~~
+
+You can install the OR-Tools FlatZinc module as binary or obtain the source code from GitHub (https://github.com/google/or-tools).
+You can find detailed compilation instructions for OR-Tools on https://developers.google.com/optimization/.
+To compile the FlatZinc module from source, run the following in a terminal (from within the OR-Tools source code directory):
+
+.. code-block:: bash
+
+  make fz -j8
+  make test_fz
+
+In order to use OR-Tools with MiniZinc, you have to create an appropriate solver configuration file.
+Add a file ``ortools.msc`` in an appropriate location (see :ref:`sec-cmdline-conffiles`) containing the following,
+where you replace ``<INSTALLATION_PREFIX>`` with the actual installation path and update the version number if necessary:
+
+.. code-block:: json
+
+ {
+  "id": "org.ortools.ortools",
+  "name": "OR Tools",
+  "description": "Or Tools FlatZinc executable",
+  "version": "7.0/stable",
+  "mznlib": "<INSTALLATION_PREFIX>/ortools/flatzinc/mznlib_sat",
+  "executable": "<INSTALLATION_PREFIX>/bin/fz",
+  "tags": ["cp","int", "lcg", "or-tools"],
+  "stdFlags": ["-a","-n","-p"],
+  "supportsMzn": false,
+  "supportsFzn": true,
+  "needsSolns2Out": true,
+  "needsMznExecutable": false,
+  "needsStdlibDir": false,
+  "isGUIApplication": false
+ }
+
+
 Chuffed
 ~~~~~~~
 
