@@ -3,7 +3,7 @@
 Solving Technologies and Solver Backends
 ========================================
 
-The ``minizinc`` tool can use various solver backends for a given model. The solver interface can use intermediate FlatZinc files or direct solver interfaces. This chapter summarises usage options available for various target solvers.
+The ``minizinc`` tool can use various solver backends for a given model. Some solvers are separate executables that are called by ``minizinc`` and passed the name of a FlatZinc file; other solvers are part of the ``minizinc`` binary (either hard-coded or loaded as a dynamic library or "plugin"). This chapter summarises usage options available for various target solvers that come bundled with the standard MiniZinc binaries. You can find instructions for installing these solvers from source code in :ref:`ch-installation_detailed`.
 
 The help text of ``minizinc`` shows a list of configured solver backends and their tags. You can see solver-specific command-line options by running
 
@@ -17,27 +17,6 @@ Constraint Programming Solvers
 Gecode
 ~~~~~~
 
-To compile from source, run ``./configure --disable-qt && make -j8 && sudo make install`` which installs in the standard location. 
-For ``minizinc`` to see it, add ``gecode.msc`` in an appropriate location (see Solver Config Files) containing the following:
-
-.. code-block:: json
-
- {
-  "id": "org.gecode.gecode",
-  "name": "Gecode",
-  "description": "Gecode FlatZinc executable",
-  "version": "6.2.0",
-  "mznlib": "/usr/local/share/gecode/mznlib",
-  "executable": "fzn-gecode",
-  "tags": ["cp","int", "float", "set", "restart"],
-  "stdFlags": ["-a","-f","-n","-p","-r","-s","-t"],
-  "supportsMzn": false,
-  "supportsFzn": true,
-  "needsSolns2Out": true,
-  "needsMznExecutable": false,
-  "needsStdlibDir": false,
-  "isGUIApplication": false
- }
 
 
 Chuffed
@@ -45,32 +24,6 @@ Chuffed
 
 Chuffed's performance is usually much better with option ``-f`` (free search).
 
-You can obtain Chuffed's source from https://github.com/chuffed/chuffed. After compiling and installing it by 
-
-.. code-block:: bash
-
-  $ mkdir build && cd build && cmake .. && cmake --build . -- -j8 && sudo cmake --build . --target install
-
-you can configure it for ``minizinc`` using the file ``chuffed.msc`` with the following content:
-
-.. code-block:: json
-
- {
-  "id": "org.chuffed.chuffed",
-  "name": "Chuffed",
-  "description": "Chuffed FlatZinc executable",
-  "version": "${chuffed_VERSION_MAJOR}.${chuffed_VERSION_MINOR}.${chuffed_VERSION_PATCH}",
-  "mznlib": "/usr/local/share/chuffed/mznlib",
-  "executable": "fzn-chuffed",
-  "tags": ["cp","lcg","int"],
-  "stdFlags": ["-a","-f","-n","-r","-s","-t","-v"],
-  "supportsMzn": false,
-  "supportsFzn": true,
-  "needsSolns2Out": true,
-  "needsMznExecutable": false,
-  "needsStdlibDir": false,
-  "isGUIApplication": false
- }
 
 
 Mixed-Integer Programming Solvers
@@ -121,119 +74,6 @@ A better solution, given reasonable bounds on :mzn:`cost1` and :mzn:`cost2`, is 
 
   int: cost_others_ub = 1+2*ub_array( [cost1, cost2] );    %% Multiply by 2 for a stronger LP relaxation      
   var int: cost_road = 286*c + cost_others_ub*(1-c);
-
-Installation of MIP Backends: *SCIP*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-For *SCIP (as of 6.0.1.0)*, if you download the Optimization Suite, the installation commands should be as follows.
-
-1. Download the SCIP Optimization Suite 6.0.1 (or higher) source code: https://scip.zib.de/download.php?fname=scipoptsuite-6.0.1.tgz
-
-2. Untar it and change directories into scipoptsuite-6.0.1
-
-3. create a build directory and change directories there
-
-4. Execute 
-
-.. code-block:: bash
-
-    cmake .. -DCMAKE_BUILD_TYPE=Release [-DCMAKE_INSTALL_PREFIX=/home/user/local/scip/installation]
-
-The first flag is necessary, the second one is optional in order to install SCIP and SoPlex non-systemwide.
-
-5. Compile and install SoPlex, SCIP, and its optional components:
-
-.. code-block:: bash
-
-    make && make install
-
-6. Configure minizinc:
-
-.. code-block:: bash
-
-    cmake .. -DUSE_PROPRIETARY=on [-DCMAKE_PREFIX_PATH=/home/user/local/scip/installation] 
-
-The optional prefix path variable is only necessary if you installed SCIP in a non-systemwide directory.
-
-7. Compile Minizinc and enjoy SCIP as a solver.
-
-If you have folders for SCIP and SoPlex separately, follow these steps.
-
-.. code-block:: bash
-
-  $ tar xvfz scipoptsuite-6.0.1.tgz
-  $ cd scipoptsuite-6.0.1
-  $ cd soplex
-  $ mkdir build
-  $ cd build
-  $ cmake ..
-  $ make -j5
-  $ cd ../scip
-  $ mdkir build
-  $ cd build
-  $ cmake .. -DSOPLEX_DIR=~/Downloads/Software/scipoptsuite-6.0.1/soplex/build
-  $ make -j5
-  $ sudo make install                    ## Now MZN should find it
-
-
-Installation of MIP Backends: *COIN-OR CBC*
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-(CBC as of 2.10/stable. Prefer stable or even trunk).
-
-**UNIX / Linux**:
-
-.. code-block:: bash
-
-  $ svn checkout https://projects.coin-or.org/svn/Cbc/stable/2.10/ Cbc-stable
-  $ cd Cbc-stable
-  $ ./configure <--enable-cbc-parallel>
-  $ make && make install
-  $ export CBC_HOME=$(pwd)               ## put this into .profile with $(pwd) expanded
-                                         ## Or use -DOSICBC_ROOT=<absolute path> for MZN's CMake config
-
-**Windows**, especially if you want the parallel version of CBC. Thanks to David Catteeuw.
-
-1. OBTAIN AND BUILD CBC
-
-  CBC is on github, but has many dependencies: https://github.com/coin-or/Cbc
-
-  AMPL provides a CBC binary and has the entire project with dependencies on github: https://github.com/ampl/coin
-
-  Building Couenne fails, but we don't need. Remove couenne, ipopt, and bonmin directories.
-  
-  Install zlib and bzip2, e.g., using vcpkg. Its CMake integration does not work as of vcpkg 2018.11.23 so you need to use its install folder manually,
-  e.g., by adding the following to CBC's CMakeLists.txt:
-  
-    ::
-     
-       include_directories(...vcpkg/installed/x86-windows/include)
-       link_libraries(...vcpkg/installed/x86-windows/lib/zlib.lib)
-       link_libraries(...vcpkg/installed/x86-windows/lib/bz2.lib)
-   
-  Then 
-
-  .. code-block:: bash
-  
-    $ cd C:\dev
-    $ git clone https://github.com/ampl/coin.git
-    $ cd coin
-    $ rmdir /s Bonmin
-    $ rmdir /s Couenne
-    $ rmdir /s Ipopt
-    $ mkdir build
-    $ cd build
-    $ cmake .. -G "Visual Studio 15 2017" -A x64 -DCMAKE_INSTALL_PREFIX=C:\dev\Cbc_install
-    $ cmake --build . --target install
- 
-  => successfully builds ``Cbc.lib``, debug version in ``C:\dev\coin\build\Debug``.
-
-
-2. BUILD MINIZINC WITH CBC
-
-  Copy ``C:\dev\coin\build\Debug\*.lib`` to ``C:\dev\Cbc_install\lib``
-
-  Configure MiniZinc's CMake with ``-DOSICBC_ROOT=C:\dev\cbc_install``.
 
 
 Useful Flattening Parameters
@@ -312,6 +152,6 @@ For Gurobi and IBM ILOG CPLEX, see ``share/minizinc/linear/options.mzn`` for the
 Warm Starts
 ~~~~~~~~~~~
 
-For general information of warm start annotations, see Tutorial.
+For general information of warm start annotations, see :ref:`sec_warm_starts`.
 Warm starts are currently implemented for Gurobi, IBM ILOG CPLEX, and XPRESS.
 
