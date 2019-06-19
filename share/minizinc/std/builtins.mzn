@@ -373,7 +373,7 @@ function int: abs(int: x);
 /** @group builtins.arithmetic Return absolute value of \a x */
 function var int: abs(var int: x) :: promise_total =
   if has_bounds(x) /\ lb(x) >= 0 then x
-  elseif has_bounds(x) /\ ub(x) < 0 then -x else
+  elseif has_bounds(x) /\ ub(x) <= 0 then -x else
   let { var 0..max(-lb(x),ub(x)): m ::is_defined_var;
         constraint int_abs(x,m) ::defines_var(m);
   } in m
@@ -384,7 +384,8 @@ function float: abs(float: x);
 /** @group builtins.arithmetic Return absolute value of \a x */
 function var float: abs(var float: x) :: promise_total =
   if has_bounds(x) then
-    if lb(x) >= 0.0 then x else
+    if lb(x) >= 0.0 then x
+    elseif ub(x) <= 0.0 then -x else
     let { var 0.0..max(-lb(x),ub(x)): m ::is_defined_var;
           constraint float_abs(x,m) ::defines_var(m);
     } in m
