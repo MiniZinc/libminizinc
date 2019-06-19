@@ -2436,6 +2436,7 @@ namespace MiniZinc {
         GCLock lock;
         BinOp* nbo = new BinOp(bo->loc().introduce(),flat_cv_exp(env, ctx, bo->lhs())(),bo->op(),flat_cv_exp(env, ctx, bo->rhs())());
         nbo->type(bo->type());
+        nbo->decl(bo->decl());
         return eval_par(env, nbo);
       }
       case Expression::E_UNOP:
