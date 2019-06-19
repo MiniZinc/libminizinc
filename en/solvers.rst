@@ -3,7 +3,13 @@
 Solving Technologies and Solver Backends
 ========================================
 
-The ``minizinc`` tool can use various solver backends for a given model. Some solvers are separate executables that are called by ``minizinc`` and passed the name of a FlatZinc file; other solvers are part of the ``minizinc`` binary (either hard-coded or loaded as a dynamic library or "plugin"). This chapter summarises usage options available for various target solvers that come bundled with the standard MiniZinc binaries. You can find instructions for installing these solvers from source code in :ref:`ch-installation_detailed`.
+The ``minizinc`` tool can use various solver backends for a given model.
+Some solvers are separate executables that are called by ``minizinc`` and passed the name of a FlatZinc file;
+other solvers are part of the ``minizinc`` binary (either hard-coded or loaded as a dynamic library or "plugin").
+Some solvers are part of the binary MiniZinc distribution, others have to be installed separately.
+You can find instructions for installing these solvers from source code and integrating into the ``minizinc`` tool
+in :ref:`ch-installation_detailed`.
+This chapter summarises usage options available for various target solvers.
 
 The help text of ``minizinc`` shows a list of configured solver backends and their tags. You can see solver-specific command-line options by running
 
@@ -17,18 +23,33 @@ Constraint Programming Solvers
 Gecode
 ~~~~~~
 
-Gecode is an open-source constraint programming system (see https://www.gecode.org). It supports many of MiniZinc's global constraints natively, and has support for set and float variables.
+Gecode is an open-source constraint programming system (see https://www.gecode.org).
+It supports many of MiniZinc's global constraints natively, and has support for set and float variables.
 
-Gecode supports a number of constraints and search annotations that are not part of the MiniZinc standard library. You can get access to these by adding :mzn:`include "gecode.mzn";` to your model.
+Gecode supports a number of constraints and search annotations that are not part of the MiniZinc standard library.
+You can get access to these by adding :mzn:`include "gecode.mzn";` to your model.
 
 
 Chuffed
 ~~~~~~~
 
-Chuffed is a constraint solver based on *lazy clause generation* (see https://github.com/chuffed/chuffed). This type of solver adapts techniques from SAT solving, such as conflict clause learning, watched literal propagation and activity-based search heuristics, and can often be much faster than traditional CP solvers.
+Chuffed is a constraint solver based on *lazy clause generation* (see https://github.com/chuffed/chuffed).
+This type of solver adapts techniques from SAT solving, such as conflict clause learning,
+watched literal propagation and activity-based search heuristics, and can often be much faster than traditional CP solvers.
 
-In order to take full advantage of Chuffed's performance, it is often useful to add a search annotation to the model (see :ref:`sec-search`), but allow Chuffed to switch between this defined search and its activity-based search. In order to enable this behaviour, use the ``-f`` (free search) command line option or select *Free search* in the solver configuration pane of the MiniZinc IDE.
+In order to take full advantage of Chuffed's performance,
+it is often useful to add a search annotation to the model (see :ref:`sec-search`),
+but allow Chuffed to switch between this defined search and its activity-based search.
+In order to enable this behaviour, use the ``-f`` (free search) command line option or
+select *Free search* in the solver configuration pane of the MiniZinc IDE.
 
+
+OR-Tools
+~~~~~~~~
+
+OR-Tools is an open-source CP/SAT/LP solver (see https://developers.google.com/optimization/).
+It supports many of MiniZinc's global constraints natively. It often performs better multi-threaded (option ``-p``)
+so it can employ various solving technologies. A search annotation (see :ref:`sec-search`) can be useful.
 
 
 Mixed-Integer Programming Solvers
