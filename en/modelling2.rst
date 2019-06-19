@@ -1189,7 +1189,7 @@ It is natural to model this in MiniZinc with a single decision variable: :mzn:`v
 where :mzn:`ITEM` is the set of possible items. If the arrays
 :mzn:`weight[i]` and :mzn:`profit[i]` respectively give the weight and
 profit of item :mzn:`i`, and the maximum weight the knapsack can carry is
-given by :mzn:`capacity` then a naural model is given in
+given by :mzn:`capacity` then a natural model is given in
 :numref:`ex-knapsack-binary`.
 
 .. literalinclude:: examples/knapsack.mzn
