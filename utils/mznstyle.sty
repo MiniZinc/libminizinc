@@ -29,8 +29,10 @@
 \RequirePackage{tocloft}
 \PassOptionsToPackage{titles}{tocloft}
 
+\setcounter{tocdepth}{4}
 \renewcommand*\cftchapnumwidth{2em}
 \renewcommand*\cftsecnumwidth{3em}
+\renewcommand*\cftsubsecnumwidth{4em}
 
 \renewenvironment{sphinxadmonition}[2]{
   \begin{tcolorbox}[colbacktitle=UglyBlue,coltitle=white,colframe=UglyBlue,fonttitle=\bfseries\large,title=#2]
