@@ -358,13 +358,25 @@ function var float: min(array[$U] of var float: x) =
   } in min_t(xx);
 
 
-/** @group builtins.arithmetic Return index of minimum of elements in array \a x */
+/** @group builtins.arithmetic
+    Returns the index of the minimum value in the array \a x.
+    When breaking ties the least index is returned.
+*/
 function $$E: arg_min(array[$$E] of int: x);
-/** @group builtins.arithmetic Return index of minimum of elements in array \a x */
+/** @group builtins.arithmetic
+    Returns the index of the minimum value in the array \a x.
+    When breaking ties the least index is returned.
+*/
 function $$E: arg_min(array[$$E] of float: x);
-/** @group builtins.arithmetic Return index of maximum of elements in array \a x */
+/** @group builtins.arithmetic
+    Returns the index of the maximum value in the array \a x.
+    When breaking ties the least index is returned.
+*/
 function $$E: arg_max(array[$$E] of int: x);
-/** @group builtins.arithmetic Return index of maximum of elements in array \a x */
+/** @group builtins.arithmetic
+    Returns the index of the maximum value in the array \a x.
+    When breaking ties the least index is returned.
+*/
 function $$E: arg_max(array[$$E] of float: x);
 
 /** @group builtins.arithmetic Return absolute value of \a x */
