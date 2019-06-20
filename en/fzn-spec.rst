@@ -881,8 +881,8 @@ When a MiniZinc model that contains the ``all_different`` constraint is now comp
 
 .. _fzn-cmdline-options:
 
-Command Line Interface
-----------------------
+Command-Line Interface and Standard Options
+-------------------------------------------
 
 In order to work with the ``minizinc`` command line driver, a FlatZinc solver must be an executable (which can include e.g. shell scripts) that can be invoked as follows:
 
@@ -923,12 +923,16 @@ where ``<executable-name>`` is the name of the executable. Solvers may support t
 
 .. option:: -p <i>
 
-  Run with ``i`` parallel threads (for multi-threded solvers).
+  Run with ``i`` parallel threads (for multi-threaded solvers).
 
 .. option:: -r <i>
 
   Use ``i`` as the random seed (for any random number generators the solver
   may be using).
+
+.. option:: -t <ms>
+
+  Wall time limit ``ms`` milliseconds.
 
 .. _sec-cmdline-conffiles:
 
@@ -983,7 +987,7 @@ Here is a list of all configuration options recognised by the configuration file
   - ``"float"``: for solvers that support float variables
   - ``"api"``: for solvers that use the internal C++ API
 
-- ``stdFlags`` (list of strings, default empty): Which of the standard solver command line flags are supported by this solver. The standard flags are ``-a``, ``-n``, ``-s``, ``-v``, ``-p``, ``-r``, ``-f``.
+- ``stdFlags`` (list of strings, default empty): Which of the standard solver command line flags are supported by this solver. The standard flags are ``-a``, ``-n``, ``-s``, ``-v``, ``-p``, ``-r``, ``-f``, ``-t``.
 - ``extraFlags`` (list of list of strings, default empty): Extra command line flags supported by the solver. Each entry must be a list of four strings. The first string is the name of the option (e.g. ``"--special-algorithm"``). The second string is a description that can be used to generate help output (e.g. ``"which special algorithm to use"``). The third string specifies the type of the argument (``"int"``, ``"bool"``, ``"float"``, ``"string"`` or ``"opt"``). The fourth string is the default value. The following types have an additional extended syntax:
 
   - ``"int:n:m"`` where ``n`` and ``m`` are integers, gives lower and upper bounds for the supported values
