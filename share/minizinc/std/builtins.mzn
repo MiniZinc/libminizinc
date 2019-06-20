@@ -212,17 +212,17 @@ function var float: '-'(var float: x,var float: y);
 function     int:   '*'(    int: x,     int: y);
 /** @group builtins.arithmetic Return \a x * \a y */
 function var int:   '*'(var int: x,  var int: y);
-/** @group builtins.arithmetic Return \a x ^ \a y */
+/** @group builtins.arithmetic Return \(\a x ^ {\a y}\) */
 function     int:   '^'(    int: x,     int: y);
-/** @group builtins.arithmetic Return \a x ^ \a y */
+/** @group builtins.arithmetic Return \(\a x ^ {\a y}\) */
 function var int:   '^'(var int: x,  var int: y);
 /** @group builtins.arithmetic Return \a x * \a y */
 function     float: '*'(    float: x,    float: y);
 /** @group builtins.arithmetic Return \a x * \a y */
 function var float: '*'(var float: x,var float: y);
-/** @group builtins.arithmetic Return \a x ^ \a y */
+/** @group builtins.arithmetic Return \(\a x ^ {\a y}\) */
 function     float: '^'(    float: x,    float: y);
-/** @group builtins.arithmetic Return \a x ^ \a y */
+/** @group builtins.arithmetic Return \(\a x ^ {\a y}\) */
 function var float: '^'(var float: x,var float: y);
 /** @group builtins.arithmetic Return negative \a x */
 function     int:   '-'(    int: x);
