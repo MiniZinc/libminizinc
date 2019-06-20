@@ -107,7 +107,7 @@ where you replace ``<INSTALLATION_PREFIX>`` with the actual installation path an
   "mznlib": "<INSTALLATION_PREFIX>/ortools/flatzinc/mznlib_sat",
   "executable": "<INSTALLATION_PREFIX>/bin/fz",
   "tags": ["cp","int", "lcg", "or-tools"],
-  "stdFlags": ["-a","-n","-p"],
+  "stdFlags": ["-a", "-n", "-p", "-f", "-r", "-v", "-l", "-s"],
   "supportsMzn": false,
   "supportsFzn": true,
   "needsSolns2Out": true,
