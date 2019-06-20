@@ -708,9 +708,9 @@ function var set of $$T: 'union'(var set of $$T: x, var set of $$T: y);
 function     set of $T:  'intersect'(    set of $T: x,      set of $T: y);
 /** @group builtins.set Return the intersection of sets \a x and \a y */
 function var set of $$T: 'intersect'(var set of $$T: x, var set of $$T: y);
-/** @group builtins.set Return the set difference of sets \a x &minus; \a y */
+/** @group builtins.set Return the set difference of sets \(\a x \setminus \a y \) */
 function     set of $T:  'diff'(    set of $T: x,      set of $T: y);
-/** @group builtins.set Return the set difference of sets \a x &minus; \a y */
+/** @group builtins.set Return the set difference of sets \(\a x \setminus \a y \) */
 function var set of $$T: 'diff'(var set of $$T: x, var set of $$T: y);
 /** @group builtins.set Return the symmetric set difference of sets \a x and \a y */
 function     set of $T:  'symdiff'(    set of $T: x,      set of $T: y);
