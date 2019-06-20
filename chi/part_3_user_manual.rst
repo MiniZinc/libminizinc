@@ -10,5 +10,6 @@ User Manual
    globalizer
    find_mus
    jupyter
+   python
 
 ..   cpprofiler

@@ -11,6 +11,7 @@ User Manual
    globalizer
    find_mus
    jupyter
+   python
    installation_detailed
 
 ..   cpprofiler
