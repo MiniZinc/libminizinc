@@ -783,6 +783,9 @@ The :mzndef:`<name>` describes the kind of statistics gathered, and the :mzndef:
 Name                     Type   Explanation
 ======================== ====== ================================================
 ``nodes``                int    Number of search nodes
+``openNodes``            int    Number of open search nodes
+``objective``            float  Current objective value
+``objectiveBound``       float  Dual bound on the objective value
 ``failures``             int    Number of leaf nodes that were failed
 ``restarts``             int    Number of times the solver restarted the search
 ``variables``            int    Number of variables
