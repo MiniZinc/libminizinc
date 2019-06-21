@@ -6,7 +6,7 @@ set of int: POSN = 1..n;
 array[int] of int: pos;
 
 array[POSN] of var PERSON: who;
-int: tdist;
+int: _objective;
 
 test alldifferent(array[int] of int: x) =
                  forall(i,j in index_set(x) where i < j)(x[i] != x[j]);
@@ -24,7 +24,7 @@ output [if
                g[fix(who[i+1])] != g[fix(who[i+2])],
                "three people of the same gender \(g[fix(who[i])]) in positions \(i)..\(i+2)\n")) /\
   let { int: obj = sum(i in 1..n-1)(abs(pos[i] - pos[i+1])); } in
-    check(obj = tdist, "calculated objective \(obj) does not agree with tdist = \(tdist)\n")
+    check(obj = _objective, "calculated objective \(obj) does not agree with objective from the model (\(_objective))\n")
   then
     "CORRECT: All constraints hold"
   else       

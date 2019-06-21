@@ -130,7 +130,9 @@ Note how it first checks whether the solution has the right dimensions (correct 
 Checking optimisation problems
 ------------------------------
 
-Optimisation problems pose a difficulty for automatic checking. When a solver claims to prove optimality, we cannot easily verify this claim without solving the problem again (using a different model that is known to be correct). At the moment, solution checking for optimisation problems is restricted to checking that the objective has been computed correctly. The example in the next section illustrates how to check the value of the objective.
+Optimisation problems pose a difficulty for automatic checking. When a solver claims to prove optimality, we cannot easily verify this claim without solving the problem again (using a different model that is known to be correct). At the moment, solution checking for optimisation problems is restricted to checking that the objective has been computed correctly. 
+
+To check that the objective value is calculated correctly, define a parameter called :mzn:`_objective` of the appropriate type (:mzn:`int` or :mzn:`float`) in the checker. The example in the next section illustrates this.
 
 Hidden variables
 ----------------

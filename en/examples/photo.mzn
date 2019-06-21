@@ -12,5 +12,4 @@ constraint inverse(pos,who);     % channel from decisions to view
 constraint forall(i in 1..n-2)
                  (g[who[i]] != g[who[i+1]] \/ g[who[i+1]] != g[who[i+2]]);
 
-var int: tdist = sum(i in 1..n-1)(abs(pos[i] - pos[i+1]));
-solve minimize tdist;
+solve minimize sum(i in 1..n-1)(abs(pos[i] - pos[i+1]));
