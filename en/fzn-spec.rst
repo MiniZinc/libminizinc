@@ -763,7 +763,12 @@ found (i.e., the problem is unsatisfiable).
 Statistics output
 ~~~~~~~~~~~~~~~~~
 
-FlatZinc solvers can output statistics in a standard format so that it can be read by scripts, for example, in order to run experiments and automatically aggregate the results. Statistics should be printed to the standard output stream in the form of FlatZinc comments that follow a specific format. Statistics can be output at any time during the solving, i.e., before the first solution, between solutions, and after the search has finished.
+FlatZinc solvers can output statistics in a standard format so that it can be read by scripts,
+for example, in order to run experiments and automatically aggregate the results.
+Statistics should be printed to the standard output stream in the form of FlatZinc comments that follow a specific format.
+Statistics can be output at any time during the solving, i.e., before the first solution, between solutions,
+and after the search has finished. Statistics output corresponding to a solution should be the last one
+before its '----------' separator.
 
 Each value should be output on a line of its own in the following format:
 
@@ -777,7 +782,47 @@ Each block of statistics is terminated by a line of its own with the following f
 
   %%%mzn-stat-end
 
-The :mzndef:`<name>` describes the kind of statistics gathered, and the :mzndef:`<value>` can be any value of a MiniZinc type. The following names are considered standard statistics:
+**Example**
+
+.. code-block:: minizincdef
+
+  %%%mzn-stat objective=1e+308
+  %%%mzn-stat objectiveBound=0
+  %%%mzn-stat nodes=0
+  %%%mzn-stat solveTime=2.3567
+  %%%mzn-stat-end
+
+  (no feasible solution found yet but something can be printed...)
+
+  %%%mzn-stat objective=12345
+  %%%mzn-stat objectiveBound=122
+  %%%mzn-stat nodes=35
+  %%%mzn-stat solveTime=78.5799
+  %%%mzn-stat-end
+
+  (the corresponding feasible solution with value 12345 goes here
+     or before its statistics but above the separator)
+  ----------               (<- the solution separator)
+
+  %%%mzn-stat objective=379
+  %%%mzn-stat objectiveBound=379
+  %%%mzn-stat nodes=4725
+  %%%mzn-stat solveTime=178.5799
+  %%%mzn-stat-end
+
+  (the corr. optimal solution with value 379 goes here)
+  ----------
+  ==========               (<- the 'search complete' marker)
+
+  %%%mzn-stat objective=379      (<- this is the concluding output)
+  %%%mzn-stat objectiveBound=379
+  %%%mzn-stat nodes=13456
+  %%%mzn-stat solveTime=2378.5799
+  %%%mzn-stat-end
+
+
+The :mzndef:`<name>` describes the kind of statistics gathered, and the :mzndef:`<value>` can be any value of a MiniZinc type.
+The following names are considered standard statistics:
 
 ======================== ====== ================================================
 Name                     Type   Explanation
