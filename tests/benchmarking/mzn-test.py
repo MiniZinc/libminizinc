@@ -184,7 +184,8 @@ class MZT_Param:
             "SCIP": [ "__BE_COMMON", "__BE_SOLVER", "BE_SCIP" ],
             "CBC": [ "__BE_COMMON", "__BE_SOLVER", "BE_CBC" ],
             "GECODE": [ "__BE_COMMON", "__BE_SOLVER", "BE_GECODE" ],
-            "CHUFFED": [ "__BE_COMMON", "__BE_SOLVER", "BE_CHUFFED" ] #,
+            "CHUFFED": [ "__BE_COMMON", "__BE_SOLVER", "BE_CHUFFED" ],
+            "ORTOOLS": [ "__BE_COMMON", "__BE_SOLVER", "BE_ORTOOLS" ] #,
             # "MZN-GUROBI": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-GUROBI" ],
             # "MZN-CPLEX": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-CPLEX" ],
             # "MZN-CBC": [ "__BE_COMMON", "__BE_SOLVER", "BE_MZN-CBC" ],
@@ -475,6 +476,13 @@ class MZT_Param:
               s_CommentKey: [ "------------------- Specializations for Chuffed FlatZinc interpreter" ],
               "EXE": {
                 "s_SolverCall" : ["minizinc -v -s --solver chuffed -f --output-time "
+                                    + sDZNOutputAgrs + " %s"], # _objective fails for checking
+              }  ##  --fzn-flags --time-out --fzn-flags 300
+            }
+            , "BE_ORTOOLS": {
+              s_CommentKey: [ "------------------- Specializations for OR-Tools FlatZinc interpreter" ],
+              "EXE": {
+                "s_SolverCall" : ["minizinc -v -s --solver ortools -f --output-time "
                                     + sDZNOutputAgrs + " %s"], # _objective fails for checking
               }  ##  --fzn-flags --time-out --fzn-flags 300
             }
