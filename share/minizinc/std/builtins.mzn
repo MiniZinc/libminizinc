@@ -2477,10 +2477,10 @@ function var bool: element_mt(var int: idx, array[int] of var bool: x) :: promis
 
 function var bool: element(var int: idx, array[int] of var bool: x) =
   if mzn_in_root_context(idx) then
-    trace("in root\n") /\ idx in index_set(x) /\ element_t(idx,x)
+    idx in index_set(x) /\ element_t(idx,x)
   elseif (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
-    trace("bounds\n") /\ element_t(idx,x)
-  else trace("not root\n") /\idx in index_set(x) /\ element_mt(idx,x)
+    element_t(idx,x)
+  else idx in index_set(x) /\ element_mt(idx,x)
   endif;
 
 function var bool: element(var int: idx1, var int: idx2,
