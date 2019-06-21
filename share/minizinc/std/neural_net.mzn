@@ -13,6 +13,9 @@ include "fzn_neural_net.mzn";
 	first_edge: array[NODE] of 1..m+1
 	neuron_type: { RELU, STEP, LINEAR, SOFTPLUS }
 */
+
+enum NEURON_TYPE = { NT_RELU, NT_STEP, NT_LINEAR, NT_SOFTPLUS };
+
 predicate neural_net(array[int] of var float: inputs,
                      array[int] of int: input_ids,
 	            	     array[int] of var float: outputs,
@@ -67,6 +70,6 @@ predicate neural_net(array[int] of var float: inputs,
                      array[int] of int: edge_parent,
                      array[int] of int: first_edge) =
            neural_net(inputs,input_ids,outputs,output_ids,bias,
-                      edge_weight,edge_parent,first_edge,RELU);
+                      edge_weight,edge_parent,first_edge,NT_RELU);
 
 %-----------------------------------------------------------------------------%

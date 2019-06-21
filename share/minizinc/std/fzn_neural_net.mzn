@@ -11,7 +11,7 @@
 	first_edge: array[NODE] of 1..m+1
 	neuron_type: { RELU }
 */
-enum NEURON_TYPE = { RELU, STEP, LINEAR, SOFTPLUS };
+
 predicate fzn_neural_net(array[int] of var float: inputs,
                          array[int] of int: input_ids,
 		                     array[int] of var float: outputs,
@@ -34,10 +34,10 @@ predicate fzn_neural_net(array[int] of var float: inputs,
                   array[int] of var float: ins = [neuron[edge_parent[j]] | j in first..last];
 		              array[int] of float: ws = [ edge_weight[j] | j in first..last ];
 	                float: b = bias[i]; } in
-                      neuron[i] = if neuron_type = RELU then neuron_relu(ins,ws,b)
-                                  elseif neuron_type = STEP then neuron_step(ins,ws,b)
-                                  elseif neuron_type = LINEAR then neuron_linear(ins,ws,b)
-                                  elseif neuron_type = SOFTPLUS then neuron_softplus(ins,ws,b)
+                      neuron[i] = if neuron_type = NT_RELU then neuron_relu(ins,ws,b)
+                                  elseif neuron_type = NT_STEP then neuron_step(ins,ws,b)
+                                  elseif neuron_type = NT_LINEAR then neuron_linear(ins,ws,b)
+                                  elseif neuron_type = NT_SOFTPLUS then neuron_softplus(ins,ws,b)
 			                            else 0.0 endif
         );
                        
