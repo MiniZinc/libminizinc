@@ -786,38 +786,38 @@ Each block of statistics is terminated by a line of its own with the following f
 
 .. code-block:: minizincdef
 
-  %%%mzn-stat objective=1e+308
-  %%%mzn-stat objectiveBound=0
-  %%%mzn-stat nodes=0
-  %%%mzn-stat solveTime=2.3567
+  %%%mzn-stat: objective=1e+308
+  %%%mzn-stat: objectiveBound=0
+  %%%mzn-stat: nodes=0
+  %%%mzn-stat: solveTime=2.3567
   %%%mzn-stat-end
 
   (no feasible solution found yet but something can be printed...)
 
-  %%%mzn-stat objective=12345
-  %%%mzn-stat objectiveBound=122
-  %%%mzn-stat nodes=35
-  %%%mzn-stat solveTime=78.5799
+  %%%mzn-stat: objective=12345
+  %%%mzn-stat: objectiveBound=122
+  %%%mzn-stat: nodes=35
+  %%%mzn-stat: solveTime=78.5799
   %%%mzn-stat-end
 
   (the corresponding feasible solution with value 12345 goes here
      or before its statistics but above the separator)
   ----------               (<- the solution separator)
 
-  %%%mzn-stat objective=379
-  %%%mzn-stat objectiveBound=379
-  %%%mzn-stat nodes=4725
-  %%%mzn-stat solveTime=178.5799
+  %%%mzn-stat: objective=379
+  %%%mzn-stat: objectiveBound=379
+  %%%mzn-stat: nodes=4725
+  %%%mzn-stat: solveTime=178.5799
   %%%mzn-stat-end
 
   (the corr. optimal solution with value 379 goes here)
   ----------
   ==========               (<- the 'search complete' marker)
 
-  %%%mzn-stat objective=379      (<- this is the concluding output)
-  %%%mzn-stat objectiveBound=379
-  %%%mzn-stat nodes=13456
-  %%%mzn-stat solveTime=2378.5799
+  %%%mzn-stat: objective=379      (<- this is the concluding output)
+  %%%mzn-stat: objectiveBound=379
+  %%%mzn-stat: nodes=13456
+  %%%mzn-stat: solveTime=2378.5799
   %%%mzn-stat-end
 
 
