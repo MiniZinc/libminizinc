@@ -218,7 +218,12 @@ namespace MiniZinc {
     
     for (int i=0; i<ite->size(); i++) {
       bool cond = true;
-      EE e_if = flat_exp(env,cmix,ite->e_if(i),NULL,constants().var_true);
+      EE e_if;
+      if (ite->e_if(i)->isa<Call>() && ite->e_if(i)->cast<Call>()->id()=="mzn_in_root_context") {
+        e_if = EE(constants().boollit(ctx.b==C_ROOT), constants().lit_true);
+      } else {
+        e_if = flat_exp(env,cmix,ite->e_if(i),NULL,constants().var_true);
+      }
       if (e_if.r()->type()==Type::parbool()) {
         {
           GCLock lock;

@@ -238,23 +238,26 @@ function     int: 'div'(int: x,int: y);
 
 /** @group builtins.arithmetic Return result of integer division \a x / \a y */
 function var int: 'div'(var int: x,var int: y) =
-  if mzn_in_root_context(y) \/ not (0 in dom(y)) then div_t(x,y) else
-  let { constraint y != 0 } in div_mt(x,y) endif;
+  if mzn_in_root_context(y) then div_t(x,y)
+  elseif not (0 in dom(y)) then div_t(x,y)
+  else let { constraint y != 0 } in div_mt(x,y) endif;
 
 /** @group builtins.arithmetic Return remainder of integer division \a x % \a y */
 function     int: 'mod'(int: x,int: y);
 
 /** @group builtins.arithmetic Return remainder of integer division \a x % \a y */
 function var int: 'mod'(var int: x,var int: y) =
-  if mzn_in_root_context(y) \/ not (0 in dom(y)) then mod_t(x,y) else
-  let { constraint y != 0 } in mod_mt(x,y) endif;
+  if mzn_in_root_context(y) then mod_t(x,y)
+  elseif not (0 in dom(y)) then mod_t(x,y)
+  else let { constraint y != 0 } in mod_mt(x,y) endif;
 
 /** @group builtins.arithmetic Return result of floating point division \a x / \a y */
 function     float: '/'(    float: x,    float: y);
 /** @group builtins.arithmetic Return result of floating point division \a x / \a y */
 function var float: '/'(var float: x,var float: y) =
-  if mzn_in_root_context(y) \/ lb(y) > 0.0 \/ ub(y) < 0.0 then fldiv_t(x,y) else
-  let { constraint y != 0.0 } in fldiv_mt(x,y) endif;
+  if mzn_in_root_context(y) then fldiv_t(x,y)
+  elseif lb(y) > 0.0 \/ ub(y) < 0.0 then fldiv_t(x,y)
+  else let { constraint y != 0.0 } in fldiv_mt(x,y) endif;
 
 /** @group builtins.arithmetic Return sum of elements in array \a x */
 function     int:   sum(array[$T] of     int: x);
@@ -2474,10 +2477,10 @@ function var bool: element_mt(var int: idx, array[int] of var bool: x) :: promis
 
 function var bool: element(var int: idx, array[int] of var bool: x) =
   if mzn_in_root_context(idx) then
-    idx in index_set(x) /\ element_t(idx,x)
+    trace("in root\n") /\ idx in index_set(x) /\ element_t(idx,x)
   elseif (has_bounds(idx) /\ lb(idx) >= min(index_set(x)) /\ ub(idx) <= max(index_set(x))) then
-    element_t(idx,x)
-  else idx in index_set(x) /\ element_mt(idx,x)
+    trace("bounds\n") /\ element_t(idx,x)
+  else trace("not root\n") /\idx in index_set(x) /\ element_mt(idx,x)
   endif;
 
 function var bool: element(var int: idx1, var int: idx2,
