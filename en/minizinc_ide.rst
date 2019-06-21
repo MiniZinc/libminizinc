@@ -26,7 +26,7 @@ Fonts and dark mode
 
 You can select the font and font size in the *View* menu. We recommend to use a fixed-width font (the IDE should pick such a font by default).
 
-The *View* menu also lets you activate "dark mode", which switches the colour scheme to a dark background.
+Depending on your platform, the *View* menu also lets you activate "dark mode", which switches the colour scheme to a dark background. On macOS 10.14 and later, the operating systems supports a global dark mode, and the MiniZinc IDE will follow that setting.
 
 Configuring and Running a Solver
 --------------------------------
@@ -110,6 +110,8 @@ MiniZinc can automatically run the output of a model through a *solution checker
 The default behaviour of the MiniZinc IDE is to run a solution checker if one is present. For a model ``abc.mzn``, a solution checker must be called ``abc.mzc`` or ``abc.mzc.mzn``. If a checker is present, the *Run* icon will turn into a *Run + check* icon instead. The output of the solution checker is displayed together with the normal solution output in the *Output* window.
 
 You can disable solution checkers by deselecting the *Check solutions* option in the solver configuration window.
+
+You can find a detailed description of MiniZinc solution checkers in :ref:`ch-solution-checkers`.
 
 Compiling a model
 ~~~~~~~~~~~~~~~~~
