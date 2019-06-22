@@ -82,7 +82,7 @@ However, the checker model will only report the first violated constraint, since
   q=3	 nsw=3	 v=3
   t=3
   % Solution checker report:
-  % ERROR: ERROR: wa and nt have the same colour
+  % ERROR: wa and nt have the same colour
   % INCORRECT
   ----------
 
@@ -101,15 +101,15 @@ Now the output contains all error messages (for the case where the model has no 
   q=3	 nsw=3	 v=3
   t=3
   % Solution checker report:
-  % ERROR: ERROR: nsw and v have the same colour
-  % ERROR: ERROR: q and nsw have the same colour
-  % ERROR: ERROR: sa and v have the same colour
-  % ERROR: ERROR: sa and nsw have the same colour
-  % ERROR: ERROR: sa and q have the same colour
-  % ERROR: ERROR: nt and q have the same colour
-  % ERROR: ERROR: nt and sa have the same colour
-  % ERROR: ERROR: wa and sa have the same colour
-  % ERROR: ERROR: wa and nt have the same colour
+  % ERROR: nsw and v have the same colour
+  % ERROR: q and nsw have the same colour
+  % ERROR: sa and v have the same colour
+  % ERROR: sa and nsw have the same colour
+  % ERROR: sa and q have the same colour
+  % ERROR: nt and q have the same colour
+  % ERROR: nt and sa have the same colour
+  % ERROR: wa and sa have the same colour
+  % ERROR: wa and nt have the same colour
   % INCORRECT
   ----------
 
@@ -125,7 +125,7 @@ For example, the following checker model could be used for the *n*-Queens proble
   :caption: A checker model :download:`nqueens.mzc.mzn <examples/nqueens.mzc.mzn>` for the n-Queens problem
   :name: ex-nqueens-check
 
-Note how it first checks whether the solution has the right dimensions (correct array index set, and each variable is assigned a value in the correct domain), and then uses standard MiniZinc constructs to check each constraint.
+The checker model first makes sure that the solution has the right dimensions (correct array index set, and each variable is assigned a value in the correct domain), and then uses standard MiniZinc constructs to check each constraint.
 
 Checking optimisation problems
 ------------------------------
@@ -151,7 +151,7 @@ gives their position in the line. A correct model for this is given in :numref:`
   :caption: A model :download:`photo.mzn <examples/photo.mzn>` for the photo lineup problem
   :name: ex-photo
 
-Note that a critical part of learning how to model this problem is to realise
+A critical part of learning how to model this problem is to realise
 that it is worth introducing the inverse of the :mzn:`pos` variables, called :mzn:`who` in this model. The :mzn:`who` array makes it much easier to specify that no more than two people of the same gender can be
 adjacent. The checker model **should not** include the :mzn:`who` variables, because that would effectively give away the key to the solution.
 
@@ -182,4 +182,4 @@ constraint, and only when that succeeds use  the computed values of the
 
 The checker model first tests whether the given :mzn:`pos` array satisfies the :mzn:`alldifferent` property (using a custom :mzn:`test` for :mzn:`alldifferent` on a par array). If it passes the test, the :mzn:`inverse` constraint is applied. Otherwise, the :mzn:`who` array is simply fixed to a list of ones.
 
-Note how the check for the :mzn:`alldifferent` constraint tries to give a  detailed description of the error.
+The check for the :mzn:`alldifferent` constraint is a good example for a checker that tries to give a detailed description of the error.
