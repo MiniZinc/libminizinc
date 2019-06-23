@@ -109,5 +109,3 @@ include(cmake/support/config_emscripten.cmake)
 
 include(cmake/support/config_export.cmake)
 include(cmake/support/config_output.cmake)
-
-include(cmake/support/clang_format.cmake)
