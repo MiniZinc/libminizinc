@@ -8,7 +8,7 @@ constraint alldifferent([ q[i] + i | i in 1..n]); % distinct diagonals
 constraint alldifferent([ q[i] - i | i in 1..n]); % upwards+downwards
 
 % search
-solve :: int_search(q, first_fail, indomain_min, complete)
+solve :: int_search(q, first_fail, indomain_min)
       satisfy;
 output [ if fix(q[j]) == i then "Q" else "." endif ++
          if j == n then "\n" else "" endif | i,j in 1..n]

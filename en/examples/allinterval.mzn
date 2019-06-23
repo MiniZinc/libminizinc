@@ -9,6 +9,6 @@ constraint alldifferent(x);
 constraint alldifferent(u);
 constraint forall(i in 1..n-1)(u[i] = abs(x[i+1] - x[i]));
 
-solve :: int_search(x, first_fail, indomain_min, complete)
+solve :: int_search(x, first_fail, indomain_min)
       satisfy;
 output ["x = \(x);\n"];

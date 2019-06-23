@@ -135,8 +135,7 @@ the array of integer variables :mzn:`q`, the variable with the smallest
 current domain (this is the :mzn:`first_fail` rule), and try setting
 it to its smallest possible value
 (:mzn:`indomain_min` 
-value selection), looking across the entire search tree
-(:mzn:`complete` search).
+value selection).
 
 
 
@@ -163,19 +162,18 @@ value selection), looking across the entire search tree
   There are three basic search annotations corresponding to different
   basic variable types:
 
-  - :mzndef:`int_search( <variables>, <varchoice>, <constrainchoice>, <strategy> )`
+  - :mzndef:`int_search( <variables>, <varchoice>, <constrainchoice> )`
     where :mzndef:`<variables>` is a one dimensional array of :mzn:`var int`,
     :mzndef:`<varchoice>` is a variable choice annotation discussed below,
     :mzndef:`<constrainchoice>` is a choice of how to constrain a variable, discussed
-    below, and :mzndef:`<strategy>` is a search strategy which we will assume for now
-    is :mzn:`complete`.
-  - :mzndef:`bool_search( <variables>, <varchoice>, <constrainchoice>, <strategy> )`
+    below.
+  - :mzndef:`bool_search( <variables>, <varchoice>, <constrainchoice> )`
     where :mzndef:`<variables>` is a one dimensional array of :mzn:`var bool`
     and the rest are as above.
-  - :mzndef:`set_search( <variables>, <varchoice>, <constrainchoice>, <strategy> )`
+  - :mzndef:`set_search( <variables>, <varchoice>, <constrainchoice> )`
     where :mzndef:`<variables>` is a one dimensional array of :mzn:`var set of int`
     and the rest are as above.
-  - :mzndef:`float_search( <variables>, <precision>, <varchoice>, <constrainchoice>, <strategy> )`
+  - :mzndef:`float_search( <variables>, <precision>, <varchoice>, <constrainchoice> )`
     where :mzndef:`<variables>` is a one dimensional array of :mzn:`var float`,
     :mzndef:`<precision>` is a fixed float specifying the :math:`\epsilon` below which
     two float values are considered equal,
@@ -211,7 +209,13 @@ value selection), looking across the entire search tree
   - :mzn:`indomain_random`: assign the variable a random value from its domain, and
   - :mzn:`indomain_split` bisect the variables domain excluding the upper half.
 
-  The :mzndef:`<strategy>` is almost always :mzn:`complete` for complete search.
+  For backwards compatibility with older version of MiniZinc, the search
+  annotations can be called with an additional argument that represents the
+  search strategy to use. The only such strategy that is currently supported is
+  :mzn:`complete`, meaning an exhaustive exploration of the search space. With
+  the additional argument, an annotation might then look like this:
+  :mzn:`::int_search(x, input_order, indomain_min, complete)`.
+
   For a complete list of variable and constraint choice annotations
   see the FlatZinc specification in the MiniZinc reference
   documentation.
@@ -238,8 +242,8 @@ We could replace the solve item with
 .. code-block:: minizinc
 
   solve :: seq_search([
-               int_search(s, smallest, indomain_min, complete),
-               int_search([end], input_order, indomain_min, complete)])
+               int_search(s, smallest, indomain_min),
+               int_search([end], input_order, indomain_min)])
         minimize end
 
 which tries to set start times :mzn:`s` by choosing the job that can start
@@ -308,11 +312,11 @@ we imagine each line is in a separate data file)
 
 .. code-block:: minizinc
 
-  search_ann = int_search(q, input_order, indomain_min, complete);
-  search_ann = int_search(q, input_order, indomain_median, complete);
-  search_ann = int_search(q, first_fail, indomain_min, complete);
-  search_ann = int_search(q, first_fail, indomain_median, complete);
-  search_ann = int_search(q, input_order, indomain_random, complete);
+  search_ann = int_search(q, input_order, indomain_min);
+  search_ann = int_search(q, input_order, indomain_median);
+  search_ann = int_search(q, first_fail, indomain_min);
+  search_ann = int_search(q, first_fail, indomain_median);
+  search_ann = int_search(q, input_order, indomain_random);
 
 The first just tries the queens in order setting them to the
 minimum value, the second tries the queens variables in order, but sets
@@ -443,7 +447,7 @@ For example the search annotation
 
 .. code-block:: minizinc
 
-  solve :: int_search(q, input_order, indomain_min, complete);
+  solve :: int_search(q, input_order, indomain_min);
         :: restart_linear(1000)
         satisfy
 
@@ -466,7 +470,7 @@ with the underlying search strategy
 
 .. code-block:: minizinc
 
-  int_search(q, first_fail, indomain_random, complete);
+  int_search(q, first_fail, indomain_random);
 
 with one of four restart strategies
 
@@ -577,7 +581,7 @@ important (especially for CP), so they all might need to be put into a ``seq_sea
           warm_start( xs, array1d( -3..-2, [ 6..8, 5..7 ] ) )
         ] ),
         warm_start( [b], [true] ),
-        int_search(x, first_fail, indomain_min, complete)
+        int_search(x, first_fail, indomain_min)
       ] )
       minimize x[1] + b + xf[2] + card( xs[1] intersect xs[3] );
 
