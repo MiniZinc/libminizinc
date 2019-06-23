@@ -924,6 +924,38 @@ A solver, let's call it *OptiSolve*, that supports this constraint natively can 
 
 When a MiniZinc model that contains the ``all_different`` constraint is now compiled with the *OptiSolve* library, it will contain calls to the newly defined predicate ``optisolve_alldifferent``.
 
+.. _fzn-half-reif:
+
+Reified and half-reified predicates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A reified constraint is a constraint that is not simply enforced, but whose truth value is bound to a Boolean variable. For example, a MiniZinc expression :mzn:`var bool: b = all_different(x);` would constrain :mzn:`b` to be true if and only if the variables :mzn:`x` take pairwise different values.
+
+If a predicate is called in such a reified context, the MiniZinc compiler will try to find a version of the predicate with :mzn:`_reif` added to its identifier and an additional :mzn:`var bool` argument. For the above example, the compiler will try to generate the following FlatZinc code:
+
+.. code-block:: minizinc
+  
+  var bool: b;
+  constraint all_different_reif(x, b);
+
+If the :mzn:`_reif` predicate does not exist, the compiler will try to use the definition of the original predicate. However, this may not be ideal: the original definition may make use of free variables in a :mzn:`let` expression (which is not allowed in reified contexts), or it may lead to inefficient solving.
+
+Solver libraries should therefore provide reified versions of constraints whenever possible.
+
+When a reified constraint is used in a *positive context* (see :numref:`pred-context`), the MiniZinc compiler can use a special version, called a half-reified predicate and identified by an :mzn:`_imp` suffix, instead of the :mzn:`_reif` predicate. Half-reified predicates essentially represent constraints that are *implied* by a Boolean variable rather than being equivalent to one. This typically leads to simpler translations or more efficient propagation (e.g., a half-reified :mzn:`all_different` only needs to *check* whether it is false, but it never has to implement the negation of the actual constraint).
+
+For example, :mzn:`constraint y=0 \/ all_different(x)` might be translated as follows:
+
+.. code-block:: minizinc
+
+  var bool: X_INTRODUCED_1;
+  var bool: X_INTRODUCED_2;
+  constraint int_eq_imp(y,0,X_INTRODUCED_1);
+  constraint all_different_imp(x, X_INTRODUCED_2);
+  constraint array_bool_or([X_INTRODUCED_1,X_INTRODUCED_2]);
+
+MiniZinc will decide whether to use half-reification case by case based on the availability of the :mzn:`_imp` predicate. As for reified constraints, it may be benefitial to provide specialised half-reified versions if the solver supports them. 
+
 .. _fzn-cmdline-options:
 
 Command-Line Interface and Standard Options

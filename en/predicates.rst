@@ -601,6 +601,8 @@ The result, :mzn:`x+y`, is indeed not functionally defined by the argument of th
     var 0..1: y;
   } in z=x+y;
 
+.. _pred-context:
+
 Context
 -------
 
