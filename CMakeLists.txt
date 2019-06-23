@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.4.0)
 #  -- Project information and versioning.
 
 project(libminizinc
-        VERSION 2.2.3
+        VERSION 2.3.0
         LANGUAGES CXX C)
 
 if(NOT BUILD_REF)
@@ -109,3 +109,5 @@ include(cmake/support/config_emscripten.cmake)
 
 include(cmake/support/config_export.cmake)
 include(cmake/support/config_output.cmake)
+
+include(cmake/support/clang_format.cmake)
