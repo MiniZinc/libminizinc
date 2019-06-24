@@ -4,7 +4,7 @@ if (DEFINED EMSCRIPTEN)
                      COMMENT "building data store minizinc.data")
 
   set(EMSCRIPTEN_CXX_FLAGS "-s MINIZ_NO_ARCHIVE_APIS -s MINIZ_NO_ZLIB_APIS")
-  set(EMSCRIPTEN_LINK_FLAGS " -s FORCE_FILESYSTEM=1 -s MODULARIZE=1 -s EXTRA_EXPORTED_RUNTIME_METHODS=\"['cwrap', 'FS', 'ENV']\" -s DISABLE_EXCEPTION_CATCHING=0")
+  set(EMSCRIPTEN_LINK_FLAGS " -s FORCE_FILESYSTEM=1 -s MODULARIZE=1 -s EXTRA_EXPORTED_RUNTIME_METHODS=\"['cwrap', 'FS', 'ENV']\" -s DISABLE_EXCEPTION_CATCHING=0 -s ALLOW_MEMORY_GROWTH=1 --no-heap-copy")
 
   # -------------------------------------------------------------------------------------------------------------------
   #  -- Web Assembly Configuration.
