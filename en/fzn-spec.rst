@@ -904,25 +904,27 @@ Example for a ``redefinitions-2.0.mzn`` that declares native support for the pre
 Solver-specific predicates
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Many solvers have built-in support for some of the constraints in the MiniZinc standard library. But without declaring which constraints they support, MiniZinc will assume that they don't support any excpect for the standard FlatZinc builtins mentioned in the section above.
+Many solvers have built-in support for some of the constraints in the MiniZinc standard library. But without declaring which constraints they support, MiniZinc will assume that they don't support any except for the standard FlatZinc builtins mentioned in the section above.
 
-A solver can declare that it supports a non-standard constraint by overriding one of the files of the standard library in its own solver-specific library. For example, assume that a solver supports the ``all_different`` constraint on integer variables. In the standard library, this constraint is defined in the file ``all_different_int.mzn``, with the following implementation:
+A solver can declare that it supports a non-standard constraint by overriding one of the files of the standard library in its own solver-specific library. For example, assume that a solver supports the ``all_different`` constraint on integer variables. In the standard library, this constraint is defined in the file ``fzn_all_different_int.mzn``, with the following implementation:
 
 .. code-block:: minizinc
 
-  predicate all_different_int(array[int] of var int: x) =
+  predicate fzn_all_different_int(array[int] of var int: x) =
     forall(i,j in index_set(x) where i < j) ( x[i] != x[j] );
 
-A solver, let's call it *OptiSolve*, that supports this constraint natively can place a file with the same name, ``all_different_int.mzn``, in its library, and redefine it as follows:
+A solver, let's call it *OptiSolve*, that supports this constraint natively can place a file with the same name, ``fzn_all_different_int.mzn``, in its library, and redefine it as follows:
 
 .. code-block:: minizinc
 
   precicate optisolve_alldifferent(array[int] of var int: x);
 
-  predicate all_different_int(array[int] of var int: x) =
+  predicate fzn_all_different_int(array[int] of var int: x) =
     optisolve_alldifferent(x);
 
-When a MiniZinc model that contains the ``all_different`` constraint is now compiled with the *OptiSolve* library, it will contain calls to the newly defined predicate ``optisolve_alldifferent``.
+When a MiniZinc model that contains the ``all_different`` constraint is now compiled with the *OptiSolve* library, the generated FlatZinc will contain calls to the newly defined predicate ``optisolve_alldifferent``.
+
+**Note:** The solver-specific library has been reorganised for MiniZinc version 2.3.0. Previously, a solver library would contain e.g. the file ``bin_packing.mzn`` in order to override the :mzn:`bin_packing` constraint. With version 2.3.0, this is still possible (in order to maintain backwards compatibility). However, the predicate :mzn:`bin_packing` from file ``bin_packing.mzn`` now delegates to the predicate :mzn:`fzn_bin_packing` in ``fzn_bin_packing.mzn``. This enables the :mzn:`bin_packing` predicate to check that the arguments are correct using assertions, before delegating to the solver-specific predicate. If your solver still uses the old library layout (i.e., overriding ``bin_packing.mzn`` instead of ``fzn_bin_packing.mzn``), you should consider updating it to the new standard.
 
 .. _fzn-half-reif:
 
@@ -940,7 +942,7 @@ If a predicate is called in such a reified context, the MiniZinc compiler will t
 
 If the :mzn:`_reif` predicate does not exist, the compiler will try to use the definition of the original predicate. However, this may not be ideal: the original definition may make use of free variables in a :mzn:`let` expression (which is not allowed in reified contexts), or it may lead to inefficient solving.
 
-Solver libraries should therefore provide reified versions of constraints whenever possible.
+Solver libraries should therefore provide reified versions of constraints whenever possible. The library contains files ``fzn_<constraintname>_reif.mzn`` for this purpose.
 
 When a reified constraint is used in a *positive context* (see :numref:`pred-context`), the MiniZinc compiler can use a special version, called a half-reified predicate and identified by an :mzn:`_imp` suffix, instead of the :mzn:`_reif` predicate. Half-reified predicates essentially represent constraints that are *implied* by a Boolean variable rather than being equivalent to one. This typically leads to simpler translations or more efficient propagation (e.g., a half-reified :mzn:`all_different` only needs to *check* whether it is false, but it never has to implement the negation of the actual constraint).
 
