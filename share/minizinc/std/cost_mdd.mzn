@@ -1,4 +1,5 @@
 include "fzn_cost_mdd.mzn";   
+include "fzn_cost_mdd_reif.mzn";   
    
 /** @group globals.extensional
    Requires that \a x defines a path in the cost MDD with total edge weight \a totalcost.

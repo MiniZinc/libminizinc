@@ -17,7 +17,4 @@ predicate fzn_circuit(array[int] of var int: x) =
     forall(i in S)(order[i] != n -> order[x[i]] = order[i] + 1) /\
     forall(i in S)(order[i] == n -> x[i] = l );
 
-predicate fzn_circuit_reif(array[int] of var int: x, var bool: b) = 
-    abort("Reified circuit/1 is not supported.");
-
 %-----------------------------------------------------------------------------%

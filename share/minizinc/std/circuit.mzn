@@ -1,4 +1,5 @@
 include "fzn_circuit.mzn";
+include "fzn_circuit_reif.mzn";
 
 /** @group globals
   Constrains the elements of \a x to define a circuit where \a x[\p i] = \p j means
