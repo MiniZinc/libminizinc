@@ -1,4 +1,7 @@
 include "fzn_geost.mzn";
+include "fzn_geost_bb.mzn";
+include "fzn_geost_smallest_bb.mzn";
+include "fzn_geost_nonoverlap_k.mzn";
 
 /** @group globals.packing
  A global non-overlap constraint for \a k dimensional objects. It enforces that no two objects overlap.
@@ -162,6 +165,32 @@ predicate geost_smallest_bb(
         % Posting the geost constraint
         fzn_geost_smallest_bb(k, rect_size, rect_offset, shape, x, kind, l, u)
     ))));
+
+/** @group globals.packing
+ A global non-overlap constraint for \a 2 dimensional objects. It enforces that no two objects overlap
+ and zero-length objects do not appear in the middle of other objects.
+    
+@param x1: first coordinate of each object
+@param w2: width in first dimension for each object
+@param x2: second coordinate of each object
+@param w2: width in second dimension for each object
+*/
+predicate geost_nonoverlap_k(
+    array[int] of var int : x1, 
+    array[int] of int     : w1, 
+    array[int] of var int : x2, 
+    array[int] of int     : w2
+) = 
+    assert(
+        % Some sanity checks
+        index_set( x1 ) = index_set( w1 ) /\ 
+        index_set( x1 ) = index_set( x2 ) /\ 
+        index_set( x1 ) = index_set( w2 ),
+        % Error message
+        "geost_nonoverlap_k: index sets of arguments do not match",
+        % Non-overlap constraint
+        fzn_geost_nonoverlap_k(x1,w1,x2,w2)
+    );
 
 test geost_nonoverlap_k(
     array[int] of int: x1, 
