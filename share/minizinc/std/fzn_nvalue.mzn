@@ -1,6 +1,3 @@
-/** @group globals.alldifferent
-  Requires that the number of distinct values in \a x is \a n.
-*/
 predicate fzn_nvalue(var int: n, array[int] of var int: x) =
     let { int: lx = lb_array(x),
           int: ux = ub_array(x),

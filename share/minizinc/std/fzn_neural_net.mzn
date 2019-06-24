@@ -1,17 +1,3 @@
-/** @group globals.learning
-  Constrain the output layer of a neural net to take the value defined by the input layer
-  The arguments are 
-	input: an array of float variables
-	input_ids: array[int] of NODE
-	output: an array of float variables
-	output_ids: array[int] of NODE
-	bias: array[NODE] of float
-	edge_weight: array[EDGE] of float (dummy one at end!)
-	edge_parent: array[EDGE] of NEURON (start neuron for edge)
-	first_edge: array[NODE] of 1..m+1
-	neuron_type: { RELU }
-*/
-
 predicate fzn_neural_net(array[int] of var float: inputs,
                          array[int] of int: input_ids,
 		                     array[int] of var float: outputs,
