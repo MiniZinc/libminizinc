@@ -1,4 +1,5 @@
 include "fzn_mdd.mzn";
+include "fzn_mdd_reif.mzn";
 
 /** @group globals.extensional
   Requires that \a x defines a path from root to true node T through the MDD defined by

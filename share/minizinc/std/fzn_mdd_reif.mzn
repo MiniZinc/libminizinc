@@ -1,11 +1,12 @@
-predicate fzn_mdd(array[int] of var int: x,    % variables constrained by MDD
+predicate fzn_mdd_reif(array[int] of var int: x,    % variables constrained by MDD
               int: N,                      % number of nodes    root is node 1
               array[int] of int: level,    % level of each node root is level 1, T is level length(x)+1
               int: E,                      % number of edges
               array[int] of int: from,     % edge leaving node  1..N
               array[int] of set of int: label,    % value of variable 
-              array[int] of int: to        % edge entering node 0..N where 0 = T node
-             ) =
+              array[int] of int: to,       % edge entering node 0..N where 0 = T node
+              var bool: b                  % reification value
+              ) =
         let { set of int: NODE = 1..N;
               set of int: EDGE = 1..E; 
               int: L = length(x);
@@ -13,7 +14,7 @@ predicate fzn_mdd(array[int] of var int: x,    % variables constrained by MDD
               array[EDGE] of var bool: be; 
               set of int: D = dom_array(x); } in
         bn[0] /\ % true node is true
-        bn[1] /\ % root must hold
+        (b <-> bn[1]) /\ % root gives truth value 
         % T1 each node except the root enforces an outgoing edge
         forall(n in NODE)(bn[n] -> exists(e in EDGE where from[e] = n)(be[e])) /\
         % T23 each edge enforces its endpoints
