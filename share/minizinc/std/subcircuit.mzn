@@ -1,4 +1,5 @@
 include "fzn_subcircuit.mzn";
+include "fzn_subcircuit_reif.mzn";
 
 /** @group globals
   Constrains the elements of \a x to define a subcircuit where \a x[\p i] = \p j
