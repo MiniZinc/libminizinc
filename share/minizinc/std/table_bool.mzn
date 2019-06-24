@@ -1,4 +1,5 @@
 include "fzn_table_bool.mzn";
+include "fzn_table_bool_reif.mzn";
 
 %-----------------------------------------------------------------------------%
 % A table constraint: table(x, t) represents the constraint x in t where we

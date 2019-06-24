@@ -22,7 +22,3 @@ predicate fzn_table_bool(array[int] of var bool: x, array[int, int] of bool: t) 
             %
             % t[i,j] = x[j]
         );
-
-predicate fzn_table_bool_reif(array[int] of var bool: x, array[int, int] of bool: t,
-      var bool: b) = 
-    abort("Reified table/2 for Booleans is not supported.");
