@@ -3,8 +3,9 @@
 % array 'y'.  Compares them from first to last element, regardless of indices
 %-----------------------------------------------------------------------------%
 
-predicate fzn_lex_lesseq_float(array[int] of var float: x,
-                               array[int] of var float: y) =
+predicate fzn_lex_lesseq_int_reif(array[int] of var int: x,
+                              array[int] of var int: y,
+                              var bool: c) =
     let { int: lx = min(index_set(x)),
           int: ux = max(index_set(x)),
           int: ly = min(index_set(y)),
@@ -13,7 +14,7 @@ predicate fzn_lex_lesseq_float(array[int] of var float: x,
           array[0..size] of var bool: b }
           % b[i] is true if the lexicographical order holds from position i on.
     in
-    b[0]
+    (c <-> b[0])
     /\
     forall(i in 0..size) (
         b[i] = ( x[lx + i] <= y[ly + i]
@@ -22,5 +23,6 @@ predicate fzn_lex_lesseq_float(array[int] of var float: x,
                  else x[lx + i] <  y[ly + i] \/ b[i+1] endif
                )
     );
+
 
 %-----------------------------------------------------------------------------%

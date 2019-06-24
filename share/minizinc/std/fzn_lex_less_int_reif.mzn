@@ -3,8 +3,9 @@
 % Compares them from first to last element, regardless of indices
 %-----------------------------------------------------------------------------%
 
-predicate fzn_lex_less_int(array[int] of var int: x,
-                           array[int] of var int: y) =
+predicate fzn_lex_less_int_reif(array[int] of var int: x,
+                                array[int] of var int: y,
+                                var bool: c) =
     let { int: lx = min(index_set(x)),
           int: ux = max(index_set(x)),
           int: ly = min(index_set(y)),
@@ -12,7 +13,7 @@ predicate fzn_lex_less_int(array[int] of var int: x,
           int: size = max(ux - lx, uy - ly),
           array[0..size+1] of var bool: b }
     in
-    b[0]
+    (c <-> b[0])
     /\
     forall(i in 0..size) (
         b[i] = ( x[lx + i] <= y[ly + i]

@@ -1,4 +1,5 @@
 include "fzn_lex_lesseq_float.mzn";
+include "fzn_lex_lesseq_float_reif.mzn";
 
 %-----------------------------------------------------------------------------%
 % Requires that the array 'x' is lexicographically less than or equal to

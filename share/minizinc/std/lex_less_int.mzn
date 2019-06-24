@@ -1,5 +1,6 @@
 include "lex_less.mzn";
 include "fzn_lex_less_int.mzn";
+include "fzn_lex_less_int_reif.mzn";
 
 %-----------------------------------------------------------------------------%
 % Requires that the array 'x' is strictly lexicographically less than array 'y'.
