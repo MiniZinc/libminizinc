@@ -1,4 +1,7 @@
-include "fzn_tree.mzn";
+include "fzn_tree_int.mzn";
+include "fzn_tree_enum.mzn";
+include "fzn_dtree_int.mzn";
+include "fzn_dtree_enum.mzn";
    
 /** @group globals.graph
     Constrains the subgraph \a ns and \a es of a given directed graph to be a tree rooted at \a r.
