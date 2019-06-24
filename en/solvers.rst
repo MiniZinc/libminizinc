@@ -24,10 +24,10 @@ Gecode
 ~~~~~~
 
 Gecode is an open-source constraint programming system (see https://www.gecode.org).
-It supports many of MiniZinc's global constraints natively, and has support for set and float variables.
+It supports many of MiniZinc's global constraints natively, and has support for integer, set and float variables.
 
 Gecode supports a number of constraints and search annotations that are not part of the MiniZinc standard library.
-You can get access to these by adding :mzn:`include "gecode.mzn";` to your model.
+You can get access to these by adding :mzn:`include "gecode.mzn";` to your model. The additional declarations are documented in :numref:`ch-lib-gecode`.
 
 
 Chuffed
@@ -43,6 +43,7 @@ but allow Chuffed to switch between this defined search and its activity-based s
 In order to enable this behaviour, use the ``-f`` (free search) command line option or
 select *Free search* in the solver configuration pane of the MiniZinc IDE.
 
+Chuffed supports a number of additional search annotations that are not part of the MiniZinc standard library. The additional declarations are documented in :numref:`ch-lib-chuffed`.
 
 OR-Tools
 ~~~~~~~~
