@@ -1,9 +1,6 @@
-include "fzn_increasing_float.mzn";
-include "fzn_increasing_float_reif.mzn";
-
 %-----------------------------------------------------------------------------%
 % Requires that the array 'x' is in increasing order (duplicates are allowed).
 %-----------------------------------------------------------------------------%
 
-predicate increasing_float(array[int] of var float: x) =
-     fzn_increasing_float(x);
+predicate fzn_increasing_float_reif(array[int] of var float: x, var bool: b) =
+    b <-> forall(i in index_set(x) diff { min(index_set(x)) }) (x[i-1] <= x[i]);

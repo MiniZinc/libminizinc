@@ -1,4 +1,5 @@
 include "fzn_int_set_channel.mzn";
+include "fzn_int_set_channel_reif.mzn";
 
 /** @group globals.channeling
   Requires that array of int variables \a x and array of set variables \a y

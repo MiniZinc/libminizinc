@@ -1,4 +1,5 @@
 include "fzn_member_bool.mzn";
+include "fzn_member_bool_reif.mzn";
 
 %-----------------------------------------------------------------------------%
 % Requires that 'y' occurs in the array or set 'x'.

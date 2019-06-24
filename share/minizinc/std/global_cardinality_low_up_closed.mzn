@@ -1,4 +1,5 @@
 include "fzn_global_cardinality_low_up_closed.mzn";
+include "fzn_global_cardinality_low_up_closed_reif.mzn";
 
 /** @group globals.counting
   Requires that for all \p i, the value \a cover[\p i] appears at least \a lbound[\p i]

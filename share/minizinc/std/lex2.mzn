@@ -1,4 +1,5 @@
 include "fzn_lex2.mzn";
+include "fzn_lex2_reif.mzn";
 
 /** @group globals.lexicographic
   Require adjacent rows and adjacent columns in the array \a x to be

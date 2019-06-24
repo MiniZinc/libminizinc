@@ -1,4 +1,5 @@
 include "fzn_global_cardinality_closed.mzn";
+include "fzn_global_cardinality_closed_reif.mzn";
 
 /** @group globals.counting
   Requires that the number of occurences of \p i in \a x is \a counts[\p i].

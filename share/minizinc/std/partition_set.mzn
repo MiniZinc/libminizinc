@@ -1,4 +1,5 @@
 include "fzn_partition_set.mzn";
+include "fzn_partition_set_reif.mzn";
 
 /** @group globals
   Constrains the sets in array \a S to partition the \a universe.

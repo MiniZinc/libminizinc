@@ -1,7 +1,11 @@
 include "fzn_geost.mzn";
+include "fzn_geost_reif.mzn";
 include "fzn_geost_bb.mzn";
+include "fzn_geost_bb_reif.mzn";
 include "fzn_geost_smallest_bb.mzn";
+include "fzn_geost_smallest_bb_reif.mzn";
 include "fzn_geost_nonoverlap_k.mzn";
+include "fzn_geost_nonoverlap_k_reif.mzn";
 
 /** @group globals.packing
  A global non-overlap constraint for \a k dimensional objects. It enforces that no two objects overlap.

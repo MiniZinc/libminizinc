@@ -1,4 +1,5 @@
 include "fzn_nvalue.mzn";
+include "fzn_nvalue_reif.mzn";
 
 /** @group globals.alldifferent
   Requires that the number of distinct values in \a x is \a n.

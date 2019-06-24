@@ -11,11 +11,6 @@ predicate lex_less_int(array[int] of var int: x,
                        array[int] of var int: y) =
     fzn_lex_less_int(x, y);
 
-predicate lex_less_int_reif(array[int] of var int: x,
-                            array[int] of var int: y,
-                            var bool: c) =
-    fzn_lex_less_int_reif(x, y, c);
-
 predicate lex_lt_int(array[int] of var int: x,
                      array[int] of var int: y) =
           lex_less(x, y);

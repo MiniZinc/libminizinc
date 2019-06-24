@@ -1,4 +1,5 @@
 include "fzn_neural_net.mzn";
+include "fzn_neural_net_reif.mzn";
 
 /** @group globals.learning
   Constrain the output layer of a neural net to take the value defined by the input layer

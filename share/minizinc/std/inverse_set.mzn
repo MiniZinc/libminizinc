@@ -1,4 +1,5 @@
 include "fzn_inverse_set.mzn";
+include "fzn_inverse_set_reif.mzn";
 
 /** @group globals.channeling
   Constrains two arrays of set of int variables, \a f and \a invf, so that

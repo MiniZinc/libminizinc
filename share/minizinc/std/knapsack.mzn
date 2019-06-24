@@ -1,4 +1,5 @@
 include "fzn_knapsack.mzn";
+include "fzn_knapsack_reif.mzn";
 
 /**  @group globals.packing
 Requires that items are packed in a knapsack with certain weight and profit restrictions.

@@ -1,19 +1,21 @@
 include "fzn_geost_nonoverlap_k.mzn";
+include "fzn_geost_nonoverlap_k_reif.mzn";
 
-predicate fzn_geost(
+predicate fzn_geost_reif(
                       int        : k           ,
     array[int,int] of int        : rect_size   ,
     array[int,int] of int        : rect_offset ,
     array[int    ] of set of int : shape       , 
     array[int,int] of var int    : x           ,
-    array[int    ] of var int    : kind
+    array[int    ] of var int    : kind        ,
+    var bool: b
 ) =
         % A few useful definitions
         let { 
             set of int: DIMS    = 1..k;
             set of int: SHAPES  = 1..length(shape);
             set of int: OBJECTS = index_set(kind); 
-        } in
+        } in b <->
         forall(o1, o2 in OBJECTS where o1 < o2)(
             forall(s1 in dom(kind[o1]), s2 in dom(kind[o2]))(
                 (kind[o1] = s1 /\ kind[o2] = s2 ->  

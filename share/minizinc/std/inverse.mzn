@@ -1,4 +1,5 @@
 include "fzn_inverse.mzn";
+include "fzn_inverse_reif.mzn";
 include "analyse_all_different.mzn";
 
 /** @group globals.channeling
@@ -11,3 +12,8 @@ predicate inverse(array[int] of var int: f,
     analyse_all_different(f) /\
     analyse_all_different(invf) /\
     fzn_inverse(f, invf);
+
+predicate inverse_reif(array[int] of var int: f,
+                       array[int] of var int: invf,
+                       var bool: b) =
+    fzn_inverse_reif(f, invf, b);

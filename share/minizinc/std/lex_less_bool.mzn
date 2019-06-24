@@ -11,11 +11,6 @@ predicate lex_less_bool(array[int] of var bool: x,
                         array[int] of var bool: y) =
     fzn_lex_less_bool(x, y);
 
-predicate lex_less_bool_reif(array[int] of var bool: x,
-                             array[int] of var bool: y,
-                             var bool: c) =
-    fzn_lex_less_bool_reif(x, y, c);
-
 predicate lex_lt_bool(array[int] of var bool: x,
                       array[int] of var bool: y) =
     lex_less(x, y);
