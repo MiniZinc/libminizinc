@@ -1,5 +1,6 @@
 include "disjunctive_strict.mzn";
 include "fzn_disjunctive.mzn";
+include "fzn_disjunctive_reif.mzn";
 
 /** @group globals.scheduling
   Requires that a set of tasks given by start times \a s and durations \a d

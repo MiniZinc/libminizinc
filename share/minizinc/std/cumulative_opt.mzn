@@ -1,4 +1,5 @@
 include "fzn_cumulative_opt.mzn";
+include "fzn_cumulative_opt_reif.mzn";
 
 /** @group globals.scheduling
   Requires that a set of tasks given by start times \a s, durations \a d, and

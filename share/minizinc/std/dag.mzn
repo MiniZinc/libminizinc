@@ -1,4 +1,5 @@
 include "fzn_dag.mzn";
+include "fzn_dag_reif.mzn";
 
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given directed graph to be a DAG.

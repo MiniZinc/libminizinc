@@ -1,4 +1,5 @@
 include "fzn_distribute.mzn";
+include "fzn_distribute_reif.mzn";
 
 /** @group globals.counting
   Requires that \a card[\p i] is the number of occurences of \a value[\p i] in

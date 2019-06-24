@@ -1,6 +1,7 @@
 include "all_different.mzn";
 include "disjunctive.mzn";
 include "fzn_cumulative.mzn";
+include "fzn_cumulative_reif.mzn";
 
 /** @group globals.scheduling
   Requires that a set of tasks given by start times \a s, durations \a d, and

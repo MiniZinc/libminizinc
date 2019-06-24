@@ -1,5 +1,6 @@
 include "disjunctive_strict_opt.mzn";
 include "fzn_disjunctive_opt.mzn";
+include "fzn_disjunctive_opt_reif.mzn";
 
 /** @group globals.scheduling
   Requires that a set of tasks given by start times \a s and durations \a d
@@ -18,6 +19,6 @@ predicate disjunctive(array[int] of var opt int: s,
         if (lb_array(d) > 0) then
           disjunctive_strict(s,d)
         else
-          fzn_disjunctive(s, d)
+          fzn_disjunctive_opt(s, d)
         endif
     );

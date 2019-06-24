@@ -1,4 +1,5 @@
 include "fzn_diffn_nonstrict.mzn";
+include "fzn_diffn_nonstrict_reif.mzn";
 
 /** @group globals.packing
   Constrains rectangles \p i, given by their origins (\a x[\p i], \a y[\p i])

@@ -1,4 +1,5 @@
 include "fzn_exactly_set.mzn";
+include "fzn_exactly_set_reif.mzn";
 
 %-----------------------------------------------------------------------------%
 % Requires exactly 'n' variables in 'x' to take the value 'v'.

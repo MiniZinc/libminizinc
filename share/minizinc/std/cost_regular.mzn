@@ -1,4 +1,5 @@
 include "fzn_cost_regular.mzn";
+include "fzn_cost_regular_reif.mzn";
 
 /** @group globals.extensional
   The sequence of values in array \a x (which must all be in the range 1..\a S)

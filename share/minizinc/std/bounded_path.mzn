@@ -89,9 +89,13 @@ predicate bounded_path(array[int] of $$N: from, array[int] of $$N: to, array[int
    fzn_bounded_path(from,to,w,s,t,ns,es,K);
 
 include "fzn_bounded_path_int.mzn";
+include "fzn_bounded_path_int_reif.mzn";
 include "fzn_bounded_path_enum.mzn";
+include "fzn_bounded_path_enum_reif.mzn";
 include "fzn_bounded_dpath_int.mzn";
+include "fzn_bounded_dpath_int_reif.mzn";
 include "fzn_bounded_dpath_enum.mzn";
+include "fzn_bounded_dpath_enum_reif.mzn";
    
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%

@@ -1,4 +1,5 @@
 include "fzn_diffn_k.mzn";   
+include "fzn_diffn_k_reif.mzn";   
 
 /** @group globals.packing
   Constrains \p k-dimensional boxes to be non-overlapping. For each box \p i

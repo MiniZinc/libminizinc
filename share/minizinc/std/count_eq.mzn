@@ -15,4 +15,7 @@ function var int: count_eq(array[int] of var int: x, var int: y) ::promise_total
 function int: count_eq(array[int] of int: x, int: y) =
               sum(i in index_set(x))(x[i] = y);
 
+predicate count_eq_reif(array[int] of var int: x, var int: y, var int: c, var bool: b) =
+    b <-> count_eq(x,y)=c;
+
 %-----------------------------------------------------------------------------%

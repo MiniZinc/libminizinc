@@ -1,5 +1,7 @@
 include "fzn_connected.mzn";
+include "fzn_connected_reif.mzn";
 include "fzn_dconnected.mzn";
+include "fzn_dconnected_reif.mzn";
 
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given directed graph to be connected.
