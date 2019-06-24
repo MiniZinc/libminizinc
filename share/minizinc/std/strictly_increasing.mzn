@@ -10,5 +10,6 @@ predicate strictly_increasing(array[int] of var int: x) =
     analyse_all_different(x) /\
     fzn_strictly_increasing_int(x);
 
-include "fzn_strictly_increasing.mzn";
+include "fzn_strictly_increasing_int.mzn";
+include "fzn_strictly_increasing_bool.mzn";
 include "analyse_all_different.mzn";

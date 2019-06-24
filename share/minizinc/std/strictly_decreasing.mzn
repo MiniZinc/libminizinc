@@ -1,4 +1,5 @@
-include "fzn_strictly_decreasing.mzn";
+include "fzn_strictly_decreasing_int.mzn";
+include "fzn_strictly_decreasing_bool.mzn";
 include "analyse_all_different.mzn";
 
 %-----------------------------------------------------------------------------%
