@@ -1,9 +1,3 @@
-/** @group globals
-  Constrains \a y(\a x) to be a piecewise-linear interpolation of
-  the provided point sequence.
-  
-  The formulation follows "Modeling SOS2 constraints in GLPK", 2008.
-*/
 predicate fzn_piecewise_linear(var float: x, var float: y,
               array[int] of float: xi, array[int] of float: vi) = 
     let {

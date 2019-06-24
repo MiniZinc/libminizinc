@@ -1,9 +1,5 @@
 include "lex_less.mzn";
 
-/** @group globals.lexicographic
-  Require adjacent rows and adjacent columns in the array \a x to be
-  lexicographically ordered.  Adjacent rows and adjacent columns cannot be equal.
-*/
 predicate fzn_strict_lex2(array[int, int] of var int: x) =
     let {
         int: lbx1 = min(index_set_1of2(x)),
