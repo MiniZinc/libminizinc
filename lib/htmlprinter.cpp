@@ -1214,13 +1214,16 @@ namespace MiniZinc {
           } while (alias);
           if (f_body->e()) {
             std::string filename = f_body->loc().filename().str();
-            size_t filePos = filename.find("std/")+4;
-            os << ".. only:: builder_html\n\n";
-            os << "    `More... <https://github.com/MiniZinc/libminizinc/blob/"
-               << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH
-               << "/share/minizinc/std/"
-               << filename.substr(filePos,std::string::npos) << "#L" << f_body->loc().first_line() << "-L" << f_body->loc().last_line()
-               << ">`__\n\n";
+            size_t filePos = filename.find("std/");
+            if (filePos != std::string::npos) {
+              filePos += 4;
+              os << ".. only:: builder_html\n\n";
+              os << "    `More... <https://github.com/MiniZinc/libminizinc/blob/"
+                 << MZN_VERSION_MAJOR << "." << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH
+                 << "/share/minizinc/std/"
+                 << filename.substr(filePos,std::string::npos) << "#L" << f_body->loc().first_line() << "-L" << f_body->loc().last_line()
+                 << ">`__\n\n";
+            }
           }
         }
 
