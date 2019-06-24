@@ -1,4 +1,5 @@
 include "fzn_network_flow.mzn";
+include "fzn_network_flow_cost.mzn";
 
 /** @group globals
   Defines a network flow constraint.
