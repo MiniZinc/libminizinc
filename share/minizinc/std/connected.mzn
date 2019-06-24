@@ -1,4 +1,5 @@
 include "fzn_connected.mzn";
+include "fzn_dconnected.mzn";
 
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given directed graph to be connected.
