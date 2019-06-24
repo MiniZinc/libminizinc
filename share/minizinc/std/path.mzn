@@ -1,4 +1,7 @@
-include "fzn_path.mzn";
+include "fzn_path_int.mzn";
+include "fzn_path_enum.mzn";
+include "fzn_dpath_int.mzn";
+include "fzn_dpath_enum.mzn";
    
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given directed graph to be a path from \a s to \a t.
