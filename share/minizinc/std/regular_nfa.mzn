@@ -1,4 +1,5 @@
 include "fzn_regular_nfa.mzn";
+include "fzn_regular_nfa_set.mzn";
 
 /** @group globals.extensional
   The sequence of values in array \a x (which must all be in the range 1..\a S)

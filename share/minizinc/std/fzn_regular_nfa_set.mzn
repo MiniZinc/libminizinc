@@ -1,4 +1,4 @@
-predicate fzn_regular_nfa(array[int] of var int: x, int: Q, int: S,
+predicate fzn_regular_nfa(array[int] of var int: x, int: Q, set of int: S,
                       array[int,int] of set of int: d, int: q0, set of int: F) =
     let {
         % If x has index set m..n-1, then a[m] holds the initial state
@@ -10,7 +10,7 @@ predicate fzn_regular_nfa(array[int] of var int: x, int: Q, int: S,
     } in
         a[m] = q0 /\                    % Set a[0].
         forall(i in index_set(x)) (
-            x[i] in 1..S /\             % Do this in case it's a var.
+            x[i] in S /\                % Do this in case it's a var.
             a[i+1] in d[a[i], x[i]]     % Determine a[i+1].
         ) /\
         a[n] in F;                      % Check the final state is in F.
