@@ -21,8 +21,6 @@ predicate bounded_dpath(int: N, int: E, array[int] of int: from, array[int] of i
    assert(index_set(w) = 1..E,"bounded_dpath: index set of w must be 1..\(E)") /\
    fzn_bounded_path(N,E,from,to,w,s,t,ns,es,K);
 
-include "fzn_bounded_path.mzn";
-
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given directed graph to be a path from \a s to \a t of weight \a K.
 
@@ -89,6 +87,11 @@ predicate bounded_path(array[int] of $$N: from, array[int] of $$N: to, array[int
    assert(dom_array(from) subset index_set(ns),"bounded_path: nodes in from must be in index set of ns") /\
    assert(dom_array(from) subset index_set(ns),"bounded_path: nodes in to must be in index set of ns") /\
    fzn_bounded_path(from,to,w,s,t,ns,es,K);
+
+include "fzn_bounded_path_int.mzn";
+include "fzn_bounded_path_enum.mzn";
+include "fzn_bounded_dpath_int.mzn";
+include "fzn_bounded_dpath_enum.mzn";
    
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%
