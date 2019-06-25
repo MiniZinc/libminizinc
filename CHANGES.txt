@@ -11,10 +11,12 @@ Version 2.3
 Major Changes:
 
 - The compiler can now generate FlatZinc with half reified constraints. See
-  http://minizinc.org/doc-2.2.3/en/fzn-spec.html#reified-and-half-reified-predic
-  ates for more details.
+  https://www.minizinc.org/doc-2.3.0/en/fzn-spec.html#reified-and-half-reified-predicates
+  for more details.
 - The standard library of global constraints has been reorganised, making it
-  easier for solvers to override just the bits that they support.
+  easier for solvers to override just the bits that they support. See
+  https://www.minizinc.org/doc-2.3.0/en/fzn-spec.html#solver-specific-libraries
+  for more details.
 - There is experimental support for solvers that can read AMPL NL files.
 
 Minor Changes:
