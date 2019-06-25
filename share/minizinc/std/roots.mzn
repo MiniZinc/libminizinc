@@ -1,4 +1,5 @@
 include "fzn_roots.mzn";
+include "fzn_roots_reif.mzn";
 
 /** @group globals
   Requires that \a x[\p i] in \a t for all \p i in \a s

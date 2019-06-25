@@ -1,4 +1,5 @@
 include "fzn_range.mzn";
+include "fzn_range_reif.mzn";
 
 /** @group globals
   Requires that the image of function \a x (represented as an array) on set

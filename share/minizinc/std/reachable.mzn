@@ -1,7 +1,11 @@
 include "fzn_reachable_int.mzn";
+include "fzn_reachable_int_reif.mzn";
 include "fzn_reachable_enum.mzn";
+include "fzn_reachable_enum_reif.mzn";
 include "fzn_dreachable_int.mzn";
+include "fzn_dreachable_int_reif.mzn";
 include "fzn_dreachable_enum.mzn";
+include "fzn_dreachable_enum_reif.mzn";
    
 /** @group globals.graph
     Constrains the subgraph \a ns and \a es of a given directed graph to be reachable from \a r.
