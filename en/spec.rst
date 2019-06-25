@@ -660,7 +660,7 @@ implementation to check that all parameters are initialised in the model or
 the instance.  It also clearly documents which variables are parameters, and
 allows more precise type-inst checking.*
 
-A type-inst is fixed if it does not contain :mzn:`var` or :mzn:`any`,
+A type-inst is fixed if it does not contain :mzn:`var`,
 with the exception of :mzn:`ann`.
 
 Note that several type-inst expressions that are syntactically expressible
@@ -2554,7 +2554,7 @@ overloaded operator:
 
 .. code-block:: minizinc
 
-    ann: '::'(any $T: e, ann: a);       % associative
+    ann: '::'(var $T: e, ann: a);       % associative
     ann: '::'(ann:    a, ann: b);       % associative + commutative
 
 Both operators are associative, the second is commutative.  This means that
@@ -2870,7 +2870,8 @@ similar.
 
 .. code-block:: minizinc
 
-  any $T:    min(any $T,    any $T )
+  $T:     min(    $T,     $T)
+  var $T: min(var $T, var $T)
 
 
 
@@ -2881,7 +2882,8 @@ Aborts if the array is empty.
 
 .. code-block:: minizinc
 
-  any $U:    min(array[$T]  of any $U)
+  $U:     min(array[$T]  of     $U)
+  var $U: min(array[$T]  of var $U)
 
 
 
@@ -3116,7 +3118,7 @@ Length of an array.
 
 .. code-block:: minizinc
 
-  int: length(array[$T] of any $U)
+  int: length(array[$T] of $U)
 
 
 
@@ -3134,8 +3136,7 @@ Note that :mzn:`'++'` also performs string concatenation.
 
 .. code-block:: minizinc
 
-  array[int] of any $T: '++'(array[int] of any $T, array[int] of any $T)
-
+  array[int] of $T: '++'(array[int] of $T, array[int] of $T)
 
 Index sets of arrays.  If the argument is a literal, returns :mzn:`1..n`
 where :mzn:`n` is the (sub-)array length.  Otherwise, returns the declared
@@ -3144,9 +3145,9 @@ way, for arrays of higher dimensions.
 
 .. code-block:: minizinc
 
-  set of $T:  index_set     (array[$T]      of any $V)
-  set of $T:  index_set_1of2(array[$T, $U]  of any $V)
-  set of $U:  index_set_2of2(array[$T, $U]  of any $V)
+  set of $T:  index_set     (array[$T]      of $V)
+  set of $T:  index_set_1of2(array[$T, $U]  of $V)
+  set of $U:  index_set_2of2(array[$T, $U]  of $V)
   ...
 
 Replace the indices of the array given by the last argument with the
@@ -3155,11 +3156,11 @@ versions exist for arrays up to 6 dimensions.
 
 .. code-block:: minizinc
 
-  array[$T1] of any $V: array1d(set of $T1, array[$U] of any $V)
-  array[$T1,$T2] of any $V:
-      array2d(set of $T1, set of $T2, array[$U] of any $V)
-  array[$T1,$T2,$T3] of any $V:
-      array3d(set of $T1, set of $T2, set of $T3, array[$U] of any $V)
+  array[$T1] of $V: array1d(set of $T1, array[$U] of $V)
+  array[$T1,$T2] of $V:
+      array2d(set of $T1, set of $T2, array[$U] of $V)
+  array[$T1,$T2,$T3] of $V:
+      array3d(set of $T1, set of $T2, set of $T3, array[$U] of $V)
 
 
 Coercion Operations
@@ -3196,7 +3197,7 @@ The exact form of the resulting string is implementation-dependent.
 
 .. code-block:: minizinc
 
-  string: show(any $T)
+  string: show($T)
 
 
 Formatted to-string conversion for integers.
@@ -3405,7 +3406,7 @@ for global sanity-checks (e.g. of instance data) in constraint items.
 
 .. code-block:: minizinc
 
-  any $T:   assert(bool, string, any $T)
+  $T:   assert(bool, string, s$T)
   par bool: assert(bool, string)
 
 
@@ -3413,7 +3414,7 @@ Abort evaluation, printing the given string.
 
 .. code-block:: minizinc
 
-  any $T: abort(string)
+  $T: abort(string)
 
 Return true. As a side-effect, an implementation may print the first argument.
 
@@ -3427,7 +3428,7 @@ As a side-effect, an implementation may print the first argument.
 
 .. code-block:: minizinc
 
-  any $T: trace(string, any $T)
+  $T: trace(string, $T)
 
 
 Check if the argument's value is fixed at this point in evaluation.  If not,
@@ -3437,14 +3438,14 @@ where a fixed value is needed, such as if-then-else conditions.
 
 .. code-block:: minizinc
 
-  $T: fix(any $T)
+  $T: fix(var $T)
 
 
 As above, but return :mzn:`false` if the argument's value is not fixed.
 
 .. code-block:: minizinc
 
-  par bool: is_fixed(any $T)
+  par bool: is_fixed(var $T)
 
 
 .. _spec-content-types:
