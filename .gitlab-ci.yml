@@ -21,7 +21,6 @@ variables:
   script:
     - sh download.sh vendor master vendor:${MZNARCH} vendor.zip
     - unzip -q vendor.zip
-    - rm -rf build
     - mkdir -p build
     - cd build
     - cmake -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=Release -v .. -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
@@ -81,7 +80,7 @@ build:win64:
     paths: [vendor.zip*]
   tags: [win64, cmake, cpp]
 
-build:wasm:
+build:wasm_complete:
   image: trzeci/emscripten
   stage: build
   variables:
@@ -92,17 +91,31 @@ build:wasm:
   script:
     - sh download.sh vendor master vendor:wasm vendor.zip
     - unzip -q vendor.zip
-    - rm -rf build
     - mkdir -p build
     - cd build
-    - emconfigure cmake -G"$CMAKE_ARCH" -DCMAKE_FIND_ROOT_PATH="/" -DGECODE_ROOT="$GECODE_ROOT" -DOSICBC_ROOT="$OSICBC_ROOT" -DCMAKE_BUILD_TYPE=MinSizeRel -DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1 -v .. -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc/complete"
+    - emconfigure cmake -G"$CMAKE_ARCH" -DCMAKE_FIND_ROOT_PATH="/" -DGECODE_ROOT="$GECODE_ROOT" -DOSICBC_ROOT="$OSICBC_ROOT" -DCMAKE_BUILD_TYPE=MinSizeRel -DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1 -v .. -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
     - cmake --build .  --config MinSizeRel
     - cmake --build .  --config MinSizeRel --target install
-    - cd ..
-    - rm -rf build
+  artifacts:
+    paths: [minizinc/]
+  cache:
+    key: "$CI_JOB_NAME"
+    paths: [.ccache, vendor.zip*]
+
+build:wasm_minimal:
+  image: trzeci/emscripten
+  stage: build
+  variables:
+    MZNARCH: "wasm"
+    CMAKE_ARCH: "Unix Makefiles"
+  tags: [docker]
+  before_script: *download_script
+  script:
+    - sh download.sh vendor master vendor:wasm vendor.zip
+    - unzip -q vendor.zip
     - mkdir -p build
     - cd build
-    - emconfigure cmake -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=MinSizeRel -DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1 -v .. -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc/minimal"
+    - emconfigure cmake -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=MinSizeRel -DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1 -v .. -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
     - cmake --build .  --config MinSizeRel
     - cmake --build .  --config MinSizeRel --target install
   artifacts:
