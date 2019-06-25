@@ -15,7 +15,7 @@ include "fzn_dwst_reif.mzn";
     \a es is a Boolean for each edge whether it is in the subgraph
     \a K is the weight of the tree
 */
-predicate dwst(int: N, int: E, array[int] of int: from, array[int] of int: to, array[int] of int: w,
+predicate d_weighted_spanning_tree(int: N, int: E, array[int] of int: from, array[int] of int: to, array[int] of int: w,
                         var int: r, array[int] of var bool: es, var int: K) =
     assert(index_set(from) = 1..E,"dwst: index set of from must be 1..\(E)") /\
     assert(index_set(to) = 1..E,"dwst: index set of to must be 1..\(E)") /\
@@ -34,7 +34,7 @@ predicate dwst(int: N, int: E, array[int] of int: from, array[int] of int: to, a
     \a es is a Boolean for each edge whether it is in the subgraph
     \a K is the weight of the tree
 **/   
-predicate wst(int: N, int: E, array[int] of int: from, array[int] of int: to, array[int] of int: w,
+predicate weighted_spanning_tree(int: N, int: E, array[int] of int: from, array[int] of int: to, array[int] of int: w,
               array[int] of var bool: es, var int: K) =
     assert(index_set(from) = 1..E,"wst: index set of from must be 1..\(E)") /\
     assert(index_set(to) = 1..E,"wst: index set of to must be 1..\(E)") /\

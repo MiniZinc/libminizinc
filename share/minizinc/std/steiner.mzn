@@ -2,7 +2,7 @@ include "fzn_steiner.mzn";
 include "fzn_steiner_reif.mzn";
 include "fzn_dsteiner.mzn";
 include "fzn_dsteiner_reif.mzn";
-include "wst.mzn";
+include "weighted_spanning_tree.mzn";
 
 /** @group globals.graph
     Constrains the subgraph \a  ns and \a es of a given directed graph to be a weighted spanning tree rooted at \a r of weight \a W.
@@ -25,7 +25,7 @@ predicate dsteiner(int: N, int: E, array[int] of int: from, array[int] of int: t
     assert(index_set(es) = 1..E,"dsteiner: index set of es must be 1..\(E)") /\
     assert(index_set(w) = 1..E,"dsteiner: index set of w must be 1..\(E)") /\
     if  forall(n in 1..N)(is_fixed(ns[n]) /\ fix(ns[n])) then
-        dwst(N,E,from,to,w,r,es,K)
+        d_weighted_spanning_tree(N,E,from,to,w,r,es,K)
     else
         fzn_dsteiner(N,E,from,to,w,r,ns,es,K)
     endif;
@@ -50,7 +50,7 @@ predicate steiner(int: N, int: E, array[int] of int: from, array[int] of int: to
     assert(index_set(es) = 1..E,"steiner: index set of es must be 1..\(E)") /\
     assert(index_set(w) = 1..E,"steiner: index set of w must be 1..\(E)") /\
     if  forall(n in 1..N)(is_fixed(ns[n]) /\ fix(ns[n])) then
-        wst(N,E,from,to,w,es,K)
+        weighted_spanning_tree(N,E,from,to,w,es,K)
     else
         fzn_steiner(N,E,from,to,w,ns,es,K)
     endif;

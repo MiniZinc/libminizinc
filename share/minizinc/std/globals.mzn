@@ -125,4 +125,4 @@ include "table.mzn";
 include "tree.mzn";   
 include "value_precede.mzn";
 include "value_precede_chain.mzn";
-include "wst.mzn";
+include "weighted_spanning_tree.mzn";
