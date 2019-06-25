@@ -1,4 +1,5 @@
 include "fzn_writes.mzn";
+include "fzn_writes_reif.mzn";
 
 /** @group globals.array
     Creates a new array \a O from an input array \a I with a simultaneous change at positions \a P to values \a V

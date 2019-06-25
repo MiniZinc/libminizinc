@@ -1,4 +1,5 @@
 include "fzn_sort.mzn";
+include "fzn_sort_reif.mzn";
 
 /** @group globals.sort
   Requires that the multiset of values in \a x are the same as the

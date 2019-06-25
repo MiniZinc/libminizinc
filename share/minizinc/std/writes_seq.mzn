@@ -1,4 +1,5 @@
 include "fzn_writes_seq.mzn";
+include "fzn_writes_seq_reif.mzn";
 
 /** @group globals.array
     Creates a new array \a O from an input array \a I with a sequence of changes at positions \a P to take values \a V

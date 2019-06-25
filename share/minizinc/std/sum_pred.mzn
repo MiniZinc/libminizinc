@@ -1,4 +1,5 @@
 include "fzn_sum_pred.mzn";
+include "fzn_sum_pred_reif.mzn";
 
 /** @group globals
   Requires that the sum of \a cs[\p i1]..\a cs[\p iN] equals \a s,

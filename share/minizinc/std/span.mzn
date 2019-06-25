@@ -1,4 +1,5 @@
 include "fzn_span.mzn";
+include "fzn_span_reif.mzn";
 
 /** @group globals.scheduling
   Span constraint for optional tasks. Task (\a s0,\a d0) spans the optional

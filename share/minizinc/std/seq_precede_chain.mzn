@@ -1,5 +1,7 @@
 include "fzn_seq_precede_chain_int.mzn";
+include "fzn_seq_precede_chain_int_reif.mzn";
 include "fzn_seq_precede_chain_set.mzn";
+include "fzn_seq_precede_chain_set_reif.mzn";
 
 /** @group globals.lexicographic
   Requires that \a i precedes \a i+1 in the array \a x for all positive \a i.

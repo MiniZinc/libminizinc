@@ -1,5 +1,7 @@
 include "fzn_steiner.mzn";
+include "fzn_steiner_reif.mzn";
 include "fzn_dsteiner.mzn";
+include "fzn_dsteiner_reif.mzn";
 include "wst.mzn";
 
 /** @group globals.graph

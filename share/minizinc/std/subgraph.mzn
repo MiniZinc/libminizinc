@@ -1,5 +1,7 @@
 include "fzn_subgraph_int.mzn";
+include "fzn_subgraph_int_reif.mzn";
 include "fzn_subgraph_enum.mzn";
+include "fzn_subgraph_enum_reif.mzn";
    
 /** @group globals.graph
     Constrains that \a ns and \a es is a subgraph of a given directed graph.

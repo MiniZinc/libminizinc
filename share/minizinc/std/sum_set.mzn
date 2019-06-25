@@ -1,4 +1,5 @@
 include "fzn_sum_set.mzn";
+include "fzn_sum_set_reif.mzn";
 
 /** @group globals
   Requires that the sum of the weights \a ws[\p i1]..\a ws[\p iN] equals \a s, 

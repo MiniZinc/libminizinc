@@ -1,5 +1,7 @@
 include "fzn_wst.mzn";
+include "fzn_wst_reif.mzn";
 include "fzn_dwst.mzn";
+include "fzn_dwst_reif.mzn";
 
 /** @group globals.graph
     Constrains the set of edges \a es of a given directed graph to be a weighted spanning tree rooted at \a r of weight \a W.
