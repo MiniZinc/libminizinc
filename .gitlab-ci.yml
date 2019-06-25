@@ -1,25 +1,36 @@
 stages:
   - build
-  - test
+  - trigger
+
+.download_script: &download_script
+  - curl --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" --silent https://gitlab.com/api/v4/snippets/1796163/raw | tr -d '\r' > download.sh
+
+variables:
+  # Vendor solver locations
+  GECODE_ROOT: "$CI_PROJECT_DIR/vendor/gecode"
+  GUROBI_ROOT: "$CI_PROJECT_DIR/vendor/gurobi"
+  CPLEX_ROOT: "$CI_PROJECT_DIR/vendor/CPLEX_Studio/cplex"
+  OSICBC_ROOT: "$CI_PROJECT_DIR/vendor/cbc"
+  # CCache settings
+  CCACHE_DIR: "$CI_PROJECT_DIR/.ccache"
+  CCACHE_MAXSIZE: "100M"
 
 .build_template: &build_definition
   stage: build
+  before_script: *download_script
   script:
-    - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" "https://gitlab.com/api/v4/projects/minizinc%2Fvendor/jobs/artifacts/master/download?job=vendor:${MZNARCH}"
+    - sh download.sh vendor master vendor:${MZNARCH} vendor.zip
     - unzip -q vendor.zip
-    - rm -rf build
     - mkdir -p build
     - cd build
-    - cmake -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=Release -v .. -DBUILD_REF=$CI_PIPELINE_ID -DGECODE_NO_MPFR=1 -DGECODE_HOME="$CI_PROJECT_DIR/vendor/gecode" -DBUILD_GUROBI_PLUGIN=ON -DGUROBI_HOME="$CI_PROJECT_DIR/vendor/gurobi" -DBUILD_CPLEX_PLUGIN=ON -DCPLEX_STUDIO_DIR="$CI_PROJECT_DIR/vendor/CPLEX_Studio" -DOSICBC_HOME="$CI_PROJECT_DIR/vendor/CBC" -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=Release -v .. -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
   artifacts:
-    paths:
-      - minizinc/
+    paths: [minizinc/]
   cache:
-    key: "${MZNARCH}_${CI_COMMIT_REF_SLUG}"
-    paths:
-      - build/
+    key: "$CI_JOB_NAME"
+    paths: [.ccache, vendor.zip*]
 
 
 build:linux:
@@ -27,55 +38,99 @@ build:linux:
   image: dekker1/minibuild:cpp
   variables:
     MZNARCH: "linux"
-    CMAKE_ARCH: "Unix Makefiles"
-  tags:
-    - linux
-    - docker
+    CMAKE_ARCH: "Ninja"
+  tags: [linux, docker]
+
+build:musl:
+  <<: *build_definition
+  image: dekker1/minibuild:alpine
+  variables:
+    MZNARCH: "musl"
+    CMAKE_ARCH: "Ninja"
+  tags: [linux, docker]
 
 build:osx:
   <<: *build_definition
   stage: build
   variables:
     MZNARCH: "osx"
-    CMAKE_ARCH: "Xcode"
-  tags:
-    - osx
-    - cmake
-    - cpp
-
-.build:win32: #DISABLED
-  <<: *build_definition
-  stage: build
-  variables:
-    MZNARCH: "win32"
-    CMAKE_ARCH: "Visual Studio 14 2015"
-  script:
-    - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fvendor/jobs/artifacts/master/download?job=vendor:win32"
-    - unzip -q vendor.zip
-    - if not exist "build" mkdir build
-    - cd build
-    - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DSHARED_GECODE=TRUE -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
-    - cmake --build .  --config Release
-    - cmake --build .  --config Release --target install
-  tags:
-    - win32
-    - cmake
-    - cpp
+    CMAKE_ARCH: "Ninja"
+  tags: [osx, cmake, cpp]
 
 build:win64:
-  <<: *build_definition
+  stage: build
   variables:
     MZNARCH: "win64"
-    CMAKE_ARCH: "Visual Studio 14 2015 Win64"
+    CMAKE_ARCH: "Visual Studio 15 2017 Win64"
+  before_script:
+    - curl -o download.sh --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" --silent https://gitlab.com/api/v4/snippets/1796163/raw
+    - dos2unix download.sh
   script:
-    - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" "https://gitlab.com/api/v4/projects/minizinc%%2Fvendor/jobs/artifacts/master/download?job=vendor:win64"
+    - sh download.sh vendor master vendor:%MZNARCH% vendor.zip
     - unzip -q vendor.zip
     - if not exist "build" mkdir build
     - cd build
-    - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DGECODE_HOME="%CI_PROJECT_DIR%/vendor/gecode" -DSHARED_GECODE=TRUE -DBUILD_GUROBI_PLUGIN=ON -DGUROBI_HOME="%CI_PROJECT_DIR%/vendor/gurobi" -DOSICBC_HOME="%CI_PROJECT_DIR%/vendor/CBC" -DBUILD_CPLEX_PLUGIN=ON -DCPLEX_STUDIO_DIR="%CI_PROJECT_DIR%/vendor/CPLEX_Studio" -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
+    - cmake -G"%CMAKE_ARCH%" .. -DBUILD_REF=%CI_PIPELINE_ID% -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="%CI_PROJECT_DIR%/minizinc"
     - cmake --build .  --config Release
     - cmake --build .  --config Release --target install
-  tags:
-    - win64
-    - cmake
-    - cpp
+  artifacts:
+    paths: [minizinc/]
+  cache:
+    key: "win64"
+    paths: [vendor.zip*]
+  tags: [win64, cmake, cpp]
+
+build:wasm_complete:
+  image: trzeci/emscripten
+  stage: build
+  variables:
+    MZNARCH: "wasm"
+    CMAKE_ARCH: "Unix Makefiles"
+  tags: [docker]
+  before_script: *download_script
+  script:
+    - sh download.sh vendor master vendor:wasm vendor.zip
+    - unzip -q vendor.zip
+    - mkdir -p build
+    - cd build
+    - emconfigure cmake -G"$CMAKE_ARCH" -DCMAKE_FIND_ROOT_PATH="/" -DGECODE_ROOT="$GECODE_ROOT" -DOSICBC_ROOT="$OSICBC_ROOT" -DCMAKE_BUILD_TYPE=MinSizeRel -DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1 -v .. -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake --build .  --config MinSizeRel
+    - cmake --build .  --config MinSizeRel --target install
+  artifacts:
+    paths: [minizinc/]
+  cache:
+    key: "$CI_JOB_NAME"
+    paths: [.ccache, vendor.zip*]
+
+build:wasm_minimal:
+  image: trzeci/emscripten
+  stage: build
+  variables:
+    MZNARCH: "wasm"
+    CMAKE_ARCH: "Unix Makefiles"
+  tags: [docker]
+  before_script: *download_script
+  script:
+    - sh download.sh vendor master vendor:wasm vendor.zip
+    - unzip -q vendor.zip
+    - mkdir -p build
+    - cd build
+    - emconfigure cmake -G"$CMAKE_ARCH" -DCMAKE_BUILD_TYPE=MinSizeRel -DEMSCRIPTEN_GENERATE_BITCODE_STATIC_LIBRARIES=1 -v .. -DBUILD_REF=$CI_PIPELINE_ID -DUSE_PROPRIETARY=OFF -DCMAKE_INSTALL_PREFIX="$CI_PROJECT_DIR/minizinc"
+    - cmake --build .  --config MinSizeRel
+    - cmake --build .  --config MinSizeRel --target install
+  artifacts:
+    paths: [minizinc/]
+  cache:
+    key: "$CI_JOB_NAME"
+    paths: [.ccache, vendor.zip*]
+
+# ----------- Trigger FindMUS pipeline -----------
+
+trigger:findmus:
+  stage: trigger
+  image: dekker1/minibuild:package
+  script:
+  - "curl --request POST --form token=$TRIGGER --form ref=master https://gitlab.com/api/v4/projects/minizinc%2FFindMUS/trigger/pipeline"
+  dependencies: []
+  tags: [linux, docker]
+  only: [develop]

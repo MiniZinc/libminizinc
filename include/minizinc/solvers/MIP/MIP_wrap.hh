@@ -147,6 +147,8 @@ class MIP_wrapper {
       int cutMask = 0; // can be any combination of User/Lazy
       bool fVerb = false;              // used in Gurobi
       bool printed = false;            // whether any solution was output
+      double nTimeoutFeas = -1.0;      // >=0 => stop that long after 1st feas
+      double nTime1Feas = -1e100;      // time of the 1st feas
     };
     CBUserInfo cbui;
 
@@ -258,6 +260,14 @@ class MIP_wrapper {
                         LinConType sense, double rhs,
                         std::string rowName = "") { throw std::runtime_error("Indicator constraints not supported. "); }
                 
+    /// Bounds disj for SCIP
+    virtual void addBoundsDisj(int n, double *fUB, double *bnd, int* vars,
+                               int nF, double *fUBF, double *bndF, int* varsF,
+                        std::string rowName = "") { throw std::runtime_error("Bounds disjunctions not supported. "); }
+
+    /// Cumulative, currently SCIP only
+    virtual void addCumulative(int nnz, int *rmatind, double* d, double* r, double b, std::string rowName="")
+    { throw std::runtime_error("Cumulative constraints not supported. "); }
     /// 0: model-defined level, 1: free, 2: uniform search
     virtual int getFreeSearch() { return 1; }
     /// Return 0 if ignoring searches
@@ -315,6 +325,9 @@ class MIP_wrapper {
      virtual int getNNodes() = 0;
      virtual int getNOpen() = 0;
 
-  }; 
+    /// Default MZN library for MIP
+    static std::string getMznLib();
+
+  };
 
 #endif  // __MIP_WRAPPER__

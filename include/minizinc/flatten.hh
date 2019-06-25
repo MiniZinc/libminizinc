@@ -37,8 +37,14 @@ namespace MiniZinc {
     bool only_toplevel_paths;
     /// Construct and collect mzn_paths for expressions and VarDeclI during flattening
     bool collect_mzn_paths;
+    /// Do not apply domain changes but insert them as constraints (useful for debugging)
+    bool record_domain_changes;
     /// Only range domains for old linearization. Set from redefs to true if not here
     bool onlyRangeDomains;
+    /// Allow the use of Half Reifications
+    bool enable_imp;
+    /// Timeout for flattening in milliseconds (0 means no timeout)
+    unsigned long long int timeout;
     /// Create standard, DZN or JSON output
     enum OutputMode {
       OUTPUT_ITEM, OUTPUT_DZN, OUTPUT_JSON
@@ -47,7 +53,7 @@ namespace MiniZinc {
     bool outputObjective;
     /// Default constructor
     FlatteningOptions(void)
-    : keepOutputInFzn(false), verbose(false), only_toplevel_paths(false), collect_mzn_paths(false), onlyRangeDomains(false), outputMode(OUTPUT_ITEM), outputObjective(false) {}
+      : keepOutputInFzn(false), verbose(false), only_toplevel_paths(false), collect_mzn_paths(false), record_domain_changes(false), onlyRangeDomains(false), enable_imp(true), timeout(0), outputMode(OUTPUT_ITEM), outputObjective(false) {}
   };
 
   class Pass {
@@ -84,10 +90,19 @@ namespace MiniZinc {
     int n_float_ct;
     /// Number of set constraints
     int n_set_ct;
+    /// Number of reified constraints evaluated
+    int n_reif_ct;
+    /// Number of half-reified constraints evaluated
+    int n_imp_ct;
+    /// Number of implications eliminated using path compression
+    int n_imp_del;
+    /// Number of linear expressions eliminated using path compression
+    int n_lin_del;
     /// Constructor
     FlatModelStatistics(void)
     : n_int_vars(0), n_bool_vars(0), n_float_vars(0), n_set_vars(0),
-      n_bool_ct(0), n_int_ct(0), n_float_ct(0), n_set_ct(0) {}
+      n_bool_ct(0), n_int_ct(0), n_float_ct(0), n_set_ct(0),
+      n_reif_ct(0), n_imp_ct(0), n_imp_del(0), n_lin_del(0) {}
   };
   
   /// Compute statistics for flat model in \a m

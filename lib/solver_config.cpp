@@ -116,15 +116,26 @@ namespace MiniZinc {
         if (nCols < 2 || nCols > 4) {
           throw ConfigException("invalid configuration item (right hand side must be a 2d array of strings)");
         }
-        bool haveType = (nCols == 3);
-        bool haveDefault = (nCols == 4);
+        bool haveType = (nCols >= 3);
+        bool haveDefault = (nCols >= 4);
         for (unsigned int i=0; i<al->size(); i+=nCols) {
           StringLit* sl1 = (*al)[i]->dyn_cast<StringLit>();
           StringLit* sl2 = (*al)[i+1]->dyn_cast<StringLit>();
           StringLit* sl3 = haveType ? (*al)[i+2]->dyn_cast<StringLit>() : NULL;
           StringLit* sl4 = haveDefault ? (*al)[i+3]->dyn_cast<StringLit>() : NULL;
+          std::string opt_type = sl3 ? sl3->v().str() : "bool";
+          std::string opt_def;
+          if (sl4) {
+            opt_def = sl4->v().str();
+          } else if (opt_type=="bool") {
+            opt_def = "false";
+          } else if (opt_type=="int") {
+            opt_def = "0";
+          } else if (opt_type=="float") {
+            opt_def = "0.0";
+          }
           if (sl1 && sl2) {
-            ret.emplace_back(sl1->v().str(),sl2->v().str(),sl3 ? sl3->v().str() : "bool",sl4 ? sl4->v().str() : "false");
+            ret.emplace_back(sl1->v().str(),sl2->v().str(),opt_type,opt_def);
           } else {
             throw ConfigException("invalid configuration item (right hand side must be a 2d array of strings)");
           }
@@ -223,14 +234,17 @@ namespace MiniZinc {
             } else if (ai->id()=="executable") {
               std::string exePath = getString(ai);
               sc._executable = exePath;
-              std::string exe;
-              if (exePath.size() > 2 && exePath[0]=='.' && (exePath[1]=='/' || (exePath[1]=='.' && exePath[2]=='/'))) {
-                exe = FileUtils::find_executable(FileUtils::file_path(basePath+"/"+getString(ai), basePath));
-              } else {
-                exe = FileUtils::find_executable(exePath);
-              }
-              if (!exe.empty()) {
+              std::string exe = FileUtils::find_executable(FileUtils::file_path(exePath, basePath));
+              int nr_found = (int) (! exe.empty());
+              std::string tmp = FileUtils::find_executable(exePath);
+              nr_found += (int) ( (! tmp.empty()) && tmp != exe);
+              exe = exe.empty() ? tmp : exe;
+              if (nr_found > 0) {
                 sc._executable_resolved = exe;
+                if (nr_found > 1) {
+                  std::cerr << "Warning: multiple executables '" << exePath << "' found on the system, using '"
+                            <<  exe << "'" << std::endl;
+                }
               }
             } else if (ai->id()=="mznlib") {
               std::string libPath = getString(ai);
@@ -239,7 +253,7 @@ namespace MiniZinc {
                 if (libPath[0]=='-') {
                   sc._mznlib_resolved = libPath;
                 } else if (libPath.size() > 2 && libPath[0]=='.' && (libPath[1]=='/' || (libPath[1]=='.' && libPath[2]=='/'))) {
-                  sc._mznlib_resolved = FileUtils::file_path(basePath+"/"+libPath, basePath);
+                  sc._mznlib_resolved = FileUtils::file_path(libPath, basePath);
                 } else {
                   sc._mznlib_resolved = FileUtils::file_path(libPath, basePath);
                 }
@@ -259,6 +273,8 @@ namespace MiniZinc {
               sc._supportsMzn = getBool(ai);
             } else if (ai->id()=="supportsFzn") {
               sc._supportsFzn = getBool(ai);
+            } else if (ai->id()=="supportsNL") {
+              sc._supportsNL = getBool(ai);
             } else if (ai->id()=="needsSolns2Out") {
               sc._needsSolns2Out = getBool(ai);
             } else if (ai->id()=="isGUIApplication") {
@@ -319,7 +335,9 @@ namespace MiniZinc {
     int newIdx = static_cast<int>(_solvers.size());
     _solvers.push_back(sc);
     std::vector<string> sc_tags = sc.tags();
-    sc_tags.push_back(sc.id());
+    std::string id = sc.id();
+    id = stringToLower(id);
+    sc_tags.push_back(id);
     std::string name = sc.name();
     name = stringToLower(name);
     sc_tags.push_back(name);
@@ -623,6 +641,7 @@ namespace MiniZinc {
       }
       oss << "    \"supportsMzn\": " << (sc.supportsMzn() ? "true" : "false") << ",\n";
       oss << "    \"supportsFzn\": " << (sc.supportsFzn() ? "true" : "false") << ",\n";
+      oss << "    \"supportsNL\": " << (sc.supportsNL() ? "true" : "false") << ",\n";
       oss << "    \"needsSolns2Out\": " << (sc.needsSolns2Out()? "true" : "false") << ",\n";
       oss << "    \"needsMznExecutable\": " << (sc.needsMznExecutable()? "true" : "false") << ",\n";
       oss << "    \"needsStdlibDir\": " << (sc.needsStdlibDir()? "true" : "false") << ",\n";
@@ -678,7 +697,7 @@ namespace MiniZinc {
     TagMap::const_iterator tag_it = _tags.find(getTag(firstTag));
 
     if (tag_it == _tags.end()) {
-      throw ConfigException("no solver with tag "+firstTag+" found");
+      throw ConfigException("no solver with tag "+getTag(firstTag)+" found");
     }
     std::string tv = getVersion(firstTag);
     for (int sidx: tag_it->second) {

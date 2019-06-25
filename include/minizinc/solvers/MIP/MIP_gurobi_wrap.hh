@@ -23,7 +23,7 @@ extern "C" {
 class MIP_gurobi_wrapper : public MIP_wrapper {
     GRBenv        * env = 0;
     GRBmodel      * model = 0;
-#ifdef HAS_GUROBI_PLUGIN
+#ifdef GUROBI_PLUGIN
     void          * gurobi_dll;
 #endif
     int             error;
@@ -40,7 +40,8 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
       int nFreeSearch=1;
       int nThreads=1;
       std::string sExportModel;
-      int nTimeout=-1;
+      int nTimeout1000=-1;
+      int nTimeoutFeas1000=-1;
       long int nSolLimit = -1;
       double nWorkMemLimit=-1;
       std::string sReadParams;
@@ -49,7 +50,8 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
       
       double absGap=-1;
       double relGap=1e-8;
-      double intTol=1e-6;
+      double feasTol=1e-8;
+      double intTol=1e-8;
       double objDiff=1.0;
       std::string sGurobiDLL;
       bool processOption(int& i, std::vector<std::string>& argv);
@@ -125,6 +127,8 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
 
     int (__stdcall *dll_GRBsetstrparam) (GRBenv *env, const char *paramname, const char *value);
 
+    void (__stdcall *dll_GRBterminate) (GRBmodel* model);
+
     int (__stdcall *dll_GRBupdatemodel) (GRBmodel *model);
 
     int (__stdcall *dll_GRBwrite) (GRBmodel *model, const char *filename);
@@ -144,6 +148,7 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt=NULL);
     static std::string getId(void);
     static std::string getName(void);
+    static std::vector<std::string> getTags(void);
     static std::vector<std::string> getStdFlags(void);
     static std::string needDllFlag(void);
 //       Statistics& getStatistics() { return _statistics; }

@@ -30,7 +30,6 @@ namespace MiniZinc {
       Statistics() : _time(0), _nodes(0), _failures(0) {}
 
       virtual void print(std::ostream& os);
-      virtual void printLine(std::ostream& os);
 
       void time(unsigned long long t);
       void nodes(unsigned long long n);

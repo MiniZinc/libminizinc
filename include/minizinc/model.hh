@@ -46,6 +46,7 @@ namespace MiniZinc {
       bool isPolymorphic;
       FnEntry(FunctionI* fi0);
       bool operator <(const FnEntry&) const;
+      static bool compare(const FnEntry& e1, const FnEntry& e2);
     };
     
     /// Add all instances of polymorphic entry \a fe to \a entries
@@ -75,6 +76,12 @@ namespace MiniZinc {
     OutputI* _outputItem;
     /// File-level documentation comment
     std::string _docComment;
+
+    /// Store some declarations
+    struct FnDecls {
+      using TCheckedDecl = std::pair<bool, FunctionI*>;  // bool means that it was checked
+      TCheckedDecl bounds_disj={false, nullptr};         // SCIP's bound disjunction
+    } fnDecls;
   public:
     
     /// Construct empty model
@@ -167,6 +174,9 @@ namespace MiniZinc {
     
     /// Remove all items marked as removed
     void compact(void);
+
+    /// Get the stored function declarations
+    FnDecls& getFnDecls() { return fnDecls; }
   };
 
   class VarDeclIterator {

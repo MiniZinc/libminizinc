@@ -42,7 +42,7 @@ class MIP_scip_wrapper : public MIP_wrapper {
 
       double absGap=-1;
       double relGap=1e-8;
-      double intTol=1e-6;
+      double intTol=1e-8;
       double objDiff=1.0;
 
       bool processOption(int& i, std::vector<std::string>& argv);
@@ -59,6 +59,7 @@ class MIP_scip_wrapper : public MIP_wrapper {
     static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt=NULL);
     static std::string getId(void);
     static std::string getName(void);
+    static std::vector<std::string> getTags(void);
     static std::vector<std::string> getStdFlags(void);
     static std::string needDllFlag(void);
 
@@ -81,6 +82,9 @@ class MIP_scip_wrapper : public MIP_wrapper {
     }
     virtual SCIP_RETCODE doAddVars_SCIP(size_t n, double *obj, double *lb, double *ub,
       VarType *vt, std::string *names);
+    virtual void setVarBounds( int iVar, double lb, double ub );
+    virtual void setVarLB( int iVar, double lb );
+    virtual void setVarUB( int iVar, double ub );
 
     /// adding a linear constraint
     virtual void addRow(int nnz, int *rmatind, double* rmatval,
@@ -95,6 +99,17 @@ class MIP_scip_wrapper : public MIP_wrapper {
                         std::string rowName = "");
     /// adding an implication
 //     virtual void addImpl() = 0;
+    /// Indicator constraint: x[iBVar]==bVal -> lin constr
+    virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int *rmatind, double* rmatval,
+                        LinConType sense, double rhs,
+                        std::string rowName = "");
+    /// Bounds disj for SCIP
+    virtual void addBoundsDisj(int n, double *fUB, double *bnd, int* vars,
+                               int nF, double *fUBF, double *bndF, int* varsF,
+                        std::string rowName = "");
+
+    /// Cumulative, currently SCIP only
+    virtual void addCumulative(int nnz, int *rmatind, double* d, double* r, double b, std::string rowName="");
     virtual void setObjSense(int s) {   // +/-1 for max/min
       wrap_assert( setObjSense_SCIP(s) );
     }
@@ -131,6 +146,10 @@ class MIP_scip_wrapper : public MIP_wrapper {
     
     /// Need to consider the 100 status codes in SCIP and change with every version? TODO
     Status convertStatus(SCIP_STATUS scipStatus);
+
+  public:
+    /// Default MZN library for SCIP
+    static std::string getMznLib();
 };
 
 #endif  // __MIP_SCIP_WRAPPER_H__

@@ -29,9 +29,11 @@ predicate bool_eq(var bool: x, var bool: y) =
 
 include "options.mzn";
 include "redefs_bool_reifs.mzn";
-    
+include "redefs_bool_imp.mzn";
+
 include "domain_encodings.mzn";
 include "redefs_lin_reifs.mzn";
+include "redefs_lin_imp.mzn";
 include "redefs_lin_halfreifs.mzn";
 
 include "nosets.mzn";                %% For set_le, set_lt ... Usind std/nosets
@@ -269,6 +271,9 @@ predicate int_times_unary__NOFN(var int: x, set of int: domx__, var int: y, var 
           ( pY[valY[j]] == sum(i in index_set(valX))( pp[i, j] ) )
     endif;
 
+predicate float_times(var float: a, var float: b, var float: c) =
+    abort("Unable to create linear formulation for the `float_times` constraint. This model instance cannot be solved using a linear solver.");
+
 %%%Define int_pow
 predicate int_pow( var int: x, var int: y, var int: r ) =
     let {
@@ -277,6 +282,28 @@ predicate int_pow( var int: x, var int: y, var int: r ) =
     } in
       r == x2y[ x, y ];
 
+%%% Adding a version returning float for efficiency
+/** @group builtins.arithmetic Return \(\a x ^ {\a y}\) */
+function var float: pow_float(var int: x, var int: y) =
+  let {
+    int: yy = if is_fixed(y) then fix(y) else -1 endif;
+  } in
+  if yy = 0 then 1
+  elseif yy = 1 then x else
+  let { var float: r ::is_defined_var;
+        constraint int_pow_float(x,y,r) ::defines_var(r);
+  } in r
+  endif;
+%%%Define int_pow_float
+predicate int_pow_float( var int: x, var int: y, var float: r ) =
+    let {
+      array[ int, int ] of float: x2y = array2d( lb(x)..ub(x), lb(y)..ub(y),
+        [ pow( X, Y ) | X in lb(x)..ub(x), Y in lb(y)..ub(y) ] )
+    } in
+      r == x2y[ x, y ];
+
+
+      
 %-----------------------------------------------------------------------------%
 % Array 'element' constraints
 
@@ -527,8 +554,9 @@ function var int: fVarInBigSetOfInt(var int: x, set of int: s)
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%
 
-annotation bool_search(array[int] of var bool: x, ann:a1, ann:a2, ann:a3) =
-  int_search([bool2int(x[i]) | i in index_set(x)],a1,a2,a3);
+annotation bool_search(array[$X] of var bool: x, ann:a1, ann:a2, ann:a3) =
+  let { array[int] of var bool: xx = array1d(x) } in 
+  int_search([bool2int(xx[i]) | i in index_set(xx)],a1,a2,a3);
 
 annotation warm_start( array[int] of var bool: x, array[int] of bool: v ) =
    warm_start( [ bool2int(x[i]) | i in index_set(x) ], [ bool2int(v[i]) | i in index_set(v) ] );

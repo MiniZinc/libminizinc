@@ -26,8 +26,9 @@
 #include <minizinc/config.hh>
 #include <minizinc/exception.hh>
 #include <minizinc/file_utils.hh>
+#include <minizinc/utils_savestream.hh>
 
-#ifdef HAS_GUROBI_PLUGIN
+#ifdef GUROBI_PLUGIN
 #ifdef HAS_DLFCN_H
 #include <dlfcn.h>
 #elif defined HAS_WINDOWS_H
@@ -42,23 +43,14 @@ using namespace std;
 
 string MIP_gurobi_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
-  oss << "MIP wrapper for Gurobi library ";
-  MIP_gurobi_wrapper mgw( static_cast<Options*>(opt) );
-  try {
-    mgw.checkDLL();
-    int major, minor, technical;
-    mgw.dll_GRBversion(&major, &minor, &technical);
-    oss << major << '.' << minor << '.' << technical;
-  } catch (MiniZinc::InternalError&) {
-    return "<unknown version>";
-  }
+  oss << "MIP wrapper for Gurobi library " << getVersion();
   oss << ".  Compiled  " __DATE__ "  " __TIME__;
   return oss.str();
 }
 
 string MIP_gurobi_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
-  MIP_gurobi_wrapper mgw( static_cast<Options*>(opt) );
+  MIP_gurobi_wrapper mgw( nullptr );               // to avoid opening the env
   try {
     mgw.checkDLL();
     int major, minor, technical;
@@ -88,6 +80,10 @@ string MIP_gurobi_wrapper::getName() {
   return "Gurobi";
 }
 
+vector<string> MIP_gurobi_wrapper::getTags() {
+  return {"mip","float","api"};
+}
+
 vector<string> MIP_gurobi_wrapper::getStdFlags() {
   return {"-a", "-p", "-n"};
 }
@@ -111,7 +107,10 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
   << "  -a\n    print intermediate solutions (use for optimization problems only TODO)" << std::endl
   << "  -p <N>\n    use N threads, default: 1." << std::endl
 //   << "  --nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
-  << "  --solver-time-limit <N>\n    stop search after N milliseconds wall time" << std::endl
+  << "  --solver-time-limit <N>, --solver-time\n"
+     "    stop search after N milliseconds wall time" << std::endl
+  << "  --solver-time-limit-feas <N>, --solver-tlf\n"
+     "    stop search after N milliseconds wall time after the first feasible solution" << std::endl
   << "  -n <N>, --num-solutions <N>\n"
      "    stop search after N solutions" << std::endl
   << "  --workmem <N>, --nodefilestart <N>\n"
@@ -123,7 +122,8 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
 
   << "\n  --absGap <n>\n    absolute gap |primal-dual| to stop" << std::endl
   << "  --relGap <n>\n    relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
-  << "  --intTol <n>\n    integrality tolerance for a variable. Default 1e-6" << std::endl
+  << "  --feasTol <n>\n   primal feasibility tolerance. Default 1e-8" << std::endl
+  << "  --intTol <n>\n    integrality tolerance for a variable. Gurobi recommends at least feasTol. Default 1e-8" << std::endl
 //   << "  --objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
   << "\n  --gurobi-dll <file> or <basename>\n    Gurobi DLL, or base name, such as gurobi75, when using plugin. Default range tried: "
@@ -146,13 +146,15 @@ bool MIP_gurobi_wrapper::Options::processOption(int& i, std::vector<std::string>
   } else if ( cop.get( "--mipfocus --mipFocus --MIPFocus --MIPfocus", &nMIPFocus ) ) {
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
   } else if ( cop.get( "-p", &nThreads ) ) {
-  } else if ( cop.get( "--solver-time-limit", &nTimeout ) ) {
+  } else if ( cop.get( "--solver-time-limit --solver-time", &nTimeout1000 ) ) {
+  } else if ( cop.get( "--solver-time-limit-feas --solver-tlf", &nTimeoutFeas1000 ) ) {
   } else if ( cop.get( "-n --num-solutions", &nSolLimit ) ) {
   } else if ( cop.get( "--workmem --nodefilestart", &nWorkMemLimit ) ) {
   } else if ( cop.get( "--readParam", &sReadParams ) ) {
   } else if ( cop.get( "--writeParam", &sWriteParams ) ) {
   } else if ( cop.get( "--absGap", &absGap ) ) {
   } else if ( cop.get( "--relGap", &relGap ) ) {
+  } else if ( cop.get( "--feasTol", &feasTol ) ) {
   } else if ( cop.get( "--intTol", &intTol ) ) {
   } else if ( cop.get( "--gurobi-dll", &sGurobiDLL ) ) {
 //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
@@ -168,8 +170,9 @@ void MIP_gurobi_wrapper::wrap_assert(bool cond, string msg, bool fTerm)
       if (error) {
          gurobi_buffer = dll_GRBgeterrormsg(env);
       }
-      string msgAll = ("  MIP_gurobi_wrapper runtime error:  " + msg + "  " + gurobi_buffer);
-      cerr << msgAll << endl;
+      string msgAll = ("  MIP_gurobi_wrapper runtime error:  " + gurobi_buffer
+                       + "\nMessage from caller: " + msg);
+      cerr << msgAll << "\nGurobi error code: " << error << endl;
       if (fTerm) {
         cerr << "TERMINATING." << endl;
         throw runtime_error(msgAll);
@@ -177,7 +180,7 @@ void MIP_gurobi_wrapper::wrap_assert(bool cond, string msg, bool fTerm)
    }
 }
 
-#ifdef HAS_GUROBI_PLUGIN
+#ifdef GUROBI_PLUGIN
 
 namespace {
   void* dll_open(const char* file) {
@@ -218,7 +221,7 @@ namespace {
 
 void MIP_gurobi_wrapper::checkDLL()
 {
-#ifdef HAS_GUROBI_PLUGIN
+#ifdef GUROBI_PLUGIN
   gurobi_dll = NULL;
   if ( options && options->sGurobiDLL.size() ) {
     gurobi_dll = dll_open( options->sGurobiDLL.c_str() );
@@ -265,6 +268,7 @@ void MIP_gurobi_wrapper::checkDLL()
   *(void**)(&dll_GRBsetdblattrlist) = dll_sym(gurobi_dll, "GRBsetdblattrlist");
   *(void**)(&dll_GRBsetintparam) = dll_sym(gurobi_dll, "GRBsetintparam");
   *(void**)(&dll_GRBsetstrparam) = dll_sym(gurobi_dll, "GRBsetstrparam");
+  *(void**)(&dll_GRBterminate) = dll_sym(gurobi_dll, "GRBterminate");
   *(void**)(&dll_GRBupdatemodel) = dll_sym(gurobi_dll, "GRBupdatemodel");
   *(void**)(&dll_GRBwrite) = dll_sym(gurobi_dll, "GRBwrite");
   *(void**)(&dll_GRBwriteparams) = dll_sym(gurobi_dll, "GRBwriteparams");
@@ -297,6 +301,7 @@ void MIP_gurobi_wrapper::checkDLL()
   dll_GRBsetdblattrlist = GRBsetdblattrlist;
   dll_GRBsetintparam = GRBsetintparam;
   dll_GRBsetstrparam = GRBsetstrparam;
+  dll_GRBterminate = GRBterminate;
   dll_GRBupdatemodel = GRBupdatemodel;
   dll_GRBwrite = GRBwrite;
   dll_GRBwriteparams = GRBwriteparams;
@@ -312,8 +317,11 @@ void MIP_gurobi_wrapper::openGUROBI()
   cbui.wrapper = this;
   
    /* Initialize the GUROBI environment */
-   cout << "% " << flush;               // Gurobi 7.5.2 prints "Academic License..."
-   error = dll_GRBloadenv (&env, "mzn-gurobi.log");
+  {
+    //   cout << "% " << flush;               // Gurobi 7.5.2 prints "Academic License..."
+    MiniZinc::StreamRedir redirStdout(stdout, stderr);
+    error = dll_GRBloadenv (&env, "mzn-gurobi.log");
+  }
    wrap_assert ( !error, "Could not open GUROBI environment." );
    error = dll_GRBsetintparam(env, "OutputFlag", 0);  // Switch off output
 //   error = dll_GRBsetintparam(env, "LogToConsole",
@@ -325,24 +333,23 @@ void MIP_gurobi_wrapper::openGUROBI()
 
 void MIP_gurobi_wrapper::closeGUROBI()
 {
-  /// Freeing the problem can be slow both in C and C++, see IBM forums. Skipping.
-     /* Free up the problem as allocated by GRB_createprob, if necessary */
   /* Free model */
 
   // If not allocated, skip
-  if (0==model)
-    return;
-  dll_GRBfreemodel(model);
-  model = 0;
+  if (nullptr!=model) {
+       /* Free up the problem as allocated by GRB_createprob, if necessary */
+    dll_GRBfreemodel(model);
+    model = 0;
+  }
 
   /* Free environment */
 
-  if (env)
+  if (nullptr!=env)
     dll_GRBfreeenv(env);
   /// and at last:
 //   MIP_wrapper::cleanup();
-#ifdef HAS_GUROBI_PLUGIN
-  dll_close(gurobi_dll);
+#ifdef GUROBI_PLUGIN
+  // dll_close(gurobi_dll);    // Is called too many times, disabling. 2019-05-06
 #endif
 }
 
@@ -491,6 +498,13 @@ solcallback(GRBmodel *model,
       gw->dll_GRBcbget(cbdata, where, GRB_CB_MIP_OBJBND, &info->pOutput->bestBound);
         gw->dll_GRBcbget(cbdata, where, GRB_CB_MIP_NODLFT, &actnodes);
       info->pOutput->nOpenNodes = static_cast<int>(actnodes);
+      /// Check time after the 1st feas
+      if (-1e100!=info->nTime1Feas) {
+        double tNow;
+        gw->dll_GRBcbget(cbdata, where, GRB_CB_RUNTIME, (void*)&tNow);
+        if (tNow-info->nTime1Feas >= info->nTimeoutFeas)
+          gw->dll_GRBterminate(model);
+      }
   } else if ( GRB_CB_MESSAGE==where ) {
     /* Message callback */
     if ( info->fVerb ) {
@@ -505,11 +519,12 @@ solcallback(GRBmodel *model,
     gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_OBJ, &objVal);
     gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPSOL_SOLCNT, &solcnt);
 
-    if ( solcnt == 0 || fabs(info->pOutput->objVal - objVal) > 1e-12*(1.0 + fabs(objVal)) ) {
+    if ( fabs(info->pOutput->objVal - objVal) > 1e-12*(1.0 + fabs(objVal)) ) {
       newincumbent = 1;
-      info->pOutput->objVal = objVal;
-      info->pOutput->status = MIP_wrapper::SAT;
-      info->pOutput->statusName = "feasible from a callback";
+      // Not confirmed yet, see lazy cuts
+//      info->pOutput->objVal = objVal;
+//      info->pOutput->status = MIP_wrapper::SAT;
+//      info->pOutput->statusName = "feasible from a callback";
     }
     if ( newincumbent ) {
         assert(info->pOutput->x);
@@ -540,7 +555,7 @@ solcallback(GRBmodel *model,
         }
       }
     }
-    if ( solcnt && newincumbent>=0 ) {
+    if ( solcnt>=0 /*This is solution number for Gurobi*/ && newincumbent>=0 ) {
       if ( fabs(info->pOutput->objVal - objVal) > 1e-12*(1.0 + fabs(objVal)) ) {
         newincumbent = 1;
         info->pOutput->objVal = objVal;
@@ -552,9 +567,16 @@ solcallback(GRBmodel *model,
         
         info->pOutput->dCPUTime = double(std::clock() - info->pOutput->cCPUTime0) / CLOCKS_PER_SEC;
 
+        /// Set time for the 1st feas
+        if (0<=info->nTimeoutFeas && -1e100==info->nTime1Feas)
+          gw->dll_GRBcbget(cbdata, where, GRB_CB_RUNTIME, (void*)&info->nTime1Feas);
+
         /// Call the user function:
         if (info->solcbfn)
             (*info->solcbfn)(*info->pOutput, info->ppp);
+
+        if (0==info->nTimeoutFeas)
+          gw->dll_GRBterminate(model);        // Straight after feas
     }
   } else if ( GRB_CB_MIPNODE==where  ) {
     int status;
@@ -680,8 +702,8 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
      wrap_assert(!error, "Failed to set GRB_INT_PAR_THREADS.", false);
    }
 
-    if (options->nTimeout>0) {
-     error = dll_GRBsetdblparam(dll_GRBgetenv(model), GRB_DBL_PAR_TIMELIMIT, static_cast<double>(options->nTimeout)/1000.0);
+    if (options->nTimeout1000>0) {
+     error = dll_GRBsetdblparam(dll_GRBgetenv(model), GRB_DBL_PAR_TIMELIMIT, static_cast<double>(options->nTimeout1000)/1000.0);
      wrap_assert(!error, "Failed to set GRB_PARAM_TimeLimit.", false);
     }
 
@@ -712,6 +734,10 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
      error = dll_GRBsetdblparam( dll_GRBgetenv(model),  "IntFeasTol", options->intTol );
      wrap_assert(!error, "Failed to set   IntFeasTol.", false);
    }
+   if ( options->feasTol>=0.0 ) {
+     error = dll_GRBsetdblparam( dll_GRBgetenv(model),  "FeasibilityTol", options->feasTol );
+     wrap_assert(!error, "Failed to set   FeasTol.", false);
+   }
 
     
        /// Solution callback
@@ -721,6 +747,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    SolCallbackFn solcbfn = cbui.solcbfn;
    if (true) {                 // Need for logging
       cbui.fVerb = fVerbose;
+      cbui.nTimeoutFeas = options->nTimeoutFeas1000/1000.0;
       if ( !options->flag_all_solutions )
         cbui.solcbfn = 0;
       if ( cbui.cutcbfn ) {

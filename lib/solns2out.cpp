@@ -22,7 +22,6 @@
 using namespace std;
 using namespace MiniZinc;
 
-
 void Solns2Out::printHelp(ostream& os)
 {
   os
@@ -121,8 +120,9 @@ void Solns2Out::initFromOzn(const std::string& filename) {
   
   {
     pEnv = new Env();
+    std::stringstream errstream;
     if ((pOutput = parse(*pEnv, filenames, std::vector<std::string>(), "", "", includePaths, false, false, false,
-                         std::cerr))) {
+                         errstream))) {
       std::vector<TypeError> typeErrors;
       pEnv->model(pOutput);
       MZN_ASSERT_HARD_MSG( pEnv, "solns2out: could not allocate Env" );
@@ -131,6 +131,8 @@ void Solns2Out::initFromOzn(const std::string& filename) {
       MiniZinc::registerBuiltins(*pEnv);
       pEnv->envi().swap_output();
       init();
+    } else {
+      throw Error(errstream.str());
     }
   }
 }
@@ -350,6 +352,8 @@ bool Solns2Out::__evalStatusMsg( SolverInstance::Status status ) {
     getOutput() << comments;
     if (!it->second.empty())
       getOutput() << it->second << '\n';
+    if ( _opt.flag_output_time)
+      getOutput() << "% time elapsed: " << starttime.stoptime() << "\n";
     if ( _opt.flag_output_flush )
       getOutput().flush();
     Solns2Out::status = status;
@@ -494,6 +498,7 @@ void Solns2Out::createInputMap() {
   mapInputStatus[ _opt.error_msg ] = SolverInstance::ERROR;
 }
 
-void Solns2Out::printStatistics(ostream&)
+void Solns2Out::printStatistics(ostream& os)
 {
+  os << "%%%mzn-stat: nSolutions=" << nSolns << "\n";
 }

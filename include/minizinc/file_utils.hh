@@ -40,6 +40,8 @@ namespace MiniZinc { namespace FileUtils {
                                           const std::string& ext=std::string("*"));
   /// Return share/minizinc directory if present anywhere above the executable
   std::string share_directory(void);
+  /// Return current working directory
+  std::string working_directory(void);
   /// Get global configuration file name (in share/minizinc directory)
   std::string global_config_file(void);
   /// Get per-user configuration file name (usually in home directory or AppData directory)
@@ -63,6 +65,18 @@ namespace MiniZinc { namespace FileUtils {
     TmpFile(const std::string& ext);
     /// Destructor (removes file)
     ~TmpFile(void);
+    std::string name(void) const { return _name; }
+  };
+
+  /// Create a temporary directory
+  class TmpDir {
+  private:
+    std::string _name;
+  public:
+    // Constructor for difrectory
+    TmpDir(void);
+    /// Destructor (removes directory)
+    ~TmpDir(void);
     std::string name(void) const { return _name; }
   };
 

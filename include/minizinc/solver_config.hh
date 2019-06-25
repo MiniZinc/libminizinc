@@ -62,6 +62,8 @@ namespace MiniZinc {
     bool _supportsMzn=false;
     /// Whether solver supports FlatZinc input
     bool _supportsFzn=true;
+    /// Whether solver supports NL input
+    bool _supportsNL=false;
     /// Whether solver requires solutions2out processing
     bool _needsSolns2Out=true;
     /// Whether solver is a GUI application
@@ -135,6 +137,11 @@ namespace MiniZinc {
     bool supportsFzn(void) const { return _supportsFzn; }
     /// Set whether solver supports FlatZinc input
     void supportsFzn(bool b) { _supportsFzn = b; }
+
+    /// Whether solver supports NL input
+    bool supportsNL(void) const { return _supportsNL; }
+    /// Set whether solver supports NL input
+    void supportsNL(bool b) { _supportsNL = b; }
 
     /// Whether solver requires solutions2out processing
     bool needsSolns2Out(void) const { return _needsSolns2Out; }
@@ -243,7 +250,7 @@ namespace MiniZinc {
     /// Examples:
     ///   config("gecode@6.1.0") would request a gecode solver of version 6.1.0
     ///   config("mip,internal") would request a MIP solver that uses the internal API
-    ///   config("org.minizinc.mip.osicbc@2.9/1.16 would request a specific version of OSICBC
+    ///   config("org.minizinc.mip.coin-bc@2.9/1.16 would request a specific version of OSICBC
     const SolverConfig& config(const std::string& s);
     /// Return list of all solver ids
     std::vector<std::string> solvers(void) const;

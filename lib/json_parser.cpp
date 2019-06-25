@@ -40,6 +40,7 @@ namespace MiniZinc {
     static Token comma() { return Token(T_COMMA); }
     static Token colon() { return Token(T_COLON); }
     static Token eof() { return Token(T_EOF); }
+    static Token null() { return Token(T_NULL); }
     string toString(void) {
       switch (t) {
         case T_LIST_OPEN: return "[";
@@ -61,6 +62,8 @@ namespace MiniZinc {
         }
         case T_BOOL:
           return b ? "true" : "false";
+        case T_NULL:
+          return "null";
         case T_EOF:
           return "eof";
       }
@@ -127,6 +130,17 @@ namespace MiniZinc {
                 throw JSONError(env,errLocation(),"unexpected token `"+string(rest)+"'");
               state = S_NOTHING;
               return Token(false);
+            }
+              break;
+            case 'n':
+            {
+              char rest[3];
+              is.read(rest,sizeof(rest));
+              column += sizeof(rest);
+              if (!is.good() || std::strncmp(rest, "ull", 3) != 0)
+                throw JSONError(env,errLocation(),"unexpected token `"+string(rest)+"'");
+              state = S_NOTHING;
+              return Token::null();
             }
               break;
             default:
@@ -207,78 +221,121 @@ namespace MiniZinc {
     return rt.s;
   }
   
-  SetLit* JSONParser::parseSetLit(istream& is) {
+  JSONParser::Token JSONParser::parseEnumString(istream& is) {
+    Token next = readToken(is);
+    if (next.t != T_STRING) {
+      throw JSONError(env,errLocation(),"invalid enum object");
+    }
+    if (next.s.empty()) {
+      throw JSONError(env,errLocation(),"invalid enum identifier");
+    }
+    size_t nonIdChar = next.s.find_first_not_of("ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_");
+    size_t nonIdBegin = next.s.find_first_of("0123456789_");
+    if (nonIdChar!=std::string::npos || nonIdBegin==0) {
+      next.s = "'"+next.s+"'";
+    }
+    return next;
+  }
+  
+  Expression* JSONParser::parseObject(istream& is) {
     // precondition: found T_OBJ_OPEN
-    Token setid = readToken(is);
-    if (setid.t != T_STRING || setid.s != "set")
-      throw JSONError(env,errLocation(),"invalid set literal");
+    Token objid = readToken(is);
+    if (objid.t != T_STRING)
+      throw JSONError(env,errLocation(),"invalid object");
     expectToken(is, T_COLON);
-    expectToken(is, T_LIST_OPEN);
-    vector<Token> elems;
-    TokenT listT = T_COLON; // dummy marker
-    for (Token next = readToken(is); next.t != T_LIST_CLOSE; next = readToken(is)) {
-      switch (next.t) {
-        case T_COMMA:
-          break;
-        case T_INT:
-          if (listT==T_STRING)
+    if (objid.s == "set") {
+      expectToken(is, T_LIST_OPEN);
+      vector<Token> elems;
+      TokenT listT = T_COLON; // dummy marker
+      for (Token next = readToken(is); next.t != T_LIST_CLOSE; next = readToken(is)) {
+        switch (next.t) {
+          case T_COMMA:
+            break;
+          case T_INT:
+            if (listT==T_STRING || listT==T_OBJ_OPEN)
+              throw JSONError(env,errLocation(),"invalid set literal");
+            if (listT!=T_FLOAT)
+              listT = T_INT;
+            elems.push_back(next);
+            break;
+          case T_FLOAT:
+            if (listT==T_STRING || listT==T_OBJ_OPEN)
+              throw JSONError(env,errLocation(),"invalid set literal");
+            listT = T_FLOAT;
+            elems.push_back(next);
+            break;
+          case T_STRING:
+            if (listT!=T_COLON && listT!=T_STRING)
+              throw JSONError(env,errLocation(),"invalid set literal");
+            listT = T_STRING;
+            elems.push_back(next);
+            break;
+          case T_BOOL:
+            if (listT==T_STRING || listT==T_OBJ_OPEN)
+              throw JSONError(env,errLocation(),"invalid set literal");
+            if (listT==T_COLON)
+              listT = T_BOOL;
+            elems.push_back(next);
+            break;
+          case T_OBJ_OPEN:
+          {
+            if (listT!=T_COLON && listT!=T_OBJ_OPEN)
+              throw JSONError(env,errLocation(),"invalid set literal");
+            listT = T_OBJ_OPEN;
+            Token enumid = readToken(is);
+            if (enumid.t != T_STRING || enumid.s != "e")
+              throw JSONError(env,errLocation(),"invalid enum object");
+            expectToken(is, T_COLON);
+            Token next = parseEnumString(is);
+            expectToken(is, T_OBJ_CLOSE);
+            elems.push_back(next);
+            break;
+          }
+          default:
             throw JSONError(env,errLocation(),"invalid set literal");
-          if (listT!=T_FLOAT)
-            listT = T_INT;
-          elems.push_back(next);
-          break;
-        case T_FLOAT:
-          if (listT==T_STRING)
-            throw JSONError(env,errLocation(),"invalid set literal");
-          listT = T_FLOAT;
-          elems.push_back(next);
-          break;
-        case T_STRING:
-          if (listT!=T_COLON && listT!=T_STRING)
-            throw JSONError(env,errLocation(),"invalid set literal");
-          listT = T_STRING;
-          elems.push_back(next);
+        }
+      }
+      expectToken(is, T_OBJ_CLOSE);
+      vector<Expression*> elems_e(elems.size());
+      switch (listT) {
+        case T_COLON:
           break;
         case T_BOOL:
-          if (listT==T_STRING)
-            throw JSONError(env,errLocation(),"invalid set literal");
-          if (listT==T_COLON)
-            listT = T_BOOL;
-          elems.push_back(next);
+          for (unsigned int i=0; i<elems.size(); i++) {
+            elems_e[i] = new BoolLit(Location().introduce(),elems[i].b);
+          }
+          break;
+        case T_INT:
+          for (unsigned int i=0; i<elems.size(); i++) {
+            elems_e[i] = IntLit::a(elems[i].i);
+          }
+          break;
+        case T_FLOAT:
+          for (unsigned int i=0; i<elems.size(); i++) {
+            elems_e[i] = FloatLit::a(elems[i].d);
+          }
+          break;
+        case T_STRING:
+          for (unsigned int i=0; i<elems.size(); i++) {
+            elems_e[i] = new StringLit(Location().introduce(),elems[i].s);
+          }
+          break;
+        case T_OBJ_OPEN:
+          for (unsigned int i=0; i<elems.size(); i++) {
+            elems_e[i] = new Id(Location().introduce(),ASTString(elems[i].s),NULL);
+          }
           break;
         default:
-          throw JSONError(env,errLocation(),"invalid set literal");
+          break;
       }
+      return new SetLit(Location().introduce(), elems_e);
+    } else if (objid.s == "e") {
+      Token next = parseEnumString(is);
+      expectToken(is, T_OBJ_CLOSE);
+      return new Id(Location().introduce(),ASTString(next.s),NULL);
+    } else {
+      throw JSONError(env,errLocation(),"invalid object");
     }
-    expectToken(is, T_OBJ_CLOSE);
-    vector<Expression*> elems_e(elems.size());
-    switch (listT) {
-      case T_COLON:
-        break;
-      case T_BOOL:
-        for (unsigned int i=0; i<elems.size(); i++) {
-          elems_e[i] = new BoolLit(Location().introduce(),elems[i].b);
-        }
-        break;
-      case T_INT:
-        for (unsigned int i=0; i<elems.size(); i++) {
-          elems_e[i] = IntLit::a(elems[i].i);
-        }
-        break;
-      case T_FLOAT:
-        for (unsigned int i=0; i<elems.size(); i++) {
-          elems_e[i] = FloatLit::a(elems[i].d);
-        }
-        break;
-      case T_STRING:
-        for (unsigned int i=0; i<elems.size(); i++) {
-          elems_e[i] = new StringLit(Location().introduce(),elems[i].s);
-        }
-        break;
-      default:
-        break;
-    }
-    return new SetLit(Location().introduce(), elems_e);
   }
 
   ArrayLit*
@@ -286,7 +343,7 @@ namespace MiniZinc {
     // precondition: opening parenthesis has been read
     vector<Expression*> exps;
     vector<pair<int,int> > dims;
-    dims.push_back(make_pair(1, 0));
+    dims.emplace_back(1, 0);
     vector<bool> hadDim;
     hadDim.push_back(false);
     Token next;
@@ -294,41 +351,61 @@ namespace MiniZinc {
       next = readToken(is);
       if (next.t!=T_LIST_OPEN)
         break;
-      dims.push_back(make_pair(1, 0));
+      dims.emplace_back(1, 0);
       hadDim.push_back(false);
     }
     int curDim = static_cast<int>(dims.size())-1;
     for (;;) {
       switch (next.t) {
         case T_LIST_CLOSE:
-          if (!hadDim[curDim] && dims[curDim].second>0)
-            dims[curDim].second++;
           hadDim[curDim] = true;
           curDim--;
-          if (curDim<0)
+          if (curDim<0) {
             goto list_done;
+          } else if (!hadDim[curDim]) {
+            dims[curDim].second++;
+          }
           break;
         case T_LIST_OPEN:
           curDim++;
           break;
         case T_COMMA:
-          if (!hadDim[curDim])
-            dims[curDim].second++;
           break;
         case T_INT:
+          if (!hadDim[curDim]) {
+            dims[curDim].second++;
+          }
           exps.push_back(IntLit::a(next.i));
           break;
         case T_FLOAT:
+          if (!hadDim[curDim]) {
+            dims[curDim].second++;
+          }
           exps.push_back(FloatLit::a(next.d));
           break;
         case T_STRING:
+          if (!hadDim[curDim]) {
+            dims[curDim].second++;
+          }
           exps.push_back(new StringLit(Location().introduce(),next.s));
           break;
         case T_BOOL:
+          if (!hadDim[curDim]) {
+            dims[curDim].second++;
+          }
           exps.push_back(new BoolLit(Location().introduce(),next.b));
           break;
+        case T_NULL:
+          if (!hadDim[curDim]) {
+            dims[curDim].second++;
+          }
+          exps.push_back(constants().absent);
+          break;
         case T_OBJ_OPEN:
-          exps.push_back(parseSetLit(is));
+          if (!hadDim[curDim]) {
+            dims[curDim].second++;
+          }
+          exps.push_back(parseObject(is));
           break;
         default:
           throw JSONError(env,errLocation(),"cannot parse JSON file");
@@ -337,6 +414,14 @@ namespace MiniZinc {
       next = readToken(is);
     }
   list_done:
+    unsigned int expectedSize = 1;
+    for (auto& d : dims) {
+      expectedSize *= d.second;
+    }
+    if (exps.size() != expectedSize) {
+      throw JSONError(env,errLocation(),"mismatch in array dimensions");
+      /// TODO: check each individual sub-array
+    }
     return new ArrayLit(Location().introduce(),exps,dims);
   }
   
@@ -353,8 +438,10 @@ namespace MiniZinc {
         return new StringLit(Location().introduce(),next.s);
       case T_BOOL:
         return new BoolLit(Location().introduce(),next.b);
+      case T_NULL:
+        return constants().absent;
       case T_OBJ_OPEN:
-        return parseSetLit(is);
+        return parseObject(is);
       case T_LIST_OPEN:
         return parseArray(is);
       default:

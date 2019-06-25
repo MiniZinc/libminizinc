@@ -394,6 +394,23 @@ namespace MiniZinc {
 
   inline
   ArrayLit::ArrayLit(const Location& loc,
+                     const std::vector<KeepAlive>& v)
+  : Expression(loc,E_ARRAYLIT,Type()) {
+    _flag_1 = false;
+    _flag_2 = false;
+    std::vector<int> d(2);
+    d[0] = 1;
+    d[1] = static_cast<int>(v.size());
+    std::vector<Expression*> vv(v.size());
+    for (unsigned int i=0; i<v.size(); i++) {
+      vv[i] = v[i]();
+    }
+    compress(vv, d);
+    rehash();
+  }
+
+  inline
+  ArrayLit::ArrayLit(const Location& loc,
                      const std::vector<std::vector<Expression*> >& v)
   : Expression(loc,E_ARRAYLIT,Type()) {
     _flag_1 = false;

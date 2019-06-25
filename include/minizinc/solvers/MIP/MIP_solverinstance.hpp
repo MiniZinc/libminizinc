@@ -10,12 +10,12 @@ namespace MiniZinc {
       requiredFlags.push_back(dllFlag);
     SolverConfig sc(getId(), MIPWrapper::getVersion());
     sc.name(MIPWrapper::getName());
-    sc.mznlib("-Glinear");
+    sc.mznlib(MIPWrapper::getMznLib());
     sc.mznlibVersion(1);
     sc.supportsMzn(true);
     sc.description("MiniZinc MIP solver plugin");
     sc.requiredFlags(requiredFlags);
-    sc.tags({"mip","float","api"});
+    sc.tags(MIPWrapper::getTags());
     sc.stdFlags(MIPWrapper::getStdFlags());
     SolverConfigs::registerBuiltinSolver(sc);
   }
@@ -444,15 +444,17 @@ namespace MiniZinc {
       std::ios oldState(nullptr);
       oldState.copyfmt(env.outstream);
       env.outstream.precision(12);
-      env.outstream << "%%mzn-stat objective=" << mip_wrap->getObjValue() << "\n";
-      env.outstream << "%%mzn-stat objectiveBound=" << mip_wrap->getBestBound() << "\n";
-      env.outstream << "%%mzn-stat nodes=" << mip_wrap->getNNodes() << "\n";
+      env.outstream << "%%%mzn-stat objective=" << mip_wrap->getObjValue() << std::endl;;
+      env.outstream << "%%%mzn-stat objectiveBound=" << mip_wrap->getBestBound() << std::endl;;
+      env.outstream << "%%%mzn-stat nodes=" << mip_wrap->getNNodes() << std::endl;;
       if (mip_wrap->getNOpen())
-        env.outstream << "%%mzn-stat openNodes=" << mip_wrap->getNOpen() << "\n";
+        env.outstream << "%%%mzn-stat openNodes=" << mip_wrap->getNOpen() << std::endl;;
       env.outstream.setf( std::ios::fixed );
       env.outstream.precision( 4 );
-      env.outstream << "%%mzn-stat time=" << mip_wrap->getWallTimeElapsed() << "\n";
+      env.outstream << "%%%mzn-stat solveTime=" << mip_wrap->getWallTimeElapsed() << std::endl;;
       env.outstream.copyfmt( oldState );
+
+      env.outstream << "%%%mzn-stat-end" << std::endl;
     }
   }
 
@@ -548,6 +550,7 @@ namespace MiniZinc {
       if ( mip_wrap->fVerbose )
         std::cerr << "  MIP_solverinstance: no constraints - skipping actual solution phase." << std::endl;
       sw = MIP_wrapper::Status::OPT;
+      printSolution();
     }
     SolverInstance::Status s = SolverInstance::UNKNOWN;
     switch(sw) {
@@ -584,6 +587,25 @@ namespace MiniZinc {
     bool CheckAnnUserCut(const Call* call);
     bool CheckAnnLazyConstraint(const Call* call);
     int GetMaskConsType(const Call* call);
+
+    /// Gurobi 8.1.0 complains about duplicates, CPLEX 12.8.0 just ignores repeats
+    /// An example for duplicated indices was on 72a9b64f with two floats equated
+    template <class Idx>
+    void removeDuplicates(std::vector<Idx>& rmi, std::vector<double>& rmv) {
+      std::unordered_map<Idx, double> linExp;
+      for (int i=rmi.size(); i--; )
+        linExp[rmi[i]] += rmv[i];
+      if (rmi.size()==linExp.size())
+        return;
+      rmi.resize(linExp.size());
+      rmv.resize(linExp.size());
+      int i=0;
+      for (const auto& iv: linExp) {
+        rmi[i] = iv.first;
+        rmv[i] = iv.second;
+        ++i;
+      }
+    }
     
     template<class MIPWrapper>
     void p_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType lt) {
@@ -640,6 +662,7 @@ namespace MiniZinc {
         // See if the solver adds indexation itself: no.
         std::stringstream ss;
         ss << "p_lin_" << (gi.getMIPWrapper()->nAddedRows++);
+        removeDuplicates(vars, coefs);
         gi.getMIPWrapper()->addRow(static_cast<int>(coefs.size()), &vars[0], &coefs[0], lt, rhs,
                                    GetMaskConsType(call), ss.str());
       }
@@ -694,6 +717,7 @@ namespace MiniZinc {
       } else {
         std::stringstream ss;
         ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
+        removeDuplicates(vars, coefs);
         gi.getMIPWrapper()->addRow(static_cast<int>(vars.size()), &vars[0], &coefs[0], nCmp, rhs,
                                    GetMaskConsType(call), ss.str());
       }
@@ -803,6 +827,7 @@ namespace MiniZinc {
         if ( val2>0.999999 ) {          // so  var1<=0
           std::ostringstream ss;
           ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
+          removeDuplicates(vars, coefs);
           gi.getMIPWrapper()->addRow(static_cast<int>(vars.size()), &vars[0], &coefs[0], MIP_wrapper::LinConType::EQ, rhs,
                                      MIP_wrapper::MaskConsType_Normal, ss.str());
         }
@@ -815,6 +840,25 @@ namespace MiniZinc {
       }
     }
     
+    /// Cumulative
+    template<class MIPWrapper>
+    void p_cumulative(SolverInstanceBase& si, const Call* call) {
+      MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>( si );
+
+      std::unique_ptr<SECCutGen> pCG( new SECCutGen( gi.getMIPWrapper() ) );
+
+      assert( call->n_args()==4 );
+
+      std::vector<MIP_solver::Variable> startTimes;
+      gi.exprToVarArray(call->arg(0), startTimes);
+      std::vector<double> durations, demands;
+      gi.exprToArray(call->arg(1), durations);
+      gi.exprToArray(call->arg(2), demands);
+      double b = gi.exprToConst(call->arg(3));
+
+      gi.getMIPWrapper()->addCumulative(startTimes.size(), startTimes.data(), durations.data(), demands.data(), b);
+    }
+
     /// The XBZ cut generator
     template<class MIPWrapper>
     void p_XBZ_cutgen(SolverInstanceBase& si, const Call* call) {
@@ -852,6 +896,26 @@ namespace MiniZinc {
       gi.registerCutGenerator( move( pCG ) );
     }
     
+    /// SCIP's bound disj
+    template<class MIPWrapper>
+    void p_bounds_disj(SolverInstanceBase& si, const Call* call) {
+      MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>( si );
+      assert(6==call->n_args());
+      std::vector<double> fUB, fUBF, bnd, bndF;
+      std::vector<MIP_solver::Variable> vars, varsF;
+      gi.exprToArray(call->arg(0), fUB);
+      gi.exprToArray(call->arg(3), fUBF);
+      gi.exprToArray(call->arg(1), bnd);
+      gi.exprToArray(call->arg(4), bndF);
+      gi.exprToVarArray(call->arg(2), vars);
+      gi.exprToVarArray(call->arg(5), varsF);
+      std::ostringstream ss;
+      ss << "p_bounds_disj_" << (gi.getMIPWrapper()->nAddedRows++);
+      double coef = 1.0;
+      gi.getMIPWrapper()->addBoundsDisj( fUB.size(), fUB.data(), bnd.data(), vars.data(),
+                                         fUBF.size(), fUBF.data(), bndF.data(), varsF.data(), ss.str() );
+    }
+
   }
 
   
@@ -879,11 +943,14 @@ namespace MiniZinc {
     _constraintRegistry.add("aux_float_le_zero_if_0__IND", SCIPConstraints::p_indicator_le0_if0<MIPWrapper>);
     _constraintRegistry.add("aux_float_eq_if_1__IND", SCIPConstraints::p_indicator_eq_if1<MIPWrapper>);
     
+    _constraintRegistry.add("cumulative", SCIPConstraints::p_cumulative<MIPWrapper>);
+
     /// XBZ cut generator
     _constraintRegistry.add("array_var_float_element__XBZ_lb__cutgen",
                             SCIPConstraints::p_XBZ_cutgen<MIPWrapper>);
     _constraintRegistry.add("circuit__SECcuts", SCIPConstraints::p_SEC_cutgen<MIPWrapper>);
 
+    _constraintRegistry.add("bounds_disj", SCIPConstraints::p_bounds_disj<MIPWrapper>);
   }
   
 

@@ -85,24 +85,24 @@ namespace MiniZinc {
       std::string error_msg          = error_msg_00;
       std::string search_complete_msg= search_complete_msg_00;
     } _opt;
-    
+
   public:
-    virtual ~Solns2Out();
+     ~Solns2Out();
     Solns2Out(std::ostream& os, std::ostream& log, const std::string& stdlibDir);
     
-    virtual bool processOption(int& i, std::vector<std::string>& argv);
-    virtual void printHelp(std::ostream& );
-    
+     bool processOption(int& i, std::vector<std::string>& argv);
+     void printHelp(std::ostream& );
+
     /// The output model (~.ozn) can be passed in 1 way in this base class:
     /// passing Env* containing output()
-    virtual bool initFromEnv(Env* pE);
+     bool initFromEnv(Env* pE);
 
     /// Then, variable assignments can be passed either as text
     /// or put directly into envi()->output() ( latter done externally
     /// by e.g. SolverInstance::assignSolutionToOutput() )
     /// In the 1st case, (part of) the assignment text is passed as follows,
     /// original end-of-lines need to be there as well
-    virtual bool feedRawDataChunk( const char* );
+     bool feedRawDataChunk( const char* );
     
     SolverInstance::Status status = SolverInstance::UNKNOWN;
     bool fStatusPrinted = false;
@@ -121,16 +121,19 @@ namespace MiniZinc {
     /// until ... exit, eof,  ??   TODO
     /// These functions should only be called explicitly
     /// from SolverInstance
-    virtual bool evalOutput( const std::string& s_ExtraInfo = "" );
+     bool evalOutput( const std::string& s_ExtraInfo = "" );
     /// This means the solver exits
-    virtual bool evalStatus(SolverInstance::Status status);
+     bool evalStatus(SolverInstance::Status status);
 
-    virtual void printStatistics(std::ostream& );
+     void printStatistics(std::ostream& );
     
-    virtual Env* getEnv() const { return pEnv; }
-    virtual Model* getModel() const { assert(getEnv()->output()); return getEnv()->output(); }
-    virtual std::ostream& getOutput();
-    virtual std::ostream& getLog();
+     Env* getEnv() const { return pEnv; }
+     Model* getModel() const { assert(getEnv()->output()); return getEnv()->output(); }
+     /// Get the primary output stream
+     /// First call restores stdout
+     std::ostream& getOutput();
+     /// Get the secondary output stream
+     std::ostream& getLog();
 
   private:
     Timer starttime;
@@ -151,7 +154,7 @@ namespace MiniZinc {
     std::string stdlibDir;
     
     // Basically open output
-    virtual void init();
+     void init();
     void createOutputMap();
     std::map<std::string, SolverInstance::Status> mapInputStatus;
     void createInputMap();
@@ -160,9 +163,9 @@ namespace MiniZinc {
     void parseAssignments( std::string& );
     /// Checking solution against checker model
     void checkSolution( std::ostream& os );
-    virtual bool __evalOutput( std::ostream& os );
-    virtual bool __evalOutputFinal( bool flag_flush );
-    virtual bool __evalStatusMsg(SolverInstance::Status status);
+     bool __evalOutput( std::ostream& os );
+     bool __evalOutputFinal( bool flag_flush );
+     bool __evalStatusMsg(SolverInstance::Status status);
     
   };
 

@@ -27,20 +27,28 @@ namespace MiniZinc {
 
   bool
   Model::FnEntry::operator<(const Model::FnEntry& f) const {
-    if (t.size() < f.t.size()) {
+    assert(!compare(*this,f) || !compare(f,*this));
+    return compare(*this, f);
+  }
+
+  bool
+  Model::FnEntry::compare(const Model::FnEntry& e1, const Model::FnEntry& e2) {
+    if (e1.t.size() < e2.t.size()) {
       return true;
     }
-    if (t.size() == f.t.size()) {
-      for (unsigned int i=0; i<t.size(); i++) {
-        if (t[i] != f.t[i]) {
-          bool b = t[i].isSubtypeOf(f.t[i], true);
-          if (!b) {
-            switch (t[i].cmp(f.t[i])) {
+    if (e1.t.size() == e2.t.size()) {
+      for (unsigned int i=0; i<e1.t.size(); i++) {
+        if (e1.t[i] != e2.t[i]) {
+          if (e1.t[i].isSubtypeOf(e2.t[i], true)) {
+            return true;
+          } else {
+            if (e2.t[i].isSubtypeOf(e1.t[i], true))
+              return false;
+            switch (e1.t[i].cmp(e2.t[i])) {
               case -1: return true;
               case 1: return false;
+              default: assert(false);
             }
-          } else {
-            return b;
           }
         }
       }

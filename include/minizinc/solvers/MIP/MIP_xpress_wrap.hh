@@ -75,6 +75,7 @@ public:
   static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt=NULL);
   static std::string getId(void);
   static std::string getName(void);
+  static std::vector<std::string> getTags(void);
   static std::vector<std::string> getStdFlags(void);
   static std::string needDllFlag(void);
 

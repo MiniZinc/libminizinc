@@ -26,7 +26,7 @@
 #include <minizinc/utils.hh>
 #include <minizinc/file_utils.hh>
 
-#ifdef HAS_CPLEX_PLUGIN
+#ifdef CPLEX_PLUGIN
 #ifdef HAS_DLFCN_H
 #include <dlfcn.h>
 #elif defined HAS_WINDOWS_H
@@ -38,7 +38,7 @@ using namespace std;
 
 #include <minizinc/solvers/MIP/MIP_cplex_wrap.hh>
 
-#ifdef HAS_CPLEX_PLUGIN
+#ifdef CPLEX_PLUGIN
 
 namespace {
   void* dll_open(const std::string& file) {
@@ -80,12 +80,12 @@ namespace {
 #endif
 
 const vector<string>& CPLEXDLLs(void) {
-  static const vector<string> sCPLEXDLLs = { "cplex1280", "cplex1270" };
+  static const vector<string> sCPLEXDLLs = { "cplex1290", "cplex1280", "cplex1270" };
   return sCPLEXDLLs;
 }
 
 void MIP_cplex_wrapper::checkDLL() {
-#ifdef HAS_CPLEX_PLUGIN
+#ifdef CPLEX_PLUGIN
   _cplex_dll = NULL;
   if ( options->sCPLEXDLL.size() ) {
     _cplex_dll = dll_open( options->sCPLEXDLL.c_str() );
@@ -266,6 +266,10 @@ string MIP_cplex_wrapper::getName() {
   return "CPLEX";
 }
 
+vector<string> MIP_cplex_wrapper::getTags() {
+  return {"mip","float","api"};
+}
+
 vector<string> MIP_cplex_wrapper::getStdFlags() {
   return {"-a", "-p", "-n"};
 }
@@ -293,7 +297,7 @@ void MIP_cplex_wrapper::Options::printHelp(ostream& os) {
 
   << "  --absGap <n>\n    absolute gap |primal-dual| to stop" << std::endl
   << "  --relGap <n>\n    relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default" << std::endl
-  << "  --intTol <n>\n    integrality tolerance for a variable. Default 1e-6" << std::endl
+  << "  --intTol <n>\n    integrality tolerance for a variable. Default 1e-8" << std::endl
   << "\n  --cplex-dll <file> or <basename>\n    CPLEX DLL, or base name, such as cplex1280, when using plugin. Default range tried: "
   << CPLEXDLLs().front() << " .. " << CPLEXDLLs().back() << std::endl
 //   << "  --objDiff <n>       objective function discretization. Default 1.0" << std::endl
@@ -383,7 +387,7 @@ void MIP_cplex_wrapper::closeCPLEX()
    }
   /// and at last:
 //   MIP_wrapper::cleanup();
-#ifdef HAS_CPLEX_PLUGIN
+#ifdef CPLEX_PLUGIN
 //  dll_close(cplex_dll);
 #endif
 
@@ -1027,7 +1031,7 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
       output.x = &x[0];
       status = dll_CPXgetx (env, lp, &x[0], 0, cur_numcols-1);
       wrap_assert(!status, "Failed to get variable values.");
-      if (cbui.solcbfn && (!options->flag_all_solutions || !cbui.printed)) {
+      if (cbui.solcbfn /*&& (!options->flag_all_solutions || !cbui.printed)*/) {
         cbui.solcbfn(output, cbui.ppp);
       }
    }

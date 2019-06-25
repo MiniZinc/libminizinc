@@ -43,6 +43,8 @@ namespace MiniZinc {
   std::string eval_string(EnvI& env, Expression* e);
   /// Evaluate a par expression \a e and return it wrapped in a literal
   Expression* eval_par(EnvI& env, Expression* e);
+  /// Check if expression \a e satisfies the domain constraint \a domain
+  bool checkParDomain(EnvI& env, Expression* e, Expression* domain);
   
   /// Representation for bounds of an integer expression
   struct IntBounds {
@@ -109,7 +111,7 @@ namespace MiniZinc {
       bool where = true;
       if (e->where(gen) != NULL) {
         GCLock lock;
-        where = eval_bool(env, e->where(gen));
+        where = e->where(gen)->type().isvar() ? true : eval_bool(env, e->where(gen));
       }
       if (where) {
         if (gen == e->n_generators()-1) {
@@ -162,7 +164,7 @@ namespace MiniZinc {
       bool where = true;
       if (e->in(gen) != NULL && e->where(gen) != NULL) {
         GCLock lock;
-        where = eval_bool(env, e->where(gen));
+        where = e->where(gen)->type().isvar() ? true : eval_bool(env, e->where(gen));
       }
       if (where) {
         if (gen == e->n_generators()-1) {

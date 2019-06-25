@@ -102,6 +102,8 @@ namespace MiniZinc {
     void remove(Id* e) {
       _m.erase(e);
     }
+    /// Return number of elements in the map
+    int size(void) const { return _m.size(); }
     /// Remove all elements from the map
     void clear(void) {
       _m.clear();

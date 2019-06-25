@@ -18,4 +18,3 @@ predicate decreasing(array[int] of var int: x) =
 /** @group globals.sort Requires that the array \a x is in decreasing order (duplicates are allowed). */
 predicate decreasing(array[int] of var set of int: x) =
     decreasing_set(x);
-

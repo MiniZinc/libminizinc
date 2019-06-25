@@ -20,6 +20,8 @@
   
   @groupdef globals.scheduling Scheduling constraints
   
+  @groupdef globals.graph Graph constraints
+  
   @groupdef globals.extensional Extensional constraints (table, regular etc.)
 */
 
@@ -40,7 +42,11 @@ include "bin_packing.mzn";
 include "bin_packing_capa.mzn";
 include "bin_packing_load.mzn";
 include "bin_packing_load_fn.mzn";
+include "bounded_path.mzn";   
 include "circuit.mzn";
+include "connected.mzn";   
+include "cost_mdd.mzn";   
+include "cost_regular.mzn";
 include "count.mzn";
 include "count_fn.mzn";
 include "count_eq.mzn";
@@ -51,6 +57,7 @@ include "count_leq.mzn";
 include "count_lt.mzn";
 include "cumulative.mzn";
 include "cumulative_opt.mzn";
+include "dag.mzn";   
 include "decreasing.mzn";
 include "diffn.mzn";
 include "diffn_nonstrict.mzn";
@@ -85,27 +92,37 @@ include "lex_less.mzn";
 include "lex2.mzn";
 include "link_set_to_booleans.mzn";
 include "maximum.mzn";
+include "mdd.mzn";
 include "member.mzn";
 include "minimum.mzn";
 include "network_flow.mzn";
+include "neural_net.mzn";
 include "nvalue.mzn";
 include "nvalue_fn.mzn";
 include "partition_set.mzn";
+include "piecewise_linear.mzn";
 include "range.mzn";
 include "range_fn.mzn";
+include "reachable.mzn";   
 include "regular.mzn";
 include "regular_nfa.mzn";
-include "regular_regexp.mzn";
 include "roots.mzn";
 include "roots_fn.mzn";
 include "sliding_sum.mzn";
 include "sort.mzn";
 include "sort_fn.mzn";
 include "span.mzn";
+include "steiner.mzn";
+include "strictly_decreasing.mzn";
+include "strictly_increasing.mzn";
 include "strict_lex2.mzn";
 include "subcircuit.mzn";
+include "subgraph.mzn";   
 include "sum_pred.mzn";
+include "sum_set.mzn";
 include "symmetric_all_different.mzn";
 include "table.mzn";
+include "tree.mzn";   
 include "value_precede.mzn";
 include "value_precede_chain.mzn";
+include "weighted_spanning_tree.mzn";

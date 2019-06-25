@@ -16,15 +16,15 @@
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 #include <minizinc/solver_instance_base.hh>
                     // CMakeLists.txt needs OSICBC_HOME defined
-// #include <CoinPackedVector.hpp>
-// #include <CoinPackedMatrix.hpp>
-// #include <CoinShallowPackedVector.hpp>
-// #include <CoinTime.hpp>
-// #include <OsiSolverInterface.hpp>
-//  #include <OsiCbcSolverInterface.hpp>
-#include <OsiClpSolverInterface.hpp>
-#include <CbcModel.hpp>
-// #include <CbcSolver.hpp>
+// #include <coin/CoinPackedVector.hpp>
+// #include <coin/CoinPackedMatrix.hpp>
+// #include <coin/CoinShallowPackedVector.hpp>
+// #include <coin/CoinTime.hpp>
+// #include <coin/OsiSolverInterface.hpp>
+//  #include <coin/OsiCbcSolverInterface.hpp>
+#include <coin/OsiClpSolverInterface.hpp>
+#include <coin/CbcModel.hpp>
+// #include <coin/CbcSolver.hpp>
 
 
 class MIP_osicbc_wrapper : public MIP_wrapper {
@@ -56,9 +56,9 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
       std::string sWriteParams;
       bool flag_all_solutions = false;
       
-      double absGap=0.99;
+      double absGap=-1;
       double relGap=1e-8;
-      double intTol=1e-6;
+      double intTol=1e-8;
       double objDiff=1.0;
       
       std::string cbc_cmdOptions;
@@ -77,6 +77,7 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
     static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt=NULL);
     static std::string getId(void);
     static std::string getName(void);
+    static std::vector<std::string> getTags(void);
     static std::vector<std::string> getStdFlags(void);
     static std::string needDllFlag(void) { return ""; }
 
