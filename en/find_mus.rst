@@ -1,8 +1,10 @@
-FindMUS
+FindMUS 
 =======
 
+Version: 0.5.0
+
 FindMUS [1]_ lists unsatisfiable subsets of constraints in your MiniZinc
-model.  These subsets, called Minimal Unsatisfiable Subsets cane help
+model.  These subsets, called Minimal Unsatisfiable Subsets can help
 you to find faults in your unsatisfiable constraint model.  FindMUS uses
 the hierarchical structure provided by the model to guide its search.
 
@@ -12,10 +14,20 @@ Basic Usage
 To use FindMUS on the command line simply execute it on a model and set
 of data files by typing:
 
-``minizinc --solver findMUS model.mzn data-1.dzn``
+``findMUS model.mzn data-1.dzn``
+
+This will perform a simple search for a single generalized MUS.
+To acquire a more accurate MUS with correct index variable assignments the
+``--paramset mzn`` argument should be used. To search for more than one
+MUS use the ``-a`` or ``-n <count>`` arguments.  By default FindMUS will
+use ``gecode`` for checking the satisfiability of a subset of constraints.
+This can be changed using the ``--solver`` argument.  For example, given
+a model that is better suited to a Mixed Integer Programming solver,
+the argument ``--solver cbc`` could be used to instruct FindMUS to
+flatten the model with the linear library and use the CBC solver for
+satisfiability checking.
 
 Note: FindMUS requires a fully instantiated constraint model.
-
 
 Commandline arguments
 ^^^^^^^^^^^^^^^^^^^^^
@@ -33,38 +45,41 @@ FindMUS's enumeration algorithm HierMUS.
 
 ``--timeout &lt;s&gt``   Stop search after *s* seconds (Default: 1800)
 
+``--paramset hint,mzn,fzn``
+  Use a preset collection of parameters. The default behaviour of the tool
+  is to use the ``hint`` set which should quickly produce an MUS.
+  The ``mzn`` and ``fzn`` options can acquire MUSes in more detail.
+  
+  ``hint`` --structure gen --depth mzn --shrink-alg map_lin
+
+  ``mzn`` --structure normal --depth mzn --shrink-alg map_qx
+
+  ``fzn`` --structure normal --depth fzn --shrink-alg map_qx
+
 **Enumeration options**
 
-The enumeration algorithm (HierMUS) explores the constraint hierarchy provided
-in the user's model, proposes potential MUSes to the sub-solver. The default
-algorithm is internally referred to as ``stackMUS``. This algorithm can be
-replaced with either ``MARCO`` or ``ReMUS`` by using the following arguments.
-NOTE: Due to limitations of the implementation, ``MARCO`` and ``ReMUS``
-cannot be applied in a hierarchical way. Use these in conjunction with
-``--structure flat``. This should be fixed in future.
+The enumeration algorithm (HierMUS) explores the constraint hierarchy
+provided in the user's model and proposes potential MUSes to the
+sub-solver.  A ``shrink`` algorithm is used to reduce found unsat subsets
+to MUSes. There are currently four available shrink algorithms available
+with FindMUS.
 
-``--marco``   Use the ``MARCO`` [3]_ algorithm as sub-enumerator
-
-``--remus``   Use the ``ReMUS`` [4]_ algorithm as sub-enumerator (not
-compatible with Hierarchical Search)
-
-Both ``MARCO`` and ``ReMUS`` use a ``shrink`` algorithm to reduce found
-unsat subsets to MUSes. There are currently three available shrink algorithms
-available with FindMUS.
-
-``--shrink-alg lin,map_lin,qx``
-  Select shrink algorithm (Default: lin)
+``--shrink-alg lin,map_lin,qx,map_qx``
+  Select shrink algorithm (Default: map_lin)
 
     ``lin`` simple linear shrink algorithm.
 
     ``map_lin`` alternative implementation of the linear algorithm that
     updates a global map of explored subsets while shrinking the subset.
 
-    ``qx`` use the ``QuickXplain`` [5]_ algorithm to shrink the subset
+    ``qx`` uses the ``QuickXplain`` [4]_ algorithm to shrink the subset
     to a MUS.
 
+    ``map_qx`` is an alternative implementation of ``QuickXplain`` that
+    uses the global map to avoid repeating any SAT checks while shrinking.
+
 ``--depth mzn,fzn,&lt;n&gt``
-  How deep in the tree should search explore. (Default: 1)
+  How deep in the tree should search explore. (Default: mzn)
 
     ``mzn`` expands the search as far as the point when the compiler
     leaves the MiniZinc model.
@@ -80,16 +95,17 @@ options mimic the ``minizinc`` arguments ``--solver`` and
 ``--fzn-flags``. The behavior of these arguments is likely to change
 in later versions of the tool.
 
-``--solver &lt;s&gt``   Use solver *s* for SAT checking. (Default:
-"gecode")
+``--solver &lt;s&gt``
+  Use solver *s* for SAT checking. (Default: "gecode")
 
-``--solver-flags &lt;f&gt``   Pass flags *f* to sub-solver. (Default:
-empty)
+``--solver-flags &lt;f&gt``
+  Pass flags *f* to sub-solver. (Default: empty)
 
-``--solver-timelimit &lt;ms&gt``   Set hard time limit for solver in
-milliseconds. (Default: 1100)
+``--solver-timelimit &lt;ms&gt``
+  Set hard time limit for solver in milliseconds. (Default: 1100)
 
-``--soft-defines``   Consider functional constraints as part of MUSes
+``--soft-defines``
+  Consider functional constraints as part of MUSes
 
 **Filtering options**
 
@@ -112,32 +128,31 @@ Include/exclude based on *paths*
 **Structure options**
 
 The structure coming from a user's model can significantly impact the
-performance of a MUS enumeration algorithm. Here we allow the structure
-to be generalized in various ways and extra structure can be injected
-in the form of binarization of the tree.
+performance of a MUS enumeration algorithm. The hierarchy is constructed
+in two steps. The first takes the existing model structure and can modify
+it in several ways. The second step adds extra binary structure.
 
 ``--structure flat,gen,normal,mix``
 
-     Alters initial structure: (Default: ``normal``)
+     Alters initial structure: (Default: ``gen``)
 
      ``flat``   Remove all structure
 
-     ``gen``    Remove instance specific structure
+     ``gen``    Remove instance specific structure (merges constraints)
 
      ``normal`` No change
 
      ``mix``    Apply ``gen`` before ``normal``
 
+     ``idx``    Remove all location information
 
-``--binarize normal,leaves,all``
+     ``idxmix`` Apply ``idx`` before ``normal``
 
-     Add additional structure: (Default: ``normal``)
 
-       ``normal`` No change
+``--no-binarize``
 
-       ``leaves`` Introduce structure at the leaves
-
-       ``all``    Introduce structure throughout tree
+     By default will introduce extra binary structure to the
+     hierarchy. This option disables this behaviour.
 
 **Verbosity options**
 
@@ -149,8 +164,6 @@ different components
 **Misc options**
 
 ``--dump-dot &lt;dot&gt`` Write tree in GraphViz format to file <dot>
-
-
 
 Example
 ^^^^^^^
@@ -175,7 +188,7 @@ latin square. The next two constraints ``LLRows`` and ``LGCols`` post
 to be increasing. Certain combinations of these constraints are going
 to be in conflict.
 
-Executing the command ``minizinc --solver findMUS -a latin_squares.mzn``
+Executing the command ``minizinc --solver -a latin_squares.mzn``
 returns the following output. Note that the ``-a`` argument requests
 all MUSes that can be found with the default settings (more detail below).
 
@@ -230,11 +243,11 @@ solver ``map`` was called, and the number of times the subproblem solver
 was called ``sat``.
 
 Interpreting the two MUSes listed here we see that the ``lex``
-constraints from lines 16 and 19 were included in both and only one
-of the ``alldifferent`` constraints from line 9 and 12 are required
-for the model to be unsatisfiable.
-The ``lex`` constraints being involved in every MUS make them a strong
-candidate for being the source of unsatisfiability in the user's model.
+constraints from lines 16 and 19 were included in both and only one of
+the ``alldifferent`` constraints from line 9 and 12 are required for
+the model to be unsatisfiable.  The ``lex`` constraints being involved
+in every MUS make them a strong candidate for being the source of
+unsatisfiability in the user's model.
 
 
 Using FindMUS in the MiniZinc IDE
@@ -243,24 +256,24 @@ Using FindMUS in the MiniZinc IDE
 To use FindMUS in the MiniZinc IDE, upon discovering that a model is
 unsatisfiable. Select ``FindMUS`` from the solver configuration dropdown
 menu and click the solve button (play symbol).  By default FindMUS is
-configured to return a single MUS at a depth of '1'. This should be
-relatively fast and help locate the relevant constraint items.  The
-following shows the result of running FindMUS with the default options.
+configured to return a single MUS using the ``hint`` parameter set.
+This should be relatively fast and help locate the relevant constraint
+items.  The following shows the result of running FindMUS with the
+default options.
 
 .. image:: figures/findmus/ide_depth_1.png
 
 Selecting the returned MUS highlights three top level constraints as
-shown: ``ADRows``, ``LLRows`` and ``LGCols``.
-To get a more specific MUS we can instruct FindMUS to go deeper than
-the top level constraints by clicking the "Show configuration editor"
-button in the top right hand corner of the MiniZinc IDE window, and
-adding ``--depth mzn`` to the "Additional solver command line arguments"
-textbox in the "Solver options" section. The following shows a more
-specific MUS in this model.
+shown: ``ADRows``, ``LLRows`` and ``LGCols``.  To get a more specific
+MUS we can instruct FindMUS to go deeper than the top level constraints
+by clicking the "Show configuration editor" button in the top right
+hand corner of the MiniZinc IDE window, and selecting the "Extra solver
+options" and selecting the ``mzn`` option under "Preset parameters".
+The following shows a more specific MUS in this model.
 
 .. image:: figures/findmus/ide_depth_mzn.png
 
-In this case we can see that the output pane list more specific
+In this case we can see that the output pane lists more specific
 information about the constraints involved in the MUS. After each
 listed constraint name we see what any loop variables were
 assigned to when the constraint was added to the FlatZinc. For
@@ -275,19 +288,18 @@ Debugging Unsatisfiable Constraint Models paper [1]_.
 The approach takes the full FlatZinc program and paritions the constraints
 into groups based on the hierarchy provided in the user's model. To
 begin with (at depth '1') we search for MUSes in the set of top level
-constraint items. If we are not at the target depth we recursively
-select a found MUS, split its constituent constraints into lower level
-constraints based on the hierarchy and begin another search for MUSes
-underneath this high-level MUS. If any MUSes are found we know that the
-high-level MUS is not minimal and so it should not be reported.
-This process is repeated on any found MUSes until we reach the required
-depth at which point we will start to repot MUSes. If in the recursive
-search we return to a high-level MUS without finding any sub-MUSes we
-can report this MUS as a real MUS. This recursive process is referred to
-as HierMUS. At each stage when we request the enumeration of a set of
-MUSes underneath a high-level MUS we can use one of several MUS
-enumeration algorithms. By default we use the internally developed
-StackMUS. We can also utilize MARCO and ReMUS for this role.
+constraint items using the MARCO [3]_ MUS enumeration algorithm. If we
+are not at the target depth we recursively select a found MUS, split
+its constituent constraints into lower level constraints based on the
+hierarchy and begin another search for MUSes underneath this high-level
+MUS. If any MUSes are found we know that the high-level MUS is not minimal
+and so it should not be reported.  This process is repeated on any found
+unsatisfiable subsets until we reach the required depth at which point
+we will start to repot MUSes. If in the recursive search we return to a
+high-level MUS without finding any sub-MUSes we can report this MUS as
+a real MUS. This recursive process is referred to as HierMUS. At each
+stage when we request the enumeration of a set of MUSes underneath a
+high-level MUS we can use one of several MUS enumeration algorithms.
 
 
 Performance tips
@@ -313,13 +325,7 @@ There are several features that we aim to include quite soon:
     This will allow a user to simply click-and-drag a selection around the
     parts of a constraint model they wish to analyse.
 
-  Single MUS focus mode
-    This mode would perform the process outlined in the 'Performance tips'
-    section automatically making it easier for users to find detailed MUSes.
-
-
 .. [1] Leo, K. et al., "Debugging Unsatisiable Constraint Models", 2017.
 .. [2] https://en.wikipedia.org/wiki/Latin_square
 .. [3] Liffiton, M. H. et al., "Fast, Flexible MUS Enumeration", 2016.
-.. [4] Bendík, J. et al., "Recursive Online Enumeration of All Minimal Unsatisfiable Subsets", 2018.
-.. [5] Junker, U. et al., "QUICKXPLAIN: preferred explanations and relaxations for over-constrained problems", 2004.
+.. [4] Junker, U. et al., "QUICKXPLAIN: preferred explanations and relaxations for over-constrained problems", 2004.
