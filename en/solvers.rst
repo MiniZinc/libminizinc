@@ -182,3 +182,49 @@ Warm Starts
 For general information of warm start annotations, see :ref:`sec_warm_starts`.
 Warm starts are currently implemented for Gurobi, IBM ILOG CPLEX, and XPRESS.
 
+.. _ch-solvers-nonlinear:
+
+Non-linear Solvers
+------------------
+
+MiniZinc has experimental support for non-linear solvers that conform to the AMPL NL standard. There are a number of open-source solvers, such as Ipopt, Bonmin and Couenne, that can be interfaced to MiniZinc in this way.
+
+You can download binaries of these solvers from AMPL (https://ampl.com/products/solvers/open-source/). In order to use them with MiniZinc, you need to create a solver configuration file. Future version of MiniZinc will make this easier, but for now you can follow these steps:
+
+1. Download the solver binary. For this example, we assume you chose the Couenne solver, which supports non-linear, non-convex, mixed discrete and continuous problems.
+2. Create a solver configuration file called ``couenne.msc`` in the ``share/minizinc/solvers`` directory of your MiniZinc installation, with the following contents:
+  
+  .. code-block:: json
+  
+    {
+      "id" : "org.coin-or.couenne",
+      "name" : "Couenne",
+      "executable" : "/Users/tack/Downloads/couenne-osx/couenne",
+      "version": "0.5.6",
+      "supportsFzn":false,
+      "supportsNL":true
+    }
+  
+  You can adapt the ``version`` field if you downloaded a different version (it's only used for displaying).
+  
+3. Run ``minizinc --solvers``. The Couenne solver should appear in the list of solvers now.
+4. Run ``minizinc --solver couenne model.mzn`` on some MiniZinc model, or use Couenne from the MiniZinc IDE.
+
+The AMPL NL support is currently experimental, and your MiniZinc model is translated to NL without regard for the capabilities of the target solver. For example, Ipopt only supports continuous variables, so translating a model with integer variables will result in a solver-level error message. There is currently no support for translating Boolean variables and constraints into 0/1 integer variables (as required by e.g. Couenne). You can experiment with the standard linearisation library, using the ``-Glinear`` flag. However, this will linearise all integer constraints, even the ones that solvers like Couenne may support natively (it does allow you to use non-linear constraints on float variables, though). We will ship dedicated solver libraries for some NL solvers with future versions of MiniZinc.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
