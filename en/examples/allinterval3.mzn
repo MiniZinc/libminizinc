@@ -15,7 +15,7 @@ constraint inverse(u,v);
 
 constraint abs(y[1] - y[n]) = 1 /\ v[n-1] = min(y[1], y[n]);
 
-solve :: int_search(y, first_fail, indomain_min, complete)
+solve :: int_search(y, first_fail, indomain_min)
       satisfy;
 
 output ["x = ",show(x),"\n"];

@@ -53,6 +53,6 @@ Throughout the documentation, some concepts are defined slightly more formally i
   tutorial for the first time, but they contain important information for 
   any serious MiniZinc user!
 
-Finally, if you find a mistake in this documentation, please report it through our GitHub issue tracker.
+Finally, if you find a mistake in this documentation, please report it through our GitHub issue tracker at https://github.com/minizinc/minizinc-doc/issues.
 
 

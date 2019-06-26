@@ -14,7 +14,7 @@ constraint forall(i,j in 1..n where i < j)(
 
 constraint abs(y[1] - y[n]) = 1 /\ v[n-1] = min(y[1], y[n]);
 
-solve :: int_search(y, first_fail, indomain_min, complete)
+solve :: int_search(y, first_fail, indomain_min)
       satisfy;
 
 array[1..n] of 1..n: x :: output_only

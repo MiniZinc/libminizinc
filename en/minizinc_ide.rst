@@ -26,7 +26,7 @@ Fonts and dark mode
 
 You can select the font and font size in the *View* menu. We recommend to use a fixed-width font (the IDE should pick such a font by default).
 
-The *View* menu also lets you activate "dark mode", which switches the colour scheme to a dark background.
+Depending on your platform, the *View* menu also lets you activate "dark mode", which switches the colour scheme to a dark background. On macOS 10.14 and later, the operating systems supports a global dark mode, and the MiniZinc IDE will follow that setting.
 
 Configuring and Running a Solver
 --------------------------------
@@ -69,7 +69,7 @@ Selecting one of the built-in solvers from the drop-down menu activates its defa
     The solver configuration window
 
 
-:numref:`fig-solver-conf` shows the configuration window. The first section (marked with a ``1`` in a red circle) contains a drop-down menu to select the *solver configuration*. In this case, a built-in configuration for the OSI-CBC solver was selected. You can make this configuration the default (the MiniZinc IDE will remember this setting), you can reset all values to the defaults, and you can make a clone of the configuration. Cloning a configuration is useful if you want to be able to quickly switch between different sets of options.
+:numref:`fig-solver-conf` shows the configuration window. The first section (marked with a ``1`` in a red circle) contains a drop-down menu to select the *solver configuration*. In this case, a built-in configuration for the COIN-BC solver was selected. You can make this configuration the default (the MiniZinc IDE will remember this setting), you can reset all values to the defaults, and you can make a clone of the configuration. Cloning a configuration is useful if you want to be able to quickly switch between different sets of options.
 
 Note that any changes to the built-in configurations will be lost when you close the IDE. Any changes to a cloned configuration are saved as part of the *project* (see :numref:`ch-ide-projects`).
 
@@ -110,6 +110,8 @@ MiniZinc can automatically run the output of a model through a *solution checker
 The default behaviour of the MiniZinc IDE is to run a solution checker if one is present. For a model ``abc.mzn``, a solution checker must be called ``abc.mzc`` or ``abc.mzc.mzn``. If a checker is present, the *Run* icon will turn into a *Run + check* icon instead. The output of the solution checker is displayed together with the normal solution output in the *Output* window.
 
 You can disable solution checkers by deselecting the *Check solutions* option in the solver configuration window.
+
+You can find a detailed description of MiniZinc solution checkers in :ref:`ch-solution-checkers`.
 
 Compiling a model
 ~~~~~~~~~~~~~~~~~

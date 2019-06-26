@@ -92,7 +92,7 @@
 
 <expr-atom> ::= <expr-atom-head> <expr-atom-tail> <annotations>
 
-<expr-binop-tail> ::= "[" <bin-op> <expr> "]"
+<expr-binop-tail> ::= [ <bin-op> <expr> ]
 
 <expr-atom-head> ::= <builtin-un-op> <expr-atom>
                    | "(" <expr> ")"
@@ -121,7 +121,7 @@
 
 <num-expr-atom> ::= <num-expr-atom-head> <expr-atom-tail> <annotations>
 
-<num-expr-binop-tail> ::= "[" <num-bin-op> <num-expr> "]"
+<num-expr-binop-tail> ::= [ <num-bin-op> <num-expr> ]
 
 <num-expr-atom-head> ::= <builtin-num-un-op> <num-expr-atom>
                        | "(" <num-expr> ")"
@@ -160,9 +160,11 @@
                 | 0o[0-7]+
 
 % Float literals
-<float-literal> ::= [0-9]+.[0-9]+
-                  | [0-9]+.[0-9]+[Ee][-+]?[0-9]+
+<float-literal> ::= [0-9]+"."[0-9]+
+                  | [0-9]+"."[0-9]+[Ee][-+]?[0-9]+
                   | [0-9]+[Ee][-+]?[0-9]+
+                  | 0[xX]([0-9a-fA-F]*"."[0-9a-fA-F]+|[0-9a-fA-F]+".")([pP][+-]?[0-9]+)
+                  | (0[xX][0-9a-fA-F]+[pP][+-]?[0-9]+)
 
 % String literals
 <string-contents> ::= ([^"\n\] | \[^\n(])*

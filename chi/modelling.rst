@@ -438,11 +438,11 @@ calculation to calculate the balance after each quarter.
 4\%借款\$1000并且每季度还款\$260，我最终还欠款多少？这个问题在数据文件 :download:`loan1.dzn <examples/loan1.dzn>` 中被编码。
 
 由于我们希望用实数求解，我们需要使用一个可以支持这种问题类型的求解器。Gecode(Minizinc捆绑二进制发布预设的求解器)支持浮点型变量,一个混合整数线性求解器可能更加适合这种类型的问题。
-MiniZinc发布包含了这样的一个求解器。我们可以通过从求解器IDE菜单( *Run* 按钮下面的三角形)选择 ``OSICBC``  来使用, 或者在命令行中运行命令 ``minizinc --solver osicbc`` :
+MiniZinc发布包含了这样的一个求解器。我们可以通过从求解器IDE菜单( *Run* 按钮下面的三角形)选择 ``COIN-BC``  来使用, 或者在命令行中运行命令 ``minizinc --solver cbc`` :
 
 .. code-block:: bash
 
-  $ minizinc --solver osicbc loan.mzn loan1.dzn
+  $ minizinc --solver cbc loan.mzn loan1.dzn
 
 输出是
 
@@ -458,7 +458,7 @@ MiniZinc发布包含了这样的一个求解器。我们可以通过从求解器
 
 .. code-block:: bash
 
-  $ minizinc --solver osicbc loan.mzn loan2.dzn
+  $ minizinc --solver cbc loan.mzn loan2.dzn
 
 后的输出是
 
@@ -474,7 +474,7 @@ MiniZinc发布包含了这样的一个求解器。我们可以通过从求解器
 
 .. code-block:: bash
 
-  $ minizinc --solver osicbc loan.mzn loan3.dzn
+  $ minizinc --solver cbc loan.mzn loan3.dzn
 
 后的输出是
 

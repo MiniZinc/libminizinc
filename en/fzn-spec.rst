@@ -763,7 +763,12 @@ found (i.e., the problem is unsatisfiable).
 Statistics output
 ~~~~~~~~~~~~~~~~~
 
-FlatZinc solvers can output statistics in a standard format so that it can be read by scripts, for example, in order to run experiments and automatically aggregate the results. Statistics should be printed to the standard output stream in the form of FlatZinc comments that follow a specific format. Statistics can be output at any time during the solving, i.e., before the first solution, between solutions, and after the search has finished.
+FlatZinc solvers can output statistics in a standard format so that it can be read by scripts,
+for example, in order to run experiments and automatically aggregate the results.
+Statistics should be printed to the standard output stream in the form of FlatZinc comments that follow a specific format.
+Statistics can be output at any time during the solving, i.e., before the first solution, between solutions,
+and after the search has finished. Statistics output corresponding to a solution should be the last one
+before its '----------' separator.
 
 Each value should be output on a line of its own in the following format:
 
@@ -777,12 +782,55 @@ Each block of statistics is terminated by a line of its own with the following f
 
   %%%mzn-stat-end
 
-The :mzndef:`<name>` describes the kind of statistics gathered, and the :mzndef:`<value>` can be any value of a MiniZinc type. The following names are considered standard statistics:
+**Example**
+
+.. code-block:: minizincdef
+
+  %%%mzn-stat: objective=1e+308
+  %%%mzn-stat: objectiveBound=0
+  %%%mzn-stat: nodes=0
+  %%%mzn-stat: solveTime=2.3567
+  %%%mzn-stat-end
+
+  (no feasible solution found yet but something can be printed...)
+
+  %%%mzn-stat: objective=12345
+  %%%mzn-stat: objectiveBound=122
+  %%%mzn-stat: nodes=35
+  %%%mzn-stat: solveTime=78.5799
+  %%%mzn-stat-end
+
+  (the corresponding feasible solution with value 12345 goes here
+     or before its statistics but above the separator)
+  ----------               (<- the solution separator)
+
+  %%%mzn-stat: objective=379
+  %%%mzn-stat: objectiveBound=379
+  %%%mzn-stat: nodes=4725
+  %%%mzn-stat: solveTime=178.5799
+  %%%mzn-stat-end
+
+  (the corr. optimal solution with value 379 goes here)
+  ----------
+  ==========               (<- the 'search complete' marker)
+
+  %%%mzn-stat: objective=379      (<- this is the concluding output)
+  %%%mzn-stat: objectiveBound=379
+  %%%mzn-stat: nodes=13456
+  %%%mzn-stat: solveTime=2378.5799
+  %%%mzn-stat-end
+
+
+The :mzndef:`<name>` describes the kind of statistics gathered, and the :mzndef:`<value>` can be any value of a MiniZinc type.
+The following names are considered standard statistics:
 
 ======================== ====== ================================================
 Name                     Type   Explanation
 ======================== ====== ================================================
 ``nodes``                int    Number of search nodes
+``openNodes``            int    Number of open search nodes
+``objective``            float  Current objective value
+``objectiveBound``       float  Dual bound on the objective value
 ``failures``             int    Number of leaf nodes that were failed
 ``restarts``             int    Number of times the solver restarted the search
 ``variables``            int    Number of variables
@@ -856,30 +904,64 @@ Example for a ``redefinitions-2.0.mzn`` that declares native support for the pre
 Solver-specific predicates
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Many solvers have built-in support for some of the constraints in the MiniZinc standard library. But without declaring which constraints they support, MiniZinc will assume that they don't support any excpect for the standard FlatZinc builtins mentioned in the section above.
+Many solvers have built-in support for some of the constraints in the MiniZinc standard library. But without declaring which constraints they support, MiniZinc will assume that they don't support any except for the standard FlatZinc builtins mentioned in the section above.
 
-A solver can declare that it supports a non-standard constraint by overriding one of the files of the standard library in its own solver-specific library. For example, assume that a solver supports the ``all_different`` constraint on integer variables. In the standard library, this constraint is defined in the file ``all_different_int.mzn``, with the following implementation:
+A solver can declare that it supports a non-standard constraint by overriding one of the files of the standard library in its own solver-specific library. For example, assume that a solver supports the ``all_different`` constraint on integer variables. In the standard library, this constraint is defined in the file ``fzn_all_different_int.mzn``, with the following implementation:
 
 .. code-block:: minizinc
 
-  predicate all_different_int(array[int] of var int: x) =
+  predicate fzn_all_different_int(array[int] of var int: x) =
     forall(i,j in index_set(x) where i < j) ( x[i] != x[j] );
 
-A solver, let's call it *OptiSolve*, that supports this constraint natively can place a file with the same name, ``all_different_int.mzn``, in its library, and redefine it as follows:
+A solver, let's call it *OptiSolve*, that supports this constraint natively can place a file with the same name, ``fzn_all_different_int.mzn``, in its library, and redefine it as follows:
 
 .. code-block:: minizinc
 
   precicate optisolve_alldifferent(array[int] of var int: x);
 
-  predicate all_different_int(array[int] of var int: x) =
+  predicate fzn_all_different_int(array[int] of var int: x) =
     optisolve_alldifferent(x);
 
-When a MiniZinc model that contains the ``all_different`` constraint is now compiled with the *OptiSolve* library, it will contain calls to the newly defined predicate ``optisolve_alldifferent``.
+When a MiniZinc model that contains the ``all_different`` constraint is now compiled with the *OptiSolve* library, the generated FlatZinc will contain calls to the newly defined predicate ``optisolve_alldifferent``.
+
+**Note:** The solver-specific library has been reorganised for MiniZinc version 2.3.0. Previously, a solver library would contain e.g. the file ``bin_packing.mzn`` in order to override the :mzn:`bin_packing` constraint. With version 2.3.0, this is still possible (in order to maintain backwards compatibility). However, the predicate :mzn:`bin_packing` from file ``bin_packing.mzn`` now delegates to the predicate :mzn:`fzn_bin_packing` in ``fzn_bin_packing.mzn``. This enables the :mzn:`bin_packing` predicate to check that the arguments are correct using assertions, before delegating to the solver-specific predicate. If your solver still uses the old library layout (i.e., overriding ``bin_packing.mzn`` instead of ``fzn_bin_packing.mzn``), you should consider updating it to the new standard.
+
+.. _fzn-half-reif:
+
+Reified and half-reified predicates
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+A reified constraint is a constraint that is not simply enforced, but whose truth value is bound to a Boolean variable. For example, a MiniZinc expression :mzn:`var bool: b = all_different(x);` would constrain :mzn:`b` to be true if and only if the variables :mzn:`x` take pairwise different values.
+
+If a predicate is called in such a reified context, the MiniZinc compiler will try to find a version of the predicate with :mzn:`_reif` added to its identifier and an additional :mzn:`var bool` argument. For the above example, the compiler will try to generate the following FlatZinc code:
+
+.. code-block:: minizinc
+  
+  var bool: b;
+  constraint all_different_reif(x, b);
+
+If the :mzn:`_reif` predicate does not exist, the compiler will try to use the definition of the original predicate. However, this may not be ideal: the original definition may make use of free variables in a :mzn:`let` expression (which is not allowed in reified contexts), or it may lead to inefficient solving.
+
+Solver libraries should therefore provide reified versions of constraints whenever possible. The library contains files ``fzn_<constraintname>_reif.mzn`` for this purpose.
+
+When a reified constraint is used in a *positive context* (see :numref:`pred-context`), the MiniZinc compiler can use a special version, called a half-reified predicate and identified by an :mzn:`_imp` suffix, instead of the :mzn:`_reif` predicate. Half-reified predicates essentially represent constraints that are *implied* by a Boolean variable rather than being equivalent to one. This typically leads to simpler translations or more efficient propagation (e.g., a half-reified :mzn:`all_different` only needs to *check* whether it is false, but it never has to implement the negation of the actual constraint).
+
+For example, :mzn:`constraint y=0 \/ all_different(x)` might be translated as follows:
+
+.. code-block:: minizinc
+
+  var bool: X_INTRODUCED_1;
+  var bool: X_INTRODUCED_2;
+  constraint int_eq_imp(y,0,X_INTRODUCED_1);
+  constraint all_different_imp(x, X_INTRODUCED_2);
+  constraint array_bool_or([X_INTRODUCED_1,X_INTRODUCED_2]);
+
+MiniZinc will decide whether to use half-reification case by case based on the availability of the :mzn:`_imp` predicate. As for reified constraints, it may be benefitial to provide specialised half-reified versions if the solver supports them. 
 
 .. _fzn-cmdline-options:
 
-Command Line Interface
-----------------------
+Command-Line Interface and Standard Options
+-------------------------------------------
 
 In order to work with the ``minizinc`` command line driver, a FlatZinc solver must be an executable (which can include e.g. shell scripts) that can be invoked as follows:
 
@@ -920,12 +1002,16 @@ where ``<executable-name>`` is the name of the executable. Solvers may support t
 
 .. option:: -p <i>
 
-  Run with ``i`` parallel threads (for multi-threded solvers).
+  Run with ``i`` parallel threads (for multi-threaded solvers).
 
 .. option:: -r <i>
 
   Use ``i`` as the random seed (for any random number generators the solver
   may be using).
+
+.. option:: -t <ms>
+
+  Wall time limit ``ms`` milliseconds.
 
 .. _sec-cmdline-conffiles:
 
@@ -933,10 +1019,11 @@ Solver Configuration Files
 --------------------------
 
 In order for a solver to be available to MiniZinc, it has to be described in a *solver configuration file*. This is a simple file, in JSON or ``.dzn`` format, that contains some basic information such as the solver's name, version, where its library of global constraints can be found, and a path to its executable.
+Examples are given in section Solver Backends in User Manual.
 
 A solver configuration file must have file extension ``.msc`` (for MiniZinc Solver Configuration), and can be placed in any of the following locations:
 
-- In the ``minizinc/solvers/`` directory of the MiniZinc installation. If you install MiniZinc from the binary distribution, this directory can be found at ``/usr/share/minizinc/solvers`` on Linux systems, inside the MiniZincIDE application on macOS system, and in the ``Program Files\\MiniZinc IDE (bundled)`` folder on Windows.
+- In the ``minizinc/solvers/`` directory of the MiniZinc installation. If you install MiniZinc from the binary distribution, this directory can be found at ``/usr/share/minizinc/solvers`` on Linux systems, inside the MiniZincIDE application on macOS system, and in the ``Program Files\MiniZinc IDE (bundled)`` folder on Windows.
 - In the directory ``$HOME/.minizinc/solvers`` on Linux and macOS systems, and the Application Data directory on Windows systems.
 - In any directory listed on the ``MZN_SOLVER_PATH`` environment variable (directories are separated by ``:`` on Linux and macOS, and by ``;`` on Windows systems).
 - In any directory listed in the ``mzn_solver_path`` option of the global or user-specific configuration file (see :numref:`ch-user-config`)
@@ -979,8 +1066,14 @@ Here is a list of all configuration options recognised by the configuration file
   - ``"float"``: for solvers that support float variables
   - ``"api"``: for solvers that use the internal C++ API
 
-- ``stdFlags`` (list of strings, default empty): Which of the standard solver command line flags are supported by this solver. The standard flags are ``-a``, ``-n``, ``-s``, ``-v``, ``-p``, ``-r``, ``-f``.
-- ``extraFlags`` (list of list of strings, default empty): Extra command line flags supported by the solver. Each entry must be a list of four strings. The first string is the name of the option (e.g. ``"--special-algorithm"``). The second string is a description that can be used to generate help output (e.g. ``"which special algorithm to use"``). The third string specifies the type of the argument (``"int"``,``"bool"``,``"float"`` or ``"string"``). The fourth string is the default value.
+- ``stdFlags`` (list of strings, default empty): Which of the standard solver command line flags are supported by this solver. The standard flags are ``-a``, ``-n``, ``-s``, ``-v``, ``-p``, ``-r``, ``-f``, ``-t``.
+- ``extraFlags`` (list of list of strings, default empty): Extra command line flags supported by the solver. Each entry must be a list of four strings. The first string is the name of the option (e.g. ``"--special-algorithm"``). The second string is a description that can be used to generate help output (e.g. ``"which special algorithm to use"``). The third string specifies the type of the argument (``"int"``, ``"bool"``, ``"float"``, ``"string"`` or ``"opt"``). The fourth string is the default value. The following types have an additional extended syntax:
+
+  - ``"int:n:m"`` where ``n`` and ``m`` are integers, gives lower and upper bounds for the supported values
+  - ``"float:n:m"`` where ``n`` and ``m`` are floating point numbers, gives lower and upper bounds for the supported values
+  - ``"bool:onstring:offstring"`` specifies strings to add to the command line flag to turn it on (``onstring``) and off (``offstring``). E.g., ``["-interrupt","whether to catch Ctrl-C","bool:false:true","true"]`` specifies a command line option that can be called as ``-interrupt true`` or ``-interrupt false``. The standard behaviour (just ``"bool"``) means that the option is either added to the command line or not.
+  - ``"opt:first option:second option:...:last option"`` specifies a list of possible values for the option
+
 - ``supportsMzn`` (bool, default ``false``): Whether the solver can run MiniZinc directly (i.e., it implements its own compilation or interpretation of the model).
 - ``supportsFzn`` (bool, default ``true``): Whether the solver can run FlatZinc. This should be the case for most solvers
 - ``needsSolns2Out`` (bool, default ``true``): Whether the output of the solver needs to be passed through the MiniZinc output processor.

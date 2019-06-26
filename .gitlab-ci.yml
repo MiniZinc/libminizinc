@@ -8,8 +8,13 @@ build:linux:
   script:
     - curl --silent -o minizinc.zip --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" "https://gitlab.com/api/v4/projects/minizinc%2Fminizinc/jobs/artifacts/develop/download?job=build:linux"
     - unzip -q minizinc.zip
-    - ./minizinc/bin/mzn2doc --rst-output --include-stdlib --output-base $PWD/en/lib $PWD/minizinc/share/minizinc/std/globals.mzn
-    - ./minizinc/bin/mzn2doc --rst-output --include-stdlib --output-base $PWD/chi/lib $PWD/minizinc/share/minizinc/std/globals.mzn
+    - curl --silent -o vendor.zip --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" "https://gitlab.com/api/v4/projects/minizinc%2Fvendor/jobs/artifacts/master/download?job=bundle:linux"
+    - unzip -q vendor.zip
+    - cp $PWD/minizinc/share/minizinc/gecode_presolver/gecode.mzn $PWD/minizinc/share/minizinc/std/
+    - cp $PWD/vendor/chuffed/share/chuffed/mznlib/chuffed.mzn $PWD/minizinc/share/minizinc/std/
+    - echo 'include "globals.mzn"; include "gecode.mzn"; include "chuffed.mzn";' > $PWD/minizinc/share/minizinc/std/all.mzn
+    - ./minizinc/bin/mzn2doc --rst-output --include-stdlib --output-base $PWD/en/lib $PWD/minizinc/share/minizinc/std/all.mzn
+    - ./minizinc/bin/mzn2doc --rst-output --include-stdlib --output-base $PWD/chi/lib $PWD/minizinc/share/minizinc/std/all.mzn
     - cd en
     - make html latexpdf
     - cd ../chi

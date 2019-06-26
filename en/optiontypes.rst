@@ -25,7 +25,7 @@ Declaring and Using Option Types
   
   .. code-block:: minizincdef
 
-    var opt <type> : <var-name:
+    var opt <type> : <var-name>:
 
   where :mzndef:`<type>` is one of :mzn:`int`, :mzn:`float` or :mzn:`bool` or
   a fixed range expression.
