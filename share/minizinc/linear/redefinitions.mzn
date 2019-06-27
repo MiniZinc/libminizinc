@@ -488,7 +488,7 @@ predicate set_in(var int: x, set of int: s__) =
 %        x <= sum(i in index_set(sR))(B[i]*sR[i])
     endif;
 
-% XXX  only for a fixed set
+%%% for a fixed set
 predicate set_in_reif(var int: x, set of int: s__, var bool: b) =
   if is_fixed(b) then
     if fix(b) then x in s__ else x in dom(x) diff s__ endif
@@ -506,19 +506,6 @@ predicate set_in_reif(var int: x, set of int: s__, var bool: b) =
          elseif s == min(s)..max(s) then
              b <-> (min(s) <= x /\ x <= max(s))
          else
-%            let {
-%              array[int] of int: sL = [ e | e in s where not (e - 1 in s) ];
-%              array[int] of int: sR = [ e | e in s where not (e + 1 in s) ];
-%              array [index_set(sR)] of var 0..1: B;
-%              constraint assert(length(sR)==length(sL), "N of lb and ub of sub-intervals of a set should be equal");
-%            } in    
-%              sum(B) = bool2int(b)      %% use indicators
-%              /\
-%              x >= lb(x) + sum(i in index_set(sL))(B[i]*(sL[i]-lb(x)))     
-%              /\ 
-%              x <= ub(x) + sum(i in index_set(sR))(B[i]*(sR[i]-ub(x)))
-            %  aux_int_le_if_1(x, max(s), bool2int(b)) /\
-            %  aux_int_ge_if_1(x, min(s), bool2int(b)) /\
             if card(dom(x))<=nMZN__UnaryLenMax_setInReif then               %% PARAM TODO
               let {
                 array[int] of var int: p = eq_encode(x);
@@ -527,7 +514,6 @@ predicate set_in_reif(var int: x, set of int: s__, var bool: b) =
             else
               bool2int(b) == fVarInBigSetOfInt(x, s)
             endif
-%           bool2int(b) == sum(e in s)(bool2int( x == e ))
         endif
     )
   endif;
@@ -542,7 +528,35 @@ predicate alt_set_in_reif(var int: x, set of int: s, var bool: b) =
             l <= x /\ x <= r
         );
 
-function var int: fVarInBigSetOfInt(var int: x, set of int: s)
+%%% for a fixed set
+predicate set_in_imp(var int: x, set of int: s__, var bool: b) =
+  if is_fixed(b) then
+    if fix(b) then x in s__ else true endif
+  elseif has_bounds(x) /\ not (s__ subset dom(x)) then
+      b -> x in s__ intersect dom(x)                     %% Use CSE
+  else
+    let {
+      set of int: s = if has_bounds(x) then s__ intersect dom(x) else s__ endif,
+    } in
+    (
+         if dom(x) subset s then true
+         elseif card(dom(x) intersect s)==0 then b==false
+         elseif s == min(s)..max(s) then
+             (b -> min(s) <= x) /\ (b -> x <= max(s))
+         else
+            if card(dom(x))<=nMZN__UnaryLenMax_setInReif then               %% PARAM TODO
+              let {
+                array[int] of var int: p = eq_encode(x);
+              } in
+                sum(i in s intersect dom(x))(p[i]) >= bool2int(b)
+            else
+              bool2int(b) <= fVarInBigSetOfInt(x, s)
+            endif
+        endif
+    )
+  endif;
+
+function var 0..1: fVarInBigSetOfInt(var int: x, set of int: s)
   = let {
     array[int] of int: sL = [ e | e in s where not (e - 1 in s) ];
     array[int] of int: sR = [ e | e in s where not (e + 1 in s) ];
