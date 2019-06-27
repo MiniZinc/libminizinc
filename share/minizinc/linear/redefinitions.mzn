@@ -503,8 +503,8 @@ predicate set_in_reif(var int: x, set of int: s__, var bool: b) =
          elseif card(dom(x) intersect s)==0 then b==false
          elseif fPostprocessDomains then
            set_in_reif__POST(x, s, b)
-         elseif s == min(s)..max(s) then
-             b <-> (min(s) <= x /\ x <= max(s))
+    %% Bad. Very much so for CBC. 27.06.2019:     elseif s == min(s)..max(s) then
+    %%         b <-> (min(s) <= x /\ x <= max(s))
          else
             if card(dom(x))<=nMZN__UnaryLenMax_setInReif then               %% PARAM TODO
               let {
