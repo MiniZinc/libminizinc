@@ -128,6 +128,7 @@ The following parameters can be given on the command line or modified in ``share
   -D fMIPdomains=true/false                    %% The unified domains feature, see below
   -D float_EPS=1e-6                            %% Epsilon for floats' strict comparison
   -DfIndConstr=true -DfMIPdomains=false        %% Use solver's indicator constraints, see below
+  --no-half-reifications                       %% Turn off halfreification (full reification was until v2.2.3)
 
 Some Solver Options and Changed Default Values
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -172,7 +173,7 @@ The 'MIPdomains' feature of the Flattener aims at reducing the number of binary 
 encoding linearized domain constraints, see the paper
 *Belov, Stuckey, Tack, Wallace. Improved Linearization of Constraint Programming Models. CP 2016.*
 
-By default it is off.
+By default it is off since v2.3.0.
 To turn it on, add option ``-D fMIPdomains=true`` during flattening.
 Some parameters of the unification are available, run with ``--help``.
 
