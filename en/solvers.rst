@@ -73,7 +73,21 @@ MIP-Aware Modeling (But Mostly Useful for All Backends)
 
 Avoid mixing positive and negative coefficients in the objective. Use 'complementing' variables to revert sense.
 
-To avoid numerical issues, make variable domains as tight as possible (compiler can deduce bounds in certain cases but explicit bounding can be stronger).
+Avoid nested expressions which are hard to linearize (decompose for MIP). For example, instead of
+
+.. code-block:: minizinc
+
+  constraint forall(s in TASKS)(exists([whentask[s]=0] ++
+    [whentask[s]>= start[s]+(t*numslots) /\ whentask[s]<=stop[s]+(t*numslots) | t in 0..nummachines-1]));
+
+prefer the tight domain constraint
+
+.. code-block:: minizinc
+
+  constraint forall(s in TASKS)(whentask[s] in
+    {0} union array_union([ start[s]+(t*numslots) .. stop[s]+(t*numslots) | t in 0..nummachines-1]));
+
+To avoid **numerical issues**, make variable domains as tight as possible (compiler can deduce bounds in certain cases but explicit bounding can be stronger).
 Try to keep magnitude difference in each constraint below 1e4.
 Especially for variables involved in logical constraints, if you cannot reduce the domains to be in +/-1e4,
 consider indicator constraints (available for some solvers, see below), or use the following trick:
