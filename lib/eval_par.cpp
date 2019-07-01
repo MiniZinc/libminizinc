@@ -1875,26 +1875,28 @@ namespace MiniZinc {
           ret->type(t);
           return ret;
         }
-        if (e->type().isintset()) {
-          return EvalSetLit::e(env,e);
-        }
-        if (e->type().isfloatset()) {
-          return EvalFloatSetLit::e(env,e);
-        }
-        if (e->type().isboolset()) {
-          return EvalBoolSetLit::e(env,e);
-        }
-        if (e->type()==Type::parint()) {
-          return EvalIntLit::e(env,e);
-        }
-        if (e->type()==Type::parbool()) {
-          return EvalBoolLit::e(env,e);
-        }
-        if (e->type()==Type::parfloat()) {
-          return EvalFloatLit::e(env,e);
-        }
-        if (e->type()==Type::parstring()) {
-          return EvalStringLit::e(env,e);
+        if (e->type().ispar()) {
+          if (e->type().isintset()) {
+            return EvalSetLit::e(env,e);
+          }
+          if (e->type().isfloatset()) {
+            return EvalFloatSetLit::e(env,e);
+          }
+          if (e->type().isboolset()) {
+            return EvalBoolSetLit::e(env,e);
+          }
+          if (e->type()==Type::parint()) {
+            return EvalIntLit::e(env,e);
+          }
+          if (e->type()==Type::parbool()) {
+            return EvalBoolLit::e(env,e);
+          }
+          if (e->type()==Type::parfloat()) {
+            return EvalFloatLit::e(env,e);
+          }
+          if (e->type()==Type::parstring()) {
+            return EvalStringLit::e(env,e);
+          }
         }
         switch (e->eid()) {
           case Expression::E_ITE:
