@@ -2525,9 +2525,11 @@ namespace MiniZinc {
           if (v->e()->type().ispar() && !v->e()->type().isopt() && !v->e()->type().cv() && v->e()->type().dim() > 0 && v->e()->ti()->domain()==NULL
               && (v->e()->type().bt()==Type::BT_INT || v->e()->type().bt()==Type::BT_FLOAT)) {
             // Compute bounds for array literals
+            CallStackItem csi(env,v->e());
             GCLock lock;
             ArrayLit* al = eval_array_lit(env, v->e()->e());
             v->e()->e(al);
+            checkIndexSets(env,v->e(), v->e()->e());
             if (v->e()->type().bt()==Type::BT_INT && v->e()->type().st()==Type::ST_PLAIN) {
               IntVal lb = IntVal::infinity();
               IntVal ub = -IntVal::infinity();
