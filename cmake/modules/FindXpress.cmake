@@ -10,14 +10,14 @@ list(INSERT CMAKE_PREFIX_PATH 0 "${XPRESS_ROOT}" "$ENV{XPRESS_ROOT}")
 #TODO: Check default installation locations
 find_path(XPRESS_INCLUDE xprs.h
           PATHS $ENV{XPRESSDIR} $ENV{XPRESS} $ENV{XPRESS_DIR}
-          HINTS /opt/xpressmp
+          HINTS /opt/xpressmp C:/xpressmp
           PATH_SUFFIXES include)
 
 foreach(XPRESS_LIB xprb xprs)
   set(XPRESS_LIB_LOC "XPRESS_LIB_LOC-NOTFOUND")
   find_library(XPRESS_LIB_LOC NAMES ${XPRESS_LIB} lib${XPRESS_LIB}
                PATHS $ENV{XPRESSDIR} $ENV{XPRESS} $ENV{XPRESS_DIR}
-               HINTS /opt/xpressmp
+               HINTS /opt/xpressmp C:/xpressmp
                PATH_SUFFIXES lib)
   if("${XPRESS_LIB_LOC}" STREQUAL "XPRESS_LIB_LOC-NOTFOUND")
 #    message(STATUS "FICO Xpres: Could not find library `${XPRESS_LIB}`")
