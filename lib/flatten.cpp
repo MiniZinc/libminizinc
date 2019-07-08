@@ -2601,7 +2601,7 @@ namespace MiniZinc {
               setComputedDomain(env, v->e(), new SetLit(Location().introduce(), FloatSetVal::a(lb, ub)), true);
             }
           } else if (v->e()->type().isvar() || v->e()->type().isann()) {
-            (void) flat_exp(env,Ctx(),v->e()->id(),NULL,constants().var_true);
+            (void) flatten_id(env,Ctx(),v->e()->id(),NULL,constants().var_true,true);
           } else {
             if (v->e()->e()==NULL) {
               if (!v->e()->type().isann())

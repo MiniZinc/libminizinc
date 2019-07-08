@@ -13,7 +13,7 @@
 
 namespace MiniZinc {
 
-  EE flatten_id(EnvI& env,Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
+  EE flatten_id(EnvI& env,Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool doNotFollowChains) {
     CallStackItem _csi(env,e);
     EE ret;
     Id* id = e->cast<Id>();
@@ -26,7 +26,9 @@ namespace MiniZinc {
         throw FlatteningError(env,e->loc(), "undefined identifier");
       }
     }
-    id = follow_id_to_decl(id)->cast<VarDecl>()->id();
+    if (!doNotFollowChains) {
+      id = follow_id_to_decl(id)->cast<VarDecl>()->id();
+    }
     if (ctx.neg && id->type().dim() > 0) {
       if (id->type().dim() > 1)
         throw InternalError("multi-dim arrays in negative positions not supported yet");
@@ -178,4 +180,9 @@ namespace MiniZinc {
     }
     return ret;
   }
+
+  EE flatten_id(EnvI& env,Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
+    return flatten_id(env,ctx,e,r,b,false);
+  }
+
 }
