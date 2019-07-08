@@ -1963,6 +1963,28 @@ namespace MiniZinc {
                 }
                 SetLit* ibv_l = new SetLit(Location().introduce(),ibv);
                 vd->ti()->domain(ibv_l);
+                if (Id* rhs_ident = vd->e()->dyn_cast<Id>()) {
+                  if (rhs_ident->decl()->ti()->domain()) {
+                    IntSetVal* rhs_domain = eval_intset(env,rhs_ident->decl()->ti()->domain());
+                    IntSetRanges dr(rhs_domain);
+                    IntSetRanges ibr(ibv);
+                    Ranges::Inter<IntVal,IntSetRanges,IntSetRanges> i(dr,ibr);
+                    IntSetVal* rhs_newibv = IntSetVal::ai(i);
+                    if (rhs_domain->card() != rhs_newibv->card()) {
+                      rhs_ident->decl()->ti()->domain(ibv_l);
+                      rhs_ident->decl()->ti()->setComputedDomain(false);
+                      if (rhs_ident->decl()->type().isopt()) {
+                        std::vector<Expression*> args(2);
+                        args[0] = rhs_ident;
+                        args[1] = ibv_l;
+                        Call* c = new Call(Location().introduce(), "var_dom", args);
+                        c->type(Type::varbool());
+                        c->decl(env.model->matchFn(env, c, false));
+                        (void) flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+                      }
+                    }
+                  }
+                }
                 if (vd->type().isopt()) {
                   std::vector<Expression*> args(2);
                   args[0] = vd->id();
@@ -2000,6 +2022,29 @@ namespace MiniZinc {
                 }
                 SetLit* fbv_l = new SetLit(Location().introduce(),fbv);
                 vd->ti()->domain(fbv_l);
+                if (Id* rhs_ident = vd->e()->dyn_cast<Id>()) {
+                  if (rhs_ident->decl()->ti()->domain()) {
+                    FloatSetVal* rhs_domain = eval_floatset(env,rhs_ident->decl()->ti()->domain());
+                    FloatSetRanges dr(rhs_domain);
+                    FloatSetRanges ibr(fbv);
+                    Ranges::Inter<FloatVal,FloatSetRanges,FloatSetRanges> i(dr,ibr);
+                    FloatSetVal* rhs_newfbv = FloatSetVal::ai(i);
+                    if (rhs_domain->card() != rhs_newfbv->card()) {
+                      rhs_ident->decl()->ti()->domain(fbv_l);
+                      rhs_ident->decl()->ti()->setComputedDomain(false);
+                      if (rhs_ident->decl()->type().isopt()) {
+                        std::vector<Expression*> args(2);
+                        args[0] = rhs_ident;
+                        args[1] = fbv_l;
+                        Call* c = new Call(Location().introduce(), "var_dom", args);
+                        c->type(Type::varbool());
+                        c->decl(env.model->matchFn(env, c, false));
+                        (void) flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
+                      }
+                    }
+                  }
+                }
+
                 if (vd->type().isopt()) {
                   std::vector<Expression*> args(2);
                   args[0] = vd->id();
