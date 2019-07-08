@@ -176,8 +176,18 @@ predicate int_mod(var int: x, var int: y, var int: r) =
 
 function array[int] of var int: aux_int_division_modulo_fn(var int: x, var int: y) =
     let {
-      int: bx = max(abs(lb(x)), abs(ub(x)));
-      var -bx..bx: q;
+      %% Domain of q
+      set of int: dom_q =
+        if lb(y)*ub(y)>0 then
+          let {
+            set of int: EP = { ub(x) div ub(y), ub(x) div lb(y), lb(x) div ub(y), lb(x) div lb(y) },
+          } in min(EP)..max(EP)
+        else
+          let {
+            int: mm = max( abs(lb(x)), abs(ub(x)) ),
+          } in -mm..mm                   %% TODO case when -1 or 1 not in dom(x)
+        endif,
+      var dom_q: q;
       int: by = max(abs(lb(y)), abs(ub(y)));
       var -by+1..by-1: r;
       constraint x = y * q + r,
