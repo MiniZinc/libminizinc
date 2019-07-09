@@ -55,21 +55,21 @@ AppImage
 
 The MiniZinc AppImage provides a way of installing the MiniZinc bundles without any added requirements. AppImages (https://appimage.org/) provide self-contained versions of applications with all their required dependencies. To use the MiniZinc AppImage you simply download the AppImage, make it executable, and run:
 
-.. code-block:: bash
+.. parsed-literal::
 
   $ chmod +x MiniZincIDE-|release|-x86_64.AppImage
   $ ./MiniZincIDE-|release|-x86_64.AppImage
 
 AppImages have no standard integration with the desktop environment. A script has been added to the MiniZinc AppImage to integrate the application into both the terminal and the desktop environment. The one requirement for this script is that the AppImage *CANNOT be moved* after the install script has been run. A suggestion would be to store the AppImages in ``~/Applications/`` or ``/opt/Applications/``. The following commands move the AppImage to the second location and install ``minizinc`` and ``MiniZincIDE`` to ``/usr/local/bin`` and will add a desktop entry and its corresponding icon to ``$HOME/.local/share/{applications,icons}``:
 
-.. code-block:: bash
+.. parsed-literal::
 
   $ mv ./MiniZincIDE-|release|-x86_64.AppImage /opt/Applications/
   $ /opt/Applications/MiniZincIDE-|release|-x86_64.AppImage install
 
 **Note:** to change the installation locations can be changed using the environmental variables ``$BIN_LOCATION`` and ``$DESKTOP_LOCATION``. The default behaviour can be achieved using the following command:
 
-.. code-block:: bash
+.. parsed-literal::
 
   $ BIN_LOCATION=/usr/local/bin DESKTOP_LOCATION=$HOME/.local/share ./MiniZincIDE-|release|-x86_64.AppImage install
 
@@ -78,11 +78,19 @@ Archive
 
 The MiniZinc archive bundle is straightforward, but doesn't offer any automatic integrations with the desktop environment. After downloading, uncompress the archive, for example in your home directory or any other location where you want to install it:
 
-.. code-block:: bash
+.. parsed-literal::
 
   $ tar xf MiniZincIDE-|release|-bundle-linux-x86_64.tgz
 
-This will unpack MiniZinc into a directory that is called the same as the archive file (without the ``.tgz``). You can run the MiniZinc IDE or any of the command line tools directly from that directory, or add it to your PATH environment variable for easier access. **Note:** the MiniZinc IDE needs to be started using the ``MiniZincIDE.sh`` script, which sets up a number of paths that are required by the IDE.
+This will unpack MiniZinc into a directory that is called the same as the archive file (without the ``.tgz``). You can start the MiniZinc IDE using the ``MiniZincIDE.sh`` shell script, which sets up a number of paths and environment variables.
+
+In order to use the command line tools, after unpacking, make the following changes to some environment variables (assuming a bash-like shell):
+
+.. parsed-literal::
+
+  $ export PATH=MiniZincIDE-|release|-bundle-linux-x86_64/bin:$PATH
+  $ export LD_LIBRARY_PATH=MiniZincIDE-|release|-bundle-linux-x86_64/lib:$LD_LIBRARY_PATH
+  $ export QT_PLUGIN_PATH=MiniZincIDE-|release|-bundle-linux-x86_64/plugins:$QT_PLUGIN_PATH
 
 Apple macOS
 -----------
