@@ -131,7 +131,11 @@ predicate array_bool_or(array[int] of var bool: a, var bool: b) =
       b
     elseif is_fixed(b) then   % frequent case
         if fix(b) = true then
-            sum(i in index_set(a))( bool2int(a[i]) ) >= 1       %% >=1 seems better for MIPDomains... 5.4.19
+            let {
+                array[index_set(a)] of var bool: c,
+                constraint forall(i in index_set(a))(c[i] -> a[i]),    %% Use chain compression
+            } in
+            sum(i in index_set(a))( bool2int(c[i]) ) == 1       %% >=1 seems better for MIPDomains... 5.4.19
         else
             forall(i in index_set(a))( not a[i] )
         endif
