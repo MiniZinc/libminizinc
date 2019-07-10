@@ -17,7 +17,7 @@ predicate fzn_mdd(array[int] of var int: x,    % variables constrained by MDD
         % T1 each node except the root enforces an outgoing edge
         forall(n in NODE)(bn[n] -> exists(e in EDGE where from[e] = n)(be[e])) /\
         % T23 each edge enforces its endpoints
-        forall(e in EDGE)((be[e] -> bn[to[e]]) /\ (be[e] -> bn[to[e]])) /\
+        forall(e in EDGE)((be[e] -> bn[from[e]]) /\ (be[e] -> bn[to[e]])) /\
         % T4 each edge enforces its label
         forall(e in EDGE)(be[e] -> x[level[from[e]]] in label[e]) /\
         % P1 each node enforces its outgoing edges
