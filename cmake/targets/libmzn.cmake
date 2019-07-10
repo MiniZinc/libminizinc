@@ -114,6 +114,7 @@ add_library(mzn
   $<TARGET_OBJECTS:minizinc_fzn>
   $<TARGET_OBJECTS:minizinc_nl>
 )
+target_link_libraries(mzn ${CMAKE_THREAD_LIBS_INIT})
 
 ### Add Solver Interfaces to the MiniZinc library when available
 include(cmake/targets/libminizinc_cplex.cmake)

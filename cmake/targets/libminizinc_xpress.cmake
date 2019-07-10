@@ -23,6 +23,6 @@ if(XPRESS_FOUND AND USE_XPRESS)
   ### Setup correct compilation into the MiniZinc library
   target_compile_definitions(mzn PRIVATE HAS_XPRESS)
   target_sources(mzn PRIVATE $<TARGET_OBJECTS:minizinc_xpress>)
-  target_link_libraries(mzn ${XPRESS_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(mzn ${XPRESS_LIBRARIES})
 
 endif()
