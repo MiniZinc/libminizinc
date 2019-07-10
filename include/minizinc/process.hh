@@ -43,15 +43,22 @@ namespace MiniZinc {
     assert( pOs!=0 || pSo!=0 );
     while (!done) {
       char buffer[5255];
+      char nl_buffer[5255];
       DWORD count = 0;
       BOOL bSuccess = ReadFile(g_hCh, buffer, sizeof(buffer) - 1, &count, NULL);
       if (bSuccess && count > 0) {
-        buffer[count] = 0;
+        int nl_count = 0;
+        for (int i=0; i<count; i++) {
+          if (buffer[i] != 13) {
+            nl_buffer[nl_count++] = buffer[i];
+          }
+        }
+        nl_buffer[nl_count] = 0;
         std::lock_guard<std::mutex> lck(*mtx);
         if (pSo)
-          pSo->feedRawDataChunk( buffer );
+          pSo->feedRawDataChunk( nl_buffer );
         if (pOs)
-          (*pOs) << buffer << std::flush;
+          (*pOs) << nl_buffer << std::flush;
       }
       else {
         if (pSo)

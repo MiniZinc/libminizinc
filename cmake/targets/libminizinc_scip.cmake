@@ -21,6 +21,6 @@ if(SCIP_FOUND AND USE_SCIP)
   ### Setup correct compilation into the MiniZinc library
   target_compile_definitions(mzn PRIVATE HAS_SCIP)
   target_sources(mzn PRIVATE $<TARGET_OBJECTS:minizinc_scip>)
-  target_link_libraries(mzn ${SCIP_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
+  target_link_libraries(mzn ${SCIP_LIBRARIES})
 
 endif()

@@ -1,10 +1,10 @@
 if (DEFINED EMSCRIPTEN)
   add_custom_command(OUTPUT ${PROJECT_BINARY_DIR}/CMakeFiles/file_packager.js
-                     COMMAND python ${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py minizinc.data --preload ${PROJECT_SOURCE_DIR}/share@/minizinc --from-emcc --js-output=${PROJECT_BINARY_DIR}/CMakeFiles/file_packager.js
+                     COMMAND python ${EMSCRIPTEN_ROOT_PATH}/tools/file_packager.py minizinc.data --lz4 --preload ${PROJECT_SOURCE_DIR}/share@/minizinc --from-emcc --js-output=${PROJECT_BINARY_DIR}/CMakeFiles/file_packager.js
                      COMMENT "building data store minizinc.data")
 
   set(EMSCRIPTEN_CXX_FLAGS "-s MINIZ_NO_ARCHIVE_APIS -s MINIZ_NO_ZLIB_APIS")
-  set(EMSCRIPTEN_LINK_FLAGS " -s FORCE_FILESYSTEM=1 -s MODULARIZE=1 -s EXTRA_EXPORTED_RUNTIME_METHODS=\"['cwrap', 'FS', 'ENV']\" -s DISABLE_EXCEPTION_CATCHING=0 -s BINARYEN_TRAP_MODE=\"clamp\" -s ALLOW_MEMORY_GROWTH=1 --no-heap-copy")
+  set(EMSCRIPTEN_LINK_FLAGS " -s FORCE_FILESYSTEM=1 -s LZ4=1 -s MODULARIZE=1 -s EXTRA_EXPORTED_RUNTIME_METHODS=\"['cwrap', 'FS', 'ENV']\" -s DISABLE_EXCEPTION_CATCHING=0 -s BINARYEN_TRAP_MODE=\"clamp\" -s ALLOW_MEMORY_GROWTH=1 --no-heap-copy")
 
   # -------------------------------------------------------------------------------------------------------------------
   #  -- Web Assembly Configuration.

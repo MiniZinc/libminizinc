@@ -101,6 +101,7 @@ build:wasm_complete:
   cache:
     key: "$CI_JOB_NAME"
     paths: [.ccache, vendor.zip*]
+  when: manual
 
 build:wasm_minimal:
   image: trzeci/emscripten
@@ -123,6 +124,7 @@ build:wasm_minimal:
   cache:
     key: "$CI_JOB_NAME"
     paths: [.ccache, vendor.zip*]
+  when: manual
 
 # ----------- Trigger FindMUS pipeline -----------
 

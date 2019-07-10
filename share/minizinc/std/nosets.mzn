@@ -48,15 +48,13 @@ predicate set_eq(var set of int: x, var set of int: y) ::promise_total =
   elseif not has_ub_set(x) then set_eq(y,x)
   else
   let {
-    set of int: uby = if has_ub_set(y) then ub(y) else
-      let {
-        constraint y subset x,
-      } in ub(x)
-    endif;
+    constraint y subset x,                        %% Constrain domains first
+    constraint x subset y,
+  } in let {
     array[int] of var bool: bx = set2bools(x);
-    array[int] of var bool: by = set2bools(y,uby);
+    array[int] of var bool: by = set2bools(y);
   } in forall (i in index_set(bx) union index_set(by)) (
-    if not (i in index_set(bx)) then not by[i]
+    if not (i in index_set(bx)) then not by[i]    %% Should be impossible
     elseif not (i in index_set(by)) then not bx[i]
     else bx[i]=by[i] endif
   )
@@ -262,7 +260,9 @@ predicate set_in_reif(int: x, var set of int: y, var bool: b) ::promise_total =
     not b
   endif;
 predicate set_in_reif(var int: x, var set of int: y, var bool: b) ::promise_total =
-  b <-> ( x in ub(y) /\ set2bools(y)[x] );
+  b <-> set2bools(y)[x];
+predicate set_in_imp(var int: x, var set of int: y, var bool: b) =
+  b -> set2bools(y)[x];
 
 function array[int] of var bool: setarray2bools(array[int] of var set of int: x) =
   if length(x)=0 then [] else

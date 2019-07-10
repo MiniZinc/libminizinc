@@ -186,6 +186,7 @@ namespace MiniZinc {
   
   void setComputedDomain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed);
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
+  EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool doNotFollowChains);
 
   class CmpExpIdx {
   public:
