@@ -5,6 +5,23 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.3.1
+=============
+
+Bug fixes:
+
+- Report error when trying to assign an array literal to an array variable with incompatible index set.
+- Fix partial evaluation of expressions, so that only par expressions are fully evaluated. Fixes #298.
+- Remove carriage returns when reading piped solver output on Windows.
+- Canonicalize paths of executables to avoid spurious warnings about multiple executables for the same solver.
+- Add implementations for != on arrays.
+- Compute quotient bounds before decomposition of int_div in linearisation library.
+- Propagate domain constraints on variables that are aliased (previously domain constraints could get lost).
+- Propagate domain constraints from left-hand-side to right-hand-side in variable assignments.
+- piecewise-linear: reuse decomposition for X when only Y-values change.
+- nosets: add set_in_imp(var set) and simplify set_in_reif, set_eq(var set, var set).
+- linearisation: improved compilation of set_in constraints.
+
 Version 2.3
 ===========
 
