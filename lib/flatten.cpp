@@ -2768,6 +2768,7 @@ namespace MiniZinc {
                 if (hasRedundantOccurrenciesOnly) {
                   removedItems.push_back(vdi);
                   env.flat_removeItem(vdi);
+                  env.vo.removeAllOccurrences(vdi->e());
                   keptVariable = false;
                   for (const auto& c: it->second) {
                     env.flat_removeItem(c);
@@ -3050,74 +3051,75 @@ namespace MiniZinc {
               }
             }
           } else if (ConstraintI* ci = m[i]->dyn_cast<ConstraintI>()) {
-            if (Call* c = ci->e()->dyn_cast<Call>()) {
-              GCLock lock;
-              Call* nc = NULL;
-              if (c->id() == constants().ids.exists) {
-                if (array_bool_or) {
-                  std::vector<Expression*> args(2);
-                  args[0] = c->arg(0);
-                  args[1] = constants().lit_true;
-                  nc = new Call(c->loc().introduce(),array_bool_or->id(),args);
-                  nc->type(Type::varbool());
-                  nc->decl(array_bool_or);
+            if (!ci->removed()) {
+              if (Call* c = ci->e()->dyn_cast<Call>()) {
+                GCLock lock;
+                Call* nc = NULL;
+                if (c->id() == constants().ids.exists) {
+                  if (array_bool_or) {
+                    std::vector<Expression*> args(2);
+                    args[0] = c->arg(0);
+                    args[1] = constants().lit_true;
+                    nc = new Call(c->loc().introduce(),array_bool_or->id(),args);
+                    nc->type(Type::varbool());
+                    nc->decl(array_bool_or);
+                  }
+                } else if (c->id() == constants().ids.forall) {
+                  if (array_bool_and) {
+                    std::vector<Expression*> args(2);
+                    args[0] = c->arg(0);
+                    args[1] = constants().lit_true;
+                    nc = new Call(c->loc().introduce(),array_bool_and->id(),args);
+                    nc->type(Type::varbool());
+                    nc->decl(array_bool_and);
+                  }
+                } else if (c->id() == constants().ids.clause) {
+                  if (array_bool_clause) {
+                    std::vector<Expression*> args(2);
+                    args[0] = c->arg(0);
+                    args[1] = c->arg(1);
+                    nc = new Call(c->loc().introduce(),array_bool_clause->id(),args);
+                    nc->type(Type::varbool());
+                    nc->decl(array_bool_clause);
+                  }
+                } else if (c->id() == constants().ids.bool_xor) {
+                  if (bool_xor) {
+                    std::vector<Expression*> args(3);
+                    args[0] = c->arg(0);
+                    args[1] = c->arg(1);
+                    args[2] = c->n_args()==2 ? constants().lit_true : c->arg(2);
+                    nc = new Call(c->loc().introduce(),bool_xor->id(),args);
+                    nc->type(Type::varbool());
+                    nc->decl(bool_xor);
+                  }
+                } else {
+                  FunctionI* decl = env.model->matchFn(env,c,false);
+                  if (decl && decl->e()) {
+                    nc = c;
+                    nc->decl(decl);
+                  }
                 }
-              } else if (c->id() == constants().ids.forall) {
-                if (array_bool_and) {
-                  std::vector<Expression*> args(2);
-                  args[0] = c->arg(0);
-                  args[1] = constants().lit_true;
-                  nc = new Call(c->loc().introduce(),array_bool_and->id(),args);
-                  nc->type(Type::varbool());
-                  nc->decl(array_bool_and);
+                if (nc != NULL) {
+                  CollectDecls cd(env.vo,deletedVarDecls,ci);
+                  topDown(cd,c);
+                  ci->e(constants().lit_true);
+                  env.flat_removeItem(i);
+                  StringLit* sl = getLongestMznPathAnnotation(env, c);
+                  CallStackItem* csi=NULL;
+                  if(sl)
+                    csi = new CallStackItem(env, sl);
+                  (void) flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
+                  if(csi) delete csi;
                 }
-              } else if (c->id() == constants().ids.clause) {
-                if (array_bool_clause) {
-                  std::vector<Expression*> args(2);
-                  args[0] = c->arg(0);
-                  args[1] = c->arg(1);
-                  nc = new Call(c->loc().introduce(),array_bool_clause->id(),args);
-                  nc->type(Type::varbool());
-                  nc->decl(array_bool_clause);
-                }
-              } else if (c->id() == constants().ids.bool_xor) {
-                if (bool_xor) {
-                  std::vector<Expression*> args(3);
-                  args[0] = c->arg(0);
-                  args[1] = c->arg(1);
-                  args[2] = c->n_args()==2 ? constants().lit_true : c->arg(2);
-                  nc = new Call(c->loc().introduce(),bool_xor->id(),args);
-                  nc->type(Type::varbool());
-                  nc->decl(bool_xor);
-                }
-              } else {
-                FunctionI* decl = env.model->matchFn(env,c,false);
-                if (decl && decl->e()) {
-                  nc = c;
-                  nc->decl(decl);
-                }
-              }
-              if (nc != NULL) {
-                CollectDecls cd(env.vo,deletedVarDecls,ci);
-                topDown(cd,c);
-                ci->e(constants().lit_true);
-                env.flat_removeItem(i);
-                StringLit* sl = getLongestMznPathAnnotation(env, c);
-                CallStackItem* csi=NULL;
-                if(sl)
-                  csi = new CallStackItem(env, sl);
-                (void) flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
-                if(csi) delete csi;
               }
             }
-            
           }
         }
 
         startItem = endItem+1;
         endItem = m.size()-1;
       }
-
+      
       for (unsigned int i=0; i<removedItems.size(); i++) {
         if (env.vo.occurrences(removedItems[i]->e())==0) {
           CollectDecls cd(env.vo,deletedVarDecls,removedItems[i]);

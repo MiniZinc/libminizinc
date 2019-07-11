@@ -37,7 +37,10 @@ namespace MiniZinc {
     
     /// Remove \a i from map and return new number of occurrences
     int remove(VarDecl* v, Item* i);
-    
+
+    /// Remove all occurrences from map and return new number of occurrences
+    void removeAllOccurrences(VarDecl* v);
+
     /// Return number of occurrences of \a v
     int occurrences(VarDecl* v);
 

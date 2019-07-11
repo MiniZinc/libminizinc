@@ -60,6 +60,12 @@ namespace MiniZinc {
     return static_cast<int>(vi->second.size());
   }
   
+  void VarOccurrences::removeAllOccurrences(VarDecl* v) {
+    IdMap<Items>::iterator vi = _m.find(v->id()->decl()->id());
+    assert(vi!=_m.end());
+    vi->second.clear();
+  }
+  
   void VarOccurrences::unify(EnvI& env, Model* m, Id* id0_0, Id *id1_0) {
     Id* id0 = id0_0->decl()->id();
     Id* id1 = id1_0->decl()->id();
