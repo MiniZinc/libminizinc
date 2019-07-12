@@ -144,6 +144,7 @@ namespace MiniZinc {
       string parentPath = np.dirName;
       Model* m = np.m;
       bool isModelString = np.isModelString;
+      IncludeI* np_ii = np.ii;
       string f(np.fileName);
       files.pop_back();
       
@@ -190,8 +191,8 @@ namespace MiniZinc {
           includePaths.pop_back();
         }
         if (!file.is_open()) {
-          if (np.ii) {
-            err << np.ii->loc().toString() << ":\n";
+          if (np_ii) {
+            err << np_ii->loc().toString() << ":\n";
             err << "MiniZinc: error in include item, cannot open file '" << f << "'." << endl;
           } else {
             err << "Error: cannot open file '" << f << "'." << endl;
