@@ -144,7 +144,9 @@ For example, tolerances have been tightened to enable more precise solving with 
   --solver-time-limit-feas <n>, --solver-tlf <n>
                      stop after <n> milliseconds after the first feasible solution (some backends)
   --writeModel <file>
-                     write model to <file> (.lp, .mps, .sav, ...)
+                     write model to <file> (.lp, .mps, .sav, ...). All solvers support the MPS format
+                     which is industry standard. Most support the LP format. Some solvers have own formats,
+                     for example, the CIP format of SCIP ("constraint integer programming").
   --readParam <file>
                      read backend-specific parameters from file (some backends)
   --writeParam <file>
