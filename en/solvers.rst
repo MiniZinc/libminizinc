@@ -138,6 +138,7 @@ For example, tolerances have been tightened to enable more precise solving with 
 
 ::
 
+  -h <solver-tag>    full description of the backend options
   --relGap <n>       relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default
   --feasTol <n>      primal feasibility tolerance (Gurobi). Default 1e-8
   --intTol <n>       integrality tolerance for a variable. Default 1e-8
@@ -156,7 +157,6 @@ For example, tolerances have been tightened to enable more precise solving with 
 
 All MIP solvers directly support multi-threading (option ``-p``). For COIN-BC to use it, it needs to be
 configured with ``--enable-cbc-parallel``.
-For other command-line options, run ``minizinc -h <solver-id>``.
 
 Subtour Elimination Constraints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
