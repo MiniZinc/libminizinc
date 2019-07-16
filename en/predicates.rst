@@ -388,7 +388,7 @@ Hence, they can be used for checking:
 .. code-block:: minizinc
 
   predicate lookup(array[int] of var int:x, int: i, var int: y) = 
-      assert(i in index_set(x), "index out of range in lookup"
+      assert(i in index_set(x), "index out of range in lookup",
              y = x[i]
       );
 
