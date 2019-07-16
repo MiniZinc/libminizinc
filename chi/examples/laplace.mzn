@@ -36,6 +36,6 @@ bottom = 0.0;
 solve satisfy;
 
 output [ show_float(6, 2, t[i,j]) ++ 
-         if j == h then "\n" else " " endif |
+         if j == w then "\n" else " " endif |
          i in HEIGHT, j in WIDTH
 ];
