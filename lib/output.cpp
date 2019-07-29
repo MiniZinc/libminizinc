@@ -695,9 +695,20 @@ namespace MiniZinc {
           tv[i].ti(Type::TI_PAR);
         }
         FunctionI* decl = env.output->matchFn(env, c.id(), tv, false);
+        FunctionI* origdecl = env.model->matchFn(env, c.id(), tv, false);
+        bool canReuseDecl = (decl != nullptr);
+        if (canReuseDecl && origdecl) {
+          // Check if this is the exact same overloaded declaration as in the model
+          for (unsigned int i=0; i<decl->params().size(); i++) {
+            if (decl->params()[i]->type() != origdecl->params()[i]->type()) {
+              // no, the types don't match, so we have to copy the original decl
+              canReuseDecl = false;
+              break;
+            }
+          }
+        }
         Type t;
-        if (decl==NULL) {
-          FunctionI* origdecl = env.model->matchFn(env, c.id(), tv, false);
+        if (!canReuseDecl) {
           if (origdecl == NULL || !origdecl->rtype(env, tv, false).ispar()) {
             throw FlatteningError(env,c.loc(),"function "+c.id().str()+" is used in output, par version needed");
           }
