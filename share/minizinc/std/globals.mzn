@@ -93,7 +93,7 @@ include "lex2.mzn";
 include "link_set_to_booleans.mzn";
 include "maximum.mzn";
 include "mdd.mzn";
-%include "mdd_nondet.mzn";
+include "mdd_nondet.mzn";
 include "member.mzn";
 include "minimum.mzn";
 include "network_flow.mzn";
