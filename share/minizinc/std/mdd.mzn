@@ -39,11 +39,9 @@ predicate mdd(array[int] of var int: x,    % variables constrained by MDD
         forall(e in EDGE)(assert(level[from[e]]+1 = levele[to[e]],
                                  "mdd level of from[\(e)] = \(level[from[e]])" ++
                                  "must be 1 less than level of to[\(e)] = \(levele[to[e]])")) /\
-        forall(l in array_union(label)) (let {
-                array[int] of int: ln = [ from[e] | e in EDGE where l in label[e] ]
-            } in assert(card({l | l in ln})=length(ln),
-                        "mdd is not deterministic, label \(l) cannot be used in multiple edges leaving the same node"
-        )) /\
+        forall(e1,e2 in EDGE where e1 < e2 /\ from[e1] = from[e2])
+              (assert(label[e1] intersect label[e2] = {},
+                      "mdd: Two edges \(e1) and \(e2) leaving node \(from[e1]) with overlapping labels")) /\
 	fzn_mdd(x, N, level, E, from, label, to);
                              
 % Example consider an MDD over 3 variables
