@@ -2,7 +2,7 @@ include "fzn_mdd.mzn";
 include "fzn_mdd_reif.mzn";
 
 /** @group globals.extensional
-  Requires that \a x defines a path from root to true node T through the MDD defined by
+  Requires that \a x defines a path from root to true node T through the (deterministic) MDD defined by
 
    \a N is the number of nodes, the root node is node 1
    \a level is the level of each node, the root is level 1, T is level \a length(x)+1
@@ -10,6 +10,9 @@ include "fzn_mdd_reif.mzn";
    \a from is the leaving node (1..\a N)for each edge
    \a label is the set of values of the \a x variable for each edge
    \a to is the entering node for each edge, where 0 = T node
+   
+  The MDD must be deterministic, i.e., there cannot be two edges
+  with the same label leaving the same node.
 */
 predicate mdd(array[int] of var int: x,    % variables constrained by MDD
               int: N,                      % number of nodes    root is node 1
@@ -36,6 +39,11 @@ predicate mdd(array[int] of var int: x,    % variables constrained by MDD
         forall(e in EDGE)(assert(level[from[e]]+1 = levele[to[e]],
                                  "mdd level of from[\(e)] = \(level[from[e]])" ++
                                  "must be 1 less than level of to[\(e)] = \(levele[to[e]])")) /\
+        forall(l in array_union(label)) (let {
+                array[int] of int: ln = [ from[e] | e in EDGE where l in label[e] ]
+            } in assert(card({l | l in ln})=length(ln),
+                        "mdd is not deterministic, label \(l) cannot be used in multiple edges leaving the same node"
+        )) /\
 	fzn_mdd(x, N, level, E, from, label, to);
                              
 % Example consider an MDD over 3 variables
