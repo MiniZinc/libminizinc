@@ -206,6 +206,9 @@ namespace MiniZinc {
         VarDecl* r = (ctx.b == C_ROOT && e0->type().isbool() && !e0->type().isopt()) ? constants().var_true : NULL;
         return flat_exp(env,ctx,e0,r,b);
       }
+      Expression* flatten(EnvI& env, Expression* e0) {
+        return flat_exp(env,Ctx(),e0,NULL,constants().var_true).r();
+      }
     } _evalf(ctx);
     std::vector<EE> elems_ee = eval_comp<EvalF>(env,_evalf,c);
     std::vector<Expression*> elems(elems_ee.size());

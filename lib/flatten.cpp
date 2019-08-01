@@ -2415,6 +2415,10 @@ namespace MiniZinc {
             return flat_cv_exp(env,ctx,e)();
           }
           static Expression* exp(Expression* e) { return e; }
+          Expression* flatten(EnvI& env, Expression* e0) {
+            return flat_exp(env,Ctx(),e0,NULL,constants().var_true).r();
+          }
+
         } eval(ctx);
         std::vector<Expression*> a = eval_comp<EvalFlatCvExp>(env,eval,c);
 

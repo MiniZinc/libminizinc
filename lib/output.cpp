@@ -538,8 +538,11 @@ namespace MiniZinc {
           s << vd->id()->str().str() << " = ";
           if (vd->type().dim() > 0) {
             ArrayLit* al = NULL;
-            if (vd->e())
+            if (vd->flat() && vd->flat()->e()) {
+              al = eval_array_lit(e, vd->flat()->e());
+            } else if (vd->e()) {
               al = eval_array_lit(e, vd->e());
+            }
             s << "array" << vd->type().dim() << "d(";
             for (int i=0; i<vd->type().dim(); i++) {
               unsigned int enumId = (vd->type().enumId() != 0 ? e.getArrayEnum(vd->type().enumId())[i] : 0);

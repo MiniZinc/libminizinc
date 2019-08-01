@@ -75,6 +75,9 @@ namespace MiniZinc {
       return IntLit::a(eval_int(env, e));
     }
     static Expression* exp(IntLit* e) { return e; }
+    Expression* flatten(EnvI&, Expression*) {
+      throw InternalError("evaluating var assignment generator inside par expression not supported");
+    }
   };
   class EvalIntVal {
   public:
@@ -91,6 +94,9 @@ namespace MiniZinc {
           throw ResultUndefinedError(env, Location().introduce(), "function result violates function type-inst");
         }
       }
+    }
+    Expression* flatten(EnvI&, Expression*) {
+      throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
   class EvalFloatVal {
@@ -109,6 +115,9 @@ namespace MiniZinc {
         }
       }
     }
+    Expression* flatten(EnvI&, Expression*) {
+      throw InternalError("evaluating var assignment generator inside par expression not supported");
+    }
   };
   class EvalFloatLit {
   public:
@@ -118,6 +127,9 @@ namespace MiniZinc {
       return FloatLit::a(eval_float(env, e));
     }
     static Expression* exp(Expression* e) { return e; }
+    Expression* flatten(EnvI&, Expression*) {
+      throw InternalError("evaluating var assignment generator inside par expression not supported");
+    }
   };
   class EvalString {
   public:
@@ -128,6 +140,9 @@ namespace MiniZinc {
     }
     static Expression* exp(const std::string& e) { return new StringLit(Location(),e); }
     static void checkRetVal(EnvI& env, Val v, FunctionI* fi) { }
+    Expression* flatten(EnvI&, Expression*) {
+      throw InternalError("evaluating var assignment generator inside par expression not supported");
+    }
   };
   class EvalStringLit {
   public:
@@ -137,6 +152,9 @@ namespace MiniZinc {
       return new StringLit(Location(),eval_string(env, e));
     }
     static Expression* exp(Expression* e) { return e; }
+    Expression* flatten(EnvI&, Expression*) {
+      throw InternalError("evaluating var assignment generator inside par expression not supported");
+    }
   };
   class EvalBoolLit {
   public:
@@ -146,6 +164,9 @@ namespace MiniZinc {
       return constants().boollit(eval_bool(env, e));
     }
     static Expression* exp(Expression* e) { return e; }
+    Expression* flatten(EnvI&, Expression*) {
+      throw InternalError("evaluating var assignment generator inside par expression not supported");
+    }
   };
   class EvalBoolVal {
   public:
@@ -155,6 +176,9 @@ namespace MiniZinc {
     }
     static Expression* exp(bool e) { return constants().boollit(e); }
     static void checkRetVal(EnvI& env, Val v, FunctionI* fi) { }
+    Expression* flatten(EnvI&, Expression*) {
+      throw InternalError("evaluating var assignment generator inside par expression not supported");
+    }
   };
   class EvalArrayLit {
   public:
@@ -164,6 +188,9 @@ namespace MiniZinc {
       return eval_array_lit(env, e);
     }
     static Expression* exp(Expression* e) { return e; }
+    Expression* flatten(EnvI&, Expression*) {
+      throw InternalError("evaluating var assignment generator inside par expression not supported");
+    }
   };
   class EvalArrayLitCopy {
   public:
@@ -237,6 +264,9 @@ namespace MiniZinc {
         }
       }
     }
+    Expression* flatten(EnvI&, Expression*) {
+      throw InternalError("evaluating var assignment generator inside par expression not supported");
+    }
   };
   class EvalIntSet {
   public:
@@ -254,6 +284,9 @@ namespace MiniZinc {
           throw ResultUndefinedError(env, Location().introduce(), "function result violates function type-inst");
         }
       }
+    }
+    Expression* flatten(EnvI&, Expression*) {
+      throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
   class EvalFloatSet {
@@ -275,6 +308,9 @@ namespace MiniZinc {
         }
       }
     }
+    Expression* flatten(EnvI&, Expression*) {
+      throw InternalError("evaluating var assignment generator inside par expression not supported");
+    }
   };
   class EvalBoolSet {
   public:
@@ -284,6 +320,9 @@ namespace MiniZinc {
     }
     static Expression* exp(IntSetVal* e) { return new SetLit(Location(),e); }
     static void checkRetVal(EnvI& env, Val v, FunctionI* fi) { }
+    Expression* flatten(EnvI&, Expression*) {
+      throw InternalError("evaluating var assignment generator inside par expression not supported");
+    }
   };
   class EvalSetLit {
   public:
@@ -293,6 +332,9 @@ namespace MiniZinc {
       return new SetLit(e->loc(),eval_intset(env, e));
     }
     static Expression* exp(Expression* e) { return e; }
+    Expression* flatten(EnvI&, Expression*) {
+      throw InternalError("evaluating var assignment generator inside par expression not supported");
+    }
   };
   class EvalFloatSetLit {
   public:
@@ -302,6 +344,9 @@ namespace MiniZinc {
       return new SetLit(e->loc(),eval_floatset(env, e));
     }
     static Expression* exp(Expression* e) { return e; }
+    Expression* flatten(EnvI&, Expression*) {
+      throw InternalError("evaluating var assignment generator inside par expression not supported");
+    }
   };
   class EvalBoolSetLit {
   public:
@@ -311,6 +356,9 @@ namespace MiniZinc {
       return new SetLit(e->loc(),eval_boolset(env, e));
     }
     static Expression* exp(Expression* e) { return e; }
+    Expression* flatten(EnvI&, Expression*) {
+      throw InternalError("evaluating var assignment generator inside par expression not supported");
+    }
   };
   class EvalCopy {
   public:
@@ -320,6 +368,9 @@ namespace MiniZinc {
       return copy(env,e,true);
     }
     static Expression* exp(Expression* e) { return e; }
+    Expression* flatten(EnvI&, Expression*) {
+      throw InternalError("evaluating var assignment generator inside par expression not supported");
+    }
   };
   class EvalPar {
   public:
@@ -330,6 +381,9 @@ namespace MiniZinc {
     }
     static Expression* exp(Expression* e) { return e; }
     static void checkRetVal(EnvI& env, Val v, FunctionI* fi) { }
+    Expression* flatten(EnvI&, Expression*) {
+      throw InternalError("evaluating var assignment generator inside par expression not supported");
+    }
   };
 
   void checkDom(EnvI& env, Id* arg, IntSetVal* dom, Expression* e) {
