@@ -186,6 +186,14 @@ void MIP_osicbc_wrapper::addRow
 }
 
 
+bool MIP_osicbc_wrapper::addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals ) {
+  assert( vars.size()==vals.size() );
+  static_assert( sizeof(VarId)==sizeof(int), "VarId should be (u)int currently" );
+  for (int i=0; i<vars.size(); ++i)
+    warmstart[vars[i]] = vals[i];
+  return true;
+}
+
 /// SolutionCallback ------------------------------------------------------------------------
 /// OSICBC ensures thread-safety?? TODO
 /// Event handling copied from examples/interrupt.cpp, Cbc 2.9.8 rev 2272
@@ -716,6 +724,10 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
       cerr << " Model creation..." << endl;
     
 // #define __USE_CbcSolver__  -- not linked rev2274
+    /// FOR WARMSTART
+    for (const auto& vv: warmstart) {
+      osi.setColName(vv.first, colNames[vv.first]);
+    }
 #ifdef __USE_CbcSolver__
     CbcSolver control(osi);
     // initialize
@@ -733,6 +745,16 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
     if ( options->intTol>=0.0 )
       model.setIntegerTolerance( options->intTol );
 //     model.setCutoffIncrement( objDiff );
+
+    /// WARMSTART
+    {
+      std::vector< std::pair< std::string, double > > mipstart;
+      for (const auto& vv: warmstart) {
+        mipstart.push_back( std::make_pair(colNames[vv.first], vv.second) );
+      }
+      warmstart.clear();
+      model.setMIPStart(mipstart);
+    }
     
     CoinMessageHandler msgStderr(stderr);
 

@@ -43,6 +43,8 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
     std::vector<double> //element,
       rowlb, rowub;
 
+    std::unordered_map<VarId, double> warmstart;           // this accumulates warmstart infos
+
   public:
 
     class Options : public MiniZinc::SolverInstanceBase::Options {
@@ -108,6 +110,9 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
                         std::string rowName = "");
     /// adding an implication
 //     virtual void addImpl() = 0;
+
+    virtual bool addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals );
+
     virtual void setObjSense(int s);   // +/-1 for max/min
     
     virtual double getInfBound() { return osi.getInfinity(); }

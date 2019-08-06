@@ -206,7 +206,7 @@ class MIP_wrapper {
     
     /// adding a variable, at once to the solver, this is for the 2nd phase
     virtual VarId addVar(double obj, double lb, double ub, 
-                             VarType vt, std::string name=0) {
+                             VarType vt, std::string name="") {
 //       cerr << "  AddVar: " << lb << ":   ";
       VarId res = addVarLocal(obj, lb, ub, vt, name);
       if (fPhase1Over)
