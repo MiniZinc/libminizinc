@@ -197,7 +197,7 @@ Warm Starts
 ~~~~~~~~~~~
 
 For general information of warm start annotations, see :ref:`sec_warm_starts`.
-Warm starts are currently implemented for Gurobi, IBM ILOG CPLEX, and XPRESS.
+Warm starts are currently implemented for Gurobi, IBM ILOG CPLEX, XPRESS, and COIN-OR CBC.
 
 .. _ch-solvers-nonlinear:
 
