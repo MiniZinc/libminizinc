@@ -33,6 +33,7 @@ using namespace std;
 #include <coin/ClpConfig.h>
 #include <coin/CbcEventHandler.hpp>
 #include <coin/CglPreProcess.hpp>
+#include <coin/CglCutGenerator.hpp>
 #include <coin/CoinSignal.hpp>
 
 #define WANT_SOLUTION
@@ -811,6 +812,46 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //      ui.pPP = 0;
      MyEventHandler3 eventHandler(&model, ui);
      model.passInEventHandler(&eventHandler);
+   }
+
+   /// Cuts needed
+   if ( cbui.cutcbfn ) {
+     /// This class is passed to CBC to organize cut callbacks
+     /// We need original solutions here (combinatorial cuts)
+     class CutCallback : public CglCutGenerator {
+       MIP_wrapper::CBUserInfo& cbui;
+     public:
+       CutCallback(MIP_wrapper::CBUserInfo& ui) : cbui(ui) { }
+       CglCutGenerator* clone() const override { return new CutCallback(cbui); }
+       /// Make sure this overrides
+       // TODO bool needOriginalModel() const override { return true; }
+       void generateCuts(const OsiSolverInterface &si, OsiCuts &cs,
+                         const CglTreeInfo info = CglTreeInfo()) override {
+         cbui.pOutput->nCols = si.getNumCols();
+         cbui.pOutput->x = si.getColSolution(); // change the pointer?
+         MIP_wrapper::CutInput cuts;
+         cbui.cutcbfn( *cbui.pOutput, cuts, cbui.ppp, info.options&128 ); // options&128: integer candidate
+         for (const auto& cut: cuts) {                  // Convert cut sense
+           OsiRowCut rc;
+           switch (cut.sense) {
+           case LQ:
+             rc.setUb(cut.rhs);
+             break;
+           case GQ:
+             rc.setLb(cut.rhs);
+             break;
+           default:
+             assert(EQ==cut.sense);
+             rc.setLb(cut.rhs);
+             rc.setUb(cut.rhs);
+           }
+           rc.setRow(cut.rmatind.size(), cut.rmatind.data(), cut.rmatval.data());
+           cs.insertIfNotDuplicate(rc);
+         }
+       }
+     };
+     CutCallback ccb(cbui);
+     model.addCutGenerator(&ccb, 1, "MZN_cuts", true, true);         // also at solution
    }
 
    if ( 1<options->nThreads ) {
