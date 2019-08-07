@@ -63,7 +63,7 @@ vector<string> MIP_scip_wrapper::getTags() {
 }
 
 vector<string> MIP_scip_wrapper::getStdFlags() {
-  return {"-a", "-p"};
+  return {"-a", "-p", "-s"};
 }
 
 void MIP_scip_wrapper::Options::printHelp(ostream& os) {
