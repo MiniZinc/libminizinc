@@ -628,7 +628,7 @@ namespace MiniZinc {
 
   inline Expression*
   VarDecl::e(void) const {
-    return _e->isUnboxedVal() ? _e : _e->untag();
+    return (_e==nullptr || _e->isUnboxedVal()) ? _e : _e->untag();
   }
 
   inline void
