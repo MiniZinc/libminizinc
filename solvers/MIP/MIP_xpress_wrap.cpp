@@ -66,7 +66,7 @@ vector<string> MIP_xpress_wrapper::getTags() {
 }
 
 vector<string> MIP_xpress_wrapper::getStdFlags() {
-  return {"-a", "-n"};
+  return {"-a", "-n", "-s"};
 }
 
 void MIP_xpress_wrapper::Options::printHelp(ostream &os) {

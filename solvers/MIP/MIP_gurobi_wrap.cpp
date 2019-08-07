@@ -85,7 +85,7 @@ vector<string> MIP_gurobi_wrapper::getTags() {
 }
 
 vector<string> MIP_gurobi_wrapper::getStdFlags() {
-  return {"-a", "-p", "-n"};
+  return {"-a", "-n", "-p", "-s"};
 }
 
 const vector<string>& gurobiDLLs(void) {
