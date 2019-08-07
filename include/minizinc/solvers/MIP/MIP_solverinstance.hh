@@ -65,6 +65,8 @@ namespace MiniZinc {
     virtual int getMask() { return MIP_wrapper::MaskConsType_Lazy | MIP_wrapper::MaskConsType_Usercut; }
     std::vector<MIP_wrapper::VarId> varXij;
     int nN=0;                        // N nodes
+    /// returns error message if fails
+    std::string validate() const;
     void generate(const MIP_wrapper::Output&, MIP_wrapper::CutInput&);
     void print( std::ostream& );
   };

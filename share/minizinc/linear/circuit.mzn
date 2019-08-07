@@ -10,10 +10,9 @@ predicate circuit(array[int] of var int: x) =
           int: l = min(S),
           int: u = max(S),
 	  int: n = card(S),
-	  constraint forall( i in S )( x[i] in S ),             %% Self-mapping
+	  constraint forall( i in S )( x[i] in S diff {i} ),             %% Self-mapping and exclude i->i before alldifferent
         } in
     alldifferent(x) /\	
-    forall(i in S)(x[i] != i) /\ 
 %    alldifferent(order) /\
     if nMZN__fSECcuts>0 then
       let {

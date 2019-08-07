@@ -137,7 +137,7 @@ class MIP_wrapper {
       MIP_wrapper* wrapper = 0;
       MIP_wrapper::Output* pOutput=0;
       MIP_wrapper::Output* pCutOutput=0;
-      void *ppp=0;  // external info. Intended to keep MIP_solverinstance
+      void *psi=0;  // external info. Intended to keep MIP_solverinstance
       SolCallbackFn solcbfn=0;
       CutCallbackFn cutcbfn=0;
       /// Union of all flags used for the registered callback cuts
@@ -153,7 +153,7 @@ class MIP_wrapper {
     CBUserInfo cbui;
 
   public:
-//     MIP_wrapper() { /*resetModel();*/ }
+    MIP_wrapper() { cbui.wrapper = this; }
     virtual ~MIP_wrapper() { /* cleanup(); */ }
 
     /// derived should overload and call the ancestor
@@ -299,14 +299,14 @@ class MIP_wrapper {
     virtual void provideSolutionCallback(SolCallbackFn cbfn, void* info) {
       assert(cbfn);
       cbui.pOutput = &output;
-      cbui.ppp = info;
+      cbui.psi = info;
       cbui.solcbfn = cbfn;
     }
     /// solution callback handler, the wrapper might not have these callbacks implemented
     virtual void provideCutCallback(CutCallbackFn cbfn, void* info) {
       assert(cbfn);
       cbui.pCutOutput = 0;  // &outpCuts;   thread-safety: caller has to provide this
-      cbui.ppp = info;
+      cbui.psi = info;
       cbui.cutcbfn = cbfn;
     }
 

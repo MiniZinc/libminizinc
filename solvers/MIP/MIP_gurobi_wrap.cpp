@@ -314,8 +314,6 @@ void MIP_gurobi_wrapper::openGUROBI()
 {
   checkDLL();
   
-  cbui.wrapper = this;
-  
    /* Initialize the GUROBI environment */
   {
     //   cout << "% " << flush;               // Gurobi 7.5.2 prints "Academic License..."
@@ -540,7 +538,7 @@ solcallback(GRBmodel *model,
     if ( info->cutcbfn && info->cutMask&MIP_wrapper::MaskConsType_Lazy ) {
       MIP_wrapper::CutInput cutInput;
       cerr << "  GRB: GRB_CB_MIPSOL (" << objVal << ") -> cut callback " << endl;
-      info->cutcbfn( *info->pOutput, cutInput, info->ppp, true );
+      info->cutcbfn( *info->pOutput, cutInput, info->psi, true );
       for ( auto& cd : cutInput ) {
 //         assert( cd.mask & MIP_wrapper::MaskConsType_Lazy );
         if ( cd.mask & MIP_wrapper::MaskConsType_Lazy ) {  // take only lazy constr generators
@@ -573,7 +571,7 @@ solcallback(GRBmodel *model,
 
         /// Call the user function:
         if (info->solcbfn)
-            (*info->solcbfn)(*info->pOutput, info->ppp);
+            (*info->solcbfn)(*info->pOutput, info->psi);
 
         if (0==info->nTimeoutFeas)
           gw->dll_GRBterminate(model);        // Straight after feas
@@ -590,7 +588,7 @@ solcallback(GRBmodel *model,
       gw->dll_GRBcbget(cbdata, where, GRB_CB_MIPNODE_REL, (void*)outpRlx.x);
 //       cerr << "  GRB: GRB_CB_MIPNODE -> cut callback " << endl;
       MIP_wrapper::CutInput cutInput;
-      info->cutcbfn( outpRlx, cutInput, info->ppp, false );
+      info->cutcbfn( outpRlx, cutInput, info->psi, false );
 //       static int nCuts=0;
 //       nCuts += cutInput.size();
 //       if ( cutInput.size() )
@@ -813,7 +811,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
       error = dll_GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, cur_numcols, (double*)output.x);
       wrap_assert(!error, "Failed to get variable values.");
       if ( !options->flag_all_solutions && solcbfn) {
-        solcbfn(output, cbui.ppp);
+        solcbfn(output, cbui.psi);
       }
    }
    output.bestBound = 1e308;

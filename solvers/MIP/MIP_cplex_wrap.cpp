@@ -589,7 +589,7 @@ solcallback (CPXCENVptr env, void *cbdata, int wherefrom, void *cbhandle)
 
       /// Call the user function:
       if (info->solcbfn)
-          (*info->solcbfn)(*info->pOutput, info->ppp);
+          (*info->solcbfn)(*info->pOutput, info->psi);
      info->printed = true;
    }
    
@@ -749,7 +749,7 @@ myusercutcallback (CPXCENVptr env,
           goto TERMINATE;
       }
       MIP_wrapper::CutInput cutInput;
-      info->cutcbfn( outpRlx, cutInput, info->ppp, fMIPSol );
+      info->cutcbfn( outpRlx, cutInput, info->psi, fMIPSol );
       static int nCuts=0;
       nCuts += cutInput.size();
       // if ( cutInput.size() )
@@ -1032,7 +1032,7 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
       status = dll_CPXgetx (env, lp, &x[0], 0, cur_numcols-1);
       wrap_assert(!status, "Failed to get variable values.");
       if (cbui.solcbfn /*&& (!options->flag_all_solutions || !cbui.printed)*/) {
-        cbui.solcbfn(output, cbui.ppp);
+        cbui.solcbfn(output, cbui.psi);
       }
    }
    output.bestBound = 1e308;

@@ -126,6 +126,18 @@ void XBZCutGen::print( ostream& os )
   os << endl;
 }
 
+std::string SECCutGen::validate() const {
+  std::ostringstream oss;
+  /// Check that diagonal flows are 0
+  for (int i=0; i<nN; ++i)
+    if (pMIP->colUB[varXij[i*nN+i]] > 0.0)
+      oss << "SECutGen with " << nN
+          << " cities: diagonal flow " << (i+1)
+          << " has UB=" << pMIP->colUB[varXij[i*nN+i]]
+          << "\n";
+  return oss.str();
+}
+
 void SECCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInput& cutsIn) {
   assert( pMIP );
   /// Extract graph, converting to undirected
@@ -135,10 +147,10 @@ void SECCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInpu
     for ( int j=0; j<nN; ++j ) {
       const double xij = slvOut.x[ varXij[ nN*i + j ] ];
       if ( i==j )
-        MZN_ASSERT_HARD_MSG( 1e-6 > fabs(xij), "circuit: X[" << (i+1) << ", " << (j+1) << "==" << xij );
-      MZN_ASSERT_HARD_MSG( -1e-6 < xij && 1.0+1e-6 > xij,
-                           "circuit: X[" << (i+1) << ", " << (j+1) << "==" << xij );
-      if ( 1e-6 <= xij ) {
+        MZN_ASSERT_HARD_MSG( 1e-4 > fabs(xij), "circuit: X[" << (i+1) << ", " << (j+1) << "]==" << xij );
+      MZN_ASSERT_HARD_MSG( -1e-4 < xij && 1.0+1e-4 > xij,           // adjusted from 1e-6 to 1e-4 for CBC. 7.8.19
+                           "circuit: X[" << (i+1) << ", " << (j+1) << "]==" << xij );
+      if ( 1e-4 <= xij ) {
         mapFlow[ make_pair( min(i,j), max(i,j) ) ] += xij;
       }
     }

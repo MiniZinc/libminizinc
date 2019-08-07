@@ -484,7 +484,7 @@ MyEventHandler3::event(CbcEvent whichEvent)
         
         /// Call the user function:
         if (ui.pCbui->solcbfn) {
-          (*(ui.pCbui->solcbfn))(*(ui.pCbui->pOutput), ui.pCbui->ppp);
+          (*(ui.pCbui->solcbfn))(*(ui.pCbui->pOutput), ui.pCbui->psi);
           ui.pCbui->printed = true;
         }
         return noAction; // carry on
@@ -828,9 +828,12 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
        void generateCuts(const OsiSolverInterface &si, OsiCuts &cs,
                          const CglTreeInfo info = CglTreeInfo()) override {
          cbui.pOutput->nCols = si.getNumCols();
+         MZN_ASSERT_HARD_MSG(cbui.pOutput->nCols == ((MIP_wrapper*)(cbui.wrapper))->colNames.size(),
+                    "CBC cut callback: current model is different? Ncols=" << cbui.pOutput->nCols
+                             << ", originally " << ((MIP_wrapper*)(cbui.wrapper))->colNames.size());
          cbui.pOutput->x = si.getColSolution(); // change the pointer?
          MIP_wrapper::CutInput cuts;
-         cbui.cutcbfn( *cbui.pOutput, cuts, cbui.ppp, info.options&128 ); // options&128: integer candidate
+         cbui.cutcbfn( *cbui.pOutput, cuts, cbui.psi, info.options&128 ); // options&128: integer candidate
          for (const auto& cut: cuts) {                  // Convert cut sense
            OsiRowCut rc;
            switch (cut.sense) {
@@ -935,7 +938,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
         output.x = x.data();
   //       output.x = osi.getColSolution();
       if (cbui.solcbfn && (!options->flag_all_solutions || !cbui.printed)) {
-        cbui.solcbfn(output, cbui.ppp);
+        cbui.solcbfn(output, cbui.psi);
       }
     }
     output.bestBound = model.getBestPossibleObjValue();
