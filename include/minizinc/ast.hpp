@@ -472,8 +472,8 @@ namespace MiniZinc {
                                Generators& g,
                                bool set)
   : Expression(loc,E_COMP,Type()) {
-    init(e,g);
     _flag_1 = set;
+    init(e,g);
   }
   inline void
   ITE::init(const std::vector<Expression*>& e_if_then, Expression* e_else) {
