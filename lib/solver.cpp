@@ -158,7 +158,6 @@ MznSolver::~MznSolver()
 //     CleanupSolverInterface(si);
   // TODO cleanup the used solver interfaces
   si=0;
-  delete si_opt;
   si_opt=nullptr;
   GC::trigger();
 }
