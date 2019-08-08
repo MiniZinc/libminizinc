@@ -5,7 +5,7 @@ include "alldifferent.mzn";
   that \p j is the successor of \p i.
 */
 % Linear version.
-predicate circuit(array[int] of var int: x) = 
+predicate fzn_circuit(array[int] of var int: x) = 
     let { set of int: S = index_set(x),
           int: l = min(S),
           int: u = max(S),
@@ -37,9 +37,6 @@ predicate circuit(array[int] of var int: x) =
     /\ if n>2 then forall (i,j in S where i<j) ( x[i]!=j \/ x[j]!=i )      %% Only this improves overall with DL'91
        else true endif
     ;
-
-predicate circuit_reif(array[int] of var int: x, var bool: b) = 
-    abort("Reified circuit/1 is not supported.");
 
 %-----------------------------------------------------------------------------%
 predicate circuit__SECcuts(array[int,int] of var int: x);     %% passed on

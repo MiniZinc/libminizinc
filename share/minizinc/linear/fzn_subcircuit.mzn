@@ -6,7 +6,7 @@ include "alldifferent.mzn";
   is not in the circuit.
 */
 %% Linear version
-predicate subcircuit(array[int] of var int: x) = 
+predicate fzn_subcircuit(array[int] of var int: x) = 
     let { set of int: S = index_set(x),
           int: l = min(S),
           int: u = max(S),
@@ -65,8 +65,4 @@ predicate subcircuit(array[int] of var int: x) =
        
     );
 
-predicate subcircuit_reif(array[int] of var int: x, var bool: b) = 
-    abort("Reified subcircuit/1 is not supported.");
-
-%-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%

@@ -1,4 +1,4 @@
-predicate if_then_else(array[int] of var bool: c, array[int] of float: x, var float: y) =
+predicate fzn_if_then_else_float(array[int] of var bool: c, array[int] of float: x, var float: y) =
   let { 
     array[index_set(c)] of var 0..1: d;
   } in

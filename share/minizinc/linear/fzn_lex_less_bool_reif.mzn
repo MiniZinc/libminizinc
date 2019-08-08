@@ -1,8 +1,8 @@
-include "../std/lex_less_bool.mzn";
+include "../std/fzn_lex_less_bool_reif.mzn";
 
-predicate lex_less_bool_imp(array[int] of var bool: x,
-                            array[int] of var bool: y,
-                            var bool: c) =
+predicate fzn_lex_less_bool_imp(array[int] of var bool: x,
+                                array[int] of var bool: y,
+                                var bool: c) =
     let { int: lx = min(index_set(x)),
           int: ux = max(index_set(x)),
           int: ly = min(index_set(y)),
