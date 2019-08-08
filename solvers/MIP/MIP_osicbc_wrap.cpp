@@ -823,14 +823,16 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
      public:
        CutCallback(MIP_wrapper::CBUserInfo& ui) : cbui(ui) { }
        CglCutGenerator* clone() const override { return new CutCallback(cbui); }
-       /// Make sure this overrides
-       // TODO bool needOriginalModel() const override { return true; }
+       /// Make sure this overrides but we might need to compile this with old CBC as well
+       bool needsOriginalModel() const /*override*/ { return true; }
        void generateCuts(const OsiSolverInterface &si, OsiCuts &cs,
                          const CglTreeInfo info = CglTreeInfo()) override {
          cbui.pOutput->nCols = si.getNumCols();
          MZN_ASSERT_HARD_MSG(cbui.pOutput->nCols == ((MIP_wrapper*)(cbui.wrapper))->colNames.size(),
                     "CBC cut callback: current model is different? Ncols=" << cbui.pOutput->nCols
-                             << ", originally " << ((MIP_wrapper*)(cbui.wrapper))->colNames.size());
+                             << ", originally " << ((MIP_wrapper*)(cbui.wrapper))->colNames.size()
+                             << ". If you have an old version of CBC, to use combinatorial cuts"
+                                " run with --cbcArgs '-preprocess off'" );
          cbui.pOutput->x = si.getColSolution(); // change the pointer?
          MIP_wrapper::CutInput cuts;
          cbui.cutcbfn( *cbui.pOutput, cuts, cbui.psi, info.options&128 ); // options&128: integer candidate
