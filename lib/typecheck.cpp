@@ -2192,7 +2192,7 @@ namespace MiniZinc {
     for (unsigned int i=0; i<ts.decls.size(); i++) {
       if (ts.decls[i]->toplevel() &&
           ts.decls[i]->type().ispar() && !ts.decls[i]->type().isann() && ts.decls[i]->e()==NULL) {
-        if (ts.decls[i]->type().isopt()) {
+        if (ts.decls[i]->type().isopt() && ts.decls[i]->type().dim()==0) {
           ts.decls[i]->e(constants().absent);
         } else if (!ignoreUndefinedParameters) {
           typeErrors.push_back(TypeError(env.envi(), ts.decls[i]->loc(),
