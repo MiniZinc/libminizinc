@@ -5,5 +5,5 @@ predicate geas_disjunctive(array[int] of var int: s,
 
 %predicate disjunctive(array[int] of var int: s, array[int] of var int: d) =
 %  geas_disjunctive_var(s, d);
-predicate disjunctive(array[int] of var int: s, array[int] of int: d) =
+predicate fzn_disjunctive(array[int] of var int: s, array[int] of int: d) =
   geas_disjunctive(s, d);

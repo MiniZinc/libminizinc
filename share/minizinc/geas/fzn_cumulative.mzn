@@ -8,7 +8,7 @@ predicate geas_cumulative(array[int] of var int: s,
   int: b);
 
 
-predicate cumulative(array[int] of var int: s,
+predicate fzn_cumulative(array[int] of var int: s,
   array[int] of var int: d,
   array[int] of var int: r,
   var int: b) =
@@ -16,7 +16,7 @@ predicate cumulative(array[int] of var int: s,
 
 %% TODO: once disjunctive propagator is fixed, add
 %% special case for b = 1.
-predicate cumulative(array[int] of var int: s,
+predicate fzn_cumulative(array[int] of var int: s,
   array[int] of int: d,
   array[int] of int: r,
   int: b) =
