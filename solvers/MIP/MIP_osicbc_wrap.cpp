@@ -856,7 +856,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
        }
      };
      CutCallback ccb(cbui);
-     model.addCutGenerator(&ccb, 1, "MZN_cuts", true, true);         // also at solution
+     model.addCutGenerator(&ccb, 10, "MZN_cuts", true, true);         // also at solution
    }
 
    if ( 1<options->nThreads ) {
