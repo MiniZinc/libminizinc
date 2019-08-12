@@ -1,4 +1,5 @@
 include "fzn_count_eq.mzn";
+include "fzn_count_eq_reif.mzn";
 
 /** @group globals.counting
   Constrains \a c to be the number of occurrences of \a y in \a x. 
@@ -16,6 +17,6 @@ function int: count_eq(array[int] of int: x, int: y) =
               sum(i in index_set(x))(x[i] = y);
 
 predicate count_eq_reif(array[int] of var int: x, var int: y, var int: c, var bool: b) =
-    b <-> count_eq(x,y)=c;
+  fzn_count_eq_reif(x, y, c, b);
 
 %-----------------------------------------------------------------------------%
