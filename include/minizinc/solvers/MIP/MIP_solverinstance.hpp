@@ -871,7 +871,8 @@ namespace MiniZinc {
       gi.exprToArray(call->arg(2), demands);
       double b = gi.exprToConst(call->arg(3));
 
-      gi.getMIPWrapper()->addCumulative(startTimes.size(), startTimes.data(), durations.data(), demands.data(), b);
+      gi.getMIPWrapper()->addCumulative(startTimes.size(), startTimes.data(), durations.data(), demands.data(), b,
+                                        makeConstrName("p_cumulative_", (gi.getMIPWrapper()->nAddedRows++), call));
     }
 
     /// The XBZ cut generator
