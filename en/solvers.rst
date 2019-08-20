@@ -152,8 +152,10 @@ For example, tolerances have been tightened to enable more precise solving with 
                      read backend-specific parameters from file (some backends)
   --writeParam <file>
                      write backend-specific parameters to file (some backends)
+  --keep-paths       this standard flattening option annotates every item in FlatZinc by its "flattening history".
+                     For MIP solvers, it additionally assigns each constraint's name as the first 255 symbols of that.
   --cbcArgs '-guess -cuts off -preprocess off -passc 1'
-                  parameters for the COIN-OR CBC backend
+                     parameters for the COIN-OR CBC backend
 
 All MIP solvers directly support multi-threading (option ``-p``). For COIN-BC to use it, it needs to be
 configured with ``--enable-cbc-parallel``.
