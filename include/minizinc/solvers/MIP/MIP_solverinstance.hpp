@@ -588,6 +588,24 @@ namespace MiniZinc {
     bool CheckAnnLazyConstraint(const Call* call);
     int GetMaskConsType(const Call* call);
 
+    /// Create constraint name
+    /// Input: a prefix, a counter, and the original call.
+    /// If the call has a path annotation, that is used,
+    /// otherwise pfx << cnt.
+    inline
+    std::string makeConstrName(const char* pfx, int cnt, const Expression* cOrig=nullptr) {
+      Call* mznp;
+      if (nullptr!=cOrig && (mznp=cOrig->ann().getCall(constants().ann.mzn_path))) {
+        assert(1==mznp->n_args());
+        auto strp = mznp->arg(0)->dyn_cast<StringLit>();
+        assert(strp);
+        return strp->v().str().substr(0, 255);    // Gurobi 8.1 has <=255 characters
+      }
+      std::ostringstream ss;
+      ss << pfx << cnt;
+      return ss.str();
+    }
+
     /// Gurobi 8.1.0 complains about duplicates, CPLEX 12.8.0 just ignores repeats
     /// An example for duplicated indices was on 72a9b64f with two floats equated
     template <class Idx>
@@ -659,12 +677,11 @@ namespace MiniZinc {
             << std::endl;
         }
       } else {
-        // See if the solver adds indexation itself: no.
-        std::stringstream ss;
-        ss << "p_lin_" << (gi.getMIPWrapper()->nAddedRows++);
         removeDuplicates(vars, coefs);
+        // See if the solver adds indexation itself: no.
         gi.getMIPWrapper()->addRow(static_cast<int>(coefs.size()), &vars[0], &coefs[0], lt, rhs,
-                                   GetMaskConsType(call), ss.str());
+                                   GetMaskConsType(call),
+            makeConstrName("p_lin_", (gi.getMIPWrapper()->nAddedRows++), call));
       }
     }
     
@@ -715,11 +732,10 @@ namespace MiniZinc {
             << std::endl;
         }
       } else {
-        std::stringstream ss;
-        ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
         removeDuplicates(vars, coefs);
         gi.getMIPWrapper()->addRow(static_cast<int>(vars.size()), &vars[0], &coefs[0], nCmp, rhs,
-                                   GetMaskConsType(call), ss.str());
+                                   GetMaskConsType(call),
+            makeConstrName("p_eq_", (gi.getMIPWrapper()->nAddedRows++), call));
       }
     }
     template<class MIPWrapper>
@@ -767,11 +783,10 @@ namespace MiniZinc {
         if ( val2<1e-6 )           // so  var1<=0
           gi.getMIPWrapper()->setVarUB( var1, 0.0 );
       } else {
-        std::ostringstream ss;
-        ss << "p_ind_" << (gi.getMIPWrapper()->nAddedRows++);
         double coef = 1.0;
         gi.getMIPWrapper()->addIndicatorConstraint( var2, 0, 1, &var1, &coef,
-                                                   MIP_wrapper::LinConType::LQ, 0.0, ss.str() );
+                                                   MIP_wrapper::LinConType::LQ, 0.0,
+                 makeConstrName("p_ind_", (gi.getMIPWrapper()->nAddedRows++), call));
         ++gi.getMIPWrapper()->nIndicatorConstr;
       }
     }
@@ -825,17 +840,17 @@ namespace MiniZinc {
           gi.getMIPWrapper()->setVarBounds( varB, 0.0, 0.0 );
       } else if ( fBconst ) {
         if ( val2>0.999999 ) {          // so  var1<=0
-          std::ostringstream ss;
-          ss << "p_eq_" << (gi.getMIPWrapper()->nAddedRows++);
           removeDuplicates(vars, coefs);
           gi.getMIPWrapper()->addRow(static_cast<int>(vars.size()), &vars[0], &coefs[0], MIP_wrapper::LinConType::EQ, rhs,
-                                     MIP_wrapper::MaskConsType_Normal, ss.str());
+                                     MIP_wrapper::MaskConsType_Normal,
+              makeConstrName("p_eq_", (gi.getMIPWrapper()->nAddedRows++), call));
         }
       } else {
         std::ostringstream ss;
         ss << "p_ind_" << (gi.getMIPWrapper()->nAddedRows++);
         gi.getMIPWrapper()->addIndicatorConstraint( varB, 1, static_cast<int>(coefs.size()), vars.data(), coefs.data(),
-                                                   MIP_wrapper::LinConType::EQ, rhs, ss.str() );
+                                                   MIP_wrapper::LinConType::EQ, rhs,
+                                                    makeConstrName("p_ind_", (gi.getMIPWrapper()->nAddedRows++), call));
         ++gi.getMIPWrapper()->nIndicatorConstr;
       }
     }
@@ -911,11 +926,10 @@ namespace MiniZinc {
       gi.exprToArray(call->arg(4), bndF);
       gi.exprToVarArray(call->arg(2), vars);
       gi.exprToVarArray(call->arg(5), varsF);
-      std::ostringstream ss;
-      ss << "p_bounds_disj_" << (gi.getMIPWrapper()->nAddedRows++);
       double coef = 1.0;
       gi.getMIPWrapper()->addBoundsDisj( fUB.size(), fUB.data(), bnd.data(), vars.data(),
-                                         fUBF.size(), fUBF.data(), bndF.data(), varsF.data(), ss.str() );
+                                         fUBF.size(), fUBF.data(), bndF.data(), varsF.data(),
+                                         makeConstrName("p_bounds_disj_", (gi.getMIPWrapper()->nAddedRows++), call));
     }
 
   }

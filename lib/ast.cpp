@@ -1859,7 +1859,7 @@ namespace MiniZinc {
   }
   
   Call*
-  Annotation::getCall(const ASTString& id) {
+  Annotation::getCall(const ASTString& id) const {
     if (_s==NULL)
       return NULL;
     for (ExpressionSetIter it=_s->begin(); it != _s->end(); ++it) {

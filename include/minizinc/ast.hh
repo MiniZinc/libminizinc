@@ -242,7 +242,7 @@ namespace MiniZinc {
     void removeCall(const ASTString& id);
     void clear(void);
     void merge(const Annotation& ann);
-    Call* getCall(const ASTString& id);
+    Call* getCall(const ASTString& id) const;
     
     static Annotation empty;
   };
