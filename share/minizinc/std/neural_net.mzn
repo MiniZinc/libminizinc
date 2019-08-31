@@ -71,6 +71,6 @@ predicate neural_net(array[int] of var float: inputs,
                      array[int] of int: edge_parent,
                      array[int] of int: first_edge) =
     neural_net(inputs,input_ids,outputs,output_ids,bias,
-               edge_weight,edge_parent,first_edge,nt_relu);
+               edge_weight,edge_parent,first_edge,NT_RELU);
 
 %-----------------------------------------------------------------------------%
