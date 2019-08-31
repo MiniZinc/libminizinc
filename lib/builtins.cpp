@@ -3034,7 +3034,7 @@ namespace MiniZinc {
       std::vector<Type> t(2);
       t[0] = Type::varint(1);
       t[1] = Type::parstring();
-      rb(env, m, ASTString("regular"),t,b_regular_from_string,true);
+      rb(env, m, ASTString("fzn_regular"),t,b_regular_from_string,true);
     }
   }
   
