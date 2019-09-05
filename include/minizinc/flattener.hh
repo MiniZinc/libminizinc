@@ -118,6 +118,7 @@ namespace MiniZinc {
     bool flag_model_types_only = false;
     FlatteningOptions::OutputMode flag_output_mode = FlatteningOptions::OUTPUT_ITEM;
     bool flag_output_objective = false;
+    bool flag_output_output_item = false;
     std::string flag_solution_check_model;
     bool flag_compile_solution_check_model = false;
     FlatteningOptions fopts;

@@ -100,6 +100,7 @@ void Flattener::printHelp(ostream& os)
   << "  --output-paths-to-stdout\n    Output symbol table to standard output" << std::endl
   << "  --output-mode <item|dzn|json>\n    Create output according to output item (default), or output compatible\n    with dzn or json format" << std::endl
   << "  --output-objective\n    Print value of objective function in dzn or json output" << std::endl
+  << "  --output-output-item\n    Print the output item as a string in the dzn or json output" << std::endl
   << "  -Werror\n    Turn warnings into errors" << std::endl
   ;
 }
@@ -161,6 +162,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
     }
   } else if ( cop.getOption( "--output-objective" ) ) {
     flag_output_objective = true;
+  } else if ( cop.getOption( "--output-output-item" ) ) {
+    flag_output_output_item = true;
   } else if ( cop.getOption( "- --input-from-stdin" ) ) {
       flag_stdinInput = true;
   } else if ( cop.getOption( "-d --data", &buffer ) ) {
@@ -597,6 +600,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           fopts.verbose = flag_verbose;
           fopts.outputMode = flag_output_mode;
           fopts.outputObjective = flag_output_objective;
+          fopts.outputOutputItem = flag_output_output_item;
 #ifdef HAS_GECODE
           GecodeOptions gopts;
           gopts.only_range_domains = flag_only_range_domains;

@@ -1423,7 +1423,7 @@ namespace MiniZinc {
   }
   
   Expression* b_outputJSON(EnvI& env, Call* call) {
-    return createJSONOutput(env, false);
+    return createJSONOutput(env, false, false);
   }
   Expression* b_outputJSONParameters(EnvI& env, Call* call) {
     std::vector<Expression*> outputVars;
