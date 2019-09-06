@@ -437,7 +437,7 @@ SCIP_DECL_EVENTEXEC(eventExecBestsol)
 
       /// Call the user function:
       if (cbuiPtr->solcbfn)
-          (*cbuiPtr->solcbfn)(*cbuiPtr->pOutput, cbuiPtr->ppp);
+          (*cbuiPtr->solcbfn)(*cbuiPtr->pOutput, cbuiPtr->psi);
    }
    
    return SCIP_OKAY;
@@ -611,7 +611,7 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
       output.x = &x[0];
       SCIP_CALL( SCIPgetSolVals(scip, SCIPgetBestSol(scip), cur_numcols, &scipVars[0], (double*)output.x) );
       if (cbui.solcbfn && (!options->flag_all_solutions || !cbui.printed)) {
-        cbui.solcbfn(output, cbui.ppp);
+        cbui.solcbfn(output, cbui.psi);
       }
    }
    output.nNodes = SCIPgetNNodes (scip);
