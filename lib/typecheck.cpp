@@ -2354,6 +2354,7 @@ namespace MiniZinc {
       Env& env;
       bool had_input;
       bool had_output;
+      bool had_add_to_output = false;
       std::ostringstream oss_input;
       std::ostringstream oss_output;
       std::string method;
@@ -2366,14 +2367,30 @@ namespace MiniZinc {
         return true;
       }
       void vVarDeclI(VarDeclI* vdi) {
-        if (vdi->e()->type().ispar() && !vdi->e()->type().isann() && (vdi->e()->e()==NULL || vdi->e()->e()==constants().absent)) {
+        VarDecl* vd = vdi->e();
+        if (vd->type().ispar() && !vd->type().isann() && (vd->e()==NULL || vd->e()==constants().absent)) {
           if (had_input) oss_input << ",\n";
-          output_var_desc_json(env, vdi->e(), oss_input);
+          output_var_desc_json(env, vd, oss_input);
           had_input = true;
-        } else if (vdi->e()->type().isvar() && (vdi->e()->e()==NULL || vdi->e()->ann().contains(constants().ann.add_to_output))) {
-          if (had_output) oss_output << ",\n";
-          output_var_desc_json(env, vdi->e(), oss_output);
-          had_output = true;
+        } else {
+          bool process_var = false;
+          if (vd->ann().contains(constants().ann.add_to_output)) {
+            if (!had_add_to_output) {
+              oss_output.str("");
+              had_output = false;
+            }
+            had_add_to_output = true;
+            process_var = true;
+          } else if (!had_add_to_output) {
+            process_var = vd->type().isvar() && (vd->e()==NULL || vd->ann().contains(constants().ann.rhs_from_assignment));
+          }
+          if (process_var) {
+            if (had_output) {
+              oss_output << ",\n";
+            }
+            output_var_desc_json(env, vd, oss_output);
+            had_output = true;
+          }
         }
       }
       void vSolveI(SolveI* si) {
