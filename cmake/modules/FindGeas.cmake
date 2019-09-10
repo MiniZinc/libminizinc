@@ -1,8 +1,8 @@
 # - Try to find Geas
 # Once done this will define
-#  GEAS_FOUND        - System has FICO Xpress
-#  GEAS_INCLUDE_DIRS - The FICO Xpress include directories
-#  GEAS_LIBRARIES    - The libraries needed to use FICO Xpress
+#  GEAS_FOUND        - System has Geas
+#  GEAS_INCLUDE_DIRS - The Geas include directories
+#  GEAS_LIBRARIES    - The libraries needed to use Geas
 # User can set GEAS_ROOT to the preferred installation prefix
 # Imported target Geas will be created for linking purposes
 
@@ -19,7 +19,7 @@ find_library(
 )
 
 include(FindPackageHandleStandardArgs)
-# handle the QUIETLY and REQUIRED arguments and set XPRESS_FOUND to TRUE
+# handle the QUIETLY and REQUIRED arguments and set GEAS_FOUND to TRUE
 # if all listed variables are TRUE
 find_package_handle_standard_args(Geas
   FOUND_VAR GEAS_FOUND
