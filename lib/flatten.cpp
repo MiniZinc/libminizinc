@@ -636,8 +636,8 @@ namespace MiniZinc {
     CSEMap::iterator it = cse_map.find(ka);
     if (it != cse_map.end()) {
       if (it->second.r()) {
-        if (it->second.r()->isa<VarDecl>()) {
-          int idx = vo.find(it->second.r()->cast<VarDecl>());
+        if (it->second.r()->isa<Id>()) {
+          int idx = vo.find(it->second.r()->cast<Id>()->decl());
           if (idx == -1 || (*_flat)[idx]->removed())
             return cse_map.end();
         }
