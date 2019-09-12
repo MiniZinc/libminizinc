@@ -10,12 +10,12 @@
 */
 
 %% A global cumulative with SCIP
-predicate cumulative(array[int] of var int: s,
+predicate fzn_cumulative(array[int] of var int: s,
                      array[int] of int: d,
                      array[int] of int: r, int: b);
 
 
-predicate cumulative(array[int] of var int: s,
+predicate fzn_cumulative(array[int] of var int: s,
                      array[int] of var int: d,
                      array[int] of var int: r, var int: b) =
     assert(index_set(s) == index_set(d) /\ index_set(s) == index_set(r),

@@ -7,15 +7,12 @@
 % See also the equality encoding of the 'element' constraint.
 %-----------------------------------------------------------------------------%
 
-predicate table_int(array[int] of var int: x, array[int, int] of int: t) =
-    assert(index_set_2of2(t) = index_set(x),
-        "The second dimension of the table must equal the number of " ++
-        "variables in the first argument",
+predicate fzn_table_int(array[int] of var int: x, array[int, int] of int: t) =
     let { set of int: it = index_set_1of2(t),
           array[it] of var 0..1: lambda }
     in
     sum(lambda) = 1
     /\
-    forall(j in index_set(x))( sum(i in it)( t[i,j]*lambda[i] ) = x[j] ) );
+    forall(j in index_set(x))( sum(i in it)( t[i,j]*lambda[i] ) = x[j] );
 
 %-----------------------------------------------------------------------------%

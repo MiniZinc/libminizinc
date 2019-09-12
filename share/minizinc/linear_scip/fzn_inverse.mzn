@@ -18,8 +18,8 @@
 
 %% Now copying the std version, seems a little faster on vrp-s2-v2-c7_vrp-v2-c7_det_ADAPT_1_INVERSE.mzn
 
-predicate inverse(array[int] of var int: f,
-                  array[int] of var int: invf) =
+predicate fzn_inverse(array[int] of var int: f,
+                      array[int] of var int: invf) =
     forall(i in index_set(f)) ( f[i] in index_set(invf) ) /\
     forall(j in index_set(invf)) ( invf[j] in index_set(f) ) /\
     forall(i in index_set(f), j in index_set(invf)) (

@@ -8,7 +8,7 @@
 
 include "domain_encodings.mzn";
 
-predicate all_different_int(array[int] of var int: x) =
+predicate fzn_all_different_int(array[int] of var int: x) =
     if length(x)<=1 then true
     else
     let {
