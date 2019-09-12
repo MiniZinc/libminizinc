@@ -5,6 +5,34 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.3.2
+=============
+
+Changes:
+- Add warm starts and subtour cuts to CBC interface.
+- Add documentation and assertion requiring that mdds are deterministic,
+  and add nondeterministic variant of mdd constraint.
+- Add -s to the standard flags supported by MIP interfaces.
+- Add flag --output-output-item to include user specified output item in
+  the formatted JSON and DZN output.
+
+Bug fixes:
+- Fix a bug that could leave unused variables in the resulting FlatZinc.
+- bounded_dpath should rewrite to fzn_bounded_dpath. Fixes #300.
+- Fix definition of sum_set.
+- Check if overloaded function required for output. Fixes #303.
+- Move regular constraint with set argument to its own file.
+- Flatten assignment generators if necessary.
+- Simplify fzn_value_precede_chain_int and avoid use of element predicate.
+  Fixes #307.
+- Only initialise par opt variables as absent if they are not arrays.
+- Fix the description of the neural_net predicate.
+- Fix regular constraint with regular expressions (stopped working in 2.3.0).
+- Fix the model interface output to include the same variables as the generated
+  output statement.
+- Fix CSE for removed variable declarations. Could lead to reified constraints
+  not being compiled correctly when the control variable got fixed to true.
+
 Version 2.3.1
 =============
 
