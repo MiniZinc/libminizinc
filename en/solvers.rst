@@ -138,23 +138,27 @@ For example, tolerances have been tightened to enable more precise solving with 
 
 ::
 
+  -h <solver-tag>    full description of the backend options
   --relGap <n>       relative gap |primal-dual|/<solver-dep> to stop. Default 1e-8, set <0 to use backend's default
   --feasTol <n>      primal feasibility tolerance (Gurobi). Default 1e-8
   --intTol <n>       integrality tolerance for a variable. Default 1e-8
   --solver-time-limit-feas <n>, --solver-tlf <n>
                      stop after <n> milliseconds after the first feasible solution (some backends)
   --writeModel <file>
-                     write model to <file> (.lp, .mps, .sav, ...)
+                     write model to <file> (.lp, .mps, .sav, ...). All solvers support the MPS format
+                     which is industry standard. Most support the LP format. Some solvers have own formats,
+                     for example, the CIP format of SCIP ("constraint integer programming").
   --readParam <file>
                      read backend-specific parameters from file (some backends)
   --writeParam <file>
                      write backend-specific parameters to file (some backends)
+  --keep-paths       this standard flattening option annotates every item in FlatZinc by its "flattening history".
+                     For MIP solvers, it additionally assigns each constraint's name as the first 255 symbols of that.
   --cbcArgs '-guess -cuts off -preprocess off -passc 1'
-                  parameters for the COIN-OR CBC backend
+                     parameters for the COIN-OR CBC backend
 
 All MIP solvers directly support multi-threading (option ``-p``). For COIN-BC to use it, it needs to be
 configured with ``--enable-cbc-parallel``.
-For other command-line options, run ``minizinc -h <solver-id>``.
 
 Subtour Elimination Constraints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -195,7 +199,7 @@ Warm Starts
 ~~~~~~~~~~~
 
 For general information of warm start annotations, see :ref:`sec_warm_starts`.
-Warm starts are currently implemented for Gurobi, IBM ILOG CPLEX, and XPRESS.
+Warm starts are currently implemented for Gurobi, IBM ILOG CPLEX, XPRESS, and COIN-OR CBC.
 
 .. _ch-solvers-nonlinear:
 

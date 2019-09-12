@@ -12,7 +12,8 @@ for solving a particular problem, and indeed it may critically depend on
 the underlying solver used, and search strategy.  In this chapter we
 concentrate
 on modelling practices that avoid inefficiency in generating models
-and generated models.
+and generated models. For solver-specific recommendations see User
+Manual/Solver Backends.
 
 Variable Bounds
 ---------------

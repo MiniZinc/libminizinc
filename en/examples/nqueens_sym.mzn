@@ -1,5 +1,5 @@
 int: n;
-array [1..n] of var 1..n: q; % queen is column i is in row q[i]
+array [1..n] of var 1..n: q; % queen in column i is in row q[i]
 
 include "alldifferent.mzn";
 

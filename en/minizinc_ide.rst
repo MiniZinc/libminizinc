@@ -56,6 +56,8 @@ The second tab lets you select one or several of the data files that are current
     :width: 300px
 
 
+.. _ide_solver_config:
+
 Solver configurations
 ~~~~~~~~~~~~~~~~~~~~~
 

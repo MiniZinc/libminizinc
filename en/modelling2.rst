@@ -716,8 +716,7 @@ row and column and :math:`S \times S` subsquare are all different.
   single: solution; all
 
 One can use MiniZinc to search 
-for all solutions to a satisfaction problem (:mzn:`solve satisfy`)
-by using the flag ``-a``
+for all solutions to a satisfaction problem (:mzn:`solve satisfy`). In the MiniZinc IDE, this can be achieved by setting the number of solutions to zero in the "User-defined behavior" part of the solver configuration pane (see :numref:`ide_solver_config`). On the command line, one can use the flag ``-a``
 or ``--all-solutions``. Running
 
 .. code-block:: bash
@@ -745,8 +744,6 @@ results in
 The line ``==========``
 is output when the system has output all possible
 solutions, here verifying that there is exactly one.
-
-
 
 .. _sec-enum:
 
@@ -927,7 +924,7 @@ of a sequence of tasks on separate machines: so task :mzn:`[i,j]` is the
 task in the :math:`i^{th}` job performed on the :math:`j^{th}` machine.  
 Each sequence of tasks must be completed in order,
 and no two tasks on the same machine can overlap in time. 
-Even small instances of this problem can be quite challenging to find
+Even for small instances of this problem it can be quite challenging to find
 optimal solutions.
 
 The command
@@ -937,8 +934,7 @@ The command
   $ minizinc --solver gecode --all-solutions jobshop.mzn jdata.dzn
 
 solves a small job shop scheduling problem, and illustrates the behaviour of 
-\texttt{all-solutions} for optimisation problems.  Here the solver outputs
-each better solutions as it finds it, rather than all possible optimal
+``--all-solutions`` for optimisation problems (note that when running this in the MiniZinc IDE, ``--all-solutions`` is the default behaviour for optimisation problems).  Here the solver outputs increasingly better solutions as it finds them, rather than all possible optimal
 solutions. The output from this command is:
 
 .. code-block:: none
@@ -984,7 +980,7 @@ and then executing
 
   $ minizinc --solver gecode --all-solutions jobshop.mzn jobshop.dzn
 
-For this problem there are 3,444,375 optimal solutions.
+For this problem there are 3,444,375 optimal solutions. In the MiniZinc IDE, you would have to select "User-defined behavior" in the configuration pane and set the number of solutions to zero in order to display all solutions of this satisfaction problem.
 
 .. literalinclude:: examples/stable-marriage.mzn
   :language: minizinc
@@ -1129,7 +1125,7 @@ leads to the output
   ----------
   ==========
 
-indicating exactly two solutions to the problem.
+indicating exactly two solutions to the problem (the effect of ``--all-solutions`` can be achieved in the MiniZinc IDE using the "User-defined behavior" option in the solver configuration pane).
 
 Note that MiniZinc will automatically coerce Booleans
 to integers and integers to floats when required. 
