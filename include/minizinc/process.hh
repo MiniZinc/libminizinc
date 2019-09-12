@@ -96,8 +96,8 @@ namespace MiniZinc {
     }
 #else
     void setPipe(int pipe) {
-            _pipe = pipe;
-        }
+      _pipe = pipe;
+    }
 #endif
 
     class PipeStream : public std::ostream {
@@ -134,7 +134,7 @@ namespace MiniZinc {
           if (_input->_pipe == 0) {
             return 0;
           }
-          return write(_input->_pipe, s, n);
+          return ::write(_input->_pipe, s, n);
 #endif
         }
       };
@@ -291,8 +291,8 @@ namespace MiniZinc {
         close(pipes[2][1]);
 
         if (_input != NULL) {
-            _input.setPipe(pipes[0][1]);
-            _input.provide();
+            _input->setPipe(pipes[0][1]);
+            _input->provide();
         }
 
         close(pipes[0][1]);
