@@ -121,9 +121,11 @@ namespace MiniZinc {
         if (c->id() == constants().ids.clause) {
           auto positive = c->arg(0)->cast<ArrayLit>();
           auto var = (*positive)[0]->cast<Id>();
-          int occurrences = env.vo.usages(var->decl());
-          unsigned long lhs_occurences = count(var->decl());
           bool output_var = var->decl()->ann().contains(constants().ann.output_var);
+          auto usages = env.vo.usages(var->decl());
+          output_var = output_var || usages.second;
+          int occurrences = usages.first;
+          unsigned long lhs_occurences = count(var->decl());
 
           // Compress if:
           // - There is one occurrence on the RHS of a clause and the others are on the LHS of a clause
@@ -348,14 +350,18 @@ namespace MiniZinc {
               auto neg = follow_id_to_decl((*bs)[i])->cast<VarDecl>();
               bool output_var = neg->ann().contains(constants().ann.output_var);
 
-              int occurrences = env.vo.usages(neg);
+              auto usages = env.vo.usages(neg);
+              int occurrences = usages.first;
+              output_var = output_var || usages.second;
               unsigned long lhs_occurences = count(neg);
               bool compress = !output_var;
               auto search = aliasMap.find(neg);
 
               if (search != aliasMap.end()) {
                 alias = search->second;
-                int alias_occ = env.vo.usages(alias);
+                auto alias_usages = env.vo.usages(alias);
+                int alias_occ = alias_usages.first;
+                compress = compress && (!alias_usages.second);
                 unsigned long alias_lhs_occ = count(alias);
                 // neg is only allowed to occur:
                 // - once in the "implication"

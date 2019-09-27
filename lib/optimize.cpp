@@ -105,21 +105,25 @@ namespace MiniZinc {
     return (vi==_m.end() ? 0 : static_cast<int>(vi->second.size()));
   }
 
-  int VarOccurrences::usages(VarDecl* v) {
+  std::pair<int,bool> VarOccurrences::usages(VarDecl* v) {
+    bool is_output = v->ann().contains(constants().ann.output_var) ||
+    v->ann().containsCall(constants().ann.output_array);
     auto vi = _m.find(v->id()->decl()->id());
     if (vi == _m.end()) {
-      return 0;
+      return std::make_pair(0,is_output);
     }
     int count = 0;
     for (Item* i : vi->second) {
       auto vd = i->dyn_cast<VarDeclI>();
-      if (vd && vd->e() && vd->e() && vd->e()->e() && (vd->e()->e()->isa<ArrayLit>() || vd->e()->e()->isa<SetLit>())) {
-        count += usages(vd->e());
+      if (vd && vd->e() && vd->e()->e() && (vd->e()->e()->isa<ArrayLit>() || vd->e()->e()->isa<SetLit>())) {
+        auto u = usages(vd->e());
+        is_output = is_output || u.second;
+        count += u.first;
       } else {
         count++;
       }
     }
-    return count;
+    return std::make_pair(count, is_output);
   }
   
   void CollectOccurrencesI::vVarDeclI(VarDeclI* v) {
