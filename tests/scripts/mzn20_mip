@@ -1,5 +1,5 @@
 #!/bin/sh
 
-MINIZINC_EXEC=mzn-cplex
+MINIZINC_EXEC=minizinc
 
-$MINIZINC_EXEC -G linear $*
+$MINIZINC_EXEC --solver cbc $*
