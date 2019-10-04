@@ -437,9 +437,10 @@ namespace MiniZinc {
       ret.b = b->id();
      
       std::vector<Expression*> defined_conjunctions(ite->size()+1);
-      for (unsigned int i=0; i<ite->size(); i++) {
+      for (unsigned int i=0; i<ite->size()+1; i++) {
         std::vector<Expression*> def_i;
         for (unsigned int j=0; j<defined.size(); j++) {
+          assert(defined[j].size()>i);
           if (defined[j][i]() != constants().lit_true) {
             def_i.push_back(defined[j][i]());
           }
