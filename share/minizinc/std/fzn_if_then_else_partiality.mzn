@@ -8,4 +8,4 @@ predicate fzn_if_then_else_partiality(array[int] of var bool: c, array[int] of v
          endif) /\
   forall(i in index_set(c))
         ( (b /\ c[i] /\ d[i] -> def[i])) /\
-  forall (i in index_set(c)) (d[i] /\ c[i] -> b);
+  forall (i in index_set(c)) (d[i] /\ c[i] /\ def[i] -> b);
