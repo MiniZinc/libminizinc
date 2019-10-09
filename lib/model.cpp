@@ -261,7 +261,9 @@ namespace MiniZinc {
             }
           }
           if (alleq) {
-            if (v[i].fi->e() && fi->e() && !v[i].isPolymorphic) {
+            if (v[i].fi==fi) {
+              return;
+            } else if (v[i].fi->e() && fi->e() && !v[i].isPolymorphic) {
               throw TypeError(env, fi->loc(),
                               "function with the same type already defined in "
                               +v[i].fi->loc().toString());
