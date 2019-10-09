@@ -1058,6 +1058,9 @@ namespace MiniZinc {
                     
                     outputVarDecls(e, item, al);
                     vd->e(copy(e,e.cmap,al));
+                    Type al_t(vd->e()->type());
+                    al_t.ti(Type::TI_PAR);
+                    vd->e()->type(al_t);
                   }
                 }
                 if (needOutputAnn) {
