@@ -2358,7 +2358,8 @@ namespace MiniZinc {
       std::ostringstream oss_input;
       std::ostringstream oss_output;
       std::string method;
-      IfcVisitor(Env& env0) : env(env0), had_input(false), had_output(false), method("sat") {}
+      bool output_item;
+      IfcVisitor(Env& env0) : env(env0), had_input(false), had_output(false), method("sat"), output_item(false) {}
       bool enter(Item* i) {
         if (IncludeI* ii = i->dyn_cast<IncludeI>()) {
           std::string prefix = ii->m()->filepath().str().substr(0,ii->m()->filepath().size()-ii->f().size());
@@ -2400,12 +2401,16 @@ namespace MiniZinc {
           case SolveI::ST_SAT: method = "sat"; break;
         }
       }
+      void vOutputI(OutputI* oi) {
+        output_item = true;
+      }
     } _ifc(env);
     iterItems(_ifc, m);
     os << "{\n  \"input\" : {\n" << _ifc.oss_input.str() << "\n  },\n  \"output\" : {\n" << _ifc.oss_output.str() << "\n  }";
     os << ",\n  \"method\": \"";
     os << _ifc.method;
     os << "\"";
+    os << ",\n  \"has_output_item\": " << (_ifc.output_item ? "true" : "false");
     os << "\n}\n";
   }
   
