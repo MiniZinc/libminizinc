@@ -23,6 +23,7 @@
 
 #include <unordered_set>
 #include <unordered_map>
+#include <map>
 
 namespace MiniZinc {
 
@@ -2537,7 +2538,35 @@ namespace MiniZinc {
     throw InternalError("internal error");    
   }
   
+  class ItemTimer {
+  public:
+    typedef std::map<std::pair<std::string,int>,std::chrono::high_resolution_clock::duration> TimingMap;
+    ItemTimer(const Location& loc, TimingMap* tm) :
+    _loc(loc),
+    _tm(tm),
+    _start(std::chrono::high_resolution_clock::now()) {}
+    
+    ~ItemTimer(void) {
+      if (_tm) {
+        std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
+        int line = _loc.first_line();
+        TimingMap::iterator it = _tm->find(std::make_pair(_loc.filename().str(),line));
+        if (it != _tm->end()) {
+          it->second += end-_start;
+        } else {
+          _tm->insert(std::make_pair(std::make_pair(_loc.filename().str(),line),end-_start));
+        }
+      }
+    }
+  private:
+    const Location& _loc;
+    TimingMap* _tm;
+    std::chrono::high_resolution_clock::time_point _start;
+  };
+
   void flatten(Env& e, FlatteningOptions opt) {
+    ItemTimer::TimingMap timing_map_o;
+    ItemTimer::TimingMap* timing_map = opt.detailedTiming ? &timing_map_o : nullptr;
     try {
       EnvI& env = e.envi();
       env.fopts = opt;
@@ -2562,11 +2591,14 @@ namespace MiniZinc {
       public:
         EnvI& env;
         bool& hadSolveItem;
-        FV(EnvI& env0, bool& hadSolveItem0) : env(env0), hadSolveItem(hadSolveItem0) {}
+        ItemTimer::TimingMap* timing_map;
+        FV(EnvI& env0, bool& hadSolveItem0, ItemTimer::TimingMap* timing_map0)
+        : env(env0), hadSolveItem(hadSolveItem0), timing_map(timing_map0) {}
         bool enter(Item* i) {
             return !(i->isa<ConstraintI>()  && env.failed());
         }
         void vVarDeclI(VarDeclI* v) {
+          ItemTimer item_timer(v->loc(), timing_map);
           v->e()->ann().remove(constants().ann.output_var);
           v->e()->ann().removeCall(constants().ann.output_array);
           if (v->e()->ann().contains(constants().ann.output_only))
@@ -2641,11 +2673,13 @@ namespace MiniZinc {
           }
         }
         void vConstraintI(ConstraintI* ci) {
+          ItemTimer item_timer(ci->loc(), timing_map);
           (void) flat_exp(env,Ctx(),ci->e(),constants().var_true,constants().var_true);
         }
         void vSolveI(SolveI* si) {
           if (hadSolveItem)
             throw FlatteningError(env,si->loc(), "Only one solve item allowed");
+          ItemTimer item_timer(si->loc(), timing_map);
           hadSolveItem = true;
           GCLock lock;
           SolveI* nsi = NULL;
@@ -2673,7 +2707,7 @@ namespace MiniZinc {
           }
           env.flat_addItem(nsi);
         }
-      } _fv(env,hadSolveItem);
+      } _fv(env,hadSolveItem,timing_map);
       iterItems<FV>(_fv,e.model());
     
       if (!hadSolveItem) {
@@ -3048,6 +3082,17 @@ namespace MiniZinc {
                   CallStackItem* csi=NULL;
                   if(vsl) vsi = new CallStackItem(env, vsl);
                   if(csl) csi = new CallStackItem(env, csl);
+                  Location orig_loc = nc->loc();
+                  if (csl) {
+                    std::string loc(csl->v().str());
+                    size_t sep = loc.find('|');
+                    std::string filename = loc.substr(0, sep);
+                    std::string start_line_s = loc.substr(sep+1, loc.find('|',sep+1)-sep-1);
+                    int start_line = std::stoi(start_line_s);
+                    Location new_loc(ASTString(filename), start_line, 0, start_line, 0);
+                    orig_loc = new_loc;
+                  }
+                  ItemTimer item_timer(orig_loc, timing_map);
                   (void) flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
                   if(csi) delete csi;
                   if(vsi) delete vsi;
@@ -3112,6 +3157,7 @@ namespace MiniZinc {
                   CallStackItem* csi=NULL;
                   if(sl)
                     csi = new CallStackItem(env, sl);
+                  ItemTimer item_timer(nc->loc(), timing_map);
                   (void) flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
                   if(csi) delete csi;
                 }
@@ -3221,6 +3267,22 @@ namespace MiniZinc {
       cleanupOutput(env);
     } catch (ModelInconsistent&) {
       
+    }
+    
+    if (opt.detailedTiming) {
+      e.envi().outstream << "% Compilation profile (file,line,milliseconds)\n";
+      if (opt.collect_mzn_paths) {
+        e.envi().outstream << "% (time is allocated to toplevel item)\n";
+      } else {
+        e.envi().outstream << "% (locations are approximate, use --keep-paths to allocate times to toplevel items)\n";
+      }
+      for (auto& entry : *timing_map) {
+        std::chrono::milliseconds time_taken = std::chrono::duration_cast<std::chrono::milliseconds>(entry.second);
+        if (time_taken > std::chrono::milliseconds(0)) {
+          e.envi().outstream << "%%%mzn-stat: profiling=[\"" << entry.first.first << "\"," << entry.first.second << "," << time_taken.count() << "]\n";
+        }
+      }
+      e.envi().outstream << "%%%mzn-stat-end\n";
     }
   }
   

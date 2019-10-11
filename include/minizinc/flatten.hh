@@ -53,9 +53,11 @@ namespace MiniZinc {
     bool outputObjective;
     /// Output original output item as string (only for DZN and JSON mode)
     bool outputOutputItem;
+    /// Output detailed timing information for flattening
+    bool detailedTiming;
     /// Default constructor
     FlatteningOptions(void)
-      : keepOutputInFzn(false), verbose(false), only_toplevel_paths(false), collect_mzn_paths(false), record_domain_changes(false), onlyRangeDomains(false), enable_imp(true), timeout(0), outputMode(OUTPUT_ITEM), outputObjective(false), outputOutputItem(false) {}
+      : keepOutputInFzn(false), verbose(false), only_toplevel_paths(false), collect_mzn_paths(false), record_domain_changes(false), onlyRangeDomains(false), enable_imp(true), timeout(0), outputMode(OUTPUT_ITEM), outputObjective(false), outputOutputItem(false), detailedTiming(false) {}
   };
 
   class Pass {
