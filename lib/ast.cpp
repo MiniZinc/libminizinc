@@ -832,12 +832,13 @@ namespace MiniZinc {
            const std::vector<Expression*>& let, Expression* in)
   : Expression(loc,E_LET,Type()) {
     _let = ASTExprVec<Expression>(let);
-    std::vector<Expression*> vde(let.size());
+    std::vector<Expression*> vde;
     for (unsigned int i=0; i<let.size(); i++) {
       if (VarDecl* vd = Expression::dyn_cast<VarDecl>(let[i])) {
-        vde[i] =  vd->e();
-      } else {
-        vde[i] = NULL;
+        vde.push_back(vd->e());
+        for (unsigned int i=0; i<vd->ti()->ranges().size(); i++) {
+          vde.push_back(vd->ti()->ranges()[i]->domain());
+        }
       }
     }
     _let_orig = ASTExprVec<Expression>(vde);
@@ -849,16 +850,19 @@ namespace MiniZinc {
   void
   Let::pushbindings(void) {
     GC::mark();
-    for (unsigned int i=_let.size(); i--;) {
+    for (unsigned int i=0, j=0; i<_let.size(); i++) {
       if (VarDecl* vd = _let[i]->dyn_cast<VarDecl>()) {
         vd->trail();
-        vd->e(_let_orig[i]);
+        vd->e(_let_orig[j++]);
+        for (unsigned int k=0; k<vd->ti()->ranges().size(); k++) {
+          vd->ti()->ranges()[k]->domain(_let_orig[j++]);
+        }
       }
     }
   }
   void
   Let::popbindings(void) {
-    for (unsigned int i=_let.size(); i--;) {
+    for (unsigned int i=0; i<_let.size(); i++) {
       if (VarDecl* vd = _let[i]->dyn_cast<VarDecl>()) {
         GC::untrail();
         break;
