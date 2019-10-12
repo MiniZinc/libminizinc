@@ -31,17 +31,21 @@ namespace MiniZinc{ class ParserLocation; }
 
 #include <minizinc/parser.hh>
 
-int utf8len(const char* s) {
-  int l=0;
-  for (int i=0; s[i] != '\0'; i++)
-    if ((s[i] & 0xc0) != 0x80)
-      l++;
-  return l;
+namespace MiniZinc {
+
+  int utf8len(const char* s) {
+    int l=0;
+    for (int i=0; s[i] != '\0'; i++)
+      if ((s[i] & 0xc0) != 0x80)
+        l++;
+    return l;
+  }
+
+  int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
 }
 
-int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
 #define YY_INPUT(buf, result, max_size) \
-  result = yy_input_proc(buf, max_size, yyscanner);
+  result = ::MiniZinc::yy_input_proc(buf, max_size, yyscanner);
 
 #define YY_USER_ACTION \
   { MiniZinc::ParserState* parm =  \
@@ -62,62 +66,65 @@ int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
     } else { \
       parm->nTokenNextStart+=yyleng; \
     } \
-    yylloc->last_column(yylloc->first_column()+utf8len(yytext)-1); \
+    yylloc->last_column(yylloc->first_column()+::MiniZinc::utf8len(yytext)-1); \
   }
 
-bool hexstrtointval(const char* s, long long int& v) {
-  std::istringstream iss(s);
-  iss >> std::hex >> v;
-  return !iss.fail();
-}
+namespace MiniZinc {
+  
+  bool hexstrtointval(const char* s, long long int& v) {
+    std::istringstream iss(s);
+    iss >> std::hex >> v;
+    return !iss.fail();
+  }
 
-bool octstrtointval(const char* s, long long int& v) {
-  std::istringstream iss(s);
-  iss >> std::oct >> v;
-  return !iss.fail();
-}
+  bool octstrtointval(const char* s, long long int& v) {
+    std::istringstream iss(s);
+    iss >> std::oct >> v;
+    return !iss.fail();
+  }
 
-bool fast_strtointval(const char* s, long long int& v) {
-  MiniZinc::IntVal x = 0;
-  try {
-    for (; *s != '\0'; ++s) {
-      x = (x*10) + (*s - '0');
+  bool fast_strtointval(const char* s, long long int& v) {
+    MiniZinc::IntVal x = 0;
+    try {
+      for (; *s != '\0'; ++s) {
+        x = (x*10) + (*s - '0');
+      }
+    } catch (MiniZinc::ArithmeticError&) {
+      return false;
     }
-  } catch (MiniZinc::ArithmeticError&) {
-    return false;
+    v = x.toInt();
+    return true;
   }
-  v = x.toInt();
-  return true;
-}
 
-bool strtofloatval(const char* s, double& v) {
-  std::istringstream iss(s);
-  iss >> v;
-  return !iss.fail();
-}
+  bool strtofloatval(const char* s, double& v) {
+    std::istringstream iss(s);
+    iss >> v;
+    return !iss.fail();
+  }
 
-void clearBuffer(void* parm) {
-  MiniZinc::ParserState* pp =
+  void clearBuffer(void* parm) {
+    MiniZinc::ParserState* pp =
+      static_cast<MiniZinc::ParserState*>(parm);
+    pp->stringBuffer = "";
+  }
+
+  void appendBufferString(void* parm, const char* s) {
+    MiniZinc::ParserState* pp =
     static_cast<MiniZinc::ParserState*>(parm);
-  pp->stringBuffer = "";
-}
+    pp->stringBuffer += s;
+  }
 
-void appendBufferString(void* parm, const char* s) {
-  MiniZinc::ParserState* pp =
-  static_cast<MiniZinc::ParserState*>(parm);
-  pp->stringBuffer += s;
-}
-
-void appendBufferChar(void* parm, char s) {
-  MiniZinc::ParserState* pp =
-  static_cast<MiniZinc::ParserState*>(parm);
-  pp->stringBuffer += s;
-}
-
-char* bufferData(void* parm) {
-  MiniZinc::ParserState* pp =
+  void appendBufferChar(void* parm, char s) {
+    MiniZinc::ParserState* pp =
     static_cast<MiniZinc::ParserState*>(parm);
-  return strdup(pp->stringBuffer.c_str());
+    pp->stringBuffer += s;
+  }
+
+  char* bufferData(void* parm) {
+    MiniZinc::ParserState* pp =
+      static_cast<MiniZinc::ParserState*>(parm);
+    return strdup(pp->stringBuffer.c_str());
+  }
 }
 
 %}
@@ -137,22 +144,22 @@ char* bufferData(void* parm) {
 \xa               { }
 [ \f\xd\t]        { /* ignore whitespace */ }
 
-"/**"             { yy_push_state(doccomment,yyscanner); clearBuffer(yyget_extra(yyscanner)); }
+"/**"             { yy_push_state(doccomment,yyscanner); ::MiniZinc::clearBuffer(yyget_extra(yyscanner)); }
 <doccomment>{
-  "*/"            { yylval->sValue = bufferData(yyget_extra(yyscanner));
+  "*/"            { yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
                     yy_pop_state(yyscanner); return MZN_DOC_COMMENT; }
-  [^*\xa]+        { appendBufferString(yyget_extra(yyscanner), yytext); }
-  "*"             { appendBufferString(yyget_extra(yyscanner), yytext); }
-  \xa             { appendBufferString(yyget_extra(yyscanner), yytext); }
+  [^*\xa]+        { ::MiniZinc::appendBufferString(yyget_extra(yyscanner), yytext); }
+  "*"             { ::MiniZinc::appendBufferString(yyget_extra(yyscanner), yytext); }
+  \xa             { ::MiniZinc::appendBufferString(yyget_extra(yyscanner), yytext); }
 }
 
-"/***"             { yy_push_state(doccomment_file,yyscanner); clearBuffer(yyget_extra(yyscanner)); }
+"/***"             { yy_push_state(doccomment_file,yyscanner); ::MiniZinc::clearBuffer(yyget_extra(yyscanner)); }
 <doccomment_file>{
-  "*/"             { yylval->sValue = bufferData(yyget_extra(yyscanner));
+  "*/"             { yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
     yy_pop_state(yyscanner); return MZN_DOC_FILE_COMMENT; }
-  [^*\xa]+         { appendBufferString(yyget_extra(yyscanner), yytext); }
-  "*"              { appendBufferString(yyget_extra(yyscanner), yytext); }
-  \xa              { appendBufferString(yyget_extra(yyscanner), yytext); }
+  [^*\xa]+         { ::MiniZinc::appendBufferString(yyget_extra(yyscanner), yytext); }
+  "*"              { ::MiniZinc::appendBufferString(yyget_extra(yyscanner), yytext); }
+  \xa              { ::MiniZinc::appendBufferString(yyget_extra(yyscanner), yytext); }
 }
 
 "/*"              { yy_push_state(multilinecomment,yyscanner); }
@@ -174,45 +181,45 @@ char* bufferData(void* parm) {
 "false"           { yylval->iValue = 0; return MZN_BOOL_LITERAL; }
 
 0[xX]([0-9a-fA-F]*\.[0-9a-fA-F]+|[0-9a-fA-F]+\.)([pP][+-]?[0-9]+)|(0[xX][0-9a-fA-F]+[pP][+-]?[0-9]+)  {
-                  if (strtofloatval(yytext, yylval->dValue))
+                  if (::MiniZinc::strtofloatval(yytext, yylval->dValue))
                   return MZN_FLOAT_LITERAL;
                   else
                   return MZN_INVALID_FLOAT_LITERAL;
                 }
 
 0[xX][0-9A-Fa-f]+  {
-                    if (hexstrtointval(yytext+2, yylval->iValue))
+                    if (::MiniZinc::hexstrtointval(yytext+2, yylval->iValue))
                       return MZN_INTEGER_LITERAL;
                     else
                       return MZN_INVALID_INTEGER_LITERAL;
                 }
 0o[0-7]+        {
-                  if (octstrtointval(yytext+2, yylval->iValue))
+                  if (::MiniZinc::octstrtointval(yytext+2, yylval->iValue))
                     return MZN_INTEGER_LITERAL;
                   else
                     return MZN_INVALID_INTEGER_LITERAL;
                 }
 [0-9]+          {
-                  if (fast_strtointval(yytext, yylval->iValue))
+                  if (::MiniZinc::fast_strtointval(yytext, yylval->iValue))
                     return MZN_INTEGER_LITERAL;
                   else
                     return MZN_INVALID_INTEGER_LITERAL;
                 }
 
 [0-9]+\.[0-9]+  {
-                  if (strtofloatval(yytext, yylval->dValue))
+                  if (::MiniZinc::strtofloatval(yytext, yylval->dValue))
                   return MZN_FLOAT_LITERAL;
                   else
                   return MZN_INVALID_FLOAT_LITERAL;
                 }
 [0-9]+\.[0-9]+[Ee][+-]?[0-9]+  {
-                    if (strtofloatval(yytext, yylval->dValue))
+                    if (::MiniZinc::strtofloatval(yytext, yylval->dValue))
                       return MZN_FLOAT_LITERAL;
                     else
                       return MZN_INVALID_FLOAT_LITERAL;
                   }
 [0-9]+[Ee][+-]?[0-9]+  {
-                    if (strtofloatval(yytext, yylval->dValue))
+                    if (::MiniZinc::strtofloatval(yytext, yylval->dValue))
                       return MZN_FLOAT_LITERAL;
                     else
                       return MZN_INVALID_FLOAT_LITERAL;
@@ -375,21 +382,21 @@ $[A-Za-z][A-Za-z0-9_]* {
 "(" { yy_push_state(bracket_exp,yyscanner); return *yytext; }
 <bracket_exp>")" { yy_pop_state(yyscanner); return *yytext; }
 <quoted_exp>")" { yy_pop_state(yyscanner); yy_pop_state(yyscanner); yy_push_state(string_quote,yyscanner);
-                  clearBuffer(yyget_extra(yyscanner)); }
+                  ::MiniZinc::clearBuffer(yyget_extra(yyscanner)); }
 
-\"                { yy_push_state(string,yyscanner); clearBuffer(yyget_extra(yyscanner)); }
-<string,string_quote>[^\\"\xa\xd\x0]* { appendBufferString(yyget_extra(yyscanner), yytext); }
-<string,string_quote>\\n         { appendBufferChar(yyget_extra(yyscanner), '\n'); }
-<string,string_quote>\\t         { appendBufferChar(yyget_extra(yyscanner), '\t'); }
-<string,string_quote>\\[\\']     { appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
-<string,string_quote>\\[\\"]     { appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
-<string>\\"("       { yylval->sValue = bufferData(yyget_extra(yyscanner));
+\"                { yy_push_state(string,yyscanner); ::MiniZinc::clearBuffer(yyget_extra(yyscanner)); }
+<string,string_quote>[^\\"\xa\xd\x0]* { ::MiniZinc::appendBufferString(yyget_extra(yyscanner), yytext); }
+<string,string_quote>\\n         { ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), '\n'); }
+<string,string_quote>\\t         { ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), '\t'); }
+<string,string_quote>\\[\\']     { ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
+<string,string_quote>\\[\\"]     { ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
+<string>\\"("       { yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
                       yy_push_state(quoted_exp,yyscanner); return MZN_STRING_QUOTE_START; }
-<string_quote>\\"(" { yylval->sValue = bufferData(yyget_extra(yyscanner));
+<string_quote>\\"(" { yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
                       yy_push_state(quoted_exp,yyscanner); return MZN_STRING_QUOTE_MID; }
-<string>\"          { yylval->sValue = bufferData(yyget_extra(yyscanner));
+<string>\"          { yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
                       yy_pop_state(yyscanner); return MZN_STRING_LITERAL; }
-<string_quote>\"          { yylval->sValue = bufferData(yyget_extra(yyscanner));
+<string_quote>\"          { yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
                             yy_pop_state(yyscanner); return MZN_STRING_QUOTE_END; }
 <string,string_quote>. { return (unsigned char)yytext[0]; }
 <string,string_quote>[\xa\xd\x0] { return MZN_END_OF_LINE_IN_STRING; }
@@ -403,10 +410,12 @@ $[A-Za-z][A-Za-z0-9_]* {
 .                 { return (unsigned char)yytext[0]; }
 
 %%
-int yy_input_proc(char* buf, int size, yyscan_t yyscanner) {
-  MiniZinc::ParserState* parm = 
-    static_cast<MiniZinc::ParserState*>(yyget_extra(yyscanner));
-  return parm->fillBuffer(buf, size);
-  // work around warning that yyunput is unused
-  yyunput (0,buf,yyscanner);
+namespace MiniZinc {
+  int yy_input_proc(char* buf, int size, yyscan_t yyscanner) {
+    MiniZinc::ParserState* parm =
+      static_cast<MiniZinc::ParserState*>(yyget_extra(yyscanner));
+    return parm->fillBuffer(buf, size);
+    // work around warning that yyunput is unused
+    yyunput (0,buf,yyscanner);
+  }
 }

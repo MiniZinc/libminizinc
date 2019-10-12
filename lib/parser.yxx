@@ -49,6 +49,8 @@ void mzn_yyset_extra (void* user_defined ,void* yyscanner );
 
 extern int yydebug;
 
+namespace MiniZinc {
+
 void yyerror(YYLTYPE* location, void* parm, const string& str) {
   ParserState* pp = static_cast<ParserState*>(parm);
   Model* m = pp->model;
@@ -88,7 +90,7 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
   return ret;
 }
 
-
+}
 
 %}
 

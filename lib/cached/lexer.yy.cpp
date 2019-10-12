@@ -1052,17 +1052,21 @@ namespace MiniZinc{ class ParserLocation; }
 
 #include <minizinc/parser.hh>
 
-int utf8len(const char* s) {
-  int l=0;
-  for (int i=0; s[i] != '\0'; i++)
-    if ((s[i] & 0xc0) != 0x80)
-      l++;
-  return l;
+namespace MiniZinc {
+
+  int utf8len(const char* s) {
+    int l=0;
+    for (int i=0; s[i] != '\0'; i++)
+      if ((s[i] & 0xc0) != 0x80)
+        l++;
+    return l;
+  }
+
+  int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
 }
 
-int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
 #define YY_INPUT(buf, result, max_size) \
-  result = yy_input_proc(buf, max_size, yyscanner);
+  result = ::MiniZinc::yy_input_proc(buf, max_size, yyscanner);
 
 #define YY_USER_ACTION \
   { MiniZinc::ParserState* parm =  \
@@ -1083,62 +1087,65 @@ int yy_input_proc(char* buf, int size, yyscan_t yyscanner);
     } else { \
       parm->nTokenNextStart+=yyleng; \
     } \
-    yylloc->last_column(yylloc->first_column()+utf8len(yytext)-1); \
+    yylloc->last_column(yylloc->first_column()+::MiniZinc::utf8len(yytext)-1); \
   }
 
-bool hexstrtointval(const char* s, long long int& v) {
-  std::istringstream iss(s);
-  iss >> std::hex >> v;
-  return !iss.fail();
-}
+namespace MiniZinc {
+  
+  bool hexstrtointval(const char* s, long long int& v) {
+    std::istringstream iss(s);
+    iss >> std::hex >> v;
+    return !iss.fail();
+  }
 
-bool octstrtointval(const char* s, long long int& v) {
-  std::istringstream iss(s);
-  iss >> std::oct >> v;
-  return !iss.fail();
-}
+  bool octstrtointval(const char* s, long long int& v) {
+    std::istringstream iss(s);
+    iss >> std::oct >> v;
+    return !iss.fail();
+  }
 
-bool fast_strtointval(const char* s, long long int& v) {
-  MiniZinc::IntVal x = 0;
-  try {
-    for (; *s != '\0'; ++s) {
-      x = (x*10) + (*s - '0');
+  bool fast_strtointval(const char* s, long long int& v) {
+    MiniZinc::IntVal x = 0;
+    try {
+      for (; *s != '\0'; ++s) {
+        x = (x*10) + (*s - '0');
+      }
+    } catch (MiniZinc::ArithmeticError&) {
+      return false;
     }
-  } catch (MiniZinc::ArithmeticError&) {
-    return false;
+    v = x.toInt();
+    return true;
   }
-  v = x.toInt();
-  return true;
-}
 
-bool strtofloatval(const char* s, double& v) {
-  std::istringstream iss(s);
-  iss >> v;
-  return !iss.fail();
-}
+  bool strtofloatval(const char* s, double& v) {
+    std::istringstream iss(s);
+    iss >> v;
+    return !iss.fail();
+  }
 
-void clearBuffer(void* parm) {
-  MiniZinc::ParserState* pp =
+  void clearBuffer(void* parm) {
+    MiniZinc::ParserState* pp =
+      static_cast<MiniZinc::ParserState*>(parm);
+    pp->stringBuffer = "";
+  }
+
+  void appendBufferString(void* parm, const char* s) {
+    MiniZinc::ParserState* pp =
     static_cast<MiniZinc::ParserState*>(parm);
-  pp->stringBuffer = "";
-}
+    pp->stringBuffer += s;
+  }
 
-void appendBufferString(void* parm, const char* s) {
-  MiniZinc::ParserState* pp =
-  static_cast<MiniZinc::ParserState*>(parm);
-  pp->stringBuffer += s;
-}
-
-void appendBufferChar(void* parm, char s) {
-  MiniZinc::ParserState* pp =
-  static_cast<MiniZinc::ParserState*>(parm);
-  pp->stringBuffer += s;
-}
-
-char* bufferData(void* parm) {
-  MiniZinc::ParserState* pp =
+  void appendBufferChar(void* parm, char s) {
+    MiniZinc::ParserState* pp =
     static_cast<MiniZinc::ParserState*>(parm);
-  return strdup(pp->stringBuffer.c_str());
+    pp->stringBuffer += s;
+  }
+
+  char* bufferData(void* parm) {
+    MiniZinc::ParserState* pp =
+      static_cast<MiniZinc::ParserState*>(parm);
+    return strdup(pp->stringBuffer.c_str());
+  }
 }
 
 #define INITIAL 0
@@ -1507,50 +1514,50 @@ YY_RULE_SETUP
 	YY_BREAK
 case 4:
 YY_RULE_SETUP
-{ yy_push_state(doccomment,yyscanner); clearBuffer(yyget_extra(yyscanner)); }
+{ yy_push_state(doccomment,yyscanner); ::MiniZinc::clearBuffer(yyget_extra(yyscanner)); }
 	YY_BREAK
 
 case 5:
 YY_RULE_SETUP
-{ yylval->sValue = bufferData(yyget_extra(yyscanner));
+{ yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
                     yy_pop_state(yyscanner); return MZN_DOC_COMMENT; }
 	YY_BREAK
 case 6:
 YY_RULE_SETUP
-{ appendBufferString(yyget_extra(yyscanner), yytext); }
+{ ::MiniZinc::appendBufferString(yyget_extra(yyscanner), yytext); }
 	YY_BREAK
 case 7:
 YY_RULE_SETUP
-{ appendBufferString(yyget_extra(yyscanner), yytext); }
+{ ::MiniZinc::appendBufferString(yyget_extra(yyscanner), yytext); }
 	YY_BREAK
 case 8:
 /* rule 8 can match eol */
 YY_RULE_SETUP
-{ appendBufferString(yyget_extra(yyscanner), yytext); }
+{ ::MiniZinc::appendBufferString(yyget_extra(yyscanner), yytext); }
 	YY_BREAK
 
 case 9:
 YY_RULE_SETUP
-{ yy_push_state(doccomment_file,yyscanner); clearBuffer(yyget_extra(yyscanner)); }
+{ yy_push_state(doccomment_file,yyscanner); ::MiniZinc::clearBuffer(yyget_extra(yyscanner)); }
 	YY_BREAK
 
 case 10:
 YY_RULE_SETUP
-{ yylval->sValue = bufferData(yyget_extra(yyscanner));
+{ yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
     yy_pop_state(yyscanner); return MZN_DOC_FILE_COMMENT; }
 	YY_BREAK
 case 11:
 YY_RULE_SETUP
-{ appendBufferString(yyget_extra(yyscanner), yytext); }
+{ ::MiniZinc::appendBufferString(yyget_extra(yyscanner), yytext); }
 	YY_BREAK
 case 12:
 YY_RULE_SETUP
-{ appendBufferString(yyget_extra(yyscanner), yytext); }
+{ ::MiniZinc::appendBufferString(yyget_extra(yyscanner), yytext); }
 	YY_BREAK
 case 13:
 /* rule 13 can match eol */
 YY_RULE_SETUP
-{ appendBufferString(yyget_extra(yyscanner), yytext); }
+{ ::MiniZinc::appendBufferString(yyget_extra(yyscanner), yytext); }
 	YY_BREAK
 
 case 14:
@@ -1607,7 +1614,7 @@ YY_RULE_SETUP
 case 26:
 YY_RULE_SETUP
 {
-                  if (strtofloatval(yytext, yylval->dValue))
+                  if (::MiniZinc::strtofloatval(yytext, yylval->dValue))
                   return MZN_FLOAT_LITERAL;
                   else
                   return MZN_INVALID_FLOAT_LITERAL;
@@ -1616,7 +1623,7 @@ YY_RULE_SETUP
 case 27:
 YY_RULE_SETUP
 {
-                    if (hexstrtointval(yytext+2, yylval->iValue))
+                    if (::MiniZinc::hexstrtointval(yytext+2, yylval->iValue))
                       return MZN_INTEGER_LITERAL;
                     else
                       return MZN_INVALID_INTEGER_LITERAL;
@@ -1625,7 +1632,7 @@ YY_RULE_SETUP
 case 28:
 YY_RULE_SETUP
 {
-                  if (octstrtointval(yytext+2, yylval->iValue))
+                  if (::MiniZinc::octstrtointval(yytext+2, yylval->iValue))
                     return MZN_INTEGER_LITERAL;
                   else
                     return MZN_INVALID_INTEGER_LITERAL;
@@ -1634,7 +1641,7 @@ YY_RULE_SETUP
 case 29:
 YY_RULE_SETUP
 {
-                  if (fast_strtointval(yytext, yylval->iValue))
+                  if (::MiniZinc::fast_strtointval(yytext, yylval->iValue))
                     return MZN_INTEGER_LITERAL;
                   else
                     return MZN_INVALID_INTEGER_LITERAL;
@@ -1643,7 +1650,7 @@ YY_RULE_SETUP
 case 30:
 YY_RULE_SETUP
 {
-                  if (strtofloatval(yytext, yylval->dValue))
+                  if (::MiniZinc::strtofloatval(yytext, yylval->dValue))
                   return MZN_FLOAT_LITERAL;
                   else
                   return MZN_INVALID_FLOAT_LITERAL;
@@ -1652,7 +1659,7 @@ YY_RULE_SETUP
 case 31:
 YY_RULE_SETUP
 {
-                    if (strtofloatval(yytext, yylval->dValue))
+                    if (::MiniZinc::strtofloatval(yytext, yylval->dValue))
                       return MZN_FLOAT_LITERAL;
                     else
                       return MZN_INVALID_FLOAT_LITERAL;
@@ -1661,7 +1668,7 @@ YY_RULE_SETUP
 case 32:
 YY_RULE_SETUP
 {
-                    if (strtofloatval(yytext, yylval->dValue))
+                    if (::MiniZinc::strtofloatval(yytext, yylval->dValue))
                       return MZN_FLOAT_LITERAL;
                     else
                       return MZN_INVALID_FLOAT_LITERAL;
@@ -2218,50 +2225,50 @@ YY_RULE_SETUP
 case 166:
 YY_RULE_SETUP
 { yy_pop_state(yyscanner); yy_pop_state(yyscanner); yy_push_state(string_quote,yyscanner);
-                  clearBuffer(yyget_extra(yyscanner)); }
+                  ::MiniZinc::clearBuffer(yyget_extra(yyscanner)); }
 	YY_BREAK
 case 167:
 YY_RULE_SETUP
-{ yy_push_state(string,yyscanner); clearBuffer(yyget_extra(yyscanner)); }
+{ yy_push_state(string,yyscanner); ::MiniZinc::clearBuffer(yyget_extra(yyscanner)); }
 	YY_BREAK
 case 168:
 YY_RULE_SETUP
-{ appendBufferString(yyget_extra(yyscanner), yytext); }
+{ ::MiniZinc::appendBufferString(yyget_extra(yyscanner), yytext); }
 	YY_BREAK
 case 169:
 YY_RULE_SETUP
-{ appendBufferChar(yyget_extra(yyscanner), '\n'); }
+{ ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), '\n'); }
 	YY_BREAK
 case 170:
 YY_RULE_SETUP
-{ appendBufferChar(yyget_extra(yyscanner), '\t'); }
+{ ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), '\t'); }
 	YY_BREAK
 case 171:
 YY_RULE_SETUP
-{ appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
+{ ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
 	YY_BREAK
 case 172:
 YY_RULE_SETUP
-{ appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
+{ ::MiniZinc::appendBufferChar(yyget_extra(yyscanner), yytext[1]); }
 	YY_BREAK
 case 173:
 YY_RULE_SETUP
-{ yylval->sValue = bufferData(yyget_extra(yyscanner));
+{ yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
                       yy_push_state(quoted_exp,yyscanner); return MZN_STRING_QUOTE_START; }
 	YY_BREAK
 case 174:
 YY_RULE_SETUP
-{ yylval->sValue = bufferData(yyget_extra(yyscanner));
+{ yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
                       yy_push_state(quoted_exp,yyscanner); return MZN_STRING_QUOTE_MID; }
 	YY_BREAK
 case 175:
 YY_RULE_SETUP
-{ yylval->sValue = bufferData(yyget_extra(yyscanner));
+{ yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
                       yy_pop_state(yyscanner); return MZN_STRING_LITERAL; }
 	YY_BREAK
 case 176:
 YY_RULE_SETUP
-{ yylval->sValue = bufferData(yyget_extra(yyscanner));
+{ yylval->sValue = ::MiniZinc::bufferData(yyget_extra(yyscanner));
                             yy_pop_state(yyscanner); return MZN_STRING_QUOTE_END; }
 	YY_BREAK
 case 177:
@@ -3530,11 +3537,13 @@ void yyfree (void * ptr , yyscan_t yyscanner)
 
 #define YYTABLES_NAME "yytables"
 
-int yy_input_proc(char* buf, int size, yyscan_t yyscanner) {
-  MiniZinc::ParserState* parm = 
-    static_cast<MiniZinc::ParserState*>(yyget_extra(yyscanner));
-  return parm->fillBuffer(buf, size);
-  // work around warning that yyunput is unused
-  yyunput (0,buf,yyscanner);
+namespace MiniZinc {
+  int yy_input_proc(char* buf, int size, yyscan_t yyscanner) {
+    MiniZinc::ParserState* parm =
+      static_cast<MiniZinc::ParserState*>(yyget_extra(yyscanner));
+    return parm->fillBuffer(buf, size);
+    // work around warning that yyunput is unused
+    yyunput (0,buf,yyscanner);
+  }
 }
 
