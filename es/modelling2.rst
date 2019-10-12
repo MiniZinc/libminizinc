@@ -266,7 +266,7 @@ Observe cómo el delimitador ``|`` se usa para separar filas.
 
 El siguiente elemento en el modelo define el parámetro :mzn:`mproducts`. Esto se establece en un límite superior en la cantidad de productos de cualquier tipo que se pueden producir. Este es un ejemplo bastante complejo de comprensiones de conjuntos anidados y operadores de agregación. Los presentaremos antes de tratar de entender este artículo y el resto del modelo.
 
-En primer lugar, MiniZinc proporciona comprensiones de listas similares a las provistas en muchos lenguajes de programación funcionales, o Python. Por ejemplo, la lista de comprensión :mzn:`[i + j | i, j in 1..3 where j < i]` evalúa a :mzn:`[1 + 2, 1 + 3, 2 + 3]` que es :mzn:`[3, 4, 5]`. Por supuesto :mzn:`[3, 4, 5]` es simplemente una matriz con conjunto de índices :mzn:`1..3`.
+En primer lugar, MiniZinc proporciona comprensiones de listas similares a las provistas en muchos lenguajes de programación funcionales, o Python. Por ejemplo, la lista de comprensión :mzn:`[i + j | i, j in 1..3 where j < i]` evalúa a :mzn:`[2 + 1, 3 + 1, 3 + 2]` que es :mzn:`[3, 4, 5]`. Por supuesto :mzn:`[3, 4, 5]` es simplemente una matriz con conjunto de índices :mzn:`1..3`.
 
 MiniZinc también proporciona conjuntos de comprensiones que tienen una sintaxis similar: por ejemplo, :mzn:`{i + j | i, j in 1..3 where j < i}` evalúa al conjunto :mzn:`{3, 4, 5}`.
 

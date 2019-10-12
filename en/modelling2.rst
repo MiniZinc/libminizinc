@@ -327,7 +327,7 @@ before we try to understand this item and the rest of the model.
 
 First, MiniZinc provides list comprehensions similar to those provided in
 many functional programming languages, or Python. For example, the list comprehension
-:mzn:`[i + j | i, j in 1..3 where j < i]` evaluates to :mzn:`[1 + 2, 1 + 3, 2 + 3]`
+:mzn:`[i + j | i, j in 1..3 where j < i]` evaluates to :mzn:`[2 + 1, 3 + 1, 3 + 2]`
 which is :mzn:`[3, 4, 5]`. Of course :mzn:`[3, 4, 5]` is
 simply an array with index set :mzn:`1..3`.
 
