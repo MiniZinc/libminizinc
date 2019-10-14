@@ -278,19 +278,19 @@ namespace MiniZinc {
         for (unsigned int j=0; j<results.size(); j++) {
           if (r_bounds_valid_int[j] && e_then[j][i]->type().isint()) {
             GCLock lock;
-            IntBounds ib_then = compute_int_bounds(env,e_then[j][i]);
+            IntBounds ib_then = compute_int_bounds(env,branches[j][i]());
             if (ib_then.valid)
               r_bounds_int[j].push_back(ib_then);
             r_bounds_valid_int[j] = r_bounds_valid_int[j] && ib_then.valid;
           } else if (r_bounds_valid_set[j] && e_then[j][i]->type().isintset()) {
             GCLock lock;
-            IntSetVal* isv = compute_intset_bounds(env, e_then[j][i]);
+            IntSetVal* isv = compute_intset_bounds(env, branches[j][i]());
             if (isv)
               r_bounds_set[j].push_back(isv);
             r_bounds_valid_set[j] = r_bounds_valid_set[j] && isv;
           } else if (r_bounds_valid_float[j] && e_then[j][i]->type().isfloat()) {
             GCLock lock;
-            FloatBounds fb_then = compute_float_bounds(env, e_then[j][i]);
+            FloatBounds fb_then = compute_float_bounds(env, branches[j][i]());
             if (fb_then.valid)
               r_bounds_float[j].push_back(fb_then);
             r_bounds_valid_float[j] = r_bounds_valid_float[j] && fb_then.valid;
@@ -321,12 +321,22 @@ namespace MiniZinc {
 
       for (unsigned int j=0; j<results.size(); j++) {
         VarDecl* nr = results[j];
-      
+
+        // flatten else branch
+        EE eelse = flat_exp(env, cmix, e_else[j], NULL, NULL);
+        assert(eelse.b());
+        defined[j].push_back(eelse.b);
+        allDefined = allDefined && (eelse.b()==constants().lit_true);
+        branches[j].push_back(eelse.r);
+        if (eelse.r()->type().isvar()) {
+          allBranchesPar[j] = false;
+        }
+
         // update bounds of result with bounds of else branch
         
         if (r_bounds_valid_int[j] && e_else[j]->type().isint()) {
           GCLock lock;
-          IntBounds ib_else = compute_int_bounds(env,e_else[j]);
+          IntBounds ib_else = compute_int_bounds(env,eelse.r());
           if (ib_else.valid) {
             r_bounds_int[j].push_back(ib_else);
             IntVal lb = IntVal::infinity();
@@ -347,7 +357,7 @@ namespace MiniZinc {
           }
         } else if (r_bounds_valid_set[j] && e_else[j]->type().isintset()) {
           GCLock lock;
-          IntSetVal* isv_else = compute_intset_bounds(env, e_else[j]);
+          IntSetVal* isv_else = compute_intset_bounds(env, eelse.r());
           if (isv_else) {
             IntSetVal* isv = isv_else;
             for (unsigned int i=0; i<r_bounds_set[j].size(); i++) {
@@ -370,7 +380,7 @@ namespace MiniZinc {
           }
         } else if (r_bounds_valid_float[j] && e_else[j]->type().isfloat()) {
           GCLock lock;
-          FloatBounds fb_else = compute_float_bounds(env, e_else[j]);
+          FloatBounds fb_else = compute_float_bounds(env, eelse.r());
           if (fb_else.valid) {
             FloatVal lb = fb_else.l;
             FloatVal ub = fb_else.u;
@@ -391,15 +401,6 @@ namespace MiniZinc {
           }
         }
         
-        // flatten else branch
-        EE eelse = flat_exp(env, cmix, e_else[j], NULL, NULL);
-        assert(eelse.b());
-        defined[j].push_back(eelse.b);
-        allDefined = allDefined && (eelse.b()==constants().lit_true);
-        branches[j].push_back(eelse.r);
-        if (eelse.r()->type().isvar()) {
-          allBranchesPar[j] = false;
-        }
       }
     }
 
