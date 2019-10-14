@@ -2475,11 +2475,43 @@ namespace MiniZinc {
         if (e->type().isfloat()) {
           FloatVal v = eval_float(env,e);
           _bounds.push_back(FBounds(v,v));
+        } else {
+          valid = false;
         }
         return false;
-      } else {
-        return e->type().isfloat();
       }
+      if (e->type().isfloat()) {
+        if (ITE* ite = e->dyn_cast<ITE>()) {
+          FBounds itebounds(FloatVal::infinity(), -FloatVal::infinity());
+          for (int i=0; i<ite->size(); i++) {
+            if (ite->e_if(i)->type().ispar() && ite->e_if(i)->type().cv()==Type::CV_NO) {
+              if (eval_bool(env, ite->e_if(i))) {
+                BottomUpIterator<ComputeFloatBounds> cbi(*this);
+                cbi.run(ite->e_then(i));
+                FBounds& back = _bounds.back();
+                back.first = std::min(itebounds.first, back.first);
+                back.second = std::max(itebounds.second, back.second);
+                return false;
+              }
+            } else {
+              BottomUpIterator<ComputeFloatBounds> cbi(*this);
+              cbi.run(ite->e_then(i));
+              FBounds back = _bounds.back();
+              _bounds.pop_back();
+              itebounds.first = std::min(itebounds.first, back.first);
+              itebounds.second = std::max(itebounds.second, back.second);
+            }
+          }
+          BottomUpIterator<ComputeFloatBounds> cbi(*this);
+          cbi.run(ite->e_else());
+          FBounds& back = _bounds.back();
+          back.first = std::min(itebounds.first, back.first);
+          back.second = std::max(itebounds.second, back.second);
+          return false;
+        }
+        return true;
+      }
+      return false;
     }
     /// Visit integer literal
     void vIntLit(const IntLit& i) {
@@ -2511,15 +2543,20 @@ namespace MiniZinc {
       while (vd->flat() && vd->flat() != vd)
         vd = vd->flat();
       if (vd->ti()->domain()) {
-        FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
-        _bounds.push_back(FBounds(fsv->min(), fsv->max()));
+        GCLock lock;
+        FloatSetVal* fsv = eval_floatset(env,vd->ti()->domain());
+        if (fsv->size()==0) {
+          valid = false;
+          _bounds.push_back(FBounds(0,0));
+        } else {
+          _bounds.push_back(FBounds(fsv->min(0),fsv->max(fsv->size()-1)));
+        }
       } else {
         if (vd->e()) {
           BottomUpIterator<ComputeFloatBounds> cbi(*this);
           cbi.run(vd->e());
         } else {
-          valid = false;
-          _bounds.push_back(FBounds(0,0));
+          _bounds.push_back(FBounds(-FloatVal::infinity(),FloatVal::infinity()));
         }
       }
     }

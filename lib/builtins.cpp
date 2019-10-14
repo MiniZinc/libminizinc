@@ -2632,6 +2632,18 @@ namespace MiniZinc {
     {
       std::vector<Type> t(1);
       t[0] = Type::varfloat();
+      t[0].ot(Type::OT_OPTIONAL);
+      rb(env, m, ASTString("lb"), t, b_lb_varoptfloat);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varfloat();
+      t[0].ot(Type::OT_OPTIONAL);
+      rb(env, m, ASTString("ub"), t, b_ub_varoptfloat);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::varfloat();
       rb(env, m, ASTString("lb"), t, b_lb_varoptfloat);
     }
     {
@@ -2642,11 +2654,13 @@ namespace MiniZinc {
     {
       std::vector<Type> t(1);
       t[0] = Type::varfloat(-1);
+      t[0].ot(Type::OT_OPTIONAL);
       rb(env, m, ASTString("lb_array"), t, b_array_lb_float);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varfloat(-1);
+      t[0].ot(Type::OT_OPTIONAL);
       rb(env, m, ASTString("ub_array"), t, b_array_ub_float);
     }
     {
