@@ -1751,10 +1751,6 @@ function int: lb_array(array[$U] of var opt int: x);
 /** @group builtins.reflect Return maximum of all upper bounds of the elements in array \a x */
 function int: ub_array(array[$U] of var opt int: x);
 /** @group builtins.reflect Return minimum of all lower bounds of the elements in array \a x */
-function float: lb_array(array[$U] of var float: x);
-/** @group builtins.reflect Return maximum of all upper bounds of the elements in array \a x */
-function float: ub_array(array[$U] of var float: x);
-/** @group builtins.reflect Return minimum of all lower bounds of the elements in array \a x */
 function float: lb_array(array[$U] of var opt float: x);
 /** @group builtins.reflect Return maximum of all upper bounds of the elements in array \a x */
 function float: ub_array(array[$U] of var opt float: x);
