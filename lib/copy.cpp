@@ -396,7 +396,7 @@ namespace MiniZinc {
         for (unsigned int i=l->let().size(); i--;)
           let[i] = copy(env,m,l->let()[i],followIds,copyFundecls,isFlatModel);
         Let* c = new Let(copy_location(m,e),let,copy(env,m,l->in(),followIds,copyFundecls,isFlatModel));
-        for (unsigned int i=l->let().size(); i--;) {
+        for (unsigned int i=l->_let_orig.size(); i--;) {
           c->_let_orig[i] = copy(env,m,l->_let_orig[i],followIds,copyFundecls,isFlatModel);
         }
         
