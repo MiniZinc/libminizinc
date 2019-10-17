@@ -1267,7 +1267,7 @@ namespace MiniZinc {
                   //ident->decl()->ti()->setComputedDomain(false);
                   //ident->decl()->ti()->domain(new SetLit(Location().introduce(),newdom));
                   setComputedDomain(env, ident->decl(), new SetLit(Location().introduce(), newdom), false);
-                  if (ident->decl()->e()==NULL && newdom->min()==newdom->max()) {
+                  if (ident->decl()->e()==NULL && newdom->min()==newdom->max() && !vd->type().is_set()) {
                     ident->decl()->e(IntLit::a(newdom->min()));
                   }
                 }
