@@ -439,11 +439,11 @@ namespace MiniZinc{
       geas::solver::result res = geas::solver::UNKNOWN;
       while ((_opt.all_solutions || nr_solutions < _opt.nr_solutions) && remaining_time() >= 0.0) {
         res = _solver.solve({remaining_time(), _opt.conflicts - _solver.data->stats.conflicts});
-        nr_solutions++;
         printSolution();
         if (res != geas::solver::SAT) {
           break;
         } else {
+          nr_solutions++;
           _solver.restart();
           if(!addSolutionNoGood()) {
             res = geas::solver::UNSAT;
