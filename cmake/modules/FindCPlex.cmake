@@ -6,8 +6,6 @@
 #  CPLEX_COMPILE_FLAGS  - The definitions required to compile with CPLEX
 # User can set CPLEX_ROOT to the preferred installation prefix
 
-list(INSERT CMAKE_PREFIX_PATH 0 "${CPLEX_ROOT}" "$ENV{CPLEX_ROOT}")
-
 set(CPLEX_COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG")
 
 set(CPLEX_VERSIONS 129 128 1271 127 1263 1262 1261 126)
@@ -59,7 +57,6 @@ if(CPLEX_PLUGIN AND HAS_WINDOWS_H AND NOT HAS_DLFCN_H)
 endif()
 
 mark_as_advanced(CPLEX_INCLUDE CPLEX_LIBRARY)
-list(REMOVE_AT CMAKE_PREFIX_PATH 1 0)
 
 set(CPLEX_LIBRARIES ${CPLEX_LIBRARY})
 set(CPLEX_INCLUDE_DIRS ${CPLEX_INCLUDE})

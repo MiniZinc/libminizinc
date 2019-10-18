@@ -6,8 +6,6 @@
 #  GOSICBC_TARGETS        - The names of imported targets created for CBC
 # User can set OSICBC_ROOT to the preferred installation prefix
 
-list(INSERT CMAKE_PREFIX_PATH 0 "${OSICBC_ROOT}" "$ENV{OSICBC_ROOT}")
-
 set(OSICBC_FIND_FILES coin/CbcSolver.hpp coin/CglPreProcess.hpp coin/ClpConfig.h coin/CoinSignal.hpp coin/OsiClpSolverInterface.hpp coin/OsiSolverInterface.hpp)
 
 foreach(OSICBC_FILE ${OSICBC_FIND_FILES})
@@ -75,7 +73,6 @@ find_package_handle_standard_args(OsiCBC
 )
 
 mark_as_advanced(OSICBC_INCLUDE OSICBC_LIBRARY)
-list(REMOVE_AT CMAKE_PREFIX_PATH 1 0)
 
 set(OSICBC_LIBRARIES ${OSICBC_LIBRARY})
 set(OSICBC_INCLUDE_DIRS ${OSICBC_INCLUDE})

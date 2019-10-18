@@ -5,8 +5,6 @@
 #  XPRESS_LIBRARIES    - The libraries needed to use FICO Xpress
 # User can set XPRESS_ROOT to the preferred installation prefix
 
-list(INSERT CMAKE_PREFIX_PATH 0 "${XPRESS_ROOT}" "$ENV{XPRESS_ROOT}")
-
 #TODO: Check default installation locations
 find_path(XPRESS_INCLUDE xprs.h
           PATHS $ENV{XPRESSDIR} $ENV{XPRESS} $ENV{XPRESS_DIR}
@@ -37,7 +35,6 @@ find_package_handle_standard_args(Xpress
 )
 
 mark_as_advanced(XPRESS_INCLUDE XPRESS_LIBRARY)
-list(REMOVE_AT CMAKE_PREFIX_PATH 1 0)
 
 set(XPRESS_LIBRARIES ${XPRESS_LIBRARY})
 set(XPRESS_INCLUDE_DIRS ${XPRESS_INCLUDE})
