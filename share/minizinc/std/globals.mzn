@@ -111,6 +111,7 @@ include "regular_set.mzn";
 include "regular_regexp.mzn";
 include "roots.mzn";
 include "roots_fn.mzn";
+include "seq_precede_chain.mzn";
 include "sliding_sum.mzn";
 include "sort.mzn";
 include "sort_fn.mzn";
