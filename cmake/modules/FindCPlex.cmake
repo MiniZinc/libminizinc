@@ -4,7 +4,7 @@
 #  CPLEX_INCLUDE_DIRS - The CPLEX include directories
 #  CPLEX_LIBRARIES    - The libraries needed to use CPLEX
 #  CPLEX_COMPILE_FLAGS  - The definitions required to compile with CPLEX
-# User can set CPLEX_ROOT to the preferred installation prefix
+# User can set CPlex_ROOT to the preferred installation prefix
 
 set(CPLEX_COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG")
 

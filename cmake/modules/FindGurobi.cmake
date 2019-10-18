@@ -4,7 +4,7 @@
 #  GUROBI_INCLUDE_DIRS - The GUROBI include directories
 #  GUROBI_LIBRARIES    - The libraries needed to use GUROBI
 #  GUROBI_COMPILE_FLAGS  - The definitions required to compile with GUROBI
-# User can set GUROBI_ROOT to the preferred installation prefix
+# User can set Gurobi_ROOT to the preferred installation prefix
 
 option(GUROBI_PLUGIN "Build Gurobi binding as a plugin" ON)
 

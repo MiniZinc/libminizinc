@@ -3,7 +3,7 @@
 #  XPRESS_FOUND        - System has FICO Xpress
 #  XPRESS_INCLUDE_DIRS - The FICO Xpress include directories
 #  XPRESS_LIBRARIES    - The libraries needed to use FICO Xpress
-# User can set XPRESS_ROOT to the preferred installation prefix
+# User can set Xpress_ROOT to the preferred installation prefix
 
 #TODO: Check default installation locations
 find_path(XPRESS_INCLUDE xprs.h
@@ -31,7 +31,7 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Xpress
   FOUND_VAR XPRESS_FOUND
   REQUIRED_VARS XPRESS_INCLUDE XPRESS_LIBRARY
-  FAIL_MESSAGE "Could NOT find Xpress, use XPRESS_ROOT to hint its location"
+  FAIL_MESSAGE "Could NOT find Xpress, use Xpress_ROOT to hint its location"
 )
 
 mark_as_advanced(XPRESS_INCLUDE XPRESS_LIBRARY)

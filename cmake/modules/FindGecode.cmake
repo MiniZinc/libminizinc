@@ -4,7 +4,7 @@
 #  GECODE_INCLUDE_DIRS   - The Gecode include directories
 #  GECODE_LIBRARIES      - The libraries needed to use Gecode
 #  GECODE_TARGETS        - The names of imported targets created for gecode
-# User can set GECODE_ROOT to the preferred installation prefix
+# User can set Gecode_ROOT to the preferred installation prefix
 
 find_path(GECODE_INCLUDE gecode/kernel.hh
           PATH_SUFFIXES include)

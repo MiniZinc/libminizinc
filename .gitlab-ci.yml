@@ -7,10 +7,10 @@ stages:
 
 variables:
   # Vendor solver locations
-  GECODE_ROOT: "$CI_PROJECT_DIR/vendor/gecode"
-  GUROBI_ROOT: "$CI_PROJECT_DIR/vendor/gurobi"
-  CPLEX_ROOT: "$CI_PROJECT_DIR/vendor/CPLEX_Studio/cplex"
-  OSICBC_ROOT: "$CI_PROJECT_DIR/vendor/cbc"
+  Gecode_ROOT: "$CI_PROJECT_DIR/vendor/gecode"
+  Gurobi_ROOT: "$CI_PROJECT_DIR/vendor/gurobi"
+  CPlex_ROOT: "$CI_PROJECT_DIR/vendor/CPLEX_Studio/cplex"
+  OsiCBC_ROOT: "$CI_PROJECT_DIR/vendor/cbc"
   # CCache settings
   CCACHE_DIR: "$CI_PROJECT_DIR/.ccache"
   CCACHE_MAXSIZE: "100M"

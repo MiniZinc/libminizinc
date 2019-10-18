@@ -4,7 +4,7 @@
 #  OSICBC_INCLUDE_DIRS    - The CBC include directories
 #  OSICBC_LIBRARIES       - The libraries needed to use CBC
 #  GOSICBC_TARGETS        - The names of imported targets created for CBC
-# User can set OSICBC_ROOT to the preferred installation prefix
+# User can set OsiCBC_ROOT to the preferred installation prefix
 
 set(OSICBC_FIND_FILES coin/CbcSolver.hpp coin/CglPreProcess.hpp coin/ClpConfig.h coin/CoinSignal.hpp coin/OsiClpSolverInterface.hpp coin/OsiSolverInterface.hpp)
 
@@ -69,7 +69,7 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(OsiCBC
   FOUND_VAR OSICBC_FOUND
   REQUIRED_VARS OSICBC_INCLUDE OSICBC_LIBRARY
-  FAIL_MESSAGE "Could NOT find OsiCBC, use OSICBC_ROOT to hint its location"
+  FAIL_MESSAGE "Could NOT find OsiCBC, use OsiCBC_ROOT to hint its location"
 )
 
 mark_as_advanced(OSICBC_INCLUDE OSICBC_LIBRARY)

@@ -3,7 +3,7 @@
 #  GEAS_FOUND        - System has Geas
 #  GEAS_INCLUDE_DIRS - The Geas include directories
 #  GEAS_LIBRARIES    - The libraries needed to use Geas
-# User can set GEAS_ROOT to the preferred installation prefix
+# User can set Geas_ROOT to the preferred installation prefix
 # Imported target Geas will be created for linking purposes
 find_path(
   GEAS_INCLUDE geas/c/geas.h
