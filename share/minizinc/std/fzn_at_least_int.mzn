@@ -5,5 +5,5 @@ include "count_fn.mzn";
 %-----------------------------------------------------------------------------%
 
 predicate fzn_at_least_int(int: n, array[int] of var int: x, int: v) =
-    count(x, n) >= n;
+    count(x, v) >= n;
 

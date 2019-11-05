@@ -5,4 +5,4 @@ include "count_fn.mzn";
 %-----------------------------------------------------------------------------%
 
 predicate fzn_at_least_int_reif(int: n, array[int] of var int: x, int: v, var bool: b) =
-    b <-> count(x, n) >= n;
+    b <-> count(x, v) >= n;
