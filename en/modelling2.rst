@@ -226,6 +226,7 @@ integers
 meaning the profit for a banana cake is 400, while for a chocolate cake it
 is 450.  Internally ``BananaCake`` will be treated like the integer 1,
 while ``ChocolateCake`` will be treated like the integer 2.
+The expression :mzn:`[400,500]` represents a literal one-dimensional array. In MiniZinc, the index set of literal arrays always starts at 1 (this is similar to other mathematically inspired languages such as MATLAB, Julia or Mathematica).
 While MiniZinc does not provide an explicit list type, one-dimensional
 arrays with an index set :mzn:`1..n` behave like lists, and we will sometimes
 refer to them as :index:`lists <list>`.
@@ -252,7 +253,7 @@ The data file contains an example initialization of a 2-D array:
   consumption= [| 250, 2, 75,  100, 0,
                 | 200, 0, 150, 150, 75 |];
             
-Notice how the delimiter ``|`` is used to separate rows.
+Notice how the delimiter ``|`` is used to separate rows. As for one-dimensional array literals, indexing of two-dimensional array literals also starts at 1.
 
 .. defblock:: Arrays
 
@@ -280,6 +281,7 @@ Notice how the delimiter ``|`` is used to separate rows.
   
     [ <expr-1>, ..., <expr-n> ]
   
+  and their index sets are :mzn:`1..n`,
   while :index:`two-dimensional array literals <array; literal; 2D>` are of form
 
   .. code-block:: minizincdef
@@ -288,7 +290,7 @@ Notice how the delimiter ``|`` is used to separate rows.
        ...                         |
        <expr-m-1>, ..., <expr-m-n> |]
 
-  where the array has ``m`` rows and ``n`` columns.
+  where the array has ``m`` rows and ``n`` columns, with index sets :mzn:`1..m` for the first and :mzn:`1..n` for the second dimension.
 
   The family of built-in functions :mzn:`array1d`,
   :mzn:`array2d`, etc,
@@ -304,8 +306,8 @@ Notice how the delimiter ``|`` is used to separate rows.
   instance, :mzn:`array2d(1..3, 1..2, [1, 2, 3, 4, 5, 6])` is equivalent to
   :mzn:`[|1, 2 |3, 4 |5, 6|]`.
 
-  Array elements are :index:`accessed <array; access>` in the usual way: :mzn:`a[i,j]` gives the
-  element in the :math:`i^{th}` row and :math:`j^{th}` column.
+  Array elements are :index:`accessed <array; access>` using bracket syntax: :mzn:`a[i,j]` gives the
+  element at row index :math:`i^{th}` and column index :math:`j^{th}`.
 
   .. \pjs{New array functions!}
 
