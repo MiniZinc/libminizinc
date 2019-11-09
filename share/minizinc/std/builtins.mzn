@@ -2783,16 +2783,24 @@ function var int: mod_mt(var int: x, var int: y) :: promise_total =
 function var int:   product_rec(array[int] of var int: x) =
   if length(x)=0 then 1
   elseif length(x)=1 then x[min(index_set(x))]
-  else x[min(index_set(x))]*
-       product_rec([x[i] | i in min(index_set(x))+1..max(index_set(x))])
-  endif;
+  else let {
+    array[int] of var int: xx = array1d(x);
+    array[index_set(xx)] of var int: y;
+    constraint y[1] = xx[1];
+    constraint forall (i in 2..length(y)) (y[i]=y[i-1]*xx[i]);
+  } in y[length(y)]
+  endif;  
 
 function var float:   product_rec(array[int] of var float: x) =
   if length(x)=0 then 1.0
   elseif length(x)=1 then x[min(index_set(x))]
-  else x[min(index_set(x))]*
-       product_rec([x[i] | i in min(index_set(x))+1..max(index_set(x))])
-  endif;
+  else let {
+    array[int] of var float: xx = array1d(x);
+    array[index_set(xx)] of var float: y;
+    constraint y[1] = xx[1];
+    constraint forall (i in 2..length(y)) (y[i]=y[i-1]*xx[i]);
+  } in y[length(y)]
+  endif;  
 
 function var int: max_t(array[int] of var int: x) :: promise_total =
   if length(x)=0 then 0
