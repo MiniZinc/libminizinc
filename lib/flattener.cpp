@@ -562,10 +562,10 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           throw Error("multiple type errors");
         }
         if (flag_model_interface_only) {
-          MiniZinc::output_model_interface(*env, m, os);
+          MiniZinc::output_model_interface(*env, m, os, includePaths);
         }
         if (flag_model_types_only) {
-          MiniZinc::output_model_variable_types(*env, m, os);
+          MiniZinc::output_model_variable_types(*env, m, os, includePaths);
         }
         if (flag_compile_solution_check_model) {
           std::string mzc(FileUtils::deflateString(compiledSolutionCheckModel.str()));

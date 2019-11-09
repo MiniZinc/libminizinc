@@ -2317,19 +2317,24 @@ namespace MiniZinc {
     os << "}";
   }
 
-  void output_model_variable_types(Env& env, Model* m, std::ostream& os) {
+  void output_model_variable_types(Env& env, Model* m, std::ostream& os, const std::vector<std::string>& skipDirs) {
     class VInfVisitor : public ItemVisitor {
     public:
       Env& env;
+      const std::vector<std::string>& skip_dirs;
       bool had_var;
       bool had_enum;
       std::ostringstream oss_vars;
       std::ostringstream oss_enums;
-      VInfVisitor(Env& env0) : env(env0), had_var(false), had_enum(false) {}
+      VInfVisitor(Env& env0, const std::vector<std::string>& skipDirs) : env(env0), skip_dirs(skipDirs), had_var(false), had_enum(false) {}
       bool enter(Item* i) {
-        if (IncludeI* ii = i->dyn_cast<IncludeI>()) {
+        if (auto ii = i->dyn_cast<IncludeI>()) {
           std::string prefix = ii->m()->filepath().str().substr(0,ii->m()->filepath().size()-ii->f().size());
-          return (prefix.empty() || prefix == "./");
+          for (const auto & skip_dir : skip_dirs) {
+            if (prefix.substr(0, skip_dir.size()) == skip_dir) {
+              return false;
+            }
+          }
         }
         return true;
       }
@@ -2344,7 +2349,7 @@ namespace MiniZinc {
           had_enum = true;
         }
       }
-    } _vinf(env);
+    } _vinf(env, skipDirs);
     iterItems(_vinf, m);
     os << "{\"var_types\": {";
     os << "\n  \"vars\": {\n" << _vinf.oss_vars.str() << "\n  },";
@@ -2353,10 +2358,11 @@ namespace MiniZinc {
   }
 
 
-  void output_model_interface(Env& env, Model* m, std::ostream& os) {
+  void output_model_interface(Env& env, Model* m, std::ostream& os, const std::vector<std::string>& skipDirs) {
     class IfcVisitor : public ItemVisitor {
     public:
       Env& env;
+      const std::vector<std::string> skip_dirs;
       bool had_input;
       bool had_output;
       bool had_add_to_output = false;
@@ -2364,11 +2370,15 @@ namespace MiniZinc {
       std::ostringstream oss_output;
       std::string method;
       bool output_item;
-      IfcVisitor(Env& env0) : env(env0), had_input(false), had_output(false), method("sat"), output_item(false) {}
+      IfcVisitor(Env& env0, const std::vector<std::string>& skipDirs) : env(env0), skip_dirs(skipDirs), had_input(false), had_output(false), method("sat"), output_item(false) {}
       bool enter(Item* i) {
-        if (IncludeI* ii = i->dyn_cast<IncludeI>()) {
+        if (auto ii = i->dyn_cast<IncludeI>()) {
           std::string prefix = ii->m()->filepath().str().substr(0,ii->m()->filepath().size()-ii->f().size());
-          return (prefix.empty() || prefix == "./");
+          for (const auto & skip_dir : skip_dirs) {
+            if (prefix.substr(0, skip_dir.size()) == skip_dir) {
+              return false;
+            }
+          }
         }
         return true;
       }
@@ -2409,7 +2419,7 @@ namespace MiniZinc {
       void vOutputI(OutputI* oi) {
         output_item = true;
       }
-    } _ifc(env);
+    } _ifc(env, skipDirs);
     iterItems(_ifc, m);
     os << "{\n  \"input\" : {\n" << _ifc.oss_input.str() << "\n  },\n  \"output\" : {\n" << _ifc.oss_output.str() << "\n  }";
     os << ",\n  \"method\": \"";

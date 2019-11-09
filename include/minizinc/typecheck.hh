@@ -88,10 +88,10 @@ namespace MiniZinc {
   void typecheck(Env& env, Model* m, AssignI* ai);
 
   /// Output description of parameters and output variables to \a os
-  void output_model_interface(Env& env, Model* m, std::ostream& os);
+  void output_model_interface(Env& env, Model* m, std::ostream& os, const std::vector<std::string>& skipDirs);
 
   /// Output information about variable types (enum types) to \a os
-  void output_model_variable_types(Env& env, Model* m, std::ostream& os);
+  void output_model_variable_types(Env& env, Model* m, std::ostream& os, const std::vector<std::string>& skipDirs);
 
 }
 
