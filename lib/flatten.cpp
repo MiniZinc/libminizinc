@@ -2880,26 +2880,18 @@ namespace MiniZinc {
                 SetLit* newDom = new SetLit(Location().introduce(),IntSetVal::a(dom->min(0),dom->max(dom->size()-1)));
                   TypeInst* nti = copy(env,vdi->e()->ti())->cast<TypeInst>();
                   nti->domain(newDom);
-                  vdi->e()->ti(nti); /// TODO: WHY WAS THIS COMMENTED OUT IN DEBUG???
+                  vdi->e()->ti(nti);
               }
               if (dom->size() > 1) {
-                IntVal firstHole = dom->max(0)+1;
-                IntSetRanges domr(dom);
-                ++domr;
-                for (; domr(); ++domr) {
-                  for (IntVal i=firstHole; i<domr.min(); i++) {
-                    std::vector<Expression*> args(2);
-                    args[0] = vdi->e()->id();
-                    args[1] = IntLit::a(i);
-                    Call* call = new Call(vdi->e()->loc(),constants().ids.int_.ne,args);
-                    call->type(Type::varbool());
-                    call->decl(env.model->matchFn(env, call, false));
-                    // Give distinct call stacks for each int_ne added
-                    CallStackItem csi(env, IntLit::a(i));
-                    env.flat_addItem(new ConstraintI(Location().introduce(), call));
-                    firstHole = domr.max().plus(1);
-                  }
-                }
+                std::vector<Expression*> args(2);
+                args[0] = vdi->e()->id();
+                args[1] = new SetLit(vdi->e()->loc(), dom);
+                Call* call = new Call(vdi->e()->loc(),constants().ids.set_in,args);
+                call->type(Type::varbool());
+                call->decl(env.model->matchFn(env, call, false));
+                // Give distinct call stack
+                CallStackItem csi(env, args[1]);
+                env.flat_addItem(new ConstraintI(Location().introduce(), call));
               }
             }
           }
