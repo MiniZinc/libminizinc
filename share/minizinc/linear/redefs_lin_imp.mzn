@@ -52,10 +52,6 @@ predicate int_eq_imp(var int: x, int: y, var bool: b) =
       b -> (y = fix(x))
     % elseif fPostprocessDomains then
     % % TODO MIPDomains
-    elseif card(dom(x)) < nMZN__UnaryLenMax_eq then % TODO: Use eq_encode in imp ??
-      let {
-        array[int] of var int: p = eq_encode(x);
-      } in b <= p[y]
     else
       aux_int_eq_if_1(x, y, b)
     endif
@@ -96,10 +92,6 @@ predicate int_ne_imp(var int: x, int: y, var bool: b) =
       b -> (y != fix(x))
     % elseif fPostprocessDomains then
     % % TODO MIPDomains
-    elseif card(dom(x)) < nMZN__UnaryLenMax_eq then
-      let {
-        array[int] of var int: p = eq_encode(x);
-      } in b <= (1 - p[y])
     else
       aux_int_ne_if_1(x, y, b)
     endif
