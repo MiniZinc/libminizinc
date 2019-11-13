@@ -233,7 +233,8 @@ elseif is_fixed(y) then
       let {
           set of int: s = lb(x)..ub(x),
           set of int: r = {lb(x)*lb(y), lb(x)*ub(y), ub(x)*lb(y), ub(x)*ub(y)},
-          array[s] of var min(r)..max(r): ady = array1d(s, [ d*y | d in s ]) }
+          array[s] of var min(r)..max(r): ady = array1d(s, [
+            if d in dom(x) then d*y else 0 endif | d in s ]) }
       in
       ady[x] = z                             %% use element()
     endif
