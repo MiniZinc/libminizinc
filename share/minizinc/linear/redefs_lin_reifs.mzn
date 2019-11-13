@@ -101,7 +101,6 @@ predicate int_ne(var int: x, var int: y) =
 
 %% var, const
 predicate int_ne(var int: x, int: y) =
-    trace("int_ne(\(x), \(y), domains: \(dom(x)), \(y))\n") /\
      if y in dom(x) then 
        if y==ub(x) then
          x <= y-1
