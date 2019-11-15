@@ -802,8 +802,10 @@ typedef LinEq__<std::vector<double>, std::vector<VarDecl*> > LinEq;
         return true;
       }
       else {
-        if ( vd->payload()>=0 )                     // only touched
+        if ( vd->payload()>=0 ) {                    // only touched
           mNViews[ rhsLin ] = nVRest;
+          return true;                               // can lead to a new connection
+        }
       }
       
       return false;
