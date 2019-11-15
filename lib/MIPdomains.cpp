@@ -736,7 +736,7 @@ typedef LinEq__<std::vector<double>, std::vector<VarDecl*> > LinEq;
     
     /// This vector stores the linear part of a general view
     /// x = <linear part> + rhs
-    typedef std::vector<std::pair<VarDecl*, double> > TLinExpLin;
+    typedef std::vector<std::pair<VarDecl*, float> > TLinExpLin;
     /// This struct has data describing the rest of a general view
     struct NViewData {
       VarDecl* pVarDefined = 0;
