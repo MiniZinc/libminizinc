@@ -43,6 +43,7 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
       int nTimeout1000=-1;
       int nTimeoutFeas1000=-1;
       long int nSolLimit = -1;
+      int nSeed = -1;
       double nWorkMemLimit=-1;
       std::string sReadParams;
       std::string sWriteParams;

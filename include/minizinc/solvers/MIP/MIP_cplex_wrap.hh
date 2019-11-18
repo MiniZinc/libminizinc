@@ -41,6 +41,7 @@ class MIP_cplex_wrapper : public MIP_wrapper {
       std::string sExportModel;
       int nTimeout=-1;
       long int nSolLimit = -1;
+      int nSeed = -1;
       double nWorkMemLimit=-1;
       std::string sReadParams;
       std::string sWriteParams;

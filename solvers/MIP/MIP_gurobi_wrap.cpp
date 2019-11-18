@@ -113,6 +113,8 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
      "    stop search after N milliseconds wall time after the first feasible solution" << std::endl
   << "  -n <N>, --num-solutions <N>\n"
      "    stop search after N solutions" << std::endl
+  << "  -r <N>, --random-seed <N>\n"
+     "    random seed, integer" << std::endl
   << "  --workmem <N>, --nodefilestart <N>\n"
      "    maximal RAM for node tree used before writing to node file, GB, default: 3" << std::endl
   << "  --writeModel <file>\n    write model to <file> (.lp, .mps, .sav, ...)" << std::endl
@@ -149,6 +151,7 @@ bool MIP_gurobi_wrapper::Options::processOption(int& i, std::vector<std::string>
   } else if ( cop.get( "--solver-time-limit --solver-time", &nTimeout1000 ) ) {
   } else if ( cop.get( "--solver-time-limit-feas --solver-tlf", &nTimeoutFeas1000 ) ) {
   } else if ( cop.get( "-n --num-solutions", &nSolLimit ) ) {
+  } else if ( cop.get( "-r --random-seed", &nSeed ) ) {
   } else if ( cop.get( "--workmem --nodefilestart", &nWorkMemLimit ) ) {
   } else if ( cop.get( "--readParam", &sReadParams ) ) {
   } else if ( cop.get( "--writeParam", &sWriteParams ) ) {
@@ -710,6 +713,11 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
       wrap_assert(!error, "Failed to set GRB_INT_PAR_SOLLIMIT.", false);
     }
     
+    if (options->nSeed>=0) {
+      error = dll_GRBsetintparam(dll_GRBgetenv(model), GRB_INT_PAR_SEED, options->nSeed);
+      wrap_assert(!error, "Failed to set GRB_INT_PAR_SEED.", false);
+    }
+
     if (options->nWorkMemLimit>0 && options->nWorkMemLimit<1e200) {
       error =  dll_GRBsetdblparam (dll_GRBgetenv(model), "NodefileStart", options->nWorkMemLimit);
       wrap_assert(!error, "Failed to set NodefileStart.", false);
