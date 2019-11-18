@@ -911,6 +911,16 @@ function var opt float: bool2float(var opt bool: x) ::promise_total =
     constraint deopt(xi)=bool2float(deopt(x));
   } in xi;
 
+/** @group optiontypes.int Return optional 0/1 integer that is absent iff \a x
+  is absent, and 1 iff \a x occurs and is true. */
+function var opt float: int2float(var opt int: x) ::promise_total =
+  let {
+    var opt int2float(lb(x))..int2float(ub(x)): xi;
+    constraint absent(xi)=absent(x);
+    constraint deopt(xi)=int2float(deopt(x));
+  } in xi;
+
+
 /** @group optiontypes.float True iff both \a x and \a y are absent or
   both are present and have the same value. */
 predicate float_eq(var opt float: x, var opt float: y) =

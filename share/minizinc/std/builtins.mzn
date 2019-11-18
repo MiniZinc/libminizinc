@@ -1532,6 +1532,12 @@ function array[$T] of var float: int2float(array[$T] of var int: x) ::promise_to
     array[int] of var int: xx = array1d(x)
   } in arrayXd(x,[int2float(xx[i]) | i in index_set(xx)]);
 
+/** @group builtins.coercion Return array of optional integers \a x coerced to an array of optional floats  */
+function array[$T] of var opt float: int2float(array[$T] of var opt int: x) ::promise_total =
+  let {
+    array[int] of var opt int: xx = array1d(x)
+  } in arrayXd(x,[int2float(xx[i]) | i in index_set(xx)]);
+
 % Only supported for set of int:
 % function array[int] of $T: set2array(set of $T);
 /** @group builtins.coercion Return a set of integers \a x coerced to an array of integers  */
