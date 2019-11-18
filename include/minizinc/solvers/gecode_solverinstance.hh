@@ -215,6 +215,7 @@ namespace MiniZinc {
     bool only_range_domains = false;
     bool sac = false;
     bool shave = false;
+    bool verbose = false;
     int pre_passes = 0;
     bool statistics = false;
     bool all_solutions = false;
