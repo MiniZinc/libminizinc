@@ -27,7 +27,13 @@ namespace MiniZinc {
       }
     }
     if (!doNotFollowChains) {
-      id = follow_id_to_decl(id)->cast<VarDecl>()->id();
+      Expression* id_f = follow_id_to_decl(id);
+      if (id_f == constants().absent) {
+        ret.b = bind(env,Ctx(),b,constants().lit_true);
+        ret.r = bind(env,ctx,r,id_f);
+      } else {
+        id = id_f->cast<VarDecl>()->id();
+      }
     }
     if (ctx.neg && id->type().dim() > 0) {
       if (id->type().dim() > 1)
