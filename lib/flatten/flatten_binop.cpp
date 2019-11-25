@@ -13,9 +13,9 @@
 
 namespace MiniZinc {
 
-  ASTString opToBuiltin(BinOp* op, BinOpType bot) {
+  ASTString opToBuiltin(Expression* op_lhs, Expression* op_rhs, BinOpType bot) {
     std::string builtin;
-    if (op->rhs()->type().isint()) {
+    if (op_rhs->type().isint()) {
       switch (bot) {
         case BOT_PLUS: return constants().ids.int_.plus;
         case BOT_MINUS: return constants().ids.int_.minus;
@@ -32,13 +32,13 @@ namespace MiniZinc {
         default:
           throw InternalError("not yet implemented");
       }
-    } else if (op->rhs()->type().isbool()) {
+    } else if (op_rhs->type().isbool()) {
       if (bot==BOT_EQ || bot==BOT_EQUIV)
         return constants().ids.bool_eq;
       builtin = "bool_";
-    } else if (op->rhs()->type().is_set()) {
+    } else if (op_rhs->type().is_set()) {
       builtin = "set_";
-    } else if (op->rhs()->type().isfloat()) {
+    } else if (op_rhs->type().isfloat()) {
       switch (bot) {
         case BOT_PLUS: return constants().ids.float_.plus;
         case BOT_MINUS: return constants().ids.float_.minus;
@@ -55,14 +55,14 @@ namespace MiniZinc {
         default:
           throw InternalError("not yet implemented");
       }
-    } else if (op->rhs()->type().isopt() &&
+    } else if (op_rhs->type().isopt() &&
                (bot==BOT_EQUIV || bot==BOT_EQ)) {
       /// TODO: extend to all option type operators
-      switch (op->lhs()->type().bt()) {
+      switch (op_lhs->type().bt()) {
         case Type::BT_BOOL: return constants().ids.bool_eq;
         case Type::BT_FLOAT: return constants().ids.float_.eq;
         case Type::BT_INT:
-          if (op->lhs()->type().st()==Type::ST_PLAIN)
+          if (op_lhs->type().st()==Type::ST_PLAIN)
             return constants().ids.int_.eq;
           else
             return constants().ids.set_eq;
@@ -71,7 +71,7 @@ namespace MiniZinc {
       }
       
     } else {
-      throw InternalError(op->opToString().str()+" not yet implemented");
+      throw InternalError("Operator not yet implemented");
     }
     switch (bot) {
       case BOT_PLUS:
@@ -559,7 +559,7 @@ namespace MiniZinc {
                 std::vector<Expression*> boargs(2);
                 boargs[0] = e0;
                 boargs[1] = e1;
-                Call* c = new Call(Location(), opToBuiltin(bo, bot), boargs);
+                Call* c = new Call(Location(), opToBuiltin(e0, e1, bot), boargs);
                 c->type(Type::varbool());
                 c->decl(env.model->matchFn(env, c, false));
                 EnvI::CSEMap::iterator it = env.cse_map_find(c);
@@ -871,7 +871,7 @@ namespace MiniZinc {
         if (bo->decl()) {
           cc = new Call(bo->loc().introduce(),bo->opToString(),args);
         } else {
-          cc = new Call(bo->loc().introduce(),opToBuiltin(bo,bot),args);
+          cc = new Call(bo->loc().introduce(),opToBuiltin(args[0],args[1],bot),args);
         }
         cc->type(bo->type());
         EnvI::CSEMap::iterator cit;
@@ -1350,10 +1350,11 @@ namespace MiniZinc {
           GC::lock();
           
           if (callid=="") {
+            assert(args.size()==2);
             if (bo->decl()) {
               callid = bo->decl()->id();
             } else {
-              callid = opToBuiltin(bo,bot);
+              callid = opToBuiltin(args[0](),args[1](),bot);
             }
           }
           
