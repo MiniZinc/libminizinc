@@ -11,7 +11,9 @@ macro(MD5 filename md5sum)
 endmacro(MD5)
 
 find_package(BISON 2.3)
-if(BISON_FOUND)
+find_package(FLEX 2.5)
+
+if(BISON_FOUND AND FLEX_FOUND)
   BISON_TARGET(MZNParser
     ${PROJECT_SOURCE_DIR}/lib/parser.yxx
     ${PROJECT_BINARY_DIR}/parser.tab.cpp
@@ -26,6 +28,20 @@ if(BISON_FOUND)
     DEFINES_FILE ${PROJECT_BINARY_DIR}/include/minizinc/support/regex_parser.tab.hh
     COMPILE_FLAGS "-p regex_yy -l"
   )
+
+  FLEX_TARGET(MZNLexer
+    ${PROJECT_SOURCE_DIR}/lib/lexer.lxx
+    ${PROJECT_BINARY_DIR}/lexer.yy.cpp
+    COMPILE_FLAGS "-P mzn_yy -L"
+    )
+  ADD_FLEX_BISON_DEPENDENCY(MZNLexer MZNParser)
+
+  FLEX_TARGET(RegExLexer
+    ${PROJECT_SOURCE_DIR}/lib/support/regex/lexer.lxx
+    ${PROJECT_BINARY_DIR}/regex_lexer.yy.cpp
+    COMPILE_FLAGS "-P regex_yy -L"
+    )
+  ADD_FLEX_BISON_DEPENDENCY(RegExLexer RegExParser)
 else()
   MD5(${PROJECT_SOURCE_DIR}/lib/parser.yxx parser_yxx_md5)
   if(NOT "${parser_yxx_md5}" STREQUAL "${parser_yxx_md5_cached}")
@@ -46,6 +62,24 @@ else()
       )
   endif()
 
+  MD5(${PROJECT_SOURCE_DIR}/lib/lexer.lxx lexer_lxx_md5)
+  if(NOT "${lexer_lxx_md5}" STREQUAL "${lexer_lxx_md5_cached}")
+    message(FATAL_ERROR
+      "The file lexer.lxx has been modified but flex cannot be run.\n"
+      "If you are sure ${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp is correct then "
+      "copy lexer.lxx's md5 ${lexer_lxx_md5} into ${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake"
+      )
+  endif()
+
+  MD5(${PROJECT_SOURCE_DIR}/lib/support/regex/lexer.lxx regex_lexer_lxx_md5)
+  if(NOT "${regex_lexer_lxx_md5}" STREQUAL "${regex_lexer_lxx_md5_cached}")
+    message(FATAL_ERROR
+      "The file regex/lexer.lxx has been modified but flex cannot be run.\n"
+      "If you are sure ${PROJECT_SOURCE_DIR}/lib/cached/regex_lexer.yy.cpp is correct then "
+      "copy regex/lexer.lxx's md5 ${regex_lexer_lxx_md5} into ${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake"
+      )
+  endif()
+
   include_directories(${PROJECT_SOURCE_DIR}/lib/cached)
   set(BISON_MZNParser_OUTPUTS
     ${PROJECT_SOURCE_DIR}/lib/cached/parser.tab.cpp
@@ -55,42 +89,6 @@ else()
     ${PROJECT_SOURCE_DIR}/lib/cached/regex_parser.tab.cpp
     ${PROJECT_SOURCE_DIR}/lib/cached/minizinc/support/regex_parser.tab.hh
   )
-endif()
-
-find_package(FLEX 2.5)
-if(FLEX_FOUND)
-  FLEX_TARGET(MZNLexer
-    ${PROJECT_SOURCE_DIR}/lib/lexer.lxx
-    ${PROJECT_BINARY_DIR}/lexer.yy.cpp
-    COMPILE_FLAGS "-P mzn_yy -L"
-  )
-  ADD_FLEX_BISON_DEPENDENCY(MZNLexer MZNParser)
-
-  FLEX_TARGET(RegExLexer
-    ${PROJECT_SOURCE_DIR}/lib/support/regex/lexer.lxx
-    ${PROJECT_BINARY_DIR}/regex_lexer.yy.cpp
-    COMPILE_FLAGS "-P regex_yy -L"
-  )
-  ADD_FLEX_BISON_DEPENDENCY(RegExLexer RegExParser)
-else()
-  MD5(${PROJECT_SOURCE_DIR}/lib/lexer.lxx lexer_lxx_md5)
-  if(NOT "${lexer_lxx_md5}" STREQUAL "${lexer_lxx_md5_cached}")
-    message(FATAL_ERROR
-      "The file lexer.lxx has been modified but flex cannot be run.\n"
-      "If you are sure ${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp is correct then "
-      "copy lexer.lxx's md5 ${lexer_lxx_md5} into ${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake"
-    )
-  endif()
-
-  MD5(${PROJECT_SOURCE_DIR}/lib/support/regex/lexer.lxx regex_lexer_lxx_md5)
-  if(NOT "${regex_lexer_lxx_md5}" STREQUAL "${regex_lexer_lxx_md5_cached}")
-    message(FATAL_ERROR
-      "The file regex/lexer.lxx has been modified but flex cannot be run.\n"
-      "If you are sure ${PROJECT_SOURCE_DIR}/lib/cached/regex_lexer.yy.cpp is correct then "
-      "copy regex/lexer.lxx's md5 ${regex_lexer_lxx_md5} into ${PROJECT_SOURCE_DIR}/lib/cached/md5_cached.cmake"
-    )
-  endif()
-
   set(FLEX_MZNLexer_OUTPUTS ${PROJECT_SOURCE_DIR}/lib/cached/lexer.yy.cpp)
   set(FLEX_RegExLexer_OUTPUTS ${PROJECT_SOURCE_DIR}/lib/cached/regex_lexer.yy.cpp)
 endif()
