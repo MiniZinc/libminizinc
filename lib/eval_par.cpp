@@ -329,7 +329,12 @@ namespace MiniZinc {
     typedef SetLit* Val;
     typedef Expression* ArrayVal;
     static SetLit* e(EnvI& env, Expression* e) {
-      return new SetLit(e->loc(),eval_intset(env, e));
+      switch (e->type().bt()) {
+        case Type::BT_INT: return new SetLit(e->loc(),eval_intset(env, e));
+        case Type::BT_BOOL: return new SetLit(e->loc(),eval_boolset(env, e));
+        case Type::BT_FLOAT: return new SetLit(e->loc(),eval_floatset(env, e));
+        default: throw InternalError("invalid set literal type");
+      }
     }
     static Expression* exp(Expression* e) { return e; }
     Expression* flatten(EnvI&, Expression*) {
@@ -488,7 +493,7 @@ namespace MiniZinc {
     } else if (e->type() == Type::parfloat(1)) {
       std::vector<Expression*> a = eval_comp<EvalFloatLit>(env,e);
       ret = new ArrayLit(e->loc(),a);
-    } else if (e->type() == Type::parsetint(1)) {
+    } else if (e->type().is_set()) {
       std::vector<Expression*> a = eval_comp<EvalSetLit>(env,e);
       ret = new ArrayLit(e->loc(),a);
     } else if (e->type() == Type::parstring(1)) {
@@ -1930,14 +1935,8 @@ namespace MiniZinc {
           return ret;
         }
         if (e->type().ispar()) {
-          if (e->type().isintset()) {
+          if (e->type().is_set()) {
             return EvalSetLit::e(env,e);
-          }
-          if (e->type().isfloatset()) {
-            return EvalFloatSetLit::e(env,e);
-          }
-          if (e->type().isboolset()) {
-            return EvalBoolSetLit::e(env,e);
           }
           if (e->type()==Type::parint()) {
             return EvalIntLit::e(env,e);
