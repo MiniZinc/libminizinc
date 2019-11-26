@@ -1781,6 +1781,32 @@ namespace MiniZinc {
     return al_sorted;
   }
   
+  Expression* b_set_to_ranges_int(EnvI& env, Call* call) {
+    assert(call->n_args()==1);
+    IntSetVal* isv = eval_intset(env, call->arg(0));
+    std::vector<Expression*> v(isv->size()*2);
+    for (unsigned int i=0; i<isv->size(); i++) {
+      v[2*i] = IntLit::a(isv->min(i));
+      v[2*i+1] = IntLit::a(isv->max(i));
+    }
+    ArrayLit* al = new ArrayLit(call->loc().introduce(), v);
+    al->type(Type::parint(1));
+    return al;
+  }
+
+  Expression* b_set_to_ranges_float(EnvI& env, Call* call) {
+    assert(call->n_args()==1);
+    FloatSetVal* fsv = eval_floatset(env, call->arg(0));
+    std::vector<Expression*> v(fsv->size()*2);
+    for (unsigned int i=0; i<fsv->size(); i++) {
+      v[2*i] = FloatLit::a(fsv->min(i));
+      v[2*i+1] = FloatLit::a(fsv->max(i));
+    }
+    ArrayLit* al = new ArrayLit(call->loc().introduce(), v);
+    al->type(Type::parfloat(1));
+    return al;
+  }
+
   std::default_random_engine& rnd_generator(void) {
     // TODO: initiate with seed if given as annotation/in command line
     static std::default_random_engine g;
@@ -2667,6 +2693,13 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::parsetint();
       rb(env, m, ASTString("card"), t, b_card);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parsetint();
+      rb(env, m, ASTString("set_to_ranges"), t, b_set_to_ranges_int);
+      t[0] = Type::parsetfloat();
+      rb(env, m, ASTString("set_to_ranges"), t, b_set_to_ranges_float);
     }
     {
       std::vector<Type> t(1);

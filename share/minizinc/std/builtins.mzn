@@ -851,6 +851,18 @@ function var $$E: min(var set of $$E: s);
 /** @group builtins.set Return the maximum of the set \a s */
 function var $$E: max(var set of $$E: s);
 
+/* Rewrite set membership on float variables to correct FlatZinc builtin */
+predicate set_in(var float: x, set of float: S) = float_set_in(x, S);
+
+/** @group builtins.set Return a sorted list of the non-overlapping ranges in \a S */
+function array[int] of int: set_to_ranges(set of int: S);
+/** @group builtins.set Return a sorted list of the non-overlapping ranges in \a S */
+function array[int] of float: set_to_ranges(set of float: S);
+/** @group builtins.set Return a sorted list of the non-overlapping ranges in \a S */
+function array[int] of bool: set_to_ranges(set of bool: S) =
+  if S={false} then [false,false] elseif S={true} then [true,true] else [false,true] endif;
+
+
 /***
   @groupdef builtins.ifthenelse Conditionals
   
@@ -2980,6 +2992,7 @@ include "redefinitions-2.0.2.mzn";
 include "redefinitions-2.1.mzn";
 include "redefinitions-2.1.1.mzn";
 include "redefinitions-2.2.1.mzn";
+include "redefinitions-2.3.3.mzn";
 include "fzn_if_then_else_int.mzn";
 include "fzn_if_then_else_opt_int.mzn";
 include "fzn_if_then_else_var_int.mzn";
