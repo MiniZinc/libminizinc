@@ -2780,7 +2780,7 @@ function var float: fldiv_t(var float: x, float: y) :: promise_total = x*(1.0/y)
 function var float: fldiv_t(var float: x, var float: y) :: promise_total =
   let {
     var float: z ::is_defined_var; % TODO: Compute division boundaries
-    constraint y != 0.0;
+    constraint if lb(y) <= 0 /\ ub(y) >= 0 then y != 0.0 endif;
     constraint float_div(x, y, z) ::defines_var(z); } in z;
 
 function var float: fldiv_mt(var float: x, var float: y) :: promise_total =
