@@ -1777,8 +1777,8 @@ namespace MiniZinc {
               // Check that index sets match
               env.errorStack.clear();
               checkIndexSets(env,vd,e);
-              if (vd->ti()->domain() && !vd->ti()->domain()->isa<TIId>() && e->isa<ArrayLit>()) {
-                ArrayLit* al = e->cast<ArrayLit>();
+              ArrayLit* al = Expression::dyn_cast<ArrayLit>(e->isa<Id>() ? e->cast<Id>()->decl()->e() : e);
+              if (al && vd->ti()->domain() && !vd->ti()->domain()->isa<TIId>()) {
                 if (e->type().bt()==Type::BT_INT) {
                   IntSetVal* isv = eval_intset(env, vd->ti()->domain());
                   for (unsigned int i=0; i<al->size(); i++) {
