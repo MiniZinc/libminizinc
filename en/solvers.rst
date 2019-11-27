@@ -126,7 +126,9 @@ The following parameters can be given on the command line or modified in ``share
 
   -D nSECcuts=0/1/2                            %% Subtour Elimination Constraints, see below
   -D fMIPdomains=true/false                    %% The unified domains feature, see below
-  -D float_EPS=1e-6                            %% Epsilon for floats' strict comparison
+  -D float_EPS=1e-6                            %% Epsilon for floats' strict comparison,
+                                               %% used e.g. for the following cases:
+                                               %% x!=y, x<y, b -> x<y, b <-> x<=y
   -DfIndConstr=true -DfMIPdomains=false        %% Use solver's indicator constraints, see below
   --no-half-reifications                       %% Turn off halfreification (full reification was until v2.2.3)
 
@@ -164,10 +166,11 @@ Subtour Elimination Constraints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Optionally use the SEC cuts for the circuit global constraint.
-Currently only Gurobi and IBM ILOG CPLEX (2019/03).
+Currently only Gurobi, IBM ILOG CPLEX, and COIN-OR CBC (trunk as of Nov 2019).
 If compiling from source, this needs boost and cmake flag ``-DCOMPILE_BOOST_MINCUT=ON``
 (or ``#define`` it in ``lib/algorithms/min_cut.cpp``).
-Values of ``nSECcuts``: 0,1: use MTZ formulation; 1,2: pass on circuit constraints
+Compile your model with the flag ``-DnSECcuts=<n>`` with the following possible ``<n>``:
+0,1: use MTZ formulation; 1,2: pass on circuit constraints
 to the SEC cut generator, so 1 would use both.
 
 Unified Domains (MIPdomains)
