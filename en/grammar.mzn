@@ -57,10 +57,15 @@
 
 % Type-inst expressions
 <ti-expr> ::= <base-ti-expr>
+            | <array-ti-expr>
 
-<base-ti-expr> ::= <var-par> <base-ti-expr-tail>
+<base-ti-expr> ::= <var-par> <opt-ti> <set-ti> <base-ti-expr-tail>
 
 <var-par> ::= "var" | "par" | ε
+
+<opt-ti> ::= "opt" | ε
+
+<set-ti> ::= "set" "of" | ε
 
 <base-type> ::= "bool"
               | "int"
@@ -69,23 +74,17 @@
 
 <base-ti-expr-tail> ::= <ident>
                       | <base-type>
-                      | <set-ti-expr-tail>
                       | <ti-variable-expr-tail>
-                      | <array-ti-expr-tail>
                       | "ann"
-                      | "opt" <base-ti-expr-tail>
                       | { <expr> "," ... }
                       | <num-expr> ".." <num-expr>
 
 % Type-inst variables
 <ti-variable-expr-tail> ::= $[A-Za-z][A-Za-z0-9_]*
 
-% Set type-inst expressions
-<set-ti-expr-tail> ::= "set" "of" <base-type>
-
 % Array type-inst expressions
-<array-ti-expr-tail> ::= "array" [ <ti-expr> "," ... ] "of" <ti-expr>
-                       | "list" "of" <ti-expr>
+<array-ti-expr> ::= "array" [ <ti-expr> "," ... ] "of" <base-ti-expr>
+                  | "list" "of" <base-ti-expr>
 
 % Expressions
 <expr> ::= <expr-atom> <expr-binop-tail>

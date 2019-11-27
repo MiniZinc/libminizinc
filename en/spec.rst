@@ -627,7 +627,7 @@ A type-inst expression specifies a type-inst.
 Type-inst expressions may include type-inst constraints.
 Type-inst expressions appear in variable declarations
 (:ref:`spec-Declarations`) and user-defined operation items
-(:ref:`spec-preds-and-fns`)..
+(:ref:`spec-preds-and-fns`).
 
 Type-inst expressions have this syntax:
 
@@ -893,12 +893,11 @@ of the following contexts:
   assigned value.
 
 |TySyntax|
-A set base type-inst expression tail has this syntax:
+A set base type-inst expression is a special case of the base type-inst rule:
 
-.. literalinclude:: grammar.mzn
-  :language: minizincdef
-  :start-after: % Set type-inst expressions
-  :end-before: %
+.. code-block:: minizincdef
+
+  <base-ti-expr> ::= <var-par> <opt-ti> "set" "of" <base-ti-expr-tail>
 
 Some example set type-inst expressions:
 
