@@ -251,7 +251,7 @@ predicate int2float(var int: x, var float: y);
 predicate array_bool_and(array[int] of var bool: as, var bool: r);
 /** @group flatzinc.bool Constrains \( \a r \leftrightarrow \bigvee_i \a as[i]\) */
 predicate array_bool_or(array[int] of var bool: as, var bool: r);
-/** @group flatzinc.bool Constrains \( \a r \leftrightarrow \oplus_i\ \a as[i]\) */
+/** @group flatzinc.bool Constrains \( \oplus_i\ \a as[i]\) */
 predicate array_bool_xor(array[int] of var bool: as);
 /** @group flatzinc.bool Constrains \a as[\a b] = \a c */
 predicate array_bool_element(var int: b, array[int] of bool: as, var bool: c);
