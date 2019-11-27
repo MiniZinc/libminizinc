@@ -330,7 +330,9 @@ namespace MiniZinc {
     typedef Expression* ArrayVal;
     static SetLit* e(EnvI& env, Expression* e) {
       switch (e->type().bt()) {
-        case Type::BT_INT: return new SetLit(e->loc(),eval_intset(env, e));
+        case Type::BT_INT:
+        case Type::BT_BOT:
+          return new SetLit(e->loc(),eval_intset(env, e));
         case Type::BT_BOOL: return new SetLit(e->loc(),eval_boolset(env, e));
         case Type::BT_FLOAT: return new SetLit(e->loc(),eval_floatset(env, e));
         default: throw InternalError("invalid set literal type");
@@ -493,7 +495,7 @@ namespace MiniZinc {
     } else if (e->type() == Type::parfloat(1)) {
       std::vector<Expression*> a = eval_comp<EvalFloatLit>(env,e);
       ret = new ArrayLit(e->loc(),a);
-    } else if (e->type().is_set()) {
+    } else if (e->type().st()==Type::ST_SET) {
       std::vector<Expression*> a = eval_comp<EvalSetLit>(env,e);
       ret = new ArrayLit(e->loc(),a);
     } else if (e->type() == Type::parstring(1)) {
