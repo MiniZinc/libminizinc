@@ -167,7 +167,7 @@ namespace MiniZinc {
       ss << "gecode_" << name;
       _constraintRegistry.add(ss.str(), p);
       std::stringstream ss2;
-      ss << "fzn_" << name;
+      ss2 << "fzn_" << name;
       _constraintRegistry.add(ss2.str(), p);
       // TODO: DO NOT USE global names directly
       _constraintRegistry.add(name, p);
