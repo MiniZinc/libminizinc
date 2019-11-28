@@ -57,6 +57,9 @@ namespace MiniZinc { namespace FileUtils {
   class TmpFile {
   private:
     std::string _name;
+#ifdef _WIN32
+    std::vector<std::string> _tmpNames;
+#endif
 #ifndef _WIN32
     int _tmpfile_desc;
 #endif

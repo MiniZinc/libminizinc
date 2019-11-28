@@ -355,12 +355,16 @@ namespace MiniZinc { namespace FileUtils {
     TCHAR szTempFileName[MAX_PATH];
     TCHAR lpTempPathBuffer[MAX_PATH];
     
-    GetTempPath(MAX_PATH, lpTempPathBuffer);
-    GetTempFileName(lpTempPathBuffer,
-                    "tmp_mzn_", 0, szTempFileName);
-    
-    _name = szTempFileName;
-    MoveFile(_name.c_str(), (_name + ext).c_str());
+    bool didCopy;
+    do {
+      GetTempPath(MAX_PATH, lpTempPathBuffer);
+      GetTempFileName(lpTempPathBuffer,
+                      "tmp_mzn_", 0, szTempFileName);
+      
+      _name = szTempFileName;
+      _tmpNames.push_back(_name);
+      didCopy = CopyFile(_name.c_str(), (_name + ext).c_str(), true);
+    } while (!didCopy);
     _name += ext;
 #else
     _tmpfile_desc = -1;
@@ -378,6 +382,11 @@ namespace MiniZinc { namespace FileUtils {
   
   TmpFile::~TmpFile(void) {
     remove(_name.c_str());
+#ifdef _WIN32
+    for (auto& n : _tmpNames) {
+      remove(n.c_str());
+    }
+#endif
 #ifndef _WIN32
     if (_tmpfile_desc != -1)
       close(_tmpfile_desc);
