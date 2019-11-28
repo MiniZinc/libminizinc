@@ -253,6 +253,12 @@ namespace MiniZinc {
             }
           }
           break;
+        } else {
+          conditions.push_back(constants().lit_false);
+          for (unsigned int j=0; j<results.size(); j++) {
+            defined[j].push_back(constants().lit_true);
+            branches[j].push_back(createDummyValue(env, e_then[j][i]->type()));
+          }
         }
       } else {
         allConditionsPar = false;
@@ -320,8 +326,6 @@ namespace MiniZinc {
       conditions.push_back(constants().lit_true);
 
       for (unsigned int j=0; j<results.size(); j++) {
-        VarDecl* nr = results[j];
-
         // flatten else branch
         EE eelse = flat_exp(env, cmix, e_else[j], NULL, NULL);
         assert(eelse.b());
@@ -332,75 +336,100 @@ namespace MiniZinc {
           allBranchesPar[j] = false;
         }
 
-        // update bounds of result with bounds of else branch
-        
         if (r_bounds_valid_int[j] && e_else[j]->type().isint()) {
           GCLock lock;
-          IntBounds ib_else = compute_int_bounds(env,eelse.r());
-          if (ib_else.valid) {
-            r_bounds_int[j].push_back(ib_else);
-            IntVal lb = IntVal::infinity();
-            IntVal ub = -IntVal::infinity();
-            for (unsigned int i=0; i<r_bounds_int[j].size(); i++) {
-              lb = std::min(lb, r_bounds_int[j][i].l);
-              ub = std::max(ub, r_bounds_int[j][i].u);
-            }
-            if (results[j]) {
-              IntBounds orig_r_bounds = compute_int_bounds(env,results[j]->id());
-              if (orig_r_bounds.valid) {
-                lb = std::max(lb,orig_r_bounds.l);
-                ub = std::min(ub,orig_r_bounds.u);
-              }
-            }
-            SetLit* r_dom = new SetLit(Location().introduce(), IntSetVal::a(lb,ub));
-            nr->ti()->domain(r_dom);
-          }
+          IntBounds ib_then = compute_int_bounds(env,eelse.r());
+          if (ib_then.valid)
+            r_bounds_int[j].push_back(ib_then);
+          r_bounds_valid_int[j] = r_bounds_valid_int[j] && ib_then.valid;
         } else if (r_bounds_valid_set[j] && e_else[j]->type().isintset()) {
           GCLock lock;
-          IntSetVal* isv_else = compute_intset_bounds(env, eelse.r());
-          if (isv_else) {
-            IntSetVal* isv = isv_else;
-            for (unsigned int i=0; i<r_bounds_set[j].size(); i++) {
-              IntSetRanges i0(isv);
-              IntSetRanges i1(r_bounds_set[j][i]);
-              Ranges::Union<IntVal,IntSetRanges, IntSetRanges> u(i0,i1);
-              isv = IntSetVal::ai(u);
-            }
-            if (results[j]) {
-              IntSetVal* orig_r_bounds = compute_intset_bounds(env,results[j]->id());
-              if (orig_r_bounds) {
-                IntSetRanges i0(isv);
-                IntSetRanges i1(orig_r_bounds);
-                Ranges::Inter<IntVal,IntSetRanges, IntSetRanges> inter(i0,i1);
-                isv = IntSetVal::ai(inter);
-              }
-            }
-            SetLit* r_dom = new SetLit(Location().introduce(),isv);
-            nr->ti()->domain(r_dom);
-          }
+          IntSetVal* isv = compute_intset_bounds(env, eelse.r());
+          if (isv)
+            r_bounds_set[j].push_back(isv);
+          r_bounds_valid_set[j] = r_bounds_valid_set[j] && isv;
         } else if (r_bounds_valid_float[j] && e_else[j]->type().isfloat()) {
           GCLock lock;
-          FloatBounds fb_else = compute_float_bounds(env, eelse.r());
-          if (fb_else.valid) {
-            FloatVal lb = fb_else.l;
-            FloatVal ub = fb_else.u;
-            for (unsigned int i=0; i<r_bounds_float[j].size(); i++) {
-              lb = std::min(lb, r_bounds_float[j][i].l);
-              ub = std::max(ub, r_bounds_float[j][i].u);
-            }
-            if (results[j]) {
-              FloatBounds orig_r_bounds = compute_float_bounds(env,results[j]->id());
-              if (orig_r_bounds.valid) {
-                lb = std::max(lb,orig_r_bounds.l);
-                ub = std::min(ub,orig_r_bounds.u);
-              }
-            }
-            BinOp* r_dom = new BinOp(Location().introduce(), FloatLit::a(lb), BOT_DOTDOT, FloatLit::a(ub));
-            r_dom->type(Type::parfloat(1));
-            nr->ti()->domain(r_dom);
-          }
+          FloatBounds fb_then = compute_float_bounds(env, eelse.r());
+          if (fb_then.valid)
+            r_bounds_float[j].push_back(fb_then);
+          r_bounds_valid_float[j] = r_bounds_valid_float[j] && fb_then.valid;
         }
         
+      }
+      
+    }
+    
+    // update domain of result variable with bounds from all branches
+    
+    for (unsigned int j=0; j<results.size(); j++) {
+      VarDecl* nr = results[j];
+      GCLock lock;
+      if (r_bounds_valid_int[j] && e_else[j]->type().isint()) {
+        IntVal lb = IntVal::infinity();
+        IntVal ub = -IntVal::infinity();
+        for (unsigned int i=0; i<r_bounds_int[j].size(); i++) {
+          lb = std::min(lb, r_bounds_int[j][i].l);
+          ub = std::max(ub, r_bounds_int[j][i].u);
+        }
+        if (nr->ti()->domain()) {
+          IntSetVal* isv = eval_intset(env, nr->ti()->domain());
+          Ranges::Const<IntVal> ite_r(lb,ub);
+          IntSetRanges isv_r(isv);
+          Ranges::Inter<IntVal, Ranges::Const<IntVal>, IntSetRanges> inter(ite_r,isv_r);
+          IntSetVal* isv_new = IntSetVal::ai(inter);
+          if (isv_new->card()!=isv->card()) {
+            SetLit* r_dom = new SetLit(Location().introduce(), isv_new);
+            nr->ti()->domain(r_dom);
+          }
+        } else {
+          SetLit* r_dom = new SetLit(Location().introduce(), IntSetVal::a(lb,ub));
+          nr->ti()->domain(r_dom);
+          nr->ti()->setComputedDomain(true);
+        }
+      } else if (r_bounds_valid_set[j] && e_else[j]->type().isintset()) {
+        IntSetVal* isv_branches = IntSetVal::a();
+        for (unsigned int i=0; i<r_bounds_set[j].size(); i++) {
+          IntSetRanges i0(isv_branches);
+          IntSetRanges i1(r_bounds_set[j][i]);
+          Ranges::Union<IntVal,IntSetRanges, IntSetRanges> u(i0,i1);
+          isv_branches = IntSetVal::ai(u);
+        }
+        if (nr->ti()->domain()) {
+          IntSetVal* isv = eval_intset(env, nr->ti()->domain());
+          IntSetRanges isv_r(isv);
+          IntSetRanges isv_branches_r(isv_branches);
+          Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> inter(isv_branches_r,isv_r);
+          IntSetVal* isv_new = IntSetVal::ai(inter);
+          if (isv_new->card()!=isv->card()) {
+            SetLit* r_dom = new SetLit(Location().introduce(), isv_new);
+            nr->ti()->domain(r_dom);
+          }
+        } else {
+          SetLit* r_dom = new SetLit(Location().introduce(), isv_branches);
+          nr->ti()->domain(r_dom);
+          nr->ti()->setComputedDomain(true);
+        }
+      } else if (r_bounds_valid_float[j] && e_else[j]->type().isfloat()) {
+        FloatVal lb = FloatVal::infinity();
+        FloatVal ub = -FloatVal::infinity();
+        for (unsigned int i=0; i<r_bounds_float[j].size(); i++) {
+          lb = std::min(lb, r_bounds_float[j][i].l);
+          ub = std::max(ub, r_bounds_float[j][i].u);
+        }
+        if (nr->ti()->domain()) {
+          FloatSetVal* isv = eval_floatset(env, nr->ti()->domain());
+          Ranges::Const<FloatVal> ite_r(lb,ub);
+          FloatSetRanges isv_r(isv);
+          Ranges::Inter<FloatVal, Ranges::Const<FloatVal>, FloatSetRanges> inter(ite_r,isv_r);
+          FloatSetVal* fsv_new = FloatSetVal::ai(inter);
+          SetLit* r_dom = new SetLit(Location().introduce(), fsv_new);
+          nr->ti()->domain(r_dom);
+        } else {
+          SetLit* r_dom = new SetLit(Location().introduce(), FloatSetVal::a(lb,ub));
+          nr->ti()->domain(r_dom);
+          nr->ti()->setComputedDomain(true);
+        }
       }
     }
 
