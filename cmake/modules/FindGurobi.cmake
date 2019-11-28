@@ -10,7 +10,7 @@ option(GUROBI_PLUGIN "Build Gurobi binding as a plugin" ON)
 
 set(GUROBI_COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG")
 
-set(GUROBI_VERSIONS 811 810 801 752 702)
+set(GUROBI_VERSIONS 900 811 810 801 752 702)
 
 foreach(VERSION ${GUROBI_VERSIONS})
   list(APPEND GUROBI_DEFAULT_LOC "/opt/gurobi${VERSION}/linux64")
