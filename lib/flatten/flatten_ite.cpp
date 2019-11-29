@@ -216,7 +216,8 @@ namespace MiniZinc {
     cmix.b = C_MIX;
     cmix.i = C_MIX;
     
-    for (int i=0; i<ite->size(); i++) {
+    bool foundTrueBranch = false;
+    for (int i=0; i<ite->size() && !foundTrueBranch; i++) {
       bool cond = true;
       EE e_if;
       if (ite->e_if(i)->isa<Call>() && ite->e_if(i)->cast<Call>()->id()=="mzn_in_root_context") {
@@ -230,7 +231,7 @@ namespace MiniZinc {
           cond = eval_bool(env,e_if.r());
         }
         if (cond) {
-          if (allConditionsPar || conditions.size()==0) {
+          if (allConditionsPar) {
             // no var conditions before this one, so we can simply emit
             // the then branch
             return flat_exp(env,ctx,ite->e_then(i),r,b);
@@ -252,7 +253,7 @@ namespace MiniZinc {
               allBranchesPar[j] = false;
             }
           }
-          break;
+          foundTrueBranch = true;
         } else {
           conditions.push_back(constants().lit_false);
           for (unsigned int j=0; j<results.size(); j++) {
