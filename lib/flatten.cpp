@@ -2903,12 +2903,12 @@ namespace MiniZinc {
                 call->decl(env.model->matchFn(env, call, false));
                 // Give distinct call stack
                 Annotation& ann = vdi->e()->ann();
+                Expression* tmp = call;
                 if(Expression* mznpath_ann = ann.getCall(constants().ann.mzn_path)) {
-                  CallStackItem csi(env, mznpath_ann->cast<Call>()->arg(0));
-                  env.flat_addItem(new ConstraintI(Location().introduce(), call));
-                } else {
-                  exit(-1);
+                  tmp = mznpath_ann->cast<Call>()->arg(0);
                 }
+                CallStackItem csi(env, tmp);
+                env.flat_addItem(new ConstraintI(Location().introduce(), call));
               }
             }
           }
