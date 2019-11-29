@@ -291,7 +291,7 @@ class CompareLogs:
                 aDetThis [ "tBest" ] = dTime_Last
                 ## Compare obj vals
                 dObj, bObj_MZN = (dObj_MZN, True) if \
-                      None!=dObj_MZN and abs( dObj_MZN ) < 1e45 else (mSlv.get("ObjVal_MZN"), False)
+                      None!=dObj_MZN and abs( dObj_MZN ) < 1e45 else (dObj_MZN, False)
                 ## Assuming solver value is better if different. WHY? Well it' happened both ways
                 dObj, bObj_SLV = (dObj_SLV, True) if \
                       None!=dObj_SLV and abs( dObj_SLV ) < 1e45 else (dObj, False)
@@ -330,7 +330,7 @@ class CompareLogs:
                         self.lOpt.append( lNames )                   ## Append the optimal method list
                         aResultThisInst[ "n_OPT" ] = 1
                         aDetThis[ "stt" ] = self.mapStatShort[ 2 ]
-                        if None==dObj or abs( dObj ) >= 1e45:
+                        if dObj is None or abs( dObj ) >= 1e45:
                             aResultThisInst[ "n_ErrorsLogical" ] += 1
                             aDetThis [ "errL" ] += 1
                             print ( "  WARNING: OPTIMAL STATUS BUT BAD OBJ VALUE, instance ", sInst,
