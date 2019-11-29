@@ -224,9 +224,9 @@ class MZT_Param:
                                         " The 1st element gives extra cmdline arguments to the call"],
                 "b_ThruShell"  : [True, "/// Set True to call solver thru shell."
                   " Then you can do shell tricks but Ctrl+C may not kill all subprocesses etc."],
-                "n_TimeoutRealHard": [300, "/// Real-time timeout per instance, seconds,"
+                "n_TimeoutRealHard": [150, "/// Real-time timeout per instance, seconds,"
                   " for all solution steps together. Use mzn/backend options for CPU time limit."],
-                "n_VMEMLIMIT_SoftHard": [8000000, 8000000, "/// 2 limits, soft/hard, in KB. Platform-dependent in Python 3.6. Default 8 GB"],
+                "n_VMEMLIMIT_SoftHard": [4000000, 4000000, "/// 2 limits, soft/hard, in KB. Platform-dependent in Python 3.6. Default 8 GB"],
               },
               "Stderr_Keylines": {
                 s_CommentKey: [ "A complete line in stderr will be interpreted accordingly.",
@@ -283,7 +283,7 @@ class MZT_Param:
               "EXE": {
                 "s_ExtraCmdline" : ["-a"],
                 "b_ThruShell"  : [True],
-                "n_TimeoutRealHard": [300],
+                "n_TimeoutRealHard": [150],
                 #  "n_VMEMLIMIT_SoftHard": [8000100000, 8100000000]
               }
             },
