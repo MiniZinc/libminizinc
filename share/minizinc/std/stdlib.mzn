@@ -523,7 +523,7 @@ function var bool : occurs_int(var opt int : x) ::promise_total =
   } in b;
 
 /** @group optiontypes.int Return value of \a x (assumes that \a x is not absent) */
-function var int : deopt(var opt int : x) ::promise_total = deopt_int(x);
+function var $$E : deopt(var opt $$E : x) ::promise_total = deopt_int(x);
 
 function var int : deopt_int(var opt int : x) ::promise_total =
   let {
