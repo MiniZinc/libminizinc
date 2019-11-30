@@ -1475,6 +1475,9 @@ namespace MiniZinc {
           if (Type::bt_subtype(tret, ethen->type(), true)) {
             tret.bt(ethen->type().bt());
           }
+          if (tret.enumId()!=0 && ethen->type().enumId()==0) {
+            tret.enumId(0);
+          }
           if (ethen->type().isvar()) allpar=false;
           if (ethen->type().isopt()) allpresent=false;
           if (ethen->type().cv())
