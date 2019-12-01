@@ -2,11 +2,6 @@ If not noted otherwise in individual file headers, all files that make up
 the libminizinc distribution are released under the Mozilla Public License
 Version 2.0, a copy of which can be found below.
 
-A notable exception is the file
-  include/minizinc/thirdparty/SafeInt3.hpp
-which is distributed under the Microsoft Public License (Ms-PL), see the
-file header for details.
-
 Mozilla Public License Version 2.0
 ==================================
 
