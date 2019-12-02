@@ -749,8 +749,29 @@ namespace MiniZinc {
         for (unsigned int i=0; i<args_ee.size(); i++)
           args.push_back(args_ee[i].r());
       }
+      bool hadImplementation = (decl->e() != nullptr);
       KeepAlive cr;
       {
+        GCLock lock;
+        std::vector<Expression*> e_args = toExpVec(args);
+        Call* cr_c = new Call(c->loc().introduce(),cid,e_args);
+        decl = env.model->matchFn(env,cr_c,false);
+        if (decl==NULL)
+          throw FlatteningError(env,cr_c->loc(), "cannot find matching declaration");
+        cr_c->type(decl->rtype(env,e_args,false));
+        assert(decl);
+        cr_c->decl(decl);
+        cr = cr_c;
+      }
+      if (hadImplementation && decl->e()==NULL && (cid == constants().ids.lin_exp || cid==constants().ids.sum)) {
+        args.clear();
+        if (e->type().isint()) {
+          flatten_linexp_call<IntLit>(env,ctx,nctx,cid,cr()->cast<Call>(),ret,b,r,args_ee,args);
+        } else {
+          flatten_linexp_call<FloatLit>(env,ctx,nctx,cid,cr()->cast<Call>(),ret,b,r,args_ee,args);
+        }
+        if (args.size()==0)
+          return ret;
         GCLock lock;
         std::vector<Expression*> e_args = toExpVec(args);
         Call* cr_c = new Call(c->loc().introduce(),cid,e_args);

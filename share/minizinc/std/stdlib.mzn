@@ -528,6 +528,15 @@ function var bool : occurs_int(var opt int : x) ::promise_total =
 /** @group optiontypes.int Return value of \a x (assumes that \a x is not absent) */
 function var $$E : deopt(var opt $$E : x) ::promise_total = deopt_int(x);
 
+function var opt int: if_b_else_absent(var bool: b, var int: x) ::promise_total =
+  let {
+    var opt dom(x): y;
+    constraint not occurs(y);
+  } in if b then x else y endif;
+
+function var int: if_b_else_zero(var bool: b, var int: x) ::promise_total =
+  if b then x else 0 endif;
+
 function var int : deopt_int(var int : x) ::promise_total = x;
 function var int : deopt_int(var opt int : x) ::promise_total =
   let {
@@ -787,6 +796,15 @@ function var bool : occurs_float(var opt float : x) ::promise_total =
 
 /** @group optiontypes.float Return value of \a x (assumes that \a x is not absent) */
 function var float : deopt(var opt float : x) ::promise_total = deopt_float(x);
+
+function var opt float: if_b_else_absent(var bool: b, var float: x) ::promise_total =
+  let {
+    var opt lb(x)..ub(x): y;
+    constraint not occurs(y);
+  } in if b then x else y endif;
+
+function var float: if_b_else_zero(var bool: b, var float: x) ::promise_total =
+  if b then x else 0.0 endif;
 
 function var float : deopt_float(var float : x) ::promise_total = x;
 function var float : deopt_float(var opt float : x) ::promise_total =

@@ -136,58 +136,23 @@ namespace MiniZinc {
           new_e = new BinOp(Location().introduce(), cond, BOT_AND, c->e());
           new_e->type(Type::varbool());
           ntype.ot(Type::OT_PRESENT);
+        } else if (surround && surround->id()==constants().ids.sum) {
+          Call* if_b_else_zero = new Call(c->loc().introduce(), ASTString("if_b_else_zero"), {cond, c->e()});
+          Type tt;
+          tt = c->e()->type();
+          tt.ti(Type::TI_VAR);
+          tt.ot(Type::OT_PRESENT);
+          if_b_else_zero->type(tt);
+          new_e = if_b_else_zero;
+          ntype.ot(Type::OT_PRESENT);
         } else {
-          Expression* r_bounds = NULL;
-          if (c->e()->type().bt()==Type::BT_INT && c->e()->type().dim() == 0) {
-            std::vector<Expression*> ubargs(1);
-            ubargs[0] = c->e();
-            if (c->e()->type().st()==Type::ST_SET) {
-              Call* bc = new Call(Location().introduce(),"ub",ubargs);
-              bc->type(Type::parsetint());
-              bc->decl(env.model->matchFn(env, bc, false));
-              r_bounds = bc;
-            } else {
-              Call* lbc = new Call(Location().introduce(),"lb",ubargs);
-              lbc->type(Type::parint());
-              lbc->decl(env.model->matchFn(env, lbc, false));
-              Call* ubc = new Call(Location().introduce(),"ub",ubargs);
-              ubc->type(Type::parint());
-              ubc->decl(env.model->matchFn(env, ubc, false));
-              r_bounds = new BinOp(Location().introduce(),lbc,BOT_DOTDOT,ubc);
-              r_bounds->type(Type::parsetint());
-            }
-            r_bounds->addAnnotation(constants().ann.maybe_partial);
-          }
+          Call* if_b_else_absent = new Call(c->loc().introduce(), ASTString("if_b_else_absent"), {cond, c->e()});
           Type tt;
           tt = c->e()->type();
           tt.ti(Type::TI_VAR);
           tt.ot(Type::OT_OPTIONAL);
-          
-          TypeInst* ti = new TypeInst(Location().introduce(),tt,r_bounds);
-          VarDecl* r = new VarDecl(c->loc(),ti,env.genId());
-          r->addAnnotation(constants().ann.promise_total);
-          r->introduced(true);
-          r->flat(r);
-          
-          std::vector<Expression*> let_exprs(3);
-          let_exprs[0] = r;
-          BinOp* r_eq_e = new BinOp(Location().introduce(),r->id(),BOT_EQ,c->e());
-          r_eq_e->type(Type::varbool());
-          let_exprs[1] = new BinOp(Location().introduce(),cond,BOT_IMPL,r_eq_e);
-          let_exprs[1]->type(Type::varbool());
-          let_exprs[1]->addAnnotation(constants().ann.promise_total);
-          let_exprs[1]->addAnnotation(constants().ann.maybe_partial);
-          std::vector<Expression*> absent_r_args(1);
-          absent_r_args[0] = r->id();
-          Call* absent_r = new Call(Location().introduce(), "absent", absent_r_args);
-          absent_r->type(Type::varbool());
-          absent_r->decl(env.model->matchFn(env, absent_r, false));
-          let_exprs[2] = new BinOp(Location().introduce(),cond,BOT_OR,absent_r);
-          let_exprs[2]->type(Type::varbool());
-          let_exprs[2]->addAnnotation(constants().ann.promise_total);
-          Let* let = new Let(Location().introduce(), let_exprs, r->id());
-          let->type(r->type());
-          new_e = let;
+          if_b_else_absent->type(tt);
+          new_e = if_b_else_absent;
         }
         Comprehension* nc = new Comprehension(c->loc(),new_e,gs,c->set());
         nc->type(ntype);
