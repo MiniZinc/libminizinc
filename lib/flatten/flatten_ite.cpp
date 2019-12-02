@@ -339,10 +339,10 @@ namespace MiniZinc {
 
         if (r_bounds_valid_int[j] && e_else[j]->type().isint()) {
           GCLock lock;
-          IntBounds ib_then = compute_int_bounds(env,eelse.r());
-          if (ib_then.valid)
-            r_bounds_int[j].push_back(ib_then);
-          r_bounds_valid_int[j] = r_bounds_valid_int[j] && ib_then.valid;
+          IntBounds ib_else = compute_int_bounds(env,eelse.r());
+          if (ib_else.valid)
+            r_bounds_int[j].push_back(ib_else);
+          r_bounds_valid_int[j] = r_bounds_valid_int[j] && ib_else.valid;
         } else if (r_bounds_valid_set[j] && e_else[j]->type().isintset()) {
           GCLock lock;
           IntSetVal* isv = compute_intset_bounds(env, eelse.r());
@@ -351,10 +351,10 @@ namespace MiniZinc {
           r_bounds_valid_set[j] = r_bounds_valid_set[j] && isv;
         } else if (r_bounds_valid_float[j] && e_else[j]->type().isfloat()) {
           GCLock lock;
-          FloatBounds fb_then = compute_float_bounds(env, eelse.r());
-          if (fb_then.valid)
-            r_bounds_float[j].push_back(fb_then);
-          r_bounds_valid_float[j] = r_bounds_valid_float[j] && fb_then.valid;
+          FloatBounds fb_else = compute_float_bounds(env, eelse.r());
+          if (fb_else.valid)
+            r_bounds_float[j].push_back(fb_else);
+          r_bounds_valid_float[j] = r_bounds_valid_float[j] && fb_else.valid;
         }
         
       }
@@ -366,7 +366,7 @@ namespace MiniZinc {
     for (unsigned int j=0; j<results.size(); j++) {
       VarDecl* nr = results[j];
       GCLock lock;
-      if (r_bounds_valid_int[j] && e_else[j]->type().isint()) {
+      if (r_bounds_valid_int[j] && ite->type().isint()) {
         IntVal lb = IntVal::infinity();
         IntVal ub = -IntVal::infinity();
         for (unsigned int i=0; i<r_bounds_int[j].size(); i++) {
@@ -388,7 +388,7 @@ namespace MiniZinc {
           nr->ti()->domain(r_dom);
           nr->ti()->setComputedDomain(true);
         }
-      } else if (r_bounds_valid_set[j] && e_else[j]->type().isintset()) {
+      } else if (r_bounds_valid_set[j] && ite->type().isintset()) {
         IntSetVal* isv_branches = IntSetVal::a();
         for (unsigned int i=0; i<r_bounds_set[j].size(); i++) {
           IntSetRanges i0(isv_branches);
@@ -411,7 +411,7 @@ namespace MiniZinc {
           nr->ti()->domain(r_dom);
           nr->ti()->setComputedDomain(true);
         }
-      } else if (r_bounds_valid_float[j] && e_else[j]->type().isfloat()) {
+      } else if (r_bounds_valid_float[j] && ite->type().isfloat()) {
         FloatVal lb = FloatVal::infinity();
         FloatVal ub = -FloatVal::infinity();
         for (unsigned int i=0; i<r_bounds_float[j].size(); i++) {
