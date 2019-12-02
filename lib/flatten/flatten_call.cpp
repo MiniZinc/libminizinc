@@ -340,12 +340,12 @@ namespace MiniZinc {
     if (decl->params().size()==1) {
       if (Call* call_body = Expression::dyn_cast<Call>(decl->e())) {
         if (call_body->n_args()==1 && Expression::equal(call_body->arg(0),decl->params()[0]->id())) {
-          c->id(call_body->id());
           c->decl(call_body->decl());
           decl = c->decl();
           for (ExpressionSetIter esi = call_body->ann().begin(); esi != call_body->ann().end(); ++esi) {
             c->addAnnotation(*esi);
           }
+          c->rehash();
         }
       }
     }
