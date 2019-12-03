@@ -188,6 +188,21 @@ namespace MiniZinc {
               FileUtils::file_exists(workingDir+"/"+f)) {
             err << "Warning: file " << f << " included from library, but also exists in current working directory" << endl;
           }
+          for (; i<includePaths.size(); i++) {
+            std::string deprecatedName = includePaths[i]+"/"+f+".deprecated.mzn";
+            if (FileUtils::file_exists(deprecatedName)) {
+              string deprecatedBaseName = FileUtils::base_name(deprecatedName);
+              Model* includedModel = new Model;
+              includedModel->setFilename(deprecatedBaseName);
+              files.push_back(ParseWorkItem(includedModel,NULL,"",deprecatedName));
+              seenModels.insert(pair<string,Model*>(deprecatedBaseName,includedModel));
+              Location loc(ASTString(deprecatedName),0,0,0,0);
+              IncludeI* inc = new IncludeI(loc,includedModel->filename());
+              inc->m(includedModel,true);
+              m->addItem(inc);
+              files.push_back(ParseWorkItem(includedModel,inc,deprecatedName,deprecatedBaseName));
+            }
+          }
           includePaths.pop_back();
         }
         if (!file.is_open()) {
@@ -198,18 +213,6 @@ namespace MiniZinc {
             err << "Error: cannot open file '" << f << "'." << endl;
           }
           goto error;
-        }
-        if (FileUtils::file_exists(fullname+".deprecated.mzn")) {
-          string deprecatedBaseName = FileUtils::base_name(fullname+".deprecated.mzn");
-          Model* includedModel = new Model;
-          includedModel->setFilename(deprecatedBaseName);
-          files.push_back(ParseWorkItem(includedModel,NULL,"",fullname+".deprecated.mzn"));
-          seenModels.insert(pair<string,Model*>(deprecatedBaseName,includedModel));
-          Location loc(ASTString(fullname+".deprecated.mzn"),0,0,0,0);
-          IncludeI* inc = new IncludeI(loc,includedModel->filename());
-          inc->m(includedModel,true);
-          m->addItem(inc);
-          files.push_back(ParseWorkItem(includedModel,inc,fullname+".deprecated.mzn",deprecatedBaseName));
         }
         if (verbose)
           std::cerr << "processing file '" << fullname << "'" << endl;

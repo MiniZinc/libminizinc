@@ -268,17 +268,13 @@ namespace MiniZinc {
                               "function with the same type already defined in "
                               +v[i].fi->loc().toString());
             } else {
-              Call* deprecated = v[i].fi->ann().getCall(constants().ann.mzn_deprecated);
-              if (!deprecated)
-                deprecated = fi->ann().getCall(constants().ann.mzn_deprecated);
-              FunctionI* fi_e = fi->e() ? fi : v[i].fi;
-              if (deprecated && fi_e) {
-                GCLock lock;
-                Call* deprecate = new Call(Location(), ASTString("mzn_deprecate"), {new StringLit(Location(), fi->id()), deprecated->arg(0), deprecated->arg(1), fi_e->e()});
-                fi_e->e(deprecate);
-                v[i] = fi_e;
-              } else if (fi->e() || v[i].isPolymorphic) {
+              if (fi->e() || v[i].isPolymorphic) {
+                if (Call* deprecated = v[i].fi->ann().getCall(constants().ann.mzn_deprecated)) {
+                  fi->ann().add(deprecated);
+                }
                 v[i] = fi;
+              } else if (Call* deprecated = fi->ann().getCall(constants().ann.mzn_deprecated)) {
+                v[i].fi->ann().add(deprecated);
               }
               return;
             }

@@ -1632,7 +1632,36 @@ namespace MiniZinc {
         Type ty = fi->rtype(_env,args,true);
         ty.cv(cv);
         call.type(ty);
-        call.decl(fi);
+        
+        if (Call* deprecated = fi->ann().getCall(constants().ann.mzn_deprecated)) {
+          // rewrite this call into a call to mzn_deprecate(..., e)
+          GCLock lock;
+          std::vector<Expression*> params(call.n_args());
+          for (unsigned int i=0; i<params.size(); i++) {
+            params[i] = call.arg(i);
+          }
+          Call* origCall = new Call(call.loc(),call.id(),params);
+          origCall->type(ty);
+          origCall->decl(fi);
+          call.id(constants().ids.mzn_deprecate);
+          std::vector<Expression*> args({new StringLit(Location(), fi->id()), deprecated->arg(0), deprecated->arg(1), origCall});
+          call.args(args);
+          FunctionI* deprecated_fi = _model->matchFn(_env, &call, false);
+          if (deprecated_fi==NULL) {
+            std::ostringstream oss;
+            oss << "no function or predicate with this signature found: `";
+            oss << call.id() << "(";
+            for (unsigned int i=0; i<call.n_args(); i++) {
+              oss << call.arg(i)->type().toString(_env);
+              if (i<call.n_args()-1) oss << ",";
+            }
+            oss << ")'";
+            throw TypeError(_env,call.loc(), oss.str());
+          }
+          call.decl(deprecated_fi);
+        } else {
+          call.decl(fi);
+        }
       } else {
         std::ostringstream oss;
         oss << "no function or predicate with this signature found: `";
