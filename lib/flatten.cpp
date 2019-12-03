@@ -3652,7 +3652,13 @@ namespace MiniZinc {
       if (vc->decl() && vc->decl() != constants().var_redef &&
           !vc->decl()->from_stdlib() &&
           globals.find(vc->decl())==globals.end()) {
-        env.flat_addItem(vc->decl());
+        std::vector<VarDecl*> params(vc->decl()->params().size());
+        for (unsigned int i=0; i<params.size(); i++) {
+          params[i] = vc->decl()->params()[i];
+        }
+        GCLock lock;
+        FunctionI* vc_decl_copy = new FunctionI(vc->decl()->loc(),vc->decl()->id(),vc->decl()->ti(),params,vc->decl()->e());
+        env.flat_addItem(vc_decl_copy);
         globals.insert(vc->decl());
       }
       return ce;
