@@ -48,6 +48,15 @@ annotation mzn_expression_name(string);
 /** @group annotations.general Declare a name for the annotated constraint. */
 annotation mzn_constraint_name(string);
 
+/** @group annotations.general State that a function is deprecated. */
+annotation mzn_deprecated(string: version, string: explanation);
+
+function $T: mzn_deprecate(string: name, string: version, string: msg, $T: x);
+function var $T: mzn_deprecate(string: name, string: version, string: msg, var $T: x);
+function var opt $T: mzn_deprecate(string: name, string: version, string: msg, var opt $T: x);
+function array[$U] of $T: mzn_deprecate(string: name, string: version, string: msg, array[$U] of $T: x);
+function array[$U] of var $T: mzn_deprecate(string: name, string: version, string: msg, array[$U] of var $T: x);
+function array[$U] of var opt $T: mzn_deprecate(string: name, string: version, string: msg, array[$U] of var opt $T: x);
 
 /** @group annotations.general Declare the annotated variable as being functionally defined.
   This annotation is introduced into FlatZinc code by the compiler. */

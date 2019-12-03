@@ -377,7 +377,7 @@ namespace MiniZinc {
         nctx.neg = true;
         cid = constants().ids.forall;
       }
-    } else if (decl->e()==NULL && (cid == constants().ids.assert || cid == constants().ids.trace)) {
+    } else if (decl->e()==NULL && (cid == constants().ids.assert || cid == constants().ids.trace || cid == constants().ids.mzn_deprecate)) {
       if (cid == constants().ids.assert && c->n_args()==2) {
         (void) decl->_builtins.b(env,c);
         ret = flat_exp(env,ctx,constants().lit_true,r,b);

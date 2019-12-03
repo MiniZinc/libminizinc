@@ -99,6 +99,7 @@ namespace MiniZinc {
     std::vector<std::string> warnings;
     bool collect_vardecls;
     std::vector<int> modifiedVarDecls;
+    std::unordered_set<std::string> deprecationWarnings;
     int in_redundant_constraint;
     int in_maybe_partial;
     int n_reif_ct;

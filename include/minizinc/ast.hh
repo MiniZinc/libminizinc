@@ -1650,6 +1650,7 @@ namespace MiniZinc {
         ASTString int2float;
         ASTString bool2float;
         ASTString assert;
+        ASTString mzn_deprecate;
         ASTString trace;
 
         ASTString sum;
@@ -1777,6 +1778,7 @@ namespace MiniZinc {
         Id* mzn_break_here;
         Id* rhs_from_assignment;
         Id* domain_change_constraint;
+        ASTString mzn_deprecated;
       } ann;
 
       /// Command line options

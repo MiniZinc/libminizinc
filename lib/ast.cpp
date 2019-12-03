@@ -1364,6 +1364,7 @@ namespace MiniZinc {
     ids.int2float = ASTString("int2float");
     ids.bool2float = ASTString("bool2float");
     ids.assert = ASTString("assert");
+    ids.mzn_deprecate = ASTString("mzn_deprecate");
     ids.trace = ASTString("trace");
 
     ids.sum = ASTString("sum");
@@ -1497,6 +1498,7 @@ namespace MiniZinc {
     ann.rhs_from_assignment->type(Type::ann());
     ann.domain_change_constraint = new Id(Location(), ASTString("domain_change_constraint"), NULL);
     ann.domain_change_constraint->type(Type::ann());
+    ann.mzn_deprecated = ASTString("mzn_deprecated");
 
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
@@ -1679,6 +1681,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.pow));
 
     v.push_back(new StringLit(Location(),ids.assert));
+    v.push_back(new StringLit(Location(),ids.mzn_deprecate));
     v.push_back(new StringLit(Location(),ids.trace));
     v.push_back(new StringLit(Location(),ids.introduced_var));
     v.push_back(new StringLit(Location(),ids.anonEnumFromStrings));
@@ -1707,6 +1710,7 @@ namespace MiniZinc {
 #endif
     v.push_back(ann.rhs_from_assignment);
     v.push_back(ann.domain_change_constraint);
+    v.push_back(new StringLit(Location(), ann.mzn_deprecated));
 
     v.push_back(new StringLit(Location(),cli.cmdlineData_short_str));
     v.push_back(new StringLit(Location(),cli.cmdlineData_str));

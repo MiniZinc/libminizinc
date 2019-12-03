@@ -1242,6 +1242,20 @@ namespace MiniZinc {
     throw EvalError(env, call->arg(0)->loc(),"Assertion failed: "+err->v().str());
   }
 
+  Expression* b_mzn_deprecate(EnvI& env, Call* call) {
+    assert(call->n_args()==4);
+    GCLock lock;
+    std::string fnName = eval_string(env, call->arg(0));
+    if (env.deprecationWarnings.find(fnName)==env.deprecationWarnings.end()) {
+      env.deprecationWarnings.insert(fnName);
+      env.dumpStack(env.errstream, false);
+      env.errstream << "  The function/predicate `"<< fnName;
+      env.errstream << "' was deprecated in MiniZinc version " << eval_string(env, call->arg(1));
+      env.errstream << ".\n  More information can be found at " << eval_string(env, call->arg(2)) << ".\n";
+    }
+    return call->arg(3);
+  }
+
   bool b_abort(EnvI& env, Call* call) {
     GCLock lock;
     StringLit* err = eval_par(env,call->arg(0))->cast<StringLit>();
@@ -2542,6 +2556,24 @@ namespace MiniZinc {
       rb(env, m, constants().ids.assert, t, b_assert);
       t[2] = Type::optvartop(-1);
       rb(env, m, constants().ids.assert, t, b_assert);
+    }
+    {
+      std::vector<Type> t(4);
+      t[0] = Type::parstring();
+      t[1] = Type::parstring();
+      t[2] = Type::parstring();
+      t[3] = Type::top();
+      rb(env, m, constants().ids.mzn_deprecate, t, b_mzn_deprecate);
+      t[3] = Type::vartop();
+      rb(env, m, constants().ids.mzn_deprecate, t, b_mzn_deprecate);
+      t[3] = Type::optvartop();
+      rb(env, m, constants().ids.mzn_deprecate, t, b_mzn_deprecate);
+      t[3] = Type::top(-1);
+      rb(env, m, constants().ids.mzn_deprecate, t, b_mzn_deprecate);
+      t[3] = Type::vartop(-1);
+      rb(env, m, constants().ids.mzn_deprecate, t, b_mzn_deprecate);
+      t[3] = Type::optvartop(-1);
+      rb(env, m, constants().ids.mzn_deprecate, t, b_mzn_deprecate);
     }
     {
       std::vector<Type> t(1);
