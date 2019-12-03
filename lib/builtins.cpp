@@ -1796,6 +1796,43 @@ namespace MiniZinc {
     return al_sorted;
   }
   
+  Expression* b_inverse(EnvI& env, Call* call) {
+    assert(call->n_args()==1);
+    ArrayLit* al = eval_array_lit(env,call->arg(0));
+    if (al->size()==0)
+      return al;
+    int min_idx = al->min(0);
+    
+    std::vector<IntVal> ivs(al->size());
+    IntVal minVal = eval_int(env, (*al)[0]);
+    IntVal maxVal = minVal;
+    ivs[0] = minVal;
+    for (unsigned int i=1; i<al->size(); i++) {
+      IntVal ii = eval_int(env, (*al)[i]);
+      ivs[i] = ii;
+      minVal = std::min(minVal, ii);
+      maxVal = std::max(maxVal, ii);
+    }
+    if (maxVal-minVal+1 != al->size()) {
+      throw ResultUndefinedError(env, call->loc(), "inverse on non-contiguous set of values is undefined");
+    }
+    
+    std::vector<Expression*> inv(al->size());
+    std::vector<bool> used(al->size());
+    for (unsigned int i=0; i<ivs.size(); i++) {
+      used[(ivs[i]-minVal).toInt()] = true;
+      inv[(ivs[i]-minVal).toInt()]=IntLit::a(i+min_idx);
+    }
+    for (bool b : used) {
+      if (!b) {
+        throw ResultUndefinedError(env, call->loc(), "inverse on non-contiguous set of values is undefined");
+      }
+    }
+    ArrayLit* al_inv = new ArrayLit(al->loc(), inv, {{minVal.toInt(),maxVal.toInt()}});
+    al_inv->type(al->type());
+    return al_inv;
+  }
+
   Expression* b_set_to_ranges_int(EnvI& env, Call* call) {
     assert(call->n_args()==1);
     IntSetVal* isv = eval_intset(env, call->arg(0));
@@ -2966,6 +3003,11 @@ namespace MiniZinc {
       rb(env, m, ASTString("sort"), t, b_sort);
       rb(env, m, ASTString("arg_min"), t, b_arg_min_float);
       rb(env, m, ASTString("arg_max"), t, b_arg_max_float);
+    }
+    {
+      std::vector<Type> t(1);
+      t[0] = Type::parint(1);
+      rb(env, m, ASTString("inverse"), t, b_inverse, true);
     }
     {
      std::vector<Type> t(1);
