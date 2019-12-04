@@ -45,13 +45,10 @@ namespace MiniZinc {
       if (first_line_indent==first_nl) {
         // first line is empty
         oss << "\n";
-        std::cerr << "--empty first line\n";
       } else {
         // strip first line
         size_t end_of_first_line = first_nl==std::string::npos ? std::string::npos : first_nl-first_line_indent+1;
         oss << s.substr(first_line_indent, end_of_first_line);
-        std::cerr << "--" << first_line_indent << ", " << first_nl << "\n";
-        std::cerr << "'" << s.substr(first_line_indent, end_of_first_line) << "'\n";
       }
       if (first_nl==std::string::npos)
         return oss.str();
