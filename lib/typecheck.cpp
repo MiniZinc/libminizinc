@@ -1538,7 +1538,15 @@ namespace MiniZinc {
           }
           if (call && (call->id()=="count" || call->id()=="sum") && call->n_args()==1 && call->arg(0)->isa<Comprehension>()) {
             Comprehension* comp = call->arg(0)->cast<Comprehension>();
-            if (BinOp* inner_bo = comp->e()->dyn_cast<BinOp>()) {
+            BinOp* inner_bo = comp->e()->dyn_cast<BinOp>();
+            if (inner_bo==nullptr) {
+              if (Call* b2i = comp->e()->dyn_cast<Call>()) {
+                if (b2i->id()==constants().ids.bool2int) {
+                  inner_bo=b2i->arg(0)->dyn_cast<BinOp>();
+                }
+              }
+            }
+            if (inner_bo) {
               if (inner_bo->op()==BOT_EQ) {
                 Expression* generated = inner_bo->lhs();
                 Expression* comparedTo = inner_bo->rhs();
