@@ -925,8 +925,6 @@ namespace MiniZinc {
       size_t pos = std::min(s.find("\\a"), s.find("\\p"));
       size_t mathjax_open = s.find("\\(");
       size_t mathjax_close = s.rfind("\\)");
-      if (pos == std::string::npos)
-        return replacements;
       while (pos != std::string::npos) {
         oss << s.substr(lastpos, pos-lastpos);
         size_t start = pos;
@@ -983,6 +981,32 @@ namespace MiniZinc {
       }
       oss2 << s.substr(lastpos, std::string::npos);
       s = oss2.str();
+
+      std::ostringstream oss3;
+      pos = std::min(s.find("\\["), s.find("\\]"));
+      lastpos = 0;
+      while (pos != std::string::npos) {
+        if (s[pos+1]==']') {
+          // remove trailing whitespace
+          std::string t = s.substr(lastpos, pos-lastpos);
+          size_t t_end = t.find_last_not_of(" ");
+          if (t_end != std::string::npos)
+            t_end++;
+          oss3 << t.substr(0, t_end);
+        } else {
+          oss3 << s.substr(lastpos, pos-lastpos);
+        }
+        lastpos = pos+2;
+        if (s[pos+1]=='[') {
+          oss3 << "``";
+          lastpos = s.find_first_not_of(" ", lastpos);
+        } else {
+          oss3 << "``";
+        }
+        pos = std::min(s.find("\\[", lastpos), s.find("\\]", lastpos));
+      }
+      oss3 << s.substr(lastpos, std::string::npos);
+      s = oss3.str();
       return replacements;
     }
 
@@ -1030,8 +1054,9 @@ namespace MiniZinc {
           std::string groupHTMLName = dc.substr(doc_start,end-doc_start);
           
           size_t next = dc.find("@groupdef", gpos+1);
-          HtmlDocOutput::setGroupDesc(_maingroup, groupName, groupHTMLName,
-                                      (dc.substr(end, next == std::string::npos ? next : next-end)));
+          std::string groupDesc = dc.substr(end, next == std::string::npos ? next : next-end);
+          replaceArgsRST(groupDesc);
+          HtmlDocOutput::setGroupDesc(_maingroup, groupName, groupHTMLName, groupDesc);
           gpos = next;
         }
       }
