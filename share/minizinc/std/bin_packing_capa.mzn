@@ -7,6 +7,7 @@ include "fzn_bin_packing_capa_reif.mzn";
   capacity \a c[\p b].
 
   Assumptions:
+
   - forall \p i, \a w[\p i] >=0
   - forall \p b, \a c[\p b] >=0
 */

@@ -8,6 +8,7 @@ include "fzn_disjunctive_reif.mzn";
   even in the middle of other tasks.
 
   Assumptions:
+
   - forall \p i, \a d[\p i] >= 0
 */
 predicate disjunctive(array[int] of var int: s,

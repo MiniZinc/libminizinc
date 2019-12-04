@@ -2,9 +2,10 @@ include "fzn_knapsack.mzn";
 include "fzn_knapsack_reif.mzn";
 
 /**  @group globals.packing
-Requires that items are packed in a knapsack with certain weight and profit restrictions.
+  Requires that items are packed in a knapsack with certain weight and profit restrictions.
 
-Assumptions:
+  Assumptions:
+
   - Weights \a w and profits \a p must be non-negative
   - \a w, \a p and \a x must have the same index sets
 

@@ -7,7 +7,9 @@ include "fzn_bin_packing_load_reif.mzn";
   \a load[\p b].
 
   Assumptions:
+
   - forall \p i, \a w[\p i] >=0
+
 */
 predicate bin_packing_load(array[int] of var int: load,
                            array[int] of var int: bin,

@@ -9,6 +9,7 @@ include "fzn_cumulative_reif.mzn";
   \a b at any one time.
 
   Assumptions:
+
   - forall \p i, \a d[\p i] >= 0 and \a r[\p i] >= 0
 */
 predicate cumulative(array[int] of var int: s,

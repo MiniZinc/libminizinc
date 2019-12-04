@@ -7,15 +7,15 @@ include "weighted_spanning_tree.mzn";
 /** @group globals.graph
     Constrains the subgraph \a  ns and \a es of a given directed graph to be a weighted spanning tree rooted at \a r of weight \a W.
 
-    \a N is the number of nodes in the given graph
-    \a E is the number of edges in the given graph
-    \a from is the leaving node 1..\a N for each edge
-    \a to is the entering node 1..\a N for each edge
-    \a w is the weight of each edge
-    \a r is the root node (which may be variable)
-    \a ns is a Boolean for each node whether it is in the subgraph
-    \a es is a Boolean for each edge whether it is in the subgraph
-    \a K is the weight of the tree
+    @param N: the number of nodes in the given graph
+    @param E: the number of edges in the given graph
+    @param from: the leaving node 1..\a N for each edge
+    @param to: the entering node 1..\a N for each edge
+    @param w: the weight of each edge
+    @param r: the root node (which may be variable)
+    @param ns: a Boolean for each node whether it is in the subgraph
+    @param es: a Boolean for each edge whether it is in the subgraph
+    @param K: the weight of the tree
 */
 predicate dsteiner(int: N, int: E, array[int] of int: from, array[int] of int: to, array[int] of int: w,
                         var int: r, array[int] of var bool: ns, array[int] of var bool: es, var int: K) =
@@ -33,14 +33,14 @@ predicate dsteiner(int: N, int: E, array[int] of int: from, array[int] of int: t
 /** @group globals.graph
     Constrains the set of edges \a es of a given undirected graph to be a weighted spanning tree of weight \a W.
 
-    \a N is the number of nodes in the given graph
-    \a E is the number of edges in the given graph
-    \a from is the leaving node 1..\a N for each edge
-    \a to is the entering node 1..\a N for each edge
-    \a w is the weight of each edge
-    \a ns is a Boolean for each node whether it is in the subgraph
-    \a es is a Boolean for each edge whether it is in the subgraph
-    \a K is the weight of the tree
+    @param N: the number of nodes in the given graph
+    @param E: the number of edges in the given graph
+    @param from: the leaving node 1..\a N for each edge
+    @param to: the entering node 1..\a N for each edge
+    @param w: the weight of each edge
+    @param ns: a Boolean for each node whether it is in the subgraph
+    @param es: a Boolean for each edge whether it is in the subgraph
+    @param K: the weight of the tree
 **/   
 predicate steiner(int: N, int: E, array[int] of int: from, array[int] of int: to, array[int] of int: w,
                   array[int] of var bool: ns, array[int] of var bool: es, var int: K) =

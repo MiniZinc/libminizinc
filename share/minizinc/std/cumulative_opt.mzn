@@ -8,6 +8,7 @@ include "fzn_cumulative_opt_reif.mzn";
   that absent tasks do not need to be scheduled.
 
   Assumptions:
+
   - forall \p i, \a d[\p i] >= 0 and \a r[\p i] >= 0
 */
 predicate cumulative(array[int] of var opt int: s,

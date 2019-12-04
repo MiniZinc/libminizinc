@@ -6,10 +6,10 @@ include "fzn_dconnected_reif.mzn";
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given directed graph to be connected.
 
-   \a from is the leaving node for each edge
-   \a to is the entering node for each edge
-   \a ns is a Boolean for each node whether it is in the subgraph
-   \a es is a Boolean for each edge whether it is in the subgraph
+   @param from: the leaving node for each edge
+   @param to: the entering node for each edge
+   @param ns: a Boolean for each node whether it is in the subgraph
+   @param es: a Boolean for each edge whether it is in the subgraph
 */
 predicate dconnected(array[int] of $$N: from, array[int] of $$N: to,
                     array[$$N] of var bool: ns, array[int] of var bool: es) =
@@ -24,10 +24,10 @@ predicate dconnected(array[int] of $$N: from, array[int] of $$N: to,
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given undirected graph to be connected.
 
-   \a from is the leaving node for each edge
-   \a to is the entering node for each edge
-   \a ns is a Boolean for each node whether it is in the subgraph
-   \a es is a Boolean for each edge whether it is in the subgraph
+   @param from: is the leaving node for each edge
+   @param to: is the entering node for each edge
+   @param ns: is a Boolean for each node whether it is in the subgraph
+   @param es: is a Boolean for each edge whether it is in the subgraph
 */
 predicate connected(array[int] of $$N: from, array[int] of $$N: to,
                     array[$$N] of var bool: ns, array[int] of var bool: es) =

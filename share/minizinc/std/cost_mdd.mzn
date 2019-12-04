@@ -4,14 +4,14 @@ include "fzn_cost_mdd_reif.mzn";
 /** @group globals.extensional
    Requires that \a x defines a path in the cost MDD with total edge weight \a totalcost.
 
-   \a N is the number of nodes, the root node is node 1
-   \a level is the level of each node, the root is level 1, T is level \a length(x)+1
-   \a E is the number of edges
-   \a from is the leaving node (1..\a N)for each edge
-   \a label is the set of value of the x variable for each edge
-   \a cost is the cost for each edge
-   \a to is the entering node for each edge, where 0 = T node
-   \a totalcost is the total cost of the path defined by \a x  
+   @param N: the number of nodes, the root node is node 1
+   @param level: the level of each node, the root is level 1, T is level \a length(x)+1
+   @param E: the number of edges
+   @param from: the leaving node (1..\a N)for each edge
+   @param label: the set of value of the x variable for each edge
+   @param cost: the cost for each edge
+   @param to: the entering node for each edge, where 0 = T node
+   @param totalcost: the total cost of the path defined by \a x  
 
 */
 predicate cost_mdd(array[int] of var int: x,      % variables constrained by MDD

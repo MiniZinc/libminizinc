@@ -6,12 +6,12 @@ include "fzn_subgraph_enum_reif.mzn";
 /** @group globals.graph
     Constrains that \a ns and \a es is a subgraph of a given directed graph.
 
-    \a N is the number of nodes in the given graph
-    \a E is the number of edges in the given graph
-    \a from is the leaving node 1..\a N for each edge
-    \a to is the entering node 1..\a N for each edge
-    \a ns is a Boolean for each node whether it is in the subgraph
-    \a es is a Boolean for each edge whether it is in the subgraph
+    @param N: the number of nodes in the given graph
+    @param E: the number of edges in the given graph
+    @param from: the leaving node 1..\a N for each edge
+    @param to: the entering node 1..\a N for each edge
+    @param ns: a Boolean for each node whether it is in the subgraph
+    @param es: a Boolean for each edge whether it is in the subgraph
 */
 predicate subgraph(int: N, int: E, array[int] of int: from, array[int] of int: to,
                    array[int] of var bool: ns, array[int] of var bool: es) =
@@ -24,10 +24,10 @@ predicate subgraph(int: N, int: E, array[int] of int: from, array[int] of int: t
 /** @group globals.graph
     Constrains that \a ns and \a es is a subgraph of a given directed graph.
 
-    \a from is the leaving node for each edge
-    \a to is the entering node for each edge
-    \a ns is a Boolean for each node whether it is in the subgraph
-    \a es is a Boolean for each edge whether it is in the subgraph
+    @param from: the leaving node for each edge
+    @param to: the entering node for each edge
+    @param ns: a Boolean for each node whether it is in the subgraph
+    @param es: a Boolean for each edge whether it is in the subgraph
 */
 predicate subgraph(array[int] of $$N: from, array[int] of $$N: to,
                    array[$$N] of var bool: ns, array[int] of var bool: es) =

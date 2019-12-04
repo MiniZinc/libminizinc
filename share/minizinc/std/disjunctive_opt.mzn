@@ -9,6 +9,7 @@ include "fzn_disjunctive_opt_reif.mzn";
   that absent tasks do not need to be scheduled.
 
   Assumptions:
+
   - forall \p i, \a d[\p i] >= 0
 */
 predicate disjunctive(array[int] of var opt int: s,

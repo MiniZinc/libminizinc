@@ -7,8 +7,10 @@ include "fzn_bin_packing_reif.mzn";
   capacity \a c.
 
   Assumptions:
+
   - forall \p i, \a w[\p i] >=0
   - \a c >=0
+
 */
 predicate bin_packing(int: c,
                       array[int] of var int: bin,

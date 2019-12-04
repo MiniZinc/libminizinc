@@ -10,14 +10,14 @@ include "fzn_dpath_enum_reif.mzn";
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given directed graph to be a path from \a s to \a t.
 
-   \a N is the number of nodes in the given graph
-   \a E is the number of edges in the given graph
-   \a from is the leaving node 1..\a N for each edge
-   \a to is the entering node 1..\a N for each edge
-   \a s is the source node (which may be variable)
-   \a t is the dest node (which may be variable)
-   \a ns is a Boolean for each node whether it is in the subgraph
-   \a es is a Boolean for each edge whether it is in the subgraph
+   @param N: the number of nodes in the given graph
+   @param E: the number of edges in the given graph
+   @param from: the leaving node 1..\a N for each edge
+   @param to: the entering node 1..\a N for each edge
+   @param s: the source node (which may be variable)
+   @param t: the dest node (which may be variable)
+   @param ns: a Boolean for each node whether it is in the subgraph
+   @param es: a Boolean for each edge whether it is in the subgraph
 */
 predicate dpath(int: N, int: E, array[int] of int: from, array[int] of int: to,
                     var int: s, var int: t, array[int] of var bool: ns, array[int] of var bool: es) =
@@ -30,12 +30,12 @@ predicate dpath(int: N, int: E, array[int] of int: from, array[int] of int: to,
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given directed graph to be a path from \a s to \a t.
 
-   \a from is the leaving node for each edge
-   \a to is the entering node for each edge
-   \a s is the source node (which may be variable)
-   \a t is the dest node (which may be variable)
-   \a ns is a Boolean for each node whether it is in the subgraph
-   \a es is a Boolean for each edge whether it is in the subgraph
+   @param from: the leaving node for each edge
+   @param to: the entering node for each edge
+   @param s: the source node (which may be variable)
+   @param t: the dest node (which may be variable)
+   @param ns: a Boolean for each node whether it is in the subgraph
+   @param es: a Boolean for each edge whether it is in the subgraph
 */
 predicate dpath(array[int] of $$N: from, array[int] of $$N: to,
                     var $$N: s, var $$N: t, array[$$N] of var bool: ns, array[int] of var bool: es) =
@@ -50,14 +50,14 @@ predicate dpath(array[int] of $$N: from, array[int] of $$N: to,
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given undirected graph to be a path from \a s to \a t.
 
-   \a N is the number of nodes in the given graph
-   \a E is the number of edges in the given graph
-   \a from is the leaving node 1..\a N for each edge
-   \a to is the entering node 1..\a N for each edge
-   \a s is the source node (which may be variable)
-   \a t is the dest node (which may be variable)
-   \a ns is a Boolean for each node whether it is in the subgraph
-   \a es is a Boolean for each edge whether it is in the subgraph
+   @param N: the number of nodes in the given graph
+   @param E: the number of edges in the given graph
+   @param from: the leaving node 1..\a N for each edge
+   @param to: the entering node 1..\a N for each edge
+   @param s: the source node (which may be variable)
+   @param t: the dest node (which may be variable)
+   @param ns: a Boolean for each node whether it is in the subgraph
+   @param es: a Boolean for each edge whether it is in the subgraph
 */
 predicate path(int: N, int: E, array[int] of int: from, array[int] of int: to,
                     var int: s, var int: t, array[int] of var bool: ns, array[int] of var bool: es) =
@@ -70,12 +70,12 @@ predicate path(int: N, int: E, array[int] of int: from, array[int] of int: to,
 /** @group globals.graph
    Constrains the subgraph \a ns and \a es of a given undirected graph to be a path from \a s to \a t.
 
-   \a from is the leaving node for each edge
-   \a to is the entering node for each edge
-   \a s is the source node (which may be variable)
-   \a t is the dest node (which may be variable)
-   \a ns is a Boolean for each node whether it is in the subgraph
-   \a es is a Boolean for each edge whether it is in the subgraph
+   @param from: the leaving node for each edge
+   @param to: the entering node for each edge
+   @param s: the source node (which may be variable)
+   @param t: the dest node (which may be variable)
+   @param ns: a Boolean for each node whether it is in the subgraph
+   @param es: a Boolean for each edge whether it is in the subgraph
 */
 predicate path(array[int] of $$N: from, array[int] of $$N: to,
                     var $$N: s, var $$N: t, array[$$N] of var bool: ns, array[int] of var bool: es) =
