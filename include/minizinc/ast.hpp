@@ -536,6 +536,7 @@ namespace MiniZinc {
              const std::string& id0,
              const std::vector<Expression*>& args)
   : Expression(loc, E_CALL,Type()) {
+    _flag_1 = false;
     id(ASTString(id0));
     if (args.size()==1) {
       _u._oneArg = args[0]->isUnboxedVal() ? args[0] : args[0]->tag();
@@ -552,6 +553,7 @@ namespace MiniZinc {
              const ASTString& id0,
              const std::vector<Expression*>& args)
   : Expression(loc, E_CALL,Type()) {
+    _flag_1 = false;
     id(ASTString(id0));
     if (args.size()==1) {
       _u._oneArg = args[0]->isUnboxedVal() ? args[0] : args[0]->tag();

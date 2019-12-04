@@ -334,6 +334,17 @@ function var float: '/'(var float: x,var float: y) =
   elseif lb(y) > 0.0 \/ ub(y) < 0.0 then fldiv_t(x,y)
   else let { constraint y != 0.0 } in fldiv_mt(x,y) endif;
 
+
+
+/** @group builtins.arithmetic Return number of true elments in array \a x */
+function int:  count(array[$T] of bool: x) = sum([bool2int(y) | y in array1d(x)]);
+/** @group builtins.arithmetic Return number of true elments in array \a x */
+function var int:  count(array[$T] of var bool: x) = sum([bool2int(y) | y in array1d(x)]);
+/** @group builtins.arithmetic Return sum of elements in array \a x */
+function int:   sum(array[$T] of bool: x) = sum([bool2int(y)|y in array1d(x)]);
+/** @group builtins.arithmetic Return sum of elements in array \a x */
+function var int:   sum(array[$T] of var bool: x) = sum([bool2int(y)|y in array1d(x)]);
+
 /** @group builtins.arithmetic Return sum of elements in array \a x */
 function     int:   sum(array[$T] of     int: x);
 /** @group builtins.arithmetic Return sum of elements in array \a x */
@@ -3008,6 +3019,13 @@ include "fzn_if_then_else_var_opt_float.mzn";
 include "fzn_if_then_else_set.mzn";
 include "fzn_if_then_else_var_set.mzn";
 include "fzn_if_then_else_partiality.mzn";
+
+include "count_eq.mzn";
+include "count_geq.mzn";
+include "count_leq.mzn";
+include "count_neq.mzn";
+include "count_gt.mzn";
+include "count_lt.mzn";
 
 %-----------------------------------------------------------------------------%
 %-----------------------------------------------------------------------------%

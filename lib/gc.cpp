@@ -309,6 +309,9 @@ namespace MiniZinc {
       case ASTNode::NID_VEC:
         ns = static_cast<ASTVec*>(n)->memsize();
         break;
+      case Call::eid:
+        ns = n->_flag_1 ? _nodesize[BinOp::eid] : _nodesize[Call::eid];
+        break;
       default:
         assert(n->_id <= Item::II_END);
         ns = _nodesize[n->_id];

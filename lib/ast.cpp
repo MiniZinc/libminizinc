@@ -15,7 +15,7 @@
 #include <minizinc/iter.hh>
 #include <minizinc/model.hh>
 #include <minizinc/flatten_internal.hh>
-
+#include <minizinc/astiterator.hh>
 #include <minizinc/prettyprinter.hh>
 
 namespace MiniZinc {
@@ -599,6 +599,33 @@ namespace MiniZinc {
     return _g[_g_idx[gen]+2+i]->cast<VarDecl>();
   }
 
+  bool
+  Comprehension::containsBoundVariable(Expression* e) {
+    std::unordered_set<VarDecl*> decls;
+    for (unsigned int i=0; i<n_generators(); i++) {
+      for (unsigned int j=0; j<n_decls(i); j++) {
+        decls.insert(decl(i,j));
+      }
+    }
+    class FindVar : public EVisitor {
+      std::unordered_set<VarDecl*>& _decls;
+      bool _found;
+    public:
+      FindVar(std::unordered_set<VarDecl*>& decls) : _decls(decls), _found(false) {}
+      bool enter(Expression*) {
+        return !_found;
+      }
+      void vId(Id& ident) {
+        if (_decls.find(ident.decl()) != _decls.end()) {
+          _found = true;
+        }
+      }
+      bool found(void) const { return _found; }
+    } _fv(decls);
+    topDown(_fv, e);
+    return _fv.found();
+  }
+
   void
   ITE::rehash(void) {
     init_hash();
@@ -621,6 +648,16 @@ namespace MiniZinc {
     cmb_hash(h(static_cast<int>(op())));
     cmb_hash(Expression::hash(_e0));
     cmb_hash(Expression::hash(_e1));
+  }
+
+  Call*
+  BinOp::morph(const ASTString& ident, const std::vector<Expression*>& args) {
+    _id = Call::eid;
+    _flag_1 = true;
+    Call* c = cast<Call>();
+    c->id(ident);
+    c->args(args);
+    return c;
   }
 
   namespace {

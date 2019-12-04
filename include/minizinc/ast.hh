@@ -913,6 +913,8 @@ namespace MiniZinc {
     void e(Expression* e0) { _e = e0; }
     /// Re-construct (used for copying)
     void init(Expression* e, Generators& g);
+    /// Check if \a e contains one of the variables bound by this comprehension
+    bool containsBoundVariable(Expression* e);
   };
   /// \brief If-then-else expression
   class ITE : public Expression {
@@ -991,6 +993,8 @@ namespace MiniZinc {
     void rehash(void);
     /// Return operator type
     BinOpType op(void) const;
+    /// Morph into a call
+    Call* morph(const ASTString& ident, const std::vector<Expression*>& args);
   };
 
   /// Type of unary operators

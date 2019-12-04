@@ -1,8 +1,10 @@
 include "at_most_int.mzn";
 include "at_most_set.mzn";
 
-/**  @group globals.counting
+/**  @group globals.deprecated
   Requires at most \a n variables in \a x to take the value \a v.
+
+  This constraint is deprecated. Use count(i in x)(i=v) <= n instead.
 */
 predicate at_most(int: n, array[int] of var int: x, int: v) =
     at_most_int(n, x, v);
