@@ -1,11 +1,19 @@
 include "fzn_count_eq.mzn";
+include "fzn_count_eq_par.mzn";
 include "fzn_count_eq_reif.mzn";
+include "fzn_count_eq_par_reif.mzn";
 
 /** @group globals.counting
   Constrains \a c to be the number of occurrences of \a y in \a x. 
 */
 predicate count_eq(array[int] of var int: x, var int: y, var int: c) =
     fzn_count_eq(x,y,c);
+
+/** @group globals.counting
+  Constrains \a c to be the number of occurrences of \a y in \a x. 
+*/
+predicate count_eq(array[int] of var int: x, int: y, int: c) =
+    fzn_count_eq_par(x,y,c);
 
 /** @group globals.counting
   Returns the number of occurrences of \a y in \a x. 
@@ -18,5 +26,8 @@ function int: count_eq(array[int] of int: x, int: y) =
 
 predicate count_eq_reif(array[int] of var int: x, var int: y, var int: c, var bool: b) =
   fzn_count_eq_reif(x, y, c, b);
+
+predicate count_eq_reif(array[int] of var int: x, int: y, int: c, var bool: b) =
+  fzn_count_eq_par_reif(x, y, c, b);
 
 %-----------------------------------------------------------------------------%
