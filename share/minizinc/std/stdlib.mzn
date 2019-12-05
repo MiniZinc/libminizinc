@@ -417,6 +417,7 @@ test absent(opt $T: x) = not occurs(x);
 /** @group optiontypes.bool True iff \a x is not absent */
 function var bool : occurs(var opt bool: x) ::promise_total = occurs_bool(x);
 
+function bool : occurs_bool(opt bool: x) ::promise_total = occurs(x);
 function bool : occurs_bool(var bool: x) ::promise_total = true;
 function var bool : occurs_bool(var opt bool: x) ::promise_total =
   let {
@@ -428,6 +429,7 @@ function var bool : occurs_bool(var opt bool: x) ::promise_total =
 /** @group optiontypes.bool Return value of \a x (assumes that \a x is not absent) */
 function var bool : deopt(var opt bool : x) ::promise_total = deopt_bool(x);
 
+function bool : deopt_bool(opt bool : x) ::promise_total = deopt(x);
 function var bool : deopt_bool(var bool : x) ::promise_total = x;
 function var bool : deopt_bool(var opt bool : x) ::promise_total =
   let {
@@ -526,6 +528,7 @@ annotation bool_search(array[int] of var opt bool: x, ann: a1, ann: a2) =
 /** @group optiontypes.int True iff \a x is not absent */
 function var bool : occurs(var opt int : x) ::promise_total = occurs_int(x);
 
+function bool : occurs_int(opt int : x) ::promise_total = occurs(x);
 function bool : occurs_int(var int : x) ::promise_total = true;
 function var bool : occurs_int(var opt int : x) ::promise_total =
   let {
@@ -533,6 +536,9 @@ function var bool : occurs_int(var opt int : x) ::promise_total =
     var int  : dx = deopt_internal_int(x);
     constraint (x = reverse_map_var_opt_int(b,dx)) :: is_reverse_map;
   } in b;
+function var bool : occurs_int(var opt bool : x) ::promise_total = occurs(x);
+function bool : occurs_int(opt bool : x) ::promise_total = occurs(x);
+function bool : occurs_int(var bool : x) ::promise_total = true;
 
 /** @group optiontypes.int Return value of \a x (assumes that \a x is not absent) */
 function var $$E : deopt(var opt $$E : x) ::promise_total = deopt_int(x);
@@ -546,6 +552,7 @@ function var opt int: if_b_else_absent(var bool: b, var int: x) ::promise_total 
 function var int: if_b_else_zero(var bool: b, var int: x) ::promise_total =
   if b then x else 0 endif;
 
+function int : deopt_int(opt int : x) ::promise_total = deopt(x);
 function var int : deopt_int(var int : x) ::promise_total = x;
 function var int : deopt_int(var opt int : x) ::promise_total =
   let {
@@ -553,6 +560,10 @@ function var int : deopt_int(var opt int : x) ::promise_total =
     var int  : dx = deopt_internal_int(x);
     constraint (x = reverse_map_var_opt_int(b,dx)) :: is_reverse_map;
   } in dx;
+function var bool : deopt_int(var opt bool : x) ::promise_total = deopt(x);
+function var bool : deopt_int(var bool : x) ::promise_total = x;
+function bool : deopt_int(opt bool : x) ::promise_total = deopt(x);
+
 
 /** @group optiontypes.int True iff \a x is absent */
 function var bool: absent(var opt int: x) ::promise_total = not occurs(x);
@@ -795,6 +806,9 @@ function var int: objective_deopt_(var opt int: x, bool: direction) =
 /** @group optiontypes.float True iff \a x is not absent */
 function var bool : occurs(var opt float : x) ::promise_total = occurs_float(x);
 
+function bool : occurs_float(opt float : x) ::promise_total = occurs(x);
+function bool : occurs_float(opt int : x) ::promise_total = occurs(x);
+function bool : occurs_float(opt bool : x) ::promise_total = occurs(x);
 function bool : occurs_float(var float : x) ::promise_total = true;
 function var bool : occurs_float(var opt float : x) ::promise_total =
   let {
@@ -802,6 +816,11 @@ function var bool : occurs_float(var opt float : x) ::promise_total =
     var float : dx = deopt_internal_float(x);
     constraint (x = reverse_map_var_opt_float(b,dx)) :: is_reverse_map;
   } in b;
+function var bool : occurs_float(var opt int : x) ::promise_total = occurs_int(x);
+function bool : occurs_float(var int : x) ::promise_total = true;
+function var bool : occurs_float(var opt bool : x) ::promise_total = occurs_bool(x);
+function bool : occurs_float(var bool : x) ::promise_total = true;
+
 
 /** @group optiontypes.float Return value of \a x (assumes that \a x is not absent) */
 function var float : deopt(var opt float : x) ::promise_total = deopt_float(x);
@@ -822,6 +841,13 @@ function var float : deopt_float(var opt float : x) ::promise_total =
     var float : dx = deopt_internal_float(x);
     constraint (x = reverse_map_var_opt_float(b,dx)) :: is_reverse_map;
   } in dx;
+function var int : deopt_float(var opt int : x) ::promise_total = deopt_int(x);
+function var int : deopt_float(var int : x) ::promise_total = x;
+function var bool : deopt_float(var opt bool : x) ::promise_total = deopt_bool(x);
+function var bool : deopt_float(var bool : x) ::promise_total = x;
+function float : deopt_float(opt float : x) ::promise_total = deopt(x);
+function int : deopt_float(opt int : x) ::promise_total = deopt(x);
+function bool : deopt_float(opt bool : x) ::promise_total = deopt(x);
 
 /** @group optiontypes.float True iff \a x is absent */
 function var bool: absent(var opt float: x) ::promise_total = not occurs(x);
