@@ -249,7 +249,9 @@ namespace MiniZinc {
       // add to list of existing elements
       std::vector<FnEntry>& v = i_id->second;
       for (unsigned int i=0; i<v.size(); i++) {
-        if (v[i].fi->params().size() == fi->params().size()) {
+        if (v[i].fi==fi) {
+          return;
+        } else if (v[i].fi->params().size() == fi->params().size()) {
           bool alleq=true;
           for (unsigned int j=0; j<fi->params().size(); j++) {
             Type t1 = v[i].fi->params()[j]->type();
@@ -261,9 +263,7 @@ namespace MiniZinc {
             }
           }
           if (alleq) {
-            if (v[i].fi==fi) {
-              return;
-            } else if (v[i].fi->e() && fi->e() && !v[i].isPolymorphic) {
+            if (v[i].fi->e() && fi->e() && !v[i].isPolymorphic) {
               throw TypeError(env, fi->loc(),
                               "function with the same type already defined in "
                               +v[i].fi->loc().toString());
@@ -402,6 +402,43 @@ namespace MiniZinc {
     }
   }
   
+  namespace {
+    int matchIdx(std::vector<FunctionI*>& matched, Expression*& botarg,
+                 EnvI& env,
+                 const std::vector<Model::FnEntry>& v, const std::vector<Expression*>& args, bool strictEnums) {
+      botarg = NULL;
+      for (unsigned int i=0; i<v.size(); i++) {
+        const std::vector<Type>& fi_t = v[i].t;
+  #ifdef MZN_DEBUG_FUNCTION_REGISTRY
+        std::cerr << "try " << *v[i].fi;
+  #endif
+        if (fi_t.size() == args.size()) {
+          bool match=true;
+          for (unsigned int j=0; j<args.size(); j++) {
+            if (!env.isSubtype(args[j]->type(),fi_t[j],strictEnums)) {
+  #ifdef MZN_DEBUG_FUNCTION_REGISTRY
+              std::cerr << args[j]->type().toString(env) << " does not match "
+              << fi_t[j].toString(env) << "\n";
+  #endif
+              match=false;
+              break;
+            }
+            if (args[j]->type().isbot() && fi_t[j].bt()!=Type::BT_TOP) {
+              botarg = args[j];
+            }
+          }
+          if (match) {
+            matched.push_back(v[i].fi);
+            if (!botarg) {
+              return i;
+            }
+          }
+        }
+      }
+      return -1;
+    }
+  }
+
   FunctionI*
   Model::matchFn(EnvI& env, const ASTString& id,
                  const std::vector<Expression*>& args,
@@ -417,35 +454,8 @@ namespace MiniZinc {
     }
     const std::vector<FnEntry>& v = it->second;
     std::vector<FunctionI*> matched;
-    Expression* botarg = NULL;
-    for (unsigned int i=0; i<v.size(); i++) {
-      const std::vector<Type>& fi_t = v[i].t;
-#ifdef MZN_DEBUG_FUNCTION_REGISTRY
-      std::cerr << "try " << *v[i].fi;
-#endif
-      if (fi_t.size() == args.size()) {
-        bool match=true;
-        for (unsigned int j=0; j<args.size(); j++) {
-          if (!env.isSubtype(args[j]->type(),fi_t[j],strictEnums)) {
-#ifdef MZN_DEBUG_FUNCTION_REGISTRY
-            std::cerr << args[j]->type().toString(env) << " does not match "
-            << fi_t[j].toString(env) << "\n";
-#endif
-            match=false;
-            break;
-          }
-          if (args[j]->type().isbot() && fi_t[j].bt()!=Type::BT_TOP) {
-            botarg = args[j];
-          }
-        }
-        if (match) {
-          if (botarg)
-            matched.push_back(v[i].fi);
-          else
-            return v[i].fi;
-        }
-      }
-    }
+    Expression* botarg;
+    (void) matchIdx(matched, botarg, env, v, args, strictEnums);
     if (matched.empty())
       return NULL;
     if (matched.size()==1)
@@ -513,6 +523,66 @@ namespace MiniZinc {
         throw TypeError(env, botarg->loc(), "ambiguous overloading on return type of function");
     }
     return matched[0];
+  }
+
+  namespace {
+    int firstOverloaded(EnvI& env, const std::vector<Model::FnEntry>& v_f, int i_f) {
+      int first_i_f=i_f;
+      for (; first_i_f--; ) {
+        // find first instance overloaded on subtypes
+        if (v_f[first_i_f].t.size() != v_f[i_f].t.size()) {
+          break;
+        }
+        bool allSubtypes = true;
+        for (unsigned int i=0; i<v_f[first_i_f].t.size(); i++) {
+          if (!env.isSubtype(v_f[first_i_f].t[i], v_f[i_f].t[i], false)) {
+            allSubtypes = false;
+            break;
+          }
+        }
+        if (!allSubtypes) {
+          break;
+        }
+      }
+      return first_i_f+1;
+    }
+  }
+
+  bool
+  Model::sameOverloading(EnvI& env, const std::vector<Expression*>& args, FunctionI* f, FunctionI* g) const {
+    const Model* m = this;
+    while (m->_parent)
+      m = m->_parent;
+    FnMap::const_iterator it_f = m->fnmap.find(f->id());
+    FnMap::const_iterator it_g = m->fnmap.find(g->id());
+    assert(it_f != m->fnmap.end());
+    assert(it_g != m->fnmap.end());
+    const std::vector<FnEntry>& v_f = it_f->second;
+    const std::vector<FnEntry>& v_g = it_g->second;
+    
+    std::vector<FunctionI*> dummyMatched;
+    Expression* dummyBotarg;
+    int i_f = matchIdx(dummyMatched, dummyBotarg, env, v_f, args, true);
+    if (i_f == -1)
+      return false;
+    int i_g = matchIdx(dummyMatched, dummyBotarg, env, v_g, args, true);
+    if (i_g == -1)
+      return false;
+    assert(i_f < v_f.size());
+    assert(i_g < v_g.size());
+    unsigned int first_i_f = firstOverloaded(env, v_f, i_f);
+    unsigned int first_i_g = firstOverloaded(env, v_g, i_g);
+    if (i_f-first_i_f != i_g-first_i_g) {
+      // not the same number of overloaded versions
+      return false;
+    }
+    for ( ; first_i_f <= i_f; first_i_f++, first_i_g++) {
+      if (! (v_f[first_i_f].t == v_g[first_i_g].t) ) {
+        // one of the overloaded versions does not agree in the types
+        return false;
+      }
+    }
+    return true;
   }
 
   FunctionI*

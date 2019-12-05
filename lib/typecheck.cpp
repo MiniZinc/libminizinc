@@ -1622,6 +1622,27 @@ namespace MiniZinc {
       for (unsigned int i=static_cast<unsigned int>(args.size()); i--;)
         args[i] = call.arg(i);
       if (FunctionI* fi = _model->matchFn(_env,call.id(),args,true)) {
+        if (fi->e() && fi->e()->isa<Call>()) {
+          Call* next_call = fi->e()->cast<Call>();
+          if (next_call->decl() && next_call->n_args()==fi->params().size() && _model->sameOverloading(_env, args, fi, next_call->decl())) {
+            bool macro = true;
+            for (unsigned int i=0; i<fi->params().size(); i++) {
+              if (!Expression::equal(next_call->arg(i),fi->params()[i]->id())) {
+                macro = false;
+                break;
+              }
+            }
+            if (macro) {
+              call.decl(next_call->decl());
+              for (ExpressionSetIter esi = next_call->ann().begin(); esi != next_call->ann().end(); ++esi) {
+                call.addAnnotation(*esi);
+              }
+              call.rehash();
+              fi = next_call->decl();
+            }
+          }
+        }
+        
         bool cv = false;
         for (unsigned int i=0; i<args.size(); i++) {
           if(Comprehension* c = call.arg(i)->dyn_cast<Comprehension>()) {
