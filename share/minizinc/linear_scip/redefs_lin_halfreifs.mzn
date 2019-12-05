@@ -47,7 +47,7 @@ predicate aux_int_eq_if_1(var int: x, var int: y, var int: p) =
 
 predicate aux_float_ne_if_1(var float: x, var float: y, var int: p) =
   if is_fixed(p) then
-    if fix(p) = 1 then (x = y) else true endif
+    if fix(p) = 1 then (x != y) else true endif
   elseif is_fixed(x) /\ is_fixed(y) then         %%% Needed to avoid constant domain var
     if (fix(x) = fix(y)) then (p = 0) else true endif
   elseif is_fixed(x-y) then                      %%% Hypothetically possible to land here
