@@ -5,6 +5,86 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.4.0
+=============
+
+Changes:
+- The compiler now detects counting constraints in expressions such as
+  count(i in x)(x=3) <= 4 and rewrites them into global counting constraints. This
+  is now the preferred way to specify counting. The atmost/atleast/exactly constraints
+  on integer variables have been deprecated, and versions of count predicates with
+  par variables have been added. FlatZinc solvers that supported atmost/atleast/exactly
+  should now support the corresponding fzn_count_?_par predicates.
+- The compiler now supports the command line option --output-detailed-timing, which
+  provides timing information for each toplevel constraint item, or for each line of
+  code when used in conjunction with the --keep-paths option.
+- The library now contains annotations for deprecated library functions.
+- A par version of the inverse function has been added (include inverse_fn.mzn to use it).
+- The common case of sums of optional variables is now handled more efficiently. This
+  case often arises from generator expressions with variable where clauses.
+- Added set_to_ranges built-ins to enable efficient iteration over sets. These are used
+  to implement set_in for float variables, which was missing before.
+- The Gurobi and CPLEX backends now support the --random-seed command line option.
+- The MIPDomains optimisations have been switched back on by default. The optimisations
+  have also been strengthened for some special cases.
+- Linearisation of multiplication can now consider the exact domain of a factor.
+- Linearisation of variable domains with holes now uses set_in instead of individual
+  not-equal constraints, which may result in more compact FlatZinc.
+- The product functions have been made non-recursive in order to support longer
+  arrays.
+- Bounds inference for results of if-then-else expressions has been improved.
+- Support for optional float variables has been added.
+
+Bug fixes:
+- Inlining of function calls has been moved from the flattener into the type checker, and
+  it now is more strict about which functions can be inlined in order to avoid overloading
+  issues.
+- Updated fzn_count_{neq,leq,lt,geq,gt}, fzn_global_cardinality_low_up{,_reif} to use use
+  the count_eq predicate. (#334, #335)
+- Fixed the documentation for several constraints, which did not display as bullet point
+  lists as intended.
+- Copy function/predicate declarations into FlatZinc without annotations, since most
+  FlatZinc parsers would not expect annotations and fail to parse.
+- Process right hand side of par VarDecls to make sure any identifiers it uses are copied
+  into the output model. Fixes #336.
+- Fix type checking for conditionals where the else branch has enum type but the then
+  branch has int type.
+- Make the deopt function return correct enum instead of int type.
+- Fix for path handling when 'needRangeDomains' is active. Avoids infinite recursion in
+  the compiler.
+- Fix race condition in temporary file generator for Windows. (#349)
+- Register fzn_ names for Gecode presolver. Fixes command line flags -O3 and above.
+- Fix par evaluation of float and bool set comprehensions.
+- Fix documentation of array_bool_xor. Fixes minizinc/minizinc-doc#13.
+- Fix the round() built-in to correctly round negative numbers
+- Fix computation of intersection of domains when assigning an array to an array variable.
+  Fixes #310.
+- Add defines_var annotations for functional global constraints. Fixes #345.
+- Add set_lt_reif/set_le_reif to flatzinc builtins library. Fixes #338.
+- Clarify set order based on spec. Fixes #339.
+- Don't return already removed VarDecl objects from CSE. Fixes #346.
+- Do not post y!=0 constraint if 0 is not in the domain (workaround for a limitation in the
+  handling of basic float constraints). Fixes #344.
+- Help type checker by making deopt/occurs argument types explicit. Fixes #331.
+- Fix transfer of domains when aliasing one variable to another
+- MIP: fix for aux_float_ne_if_1
+- MIP: int_(eq/ne)_imp: don't force eq_encode without MIPdomains
+- Fix a typo in the definition of fzn_at_least_int{,_reif}
+- Fix dependency problem in the gecode_presolver table specification
+- Add seq_precede_chain.mzn to globals.mzn. Fixes #332.
+- Don't assign right hand side of set variables if domain is singleton. Fixes #330.
+- Don't invalidate float bound just because an expression contains an integer.
+- Fix copying of let expressions.
+- Put lexer and parser helper functions into MiniZinc namespace to avoid linker issues.
+  Fixes #325.
+- Reset array index sets defined in lets inside recursive function calls.
+- Arrays copied into output model need to have par type-inst. Fixes #322.
+- Don't complain when same function is registered twice. Fixes #323.
+- Fix partiality handling of if-then-else expressions.
+- Track whether variable is used in an output array before making decision to compress
+  implication chains. Fixes #318.
+
+
 Version 2.3.2
 =============
 
