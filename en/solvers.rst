@@ -180,8 +180,8 @@ The 'MIPdomains' feature of the Flattener aims at reducing the number of binary 
 encoding linearized domain constraints, see the paper
 *Belov, Stuckey, Tack, Wallace. Improved Linearization of Constraint Programming Models. CP 2016.*
 
-By default it is off since v2.3.0.
-To turn it on, add option ``-D fMIPdomains=true`` during flattening.
+By default it is on.
+To turn it off which might be good for some models, add option ``-D fMIPdomains=false`` during flattening.
 Some parameters of the unification are available, run with ``--help``.
 
 Indicator Constraints
