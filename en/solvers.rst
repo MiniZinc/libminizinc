@@ -4,8 +4,10 @@ Solving Technologies and Solver Backends
 ========================================
 
 The ``minizinc`` tool can use various solver backends for a given model.
-Some solvers are separate executables that are called by ``minizinc`` and passed the name of a FlatZinc file;
+Some solvers are separate executables that are called by ``minizinc``;
 other solvers are part of the ``minizinc`` binary (either hard-coded or loaded as a dynamic library or "plugin").
+In the former case, a temporary FlatZinc file is created and passed to the solver binary;
+in the latter one, the flattened model is passed to the backend directly in memory.
 Some solvers are part of the binary MiniZinc distribution, others have to be installed separately.
 You can find instructions for installing these solvers from source code and integrating into the ``minizinc`` tool
 in :ref:`ch-installation_detailed`.
