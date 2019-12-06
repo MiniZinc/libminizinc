@@ -22,6 +22,9 @@ The help text of ``minizinc`` shows a list of configured solver backends and the
 Constraint Programming Solvers
 ------------------------------
 
+Constraint Programming is the 'native' paradigm of MiniZinc. Below we discuss most common CP solvers.
+For their performance, consult MiniZinc Challenges (https://www.minizinc.org/challenge.html).
+
 Gecode
 ~~~~~~
 
@@ -45,20 +48,25 @@ but allow Chuffed to switch between this defined search and its activity-based s
 In order to enable this behaviour, use the ``-f`` (free search) command line option or
 select *Free search* in the solver configuration pane of the MiniZinc IDE.
 
-Chuffed supports a number of additional search annotations that are not part of the MiniZinc standard library. The additional declarations are documented in :numref:`ch-lib-chuffed`.
+Chuffed supports a number of additional search annotations that are not part of the MiniZinc standard library.
+The additional declarations are documented in :numref:`ch-lib-chuffed`.
 
 OR-Tools
 ~~~~~~~~
 
-OR-Tools is an open-source CP/SAT/LP solver (see https://developers.google.com/optimization/).
+OR-Tools is a powerful open-source CP/SAT/LP solver (see https://developers.google.com/optimization/).
 It supports many of MiniZinc's global constraints natively. It often performs better multi-threaded (option ``-p``)
-so it can employ various solving technologies. A search annotation (see :ref:`sec-search`) can be useful.
+so it can employ various solving technologies. A search annotation (see :ref:`sec-search`) can be useful,
+however allowing OR-Tools to mix the prescribed strategy with its own (option ``-f``) usually is best,
+analogously to Chuffed.
 
 
 Mixed-Integer Programming Solvers
 ---------------------------------
 
-MiniZinc has built-in support for Mixed Integer Programing solvers. If you have any MIP solver installed (and MiniZinc was compiled with MIP support), you can run a model using MIP like this on the command line:
+MiniZinc has built-in support for Mixed Integer Programing solvers.
+If you have any MIP solver installed (and MiniZinc was compiled with its support),
+you can run a model using MIP like this on the command line:
 
 .. code-block:: bash
   
