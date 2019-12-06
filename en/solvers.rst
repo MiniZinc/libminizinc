@@ -103,7 +103,8 @@ Especially for variables involved in logical constraints, if you cannot reduce t
 consider indicator constraints (available for some solvers, see below), or use the following trick:
 instead of saying :mzn:`b=1 -> x<=0` where x can become very big, use e.g. :mzn:`b=1 -> 0.001*x<=0.0`.
 Especially for integer variables, the domain size of 1e4 should be an upper bound if possible -- what is the value of integrality otherwise?
-Avoid large coefficients too, as well as large values in the objective function. See more on tolerances in a below section.
+Avoid large coefficients too, as well as large values in the objective function.
+See more on tolerances in the Solver Options section.
 
 Example 1: *basic big-M constraint vs implication*. Instead of :mzn:`<expr> <= 1000000*y` given :mzn:`var 0..1: y`
 and where you use the 'big-M' value of 1000000 because you don't know a good upper bound on :mzn:`<expr>`, prefer :mzn:`y=0 -> <expr> <= 0`
