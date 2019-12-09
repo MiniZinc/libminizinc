@@ -2783,10 +2783,11 @@ namespace MiniZinc {
       }
       
       std::vector<VarDeclI*> removedItems;
+      std::vector<int> convertToRangeDomain;
       env.collectVarDecls(true);
 
-      while (startItem <= endItem || !env.modifiedVarDecls.empty()) {
-          if (env.failed())
+      while (startItem <= endItem || !env.modifiedVarDecls.empty() || !convertToRangeDomain.empty()) {
+        if (env.failed())
           return;
         std::vector<int> agenda;
         for (int i=startItem; i<=endItem; i++) {
@@ -2796,6 +2797,15 @@ namespace MiniZinc {
           agenda.push_back(env.modifiedVarDecls[i]);
         }
         env.modifiedVarDecls.clear();
+        
+        bool doConvertToRangeDomain = false;
+        if (agenda.empty()) {
+          for (auto i : convertToRangeDomain) {
+            agenda.push_back(i);
+          }
+          convertToRangeDomain.clear();
+          doConvertToRangeDomain = true;
+        }
         
         for (int ai=0; ai<agenda.size(); ai++) {
           int i=agenda[ai];
@@ -2867,48 +2877,52 @@ namespace MiniZinc {
                 needRangeDomain = true;
             }
             if (needRangeDomain) {
-              if (dom->min(0).isMinusInfinity() || dom->max(dom->size()-1).isPlusInfinity()) {
-                TypeInst* nti = copy(env,vdi->e()->ti())->cast<TypeInst>();
-                nti->domain(NULL);
-                vdi->e()->ti(nti);
-                if (dom->min(0).isFinite()) {
-                  std::vector<Expression*> args(2);
-                  args[0] = IntLit::a(dom->min(0));
-                  args[1] = vdi->e()->id();
-                  Call* call = new Call(Location().introduce(),constants().ids.int_.le,args);
-                  call->type(Type::varbool());
-                  call->decl(env.model->matchFn(env, call, false));
-                  env.flat_addItem(new ConstraintI(Location().introduce(), call));
-                } else if (dom->max(dom->size()-1).isFinite()) {
+              if (doConvertToRangeDomain) {
+                if (dom->min(0).isMinusInfinity() || dom->max(dom->size()-1).isPlusInfinity()) {
+                  TypeInst* nti = copy(env,vdi->e()->ti())->cast<TypeInst>();
+                  nti->domain(NULL);
+                  vdi->e()->ti(nti);
+                  if (dom->min(0).isFinite()) {
+                    std::vector<Expression*> args(2);
+                    args[0] = IntLit::a(dom->min(0));
+                    args[1] = vdi->e()->id();
+                    Call* call = new Call(Location().introduce(),constants().ids.int_.le,args);
+                    call->type(Type::varbool());
+                    call->decl(env.model->matchFn(env, call, false));
+                    env.flat_addItem(new ConstraintI(Location().introduce(), call));
+                  } else if (dom->max(dom->size()-1).isFinite()) {
+                    std::vector<Expression*> args(2);
+                    args[0] = vdi->e()->id();
+                    args[1] = IntLit::a(dom->max(dom->size()-1));
+                    Call* call = new Call(Location().introduce(),constants().ids.int_.le,args);
+                    call->type(Type::varbool());
+                    call->decl(env.model->matchFn(env, call, false));
+                    env.flat_addItem(new ConstraintI(Location().introduce(), call));
+                  }
+                } else if (dom->size() > 1) {
+                  SetLit* newDom = new SetLit(Location().introduce(),IntSetVal::a(dom->min(0),dom->max(dom->size()-1)));
+                    TypeInst* nti = copy(env,vdi->e()->ti())->cast<TypeInst>();
+                    nti->domain(newDom);
+                    vdi->e()->ti(nti);
+                }
+                if (dom->size() > 1) {
                   std::vector<Expression*> args(2);
                   args[0] = vdi->e()->id();
-                  args[1] = IntLit::a(dom->max(dom->size()-1));
-                  Call* call = new Call(Location().introduce(),constants().ids.int_.le,args);
+                  args[1] = new SetLit(vdi->e()->loc(), dom);
+                  Call* call = new Call(vdi->e()->loc(),constants().ids.set_in,args);
                   call->type(Type::varbool());
                   call->decl(env.model->matchFn(env, call, false));
+                  // Give distinct call stack
+                  Annotation& ann = vdi->e()->ann();
+                  Expression* tmp = call;
+                  if(Expression* mznpath_ann = ann.getCall(constants().ann.mzn_path)) {
+                    tmp = mznpath_ann->cast<Call>()->arg(0);
+                  }
+                  CallStackItem csi(env, tmp);
                   env.flat_addItem(new ConstraintI(Location().introduce(), call));
                 }
-              } else if (dom->size() > 1) {
-                SetLit* newDom = new SetLit(Location().introduce(),IntSetVal::a(dom->min(0),dom->max(dom->size()-1)));
-                  TypeInst* nti = copy(env,vdi->e()->ti())->cast<TypeInst>();
-                  nti->domain(newDom);
-                  vdi->e()->ti(nti);
-              }
-              if (dom->size() > 1) {
-                std::vector<Expression*> args(2);
-                args[0] = vdi->e()->id();
-                args[1] = new SetLit(vdi->e()->loc(), dom);
-                Call* call = new Call(vdi->e()->loc(),constants().ids.set_in,args);
-                call->type(Type::varbool());
-                call->decl(env.model->matchFn(env, call, false));
-                // Give distinct call stack
-                Annotation& ann = vdi->e()->ann();
-                Expression* tmp = call;
-                if(Expression* mznpath_ann = ann.getCall(constants().ann.mzn_path)) {
-                  tmp = mznpath_ann->cast<Call>()->arg(0);
-                }
-                CallStackItem csi(env, tmp);
-                env.flat_addItem(new ConstraintI(Location().introduce(), call));
+              } else {
+                convertToRangeDomain.push_back(i);
               }
             }
           }
