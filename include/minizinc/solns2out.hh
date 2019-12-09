@@ -154,8 +154,7 @@ namespace MiniZinc {
     std::string stdlibDir;
     
     // Basically open output
-     void init();
-    void createOutputMap();
+    void init();
     std::map<std::string, SolverInstance::Status> mapInputStatus;
     void createInputMap();
     void restoreDefaults();
