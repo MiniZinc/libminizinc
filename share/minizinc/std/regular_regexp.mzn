@@ -1,4 +1,5 @@
 include "fzn_regular_regexp.mzn";
+include "regular.mzn";
 
 /** @group globals.extensional
   The sequence of values in array \a x  is accepted by the regular
