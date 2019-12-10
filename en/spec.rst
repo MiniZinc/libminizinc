@@ -3492,25 +3492,35 @@ as JSON objects. A JSON input file needs to have the following structure:
   - An array of values. Arrays of arrays are supported only if all inner arrays are of the same length, so that they can be mapped to multi-dimensional MiniZinc arrays.
 
   - A set of values encoded as an object with a single member with key ``"set"`` and a list of values (the elements of the set).
+  
+  - A value of an enumerated type encoded as an object with a single member with key ``"e"`` and a string value (the identifier of the enumerated value).
 
-This is an example of a JSON parameter file using all of the above features:
+Assume a MiniZinc model declaring the following parameters:
+
+.. code-block:: minizinc
+
+  int: n;
+  enum Customers;
+  array[1..n,Customers] of int: distances;
+  array[1..n] of set of int: patterns;
+
+Here is an example of a JSON parameter file using all of the above features:
 
 .. code-block:: json
 
     {
-      "n" : 3,
+      "n" : 2,
+      "Customers" : [ {"e" : "Customer A"}, {"e" : "Customer B"}, {"e" : "Customer C"} ],
       "distances" : [ [1,2,3],
                       [4,5,6]],
       "patterns"  : [ {"set" : [1,3,5]}, {"set" : [2,4,6]} ]
     }
 
 
-The first parameter declares a simple integer ``n``. The
+The first parameter declares a simple integer ``n``. The ``Customers`` parameter defines the members of an enumerated type. The
 ``distances`` parameter is a two-dimensional array; note that all inner
 arrays must be of the same size in order to map to a (rectangular) MiniZinc
-two-dimensional array. The third parameter is an array of sets of integers.
-
-**Note**: The JSON input and output currently does not support enumerated types. This will be added in a future release.
+two-dimensional array. The ``patterns`` parameter is an array of sets of integers.
 
 .. _spec-grammar:
 
