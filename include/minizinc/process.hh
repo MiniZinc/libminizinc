@@ -206,7 +206,7 @@ namespace MiniZinc {
 
       std::deque<std::string> outputQueue;
       bool workerReady = false;
-      bool mainThreadReady = true;
+      bool mainThreadReady = false;
       terminateMutex.lock();
       thread thrStdout(&ReadPipePrint<S2O>, g_hChildStd_OUT_Rd, &doneStdout, nullptr, &outputQueue, &pipeMutex, &cv_mutex, &cv, &workerReady, &mainThreadReady);
       thread thrStderr(&ReadPipePrint<S2O>, g_hChildStd_ERR_Rd, &doneStderr, &pS2Out->getLog(), nullptr, &pipeMutex, nullptr, nullptr, nullptr, nullptr);
