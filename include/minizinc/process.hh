@@ -38,7 +38,7 @@ namespace MiniZinc {
 #ifdef _WIN32
 
   template<class S2O>
-  void ReadPipePrint(HANDLE g_hCh, bool* _done, std::ostream* pOs, S2O* pSo, std::mutex* mtx) {
+  void ReadPipePrint(HANDLE g_hCh, bool* _done, std::exception_ptr* exception, std::ostream* pOs, S2O* pSo, std::mutex* mtx) {
     bool& done = *_done;
     assert( pOs!=0 || pSo!=0 );
     while (!done) {
@@ -55,14 +55,28 @@ namespace MiniZinc {
         }
         nl_buffer[nl_count] = 0;
         std::lock_guard<std::mutex> lck(*mtx);
-        if (pSo)
-          pSo->feedRawDataChunk( nl_buffer );
-        if (pOs)
+		if (pSo) {
+		  try {
+			pSo->feedRawDataChunk(nl_buffer);
+		  }
+		  catch (...) {
+			  *exception = std::current_exception();
+			  done = true;
+		  }
+		}
+		if (pOs)
           (*pOs) << nl_buffer << std::flush;
       }
       else {
-        if (pSo)
-          pSo->feedRawDataChunk( "\n" );   // in case the last chunk had none
+		  if (pSo) {
+			  try {
+				  pSo->feedRawDataChunk("\n");   // in case the last chunk had none
+			  }
+			  catch (...) {
+			  *exception = std::current_exception();
+			  done = true;
+		  }
+		  }
         done = true;
       }
     }
@@ -177,17 +191,25 @@ namespace MiniZinc {
       CloseHandle(g_hChildStd_IN_Rd);
       bool doneStdout = false;
       bool doneStderr = false;
+	  std::exception_ptr stdout_exception;
+	  std::exception_ptr stderr_exception;
       // Threaded solution seems simpler than asyncronous pipe reading
       std::mutex pipeMutex;
       std::timed_mutex terminateMutex;
       terminateMutex.lock();
-      thread thrStdout(&ReadPipePrint<S2O>, g_hChildStd_OUT_Rd, &doneStdout, nullptr, pS2Out, &pipeMutex);
-      thread thrStderr(&ReadPipePrint<S2O>, g_hChildStd_ERR_Rd, &doneStderr, &pS2Out->getLog(), nullptr, &pipeMutex);
+      thread thrStdout(&ReadPipePrint<S2O>, g_hChildStd_OUT_Rd, &doneStdout, &stdout_exception, nullptr, pS2Out, &pipeMutex);
+      thread thrStderr(&ReadPipePrint<S2O>, g_hChildStd_ERR_Rd, &doneStderr, &stderr_exception, &pS2Out->getLog(), nullptr, &pipeMutex);
       thread thrTimeout(TimeOut, piProcInfo.hProcess, &doneStdout, &doneStderr, timelimit, &terminateMutex);
       thrStdout.join();
       thrStderr.join();
       terminateMutex.unlock();
       thrTimeout.join();
+	  if (stdout_exception) {
+		  std::rethrow_exception(stdout_exception);
+	  }
+	  if (stderr_exception) {
+		  std::rethrow_exception(stderr_exception);
+	  }
       DWORD exitCode = 0;
       if (GetExitCodeProcess(piProcInfo.hProcess,&exitCode) == FALSE) {
         exitCode = 1;

@@ -14,6 +14,7 @@
 namespace MiniZinc {
 
 #ifdef _WIN32
+	std::exception_ptr winExceptions[2];
 
   void TimeOut(HANDLE hProcess, bool* doneStdout, bool* doneStderr, int timeout, std::timed_mutex* mtx) {
     if (timeout > 0) {
