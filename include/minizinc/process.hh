@@ -32,15 +32,23 @@ const auto SolverInstance__ERROR = MiniZinc::SolverInstance::ERROR;  // before w
 #include <string>
 #include <thread>
 #include <mutex>
+#include <condition_variable>
+#include <deque>
 
 namespace MiniZinc {
 
 #ifdef _WIN32
 
   template<class S2O>
-  void ReadPipePrint(HANDLE g_hCh, bool* _done, std::exception_ptr* exception, std::ostream* pOs, S2O* pSo, std::mutex* mtx) {
+  void ReadPipePrint(HANDLE g_hCh, bool* _done, std::ostream* pOs, std::deque<std::string>* outputQueue,
+    std::mutex* mtx, std::mutex* cv_mutex, std::condition_variable* cv,
+    bool* workerReady, bool* mainThreadReady) {
     bool& done = *_done;
-    assert( pOs!=0 || pSo!=0 );
+    assert(pOs != 0 || outputQueue != 0);
+    if (cv_mutex) {
+      std::unique_lock<std::mutex> lk(*cv_mutex);
+      cv->wait(lk, [=] { return *mainThreadReady; });
+    }
     while (!done) {
       char buffer[5255];
       char nl_buffer[5255];
@@ -48,35 +56,32 @@ namespace MiniZinc {
       BOOL bSuccess = ReadFile(g_hCh, buffer, sizeof(buffer) - 1, &count, NULL);
       if (bSuccess && count > 0) {
         int nl_count = 0;
-        for (int i=0; i<count; i++) {
+        for (int i = 0; i < count; i++) {
           if (buffer[i] != 13) {
             nl_buffer[nl_count++] = buffer[i];
           }
         }
         nl_buffer[nl_count] = 0;
         std::lock_guard<std::mutex> lck(*mtx);
-		if (pSo) {
-		  try {
-			pSo->feedRawDataChunk(nl_buffer);
-		  }
-		  catch (...) {
-			  *exception = std::current_exception();
-			  done = true;
-		  }
-		}
-		if (pOs)
+        if (outputQueue) {
+          outputQueue->push_back(nl_buffer);
+          *workerReady = true;
+          cv->notify_one();
+          std::unique_lock<std::mutex> lk(*cv_mutex);
+          cv->wait(lk, [=] { return *mainThreadReady; });
+          *workerReady = false;
+        }
+        if (pOs)
           (*pOs) << nl_buffer << std::flush;
       }
       else {
-		  if (pSo) {
-			  try {
-				  pSo->feedRawDataChunk("\n");   // in case the last chunk had none
-			  }
-			  catch (...) {
-			  *exception = std::current_exception();
-			  done = true;
-		  }
-		  }
+        if (outputQueue) {
+          outputQueue->push_back("\n");
+          *workerReady = true;
+          cv->notify_one();
+          std::unique_lock<std::mutex> lk(*cv_mutex);
+          cv->wait(lk, [=] { return *mainThreadReady; });
+        }
         done = true;
       }
     }
@@ -191,27 +196,60 @@ namespace MiniZinc {
       CloseHandle(g_hChildStd_IN_Rd);
       bool doneStdout = false;
       bool doneStderr = false;
-	  std::exception_ptr stdout_exception;
-	  std::exception_ptr stderr_exception;
+
       // Threaded solution seems simpler than asyncronous pipe reading
       std::mutex pipeMutex;
       std::timed_mutex terminateMutex;
+
+      std::mutex cv_mutex;
+      std::condition_variable cv;
+
+      std::deque<std::string> outputQueue;
+      bool workerReady = false;
+      bool mainThreadReady = true;
       terminateMutex.lock();
-      thread thrStdout(&ReadPipePrint<S2O>, g_hChildStd_OUT_Rd, &doneStdout, &stdout_exception, nullptr, pS2Out, &pipeMutex);
-      thread thrStderr(&ReadPipePrint<S2O>, g_hChildStd_ERR_Rd, &doneStderr, &stderr_exception, &pS2Out->getLog(), nullptr, &pipeMutex);
+      thread thrStdout(&ReadPipePrint<S2O>, g_hChildStd_OUT_Rd, &doneStdout, nullptr, &outputQueue, &pipeMutex, &cv_mutex, &cv, &workerReady, &mainThreadReady);
+      thread thrStderr(&ReadPipePrint<S2O>, g_hChildStd_ERR_Rd, &doneStderr, &pS2Out->getLog(), nullptr, &pipeMutex, nullptr, nullptr, nullptr, nullptr);
       thread thrTimeout(TimeOut, piProcInfo.hProcess, &doneStdout, &doneStderr, timelimit, &terminateMutex);
+      {
+        std::unique_lock<std::mutex> lk(cv_mutex);
+        mainThreadReady = true;
+      }
+      cv.notify_one();
+      while (!doneStdout) {
+        std::unique_lock<std::mutex> lk(cv_mutex);
+        cv.wait(lk, [&] { return workerReady; });
+        mainThreadReady = false;
+        while (!outputQueue.empty()) {
+          try {
+            pS2Out->feedRawDataChunk(outputQueue.front().c_str());
+            outputQueue.pop_front();
+          }
+          catch (...) {
+            TerminateProcess(piProcInfo.hProcess, 0);
+            doneStdout = true;
+            doneStderr = true;
+            mainThreadReady = true;
+            lk.unlock();
+            cv.notify_one();
+            thrStdout.join();
+            thrStderr.join();
+            terminateMutex.unlock();
+            thrTimeout.join();
+            std::rethrow_exception(std::current_exception());
+          }
+        }
+        mainThreadReady = true;
+        lk.unlock();
+        cv.notify_one();
+      }
+
       thrStdout.join();
       thrStderr.join();
       terminateMutex.unlock();
       thrTimeout.join();
-	  if (stdout_exception) {
-		  std::rethrow_exception(stdout_exception);
-	  }
-	  if (stderr_exception) {
-		  std::rethrow_exception(stderr_exception);
-	  }
       DWORD exitCode = 0;
-      if (GetExitCodeProcess(piProcInfo.hProcess,&exitCode) == FALSE) {
+      if (GetExitCodeProcess(piProcInfo.hProcess, &exitCode) == FALSE) {
         exitCode = 1;
       }
       CloseHandle(piProcInfo.hProcess);
