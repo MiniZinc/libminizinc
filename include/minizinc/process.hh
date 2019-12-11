@@ -41,14 +41,9 @@ namespace MiniZinc {
 
   template<class S2O>
   void ReadPipePrint(HANDLE g_hCh, bool* _done, std::ostream* pOs, std::deque<std::string>* outputQueue,
-    std::mutex* mtx, std::mutex* cv_mutex, std::condition_variable* cv,
-    bool* workerReady, bool* mainThreadReady) {
+    std::mutex* mtx, std::mutex* cv_mutex, std::condition_variable* cv) {
     bool& done = *_done;
     assert(pOs != 0 || outputQueue != 0);
-    if (cv_mutex) {
-      std::unique_lock<std::mutex> lk(*cv_mutex);
-      cv->wait(lk, [=] { return *mainThreadReady; });
-    }
     while (!done) {
       char buffer[5255];
       char nl_buffer[5255];
@@ -64,25 +59,31 @@ namespace MiniZinc {
         nl_buffer[nl_count] = 0;
         std::lock_guard<std::mutex> lck(*mtx);
         if (outputQueue) {
-          outputQueue->push_back(nl_buffer);
-          *workerReady = true;
-          cv->notify_one();
           std::unique_lock<std::mutex> lk(*cv_mutex);
-          cv->wait(lk, [=] { return *mainThreadReady; });
-          *workerReady = false;
+          bool wasEmpty = outputQueue->empty();
+          outputQueue->push_back(nl_buffer);
+          lk.unlock();
+          if (wasEmpty) {
+            cv->notify_one();
+          }
         }
         if (pOs)
           (*pOs) << nl_buffer << std::flush;
       }
       else {
         if (outputQueue) {
-          outputQueue->push_back("\n");
-          *workerReady = true;
-          cv->notify_one();
           std::unique_lock<std::mutex> lk(*cv_mutex);
-          cv->wait(lk, [=] { return *mainThreadReady; });
+          bool wasEmpty = outputQueue->empty();
+          outputQueue->push_back("\n");
+          done = true;
+          lk.unlock();
+          if (wasEmpty) {
+            cv->notify_one();
+          }
         }
-        done = true;
+        else {
+          done = true;
+        }
       }
     }
   }
@@ -205,21 +206,14 @@ namespace MiniZinc {
       std::condition_variable cv;
 
       std::deque<std::string> outputQueue;
-      bool workerReady = false;
-      bool mainThreadReady = false;
       terminateMutex.lock();
-      thread thrStdout(&ReadPipePrint<S2O>, g_hChildStd_OUT_Rd, &doneStdout, nullptr, &outputQueue, &pipeMutex, &cv_mutex, &cv, &workerReady, &mainThreadReady);
-      thread thrStderr(&ReadPipePrint<S2O>, g_hChildStd_ERR_Rd, &doneStderr, &pS2Out->getLog(), nullptr, &pipeMutex, nullptr, nullptr, nullptr, nullptr);
+      thread thrStdout(&ReadPipePrint<S2O>, g_hChildStd_OUT_Rd, &doneStdout, nullptr, &outputQueue, &pipeMutex, &cv_mutex, &cv);
+      thread thrStderr(&ReadPipePrint<S2O>, g_hChildStd_ERR_Rd, &doneStderr, &pS2Out->getLog(), nullptr, &pipeMutex, nullptr, nullptr);
       thread thrTimeout(TimeOut, piProcInfo.hProcess, &doneStdout, &doneStderr, timelimit, &terminateMutex);
-      {
+
+      while (true) {
         std::unique_lock<std::mutex> lk(cv_mutex);
-        mainThreadReady = true;
-      }
-      cv.notify_one();
-      while (!doneStdout) {
-        std::unique_lock<std::mutex> lk(cv_mutex);
-        cv.wait(lk, [&] { return workerReady; });
-        mainThreadReady = false;
+        cv.wait(lk, [&] { return !outputQueue.empty(); });
         while (!outputQueue.empty()) {
           try {
             pS2Out->feedRawDataChunk(outputQueue.front().c_str());
@@ -229,9 +223,7 @@ namespace MiniZinc {
             TerminateProcess(piProcInfo.hProcess, 0);
             doneStdout = true;
             doneStderr = true;
-            mainThreadReady = true;
             lk.unlock();
-            cv.notify_one();
             thrStdout.join();
             thrStderr.join();
             terminateMutex.unlock();
@@ -239,9 +231,8 @@ namespace MiniZinc {
             std::rethrow_exception(std::current_exception());
           }
         }
-        mainThreadReady = true;
-        lk.unlock();
-        cv.notify_one();
+        if (doneStdout)
+          break;
       }
 
       thrStdout.join();
