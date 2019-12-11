@@ -8,8 +8,8 @@ predicate mzn_reverse_map_var(var set of int: x) = let {
   array[int] of var bool: b = set2bools(x)
 } in true;
 
-function var set of int: reverse_map(array[int] of var bool: b);
-function set of int: reverse_map(array[int] of bool: b) ::promise_total =
+function var set of int: reverse_map_ab2si(array[int] of var bool: b);
+function set of int: reverse_map_ab2si(array[int] of bool: b) ::promise_total =
   { i | i in index_set(b) where b[i] };
 
 array[int] of var bool: set2bools(var set of int: x) ::promise_total =
@@ -17,7 +17,7 @@ array[int] of var bool: set2bools(var set of int: x) ::promise_total =
   let {
     array[int] of var bool: b = array1d( min(ub(x))..max(ub(x)),
       [ set2bools_bit( x, i ) | i in min(ub(x))..max(ub(x)) ] );
-    constraint (x = reverse_map(b)) :: is_reverse_map;
+    constraint (x = reverse_map_ab2si(b)) :: is_reverse_map;
   } in b
   endif;
 array[int] of var bool: set2bools(var set of int: x, set of int: ubx) ::promise_total =
@@ -27,7 +27,6 @@ array[int] of var bool: set2bools(var set of int: x, set of int: ubx) ::promise_
     array[int] of var bool: b = array1d( min(ubx)..max(ubx),
       [ if i in ubx then set2bools_bit( x, i ) else false endif
         | i in min(ubx)..max(ubx) ] );
-%% Not again:    constraint (x = reverse_map(b)) :: is_reverse_map;
   } in b
   endif;
 array[int] of bool: set2bools(set of int: x) ::promise_total =
