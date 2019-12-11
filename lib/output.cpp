@@ -383,7 +383,6 @@ namespace MiniZinc {
                 tv[i].ti(Type::TI_PAR);
               }
               FunctionI* decl = env.output->matchFn(env, rhs->id(), tv, false);
-              Type t;
               if (decl==NULL) {
                 FunctionI* origdecl = env.model->matchFn(env, rhs->id(), tv, false);
                 if (origdecl == NULL) {
@@ -402,6 +401,7 @@ namespace MiniZinc {
                   decl = origdecl;
                 }
               }
+              rhs->type(decl->rtype(env, tv, false));
               rhs->decl(decl);
             }
             outputVarDecls(env,nvi,it->second());
