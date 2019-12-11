@@ -3242,18 +3242,6 @@ namespace MiniZinc {
           }
         }
       }
-
-      for (unsigned int i=0; i<m.size(); i++) {
-        if (ConstraintI* ci = m[i]->dyn_cast<ConstraintI>()) {
-          if (Call* c = ci->e()->dyn_cast<Call>()) {
-            if (c->decl()==constants().var_redef) {
-              CollectDecls cd(env.vo,deletedVarDecls,ci);
-              topDown(cd,c);
-              env.flat_removeItem(i);
-            }
-          }
-        }
-      }
       
       while (!deletedVarDecls.empty()) {
         VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
@@ -3271,6 +3259,18 @@ namespace MiniZinc {
 
       if (!opt.keepOutputInFzn) {
         finaliseOutput(env, deletedVarDecls);
+      }
+
+      for (unsigned int i=0; i<m.size(); i++) {
+        if (ConstraintI* ci = m[i]->dyn_cast<ConstraintI>()) {
+          if (Call* c = ci->e()->dyn_cast<Call>()) {
+            if (c->decl()==constants().var_redef) {
+              CollectDecls cd(env.vo,deletedVarDecls,ci);
+              topDown(cd,c);
+              env.flat_removeItem(i);
+            }
+          }
+        }
       }
 
       while (!deletedVarDecls.empty()) {
