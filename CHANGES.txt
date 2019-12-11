@@ -36,6 +36,7 @@ Changes:
 - Support for optional float variables has been added.
 
 Bug fixes:
+- Include regular.mzn from regular_regexp.mzn. (#351)
 - Inlining of function calls has been moved from the flattener into the type checker, and
   it now is more strict about which functions can be inlined in order to avoid overloading
   issues.
