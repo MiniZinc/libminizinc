@@ -36,6 +36,15 @@ Changes:
 - Support for optional float variables has been added.
 
 Bug fixes:
+- Fixed output handling on Windows (output is now processed on the main thread,
+  so that exceptions thrown during output are printed correctly, and memory
+  management is thread safe).
+- Fixed decomposition of reified mdd constraint, and strengthened decompositions
+  of mdd and cost_mdd.
+- Fix handling of variable re-definitions (e.g. converting sets to arrays of bools),
+  which would previously sometimes result in variables being removed although they
+  were required for output, or the reverse mapping function not being available
+  in the output model.
 - Include regular.mzn from regular_regexp.mzn. (#351)
 - Inlining of function calls has been moved from the flattener into the type checker, and
   it now is more strict about which functions can be inlined in order to avoid overloading
