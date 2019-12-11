@@ -38,6 +38,9 @@ predicate fzn_cost_mdd(array[int] of var int: x,      % variables constrained by
         % P3 each label has a support
         forall(i in 1..L, d in dom(x[i]))
               (x[i] = d -> exists(e in EDGE where level[from[e]] = i /\ d in label[e])(be[e])) /\
+        % P4 exactly one node at each level
+        forall(i in 1..L)
+              (sum(n in NODE where level[n] = i)(bn[n]) = 1) /\
         ln[0] = 0 /\ un[1] = 0 /\
         forall(n in NODE)
               (ln[n] = min(e in EDGE where from[e] = n)(ln[to[e]] + cost[e] + (not be[e])*(maxcost+1 - cost[e]))) /\

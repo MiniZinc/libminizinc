@@ -14,7 +14,7 @@ predicate fzn_mdd(array[int] of var int: x,    % variables constrained by MDD
               set of int: D = dom_array(x); } in
         bn[0] /\ % true node is true
         bn[1] /\ % root must hold
-        % T1 each node except the root enforces an outgoing edge
+        % T1 each node except the true node enforces an outgoing edge
         forall(n in NODE)(bn[n] -> exists(e in EDGE where from[e] = n)(be[e])) /\
         % T23 each edge enforces its endpoints
         forall(e in EDGE)((be[e] -> bn[from[e]]) /\ (be[e] -> bn[to[e]])) /\
@@ -27,4 +27,7 @@ predicate fzn_mdd(array[int] of var int: x,    % variables constrained by MDD
         forall(n in 2..N)(bn[n] -> exists(e in EDGE where to[e] = n)(be[e])) /\
         % P3 each label has a support
         forall(i in 1..L, d in D)
-              (x[i] = d -> exists(e in EDGE where level[from[e]] = i /\ d in label[e])(be[e]));
+              (x[i] = d -> exists(e in EDGE where level[from[e]] = i /\ d in label[e])(be[e])) /\
+        % P4 exactly one node at each level
+        forall(i in 1..L)
+              (sum(n in NODE where level[n] = i)(bn[n]) = 1);

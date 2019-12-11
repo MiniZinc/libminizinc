@@ -13,10 +13,10 @@ predicate fzn_mdd_reif(array[int] of var int: x,    % variables constrained by M
               array[0..N] of var bool: bn; 
               array[EDGE] of var bool: be; 
               set of int: D = dom_array(x); } in
-        bn[0] /\ % true node is true
-        (b <-> bn[1]) /\ % root gives truth value 
-        % T1 each node except the root enforces an outgoing edge
-        forall(n in NODE)(bn[n] -> exists(e in EDGE where from[e] = n)(be[e])) /\
+        (b <-> bn[0]) /\ % true node is result
+        bn[1] /\ % root is always true
+        % T1 each node except the true enforces an outgoing edge
+        forall(n in NODE)(bn[n] -> (exists(e in EDGE where from[e] = n)(be[e]) \/ b = 0)) /\
         % T23 each edge enforces its endpoints
         forall(e in EDGE)((be[e] -> bn[from[e]]) /\ (be[e] -> bn[to[e]])) /\
         % T4 each edge enforces its label
@@ -24,8 +24,17 @@ predicate fzn_mdd_reif(array[int] of var int: x,    % variables constrained by M
         % P1 each node enforces its outgoing edges
         forall(e in EDGE)(bn[from[e]] /\ x[level[from[e]]] in label[e] -> be[e]) /\
         % P2 each node except the root enforces an incoming edge
-        exists(e in EDGE where to[e] = 0)(be[e]) /\
+        (bn[0] -> exists(e in EDGE where to[e] = 0)(be[e])) /\
         forall(n in 2..N)(bn[n] -> exists(e in EDGE where to[e] = n)(be[e])) /\
-        % P3 each label has a support
+        % P3 each label has a support, either an edge or to give false
         forall(i in 1..L, d in D)
-              (x[i] = d -> exists(e in EDGE where level[from[e]] = i /\ d in label[e])(be[e]));
+              (x[i] = d -> forall(n in NODE where level[n] = i,  
+                                  e in EDGE where from[e] = n /\ d in label[e])
+                                 (bn[n] -> be[e]) /\
+                           forall(n in NODE where level[n] = i /\ 
+                                                  not exists(e in EDGE where from[e] = n)
+                                                            (d in label[e]))
+                                 (bn[n] -> b = 0)) /\
+        % P4 at most one node at every level is true (redundant)
+        forall(i in 1..L)
+              (sum(n in NODE where level[n] = i)(bn[n]) <= 1);
