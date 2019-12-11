@@ -116,7 +116,7 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
   << "  -r <N>, --random-seed <N>\n"
      "    random seed, integer" << std::endl
   << "  --workmem <N>, --nodefilestart <N>\n"
-     "    maximal RAM for node tree used before writing to node file, GB, default: 3" << std::endl
+     "    maximal RAM for node tree used before writing to node file, GB, default: 0.5" << std::endl
   << "  --writeModel <file>\n    write model to <file> (.lp, .mps, .sav, ...)" << std::endl
   << "  --readParam <file>\n    read GUROBI parameters from file" << std::endl
   << "  --writeParam <file>\n    write GUROBI parameters to file" << std::endl

@@ -42,7 +42,7 @@ class MIP_cplex_wrapper : public MIP_wrapper {
       int nTimeout=-1;
       long int nSolLimit = -1;
       int nSeed = -1;
-      double nWorkMemLimit=-1;
+      double nWorkMemLimit=0.5;   // although CPLEX 12.10 has default 2GB
       std::string sReadParams;
       std::string sWriteParams;
       bool flag_all_solutions = false;

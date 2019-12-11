@@ -291,7 +291,7 @@ void MIP_cplex_wrapper::Options::printHelp(ostream& os) {
   << "  -r <N>, --random-seed <N>\n"
      "    random seed, integer" << std::endl
   << "  --workmem <N>, --nodefilestart <N>\n"
-     "    maximal RAM for working memory used before writing to node file, GB, default: 3" << std::endl
+     "    maximal RAM for working memory used before writing to node file, GB, default: 0.5" << std::endl
   << "  --writeModel <file>\n    write model to <file> (.lp, .mps, .sav, ...)" << std::endl
   << "  --readParam <file>\n    read CPLEX parameters from file" << std::endl
   << "  --writeParam <file>\n    write CPLEX parameters to file" << std::endl
