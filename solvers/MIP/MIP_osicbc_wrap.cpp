@@ -65,7 +65,7 @@ vector<string> MIP_osicbc_wrapper::getTags() {
 }
 
 vector<string> MIP_osicbc_wrapper::getStdFlags() {
-  return {"-a", "-p", "-s"};
+  return {"-a", "-p", "-s", "-v"};
 }
 
 void MIP_osicbc_wrapper::Options::printHelp(ostream& os) {

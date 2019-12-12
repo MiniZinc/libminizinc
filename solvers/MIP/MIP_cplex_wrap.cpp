@@ -273,7 +273,7 @@ vector<string> MIP_cplex_wrapper::getTags() {
 }
 
 vector<string> MIP_cplex_wrapper::getStdFlags() {
-  return {"-a", "-n", "-p", "-s"};
+  return {"-a", "-n", "-p", "-s", "-v"};
 }
 
 void MIP_cplex_wrapper::Options::printHelp(ostream& os) {

@@ -37,6 +37,9 @@ Changes:
   arrays.
 - Bounds inference for results of if-then-else expressions has been improved.
 - Support for optional float variables has been added.
+- The interfaces to CBC, CPLEX and Gurobi now report correctly that they support
+  verbose output during solving (so that the "verbose solving" option is available
+  from the MiniZinc IDE).
 
 Bug fixes:
 - Fixed output handling on Windows (output is now processed on the main thread,
