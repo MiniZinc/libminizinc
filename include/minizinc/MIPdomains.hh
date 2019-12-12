@@ -30,12 +30,19 @@
  if ( !(c) ) if ( ++nn<=1 ) std::cerr << e << std::endl; } while (0)
 #define MZN_MIPD__assert_hard( c ) MZN_ASSERT_HARD(	c )
 #define MZN_MIPD__assert_hard_msg( c, e ) MZN_ASSERT_HARD_MSG( c, e )
-struct MIPD_Infeasibility_Exception {
-  std::string msg;
-  MIPD_Infeasibility_Exception(const std::string& s) : msg(s) { }
-};
-#define MZN_MIPD__assert_for_feas( c, e ) \
-   do { if ( !(c) ) { std::ostringstream oss; oss << e; throw MIPD_Infeasibility_Exception(oss.str()); } } while (0)
+#define MZN_MIPD__FLATTENING_ERROR__IF_NOT( cond, envi, loc, msg )    do { if ( !(cond) ) { \
+    std::ostringstream oss; \
+    oss << msg; \
+    throw FlatteningError(envi, loc, oss.str()); \
+  } } while(0)
+#define MZN_MIPD__ASSERT_FOR_SAT( cond, envi, loc, msg )   do {  if ( !(cond) )  { \
+    std::ostringstream oss; \
+    oss << "from MIPDomains: " << msg; \
+    throw ModelInconsistent(envi, loc, oss.str());  \
+  } } while(0)
+
+//( c, e ) \
+//   do { if ( !(c) ) { std::ostringstream oss; oss << e; throw MIPD_Infeasibility_Exception(oss.str()); } } while (0)
 
 
 namespace MiniZinc {

@@ -1076,17 +1076,18 @@ typedef LinEq__<std::vector<double>, std::vector<VarDecl*> > LinEq;
           << ": main ref var " <<cls.varRef1->id()->str()
           << ", domain dec: " << sDomain );
         
-        MZN_MIPD__assert_for_feas( sDomain.size(), "Clique " << nClique
-            << ": main ref var " <<cls.varRef1->id()->str()
-            << ", domain dec: " << sDomain );
+        MZN_MIPD__ASSERT_FOR_SAT( sDomain.size()!=0,
+                                  mipd.getEnv()->envi(), cls.varRef1->loc(),
+                                  "clique " << nClique
+                                  << ": main ref var " << *cls.varRef1->id()
+                                  << ", domain decomposition seems empty: " << sDomain );
         
-        if (!sDomain.checkFiniteBounds()) {
-          std::ostringstream oss;
-          oss << "Variable " << *cls.varRef1->id()
-              << " needs finite bounds for linearisation."
-                 " Or, use indicator constraints";
-          throw FlatteningError(mipd.getEnv()->envi(),cls.varRef1->loc(), oss.str());
-        }
+        MZN_MIPD__FLATTENING_ERROR__IF_NOT (sDomain.checkFiniteBounds(),
+                                            mipd.getEnv()->envi(),cls.varRef1->loc(),
+                                            "variable " << *cls.varRef1->id()
+                                            << " needs finite bounds for linearisation."
+                                               " Or, use indicator constraints. "
+                                            << "Current domain is " << sDomain);
         
         MZN_MIPD__assert_hard( sDomain.checkDisjunctStrict() );
         
@@ -1146,7 +1147,8 @@ typedef LinEq__<std::vector<double>, std::vector<VarDecl*> > LinEq;
             lb = bnds.left;
             ub = bnds.right;
           } else {
-            MZN_MIPD__assert_for_feas( 0, 
+            MZN_MIPD__FLATTENING_ERROR__IF_NOT( 0,
+                                                mipd.getEnv()->envi(), cls.varRef1->loc(),
               "Variable " << vd->id()->str()
               << " of type " << vd->type().toString(mipd.__env->envi())
               << " has a domain." );
@@ -1165,9 +1167,9 @@ typedef LinEq__<std::vector<double>, std::vector<VarDecl*> > LinEq;
         auto& aCalls = mipd.vVarDescr[ vd->payload() ].aCalls;
         for ( Item* pItem : aCalls ) {
           ConstraintI* pCI = pItem->dyn_cast<ConstraintI>();
-          MZN_MIPD__assert_hard( pCI );
+          MZN_MIPD__assert_hard( pCI!=nullptr );
           Call* pCall = pCI->e()->dyn_cast<Call>();
-          MZN_MIPD__assert_hard( pCall );
+          MZN_MIPD__assert_hard( pCall!=nullptr );
           DBGOUT_MIPD__( "PROPAG CALL  " );
           DBGOUT_MIPD_SELF( debugprint( pCall ) );
           // check the bounds for bool in reifs?                     TODO
@@ -1829,22 +1831,10 @@ typedef LinEq__<std::vector<double>, std::vector<VarDecl*> > LinEq;
       for ( int iVar=0; iVar<vVarDescr.size(); ++iVar ) {
 //         VarDescr& var = vVarDescr[iVar];
         if ( ! vVarDescr[iVar].fDomainConstrProcessed ) {
-          try {
             GCLock lock;      
             DomainDecomp dd(this, iVar);
             dd.doProcess();
             vVarDescr[iVar].fDomainConstrProcessed = true;
-          } catch (const MIPD_Infeasibility_Exception& exc) {
-            std::cerr << "  INFEASIBILITY: " << exc.msg << std::endl;
-            fRetTrue = false;
-            break;
-//           } catch (const Exception& e) {
-//             std::cerr << "ERROR: " << e.what() << ": " << e.msg() << std::endl;
-//             fRetTrue = false;
-//             break;
-// //           } catch ( ... ) {  // a contradiction
-// //             return false;
-          }
         }
       }
       // Clean up __POSTs:
@@ -1868,8 +1858,8 @@ typedef LinEq__<std::vector<double>, std::vector<VarDecl*> > LinEq;
 //       MZN_MIPD__assert_hard( ! arg->dyn_cast<BoolLit>() );
       Id* id = arg->dyn_cast<Id>();
 //       MZN_MIPD__assert_hard(id);
-      if ( 0==id )
-        return 0;                        // the call using this should be ignored?
+      if ( nullptr==id )
+        return nullptr;                        // the call using this should be ignored?
       VarDecl* vd = id->decl();
       MZN_MIPD__assert_hard(vd);
       return vd;

@@ -65,8 +65,9 @@ namespace MiniZinc {
 
   class ModelInconsistent : public LocationException {
   public:
-    ModelInconsistent(EnvI& env, const Location& loc)
-      : LocationException(env,loc,"model inconsistency detected") {}
+    ModelInconsistent(EnvI& env, const Location& loc, const std::string& msg="")
+      : LocationException(env,loc,"model inconsistency detected"
+                          + (msg.empty() ? msg : ":  ") + msg) {}
     ~ModelInconsistent(void) throw() {}
     virtual const char* what(void) const throw() {
       return "MiniZinc: warning";
