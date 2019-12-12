@@ -195,7 +195,7 @@ namespace MiniZinc {
     VarDeclIterator() {}
     VarDeclIterator(const VarDeclIterator& vi) : _it(vi._it) {}
     VarDeclIterator(Model* model, const Model::iterator& it) : _model(model), _it(it) {
-      while (_it != _model->end() && !(*_it)->isa<VarDeclI>()) {
+      while (_it != _model->end() && (!(*_it)->isa<VarDeclI>() || (*_it)->removed())) {
         ++_it;
       }
     }
@@ -212,7 +212,7 @@ namespace MiniZinc {
     VarDeclIterator& operator++() {
       do {
         ++_it;
-      } while (_it != _model->end() && !(*_it)->isa<VarDeclI>());
+      } while (_it != _model->end() && (!(*_it)->isa<VarDeclI>() || (*_it)->removed()));
       return *this;
     }
     
@@ -233,7 +233,7 @@ namespace MiniZinc {
     ConstraintIterator() {}
     ConstraintIterator(const ConstraintIterator& vi) : _it(vi._it) {}
     ConstraintIterator(Model* model, const Model::iterator& it) : _model(model), _it(it) {
-      while (_it != _model->end() && !(*_it)->isa<ConstraintI>()) {
+      while (_it != _model->end() && (!(*_it)->isa<ConstraintI>() || (*_it)->removed())) {
         ++_it;
       }
     }
@@ -250,7 +250,7 @@ namespace MiniZinc {
     ConstraintIterator& operator++() {
       do {
         ++_it;
-      } while (_it != _model->end() && !(*_it)->isa<ConstraintI>());
+      } while (_it != _model->end() && (!(*_it)->isa<ConstraintI>() || (*_it)->removed()));
       return *this;
     }
     
@@ -271,7 +271,7 @@ namespace MiniZinc {
     FunctionIterator() {}
     FunctionIterator(const FunctionIterator& vi) : _it(vi._it) {}
     FunctionIterator(Model* model, const Model::iterator& it) : _model(model), _it(it) {
-      while (_it != _model->end() && !(*_it)->isa<FunctionI>()) {
+      while (_it != _model->end() && (!(*_it)->isa<FunctionI>() || (*_it)->removed())) {
         ++_it;
       }
     }
@@ -288,7 +288,7 @@ namespace MiniZinc {
     FunctionIterator& operator++() {
       do {
         ++_it;
-      } while (_it != _model->end() && !(*_it)->isa<FunctionI>());
+      } while (_it != _model->end() && (!(*_it)->isa<FunctionI>() || (*_it)->removed()));
       return *this;
     }
     
