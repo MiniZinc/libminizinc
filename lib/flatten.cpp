@@ -3064,17 +3064,25 @@ namespace MiniZinc {
                       nc->type(Type::varbool());
                       nc->decl(array_bool_clause_reif);
                     } else {
+                      FunctionI* decl = nullptr;
                       if (c->type().isbool() && vd->type().isbool()) {
                         if (env.fopts.enable_imp && vd->ann().contains(constants().ctx.pos)) {
                           cid = env.halfReifyId(c->id());
-                          if (env.model->matchFn(env, cid, args, false) == NULL) {
+                          decl = env.model->matchFn(env, cid, args, false);
+                          if (decl==nullptr) {
                             cid = env.reifyId(c->id());
+                            decl = env.model->matchFn(env, cid, args, false);
                           }
                         } else {
                           cid = env.reifyId(c->id());
+                          decl = env.model->matchFn(env, cid, args, false);
                         }
+                        if (decl==nullptr) {
+                          throw FlatteningError(env,c->loc(),"'"+c->id().str()+"' is used in a reified context but no reified version is available");
+                        }
+                      } else {
+                        decl = env.model->matchFn(env,cid,args,false);
                       }
-                      FunctionI* decl = env.model->matchFn(env,cid,args,false);
                       if (decl && decl->e()) {
                         addPathAnnotation(env, decl->e());
                         nc = new Call(c->loc().introduce(),cid,args);
