@@ -1082,11 +1082,12 @@ typedef LinEq__<std::vector<double>, std::vector<VarDecl*> > LinEq;
         
         if (!sDomain.checkFiniteBounds()) {
           std::ostringstream oss;
-          oss << "Variable " << *cls.varRef1->id() << " needs finite bounds for linearisation";
+          oss << "Variable " << *cls.varRef1->id()
+              << " needs finite bounds for linearisation."
+                 " Or, use indicator constraints";
           throw FlatteningError(mipd.getEnv()->envi(),cls.varRef1->loc(), oss.str());
         }
         
-        MZN_MIPD__assert_hard( sDomain.checkFiniteBounds() );
         MZN_MIPD__assert_hard( sDomain.checkDisjunctStrict() );
         
         makeRangeDomains();
