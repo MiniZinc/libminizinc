@@ -43,6 +43,7 @@ class MIP_cplex_wrapper : public MIP_wrapper {
       long int nSolLimit = -1;
       int nSeed = -1;
       double nWorkMemLimit=0.5;   // although CPLEX 12.10 has default 2GB
+      std::string sNodefileDir;
       std::string sReadParams;
       std::string sWriteParams;
       bool flag_all_solutions = false;
@@ -210,6 +211,7 @@ class MIP_cplex_wrapper : public MIP_wrapper {
                           int(*callback)(CPXCENVptr, void *, int, void *),
                           void *cbhandle);
   int (*dll_CPXsetintparam) (CPXENVptr env, int whichparam, CPXINT newvalue);
+  int (*dll_CPXsetstrparam) (CPXENVptr env, int whichparam, char const * newvalue);
   int (*dll_CPXsetlazyconstraintcallbackfunc) (CPXENVptr env,
                                     int(*lazyconcallback)(CALLBACK_CUT_ARGS),
                                     void *cbhandle);

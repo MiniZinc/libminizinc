@@ -146,6 +146,7 @@ void MIP_cplex_wrapper::checkDLL() {
   *(void**)(&dll_CPXsetdblparam) = dll_sym(_cplex_dll, "CPXsetdblparam");
   *(void**)(&dll_CPXsetinfocallbackfunc) = dll_sym(_cplex_dll, "CPXsetinfocallbackfunc");
   *(void**)(&dll_CPXsetintparam) = dll_sym(_cplex_dll, "CPXsetintparam");
+  *(void**)(&dll_CPXsetstrparam) = dll_sym(_cplex_dll, "CPXsetstrparam");
   *(void**)(&dll_CPXsetlazyconstraintcallbackfunc) = dll_sym(_cplex_dll, "CPXsetlazyconstraintcallbackfunc");
   *(void**)(&dll_CPXsetusercutcallbackfunc) = dll_sym(_cplex_dll, "CPXsetusercutcallbackfunc");
   *(void**)(&dll_CPXversion) = dll_sym(_cplex_dll, "CPXversion");
@@ -194,6 +195,7 @@ void MIP_cplex_wrapper::checkDLL() {
   dll_CPXsetdblparam = CPXsetdblparam;
   dll_CPXsetinfocallbackfunc = CPXsetinfocallbackfunc;
   dll_CPXsetintparam = CPXsetintparam;
+  dll_CPXsetstrparam = CPXsetstrparam;
   dll_CPXsetlazyconstraintcallbackfunc = CPXsetlazyconstraintcallbackfunc;
   dll_CPXsetusercutcallbackfunc = CPXsetusercutcallbackfunc;
   dll_CPXversion = CPXversion;
@@ -292,6 +294,8 @@ void MIP_cplex_wrapper::Options::printHelp(ostream& os) {
      "    random seed, integer" << std::endl
   << "  --workmem <N>, --nodefilestart <N>\n"
      "    maximal RAM for working memory used before writing to node file, GB, default: 0.5" << std::endl
+  << "  --nodefiledir <path>\n"
+     "    nodefile directory" << std::endl
   << "  --writeModel <file>\n    write model to <file> (.lp, .mps, .sav, ...)" << std::endl
   << "  --readParam <file>\n    read CPLEX parameters from file" << std::endl
   << "  --writeParam <file>\n    write CPLEX parameters to file" << std::endl
@@ -322,6 +326,7 @@ bool MIP_cplex_wrapper::Options::processOption(int& i, std::vector<std::string>&
   } else if ( cop.get( "-n --num-solutions", &nSolLimit ) ) {
   } else if ( cop.get( "-r --random-seed", &nSeed ) ) {
   } else if ( cop.get( "--workmem --nodefilestart", &nWorkMemLimit ) ) {
+  } else if ( cop.get( "--nodefiledir --NodefileDir", &sNodefileDir ) ) {
   } else if ( cop.get( "--readParam", &sReadParams ) ) {
   } else if ( cop.get( "--writeParam", &sWriteParams ) ) {
   } else if ( cop.get( "--absGap", &absGap ) ) {
@@ -908,6 +913,11 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
      wrap_assert(!status, "Failed to set CPXPARAM_MIP_Strategy_File.", false);
      status =  dll_CPXsetdblparam (env, CPXPARAM_WorkMem, 1024.0 * options->nWorkMemLimit);   // MB in CPLEX
      wrap_assert(!status, "Failed to set CPXPARAM_WorkMem.", false);
+    }
+
+    if (options->sNodefileDir.size()>0) {
+     status =  dll_CPXsetstrparam (env, CPXPARAM_WorkDir, options->sNodefileDir.c_str());
+     wrap_assert(!status, "Failed to set CPXPARAM_WorkDir.", false);
     }
 
    if ( options->absGap>=0.0 ) {

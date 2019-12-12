@@ -25,11 +25,14 @@ Changes:
 - Added set_to_ranges built-ins to enable efficient iteration over sets. These are used
   to implement set_in for float variables, which was missing before.
 - The Gurobi and CPLEX backends now support the --random-seed command line option.
+- The Gurobi and CPLEX backends now use nodefile for search trees exceeding 500 MB
+  (--nodefilestart can change this value and --nodefiledir the folder.)
 - The MIPDomains optimisations have been switched back on by default. The optimisations
   have also been strengthened for some special cases.
+- Without the MIPdomains postprocessing, linearisation of variable domains with holes
+  now uses set_in instead of individual not-equal constraints, which may result in more
+  compact FlatZinc.
 - Linearisation of multiplication can now consider the exact domain of a factor.
-- Linearisation of variable domains with holes now uses set_in instead of individual
-  not-equal constraints, which may result in more compact FlatZinc.
 - The product functions have been made non-recursive in order to support longer
   arrays.
 - Bounds inference for results of if-then-else expressions has been improved.

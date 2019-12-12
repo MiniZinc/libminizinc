@@ -117,6 +117,8 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
      "    random seed, integer" << std::endl
   << "  --workmem <N>, --nodefilestart <N>\n"
      "    maximal RAM for node tree used before writing to node file, GB, default: 0.5" << std::endl
+  << "  --nodefiledir <path>\n"
+     "    nodefile directory" << std::endl
   << "  --writeModel <file>\n    write model to <file> (.lp, .mps, .sav, ...)" << std::endl
   << "  --readParam <file>\n    read GUROBI parameters from file" << std::endl
   << "  --writeParam <file>\n    write GUROBI parameters to file" << std::endl
@@ -153,6 +155,7 @@ bool MIP_gurobi_wrapper::Options::processOption(int& i, std::vector<std::string>
   } else if ( cop.get( "-n --num-solutions", &nSolLimit ) ) {
   } else if ( cop.get( "-r --random-seed", &nSeed ) ) {
   } else if ( cop.get( "--workmem --nodefilestart", &nWorkMemLimit ) ) {
+  } else if ( cop.get( "--nodefiledir --NodefileDir", &sNodefileDir ) ) {
   } else if ( cop.get( "--readParam", &sReadParams ) ) {
   } else if ( cop.get( "--writeParam", &sWriteParams ) ) {
   } else if ( cop.get( "--absGap", &absGap ) ) {
@@ -721,6 +724,11 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
     if (options->nWorkMemLimit>0 && options->nWorkMemLimit<1e200) {
       error =  dll_GRBsetdblparam (dll_GRBgetenv(model), "NodefileStart", options->nWorkMemLimit);
       wrap_assert(!error, "Failed to set NodefileStart.", false);
+    }
+
+    if (options->sNodefileDir.size()>0) {
+      error =  dll_GRBsetstrparam (dll_GRBgetenv(model), "NodefileDir", options->sNodefileDir.c_str());
+      wrap_assert(!error, "Failed to set NodefileDir.", false);
     }
 
     if ( options->absGap>=0.0 ) {

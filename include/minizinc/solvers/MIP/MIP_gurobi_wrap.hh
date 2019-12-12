@@ -45,6 +45,7 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
       long int nSolLimit = -1;
       int nSeed = -1;
       double nWorkMemLimit=0.5;
+      std::string sNodefileDir;
       std::string sReadParams;
       std::string sWriteParams;
       bool flag_all_solutions = false;
