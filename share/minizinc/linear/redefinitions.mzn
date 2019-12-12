@@ -25,6 +25,8 @@ predicate bool_eq(var bool: x, var bool: y) =
 %%  trace(" bool_eq: \(x), \(y) \n") /\
   bool2int(x)==bool2int(y);
 
+predicate bool2int(var bool: x, var int: y) = y = bool2int(x);
+
 %---------------------------- BASIC (HALF)REIFS -----------------------------%
 
 include "options.mzn";
