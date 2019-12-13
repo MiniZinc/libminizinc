@@ -32,6 +32,8 @@
   
   @groupdef globals.extensional Extensional constraints (table, regular etc.)
 
+  @groupdef globals.learning Machine learning constraints
+
   @groupdef globals.deprecated Deprecated constraints
 
 */
