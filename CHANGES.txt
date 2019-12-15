@@ -10,7 +10,7 @@ Version 2.4.0
 
 Changes:
 - The compiler now detects counting constraints in expressions such as
-  count(i in x)(x=3) <= 4 and rewrites them into global counting constraints. This
+  count(i in x)(i=3) <= 4 and rewrites them into global counting constraints. This
   is now the preferred way to specify counting. The atmost/atleast/exactly constraints
   on integer variables have been deprecated, and versions of count predicates with
   par variables have been added. FlatZinc solvers that supported atmost/atleast/exactly
