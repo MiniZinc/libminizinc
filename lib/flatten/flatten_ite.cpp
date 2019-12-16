@@ -215,6 +215,7 @@ namespace MiniZinc {
     Ctx cmix;
     cmix.b = C_MIX;
     cmix.i = C_MIX;
+    cmix.neg = ctx.neg;
     
     bool foundTrueBranch = false;
     for (int i=0; i<ite->size() && !foundTrueBranch; i++) {
@@ -223,7 +224,10 @@ namespace MiniZinc {
       if (ite->e_if(i)->isa<Call>() && ite->e_if(i)->cast<Call>()->id()=="mzn_in_root_context") {
         e_if = EE(constants().boollit(ctx.b==C_ROOT), constants().lit_true);
       } else {
-        e_if = flat_exp(env,cmix,ite->e_if(i),NULL,constants().var_true);
+        Ctx cmix_not_negated;
+        cmix_not_negated.b = C_MIX;
+        cmix_not_negated.i = C_MIX;
+        e_if = flat_exp(env,cmix_not_negated,ite->e_if(i),NULL,constants().var_true);
       }
       if (e_if.r()->type()==Type::parbool()) {
         {
@@ -238,9 +242,6 @@ namespace MiniZinc {
           }
           // had var conditions, so we have to take them into account
           // and emit new conditional clause
-          Ctx cmix;
-          cmix.b = C_MIX;
-          cmix.i = C_MIX;
           // add another condition and definedness variable
           conditions.push_back(constants().lit_true);
           for (unsigned int j=0; j<results.size(); j++) {
