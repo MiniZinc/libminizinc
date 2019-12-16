@@ -816,7 +816,10 @@ function var set of int: '..'(var int: a, var int: b) ::promise_total =
 /** @group builtins.set Return the cardinality of the set \a x */
 function     int: card(    set of $T: x);
 /** @group builtins.set Return the cardinality of the set \a x */
-function var int: card(var set of int: x);
+function var int: card(var set of int: x) ::promise_total = let {
+    var 0..card(ub(x)): c;
+    constraint set_card(x,c);
+  } in c;
 
 /** @group builtins.set Return the union of the sets in array \a x */
 function     set of $U:  array_union(array[$T] of     set of $U: x);

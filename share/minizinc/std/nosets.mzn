@@ -303,12 +303,11 @@ function var set of int: set_symdiff(var set of int: x, var set of int: y) ::pro
     );
   } in z;
 
-function var int: card(var set of int: x) ::promise_total =
+predicate set_card(var set of int: x, var int: c) =
   let {
     array[int] of var bool: bx = set2bools(x);
-    var 0..length(bx) : c;
-    constraint bool_lin_eq([1 | i in index_set(bx)],[bx[i] | i in index_set(bx)],c);
-  } in c;
+  } in
+    bool_lin_eq([1 | i in index_set(bx)],[bx[i] | i in index_set(bx)],c);
 
 predicate set_in(int: x, var set of int: y) ::promise_total =
   let {
