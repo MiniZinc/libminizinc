@@ -1536,46 +1536,68 @@ namespace MiniZinc {
               default: break;
             }
           }
-          if (call && call->id()=="count" && call->n_args()==1 && call->arg(0)->isa<Comprehension>()) {
-            Comprehension* comp = call->arg(0)->cast<Comprehension>();
-            BinOp* inner_bo = comp->e()->dyn_cast<BinOp>();
-            if (inner_bo) {
-              if (inner_bo->op()==BOT_EQ && inner_bo->lhs()->type().isint()) {
-                Expression* generated = inner_bo->lhs();
-                Expression* comparedTo = inner_bo->rhs();
-                if (comp->containsBoundVariable(comparedTo)) {
-                  if (comp->containsBoundVariable(generated)) {
-                    comparedTo = nullptr;
-                  } else {
-                    std::swap(generated,comparedTo);
+          if (call && call->id()=="count") {
+            if (call->n_args()==1 && call->arg(0)->isa<Comprehension>()) {
+              Comprehension* comp = call->arg(0)->cast<Comprehension>();
+              BinOp* inner_bo = comp->e()->dyn_cast<BinOp>();
+              if (inner_bo) {
+                if (inner_bo->op()==BOT_EQ && inner_bo->lhs()->type().isint()) {
+                  Expression* generated = inner_bo->lhs();
+                  Expression* comparedTo = inner_bo->rhs();
+                  if (comp->containsBoundVariable(comparedTo)) {
+                    if (comp->containsBoundVariable(generated)) {
+                      comparedTo = nullptr;
+                    } else {
+                      std::swap(generated,comparedTo);
+                    }
                   }
-                }
-                if (comparedTo) {
-                  GCLock lock;
-                  ASTString cid;
-                  switch (bot) {
-                    case BOT_EQ: cid = ASTString("count_eq"); break;
-                    case BOT_GQ: cid = ASTString("count_leq"); break;
-                    case BOT_GR: cid = ASTString("count_lt"); break;
-                    case BOT_LQ: cid = ASTString("count_geq"); break;
-                    case BOT_LE: cid = ASTString("count_gt"); break;
-                    case BOT_NQ: cid = ASTString("count_neq"); break;
-                    default: assert(false);
-                  }
+                  if (comparedTo) {
+                    GCLock lock;
+                    ASTString cid;
+                    switch (bot) {
+                      case BOT_EQ: cid = ASTString("count_eq"); break;
+                      case BOT_GQ: cid = ASTString("count_leq"); break;
+                      case BOT_GR: cid = ASTString("count_lt"); break;
+                      case BOT_LQ: cid = ASTString("count_geq"); break;
+                      case BOT_LE: cid = ASTString("count_gt"); break;
+                      case BOT_NQ: cid = ASTString("count_neq"); break;
+                      default: assert(false);
+                    }
 
-                  comp->e(generated);
-                  Type ct = comp->type();
-                  ct.bt(generated->type().bt());
-                  
-                  std::vector<Expression*> args({comp,comparedTo,rhs});
-                  FunctionI* newCall_decl = _model->matchFn(_env, cid, args, true);
-                  if (newCall_decl==nullptr) {
-                    throw InternalError("could not replace binary operator by call to "+cid.str());
-                  } else {
-                    Call* newCall = bop.morph(cid, args);
-                    newCall->decl(newCall_decl);
+                    comp->e(generated);
+                    Type ct = comp->type();
+                    ct.bt(generated->type().bt());
+                    
+                    std::vector<Expression*> args({comp,comparedTo,rhs});
+                    FunctionI* newCall_decl = _model->matchFn(_env, cid, args, true);
+                    if (newCall_decl==nullptr) {
+                      throw InternalError("could not replace binary operator by call to "+cid.str());
+                    } else {
+                      Call* newCall = bop.morph(cid, args);
+                      newCall->decl(newCall_decl);
+                    }
                   }
                 }
+              }
+            } else if (call->n_args()==2 && call->arg(0)->type().isintarray() && call->arg(1)->type().isint()) {
+              GCLock lock;
+              ASTString cid;
+              switch (bot) {
+                case BOT_EQ: cid = ASTString("count_eq"); break;
+                case BOT_GQ: cid = ASTString("count_leq"); break;
+                case BOT_GR: cid = ASTString("count_lt"); break;
+                case BOT_LQ: cid = ASTString("count_geq"); break;
+                case BOT_LE: cid = ASTString("count_gt"); break;
+                case BOT_NQ: cid = ASTString("count_neq"); break;
+                default: assert(false);
+              }
+              std::vector<Expression*> args({call->arg(0),call->arg(1),rhs});
+              FunctionI* newCall_decl = _model->matchFn(_env, cid, args, true);
+              if (newCall_decl==nullptr) {
+                throw InternalError("could not replace binary operator by call to "+cid.str());
+              } else {
+                Call* newCall = bop.morph(cid, args);
+                newCall->decl(newCall_decl);
               }
             }
           }
