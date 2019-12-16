@@ -1480,7 +1480,7 @@ namespace MiniZinc {
         if(vds.find(name) != vds.end()) {
           VarDecl* nvd = vds[name];
           Type::BaseType bt = vd->type().bt();
-          if(bt == Type::BaseType::BT_INT) {
+          if(bt == Type::BaseType::BT_INT && vd->type().st()==Type::ST_PLAIN) {
             IntVar intvar = it->second.intVar(_current_space);
             const long long int l = intvar.min(), u = intvar.max();
 
