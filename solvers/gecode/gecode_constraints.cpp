@@ -1667,7 +1667,7 @@ namespace MiniZinc {
       GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
       if (!ce->arg(1)->type().isvar()) {
         IntVal i = ce->arg(1)->cast<IntLit>()->v().toInt();
-        assert(i<0 || i>Gecode::Int::Limits::max);
+        assert(i>=0 && i<=Gecode::Int::Limits::max);
         unsigned int ui = static_cast<unsigned int>(i.toInt());
         cardinality(*gi._current_space, gi.arg2setvar(ce->arg(0)), ui, ui);
       } else {
