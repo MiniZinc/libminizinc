@@ -757,18 +757,21 @@ namespace MiniZinc {
             throw FlatteningError(env,c.loc(),"function "+c.id().str()+" is used in output, par version needed");
           }
           if (!origdecl->from_stdlib()) {
-            decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
-            env.output->registerFn(env, decl);
-            env.output->addItem(decl);
-            if (decl->e()) {
-              makePar(env, decl->e());
-              topDown(*this, decl->e());
+            FunctionI* decl_copy = copy(env,env.cmap,origdecl)->cast<FunctionI>();
+            if (decl_copy != decl) {
+              decl = decl_copy;
+              env.output->registerFn(env, decl);
+              env.output->addItem(decl);
+              if (decl->e()) {
+                makePar(env, decl->e());
+                topDown(*this, decl->e());
+              }
+              CollectOccurrencesE ce(env.output_vo,decl);
+              topDown(ce, decl->e());
+              topDown(ce, decl->ti());
+              for (unsigned int i = decl->params().size(); i--;)
+                topDown(ce, decl->params()[i]);
             }
-            CollectOccurrencesE ce(env.output_vo,decl);
-            topDown(ce, decl->e());
-            topDown(ce, decl->ti());
-            for (unsigned int i = decl->params().size(); i--;)
-              topDown(ce, decl->params()[i]);
           } else {
             decl = origdecl;
           }
