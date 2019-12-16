@@ -2189,11 +2189,12 @@ namespace MiniZinc {
                 }
                 nc = new Call(c->loc().introduce(), nid, args);
               }
-              nc->decl(env.model->matchFn(env,nc,false));
-              if (nc->decl() == NULL) {
+              FunctionI* nc_decl = env.model->matchFn(env,nc,false);
+              if (nc_decl == NULL) {
                 throw InternalError("undeclared function or predicate "
                                     +nc->id().str());
               }
+              nc->decl(nc_decl);
               nc->type(nc->decl()->rtype(env,args,false));
               makeDefinedVar(vd, nc);
               flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
