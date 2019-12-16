@@ -457,7 +457,7 @@ namespace MiniZinc {
       ret.r = results.back()->id();
     }
     if (allDefined) {
-      bind(env, ctx, b, constants().lit_true);
+      bind(env, Ctx(), b, constants().lit_true);
       ret.b = constants().lit_true;
     } else {
       // Otherwise, constraint linking conditions, b and the definedness variables
