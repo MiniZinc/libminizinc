@@ -432,7 +432,7 @@ namespace MiniZinc {
             unify(envi, deletedVarDecls, vdi->e()->id(), id1);
             pushDependentConstraints(envi, id1, constraintQueue);
           }
-          if (vdi->e()->type().isbool() && vdi->e()->type().isvar() && vdi->e()->type().dim()==0
+          if (vdi->e()->type().isbool() && vdi->e()->type().dim()==0
               && (vdi->e()->ti()->domain() == constants().lit_true || vdi->e()->ti()->domain() == constants().lit_false)) {
             // push RHS onto constraint queue since this bool var is fixed
             pushVarDecl(envi, vdi, i, vardeclQueue);
