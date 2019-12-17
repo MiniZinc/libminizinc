@@ -522,6 +522,8 @@ namespace MiniZinc {
             } else if (c->arg(i)->type().bt()==Type::BT_INT) {
               argctx.i = C_MIX;
             }
+          } else if (cid == constants().ids.sum && c->arg(i)->type().bt()==Type::BT_BOOL) {
+            argctx.b = argctx.i;
           }
           Expression* tmp = follow_id_to_decl(c->arg(i));
           if (VarDecl* vd = tmp->dyn_cast<VarDecl>())

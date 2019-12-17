@@ -1536,7 +1536,7 @@ namespace MiniZinc {
               default: break;
             }
           }
-          if (call && call->id()=="count") {
+          if (call && (call->id()=="count" || call->id()=="sum")) {
             if (call->n_args()==1 && call->arg(0)->isa<Comprehension>()) {
               Comprehension* comp = call->arg(0)->cast<Comprehension>();
               BinOp* inner_bo = comp->e()->dyn_cast<BinOp>();
