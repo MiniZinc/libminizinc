@@ -522,6 +522,12 @@ namespace MiniZinc {
       }
     } else {
       vd->e(rhs);
+      if (rhs && hasBeenAdded) {
+        // This variable is being reused, so it won't be added to the model below.
+        // Therefore, we need to register that we changed the RHS, in order
+        // for the reference counts to be accurate.
+        env.vo_add_exp(vd);
+      }
     }
     assert(!vd->type().isbot());
     if (origVd && (origVd->id()->idn()!=-1 || origVd->toplevel())) {
