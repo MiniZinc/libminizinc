@@ -163,10 +163,6 @@ namespace MiniZinc {
         }
         ifstream file;
         if (FileUtils::is_absolute(f) || parentPath=="") {
-          if (filenames.size() == 0) {
-            err << "Internal error." << endl;
-            goto error;
-          }
           fullname = f;
           if (FileUtils::file_exists(fullname)) {
             file.open(fullname.c_str(), std::ios::binary);
