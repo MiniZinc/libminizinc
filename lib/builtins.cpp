@@ -2797,6 +2797,15 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::optvartop();
       rb(env, m, ASTString("is_fixed"), t, b_is_fixed);
+      t[0] = Type::varsetint();
+      rb(env, m, ASTString("is_fixed"), t, b_is_fixed);
+      Type setoftop;
+      setoftop.bt(Type::BT_TOP);
+      setoftop.st(Type::ST_SET);
+      setoftop.ti(Type::TI_PAR);
+      setoftop.ot(Type::OT_PRESENT);
+      t[0] = setoftop;
+      rb(env, m, ASTString("is_fixed"), t, b_is_fixed);
     }
     {
       std::vector<Type> t(1);
