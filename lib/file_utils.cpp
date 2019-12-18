@@ -187,6 +187,8 @@ namespace MiniZinc { namespace FileUtils {
 
   bool is_absolute(const std::string& path) {
 #ifdef _MSC_VER
+    if (path.size() > 2 && ((path[0]=='\\' && path[1]=='\\') || (path[0] == '/' && path[1] == '/')))
+      return true;
     return !PathIsRelative(path.c_str());
 #else
     return path.empty() ? false : (path[0]=='/');
