@@ -5,6 +5,43 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.4.1
+=============
+
+Changes:
+- Improve compiler optimisation for some linear, multiplication and
+  Boolean constraints.
+- Improved translation of lex and all_equal constraints when the
+  arrays have no or only one variable.
+
+Bug fixes:
+- Fix element constraint in nosets.mzn library when set domains are not
+  contiguous.
+- Correctly identify Windows paths starting with // or \\ as absolute
+  (this enables the parser to open files stored on network drives).
+- Use set_in constraints (rather than int_in) for internal Gecode-based
+  presolver. This fixes some issues when compiling with -O3.
+- The optimisation phase of the compiler now fully substitutes par bool
+  variables (these can be introduced into the FlatZinc during multipass
+  compilation). Partially fixes #357.
+- Fixed the reference counting for variables that are re-used in
+  multipass compilation. Partially fixes #357.
+- Remove incorrect error handling when parsing from strings rather than
+  files. Partially fixes #357.
+- Made the is_fixed builtin work for more types. Fixes #356.
+- Enable rewriting of sum(i in x)(i=c) op d and count(x,y) op z into
+  global counting constraints.
+- Split up count global constraints into separate files for reified
+  versions.
+- Use contiguous range for array index set in set_lt for nosets.mzn.
+- Negate results of conditionals if required. Fixes #355.
+- Partiality of conditional needs to be translated in root context
+  (even if conditional itself is negated). Fixes #355.
+- Don't copy function into output again if it was already copied (and
+  made par) before. Fixes #323.
+- Define card function on var sets in terms of set_card FlatZinc builtin.
+- Don't set bounds for set variables in internal Gecode presolver.
+
 Version 2.4.0
 =============
 
