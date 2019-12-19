@@ -16,7 +16,7 @@
 // Regex Parser Requirements
 #include <memory>
 #include <unordered_map>
-#include <unordered_set>
+#include <set>
 #include <gecode/minimodel.hh>
 #include <minizinc/values.hh>
 

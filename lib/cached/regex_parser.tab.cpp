@@ -1,4 +1,4 @@
-/* A Bison parser, made by GNU Bison 3.0.5.  */
+/* A Bison parser, made by GNU Bison 3.1.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
@@ -44,7 +44,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "3.0.5"
+#define YYBISON_VERSION "3.1"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -75,7 +75,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <memory>
-#include <unordered_set>
+#include <set>
 #include <unordered_map>
 
 #include <gecode/minimodel.hh>
@@ -117,8 +117,8 @@ void yyerror(REContext& ctx, const char* s);
 
 /* In a future release of Bison, this section will be replaced
    by #include "regex_parser.tab.hh".  */
-#ifndef YY_REGEX_YY_USERS_JDEK0001_REPOSITORIES_MINIZINC_MINIZINC_BUILD_RELEASE_INCLUDE_MINIZINC_SUPPORT_REGEX_PARSER_TAB_HH_INCLUDED
-# define YY_REGEX_YY_USERS_JDEK0001_REPOSITORIES_MINIZINC_MINIZINC_BUILD_RELEASE_INCLUDE_MINIZINC_SUPPORT_REGEX_PARSER_TAB_HH_INCLUDED
+#ifndef YY_REGEX_YY_USERS_TACK_PROGRAMMING_MINIZINC_LIBMZN_BUILD_XCODE_INCLUDE_MINIZINC_SUPPORT_REGEX_PARSER_TAB_HH_INCLUDED
+# define YY_REGEX_YY_USERS_TACK_PROGRAMMING_MINIZINC_LIBMZN_BUILD_XCODE_INCLUDE_MINIZINC_SUPPORT_REGEX_PARSER_TAB_HH_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -160,7 +160,7 @@ union YYSTYPE
 
   int iValue;
   char* sValue;
-  std::unordered_set<int>* setValue;
+  std::set<int>* setValue;
   Gecode::REG* rValue;
 
 
@@ -176,7 +176,7 @@ extern YYSTYPE regex_yylval;
 
 int regex_yyparse (REContext& ctx);
 
-#endif /* !YY_REGEX_YY_USERS_JDEK0001_REPOSITORIES_MINIZINC_MINIZINC_BUILD_RELEASE_INCLUDE_MINIZINC_SUPPORT_REGEX_PARSER_TAB_HH_INCLUDED  */
+#endif /* !YY_REGEX_YY_USERS_TACK_PROGRAMMING_MINIZINC_LIBMZN_BUILD_XCODE_INCLUDE_MINIZINC_SUPPORT_REGEX_PARSER_TAB_HH_INCLUDED  */
 
 /* Copy the second part of user declarations.  */
 
@@ -201,13 +201,13 @@ typedef signed char yytype_int8;
 #ifdef YYTYPE_UINT16
 typedef YYTYPE_UINT16 yytype_uint16;
 #else
-typedef unsigned short int yytype_uint16;
+typedef unsigned short yytype_uint16;
 #endif
 
 #ifdef YYTYPE_INT16
 typedef YYTYPE_INT16 yytype_int16;
 #else
-typedef short int yytype_int16;
+typedef short yytype_int16;
 #endif
 
 #ifndef YYSIZE_T
@@ -219,7 +219,7 @@ typedef short int yytype_int16;
 #  include <stddef.h> /* INFRINGES ON USER NAME SPACE */
 #  define YYSIZE_T size_t
 # else
-#  define YYSIZE_T unsigned int
+#  define YYSIZE_T unsigned
 # endif
 #endif
 
@@ -271,7 +271,7 @@ typedef short int yytype_int16;
 # define YYUSE(E) /* empty */
 #endif
 
-#if defined __GNUC__ && 407 <= __GNUC__ * 100 + __GNUC_MINOR__
+#if defined __GNUC__ && ! defined __ICC && 407 <= __GNUC__ * 100 + __GNUC_MINOR__
 /* Suppress an incorrect diagnostic about yylval being uninitialized.  */
 # define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN \
     _Pragma ("GCC diagnostic push") \
@@ -439,7 +439,7 @@ union yyalloc
 #define YYMAXUTOK   273
 
 #define YYTRANSLATE(YYX)                                                \
-  ((unsigned int) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
+  ((unsigned) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
 
 /* YYTRANSLATE[TOKEN-NUM] -- Symbol number corresponding to TOKEN-NUM
    as returned by yylex, without out-of-bounds checking.  */
@@ -729,7 +729,7 @@ do {                                                            \
 static void
 yy_reduce_print (yytype_int16 *yyssp, YYSTYPE *yyvsp, int yyrule, REContext& ctx)
 {
-  unsigned long int yylno = yyrline[yyrule];
+  unsigned long yylno = yyrline[yyrule];
   int yynrhs = yyr2[yyrule];
   int yyi;
   YYFPRINTF (stderr, "Reducing stack by rule %d (line %lu):\n",
@@ -1162,7 +1162,7 @@ yyparse (REContext& ctx)
       yyvsp = yyvs + yysize - 1;
 
       YYDPRINTF ((stderr, "Stack size increased to %lu\n",
-                  (unsigned long int) yystacksize));
+                  (unsigned long) yystacksize));
 
       if (yyss + yystacksize - 1 <= yyssp)
         YYABORT;
@@ -1388,7 +1388,7 @@ yyreduce:
 
     {
       std::vector<int> diff;
-      std::unordered_set<int> domain;
+      std::set<int> domain;
       for(int i = ctx.dom.min().toInt(); i<=ctx.dom.max().toInt(); ++i) {
         domain.insert(i);
       }
@@ -1424,7 +1424,7 @@ yyreduce:
   case 21:
 
     {
-      (yyval.setValue) = new std::unordered_set<int>({(yyvsp[0].iValue)});
+      (yyval.setValue) = new std::set<int>({(yyvsp[0].iValue)});
     }
 
     break;
@@ -1437,7 +1437,7 @@ yyreduce:
       if (to < from) {
         std::swap(from,to);
       }
-      (yyval.setValue) = new std::unordered_set<int>;
+      (yyval.setValue) = new std::set<int>;
       for(int i = from; i<=to; ++i) {
         (yyval.setValue)->insert(i);
       }

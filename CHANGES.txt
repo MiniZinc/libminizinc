@@ -15,6 +15,8 @@ Changes:
   arrays have no or only one variable.
 
 Bug fixes:
+- Fixed regular expression constraint for expressions containing negated character
+  classes (^ operator).
 - Fix element constraint in nosets.mzn library when set domains are not
   contiguous.
 - Correctly identify Windows paths starting with // or \\ as absolute

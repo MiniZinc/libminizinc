@@ -13,7 +13,7 @@
 #include <cstdlib>
 #include <cstdio>
 #include <memory>
-#include <unordered_set>
+#include <set>
 #include <unordered_map>
 
 #include <gecode/minimodel.hh>
@@ -39,7 +39,7 @@ void yyerror(REContext& ctx, const char* s);
 %union {
   int iValue;
   char* sValue;
-  std::unordered_set<int>* setValue;
+  std::set<int>* setValue;
   Gecode::REG* rValue;
 }
 %parse-param {REContext& ctx}
@@ -148,7 +148,7 @@ atom:
   | "[" "^" set_items "]"
     {
       std::vector<int> diff;
-      std::unordered_set<int> domain;
+      std::set<int> domain;
       for(int i = ctx.dom.min().toInt(); i<=ctx.dom.max().toInt(); ++i) {
         domain.insert(i);
       }
@@ -177,7 +177,7 @@ set_items:
 set_item:
     literal
     {
-      $$ = new std::unordered_set<int>({$1});
+      $$ = new std::set<int>({$1});
     }
   | literal "-" literal
     {
@@ -186,7 +186,7 @@ set_item:
       if (to < from) {
         std::swap(from,to);
       }
-      $$ = new std::unordered_set<int>;
+      $$ = new std::set<int>;
       for(int i = from; i<=to; ++i) {
         $$->insert(i);
       }
