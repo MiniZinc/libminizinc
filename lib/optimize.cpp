@@ -261,6 +261,7 @@ namespace MiniZinc {
                               std::deque<int>& vardeclQueue,
                               std::deque<Item*>& constraintQueue,
                               std::vector<Item*>& toRemove,
+                              std::vector<VarDecl*>& deletedVarDecls,
                               std::unordered_map<Expression*, int>& nonFixedLiteralCount);
 
   bool simplifyConstraint(EnvI& env, Item* ii,
@@ -681,14 +682,14 @@ namespace MiniZinc {
                     IdMap<VarOccurrences::Items>::iterator ait = envi.vo._m.find(vdi->e()->id()->decl()->id());
                     if (ait != envi.vo._m.end()) {
                       for (VarOccurrences::Items::iterator aitem = ait->second.begin(); aitem != ait->second.end(); ++aitem) {
-                        simplifyBoolConstraint(envi,*aitem,vd,remove,vardeclQueue,constraintQueue,toRemove,nonFixedLiteralCount);
+                        simplifyBoolConstraint(envi,*aitem,vd,remove,vardeclQueue,constraintQueue,toRemove,deletedVarDecls,nonFixedLiteralCount);
                       }
                     }
                     continue;
                   }
                 }
                 // Simplify the constraint *item (which depends on this variable)
-                simplifyBoolConstraint(envi,*item,vd,remove,vardeclQueue,constraintQueue,toRemove,nonFixedLiteralCount);
+                simplifyBoolConstraint(envi,*item,vd,remove,vardeclQueue,constraintQueue,toRemove,deletedVarDecls,nonFixedLiteralCount);
               }
             }
             // Actually remove all items that have become unnecessary in the step above
@@ -1383,6 +1384,7 @@ namespace MiniZinc {
                               std::deque<int>& vardeclQueue,
                               std::deque<Item*>& constraintQueue,
                               std::vector<Item*>& toRemove,
+                              std::vector<VarDecl*>& deletedVarDecls,
                               std::unordered_map<Expression*, int>& nonFixedLiteralCount) {
     if (ii->isa<SolveI>()) {
       remove = false;
@@ -1560,12 +1562,12 @@ namespace MiniZinc {
             // not subsumed, nonfixed==1
             assert(nonfixed_i != -1);
             ArrayLit* al = follow_id(c->arg(nonfixed_i))->cast<ArrayLit>();
-            Id* id = (*al)[nonfixed_j]->cast<Id>();
+            Id* ident = (*al)[nonfixed_j]->cast<Id>();
             if (ci || vdi->e()->ti()->domain()) {
               bool result = nonfixed_i==0;
               if (vdi && vdi->e()->ti()->domain()==constants().lit_false)
                 result = !result;
-              VarDecl* vd = id->decl();
+              VarDecl* vd = ident->decl();
               if (vd->ti()->domain()==NULL) {
                 vd->ti()->domain(constants().boollit(result));
                 vardeclQueue.push_back(env.vo.idx.find(vd->id())->second);
@@ -1574,7 +1576,15 @@ namespace MiniZinc {
                 vd->e(constants().lit_true);
               }
             } else {
-              remove = false;
+              if (nonfixed_i==0) {
+                // this is a clause, exists or forall with a single non-fixed variable,
+                // assigned to a non-fixed variable => turn into simple equality
+                vdi->e()->e(NULL);
+                unify(env, deletedVarDecls, vdi->e()->id(), ident);
+                pushDependentConstraints(env, ident, constraintQueue);
+              } else {
+                remove = false;
+              }
             }
           }
           
