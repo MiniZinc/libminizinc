@@ -1262,6 +1262,9 @@ namespace MiniZinc {
             } else {
               VarDeclI* vdi = ii->cast<VarDeclI>();
               vdi->e()->ti()->domain(constants().lit_false);
+              CollectDecls cd(env.vo,deletedVarDecls,ii);
+              topDown(cd,c);
+              vdi->e()->e(constants().lit_false);
               pushVarDecl(env, vdi, env.vo.find(vdi->e()), vardeclQueue);
               return true;
             }
@@ -1281,6 +1284,9 @@ namespace MiniZinc {
             } else {
               VarDeclI* vdi = ii->cast<VarDeclI>();
               vdi->e()->ti()->domain(constants().lit_true);
+              CollectDecls cd(env.vo,deletedVarDecls,ii);
+              topDown(cd,c);
+              vdi->e()->e(constants().lit_true);
               pushVarDecl(env, vdi, env.vo.find(vdi->e()), vardeclQueue);
               return true;
             }
