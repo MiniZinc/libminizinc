@@ -353,7 +353,7 @@ predicate array_var_set_element(var int: x, array[int] of var set of int: y, var
           true
         else
           array1d( lb(x)..ub(x),
-            [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in dom(x) ] )[x]
+            [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in lb(x)..ub(x) ] )[x]
         endif
       else
         false
@@ -364,7 +364,7 @@ predicate array_var_set_element(var int: x, array[int] of var set of int: y, var
       false                     %% fail the constraint
     else
       not array1d( lb(x)..ub(x),
-        [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in dom(x) ] )[x]
+        [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in lb(x)..ub(x) ] )[x]
     endif
   );
 
@@ -385,7 +385,7 @@ predicate array_set_element(var int: x, array[int] of set of int: y, var set of 
           true
         else
           array1d( lb(x)..ub(x),
-            [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in dom(x) ] )[x]
+            [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in lb(x)..ub(x) ] )[x]
         endif
       else
         false
@@ -396,7 +396,7 @@ predicate array_set_element(var int: x, array[int] of set of int: y, var set of 
       false                     %% fail the constraint
     else
       not array1d( lb(x)..ub(x),
-        [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in dom(x) ] )[x]
+        [ if k in ub(y[i]) then set2bools(y[i])[k] else false endif | i in lb(x)..ub(x) ] )[x]
     endif
   );
 
