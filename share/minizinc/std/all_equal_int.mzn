@@ -6,7 +6,7 @@ include "fzn_all_equal_int_reif.mzn";
 %-----------------------------------------------------------------------------%
 
 predicate all_equal_int(array[int] of var int: x) =
-    fzn_all_equal_int(x);
+  if length(x) <= 1 then true else fzn_all_equal_int(x) endif;
 
 predicate all_equal_int_reif(array[int] of var int: x, var bool: b) =
-    fzn_all_equal_int_reif(x,b);
+  if length(x) <= 1 then b=true else fzn_all_equal_int_reif(x,b) endif;
