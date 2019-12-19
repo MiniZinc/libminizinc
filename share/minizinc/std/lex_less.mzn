@@ -9,7 +9,10 @@ include "lex_less_set.mzn";
 */
 predicate lex_less(array[int] of var bool: x,
                    array[int] of var bool: y) =
-    lex_less_bool(x, y);
+    if length(x)=1 /\ length(y)=1 then x[min(index_set(x))] < y[min(index_set(y))]
+    elseif length(x)=0 then length(y)>0
+    elseif length(y)=0 then false
+    else lex_less_bool(x, y) endif;
 
 /** @group globals.lexicographic
   Requires that the array \a x is strictly lexicographically less than
@@ -17,7 +20,10 @@ predicate lex_less(array[int] of var bool: x,
 */
 predicate lex_less(array[int] of var int: x,
                    array[int] of var int: y) =
-    lex_less_int(x, y);
+    if length(x)=1 /\ length(y)=1 then x[min(index_set(x))] < y[min(index_set(y))]
+    elseif length(x)=0 then length(y)>0
+    elseif length(y)=0 then false
+    else lex_less_int(x, y) endif;
 
 /** @group globals.lexicographic
   Requires that the array \a x is strictly lexicographically less than
@@ -25,7 +31,10 @@ predicate lex_less(array[int] of var int: x,
 */
 predicate lex_less(array[int] of var float: x,
                    array[int] of var float: y) =
-    lex_less_float(x, y);
+    if length(x)=1 /\ length(y)=1 then x[min(index_set(x))] < y[min(index_set(y))]
+    elseif length(x)=0 then length(y)>0
+    elseif length(y)=0 then false
+    else lex_less_float(x, y) endif;
 
 /** @group globals.lexicographic
   Requires that the array \a x is strictly lexicographically less than
@@ -33,7 +42,10 @@ predicate lex_less(array[int] of var float: x,
 */
 predicate lex_less(array[int] of var set of int: x,
                    array[int] of var set of int: y) =
-    lex_less_set(x, y);
+    if length(x)=1 /\ length(y)=1 then x[min(index_set(x))] < y[min(index_set(y))]
+    elseif length(x)=0 then length(y)>0
+    elseif length(y)=0 then false
+    else lex_less_set(x, y) endif;
 
 % Alternative names for the above.
 %
