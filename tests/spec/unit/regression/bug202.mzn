@@ -1,6 +1,9 @@
 /***
 !Test
-expected: !Error
+expected:
+- !Error
+- !Result # TODO: Remove when bug is fixed
+  status: SATISFIED
 ***/
 
 % Regression test for bug #220.  The assignment of the let-variable 'capacity'

@@ -1,6 +1,6 @@
 /***
 !Test
-solvers: [gecode, chuffed] # Too slow on cbc
+solvers: [chuffed] # Too slow on cbc
 options:
   all_solutions: true
 expected: !Result
