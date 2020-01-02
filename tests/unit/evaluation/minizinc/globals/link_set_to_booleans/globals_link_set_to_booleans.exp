@@ -1,3 +1,0 @@
-link_avb = array1d(0..4, [false, true, false, true, true]);
-link_vsi = {1, 4};
-----------

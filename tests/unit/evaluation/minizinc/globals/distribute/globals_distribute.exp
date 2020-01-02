@@ -1,4 +1,0 @@
-dist_base = array1d(1..7, [6, 7, 6, 8, 6, 9, 6]);
-dist_card = array1d(1..4, [4, 1, 1, 1]);
-dist_value = array1d(1..4, [6, 7, 8, 9]);
-----------

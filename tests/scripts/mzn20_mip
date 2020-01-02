@@ -1,5 +1,0 @@
-#!/bin/sh
-
-MINIZINC_EXEC=minizinc
-
-$MINIZINC_EXEC --solver cbc $*

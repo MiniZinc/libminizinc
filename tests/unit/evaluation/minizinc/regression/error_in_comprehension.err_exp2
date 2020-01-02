@@ -1,8 +1,0 @@
-MiniZinc: result of evaluation is undefined: 
-  unit/evaluation/minizinc/regression/error_in_comprehension.mzn:2:
-  in variable declaration for 'neighbours'
-  unit/evaluation/minizinc/regression/error_in_comprehension.mzn:3:
-  in set comprehension expression
-  in set literal
-  in array access
-  array access out of bounds

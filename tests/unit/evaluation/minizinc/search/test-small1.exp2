@@ -1,5 +1,0 @@
-%% test-small1.mzn: output should be x = 9, y = 2
-x = 9;
-y = 2;
-----------
-==========

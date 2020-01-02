@@ -1,6 +1,0 @@
-%% test-ff3.mzn: output should be x = 5, y = 1, z = 1, w = 3
-x = 5;
-y = 1;
-z = 1;
-w = 3;
-----------

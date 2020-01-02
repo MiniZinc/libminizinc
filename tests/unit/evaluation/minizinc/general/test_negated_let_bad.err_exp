@@ -1,8 +1,0 @@
-test_negated_let_bad.mzn:6:
-  error: 
-  In constraint item 
-  In not application 
-  In not expression 
-  In let expression 
-  In declaration of let variable y 
-  Let variable must have an assignment in a reified or negated context.

@@ -1,5 +1,0 @@
-test_negated_let_bad.mzn:4:
-MiniZinc: flattening error: free variable in non-positive context
-while evaluating
-  let expression in file test_negated_let_bad.mzn:4.17
-  unary operator @not in file test_negated_let_bad.mzn:4.12

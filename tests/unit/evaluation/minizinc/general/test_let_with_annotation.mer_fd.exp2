@@ -1,6 +1,0 @@
-/tmp/minizinc.test_let_with_annotation.5476.fzn:1: symbol warning: annotation 
-/tmp/minizinc.test_let_with_annotation.5476.fzn:1:   `made_up_annotation' not 
-/tmp/minizinc.test_let_with_annotation.5476.fzn:1:   recognised, ignoring
-warning: FD solver backend: ignoring made_up_annotation/0 annotation.
-x = 1;
-----------

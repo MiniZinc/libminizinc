@@ -1,8 +1,0 @@
-test_reified_let_bad.mzn:7:
-  error: 
-  In constraint item 
-  In <-> application 
-  In right side of equivalence 
-  In let expression 
-  In declaration of let variable y 
-  Let variable must have an assignment in a reified or negated context.

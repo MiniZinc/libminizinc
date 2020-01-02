@@ -1,4 +1,0 @@
-assert_bad_1.mzn:8: error: 
-assert_bad_1.mzn:8:   In constraint item 
-assert_bad_1.mzn:8:   In assert application 
-assert_bad_1.mzn:8:   Assertion failure: a not decreasing

@@ -1,5 +1,0 @@
-%% test-ff1.mzn: output should be x = 3, y = 8
-x = 3;
-y = 8;
-----------
-==========
