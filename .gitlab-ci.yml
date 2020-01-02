@@ -1,5 +1,6 @@
 stages:
   - build
+  - test
   - trigger
 
 .download_script: &download_script
@@ -31,6 +32,7 @@ variables:
   cache:
     key: "$CI_JOB_NAME"
     paths: [.ccache, vendor.zip*]
+  only: [refs, branches, tags, merge_requests]
 
 
 build:linux:
@@ -79,6 +81,7 @@ build:win64:
     key: "win64"
     paths: [vendor.zip*]
   tags: [win64, cmake, cpp]
+  only: [refs, branches, tags, merge_requests]
 
 build:wasm_complete:
   image: trzeci/emscripten
@@ -125,6 +128,11 @@ build:wasm_minimal:
     key: "$CI_JOB_NAME"
     paths: [.ccache, vendor.zip*]
   when: manual
+
+# ----------- Test Suite -----------
+
+include: 
+- local: '/tests/.gitlab-ci-testing-pipeline.yml'
 
 # ----------- Trigger FindMUS pipeline -----------
 

@@ -1,0 +1,102 @@
+# Main test config template
+.tests:
+  stage: test
+  variables:
+    PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+    MZN_SOLVER_PATH: "$CI_PROJECT_DIR/vendor/chuffed:$CI_PROJECT_DIR/vendor/gecode"
+  before_script:
+    - curl --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" --silent https://gitlab.com/api/v4/snippets/1796163/raw | tr -d '\r' > download.sh
+    - sh download.sh vendor master bundle:${MZNARCH} vendor.zip
+    - unzip -q vendor.zip
+    # TODO: Add gecode configuration to the Gecode solver
+    - "echo '{\n  \"id\": \"org.gecode.gecode\",\n  \"name\": \"Gecode\",\n  \"description\": \"Gecode FlatZinc executable\",\n  \"version\": \"6.1.0\",\n  \"mznlib\": \"share/gecode/mznlib\",\n  \"executable\": \"bin/fzn-gecode\",\n  \"tags\": [\"cp\",\"int\", \"float\", \"set\", \"restart\"],\n  \"stdFlags\": [\"-a\",\"-f\",\"-n\",\"-p\",\"-r\",\"-s\",\"-t\"],\n  \"supportsMzn\": false,\n  \"supportsFzn\": true,\n  \"needsSolns2Out\": true,\n  \"needsMznExecutable\": false,\n  \"needsStdlibDir\": false,\n  \"isGUIApplication\": false\n}' > vendor/gecode/gecode.msc"
+    - export PATH=$CI_PROJECT_DIR/minizinc/bin:$PATH
+    - cd tests
+    - python3 -m venv env
+    - source env/bin/activate
+    - pip install -r requirements.txt
+  after_script:
+    - echo "Test results at https://minizinc.gitlab.io/-/minizinc/-/jobs/${CI_JOB_ID}/artifacts/tests/output/report.html"
+  artifacts:
+    when: always
+    paths:
+    - tests/output
+    reports:
+      junit: tests/output/junit*.xml
+  cache:
+    key: "$CI_JOB_NAME"
+    paths: [.cache/pip, vendor.zip*]
+
+# Linux specific config
+.tests_linux:
+  extends: .tests
+  image: python:latest
+  variables:
+    MZNARCH: "linux"
+  tags: [linux, docker]
+  dependencies: ["build:linux"]
+
+# OSX specific config
+.tests_osx:
+  extends: .tests
+  variables:
+    MZNARCH: "osx"
+  tags: [osx]
+  dependencies: ["build:osx"]
+
+# Windows specific config
+.tests_win64:
+  extends: .tests
+  variables:
+    MZNARCH: "win64"
+    MZN_SOLVER_PATH: "$CI_PROJECT_DIR/vendor/chuffed;$CI_PROJECT_DIR/vendor/gecode"
+  before_script:
+    - curl -o download.sh --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" --silent https://gitlab.com/api/v4/snippets/1796163/raw
+    - dos2unix download.sh
+    - sh download.sh vendor master bundle:%MZNARCH% vendor.zip
+    - unzip -q vendor.zip
+    # TODO: Add gecode configuration to the Gecode solver
+    - 'echo { "id": "org.gecode.gecode", "name": "Gecode", "description": "Gecode FlatZinc executable", "version": "6.1.0", "mznlib": "share/gecode/mznlib", "executable": "bin/fzn-gecode", "tags": ["cp","int", "float", "set", "restart"], "stdFlags": ["-a","-f","-n","-p","-r","-s","-t"], "supportsMzn": false, "supportsFzn": true, "needsSolns2Out": true, "needsMznExecutable":  false, "needsStdlibDir": false, "isGUIApplication": false} > vendor/gecode/gecode.msc'
+    - set PATH=%CI_PROJECT_DIR%/minizinc/bin;%PATH%
+    - cd tests
+    - python -m venv env
+    - call env\Scripts\activate.bat
+    - pip install -r requirements.txt
+  after_script:
+    - 'echo Test results at https://minizinc.gitlab.io/-/minizinc/-/jobs/%CI_JOB_ID%/artifacts/tests/output/report.html'
+  tags: [win64]
+  dependencies: ["build:win64"]
+  cache:
+    key: win64
+
+.tests_fast:
+  script:
+    - pytest
+  only: [pushes]
+
+.tests_full:
+  script:
+    - pytest --all-suites
+  only: [merge_requests]
+
+test:linux:fast:
+  extends: [.tests_linux, .tests_fast]
+
+test:linux:full:
+  extends: [.tests_linux, .tests_full]
+
+test:osx:fast:
+  extends: [.tests_osx, .tests_fast]
+
+test:osx:full:
+  extends: [.tests_osx, .tests_full]
+
+test:win64:fast:
+  extends: [.tests_win64, .tests_fast]
+  cache:
+    key: test_win64_fast
+
+test:win64:full:
+  extends: [.tests_win64, .tests_full]
+  cache:
+    key: test_win64_full
