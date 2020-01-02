@@ -1,0 +1,7 @@
+PyYAML==5.1.2
+pytest==5.3.1
+py==1.8.0
+pytest-html==2.0.1
+pytest-xdist==1.30.0
+pytest-instafail==0.4.1.post0
+git+https://gitlab.com/minizinc/minizinc-python.git@develop

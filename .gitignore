@@ -24,3 +24,9 @@ CMakeLists.txt.user
 *.err
 .vscode/c_cpp_properties.json
 .vscode/ipch
+tests/output
+tests/env
+tests/.pytest_cache
+__pycache__/
+.mypy_cache/
+.vscode/settings.json

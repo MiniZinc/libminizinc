@@ -1,0 +1,39 @@
+default: !Suite
+  includes: ['*']
+
+optimize-0: !Suite
+  includes: ['examples/*']
+  strict: false
+  options:
+    -O0: true
+
+optimize-2: !Suite
+  includes: ['examples/*']
+  strict: false
+  options:
+    -O0: true
+
+optimize-3: !Suite
+  includes: ['examples/*']
+  strict: false
+  options:
+    -O0: true
+
+no-mip-domains: !Suite
+  includes: ['examples/*']
+  strict: false
+  solvers: [cbc]
+  options:
+    -D: fMIPdomains=false
+
+no-half-reifications: !Suite
+  includes: ['examples/*']
+  strict: false
+  options:
+    no-half-reifications: true
+
+no-chain-compression: !Suite
+  includes: ['examples/*']
+  strict: false
+  options:
+    no-chain-compression: true
