@@ -792,7 +792,7 @@ namespace MiniZinc {
         } else {
           c = Expression::dyn_cast<Call>(bi->cast<VarDeclI>()->e()->e());
         }
-        if (c==NULL)
+        if (c==NULL || !(c->id()==constants().ids.forall || c->id()==constants().ids.exists || c->id()==constants().ids.clause))
           continue;
         bool isConjunction = (c->id() == constants().ids.forall);
         bool subsumed = false;
