@@ -92,9 +92,9 @@ namespace MiniZinc {
     // The result variables of each generated conditional
     std::vector<VarDecl*> results;
     // The then-expressions of each generated conditional
-    std::vector<std::vector<Expression*> > e_then;
+    std::vector<std::vector<KeepAlive> > e_then;
     // The else-expressions of each generated conditional
-    std::vector<Expression*> e_else;
+    std::vector<KeepAlive> e_else;
 
     bool noOtherBranches = true;
     if (ite->type()==Type::varbool() && ctx.b==C_ROOT && r==constants().var_true) {
@@ -120,7 +120,7 @@ namespace MiniZinc {
         if (e.second>=ite->size()) {
           // Any identifier that occurs in all or all but one branch gets its own conditional
           results.push_back(e.first->decl());
-          e_then.push_back(std::vector<Expression*>());
+          e_then.push_back(std::vector<KeepAlive>());
           for (int i=0; i<ite->size(); i++) {
             IdMap<std::pair<Expression*,Expression*> >::iterator it = eq_branches[i].find(e.first);
             if (it==eq_branches[i].end()) {
@@ -153,7 +153,7 @@ namespace MiniZinc {
       }
       if (!noOtherBranches) {
         results.push_back(r);
-        e_then.push_back(std::vector<Expression*>());
+        e_then.push_back(std::vector<KeepAlive>());
         for (int i=0; i<ite->size(); i++) {
           if (eq_branches[i].size()==0) {
             e_then.back().push_back(ite->e_then(i));
@@ -162,6 +162,7 @@ namespace MiniZinc {
           } else if (other_branches[i].size()==1) {
             e_then.back().push_back(other_branches[i][0]);
           } else {
+            GCLock lock;
             ArrayLit* al = new ArrayLit(Location().introduce(), other_branches[i]);
             al->type(Type::varbool(1));
             Call* forall = new Call(Location().introduce(),constants().ids.forall,{al});
@@ -178,6 +179,7 @@ namespace MiniZinc {
           } else if (other_branches[ite->size()].size()==1) {
             e_else.push_back(other_branches[ite->size()][0]);
           } else {
+            GCLock lock;
             ArrayLit* al = new ArrayLit(Location().introduce(), other_branches[ite->size()]);
             al->type(Type::varbool(1));
             Call* forall = new Call(Location().introduce(),constants().ids.forall,{al});
@@ -190,7 +192,7 @@ namespace MiniZinc {
     } else {
       noOtherBranches = false;
       results.push_back(r);
-      e_then.push_back(std::vector<Expression*>());
+      e_then.push_back(std::vector<KeepAlive>());
       for (int i=0; i<ite->size(); i++) {
         e_then.back().push_back(ite->e_then(i));
       }
@@ -245,7 +247,7 @@ namespace MiniZinc {
           // add another condition and definedness variable
           conditions.push_back(constants().lit_true);
           for (unsigned int j=0; j<results.size(); j++) {
-            EE ethen = flat_exp(env, cmix, e_then[j][i], NULL, NULL);
+            EE ethen = flat_exp(env, cmix, e_then[j][i](), NULL, NULL);
             assert(ethen.b());
             defined[j].push_back(ethen.b);
             allDefined = allDefined && (ethen.b()==constants().lit_true);
@@ -259,7 +261,7 @@ namespace MiniZinc {
           conditions.push_back(constants().lit_false);
           for (unsigned int j=0; j<results.size(); j++) {
             defined[j].push_back(constants().lit_true);
-            branches[j].push_back(createDummyValue(env, e_then[j][i]->type()));
+            branches[j].push_back(createDummyValue(env, e_then[j][i]()->type()));
           }
         }
       } else {
@@ -269,7 +271,7 @@ namespace MiniZinc {
 
         for (unsigned int j=0; j<results.size(); j++) {
           // flatten the then branch
-          EE ethen = flat_exp(env, cmix, e_then[j][i], NULL, NULL);
+          EE ethen = flat_exp(env, cmix, e_then[j][i](), NULL, NULL);
 
           assert(ethen.b());
           defined[j].push_back(ethen.b);
@@ -284,19 +286,19 @@ namespace MiniZinc {
       
       if (cond) {
         for (unsigned int j=0; j<results.size(); j++) {
-          if (r_bounds_valid_int[j] && e_then[j][i]->type().isint()) {
+          if (r_bounds_valid_int[j] && e_then[j][i]()->type().isint()) {
             GCLock lock;
             IntBounds ib_then = compute_int_bounds(env,branches[j][i]());
             if (ib_then.valid)
               r_bounds_int[j].push_back(ib_then);
             r_bounds_valid_int[j] = r_bounds_valid_int[j] && ib_then.valid;
-          } else if (r_bounds_valid_set[j] && e_then[j][i]->type().isintset()) {
+          } else if (r_bounds_valid_set[j] && e_then[j][i]()->type().isintset()) {
             GCLock lock;
             IntSetVal* isv = compute_intset_bounds(env, branches[j][i]());
             if (isv)
               r_bounds_set[j].push_back(isv);
             r_bounds_valid_set[j] = r_bounds_valid_set[j] && isv;
-          } else if (r_bounds_valid_float[j] && e_then[j][i]->type().isfloat()) {
+          } else if (r_bounds_valid_float[j] && e_then[j][i]()->type().isfloat()) {
             GCLock lock;
             FloatBounds fb_then = compute_float_bounds(env, branches[j][i]());
             if (fb_then.valid)
@@ -329,7 +331,7 @@ namespace MiniZinc {
 
       for (unsigned int j=0; j<results.size(); j++) {
         // flatten else branch
-        EE eelse = flat_exp(env, cmix, e_else[j], NULL, NULL);
+        EE eelse = flat_exp(env, cmix, e_else[j](), NULL, NULL);
         assert(eelse.b());
         defined[j].push_back(eelse.b);
         allDefined = allDefined && (eelse.b()==constants().lit_true);
@@ -338,19 +340,19 @@ namespace MiniZinc {
           allBranchesPar[j] = false;
         }
 
-        if (r_bounds_valid_int[j] && e_else[j]->type().isint()) {
+        if (r_bounds_valid_int[j] && e_else[j]()->type().isint()) {
           GCLock lock;
           IntBounds ib_else = compute_int_bounds(env,eelse.r());
           if (ib_else.valid)
             r_bounds_int[j].push_back(ib_else);
           r_bounds_valid_int[j] = r_bounds_valid_int[j] && ib_else.valid;
-        } else if (r_bounds_valid_set[j] && e_else[j]->type().isintset()) {
+        } else if (r_bounds_valid_set[j] && e_else[j]()->type().isintset()) {
           GCLock lock;
           IntSetVal* isv = compute_intset_bounds(env, eelse.r());
           if (isv)
             r_bounds_set[j].push_back(isv);
           r_bounds_valid_set[j] = r_bounds_valid_set[j] && isv;
-        } else if (r_bounds_valid_float[j] && e_else[j]->type().isfloat()) {
+        } else if (r_bounds_valid_float[j] && e_else[j]()->type().isfloat()) {
           GCLock lock;
           FloatBounds fb_else = compute_float_bounds(env, eelse.r());
           if (fb_else.valid)
