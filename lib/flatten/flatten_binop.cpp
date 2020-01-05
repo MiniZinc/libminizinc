@@ -918,7 +918,7 @@ namespace MiniZinc {
             Expression* e_todo = todo.back();
             todo.pop_back();
             BinOp* e_bo = e_todo->dyn_cast<BinOp>();
-            if (e_bo && e_bo->op()==BOT_AND) {
+            if (e_bo && e_bo->op() == (negArgs ? BOT_OR : BOT_AND)) {
               todo.push_back(e_bo->rhs());
               todo.push_back(e_bo->lhs());
             } else {
