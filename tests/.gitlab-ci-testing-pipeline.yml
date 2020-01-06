@@ -77,7 +77,7 @@
 .tests_full:
   script:
     - pytest --all-suites
-  only: [merge_requests]
+  when: manual
 
 test:linux:fast:
   extends: [.tests_linux, .tests_fast]

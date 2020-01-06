@@ -32,7 +32,8 @@ variables:
   cache:
     key: "$CI_JOB_NAME"
     paths: [.ccache, vendor.zip*]
-  only: [refs, branches, tags, merge_requests]
+  # TODO: Uncomment when builds are required on merge request
+  # only: [refs, branches, tags, merge_requests]
 
 
 build:linux:
@@ -81,7 +82,8 @@ build:win64:
     key: "win64"
     paths: [vendor.zip*]
   tags: [win64, cmake, cpp]
-  only: [refs, branches, tags, merge_requests]
+  # TODO: Uncomment when builds are required on merge request
+  # only: [refs, branches, tags, merge_requests]
 
 build:wasm_complete:
   image: trzeci/emscripten
