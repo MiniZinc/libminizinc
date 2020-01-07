@@ -1536,7 +1536,7 @@ namespace MiniZinc {
               default: break;
             }
           }
-          if (call && (call->id()=="count" || call->id()=="sum")) {
+          if (call && (call->id()=="count" || call->id()=="sum") && call->type().isvar()) {
             if (call->n_args()==1 && call->arg(0)->isa<Comprehension>()) {
               Comprehension* comp = call->arg(0)->cast<Comprehension>();
               BinOp* inner_bo = comp->e()->dyn_cast<BinOp>();
@@ -1567,6 +1567,7 @@ namespace MiniZinc {
                     comp->e(generated);
                     Type ct = comp->type();
                     ct.bt(generated->type().bt());
+                    comp->type(ct);
                     
                     std::vector<Expression*> args({comp,comparedTo,rhs});
                     FunctionI* newCall_decl = _model->matchFn(_env, cid, args, true);
