@@ -15,6 +15,9 @@ predicate count_eq(array[int] of var int: x, var int: y, var int: c) =
 predicate count_eq(array[int] of var int: x, int: y, int: c) =
     fzn_count_eq_par(x,y,c);
 
+predicate count_eq(array[int] of int: x, int: y, int: c) =
+    c=count_eq(x,y);
+
 /** @group globals.counting
   Returns the number of occurrences of \a y in \a x. 
 */
