@@ -772,12 +772,11 @@ typedef LinEq__<std::vector<double>, std::vector<VarDecl*> > LinEq;
       int nVD=0;
       for ( int i=0; i<vars.size(); ++i ) {
 //         MZN_MIPD__assert_hard( 0.0!=std::fabs
-        if ( vd==vars[i] ) {                     // the defined var
+        if ( vd==vars[i] ) {               // when int/float_lin_eq :: defines_var(vd)                               "Recursive definition of " << *vd
           nVRest.coef0 = -coefs[i];
           nVRest.rhs = -nVRest.rhs;
           ++nVD;
-        }
-        else
+        } else
           rhsLin.push_back( std::make_pair( vars[i], coefs[i] ) );
       }
       MZN_MIPD__assert_hard( 1>=nVD );
@@ -792,7 +791,8 @@ typedef LinEq__<std::vector<double>, std::vector<VarDecl*> > LinEq;
         rhsL.second /= coef1;
       
       auto it = mNViews.find( rhsLin );
-      if ( mNViews.end()!=it ) {
+      if ( mNViews.end()!=it &&
+           nVRest.pVarDefined!=it->second.pVarDefined) {    // don't connect to itself
         LinEq2Vars leq;
         leq.vd = { {nVRest.pVarDefined, it->second.pVarDefined} };
         leq.coefs = { {nVRest.coef0, -it->second.coef0} };        // +, -
@@ -838,6 +838,16 @@ typedef LinEq__<std::vector<double>, std::vector<VarDecl*> > LinEq;
       MZN_MIPD__assert_hard( led.coefs.size() == led.vd.size() );
       MZN_MIPD__assert_hard( led.vd.size() == 2 );
       DBGOUT_MIPD__ ( "  Register 2-var connection: " << led );
+      /// Check it's not same 2 vars
+      if (led.vd[0]==led.vd[1]) {
+        MZN_MIPD__assert_soft(0,
+                              "MIPD: STRANGE: registering var connection to itself: "
+                              << led << ", skipping");
+        MZN_MIPD__ASSERT_FOR_SAT(fabs(led.coefs[0]+led.coefs[1]) < 1e-6,       // TODO param
+            getEnv()->envi(), led.vd[0]->loc(),
+            "Var connection to itself seems to indicate UNSAT: " << led);
+        return;
+      }
       // register if new variables
 //       std::vector<bool> fHaveClq(led.vd.size(), false);
       int nCliqueAvailable = -1;
