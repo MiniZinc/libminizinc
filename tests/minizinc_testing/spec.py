@@ -103,7 +103,7 @@ class Result:
         if self.status is not yaml.Undefined and str(actual.status) != self.status:
             return False
 
-        if self.solution is not yaml.Undefined:
+        if self.solution is not yaml.Undefined and self.solution is not None:
             required = self.solution
             obtained = actual.solution
 
