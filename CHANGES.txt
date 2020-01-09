@@ -5,6 +5,21 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.4.2
+=============
+
+Changes:
+- The test suite is now integrated into the continuous integration
+  system.
+
+Bug fixes:
+- Fix flattening of negated disjunctions (#359).
+- Fix simplification of Boolean constraints (repeated simplification
+  could sometimes crash).
+- Fix memory management during flattening of conditionals (#358).
+- Fix type inference for rewriting of sums into count constraints,
+  and only apply the rewriting for var type-insts.
+
 Version 2.4.1
 =============
 
