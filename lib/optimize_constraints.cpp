@@ -320,7 +320,7 @@ namespace MiniZinc {
         } else {
           // this is the relational version of times
           assert(c->n_args()==3);
-          rewrite = new Call(Location().introduce(), constants().ids.int_.eq, {c->arg(3),result});
+          rewrite = new Call(Location().introduce(), constants().ids.int_.eq, {c->arg(2),result});
           return OptimizeRegistry::CS_REWRITE;
         }
       }
