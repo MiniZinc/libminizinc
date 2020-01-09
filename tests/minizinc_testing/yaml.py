@@ -12,6 +12,7 @@ class Undefined:
     """
     Represents missing values in YAML (as opposed to null which is None in Python)
     """
+
     pass
 
 
@@ -121,6 +122,13 @@ def dump(data):
     return yaml.dump(data, Dumper=Dumper)
 
 
+def dump_all(data):
+    """
+    Helper function which serializes a list of objects as YAML
+    """
+    return yaml.dump_all(data, Dumper=Dumper)
+
+
 def range_representer(dumper, data):
     """
     A YAML `!Range l..u` tag
@@ -148,7 +156,7 @@ def dt_representer(dumper, data):
     """
     A YAML `!Duration` tag
     """
-    scalar = u"{}ms".format(data.microseconds() / 1000)
+    scalar = u"{}ms".format(data.total_seconds() * 1000)
     return dumper.represent_scalar(u"!Duration", scalar)
 
 

@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>MiniZinc Test Creator</title>
+        <link rel="stylesheet" href="https://unpkg.com/wingcss">
+        <link rel="stylesheet" href="https://unpkg.com/codemirror@5.50.2/lib/codemirror.css">
+        <script src="https://cdn.jsdelivr.net/npm/vue/dist/vue.js"></script>
+        <script src="https://rawgit.com/farzher/fuzzysort/master/fuzzysort.js"></script>
+        <script src="https://unpkg.com/codemirror@5.50.2/lib/codemirror.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/vue-codemirror@4.0.0/dist/vue-codemirror.js"></script>
+        <script src="https://unpkg.com/codemirror@5.50.2/mode/yaml/yaml.js"></script>
+        <style>
+            .files, .cases {
+                position: fixed;
+                top: 0;
+                height: 100vh;
+                overflow-x: hidden;
+                overflow-y: auto;
+            }
+
+            .title {
+                padding: 1rem;
+                padding-bottom: 0;
+            }
+
+            button, li {
+                cursor: pointer;
+            }
+
+            .active {
+                font-weight: bold;
+                color: blue;
+            }
+
+            .top {
+                position: sticky;
+                top: 0;
+                left: 0;
+                padding: 1rem;
+                background: #f9f9f9;
+                border-bottom: solid 1px #CCC;
+            }
+
+            .top input {
+                margin: 0;
+            }
+
+            ul {
+                list-style: none;
+                margin: 0;
+                padding: 1rem;
+            }
+
+            li {
+                overflow: hidden;
+                text-overflow: ellipsis;
+                white-space: nowrap;
+            }
+
+            .files {
+                left: 0;
+                width: 300px;
+            }
+
+            .cases {
+                left: 300px;
+                width: 250px;
+            }
+
+            .main {
+                margin-left: 550px;
+            }
+
+            .CodeMirror {
+                border: 1px solid #CCC;
+                height: auto;
+            }
+
+            .expected {
+                margin-bottom: 1rem;
+            }
+
+            .remove {
+                margin: 0;
+                padding: 0.5rem 1rem;
+            }
+
+            .options {
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+            }
+
+            .options div {
+                padding-right: 3rem;
+            }
+
+            .options input, .options button {
+                margin: 0.5rem 0 !important;
+            }
+        </style>
+    </head>
+    <body>
+        <div id="app">
+            <div class="files">
+                <div class="row top"><input type="text" placeholder="Search" v-model="search"></div>
+                <ul>
+                    <li v-for="file in filteredFiles" :title="file" :class="{ active: activeFile === file }"  v-on:click="chooseFile(file)">{{ modified[file] ? '● ' : '' }}{{file}}</button>
+                </ul>
+            </div>
+            <div v-if="cases" class="cases">
+                <div class="title"><strong>Edit test case</strong></div>
+                <ul>
+                    <li v-for="(c, i) in cases" :class="{ active: activeTest === i }"  v-on:click="chooseTest(i)">{{ c.name ? c.name : `Test case ${i+1}`}}</li>
+                </ul>
+                <div class="center">
+                    <button class="col" v-on:click="addCase()">Add new test case</button>
+                </div>
+                <div v-if="modified[activeFile]" class="center">
+                    <button class="col" v-on:click="save()">Save changes</button>
+                </div>
+            </div>
+            <div v-if="testCase" class="main">
+                <div class="row">
+                    <fieldset class="col">
+                        <legend>Test Case</legend>
+                        <div class="row">
+                            <input type="text" placeholder="Test name" v-model="testCase.name"/>
+                        </div>
+                        <div class="row">
+                            <textarea placeholder="Extra (.dzn) files, one per line" v-model="testCase.extra_files"></textarea>
+                        </div>
+                        <div class="row">
+                            <fieldset class="col">
+                                <legend>Solvers</legend>
+                                <div class="row">
+                                    <div>
+                                        <label><input type="checkbox" value="gecode" v-model="testCase.solvers">Gecode</label>
+                                        <label><input type="checkbox" value="chuffed" v-model="testCase.solvers">Chuffed</label>
+                                        <label><input type="checkbox" value="cbc" v-model="testCase.solvers">CBC</label>
+                                    </div>
+                                </div>
+                            </fieldset>
+                            <fieldset v-if="testCase.type === 'solve'" class="col">
+                                <legend>Checkers</legend>
+                                <div class="row">
+                                    <div>
+                                        <label><input type="checkbox" value="gecode" v-model="testCase.check_against">Gecode</label>
+                                        <label><input type="checkbox" value="chuffed" v-model="testCase.check_against">Chuffed</label>
+                                        <label><input type="checkbox" value="cbc" v-model="testCase.check_against">CBC</label>
+                                    </div>
+                                </div>
+                            </fieldset>
+                            <fieldset class="col">
+                                <legend>Type</legend>
+                                <div class="row">
+                                    <div>
+                                        <label><input type="radio" value="solve" v-model="testCase.type">Solve</label>
+                                        <label><input type="radio" value="compile" v-model="testCase.type">Compile</label>
+                                    </div>
+                                </div>
+                            </fieldset>
+                        </div>
+                        <div class="row">
+                            <fieldset class="col">
+                                <legend>Options</legend>
+                                <div v-if="testCase.type === 'solve'" class="row">
+                                    <label><input type="checkbox" v-model="testCase.all_solutions">All solutions</label>
+                                </div>
+                                <div class="row">
+                                    <label class="horizontal-align vertical-align">
+                                        <span>Timeout&nbsp;(seconds):&nbsp;&nbsp;</span>
+                                        <input type="number" step="any" min="0" v-model="testCase.timeout">
+                                    </label>
+                                </div>
+                                <div>
+                                    <fieldset>
+                                        <legend>Extra command line options</legend>
+                                        <div class="options" v-for="(opt, i) in testCase.options">
+                                            <div ><input type="text" v-model="opt.key" placeholder="Option/flag"></div >
+                                            <div><input type="text" v-model="opt.value" placeholder="Value (or empty if flag)"></div>
+                                            <div><button v-on:click="testCase.options = [...testCase.options.slice(0, i), ...testCase.options.slice(i + 1)]">Remove</button></div>
+                                        </div>
+                                        <button v-on:click="testCase.options = [...testCase.options, {key: '', value: ''}]">Add option</button>
+                                    </fieldset>
+                                </div>
+                            </fieldset>
+                        </div>
+                        <div class="row">
+                            <fieldset class="col">
+                                <legend>Expected Output</legend>
+                                <div class="row">
+                                    <div class="col">
+                                        <fieldset v-if="testCase.type === 'solve'">
+                                            <legend>Generate</legend>
+                                            <div class="row">
+                                                <div>
+                                                    <label><input type="radio" value="include" v-model="mode">Include variables</label>
+                                                    <label><input type="radio" value="exclude" v-model="mode">Exclude variables</label>
+                                                </div>
+                                                <textarea placeholder="Variable names, one per line" v-model="variables"></textarea>
+                                            </div>
+                                            <div>
+                                                <button v-on:click="generate()">Generate</button>
+                                            </div>
+                                        </fieldset>
+                                        <div class="col">
+                                            <div v-for="(expected, i) in testCase.expected" class="expected">
+                                                <div class="right"><button class="remove" v-on:click="testCase.expected = [...testCase.expected.slice(0, i), ...testCase.expected.slice(i+1)]">Remove</button></div>
+                                                <codemirror v-model="expected.value" :options="{mode: 'yaml', tabSize: 2, styleActiveLine: true, lineNumbers: true}"></codemirror>
+                                            </div>
+                                            <div>
+                                                <button v-on:click="testCase.expected = [...testCase.expected, {value: ''}]">Add new expected output</button>
+                                                <button v-if="testCase.expected.length > 0" v-on:click="testCase.expected = []" class="outline">Clear expected outputs</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </fieldset>
+                        </div>
+                        <div class="row">
+                            <div>
+                                <button v-on:click="deleteCase()">Delete test case</button>
+                            </div>
+                        </div>
+                    </fieldset>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            Vue.use(VueCodemirror);
+            const app = new Vue({
+                el: '#app',
+                data() {
+                    return {
+                        files: [],
+                        activeFile: null,
+                        activeTest: null,
+                        loaded: {},
+                        modified: {},
+                        search: '',
+                        justSwitchedFiles: false,
+
+                        mode: 'exclude',
+                        variables: ''
+                    };
+                },
+                async mounted() {
+                    const response = await fetch('/files.json');
+                    const json = await response.json();
+                    this.files = json.files;
+                    this.searchTerms = json.files.map(x => fuzzysort.prepare(x));
+                },
+                watch: {
+                    async activeFile(file) {
+                        if (file && !(file in this.loaded)) {
+                            const response = await fetch(`/file.json?f=${encodeURIComponent(file)}`);
+                            const json = await response.json();
+                            this.loaded = { ...this.loaded, [file]: json.cases };
+                        }
+                        this.activeTest = 0;
+                        this.justSwitchedFiles = true;
+                    },
+                    cases: {
+                        deep: true,
+                        handler(val, oldVal) {
+                            if (this.justSwitchedFiles) {
+                                this.justSwitchedFiles = false;
+                                return;
+                            }
+
+                            if (!val || !oldVal)
+                                return;
+
+                            this.modified = { ...this.modified, [this.activeFile]: true };
+                        }
+                    },
+                    testCase: {
+                        deep: true,
+                        handler(testCase) {
+                            if (testCase && testCase.type === 'compile') {
+                                if (testCase.check_against.length > 0)
+                                    testCase.check_against = [];
+                                if (testCase.all_solutions)
+                                    testCase.all_solutions = false;
+                            }
+                        }
+                    }
+                },
+                computed: {
+                    filteredFiles() {
+                        if (this.search.length === 0)
+                            return this.files;
+                        return fuzzysort
+                            .go(this.search, this.searchTerms, { limit: 20 })
+                            .map(x => x.target);
+                    },
+                    cases() {
+                        if (this.activeFile === null || !(this.activeFile in this.loaded))
+                            return null;
+                        return this.loaded[this.activeFile];
+                    },
+                    testCase() {
+                        return this.cases && this.cases[this.activeTest];
+                    }
+                },
+                methods: {
+                    chooseFile(file) {
+                        this.activeFile = file;
+                    },
+                    chooseTest(i) {
+                        this.activeTest = i;
+                    },
+                    addCase() {
+                        this.loaded[this.activeFile] = [...this.cases, {
+                            name: '',
+                            solvers: ['gecode', 'chuffed', 'cbc'],
+                            check_against: [],
+                            expected: [],
+                            all_solutions: false,
+                            timeout: '',
+                            options: [],
+                            extra_files: [],
+                            markers: [],
+                            type: 'solve'
+                        }];
+                        this.chooseTest(this.cases.length - 1);
+                    },
+                    deleteCase() {
+                        this.loaded[this.activeFile] = [...this.cases.slice(0, this.activeTest), ...this.cases.slice(this.activeTest+1)];
+                        this.activeTest = Math.min(this.activeTest, this.cases.length - 1);
+                    },
+                    async save() {
+                        const response = await fetch(`/save.json?f=${encodeURIComponent(this.activeFile)}`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(this.cases)
+                        });
+
+                        const json = await response.json();
+
+                        if (json.status === 'success') {
+                            this.modified = { ...this.modified, [this.activeFile]: false };
+                        }
+                    },
+                    async generate() {
+                        const response = await fetch(`/generate.json?f=${encodeURIComponent(this.activeFile)}&mode=${encodeURIComponent(this.mode)}&vars=${encodeURIComponent(this.variables)}`, {
+                            method: 'POST',
+                            headers: {
+                              'Content-Type': 'application/json'
+                            },
+                            body: JSON.stringify(this.testCase)
+                        });
+
+                        const json = await response.json();
+                        if (json.obtained.length > 0)
+                            this.testCase.expected = [...this.testCase.expected, ...json.obtained];
+                    }
+                }
+            });
+
+            window.onbeforeunload = function (e) {
+                e = e || window.event;
+                if (Object.values(app.modified).some(x => x)) {
+                    if (e)
+                        e.returnValue = 'Discard changes and exit?';
+                    return 'Discard changes and exit?';
+                }
+            };
+        </script>
+    </body>
+</html>

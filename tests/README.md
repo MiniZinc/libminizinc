@@ -19,7 +19,7 @@ pytest
 
 An HTML report will be generated at `output/report.html`.
 
-## Multiple Test Suites
+## Multiple test suites
 
 To facilitate running the test suite with different minizinc options, `specs/suites.yml` contains configurations for running tests, or a subset of tests using different options.
 
@@ -38,7 +38,26 @@ For example, to run the `optimize-2` and `no-mip-domains` configurations only:
 pytest --suite optimize-2 --suite no-mip-domains
 ```
 
-## Creating/Editing Test Cases
+## Creating/editing test cases with the web interface
+
+A web interface can be used to create and edit test cases graphically. Python 3.8.1 or newer and Flask is required.
+
+```sh
+pip install flask
+```
+
+Start the web interface with
+
+```sh
+cd tests
+python -m minizinc_testing.create
+```
+
+Then open `http://localhost:5000`.
+
+The web interface detects `.mzn` files in the `tests/spec` directory. To add a new test, simply create a `.mzn` containing the model, and then open the file in the web interface. Test cases can then be generated accordingly.
+
+## Creating/editing test cases manually
 
 The test cases are defined using `YAML` inside the minizinc `.mzn` files. This YAML definition must be inside a block comment like the following:
 
@@ -64,7 +83,7 @@ Multiple cases can be specified for one `.mzn` file:
 ***/
 ```
 
-### YAML Format
+### YAML format
 
 The format of the test case spec is as follows:
 
@@ -97,7 +116,7 @@ For a test to pass, at least one expected result must be a subset of the obtaine
 
 If a solution is produced that does not match any given expected output, the result is checked using another solver. If this check passes then the test passes with a warning.
 
-### Multiple Solutions
+### Multiple solutions
 
 When setting `all_solutions: true` and the order of the returned solutions often does not matter, use `!SolutionSet` for the list of solutions:
 
@@ -111,7 +130,7 @@ When setting `all_solutions: true` and the order of the returned solutions often
     x: 2
 ```
 
-### Testing FlatZinc Output
+### Testing FlatZinc output
 
 Use `type: compile` on a test to enable only flattening.
 Then `!FlatZinc filename.fzn` to give files with expected results.

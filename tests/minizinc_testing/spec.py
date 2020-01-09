@@ -19,7 +19,6 @@ class Test:
         self.solvers = ["gecode", "cbc", "chuffed"]
         self.check_against = []
         self.expected = []
-        self.runs_in = yaml.Undefined
         self.options = {}
         self.extra_files = []
         self.markers = []
@@ -269,6 +268,7 @@ class FlatZinc:
     """
     A FlatZinc result, encoded by !FlatZinc in YAML.
     """
+
     def __init__(self, path):
         self.path = path
         self.base = None
@@ -281,7 +281,7 @@ class FlatZinc:
         if self.fzn is None:
             with open(actual.base.joinpath(self.path)) as f:
                 self.fzn = f.read()
-        
+
         return self.normalized() == actual.normalized()
 
     def normalized(self):
@@ -297,9 +297,11 @@ class FlatZinc:
             needle = "X_INTRODUCED_{}_".format(old)
             replacement = "X_INTRODUCED_{}_".format(new)
             fzn = fzn.replace(needle, replacement)
-        return "\n".join(sorted(fzn.split("\n"))) # Sort the FlatZinc lines
+        return "\n".join(sorted(fzn.split("\n")))  # Sort the FlatZinc lines
 
     def get_value(self):
+        if self.fzn is None:
+            return self.path
         return self.normalized()
 
     @staticmethod
