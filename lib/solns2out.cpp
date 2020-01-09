@@ -148,10 +148,12 @@ Solns2Out::DE& Solns2Out::findOutputVar( ASTString id ) {
 void Solns2Out::restoreDefaults() {
   for (unsigned int i=0; i<getModel()->size(); i++) {
     if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
-      GCLock lock;
-      auto& de = findOutputVar(vdi->e()->id()->str());
-      vdi->e()->e(de.second());
-      vdi->e()->evaluated(false);
+      if (vdi->e()->id()->idn()!=-1 || vdi->e()->id()->v()!="_mzn_solution_checker") {
+        GCLock lock;
+        auto& de = findOutputVar(vdi->e()->id()->str());
+        vdi->e()->e(de.second());
+        vdi->e()->evaluated(false);
+      }
     }
   }
   fNewSol2Print = false;
