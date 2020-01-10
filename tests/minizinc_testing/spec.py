@@ -207,7 +207,7 @@ class Error:
                 return False
 
         if self.message is not yaml.Undefined:
-            return self.message == actual.message
+            return self.message == str(actual)
 
         return True
 
