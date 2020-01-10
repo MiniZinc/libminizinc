@@ -19,6 +19,8 @@ Bug fixes:
 - Fix memory management during flattening of conditionals (#358).
 - Fix type inference for rewriting of sums into count constraints,
   and only apply the rewriting for var type-insts.
+- Fix handling of solution checkers (these used to produce spurious
+  error messages).
 
 Version 2.4.1
 =============
