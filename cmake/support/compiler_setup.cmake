@@ -6,12 +6,6 @@ if(USE_ADDRESS_SANITIZER)
   set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -fsanitize=address")
 endif()
 
-if(APPLE)
-  execute_process(COMMAND xcrun --show-sdk-path OUTPUT_VARIABLE OSX_SYSROOT OUTPUT_STRIP_TRAILING_WHITESPACE)
-  set(CMAKE_OSX_SYSROOT ${OSX_SYSROOT})
-  set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X deployment version")
-endif(APPLE)
-
 set(CMAKE_REQUIRED_QUIET $<NOT:${VERBOSE}>)
 
 include(CheckCXXCompilerFlag)

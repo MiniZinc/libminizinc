@@ -1,4 +1,5 @@
 cmake_minimum_required(VERSION 3.4.0)
+set(CMAKE_OSX_DEPLOYMENT_TARGET "10.9" CACHE STRING "Minimum OS X deployment version") # Must be before project()
 
 # -------------------------------------------------------------------------------------------------------------------
 #  -- Project information and versioning.
