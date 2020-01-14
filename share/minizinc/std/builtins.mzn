@@ -1588,6 +1588,8 @@ function string: showDzn(var opt $T: x);
 function string: showDzn(array[$U] of var opt $T: x);
 function string: showDznId(string: x);
 
+function string: showCheckerOutput();
+
 /** @group builtins.string Formatted to-string conversion for integers
 
 Converts the integer \a x into a string right

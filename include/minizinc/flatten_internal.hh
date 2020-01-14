@@ -73,6 +73,7 @@ namespace MiniZinc {
     
     std::ostream& outstream;
     std::ostream& errstream;
+    std::stringstream checker_output;
 
     // The current pass number (used for unifying and disabling path construction in final pass)
     unsigned int current_pass_no;

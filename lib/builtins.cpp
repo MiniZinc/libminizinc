@@ -2325,6 +2325,15 @@ namespace MiniZinc {
     throw FlatteningError(env, call->loc(), "MiniZinc was compiled without built-in Gecode, cannot parse regular expression");
 #endif
   }
+
+  Expression* b_show_checker_output(EnvI& env, Call* call) {
+    // Get checker output
+    std::string output = env.checker_output.str();
+    // Reset checker output
+    env.checker_output.str("");
+    env.checker_output.clear();
+    return new StringLit(call->loc().introduce(), output);
+  }
   
   void registerBuiltins(Env& e) {
     EnvI& env = e.envi();
@@ -3167,8 +3176,11 @@ namespace MiniZinc {
       t[1] = Type::parstring();
       rb(env, m, ASTString("fzn_regular"),t,b_regular_from_string,true);
     }
+    {
+      rb(env, m, ASTString("showCheckerOutput"), {}, b_show_checker_output);
+    }
   }
-  
+
 }
 
 

@@ -195,10 +195,22 @@ bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
   if ( !fNewSol2Print )
     return true;
   ostringstream oss;
-  if (!__evalOutput( oss ))
+  if ( !checkerModel.empty() ) {
+    checkSolution(pEnv->envi().checker_output);
+  }
+  if (!__evalOutput( oss )) {
     return false;
-  if ( !checkerModel.empty() )
-    checkSolution(oss);
+  }
+  {
+    std::string line;
+    if (std::getline(pEnv->envi().checker_output, line)) {
+      os << "% Solution checker report:\n";
+      os << "% " << line << "\n";
+      while (std::getline(pEnv->envi().checker_output, line)) {
+        os << "% " << line << "\n";
+      }
+    }
+  }
   bool fNew=true;
   if ( _opt.flag_unique || _opt.flag_canonicalize ) {
     auto res = sSolsCanon.insert( oss.str() );
@@ -247,7 +259,7 @@ bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
   return true;
 }
 
-void Solns2Out::checkSolution(std::ostream& os) {
+void Solns2Out::checkSolution(std::ostream& oss) {
 #ifdef HAS_GECODE
 
   std::ostringstream checker;
@@ -289,13 +301,12 @@ void Solns2Out::checkSolution(std::ostream& os) {
   }
   std::istringstream iss(oss_err.str());
   std::string line;
-  os << "% Solution checker report:\n";
   while (std::getline(iss,line)) {
-    os << "% " << line << "\n";
+    oss << line << "\n";
   }
   
 #else
-  os << "% solution checking not supported (need built-in Gecode)" << std::endl;
+  oss << "% solution checking not supported (need built-in Gecode)" << std::endl;
 #endif
 }
 
