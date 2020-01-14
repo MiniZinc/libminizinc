@@ -279,30 +279,24 @@ void Solns2Out::checkSolution(std::ostream& oss) {
       }
     }
   }
-  
-  std::ostringstream oss_err;
-  MznSolver slv(oss_err,oss_err);
+
+  MznSolver slv(oss,oss);
   slv.s2out._opt.solution_separator = "";
   try {
     std::vector<std::string> args({"--solver","org.minizinc.gecode_presolver"});
     slv.run(args, checker.str(), "minizinc", "checker.mzc");
   } catch (const LocationException& e) {
-    oss_err << e.loc() << ":" << std::endl;
-    oss_err << e.what() << ": " << e.msg() << std::endl;
+    oss << e.loc() << ":" << std::endl;
+    oss << e.what() << ": " << e.msg() << std::endl;
   } catch (const Exception& e) {
     std::string what = e.what();
-    oss_err << what << (what.empty() ? "" : ": ") <<e.msg() << std::endl;
+    oss << what << (what.empty() ? "" : ": ") <<e.msg() << std::endl;
   }
   catch (const exception& e) {
-    oss_err << e.what() << std::endl;
+    oss << e.what() << std::endl;
   }
   catch (...) {
-    oss_err << "  UNKNOWN EXCEPTION." << std::endl;
-  }
-  std::istringstream iss(oss_err.str());
-  std::string line;
-  while (std::getline(iss,line)) {
-    oss << line << "\n";
+    oss << "  UNKNOWN EXCEPTION." << std::endl;
   }
   
 #else
