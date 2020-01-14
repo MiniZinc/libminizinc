@@ -604,6 +604,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           fopts.outputMode = flag_output_mode;
           fopts.outputObjective = flag_output_objective;
           fopts.outputOutputItem = flag_output_output_item;
+          fopts.hasChecker = !flag_solution_check_model.empty();
 #ifdef HAS_GECODE
           GecodeOptions gopts;
           gopts.only_range_domains = flag_only_range_domains;

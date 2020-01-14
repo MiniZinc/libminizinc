@@ -2740,7 +2740,7 @@ namespace MiniZinc {
       if (opt.keepOutputInFzn) {
         copyOutput(env);
       } else {
-        createOutput(env, deletedVarDecls, opt.outputMode, opt.outputObjective, opt.outputOutputItem);
+        createOutput(env, deletedVarDecls, opt.outputMode, opt.outputObjective, opt.outputOutputItem, opt.hasChecker);
       }
       
       // Flatten remaining redefinitions

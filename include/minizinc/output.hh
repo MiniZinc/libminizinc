@@ -27,14 +27,14 @@ namespace MiniZinc {
   
   /// Create initial output model
   void createOutput(EnvI& e, std::vector<VarDecl*>& deletedFlatVarDecls,
-                    FlatteningOptions::OutputMode outputMode, bool outputObjective, bool includeOutputItem);
+                    FlatteningOptions::OutputMode outputMode, bool outputObjective, bool includeOutputItem, bool hasChecker);
   /// Finalise output model after flattening is complete
   void finaliseOutput(EnvI& e, std::vector<VarDecl*>& deletedFlatVarDecls);
   
   /// Remove all links to variables in flat model from output model in \a env
   void cleanupOutput(EnvI& env);
 
-  ArrayLit* createJSONOutput(EnvI& env, bool outputObjective, bool includeOutputItem);
+  ArrayLit* createJSONOutput(EnvI& env, bool outputObjective, bool includeOutputItem, bool hasChecker);
   
 }
 

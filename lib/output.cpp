@@ -161,7 +161,7 @@ namespace MiniZinc {
         if (c.id()=="outputJSON") {
           bool outputObjective = (c.n_args()==1 && eval_bool(env,c.arg(0)));
           c.id(ASTString("array1d"));
-          Expression* json = copy(env, env.cmap, createJSONOutput(env, outputObjective, false));
+          Expression* json = copy(env, env.cmap, createJSONOutput(env, outputObjective, false, false));
           std::vector<Expression*> new_args({json});
           new_args[0]->type(Type::parstring(1));
           c.args(new_args);
@@ -487,7 +487,7 @@ namespace MiniZinc {
     }
   }
   
-  void createDznOutputItem(EnvI& e, bool outputObjective, bool includeOutputItem) {
+  void createDznOutputItem(EnvI& e, bool outputObjective, bool includeOutputItem, bool hasChecker) {
     std::vector<Expression*> outputVars;
     
     class DZNOVisitor : public ItemVisitor {
@@ -596,12 +596,28 @@ namespace MiniZinc {
     } dznov(e, outputObjective, includeOutputItem, outputVars);
 
     iterItems(dznov, e.model);
+
+    if (hasChecker) {
+      outputVars.push_back(new StringLit(Location().introduce(), "_checker = "));
+      auto checker_output = new Call(Location().introduce(), ASTString("showCheckerOutput"), {});
+      checker_output->type(Type::parstring());
+      FunctionI* fi = e.model->matchFn(e, checker_output, false);
+      assert(fi);
+      checker_output->decl(fi);
+      auto show = new Call(Location().introduce(), ASTString("showDzn"), {checker_output});
+      show->type(Type::parstring());
+      fi = e.model->matchFn(e, show, false);
+      assert(fi);
+      show->decl(fi);
+      outputVars.push_back(show);
+      outputVars.push_back(new StringLit(Location().introduce(), ";\n"));
+    }
     
-    OutputI* newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
+    auto newOutputItem = new OutputI(Location().introduce(),new ArrayLit(Location().introduce(),outputVars));
     e.model->addItem(newOutputItem);
   }
 
-  ArrayLit* createJSONOutput(EnvI& e, bool outputObjective, bool includeOutputItem) {
+  ArrayLit* createJSONOutput(EnvI& e, bool outputObjective, bool includeOutputItem, bool hasChecker) {
     std::vector<Expression*> outputVars;
     outputVars.push_back(new StringLit(Location().introduce(), "{\n"));
 
@@ -612,8 +628,8 @@ namespace MiniZinc {
       bool includeOutputItem;
       std::vector<Expression*>& outputVars;
       bool had_add_to_output;
-      bool first_var;
     public:
+      bool first_var;
       JSONOVisitor(EnvI& e0, bool outputObjective0, bool includeOutputItem0, std::vector<Expression*>& outputVars0)
         : e(e0), outputObjective(outputObjective0), outputVars(outputVars0), includeOutputItem(includeOutputItem0), had_add_to_output(false), first_var(true) {}
       void vVarDeclI(VarDeclI* vdi) {
@@ -632,7 +648,7 @@ namespace MiniZinc {
             process_var = true;
           } else {
             if (!had_add_to_output) {
-              process_var = vd->type().isvar() && (vd->e()==NULL || vd->ann().contains(constants().ann.rhs_from_assignment));
+              process_var = vd->type().isvar() && (vd->e()==nullptr || vd->ann().contains(constants().ann.rhs_from_assignment));
             }
           }
         }
@@ -644,7 +660,7 @@ namespace MiniZinc {
             s << ",\n";
           }
           s << "  \"" << vd->id()->str().str() << "\"" << " : ";
-          StringLit* sl = new StringLit(Location().introduce(),s.str());
+          auto sl = new StringLit(Location().introduce(),s.str());
           outputVars.push_back(sl);
           
           std::vector<Expression*> showArgs(1);
@@ -666,7 +682,7 @@ namespace MiniZinc {
             s << ",\n";
           }
           s << "  \"_output\"" << " : ";
-          StringLit* sl = new StringLit(Location().introduce(),s.str());
+          auto sl = new StringLit(Location().introduce(),s.str());
           outputVars.push_back(sl);
           Call* concat = new Call(Location().introduce(), ASTString("concat"), {oi->e()});
           concat->type(Type::parstring());
@@ -687,29 +703,52 @@ namespace MiniZinc {
     
     iterItems(jsonov, e.model);
 
+    if (hasChecker) {
+      std::ostringstream s;
+      if (jsonov.first_var) {
+        jsonov.first_var = false;
+      } else {
+        s << ",\n";
+      }
+      s << "  \"_checker\"" << " : ";
+      auto sl = new StringLit(Location().introduce(),s.str());
+      outputVars.push_back(sl);
+      Call* checker_output = new Call(Location().introduce(), ASTString("showCheckerOutput"), {});
+      checker_output->type(Type::parstring());
+      FunctionI* fi = e.model->matchFn(e, checker_output, false);
+      assert(fi);
+      checker_output->decl(fi);
+      Call* show = new Call(Location().introduce(), ASTString("showJSON"), {checker_output});
+      show->type(Type::parstring());
+      fi = e.model->matchFn(e, show, false);
+      assert(fi);
+      show->decl(fi);
+      outputVars.push_back(show);
+    }
+
     outputVars.push_back(new StringLit(Location().introduce(), "\n}\n"));
     return new ArrayLit(Location().introduce(),outputVars);
   }
-  void createJSONOutputItem(EnvI& e, bool outputObjective, bool includeOutputItem) {
-    OutputI* newOutputItem = new OutputI(Location().introduce(), createJSONOutput(e, outputObjective, includeOutputItem));
+  void createJSONOutputItem(EnvI& e, bool outputObjective, bool includeOutputItem, bool hasChecker) {
+    auto newOutputItem = new OutputI(Location().introduce(), createJSONOutput(e, outputObjective, includeOutputItem, hasChecker));
     e.model->addItem(newOutputItem);
   }
 
   void createOutput(EnvI& e, std::vector<VarDecl*>& deletedFlatVarDecls,
-                    FlatteningOptions::OutputMode outputMode, bool outputObjective, bool includeOutputItem) {
+                    FlatteningOptions::OutputMode outputMode, bool outputObjective, bool includeOutputItem, bool hasChecker) {
     // Create new output model
     OutputI* outputItem = NULL;
     GCLock lock;
     
     switch (outputMode) {
       case FlatteningOptions::OUTPUT_DZN:
-        createDznOutputItem(e,outputObjective, includeOutputItem);
+        createDznOutputItem(e,outputObjective, includeOutputItem, hasChecker);
         break;
       case FlatteningOptions::OUTPUT_JSON:
-        createJSONOutputItem(e, outputObjective, includeOutputItem);
+        createJSONOutputItem(e, outputObjective, includeOutputItem, hasChecker);
       default:
         if (e.model->outputItem()==NULL) {
-          createDznOutputItem(e, outputObjective, false);
+          createDznOutputItem(e, outputObjective, false, false);
         }
         break;
     }

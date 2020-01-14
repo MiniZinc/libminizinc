@@ -53,6 +53,8 @@ namespace MiniZinc {
     bool outputObjective;
     /// Output original output item as string (only for DZN and JSON mode)
     bool outputOutputItem;
+    /// Model is being compiled with a solution checker
+    bool hasChecker;
     /// Output detailed timing information for flattening
     bool detailedTiming;
     /// Default constructor
