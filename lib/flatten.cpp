@@ -2671,23 +2671,7 @@ namespace MiniZinc {
                 EE ee = flat_exp(env, Ctx(), v->e()->e(), NULL, constants().var_true);
                 v->e()->e(ee.r());
               }
-              if (v->e()->type().dim() > 0) {
-                checkIndexSets(env,v->e(), v->e()->e());
-                if (v->e()->ti()->domain() != NULL) {
-                  ArrayLit* al = eval_array_lit(env,v->e()->e());
-                  for (unsigned int i=0; i<al->size(); i++) {
-                    if (!checkParDomain(env,(*al)[i], v->e()->ti()->domain())) {
-                      throw EvalError(env, v_loc, "parameter value out of range");
-                    }
-                  }
-                }
-              } else {
-                if (v->e()->ti()->domain() != NULL) {
-                  if (!checkParDomain(env,v->e()->e(), v->e()->ti()->domain())) {
-                    throw EvalError(env, v_loc, "parameter value out of range");
-                  }
-                }
-              }
+              checkParDeclaration(env, v->e());
             }
           }
         }
