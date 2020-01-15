@@ -169,6 +169,7 @@ class SolveItem(MznItem):
         # To pass model and result to checker test item
         self.cache.model = model
         self.cache.result = result
+        self.cache.obtained = obtained
 
         passed = self.spec.passed(result)
 
@@ -216,9 +217,8 @@ class CheckItem(MznItem):
         ):
             pytest.skip("skipping check for no result/solution")
         else:
-            assert self.cache.test(
-                self.checker
-            ), "failed when checking against {}".format(self.checker)
+            passed = self.cache.test(self.checker)
+            assert passed, "failed when checking against {}. Got {}".format(self.checker, yaml.dump(self.cache.obtained))
 
     def reportinfo(self):
         return self.fspath, 0, "{}::{}".format(str(self.fspath), self.name)

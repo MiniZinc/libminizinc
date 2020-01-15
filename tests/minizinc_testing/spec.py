@@ -233,6 +233,7 @@ class CachedResult:
     def __init__(self):
         self.model = None
         self.result = None
+        self.obtained = None
 
     def test(self, solver):
         """
