@@ -1016,7 +1016,6 @@ namespace MiniZinc {
       if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
         return bl->v();
       }
-      CallStackItem csi(env,e);
       switch (e->eid()) {
       case Expression::E_INTLIT:
       case Expression::E_FLOATLIT:
@@ -1596,17 +1595,16 @@ namespace MiniZinc {
   }
 
   FloatVal eval_float(EnvI& env, Expression* e) {
+    if (e->type().isint()) {
+      return FloatVal(eval_int(env,e).toInt());
+    } else if (e->type().isbool()) {
+      return eval_bool(env,e);
+    }
     CallStackItem csi(env,e);
     try {
-      if (e->type().isint()) {
-        return FloatVal(eval_int(env,e).toInt());
-      } else if (e->type().isbool()) {
-        return eval_bool(env,e);
-      }
       if (FloatLit* fl = e->dyn_cast<FloatLit>()) {
         return fl->v();
       }
-      CallStackItem csi(env,e);
       switch (e->eid()) {
         case Expression::E_INTLIT:
         case Expression::E_BOOLLIT:
