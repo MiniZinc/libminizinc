@@ -1921,7 +1921,9 @@ namespace MiniZinc {
               ret = vd->id();
             }
             Id* vde_id = Expression::dyn_cast<Id>(vd->e());
-            if (vde_id && vde_id->decl()->ti()->domain()==NULL) {
+            if (vde_id == constants().absent) {
+              // no need to do anything
+            } else if (vde_id && vde_id->decl()->ti()->domain()==NULL) {
               if (vd->ti()->domain()) {
                 GCLock lock;
                 Expression* vd_dom = eval_par(env, vd->ti()->domain());
