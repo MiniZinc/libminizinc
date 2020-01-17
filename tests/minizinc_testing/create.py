@@ -86,7 +86,7 @@ def load_spec(data):
         x["key"]: (x["value"] if len(x["value"]) > 0 else True) for x in data["options"]
     }
     items["options"]["all_solutions"] = data["all_solutions"]
-    if len(data["timeout"]) > 0 and float(data["timeout"]) > 0:
+    if not data["timeout"] == "" and float(data["timeout"]) > 0:
         items["options"]["timeout"] = timedelta(seconds=float(data["timeout"]))
     print(items)
     return spec.Test(**items)
