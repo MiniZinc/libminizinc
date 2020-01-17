@@ -1,46 +1,115 @@
 /***
 !Test
+check_against: []
 expected:
 - !Result
   solution: !Solution
     makespan: 1168
     objective: 1168
     start:
-    - [507, 0, 6]
-    - [0, 168, 663]
-    - [168, 663, 339]
+    - - 507
+      - 0
+      - 6
+    - - 0
+      - 168
+      - 663
+    - - 168
+      - 663
+      - 339
 - !Result
   solution: !Solution
     makespan: 1168
     objective: 1168
     start:
-    - [333, 1162, 0]
-    - [1000, 0, 657]
-    - [0, 657, 333]
+    - - 333
+      - 1162
+      - 0
+    - - 1000
+      - 0
+      - 657
+    - - 0
+      - 657
+      - 333
 - !Result
   solution: !Solution
     makespan: 1168
     objective: 1168
     start:
-    - [339, 0, 6]
-    - [0, 168, 663]
-    - [168, 663, 339]
+    - - 339
+      - 0
+      - 6
+    - - 0
+      - 168
+      - 663
+    - - 168
+      - 663
+      - 339
 - !Result
   solution: !Solution
     makespan: 1168
     objective: 1168
     start:
-    - [0, 1162, 829]
-    - [1000, 505, 0]
-    - [829, 0, 505]
+    - - 0
+      - 1162
+      - 829
+    - - 1000
+      - 505
+      - 0
+    - - 829
+      - 0
+      - 505
 - !Result
   solution: !Solution
     makespan: 1168
     objective: 1168
     start:
-    - [339, 1162, 0]
-    - [1000, 168, 657]
-    - [161, 657, 333]
+    - - 339
+      - 1162
+      - 0
+    - - 1000
+      - 168
+      - 657
+    - - 161
+      - 657
+      - 333
+- !Result
+  solution: !Solution
+    makespan: 1168
+    objective: 1168
+    start:
+    - - 503
+      - 0
+      - 6
+    - - 0
+      - 169
+      - 820
+    - - 168
+      - 663
+      - 339
+- !Result
+  solution: !Solution
+    makespan: 1168
+    objective: 1168
+    start:
+    - - 507
+      - 0
+      - 6
+    - - 0
+      - 174
+      - 825
+    - - 168
+      - 663
+      - 339
+extra_files: []
+markers: []
+options:
+  all_solutions: false
+solvers:
+- gecode
+- cbc
+- chuffed
+type: solve
+
 ***/
 
 int: Endtime;
