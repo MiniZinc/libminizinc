@@ -11,6 +11,8 @@
 
 #include <minizinc/flat_exp.hh>
 
+#include <list>
+
 namespace MiniZinc {
 
   ASTString opToBuiltin(Expression* op_lhs, Expression* op_rhs, BinOpType bot) {
@@ -271,35 +273,40 @@ namespace MiniZinc {
     assert(bot == BOT_AND || bot == BOT_OR);
     BinOpType negbot = (bot == BOT_AND ? BOT_OR : BOT_AND);
     typedef std::pair<Expression*,bool> arg_literal;
-    std::vector<arg_literal> bo_args(2);
-    bo_args[0] = arg_literal(bo->lhs(), !negateArgs);
-    bo_args[1] = arg_literal(bo->rhs(), !negateArgs);
+    typedef std::list<arg_literal> arg_literal_l;
+    arg_literal_l bo_args({arg_literal(bo->lhs(), !negateArgs), arg_literal(bo->rhs(), !negateArgs)});
     std::vector<Expression*> output_pos;
     std::vector<Expression*> output_neg;
-    unsigned int processed = 0;
-    while (processed < bo_args.size()) {
-      BinOp* bo_arg = bo_args[processed].first->dyn_cast<BinOp>();
-      UnOp* uo_arg = bo_args[processed].first->dyn_cast<UnOp>();
-      bool positive = bo_args[processed].second;
+    arg_literal_l::iterator i = bo_args.begin();
+    while (i != bo_args.end()) {
+      BinOp* bo_arg = i->first->dyn_cast<BinOp>();
+      UnOp* uo_arg = i->first->dyn_cast<UnOp>();
+      bool positive = i->second;
       if (bo_arg && positive && bo_arg->op() == bot) {
-        bo_args[processed].first = bo_arg->lhs();
-        bo_args.push_back(arg_literal(bo_arg->rhs(),true));
+        i->first = bo_arg->lhs();
+        i++;
+        bo_args.insert(i, arg_literal(bo_arg->rhs(),true));
+        i--;
+        i--;
       } else if (bo_arg && !positive && bo_arg->op() == negbot) {
-        bo_args[processed].first = bo_arg->lhs();
-        bo_args.push_back(arg_literal(bo_arg->rhs(),false));
+        i->first = bo_arg->lhs();
+        i++;
+        bo_args.insert(i, arg_literal(bo_arg->rhs(),false));
+        i--;
+        i--;
       } else if (uo_arg && !positive && uo_arg->op() == UOT_NOT) {
-        bo_args[processed].first = uo_arg->e();
-        bo_args[processed].second = true;
+        i->first = uo_arg->e();
+        i->second = true;
       } else if (bot==BOT_OR && uo_arg && positive && uo_arg->op() == UOT_NOT) {
         output_neg.push_back(uo_arg->e());
-        processed++;
+        i++;
       } else {
         if (positive) {
-          output_pos.push_back(bo_args[processed].first);
+          output_pos.push_back(i->first);
         } else {
-          output_neg.push_back(bo_args[processed].first);
+          output_neg.push_back(i->first);
         }
-        processed++;
+        i++;
       }
     }
     Call* c;

@@ -485,52 +485,139 @@ namespace MiniZinc {
           env.in_reverse_map_var = true;
         }
         if (cid == constants().ids.clause && c->arg(0)->isa<ArrayLit>() && c->arg(1)->isa<ArrayLit>()) {
-          GCLock lock;
-          // try to make negative arguments positive
-          std::vector<Expression*> newPositives;
-          std::vector<Expression*> newNegatives;
+          Ctx argctx = nctx;
+          
+          // handle negated args first, try to make them positive
+          
+          if (mixContext) {
+            argctx.b = -nctx.b;
+          }
+          std::vector<KeepAlive> neg_args;
+          std::vector<KeepAlive> pos_args;
+          std::vector<KeepAlive> newPositives;
+          bool is_subsumed = false;
           ArrayLit* al_neg = c->arg(1)->cast<ArrayLit>();
-          for (unsigned int i=0; i<al_neg->size(); i++) {
-            BinOp* bo = (*al_neg)[i]->dyn_cast<BinOp>();
-            Call* co = (*al_neg)[i]->dyn_cast<Call>();
-            if (bo || (co && (co->id()==constants().ids.forall || co->id()==constants().ids.exists || co->id()==constants().ids.clause))) {
-              UnOp* notBoe0 = new UnOp(Location().introduce(), UOT_NOT, (*al_neg)[i]);
-              notBoe0->type(Type::varbool());
-              newPositives.push_back(notBoe0);
-            } else {
-              newNegatives.push_back((*al_neg)[i]);
+          {
+            CallArgItem cai(env);
+            for (unsigned int i=0; i<al_neg->size(); i++) {
+              BinOp* bo = (*al_neg)[i]->dyn_cast<BinOp>();
+              Call* co = (*al_neg)[i]->dyn_cast<Call>();
+              if (bo || (co && (co->id()==constants().ids.forall || co->id()==constants().ids.exists || co->id()==constants().ids.clause))) {
+                GCLock lock;
+                UnOp* notBoe0 = new UnOp(Location().introduce(), UOT_NOT, (*al_neg)[i]);
+                notBoe0->type(Type::varbool());
+                newPositives.push_back(notBoe0);
+              } else {
+                EE res = flat_exp(env,argctx,(*al_neg)[i],NULL,constants().var_true);
+                if (res.r()->type().ispar()) {
+                  if (eval_bool(env, res.r())) {
+                    // this element is irrelevant
+                  } else {
+                    // this element subsumes all other elements
+                    neg_args = {res.r()};
+                    pos_args = {};
+                    is_subsumed = true;
+                    break;
+                  }
+                } else {
+                  neg_args.push_back(res.r());
+                }
+              }
             }
           }
-          if (!newPositives.empty()) {
-            ArrayLit* al_pos = c->arg(0)->cast<ArrayLit>();
-            for (unsigned int i=0; i<al_pos->size(); i++) {
-              newPositives.push_back((*al_pos)[i]);
-            }
-            c->arg(0, new ArrayLit(Location().introduce(), newPositives));
-            c->arg(1, new ArrayLit(Location().introduce(), newNegatives));
-            c->arg(0)->type(Type::varbool(1));
-            c->arg(1)->type(Type::varbool(1));
+
+          // Now process new and previous positive arguments
+          if (mixContext) {
+            argctx.b = +nctx.b;
           }
-        }
-        for (unsigned int i=c->n_args(); i--;) {
+          ArrayLit* al_pos = c->arg(0)->cast<ArrayLit>();
+          for (unsigned int i=0; i<al_pos->size(); i++) {
+            newPositives.push_back((*al_pos)[i]);
+          }
+          {
+            CallArgItem cai(env);
+            for (unsigned int i=0; i<newPositives.size(); i++) {
+              EE res = flat_exp(env,argctx,newPositives[i](),NULL,constants().var_true);
+              if (res.r()->type().ispar()) {
+                if (!eval_bool(env, res.r())) {
+                  // this element is irrelevant
+                } else {
+                  // this element subsumes all other elements
+                  pos_args = {res.r()};
+                  neg_args = {};
+                  is_subsumed = true;
+                  break;
+                }
+              } else {
+                pos_args.push_back(res.r());
+              }
+            }
+          }
+          
+          GCLock lock;
+          ArrayLit* al_new_pos = new ArrayLit(al_pos->loc(), toExpVec(pos_args));
+          al_new_pos->type(Type::varbool(1));
+          al_new_pos->flat(true);
+          args_ee[0] = EE(al_new_pos, constants().lit_true);
+          ArrayLit* al_new_neg = new ArrayLit(al_neg->loc(), toExpVec(neg_args));
+          al_new_neg->flat(true);
+          al_new_neg->type(Type::varbool(1));
+          args_ee[1] = EE(al_new_neg, constants().lit_true);
+        } else if ( (cid == constants().ids.forall || cid == constants().ids.exists)
+              && c->arg(0)->isa<ArrayLit>() ) {
+          bool is_conj = (cid == constants().ids.forall);
           Ctx argctx = nctx;
           if (mixContext) {
-            if (cid==constants().ids.clause) {
-              argctx.b = (i==0 ? +nctx.b : -nctx.b);
-            } else if (c->arg(i)->type().bt()==Type::BT_BOOL) {
-              argctx.b = C_MIX;
-            } else if (c->arg(i)->type().bt()==Type::BT_INT) {
-              argctx.i = C_MIX;
-            }
-          } else if (cid == constants().ids.sum && c->arg(i)->type().bt()==Type::BT_BOOL) {
-            argctx.b = argctx.i;
+            argctx.b = C_MIX;
           }
-          Expression* tmp = follow_id_to_decl(c->arg(i));
-          if (VarDecl* vd = tmp->dyn_cast<VarDecl>())
-            tmp = vd->id();
-          CallArgItem cai(env);
-          args_ee[i] = flat_exp(env,argctx,tmp,NULL,NULL);
-          isPartial |= isfalse(env, args_ee[i].b());
+          ArrayLit* al = c->arg(0)->cast<ArrayLit>();
+          ArrayLit* al_new;
+          if (al->flat()) {
+            al_new = al;
+          } else {
+            std::vector<KeepAlive> flat_args;
+            CallArgItem cai(env);
+            for (unsigned int i=0; i<al->size(); i++) {
+              EE res = flat_exp(env,argctx,(*al)[i],NULL,constants().var_true);
+              if (res.r()->type().ispar()) {
+                if (eval_bool(env, res.r())==is_conj) {
+                  // this element is irrelevant
+                } else {
+                  // this element subsumes all other elements
+                  flat_args = {res.r()};
+                  break;
+                }
+              } else {
+                flat_args.push_back(res.r());
+              }
+            }
+            GCLock lock;
+            al_new = new ArrayLit(al->loc(), toExpVec(flat_args));
+            al_new->type(Type::varbool(1));
+            al_new->flat(true);
+          }
+          args_ee[0] = EE(al_new, constants().lit_true);
+        } else {
+          for (unsigned int i=c->n_args(); i--;) {
+            Ctx argctx = nctx;
+            if (mixContext) {
+              if (cid==constants().ids.clause) {
+                argctx.b = (i==0 ? +nctx.b : -nctx.b);
+              } else if (c->arg(i)->type().bt()==Type::BT_BOOL) {
+                argctx.b = C_MIX;
+              } else if (c->arg(i)->type().bt()==Type::BT_INT) {
+                argctx.i = C_MIX;
+              }
+            } else if (cid == constants().ids.sum && c->arg(i)->type().bt()==Type::BT_BOOL) {
+              argctx.b = argctx.i;
+            }
+            Expression* tmp = follow_id_to_decl(c->arg(i));
+            if (VarDecl* vd = tmp->dyn_cast<VarDecl>())
+              tmp = vd->id();
+            CallArgItem cai(env);
+            args_ee[i] = flat_exp(env,argctx,tmp,NULL,NULL);
+            isPartial |= isfalse(env, args_ee[i].b());
+          }
         }
       }
       if (isPartial && c->type().isbool() && !c->type().isopt()) {
