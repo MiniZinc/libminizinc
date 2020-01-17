@@ -450,6 +450,13 @@ function var opt bool: reverse_map_var_opt_bool(var bool: occ, var bool: d);
 function opt bool: reverse_map_var_opt_bool(bool: occ, bool: d) ::promise_total =
   if occ then d else <> endif;
 
+predicate mzn_reverse_map_var(var opt bool: x) =
+  let {
+    var bool : b = occurs_internal_bool(x);
+    var bool : dx = deopt_internal_bool(x);
+    constraint (x = reverse_map_var_opt_bool(b,dx)) :: is_reverse_map;
+  } in true;
+
 predicate bool_opt_eq(var opt bool: x, var opt bool: y) =
   deopt(x)=deopt(y) /\ occurs(x)=occurs(y);
 
@@ -576,6 +583,13 @@ function var int : deopt_internal_int(var opt int : x) ::promise_total =
 function var opt int: reverse_map_var_opt_int(var bool: occ, var int: d);
 function opt int: reverse_map_var_opt_int(bool: occ, int: d) ::promise_total =
   if occ then d else <> endif;
+
+predicate mzn_reverse_map_var(var opt int: x) =
+  let {
+    var bool : b = occurs_internal_int(x);
+    var int : dx = deopt_internal_int(x);
+    constraint (x = reverse_map_var_opt_int(b,dx)) :: is_reverse_map;
+  } in true;
 
 predicate var_dom(var opt int:x, set of int: s) =
   let {
@@ -860,6 +874,13 @@ function var float : deopt_internal_float(var opt float : x) ::promise_total =
 function var opt float: reverse_map_var_opt_float(var bool: occ, var float: d); % :NOTE: Must define in cpp?
 function opt float: reverse_map_var_opt_float(bool: occ, float: d) ::promise_total =
   if occ then d else <> endif;
+
+predicate mzn_reverse_map_var(var opt float: x) =
+  let {
+    var bool : b = occurs_internal_float(x);
+    var float : dx = deopt_internal_float(x);
+    constraint (x = reverse_map_var_opt_float(b,dx)) :: is_reverse_map;
+  } in true;
 
 % :NOTE: does it apply to float?
 /*
