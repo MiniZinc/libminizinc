@@ -38,14 +38,7 @@ def file():
                 k: v
                 for k, v in test.__dict__.items()
                 if v is not yaml.Undefined
-                and k
-                in [
-                    "name",
-                    "solvers",
-                    "check_against",
-                    "markers",
-                    "type",
-                ]
+                and k in ["name", "solvers", "check_against", "markers", "type",]
             }
             for test in tests
         ]
@@ -108,6 +101,7 @@ def generate():
             for x in all_vars:
                 if x not in variables:
                     delattr(solution, x)
+        return solution
 
     test = load_spec(data)
 
