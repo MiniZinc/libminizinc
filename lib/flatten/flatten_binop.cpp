@@ -1059,7 +1059,7 @@ namespace MiniZinc {
           if (!boe0->type().isopt() && istrue(env, boe1)) {
             return flat_exp(env, ctx, boe0, r, b);
           }
-          if (r && r==constants().var_true) {
+          if (!boe0->type().isopt() && !boe1->type().isopt() && r && r==constants().var_true) {
             if (boe1->type().ispar() || boe1->isa<Id>())
               std::swap(boe0,boe1);
             if (istrue(env,boe0)) {
