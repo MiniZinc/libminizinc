@@ -250,14 +250,12 @@ namespace MiniZinc {
   /// Check if \a e is NULL or true
   bool istrue(EnvI& env, Expression* e) {
     GCLock lock;
-    return e==NULL || (e->type().ispar() && e->type().isbool()
-                       && eval_bool(env,e));
+    return e==NULL || (e->type() == Type::parbool() && eval_bool(env,e));
   }  
   /// Check if \a e is non-NULL and false
   bool isfalse(EnvI& env, Expression* e) {
     GCLock lock;
-    return e!=NULL && e->type().ispar() && e->type().isbool()
-           && !eval_bool(env,e);
+    return e!=NULL && e->type() == Type::parbool() && !eval_bool(env,e);
   }  
 
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
