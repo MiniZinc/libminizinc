@@ -475,6 +475,14 @@ predicate bool_eq(var opt bool: b0, var bool: b1) =
 predicate bool_eq(var bool: b0, var opt bool: b1) =
   occurs(b1) /\ deopt(b1)=b0;
 
+/** @group optiontypes.bool Return truth value of \a x &and; \a y with identity <> = True*/
+function var bool: '/\'(var opt bool: x, var opt bool: y) = (absent(x) \/ deopt(x)) /\ (absent(y) \/ deopt(y));
+function bool: '/\'(opt bool: x, opt bool: y) = (absent(x) \/ deopt(x)) /\ (absent(y) \/ deopt(y));
+
+/** @group optiontypes.bool Return truth value of \a x &or; \a y with identity <> = False*/
+function var bool: '\/'(var opt bool: x, var opt bool: y) = (occurs(x) /\ deopt(x)) \/ (occurs(y) /\ deopt(y));
+function bool: '\/'(opt bool: x, opt bool: y) = (occurs(x) /\ deopt(x)) \/ (occurs(y) /\ deopt(y));
+
 /** @group optiontypes.bool True iff for any \p i, \a x[i] is absent or true */
 predicate forall (array[int] of var opt bool: x) =
   forall ([absent(x[i]) \/ deopt(x[i]) | i in index_set(x)]);
@@ -485,6 +493,7 @@ predicate exists (array[int] of var opt bool: x) =
 
 /** @group optiontypes.bool True iff \a x is absent or false */
 function var bool: 'not'(var opt bool: x) = absent(x) \/ not deopt(x);
+function bool: 'not'(opt bool: x) = absent(x) \/ not deopt(x);
 
 /** @group optiontypes.bool Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt bool: element(var opt int: idx, array[int] of var bool: x) =
