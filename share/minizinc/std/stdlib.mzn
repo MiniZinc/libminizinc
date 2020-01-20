@@ -1038,12 +1038,12 @@ function float: '*'(opt float: x, opt float: y) ::promise_total =
   if occurs(x) then deopt(x) else 1 endif * if occurs(y) then deopt(y) else 1 endif;
 
 /** @group optiontypes.float Optional division. Return \a x div \a y, with absent replaced by 1. */
-function var float: 'div'(var opt float: x, var opt float: y) ::promise_total =
-  if occurs(x) then deopt(x) else 1 endif div if occurs(y) then deopt(y) else 1 endif;
+function var float: '/'(var opt float: x, var opt float: y) ::promise_total =
+  if occurs(x) then deopt(x) else 1 endif / if occurs(y) then deopt(y) else 1 endif;
 
 /** @group optiontypes.float Optional division. Return \a x div \a y, with absent replaced by 1. */
-function float: 'div'(opt float: x, opt float: y) ::promise_total =
-  if occurs(x) then deopt(x) else 1 endif div if occurs(y) then deopt(y) else 1 endif;
+function float: '/'(opt float: x, opt float: y) ::promise_total =
+  if occurs(x) then deopt(x) else 1 endif / if occurs(y) then deopt(y) else 1 endif;
 
 /** @group optiontypes.float Optional modulo. Return \a x mod \a y, with absent replaced by 1. */
 function var float: 'mod'(var opt float: x, var opt float: y) ::promise_total =
