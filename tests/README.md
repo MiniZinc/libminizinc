@@ -19,6 +19,11 @@ pytest
 
 An HTML report will be generated at `output/report.html`.
 
+Use the `--solvers` option to specify a subset of solvers to use in the tests. Tests which use a solver not in this list will be skipped.
+```sh
+pytest --solvers gecode,chuffed
+```
+
 ## Multiple test suites
 
 To facilitate running the test suite with different minizinc options, `specs/suites.yml` contains configurations for running tests, or a subset of tests using different options.
