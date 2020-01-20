@@ -145,7 +145,8 @@ class MznItem(pytest.Item):
         for marker in markers:
             self.add_marker(marker)
 
-        allowed = suite.solvers
+        allowed = [x.strip() for x in self.config.getoption("--solvers").split(",")]
+        allowed = [x for x in allowed if x in suite.solvers]
         if solver not in allowed:
             self.add_marker(
                 pytest.mark.skip("skipping {} not in {}".format(solver, allowed))
@@ -204,6 +205,13 @@ class SolveItem(MznItem):
 class CheckItem(MznItem):
     def __init__(self, name, parent, cache, solver, checker, markers, suite):
         super().__init__(name, parent, solver, markers, suite)
+        allowed = [x.strip() for x in self.config.getoption("--solvers").split(",")]
+        allowed = [x for x in allowed if x in suite.solvers]
+        if checker not in allowed:
+            self.add_marker(
+                pytest.mark.skip("skipping checker {} not in {}".format(checker, allowed))
+            )
+
         self.cache = cache
         self.solver = solver
         self.checker = checker
