@@ -3316,6 +3316,7 @@ namespace MiniZinc {
     e->ann().remove(constants().ann.maybe_partial);
     e->ann().remove(constants().ann.add_to_output);
     e->ann().remove(constants().ann.rhs_from_assignment);
+    e->ann().remove(constants().ann.mzn_was_undefined);
     // Remove defines_var(x) annotation where x is par
     std::vector<Expression*> removeAnns;
     for (ExpressionSetIter anns = e->ann().begin(); anns != e->ann().end(); ++anns) {
@@ -3608,6 +3609,7 @@ namespace MiniZinc {
     vd->ann().remove(constants().ann.add_to_output);
     vd->ann().remove(constants().ann.mzn_check_var);
     vd->ann().remove(constants().ann.rhs_from_assignment);
+    vd->ann().remove(constants().ann.mzn_was_undefined);
     vd->ann().removeCall(constants().ann.mzn_check_enum_var);
 
     return added_constraints;

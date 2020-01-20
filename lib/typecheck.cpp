@@ -2337,6 +2337,7 @@ namespace MiniZinc {
           ts.decls[i]->type().ispar() && !ts.decls[i]->type().isann() && ts.decls[i]->e()==NULL) {
         if (ts.decls[i]->type().isopt() && ts.decls[i]->type().dim()==0) {
           ts.decls[i]->e(constants().absent);
+          ts.decls[i]->addAnnotation(constants().ann.mzn_was_undefined);
         } else if (!ignoreUndefinedParameters) {
           typeErrors.push_back(TypeError(env.envi(), ts.decls[i]->loc(),
                                          "  symbol error: variable `" + ts.decls[i]->id()->str().str()
@@ -2522,7 +2523,9 @@ namespace MiniZinc {
       }
       void vVarDeclI(VarDeclI* vdi) {
         VarDecl* vd = vdi->e();
-        if (vd->type().ispar() && !vd->type().isann() && (vd->e()==NULL || vd->e()==constants().absent)) {
+        if (vd->type().ispar() && !vd->type().isann() &&
+            (vd->e()==NULL ||
+             (vd->e()==constants().absent && vd->ann().contains(constants().ann.mzn_was_undefined)))) {
           if (had_input) oss_input << ",\n";
           output_var_desc_json(env, vd, oss_input);
           had_input = true;

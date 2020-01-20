@@ -1536,7 +1536,9 @@ namespace MiniZinc {
     ann.domain_change_constraint = new Id(Location(), ASTString("domain_change_constraint"), NULL);
     ann.domain_change_constraint->type(Type::ann());
     ann.mzn_deprecated = ASTString("mzn_deprecated");
-
+    ann.mzn_was_undefined = new Id(Location(), ASTString("mzn_was_undefined"), NULL);
+    ann.mzn_was_undefined->type(Type::ann());
+    
     var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
                               std::vector<VarDecl*>());
     
@@ -1748,6 +1750,7 @@ namespace MiniZinc {
     v.push_back(ann.rhs_from_assignment);
     v.push_back(ann.domain_change_constraint);
     v.push_back(new StringLit(Location(), ann.mzn_deprecated));
+    v.push_back(ann.mzn_was_undefined);
 
     v.push_back(new StringLit(Location(),cli.cmdlineData_short_str));
     v.push_back(new StringLit(Location(),cli.cmdlineData_str));

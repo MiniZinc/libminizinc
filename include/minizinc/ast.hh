@@ -1783,6 +1783,7 @@ namespace MiniZinc {
         Id* rhs_from_assignment;
         Id* domain_change_constraint;
         ASTString mzn_deprecated;
+        Id* mzn_was_undefined;
       } ann;
 
       /// Command line options
