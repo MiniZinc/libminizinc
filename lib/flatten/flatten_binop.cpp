@@ -133,6 +133,67 @@ namespace MiniZinc {
         assert(false); return ASTString("");
     }
   }
+
+  ASTString opToId(BinOpType bot) {
+    switch (bot) {
+      case BOT_PLUS:
+        return ASTString("'+'");
+      case BOT_MINUS:
+        return ASTString("'-'");
+      case BOT_MULT:
+        return ASTString("'*'");
+      case BOT_DIV:
+        return ASTString("'/'");
+      case BOT_IDIV:
+        return ASTString("'div'");
+      case BOT_MOD:
+        return ASTString("'mod'");
+      case BOT_LE:
+        return ASTString("'<'");
+      case BOT_LQ:
+        return ASTString("'<='");
+      case BOT_GR:
+        return ASTString("'>'");
+      case BOT_GQ:
+        return ASTString("'>='");
+      case BOT_EQ:
+        return ASTString("'='");
+      case BOT_NQ:
+        return ASTString("'!='");
+      case BOT_IN:
+        return ASTString("'in'");
+      case BOT_SUBSET:
+        return ASTString("'subset'");
+      case BOT_SUPERSET:
+        return ASTString("'superset'");
+      case BOT_UNION:
+        return ASTString("'union'");
+      case BOT_DIFF:
+        return ASTString("'diff'");
+      case BOT_SYMDIFF:
+        return ASTString("'symdiff'");
+      case BOT_INTERSECT:
+        return ASTString("'intersect'");
+      case BOT_PLUSPLUS:
+        return ASTString("'++'");
+      case BOT_DOTDOT:
+        return ASTString("'..'");
+      case BOT_EQUIV:
+        return ASTString("'<->'");
+      case BOT_IMPL:
+        return ASTString("'->'");
+      case BOT_RIMPL:
+        return ASTString("'<-'");
+      case BOT_OR:
+        return ASTString("'\\/'");
+      case BOT_AND:
+        return ASTString("'/\\'");
+      case BOT_XOR:
+        return ASTString("'xor'");
+      default:
+        assert(false); return ASTString("");
+    }
+  }
   
   bool isReverseMap(BinOp* e) {
     return e->ann().contains(constants().ann.is_reverse_map);
@@ -875,7 +936,7 @@ namespace MiniZinc {
         std::vector<Expression*> args(2);
         args[0] = e0.r(); args[1] = e1.r();
         Call* cc;
-        if (bo->decl()) {
+        if (!isBuiltin) {
           cc = new Call(bo->loc().introduce(),bo->opToString(),args);
         } else {
           cc = new Call(bo->loc().introduce(),opToBuiltin(args[0],args[1],bot),args);
@@ -1335,7 +1396,7 @@ namespace MiniZinc {
             flatten_linexp_binop<FloatLit>(env,ctx,r,b,ret,le0,le1,bot,doubleNeg,ees,args,callid);
           }
         } else {
-          if (bo->decl()==NULL) {
+          if (isBuiltin) {
             switch (bot) {
               case BOT_GR:
                 std::swap(e0,e1);
@@ -1358,8 +1419,8 @@ namespace MiniZinc {
           
           if (callid=="") {
             assert(args.size()==2);
-            if (bo->decl()) {
-              callid = bo->decl()->id();
+            if (!isBuiltin) {
+              callid = opToId(bot);
             } else {
               callid = opToBuiltin(args[0](),args[1](),bot);
             }
