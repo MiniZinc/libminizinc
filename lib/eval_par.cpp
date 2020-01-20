@@ -1995,6 +1995,9 @@ namespace MiniZinc {
           case Expression::E_BINOP:
           {
             BinOp* bo = e->cast<BinOp>();
+            if (bo->decl() && bo->decl()->e()) {
+              return eval_call<EvalPar,BinOp>(env,bo);
+            }
             BinOp* nbo = new BinOp(e->loc(),eval_par(env,bo->lhs()),bo->op(),eval_par(env,bo->rhs()));
             nbo->type(bo->type());
             return nbo;
