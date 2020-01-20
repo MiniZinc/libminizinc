@@ -766,9 +766,6 @@ function var opt int: 'mod'(var opt int: x, var opt int: y) =
 function opt int: 'mod'(opt int: x, opt int: y) =
   if occurs(x) /\ occurs(y) then deopt(x) mod deopt(y) else <> endif;
 
-function int: 'mod'(int: x, opt int: y) =
-  if absent(y) then x else x mod deopt(y) endif;
-
 /** @group optiontypes.int Return sum of non-absent elements of \a x. */
 function var int: sum(array[int] of var opt int: x) =
   sum (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 0 endif);
