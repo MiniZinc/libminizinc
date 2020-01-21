@@ -694,7 +694,7 @@ namespace MiniZinc {
     return isv->max();
   }
   IntSetVal* b_lb_set(EnvI& env, Call* e) {
-    Expression* ee = eval_par(env, e->arg(0));
+    Expression* ee = follow_id_to_value(e->arg(0));
     if (ee->type().ispar()) {
       return eval_intset(env, ee);
     }
@@ -1099,12 +1099,12 @@ namespace MiniZinc {
   
   Expression* exp_is_fixed(EnvI& env, Expression* e) {
     GCLock lock;
-    Expression* cur = eval_par(env,e);
+    Expression* cur = e;
     for (;;) {
       if (cur==NULL)
         return NULL;
       if (cur->type().ispar())
-        return cur;
+        return eval_par(env, cur);
       switch (cur->eid()) {
         case Expression::E_ID:
           cur = cur->cast<Id>()->decl();
