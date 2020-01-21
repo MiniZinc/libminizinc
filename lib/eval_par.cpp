@@ -2025,6 +2025,29 @@ namespace MiniZinc {
             }
             return eval_par(env,eval_arrayaccess(env,aa));
           }
+          case Expression::E_LET:
+          {
+            Let* l = e->cast<Let>();
+            assert(l->type().ispar());
+            l->pushbindings();
+            for (unsigned int i=0; i<l->let().size(); i++) {
+              // Evaluate all variable declarations
+              if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+                vdi->e(eval_par(env, vdi->e()));
+                checkParDeclaration(env, vdi);
+              } else {
+                // This is a constraint item. Since the let is par,
+                // it can only be a par bool expression. If it evaluates
+                // to false, it means that the value of this let is undefined.
+                if (!eval_bool(env, l->let()[i])) {
+                  throw ResultUndefinedError(env, l->let()[i]->loc(),"constraint in let failed");
+                }
+              }
+            }
+            Expression* ret = eval_par(env,l->in());
+            l->popbindings();
+            return ret;
+          }
           default:
             return e;
         }
