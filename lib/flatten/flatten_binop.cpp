@@ -827,6 +827,52 @@ namespace MiniZinc {
     Expression* boe1 = bo->rhs();
     bool isBuiltin = bo->decl()==NULL || bo->decl()->e()==NULL;
     switch (bot) {
+      case BOT_AND:
+        if (isBuiltin) {
+          if (r == constants().var_true) {
+            Ctx nctx;
+            nctx.neg = negArgs;
+            nctx.b = negArgs ? C_NEG : C_ROOT;
+            std::vector<Expression*> todo;
+            todo.push_back(boe1);
+            todo.push_back(boe0);
+            while (!todo.empty()) {
+              Expression* e_todo = todo.back();
+              todo.pop_back();
+              BinOp* e_bo = e_todo->dyn_cast<BinOp>();
+              if (e_bo && e_bo->op() == (negArgs ? BOT_OR : BOT_AND)) {
+                todo.push_back(e_bo->rhs());
+                todo.push_back(e_bo->lhs());
+              } else {
+                (void)flat_exp(env, nctx, e_todo, constants().var_true, constants().var_true);
+              }
+            }
+            ret.r = bind(env, ctx, r, constants().lit_true);
+            break;
+          } else {
+            GC::lock();
+            Call* c = aggregateAndOrOps(env, bo, negArgs, bot);
+            KeepAlive ka(c);
+            GC::unlock();
+            ret = flat_exp(env, ctx, c, r, b);
+            if (Id* id = ret.r()->dyn_cast<Id>()) {
+              addCtxAnn(id->decl(), ctx.b);
+            }
+          }
+          break;
+        }
+      case BOT_OR:
+        if (isBuiltin) {
+          GC::lock();
+          Call* c = aggregateAndOrOps(env, bo, negArgs, bot);
+          KeepAlive ka(c);
+          GC::unlock();
+          ret = flat_exp(env, ctx, c, r, b);
+          if (Id* id = ret.r()->dyn_cast<Id>()) {
+            addCtxAnn(id->decl(), ctx.b);
+          }
+          break;
+        }
       case BOT_PLUS:
         if (isBuiltin) {
           KeepAlive ka;
@@ -962,53 +1008,6 @@ namespace MiniZinc {
         }
       }
         GC::unlock();
-        break;
-        
-      case BOT_AND:
-      {
-        if (r==constants().var_true) {
-          Ctx nctx;
-          nctx.neg = negArgs;
-          nctx.b = negArgs ? C_NEG : C_ROOT;
-          std::vector<Expression*> todo;
-          todo.push_back(boe1);
-          todo.push_back(boe0);
-          while (!todo.empty()) {
-            Expression* e_todo = todo.back();
-            todo.pop_back();
-            BinOp* e_bo = e_todo->dyn_cast<BinOp>();
-            if (e_bo && e_bo->op() == (negArgs ? BOT_OR : BOT_AND)) {
-              todo.push_back(e_bo->rhs());
-              todo.push_back(e_bo->lhs());
-            } else {
-              (void) flat_exp(env,nctx,e_todo,constants().var_true,constants().var_true);
-            }
-          }
-          ret.r = bind(env,ctx,r,constants().lit_true);
-          break;
-        } else {
-          GC::lock();
-          Call* c = aggregateAndOrOps(env, bo, negArgs, bot);
-          KeepAlive ka(c);
-          GC::unlock();
-          ret = flat_exp(env,ctx,c,r,b);
-          if (Id* id = ret.r()->dyn_cast<Id>()) {
-            addCtxAnn(id->decl(), ctx.b);
-          }
-        }
-        break;
-      }
-      case BOT_OR:
-      {
-        GC::lock();
-        Call* c = aggregateAndOrOps(env, bo, negArgs, bot);
-        KeepAlive ka(c);
-        GC::unlock();
-        ret = flat_exp(env,ctx,c,r,b);
-        if (Id* id = ret.r()->dyn_cast<Id>()) {
-          addCtxAnn(id->decl(), ctx.b);
-        }
-      }
         break;
       case BOT_RIMPL:
       {
