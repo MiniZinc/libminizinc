@@ -314,6 +314,13 @@ namespace MiniZinc {
       {
         BinOp* b = e->cast<BinOp>();
         BinOp* c = new BinOp(copy_location(m,e),NULL,b->op(),NULL);
+        if (b->decl()) {
+          if (copyFundecls) {
+            c->decl(Item::cast<FunctionI>(copy(env,m,b->decl())));
+          } else {
+            c->decl(b->decl());
+          }
+        }
         m.insert(e,c);
         c->lhs(copy(env,m,b->lhs(),followIds,copyFundecls,isFlatModel));
         c->rhs(copy(env,m,b->rhs(),followIds,copyFundecls,isFlatModel));
@@ -324,6 +331,13 @@ namespace MiniZinc {
       {
         UnOp* b = e->cast<UnOp>();
         UnOp* c = new UnOp(copy_location(m,e),b->op(),NULL);
+        if (b->decl()) {
+          if (copyFundecls) {
+            c->decl(Item::cast<FunctionI>(copy(env,m,b->decl())));
+          } else {
+            c->decl(b->decl());
+          }
+        }
         m.insert(e,c);
         c->e(copy(env,m,b->e(),followIds,copyFundecls,isFlatModel));
         ret = c;
