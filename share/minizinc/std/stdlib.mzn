@@ -491,9 +491,9 @@ predicate forall (array[int] of var opt bool: x) =
 predicate exists (array[int] of var opt bool: x) =
   exists ([occurs(x[i]) /\ deopt(x[i]) | i in index_set(x)]);
 
-/** @group optiontypes.bool True iff \a x is absent or false */
-function var bool: 'not'(var opt bool: x) = absent(x) \/ not deopt(x);
-function bool: 'not'(opt bool: x) = absent(x) \/ not deopt(x);
+/** @group optiontypes.bool Negation of \a x if it occurs, otherwise absent */
+function var opt bool: 'not'(var opt bool: x) = if absent(x) then <> else not deopt(x) endif;
+function opt bool: 'not'(opt bool: x) = if absent(x) then <> else not deopt(x) endif;
 
 /** @group optiontypes.bool Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt bool: element(var opt int: idx, array[int] of var bool: x) =
