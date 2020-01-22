@@ -1,3 +1,5 @@
+include "global_cardinality.mzn";
+
 predicate fzn_inverse_in_range(array[int] of var int: f,
                   array[int] of var int: invf) =
     forall(i in index_set(f)) (
@@ -7,4 +9,18 @@ predicate fzn_inverse_in_range(array[int] of var int: f,
     forall(j in index_set(invf)) (
         invf[j] in index_set(f) ->
         (f[invf[j]] == j)
-    );
+    ) /\
+    redundant_constraint( improve_injection(f, invf) )
+    /\
+    redundant_constraint( improve_injection(invf, f) );
+
+predicate improve_injection(array[int] of var int: f,
+                  array[int] of var int: invf) =
+    let {
+      set of int: sinvf = { i | i in index_set(invf) where
+                            dom(invf[i]) subset index_set(f) },
+    } in
+      global_cardinality(f,
+        [ i | i in sinvf ],
+        [ 1 | i in sinvf ]
+      );
