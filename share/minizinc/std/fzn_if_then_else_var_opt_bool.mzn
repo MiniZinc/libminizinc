@@ -1,5 +1,9 @@
-include "fzn_if_then_else_var_bool.mzn";
-
 predicate fzn_if_then_else_var_opt_bool(array[int] of var bool: c, array[int] of var opt bool: x, var opt bool: y) =
-  fzn_if_then_else_var_bool(array1d(c),[deopt_bool(x[i]) | i in index_set(x)],deopt_bool(y)) /\
-  fzn_if_then_else_var_bool(array1d(c),[occurs_bool(x[i]) | i in index_set(x)],occurs_bool(y));
+  let { array[index_set(c)] of var bool: d; } in
+  forall(i in index_set(c))
+        (if i > min(index_set(c)) then
+            d[i] = (not c[i-1] /\ d[i-1])
+         else
+            d[i] = true
+         endif) /\
+  forall (i in index_set(c)) (c[i] /\ d[i] -> y=x[i]);
