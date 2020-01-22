@@ -196,17 +196,22 @@ bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
     return true;
   ostringstream oss;
   if ( !checkerModel.empty() ) {
-    checkSolution(pEnv->envi().checker_output);
+    auto& checkerStream = pEnv->envi().checker_output;
+    checkerStream.clear();
+    checkerStream.str("");
+    checkSolution(checkerStream);
   }
   if (!__evalOutput( oss )) {
     return false;
   }
   {
+    auto& checkerStream = pEnv->envi().checker_output;
+    checkerStream.flush();
     std::string line;
-    if (std::getline(pEnv->envi().checker_output, line)) {
+    if (std::getline(checkerStream, line)) {
       os << "% Solution checker report:\n";
       os << "% " << line << "\n";
-      while (std::getline(pEnv->envi().checker_output, line)) {
+      while (std::getline(checkerStream, line)) {
         os << "% " << line << "\n";
       }
     }

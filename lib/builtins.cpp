@@ -2328,6 +2328,7 @@ namespace MiniZinc {
 
   Expression* b_show_checker_output(EnvI& env, Call* call) {
     // Get checker output
+    env.checker_output.flush();
     std::string output = env.checker_output.str();
     // Reset checker output
     env.checker_output.str("");
