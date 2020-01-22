@@ -3125,11 +3125,14 @@ namespace MiniZinc {
           e = e->cast<Id>()->decl();
           break;
         case Expression::E_VARDECL:
-          if (e->cast<VarDecl>()->e() && e->cast<VarDecl>()->e()->isa<Id>())
-            e = e->cast<VarDecl>()->e();
+        {
+          Expression* vd_e = e->cast<VarDecl>()->e();
+          if (vd_e && vd_e->isa<Id>() && vd_e != constants().absent)
+            e = vd_e;
           else
             return e;
           break;
+        }
         default:
           return e;
       }
