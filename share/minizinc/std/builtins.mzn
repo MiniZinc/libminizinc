@@ -41,7 +41,11 @@ function var bool: '='(var opt $T: x,var opt $T: y);
 /** @group builtins.compare Return if \a x is not equal to \a y */
 function     bool: '!='(    $T: x,     $T: y);
 /** @group builtins.compare Return if \a x is not equal to \a y */
+function     bool: '!='(opt $T: x, opt $T: y);
+/** @group builtins.compare Return if \a x is not equal to \a y */
 function var bool: '!='(var $T: x, var $T: y);
+/** @group builtins.compare Return if \a x is not equal to \a y */
+function var bool: '!='(var opt $T: x, var opt $T: y);
 
 % Special case comparison operators for integer variable and float constant
 function var bool: '<='(var int: x, float: y) = (x <= floor(y));
