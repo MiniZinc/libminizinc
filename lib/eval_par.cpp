@@ -2005,6 +2005,9 @@ namespace MiniZinc {
           case Expression::E_UNOP:
           {
             UnOp* uo = e->cast<UnOp>();
+            if (uo->decl() && uo->decl()->e()) {
+              return eval_call<EvalPar, UnOp>(env, uo);
+            }
             UnOp* nuo = new UnOp(e->loc(),uo->op(),eval_par(env,uo->e()));
             nuo->type(uo->type());
             return nuo;
