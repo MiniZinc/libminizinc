@@ -35,6 +35,7 @@
     MZNARCH: "linux"
   tags: [linux, docker]
   dependencies: ["build:linux"]
+  needs: ["build:linux"]
 
 # OSX specific config
 .tests_osx:
@@ -43,6 +44,7 @@
     MZNARCH: "osx"
   tags: [osx]
   dependencies: ["build:osx"]
+  needs: ["build:osx"]
 
 # Windows specific config
 .tests_win64:
@@ -66,6 +68,7 @@
     - 'echo Test results at https://minizinc.gitlab.io/-/minizinc/-/jobs/%CI_JOB_ID%/artifacts/tests/output/report.html'
   tags: [win64]
   dependencies: ["build:win64"]
+  needs: ["build:win64"]
   cache:
     key: win64
 
