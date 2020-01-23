@@ -10,11 +10,11 @@ predicate fzn_inverse_in_range(array[int] of var int: f,
         invf[j] in index_set(f) ->
         (f[invf[j]] == j)
     ) /\
-    redundant_constraint( improve_injection(f, invf) )
+    redundant_constraint( strengthen_injection_for_inverse_in_range(f, invf) )
     /\
-    redundant_constraint( improve_injection(invf, f) );
+    redundant_constraint( strengthen_injection_for_inverse_in_range(invf, f) );
 
-predicate improve_injection(array[int] of var int: f,
+predicate strengthen_injection_for_inverse_in_range(array[int] of var int: f,
                   array[int] of var int: invf) =
     let {
       set of int: sinvf = { i | i in index_set(invf) where
