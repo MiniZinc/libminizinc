@@ -2129,8 +2129,14 @@ namespace MiniZinc {
         return false;
       if (e->type().ispar()) {
         if (e->type().isint()) {
-          IntVal v = eval_int(env,e);
-          _bounds.push_back(Bounds(v,v));
+          Expression* exp = eval_par(env, e);
+          if (exp == constants().absent) {
+            valid = false;
+          }
+          else {
+            IntVal v = exp->cast<IntLit>()->v();
+            _bounds.push_back(Bounds(v, v));
+          }
         } else {
           valid = false;
         }
@@ -2552,8 +2558,13 @@ namespace MiniZinc {
         return false;
       if (e->type().ispar()) {
         if (e->type().isfloat()) {
-          FloatVal v = eval_float(env,e);
-          _bounds.push_back(FBounds(v,v));
+          Expression* exp = eval_par(env, e);
+          if (exp == constants().absent) {
+            valid = false;
+          } else {
+            FloatVal v = exp->cast<FloatLit>()->v();
+            _bounds.push_back(FBounds(v, v));
+          }
         }
         return false;
       }
