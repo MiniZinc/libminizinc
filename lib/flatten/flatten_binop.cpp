@@ -914,8 +914,12 @@ namespace MiniZinc {
         if (e0.r()->type().ispar() && e1.r()->type().ispar()) {
           GCLock lock;
           BinOp* parbo = new BinOp(bo->loc(),e0.r(),bo->op(),e1.r());
-          Type tt = bo->type();
-          tt.ti(Type::TI_PAR);
+          std::vector<Expression*> args(2);
+          args[0] = e0.r(); args[1] = e1.r();
+          FunctionI* fi = env.model->matchFn(env, bo->opToString(), args, false);
+          parbo->decl(fi);
+          Type tt = fi->rtype(env, { e0.r()->type(), e1.r()->type() }, false);
+          assert(tt.ispar());
           parbo->type(tt);
           try {
             Expression* res = eval_par(env,parbo);
