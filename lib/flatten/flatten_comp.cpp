@@ -137,7 +137,7 @@ namespace MiniZinc {
           new_e->type(Type::varbool());
           ntype.ot(Type::OT_PRESENT);
         } else if (surround && surround->id()==constants().ids.sum) {
-          Call* if_b_else_zero = new Call(c->loc().introduce(), ASTString("if_b_else_zero"), {cond, c->e()});
+          ITE* if_b_else_zero = new ITE(c->loc().introduce(), { cond, c->e() }, IntLit::a(0));
           Type tt;
           tt = c->e()->type();
           tt.ti(Type::TI_VAR);
@@ -146,7 +146,7 @@ namespace MiniZinc {
           new_e = if_b_else_zero;
           ntype.ot(Type::OT_PRESENT);
         } else {
-          Call* if_b_else_absent = new Call(c->loc().introduce(), ASTString("if_b_else_absent"), {cond, c->e()});
+          ITE* if_b_else_absent = new ITE(c->loc().introduce(), { cond, c->e() }, constants().absent);
           Type tt;
           tt = c->e()->type();
           tt.ti(Type::TI_VAR);
