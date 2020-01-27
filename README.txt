@@ -5,7 +5,7 @@ This package contains the MiniZinc constraint modelling
 language and tool chain. 
 
 For the full documentation, including installation and compilation
-instructions, see http://minizinc.org/doc-latest/index.html.
+instructions, see http://www.minizinc.org/doc-latest/index.html.
 
 ** Bugs **
 
