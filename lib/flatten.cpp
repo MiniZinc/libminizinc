@@ -1921,6 +1921,8 @@ namespace MiniZinc {
                   IntSetVal* isv = eval_intset(env, vd->ti()->domain());
                   for (unsigned int i=0; i<al->size(); i++) {
                     if (Id* id = (*al)[i]->dyn_cast<Id>()) {
+                      if (id == constants().absent)
+                        continue;
                       VarDecl* vdi = id->decl();
                       if (vdi->ti()->domain()==NULL) {
                         vdi->ti()->domain(vd->ti()->domain());

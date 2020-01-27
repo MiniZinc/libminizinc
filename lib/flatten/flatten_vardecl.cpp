@@ -51,7 +51,7 @@ namespace MiniZinc {
           if (vd->ti()->domain()) {
             for (unsigned int i=0; i<al->size(); i++) {
               if (Id* ali_id = (*al)[i]->dyn_cast<Id>()) {
-                if (ali_id->decl()->ti()->domain()==NULL) {
+                if (ali_id != constants().absent && ali_id->decl()->ti()->domain()==NULL) {
                   ali_id->decl()->ti()->domain(vd->ti()->domain());
                 }
               }
