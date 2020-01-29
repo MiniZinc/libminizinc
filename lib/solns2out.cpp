@@ -274,12 +274,39 @@ void Solns2Out::checkSolution(std::ostream& oss) {
     for (unsigned int i=0; i<getModel()->size(); i++) {
       if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
         if (vdi->e()->ann().contains(constants().ann.mzn_check_var)) {
+          checker << vdi->e()->id()->str() << " = ";
+          Expression* e = eval_par(getEnv()->envi(),vdi->e()->e());
+          ArrayLit* al = e->dyn_cast<ArrayLit>();
+          std::vector<Id*> enumids;
           if (Call* cev = vdi->e()->ann().getCall(constants().ann.mzn_check_enum_var)) {
-            checker << vdi->e()->id()->str() << "= to_enum(" << *cev->arg(0)->cast<Id>() << "," << *eval_par(getEnv()->envi(),vdi->e()->e()) << ");";
-          } else {
-            checker << vdi->e()->id()->str() << "=" << *eval_par(getEnv()->envi(),vdi->e()->e()) << ";";
+            ArrayLit* enumIdsAl = cev->arg(0)->cast<ArrayLit>();
+            for (int j=0; j<enumIdsAl->size(); j++) {
+              enumids.push_back((*enumIdsAl)[j]->dyn_cast<Id>());
+            }
           }
           
+          if (al) {
+            checker << "array" << al->dims() << "d(";
+            for (int i=0; i<al->dims(); i++) {
+              if (enumids.size() > 0 && enumids[i] != nullptr) {
+                checker << "to_enum(" << *enumids[i] << ",";
+              }
+              checker << al->min(i) << ".." << al->max(i);
+              if (enumids.size() > 0 && enumids[i] != nullptr) {
+                checker << ")";
+              }
+              checker << ",";
+            }
+          }
+          if (enumids.size() > 0 && enumids.back() != nullptr) {
+            checker << "to_enum(" << *enumids.back() << "," << *e << ")";
+          } else {
+            checker << *e;
+          }
+          if (al) {
+            checker << ")";
+          }
+          checker << ";\n";
         }
       }
     }

@@ -2358,18 +2358,25 @@ namespace MiniZinc {
         vd->ann().add(constants().ann.mzn_check_var);
         if (vd->type().enumId() != 0) {
           GCLock lock;
-          int enumId = vd->type().enumId();
+          std::vector<unsigned int> enumIds({vd->type().enumId()});
           if (vd->type().dim() > 0) {
-            const std::vector<unsigned int>& arrayEnumIds = env.envi().getArrayEnum(vd->type().enumId());
-            enumId = arrayEnumIds[arrayEnumIds.size()-1];
+            enumIds = env.envi().getArrayEnum(vd->type().enumId());
           }
-          if (enumId > 0) {
-            std::vector<Expression*> args({env.envi().getEnum(enumId)->e()->id()});
-            Call* checkEnum = new Call(Location().introduce(), constants().ann.mzn_check_enum_var, args);
-            checkEnum->type(Type::ann());
-            checkEnum->decl(env.envi().model->matchFn(env.envi(), checkEnum, false));
-            vd->ann().add(checkEnum);
+          std::vector<Expression*> enumIds_a(enumIds.size());
+          for (unsigned int i=0; i<enumIds.size(); i++) {
+            if (enumIds[i] != 0) {
+              enumIds_a[i] = env.envi().getEnum(enumIds[i])->e()->id();
+            } else {
+              enumIds_a[i] = new SetLit(Location().introduce(), std::vector<Expression*>());
+            }
           }
+          ArrayLit* enumIds_al = new ArrayLit(Location().introduce(), enumIds_a);
+          enumIds_al->type(Type::parsetint(1));
+          std::vector<Expression*> args({enumIds_al});
+          Call* checkEnum = new Call(Location().introduce(), constants().ann.mzn_check_enum_var, args);
+          checkEnum->type(Type::ann());
+          checkEnum->decl(env.envi().model->matchFn(env.envi(), checkEnum, false));
+          vd->ann().add(checkEnum);
         }
         Type vdktype = vd_k()->type();
         vdktype.ti(Type::TI_VAR);
