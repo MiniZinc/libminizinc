@@ -647,44 +647,51 @@ namespace MiniZinc {
           }
         }
         
+        std::unordered_set<Expression*> seen;
+        
         while (!pos_stack.empty() || !neg_stack.empty()) {
           
           while (!pos_stack.empty()) {
             Expression* cur = pos_stack.back();
             pos_stack.pop_back();
-            GCLock lock;
-            if (Call* sc = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.exists))) {
-              GCLock lock;
-              ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
-              for (unsigned int j=0; j<sc_c->size(); j++) {
-                pos_stack.push_back((*sc_c)[j]);
-              }
-            } else if (Call* sc = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.clause))) {
-              GCLock lock;
-              ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
-              for (unsigned int j=0; j<sc_c->size(); j++) {
-                pos_stack.push_back((*sc_c)[j]);
-              }
-              sc_c = eval_array_lit(env,sc->arg(1));
-              for (unsigned int j=0; j<sc_c->size(); j++) {
-                neg_stack.push_back((*sc_c)[j]);
-              }
+            if (cur->isa<Id>() && seen.find(cur) != seen.end()) {
+              pos_alv.push_back(cur);
             } else {
-              Call* eq_call = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.bool_eq));
-              if (eq_call && Expression::equal(eq_call->arg(1),constants().lit_false)) {
-                neg_stack.push_back(eq_call->arg(0));
-              } else if (eq_call && Expression::equal(eq_call->arg(0),constants().lit_false)) {
-                neg_stack.push_back(eq_call->arg(1));
-              } else if (eq_call && Expression::equal(eq_call->arg(1),constants().lit_true)) {
-                pos_stack.push_back(eq_call->arg(0));
-              } else if (eq_call && Expression::equal(eq_call->arg(0),constants().lit_true)) {
-                pos_stack.push_back(eq_call->arg(1));
-              } else if (Id* ident = cur->dyn_cast<Id>()) {
-                if (ident->decl()->ti()->domain()!=constants().lit_false) {
-                  pos_alv.push_back(ident);
+              seen.insert(cur);
+              GCLock lock;
+              if (Call* sc = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.exists))) {
+                GCLock lock;
+                ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
+                for (unsigned int j=0; j<sc_c->size(); j++) {
+                  pos_stack.push_back((*sc_c)[j]);
+                }
+              } else if (Call* sc = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.clause))) {
+                GCLock lock;
+                ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
+                for (unsigned int j=0; j<sc_c->size(); j++) {
+                  pos_stack.push_back((*sc_c)[j]);
+                }
+                sc_c = eval_array_lit(env,sc->arg(1));
+                for (unsigned int j=0; j<sc_c->size(); j++) {
+                  neg_stack.push_back((*sc_c)[j]);
                 }
               } else {
-                pos_alv.push_back(cur);
+                Call* eq_call = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.bool_eq));
+                if (eq_call && Expression::equal(eq_call->arg(1),constants().lit_false)) {
+                  neg_stack.push_back(eq_call->arg(0));
+                } else if (eq_call && Expression::equal(eq_call->arg(0),constants().lit_false)) {
+                  neg_stack.push_back(eq_call->arg(1));
+                } else if (eq_call && Expression::equal(eq_call->arg(1),constants().lit_true)) {
+                  pos_stack.push_back(eq_call->arg(0));
+                } else if (eq_call && Expression::equal(eq_call->arg(0),constants().lit_true)) {
+                  pos_stack.push_back(eq_call->arg(1));
+                } else if (Id* ident = cur->dyn_cast<Id>()) {
+                  if (ident->decl()->ti()->domain()!=constants().lit_false) {
+                    pos_alv.push_back(ident);
+                  }
+                } else {
+                  pos_alv.push_back(cur);
+                }
               }
             }
           }
@@ -693,31 +700,35 @@ namespace MiniZinc {
             GCLock lock;
             Expression* cur = neg_stack.back();
             neg_stack.pop_back();
-            if (Call* sc = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.forall))) {
-              GCLock lock;
-              ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
-              for (unsigned int j=0; j<sc_c->size(); j++) {
-                neg_stack.push_back((*sc_c)[j]);
-              }
+            if (cur->isa<Id>() && seen.find(cur) != seen.end()) {
+              neg_alv.push_back(cur);
             } else {
-              Call* eq_call = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.bool_eq));
-              if (eq_call && Expression::equal(eq_call->arg(1),constants().lit_false)) {
-                pos_stack.push_back(eq_call->arg(0));
-              } else if (eq_call && Expression::equal(eq_call->arg(0),constants().lit_false)) {
-                pos_stack.push_back(eq_call->arg(1));
-              } else if (eq_call && Expression::equal(eq_call->arg(1),constants().lit_true)) {
-                neg_stack.push_back(eq_call->arg(0));
-              } else if (eq_call && Expression::equal(eq_call->arg(0),constants().lit_true)) {
-                neg_stack.push_back(eq_call->arg(1));
-              } else if (Id* ident = cur->dyn_cast<Id>()) {
-                if (ident->decl()->ti()->domain()!=constants().lit_true) {
-                  neg_alv.push_back(ident);
+              seen.insert(cur);
+              if (Call* sc = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.forall))) {
+                GCLock lock;
+                ArrayLit* sc_c = eval_array_lit(env,sc->arg(0));
+                for (unsigned int j=0; j<sc_c->size(); j++) {
+                  neg_stack.push_back((*sc_c)[j]);
                 }
               } else {
-                neg_alv.push_back(cur);
+                Call* eq_call = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.bool_eq));
+                if (eq_call && Expression::equal(eq_call->arg(1),constants().lit_false)) {
+                  pos_stack.push_back(eq_call->arg(0));
+                } else if (eq_call && Expression::equal(eq_call->arg(0),constants().lit_false)) {
+                  pos_stack.push_back(eq_call->arg(1));
+                } else if (eq_call && Expression::equal(eq_call->arg(1),constants().lit_true)) {
+                  neg_stack.push_back(eq_call->arg(0));
+                } else if (eq_call && Expression::equal(eq_call->arg(0),constants().lit_true)) {
+                  neg_stack.push_back(eq_call->arg(1));
+                } else if (Id* ident = cur->dyn_cast<Id>()) {
+                  if (ident->decl()->ti()->domain()!=constants().lit_true) {
+                    neg_alv.push_back(ident);
+                  }
+                } else {
+                  neg_alv.push_back(cur);
+                }
               }
             }
-
           }
           
         }
