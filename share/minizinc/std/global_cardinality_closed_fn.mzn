@@ -1,7 +1,7 @@
 include "global_cardinality_closed.mzn";
 
 /** @group globals.counting
-  Returns an array with number of occurences of \p i in \a x.
+  Returns an array with number of occurrences of \p i in \a x.
 
   The elements of \a x must take their values from \a cover.
 */

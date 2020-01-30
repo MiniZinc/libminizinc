@@ -11,7 +11,7 @@ include "fzn_geost_nonoverlap_k_reif.mzn";
  A global non-overlap constraint for \a k dimensional objects. It enforces that no two objects overlap.
     
 @param k:            the number of dimensions
-@param rect_size:    the size of each box in \a k dimensios
+@param rect_size:    the size of each box in \a k dimensions
 @param rect_offset:  the offset of each box from the base position in \a k dimensions
  
 @param shape:        the set of rectangles defining the \p i-th shape. 
@@ -55,7 +55,7 @@ predicate geost(
  A global non-overlap constraint for \a k dimensional objects. It enforces that no two objects overlap, and that all objects fit within a global \a k dimensional bounding box.
     
 @param k:            the number of dimensions
-@param rect_size:    the size of each box in \a k dimensios
+@param rect_size:    the size of each box in \a k dimensions
 @param rect_offset:  the offset of each box from the base position in \a k dimensions
  
 @param shape:        the set of rectangles defining the \p i-th shape. 
@@ -109,7 +109,7 @@ predicate geost_bb(
  A global non-overlap constraint for \a k dimensional objects. It enforces that no two objects overlap, and that all objects fit within a global \a k dimensional bounding box. In addition, it enforces that the bounding box is the smallest one containing all objects, i.e., each of the \a 2k boundaries is touched by at least by one object.
     
 @param k:            the number of dimensions
-@param rect_size:    the size of each box in \a k dimensios
+@param rect_size:    the size of each box in \a k dimensions
 @param rect_offset:  the offset of each box from the base position in \a k dimensions
  
 @param shape:        the set of rectangles defining the \p i-th shape. 

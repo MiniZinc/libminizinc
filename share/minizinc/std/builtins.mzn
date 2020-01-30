@@ -1102,55 +1102,55 @@ function set of $$E: index_set_5of6(array[int,int,int,int,$$E,int] of var opt $U
 function set of $$E: index_set_6of6(array[int,int,int,int,int,$$E] of var opt $U: x);
 
 /** @group builtins.array Return array \a x coerced to index set 1..length(\a x).
-  Coercions are perfomed by considering the array \a x in row-major order. */
+  Coercions are performed by considering the array \a x in row-major order. */
 function array[int] of $V: array1d(array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to index set 1..length(\a x).
-  Coercions are perfomed by considering the array \a x in row-major order.  */
+  Coercions are performed by considering the array \a x in row-major order.  */
 function array[int] of opt $V: array1d(array[$U] of opt $V: x);
 /** @group builtins.array Return array \a x coerced to index set 1..length(\a x).
-  Coercions are perfomed by considering the array \a x in row-major order.  */
+  Coercions are performed by considering the array \a x in row-major order.  */
 function array[int] of var $V: array1d(array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to index set 1..length(\a x).
-  Coercions are perfomed by considering the array \a x in row-major order.  */
+  Coercions are performed by considering the array \a x in row-major order.  */
 function array[int] of var opt $V: array1d(array[$U] of var opt $V: x);
 
 /** @group builtins.array Return array \a x coerced to one-dimensional array with index set \a S.
-  Coercions are perfomed by considering the array \a x in row-major order.  */
+  Coercions are performed by considering the array \a x in row-major order.  */
 function array[$$E] of $V: array1d(set of $$E: S,
                                    array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to one-dimensional array with index set \a S.
-  Coercions are perfomed by considering the array \a x in row-major order.  */
+  Coercions are performed by considering the array \a x in row-major order.  */
 function array[$$E] of opt $V: array1d(set of $$E: S,
                                        array[$U] of opt $V: x);
 /** @group builtins.array Return array \a x coerced to one-dimensional array with index set \a S.
-  Coercions are perfomed by considering the array \a x in row-major order.  */
+  Coercions are performed by considering the array \a x in row-major order.  */
 function array[$$E] of var $V: array1d(set of $$E: S,
                                        array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to one-dimensional array with index set \a S.
-  Coercions are perfomed by considering the array \a x in row-major order.  */
+  Coercions are performed by considering the array \a x in row-major order.  */
 function array[$$E] of var opt $V: array1d(set of $$E: S,
                                            array[$U] of var opt $V: x);
 
 /** @group builtins.array Return array \a x coerced to two-dimensional array with index sets \a S1 and \a S2.
-  Coercions are perfomed by considering the array \a x in row-major order.  */
+  Coercions are performed by considering the array \a x in row-major order.  */
 function array[$$E,$$F] of $V: array2d(set of $$E: S1, set of $$F: S2, 
                                        array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to two-dimensional array with index sets \a S1 and \a S2.
-  Coercions are perfomed by considering the array \a x in row-major order.  */
+  Coercions are performed by considering the array \a x in row-major order.  */
 function array[$$E,$$F] of opt $V: array2d(set of $$E: S1, set of $$F: S2, 
                                            array[$U] of opt $V: x);
 /** @group builtins.array Return array \a x coerced to two-dimensional array with index sets \a S1 and \a S2.
-  Coercions are perfomed by considering the array \a x in row-major order.  */
+  Coercions are performed by considering the array \a x in row-major order.  */
 function array[$$E,$$F] of var $V: array2d(set of $$E: S1, set of $$F: S2, 
                                            array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to two-dimensional array with index sets \a S1 and \a S2.
-  Coercions are perfomed by considering the array \a x in row-major order.  */
+  Coercions are performed by considering the array \a x in row-major order.  */
 function array[$$E,$$F] of var opt $V: array2d(set of $$E: S1, set of $$F: S2, 
                                                array[$U] of var opt $V: x);
 
 /** @group builtins.array Return array \a x coerced to three-dimensional array with
   index sets \a S1, \a S2 and \a S3.
-  Coercions are perfomed by considering the array \a x in row-major order. 
+  Coercions are performed by considering the array \a x in row-major order. 
 */
 function array[$$E,$$F,$$G] of $V: array3d(set of $$E: S1,
                                            set of $$F: S2,
@@ -1158,7 +1158,7 @@ function array[$$E,$$F,$$G] of $V: array3d(set of $$E: S1,
                                            array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to three-dimensional array with
   index sets \a S1, \a S2 and \a S3.
-  Coercions are perfomed by considering the array \a x in row-major order. 
+  Coercions are performed by considering the array \a x in row-major order. 
 */
 function array[$$E,$$F,$$G] of opt $V: array3d(set of $$E: S1,
                                                set of $$F: S2,
@@ -1166,7 +1166,7 @@ function array[$$E,$$F,$$G] of opt $V: array3d(set of $$E: S1,
                                                array[$U] of opt $V: x);
 /** @group builtins.array Return array \a x coerced to three-dimensional array with
   index sets \a S1, \a S2 and \a S3.
-  Coercions are perfomed by considering the array \a x in row-major order. 
+  Coercions are performed by considering the array \a x in row-major order. 
 */
 function array[$$E,$$F,$$G] of var $V: array3d(set of $$E: S1,
                                                set of $$F: S2,
@@ -1174,7 +1174,7 @@ function array[$$E,$$F,$$G] of var $V: array3d(set of $$E: S1,
                                                array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to three-dimensional array with
   index sets \a S1, \a S2 and \a S3.
-  Coercions are perfomed by considering the array \a x in row-major order. 
+  Coercions are performed by considering the array \a x in row-major order. 
 */
 function array[$$E,$$F,$$G] of var opt $V: array3d(set of $$E: S1,
                                                    set of $$F: S2,
@@ -1183,7 +1183,7 @@ function array[$$E,$$F,$$G] of var opt $V: array3d(set of $$E: S1,
 
 /** @group builtins.array Return array \a x coerced to 4-dimensional array with
   index sets \a S1, \a S2, \a S3 and \a S4.
-  Coercions are perfomed by considering the array \a x in row-major order. 
+  Coercions are performed by considering the array \a x in row-major order. 
 */
 function array[$$E,$$F,$$G,$$H] of $V: array4d(set of $$E: S1,
                                                set of $$F: S2,
@@ -1192,7 +1192,7 @@ function array[$$E,$$F,$$G,$$H] of $V: array4d(set of $$E: S1,
                                                array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to 4-dimensional array with
   index sets \a S1, \a S2, \a S3 and \a S4.
-  Coercions are perfomed by considering the array \a x in row-major order. 
+  Coercions are performed by considering the array \a x in row-major order. 
 */
 function array[$$E,$$F,$$G,$$H] of opt $V: array4d(set of $$E: S1,
                                                    set of $$F: S2,
@@ -1201,7 +1201,7 @@ function array[$$E,$$F,$$G,$$H] of opt $V: array4d(set of $$E: S1,
                                                    array[$U] of opt $V: x);
 /** @group builtins.array Return array \a x coerced to 4-dimensional array with
   index sets \a S1, \a S2, \a S3 and \a S4.
-  Coercions are perfomed by considering the array \a x in row-major order. 
+  Coercions are performed by considering the array \a x in row-major order. 
 */
 function array[$$E,$$F,$$G,$$H] of var $V: array4d(set of $$E: S1,
                                                    set of $$F: S2,
@@ -1210,7 +1210,7 @@ function array[$$E,$$F,$$G,$$H] of var $V: array4d(set of $$E: S1,
                                                    array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to 4-dimensional array with
   index sets \a S1, \a S2, \a S3 and \a S4.
-  Coercions are perfomed by considering the array \a x in row-major order. 
+  Coercions are performed by considering the array \a x in row-major order. 
 */
 function array[$$E,$$F,$$G,$$H] of var opt $V: array4d(set of $$E: S1,
                                                        set of $$F: S2,
@@ -1220,7 +1220,7 @@ function array[$$E,$$F,$$G,$$H] of var opt $V: array4d(set of $$E: S1,
 
 /** @group builtins.array Return array \a x coerced to 5-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4 and \a S5.
-  Coercions are perfomed by considering the array \a x in row-major order. 
+  Coercions are performed by considering the array \a x in row-major order. 
 */
 function array[$$E,$$F,$$G,$$H,$$I] of $V: array5d(set of $$E: S1,
                                                    set of $$F: S2,
@@ -1230,7 +1230,7 @@ function array[$$E,$$F,$$G,$$H,$$I] of $V: array5d(set of $$E: S1,
                                                    array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to 5-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4 and \a S5.
-  Coercions are perfomed by considering the array \a x in row-major order. 
+  Coercions are performed by considering the array \a x in row-major order. 
 */
 function array[$$E,$$F,$$G,$$H,$$I] of opt $V: array5d(set of $$E: S1,
                                                        set of $$F: S2,
@@ -1240,7 +1240,7 @@ function array[$$E,$$F,$$G,$$H,$$I] of opt $V: array5d(set of $$E: S1,
                                                        array[$U] of opt $V: x);
 /** @group builtins.array Return array \a x coerced to 5-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4 and \a S5.
-  Coercions are perfomed by considering the array \a x in row-major order. 
+  Coercions are performed by considering the array \a x in row-major order. 
 */
 function array[$$E,$$F,$$G,$$H,$$I] of var $V: array5d(set of $$E: S1,
                                                        set of $$F: S2,
@@ -1250,7 +1250,7 @@ function array[$$E,$$F,$$G,$$H,$$I] of var $V: array5d(set of $$E: S1,
                                                        array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to 5-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4 and \a S5.
-  Coercions are perfomed by considering the array \a x in row-major order. 
+  Coercions are performed by considering the array \a x in row-major order. 
 */
 function array[$$E,$$F,$$G,$$H,$$I] of var opt $V: array5d(set of $$E: S1,
                                                            set of $$F: S2,
@@ -1261,7 +1261,7 @@ function array[$$E,$$F,$$G,$$H,$$I] of var opt $V: array5d(set of $$E: S1,
 
 /** @group builtins.array Return array \a x coerced to 6-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4, \a S5 and \a S6.
-  Coercions are perfomed by considering the array \a x in row-major order. 
+  Coercions are performed by considering the array \a x in row-major order. 
 */
 function array[$$E,$$F,$$G,$$H,$$I,$$J] of $V: array6d(set of $$E: S1,
                                                        set of $$F: S2,
@@ -1272,7 +1272,7 @@ function array[$$E,$$F,$$G,$$H,$$I,$$J] of $V: array6d(set of $$E: S1,
                                                        array[$U] of $V: x);
 /** @group builtins.array Return array \a x coerced to 6-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4, \a S5 and \a S6.
-  Coercions are perfomed by considering the array \a x in row-major order. 
+  Coercions are performed by considering the array \a x in row-major order. 
 */
 function array[$$E,$$F,$$G,$$H,$$I,$$J] of opt $V: array6d(set of $$E: S1,
                                                            set of $$F: S2,
@@ -1283,7 +1283,7 @@ function array[$$E,$$F,$$G,$$H,$$I,$$J] of opt $V: array6d(set of $$E: S1,
                                                            array[$U] of opt $V: x);
 /** @group builtins.array Return array \a x coerced to 6-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4, \a S5 and \a S6.
-  Coercions are perfomed by considering the array \a x in row-major order. 
+  Coercions are performed by considering the array \a x in row-major order. 
 */
 function array[$$E,$$F,$$G,$$H,$$I,$$J] of var $V: array6d(set of $$E: S1,
                                                            set of $$F: S2,
@@ -1294,7 +1294,7 @@ function array[$$E,$$F,$$G,$$H,$$I,$$J] of var $V: array6d(set of $$E: S1,
                                                            array[$U] of var $V: x);
 /** @group builtins.array Return array \a x coerced to 6-dimensional array with
   index sets \a S1, \a S2, \a S3, \a S4, \a S5 and \a S6.
-  Coercions are perfomed by considering the array \a x in row-major order. 
+  Coercions are performed by considering the array \a x in row-major order. 
 */
 function array[$$E,$$F,$$G,$$H,$$I,$$J] of var opt $V: array6d(set of $$E: S1,
                                                                set of $$F: S2,
@@ -1306,22 +1306,22 @@ function array[$$E,$$F,$$G,$$H,$$I,$$J] of var opt $V: array6d(set of $$E: S1,
 
 /** @group builtins.array Return array \a y coerced to array with same number of
   dimensions and same index sets as array \a x.
-  Coercions are perfomed by considering the array \a y in row-major order. 
+  Coercions are performed by considering the array \a y in row-major order. 
 */
 function array[$T] of $V: arrayXd(array[$T] of var opt $X: x, array[$U] of $V: y);
 /** @group builtins.array Return array \a y coerced to array with same number of
   dimensions and same index sets as array \a x.
-  Coercions are perfomed by considering the array \a y in row-major order. 
+  Coercions are performed by considering the array \a y in row-major order. 
 */
 function array[$T] of opt $V: arrayXd(array[$T] of var opt $X: x, array[$U] of opt $V: y);
 /** @group builtins.array Return array \a y coerced to array with same number of
   dimensions and same index sets as array \a x.
-  Coercions are perfomed by considering the array \a y in row-major order. 
+  Coercions are performed by considering the array \a y in row-major order. 
 */
 function array[$T] of var $V: arrayXd(array[$T] of var opt $X: x, array[$U] of var $V: y);
 /** @group builtins.array Return array \a y coerced to array with same number of
   dimensions and same index sets as array \a x.
-  Coercions are perfomed by considering the array \a y in row-major order. 
+  Coercions are performed by considering the array \a y in row-major order. 
 */
 function array[$T] of var opt $V: arrayXd(array[$T] of var opt $X: x, array[$U] of var opt $V: y);
 
