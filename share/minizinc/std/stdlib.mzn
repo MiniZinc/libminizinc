@@ -579,7 +579,7 @@ function var bool: absent(var opt int: x) ::promise_total = not occurs(x);
 function var bool: occurs_internal_int(var opt int: x) ::promise_total =
   let { var bool : b; } in b;
 function var int : deopt_internal_int(var opt int : x) ::promise_total =
-  let { var lb(x)..ub(x): y } in y;
+  let { var dom(x): y } in y;
 
 function var opt int: reverse_map_var_opt_int(var bool: occ, var int: d);
 function opt int: reverse_map_var_opt_int(bool: occ, int: d) ::promise_total =
