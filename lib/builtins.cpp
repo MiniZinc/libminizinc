@@ -857,6 +857,8 @@ namespace MiniZinc {
       case Expression::E_ID:
         {
           lastid = cur->cast<Id>();
+          if (lastid == constants().absent)
+            return IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
           if (lastid->decl()==NULL)
             throw EvalError(env, lastid->loc(),"undefined identifier");
           cur = lastid->decl()->e();
