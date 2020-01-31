@@ -905,6 +905,13 @@ predicate var_dom(array[$T] of var opt float: x, set of float: d) =
     in forall (i in index_set(xx)) (var_dom(xx[i],d));
 */
 
+predicate float_dom(var opt float: x, array[int] of float: as) =
+  let {
+    var bool : b = occurs_internal_float(x);
+    var float : dx = deopt_internal_float(x);
+    constraint (x = reverse_map_var_opt_float(b,dx)) :: is_reverse_map;
+  } in float_dom(dx, as);
+
 predicate float_opt_eq(var opt float: x, var opt float: y) =
   deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
 
