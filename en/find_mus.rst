@@ -223,7 +223,7 @@ provide some useful information for debugging the ``findMUS`` tool.
 Next we have the list of MUSes separated by a series of equals ``=``
 signs.  Each MUS is described with three sections:
 
- #. ``MUS:`` lists the indicies of FlatZinc constraints involved in
+ #. ``MUS:`` lists the indices of FlatZinc constraints involved in
     this MUS.
  #. ``Brief:`` lists the FlatZinc constraint name, the
     expression name, and the constraint name for each involved FlatZinc
@@ -285,7 +285,7 @@ A simple explanation of the algorithm is presented here. For a more
 detailed exploration of an earlier version of the approach see the
 Debugging Unsatisfiable Constraint Models paper [1]_.
 
-The approach takes the full FlatZinc program and paritions the constraints
+The approach takes the full FlatZinc program and partitions the constraints
 into groups based on the hierarchy provided in the user's model. To
 begin with (at depth '1') we search for MUSes in the set of top level
 constraint items using the MARCO [3]_ MUS enumeration algorithm. If we
@@ -295,7 +295,7 @@ hierarchy and begin another search for MUSes underneath this high-level
 MUS. If any MUSes are found we know that the high-level MUS is not minimal
 and so it should not be reported.  This process is repeated on any found
 unsatisfiable subsets until we reach the required depth at which point
-we will start to repot MUSes. If in the recursive search we return to a
+we will start to report MUSes. If in the recursive search we return to a
 high-level MUS without finding any sub-MUSes we can report this MUS as
 a real MUS. This recursive process is referred to as HierMUS. At each
 stage when we request the enumeration of a set of MUSes underneath a
@@ -325,7 +325,7 @@ There are several features that we aim to include quite soon:
     This will allow a user to simply click-and-drag a selection around the
     parts of a constraint model they wish to analyse.
 
-.. [1] Leo, K. et al., "Debugging Unsatisiable Constraint Models", 2017.
+.. [1] Leo, K. et al., "Debugging Unsatisfiable Constraint Models", 2017.
 .. [2] https://en.wikipedia.org/wiki/Latin_square
 .. [3] Liffiton, M. H. et al., "Fast, Flexible MUS Enumeration", 2016.
 .. [4] Junker, U. et al., "QUICKXPLAIN: preferred explanations and relaxations for over-constrained problems", 2004.

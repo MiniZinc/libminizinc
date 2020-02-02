@@ -212,7 +212,7 @@ can be used to index the array.
 The elements of an enumerated type of :math:`n` elements 
 act very similar to the integers :math:`1\dots n`. They can be compared, they are
 ordered, by the order they appear in the enumerated type definition,
-they can be interated over, they can appear as indices of arrays, in fact
+they can be iterated over, they can appear as indices of arrays, in fact
 they can appear anywhere an integer can appear.
 
 In the example data file we have initialized the array using a list of 

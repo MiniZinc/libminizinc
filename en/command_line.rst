@@ -191,7 +191,7 @@ Each solver may support specific command line options for controlling its behavi
 
 .. option:: -p <i>, --parallel <i>
 
-  Run with ``i`` parallel threads (for multi-threded solvers).
+  Run with ``i`` parallel threads (for multi-threaded solvers).
 
 .. option:: -r <i>, --random-seed <i>
 
