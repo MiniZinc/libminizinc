@@ -210,7 +210,7 @@ If there are no solutions in the output,
 the outcome must indicate that there are no solutions.
 
 If the search is complete the output may state this after the solutions.
-The absence of the completness message indicates that the search is incomplete.
+The absence of the completeness message indicates that the search is incomplete.
 
 Any warnings produced during run-time must be summarised
 after the statement of completeness.
@@ -1061,7 +1061,7 @@ Option Types
 |TyOverview|
 Option types defined using the :mzn:`opt` type constructor, define types
 that may or may not be there. They are similar to ``Maybe`` types of
-Haskell implicity adding a new value :mzn:`<>` to the type.
+Haskell implicitly adding a new value :mzn:`<>` to the type.
 
 
 |TyInsts|
@@ -2586,7 +2586,7 @@ latter are used for *naming* constraints and expressions, for example
 
 Note that constraint items can *only* be annotated with string literals.
 
-*Rationale: Allowing arbitrary annotations on constraint items makes the grammar ambiguous, and seems unneccessary since we can just as well annotate the constraint expression.*
+*Rationale: Allowing arbitrary annotations on constraint items makes the grammar ambiguous, and seems unnecessary since we can just as well annotate the constraint expression.*
 
 .. _spec-partiality:
 
@@ -3219,7 +3219,7 @@ The number of digits to appear after the decimal point is given by
 the second argument.
 It is a run-time error for the second argument to be negative.
 If the third argument is not fixed, the form of the string is
-implemenation-dependent.
+implementation-dependent.
 
 .. code-block:: minizinc
 
@@ -3243,7 +3243,7 @@ efficiently.
    string: concat(array[$T] of string)
 
 
-Concatenate an array of strings, putting a seperator beween adjacent strings.
+Concatenate an array of strings, putting a separator between adjacent strings.
 Returns the the empty string if the array is empty.
 
 .. code-block:: minizinc

@@ -463,7 +463,7 @@ The complete model is shown in :numref:`ex-manhattan`.
 Functions in MiniZinc can have any return type, not just fixed
 return types.
 Functions are useful for defining and documenting complex expressions that
-are used mulitple times in a model.
+are used multiple times in a model.
 
 
 Reflection Functions
@@ -668,17 +668,17 @@ root
   root context is the context for any expression :mzn:`e` appearing as
   the argument of :mzn:`constraint` or as an
   :index:`assignment` item, or appearing as a sub expression :mzn:`e1`
-  or :mzn:`e2` in an expression :mzn:`e1 /\ e2` occuring in a root context.
+  or :mzn:`e2` in an expression :mzn:`e1 /\ e2` occurring in a root context.
 
   Root context Boolean expressions must hold in any model of the problem.
 
 positive
   positive context is the context for any expression
   appearing as a sub expression :mzn:`e1`
-  or :mzn:`e2` in an expression :mzn:`e1 \/ e2` occuring in a root
+  or :mzn:`e2` in an expression :mzn:`e1 \/ e2` occurring in a root
   or positive context,
   appearing as a sub expression :mzn:`e1`
-  or :mzn:`e2` in an expression :mzn:`e1 /\ e2` occuring in a positive context,
+  or :mzn:`e2` in an expression :mzn:`e1 /\ e2` occurring in a positive context,
   or appearing as a sub expression :mzn:`e` in an expression
   :mzn:`not e` appearing in a negative context.
 
@@ -689,7 +689,7 @@ positive
 
 negative
   negative context is the context for any expression appearing as a sub expression :mzn:`e1`
-  or :mzn:`e2` in an expression :mzn:`e1 \/ e2` or :mzn:`e1 /\ e2` occuring in a negative context,
+  or :mzn:`e2` in an expression :mzn:`e1 \/ e2` or :mzn:`e1 /\ e2` occurring in a negative context,
   or appearing as a sub expression :mzn:`e` in an expression
   :mzn:`not e` appearing in a positive context.
 

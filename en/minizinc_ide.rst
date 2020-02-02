@@ -125,7 +125,7 @@ Profiling a model
 
 MiniZinc can produce statistics about the translation of a model to FlatZinc, which can be helpful in order to better understand the behaviour of the model. In the IDE, this feature can be accessed from the *MiniZinc* menu: Select *Profile compilation*, which will run the compiler with the current settings (such as selected solver etc.) and output compilation statistics next to each line of code.
 
-For the Magic Series puzzle from :numref:`ex-magic-series2`, profling using the Gurobi solver backend could produce the statistics shown in :numref:`fig-profile-magic-series`. The first column ("Cons") represents the number of FlatZinc constraints generated from each line of code, the second column ("Vars") the number of variables, and the third column ("Time") the time it took to compile the line. In this example, for ``n=10``, the constraint in lines 4 and 5 creates 100 variables (one 0/1 variable for each of the ``bool2int`` calls), and the constraints in lines 7 and 8 each result in a single FlatZinc constraint and no additional variables.
+For the Magic Series puzzle from :numref:`ex-magic-series2`, profiling using the Gurobi solver backend could produce the statistics shown in :numref:`fig-profile-magic-series`. The first column ("Cons") represents the number of FlatZinc constraints generated from each line of code, the second column ("Vars") the number of variables, and the third column ("Time") the time it took to compile the line. In this example, for ``n=10``, the constraint in lines 4 and 5 creates 100 variables (one 0/1 variable for each of the ``bool2int`` calls), and the constraints in lines 7 and 8 each result in a single FlatZinc constraint and no additional variables.
 
 .. _fig-profile-magic-series:
 

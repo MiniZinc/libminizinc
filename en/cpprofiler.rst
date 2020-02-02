@@ -210,9 +210,9 @@ The exception is the last restart in which no solution have been found (it corre
 However, not much can be concluded about the size of individual restarts, or the amount of search that they represent (at least not at a glance).
 
 The following image shows the same restart tree using this alternative visualisation.
-All colalpsed subtrees in this case are represented by "lantern" nodes, which cna be seen as a triangle extended with a rectangular section at the bottom.
+All collapsed subtrees in this case are represented by "lantern" nodes, which cna be seen as a triangle extended with a rectangular section at the bottom.
 
-The latnern tree visualisation is parameterised by *N*, which is the maximum numer of nodes a lantern node can represent before splitting into several smaller lanterns.
+The lantern tree visualisation is parameterised by *N*, which is the maximum number of nodes a lantern node can represent before splitting into several smaller lanterns.
 Note that is rarely possible to collapse subtrees such that each subtree contains exactly *N* nodes.
 For this reason, lantern nodes (their rectangular sections) are dynamic in size and grow linearly with the actual number of nodes *n* in the subtree (1 < *n* <= *N*).
 
@@ -313,8 +313,8 @@ Execution Comparison by Merging
 -------------------------------
 
 CP-Profiler allows users to compare two executions by merging the corresponding search trees.
-This is accomplished traversing both trees in lockstep in a depth-frist-search manner, starting at the root nodes and comparing corresponding node at each step.
-A node is created on the resulting merged tree for every pair of nodes that are deemed idential.
+This is accomplished traversing both trees in lockstep in a depth-first-search manner, starting at the root nodes and comparing corresponding node at each step.
+A node is created on the resulting merged tree for every pair of nodes that are deemed identical.
 Once a difference is found, a special *pentagon* node is created, whose two children are the roots of the corresponding different subtrees.
 
 This comparison of two execution can be done in CP-Profiler by selecting the two executions of interest from the list of executions and clicking the *Merge Trees* button.
@@ -387,7 +387,7 @@ For example: ``gecode --cpprofiler_replay pizza.search pizza.fzn``
 
 4. The two resulting trees are merged using CP-Profiler.
 
-5. **Nogood analsyis** option is selected from the **Analyses** menu in CP-Profiler.
+5. **Nogood analysis** option is selected from the **Analyses** menu in CP-Profiler.
 
 The image below shows a possible result window, in which the ranking is displayed in a tabular form with one row per nogood:
 
@@ -396,8 +396,8 @@ The image below shows a possible result window, in which the ranking is displaye
 
 The first column identifies the (failed) node at which the nogood has been generated.
 The next column shows search reduction (in the number of nodes) attributed to this nogood.
-This is followed by the column that shows the number of times the nogood contributed to search reduction, that is, it the number of *1/n* pentagons it was partically or solely responsible for the early failure.
-Finally, the last column shows the nogood itself in a form of a clause (disjunction of literals) where its literals are spearated by a whitespace character.
+This is followed by the column that shows the number of times the nogood contributed to search reduction, that is, the number of *1/n* pentagons that were partially or solely responsible for the early failure.
+Finally, the last column shows the nogood itself in a form of a clause (disjunction of literals) where its literals are separated by a whitespace character.
 
 Note that dy default the entries are sorted based on search reduction.
 The sorting criteria can be changed by clicking on corresponding column headers.

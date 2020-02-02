@@ -917,7 +917,7 @@ A solver, let's call it *OptiSolve*, that supports this constraint natively can 
 
 .. code-block:: minizinc
 
-  precicate optisolve_alldifferent(array[int] of var int: x);
+  predicate optisolve_alldifferent(array[int] of var int: x);
 
   predicate fzn_all_different_int(array[int] of var int: x) =
     optisolve_alldifferent(x);

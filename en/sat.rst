@@ -51,7 +51,7 @@ variables.
     array[0..m]  of var bool: i;
     constraint sum(j in 0..m)(bool2int(i[j]) == 1;
     var 0..m: I;
-    constraint foall(j in 0..m)(I == j <-> i[j]);
+    constraint forall(j in 0..m)(I == j <-> i[j]);
 
 There are advantages and disadvantages to each representation.  It depends
 on what operations on integers are to required in the model as to which is
@@ -96,7 +96,7 @@ lights
 in the blank squares so that
 
 - Each blank square is "illuminated", that is can see a light through an
-  uninterupted line of blank squares
+  uninterrupted line of blank squares
 - No two lights can see each other
 - The number of lights adjacent to a numbered filled square
   is exactly the number in the filled square.

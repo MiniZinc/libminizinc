@@ -432,7 +432,7 @@ solve item of the model.
     :mzn:`k` th number in the Luby sequence. The Luby sequence looks like 
     1 1 2 1 1 2 4 1 1 2 1 1 2 4 8 ..., that is it repeats two copies of the 
     sequence ending in :mzn:`2^i` before adding the number :mzn:`2^{i+1}`.
-  - :mzndef:`restart_none` dont apply any restart
+  - :mzndef:`restart_none` don't apply any restart
     (useful for setting a :mzn:`ann` parameter that controls restart).
 
 

@@ -90,7 +90,7 @@ constraint to construct the value of each expression.  Let's examine the
 subexpressions of the constraint expression. :mzn:`(x1 - x2)` is a
 subexpression, if we name if :mzn:`FLOAT01` we can define it as
 :mzn:`constraint FLOAT01 = x1 - x2;` Notice that this expression occurs
-twice in the model. We only need to contruct the value once, we can then
+twice in the model. We only need to construct the value once, we can then
 reuse it.  This is called *common subexpression elimination*.
 The subexpression :mzn:`(x1 - x2)*(x1 - x2)` can be named
 :mzn:`FLOAT02`
@@ -193,7 +193,7 @@ subexpressions.
   :name: fig-lflat
 
 Consider the model shown in :numref:`fig-lflat`. Rather than create
-variables for all the subexressions :math:`3*x`, :math:`3*x - y`, :math:`x * z`, :math:`3*x - y + x*z`,
+variables for all the subexpressions :math:`3*x`, :math:`3*x - y`, :math:`x * z`, :math:`3*x - y + x*z`,
 :math:`x + y + z`, :math:`d * (x + y + z)`, :math:`19 + d * (x + y + z)`,
 and :math:`19 + d * (x + y + z) - 4*d`
 translation will attempt to create a large linear constraint which captures
@@ -201,7 +201,7 @@ as much as possible of the constraint in a single FlatZinc
 constraint. 
 
 Flattening creates linear expressions as a single unit rather than building
-intermediate variables for each subexpression. It also simplfies the linear
+intermediate variables for each subexpression. It also simplifies the linear
 expression created.  Extracting the linear expression from the constraints
 leads to 
 
@@ -439,7 +439,7 @@ with Boolean connectives other than conjunction, something has to be done.
 The core approach to handling complex formulae that use 
 connectives other than conjunction is by
 *reification*. 
-Reifying a constraint :math:`c` createsa new constraint equivalent to :math:`b \leftrightarrow c`
+Reifying a constraint :math:`c` creates a new constraint equivalent to :math:`b \leftrightarrow c`
 where the Boolean variable :math:`b` is :mzn:`true`
 if the constraint holds and :mzn:`false` if it doesn't hold. 
 
@@ -593,7 +593,7 @@ predicate, will include the definition
 
   predicate alldifferent(array[int] of var int:x);
 
-in its globals library, while a solver using the default decompsition will
+in its globals library, while a solver using the default decomposition will
 have the definition
 
 .. code-block:: minizinc
@@ -655,7 +655,7 @@ position.
 
   constraint alldifferent([A,B,C]) \/ alldifferent([B,C,D]);
 
-If the solver has a reified form of :mzn:`alldifferent` this will be flattend to
+If the solver has a reified form of :mzn:`alldifferent` this will be flattened to
 
 .. code-block:: minizinc
 
@@ -913,7 +913,7 @@ constraint removes the possibility that :mzn:`x = 4`.
 The treatment of *constraint items* in let expressions is analogous
 to defined variables. One can think of a constraint as equivalent to
 defining a new Boolean variable. The definitions of the new Boolean variables
-are extractted to the top level, and the Boolean remains in the correct
+are extracted to the top level, and the Boolean remains in the correct
 context. 
 
 .. code-block:: minizinc
