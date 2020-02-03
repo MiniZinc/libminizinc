@@ -34,7 +34,10 @@ namespace MiniZinc {
       /// Visit array access
       void vArrayAccess(const ArrayAccess&) {}
       /// Visit array comprehension
-      void vComprehension(const Comprehension&) {}
+      void vComprehension(const Comprehension& c) {
+        if (c.type().isopt())
+          success = false;
+      }
       /// Visit if-then-else
       void vITE(const ITE&) {}
       /// Visit binary operator
