@@ -32,7 +32,8 @@ function var bool: '>='(var $T: x,var $T: y);
 /** @group builtins.compare Return if \a x is equal to \a y */
 function     bool: '='(    $T: x,    $T: y);
 /** @group builtins.compare Return if \a x is equal to \a y */
-function     bool: '='(opt $T: x, opt $T: y);
+function     bool: '='(opt $T: x, opt $T: y) =
+  absent(x) /\ absent(y) \/ occurs(x) /\ occurs(y) /\ deopt(x) = deopt(y);
 /** @group builtins.compare Return if \a x is equal to \a y */
 function var bool: '='(var $T: x,var $T: y);
 /** @group builtins.compare Return if \a x is equal to \a y */
@@ -41,7 +42,7 @@ function var bool: '='(var opt $T: x,var opt $T: y);
 /** @group builtins.compare Return if \a x is not equal to \a y */
 function     bool: '!='(    $T: x,     $T: y);
 /** @group builtins.compare Return if \a x is not equal to \a y */
-function     bool: '!='(opt $T: x, opt $T: y);
+function     bool: '!='(opt $T: x, opt $T: y) = not (x = y);
 /** @group builtins.compare Return if \a x is not equal to \a y */
 function var bool: '!='(var $T: x, var $T: y);
 /** @group builtins.compare Return if \a x is not equal to \a y */
