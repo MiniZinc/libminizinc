@@ -1097,10 +1097,6 @@ namespace MiniZinc {
           Expression* rhs = bo->rhs();
           if (rhs->type().bt()==Type::BT_TOP)
             rhs = eval_par(env,rhs);
-          if ( bo->op()==BOT_EQ && (lhs->type().isopt() || rhs->type().isopt()) ) {
-            if (lhs == constants().absent || rhs==constants().absent)
-              return lhs==rhs;
-          }
           if (bo->decl() && bo->decl()->e()) {
             return eval_call<EvalBoolVal,BinOp>(env,bo);
           }
