@@ -11,6 +11,7 @@
 
 #include <minizinc/json_parser.hh>
 
+#include <minizinc/iter.hh>
 #include <fstream>
 #include <sstream>
 
@@ -257,11 +258,13 @@ namespace MiniZinc {
             if (listT!=T_FLOAT)
               listT = T_INT;
             elems.push_back(next);
+            elems.push_back(next);
             break;
           case T_FLOAT:
             if (listT==T_STRING || listT==T_OBJ_OPEN)
               throw JSONError(env,errLocation(),"invalid set literal");
             listT = T_FLOAT;
+            elems.push_back(next);
             elems.push_back(next);
             break;
           case T_STRING:
@@ -291,11 +294,70 @@ namespace MiniZinc {
             elems.push_back(next);
             break;
           }
+          case T_LIST_OPEN:
+            if (listT != T_COLON && listT != T_INT && listT != T_FLOAT)
+              throw JSONError(env, errLocation(), "invalid set literal");
+
+            next = readToken(is);
+            if (next.t == T_INT) {
+              if (listT != T_FLOAT)
+                listT = T_INT;
+            } else if (next.t == T_FLOAT) {
+              listT = T_FLOAT;
+            } else {
+              throw JSONError(env, errLocation(), "invalid set literal");
+            }
+            elems.push_back(next);
+
+            expectToken(is, T_COMMA);
+
+            next = readToken(is);
+            if (next.t == T_INT) {
+              if (listT != T_FLOAT)
+                listT = T_INT;
+            } else if (next.t == T_FLOAT) {
+              listT = T_FLOAT;
+            } else {
+              throw JSONError(env, errLocation(), "invalid set literal");
+            }
+            elems.push_back(next);
+
+            expectToken(is, T_LIST_CLOSE);
+            break;
           default:
             throw JSONError(env,errLocation(),"invalid set literal");
         }
       }
       expectToken(is, T_OBJ_CLOSE);
+
+      if (listT == T_INT) {
+        int n = elems.size() / 2;
+        auto res = IntSetVal::a();
+        for (unsigned int i = 0; i < n; i++) {
+          IntVal m(elems[2 * i].i);
+          IntVal n(elems[2 * i + 1].i);
+          auto isv = IntSetVal::a(m, n);
+          IntSetRanges isr(isv);
+          IntSetRanges r(res);
+          Ranges::Union<IntVal, IntSetRanges, IntSetRanges> u(isr, r);
+          res = IntSetVal::ai(u);
+        }
+        return new SetLit(Location().introduce(), res);
+      } else if (listT == T_FLOAT) {
+        int n = elems.size() / 2;
+        auto res = FloatSetVal::a();
+        for (unsigned int i = 0; i < n; i ++) {
+          FloatVal m(elems[2 * i].d);
+          FloatVal n(elems[2 * i + 1].d);
+          auto fsv = FloatSetVal::a(m, n);
+          FloatSetRanges fsr(fsv);
+          FloatSetRanges r(res);
+          Ranges::Union<FloatVal, FloatSetRanges, FloatSetRanges > u(fsr, r);
+          res = FloatSetVal::ai(u);
+        }
+        return new SetLit(Location().introduce(), res);
+      }
+
       vector<Expression*> elems_e(elems.size());
       switch (listT) {
         case T_COLON:
@@ -303,16 +365,6 @@ namespace MiniZinc {
         case T_BOOL:
           for (unsigned int i=0; i<elems.size(); i++) {
             elems_e[i] = new BoolLit(Location().introduce(),elems[i].b);
-          }
-          break;
-        case T_INT:
-          for (unsigned int i=0; i<elems.size(); i++) {
-            elems_e[i] = IntLit::a(elems[i].i);
-          }
-          break;
-        case T_FLOAT:
-          for (unsigned int i=0; i<elems.size(); i++) {
-            elems_e[i] = FloatLit::a(elems[i].d);
           }
           break;
         case T_STRING:
