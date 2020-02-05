@@ -898,8 +898,6 @@ namespace MiniZinc {
     }
     if (e->type().dim()==funarg_t.dim() && (funarg_t.bt()==Type::BT_BOT || funarg_t.bt()==Type::BT_TOP || e->type().bt()==funarg_t.bt() || e->type().bt()==Type::BT_BOT))
       return e;
-    std::vector<Expression*> args(1);
-    args[0] = e;
     GCLock lock;
     Call* c = NULL;
     if (e->type().dim()==0 && funarg_t.dim()!=0) {
@@ -914,7 +912,7 @@ namespace MiniZinc {
       Call* set2a = new Call(e->loc(), ASTString("set2array"), set2a_args);
       FunctionI* fi = m->matchFn(env, set2a, false);
       if (fi) {
-        set2a->type(fi->rtype(env, args, false));
+        set2a->type(fi->rtype(env, set2a_args, false));
         set2a->decl(fi);
         e = set2a;
       }
@@ -923,6 +921,8 @@ namespace MiniZinc {
       KeepAlive ka(e);
       return ka;
     }
+    std::vector<Expression*> args(1);
+    args[0] = e;
     if (e->type().bt()==Type::BT_BOOL) {
       if (funarg_t.bt()==Type::BT_INT) {
         c = new Call(e->loc(), constants().ids.bool2int, args);

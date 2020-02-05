@@ -259,7 +259,7 @@ namespace MiniZinc {
 
     /// Check if this type is a subtype of \a t
     bool isSubtypeOf(const Type& t, bool strictEnums) const {
-      if (_dim==0 && t._dim!=0 && _st==ST_SET && t._st==ST_PLAIN &&
+      if (_dim==0 && t._dim!=0 && _st==ST_SET && t._st==ST_PLAIN && bt() != BT_FLOAT &&
           ( bt()==BT_BOT || bt_subtype(*this, t, false) || t.bt()==BT_TOP) && _ti==TI_PAR &&
           (_ot==OT_PRESENT || _ot==t._ot) )
         return true;
