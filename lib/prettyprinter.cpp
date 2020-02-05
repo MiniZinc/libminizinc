@@ -244,16 +244,15 @@ namespace MiniZinc {
               if (!sl.isv()->min(0).isFinite())
                 os << sl.isv()->min(0) << ".." << sl.isv()->max(0) << "++";
               os << "{";
-              for (IntSetRanges isr(sl.isv()); isr();) {
+              bool first = true;
+              for (IntSetRanges isr(sl.isv()); isr(); ++isr) {
                 if (isr.min().isFinite() && isr.max().isFinite()) {
                   for (IntVal i=isr.min(); i<=isr.max(); i++) {
-                    os << i;
-                    if (i<isr.max())
+                    if (!first)
                       os << ",";
+                    first = false;
+                    os << i;
                   }
-                  ++isr;
-                  if (isr())
-                    os << ",";
                 }
               }
               os << "}";
