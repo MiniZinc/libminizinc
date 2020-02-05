@@ -242,7 +242,7 @@ namespace MiniZinc {
               os << sl.isv()->min(0) << ".." << sl.isv()->max(0);
             } else {
               if (!sl.isv()->min(0).isFinite())
-                os << sl.isv()->min(0) << ".." << sl.isv()->max(0) << "++";
+                os << sl.isv()->min(0) << ".." << sl.isv()->max(0) << " union ";
               os << "{";
               bool first = true;
               for (IntSetRanges isr(sl.isv()); isr(); ++isr) {
@@ -257,7 +257,7 @@ namespace MiniZinc {
               }
               os << "}";
               if (!sl.isv()->max(sl.isv()->size()-1).isFinite())
-                os << "++" << sl.isv()->min(sl.isv()->size()-1) << ".." << sl.isv()->max(sl.isv()->size()-1);
+                os << " union " << sl.isv()->min(sl.isv()->size()-1) << ".." << sl.isv()->max(sl.isv()->size()-1);
             }
           } else if (sl.fsv()) {
             if (sl.fsv()->size()==0) {
@@ -288,7 +288,7 @@ namespace MiniZinc {
                 bool first = true;
                 for (FloatSetRanges isr(sl.fsv()); isr(); ++isr) {
                   if (!first)
-                    os << "++";
+                    os << " union ";
                   first = false;
                   ppFloatVal(os, isr.min());
                   os << "..";
@@ -1163,7 +1163,7 @@ namespace MiniZinc {
             dl->addDocumentToList(new StringDocument(oss.str()));
           }
         } else {
-          dl = new DocumentList("", "++", "", true);
+          dl = new DocumentList("", " union ", "", true);
           FloatSetRanges fsr(sl.fsv());
           for (; fsr(); ++fsr) {
             std::ostringstream oss;
