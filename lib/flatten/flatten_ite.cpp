@@ -258,6 +258,7 @@ namespace MiniZinc {
           }
           foundTrueBranch = true;
         } else {
+          GCLock lock;
           conditions.push_back(constants().lit_false);
           for (unsigned int j=0; j<results.size(); j++) {
             defined[j].push_back(constants().lit_true);
