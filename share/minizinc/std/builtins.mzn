@@ -1420,6 +1420,16 @@ function var set of $$T: array2set(array[int] of var $$T: x) ::promise_total =
 function set of $$T: array2set(array[int] of $$T: x) =
   { x[i] | i in index_set(x) };
 
+/** @group builtins.array Return the set containing the elements of \a x */
+function set of bool: array2set(array[int] of bool: x) =
+  let { bool: f = exists(b in x)(not b);
+        bool: t = exists(b in x)(b);
+  } in if f /\ t then {false,true} elseif f then {false} elseif t then {true} else {} endif;
+
+/** @group builtins.array Return the set containing the elements of \a x */
+function set of float: array2set(array[int] of float: x) =
+  { x[i] | i in index_set(x) };
+
 /***
   @groupdef builtins.sort Array sorting operations
 */
