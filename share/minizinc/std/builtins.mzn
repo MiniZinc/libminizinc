@@ -1405,6 +1405,21 @@ test has_element($T: e, array[int] of opt $T: x) = exists (i in index_set(x)) (x
 /** @group builtins.array Test if \a e is an element of array \a x */
 predicate has_element($T: e, array[$$E] of var opt $T: x) = exists (i in index_set(x)) (x[i]=e);
 
+/** @group builtins.array Return the set containing the elements of \a x */
+function var set of $$T: array2set(array[int] of var $$T: x) ::promise_total =
+    let {
+      set of int: D = dom_array(x);
+      constraint assert(min(D) > -infinity /\ max(D) < infinity, "array2set needs finite bounds on argument array");
+      var set of D: y = array_union([
+        let { var set of dom(x[i]): s;
+        constraint x[i] in s /\ card(s)=1;
+        } in s | i in index_set(x)]);
+    } in y;
+
+/** @group builtins.array Return the set containing the elements of \a x */
+function set of $$T: array2set(array[int] of $$T: x) =
+  { x[i] | i in index_set(x) };
+
 /***
   @groupdef builtins.sort Array sorting operations
 */
@@ -1964,17 +1979,6 @@ test var_dom(array[$T] of float: x, float: l, float: u) =
 test var_dom(array[$T] of float: x, set of float: d) =
     let { array[int] of float: xx = array1d(x) }
     in forall (i in index_set(xx)) (var_dom(xx[i],d));
-
-function var set of int: array2set(array[int] of var int: x) ::promise_total =
-    let {
-      var set of int: y = array_union([
-        let { var set of dom(x[i]): s;
-        constraint x[i] in s /\ card(s)=1;
-        } in s | i in index_set(x)]);
-    } in y;
-
-function set of $$T: array2set(array[int] of $$T: x) =
-  { x[i] | i in index_set(x) };
 
 predicate array_var_int_element(var int: x, array[int] of int: y, var int: z) =
   array_int_element(x,y,z);
