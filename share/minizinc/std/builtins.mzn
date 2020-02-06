@@ -810,6 +810,9 @@ function var set of $$T: 'symdiff'(var set of $$T: x, var set of $$T: y);
 function set of $$E: '..'($$E: a,$$E: b);
 /** @group builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
 function set of float: '..'(float: a,float: b);
+/** @group builtins.set Return the set \(\{\a a,\ldots,\a b\}\) */
+function set of bool: '..'(bool: a,bool: b) =
+  if a then if b then {true} else {} endif elseif b then {false,true} else {false} endif;
 
 function var set of int: '..'(var int: a, var int: b) ::promise_total =
   let {

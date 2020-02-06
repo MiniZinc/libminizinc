@@ -590,7 +590,7 @@ namespace MiniZinc {
     /// Set value
     void v(const ASTExprVec<Expression>& val) { _v = val; }
     /// Access integer set value if present
-    IntSetVal* isv(void) const { return type().bt()==Type::BT_INT ? _u.isv : NULL; }
+    IntSetVal* isv(void) const { return (type().bt()==Type::BT_INT || type().bt()==Type::BT_BOOL) ? _u.isv : NULL; }
     /// Set integer set value
     void isv(IntSetVal* val) { _u.isv = val; }
     /// Access float set value if present

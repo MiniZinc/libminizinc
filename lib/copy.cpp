@@ -123,6 +123,7 @@ namespace MiniZinc {
             c->v(ce);
           }
         }
+        c->type(s->type());
         ret = c;
       }
       break;

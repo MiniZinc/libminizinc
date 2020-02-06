@@ -339,7 +339,7 @@ namespace MiniZinc {
     static IntSetVal* e(EnvI& env, Expression* e) {
       return eval_boolset(env, e);
     }
-    static Expression* exp(IntSetVal* e) { return new SetLit(Location(),e); }
+    static Expression* exp(IntSetVal* e) { SetLit* sl = new SetLit(Location(),e); sl->type(Type::parsetbool()); return sl; }
     static void checkRetVal(EnvI& env, Val v, FunctionI* fi) { }
     Expression* flatten(EnvI&, Expression*) {
       throw InternalError("evaluating var assignment generator inside par expression not supported");
@@ -354,7 +354,11 @@ namespace MiniZinc {
         case Type::BT_INT:
         case Type::BT_BOT:
           return new SetLit(e->loc(),eval_intset(env, e));
-        case Type::BT_BOOL: return new SetLit(e->loc(),eval_boolset(env, e));
+        case Type::BT_BOOL: {
+          SetLit* sl = new SetLit(e->loc(),eval_boolset(env, e));
+          sl->type(Type::parsetbool());
+          return sl;
+        }
         case Type::BT_FLOAT: return new SetLit(e->loc(),eval_floatset(env, e));
         default: throw InternalError("invalid set literal type");
       }
@@ -381,7 +385,9 @@ namespace MiniZinc {
     typedef SetLit* Val;
     typedef Expression* ArrayVal;
     static SetLit* e(EnvI& env, Expression* e) {
-      return new SetLit(e->loc(),eval_boolset(env, e));
+      SetLit* sl = new SetLit(e->loc(),eval_boolset(env, e));
+      sl->type(Type::parsetbool());
+      return sl;
     }
     static Expression* exp(Expression* e) { return e; }
     Expression* flatten(EnvI&, Expression*) {
