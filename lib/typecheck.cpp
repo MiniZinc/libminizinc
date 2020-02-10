@@ -2008,9 +2008,10 @@ namespace MiniZinc {
       std::vector<AssignI*>& ais;
       VarDeclI* objective;
       Model* enumis;
+      bool isFlatZinc;
       TSV0(EnvI& env0, TopoSorter& ts0, Model* model0, std::vector<AssignI*>& ais0,
-           Model* enumis0)
-        : env(env0), ts(ts0), model(model0), hadSolveItem(false), ais(ais0), objective(NULL), enumis(enumis0) {}
+           Model* enumis0, bool isFlatZinc0)
+        : env(env0), ts(ts0), model(model0), hadSolveItem(false), ais(ais0), objective(NULL), enumis(enumis0), isFlatZinc(isFlatZinc0) {}
       void vAssignI(AssignI* i) { ais.push_back(i); }
       void vVarDeclI(VarDeclI* i) {
         ts.add(env, i, true, enumis);
@@ -2036,7 +2037,7 @@ namespace MiniZinc {
         if (hadSolveItem)
           throw TypeError(env,si->loc(),"Only one solve item allowed");
         hadSolveItem = true;
-        if (si->e()) {
+        if (!isFlatZinc && si->e()) {
           GCLock lock;
           TypeInst* ti = new TypeInst(Location().introduce(), Type());
           VarDecl* obj = new VarDecl(Location().introduce(), ti, "_objective", si->e());
@@ -2045,7 +2046,7 @@ namespace MiniZinc {
         }
         
       }
-    } _tsv0(env.envi(),ts,m,assignItems,enumItems);
+    } _tsv0(env.envi(),ts,m,assignItems,enumItems,isFlatZinc);
     iterItems(_tsv0,m);
     if (_tsv0.objective) {
       m->addItem(_tsv0.objective);
