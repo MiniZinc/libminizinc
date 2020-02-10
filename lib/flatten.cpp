@@ -1288,15 +1288,22 @@ namespace MiniZinc {
           vd_t.ti(Type::TI_PAR);
           vd_output->type(vd_t);
           vd_output->ti()->type(vd_t);          
-          _output->addItem(new VarDeclI(Location().introduce(), vd_output));
 
           if (dims) {
+            std::vector<TypeInst*> ranges(dims->size());
             s << "array" << dims->size() << "d(";
             for (unsigned int i=0; i<dims->size(); i++) {
               IntSetVal* idxset = eval_intset(envi,(*dims)[i]);
+              ranges[i] = new TypeInst(Location().introduce(), Type(), new SetLit(Location().introduce(), idxset));
               s << *idxset << ",";
             }
+            Type t = vd_t;
+            vd_t.dim(dims->size());
+            vd_output->type(t);
+            vd_output->ti(new TypeInst(Location().introduce(), vd_t, ranges));
           }
+          _output->addItem(new VarDeclI(Location().introduce(), vd_output));
+
           StringLit* sl = new StringLit(Location().introduce(),s.str());
           outputVars.push_back(sl);
 
