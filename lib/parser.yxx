@@ -244,10 +244,10 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
 %type <tiexpr_v> ti_expr_list ti_expr_list_head
 
 %type <expression> expr expr_atom_head expr_atom_head_nonstring array_access_expr
-%type <expression> set_expr string_expr string_quote_rest annotation_expr
+%type <expression> set_expr string_expr string_quote_rest annotation_expr enum_construct
 %type <expression> simple_array_literal simple_array_literal_2d simple_array_comp if_then_else_expr call_expr quoted_op_call let_expr operation_item_tail set_literal set_comp
 
-%type <expression_v> expr_list expr_list_head array_access_expr_list array_access_expr_list_head elseif_list let_vardecl_item_list enum_id_list string_lit_list
+%type <expression_v> expr_list expr_list_head array_access_expr_list array_access_expr_list_head elseif_list let_vardecl_item_list enum_init enum_id_list string_lit_list
 %type <expression_vv> simple_array_literal_2d_list array_access_tail
 %type <expression_vvv> simple_array_literal_3d_list
 
@@ -428,17 +428,23 @@ vardecl_item :
         free($2);
         $$ = new VarDeclI(@$,vd);
       }
-    | MZN_ENUM MZN_IDENTIFIER annotations MZN_EQ '{' enum_id_list '}'
+    | MZN_ENUM MZN_IDENTIFIER annotations MZN_EQ enum_init
       {
-        TypeInst* ti = new TypeInst(@$,Type::parsetint());
-        ti->setIsEnum(true);
-        SetLit* sl = new SetLit(@$, *$6);
-        VarDecl* vd = new VarDecl(@$,ti,$2,sl);
-        if ($2 && $3)
-          vd->addAnnotations(*$3);
+        if ($5) {
+          TypeInst* ti = new TypeInst(@$,Type::parsetint());
+          ti->setIsEnum(true);
+          Expression* e;
+          if ($5->size()==1) {
+            e = (*$5)[0];
+          } else {
+            ArrayLit* al = new ArrayLit(@$,*$5);
+            e = new Call(@$, ASTString("enumFromConstructors"), {al});
+          }
+          VarDecl* vd = new VarDecl(@$,ti,$2,e);
+          $$ = new VarDeclI(@$,vd);
+        }
         free($2);
-        delete $6;
-        $$ = new VarDeclI(@$,vd);
+        delete $5;
       }
     | MZN_ENUM MZN_IDENTIFIER annotations MZN_EQ MZN_LEFT_BRACKET string_lit_list MZN_RIGHT_BRACKET
       {
@@ -454,19 +460,31 @@ vardecl_item :
         delete $6;
         $$ = new VarDeclI(@$,vd);
       }
-    | MZN_ENUM MZN_IDENTIFIER annotations MZN_EQ MZN_IDENTIFIER '(' expr ')'
+
+enum_init :
+      enum_construct
       {
-        TypeInst* ti = new TypeInst(@$,Type::parsetint());
-        ti->setIsEnum(true);
-        vector<Expression*> args;
-        args.push_back($7);
-        Call* sl = new Call(@$, ASTString($5), args);
-        VarDecl* vd = new VarDecl(@$,ti,$2,sl);
-        if ($2 && $3)
-          vd->addAnnotations(*$3);
-        free($2);
-        free($5);
-        $$ = new VarDeclI(@$,vd);
+        $$ = new std::vector<Expression*>({$1});
+      }
+    | enum_init MZN_PLUSPLUS enum_construct
+      {
+        $$ = $1;
+        if ($$) {
+          $$->push_back($3);
+        }
+      }
+
+enum_construct :
+      '{' enum_id_list '}'
+      {
+        $$ = new SetLit(@$, *$2);
+        delete $2;
+      }
+    | MZN_IDENTIFIER '(' expr ')'
+      {
+        vector<Expression*> args({$3});
+        $$ = new Call(@$, ASTString($1), args);
+        free($1);
       }
 
 string_lit_list :

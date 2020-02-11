@@ -119,13 +119,10 @@ namespace MiniZinc {
     if (ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
       enum_init_al = al;
     } else if (Call* c = vd->e()->dyn_cast<Call>()) {
-      if (c->id()!="anon_enum") {
-        std::ostringstream ss;
-        ss << "invalid initialisation for enum `" << ident->v() << "'";
-        throw TypeError(env, c->loc(), ss.str());
-      }
-      if (c->n_args()==1 && c->arg(0)->isa<ArrayLit>()) {
-        enum_init_al = c->arg(0)->cast<ArrayLit>();
+      if (c->id()=="anon_enum") {
+        if (c->n_args()==1 && c->arg(0)->isa<ArrayLit>()) {
+          enum_init_al = c->arg(0)->cast<ArrayLit>();
+        }
       }
     }
     if (enum_init_al) {
@@ -249,7 +246,8 @@ namespace MiniZinc {
         ///       know it's a non-anonymous enum)
         vd_enumToString->e(new ArrayLit(Location().introduce(), std::vector<Expression*>()));
       }
-      {
+      Call* c = vd->e()->cast<Call>();
+      if (c->id()=="anon_enum") {
         Type tx = Type::parint();
         tx.ot(Type::OT_OPTIONAL);
         TypeInst* ti_aa = new TypeInst(Location().introduce(),tx);
@@ -311,6 +309,36 @@ namespace MiniZinc {
                                       createEnumToStringName(ident, "_toString_"),
                                       ti_fi,fi_params,ite);
         enumItems->addItem(fi);
+      } else {
+        std::vector<Expression*> parts;
+        if (c->id()=="enumFromConstructors") {
+          if (c->n_args()!=1 || !c->arg(0)->isa<ArrayLit>()) {
+            throw TypeError(env, c->loc(), "enumFromConstructors used with incorrect argument type (only supports array literals)");
+          }
+          ArrayLit* al = c->arg(0)->cast<ArrayLit>();
+          for (unsigned int i=0; i<al->size(); i++) {
+            parts.push_back((*al)[i]);
+          }
+        } else {
+          parts.push_back(c);
+        }
+        /*
+         function Foo: a(A: x) = to_enum(Foo,x)
+         function Foo: b(B: x) = to_enum(Foo,card(A)+x)
+         function Foo: c(C: x) = to_enum(Foo,card(A)+card(B)+x)
+         function A: toA(Foo: x) = to_enum(A,x)
+         function B: toB(Foo: x) = to_enum(B,x-card(A))
+         function C: toC(Foo: x) = to_enum(C,x-card(A)-card(B))
+         */
+        /*
+         function string: _toString_ENUM(opt Foo: x, bool: b, bool: json) =
+           if occurs(x) then
+             if deopt(x)<=card(A) then "A("++_toString_ENUM(to_enum(A,x))++")"
+             elseif deopt(x)<=card(A)+card(B) then "B("++_toString_ENUM(to_enum(B,x))++")"
+             ...
+             else "F("++_toString_ENUM(to_enum(F,x))++")"
+           else <> endif
+         */
       }
     }
     
