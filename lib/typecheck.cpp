@@ -108,27 +108,23 @@ namespace MiniZinc {
     }
   };
 
-  AssignI* createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, VarDecl* vd_enumToString, Model* enumItems) {
+  void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Model* enumItems) {
+    GCLock lock;
 
     Id* ident = vd->id();
-    SetLit* sl = vd->e()->dyn_cast<SetLit>();
-    ArrayLit* enum_init_al = NULL;
-    AssignI* ret = NULL;
-    
-    GCLock lock;
-    if (ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
-      enum_init_al = al;
-    } else if (Call* c = vd->e()->dyn_cast<Call>()) {
-      if (c->id()=="anon_enum") {
-        if (c->n_args()==1 && c->arg(0)->isa<ArrayLit>()) {
-          enum_init_al = c->arg(0)->cast<ArrayLit>();
-        }
+    Call* c = vd->e()->dyn_cast<Call>();
+    ArrayLit* al = vd->e()->dyn_cast<ArrayLit>();
+
+    std::vector<Expression*> parts;
+    if (vd->e()->isa<SetLit>()) {
+      parts.push_back(vd->e());
+    } else if (al || (c && c->id()=="anon_enum" && c->n_args()==1 && c->arg(0)->isa<ArrayLit>())) {
+      if (c) {
+        al = c->arg(0)->cast<ArrayLit>();
       }
-    }
-    if (enum_init_al) {
-      std::vector<Expression*> enumIds(enum_init_al->size());
-      for (unsigned int i=0; i<enum_init_al->size(); i++) {
-        if (Id* eid = (*enum_init_al)[i]->dyn_cast<Id>()) {
+      std::vector<Expression*> enumIds(al->size());
+      for (unsigned int i=0; i<al->size(); i++) {
+        if (Id* eid = (*al)[i]->dyn_cast<Id>()) {
           enumIds[i] = eid;
         } else {
           std::ostringstream ss;
@@ -136,210 +132,414 @@ namespace MiniZinc {
           throw TypeError(env, vd->e()->loc(), ss.str());
         }
       }
-      sl = new SetLit(vd->e()->loc(), enumIds);
-    }
-    if (sl) {
-      for (unsigned int i=0; i<sl->v().size(); i++) {
-        if (!sl->v()[i]->isa<Id>()) {
-          std::ostringstream ss;
-          ss << "invalid initialisation for enum `" << ident->v() << "'";
-          throw TypeError(env, sl->v()[i]->loc(), ss.str());
+      parts.push_back(new SetLit(vd->e()->loc(), enumIds));
+    } else if (c) {
+      if (c->id()=="enumFromConstructors") {
+        if (c->n_args()!=1 || !c->arg(0)->isa<ArrayLit>()) {
+          throw TypeError(env, c->loc(), "enumFromConstructors used with incorrect argument type (only supports array literals)");
         }
-        TypeInst* ti_id = new TypeInst(sl->v()[i]->loc(),Type::parenum(enumId));
-        
-        std::vector<Expression*> toEnumArgs(2);
-        toEnumArgs[0] = vd->id();
-        toEnumArgs[1] = IntLit::a(i+1);
-        Call* toEnum = new Call(sl->v()[i]->loc(), ASTString("to_enum"), toEnumArgs);
-        toEnum->decl(env.model->matchFn(env, toEnum, false));
-        VarDecl* vd_id = new VarDecl(ti_id->loc(),ti_id,sl->v()[i]->cast<Id>()->str(),toEnum);
-        enumItems->addItem(new VarDeclI(vd_id->loc(),vd_id));
-      }
-      SetLit* nsl = new SetLit(vd->loc(), IntSetVal::a(1,sl->v().size()));
-      Type tt = nsl->type();
-      tt.enumId(vd->type().enumId());
-      nsl->type(tt);
-      vd->e(nsl);
-    } else if (!vd->e()->isa<Call>()) {
-      std::ostringstream ss;
-      ss << "invalid initialisation for enum `" << ident->v() << "'";
-      throw TypeError(env, vd->e()->loc(), ss.str());
-    }
-
-    
-    if (sl) {
-      std::string name = createEnumToStringName(ident,"_enum_to_string_");
-      std::vector<Expression*> al_args(sl->v().size());
-      for (unsigned int i=0; i<sl->v().size(); i++) {
-        ASTString str = sl->v()[i]->cast<Id>()->str();
-        if (str.size()>=2 && str.c_str()[0]=='\'' && str.c_str()[str.size()-1]=='\'') {
-          al_args[i] = new StringLit(Location().introduce(), ASTString(str.substr(1,str.size()-2)));
-        } else {
-          al_args[i] = new StringLit(Location().introduce(), str);
+        ArrayLit* al = c->arg(0)->cast<ArrayLit>();
+        for (unsigned int i=0; i<al->size(); i++) {
+          parts.push_back((*al)[i]);
         }
-        env.reverseEnum[str] = i+1;
-      }
-      ArrayLit* al = new ArrayLit(Location().introduce(),al_args);
-      
-      if (vd_enumToString) {
-        ret = new AssignI(Location().introduce(),name,al);
-        ret->decl(vd_enumToString);
       } else {
+        parts.push_back(c);
+      }
+    } else {
+      throw TypeError(env, vd->e()->loc(), std::string("invalid initialisation for enum `")+ident->v().c_str()+"'");
+    }
+    
+    std::vector<Expression*> partCardinality;
+    for (unsigned int p=0; p<parts.size(); p++) {
+      if (SetLit* sl = parts[p]->dyn_cast<SetLit>()) {
+        for (unsigned int i=0; i<sl->v().size(); i++) {
+          if (!sl->v()[i]->isa<Id>()) {
+            throw TypeError(env, sl->v()[i]->loc(),
+                            std::string("invalid initialisation for enum `")+ident->v().c_str()+"'");
+          }
+          TypeInst* ti_id = new TypeInst(sl->v()[i]->loc(),Type::parenum(enumId));
+          
+          std::vector<Expression*> toEnumArgs(2);
+          toEnumArgs[0] = vd->id();
+          if (partCardinality.empty()) {
+            toEnumArgs[1] = IntLit::a(i+1);
+          } else {
+            toEnumArgs[1] = new BinOp(Location().introduce(), partCardinality.back(), BOT_PLUS, IntLit::a(i+1));
+          }
+          Call* toEnum = new Call(sl->v()[i]->loc(), ASTString("to_enum"), toEnumArgs);
+          VarDecl* vd_id = new VarDecl(ti_id->loc(),ti_id,sl->v()[i]->cast<Id>()->str(),toEnum);
+          enumItems->addItem(new VarDeclI(vd_id->loc(),vd_id));
+          if (i==sl->v().size()-1) {
+            // remember the last identifier
+            partCardinality.push_back(toEnumArgs[1]);
+          }
+        }
+
+        std::string name = createEnumToStringName(ident,"_enum_to_string_"+std::to_string(p)+"_");
+        std::vector<Expression*> al_args(sl->v().size());
+        for (unsigned int i=0; i<sl->v().size(); i++) {
+          std::string str(sl->v()[i]->cast<Id>()->str().c_str());
+          if (str.size()>=2 && str[0]=='\'' && str[str.size()-1]=='\'') {
+            al_args[i] = new StringLit(Location().introduce(), ASTString(str.substr(1,str.size()-2)));
+          } else {
+            al_args[i] = new StringLit(Location().introduce(), ASTString(str));
+          }
+          /// TODO: reimplement reverseEnum with a symbol table into the model (so you can evalPar an expression)
+//          env.reverseEnum[str] = i+1;
+        }
+        ArrayLit* al = new ArrayLit(Location().introduce(),al_args);
+        
         std::vector<TypeInst*> ranges(1);
         ranges[0] = new TypeInst(Location().introduce(),Type::parint());
         TypeInst* ti = new TypeInst(Location().introduce(),Type::parstring(1));
         ti->setRanges(ranges);
-        vd_enumToString = new VarDecl(Location().introduce(),ti,name,al);
+        VarDecl* vd_enumToString = new VarDecl(Location().introduce(),ti,name,al);
         enumItems->addItem(new VarDeclI(Location().introduce(),vd_enumToString));
-      }
-      
-      Type tx = Type::parint();
-      tx.ot(Type::OT_OPTIONAL);
-      TypeInst* ti_aa = new TypeInst(Location().introduce(),tx);
-      VarDecl* vd_aa = new VarDecl(Location().introduce(),ti_aa,"x");
-      vd_aa->toplevel(false);
-      TypeInst* ti_ab = new TypeInst(Location().introduce(),Type::parbool());
-      VarDecl* vd_ab = new VarDecl(Location().introduce(),ti_ab,"b");
-      vd_ab->toplevel(false);
-      TypeInst* ti_aj = new TypeInst(Location().introduce(),Type::parbool());
-      VarDecl* vd_aj = new VarDecl(Location().introduce(),ti_aj,"json");
-      vd_aj->toplevel(false);
-      TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
-      std::vector<VarDecl*> fi_params(3);
-      fi_params[0] = vd_aa;
-      fi_params[1] = vd_ab;
-      fi_params[2] = vd_aj;
-
-      std::vector<Expression*> deopt_args(1);
-      deopt_args[0] = vd_aa->id();
-      Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
-      Call* occurs = new Call(Location().introduce(), "occurs", deopt_args);
-      std::vector<Expression*> aa_args(1);
-      aa_args[0] = deopt;
-      ArrayAccess* aa = new ArrayAccess(Location().introduce(),vd_enumToString->id(),aa_args);
-
-      StringLit* sl_absent = new StringLit(Location().introduce(),"<>");
-      
-      ITE* if_absent = new ITE(Location().introduce(), {vd_aj->id(), new StringLit(Location().introduce(), ASTString("null"))}, sl_absent);
-      
-      
-      StringLit* json_e_quote = new StringLit(Location().introduce(), ASTString("{\"e\":\""));
-      StringLit* json_e_quote_end = new StringLit(Location().introduce(), ASTString("\"}"));
-      BinOp* quote_aa = new BinOp(Location().introduce(),json_e_quote,BOT_PLUSPLUS,aa);
-      BinOp* quote_aa2 = new BinOp(Location().introduce(),quote_aa,BOT_PLUSPLUS,json_e_quote_end);
-      
-      Call* quote_dzn = new Call(Location().introduce(),ASTString("showDznId"),{aa});
-      
-      std::vector<Expression*> ite_ifelse(2);
-      ite_ifelse[0] = occurs;
-      ite_ifelse[1] = new ITE(Location().introduce(), {vd_ab->id(),quote_dzn,vd_aj->id(),quote_aa2}, aa);
-      
-      ITE* ite = new ITE(Location().introduce(),ite_ifelse,if_absent);
-      
-      FunctionI* fi = new FunctionI(Location().introduce(),
-                                    createEnumToStringName(ident, "_toString_"),
-                                    ti_fi,fi_params,ite);
-      enumItems->addItem(fi);
-    } else {
-      if (vd_enumToString) {
-        /// TODO: find a better solution (don't introduce the vd_enumToString until we
-        ///       know it's a non-anonymous enum)
-        vd_enumToString->e(new ArrayLit(Location().introduce(), std::vector<Expression*>()));
-      }
-      Call* c = vd->e()->cast<Call>();
-      if (c->id()=="anon_enum") {
+        
         Type tx = Type::parint();
         tx.ot(Type::OT_OPTIONAL);
         TypeInst* ti_aa = new TypeInst(Location().introduce(),tx);
         VarDecl* vd_aa = new VarDecl(Location().introduce(),ti_aa,"x");
         vd_aa->toplevel(false);
-        
         TypeInst* ti_ab = new TypeInst(Location().introduce(),Type::parbool());
         VarDecl* vd_ab = new VarDecl(Location().introduce(),ti_ab,"b");
         vd_ab->toplevel(false);
-
         TypeInst* ti_aj = new TypeInst(Location().introduce(),Type::parbool());
         VarDecl* vd_aj = new VarDecl(Location().introduce(),ti_aj,"json");
         vd_aj->toplevel(false);
-
-        std::vector<Expression*> deopt_args(1);
-        deopt_args[0] = vd_aa->id();
-        Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
-        Call* if_absent = new Call(Location().introduce(), "absent", deopt_args);
-        StringLit* sl_absent_dzn = new StringLit(Location().introduce(),"<>");
-        ITE* sl_absent = new ITE(Location().introduce(), {vd_aj->id(), new StringLit(Location().introduce(), ASTString("null"))}, sl_absent_dzn);
-
-        std::ostringstream ss1;
-        ss1 << "to_enum(" << ident->str() << ",";
-        StringLit* sl_dzn = new StringLit(Location().introduce(), ASTString(ss1.str()));
-        std::vector<Expression*> showIntArgs(1);
-        showIntArgs[0] = deopt;
-        Call* showInt = new Call(Location().introduce(), constants().ids.show, showIntArgs);
-        BinOp* construct_string_dzn = new BinOp(Location().introduce(), sl_dzn, BOT_PLUSPLUS, showInt);
-        StringLit* closing_bracket = new StringLit(Location().introduce(), ASTString(")"));
-        BinOp* construct_string_dzn_2 = new BinOp(Location().introduce(), construct_string_dzn,
-                                             BOT_PLUSPLUS, closing_bracket);
-
-        std::ostringstream ss2;
-        ss2 << ident->str() << "_";
-        StringLit* sl = new StringLit(Location().introduce(), ASTString(ss2.str()));
-        BinOp* construct_string = new BinOp(Location().introduce(), sl, BOT_PLUSPLUS, showInt);
-
-        StringLit* json_e_quote = new StringLit(Location().introduce(), ASTString("{\"e\":\""));
-        StringLit* json_e_quote_end = new StringLit(Location().introduce(), ASTString("\"}"));
-        BinOp* construct_string_json = new BinOp(Location().introduce(), json_e_quote, BOT_PLUSPLUS, construct_string);
-        BinOp* construct_string_json_2 = new BinOp(Location().introduce(), construct_string_json, BOT_PLUSPLUS, json_e_quote_end);
-
-        std::vector<Expression*> if_then(6);
-        if_then[0] = if_absent;
-        if_then[1] = sl_absent;
-        if_then[2] = vd_ab->id();
-        if_then[3] = construct_string_dzn_2;
-        if_then[4] = vd_aj->id();
-        if_then[5] = construct_string_json_2;
-        ITE* ite = new ITE(Location().introduce(), if_then, construct_string);
-        
-        
         TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
         std::vector<VarDecl*> fi_params(3);
         fi_params[0] = vd_aa;
         fi_params[1] = vd_ab;
         fi_params[2] = vd_aj;
+
+        std::vector<Expression*> deopt_args(1);
+        deopt_args[0] = vd_aa->id();
+        Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
+        Call* occurs = new Call(Location().introduce(), "occurs", deopt_args);
+        std::vector<Expression*> aa_args(1);
+        aa_args[0] = deopt;
+        ArrayAccess* aa = new ArrayAccess(Location().introduce(),vd_enumToString->id(),aa_args);
+
+        StringLit* sl_absent = new StringLit(Location().introduce(),"<>");
+        
+        ITE* if_absent = new ITE(Location().introduce(), {vd_aj->id(), new StringLit(Location().introduce(), ASTString("null"))}, sl_absent);
+        
+        
+        StringLit* json_e_quote = new StringLit(Location().introduce(), ASTString("{\"e\":\""));
+        StringLit* json_e_quote_end = new StringLit(Location().introduce(), ASTString("\"}"));
+        BinOp* quote_aa = new BinOp(Location().introduce(),json_e_quote,BOT_PLUSPLUS,aa);
+        BinOp* quote_aa2 = new BinOp(Location().introduce(),quote_aa,BOT_PLUSPLUS,json_e_quote_end);
+        
+        Call* quote_dzn = new Call(Location().introduce(),ASTString("showDznId"),{aa});
+        
+        std::vector<Expression*> ite_ifelse(2);
+        ite_ifelse[0] = occurs;
+        ite_ifelse[1] = new ITE(Location().introduce(), {vd_ab->id(),quote_dzn,vd_aj->id(),quote_aa2}, aa);
+        
+        ITE* ite = new ITE(Location().introduce(),ite_ifelse,if_absent);
+        
+        std::string toString = "_toString_";
+        if (parts.size()>1) {
+          toString += std::to_string(p)+"_";
+        }
+        
         FunctionI* fi = new FunctionI(Location().introduce(),
-                                      createEnumToStringName(ident, "_toString_"),
+                                      createEnumToStringName(ident, toString),
                                       ti_fi,fi_params,ite);
         enumItems->addItem(fi);
-      } else {
-        std::vector<Expression*> parts;
-        if (c->id()=="enumFromConstructors") {
-          if (c->n_args()!=1 || !c->arg(0)->isa<ArrayLit>()) {
-            throw TypeError(env, c->loc(), "enumFromConstructors used with incorrect argument type (only supports array literals)");
+      } else if (Call* c = parts[p]->dyn_cast<Call>()) {
+        if (c->id()=="anon_enum") {
+          Type tx = Type::parint();
+          tx.ot(Type::OT_OPTIONAL);
+          TypeInst* ti_aa = new TypeInst(Location().introduce(),tx);
+          VarDecl* vd_aa = new VarDecl(Location().introduce(),ti_aa,"x");
+          vd_aa->toplevel(false);
+          
+          TypeInst* ti_ab = new TypeInst(Location().introduce(),Type::parbool());
+          VarDecl* vd_ab = new VarDecl(Location().introduce(),ti_ab,"b");
+          vd_ab->toplevel(false);
+
+          TypeInst* ti_aj = new TypeInst(Location().introduce(),Type::parbool());
+          VarDecl* vd_aj = new VarDecl(Location().introduce(),ti_aj,"json");
+          vd_aj->toplevel(false);
+
+          std::vector<Expression*> deopt_args(1);
+          deopt_args[0] = vd_aa->id();
+          Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
+          Call* if_absent = new Call(Location().introduce(), "absent", deopt_args);
+          StringLit* sl_absent_dzn = new StringLit(Location().introduce(),"<>");
+          ITE* sl_absent = new ITE(Location().introduce(), {vd_aj->id(), new StringLit(Location().introduce(), ASTString("null"))}, sl_absent_dzn);
+          
+          StringLit* sl_dzn = new StringLit(Location().introduce(),
+                                            ASTString(std::string("to_enum(")+ident->str().c_str()+","));
+          
+          std::vector<Expression*> showIntArgs(1);
+          if (partCardinality.empty()) {
+            showIntArgs[0] = deopt;
+            partCardinality.push_back(c->arg(0));
+          } else {
+            showIntArgs[0] = new BinOp(Location().introduce(), partCardinality.back(), BOT_PLUS, deopt);
+            partCardinality.push_back(new BinOp(Location().introduce(), partCardinality.back(), BOT_PLUS, c->arg(0)));
           }
-          ArrayLit* al = c->arg(0)->cast<ArrayLit>();
-          for (unsigned int i=0; i<al->size(); i++) {
-            parts.push_back((*al)[i]);
+          
+          Call* showInt = new Call(Location().introduce(), constants().ids.show, showIntArgs);
+          BinOp* construct_string_dzn = new BinOp(Location().introduce(), sl_dzn, BOT_PLUSPLUS, showInt);
+          StringLit* closing_bracket = new StringLit(Location().introduce(), ASTString(")"));
+          BinOp* construct_string_dzn_2 = new BinOp(Location().introduce(), construct_string_dzn,
+                                               BOT_PLUSPLUS, closing_bracket);
+          
+          StringLit* sl = new StringLit(Location().introduce(), ASTString(std::string(ident->str().c_str())+"_"));
+          BinOp* construct_string = new BinOp(Location().introduce(), sl, BOT_PLUSPLUS, showInt);
+
+          StringLit* json_e_quote = new StringLit(Location().introduce(), ASTString("{\"e\":\""));
+          StringLit* json_e_quote_mid = new StringLit(Location().introduce(), ASTString("\", \"i\":"));
+          StringLit* json_e_quote_end = new StringLit(Location().introduce(), ASTString("}"));
+          BinOp* construct_string_json = new BinOp(Location().introduce(), json_e_quote, BOT_PLUSPLUS,
+                                                   new StringLit(Location().introduce(), ident->str()));
+          BinOp* construct_string_json_1a = new BinOp(Location().introduce(), construct_string_json, BOT_PLUSPLUS,
+                                                     json_e_quote_mid);
+          BinOp* construct_string_json_1b = new BinOp(Location().introduce(), construct_string_json_1a, BOT_PLUSPLUS,
+                                                      showInt);
+          BinOp* construct_string_json_2 = new BinOp(Location().introduce(), construct_string_json_1b, BOT_PLUSPLUS,
+                                                     json_e_quote_end);
+
+          std::vector<Expression*> if_then(6);
+          if_then[0] = if_absent;
+          if_then[1] = sl_absent;
+          if_then[2] = vd_ab->id();
+          if_then[3] = construct_string_dzn_2;
+          if_then[4] = vd_aj->id();
+          if_then[5] = construct_string_json_2;
+          ITE* ite = new ITE(Location().introduce(), if_then, construct_string);
+          
+          
+          TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
+          std::vector<VarDecl*> fi_params(3);
+          fi_params[0] = vd_aa;
+          fi_params[1] = vd_ab;
+          fi_params[2] = vd_aj;
+          std::string toString = "_toString_";
+          if (parts.size()>1) {
+            toString += std::to_string(p)+"_";
           }
+
+          FunctionI* fi = new FunctionI(Location().introduce(),
+                                        createEnumToStringName(ident, toString),
+                                        ti_fi,fi_params,ite);
+          enumItems->addItem(fi);
         } else {
-          parts.push_back(c);
+          // This is an enum constructor C(E)
+          
+          if (c->n_args() != 1 || !c->arg(0)->isa<Id>()) {
+            throw TypeError(env, c->loc(), "enum constructors must have a single identifier as argument");
+          }
+          Id* otherEnumId = c->arg(0)->cast<Id>();
+          
+          
+          // Generate:
+          /*
+           function X: C(E: x) = to_enum(X,partCardinality.back()+x)
+           function var X: C(var E: x) = to_enum(X,partCardinality.back()+x)
+           function opt X: C(opt E: x) = to_enum(X,partCardinality.back()+x)
+           function var opt X: C(var opt E: x) = to_enum(X,partCardinality.back()+x)
+           */
+          // TODO: also generate var and opt versions
+          {
+            Type Xt = Type::parint();
+            Xt.enumId(enumId);
+            TypeInst* Cfn_ti = new TypeInst(Location().introduce(),Xt);
+            TypeInst* Cfn_x_ti = new TypeInst(Location().introduce(),Type(),otherEnumId);
+            VarDecl* vd_x = new VarDecl(Location().introduce(),Cfn_x_ti,"x");
+            vd_x->toplevel(false);
+            Expression* realX;
+            if (partCardinality.empty()) {
+              realX = vd_x->id();
+            } else {
+              realX = new BinOp(Location().introduce(),partCardinality.back(),BOT_PLUS,vd_x->id());
+            }
+            Call* Cfn_body = new Call(Location().introduce(),"to_enum",{vd->id(),realX});
+            
+            FunctionI* Cfn = new FunctionI(Location().introduce(),
+                                           std::string(c->id().c_str()),
+                                           Cfn_ti,{vd_x},Cfn_body);
+            enumItems->addItem(Cfn);
+          }
+          /*
+           function E: C_inv(X: x) = to_enum(E,x-partCardinality.back())
+           */
+          {
+            TypeInst* toEfn_ti = new TypeInst(Location().introduce(),Type(),otherEnumId);
+            TypeInst* toEfn_x_ti = new TypeInst(Location().introduce(),Type(),vd->id());
+            VarDecl* vd_x = new VarDecl(Location().introduce(),toEfn_x_ti,"x");
+            vd_x->toplevel(false);
+            Expression* realX;
+            if (partCardinality.empty()) {
+              realX = vd_x->id();
+            } else {
+              realX = new BinOp(Location().introduce(),vd_x->id(),BOT_MINUS,partCardinality.back());
+            }
+            Call* toEfn_body = new Call(Location().introduce(),"to_enum",{otherEnumId,realX});
+
+            FunctionI* toEfn = new FunctionI(Location().introduce(),
+                                             std::string(c->id().c_str())+"_inv",
+                                             toEfn_ti,{vd_x},toEfn_body);
+            enumItems->addItem(toEfn);
+          }
+          
+          /*
+           function string: _toString_p_X(opt X: x, bool: b, bool: json) =
+             if absent(x) then "<>" else
+             if json then "{ \"c\": \"C\", \"e\":" else "C(" endif
+             ++_toString_E(to_enum(E,deopt(x)),b,json)
+             ++ if json then "}" else ")" endif
+             endif
+           */
+          
+          {
+            Type tx = Type::parint();
+            tx.ot(Type::OT_OPTIONAL);
+            TypeInst* ti_aa = new TypeInst(Location().introduce(),tx);
+            VarDecl* vd_aa = new VarDecl(Location().introduce(),ti_aa,"x");
+            vd_aa->toplevel(false);
+            
+            TypeInst* ti_ab = new TypeInst(Location().introduce(),Type::parbool());
+            VarDecl* vd_ab = new VarDecl(Location().introduce(),ti_ab,"b");
+            vd_ab->toplevel(false);
+
+            TypeInst* ti_aj = new TypeInst(Location().introduce(),Type::parbool());
+            VarDecl* vd_aj = new VarDecl(Location().introduce(),ti_aj,"json");
+            vd_aj->toplevel(false);
+
+            std::vector<Expression*> deopt_args(1);
+            deopt_args[0] = vd_aa->id();
+            Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
+            Call* if_absent = new Call(Location().introduce(), "absent", deopt_args);
+            StringLit* sl_absent_dzn = new StringLit(Location().introduce(),"<>");
+            ITE* sl_absent = new ITE(Location().introduce(), {vd_aj->id(), new StringLit(Location().introduce(), ASTString("null"))}, sl_absent_dzn);
+            
+            Call* toEnumE = new Call(Location().introduce(), "to_enum", {otherEnumId,deopt});
+            Call* toString = new Call(Location().introduce(),
+                                      createEnumToStringName(otherEnumId, "_toString_"),
+                                      {toEnumE,vd_ab->id(),vd_aj->id()});
+            
+            StringLit* openOther = new StringLit(Location().introduce(),std::string(c->id().c_str())+"(");
+            StringLit* openJson = new StringLit(Location().introduce(),"{ \"c\" : \""+std::string(c->id().c_str())+"\", \"e\" : ");
+            ITE* openConstr = new ITE(Location().introduce(), {vd_aj->id(), openJson}, openOther);
+            StringLit* closeJson = new StringLit(Location().introduce(), "}");
+            StringLit* closeOther = new StringLit(Location().introduce(), ")");
+            ITE* closeConstr = new ITE(Location().introduce(), {vd_aj->id(), closeJson}, closeOther);
+            
+            BinOp* concat1 = new BinOp(Location().introduce(),
+                                       openConstr,
+                                       BOT_PLUSPLUS, toString);
+            BinOp* concat2 = new BinOp(Location().introduce(),concat1,BOT_PLUSPLUS,
+                                       closeConstr);
+            
+            ITE* ite = new ITE(Location().introduce(), {if_absent,sl_absent}, concat2);
+            TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
+            std::vector<VarDecl*> fi_params(3);
+            fi_params[0] = vd_aa;
+            fi_params[1] = vd_ab;
+            fi_params[2] = vd_aj;
+            std::string XtoString = "_toString_";
+            if (parts.size()>1) {
+              XtoString += std::to_string(p)+"_";
+            }
+
+            FunctionI* fi = new FunctionI(Location().introduce(),
+                                          createEnumToStringName(ident, XtoString),
+                                          ti_fi,fi_params,ite);
+            enumItems->addItem(fi);
+          }
+          
+          Call* cardE = new Call(Location().introduce(),"card",{otherEnumId});
+          if (partCardinality.empty()) {
+            partCardinality.push_back(cardE);
+          } else {
+            partCardinality.push_back(new BinOp(Location().introduce(),partCardinality.back(),BOT_PLUS,cardE));
+          }
+          
         }
-        /*
-         function Foo: a(A: x) = to_enum(Foo,x)
-         function Foo: b(B: x) = to_enum(Foo,card(A)+x)
-         function Foo: c(C: x) = to_enum(Foo,card(A)+card(B)+x)
-         function A: toA(Foo: x) = to_enum(A,x)
-         function B: toB(Foo: x) = to_enum(B,x-card(A))
-         function C: toC(Foo: x) = to_enum(C,x-card(A)-card(B))
-         */
-        /*
-         function string: _toString_ENUM(opt Foo: x, bool: b, bool: json) =
-           if occurs(x) then
-             if deopt(x)<=card(A) then "A("++_toString_ENUM(to_enum(A,x))++")"
-             elseif deopt(x)<=card(A)+card(B) then "B("++_toString_ENUM(to_enum(B,x))++")"
-             ...
-             else "F("++_toString_ENUM(to_enum(F,x))++")"
-           else <> endif
-         */
+      } else {
+        assert(false);
       }
+    }
+    
+    // Create set literal for overall enum
+    BinOp* rhs = new BinOp(vd->loc(), IntLit::a(1), BOT_DOTDOT, partCardinality.back());
+    vd->e(rhs);
+    
+    if (parts.size() > 1) {
+      Type tx = Type::parint();
+      tx.ot(Type::OT_OPTIONAL);
+      TypeInst* ti_aa = new TypeInst(Location().introduce(),tx);
+      VarDecl* vd_aa = new VarDecl(Location().introduce(),ti_aa,"x");
+      vd_aa->toplevel(false);
+      
+      TypeInst* ti_ab = new TypeInst(Location().introduce(),Type::parbool());
+      VarDecl* vd_ab = new VarDecl(Location().introduce(),ti_ab,"b");
+      vd_ab->toplevel(false);
+
+      TypeInst* ti_aj = new TypeInst(Location().introduce(),Type::parbool());
+      VarDecl* vd_aj = new VarDecl(Location().introduce(),ti_aj,"json");
+      vd_aj->toplevel(false);
+
+      std::vector<Expression*> deopt_args(1);
+      deopt_args[0] = vd_aa->id();
+      Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
+      Call* if_absent = new Call(Location().introduce(), "absent", deopt_args);
+      StringLit* sl_absent_dzn = new StringLit(Location().introduce(),"<>");
+      ITE* sl_absent = new ITE(Location().introduce(), {vd_aj->id(), new StringLit(Location().introduce(), ASTString("null"))}, sl_absent_dzn);
+      
+      std::vector<Expression*> ite_cases_a;
+      Expression* ite_cases_else;
+      for (unsigned int i=0; i<parts.size(); i++) {
+        std::string toString = "_toString_"+std::to_string(i)+"_";
+        Expression* aa;
+        if (i==0) {
+          aa = vd_aa->id();
+        } else {
+          BinOp* bo = new BinOp(Location().introduce(), deopt, BOT_MINUS, partCardinality[i-1]);
+          Call* c = new Call(Location().introduce(), "to_enum", {vd->id(), bo});
+          aa = c;
+        }
+        Call* c = new Call(Location().introduce(),
+                           createEnumToStringName(ident, toString),
+                           {aa,vd_ab->id(),vd_aj->id()});
+        if (i < parts.size()-1) {
+          BinOp* bo = new BinOp(Location().introduce(), deopt, BOT_LQ, partCardinality[i]);
+          ite_cases_a.push_back(bo);
+          ite_cases_a.push_back(c);
+        } else {
+          ite_cases_else = c;
+        }
+      }
+      
+      ITE* ite_cases = new ITE(Location().introduce(),ite_cases_a, ite_cases_else);
+      
+      ITE* ite = new ITE(Location().introduce(),{if_absent,sl_absent},ite_cases);
+      
+      TypeInst* ti_fi = new TypeInst(Location().introduce(),Type::parstring());
+      std::vector<VarDecl*> fi_params(3);
+      fi_params[0] = vd_aa;
+      fi_params[1] = vd_ab;
+      fi_params[2] = vd_aj;
+      FunctionI* fi = new FunctionI(Location().introduce(),
+                                    createEnumToStringName(ident, "_toString_"),
+                                    ti_fi,fi_params,ite);
+      enumItems->addItem(fi);
+
+      
+      /*
+       function string: _toString_ENUM(opt Foo: x, bool: b, bool: json) =
+         if occurs(x) then
+           if deopt(x)<=partCardinality[1] then _toString_1_ENUM(x,b,json)
+           elseif deopt(x)<=partCardinality[2] then _toString_2_ENUM(x,b,json)
+           ...
+           endif
+         else "<>" endif
+       */
     }
     
     {
@@ -613,7 +813,6 @@ namespace MiniZinc {
                                     ti_fi,fi_params,let);
       enumItems->addItem(fi);
     }
-    return ret;
   }
 
   void
@@ -627,16 +826,7 @@ namespace MiniZinc {
       vd->type(vdt);
 
       if (vd->e()) {
-        (void) createEnumMapper(env, model, enumId, vd, NULL, enumItems);
-      } else {
-        GCLock lock;
-        std::string name = createEnumToStringName(vd->id(),"_enum_to_string_");
-        std::vector<TypeInst*> ranges(1);
-        ranges[0] = new TypeInst(Location().introduce(),Type::parint());
-        TypeInst* ti = new TypeInst(Location().introduce(),Type::parstring(1));
-        ti->setRanges(ranges);
-        VarDecl* vd_enumToString = new VarDecl(Location().introduce(),ti,name,NULL);
-        enumItems->addItem(new VarDeclI(Location().introduce(),vd_enumToString));
+        createEnumMapper(env, model, enumId, vd, enumItems);
       }
     }
     scopes.add(env, vd);
@@ -1894,6 +2084,8 @@ namespace MiniZinc {
             if (vet == Type::bot(1) && vd.e()->isa<ArrayLit>() && vd.e()->cast<ArrayLit>()->size()==0 &&
                 vdt.dim() != 0) {
               // this is okay: assigning an empty array (one-dimensional) to an array variable
+            } else if (vd.ti()->isEnum() && vet == Type::parsetint()) {
+              // let's ignore this for now (TODO: add an annotation to make sure only compiler-generated ones are accepted)
             } else {
               std::ostringstream ss;
               ss << "initialisation value for `" << vd.id()->str() << "' has invalid type-inst: expected `"
@@ -2141,16 +2333,7 @@ namespace MiniZinc {
           vd->e(ai->e());
           vd->ann().add(constants().ann.rhs_from_assignment);
           if (vd->ti()->isEnum()) {
-            GCLock lock;
-            ASTString name(createEnumToStringName(vd->id(),"_enum_to_string_"));
-            VarDecl* vd_enum = ts.get(env.envi(),name,vd->loc());
-            if (vd_enum->e())
-              throw TypeError(env.envi(),ai->loc(),"multiple definition of the same enum");
-            AssignI* ai_enum = createEnumMapper(env.envi(), m, vd->ti()->type().enumId(), vd, vd_enum, enumItems2);
-            if (ai_enum) {
-              vd_enum->e(ai_enum->e());
-              ai_enum->remove();
-            }
+            createEnumMapper(env.envi(), m, vd->ti()->type().enumId(), vd, enumItems2);
           }
         }
       }
@@ -2168,7 +2351,7 @@ namespace MiniZinc {
         functionItems.push_back(fi);
       }
     }
-    
+
     delete enumItems;
     delete enumItems2;
     
