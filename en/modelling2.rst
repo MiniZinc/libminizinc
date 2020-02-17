@@ -32,7 +32,7 @@ declares four fixed sets of integers describing the dimensions of the finite
 element model: ``HEIGHT`` is the whole height of the model, while ``CHEIGHT`` is
 the centre of the height omitting the top and bottom,
 ``WIDTH`` is the whole width of the model, while
-``CWIDTH`` is the centre of the width omitting the left and rightsides,
+``CWIDTH`` is the centre of the width omitting the left and right sides.
 Finally a two dimensional array of float variables ``t`` 
 with rows numbered
 :math:`0` to :math:`h` (``HEIGHT``) and columns :math:`0` to :math:`w` (``WIDTH``), 
@@ -395,7 +395,7 @@ instance, :mzn:`{i + j | i, j in 1..3 where j < i}` evaluates to the set
 
 Second, MiniZinc provides a number of built-in functions that take a
 one-dimensional array and aggregate the elements. Probably the most useful
-of these is :mzn:``forall``.
+of these is :mzn:`forall`.
 This takes an array of Boolean expressions
 (that is, constraints) and returns a single Boolean expression which is the
 logical conjunction of the Boolean expressions in the array.
@@ -804,7 +804,7 @@ might result in output
     <enum-name> : <var-name>
     <l>..<u> : <var-name>
   
-  where :mzndef:`<enum-name>` is the name of a enumerated type, and
+  where :mzndef:`<enum-name>` is the name of an enumerated type, and
   :mzndef:`<l>` and :mzndef:`<u>` are fixed enumerated type expressions of the same
   enumerated type.
 
@@ -816,7 +816,7 @@ might result in output
     var <enum-name> : <var-name>
     var <l>..<u> : <var-name>
 
-  where :mzndef:`<enum-name>` is the name of a enumerated type, and
+  where :mzndef:`<enum-name>` is the name of an enumerated type, and
   :mzndef:`<l>` and :mzndef:`<u>` are fixed enumerated type expressions of the same
   enumerated type.
 

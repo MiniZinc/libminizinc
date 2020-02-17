@@ -227,7 +227,7 @@ print when the model has been run and a :index:`solution` is found.
   if :math:`n > 0` and left justified otherwise;
   :mzn:`show_float(n,d,X)`
   outputs the value of float ``X`` in at least :math:`|n|` characters, right justified
-  if :math:`n > 0` and left justified otherwise, with :math`d` characters after the
+  if :math:`n > 0` and left justified otherwise, with :math:`d` characters after the
   decimal point.
 
   :index:`String literals <string; literal>` must fit on a single line. Longer string literals can be
@@ -694,7 +694,7 @@ There are 8 kinds of :index:`items <item>`.
   Variables come in two kinds.
   Parameters which are assigned a fixed value in the model or in a data file and
   decision variables whose value is found only when the model is solved.
-  We say that parameters are :index:`fixed` and decision variables
+  We say that parameters are :index:`fixed` and decision variables are
   :index:`unfixed`.
   The variable can be optionally assigned a value as part of the declaration.
   The form is:
@@ -766,7 +766,7 @@ There are 8 kinds of :index:`items <item>`.
     solve maximize <arithmetic expression>;
     solve minimize <arithmetic expression>;
 
-  A model is required to have at most one solve item. If its omitted it is
+  A model is required to have at most one solve item. If it's omitted, it is
   treated as :mzn:`solve satisfy`.
 
 - :index:`Output items <item; output>` are for nicely presenting the results of the model execution. 
