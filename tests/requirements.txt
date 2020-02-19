@@ -1,7 +1,7 @@
-PyYAML==5.1.2
-pytest==5.3.1
-py==1.8.0
+PyYAML==5.3
+pytest==5.3.5
+py==1.8.1
 pytest-html==2.0.1
-pytest-xdist==1.30.0
+pytest-xdist==1.31.0
 pytest-instafail==0.4.1.post0
-minizinc==0.2.1
+minizinc==0.2.2
