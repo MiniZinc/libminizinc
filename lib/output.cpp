@@ -232,6 +232,14 @@ namespace MiniZinc {
         }
         c.decl(env.model->matchFn(env,&c,false));
       }
+      void vBinOp(BinOp& bo) {
+        std::vector<Expression*> args = {bo.lhs(), bo.rhs()};
+        bo.decl(env.model->matchFn(env, bo.opToString(), args, false));
+      }
+      void vUnop(UnOp& uo) {
+        std::vector<Expression*> args = {uo.e()};
+        uo.decl(env.model->matchFn(env, uo.opToString(), args, false));
+      }
     } _decls(env);
     topDown(_decls, e);
   }
