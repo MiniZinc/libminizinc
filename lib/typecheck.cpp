@@ -978,6 +978,11 @@ namespace MiniZinc {
         sl.type(ty);
         return;
       }
+      if (sl.fsv()) {
+        ty.bt(Type::BT_FLOAT);
+        sl.type(ty);
+        return;
+      }
       unsigned int enumId = sl.v().size() > 0 ? sl.v()[0]->type().enumId() : 0;
       for (unsigned int i=0; i<sl.v().size(); i++) {
         if (sl.v()[i]->type().dim() > 0)
