@@ -199,7 +199,7 @@ static void XPRS_CC userSolNotifyCallback(XPRSprob xprsProblem,
   data->problem->endCB();
 
   if (info->solcbfn) {
-    (*info->solcbfn)(*info->pOutput, info->ppp);
+    (*info->solcbfn)(*info->pOutput, info->psi);
   }
 }
 
@@ -288,7 +288,7 @@ void MIP_xpress_wrapper::solve() {
   setOutputAttributes(&output,  problem.getXPRSprob());
 
   if ( !options->printAllSolutions && cbui.solcbfn) {
-    cbui.solcbfn(output, cbui.ppp);
+    cbui.solcbfn(output, cbui.psi);
   }
 }
 
