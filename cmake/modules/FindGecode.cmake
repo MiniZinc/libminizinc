@@ -72,6 +72,7 @@ find_package_handle_standard_args(
   REQUIRED_VARS GECODE_INCLUDE GECODE_LIBRARY
   VERSION_VAR GECODE_VERSION
   HANDLE_COMPONENTS
+  FAIL_MESSAGE "Could NOT find Gecode, use Gecode_ROOT to hint its location"
 )
 
 mark_as_advanced(GECODE_INCLUDE GECODE_LIBRARY)

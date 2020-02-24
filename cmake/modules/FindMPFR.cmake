@@ -13,8 +13,11 @@ find_library(MPFR_LIBRARY mpfr
 include(FindPackageHandleStandardArgs)
 # handle the QUIETLY and REQUIRED arguments and set MPFR_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(MPFR DEFAULT_MSG
-                                  MPFR_LIBRARY MPFR_INCLUDE)
+find_package_handle_standard_args(MPFR
+  FOUND_VAR MPFR_FOUND
+  REQUIRED_VARS MPFR_LIBRARY MPFR_INCLUDE
+  FAIL_MESSAGE "Could NOT find MPFR, use MPFR_ROOT to hint its location"
+)
 
 mark_as_advanced(MPFR_INCLUDE MPFR_LIBRARY)
 

@@ -51,10 +51,13 @@ else()
 endif()
 
 include(FindPackageHandleStandardArgs)
-# handle the QUIETLY and REQUIRED arguments and set CBC_FOUND to TRUE
+# handle the QUIETLY and REQUIRED arguments and set GUROBI_FOUND to TRUE
 # if all listed variables are TRUE
-find_package_handle_standard_args(Gurobi DEFAULT_MSG
-                                  GUROBI_INCLUDE GUROBI_LIBRARY)
+find_package_handle_standard_args(Gurobi
+  FOUND_VAR GUROBI_FOUND
+  REQUIRED_VARS GUROBI_INCLUDE GUROBI_LIBRARY
+  FAIL_MESSAGE "Could NOT find Gurobi, use GUROBI_ROOT to hint its location"
+)
 
 if(GUROBI_PLUGIN AND HAS_WINDOWS_H AND NOT HAS_DLFCN_H)
   unset(GUROBI_LIBRARY)
