@@ -33,7 +33,6 @@ option(USE_PROPRIETARY "Enable static linking of proprietary solvers" OFF)
 if(NOT USE_PROPRIETARY)
   set(CPLEX_PLUGIN ON)
   set(GUROBI_PLUGIN ON)
-  set(USE_SCIP OFF)
 endif()
 
 # Export compile commands (useful when working with visual studio code)
@@ -55,7 +54,7 @@ find_package(Geas)
 find_package(Gecode 6.0 COMPONENTS Driver Float Int Kernel Minimodel Search Set Support)
 find_package(Gurobi)
 find_package(OsiCBC)
-find_package(SCIP CONFIG)
+find_package(SCIP)
 find_package(Xpress)
 
 # Set build type when none is selected

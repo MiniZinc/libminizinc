@@ -10,6 +10,7 @@ if(SCIP_FOUND AND USE_SCIP)
     solvers/MIP/MIP_scip_wrap.cpp
     solvers/MIP/MIP_solverinstance.cpp
 
+    include/minizinc/plugin.hh
     include/minizinc/solvers/MIP/MIP_scip_solverfactory.hh
     include/minizinc/solvers/MIP/MIP_scip_wrap.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh
@@ -21,6 +22,5 @@ if(SCIP_FOUND AND USE_SCIP)
   ### Setup correct compilation into the MiniZinc library
   target_compile_definitions(mzn PRIVATE HAS_SCIP)
   target_sources(mzn PRIVATE $<TARGET_OBJECTS:minizinc_scip>)
-  target_link_libraries(mzn ${SCIP_LIBRARIES})
 
 endif()

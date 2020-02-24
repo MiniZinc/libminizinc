@@ -12,6 +12,7 @@ variables:
   Gurobi_ROOT: "$CI_PROJECT_DIR/vendor/gurobi"
   CPlex_ROOT: "$CI_PROJECT_DIR/vendor/CPLEX_Studio/cplex"
   OsiCBC_ROOT: "$CI_PROJECT_DIR/vendor/cbc"
+  SCIP_ROOT: "$CI_PROJECT_DIR/vendor/scip"
   # CCache settings
   CCACHE_DIR: "$CI_PROJECT_DIR/.ccache"
   CCACHE_MAXSIZE: "100M"
