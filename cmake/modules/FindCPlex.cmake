@@ -17,6 +17,7 @@ foreach(VERSION ${CPLEX_VERSIONS})
   list(APPEND CPLEX_DEFAULT_LOC "C:\\Program Files (x86)\\IBM\\ILOG\\CPLEX_Studio${VERSION}")
   list(APPEND CPLEX_DEFAULT_LOC "$ENV{HOME}/Applications/IBM/ILOG/CPLEX_Studio${VERSION}")
   list(APPEND CPLEX_DEFAULT_LOC "/Applications/IBM/ILOG/CPLEX_Studio${VERSION}")
+  list(APPEND CPLEX_DEFAULT_LOC "/Applications/CPLEX_Studio${VERSION}")
 
   list(APPEND CPLEX_LIB_NAMES cplex${VERSION})
 endforeach(VERSION)
