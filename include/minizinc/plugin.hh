@@ -44,13 +44,15 @@ namespace MiniZinc {
     };
 
     /// Load a plugin with given DLL path
-    Plugin(std::string file) {
+    Plugin(const std::string& file) {
       if (MiniZinc::FileUtils::is_absolute(file)) {
         open(file);
       } else {
         // TODO: this should probably check that there is no current file extension
 #ifdef _WIN32
         open(file + ".dll");
+#elif __APPLE__
+        open(file + ".dylib");
 #else
         open(file + ".so");
 #endif
@@ -59,7 +61,7 @@ namespace MiniZinc {
         throw PluginError("Failed to load plugin " + file);
     }
     /// Load a plugin by trying the given DLL file paths
-    Plugin(std::vector<std::string> files) {
+    Plugin(const std::vector<std::string>& files) {
       for (auto file : files) {
         if (MiniZinc::FileUtils::is_absolute(file)) {
           open(file);
@@ -74,7 +76,17 @@ namespace MiniZinc {
         if (dll != nullptr)
           return;
       }
-      throw PluginError("Failed to load plugin");
+      bool first = true;
+      std::stringstream ss;
+      ss << "Failed to load plugin. Tried ";
+      for (auto file : files) {
+        if (first)
+          first = false;
+        else
+          ss << ", ";
+        ss << file;
+      }
+      throw PluginError(ss.str());
     }
 
     ~Plugin() {
@@ -95,7 +107,7 @@ namespace MiniZinc {
     }
   private:
     void* dll;
-    void open(std::string file) {
+    void open(const std::string& file) {
 #ifdef _WIN32
       dll = (void*)LoadLibrary((LPCSTR)file.c_str());
 #else

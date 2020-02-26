@@ -81,7 +81,7 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
     static std::string getName(void);
     static std::vector<std::string> getTags(void);
     static std::vector<std::string> getStdFlags(void);
-    static std::string needDllFlag(void) { return ""; }
+    static std::vector<std::string> getRequiredFlags(void) { return {}; };
 
     void printVersion(std::ostream& );
     void printHelp(std::ostream& );

@@ -152,7 +152,7 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     static std::string getName(void);
     static std::vector<std::string> getTags(void);
     static std::vector<std::string> getStdFlags(void);
-    static std::string needDllFlag(void);
+    static std::vector<std::string> getRequiredFlags(void);
 //       Statistics& getStatistics() { return _statistics; }
 
 //      IloConstraintArray *userCuts, *lazyConstraints;

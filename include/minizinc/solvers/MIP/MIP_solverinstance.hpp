@@ -4,17 +4,13 @@ namespace MiniZinc {
 
   template<class MIPWrapper>
   MIP_SolverFactory<MIPWrapper>::MIP_SolverFactory(void) {
-    std::vector<std::string> requiredFlags;
-    std::string dllFlag = MIPWrapper::needDllFlag();
-    if (dllFlag.size())
-      requiredFlags.push_back(dllFlag);
     SolverConfig sc(getId(), MIPWrapper::getVersion());
     sc.name(MIPWrapper::getName());
     sc.mznlib(MIPWrapper::getMznLib());
     sc.mznlibVersion(1);
     sc.supportsMzn(true);
     sc.description("MiniZinc MIP solver plugin");
-    sc.requiredFlags(requiredFlags);
+    sc.requiredFlags(MIPWrapper::getRequiredFlags());
     sc.tags(MIPWrapper::getTags());
     sc.stdFlags(MIPWrapper::getStdFlags());
     SolverConfigs::registerBuiltinSolver(sc);

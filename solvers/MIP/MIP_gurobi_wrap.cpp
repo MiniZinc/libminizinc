@@ -62,13 +62,13 @@ string MIP_gurobi_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt
   }
 }
 
-string MIP_gurobi_wrapper::needDllFlag( ) {
+vector<string> MIP_gurobi_wrapper::getRequiredFlags(void) {
   MIP_gurobi_wrapper mgw( NULL );
   try {
     mgw.checkDLL();
-    return "";
+    return { "" };
   } catch (MiniZinc::InternalError&) {
-    return "--gurobi-dll";
+    return { "--gurobi-dll" };
   }
 }
 

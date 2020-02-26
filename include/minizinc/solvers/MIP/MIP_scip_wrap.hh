@@ -33,7 +33,7 @@
 class ScipPlugin : public MiniZinc::Plugin {
 public:
   ScipPlugin();
-  ScipPlugin(std::string dll);
+  ScipPlugin(const std::string& dll);
   
   int(__stdcall *SCIPmajorVersion) (void);
   int(__stdcall *SCIPminorVersion) (void);
@@ -140,7 +140,7 @@ class MIP_scip_wrapper : public MIP_wrapper {
     static std::string getName(void);
     static std::vector<std::string> getTags(void);
     static std::vector<std::string> getStdFlags(void);
-    static std::string needDllFlag(void);
+    static std::vector<std::string> getRequiredFlags(void);
 
     bool processOption(int& i, int argc, const char** argv);
     void printVersion(std::ostream& );

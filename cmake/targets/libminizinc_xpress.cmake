@@ -10,6 +10,7 @@ if(XPRESS_FOUND AND USE_XPRESS)
     solvers/MIP/MIP_xpress_solverfactory.cpp
     solvers/MIP/MIP_xpress_wrap.cpp
 
+    include/minizinc/plugin.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hh
     include/minizinc/solvers/MIP/MIP_solverinstance.hpp
     include/minizinc/solvers/MIP/MIP_xpress_solverfactory.hh
@@ -17,12 +18,10 @@ if(XPRESS_FOUND AND USE_XPRESS)
   )
 
   target_include_directories(minizinc_xpress PRIVATE ${XPRESS_INCLUDE_DIRS})
-  target_link_libraries(minizinc_xpress minizinc_core ${XPRESS_LIBRARIES} ${CMAKE_THREAD_LIBS_INIT})
   add_dependencies(minizinc_xpress minizinc_parser)
 
   ### Setup correct compilation into the MiniZinc library
   target_compile_definitions(mzn PRIVATE HAS_XPRESS)
   target_sources(mzn PRIVATE $<TARGET_OBJECTS:minizinc_xpress>)
-  target_link_libraries(mzn ${XPRESS_LIBRARIES})
 
 endif()

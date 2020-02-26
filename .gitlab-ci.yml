@@ -13,6 +13,7 @@ variables:
   CPlex_ROOT: "$CI_PROJECT_DIR/vendor/CPLEX_Studio/cplex"
   OsiCBC_ROOT: "$CI_PROJECT_DIR/vendor/cbc"
   SCIP_ROOT: "$CI_PROJECT_DIR/vendor/scip"
+  Xpress_ROOT: "$CI_PROJECT_DIR/vendor/xpressmp"
   # CCache settings
   CCACHE_DIR: "$CI_PROJECT_DIR/.ccache"
   CCACHE_MAXSIZE: "100M"

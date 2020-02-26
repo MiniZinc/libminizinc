@@ -28,7 +28,7 @@ using namespace std;
 #include <minizinc/utils.hh>
 
 /// Load SCIP DLL with the given path
-ScipPlugin::ScipPlugin(std::string dll) : Plugin(dll) {
+ScipPlugin::ScipPlugin(const std::string& dll) : Plugin(dll) {
   load();
 }
 
@@ -150,12 +150,12 @@ string MIP_scip_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt) 
     return "<unknown version>";
   }
 }
-string MIP_scip_wrapper::needDllFlag( ) {
+vector<string> MIP_scip_wrapper::getRequiredFlags(void) {
   try {
     ScipPlugin p;
-    return "";
+    return {};
   } catch (MiniZinc::Plugin::PluginError&) {
-    return "--scip-dll";
+    return { "--scip-dll" };
   }
 }
 
