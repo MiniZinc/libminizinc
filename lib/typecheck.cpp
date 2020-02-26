@@ -1152,6 +1152,7 @@ namespace MiniZinc {
       Type tt = aa.v()->type();
       if (tt.enumId() != 0) {
         const std::vector<unsigned int>& arrayEnumIds = _env.getArrayEnum(tt.enumId());
+        std::vector<unsigned int> newArrayEnumids;
         
         for (unsigned int i=0; i<arrayEnumIds.size()-1; i++) {
           Expression* aai = aa.idx()[i];
@@ -1181,7 +1182,10 @@ namespace MiniZinc {
               aai_bo->type(aai_bo_t);
             }
           }
-
+          if (aai->type().is_set()) {
+            newArrayEnumids.push_back(arrayEnumIds[i]);
+          }
+          
           if (arrayEnumIds[i] != 0) {
             if (aa.idx()[i]->type().enumId() != arrayEnumIds[i]) {
               std::ostringstream oss;
@@ -1194,7 +1198,13 @@ namespace MiniZinc {
             }
           }
         }
-        tt.enumId(arrayEnumIds[arrayEnumIds.size()-1]);
+        if (newArrayEnumids.empty()) {
+          tt.enumId(arrayEnumIds[arrayEnumIds.size()-1]);
+        } else {
+          newArrayEnumids.push_back(arrayEnumIds[arrayEnumIds.size()-1]);
+          int newEnumId = _env.registerArrayEnum(newArrayEnumids);
+          tt.enumId(newEnumId);
+        }
       }
       int n_dimensions = 0;
       bool isVarAccess = false;
