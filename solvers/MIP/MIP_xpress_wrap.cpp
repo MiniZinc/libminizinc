@@ -45,10 +45,11 @@ const std::vector<std::string>& XprlPlugin::dlls() {
     "xprl",
     "C:\\xpressmp\\bin\\xprl.dll"
 #elif __APPLE__
-    "libxprl"
+    "libxprl",
+    " /Applications/FICO Xpress/xpressmp/lib/libxprl.dylib"
 #else
     "libxprl",
-    "/opt/xpressmp/libxprl.so"
+    "/opt/xpressmp/lib/libxprl.so"
 #endif
   };
   return ret;
@@ -101,9 +102,10 @@ const std::vector<std::string>& XpressPlugin::dlls() {
     "C:\\xpressmp\\bin\\xprs.dll"
 #elif __APPLE__
     "libxprs"
+    " /Applications/FICO Xpress/xpressmp/lib/libxprs.dylib"
 #else
     "libxprs",
-    "/opt/xpressmp/libxprs.so"
+    "/opt/xpressmp/lib/libxprs.so"
 #endif
   };
   return ret;

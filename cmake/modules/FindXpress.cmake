@@ -7,7 +7,7 @@
 #TODO: Check default installation locations
 find_path(XPRESS_INCLUDE xprs.h
           PATHS $ENV{XPRESSDIR} $ENV{XPRESS} $ENV{XPRESS_DIR}
-          HINTS /opt/xpressmp C:/xpressmp
+          HINTS /opt/xpressmp C:/xpressmp /Applications/FICO\ Xpress/xpressmp
           PATH_SUFFIXES include)
 
 # handle the QUIETLY and REQUIRED arguments and set XPRESS_FOUND to TRUE
