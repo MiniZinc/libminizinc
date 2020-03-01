@@ -43,7 +43,7 @@ variables.
 
 - Value: where :math:`I` is represented by :math:`m+1` binary variables
   :math:`i_0, \ldots, i_m` where
-  :math:`i = k \Leftrightarrow i_k`, and at most one of :math:`i_0, \ldots, i_m` is true. 
+  :math:`I = k \Leftrightarrow i_k`, and at most one of :math:`i_0, \ldots, i_m` is true. 
   This can be represented in MiniZinc as
 
   .. code-block:: minizinc
