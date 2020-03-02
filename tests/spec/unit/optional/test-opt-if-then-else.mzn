@@ -49,4 +49,4 @@ var opt int: b :: add_to_output = if p then x else y endif;
 bool: q = true;
 opt int: c :: add_to_output = if q then <> else 1 endif;
 
-constraint x != y;
+constraint not (x = y);
