@@ -5,6 +5,56 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.4.3
+=============
+
+Changes:
+- Enable CPLEX 12.10.
+- Add checker output to generated output items.
+- Short-circuit evaluation for mixed par/var conjunctions, disjunctions,
+  and clauses.
+- Add inverse_in_range global.
+- Pretty printing set ranges now uses union instead of ++ to be compatible
+  with DZN.
+- Add array2set for par bool and float arrays
+- The _objective variable is no longer added to FlatZinc input files.
+- JSON representation of sets with ranges can now be parsed
+  (previously they could only be output).
+- Check index sets to arguments of global_cardinality_low_up.
+- Xpress and SCIP are not compiled as plugins and no longer require recompilation
+  to enable.
+- If-then-else for opt are no longer written in terms of the non-opt version,
+  allowing them to return absent.
+
+Bug fixes:
+- Fix checking of domains and index sets in par arrays inside lets.
+- Remove duplicate call stack items to improve error messages.
+- Ignore absent values when computing domains.
+- Generate call for actual binary operator (after optimising double negation).
+  Fixes #364.
+- Fix non-associative operators on optional values.
+- Only output optional parameters in model interface if they were undefined
+  (rather than assigned to <>).
+- Fix some issues with evaluating par opt expressions.
+- Make solution checkers work for multi-dimensional arrays
+  and arrays with enum index sets
+- Fix Boolean aggregation for expressions that are defined recursively.
+- Use correct index set for nosets set_lt and similar (partial fix for #369)
+- Fix coercion of sets to arrays (previously, coercing a set of X to
+  an array of X to an array of Y did not work correctly).
+- Fix infinite loop when printing infinite set range
+- Add assertion so that array2set can only be used for arrays with bounds (#370, #371).
+- Fix typing and pretty printing of par bool sets.
+- Use output_array dims for output vars in FlatZinc files
+  (previously, a type-checker error would occur when running a solver through
+  MiniZinc on a FlatZinc file with multidimensional arrays).
+- The Xpress backend was made functional again.
+- Fix segmentation fault in output_only type-checking.
+- Compute correct array enum type for array slices (#372).
+- Fix behaviour of using undefined expressions in var comprehensions guarded
+  against by where clauses (previously, these undefined expressions would bubble
+  up regardless of the where clause, constraining the model).
+
 Version 2.4.2
 =============
 
