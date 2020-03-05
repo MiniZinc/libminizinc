@@ -2370,7 +2370,15 @@ namespace MiniZinc {
 
     for (auto vd_k : env.envi().checkVars) {
       try {
-        VarDecl* vd = ts.get(env.envi(), vd_k()->cast<VarDecl>()->id()->str(), vd_k()->cast<VarDecl>()->loc());
+        VarDecl* vd;
+        try {
+          vd = ts.get(env.envi(), vd_k()->cast<VarDecl>()->id()->str(), vd_k()->cast<VarDecl>()->loc());
+        } catch (TypeError&) {
+          if (vd_k()->cast<VarDecl>()->type().isvar())
+            continue; // var can be undefined
+          else
+            throw;
+        }
         vd->ann().add(constants().ann.mzn_check_var);
         if (vd->type().enumId() != 0) {
           GCLock lock;
