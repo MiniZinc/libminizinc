@@ -872,7 +872,12 @@ namespace MiniZinc {
       }
       EnvI::CSEMap::iterator cit = env.cse_map_find(cr());
       if (cit != env.cse_map_end()) {
-        ret.b = bind(env,Ctx(),b,env.ignorePartial ? constants().lit_true : cit->second.b());
+        if (env.ignorePartial) {
+          ret.b = bind(env,Ctx(),b,constants().lit_true);
+        } else {
+          args_ee.push_back(EE(nullptr,cit->second.b()));
+          ret.b = conj(env,b,Ctx(),args_ee);
+        }
         ret.r = bind(env,ctx,r,cit->second.r());
       } else {
         for (unsigned int i=0; i<decl->params().size(); i++) {
