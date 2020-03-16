@@ -16,11 +16,13 @@ import warnings
 import sys
 
 
+def pytest_configure():
+    pytest.solver_cache = {}
+
 def pytest_addoption(parser):
     parser.addoption(
         "--solvers",
         action="store",
-        default="gecode,cbc,chuffed",
         metavar="SOLVERS",
         help="only run tests with the comma separated SOLVERS.",
     )
@@ -29,13 +31,10 @@ def pytest_addoption(parser):
         action="append",
         default=[],
         metavar="SUITE_NAME",
-        help="Use the given YAML configuration from suites.yml"
+        help="Use the given YAML configuration from suites.yml",
     )
     parser.addoption(
-        "--all-suites",
-        action="store_true",
-        dest="feature",
-        help="Run all test suites"
+        "--all-suites", action="store_true", dest="feature", help="Run all test suites"
     )
 
 
@@ -70,7 +69,9 @@ def pytest_runtest_makereport(item, call):
             html_content = """
                 <button class="copy-button" onclick="this.nextElementSibling.select();document.execCommand('copy');this.textContent = 'Copied!';">Copy obtained output to clipboard</button>
                 <textarea class="hidden-textarea" readonly>{}</textarea>
-            """.format(escape(obtained))
+            """.format(
+                escape(obtained)
+            )
             actual = obtained.split("\n")
             htmldiff = HtmlDiff(2)
             html_content += '<h4>Diffs</h4><div class="diffs">'
@@ -113,7 +114,9 @@ class MznFile(pytest.File):
             contents = file.read()
             yaml_comment = re.match(r"\/\*\*\*\n(.*?)\n\*\*\*\/", contents, flags=re.S)
             if yaml_comment is None:
-                pytest.skip("skipping {} as no tests specified".format(str(self.fspath)))
+                pytest.skip(
+                    "skipping {} as no tests specified".format(str(self.fspath))
+                )
             else:
                 tests = [doc for doc in yaml.load_all(yaml_comment.group(1))]
 
@@ -121,11 +124,20 @@ class MznFile(pytest.File):
                     if any(self.fspath.fnmatch(glob) for glob in suite.includes):
                         for i, spec in enumerate(tests):
                             for solver in spec.solvers:
-                                base = str(i) if spec.name is yaml.Undefined else spec.name
+                                base = (
+                                    str(i) if spec.name is yaml.Undefined else spec.name
+                                )
                                 name = "{}.{}.{}".format(suite_name, base, solver)
                                 cache = CachedResult()
-                                yield SolveItem(name, self, spec, solver, cache, spec.markers, suite)
-
+                                yield SolveItem(
+                                    name,
+                                    self,
+                                    spec,
+                                    solver,
+                                    cache,
+                                    spec.markers,
+                                    suite,
+                                )
                                 for checker in spec.check_against:
                                     yield CheckItem(
                                         "{}:{}".format(name, checker),
@@ -145,12 +157,40 @@ class MznItem(pytest.Item):
         for marker in markers:
             self.add_marker(marker)
 
-        allowed = [x.strip() for x in self.config.getoption("--solvers").split(",")]
-        allowed = [x for x in allowed if x in suite.solvers]
-        if solver not in allowed:
+        if self.config.getoption("--solvers") is not None:
+            self.allowed = [
+                x.strip() for x in self.config.getoption("--solvers").split(",")
+            ]
+            self.allowed = [x for x in allowed if x in suite.solvers]
+        else:
+            self.allowed = suite.solvers
+
+        if not self.solver_allowed(solver):
             self.add_marker(
                 pytest.mark.skip("skipping {} not in {}".format(solver, allowed))
             )
+
+        if not self.solver_exists(solver):
+            self.add_marker(pytest.mark.skip("Solver {} not available".format(solver)))
+
+    def solver_allowed(self, solver):
+        return self.allowed is None or solver in self.allowed
+
+    def solver_exists(self, solver):
+        solver_exists = pytest.solver_cache.get(solver, None)
+        if solver_exists is None:
+            try:
+                s = mzn.Solver.lookup(solver)
+                empty_model = mzn.Model()
+                empty_model.add_string("solve satisfy;")
+                instance = mzn.Instance(s, empty_model)
+                instance.solve()
+                solver_exists = True
+            except (mzn.MiniZincError, LookupError) as error:
+                solver_exists = False
+            finally:
+                pytest.solver_cache[solver] = solver_exists
+        return solver_exists
 
 
 class SolveItem(MznItem):
@@ -191,11 +231,11 @@ class SolveItem(MznItem):
                     non_strict_pass = self.cache.test(checker)
                     status = "but passed" if non_strict_pass else "and failed"
                     message += "\n\n{} check against {}.".format(status, checker)
-                    
+
                     if not self.strict and non_strict_pass:
                         print(message, file=sys.stderr)
                         return
-                        
+
             assert False, message
 
     def reportinfo(self):
@@ -203,13 +243,19 @@ class SolveItem(MznItem):
 
 
 class CheckItem(MznItem):
-    def __init__(self, name, parent, cache, solver, checker, markers, suite):
+    def __init__(
+        self, name, parent, cache, solver, checker, markers, suite
+    ):
         super().__init__(name, parent, solver, markers, suite)
-        allowed = [x.strip() for x in self.config.getoption("--solvers").split(",")]
-        allowed = [x for x in allowed if x in suite.solvers]
-        if checker not in allowed:
+        if not self.solver_allowed(checker):
             self.add_marker(
-                pytest.mark.skip("skipping checker {} not in {}".format(checker, allowed))
+                pytest.mark.skip(
+                    "skipping checker {} not in {}".format(checker, allowed)
+                )
+            )
+        if not self.solver_exists(checker):
+            self.add_marker(
+                pytest.mark.skip("skipping checker {} not available".format(checker))
             )
 
         self.cache = cache
@@ -226,7 +272,9 @@ class CheckItem(MznItem):
             pytest.skip("skipping check for no result/solution")
         else:
             passed = self.cache.test(self.checker)
-            assert passed, "failed when checking against {}. Got {}".format(self.checker, yaml.dump(self.cache.obtained))
+            assert passed, "failed when checking against {}. Got {}".format(
+                self.checker, yaml.dump(self.cache.obtained)
+            )
 
     def reportinfo(self):
         return self.fspath, 0, "{}::{}".format(str(self.fspath), self.name)

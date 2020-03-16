@@ -329,7 +329,7 @@ class Suite:
     """
 
     def __init__(self, **kwargs):
-        self.solvers = ["gecode", "cbc", "chuffed"]
+        self.solvers = None
         self.options = {}
         self.strict = True
         self.regex = r"."

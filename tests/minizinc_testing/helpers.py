@@ -31,13 +31,13 @@ class Approx:
     A helper which allows for approximate comparison of floats using `!Approx`
     """
 
-    def __init__(self, value, theshold=0.000001):
+    def __init__(self, value, threshold=0.000001):
         self.value = float(value)
-        self.theshold = theshold
+        self.threshold = threshold
 
     def __eq__(self, other):
         diff = abs(other - self.value)
-        return diff <= self.theshold
+        return diff <= self.threshold
 
     def __repr__(self):
         return "Approx({})".format(self.value)
