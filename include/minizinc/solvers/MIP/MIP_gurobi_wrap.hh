@@ -55,6 +55,7 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
       double feasTol=1e-8;
       double intTol=1e-8;
       double objDiff=1.0;
+      int nonConvex=2;
       std::string sGurobiDLL;
       bool processOption(int& i, std::vector<std::string>& argv);
       static void printHelp(std::ostream& );
@@ -67,6 +68,11 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     
     int (__stdcall *dll_GRBaddconstr) (GRBmodel *model, int numnz, int *cind, double *cval,
                              char sense, double rhs, const char *constrname);
+
+    int (__stdcall *
+      dll_GRBaddqconstr) (GRBmodel *model, int numlnz, int *lind, double *lval,
+                    int numqnz, int *qrow, int *qcol, double *qval,
+                    char sense, double rhs, const char *QCname);
 
     int (__stdcall *dll_GRBaddgenconstrIndicator) (  GRBmodel  *model, const char  *name, int binvar,
         int binval, int nvars, const int*  ind, const double* val, char  sense, double  rhs );
@@ -180,6 +186,11 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int *rmatind, double* rmatval,
                         LinConType sense, double rhs,
                         std::string rowName = "");
+
+    /// Times constraint: var[x]*var[y] == var[z]
+    virtual void addTimes(int x, int y, int z, const std::string& rowName = "");
+
+
     virtual int getFreeSearch();
     virtual bool addSearch( const std::vector<VarId>& vars, const std::vector<int> pri );
     virtual bool addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals );

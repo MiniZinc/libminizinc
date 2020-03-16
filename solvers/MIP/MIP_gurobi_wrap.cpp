@@ -130,6 +130,8 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
   << "  --intTol <n>\n    integrality tolerance for a variable. Gurobi recommends at least feasTol. Default 1e-8" << std::endl
 //   << "  --objDiff <n>       objective function discretization. Default 1.0" << std::endl
 
+  << "  --nonConvex <n>\n    non-convexity. -1: solver default, 0: none, 1: if presolved, 2: global. Default value 2." << std::endl
+
   << "\n  --gurobi-dll <file> or <basename>\n    Gurobi DLL, or base name, such as gurobi75, when using plugin. Default range tried: "
        << gurobiDLLs().front() << " .. " << gurobiDLLs().back() << std::endl
   << std::endl;
@@ -162,6 +164,7 @@ bool MIP_gurobi_wrapper::Options::processOption(int& i, std::vector<std::string>
   } else if ( cop.get( "--relGap", &relGap ) ) {
   } else if ( cop.get( "--feasTol", &feasTol ) ) {
   } else if ( cop.get( "--intTol", &intTol ) ) {
+  } else if ( cop.get( "--nonConvex --nonconvex --NonConvex", &nonConvex ) ) {
   } else if ( cop.get( "--gurobi-dll", &sGurobiDLL ) ) {
 //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
   } else
@@ -250,6 +253,7 @@ void MIP_gurobi_wrapper::checkDLL()
 
   *(void**)(&dll_GRBversion) = dll_sym(gurobi_dll, "GRBversion");
   *(void**)(&dll_GRBaddconstr) = dll_sym(gurobi_dll, "GRBaddconstr");
+  *(void**)(&dll_GRBaddqconstr) = dll_sym(gurobi_dll, "GRBaddqconstr");
   *(void**)(&dll_GRBaddgenconstrIndicator) = dll_sym(gurobi_dll, "GRBaddgenconstrIndicator");
   *(void**)(&dll_GRBaddvars) = dll_sym(gurobi_dll, "GRBaddvars");
   *(void**)(&dll_GRBcbcut) = dll_sym(gurobi_dll, "GRBcbcut");
@@ -437,6 +441,17 @@ void MIP_gurobi_wrapper::addIndicatorConstraint(
   error = dll_GRBaddgenconstrIndicator(model, rowName.c_str(), iBVar, bVal,
                                    nnz, rmatind, rmatval, ssense, rhs);    
   wrap_assert( !error,  "Failed to add indicator constraint." );
+}
+
+void MIP_gurobi_wrapper::addTimes(int x, int y, int z, const string& rowName) {
+  /// As x*y - z == 0
+  double zCoef = -1.0;
+  double xyCoef = 1.0;
+  error = dll_GRBaddqconstr(model, 1, &z, &zCoef,
+                                          1, &x, &y, &xyCoef,
+                                          GRB_EQUAL, 0.0, rowName.c_str());
+     ///Gurobi 9.0.1 says we cannot have GRB_EQUAL but seems to work.
+  wrap_assert( !error,  "Failed: GRBaddqconstr." );
 }
 
 bool MIP_gurobi_wrapper::addSearch( const std::vector<VarId>& vars, const std::vector<int> pri ) {
@@ -751,6 +766,10 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    if ( options->feasTol>=0.0 ) {
      error = dll_GRBsetdblparam( dll_GRBgetenv(model),  "FeasibilityTol", options->feasTol );
      wrap_assert(!error, "Failed to set   FeasTol.", false);
+   }
+   if ( options->nonConvex>=0 ) {
+     error = dll_GRBsetintparam( dll_GRBgetenv(model),  GRB_INT_PAR_NONCONVEX, options->nonConvex );
+     wrap_assert(!error, "Failed to set   " GRB_INT_PAR_NONCONVEX, false);
    }
 
     

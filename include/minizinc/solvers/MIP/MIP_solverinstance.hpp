@@ -929,6 +929,18 @@ namespace MiniZinc {
                                          makeConstrName("p_bounds_disj_", (gi.getMIPWrapper()->nAddedRows++), call));
     }
 
+    /// fzn_[int/float]_times
+    template<class MIPWrapper>
+    void p_times(SolverInstanceBase& si, const Call* call) {
+      MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>( si );
+      assert(3==call->n_args());
+      auto x = gi.exprToVar(call->arg(0));
+      auto y = gi.exprToVar(call->arg(1));
+      auto z = gi.exprToVar(call->arg(2));
+      gi.getMIPWrapper()->addTimes( x, y, z,
+                    makeConstrName("p_times_", (gi.getMIPWrapper()->nAddedRows++), call) );
+    }
+
   }
 
   
@@ -951,6 +963,12 @@ namespace MiniZinc {
     _constraintRegistry.add("float_lin_le", SCIPConstraints::p_float_lin_le<MIPWrapper>);
     //   _constraintRegistry.add("float_plus",   SCIPConstraints::p_plus<MIPWrapper>);
     
+    /// XBZ cut generator
+    _constraintRegistry.add("array_var_float_element__XBZ_lb__cutgen",
+                            SCIPConstraints::p_XBZ_cutgen<MIPWrapper>);
+    _constraintRegistry.add("circuit__SECcuts", SCIPConstraints::p_SEC_cutgen<MIPWrapper>);
+
+    //////////////// GLOBALS / GENERAL CONSTRAINTS /////////////////////////////////////////
     /// Indicators, if supported by the solver
     _constraintRegistry.add("aux_int_le_zero_if_0__IND", SCIPConstraints::p_indicator_le0_if0<MIPWrapper>);
     _constraintRegistry.add("aux_float_le_zero_if_0__IND", SCIPConstraints::p_indicator_le0_if0<MIPWrapper>);
@@ -958,13 +976,13 @@ namespace MiniZinc {
     
     _constraintRegistry.add("fzn_cumulative", SCIPConstraints::p_cumulative<MIPWrapper>);
 
-    /// XBZ cut generator
-    _constraintRegistry.add("array_var_float_element__XBZ_lb__cutgen",
-                            SCIPConstraints::p_XBZ_cutgen<MIPWrapper>);
-    _constraintRegistry.add("circuit__SECcuts", SCIPConstraints::p_SEC_cutgen<MIPWrapper>);
 
     _constraintRegistry.add("bounds_disj", SCIPConstraints::p_bounds_disj<MIPWrapper>);
+
+    _constraintRegistry.add("fzn_int_times", SCIPConstraints::p_times<MIPWrapper>);
+    _constraintRegistry.add("fzn_float_times", SCIPConstraints::p_times<MIPWrapper>);
   }
+
   
 
 

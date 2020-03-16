@@ -204,22 +204,23 @@ function array[int] of var int: aux_int_division_modulo_fn(var int: x, var int: 
 %% Can also have int_times(var float, var int) ......... TODO
 
 predicate int_times(var int: x, var int: y, var int: z) =
-if is_fixed(x) then
-  z==fix(x)*y             %%%%% Need to use fix() otherwise added to map & nothing happens
-elseif is_fixed(y) then
-  z==x*fix(y)
-  else
-  if 0..1==dom(x) /\ 0..1==dom(y) then bool_and__INT(x,y,z)
+  if is_fixed(x) then
+    z==fix(x)*y             %%%%% Need to use fix() otherwise added to CSE & nothing happens
+  elseif is_fixed(y) then
+    z==x*fix(y)
+  elseif 0..1==dom(x) /\ 0..1==dom(y) then bool_and__INT(x,y,z)
+  elseif MZN__QuadrInt then
+    fzn_int_times(x, y, z)
   elseif card(dom(x))==2 /\ card(dom(y))==2 /\ 0 in dom(x) /\ 0 in dom(y)
-    then let {
-      var 0..1: xn;
-      var 0..1: yn;
-      var 0..1: zn;
-      constraint x=xn*max(dom(x) diff {0});
-      constraint y=yn*max(dom(y) diff {0});
-      constraint z=zn*max(dom(x) diff {0})*max(dom(y) diff {0});
-    } in
-    bool_and__INT(xn,yn,zn)
+      then let {
+        var 0..1: xn;
+        var 0..1: yn;
+        var 0..1: zn;
+        constraint x=xn*max(dom(x) diff {0});
+        constraint y=yn*max(dom(y) diff {0});
+        constraint z=zn*max(dom(x) diff {0})*max(dom(y) diff {0});
+      } in
+      bool_and__INT(xn,yn,zn)
   elseif card(dom(x)) * card(dom(y)) > nMZN__UnarySizeMax_intTimes
     \/ ( fIntTimesBool /\ (
           %% Peter's idea for *bool. More optimal but worse values on carpet cutting.
@@ -242,8 +243,7 @@ elseif is_fixed(y) then
     endif
   else
     int_times_unary(x, { }, y, z)
-  endif
-endif;
+  endif;
 
 %% domx__ can be used to narrow domain... NOT IMPL.
 predicate int_times_unary(var int: x, set of int: domx__, var int: y, var int: z) =
@@ -284,8 +284,17 @@ predicate int_times_unary__NOFN(var int: x, set of int: domx__, var int: y, var 
           ( pY[valY[j]] == sum(i in index_set(valX))( pp[i, j] ) )
     endif;
 
-predicate float_times(var float: a, var float: b, var float: c) =
-    abort("Unable to create linear formulation for the `float_times` constraint. This model instance cannot be solved using a linear solver.");
+predicate float_times(var float: x, var float: y, var float: z) =
+  if is_fixed(x) then
+    z==fix(x)*y                 %%%%% Need to use fix() otherwise added to CSE & nothing happens
+  elseif is_fixed(y) then
+    z==x*fix(y)
+  elseif MZN__QuadrFloat then
+    fzn_float_times(x, y, z)
+  else
+    abort("Unable to create linear formulation for the `float_times(\(x), \(y), \(z))` constraint." ++
+      " This model instance cannot be solved using a linear solver.")
+  endif;
 
 %%%Define int_pow
 predicate int_pow( var int: x, var int: y, var int: r ) =
@@ -618,3 +627,6 @@ predicate array_float_maximum__IND(var float: m, array[int] of var float: x);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% XBZ cut generator, currently CPLEX only %%%%%%%%%%%%%%%%%%%%%%%%%%
 predicate array_var_float_element__XBZ_lb__cutgen(array[int] of var float: x, array[int] of var int: b, var float: z);
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Quadratic expressions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
+predicate fzn_float_times(var float: a, var float: b, var float: c);
+predicate fzn_int_times(var int: a, var int: b, var int: c);

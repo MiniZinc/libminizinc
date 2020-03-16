@@ -32,6 +32,13 @@ bool: fMZN__UseIndicators =    %% Pass on indicator constraints
            else deopt( fIndConstr ) endif;
     %% CPLEX 12.6.2 Concert: reifs give wrong result on 2012/amaze, so using implications only
 
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Quadratic expressions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% --------------------------------------------------------------------------------------- %
+opt bool: QuadrFloat;           %% Allow float_times as fzn_float_times
+bool: MZN__QuadrFloat = if absent(QuadrFloat) then false else deopt(QuadrFloat) endif;
+opt bool: QuadrInt;             %% Convert int_times to fzn_int_times
+bool: MZN__QuadrInt = if absent(QuadrInt) then false else deopt(QuadrInt) endif;
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Subtour elimination in circuit %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --------------------------------------------------------------------------------------- %
 opt int: nSECcuts;       %% 0,1: use MTZ formulation

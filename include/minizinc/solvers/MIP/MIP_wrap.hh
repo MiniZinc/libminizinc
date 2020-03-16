@@ -264,6 +264,10 @@ class MIP_wrapper {
     virtual void addBoundsDisj(int n, double *fUB, double *bnd, int* vars,
                                int nF, double *fUBF, double *bndF, int* varsF,
                         std::string rowName = "") { throw std::runtime_error("Bounds disjunctions not supported. "); }
+    /// Times constraint: var[x]*var[y] == var[z]
+    virtual void addTimes(int x, int y, int z, const std::string& rowName = "") {
+      throw std::runtime_error("Backend: [int/float]_times not supported. ");
+    }
 
     /// Cumulative, currently SCIP only
     virtual void addCumulative(int nnz, int *rmatind, double* d, double* r, double b, std::string rowName="")
