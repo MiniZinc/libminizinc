@@ -141,6 +141,7 @@ The following parameters can be given on the command line or modified in ``share
                                                %% used e.g. for the following cases:
                                                %% x!=y, x<y, b -> x<y, b <-> x<=y
   -DfIndConstr=true -DfMIPdomains=false        %% Use solver's indicator constraints, see below
+  -DQuadrFloat=true -DQuadrInt=true            %% Forward float/integer multiplications for MIQCP backends, see below
   --no-half-reifications                       %% Turn off halfreification (full reification was until v2.2.3)
 
 Some Solver Options and Changed Default Values
@@ -203,6 +204,15 @@ Moreover, they can be applied to decompose logical constraints on *unbounded var
 Add command-line parameters ``-D fIndConstr=true -D fMIPdomains=false`` when flattening
 to use them.
 
+Quadratic Constraints and Objectives (MIQCP)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The Gurobi interface has support for MIQCP (invoking global optimizer because MiniZinc translates multiplication to
+equality with an intermediate variable: whenever the model uses an expression x*y it is converted to z with z==x*y which is non-convex).
+While this might not always be advantageous for integer multiplication (which is linearly decomposed by default), for float variables
+this is the only way to go. To forward float/integer multiplications to the backend, run compiler with either or both of
+``-DQuadrFloat=true -DQuadrInt=true``.
+
 Pools of User Cuts and Lazy Constraints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Some constraints in the model can be declared as user and/or lazy cuts and they will be added to the corresponding pools
@@ -217,8 +227,8 @@ Warm starts are currently implemented for Gurobi, IBM ILOG CPLEX, XPRESS, and CO
 
 .. _ch-solvers-nonlinear:
 
-Non-linear Solvers
-------------------
+Non-Linear Solvers via NL File Format
+-------------------------------------
 
 MiniZinc has experimental support for non-linear solvers that conform to the AMPL NL standard. There are a number of open-source solvers, such as Ipopt, Bonmin and Couenne, that can be interfaced to MiniZinc in this way.
 
@@ -243,7 +253,14 @@ You can download binaries of these solvers from AMPL (https://ampl.com/products/
 3. Run ``minizinc --solvers``. The Couenne solver should appear in the list of solvers now.
 4. Run ``minizinc --solver couenne model.mzn`` on some MiniZinc model, or use Couenne from the MiniZinc IDE.
 
-The AMPL NL support is currently experimental, and your MiniZinc model is translated to NL without regard for the capabilities of the target solver. For example, Ipopt only supports continuous variables, so translating a model with integer variables will result in a solver-level error message. There is currently no support for translating Boolean variables and constraints into 0/1 integer variables (as required by e.g. Couenne). You can experiment with the standard linearisation library, using the ``-Glinear`` flag. However, this will linearise all integer constraints, even the ones that solvers like Couenne may support natively (it does allow you to use non-linear constraints on float variables, though). We will ship dedicated solver libraries for some NL solvers with future versions of MiniZinc.
+The AMPL NL support is currently experimental, and your MiniZinc model is translated to NL without regard
+for the capabilities of the target solver. For example, Ipopt only supports continuous variables, so translating
+a model with integer variables will result in a solver-level error message. There is currently no support for
+translating Boolean variables and constraints into 0/1 integer variables (as required by e.g. Couenne).
+You can experiment with the standard linearisation library, using the ``-Glinear [-DQuadrFloat=true -DQuadrInt=true]``
+flag. However, this will either
+linearise all integer constraints, even the ones that solvers like Couenne may support natively, or use non-convex
+representation. We will ship dedicated solver libraries for some NL solvers with future versions of MiniZinc.
 
 
 
