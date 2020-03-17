@@ -45,6 +45,7 @@ add_library(mzn
   lib/optimize.cpp
   lib/optimize_constraints.cpp
   lib/output.cpp
+  lib/param_config.cpp
   lib/parser.cpp
   lib/parser.yxx
   lib/passes/compile_pass.cpp
@@ -89,6 +90,7 @@ add_library(mzn
   include/minizinc/optimize.hh
   include/minizinc/optimize_constraints.hh
   include/minizinc/output.hh
+  include/minizinc/param_config.hh
   include/minizinc/parser.hh
   include/minizinc/passes/compile_pass.hh
   include/minizinc/pathfileprinter.hh

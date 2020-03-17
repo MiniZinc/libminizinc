@@ -33,6 +33,7 @@
 #include <ratio>
 
 #include <minizinc/solver.hh>
+#include <minizinc/param_config.hh>
 
 #ifdef HAS_GUROBI
 #include <minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh>
@@ -233,7 +234,8 @@ void MznSolver::printHelp(const std::string& selectedSolver)
     << "  -s, --statistics\n    Print statistics." << std::endl
     << "  --compiler-statistics\n    Print statistics for compilation." << std::endl
     << "  -c, --compile\n    Compile only (do not run solver)." << std::endl
-    << "  --config-dirs\n    Output configuration directories." << std::endl;
+    << "  --config-dirs\n    Output configuration directories." << std::endl
+    << "  --param-file <file>\n    Load parameters from the given JSON file." << std::endl;
 
   if (selectedSolver.empty()) {
     flt.printHelp(os);
@@ -292,6 +294,8 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     executable_name = executable_name.substr(0, lastdot);
   }
   string solver;
+  bool load_params = false;
+  string param_file;
   bool mzn2fzn_exe = (executable_name=="mzn2fzn");
   if (mzn2fzn_exe) {
     is_mzn2fzn=true;
@@ -304,6 +308,58 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   int argc = static_cast<int>(argv.size());
   if (argc < 2)
     return OPTION_ERROR;
+
+  // Add params from a file if necessary
+  for (i = 1; i < argc; ++i) {
+    if (argv[i] == "--param-file") {
+      ++i;
+      if (load_params) {
+        log << "Only one --param-file argument allowed" << endl;
+        return OPTION_ERROR;
+      }
+      if (i == argc) {
+        log << "Argument required for --param-file" << endl;
+        return OPTION_ERROR;
+      }
+      param_file = argv[i];
+      load_params = true;
+    }
+  }
+
+  if (load_params) {
+    try {
+      vector<string> new_args = { argv[0] };
+      // add parameter file arguments
+      ParamConfig pc;
+      pc.blacklist({
+        "--param-file",
+        "--solvers",
+        "--solvers-json",
+        "--help", "-h",
+        "--config-dirs"
+        });
+      pc.load(param_file);
+      for (auto a : pc.argv()) {
+        new_args.push_back(a);
+      }
+
+      // add command line arguments
+      for (i = 1; i < argc; ++i) {
+        if (argv[i] == "--param-file") {
+          ++i;
+          continue;
+        }
+        new_args.push_back(argv[i]);
+      }
+      argv = new_args;
+      argc = argv.size();
+    }
+    catch (ParamException& e) {
+      log << "Solver parameter exception: " << e.msg() << endl;
+      return OPTION_ERROR;
+    }
+  }
+
   for (i=1; i<argc; ++i) {
     if (argv[i]=="-h" || argv[i]=="--help") {
       if (argc > i+1) {
