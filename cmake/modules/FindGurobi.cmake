@@ -28,6 +28,17 @@ find_path(GUROBI_INCLUDE gurobi_c.h
           HINTS ${GUROBI_DEFAULT_LOC}
           PATH_SUFFIXES include)
 
+if(NOT "${GUROBI_INCLUDE}" STREQUAL "GUROBI_INCLUDE-NOTFOUND")
+  file(READ "${GUROBI_INCLUDE}/gurobi_c.h" GUROBI_CONFIG)
+  string(REGEX MATCH "\#define GRB_VERSION_MAJOR +([0-9]+)" _ "${GUROBI_CONFIG}")
+  set(GRB_VERSION_MAJOR "${CMAKE_MATCH_1}")
+  string(REGEX MATCH "\#define GRB_VERSION_MINOR +([0-9]+)" _ "${GUROBI_CONFIG}")
+  set(GRB_VERSION_MINOR "${CMAKE_MATCH_1}")
+  string(REGEX MATCH "\#define GRB_VERSION_TECHNICAL +([0-9]+)" _ "${GUROBI_CONFIG}")
+  set(GRB_VERSION_TECHNICAL "${CMAKE_MATCH_1}")
+  set(GUROBI_VERSION "${GRB_VERSION_MAJOR}.${GRB_VERSION_MINOR}.${GRB_VERSION_TECHNICAL}")
+endif()
+
 if(GUROBI_PLUGIN)
   include(CheckIncludeFiles)
   # TODO: Cleanup this mess
@@ -56,6 +67,7 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(Gurobi
   FOUND_VAR GUROBI_FOUND
   REQUIRED_VARS GUROBI_INCLUDE GUROBI_LIBRARY
+  VERSION_VAR GUROBI_VERSION
   FAIL_MESSAGE "Could NOT find Gurobi, use GUROBI_ROOT to hint its location"
 )
 
