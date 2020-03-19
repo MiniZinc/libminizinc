@@ -1938,7 +1938,15 @@ function set of $$E: to_enum(set of $$E: X, set of int: x) = { to_enum(X,i) | i 
 function var set of $$E: to_enum(set of $$E: X, var set of int: x) = 
   let { var set of X: y; constraint x subset X; constraint forall (i in X) (i in x <-> i in y); } in y;
 
+/** @group builtins.enum Convert \a x to enum type \a X */
+function array[$U] of set of $$E: to_enum(set of $$E: X, array[$U] of set of int: x) =
+  let { array[int] of set of int: xx = array1d(x) } in
+  arrayXd(x, [ to_enum(X, xx[i]) | i in index_set(xx)]);
 
+/** @group builtins.enum Convert \a x to enum type \a X */
+function array[$U] of var set of $$E: to_enum(set of $$E: X, array[$U] of var set of int: x) =
+  let { array[int] of var set of int: xx = array1d(x) } in
+  arrayXd(x, [ to_enum(X, xx[i]) | i in index_set(xx)]);
 
 %-----------------------------------------------------------------------------%
 %
