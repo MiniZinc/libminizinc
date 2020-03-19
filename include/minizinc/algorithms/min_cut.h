@@ -1,5 +1,4 @@
-#ifndef __MIN_CUT_H
-#define __MIN_CUT_H
+#pragma once
 
 #include <vector>
 #include <algorithm>
@@ -21,5 +20,3 @@ namespace Algorithms {
   };
 
 }  // namespace Algorithms
-
-#endif  // __MIN_CUT_H

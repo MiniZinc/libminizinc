@@ -9,9 +9,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-
-#ifndef __MINIZINC_GECODE_FZN_SPACE_HH__
-#define __MINIZINC_GECODE_FZN_SPACE_HH__
+#pragma once
 
 #include <gecode/kernel.hh>
 #include <gecode/int.hh>
@@ -101,4 +99,3 @@ namespace MiniZinc {
   };
   
 }
-#endif

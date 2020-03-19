@@ -1,5 +1,4 @@
-#ifndef __MINIZINC_NL_COMPONENTS_HH__
-#define __MINIZINC_NL_COMPONENTS_HH__
+#pragma once
 
 //#include <assert.h>
 
@@ -524,9 +523,4 @@ namespace MiniZinc {
         ostream& print_on( ostream& o, const NLFile& nl_file ) const;
     };
 
-
-
 }
-
-
-#endif

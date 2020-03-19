@@ -1,5 +1,4 @@
-#ifndef __MINIZINC_NL_READ_SOL_HH__
-#define __MINIZINC_NL_READ_SOL_HH__
+#pragma once
 
 #include <string>
 #include <cstring>
@@ -117,5 +116,3 @@ namespace MiniZinc {
         std::ostream& getLog(void);
     };
 }
-
-#endif

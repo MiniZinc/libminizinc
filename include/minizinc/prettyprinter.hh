@@ -10,8 +10,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MINIZINC_PRETTYPRINTER_HH__
-#define __MINIZINC_PRETTYPRINTER_HH__
+#pragma once
 
 #include <iostream>
 
@@ -77,5 +76,3 @@ void debugprint(MiniZinc::Expression* e);
 void debugprint(MiniZinc::Item* i);
 void debugprint(MiniZinc::Model* m);
 void debugprint(const MiniZinc::Location& l);
-
-#endif

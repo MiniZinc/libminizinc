@@ -10,8 +10,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MIP_CPLEX_WRAPPER_H__
-#define __MIP_CPLEX_WRAPPER_H__
+#pragma once
 
 #include <minizinc/config.hh>
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
@@ -230,5 +229,3 @@ class MIP_cplex_wrapper : public MIP_wrapper {
     /// Need to consider the 100 status codes in CPLEX and change with every version? TODO
     Status convertStatus(int cplexStatus);
 };
-
-#endif  // __MIP_CPLEX_WRAPPER_H__

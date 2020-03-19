@@ -9,8 +9,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MINIZINC_MIP_SOLVER_INSTANCE_H__
-#define __MINIZINC_MIP_SOLVER_INSTANCE_H__
+#pragma once
 
 #include <minizinc/flattener.hh>
 #include <minizinc/solver.hh>
@@ -144,5 +143,3 @@ namespace MiniZinc {
 }
 
 #include <minizinc/solvers/MIP/MIP_solverinstance.hpp>
-
-#endif  // __MINIZINC_MIP_SOLVER_INSTANCE_H__

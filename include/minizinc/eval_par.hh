@@ -9,8 +9,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MINIZINC_EVAL_PAR_HH__
-#define __MINIZINC_EVAL_PAR_HH__
+#pragma once
 
 #include <minizinc/model.hh>
 #include <minizinc/iter.hh>
@@ -290,5 +289,3 @@ namespace MiniZinc {
   Expression* follow_id_to_value(Expression* e);
   
 }
-
-#endif

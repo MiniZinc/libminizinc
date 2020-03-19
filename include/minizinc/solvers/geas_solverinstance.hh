@@ -9,8 +9,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MINIZINC_GEAS_SOLVER_INSTANCE_HH__
-#define __MINIZINC_GEAS_SOLVER_INSTANCE_HH__
+#pragma once
 
 #include <minizinc/flattener.hh>
 #include <minizinc/solver.hh>
@@ -123,5 +122,3 @@ namespace MiniZinc {
   };
 
 }
-
-#endif // __MINIZINC_GEAS_SOLVER_INSTANCE_HH__

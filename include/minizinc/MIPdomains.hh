@@ -9,8 +9,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MINIZINC_mipDOMAINS_HH__
-#define __MINIZINC_mipDOMAINS_HH__
+#pragma once
 
 #include <minizinc/flatten.hh>
 #include <minizinc/hash.hh>
@@ -51,5 +50,3 @@ namespace MiniZinc {
   void MIPdomains(Env& env, bool fVerbose = false, int=0, double=3.0);
   
 }
-
-#endif

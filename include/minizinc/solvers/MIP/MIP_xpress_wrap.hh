@@ -7,8 +7,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MIP_XPRESS_WRAPPER_H__
-#define __MIP_XPRESS_WRAPPER_H__
+#pragma once
+
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 #include <minizinc/solver_instance_base.hh>
 #include <minizinc/plugin.hh>
@@ -153,5 +153,3 @@ private:
                         LinConType sense, double rhs, int mask, string rowName);
   void addDummyConstraint();
 };
-
-#endif // __MIP_XPRESS_WRAPPER_H__

@@ -3,8 +3,7 @@
  * Main author: Matthieu Herrmann, Monash University, Melbourne, Australia. 2019
  **/
 
-#ifndef __MINIZINC_NL_FILE_HH__
-#define __MINIZINC_NL_FILE_HH__
+#pragma once
 
 #include <string>
 #include <ostream>
@@ -593,5 +592,3 @@ namespace MiniZinc {
     };
 
 } // End of NameSpace MiniZinc
-
-#endif

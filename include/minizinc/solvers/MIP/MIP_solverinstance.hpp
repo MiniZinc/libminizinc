@@ -983,7 +983,4 @@ namespace MiniZinc {
     _constraintRegistry.add("fzn_float_times", SCIPConstraints::p_times<MIPWrapper>);
   }
 
-  
-
-
 }

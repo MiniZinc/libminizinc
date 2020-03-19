@@ -10,8 +10,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MIP_OSICBC_WRAPPER_H__
-#define __MIP_OSICBC_WRAPPER_H__
+#pragma once
 
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
 #include <minizinc/solver_instance_base.hh>
@@ -159,5 +158,3 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
     Status convertStatus(CbcModel *pModel);
     Status convertStatus();
 };
-
-#endif  // __MIP_OSICBC_WRAPPER_H__

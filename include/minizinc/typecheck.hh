@@ -9,8 +9,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MINIZINC_TYPECHECK_HH__
-#define __MINIZINC_TYPECHECK_HH__
+#pragma once
 
 #include <minizinc/model.hh>
 #include <minizinc/hash.hh>
@@ -94,5 +93,3 @@ namespace MiniZinc {
   void output_model_variable_types(Env& env, Model* m, std::ostream& os, const std::vector<std::string>& skipDirs);
 
 }
-
-#endif

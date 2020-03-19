@@ -9,8 +9,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#ifndef __MINIZINC_OUTPUT_HH__
-#define __MINIZINC_OUTPUT_HH__
+#pragma once
 
 #include <minizinc/flatten_internal.hh>
 
@@ -37,5 +36,3 @@ namespace MiniZinc {
   ArrayLit* createJSONOutput(EnvI& env, bool outputObjective, bool includeOutputItem, bool hasChecker);
   
 }
-
-#endif
