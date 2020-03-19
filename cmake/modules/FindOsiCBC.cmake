@@ -26,6 +26,18 @@ list(REMOVE_DUPLICATES OSICBC_INCLUDE)
 unset(OSICBC_FIND_FILES)
 unset(OSICBC_FILE_LOC)
 
+find_file(CBC_CONFIG_LOC NAMES coin/config_cbc_default.h coin/CbcConfig.h
+  HINTS ${OSICBC_INCLUDE}
+  PATH_SUFFIXES cbc)
+
+if(NOT "${CBC_CONFIG_LOC}" STREQUAL "CBC_CONFIG_LOC-NOTFOUND")
+  file(READ "${CBC_CONFIG_LOC}" CBC_CONFIG)
+  string(REGEX MATCH "\#define +CBC_VERSION +\"([0-9]+.[0-9]+)\"" _ "${CBC_CONFIG}")
+  set(OSICBC_VERSION "${CMAKE_MATCH_1}")
+  unset(CBC_CONFIG)
+endif()
+unset(CBC_CONFIG_LOC)
+
 if(WIN32 AND NOT UNIX)
   set(OSICBC_REQ_LIBS Osi OsiClp OsiCbc Clp Cgl Cbc CbcSolver CoinUtils)
 else()
@@ -69,6 +81,7 @@ include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args(OsiCBC
   FOUND_VAR OSICBC_FOUND
   REQUIRED_VARS OSICBC_INCLUDE OSICBC_LIBRARY
+  VERSION_VAR OSICBC_VERSION
   FAIL_MESSAGE "Could NOT find OsiCBC, use OsiCBC_ROOT to hint its location"
 )
 
