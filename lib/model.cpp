@@ -64,9 +64,9 @@ namespace MiniZinc {
     for (unsigned int j=0; j<_items.size(); j++) {
       Item* i = _items[j];
       if (IncludeI* ii = i->dyn_cast<IncludeI>()) {
-        if (ii->own() && ii->m()) {
+        if (ii->own()) {
           delete ii->m();
-          ii->m(NULL);
+          ii->m(nullptr);
         }
       }
     }

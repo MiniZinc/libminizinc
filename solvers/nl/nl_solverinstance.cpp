@@ -136,7 +136,7 @@ namespace MiniZinc {
     // --- --- --- Prepare the files
     string file_nl;   // Output for the NL, will be the input for the solver
     string file_sol;  // Ouput of the solver
-    FileUtils::TmpDir* tmpdir = NULL;
+    FileUtils::TmpDir* tmpdir = nullptr;
 
     if(opt.do_keepfile){
       // Keep file: output next to original file
@@ -198,10 +198,8 @@ namespace MiniZinc {
       vector<string> cmd_line;
       
       if (opt.nl_solver.empty()) {
-        if(tmpdir != NULL){
-          delete tmpdir;
-          tmpdir = NULL;
-        }
+        delete tmpdir;
+        tmpdir = nullptr;
         outfile.close();
         throw InternalError("No NL solver specified");
       }
@@ -225,10 +223,8 @@ namespace MiniZinc {
 
 
     // --- --- --- Cleanup and exit
-    if(tmpdir != NULL){
-      delete tmpdir;
-      tmpdir = NULL;
-    }
+    delete tmpdir;
+    tmpdir = nullptr;
     outfile.close();
     return exitStatus == 0 ? out->status : Status::ERROR;
   }
@@ -237,7 +233,7 @@ namespace MiniZinc {
 
 
   // Unused
-  Expression* NLSolverInstance::getSolutionValue(Id* id) { assert(false); return NULL; }
+  Expression* NLSolverInstance::getSolutionValue(Id* id) { assert(false); return nullptr; }
 
 
 
@@ -250,7 +246,7 @@ namespace MiniZinc {
    */
   void NLSolverInstance::analyse(const Item* i) {
     // Guard
-    if (i==NULL) return;
+    if (i == nullptr) return;
 
     // Switch on the id of item
     switch (i->iid()) {

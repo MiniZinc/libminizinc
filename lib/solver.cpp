@@ -429,9 +429,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
            it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
         if ((*it)->getId()==solverId) { /// TODO: also check version (currently assumes all ids are unique)
           sf = *it;
-          if (si_opt) {
-            delete si_opt;
-          }
+          delete si_opt;
           si_opt = sf->createOptions();
           if (!sc.executable().empty() || solverId=="org.minizinc.mzn-fzn" || solverId=="org.minizinc.mzn-nl") {
             std::vector<MZNFZNSolverFlag> acceptedFlags;
