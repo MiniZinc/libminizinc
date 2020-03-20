@@ -1114,6 +1114,17 @@ namespace MiniZinc {
             Expression* dom = cur->cast<VarDecl>()->ti()->domain();
             if (dom && (dom->isa<IntLit>() || dom->isa<BoolLit>() || dom->isa<FloatLit>()))
               return dom;
+            else if (dom && dom->isa<SetLit>()) {
+              auto sl = dom->cast<SetLit>();
+              auto isv = sl->isv();
+              if (isv && isv->min() == isv->max()) {
+                return IntLit::a(isv->min());
+              }
+              auto fsv = sl->fsv();
+              if (fsv && fsv->min() == fsv->max()) {
+                return FloatLit::a(fsv->min());
+              }
+            }
           }
           cur = cur->cast<VarDecl>()->e();
           break;
