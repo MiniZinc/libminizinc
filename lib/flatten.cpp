@@ -112,6 +112,7 @@ namespace MiniZinc {
     if (!envi.fopts.record_domain_changes ||
         vd->ann().contains(constants().ann.is_defined_var) ||
         vd->introduced() ||
+        vd->type().dim() > 0 ||
         !createExplicitDomainConstraints(envi, vd, domain)) {
       vd->ti()->domain(domain);
       vd->ti()->setComputedDomain(is_computed);
