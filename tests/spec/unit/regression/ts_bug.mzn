@@ -1,5 +1,6 @@
 /***
 !Test
+solvers: [gecode]
 expected:
 - !Result
   status: OPTIMAL_SOLUTION
