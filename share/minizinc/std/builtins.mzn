@@ -1895,6 +1895,17 @@ function var opt $T: trace_stdout(string: msg, var opt $T: x);
 /** @group builtins.debug Return true, and print message \a msg. */
 function bool: trace_stdout(string: msg);
 
+/** @group builtins.debug Return \a x, and print message \a msg to logging stream. */
+function $T: trace_logstream(string: msg, $T: x);
+/** @group builtins.debug Return \a x, and print message \a msg to logging stream. */
+function var $T: trace_logstream(string: msg, var $T: x);
+/** @group builtins.debug Return \a x, and print message \a msg to logging stream. */
+function var opt $T: trace_logstream(string: msg, var opt $T: x);
+/** @group builtins.debug Return true, and print message \a msg to logging stream. */
+function bool: trace_logstream(string: msg);
+/** @group builtins.debug Return logging stream as string */
+function string: logstream_to_string();
+
 /** @group builtins.debug Abort evaluation and print message \a msg. */
 function bool: abort(string: msg);
 

@@ -1286,7 +1286,17 @@ namespace MiniZinc {
     env.outstream << msg->v();
     return call->n_args()==1 ? constants().lit_true : call->arg(1);
   }
-  
+
+  Expression* b_trace_logstream(EnvI& env, Call* call) {
+    GCLock lock;
+    StringLit* msg = eval_par(env,call->arg(0))->cast<StringLit>();
+    env.logstream << msg->v();
+    return call->n_args()==1 ? constants().lit_true : call->arg(1);
+  }
+  std::string b_logstream(EnvI& env, Call* call) {
+    return env.logstream.str();
+  }
+
   bool b_in_redundant_constraint(EnvI& env, Call*) {
     return env.in_redundant_constraint > 0;
   }
@@ -2639,6 +2649,11 @@ namespace MiniZinc {
       rb(env, m, ASTString("abort"), t, b_abort);
       rb(env, m, constants().ids.trace, t, b_trace);
       rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
+      rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
+    }
+    {
+      std::vector<Type> t;
+      rb(env, m, ASTString("logstream_to_string"), t, b_logstream);
     }
     {
       std::vector<Type> t(2);
@@ -2646,12 +2661,15 @@ namespace MiniZinc {
       t[1] = Type::top();
       rb(env, m, constants().ids.trace, t, b_trace);
       rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
+      rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
       t[1] = Type::vartop();
       rb(env, m, constants().ids.trace, t, b_trace);
       rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
+      rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
       t[1] = Type::optvartop();
       rb(env, m, constants().ids.trace, t, b_trace);
       rb(env, m, ASTString("trace_stdout"), t, b_trace_stdout);
+      rb(env, m, ASTString("trace_logstream"), t, b_trace_logstream);
     }
     {
       rb(env, m, ASTString("mzn_in_redundant_constraint"), std::vector<Type>(), b_in_redundant_constraint);
