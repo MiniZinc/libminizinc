@@ -85,6 +85,12 @@ namespace MiniZinc {
    */
   IntSetVal* compute_intset_bounds(EnvI& env, Expression* e);
 
+  class EvalBase {
+  public:
+    /// Evaluate bool expression that may contain variables
+    bool eval_bool_cv(EnvI& env, Expression* e);
+  };
+
   template<class Eval>
   void
   eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id,
@@ -108,9 +114,8 @@ namespace MiniZinc {
     CallStackItem csi(env, e->decl(gen,id)->id(), i);
     if (id == e->n_decls(gen)-1) {
       bool where = true;
-      if (e->where(gen) != NULL) {
-        GCLock lock;
-        where = e->where(gen)->type().isvar() ? true : eval_bool(env, e->where(gen));
+      if (e->where(gen) != NULL && !e->where(gen)->type().isvar()) {
+        where = eval.eval_bool_cv(env, e->where(gen));
       }
       if (where) {
         if (gen == e->n_generators()-1) {
@@ -161,9 +166,8 @@ namespace MiniZinc {
     }
     if (id == e->n_decls(gen)-1) {
       bool where = true;
-      if (e->in(gen) != NULL && e->where(gen) != NULL) {
-        GCLock lock;
-        where = e->where(gen)->type().isvar() ? true : eval_bool(env, e->where(gen));
+      if (e->in(gen) != NULL && e->where(gen) != NULL && !e->where(gen)->type().isvar()) {
+        where = eval.eval_bool_cv(env, e->where(gen));
       }
       if (where) {
         if (gen == e->n_generators()-1) {

@@ -2434,7 +2434,7 @@ namespace MiniZinc {
       {
         Comprehension* c = e->cast<Comprehension>();
         GCLock lock;
-        class EvalFlatCvExp {
+        class EvalFlatCvExp : public EvalBase {
         public:
           Ctx ctx;
           EvalFlatCvExp(Ctx& ctx0) : ctx(ctx0) {}

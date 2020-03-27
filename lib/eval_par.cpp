@@ -88,7 +88,16 @@ namespace MiniZinc {
     return r;
   }
 
-  class EvalIntLit {
+  bool EvalBase::eval_bool_cv(EnvI& env, Expression* e) {
+    GCLock lock;
+    if (e->type().cv()) {
+      return eval_bool(env, flat_cv_exp(env, Ctx(), e)());
+    } else {
+      return eval_bool(env, e);
+    }
+  };
+
+  class EvalIntLit : public EvalBase {
   public:
     typedef IntLit* Val;
     typedef Expression* ArrayVal;
@@ -100,7 +109,7 @@ namespace MiniZinc {
       throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
-  class EvalIntVal {
+  class EvalIntVal : public EvalBase {
   public:
     typedef IntVal Val;
     typedef IntVal ArrayVal;
@@ -120,7 +129,7 @@ namespace MiniZinc {
       throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
-  class EvalFloatVal {
+  class EvalFloatVal : public EvalBase {
   public:
     typedef FloatVal Val;
     typedef FloatVal ArrayVal;
@@ -140,7 +149,7 @@ namespace MiniZinc {
       throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
-  class EvalFloatLit {
+  class EvalFloatLit : public EvalBase {
   public:
     typedef FloatLit* Val;
     typedef Expression* ArrayVal;
@@ -152,7 +161,7 @@ namespace MiniZinc {
       throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
-  class EvalString {
+  class EvalString : public EvalBase {
   public:
     typedef std::string Val;
     typedef std::string ArrayVal;
@@ -165,7 +174,7 @@ namespace MiniZinc {
       throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
-  class EvalStringLit {
+  class EvalStringLit : public EvalBase {
   public:
     typedef StringLit* Val;
     typedef Expression* ArrayVal;
@@ -177,7 +186,7 @@ namespace MiniZinc {
       throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
-  class EvalBoolLit {
+  class EvalBoolLit : public EvalBase {
   public:
     typedef BoolLit* Val;
     typedef Expression* ArrayVal;
@@ -189,7 +198,7 @@ namespace MiniZinc {
       throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
-  class EvalBoolVal {
+  class EvalBoolVal : public EvalBase {
   public:
     typedef bool Val;
     static bool e(EnvI& env, Expression* e) {
@@ -201,7 +210,7 @@ namespace MiniZinc {
       throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
-  class EvalArrayLit {
+  class EvalArrayLit : public EvalBase {
   public:
     typedef ArrayLit* Val;
     typedef Expression* ArrayVal;
@@ -213,7 +222,7 @@ namespace MiniZinc {
       throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
-  class EvalArrayLitCopy {
+  class EvalArrayLitCopy : public EvalBase {
   public:
     typedef ArrayLit* Val;
     typedef Expression* ArrayVal;
@@ -289,7 +298,7 @@ namespace MiniZinc {
       throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
-  class EvalIntSet {
+  class EvalIntSet : public EvalBase {
   public:
     typedef IntSetVal* Val;
     static IntSetVal* e(EnvI& env, Expression* e) {
@@ -310,7 +319,7 @@ namespace MiniZinc {
       throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
-  class EvalFloatSet {
+  class EvalFloatSet : public EvalBase {
   public:
     typedef FloatSetVal* Val;
     static FloatSetVal* e(EnvI& env, Expression* e) {
@@ -333,7 +342,7 @@ namespace MiniZinc {
       throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
-  class EvalBoolSet {
+  class EvalBoolSet : public EvalBase {
   public:
     typedef IntSetVal* Val;
     static IntSetVal* e(EnvI& env, Expression* e) {
@@ -345,7 +354,7 @@ namespace MiniZinc {
       throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
-  class EvalSetLit {
+  class EvalSetLit : public EvalBase {
   public:
     typedef SetLit* Val;
     typedef Expression* ArrayVal;
@@ -368,7 +377,7 @@ namespace MiniZinc {
       throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
-  class EvalFloatSetLit {
+  class EvalFloatSetLit : public EvalBase {
   public:
     typedef SetLit* Val;
     typedef Expression* ArrayVal;
@@ -380,7 +389,7 @@ namespace MiniZinc {
       throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
-  class EvalBoolSetLit {
+  class EvalBoolSetLit : public EvalBase {
   public:
     typedef SetLit* Val;
     typedef Expression* ArrayVal;
@@ -394,7 +403,7 @@ namespace MiniZinc {
       throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
-  class EvalCopy {
+  class EvalCopy : public EvalBase {
   public:
     typedef Expression* Val;
     typedef Expression* ArrayVal;
@@ -406,7 +415,7 @@ namespace MiniZinc {
       throw InternalError("evaluating var assignment generator inside par expression not supported");
     }
   };
-  class EvalPar {
+  class EvalPar : public EvalBase {
   public:
     typedef Expression* Val;
     typedef Expression* ArrayVal;

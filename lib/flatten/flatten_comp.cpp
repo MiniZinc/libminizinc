@@ -161,7 +161,7 @@ namespace MiniZinc {
       }
     }
     
-    class EvalF {
+    class EvalF : public EvalBase {
     public:
       Ctx ctx;
       EvalF(Ctx ctx0) : ctx(ctx0) {}
