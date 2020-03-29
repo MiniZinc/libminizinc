@@ -48,13 +48,13 @@ namespace MiniZinc {
     ArrayLit* parseArray(std::istream& is);
     Expression* parseObject(std::istream& is);
     
-    void parse(Model*m, std::istream& is);
+    void parse(Model*m, std::istream& is, bool ignoreUnknown);
   public:
     JSONParser(EnvI& env0) : env(env0) {}
     /// Parses \a filename as MiniZinc data and creates assign items in \a m
-    void parse(Model* m, const std::string& filename);
+    void parse(Model* m, const std::string& filename, bool ignoreUnknown = false);
     /// Parses \a data as JSON-encoded MiniZinc data and creates assign items in \a m
-    void parseFromString(Model* m, const std::string& data);
+    void parseFromString(Model* m, const std::string& data, bool ignoreUnknown = false);
     /// Check if file \a filename may contain JSON-encoded MiniZinc data
     static bool fileIsJSON(const std::string& filename);
     /// Check if string \a data may contain JSON-encoded MiniZinc data

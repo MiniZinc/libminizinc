@@ -243,7 +243,7 @@ namespace MiniZinc {
       string f = datafiles[i];
       if (f.size()>=6 && f.substr(f.size()-5,string::npos)==".json") {
         JSONParser jp(env.envi());
-        jp.parse(model, f);
+        jp.parse(model, f, true);
       } else {
         string s;
         if (f.size() > 5 && f.substr(0,5)=="cmd:/") {

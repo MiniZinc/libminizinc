@@ -503,16 +503,30 @@ namespace MiniZinc {
   }
   
   void
-  JSONParser::parse(Model* m, std::istream& is) {
+  JSONParser::parse(Model* m, std::istream& is, bool ignoreUnknown) {
     line = 0;
     column = 0;
     expectToken(is, T_OBJ_OPEN);
+    unordered_set<string> knownIds;
+    if (ignoreUnknown) {
+      // Collect known VarDecl ids from model and includes
+      class VarDeclVisitor : public ItemVisitor {
+      private:
+        unordered_set<string>& knownIds;
+      public:
+        VarDeclVisitor(unordered_set<string>& _knownIds) : knownIds(_knownIds) {}
+        void vVarDeclI(VarDeclI* vdi) {
+          knownIds.insert(vdi->e()->id()->str().str());
+        }
+      } _varDecls(knownIds);
+      iterItems(_varDecls, m);
+    }
     for (;;) {
       string ident = expectString(is);
       expectToken(is, T_COLON);
       Expression* e = parseExp(is);
-      if (ident[0]!='_') {
-        AssignI* ai = new AssignI(Location().introduce(),ident,e);
+      if (ident[0]!='_' && (!ignoreUnknown || knownIds.count(ident) == 1)) {
+        AssignI* ai = new AssignI(Location().introduce(), ident, e);
         m->addItem(ai);
       }
       Token next = readToken(is);
@@ -524,22 +538,22 @@ namespace MiniZinc {
   }
 
   void
-  JSONParser::parse(Model* m, const std::string& filename0) {
+  JSONParser::parse(Model* m, const std::string& filename0, bool ignoreUnknown) {
     filename = filename0;
     ifstream is;
     is.open(filename, ios::in);
     if (!is.good()) {
       throw JSONError(env,Location().introduce(),"cannot open file "+filename);
     }
-    parse(m,is);
+    parse(m, is, ignoreUnknown);
   }
   
   void
-  JSONParser::parseFromString(Model* m, const std::string& data) {
+  JSONParser::parseFromString(Model* m, const std::string& data, bool ignoreUnknown) {
     istringstream iss(data);
     line = 0;
     column = 0;
-    parse(m, iss);
+    parse(m, iss, ignoreUnknown);
   }
   
   namespace {
