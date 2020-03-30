@@ -35,11 +35,10 @@ if(NOT USE_PROPRIETARY)
   set(GUROBI_PLUGIN ON)
 endif()
 
-# Export compile commands (useful when working with visual studio code)
-set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-
 # -------------------------------------------------------------------------------------------------------------------
 #  -- CMake initialisation
+
+include(GNUInstallDirs)
 
 # Fix library suffixes for Web Assembly platform
 include(cmake/support/emscripten_setup.cmake)
