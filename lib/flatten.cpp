@@ -1969,7 +1969,9 @@ namespace MiniZinc {
                   IntSetRanges ibr(ibv);
                   Ranges::Inter<IntVal,IntSetRanges,IntSetRanges> i(dr,ibr);
                   IntSetVal* newibv = IntSetVal::ai(i);
-                  if (ibv->card() == newibv->card()) {
+                  if (newibv->card() == 0) {
+                    env.fail();
+                  } else  if (ibv->card() == newibv->card()) {
                     vd->ti()->setComputedDomain(true);
                   } else {
                     ibv = newibv;
@@ -2032,7 +2034,9 @@ namespace MiniZinc {
                   FloatSetRanges fbr(fbv);
                   Ranges::Inter<FloatVal,FloatSetRanges,FloatSetRanges> i(dr,fbr);
                   FloatSetVal* newfbv = FloatSetVal::ai(i);
-                  
+                  if (newfbv->size()==0) {
+                    env.fail();
+                  }
                   FloatSetRanges dr_eq(domain);
                   FloatSetRanges newfbv_eq(newfbv);
                   if (Ranges::equal(dr_eq, newfbv_eq)) {
