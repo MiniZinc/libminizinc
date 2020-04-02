@@ -88,6 +88,40 @@ namespace MiniZinc {
       if (vd->e()!=NULL) {
         if (vd->e()->type().ispar() && vd->e()->type().dim()==0) {
           rete = eval_par(env, vd->e());
+          if (vd->ti()->domain() && !vd->ti()->computedDomain()) {
+            // need to check if domain includes RHS value
+            if (vd->type()==Type::varbool()) {
+              if (!Expression::equal(rete, vd->ti()->domain())) {
+                env.fail();
+              }
+              vd->ti()->domain(rete);
+            } else if (vd->type()==Type::varint()) {
+              IntSetVal* isv = eval_intset(env, vd->ti()->domain());
+              IntVal v = eval_int(env, rete);
+              if (!isv->contains(v)) {
+                env.fail();
+              }
+              vd->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(v, v)));
+            } else if (vd->type()==Type::varfloat()) {
+              FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
+              FloatVal v = eval_float(env, rete);
+              if (!fsv->contains(v)) {
+                env.fail();
+              }
+              vd->ti()->domain(new SetLit(Location().introduce(), FloatSetVal::a(v, v)));
+            } else if (vd->type()==Type::varsetint()) {
+              IntSetVal* isv = eval_intset(env, vd->ti()->domain());
+              IntSetVal* v = eval_intset(env, rete);
+              IntSetRanges isv_r(isv);
+              IntSetRanges v_r(v);
+              if (!Ranges::subset(v_r, isv_r)) {
+                env.fail();
+              }
+              vd->ti()->domain(new SetLit(Location().introduce(), v));
+            }
+            // If we made it to here, the new domain is equal to the RHS
+            vd->ti()->setComputedDomain(true);
+          }
         } else if (vd->e()->isa<Id>()) {
           rete = vd->e();
         }
