@@ -88,7 +88,7 @@ namespace MiniZinc {
       if (vd->e()!=NULL) {
         if (vd->e()->type().ispar() && vd->e()->type().dim()==0) {
           rete = eval_par(env, vd->e());
-          if (vd->ti()->domain() && !vd->ti()->computedDomain()) {
+          if (vd->toplevel() && vd->ti()->domain() && !vd->ti()->computedDomain()) {
             // need to check if domain includes RHS value
             if (vd->type()==Type::varbool()) {
               if (!Expression::equal(rete, vd->ti()->domain())) {
