@@ -1159,98 +1159,109 @@ namespace MiniZinc {
     ASTString curloc_f;
     int curloc_l = -1;
 
-    for (int i=lastError-1; i>=0; i--) {
-      Expression* e = stack[i]->untag();
-      bool isCompIter = stack[i]->isTagged();
+    if (lastError==0 && stack.size()!=0 && stack[0]->untag()->isa<Id>()) {
+      Expression* e = stack[0]->untag();
       ASTString newloc_f = e->loc().filename();
-      if (e->loc().is_introduced())
-        continue;
-      int newloc_l = e->loc().first_line();
-      if (newloc_f != curloc_f || newloc_l != curloc_l) {
+      if (!e->loc().is_introduced()) {
+        int newloc_l = e->loc().first_line();
         os << "  " << newloc_f << ":" << newloc_l << ":" << std::endl;
-        curloc_f = newloc_f;
-        curloc_l = newloc_l;
+        os << "  in variable declaration " << *e << std::endl;
       }
-      if (isCompIter)
-        os << "    with ";
-      else
-        os << "  in ";
-      switch (e->eid()) {
-        case Expression::E_INTLIT:
-          os << "integer literal" << std::endl;
-          break;
-        case Expression::E_FLOATLIT:
-          os << "float literal" << std::endl;
-          break;
-        case Expression::E_SETLIT:
-          os << "set literal" << std::endl;
-          break;
-        case Expression::E_BOOLLIT:
-          os << "bool literal" << std::endl;
-          break;
-        case Expression::E_STRINGLIT:
-          os << "string literal" << std::endl;
-          break;
-        case Expression::E_ID:
-          if (isCompIter) {
-            if (e->cast<Id>()->decl()->e()->type().ispar())
-              os << *e << " = " << *e->cast<Id>()->decl()->e() << std::endl;
+    } else {
+    
+      for (int i=lastError-1; i>=0; i--) {
+        Expression* e = stack[i]->untag();
+        bool isCompIter = stack[i]->isTagged();
+        ASTString newloc_f = e->loc().filename();
+        if (e->loc().is_introduced())
+          continue;
+        int newloc_l = e->loc().first_line();
+        if (newloc_f != curloc_f || newloc_l != curloc_l) {
+          os << "  " << newloc_f << ":" << newloc_l << ":" << std::endl;
+          curloc_f = newloc_f;
+          curloc_l = newloc_l;
+        }
+        if (isCompIter)
+          os << "    with ";
+        else
+          os << "  in ";
+        switch (e->eid()) {
+          case Expression::E_INTLIT:
+            os << "integer literal" << std::endl;
+            break;
+          case Expression::E_FLOATLIT:
+            os << "float literal" << std::endl;
+            break;
+          case Expression::E_SETLIT:
+            os << "set literal" << std::endl;
+            break;
+          case Expression::E_BOOLLIT:
+            os << "bool literal" << std::endl;
+            break;
+          case Expression::E_STRINGLIT:
+            os << "string literal" << std::endl;
+            break;
+          case Expression::E_ID:
+            if (isCompIter) {
+              if (e->cast<Id>()->decl()->e()->type().ispar())
+                os << *e << " = " << *e->cast<Id>()->decl()->e() << std::endl;
+              else
+                os << *e << " = <expression>" << std::endl;
+            } else {
+              os << "identifier" << *e << std::endl;
+            }
+            break;
+          case Expression::E_ANON:
+            os << "anonymous variable" << std::endl;
+            break;
+          case Expression::E_ARRAYLIT:
+            os << "array literal" << std::endl;
+            break;
+          case Expression::E_ARRAYACCESS:
+            os << "array access" << std::endl;
+            break;
+          case Expression::E_COMP:
+          {
+            const Comprehension* cmp = e->cast<Comprehension>();
+            if (cmp->set())
+              os << "set ";
             else
-              os << *e << " = <expression>" << std::endl;
-          } else {
-            os << "identifier" << *e << std::endl;
+              os << "array ";
+            os << "comprehension expression" << std::endl;
           }
-          break;
-        case Expression::E_ANON:
-          os << "anonymous variable" << std::endl;
-          break;
-        case Expression::E_ARRAYLIT:
-          os << "array literal" << std::endl;
-          break;
-        case Expression::E_ARRAYACCESS:
-          os << "array access" << std::endl;
-          break;
-        case Expression::E_COMP:
-        {
-          const Comprehension* cmp = e->cast<Comprehension>();
-          if (cmp->set())
-            os << "set ";
-          else
-            os << "array ";
-          os << "comprehension expression" << std::endl;
+            break;
+          case Expression::E_ITE:
+            os << "if-then-else expression" << std::endl;
+            break;
+          case Expression::E_BINOP:
+            os << "binary " << e->cast<BinOp>()->opToString() << " operator expression" << std::endl;
+            break;
+          case Expression::E_UNOP:
+            os << "unary " << e->cast<UnOp>()->opToString() << " operator expression" << std::endl;
+            break;
+          case Expression::E_CALL:
+            os << "call '" << e->cast<Call>()->id() << "'" << std::endl;
+            break;
+          case Expression::E_VARDECL:
+          {
+            GCLock lock;
+            os << "variable declaration for '" << e->cast<VarDecl>()->id()->str() << "'" << std::endl;
+          }
+            break;
+          case Expression::E_LET:
+            os << "let expression" << std::endl;
+            break;
+          case Expression::E_TI:
+            os << "type-inst expression" << std::endl;
+            break;
+          case Expression::E_TIID:
+            os << "type identifier" << std::endl;
+            break;
+          default:
+            assert(false);
+            os << "unknown expression (internal error)" << std::endl;
+            break;
         }
-          break;
-        case Expression::E_ITE:
-          os << "if-then-else expression" << std::endl;
-          break;
-        case Expression::E_BINOP:
-          os << "binary " << e->cast<BinOp>()->opToString() << " operator expression" << std::endl;
-          break;
-        case Expression::E_UNOP:
-          os << "unary " << e->cast<UnOp>()->opToString() << " operator expression" << std::endl;
-          break;
-        case Expression::E_CALL:
-          os << "call '" << e->cast<Call>()->id() << "'" << std::endl;
-          break;
-        case Expression::E_VARDECL:
-        {
-          GCLock lock;
-          os << "variable declaration for '" << e->cast<VarDecl>()->id()->str() << "'" << std::endl;
-        }
-          break;
-        case Expression::E_LET:
-          os << "let expression" << std::endl;
-          break;
-        case Expression::E_TI:
-          os << "type-inst expression" << std::endl;
-          break;
-        case Expression::E_TIID:
-          os << "type identifier" << std::endl;
-          break;
-        default:
-          assert(false);
-          os << "unknown expression (internal error)" << std::endl;
-          break;
       }
     }
     return os;
