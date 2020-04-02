@@ -125,6 +125,15 @@ namespace MiniZinc {
         } else if (vd->e()->isa<Id>()) {
           rete = vd->e();
         }
+      } else if (vd->ti()->ranges().size() == 0 && vd->ti()->domain() && vd->type().st()==Type::ST_PLAIN) {
+        if (vd->type().bt()==Type::BT_BOOL) {
+          rete = vd->ti()->domain();
+        } else if (vd->type().bt()==Type::BT_INT &&
+                   vd->ti()->domain()->isa<SetLit>() &&
+                   vd->ti()->domain()->cast<SetLit>()->isv() &&
+                   vd->ti()->domain()->cast<SetLit>()->isv()->card()==1) {
+          rete = IntLit::a(vd->ti()->domain()->cast<SetLit>()->isv()->min());
+        }
       } else if (vd->ti()->ranges().size() > 0) {
         // create fresh variables and array literal
         std::vector<std::pair<int,int> > dims;
