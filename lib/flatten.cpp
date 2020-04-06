@@ -1586,7 +1586,6 @@ namespace MiniZinc {
                 GCLock lock;
                 env.flat_addItem(new ConstraintI(Location().introduce(),constants().lit_false));
               } else if (id->decl()->ti()->domain()==NULL) {
-                id->decl()->ti()->domain(constants().lit_true);
                 GCLock lock;
                 std::vector<Expression*> args(2);
                 args[0] = id;
@@ -1597,6 +1596,7 @@ namespace MiniZinc {
                 if (c->decl()->e()) {
                   flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
                 }
+                id->decl()->ti()->domain(constants().lit_true);
               }
               id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
             }
@@ -2117,7 +2117,6 @@ namespace MiniZinc {
                   GCLock lock;
                   env.flat_addItem(new ConstraintI(Location().introduce(),constants().lit_false));
                 } else {
-                  id->decl()->ti()->domain(e);
                   GCLock lock;
                   std::vector<Expression*> args(2);
                   args[0] = id;
@@ -2128,6 +2127,7 @@ namespace MiniZinc {
                   if (c->decl()->e()) {
                     flat_exp(env, Ctx(), c, constants().var_true, constants().var_true);
                   }
+                  id->decl()->ti()->domain(e);
                 }
                 id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
               }
