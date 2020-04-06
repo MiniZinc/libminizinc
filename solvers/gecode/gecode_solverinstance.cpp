@@ -1292,6 +1292,7 @@ namespace MiniZinc {
   SolverInstanceBase::Status
   GecodeSolverInstance::solve(void) {
     GCLock lock;
+    SolverInstanceBase::Status ret;
 
     prepareEngine();
 
@@ -1332,13 +1333,16 @@ namespace MiniZinc {
     }
     if (next_sol==NULL) {
       if (_solution) {
-        return engine->stopped() ? SolverInstance::SAT : SolverInstance::OPT;
+        ret = engine->stopped() ? SolverInstance::SAT : SolverInstance::OPT;
       } else {
-        return engine->stopped() ? SolverInstance::UNKNOWN : SolverInstance::UNSAT;
+        ret = engine->stopped() ? SolverInstance::UNKNOWN : SolverInstance::UNSAT;
       }
     } else {
-      return SolverInstance::SAT;
+      ret = SolverInstance::SAT;
     }
+    delete engine;
+    engine = NULL;
+    return ret;
   }
 
   class IntVarComp {
