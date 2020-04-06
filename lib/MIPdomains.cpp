@@ -696,7 +696,7 @@ typedef LinEq__<std::vector<double>, std::vector<VarDecl*> > LinEq;
                 MZN_MIPD__assert_hard( pC->n_args() );
                 // Checking all but adding only touched defined vars? Seems too long.
                 VarDecl* vd = expr2VarDecl( pC->arg(0) );
-                if ( vd->payload()>=0 )                    // only if touched
+                if ( vd && vd->payload()>=0 )                    // only if touched
                   if ( findOrAddDefining( pC->arg(0), c ) )
                     fChanges = true;
               }
