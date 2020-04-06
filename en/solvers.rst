@@ -141,6 +141,7 @@ The following parameters can be given on the command line or modified in ``share
                                                %% used e.g. for the following cases:
                                                %% x!=y, x<y, b -> x<y, b <-> x<=y
   -DfIndConstr=true -DfMIPdomains=false        %% Use solver's indicator constraints, see below
+  -DMinMaxGeneral=true                         %% Send min/max constraints to the solver (Gurobi only)
   -DQuadrFloat=true -DQuadrInt=true            %% Forward float/integer multiplications for MIQCP backends, see below
   --no-half-reifications                       %% Turn off halfreification (full reification was until v2.2.3)
 
