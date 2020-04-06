@@ -22,6 +22,7 @@
 
 #include "minizinc/solvers/MIP/MIP_xpress_wrap.hh"
 #include "minizinc/utils.hh"
+#include "minizinc/file_utils.hh"
 
 struct UserSolutionCallbackData {
   MIP_wrapper::CBUserInfo *info;
@@ -64,7 +65,10 @@ XpressPlugin::XpressPlugin(const std::string& dll_file) : Plugin(dll_file) {
 }
 
 void XpressPlugin::load_dll(void) {
+  load_symbol(XPRSinit);
+  load_symbol(XPRSfree);
   load_symbol(XPRSgetversion);
+  load_symbol(XPRSgetlicerrmsg);
   load_symbol(XPRBgetXPRSprob);
   load_symbol(XPRBsetmsglevel);
   load_symbol(XPRSsetlogfile);
@@ -93,6 +97,7 @@ void XpressPlugin::load_dll(void) {
   load_symbol(XPRBsetsolvar);
   load_symbol(XPRBaddmipsol);
   load_symbol(XPRBnewprob);
+  load_symbol(XPRBdelprob);
 }
 
 const std::vector<std::string>& XpressPlugin::dlls() {
@@ -112,13 +117,37 @@ const std::vector<std::string>& XpressPlugin::dlls() {
 }
 
 void MIP_xpress_wrapper::openXpress(void) {
-  if (options->xprlFile.size() && options->xprsFile.size()) {
-    plugin_dep = new XprlPlugin(options->xprlFile);
-    plugin = new XpressPlugin(options->xprsFile);
+  if (options->xprsRoot.size()) {
+    auto base = MiniZinc::FileUtils::file_path(options->xprsRoot);
+#ifdef _WIN32
+    auto xprl = MiniZinc::FileUtils::file_path("bin/xprl.dll", base);
+    auto xprs = MiniZinc::FileUtils::file_path("bin/xprs.dll", base);
+#elif __APPLE__
+    auto xprl = MiniZinc::FileUtils::file_path("lib/libxprl.dylib", base);
+    auto xprs = MiniZinc::FileUtils::file_path("lib/libxprs.dylib", base);
+#else
+    auto xprl = MiniZinc::FileUtils::file_path("lib/libxprl.so", base);
+    auto xprs = MiniZinc::FileUtils::file_path("lib/libxprs.so", base);
+#endif
+    plugin_dep = new XprlPlugin(xprl);
+    plugin = new XpressPlugin(xprs);
   }
   else {
     plugin_dep = new XprlPlugin();
     plugin = new XpressPlugin();
+  }
+
+  int ret = plugin->XPRSinit(options->xprsPassword.size() ? options->xprsPassword.c_str() : nullptr);
+  if (ret) {
+    char message[512];
+    plugin->XPRSgetlicerrmsg(message, 512);
+    // Return code of 32 means student licence, but otherwise it's an error
+    if (ret == 32) {
+      std::cerr << message << std::endl;
+    }
+    else {
+      throw XpressException(message);
+    }
   }
 
   problem = plugin->XPRBnewprob(nullptr);
@@ -126,6 +155,8 @@ void MIP_xpress_wrapper::openXpress(void) {
 }
 
 void MIP_xpress_wrapper::closeXpress(void) {
+  plugin->XPRBdelprob(problem);
+  plugin->XPRSfree();
   delete plugin;
   delete plugin_dep;
 }
@@ -151,10 +182,17 @@ string MIP_xpress_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt
 
 vector<string> MIP_xpress_wrapper::getRequiredFlags(void) {
   try {
-    XpressPlugin p;
-    return { "" };
+    XprlPlugin p1;
+    XpressPlugin p2;
+    int ret = p2.XPRSinit(nullptr);
+    p2.XPRSfree();
+    if (ret == 0 || ret == 32) {
+      return {};
+    } else {
+      return { "--xpress-password" };
+    }
   } catch (MiniZinc::Plugin::PluginError&) {
-    return { "--xprl-dll", "--xprs-dll" };
+    return { "--xpress-root" };
   }
 }
 
@@ -194,8 +232,8 @@ void MIP_xpress_wrapper::Options::printHelp(ostream &os) {
      << 0.0001 << std::endl
      << "-a, --printAllSolutions  print intermediate solution, default: false"
      << std::endl
-     << "--xprl-dll <file>    path to xprl shared library (must also specify --xprs-dll)" << std::endl
-     << "--xprs-dll <file>    path to xprs shared library (must also specify --xprl-dll)" << std::endl
+     << "--xpress-root <dir>      Xpress installation directory (usually named xpressmp)" << std::endl
+     << "--xpress-password <dir>  directory where xpauth.xpr is located (optional)" << std::endl
      << std::endl;
 }
 
@@ -212,8 +250,8 @@ bool MIP_xpress_wrapper::Options::processOption(int &i, std::vector<std::string>
   } else if (string(argv[i]) == "--printAllSolutions" ||
              string(argv[i]) == "-a") {
     printAllSolutions = true;
-  } else if (cop.get("--xprs-dll", &xprsFile)) {
-  } else if (cop.get("--xprl-dll", &xprlFile)) {
+  } else if (cop.get("--xpress-root", &xprsRoot)) {
+  } else if (cop.get("--xpress-password", &xprsPassword)) {
   } else
     return false;
   return true;

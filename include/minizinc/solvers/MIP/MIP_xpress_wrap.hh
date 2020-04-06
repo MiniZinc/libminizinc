@@ -31,7 +31,10 @@ class XpressPlugin : MiniZinc::Plugin {
 public:
   XpressPlugin();
   XpressPlugin(const std::string& dll);
+  int (XPRS_CC *XPRSinit)(const char* path);
+  int (XPRS_CC *XPRSfree)(void);
   int (XB_CC *XPRSgetversion)(char* version);
+  int (XPRS_CC *XPRSgetlicerrmsg)(char *buffer, int length);
   struct xo_prob_struct* (XB_CC* XPRBgetXPRSprob)(struct Xbprob *  prob);
   int (XB_CC *XPRBsetmsglevel)(struct Xbprob * prob, int level);
   int (XPRS_CC *XPRSsetlogfile)(XPRSprob prob, const char* logname);
@@ -60,6 +63,7 @@ public:
   int (XB_CC *XPRBsetsolvar)(struct Xbsol * sol, struct Xbvar * var, double coeff);
   int (XB_CC *XPRBaddmipsol)(struct Xbprob * prob, struct Xbsol * sol, const char *name);
   struct Xbprob* (XB_CC *XPRBnewprob)(const char *name);
+  int (XB_CC *XPRBdelprob)(struct Xbprob *  prob);
 private:
   void load_dll(void);
   static const std::vector<std::string>& dlls(void);
@@ -79,8 +83,8 @@ public:
       double relGap = 0.0001;
       bool printAllSolutions = false;
       bool processOption(int& i, std::vector<std::string>& argv);
-      std::string xprlFile;
-      std::string xprsFile;
+      std::string xprsPassword;
+      std::string xprsRoot;
       static void printHelp(std::ostream& );
     };
   private:
