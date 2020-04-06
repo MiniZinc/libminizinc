@@ -929,6 +929,17 @@ namespace MiniZinc {
                                          makeConstrName("p_bounds_disj_", (gi.getMIPWrapper()->nAddedRows++), call));
     }
 
+    template<class MIPWrapper>
+    void p_array_minimum(SolverInstanceBase& si, const Call* call) {
+      MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>( si );
+      assert(2==call->n_args());
+      auto res = gi.exprToVar(call->arg(0));
+      std::vector<MIP_solver::Variable> args;
+      gi.exprToVarArray(call->arg(1), args);
+      gi.getMIPWrapper()->addMinimum( res, args.size(), args.data(),
+                    makeConstrName("p_minimum_", (gi.getMIPWrapper()->nAddedRows++), call) );
+    }
+
     /// fzn_[int/float]_times
     template<class MIPWrapper>
     void p_times(SolverInstanceBase& si, const Call* call) {
@@ -978,6 +989,8 @@ namespace MiniZinc {
 
 
     _constraintRegistry.add("bounds_disj", SCIPConstraints::p_bounds_disj<MIPWrapper>);
+
+    _constraintRegistry.add("fzn_array_float_minimum", SCIPConstraints::p_array_minimum<MIPWrapper>);
 
     _constraintRegistry.add("fzn_int_times", SCIPConstraints::p_times<MIPWrapper>);
     _constraintRegistry.add("fzn_float_times", SCIPConstraints::p_times<MIPWrapper>);

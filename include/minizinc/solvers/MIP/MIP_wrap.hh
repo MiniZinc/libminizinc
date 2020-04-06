@@ -258,7 +258,9 @@ class MIP_wrapper {
     virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int *rmatind, double* rmatval,
                         LinConType sense, double rhs,
                         std::string rowName = "") { throw std::runtime_error("Indicator constraints not supported. "); }
-                
+    virtual void addMinimum(int iResultVar, int nnz, int *ind, std::string rowName = "")
+    { throw std::runtime_error("This backend does not support the Minimum constraint"); }
+
     /// Bounds disj for SCIP
     virtual void addBoundsDisj(int n, double *fUB, double *bnd, int* vars,
                                int nF, double *fUBF, double *bndF, int* varsF,

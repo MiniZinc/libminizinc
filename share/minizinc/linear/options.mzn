@@ -25,12 +25,15 @@ ann: MIP_cut = user_cut;         %% MIP_cut: make sure no feasible solutions are
                                  %% -- seems better on average but in CPLEX, wrong LB e.g. on carpet-cutting
 ann: MIP_lazy = lazy_constraint;
 
-%-----------------------------------------------------------------------------%
-opt bool: fIndConstr;
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% "GENERAL" constraints %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+opt bool: fIndConstr;          %% Attention: as of MZN 2.4.3, you also need -DfMIPdomains=false
 bool: fMZN__UseIndicators =    %% Pass on indicator constraints
            if absent( fIndConstr ) then false
            else deopt( fIndConstr ) endif;
     %% CPLEX 12.6.2 Concert: reifs give wrong result on 2012/amaze, so using implications only
+opt bool: MinMaxGeneral;       %% pass on min/max to the backend as fzn_array_float_minimum
+bool: MZN__MinMaxGeneral = if absent(MinMaxGeneral) then false else deopt(MinMaxGeneral) endif;
+
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Quadratic expressions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --------------------------------------------------------------------------------------- %

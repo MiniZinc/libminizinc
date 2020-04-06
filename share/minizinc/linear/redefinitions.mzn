@@ -124,6 +124,8 @@ predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
     } in
     if 1==card(sActive) then
       m == x[min(sActive)]
+    elseif MZN__MinMaxGeneral then
+      fzn_array_float_minimum(m, x)                      %% Send to backend
     else
       let {
           array[1..n] of var int: p = [
@@ -630,3 +632,4 @@ predicate array_var_float_element__XBZ_lb__cutgen(array[int] of var float: x, ar
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Quadratic expressions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%5
 predicate fzn_float_times(var float: a, var float: b, var float: c);
 predicate fzn_int_times(var int: a, var int: b, var int: c);
+predicate fzn_array_float_minimum(var float: m, array[int] of var float: x);

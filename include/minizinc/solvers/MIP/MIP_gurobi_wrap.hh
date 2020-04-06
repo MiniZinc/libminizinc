@@ -68,6 +68,13 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     int (__stdcall *dll_GRBaddconstr) (GRBmodel *model, int numnz, int *cind, double *cval,
                              char sense, double rhs, const char *constrname);
 
+    int	(__stdcall *dll_GRBaddgenconstrMin) (	GRBmodel	*model,
+        const char	*name,
+        int	resvar,
+        int	nvars,
+        const int	*vars,
+        double	constant );
+
     int (__stdcall *
       dll_GRBaddqconstr) (GRBmodel *model, int numlnz, int *lind, double *lval,
                     int numqnz, int *qrow, int *qcol, double *qval,
@@ -185,6 +192,7 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     virtual void addIndicatorConstraint(int iBVar, int bVal, int nnz, int *rmatind, double* rmatval,
                         LinConType sense, double rhs,
                         std::string rowName = "");
+    virtual void addMinimum(int iResultVar, int nnz, int *ind, std::string rowName = "");
 
     /// Times constraint: var[x]*var[y] == var[z]
     virtual void addTimes(int x, int y, int z, const std::string& rowName = "");

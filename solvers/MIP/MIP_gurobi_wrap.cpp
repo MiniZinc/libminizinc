@@ -253,6 +253,7 @@ void MIP_gurobi_wrapper::checkDLL()
 
   *(void**)(&dll_GRBversion) = dll_sym(gurobi_dll, "GRBversion");
   *(void**)(&dll_GRBaddconstr) = dll_sym(gurobi_dll, "GRBaddconstr");
+  *(void**)(&dll_GRBaddgenconstrMin) = dll_sym(gurobi_dll, "GRBaddgenconstrMin");
   *(void**)(&dll_GRBaddqconstr) = dll_sym(gurobi_dll, "GRBaddqconstr");
   *(void**)(&dll_GRBaddgenconstrIndicator) = dll_sym(gurobi_dll, "GRBaddgenconstrIndicator");
   *(void**)(&dll_GRBaddvars) = dll_sym(gurobi_dll, "GRBaddvars");
@@ -441,6 +442,12 @@ void MIP_gurobi_wrapper::addIndicatorConstraint(
   error = dll_GRBaddgenconstrIndicator(model, rowName.c_str(), iBVar, bVal,
                                    nnz, rmatind, rmatval, ssense, rhs);    
   wrap_assert( !error,  "Failed to add indicator constraint." );
+}
+
+void MIP_gurobi_wrapper::addMinimum(int iResultVar, int nnz, int *ind, std::string rowName) {
+  error = dll_GRBaddgenconstrMin(model, rowName.c_str(),
+                                 iResultVar, nnz, (const int*)ind, GRB_INFINITY);
+  wrap_assert( !error,  "Failed: GRBaddgenconstrMin." );
 }
 
 void MIP_gurobi_wrapper::addTimes(int x, int y, int z, const string& rowName) {
