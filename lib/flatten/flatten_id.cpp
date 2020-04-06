@@ -125,7 +125,7 @@ namespace MiniZinc {
         } else if (vd->e()->isa<Id>()) {
           rete = vd->e();
         }
-      } else if (vd->ti()->ranges().size() == 0 && vd->ti()->domain() && vd->type().st()==Type::ST_PLAIN) {
+      } else if (vd->ti()->ranges().size() == 0 && vd->ti()->domain() && vd->type().st()==Type::ST_PLAIN && vd->type().ot()==Type::OT_PRESENT) {
         if (vd->type().bt()==Type::BT_BOOL) {
           rete = vd->ti()->domain();
         } else if (vd->type().bt()==Type::BT_INT &&
