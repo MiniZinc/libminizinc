@@ -34,6 +34,7 @@ class CompareLogs:
           ]
         self.hdrRanking = [       ## These are column headers for ranking analysis
             ## ( "nmMeth", "logfile/test/method name" ),
+            ( "ONFZ",   "Number of instances where ONLY this method failed to compile (NOFZN)" ),
             ( "OOpt",   "Number of instances where ONLY this method is OPTIMAL" ),
             ( "OSaC",   "Number of instances where ONLY this method is SAT-COMPLETE" ),
             ( "OFeas",  "Number of instances where ONLY this method is FEASIBLE and none is optimal" ),
@@ -232,7 +233,7 @@ class CompareLogs:
 ####################### LEVEL 2 #########################
 ###############################################################################################
     def initInstanceComparison( self, sInst ):
-        self.lOpt, self.lSatAll, self.lFeas, self.lSat, self.lInfeas = [], [], [], [], []
+        self.lNOFZN, self.lOpt, self.lSatAll, self.lFeas, self.lSat, self.lInfeas = [], [], [], [], [], []
         self.mOptVal, self.lOptVal, self.lPrimBnd, self.lDualBnd = OrderedDict(), [], [], []
         self.nInstCompared += 1
         self.nReported = 0               ## How many methods reported for this instances
@@ -383,6 +384,7 @@ class CompareLogs:
                 if None==dTime_Flt:
                     aResultThisInst[ "n_NOFZN" ] = 1
                     self.mNoFZN. setdefault( sInst, [] ).append( lNames )
+                    self.lNOFZN.append( lNames )
                 ## Handle FAIL???
                 # LAST:
                 utils.addMapValues( self.mCmpVecVals[lNames], aResultThisInst )
@@ -448,7 +450,11 @@ class CompareLogs:
             self.nOptSense = self.nOptSenseGiven
         ### Compare methods on this instance:
         if not self.fContr and self.nReported == len(self.lResLogs):
-            if len(self.lOpt) == 1:
+            if len(self.lNOFZN) == 1:
+                self.matrRanking[self.lNOFZN[0], "ONFZ"] += 1
+                self.matrRankingMsg[self.lNOFZN[0], "ONFZ"].append( \
+                  str(sInst) + ":   the ONLY NON-FLATTENED")
+            elif len(self.lOpt) == 1:
                 self.matrRanking[self.lOpt[0], "OOpt"] += 1
                 self.matrRankingMsg[self.lOpt[0], "OOpt"].append( \
                   str(sInst) + ":   the ONLY OPTIMAL")
