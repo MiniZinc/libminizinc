@@ -1386,8 +1386,32 @@ namespace MiniZinc {
             newtis[i] = e_tis[i];
             needNewTypeInst = true;
           } else {
-            if (!eval_intset(env,tis[i]->domain())->equal(eval_intset(env,e_tis[i]->domain())))
-              throw EvalError(env, vd->loc(), "Index set mismatch");
+            IntSetVal* isv0 = eval_intset(env,tis[i]->domain());
+            IntSetVal* isv1 = eval_intset(env,e_tis[i]->domain());
+            if (!isv0->equal(isv1)) {
+              std::ostringstream oss;
+              oss << "Index set mismatch. Declared index " << (tis.size()==1 ? "set" : "sets");
+              oss << " of `" << *vd->id() << "' " << (tis.size()==1 ? "is [" : "are [");
+              for (unsigned int j=0; j<tis.size(); j++) {
+                if (tis[j]->domain()) {
+                  oss << *eval_intset(env, tis[j]->domain());
+                } else {
+                  oss << "int";
+                }
+                if (j<tis.size()-1) {
+                  oss << ", ";
+                }
+              }
+              oss << "], but is assigned to array `" << *id << "' with index " << (tis.size()==1 ? "set [" : "sets [");
+              for (unsigned int j=0; j<e_tis.size(); j++) {
+                oss << *eval_intset(env, e_tis[j]->domain());
+                if (j<e_tis.size()-1) {
+                  oss << ", ";
+                }
+              }
+              oss << "]. You may need to coerce the index sets using the array" << tis.size() << "d function.";
+              throw EvalError(env, vd->loc(), oss.str());
+            }
             newtis[i] = tis[i];
           }
         }
@@ -1404,8 +1428,30 @@ namespace MiniZinc {
             IntSetVal* isv = eval_intset(env,tis[i]->domain());
             assert(isv->size()<=1);
             if ( (isv->size()==0 && al->min(i) <= al->max(i)) ||
-                 (isv->size()!=0 && (isv->min(0) != al->min(i) || isv->max(0) != al->max(i))) )
-              throw EvalError(env, vd->loc(), "Index set mismatch");
+                (isv->size()!=0 && (isv->min(0) != al->min(i) || isv->max(0) != al->max(i))) ) {
+              std::ostringstream oss;
+              oss << "Index set mismatch. Declared index " << (tis.size()==1 ? "set" : "sets");
+              oss << " of `" << *vd->id() << "' " << (tis.size()==1 ? "is [" : "are [");
+              for (unsigned int j=0; j<tis.size(); j++) {
+                if (tis[j]->domain()) {
+                  oss << *eval_intset(env, tis[j]->domain());
+                } else {
+                  oss << "int";
+                }
+                if (j<tis.size()-1) {
+                  oss << ",";
+                }
+              }
+              oss << "], but is assigned to array with index " << (tis.size()==1 ? "set [" : "sets [");
+              for (unsigned int j=0; j<al->dims(); j++) {
+                oss << al->min(j) << ".." << al->max(j);
+                if (j<al->dims()-1) {
+                  oss << ", ";
+                }
+              }
+              oss << "]. You may need to coerce the index sets using the array" << tis.size() << "d function.";
+              throw EvalError(env, vd->loc(), oss.str());
+            }
             newtis[i] = tis[i];
           }
         }
