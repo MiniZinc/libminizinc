@@ -661,6 +661,7 @@ typedef LinEq__<std::vector<double>, std::vector<VarDecl*> > LinEq;
               LinEq2Vars led;
               expr2DeclArray(c->arg(1), led.vd);
               // At least 1 touched var:
+              if (nullptr!=led.vd[0] && nullptr!=led.vd[1])
               if ( led.vd[0]->payload() >= 0 || led.vd[1]->payload()>=0 ) {
                 if ( sCallLinEq2.end() != sCallLinEq2.find(c) )
                   continue;
