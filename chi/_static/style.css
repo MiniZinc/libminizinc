@@ -1,5 +1,6 @@
-code {
+.rst-content code, .rst-content tt {
   background: inherit;
+  border: none;
   padding: 0;  
 }
 .highlight, .highlight .cs {
