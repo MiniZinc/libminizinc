@@ -389,6 +389,41 @@ namespace MiniZinc {
     }
   }
 
+  IntVal b_idiv(EnvI& env, Call* call) {
+    assert(call->n_args()==2);
+    IntVal a = eval_int(env, call->arg(0));
+    IntVal b = eval_int(env, call->arg(1));
+    if (b==0) {
+      throw ResultUndefinedError(env, call->loc(),"division by zero");
+    }
+    return a / b;
+  }
+  IntVal b_mod(EnvI& env, Call* call) {
+    assert(call->n_args()==2);
+    IntVal a = eval_int(env, call->arg(0));
+    IntVal b = eval_int(env, call->arg(1));
+    if (b==0) {
+      throw ResultUndefinedError(env, call->loc(),"division by zero");
+    }
+    return a % b;
+  }
+  FloatVal b_fdiv(EnvI& env, Call* call) {
+    assert(call->n_args()==2);
+    FloatVal a = eval_float(env, call->arg(0));
+    FloatVal b = eval_float(env, call->arg(1));
+    if (b==0.0) {
+      throw ResultUndefinedError(env, call->loc(),"division by zero");
+    }
+    return a / b;
+  }
+  IntSetVal* b_dotdot(EnvI& env, Call* call) {
+    assert(call->n_args()==2);
+    IntVal a = eval_int(env, call->arg(0));
+    IntVal b = eval_int(env, call->arg(1));
+    return IntSetVal::a(a,b);
+  }
+
+
   IntVal b_sum_int(EnvI& env, Call* call) {
     assert(call->n_args()==1);
     GCLock lock;
@@ -2378,6 +2413,13 @@ namespace MiniZinc {
     rb(env, m, ASTString("product"), t_intarray, b_product_int);
     rb(env, m, ASTString("pow"), t_intint, b_pow_int);
 
+    rb(env, m, ASTString("'div'"), t_intint, b_idiv);
+    rb(env, m, ASTString("'mod'"), t_intint, b_mod);
+    rb(env, m, ASTString("'..'"), t_intint, b_dotdot);
+    {
+      std::vector<Type> t({Type::parfloat(),Type::parfloat()});
+      rb(env, m, ASTString("'/'"), t, b_fdiv);
+    }
     {
       std::vector<Type> t(2);
       t[0] = Type::top(-1);
