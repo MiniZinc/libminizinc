@@ -950,7 +950,8 @@ MiniZinc arrays can be declared in two different ways.
 
   .. code-block:: minizinc
 
-    array[0..3] of int: a1;
+    array[1..3] of int: a1;
+    array[0..3] of int: a2;
     array[1..5, 1..10] of var float: a5;
 
   For such arrays, the index type specifies exactly the indices that will
@@ -963,7 +964,17 @@ MiniZinc arrays can be declared in two different ways.
   .. code-block:: minizinc
 
     a1 = [4,6,4,3,2];   % too many elements
-    a5 = [];            % too few elements
+    a2 = [3,2,6,5];     % index set mismatch
+    a5 = [||];          % too few elements
+  
+  For :mzn:`a2` above, the index set of the array literal :mzn:`[3,2,6,5]`
+  is (implicitly) :mzn:`1..4`, so it cannot be assigned to an array declared
+  with index set :mzn:`0..3`, even though the length matches. A correct 
+  assignment would use the :mzn:`array1d` function (see :ref:`sec-array-ops`):
+  
+  .. code-block:: minizinc
+
+    a2 = array1d(0..3,[3,2,6,5]);     % correct
 - *Implicitly-indexed* arrays have index types in the declaration
   that are not finite types.  For example:
 
@@ -1597,7 +1608,7 @@ For example:
     [1, _]
 
 
-In a array literal all elements must have the same type-inst, or
+In an array literal all elements must have the same type-inst, or
 be coercible to the same type-inst (as in the last example above, where the
 fixed integer :mzn:`1` will be coerced to a :mzn:`var int`).
 
@@ -3108,6 +3119,8 @@ Intersection of multiple sets (:mzn:`array_intersect`) is similar.
       set of  $U:    array_union(array[$T]  of     set of  $U)
   var set of int:    array_union(array[$T]  of var set of int)
 
+
+.. _sec-array-ops:
 
 Array Operations
 ~~~~~~~~~~~~~~~~
