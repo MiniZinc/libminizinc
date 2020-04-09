@@ -3124,7 +3124,9 @@ namespace MiniZinc {
                     if (isTrueVar) {
                       env.fail();
                     } else {
-                      // nothing to do
+                      CollectDecls cd(env.vo,deletedVarDecls,vdi);
+                      topDown(cd,c);
+                      env.cse_map_remove(c);
                       vd->e(constants().lit_false);
                       vd->ti()->domain(constants().lit_false);
                     }
@@ -3132,7 +3134,9 @@ namespace MiniZinc {
                     if (isFalseVar) {
                       env.fail();
                     } else {
-                      // nothing to do
+                      CollectDecls cd(env.vo,deletedVarDecls,vdi);
+                      topDown(cd,c);
+                      env.cse_map_remove(c);
                       vd->e(constants().lit_true);
                       vd->ti()->domain(constants().lit_true);
                     }
