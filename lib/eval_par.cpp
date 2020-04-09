@@ -867,8 +867,12 @@ namespace MiniZinc {
 
   FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
     if (SetLit* sl = e->dyn_cast<SetLit>()) {
-      if (sl->fsv())
+      if (sl->fsv()) {
         return sl->fsv();
+      } else if (sl->isv()) {
+        IntSetRanges isr(sl->isv());
+        return FloatSetVal::ai(isr);
+      }
     }
     CallStackItem csi(env,e);
     switch (e->eid()) {
