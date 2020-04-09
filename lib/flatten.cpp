@@ -622,6 +622,7 @@ namespace MiniZinc {
     reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.bool_eq,constants().ids.bool_eq_reif));
     reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.bool_clause,constants().ids.bool_clause_reif));
     reifyMap.insert(std::pair<ASTString,ASTString>(constants().ids.clause,constants().ids.bool_clause_reif));
+    reifyMap.insert({constants().ids.bool_not,constants().ids.bool_not});
   }
   EnvI::~EnvI(void) {
     delete _flat;
@@ -634,9 +635,17 @@ namespace MiniZinc {
       return ids++;
     }
   void EnvI::cse_map_insert(Expression* e, const EE& ee) {
-      KeepAlive ka(e);
-      cse_map.insert(ka,WW(ee.r(),ee.b()));
+    KeepAlive ka(e);
+    cse_map.insert(ka,WW(ee.r(),ee.b()));
+    Call* c = e->dyn_cast<Call>();
+    if (c && c->id()==constants().ids.bool_not && c->arg(0)->isa<Id>() && ee.r()->isa<Id>() && ee.b()==constants().boollit(true)) {
+      Call* neg_c = new Call(Location().introduce(), c->id(), {ee.r()});
+      neg_c->type(c->type());
+      neg_c->decl(c->decl());
+      KeepAlive neg_ka(neg_c);
+      cse_map.insert(neg_ka,WW(c->arg(0),ee.b()));
     }
+  }
   EnvI::CSEMap::iterator EnvI::cse_map_find(Expression* e) {
     KeepAlive ka(e);
     CSEMap::iterator it = cse_map.find(ka);
@@ -1604,23 +1613,25 @@ namespace MiniZinc {
             return constants().lit_true;
           } else {
             GC::lock();
-            BinOp* bo = new BinOp(e->loc(),e,BOT_EQUIV,constants().lit_false);
-            bo->type(e->type());
-            KeepAlive ka(bo);
+            Call* bn = new Call(e->loc(), constants().ids.bool_not, {e});
+            bn->type(e->type());
+            bn->decl(env.model->matchFn(env,bn,false));
+            KeepAlive ka(bn);
             GC::unlock();
-            EE ee = flat_exp(env,Ctx(),bo,NULL,constants().var_true);
-            return bind(env,Ctx(),vd,ee.r());
+            EE ee = flat_exp(env,Ctx(),bn,vd,constants().var_true);
+            return ee.r;
           }
         }
         return constants().lit_true;
       } else {
         GC::lock();
-        BinOp* bo = new BinOp(e->loc(),e,BOT_EQUIV,constants().lit_false);
-        bo->type(e->type());
-        KeepAlive ka(bo);
+        Call* bn = new Call(e->loc(), constants().ids.bool_not, {e});
+        bn->type(e->type());
+        bn->decl(env.model->matchFn(env,bn,false));
+        KeepAlive ka(bn);
         GC::unlock();
-        EE ee = flat_exp(env,Ctx(),bo,NULL,constants().var_true);
-        return bind(env,Ctx(),vd,ee.r());
+        EE ee = flat_exp(env,Ctx(),bn,vd,constants().var_true);
+        return ee.r;
       }
     } else {
       if (vd==constants().var_true) {
@@ -3234,6 +3245,30 @@ namespace MiniZinc {
                     nc = new Call(c->loc().introduce(),bool_xor->id(),args);
                     nc->type(Type::varbool());
                     nc->decl(bool_xor);
+                  }
+                } else if (c->id() == constants().ids.bool_not && c->n_args()==1 && c->decl()->e()==nullptr) {
+                  if (c->arg(0)==constants().boollit(true)) {
+                    env.fail();
+                  } else if (c->arg(0)==constants().boollit(false)) {
+                    // nothing to do, not false = true
+                  } else if (c->arg(0)->isa<Id>()) {
+                    VarDecl* vd = c->arg(0)->cast<Id>()->decl();
+                    if (vd->ti()->domain()==nullptr) {
+                      vd->ti()->domain(constants().boollit(false));
+                    } else if (vd->ti()->domain()==constants().boollit(true)) {
+                      env.fail();
+                    }
+                  } else {
+                    // don't know how to handle, use bool_not/2
+                    nc = new Call(c->loc().introduce(), c->id(), {c->arg(0), constants().boollit(true)});
+                    nc->type(Type::varbool());
+                    nc->decl(env.model->matchFn(env,nc,false));
+                  }
+                  if (nc == nullptr) {
+                    CollectDecls cd(env.vo,deletedVarDecls,ci);
+                    topDown(cd,c);
+                    ci->e(constants().lit_true);
+                    env.flat_removeItem(i);
                   }
                 } else {
                   FunctionI* decl = env.model->matchFn(env,c,false);

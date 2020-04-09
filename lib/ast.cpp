@@ -1479,6 +1479,7 @@ namespace MiniZinc {
 
     ids.bool_eq = ASTString("bool_eq");
     ids.bool_eq_reif = ASTString("bool_eq_reif");
+    ids.bool_not = ASTString("bool_not");
     ids.bool_clause = ASTString("bool_clause");
     ids.bool_clause_reif = ASTString("bool_clause_reif");
     ids.bool_xor = ASTString("bool_xor");
@@ -1709,6 +1710,7 @@ namespace MiniZinc {
 
     v.push_back(new StringLit(Location(),ids.bool_eq));
     v.push_back(new StringLit(Location(),ids.bool_eq_reif));
+    v.push_back(new StringLit(Location(),ids.bool_not));
     v.push_back(new StringLit(Location(),ids.bool_clause));
     v.push_back(new StringLit(Location(),ids.bool_clause_reif));
     v.push_back(new StringLit(Location(),ids.bool_xor));

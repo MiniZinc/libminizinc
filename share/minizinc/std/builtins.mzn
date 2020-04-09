@@ -774,6 +774,9 @@ function var bool: clause(array[$T] of var bool: x, array[$T] of var bool: y);
 /** @group builtins.logic Return truth value of \((\bigvee_i \a x[i]) \lor (\bigvee_j \lnot \a y[j])\) */
 function var bool: clause(array[$T] of     bool: x, array[$T] of     bool: y);
 
+/** @group builtins.logic Return negation of \a b */
+function var bool: bool_not(var bool: b);
+
 /***
   @groupdef builtins.set Set operations
   
