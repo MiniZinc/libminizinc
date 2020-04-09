@@ -275,6 +275,25 @@ namespace MiniZinc {
       }
     }
 
+    OptimizeRegistry::ConstraintStatus o_not(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
+      if (c->n_args()==2) {
+        Expression* e0 = c->arg(0);
+        Expression* e1 = c->arg(1);
+        if (e0->type().ispar() && e1->type().ispar()) {
+          return eval_bool(env, e0)==eval_bool(env, e1) ? OptimizeRegistry::CS_FAILED : OptimizeRegistry::CS_ENTAILED;
+        }
+        if (e1->type().ispar()) {
+          std::swap(e0,e1);
+        }
+        if (e0->type().ispar()) {
+          Call* eq = new Call(Location(),constants().ids.bool_eq,{e1,constants().boollit(!eval_par(env, e0))});
+          rewrite = eq;
+          return OptimizeRegistry::CS_REWRITE;
+        }
+      }
+      return OptimizeRegistry::CS_OK;
+    }
+  
     OptimizeRegistry::ConstraintStatus o_div(EnvI& env, Item* i, Call* c, Expression*& rewrite) {
       if (c->arg(1)->type().ispar()) {
         IntVal c1v = eval_int(env, c->arg(1));
@@ -445,6 +464,7 @@ namespace MiniZinc {
         OptimizeRegistry::registry().reg(id_var_element, o_element);
         OptimizeRegistry::registry().reg(constants().ids.clause, o_clause);
         OptimizeRegistry::registry().reg(constants().ids.bool_clause, o_clause);
+        OptimizeRegistry::registry().reg(constants().ids.bool_not, o_not);
         OptimizeRegistry::registry().reg(constants().ids.set_in, o_set_in);
         OptimizeRegistry::registry().reg(constants().ids.int_.ne, o_int_ne);
         OptimizeRegistry::registry().reg(constants().ids.int_.le, o_int_le);
