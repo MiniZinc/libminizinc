@@ -3117,6 +3117,48 @@ namespace MiniZinc {
                   nc = new Call(c->loc().introduce(),array_bool_clause_reif->id(),args);
                   nc->type(Type::varbool());
                   nc->decl(array_bool_clause_reif);
+
+                } else if (c->id() == constants().ids.bool_not && c->n_args()==1 && c->decl()->e()==nullptr) {
+                  bool isFalseVar = Expression::equal(vd->ti()->domain(), constants().lit_false);
+                  if (c->arg(0)==constants().boollit(true)) {
+                    if (isTrueVar) {
+                      env.fail();
+                    } else {
+                      // nothing to do
+                      vd->e(constants().lit_false);
+                      vd->ti()->domain(constants().lit_false);
+                    }
+                  } else if (c->arg(0)==constants().boollit(false)) {
+                    if (isFalseVar) {
+                      env.fail();
+                    } else {
+                      // nothing to do
+                      vd->e(constants().lit_true);
+                      vd->ti()->domain(constants().lit_true);
+                    }
+                  } else if (c->arg(0)->isa<Id>() && (isTrueVar || isFalseVar)) {
+                    VarDecl* arg_vd = c->arg(0)->cast<Id>()->decl();
+                    if (arg_vd->ti()->domain()==nullptr) {
+                      arg_vd->e(constants().boollit(!isTrueVar));
+                      arg_vd->ti()->domain(constants().boollit(!isTrueVar));
+                    } else if (arg_vd->ti()->domain()==constants().boollit(isTrueVar)) {
+                      env.fail();
+                    } else {
+                      arg_vd->e(arg_vd->ti()->domain());
+                    }
+                    CollectDecls cd(env.vo,deletedVarDecls,vdi);
+                    topDown(cd,c);
+                    vd->e(NULL);
+                    // Need to remove right hand side from CSE map, otherwise
+                    // flattening of nc could assume c has already been flattened
+                    // to vd
+                    env.cse_map_remove(c);
+                  } else {
+                    // don't know how to handle, use bool_not/2
+                    nc = new Call(c->loc().introduce(), c->id(), {c->arg(0), vd->id()});
+                    nc->type(Type::varbool());
+                    nc->decl(env.model->matchFn(env,nc,false));
+                  }
                 } else {
                   if (isTrueVar) {
                     FunctionI* decl = env.model->matchFn(env,c,false);
