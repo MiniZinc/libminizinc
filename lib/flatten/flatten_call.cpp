@@ -1078,6 +1078,7 @@ namespace MiniZinc {
             if (!ctx.neg && !cr_c->type().isann())
               env.cse_map_insert(cr_c,ret);
           } else {
+            GCLock lock;
             ret.b = conj(env,b,Ctx(),args_ee);
             addPathAnnotation(env, cr_c);
             ret.r = bind(env,ctx,r,cr_c);
