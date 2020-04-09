@@ -160,11 +160,15 @@ namespace MiniZinc {
         assert(count(rhs) > 0);
 
         auto range = find(rhs);
-        for (auto match = range.first; match != range.second;) {
-          bool succes = compressItem(match->second, lhs);
-          assert(succes);
+        std::vector<Item*> to_process;
+        for (auto match = range.first; match != range.second; ++match) {
+          to_process.push_back(match->second);
+        }
+        items.erase(range.first,range.second);
+        for (auto item : to_process) {
+          bool success = compressItem(item, lhs);
+          assert(success);
           env.n_imp_del++;
-          match = items.erase(match);
         }
 
         assert(!rhs->ann().contains(constants().ann.output_var));
@@ -419,9 +423,13 @@ namespace MiniZinc {
           }
 
           auto arange = find(alias);
-          for (auto match = arange.first; match != arange.second;) {
-            LEReplaceVar<FloatLit>(match->second, alias, i2f_lhs);
-            match = items.erase(match);
+          std::vector<Item*> to_process;
+          for (auto match = arange.first; match != arange.second; ++match) {
+            to_process.push_back(match->second);
+          }
+          items.erase(arange.first,arange.second);
+          for (auto item : to_process) {
+            LEReplaceVar<FloatLit>(item, alias, i2f_lhs);
           }
         }
 
