@@ -399,9 +399,16 @@ namespace MiniZinc {
         assert(count(rhs) + count(alias) > 0);
 
         auto range = find(rhs);
-        for (auto match = range.first; match != range.second;) {
-          LEReplaceVar<IntLit>(match->second, rhs, lhs);
-          match = items.erase(match);
+
+        {
+          std::vector<Item*> to_process;
+          for (auto match = range.first; match != range.second; ++match) {
+            to_process.push_back(match->second);
+          }
+          items.erase(range.first,range.second);
+          for (auto item : to_process) {
+            LEReplaceVar<IntLit>(item, rhs, lhs);
+          }
         }
         if (alias) {
           VarDecl* i2f_lhs;
@@ -423,13 +430,15 @@ namespace MiniZinc {
           }
 
           auto arange = find(alias);
-          std::vector<Item*> to_process;
-          for (auto match = arange.first; match != arange.second; ++match) {
-            to_process.push_back(match->second);
-          }
-          items.erase(arange.first,arange.second);
-          for (auto item : to_process) {
-            LEReplaceVar<FloatLit>(item, alias, i2f_lhs);
+          {
+            std::vector<Item*> to_process;
+            for (auto match = arange.first; match != arange.second; ++match) {
+              to_process.push_back(match->second);
+            }
+            items.erase(arange.first,arange.second);
+            for (auto item : to_process) {
+              LEReplaceVar<FloatLit>(item, alias, i2f_lhs);
+            }
           }
         }
 
