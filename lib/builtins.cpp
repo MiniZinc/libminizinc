@@ -1161,6 +1161,10 @@ namespace MiniZinc {
       count += eval_bool(env,(*al)[i]);
     return count % 2 == 0;
   }
+  bool b_not_par(EnvI& env, Call* call) {
+    assert(call->n_args()==1);
+    return !eval_bool(env, call->arg(0));
+  }
   
   IntVal b_card(EnvI& env, Call* call) {
     if (call->n_args()!=1)
@@ -2795,6 +2799,9 @@ namespace MiniZinc {
       rb(env, m, constants().ids.exists, t, b_exists_par);
       rb(env, m, ASTString("xorall"), t, b_xorall_par);
       rb(env, m, ASTString("iffall"), t, b_iffall_par);
+    }
+    {
+      rb(env, m, constants().ids.bool_not, {Type::parbool()}, b_not_par);
     }
     {
       std::vector<Type> t(2);
