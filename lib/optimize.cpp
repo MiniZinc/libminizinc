@@ -1377,7 +1377,6 @@ namespace MiniZinc {
             nonFixedVars--;
         }
       }
-      nonFixedVars--; // for the identifier we're currently processing
       nonFixedLiteralCount.insert(std::make_pair(c, nonFixedVars));
       return nonFixedVars;
     } else {
@@ -1564,7 +1563,7 @@ namespace MiniZinc {
               }
               toRemove.push_back(vdi);
             }
-          } else {
+          } else if (realNonFixed==1) {
             // not subsumed, nonfixed==1
             assert(nonfixed_i != -1);
             ArrayLit* al = follow_id(c->arg(nonfixed_i))->cast<ArrayLit>();
@@ -1592,6 +1591,8 @@ namespace MiniZinc {
                 remove = false;
               }
             }
+          } else {
+            remove = false;
           }
           
         } else if (c->id()==constants().ids.clause) {
