@@ -120,6 +120,8 @@ predicate set_subset(var set of int: x, var set of int: y);
 predicate set_superset(var set of int: x, var set of int: y);
 /** @group flatzinc.set Constrains \( \a r \leftrightarrow (\a x \subseteq \a y) \) */
 predicate set_subset_reif(var set of int: x, var set of int: y, var bool: r);
+/** @group flatzinc.set Constrains \( \a r \leftrightarrow (\a x \subseteq \a y) \) */
+predicate set_superset_reif(var set of int: x, var set of int: y, var bool: r);
 /** @group flatzinc.set Constrains \a x ≤ \a y (lexicographic order of the sorted lists of elements) */
 predicate set_le(var set of int: x, var set of int: y);
 /** @group flatzinc.set Constrains \( \a r \leftrightarrow (\a x \leq \a y) \) (lexicographic order of the sorted lists of elements) */
