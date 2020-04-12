@@ -91,7 +91,7 @@ void Flattener::printHelp(ostream& os)
   << ( fOutputByDefault ? "  -o <file>, --fzn <file>, --output-to-file <file>, --output-fzn-to-file <file>\n"
        : "  --fzn <file>, --output-fzn-to-file <file>\n" )
   << "    Filename for generated FlatZinc output" << std::endl
-  << "  -O, --ozn, --output-ozn-to-file <file>\n    Filename for model output specification (-O- for none)" << std::endl
+  << "  --ozn, --output-ozn-to-file <file>\n    Filename for model output specification (--ozn- for none)" << std::endl
   << "  --keep-paths\n    Don't remove path annotations from FlatZinc" << std::endl
   << "  --output-paths\n    Output a symbol table (.paths file)" << std::endl
   << "  --output-paths-to-file <file>\n    Output a symbol table (.paths file) to <file>" << std::endl
@@ -252,7 +252,7 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
     return false;
 #endif
     // ozn options must be after the -O<n> optimisation options
-  } else if ( cop.getOption( "-O --ozn --output-ozn-to-file", &flag_output_ozn) ) {
+  } else if ( cop.getOption( "--ozn --output-ozn-to-file", &flag_output_ozn) ) {
   } else if (string(argv[i])=="-g") {
     flag_optimize = false;
     flag_two_pass = false;
