@@ -130,7 +130,37 @@ namespace MiniZinc {
       throw EvalError(env, Location(), "dynamic type error");
     }
   }
-  
+
+  IntVal b_arg_min_bool(EnvI& env, Call* call) {
+    GCLock lock;
+    ArrayLit* al = eval_array_lit(env,call->arg(0));
+    if (al->size()==0) {
+      throw ResultUndefinedError(env, al->loc(), "arg_min of empty array is undefined");
+    }
+    assert(al->dims() == 0);
+    for (int i = 0; i < al->size(); ++i) {
+      bool val = eval_bool(env,(*al)[i]);
+      if (!val) {
+        return i + al->min(0);
+      }
+    }
+    return al->min(0);
+  }
+  IntVal b_arg_max_bool(EnvI& env, Call* call) {
+    GCLock lock;
+    ArrayLit* al = eval_array_lit(env,call->arg(0));
+    if (al->size()==0) {
+      throw ResultUndefinedError(env, al->loc(), "arg_max of empty array is undefined");
+    }
+    assert(al->dims() == 0);
+    for (int i = 0; i < al->size(); ++i) {
+      bool val = eval_bool(env,(*al)[i]);
+      if (val) {
+        return i + al->min(0);
+      }
+    }
+    return al->min(0);
+  }
   IntVal b_arg_min_int(EnvI& env, Call* call) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,call->arg(0));
@@ -3113,6 +3143,8 @@ namespace MiniZinc {
       rb(env, m, ASTString("arg_max"), t, b_arg_max_int);
       t[0] = Type::parbool(1);
       rb(env, m, ASTString("sort"), t, b_sort);
+      rb(env, m, ASTString("arg_min"), t, b_arg_min_bool);
+      rb(env, m, ASTString("arg_max"), t, b_arg_max_bool);
       t[0] = Type::parfloat(1);
       rb(env, m, ASTString("sort"), t, b_sort);
       rb(env, m, ASTString("arg_min"), t, b_arg_min_float);
