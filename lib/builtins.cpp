@@ -164,8 +164,10 @@ namespace MiniZinc {
   IntVal b_arg_min_int(EnvI& env, Call* call) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,call->arg(0));
-    if (al->size()==0)
+    if (al->size()==0) {
       throw ResultUndefinedError(env, al->loc(), "argmin of empty array is undefined");
+    }
+    assert(al->dims() == 0);
     IntVal m = eval_int(env,(*al)[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->size(); i++) {
@@ -175,13 +177,15 @@ namespace MiniZinc {
         m_idx = i;
       }
     }
-    return m_idx+1;
+    return m_idx + al->min(0);
   }
   IntVal b_arg_max_int(EnvI& env, Call* call) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,call->arg(0));
-    if (al->size()==0)
+    if (al->size()==0) {
       throw ResultUndefinedError(env, al->loc(), "argmax of empty array is undefined");
+    }
+    assert(al->dims() == 0);
     IntVal m = eval_int(env,(*al)[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->size(); i++) {
@@ -191,13 +195,15 @@ namespace MiniZinc {
         m_idx = i;
       }
     }
-    return m_idx+1;
+    return m_idx + al->min(0);
   }
   IntVal b_arg_min_float(EnvI& env, Call* call) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,call->arg(0));
-    if (al->size()==0)
+    if (al->size()==0) {
       throw ResultUndefinedError(env, al->loc(), "argmin of empty array is undefined");
+    }
+    assert(al->dims() == 0);
     FloatVal m = eval_float(env,(*al)[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->size(); i++) {
@@ -207,13 +213,15 @@ namespace MiniZinc {
         m_idx = i;
       }
     }
-    return m_idx+1;
+    return m_idx + al->min(0);
   }
   IntVal b_arg_max_float(EnvI& env, Call* call) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env,call->arg(0));
-    if (al->size()==0)
+    if (al->size()==0) {
       throw ResultUndefinedError(env, al->loc(), "argmax of empty array is undefined");
+    }
+    assert(al->dims() == 0);
     FloatVal m = eval_float(env,(*al)[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->size(); i++) {
@@ -223,7 +231,7 @@ namespace MiniZinc {
         m_idx = i;
       }
     }
-    return m_idx+1;
+    return m_idx + al->min(0);
   }
   
   
