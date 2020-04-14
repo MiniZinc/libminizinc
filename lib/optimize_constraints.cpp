@@ -286,7 +286,7 @@ namespace MiniZinc {
           std::swap(e0,e1);
         }
         if (e0->type().ispar()) {
-          Call* eq = new Call(Location(),constants().ids.bool_eq,{e1,constants().boollit(!eval_par(env, e0))});
+          Call* eq = new Call(Location(),constants().ids.bool_eq,{e1,constants().boollit(!eval_bool(env, e0))});
           rewrite = eq;
           return OptimizeRegistry::CS_REWRITE;
         }
