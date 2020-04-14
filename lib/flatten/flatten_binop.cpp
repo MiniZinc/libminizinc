@@ -437,12 +437,13 @@ namespace MiniZinc {
     std::vector<KeepAlive> alv;
     Val d = 0;
     Expression* le[2] = {le0,le1};
-    
+
+    // Assign linear expression directly if one side is an Id.
     Id* assignTo = NULL;
     if (bot==BOT_EQ && ctx.b == C_ROOT) {
-      if (le0->isa<Id>()) {
+      if (le0->isa<Id>() && env.reverseMappers.find(le0->cast<Id>()) == env.reverseMappers.end()) {
         assignTo = le0->cast<Id>();
-      } else if (le1->isa<Id>()) {
+      } else if (le1->isa<Id>() && env.reverseMappers.find(le1->cast<Id>()) == env.reverseMappers.end()) {
         assignTo = le1->cast<Id>();
       }
     }
@@ -551,7 +552,7 @@ namespace MiniZinc {
         }
       }
       
-      if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && bot==BOT_EQ) {
+      if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && env.reverseMappers.find(alv[0]()->cast<Id>()) == env.reverseMappers.end() && bot==BOT_EQ) {
         GCLock lock;
         VarDecl* vd = alv[0]()->cast<Id>()->decl();
         if (vd->ti()->domain()) {
