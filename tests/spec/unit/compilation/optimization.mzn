@@ -27,6 +27,9 @@ expected: !FlatZinc optimization_3.fzn
 
 var 1..10: x;
 var set of 1..10: y;
+var bool: z;
 
 constraint forall (i in y) (i mod 2 = 1);
 constraint x >= 5 <-> x in y;
+constraint x > 2 -> not z;
+constraint z;
