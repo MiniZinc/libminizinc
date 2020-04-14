@@ -608,7 +608,7 @@ namespace MiniZinc {
             e0 = alv[0]();
             e1 = LinearTraits<Lit>::newLit(d);
         }
-        if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && alv[0]()->cast<Id>()->decl()->ti()->domain()) {
+        if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && env.reverseMappers.find(alv[0]()->cast<Id>()) == env.reverseMappers.end() && alv[0]()->cast<Id>()->decl()->ti()->domain()) {
           VarDecl* vd = alv[0]()->cast<Id>()->decl();
           typename LinearTraits<Lit>::Domain domain = LinearTraits<Lit>::eval_domain(env,vd->ti()->domain());
           typename LinearTraits<Lit>::Domain ndomain = LinearTraits<Lit>::limit_domain(old_bot,domain,old_d);
