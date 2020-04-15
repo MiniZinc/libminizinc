@@ -775,8 +775,18 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
      wrap_assert(!error, "Failed to set   FeasTol.", false);
    }
    if ( options->nonConvex>=0 ) {
-     error = dll_GRBsetintparam( dll_GRBgetenv(model),  GRB_INT_PAR_NONCONVEX, options->nonConvex );
-     wrap_assert(!error, "Failed to set   " GRB_INT_PAR_NONCONVEX, false);
+#ifdef GRB_INT_PAR_NONCONVEX
+     int major, minor, technical;
+     dll_GRBversion(&major, &minor, &technical);
+     if (major >= 9) {
+       error = dll_GRBsetintparam( dll_GRBgetenv(model),  GRB_INT_PAR_NONCONVEX, options->nonConvex );
+       wrap_assert(!error, "Failed to set   " GRB_INT_PAR_NONCONVEX, false);
+     } else {
+       std::cerr << "WARNING: Non-convex solving is unavailable in this version of Gurobi" << std::endl;
+     }
+#else
+     std::cerr << "WARNING: Non-convex solving is unavailable in this version of Gurobi" << std::endl;
+#endif
    }
 
     
