@@ -137,7 +137,7 @@ namespace MiniZinc {
     if (al->size()==0) {
       throw ResultUndefinedError(env, al->loc(), "arg_min of empty array is undefined");
     }
-    assert(al->dims() == 0);
+    assert(al->dims() == 1);
     for (int i = 0; i < al->size(); ++i) {
       bool val = eval_bool(env,(*al)[i]);
       if (!val) {
@@ -152,7 +152,7 @@ namespace MiniZinc {
     if (al->size()==0) {
       throw ResultUndefinedError(env, al->loc(), "arg_max of empty array is undefined");
     }
-    assert(al->dims() == 0);
+    assert(al->dims() == 1);
     for (int i = 0; i < al->size(); ++i) {
       bool val = eval_bool(env,(*al)[i]);
       if (val) {
@@ -167,7 +167,7 @@ namespace MiniZinc {
     if (al->size()==0) {
       throw ResultUndefinedError(env, al->loc(), "argmin of empty array is undefined");
     }
-    assert(al->dims() == 0);
+    assert(al->dims() == 1);
     IntVal m = eval_int(env,(*al)[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->size(); i++) {
@@ -185,7 +185,7 @@ namespace MiniZinc {
     if (al->size()==0) {
       throw ResultUndefinedError(env, al->loc(), "argmax of empty array is undefined");
     }
-    assert(al->dims() == 0);
+    assert(al->dims() == 1);
     IntVal m = eval_int(env,(*al)[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->size(); i++) {
@@ -203,7 +203,7 @@ namespace MiniZinc {
     if (al->size()==0) {
       throw ResultUndefinedError(env, al->loc(), "argmin of empty array is undefined");
     }
-    assert(al->dims() == 0);
+    assert(al->dims() == 1);
     FloatVal m = eval_float(env,(*al)[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->size(); i++) {
@@ -221,7 +221,7 @@ namespace MiniZinc {
     if (al->size()==0) {
       throw ResultUndefinedError(env, al->loc(), "argmax of empty array is undefined");
     }
-    assert(al->dims() == 0);
+    assert(al->dims() == 1);
     FloatVal m = eval_float(env,(*al)[0]);
     int m_idx = 0;
     for (unsigned int i=1; i<al->size(); i++) {
