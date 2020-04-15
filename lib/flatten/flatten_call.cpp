@@ -1045,7 +1045,7 @@ namespace MiniZinc {
           }
         }
       call_nonreif:
-        if ( (cr()->type().ispar() && !cr()->type().isann()) || decl->e()==NULL) {
+        if ( decl->e()==nullptr || (cr()->type().ispar() && !cr()->type().isann() && !decl->e()->type().cv()) ) {
           Call* cr_c = cr()->cast<Call>();
           /// All builtins are total
           std::vector<Type> argt(cr_c->n_args());

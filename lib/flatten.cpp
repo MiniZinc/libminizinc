@@ -2621,16 +2621,25 @@ namespace MiniZinc {
         }
         Call* nc = new Call(c->loc(), c->id(), args);
         nc->decl(c->decl());
-        nc->type(c->type());
+        Type nct(c->type());
+        nct.cv(false);
+        nct.ti(Type::TI_VAR);
+        nc->type(nct);
+        if (nc->decl()->e() && nc->decl()->e()->type().cv()) {
+          EE ee = flat_exp(env, ctx, nc, NULL,NULL);
+          if (isfalse(env, ee.b()))
+            throw ResultUndefinedError(env, e->loc(), "evaluation of `"+nc->id().str()+"' was undefined");
+          return ee.r();
+        }
         return eval_par(env, nc);
       }
       case Expression::E_LET:
       {
         Let* l = e->cast<Let>();
-        l->pushbindings();
-        KeepAlive ret = flat_cv_exp(env, ctx, l->in());
-        l->popbindings();
-        return ret;
+        EE ee = flat_exp(env, ctx, l, NULL,NULL);
+        if (isfalse(env, ee.b()))
+          throw ResultUndefinedError(env, e->loc(), "evaluation of let expression was undefined");
+        return ee.r();
       }
         
     }
