@@ -2622,16 +2622,18 @@ namespace MiniZinc {
         Call* nc = new Call(c->loc(), c->id(), args);
         nc->decl(c->decl());
         Type nct(c->type());
-        nct.cv(false);
-        nct.ti(Type::TI_VAR);
-        nc->type(nct);
         if (nc->decl()->e() && nc->decl()->e()->type().cv()) {
+          nct.cv(false);
+          nct.ti(Type::TI_VAR);
+          nc->type(nct);
           EE ee = flat_exp(env, ctx, nc, NULL,NULL);
           if (isfalse(env, ee.b()))
             throw ResultUndefinedError(env, e->loc(), "evaluation of `"+nc->id().str()+"' was undefined");
           return ee.r();
+        } else {
+          nc->type(nct);
+          return eval_par(env, nc);
         }
-        return eval_par(env, nc);
       }
       case Expression::E_LET:
       {
