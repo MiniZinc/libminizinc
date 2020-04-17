@@ -677,6 +677,7 @@ namespace MiniZinc {
                 }
               } else {
                 Call* eq_call = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.bool_eq));
+                Call* not_call = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.bool_not));
                 if (eq_call && Expression::equal(eq_call->arg(1),constants().lit_false)) {
                   neg_stack.push_back(eq_call->arg(0));
                 } else if (eq_call && Expression::equal(eq_call->arg(0),constants().lit_false)) {
@@ -685,6 +686,8 @@ namespace MiniZinc {
                   pos_stack.push_back(eq_call->arg(0));
                 } else if (eq_call && Expression::equal(eq_call->arg(0),constants().lit_true)) {
                   pos_stack.push_back(eq_call->arg(1));
+                } else if (not_call && not_call->n_args()==1) {
+                  neg_stack.push_back(not_call->arg(0));
                 } else if (Id* ident = cur->dyn_cast<Id>()) {
                   if (ident->decl()->ti()->domain()!=constants().lit_false) {
                     pos_alv.push_back(ident);
@@ -712,6 +715,7 @@ namespace MiniZinc {
                 }
               } else {
                 Call* eq_call = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.bool_eq));
+                Call* not_call = Expression::dyn_cast<Call>(same_call(env,cur,constants().ids.bool_not));
                 if (eq_call && Expression::equal(eq_call->arg(1),constants().lit_false)) {
                   pos_stack.push_back(eq_call->arg(0));
                 } else if (eq_call && Expression::equal(eq_call->arg(0),constants().lit_false)) {
@@ -720,6 +724,8 @@ namespace MiniZinc {
                   neg_stack.push_back(eq_call->arg(0));
                 } else if (eq_call && Expression::equal(eq_call->arg(0),constants().lit_true)) {
                   neg_stack.push_back(eq_call->arg(1));
+                } else if (not_call && not_call->n_args()==1) {
+                  pos_stack.push_back(not_call->arg(0));
                 } else if (Id* ident = cur->dyn_cast<Id>()) {
                   if (ident->decl()->ti()->domain()!=constants().lit_true) {
                     neg_alv.push_back(ident);
