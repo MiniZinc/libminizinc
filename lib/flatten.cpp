@@ -2334,6 +2334,7 @@ namespace MiniZinc {
     } else {
       Ctx nctx = ctx;
       nctx.neg = false;
+      nctx.b = -nctx.b;
       // negated
       std::vector<Expression*> nonfalse;
       for (unsigned int i=0; i<e.size(); i++) {
