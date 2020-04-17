@@ -13,6 +13,8 @@
 %
 %-----------------------------------------------------------------------------%
 
+predicate bool_not(var bool: p) = bool2int(p)=0;
+
 predicate bool_not(var bool: p, var bool: q) =
     bool2int(p) + bool2int(q) = 1;
 
