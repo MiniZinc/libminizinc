@@ -763,6 +763,14 @@ namespace MiniZinc {
           args.push_back(nal);
           cid = constants().ids.exists;
         } else {
+          if (pos_alv.empty() && neg_alv.size()==1) {
+            ret.b = bind(env,Ctx(),b,constants().lit_true);
+            Ctx nctx = ctx;
+            nctx.neg = !nctx.neg;
+            nctx.b = -nctx.b;
+            ret.r = bind(env,nctx,r,neg_alv[0]());
+            return ret;
+          }
           GCLock lock;
           ArrayLit* pos_al = new ArrayLit(Location().introduce(),toExpVec(pos_alv));
           pos_al->type(Type::varbool(1));
