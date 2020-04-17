@@ -1,17 +1,11 @@
-predicate int_le_imp(var int: a,var int: b,var bool: r);
-var 1..10: x:: output_var;
+var 1..2: x:: output_var;
 var set of 1..10: y:: output_var;
 var bool: X_INTRODUCED_20_ ::var_is_introduced :: is_defined_var;
-var bool: X_INTRODUCED_21_ ::var_is_introduced :: is_defined_var;
-var bool: X_INTRODUCED_22_ ::var_is_introduced :: is_defined_var;
 constraint set_in_reif(x,y,X_INTRODUCED_20_):: defines_var(X_INTRODUCED_20_);
-constraint array_bool_or([X_INTRODUCED_21_,X_INTRODUCED_22_],true);
-constraint bool_not(true,X_INTRODUCED_22_):: defines_var(X_INTRODUCED_22_);
 constraint set_in_reif(2,y,false);
 constraint set_in_reif(4,y,false);
 constraint set_in_reif(6,y,false);
 constraint set_in_reif(8,y,false);
 constraint set_in_reif(10,y,false);
 constraint int_le_reif(5,x,X_INTRODUCED_20_);
-constraint int_le_imp(x,2,X_INTRODUCED_21_):: defines_var(X_INTRODUCED_21_);
 solve  satisfy;
