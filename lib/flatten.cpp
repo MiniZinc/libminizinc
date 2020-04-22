@@ -2832,7 +2832,17 @@ namespace MiniZinc {
         int_lin_eq_t[2] = Type::parint(0);
         GCLock lock;
         FunctionI* fi = env.model->matchFn(env, constants().ids.int_.lin_eq, int_lin_eq_t, false);
-        int_lin_eq = (fi && fi->e()) ? fi : NULL;
+        int_lin_eq = (fi && fi->e()) ? fi : nullptr;
+      }
+      FunctionI* float_lin_eq;
+      {
+        std::vector<Type> float_lin_eq_t(3);
+        float_lin_eq_t[0] = Type::parfloat(1);
+        float_lin_eq_t[1] = Type::varfloat(1);
+        float_lin_eq_t[2] = Type::parfloat(0);
+        GCLock lock;
+        FunctionI* fi = env.model->matchFn(env, constants().ids.float_.lin_eq, float_lin_eq_t, false);
+        float_lin_eq = (fi && fi->e()) ? fi : nullptr;
       }
       FunctionI* array_bool_and;
       FunctionI* array_bool_or;
@@ -3071,21 +3081,48 @@ namespace MiniZinc {
               bool isTrueVar = vd->type().isbool() && Expression::equal(vd->ti()->domain(), constants().lit_true);
               if (Call* c = vd->e()->dyn_cast<Call>()) {
                 GCLock lock;
-                Call* nc = NULL;
+                Call* nc = nullptr;
                 if (c->id() == constants().ids.lin_exp) {
-                  if (int_lin_eq) {
+                  if (c->type().isfloat() && float_lin_eq) {
                     std::vector<Expression*> args(c->n_args());
-                    ArrayLit* le_c = follow_id(c->arg(0))->cast<ArrayLit>();
+                    auto le_c = follow_id(c->arg(0))->cast<ArrayLit>();
                     std::vector<Expression*> nc_c(le_c->size());
-                    for (unsigned int i=static_cast<unsigned int>(nc_c.size()); i--;)
-                      nc_c[i] = (*le_c)[i];
+                    for (unsigned int ii=static_cast<unsigned int>(nc_c.size()); ii--;) {
+                      nc_c[ii] = (*le_c)[ii];
+                    }
+                    nc_c.push_back(FloatLit::a(-1));
+                    args[0] = new ArrayLit(Location().introduce(),nc_c);
+                    args[0]->type(Type::parfloat(1));
+                    auto le_x = follow_id(c->arg(1))->cast<ArrayLit>();
+                    std::vector<Expression*> nx(le_x->size());
+                    for (unsigned int ii=static_cast<unsigned int>(nx.size()); ii--;) {
+                      nx[ii] = (*le_x)[ii];
+                    }
+                    nx.push_back(vd->id());
+                    args[1] = new ArrayLit(Location().introduce(),nx);
+                    args[1]->type(Type::varfloat(1));
+                    FloatVal d = c->arg(2)->cast<FloatLit>()->v();
+                    args[2] = FloatLit::a(-d);
+                    args[2]->type(Type::parfloat(0));
+                    nc = new Call(c->loc().introduce(),ASTString("float_lin_eq"),args);
+                    nc->type(Type::varbool());
+                    nc->decl(float_lin_eq);
+                  } else if (int_lin_eq) {
+                    assert(c->type().isint());
+                    std::vector<Expression*> args(c->n_args());
+                    auto le_c = follow_id(c->arg(0))->cast<ArrayLit>();
+                    std::vector<Expression*> nc_c(le_c->size());
+                    for (unsigned int ii=static_cast<unsigned int>(nc_c.size()); ii--;) {
+                      nc_c[ii] = (*le_c)[ii];
+                    }
                     nc_c.push_back(IntLit::a(-1));
                     args[0] = new ArrayLit(Location().introduce(),nc_c);
                     args[0]->type(Type::parint(1));
-                    ArrayLit* le_x = follow_id(c->arg(1))->cast<ArrayLit>();
+                    auto le_x = follow_id(c->arg(1))->cast<ArrayLit>();
                     std::vector<Expression*> nx(le_x->size());
-                    for (unsigned int i=static_cast<unsigned int>(nx.size()); i--;)
-                      nx[i] = (*le_x)[i];
+                    for (unsigned int ii=static_cast<unsigned int>(nx.size()); ii--;) {
+                      nx[ii] = (*le_x)[ii];
+                    }
                     nx.push_back(vd->id());
                     args[1] = new ArrayLit(Location().introduce(),nx);
                     args[1]->type(Type::varint(1));
