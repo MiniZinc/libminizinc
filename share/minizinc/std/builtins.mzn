@@ -1432,9 +1432,23 @@ function var set of $$T: array2set(array[int] of var $$T: x) ::promise_total =
         } in s | i in index_set(x)]);
     } in y;
 
+function var set of $$T: array2set(array[int] of var opt $$T: x) ::promise_total =
+    let {
+      set of int: D = dom_array(x);
+      constraint assert(min(D) > -infinity /\ max(D) < infinity, "array2set needs finite bounds on argument array");
+      var set of D: y = array_union([
+        let { var set of dom(x[i]): s;
+        constraint if occurs(x[i]) then deopt(x[i]) in s /\ card(s)=1 else card(s)=0 endif;
+        } in s | i in index_set(x)]);
+    } in y;
+
 /** @group builtins.array Return the set containing the elements of \a x */
 function set of $$T: array2set(array[int] of $$T: x) =
   { x[i] | i in index_set(x) };
+
+/** @group builtins.array Return the set containing the elements of \a x */
+function set of $$T: array2set(array[int] of opt $$T: x) =
+  { deopt(x[i]) | i in index_set(x) where occurs(x[i]) };
 
 /** @group builtins.array Return the set containing the elements of \a x */
 function set of bool: array2set(array[int] of bool: x) =
