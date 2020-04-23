@@ -721,9 +721,13 @@ namespace MiniZinc {
     case Expression::E_SETLIT:
       {
         SetLit* sl = e->cast<SetLit>();
-        std::vector<IntVal> vals(sl->v().size());
-        for (unsigned int i=0; i<sl->v().size(); i++)
-          vals[i] = eval_int(env,sl->v()[i]);
+        std::vector<IntVal> vals;
+        for (unsigned int i=0; i<sl->v().size(); i++) {
+          Expression* vi = eval_par(env, sl->v()[i]);
+          if (vi != constants().absent) {
+            vals.push_back(eval_int(env, vi));
+          }
+        }
         return IntSetVal::a(vals);
       }
     case Expression::E_BOOLLIT:
@@ -893,9 +897,13 @@ namespace MiniZinc {
       case Expression::E_SETLIT:
       {
         SetLit* sl = e->cast<SetLit>();
-        std::vector<FloatVal> vals(sl->v().size());
-        for (unsigned int i=0; i<sl->v().size(); i++)
-          vals[i] = eval_float(env,sl->v()[i]);
+        std::vector<FloatVal> vals;
+        for (unsigned int i=0; i<sl->v().size(); i++) {
+          Expression* vi = eval_par(env, sl->v()[i]);
+          if (vi != constants().absent) {
+            vals.push_back(eval_float(env, vi));
+          }
+        }
         return FloatSetVal::a(vals);
       }
       case Expression::E_BOOLLIT:
@@ -1345,9 +1353,13 @@ namespace MiniZinc {
         SetLit* sl = e->cast<SetLit>();
         if (sl->isv())
           return sl->isv();
-        std::vector<IntVal> vals(sl->v().size());
-        for (unsigned int i=0; i<sl->v().size(); i++)
-          vals[i] = eval_bool(env,sl->v()[i]);
+        std::vector<IntVal> vals;
+        for (unsigned int i=0; i<sl->v().size(); i++) {
+          Expression* vi = eval_par(env, sl->v()[i]);
+          if (vi != constants().absent) {
+            vals.push_back(eval_int(env, vi));
+          }
+        }
         return IntSetVal::a(vals);
       }
       case Expression::E_BOOLLIT:

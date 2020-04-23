@@ -989,21 +989,24 @@ namespace MiniZinc {
       }
       unsigned int enumId = sl.v().size() > 0 ? sl.v()[0]->type().enumId() : 0;
       for (unsigned int i=0; i<sl.v().size(); i++) {
-        if (sl.v()[i]->type().dim() > 0)
+        Type vi_t = sl.v()[i]->type();
+        vi_t.ot(Type::OT_PRESENT);
+        if (sl.v()[i]==constants().absent) {
+          continue;
+        }
+        if (vi_t.dim() > 0)
           throw TypeError(_env,sl.v()[i]->loc(),"set literals cannot contain arrays");
-        if (sl.v()[i]->type().st()==Type::ST_SET)
+        if (vi_t.st()==Type::ST_SET)
           throw TypeError(_env,sl.v()[i]->loc(),"set literals cannot contain sets");
-        if (sl.v()[i]->type().isvar())
+        if (vi_t.isvar())
           ty.ti(Type::TI_VAR);
-        if (sl.v()[i]->type().isopt())
-          throw TypeError(_env,sl.v()[i]->loc(),"set literals cannot contain option type values");
-        if (sl.v()[i]->type().cv())
+        if (vi_t.cv())
           ty.cv(true);
-        if (enumId != sl.v()[i]->type().enumId())
+        if (enumId != vi_t.enumId())
           enumId = 0;
-        if (!Type::bt_subtype(sl.v()[i]->type(), ty, true)) {
-          if (ty.bt() == Type::BT_UNKNOWN || Type::bt_subtype(ty, sl.v()[i]->type(), true)) {
-            ty.bt(sl.v()[i]->type().bt());
+        if (!Type::bt_subtype(vi_t, ty, true)) {
+          if (ty.bt() == Type::BT_UNKNOWN || Type::bt_subtype(ty, vi_t, true)) {
+            ty.bt(vi_t.bt());
           } else {
             throw TypeError(_env,sl.loc(),"non-uniform set literal");
           }
