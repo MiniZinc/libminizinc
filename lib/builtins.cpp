@@ -2824,10 +2824,15 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::varint();
       rb(env, m, ASTString("dom"), t, b_dom_varint);
+      t[0].ot(Type::OT_OPTIONAL);
+      rb(env, m, ASTString("dom"), t, b_dom_varint);
     }
     {
       std::vector<Type> t(1);
       t[0] = Type::varint(-1);
+      rb(env, m, ASTString("dom_array"), t, b_dom_array);
+      rb(env, m, ASTString("dom_bounds_array"), t, b_dom_bounds_array);
+      t[0].ot(Type::OT_OPTIONAL);
       rb(env, m, ASTString("dom_array"), t, b_dom_array);
       rb(env, m, ASTString("dom_bounds_array"), t, b_dom_bounds_array);
     }
