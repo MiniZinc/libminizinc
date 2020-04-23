@@ -832,6 +832,11 @@ function var int: objective_deopt_(var opt int: x, bool: direction) =
     int: worst = if direction then lb(x)-1 else ub(x)+1 endif;
   } in if occurs(x) then deopt(x) else worst endif;
 
+/** @group flatzinc.set Constrains \a x \( \in \) \a S */
+predicate set_in(var opt int: x, set of int: S) = if occurs(x) then deopt(x) in S endif;
+/** @group flatzinc.set Constrains \a x \( \in \) \a S */
+predicate set_in(var opt int: x, var set of int: S) = if occurs(x) then deopt(x) in S endif;
+
 /***
   @groupdef optiontypes.float Option type support for floats
 */
