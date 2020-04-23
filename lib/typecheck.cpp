@@ -1265,7 +1265,9 @@ namespace MiniZinc {
         if (g_in) {
           const Type& ty_in = g_in->type();
           if (ty_in == Type::varsetint()) {
-            tt.ot(Type::OT_OPTIONAL);
+            if (!c.set()) {
+              tt.ot(Type::OT_OPTIONAL);
+            }
             tt.ti(Type::TI_VAR);
             tt.cv(true);
           }
@@ -1273,7 +1275,9 @@ namespace MiniZinc {
             tt.cv(true);
           if (c.where(i)) {
             if (c.where(i)->type() == Type::varbool()) {
-              tt.ot(Type::OT_OPTIONAL);
+              if (!c.set()) {
+                tt.ot(Type::OT_OPTIONAL);
+              }
               tt.ti(Type::TI_VAR);
               tt.cv(true);
             } else if (c.where(i)->type() != Type::parbool()) {

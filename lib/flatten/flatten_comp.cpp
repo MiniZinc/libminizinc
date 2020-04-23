@@ -19,7 +19,27 @@ namespace MiniZinc {
     Comprehension* c = e->cast<Comprehension>();
     KeepAlive c_ka(c);
     
-    if (c->type().isopt()) {
+    bool isvarset = false;
+    if (c->set()) {
+      for (int i=0; i<c->n_generators(); i++) {
+        Expression* g_in = c->in(i);
+        if (g_in) {
+          const Type& ty_in = g_in->type();
+          if (ty_in == Type::varsetint()) {
+            isvarset = true;
+            break;
+          }
+          if (c->where(i)) {
+            if (c->where(i)->type() == Type::varbool()) {
+              isvarset = true;
+              break;
+            }
+          }
+        }
+      }
+    }
+    
+    if (c->type().isopt() || isvarset) {
       std::vector<Expression*> in(c->n_generators());
       std::vector<Expression*> orig_where(c->n_generators());
       std::vector<Expression*> where;
@@ -207,7 +227,16 @@ namespace MiniZinc {
           slr->type(elemType);
           ka = slr;
         } else {
-          throw InternalError("var set comprehensions not supported yet");
+          ArrayLit* alr = new ArrayLit(Location().introduce(),elems);
+          elemType.st(Type::ST_PLAIN);
+          elemType.dim(1);
+          alr->type(elemType);
+          alr->flat(true);
+          Call* a2s = new Call(Location().introduce(), "array2set", {alr});
+          a2s->decl(env.model->matchFn(env, a2s, false));
+          a2s->type(a2s->decl()->rtype(env, {alr}, false));
+          EE ee = flat_exp(env, Ctx(), a2s, nullptr, constants().var_true);
+          ka = ee.r();
         }
       } else {
         ArrayLit* alr = new ArrayLit(Location().introduce(),elems);
