@@ -23,9 +23,11 @@ namespace MiniZinc {
       elems_ee[i] = flat_exp(env,ctx,sl->v()[i],NULL,NULL);
     std::vector<Expression*> elems(elems_ee.size());
     bool allPar = true;
+    bool hadOpt = false;
     for (unsigned int i=static_cast<unsigned int>(elems.size()); i--;) {
       elems[i] = elems_ee[i].r();
       allPar = allPar && elems[i]->type().ispar();
+      hadOpt = hadOpt || elems[i]->type().isopt();
     }
     
     ret.b = conj(env,b,Ctx(),elems_ee);
@@ -36,7 +38,11 @@ namespace MiniZinc {
     } else {
       GCLock lock;
       ArrayLit* al = new ArrayLit(sl->loc(),elems);
-      al->type(Type::varint(1));
+      Type al_t = Type::varint(1);
+      if (hadOpt) {
+        al_t.ot(Type::OT_OPTIONAL);
+      }
+      al->type(al_t);
       std::vector<Expression*> args(1);
       args[0] = al;
       Call* cc = new Call(sl->loc().introduce(), "array2set", args);
