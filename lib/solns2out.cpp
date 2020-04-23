@@ -204,18 +204,6 @@ bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
   if (!__evalOutput( oss )) {
     return false;
   }
-  {
-    auto& checkerStream = pEnv->envi().checker_output;
-    checkerStream.flush();
-    std::string line;
-    if (std::getline(checkerStream, line)) {
-      os << "% Solution checker report:\n";
-      os << "% " << line << "\n";
-      while (std::getline(checkerStream, line)) {
-        os << "% " << line << "\n";
-      }
-    }
-  }
   bool fNew=true;
   if ( _opt.flag_unique || _opt.flag_canonicalize ) {
     auto res = sSolsCanon.insert( oss.str() );
@@ -223,6 +211,18 @@ bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
       fNew = false;
   }
   if ( fNew ) {
+    {
+      auto& checkerStream = pEnv->envi().checker_output;
+      checkerStream.flush();
+      std::string line;
+      if (std::getline(checkerStream, line)) {
+        os << "% Solution checker report:\n";
+        os << "% " << line << "\n";
+        while (std::getline(checkerStream, line)) {
+          os << "% " << line << "\n";
+        }
+      }
+    }
     ++nSolns;
     if ( _opt.flag_canonicalize ) {
       if ( pOfs_non_canon.get() )
