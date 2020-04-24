@@ -69,14 +69,14 @@
                  | "true"
 
 % Integer literals
-<int-literal> ::= [0-9]+
-                | 0x[0-9A-Fa-f]+
-                | 0o[0-7]+
+<int-literal> ::= [-]?[0-9]+
+                | [-]?0x[0-9A-Fa-f]+
+                | [-]?0o[0-7]+
 
 % Float literals
-<float-literal> ::= [0-9]+.[0-9]+
-                  | [0-9]+.[0-9]+[Ee][-+]?[0-9]+
-                  | [0-9]+[Ee][-+]?[0-9]+
+<float-literal> ::= [-]?[0-9]+.[0-9]+
+                  | [-]?[0-9]+.[0-9]+[Ee][-+]?[0-9]+
+                  | [-]?[0-9]+[Ee][-+]?[0-9]+
 
 % Set literals
 <set-literal> ::= "{" [ <int-literal> "," ... ] "}"
