@@ -200,6 +200,7 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
 %token MZN_PLUS "+" MZN_MINUS "-" MZN_WEAK_PLUS "~+" MZN_WEAK_MINUS "~-"
 %token MZN_MULT "*" MZN_DIV "/" MZN_IDIV "div" MZN_MOD "mod" MZN_INTERSECT "intersect" MZN_WEAK_MULT "~*"
 %token MZN_POW "^"
+%token MZN_POW_MINUS1 "^-1"
 %token MZN_NOT "not"
 %token MZN_PLUSPLUS "++"
 %token MZN_COLONCOLON "::"
@@ -215,7 +216,7 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
 %nonassoc MZN_DOTDOT
 %left MZN_PLUS MZN_MINUS MZN_WEAK_PLUS MZN_WEAK_MINUS
 %left MZN_MULT MZN_DIV MZN_IDIV MZN_MOD MZN_WEAK_MULT
-%left MZN_POW
+%left MZN_POW MZN_POW_MINUS1
 %nonassoc MZN_NOT
 %left MZN_PLUSPLUS
 %left MZN_QUOTED_IDENTIFIER
@@ -566,6 +567,22 @@ predicate_item :
         free($2);
         delete $3;
         delete $4;
+      }
+      | MZN_PREDICATE MZN_IDENTIFIER MZN_POW_MINUS1 params annotations operation_item_tail
+      { if ($4) $$ = new FunctionI(@$,std::string($2)+"⁻¹",new TypeInst(@$,
+                                   Type::varbool()),*$4,$6);
+        if ($$ && $5) $$->cast<FunctionI>()->ann().add(*$5);
+        free($2);
+        delete $4;
+        delete $5;
+      }
+      | MZN_TEST MZN_IDENTIFIER MZN_POW_MINUS1 params annotations operation_item_tail
+      { if ($4) $$ = new FunctionI(@$,std::string($2)+"⁻¹",new TypeInst(@$,
+                                   Type::parbool()),*$4,$6);
+        if ($$ && $5) $$->cast<FunctionI>()->ann().add(*$5);
+        free($2);
+        delete $4;
+        delete $5;
       }
 
 function_item :
@@ -1029,53 +1046,111 @@ expr_atom_head_nonstring :
       { $$=$2; }
     | '(' expr ')' array_access_tail
       { if ($4) $$=createArrayAccess(@$, $2, *$4); delete $4; }
+    | '(' expr ')' MZN_POW_MINUS1
+      { $$=new BinOp(@$, $2, BOT_POW, IntLit::a(-1)); }
+    | '(' expr ')' array_access_tail MZN_POW_MINUS1
+      { if ($4) $$=new BinOp(@$,createArrayAccess(@$, $2, *$4), BOT_POW, IntLit::a(-1)); delete $4; }
     | MZN_IDENTIFIER
       { $$=new Id(@$, $1, NULL); free($1); }
     | MZN_IDENTIFIER array_access_tail
       { if ($2) $$=createArrayAccess(@$, new Id(@1,$1,NULL), *$2);
+        free($1); delete $2; }
+    | MZN_IDENTIFIER MZN_POW_MINUS1
+      { $$=new BinOp(@$,new Id(@$, $1, NULL), BOT_POW, IntLit::a(-1)); free($1); }
+    | MZN_IDENTIFIER array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, new Id(@1,$1,NULL), *$2), BOT_POW, IntLit::a(-1));
         free($1); delete $2; }
     | MZN_UNDERSCORE
       { $$=new AnonVar(@$); }
     | MZN_UNDERSCORE array_access_tail
       { if ($2) $$=createArrayAccess(@$, new AnonVar(@$), *$2);
         delete $2; }
+    | MZN_UNDERSCORE MZN_POW_MINUS1
+      { $$=new BinOp(@$,new AnonVar(@$), BOT_POW, IntLit::a(-1)); }
+    | MZN_UNDERSCORE array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, new AnonVar(@$), *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
     | MZN_BOOL_LITERAL
       { $$=constants().boollit(($1!=0)); }
+    | MZN_BOOL_LITERAL MZN_POW_MINUS1
+      { $$=new BinOp(@$,constants().boollit(($1!=0)), BOT_POW, IntLit::a(-1)); }
     | MZN_INTEGER_LITERAL
       { $$=IntLit::a($1); }
+    | MZN_INTEGER_LITERAL MZN_POW_MINUS1
+      { $$=new BinOp(@$,IntLit::a($1), BOT_POW, IntLit::a(-1)); }
     | MZN_INFINITY
       { $$=IntLit::a(IntVal::infinity()); }
+    | MZN_INFINITY MZN_POW_MINUS1
+      { $$=new BinOp(@$,IntLit::a(IntVal::infinity()), BOT_POW, IntLit::a(-1)); }
     | MZN_FLOAT_LITERAL
       { $$=FloatLit::a($1); }
+    | MZN_FLOAT_LITERAL MZN_POW_MINUS1
+      { $$=new BinOp(@$,FloatLit::a($1), BOT_POW, IntLit::a(-1)); }
     | MZN_ABSENT
+      { $$=constants().absent; }
+    | MZN_ABSENT MZN_POW_MINUS1
       { $$=constants().absent; }
     | set_literal
     | set_literal array_access_tail
       { if ($2) $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
+    | set_literal MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | set_literal array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
     | set_comp
     | set_comp array_access_tail
       { if ($2) $$=createArrayAccess(@$, $1, *$2);
+        delete $2; }
+    | set_comp MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | set_comp array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | simple_array_literal
     | simple_array_literal array_access_tail
       { if ($2) $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
+    | simple_array_literal MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | simple_array_literal array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
     | simple_array_literal_2d
     | simple_array_literal_2d array_access_tail
       { if ($2) $$=createArrayAccess(@$, $1, *$2);
+        delete $2; }
+    | simple_array_literal_2d MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | simple_array_literal_2d array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
         delete $2; }
     | simple_array_comp
     | simple_array_comp array_access_tail
       { if ($2) $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
+    | simple_array_comp MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | simple_array_comp array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
     | if_then_else_expr
     | if_then_else_expr array_access_tail
       { if ($2) $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
+    | if_then_else_expr MZN_POW_MINUS1
+      { $$ = new BinOp(@$,$1, BOT_POW, IntLit::a(-1)); }
+    | if_then_else_expr array_access_tail MZN_POW_MINUS1
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, $1, *$2), BOT_POW, IntLit::a(-1));
+        delete $2; }
     | let_expr
     | call_expr
     | call_expr array_access_tail
+      { if ($2) $$=createArrayAccess(@$, $1, *$2);
+        delete $2; }
+    | call_expr MZN_POW_MINUS1
+    | call_expr array_access_tail MZN_POW_MINUS1
       { if ($2) $$=createArrayAccess(@$, $1, *$2);
         delete $2; }
 
@@ -1403,6 +1478,8 @@ quoted_op_call :
 call_expr :
       MZN_IDENTIFIER '(' ')'
       { $$=new Call(@$, $1, std::vector<Expression*>()); free($1); }
+    | MZN_IDENTIFIER MZN_POW_MINUS1 '(' ')'
+      { $$=new Call(@$, std::string($1)+"⁻¹", std::vector<Expression*>()); free($1); }
     | quoted_op_call
     | MZN_IDENTIFIER '(' comp_or_expr ')'
       { 
@@ -1477,6 +1554,80 @@ call_expr :
         }
         free($1);
         delete $3;
+      }
+    | MZN_IDENTIFIER MZN_POW_MINUS1 '(' comp_or_expr ')'
+      {
+        if ($4!=NULL) {
+          bool hadWhere = false;
+          std::vector<Expression*> args;
+          for (unsigned int i=0; i<$4->size(); i++) {
+            if ((*$4)[i].second) {
+              yyerror(&@4, parm, "syntax error, 'where' expression outside generator call");
+              hadWhere = true;
+              $$=NULL;
+            }
+            args.push_back((*$4)[i].first);
+          }
+          if (!hadWhere) {
+            $$=new Call(@$, std::string($1)+"⁻¹", args);
+          }
+        }
+        free($1);
+        delete $4;
+      }
+    | MZN_IDENTIFIER MZN_POW_MINUS1 '(' comp_or_expr ')' '(' expr ')'
+      {
+        vector<Generator> gens;
+        vector<Id*> ids;
+        if ($4) {
+          for (unsigned int i=0; i<$4->size(); i++) {
+            if (Id* id = Expression::dyn_cast<Id>((*$4)[i].first)) {
+              if ((*$4)[i].second) {
+                ParserLocation loc = (*$4)[i].second->loc().parserLocation();
+                yyerror(&loc, parm, "illegal where expression in generator call");
+              }
+              ids.push_back(id);
+            } else {
+              if (BinOp* boe = Expression::dyn_cast<BinOp>((*$4)[i].first)) {
+                if (boe->lhs() && boe->rhs()) {
+                  Id* id = Expression::dyn_cast<Id>(boe->lhs());
+                  if (id && boe->op() == BOT_IN) {
+                    ids.push_back(id);
+                    gens.push_back(Generator(ids,boe->rhs(),(*$4)[i].second));
+                    ids = vector<Id*>();
+                  } else if (id && boe->op() == BOT_EQ && ids.empty()) {
+                    ids.push_back(id);
+                    gens.push_back(Generator(ids,NULL,boe->rhs()));
+                    if ((*$4)[i].second) {
+                      gens.push_back(Generator(gens.size(),(*$4)[i].second));
+                    }
+                    ids = vector<Id*>();
+                  } else {
+                    ParserLocation loc = (*$4)[i].first->loc().parserLocation();
+                    yyerror(&loc, parm, "illegal expression in generator call");
+                  }
+                }
+              } else {
+                ParserLocation loc = (*$4)[i].first->loc().parserLocation();
+                yyerror(&loc, parm, "illegal expression in generator call");
+              }
+            }
+          }
+        }
+        if (ids.size() != 0) {
+          yyerror(&@4, parm, "illegal expression in generator call");
+        }
+        ParserState* pp = static_cast<ParserState*>(parm);
+        if (pp->hadError) {
+          $$=NULL;
+        } else {
+          Generators g; g._g = gens;
+          Comprehension* ac = new Comprehension(@$, $7,g,false);
+          vector<Expression*> args; args.push_back(ac);
+          $$=new Call(@$, std::string($1)+"⁻¹", args);
+        }
+        free($1);
+        delete $4;
       }
 
 comp_or_expr : comp_or_expr_head comma_or_none
@@ -1577,6 +1728,8 @@ ne_annotations :
 id_or_quoted_op :
       MZN_IDENTIFIER
       { $$=$1; }
+    | MZN_IDENTIFIER MZN_POW_MINUS1
+      { $$=strdup((std::string($1)+"⁻¹").c_str()); }
     | MZN_EQUIV_QUOTED
       { $$=strdup("'<->'"); }
     | MZN_IMPL_QUOTED
