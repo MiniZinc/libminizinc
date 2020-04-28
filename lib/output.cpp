@@ -779,6 +779,12 @@ namespace MiniZinc {
         }
         return true;
       }
+      void vId(Id& i) {
+        // Also collect functions from output_only variables we depend on
+        if (i.decl() && i.decl()->ann().contains(constants().ann.output_only)) {
+          topDown(*this, i.decl()->e());
+        }
+      }
       void vCall(Call& c) {
         std::vector<Type> tv(c.n_args());
         for (unsigned int i=c.n_args(); i--;) {
