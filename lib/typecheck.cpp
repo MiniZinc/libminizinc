@@ -2237,8 +2237,12 @@ namespace MiniZinc {
             _typeErrors.push_back(TypeError(env,vdi->loc(),
                                             "set element type for `"+vdi->id()->str().str()+"' is not finite"));
           }
-          if (i->e()->ann().contains(constants().ann.output_only) && vdi->e() && vdi->e()->type().isvar()) {
-            _typeErrors.push_back(TypeError(env,vdi->loc(),"variables annotated with ::output_only must be par"));
+          if (i->e()->ann().contains(constants().ann.output_only)) {
+            if (!vdi->e()) {
+              _typeErrors.push_back(TypeError(env, vdi->loc(), "variables annotated with ::output_only must have a right hand side"));
+            } else if (vdi->e()->type().isvar()) {
+              _typeErrors.push_back(TypeError(env, vdi->loc(), "variables annotated with ::output_only must be par"));
+            }
           }
         }
         void vAssignI(AssignI* i) {
