@@ -59,6 +59,10 @@ class Test:
                 with instance.flat(**options) as (fzn, ozn, stats):
                     obtained = FlatZinc.from_mzn(fzn, file.parent)
                     result = obtained
+            elif self.type == "output-model":
+                with instance.flat(**options) as (fzn, ozn, stats):
+                    obtained = OutputModel.from_mzn(ozn, file.parent)
+                    result = obtained
             else:
                 raise NotImplementedError("Unknown test case type")
         except mzn.MiniZincError as error:
@@ -316,6 +320,47 @@ class FlatZinc:
         with open(fzn.name) as file:
             instance = FlatZinc(None)
             instance.fzn = file.read()
+            instance.base = base
+            return instance
+
+
+@yaml.scalar(u"!OutputModel")
+class OutputModel:
+    """
+    An OZN result, encoded by !OutputModel in YAML.
+    """
+
+    def __init__(self, path):
+        self.path = path
+        self.base = None
+        self.ozn = None
+
+    def check(self, actual):
+        if not isinstance(actual, OutputModel):
+            return False
+
+        if self.ozn is None:
+            with open(actual.base.joinpath(self.path)) as f:
+                self.ozn = f.read()
+
+        return self.ozn == actual.ozn
+
+    def get_value(self):
+        if self.ozn is None:
+            return self.path
+        return self.ozn
+
+    @staticmethod
+    def from_mzn(ozn, base):
+        """
+        Creates a `OutputModel` object from a `File` returned by `flat()` in the minizinc interface.
+        
+        Also takes the base path the mzn file was from, so that when loading the expected ozn file
+        it can be done relative to the mzn path.
+        """
+        with open(ozn.name) as file:
+            instance = OutputModel(None)
+            instance.ozn = file.read()
             instance.base = base
             return instance
 
