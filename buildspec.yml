@@ -5,7 +5,7 @@ phases:
     commands:
       - echo Entered the install phase...
         #- yum update -y
-      - yum search g++
+      - yum search c++
       - yum install -y g++-6
       - yum install -y cmake
       - yum install -y build-essential
