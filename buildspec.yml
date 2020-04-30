@@ -6,15 +6,19 @@ phases:
       - echo Entered the install phase...
         #- yum update -y
         #- yum install -y gcc-c++.x86_64
-      - yum groupinstall "Development Tools"
+      - yum groupinstall -y "Development Tools"
       - yum install -y cmake3.x86_64
   build:
     commands:
        - echo Entered the build phase...
-       - cmake3 .
-       - make -j 2
+       - mkdir build
+       - cd build
+       - cmake3 ../
+       - make -j 
+       - cd ../
 
 artifacts:
   files:
+    - build/*
     - install.sh
 
