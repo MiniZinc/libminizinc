@@ -13,7 +13,7 @@ phases:
        - echo Entered the build phase...
        - mkdir build
        - cd build
-       - cmake3 ../
+       - cmake3 ../ -DCMAKE_BUILD_TYPE=RELEASE
        - make -j 2
        - cd ../
 
@@ -21,4 +21,5 @@ artifacts:
   files:
     - build/minizinc
     - build/libmzn.a
+    - share/minizinc/std
 
