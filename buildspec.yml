@@ -6,9 +6,10 @@ phases:
       - echo Entered the install phase...
         #- yum update -y
       - yum search c++
+      - yum install -y gcc-c++.x86_64
       - yum install -y g++-6
-      - yum install -y cmake
-      - yum install -y build-essential
+      - yum install -y cmake3.x86_64
+      - yum groupinstall "Development Tools"
   build:
     commands:
        - echo Entered the build phase...
