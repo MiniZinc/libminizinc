@@ -19,6 +19,6 @@ phases:
 
 artifacts:
   files:
-    - build/*
-    - install.sh
+    - build/minizinc
+    - build/libmzn.a
 
