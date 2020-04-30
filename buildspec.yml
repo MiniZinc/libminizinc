@@ -4,10 +4,10 @@ phases:
   install:
     commands:
       - echo Entered the install phase...
-      - apt-get update -y
-      - apt-get install -y g++-6
-      - apt-get install -y cmake
-      - apt-get install -y build-essential
+      - yum update -y
+      - yum install -y g++-6
+      - yum install -y cmake
+      - yum install -y build-essential
   build:
     commands:
        - echo Entered the build phase...
