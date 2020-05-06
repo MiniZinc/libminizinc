@@ -937,7 +937,9 @@ namespace MiniZinc {
     if (c) {
       FunctionI* fi = m->matchFn(env, c, false);
       assert(fi);
-      c->type(fi->rtype(env, args, false));
+      Type ct = fi->rtype(env, args, false);
+      ct.cv(e->type().cv());
+      c->type(ct);
       c->decl(fi);
       KeepAlive ka(c);
       return ka;
