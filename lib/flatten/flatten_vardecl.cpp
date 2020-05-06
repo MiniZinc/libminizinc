@@ -23,6 +23,17 @@ namespace MiniZinc {
     VarDecl* it = v->flat();
     if (it==NULL) {
       TypeInst* ti = eval_typeinst(env,v);
+      if (ti->domain() && ti->domain()->isa<SetLit>()) {
+        if (ti->type().bt()==Type::BT_INT && ti->type().st()==Type::ST_PLAIN) {
+          if (eval_intset(env, ti->domain())->size()==0) {
+            env.fail("domain is empty");
+          }
+        } else if (ti->type().bt()==Type::BT_FLOAT) {
+          if (eval_floatset(env, ti->domain())->size()==0) {
+            env.fail("domain is empty");
+          }
+        }
+      }
       bool reuseVarId = v->type().isann() || ( v->toplevel() && v->id()->idn()==-1 && v->id()->v().c_str()[0]!='\'' && v->id()->v().c_str()[0]!='_' );
       VarDecl* vd = newVarDecl(env, ctx, ti, reuseVarId ? v->id() : NULL, v, NULL);
       v->flat(vd);
