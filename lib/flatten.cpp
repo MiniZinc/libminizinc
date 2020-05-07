@@ -1966,7 +1966,7 @@ namespace MiniZinc {
                 } else if (e->type().isfloat()) {
                   cid = constants().ids.float_.eq;
                 }
-                if (cid != "") {
+                if (cid != "" && env.hasReverseMapper(vd->id())) {
                   GCLock lock;
                   std::vector<Expression*> args(2);
                   args[0] = vd->id();

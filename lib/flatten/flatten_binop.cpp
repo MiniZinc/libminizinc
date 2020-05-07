@@ -441,9 +441,9 @@ namespace MiniZinc {
     // Assign linear expression directly if one side is an Id.
     Id* assignTo = NULL;
     if (bot==BOT_EQ && ctx.b == C_ROOT) {
-      if (le0->isa<Id>() && env.reverseMappers.find(le0->cast<Id>()) == env.reverseMappers.end()) {
+      if (le0->isa<Id>() && !env.hasReverseMapper(le0->cast<Id>())) {
         assignTo = le0->cast<Id>();
-      } else if (le1->isa<Id>() && env.reverseMappers.find(le1->cast<Id>()) == env.reverseMappers.end()) {
+      } else if (le1->isa<Id>() && !env.hasReverseMapper(le1->cast<Id>())) {
         assignTo = le1->cast<Id>();
       }
     }
@@ -552,7 +552,7 @@ namespace MiniZinc {
         }
       }
       
-      if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && env.reverseMappers.find(alv[0]()->cast<Id>()) == env.reverseMappers.end() && bot==BOT_EQ) {
+      if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && !env.hasReverseMapper(alv[0]()->cast<Id>()) && bot==BOT_EQ) {
         GCLock lock;
         VarDecl* vd = alv[0]()->cast<Id>()->decl();
         if (vd->ti()->domain()) {
@@ -608,7 +608,7 @@ namespace MiniZinc {
             e0 = alv[0]();
             e1 = LinearTraits<Lit>::newLit(d);
         }
-        if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && env.reverseMappers.find(alv[0]()->cast<Id>()) == env.reverseMappers.end() && alv[0]()->cast<Id>()->decl()->ti()->domain()) {
+        if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && !env.hasReverseMapper(alv[0]()->cast<Id>()) && alv[0]()->cast<Id>()->decl()->ti()->domain()) {
           VarDecl* vd = alv[0]()->cast<Id>()->decl();
           typename LinearTraits<Lit>::Domain domain = LinearTraits<Lit>::eval_domain(env,vd->ti()->domain());
           typename LinearTraits<Lit>::Domain ndomain = LinearTraits<Lit>::limit_domain(old_bot,domain,old_d);
