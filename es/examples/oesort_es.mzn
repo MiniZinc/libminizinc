@@ -34,7 +34,7 @@ predicate oemerge(array[int] of var bool:x, array[int] of var bool:y)=
       forall(i in 1..c div 2 -1)(
         comparator(te[i],to[i+1],y[2*i],y[2*i+1])) /\
       y[c] = te[c div 2]
-  endif));
+  endif;
 
 % Como usar:
 % comparator o1 = max(i1,i2), o2 = min(i1,i2)
