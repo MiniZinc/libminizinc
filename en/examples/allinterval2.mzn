@@ -18,5 +18,5 @@ solve :: int_search(y, first_fail, indomain_min)
       satisfy;
 
 array[1..n] of 1..n: x :: output_only
-  = [ sum(i in 1..n)(i*(fix(y[j]) = i) | j in 1..n ];
+  = [ sum(i in 1..n)(i*(fix(y[j]) = i)) | j in 1..n ];
 output [ "x = \(x);\n" ]
