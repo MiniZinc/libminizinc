@@ -749,7 +749,7 @@ namespace MiniZinc {
     bool allCalls = true;
     for (int i = static_cast<int>(callStack.size())-1; i >= prev; i--) {
       Expression* ee = callStack[i]->untag();
-      allCalls = allCalls && (i==callStack.size()-1 || ee->isa<Call>());
+      allCalls = allCalls && (i==callStack.size()-1 || ee->isa<Call>() || ee->isa<BinOp>());
       for (ExpressionSetIter it = ee->ann().begin(); it != ee->ann().end(); ++it) {
         EE ee_ann = flat_exp(*this, Ctx(), *it, NULL, constants().var_true);
         if (allCalls || !isDefinesVarAnn(ee_ann.r()))
@@ -3374,6 +3374,12 @@ namespace MiniZinc {
                   }
                 }
                 if (nc != NULL) {
+                  if (nc != c) {
+                    for (ExpressionSetIter it = c->ann().begin(); it != c->ann().end(); ++it) {
+                      EE ee_ann = flat_exp(env, Ctx(), *it, NULL, constants().var_true);
+                      nc->addAnnotation(ee_ann.r());
+                    }
+                  }
                   CollectDecls cd(env.vo,deletedVarDecls,ci);
                   topDown(cd,c);
                   ci->e(constants().lit_true);
