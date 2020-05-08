@@ -99,7 +99,7 @@ void Flattener::printHelp(ostream& os)
   << "  --output-to-stdout, --output-fzn-to-stdout\n    Print generated FlatZinc to standard output" << std::endl
   << "  --output-ozn-to-stdout\n    Print model output specification to standard output" << std::endl
   << "  --output-paths-to-stdout\n    Output symbol table to standard output" << std::endl
-  << "  --output-mode <item|dzn|json>\n    Create output according to output item (default), or output compatible\n    with dzn or json format" << std::endl
+  << "  --output-mode <item|dzn|json|checker>\n    Create output according to output item (default), or output compatible\n    with dzn or json format, or for solution checking" << std::endl
   << "  --output-objective\n    Print value of objective function in dzn or json output" << std::endl
   << "  --output-output-item\n    Print the output item as a string in the dzn or json output" << std::endl
   << "  -Werror\n    Turn warnings into errors" << std::endl
@@ -160,6 +160,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
       flag_output_mode = FlatteningOptions::OUTPUT_JSON;
     } else if (buffer == "item") {
       flag_output_mode = FlatteningOptions::OUTPUT_ITEM;
+    } else if (buffer == "checker") {
+      flag_output_mode = FlatteningOptions::OUTPUT_CHECKER;
     } else {
       return false;
     }

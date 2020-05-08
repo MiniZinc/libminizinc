@@ -46,7 +46,7 @@ namespace MiniZinc {
     unsigned long long int timeout;
     /// Create standard, DZN or JSON output
     enum OutputMode {
-      OUTPUT_ITEM, OUTPUT_DZN, OUTPUT_JSON
+      OUTPUT_ITEM, OUTPUT_DZN, OUTPUT_JSON, OUTPUT_CHECKER
     } outputMode;
     /// Output objective value (only for DZN and JSON mode)
     bool outputObjective;

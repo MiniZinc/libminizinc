@@ -495,7 +495,7 @@ namespace MiniZinc {
     }
   }
   
-  void createDznOutputItem(EnvI& e, bool outputObjective, bool includeOutputItem, bool hasChecker) {
+  void createDznOutputItem(EnvI& e, bool outputObjective, bool includeOutputItem, bool hasChecker, bool outputForChecker) {
     std::vector<Expression*> outputVars;
     
     class DZNOVisitor : public ItemVisitor {
@@ -503,40 +503,47 @@ namespace MiniZinc {
       EnvI& e;
       bool outputObjective;
       bool includeOutputItem;
+      bool outputForChecker;
       std::vector<Expression*>& outputVars;
       bool had_add_to_output;
     public:
-      DZNOVisitor(EnvI& e0, bool outputObjective0, bool includeOutputItem0, std::vector<Expression*>& outputVars0)
-        : e(e0), outputObjective(outputObjective0), outputVars(outputVars0), includeOutputItem(includeOutputItem0), had_add_to_output(false) {}
+      DZNOVisitor(EnvI& e0, bool outputObjective0, bool includeOutputItem0, bool outputForChecker0, std::vector<Expression*>& outputVars0)
+        : e(e0), outputObjective(outputObjective0), includeOutputItem(includeOutputItem0), outputForChecker(outputForChecker0), outputVars(outputVars0), had_add_to_output(false) {}
       void vVarDeclI(VarDeclI* vdi) {
         VarDecl* vd = vdi->e();
         bool process_var = false;
-        if (outputObjective && vd->id()->idn()==-1 && vd->id()->v()=="_objective") {
-          process_var = true;
+        if (outputForChecker) {
+          if (vd->ann().contains(constants().ann.mzn_check_var)) {
+            process_var = true;
+          }
         } else {
-          if (vd->ann().contains(constants().ann.add_to_output)) {
-            if (!had_add_to_output) {
-              outputVars.clear();
-            }
-            had_add_to_output = true;
+          if (outputObjective && vd->id()->idn()==-1 && vd->id()->v()=="_objective") {
             process_var = true;
           } else {
-            if (!had_add_to_output) {
-              process_var = false;
-              if (vd->type().isvar()) {
-                if (vd->e()) {
-                  if (ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
-                    for (unsigned int i=0; i<al->size(); i++) {
-                      if ((*al)[i]->isa<AnonVar>()) {
-                        process_var = true;
-                        break;
+            if (vd->ann().contains(constants().ann.add_to_output)) {
+              if (!had_add_to_output) {
+                outputVars.clear();
+              }
+              had_add_to_output = true;
+              process_var = true;
+            } else {
+              if (!had_add_to_output) {
+                process_var = false;
+                if (vd->type().isvar()) {
+                  if (vd->e()) {
+                    if (ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
+                      for (unsigned int i=0; i<al->size(); i++) {
+                        if ((*al)[i]->isa<AnonVar>()) {
+                          process_var = true;
+                          break;
+                        }
                       }
+                    } else if (vd->ann().contains(constants().ann.rhs_from_assignment)) {
+                      process_var = true;
                     }
-                  } else if (vd->ann().contains(constants().ann.rhs_from_assignment)) {
+                  } else {
                     process_var = true;
                   }
-                } else {
-                  process_var = true;
                 }
               }
             }
@@ -601,11 +608,11 @@ namespace MiniZinc {
 
         oi->remove();
       }
-    } dznov(e, outputObjective, includeOutputItem, outputVars);
+    } dznov(e, outputObjective, includeOutputItem, outputForChecker, outputVars);
 
     iterItems(dznov, e.model);
 
-    if (hasChecker) {
+    if (hasChecker && !outputForChecker) {
       outputVars.push_back(new StringLit(Location().introduce(), "_checker = "));
       auto checker_output = new Call(Location().introduce(), ASTString("showCheckerOutput"), {});
       checker_output->type(Type::parstring());
@@ -750,13 +757,17 @@ namespace MiniZinc {
     
     switch (outputMode) {
       case FlatteningOptions::OUTPUT_DZN:
-        createDznOutputItem(e,outputObjective, includeOutputItem, hasChecker);
+        createDznOutputItem(e,outputObjective, includeOutputItem, hasChecker, false);
         break;
       case FlatteningOptions::OUTPUT_JSON:
         createJSONOutputItem(e, outputObjective, includeOutputItem, hasChecker);
+        break;
+      case FlatteningOptions::OUTPUT_CHECKER:
+        createDznOutputItem(e,outputObjective, includeOutputItem, hasChecker, true);
+        break;
       default:
         if (e.model->outputItem()==NULL) {
-          createDznOutputItem(e, outputObjective, false, false);
+          createDznOutputItem(e, outputObjective, false, false, false);
         }
         break;
     }
