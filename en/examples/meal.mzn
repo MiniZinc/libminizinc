@@ -30,7 +30,7 @@ constraint budget = main[cost] + side[cost] + dessert[cost];
 
 solve minimize budget; 
 
-output ["main = ",show(to_enum(FOOD,main[name])),", 
+output ["main = ",show(to_enum(FOOD,main[name])), 
         ", side = ",show(to_enum(FOOD,side[name])),
-        ", dessert = ",show(to_enum(FOOD,dessert[name]))],
+        ", dessert = ",show(to_enum(FOOD,dessert[name])),
         ", cost = ",show(budget), "\n"];
