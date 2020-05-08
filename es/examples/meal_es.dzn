@@ -1,4 +1,4 @@
-FOODS = { icecream, banana, chocolatecake, lasagna,
+FOOD = { icecream, banana, chocolatecake, lasagna,
           steak, rice, chips, brocolli, beans} ;
 
 dd = [| icecream,      1200,  50,  10, 120,  400     % Helado
@@ -15,6 +15,6 @@ min_energy = 3300;
 min_protein = 500;
 max_salt = 180;
 max_fat = 320;
-desserts = { icecream, banana, chocolotecake };
+desserts = { icecream, banana, chocolatecake };
 mains = { lasagna, steak, rice };
 sides = { chips, brocolli, beans };
