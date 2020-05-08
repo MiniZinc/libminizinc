@@ -3276,6 +3276,10 @@ namespace MiniZinc {
 //                  }
                   if (nc != c) {
                     makeDefinedVar(vd, nc);
+                    for (ExpressionSetIter it = c->ann().begin(); it != c->ann().end(); ++it) {
+                      EE ee_ann = flat_exp(env, Ctx(), *it, NULL, constants().var_true);
+                      nc->addAnnotation(ee_ann.r());
+                    }
                   }
                   StringLit* vsl = getLongestMznPathAnnotation(env, vdi->e());
                   StringLit* csl = getLongestMznPathAnnotation(env, c);
