@@ -33,7 +33,7 @@ constraint budget = main[cost] + side[cost] + dessert[cost];
 
 solve minimize budget;
 
-output ["Plato principal = ",show(to_enum(FOOD,main[name])),",
+output ["Plato principal = ",show(to_enum(FOOD,main[name])),
         ", acompañamiento = ",show(to_enum(FOOD,side[name])),
-        ", postre = ",show(to_enum(FOOD,dessert[name]))],
+        ", postre = ",show(to_enum(FOOD,dessert[name])),
         ", costo = ",show(budget), "\n"];
