@@ -13,7 +13,7 @@ test visible(int: i1, int: j1, int: i2, int: j2) =
 array[H,W] of var bool: l; % is there a light
 
 % filled squares have no lights
-constraint forall(i in H, j in W, where b[i,j] != E)(l[i,j] == false);
+constraint forall(i in H, j in W where b[i,j] != E)(l[i,j] == false);
 % lights next to filled numbered square agree
 include "boolsum.mzn";
 constraint forall(i in H, j in W where b[i,j] in N)(
