@@ -25,7 +25,7 @@ test visible(int: i1, int: j1, int: i2, int: j2) =
 array[H,W] of var bool: l;
 
 % Tableros llenos que no tienen luces.
-constraint forall(i in H, j in W, where b[i,j] != E)(l[i,j] == false);
+constraint forall(i in H, j in W where b[i,j] != E)(l[i,j] == false);
 
 % Las luces del tablero numerado esta correcto.
 include "boolsum.mzn";
