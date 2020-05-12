@@ -167,7 +167,7 @@ class MznItem(pytest.Item):
 
         if not self.solver_allowed(solver):
             self.add_marker(
-                pytest.mark.skip("skipping {} not in {}".format(solver, allowed))
+                pytest.mark.skip("skipping {} not in {}".format(solver, self.allowed))
             )
 
         if not self.solver_exists(solver):
@@ -250,7 +250,7 @@ class CheckItem(MznItem):
         if not self.solver_allowed(checker):
             self.add_marker(
                 pytest.mark.skip(
-                    "skipping checker {} not in {}".format(checker, allowed)
+                    "skipping checker {} not in {}".format(checker, self.allowed)
                 )
             )
         if not self.solver_exists(checker):
