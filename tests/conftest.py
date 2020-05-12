@@ -161,7 +161,7 @@ class MznItem(pytest.Item):
             self.allowed = [
                 x.strip() for x in self.config.getoption("--solvers").split(",")
             ]
-            self.allowed = [x for x in allowed if x in suite.solvers]
+            self.allowed = [x for x in self.allowed if x in suite.solvers]
         else:
             self.allowed = suite.solvers
 
