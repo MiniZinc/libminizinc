@@ -10,6 +10,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 %pure-parser
+
 %parse-param {void *parm}
 %lex-param {void* SCANNER}
 %{
@@ -31,11 +32,11 @@ using namespace std;
 using namespace MiniZinc;
 
 #define YYLLOC_DEFAULT(Current, Rhs, N) \
-  Current.filename = Rhs[1].filename; \
-  Current.first_line = Rhs[1].first_line; \
-  Current.first_column = Rhs[1].first_column; \
-  Current.last_line = Rhs[N].last_line; \
-  Current.last_column = Rhs[N].last_column;
+  (Current).filename = Rhs[1].filename; \
+  (Current).first_line = Rhs[1].first_line; \
+  (Current).first_column = Rhs[1].first_column; \
+  (Current).last_line = Rhs[N].last_line; \
+  (Current).last_column = Rhs[N].last_column;
 
 int yyparse(void*);
 int yylex(YYSTYPE*, YYLTYPE*, void* scanner);
@@ -246,10 +247,10 @@ namespace MiniZinc {
     vector<string> includePaths;
     for (unsigned int i=0; i<ip.size(); i++)
       includePaths.push_back(ip[i]);
-    
+
     vector<pair<string,Model*> > files;
     map<string,Model*> seenModels;
-    
+
     Model* model = new Model();
     model->setFilename(fileBasename);
 
@@ -260,21 +261,21 @@ namespace MiniZinc {
       seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
       Location stdlibloc;
       stdlibloc.filename=ASTString(filename);
-      IncludeI* stdlibinc = 
+      IncludeI* stdlibinc =
         new IncludeI(stdlibloc,stdlib->filename());
       stdlibinc->m(stdlib,true);
       model->addItem(stdlibinc);
     }
-    
+
     files.push_back(pair<string,Model*>("",model));
-        
+
     while (!files.empty()) {
       pair<string,Model*>& np = files.back();
       string parentPath = np.first;
       Model* m = np.second;
       files.pop_back();
       string f(m->filename().str());
-            
+
       for (Model* p=m->parent(); p; p=p->parent()) {
         if (f == p->filename().c_str()) {
           err << "Error: cyclic includes: " << std::endl;
@@ -325,7 +326,7 @@ namespace MiniZinc {
         goto error;
       }
     }
-    
+
     for (unsigned int i=0; i<datafiles.size(); i++) {
       string f = datafiles[i];
       std::string s;
@@ -353,7 +354,7 @@ namespace MiniZinc {
         goto error;
       }
     }
-    
+
     return model;
   error:
     for (unsigned int i=0; i<files.size(); i++)
@@ -372,7 +373,7 @@ namespace MiniZinc {
 
   vector<pair<string,Model*> > files;
   map<string,Model*> seenModels;
-  
+
   if (!ignoreStdlib) {
     Model* stdlib = new Model;
     stdlib->setFilename("stdlib.mzn");
@@ -383,14 +384,14 @@ namespace MiniZinc {
     stdlibinc->m(stdlib,true);
     model->addItem(stdlibinc);
   }
-  
+
   while (!files.empty()) {
     pair<string,Model*>& np = files.back();
     string parentPath = np.first;
     Model* m = np.second;
     files.pop_back();
     string f(m->filename().str());
-    
+
     for (Model* p=m->parent(); p; p=p->parent()) {
       if (f == p->filename().c_str()) {
         err << "Error: cyclic includes: " << std::endl;
@@ -422,7 +423,7 @@ namespace MiniZinc {
     if (verbose)
       std::cerr << "processing file '" << fullname << "'" << endl;
     std::string s = get_file_contents(file);
-    
+
     m->setFilepath(fullname);
     bool isFzn = (fullname.compare(fullname.length()-4,4,".fzn")==0);
     isFzn |= (fullname.compare(fullname.length()-4,4,".ozn")==0);
@@ -437,7 +438,7 @@ namespace MiniZinc {
       goto error;
     }
   }
-  
+
   for (unsigned int i=0; i<datafiles.size(); i++) {
     string f = datafiles[i];
     std::string s;
@@ -454,7 +455,7 @@ namespace MiniZinc {
         std::cerr << "processing data file '" << f << "'" << endl;
       s = get_file_contents(file);
     }
-    
+
     ParserState pp(f, s, err, files, seenModels, model, true, false, parseDocComments);
     yylex_init(&pp.yyscanner);
     yyset_extra(&pp, pp.yyscanner);
@@ -465,7 +466,7 @@ namespace MiniZinc {
       goto error;
     }
   }
-  
+
   return model;
   error:
   for (unsigned int i=0; i<files.size(); i++)
