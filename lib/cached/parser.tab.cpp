@@ -1,8 +1,9 @@
-/* A Bison parser, made by GNU Bison 3.1.  */
+/* A Bison parser, made by GNU Bison 3.6.1.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
-   Copyright (C) 1984, 1989-1990, 2000-2015, 2018 Free Software Foundation, Inc.
+   Copyright (C) 1984, 1989-1990, 2000-2015, 2018-2020 Free Software Foundation,
+   Inc.
 
    This program is free software: you can redistribute it and/or modify
    it under the terms of the GNU General Public License as published by
@@ -33,6 +34,10 @@
 /* C LALR(1) parser skeleton written by Richard Stallman, by
    simplifying the original so-called "semantic" parser.  */
 
+/* DO NOT RELY ON FEATURES THAT ARE NOT DOCUMENTED in the manual,
+   especially those whose name start with YY_ or yy_.  They are
+   private implementation details that can be changed or removed.  */
+
 /* All symbols defined below should begin with yy or YY, to avoid
    infringing on user name space.  This should be done even for local
    variables, as they might otherwise be expanded by user macros.
@@ -44,7 +49,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "3.1"
+#define YYBISON_VERSION "3.6.1"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -66,9 +71,7 @@
 #define yydebug         mzn_yydebug
 #define yynerrs         mzn_yynerrs
 
-
-/* Copy the first part of user declarations.  */
-
+/* First part of user prologue.  */
 
 #define SCANNER static_cast<ParserState*>(parm)->yyscanner
 #include <iostream>
@@ -91,11 +94,11 @@ using namespace std;
 using namespace MiniZinc;
 
 #define YYLLOC_DEFAULT(Current, Rhs, N) \
-  Current.filename(Rhs[1].filename()); \
-  Current.first_line(Rhs[1].first_line()); \
-  Current.first_column(Rhs[1].first_column()); \
-  Current.last_line(Rhs[N].last_line()); \
-  Current.last_column(Rhs[N].last_column());
+  (Current).filename(Rhs[1].filename()); \
+  (Current).first_line(Rhs[1].first_line()); \
+  (Current).first_column(Rhs[1].first_column()); \
+  (Current).last_line(Rhs[N].last_line()); \
+  (Current).last_column(Rhs[N].last_column());
 
 int mzn_yyparse(void*);
 int mzn_yylex(YYSTYPE*, YYLTYPE*, void* scanner);
@@ -151,27 +154,31 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
 
 
 
-
-# ifndef YY_NULLPTR
-#  if defined __cplusplus && 201103L <= __cplusplus
-#   define YY_NULLPTR nullptr
+# ifndef YY_CAST
+#  ifdef __cplusplus
+#   define YY_CAST(Type, Val) static_cast<Type> (Val)
+#   define YY_REINTERPRET_CAST(Type, Val) reinterpret_cast<Type> (Val)
 #  else
-#   define YY_NULLPTR 0
+#   define YY_CAST(Type, Val) ((Type) (Val))
+#   define YY_REINTERPRET_CAST(Type, Val) ((Type) (Val))
+#  endif
+# endif
+# ifndef YY_NULLPTR
+#  if defined __cplusplus
+#   if 201103L <= __cplusplus
+#    define YY_NULLPTR nullptr
+#   else
+#    define YY_NULLPTR 0
+#   endif
+#  else
+#   define YY_NULLPTR ((void*)0)
 #  endif
 # endif
 
-/* Enabling verbose error messages.  */
-#ifdef YYERROR_VERBOSE
-# undef YYERROR_VERBOSE
-# define YYERROR_VERBOSE 1
-#else
-# define YYERROR_VERBOSE 1
-#endif
-
-/* In a future release of Bison, this section will be replaced
-   by #include "parser.tab.hh".  */
-#ifndef YY_MZN_YY_USERS_TACK_PROGRAMMING_MINIZINC_LIBMZN_BUILD_XCODE_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
-# define YY_MZN_YY_USERS_TACK_PROGRAMMING_MINIZINC_LIBMZN_BUILD_XCODE_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
+/* Use api.header.include to #include this header
+   instead of duplicating it here.  */
+#ifndef YY_MZN_YY_USERS_TACK_PROGRAMMING_MINIZINC_LIBMZN_DEVELOP_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
+# define YY_MZN_YY_USERS_TACK_PROGRAMMING_MINIZINC_LIBMZN_DEVELOP_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -180,150 +187,152 @@ Expression* createArrayAccess(const ParserLocation& loc, Expression* e, std::vec
 extern int mzn_yydebug;
 #endif
 
-/* Token type.  */
+/* Token kinds.  */
 #ifndef YYTOKENTYPE
 # define YYTOKENTYPE
   enum yytokentype
   {
-    END = 0,
-    MZN_INTEGER_LITERAL = 258,
-    MZN_BOOL_LITERAL = 259,
-    MZN_FLOAT_LITERAL = 260,
-    MZN_IDENTIFIER = 261,
-    MZN_QUOTED_IDENTIFIER = 262,
-    MZN_STRING_LITERAL = 263,
-    MZN_STRING_QUOTE_START = 264,
-    MZN_STRING_QUOTE_MID = 265,
-    MZN_STRING_QUOTE_END = 266,
-    MZN_TI_IDENTIFIER = 267,
-    MZN_TI_ENUM_IDENTIFIER = 268,
-    MZN_DOC_COMMENT = 269,
-    MZN_DOC_FILE_COMMENT = 270,
-    MZN_VAR = 271,
-    MZN_PAR = 272,
-    MZN_ABSENT = 273,
-    MZN_ANN = 274,
-    MZN_ANNOTATION = 275,
-    MZN_ANY = 276,
-    MZN_ARRAY = 277,
-    MZN_BOOL = 278,
-    MZN_CASE = 279,
-    MZN_CONSTRAINT = 280,
-    MZN_DEFAULT = 281,
-    MZN_ELSE = 282,
-    MZN_ELSEIF = 283,
-    MZN_ENDIF = 284,
-    MZN_ENUM = 285,
-    MZN_FLOAT = 286,
-    MZN_FUNCTION = 287,
-    MZN_IF = 288,
-    MZN_INCLUDE = 289,
-    MZN_INFINITY = 290,
-    MZN_INT = 291,
-    MZN_LET = 292,
-    MZN_LIST = 293,
-    MZN_MAXIMIZE = 294,
-    MZN_MINIMIZE = 295,
-    MZN_OF = 296,
-    MZN_OPT = 297,
-    MZN_SATISFY = 298,
-    MZN_OUTPUT = 299,
-    MZN_PREDICATE = 300,
-    MZN_RECORD = 301,
-    MZN_SET = 302,
-    MZN_SOLVE = 303,
-    MZN_STRING = 304,
-    MZN_TEST = 305,
-    MZN_THEN = 306,
-    MZN_TUPLE = 307,
-    MZN_TYPE = 308,
-    MZN_UNDERSCORE = 309,
-    MZN_VARIANT_RECORD = 310,
-    MZN_WHERE = 311,
-    MZN_LEFT_BRACKET = 312,
-    MZN_LEFT_2D_BRACKET = 313,
-    MZN_RIGHT_BRACKET = 314,
-    MZN_RIGHT_2D_BRACKET = 315,
-    FLATZINC_IDENTIFIER = 316,
-    MZN_INVALID_INTEGER_LITERAL = 317,
-    MZN_INVALID_FLOAT_LITERAL = 318,
-    MZN_UNTERMINATED_STRING = 319,
-    MZN_END_OF_LINE_IN_STRING = 320,
-    MZN_INVALID_NULL = 321,
-    MZN_EQUIV = 322,
-    MZN_IMPL = 323,
-    MZN_RIMPL = 324,
-    MZN_OR = 325,
-    MZN_XOR = 326,
-    MZN_AND = 327,
-    MZN_LE = 328,
-    MZN_GR = 329,
-    MZN_LQ = 330,
-    MZN_GQ = 331,
-    MZN_EQ = 332,
-    MZN_NQ = 333,
-    MZN_WEAK_EQ = 334,
-    MZN_IN = 335,
-    MZN_SUBSET = 336,
-    MZN_SUPERSET = 337,
-    MZN_UNION = 338,
-    MZN_DIFF = 339,
-    MZN_SYMDIFF = 340,
-    MZN_DOTDOT = 341,
-    MZN_PLUS = 342,
-    MZN_MINUS = 343,
-    MZN_WEAK_PLUS = 344,
-    MZN_WEAK_MINUS = 345,
-    MZN_MULT = 346,
-    MZN_DIV = 347,
-    MZN_IDIV = 348,
-    MZN_MOD = 349,
-    MZN_INTERSECT = 350,
-    MZN_WEAK_MULT = 351,
-    MZN_POW = 352,
-    MZN_NOT = 353,
-    MZN_PLUSPLUS = 354,
-    MZN_COLONCOLON = 355,
-    PREC_ANNO = 356,
-    MZN_EQUIV_QUOTED = 357,
-    MZN_IMPL_QUOTED = 358,
-    MZN_RIMPL_QUOTED = 359,
-    MZN_OR_QUOTED = 360,
-    MZN_XOR_QUOTED = 361,
-    MZN_AND_QUOTED = 362,
-    MZN_LE_QUOTED = 363,
-    MZN_GR_QUOTED = 364,
-    MZN_LQ_QUOTED = 365,
-    MZN_GQ_QUOTED = 366,
-    MZN_EQ_QUOTED = 367,
-    MZN_NQ_QUOTED = 368,
-    MZN_IN_QUOTED = 369,
-    MZN_SUBSET_QUOTED = 370,
-    MZN_SUPERSET_QUOTED = 371,
-    MZN_UNION_QUOTED = 372,
-    MZN_DIFF_QUOTED = 373,
-    MZN_SYMDIFF_QUOTED = 374,
-    MZN_DOTDOT_QUOTED = 375,
-    MZN_PLUS_QUOTED = 376,
-    MZN_MINUS_QUOTED = 377,
-    MZN_MULT_QUOTED = 378,
-    MZN_DIV_QUOTED = 379,
-    MZN_IDIV_QUOTED = 380,
-    MZN_MOD_QUOTED = 381,
-    MZN_INTERSECT_QUOTED = 382,
-    MZN_POW_QUOTED = 383,
-    MZN_NOT_QUOTED = 384,
-    MZN_COLONCOLON_QUOTED = 385,
-    MZN_PLUSPLUS_QUOTED = 386
+    YYEMPTY = -2,
+    END = 0,                       /* "end of file"  */
+    YYerror = 256,                 /* error  */
+    YYUNDEF = 257,                 /* "invalid token"  */
+    MZN_INTEGER_LITERAL = 258,     /* "integer literal"  */
+    MZN_BOOL_LITERAL = 259,        /* "bool literal"  */
+    MZN_FLOAT_LITERAL = 260,       /* "float literal"  */
+    MZN_IDENTIFIER = 261,          /* "identifier"  */
+    MZN_QUOTED_IDENTIFIER = 262,   /* "quoted identifier"  */
+    MZN_STRING_LITERAL = 263,      /* "string literal"  */
+    MZN_STRING_QUOTE_START = 264,  /* "interpolated string start"  */
+    MZN_STRING_QUOTE_MID = 265,    /* "interpolated string middle"  */
+    MZN_STRING_QUOTE_END = 266,    /* "interpolated string end"  */
+    MZN_TI_IDENTIFIER = 267,       /* "type-inst identifier"  */
+    MZN_TI_ENUM_IDENTIFIER = 268,  /* "type-inst enum identifier"  */
+    MZN_DOC_COMMENT = 269,         /* "documentation comment"  */
+    MZN_DOC_FILE_COMMENT = 270,    /* "file-level documentation comment"  */
+    MZN_VAR = 271,                 /* "var"  */
+    MZN_PAR = 272,                 /* "par"  */
+    MZN_ABSENT = 273,              /* "<>"  */
+    MZN_ANN = 274,                 /* "ann"  */
+    MZN_ANNOTATION = 275,          /* "annotation"  */
+    MZN_ANY = 276,                 /* "any"  */
+    MZN_ARRAY = 277,               /* "array"  */
+    MZN_BOOL = 278,                /* "bool"  */
+    MZN_CASE = 279,                /* "case"  */
+    MZN_CONSTRAINT = 280,          /* "constraint"  */
+    MZN_DEFAULT = 281,             /* "default"  */
+    MZN_ELSE = 282,                /* "else"  */
+    MZN_ELSEIF = 283,              /* "elseif"  */
+    MZN_ENDIF = 284,               /* "endif"  */
+    MZN_ENUM = 285,                /* "enum"  */
+    MZN_FLOAT = 286,               /* "float"  */
+    MZN_FUNCTION = 287,            /* "function"  */
+    MZN_IF = 288,                  /* "if"  */
+    MZN_INCLUDE = 289,             /* "include"  */
+    MZN_INFINITY = 290,            /* "infinity"  */
+    MZN_INT = 291,                 /* "int"  */
+    MZN_LET = 292,                 /* "let"  */
+    MZN_LIST = 293,                /* "list"  */
+    MZN_MAXIMIZE = 294,            /* "maximize"  */
+    MZN_MINIMIZE = 295,            /* "minimize"  */
+    MZN_OF = 296,                  /* "of"  */
+    MZN_OPT = 297,                 /* "opt"  */
+    MZN_SATISFY = 298,             /* "satisfy"  */
+    MZN_OUTPUT = 299,              /* "output"  */
+    MZN_PREDICATE = 300,           /* "predicate"  */
+    MZN_RECORD = 301,              /* "record"  */
+    MZN_SET = 302,                 /* "set"  */
+    MZN_SOLVE = 303,               /* "solve"  */
+    MZN_STRING = 304,              /* "string"  */
+    MZN_TEST = 305,                /* "test"  */
+    MZN_THEN = 306,                /* "then"  */
+    MZN_TUPLE = 307,               /* "tuple"  */
+    MZN_TYPE = 308,                /* "type"  */
+    MZN_UNDERSCORE = 309,          /* "_"  */
+    MZN_VARIANT_RECORD = 310,      /* "variant_record"  */
+    MZN_WHERE = 311,               /* "where"  */
+    MZN_LEFT_BRACKET = 312,        /* "["  */
+    MZN_LEFT_2D_BRACKET = 313,     /* "[|"  */
+    MZN_RIGHT_BRACKET = 314,       /* "]"  */
+    MZN_RIGHT_2D_BRACKET = 315,    /* "|]"  */
+    FLATZINC_IDENTIFIER = 316,     /* FLATZINC_IDENTIFIER  */
+    MZN_INVALID_INTEGER_LITERAL = 317, /* "invalid integer literal"  */
+    MZN_INVALID_FLOAT_LITERAL = 318, /* "invalid float literal"  */
+    MZN_UNTERMINATED_STRING = 319, /* "unterminated string"  */
+    MZN_END_OF_LINE_IN_STRING = 320, /* "end of line inside string literal"  */
+    MZN_INVALID_NULL = 321,        /* "null character"  */
+    MZN_EQUIV = 322,               /* "<->"  */
+    MZN_IMPL = 323,                /* "->"  */
+    MZN_RIMPL = 324,               /* "<-"  */
+    MZN_OR = 325,                  /* "\\/"  */
+    MZN_XOR = 326,                 /* "xor"  */
+    MZN_AND = 327,                 /* "/\\"  */
+    MZN_LE = 328,                  /* "<"  */
+    MZN_GR = 329,                  /* ">"  */
+    MZN_LQ = 330,                  /* "<="  */
+    MZN_GQ = 331,                  /* ">="  */
+    MZN_EQ = 332,                  /* "="  */
+    MZN_NQ = 333,                  /* "!="  */
+    MZN_WEAK_EQ = 334,             /* "~="  */
+    MZN_IN = 335,                  /* "in"  */
+    MZN_SUBSET = 336,              /* "subset"  */
+    MZN_SUPERSET = 337,            /* "superset"  */
+    MZN_UNION = 338,               /* "union"  */
+    MZN_DIFF = 339,                /* "diff"  */
+    MZN_SYMDIFF = 340,             /* "symdiff"  */
+    MZN_DOTDOT = 341,              /* ".."  */
+    MZN_PLUS = 342,                /* "+"  */
+    MZN_MINUS = 343,               /* "-"  */
+    MZN_WEAK_PLUS = 344,           /* "~+"  */
+    MZN_WEAK_MINUS = 345,          /* "~-"  */
+    MZN_MULT = 346,                /* "*"  */
+    MZN_DIV = 347,                 /* "/"  */
+    MZN_IDIV = 348,                /* "div"  */
+    MZN_MOD = 349,                 /* "mod"  */
+    MZN_INTERSECT = 350,           /* "intersect"  */
+    MZN_WEAK_MULT = 351,           /* "~*"  */
+    MZN_POW = 352,                 /* "^"  */
+    MZN_NOT = 353,                 /* "not"  */
+    MZN_PLUSPLUS = 354,            /* "++"  */
+    MZN_COLONCOLON = 355,          /* "::"  */
+    PREC_ANNO = 356,               /* PREC_ANNO  */
+    MZN_EQUIV_QUOTED = 357,        /* "'<->'"  */
+    MZN_IMPL_QUOTED = 358,         /* "'->'"  */
+    MZN_RIMPL_QUOTED = 359,        /* "'<-'"  */
+    MZN_OR_QUOTED = 360,           /* "'\\/'"  */
+    MZN_XOR_QUOTED = 361,          /* "'xor'"  */
+    MZN_AND_QUOTED = 362,          /* "'/\\'"  */
+    MZN_LE_QUOTED = 363,           /* "'<'"  */
+    MZN_GR_QUOTED = 364,           /* "'>'"  */
+    MZN_LQ_QUOTED = 365,           /* "'<='"  */
+    MZN_GQ_QUOTED = 366,           /* "'>='"  */
+    MZN_EQ_QUOTED = 367,           /* "'='"  */
+    MZN_NQ_QUOTED = 368,           /* "'!='"  */
+    MZN_IN_QUOTED = 369,           /* "'in'"  */
+    MZN_SUBSET_QUOTED = 370,       /* "'subset'"  */
+    MZN_SUPERSET_QUOTED = 371,     /* "'superset'"  */
+    MZN_UNION_QUOTED = 372,        /* "'union'"  */
+    MZN_DIFF_QUOTED = 373,         /* "'diff'"  */
+    MZN_SYMDIFF_QUOTED = 374,      /* "'symdiff'"  */
+    MZN_DOTDOT_QUOTED = 375,       /* "'..'"  */
+    MZN_PLUS_QUOTED = 376,         /* "'+'"  */
+    MZN_MINUS_QUOTED = 377,        /* "'-'"  */
+    MZN_MULT_QUOTED = 378,         /* "'*'"  */
+    MZN_DIV_QUOTED = 379,          /* "'/'"  */
+    MZN_IDIV_QUOTED = 380,         /* "'div'"  */
+    MZN_MOD_QUOTED = 381,          /* "'mod'"  */
+    MZN_INTERSECT_QUOTED = 382,    /* "'intersect'"  */
+    MZN_POW_QUOTED = 383,          /* "'^'"  */
+    MZN_NOT_QUOTED = 384,          /* "'not'"  */
+    MZN_COLONCOLON_QUOTED = 385,   /* "'::'"  */
+    MZN_PLUSPLUS_QUOTED = 386      /* "'++'"  */
   };
+  typedef enum yytokentype yytoken_kind_t;
 #endif
 
 /* Value type.  */
 #if ! defined YYSTYPE && ! defined YYSTYPE_IS_DECLARED
-
 union YYSTYPE
 {
-
  long long int iValue; char* sValue; bool bValue; double dValue;
          MiniZinc::Item* item;
          MiniZinc::VarDecl* vardeclexpr;
@@ -343,7 +352,6 @@ union YYSTYPE
 
 
 };
-
 typedef union YYSTYPE YYSTYPE;
 # define YYSTYPE_IS_TRIVIAL 1
 # define YYSTYPE_IS_DECLARED 1
@@ -367,9 +375,228 @@ struct YYLTYPE
 
 int mzn_yyparse (void *parm);
 
-#endif /* !YY_MZN_YY_USERS_TACK_PROGRAMMING_MINIZINC_LIBMZN_BUILD_XCODE_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED  */
+#endif /* !YY_MZN_YY_USERS_TACK_PROGRAMMING_MINIZINC_LIBMZN_DEVELOP_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED  */
+/* Symbol kind.  */
+enum yysymbol_kind_t
+{
+  YYSYMBOL_YYEMPTY = -2,
+  YYSYMBOL_YYEOF = 0,                      /* "end of file"  */
+  YYSYMBOL_YYerror = 1,                    /* error  */
+  YYSYMBOL_YYUNDEF = 2,                    /* "invalid token"  */
+  YYSYMBOL_MZN_INTEGER_LITERAL = 3,        /* "integer literal"  */
+  YYSYMBOL_MZN_BOOL_LITERAL = 4,           /* "bool literal"  */
+  YYSYMBOL_MZN_FLOAT_LITERAL = 5,          /* "float literal"  */
+  YYSYMBOL_MZN_IDENTIFIER = 6,             /* "identifier"  */
+  YYSYMBOL_MZN_QUOTED_IDENTIFIER = 7,      /* "quoted identifier"  */
+  YYSYMBOL_MZN_STRING_LITERAL = 8,         /* "string literal"  */
+  YYSYMBOL_MZN_STRING_QUOTE_START = 9,     /* "interpolated string start"  */
+  YYSYMBOL_MZN_STRING_QUOTE_MID = 10,      /* "interpolated string middle"  */
+  YYSYMBOL_MZN_STRING_QUOTE_END = 11,      /* "interpolated string end"  */
+  YYSYMBOL_MZN_TI_IDENTIFIER = 12,         /* "type-inst identifier"  */
+  YYSYMBOL_MZN_TI_ENUM_IDENTIFIER = 13,    /* "type-inst enum identifier"  */
+  YYSYMBOL_MZN_DOC_COMMENT = 14,           /* "documentation comment"  */
+  YYSYMBOL_MZN_DOC_FILE_COMMENT = 15,      /* "file-level documentation comment"  */
+  YYSYMBOL_MZN_VAR = 16,                   /* "var"  */
+  YYSYMBOL_MZN_PAR = 17,                   /* "par"  */
+  YYSYMBOL_MZN_ABSENT = 18,                /* "<>"  */
+  YYSYMBOL_MZN_ANN = 19,                   /* "ann"  */
+  YYSYMBOL_MZN_ANNOTATION = 20,            /* "annotation"  */
+  YYSYMBOL_MZN_ANY = 21,                   /* "any"  */
+  YYSYMBOL_MZN_ARRAY = 22,                 /* "array"  */
+  YYSYMBOL_MZN_BOOL = 23,                  /* "bool"  */
+  YYSYMBOL_MZN_CASE = 24,                  /* "case"  */
+  YYSYMBOL_MZN_CONSTRAINT = 25,            /* "constraint"  */
+  YYSYMBOL_MZN_DEFAULT = 26,               /* "default"  */
+  YYSYMBOL_MZN_ELSE = 27,                  /* "else"  */
+  YYSYMBOL_MZN_ELSEIF = 28,                /* "elseif"  */
+  YYSYMBOL_MZN_ENDIF = 29,                 /* "endif"  */
+  YYSYMBOL_MZN_ENUM = 30,                  /* "enum"  */
+  YYSYMBOL_MZN_FLOAT = 31,                 /* "float"  */
+  YYSYMBOL_MZN_FUNCTION = 32,              /* "function"  */
+  YYSYMBOL_MZN_IF = 33,                    /* "if"  */
+  YYSYMBOL_MZN_INCLUDE = 34,               /* "include"  */
+  YYSYMBOL_MZN_INFINITY = 35,              /* "infinity"  */
+  YYSYMBOL_MZN_INT = 36,                   /* "int"  */
+  YYSYMBOL_MZN_LET = 37,                   /* "let"  */
+  YYSYMBOL_MZN_LIST = 38,                  /* "list"  */
+  YYSYMBOL_MZN_MAXIMIZE = 39,              /* "maximize"  */
+  YYSYMBOL_MZN_MINIMIZE = 40,              /* "minimize"  */
+  YYSYMBOL_MZN_OF = 41,                    /* "of"  */
+  YYSYMBOL_MZN_OPT = 42,                   /* "opt"  */
+  YYSYMBOL_MZN_SATISFY = 43,               /* "satisfy"  */
+  YYSYMBOL_MZN_OUTPUT = 44,                /* "output"  */
+  YYSYMBOL_MZN_PREDICATE = 45,             /* "predicate"  */
+  YYSYMBOL_MZN_RECORD = 46,                /* "record"  */
+  YYSYMBOL_MZN_SET = 47,                   /* "set"  */
+  YYSYMBOL_MZN_SOLVE = 48,                 /* "solve"  */
+  YYSYMBOL_MZN_STRING = 49,                /* "string"  */
+  YYSYMBOL_MZN_TEST = 50,                  /* "test"  */
+  YYSYMBOL_MZN_THEN = 51,                  /* "then"  */
+  YYSYMBOL_MZN_TUPLE = 52,                 /* "tuple"  */
+  YYSYMBOL_MZN_TYPE = 53,                  /* "type"  */
+  YYSYMBOL_MZN_UNDERSCORE = 54,            /* "_"  */
+  YYSYMBOL_MZN_VARIANT_RECORD = 55,        /* "variant_record"  */
+  YYSYMBOL_MZN_WHERE = 56,                 /* "where"  */
+  YYSYMBOL_MZN_LEFT_BRACKET = 57,          /* "["  */
+  YYSYMBOL_MZN_LEFT_2D_BRACKET = 58,       /* "[|"  */
+  YYSYMBOL_MZN_RIGHT_BRACKET = 59,         /* "]"  */
+  YYSYMBOL_MZN_RIGHT_2D_BRACKET = 60,      /* "|]"  */
+  YYSYMBOL_FLATZINC_IDENTIFIER = 61,       /* FLATZINC_IDENTIFIER  */
+  YYSYMBOL_MZN_INVALID_INTEGER_LITERAL = 62, /* "invalid integer literal"  */
+  YYSYMBOL_MZN_INVALID_FLOAT_LITERAL = 63, /* "invalid float literal"  */
+  YYSYMBOL_MZN_UNTERMINATED_STRING = 64,   /* "unterminated string"  */
+  YYSYMBOL_MZN_END_OF_LINE_IN_STRING = 65, /* "end of line inside string literal"  */
+  YYSYMBOL_MZN_INVALID_NULL = 66,          /* "null character"  */
+  YYSYMBOL_MZN_EQUIV = 67,                 /* "<->"  */
+  YYSYMBOL_MZN_IMPL = 68,                  /* "->"  */
+  YYSYMBOL_MZN_RIMPL = 69,                 /* "<-"  */
+  YYSYMBOL_MZN_OR = 70,                    /* "\\/"  */
+  YYSYMBOL_MZN_XOR = 71,                   /* "xor"  */
+  YYSYMBOL_MZN_AND = 72,                   /* "/\\"  */
+  YYSYMBOL_MZN_LE = 73,                    /* "<"  */
+  YYSYMBOL_MZN_GR = 74,                    /* ">"  */
+  YYSYMBOL_MZN_LQ = 75,                    /* "<="  */
+  YYSYMBOL_MZN_GQ = 76,                    /* ">="  */
+  YYSYMBOL_MZN_EQ = 77,                    /* "="  */
+  YYSYMBOL_MZN_NQ = 78,                    /* "!="  */
+  YYSYMBOL_MZN_WEAK_EQ = 79,               /* "~="  */
+  YYSYMBOL_MZN_IN = 80,                    /* "in"  */
+  YYSYMBOL_MZN_SUBSET = 81,                /* "subset"  */
+  YYSYMBOL_MZN_SUPERSET = 82,              /* "superset"  */
+  YYSYMBOL_MZN_UNION = 83,                 /* "union"  */
+  YYSYMBOL_MZN_DIFF = 84,                  /* "diff"  */
+  YYSYMBOL_MZN_SYMDIFF = 85,               /* "symdiff"  */
+  YYSYMBOL_MZN_DOTDOT = 86,                /* ".."  */
+  YYSYMBOL_MZN_PLUS = 87,                  /* "+"  */
+  YYSYMBOL_MZN_MINUS = 88,                 /* "-"  */
+  YYSYMBOL_MZN_WEAK_PLUS = 89,             /* "~+"  */
+  YYSYMBOL_MZN_WEAK_MINUS = 90,            /* "~-"  */
+  YYSYMBOL_MZN_MULT = 91,                  /* "*"  */
+  YYSYMBOL_MZN_DIV = 92,                   /* "/"  */
+  YYSYMBOL_MZN_IDIV = 93,                  /* "div"  */
+  YYSYMBOL_MZN_MOD = 94,                   /* "mod"  */
+  YYSYMBOL_MZN_INTERSECT = 95,             /* "intersect"  */
+  YYSYMBOL_MZN_WEAK_MULT = 96,             /* "~*"  */
+  YYSYMBOL_MZN_POW = 97,                   /* "^"  */
+  YYSYMBOL_MZN_NOT = 98,                   /* "not"  */
+  YYSYMBOL_MZN_PLUSPLUS = 99,              /* "++"  */
+  YYSYMBOL_MZN_COLONCOLON = 100,           /* "::"  */
+  YYSYMBOL_PREC_ANNO = 101,                /* PREC_ANNO  */
+  YYSYMBOL_MZN_EQUIV_QUOTED = 102,         /* "'<->'"  */
+  YYSYMBOL_MZN_IMPL_QUOTED = 103,          /* "'->'"  */
+  YYSYMBOL_MZN_RIMPL_QUOTED = 104,         /* "'<-'"  */
+  YYSYMBOL_MZN_OR_QUOTED = 105,            /* "'\\/'"  */
+  YYSYMBOL_MZN_XOR_QUOTED = 106,           /* "'xor'"  */
+  YYSYMBOL_MZN_AND_QUOTED = 107,           /* "'/\\'"  */
+  YYSYMBOL_MZN_LE_QUOTED = 108,            /* "'<'"  */
+  YYSYMBOL_MZN_GR_QUOTED = 109,            /* "'>'"  */
+  YYSYMBOL_MZN_LQ_QUOTED = 110,            /* "'<='"  */
+  YYSYMBOL_MZN_GQ_QUOTED = 111,            /* "'>='"  */
+  YYSYMBOL_MZN_EQ_QUOTED = 112,            /* "'='"  */
+  YYSYMBOL_MZN_NQ_QUOTED = 113,            /* "'!='"  */
+  YYSYMBOL_MZN_IN_QUOTED = 114,            /* "'in'"  */
+  YYSYMBOL_MZN_SUBSET_QUOTED = 115,        /* "'subset'"  */
+  YYSYMBOL_MZN_SUPERSET_QUOTED = 116,      /* "'superset'"  */
+  YYSYMBOL_MZN_UNION_QUOTED = 117,         /* "'union'"  */
+  YYSYMBOL_MZN_DIFF_QUOTED = 118,          /* "'diff'"  */
+  YYSYMBOL_MZN_SYMDIFF_QUOTED = 119,       /* "'symdiff'"  */
+  YYSYMBOL_MZN_DOTDOT_QUOTED = 120,        /* "'..'"  */
+  YYSYMBOL_MZN_PLUS_QUOTED = 121,          /* "'+'"  */
+  YYSYMBOL_MZN_MINUS_QUOTED = 122,         /* "'-'"  */
+  YYSYMBOL_MZN_MULT_QUOTED = 123,          /* "'*'"  */
+  YYSYMBOL_MZN_DIV_QUOTED = 124,           /* "'/'"  */
+  YYSYMBOL_MZN_IDIV_QUOTED = 125,          /* "'div'"  */
+  YYSYMBOL_MZN_MOD_QUOTED = 126,           /* "'mod'"  */
+  YYSYMBOL_MZN_INTERSECT_QUOTED = 127,     /* "'intersect'"  */
+  YYSYMBOL_MZN_POW_QUOTED = 128,           /* "'^'"  */
+  YYSYMBOL_MZN_NOT_QUOTED = 129,           /* "'not'"  */
+  YYSYMBOL_MZN_COLONCOLON_QUOTED = 130,    /* "'::'"  */
+  YYSYMBOL_MZN_PLUSPLUS_QUOTED = 131,      /* "'++'"  */
+  YYSYMBOL_132_ = 132,                     /* ';'  */
+  YYSYMBOL_133_ = 133,                     /* '{'  */
+  YYSYMBOL_134_ = 134,                     /* '}'  */
+  YYSYMBOL_135_ = 135,                     /* '('  */
+  YYSYMBOL_136_ = 136,                     /* ')'  */
+  YYSYMBOL_137_ = 137,                     /* ','  */
+  YYSYMBOL_138_ = 138,                     /* ':'  */
+  YYSYMBOL_139_ = 139,                     /* '|'  */
+  YYSYMBOL_YYACCEPT = 140,                 /* $accept  */
+  YYSYMBOL_model = 141,                    /* model  */
+  YYSYMBOL_item_list = 142,                /* item_list  */
+  YYSYMBOL_item_list_head = 143,           /* item_list_head  */
+  YYSYMBOL_doc_file_comments = 144,        /* doc_file_comments  */
+  YYSYMBOL_semi_or_none = 145,             /* semi_or_none  */
+  YYSYMBOL_item = 146,                     /* item  */
+  YYSYMBOL_item_tail = 147,                /* item_tail  */
+  YYSYMBOL_error_item_start = 148,         /* error_item_start  */
+  YYSYMBOL_include_item = 149,             /* include_item  */
+  YYSYMBOL_vardecl_item = 150,             /* vardecl_item  */
+  YYSYMBOL_string_lit_list = 151,          /* string_lit_list  */
+  YYSYMBOL_enum_id_list = 152,             /* enum_id_list  */
+  YYSYMBOL_assign_item = 153,              /* assign_item  */
+  YYSYMBOL_constraint_item = 154,          /* constraint_item  */
+  YYSYMBOL_solve_item = 155,               /* solve_item  */
+  YYSYMBOL_output_item = 156,              /* output_item  */
+  YYSYMBOL_predicate_item = 157,           /* predicate_item  */
+  YYSYMBOL_function_item = 158,            /* function_item  */
+  YYSYMBOL_annotation_item = 159,          /* annotation_item  */
+  YYSYMBOL_operation_item_tail = 160,      /* operation_item_tail  */
+  YYSYMBOL_params = 161,                   /* params  */
+  YYSYMBOL_params_list = 162,              /* params_list  */
+  YYSYMBOL_params_list_head = 163,         /* params_list_head  */
+  YYSYMBOL_comma_or_none = 164,            /* comma_or_none  */
+  YYSYMBOL_ti_expr_and_id_or_anon = 165,   /* ti_expr_and_id_or_anon  */
+  YYSYMBOL_ti_expr_and_id = 166,           /* ti_expr_and_id  */
+  YYSYMBOL_ti_expr_list = 167,             /* ti_expr_list  */
+  YYSYMBOL_ti_expr_list_head = 168,        /* ti_expr_list_head  */
+  YYSYMBOL_ti_expr = 169,                  /* ti_expr  */
+  YYSYMBOL_base_ti_expr = 170,             /* base_ti_expr  */
+  YYSYMBOL_opt_opt = 171,                  /* opt_opt  */
+  YYSYMBOL_base_ti_expr_tail = 172,        /* base_ti_expr_tail  */
+  YYSYMBOL_array_access_expr_list = 173,   /* array_access_expr_list  */
+  YYSYMBOL_array_access_expr_list_head = 174, /* array_access_expr_list_head  */
+  YYSYMBOL_array_access_expr = 175,        /* array_access_expr  */
+  YYSYMBOL_expr_list = 176,                /* expr_list  */
+  YYSYMBOL_expr_list_head = 177,           /* expr_list_head  */
+  YYSYMBOL_set_expr = 178,                 /* set_expr  */
+  YYSYMBOL_expr = 179,                     /* expr  */
+  YYSYMBOL_expr_atom_head = 180,           /* expr_atom_head  */
+  YYSYMBOL_expr_atom_head_nonstring = 181, /* expr_atom_head_nonstring  */
+  YYSYMBOL_string_expr = 182,              /* string_expr  */
+  YYSYMBOL_string_quote_rest = 183,        /* string_quote_rest  */
+  YYSYMBOL_array_access_tail = 184,        /* array_access_tail  */
+  YYSYMBOL_set_literal = 185,              /* set_literal  */
+  YYSYMBOL_set_comp = 186,                 /* set_comp  */
+  YYSYMBOL_comp_tail = 187,                /* comp_tail  */
+  YYSYMBOL_generator_list = 188,           /* generator_list  */
+  YYSYMBOL_generator_list_head = 189,      /* generator_list_head  */
+  YYSYMBOL_generator = 190,                /* generator  */
+  YYSYMBOL_generator_eq = 191,             /* generator_eq  */
+  YYSYMBOL_id_list = 192,                  /* id_list  */
+  YYSYMBOL_id_list_head = 193,             /* id_list_head  */
+  YYSYMBOL_simple_array_literal = 194,     /* simple_array_literal  */
+  YYSYMBOL_simple_array_literal_2d = 195,  /* simple_array_literal_2d  */
+  YYSYMBOL_simple_array_literal_3d_list = 196, /* simple_array_literal_3d_list  */
+  YYSYMBOL_simple_array_literal_2d_list = 197, /* simple_array_literal_2d_list  */
+  YYSYMBOL_simple_array_comp = 198,        /* simple_array_comp  */
+  YYSYMBOL_if_then_else_expr = 199,        /* if_then_else_expr  */
+  YYSYMBOL_elseif_list = 200,              /* elseif_list  */
+  YYSYMBOL_quoted_op = 201,                /* quoted_op  */
+  YYSYMBOL_quoted_op_call = 202,           /* quoted_op_call  */
+  YYSYMBOL_call_expr = 203,                /* call_expr  */
+  YYSYMBOL_comp_or_expr = 204,             /* comp_or_expr  */
+  YYSYMBOL_comp_or_expr_head = 205,        /* comp_or_expr_head  */
+  YYSYMBOL_let_expr = 206,                 /* let_expr  */
+  YYSYMBOL_let_vardecl_item_list = 207,    /* let_vardecl_item_list  */
+  YYSYMBOL_comma_or_semi = 208,            /* comma_or_semi  */
+  YYSYMBOL_let_vardecl_item = 209,         /* let_vardecl_item  */
+  YYSYMBOL_annotations = 210,              /* annotations  */
+  YYSYMBOL_annotation_expr = 211,          /* annotation_expr  */
+  YYSYMBOL_ne_annotations = 212,           /* ne_annotations  */
+  YYSYMBOL_id_or_quoted_op = 213           /* id_or_quoted_op  */
+};
+typedef enum yysymbol_kind_t yysymbol_kind_t;
 
-/* Copy the second part of user declarations.  */
 
 
 
@@ -377,28 +604,75 @@ int mzn_yyparse (void *parm);
 # undef short
 #endif
 
-#ifdef YYTYPE_UINT8
-typedef YYTYPE_UINT8 yytype_uint8;
-#else
-typedef unsigned char yytype_uint8;
+/* On compilers that do not define __PTRDIFF_MAX__ etc., make sure
+   <limits.h> and (if available) <stdint.h> are included
+   so that the code can choose integer types of a good width.  */
+
+#ifndef __PTRDIFF_MAX__
+# include <limits.h> /* INFRINGES ON USER NAME SPACE */
+# if defined __STDC_VERSION__ && 199901 <= __STDC_VERSION__
+#  include <stdint.h> /* INFRINGES ON USER NAME SPACE */
+#  define YY_STDINT_H
+# endif
 #endif
 
-#ifdef YYTYPE_INT8
-typedef YYTYPE_INT8 yytype_int8;
+/* Narrow types that promote to a signed type and that can represent a
+   signed or unsigned integer of at least N bits.  In tables they can
+   save space and decrease cache pressure.  Promoting to a signed type
+   helps avoid bugs in integer arithmetic.  */
+
+#ifdef __INT_LEAST8_MAX__
+typedef __INT_LEAST8_TYPE__ yytype_int8;
+#elif defined YY_STDINT_H
+typedef int_least8_t yytype_int8;
 #else
 typedef signed char yytype_int8;
 #endif
 
-#ifdef YYTYPE_UINT16
-typedef YYTYPE_UINT16 yytype_uint16;
-#else
-typedef unsigned short yytype_uint16;
-#endif
-
-#ifdef YYTYPE_INT16
-typedef YYTYPE_INT16 yytype_int16;
+#ifdef __INT_LEAST16_MAX__
+typedef __INT_LEAST16_TYPE__ yytype_int16;
+#elif defined YY_STDINT_H
+typedef int_least16_t yytype_int16;
 #else
 typedef short yytype_int16;
+#endif
+
+#if defined __UINT_LEAST8_MAX__ && __UINT_LEAST8_MAX__ <= __INT_MAX__
+typedef __UINT_LEAST8_TYPE__ yytype_uint8;
+#elif (!defined __UINT_LEAST8_MAX__ && defined YY_STDINT_H \
+       && UINT_LEAST8_MAX <= INT_MAX)
+typedef uint_least8_t yytype_uint8;
+#elif !defined __UINT_LEAST8_MAX__ && UCHAR_MAX <= INT_MAX
+typedef unsigned char yytype_uint8;
+#else
+typedef short yytype_uint8;
+#endif
+
+#if defined __UINT_LEAST16_MAX__ && __UINT_LEAST16_MAX__ <= __INT_MAX__
+typedef __UINT_LEAST16_TYPE__ yytype_uint16;
+#elif (!defined __UINT_LEAST16_MAX__ && defined YY_STDINT_H \
+       && UINT_LEAST16_MAX <= INT_MAX)
+typedef uint_least16_t yytype_uint16;
+#elif !defined __UINT_LEAST16_MAX__ && USHRT_MAX <= INT_MAX
+typedef unsigned short yytype_uint16;
+#else
+typedef int yytype_uint16;
+#endif
+
+#ifndef YYPTRDIFF_T
+# if defined __PTRDIFF_TYPE__ && defined __PTRDIFF_MAX__
+#  define YYPTRDIFF_T __PTRDIFF_TYPE__
+#  define YYPTRDIFF_MAXIMUM __PTRDIFF_MAX__
+# elif defined PTRDIFF_MAX
+#  ifndef ptrdiff_t
+#   include <stddef.h> /* INFRINGES ON USER NAME SPACE */
+#  endif
+#  define YYPTRDIFF_T ptrdiff_t
+#  define YYPTRDIFF_MAXIMUM PTRDIFF_MAX
+# else
+#  define YYPTRDIFF_T long
+#  define YYPTRDIFF_MAXIMUM LONG_MAX
+# endif
 #endif
 
 #ifndef YYSIZE_T
@@ -406,7 +680,7 @@ typedef short yytype_int16;
 #  define YYSIZE_T __SIZE_TYPE__
 # elif defined size_t
 #  define YYSIZE_T size_t
-# elif ! defined YYSIZE_T
+# elif defined __STDC_VERSION__ && 199901 <= __STDC_VERSION__
 #  include <stddef.h> /* INFRINGES ON USER NAME SPACE */
 #  define YYSIZE_T size_t
 # else
@@ -414,7 +688,20 @@ typedef short yytype_int16;
 # endif
 #endif
 
-#define YYSIZE_MAXIMUM ((YYSIZE_T) -1)
+#define YYSIZE_MAXIMUM                                  \
+  YY_CAST (YYPTRDIFF_T,                                 \
+           (YYPTRDIFF_MAXIMUM < YY_CAST (YYSIZE_T, -1)  \
+            ? YYPTRDIFF_MAXIMUM                         \
+            : YY_CAST (YYSIZE_T, -1)))
+
+#define YYSIZEOF(X) YY_CAST (YYPTRDIFF_T, sizeof (X))
+
+
+/* Stored state numbers (used for stacks). */
+typedef yytype_int16 yy_state_t;
+
+/* State numbers in computations.  */
+typedef int yy_state_fast_t;
 
 #ifndef YY_
 # if defined YYENABLE_NLS && YYENABLE_NLS
@@ -428,30 +715,20 @@ typedef short yytype_int16;
 # endif
 #endif
 
-#ifndef YY_ATTRIBUTE
-# if (defined __GNUC__                                               \
-      && (2 < __GNUC__ || (__GNUC__ == 2 && 96 <= __GNUC_MINOR__)))  \
-     || defined __SUNPRO_C && 0x5110 <= __SUNPRO_C
-#  define YY_ATTRIBUTE(Spec) __attribute__(Spec)
+
+#ifndef YY_ATTRIBUTE_PURE
+# if defined __GNUC__ && 2 < __GNUC__ + (96 <= __GNUC_MINOR__)
+#  define YY_ATTRIBUTE_PURE __attribute__ ((__pure__))
 # else
-#  define YY_ATTRIBUTE(Spec) /* empty */
+#  define YY_ATTRIBUTE_PURE
 # endif
 #endif
 
-#ifndef YY_ATTRIBUTE_PURE
-# define YY_ATTRIBUTE_PURE   YY_ATTRIBUTE ((__pure__))
-#endif
-
 #ifndef YY_ATTRIBUTE_UNUSED
-# define YY_ATTRIBUTE_UNUSED YY_ATTRIBUTE ((__unused__))
-#endif
-
-#if !defined _Noreturn \
-     && (!defined __STDC_VERSION__ || __STDC_VERSION__ < 201112)
-# if defined _MSC_VER && 1200 <= _MSC_VER
-#  define _Noreturn __declspec (noreturn)
+# if defined __GNUC__ && 2 < __GNUC__ + (7 <= __GNUC_MINOR__)
+#  define YY_ATTRIBUTE_UNUSED __attribute__ ((__unused__))
 # else
-#  define _Noreturn YY_ATTRIBUTE ((__noreturn__))
+#  define YY_ATTRIBUTE_UNUSED
 # endif
 #endif
 
@@ -464,11 +741,11 @@ typedef short yytype_int16;
 
 #if defined __GNUC__ && ! defined __ICC && 407 <= __GNUC__ * 100 + __GNUC_MINOR__
 /* Suppress an incorrect diagnostic about yylval being uninitialized.  */
-# define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN \
-    _Pragma ("GCC diagnostic push") \
-    _Pragma ("GCC diagnostic ignored \"-Wuninitialized\"")\
+# define YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN                            \
+    _Pragma ("GCC diagnostic push")                                     \
+    _Pragma ("GCC diagnostic ignored \"-Wuninitialized\"")              \
     _Pragma ("GCC diagnostic ignored \"-Wmaybe-uninitialized\"")
-# define YY_IGNORE_MAYBE_UNINITIALIZED_END \
+# define YY_IGNORE_MAYBE_UNINITIALIZED_END      \
     _Pragma ("GCC diagnostic pop")
 #else
 # define YY_INITIAL_VALUE(Value) Value
@@ -481,8 +758,22 @@ typedef short yytype_int16;
 # define YY_INITIAL_VALUE(Value) /* Nothing. */
 #endif
 
+#if defined __cplusplus && defined __GNUC__ && ! defined __ICC && 6 <= __GNUC__
+# define YY_IGNORE_USELESS_CAST_BEGIN                          \
+    _Pragma ("GCC diagnostic push")                            \
+    _Pragma ("GCC diagnostic ignored \"-Wuseless-cast\"")
+# define YY_IGNORE_USELESS_CAST_END            \
+    _Pragma ("GCC diagnostic pop")
+#endif
+#ifndef YY_IGNORE_USELESS_CAST_BEGIN
+# define YY_IGNORE_USELESS_CAST_BEGIN
+# define YY_IGNORE_USELESS_CAST_END
+#endif
 
-#if ! defined yyoverflow || YYERROR_VERBOSE
+
+#define YY_ASSERT(E) ((void) (0 && (E)))
+
+#if 1
 
 /* The parser invokes alloca or malloc; define the necessary symbols.  */
 
@@ -547,8 +838,7 @@ void free (void *); /* INFRINGES ON USER NAME SPACE */
 #   endif
 #  endif
 # endif
-#endif /* ! defined yyoverflow || YYERROR_VERBOSE */
-
+#endif /* 1 */
 
 #if (! defined yyoverflow \
      && (! defined __cplusplus \
@@ -558,18 +848,19 @@ void free (void *); /* INFRINGES ON USER NAME SPACE */
 /* A type that is properly aligned for any stack member.  */
 union yyalloc
 {
-  yytype_int16 yyss_alloc;
+  yy_state_t yyss_alloc;
   YYSTYPE yyvs_alloc;
   YYLTYPE yyls_alloc;
 };
 
 /* The size of the maximum gap between one aligned stack and the next.  */
-# define YYSTACK_GAP_MAXIMUM (sizeof (union yyalloc) - 1)
+# define YYSTACK_GAP_MAXIMUM (YYSIZEOF (union yyalloc) - 1)
 
 /* The size of an array large to enough to hold all stacks, each with
    N elements.  */
 # define YYSTACK_BYTES(N) \
-     ((N) * (sizeof (yytype_int16) + sizeof (YYSTYPE) + sizeof (YYLTYPE)) \
+     ((N) * (YYSIZEOF (yy_state_t) + YYSIZEOF (YYSTYPE) \
+             + YYSIZEOF (YYLTYPE)) \
       + 2 * YYSTACK_GAP_MAXIMUM)
 
 # define YYCOPY_NEEDED 1
@@ -582,11 +873,11 @@ union yyalloc
 # define YYSTACK_RELOCATE(Stack_alloc, Stack)                           \
     do                                                                  \
       {                                                                 \
-        YYSIZE_T yynewbytes;                                            \
+        YYPTRDIFF_T yynewbytes;                                         \
         YYCOPY (&yyptr->Stack_alloc, Stack, yysize);                    \
         Stack = &yyptr->Stack_alloc;                                    \
-        yynewbytes = yystacksize * sizeof (*Stack) + YYSTACK_GAP_MAXIMUM; \
-        yyptr += yynewbytes / sizeof (*yyptr);                          \
+        yynewbytes = yystacksize * YYSIZEOF (*Stack) + YYSTACK_GAP_MAXIMUM; \
+        yyptr += yynewbytes / YYSIZEOF (*yyptr);                        \
       }                                                                 \
     while (0)
 
@@ -598,12 +889,12 @@ union yyalloc
 # ifndef YYCOPY
 #  if defined __GNUC__ && 1 < __GNUC__
 #   define YYCOPY(Dst, Src, Count) \
-      __builtin_memcpy (Dst, Src, (Count) * sizeof (*(Src)))
+      __builtin_memcpy (Dst, Src, YY_CAST (YYSIZE_T, (Count)) * sizeof (*(Src)))
 #  else
 #   define YYCOPY(Dst, Src, Count)              \
       do                                        \
         {                                       \
-          YYSIZE_T yyi;                         \
+          YYPTRDIFF_T yyi;                      \
           for (yyi = 0; yyi < (Count); yyi++)   \
             (Dst)[yyi] = (Src)[yyi];            \
         }                                       \
@@ -626,16 +917,18 @@ union yyalloc
 /* YYNSTATES -- Number of states.  */
 #define YYNSTATES  540
 
-/* YYTRANSLATE[YYX] -- Symbol number corresponding to YYX as returned
-   by yylex, with out-of-bounds checking.  */
-#define YYUNDEFTOK  2
 #define YYMAXUTOK   386
 
-#define YYTRANSLATE(YYX)                                                \
-  ((unsigned) (YYX) <= YYMAXUTOK ? yytranslate[YYX] : YYUNDEFTOK)
+
+/* YYTRANSLATE(TOKEN-NUM) -- Symbol number corresponding to TOKEN-NUM
+   as returned by yylex, with out-of-bounds checking.  */
+#define YYTRANSLATE(YYX)                                \
+  (0 <= (YYX) && (YYX) <= YYMAXUTOK                     \
+   ? YY_CAST (yysymbol_kind_t, yytranslate[YYX])        \
+   : YYSYMBOL_YYUNDEF)
 
 /* YYTRANSLATE[TOKEN-NUM] -- Symbol number corresponding to TOKEN-NUM
-   as returned by yylex, without out-of-bounds checking.  */
+   as returned by yylex.  */
 static const yytype_uint8 yytranslate[] =
 {
        0,     2,     2,     2,     2,     2,     2,     2,     2,     2,
@@ -681,50 +974,57 @@ static const yytype_uint8 yytranslate[] =
 
 #if YYDEBUG
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
-static const yytype_uint16 yyrline[] =
+static const yytype_int16 yyrline[] =
 {
-       0,   271,   271,   273,   275,   278,   287,   296,   305,   314,
-     316,   319,   327,   336,   336,   338,   354,   358,   360,   362,
-     363,   365,   367,   369,   371,   373,   376,   376,   376,   377,
-     377,   377,   377,   377,   378,   381,   405,   411,   418,   426,
-     436,   448,   463,   464,   468,   476,   477,   481,   485,   491,
-     493,   500,   505,   510,   517,   521,   529,   539,   546,   555,
-     567,   575,   576,   581,   582,   584,   589,   590,   594,   598,
-     603,   603,   606,   608,   612,   617,   621,   623,   627,   628,
-     634,   643,   646,   654,   662,   671,   680,   689,   702,   703,
-     707,   709,   711,   713,   715,   717,   719,   724,   730,   733,
-     735,   739,   741,   743,   752,   763,   766,   768,   774,   775,
-     777,   779,   781,   783,   792,   801,   803,   805,   807,   809,
-     811,   813,   815,   817,   819,   824,   829,   834,   839,   845,
-     847,   860,   861,   863,   865,   867,   869,   871,   873,   875,
-     877,   879,   881,   883,   885,   887,   889,   891,   893,   895,
-     897,   899,   908,   917,   919,   921,   923,   925,   927,   929,
-     931,   933,   935,   940,   945,   950,   955,   961,   963,   970,
-     982,   984,   988,   990,   992,   994,   997,   999,  1002,  1004,
-    1006,  1008,  1010,  1012,  1013,  1016,  1017,  1020,  1021,  1024,
-    1025,  1028,  1029,  1032,  1033,  1036,  1037,  1038,  1043,  1045,
-    1051,  1056,  1064,  1071,  1080,  1082,  1087,  1093,  1096,  1099,
-    1101,  1103,  1109,  1111,  1113,  1121,  1123,  1126,  1129,  1132,
-    1134,  1138,  1140,  1144,  1146,  1157,  1168,  1208,  1211,  1216,
-    1223,  1228,  1232,  1238,  1245,  1261,  1262,  1266,  1268,  1270,
-    1272,  1274,  1276,  1278,  1280,  1282,  1284,  1286,  1288,  1290,
-    1292,  1294,  1296,  1298,  1300,  1302,  1304,  1306,  1308,  1310,
-    1312,  1314,  1316,  1318,  1320,  1324,  1332,  1364,  1366,  1367,
-    1387,  1442,  1445,  1451,  1457,  1459,  1463,  1470,  1479,  1481,
-    1489,  1491,  1500,  1500,  1503,  1509,  1520,  1521,  1524,  1526,
-    1530,  1534,  1538,  1540,  1542,  1544,  1546,  1548,  1550,  1552,
-    1554,  1556,  1558,  1560,  1562,  1564,  1566,  1568,  1570,  1572,
-    1574,  1576,  1578,  1580,  1582,  1584,  1586,  1588,  1590,  1592,
-    1594,  1596
+       0,   272,   272,   274,   276,   279,   288,   297,   306,   315,
+     317,   320,   328,   337,   337,   339,   355,   359,   361,   363,
+     364,   366,   368,   370,   372,   374,   377,   377,   377,   378,
+     378,   378,   378,   378,   379,   382,   406,   412,   419,   427,
+     437,   449,   464,   465,   469,   477,   478,   482,   486,   492,
+     494,   501,   506,   511,   518,   522,   530,   540,   547,   556,
+     568,   576,   577,   582,   583,   585,   590,   591,   595,   599,
+     604,   604,   607,   609,   613,   618,   622,   624,   628,   629,
+     635,   644,   647,   655,   663,   672,   681,   690,   703,   704,
+     708,   710,   712,   714,   716,   718,   720,   725,   731,   734,
+     736,   740,   742,   744,   753,   764,   767,   769,   775,   776,
+     778,   780,   782,   784,   793,   802,   804,   806,   808,   810,
+     812,   814,   816,   818,   820,   825,   830,   835,   840,   846,
+     848,   861,   862,   864,   866,   868,   870,   872,   874,   876,
+     878,   880,   882,   884,   886,   888,   890,   892,   894,   896,
+     898,   900,   909,   918,   920,   922,   924,   926,   928,   930,
+     932,   934,   936,   941,   946,   951,   956,   962,   964,   971,
+     983,   985,   989,   991,   993,   995,   998,  1000,  1003,  1005,
+    1007,  1009,  1011,  1013,  1014,  1017,  1018,  1021,  1022,  1025,
+    1026,  1029,  1030,  1033,  1034,  1037,  1038,  1039,  1044,  1046,
+    1052,  1057,  1065,  1072,  1081,  1083,  1088,  1094,  1097,  1100,
+    1102,  1104,  1110,  1112,  1114,  1122,  1124,  1127,  1130,  1133,
+    1135,  1139,  1141,  1145,  1147,  1158,  1169,  1209,  1212,  1217,
+    1224,  1229,  1233,  1239,  1246,  1262,  1263,  1267,  1269,  1271,
+    1273,  1275,  1277,  1279,  1281,  1283,  1285,  1287,  1289,  1291,
+    1293,  1295,  1297,  1299,  1301,  1303,  1305,  1307,  1309,  1311,
+    1313,  1315,  1317,  1319,  1321,  1325,  1333,  1365,  1367,  1368,
+    1388,  1443,  1446,  1452,  1458,  1460,  1464,  1471,  1480,  1482,
+    1490,  1492,  1501,  1501,  1504,  1510,  1521,  1522,  1525,  1527,
+    1531,  1535,  1539,  1541,  1543,  1545,  1547,  1549,  1551,  1553,
+    1555,  1557,  1559,  1561,  1563,  1565,  1567,  1569,  1571,  1573,
+    1575,  1577,  1579,  1581,  1583,  1585,  1587,  1589,  1591,  1593,
+    1595,  1597
 };
 #endif
 
-#if YYDEBUG || YYERROR_VERBOSE || 1
+/** Accessing symbol of state STATE.  */
+#define YY_ACCESSING_SYMBOL(State) YY_CAST (yysymbol_kind_t, yystos[State])
+
+#if 1
+/* The user-facing name of the symbol whose (internal) number is
+   YYSYMBOL.  No bounds checking.  */
+static const char *yysymbol_name (yysymbol_kind_t yysymbol) YY_ATTRIBUTE_UNUSED;
+
 /* YYTNAME[SYMBOL-NUM] -- String name of the symbol SYMBOL-NUM.
    First, the terminals, then, starting at YYNTOKENS, nonterminals.  */
 static const char *const yytname[] =
 {
-  "\"end of file\"", "error", "$undefined", "\"integer literal\"",
+  "\"end of file\"", "error", "\"invalid token\"", "\"integer literal\"",
   "\"bool literal\"", "\"float literal\"", "\"identifier\"",
   "\"quoted identifier\"", "\"string literal\"",
   "\"interpolated string start\"", "\"interpolated string middle\"",
@@ -776,12 +1076,18 @@ static const char *const yytname[] =
   "comma_or_semi", "let_vardecl_item", "annotations", "annotation_expr",
   "ne_annotations", "id_or_quoted_op", YY_NULLPTR
 };
+
+static const char *
+yysymbol_name (yysymbol_kind_t yysymbol)
+{
+  return yytname[yysymbol];
+}
 #endif
 
-# ifdef YYPRINT
+#ifdef YYPRINT
 /* YYTOKNUM[NUM] -- (External) token number corresponding to the
    (internal) symbol number NUM (which must be that of a token).  */
-static const yytype_uint16 yytoknum[] =
+static const yytype_int16 yytoknum[] =
 {
        0,   256,   257,   258,   259,   260,   261,   262,   263,   264,
      265,   266,   267,   268,   269,   270,   271,   272,   273,   274,
@@ -798,17 +1104,17 @@ static const yytype_uint16 yytoknum[] =
      375,   376,   377,   378,   379,   380,   381,   382,   383,   384,
      385,   386,    59,   123,   125,    40,    41,    44,    58,   124
 };
-# endif
+#endif
 
-#define YYPACT_NINF -402
+#define YYPACT_NINF (-402)
 
-#define yypact_value_is_default(Yystate) \
-  (!!((Yystate) == (-402)))
+#define yypact_value_is_default(Yyn) \
+  ((Yyn) == YYPACT_NINF)
 
-#define YYTABLE_NINF -89
+#define YYTABLE_NINF (-89)
 
-#define yytable_value_is_error(Yytable_value) \
-  (!!((Yytable_value) == (-89)))
+#define yytable_value_is_error(Yyn) \
+  ((Yyn) == YYTABLE_NINF)
 
   /* YYPACT[STATE-NUM] -- Index in YYTABLE of the portion describing
      STATE-NUM.  */
@@ -873,7 +1179,7 @@ static const yytype_int16 yypact[] =
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
      Performed when YYTABLE does not specify something else to do.  Zero
      means the default is an error.  */
-static const yytype_uint16 yydefact[] =
+static const yytype_int16 yydefact[] =
 {
        0,     0,   179,   178,   181,   174,   198,     0,    96,    97,
       88,    11,    88,    88,   182,    94,     0,     0,    91,     0,
@@ -2079,7 +2385,7 @@ static const yytype_uint8 yyr1[] =
 };
 
   /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
-static const yytype_uint8 yyr2[] =
+static const yytype_int8 yyr2[] =
 {
        0,     2,     1,     0,     2,     1,     2,     3,     4,     2,
        3,     1,     2,     0,     1,     2,     1,     1,     1,     1,
@@ -2117,10 +2423,10 @@ static const yytype_uint8 yyr2[] =
 };
 
 
+enum { YYENOMEM = -2 };
+
 #define yyerrok         (yyerrstatus = 0)
 #define yyclearin       (yychar = YYEMPTY)
-#define YYEMPTY         (-2)
-#define YYEOF           0
 
 #define YYACCEPT        goto yyacceptlab
 #define YYABORT         goto yyabortlab
@@ -2129,27 +2435,26 @@ static const yytype_uint8 yyr2[] =
 
 #define YYRECOVERING()  (!!yyerrstatus)
 
-#define YYBACKUP(Token, Value)                                  \
-do                                                              \
-  if (yychar == YYEMPTY)                                        \
-    {                                                           \
-      yychar = (Token);                                         \
-      yylval = (Value);                                         \
-      YYPOPSTACK (yylen);                                       \
-      yystate = *yyssp;                                         \
-      goto yybackup;                                            \
-    }                                                           \
-  else                                                          \
-    {                                                           \
-      yyerror (&yylloc, parm, YY_("syntax error: cannot back up")); \
-      YYERROR;                                                  \
-    }                                                           \
-while (0)
+#define YYBACKUP(Token, Value)                                    \
+  do                                                              \
+    if (yychar == YYEMPTY)                                        \
+      {                                                           \
+        yychar = (Token);                                         \
+        yylval = (Value);                                         \
+        YYPOPSTACK (yylen);                                       \
+        yystate = *yyssp;                                         \
+        goto yybackup;                                            \
+      }                                                           \
+    else                                                          \
+      {                                                           \
+        yyerror (&yylloc, parm, YY_("syntax error: cannot back up")); \
+        YYERROR;                                                  \
+      }                                                           \
+  while (0)
 
-/* Error token number */
-#define YYTERROR        1
-#define YYERRCODE       256
-
+/* Backward compatibility with an undocumented macro.
+   Use YYerror or YYUNDEF. */
+#define YYERRCODE YYUNDEF
 
 /* YYLLOC_DEFAULT -- Set CURRENT to span from RHS[1] to RHS[N].
    If N is 0, then set CURRENT to the empty location which ends
@@ -2197,16 +2502,16 @@ do {                                            \
    This macro was not mandated originally: define only if we know
    we won't break user code: when these are the locations we know.  */
 
-#ifndef YY_LOCATION_PRINT
-# if defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL
+# ifndef YY_LOCATION_PRINT
+#  if defined YYLTYPE_IS_TRIVIAL && YYLTYPE_IS_TRIVIAL
 
 /* Print *YYLOCP on YYO.  Private, do not rely on its existence. */
 
 YY_ATTRIBUTE_UNUSED
-static unsigned
+static int
 yy_location_print_ (FILE *yyo, YYLTYPE const * const yylocp)
 {
-  unsigned res = 0;
+  int res = 0;
   int end_col = 0 != yylocp->last_column ? yylocp->last_column - 1 : 0;
   if (0 <= yylocp->first_line)
     {
@@ -2228,62 +2533,66 @@ yy_location_print_ (FILE *yyo, YYLTYPE const * const yylocp)
   return res;
  }
 
-#  define YY_LOCATION_PRINT(File, Loc)          \
+#   define YY_LOCATION_PRINT(File, Loc)          \
   yy_location_print_ (File, &(Loc))
 
-# else
-#  define YY_LOCATION_PRINT(File, Loc) ((void) 0)
-# endif
-#endif
+#  else
+#   define YY_LOCATION_PRINT(File, Loc) ((void) 0)
+#  endif
+# endif /* !defined YY_LOCATION_PRINT */
 
 
-# define YY_SYMBOL_PRINT(Title, Type, Value, Location)                    \
+# define YY_SYMBOL_PRINT(Title, Kind, Value, Location)                    \
 do {                                                                      \
   if (yydebug)                                                            \
     {                                                                     \
       YYFPRINTF (stderr, "%s ", Title);                                   \
       yy_symbol_print (stderr,                                            \
-                  Type, Value, Location, parm); \
+                  Kind, Value, Location, parm); \
       YYFPRINTF (stderr, "\n");                                           \
     }                                                                     \
 } while (0)
 
 
-/*----------------------------------------.
-| Print this symbol's value on YYOUTPUT.  |
-`----------------------------------------*/
+/*-----------------------------------.
+| Print this symbol's value on YYO.  |
+`-----------------------------------*/
 
 static void
-yy_symbol_value_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, void *parm)
+yy_symbol_value_print (FILE *yyo,
+                       yysymbol_kind_t yykind, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, void *parm)
 {
-  FILE *yyo = yyoutput;
-  YYUSE (yyo);
+  FILE *yyoutput = yyo;
+  YYUSE (yyoutput);
   YYUSE (yylocationp);
   YYUSE (parm);
   if (!yyvaluep)
     return;
 # ifdef YYPRINT
-  if (yytype < YYNTOKENS)
-    YYPRINT (yyoutput, yytoknum[yytype], *yyvaluep);
+  if (yykind < YYNTOKENS)
+    YYPRINT (yyo, yytoknum[yykind], *yyvaluep);
 # endif
-  YYUSE (yytype);
+  YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
+  YYUSE (yykind);
+  YY_IGNORE_MAYBE_UNINITIALIZED_END
 }
 
 
-/*--------------------------------.
-| Print this symbol on YYOUTPUT.  |
-`--------------------------------*/
+/*---------------------------.
+| Print this symbol on YYO.  |
+`---------------------------*/
 
 static void
-yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, void *parm)
+yy_symbol_print (FILE *yyo,
+                 yysymbol_kind_t yykind, YYSTYPE const * const yyvaluep, YYLTYPE const * const yylocationp, void *parm)
 {
-  YYFPRINTF (yyoutput, "%s %s (",
-             yytype < YYNTOKENS ? "token" : "nterm", yytname[yytype]);
+  YYFPRINTF (yyo, "%s %s (",
+             yykind < YYNTOKENS ? "token" : "nterm", yysymbol_name (yykind));
 
-  YY_LOCATION_PRINT (yyoutput, *yylocationp);
-  YYFPRINTF (yyoutput, ": ");
-  yy_symbol_value_print (yyoutput, yytype, yyvaluep, yylocationp, parm);
-  YYFPRINTF (yyoutput, ")");
+  YY_LOCATION_PRINT (yyo, *yylocationp);
+  YYFPRINTF (yyo, ": ");
+  yy_symbol_value_print (yyo, yykind, yyvaluep, yylocationp, parm);
+  YYFPRINTF (yyo, ")");
 }
 
 /*------------------------------------------------------------------.
@@ -2292,7 +2601,7 @@ yy_symbol_print (FILE *yyoutput, int yytype, YYSTYPE const * const yyvaluep, YYL
 `------------------------------------------------------------------*/
 
 static void
-yy_stack_print (yytype_int16 *yybottom, yytype_int16 *yytop)
+yy_stack_print (yy_state_t *yybottom, yy_state_t *yytop)
 {
   YYFPRINTF (stderr, "Stack now");
   for (; yybottom <= yytop; yybottom++)
@@ -2315,21 +2624,22 @@ do {                                                            \
 `------------------------------------------------*/
 
 static void
-yy_reduce_print (yytype_int16 *yyssp, YYSTYPE *yyvsp, YYLTYPE *yylsp, int yyrule, void *parm)
+yy_reduce_print (yy_state_t *yyssp, YYSTYPE *yyvsp, YYLTYPE *yylsp,
+                 int yyrule, void *parm)
 {
-  unsigned long yylno = yyrline[yyrule];
+  int yylno = yyrline[yyrule];
   int yynrhs = yyr2[yyrule];
   int yyi;
-  YYFPRINTF (stderr, "Reducing stack by rule %d (line %lu):\n",
+  YYFPRINTF (stderr, "Reducing stack by rule %d (line %d):\n",
              yyrule - 1, yylno);
   /* The symbols being reduced.  */
   for (yyi = 0; yyi < yynrhs; yyi++)
     {
       YYFPRINTF (stderr, "   $%d = ", yyi + 1);
       yy_symbol_print (stderr,
-                       yystos[yyssp[yyi + 1 - yynrhs]],
-                       &(yyvsp[(yyi + 1) - (yynrhs)])
-                       , &(yylsp[(yyi + 1) - (yynrhs)])                       , parm);
+                       YY_ACCESSING_SYMBOL (+yyssp[yyi + 1 - yynrhs]),
+                       &yyvsp[(yyi + 1) - (yynrhs)],
+                       &(yylsp[(yyi + 1) - (yynrhs)]), parm);
       YYFPRINTF (stderr, "\n");
     }
 }
@@ -2344,8 +2654,8 @@ do {                                    \
    multiple parsers can coexist.  */
 int yydebug;
 #else /* !YYDEBUG */
-# define YYDPRINTF(Args)
-# define YY_SYMBOL_PRINT(Title, Type, Value, Location)
+# define YYDPRINTF(Args) ((void) 0)
+# define YY_SYMBOL_PRINT(Title, Kind, Value, Location)
 # define YY_STACK_PRINT(Bottom, Top)
 # define YY_REDUCE_PRINT(Rule)
 #endif /* !YYDEBUG */
@@ -2368,28 +2678,77 @@ int yydebug;
 #endif
 
 
-#if YYERROR_VERBOSE
+/* Context of a parse error.  */
+typedef struct
+{
+  yy_state_t *yyssp;
+  yysymbol_kind_t yytoken;
+  YYLTYPE *yylloc;
+} yypcontext_t;
 
-# ifndef yystrlen
-#  if defined __GLIBC__ && defined _STRING_H
-#   define yystrlen strlen
-#  else
+/* Put in YYARG at most YYARGN of the expected tokens given the
+   current YYCTX, and return the number of tokens stored in YYARG.  If
+   YYARG is null, return the number of expected tokens (guaranteed to
+   be less than YYNTOKENS).  Return YYENOMEM on memory exhaustion.
+   Return 0 if there are more than YYARGN expected tokens, yet fill
+   YYARG up to YYARGN. */
+static int
+yypcontext_expected_tokens (const yypcontext_t *yyctx,
+                            yysymbol_kind_t yyarg[], int yyargn)
+{
+  /* Actual size of YYARG. */
+  int yycount = 0;
+  int yyn = yypact[+*yyctx->yyssp];
+  if (!yypact_value_is_default (yyn))
+    {
+      /* Start YYX at -YYN if negative to avoid negative indexes in
+         YYCHECK.  In other words, skip the first -YYN actions for
+         this state because they are default actions.  */
+      int yyxbegin = yyn < 0 ? -yyn : 0;
+      /* Stay within bounds of both yycheck and yytname.  */
+      int yychecklim = YYLAST - yyn + 1;
+      int yyxend = yychecklim < YYNTOKENS ? yychecklim : YYNTOKENS;
+      int yyx;
+      for (yyx = yyxbegin; yyx < yyxend; ++yyx)
+        if (yycheck[yyx + yyn] == yyx && yyx != YYSYMBOL_YYerror
+            && !yytable_value_is_error (yytable[yyx + yyn]))
+          {
+            if (!yyarg)
+              ++yycount;
+            else if (yycount == yyargn)
+              return 0;
+            else
+              yyarg[yycount++] = YY_CAST (yysymbol_kind_t, yyx);
+          }
+    }
+  if (yyarg && yycount == 0 && 0 < yyargn)
+    yyarg[0] = YYSYMBOL_YYEMPTY;
+  return yycount;
+}
+
+
+
+
+#ifndef yystrlen
+# if defined __GLIBC__ && defined _STRING_H
+#  define yystrlen(S) (YY_CAST (YYPTRDIFF_T, strlen (S)))
+# else
 /* Return the length of YYSTR.  */
-static YYSIZE_T
+static YYPTRDIFF_T
 yystrlen (const char *yystr)
 {
-  YYSIZE_T yylen;
+  YYPTRDIFF_T yylen;
   for (yylen = 0; yystr[yylen]; yylen++)
     continue;
   return yylen;
 }
-#  endif
 # endif
+#endif
 
-# ifndef yystpcpy
-#  if defined __GLIBC__ && defined _STRING_H && defined _GNU_SOURCE
-#   define yystpcpy stpcpy
-#  else
+#ifndef yystpcpy
+# if defined __GLIBC__ && defined _STRING_H && defined _GNU_SOURCE
+#  define yystpcpy stpcpy
+# else
 /* Copy YYSRC to YYDEST, returning the address of the terminating '\0' in
    YYDEST.  */
 static char *
@@ -2403,10 +2762,10 @@ yystpcpy (char *yydest, const char *yysrc)
 
   return yyd - 1;
 }
-#  endif
 # endif
+#endif
 
-# ifndef yytnamerr
+#ifndef yytnamerr
 /* Copy to YYRES the contents of YYSTR after stripping away unnecessary
    quotes and backslashes, so that it's suitable for yyerror.  The
    heuristic is that double-quoting is unnecessary unless the string
@@ -2414,14 +2773,13 @@ yystpcpy (char *yydest, const char *yysrc)
    backslash-backslash).  YYSTR is taken from yytname.  If YYRES is
    null, do not copy; instead, return the length of what the result
    would have been.  */
-static YYSIZE_T
+static YYPTRDIFF_T
 yytnamerr (char *yyres, const char *yystr)
 {
   if (*yystr == '"')
     {
-      YYSIZE_T yyn = 0;
+      YYPTRDIFF_T yyn = 0;
       char const *yyp = yystr;
-
       for (;;)
         switch (*++yyp)
           {
@@ -2432,7 +2790,10 @@ yytnamerr (char *yyres, const char *yystr)
           case '\\':
             if (*++yyp != '\\')
               goto do_not_strip_quotes;
-            /* Fall through.  */
+            else
+              goto append;
+
+          append:
           default:
             if (yyres)
               yyres[yyn] = *yyp;
@@ -2447,36 +2808,20 @@ yytnamerr (char *yyres, const char *yystr)
     do_not_strip_quotes: ;
     }
 
-  if (! yyres)
+  if (yyres)
+    return yystpcpy (yyres, yystr) - yyres;
+  else
     return yystrlen (yystr);
-
-  return yystpcpy (yyres, yystr) - yyres;
 }
-# endif
+#endif
 
-/* Copy into *YYMSG, which is of size *YYMSG_ALLOC, an error message
-   about the unexpected token YYTOKEN for the state stack whose top is
-   YYSSP.
 
-   Return 0 if *YYMSG was successfully written.  Return 1 if *YYMSG is
-   not large enough to hold the message.  In that case, also set
-   *YYMSG_ALLOC to the required number of bytes.  Return 2 if the
-   required number of bytes is too large to store.  */
 static int
-yysyntax_error (YYSIZE_T *yymsg_alloc, char **yymsg,
-                yytype_int16 *yyssp, int yytoken)
+yy_syntax_error_arguments (const yypcontext_t *yyctx,
+                           yysymbol_kind_t yyarg[], int yyargn)
 {
-  YYSIZE_T yysize0 = yytnamerr (YY_NULLPTR, yytname[yytoken]);
-  YYSIZE_T yysize = yysize0;
-  enum { YYERROR_VERBOSE_ARGS_MAXIMUM = 5 };
-  /* Internationalized format string. */
-  const char *yyformat = YY_NULLPTR;
-  /* Arguments of yyformat. */
-  char const *yyarg[YYERROR_VERBOSE_ARGS_MAXIMUM];
-  /* Number of reported tokens (one for the "unexpected", one per
-     "expected"). */
+  /* Actual size of YYARG. */
   int yycount = 0;
-
   /* There are many possibilities here to consider:
      - If this state is a consistent state with a default action, then
        the only way this function was invoked is if the default action
@@ -2500,49 +2845,54 @@ yysyntax_error (YYSIZE_T *yymsg_alloc, char **yymsg,
        one exception: it will still contain any token that will not be
        accepted due to an error action in a later state.
   */
-  if (yytoken != YYEMPTY)
+  if (yyctx->yytoken != YYSYMBOL_YYEMPTY)
     {
-      int yyn = yypact[*yyssp];
-      yyarg[yycount++] = yytname[yytoken];
-      if (!yypact_value_is_default (yyn))
-        {
-          /* Start YYX at -YYN if negative to avoid negative indexes in
-             YYCHECK.  In other words, skip the first -YYN actions for
-             this state because they are default actions.  */
-          int yyxbegin = yyn < 0 ? -yyn : 0;
-          /* Stay within bounds of both yycheck and yytname.  */
-          int yychecklim = YYLAST - yyn + 1;
-          int yyxend = yychecklim < YYNTOKENS ? yychecklim : YYNTOKENS;
-          int yyx;
-
-          for (yyx = yyxbegin; yyx < yyxend; ++yyx)
-            if (yycheck[yyx + yyn] == yyx && yyx != YYTERROR
-                && !yytable_value_is_error (yytable[yyx + yyn]))
-              {
-                if (yycount == YYERROR_VERBOSE_ARGS_MAXIMUM)
-                  {
-                    yycount = 1;
-                    yysize = yysize0;
-                    break;
-                  }
-                yyarg[yycount++] = yytname[yyx];
-                {
-                  YYSIZE_T yysize1 = yysize + yytnamerr (YY_NULLPTR, yytname[yyx]);
-                  if (! (yysize <= yysize1
-                         && yysize1 <= YYSTACK_ALLOC_MAXIMUM))
-                    return 2;
-                  yysize = yysize1;
-                }
-              }
-        }
+      int yyn;
+      if (yyarg)
+        yyarg[yycount] = yyctx->yytoken;
+      ++yycount;
+      yyn = yypcontext_expected_tokens (yyctx,
+                                        yyarg ? yyarg + 1 : yyarg, yyargn - 1);
+      if (yyn == YYENOMEM)
+        return YYENOMEM;
+      else
+        yycount += yyn;
     }
+  return yycount;
+}
+
+/* Copy into *YYMSG, which is of size *YYMSG_ALLOC, an error message
+   about the unexpected token YYTOKEN for the state stack whose top is
+   YYSSP.
+
+   Return 0 if *YYMSG was successfully written.  Return -1 if *YYMSG is
+   not large enough to hold the message.  In that case, also set
+   *YYMSG_ALLOC to the required number of bytes.  Return YYENOMEM if the
+   required number of bytes is too large to store.  */
+static int
+yysyntax_error (YYPTRDIFF_T *yymsg_alloc, char **yymsg,
+                const yypcontext_t *yyctx)
+{
+  enum { YYARGS_MAX = 5 };
+  /* Internationalized format string. */
+  const char *yyformat = YY_NULLPTR;
+  /* Arguments of yyformat: reported tokens (one for the "unexpected",
+     one per "expected"). */
+  yysymbol_kind_t yyarg[YYARGS_MAX];
+  /* Cumulated lengths of YYARG.  */
+  YYPTRDIFF_T yysize = 0;
+
+  /* Actual size of YYARG. */
+  int yycount = yy_syntax_error_arguments (yyctx, yyarg, YYARGS_MAX);
+  if (yycount == YYENOMEM)
+    return YYENOMEM;
 
   switch (yycount)
     {
-# define YYCASE_(N, S)                      \
+#define YYCASE_(N, S)                       \
       case N:                               \
         yyformat = S;                       \
-      break
+        break
     default: /* Avoid compiler warnings. */
       YYCASE_(0, YY_("syntax error"));
       YYCASE_(1, YY_("syntax error, unexpected %s"));
@@ -2550,14 +2900,23 @@ yysyntax_error (YYSIZE_T *yymsg_alloc, char **yymsg,
       YYCASE_(3, YY_("syntax error, unexpected %s, expecting %s or %s"));
       YYCASE_(4, YY_("syntax error, unexpected %s, expecting %s or %s or %s"));
       YYCASE_(5, YY_("syntax error, unexpected %s, expecting %s or %s or %s or %s"));
-# undef YYCASE_
+#undef YYCASE_
     }
 
+  /* Compute error message size.  Don't count the "%s"s, but reserve
+     room for the terminator.  */
+  yysize = yystrlen (yyformat) - 2 * yycount + 1;
   {
-    YYSIZE_T yysize1 = yysize + yystrlen (yyformat);
-    if (! (yysize <= yysize1 && yysize1 <= YYSTACK_ALLOC_MAXIMUM))
-      return 2;
-    yysize = yysize1;
+    int yyi;
+    for (yyi = 0; yyi < yycount; ++yyi)
+      {
+        YYPTRDIFF_T yysize1
+          = yysize + yytnamerr (YY_NULLPTR, yytname[yyarg[yyi]]);
+        if (yysize <= yysize1 && yysize1 <= YYSTACK_ALLOC_MAXIMUM)
+          yysize = yysize1;
+        else
+          return YYENOMEM;
+      }
   }
 
   if (*yymsg_alloc < yysize)
@@ -2566,7 +2925,7 @@ yysyntax_error (YYSIZE_T *yymsg_alloc, char **yymsg,
       if (! (yysize <= *yymsg_alloc
              && *yymsg_alloc <= YYSTACK_ALLOC_MAXIMUM))
         *yymsg_alloc = YYSTACK_ALLOC_MAXIMUM;
-      return 1;
+      return -1;
     }
 
   /* Avoid sprintf, as that infringes on the user's name space.
@@ -2578,37 +2937,40 @@ yysyntax_error (YYSIZE_T *yymsg_alloc, char **yymsg,
     while ((*yyp = *yyformat) != '\0')
       if (*yyp == '%' && yyformat[1] == 's' && yyi < yycount)
         {
-          yyp += yytnamerr (yyp, yyarg[yyi++]);
+          yyp += yytnamerr (yyp, yytname[yyarg[yyi++]]);
           yyformat += 2;
         }
       else
         {
-          yyp++;
-          yyformat++;
+          ++yyp;
+          ++yyformat;
         }
   }
   return 0;
 }
-#endif /* YYERROR_VERBOSE */
+
 
 /*-----------------------------------------------.
 | Release the memory associated to this symbol.  |
 `-----------------------------------------------*/
 
 static void
-yydestruct (const char *yymsg, int yytype, YYSTYPE *yyvaluep, YYLTYPE *yylocationp, void *parm)
+yydestruct (const char *yymsg,
+            yysymbol_kind_t yykind, YYSTYPE *yyvaluep, YYLTYPE *yylocationp, void *parm)
 {
   YYUSE (yyvaluep);
   YYUSE (yylocationp);
   YYUSE (parm);
   if (!yymsg)
     yymsg = "Deleting";
-  YY_SYMBOL_PRINT (yymsg, yytype, yyvaluep, yylocationp);
+  YY_SYMBOL_PRINT (yymsg, yykind, yyvaluep, yylocationp);
 
   YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
-  YYUSE (yytype);
+  YYUSE (yykind);
   YY_IGNORE_MAYBE_UNINITIALIZED_END
 }
+
+
 
 
 
@@ -2641,7 +3003,7 @@ YYLTYPE yylloc = yyloc_default;
     /* Number of syntax errors so far.  */
     int yynerrs;
 
-    int yystate;
+    yy_state_fast_t yystate;
     /* Number of tokens to shift before error messages enabled.  */
     int yyerrstatus;
 
@@ -2653,10 +3015,13 @@ YYLTYPE yylloc = yyloc_default;
        Refer to the stacks through separate pointers, to allow yyoverflow
        to reallocate them elsewhere.  */
 
+    /* Their size.  */
+    YYPTRDIFF_T yystacksize;
+
     /* The state stack.  */
-    yytype_int16 yyssa[YYINITDEPTH];
-    yytype_int16 *yyss;
-    yytype_int16 *yyssp;
+    yy_state_t yyssa[YYINITDEPTH];
+    yy_state_t *yyss;
+    yy_state_t *yyssp;
 
     /* The semantic value stack.  */
     YYSTYPE yyvsa[YYINITDEPTH];
@@ -2668,26 +3033,23 @@ YYLTYPE yylloc = yyloc_default;
     YYLTYPE *yyls;
     YYLTYPE *yylsp;
 
-    /* The locations where the error started and ended.  */
-    YYLTYPE yyerror_range[3];
-
-    YYSIZE_T yystacksize;
-
   int yyn;
+  /* The return value of yyparse.  */
   int yyresult;
   /* Lookahead token as an internal (translated) token number.  */
-  int yytoken = 0;
+  yysymbol_kind_t yytoken = YYSYMBOL_YYEMPTY;
   /* The variables used to return semantic value and location from the
      action routines.  */
   YYSTYPE yyval;
   YYLTYPE yyloc;
 
-#if YYERROR_VERBOSE
+  /* The locations where the error started and ended.  */
+  YYLTYPE yyerror_range[3];
+
   /* Buffer for error messages, and its allocated size.  */
   char yymsgbuf[128];
   char *yymsg = yymsgbuf;
-  YYSIZE_T yymsg_alloc = sizeof yymsgbuf;
-#endif
+  YYPTRDIFF_T yymsg_alloc = sizeof yymsgbuf;
 
 #define YYPOPSTACK(N)   (yyvsp -= (N), yyssp -= (N), yylsp -= (N))
 
@@ -2695,20 +3057,21 @@ YYLTYPE yylloc = yyloc_default;
      Keep to zero when no symbol should be popped.  */
   int yylen = 0;
 
+  yynerrs = 0;
+  yystate = 0;
+  yyerrstatus = 0;
+
+  yystacksize = YYINITDEPTH;
   yyssp = yyss = yyssa;
   yyvsp = yyvs = yyvsa;
   yylsp = yyls = yylsa;
-  yystacksize = YYINITDEPTH;
+
 
   YYDPRINTF ((stderr, "Starting parse\n"));
 
-  yystate = 0;
-  yyerrstatus = 0;
-  yynerrs = 0;
   yychar = YYEMPTY; /* Cause a token to be read.  */
 
 /* User initialization code.  */
-
 {
   GCLock lock;
   yylloc.filename(ASTString(static_cast<ParserState*>(parm)->filename));
@@ -2718,29 +3081,42 @@ YYLTYPE yylloc = yyloc_default;
   yylsp[0] = yylloc;
   goto yysetstate;
 
+
 /*------------------------------------------------------------.
-| yynewstate -- Push a new state, which is found in yystate.  |
+| yynewstate -- push a new state, which is found in yystate.  |
 `------------------------------------------------------------*/
- yynewstate:
+yynewstate:
   /* In all cases, when you get here, the value and location stacks
      have just been pushed.  So pushing a state here evens the stacks.  */
   yyssp++;
 
- yysetstate:
-  *yyssp = yystate;
+
+/*--------------------------------------------------------------------.
+| yysetstate -- set current state (the top of the stack) to yystate.  |
+`--------------------------------------------------------------------*/
+yysetstate:
+  YYDPRINTF ((stderr, "Entering state %d\n", yystate));
+  YY_ASSERT (0 <= yystate && yystate < YYNSTATES);
+  YY_IGNORE_USELESS_CAST_BEGIN
+  *yyssp = YY_CAST (yy_state_t, yystate);
+  YY_IGNORE_USELESS_CAST_END
+  YY_STACK_PRINT (yyss, yyssp);
 
   if (yyss + yystacksize - 1 <= yyssp)
+#if !defined yyoverflow && !defined YYSTACK_RELOCATE
+    goto yyexhaustedlab;
+#else
     {
       /* Get the current used size of the three stacks, in elements.  */
-      YYSIZE_T yysize = yyssp - yyss + 1;
+      YYPTRDIFF_T yysize = yyssp - yyss + 1;
 
-#ifdef yyoverflow
+# if defined yyoverflow
       {
         /* Give user a chance to reallocate the stack.  Use copies of
            these so that the &'s don't force the real ones into
            memory.  */
+        yy_state_t *yyss1 = yyss;
         YYSTYPE *yyvs1 = yyvs;
-        yytype_int16 *yyss1 = yyss;
         YYLTYPE *yyls1 = yyls;
 
         /* Each stack pointer address is followed by the size of the
@@ -2748,19 +3124,15 @@ YYLTYPE yylloc = yyloc_default;
            conditional around just the two extra args, but that might
            be undefined if yyoverflow is a macro.  */
         yyoverflow (YY_("memory exhausted"),
-                    &yyss1, yysize * sizeof (*yyssp),
-                    &yyvs1, yysize * sizeof (*yyvsp),
-                    &yyls1, yysize * sizeof (*yylsp),
+                    &yyss1, yysize * YYSIZEOF (*yyssp),
+                    &yyvs1, yysize * YYSIZEOF (*yyvsp),
+                    &yyls1, yysize * YYSIZEOF (*yylsp),
                     &yystacksize);
-
-        yyls = yyls1;
         yyss = yyss1;
         yyvs = yyvs1;
+        yyls = yyls1;
       }
-#else /* no yyoverflow */
-# ifndef YYSTACK_RELOCATE
-      goto yyexhaustedlab;
-# else
+# else /* defined YYSTACK_RELOCATE */
       /* Extend the stack our own way.  */
       if (YYMAXDEPTH <= yystacksize)
         goto yyexhaustedlab;
@@ -2769,9 +3141,10 @@ YYLTYPE yylloc = yyloc_default;
         yystacksize = YYMAXDEPTH;
 
       {
-        yytype_int16 *yyss1 = yyss;
+        yy_state_t *yyss1 = yyss;
         union yyalloc *yyptr =
-          (union yyalloc *) YYSTACK_ALLOC (YYSTACK_BYTES (yystacksize));
+          YY_CAST (union yyalloc *,
+                   YYSTACK_ALLOC (YY_CAST (YYSIZE_T, YYSTACK_BYTES (yystacksize))));
         if (! yyptr)
           goto yyexhaustedlab;
         YYSTACK_RELOCATE (yyss_alloc, yyss);
@@ -2782,31 +3155,31 @@ YYLTYPE yylloc = yyloc_default;
           YYSTACK_FREE (yyss1);
       }
 # endif
-#endif /* no yyoverflow */
 
       yyssp = yyss + yysize - 1;
       yyvsp = yyvs + yysize - 1;
       yylsp = yyls + yysize - 1;
 
-      YYDPRINTF ((stderr, "Stack size increased to %lu\n",
-                  (unsigned long) yystacksize));
+      YY_IGNORE_USELESS_CAST_BEGIN
+      YYDPRINTF ((stderr, "Stack size increased to %ld\n",
+                  YY_CAST (long, yystacksize)));
+      YY_IGNORE_USELESS_CAST_END
 
       if (yyss + yystacksize - 1 <= yyssp)
         YYABORT;
     }
-
-  YYDPRINTF ((stderr, "Entering state %d\n", yystate));
+#endif /* !defined yyoverflow && !defined YYSTACK_RELOCATE */
 
   if (yystate == YYFINAL)
     YYACCEPT;
 
   goto yybackup;
 
+
 /*-----------.
 | yybackup.  |
 `-----------*/
 yybackup:
-
   /* Do appropriate processing given the current state.  Read a
      lookahead token if we need one and don't already have one.  */
 
@@ -2817,17 +3190,29 @@ yybackup:
 
   /* Not known => get a lookahead token if don't already have one.  */
 
-  /* YYCHAR is either YYEMPTY or YYEOF or a valid lookahead symbol.  */
+  /* YYCHAR is either empty, or end-of-input, or a valid lookahead.  */
   if (yychar == YYEMPTY)
     {
-      YYDPRINTF ((stderr, "Reading a token: "));
+      YYDPRINTF ((stderr, "Reading a token\n"));
       yychar = yylex (&yylval, &yylloc, SCANNER);
     }
 
-  if (yychar <= YYEOF)
+  if (yychar <= END)
     {
-      yychar = yytoken = YYEOF;
+      yychar = END;
+      yytoken = YYSYMBOL_YYEOF;
       YYDPRINTF ((stderr, "Now at end of input.\n"));
+    }
+  else if (yychar == YYerror)
+    {
+      /* The scanner already issued an error message, process directly
+         to error recovery.  But do not keep the error token as
+         lookahead, it is too special and may lead us to an endless
+         loop in error recovery. */
+      yychar = YYUNDEF;
+      yytoken = YYSYMBOL_YYerror;
+      yyerror_range[1] = yylloc;
+      goto yyerrlab1;
     }
   else
     {
@@ -2856,15 +3241,14 @@ yybackup:
 
   /* Shift the lookahead token.  */
   YY_SYMBOL_PRINT ("Shifting", yytoken, &yylval, &yylloc);
-
-  /* Discard the shifted token.  */
-  yychar = YYEMPTY;
-
   yystate = yyn;
   YY_IGNORE_MAYBE_UNINITIALIZED_BEGIN
   *++yyvsp = yylval;
   YY_IGNORE_MAYBE_UNINITIALIZED_END
   *++yylsp = yylloc;
+
+  /* Discard the shifted token.  */
+  yychar = YYEMPTY;
   goto yynewstate;
 
 
@@ -2879,7 +3263,7 @@ yydefault:
 
 
 /*-----------------------------.
-| yyreduce -- Do a reduction.  |
+| yyreduce -- do a reduction.  |
 `-----------------------------*/
 yyreduce:
   /* yyn is the number of a rule to reduce with.  */
@@ -2901,9 +3285,8 @@ yyreduce:
   YY_REDUCE_PRINT (yyn);
   switch (yyn)
     {
-        case 5:
-
-    {
+  case 5:
+      {
         ParserState* pp = static_cast<ParserState*>(parm);
         if ((yyvsp[0].item)) {
           pp->model->addItem((yyvsp[0].item));
@@ -2911,12 +3294,10 @@ yyreduce:
           GC::lock();
         }
       }
-
     break;
 
   case 6:
-
-    {
+      {
         ParserState* pp = static_cast<ParserState*>(parm);
         if ((yyvsp[0].item)) {
           pp->model->addItem((yyvsp[0].item));
@@ -2924,12 +3305,10 @@ yyreduce:
           GC::lock();
         }
       }
-
     break;
 
   case 7:
-
-    {
+      {
         ParserState* pp = static_cast<ParserState*>(parm);
         if ((yyvsp[0].item)) {
           pp->model->addItem((yyvsp[0].item));
@@ -2937,12 +3316,10 @@ yyreduce:
           GC::lock();
         }
       }
-
     break;
 
   case 8:
-
-    {
+      {
         ParserState* pp = static_cast<ParserState*>(parm);
         if ((yyvsp[0].item)) {
           pp->model->addItem((yyvsp[0].item));
@@ -2950,42 +3327,34 @@ yyreduce:
           GC::lock();
         }
       }
-
     break;
 
   case 9:
-
-    { yyerror(&(yylsp[0]), parm, "unexpected item, expecting ';' or end of file"); YYERROR; }
-
+{ yyerror(&(yylsp[0]), parm, "unexpected item, expecting ';' or end of file"); YYERROR; }
     break;
 
   case 11:
-
-    {
+      {
         ParserState* pp = static_cast<ParserState*>(parm);
         if (pp->parseDocComments && (yyvsp[0].sValue)) {
           pp->model->addDocComment((yyvsp[0].sValue));
         }
         free((yyvsp[0].sValue));
       }
-
     break;
 
   case 12:
-
-    {
+      {
         ParserState* pp = static_cast<ParserState*>(parm);
         if (pp->parseDocComments && (yyvsp[0].sValue)) {
           pp->model->addDocComment((yyvsp[0].sValue));
         }
         free((yyvsp[0].sValue));
       }
-
     break;
 
   case 15:
-
-    { (yyval.item) = (yyvsp[0].item);
+      { (yyval.item) = (yyvsp[0].item);
         ParserState* pp = static_cast<ParserState*>(parm);
         if (FunctionI* fi = Item::dyn_cast<FunctionI>((yyval.item))) {
           if (pp->parseDocComments) {
@@ -3000,66 +3369,46 @@ yyreduce:
         }
         free((yyvsp[-1].sValue));
       }
-
     break;
 
   case 16:
-
-    { (yyval.item) = (yyvsp[0].item); }
-
+      { (yyval.item) = (yyvsp[0].item); }
     break;
 
   case 17:
-
-    { (yyval.item)=notInDatafile(&(yyloc),parm,"include") ? (yyvsp[0].item) : NULL; }
-
+      { (yyval.item)=notInDatafile(&(yyloc),parm,"include") ? (yyvsp[0].item) : NULL; }
     break;
 
   case 18:
-
-    { (yyval.item)=notInDatafile(&(yyloc),parm,"variable declaration") ? (yyvsp[0].item) : NULL; }
-
+      { (yyval.item)=notInDatafile(&(yyloc),parm,"variable declaration") ? (yyvsp[0].item) : NULL; }
     break;
 
   case 20:
-
-    { (yyval.item)=notInDatafile(&(yyloc),parm,"constraint") ? (yyvsp[0].item) : NULL; }
-
+      { (yyval.item)=notInDatafile(&(yyloc),parm,"constraint") ? (yyvsp[0].item) : NULL; }
     break;
 
   case 21:
-
-    { (yyval.item)=notInDatafile(&(yyloc),parm,"solve") ? (yyvsp[0].item) : NULL; }
-
+      { (yyval.item)=notInDatafile(&(yyloc),parm,"solve") ? (yyvsp[0].item) : NULL; }
     break;
 
   case 22:
-
-    { (yyval.item)=notInDatafile(&(yyloc),parm,"output") ? (yyvsp[0].item) : NULL; }
-
+      { (yyval.item)=notInDatafile(&(yyloc),parm,"output") ? (yyvsp[0].item) : NULL; }
     break;
 
   case 23:
-
-    { (yyval.item)=notInDatafile(&(yyloc),parm,"predicate") ? (yyvsp[0].item) : NULL; }
-
+      { (yyval.item)=notInDatafile(&(yyloc),parm,"predicate") ? (yyvsp[0].item) : NULL; }
     break;
 
   case 24:
-
-    { (yyval.item)=notInDatafile(&(yyloc),parm,"predicate") ? (yyvsp[0].item) : NULL; }
-
+      { (yyval.item)=notInDatafile(&(yyloc),parm,"predicate") ? (yyvsp[0].item) : NULL; }
     break;
 
   case 25:
-
-    { (yyval.item)=notInDatafile(&(yyloc),parm,"annotation") ? (yyvsp[0].item) : NULL; }
-
+      { (yyval.item)=notInDatafile(&(yyloc),parm,"annotation") ? (yyvsp[0].item) : NULL; }
     break;
 
   case 35:
-
-    { ParserState* pp = static_cast<ParserState*>(parm);
+      { ParserState* pp = static_cast<ParserState*>(parm);
         map<string,Model*>::iterator ret = pp->seenModels.find((yyvsp[0].sValue));
         IncludeI* ii = new IncludeI((yyloc),ASTString((yyvsp[0].sValue)));
         (yyval.item) = ii;
@@ -3080,45 +3429,37 @@ yyreduce:
         }
         free((yyvsp[0].sValue));
       }
-
     break;
 
   case 36:
-
-    { if ((yyvsp[-1].vardeclexpr) && (yyvsp[0].expression_v)) (yyvsp[-1].vardeclexpr)->addAnnotations(*(yyvsp[0].expression_v));
+      { if ((yyvsp[-1].vardeclexpr) && (yyvsp[0].expression_v)) (yyvsp[-1].vardeclexpr)->addAnnotations(*(yyvsp[0].expression_v));
         if ((yyvsp[-1].vardeclexpr))
           (yyval.item) = new VarDeclI((yyloc),(yyvsp[-1].vardeclexpr));
         delete (yyvsp[0].expression_v);
       }
-
     break;
 
   case 37:
-
-    { if ((yyvsp[-3].vardeclexpr)) (yyvsp[-3].vardeclexpr)->e((yyvsp[0].expression));
+      { if ((yyvsp[-3].vardeclexpr)) (yyvsp[-3].vardeclexpr)->e((yyvsp[0].expression));
         if ((yyvsp[-3].vardeclexpr) && (yyvsp[-2].expression_v)) (yyvsp[-3].vardeclexpr)->addAnnotations(*(yyvsp[-2].expression_v));
         if ((yyvsp[-3].vardeclexpr))
           (yyval.item) = new VarDeclI((yyloc),(yyvsp[-3].vardeclexpr));
         delete (yyvsp[-2].expression_v);
       }
-
     break;
 
   case 38:
-
-    {
+      {
         TypeInst* ti = new TypeInst((yyloc),Type::parsetint());
         ti->setIsEnum(true);
         VarDecl* vd = new VarDecl((yyloc),ti,(yyvsp[0].sValue));
         free((yyvsp[0].sValue));
         (yyval.item) = new VarDeclI((yyloc),vd);
       }
-
     break;
 
   case 39:
-
-    {
+      {
         TypeInst* ti = new TypeInst((yyloc),Type::parsetint());
         ti->setIsEnum(true);
         SetLit* sl = new SetLit((yyloc), *(yyvsp[-1].expression_v));
@@ -3127,12 +3468,10 @@ yyreduce:
         delete (yyvsp[-1].expression_v);
         (yyval.item) = new VarDeclI((yyloc),vd);
       }
-
     break;
 
   case 40:
-
-    {
+      {
         TypeInst* ti = new TypeInst((yyloc),Type::parsetint());
         ti->setIsEnum(true);
         vector<Expression*> args;
@@ -3143,12 +3482,10 @@ yyreduce:
         delete (yyvsp[-1].expression_v);
         (yyval.item) = new VarDeclI((yyloc),vd);
       }
-
     break;
 
   case 41:
-
-    {
+      {
         TypeInst* ti = new TypeInst((yyloc),Type::parsetint());
         ti->setIsEnum(true);
         vector<Expression*> args;
@@ -3159,157 +3496,121 @@ yyreduce:
         free((yyvsp[-3].sValue));
         (yyval.item) = new VarDeclI((yyloc),vd);
       }
-
     break;
 
   case 42:
-
-    { (yyval.expression_v) = new std::vector<Expression*>(); }
-
+      { (yyval.expression_v) = new std::vector<Expression*>(); }
     break;
 
   case 43:
-
-    { (yyval.expression_v) = new std::vector<Expression*>();
+      { (yyval.expression_v) = new std::vector<Expression*>();
         (yyval.expression_v)->push_back(new StringLit((yyloc), (yyvsp[0].sValue))); free((yyvsp[0].sValue));
       }
-
     break;
 
   case 44:
-
-    { (yyval.expression_v) = (yyvsp[-2].expression_v);
+      { (yyval.expression_v) = (yyvsp[-2].expression_v);
         if ((yyval.expression_v)) (yyval.expression_v)->push_back(new StringLit((yyloc), (yyvsp[0].sValue)));
         free((yyvsp[0].sValue));
       }
-
     break;
 
   case 45:
-
-    { (yyval.expression_v) = new std::vector<Expression*>(); }
-
+      { (yyval.expression_v) = new std::vector<Expression*>(); }
     break;
 
   case 46:
-
-    { (yyval.expression_v) = new std::vector<Expression*>();
+      { (yyval.expression_v) = new std::vector<Expression*>();
         (yyval.expression_v)->push_back(new Id((yyloc),(yyvsp[0].sValue),NULL)); free((yyvsp[0].sValue));
       }
-
     break;
 
   case 47:
-
-    { (yyval.expression_v) = (yyvsp[-2].expression_v); if ((yyval.expression_v)) (yyval.expression_v)->push_back(new Id((yyloc),(yyvsp[0].sValue),NULL)); free((yyvsp[0].sValue)); }
-
+      { (yyval.expression_v) = (yyvsp[-2].expression_v); if ((yyval.expression_v)) (yyval.expression_v)->push_back(new Id((yyloc),(yyvsp[0].sValue),NULL)); free((yyvsp[0].sValue)); }
     break;
 
   case 48:
-
-    { (yyval.item) = new AssignI((yyloc),(yyvsp[-2].sValue),(yyvsp[0].expression));
+      { (yyval.item) = new AssignI((yyloc),(yyvsp[-2].sValue),(yyvsp[0].expression));
         free((yyvsp[-2].sValue));
       }
-
     break;
 
   case 49:
-
-    { (yyval.item) = new ConstraintI((yyloc),(yyvsp[0].expression));}
-
+      { (yyval.item) = new ConstraintI((yyloc),(yyvsp[0].expression));}
     break;
 
   case 50:
-
-    { (yyval.item) = new ConstraintI((yyloc),(yyvsp[0].expression));
+      { (yyval.item) = new ConstraintI((yyloc),(yyvsp[0].expression));
         if ((yyvsp[0].expression) && (yyvsp[-1].expression))
           (yyval.item)->cast<ConstraintI>()->e()->ann().add(new Call((yylsp[-2]), ASTString("mzn_constraint_name"), {(yyvsp[-1].expression)}));
       }
-
     break;
 
   case 51:
-
-    { (yyval.item) = SolveI::sat((yyloc));
+      { (yyval.item) = SolveI::sat((yyloc));
         if ((yyval.item) && (yyvsp[-1].expression_v)) (yyval.item)->cast<SolveI>()->ann().add(*(yyvsp[-1].expression_v));
         delete (yyvsp[-1].expression_v);
       }
-
     break;
 
   case 52:
-
-    { (yyval.item) = SolveI::min((yyloc),(yyvsp[0].expression));
+      { (yyval.item) = SolveI::min((yyloc),(yyvsp[0].expression));
         if ((yyval.item) && (yyvsp[-2].expression_v)) (yyval.item)->cast<SolveI>()->ann().add(*(yyvsp[-2].expression_v));
         delete (yyvsp[-2].expression_v);
       }
-
     break;
 
   case 53:
-
-    { (yyval.item) = SolveI::max((yyloc),(yyvsp[0].expression));
+      { (yyval.item) = SolveI::max((yyloc),(yyvsp[0].expression));
         if ((yyval.item) && (yyvsp[-2].expression_v)) (yyval.item)->cast<SolveI>()->ann().add(*(yyvsp[-2].expression_v));
         delete (yyvsp[-2].expression_v);
       }
-
     break;
 
   case 54:
-
-    { (yyval.item) = new OutputI((yyloc),(yyvsp[0].expression));}
-
+      { (yyval.item) = new OutputI((yyloc),(yyvsp[0].expression));}
     break;
 
   case 55:
-
-    { if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),new TypeInst((yyloc),
+      { if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),new TypeInst((yyloc),
                                    Type::varbool()),*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression));
         if ((yyval.item) && (yyvsp[-1].expression_v)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expression_v));
         free((yyvsp[-3].sValue));
         delete (yyvsp[-2].vardeclexpr_v);
         delete (yyvsp[-1].expression_v);
       }
-
     break;
 
   case 56:
-
-    { if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),new TypeInst((yyloc),
+      { if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),new TypeInst((yyloc),
                                    Type::parbool()),*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression));
         if ((yyval.item) && (yyvsp[-1].expression_v)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expression_v));
         free((yyvsp[-3].sValue));
         delete (yyvsp[-2].vardeclexpr_v);
         delete (yyvsp[-1].expression_v);
       }
-
     break;
 
   case 57:
-
-    { if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),(yyvsp[-5].tiexpr),*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression));
+      { if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),(yyvsp[-5].tiexpr),*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression));
         if ((yyval.item) && (yyvsp[-1].expression_v)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expression_v));
         free((yyvsp[-3].sValue));
         delete (yyvsp[-2].vardeclexpr_v);
         delete (yyvsp[-1].expression_v);
       }
-
     break;
 
   case 58:
-
-    { if ((yyvsp[-3].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-5].sValue),(yyvsp[-7].tiexpr),*(yyvsp[-3].vardeclexpr_v),(yyvsp[0].expression));
+      { if ((yyvsp[-3].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-5].sValue),(yyvsp[-7].tiexpr),*(yyvsp[-3].vardeclexpr_v),(yyvsp[0].expression));
         if ((yyval.item) && (yyvsp[-1].expression_v)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expression_v));
         free((yyvsp[-5].sValue));
         delete (yyvsp[-3].vardeclexpr_v);
         delete (yyvsp[-1].expression_v);
       }
-
     break;
 
   case 59:
-
-    {
+      {
         TypeInst* ti=new TypeInst((yylsp[-2]),Type::ann());
         if ((yyvsp[0].vardeclexpr_v)==NULL || (yyvsp[0].vardeclexpr_v)->empty()) {
           VarDecl* vd = new VarDecl((yyloc),ti,(yyvsp[-1].sValue));
@@ -3320,169 +3621,125 @@ yyreduce:
         free((yyvsp[-1].sValue));
         delete (yyvsp[0].vardeclexpr_v);
       }
-
     break;
 
   case 60:
-
-    { TypeInst* ti=new TypeInst((yylsp[-4]),Type::ann());
+      { TypeInst* ti=new TypeInst((yylsp[-4]),Type::ann());
         if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),ti,*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression));
         delete (yyvsp[-2].vardeclexpr_v);
       }
-
     break;
 
   case 61:
-
-    { (yyval.expression)=NULL; }
-
+      { (yyval.expression)=NULL; }
     break;
 
   case 62:
-
-    { (yyval.expression)=(yyvsp[0].expression); }
-
+      { (yyval.expression)=(yyvsp[0].expression); }
     break;
 
   case 63:
-
-    { (yyval.vardeclexpr_v)=new vector<VarDecl*>(); }
-
+      { (yyval.vardeclexpr_v)=new vector<VarDecl*>(); }
     break;
 
   case 64:
-
-    { (yyval.vardeclexpr_v)=(yyvsp[-1].vardeclexpr_v); }
-
+      { (yyval.vardeclexpr_v)=(yyvsp[-1].vardeclexpr_v); }
     break;
 
   case 65:
-
-    { (yyval.vardeclexpr_v)=new vector<VarDecl*>(); }
-
+      { (yyval.vardeclexpr_v)=new vector<VarDecl*>(); }
     break;
 
   case 66:
-
-    { (yyval.vardeclexpr_v)=new vector<VarDecl*>(); }
-
+      { (yyval.vardeclexpr_v)=new vector<VarDecl*>(); }
     break;
 
   case 67:
-
-    { (yyval.vardeclexpr_v)=(yyvsp[-1].vardeclexpr_v); }
-
+      { (yyval.vardeclexpr_v)=(yyvsp[-1].vardeclexpr_v); }
     break;
 
   case 68:
-
-    { (yyval.vardeclexpr_v)=new vector<VarDecl*>();
+      { (yyval.vardeclexpr_v)=new vector<VarDecl*>();
         if ((yyvsp[0].vardeclexpr)) (yyvsp[0].vardeclexpr)->toplevel(false);
         if ((yyvsp[0].vardeclexpr)) (yyval.vardeclexpr_v)->push_back((yyvsp[0].vardeclexpr)); }
-
     break;
 
   case 69:
-
-    { (yyval.vardeclexpr_v)=(yyvsp[-2].vardeclexpr_v);
+      { (yyval.vardeclexpr_v)=(yyvsp[-2].vardeclexpr_v);
         if ((yyvsp[0].vardeclexpr)) (yyvsp[0].vardeclexpr)->toplevel(false);
         if ((yyvsp[-2].vardeclexpr_v) && (yyvsp[0].vardeclexpr)) (yyvsp[-2].vardeclexpr_v)->push_back((yyvsp[0].vardeclexpr)); }
-
     break;
 
   case 72:
-
-    { (yyval.vardeclexpr)=(yyvsp[0].vardeclexpr); }
-
+      { (yyval.vardeclexpr)=(yyvsp[0].vardeclexpr); }
     break;
 
   case 73:
-
-    { if ((yyvsp[0].tiexpr)) (yyval.vardeclexpr)=new VarDecl((yyloc), (yyvsp[0].tiexpr), ""); }
-
+      { if ((yyvsp[0].tiexpr)) (yyval.vardeclexpr)=new VarDecl((yyloc), (yyvsp[0].tiexpr), ""); }
     break;
 
   case 74:
-
-    { if ((yyvsp[-2].tiexpr) && (yyvsp[0].sValue)) (yyval.vardeclexpr) = new VarDecl((yyloc), (yyvsp[-2].tiexpr), (yyvsp[0].sValue));
+      { if ((yyvsp[-2].tiexpr) && (yyvsp[0].sValue)) (yyval.vardeclexpr) = new VarDecl((yyloc), (yyvsp[-2].tiexpr), (yyvsp[0].sValue));
         free((yyvsp[0].sValue));
       }
-
     break;
 
   case 75:
-
-    { (yyval.tiexpr_v)=(yyvsp[-1].tiexpr_v); }
-
+      { (yyval.tiexpr_v)=(yyvsp[-1].tiexpr_v); }
     break;
 
   case 76:
-
-    { (yyval.tiexpr_v)=new vector<TypeInst*>(); (yyval.tiexpr_v)->push_back((yyvsp[0].tiexpr)); }
-
+      { (yyval.tiexpr_v)=new vector<TypeInst*>(); (yyval.tiexpr_v)->push_back((yyvsp[0].tiexpr)); }
     break;
 
   case 77:
-
-    { (yyval.tiexpr_v)=(yyvsp[-2].tiexpr_v); if ((yyvsp[-2].tiexpr_v) && (yyvsp[0].tiexpr)) (yyvsp[-2].tiexpr_v)->push_back((yyvsp[0].tiexpr)); }
-
+      { (yyval.tiexpr_v)=(yyvsp[-2].tiexpr_v); if ((yyvsp[-2].tiexpr_v) && (yyvsp[0].tiexpr)) (yyvsp[-2].tiexpr_v)->push_back((yyvsp[0].tiexpr)); }
     break;
 
   case 79:
-
-    {
+      {
         (yyval.tiexpr) = (yyvsp[0].tiexpr);
         if ((yyval.tiexpr) && (yyvsp[-3].tiexpr_v)) (yyval.tiexpr)->setRanges(*(yyvsp[-3].tiexpr_v));
         delete (yyvsp[-3].tiexpr_v);
       }
-
     break;
 
   case 80:
-
-    {
+      {
         (yyval.tiexpr) = (yyvsp[0].tiexpr);
         std::vector<TypeInst*> ti(1);
         ti[0] = new TypeInst((yyloc),Type::parint());
         if ((yyval.tiexpr)) (yyval.tiexpr)->setRanges(ti);
       }
-
     break;
 
   case 81:
-
-    { (yyval.tiexpr) = (yyvsp[0].tiexpr);
+      { (yyval.tiexpr) = (yyvsp[0].tiexpr);
       }
-
     break;
 
   case 82:
-
-    { (yyval.tiexpr) = (yyvsp[0].tiexpr);
+      { (yyval.tiexpr) = (yyvsp[0].tiexpr);
         if ((yyval.tiexpr)) {
           Type tt = (yyval.tiexpr)->type();
           tt.ot(Type::OT_OPTIONAL);
           (yyval.tiexpr)->type(tt);
         }
       }
-
     break;
 
   case 83:
-
-    { (yyval.tiexpr) = (yyvsp[0].tiexpr);
+      { (yyval.tiexpr) = (yyvsp[0].tiexpr);
         if ((yyval.tiexpr) && (yyvsp[-1].bValue)) {
           Type tt = (yyval.tiexpr)->type();
           tt.ot(Type::OT_OPTIONAL);
           (yyval.tiexpr)->type(tt);
         }
       }
-
     break;
 
   case 84:
-
-    { (yyval.tiexpr) = (yyvsp[0].tiexpr);
+      { (yyval.tiexpr) = (yyvsp[0].tiexpr);
         if ((yyval.tiexpr)) {
           Type tt = (yyval.tiexpr)->type();
           tt.ti(Type::TI_VAR);
@@ -3490,12 +3747,10 @@ yyreduce:
           (yyval.tiexpr)->type(tt);
         }
       }
-
     break;
 
   case 85:
-
-    { (yyval.tiexpr) = (yyvsp[0].tiexpr);
+      { (yyval.tiexpr) = (yyvsp[0].tiexpr);
         if ((yyval.tiexpr)) {
           Type tt = (yyval.tiexpr)->type();
           tt.st(Type::ST_SET);
@@ -3503,12 +3758,10 @@ yyreduce:
           (yyval.tiexpr)->type(tt);
         }
       }
-
     break;
 
   case 86:
-
-    { (yyval.tiexpr) = (yyvsp[0].tiexpr);
+      { (yyval.tiexpr) = (yyvsp[0].tiexpr);
         if ((yyval.tiexpr)) {
           Type tt = (yyval.tiexpr)->type();
           tt.st(Type::ST_SET);
@@ -3516,12 +3769,10 @@ yyreduce:
           (yyval.tiexpr)->type(tt);
         }
       }
-
     break;
 
   case 87:
-
-    { (yyval.tiexpr) = (yyvsp[0].tiexpr);
+      { (yyval.tiexpr) = (yyvsp[0].tiexpr);
         if ((yyval.tiexpr)) {
           Type tt = (yyval.tiexpr)->type();
           tt.ti(Type::TI_VAR);
@@ -3530,102 +3781,72 @@ yyreduce:
           (yyval.tiexpr)->type(tt);
         }
       }
-
     break;
 
   case 88:
-
-    { (yyval.bValue) = false; }
-
+      { (yyval.bValue) = false; }
     break;
 
   case 89:
-
-    { (yyval.bValue) = true; }
-
+      { (yyval.bValue) = true; }
     break;
 
   case 90:
-
-    { (yyval.tiexpr) = new TypeInst((yyloc),Type::parint()); }
-
+      { (yyval.tiexpr) = new TypeInst((yyloc),Type::parint()); }
     break;
 
   case 91:
-
-    { (yyval.tiexpr) = new TypeInst((yyloc),Type::parbool()); }
-
+      { (yyval.tiexpr) = new TypeInst((yyloc),Type::parbool()); }
     break;
 
   case 92:
-
-    { (yyval.tiexpr) = new TypeInst((yyloc),Type::parfloat()); }
-
+      { (yyval.tiexpr) = new TypeInst((yyloc),Type::parfloat()); }
     break;
 
   case 93:
-
-    { (yyval.tiexpr) = new TypeInst((yyloc),Type::parstring()); }
-
+      { (yyval.tiexpr) = new TypeInst((yyloc),Type::parstring()); }
     break;
 
   case 94:
-
-    { (yyval.tiexpr) = new TypeInst((yyloc),Type::ann()); }
-
+      { (yyval.tiexpr) = new TypeInst((yyloc),Type::ann()); }
     break;
 
   case 95:
-
-    { if ((yyvsp[0].expression)) (yyval.tiexpr) = new TypeInst((yyloc),Type(),(yyvsp[0].expression)); }
-
+        { if ((yyvsp[0].expression)) (yyval.tiexpr) = new TypeInst((yyloc),Type(),(yyvsp[0].expression)); }
     break;
 
   case 96:
-
-    { (yyval.tiexpr) = new TypeInst((yyloc),Type::top(),
+      { (yyval.tiexpr) = new TypeInst((yyloc),Type::top(),
                          new TIId((yyloc), (yyvsp[0].sValue)));
         free((yyvsp[0].sValue));
       }
-
     break;
 
   case 97:
-
-    { (yyval.tiexpr) = new TypeInst((yyloc),Type::parint(),
+      { (yyval.tiexpr) = new TypeInst((yyloc),Type::parint(),
           new TIId((yyloc), (yyvsp[0].sValue)));
           free((yyvsp[0].sValue));
       }
-
     break;
 
   case 99:
-
-    { (yyval.expression_v)=new std::vector<MiniZinc::Expression*>; (yyval.expression_v)->push_back((yyvsp[0].expression)); }
-
+      { (yyval.expression_v)=new std::vector<MiniZinc::Expression*>; (yyval.expression_v)->push_back((yyvsp[0].expression)); }
     break;
 
   case 100:
-
-    { (yyval.expression_v)=(yyvsp[-2].expression_v); if ((yyval.expression_v) && (yyvsp[0].expression)) (yyval.expression_v)->push_back((yyvsp[0].expression)); }
-
+      { (yyval.expression_v)=(yyvsp[-2].expression_v); if ((yyval.expression_v) && (yyvsp[0].expression)) (yyval.expression_v)->push_back((yyvsp[0].expression)); }
     break;
 
   case 101:
-
-    { (yyval.expression) = (yyvsp[0].expression); }
-
+      { (yyval.expression) = (yyvsp[0].expression); }
     break;
 
   case 102:
-
-    { (yyval.expression)=new SetLit((yyloc), IntSetVal::a(-IntVal::infinity(),IntVal::infinity())); }
-
+      { (yyval.expression)=new SetLit((yyloc), IntSetVal::a(-IntVal::infinity(),IntVal::infinity())); }
     break;
 
   case 103:
-
-    { if ((yyvsp[0].expression)==NULL) {
+      { if ((yyvsp[0].expression)==NULL) {
           (yyval.expression) = NULL;
         } else if ((yyvsp[0].expression)->isa<IntLit>()) {
           (yyval.expression)=new SetLit((yyloc), IntSetVal::a(-IntVal::infinity(),(yyvsp[0].expression)->cast<IntLit>()->v()));
@@ -3633,12 +3854,10 @@ yyreduce:
           (yyval.expression)=new BinOp((yyloc), IntLit::a(-IntVal::infinity()), BOT_DOTDOT, (yyvsp[0].expression));
         }
       }
-
     break;
 
   case 104:
-
-    { if ((yyvsp[-1].expression)==NULL) {
+      { if ((yyvsp[-1].expression)==NULL) {
           (yyval.expression) = NULL;
         } else if ((yyvsp[-1].expression)->isa<IntLit>()) {
           (yyval.expression)=new SetLit((yyloc), IntSetVal::a((yyvsp[-1].expression)->cast<IntLit>()->v(),IntVal::infinity()));
@@ -3646,48 +3865,34 @@ yyreduce:
           (yyval.expression)=new BinOp((yyloc), (yyvsp[-1].expression), BOT_DOTDOT, IntLit::a(IntVal::infinity()));
         }
       }
-
     break;
 
   case 106:
-
-    { (yyval.expression_v)=new std::vector<MiniZinc::Expression*>; (yyval.expression_v)->push_back((yyvsp[0].expression)); }
-
+      { (yyval.expression_v)=new std::vector<MiniZinc::Expression*>; (yyval.expression_v)->push_back((yyvsp[0].expression)); }
     break;
 
   case 107:
-
-    { (yyval.expression_v)=(yyvsp[-2].expression_v); if ((yyval.expression_v) && (yyvsp[0].expression)) (yyval.expression_v)->push_back((yyvsp[0].expression)); }
-
+      { (yyval.expression_v)=(yyvsp[-2].expression_v); if ((yyval.expression_v) && (yyvsp[0].expression)) (yyval.expression_v)->push_back((yyvsp[0].expression)); }
     break;
 
   case 109:
-
-    { if ((yyvsp[-2].expression) && (yyvsp[0].expression)) (yyvsp[-2].expression)->addAnnotation((yyvsp[0].expression)); (yyval.expression)=(yyvsp[-2].expression); }
-
+      { if ((yyvsp[-2].expression) && (yyvsp[0].expression)) (yyvsp[-2].expression)->addAnnotation((yyvsp[0].expression)); (yyval.expression)=(yyvsp[-2].expression); }
     break;
 
   case 110:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_UNION, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_UNION, (yyvsp[0].expression)); }
     break;
 
   case 111:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_DIFF, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_DIFF, (yyvsp[0].expression)); }
     break;
 
   case 112:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_SYMDIFF, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_SYMDIFF, (yyvsp[0].expression)); }
     break;
 
   case 113:
-
-    { if ((yyvsp[-2].expression)==NULL || (yyvsp[0].expression)==NULL) {
+      { if ((yyvsp[-2].expression)==NULL || (yyvsp[0].expression)==NULL) {
           (yyval.expression) = NULL;
         } else if ((yyvsp[-2].expression)->isa<IntLit>() && (yyvsp[0].expression)->isa<IntLit>()) {
           (yyval.expression)=new SetLit((yyloc), IntSetVal::a((yyvsp[-2].expression)->cast<IntLit>()->v(),(yyvsp[0].expression)->cast<IntLit>()->v()));
@@ -3695,12 +3900,10 @@ yyreduce:
           (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_DOTDOT, (yyvsp[0].expression));
         }
       }
-
     break;
 
   case 114:
-
-    { if ((yyvsp[-3].expression)==NULL || (yyvsp[-1].expression)==NULL) {
+      { if ((yyvsp[-3].expression)==NULL || (yyvsp[-1].expression)==NULL) {
           (yyval.expression) = NULL;
         } else if ((yyvsp[-3].expression)->isa<IntLit>() && (yyvsp[-1].expression)->isa<IntLit>()) {
           (yyval.expression)=new SetLit((yyloc), IntSetVal::a((yyvsp[-3].expression)->cast<IntLit>()->v(),(yyvsp[-1].expression)->cast<IntLit>()->v()));
@@ -3708,118 +3911,86 @@ yyreduce:
           (yyval.expression)=new BinOp((yyloc), (yyvsp[-3].expression), BOT_DOTDOT, (yyvsp[-1].expression));
         }
       }
-
     break;
 
   case 115:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_INTERSECT, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_INTERSECT, (yyvsp[0].expression)); }
     break;
 
   case 116:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_PLUSPLUS, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_PLUSPLUS, (yyvsp[0].expression)); }
     break;
 
   case 117:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_PLUS, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_PLUS, (yyvsp[0].expression)); }
     break;
 
   case 118:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_MINUS, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_MINUS, (yyvsp[0].expression)); }
     break;
 
   case 119:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_MULT, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_MULT, (yyvsp[0].expression)); }
     break;
 
   case 120:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_DIV, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_DIV, (yyvsp[0].expression)); }
     break;
 
   case 121:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_IDIV, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_IDIV, (yyvsp[0].expression)); }
     break;
 
   case 122:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_MOD, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_MOD, (yyvsp[0].expression)); }
     break;
 
   case 123:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_POW, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_POW, (yyvsp[0].expression)); }
     break;
 
   case 124:
-
-    { vector<Expression*> args;
+      { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
         (yyval.expression)=new Call((yyloc), ASTString("~+"), args);
       }
-
     break;
 
   case 125:
-
-    { vector<Expression*> args;
+      { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
         (yyval.expression)=new Call((yyloc), ASTString("~-"), args);
       }
-
     break;
 
   case 126:
-
-    { vector<Expression*> args;
+      { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
         (yyval.expression)=new Call((yyloc), ASTString("~*"), args);
       }
-
     break;
 
   case 127:
-
-    { vector<Expression*> args;
+      { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
         (yyval.expression)=new Call((yyloc), ASTString("~="), args);
       }
-
     break;
 
   case 128:
-
-    { vector<Expression*> args;
+      { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
         (yyval.expression)=new Call((yyloc), (yyvsp[-1].sValue), args);
         free((yyvsp[-1].sValue));
       }
-
     break;
 
   case 129:
-
-    { (yyval.expression)=new UnOp((yyloc), UOT_PLUS, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new UnOp((yyloc), UOT_PLUS, (yyvsp[0].expression)); }
     break;
 
   case 130:
-
-    { if ((yyvsp[0].expression) && (yyvsp[0].expression)->isa<IntLit>()) {
+      { if ((yyvsp[0].expression) && (yyvsp[0].expression)->isa<IntLit>()) {
           (yyval.expression) = IntLit::a(-(yyvsp[0].expression)->cast<IntLit>()->v());
         } else if ((yyvsp[0].expression) && (yyvsp[0].expression)->isa<FloatLit>()) {
           (yyval.expression) = FloatLit::a(-(yyvsp[0].expression)->cast<FloatLit>()->v());
@@ -3827,126 +3998,86 @@ yyreduce:
           (yyval.expression)=new UnOp((yyloc), UOT_MINUS, (yyvsp[0].expression));
         }
       }
-
     break;
 
   case 132:
-
-    { if ((yyvsp[-2].expression) && (yyvsp[0].expression)) (yyvsp[-2].expression)->addAnnotation((yyvsp[0].expression)); (yyval.expression)=(yyvsp[-2].expression); }
-
+      { if ((yyvsp[-2].expression) && (yyvsp[0].expression)) (yyvsp[-2].expression)->addAnnotation((yyvsp[0].expression)); (yyval.expression)=(yyvsp[-2].expression); }
     break;
 
   case 133:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_EQUIV, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_EQUIV, (yyvsp[0].expression)); }
     break;
 
   case 134:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_IMPL, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_IMPL, (yyvsp[0].expression)); }
     break;
 
   case 135:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_RIMPL, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_RIMPL, (yyvsp[0].expression)); }
     break;
 
   case 136:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_OR, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_OR, (yyvsp[0].expression)); }
     break;
 
   case 137:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_XOR, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_XOR, (yyvsp[0].expression)); }
     break;
 
   case 138:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_AND, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_AND, (yyvsp[0].expression)); }
     break;
 
   case 139:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_LE, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_LE, (yyvsp[0].expression)); }
     break;
 
   case 140:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_GR, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_GR, (yyvsp[0].expression)); }
     break;
 
   case 141:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_LQ, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_LQ, (yyvsp[0].expression)); }
     break;
 
   case 142:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_GQ, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_GQ, (yyvsp[0].expression)); }
     break;
 
   case 143:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_EQ, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_EQ, (yyvsp[0].expression)); }
     break;
 
   case 144:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_NQ, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_NQ, (yyvsp[0].expression)); }
     break;
 
   case 145:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_IN, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_IN, (yyvsp[0].expression)); }
     break;
 
   case 146:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_SUBSET, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_SUBSET, (yyvsp[0].expression)); }
     break;
 
   case 147:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_SUPERSET, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_SUPERSET, (yyvsp[0].expression)); }
     break;
 
   case 148:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_UNION, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_UNION, (yyvsp[0].expression)); }
     break;
 
   case 149:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_DIFF, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_DIFF, (yyvsp[0].expression)); }
     break;
 
   case 150:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_SYMDIFF, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_SYMDIFF, (yyvsp[0].expression)); }
     break;
 
   case 151:
-
-    { if ((yyvsp[-2].expression)==NULL || (yyvsp[0].expression)==NULL) {
+      { if ((yyvsp[-2].expression)==NULL || (yyvsp[0].expression)==NULL) {
           (yyval.expression) = NULL;
         } else if ((yyvsp[-2].expression)->isa<IntLit>() && (yyvsp[0].expression)->isa<IntLit>()) {
           (yyval.expression)=new SetLit((yyloc), IntSetVal::a((yyvsp[-2].expression)->cast<IntLit>()->v(),(yyvsp[0].expression)->cast<IntLit>()->v()));
@@ -3954,12 +4085,10 @@ yyreduce:
           (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_DOTDOT, (yyvsp[0].expression));
         }
       }
-
     break;
 
   case 152:
-
-    { if ((yyvsp[-3].expression)==NULL || (yyvsp[-1].expression)==NULL) {
+      { if ((yyvsp[-3].expression)==NULL || (yyvsp[-1].expression)==NULL) {
           (yyval.expression) = NULL;
         } else if ((yyvsp[-3].expression)->isa<IntLit>() && (yyvsp[-1].expression)->isa<IntLit>()) {
           (yyval.expression)=new SetLit((yyloc), IntSetVal::a((yyvsp[-3].expression)->cast<IntLit>()->v(),(yyvsp[-1].expression)->cast<IntLit>()->v()));
@@ -3967,129 +4096,95 @@ yyreduce:
           (yyval.expression)=new BinOp((yyloc), (yyvsp[-3].expression), BOT_DOTDOT, (yyvsp[-1].expression));
         }
       }
-
     break;
 
   case 153:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_INTERSECT, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_INTERSECT, (yyvsp[0].expression)); }
     break;
 
   case 154:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_PLUSPLUS, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_PLUSPLUS, (yyvsp[0].expression)); }
     break;
 
   case 155:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_PLUS, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_PLUS, (yyvsp[0].expression)); }
     break;
 
   case 156:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_MINUS, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_MINUS, (yyvsp[0].expression)); }
     break;
 
   case 157:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_MULT, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_MULT, (yyvsp[0].expression)); }
     break;
 
   case 158:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_DIV, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_DIV, (yyvsp[0].expression)); }
     break;
 
   case 159:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_IDIV, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_IDIV, (yyvsp[0].expression)); }
     break;
 
   case 160:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_MOD, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_MOD, (yyvsp[0].expression)); }
     break;
 
   case 161:
-
-    { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_POW, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new BinOp((yyloc), (yyvsp[-2].expression), BOT_POW, (yyvsp[0].expression)); }
     break;
 
   case 162:
-
-    { vector<Expression*> args;
+      { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
         (yyval.expression)=new Call((yyloc), ASTString("~+"), args);
       }
-
     break;
 
   case 163:
-
-    { vector<Expression*> args;
+      { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
         (yyval.expression)=new Call((yyloc), ASTString("~-"), args);
       }
-
     break;
 
   case 164:
-
-    { vector<Expression*> args;
+      { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
         (yyval.expression)=new Call((yyloc), ASTString("~*"), args);
       }
-
     break;
 
   case 165:
-
-    { vector<Expression*> args;
+      { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
         (yyval.expression)=new Call((yyloc), ASTString("~="), args);
       }
-
     break;
 
   case 166:
-
-    { vector<Expression*> args;
+      { vector<Expression*> args;
         args.push_back((yyvsp[-2].expression)); args.push_back((yyvsp[0].expression));
         (yyval.expression)=new Call((yyloc), (yyvsp[-1].sValue), args);
         free((yyvsp[-1].sValue));
       }
-
     break;
 
   case 167:
-
-    { (yyval.expression)=new UnOp((yyloc), UOT_NOT, (yyvsp[0].expression)); }
-
+      { (yyval.expression)=new UnOp((yyloc), UOT_NOT, (yyvsp[0].expression)); }
     break;
 
   case 168:
-
-    { if (((yyvsp[0].expression) && (yyvsp[0].expression)->isa<IntLit>()) || ((yyvsp[0].expression) && (yyvsp[0].expression)->isa<FloatLit>())) {
+      { if (((yyvsp[0].expression) && (yyvsp[0].expression)->isa<IntLit>()) || ((yyvsp[0].expression) && (yyvsp[0].expression)->isa<FloatLit>())) {
           (yyval.expression) = (yyvsp[0].expression);
         } else {
           (yyval.expression)=new UnOp((yyloc), UOT_PLUS, (yyvsp[0].expression));
         }
       }
-
     break;
 
   case 169:
-
-    { if ((yyvsp[0].expression) && (yyvsp[0].expression)->isa<IntLit>()) {
+      { if ((yyvsp[0].expression) && (yyvsp[0].expression)->isa<IntLit>()) {
           (yyval.expression) = IntLit::a(-(yyvsp[0].expression)->cast<IntLit>()->v());
         } else if ((yyvsp[0].expression) && (yyvsp[0].expression)->isa<FloatLit>()) {
           (yyval.expression) = FloatLit::a(-(yyvsp[0].expression)->cast<FloatLit>()->v());
@@ -4097,315 +4192,225 @@ yyreduce:
           (yyval.expression)=new UnOp((yyloc), UOT_MINUS, (yyvsp[0].expression));
         }
       }
-
     break;
 
   case 170:
-
-    { (yyval.expression)=(yyvsp[0].expression); }
-
+      { (yyval.expression)=(yyvsp[0].expression); }
     break;
 
   case 171:
-
-    { (yyval.expression)=(yyvsp[0].expression); }
-
+      { (yyval.expression)=(yyvsp[0].expression); }
     break;
 
   case 172:
-
-    { (yyval.expression)=(yyvsp[-1].expression); }
-
+      { (yyval.expression)=(yyvsp[-1].expression); }
     break;
 
   case 173:
-
-    { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[0].expression_vv)); delete (yyvsp[0].expression_vv); }
-
+      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-2].expression), *(yyvsp[0].expression_vv)); delete (yyvsp[0].expression_vv); }
     break;
 
   case 174:
-
-    { (yyval.expression)=new Id((yyloc), (yyvsp[0].sValue), NULL); free((yyvsp[0].sValue)); }
-
+      { (yyval.expression)=new Id((yyloc), (yyvsp[0].sValue), NULL); free((yyvsp[0].sValue)); }
     break;
 
   case 175:
-
-    { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), new Id((yylsp[-1]),(yyvsp[-1].sValue),NULL), *(yyvsp[0].expression_vv));
+      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), new Id((yylsp[-1]),(yyvsp[-1].sValue),NULL), *(yyvsp[0].expression_vv));
         free((yyvsp[-1].sValue)); delete (yyvsp[0].expression_vv); }
-
     break;
 
   case 176:
-
-    { (yyval.expression)=new AnonVar((yyloc)); }
-
+      { (yyval.expression)=new AnonVar((yyloc)); }
     break;
 
   case 177:
-
-    { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), new AnonVar((yyloc)), *(yyvsp[0].expression_vv));
+      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), new AnonVar((yyloc)), *(yyvsp[0].expression_vv));
         delete (yyvsp[0].expression_vv); }
-
     break;
 
   case 178:
-
-    { (yyval.expression)=constants().boollit(((yyvsp[0].iValue)!=0)); }
-
+      { (yyval.expression)=constants().boollit(((yyvsp[0].iValue)!=0)); }
     break;
 
   case 179:
-
-    { (yyval.expression)=IntLit::a((yyvsp[0].iValue)); }
-
+      { (yyval.expression)=IntLit::a((yyvsp[0].iValue)); }
     break;
 
   case 180:
-
-    { (yyval.expression)=IntLit::a(IntVal::infinity()); }
-
+      { (yyval.expression)=IntLit::a(IntVal::infinity()); }
     break;
 
   case 181:
-
-    { (yyval.expression)=FloatLit::a((yyvsp[0].dValue)); }
-
+      { (yyval.expression)=FloatLit::a((yyvsp[0].dValue)); }
     break;
 
   case 182:
-
-    { (yyval.expression)=constants().absent; }
-
+      { (yyval.expression)=constants().absent; }
     break;
 
   case 184:
-
-    { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
+      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
         delete (yyvsp[0].expression_vv); }
-
     break;
 
   case 186:
-
-    { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
+      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
         delete (yyvsp[0].expression_vv); }
-
     break;
 
   case 188:
-
-    { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
+      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
         delete (yyvsp[0].expression_vv); }
-
     break;
 
   case 190:
-
-    { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
+      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
         delete (yyvsp[0].expression_vv); }
-
     break;
 
   case 192:
-
-    { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
+      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
         delete (yyvsp[0].expression_vv); }
-
     break;
 
   case 194:
-
-    { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
+      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
         delete (yyvsp[0].expression_vv); }
-
     break;
 
   case 197:
-
-    { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
+      { if ((yyvsp[0].expression_vv)) (yyval.expression)=createArrayAccess((yyloc), (yyvsp[-1].expression), *(yyvsp[0].expression_vv));
         delete (yyvsp[0].expression_vv); }
-
     break;
 
   case 198:
-
-    { (yyval.expression)=new StringLit((yyloc), (yyvsp[0].sValue)); free((yyvsp[0].sValue)); }
-
+      { (yyval.expression)=new StringLit((yyloc), (yyvsp[0].sValue)); free((yyvsp[0].sValue)); }
     break;
 
   case 199:
-
-    { (yyval.expression)=new BinOp((yyloc), new StringLit((yyloc), (yyvsp[-1].sValue)), BOT_PLUSPLUS, (yyvsp[0].expression));
+      { (yyval.expression)=new BinOp((yyloc), new StringLit((yyloc), (yyvsp[-1].sValue)), BOT_PLUSPLUS, (yyvsp[0].expression));
         free((yyvsp[-1].sValue));
       }
-
     break;
 
   case 200:
-
-    { if ((yyvsp[-1].expression_v)) (yyval.expression)=new BinOp((yyloc), new Call((yyloc), ASTString("format"), *(yyvsp[-1].expression_v)), BOT_PLUSPLUS, new StringLit((yyloc),(yyvsp[0].sValue)));
+      { if ((yyvsp[-1].expression_v)) (yyval.expression)=new BinOp((yyloc), new Call((yyloc), ASTString("format"), *(yyvsp[-1].expression_v)), BOT_PLUSPLUS, new StringLit((yyloc),(yyvsp[0].sValue)));
         free((yyvsp[0].sValue));
         delete (yyvsp[-1].expression_v);
       }
-
     break;
 
   case 201:
-
-    { if ((yyvsp[-2].expression_v)) (yyval.expression)=new BinOp((yyloc), new Call((yyloc), ASTString("format"), *(yyvsp[-2].expression_v)), BOT_PLUSPLUS,
+      { if ((yyvsp[-2].expression_v)) (yyval.expression)=new BinOp((yyloc), new Call((yyloc), ASTString("format"), *(yyvsp[-2].expression_v)), BOT_PLUSPLUS,
                              new BinOp((yyloc), new StringLit((yyloc),(yyvsp[-1].sValue)), BOT_PLUSPLUS, (yyvsp[0].expression)));
         free((yyvsp[-1].sValue));
         delete (yyvsp[-2].expression_v);
       }
-
     break;
 
   case 202:
-
-    { (yyval.expression_vv)=new std::vector<std::vector<Expression*> >();
+      { (yyval.expression_vv)=new std::vector<std::vector<Expression*> >();
         if ((yyvsp[-1].expression_v)) {
           (yyval.expression_vv)->push_back(*(yyvsp[-1].expression_v));
           delete (yyvsp[-1].expression_v);
         }
       }
-
     break;
 
   case 203:
-
-    { (yyval.expression_vv)=(yyvsp[-3].expression_vv);
+      { (yyval.expression_vv)=(yyvsp[-3].expression_vv);
         if ((yyval.expression_vv) && (yyvsp[-1].expression_v)) {
           (yyval.expression_vv)->push_back(*(yyvsp[-1].expression_v));
           delete (yyvsp[-1].expression_v);
         }
       }
-
     break;
 
   case 204:
-
-    { (yyval.expression) = new SetLit((yyloc), std::vector<Expression*>()); }
-
+      { (yyval.expression) = new SetLit((yyloc), std::vector<Expression*>()); }
     break;
 
   case 205:
-
-    { if ((yyvsp[-1].expression_v)) (yyval.expression) = new SetLit((yyloc), *(yyvsp[-1].expression_v));
+      { if ((yyvsp[-1].expression_v)) (yyval.expression) = new SetLit((yyloc), *(yyvsp[-1].expression_v));
         delete (yyvsp[-1].expression_v); }
-
     break;
 
   case 206:
-
-    { if ((yyvsp[-1].generators)) (yyval.expression) = new Comprehension((yyloc), (yyvsp[-3].expression), *(yyvsp[-1].generators), true);
+      { if ((yyvsp[-1].generators)) (yyval.expression) = new Comprehension((yyloc), (yyvsp[-3].expression), *(yyvsp[-1].generators), true);
         delete (yyvsp[-1].generators);
       }
-
     break;
 
   case 207:
-
-    { if ((yyvsp[0].generator_v)) (yyval.generators)=new Generators; (yyval.generators)->_g = *(yyvsp[0].generator_v); delete (yyvsp[0].generator_v); }
-
+      { if ((yyvsp[0].generator_v)) (yyval.generators)=new Generators; (yyval.generators)->_g = *(yyvsp[0].generator_v); delete (yyvsp[0].generator_v); }
     break;
 
   case 209:
-
-    { (yyval.generator_v)=new std::vector<Generator>; if ((yyvsp[0].generator)) (yyval.generator_v)->push_back(*(yyvsp[0].generator)); delete (yyvsp[0].generator); }
-
+      { (yyval.generator_v)=new std::vector<Generator>; if ((yyvsp[0].generator)) (yyval.generator_v)->push_back(*(yyvsp[0].generator)); delete (yyvsp[0].generator); }
     break;
 
   case 210:
-
-    { (yyval.generator_v)=new std::vector<Generator>; if ((yyvsp[0].generator)) (yyval.generator_v)->push_back(*(yyvsp[0].generator)); delete (yyvsp[0].generator); }
-
+      { (yyval.generator_v)=new std::vector<Generator>; if ((yyvsp[0].generator)) (yyval.generator_v)->push_back(*(yyvsp[0].generator)); delete (yyvsp[0].generator); }
     break;
 
   case 211:
-
-    { (yyval.generator_v)=new std::vector<Generator>;
+      { (yyval.generator_v)=new std::vector<Generator>;
         if ((yyvsp[-2].generator)) (yyval.generator_v)->push_back(*(yyvsp[-2].generator));
         if ((yyvsp[-2].generator) && (yyvsp[0].expression)) (yyval.generator_v)->push_back(Generator((yyval.generator_v)->size(),(yyvsp[0].expression)));
         delete (yyvsp[-2].generator);
       }
-
     break;
 
   case 212:
-
-    { (yyval.generator_v)=(yyvsp[-2].generator_v); if ((yyval.generator_v) && (yyvsp[0].generator)) (yyval.generator_v)->push_back(*(yyvsp[0].generator)); delete (yyvsp[0].generator); }
-
+      { (yyval.generator_v)=(yyvsp[-2].generator_v); if ((yyval.generator_v) && (yyvsp[0].generator)) (yyval.generator_v)->push_back(*(yyvsp[0].generator)); delete (yyvsp[0].generator); }
     break;
 
   case 213:
-
-    { (yyval.generator_v)=(yyvsp[-2].generator_v); if ((yyval.generator_v) && (yyvsp[0].generator)) (yyval.generator_v)->push_back(*(yyvsp[0].generator)); delete (yyvsp[0].generator); }
-
+      { (yyval.generator_v)=(yyvsp[-2].generator_v); if ((yyval.generator_v) && (yyvsp[0].generator)) (yyval.generator_v)->push_back(*(yyvsp[0].generator)); delete (yyvsp[0].generator); }
     break;
 
   case 214:
-
-    { (yyval.generator_v)=(yyvsp[-4].generator_v);
+      { (yyval.generator_v)=(yyvsp[-4].generator_v);
         if ((yyval.generator_v) && (yyvsp[-2].generator)) (yyval.generator_v)->push_back(*(yyvsp[-2].generator));
         if ((yyval.generator_v) && (yyvsp[-2].generator) && (yyvsp[0].expression)) (yyval.generator_v)->push_back(Generator((yyval.generator_v)->size(),(yyvsp[0].expression)));
         delete (yyvsp[-2].generator);
       }
-
     break;
 
   case 215:
-
-    { if ((yyvsp[-2].string_v) && (yyvsp[0].expression)) (yyval.generator)=new Generator(*(yyvsp[-2].string_v),(yyvsp[0].expression),NULL); else (yyval.generator)=NULL; delete (yyvsp[-2].string_v); }
-
+      { if ((yyvsp[-2].string_v) && (yyvsp[0].expression)) (yyval.generator)=new Generator(*(yyvsp[-2].string_v),(yyvsp[0].expression),NULL); else (yyval.generator)=NULL; delete (yyvsp[-2].string_v); }
     break;
 
   case 216:
-
-    { if ((yyvsp[-4].string_v) && (yyvsp[-2].expression)) (yyval.generator)=new Generator(*(yyvsp[-4].string_v),(yyvsp[-2].expression),(yyvsp[0].expression)); else (yyval.generator)=NULL; delete (yyvsp[-4].string_v); }
-
+      { if ((yyvsp[-4].string_v) && (yyvsp[-2].expression)) (yyval.generator)=new Generator(*(yyvsp[-4].string_v),(yyvsp[-2].expression),(yyvsp[0].expression)); else (yyval.generator)=NULL; delete (yyvsp[-4].string_v); }
     break;
 
   case 217:
-
-    { if ((yyvsp[0].expression)) (yyval.generator)=new Generator({(yyvsp[-2].sValue)},NULL,(yyvsp[0].expression)); else (yyval.generator)=NULL; free((yyvsp[-2].sValue)); }
-
+      { if ((yyvsp[0].expression)) (yyval.generator)=new Generator({(yyvsp[-2].sValue)},NULL,(yyvsp[0].expression)); else (yyval.generator)=NULL; free((yyvsp[-2].sValue)); }
     break;
 
   case 219:
-
-    { (yyval.string_v)=new std::vector<std::string>; (yyval.string_v)->push_back((yyvsp[0].sValue)); free((yyvsp[0].sValue)); }
-
+      { (yyval.string_v)=new std::vector<std::string>; (yyval.string_v)->push_back((yyvsp[0].sValue)); free((yyvsp[0].sValue)); }
     break;
 
   case 220:
-
-    { (yyval.string_v)=(yyvsp[-2].string_v); if ((yyval.string_v) && (yyvsp[0].sValue)) (yyval.string_v)->push_back((yyvsp[0].sValue)); free((yyvsp[0].sValue)); }
-
+      { (yyval.string_v)=(yyvsp[-2].string_v); if ((yyval.string_v) && (yyvsp[0].sValue)) (yyval.string_v)->push_back((yyvsp[0].sValue)); free((yyvsp[0].sValue)); }
     break;
 
   case 221:
-
-    { (yyval.expression)=new ArrayLit((yyloc), std::vector<MiniZinc::Expression*>()); }
-
+      { (yyval.expression)=new ArrayLit((yyloc), std::vector<MiniZinc::Expression*>()); }
     break;
 
   case 222:
-
-    { if ((yyvsp[-1].expression_v)) (yyval.expression)=new ArrayLit((yyloc), *(yyvsp[-1].expression_v)); delete (yyvsp[-1].expression_v); }
-
+      { if ((yyvsp[-1].expression_v)) (yyval.expression)=new ArrayLit((yyloc), *(yyvsp[-1].expression_v)); delete (yyvsp[-1].expression_v); }
     break;
 
   case 223:
-
-    { (yyval.expression)=new ArrayLit((yyloc), std::vector<std::vector<Expression*> >()); }
-
+      { (yyval.expression)=new ArrayLit((yyloc), std::vector<std::vector<Expression*> >()); }
     break;
 
   case 224:
-
-    { if ((yyvsp[-1].expression_vv)) {
+      { if ((yyvsp[-1].expression_vv)) {
           (yyval.expression)=new ArrayLit((yyloc), *(yyvsp[-1].expression_vv));
           for (unsigned int i=1; i<(yyvsp[-1].expression_vv)->size(); i++)
             if ((*(yyvsp[-1].expression_vv))[i].size() != (*(yyvsp[-1].expression_vv))[i-1].size())
@@ -4415,12 +4420,10 @@ yyreduce:
           (yyval.expression) = NULL;
         }
       }
-
     break;
 
   case 225:
-
-    { if ((yyvsp[-2].expression_vv)) {
+      { if ((yyvsp[-2].expression_vv)) {
           (yyval.expression)=new ArrayLit((yyloc), *(yyvsp[-2].expression_vv));
           for (unsigned int i=1; i<(yyvsp[-2].expression_vv)->size(); i++)
             if ((*(yyvsp[-2].expression_vv))[i].size() != (*(yyvsp[-2].expression_vv))[i-1].size())
@@ -4430,11 +4433,9 @@ yyreduce:
           (yyval.expression) = NULL;
         }
       }
-
     break;
 
   case 226:
-
     {
       if ((yyvsp[-1].expression_vvv)) {
         std::vector<std::pair<int,int> > dims(3);
@@ -4472,71 +4473,55 @@ yyreduce:
         (yyval.expression) = NULL;
       }
     }
-
     break;
 
   case 227:
-
-    { (yyval.expression_vvv)=new std::vector<std::vector<std::vector<MiniZinc::Expression*> > >;
+      { (yyval.expression_vvv)=new std::vector<std::vector<std::vector<MiniZinc::Expression*> > >;
       }
-
     break;
 
   case 228:
-
-    { (yyval.expression_vvv)=new std::vector<std::vector<std::vector<MiniZinc::Expression*> > >;
+      { (yyval.expression_vvv)=new std::vector<std::vector<std::vector<MiniZinc::Expression*> > >;
         if ((yyvsp[-1].expression_vv)) (yyval.expression_vvv)->push_back(*(yyvsp[-1].expression_vv));
         delete (yyvsp[-1].expression_vv);
       }
-
     break;
 
   case 229:
-
-    { (yyval.expression_vvv)=(yyvsp[-4].expression_vvv);
+      { (yyval.expression_vvv)=(yyvsp[-4].expression_vvv);
         if ((yyval.expression_vvv) && (yyvsp[-1].expression_vv)) (yyval.expression_vvv)->push_back(*(yyvsp[-1].expression_vv));
         delete (yyvsp[-1].expression_vv);
       }
-
     break;
 
   case 230:
-
-    { (yyval.expression_vv)=new std::vector<std::vector<MiniZinc::Expression*> >;
+      { (yyval.expression_vv)=new std::vector<std::vector<MiniZinc::Expression*> >;
         if ((yyvsp[0].expression_v)) (yyval.expression_vv)->push_back(*(yyvsp[0].expression_v));
         delete (yyvsp[0].expression_v);
       }
-
     break;
 
   case 231:
-
-    { (yyval.expression_vv)=(yyvsp[-2].expression_vv); if ((yyval.expression_vv) && (yyvsp[0].expression_v)) (yyval.expression_vv)->push_back(*(yyvsp[0].expression_v)); delete (yyvsp[0].expression_v); }
-
+      { (yyval.expression_vv)=(yyvsp[-2].expression_vv); if ((yyval.expression_vv) && (yyvsp[0].expression_v)) (yyval.expression_vv)->push_back(*(yyvsp[0].expression_v)); delete (yyvsp[0].expression_v); }
     break;
 
   case 232:
-
-    { if ((yyvsp[-1].generators)) (yyval.expression)=new Comprehension((yyloc), (yyvsp[-3].expression), *(yyvsp[-1].generators), false);
+      { if ((yyvsp[-1].generators)) (yyval.expression)=new Comprehension((yyloc), (yyvsp[-3].expression), *(yyvsp[-1].generators), false);
         delete (yyvsp[-1].generators);
       }
-
     break;
 
   case 233:
-
-    {
+      {
         std::vector<Expression*> iexps;
         iexps.push_back((yyvsp[-3].expression));
         iexps.push_back((yyvsp[-1].expression));
         (yyval.expression)=new ITE((yyloc), iexps, NULL);
       }
-
     break;
 
   case 234:
-
-    {
+      {
         std::vector<Expression*> iexps;
         iexps.push_back((yyvsp[-6].expression));
         iexps.push_back((yyvsp[-4].expression));
@@ -4549,204 +4534,140 @@ yyreduce:
         (yyval.expression)=new ITE((yyloc), iexps,(yyvsp[-1].expression));
         delete (yyvsp[-3].expression_v);
       }
-
     break;
 
   case 235:
-
-    { (yyval.expression_v)=new std::vector<MiniZinc::Expression*>; }
-
+      { (yyval.expression_v)=new std::vector<MiniZinc::Expression*>; }
     break;
 
   case 236:
-
-    { (yyval.expression_v)=(yyvsp[-4].expression_v); if ((yyval.expression_v) && (yyvsp[-2].expression) && (yyvsp[0].expression)) { (yyval.expression_v)->push_back((yyvsp[-2].expression)); (yyval.expression_v)->push_back((yyvsp[0].expression)); } }
-
+      { (yyval.expression_v)=(yyvsp[-4].expression_v); if ((yyval.expression_v) && (yyvsp[-2].expression) && (yyvsp[0].expression)) { (yyval.expression_v)->push_back((yyvsp[-2].expression)); (yyval.expression_v)->push_back((yyvsp[0].expression)); } }
     break;
 
   case 237:
-
-    { (yyval.iValue)=BOT_EQUIV; }
-
+      { (yyval.iValue)=BOT_EQUIV; }
     break;
 
   case 238:
-
-    { (yyval.iValue)=BOT_IMPL; }
-
+      { (yyval.iValue)=BOT_IMPL; }
     break;
 
   case 239:
-
-    { (yyval.iValue)=BOT_RIMPL; }
-
+      { (yyval.iValue)=BOT_RIMPL; }
     break;
 
   case 240:
-
-    { (yyval.iValue)=BOT_OR; }
-
+      { (yyval.iValue)=BOT_OR; }
     break;
 
   case 241:
-
-    { (yyval.iValue)=BOT_XOR; }
-
+      { (yyval.iValue)=BOT_XOR; }
     break;
 
   case 242:
-
-    { (yyval.iValue)=BOT_AND; }
-
+      { (yyval.iValue)=BOT_AND; }
     break;
 
   case 243:
-
-    { (yyval.iValue)=BOT_LE; }
-
+      { (yyval.iValue)=BOT_LE; }
     break;
 
   case 244:
-
-    { (yyval.iValue)=BOT_GR; }
-
+      { (yyval.iValue)=BOT_GR; }
     break;
 
   case 245:
-
-    { (yyval.iValue)=BOT_LQ; }
-
+      { (yyval.iValue)=BOT_LQ; }
     break;
 
   case 246:
-
-    { (yyval.iValue)=BOT_GQ; }
-
+      { (yyval.iValue)=BOT_GQ; }
     break;
 
   case 247:
-
-    { (yyval.iValue)=BOT_EQ; }
-
+      { (yyval.iValue)=BOT_EQ; }
     break;
 
   case 248:
-
-    { (yyval.iValue)=BOT_NQ; }
-
+      { (yyval.iValue)=BOT_NQ; }
     break;
 
   case 249:
-
-    { (yyval.iValue)=BOT_IN; }
-
+      { (yyval.iValue)=BOT_IN; }
     break;
 
   case 250:
-
-    { (yyval.iValue)=BOT_SUBSET; }
-
+      { (yyval.iValue)=BOT_SUBSET; }
     break;
 
   case 251:
-
-    { (yyval.iValue)=BOT_SUPERSET; }
-
+      { (yyval.iValue)=BOT_SUPERSET; }
     break;
 
   case 252:
-
-    { (yyval.iValue)=BOT_UNION; }
-
+      { (yyval.iValue)=BOT_UNION; }
     break;
 
   case 253:
-
-    { (yyval.iValue)=BOT_DIFF; }
-
+      { (yyval.iValue)=BOT_DIFF; }
     break;
 
   case 254:
-
-    { (yyval.iValue)=BOT_SYMDIFF; }
-
+      { (yyval.iValue)=BOT_SYMDIFF; }
     break;
 
   case 255:
-
-    { (yyval.iValue)=BOT_PLUS; }
-
+      { (yyval.iValue)=BOT_PLUS; }
     break;
 
   case 256:
-
-    { (yyval.iValue)=BOT_MINUS; }
-
+      { (yyval.iValue)=BOT_MINUS; }
     break;
 
   case 257:
-
-    { (yyval.iValue)=BOT_MULT; }
-
+      { (yyval.iValue)=BOT_MULT; }
     break;
 
   case 258:
-
-    { (yyval.iValue)=BOT_POW; }
-
+      { (yyval.iValue)=BOT_POW; }
     break;
 
   case 259:
-
-    { (yyval.iValue)=BOT_DIV; }
-
+      { (yyval.iValue)=BOT_DIV; }
     break;
 
   case 260:
-
-    { (yyval.iValue)=BOT_IDIV; }
-
+      { (yyval.iValue)=BOT_IDIV; }
     break;
 
   case 261:
-
-    { (yyval.iValue)=BOT_MOD; }
-
+      { (yyval.iValue)=BOT_MOD; }
     break;
 
   case 262:
-
-    { (yyval.iValue)=BOT_INTERSECT; }
-
+      { (yyval.iValue)=BOT_INTERSECT; }
     break;
 
   case 263:
-
-    { (yyval.iValue)=BOT_PLUSPLUS; }
-
+      { (yyval.iValue)=BOT_PLUSPLUS; }
     break;
 
   case 264:
-
-    { (yyval.iValue)=-1; }
-
+      { (yyval.iValue)=-1; }
     break;
 
   case 265:
-
-    { if ((yyvsp[-5].iValue)==-1) {
+      { if ((yyvsp[-5].iValue)==-1) {
           (yyval.expression)=NULL;
           yyerror(&(yylsp[-3]), parm, "syntax error, unary operator with two arguments");
         } else {
           (yyval.expression)=new BinOp((yyloc), (yyvsp[-3].expression),static_cast<BinOpType>((yyvsp[-5].iValue)),(yyvsp[-1].expression));
         }
       }
-
     break;
 
   case 266:
-
-    { int uot=-1;
+      { int uot=-1;
         switch ((yyvsp[-3].iValue)) {
         case -1:
           uot = UOT_NOT;
@@ -4775,18 +4696,14 @@ yyreduce:
           }
         }
       }
-
     break;
 
   case 267:
-
-    { (yyval.expression)=new Call((yyloc), (yyvsp[-2].sValue), std::vector<Expression*>()); free((yyvsp[-2].sValue)); }
-
+      { (yyval.expression)=new Call((yyloc), (yyvsp[-2].sValue), std::vector<Expression*>()); free((yyvsp[-2].sValue)); }
     break;
 
   case 269:
-
-    { 
+      { 
         if ((yyvsp[-1].expression_p)!=NULL) {
           bool hadWhere = false;
           std::vector<Expression*> args;
@@ -4805,12 +4722,10 @@ yyreduce:
         free((yyvsp[-3].sValue));
         delete (yyvsp[-1].expression_p);
       }
-
     break;
 
   case 270:
-
-    { 
+      { 
         vector<Generator> gens;
         vector<Id*> ids;
         if ((yyvsp[-4].expression_p)) {
@@ -4863,331 +4778,236 @@ yyreduce:
         free((yyvsp[-6].sValue));
         delete (yyvsp[-4].expression_p);
       }
-
     break;
 
   case 272:
-
-    { (yyval.expression_p)=new vector<pair<Expression*,Expression*> >;
+      { (yyval.expression_p)=new vector<pair<Expression*,Expression*> >;
         if ((yyvsp[0].expression)) {
           (yyval.expression_p)->push_back(pair<Expression*,Expression*>((yyvsp[0].expression),NULL));
         }
       }
-
     break;
 
   case 273:
-
-    { (yyval.expression_p)=new vector<pair<Expression*,Expression*> >;
+      { (yyval.expression_p)=new vector<pair<Expression*,Expression*> >;
         if ((yyvsp[-2].expression) && (yyvsp[0].expression)) {
           (yyval.expression_p)->push_back(pair<Expression*,Expression*>((yyvsp[-2].expression),(yyvsp[0].expression)));
         }
       }
-
     break;
 
   case 274:
-
-    { (yyval.expression_p)=(yyvsp[-2].expression_p); if ((yyval.expression_p) && (yyvsp[0].expression)) (yyval.expression_p)->push_back(pair<Expression*,Expression*>((yyvsp[0].expression),NULL)); }
-
+      { (yyval.expression_p)=(yyvsp[-2].expression_p); if ((yyval.expression_p) && (yyvsp[0].expression)) (yyval.expression_p)->push_back(pair<Expression*,Expression*>((yyvsp[0].expression),NULL)); }
     break;
 
   case 275:
-
-    { (yyval.expression_p)=(yyvsp[-4].expression_p); if ((yyval.expression_p) && (yyvsp[-2].expression) && (yyvsp[0].expression)) (yyval.expression_p)->push_back(pair<Expression*,Expression*>((yyvsp[-2].expression),(yyvsp[0].expression))); }
-
+      { (yyval.expression_p)=(yyvsp[-4].expression_p); if ((yyval.expression_p) && (yyvsp[-2].expression) && (yyvsp[0].expression)) (yyval.expression_p)->push_back(pair<Expression*,Expression*>((yyvsp[-2].expression),(yyvsp[0].expression))); }
     break;
 
   case 276:
-
-    { if ((yyvsp[-3].expression_v) && (yyvsp[0].expression)) {
+      { if ((yyvsp[-3].expression_v) && (yyvsp[0].expression)) {
           (yyval.expression)=new Let((yyloc), *(yyvsp[-3].expression_v), (yyvsp[0].expression)); delete (yyvsp[-3].expression_v);
         } else {
           (yyval.expression)=NULL;
         }
       }
-
     break;
 
   case 277:
-
-    { if ((yyvsp[-4].expression_v) && (yyvsp[0].expression)) {
+      { if ((yyvsp[-4].expression_v) && (yyvsp[0].expression)) {
           (yyval.expression)=new Let((yyloc), *(yyvsp[-4].expression_v), (yyvsp[0].expression)); delete (yyvsp[-4].expression_v);
         } else {
           (yyval.expression)=NULL;
         }
       }
-
     break;
 
   case 278:
-
-    { (yyval.expression_v)=new vector<Expression*>; (yyval.expression_v)->push_back((yyvsp[0].vardeclexpr)); }
-
+      { (yyval.expression_v)=new vector<Expression*>; (yyval.expression_v)->push_back((yyvsp[0].vardeclexpr)); }
     break;
 
   case 279:
-
-    { (yyval.expression_v)=new vector<Expression*>;
+      { (yyval.expression_v)=new vector<Expression*>;
         if ((yyvsp[0].item)) {
           ConstraintI* ce = (yyvsp[0].item)->cast<ConstraintI>();
           (yyval.expression_v)->push_back(ce->e());
           ce->e(NULL);
         }
       }
-
     break;
 
   case 280:
-
-    { (yyval.expression_v)=(yyvsp[-2].expression_v); if ((yyval.expression_v) && (yyvsp[0].vardeclexpr)) (yyval.expression_v)->push_back((yyvsp[0].vardeclexpr)); }
-
+      { (yyval.expression_v)=(yyvsp[-2].expression_v); if ((yyval.expression_v) && (yyvsp[0].vardeclexpr)) (yyval.expression_v)->push_back((yyvsp[0].vardeclexpr)); }
     break;
 
   case 281:
-
-    { (yyval.expression_v)=(yyvsp[-2].expression_v);
+      { (yyval.expression_v)=(yyvsp[-2].expression_v);
         if ((yyval.expression_v) && (yyvsp[0].item)) {
           ConstraintI* ce = (yyvsp[0].item)->cast<ConstraintI>();
           (yyval.expression_v)->push_back(ce->e());
           ce->e(NULL);
         }
       }
-
     break;
 
   case 284:
-
-    { (yyval.vardeclexpr) = (yyvsp[-1].vardeclexpr);
+      { (yyval.vardeclexpr) = (yyvsp[-1].vardeclexpr);
         if ((yyval.vardeclexpr)) (yyval.vardeclexpr)->toplevel(false);
         if ((yyval.vardeclexpr) && (yyvsp[0].expression_v)) (yyval.vardeclexpr)->addAnnotations(*(yyvsp[0].expression_v));
         delete (yyvsp[0].expression_v);
       }
-
     break;
 
   case 285:
-
-    { if ((yyvsp[-3].vardeclexpr)) (yyvsp[-3].vardeclexpr)->e((yyvsp[0].expression));
+      { if ((yyvsp[-3].vardeclexpr)) (yyvsp[-3].vardeclexpr)->e((yyvsp[0].expression));
         (yyval.vardeclexpr) = (yyvsp[-3].vardeclexpr);
         if ((yyval.vardeclexpr)) (yyval.vardeclexpr)->loc((yyloc));
         if ((yyval.vardeclexpr)) (yyval.vardeclexpr)->toplevel(false);
         if ((yyval.vardeclexpr) && (yyvsp[-2].expression_v)) (yyval.vardeclexpr)->addAnnotations(*(yyvsp[-2].expression_v));
         delete (yyvsp[-2].expression_v);
       }
-
     break;
 
   case 286:
-
-    { (yyval.expression_v)=NULL; }
-
+      { (yyval.expression_v)=NULL; }
     break;
 
   case 288:
-
-    { (yyval.expression) = (yyvsp[0].expression); }
-
+      { (yyval.expression) = (yyvsp[0].expression); }
     break;
 
   case 289:
-
-    { (yyval.expression) = new Call((yylsp[0]), ASTString("mzn_expression_name"), {(yyvsp[0].expression)}); }
-
+      { (yyval.expression) = new Call((yylsp[0]), ASTString("mzn_expression_name"), {(yyvsp[0].expression)}); }
     break;
 
   case 290:
-
-    { (yyval.expression_v)=new std::vector<Expression*>(1);
+      { (yyval.expression_v)=new std::vector<Expression*>(1);
         (*(yyval.expression_v))[0] = (yyvsp[0].expression);
       }
-
     break;
 
   case 291:
-
-    { (yyval.expression_v)=(yyvsp[-2].expression_v); if ((yyval.expression_v)) (yyval.expression_v)->push_back((yyvsp[0].expression)); }
-
+      { (yyval.expression_v)=(yyvsp[-2].expression_v); if ((yyval.expression_v)) (yyval.expression_v)->push_back((yyvsp[0].expression)); }
     break;
 
   case 292:
-
-    { (yyval.sValue)=(yyvsp[0].sValue); }
-
+      { (yyval.sValue)=(yyvsp[0].sValue); }
     break;
 
   case 293:
-
-    { (yyval.sValue)=strdup("'<->'"); }
-
+      { (yyval.sValue)=strdup("'<->'"); }
     break;
 
   case 294:
-
-    { (yyval.sValue)=strdup("'->'"); }
-
+      { (yyval.sValue)=strdup("'->'"); }
     break;
 
   case 295:
-
-    { (yyval.sValue)=strdup("'<-'"); }
-
+      { (yyval.sValue)=strdup("'<-'"); }
     break;
 
   case 296:
-
-    { (yyval.sValue)=strdup("'\\/'"); }
-
+      { (yyval.sValue)=strdup("'\\/'"); }
     break;
 
   case 297:
-
-    { (yyval.sValue)=strdup("'xor'"); }
-
+      { (yyval.sValue)=strdup("'xor'"); }
     break;
 
   case 298:
-
-    { (yyval.sValue)=strdup("'/\\'"); }
-
+      { (yyval.sValue)=strdup("'/\\'"); }
     break;
 
   case 299:
-
-    { (yyval.sValue)=strdup("'<'"); }
-
+      { (yyval.sValue)=strdup("'<'"); }
     break;
 
   case 300:
-
-    { (yyval.sValue)=strdup("'>'"); }
-
+      { (yyval.sValue)=strdup("'>'"); }
     break;
 
   case 301:
-
-    { (yyval.sValue)=strdup("'<='"); }
-
+      { (yyval.sValue)=strdup("'<='"); }
     break;
 
   case 302:
-
-    { (yyval.sValue)=strdup("'>='"); }
-
+      { (yyval.sValue)=strdup("'>='"); }
     break;
 
   case 303:
-
-    { (yyval.sValue)=strdup("'='"); }
-
+      { (yyval.sValue)=strdup("'='"); }
     break;
 
   case 304:
-
-    { (yyval.sValue)=strdup("'!='"); }
-
+      { (yyval.sValue)=strdup("'!='"); }
     break;
 
   case 305:
-
-    { (yyval.sValue)=strdup("'in'"); }
-
+      { (yyval.sValue)=strdup("'in'"); }
     break;
 
   case 306:
-
-    { (yyval.sValue)=strdup("'subset'"); }
-
+      { (yyval.sValue)=strdup("'subset'"); }
     break;
 
   case 307:
-
-    { (yyval.sValue)=strdup("'superset'"); }
-
+      { (yyval.sValue)=strdup("'superset'"); }
     break;
 
   case 308:
-
-    { (yyval.sValue)=strdup("'union'"); }
-
+      { (yyval.sValue)=strdup("'union'"); }
     break;
 
   case 309:
-
-    { (yyval.sValue)=strdup("'diff'"); }
-
+      { (yyval.sValue)=strdup("'diff'"); }
     break;
 
   case 310:
-
-    { (yyval.sValue)=strdup("'symdiff'"); }
-
+      { (yyval.sValue)=strdup("'symdiff'"); }
     break;
 
   case 311:
-
-    { (yyval.sValue)=strdup("'..'"); }
-
+      { (yyval.sValue)=strdup("'..'"); }
     break;
 
   case 312:
-
-    { (yyval.sValue)=strdup("'+'"); }
-
+      { (yyval.sValue)=strdup("'+'"); }
     break;
 
   case 313:
-
-    { (yyval.sValue)=strdup("'-'"); }
-
+      { (yyval.sValue)=strdup("'-'"); }
     break;
 
   case 314:
-
-    { (yyval.sValue)=strdup("'*'"); }
-
+      { (yyval.sValue)=strdup("'*'"); }
     break;
 
   case 315:
-
-    { (yyval.sValue)=strdup("'^'"); }
-
+      { (yyval.sValue)=strdup("'^'"); }
     break;
 
   case 316:
-
-    { (yyval.sValue)=strdup("'/'"); }
-
+      { (yyval.sValue)=strdup("'/'"); }
     break;
 
   case 317:
-
-    { (yyval.sValue)=strdup("'div'"); }
-
+      { (yyval.sValue)=strdup("'div'"); }
     break;
 
   case 318:
-
-    { (yyval.sValue)=strdup("'mod'"); }
-
+      { (yyval.sValue)=strdup("'mod'"); }
     break;
 
   case 319:
-
-    { (yyval.sValue)=strdup("'intersect'"); }
-
+      { (yyval.sValue)=strdup("'intersect'"); }
     break;
 
   case 320:
-
-    { (yyval.sValue)=strdup("'not'"); }
-
+      { (yyval.sValue)=strdup("'not'"); }
     break;
 
   case 321:
-
-    { (yyval.sValue)=strdup("'++'"); }
-
+      { (yyval.sValue)=strdup("'++'"); }
     break;
 
 
@@ -5205,11 +5025,10 @@ yyreduce:
      case of YYERROR or YYBACKUP, subsequent parser actions might lead
      to an incorrect destructor call or verbose syntax error message
      before the lookahead is translated.  */
-  YY_SYMBOL_PRINT ("-> $$ =", yyr1[yyn], &yyval, &yyloc);
+  YY_SYMBOL_PRINT ("-> $$ =", YY_CAST (yysymbol_kind_t, yyr1[yyn]), &yyval, &yyloc);
 
   YYPOPSTACK (yylen);
   yylen = 0;
-  YY_STACK_PRINT (yyss, yyssp);
 
   *++yyvsp = yyval;
   *++yylsp = yyloc;
@@ -5217,14 +5036,13 @@ yyreduce:
   /* Now 'shift' the result of the reduction.  Determine what state
      that goes to, based on the state we popped back to and the rule
      number reduced by.  */
-
-  yyn = yyr1[yyn];
-
-  yystate = yypgoto[yyn - YYNTOKENS] + *yyssp;
-  if (0 <= yystate && yystate <= YYLAST && yycheck[yystate] == *yyssp)
-    yystate = yytable[yystate];
-  else
-    yystate = yydefgoto[yyn - YYNTOKENS];
+  {
+    const int yylhs = yyr1[yyn] - YYNTOKENS;
+    const int yyi = yypgoto[yylhs] + *yyssp;
+    yystate = (0 <= yyi && yyi <= YYLAST && yycheck[yyi] == *yyssp
+               ? yytable[yyi]
+               : yydefgoto[yylhs]);
+  }
 
   goto yynewstate;
 
@@ -5235,59 +5053,54 @@ yyreduce:
 yyerrlab:
   /* Make sure we have latest lookahead translation.  See comments at
      user semantic actions for why this is necessary.  */
-  yytoken = yychar == YYEMPTY ? YYEMPTY : YYTRANSLATE (yychar);
-
+  yytoken = yychar == YYEMPTY ? YYSYMBOL_YYEMPTY : YYTRANSLATE (yychar);
   /* If not already recovering from an error, report this error.  */
   if (!yyerrstatus)
     {
       ++yynerrs;
-#if ! YYERROR_VERBOSE
-      yyerror (&yylloc, parm, YY_("syntax error"));
-#else
-# define YYSYNTAX_ERROR yysyntax_error (&yymsg_alloc, &yymsg, \
-                                        yyssp, yytoken)
       {
+        yypcontext_t yyctx
+          = {yyssp, yytoken, &yylloc};
         char const *yymsgp = YY_("syntax error");
         int yysyntax_error_status;
-        yysyntax_error_status = YYSYNTAX_ERROR;
+        yysyntax_error_status = yysyntax_error (&yymsg_alloc, &yymsg, &yyctx);
         if (yysyntax_error_status == 0)
           yymsgp = yymsg;
-        else if (yysyntax_error_status == 1)
+        else if (yysyntax_error_status == -1)
           {
             if (yymsg != yymsgbuf)
               YYSTACK_FREE (yymsg);
-            yymsg = (char *) YYSTACK_ALLOC (yymsg_alloc);
-            if (!yymsg)
+            yymsg = YY_CAST (char *,
+                             YYSTACK_ALLOC (YY_CAST (YYSIZE_T, yymsg_alloc)));
+            if (yymsg)
               {
-                yymsg = yymsgbuf;
-                yymsg_alloc = sizeof yymsgbuf;
-                yysyntax_error_status = 2;
+                yysyntax_error_status
+                  = yysyntax_error (&yymsg_alloc, &yymsg, &yyctx);
+                yymsgp = yymsg;
               }
             else
               {
-                yysyntax_error_status = YYSYNTAX_ERROR;
-                yymsgp = yymsg;
+                yymsg = yymsgbuf;
+                yymsg_alloc = sizeof yymsgbuf;
+                yysyntax_error_status = YYENOMEM;
               }
           }
         yyerror (&yylloc, parm, yymsgp);
-        if (yysyntax_error_status == 2)
+        if (yysyntax_error_status == YYENOMEM)
           goto yyexhaustedlab;
       }
-# undef YYSYNTAX_ERROR
-#endif
     }
 
   yyerror_range[1] = yylloc;
-
   if (yyerrstatus == 3)
     {
       /* If just tried and failed to reuse lookahead token after an
          error, discard it.  */
 
-      if (yychar <= YYEOF)
+      if (yychar <= END)
         {
           /* Return failure if at end of input.  */
-          if (yychar == YYEOF)
+          if (yychar == END)
             YYABORT;
         }
       else
@@ -5307,12 +5120,10 @@ yyerrlab:
 | yyerrorlab -- error raised explicitly by YYERROR.  |
 `---------------------------------------------------*/
 yyerrorlab:
-
-  /* Pacify compilers like GCC when the user code never invokes
-     YYERROR and the label yyerrorlab therefore never appears in user
-     code.  */
-  if (/*CONSTCOND*/ 0)
-     goto yyerrorlab;
+  /* Pacify compilers when the user code never invokes YYERROR and the
+     label yyerrorlab therefore never appears in user code.  */
+  if (0)
+    YYERROR;
 
   /* Do not reclaim the symbols of the rule whose action triggered
      this YYERROR.  */
@@ -5329,13 +5140,14 @@ yyerrorlab:
 yyerrlab1:
   yyerrstatus = 3;      /* Each real token shifted decrements this.  */
 
+  /* Pop stack until we find a state that shifts the error token.  */
   for (;;)
     {
       yyn = yypact[yystate];
       if (!yypact_value_is_default (yyn))
         {
-          yyn += YYTERROR;
-          if (0 <= yyn && yyn <= YYLAST && yycheck[yyn] == YYTERROR)
+          yyn += YYSYMBOL_YYerror;
+          if (0 <= yyn && yyn <= YYLAST && yycheck[yyn] == YYSYMBOL_YYerror)
             {
               yyn = yytable[yyn];
               if (0 < yyn)
@@ -5349,7 +5161,7 @@ yyerrlab1:
 
       yyerror_range[1] = *yylsp;
       yydestruct ("Error: popping",
-                  yystos[yystate], yyvsp, yylsp, parm);
+                  YY_ACCESSING_SYMBOL (yystate), yyvsp, yylsp, parm);
       YYPOPSTACK (1);
       yystate = *yyssp;
       YY_STACK_PRINT (yyss, yyssp);
@@ -5360,13 +5172,11 @@ yyerrlab1:
   YY_IGNORE_MAYBE_UNINITIALIZED_END
 
   yyerror_range[2] = yylloc;
-  /* Using YYLLOC is tempting, but would change the location of
-     the lookahead.  YYLOC is available though.  */
-  YYLLOC_DEFAULT (yyloc, yyerror_range, 2);
-  *++yylsp = yyloc;
+  ++yylsp;
+  YYLLOC_DEFAULT (*yylsp, yyerror_range, 2);
 
   /* Shift the error token.  */
-  YY_SYMBOL_PRINT ("Shifting", yystos[yyn], yyvsp, yylsp);
+  YY_SYMBOL_PRINT ("Shifting", YY_ACCESSING_SYMBOL (yyn), yyvsp, yylsp);
 
   yystate = yyn;
   goto yynewstate;
@@ -5379,6 +5189,7 @@ yyacceptlab:
   yyresult = 0;
   goto yyreturn;
 
+
 /*-----------------------------------.
 | yyabortlab -- YYABORT comes here.  |
 `-----------------------------------*/
@@ -5386,7 +5197,8 @@ yyabortlab:
   yyresult = 1;
   goto yyreturn;
 
-#if !defined yyoverflow || YYERROR_VERBOSE
+
+#if 1
 /*-------------------------------------------------.
 | yyexhaustedlab -- memory exhaustion comes here.  |
 `-------------------------------------------------*/
@@ -5396,6 +5208,10 @@ yyexhaustedlab:
   /* Fall through.  */
 #endif
 
+
+/*-----------------------------------------------------.
+| yyreturn -- parsing is finished, return the result.  |
+`-----------------------------------------------------*/
 yyreturn:
   if (yychar != YYEMPTY)
     {
@@ -5412,16 +5228,15 @@ yyreturn:
   while (yyssp != yyss)
     {
       yydestruct ("Cleanup: popping",
-                  yystos[*yyssp], yyvsp, yylsp, parm);
+                  YY_ACCESSING_SYMBOL (+*yyssp), yyvsp, yylsp, parm);
       YYPOPSTACK (1);
     }
 #ifndef yyoverflow
   if (yyss != yyssa)
     YYSTACK_FREE (yyss);
 #endif
-#if YYERROR_VERBOSE
   if (yymsg != yymsgbuf)
     YYSTACK_FREE (yymsg);
-#endif
   return yyresult;
 }
+

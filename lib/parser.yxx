@@ -10,6 +10,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 %pure-parser
+
 %parse-param {void *parm}
 %lex-param {void* SCANNER}
 %{
@@ -34,11 +35,11 @@ using namespace std;
 using namespace MiniZinc;
 
 #define YYLLOC_DEFAULT(Current, Rhs, N) \
-  Current.filename(Rhs[1].filename()); \
-  Current.first_line(Rhs[1].first_line()); \
-  Current.first_column(Rhs[1].first_column()); \
-  Current.last_line(Rhs[N].last_line()); \
-  Current.last_column(Rhs[N].last_column());
+  (Current).filename(Rhs[1].filename()); \
+  (Current).first_line(Rhs[1].first_line()); \
+  (Current).first_column(Rhs[1].first_column()); \
+  (Current).last_line(Rhs[N].last_line()); \
+  (Current).last_column(Rhs[N].last_column());
 
 int mzn_yyparse(void*);
 int mzn_yylex(YYSTYPE*, YYLTYPE*, void* scanner);
