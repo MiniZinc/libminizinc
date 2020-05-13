@@ -444,8 +444,10 @@ namespace MiniZinc {
             os << " then ";
             p(ite.e_then(i));
           }
-          os << " else ";
-          p(ite.e_else());
+          if (ite.e_else()) {
+            os << " else ";
+            p(ite.e_else());
+          }
           os << " endif";
         }
         break;
