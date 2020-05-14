@@ -1272,6 +1272,49 @@ namespace MiniZinc {
     return ret;
   }
 
+  bool b_has_ann(EnvI& env, Call* call) {
+    assert(call->n_args()==2);
+    Expression* expr = call->arg(0);
+    if (!expr->isa<Id>()) {
+      // Argument is a literal, unable to verify annotations
+      return false;
+    }
+    expr = follow_id_to_decl(expr);
+    Expression* ann = call->arg(1);
+    if (ann->isa<Id>()) {
+      return expr->ann().contains(ann);
+    }
+    auto key = ann->cast<Call>();
+    if (Call* c = expr->ann().getCall(key->id())) {
+      if (c->n_args() != key->n_args()) {
+        return false;
+      }
+      for (int i = 0; i < c->n_args(); ++i) {
+        if (c->arg(i)->type() != key->arg(i)->type()) {
+          return false;
+        }
+        if (c->arg(i)->type().ispar()) {
+          GCLock lock;
+          Expression* check_eq = new BinOp(Location().introduce(), c->arg(i), BOT_EQ, key->arg(i));
+          check_eq->type(Type::parbool());
+          if (!eval_bool(env, check_eq)) {
+            return false;
+          }
+        } else {
+          if (c->arg(i)->isa<Id>() && key->arg(i)->isa<Id>()) {
+            if (follow_id_to_decl(c->arg(i)) != follow_id_to_decl(key->arg(i))) {
+              return false;
+            }
+          } else {
+            throw EvalError(env, call->loc(), "Unable to determine equality of variable expressions");
+          }
+        }
+      }
+      return true;
+    }
+    return false;
+  }
+
   FloatVal b_int2float(EnvI& env, Call* call) {
     return eval_int(env,call->arg(0));
   }
@@ -2989,6 +3032,23 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::optvartop(1);
       rb(env, m, ASTString("fix"), t, b_fix_array);
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = Type::optvartop();
+      t[1] = Type::ann();
+      rb(env, m, ASTString("has_ann"), t, b_has_ann);
+      t[0] = Type::varsetint();
+      rb(env, m, ASTString("has_ann"), t, b_has_ann);
+      Type setoftop;
+      setoftop.bt(Type::BT_TOP);
+      setoftop.st(Type::ST_SET);
+      setoftop.ti(Type::TI_PAR);
+      setoftop.ot(Type::OT_PRESENT);
+      t[0] = setoftop;
+      rb(env, m, ASTString("has_ann"), t, b_has_ann);
+      /* t[0] = Type::optvartop(-1); */
+      /* rb(env, m, ASTString("has_ann"), t, b_has_ann); */
     }
     {
       std::vector<Type> t(1);
