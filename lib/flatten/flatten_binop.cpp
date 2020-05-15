@@ -1388,19 +1388,17 @@ namespace MiniZinc {
             flatten_linexp_binop<FloatLit>(env,ctx,r,b,ret,le0,le1,bot,doubleNeg,ees,args,callid);
           }
         } else {
-          if (isBuiltin) {
-            switch (bot) {
-              case BOT_GR:
-                std::swap(e0,e1);
-                bot = BOT_LE;
-                break;
-              case BOT_GQ:
-                std::swap(e0,e1);
-                bot = BOT_LQ;
-                break;
-              default:
-                break;
-            }
+          switch (bot) {
+            case BOT_GR:
+              std::swap(e0,e1);
+              bot = BOT_LE;
+              break;
+            case BOT_GQ:
+              std::swap(e0,e1);
+              bot = BOT_LQ;
+              break;
+            default:
+              break;
           }
           args.push_back(e0.r);
           args.push_back(e1.r);
@@ -1409,10 +1407,12 @@ namespace MiniZinc {
         if (args.size() > 0) {
           GC::lock();
           
+          bool idIsOp = false;
           if (callid=="") {
             assert(args.size()==2);
             if (!isBuiltin) {
               callid = opToId(bot);
+              idIsOp = true;
             } else {
               callid = opToBuiltin(args[0](),args[1](),bot);
             }
@@ -1425,6 +1425,15 @@ namespace MiniZinc {
           cc->decl(env.model->matchFn(env,cc->id(),args_e,false));
           if (cc->decl()==NULL) {
             throw FlatteningError(env,cc->loc(), "cannot find matching declaration");
+          }
+          if (idIsOp && cc->decl()->e()==nullptr) {
+            // This is in fact a built-in operator, but we only found out after
+            // constructing the call
+            cc = new Call(e->loc().introduce(),opToBuiltin(args[0](),args[1](),bot),args_e);
+            cc->decl(env.model->matchFn(env,cc->id(),args_e,false));
+            if (cc->decl()==NULL) {
+              throw FlatteningError(env,cc->loc(), "cannot find matching declaration");
+            }
           }
           cc->type(cc->decl()->rtype(env,args_e,false));
           
