@@ -359,18 +359,7 @@ namespace MiniZinc {
     typedef SetLit* Val;
     typedef Expression* ArrayVal;
     static SetLit* e(EnvI& env, Expression* e) {
-      switch (e->type().bt()) {
-        case Type::BT_INT:
-        case Type::BT_BOT:
-          return new SetLit(e->loc(),eval_intset(env, e));
-        case Type::BT_BOOL: {
-          SetLit* sl = new SetLit(e->loc(),eval_boolset(env, e));
-          sl->type(Type::parsetbool());
-          return sl;
-        }
-        case Type::BT_FLOAT: return new SetLit(e->loc(),eval_floatset(env, e));
-        default: throw InternalError("invalid set literal type");
-      }
+      return eval_set_lit(env, e);
     }
     static Expression* exp(Expression* e) { return e; }
     Expression* flatten(EnvI&, Expression*) {
@@ -700,6 +689,23 @@ namespace MiniZinc {
       throw ResultUndefinedError(env, e->loc(), "array access out of bounds");
   }
   
+  SetLit* eval_set_lit(EnvI& env, Expression* e) {
+    switch (e->type().bt()) {
+      case Type::BT_INT:
+      case Type::BT_BOT:
+        return new SetLit(e->loc(), eval_intset(env, e));
+      case Type::BT_BOOL: {
+        SetLit* sl = new SetLit(e->loc(), eval_boolset(env, e));
+        sl->type(Type::parsetbool());
+        return sl;
+      }
+      case Type::BT_FLOAT:
+        return new SetLit(e->loc(), eval_floatset(env, e));
+      default:
+        throw InternalError("invalid set literal type");
+    }
+  }
+
   IntSetVal* eval_intset(EnvI& env, Expression* e) {
     if (SetLit* sl = e->dyn_cast<SetLit>()) {
       if (sl->isv())

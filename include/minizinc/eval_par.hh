@@ -32,6 +32,8 @@ namespace MiniZinc {
   Expression* eval_arrayaccess(EnvI& env, ArrayLit* a, const std::vector<IntVal>& idx, bool& success);
   /// Evaluate an array access \a e and return whether access succeeded in \a success
   Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, bool& success);
+  /// Evaluate a set expression \a e into a set literal
+  SetLit* eval_set_lit(EnvI& env, Expression* e);
   /// Evaluate a par integer set \a e
   IntSetVal* eval_intset(EnvI& env, Expression* e);
   /// Evaluate a par bool set \a e

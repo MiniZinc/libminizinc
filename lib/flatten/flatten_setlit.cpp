@@ -31,7 +31,7 @@ namespace MiniZinc {
     ret.b = conj(env,b,Ctx(),elems_ee);
     if (allPar) {
       GCLock lock;
-      Expression* ee = eval_par(env,e);
+      Expression* ee = eval_set_lit(env, e);
       ret.r = bind(env,Ctx(),r,ee);
     } else {
       GCLock lock;
