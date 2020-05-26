@@ -322,6 +322,103 @@ namespace MiniZinc {
     
     return sc;
   }
+
+  std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
+    GCLock lock;
+    std::ostringstream oss;
+    auto def_id = configs.defaultSolver("");
+    oss << "{\n";
+    oss << "  \"extraInfo\": {\n";
+    if (!def_id.empty() && def_id == id()) {
+      oss << "    \"isDefault\": true,\n";
+    }
+    if (mznlib_resolved().size()) {
+      oss << "    \"mznlib\": \"" << Printer::escapeStringLit(mznlib_resolved()) << "\",\n";
+    }
+    if (executable_resolved().size()) {
+      oss << "    \"executable\": \"" << Printer::escapeStringLit(executable_resolved()) << "\",\n";
+    }
+    oss << "    \"configFile\": \"" << Printer::escapeStringLit(configFile()) << "\"";
+    if (defaultFlags().size()) {
+      oss << ",\n    \"defaultFlags\": [";
+      for (unsigned int j = 0; j < defaultFlags().size(); j++) {
+        oss << "\"" << Printer::escapeStringLit(defaultFlags()[j]) << "\"";
+        if (j < defaultFlags().size() - 1)
+          oss << ",";
+      }
+      oss << "]";
+    }
+    oss << "\n";
+    oss << "  },\n";
+    oss << "  \"id\": \"" << Printer::escapeStringLit(id()) << "\",\n";
+    oss << "  \"name\": \"" << Printer::escapeStringLit(name()) << "\",\n";
+    oss << "  \"version\": \"" << Printer::escapeStringLit(version()) << "\",\n";
+    if (mznlib().size()) {
+      oss << "  \"mznlib\": \"" << Printer::escapeStringLit(mznlib()) << "\",\n";
+    }
+    if (executable().size()) {
+      oss << "  \"executable\": \"" << Printer::escapeStringLit(executable()) << "\",\n";
+    }
+    oss << "  \"mznlibVersion\": " << mznlibVersion() << ",\n";
+    if (description().size()) {
+      oss << "  \"description\": \"" << Printer::escapeStringLit(description()) << "\",\n";
+    }
+    if (contact().size()) {
+      oss << "  \"contact\": \"" << Printer::escapeStringLit(contact()) << "\",\n";
+    }
+    if (website().size()) {
+      oss << "  \"website\": \"" << Printer::escapeStringLit(website()) << "\",\n";
+    }
+    if (requiredFlags().size()) {
+      oss << "  \"requiredFlags\": [";
+      for (unsigned int j = 0; j < requiredFlags().size(); j++) {
+        oss << "\"" << requiredFlags()[j] << "\"";
+        if (j < requiredFlags().size() - 1)
+          oss << ",";
+      }
+      oss << "],\n";
+    }
+    if (stdFlags().size()) {
+      oss << "  \"stdFlags\": [";
+      for (unsigned int j = 0; j < stdFlags().size(); j++) {
+        oss << "\"" << stdFlags()[j] << "\"";
+        if (j < stdFlags().size() - 1)
+          oss << ",";
+      }
+      oss << "],\n";
+    }
+    if (extraFlags().size()) {
+      oss << "  \"extraFlags\": [";
+      for (unsigned int j = 0; j < extraFlags().size(); j++) {
+        oss << "[" << "\"" << extraFlags()[j].flag << "\",\"" << extraFlags()[j].description << "\",\"";
+        oss << extraFlags()[j].flag_type << "\",\"" << extraFlags()[j].default_value << "\"]";
+        if (j < extraFlags().size() - 1)
+          oss << ",";
+      }
+      oss << "],\n";
+    }
+
+    if (tags().size()) {
+      oss << "  \"tags\": [";
+      for (unsigned int j = 0; j < tags().size(); j++) {
+        oss << "\"" << Printer::escapeStringLit(tags()[j]) << "\"";
+        if (j < tags().size() - 1)
+          oss << ",";
+      }
+      oss << "],\n";
+    }
+    oss << "  \"supportsMzn\": " << (supportsMzn() ? "true" : "false") << ",\n";
+    oss << "  \"supportsFzn\": " << (supportsFzn() ? "true" : "false") << ",\n";
+    oss << "  \"supportsNL\": " << (supportsNL() ? "true" : "false") << ",\n";
+    oss << "  \"needsSolns2Out\": " << (needsSolns2Out() ? "true" : "false") << ",\n";
+    oss << "  \"needsMznExecutable\": " << (needsMznExecutable() ? "true" : "false") << ",\n";
+    oss << "  \"needsStdlibDir\": " << (needsStdlibDir() ? "true" : "false") << ",\n";
+    oss << "  \"needsPathsFile\": " << (needsPathsFile() ? "true" : "false") << ",\n";
+    oss << "  \"isGUIApplication\": " << (isGUIApplication() ? "true" : "false") << "\n";
+    oss << "}";
+
+    return oss.str();
+  }
  
   class BuiltinSolverConfigs {
   public:
@@ -534,15 +631,7 @@ namespace MiniZinc {
   }
 
   std::string SolverConfigs::solverConfigsJSON() const {
-    GCLock lock;
     std::ostringstream oss;
-    
-    // Find default solver, if present
-    std::string def_id;
-    DefaultMap::const_iterator def_it = _tagDefault.find("");
-    if (def_it != _tagDefault.end()) {
-      def_id = def_it->second;
-    }
     
     SortByName sortByName(_solvers);
     std::vector<int> solversIdx(_solvers.size());
@@ -552,104 +641,20 @@ namespace MiniZinc {
     std::sort(solversIdx.begin(), solversIdx.end(), sortByName);
     
     bool hadSolver = false;
-    oss << "[\n";
+    oss << "[";
     for (unsigned int i=0; i<_solvers.size(); i++) {
       const SolverConfig& sc = _solvers[solversIdx[i]];
       if (std::find(sc.tags().begin(), sc.tags().end(), "__internal__") != sc.tags().end())
         continue;
       if (hadSolver) {
-        oss << ",\n";
+        oss << ",";
       }
       hadSolver = true;
-      oss << "  {\n";
-      oss << "    \"extraInfo\": {\n";
-      if (!def_id.empty() && def_id==sc.id()) {
-        oss << "      \"isDefault\": true,\n";
+      std::istringstream iss(sc.toJSON(*this));
+      std::string line;
+      while (std::getline(iss, line)) {
+        oss << "\n  " << line;
       }
-      if (sc.mznlib_resolved().size()) {
-        oss << "      \"mznlib\": \"" << Printer::escapeStringLit(sc.mznlib_resolved()) << "\",\n";
-      }
-      if (sc.executable_resolved().size()) {
-        oss << "      \"executable\": \"" << Printer::escapeStringLit(sc.executable_resolved()) << "\",\n";
-      }
-      oss << "      \"configFile\": \"" << Printer::escapeStringLit(sc.configFile()) << "\"";
-      if (sc.defaultFlags().size()) {
-        oss << ",\n      \"defaultFlags\": [";
-        for (unsigned int j=0; j<sc.defaultFlags().size(); j++) {
-          oss << "\"" << Printer::escapeStringLit(sc.defaultFlags()[j]) << "\"";
-          if (j<sc.defaultFlags().size()-1)
-            oss << ",";
-        }
-        oss << "]";
-      }
-      oss << "\n";
-      oss << "    },\n";
-      oss << "    \"id\": \"" << Printer::escapeStringLit(sc.id()) << "\",\n";
-      oss << "    \"name\": \"" << Printer::escapeStringLit(sc.name()) << "\",\n";
-      oss << "    \"version\": \"" << Printer::escapeStringLit(sc.version()) << "\",\n";
-      if (sc.mznlib().size()) {
-        oss << "    \"mznlib\": \"" << Printer::escapeStringLit(sc.mznlib()) << "\",\n";
-      }
-      if (sc.executable().size()) {
-        oss << "    \"executable\": \"" << Printer::escapeStringLit(sc.executable()) << "\",\n";
-      }
-      oss << "    \"mznlibVersion\": " << sc.mznlibVersion() << ",\n";
-      if (sc.description().size()) {
-        oss << "    \"description\": \"" << Printer::escapeStringLit(sc.description()) << "\",\n";
-      }
-      if (sc.contact().size()) {
-        oss << "    \"contact\": \"" << Printer::escapeStringLit(sc.contact()) << "\",\n";
-      }
-      if (sc.website().size()) {
-        oss << "    \"website\": \"" << Printer::escapeStringLit(sc.website()) << "\",\n";
-      }
-      if (sc.requiredFlags().size()) {
-        oss << "    \"requiredFlags\": [";
-        for (unsigned int j=0; j<sc.requiredFlags().size(); j++) {
-          oss << "\"" << sc.requiredFlags()[j] << "\"";
-          if (j<sc.requiredFlags().size()-1)
-            oss << ",";
-        }
-        oss << "],\n";
-      }
-      if (sc.stdFlags().size()) {
-        oss << "    \"stdFlags\": [";
-        for (unsigned int j=0; j<sc.stdFlags().size(); j++) {
-          oss << "\"" << sc.stdFlags()[j] << "\"";
-          if (j<sc.stdFlags().size()-1)
-            oss << ",";
-        }
-        oss << "],\n";
-      }
-      if (sc.extraFlags().size()) {
-        oss << "    \"extraFlags\": [";
-        for (unsigned int j=0; j<sc.extraFlags().size(); j++) {
-          oss << "[" << "\"" << sc.extraFlags()[j].flag << "\",\"" << sc.extraFlags()[j].description << "\",\"";
-          oss << sc.extraFlags()[j].flag_type  << "\",\"" << sc.extraFlags()[j].default_value << "\"]";
-          if (j<sc.extraFlags().size()-1)
-            oss << ",";
-        }
-        oss << "],\n";
-      }
-
-      if (sc.tags().size()) {
-        oss << "    \"tags\": [";
-        for (unsigned int j=0; j<sc.tags().size(); j++) {
-          oss << "\"" << Printer::escapeStringLit(sc.tags()[j]) << "\"";
-          if (j<sc.tags().size()-1)
-            oss << ",";
-        }
-        oss << "],\n";
-      }
-      oss << "    \"supportsMzn\": " << (sc.supportsMzn() ? "true" : "false") << ",\n";
-      oss << "    \"supportsFzn\": " << (sc.supportsFzn() ? "true" : "false") << ",\n";
-      oss << "    \"supportsNL\": " << (sc.supportsNL() ? "true" : "false") << ",\n";
-      oss << "    \"needsSolns2Out\": " << (sc.needsSolns2Out()? "true" : "false") << ",\n";
-      oss << "    \"needsMznExecutable\": " << (sc.needsMznExecutable()? "true" : "false") << ",\n";
-      oss << "    \"needsStdlibDir\": " << (sc.needsStdlibDir()? "true" : "false") << ",\n";
-      oss << "    \"needsPathsFile\": " << (sc.needsPathsFile()? "true" : "false") << ",\n";
-      oss << "    \"isGUIApplication\": " << (sc.isGUIApplication()? "true" : "false") << "\n";
-      oss << "  }";
     }
     oss << "\n]\n";
     return oss.str();

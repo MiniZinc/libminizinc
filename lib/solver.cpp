@@ -335,6 +335,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         "--param-file",
         "--solvers",
         "--solvers-json",
+        "--solver-json",
         "--help", "-h",
         "--config-dirs"
         });
@@ -389,6 +390,21 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     }
     if (argv[i]=="--solvers-json") {
       cout << solver_configs.solverConfigsJSON();
+      return OPTION_FINISH;
+    }
+    if (argv[i] == "--solver-json") {
+      ++i;
+      if (i == argc) {
+        log << "Argument required for --solver-json" << endl;
+        return OPTION_ERROR;
+      }
+      if (solver.size() > 0 && solver != argv[i]) {
+        log << "Only one --solver-json option allowed" << endl;
+        return OPTION_ERROR;
+      }
+      solver = argv[i];
+      const SolverConfig& sc = solver_configs.config(solver);
+      cout << sc.toJSON(solver_configs);
       return OPTION_FINISH;
     }
     if (argv[i]=="--config-dirs") {

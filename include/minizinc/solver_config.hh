@@ -17,6 +17,7 @@
 #include <unordered_map>
 
 namespace MiniZinc {
+  class SolverConfigs;
 
   /**
    * \brief Configuration data for individual MiniZinc solvers
@@ -207,6 +208,9 @@ namespace MiniZinc {
     /// Set tags
     void tags(const std::vector<std::string>& t) { _tags = t; }
     
+    /// Output as JSON
+    std::string toJSON(const SolverConfigs& configs) const;
+
     /// Test equality
     bool operator==(const SolverConfig& sc) const {
       return _id==sc.id() && _version==sc.version();
@@ -263,7 +267,7 @@ namespace MiniZinc {
     /// Default solver
     const std::string& defaultSolver(void) const { return _defaultSolver; }
     /// Default solver for tag \a t
-    const std::string& defaultSolver(const std::string& t) {
+    const std::string& defaultSolver(const std::string& t) const {
       static std::string noDefault;
       auto it = _tagDefault.find(t);
       return it==_tagDefault.end() ? noDefault : it->second;
