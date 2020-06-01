@@ -172,7 +172,9 @@ namespace MiniZinc {
   SolverInstanceBase::flattenSearchAnnotations(const Annotation& ann, std::vector<Expression*>& out) {
     for(ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
       Expression* e = *i;
-      if(e->isa<Call>() && (e->cast<Call>()->id().str() == "seq_search" || e->cast<Call>()->id().str() == "warm_start_array")) {
+      if(e->isa<Call>() &&
+         (e->cast<Call>()->id().str() == "seq_search" ||
+          e->cast<Call>()->id().str() == "warm_start_array")) {
         Call* c = e->cast<Call>();
         auto* anns = c->arg(0)->cast<ArrayLit>();
         for(unsigned int i=0; i<anns->size(); i++) {
@@ -186,5 +188,52 @@ namespace MiniZinc {
     }
   }
 
+  void SolverInstanceBase::flattenMultipleObjectives(const Annotation &ann, MultipleObjectives &mo) {
+    int nGoalH=0;
+    for(ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
+      MZN_ASSERT_HARD_MSG(0==nGoalH++, "Several goal hierarchies provided");
+      Expression* e = *i;
+      if(e->isa<Call>() &&
+         (e->cast<Call>()->id().str() == "goal_hierarchy")) {
+        MZN_ASSERT_HARD_MSG(
+              getEnv()->flat()->solveItem()->st() == SolveI::SolveType::ST_SAT,
+              "goal_hierarchy provided but solve item is not SAT");
+        Call* c = e->cast<Call>();
+        auto* anns = c->arg(0)->cast<ArrayLit>();
+        for(unsigned int i=0; i<anns->size(); i++) {
+          Annotation subann;
+          subann.add((*anns)[i]);
+          MultipleObjectives::Objective obj;
+          flattenMultObjComponent(subann, obj);
+          mo.add(obj);
+        }
+      }
+    }
+  }
+
+  void SolverInstanceBase::flattenMultObjComponent(const Annotation &ann, MultipleObjectives::Objective &obj) {
+    MZN_ASSERT_HARD(!ann.isEmpty());
+    Expression *e=*ann.begin();
+    MZN_ASSERT_HARD(e->isa<Call>());
+    Call* c = e->cast<Call>();
+    obj.setVariable(c->arg(0));
+    const auto id = c->id().str();
+    if ("min_goal"==id)
+      obj.setWeight(-1.0);
+    else if ("int_min_goal"==id)
+      obj.setWeight(-1.0);
+    else if ("float_min_goal"==id)
+      obj.setWeight(-1.0);
+    else if ("max_goal"==id)
+      obj.setWeight(1.0);
+    else if ("int_max_goal"==id)
+      obj.setWeight(1.0);
+    else if ("float_max_goal"==id)
+      obj.setWeight(1.0);
+    else if ("sat_goal"==id)
+      obj.setWeight(1.0);
+    else
+      MZN_ASSERT_HARD_MSG(false, "unknown goal: " << id);
+  }
 
 }  // namespace MiniZinc

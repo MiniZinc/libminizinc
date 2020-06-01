@@ -12,12 +12,14 @@
 #pragma once
 
 #include <iostream>
+#include <vector>
 
 #include <minizinc/model.hh>
 #include <minizinc/flatten.hh>
 #include <minizinc/hash.hh>
 #include <minizinc/statistics.hh>
 #include <minizinc/solver_instance.hh>
+#include <minizinc/solver_instance_defs.hh>
 #include <minizinc/solns2out.hh>
 
 namespace MiniZinc {
@@ -85,7 +87,10 @@ namespace MiniZinc {
     virtual void processPermanentConstraints(Model::iterator begin, Model::iterator end);
   protected:
     /// flatten the search annotations, pushing them into the vector \a out
-    void flattenSearchAnnotations(const Annotation& ann, std::vector<Expression*>& out);    
+    void flattenSearchAnnotations(const Annotation& ann, std::vector<Expression*>& out);
+
+    void flattenMultipleObjectives(const Annotation& ann, MultipleObjectives& mo);
+    void flattenMultObjComponent(const Annotation& ann, MultipleObjectives::Objective& obj);
 
   private:
     SolverInstanceBase(const SolverInstanceBase&);

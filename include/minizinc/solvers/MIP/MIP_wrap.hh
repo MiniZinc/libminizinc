@@ -20,6 +20,7 @@
 #include <cassert>
 #include <chrono>
 
+#include <minizinc/solver_instance_defs.hh>
 
 /// Facilitate lhs computation of a cut
 inline
@@ -283,6 +284,9 @@ class MIP_wrapper {
     virtual bool addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals ) {
       return false;
     }
+
+    using MultipleObjectives = MiniZinc::MultipleObjectivesTemplate<VarId>;
+    virtual bool defineMultipleObjectives(const MultipleObjectives& mo) { return false; }
                         
     int nAddedRows = 0;   // for name counting
     int nIndicatorConstr = 0;

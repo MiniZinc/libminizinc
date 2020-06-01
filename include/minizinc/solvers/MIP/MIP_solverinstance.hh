@@ -102,6 +102,7 @@ namespace MiniZinc {
       virtual void processFlatZinc(void);
       virtual void processWarmstartAnnotations( const Annotation& ann );
       virtual void processSearchAnnotations( const Annotation& ann );
+      virtual void processMultipleObjectives( const Annotation& ann );
       virtual Status solve(void);
       virtual void resetSolver(void) { }
       

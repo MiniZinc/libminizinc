@@ -139,6 +139,10 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     int (__stdcall *dll_GRBsetdblattrlist) (GRBmodel *model, const char *attrname,
                     int len, int *ind, double *newvalues);
 
+    int (__stdcall *dll_GRBsetobjectiven) (GRBmodel *model, int index, int priority, double weight,
+                                                            double abstol, double reltol, const char *name,
+                                                            double constant, int lnz, int *lind, double *lval);
+
     int (__stdcall *dll_GRBsetstrparam) (GRBenv *env, const char *paramname, const char *value);
 
     void (__stdcall *dll_GRBterminate) (GRBmodel* model);
@@ -201,6 +205,10 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
     virtual int getFreeSearch();
     virtual bool addSearch( const std::vector<VarId>& vars, const std::vector<int> pri );
     virtual bool addWarmStart( const std::vector<VarId>& vars, const std::vector<double> vals );
+    virtual bool defineMultipleObjectives(const MultipleObjectives& mo);
+
+
+
     int nRows=0;    // to count rows in order tp notice lazy constraints
     std::vector<int> nLazyIdx;
     std::vector<int> nLazyValue;

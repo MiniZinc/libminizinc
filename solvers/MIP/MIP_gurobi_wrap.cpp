@@ -277,6 +277,7 @@ void MIP_gurobi_wrapper::checkDLL()
   *(void**)(&dll_GRBsetintattrlist) = dll_sym(gurobi_dll, "GRBsetintattrlist");
   *(void**)(&dll_GRBsetdblattrelement) = dll_sym(gurobi_dll, "GRBsetdblattrelement");
   *(void**)(&dll_GRBsetdblattrlist) = dll_sym(gurobi_dll, "GRBsetdblattrlist");
+  *(void**)(&dll_GRBsetobjectiven) = dll_sym(gurobi_dll, "GRBsetobjectiven");
   *(void**)(&dll_GRBsetintparam) = dll_sym(gurobi_dll, "GRBsetintparam");
   *(void**)(&dll_GRBsetstrparam) = dll_sym(gurobi_dll, "GRBsetstrparam");
   *(void**)(&dll_GRBterminate) = dll_sym(gurobi_dll, "GRBterminate");
@@ -479,6 +480,20 @@ bool MIP_gurobi_wrapper::addWarmStart( const std::vector<VarId>& vars, const std
   // error = GRBsetdblattrelement(model, "Start", 0, 1.0);
   error = dll_GRBsetdblattrlist(model, "Start", static_cast<int>(vars.size()), (int*)vars.data(), (double*)vals.data());
   wrap_assert( !error,  "Failed to add warm start" );
+  return true;
+}
+
+bool MIP_gurobi_wrapper::defineMultipleObjectives(const MultipleObjectives &mo) {
+  setObjSense(1);                     // Maximize
+  for (int iobj=0; iobj<mo.size(); ++iobj) {
+    const auto& obj = mo.getObjectives()[iobj];
+    int objvar = obj.getVariable();
+    double coef = 1.0;
+    error = dll_GRBsetobjectiven(model, iobj, mo.size()-iobj,
+                             obj.getWeight(), 0.0, 0.0, nullptr,
+                             0.0, 1, &objvar, &coef);
+    wrap_assert( !error, "Failed to set objective " + std::to_string(iobj));
+  }
   return true;
 }
 
@@ -866,9 +881,14 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
         solcbfn(output, cbui.psi);
       }
    }
-   output.bestBound = 1e308;
-   error = dll_GRBgetdblattr(model, GRB_DBL_ATTR_OBJBOUNDC, &output.bestBound);
-   wrap_assert(!error, "Failed to get the best bound.", false);
+   output.bestBound = std::numeric_limits<double>::has_quiet_NaN ?
+         std::numeric_limits<double>::quiet_NaN(): std::numeric_limits<double>::max();
+   int nObj = 0;
+   dll_GRBgetintattr(model, GRB_INT_ATTR_NUMOBJ, &nObj);
+   if (1>=nObj) {
+     error = dll_GRBgetdblattr(model, GRB_DBL_ATTR_OBJBOUNDC, &output.bestBound);
+     wrap_assert(!error, "Failed to get the best bound.", false);
+   }
    double nNodes=-1;
    error = dll_GRBgetdblattr(model, GRB_DBL_ATTR_NODECOUNT, &nNodes);
    output.nNodes = static_cast<int>(nNodes);

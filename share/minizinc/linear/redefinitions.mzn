@@ -598,6 +598,9 @@ annotation bool_search(array[$X] of var bool: x, ann:a1, ann:a2, ann:a3) =
 
 annotation warm_start( array[int] of var bool: x, array[int] of bool: v ) =
    warm_start( [ bool2int(x[i]) | i in index_set(x) ], [ bool2int(v[i]) | i in index_set(v) ] );
+   
+   
+annotation sat_goal(var bool: b) = int_max_goal(b);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% DOMAIN POSTPROCESSING BUILT-INS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

@@ -1,5 +1,7 @@
 #include <chrono>
 
+#include <minizinc/solvers/MIP/MIP_solverinstance.hh>
+
 namespace MiniZinc {
 
   template<class MIPWrapper>
@@ -202,6 +204,23 @@ namespace MiniZinc {
       std::cerr << "  MIP: added " << nVal << " MIPstart values..." << std::flush;
     }
   }
+
+  template<class MIPWrapper>
+  void
+  MIP_solverinstance<MIPWrapper>::processMultipleObjectives(const Annotation& ann) {
+    MultipleObjectives mo;
+    flattenMultipleObjectives(ann, mo);
+    if (mo.size()) {
+      typename MIPWrapper::MultipleObjectives mo_mip;
+      for (const auto& obj: mo.getObjectives())
+        mo_mip.add( {exprToVar(obj.getVariable()), obj.getWeight()} );
+      if (!getMIPWrapper()->defineMultipleObjectives(mo_mip))
+        getEnv()->envi().addWarning("Solver backend does not support multiple objectives.");
+      if (getMIPWrapper()->fVerbose)
+        std::cerr << "  MIP: added " << mo.size() << " objectives." << std::endl;
+    }
+  }
+
   
   template<class MIPWrapper>
   void
@@ -367,6 +386,8 @@ namespace MiniZinc {
     processSearchAnnotations( solveItem->ann() );
     
     processWarmstartAnnotations( solveItem->ann() );
+
+    processMultipleObjectives( solveItem->ann() );
   }  // processFlatZinc
   
   template<class MIPWrapper>
