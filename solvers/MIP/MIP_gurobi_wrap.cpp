@@ -66,7 +66,7 @@ vector<string> MIP_gurobi_wrapper::getRequiredFlags(void) {
   MIP_gurobi_wrapper mgw( NULL );
   try {
     mgw.checkDLL();
-    return { "" };
+    return {};
   } catch (MiniZinc::InternalError&) {
     return { "--gurobi-dll" };
   }
@@ -88,9 +88,26 @@ vector<string> MIP_gurobi_wrapper::getStdFlags() {
   return {"-a", "-n", "-p", "-s", "-v"};
 }
 
-const vector<string>& gurobiDLLs(void) {
-  static const vector<string> sGurobiDLLs = { "gurobi90", "gurobi85", "gurobi81", "gurobi80", "gurobi75", "gurobi70", "gurobi65" };
-  return sGurobiDLLs;
+const vector<string> gurobiDLLs(void) {
+  const vector<string> versions = { "902", "901", "900", "811", "810", "801", "800", "752", "751", "750", "702", "701", "700", "652", "651", "650" };
+  vector<string> dlls;
+  string lastMajorVersion;
+  for (auto& version : versions) {
+      string majorVersion = version.substr(0, 2);
+      if (majorVersion != lastMajorVersion) {
+        dlls.push_back("gurobi" + majorVersion);
+        lastMajorVersion = majorVersion;
+      }
+    #ifdef _WIN32
+      dlls.push_back("C:\\gurobi" + version + "\\win64\\bin\\gurobi" + majorVersion + ".dll");
+    #elif __APPLE__
+      dlls.push_back("/Library/gurobi" + version + "/mac64/lib/libgurobi" + majorVersion + ".dylib");
+    #else
+      dlls.push_back("/opt/gurobi" + version + "/linux64/lib/libgurobi" + majorVersion + ".so");
+    #endif
+  }
+
+  return dlls;
 }
 
 void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
