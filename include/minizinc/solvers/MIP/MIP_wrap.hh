@@ -240,7 +240,9 @@ class MIP_wrapper {
       assert(! fPhase1Over);
       if (fVerbose)
         std::cerr << "  MIP_wrapper: adding the " << colObj.size() << " Phase-1 variables..." << std::flush;
-      doAddVars(colObj.size(), &colObj[0], &colLB[0], &colUB[0], &colTypes[0], &colNames[0]);
+      if (colObj.size()) {
+        doAddVars(colObj.size(), &colObj[0], &colLB[0], &colUB[0], &colTypes[0], &colNames[0]);
+      }
       if (fVerbose)
         std::cerr << " done." << std::endl;
       fPhase1Over = true;    // SCIP needs after adding
