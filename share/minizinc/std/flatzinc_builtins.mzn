@@ -85,7 +85,7 @@ predicate bool_le(var bool: a, var bool: b);
 predicate bool_le_reif(var bool: a, var bool: b, var bool: r);
 /** @group flatzinc.bool Constrains \( \a c = \sum_i \a as[i]*\a bs[i] \) */
 predicate bool_lin_eq(array[int] of int: as, array[int] of var bool: bs, var int: c);
-/** @group flatzinc.bool Constrains \( \a c \leq \sum_i \a as[i]*\a bs[i] \) */
+/** @group flatzinc.bool Constrains \( \sum_i \a as[i]*\a bs[i] \leq \a c \) */
 predicate bool_lin_le(array[int] of int: as, array[int] of var bool: bs, int: c);
 /** @group flatzinc.bool Constrains \a a < \a b */
 predicate bool_lt(var bool: a, var bool: b);
@@ -219,13 +219,13 @@ predicate float_dom(var float: x, array[int] of float: as);
 predicate float_lin_eq(array[int] of float: as, array[int] of var float: bs, float: c);
 /** @group flatzinc.float Constrains \( \a r \leftrightarrow (\a c = \sum_i \a as[i]*\a bs[i]) \) */
 predicate float_lin_eq_reif(array[int] of float: as, array[int] of var float: bs, float: c, var bool: r);
-/** @group flatzinc.float Constrains \( \a c \leq \sum_i \a as[i]*\a bs[i] \) */
+/** @group flatzinc.float Constrains \( \sum_i \a as[i]*\a bs[i] \leq \a c \) */
 predicate float_lin_le(array[int] of float: as, array[int] of var float: bs, float: c);
-/** @group flatzinc.float Constrains \( \a r \leftrightarrow (\a c \leq \sum_i \a as[i]*\a bs[i]) \) */
+/** @group flatzinc.float Constrains \( \a r \leftrightarrow (\sum_i \a as[i]*\a bs[i] \leq \a c) \) */
 predicate float_lin_le_reif(array[int] of float: as, array[int] of var float: bs, float: c, var bool: r);
-/** @group flatzinc.float Constrains \( \a c < \sum_i \a as[i]*\a bs[i] \) */
+/** @group flatzinc.float Constrains \( \sum_i \a as[i]*\a bs[i] < \a c \) */
 predicate float_lin_lt(array[int] of float: as, array[int] of var float: bs, float: c);
-/** @group flatzinc.float Constrains \( \a r \leftrightarrow (\a c < \sum_i \a as[i]*\a bs[i]) \) */
+/** @group flatzinc.float Constrains \( \a r \leftrightarrow (\sum_i \a as[i]*\a bs[i] < \a c) \) */
 predicate float_lin_lt_reif(array[int] of float: as, array[int] of var float: bs, float: c, var bool: r);
 /** @group flatzinc.float Constrains \( \a c \neq \sum_i \a as[i]*\a bs[i] \) */
 predicate float_lin_ne(array[int] of float: as, array[int] of var float: bs, float: c);
