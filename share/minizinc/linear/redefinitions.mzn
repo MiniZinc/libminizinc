@@ -211,8 +211,6 @@ predicate int_times(var int: x, var int: y, var int: z) =
   elseif is_fixed(y) then
     z==x*fix(y)
   elseif 0..1==dom(x) /\ 0..1==dom(y) then bool_and__INT(x,y,z)
-  elseif MZN__QuadrInt then
-    fzn_int_times(x, y, z)
   elseif card(dom(x))==2 /\ card(dom(y))==2 /\ 0 in dom(x) /\ 0 in dom(y)
       then let {
         var 0..1: xn;
@@ -223,6 +221,8 @@ predicate int_times(var int: x, var int: y, var int: z) =
         constraint z=zn*max(dom(x) diff {0})*max(dom(y) diff {0});
       } in
       bool_and__INT(xn,yn,zn)
+  elseif min(card(dom(x)), card(dom(y))) >= MZN__QuadrIntCard then
+    fzn_int_times(x, y, z)
   elseif card(dom(x)) * card(dom(y)) > nMZN__UnarySizeMax_intTimes
     \/ ( fIntTimesBool /\ (
           %% Peter's idea for *bool. More optimal but worse values on carpet cutting.

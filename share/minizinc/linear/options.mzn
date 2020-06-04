@@ -39,8 +39,9 @@ bool: MZN__MinMaxGeneral = if absent(MinMaxGeneral) then false else deopt(MinMax
 % --------------------------------------------------------------------------------------- %
 opt bool: QuadrFloat;           %% Allow float_times as fzn_float_times
 bool: MZN__QuadrFloat = if absent(QuadrFloat) then false else deopt(QuadrFloat) endif;
-opt bool: QuadrInt;             %% Convert int_times to fzn_int_times
-bool: MZN__QuadrInt = if absent(QuadrInt) then false else deopt(QuadrInt) endif;
+opt int: QuadrIntCard;          %% Convert int_times to fzn_int_times if the minimum
+                                %% of x, y's domain cardinalities as at least QuadrIntCard
+int: MZN__QuadrIntCard = if absent(QuadrIntCard) then infinity else deopt(QuadrIntCard) endif;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Subtour elimination in circuit %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --------------------------------------------------------------------------------------- %
