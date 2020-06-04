@@ -169,7 +169,13 @@ void Solns2Out::parseAssignments(string& solution) {
   for (unsigned int i=0; i<sm->size(); i++) {
     if (AssignI* ai = (*sm)[i]->dyn_cast<AssignI>()) {
       auto& de = findOutputVar(ai->id());
-      ai->e()->type(de.first->type());
+      if (!ai->e()->isa<BoolLit>() &&
+          !ai->e()->isa<IntLit>() &&
+          !ai->e()->isa<FloatLit>()) {
+        Type de_t = de.first->type();
+        de_t.cv(false);
+        ai->e()->type(de_t);
+      }
       ai->decl(de.first);
       typecheck(*pEnv, getModel(), ai);
       if (Call* c = ai->e()->dyn_cast<Call>()) {

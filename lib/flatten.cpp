@@ -2443,7 +2443,6 @@ namespace MiniZinc {
       case Expression::E_FLOATLIT:
       case Expression::E_BOOLLIT:
       case Expression::E_STRINGLIT:
-        return e;
       case Expression::E_TIID:
       case Expression::E_VARDECL:
       case Expression::E_TI:
