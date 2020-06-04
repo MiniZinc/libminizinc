@@ -89,7 +89,10 @@ vector<string> MIP_gurobi_wrapper::getStdFlags() {
 }
 
 const vector<string> gurobiDLLs(void) {
-  const vector<string> versions = { "902", "901", "900", "811", "810", "801", "800", "752", "751", "750", "702", "701", "700", "652", "651", "650" };
+  const vector<string> versions = {
+    "913", "912", "911", "910", "903", // Potential future versions which should load correctly
+    "902", "901", "900", "811", "810", "801", "800", "752", "751", "750", "702", "701", "700", "652", "651", "650"
+  };
   vector<string> dlls;
   string lastMajorVersion;
   for (auto& version : versions) {
