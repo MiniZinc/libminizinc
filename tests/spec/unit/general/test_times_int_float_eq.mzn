@@ -2,7 +2,7 @@
 !Test
 solvers: [gurobi]
 options:
-  -D: QuadrFloat=true;QuadrInt=true
+  -D: QuadrFloat=true;QuadrIntCard=0
 expected: !Result
   status: OPTIMAL_SOLUTION
   solution: !Solution
