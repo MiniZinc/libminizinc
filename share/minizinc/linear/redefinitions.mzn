@@ -112,9 +112,36 @@ predicate float_min(var float: x, var float: y, var float: z) =
 predicate float_max(var float: x, var float: y, var float: z) =
     array_float_maximum(z, [x, y]);
 
-%% For any other solver which only works with ints,
-%% create corresp. int version without the XZB stuff
-%% and invoke it from redefinitions-2.0.mzn
+predicate array_int_minimum_I(var int: m, array[int] of var int: x) =
+    let { int: n = length(x),
+          constraint assert(1 == min(index_set(x)), "  array_int_minimum_I: argument indexed not from 1??"),
+          int: iMinUB = arg_min([ub(x[i]) | i in 1..n]),
+          int: MinUB = ub(x[iMinUB]),
+          set of int: sLBLess = { i | i in 1..n where lb(x[i])<MinUB },
+          set of int: sUBEqual = { i | i in 1..n where ub(x[i])==MinUB },
+          set of int: sActive = if card(sLBLess intersect sUBEqual)>0 then sLBLess
+                                else sLBLess union { iMinUB } endif,
+    } in
+    if 1==card(sActive) then
+      m == x[min(sActive)]
+    elseif MZN__MinMaxGeneral then
+      fzn_array_float_minimum(m, x)                      %% Send to backend
+    else
+      let {
+          array[1..n] of var int: p = [
+            if i in sActive then let { var 0..1: pi } in pi else 0 endif | i in 1..n ],
+          constraint 1==sum(p),
+          constraint m >= lb_array(x),
+          constraint m <= MinUB,
+        } in
+      forall (i in index_set(x))
+        (
+          if i in sActive                               %% for at least 1 element
+          then
+              m<=x[i] /\ aux_int_ge_if_1(m, x[i], p[i])
+          endif )                                       %% -- exclude too big x[i]
+    endif;
+
 predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
     let { int: n = length(x),
           constraint assert(1 == min(index_set(x)), "  array_float_minimum_I: argument indexed not from 1??"),
@@ -142,8 +169,7 @@ predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
           if i in sActive                               %% for at least 1 element
           then 
               m<=x[i] /\ aux_float_ge_if_1(m, x[i], p[i])
-          else true endif )
-                                                        %% -- exclude too big x[i]
+          endif )                                       %% -- exclude too big x[i]
       /\
       if card(sActive)>1 /\ fMinimumCutsXZ then
         let {
@@ -167,8 +193,7 @@ predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
       if card(sActive)>1 /\ fMinimumCutsXZB then
             array_var_float_element__XBZ_lb([ -x[i] | i in sActive ],  [  p[i] | i in sActive ], -m)  :: MIP_cut 
       else true endif
-    endif
-  ;
+    endif;
 
 %-----------------------------------------------------------------------------%
 % Multiplication and division
