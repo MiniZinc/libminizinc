@@ -1887,6 +1887,10 @@ function bool: is_fixed(var set of int: x);
 /** @group builtins.reflect Test if every element of array \a x is fixed */
 function bool: is_fixed(array[$U] of var opt $T: x);
 
+/** @group builtins.reflect Test if \a x is fixed */
+function bool: is_same(var opt $T: x, var opt $U: y);
+
+
 /***
   @groupdef builtins.debug Assertions and debugging functions
   

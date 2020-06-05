@@ -1229,6 +1229,11 @@ namespace MiniZinc {
     return true;
   }
 
+  bool b_is_same(EnvI& env, Call* call) {
+    assert(call->n_args()==2);
+    return follow_id_to_decl(call->arg(0))==follow_id_to_decl(call->arg(1));
+  }
+
   Expression* b_fix(EnvI& env, Call* call) {
     assert(call->n_args()==1);
     Expression* ret = exp_is_fixed(env,call->arg(0));
@@ -2966,6 +2971,11 @@ namespace MiniZinc {
       std::vector<Type> t(1);
       t[0] = Type::optvartop(-1);
       rb(env, m, ASTString("is_fixed"), t, b_is_fixed_array);
+    }
+    {
+      std::vector<Type> t(2);
+      t[0] = t[1] = Type::optvartop();
+      rb(env, m, ASTString("is_same"), t, b_is_same);
     }
     {
       std::vector<Type> t(1);

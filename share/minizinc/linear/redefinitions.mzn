@@ -112,6 +112,9 @@ predicate float_min(var float: x, var float: y, var float: z) =
 predicate float_max(var float: x, var float: y, var float: z) =
     array_float_maximum(z, [x, y]);
 
+%% For any other solver which only works with ints,
+%% create corresp. int version without the XZB stuff
+%% and invoke it from redefinitions-2.0.mzn
 predicate array_float_minimum_I(var float: m, array[int] of var float: x) =
     let { int: n = length(x),
           constraint assert(1 == min(index_set(x)), "  array_float_minimum_I: argument indexed not from 1??"),
@@ -210,6 +213,8 @@ predicate int_times(var int: x, var int: y, var int: z) =
     z==fix(x)*y             %%%%% Need to use fix() otherwise added to CSE & nothing happens
   elseif is_fixed(y) then
     z==x*fix(y)
+  elseif is_same(x, y) then
+    z == pow(x, 2)
   elseif 0..1==dom(x) /\ 0..1==dom(y) then bool_and__INT(x,y,z)
   elseif card(dom(x))==2 /\ card(dom(y))==2 /\ 0 in dom(x) /\ 0 in dom(y)
       then let {
@@ -295,7 +300,8 @@ predicate float_times(var float: x, var float: y, var float: z) =
     fzn_float_times(x, y, z)
   else
     abort("Unable to create linear formulation for the `float_times(\(x), \(y), \(z))` constraint." ++
-      " This model instance cannot be solved using a linear solver.")
+      " Define QuadrFloat=true if your linear solver supports quadratic constraints," ++
+      " or use integer variables.")
   endif;
 
 %%%Define int_pow
