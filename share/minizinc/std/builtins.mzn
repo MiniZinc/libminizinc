@@ -534,7 +534,9 @@ function var int: pow(var int: x, var int: y) =
     int: yy = if is_fixed(y) then fix(y) else -1 endif;
   } in
   if yy = 0 then 1
-  elseif yy = 1 then x else
+  elseif yy = 1 then x
+  elseif 0..1==dom(x) then x
+  elseif -1..1==dom(x) /\ is_fixed(y) /\ 1 == fix(y) mod 2 then x else
   let { var int: r ::is_defined_var;
         constraint if is_fixed(y) then int_pow_fixed(x,fix(y),r) ::defines_var(r) else int_pow(x,y,r) ::defines_var(r) endif;
   } in r
