@@ -344,28 +344,63 @@ predicate array_var_bool_element(var int: x, array[int] of var bool: a,
                                  var bool: z) =
     array_var_int_element(x, arrayXd(a, [bool2int(a[i]) | i in index_set(a)]), bool2int(z));
 
-predicate array_int_element(var int: x, array[int] of int: a, var int: z) =
+predicate array_int_element(var int: i00, array[int] of int: a, var int: z) =
     let {
-      constraint x in { i | i in index_set(a) where a[i] in dom(z) },
+      set of int: ix = index_set(a),
+      constraint i00 in { i | i in ix where a[i] in dom(z) },
+    } in         %%% Tighten domain of i00 before dMin/dMax
+    let {
+          int: dMin = min(i in dom(i00))(a[i]),
+          int: dMax = max(i in dom(i00))(a[i]),
     } in
-    array_float_element(x, arrayXd(a, [int2float(a[i]) | i in index_set(a)]), int2float(z));
+    if dMin==dMax then
+      z==dMin
+    else
+      z >= dMin /\
+      z <= dMax /\
+      let {
+        int: nUBi00 = max(dom(i00)),
+        int: nLBi00 = min(dom(i00)),
+        int: nMinDist = min(i in nLBi00 .. nUBi00-1)(a[i+1]-a[i]),
+        int: nMaxDist = max(i in nLBi00 .. nUBi00-1)(a[i+1]-a[i]),
+      } in
+      if nMinDist == nMaxDist then               %% The linear case
+        z == a[nLBi00] + nMinDist*(i00-nLBi00)
+      else
+        sum(i in dom(i00))( a[i] * (i==i00) ) == z
+      endif
+    endif;
 
-predicate array_var_int_element(var int: x, array[int] of var int: a,
+predicate array_var_int_element(var int: i00, array[int] of var int: a,
                                 var int: z) =
     let {
-      constraint x in { i | i in index_set(a) where 0 < card(dom(a[i]) intersect dom(z)) },
+      constraint i00 in { i | i in index_set(a) where
+        0 < card(dom(a[i]) intersect dom(z)) },
+    } in                            %% finish domain first
+    let {
+          int: minLB=min(i in dom(i00))(lb(a[i])),
+          int: maxUB=max(i in dom(i00))(ub(a[i]))
     } in
-   %%%% Relate to the float version:
-    array_var_float_element(x, arrayXd(a, [int2float(a[i]) | i in index_set(a)]), int2float(z));
-   %%%% Simplistic version:
-   %%%% Complete binarization: MEMORY FULL. Need exact domains & sparse encoding
-
+    if minLB==maxUB then
+      z==minLB
+    else
+      z >= minLB /\
+      z <= maxUB /\
+      if {0,1}==dom(i00) /*ub(i00)-lb(i00)==1*/ /*2==card( dom( i00 ) )*/ then
+        aux_int_eq_if_1(z, a[lb(i00)], (ub(i00)-i00)) /\
+        aux_int_eq_if_1(z, a[ub(i00)], (i00-lb(i00)))
+      else
+        forall (i in dom(i00))(
+          aux_int_eq_if_1(z, a[i], (i==i00))
+        )
+      endif
+    endif;
 
 predicate array_float_element(var int: i00, array[int] of float: a,
                               var float: z) =
     let { set of int: ix = index_set(a),
           constraint i00 in { i | i in ix where a[i]>=lb(z) /\ a[i]<=ub(z) },
-    } in         %%% Finish domain before dMin/dMax
+    } in         %%% Tighten domain of i00 before dMin/dMax
     let {
           float: dMin = min(i in dom(i00))(a[i]),
           float: dMax = max(i in dom(i00))(a[i]),
@@ -384,12 +419,7 @@ predicate array_float_element(var int: i00, array[int] of float: a,
       if nMinDist == nMaxDist then               %% The linear case
         z == a[nLBi00] + nMinDist*(i00-nLBi00)
       else
-        let {
-          array[int] of var int: p = eq_encode(i00)    %% this needs i00 in ix
-        }
-        in
-        assert(dom(i00) subset index_set(p), "", true) /\
-        sum(i in dom(i00))( a[i] * int2float(p[i]) ) == z        %% add more hull?
+        sum(i in dom(i00))( a[i] * (i==i00) ) == z
       endif
     endif;
 
@@ -413,26 +443,22 @@ predicate array_var_float_element(var int: i00, array[int] of var float: a,
         aux_float_eq_if_1(z, a[lb(i00)], (ub(i00)-i00)) /\
         aux_float_eq_if_1(z, a[ub(i00)], (i00-lb(i00)))
       else
-        let {
-          array[int] of var int: p = eq_encode(i00),
-        } in
-        assert(dom(i00) subset index_set(p), "", true) /\
   %%% The convexified bounds seem slow for ^2 and ^3 equations:
-  %    sum(i in dom(i01))( lb(a[i]) * int2float(p[i]) ) <= z /\    %% convexify lower bounds
-  %    sum(i in dom(i01))( ub(a[i]) * int2float(p[i]) ) >= z /\    %% convexify upper bounds
+  %    sum(i in dom(i01))( lb(a[i]) * (i==i00) ) <= z /\    %% convexify lower bounds
+  %    sum(i in dom(i01))( ub(a[i]) * (i==i00) ) >= z /\    %% convexify upper bounds
         forall (i in dom(i00))(
-          aux_float_eq_if_1(z, a[i], p[i])
+          aux_float_eq_if_1(z, a[i], (i==i00))
         )
         %% Cuts:
         /\ 
         if fElementCutsXZ then
-          array_var_float_element__ROOF([  a[i] | i in dom(i00) ],  z)  :: MIP_cut   %% these 2 better as user cuts - too slow
+          array_var_float_element__ROOF([  a[i] | i in dom(i00) ],  z)  :: MIP_cut   %% these 2 as user cuts - too slow
           /\ array_var_float_element__ROOF([ -a[i] | i in dom(i00) ], -z)  :: MIP_cut   %% or even skip them
         else true endif
         /\
         if fElementCutsXZB then
-              array_var_float_element__XBZ_lb([  a[i] | i in dom(i00) ],  [  p[i] | i in dom(i00) ],  z)  :: MIP_cut
-          /\    array_var_float_element__XBZ_lb([ -a[i] | i in dom(i00) ],  [  p[i] | i in dom(i00) ], -z)  :: MIP_cut
+              array_var_float_element__XBZ_lb([  a[i] | i in dom(i00) ],  [  (i==i00) | i in dom(i00) ],  z)  :: MIP_cut
+          /\    array_var_float_element__XBZ_lb([ -a[i] | i in dom(i00) ],  [  (i==i00) | i in dom(i00) ], -z)  :: MIP_cut
         else true endif
       endif
     endif;
