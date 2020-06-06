@@ -11,8 +11,12 @@ expected:
     ifTwoVars : 0
     ifTwoOptVars : 0
     ifEqualInitVars : 1
+    ifEqualChainInitVars : 1
     ifOneVar : 1
     ifOneOptVar : 1
+solvers:
+- gecode
+- cbc
 ***/
 
 %-----------------------------------------------------------------------------%
@@ -45,6 +49,12 @@ var int: ifEqualInitVars;
 var int: varInit1 = 3;
 var 0..15: varInit2 = 3;
 ifEqualInitVars == is_same(varInit1, varInit2);
+
+var int: ifEqualChainInitVars;
+var opt int: varInterm = varO1;
+var opt int: varChInit1 = varInterm;
+var opt 0..15: varChInit2 = varO1;
+ifEqualChainInitVars == is_same(varChInit1, varChInit2);
 
 var int: ifOneVar;
 var int: v;
