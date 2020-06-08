@@ -392,7 +392,11 @@ predicate array_int_element(var int: i00, array[int] of int: a, var int: z) =
       if nMinDist == nMaxDist then               %% The linear case
         z == a[nLBi00] + nMinDist*(i00-nLBi00)
       else
-        sum(i in dom(i00))( a[i] * (i==i00) ) == z
+        let {
+          array[int] of var int: p = eq_encode(i00)    %% this needs i00 in ix
+        }                         %% Faster flattening than (i==i00) @2a9df1f7
+        in
+          sum(i in dom(i00))( a[i] * p[i] ) == z
       endif
     endif;
 
@@ -415,9 +419,13 @@ predicate array_var_int_element(var int: i00, array[int] of var int: a,
         aux_int_eq_if_1(z, a[lb(i00)], (ub(i00)-i00)) /\
         aux_int_eq_if_1(z, a[ub(i00)], (i00-lb(i00)))
       else
-        forall (i in dom(i00))(
-          aux_int_eq_if_1(z, a[i], (i==i00))
-        )
+        let {
+          array[int] of var int: p = eq_encode(i00)    %% this needs i00 in ix
+        }                         %% Faster flattening than (i==i00) @2a9df1f7
+        in
+          forall (i in dom(i00))(
+            aux_int_eq_if_1(z, a[i], p[i])
+          )
       endif
     endif;
 
@@ -444,7 +452,11 @@ predicate array_float_element(var int: i00, array[int] of float: a,
       if nMinDist == nMaxDist then               %% The linear case
         z == a[nLBi00] + nMinDist*(i00-nLBi00)
       else
-        sum(i in dom(i00))( a[i] * (i==i00) ) == z
+        let {
+          array[int] of var int: p = eq_encode(i00)    %% this needs i00 in ix
+        }                         %% Faster flattening than (i==i00) @2a9df1f7
+        in
+          sum(i in dom(i00))( a[i] * p[i] ) == z
       endif
     endif;
 
@@ -471,9 +483,13 @@ predicate array_var_float_element(var int: i00, array[int] of var float: a,
   %%% The convexified bounds seem slow for ^2 and ^3 equations:
   %    sum(i in dom(i01))( lb(a[i]) * (i==i00) ) <= z /\    %% convexify lower bounds
   %    sum(i in dom(i01))( ub(a[i]) * (i==i00) ) >= z /\    %% convexify upper bounds
-        forall (i in dom(i00))(
-          aux_float_eq_if_1(z, a[i], (i==i00))
-        )
+        let {
+          array[int] of var int: p = eq_encode(i00)    %% this needs i00 in ix
+        }                         %% Faster flattening than (i==i00) @2a9df1f7
+        in
+          forall (i in dom(i00))(
+            aux_float_eq_if_1(z, a[i], p[i])
+          )
         %% Cuts:
         /\ 
         if fElementCutsXZ then
@@ -482,8 +498,8 @@ predicate array_var_float_element(var int: i00, array[int] of var float: a,
         else true endif
         /\
         if fElementCutsXZB then
-              array_var_float_element__XBZ_lb([  a[i] | i in dom(i00) ],  [  (i==i00) | i in dom(i00) ],  z)  :: MIP_cut
-          /\    array_var_float_element__XBZ_lb([ -a[i] | i in dom(i00) ],  [  (i==i00) | i in dom(i00) ], -z)  :: MIP_cut
+              array_var_float_element__XBZ_lb([  a[i] | i in dom(i00) ],  [  p[i] | i in dom(i00) ],  z)  :: MIP_cut
+          /\    array_var_float_element__XBZ_lb([ -a[i] | i in dom(i00) ],  [  p[i] | i in dom(i00) ], -z)  :: MIP_cut
         else true endif
       endif
     endif;
