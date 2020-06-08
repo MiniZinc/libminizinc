@@ -240,7 +240,7 @@ namespace MiniZinc{
                 vec<int> vals(static_cast<int>(isv->card().toInt()));
                 int i = 0;
                 for (int j = 0; j < isv->size(); ++j) {
-                  for (auto k = isv->min(i).toInt(); k <= isv->max(j).toInt(); ++k) {
+                  for (auto k = isv->min(j).toInt(); k <= isv->max(j).toInt(); ++k) {
                     vals[i++] = static_cast<int>(k);
                   }
                 }
