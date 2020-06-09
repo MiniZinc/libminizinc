@@ -2905,7 +2905,6 @@ namespace MiniZinc {
           if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
             if (vdi->removed())
               continue;
-            bool keptVariable = true;
             /// Look at constraints
             if (!isOutput(vdi->e())) {
               if (0<env.vo.occurrences(vdi->e())) {
@@ -2924,10 +2923,10 @@ namespace MiniZinc {
                     removedItems.push_back(vdi);
                     env.flat_removeItem(vdi);
                     env.vo.removeAllOccurrences(vdi->e());
-                    keptVariable = false;
                     for (const auto& c: it->second) {
                       env.flat_removeItem(c);
                     }
+                    continue;
                   }
                 }
               } else {                // 0 occurrencies
@@ -2940,27 +2939,26 @@ namespace MiniZinc {
                     if (vdi->e()->introduced()) {
                       removedItems.push_back(vdi);
                       env.flat_removeItem(vdi);
-                      keptVariable = false;
-                    } else {
-                      vdi->e()->e(NULL);
+                      env.flat_addItem(ci);
+                      continue;
                     }
+                    vdi->e()->e(NULL);
                     env.flat_addItem(ci);
                   } else if (vdi->e()->type().ispar() || vdi->e()->ti()->computedDomain()) {
                     removedItems.push_back(vdi);
-                    keptVariable = false;
+                    continue;
                   }
                 } else {
                   removedItems.push_back(vdi);
                   env.flat_removeItem(vdi);
-                  keptVariable = false;
+                  continue;
                 }
               }
             }
-            if (keptVariable && vdi->e()->type().dim() > 0 && vdi->e()->type().isvar()) {
+            if (vdi->e()->type().dim() > 0 && vdi->e()->type().isvar()) {
               vdi->e()->ti()->domain(NULL);
             }
-            if (keptVariable &&
-                vdi->e()->type().isint() && vdi->e()->type().isvar() &&
+            if (vdi->e()->type().isint() && vdi->e()->type().isvar() &&
                 vdi->e()->ti()->domain() != NULL) {
 
               GCLock lock;
@@ -3021,8 +3019,7 @@ namespace MiniZinc {
                 }
               }
             }
-            if (keptVariable &&
-                vdi->e()->type().isfloat() && vdi->e()->type().isvar() &&
+            if (vdi->e()->type().isfloat() && vdi->e()->type().isvar() &&
                 vdi->e()->ti()->domain() != NULL) {
               GCLock lock;
               FloatSetVal* vdi_dom = eval_floatset(env, vdi->e()->ti()->domain());
