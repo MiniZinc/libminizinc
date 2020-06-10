@@ -3075,9 +3075,12 @@ namespace MiniZinc {
         // rewrite some constraints if there are redefinitions
         for (int ai=0; ai<agenda.size(); ai++) {
           int i=agenda[ai];
+          if (m[i]->removed()) {
+            continue;
+          }
           if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
             VarDecl* vd = vdi->e();
-            if (!vdi->removed() && vd->e()) {
+            if (vd->e()) {
               bool isTrueVar = vd->type().isbool() && Expression::equal(vd->ti()->domain(), constants().lit_true);
               if (Call* c = vd->e()->dyn_cast<Call>()) {
                 GCLock lock;
@@ -3304,97 +3307,95 @@ namespace MiniZinc {
               }
             }
           } else if (ConstraintI* ci = m[i]->dyn_cast<ConstraintI>()) {
-            if (!ci->removed()) {
-              if (Call* c = ci->e()->dyn_cast<Call>()) {
-                GCLock lock;
-                Call* nc = NULL;
-                if (c->id() == constants().ids.exists) {
-                  if (array_bool_or) {
-                    std::vector<Expression*> args(2);
-                    args[0] = c->arg(0);
-                    args[1] = constants().lit_true;
-                    nc = new Call(c->loc().introduce(),array_bool_or->id(),args);
-                    nc->type(Type::varbool());
-                    nc->decl(array_bool_or);
-                  }
-                } else if (c->id() == constants().ids.forall) {
-                  if (array_bool_and) {
-                    std::vector<Expression*> args(2);
-                    args[0] = c->arg(0);
-                    args[1] = constants().lit_true;
-                    nc = new Call(c->loc().introduce(),array_bool_and->id(),args);
-                    nc->type(Type::varbool());
-                    nc->decl(array_bool_and);
-                  }
-                } else if (c->id() == constants().ids.clause) {
-                  if (array_bool_clause) {
-                    std::vector<Expression*> args(2);
-                    args[0] = c->arg(0);
-                    args[1] = c->arg(1);
-                    nc = new Call(c->loc().introduce(),array_bool_clause->id(),args);
-                    nc->type(Type::varbool());
-                    nc->decl(array_bool_clause);
-                  }
-                } else if (c->id() == constants().ids.bool_xor) {
-                  if (bool_xor) {
-                    std::vector<Expression*> args(3);
-                    args[0] = c->arg(0);
-                    args[1] = c->arg(1);
-                    args[2] = c->n_args()==2 ? constants().lit_true : c->arg(2);
-                    nc = new Call(c->loc().introduce(),bool_xor->id(),args);
-                    nc->type(Type::varbool());
-                    nc->decl(bool_xor);
-                  }
-                } else if (c->id() == constants().ids.bool_not && c->n_args()==1 && c->decl()->e()==nullptr) {
-                  if (c->arg(0)==constants().boollit(true)) {
+            if (Call* c = ci->e()->dyn_cast<Call>()) {
+              GCLock lock;
+              Call* nc = NULL;
+              if (c->id() == constants().ids.exists) {
+                if (array_bool_or) {
+                  std::vector<Expression*> args(2);
+                  args[0] = c->arg(0);
+                  args[1] = constants().lit_true;
+                  nc = new Call(c->loc().introduce(),array_bool_or->id(),args);
+                  nc->type(Type::varbool());
+                  nc->decl(array_bool_or);
+                }
+              } else if (c->id() == constants().ids.forall) {
+                if (array_bool_and) {
+                  std::vector<Expression*> args(2);
+                  args[0] = c->arg(0);
+                  args[1] = constants().lit_true;
+                  nc = new Call(c->loc().introduce(),array_bool_and->id(),args);
+                  nc->type(Type::varbool());
+                  nc->decl(array_bool_and);
+                }
+              } else if (c->id() == constants().ids.clause) {
+                if (array_bool_clause) {
+                  std::vector<Expression*> args(2);
+                  args[0] = c->arg(0);
+                  args[1] = c->arg(1);
+                  nc = new Call(c->loc().introduce(),array_bool_clause->id(),args);
+                  nc->type(Type::varbool());
+                  nc->decl(array_bool_clause);
+                }
+              } else if (c->id() == constants().ids.bool_xor) {
+                if (bool_xor) {
+                  std::vector<Expression*> args(3);
+                  args[0] = c->arg(0);
+                  args[1] = c->arg(1);
+                  args[2] = c->n_args()==2 ? constants().lit_true : c->arg(2);
+                  nc = new Call(c->loc().introduce(),bool_xor->id(),args);
+                  nc->type(Type::varbool());
+                  nc->decl(bool_xor);
+                }
+              } else if (c->id() == constants().ids.bool_not && c->n_args()==1 && c->decl()->e()==nullptr) {
+                if (c->arg(0)==constants().boollit(true)) {
+                  env.fail();
+                } else if (c->arg(0)==constants().boollit(false)) {
+                  // nothing to do, not false = true
+                } else if (c->arg(0)->isa<Id>()) {
+                  VarDecl* vd = c->arg(0)->cast<Id>()->decl();
+                  if (vd->ti()->domain()==nullptr) {
+                    vd->ti()->domain(constants().boollit(false));
+                  } else if (vd->ti()->domain()==constants().boollit(true)) {
                     env.fail();
-                  } else if (c->arg(0)==constants().boollit(false)) {
-                    // nothing to do, not false = true
-                  } else if (c->arg(0)->isa<Id>()) {
-                    VarDecl* vd = c->arg(0)->cast<Id>()->decl();
-                    if (vd->ti()->domain()==nullptr) {
-                      vd->ti()->domain(constants().boollit(false));
-                    } else if (vd->ti()->domain()==constants().boollit(true)) {
-                      env.fail();
-                    }
-                  } else {
-                    // don't know how to handle, use bool_not/2
-                    nc = new Call(c->loc().introduce(), c->id(), {c->arg(0), constants().boollit(true)});
-                    nc->type(Type::varbool());
-                    nc->decl(env.model->matchFn(env,nc,false));
-                  }
-                  if (nc == nullptr) {
-                    CollectDecls cd(env.vo,deletedVarDecls,ci);
-                    topDown(cd,c);
-                    ci->e(constants().lit_true);
-                    env.flat_removeItem(i);
                   }
                 } else {
-                  FunctionI* decl = env.model->matchFn(env,c,false);
-                  if (decl && decl->e()) {
-                    nc = c;
-                    nc->decl(decl);
-                  }
+                  // don't know how to handle, use bool_not/2
+                  nc = new Call(c->loc().introduce(), c->id(), {c->arg(0), constants().boollit(true)});
+                  nc->type(Type::varbool());
+                  nc->decl(env.model->matchFn(env,nc,false));
                 }
-                if (nc != NULL) {
-                  if (nc != c) {
-                    for (ExpressionSetIter it = c->ann().begin(); it != c->ann().end(); ++it) {
-                      EE ee_ann = flat_exp(env, Ctx(), *it, NULL, constants().var_true);
-                      nc->addAnnotation(ee_ann.r());
-                    }
-                  }
+                if (nc == nullptr) {
                   CollectDecls cd(env.vo,deletedVarDecls,ci);
                   topDown(cd,c);
                   ci->e(constants().lit_true);
                   env.flat_removeItem(i);
-                  StringLit* sl = getLongestMznPathAnnotation(env, c);
-                  CallStackItem* csi=NULL;
-                  if(sl)
-                    csi = new CallStackItem(env, sl);
-                  ItemTimer item_timer(nc->loc(), timing_map);
-                  (void) flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
-                  if(csi) delete csi;
                 }
+              } else {
+                FunctionI* decl = env.model->matchFn(env,c,false);
+                if (decl && decl->e()) {
+                  nc = c;
+                  nc->decl(decl);
+                }
+              }
+              if (nc != NULL) {
+                if (nc != c) {
+                  for (ExpressionSetIter it = c->ann().begin(); it != c->ann().end(); ++it) {
+                    EE ee_ann = flat_exp(env, Ctx(), *it, NULL, constants().var_true);
+                    nc->addAnnotation(ee_ann.r());
+                  }
+                }
+                CollectDecls cd(env.vo,deletedVarDecls,ci);
+                topDown(cd,c);
+                ci->e(constants().lit_true);
+                env.flat_removeItem(i);
+                StringLit* sl = getLongestMznPathAnnotation(env, c);
+                CallStackItem* csi=NULL;
+                if(sl)
+                  csi = new CallStackItem(env, sl);
+                ItemTimer item_timer(nc->loc(), timing_map);
+                (void) flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
+                if(csi) delete csi;
               }
             }
           }
