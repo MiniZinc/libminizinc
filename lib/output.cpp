@@ -1102,7 +1102,7 @@ namespace MiniZinc {
                 
                 if (e.vo.occurrences(reallyFlat)==0 && reallyFlat->e()==NULL) {
                   auto it = e.vo.idx.find(reallyFlat->id());
-                  assert(it != vo.idx.end());
+                  assert(it != e.vo.idx.end());
                   e.flatRemoveItem((*e.flat())[it->second]->cast<VarDeclI>());
                 }
                 
@@ -1129,7 +1129,7 @@ namespace MiniZinc {
                     removeIsOutput(reallyFlat);
                     if (e.vo.occurrences(reallyFlat)==0) {
                       auto it = e.vo.idx.find(reallyFlat->id());
-                      assert(it != vo.idx.end());
+                      assert(it != e.vo.idx.end());
                       e.flatRemoveItem((*e.flat())[it->second]->cast<VarDeclI>());
                     }
 
