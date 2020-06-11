@@ -25,7 +25,7 @@ namespace MiniZinc {
     } else {
       assert(false); // CURRENTLY NOT SUPPORTED
     }
-    env.flat_removeItem(i);
+    i->remove();
   }
 
   int ChainCompressor::addItem(Item *i) {
@@ -484,7 +484,7 @@ namespace MiniZinc {
 
     simplify_lin<Lit>(coeffs, x, d);
     if (coeffs.empty()) {
-      env.flat_removeItem(i);
+      i->remove();
       env.n_lin_del++;
       return;
     } else {

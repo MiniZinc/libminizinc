@@ -768,14 +768,37 @@ namespace MiniZinc {
     pathMap = env.getPathMap();
     reversePathMap = env.getReversePathMap();
   }
-  
-  void EnvI::flat_removeItem(MiniZinc::Item* i) {
-    i->remove();
+
+  void EnvI::flatRemoveExpr(Expression* e, Item* i) {
+    std::vector<VarDecl*> toRemove;
+    CollectDecls cd(this->vo, toRemove, i);
+    topDown(cd, e);
+
+    Model& flat = (*_flat);
+    while (!toRemove.empty()) {
+      VarDecl* cur = toRemove.back(); toRemove.pop_back();
+      assert(vo.occurrences(cur) == 0 && CollectDecls::varIsFree(cur));
+      if (!isOutput(cur)) {
+        IdMap<int>::iterator cur_idx = vo.idx.find(cur->id());
+        if (cur_idx != vo.idx.end() && !flat[cur_idx->second]->removed()) {
+          CollectDecls cd(vo, toRemove, flat[cur_idx->second]->cast<VarDeclI>());
+          topDown(cd,cur->e());
+          flat[cur_idx->second]->remove();
+        }
+      }
+    }
   }
-  void EnvI::flat_removeItem(int i) {
-    flat_removeItem((*_flat)[i]);
+
+  void EnvI::flatRemoveItem(ConstraintI* ci) {
+    flatRemoveExpr(ci->e(), ci);
+    ci->e(constants().lit_true);
+    ci->remove();
   }
-  
+  void EnvI::flatRemoveItem(VarDeclI* vdi) {
+    flatRemoveExpr(vdi->e(), vdi);
+    vdi->remove();
+  }
+
   void EnvI::fail(const std::string& msg) {
     if (!_failed) {
       addWarning(std::string("model inconsistency detected")+(msg.empty() ? std::string() : (": "+msg)));
@@ -2810,13 +2833,11 @@ namespace MiniZinc {
         e.envi().flat_addItem(SolveI::sat(Location().introduce()));
       }
 
-      std::vector<VarDecl*> deletedVarDecls;
-
       // Create output model
       if (opt.keepOutputInFzn) {
         copyOutput(env);
       } else {
-        createOutput(env, deletedVarDecls, opt.outputMode, opt.outputObjective, opt.outputOutputItem, opt.hasChecker);
+        createOutput(env, opt.outputMode, opt.outputObjective, opt.outputOutputItem, opt.hasChecker);
       }
       
       // Flatten remaining redefinitions
@@ -2866,7 +2887,7 @@ namespace MiniZinc {
         array_bool_andor_t.push_back(Type::varbool());
         fi = env.model->matchFn(env, ASTString("bool_clause_reif"), array_bool_andor_t, false);
         array_bool_clause_reif = (fi && fi->e()) ? fi : NULL;
-        
+
         std::vector<Type> bool_xor_t(3);
         bool_xor_t[0] = Type::varbool();
         bool_xor_t[1] = Type::varbool();
@@ -2874,8 +2895,7 @@ namespace MiniZinc {
         fi = env.model->matchFn(env, constants().ids.bool_xor, bool_xor_t, false);
         bool_xor = (fi && fi->e()) ? fi : NULL;
       }
-      
-      std::vector<VarDeclI*> removedItems;
+
       std::vector<int> convertToRangeDomain;
       env.collectVarDecls(true);
 
@@ -2890,7 +2910,7 @@ namespace MiniZinc {
           agenda.push_back(env.modifiedVarDecls[i]);
         }
         env.modifiedVarDecls.clear();
-        
+
         bool doConvertToRangeDomain = false;
         if (agenda.empty()) {
           for (auto i : convertToRangeDomain) {
@@ -2899,7 +2919,7 @@ namespace MiniZinc {
           convertToRangeDomain.clear();
           doConvertToRangeDomain = true;
         }
-        
+
         for (int ai=0; ai<agenda.size(); ai++) {
           int i=agenda[ai];
           if (VarDeclI* vdi = m[i]->dyn_cast<VarDeclI>()) {
@@ -2920,11 +2940,10 @@ namespace MiniZinc {
                     break;
                   }
                   if (hasRedundantOccurrenciesOnly) {
-                    removedItems.push_back(vdi);
-                    env.flat_removeItem(vdi);
+                    env.flatRemoveItem(vdi);
                     env.vo.removeAllOccurrences(vdi->e());
                     for (const auto& c: it->second) {
-                      env.flat_removeItem(c);
+                      c->remove();
                     }
                     continue;
                   }
@@ -2937,20 +2956,18 @@ namespace MiniZinc {
                     GCLock lock;
                     ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->e()->e());
                     if (vdi->e()->introduced()) {
-                      removedItems.push_back(vdi);
-                      env.flat_removeItem(vdi);
                       env.flat_addItem(ci);
+                      env.flatRemoveItem(vdi);
                       continue;
                     }
                     vdi->e()->e(NULL);
                     env.flat_addItem(ci);
                   } else if (vdi->e()->type().ispar() || vdi->e()->ti()->computedDomain()) {
-                    removedItems.push_back(vdi);
+                    env.flatRemoveItem(vdi);
                     continue;
                   }
                 } else {
-                  removedItems.push_back(vdi);
-                  env.flat_removeItem(vdi);
+                  env.flatRemoveItem(vdi);
                   continue;
                 }
               }
@@ -3173,8 +3190,7 @@ namespace MiniZinc {
                     if (isTrueVar) {
                       env.fail();
                     } else {
-                      CollectDecls cd(env.vo,deletedVarDecls,vdi);
-                      topDown(cd,c);
+                      env.flatRemoveExpr(c, vdi);
                       env.cse_map_remove(c);
                       vd->e(constants().lit_false);
                       vd->ti()->domain(constants().lit_false);
@@ -3183,8 +3199,7 @@ namespace MiniZinc {
                     if (isFalseVar) {
                       env.fail();
                     } else {
-                      CollectDecls cd(env.vo,deletedVarDecls,vdi);
-                      topDown(cd,c);
+                      env.flatRemoveExpr(c, vdi);
                       env.cse_map_remove(c);
                       vd->e(constants().lit_true);
                       vd->ti()->domain(constants().lit_true);
@@ -3199,8 +3214,7 @@ namespace MiniZinc {
                     } else {
                       arg_vd->e(arg_vd->ti()->domain());
                     }
-                    CollectDecls cd(env.vo,deletedVarDecls,vdi);
-                    topDown(cd,c);
+                    env.flatRemoveExpr(c, vdi);
                     vd->e(NULL);
                     // Need to remove right hand side from CSE map, otherwise
                     // flattening of nc could assume c has already been flattened
@@ -3261,8 +3275,11 @@ namespace MiniZinc {
                     }
                   }
                 }
-                if (nc != NULL) {
-                  CollectDecls cd(env.vo,deletedVarDecls,vdi);
+                if (nc) {
+                  // Note: Removal of VarDecl's referenced by c must be delayed
+                  // until nc is flattened
+                  std::vector<VarDecl*> toRemove;
+                  CollectDecls cd(env.vo, toRemove, vdi);
                   topDown(cd,c);
                   vd->e(NULL);
                   // Need to remove right hand side from CSE map, otherwise
@@ -3300,6 +3317,22 @@ namespace MiniZinc {
                   (void) flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
                   if(csi) delete csi;
                   if(vsi) delete vsi;
+
+                  // Remove VarDecls becoming unused through the removal of c
+                  // because they are not used by nc
+                  while (!toRemove.empty()) {
+                    VarDecl* cur = toRemove.back(); toRemove.pop_back();
+                    if (env.vo.occurrences(cur) == 0 && !isOutput(cur)) {
+                      if (CollectDecls::varIsFree(cur)) {
+                        IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
+                        if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
+                          CollectDecls cd(env.vo, toRemove, m[cur_idx->second]->cast<VarDeclI>());
+                          topDown(cd,cur->e());
+                          m[cur_idx->second]->remove();
+                        }
+                      }
+                    }
+                  }
                 }
               }
             }
@@ -3363,10 +3396,7 @@ namespace MiniZinc {
                   nc->decl(env.model->matchFn(env,nc,false));
                 }
                 if (nc == nullptr) {
-                  CollectDecls cd(env.vo,deletedVarDecls,ci);
-                  topDown(cd,c);
-                  ci->e(constants().lit_true);
-                  env.flat_removeItem(i);
+                  env.flatRemoveItem(ci);
                 }
               } else {
                 FunctionI* decl = env.model->matchFn(env,c,false);
@@ -3382,10 +3412,7 @@ namespace MiniZinc {
                     nc->addAnnotation(ee_ann.r());
                   }
                 }
-                CollectDecls cd(env.vo,deletedVarDecls,ci);
-                topDown(cd,c);
-                ci->e(constants().lit_true);
-                env.flat_removeItem(i);
+                env.flatRemoveItem(ci);
                 StringLit* sl = getLongestMznPathAnnotation(env, c);
                 CallStackItem* csi=NULL;
                 if(sl)
@@ -3401,15 +3428,7 @@ namespace MiniZinc {
         startItem = endItem+1;
         endItem = m.size()-1;
       }
-      
-      for (unsigned int i=0; i<removedItems.size(); i++) {
-        if (env.vo.occurrences(removedItems[i]->e())==0) {
-          CollectDecls cd(env.vo,deletedVarDecls,removedItems[i]);
-          topDown(cd,removedItems[i]->e()->e());
-          env.flat_removeItem(removedItems[i]);
-        }
-      }
-      
+
       // Add redefinitions for output variables that may have been redefined since createOutput
       for (unsigned int i=0; i<env.output->size(); i++) {
         if (VarDeclI* vdi = (*env.output)[i]->dyn_cast<VarDeclI>()) {
@@ -3445,52 +3464,22 @@ namespace MiniZinc {
             }
             rhs->decl(decl);
             outputVarDecls(env,vdi,rhs);
-            
+
             removeIsOutput(vdi->e()->flat());
             vdi->e()->e(rhs);
           }
         }
       }
-      
-      while (!deletedVarDecls.empty()) {
-        VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
-        if (env.vo.occurrences(cur) == 0 && !isOutput(cur)) {
-          if (CollectDecls::varIsFree(cur)) {
-            IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
-            if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
-              CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
-              topDown(cd,cur->e());
-              env.flat_removeItem(cur_idx->second);
-            }
-          }
-        }
-      }
 
       if (!opt.keepOutputInFzn) {
-        finaliseOutput(env, deletedVarDecls);
+        finaliseOutput(env);
       }
 
       for (unsigned int i=0; i<m.size(); i++) {
         if (ConstraintI* ci = m[i]->dyn_cast<ConstraintI>()) {
           if (Call* c = ci->e()->dyn_cast<Call>()) {
             if (c->decl()==constants().var_redef) {
-              CollectDecls cd(env.vo,deletedVarDecls,ci);
-              topDown(cd,c);
-              env.flat_removeItem(i);
-            }
-          }
-        }
-      }
-
-      while (!deletedVarDecls.empty()) {
-        VarDecl* cur = deletedVarDecls.back(); deletedVarDecls.pop_back();
-        if (env.vo.occurrences(cur) == 0 && !isOutput(cur)) {
-          if (CollectDecls::varIsFree(cur)) {
-            IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
-            if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
-              CollectDecls cd(env.vo,deletedVarDecls,m[cur_idx->second]->cast<VarDeclI>());
-              topDown(cd,cur->e());
-              env.flat_removeItem(cur_idx->second);
+              env.flatRemoveItem(ci);
             }
           }
         }
@@ -3683,7 +3672,7 @@ namespace MiniZinc {
             vd_output->e(vd->e());
           }
         }
-        env.flat_removeItem(vdi);
+        env.flatRemoveItem(vdi);
       }
     } else if (vd->type().isvar() && vd->type().dim()==0) {
       // Int or Float var
@@ -3920,7 +3909,7 @@ namespace MiniZinc {
       if(VarDeclI* vdi = item->dyn_cast<VarDeclI>()) {
         if(item->cast<VarDeclI>()->e()->type().ot() == Type::OT_OPTIONAL ||
             item->cast<VarDeclI>()->e()->type().bt() == Type::BT_ANN) {
-          e.envi().flat_removeItem(i);
+          item->remove();
         }
       }
     }

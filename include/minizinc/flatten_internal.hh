@@ -161,8 +161,10 @@ namespace MiniZinc {
     }
     
     void flat_addItem(Item* i);
-    void flat_removeItem(int i);
-    void flat_removeItem(Item* i);
+    void flatRemoveItem(ConstraintI* i);
+    void flatRemoveItem(VarDeclI* i);
+    void flatRemoveExpr(Expression* e, Item*);
+
     void vo_add_exp(VarDecl* vd);
     void annotateFromCallStack(Expression* e);
     void fail(const std::string& msg = std::string());
