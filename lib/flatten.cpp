@@ -250,13 +250,33 @@ namespace MiniZinc {
   
   /// Check if \a e is NULL or true
   bool istrue(EnvI& env, Expression* e) {
-    GCLock lock;
-    return e==NULL || (e->type() == Type::parbool() && eval_bool(env,e));
-  }  
+    if (e==nullptr)
+      return true;
+    if (e->type()==Type::parbool()) {
+      if (e->type().cv()) {
+        KeepAlive r = flat_cv_exp(env, Ctx(), e);
+        return eval_bool(env, r());
+      } else {
+        GCLock lock;
+        return eval_bool(env, e);
+      }
+    }
+    return false;
+  }
   /// Check if \a e is non-NULL and false
   bool isfalse(EnvI& env, Expression* e) {
-    GCLock lock;
-    return e!=NULL && e->type() == Type::parbool() && !eval_bool(env,e);
+    if (e==nullptr)
+      return false;
+    if (e->type()==Type::parbool()) {
+      if (e->type().cv()) {
+        KeepAlive r = flat_cv_exp(env, Ctx(), e);
+        return !eval_bool(env, r());
+      } else {
+        GCLock lock;
+        return !eval_bool(env, e);
+      }
+    }
+    return false;
   }  
 
   EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
