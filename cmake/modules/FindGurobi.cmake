@@ -8,7 +8,7 @@
 
 option(GUROBI_PLUGIN "Build Gurobi binding as a plugin" ON)
 
-set(GUROBI_COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG")
+set(GUROBI_COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions")
 
 set(GUROBI_VERSIONS 901 900 811 810 801 752 702)
 

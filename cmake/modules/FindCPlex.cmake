@@ -6,7 +6,7 @@
 #  CPLEX_COMPILE_FLAGS  - The definitions required to compile with CPLEX
 # User can set CPlex_ROOT to the preferred installation prefix
 
-set(CPLEX_COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions -DNDEBUG")
+set(CPLEX_COMPILE_FLAGS "-fPIC -fno-strict-aliasing -fexceptions")
 
 set(CPLEX_VERSIONS 1210 129 128 1271 127 1263 1262 1261 126)
 
