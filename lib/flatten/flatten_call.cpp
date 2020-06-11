@@ -304,7 +304,7 @@ namespace MiniZinc {
                        args);
     c->type(Type::varbool());
     c->decl(env.model->getFnDecls().bounds_disj.second);
-    env.flat_addItem(new ConstraintI(c_orig->loc().introduce(), c));
+    env.flatAddItem(new ConstraintI(c_orig->loc().introduce(), c));
     return true;
   }
 

@@ -130,7 +130,7 @@ namespace MiniZinc {
         }
         FunctionI* decl = c.decl();
         if (!decl->from_stdlib()) {
-          env.flat_addItem(decl);
+          env.flatAddItem(decl);
         }
       }
     };
@@ -140,7 +140,7 @@ namespace MiniZinc {
       OutputI* noi = copy(e,oi)->cast<OutputI>();
       CopyOutput co(e);
       topDown(co, noi->e());
-      e.flat_addItem(noi);
+      e.flatAddItem(noi);
     }
   }
   

@@ -551,11 +551,11 @@ namespace MiniZinc {
         Call* revmap = new Call(Location().introduce(), fi->id(), {vd->id()});
         revmap->decl(fi);
         revmap->type(Type::varbool());
-        env.flat_addItem(new ConstraintI(Location().introduce(), revmap));
+        env.flatAddItem(new ConstraintI(Location().introduce(), revmap));
       }
 
       VarDeclI* ni = new VarDeclI(Location().introduce(),vd);
-      env.flat_addItem(ni);
+      env.flatAddItem(ni);
       EE ee(vd,NULL);
       env.cse_map_insert(vd->id(),ee);
     }
@@ -686,7 +686,7 @@ namespace MiniZinc {
     cse_map.dump<EED>();
   }
   
-  void EnvI::flat_addItem(Item* i) {
+  void EnvI::flatAddItem(Item* i) {
     assert(_flat);
     if (_failed)
       return;
@@ -1617,7 +1617,7 @@ namespace MiniZinc {
               assert(id->decl() != NULL);
               if (id->decl()->ti()->domain() && istrue(env,id->decl()->ti()->domain())) {
                 GCLock lock;
-                env.flat_addItem(new ConstraintI(Location().introduce(),constants().lit_false));
+                env.flatAddItem(new ConstraintI(Location().introduce(),constants().lit_false));
               } else {
                 GCLock lock;
                 std::vector<Expression*> args(2);
@@ -1664,7 +1664,7 @@ namespace MiniZinc {
             while (id != NULL) {
               if (id->decl()->ti()->domain() && isfalse(env,id->decl()->ti()->domain())) {
                 GCLock lock;
-                env.flat_addItem(new ConstraintI(Location().introduce(),constants().lit_false));
+                env.flatAddItem(new ConstraintI(Location().introduce(),constants().lit_false));
               } else if (id->decl()->ti()->domain()==NULL) {
                 GCLock lock;
                 std::vector<Expression*> args(2);
@@ -1684,7 +1684,7 @@ namespace MiniZinc {
             GCLock lock;
             // extract domain information from added constraint if possible
             if (!e->isa<Call>() || checkDomainConstraints(env,e->cast<Call>())) {
-              env.flat_addItem(new ConstraintI(Location().introduce(),e));
+              env.flatAddItem(new ConstraintI(Location().introduce(),e));
             }
           }
         }
@@ -2195,7 +2195,7 @@ namespace MiniZinc {
                   return constants().lit_true;
                 } else if (id->decl()->ti()->domain() && eval_bool(env,id->decl()->ti()->domain()) != e->cast<BoolLit>()->v()) {
                   GCLock lock;
-                  env.flat_addItem(new ConstraintI(Location().introduce(),constants().lit_false));
+                  env.flatAddItem(new ConstraintI(Location().introduce(),constants().lit_false));
                 } else {
                   GCLock lock;
                   std::vector<Expression*> args(2);
@@ -2823,14 +2823,14 @@ namespace MiniZinc {
           for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
             nsi->ann().add(flat_exp(env,Ctx(),*it,NULL,constants().var_true).r());
           }
-          env.flat_addItem(nsi);
+          env.flatAddItem(nsi);
         }
       } _fv(env,hadSolveItem,timing_map);
       iterItems<FV>(_fv,e.model());
     
       if (!hadSolveItem) {
         GCLock lock;
-        e.envi().flat_addItem(SolveI::sat(Location().introduce()));
+        e.envi().flatAddItem(SolveI::sat(Location().introduce()));
       }
 
       // Create output model
@@ -2956,12 +2956,12 @@ namespace MiniZinc {
                     GCLock lock;
                     ConstraintI* ci = new ConstraintI(vdi->loc(),vdi->e()->e());
                     if (vdi->e()->introduced()) {
-                      env.flat_addItem(ci);
+                      env.flatAddItem(ci);
                       env.flatRemoveItem(vdi);
                       continue;
                     }
                     vdi->e()->e(NULL);
-                    env.flat_addItem(ci);
+                    env.flatAddItem(ci);
                   } else if (vdi->e()->type().ispar() || vdi->e()->ti()->computedDomain()) {
                     env.flatRemoveItem(vdi);
                     continue;
@@ -2999,7 +2999,7 @@ namespace MiniZinc {
                       Call* call = new Call(Location().introduce(),constants().ids.int_.le,args);
                       call->type(Type::varbool());
                       call->decl(env.model->matchFn(env, call, false));
-                      env.flat_addItem(new ConstraintI(Location().introduce(), call));
+                      env.flatAddItem(new ConstraintI(Location().introduce(), call));
                     } else if (dom->max(dom->size()-1).isFinite()) {
                       std::vector<Expression*> args(2);
                       args[0] = vdi->e()->id();
@@ -3007,7 +3007,7 @@ namespace MiniZinc {
                       Call* call = new Call(Location().introduce(),constants().ids.int_.le,args);
                       call->type(Type::varbool());
                       call->decl(env.model->matchFn(env, call, false));
-                      env.flat_addItem(new ConstraintI(Location().introduce(), call));
+                      env.flatAddItem(new ConstraintI(Location().introduce(), call));
                     }
                   } else if (dom->size() > 1) {
                     SetLit* newDom = new SetLit(Location().introduce(),IntSetVal::a(dom->min(0),dom->max(dom->size()-1)));
@@ -3029,7 +3029,7 @@ namespace MiniZinc {
                       tmp = mznpath_ann->cast<Call>()->arg(0);
                     }
                     CallStackItem csi(env, tmp);
-                    env.flat_addItem(new ConstraintI(Location().introduce(), call));
+                    env.flatAddItem(new ConstraintI(Location().introduce(), call));
                   }
                 } else {
                   convertToRangeDomain.push_back(i);
@@ -3052,7 +3052,7 @@ namespace MiniZinc {
                 Call* call = new Call(Location().introduce(),constants().ids.float_.le,args);
                 call->type(Type::varbool());
                 call->decl(env.model->matchFn(env, call, false));
-                env.flat_addItem(new ConstraintI(Location().introduce(), call));
+                env.flatAddItem(new ConstraintI(Location().introduce(), call));
               } else if (vmax == FloatVal::infinity()) {
                 vdi->e()->ti()->domain(NULL);
                 std::vector<Expression*> args(2);
@@ -3061,7 +3061,7 @@ namespace MiniZinc {
                 Call* call = new Call(Location().introduce(),constants().ids.float_.le,args);
                 call->type(Type::varbool());
                 call->decl(env.model->matchFn(env, call, false));
-                env.flat_addItem(new ConstraintI(Location().introduce(), call));
+                env.flatAddItem(new ConstraintI(Location().introduce(), call));
               } else if (vdi_dom->size() > 1) {
                 BinOp* dom_ranges = new BinOp(vdi->e()->ti()->domain()->loc().introduce(),
                                               FloatLit::a(vmin), BOT_DOTDOT, FloatLit::a(vmax));
@@ -3080,7 +3080,7 @@ namespace MiniZinc {
                 Call* call = new Call(Location().introduce(),constants().ids.float_.dom,args);
                 call->type(Type::varbool());
                 call->decl(env.model->matchFn(env, call, false));
-                env.flat_addItem(new ConstraintI(Location().introduce(), call));
+                env.flatAddItem(new ConstraintI(Location().introduce(), call));
               }
             }
           }
@@ -3872,7 +3872,7 @@ namespace MiniZinc {
         }
         GCLock lock;
         FunctionI* vc_decl_copy = new FunctionI(vc->decl()->loc(),vc->decl()->id(),vc->decl()->ti(),params,vc->decl()->e());
-        env.flat_addItem(vc_decl_copy);
+        env.flatAddItem(vc_decl_copy);
         globals.insert(vc->decl());
       }
       return ce;
@@ -3940,7 +3940,7 @@ namespace MiniZinc {
         for (auto nc : added_constraints) {
           Expression* new_ce = cleanup_constraint(e.envi(), globals, nc);
           if (new_ce) {
-            e.envi().flat_addItem(new ConstraintI(Location().introduce(),new_ce));
+            e.envi().flatAddItem(new ConstraintI(Location().introduce(),new_ce));
           }
         }
       } else if (ConstraintI* ci = (*m)[i]->dyn_cast<ConstraintI>()) {
@@ -3977,7 +3977,7 @@ namespace MiniZinc {
           TypeInst* ti = new TypeInst(Location().introduce(),si->e()->type(),NULL);
           VarDecl* constantobj = new VarDecl(Location().introduce(),ti,e.envi().genId(),si->e());
           si->e(constantobj->id());
-          e.envi().flat_addItem(new VarDeclI(Location().introduce(),constantobj));
+          e.envi().flatAddItem(new VarDeclI(Location().introduce(),constantobj));
         }
       }
     }

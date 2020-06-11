@@ -29,7 +29,7 @@ namespace MiniZinc {
   }
 
   int ChainCompressor::addItem(Item *i) {
-    env.flat_addItem(i);
+    env.flatAddItem(i);
     int item_idx = env.flat()->size()-1;
     trackItem(i);
     return item_idx;

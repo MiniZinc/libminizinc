@@ -1665,7 +1665,7 @@ typedef LinEq__<std::vector<double>, std::vector<VarDecl*> > LinEq;
         TypeInst* ti = new TypeInst(Location().introduce(),Type::varint(),newDom);
         VarDecl* newVar = new VarDecl(Location().introduce(),ti,mipd.getEnv()->envi().genId());
         newVar->flat(newVar);
-        mipd.getEnv()->envi().flat_addItem(new VarDeclI(Location().introduce(),newVar));
+        mipd.getEnv()->envi().flatAddItem(new VarDeclI(Location().introduce(),newVar));
         return newVar;
       }
       
@@ -1767,7 +1767,7 @@ typedef LinEq__<std::vector<double>, std::vector<VarDecl*> > LinEq;
         auto nc = new Call(Location().introduce(),ASTString(sName),args);
         nc->type(Type::varbool());
         nc->decl(fDecl);
-        mipd.getEnv()->envi().flat_addItem(new ConstraintI(Location().introduce(), nc));
+        mipd.getEnv()->envi().flatAddItem(new ConstraintI(Location().introduce(), nc));
       }
       
       /// domain / reif set of one variable into that for a!her

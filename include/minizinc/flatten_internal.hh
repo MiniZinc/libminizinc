@@ -160,7 +160,7 @@ namespace MiniZinc {
       return reverseMappers.find(ident) != reverseMappers.end();
     }
     
-    void flat_addItem(Item* i);
+    void flatAddItem(Item* i);
     void flatRemoveItem(ConstraintI* i);
     void flatRemoveItem(VarDeclI* i);
     void flatRemoveExpr(Expression* e, Item*);
