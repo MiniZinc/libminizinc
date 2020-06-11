@@ -294,6 +294,7 @@ namespace MiniZinc {
               throw InternalError(std::string("Error in communication with solver: ")+strerror(errno));
             }
           }
+          bool killed = false;
           if (timelimit!=0) {
             timeval currentTime;
             gettimeofday(&currentTime, NULL);
@@ -329,12 +330,13 @@ namespace MiniZinc {
                 sigint = false;
               } else {
                 kill(childPID, SIGTERM);
-                pS2Out->feedRawDataChunk( "\n" );   // in case last chunk did not end with \n
+                killed = true;
                 done = true;
               }
             }
           }
 
+          bool addedNl = false;
           for ( int i=1; i<=2; ++i ) {
             if ( FD_ISSET( pipes[i][0], &fdset ) )
             {
@@ -353,9 +355,13 @@ namespace MiniZinc {
               }
               else if ( 1==i ) {
                 pS2Out->feedRawDataChunk("\n");   // in case last chunk did not end with \n
+                addedNl = true;
                 done = true;
               }
             }
+          }
+          if (killed && !addedNl) {
+            pS2Out->feedRawDataChunk("\n");   // in case last chunk did not end with \n
           }
         }
 
