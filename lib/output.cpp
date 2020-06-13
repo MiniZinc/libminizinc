@@ -1114,7 +1114,23 @@ namespace MiniZinc {
                 assert(vd->flat());
                 
                 bool needOutputAnn = true;
-                if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
+                if (reallyFlat->e() && reallyFlat->e()->isa<Id>()) {
+                  Id* ident = reallyFlat->e()->cast<Id>();
+                  if (e.reverseMappers.find(ident) != e.reverseMappers.end()) {
+                    needOutputAnn = false;
+                    removeIsOutput(vd);
+                    removeIsOutput(reallyFlat);
+                    if (e.vo.occurrences(reallyFlat)==0) {
+                      auto it = e.vo.idx.find(reallyFlat->id());
+                      assert(it != e.vo.idx.end());
+                      e.flatRemoveItem((*e.flat())[it->second]->cast<VarDeclI>());
+                    }
+                    vd->e(copy(e,e.cmap,ident));
+                    Type al_t(vd->e()->type());
+                    al_t.ti(Type::TI_PAR);
+                    vd->e()->type(al_t);
+                  }
+                } else if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
                   ArrayLit* al = reallyFlat->e()->cast<ArrayLit>();
                   for (unsigned int i=0; i<al->size(); i++) {
                     if (Id* id = (*al)[i]->dyn_cast<Id>()) {
