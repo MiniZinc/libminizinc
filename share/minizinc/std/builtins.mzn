@@ -3099,6 +3099,13 @@ predicate redundant_constraint(var bool: b);
 /** @group builtins.special Mark \a b as an implied constraint (synonym for redundant_constraint) */
 predicate implied_constraint(var bool: b) = redundant_constraint(b);
 
+/** @group builtins.special Mark declaration of \a x with annotation \a a */
+function bool: annotated(var opt $T: x, ann: a);
+/** @group builtins.special Mark declaration of \a x with annotation \a a */
+function bool: annotated(set of $T: x, ann: a);
+/** @group builtins.special Mark declaration of \a x with annotation \a a */
+function bool: annotated(var set of int: x, ann: a);
+
 function set of int: anon_enum(int: n) = 1..n;
 
 function set of int: anon_enum(array[int] of string: x);
