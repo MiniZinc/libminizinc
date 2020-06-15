@@ -539,7 +539,7 @@ namespace MiniZinc {
     void p_bool_lin_le(SolverInstanceBase& s, const Call* call) {
       vec<int> cons = INTARRAY(0);
       vec<geas::patom_t> vars = BOOLVARARRAY(1);
-      geas::bool_linear_le(SD, geas::at_True, SI.zero, cons, vars, -INT(2));
+      geas::bool_linear_ge(SD, geas::at_True, SI.zero, cons, vars, -INT(2));
     }
 
     void p_bool_lin_eq_imp(SolverInstanceBase& s, const Call* call) {
@@ -559,7 +559,7 @@ namespace MiniZinc {
     void p_bool_lin_le_imp(SolverInstanceBase& s, const Call* call) {
       vec<int> cons = INTARRAY(0);
       vec<geas::patom_t> vars = BOOLVARARRAY(1);
-      geas::bool_linear_le(SD, BOOLVAR(3), SI.zero, cons, vars, -INT(2));
+      geas::bool_linear_ge(SD, BOOLVAR(3), SI.zero, cons, vars, -INT(2));
     }
 
     void p_bool_lin_eq_reif(SolverInstanceBase& s, const Call* call) {
@@ -584,8 +584,8 @@ namespace MiniZinc {
       vec<int> cons = INTARRAY(0);
       vec<geas::patom_t> vars = BOOLVARARRAY(1);
       // TODO: Rewrite using MiniZinc Library??
-      geas::bool_linear_le(SD, BOOLVAR(3), SI.zero, cons, vars, -INT(2));
-      geas::bool_linear_ge(SD, ~BOOLVAR(3), SI.zero, cons, vars, -INT(2)-1);
+      geas::bool_linear_ge(SD, BOOLVAR(3), SI.zero, cons, vars, -INT(2));
+      geas::bool_linear_le(SD, ~BOOLVAR(3), SI.zero, cons, vars, -INT(2)-1);
     }
 
     void p_bool2int(SolverInstanceBase& s, const Call* call) {
