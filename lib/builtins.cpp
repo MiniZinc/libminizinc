@@ -1462,11 +1462,11 @@ namespace MiniZinc {
     std::ostringstream oss;
     GCLock lock;
     Printer p(oss,0,false);
-    Expression* e = eval_par(env,exp);
+    Expression* e = follow_id_to_value(exp);
     if (e->type().isvar()) {
       p.print(e);
     } else {
-      e = eval_par(env,e);
+      e = eval_par(env, e);
       if (ArrayLit* al = e->dyn_cast<ArrayLit>()) {
         oss << "[";
         for (unsigned int i=0; i<al->size(); i++) {
