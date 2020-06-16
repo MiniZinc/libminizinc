@@ -128,8 +128,6 @@ void ScipPlugin::load() {
   }\
 }
 
-std::string MIP_scip_wrapper::getMznLib() { return "-Glinear_scip"; }
-
 string MIP_scip_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;
   oss << "MIP wrapper for SCIP "

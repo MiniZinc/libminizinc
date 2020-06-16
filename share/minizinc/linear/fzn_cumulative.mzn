@@ -22,12 +22,13 @@ predicate fzn_cumulative(array[int] of var int: s,
             set of int: times = dom_array( [ s[i] | i in tasks ] )
             } in
                 if 0==card(tasks) then /*true*/ 0==card(index_set(s)) \/ b>=0
-                else
-                    if nMZN__UnarySizeMax_cumul>=card(times)*card(tasks) then     %%%   -- Mem overflow on rcmsp. PARAMETER? TODO
+                elseif MZN__Cumulative_Fixed_d_r /\
+                      is_fixed(d) /\ is_fixed(r) /\ is_fixed(b) then
+                        fzn_cumulative_fixed_d_r(s, fix(d), fix(r), fix(b)) 
+                elseif nMZN__UnarySizeMax_cumul>=card(times)*card(tasks) then
                         cumulative_time_decomp(s, d, r, b, times) 
-                    else 
+                else 
                         cumulative_task_decomp(s, d, r, b) 
-                    endif
                 endif
         endif;
 
@@ -47,7 +48,7 @@ predicate cumulative_set_times(array[int] of var int: s,
                set of int: times = dom_array( [ s[i] | i in tasks ] )
                                intersect TIMES01
             } in
-      if false then       %%% 100>=card(times) then                 %% PARAMETER ?
+      if false then
         cumulative_time_decomp(s, d, r, b, times) 
       else 
         cumulative_task_decomp(s, d, r, b) 
@@ -66,7 +67,6 @@ let {
       max([ ub(s[i]) + ub(d[i]) | i in tasks ]) where i in TIMES01 } 
 }  
 in 
-%  my_trace("  cumul_time: " ++ show(card(tasks)) ++ " tasks, " ++ show(card(times)) ++ " times\n") /\
   forall( t in times ) ( 
     b >= sum( i in tasks ) ( 
       if is_fixed(d[i]) then
@@ -87,7 +87,6 @@ let {
   {i | i in index_set(s) where ub(r[i]) > 0 /\ ub(d[i]) > 0 } 
 }  
 in 
-%  my_trace("  cumul_tasks: " ++ show(card(tasks)) ++ " tasks\n") /\
   forall( j in tasks) (
     b-r[j] >= sum( i in tasks where i != j
         /\ lb(s[i])<=ub(s[j]) /\ lb(s[j])<ub(s[i]+d[i])   %% -- seems slower on mspsp ???
@@ -95,3 +94,9 @@ in
       r[i] *                                              %% r[i] *  !
           bool2int( s[i] <= s[j] /\ s[j] < s[i]+d[i] )) )
   ;
+
+  
+%% A global cumulative with SCIP: fixed d and r
+predicate fzn_cumulative_fixed_d_r(array[int] of var int: s,
+                     array[int] of int: d,
+                     array[int] of int: r, int: b);

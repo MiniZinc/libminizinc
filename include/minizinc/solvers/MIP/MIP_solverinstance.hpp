@@ -1006,7 +1006,7 @@ namespace MiniZinc {
     _constraintRegistry.add("aux_float_le_zero_if_0__IND", SCIPConstraints::p_indicator_le0_if0<MIPWrapper>);
     _constraintRegistry.add("aux_float_eq_if_1__IND", SCIPConstraints::p_indicator_eq_if1<MIPWrapper>);
     
-    _constraintRegistry.add("fzn_cumulative", SCIPConstraints::p_cumulative<MIPWrapper>);
+    _constraintRegistry.add("fzn_cumulative_fixed_d_r", SCIPConstraints::p_cumulative<MIPWrapper>);
 
 
     _constraintRegistry.add("bounds_disj", SCIPConstraints::p_bounds_disj<MIPWrapper>);

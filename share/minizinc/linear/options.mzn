@@ -26,13 +26,24 @@ ann: MIP_cut = user_cut;         %% MIP_cut: make sure no feasible solutions are
 ann: MIP_lazy = lazy_constraint;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% "GENERAL" constraints %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-opt bool: fIndConstr;          %% Attention: as of MZN 2.4.3, you also need -DfMIPdomains=false
+opt bool: fIndConstr;          %% User option, e.g., with -D
+                               %% Attention: as of MZN 2.4.3, you also need -DfMIPdomains=false
 bool: fMZN__UseIndicators =    %% Pass on indicator constraints
            if absent( fIndConstr ) then false
            else deopt( fIndConstr ) endif;
     %% CPLEX 12.6.2 Concert: reifs give wrong result on 2012/amaze, so using implications only
-opt bool: MinMaxGeneral;       %% pass on min/max to the backend as fzn_array_float_minimum
+    
+%% MAX/MIN
+opt bool: MinMaxGeneral;       %% User option, e.g., with -D
+                               %% pass on min/max to the backend as fzn_array_float_minimum
 bool: MZN__MinMaxGeneral = if absent(MinMaxGeneral) then false else deopt(MinMaxGeneral) endif;
+
+%% CUMULATIVE
+opt bool: CumulativeSolverConfig;               %% As set in share/minizinc/Preferences.json
+opt bool: Cumulative;          %% User option, e.g., with -D
+bool: MZN__Cumulative_Fixed_d_r = if occurs(Cumulative) then deopt(Cumulative)
+                      elseif occurs(CumulativeSolverConfig) then deopt(CumulativeSolverConfig)
+                      else false endif;
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Quadratic expressions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
