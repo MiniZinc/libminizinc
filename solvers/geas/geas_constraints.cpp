@@ -151,7 +151,7 @@ namespace MiniZinc {
     }
 
     void p_int_times(SolverInstanceBase& s, const Call* call) {
-      geas::int_mul(SD, INTVAR(0), INTVAR(1), INTVAR(2));
+      geas::int_mul(SD, INTVAR(2), INTVAR(0), INTVAR(1));
     }
 
     void p_int_div(SolverInstanceBase& s, const Call* call) {
