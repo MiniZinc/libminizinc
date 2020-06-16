@@ -21,6 +21,7 @@
 #include <cstring>
 #include <cmath>
 #include <stdexcept>
+#include <array>
 
 using namespace std;
 
