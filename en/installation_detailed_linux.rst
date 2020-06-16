@@ -178,7 +178,30 @@ The MiniZinc build system should find CBC automatically if it is installed in th
 SCIP
 ~~~~
 
-For *SCIP (as of 6.0.1.0)*, if you download the Optimization Suite, the installation commands should be as follows.
+For *SCIP (as of 7.0.0)*, the installation commands should be as follows.
+
+1. Download the SCIP Optimization Suite 7.0.0 source code: https://scip.zib.de/download.php?fname=scipoptsuite-7.0.0.tgz
+
+2. Untar it and change into scipoptsuite-7.0.0.
+
+3. Run the following commands:
+
+.. code-block:: bash
+
+    mkdir build
+    cd build
+    cmake .. [-DSOPLEX_DIR=/path/to/soplex]
+    make
+    # optional: run a quick check on some instances
+    make check
+    # optional: install scip executable, library, and headers
+    # Helps MiniZinc find SCIP if in the standard location
+    make install
+
+4. You might want to install LAPACK, bliss patch and any other support libraries for performance.
+
+
+For *SCIP (as of 6.0.1.0)*, the installation commands should be as follows.
 
 1. Download the SCIP Optimization Suite 6.0.1 (or higher) source code: https://scip.zib.de/download.php?fname=scipoptsuite-6.0.1.tgz
 
