@@ -772,13 +772,12 @@ namespace MiniZinc {
       vec<geas::intvar> vars = INTVARARRAY(0);
       vec<int> tmp = INTARRAY(1);
       assert(tmp.size() % vars.size() == 0);
-      vec<vec<int>> table(tmp.size()/vars.size());
+      vec<vec<int>> table(tmp.size() == 0 ? 0 : tmp.size()/vars.size());
       for (int i = 0; i < table.size(); ++i) {
-        vec<int> row(vars.size());
+        table[i].growTo(vars.size());
         for (int j = 0; j < vars.size(); ++j) {
-          row[j] = tmp[i*vars.size() + j];
+          table[i][j] = tmp[i*vars.size() + j];
         }
-        table.push(row);
       }
       geas::table_id id = geas::table::build(SD, table);
       // TODO: Annotations for table versions
