@@ -37,14 +37,23 @@ bool: MZN__MinMaxGeneral = if absent(MinMaxGeneral) then false else deopt(MinMax
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Quadratic expressions %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --------------------------------------------------------------------------------------- %
-opt bool: QuadrFloat;           %% Forward float_times as fzn_float_times
-bool: MZN__QuadrFloat = if absent(QuadrFloat) then false else deopt(QuadrFloat) endif;
-opt bool: QuadrInt;             %% Forward int_times as fzn_int_times
+%% Forward float_times as fzn_float_times
+opt bool: QuadrFloatSolverConfig;             %% As set in share/minizinc/Preferences.json
+opt bool: QuadrFloat;                         %% User option, e.g., with -D
+bool: MZN__QuadrFloat = if occurs(QuadrFloat) then deopt(QuadrFloat)
+                      elseif occurs(QuadrFloatSolverConfig) then deopt(QuadrFloatSolverConfig)
+                      else false endif;
+
+%% Forward int_times as fzn_int_times
+opt bool: QuadrIntSolverConfig;               %% As set in share/minizinc/Preferences.json
+opt bool: QuadrInt;                           %% User option, e.g., with -D
+bool: QuadrIntFinal = if occurs(QuadrInt) then deopt(QuadrInt)
+                      elseif occurs(QuadrIntSolverConfig) then deopt(QuadrIntSolverConfig)
+                      else false endif;
 opt int: QuadrIntCard;          %% Convert int_times to fzn_int_times if the minimum
                                 %% of x, y's domain cardinalities as at least QuadrIntCard
-int: MZN__QuadrIntCard = if absent(QuadrIntCard) then
-      if absent(QuadrInt) \/ not deopt(QuadrInt) then infinity else 0 endif
-    else deopt(QuadrIntCard) endif;
+int: MZN__QuadrIntCard = if occurs(QuadrIntCard) then deopt(QuadrIntCard)
+                         elseif QuadrIntFinal then 0 else infinity endif;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% Subtour elimination in circuit %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % --------------------------------------------------------------------------------------- %

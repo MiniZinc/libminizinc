@@ -1,0 +1,4 @@
+{ "solverDefaults" : [
+  [ "org.minizinc.mip.gurobi", "-DQuadrIntSolverConfig=true", "" ],
+  [ "org.minizinc.mip.gurobi", "-DQuadrFloatSolverConfig=true", "" ]
+] }
