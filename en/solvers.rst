@@ -142,7 +142,8 @@ The following parameters can be given on the command line or modified in ``share
                                                %% x!=y, x<y, b -> x<y, b <-> x<=y
   -DfIndConstr=true -DfMIPdomains=false        %% Use solver's indicator constraints, see below
   -DMinMaxGeneral=true                         %% Send min/max constraints to the solver (Gurobi only)
-  -DQuadrFloat=true -DQuadrInt=true            %% Forward float/integer multiplications for MIQCP backends, see below
+  -DQuadrFloat=false -DQuadrInt=false          %% Not forward float/integer multiplications for MIQCP backends, see below
+  -DCumulative=false                           %% Not forward cumulative with fixed durations/resources (SCIP only)
   --no-half-reifications                       %% Turn off halfreification (full reification was until v2.2.3)
 
 Some Solver Options and Changed Default Values
@@ -208,11 +209,11 @@ to use them.
 Quadratic Constraints and Objectives (MIQCP)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The Gurobi interface has support for MIQCP (invoking global optimizer because MiniZinc translates multiplication to
+Gurobi 9.0 and SCIP support MIQCP (invoking non-convex global optimizer because MiniZinc translates multiplication to
 equality with an intermediate variable: whenever the model uses an expression x*y it is converted to z with z==x*y which is non-convex).
-While this might not always be advantageous for integer multiplication (which is linearly decomposed by default), for float variables
-this is the only way to go. To forward float/integer multiplications to the backend, run compiler with either or both of
-``-DQuadrFloat=true -DQuadrInt=true``.
+While this might not always be advantageous for integer multiplication (which is linearly decomposed for other solvers), for float variables
+this is the only way to go. To switch off forwarding float/integer multiplications to the backend, run compiler with either or both of
+``-DQuadrFloat=false -DQuadrInt=false``.
 
 Pools of User Cuts and Lazy Constraints
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
