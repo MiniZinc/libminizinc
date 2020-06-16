@@ -77,6 +77,7 @@ void ScipPlugin::load() {
   load_symbol(SCIPinfinity);
 #endif
   load_symbol(SCIPcreateConsBasicLinear);
+  load_symbol(SCIPcreateConsBasicQuadratic);
   load_symbol(SCIPaddCons);
   load_symbol(SCIPreleaseCons);
   load_symbol(SCIPchgVarLbGlobal);
@@ -119,7 +120,7 @@ void ScipPlugin::load() {
   load_symbol(SCIPgetNConss);
 }
 
-#define SCIP_PLUGIN_CALL(plugin, x) { \
+#define SCIP_PLUGIN_CALL_R(plugin, x) { \
   SCIP_RETCODE _ret = (x); \
   if (_ret != SCIP_OKAY) { \
     (plugin)->SCIPmessagePrintErrorHeader(__FILE__, __LINE__); \
@@ -228,7 +229,7 @@ error:
   return false;
 }
 
-void MIP_scip_wrapper::wrap_assert(SCIP_RETCODE retcode, string msg, bool fTerm)
+void MIP_scip_wrapper::SCIP_PLUGIN_CALL(SCIP_RETCODE retcode, string msg, bool fTerm)
 {
       /* evaluate return code of the SCIP process */
       if( retcode != SCIP_OKAY )
@@ -251,17 +252,17 @@ SCIP_RETCODE MIP_scip_wrapper::openSCIP()
   else
     plugin = new ScipPlugin();
 
-  SCIP_PLUGIN_CALL( plugin, plugin->SCIPcreate(&scip) );
-  SCIP_PLUGIN_CALL( plugin, plugin->SCIPincludeDefaultPlugins(scip) );
+  SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPcreate(&scip) );
+  SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPincludeDefaultPlugins(scip) );
 
   /* create empty problem */
-  SCIP_PLUGIN_CALL( plugin, plugin->SCIPcreateProbBasic(scip, "mzn_scip") );
+  SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPcreateProbBasic(scip, "mzn_scip") );
   return SCIP_OKAY;
 }
 
 SCIP_RETCODE MIP_scip_wrapper::closeSCIP()
 {
-  SCIP_PLUGIN_CALL( plugin, plugin->SCIPfree(&scip) );
+  SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPfree(&scip) );
 
    delete plugin;
   /// and at last:
@@ -294,8 +295,8 @@ SCIP_RETCODE MIP_scip_wrapper::doAddVars_SCIP
     scipVars.resize(scipVars.size()+1);
     if (fPhase1Over)
       assert(scipVars.size() == colObj.size());
-    SCIP_PLUGIN_CALL( plugin, plugin->SCIPcreateVarBasic(scip, &scipVars.back(), names[j].c_str(), lb[j], ub[j], obj[j], ctype) );
-    SCIP_PLUGIN_CALL( plugin, plugin->SCIPaddVar(scip, scipVars.back()) );
+    SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPcreateVarBasic(scip, &scipVars.back(), names[j].c_str(), lb[j], ub[j], obj[j], ctype) );
+    SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPaddVar(scip, scipVars.back()) );
   }
 //   retcode = SCIP_newcols (env, lp, n, obj, lb, ub, &ctype[0], &pcNames[0]);
 //   wrap_assert( !retcode,  "Failed to declare variables." );
@@ -339,9 +340,9 @@ SCIP_RETCODE MIP_scip_wrapper::addRow_SCIP
       for (int j=0; j<nnz; ++j)
         ab[j] = scipVars[rmatind[j]];
 
-      SCIP_PLUGIN_CALL( plugin, plugin->SCIPcreateConsBasicLinear(scip, &cons, rowName.c_str(), nnz, &ab[0], rmatval, lh, rh) );
-      SCIP_PLUGIN_CALL( plugin, plugin->SCIPaddCons(scip, cons) );
-      SCIP_PLUGIN_CALL( plugin, plugin->SCIPreleaseCons(scip, &cons) );
+      SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPcreateConsBasicLinear(scip, &cons, rowName.c_str(), nnz, &ab[0], rmatval, lh, rh) );
+      SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPaddCons(scip, cons) );
+      SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPreleaseCons(scip, &cons) );
       return SCIP_OKAY;
 //   retcode = SCIP_addrows (env, lp, ccnt, rcnt, nnz, &rhs,
 //         &ssense, rmatbeg, rmatind, rmatval,
@@ -351,7 +352,7 @@ SCIP_RETCODE MIP_scip_wrapper::addRow_SCIP
 
 void MIP_scip_wrapper::setVarBounds(int iVar, double lb, double ub)
 {
-  wrap_assert( lb<=ub ? SCIP_OKAY : SCIP_ERROR,
+  SCIP_PLUGIN_CALL( lb<=ub ? SCIP_OKAY : SCIP_ERROR,
                "scip interface: setVarBounds: lb>ub" );
   setVarLB(iVar, lb);
   setVarUB(iVar, ub);
@@ -360,13 +361,13 @@ void MIP_scip_wrapper::setVarBounds(int iVar, double lb, double ub)
 void MIP_scip_wrapper::setVarLB(int iVar, double lb)
 {
   auto res = plugin->SCIPchgVarLbGlobal(scip,scipVars[iVar],lb);
-  wrap_assert( res,  "scip interface: failed to set var lb." );
+  SCIP_PLUGIN_CALL( res,  "scip interface: failed to set var lb." );
 }
 
 void MIP_scip_wrapper::setVarUB(int iVar, double ub)
 {
   auto res = plugin->SCIPchgVarUbGlobal(scip,scipVars[iVar],ub);
-  wrap_assert( res,  "scip interface: failed to set var ub." );
+  SCIP_PLUGIN_CALL( res,  "scip interface: failed to set var ub." );
 }
 
 
@@ -388,21 +389,21 @@ void MIP_scip_wrapper::addIndicatorConstraint(
   indicator_var = scipVars[iBVar];
   if (0==bVal)
   {
-    wrap_assert( plugin->SCIPgetNegatedVar(scip, indicator_var, &indicator_var) );
+    SCIP_PLUGIN_CALL( plugin->SCIPgetNegatedVar(scip, indicator_var, &indicator_var) );
   }
 
   if (LQ==sense || EQ==sense) {
-    wrap_assert( plugin->SCIPcreateConsBasicIndicator(scip, &cons, rowName.c_str(), indicator_var, nnz, ab.data(), rmatval, rhs ) );
-    wrap_assert( plugin->SCIPaddCons(scip, cons) );
-    wrap_assert( plugin->SCIPreleaseCons(scip, &cons) );
+    SCIP_PLUGIN_CALL( plugin->SCIPcreateConsBasicIndicator(scip, &cons, rowName.c_str(), indicator_var, nnz, ab.data(), rmatval, rhs ) );
+    SCIP_PLUGIN_CALL( plugin->SCIPaddCons(scip, cons) );
+    SCIP_PLUGIN_CALL( plugin->SCIPreleaseCons(scip, &cons) );
   }
   if (GQ==sense || EQ==sense) {
     std::vector<double> rmatvalNEG(nnz);
     for (int i=nnz; i--;)
       rmatvalNEG[i] = -rmatval[i];
-    wrap_assert( plugin->SCIPcreateConsBasicIndicator(scip, &cons, rowName.c_str(), indicator_var, nnz, ab.data(), rmatvalNEG.data(), -rhs ) );
-    wrap_assert( plugin->SCIPaddCons(scip, cons) );
-    wrap_assert( plugin->SCIPreleaseCons(scip, &cons) );
+    SCIP_PLUGIN_CALL( plugin->SCIPcreateConsBasicIndicator(scip, &cons, rowName.c_str(), indicator_var, nnz, ab.data(), rmatvalNEG.data(), -rhs ) );
+    SCIP_PLUGIN_CALL( plugin->SCIPaddCons(scip, cons) );
+    SCIP_PLUGIN_CALL( plugin->SCIPreleaseCons(scip, &cons) );
   }
 }
 
@@ -424,10 +425,10 @@ void MIP_scip_wrapper::addBoundsDisj(int n, double *fUB, double *bnd, int *vars,
     bs[n+j] = bndF[j];
   }
 
-  wrap_assert( plugin->SCIPcreateConsBasicBounddisjunction(scip, &cons, rowName.c_str(),
+  SCIP_PLUGIN_CALL( plugin->SCIPcreateConsBasicBounddisjunction(scip, &cons, rowName.c_str(),
                                                    v.size(), v.data(), bt.data(), bs.data() ) );
-  wrap_assert( plugin->SCIPaddCons(scip, cons) );
-  wrap_assert( plugin->SCIPreleaseCons(scip, &cons) );
+  SCIP_PLUGIN_CALL( plugin->SCIPaddCons(scip, cons) );
+  SCIP_PLUGIN_CALL( plugin->SCIPreleaseCons(scip, &cons) );
 
 }
 
@@ -444,12 +445,39 @@ void MIP_scip_wrapper::addCumulative(int nnz, int *rmatind, double *d, double *r
     nr[j] = (int)round(r[j]);
   }
 
-  wrap_assert( plugin->SCIPcreateConsBasicCumulative(scip, &cons, rowName.c_str(),
+  SCIP_PLUGIN_CALL( plugin->SCIPcreateConsBasicCumulative(scip, &cons, rowName.c_str(),
                                               nnz, ab.data(), nd.data(), nr.data(), (int)round(b)) );
 
-  wrap_assert( plugin->SCIPaddCons(scip, cons) );
-  wrap_assert( plugin->SCIPreleaseCons(scip, &cons) );
+  SCIP_PLUGIN_CALL( plugin->SCIPaddCons(scip, cons) );
+  SCIP_PLUGIN_CALL( plugin->SCIPreleaseCons(scip, &cons) );
 }
+
+
+void MIP_scip_wrapper::addTimes(int x, int y, int z, const string& rowName) {
+  /// As x*y - z == 0
+  double zCoef = -1.0;
+  double xyCoef = 1.0;
+  SCIP_CONS* cons;
+  std::array<SCIP_VAR*, 3> zxy = { scipVars[z], scipVars[x], scipVars[y] };
+
+  SCIP_PLUGIN_CALL( plugin->SCIPcreateConsBasicQuadratic(
+                      scip,
+                      &cons,
+                      rowName.c_str(),
+                      1,
+                      &zxy[0],
+                      &zCoef,
+                    1,
+                    &zxy[1],
+                    &zxy[2],
+                    &xyCoef,
+                    0.0,
+                    0.0
+                      ) );
+  SCIP_PLUGIN_CALL( plugin->SCIPaddCons(scip, cons) );
+  SCIP_PLUGIN_CALL( plugin->SCIPreleaseCons(scip, &cons) );
+}
+
 
 
 /// SolutionCallback ------------------------------------------------------------------------
@@ -470,7 +498,7 @@ SCIP_DECL_EVENTINIT(eventInitBestsol)
    assert(strcmp(_cb_plugin->SCIPeventhdlrGetName(eventhdlr), EVENTHDLR_NAME) == 0);
 
    /* notify SCIP that your event handler wants to react on the event type best solution found */
-   SCIP_PLUGIN_CALL( _cb_plugin, _cb_plugin->SCIPcatchEvent( scip, SCIP_EVENTTYPE_BESTSOLFOUND, eventhdlr, NULL, NULL) );
+   SCIP_PLUGIN_CALL_R( _cb_plugin, _cb_plugin->SCIPcatchEvent( scip, SCIP_EVENTTYPE_BESTSOLFOUND, eventhdlr, NULL, NULL) );
 
    return SCIP_OKAY;
 }
@@ -484,7 +512,7 @@ SCIP_DECL_EVENTEXIT(eventExitBestsol)
    assert(strcmp(_cb_plugin->SCIPeventhdlrGetName(eventhdlr), EVENTHDLR_NAME) == 0);
    
    /* notify SCIP that your event handler wants to drop the event type best solution found */
-   SCIP_PLUGIN_CALL( _cb_plugin, _cb_plugin->SCIPdropEvent( scip, SCIP_EVENTTYPE_BESTSOLFOUND, eventhdlr, NULL, -1) );
+   SCIP_PLUGIN_CALL_R( _cb_plugin, _cb_plugin->SCIPdropEvent( scip, SCIP_EVENTTYPE_BESTSOLFOUND, eventhdlr, NULL, -1) );
 
    return SCIP_OKAY;
 }
@@ -524,7 +552,7 @@ SCIP_DECL_EVENTEXEC(eventExecBestsol)
 
    if ( newincumbent && scipVarsPtr ) {
       assert(cbuiPtr->pOutput->x);
-      SCIP_PLUGIN_CALL( _cb_plugin, _cb_plugin->SCIPgetSolVals(scip, bestsol, cbuiPtr->pOutput->nCols,
+      SCIP_PLUGIN_CALL_R( _cb_plugin, _cb_plugin->SCIPgetSolVals(scip, bestsol, cbuiPtr->pOutput->nCols,
                                 scipVarsPtr, (double*)cbuiPtr->pOutput->x) );
 //       wrap_assert(!retcode, "Failed to get variable values.");
       cbuiPtr->pOutput->nNodes = _cb_plugin->SCIPgetNNodes (scip);
@@ -552,12 +580,12 @@ SCIP_RETCODE MIP_scip_wrapper::includeEventHdlrBestsol() {
    _cb_plugin = plugin; // So that callbacks can access plugin functions
 
    /* create event handler for events on watched variables */
-   SCIP_PLUGIN_CALL( plugin, plugin->SCIPincludeEventhdlrBasic(scip, &eventhdlr, EVENTHDLR_NAME, EVENTHDLR_DESC, eventExecBestsol, eventhdlrdata) );
+   SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPincludeEventhdlrBasic(scip, &eventhdlr, EVENTHDLR_NAME, EVENTHDLR_DESC, eventExecBestsol, eventhdlrdata) );
    assert(eventhdlr != NULL);
 
    /// Not for sub-SCIPs
-   SCIP_PLUGIN_CALL( plugin, plugin->SCIPsetEventhdlrInit(scip, eventhdlr, eventInitBestsol) );
-   SCIP_PLUGIN_CALL( plugin, plugin->SCIPsetEventhdlrExit(scip, eventhdlr, eventExitBestsol) );
+   SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPsetEventhdlrInit(scip, eventhdlr, eventInitBestsol) );
+   SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPsetEventhdlrExit(scip, eventhdlr, eventExitBestsol) );
    
    return SCIP_OKAY;
 }
@@ -619,27 +647,27 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
     cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
 
     if (options->nThreads>0)
-      SCIP_PLUGIN_CALL(plugin, plugin->SCIPsetIntParam(scip, "lp/threads", options->nThreads) );
+      SCIP_PLUGIN_CALL_R(plugin, plugin->SCIPsetIntParam(scip, "lp/threads", options->nThreads) );
 
     if (options->nTimeout>0)
-      SCIP_PLUGIN_CALL( plugin, plugin->SCIPsetRealParam(scip, "limits/time", static_cast<double>(options->nTimeout)/1000.0) );
+      SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPsetRealParam(scip, "limits/time", static_cast<double>(options->nTimeout)/1000.0) );
 
     if (options->nWorkMemLimit>0)
-      SCIP_PLUGIN_CALL( plugin, plugin->SCIPsetRealParam(scip, "limits/memory", options->nWorkMemLimit) );
+      SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPsetRealParam(scip, "limits/memory", options->nWorkMemLimit) );
 
     if ( options->absGap>=0.0 )
-      SCIP_PLUGIN_CALL( plugin, plugin->SCIPsetRealParam( scip, "limits/absgap", options->absGap ) );
+      SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPsetRealParam( scip, "limits/absgap", options->absGap ) );
     if ( options->relGap>=0.0 )
-      SCIP_PLUGIN_CALL( plugin, plugin->SCIPsetRealParam( scip, "limits/gap", options->relGap ) );
+      SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPsetRealParam( scip, "limits/gap", options->relGap ) );
     if ( options->intTol>=0.0 )
-      SCIP_PLUGIN_CALL( plugin, plugin->SCIPsetRealParam( scip, "numerics/feastol", options->intTol ) );
+      SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPsetRealParam( scip, "numerics/feastol", options->intTol ) );
 
 //    retcode =  SCIP_setintparam (env, SCIP_PARAM_ClockType, 1);            // CPU time
 //    wrap_assert(!retcode, "  SCIP Warning: Failure to measure CPU time.", false);
 
     if (!options->sExportModel.empty()) {
 //       std::cerr <<"  Exporting LP model to "  << sExportModel << " ..." << std::endl;
-      SCIP_PLUGIN_CALL( plugin, plugin->SCIPwriteOrigProblem(scip, options->sExportModel.c_str(), 0, 0) );
+      SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPwriteOrigProblem(scip, options->sExportModel.c_str(), 0, 0) );
     }
 
   /* Turn on output to the screen  - after model export */
@@ -648,8 +676,8 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
       plugin->SCIPsetMessagehdlrQuiet(scip, true);
     } else {
       SCIP_MESSAGEHDLR* pHndl=0;
-      SCIP_PLUGIN_CALL( plugin, plugin->SCIPmessagehdlrCreate ( &pHndl, FALSE, NULL, FALSE, printMsg, printMsg, printMsg, NULL, NULL) );
-      SCIP_PLUGIN_CALL( plugin, plugin->SCIPsetMessagehdlr(scip, pHndl) );
+      SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPmessagehdlrCreate ( &pHndl, FALSE, NULL, FALSE, printMsg, printMsg, printMsg, NULL, NULL) );
+      SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPsetMessagehdlr(scip, pHndl) );
     }
     
 //     assert(scipVars.size() == colObj.size());
@@ -663,7 +691,7 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
    output.x = &x[0];
    if (options->flag_all_solutions && cbui.solcbfn && !cbuiPtr) {
    /* include event handler for best solution found */
-     SCIP_PLUGIN_CALL( plugin, includeEventHdlrBestsol() );
+     SCIP_PLUGIN_CALL_R( plugin, includeEventHdlrBestsol() );
      cbuiPtr = &cbui;   // not thread-safe...         TODO
      scipVarsPtr = &scipVars[0];
 //       retcode = SCIP_setinfocallbackfunc (env, solcallback, &cbui);
@@ -671,11 +699,11 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
    }
 
     if (options->sReadParams.size()) {
-     SCIP_PLUGIN_CALL( plugin, plugin->SCIPreadParams (scip, options->sReadParams.c_str()) );
+     SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPreadParams (scip, options->sReadParams.c_str()) );
     }
     
     if (options->sWriteParams.size()) {
-     SCIP_PLUGIN_CALL( plugin, plugin->SCIPwriteParams (scip, options->sReadParams.c_str(), TRUE, FALSE) );
+     SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPwriteParams (scip, options->sReadParams.c_str(), TRUE, FALSE) );
     }
 
     cbui.pOutput->dWallTime0 = output.dWallTime0 =
@@ -683,7 +711,7 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
    output.dCPUTime = clock();
 
    /* Optimize the problem and obtain solution. */
-   SCIP_PLUGIN_CALL( plugin, plugin->SCIPsolve (scip) );
+   SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPsolve (scip) );
 //    wrap_assert( !retcode,  "Failed to optimize MIP." );
 
    output.dWallTime = std::chrono::duration<double>(
@@ -706,7 +734,7 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
       
       x.resize(cur_numcols);
       output.x = &x[0];
-      SCIP_PLUGIN_CALL( plugin, plugin->SCIPgetSolVals(scip, plugin->SCIPgetBestSol(scip), cur_numcols, &scipVars[0], (double*)output.x) );
+      SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPgetSolVals(scip, plugin->SCIPgetBestSol(scip), cur_numcols, &scipVars[0], (double*)output.x) );
       if (cbui.solcbfn && (!options->flag_all_solutions || !cbui.printed)) {
         cbui.solcbfn(output, cbui.psi);
       }
@@ -714,14 +742,14 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
    output.nNodes = plugin->SCIPgetNNodes (scip);
    output.nOpenNodes = plugin->SCIPgetNNodesLeft(scip);  // SCIP_getnodeleftcnt (env, lp);
 
-   SCIP_PLUGIN_CALL( plugin, plugin->SCIPfreeTransform(scip) );
+   SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPfreeTransform(scip) );
 
    return SCIP_OKAY;
 }
 
 SCIP_RETCODE MIP_scip_wrapper::setObjSense_SCIP(int s)
 {
-  SCIP_PLUGIN_CALL( plugin, plugin->SCIPsetObjsense(scip, s>0 ? SCIP_OBJSENSE_MAXIMIZE : SCIP_OBJSENSE_MINIMIZE) );
+  SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPsetObjsense(scip, s>0 ? SCIP_OBJSENSE_MAXIMIZE : SCIP_OBJSENSE_MINIMIZE) );
   return SCIP_OKAY;
 }
 

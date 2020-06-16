@@ -1,6 +1,6 @@
 /***
 !Test
-solvers: [gurobi]
+solvers: [gurobi,scip]
 expected: !Result
   status: OPTIMAL_SOLUTION
   solution: !Solution

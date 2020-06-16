@@ -48,6 +48,20 @@ public:
   SCIP_RETCODE(__stdcall *SCIPreleaseVar)(SCIP* scip, SCIP_VAR** var);
   SCIP_Real(__stdcall *SCIPinfinity)(SCIP* scip);
   SCIP_RETCODE(__stdcall *SCIPcreateConsBasicLinear)(SCIP* scip, SCIP_CONS** cons, const char* name, int nvars, SCIP_VAR** vars, SCIP_Real* vals, SCIP_Real lhs, SCIP_Real rhs);
+  SCIP_RETCODE(__stdcall *SCIPcreateConsBasicQuadratic)(
+      SCIP*                 scip,               /**< SCIP data structure */
+      SCIP_CONS**           cons,               /**< pointer to hold the created constraint */
+      const char*           name,               /**< name of constraint */
+      int                   nlinvars,           /**< number of linear terms (n) */
+      SCIP_VAR**            linvars,            /**< array with variables in linear part (x_i) */
+      SCIP_Real*            lincoefs,           /**< array with coefficients of variables in linear part (b_i) */
+      int                   nquadterms,         /**< number of quadratic terms (m) */
+      SCIP_VAR**            quadvars1,          /**< array with first variables in quadratic terms (y_j) */
+      SCIP_VAR**            quadvars2,          /**< array with second variables in quadratic terms (z_j) */
+      SCIP_Real*            quadcoefs,          /**< array with coefficients of quadratic terms (a_j) */
+      SCIP_Real             lhs,                /**< left hand side of quadratic equation (ell) */
+      SCIP_Real             rhs                 /**< right hand side of quadratic equation (u) */
+      );
   SCIP_RETCODE(__stdcall *SCIPaddCons)(SCIP* scip, SCIP_CONS* cons);
   SCIP_RETCODE(__stdcall *SCIPreleaseCons)(SCIP* scip, SCIP_CONS** cons);
   SCIP_RETCODE(__stdcall *SCIPchgVarLbGlobal)(SCIP* scip, SCIP_VAR* var, SCIP_Real newbound);
@@ -130,8 +144,8 @@ class MIP_scip_wrapper : public MIP_wrapper {
     ScipPlugin* plugin = nullptr;
   public:
 
-    MIP_scip_wrapper(Options* opt) : options(opt) { wrap_assert( openSCIP() ); }
-    virtual ~MIP_scip_wrapper() { wrap_assert( delSCIPVars() ); wrap_assert( closeSCIP() ); }
+    MIP_scip_wrapper(Options* opt) : options(opt) { SCIP_PLUGIN_CALL( openSCIP() ); }
+    virtual ~MIP_scip_wrapper() { SCIP_PLUGIN_CALL( delSCIPVars() ); SCIP_PLUGIN_CALL( closeSCIP() ); }
     
     static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt=NULL);
     static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt=NULL);
@@ -158,7 +172,7 @@ class MIP_scip_wrapper : public MIP_wrapper {
     /// actual adding new variables to the solver
     virtual void doAddVars(size_t n, double *obj, double *lb, double *ub,
       VarType *vt, std::string *names) {
-        wrap_assert(doAddVars_SCIP(n, obj, lb, ub, vt, names)); 
+        SCIP_PLUGIN_CALL(doAddVars_SCIP(n, obj, lb, ub, vt, names));
     }
     virtual SCIP_RETCODE doAddVars_SCIP(size_t n, double *obj, double *lb, double *ub,
       VarType *vt, std::string *names);
@@ -171,7 +185,7 @@ class MIP_scip_wrapper : public MIP_wrapper {
                         LinConType sense, double rhs,
                         int mask = MaskConsType_Normal,
                         std::string rowName = "") {
-      wrap_assert(addRow_SCIP(nnz, rmatind, rmatval, sense, rhs, mask, rowName));
+      SCIP_PLUGIN_CALL(addRow_SCIP(nnz, rmatind, rmatval, sense, rhs, mask, rowName));
     }
     virtual SCIP_RETCODE addRow_SCIP(int nnz, int *rmatind, double* rmatval,
                         LinConType sense, double rhs,
@@ -190,8 +204,14 @@ class MIP_scip_wrapper : public MIP_wrapper {
 
     /// Cumulative, currently SCIP only
     virtual void addCumulative(int nnz, int *rmatind, double* d, double* r, double b, std::string rowName="");
+
+    /// Times constraint: var[x]*var[y] == var[z]
+    virtual void addTimes(int x, int y, int z, const std::string& rowName = "");
+
+
+
     virtual void setObjSense(int s) {   // +/-1 for max/min
-      wrap_assert( setObjSense_SCIP(s) );
+      SCIP_PLUGIN_CALL( setObjSense_SCIP(s) );
     }
     virtual SCIP_RETCODE setObjSense_SCIP(int s);
     
@@ -203,7 +223,7 @@ class MIP_scip_wrapper : public MIP_wrapper {
 //     void setObjUB(double ub) { objUB = ub; }
 //     void addQPUniform(double c) { qpu = c; } // also sets problem type to MIQP unless c=0
 
-    virtual void solve() { wrap_assert(solve_SCIP()); }
+    virtual void solve() { SCIP_PLUGIN_CALL(solve_SCIP()); }
     virtual SCIP_RETCODE solve_SCIP();
     
     /// OUTPUT:
@@ -222,7 +242,7 @@ class MIP_scip_wrapper : public MIP_wrapper {
 //     virtual double getTime() = 0;
     
   protected:
-    void wrap_assert(SCIP_RETCODE , std::string="" , bool fTerm=true);
+    void SCIP_PLUGIN_CALL(SCIP_RETCODE , std::string="" , bool fTerm=true);
     
     /// Need to consider the 100 status codes in SCIP and change with every version? TODO
     Status convertStatus(SCIP_STATUS scipStatus);

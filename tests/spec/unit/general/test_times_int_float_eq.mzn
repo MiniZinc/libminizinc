@@ -1,6 +1,6 @@
 /***
 !Test
-solvers: [gurobi]
+solvers: [gurobi,scip]
 options:
   -D: QuadrFloat=true;QuadrIntCard=0
 expected: !Result
