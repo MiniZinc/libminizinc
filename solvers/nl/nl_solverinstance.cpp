@@ -150,7 +150,7 @@ namespace MiniZinc {
       file_nl = tmpdir->name()+"/model.nl";
       file_sol = tmpdir->name()+"/model.sol";
     }
-    std::ofstream outfile(file_nl);
+    std::ofstream outfile(FILE_PATH(file_nl));
     // Configure floating point output
     if(opt.do_hexafloat){
       outfile << hexfloat;

@@ -246,7 +246,7 @@ namespace MiniZinc {
     bool sigint = opt.fzn_sigint;
     
     FileUtils::TmpFile fznFile(".fzn");
-    std::ofstream os(fznFile.name());
+    std::ofstream os(FILE_PATH(fznFile.name()));
     Printer p(os, 0, true);
     for (FunctionIterator it = _fzn->begin_functions(); it != _fzn->end_functions(); ++it) {
       if(!it->removed()) {
@@ -272,7 +272,7 @@ namespace MiniZinc {
     FileUtils::TmpFile* pathsFile = NULL;
     if(opt.fzn_needs_paths) {
       pathsFile = new FileUtils::TmpFile(".paths");
-      std::ofstream ofs(pathsFile->name());
+      std::ofstream ofs(FILE_PATH(pathsFile->name()));
       PathFilePrinter pfp(ofs, _env.envi());
       pfp.print(_fzn);
 

@@ -165,7 +165,7 @@ namespace MiniZinc {
         if (FileUtils::is_absolute(f) || parentPath=="") {
           fullname = f;
           if (FileUtils::file_exists(fullname)) {
-            file.open(fullname.c_str(), std::ios::binary);
+            file.open(FILE_PATH(fullname), std::ios::binary);
           }
         } else {
           includePaths.push_back(parentPath);
@@ -173,7 +173,7 @@ namespace MiniZinc {
           for (; i<includePaths.size(); i++) {
             fullname = includePaths[i]+"/"+f;
             if (FileUtils::file_exists(fullname)) {
-              file.open(fullname.c_str(), std::ios::binary);
+              file.open(FILE_PATH(fullname), std::ios::binary);
               if (file.is_open())
                 break;
             }
@@ -249,8 +249,7 @@ namespace MiniZinc {
         if (f.size() > 5 && f.substr(0,5)=="cmd:/") {
           s = f.substr(5);
         } else {
-          std::ifstream file;
-          file.open(f.c_str(), std::ios::binary);
+          std::ifstream file(FILE_PATH(f), std::ios::binary);
           if (!FileUtils::file_exists(f) || !file.is_open()) {
             err << "Error: cannot open data file '" << f << "'." << endl;
             goto error;

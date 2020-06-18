@@ -464,7 +464,7 @@ void Solns2Out::init() {
   /// Main output file
   if ( 0==pOut ) {
     if ( _opt.flag_output_file.size() ) {
-      pOut.reset( new ofstream( _opt.flag_output_file ) );
+      pOut.reset(new ofstream(FILE_PATH(_opt.flag_output_file)));
       MZN_ASSERT_HARD_MSG( pOut.get(),
         "solns2out_base: could not allocate stream object for file output into "
         << _opt.flag_output_file );
@@ -473,14 +473,14 @@ void Solns2Out::init() {
   }
   /// Non-canonical output
   if ( _opt.flag_canonicalize && _opt.flag_output_noncanonical.size() ) {
-    pOfs_non_canon.reset( new ofstream( _opt.flag_output_noncanonical ) );
+    pOfs_non_canon.reset(new ofstream(FILE_PATH(_opt.flag_output_noncanonical)));
     MZN_ASSERT_HARD_MSG( pOfs_non_canon.get(),
                          "solns2out_base: could not allocate stream object for non-canon output" );
     checkIOStatus( pOfs_non_canon->good(), _opt.flag_output_noncanonical, 0);
   }
   /// Raw output
   if ( _opt.flag_output_raw.size() ) {
-    pOfs_raw.reset( new ofstream( _opt.flag_output_raw ) );
+    pOfs_raw.reset(new ofstream(FILE_PATH(_opt.flag_output_raw)));
     MZN_ASSERT_HARD_MSG( pOfs_raw.get(),
                          "solns2out_base: could not allocate stream object for raw output" );
     checkIOStatus( pOfs_raw->good(), _opt.flag_output_raw, 0);

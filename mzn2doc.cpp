@@ -192,7 +192,7 @@ int main(int argc, char** argv) {
     size_t header_title = std::string::npos;
     size_t title_size = std::string("@TITLE").size();
     if (!header_file.empty()) {
-      std::ifstream hs(header_file);
+      std::ifstream hs(FILE_PATH(header_file));
       if (!hs.good()) {
         std::cerr << "Cannot open header file " << header_file << "\n";
         std::exit(EXIT_FAILURE);
@@ -204,7 +204,7 @@ int main(int argc, char** argv) {
     }
     string footer;
     if (!footer_file.empty()) {
-      std::ifstream hs(footer_file);
+      std::ifstream hs(FILE_PATH(footer_file));
       if (!hs.good()) {
         std::cerr << "Cannot open footer file " << footer_file << "\n";
         std::exit(EXIT_FAILURE);
@@ -256,7 +256,7 @@ int main(int argc, char** argv) {
         }
         
         for (unsigned int i=0; i<docs.size(); i++) {
-          std::ofstream os(basedir+docs[i].filename()+(flag_rst ? ".rst" : ".html"));
+          std::ofstream os(FILE_PATH(basedir+docs[i].filename()+(flag_rst ? ".rst" : ".html")));
           std::string header_replace = header;
           if (header_title != std::string::npos) {
             header_replace = header_replace.replace(header_title, title_size, docs[i].title());

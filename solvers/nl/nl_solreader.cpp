@@ -147,7 +147,7 @@ namespace MiniZinc {
 
   void  NLSolns2Out::parse_sol(const string& filename){
 
-    ifstream  f(filename);
+    ifstream  f(FILE_PATH(filename));
     NLSol sol = NLSol::parse_sol(f);
 
       switch(sol.status){

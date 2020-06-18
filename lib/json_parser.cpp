@@ -12,6 +12,7 @@
 #include <minizinc/json_parser.hh>
 
 #include <minizinc/iter.hh>
+#include <minizinc/file_utils.hh>
 #include <fstream>
 #include <sstream>
 
@@ -540,8 +541,7 @@ namespace MiniZinc {
   void
   JSONParser::parse(Model* m, const std::string& filename0, bool ignoreUnknown) {
     filename = filename0;
-    ifstream is;
-    is.open(filename, ios::in);
+    ifstream is(FILE_PATH(filename), ios::in);
     if (!is.good()) {
       throw JSONError(env,Location().introduce(),"cannot open file "+filename);
     }
@@ -575,8 +575,7 @@ namespace MiniZinc {
   }
 
   bool JSONParser::fileIsJSON(const std::string& filename) {
-    ifstream is;
-    is.open(filename, ios::in);
+    ifstream is(FILE_PATH(filename), ios::in);
     return isJSON(is);
   }
 

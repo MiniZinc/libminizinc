@@ -151,7 +151,7 @@ namespace MiniZinc {
         std::cerr << "Stdin SetHandleInformation" << std::endl;
 
       PROCESS_INFORMATION piProcInfo;
-      STARTUPINFO siStartInfo;
+      STARTUPINFOW siStartInfo;
       BOOL bSuccess = FALSE;
 
       // Set up members of the PROCESS_INFORMATION structure.
@@ -159,17 +159,17 @@ namespace MiniZinc {
 
       // Set up members of the STARTUPINFO structure.
       // This structure specifies the STDIN and STDOUT handles for redirection.
-      ZeroMemory(&siStartInfo, sizeof(STARTUPINFO));
-      siStartInfo.cb = sizeof(STARTUPINFO);
+      ZeroMemory(&siStartInfo, sizeof(STARTUPINFOW));
+      siStartInfo.cb = sizeof(STARTUPINFOW);
       siStartInfo.hStdError = g_hChildStd_ERR_Wr;
       siStartInfo.hStdOutput = g_hChildStd_OUT_Wr;
       siStartInfo.hStdInput = g_hChildStd_IN_Rd;
       siStartInfo.dwFlags |= STARTF_USESTDHANDLES;
 
       std::string cmdline = FileUtils::combineCmdLine(_fzncmd);
-      char* cmdstr = strdup(cmdline.c_str());
+      wchar_t* cmdstr = _wcsdup(FileUtils::utf8ToWide(cmdline).c_str());
 
-      BOOL processStarted = CreateProcess(NULL,
+      BOOL processStarted = CreateProcessW(NULL,
         cmdstr,        // command line
         NULL,          // process security attributes
         NULL,          // primary thread security attributes
@@ -182,7 +182,7 @@ namespace MiniZinc {
 
       if (!processStarted) {
         std::stringstream ssm;
-        ssm << "Error occurred when executing FZN solver with command \"" << cmdstr << "\".";
+        ssm << "Error occurred when executing FZN solver with command \"" << FileUtils::wideToUtf8(cmdstr) << "\".";
         throw InternalError(ssm.str());
       }
 

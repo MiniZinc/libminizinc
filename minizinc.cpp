@@ -31,7 +31,11 @@
 using namespace std;
 using namespace MiniZinc;
 
+#ifdef _WIN32
+int wmain(int argc, wchar_t *argv[], wchar_t *envp[]) {
+#else
 int main(int argc, const char** argv) {
+#endif
   Timer starttime;
   bool fSuccess = false;
 
@@ -39,9 +43,15 @@ int main(int argc, const char** argv) {
     MznSolver slv(std::cout,std::cerr);
     try {
       std::vector<std::string> args(argc-1);
+#ifdef _WIN32
+      for (int i = 1; i < argc; i++)
+        args[i - 1] = FileUtils::wideToUtf8(argv[i]);
+      fSuccess = (slv.run(args, "", FileUtils::wideToUtf8(argv[0])) != SolverInstance::ERROR);
+#else
       for (int i=1; i<argc; i++)
         args[i-1] = argv[i];
       fSuccess = (slv.run(args,"",argv[0]) != SolverInstance::ERROR);
+#endif
     } catch (const LocationException& e) {
       if (slv.get_flag_verbose())
         std::cerr << std::endl;

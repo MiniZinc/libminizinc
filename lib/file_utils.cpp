@@ -68,12 +68,12 @@ namespace MiniZinc { namespace FileUtils {
   }
 #elif defined(HAS_GETMODULEFILENAME)
   std::string progpath(void) {
-    char path[MAX_PATH];
-    int ret = GetModuleFileName(NULL, path, MAX_PATH);
+    wchar_t path[MAX_PATH];
+    int ret = GetModuleFileNameW(NULL, path, MAX_PATH);
     if ( ret <= 0 ) {
       return "";
     } else {
-      std::string p(path);
+      std::string p = wideToUtf8(path);
       size_t slash = p.find_last_of("/\\");
       if (slash != std::string::npos) {
         p = p.substr(0,slash);
@@ -102,7 +102,7 @@ namespace MiniZinc { namespace FileUtils {
   
   bool file_exists(const std::string& filename) {
 #if defined(HAS_GETFILEATTRIBUTES)
-    DWORD dwAttrib = GetFileAttributes(filename.c_str());
+    DWORD dwAttrib = GetFileAttributesW(utf8ToWide(filename).c_str());
     
     return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
             !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
@@ -114,7 +114,7 @@ namespace MiniZinc { namespace FileUtils {
   
   bool directory_exists(const std::string& dirname) {
 #if defined(HAS_GETFILEATTRIBUTES)
-    DWORD dwAttrib = GetFileAttributes(dirname.c_str());
+    DWORD dwAttrib = GetFileAttributesW(utf8ToWide(dirname).c_str());
       
     return (dwAttrib != INVALID_FILE_ATTRIBUTES &&
             (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
@@ -126,13 +126,13 @@ namespace MiniZinc { namespace FileUtils {
 
   std::string file_path(const std::string& filename, const std::string& basePath) {
 #ifdef _MSC_VER
-    LPSTR lpBuffer, lpFilePart;
-    DWORD nBufferLength = GetFullPathName(filename.c_str(), 0,0,&lpFilePart);
-    if (!(lpBuffer = (LPTSTR)LocalAlloc(LMEM_FIXED, sizeof(TCHAR) * nBufferLength)))
+    LPWSTR lpBuffer, lpFilePart;
+    DWORD nBufferLength = GetFullPathNameW(utf8ToWide(filename).c_str(), 0,0,&lpFilePart);
+    if (!(lpBuffer = (LPWSTR)LocalAlloc(LMEM_FIXED, sizeof(WCHAR) * nBufferLength)))
       return 0;
     std::string ret;
-    DWORD error = GetFullPathName(filename.c_str(), nBufferLength, lpBuffer, &lpFilePart);
-    DWORD fileAttr = GetFileAttributes(lpBuffer);
+    DWORD error = GetFullPathNameW(utf8ToWide(filename).c_str(), nBufferLength, lpBuffer, &lpFilePart);
+    DWORD fileAttr = GetFileAttributesW(lpBuffer);
     DWORD lastError = GetLastError();
 
     if(error == 0 || (fileAttr == INVALID_FILE_ATTRIBUTES && lastError != NO_ERROR)) {
@@ -141,7 +141,7 @@ namespace MiniZinc { namespace FileUtils {
       else
         ret = file_path(basePath+"/"+filename);
     } else {
-      ret = std::string(lpBuffer);
+      ret = wideToUtf8(lpBuffer);
     }
     LocalFree(lpBuffer);
     return ret;
@@ -189,7 +189,7 @@ namespace MiniZinc { namespace FileUtils {
 #ifdef _MSC_VER
     if (path.size() > 2 && ((path[0]=='\\' && path[1]=='\\') || (path[0] == '/' && path[1] == '/')))
       return true;
-    return !PathIsRelative(path.c_str());
+    return !PathIsRelativeW(utf8ToWide(path).c_str());
 #else
     return path.empty() ? false : (path[0]=='/');
 #endif
@@ -245,14 +245,14 @@ namespace MiniZinc { namespace FileUtils {
                                           const std::string& ext) {
     std::vector<std::string> entries;
 #ifdef _MSC_VER
-    WIN32_FIND_DATA findData;
-    HANDLE hFind = ::FindFirstFile( (dir+"/*."+ext).c_str(), &findData);
+    WIN32_FIND_DATAW findData;
+    HANDLE hFind = ::FindFirstFileW( utf8ToWide(dir+"/*."+ext).c_str(), &findData);
     if (hFind != INVALID_HANDLE_VALUE) {
       do {
         if ( !(findData.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) ) {
-          entries.push_back(findData.cFileName);
+          entries.push_back(wideToUtf8(findData.cFileName));
         }
-      } while(::FindNextFile(hFind, &findData));
+      } while(::FindNextFileW(hFind, &findData));
       ::FindClose(hFind);
     }
 #else
@@ -280,21 +280,29 @@ namespace MiniZinc { namespace FileUtils {
   }
 
   std::string working_directory(void) {
-    char wd[FILENAME_MAX];
 #ifdef _MSC_VER
-    if (!_getcwd(wd,sizeof(wd)))
+    wchar_t wd[FILENAME_MAX];
+    if (!_wgetcwd(wd, FILENAME_MAX))
       return "";
+    return wideToUtf8(wd);
 #else
+    char wd[FILENAME_MAX];
     if (!getcwd(wd,sizeof(wd)))
       return "";
-#endif
     return wd;
+#endif
   }
   
   std::string share_directory(void) {
+#ifdef _WIN32
+    if (wchar_t* MZNSTDLIBDIR = _wgetenv(L"MZN_STDLIB_DIR")) {
+      return wideToUtf8(MZNSTDLIBDIR);
+    }
+#else
     if (char* MZNSTDLIBDIR = getenv("MZN_STDLIB_DIR")) {
       return std::string(MZNSTDLIBDIR);
     }
+#endif
     std::string mypath = FileUtils::progpath();
     int depth = 0;
     for (unsigned int i=0; i<mypath.size(); i++)
@@ -315,16 +323,7 @@ namespace MiniZinc { namespace FileUtils {
     
     hr = SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, NULL, &pszPath);
     if (SUCCEEDED(hr)) {
-      int charsRequired = WideCharToMultiByte(CP_ACP, 0, pszPath, -1, 0, 0, 0, 0);
-      std::string configPath;
-      if (charsRequired > 0) {
-        char* tmp = new char[charsRequired];
-        if (WideCharToMultiByte(CP_ACP, 0, pszPath, -1, tmp, charsRequired, 0, 0) != 0) {
-          tmp[charsRequired-1]=0;
-          configPath=tmp;
-        }
-        delete[] tmp;
-      }
+      auto configPath = wideToUtf8(pszPath);
       CoTaskMemFree(pszPath);
       if (configPath.empty()) {
         return "";
@@ -354,18 +353,18 @@ namespace MiniZinc { namespace FileUtils {
 
   TmpFile::TmpFile(const std::string& ext) {
 #ifdef _WIN32
-    TCHAR szTempFileName[MAX_PATH];
-    TCHAR lpTempPathBuffer[MAX_PATH];
+    WCHAR szTempFileName[MAX_PATH];
+    WCHAR lpTempPathBuffer[MAX_PATH];
     
     bool didCopy;
     do {
-      GetTempPath(MAX_PATH, lpTempPathBuffer);
-      GetTempFileName(lpTempPathBuffer,
-                      "tmp_mzn_", 0, szTempFileName);
+      GetTempPathW(MAX_PATH, lpTempPathBuffer);
+      GetTempFileNameW(lpTempPathBuffer,
+                      L"tmp_mzn_", 0, szTempFileName);
       
-      _name = szTempFileName;
+      _name = wideToUtf8(szTempFileName);
       _tmpNames.push_back(_name);
-      didCopy = CopyFile(_name.c_str(), (_name + ext).c_str(), true);
+      didCopy = CopyFileW(szTempFileName, utf8ToWide(_name + ext).c_str(), true);
     } while (!didCopy);
     _name += ext;
 #else
@@ -383,13 +382,13 @@ namespace MiniZinc { namespace FileUtils {
   }
   
   TmpFile::~TmpFile(void) {
-    remove(_name.c_str());
 #ifdef _WIN32
+    _wremove(utf8ToWide(_name).c_str()); // TODO: Is this necessary?
     for (auto& n : _tmpNames) {
-      remove(n.c_str());
+      _wremove(utf8ToWide(n).c_str());
     }
-#endif
-#ifndef _WIN32
+#else
+    remove(_name.c_str());
     if (_tmpfile_desc != -1)
       close(_tmpfile_desc);
 #endif
@@ -397,16 +396,16 @@ namespace MiniZinc { namespace FileUtils {
 
   TmpDir::TmpDir(void) {
 #ifdef _WIN32
-    TCHAR szTempFileName[MAX_PATH];
-    TCHAR lpTempPathBuffer[MAX_PATH];
+    WCHAR szTempFileName[MAX_PATH];
+    WCHAR lpTempPathBuffer[MAX_PATH];
     
-    GetTempPath(MAX_PATH, lpTempPathBuffer);
-    GetTempFileName(lpTempPathBuffer,
-                    "tmp_mzn_", 0, szTempFileName);
+    GetTempPathW(MAX_PATH, lpTempPathBuffer);
+    GetTempFileNameW(lpTempPathBuffer,
+                    L"tmp_mzn_", 0, szTempFileName);
     
-    _name = szTempFileName;
-    DeleteFile(_name.c_str());
-    CreateDirectory(_name.c_str(),NULL);
+    _name = wideToUtf8(szTempFileName);
+    DeleteFileW(szTempFileName);
+    CreateDirectoryW(szTempFileName,NULL);
 #else
     _name = "/tmp/mzndirXXXXXX";
     char* tmpfile = strndup(_name.c_str(), _name.size());
@@ -424,26 +423,26 @@ namespace MiniZinc { namespace FileUtils {
   namespace {
     void remove_dir(const std::string& d) {
       HANDLE dh;
-      WIN32_FIND_DATA info;
-      
-      std::string pattern = d+"\\*.*";
-      dh = ::FindFirstFile(pattern.c_str(), &info);
+      WIN32_FIND_DATAW info;
+      auto dw = utf8ToWide(d);
+      auto pattern = dw + L"\\*.*";
+      dh = ::FindFirstFileW(pattern.c_str(), &info);
       if (dh != INVALID_HANDLE_VALUE) {
         do {
-          if (info.cFileName[0] != '.') {
-            std::string fp = d+"\\"+info.cFileName;
+          if (info.cFileName[0] != L'.') {
+            auto fp = dw + L"\\" + info.cFileName;
             if (info.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY) {
-              remove_dir(fp);
+              remove_dir(wideToUtf8(fp));
             } else {
-              ::SetFileAttributes(fp.c_str(), FILE_ATTRIBUTE_NORMAL);
-              ::DeleteFile(fp.c_str());
+              ::SetFileAttributesW(fp.c_str(), FILE_ATTRIBUTE_NORMAL);
+              ::DeleteFileW(fp.c_str());
             }
           }
-        } while (::FindNextFile(dh, &info) == TRUE);
+        } while (::FindNextFileW(dh, &info) == TRUE);
       }
       ::FindClose(dh);
-      ::SetFileAttributes(d.c_str(), FILE_ATTRIBUTE_NORMAL);
-      ::RemoveDirectory(d.c_str());
+      ::SetFileAttributesW(dw.c_str(), FILE_ATTRIBUTE_NORMAL);
+      ::RemoveDirectoryW(dw.c_str());
     }
   }
 #else
@@ -679,4 +678,29 @@ namespace MiniZinc { namespace FileUtils {
     return oss.str();
   }
 
+#ifdef _WIN32
+  std::string wideToUtf8(const wchar_t* str, int size) {
+    int buffer_size = WideCharToMultiByte(CP_UTF8, 0, str, size, nullptr, 0, nullptr, nullptr);
+    if (buffer_size == 0) {
+      return "";
+    }
+    std::string result(buffer_size - 1, '\0');
+    WideCharToMultiByte(CP_UTF8, 0, str, size, &result[0], buffer_size, nullptr, nullptr);
+    return result;
+  }
+
+  std::string wideToUtf8(const std::wstring& str) {
+    return wideToUtf8(str.c_str(), -1);
+  }
+
+  std::wstring utf8ToWide(const std::string& str) {
+    int buffer_size = MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, str.c_str(), -1, nullptr, 0);
+    if (buffer_size == 0) {
+      return L"";
+    }
+    std::wstring result(buffer_size - 1, '\0');
+    MultiByteToWideChar(CP_UTF8, MB_PRECOMPOSED, str.c_str(), -1, &result[0], buffer_size);
+    return result;
+  }
+#endif
 }}

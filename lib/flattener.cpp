@@ -596,7 +596,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           std::string mzc_filename = filenames[0].substr(0,filenames[0].size()-4);
           if (flag_verbose)
             log << "Write solution checker to " << mzc_filename << "\n";
-          std::ofstream mzc_f(mzc_filename);
+          std::ofstream mzc_f(FILE_PATH(mzc_filename));
           mzc_f << mzc;
           mzc_f.close();
         }
@@ -727,8 +727,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           if (flag_verbose)
             log << "Printing Paths to '"
             << flag_output_paths << "' ..." << std::flush;
-          std::ofstream ofs;
-          ofs.open(flag_output_paths.c_str(), ios::out);
+          std::ofstream ofs(FILE_PATH(flag_output_paths), ios::out);
           checkIOStatus (ofs.good(), " I/O error: cannot open fzn output file. ");
           PathFilePrinter pfp(ofs, env->envi());
           pfp.print(env->flat());
@@ -765,8 +764,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           if (flag_verbose)
             log << "Printing FlatZinc to '"
             << flag_output_fzn << "' ..." << std::flush;
-          std::ofstream ofs;
-          ofs.open(flag_output_fzn.c_str(), ios::out);
+          std::ofstream ofs(FILE_PATH(flag_output_fzn), ios::out);
           checkIOStatus (ofs.good(), " I/O error: cannot open fzn output file. ");
           Printer p(ofs,0);
           p.print(env->flat());
@@ -787,8 +785,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             if (flag_verbose)
               log << "Printing .ozn to '"
               << flag_output_ozn << "' ..." << std::flush;
-            std::ofstream ofs;
-            ofs.open(flag_output_ozn.c_str(), std::ios::out);
+            std::ofstream ofs(FILE_PATH(flag_output_ozn), std::ios::out);
             checkIOStatus (ofs.good(), " I/O error: cannot open ozn output file. ");
             Printer p(ofs,0);
             p.print(env->output());

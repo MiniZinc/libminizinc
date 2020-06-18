@@ -14,6 +14,13 @@
 #include <string>
 #include <vector>
 
+// Macro so that we can use overloaded wide versions of fstream::open for Windows
+#ifdef _WIN32
+#define FILE_PATH(path) MiniZinc::FileUtils::utf8ToWide(path)
+#else
+#define FILE_PATH(path) (path)
+#endif
+
 namespace MiniZinc { namespace FileUtils {
 
   /// Return full path to current executable
@@ -90,4 +97,13 @@ namespace MiniZinc { namespace FileUtils {
   std::string encodeBase64(const std::string& s);
   /// Decode string from base 64
   std::string decodeBase64(const std::string& s);
+
+#ifdef _WIN32
+  /// Convert UTF-16 string to UTF-8
+  std::string wideToUtf8(const wchar_t* str, int size = -1);
+  /// Convert UTF-16 string to UTF-8
+  std::string wideToUtf8(const std::wstring& str);
+  /// Convert UTF-8 string to UTF-16
+  std::wstring utf8ToWide(const std::string& str);
+#endif
 }}
