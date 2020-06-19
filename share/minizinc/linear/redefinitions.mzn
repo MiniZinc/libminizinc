@@ -674,6 +674,7 @@ annotation warm_start( array[int] of var bool: x, array[int] of bool: v ) =
    
    
 annotation sat_goal(var bool: b) = int_max_goal(b);
+annotation int_max_goal(var int: x);
 
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%% DOMAIN POSTPROCESSING BUILT-INS %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
