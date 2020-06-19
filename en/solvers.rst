@@ -202,7 +202,8 @@ Indicator Constraints
 ~~~~~~~~~~~~~~~~~~~~~
 
 Some solvers (IBM ILOG CPLEX, Gurobi, SCIP) have indicator constrains with greater numerical stability than big-M decomposition.
-Moreover, they can be applied to decompose logical constraints on *unbounded variables*.
+Moreover, they can be applied to decompose logical constraints on *unbounded variables*. However, for reified comparisons with
+reasonable big-M bounds they perform worse because solvers don't include them in the LP relaxation.
 Add command-line parameters ``-D fIndConstr=true -D fMIPdomains=false`` when flattening
 to use them.
 
@@ -211,7 +212,7 @@ Quadratic Constraints and Objectives (MIQCP)
 
 Gurobi 9.0 and SCIP support MIQCP (invoking non-convex global optimizer because MiniZinc translates multiplication to
 equality with an intermediate variable: whenever the model uses an expression x*y it is converted to z with z==x*y which is non-convex).
-While this might not always be advantageous for integer multiplication (which is linearly decomposed for other solvers), for float variables
+While this is mostly advantageous for integer multiplication (which is linearly decomposed for other solvers), for float variables
 this is the only way to go. To switch off forwarding float/integer multiplications to the backend, run compiler with either or both of
 ``-DQuadrFloat=false -DQuadrInt=false``.
 
