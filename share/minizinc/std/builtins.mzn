@@ -340,10 +340,6 @@ function var float: '/'(var float: x,var float: y) =
 function int:  count(array[$T] of bool: x) = sum([bool2int(y) | y in array1d(x)]);
 /** @group builtins.arithmetic Return number of true elments in array \a x */
 function var int:  count(array[$T] of var bool: x) = sum([bool2int(y) | y in array1d(x)]);
-/** @group builtins.arithmetic Return sum of elements in array \a x */
-function int:   sum(array[$T] of bool: x) = sum([bool2int(y)|y in array1d(x)]);
-/** @group builtins.arithmetic Return sum of elements in array \a x */
-function var int:   sum(array[$T] of var bool: x) = sum([bool2int(y)|y in array1d(x)]);
 
 /** @group builtins.arithmetic Return sum of elements in array \a x */
 function     int:   sum(array[$T] of     int: x);
