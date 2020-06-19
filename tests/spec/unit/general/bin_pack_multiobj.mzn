@@ -7,6 +7,7 @@ expected: !Result
 ***/
 
 include "bin_packing_load_fn.mzn";
+include "experimental.mzn";
 
 array [1..6] of var 1..3: bin;
 array [1..3] of var 0..10: load;
