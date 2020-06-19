@@ -178,7 +178,10 @@ The MiniZinc build system should find CBC automatically if it is installed in th
 SCIP
 ~~~~
 
-For *SCIP (as of 7.0.0)*, the installation commands should be as follows.
+For *SCIP (as of 7.0.0)*, it seems best to install the binary package because it also installs the include files and thus even when compiling MiniZinc from source,
+SCIP is invoked; moreover the binary package has all the bells&whistles like symmetry handling and IPOPT. Use the ``scipoptsuite`` binary installation.
+
+If you want to compile ``scipoptsuite``, the installation commands should be as follows.
 
 1. Download the SCIP Optimization Suite 7.0.0 source code: https://scip.zib.de/download.php?fname=scipoptsuite-7.0.0.tgz
 
