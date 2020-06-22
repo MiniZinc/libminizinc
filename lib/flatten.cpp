@@ -3432,13 +3432,13 @@ namespace MiniZinc {
                     nc->addAnnotation(ee_ann.r());
                   }
                 }
-                env.flatRemoveItem(ci);
                 StringLit* sl = getLongestMznPathAnnotation(env, c);
                 CallStackItem* csi=NULL;
                 if(sl)
                   csi = new CallStackItem(env, sl);
                 ItemTimer item_timer(nc->loc(), timing_map);
                 (void) flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
+                env.flatRemoveItem(ci);
                 if(csi) delete csi;
               }
             }
