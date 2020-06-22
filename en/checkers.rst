@@ -1,9 +1,61 @@
 .. _ch-solution-checkers:
 
-Automatic Solution Checking
-===========================
+Automatic Solution Checking, Model Validation, and Benchmarking
+===============================================================
 
-MiniZinc provides support for checking the correctness of solutions of a model by using a *checker model*. This approach has two main applications:
+MiniZinc supports checking the correctness of solutions of a model in two ways.
+First, it is the *autonomous checking* where compiler substitutes solution values into the model
+and tries to find inconsistencies, possibly invoking a solver to a much smaller instance.
+Second, it is by using a *checker model*. This latter method can also be seen as model validation.
+
+Autonomous Automatic Solution Checking and Benchmarking
+-------------------------------------------------------
+
+For this method, compiler needs the values of as many variables as possible,
+ideally all variables without the right-hand side. For all top-level variables (not those inside let constructs)
+the values can be output using ``--output-mode dzn`` compiler option. For optimization problems, when no explicit
+objective variable exists, a variable named ``_objective`` is added by ``--output-objective``.
+Then, each produced solution can be copied into a ``.dzn`` and compiled together with the original instance,
+adding ``--allow-multiple-assignments`` option if ``--output-objective`` was used. In the case that
+some variables inside let constructs need to be assigned, a solver has to be invoked for the
+smaller instance remaining after fixing the supplied values. For example, for the following model:
+
+.. code-block:: none
+
+  var int: a;
+  var float: b = a;
+  solve
+    maximize a-b;
+  output
+    [ "a+b is \(a+b)\n" ];
+
+running it with ``minizinc --solver gecode test_output_mode.mzn --output-mode dzn --output-objective`` ignores
+the provided output annotation and prints
+
+.. code-block:: none
+
+  a = -2147483646;
+  _objective = 0.0;
+  ----------
+  ==========
+
+which can be added as an extra ``.dzn`` file. The process of compilation for autonomous checking and re-solving
+with the output variables fixed,
+is automated by a Python script ``tests/benchmarking/mzn-test.py``. To solve an instance with autonomous
+checking by variable value substitution, run, e.g.,
+
+.. code-block:: bash
+
+  mzn-test.py --solver GECODE model.mzn data.dzn
+
+Moreover, ``mzn-test.py`` provides facility to run a list of instances and compare results
+from various test runs and different solvers.
+
+
+Model Validation: Automatic Solution Checking with a Checker Model
+------------------------------------------------------------------
+
+This approach has two main applications:
 
 - Instructors can provide checker models for student assignments. This provides students with immediate, detailed feedback on their modelling attempts.
 - A simplified checker model can be used to verify a complex model used for solving. This can be useful when experimenting with new decompositions of constraints, or for post-processing solutions if some constraints cannot be added to the original model (e.g. in case the solver does not support certain constructs).
@@ -30,8 +82,9 @@ The MiniZinc IDE has built-in support for solution checkers. Whenever the curren
 
 The rest of this section describes how to implement checker models.
 
+
 Basic checker models
---------------------
+~~~~~~~~~~~~~~~~~~~~
 
 At its core, a checker model takes each solution that a solver produces as input, and outputs whether the solution is correct or not. Let's use the simple map colouring model from the tutorial as an example. Here is the model again:
 
@@ -62,8 +115,9 @@ Running the model and the checker will produce output like this:
 
 The solution checker report is embedded as comments in the original output.
 
+
 Detailed feedback
------------------
+~~~~~~~~~~~~~~~~~
 
 The basic checker model above only reports whether the solutions satisfy the constraints, but it doesn't provide any insights into the nature of the error if a constraint is violated.
 
@@ -113,8 +167,9 @@ Now the output contains all error messages (for the case where the model has no 
   % INCORRECT
   ----------
 
+
 Instance data in checker models
--------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The map colouring example was quite simple because the model did not contain any parameter declarations. For a model that is parameterised, the checker model simply contains the same parameter declarations. MiniZinc will then pass the actual parameters of the instance being solved to the checker model.
 
@@ -127,15 +182,17 @@ For example, the following checker model could be used for the *n*-Queens proble
 
 The checker model first makes sure that the solution has the right dimensions (correct array index set, and each variable is assigned a value in the correct domain), and then uses standard MiniZinc constructs to check each constraint.
 
+
 Checking optimisation problems
-------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Optimisation problems pose a difficulty for automatic checking. When a solver claims to prove optimality, we cannot easily verify this claim without solving the problem again (using a different model that is known to be correct). At the moment, solution checking for optimisation problems is restricted to checking that the objective has been computed correctly. 
 
 To check that the objective value is calculated correctly, define a parameter called :mzn:`_objective` of the appropriate type (:mzn:`int` or :mzn:`float`) in the checker. The example in the next section illustrates this.
 
+
 Hidden variables
-----------------
+~~~~~~~~~~~~~~~~
 
 For many models, the decision variables which describe the solution may not be the variables that are natural to describe the constraints. There may be other internal variables which are functionally defined by the decision variables, and which are likely to be used in the model for building constraints and/or are much more natural for describing the correctness of a candidate solution.
 
