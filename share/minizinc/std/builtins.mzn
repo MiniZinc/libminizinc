@@ -1042,32 +1042,40 @@ function int: length(array[$T] of var opt $U: x);
   The resulting array has the same index set as \a x.
 */
 function array[$$E] of $T: reverse(array[$$E] of $T: x) =
+  if length(x)=0 then [] else
   let { int: l = max(index_set(x))+min(index_set(x)) } in
-  array1d(index_set(x),[x[l-i] | i in index_set(x)]);
+  array1d(index_set(x),[x[l-i] | i in index_set(x)])
+  endif;
 
 /** @group builtins.array Return the array \a x in reverse order
 
   The resulting array has the same index set as \a x.
 */
 function array[$$E] of opt $T: reverse(array[$$E] of opt $T: x) =
+  if length(x)=0 then [] else
   let { int: l = max(index_set(x))+min(index_set(x)) } in
-  array1d(index_set(x),[x[l-i] | i in index_set(x)]);
+  array1d(index_set(x),[x[l-i] | i in index_set(x)])
+  endif;
 
 /** @group builtins.array Return the array \a x in reverse order
 
   The resulting array has the same index set as \a x.
 */
 function array[$$E] of var $T: reverse(array[$$E] of var $T: x) =
+  if length(x)=0 then [] else
   let { int: l = max(index_set(x))+min(index_set(x)) } in
-  array1d(index_set(x),[x[l-i] | i in index_set(x)]);
+  array1d(index_set(x),[x[l-i] | i in index_set(x)])
+  endif;
 
 /** @group builtins.array Return the array \a x in reverse order
 
   The resulting array has the same index set as \a x.
 */
 function array[$$E] of var opt $T: reverse(array[$$E] of var opt $T: x) =
+  if length(x)=0 then [] else
   let { int: l = max(index_set(x))+min(index_set(x)) } in
-  array1d(index_set(x),[x[l-i] | i in index_set(x)]);
+  array1d(index_set(x),[x[l-i] | i in index_set(x)])
+  endif;
 
 /** @group builtins.array Test if \a x and \a y have the same index sets */
 test index_sets_agree(array[$T] of var opt $U: x, array[$T] of var opt $W: y);
