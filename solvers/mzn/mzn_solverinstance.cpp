@@ -185,7 +185,7 @@ namespace MiniZinc {
     int timelimit = opt.mzn_time_limit_ms;
     bool sigint = opt.mzn_sigint;
     Solns2Log s2l(getSolns2Out()->getOutput(), _log);
-    Process<Solns2Log> proc(cmd_line, &s2l, timelimit, sigint);
+    Process<Solns2Log> proc(cmd_line, &s2l, timelimit, sigint, nullptr);
     int exitCode = proc.run();
 
     return exitCode == 0 ? SolverInstance::UNKNOWN : SolverInstance::ERROR;

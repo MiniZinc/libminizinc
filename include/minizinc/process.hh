@@ -91,6 +91,79 @@ namespace MiniZinc {
 
 #endif
 
+  class InputProvider {
+
+  private:
+#ifdef _WIN32
+    HANDLE _h_pipe = nullptr;
+#else
+    int _pipe = 0;
+#endif
+
+  public:
+    InputProvider() : stream(this) {}
+
+    std::ostream* getStream() {
+      return &stream;
+    }
+
+    virtual void provide() {}
+
+#ifdef _WIN32
+    void setHandle(HANDLE h_pipe) {
+      _h_pipe = h_pipe;
+    }
+#else
+    void setPipe(int pipe) {
+      _pipe = pipe;
+    }
+#endif
+
+    class PipeStream : public std::ostream {
+
+    public:
+      explicit PipeStream(InputProvider* input) : std::ostream(new PipeBuf(input)) {}
+
+      class PipeBuf : public std::streambuf {
+
+      public:
+        explicit PipeBuf(InputProvider* input) : _input(input) {}
+
+      protected:
+        std::streamsize xsputn(const char_type* s, std::streamsize n) override {
+          return write(s, n);
+        }
+
+        int_type overflow(int_type ch) override {
+          return write(&ch, 1);
+        }
+
+      private:
+        InputProvider* _input;
+
+        std::streamsize write(const void* s, std::streamsize n) {
+#ifdef _WIN32
+          if (_input->_h_pipe == nullptr) {
+            return 0;
+          }
+          DWORD count;
+          BOOL success = WriteFile(_input->_h_pipe, reinterpret_cast<const char*>(s), n, &count, nullptr);
+          return count;
+#else
+          if (_input->_pipe == 0) {
+            return 0;
+          }
+          return ::write(_input->_pipe, s, n);
+#endif
+        }
+      };
+    };
+
+  protected:
+    InputProvider::PipeStream stream;
+
+  };
+
   template<class S2O>
   class Process {
   protected:
@@ -98,6 +171,7 @@ namespace MiniZinc {
     S2O* pS2Out;
     int timelimit;
     bool sigint;
+    InputProvider* _input;
 #ifndef _WIN32
     static void handleInterrupt(int signal) {
       if (signal==SIGINT)
@@ -109,8 +183,8 @@ namespace MiniZinc {
     static bool hadTerm;
 #endif
   public:
-    Process(std::vector<std::string>& fzncmd, S2O* pso, int tl, bool si)
-      : _fzncmd(fzncmd), pS2Out(pso), timelimit(tl), sigint(si) {
+    Process(std::vector<std::string>& fzncmd, S2O* pso, int tl, bool si, InputProvider* input)
+        : _fzncmd(fzncmd), pS2Out(pso), timelimit(tl), sigint(si), _input(input) {
       assert( 0!=pS2Out );
     }
     int run(void) {
@@ -192,6 +266,13 @@ namespace MiniZinc {
       // Stop ReadFile from blocking
       CloseHandle(g_hChildStd_OUT_Wr);
       CloseHandle(g_hChildStd_ERR_Wr);
+
+      if (_input != NULL) {
+        _input->setHandle(g_hChildStd_IN_Wr);
+        _input->provide();
+        CloseHandle(g_hChildStd_IN_Wr);
+      }
+
       // Just close the child's in pipe here
       CloseHandle(g_hChildStd_IN_Rd);
       bool doneStdout = false;
@@ -258,6 +339,12 @@ namespace MiniZinc {
         close(pipes[0][0]);
         close(pipes[1][1]);
         close(pipes[2][1]);
+
+        if (_input != NULL) {
+            _input->setPipe(pipes[0][1]);
+            _input->provide();
+        }
+
         close(pipes[0][1]);
 
         fd_set fdset;

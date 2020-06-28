@@ -28,6 +28,7 @@ namespace MiniZinc {
     int fzn_time_limit_ms = 0;
     int solver_time_limit_ms = 0;
     bool fzn_sigint = false;
+    bool fzn_use_stdin = false;
 
     bool fzn_needs_paths = false;
     bool fzn_output_passthrough = false;
@@ -61,6 +62,8 @@ namespace MiniZinc {
       void processFlatZinc(void);
 
       void resetSolver(void);
+
+      void printModel(Printer p);
 
     protected:
       Expression* getSolutionValue(Id* id);

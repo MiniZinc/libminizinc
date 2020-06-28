@@ -80,6 +80,7 @@ namespace MiniZinc {
     << "  -k, --keep-files\n     For compatibility only: to produce .ozn and .fzn, use mzn2fzn\n"
                            "     or <this_exe> --fzn ..., --ozn ...\n"
     << "  -r <n>, --seed <n>, --random-seed <n>\n     For compatibility only: use solver flags instead.\n"
+    << "  --use-stdin\n    Pass flatzinc to solver via stdin instead of temp file.\n"
     ;
   }
 
@@ -143,6 +144,8 @@ namespace MiniZinc {
     } else if ( cop.getOption( "-f --free-search") ) {
       if (_opt.supports_f)
         _opt.fzn_flags.push_back("-f");
+    } else if ( cop.getOption( "--use-stdin") ) {
+      _opt.fzn_use_stdin = true;
     } else {
       for (auto& fznf : _opt.fzn_solver_flags) {
         if (fznf.t==MZNFZNSolverFlag::FT_ARG && cop.getOption(fznf.n.c_str(), &buffer)) {
@@ -186,6 +189,20 @@ namespace MiniZinc {
     }
   }
 
+  class FZN_Provider : public InputProvider {
+
+  protected:
+    FZNSolverInstance* _inst;
+    Printer p;
+
+  public:
+    explicit FZN_Provider(FZNSolverInstance* inst) : _inst(inst), p(*getStream(), 0, true) {};
+
+    void provide() override {
+      _inst->printModel(p);
+    }
+
+  };
 
   FZNSolverInstance::FZNSolverInstance(Env& env, std::ostream& log, SolverInstanceBase::Options* options)
     : SolverInstanceBase(env, log, options), _fzn(env.flat()), _ozn(env.output()) {}
@@ -244,10 +261,58 @@ namespace MiniZinc {
     }
     int timelimit = opt.fzn_time_limit_ms;
     bool sigint = opt.fzn_sigint;
-    
-    FileUtils::TmpFile fznFile(".fzn");
-    std::ofstream os(fznFile.name());
-    Printer p(os, 0, true);
+
+    FileUtils::TmpFile* pathsFile = NULL;
+    if(opt.fzn_needs_paths) {
+      pathsFile = new FileUtils::TmpFile(".paths");
+      std::ofstream ofs(pathsFile->name());
+      PathFilePrinter pfp(ofs, _env.envi());
+      pfp.print(_fzn);
+
+      cmd_line.push_back("--paths");
+      cmd_line.push_back(pathsFile->name());
+    }
+
+    FZN_Provider* input = nullptr;
+    FileUtils::TmpFile* fznFile = nullptr;
+    if (opt.fzn_use_stdin) {
+      input = new FZN_Provider(this);
+    } else {
+      fznFile = new FileUtils::TmpFile(".fzn");
+      std::ofstream os(fznFile->name());
+      Printer p(os, 0, true);
+      printModel(p);
+      cmd_line.push_back(fznFile->name());
+    }
+
+    if(!opt.fzn_output_passthrough) {
+      Process<Solns2Out> proc(cmd_line, getSolns2Out(), timelimit, sigint, input);
+      int exitStatus = proc.run();
+      delete fznFile;
+      delete pathsFile;
+      return exitStatus == 0 ? getSolns2Out()->status : SolverInstance::ERROR;
+    } else {
+      Solns2Log s2l(getSolns2Out()->getOutput(), _log);
+      Process<Solns2Log> proc(cmd_line, &s2l, timelimit, sigint, input);
+      int exitStatus = proc.run();
+      delete fznFile;
+      delete pathsFile;
+      return exitStatus==0 ? SolverInstance::NONE : SolverInstance::ERROR;
+    }
+  }
+
+  void FZNSolverInstance::processFlatZinc(void) {}
+
+  void FZNSolverInstance::resetSolver(void) {}
+
+  Expression*
+  FZNSolverInstance::getSolutionValue(Id* id) {
+    assert(false);
+    return NULL;
+  }
+
+  void FZNSolverInstance::printModel(Printer p) {
+
     for (FunctionIterator it = _fzn->begin_functions(); it != _fzn->end_functions(); ++it) {
       if(!it->removed()) {
         Item& item = *it;
@@ -267,40 +332,7 @@ namespace MiniZinc {
       }
     }
     p.print(_fzn->solveItem());
-    cmd_line.push_back(fznFile.name());
 
-    FileUtils::TmpFile* pathsFile = NULL;
-    if(opt.fzn_needs_paths) {
-      pathsFile = new FileUtils::TmpFile(".paths");
-      std::ofstream ofs(pathsFile->name());
-      PathFilePrinter pfp(ofs, _env.envi());
-      pfp.print(_fzn);
-
-      cmd_line.push_back("--paths");
-      cmd_line.push_back(pathsFile->name());
-    }
-
-    if(!opt.fzn_output_passthrough) {
-      Process<Solns2Out> proc(cmd_line, getSolns2Out(), timelimit, sigint);
-      int exitStatus = proc.run();
-      delete pathsFile;
-      return exitStatus == 0 ? getSolns2Out()->status : SolverInstance::ERROR;
-    } else {
-      Solns2Log s2l(getSolns2Out()->getOutput(), _log);
-      Process<Solns2Log> proc(cmd_line, &s2l, timelimit, sigint);
-      int exitStatus = proc.run();
-      delete pathsFile;
-      return exitStatus==0 ? SolverInstance::NONE : SolverInstance::ERROR;
-    }
   }
 
-  void FZNSolverInstance::processFlatZinc(void) {}
-
-  void FZNSolverInstance::resetSolver(void) {}
-
-  Expression*
-  FZNSolverInstance::getSolutionValue(Id* id) {
-    assert(false);
-    return NULL;
-  }
 }

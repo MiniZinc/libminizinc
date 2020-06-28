@@ -207,7 +207,7 @@ namespace MiniZinc {
       cmd_line.push_back(opt.nl_solver);
       cmd_line.push_back(file_nl);
       cmd_line.push_back("-AMPL");
-      Process<NLSolns2Out> proc(cmd_line, &s2o, 0, true);
+      Process<NLSolns2Out> proc(cmd_line, &s2o, 0, true, nullptr);
       exitStatus = proc.run();
 
       if (exitStatus == 0) {
