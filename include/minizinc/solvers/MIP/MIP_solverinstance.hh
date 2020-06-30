@@ -110,7 +110,7 @@ namespace MiniZinc {
         ( const MIP_wrapper::Output& , MIP_wrapper::CutInput& , bool fMIPSol);
 
 //       void assignSolutionToOutput();   // needs to be public for the callback?
-      virtual void printStatistics(bool fLegend=0);
+      virtual void printStatistics(void);
       virtual void printStatisticsLine(bool fLegend=0);
 
     public:

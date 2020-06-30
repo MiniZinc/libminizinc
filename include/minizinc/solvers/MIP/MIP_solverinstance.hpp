@@ -451,7 +451,7 @@ namespace MiniZinc {
   
   template<class MIPWrapper>
   void
-  MIP_solverinstance<MIPWrapper>::printStatistics(bool fLegend)
+  MIP_solverinstance<MIPWrapper>::printStatistics(void)
   {
     //   auto nn = std::chrono::system_clock::now();
     //   auto n_c = std::chrono::system_clock::to_time_t( nn );

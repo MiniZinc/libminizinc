@@ -61,7 +61,7 @@ namespace MiniZinc {
     virtual void printSolution();
 //     virtual void printSolution(ostream& );  // deprecated
     /// print statistics in form of comments
-    virtual void printStatistics(bool fLegend=0) { }
+    virtual void printStatistics(void) { }
     virtual void printStatisticsLine(bool fLegend=0) { }
 
     /// find the next solution

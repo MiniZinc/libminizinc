@@ -55,7 +55,7 @@ namespace MiniZinc {
     std::ostringstream oss;
 
     if ( _options->printStatistics )
-      printStatistics(1);             // Insert stats before sol separator
+      printStatistics();             // Insert stats before sol separator
     if ( 0==pS2Out ) {
       getEnv()->evalOutput(std::cout);               // deprecated
       std::cout << oss.str();
