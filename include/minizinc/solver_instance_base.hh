@@ -134,9 +134,6 @@ namespace MiniZinc {
   template<class Solver>
   class SolverInstanceImpl : public SolverInstanceBase2 {
   public:
-    typename Solver::Statistics _statistics;
-    virtual Statistics& getStatistics() { return _statistics; }
-
     typedef typename Solver::Variable VarId;
 
   protected:
