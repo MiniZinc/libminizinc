@@ -148,7 +148,7 @@ Solns2Out::DE& Solns2Out::findOutputVar( ASTString id ) {
 void Solns2Out::restoreDefaults() {
   for (unsigned int i=0; i<getModel()->size(); i++) {
     if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
-      if (vdi->e()->id()->idn()!=-1 || vdi->e()->id()->v()!="_mzn_solution_checker") {
+      if (vdi->e()->id()->idn()!=-1 || (vdi->e()->id()->v()!="_mzn_solution_checker" && vdi->e()->id()->v()!="_mzn_stats_checker")) {
         GCLock lock;
         auto& de = findOutputVar(vdi->e()->id()->str());
         vdi->e()->e(de.second());
@@ -229,7 +229,7 @@ bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
         }
       }
     }
-    ++nSolns;
+    ++_stats.nSolns;
     if ( _opt.flag_canonicalize ) {
       if ( pOfs_non_canon.get() )
         if ( pOfs_non_canon->good() ) {
@@ -248,7 +248,7 @@ bool Solns2Out::evalOutput( const string& s_ExtraInfo ) {
             pOfs_non_canon->flush();
         }
     } else {
-      if ( _opt.solution_comma.size() && nSolns>1 )
+      if ( _opt.solution_comma.size() && _stats.nSolns>1 )
         getOutput() << _opt.solution_comma << '\n';
       getOutput() << oss.str();
     }
@@ -342,6 +342,40 @@ void Solns2Out::checkSolution(std::ostream& oss) {
 #endif
 }
 
+void Solns2Out::checkStatistics(std::ostream& oss) {
+#ifdef HAS_GECODE
+
+  std::ostringstream checker;
+  checker << statisticsCheckerModel;
+  checker << "mzn_stats_failures = " << _stats.nFails << ";\n";
+  checker << "mzn_stats_solutions = " << _stats.nSolns << ";\n";
+  checker << "mzn_stats_nodes = " << _stats.nNodes << ";\n";
+  checker << "mzn_stats_time = " << starttime.ms() << ";\n";
+
+  MznSolver slv(oss,oss);
+  slv.s2out._opt.solution_separator = "";
+  try {
+    std::vector<std::string> args({"--solver","org.minizinc.gecode_presolver"});
+    slv.run(args, checker.str(), "minizinc", "checker.mzc");
+  } catch (const LocationException& e) {
+    oss << e.loc() << ":" << std::endl;
+    oss << e.what() << ": " << e.msg() << std::endl;
+  } catch (const Exception& e) {
+    std::string what = e.what();
+    oss << what << (what.empty() ? "" : ": ") <<e.msg() << std::endl;
+  }
+  catch (const exception& e) {
+    oss << e.what() << std::endl;
+  }
+  catch (...) {
+    oss << "  UNKNOWN EXCEPTION." << std::endl;
+  }
+  
+#else
+  oss << "% statistics checking not supported (need built-in Gecode)" << std::endl;
+#endif
+}
+
 bool Solns2Out::__evalOutput( ostream& fout ) {
   if ( 0!=outputExpr ) {
     pEnv->envi().evalOutput( fout );
@@ -414,6 +448,12 @@ void Solns2Out::init() {
           checkerModel = FileUtils::decodeBase64(checkerModel);
           FileUtils::inflateString(checkerModel);
         }
+      } else if (vdi->e()->id()->idn()==-1 && vdi->e()->id()->v()=="_mzn_stats_checker") {
+          statisticsCheckerModel = eval_string(getEnv()->envi(), vdi->e()->e());
+          if (statisticsCheckerModel.size() > 0 && statisticsCheckerModel[0]=='@') {
+            statisticsCheckerModel = FileUtils::decodeBase64(statisticsCheckerModel);
+            FileUtils::inflateString(statisticsCheckerModel);
+          }
       } else {
         GCLock lock;
         declmap.insert(pair<std::string,DE>(vdi->e()->id()->str().str(),DE(vdi->e(),vdi->e()->e())));
@@ -509,6 +549,19 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
           if ( pOfs_non_canon.get() )
             if ( pOfs_non_canon->good() )
               ( *pOfs_non_canon ) << line << '\n';
+          if (line.substr(0,13)=="%%%mzn-stat: " && line.size() > 13) {
+            if (line.substr(13,6)=="nodes=") {
+              std::istringstream iss(line.substr(19));
+              int n_nodes;
+              iss >> n_nodes;
+              _stats.nNodes = n_nodes;
+            } else if (line.substr(13,9)=="failures=") {
+              std::istringstream iss(line.substr(22));
+              int n_failures;
+              iss >> n_failures;
+              _stats.nFails = n_failures;
+            }
+          }
         }
       }
     }
@@ -533,5 +586,11 @@ void Solns2Out::createInputMap() {
 
 void Solns2Out::printStatistics(ostream& os)
 {
-  os << "%%%mzn-stat: nSolutions=" << nSolns << "\n";
+  os << "%%%mzn-stat: nSolutions=" << _stats.nSolns << "\n";
+  if (!statisticsCheckerModel.empty()) {
+    std::ostringstream oss;
+    checkStatistics(oss);
+    os << "%%%mzn-stat: statisticsCheck=\"" << Printer::escapeStringLit(oss.str()) << "\"\n";
+  }
+  os << "%%%mzn-stat-end\n";
 }

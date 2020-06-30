@@ -454,6 +454,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         log << errstream.str();
         errstream.str("");
         std::ostringstream smm_oss;
+        std::ostringstream smm_stats_oss;
         Printer p(smm_oss,0,false);
         p.print(smm);
         Env smm_env(smm);
@@ -476,6 +477,9 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             if (VarDeclI* vdi = (*smm)[i]->dyn_cast<VarDeclI>()) {
               if (vdi->e()->e()==NULL)
                 env->envi().checkVars.push_back(vdi->e());
+              else if (vdi->e()->ann().contains(constants().ann.rhs_from_assignment)) {
+                smm_stats_oss << *vdi;
+              }
             }
           }
           smm->compact();
@@ -484,6 +488,23 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           VarDecl* checkString = new VarDecl(Location().introduce(),ti,ASTString("_mzn_solution_checker"),new StringLit(Location().introduce(),smm_compressed));
           VarDeclI* checkStringI = new VarDeclI(Location().introduce(), checkString);
           env->output()->addItem(checkStringI);
+          
+          for (FunctionIterator it = smm->begin_functions(); it != smm->end_functions(); ++it) {
+            if (it->id()=="checkStatistics") {
+              smm_stats_oss << *it;
+              smm_stats_oss << "int: mzn_stats_failures;\n";
+              smm_stats_oss << "int: mzn_stats_solutions;\n";
+              smm_stats_oss << "int: mzn_stats_nodes;\n";
+              smm_stats_oss << "int: mzn_stats_time;\n";
+              smm_stats_oss << "output [checkStatistics(mzn_stats_failures,mzn_stats_solutions,mzn_stats_nodes,mzn_stats_time)];\n";
+              std::string smm_stats_compressed = FileUtils::encodeBase64(FileUtils::deflateString(smm_stats_oss.str()));
+              TypeInst* ti = new TypeInst(Location().introduce(),Type::parstring(),NULL);
+              VarDecl* checkStatsString = new VarDecl(Location().introduce(),ti,ASTString("_mzn_stats_checker"),
+                                                      new StringLit(Location().introduce(),smm_stats_compressed));
+              VarDeclI* checkStatsStringI = new VarDeclI(Location().introduce(), checkStatsString);
+              env->output()->addItem(checkStatsStringI);
+            }
+          }
         } catch (TypeError& e) {
           if (isCompressedChecker) {
             log << "Warning: type error in solution checker model\n";

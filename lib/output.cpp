@@ -452,7 +452,8 @@ namespace MiniZinc {
       if (VarDeclI* vdi = (*e.output)[i]->dyn_cast<VarDeclI>()) {
         if (!vdi->removed() && e.output_vo.occurrences(vdi->e())==0 &&
             !vdi->e()->ann().contains(constants().ann.mzn_check_var) &&
-            !(vdi->e()->id()->idn()==-1 && vdi->e()->id()->v()=="_mzn_solution_checker")) {
+            !(vdi->e()->id()->idn()==-1 &&
+              (vdi->e()->id()->v()=="_mzn_solution_checker" || vdi->e()->id()->v()=="_mzn_stats_checker"))) {
           CollectDecls cd(e.output_vo,deletedVarDecls,vdi);
           topDown(cd, vdi->e()->e());
           removeIsOutput(vdi->e()->flat());

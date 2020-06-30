@@ -1341,6 +1341,8 @@ namespace MiniZinc {
     } else {
       ret = SolverInstance::SAT;
     }
+    pS2Out->_stats.nFails = engine->statistics().fail;
+    pS2Out->_stats.nNodes = engine->statistics().node;
     delete engine;
     engine = NULL;
     return ret;

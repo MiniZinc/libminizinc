@@ -47,6 +47,7 @@ namespace MiniZinc {
     std::unordered_map<std::string, DE> declmap;
     Expression* outputExpr = NULL;
     std::string checkerModel;
+    std::string statisticsCheckerModel;
     bool fNewSol2Print = false;     // should be set for evalOutput to work
     
   public:
@@ -85,6 +86,12 @@ namespace MiniZinc {
       std::string search_complete_msg= search_complete_msg_00;
     } _opt;
 
+    struct Statistics {
+      int nSolns = 0;
+      int nFails = 0;
+      int nNodes = 0;
+    } _stats;
+    
   public:
      ~Solns2Out();
     Solns2Out(std::ostream& os, std::ostream& log, const std::string& stdlibDir);
@@ -120,19 +127,19 @@ namespace MiniZinc {
     /// until ... exit, eof,  ??   TODO
     /// These functions should only be called explicitly
     /// from SolverInstance
-     bool evalOutput( const std::string& s_ExtraInfo = "" );
+    bool evalOutput( const std::string& s_ExtraInfo = "" );
     /// This means the solver exits
-     bool evalStatus(SolverInstance::Status status);
-
-     void printStatistics(std::ostream& );
+    bool evalStatus(SolverInstance::Status status);
     
-     Env* getEnv() const { return pEnv; }
-     Model* getModel() const { assert(getEnv()->output()); return getEnv()->output(); }
-     /// Get the primary output stream
-     /// First call restores stdout
-     std::ostream& getOutput();
-     /// Get the secondary output stream
-     std::ostream& getLog();
+    void printStatistics(std::ostream& );
+    
+    Env* getEnv() const { return pEnv; }
+    Model* getModel() const { assert(getEnv()->output()); return getEnv()->output(); }
+    /// Get the primary output stream
+    /// First call restores stdout
+    std::ostream& getOutput();
+    /// Get the secondary output stream
+    std::ostream& getLog();
 
   private:
     Timer starttime;
@@ -140,7 +147,6 @@ namespace MiniZinc {
     std::unique_ptr<std::ostream> pOut;  // file output
     std::unique_ptr<std::ostream> pOfs_non_canon;
     std::unique_ptr<std::ostream> pOfs_raw;
-    int nSolns = 0;
     std::set<std::string> sSolsCanon;
     std::string line_part;   // non-finished line from last chunk
 
@@ -161,9 +167,10 @@ namespace MiniZinc {
     void parseAssignments( std::string& );
     /// Checking solution against checker model
     void checkSolution( std::ostream& os );
-     bool __evalOutput( std::ostream& os );
-     bool __evalOutputFinal( bool flag_flush );
-     bool __evalStatusMsg(SolverInstance::Status status);
+    void checkStatistics( std::ostream& os );
+    bool __evalOutput( std::ostream& os );
+    bool __evalOutputFinal( bool flag_flush );
+    bool __evalStatusMsg(SolverInstance::Status status);
     
   };
 

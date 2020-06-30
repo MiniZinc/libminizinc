@@ -596,6 +596,7 @@ namespace MiniZinc {
       default:
         s = SolverInstance::ERROR;
     }
+    pS2Out->_stats.nNodes = mip_wrap->getNNodes();
     return s;
   }
   
