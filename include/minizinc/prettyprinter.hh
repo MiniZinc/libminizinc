@@ -42,7 +42,30 @@ namespace MiniZinc {
     void print(const Item* i);
     void print(const Model* m);
     
-    static std::string escapeStringLit(const ASTString& s);
+    template<class S>
+    static std::string escapeStringLit(const S& s) {
+      const char* sc = s.c_str();
+      std::ostringstream ret;
+      for (unsigned int i=0; i<s.size(); i++) {
+        switch (sc[i]) {
+          case '\n':
+            ret << "\\n";
+            break;
+          case '\t':
+            ret << "\\t";
+            break;
+          case '"':
+            ret << "\\\"";
+            break;
+          case '\\':
+            ret << "\\\\";
+            break;
+          default:
+            ret << sc[i];
+        }
+      }
+      return ret.str();
+    }
 
   };
 

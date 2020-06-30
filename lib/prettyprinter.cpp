@@ -133,31 +133,7 @@ namespace MiniZinc {
     ret += 2 * ((pbo < pr) || (pbo == pr && assoc(bo) != AS_RIGHT));
     return static_cast<Parentheses>(ret);
   }
-  
-  std::string Printer::escapeStringLit(const ASTString& s) {
-    const char* sc = s.c_str();
-    std::ostringstream ret;
-    for (unsigned int i=0; i<s.size(); i++) {
-      switch (sc[i]) {
-        case '\n':
-          ret << "\\n";
-          break;
-        case '\t':
-          ret << "\\t";
-          break;
-        case '"':
-          ret << "\\\"";
-          break;
-        case '\\':
-          ret << "\\\\";
-          break;
-        default:
-          ret << sc[i];
-      }
-    }
-    return ret.str();
-  }
-  
+    
   void ppFloatVal(std::ostream& os, const FloatVal& fv, bool hexFloat) {
     std::ostringstream oss;
     if (fv.isFinite()) {
