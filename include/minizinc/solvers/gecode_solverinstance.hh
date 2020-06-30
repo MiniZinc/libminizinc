@@ -265,7 +265,7 @@ namespace MiniZinc {
     // names in the given Model* m.
     bool presolve(Model* m = NULL);
     bool sac(bool toFixedPoint, bool shaving);
-    void print_stats();
+    void printStatistics(void);
 
     void processSolution(bool last_sol = false);
     virtual Expression* getSolutionValue(Id* id);

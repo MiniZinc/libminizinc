@@ -1223,19 +1223,20 @@ namespace MiniZinc {
     }
   }
 
-  void GecodeSolverInstance::print_stats(){
-      Gecode::Search::Statistics stat = engine->statistics();
-      std::cerr << "%%  variables:     " 
+  void GecodeSolverInstance::printStatistics(void) {
+    EnvI& env = _env.envi();
+    Gecode::Search::Statistics stat = engine->statistics();
+    env.outstream << "%%%mzn-stat: variables="
         << (_current_space->iv.size() +
             _current_space->bv.size() +
             _current_space->sv.size()) << std::endl
-        << "%%  propagators:   " << Gecode::PropagatorGroup::all.size(*_current_space) << endl
-        << "%%  propagations:  " << stat.propagate << std::endl
-        << "%%  nodes:         " << stat.node << std::endl
-        << "%%  failures:      " << stat.fail << std::endl
-        << "%%  restarts:      " << stat.restart << std::endl
-        << "%%  peak depth:    " << stat.depth << std::endl
-        << std::endl;
+        << "%%%mzn-stat: propagators=" << Gecode::PropagatorGroup::all.size(*_current_space) << endl
+        << "%%%mzn-stat: propagations=" << stat.propagate << std::endl
+        << "%%%mzn-stat: nodes=" << stat.node << std::endl
+        << "%%%mzn-stat: failures=" << stat.fail << std::endl
+        << "%%%mzn-stat: restarts=" << stat.restart << std::endl
+        << "%%%mzn-stat: peak_depth=" << stat.depth << std::endl
+        << "%%%mzn-stat-end" << std::endl;
   }
 
   void GecodeSolverInstance::processSolution(bool last_sol) {
@@ -1317,7 +1318,7 @@ namespace MiniZinc {
 
       if(n_max_solutions==0 || _n_found_solutions <= n_max_solutions) {
         processSolution();
-        if (_print_stats) print_stats();
+        if (_print_stats) printStatistics();
       }
       if (_n_found_solutions == n_max_solutions) {
         break;
@@ -1328,7 +1329,7 @@ namespace MiniZinc {
       if (n_max_solutions==-1) {
         // Print last solution
         processSolution(next_sol == NULL);
-        if (_print_stats) print_stats();
+        if (_print_stats) printStatistics();
       }
     }
     if (next_sol==NULL) {
