@@ -2661,7 +2661,10 @@ namespace MiniZinc {
         std::vector<Expression*> args(c->n_args());
         GCLock lock;
         for (unsigned int i=0; i<c->n_args(); i++) {
-          args[i] = flat_cv_exp(env, ctx, c->arg(i))();
+          Ctx c_mix;
+          c_mix.b = C_MIX;
+          c_mix.i = C_MIX;
+          args[i] = flat_cv_exp(env, c_mix, c->arg(i))();
         }
         Call* nc = new Call(c->loc(), c->id(), args);
         nc->decl(c->decl());
