@@ -79,7 +79,7 @@ namespace MiniZinc {
     void resetSolver() override;
 
     Expression* getSolutionValue(Id* id) override;
-    void printStatistics(bool fLegend) override;
+    void printStatistics() override;
 
     // MiniZinc to Geas conversions
     bool asBool(Expression* e) { return eval_bool(env().envi(), e); }

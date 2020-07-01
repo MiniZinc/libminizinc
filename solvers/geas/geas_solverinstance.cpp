@@ -536,7 +536,7 @@ namespace MiniZinc{
       }
     }
     if (_opt.statistics) {
-      printStatistics(true);
+      printStatistics();
     }
     return status;
   }
@@ -655,7 +655,7 @@ namespace MiniZinc{
     return vec;
   }
 
-  void GeasSolverInstance::printStatistics(bool fLegend) {
+  void GeasSolverInstance::printStatistics() {
     auto& st = _solver.data->stats;
     auto& out = getSolns2Out()->getOutput();
 
