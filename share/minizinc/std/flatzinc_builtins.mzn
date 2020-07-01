@@ -64,6 +64,9 @@ predicate int_times(var int: a, var int: b, var int: c);
 /** @group flatzinc.int Constrains \a z = \(\a x ^ {\a y}\) */
 predicate int_pow(var int: x, var int: y, var int: z);
 
+/** @group flatzinc.int Constrains \a x \( \in \) \a S */
+predicate set_in(var int: x, set of int: S);
+
 /***
   @groupdef flatzinc.bool Bool FlatZinc builtins
 */
@@ -104,8 +107,6 @@ predicate bool_xor(var bool: a, var bool: b);
   @groupdef flatzinc.set Set FlatZinc builtins
 */
 
-/** @group flatzinc.set Constrains \a x \( \in \) \a S */
-predicate set_in(var int: x, set of int: S);
 /** @group flatzinc.set Constrains \a x \( \in \) \a S */
 predicate set_in(var int: x, var set of int: S);
 /** @group flatzinc.set Constrains \a x = |\a S| */
