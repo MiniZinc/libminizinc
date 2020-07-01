@@ -1100,20 +1100,20 @@ namespace MiniZinc {
                 }
                 rhs->decl(decl);
                 removeIsOutput(reallyFlat);
-                
+
+                outputVarDecls(e,item,it->second()->cast<Call>());
+                vd->e(rhs);
+
                 if (e.vo.occurrences(reallyFlat)==0 && reallyFlat->e()==NULL) {
                   auto it = e.vo.idx.find(reallyFlat->id());
                   assert(it != e.vo.idx.end());
                   e.flatRemoveItem((*e.flat())[it->second]->cast<VarDeclI>());
                 }
-                
-                outputVarDecls(e,item,it->second()->cast<Call>());
-                vd->e(rhs);
               } else {
                 // If the VarDecl does not have a usable right hand side, it needs to be
                 // marked as output in the FlatZinc
                 assert(vd->flat());
-                
+
                 bool needOutputAnn = true;
                 if (reallyFlat->e() && reallyFlat->e()->isa<Id>()) {
                   Id* ident = reallyFlat->e()->cast<Id>();
@@ -1121,15 +1121,19 @@ namespace MiniZinc {
                     needOutputAnn = false;
                     removeIsOutput(vd);
                     removeIsOutput(reallyFlat);
+
+                    vd->e(copy(e,e.cmap,ident));
+                    Type al_t(vd->e()->type());
+                    al_t.ti(Type::TI_PAR);
+                    vd->e()->type(al_t);
+
+                    outputVarDecls(e,item,ident);
+
                     if (e.vo.occurrences(reallyFlat)==0) {
                       auto it = e.vo.idx.find(reallyFlat->id());
                       assert(it != e.vo.idx.end());
                       e.flatRemoveItem((*e.flat())[it->second]->cast<VarDeclI>());
                     }
-                    vd->e(copy(e,e.cmap,ident));
-                    Type al_t(vd->e()->type());
-                    al_t.ti(Type::TI_PAR);
-                    vd->e()->type(al_t);
                   }
                 } else if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
                   ArrayLit* al = reallyFlat->e()->cast<ArrayLit>();
