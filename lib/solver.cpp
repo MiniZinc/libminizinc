@@ -642,7 +642,7 @@ SolverInstance::Status MznSolver::solve()
   if (si_opt->printStatistics)
       getSI()->printStatistics();
   if (flag_statistics)
-    getSI()->getSolns2Out()->printStatistics(log);
+    getSI()->getSolns2Out()->printStatistics(os);
   return status;
 }
 
