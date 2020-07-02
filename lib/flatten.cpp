@@ -109,6 +109,12 @@ namespace MiniZinc {
   }
 
   void setComputedDomain(EnvI& envi, VarDecl* vd, Expression* domain, bool is_computed) {
+    if (envi.hasReverseMapper(vd->id())) {
+      if (!createExplicitDomainConstraints(envi, vd, domain)) {
+        throw EvalError(envi, domain->loc(), "Unable to create domain constraint for reverse mapped variable");
+      }
+      return;
+    }
     if (!envi.fopts.record_domain_changes ||
         vd->ann().contains(constants().ann.is_defined_var) ||
         vd->introduced() ||
