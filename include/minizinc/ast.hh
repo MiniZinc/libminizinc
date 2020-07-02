@@ -1747,6 +1747,7 @@ namespace MiniZinc {
         ASTString bool_xor;
         ASTString set_eq;
         ASTString set_in;
+        ASTString set_subset;
         ASTString set_card;
         ASTString pow;
         

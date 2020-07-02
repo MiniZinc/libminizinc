@@ -32,7 +32,13 @@ namespace MiniZinc {
     std::vector<Call*> calls;
     Location iloc = Location().introduce();
 
-    if(domain->type().isfloat() || domain->type().isfloatset()) {
+    if (vd->type().isintset()) {
+      assert(domain->type().isint() || domain->type().isintset());
+      IntSetVal* isv = eval_intset(envi, domain);
+      calls.push_back(new Call(iloc,
+            constants().ids.set_subset,
+            {vd->id(), new SetLit(iloc, isv)}));
+    } else if(domain->type().isfloat() || domain->type().isfloatset()) {
       FloatSetVal* fsv = eval_floatset(envi, domain);
       if(fsv->size() == 1) { // Range based
         if(fsv->min() == fsv->max()) {

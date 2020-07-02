@@ -1487,6 +1487,7 @@ namespace MiniZinc {
     ids.array_bool_and = ASTString("array_bool_and");
     ids.set_eq = ASTString("set_eq");
     ids.set_in = ASTString("set_in");
+    ids.set_subset = ASTString("set_subset");
     ids.set_card = ASTString("set_card");
     ids.pow = ASTString("pow");
     
@@ -1718,6 +1719,7 @@ namespace MiniZinc {
     v.push_back(new StringLit(Location(),ids.array_bool_and));
     v.push_back(new StringLit(Location(),ids.set_eq));
     v.push_back(new StringLit(Location(),ids.set_in));
+    v.push_back(new StringLit(Location(),ids.set_subset));
     v.push_back(new StringLit(Location(),ids.set_card));
     v.push_back(new StringLit(Location(),ids.pow));
 
