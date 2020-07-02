@@ -2789,8 +2789,6 @@ namespace MiniZinc {
                 ub = std::max(ub, vi);
               }
               GCLock lock;
-              //v->e()->ti()->domain(new SetLit(Location().introduce(), IntSetVal::a(lb, ub)));
-              //v->e()->ti()->setComputedDomain(true);
               setComputedDomain(env, v->e(), new SetLit(Location().introduce(), IntSetVal::a(lb, ub)), true);
             } else if (v->e()->type().bt()==Type::BT_FLOAT && v->e()->type().st()==Type::ST_PLAIN) {
               FloatVal lb = FloatVal::infinity();
@@ -2801,8 +2799,6 @@ namespace MiniZinc {
                 ub = std::max(ub, vi);
               }
               GCLock lock;
-              //v->e()->ti()->domain(new SetLit(Location().introduce(), FloatSetVal::a(lb, ub)));
-              //v->e()->ti()->setComputedDomain(true);
               setComputedDomain(env, v->e(), new SetLit(Location().introduce(), FloatSetVal::a(lb, ub)), true);
             }
           } else if (v->e()->type().isvar() || v->e()->type().isann()) {

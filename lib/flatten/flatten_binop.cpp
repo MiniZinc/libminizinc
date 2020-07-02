@@ -441,9 +441,9 @@ namespace MiniZinc {
     // Assign linear expression directly if one side is an Id.
     Id* assignTo = NULL;
     if (bot==BOT_EQ && ctx.b == C_ROOT) {
-      if (le0->isa<Id>() && !env.hasReverseMapper(le0->cast<Id>())) {
+      if (le0->isa<Id>()) {
         assignTo = le0->cast<Id>();
-      } else if (le1->isa<Id>() && !env.hasReverseMapper(le1->cast<Id>())) {
+      } else if (le1->isa<Id>()) {
         assignTo = le1->cast<Id>();
       }
     }
@@ -552,15 +552,13 @@ namespace MiniZinc {
         }
       }
       
-      if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && !env.hasReverseMapper(alv[0]()->cast<Id>()) && bot==BOT_EQ) {
+      if (ctx.b == C_ROOT && alv[0]()->isa<Id>() && bot==BOT_EQ) {
         GCLock lock;
         VarDecl* vd = alv[0]()->cast<Id>()->decl();
         if (vd->ti()->domain()) {
           typename LinearTraits<Lit>::Domain domain = LinearTraits<Lit>::eval_domain(env,vd->ti()->domain());
           if (LinearTraits<Lit>::domain_contains(domain,d)) {
             if (!LinearTraits<Lit>::domain_equals(domain,d)) {
-              //vd->ti()->setComputedDomain(false);
-              //vd->ti()->domain(LinearTraits<Lit>::new_domain(d));
               setComputedDomain(env, vd, LinearTraits<Lit>::new_domain(d), false);
             }
             ret.r = bind(env,ctx,r,constants().lit_true);
@@ -568,8 +566,6 @@ namespace MiniZinc {
             ret.r = bind(env,ctx,r,constants().lit_false);
           }
         } else {
-          //vd->ti()->setComputedDomain(false);
-          //vd->ti()->domain(LinearTraits<Lit>::new_domain(d));
           setComputedDomain(env, vd, LinearTraits<Lit>::new_domain(d), false);
           ret.r = bind(env,ctx,r,constants().lit_true);
         }
@@ -618,8 +614,6 @@ namespace MiniZinc {
               return;
             } else if (!LinearTraits<Lit>::domain_equals(domain,ndomain)) {
               ret.r = bind(env,ctx,r,constants().lit_true);
-              //vd->ti()->setComputedDomain(false);
-              //vd->ti()->domain(LinearTraits<Lit>::new_domain(ndomain));
               setComputedDomain(env, vd, LinearTraits<Lit>::new_domain(ndomain), false);
               
               if (r==constants().var_true) {
@@ -675,7 +669,7 @@ namespace MiniZinc {
             continue;
           }
           typename LinearTraits<Lit>::Bounds b = LinearTraits<Lit>::compute_bounds(env,alv[i]());
-          
+
           if (b.valid && LinearTraits<Lit>::finite(b)) {
             if (coeffv[i] > 0) {
               bounds.l += coeffv[i]*b.l;
@@ -704,21 +698,17 @@ namespace MiniZinc {
             if (LinearTraits<Lit>::domain_intersects(domain,bounds.l,bounds.u)) {
               typename LinearTraits<Lit>::Domain new_domain = LinearTraits<Lit>::intersect_domain(domain,bounds.l,bounds.u);
               if (!LinearTraits<Lit>::domain_equals(domain,new_domain)) {
-                //vd->ti()->setComputedDomain(false);
-                //vd->ti()->domain(LinearTraits<Lit>::new_domain(new_domain));
                 setComputedDomain(env, vd, LinearTraits<Lit>::new_domain(new_domain), false);
               }
             } else {
               ret.r = bind(env,ctx,r,constants().lit_false);
             }
           } else {
-            //vd->ti()->setComputedDomain(true);
-            //vd->ti()->domain(LinearTraits<Lit>::new_domain(bounds.l,bounds.u));
             setComputedDomain(env, vd, LinearTraits<Lit>::new_domain(bounds.l, bounds.u), true);
           }
         }
       }
-      
+
       int coeff_sign;
       LinearTraits<Lit>::constructLinBuiltin(bot,callid,coeff_sign,d);
       std::vector<Expression*> coeff_ev(coeffv.size());
