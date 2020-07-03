@@ -218,6 +218,8 @@ namespace MiniZinc {
     bool statistics = false;
     bool all_solutions = false;
     int n_solutions = -1;
+    unsigned int c_d = 8;
+    unsigned int a_d = 2;
     int nodes = 0;
     int fails = 0;
     int time = 0;

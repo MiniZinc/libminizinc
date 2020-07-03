@@ -82,6 +82,16 @@ namespace MiniZinc {
       int nodes = atoi(argv[i].c_str());
       if(nodes >= 0)
         _opt.nodes = nodes;
+    } else if (string(argv[i])=="--c_d") {
+      if (++i==argv.size()) return false;
+      int c_d = atoi(argv[i].c_str());
+      if(c_d >= 0)
+        _opt.c_d = static_cast<unsigned int>(c_d);
+    } else if (string(argv[i])=="--a_d") {
+      if (++i==argv.size()) return false;
+      int a_d = atoi(argv[i].c_str());
+      if(a_d >= 0)
+        _opt.a_d = static_cast<unsigned int>(a_d);
     } else if (string(argv[i])=="--fail") {
       if (++i==argv.size()) return false;
       int fails = atoi(argv[i].c_str());
@@ -116,6 +126,10 @@ namespace MiniZinc {
     << "    shave domains" << std::endl
     << "  --pre-passes <n>" << std::endl
     << "    n passes of sac/shaving, 0 for fixed point" << std::endl
+    << "  --c_d <n>" << std::endl
+    << "    recomputation commit distance" << std::endl
+    << "  --a_d <n>" << std::endl
+    << "    recomputation adaption distance" << std::endl
     << "  --node <n>" << std::endl
     << "    node cutoff (0 = none, solution mode)" << std::endl
     << "  --fail <f>" << std::endl
@@ -1198,6 +1212,9 @@ namespace MiniZinc {
           assert(false);
       }
 
+      engine_options.c_d = _opt.c_d;
+      engine_options.a_d = _opt.a_d;
+
       int seed = _opt.seed;
       double decay = _opt.decay;
       
@@ -1214,6 +1231,8 @@ namespace MiniZinc {
                                             failStop,
                                             timeStop,
                                             false);
+
+
       // TODO: add presolving part
       if(_current_space->_solveType == MiniZinc::SolveI::SolveType::ST_SAT) {
         engine = new MetaEngine<DFS, Driver::EngineToMeta>(this->_current_space,engine_options);
