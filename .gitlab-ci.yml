@@ -1,4 +1,5 @@
 stages:
+  - check
   - build
   - test
   - trigger
@@ -18,6 +19,17 @@ variables:
   CCACHE_DIR: "$CI_PROJECT_DIR/.ccache"
   CCACHE_MAXSIZE: "100M"
 
+# ----------- Quick check -----------
+
+check:format:
+  stage: check
+  image: dekker1/minibuild:clang-format
+  script:
+    - run-clang-format -r lib include solvers minizinc.cpp mzn2doc.cpp
+  tags: [linux, docker]
+
+# ----------- Build MiniZinc -----------
+
 .build_template: &build_definition
   stage: build
   before_script: *download_script
@@ -36,7 +48,6 @@ variables:
     paths: [.ccache, vendor.zip*]
   # TODO: Uncomment when builds are required on merge request
   # only: [refs, branches, tags, merge_requests]
-
 
 build:linux:
   <<: *build_definition
