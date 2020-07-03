@@ -1,6 +1,17 @@
 % This file contains redefinitions of standard builtins for version 2.3.3
 % that can be overridden by solvers.
 
+/***
+  @groupdef flatzinc.twothreethree FlatZinc builtins added in MiniZinc 2.3.3.
+
+  These functions and predicates define built-in operations of the MiniZinc language
+  that have been added in MiniZinc 2.3.3. Solvers that support these natively need
+  to include a file called redefinitions-2.3.3.mzn in their solver library that
+  redefines these predicates as builtins.
+
+*/
+
+/** @group flatzinc.twothreethree Constrains \a x \( \in \) \a S */
 predicate float_set_in(var float: x, set of float: S) =
   let {
     array[int] of float: r1d = set_to_ranges(S);
