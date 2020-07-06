@@ -275,7 +275,7 @@ vector<string> MIP_cplex_wrapper::getTags() {
 }
 
 vector<string> MIP_cplex_wrapper::getStdFlags() {
-  return {"-a", "-n", "-p", "-s", "-v"};
+  return {"-i", "-n", "-p", "-s", "-v"};
 }
 
 void MIP_cplex_wrapper::Options::printHelp(ostream& os) {
@@ -286,7 +286,7 @@ void MIP_cplex_wrapper::Options::printHelp(ostream& os) {
   //               << "--writeParam <file> write CPLEX parameters to file
   //               << "--tuneParam         instruct CPLEX to tune parameters instead of solving
   << "  --mipfocus <n>\n    1: feasibility, 2: optimality, 3: move bound (default is 0, balanced)" << std::endl
-  << "  -a\n    print intermediate solutions (use for optimization problems only TODO)" << std::endl
+  << "  -i\n    print intermediate solutions for optimization problems" << std::endl
   << "  -p <N>\n    use N threads, default: 1" << std::endl
 //   << "  --nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
   << "  --solver-time-limit <N>\n    stop search after N milliseconds wall time" << std::endl
@@ -315,10 +315,8 @@ void MIP_cplex_wrapper::Options::printHelp(ostream& os) {
 
 bool MIP_cplex_wrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
   MiniZinc::CLOParser cop( i, argv );
-  if ( string(argv[i])=="-a"
-      || string(argv[i])=="--all"
-      || string(argv[i])=="--all-solutions" ) {
-    flag_all_solutions = true;
+  if (cop.get("-i")) {
+    flag_intermediate = true;
   } else if (string(argv[i])=="-f") {
 //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if ( cop.get( "--mipfocus --mipFocus --MIPFocus --MIPfocus", &nMIPFocus ) ) {
@@ -849,8 +847,6 @@ void msgfunction(void *handle, const char *msg_string)
 void MIP_cplex_wrapper::solve() {  // Move into ancestor?
 
   /////////////// Last-minute solver options //////////////////
-  if ( options->flag_all_solutions && 0==nProbType )
-    cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
   // Before all manual params ???
   if (options->sReadParams.size()) {
     status = dll_CPXreadcopyparam (env, options->sReadParams.c_str());
@@ -865,11 +861,11 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
        status = dll_CPXaddfuncdest(env, chnl[i], nullptr, msgfunction);
      }
 //     status = dll_CPXsetintparam(env, CPXPARAM_ScreenOutput,
-//       fVerbose ? CPX_ON : CPX_OFF);  // also when flag_all_solutions?  TODO
+//       fVerbose ? CPX_ON : CPX_OFF);  // also when flag_intermediate?  TODO
 //     wrap_assert(!status, "  CPLEX Warning: Failure to switch screen indicator.", false);
    }
    status = dll_CPXsetintparam (env, CPXPARAM_MIP_Display,
-                            fVerbose ? 2 : 0);  // also when flag_all_solutions?  TODO
+                            fVerbose ? 2 : 0);  // also when flag_intermediate?  TODO
    wrap_assert(!status, "  CPLEX Warning: Failure to switch logging.", false);
    /// Make it wall time by default, 12.8
 //    status =  dll_CPXsetintparam (env, CPXPARAM_ClockType, 1);            // CPU time
@@ -943,7 +939,7 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
    output.nCols = colObj.size();
    x.resize(output.nCols);
    output.x = &x[0];
-   if (options->flag_all_solutions && cbui.solcbfn) {
+   if (options->flag_intermediate && cbui.solcbfn) {
       status = dll_CPXsetinfocallbackfunc (env, solcallback, &cbui);
       wrap_assert(!status, "Failed to set solution callback", false);
    }
@@ -1050,7 +1046,7 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
       output.x = &x[0];
       status = dll_CPXgetx (env, lp, &x[0], 0, cur_numcols-1);
       wrap_assert(!status, "Failed to get variable values.");
-      if (cbui.solcbfn /*&& (!options->flag_all_solutions || !cbui.printed)*/) {
+      if (cbui.solcbfn /*&& (!options->flag_intermediate || !cbui.printed)*/) {
         cbui.solcbfn(output, cbui.psi);
       }
    }

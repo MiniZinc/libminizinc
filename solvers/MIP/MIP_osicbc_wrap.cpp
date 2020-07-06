@@ -65,7 +65,7 @@ vector<string> MIP_osicbc_wrapper::getTags() {
 }
 
 vector<string> MIP_osicbc_wrapper::getStdFlags() {
-  return {"-a", "-p", "-s", "-v"};
+  return {"-i", "-p", "-s", "-v"};
 }
 
 void MIP_osicbc_wrapper::Options::printHelp(ostream& os) {
@@ -80,7 +80,7 @@ void MIP_osicbc_wrapper::Options::printHelp(ostream& os) {
      //  \"-preprocess off\" recommended in 2.9.6
   << "  --writeModel <file>" << endl
   << "    write model to <file> (.mps)" << std::endl
-  << "  -a, --all\n    print intermediate solutions for optimization problems\n"
+  << "  -i\n    print intermediate solutions for optimization problems\n"
      "    (not from FeasPump. Can be slow.)" << std::endl
    << "  -p <N>\n    use N threads, default: 1. CBC should be configured with --enable-cbc-parallel" << std::endl
 //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
@@ -100,10 +100,8 @@ void MIP_osicbc_wrapper::Options::printHelp(ostream& os) {
 
 bool MIP_osicbc_wrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
   MiniZinc::CLOParser cop( i, argv );
-  if ( string(argv[i])=="-a"
-      || string(argv[i])=="--all"
-      || string(argv[i])=="--all-solutions" ) {
-    flag_all_solutions = true;
+  if (cop.get("-i")) {
+    flag_intermediate = true;
   } else if (string(argv[i])=="-f") {
 //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
@@ -666,8 +664,6 @@ MIP_osicbc_wrapper::Status MIP_osicbc_wrapper::convertStatus()
 
 
 void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
-  if ( options->flag_all_solutions && 0==nProbType )
-    cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
   try {
     /// Not using CoinPackedMatrix any more, so need to add all constraints at once:
     /// But this gives segf:
@@ -815,7 +811,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 //    x.resize(output.nCols);
 //    output.x = &x[0];
 
-   if (options->flag_all_solutions && cbui.solcbfn) {
+   if (options->flag_intermediate && cbui.solcbfn) {
      // Event handler. Should be after CbcMain0()?
      EventUserInfo ui;
      ui.pCbui = &cbui;
@@ -949,7 +945,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
         x.assign( model.getColSolution(), model.getColSolution() + cur_numcols ); // ColSolution();
         output.x = x.data();
   //       output.x = osi.getColSolution();
-      if (cbui.solcbfn && (!options->flag_all_solutions || !cbui.printed)) {
+      if (cbui.solcbfn && (!options->flag_intermediate || !cbui.printed)) {
         cbui.solcbfn(output, cbui.psi);
       }
     }

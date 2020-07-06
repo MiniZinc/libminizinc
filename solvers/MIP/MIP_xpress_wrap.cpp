@@ -209,7 +209,7 @@ vector<string> MIP_xpress_wrapper::getTags() {
 }
 
 vector<string> MIP_xpress_wrapper::getStdFlags() {
-  return {"-a", "-n", "-s"};
+  return {"-i", "-n", "-s"};
 }
 
 void MIP_xpress_wrapper::Options::printHelp(ostream &os) {
@@ -230,7 +230,7 @@ void MIP_xpress_wrapper::Options::printHelp(ostream &os) {
      << "--relGap <d>         relative gap |primal-dual|/<solver-dep> to stop, "
         "default: "
      << 0.0001 << std::endl
-     << "-a, --printAllSolutions  print intermediate solution, default: false"
+     << "-i                   print intermediate solution, default: false"
      << std::endl
      << "--xpress-root <dir>      Xpress installation directory (usually named xpressmp)" << std::endl
      << "--xpress-password <dir>  directory where xpauth.xpr is located (optional)" << std::endl
@@ -247,9 +247,8 @@ bool MIP_xpress_wrapper::Options::processOption(int &i, std::vector<std::string>
   } else if (cop.get("--writeModelFormat", &writeModelFormat)) {
   } else if (cop.get("--relGap", &relGap)) {
   } else if (cop.get("--absGap", &absGap)) {
-  } else if (string(argv[i]) == "--printAllSolutions" ||
-             string(argv[i]) == "-a") {
-    printAllSolutions = true;
+  } else if (cop.get("-i")) {
+    intermediateSolutions = true;
   } else if (cop.get("--xpress-root", &xprsRoot)) {
   } else if (cop.get("--xpress-password", &xprsPassword)) {
   } else
@@ -431,13 +430,13 @@ void MIP_xpress_wrapper::solve() {
   setOutputVariables(plugin, &output, &variables);
   setOutputAttributes(plugin, &output, plugin->XPRBgetXPRSprob(problem));
 
-  if ( !options->printAllSolutions && cbui.solcbfn) {
+  if ( !options->intermediateSolutions && cbui.solcbfn) {
     cbui.solcbfn(output, cbui.psi);
   }
 }
 
 void MIP_xpress_wrapper::setUserSolutionCallback() {
-  if (!options->printAllSolutions) {
+  if (!options->intermediateSolutions) {
     return;
   }
 

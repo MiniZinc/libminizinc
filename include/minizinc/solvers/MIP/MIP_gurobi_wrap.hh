@@ -47,7 +47,7 @@ class MIP_gurobi_wrapper : public MIP_wrapper {
       std::string sNodefileDir;
       std::string sReadParams;
       std::string sWriteParams;
-      bool flag_all_solutions = false;
+      bool flag_intermediate = false;
       
       double absGap=-1;
       double relGap=1e-8;

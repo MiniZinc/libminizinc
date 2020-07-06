@@ -176,7 +176,7 @@ vector<string> MIP_scip_wrapper::getTags() {
 }
 
 vector<string> MIP_scip_wrapper::getStdFlags() {
-  return {"-a", "-p", "-s"};
+  return {"-i", "-p", "-s"};
 }
 
 void MIP_scip_wrapper::Options::printHelp(ostream& os) {
@@ -187,7 +187,7 @@ void MIP_scip_wrapper::Options::printHelp(ostream& os) {
   //               << "--writeParam <file> write SCIP parameters to file
   //               << "--tuneParam         instruct SCIP to tune parameters instead of solving
   << "--writeModel <file> write model to <file> (.lp, .mps, ...?)" << std::endl
-  << "-a                  print intermediate solutions (use for optimization problems only TODO)" << std::endl
+  << "-i                  print intermediate solutions for optimization problems" << std::endl
   << "-p <N>              use N threads, default: 1" << std::endl
 //   << "--nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
   << "--solver-time-limit <N>       stop search after N milliseconds" << std::endl
@@ -210,10 +210,8 @@ void MIP_scip_wrapper::Options::printHelp(ostream& os) {
 
 bool MIP_scip_wrapper::Options::processOption(int& i, vector<string>& argv) {
   MiniZinc::CLOParser cop( i, argv );
-  if ( string(argv[i])=="-a"
-      || string(argv[i])=="--all"
-      || string(argv[i])=="--all-solutions" ) {
-    flag_all_solutions = true;
+  if (cop.get("-i")) {
+    flag_intermediate = true;
   } else if (string(argv[i])=="-f") {
 //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
@@ -648,9 +646,6 @@ SCIP_DECL_MESSAGEWARNING(printMsg) {
 SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
 
   /////////////// Last-minute solver options //////////////////
-  if ( options->flag_all_solutions && 0==nProbType )
-    cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
-
     if (options->nThreads>0)
       SCIP_PLUGIN_CALL_R(plugin, plugin->SCIPsetIntParam(scip, "lp/threads", options->nThreads) );
 
@@ -694,7 +689,7 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
    output.nCols = colObj.size();
    x.resize(output.nCols);
    output.x = &x[0];
-   if (options->flag_all_solutions && cbui.solcbfn && !cbuiPtr) {
+   if (options->flag_intermediate && cbui.solcbfn && !cbuiPtr) {
    /* include event handler for best solution found */
      SCIP_PLUGIN_CALL_R( plugin, includeEventHdlrBestsol() );
      cbuiPtr = &cbui;   // not thread-safe...         TODO
@@ -740,7 +735,7 @@ SCIP_RETCODE MIP_scip_wrapper::solve_SCIP() {  // Move into ancestor?
       x.resize(cur_numcols);
       output.x = &x[0];
       SCIP_PLUGIN_CALL_R( plugin, plugin->SCIPgetSolVals(scip, plugin->SCIPgetBestSol(scip), cur_numcols, &scipVars[0], (double*)output.x) );
-      if (cbui.solcbfn && (!options->flag_all_solutions || !cbui.printed)) {
+      if (cbui.solcbfn && (!options->flag_intermediate || !cbui.printed)) {
         cbui.solcbfn(output, cbui.psi);
       }
    }

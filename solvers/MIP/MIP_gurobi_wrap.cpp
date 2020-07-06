@@ -87,7 +87,7 @@ vector<string> MIP_gurobi_wrapper::getTags() {
 }
 
 vector<string> MIP_gurobi_wrapper::getStdFlags() {
-  return {"-a", "-n", "-p", "-s", "-v"};
+  return {"-i", "-n", "-p", "-s", "-v"};
 }
 
 const vector<string> gurobiDLLs(void) {
@@ -126,7 +126,7 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
   << "  --fixed-search\n    fixed search (approximation of the model's one by branching priorities)" << std::endl
   << "  --uniform-search\n    'more fixed' search (all variables in the search anns get priority 1)" << std::endl
   << "  --mipfocus <n>\n    1: feasibility, 2: optimality, 3: move bound (default is 0, balanced)" << std::endl
-  << "  -a\n    print intermediate solutions (use for optimization problems only TODO)" << std::endl
+  << "  -i\n    print intermediate solutions for optimization problems" << std::endl
   << "  -p <N>\n    use N threads, default: 1." << std::endl
 //   << "  --nomippresolve     disable MIP presolving   NOT IMPL" << std::endl
   << "  --solver-time-limit <N>, --solver-time\n"
@@ -162,10 +162,8 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
 
 bool MIP_gurobi_wrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
   MiniZinc::CLOParser cop( i, argv );
-  if ( string(argv[i])=="-a"
-      || string(argv[i])=="--all"
-      || string(argv[i])=="--all-solutions" ) {
-    flag_all_solutions = true;
+  if (cop.get("-i")) {
+    flag_intermediate = true;
   } else if (string(argv[i])=="-f") {
   } else if (string(argv[i])=="--fixed-search") {
     nFreeSearch = 0;
@@ -357,7 +355,7 @@ void MIP_gurobi_wrapper::openGUROBI()
    wrap_assert ( !error, "Could not open GUROBI environment." );
    error = dll_GRBsetintparam(env, "OutputFlag", 0);  // Switch off output
 //   error = dll_GRBsetintparam(env, "LogToConsole",
-//                            fVerbose ? 1 : 0);  // also when flag_all_solutions?  TODO
+//                            fVerbose ? 1 : 0);  // also when flag_intermediate?  TODO
   /* Create the problem. */
    error = dll_GRBnewmodel(env, &model, "mzn_gurobi", 0, NULL, NULL, NULL, NULL, NULL);
    wrap_assert ( model!=NULL, "Failed to create LP." );
@@ -715,9 +713,6 @@ MIP_gurobi_wrapper::Status MIP_gurobi_wrapper::convertStatus(int gurobiStatus)
 
 
 void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
-  if ( options->flag_all_solutions && 0==nProbType )
-    cerr << "WARNING. --all-solutions for SAT problems not implemented." << endl;
-  
    error = dll_GRBupdatemodel(model);                  // for model export
    wrap_assert( !error,  "Failed to update model." );
    
@@ -742,7 +737,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    error = dll_GRBsetintparam(dll_GRBgetenv(model), "OutputFlag",
                              /*fVerbose ? 1 :*/ 0);  // switch off, redirect in callback
 //    error = dll_GRBsetintparam(dll_GRBgetenv(model), "LogToConsole",
-//                             fVerbose ? 1 : 0);  // also when flag_all_solutions?  TODO
+//                             fVerbose ? 1 : 0);  // also when flag_intermediate?  TODO
    wrap_assert(!error, "  GUROBI Warning: Failure to switch screen indicator.", false);
 //    error =  dll_GRB_setintparam (env, GRB_PARAM_ClockType, 1);            // CPU time
 //    error =  dll_GRB_setintparam (env, GRB_PARAM_MIP_Strategy_CallbackReducedLP, GRB__OFF);    // Access original model
@@ -835,7 +830,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
    if (true) {                 // Need for logging
       cbui.fVerb = fVerbose;
       cbui.nTimeoutFeas = options->nTimeoutFeas1000/1000.0;
-      if ( !options->flag_all_solutions )
+      if ( !options->flag_intermediate )
         cbui.solcbfn = 0;
       if ( cbui.cutcbfn ) {
         assert( cbui.cutMask & (MaskConsType_Usercut|MaskConsType_Lazy) );
@@ -899,7 +894,7 @@ void MIP_gurobi_wrapper::solve() {  // Move into ancestor?
       output.x = &x[0];
       error = dll_GRBgetdblattrarray(model, GRB_DBL_ATTR_X, 0, cur_numcols, (double*)output.x);
       wrap_assert(!error, "Failed to get variable values.");
-      if ( !options->flag_all_solutions && solcbfn) {
+      if ( !options->flag_intermediate && solcbfn) {
         solcbfn(output, cbui.psi);
       }
    }

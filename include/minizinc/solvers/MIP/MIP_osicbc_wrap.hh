@@ -55,7 +55,7 @@ class MIP_osicbc_wrapper : public MIP_wrapper {
       double nWorkMemLimit=-1;
       std::string sReadParams;
       std::string sWriteParams;
-      bool flag_all_solutions = false;
+      bool flag_intermediate = false;
       
       double absGap=-1;
       double relGap=1e-8;

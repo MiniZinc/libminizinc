@@ -81,7 +81,7 @@ public:
       std::string writeModelFormat = "lp";
       double absGap = 0;
       double relGap = 0.0001;
-      bool printAllSolutions = false;
+      bool intermediateSolutions = false;
       bool processOption(int& i, std::vector<std::string>& argv);
       std::string xprsPassword;
       std::string xprsRoot;
