@@ -64,10 +64,18 @@ namespace MiniZinc {
     << "  -b, --backend, --solver-backend <be>\n     the backend codename. Currently passed to the solver.\n"
     << "  --fzn-flags <options>, --flatzinc-flags <options>\n     Specify option to be passed to the FlatZinc interpreter.\n"
     << "  --fzn-flag <option>, --flatzinc-flag <option>\n     As above, but for a single option string that need to be quoted in a shell.\n"
-    << "  -n <n>, --num-solutions <n>\n     An upper bound on the number of solutions to output. The default should be 1.\n"
     << "  -t <ms>, --solver-time-limit <ms>, --fzn-time-limit <ms>\n     Set time limit (in milliseconds) for solving.\n"
     << "  --fzn-sigint\n     Send SIGINT instead of SIGTERM.\n"
-    << "  -a, --all, --all-solns, --all-solutions\n     Print all solutions.\n"
+    << "  -n <n>, --num-solutions <n>\n"
+    << "    An upper bound on the number of solutions to output for satisfaction problems. The default should be 1.\n"
+    << "  -a, --all, --all-solns, --all-solutions\n     Print all solutions for satisfaction problems and intermediate solutions for optimization problems.\n"
+    << "  -i, --intermediate --intermediate-solutions\n    Print intermediate solutions for optimisation problems.\n"
+    << "  -n-i, --no-intermediate --no-intermediate-solutions\n    Don't print intermediate solutions for optimisation problems.\n"
+    << "  --all-satisfaction\n    Print all solutions for satisfaction problems.\n"
+    << "  --disable-all-satisfaction\n    Don't print all solutions for satisfaction problems.\n"
+    << "  -n-o <n>, --num-opt-solutions <n>\n"
+    << "    An upper bound on the number of optimal solutions to output for optimisation problems. The default should be 1.\n"
+    << "  -a-o, --all-opt, --all-optimal\n     Print all optimal solutions for optimisation problems.\n"
     << "  -p <n>, --parallel <n>\n     Use <n> threads during search. The default is solver-dependent.\n"
     << "  -k, --keep-files\n     For compatibility only: to produce .ozn and .fzn, use mzn2fzn\n"
                            "     or <this_exe> --fzn ..., --ozn ...\n"
@@ -115,9 +123,15 @@ namespace MiniZinc {
       _opt.fzn_flags.push_back(buffer);
     } else if ( _opt.supports_n && cop.getOption( "-n --num-solutions", &nn) ) {
       _opt.numSols = nn;
-    } else if ( _opt.supports_a && cop.getOption( "-a --all --all-solns --all-solutions") ) {
-      _opt.allSols = true;
-    } else if ( cop.getOption( "-p --parallel", &nn) ) {
+    } else if ( cop.getOption("-a") ) {
+      _opt.fzn_flags.push_back("-a");
+    } else if (cop.getOption("-i")) {
+      _opt.fzn_flags.push_back("-i");
+    } else if (_opt.supports_n_o && cop.getOption("-n-o --num-optimal", &nn)) {
+      _opt.num_optimal = nn;
+    } else if (_opt.supports_a_o && cop.getOption("-a-o --all-opt --all-optimal")) {
+      _opt.all_optimal = true;
+    } else if (cop.getOption("-p --parallel", &nn)) {
       if (_opt.supports_p)
         _opt.parallel = to_string(nn);
     } else if ( cop.getOption( "-k --keep-files" ) ) {
@@ -173,6 +187,12 @@ namespace MiniZinc {
         _opt.supports_v = true;
       } else if (f.n=="-t") {
         _opt.supports_t = true;
+      } else if (f.n == "-i") {
+        _opt.supports_i = true;
+      } else if (f.n == "-n-o") {
+        _opt.supports_n_o = true;
+      } else if (f.n == "-a-o") {
+        _opt.supports_a_o = true;
       } else {
         _opt.fzn_solver_flags.push_back(f);
       }
@@ -195,6 +215,7 @@ namespace MiniZinc {
     vector<string> cmd_line;
     cmd_line.push_back( opt.fzn_solver );
     string sBE = opt.backend;
+    bool is_sat = _fzn->solveItem()->st() == SolveI::SolveType::ST_SAT;
     if ( sBE.size() ) {
       cmd_line.push_back( "-b" );
       cmd_line.push_back( sBE );
@@ -202,14 +223,20 @@ namespace MiniZinc {
     for (auto& f : opt.fzn_flags) {
       cmd_line.push_back( f );
     }
-    if ( opt.numSols != 1 ) {
+    if (opt.all_optimal && !is_sat) {
+      cmd_line.push_back("-a-o");
+    }
+    if (opt.num_optimal != 1 && !is_sat) {
+      cmd_line.push_back("-n-o");
+      ostringstream oss;
+      oss << opt.num_optimal;
+      cmd_line.push_back(oss.str());
+    }
+    if (opt.numSols != 1 && is_sat) {
       cmd_line.push_back( "-n" );
       ostringstream oss;
       oss << opt.numSols;
       cmd_line.push_back( oss.str() );
-    }
-    if ( opt.allSols ) {
-      cmd_line.push_back( "-a" );
     }
     if ( opt.parallel.size() ) {
       cmd_line.push_back( "-p" );

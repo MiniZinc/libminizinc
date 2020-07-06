@@ -23,11 +23,13 @@ namespace MiniZinc {
     std::string backend;
     std::vector<std::string> fzn_flags;
     int numSols = 1;
-    bool allSols = false;
     std::string parallel;
     int fzn_time_limit_ms = 0;
     int solver_time_limit_ms = 0;
     bool fzn_sigint = false;
+    /// Number of (optimal) solutions to output
+    bool num_optimal = 1;
+    bool all_optimal = false;
 
     bool fzn_needs_paths = false;
     bool fzn_output_passthrough = false;
@@ -40,6 +42,9 @@ namespace MiniZinc {
     bool supports_r = false;
     bool supports_v = false;
     bool supports_t = false;
+    bool supports_i = false;
+    bool supports_n_o = false;
+    bool supports_a_o = false;
     std::vector<MZNFZNSolverFlag> fzn_solver_flags;
   };
 

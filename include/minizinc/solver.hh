@@ -124,6 +124,13 @@ namespace MiniZinc {
     std::ostream& os;
     std::ostream& log;
 
+    // These have special handling here as the stdFlags they correspond to
+    // depend on the method and whether the solver supports the flag
+    bool supports_a = false;
+    bool supports_i = false;
+    bool flag_all_satisfaction = false;
+    bool flag_intermediate = false;
+
   public:
     Solns2Out s2out;
     

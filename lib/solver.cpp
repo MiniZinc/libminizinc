@@ -94,7 +94,7 @@ SolverInitialiser::SolverInitialiser(void) {
 }
   
 MZNFZNSolverFlag MZNFZNSolverFlag::std(const std::string& n0) {
-  const std::string argFlags("-I -n -p -r");
+  const std::string argFlags("-I -n -p -r -n-o");
   if (argFlags.find(n0) != std::string::npos)
     return MZNFZNSolverFlag(FT_ARG,n0);
   return MZNFZNSolverFlag(FT_NOARG,n0);
@@ -339,6 +339,10 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         "--help", "-h",
         "--config-dirs"
         });
+      pc.negated_flag("-i", "-n-i");
+      pc.negated_flag("--intermediate", "--no-intermediate");
+      pc.negated_flag("--intermediate-solutions", "--no-intermediate-solutions");
+      pc.negated_flag("--all-satisfaction", "--disable-all-satisfaction");
       pc.load(param_file);
       for (auto a : pc.argv()) {
         new_args.push_back(a);
@@ -496,6 +500,16 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         log << "Selected solver does not support MiniZinc, FlatZinc or NL input." << endl;
         return OPTION_ERROR;
       }
+
+      // Check support of -a and -i
+      for (auto& flag : sc.stdFlags()) {
+        if (flag == "-a") {
+          supports_a = true;
+        } else if (flag == "-i") {
+          supports_i = true;
+        }
+      }
+
       for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
            it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
         if ((*it)->getId()==solverId) { /// TODO: also check version (currently assumes all ids are unique)
@@ -504,8 +518,9 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
           si_opt = sf->createOptions();
           if (!sc.executable().empty() || solverId=="org.minizinc.mzn-fzn" || solverId=="org.minizinc.mzn-nl") {
             std::vector<MZNFZNSolverFlag> acceptedFlags;
-            for (auto& sf : sc.stdFlags())
+            for (auto& sf : sc.stdFlags()) {
               acceptedFlags.push_back(MZNFZNSolverFlag::std(sf));
+            }
             for (auto& ef : sc.extraFlags())
               acceptedFlags.push_back(MZNFZNSolverFlag::extra(ef.flag,ef.flag_type));
 
@@ -657,11 +672,23 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       return OPTION_ERROR;
     }
     
+    CLOParser cop(i, argv); // For special handling of -a, -i and -n-i
     for (i=1; i<argc; ++i) {
       if ( !ifMzn2Fzn() ? s2out.processOption( i, argv ) : false ) {
         // Processed by Solns2Out
       } else if ((!isMznMzn || is_mzn2fzn) && flt.processOption(i, argv)) {
         // Processed by Flattener
+      } else if ((supports_a || supports_i) && cop.get("-a --all --all-solns --all-solutions")) {
+        flag_all_satisfaction = true;
+        flag_intermediate = true;
+      } else if ((supports_a || supports_i) && cop.get("-i --intermediate --intermediate-solutions")) {
+        flag_intermediate = true;
+      } else if (cop.getOption("-n-i --no-intermediate --no-intermediate-solutions")) {
+        flag_intermediate = false;
+      } else if (supports_a && cop.get("--all-satisfaction")) {
+        flag_all_satisfaction = true;
+      } else if (cop.get("--disable-all-satisfaction")) {
+        flag_all_satisfaction = false;
       } else if (sf != NULL && sf->processOption(si_opt, i, argv)) {
         // Processed by Solver Factory
       } else {
@@ -790,6 +817,26 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0, con
   if (SolverInstance::UNKNOWN == getFltStatus())
   {
     if ( !ifMzn2Fzn() ) {          // only then
+      // Special handling of basic stdFlags
+      auto solve_item = flt.getEnv()->model()->solveItem();
+      bool is_sat_problem = solve_item ? solve_item->st() == SolveI::SolveType::ST_SAT : true;
+      if (is_sat_problem && flag_all_satisfaction) {
+        if (supports_a) {
+          std::vector<std::string> a_flag = { "-a" };
+          int i = 0;
+          sf->processOption(si_opt, i, a_flag);
+        } else {
+          // Solver does not support -a
+          log << "WARNING: Solver does not support all solutions for satisfaction problems." << endl;
+        }
+      }
+      if (!is_sat_problem && flag_intermediate) {
+        std::vector<std::string> i_flag(1);
+        i_flag[0] = supports_i ? "-i" : "-a"; // Fallback to -a if -i is not supported
+        int i = 0;
+        sf->processOption(si_opt, i, i_flag);
+      }
+
       // GCLock lock;                  // better locally, to enable cleanup after ProcessFlt()
       addSolverInterface();
       return solve();
