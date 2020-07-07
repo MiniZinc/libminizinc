@@ -1,5 +1,6 @@
 /***
-!Test
+--- !Test
+solvers: [gecode, chuffed]
 expected: !Result
   solution: !SolutionSet
   - !Solution
@@ -2524,6 +2525,11 @@ expected: !Result
     n: 3
 options:
   all_solutions: true
+--- !Test
+solvers: [cbc]
+check_against: [gecode]
+expected: !Result
+  solution: !Solution {}
 ***/
 
 include "nvalue.mzn";

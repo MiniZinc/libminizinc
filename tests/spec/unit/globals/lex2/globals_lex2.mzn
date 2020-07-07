@@ -1,5 +1,6 @@
 /***
-!Test
+--- !Test
+solvers: [gecode, chuffed]
 expected: !Result
   solution: !SolutionSet
   - !Solution
@@ -46,6 +47,44 @@ expected: !Result
       - 2
 options:
   all_solutions: true
+--- !Test
+solvers: [cbc]
+expected:
+- !Result
+  solution: !Solution
+    y:
+    - [1, 1]
+    - [1, 1]
+- !Result
+  solution: !Solution
+    y:
+    - [1, 2]
+    - [2, 1]
+- !Result
+  solution: !Solution
+    y:
+    - [1, 1]
+    - [1, 2]
+- !Result
+  solution: !Solution
+    y:
+    - [1, 2]
+    - [1, 2]
+- !Result
+  solution: !Solution
+    y:
+    - [1, 1]
+    - [2, 2]
+- !Result
+  solution: !Solution
+    y:
+    - [1, 2]
+    - [2, 2]
+- !Result
+  solution: !Solution
+    y:
+    - [2, 2]
+    - [2, 2]
 ***/
 
 include "lex2.mzn";
