@@ -758,48 +758,40 @@ namespace MiniZinc {
   FunctionI::FunctionI(const Location& loc,
                        const std::string& id, TypeInst* ti,
                        const std::vector<VarDecl*>& params,
-                       Expression* e)
+                       Expression* e,
+                       bool from_stdlib)
   : Item(loc, II_FUN),
     _id(ASTString(id)),
     _ti(ti),
     _params(ASTExprVec<VarDecl>(params)),
-    _e(e) {
+    _e(e),
+    _from_stdlib(from_stdlib) {
     _builtins.e = NULL;
     _builtins.b = NULL;
     _builtins.f = NULL;
     _builtins.i = NULL;
     _builtins.s = NULL;
     _builtins.str = NULL;
-    _from_stdlib = (loc.filename() == "builtins.mzn" ||
-              loc.filename().endsWith("/builtins.mzn") ||
-              loc.filename() == "stdlib.mzn" ||
-              loc.filename().endsWith("/stdlib.mzn") ||
-              loc.filename() == "flatzinc_builtins.mzn" ||
-              loc.filename().endsWith("/flatzinc_builtins.mzn"));
   }
 
   inline
   FunctionI::FunctionI(const Location& loc,
                        const ASTString& id, TypeInst* ti,
                        const ASTExprVec<VarDecl>& params,
-                       Expression* e)
+                       Expression* e,
+                       bool from_stdlib)
   : Item(loc, II_FUN),
   _id(id),
   _ti(ti),
   _params(params),
-  _e(e) {
+  _e(e),
+  _from_stdlib(from_stdlib) {
     _builtins.e = NULL;
     _builtins.b = NULL;
     _builtins.f = NULL;
     _builtins.i = NULL;
     _builtins.s = NULL;
     _builtins.str = NULL;
-    _from_stdlib = (loc.filename() == "builtins.mzn" ||
-                    loc.filename().endsWith("/builtins.mzn") ||
-                    loc.filename() == "stdlib.mzn" ||
-                    loc.filename().endsWith("/stdlib.mzn") ||
-                    loc.filename() == "flatzinc_builtins.mzn" ||
-                    loc.filename().endsWith("/flatzinc_builtins.mzn"));
   }
 
 }

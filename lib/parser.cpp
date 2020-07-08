@@ -1,4 +1,4 @@
-td* -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*- */
+/* -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*- */
 
 /*
  *  Main authors:
@@ -112,7 +112,7 @@ namespace MiniZinc {
       if (!modelString.empty()) {
         Model* includedModel = new Model;
         includedModel->setFilename(modelStringName);
-        files.push_back(ParseWorkItem(includedModel,NULL,modelString,modelStringName,true));
+        files.push_back(ParseWorkItem(includedModel,NULL,modelString,modelStringName,false,true));
         seenModels.insert(pair<string,Model*>(modelStringName,includedModel));
         Location loc(ASTString(modelStringName),0,0,0,0);
         IncludeI* inc = new IncludeI(loc,includedModel->filename());
@@ -122,7 +122,7 @@ namespace MiniZinc {
     } else if (!modelString.empty()) {
       GCLock lock;
       model->setFilename(modelStringName);
-      files.push_back(ParseWorkItem(model,NULL,modelString,modelStringName,true));
+      files.push_back(ParseWorkItem(model,NULL,modelString,modelStringName,false,true));
     }
     
     {
@@ -132,7 +132,7 @@ namespace MiniZinc {
       GCLock lock;
       Model* stdlib = new Model;
       stdlib->setFilename(libname);
-      files.push_back(ParseWorkItem(stdlib,NULL,"./",libname));
+      files.push_back(ParseWorkItem(stdlib, nullptr, "./", libname, true));
       seenModels.insert(pair<string,Model*>(libname, stdlib));
       Location stdlibloc(ASTString(model->filename()),0,0,0,0);
       IncludeI* stdlibinc =
@@ -193,13 +193,13 @@ namespace MiniZinc {
               string deprecatedBaseName = FileUtils::base_name(deprecatedName);
               Model* includedModel = new Model;
               includedModel->setFilename(deprecatedBaseName);
-              files.push_back(ParseWorkItem(includedModel,NULL,"",deprecatedName));
+              files.push_back(ParseWorkItem(includedModel,NULL,"",deprecatedName, np.isSTDLib));
               seenModels.insert(pair<string,Model*>(deprecatedBaseName,includedModel));
               Location loc(ASTString(deprecatedName),0,0,0,0);
               IncludeI* inc = new IncludeI(loc,includedModel->filename());
               inc->m(includedModel,true);
               m->addItem(inc);
-              files.push_back(ParseWorkItem(includedModel,inc,deprecatedName,deprecatedBaseName));
+              files.push_back(ParseWorkItem(includedModel,inc,deprecatedName,deprecatedBaseName, np.isSTDLib));
             }
           }
           includePaths.pop_back();
@@ -228,7 +228,7 @@ namespace MiniZinc {
         fullname = f;
         s = parentPath;
       }
-      ParserState pp(fullname,s, err, files, seenModels, m, false, isFzn, parseDocComments);
+      ParserState pp(fullname,s, err, files, seenModels, m, false, isFzn, np.isSTDLib, parseDocComments);
       mzn_yylex_init(&pp.yyscanner);
       mzn_yyset_extra(&pp, pp.yyscanner);
       mzn_yyparse(&pp);
@@ -262,7 +262,7 @@ namespace MiniZinc {
           s = get_file_contents(file);
         }
         
-        ParserState pp(f, s, err, files, seenModels, model, true, false, parseDocComments);
+        ParserState pp(f, s, err, files, seenModels, model, true, false, false, parseDocComments);
         mzn_yylex_init(&pp.yyscanner);
         mzn_yyset_extra(&pp, pp.yyscanner);
         mzn_yyparse(&pp);

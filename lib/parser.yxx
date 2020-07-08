@@ -395,8 +395,7 @@ include_item :
           string fbase = FileUtils::base_name(pp->filename);
           if (fpath=="")
             fpath="./";
-          ParseWorkItem pm(im, ii, fpath, $2);
-          pp->files.push_back(pm);
+          pp->files.emplace_back(im, ii, fpath, $2, pp->isSTDLib);
           ii->m(im);
           pp->seenModels.insert(pair<string,Model*>($2,im));
         } else {
@@ -531,16 +530,20 @@ output_item :
 
 predicate_item :
         MZN_PREDICATE MZN_IDENTIFIER params annotations operation_item_tail
-      { if ($3) $$ = new FunctionI(@$,$2,new TypeInst(@$,
-                                   Type::varbool()),*$3,$5);
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        if ($3) $$ = new FunctionI(@$,$2,new TypeInst(@$,
+                                   Type::varbool()),*$3,$5,pp->isSTDLib);
         if ($$ && $4) $$->cast<FunctionI>()->ann().add(*$4);
         free($2);
         delete $3;
         delete $4;
       }
       | MZN_TEST MZN_IDENTIFIER params annotations operation_item_tail
-      { if ($3) $$ = new FunctionI(@$,$2,new TypeInst(@$,
-                                   Type::parbool()),*$3,$5);
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        if ($3) $$ = new FunctionI(@$,$2,new TypeInst(@$,
+                                   Type::parbool()),*$3,$5,pp->isSTDLib);
         if ($$ && $4) $$->cast<FunctionI>()->ann().add(*$4);
         free($2);
         delete $3;
@@ -549,14 +552,18 @@ predicate_item :
 
 function_item :
         MZN_FUNCTION ti_expr ':' id_or_quoted_op params annotations operation_item_tail
-      { if ($5) $$ = new FunctionI(@$,$4,$2,*$5,$7);
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        if ($5) $$ = new FunctionI(@$,$4,$2,*$5,$7,pp->isSTDLib);
         if ($$ && $6) $$->cast<FunctionI>()->ann().add(*$6);
         free($4);
         delete $5;
         delete $6;
       }
       | ti_expr ':' MZN_IDENTIFIER '(' params_list ')' annotations operation_item_tail
-      { if ($5) $$ = new FunctionI(@$,$3,$1,*$5,$8);
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        if ($5) $$ = new FunctionI(@$,$3,$1,*$5,$8,pp->isSTDLib);
         if ($$ && $7) $$->cast<FunctionI>()->ann().add(*$7);
         free($3);
         delete $5;
@@ -566,19 +573,22 @@ function_item :
 annotation_item :
         MZN_ANNOTATION MZN_IDENTIFIER params
       {
+        ParserState* pp = static_cast<ParserState*>(parm);
         TypeInst* ti=new TypeInst(@1,Type::ann());
         if ($3==NULL || $3->empty()) {
           VarDecl* vd = new VarDecl(@$,ti,$2);
           $$ = new VarDeclI(@$,vd);
         } else {
-          $$ = new FunctionI(@$,$2,ti,*$3,NULL);
+          $$ = new FunctionI(@$,$2,ti,*$3,NULL,pp->isSTDLib);
         }
         free($2);
         delete $3;
       }
     | MZN_ANNOTATION MZN_IDENTIFIER params MZN_EQ expr
-      { TypeInst* ti=new TypeInst(@1,Type::ann());
-        if ($3) $$ = new FunctionI(@$,$2,ti,*$3,$5);
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        TypeInst* ti=new TypeInst(@1,Type::ann());
+        if ($3) $$ = new FunctionI(@$,$2,ti,*$3,$5,pp->isSTDLib);
         delete $3;
       }
 

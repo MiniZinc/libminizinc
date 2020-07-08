@@ -2480,16 +2480,7 @@ namespace MiniZinc {
       return new TypeInst(vd->ti()->loc(), t, dims, flat_cv_exp(env, ctx, vd->ti()->domain())());
     }
   }
-  
-  bool isBuiltin(FunctionI* decl) {
-    return (decl->loc().filename() == "builtins.mzn" ||
-            decl->loc().filename().endsWith("/builtins.mzn") ||
-            decl->loc().filename() == "stdlib.mzn" ||
-            decl->loc().filename().endsWith("/stdlib.mzn") ||
-            decl->loc().filename() == "flatzinc_builtins.mzn" ||
-            decl->loc().filename().endsWith("/flatzinc_builtins.mzn"));
-  }
-  
+
   KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
     if (!e) {
       return nullptr;
@@ -3499,13 +3490,14 @@ namespace MiniZinc {
                 ss << "function " << rhs->id() << " is used in output, par version needed";
                 throw FlatteningError(env, rhs->loc(), ss.str());
               }
-                if (!isBuiltin(origdecl)) {
+              if (origdecl->from_stdlib()) {
                 decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
                 CollectOccurrencesE ce(env.output_vo,decl);
                 topDown(ce, decl->e());
                 topDown(ce, decl->ti());
-                for (unsigned int i = decl->params().size(); i--;)
+                for (unsigned int i = decl->params().size(); i--;) {
                   topDown(ce, decl->params()[i]);
+                }
                 env.output->registerFn(env, decl);
                 env.output->addItem(decl);
               } else {

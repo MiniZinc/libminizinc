@@ -51,9 +51,10 @@ namespace MiniZinc {
     IncludeI* ii;
     std::string dirName;
     std::string fileName;
+    bool isSTDLib;
     bool isModelString;
-    ParseWorkItem(Model* m0, IncludeI* ii0, const std::string& dirName0, const std::string& fileName0, bool isModelString0=false)
-    : m(m0), ii(ii0), dirName(dirName0), fileName(fileName0), isModelString(isModelString0) {}
+    ParseWorkItem(Model* m0, IncludeI* ii0, const std::string& dirName0, const std::string& fileName0, bool isSTDLib0=false, bool isModelString0=false)
+    : m(m0), ii(ii0), dirName(dirName0), fileName(fileName0), isSTDLib(isSTDLib0), isModelString(isModelString0) {}
   };
   
 
@@ -65,13 +66,13 @@ namespace MiniZinc {
                 std::vector<ParseWorkItem>& files0,
                 std::map<std::string,Model*>& seenModels0,
                 MiniZinc::Model* model0,
-                bool isDatafile0, bool isFlatZinc0, bool parseDocComments0)
+                bool isDatafile0, bool isFlatZinc0, bool isSTDLib0, bool parseDocComments0)
     : filename(f.c_str()), buf(b.c_str()), pos(0), length(static_cast<unsigned int>(b.size())),
       lineStartPos(0), nTokenNextStart(1), hadNewline(false),
       files(files0), seenModels(seenModels0), model(model0),
-      isDatafile(isDatafile0), isFlatZinc(isFlatZinc0), parseDocComments(parseDocComments0),
-      hadError(false), err(err0) {}
-  
+      isDatafile(isDatafile0), isFlatZinc(isFlatZinc0), isSTDLib(isSTDLib0),
+      parseDocComments(parseDocComments0), hadError(false), err(err0) {}
+
     const char* filename;
   
     void* yyscanner;
@@ -88,6 +89,7 @@ namespace MiniZinc {
 
     bool isDatafile;
     bool isFlatZinc;
+    bool isSTDLib;
     bool parseDocComments;
     bool hadError;
     std::vector<SyntaxError> syntaxErrors;
