@@ -13,6 +13,16 @@ function int: round(float: x);
 
 /** @group stdlib.coercion Return Boolean \a b coerced to an integer  */
 function int: bool2int(bool: b);
+/** @group stdlib.coercion Return optional 0/1 integer that is absent iff \a x
+  is absent, and 1 iff \a x occurs and is true. */
+function var opt int: bool2int(var opt bool: x) ::promise_total =
+  let {
+    var opt 0..1: xi;
+    constraint absent(xi)=absent(x);
+    constraint deopt(xi)=bool2int(deopt(x));
+  } in xi;
+
+
 /** @group stdlib.coercion Return Boolean \a b coerced to a float  */
 function float: bool2float(bool: b) = if b then 1.0 else 0.0 endif;
 /** @group stdlib.coercion Return array of Booleans \a x coerced to an array of floats  */
@@ -35,6 +45,23 @@ function var float: bool2float(var bool: b) = int2float(bool2int(b));
 function float: int2float(int: x);
 /** @group stdlib.coercion Return integer \a x coerced to a float  */
 function var float: int2float(var int: x) ::promise_total;
+
+/** @group stdlib.arithmetic Return optional 0/1 float that is absent iff \a x
+  is absent, and 1 iff \a x occurs and is true. */
+function var opt float: bool2float(var opt bool: x) ::promise_total =
+  let {
+    var opt 0.0..1.0: xi;
+    constraint absent(xi)=absent(x);
+    constraint deopt(xi)=bool2float(deopt(x));
+  } in xi;
+/** @group stdlib.arithmetic Return optional 0/1 integer that is absent iff \a x
+  is absent, and 1 iff \a x occurs and is true. */
+function var opt float: int2float(var opt int: x) ::promise_total =
+  let {
+    var opt int2float(lb(x))..int2float(ub(x)): xi;
+    constraint absent(xi)=absent(x);
+    constraint deopt(xi)=int2float(deopt(x));
+  } in xi;
 
 function set of int: bool2int(set of bool: b) =
   if b={false,true} then {0,1}

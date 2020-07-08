@@ -12,6 +12,19 @@ function var int:   '+'(var int: x,  var int: y);
 function     float: '+'(    float: x,    float: y);
 /** @group stdlib.arithmetic Return \a x + \a y */
 function var float: '+'(var float: x,var float: y);
+/** @group stdlib.arithmetic Optional addition. Return sum of \a x and \a y, with absent replaced by 0. */
+function var int: '+'(var opt int: x, var opt int: y) ::promise_total =
+  if occurs(x) then deopt(x) else 0 endif + if occurs(y) then deopt(y) else 0 endif;
+/** @group stdlib.arithmetic Optional addition. Return sum of \a x and \a y, with absent replaced by 0. */
+function int: '+'(opt int: x, opt int: y) ::promise_total =
+  if occurs(x) then deopt(x) else 0 endif + if occurs(y) then deopt(y) else 0 endif;
+/** @group stdlib.arithmetic Optional addition. Return sum of \a x and \a y, with absent replaced by 0. */
+function var float: '+'(var opt float: x, var opt float: y) ::promise_total =
+  if occurs(x) then deopt(x) else 0 endif + if occurs(y) then deopt(y) else 0 endif;
+/** @group stdlib.arithmetic Optional addition. Return sum of \a x and \a y, with absent replaced by 0. */
+function float: '+'(opt float: x, opt float: y) ::promise_total =
+  if occurs(x) then deopt(x) else 0 endif + if occurs(y) then deopt(y) else 0 endif;
+
 /** @group stdlib.arithmetic Return \a x - \a y */
 function     int:   '-'(    int: x,     int: y);
 /** @group stdlib.arithmetic Return \a x - \a y */
@@ -20,10 +33,50 @@ function var int:   '-'(var int: x,  var int: y);
 function     float: '-'(    float: x,    float: y);
 /** @group stdlib.arithmetic Return \a x - \a y */
 function var float: '-'(var float: x,var float: y);
+/** @group stdlib.arithmetic Optional subtraction. Return absent if \a x is absent, \a x if \a y is absent,
+  difference of \a x and \a y if both are present. */
+function var opt int: '-'(var opt int: x, var opt int: y) ::promise_total =
+  if absent(x) then <> elseif absent(y) then deopt(x) else deopt(x)-deopt(y) endif;
+function var int: '-'(var int: x, var opt int: y) ::promise_total =
+  if absent(y) then x else x-deopt(y) endif;
+/** @group stdlib.arithmetic Optional subtraction. Return absent if \a x is absent, \a x if \a y is absent,
+  difference of \a x and \a y if both are present. */
+function var opt float: '-'(var opt float: x, var opt float: y) ::promise_total =
+  if absent(x) then <> elseif absent(y) then deopt(x) else deopt(x)-deopt(y) endif;
+function var float: '-'(var float: x, var opt float: y) ::promise_total =
+  if absent(y) then x else x-deopt(y) endif;
+/** @group stdlib.arithmetic Optional subtraction. Return absent if \a x is absent, \a x if \a y is absent,
+  difference of \a x and \a y if both are present. */
+function opt int: '-'(opt int: x, opt int: y) ::promise_total =
+  if absent(x) then <> elseif absent(y) then deopt(x) else deopt(x)-deopt(y) endif;
+function int: '-'(int: x, opt int: y) ::promise_total =
+  if absent(y) then x else x-deopt(y) endif;
+/** @group stdlib.arithmetic Optional subtraction. Return absent if \a x is absent, \a x if \a y is absent,
+  difference of \a x and \a y if both are present. */
+function opt float: '-'(opt float: x, opt float: y) ::promise_total =
+  if absent(x) then <> elseif absent(y) then deopt(x) else deopt(x)-deopt(y) endif;
+function float: '-'(float: x, opt float: y) ::promise_total =
+  if absent(y) then x else x-deopt(y) endif;
+
+
 /** @group stdlib.arithmetic Return \a x * \a y */
 function     int:   '*'(    int: x,     int: y);
 /** @group stdlib.arithmetic Return \a x * \a y */
 function var int:   '*'(var int: x,  var int: y);
+/** @group stdlib.arithmetic Optional multiplication. Return product of \a x and \a y, with absent replaced by 1. */
+function var int: '*'(var opt int: x, var opt int: y) ::promise_total =
+  if occurs(x) then deopt(x) else 1 endif * if occurs(y) then deopt(y) else 1 endif;
+/** @group stdlib.arithmetic Optional multiplication. Return product of \a x and \a y, with absent replaced by 1. */
+function int: '*'(opt int: x, opt int: y) ::promise_total =
+  if occurs(x) then deopt(x) else 1 endif * if occurs(y) then deopt(y) else 1 endif;
+/** @group stdlib.arithmetic Optional multiplication. Return product of \a x and \a y, with absent replaced by 1. */
+function var float: '*'(var opt float: x, var opt float: y) ::promise_total =
+  if occurs(x) then deopt(x) else 1 endif * if occurs(y) then deopt(y) else 1 endif;
+/** @group stdlib.arithmetic Optional multiplication. Return product of \a x and \a y, with absent replaced by 1. */
+function float: '*'(opt float: x, opt float: y) ::promise_total =
+  if occurs(x) then deopt(x) else 1 endif * if occurs(y) then deopt(y) else 1 endif;
+
+
 /** @group stdlib.arithmetic Return \(\a x ^ {\a y}\) */
 function     int:   '^'(    int: x,     int: y);
 /** @group stdlib.arithmetic Return \(\a x ^ {\a y}\) */
@@ -54,6 +107,21 @@ function var int: 'div'(var int: x,var int: y) =
   elseif not (0 in dom(y)) then div_t(x,y)
   else let { constraint y != 0 } in div_mt(x,y) endif;
 
+/** @group stdlib.arithmetic Optional division. Return absent if \a x is absent, \a x if \a y is absent,
+  \a x divided by \a y if both are present. */
+function var opt int: 'div'(var opt int: x, var opt int: y) =
+  if absent(x) then <> elseif absent(y) then deopt(x) else deopt(x) div deopt(y) endif;
+
+function var int: 'div'(var int: x, var opt int: y) =
+  if absent(y) then x else x div deopt(y) endif;
+
+/** @group stdlib.arithmetic Optional division. Return absent if \a x is absent, \a x if \a y is absent,
+  \a x divided by \a y if both are present. */
+function opt int: 'div'(opt int: x, opt int: y) =
+  if absent(x) then <> elseif absent(y) then deopt(x) else deopt(x) div deopt(y) endif;
+
+function int: 'div'(int: x, opt int: y) =
+  if absent(y) then x else x div deopt(y) endif;
 /** @group stdlib.arithmetic Return remainder of integer division \a x % \a y */
 function     int: 'mod'(int: x,int: y);
 
@@ -63,6 +131,17 @@ function var int: 'mod'(var int: x,var int: y) =
   elseif not (0 in dom(y)) then mod_t(x,y)
   else let { constraint y != 0 } in mod_mt(x,y) endif;
 
+/** @group stdlib.arithmetic Optional modulo. Return absent if \a x or \a y is absent,
+  \a x modulo \a y if both are present. */
+function var opt int: 'mod'(var opt int: x, var opt int: y) =
+  if occurs(x) /\ occurs(y) then deopt(x) mod deopt(y) else <> endif;
+
+/** @group stdlib.arithmetic Optional modulo. Return absent if \a x or \a y is absent,
+  \a x modulo \a y if both are present. */
+function opt int: 'mod'(opt int: x, opt int: y) =
+  if occurs(x) /\ occurs(y) then deopt(x) mod deopt(y) else <> endif;
+
+
 /** @group stdlib.arithmetic Return result of floating point division \a x / \a y */
 function     float: '/'(    float: x,    float: y);
 /** @group stdlib.arithmetic Return result of floating point division \a x / \a y */
@@ -70,7 +149,18 @@ function var float: '/'(var float: x,var float: y) =
   if mzn_in_root_context(y) then fldiv_t(x,y)
   elseif lb(y) > 0.0 \/ ub(y) < 0.0 then fldiv_t(x,y)
   else let { constraint y != 0.0 } in fldiv_mt(x,y) endif;
-
+/** @group stdlib.arithmetic Optional division. Return absent if \a x is absent, \a x if \a y is absent,
+  \a x divided by \a y if both are present. */
+function var opt float: '/'(var opt float: x, var opt float: y) =
+  if absent(x) then <> elseif absent(y) then deopt(x) else deopt(x) / deopt(y) endif;
+function var float: '/'(var float: x, var opt float: y) =
+  if absent(y) then x else x / deopt(y) endif;
+/** @group stdlib.arithmetic Optional division. Return absent if \a x is absent, \a x if \a y is absent,
+  \a x divided by \a y if both are present. */
+function opt float: '/'(opt float: x, opt float: y) =
+  if absent(x) then <> elseif absent(y) then deopt(x) else deopt(x) / deopt(y) endif;
+function float: '/'(float: x, opt float: y) =
+  if absent(y) then x else x / deopt(y) endif;
 
 
 /** @group stdlib.arithmetic Return number of true elments in array \a x */
@@ -86,27 +176,87 @@ function var int:   sum(array[$T] of var int: x);
 function     float: sum(array[$T] of     float: x);
 /** @group stdlib.arithmetic Return sum of elements in array \a x */
 function var float: sum(array[$T] of var float: x);
+/** @group stdlib.arithmetic Return sum of non-absent elements of \a x. */
+function var int: sum(array[int] of var opt int: x) =
+  sum (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 0 endif);
+/** @group stdlib.arithmetic Return sum of non-absent elements of \a x. */
+function int: sum(array[int] of opt int: x) =
+  sum (i in index_set(x)) (if occurs(x[i]) then deopt(x[i]) else 0 endif);
+/** @group stdlib.arithmetic Return sum of non-absent elements of \a x. */
+function var float: sum(array[int] of var opt float: x) =
+  sum (i in index_set(x)) (let { var float: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 0 endif);
+/** @group stdlib.arithmetic Return sum of non-absent elements of \a x. */
+function float: sum(array[int] of opt float: x) =
+  sum (i in index_set(x)) (if occurs(x[i]) then deopt(x[i]) else 0 endif);
+
 
 /** @group stdlib.arithmetic Return product of elements in array \a x */
 function     int:   product(array[$T] of     int: x);
 /** @group stdlib.arithmetic Return product of elements in array \a x */
 function var int:   product(array[$T] of var int: x) =
   product_rec(array1d(x));
-
+/** @group stdlib.arithmetic Return product of non-absent elements of \a x. */
+function var int: product(array[int] of var opt int: x) =
+  product (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 1 endif);
+/** @group stdlib.arithmetic Return product of non-absent elements of \a x. */
+function int: product(array[int] of opt int: x) =
+  product (i in index_set(x)) (if occurs(x[i]) then deopt(x[i]) else 1 endif);
 /** @group stdlib.arithmetic Return product of elements in array \a x */
 function     float: product(array[$T] of     float: x);
 /** @group stdlib.arithmetic Return product of elements in array \a x */
 function var float: product(array[$T] of var float: x) =
   product_rec(array1d(x));
+/** @group stdlib.arithmetic Return product of non-absent elements of \a x. */
+function var float: product(array[int] of var opt float: x) =
+  product (i in index_set(x)) (let { var float: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 1 endif);
+/** @group stdlib.arithmetic Return product of non-absent elements of \a x. */
+function float: product(array[int] of opt float: x) =
+  product (i in index_set(x)) (if occurs(x[i]) then deopt(x[i]) else 1 endif);
+
 
 /** @group stdlib.arithmetic Return minimum of \a x and \a y */
 function     $T: min(    $T: x,     $T: y);
 /** @group stdlib.arithmetic Return minimum of elements in array \a x */
 function     $T: min(array[$U] of     par $T: x);
+/** @group stdlib.arithmetic Return minimum of elements in \a x that are not absent, or
+absent if all elements in \a x are absent. */
+function var opt int: min(array[int] of var opt int: x) ::promise_total =
+    let {
+        var opt lb_array(x)..ub_array(x): m;
+        var lb_array(x)..ub_array(x): xmax;
+        constraint if ub(xmax) != infinity then xmax = ub(xmax) else forall (i in index_set(x)) (xmax >= deopt(x[i])) endif;
+        constraint occurs(m) <-> exists (i in index_set(x)) (occurs(x[i]));
+        constraint occurs(m) ->
+            deopt(m) = min([if occurs(xi) then deopt(xi) else xmax endif | xi in x]);
+    } in m;
+/** @group stdlib.arithmetic Return minimum of elements in \a x that are not absent, or
+absent if all elements in \a x are absent. */
+% :NOTE: since -oo is always a lb for float variables, should we instead return -oo if all absent?
+function var opt float: min(array[int] of var opt float: x) ::promise_total =
+    let {
+        var opt lb_array(x)..ub_array(x): m;
+        var lb_array(x)..ub_array(x): xmax;
+        constraint if ub(xmax) != infinity then xmax = ub(xmax) else forall (i in index_set(x)) (xmax >= deopt(x[i])) endif;
+        constraint occurs(m) <-> exists (i in index_set(x)) (occurs(x[i]));
+        constraint occurs(m) ->
+            deopt(m) = min([if occurs(xi) then deopt(xi) else xmax endif | xi in x]);
+    } in m;
+
 /** @group stdlib.arithmetic Return maximum of \a x and \a y */
 function     $T: max(    $T: x,     $T: y);
 /** @group stdlib.arithmetic Return maximum of elements in array \a x */
 function     $T: max(array[$U] of     $T: x);
+/** @group stdlib.arithmetic Return maximum of elements in \a x that are not absent, or
+absent if all elements in \a x are absent. */
+function var opt int: max(array[int] of var opt int: x) ::promise_total =
+    let {
+        var opt lb_array(x)..ub_array(x): m;
+        var lb_array(x)..ub_array(x): xmin;
+        constraint if lb(xmin) != -infinity then xmin = lb(xmin) else forall (i in index_set(x)) (xmin <= deopt(x[i])) endif;
+        constraint occurs(m) <-> exists (i in index_set(x)) (occurs(x[i]));
+        constraint occurs(m) ->
+            deopt(m) = max([if occurs(xi) then deopt(xi) else xmin endif | xi in x]);
+    } in m;
 /** @group stdlib.arithmetic Return minimum of elements in set \a x */
 function $$E: min(set of $$E: x);
 /** @group stdlib.arithmetic Return maximum of elements in set \a x */
@@ -124,6 +274,17 @@ function var int: max(array[$U] of var int: x) =
     array[int] of var int: xx = array1d(x);
     constraint length(x) >= 1;
   } in max_t(xx);
+/** @group stdlib.arithmetic Return maximum of elements in \a x that are not absent, or
+absent if all elements in \a x are absent. */
+function var opt float: max(array[int] of var opt float: x) ::promise_total =
+    let {
+        var opt lb_array(x)..ub_array(x): m;
+        var lb_array(x)..ub_array(x): xmin;
+        constraint if lb(xmin) != -infinity then xmin = lb(xmin) else forall (i in index_set(x)) (xmin <= deopt(x[i])) endif;
+        constraint occurs(m) <-> exists (i in index_set(x)) (occurs(x[i]));
+        constraint occurs(m) ->
+            deopt(m) = max([if occurs(xi) then deopt(xi) else xmin endif | xi in x]);
+    } in m;
 
 /** @group stdlib.arithmetic Return minimum of \a x and \a y */
 function var int: min(var int: x, var int: y) :: promise_total =

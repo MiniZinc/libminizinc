@@ -86,25 +86,6 @@ predicate bool_eq(var opt bool: b0, var bool: b1) =
 predicate bool_eq(var bool: b0, var opt bool: b1) =
   occurs(b1) /\ deopt(b1)=b0;
 
-/** @group stdlib.optiontypes.bool Return truth value of \a x &and; \a y with identity <> = True*/
-function var bool: '/\'(var opt bool: x, var opt bool: y) = (absent(x) \/ deopt(x)) /\ (absent(y) \/ deopt(y));
-function bool: '/\'(opt bool: x, opt bool: y) = (absent(x) \/ deopt(x)) /\ (absent(y) \/ deopt(y));
-
-/** @group stdlib.optiontypes.bool Return truth value of \a x &or; \a y with identity <> = False*/
-function var bool: '\/'(var opt bool: x, var opt bool: y) = (occurs(x) /\ deopt(x)) \/ (occurs(y) /\ deopt(y));
-function bool: '\/'(opt bool: x, opt bool: y) = (occurs(x) /\ deopt(x)) \/ (occurs(y) /\ deopt(y));
-
-/** @group stdlib.optiontypes.bool True iff for any \p i, \a x[i] is absent or true */
-predicate forall (array[int] of var opt bool: x) =
-  forall ([absent(x[i]) \/ deopt(x[i]) | i in index_set(x)]);
-
-/** @group stdlib.optiontypes.bool True iff for at least one \p i, \a x[i] occurs and is true */
-predicate exists (array[int] of var opt bool: x) =
-  exists ([occurs(x[i]) /\ deopt(x[i]) | i in index_set(x)]);
-
-/** @group stdlib.optiontypes.bool Negation of \a x if it occurs, otherwise absent */
-function var opt bool: 'not'(var opt bool: x) = if absent(x) then <> else not deopt(x) endif;
-function opt bool: 'not'(opt bool: x) = if absent(x) then <> else not deopt(x) endif;
 
 /** @group stdlib.optiontypes.bool Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt bool: element(var opt int: idx, array[int] of var bool: x) =
@@ -216,55 +197,7 @@ predicate var_dom(array[$T] of var opt int: x, set of int: d) =
 predicate int_opt_eq(var opt int: x, var opt int: y) =
   deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
 
-/** @group stdlib.optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
-  occur and the value of \a x is greater than the value of \a y. */
-function var bool: '>'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
-/** @group stdlib.optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
-  occur and the value of \a x is greater than or equal to the value of \a y. */
-function var bool: '>='(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
-/** @group stdlib.optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
-  occur and the value of \a x is less than the value of \a y. */
-function var bool: '<'(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
-/** @group stdlib.optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
-  occur and the value of \a x is less than or equal to the value of \a y. */
-function var bool: '<='(var opt int: x, var opt int: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
 
-/** @group stdlib.optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
-  occur and the value of \a x is greater than the value of \a y. */
-function bool: '>'(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
-/** @group stdlib.optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
-  occur and the value of \a x is greater than or equal to the value of \a y. */
-function bool: '>='(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
-/** @group stdlib.optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
-  occur and the value of \a x is less than the value of \a y. */
-function bool: '<'(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
-/** @group stdlib.optiontypes.int Weak comparison: true iff either \a x or \a y is absent, or both
-  occur and the value of \a x is less than or equal to the value of \a y. */
-function bool: '<='(opt int: x, opt int: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
-
-/** @group stdlib.optiontypes.int Return minimum of elements in \a x that are not absent, or
-absent if all elements in \a x are absent. */
-function var opt int: min(array[int] of var opt int: x) ::promise_total =
-    let {
-        var opt lb_array(x)..ub_array(x): m;
-        var lb_array(x)..ub_array(x): xmax;
-        constraint if ub(xmax) != infinity then xmax = ub(xmax) else forall (i in index_set(x)) (xmax >= deopt(x[i])) endif;
-        constraint occurs(m) <-> exists (i in index_set(x)) (occurs(x[i]));
-        constraint occurs(m) ->
-            deopt(m) = min([if occurs(xi) then deopt(xi) else xmax endif | xi in x]);
-    } in m;
-
-/** @group stdlib.optiontypes.int Return maximum of elements in \a x that are not absent, or
-absent if all elements in \a x are absent. */
-function var opt int: max(array[int] of var opt int: x) ::promise_total =
-    let {
-        var opt lb_array(x)..ub_array(x): m;
-        var lb_array(x)..ub_array(x): xmin;
-        constraint if lb(xmin) != -infinity then xmin = lb(xmin) else forall (i in index_set(x)) (xmin <= deopt(x[i])) endif;
-        constraint occurs(m) <-> exists (i in index_set(x)) (occurs(x[i]));
-        constraint occurs(m) ->
-            deopt(m) = max([if occurs(xi) then deopt(xi) else xmin endif | xi in x]);
-    } in m;
 
 /** @group stdlib.optiontypes.int Weak addition. Return sum of \a x and \a y if both
 are present, otherwise return absent. */
@@ -299,14 +232,6 @@ present and equal.*/
 function var bool: '~='(var opt int: x, var opt int: y) ::promise_total =
     absent(x) \/ absent(y) \/ deopt(x)=deopt(y);
 
-/** @group stdlib.optiontypes.int Return optional 0/1 integer that is absent iff \a x
-  is absent, and 1 iff \a x occurs and is true. */
-function var opt int: bool2int(var opt bool: x) ::promise_total =
-  let {
-    var opt 0..1: xi;
-    constraint absent(xi)=absent(x);
-    constraint deopt(xi)=bool2int(deopt(x));
-  } in xi;
 
 /** @group stdlib.optiontypes.int True iff both \a x and \a y are absent or
   both are present and have the same value. */
@@ -320,79 +245,6 @@ predicate int_ne(var opt int : x, var opt int : y) =
      (absent(x) != absent(y))
   \/ (occurs(x) /\ occurs(y) /\ (deopt(x)!=deopt(y))::maybe_partial);
 
-/** @group stdlib.optiontypes.int Optional addition. Return sum of \a x and \a y, with absent replaced by 0. */
-function var int: '+'(var opt int: x, var opt int: y) ::promise_total =
-  if occurs(x) then deopt(x) else 0 endif + if occurs(y) then deopt(y) else 0 endif;
-
-/** @group stdlib.optiontypes.int Optional addition. Return sum of \a x and \a y, with absent replaced by 0. */
-function int: '+'(opt int: x, opt int: y) ::promise_total =
-  if occurs(x) then deopt(x) else 0 endif + if occurs(y) then deopt(y) else 0 endif;
-
-/** @group stdlib.optiontypes.int Optional subtraction. Return absent if \a x is absent, \a x if \a y is absent,
-  difference of \a x and \a y if both are present. */
-function var opt int: '-'(var opt int: x, var opt int: y) ::promise_total =
-  if absent(x) then <> elseif absent(y) then deopt(x) else deopt(x)-deopt(y) endif;
-
-function var int: '-'(var int: x, var opt int: y) ::promise_total =
-  if absent(y) then x else x-deopt(y) endif;
-
-/** @group stdlib.optiontypes.int Optional subtraction. Return absent if \a x is absent, \a x if \a y is absent,
-  difference of \a x and \a y if both are present. */
-function opt int: '-'(opt int: x, opt int: y) ::promise_total =
-  if absent(x) then <> elseif absent(y) then deopt(x) else deopt(x)-deopt(y) endif;
-
-function int: '-'(int: x, opt int: y) ::promise_total =
-  if absent(y) then x else x-deopt(y) endif;
-
-/** @group stdlib.optiontypes.int Optional multiplication. Return product of \a x and \a y, with absent replaced by 1. */
-function var int: '*'(var opt int: x, var opt int: y) ::promise_total =
-  if occurs(x) then deopt(x) else 1 endif * if occurs(y) then deopt(y) else 1 endif;
-
-/** @group stdlib.optiontypes.int Optional multiplication. Return product of \a x and \a y, with absent replaced by 1. */
-function int: '*'(opt int: x, opt int: y) ::promise_total =
-  if occurs(x) then deopt(x) else 1 endif * if occurs(y) then deopt(y) else 1 endif;
-
-/** @group stdlib.optiontypes.int Optional division. Return absent if \a x is absent, \a x if \a y is absent,
-  \a x divided by \a y if both are present. */
-function var opt int: 'div'(var opt int: x, var opt int: y) =
-  if absent(x) then <> elseif absent(y) then deopt(x) else deopt(x) div deopt(y) endif;
-
-function var int: 'div'(var int: x, var opt int: y) =
-  if absent(y) then x else x div deopt(y) endif;
-
-/** @group stdlib.optiontypes.int Optional division. Return absent if \a x is absent, \a x if \a y is absent,
-  \a x divided by \a y if both are present. */
-function opt int: 'div'(opt int: x, opt int: y) =
-  if absent(x) then <> elseif absent(y) then deopt(x) else deopt(x) div deopt(y) endif;
-
-function int: 'div'(int: x, opt int: y) =
-  if absent(y) then x else x div deopt(y) endif;
-
-/** @group stdlib.optiontypes.int Optional modulo. Return absent if \a x or \a y is absent,
-  \a x modulo \a y if both are present. */
-function var opt int: 'mod'(var opt int: x, var opt int: y) =
-  if occurs(x) /\ occurs(y) then deopt(x) mod deopt(y) else <> endif;
-
-/** @group stdlib.optiontypes.int Optional modulo. Return absent if \a x or \a y is absent,
-  \a x modulo \a y if both are present. */
-function opt int: 'mod'(opt int: x, opt int: y) =
-  if occurs(x) /\ occurs(y) then deopt(x) mod deopt(y) else <> endif;
-
-/** @group stdlib.optiontypes.int Return sum of non-absent elements of \a x. */
-function var int: sum(array[int] of var opt int: x) =
-  sum (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 0 endif);
-
-/** @group stdlib.optiontypes.int Return sum of non-absent elements of \a x. */
-function int: sum(array[int] of opt int: x) =
-  sum (i in index_set(x)) (if occurs(x[i]) then deopt(x[i]) else 0 endif);
-
-/** @group stdlib.optiontypes.int Return product of non-absent elements of \a x. */
-function var int: product(array[int] of var opt int: x) =
-  product (i in index_set(x)) (let { var int: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 1 endif);
-
-/** @group stdlib.optiontypes.int Return product of non-absent elements of \a x. */
-function int: product(array[int] of opt int: x) =
-  product (i in index_set(x)) (if occurs(x[i]) then deopt(x[i]) else 1 endif);
 
 /** @group stdlib.optiontypes.int Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt int: element(var opt int: idx, array[int] of var int: x) =
@@ -531,56 +383,6 @@ predicate float_dom(var opt float: x, array[int] of float: as) =
 predicate float_opt_eq(var opt float: x, var opt float: y) =
   deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
 
-/** @group stdlib.optiontypes.float Weak comparison: true iff either \a x or \a y is absent, or both
-  occur and the value of \a x is greater than the value of \a y. */
-function var bool: '>'(var opt float: x, var opt float: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
-/** @group stdlib.optiontypes.float Weak comparison: true iff either \a x or \a y is absent, or both
-  occur and the value of \a x is greater than or equal to the value of \a y. */
-function var bool: '>='(var opt float: x, var opt float: y) = absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
-/** @group stdlib.optiontypes.float Weak comparison: true iff either \a x or \a y is absent, or both
-  occur and the value of \a x is less than the value of \a y. */
-function var bool: '<'(var opt float: x, var opt float: y) = absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
-/** @group stdlib.optiontypes.float Weak comparison: true iff either \a x or \a y is absent, or both
-  occur and the value of \a x is less than or equal to the value of \a y. */
-function var bool: '<='(var opt float: x, var opt float: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
-
-/** @group stdlib.optiontypes.float Weak comparison: true iff either \a x or \a y is absent, or both
-  occur and the value of \a x is greater than the value of \a y. */
-function bool: '>'(opt float: x, opt float: y) = absent(x) \/ absent(y) \/ deopt(x) > deopt(y);
-/** @group stdlib.optiontypes.float Weak comparison: true iff either \a x or \a y is absent, or both
-  occur and the value of \a x is greater than or equal to the value of \a y. */
-function bool: '>='(opt float: x, opt float: y) = absent(x) \/ absent(y) \/ deopt(x) >= deopt(y);
-/** @group stdlib.optiontypes.float Weak comparison: true iff either \a x or \a y is absent, or both
-  occur and the value of \a x is less than the value of \a y. */
-function bool: '<'(opt float: x, opt float: y) = absent(x) \/ absent(y) \/ deopt(x) < deopt(y);
-/** @group stdlib.optiontypes.float Weak comparison: true iff either \a x or \a y is absent, or both
-  occur and the value of \a x is less than or equal to the value of \a y. */
-function bool: '<='(opt float: x, opt float: y) = absent(x) \/ absent(y) \/ deopt(x) <= deopt(y);
-
-/** @group stdlib.optiontypes.float Return minimum of elements in \a x that are not absent, or
-absent if all elements in \a x are absent. */
-% :NOTE: since -oo is always a lb for float variables, should we instead return -oo if all absent?
-function var opt float: min(array[int] of var opt float: x) ::promise_total =
-    let {
-        var opt lb_array(x)..ub_array(x): m;
-        var lb_array(x)..ub_array(x): xmax;
-        constraint if ub(xmax) != infinity then xmax = ub(xmax) else forall (i in index_set(x)) (xmax >= deopt(x[i])) endif;
-        constraint occurs(m) <-> exists (i in index_set(x)) (occurs(x[i]));
-        constraint occurs(m) ->
-            deopt(m) = min([if occurs(xi) then deopt(xi) else xmax endif | xi in x]);
-    } in m;
-
-/** @group stdlib.optiontypes.float Return maximum of elements in \a x that are not absent, or
-absent if all elements in \a x are absent. */
-function var opt float: max(array[int] of var opt float: x) ::promise_total =
-    let {
-        var opt lb_array(x)..ub_array(x): m;
-        var lb_array(x)..ub_array(x): xmin;
-        constraint if lb(xmin) != -infinity then xmin = lb(xmin) else forall (i in index_set(x)) (xmin <= deopt(x[i])) endif;
-        constraint occurs(m) <-> exists (i in index_set(x)) (occurs(x[i]));
-        constraint occurs(m) ->
-            deopt(m) = max([if occurs(xi) then deopt(xi) else xmin endif | xi in x]);
-    } in m;
 
 /** @group stdlib.optiontypes.float Weak addition. Return sum of \a x and \a y if both
 are present, otherwise return absent. */
@@ -615,24 +417,6 @@ present and equal.*/
 function var bool: '~='(var opt float: x, var opt float: y) ::promise_total =
     absent(x) \/ absent(y) \/ deopt(x)=deopt(y);
 
-/** @group stdlib.optiontypes.float Return optional 0/1 float that is absent iff \a x
-  is absent, and 1 iff \a x occurs and is true. */
-function var opt float: bool2float(var opt bool: x) ::promise_total =
-  let {
-    var opt 0.0..1.0: xi;
-    constraint absent(xi)=absent(x);
-    constraint deopt(xi)=bool2float(deopt(x));
-  } in xi;
-
-/** @group stdlib.optiontypes.int Return optional 0/1 integer that is absent iff \a x
-  is absent, and 1 iff \a x occurs and is true. */
-function var opt float: int2float(var opt int: x) ::promise_total =
-  let {
-    var opt int2float(lb(x))..int2float(ub(x)): xi;
-    constraint absent(xi)=absent(x);
-    constraint deopt(xi)=int2float(deopt(x));
-  } in xi;
-
 
 /** @group stdlib.optiontypes.float True iff both \a x and \a y are absent or
   both are present and have the same value. */
@@ -646,69 +430,6 @@ predicate float_ne(var opt float : x, var opt float : y) =
      (absent(x) != absent(y))
   \/ (occurs(x) /\ occurs(y) /\ (deopt(x)!=deopt(y))::maybe_partial);
 
-/** @group stdlib.optiontypes.float Optional addition. Return sum of \a x and \a y, with absent replaced by 0. */
-function var float: '+'(var opt float: x, var opt float: y) ::promise_total =
-  if occurs(x) then deopt(x) else 0 endif + if occurs(y) then deopt(y) else 0 endif;
-
-/** @group stdlib.optiontypes.float Optional addition. Return sum of \a x and \a y, with absent replaced by 0. */
-function float: '+'(opt float: x, opt float: y) ::promise_total =
-  if occurs(x) then deopt(x) else 0 endif + if occurs(y) then deopt(y) else 0 endif;
-
-/** @group stdlib.optiontypes.float Optional subtraction. Return absent if \a x is absent, \a x if \a y is absent,
-  difference of \a x and \a y if both are present. */
-function var opt float: '-'(var opt float: x, var opt float: y) ::promise_total =
-  if absent(x) then <> elseif absent(y) then deopt(x) else deopt(x)-deopt(y) endif;
-
-function var float: '-'(var float: x, var opt float: y) ::promise_total =
-  if absent(y) then x else x-deopt(y) endif;
-
-/** @group stdlib.optiontypes.float Optional subtraction. Return absent if \a x is absent, \a x if \a y is absent,
-  difference of \a x and \a y if both are present. */
-function opt float: '-'(opt float: x, opt float: y) ::promise_total =
-  if absent(x) then <> elseif absent(y) then deopt(x) else deopt(x)-deopt(y) endif;
-
-function float: '-'(float: x, opt float: y) ::promise_total =
-  if absent(y) then x else x-deopt(y) endif;
-
-/** @group stdlib.optiontypes.float Optional multiplication. Return product of \a x and \a y, with absent replaced by 1. */
-function var float: '*'(var opt float: x, var opt float: y) ::promise_total =
-  if occurs(x) then deopt(x) else 1 endif * if occurs(y) then deopt(y) else 1 endif;
-
-/** @group stdlib.optiontypes.float Optional multiplication. Return product of \a x and \a y, with absent replaced by 1. */
-function float: '*'(opt float: x, opt float: y) ::promise_total =
-  if occurs(x) then deopt(x) else 1 endif * if occurs(y) then deopt(y) else 1 endif;
-
-/** @group stdlib.optiontypes.float Optional division. Return absent if \a x is absent, \a x if \a y is absent,
-  \a x divided by \a y if both are present. */
-function var opt float: '/'(var opt float: x, var opt float: y) =
-  if absent(x) then <> elseif absent(y) then deopt(x) else deopt(x) / deopt(y) endif;
-
-function var float: '/'(var float: x, var opt float: y) =
-  if absent(y) then x else x / deopt(y) endif;
-
-/** @group stdlib.optiontypes.float Optional division. Return absent if \a x is absent, \a x if \a y is absent,
-  \a x divided by \a y if both are present. */
-function opt float: '/'(opt float: x, opt float: y) =
-  if absent(x) then <> elseif absent(y) then deopt(x) else deopt(x) / deopt(y) endif;
-
-function float: '/'(float: x, opt float: y) =
-  if absent(y) then x else x / deopt(y) endif;
-
-/** @group stdlib.optiontypes.float Return sum of non-absent elements of \a x. */
-function var float: sum(array[int] of var opt float: x) =
-  sum (i in index_set(x)) (let { var float: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 0 endif);
-
-/** @group stdlib.optiontypes.float Return sum of non-absent elements of \a x. */
-function float: sum(array[int] of opt float: x) =
-  sum (i in index_set(x)) (if occurs(x[i]) then deopt(x[i]) else 0 endif);
-
-/** @group stdlib.optiontypes.float Return product of non-absent elements of \a x. */
-function var float: product(array[int] of var opt float: x) =
-  product (i in index_set(x)) (let { var float: dx = deopt(x[i]) } in if occurs(x[i]) then dx else 1 endif);
-
-/** @group stdlib.optiontypes.float Return product of non-absent elements of \a x. */
-function float: product(array[int] of opt float: x) =
-  product (i in index_set(x)) (if occurs(x[i]) then deopt(x[i]) else 1 endif);
 
 /** @group stdlib.optiontypes.float Return absent if \a idx is absent, otherwise return \a x[\a idx] */
 function var opt float: element(var opt int: idx, array[int] of var float: x) =
