@@ -40,8 +40,8 @@ output [ show(p), "\n", show(ks), "\n", show(first), "\n"]++
        	    "depot(" ++ name[r] ++ "," ++ show(p[d]) ++ ").\n"
          else "" endif | d in Depot, r in first ];
 
-nr = 4;                                                                                                                                                                                                                                                        
-name = ["a", "b", "c", "d"];                                                                                                                                                                                                                                   
-k = [4,4,10,13];                                                                                                                                                                                                                                               
-                                                                                                                                                                                                                                                               
-number_of_depots = 2;                                                                                                                                                                                                                                          
+nr = 4;
+name = ["a", "b", "c", "d"];
+k = [4,4,10,13];
+
+number_of_depots = 2;
