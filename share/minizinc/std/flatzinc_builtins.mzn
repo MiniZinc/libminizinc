@@ -7,9 +7,11 @@
 %  solver globals library.
 %
 
+include "stdlib_ann.mzn";
+
 /***
   @groupdef flatzinc FlatZinc builtins
-  
+
   These are the standard constraints that need to be supported by FlatZinc
   solvers (or redefined in the redefinitions.mzn file).
 */

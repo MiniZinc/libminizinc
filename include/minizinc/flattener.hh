@@ -76,7 +76,6 @@ namespace MiniZinc {
     std::vector<std::string> includePaths;
     bool is_flatzinc = false;
 
-    bool flag_ignoreStdlib = false;
     bool flag_typecheck = true;
     bool flag_verbose = false;
     bool flag_newfzn = false;

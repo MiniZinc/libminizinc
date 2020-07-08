@@ -129,14 +129,14 @@ namespace MiniZinc {
                const std::string& textModel,
                const std::string& textModelName,
                const std::vector<std::string>& includePaths,
-               bool ignoreStdlib, bool parseDocComments, bool verbose,
+               bool isFlatZinc, bool parseDocComments, bool verbose,
                std::ostream& err);
 
   Model* parseFromString(Env& env,
                          const std::string& model,
                          const std::string& filename,
                          const std::vector<std::string>& includePaths,
-                         bool ignoreStdlib, bool parseDocComments, bool verbose,
+                         bool isFlatZinc, bool parseDocComments, bool verbose,
                          std::ostream& err,
                          std::vector<SyntaxError>& syntaxErrors);
 
@@ -144,7 +144,7 @@ namespace MiniZinc {
                    Model* m,
                    const std::vector<std::string>& datafiles,
                    const std::vector<std::string>& includePaths,
-                   bool ignoreStdlib, bool parseDocComments, bool verbose,
+                   bool isFlatZinc, bool parseDocComments, bool verbose,
                    std::ostream& err);
 
 }

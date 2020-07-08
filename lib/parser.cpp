@@ -64,7 +64,7 @@ namespace MiniZinc {
              const std::string& modelString,
              const std::string& modelStringName,
              const vector<string>& ip,
-             bool ignoreStdlib,
+             bool isFlatZinc,
              bool parseDocComments,
              bool verbose,
              ostream& err,
@@ -125,12 +125,13 @@ namespace MiniZinc {
       files.push_back(ParseWorkItem(model,NULL,modelString,modelStringName,true));
     }
     
-    if (!ignoreStdlib) {
+    {
+      std::string libname = isFlatZinc ? "flatzinc_builtins.mzn" : "stdlib.mzn";
       GCLock lock;
       Model* stdlib = new Model;
-      stdlib->setFilename("stdlib.mzn");
-      files.push_back(ParseWorkItem(stdlib,NULL,"./","stdlib.mzn"));
-      seenModels.insert(pair<string,Model*>("stdlib.mzn",stdlib));
+      stdlib->setFilename(libname);
+      files.push_back(ParseWorkItem(stdlib,NULL,"./",libname));
+      seenModels.insert(pair<string,Model*>(libname, stdlib));
       Location stdlibloc(ASTString(model->filename()),0,0,0,0);
       IncludeI* stdlibinc =
       new IncludeI(stdlibloc,stdlib->filename());
@@ -285,7 +286,7 @@ namespace MiniZinc {
                const string& textModel,
                const string& textModelName,
                const vector<string>& ip,
-               bool ignoreStdlib,
+               bool isFlatZinc,
                bool parseDocComments,
                bool verbose,
                ostream& err) {
@@ -302,7 +303,7 @@ namespace MiniZinc {
     }
     std::vector<SyntaxError> se;
     parse(env, model, filenames, datafiles, textModel, textModelName,
-          ip, ignoreStdlib, parseDocComments, verbose, err, se);
+          ip, isFlatZinc, parseDocComments, verbose, err, se);
     return model;
   }
   
@@ -310,7 +311,7 @@ namespace MiniZinc {
                    Model* model,
                    const vector<string>& datafiles,
                    const vector<string>& includePaths,
-                   bool ignoreStdlib,
+                   bool isFlatZinc,
                    bool parseDocComments,
                    bool verbose,
                    ostream& err) {
@@ -318,7 +319,7 @@ namespace MiniZinc {
     vector<string> filenames;
     std::vector<SyntaxError> se;
     parse(env, model, filenames, datafiles, "", "", includePaths,
-          ignoreStdlib, parseDocComments, verbose, err, se);
+          isFlatZinc, parseDocComments, verbose, err, se);
     return model;
   }
 
@@ -326,7 +327,7 @@ namespace MiniZinc {
                          const string& text,
                          const string& filename,
                          const vector<string>& ip,
-                         bool ignoreStdlib,
+                         bool isFlatZinc,
                          bool parseDocComments,
                          bool verbose,
                          ostream& err,
@@ -339,7 +340,7 @@ namespace MiniZinc {
       model = new Model();
     }
     parse(env, model, filenames, datafiles, text, filename,
-          ip, ignoreStdlib, parseDocComments, verbose, err, syntaxErrors);
+          ip, isFlatZinc, parseDocComments, verbose, err, syntaxErrors);
     return model;
   }
   

@@ -36,7 +36,6 @@ bool beginswith(string s, string t) {
 int main(int argc, char** argv) {
   string filename;
   vector<string> includePaths;
-  bool flag_ignoreStdlib = false;
   bool flag_verbose = false;
   bool flag_include_stdlib = false;
   bool flag_index = true;
@@ -75,8 +74,6 @@ int main(int argc, char** argv) {
         }
         includePaths.push_back(argv[i]+string("/"));
       }
-    } else if (string(argv[i])==string("--ignore-stdlib")) {
-      flag_ignoreStdlib = true;
     } else if (string(argv[i])==string("-v") || string(argv[i])==string("--verbose")) {
       flag_verbose = true;
     } else if (string(argv[i])=="--stdlib-dir") {
@@ -220,7 +217,7 @@ int main(int argc, char** argv) {
     std::vector<std::string> filenames;
     filenames.push_back(filename);
     Env env;
-    if (Model* m = parse(env, filenames, vector<string>(), "", "", includePaths, flag_ignoreStdlib, true,
+    if (Model* m = parse(env, filenames, vector<string>(), "", "", includePaths, true, true,
                          flag_verbose, errstream)) {
       try {
         env.model(m);
@@ -299,7 +296,7 @@ error:
             << "Options:" << std::endl
             << "  --help, -h\n    Print this help message" << std::endl
             << "  --version\n    Print version information" << std::endl
-            << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
+            << "  --include-stdlib\n    Include the standard libraries in the output" << std::endl
             << "  -v, --verbose\n    Print progress statements" << std::endl
             << "  --stdlib-dir <dir>\n    Path to MiniZinc standard library directory" << std::endl
             << "  -G --globals-dir --mzn-globals-dir\n    Search for included files in <stdlib>/<dir>." << std::endl

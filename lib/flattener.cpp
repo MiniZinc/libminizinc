@@ -44,7 +44,6 @@ void Flattener::printHelp(ostream& os)
   os
   << std::endl
   << "Flattener input options:" << std::endl
-  << "  --ignore-stdlib\n    Ignore the standard libraries stdlib.mzn and builtins.mzn" << std::endl
   << "  --instance-check-only\n    Check the model instance (including data) for errors, but do not\n    convert to FlatZinc." << std::endl
   << "  -e, --model-check-only\n    Check the model (without requiring data) for errors, but do not\n    convert to FlatZinc." << std::endl
   << "  --model-interface-only\n    Only extract parameters and output variables." << std::endl
@@ -114,8 +113,6 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
 
   if ( cop.getOption( "-I --search-dir", &buffer ) ) {
     includePaths.push_back(buffer+string("/"));
-  } else if ( cop.getOption( "--ignore-stdlib" ) ) {
-    flag_ignoreStdlib = true;
   } else if ( cop.getOption( "--no-typecheck") ) {
     flag_typecheck = false;
   } else if ( cop.getOption( "--instance-check-only") ) {
@@ -457,7 +454,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         log << "Parsing solution checker model " << flag_solution_check_model << " ..." << endl;
       bool isCompressedChecker = flag_solution_check_model.size() >= 4 && flag_solution_check_model.substr(flag_solution_check_model.size()-4)==".mzc";
       std::vector<std::string> smm_model({flag_solution_check_model});
-      Model* smm = parse(*env, smm_model, datafiles, "", "", includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+      Model* smm = parse(*env, smm_model, datafiles, "", "", includePaths, is_flatzinc, false, flag_verbose, errstream);
       if (flag_verbose)
         log << " done parsing (" << starttime.stoptime() << ")" << std::endl;
       if (smm) {
@@ -563,7 +560,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
       log << " ..." << std::endl;
     }
     errstream.str("");
-    m = parse(*env, filenames, datafiles, modelText, modelName.empty() ? "stdin" : modelName, includePaths, flag_ignoreStdlib, false, flag_verbose, errstream);
+    m = parse(*env, filenames, datafiles, modelText, modelName.empty() ? "stdin" : modelName, includePaths, is_flatzinc, false, flag_verbose, errstream);
     if (globals_dir != "") {
       includePaths.erase(includePaths.begin());
     }
