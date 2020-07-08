@@ -131,6 +131,14 @@ annotation int_search(
     ann: choice
 ) = int_search(x,select,choice,complete);
 
+/** @group stdlib.annotations.search Search annotation for optional integer variables */
+annotation int_search(array[int] of var opt int: x, ann: a1, ann: a2, ann: a3) =
+  int_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],a1,a2,a3);
+
+/** @group stdlib.annotations.search Search annotation for optional integer variables */
+annotation int_search(array[int] of var opt int: x, ann: a1, ann: a2) =
+  int_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],a1,a2);
+
 /** @group stdlib.annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, value choice strategy \a choice, and exploration strategy
   \a explore.
@@ -154,6 +162,14 @@ annotation bool_search(
     ann: select,
     ann: choice
 ) = bool_search(x,select,choice,complete);
+
+/** @group stdlib.annotations.search Search annotation for optional Boolean variables */
+annotation bool_search(array[int] of var opt bool: x, ann: a1, ann: a2, ann: a3) =
+  bool_search([if occurs(x[i]) then deopt(x[i]) else false endif | i in index_set(x)],a1,a2,a3);
+
+/** @group stdlib.annotations.search Search annotation for optional Boolean variables */
+annotation bool_search(array[int] of var opt bool: x, ann: a1, ann: a2) =
+  bool_search([if occurs(x[i]) then deopt(x[i]) else false endif | i in index_set(x)],a1,a2);
 
 /** @group stdlib.annotations.search Specify search on variables \a x, 
   with precision \a prec, variable selection
@@ -182,6 +198,14 @@ annotation float_search(
     ann: select,
     ann: choice
 ) = float_search(x,prec,select,choice,complete);
+
+/** @group stdlib.annotations.search Search annotation for optional float variables */
+annotation float_search(array[int] of var opt float: x, ann: a1, ann: a2, ann: a3) =
+  float_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],a1,a2,a3);
+
+/** @group stdlib.annotations.search Search annotation for optional float variables */
+annotation float_search(array[int] of var opt float: x, ann: a1, ann: a2) =
+  float_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],a1,a2);
 
 /** @group stdlib.annotations.search Specify search on variables \a x, with variable selection
   strategy \a select, value choice strategy \a choice, and exploration strategy

@@ -19,18 +19,31 @@ predicate var_dom(var int:x, set of int: s) =
   if has_bounds(x) /\ dom(x) subset s then true
   else x in s
   endif;
+predicate var_dom(var opt int:x, set of int: s) =
+  let {
+    var int: dx = deopt(x);
+    set of int: new_dom = dom(dx) intersect s;
+  } in if new_dom = {} then absent(x) else dx in new_dom endif;
+predicate var_dom(array[$T] of var opt int: x, set of int: d) =
+    let { array[int] of var opt int: xx = array1d(x) }
+    in forall (i in index_set(xx)) (var_dom(xx[i],d));
+
 predicate var_dom(var set of int: x, set of int: s) =
   if has_ub_set(x) /\ ub(x) subset s then true
   else set_subset(x,s)
   endif;
+
 predicate var_dom(var float:x, float: l, float: u) =
   if has_bounds(x) /\ lb(x) >= l /\ ub(x) <= u then true
   else x >= l /\ x <= u
   endif;
+
 predicate var_dom(var float:x, set of float: d) =
   x in d;
+
 test var_dom(float:x, float: l, float: u) =
   x >= l /\ x <= u;
+
 test var_dom(float:x, set of float: d) =
   x in d;
 
@@ -77,8 +90,73 @@ predicate array_var_float_element(var int: x, array[int] of float: y, var float:
 predicate array_var_set_element(var int: x, array[int] of set of int: y, var set of int: z) =
   array_set_element(x,y,z);
 
+predicate bool_opt_eq(var opt bool: x, var opt bool: y) =
+  deopt(x)=deopt(y) /\ occurs(x)=occurs(y);
+/** True iff both \a b0 and \a b1 are absent or
+  both are present and have the same value. */
+predicate bool_eq(var opt bool: b0, var opt bool: b1) =
+     (absent(b0) /\ absent(b1))
+  \/ (occurs(b0) /\ occurs(b1) /\ deopt(b0)=deopt(b1));
+/** True iff \a b0 occurs and is equal to \a b1 */
+predicate bool_eq(var opt bool: b0, var bool: b1) =
+  occurs(b0) /\ deopt(b0)=b1;
+/** True iff \a b1 occurs and is equal to \a b0 */
+predicate bool_eq(var bool: b0, var opt bool: b1) =
+  occurs(b1) /\ deopt(b1)=b0;
+
 predicate bool_xor_reif(var bool: a, var bool: b, var bool: c) =
   bool_xor(a,b,c);
+
+predicate int_opt_eq(var opt int: x, var opt int: y) =
+  deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
+/** True iff both \a x and \a y are absent or
+  both are present and have the same value. */
+predicate int_eq(var opt int: x, var opt int: y) =
+     (absent(x) /\ absent(y))
+  \/ (occurs(x) /\ occurs(y) /\ (deopt(x)=deopt(y))::maybe_partial);
+/** True iff only one of \a x and \a y is absent or
+  both are present and have different values. */
+predicate int_ne(var opt int : x, var opt int : y) =
+     (absent(x) != absent(y))
+  \/ (occurs(x) /\ occurs(y) /\ (deopt(x)!=deopt(y))::maybe_partial);
+/** Constrains \a x \( \in \) \a S */
+predicate set_in(var opt int: x, set of int: S) = if occurs(x) then deopt(x) in S endif;
+/** Constrains \a x \( \in \) \a S */
+predicate set_in(var opt int: x, var set of int: S) = if occurs(x) then deopt(x) in S endif;
+
+% :NOTE: does it apply to float?
+
+/*
+predicate var_dom(var opt float:x, set of float: s) =
+  let {
+    var float: dx = deopt(x);
+    set of float: new_dom = dom(dx) intersect s;
+  } in if new_dom = {} then absent(x) else dx in new_dom endif;
+
+predicate var_dom(array[$T] of var opt float: x, set of float: d) =
+    let { array[int] of var opt float: xx = array1d(x) }
+    in forall (i in index_set(xx)) (var_dom(xx[i],d));
+*/
+predicate float_dom(var opt float: x, array[int] of float: as) =
+  let {
+    var bool : b = occurs_internal_float(x);
+    var float : dx = deopt_internal_float(x);
+    constraint (x = reverse_map_var_opt_float(b,dx)) :: is_reverse_map;
+  } in float_dom(dx, as);
+
+predicate float_opt_eq(var opt float: x, var opt float: y) =
+  deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
+/** True iff both \a x and \a y are absent or
+  both are present and have the same value. */
+predicate float_eq(var opt float: x, var opt float: y) =
+     (absent(x) /\ absent(y))
+  \/ (occurs(x) /\ occurs(y) /\ (deopt(x)=deopt(y))::maybe_partial);
+
+/** True iff only one of \a x and \a y is absent or
+  both are present and have different values. */
+predicate float_ne(var opt float : x, var opt float : y) =
+     (absent(x) != absent(y))
+  \/ (occurs(x) /\ occurs(y) /\ (deopt(x)!=deopt(y))::maybe_partial);
 
 predicate xorall_reif(array[int] of var bool: b, var bool: c) =
   let { var bool: nc ::is_defined_var; constraint xorall([nc]++b) ::defines_var(nc); } in c = not nc;
@@ -89,6 +167,13 @@ function var float: lin_exp(array[int] of float, array[int] of var float, float)
 test mzn_in_root_context(var $T);
 
 test mzn_in_redundant_constraint();
+
+/* Internal function used to optimize over option type objective */
+function var float: objective_deopt_(var opt float: x, bool: direction) =
+  let {
+    float: worst = if direction then lb(x)-1 else ub(x)+1 endif;
+  } in if occurs(x) then deopt(x) else worst endif;
+
 
 %-----------------------------------------------------------------------------%
 %
@@ -293,6 +378,40 @@ function var int: element(var int: idx1, var int: idx2, var int: idx3, var int: 
        } in element_mt( (idx1*(dim2*dim3*dim4*dim5*dim6)+idx2*(dim3*dim4*dim5*dim6)+idx3*(dim4*dim5*dim6)+idx4*(dim5*dim6)+idx5*dim6+idx6-min)::domain, array1d(x))
        endif;
 
+/** Return absent if \a idx is absent, otherwise return \a x[\a idx] */
+function var opt int: element(var opt int: idx, array[int] of var int: x) =
+  if absent(idx) then <> else element(deopt(idx),x) endif;
+
+/** Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
+function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,int] of var int: x) =
+  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
+
+/** Return \a x[\a idx] */
+function var opt int: element(var int: idx, array[int] of var opt int: x) =
+  let {
+    var opt int: r;
+    constraint occurs(r) = element(idx,array1d(index_set(x),[occurs(x[i]) | i in index_set(x)]));
+    constraint deopt(r) = element(idx,array1d(index_set(x),[deopt(x[i]) | i in index_set(x)]));
+  } in r;
+
+/** Return \a x[\a idx1, \a idx2] */
+function var opt int: element(var int: idx1, var int: idx2, array[int,int] of var opt int: x) =
+  let {
+    var opt int: r;
+    constraint occurs(r) = element(idx1,idx2,
+      array2d(index_set_1of2(x),index_set_2of2(x),[occurs(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
+    constraint deopt(r) = element(idx1,idx2,
+      array2d(index_set_1of2(x),index_set_2of2(x),[deopt(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
+  } in r;
+
+/** Return absent if \a idx is absent, otherwise return \a x[\a idx] */
+function var opt int: element(var opt int: idx, array[int] of var opt int: x) =
+  if absent(idx) then <> else element(deopt(idx),x) endif;
+
+/** Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
+function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt int: x) =
+  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
+
 %%%%%%%%%%%%%%%%%%%
 % Element on floats
 
@@ -484,6 +603,40 @@ function var float: element(var int: idx1, var int: idx2, var int: idx3, var int
          constraint idx6 in index_set_6of6(x);
        } in element_mt( (idx1*(dim2*dim3*dim4*dim5*dim6)+idx2*(dim3*dim4*dim5*dim6)+idx3*(dim4*dim5*dim6)+idx4*(dim5*dim6)+idx5*dim6+idx6-min)::domain, array1d(x))
        endif;
+
+/** Return absent if \a idx is absent, otherwise return \a x[\a idx] */
+function var opt float: element(var opt int: idx, array[int] of var float: x) =
+  if absent(idx) then <> else element(deopt(idx),x) endif;
+
+/** Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
+function var opt float: element(var opt int: idx1, var opt int: idx2, array[int,int] of var float: x) =
+  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
+
+/** Return \a x[\a idx] */
+function var opt float: element(var int: idx, array[int] of var opt float: x) =
+  let {
+    var opt float: r;
+    constraint occurs(r) = element(idx,array1d(index_set(x),[occurs(x[i]) | i in index_set(x)]));
+    constraint deopt(r) = element(idx,array1d(index_set(x),[deopt(x[i]) | i in index_set(x)]));
+  } in r;
+
+/** Return \a x[\a idx1, \a idx2] */
+function var opt float: element(var int: idx1, var int: idx2, array[int,int] of var opt float: x) =
+  let {
+    var opt float: r;
+    constraint occurs(r) = element(idx1,idx2,
+      array2d(index_set_1of2(x),index_set_2of2(x),[occurs(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
+    constraint deopt(r) = element(idx1,idx2,
+      array2d(index_set_1of2(x),index_set_2of2(x),[deopt(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
+  } in r;
+
+/** Return absent if \a idx is absent, otherwise return \a x[\a idx] */
+function var opt float: element(var opt int: idx, array[int] of var opt float: x) =
+  if absent(idx) then <> else element(deopt(idx),x) endif;
+
+/** Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
+function var opt float: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt float: x) =
+  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
 
 %%%%%%%%%%%%%%%%%
 % Element on sets
@@ -869,6 +1022,40 @@ function var bool: element(var int: idx1, var int: idx2, var int: idx3, var int:
          constraint idx6 in index_set_6of6(x);
        } in element_mt( (idx1*(dim2*dim3*dim4*dim5*dim6)+idx2*(dim3*dim4*dim5*dim6)+idx3*(dim4*dim5*dim6)+idx4*(dim5*dim6)+idx5*dim6+idx6-min)::domain, array1d(x))
        endif;
+
+/** Return absent if \a idx is absent, otherwise return \a x[\a idx] */
+function var opt bool: element(var opt int: idx, array[int] of var bool: x) =
+  if absent(idx) then <> else element(deopt(idx),x) endif;
+
+/** Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
+function var opt bool: element(var opt int: idx1, var opt int: idx2, array[int,int] of var bool: x) =
+  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
+
+/** Return \a x[\a idx] */
+function var opt bool: element(var int: idx, array[int] of var opt bool: x) =
+  let {
+    var opt bool: r;
+    constraint occurs(r) = element(idx,array1d(index_set(x),[occurs(x[i]) | i in index_set(x)]));
+    constraint deopt(r) = element(idx,array1d(index_set(x),[deopt(x[i]) | i in index_set(x)]));
+  } in r;
+
+/** Return \a x[\a idx1, \a idx2] */
+function var opt bool: element(var int: idx1, var int: idx2, array[int,int] of var opt bool: x) =
+  let {
+    var opt bool: r;
+    constraint occurs(r) = element(idx1,idx2,
+      array2d(index_set_1of2(x),index_set_2of2(x),[occurs(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
+    constraint deopt(r) = element(idx1,idx2,
+      array2d(index_set_1of2(x),index_set_2of2(x),[deopt(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
+  } in r;
+
+/** Return absent if \a idx is absent, otherwise return \a x[\a idx] */
+function var opt bool: element(var opt int: idx, array[int] of var opt bool: x) =
+  if absent(idx) then <> else element(deopt(idx),x) endif;
+
+/** Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
+function var opt bool: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt bool: x) =
+  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
 
 %-----------------------------------------------------------------------------%
 %

@@ -69,66 +69,6 @@ predicate mzn_reverse_map_var(var opt bool: x) =
     constraint (x = reverse_map_var_opt_bool(b,dx)) :: is_reverse_map;
   } in true;
 
-predicate bool_opt_eq(var opt bool: x, var opt bool: y) =
-  deopt(x)=deopt(y) /\ occurs(x)=occurs(y);
-
-/** @group stdlib.optiontypes.bool True iff both \a b0 and \a b1 are absent or
-  both are present and have the same value. */
-predicate bool_eq(var opt bool: b0, var opt bool: b1) =
-     (absent(b0) /\ absent(b1))
-  \/ (occurs(b0) /\ occurs(b1) /\ deopt(b0)=deopt(b1));
-
-/** @group stdlib.optiontypes.bool True iff \a b0 occurs and is equal to \a b1 */
-predicate bool_eq(var opt bool: b0, var bool: b1) =
-  occurs(b0) /\ deopt(b0)=b1;
-
-  /** @group stdlib.optiontypes.bool True iff \a b1 occurs and is equal to \a b0 */
-predicate bool_eq(var bool: b0, var opt bool: b1) =
-  occurs(b1) /\ deopt(b1)=b0;
-
-
-/** @group stdlib.optiontypes.bool Return absent if \a idx is absent, otherwise return \a x[\a idx] */
-function var opt bool: element(var opt int: idx, array[int] of var bool: x) =
-  if absent(idx) then <> else element(deopt(idx),x) endif;
-
-/** @group stdlib.optiontypes.bool Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
-function var opt bool: element(var opt int: idx1, var opt int: idx2, array[int,int] of var bool: x) =
-  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
-
-/** @group stdlib.optiontypes.bool Return \a x[\a idx] */
-function var opt bool: element(var int: idx, array[int] of var opt bool: x) =
-  let {
-    var opt bool: r;
-    constraint occurs(r) = element(idx,array1d(index_set(x),[occurs(x[i]) | i in index_set(x)]));
-    constraint deopt(r) = element(idx,array1d(index_set(x),[deopt(x[i]) | i in index_set(x)]));
-  } in r;
-
-/** @group stdlib.optiontypes.bool Return \a x[\a idx1, \a idx2] */
-function var opt bool: element(var int: idx1, var int: idx2, array[int,int] of var opt bool: x) =
-  let {
-    var opt bool: r;
-    constraint occurs(r) = element(idx1,idx2,
-      array2d(index_set_1of2(x),index_set_2of2(x),[occurs(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
-    constraint deopt(r) = element(idx1,idx2,
-      array2d(index_set_1of2(x),index_set_2of2(x),[deopt(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
-  } in r;
-
-/** @group stdlib.optiontypes.bool Return absent if \a idx is absent, otherwise return \a x[\a idx] */
-function var opt bool: element(var opt int: idx, array[int] of var opt bool: x) =
-  if absent(idx) then <> else element(deopt(idx),x) endif;
-
-/** @group stdlib.optiontypes.bool Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
-function var opt bool: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt bool: x) =
-  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
-
-/** @group stdlib.optiontypes.bool Search annotation for optional Boolean variables */
-annotation bool_search(array[int] of var opt bool: x, ann: a1, ann: a2, ann: a3) =
-  bool_search([if occurs(x[i]) then deopt(x[i]) else false endif | i in index_set(x)],a1,a2,a3);
-
-/** @group stdlib.optiontypes.bool Search annotation for optional Boolean variables */
-annotation bool_search(array[int] of var opt bool: x, ann: a1, ann: a2) =
-  bool_search([if occurs(x[i]) then deopt(x[i]) else false endif | i in index_set(x)],a1,a2);
-
 
 /***
   @groupdef stdlib.optiontypes.int Option type support for integers
@@ -184,20 +124,6 @@ predicate mzn_reverse_map_var(var opt int: x) =
     constraint (x = reverse_map_var_opt_int(b,dx)) :: is_reverse_map;
   } in true;
 
-predicate var_dom(var opt int:x, set of int: s) =
-  let {
-    var int: dx = deopt(x);
-    set of int: new_dom = dom(dx) intersect s;
-  } in if new_dom = {} then absent(x) else dx in new_dom endif;
-
-predicate var_dom(array[$T] of var opt int: x, set of int: d) =
-    let { array[int] of var opt int: xx = array1d(x) }
-    in forall (i in index_set(xx)) (var_dom(xx[i],d));
-
-predicate int_opt_eq(var opt int: x, var opt int: y) =
-  deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
-
-
 
 /** @group stdlib.optiontypes.int Weak addition. Return sum of \a x and \a y if both
 are present, otherwise return absent. */
@@ -232,73 +158,12 @@ present and equal.*/
 function var bool: '~='(var opt int: x, var opt int: y) ::promise_total =
     absent(x) \/ absent(y) \/ deopt(x)=deopt(y);
 
-
-/** @group stdlib.optiontypes.int True iff both \a x and \a y are absent or
-  both are present and have the same value. */
-predicate int_eq(var opt int: x, var opt int: y) =
-     (absent(x) /\ absent(y))
-  \/ (occurs(x) /\ occurs(y) /\ (deopt(x)=deopt(y))::maybe_partial);
-
-/** @group stdlib.optiontypes.int True iff only one of \a x and \a y is absent or
-  both are present and have different values. */
-predicate int_ne(var opt int : x, var opt int : y) =
-     (absent(x) != absent(y))
-  \/ (occurs(x) /\ occurs(y) /\ (deopt(x)!=deopt(y))::maybe_partial);
-
-
-/** @group stdlib.optiontypes.int Return absent if \a idx is absent, otherwise return \a x[\a idx] */
-function var opt int: element(var opt int: idx, array[int] of var int: x) =
-  if absent(idx) then <> else element(deopt(idx),x) endif;
-
-/** @group stdlib.optiontypes.int Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
-function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,int] of var int: x) =
-  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
-
-/** @group stdlib.optiontypes.int Return \a x[\a idx] */
-function var opt int: element(var int: idx, array[int] of var opt int: x) =
-  let {
-    var opt int: r;
-    constraint occurs(r) = element(idx,array1d(index_set(x),[occurs(x[i]) | i in index_set(x)]));
-    constraint deopt(r) = element(idx,array1d(index_set(x),[deopt(x[i]) | i in index_set(x)]));
-  } in r;
-
-/** @group stdlib.optiontypes.int Return \a x[\a idx1, \a idx2] */
-function var opt int: element(var int: idx1, var int: idx2, array[int,int] of var opt int: x) =
-  let {
-    var opt int: r;
-    constraint occurs(r) = element(idx1,idx2,
-      array2d(index_set_1of2(x),index_set_2of2(x),[occurs(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
-    constraint deopt(r) = element(idx1,idx2,
-      array2d(index_set_1of2(x),index_set_2of2(x),[deopt(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
-  } in r;
-
-/** @group stdlib.optiontypes.int Return absent if \a idx is absent, otherwise return \a x[\a idx] */
-function var opt int: element(var opt int: idx, array[int] of var opt int: x) =
-  if absent(idx) then <> else element(deopt(idx),x) endif;
-
-/** @group stdlib.optiontypes.int Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
-function var opt int: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt int: x) =
-  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
-
-/** @group stdlib.optiontypes.int Search annotation for optional integer variables */
-annotation int_search(array[int] of var opt int: x, ann: a1, ann: a2, ann: a3) =
-  int_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],a1,a2,a3);
-
-/** @group stdlib.optiontypes.int Search annotation for optional integer variables */
-annotation int_search(array[int] of var opt int: x, ann: a1, ann: a2) =
-  int_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],a1,a2);
-
 /* Internal function used to optimize over option type objective */
 
 function var int: objective_deopt_(var opt int: x, bool: direction) =
   let {
     int: worst = if direction then lb(x)-1 else ub(x)+1 endif;
   } in if occurs(x) then deopt(x) else worst endif;
-
-/** @group flatzinc.set Constrains \a x \( \in \) \a S */
-predicate set_in(var opt int: x, set of int: S) = if occurs(x) then deopt(x) in S endif;
-/** @group flatzinc.set Constrains \a x \( \in \) \a S */
-predicate set_in(var opt int: x, var set of int: S) = if occurs(x) then deopt(x) in S endif;
 
 /***
   @groupdef stdlib.optiontypes.float Option type support for floats
@@ -360,30 +225,6 @@ predicate mzn_reverse_map_var(var opt float: x) =
     constraint (x = reverse_map_var_opt_float(b,dx)) :: is_reverse_map;
   } in true;
 
-% :NOTE: does it apply to float?
-/*
-predicate var_dom(var opt float:x, set of float: s) =
-  let {
-    var float: dx = deopt(x);
-    set of float: new_dom = dom(dx) intersect s;
-  } in if new_dom = {} then absent(x) else dx in new_dom endif;
-
-predicate var_dom(array[$T] of var opt float: x, set of float: d) =
-    let { array[int] of var opt float: xx = array1d(x) }
-    in forall (i in index_set(xx)) (var_dom(xx[i],d));
-*/
-
-predicate float_dom(var opt float: x, array[int] of float: as) =
-  let {
-    var bool : b = occurs_internal_float(x);
-    var float : dx = deopt_internal_float(x);
-    constraint (x = reverse_map_var_opt_float(b,dx)) :: is_reverse_map;
-  } in float_dom(dx, as);
-
-predicate float_opt_eq(var opt float: x, var opt float: y) =
-  deopt(x) = deopt(y) /\ occurs(x) = occurs(y);
-
-
 /** @group stdlib.optiontypes.float Weak addition. Return sum of \a x and \a y if both
 are present, otherwise return absent. */
 function var opt float: '~+'(var opt float: x, var opt float: y) ::promise_total =
@@ -418,65 +259,4 @@ function var bool: '~='(var opt float: x, var opt float: y) ::promise_total =
     absent(x) \/ absent(y) \/ deopt(x)=deopt(y);
 
 
-/** @group stdlib.optiontypes.float True iff both \a x and \a y are absent or
-  both are present and have the same value. */
-predicate float_eq(var opt float: x, var opt float: y) =
-     (absent(x) /\ absent(y))
-  \/ (occurs(x) /\ occurs(y) /\ (deopt(x)=deopt(y))::maybe_partial);
-
-/** @group stdlib.optiontypes.float True iff only one of \a x and \a y is absent or
-  both are present and have different values. */
-predicate float_ne(var opt float : x, var opt float : y) =
-     (absent(x) != absent(y))
-  \/ (occurs(x) /\ occurs(y) /\ (deopt(x)!=deopt(y))::maybe_partial);
-
-
-/** @group stdlib.optiontypes.float Return absent if \a idx is absent, otherwise return \a x[\a idx] */
-function var opt float: element(var opt int: idx, array[int] of var float: x) =
-  if absent(idx) then <> else element(deopt(idx),x) endif;
-
-/** @group stdlib.optiontypes.float Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
-function var opt float: element(var opt int: idx1, var opt int: idx2, array[int,int] of var float: x) =
-  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
-
-/** @group stdlib.optiontypes.float Return \a x[\a idx] */
-function var opt float: element(var int: idx, array[int] of var opt float: x) =
-  let {
-    var opt float: r;
-    constraint occurs(r) = element(idx,array1d(index_set(x),[occurs(x[i]) | i in index_set(x)]));
-    constraint deopt(r) = element(idx,array1d(index_set(x),[deopt(x[i]) | i in index_set(x)]));
-  } in r;
-
-/** @group stdlib.optiontypes.float Return \a x[\a idx1, \a idx2] */
-function var opt float: element(var int: idx1, var int: idx2, array[int,int] of var opt float: x) =
-  let {
-    var opt float: r;
-    constraint occurs(r) = element(idx1,idx2,
-      array2d(index_set_1of2(x),index_set_2of2(x),[occurs(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
-    constraint deopt(r) = element(idx1,idx2,
-      array2d(index_set_1of2(x),index_set_2of2(x),[deopt(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
-  } in r;
-
-/** @group stdlib.optiontypes.float Return absent if \a idx is absent, otherwise return \a x[\a idx] */
-function var opt float: element(var opt int: idx, array[int] of var opt float: x) =
-  if absent(idx) then <> else element(deopt(idx),x) endif;
-
-/** @group stdlib.optiontypes.float Return absent if \a idx1 or \a idx2 is absent, otherwise return \a x[\a idx1, \a idx2] */
-function var opt float: element(var opt int: idx1, var opt int: idx2, array[int,int] of var opt float: x) =
-  if absent(idx1) \/ absent(idx2) then <> else element(deopt(idx1),deopt(idx2),x) endif;
-
-/** @group stdlib.optiontypes.float Search annotation for optional float variables */
-annotation float_search(array[int] of var opt float: x, ann: a1, ann: a2, ann: a3) =
-  float_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],a1,a2,a3);
-
-/** @group stdlib.optiontypes.float Search annotation for optional float variables */
-annotation float_search(array[int] of var opt float: x, ann: a1, ann: a2) =
-  float_search([if occurs(x[i]) then deopt(x[i]) else 0 endif | i in index_set(x)],a1,a2);
-
-/* Internal function used to optimize over option type objective */
-
-function var float: objective_deopt_(var opt float: x, bool: direction) =
-  let {
-    float: worst = if direction then lb(x)-1 else ub(x)+1 endif;
-  } in if occurs(x) then deopt(x) else worst endif;
 
