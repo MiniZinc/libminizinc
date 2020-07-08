@@ -1,4 +1,4 @@
-/* A Bison parser, made by GNU Bison 3.7.  */
+/* A Bison parser, made by GNU Bison 3.7.1.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
@@ -49,7 +49,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "3.7"
+#define YYBISON_VERSION "3.7.1"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -780,36 +780,36 @@ static const yytype_int16 yyrline[] =
        0,   275,   275,   277,   279,   282,   291,   300,   309,   318,
      320,   323,   331,   340,   340,   342,   358,   362,   364,   366,
      367,   369,   371,   373,   375,   377,   380,   380,   380,   381,
-     381,   381,   381,   381,   382,   385,   409,   415,   422,   432,
-     444,   458,   475,   476,   480,   488,   489,   493,   497,   503,
-     505,   512,   517,   522,   529,   533,   541,   551,   558,   567,
-     579,   587,   588,   593,   594,   596,   601,   602,   606,   610,
-     615,   615,   618,   620,   624,   629,   633,   635,   639,   640,
-     646,   655,   658,   666,   674,   683,   692,   701,   714,   715,
-     719,   721,   723,   725,   727,   729,   731,   736,   742,   745,
-     747,   751,   753,   755,   764,   775,   778,   780,   786,   787,
-     789,   791,   793,   795,   804,   813,   815,   817,   819,   821,
-     823,   825,   827,   829,   831,   836,   841,   846,   851,   857,
-     859,   872,   873,   875,   877,   879,   881,   883,   885,   887,
-     889,   891,   893,   895,   897,   899,   901,   903,   905,   907,
-     909,   911,   920,   929,   931,   933,   935,   937,   939,   941,
-     943,   945,   947,   952,   957,   962,   967,   973,   975,   982,
-     994,   996,  1000,  1002,  1004,  1006,  1009,  1011,  1014,  1016,
-    1018,  1020,  1022,  1024,  1025,  1028,  1029,  1032,  1033,  1036,
-    1037,  1040,  1041,  1044,  1045,  1048,  1049,  1050,  1055,  1057,
-    1063,  1068,  1076,  1083,  1092,  1094,  1099,  1105,  1108,  1111,
-    1113,  1115,  1121,  1123,  1125,  1133,  1135,  1138,  1141,  1144,
-    1146,  1150,  1152,  1156,  1158,  1169,  1180,  1220,  1223,  1228,
-    1235,  1240,  1244,  1250,  1257,  1273,  1274,  1278,  1280,  1282,
-    1284,  1286,  1288,  1290,  1292,  1294,  1296,  1298,  1300,  1302,
-    1304,  1306,  1308,  1310,  1312,  1314,  1316,  1318,  1320,  1322,
-    1324,  1326,  1328,  1330,  1332,  1336,  1344,  1376,  1378,  1379,
-    1399,  1454,  1457,  1463,  1469,  1471,  1475,  1482,  1491,  1493,
-    1501,  1503,  1512,  1512,  1515,  1521,  1532,  1533,  1536,  1538,
-    1542,  1546,  1550,  1552,  1554,  1556,  1558,  1560,  1562,  1564,
-    1566,  1568,  1570,  1572,  1574,  1576,  1578,  1580,  1582,  1584,
-    1586,  1588,  1590,  1592,  1594,  1596,  1598,  1600,  1602,  1604,
-    1606,  1608
+     381,   381,   381,   381,   382,   385,   408,   414,   421,   431,
+     443,   457,   474,   475,   479,   487,   488,   492,   496,   502,
+     504,   511,   516,   521,   528,   532,   542,   554,   563,   574,
+     587,   597,   598,   603,   604,   606,   611,   612,   616,   620,
+     625,   625,   628,   630,   634,   639,   643,   645,   649,   650,
+     656,   665,   668,   676,   684,   693,   702,   711,   724,   725,
+     729,   731,   733,   735,   737,   739,   741,   746,   752,   755,
+     757,   761,   763,   765,   774,   785,   788,   790,   796,   797,
+     799,   801,   803,   805,   814,   823,   825,   827,   829,   831,
+     833,   835,   837,   839,   841,   846,   851,   856,   861,   867,
+     869,   882,   883,   885,   887,   889,   891,   893,   895,   897,
+     899,   901,   903,   905,   907,   909,   911,   913,   915,   917,
+     919,   921,   930,   939,   941,   943,   945,   947,   949,   951,
+     953,   955,   957,   962,   967,   972,   977,   983,   985,   992,
+    1004,  1006,  1010,  1012,  1014,  1016,  1019,  1021,  1024,  1026,
+    1028,  1030,  1032,  1034,  1035,  1038,  1039,  1042,  1043,  1046,
+    1047,  1050,  1051,  1054,  1055,  1058,  1059,  1060,  1065,  1067,
+    1073,  1078,  1086,  1093,  1102,  1104,  1109,  1115,  1118,  1121,
+    1123,  1125,  1131,  1133,  1135,  1143,  1145,  1148,  1151,  1154,
+    1156,  1160,  1162,  1166,  1168,  1179,  1190,  1230,  1233,  1238,
+    1245,  1250,  1254,  1260,  1267,  1283,  1284,  1288,  1290,  1292,
+    1294,  1296,  1298,  1300,  1302,  1304,  1306,  1308,  1310,  1312,
+    1314,  1316,  1318,  1320,  1322,  1324,  1326,  1328,  1330,  1332,
+    1334,  1336,  1338,  1340,  1342,  1346,  1354,  1386,  1388,  1389,
+    1409,  1464,  1467,  1473,  1479,  1481,  1485,  1492,  1501,  1503,
+    1511,  1513,  1522,  1522,  1525,  1531,  1542,  1543,  1546,  1548,
+    1552,  1556,  1560,  1562,  1564,  1566,  1568,  1570,  1572,  1574,
+    1576,  1578,  1580,  1582,  1584,  1586,  1588,  1590,  1592,  1594,
+    1596,  1598,  1600,  1602,  1604,  1606,  1608,  1610,  1612,  1614,
+    1616,  1618
 };
 #endif
 
@@ -3209,8 +3209,7 @@ yyreduce:
           string fbase = FileUtils::base_name(pp->filename);
           if (fpath=="")
             fpath="./";
-          ParseWorkItem pm(im, ii, fpath, (yyvsp[0].sValue));
-          pp->files.push_back(pm);
+          pp->files.emplace_back(im, ii, fpath, (yyvsp[0].sValue), pp->isSTDLib);
           ii->m(im);
           pp->seenModels.insert(pair<string,Model*>((yyvsp[0].sValue),im));
         } else {
@@ -3369,8 +3368,10 @@ yyreduce:
     break;
 
   case 55: /* predicate_item: "predicate" "identifier" params annotations operation_item_tail  */
-      { if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),new TypeInst((yyloc),
-                                   Type::varbool()),*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression));
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),new TypeInst((yyloc),
+                                   Type::varbool()),*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression),pp->isSTDLib);
         if ((yyval.item) && (yyvsp[-1].expression_v)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expression_v));
         free((yyvsp[-3].sValue));
         delete (yyvsp[-2].vardeclexpr_v);
@@ -3379,8 +3380,10 @@ yyreduce:
     break;
 
   case 56: /* predicate_item: "test" "identifier" params annotations operation_item_tail  */
-      { if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),new TypeInst((yyloc),
-                                   Type::parbool()),*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression));
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),new TypeInst((yyloc),
+                                   Type::parbool()),*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression),pp->isSTDLib);
         if ((yyval.item) && (yyvsp[-1].expression_v)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expression_v));
         free((yyvsp[-3].sValue));
         delete (yyvsp[-2].vardeclexpr_v);
@@ -3389,7 +3392,9 @@ yyreduce:
     break;
 
   case 57: /* function_item: "function" ti_expr ':' id_or_quoted_op params annotations operation_item_tail  */
-      { if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),(yyvsp[-5].tiexpr),*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression));
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),(yyvsp[-5].tiexpr),*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression),pp->isSTDLib);
         if ((yyval.item) && (yyvsp[-1].expression_v)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expression_v));
         free((yyvsp[-3].sValue));
         delete (yyvsp[-2].vardeclexpr_v);
@@ -3398,7 +3403,9 @@ yyreduce:
     break;
 
   case 58: /* function_item: ti_expr ':' "identifier" '(' params_list ')' annotations operation_item_tail  */
-      { if ((yyvsp[-3].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-5].sValue),(yyvsp[-7].tiexpr),*(yyvsp[-3].vardeclexpr_v),(yyvsp[0].expression));
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        if ((yyvsp[-3].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-5].sValue),(yyvsp[-7].tiexpr),*(yyvsp[-3].vardeclexpr_v),(yyvsp[0].expression),pp->isSTDLib);
         if ((yyval.item) && (yyvsp[-1].expression_v)) (yyval.item)->cast<FunctionI>()->ann().add(*(yyvsp[-1].expression_v));
         free((yyvsp[-5].sValue));
         delete (yyvsp[-3].vardeclexpr_v);
@@ -3408,12 +3415,13 @@ yyreduce:
 
   case 59: /* annotation_item: "annotation" "identifier" params  */
       {
+        ParserState* pp = static_cast<ParserState*>(parm);
         TypeInst* ti=new TypeInst((yylsp[-2]),Type::ann());
         if ((yyvsp[0].vardeclexpr_v)==NULL || (yyvsp[0].vardeclexpr_v)->empty()) {
           VarDecl* vd = new VarDecl((yyloc),ti,(yyvsp[-1].sValue));
           (yyval.item) = new VarDeclI((yyloc),vd);
         } else {
-          (yyval.item) = new FunctionI((yyloc),(yyvsp[-1].sValue),ti,*(yyvsp[0].vardeclexpr_v),NULL);
+          (yyval.item) = new FunctionI((yyloc),(yyvsp[-1].sValue),ti,*(yyvsp[0].vardeclexpr_v),NULL,pp->isSTDLib);
         }
         free((yyvsp[-1].sValue));
         delete (yyvsp[0].vardeclexpr_v);
@@ -3421,8 +3429,10 @@ yyreduce:
     break;
 
   case 60: /* annotation_item: "annotation" "identifier" params "=" expr  */
-      { TypeInst* ti=new TypeInst((yylsp[-4]),Type::ann());
-        if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),ti,*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression));
+      {
+        ParserState* pp = static_cast<ParserState*>(parm);
+        TypeInst* ti=new TypeInst((yylsp[-4]),Type::ann());
+        if ((yyvsp[-2].vardeclexpr_v)) (yyval.item) = new FunctionI((yyloc),(yyvsp[-3].sValue),ti,*(yyvsp[-2].vardeclexpr_v),(yyvsp[0].expression),pp->isSTDLib);
         delete (yyvsp[-2].vardeclexpr_v);
       }
     break;
