@@ -310,7 +310,7 @@ namespace MiniZinc { namespace FileUtils {
       if (mypath[i]=='/' || mypath[i]=='\\')
         depth++;
     for (int i=0; i<=depth; i++) {
-      if (FileUtils::file_exists(mypath+"/share/minizinc/std/builtins.mzn"))
+      if (FileUtils::file_exists(mypath+"/share/minizinc/std/stdlib.mzn"))
         return mypath+"/share/minizinc";
       mypath += "/..";
     }

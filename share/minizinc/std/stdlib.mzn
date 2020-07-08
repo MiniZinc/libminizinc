@@ -37,7 +37,6 @@ include "redefinitions-2.3.3.mzn";
 include "stdlib_language.mzn";
 include "stdlib_ann.mzn";
 include "stdlib_opt.mzn";
-include "stdlib_options.mzn";
 include "stdlib_compare.mzn";
 include "stdlib_math.mzn";
 include "stdlib_logic.mzn";
