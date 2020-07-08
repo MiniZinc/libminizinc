@@ -180,11 +180,16 @@ namespace MiniZinc {
               }
             }
           } while (!done);
-          if (cur->isa<Id>()) {
-            return cur;
-          } else {
+          if (!cur->isa<Id>()) {
             return copy(env,m,cur,false);
           }
+          Id* curId = cur->cast<Id>();
+          if (id->decl()) {
+            if (Expression* cached = m.find(id->decl())) {
+              return cached->cast<VarDecl>()->id();
+            }
+          }
+          return curId;
         } else {
           Id* c;
           if (id->decl()) {
@@ -288,8 +293,11 @@ namespace MiniZinc {
 
         for (int i=0; i<c->n_generators(); i++) {
           std::vector<VarDecl*> vv;
-          for (int j=0; j<c->n_decls(i); j++)
+          for (int j=0; j<c->n_decls(i); j++) {
             vv.push_back(static_cast<VarDecl*>(copy(env,m,c->decl(i,j),followIds,copyFundecls,isFlatModel)));
+            // Comprehension VarDecl should not be assigned to a particular value when copying the full comprehension
+            assert(!c->decl(i,j)->e());
+          }
           g._g.push_back(Generator(vv,copy(env,m,c->in(i),followIds,copyFundecls,isFlatModel),
                                    copy(env,m,c->where(i),followIds,copyFundecls,isFlatModel)));
         }

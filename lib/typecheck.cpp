@@ -1418,11 +1418,9 @@ namespace MiniZinc {
                           +ty_in.toString(_env)+"'");
         }
         Type ty_id;
-        bool needIntLit = false;
         if (ty_in.dim()==0) {
           ty_id = Type::parint();
           ty_id.enumId(ty_in.enumId());
-          needIntLit = true;
         } else {
           ty_id = ty_in;
           if (ty_in.enumId() != 0) {
@@ -1432,10 +1430,6 @@ namespace MiniZinc {
           ty_id.dim(0);
         }
         for (int j=0; j<c.n_decls(gen_i); j++) {
-          if (needIntLit) {
-            GCLock lock;
-            c.decl(gen_i,j)->e(IntLit::aEnum(0,ty_id.enumId()));
-          }
           c.decl(gen_i,j)->type(ty_id);
           c.decl(gen_i,j)->ti()->type(ty_id);
         }
