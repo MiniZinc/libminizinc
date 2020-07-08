@@ -1,4 +1,4 @@
-/* -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*- */
+td* -*- mode: C++; c-basic-offset: 2; indent-tabs-mode: nil -*- */
 
 /*
  *  Main authors:
@@ -126,7 +126,9 @@ namespace MiniZinc {
     }
     
     {
-      std::string libname = isFlatZinc ? "flatzinc_builtins.mzn" : "stdlib.mzn";
+      // TODO: It should be possible to use just flatzinc builtins instead of stdlib when parsing FlatZinc
+      /* std::string libname = isFlatZinc ? "flatzinc_builtins.mzn" : "stdlib.mzn"; */
+      std::string libname = "stdlib.mzn";
       GCLock lock;
       Model* stdlib = new Model;
       stdlib->setFilename(libname);
