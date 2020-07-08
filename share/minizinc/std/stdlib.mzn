@@ -34,23 +34,23 @@ include "redefinitions-2.3.3.mzn";
 
 */
 
-include "stdlib_language.mzn";
-include "stdlib_ann.mzn";
-include "stdlib_opt.mzn";
-include "stdlib_compare.mzn";
-include "stdlib_math.mzn";
-include "stdlib_logic.mzn";
-include "stdlib_set.mzn";
-include "stdlib_ite.mzn";
-include "stdlib_array.mzn";
-include "stdlib_sort.mzn";
-include "stdlib_coercion.mzn";
-include "stdlib_string.mzn";
-include "stdlib_reflect.mzn";
-include "stdlib_debug.mzn";
-include "stdlib_enum.mzn";
-include "stdlib_random.mzn";
+include "stdlib/stdlib_language.mzn";
+include "stdlib/stdlib_ann.mzn";
+include "stdlib/stdlib_opt.mzn";
+include "stdlib/stdlib_compare.mzn";
+include "stdlib/stdlib_math.mzn";
+include "stdlib/stdlib_logic.mzn";
+include "stdlib/stdlib_set.mzn";
+include "stdlib/stdlib_ite.mzn";
+include "stdlib/stdlib_array.mzn";
+include "stdlib/stdlib_sort.mzn";
+include "stdlib/stdlib_coercion.mzn";
+include "stdlib/stdlib_string.mzn";
+include "stdlib/stdlib_reflect.mzn";
+include "stdlib/stdlib_debug.mzn";
+include "stdlib/stdlib_enum.mzn";
+include "stdlib/stdlib_random.mzn";
 
 % Undocumented internal implementation used during compilation
-include "stdlib_internal.mzn";
+include "stdlib/stdlib_internal.mzn";
 
