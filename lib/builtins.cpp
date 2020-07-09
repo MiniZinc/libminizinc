@@ -1329,7 +1329,7 @@ namespace MiniZinc {
     return false;
   }
 
-  bool b_annotated(EnvI& env, Call* call) {
+  bool b_annotate(EnvI& env, Call* call) {
     assert(call->n_args()==2);
     Expression* expr = call->arg(0);
     if (!expr->isa<Id>()) {
@@ -3093,25 +3093,21 @@ namespace MiniZinc {
       setoftop.ot(Type::OT_PRESENT);
       t[0] = setoftop;
       rb(env, m, ASTString("has_ann"), t, b_has_ann);
-      /* t[0] = Type::optvartop(-1); */
-      /* rb(env, m, ASTString("has_ann"), t, b_has_ann); */
     }
     {
       std::vector<Type> t(2);
       t[0] = Type::optvartop();
       t[1] = Type::ann();
-      rb(env, m, ASTString("annotated"), t, b_annotated);
+      rb(env, m, ASTString("annotate"), t, b_annotate);
       t[0] = Type::varsetint();
-      rb(env, m, ASTString("annotated"), t, b_annotated);
+      rb(env, m, ASTString("annotate"), t, b_annotate);
       Type setoftop;
       setoftop.bt(Type::BT_TOP);
       setoftop.st(Type::ST_SET);
       setoftop.ti(Type::TI_PAR);
       setoftop.ot(Type::OT_PRESENT);
       t[0] = setoftop;
-      rb(env, m, ASTString("annotated"), t, b_annotated);
-      /* t[0] = Type::optvartop(-1); */
-      /* rb(env, m, ASTString("annotated"), t, b_annotated); */
+      rb(env, m, ASTString("annotate"), t, b_annotate);
     }
     {
       std::vector<Type> t(1);

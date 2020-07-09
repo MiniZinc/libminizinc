@@ -103,14 +103,12 @@ function bool: has_ann(var set of $T: x, ann: a);
 function bool: has_ann(var set of int: x, ann: a);
 
 /** @group stdlib.reflect Annotate declaration of \a x with annotation \a a */
-function bool: annotated(var opt $T: x, ann: a);
+function bool: annotate(var opt $T: x, ann: a);
 /** @group stdlib.reflect Annotate declaration of \a x with annotation \a a */
-function bool: annotated(set of $T: x, ann: a);
+function bool: annotate(set of $T: x, ann: a);
 /** @group stdlib.reflect Annotate declaration of \a x with annotation \a a */
-function bool: annotated(var set of int: x, ann: a);
-
+function bool: annotate(var set of int: x, ann: a);
 
 /** @group stdlib.reflect Test if \a x and \a y are the same variable */
 function bool: is_same(var opt $T: x, var opt $U: y);
-
 
