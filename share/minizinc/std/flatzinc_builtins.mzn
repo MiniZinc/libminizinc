@@ -7,7 +7,7 @@
 %  solver globals library.
 %
 
-include "stdlib_ann.mzn";
+include "stdlib/stdlib_ann.mzn";
 
 /***
   @groupdef flatzinc FlatZinc builtins
