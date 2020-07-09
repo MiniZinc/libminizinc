@@ -16,13 +16,13 @@ namespace MiniZinc {
 #ifdef _WIN32
 	std::exception_ptr winExceptions[2];
 
-  void TimeOut(HANDLE hProcess, bool* doneStdout, bool* doneStderr, int timeout, std::timed_mutex* mtx) {
+  void TimeOut(HANDLE hJobObject, bool* doneStdout, bool* doneStderr, int timeout, std::timed_mutex* mtx) {
     if (timeout > 0) {
       if (!mtx->try_lock_for(std::chrono::milliseconds(timeout))) {
         if ( (!*doneStdout) || (!*doneStderr) ) {
           *doneStdout = true;
           *doneStderr = true;
-          TerminateProcess(hProcess,0);
+          TerminateJobObject(hJobObject, 0);
         }
       }
     }

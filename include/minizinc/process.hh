@@ -87,7 +87,7 @@ namespace MiniZinc {
     }
   }
 
-  void TimeOut(HANDLE hProcess, bool* doneStdout, bool* doneStderr, int timeout, std::timed_mutex* mtx);
+  void TimeOut(HANDLE hJobObject, bool* doneStdout, bool* doneStderr, int timeout, std::timed_mutex* mtx);
 
 #endif
 
@@ -169,6 +169,8 @@ namespace MiniZinc {
       std::string cmdline = FileUtils::combineCmdLine(_fzncmd);
       wchar_t* cmdstr = _wcsdup(FileUtils::utf8ToWide(cmdline).c_str());
 
+      HANDLE hJobObject = CreateJobObject(NULL, NULL);
+
       BOOL processStarted = CreateProcessW(NULL,
         cmdstr,        // command line
         NULL,          // process security attributes
@@ -184,6 +186,11 @@ namespace MiniZinc {
         std::stringstream ssm;
         ssm << "Error occurred when executing FZN solver with command \"" << FileUtils::wideToUtf8(cmdstr) << "\".";
         throw InternalError(ssm.str());
+      }
+
+      BOOL assignedToJob = AssignProcessToJobObject(hJobObject, piProcInfo.hProcess);
+      if (!assignedToJob) {
+        throw InternalError("Failed to assign process to job.");
       }
 
       CloseHandle(piProcInfo.hThread);
@@ -208,7 +215,7 @@ namespace MiniZinc {
       terminateMutex.lock();
       thread thrStdout(&ReadPipePrint<S2O>, g_hChildStd_OUT_Rd, &doneStdout, nullptr, &outputQueue, &pipeMutex, &cv_mutex, &cv);
       thread thrStderr(&ReadPipePrint<S2O>, g_hChildStd_ERR_Rd, &doneStderr, &pS2Out->getLog(), nullptr, &pipeMutex, nullptr, nullptr);
-      thread thrTimeout(TimeOut, piProcInfo.hProcess, &doneStdout, &doneStderr, timelimit, &terminateMutex);
+      thread thrTimeout(TimeOut, hJobObject, &doneStdout, &doneStderr, timelimit, &terminateMutex);
 
       while (true) {
         std::unique_lock<std::mutex> lk(cv_mutex);
@@ -219,7 +226,7 @@ namespace MiniZinc {
             outputQueue.pop_front();
           }
           catch (...) {
-            TerminateProcess(piProcInfo.hProcess, 0);
+            TerminateJobObject(hJobObject, 0);
             doneStdout = true;
             doneStderr = true;
             lk.unlock();
