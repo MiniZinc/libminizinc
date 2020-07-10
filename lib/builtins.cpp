@@ -1320,7 +1320,12 @@ namespace MiniZinc {
     Expression* expr = call->arg(0);
     if (!expr->isa<Id>()) {
       // Argument is a literal, unable to annotate
-      return false;
+      std::ostringstream ss;
+      ss << "Unable to annotate literal expression `"
+         << *expr
+         << "'.";
+      env.addWarning(ss.str());
+      return true;
     }
     expr = follow_id_to_decl(expr);
     Expression* ann = call->arg(1);
