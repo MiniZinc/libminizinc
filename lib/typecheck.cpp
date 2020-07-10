@@ -1259,7 +1259,7 @@ namespace MiniZinc {
       genMap_t generatorMap;
       whereMap_t whereMap;
       int declCount = 0;
-      bool didMoveWheres = false;
+
       for (int i=0; i<c.n_generators(); i++) {
         for (int j=0; j<c.n_decls(i); j++) {
           generatorMap[c.decl(i,j)] = std::pair<int,int>(i,declCount++);
@@ -1336,10 +1336,6 @@ namespace MiniZinc {
               } flg(generatorMap,&c);
               topDown(flg, wp);
               whereMap[flg.decl].push_back(wp);
-              
-              if (flg.decl_idx < declCount-1)
-                didMoveWheres = true;
-              
             }
           }
         } else {
@@ -1348,12 +1344,14 @@ namespace MiniZinc {
         }
       }
       
-      if (didMoveWheres) {
+      {
+        GCLock lock;
         Generators generators;
         for (int i=0; i<c.n_generators(); i++) {
           std::vector<VarDecl*> decls;
           for (int j=0; j<c.n_decls(i); j++) {
             decls.push_back(c.decl(i,j));
+            KeepAlive c_in = addCoercion(_env, _model, c.in(i), c.in(i)->type());
             if (whereMap[c.decl(i,j)].size() != 0) {
               // need a generator for all the decls up to this point
               Expression* whereExpr = whereMap[c.decl(i,j)][0];
@@ -1364,15 +1362,14 @@ namespace MiniZinc {
                 bo->type(bo_t);
                 whereExpr = bo;
               }
-              generators._g.push_back(Generator(decls,c.in(i),whereExpr));
+              generators._g.push_back(Generator(decls,c_in(),whereExpr));
               decls.clear();
             } else if (j==c.n_decls(i)-1) {
-              generators._g.push_back(Generator(decls,c.in(i),NULL));
+              generators._g.push_back(Generator(decls,c_in(),NULL));
               decls.clear();
             }
           }
         }
-        GCLock lock;
         c.init(c.e(), generators);
       }
       
