@@ -265,7 +265,11 @@ namespace MiniZinc {
             in = new SetLit(Location(),eval_intset(env, e->in(0)));
           }
         } else {
-          in = eval_array_lit(env, e->in(0));
+          if (e->in(0)->type().isvar()) {
+            in = eval_array_lit(env, eval.flatten(env, e->in(0)));
+          } else {
+            in = eval_array_lit(env, e->in(0));
+          }
         }
       }
       if (e->in(0)->type().dim()==0) {
