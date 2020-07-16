@@ -281,6 +281,9 @@ namespace MiniZinc {
         sigfillset(&sa.sa_mask);
         sigaction(SIGINT, &sa, &old_sa_int);
         sigaction(SIGTERM, &sa, &old_sa_term);
+        int signal = sigint ? SIGINT : SIGTERM;
+        bool handledInterrupt = false;
+        bool handledTerm = false;
         
         bool done = hadTerm || hadInterrupt;
         bool timed_out = false;
@@ -294,6 +297,28 @@ namespace MiniZinc {
               throw InternalError(std::string("Error in communication with solver: ")+strerror(errno));
             }
           }
+          bool timeoutImmediately = false;
+          if (hadInterrupt && !handledInterrupt) {
+            signal = SIGINT;
+            handledInterrupt = true;
+            timeoutImmediately = true;
+          }
+          if (hadTerm && !handledTerm) {
+            signal = SIGTERM;
+            handledTerm = true;
+            timeoutImmediately = true;
+          }
+          if (timeoutImmediately) {
+            // Set timeout to immediately expire
+            timelimit = -1;
+            timeout.tv_sec = 0;
+            timeout.tv_usec = 0;
+            timeout_orig = timeout;
+            timeval currentTime;
+            gettimeofday(&currentTime, NULL);
+            starttime = currentTime;
+          }
+
           bool killed = false;
           if (timelimit!=0) {
             timeval currentTime;
@@ -319,20 +344,22 @@ namespace MiniZinc {
               timeout.tv_usec = 0;
               timeout.tv_sec = 0;
             }
-            if(hadTerm || hadInterrupt || timeout.tv_sec < 0 || (timeout.tv_sec==0 && timeout.tv_usec == 0)) {
+            if (timeout.tv_sec < 0 || (timeout.tv_sec == 0 && timeout.tv_usec == 0)) {
               timed_out = true;
-              if(sigint) {
-                kill(childPID, SIGINT);
-                timeout.tv_sec = 0;
-                timeout.tv_usec = 200000;
-                timeout_orig = timeout;
-                starttime = currentTime;
-                sigint = false;
-              } else {
-                kill(childPID, SIGTERM);
+              if (signal == SIGKILL) {
                 killed = true;
                 done = true;
               }
+              if (killpg(childPID, signal) == -1) {
+                // Fallback to killing the child if killing the process group fails
+                kill(childPID, signal);
+              }
+              timeout.tv_sec = 0;
+              timeout.tv_usec = 200000;
+              timeout_orig = timeout;
+              starttime = currentTime;
+              // Upgrade signal for next attempt
+              signal = signal == SIGINT ? SIGTERM : SIGKILL;
             }
           }
 
@@ -386,6 +413,9 @@ namespace MiniZinc {
         return exitStatus;
       }
       else {
+        if (setpgid(0, 0) == -1) {
+          throw InternalError("Failed to set pgid of subprocess");
+        }
         close(STDOUT_FILENO);
         close(STDERR_FILENO);
         close(STDIN_FILENO);
