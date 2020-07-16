@@ -49,7 +49,6 @@ add_library(mzn
   lib/passes/compile_pass.cpp
   lib/pathfileprinter.cpp
   lib/prettyprinter.cpp
-  lib/process.cpp
   lib/solns2out.cpp
   lib/solver.cpp
   lib/solver_config.cpp

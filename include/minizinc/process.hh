@@ -86,9 +86,6 @@ namespace MiniZinc {
       }
     }
   }
-
-  void TimeOut(HANDLE hJobObject, bool* doneStdout, bool* doneStderr, int timeout, std::timed_mutex* mtx);
-
 #endif
 
   template<class S2O>
@@ -98,16 +95,31 @@ namespace MiniZinc {
     S2O* pS2Out;
     int timelimit;
     bool sigint;
-#ifndef _WIN32
+#ifdef _WIN32
+    static BOOL WINAPI handleInterrupt(DWORD fdwCtrlType) {
+      switch (fdwCtrlType) {
+        case CTRL_C_EVENT: {
+          std::unique_lock<std::mutex> lck(i_mtx);
+          hadInterrupt = true;
+          i_cv.notify_all();
+          return TRUE;
+        }
+        default:
+          return FALSE;
+      }
+    }
+    static std::mutex i_mtx;
+    static std::condition_variable i_cv;
+#else
     static void handleInterrupt(int signal) {
       if (signal==SIGINT)
         hadInterrupt = true;
       else
         hadTerm = true;
     }
-    static bool hadInterrupt;
     static bool hadTerm;
 #endif
+    static bool hadInterrupt;
   public:
     Process(std::vector<std::string>& fzncmd, S2O* pso, int tl, bool si)
       : _fzncmd(fzncmd), pS2Out(pso), timelimit(tl), sigint(si) {
@@ -115,7 +127,7 @@ namespace MiniZinc {
     }
     int run(void) {
 #ifdef _WIN32
-      //TODO: implement hard timelimits for windows
+      SetConsoleCtrlHandler(handleInterrupt, TRUE);
 
       SECURITY_ATTRIBUTES saAttr;
       saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
@@ -206,16 +218,35 @@ namespace MiniZinc {
 
       // Threaded solution seems simpler than asyncronous pipe reading
       std::mutex pipeMutex;
-      std::timed_mutex terminateMutex;
 
       std::mutex cv_mutex;
       std::condition_variable cv;
 
       std::deque<std::string> outputQueue;
-      terminateMutex.lock();
       thread thrStdout(&ReadPipePrint<S2O>, g_hChildStd_OUT_Rd, &doneStdout, nullptr, &outputQueue, &pipeMutex, &cv_mutex, &cv);
       thread thrStderr(&ReadPipePrint<S2O>, g_hChildStd_ERR_Rd, &doneStderr, &pS2Out->getLog(), nullptr, &pipeMutex, nullptr, nullptr);
-      thread thrTimeout(TimeOut, hJobObject, &doneStdout, &doneStderr, timelimit, &terminateMutex);
+      thread thrTimeout([&] {
+        auto shouldStop = [&] { return hadInterrupt || (doneStderr && doneStdout); };
+        std::unique_lock<std::mutex> lck(i_mtx);
+        if (timelimit != 0) {
+          if (!i_cv.wait_for(lck, std::chrono::milliseconds(timelimit), shouldStop)) {
+            // If we timed out, generate an interrupt but ignore it ourselves
+            bool oldHadInterrupt = hadInterrupt;
+            GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0);
+            i_cv.wait(lck, [&] { return hadInterrupt; });
+            hadInterrupt = oldHadInterrupt;
+          }
+        } else {
+          i_cv.wait(lck, shouldStop);
+        }
+        // At this point the child should be stopped/stopping
+        if (!doneStderr || !doneStdout) {
+          if (!i_cv.wait_for(lck, std::chrono::milliseconds(200), [&] { return doneStderr && doneStdout; })) {
+            // Force terminate the child after 200ms
+            TerminateJobObject(hJobObject, 0);
+          };
+        }
+      });
 
       while (true) {
         std::unique_lock<std::mutex> lk(cv_mutex);
@@ -232,8 +263,13 @@ namespace MiniZinc {
             lk.unlock();
             thrStdout.join();
             thrStderr.join();
-            terminateMutex.unlock();
+            {
+              // Make sure thrTimeout terminates
+              std::unique_lock<std::mutex> lck(i_mtx);
+              i_cv.notify_all();
+            }
             thrTimeout.join();
+            SetConsoleCtrlHandler(handleInterrupt, FALSE);
             std::rethrow_exception(std::current_exception());
           }
         }
@@ -243,7 +279,11 @@ namespace MiniZinc {
 
       thrStdout.join();
       thrStderr.join();
-      terminateMutex.unlock();
+      {
+        // Make sure thrTimeout terminates
+        std::unique_lock<std::mutex> lck(i_mtx);
+        i_cv.notify_all();
+      }
       thrTimeout.join();
       DWORD exitCode = 0;
       if (GetExitCodeProcess(piProcInfo.hProcess, &exitCode) == FALSE) {
@@ -251,8 +291,11 @@ namespace MiniZinc {
       }
       CloseHandle(piProcInfo.hProcess);
 
-      // Hard timeout: GenerateConsoleCtrlEvent()
-
+      SetConsoleCtrlHandler(handleInterrupt, FALSE);
+      if (hadInterrupt) {
+        // Re-trigger signal if it was not caused by our own timeout
+        GenerateConsoleCtrlEvent(CTRL_C_EVENT, 0);
+      }
       return exitCode;
     }
 #else
@@ -459,8 +502,11 @@ namespace MiniZinc {
 #endif
   };
 
-#ifndef _WIN32
   template<class S2O> bool Process<S2O>::hadInterrupt;
+#ifdef _WIN32
+  template<class S2O> std::mutex Process<S2O>::i_mtx;
+  template<class S2O> std::condition_variable Process<S2O>::i_cv;
+#else
   template<class S2O> bool Process<S2O>::hadTerm;
 #endif
                   
