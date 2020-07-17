@@ -32,7 +32,10 @@ using namespace std;
 using namespace MiniZinc;
 
 #ifdef _WIN32
+#include <minizinc/interrupt.hh>
+
 int wmain(int argc, wchar_t *argv[], wchar_t *envp[]) {
+  InterruptListener::run();
 #else
 int main(int argc, const char** argv) {
 #endif

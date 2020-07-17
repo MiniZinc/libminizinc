@@ -79,6 +79,7 @@ add_library(mzn
   include/minizinc/gc.hh
   include/minizinc/hash.hh
   include/minizinc/htmlprinter.hh
+  include/minizinc/interrupt.hh
   include/minizinc/iter.hh
   include/minizinc/json_parser.hh
   include/minizinc/model.hh
