@@ -23,6 +23,7 @@
 #include <minizinc/builtins.hh>
 #include <minizinc/flatten_internal.hh>
 #include <minizinc/timer.hh>
+#include <minizinc/prettyprinter.hh>
 
 #include <minizinc/MIPdomains.hh>
 
@@ -51,7 +52,7 @@ namespace MiniZinc {
     vector<string> include_names;
     for(Item* item : *m) {
       if(IncludeI* inc = item->dyn_cast<IncludeI>()) {
-        include_names.push_back(inc->f().str());
+        include_names.push_back(inc->m()->filepath().str());
       } else {
         new_mod->addItem(copy(e.envi(),cm,item));
       }
@@ -59,7 +60,7 @@ namespace MiniZinc {
 
     std::stringstream ss;
     for(auto& name : include_names)
-      ss << "include \""<< name << "\";";
+      ss << "include \""<< Printer::escapeStringLit(name) << "\";";
 
     vector<SyntaxError> syntax_errors;
     Env* fenv = new Env(new_mod);
