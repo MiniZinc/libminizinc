@@ -810,12 +810,15 @@ namespace MiniZinc {
     while (!toRemove.empty()) {
       VarDecl* cur = toRemove.back(); toRemove.pop_back();
       assert(vo.occurrences(cur) == 0 && CollectDecls::varIsFree(cur));
-      if (!isOutput(cur)) {
-        IdMap<int>::iterator cur_idx = vo.idx.find(cur->id());
-        if (cur_idx != vo.idx.end() && !flat[cur_idx->second]->removed()) {
-          CollectDecls cd(vo, toRemove, flat[cur_idx->second]->cast<VarDeclI>());
-          topDown(cd,cur->e());
-          flat[cur_idx->second]->remove();
+
+      IdMap<int>::iterator cur_idx = vo.idx.find(cur->id());
+      if (cur_idx != vo.idx.end()) {
+        VarDeclI* vdi = flat[cur_idx->second]->cast<VarDeclI>();
+
+        if (!isOutput(vdi->e()) && !vdi->removed()) {
+          CollectDecls cd(vo, toRemove, vdi);
+          topDown(cd, vdi->e()->e());
+          vdi->remove();
         }
       }
     }
@@ -3353,13 +3356,14 @@ namespace MiniZinc {
                   // because they are not used by nc
                   while (!toRemove.empty()) {
                     VarDecl* cur = toRemove.back(); toRemove.pop_back();
-                    if (env.vo.occurrences(cur) == 0 && !isOutput(cur)) {
-                      if (CollectDecls::varIsFree(cur)) {
-                        IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
-                        if (cur_idx != env.vo.idx.end() && !m[cur_idx->second]->removed()) {
-                          CollectDecls cd(env.vo, toRemove, m[cur_idx->second]->cast<VarDeclI>());
-                          topDown(cd,cur->e());
-                          m[cur_idx->second]->remove();
+                    if (env.vo.occurrences(cur) == 0 && CollectDecls::varIsFree(cur)) {
+                      IdMap<int>::iterator cur_idx = env.vo.idx.find(cur->id());
+                      if (cur_idx != env.vo.idx.end()) {
+                        VarDeclI* vdi = m[cur_idx->second]->cast<VarDeclI>();
+                        if (!isOutput(cur) && !m[cur_idx->second]->removed()) {
+                          CollectDecls cd(env.vo, toRemove, vdi);
+                          topDown(cd, vdi->e()->e());
+                          vdi->remove();
                         }
                       }
                     }
