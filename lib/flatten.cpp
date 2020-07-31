@@ -1270,7 +1270,7 @@ namespace MiniZinc {
             break;
           case Expression::E_ID:
             if (isCompIter) {
-              if (e->cast<Id>()->decl()->e()->type().ispar())
+              if (e->cast<Id>()->decl()->e() && e->cast<Id>()->decl()->e()->type().ispar())
                 os << *e << " = " << *e->cast<Id>()->decl()->e() << std::endl;
               else
                 os << *e << " = <expression>" << std::endl;
