@@ -1351,7 +1351,7 @@ namespace MiniZinc {
           std::vector<VarDecl*> decls;
           for (int j=0; j<c.n_decls(i); j++) {
             decls.push_back(c.decl(i,j));
-            KeepAlive c_in = addCoercion(_env, _model, c.in(i), c.in(i)->type());
+            KeepAlive c_in = c.in(i) ? addCoercion(_env, _model, c.in(i), c.in(i)->type()) : nullptr;
             if (whereMap[c.decl(i,j)].size() != 0) {
               // need a generator for all the decls up to this point
               Expression* whereExpr = whereMap[c.decl(i,j)][0];
