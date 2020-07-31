@@ -1208,7 +1208,7 @@ namespace MiniZinc {
       if (&id == constants().absent)
         return new StringDocument("<>");
       if (id.idn()==-1)
-        return new StringDocument(id.v().str());
+        return new StringDocument(std::string(id.v().c_str(), id.v().size()));
       else {
         std::ostringstream oss;
         oss << "X_INTRODUCED_" << id.idn() << "_";
@@ -1216,7 +1216,9 @@ namespace MiniZinc {
       }
     }
     ret mapTIId(const TIId& id) {
-      return new StringDocument("$"+id.v().str());
+      std::ostringstream ss;
+      ss << "$" << id.v();
+      return new StringDocument(ss.str());
     }
     ret mapAnonVar(const AnonVar&) {
       return new StringDocument("_");
@@ -1286,7 +1288,7 @@ namespace MiniZinc {
         DocumentList* gen = new DocumentList("", "", "");
         DocumentList* idents = new DocumentList("", ", ", "");
         for (int j = 0; j < c.n_decls(i); j++) {
-          idents->addStringToList(c.decl(i, j)->id()->v().str());
+          idents->addStringToList(std::string(c.decl(i, j)->id()->v().c_str(), c.decl(i, j)->id()->v().size()));
         }
         gen->addDocumentToList(idents);
         if (c.in(i)==NULL) {
@@ -1497,7 +1499,7 @@ namespace MiniZinc {
           const Comprehension* com = e->cast<Comprehension>();
           if (!com->set()) {
             DocumentList* dl = new DocumentList("", " ", "");
-            dl->addStringToList(c.id().str());
+            dl->addStringToList(std::string(c.id().c_str(), c.id().size()));
             DocumentList* args = new DocumentList("", " ", "", false);
             DocumentList* generators = new DocumentList("", ", ", "");
 
@@ -1505,8 +1507,7 @@ namespace MiniZinc {
               DocumentList* gen = new DocumentList("", "", "");
               DocumentList* idents = new DocumentList("", ", ", "");
               for (int j = 0; j<com->n_decls(i); j++) {
-                idents->addStringToList(
-                  com->decl(i,j)->id()->v().str());
+                idents->addStringToList(std::string(com->decl(i,j)->id()->v().c_str(), com->decl(i,j)->id()->v().size()));
               }
               gen->addDocumentToList(idents);
               if (com->in(i) == NULL) {
@@ -1540,8 +1541,9 @@ namespace MiniZinc {
         }
 
       }
-      std::string beg = c.id().str() + "(";
-      DocumentList* dl = new DocumentList(beg, ", ", ")");
+      std::ostringstream beg;
+      beg << c.id() << "(";
+      DocumentList* dl = new DocumentList(beg.str(), ", ", ")");
       for (unsigned int i = 0; i < c.n_args(); i++) {
         dl->addDocumentToList(expressionToDocument(c.arg(i)));
       }
@@ -1555,7 +1557,7 @@ namespace MiniZinc {
       dl->addDocumentToList(expressionToDocument(vd.ti()));
       dl->addStringToList(": ");
       if (vd.id()->idn()==-1) {
-        dl->addStringToList(vd.id()->v().str());
+        dl->addStringToList(std::string(vd.id()->v().c_str(), vd.id()->v().c_str()));
       } else {
         std::ostringstream oss;
         oss << "X_INTRODUCED_" << vd.id()->idn() << "_";
@@ -1663,7 +1665,7 @@ namespace MiniZinc {
     }
     ret mapAssignI(const AssignI& ai) {
       DocumentList* dl = new DocumentList("", " = ", ";");
-      dl->addStringToList(ai.id().str());
+      dl->addStringToList(std::string(ai.id().c_str(), ai.id().size()));
       dl->addDocumentToList(expressionToDocument(ai.e()));
       return dl;
     }
@@ -1710,7 +1712,7 @@ namespace MiniZinc {
         dl->addDocumentToList(expressionToDocument(fi.ti()));
         dl->addStringToList(": ");
       }
-      dl->addStringToList(fi.id().str());
+      dl->addStringToList(std::string(fi.id().c_str(), fi.id().size()));
       if (fi.params().size() > 0) {
         DocumentList* params = new DocumentList("(", ", ", ")");
         for (unsigned int i = 0; i < fi.params().size(); i++) {

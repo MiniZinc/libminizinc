@@ -153,7 +153,7 @@ namespace MiniZinc {
       bool isFzn;
       if (!isModelString) {
         for (Model* p=m->parent(); p; p=p->parent()) {
-          if (f == p->filename().c_str()) {
+          if (p->filename() == f) {
             err << "Error: cyclic includes: " << std::endl;
             for (Model* pe=m; pe; pe=pe->parent()) {
               err << "  " << pe->filename() << std::endl;

@@ -39,7 +39,7 @@ namespace MiniZinc {
     /// Flag
     unsigned int _flag_2 : 1;
     
-    enum BaseNodes { NID_FL, NID_CHUNK, NID_VEC, NID_END = NID_VEC };
+    enum BaseNodes { NID_FL, NID_CHUNK, NID_VEC, NID_STR, NID_END = NID_STR};
 
     /// Constructor
     ASTNode(unsigned int id) : _gc_mark(0), _id(id) {}
@@ -73,7 +73,7 @@ namespace MiniZinc {
     /// Storage
     char _data[4];
     /// Constructor
-    ASTChunk(size_t size);
+    ASTChunk(size_t size, unsigned int id = ASTNode::NID_CHUNK);
     /// Actual size of object in memory
     size_t memsize(void) const {
       size_t s = sizeof(ASTChunk)+(_size<=4?0:_size-4)*sizeof(char);
@@ -114,12 +114,14 @@ namespace MiniZinc {
   class WeakRef;
 
   class ASTNodeWeakMap;
-  
+  class ASTStringData;
+
   /// Garbage collector
   class GC {
     friend class ASTNode;
     friend class ASTVec;
     friend class ASTChunk;
+    friend class ASTStringData;
     friend class KeepAlive;
     friend class WeakRef;
     friend class ASTNodeWeakMap;

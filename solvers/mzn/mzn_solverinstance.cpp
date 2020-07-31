@@ -13,10 +13,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#ifdef _WIN32
-#define NOMINMAX     // Need this before all (implicit) include's of Windows.h
-#endif
-
 #include <minizinc/solvers/mzn_solverinstance.hh>
 #include <cstdio>
 #include <fstream>

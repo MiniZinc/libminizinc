@@ -973,7 +973,7 @@ namespace MiniZinc {
           isaTIId(fi->ti()->ranges()[0]->domain()))
         rh = fi->ti()->ranges()[0]->domain()->cast<TIId>()->v();
       
-      ASTStringMap<Type>::t tmap;
+      ASTStringMap<Type> tmap;
       for (unsigned int i=0; i<ta.size(); i++) {
         TypeInst* tii = fi->params()[i]->ti();
         if (tii->domain() && tii->domain()->isa<TIId>()) {
@@ -990,13 +990,14 @@ namespace MiniZinc {
           if (isaEnumTIId(tii->domain())) {
             tiit.st(Type::ST_SET);
           }
-          ASTStringMap<Type>::t::iterator it = tmap.find(tiid);
+          auto it = tmap.find(tiid);
           if (it==tmap.end()) {
             tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
           } else {
             if (it->second.dim() > 0) {
-              throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
-                              tiid.str()+" used in both array and non-array position");
+              std::ostringstream ss;
+              ss << "type-inst variable $" << tiid << " used in both array and non-array position";
+              throw TypeError(env, getLoc(ta[i],fi), ss.str());
             } else {
               Type tiit_par = tiit;
               tiit_par.ti(Type::TI_PAR);
@@ -1016,10 +1017,10 @@ namespace MiniZinc {
               } else if (env.isSubtype(its_par,tiit_par,strictEnum)) {
                 it->second = tiit_par;
               } else {
-                throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
-                                tiid.str()+" instantiated with different types ("+
-                                tiit.toString(env)+" vs "+
-                                it->second.toString(env)+")");
+                std::ostringstream ss;
+                ss << "type-inst variable $" << tiid << " instantiated with different types ("
+                   << tiit.toString(env) << " vs " << it->second.toString(env) << ")";
+                throw TypeError(env, getLoc(ta[i],fi), ss.str());
               }
             }
           }
@@ -1029,8 +1030,9 @@ namespace MiniZinc {
           ASTString tiid = tii->ranges()[0]->domain()->cast<TIId>()->v();
           Type orig_tiit = getType(ta[i]);
           if (orig_tiit.dim()==0) {
-            throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+tiid.str()+
-                            " must be an array index");
+            std::ostringstream ss;
+            ss << "type-inst variable $" << tiid << " must be an array index";
+            throw TypeError(env, getLoc(ta[i],fi), ss.str());
           }
           Type tiit = Type::top(orig_tiit.dim());
           if (orig_tiit.enumId() != 0) {
@@ -1042,18 +1044,19 @@ namespace MiniZinc {
             enumIds[enumIds.size()-1] = 0;
             tiit.enumId(env.registerArrayEnum(enumIds));
           }
-          ASTStringMap<Type>::t::iterator it = tmap.find(tiid);
+          auto it = tmap.find(tiid);
           if (it==tmap.end()) {
             tmap.insert(std::pair<ASTString,Type>(tiid,tiit));
           } else {
             if (it->second.dim() == 0) {
-              throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
-                              tiid.str()+" used in both array and non-array position");
+              std::ostringstream ss;
+              ss << "type-inst variable $" << tiid << " used in both array and non-array position";
+              throw TypeError(env, getLoc(ta[i],fi), ss.str());
             } else if (it->second!=tiit) {
-              throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
-                              tiid.str()+" instantiated with different types ("+
-                              tiit.toString(env)+" vs "+
-                              it->second.toString(env)+")");
+              std::ostringstream ss;
+              ss << "type-inst variable $" << tiid <<" instantiated with different types ("
+                 << tiit.toString(env)+" vs " << it->second.toString(env) << ")";
+              throw TypeError(env, getLoc(ta[i],fi), ss.str());
             }
           }
         } else if (tii->ranges().size() > 0) {
@@ -1068,15 +1071,16 @@ namespace MiniZinc {
               } else {
                 enumIdT = Type::parsetint();
               }
-              ASTStringMap<Type>::t::iterator it = tmap.find(enumTIId);
+              auto it = tmap.find(enumTIId);
               // TODO: this may clash if the same enum TIId is used for different types
               // but the same enum
               if (it==tmap.end()) {
                 tmap.insert(std::pair<ASTString,Type>(enumTIId,enumIdT));
               } else {
                 if (it->second.enumId() != enumIdT.enumId()) {
-                  throw TypeError(env, getLoc(ta[i],fi),"type-inst variable $"+
-                                  enumTIId.str()+" used for different enum types");
+                  std::ostringstream ss;
+                  ss << "type-inst variable $" << enumTIId << " used for different enum types";
+                  throw TypeError(env, getLoc(ta[i],fi),ss.str());
                 }
               }
             }
@@ -1084,9 +1088,12 @@ namespace MiniZinc {
         }
       }
       if (dh.size() != 0) {
-        ASTStringMap<Type>::t::iterator it = tmap.find(dh);
-        if (it==tmap.end())
-          throw TypeError(env, fi->loc(),"type-inst variable $"+dh.str()+" used but not defined");
+        auto it = tmap.find(dh);
+        if (it==tmap.end()) {
+          std::ostringstream ss;
+          ss << "type-inst variable $" << dh << " used but not defined";
+          throw TypeError(env, fi->loc(), ss.str());
+        }
         if (dh.beginsWith("$")) {
           // this is an enum
           ret.bt(Type::BT_INT);
@@ -1107,9 +1114,12 @@ namespace MiniZinc {
         }
       }
       if (rh.size() != 0) {
-        ASTStringMap<Type>::t::iterator it = tmap.find(rh);
-        if (it==tmap.end())
-          throw TypeError(env, fi->loc(),"type-inst variable $"+rh.str()+" used but not defined");
+        auto it = tmap.find(rh);
+        if (it==tmap.end()) {
+          std::ostringstream ss;
+          ss << "type-inst variable $" << rh << " used but not defined";
+          throw TypeError(env, fi->loc(), ss.str());
+        }
         ret.dim(it->second.dim());
         if (it->second.enumId() != 0) {
           std::vector<unsigned int> enumIds(it->second.dim()+1);
@@ -1134,9 +1144,12 @@ namespace MiniZinc {
         for (unsigned int i=0; i<fi->ti()->ranges().size(); i++) {
           if (isaEnumTIId(fi->ti()->ranges()[i]->domain())) {
             ASTString enumTIId = fi->ti()->ranges()[i]->domain()->cast<TIId>()->v();
-            ASTStringMap<Type>::t::iterator it = tmap.find(enumTIId);
-            if (it==tmap.end())
-              throw TypeError(env, fi->loc(),"type-inst variable $"+enumTIId.str()+" used but not defined");
+            auto it = tmap.find(enumTIId);
+            if (it==tmap.end()) {
+              std::ostringstream ss;
+              ss << "type-inst variable $" << enumTIId << " used but not defined";
+              throw TypeError(env, fi->loc(),ss.str());
+            }
             enumIds[i] = it->second.enumId();
             hadRealEnum |= (enumIds[i] != 0);
           } else {
@@ -1958,9 +1971,10 @@ namespace MiniZinc {
   Expression* getAnnotation(const Annotation& ann, std::string str) {
     for(ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
         Expression* e = *i;
-        if((e->isa<Id>() && e->cast<Id>()->str().str() == str) || 
-                (e->isa<Call>() && e->cast<Call>()->id().str() == str))
+        if((e->isa<Id>() && e->cast<Id>()->str() == str)
+           || (e->isa<Call>() && e->cast<Call>()->id() == str)) {
             return e;
+        }
     }
     return NULL;
   }

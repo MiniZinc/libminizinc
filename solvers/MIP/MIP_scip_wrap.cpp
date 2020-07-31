@@ -23,10 +23,10 @@
 #include <stdexcept>
 #include <array>
 
-using namespace std;
-
 #include <minizinc/solvers/MIP/MIP_scip_wrap.hh>
 #include <minizinc/utils.hh>
+
+using namespace std;
 
 /// Load SCIP DLL with the given path
 ScipPlugin::ScipPlugin(const std::string& dll) : Plugin(dll) {

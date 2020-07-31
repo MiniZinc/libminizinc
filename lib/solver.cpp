@@ -32,11 +32,7 @@
 #include <chrono>
 #include <ratio>
 
-using namespace std;
-
 #include <minizinc/solver.hh>
-
-using namespace MiniZinc;
 
 #ifdef HAS_GUROBI
 #include <minizinc/solvers/MIP/MIP_gurobi_solverfactory.hh>
@@ -65,6 +61,9 @@ using namespace MiniZinc;
 #include <minizinc/solvers/mzn_solverinstance.hh>
 #include <minizinc/solvers/nl/nl_solverfactory.hh>
 #include <minizinc/solvers/nl/nl_solverinstance.hh>
+
+using namespace std;
+using namespace MiniZinc;
 
 SolverInitialiser::SolverInitialiser(void) {
   #ifdef HAS_GUROBI

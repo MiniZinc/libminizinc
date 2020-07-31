@@ -40,9 +40,9 @@ namespace MiniZinc {
     if (vdi == s.back().m.end()) {
       s.back().m.insert(vd->id(),vd);
     } else {
-      GCLock lock;
-      throw TypeError(env, vd->loc(),"identifier `"+vd->id()->str().str()+
-                      "' already defined");
+      std::ostringstream ss;
+      ss << "identifier `" << vd->id()->str() << "' already defined";
+      throw TypeError(env, vd->loc(), ss.str());
     }
   }
   
@@ -107,17 +107,7 @@ namespace MiniZinc {
       }
     }
   };
-  
-  std::string createEnumToStringName(Id* ident, std::string prefix) {
-    std::string name = ident->str().str();
-    if (name[0]=='\'') {
-      name = "'"+prefix+name.substr(1);
-    } else {
-      name = prefix+name;
-    }
-    return name;
-  }
-  
+
   AssignI* createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, VarDecl* vd_enumToString, Model* enumItems) {
 
     Id* ident = vd->id();
@@ -130,8 +120,9 @@ namespace MiniZinc {
       enum_init_al = al;
     } else if (Call* c = vd->e()->dyn_cast<Call>()) {
       if (c->id()!="anon_enum") {
-        throw TypeError(env, c->loc(),
-                        "invalid initialisation for enum `"+ident->v().str()+"'");
+        std::ostringstream ss;
+        ss << "invalid initialisation for enum `" << ident->v() << "'";
+        throw TypeError(env, c->loc(), ss.str());
       }
       if (c->n_args()==1 && c->arg(0)->isa<ArrayLit>()) {
         enum_init_al = c->arg(0)->cast<ArrayLit>();
@@ -143,8 +134,9 @@ namespace MiniZinc {
         if (Id* eid = (*enum_init_al)[i]->dyn_cast<Id>()) {
           enumIds[i] = eid;
         } else {
-          throw TypeError(env, vd->e()->loc(),
-                          "invalid initialisation for enum `"+ident->v().str()+"'");
+          std::ostringstream ss;
+          ss << "invalid initialisation for enum `" << ident->v() << "'";
+          throw TypeError(env, vd->e()->loc(), ss.str());
         }
       }
       sl = new SetLit(vd->e()->loc(), enumIds);
@@ -152,8 +144,9 @@ namespace MiniZinc {
     if (sl) {
       for (unsigned int i=0; i<sl->v().size(); i++) {
         if (!sl->v()[i]->isa<Id>()) {
-          throw TypeError(env, sl->v()[i]->loc(),
-                          "invalid initialisation for enum `"+ident->v().str()+"'");
+          std::ostringstream ss;
+          ss << "invalid initialisation for enum `" << ident->v() << "'";
+          throw TypeError(env, sl->v()[i]->loc(), ss.str());
         }
         TypeInst* ti_id = new TypeInst(sl->v()[i]->loc(),Type::parenum(enumId));
         
@@ -171,8 +164,9 @@ namespace MiniZinc {
       nsl->type(tt);
       vd->e(nsl);
     } else if (!vd->e()->isa<Call>()) {
-      throw TypeError(env, vd->e()->loc(),
-                      "invalid initialisation for enum `"+ident->v().str()+"'");
+      std::ostringstream ss;
+      ss << "invalid initialisation for enum `" << ident->v() << "'";
+      throw TypeError(env, vd->e()->loc(), ss.str());
     }
 
     
@@ -180,11 +174,11 @@ namespace MiniZinc {
       std::string name = createEnumToStringName(ident,"_enum_to_string_");
       std::vector<Expression*> al_args(sl->v().size());
       for (unsigned int i=0; i<sl->v().size(); i++) {
-        std::string str = sl->v()[i]->cast<Id>()->str().str();
-        if (str.size()>=2 && str[0]=='\'' && str[str.size()-1]=='\'') {
+        ASTString str = sl->v()[i]->cast<Id>()->str();
+        if (str.size()>=2 && str.c_str()[0]=='\'' && str.c_str()[str.size()-1]=='\'') {
           al_args[i] = new StringLit(Location().introduce(), ASTString(str.substr(1,str.size()-2)));
         } else {
-          al_args[i] = new StringLit(Location().introduce(), ASTString(str));
+          al_args[i] = new StringLit(Location().introduce(), str);
         }
         env.reverseEnum[str] = i+1;
       }
@@ -276,9 +270,10 @@ namespace MiniZinc {
         Call* if_absent = new Call(Location().introduce(), "absent", deopt_args);
         StringLit* sl_absent_dzn = new StringLit(Location().introduce(),"<>");
         ITE* sl_absent = new ITE(Location().introduce(), {vd_aj->id(), new StringLit(Location().introduce(), ASTString("null"))}, sl_absent_dzn);
-        
-        StringLit* sl_dzn = new StringLit(Location().introduce(),
-                                          ASTString("to_enum("+ident->str().str()+","));
+
+        std::ostringstream ss1;
+        ss1 << "to_enum(" << ident->str() << ",";
+        StringLit* sl_dzn = new StringLit(Location().introduce(), ASTString(ss1.str()));
         std::vector<Expression*> showIntArgs(1);
         showIntArgs[0] = deopt;
         Call* showInt = new Call(Location().introduce(), constants().ids.show, showIntArgs);
@@ -286,8 +281,10 @@ namespace MiniZinc {
         StringLit* closing_bracket = new StringLit(Location().introduce(), ASTString(")"));
         BinOp* construct_string_dzn_2 = new BinOp(Location().introduce(), construct_string_dzn,
                                              BOT_PLUSPLUS, closing_bracket);
-        
-        StringLit* sl = new StringLit(Location().introduce(), ASTString(ident->str().str()+"_"));
+
+        std::ostringstream ss2;
+        ss2 << ident->str() << "_";
+        StringLit* sl = new StringLit(Location().introduce(), ASTString(ss2.str()));
         BinOp* construct_string = new BinOp(Location().introduce(), sl, BOT_PLUSPLUS, showInt);
 
         StringLit* json_e_quote = new StringLit(Location().introduce(), ASTString("{\"e\":\""));
@@ -622,8 +619,10 @@ namespace MiniZinc {
     GCLock lock;
     Id* id = new Id(Location(), id_v, NULL);
     VarDecl* decl = scopes.find(id);
-    if (decl==NULL) {
-      throw TypeError(env,loc,"undefined identifier `"+id->str().str()+"'");
+    if (!decl) {
+      std::ostringstream ss;
+      ss << "undefined identifier `" << id->str() << "'";
+      throw TypeError(env, loc, ss.str());
     }
     return decl;
   }
@@ -631,9 +630,10 @@ namespace MiniZinc {
   VarDecl*
   TopoSorter::checkId(EnvI& env, Id* ident, const Location& loc) {
     VarDecl* decl = scopes.find(ident);
-    if (decl==NULL) {
-      GCLock lock;
-      throw TypeError(env,loc,"undefined identifier `"+ident->str().str()+"'");
+    if (!decl) {
+      std::ostringstream ss;
+      ss << "undefined identifier `" << ident->str() << "'";
+      throw TypeError(env, loc, ss.str());
     }
     PosMap::iterator pi = pos.find(decl);
     if (pi==pos.end()) {
@@ -644,8 +644,9 @@ namespace MiniZinc {
     } else {
       // previously seen, check if circular
       if (pi->second==-1) {
-        GCLock lock;
-        throw TypeError(env,loc,"circular definition of `"+ident->str().str()+"'");
+        std::ostringstream ss;
+        ss << "circular definition of `" << ident->str() << "'";
+        throw TypeError(env, loc, ss.str());
       }
     }
     return decl;
@@ -1197,7 +1198,7 @@ namespace MiniZinc {
               if (aa.idx().size() > 1) {
                 oss << (i+1) << " ";
               }
-              oss << "must be `" << _env.getEnum(arrayEnumIds[i])->e()->id()->str().str() << "', but is `" << aa.idx()[i]->type().toString(_env) << "'";
+              oss << "must be `" << _env.getEnum(arrayEnumIds[i])->e()->id()->str() << "', but is `" << aa.idx()[i]->type().toString(_env) << "'";
               throw TypeError(_env,aa.loc(),oss.str());
             }
           }
@@ -1586,7 +1587,9 @@ namespace MiniZinc {
                     std::vector<Expression*> args({comp,comparedTo,rhs});
                     FunctionI* newCall_decl = _model->matchFn(_env, cid, args, true);
                     if (newCall_decl==nullptr) {
-                      throw InternalError("could not replace binary operator by call to "+cid.str());
+                      std::ostringstream ss;
+                      ss << "could not replace binary operator by call to " << cid;
+                      throw InternalError(ss.str());
                     } else {
                       Call* newCall = bop.morph(cid, args);
                       newCall->decl(newCall_decl);
@@ -1608,8 +1611,10 @@ namespace MiniZinc {
               }
               std::vector<Expression*> args({call->arg(0),call->arg(1),rhs});
               FunctionI* newCall_decl = _model->matchFn(_env, cid, args, true);
-              if (newCall_decl==nullptr) {
-                throw InternalError("could not replace binary operator by call to "+cid.str());
+              if (!newCall_decl) {
+                std::ostringstream ss;
+                ss << "could not replace binary operator by call to " << cid;
+                throw InternalError(ss.str());
               } else {
                 Call* newCall = bop.morph(cid, args);
                 newCall->decl(newCall_decl);
@@ -1618,11 +1623,11 @@ namespace MiniZinc {
           }
         }
       } else {
-        throw TypeError(_env,bop.loc(),
-          std::string("type error in operator application for `")+
-          bop.opToString().str()+"'. No matching operator found with left-hand side type `"
-                        +bop.lhs()->type().toString(_env)+
-                        "' and right-hand side type `"+bop.rhs()->type().toString(_env)+"'");
+        std::ostringstream ss;
+        ss << "type error in operator application for `" << bop.opToString() 
+           << "'. No matching operator found with left-hand side type `" << bop.lhs()->type().toString(_env)
+           << "' and right-hand side type `" << bop.rhs()->type().toString(_env) << "'";
+        throw TypeError(_env,bop.loc(), ss.str());
       }
     }
     /// Visit unary operator
@@ -1638,19 +1643,11 @@ namespace MiniZinc {
         if (fi->e())
           uop.decl(fi);
       } else {
-        throw TypeError(_env,uop.loc(),
-          std::string("type error in operator application for `")+
-          uop.opToString().str()+"'. No matching operator found with type `"+uop.e()->type().toString(_env)+"'");
+        std::ostringstream ss;
+        ss << "type error in operator application for `" << uop.opToString()
+           << "'. No matching operator found with type `" << uop.e()->type().toString(_env) << "'";
+        throw TypeError(_env,uop.loc(), ss.str());
       }
-    }
-    static std::string createEnumToStringName(Id* ident, std::string prefix) {
-      std::string name = ident->str().str();
-      if (name[0]=='\'') {
-        name = "'"+prefix+name.substr(1);
-      } else {
-        name = prefix+name;
-      }
-      return name;
     }
 
     /// Visit call
@@ -1804,15 +1801,19 @@ namespace MiniZinc {
         if (VarDecl* vdi = li->dyn_cast<VarDecl>()) {
           if (vdi->e()==NULL && vdi->type().is_set() && vdi->type().isvar() &&
               vdi->ti()->domain()==NULL) {
-            _typeErrors.push_back(TypeError(_env,vdi->loc(),
-                                            "set element type for `"+vdi->id()->str().str()+"' is not finite"));
+            std::ostringstream ss;
+            ss << "set element type for `" << vdi->id()->str() << "' is not finite";
+            _typeErrors.emplace_back(_env, vdi->loc(), ss.str());
           }
-          if (vdi->type().ispar() && vdi->e() == NULL)
-            throw TypeError(_env,vdi->loc(),
-              "let variable `"+vdi->id()->v().str()+"' must be initialised");
+          if (vdi->type().ispar() && !vdi->e()) {
+            std::ostringstream ss;
+            ss << "let variable `" << vdi->id()->v() << "' must be initialised";
+            throw TypeError(_env, vdi->loc(), ss.str());
+          }
           if (vdi->ti()->hasTiVariable()) {
-            _typeErrors.push_back(TypeError(_env,vdi->loc(),
-                                            "type-inst variables not allowed in type-inst for let variable `"+vdi->id()->str().str()+"'"));
+            std::ostringstream ss;
+            ss << "type-inst variables not allowed in type-inst for let variable `" << vdi->id()->str() << "'";
+            _typeErrors.emplace_back(_env, vdi->loc(), ss.str());
           }
           let.let_orig()[j++] = vdi->e();
           for (unsigned int k=0; k<vdi->ti()->ranges().size(); k++) {
@@ -1862,9 +1863,10 @@ namespace MiniZinc {
                 vdt.dim() != 0) {
               // this is okay: assigning an empty array (one-dimensional) to an array variable
             } else {
-              _typeErrors.push_back(TypeError(_env,vd.e()->loc(),
-                                              "initialisation value for `"+vd.id()->str().str()+"' has invalid type-inst: expected `"+
-                                              vd.ti()->type().toString(_env)+"', actual `"+vd.e()->type().toString(_env)+"'"));
+              std::ostringstream ss;
+              ss << "initialisation value for `" << vd.id()->str() << "' has invalid type-inst: expected `"
+                 << vd.ti()->type().toString(_env) << "', actual `" << vd.e()->type().toString(_env) << "'";
+              _typeErrors.emplace_back(_env,vd.e()->loc(), ss.str());
             }
           } else {
             vd.e(addCoercion(_env, _model, vd.e(), vd.ti()->type())());
@@ -2033,7 +2035,7 @@ namespace MiniZinc {
         if (i->e()->id()->idn() >= 0) {
           env.minId(i->e()->id()->idn());
         } else if (i->e()->id()->v().beginsWith("X_INTRODUCED_") && i->e()->id()->v().endsWith("_")) {
-          std::string numId = i->e()->id()->v().str().substr(std::string("X_INTRODUCED_").size());
+          std::string numId = i->e()->id()->v().substr(std::string("X_INTRODUCED_").size());
           if (numId.size() > 0) {
             numId = numId.substr(0,numId.size()-1);
             if (numId.size() > 0) {
@@ -2041,8 +2043,9 @@ namespace MiniZinc {
               try {
                 vId = std::stoi(numId);
               } catch(std::exception&) {}
-              if (vId >= 0)
+              if (vId >= 0) {
                 env.minId(vId);
+              }
             }
           }
         }
@@ -2221,29 +2224,32 @@ namespace MiniZinc {
         void vVarDeclI(VarDeclI* i) {
           bu_ty.run(i->e());
           if (i->e()->ti()->hasTiVariable()) {
-            _typeErrors.push_back(TypeError(env, i->e()->loc(),
-                                            "type-inst variables not allowed in type-inst for `"+i->e()->id()->str().str()+"'"));
+            std::ostringstream ss;
+            ss << "type-inst variables not allowed in type-inst for `" << i->e()->id()->str() << "'";
+            _typeErrors.emplace_back(env, i->e()->loc(),ss.str());
           }
           VarDecl* vdi = i->e();
           if (vdi->e()==NULL && vdi->type().is_set() && vdi->type().isvar() &&
               vdi->ti()->domain()==NULL) {
-            _typeErrors.push_back(TypeError(env,vdi->loc(),
-                                            "set element type for `"+vdi->id()->str().str()+"' is not finite"));
+            std::ostringstream ss;
+            ss << "set element type for `" << vdi->id()->str() << "' is not finite";
+            _typeErrors.emplace_back(env,vdi->loc(), ss.str());
           }
           if (i->e()->ann().contains(constants().ann.output_only)) {
             if (!vdi->e()) {
-              _typeErrors.push_back(TypeError(env, vdi->loc(), "variables annotated with ::output_only must have a right hand side"));
+              _typeErrors.emplace_back(env, vdi->loc(), "variables annotated with ::output_only must have a right hand side");
             } else if (vdi->e()->type().isvar()) {
-              _typeErrors.push_back(TypeError(env, vdi->loc(), "variables annotated with ::output_only must be par"));
+              _typeErrors.emplace_back(env, vdi->loc(), "variables annotated with ::output_only must be par");
             }
           }
         }
         void vAssignI(AssignI* i) {
           bu_ty.run(i->e());
           if (!env.isSubtype(i->e()->type(),i->decl()->ti()->type(),true)) {
-            _typeErrors.push_back(TypeError(env, i->loc(),
-                                           "assignment value for `"+i->decl()->id()->str().str()+"' has invalid type-inst: expected `"+
-                                           i->decl()->ti()->type().toString(env)+"', actual `"+i->e()->type().toString(env)+"'"));
+            std::ostringstream ss;
+            ss << "assignment value for `" << i->decl()->id()->str() << "' has invalid type-inst: expected `"
+               << i->decl()->ti()->type().toString(env) << "', actual `" << i->e()->type().toString(env) << "'";
+            _typeErrors.emplace_back(env, i->loc(), ss.str());
             // Assign to "true" constant to avoid generating further errors that the parameter
             // is undefined
             i->decl()->e(constants().lit_true);
@@ -2358,9 +2364,10 @@ namespace MiniZinc {
           ts.decls[i]->e(constants().absent);
           ts.decls[i]->addAnnotation(constants().ann.mzn_was_undefined);
         } else if (!ignoreUndefinedParameters) {
-          typeErrors.push_back(TypeError(env.envi(), ts.decls[i]->loc(),
-                                         "  symbol error: variable `" + ts.decls[i]->id()->str().str()
-                                         + "' must be defined (did you forget to specify a data file?)"));
+          std::ostringstream ss;
+          ss << "  symbol error: variable `" << ts.decls[i]->id()->str()
+             << "' must be defined (did you forget to specify a data file?)";
+          typeErrors.emplace_back(env.envi(), ts.decls[i]->loc(), ss.str());
         }
       }
       if (ts.decls[i]->ti()->isEnum()) {
@@ -2408,14 +2415,13 @@ namespace MiniZinc {
         Type vdktype = vd_k()->type();
         vdktype.ti(Type::TI_VAR);
         if (!vd_k()->type().isSubtypeOf(vd->type(), false)) {
-          GCLock lock;
-          
-          typeErrors.push_back(TypeError(env.envi(), vd->loc(),
-                                         "Solution checker requires `"+vd->id()->str().str()+"' to be of type `"+
-                                         vdktype.toString(env.envi())+"'"));
+          std::ostringstream ss;
+          ss << "Solution checker requires `" << vd->id()->str() << "' to be of type `"
+             << vdktype.toString(env.envi()) << "'";
+          typeErrors.emplace_back(env.envi(), vd->loc(), ss.str());
         }
       } catch (TypeError& e) {
-        typeErrors.push_back(TypeError(env.envi(), e.loc(), e.msg()+" (required by solution checker model)"));
+        typeErrors.emplace_back(env.envi(), e.loc(), e.msg()+" (required by solution checker model)");
       }
     }
     
@@ -2430,11 +2436,11 @@ namespace MiniZinc {
       throw typeErrors[0];
     }
     if (!env.envi().isSubtype(ai->e()->type(),ai->decl()->ti()->type(),true)) {
-      throw TypeError(env.envi(), ai->e()->loc(),
-                      "assignment value for `"+ai->decl()->id()->str().str()+"' has invalid type-inst: expected `"+
-                      ai->decl()->ti()->type().toString(env.envi())+"', actual `"+ai->e()->type().toString(env.envi())+"'");
+      std::ostringstream ss;
+      ss << "assignment value for `" << ai->decl()->id()->str() << "' has invalid type-inst: expected `"
+         << ai->decl()->ti()->type().toString(env.envi()) << "', actual `" << ai->e()->type().toString(env.envi()) << "'";
+      throw TypeError(env.envi(), ai->e()->loc(), ss.str());
     }
-    
   }
 
   void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os, bool extra = false) {
@@ -2502,7 +2508,7 @@ namespace MiniZinc {
       VInfVisitor(Env& env0, const std::vector<std::string>& skipDirs) : env(env0), skip_dirs(skipDirs), had_var(false), had_enum(false) {}
       bool enter(Item* i) {
         if (auto ii = i->dyn_cast<IncludeI>()) {
-          std::string prefix = ii->m()->filepath().str().substr(0,ii->m()->filepath().size()-ii->f().size());
+          std::string prefix = ii->m()->filepath().substr(0,ii->m()->filepath().size()-ii->f().size());
           for (const auto & skip_dir : skip_dirs) {
             if (prefix.substr(0, skip_dir.size()) == skip_dir) {
               return false;
@@ -2549,7 +2555,7 @@ namespace MiniZinc {
         had_input(false), had_output(false), had_included_files(false), method("sat"), output_item(false) {}
       bool enter(Item* i) {
         if (auto ii = i->dyn_cast<IncludeI>()) {
-          std::string prefix = ii->m()->filepath().str().substr(0,ii->m()->filepath().size()-ii->f().size());
+          std::string prefix = ii->m()->filepath().substr(0,ii->m()->filepath().size()-ii->f().size());
           for (const auto & skip_dir : skip_dirs) {
             if (prefix.substr(0, skip_dir.size()) == skip_dir) {
               return false;

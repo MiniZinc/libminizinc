@@ -72,13 +72,15 @@ namespace MiniZinc {
   template<class E>
   typename E::Val eval_id(EnvI& env, Expression* e) {
     Id* id = e->cast<Id>();
-    if (id->decl() == NULL)
-      throw EvalError(env, e->loc(), "undeclared identifier", id->str().str());
+    if (!id->decl()) {
+      throw EvalError(env, e->loc(), "undeclared identifier", id->str());
+    }
     VarDecl* vd = id->decl();
     while (vd->flat() && vd->flat() != vd)
       vd = vd->flat();
-    if (vd->e() == NULL)
-      throw EvalError(env, vd->loc(), "cannot evaluate expression", id->str().str());
+    if (!vd->e()) {
+      throw EvalError(env, vd->loc(), "cannot evaluate expression", id->str());
+    }
     typename E::Val r = E::e(env,vd->e());
     if (!vd->evaluated() && (vd->toplevel() || vd->type().dim() > 0) ) {
       Expression* ne = E::exp(r);
@@ -604,8 +606,11 @@ namespace MiniZinc {
         if (ce->decl()->_builtins.e)
           return eval_array_lit(env,ce->decl()->_builtins.e(env,ce));
 
-        if (ce->decl()->e()==NULL)
-          throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+        if (!ce->decl()->e()) {
+          std::ostringstream ss;
+          ss << "internal error: missing builtin '" << ce->id() << "'";
+          throw EvalError(env, ce->loc(), ss.str());
+        }
 
         return eval_call<EvalArrayLitCopy>(env,ce);
       }
@@ -838,9 +843,12 @@ namespace MiniZinc {
         if (ce->decl()->_builtins.e)
           return eval_intset(env,ce->decl()->_builtins.e(env,ce));
 
-        if (ce->decl()->e()==NULL)
-          throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
-        
+        if (!ce->decl()->e()) {
+          std::ostringstream ss;
+          ss << "internal error: missing builtin '" << ce->id() << "'";
+          throw EvalError(env, ce->loc(), ss.str());
+        }
+
         return eval_call<EvalIntSet>(env,ce);
       }
       break;
@@ -1001,10 +1009,13 @@ namespace MiniZinc {
         
         if (ce->decl()->_builtins.e)
           return eval_floatset(env,ce->decl()->_builtins.e(env,ce));
-        
-        if (ce->decl()->e()==NULL)
-          throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
-        
+
+        if (!ce->decl()->e()) {
+          std::ostringstream ss;
+          ss << "internal error: missing builtin '" << ce->id() << "'";
+          throw EvalError(env, ce->loc(), ss.str());
+        }
+
         return eval_call<EvalFloatSet>(env,ce);
       }
         break;
@@ -1271,9 +1282,12 @@ namespace MiniZinc {
             if (ce->decl()->_builtins.e)
               return eval_bool(env,ce->decl()->_builtins.e(env,ce));
 
-            if (ce->decl()->e()==NULL)
-              throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
-            
+            if (!ce->decl()->e()) {
+              std::ostringstream ss;
+              ss << "internal error: missing builtin '" << ce->id() << "'";
+              throw EvalError(env, ce->loc(), ss.str());
+            }
+
             return eval_call<EvalBoolVal>(env,ce);
           } catch (ResultUndefinedError&) {
             return false;
@@ -1455,10 +1469,13 @@ namespace MiniZinc {
         
         if (ce->decl()->_builtins.e)
           return eval_boolset(env,ce->decl()->_builtins.e(env,ce));
-        
-        if (ce->decl()->e()==NULL)
-          throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
-        
+
+        if (!ce->decl()->e()) {
+          std::ostringstream ss;
+          ss << "internal error: missing builtin '" << ce->id() << "'";
+          throw EvalError(env, ce->loc(), ss.str());
+        }
+
         return eval_call<EvalBoolSet>(env,ce);
       }
         break;
@@ -1582,10 +1599,13 @@ namespace MiniZinc {
           
           if (ce->decl()->_builtins.e)
             return eval_int(env,ce->decl()->_builtins.e(env,ce));
-          
-          if (ce->decl()->e()==NULL)
-            throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
-          
+
+          if (!ce->decl()->e()) {
+            std::ostringstream ss;
+            ss << "internal error: missing builtin '" << ce->id() << "'";
+            throw EvalError(env, ce->loc(), ss.str());
+          }
+
           return eval_call<EvalIntVal>(env,ce);
         }
           break;
@@ -1711,8 +1731,11 @@ namespace MiniZinc {
           if (ce->decl()->_builtins.e)
             return eval_float(env,ce->decl()->_builtins.e(env,ce));
 
-          if (ce->decl()->e()==NULL)
-            throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
+          if (!ce->decl()->e()) {
+            std::ostringstream ss;
+            ss << "internal error: missing builtin '" << ce->id() << "'";
+            throw EvalError(env, ce->loc(), ss.str());
+          }
 
           return eval_call<EvalFloatVal>(env,ce);
         }
@@ -1751,7 +1774,10 @@ namespace MiniZinc {
     CallStackItem csi(env,e);
     switch (e->eid()) {
       case Expression::E_STRINGLIT:
-        return e->cast<StringLit>()->v().str();
+      {
+        ASTString str = e->cast<StringLit>()->v();
+        return std::string(str.c_str(), str.size());
+      }
       case Expression::E_FLOATLIT:
       case Expression::E_INTLIT:
       case Expression::E_BOOLLIT:
@@ -1767,7 +1793,8 @@ namespace MiniZinc {
       case Expression::E_ID:
       {
         GCLock lock;
-        return eval_id<EvalStringLit>(env,e)->v().str();
+        ASTString str = eval_id<EvalStringLit>(env,e)->v();
+        return std::string(str.c_str(), str.size());
       }
         break;
       case Expression::E_ARRAYACCESS:
@@ -1819,10 +1846,13 @@ namespace MiniZinc {
           return ce->decl()->_builtins.str(env,ce);
         if (ce->decl()->_builtins.e)
           return eval_string(env,ce->decl()->_builtins.e(env,ce));
-        
-        if (ce->decl()->e()==NULL)
-          throw EvalError(env, ce->loc(), "internal error: missing builtin '"+ce->id().str()+"'");
-        
+
+        if (ce->decl()->e()==NULL) {
+          std::ostringstream ss;
+          ss << "internal error: missing builtin '" << ce->id() << "'";
+          throw EvalError(env, ce->loc(), ss.str());
+        }
+
         return eval_call<EvalString>(env,ce);
       }
         break;

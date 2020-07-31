@@ -21,7 +21,7 @@ namespace MiniZinc {
     enum ConstraintStatus { CS_NONE, CS_OK, CS_FAILED, CS_ENTAILED, CS_REWRITE };
     typedef ConstraintStatus (*optimizer) (EnvI& env, Item* i, Call* c, Expression*& rewrite);
   protected:
-    ASTStringMap<optimizer>::t _m;
+    ASTStringMap<optimizer> _m;
   public:
     
     void reg(const ASTString& call, optimizer);

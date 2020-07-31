@@ -213,7 +213,9 @@ namespace MiniZinc{
               lb = fb.l.toDouble();
               ub = fb.u.toDouble();
             } else {
-              throw Error("GeasSolverInstance::processFlatZinc: Error: Unbounded variable: " + vd->id()->str().str());
+              std::ostringstream ss;
+              ss << "GeasSolverInstance::processFlatZinc: Error: Unbounded variable: " << vd->id()->str();
+              throw Error(ss.str());
             }
             // TODO: Error correction from double to float??
             auto var = _solver.new_floatvar(static_cast<geas::fp::val_t>(lb), static_cast<geas::fp::val_t>(ub));
@@ -250,7 +252,9 @@ namespace MiniZinc{
               }
               _variableMap.insert(vd->id(), GeasVariable(var));
             } else {
-              throw Error("GeasSolverInstance::processFlatZinc: Error: Unbounded variable: " + vd->id()->str().str());
+              std::ostringstream ss;
+              ss << "GeasSolverInstance::processFlatZinc: Error: Unbounded variable: " << vd->id()->str();
+              throw Error(ss.str());
             }
           } else {
             Expression* init = vd->e();
@@ -298,7 +302,7 @@ namespace MiniZinc{
       for (auto &ann : flatAnn) {
         if (ann->isa<Call>()) {
           Call* call = ann->cast<Call>();
-          if (call->id().str() == "warm_start") {
+          if (call->id() == "warm_start") {
             auto vars = eval_array_lit(env().envi(), call->arg(0));
             auto vals = eval_array_lit(env().envi(), call->arg(1));
             assert(vars->size() == vals->size());
@@ -329,13 +333,13 @@ namespace MiniZinc{
           vec<geas::pid_t> pids;
           geas::VarChoice select = geas::Var_FirstFail;
           geas::ValChoice choice = geas::Val_Min;
-          if (call->id().str() == "int_search") {
+          if (call->id() == "int_search") {
             vec<geas::intvar> iv = asIntVar(eval_array_lit(env().envi(), call->arg(0)));
             pids.growTo(iv.size());
             for (int i = 0; i < iv.size(); ++i) {
               pids[i] = iv[i].p;
             }
-          } else if (call->id().str() == "bool_search") {
+          } else if (call->id() == "bool_search") {
             vec<geas::patom_t> bv = asBoolVar(eval_array_lit(env().envi(), call->arg(0)));
             pids.growTo(bv.size());
             for (int i = 0; i < bv.size(); ++i) {
@@ -345,7 +349,7 @@ namespace MiniZinc{
             std::cerr << "WARNING Geas: ignoring unknown search annotation: " << *ann << std::endl;
             continue;
           }
-          const std::string& select_str = call->arg(1)->cast<Id>()->str().str();
+          ASTString select_str = call->arg(1)->cast<Id>()->str();
           if (select_str == "input_order") {
             select = geas::Var_InputOrder;
           } else if (select_str == "first_fail") {
@@ -357,7 +361,7 @@ namespace MiniZinc{
           } else {
             std::cerr << "WARNING Geas: unknown variable selection '" << select_str << "', using default value First Fail." << std::endl;
           }
-          const std::string& choice_str = call->arg(2)->cast<Id>()->str().str();
+          ASTString choice_str = call->arg(2)->cast<Id>()->str();
           if (choice_str == "indomain_max") {
             choice = geas::Val_Max;
           } else if (choice_str == "indomain_min") {

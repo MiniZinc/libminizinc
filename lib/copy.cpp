@@ -35,12 +35,6 @@ namespace MiniZinc {
     if (it==model_m.end()) return NULL;
     return it->second;
   }
-  void CopyMap::insert(const ASTString& e0, const ASTString& e1) {
-    node_m.insert(e0.aststr(),e1.aststr());
-  }
-  ASTStringO* CopyMap::find(const ASTString& e) {
-    return static_cast<ASTStringO*>(node_m.find(e.aststr()));
-  }
   void CopyMap::insert(IntSetVal* e0, IntSetVal* e1) {
     node_m.insert(e0,e1);
   }
@@ -135,14 +129,7 @@ namespace MiniZinc {
     case Expression::E_STRINGLIT:
       {
         StringLit* sl = e->cast<StringLit>();
-        StringLit* c;
-        if (ASTStringO* cs = m.find(sl->v())) {
-          c = new StringLit(copy_location(m,e),ASTString(cs));
-        } else {
-          ASTString s(sl->v().str());
-          m.insert(sl->v(),s);
-          c = new StringLit(copy_location(m,e),s);
-        }
+        auto c = new StringLit(copy_location(m,e),sl->v());
         m.insert(e,c);
         ret = c;
       }
@@ -199,14 +186,7 @@ namespace MiniZinc {
             if (id->idn()!=-1) {
               c = new Id(copy_location(m,e),id->idn(),NULL);
             } else {
-              ASTString id_v;
-              if (ASTStringO* cs = m.find(id->v())) {
-                id_v = ASTString(cs);
-              } else {
-                id_v = ASTString(id->v().str());
-                m.insert(id->v(),id_v);
-              }
-              c = new Id(copy_location(m,e),id_v,NULL);
+              c = new Id(copy_location(m,e),id->v(),NULL);
             }
           }
           m.insert(e,c);
@@ -355,14 +335,7 @@ namespace MiniZinc {
     case Expression::E_CALL:
       {
         Call* ca = e->cast<Call>();
-        ASTString id_v;
-        if (ASTStringO* cs = m.find(ca->id())) {
-          id_v = ASTString(cs);
-        } else {
-          id_v = ASTString(ca->id().str());
-          m.insert(ca->id(),id_v);
-        }
-        Call* c = new Call(copy_location(m,e),id_v,std::vector<Expression*>());
+        Call* c = new Call(copy_location(m,e),ca->id(),std::vector<Expression*>());
 
         if (ca->decl()) {
           if (copyFundecls) {
@@ -384,15 +357,8 @@ namespace MiniZinc {
       {
         VarDecl* vd = e->cast<VarDecl>();
         VarDecl* c;
-        if (vd->id()->idn()==-1) {
-          ASTString id_v;
-          if (ASTStringO* cs = m.find(vd->id()->v())) {
-            id_v = ASTString(cs);
-          } else {
-            id_v = ASTString(vd->id()->v().str());
-            m.insert(vd->id()->v(),id_v);
-          }
-          c = new VarDecl(copy_location(m,e),NULL,id_v,NULL);
+        if (vd->id()->hasStr()) {
+          c = new VarDecl(copy_location(m,e),NULL,vd->id()->v(),NULL);
         } else {
           c = new VarDecl(copy_location(m,e),NULL,vd->id()->idn(),NULL);
         }
@@ -451,7 +417,7 @@ namespace MiniZinc {
     case Expression::E_TIID:
       {
         TIId* t = e->cast<TIId>();
-        TIId* c = new TIId(copy_location(m,e),t->v().str());
+        TIId* c = new TIId(copy_location(m,e),t->v());
         m.insert(e,c);
         ret = c;
       }
@@ -485,9 +451,7 @@ namespace MiniZinc {
     case Item::II_INC:
       {
         IncludeI* ii = i->cast<IncludeI>();
-        IncludeI* c = 
-          new IncludeI(copy_location(m,i),
-                      ASTString(ii->f().str()));
+        auto c = new IncludeI(copy_location(m,i), ii->f());
         m.insert(i,c);
         c->m(copy(env,m,ii->m()),ii->own());
         return c;
@@ -504,9 +468,7 @@ namespace MiniZinc {
     case Item::II_ASN:
       {
         AssignI* a = i->cast<AssignI>();
-        AssignI* c = 
-          new AssignI(copy_location(m,i),
-                     a->id().str(),NULL);
+        auto c = new AssignI(copy_location(m,i), a->id(),NULL);
         m.insert(i,c);
         c->e(copy(env,m,a->e(),followIds,copyFundecls,isFlatModel));
         c->decl(static_cast<VarDecl*>(copy(env,m,a->decl(),followIds,copyFundecls,isFlatModel)));
@@ -552,7 +514,7 @@ namespace MiniZinc {
         std::vector<VarDecl*> params(f->params().size());
         for (unsigned int j=f->params().size(); j--;)
           params[j] = static_cast<VarDecl*>(copy(env,m,f->params()[j],followIds,copyFundecls,isFlatModel));
-        FunctionI* c = new FunctionI(copy_location(m,i),f->id().str(),
+        auto c = new FunctionI(copy_location(m,i),f->id(),
           static_cast<TypeInst*>(copy(env,m,f->ti(),followIds,copyFundecls,isFlatModel)),
                                      params, copy(env,m,f->e(),followIds,copyFundecls,isFlatModel));
         c->_builtins.e = f->_builtins.e;

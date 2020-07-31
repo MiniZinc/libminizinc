@@ -9,8 +9,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-#include <minizinc/output.hh>
 #include <minizinc/astiterator.hh>
+#include <minizinc/output.hh>
+#include <minizinc/typecheck.hh>
 
 namespace MiniZinc {
 
@@ -52,7 +53,9 @@ namespace MiniZinc {
         if (decl==NULL) {
           FunctionI* origdecl = env.model->matchFn(env, c.id(), tv, false);
           if (origdecl == NULL) {
-            throw FlatteningError(env,c.loc(),"function "+c.id().str()+" is used in output, par version needed");
+            std::ostringstream ss;
+            ss << "function " << c.id() << " is used in output, par version needed";
+            throw FlatteningError(env, c.loc(), ss.str());
           }
           bool seen = (seen_functions.find(origdecl) != seen_functions.end());
           if (seen) {
@@ -185,17 +188,6 @@ namespace MiniZinc {
     } _par;
     topDown(_par, e);
     class Decls : public EVisitor {
-    protected:
-      static std::string createEnumToStringName(Id* ident, std::string prefix) {
-        std::string name = ident->str().str();
-        if (name[0]=='\'') {
-          name = "'"+prefix+name.substr(1);
-        } else {
-          name = prefix+name;
-        }
-        return name;
-      }
-      
     public:
       EnvI& env;
       Decls(EnvI& env0) : env(env0) {}
@@ -394,7 +386,9 @@ namespace MiniZinc {
               if (decl==NULL) {
                 FunctionI* origdecl = env.model->matchFn(env, rhs->id(), tv, false);
                 if (origdecl == NULL) {
-                  throw FlatteningError(env,rhs->loc(),"function "+rhs->id().str()+" is used in output, par version needed");
+                  std::ostringstream ss;
+                  ss << "function " << rhs->id() << " is used in output, par version needed";
+                  throw FlatteningError(env,rhs->loc(), ss.str());
                 }
                 if (!origdecl->from_stdlib()) {
                   decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
@@ -552,7 +546,7 @@ namespace MiniZinc {
         }
         if (process_var) {
           std::ostringstream s;
-          s << vd->id()->str().str() << " = ";
+          s << vd->id()->str() << " = ";
           if (vd->type().dim() > 0) {
             ArrayLit* al = NULL;
             if (vd->flat() && vd->flat()->e()) {
@@ -675,7 +669,7 @@ namespace MiniZinc {
           } else {
             s << ",\n";
           }
-          s << "  \"" << vd->id()->str().str() << "\"" << " : ";
+          s << "  \"" << vd->id()->str() << "\"" << " : ";
           auto sl = new StringLit(Location().introduce(),s.str());
           outputVars.push_back(sl);
           
@@ -818,7 +812,9 @@ namespace MiniZinc {
         Type t;
         if (!canReuseDecl) {
           if (origdecl == NULL || !origdecl->rtype(env, tv, false).ispar()) {
-            throw FlatteningError(env,c.loc(),"function "+c.id().str()+" is used in output, par version needed");
+            std::ostringstream ss;
+            ss << "function " << c.id() << " is used in output, par version needed";
+            throw FlatteningError(env,c.loc(),ss.str());
           }
           if (!origdecl->from_stdlib()) {
             FunctionI* decl_copy = copy(env,env.cmap,origdecl)->cast<FunctionI>();
@@ -933,7 +929,9 @@ namespace MiniZinc {
                   if (decl==NULL) {
                     FunctionI* origdecl = env.model->matchFn(env, rhs->id(), tv, false);
                     if (origdecl == NULL) {
-                      throw FlatteningError(env,rhs->loc(),"function "+rhs->id().str()+" is used in output, par version needed");
+                      std::ostringstream ss;
+                      ss << "function " << rhs->id() << " is used in output, par version needed";
+                      throw FlatteningError(env, rhs->loc(), ss.str());
                     }
                     if (!origdecl->from_stdlib()) {
                       decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
@@ -1083,7 +1081,9 @@ namespace MiniZinc {
                 if (decl==NULL) {
                   FunctionI* origdecl = e.model->matchFn(e, rhs->id(), tv, false);
                   if (origdecl == NULL) {
-                    throw FlatteningError(e,rhs->loc(),"function "+rhs->id().str()+" is used in output, par version needed");
+                    std::ostringstream ss;
+                    ss << "function " << rhs->id() << " is used in output, par version needed";
+                    throw FlatteningError(e, rhs->loc(), ss.str());
                   }
                   if (!origdecl->from_stdlib()) {
                     decl = copy(e,e.cmap,origdecl)->cast<FunctionI>();

@@ -22,7 +22,7 @@ namespace MiniZinc {
   
   OptimizeRegistry::ConstraintStatus
   OptimizeRegistry::process(EnvI& env, MiniZinc::Item* i, MiniZinc::Call* c, Expression*& rewrite) {
-    ASTStringMap<optimizer>::t::iterator it = _m.find(c->id());
+    auto it = _m.find(c->id());
     if (it != _m.end()) {
       return it->second(env,i,c,rewrite);
     }

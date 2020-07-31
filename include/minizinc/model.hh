@@ -51,17 +51,17 @@ namespace MiniZinc {
   protected:
     /// Add all instances of polymorphic entry \a fe to \a entries
     void addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& entries);
-    
+
     /// Type of map from identifiers to function declarations
-    typedef ASTStringMap<std::vector<FnEntry> >::t FnMap;
+    using FnMap = ASTStringMap<std::vector<FnEntry>>;
     /// Map from identifiers to function declarations
     FnMap fnmap;
 
     /// Type of map from Type (represented as int) to reverse mapper functions
-    typedef std::unordered_map<int, FunctionI*> RevMapperMap;
+    using RevMapperMap = std::unordered_map<int, FunctionI*>;
     /// Map from Type (represented as int) to reverse mapper functions
     RevMapperMap revmapmap;
-    
+
     /// Filename of the model
     ASTString _filename;
     /// Path of the model
@@ -106,10 +106,18 @@ namespace MiniZinc {
       assert(_filename.size()==0);
       _filename = ASTString(f);
     }
+    /// Set file name
+    void setFilename(const ASTString& f) {
+      _filename = f;
+    }
     /// Set file path
     void setFilepath(const std::string& f) {
       assert(_filepath.size()==0);
       _filepath = ASTString(f);
+    }
+    void setFilepath(const ASTString& f) {
+      assert(_filepath.size()==0);
+      _filepath = f;
     }
 
     /// Register a builtin function item

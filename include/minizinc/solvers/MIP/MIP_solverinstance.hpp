@@ -123,8 +123,8 @@ namespace MiniZinc {
       const auto& pE = aAnns[iA];
       if( pE->isa<Call>() ) {
         Call* pC = pE->cast<Call>();
-        const auto cId = pC->id().str();
-        if ( "int_search"==cId || "float_search"==cId ) {
+        const auto cId = pC->id();
+        if (cId == "int_search" || cId == "float_search") {
           ArrayLit* alV = nullptr;
           if ( !pC->n_args() || nullptr == (alV = eval_array_lit(_env.envi(),pC->arg(0))) ) {
             std::cerr << "  SEARCH ANN: '" << (*pC)
@@ -162,7 +162,7 @@ namespace MiniZinc {
       Expression* e = *i;
       if ( e->isa<Call>() ) {
         Call* c = e->cast<Call>();
-        if ( c->id().str() == "warm_start_array" || c->id().str() == "seq_search" ) {
+        if ( c->id() ==  "warm_start_array" || c->id() == "seq_search" ) {
           ArrayLit* anns = c->arg(0)->cast<ArrayLit>();
           for(unsigned int i=0; i<anns->size(); i++) {
             Annotation subann;
@@ -170,7 +170,7 @@ namespace MiniZinc {
             processWarmstartAnnotations( subann );
           }
         } else
-          if ( c->id().str() == "warm_start" ) {
+          if ( c->id() == "warm_start" ) {
             MZN_ASSERT_HARD_MSG( c->n_args()>=2, "ERROR: warm_start needs 2 array args" );
             std::vector<double> coefs;
             std::vector<MIP_solverinstance::VarId> vars;
@@ -245,7 +245,7 @@ namespace MiniZinc {
       }
       VarDecl* vd = it->e();
       if(!vd->ann().isEmpty()) {
-        if(vd->ann().containsCall(constants().ann.output_array.aststr()) ||
+        if(vd->ann().containsCall(constants().ann.output_array) ||
            vd->ann().contains(constants().ann.output_var)
            ) {
           _varsWithOutput.push_back(vd);
@@ -613,14 +613,15 @@ namespace MiniZinc {
     inline
     std::string makeConstrName(const char* pfx, int cnt, const Expression* cOrig=nullptr) {
       Call* mznp;
+      std::ostringstream ss;
       if (nullptr!=cOrig && (mznp=cOrig->ann().getCall(constants().ann.mzn_path))) {
         assert(1==mznp->n_args());
         auto strp = mznp->arg(0)->dyn_cast<StringLit>();
         assert(strp);
-        return strp->v().str().substr(0, 255);    // Gurobi 8.1 has <=255 characters
+        ss << strp->v().substr(0, 255);    // Gurobi 8.1 has <=255 characters
+      } else {
+        ss << pfx << cnt;
       }
-      std::ostringstream ss;
-      ss << pfx << cnt;
       return ss.str();
     }
 

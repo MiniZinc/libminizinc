@@ -143,19 +143,19 @@ namespace MiniZinc {
     }
     return def;
   }
-  std::string Options::getStringParam(const std::string& name) const {
+  ASTString Options::getStringParam(const std::string& name) const {
     if(StringLit* sl = getParam(name)->dyn_cast<StringLit>()) {
-      return sl->v().str();
+      return sl->v();
     } else {
       std::stringstream ss;
       ss << "Option: \"" << name << "\" is not Par String" << std::endl;
       throw InternalError(ss.str());
     }
   }
-  std::string Options::getStringParam(const std::string& name, std::string def) const {
+  ASTString Options::getStringParam(const std::string& name, const ASTString def) const {
     if (hasParam(name)) {
       if(StringLit* sl = getParam(name)->dyn_cast<StringLit>()) {
-        return sl->v().str();
+        return sl->v();
       }
     }
     return def;

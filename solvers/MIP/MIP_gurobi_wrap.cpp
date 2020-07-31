@@ -32,14 +32,15 @@
 #ifdef HAS_DLFCN_H
 #include <dlfcn.h>
 #elif defined HAS_WINDOWS_H
+#define NOMINMAX // Ensure the words min/max remain available
 #include <Windows.h>
 #endif
 #endif
 
-using namespace std;
-
 #include <minizinc/solvers/MIP/MIP_gurobi_wrap.hh>
 #include <minizinc/utils.hh>
+
+using namespace std;
 
 string MIP_gurobi_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options* opt) {
   ostringstream oss;

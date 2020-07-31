@@ -317,26 +317,26 @@ namespace MiniZinc {
     MZ_IntConLevel ann2icl(const Annotation& ann);
 
      /// convert the annotation \a s int variable selection to the respective Gecode var selection
-    Gecode::TieBreak<Gecode::IntVarBranch> ann2ivarsel(std::string s, Gecode::Rnd& rnd, double decay);
+    Gecode::TieBreak<Gecode::IntVarBranch> ann2ivarsel(const ASTString s, Gecode::Rnd& rnd, double decay);
     /// convert the annotation \a s int value selection to the respective Gecode val selection
-    Gecode::IntValBranch ann2ivalsel(std::string s, std::string& r0, std::string& r1, Gecode::Rnd& rnd);
+    Gecode::IntValBranch ann2ivalsel(const ASTString s, std::string& r0, std::string& r1, Gecode::Rnd& rnd);
     /// convert assign value selection
-    Gecode::IntAssign ann2asnivalsel(std::string s, Gecode::Rnd& rnd);
+    Gecode::IntAssign ann2asnivalsel(const ASTString s, Gecode::Rnd& rnd);
 
-    Gecode::TieBreak<Gecode::BoolVarBranch> ann2bvarsel(std::string s, Gecode::Rnd& rnd, double decay);
+    Gecode::TieBreak<Gecode::BoolVarBranch> ann2bvarsel(const ASTString s, Gecode::Rnd& rnd, double decay);
     /// convert the annotation \a s int value selection to the respectbve Gecode val selection
-    Gecode::BoolValBranch ann2bvalsel(std::string s, std::string& r0, std::string& r1, Gecode::Rnd& rnd);
+    Gecode::BoolValBranch ann2bvalsel(const ASTString s, std::string& r0, std::string& r1, Gecode::Rnd& rnd);
     /// convert assign value selection
-    Gecode::BoolAssign ann2asnbvalsel(std::string s, Gecode::Rnd& rnd);
+    Gecode::BoolAssign ann2asnbvalsel(const ASTString s, Gecode::Rnd& rnd);
 
 
 #ifdef GECODE_HAS_SET_VARS
-    Gecode::SetVarBranch ann2svarsel(std::string s, Gecode::Rnd& rnd, double decay);
-    Gecode::SetValBranch ann2svalsel(std::string s, std::string r0, std::string r1, Gecode::Rnd& rnd);
+    Gecode::SetVarBranch ann2svarsel(const ASTString s, Gecode::Rnd& rnd, double decay);
+    Gecode::SetValBranch ann2svalsel(const ASTString s, std::string& r0, std::string& r1, Gecode::Rnd& rnd);
 #endif
 #ifdef GECODE_HAS_FLOAT_VARS
-    Gecode::TieBreak<Gecode::FloatVarBranch> ann2fvarsel(std::string s, Gecode::Rnd& rnd, double decay);
-    Gecode::FloatValBranch ann2fvalsel(std::string s, std::string r0, std::string r1);
+    Gecode::TieBreak<Gecode::FloatVarBranch> ann2fvarsel(const ASTString s, Gecode::Rnd& rnd, double decay);
+    Gecode::FloatValBranch ann2fvalsel(const ASTString s, std::string& r0, std::string& r1);
 #endif    
     /// Returns the VarDecl of \a expr and throws an InternalError if not possible
     VarDecl* getVarDecl(Expression* expr);

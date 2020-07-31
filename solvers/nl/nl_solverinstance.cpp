@@ -9,10 +9,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
-#ifdef _WIN32
-#define NOMINMAX     // Need this before all (implicit) include's of Windows.h
-#endif
-
 #include <cstdio>
 #include <cstring>
 #include <fstream>
@@ -140,10 +136,10 @@ namespace MiniZinc {
 
     if(opt.do_keepfile){
       // Keep file: output next to original file
-      string file_mzn = _env.envi().orig_model ? _env.envi().orig_model->filepath().str() : _env.envi().model->filepath().str();
-      string file_sub = file_mzn.substr(0,file_mzn.find_last_of('.'));
-      file_nl  = file_sub+".nl";
-      file_sol = file_sub+".sol";
+      ASTString file_mzn = _env.envi().orig_model ? _env.envi().orig_model->filepath() : _env.envi().model->filepath();
+      string file_base = std::string(file_mzn.substr(0,file_mzn.find_last_of('.')));
+      file_nl  = file_base + ".nl";
+      file_sol = file_base + ".sol";
     } else {
       // Don't keep file: create a temp directory
       tmpdir = new FileUtils::TmpDir();

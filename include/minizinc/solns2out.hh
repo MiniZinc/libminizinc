@@ -44,6 +44,7 @@ namespace MiniZinc {
     Model* pOutput=0;
 
     typedef std::pair<VarDecl*, KeepAlive> DE;
+    // TODO: Can this be turned into a map on ASTString?
     std::unordered_map<std::string, DE> declmap;
     Expression* outputExpr = NULL;
     std::string checkerModel;

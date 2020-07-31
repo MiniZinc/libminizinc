@@ -20,7 +20,7 @@
 #include <string>
 #include <stdexcept>
 
-using namespace std;
-
 #include <minizinc/solvers/MIP/MIP_wrap.hh>
+
+using namespace std;
 

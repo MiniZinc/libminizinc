@@ -15,10 +15,10 @@
 
 // Regex Parser Requirements
 #include <memory>
-#include <unordered_map>
 #include <set>
 #include <gecode/minimodel.hh>
 #include <minizinc/values.hh>
+#include <minizinc/aststring.hh>
 
 // This is a workaround for a bug in flex that only shows up
 // with the Microsoft C++ compiler
@@ -45,6 +45,6 @@ using namespace Gecode;
 using namespace MiniZinc;
 
 // Parsing function
-std::unique_ptr<REG> regex_from_string(const std::string& expression, const IntSetVal& domain, const std::unordered_map<std::string, int>& identifiers);
+std::unique_ptr<REG> regex_from_string(const std::string& expression, const IntSetVal& domain, const ASTStringMap<int>& identifiers);
 
 #endif //HAS_GECODE

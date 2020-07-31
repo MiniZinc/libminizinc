@@ -1,4 +1,4 @@
-/* A Bison parser, made by GNU Bison 3.7.  */
+/* A Bison parser, made by GNU Bison 3.7.1.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
@@ -49,7 +49,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "3.7"
+#define YYBISON_VERSION "3.7.1"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -79,10 +79,10 @@
 #include <cstdio>
 #include <memory>
 #include <set>
-#include <unordered_map>
 
 #include <gecode/minimodel.hh>
 #include <minizinc/values.hh>
+#include <minizinc/aststring.hh>
 using namespace Gecode;
 using namespace MiniZinc;
 
@@ -95,7 +95,7 @@ extern FILE* yyin;
 typedef struct REContext{
   REG* expr;
   const IntSetVal& dom;
-  const std::unordered_map<std::string, int>& idMap;
+  const ASTStringMap<int>& idMap;
 } REContext;
 
 void yyerror(REContext& ctx, const char* s);
@@ -1471,7 +1471,7 @@ void yyerror(REContext& ctx, const char* s) {
     throw std::runtime_error("Cannot parse regular expression: " + std::string(s));
 }
 
-std::unique_ptr<REG> regex_from_string(const std::string& regex_str, const IntSetVal& domain, const std::unordered_map<std::string, int>& identifiers) {
+std::unique_ptr<REG> regex_from_string(const std::string& regex_str, const IntSetVal& domain, const ASTStringMap<int>& identifiers) {
     REG* expr = new REG();
     regex_yy_scan_string(regex_str.c_str());
     REContext rctx = REContext{expr, domain, identifiers};

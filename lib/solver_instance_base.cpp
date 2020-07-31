@@ -43,10 +43,11 @@ namespace MiniZinc {
   }
   void
   Registry::post(Call* c) {
-    std::unordered_map<std::string,poster>::iterator it = _registry.find(c->id().str());
+    auto it = _registry.find(std::string(c->id().c_str(), c->id().size()));
     if (it == _registry.end()) {
-      GCLock lock;
-      throw InternalError("Error: solver backend cannot handle constraint: " + c->id().str() + "\n");
+      std::ostringstream ss;
+      ss << "Error: solver backend cannot handle constraint: " << c->id();
+      throw InternalError(ss.str());
     }
     it->second(_base, c);
   }
@@ -155,13 +156,13 @@ namespace MiniZinc {
           }
           ArrayLit* array_solution = new ArrayLit(Location(),array_elems,dims_v);
           KeepAlive ka(array_solution);
-          auto& de = getSolns2Out()->findOutputVar(vd->id()->str().str());
+          auto& de = getSolns2Out()->findOutputVar(vd->id()->str());
           de.first->e(array_solution);
         }
       } else if(vd->ann().contains(constants().ann.output_var)) {
         Expression* sol = getSolutionValue(vd->id());
         vd->e(sol);
-        auto& de = getSolns2Out()->findOutputVar(vd->id()->str().str());
+        auto& de = getSolns2Out()->findOutputVar(vd->id()->str());
         de.first->e(sol);
       }
     }
@@ -173,8 +174,8 @@ namespace MiniZinc {
     for(ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
       Expression* e = *i;
       if(e->isa<Call>() &&
-         (e->cast<Call>()->id().str() == "seq_search" ||
-          e->cast<Call>()->id().str() == "warm_start_array")) {
+         (e->cast<Call>()->id() == "seq_search" ||
+          e->cast<Call>()->id() == "warm_start_array")) {
         Call* c = e->cast<Call>();
         auto* anns = c->arg(0)->cast<ArrayLit>();
         for(unsigned int i=0; i<anns->size(); i++) {
@@ -194,7 +195,7 @@ namespace MiniZinc {
       MZN_ASSERT_HARD_MSG(0==nGoalH++, "Several goal hierarchies provided");
       Expression* e = *i;
       if(e->isa<Call>() &&
-         (e->cast<Call>()->id().str() == "goal_hierarchy")) {
+         (e->cast<Call>()->id() == "goal_hierarchy")) {
         MZN_ASSERT_HARD_MSG(
               getEnv()->flat()->solveItem()->st() == SolveI::SolveType::ST_SAT,
               "goal_hierarchy provided but solve item is not SAT");
@@ -217,20 +218,20 @@ namespace MiniZinc {
     MZN_ASSERT_HARD(e->isa<Call>());
     Call* c = e->cast<Call>();
     obj.setVariable(c->arg(0));
-    const auto id = c->id().str();
-    if ("min_goal"==id)
+    const auto id = c->id();
+    if (id == "min_goal")
       obj.setWeight(-1.0);
-    else if ("int_min_goal"==id)
+    else if (id == "int_min_goal")
       obj.setWeight(-1.0);
-    else if ("float_min_goal"==id)
+    else if (id == "float_min_goal")
       obj.setWeight(-1.0);
-    else if ("max_goal"==id)
+    else if (id == "max_goal")
       obj.setWeight(1.0);
-    else if ("int_max_goal"==id)
+    else if (id == "int_max_goal")
       obj.setWeight(1.0);
-    else if ("float_max_goal"==id)
+    else if (id == "float_max_goal")
       obj.setWeight(1.0);
-    else if ("sat_goal"==id)
+    else if (id == "sat_goal")
       obj.setWeight(1.0);
     else
       MZN_ASSERT_HARD_MSG(false, "unknown goal: " << id);

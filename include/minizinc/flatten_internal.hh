@@ -110,7 +110,7 @@ namespace MiniZinc {
     bool in_reverse_map_var;
     FlatteningOptions fopts;
     unsigned int pathUse;
-    std::unordered_map<std::string, int> reverseEnum;
+    ASTStringMap<int> reverseEnum;
 
     struct PathVar {
       KeepAlive decl;
@@ -120,18 +120,16 @@ namespace MiniZinc {
     typedef std::unordered_map<std::string, PathVar> PathMap;
     // Mapping from arbitrary Expressions to paths
     typedef KeepAliveMap<std::string> ReversePathMap;
-    // Map from filename to integer (space saving optimisation)
-    typedef std::unordered_map<std::string, int> FilenameMap;
     std::vector<KeepAlive> checkVars;
   protected:
     CSEMap cse_map;
     Model* _flat;
     bool _failed;
     unsigned int ids;
-    ASTStringMap<ASTString>::t reifyMap;
+    ASTStringMap<ASTString> reifyMap;
     PathMap pathMap;
     ReversePathMap reversePathMap;
-    FilenameMap filenameMap;
+    ASTStringSet filenameSet;
     typedef std::unordered_map<VarDeclI*,unsigned int> EnumMap;
     EnumMap enumMap;
     std::vector<VarDeclI*> enumVarDecls;
@@ -180,7 +178,7 @@ namespace MiniZinc {
     void collectVarDecls(bool b);
     PathMap& getPathMap() { return pathMap; }
     ReversePathMap& getReversePathMap() { return reversePathMap; }
-    FilenameMap& getFilenameMap() { return filenameMap; }
+    ASTStringSet& getFilenameSet() { return filenameSet; }
 
     void copyPathMapsAndState(EnvI& env);
     /// deprecated, use Solns2Out

@@ -508,16 +508,16 @@ namespace MiniZinc {
     line = 0;
     column = 0;
     expectToken(is, T_OBJ_OPEN);
-    unordered_set<string> knownIds;
+    unordered_set<ASTString> knownIds;
     if (ignoreUnknown) {
       // Collect known VarDecl ids from model and includes
       class VarDeclVisitor : public ItemVisitor {
       private:
-        unordered_set<string>& knownIds;
+        unordered_set<ASTString>& knownIds;
       public:
-        VarDeclVisitor(unordered_set<string>& _knownIds) : knownIds(_knownIds) {}
+        VarDeclVisitor(unordered_set<ASTString>& _knownIds) : knownIds(_knownIds) {}
         void vVarDeclI(VarDeclI* vdi) {
-          knownIds.insert(vdi->e()->id()->str().str());
+          knownIds.insert(vdi->e()->id()->str());
         }
       } _varDecls(knownIds);
       iterItems(_varDecls, m);

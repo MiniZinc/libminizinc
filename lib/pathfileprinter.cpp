@@ -119,7 +119,7 @@ using std::vector;
             }
           } else if(ca->id() == constants().ann.mzn_path) {
             StringLit* sl = ca->arg(0)->cast<StringLit>();
-            addBetterName(e->id(), path2name(sl->v().str()), sl->v().str());
+            addBetterName(e->id(), path2name(string(sl->v().c_str(), sl->v().size())), string(sl->v().c_str()));
           }
         }
       }

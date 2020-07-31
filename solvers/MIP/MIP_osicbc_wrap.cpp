@@ -23,8 +23,6 @@
 #include <cmath>
 #include <stdexcept>
 
-using namespace std;
-
 #include <minizinc/solvers/MIP/MIP_osicbc_wrap.hh>
 #include <minizinc/utils.hh>
 
@@ -35,6 +33,8 @@ using namespace std;
 #include <coin/CglPreProcess.hpp>
 #include <coin/CglCutGenerator.hpp>
 #include <coin/CoinSignal.hpp>
+
+using namespace std;
 
 #define WANT_SOLUTION
 

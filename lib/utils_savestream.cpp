@@ -21,7 +21,6 @@
 #include <iostream>
 #include <minizinc/utils_savestream.hh>
 
-
 using namespace std;
 using namespace MiniZinc;
 

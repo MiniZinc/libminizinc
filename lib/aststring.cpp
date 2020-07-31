@@ -22,19 +22,28 @@ namespace {
 
 namespace MiniZinc {
 
-  ASTStringO::ASTStringO(const std::string& s)
-    : ASTChunk(s.size()+sizeof(size_t)+1) {
+  ASTStringData::Interner ASTStringData::interner = Interner(1024);
+
+  ASTStringData::ASTStringData(const std::string& s)
+    : ASTChunk(s.size()+sizeof(size_t)+1, ASTNode::NID_STR) {
     memcpy_s(_data+sizeof(size_t),s.size()+1,s.c_str(),s.size());
     *(_data+sizeof(size_t)+s.size())=0;
     std::hash<std::string> h;
     reinterpret_cast<size_t*>(_data)[0] = h(s);
   }
 
-  ASTStringO*
-  ASTStringO::a(const std::string& s) {
-    ASTStringO* as =
-      static_cast<ASTStringO*>(alloc(1+sizeof(size_t)+s.size()));
-    new (as) ASTStringO(s);
+  ASTStringData*
+  ASTStringData::a(const std::string& s) {
+    if (s.empty()) {
+      return nullptr;
+    }
+    auto it = interner.find({s.c_str(), s.size()});
+    if (it != interner.end()) {
+      return it->second;
+    }
+    auto as = static_cast<ASTStringData*>(alloc(1+sizeof(size_t)+s.size()));
+    new (as) ASTStringData(s);
+    interner.emplace(std::make_pair(as->c_str(), as->size()), as);
     return as;
   }
   

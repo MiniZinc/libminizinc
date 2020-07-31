@@ -30,13 +30,14 @@
 #ifdef HAS_DLFCN_H
 #include <dlfcn.h>
 #elif defined HAS_WINDOWS_H
+#define NOMINMAX // Ensure the words min/max remain available
 #include <Windows.h>
 #endif
 #endif
 
-using namespace std;
-
 #include <minizinc/solvers/MIP/MIP_cplex_wrap.hh>
+
+using namespace std;
 
 #ifdef CPLEX_PLUGIN
 

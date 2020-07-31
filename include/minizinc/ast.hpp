@@ -87,7 +87,7 @@ namespace MiniZinc {
   
   inline ASTString
   Location::LocVec::filename(void) const {
-    return static_cast<ASTStringO*>(_data[0]);
+    return static_cast<ASTStringData*>(_data[0]);
   }
   inline unsigned int
   Location::LocVec::first_line(void) const {
@@ -278,8 +278,8 @@ namespace MiniZinc {
       }
       return d->cast<VarDecl>()->id()->v();
     } else {
-      assert((reinterpret_cast<ptrdiff_t>(_v_or_idn) & static_cast<ptrdiff_t>(1)) == 0);
-      return ASTString(reinterpret_cast<ASTStringO*>(_v_or_idn));
+      assert(hasStr());
+      return _v_or_idn.val;
     }
   }
 
@@ -292,17 +292,23 @@ namespace MiniZinc {
       }
       return d->cast<VarDecl>()->id()->idn();
     } else {
-      if ((reinterpret_cast<ptrdiff_t>(_v_or_idn) & static_cast<ptrdiff_t>(1)) == 0)
+      if (hasStr())
         return -1;
-      long long int i = reinterpret_cast<ptrdiff_t>(_v_or_idn) & ~static_cast<ptrdiff_t>(1);
+      long long int i = reinterpret_cast<ptrdiff_t>(_v_or_idn.idn) & ~static_cast<ptrdiff_t>(1);
       return i >> 1;
     }
   }
 
-  
+
   inline
   TIId::TIId(const Location& loc, const std::string& v)
   : Expression(loc,E_TIID,Type()), _v(ASTString(v)) {
+    rehash();
+  }
+
+  inline
+  TIId::TIId(const Location& loc, const ASTString& v)
+  : Expression(loc,E_TIID,Type()), _v(v) {
     rehash();
   }
 
@@ -515,7 +521,7 @@ namespace MiniZinc {
   
   inline void
   Call::id(const ASTString& i) {
-    _u_id._id = i.aststr();
+    _u_id._id = i;
     assert(hasId());
     assert(decl()==NULL);
   }
@@ -705,6 +711,10 @@ namespace MiniZinc {
   inline
   AssignI::AssignI(const Location& loc, const std::string& id, Expression* e)
     : Item(loc, II_ASN), _id(ASTString(id)), _e(e), _decl(NULL) {}
+
+  inline
+  AssignI::AssignI(const Location& loc, const ASTString& id, Expression* e)
+    : Item(loc, II_ASN), _id(id), _e(e), _decl(NULL) {}
 
   inline
   ConstraintI::ConstraintI(const Location& loc, Expression* e)

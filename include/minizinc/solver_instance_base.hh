@@ -120,6 +120,7 @@ namespace MiniZinc {
   typedef void (*poster) (SolverInstanceBase&, const Call* call);
   class Registry {
   protected:
+    // TODO: Can this be a Map on ASTString?
     std::unordered_map<std::string,poster> _registry;
     SolverInstanceBase& _base;
   public:

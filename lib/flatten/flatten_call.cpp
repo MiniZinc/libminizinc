@@ -333,10 +333,11 @@ namespace MiniZinc {
     }
     FunctionI* decl = env.model->matchFn(env,c,false);
     if (decl == NULL) {
-      throw InternalError("undeclared function or predicate "
-                          +c->id().str());
+      std::ostringstream ss;
+      ss << "undeclared function or predicate " << c->id();
+      throw InternalError(ss.str());
     }
-    
+
     Ctx nctx = ctx;
     nctx.neg = false;
     ASTString cid = c->id();

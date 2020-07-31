@@ -29,7 +29,7 @@ namespace MiniZinc {
   namespace {
     std::string getString(AssignI* ai) {
       if (StringLit* sl = ai->e()->dyn_cast<StringLit>()) {
-        return sl->v().str();
+        return std::string(sl->v().c_str(), sl->v().size());
       }
       throw ConfigException("invalid configuration item (right hand side must be string)");
     }
@@ -50,7 +50,7 @@ namespace MiniZinc {
         std::vector<std::string> ret;
         for (unsigned int i=0; i<al->size(); i++) {
           if (StringLit* sl = (*al)[i]->dyn_cast<StringLit>()) {
-            ret.push_back(sl->v().str());
+            ret.push_back(std::string(sl->v().c_str(), sl->v().size()));
           } else {
             throw ConfigException("invalid configuration item (right hand side must be a list of strings)");
           }
@@ -69,7 +69,7 @@ namespace MiniZinc {
           StringLit* sl1 = (*al)[i]->dyn_cast<StringLit>();
           StringLit* sl2 = (*al)[i+1]->dyn_cast<StringLit>();
           if (sl1 && sl2) {
-            ret.push_back(std::make_pair(sl1->v().str(),sl2->v().str()));
+            ret.push_back(std::make_pair(std::string(sl1->v().c_str(), sl1->v().size()),std::string(sl2->v().c_str(), sl2->v().size())));
           } else {
             throw ConfigException("invalid configuration item (right hand side must be a 2d array of strings)");
           }
@@ -95,7 +95,7 @@ namespace MiniZinc {
           StringLit* sl1 = (*al)[i+1]->dyn_cast<StringLit>();
           StringLit* sl2 = (*al)[i+2]->dyn_cast<StringLit>();
           if (sl0 && sl1 && sl2) {
-            ret.push_back(std::vector<std::string>({sl0->v().str(),sl1->v().str(),sl2->v().str()}));
+            ret.push_back(std::vector<std::string>({std::string(sl0->v().c_str(), sl0->v().size()),std::string(sl1->v().c_str(), sl1->v().size()),std::string(sl2->v().c_str(), sl2->v().size())}));
           } else {
             throw ConfigException("invalid configuration item (right hand side must be a list of strings)");
           }
@@ -123,10 +123,10 @@ namespace MiniZinc {
           StringLit* sl2 = (*al)[i+1]->dyn_cast<StringLit>();
           StringLit* sl3 = haveType ? (*al)[i+2]->dyn_cast<StringLit>() : NULL;
           StringLit* sl4 = haveDefault ? (*al)[i+3]->dyn_cast<StringLit>() : NULL;
-          std::string opt_type = sl3 ? sl3->v().str() : "bool";
+          std::string opt_type = sl3 ? std::string(sl3->v().c_str(), sl3->v().size()) : "bool";
           std::string opt_def;
           if (sl4) {
-            opt_def = sl4->v().str();
+            opt_def = std::string(sl4->v().c_str(), sl4->v().size());
           } else if (opt_type=="bool") {
             opt_def = "false";
           } else if (opt_type=="int") {
@@ -135,7 +135,7 @@ namespace MiniZinc {
             opt_def = "0.0";
           }
           if (sl1 && sl2) {
-            ret.emplace_back(sl1->v().str(),sl2->v().str(),opt_type,opt_def);
+            ret.emplace_back(std::string(sl1->v().c_str(), sl1->v().size()), std::string(sl2->v().c_str(), sl2->v().size()), opt_type, opt_def);
           } else {
             throw ConfigException("invalid configuration item (right hand side must be a 2d array of strings)");
           }
@@ -294,7 +294,9 @@ namespace MiniZinc {
             } else if (ai->id()=="extraFlags") {
               sc._extraFlags = getExtraFlagList(ai);
             } else {
-              throw ConfigException("invalid configuration item ("+ai->id().str()+")");
+              std::ostringstream ss;
+              ss << "invalid configuration item (" << ai->id() << ")";
+              throw ConfigException(ss.str());
             }
           } else {
             throw ConfigException("invalid configuration item");

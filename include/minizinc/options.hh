@@ -35,8 +35,8 @@ namespace MiniZinc {
       double getFloatParam(const std::string& name, double def) const;
       bool getBoolParam(const std::string& name) const;
       bool getBoolParam(const std::string& name, bool def) const;
-      std::string getStringParam(const std::string& name) const;
-      std::string getStringParam(const std::string& name, std::string def) const;
+      ASTString getStringParam(const std::string& name) const;
+      ASTString getStringParam(const std::string& name, const ASTString def) const;
       bool hasParam(const std::string& name) const;
       std::ostream& dump(std::ostream& os);
   };

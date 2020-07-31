@@ -795,7 +795,7 @@ namespace MiniZinc {
     final_pass_no = env.final_pass_no;
     maxPathDepth = env.maxPathDepth;
     current_pass_no = env.current_pass_no;
-    filenameMap = env.filenameMap;
+    filenameSet = env.filenameSet;
     maxPathDepth = env.maxPathDepth;
     pathMap = env.getPathMap();
     reversePathMap = env.getReversePathMap();
@@ -967,16 +967,20 @@ namespace MiniZinc {
     _flat = tmp;
   }
   ASTString EnvI::reifyId(const ASTString& id) {
-    ASTStringMap<ASTString>::t::iterator it = reifyMap.find(id);
+    auto it = reifyMap.find(id);
     if (it == reifyMap.end()) {
-      return id.str()+"_reif";
+      std::ostringstream ss;
+      ss << id << "_reif";
+      return {ss.str()};
     } else {
       return it->second;
     }
   }
 #undef MZN_FILL_REIFY_MAP
   ASTString EnvI::halfReifyId(const ASTString& id) {
-    return id.str() + "_imp";
+    std::ostringstream ss;
+    ss << id << "_imp";
+    return {ss.str()};
   }
 
   void EnvI::addWarning(const std::string& msg) {
@@ -1093,21 +1097,16 @@ namespace MiniZinc {
       Expression* e = callStack[i]->untag();
       bool isCompIter = callStack[i]->isTagged();
       Location loc = e->loc();
-      int filenameId;
-      std::unordered_map<std::string, int>::iterator findFilename = filenameMap.find(loc.filename().str());
-      if (findFilename == filenameMap.end()) {
+      auto findFilename = filenameSet.find(loc.filename());
+      if (findFilename == filenameSet.end()) {
         if(!force && current_pass_no >= final_pass_no-1)
           return false;
-        filenameId = static_cast<int>(filenameMap.size());
-        filenameMap.insert(std::make_pair(loc.filename().str(), static_cast<int>(filenameMap.size())));
-      } else {
-        filenameId = findFilename->second;
+        filenameSet.insert(loc.filename());
       }
-
 
       // If this call is not a dummy StringLit with empty Location (so that deferred compilation doesn't drop the paths)
       if(e->eid() != Expression::E_STRINGLIT || loc.first_line() || loc.first_column() || loc.last_line() || loc.last_column()) {
-        os << loc.filename().str() << minor_sep
+        os << loc.filename()       << minor_sep
            << loc.first_line()     << minor_sep
            << loc.first_column()   << minor_sep
            << loc.last_line()      << minor_sep
@@ -1360,7 +1359,7 @@ namespace MiniZinc {
         }
         if(has_output_ann) {
           std::ostringstream s;
-          s << vd->id()->str().str() << " = ";
+          s << vd->id()->str() << " = ";
           
           VarDecl* vd_output = copy(env.envi(), vd)->cast<VarDecl>();
           Type vd_t = vd_output->type();
@@ -2302,8 +2301,9 @@ namespace MiniZinc {
                 nc = new Call(c->loc().introduce(), constants().ids.lin_exp, args);
                 nc->decl(env.model->matchFn(env,nc,false));
                 if (nc->decl() == NULL) {
-                  throw InternalError("undeclared function or predicate "
-                                      +nc->id().str());
+                  std::ostringstream ss;
+                  ss << "undeclared function or predicate " << nc->id();
+                  throw InternalError(ss.str());
                 }
                 nc->type(nc->decl()->rtype(env,args,false));
                 BinOp* bop = new BinOp(nc->loc(), nc, BOT_EQ, IntLit::a(0));
@@ -2335,8 +2335,9 @@ namespace MiniZinc {
               }
               FunctionI* nc_decl = env.model->matchFn(env,nc,false);
               if (nc_decl == NULL) {
-                throw InternalError("undeclared function or predicate "
-                                    +nc->id().str());
+                std::ostringstream ss;
+                ss << "undeclared function or predicate " << nc->id();
+                throw InternalError(ss.str());
               }
               nc->decl(nc_decl);
               nc->type(nc->decl()->rtype(env,args,false));
@@ -2689,8 +2690,11 @@ namespace MiniZinc {
           nct.ti(Type::TI_VAR);
           nc->type(nct);
           EE ee = flat_exp(env, ctx, nc, NULL,NULL);
-          if (isfalse(env, ee.b()))
-            throw ResultUndefinedError(env, e->loc(), "evaluation of `"+nc->id().str()+"' was undefined");
+          if (isfalse(env, ee.b())) {
+            std::ostringstream ss;
+            ss << "evaluation of `" << nc->id() << "was undefined";
+            throw ResultUndefinedError(env, e->loc(), ss.str());
+          }
           return ee.r();
         } else {
           nc->type(nct);
@@ -2712,7 +2716,7 @@ namespace MiniZinc {
   
   class ItemTimer {
   public:
-    typedef std::map<std::pair<std::string,int>,std::chrono::high_resolution_clock::duration> TimingMap;
+    using TimingMap = std::map<std::pair<ASTString,int>, std::chrono::high_resolution_clock::duration>;
     ItemTimer(const Location& loc, TimingMap* tm) :
     _loc(loc),
     _tm(tm),
@@ -2722,11 +2726,11 @@ namespace MiniZinc {
       if (_tm) {
         std::chrono::high_resolution_clock::time_point end = std::chrono::high_resolution_clock::now();
         int line = _loc.first_line();
-        TimingMap::iterator it = _tm->find(std::make_pair(_loc.filename().str(),line));
+        TimingMap::iterator it = _tm->find(std::make_pair(_loc.filename(),line));
         if (it != _tm->end()) {
           it->second += end-_start;
         } else {
-          _tm->insert(std::make_pair(std::make_pair(_loc.filename().str(),line),end-_start));
+          _tm->insert(std::make_pair(std::make_pair(_loc.filename(),line),end-_start));
         }
       }
     }
@@ -3295,7 +3299,9 @@ namespace MiniZinc {
                           decl = env.model->matchFn(env, cid, args, false);
                         }
                         if (decl==nullptr) {
-                          throw FlatteningError(env,c->loc(),"'"+c->id().str()+"' is used in a reified context but no reified version is available");
+                          std::ostringstream ss;
+                          ss << "'" << c->id() << "' is used in a reified context but no reified version is available";
+                          throw FlatteningError(env, c->loc(), ss.str());
                         }
                       } else {
                         decl = env.model->matchFn(env,cid,args,false);
@@ -3339,10 +3345,10 @@ namespace MiniZinc {
                   if(csl) csi = new CallStackItem(env, csl);
                   Location orig_loc = nc->loc();
                   if (csl) {
-                    std::string loc(csl->v().str());
+                    ASTString loc = csl->v();
                     size_t sep = loc.find('|');
                     std::string filename = loc.substr(0, sep);
-                    std::string start_line_s = loc.substr(sep+1, loc.find('|',sep+1)-sep-1);
+                    std::string start_line_s = loc.substr(sep+1, loc.find('|', sep+1)-sep-1);
                     int start_line = std::stoi(start_line_s);
                     Location new_loc(ASTString(filename), start_line, 0, start_line, 0);
                     orig_loc = new_loc;
@@ -3482,7 +3488,9 @@ namespace MiniZinc {
             if (decl==NULL) {
               FunctionI* origdecl = env.model->matchFn(env, rhs->id(), tv, false);
               if (origdecl == NULL) {
-                throw FlatteningError(env,rhs->loc(),"function "+rhs->id().str()+" is used in output, par version needed");
+                std::ostringstream ss;
+                ss << "function " << rhs->id() << " is used in output, par version needed";
+                throw FlatteningError(env, rhs->loc(), ss.str());
               }
                 if (!isBuiltin(origdecl)) {
                 decl = copy(env,env.cmap,origdecl)->cast<FunctionI>();
@@ -3681,7 +3689,9 @@ namespace MiniZinc {
             nc->type(c->type());
             FunctionI* decl = env.model->matchFn(env, nc, false);
             if (decl==NULL) {
-              throw FlatteningError(env,c->loc(),"'"+c->id().str()+"' is used in a reified context but no reified version is available");
+              std::ostringstream ss;
+              ss << "'" << c->id() << "' is used in a reified context but no reified version is available";
+              throw FlatteningError(env, c->loc(), ss.str());
             }
             nc->decl(decl);
             if (!is_fixed) {

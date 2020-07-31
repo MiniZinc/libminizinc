@@ -34,7 +34,9 @@ namespace MiniZinc {
     if (fi) {
       fi->_builtins.e = b;
     } else if (!fromGlobals) {
-      throw InternalError("no definition found for builtin "+id.str());
+      std::ostringstream ss;
+      ss << "no definition found for builtin " << id;
+      throw InternalError(ss.str());
     }
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
@@ -43,7 +45,9 @@ namespace MiniZinc {
     if (fi) {
       fi->_builtins.f = b;
     } else if (!fromGlobals)  {
-      throw InternalError("no definition found for builtin "+id.str());
+      std::ostringstream ss;
+      ss << "no definition found for builtin " << id;
+      throw InternalError(ss.str());
     }
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
@@ -52,7 +56,9 @@ namespace MiniZinc {
     if (fi) {
       fi->_builtins.i = b;
     } else if (!fromGlobals)  {
-      throw InternalError("no definition found for builtin "+id.str());
+      std::ostringstream ss;
+      ss << "no definition found for builtin " << id;
+      throw InternalError(ss.str());
     }
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
@@ -61,7 +67,9 @@ namespace MiniZinc {
     if (fi) {
       fi->_builtins.b = b;
     } else if (!fromGlobals)  {
-      throw InternalError("no definition found for builtin "+id.str());
+      std::ostringstream ss;
+      ss << "no definition found for builtin " << id;
+      throw InternalError(ss.str());
     }
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
@@ -70,7 +78,9 @@ namespace MiniZinc {
     if (fi) {
       fi->_builtins.s = b;
     } else if (!fromGlobals)  {
-      throw InternalError("no definition found for builtin "+id.str());
+      std::ostringstream ss;
+      ss << "no definition found for builtin " << id;
+      throw InternalError(ss.str());
     }
   }
   void rb(EnvI& env, Model* m, const ASTString& id, const std::vector<Type>& t,
@@ -79,7 +89,9 @@ namespace MiniZinc {
     if (fi) {
       fi->_builtins.str = b;
     } else if (!fromGlobals)  {
-      throw InternalError("no definition found for builtin "+id.str());
+      std::ostringstream ss;
+      ss << "no definition found for builtin " << id;
+      throw InternalError(ss.str());
     }
   }
 
@@ -1377,14 +1389,16 @@ namespace MiniZinc {
   FloatVal b_sqrt(EnvI& env, Call* call) {
     return std::sqrt(eval_float(env,call->arg(0)).toDouble());
   }
-  
+
   bool b_assert_bool(EnvI& env, Call* call) {
     assert(call->n_args()==2);
     GCLock lock;
     if (eval_bool(env,call->arg(0)))
       return true;
     StringLit* err = eval_par(env,call->arg(1))->cast<StringLit>();
-    throw EvalError(env, call->arg(0)->loc(),"Assertion failed: "+err->v().str());
+    std::ostringstream ss;
+    ss << "Assertion failed: " << err->v();
+    throw EvalError(env, call->arg(0)->loc(), ss.str());
   }
 
   Expression* b_assert(EnvI& env, Call* call) {
@@ -1393,7 +1407,9 @@ namespace MiniZinc {
     if (eval_bool(env,call->arg(0)))
       return call->arg(2);
     StringLit* err = eval_par(env,call->arg(1))->cast<StringLit>();
-    throw EvalError(env, call->arg(0)->loc(),"Assertion failed: "+err->v().str());
+    std::ostringstream ss;
+    ss << "Assertion failed: " << err->v();
+    throw EvalError(env, call->arg(0)->loc(), ss.str());
   }
 
   Expression* b_mzn_deprecate(EnvI& env, Call* call) {
@@ -1413,7 +1429,9 @@ namespace MiniZinc {
   bool b_abort(EnvI& env, Call* call) {
     GCLock lock;
     StringLit* err = eval_par(env,call->arg(0))->cast<StringLit>();
-    throw EvalError(env, call->arg(0)->loc(),"Abort: "+err->v().str());
+    std::ostringstream ss;
+    ss << "Abort: " << err->v();
+    throw EvalError(env, call->arg(0)->loc(),ss.str());
   }
   
   Expression* b_trace(EnvI& env, Call* call) {
@@ -1633,7 +1651,7 @@ namespace MiniZinc {
           } else {
             s << ",\n";
           }
-          s << "  \"" << vd->id()->str().str() << "\"" << " : ";
+          s << "  \"" << vd->id()->str() << "\"" << " : ";
           StringLit* sl = new StringLit(Location().introduce(),s.str());
           outputVars.push_back(sl);
           
@@ -1803,9 +1821,9 @@ namespace MiniZinc {
   }
 
   std::string b_file_path(EnvI&, Call* call) {
-    return FileUtils::file_path(call->loc().filename().str());
+    return FileUtils::file_path(std::string(call->loc().filename().c_str(), call->loc().filename().size()));
   }
-  
+
   std::string b_concat(EnvI& env, Call* call) {
     assert(call->n_args()==1);
     GCLock lock;

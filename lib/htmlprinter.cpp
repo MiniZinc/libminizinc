@@ -584,7 +584,7 @@ namespace MiniZinc {
         }
         
         std::ostringstream os;
-        std::string sig = vdi->e()->type().toString(env)+" "+vdi->e()->id()->str().str();
+        std::string sig = vdi->e()->type().toString(env) + " " + std::string(vdi->e()->id()->str().c_str());
         os << "<div class='mzn-vardecl' id='" << HtmlDocOutput::makeHTMLId(sig) << "'>\n";
         os << "<div class='mzn-vardecl-code'>\n";
         if (vdi->e()->ti()->type() == Type::ann()) {
@@ -631,7 +631,7 @@ namespace MiniZinc {
         
         GCLock lock;
         for (unsigned int i=0; i<fi->params().size(); i++) {
-          if (allArgs.find(fi->params()[i]->id()->str().str()) == allArgs.end()) {
+          if (allArgs.find(fi->params()[i]->id()->str().c_str()) == allArgs.end()) {
             std::cerr << "Warning: parameter " << *fi->params()[i]->id() << " not documented for function "
                       << fi->id() << " at location " << fi->loc() << "\n";
           }
@@ -718,7 +718,7 @@ namespace MiniZinc {
             Printer p(body_os, 70);
             p.print(f_body->e());
 
-            std::string filename = f_body->loc().filename().str();
+            std::string filename = std::string(f_body->loc().filename().c_str(), f_body->loc().filename().size());
             size_t lastSlash = filename.find_last_of("/");
             if (lastSlash != std::string::npos) {
               filename = filename.substr(lastSlash+1, std::string::npos);
@@ -736,8 +736,7 @@ namespace MiniZinc {
         os << "</div>\n<div class='mzn-fundecl-doc'>\n";
 
         if (fi->id().c_str()[0]=='\'') {
-          std::string op = fi->id().str();
-          op = op.substr(1,op.length()-2);
+          std::string op = fi->id().substr(1, fi->id().size()-2);;
           const char* space = (op[0]>='a' ? " " : "");
           if (fi->params().size()==2) {
             os << "<p>Usage: <span class=\"mzn-arg\">" << *fi->params()[0]->id() << space
@@ -761,7 +760,7 @@ namespace MiniZinc {
         os << "</div>";
         os << "</div>";
         
-        HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN, fi->id().str(), sig, os.str());
+        HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN, std::string(fi->id().c_str(), fi->id().size()), sig, os.str());
         HtmlDocOutput::addToGroup(_maingroup, group, di);
       }
     }
@@ -1072,7 +1071,7 @@ namespace MiniZinc {
           group = HtmlDocOutput::extractArgWord(ds, group_idx);
         }
         std::ostringstream os;
-        std::string sig = vdi->e()->type().toString(env)+" "+vdi->e()->id()->str().str();
+        std::string sig = vdi->e()->type().toString(env) + " " + std::string(vdi->e()->id()->str().c_str(), vdi->e()->id()->str().size());
 
         std::string myMainGroup = group.substr(0,group.find_first_of("."));
         auto it = _maingroup.subgroups.find(myMainGroup);
@@ -1127,7 +1126,7 @@ namespace MiniZinc {
         
         GCLock lock;
         for (unsigned int i=0; i<fi->params().size(); i++) {
-          if (allArgs.find(fi->params()[i]->id()->str().str()) == allArgs.end()) {
+          if (allArgs.find(std::string(fi->params()[i]->id()->str().c_str(), fi->params()[i]->id()->str().size())) == allArgs.end()) {
             std::cerr << "Warning: parameter " << *fi->params()[i]->id() << " not documented for function "
             << fi->id() << " at location " << fi->loc() << "\n";
           }
@@ -1201,8 +1200,7 @@ namespace MiniZinc {
         os << "\n\n";
         
         if (fi->id().c_str()[0]=='\'') {
-          std::string op = fi->id().str();
-          op = op.substr(1,op.length()-2);
+          std::string op = fi->id().substr(1,fi->id().size()-2);
           if (fi->params().size()==2) {
             os << "Usage: ``" << *fi->params()[0]->id() << " "
             << op << " " << *fi->params()[1]->id() << "``\n\n";
@@ -1235,7 +1233,7 @@ namespace MiniZinc {
             }
           } while (alias);
           if (f_body->e()) {
-            std::string filename = f_body->loc().filename().str();
+            std::string filename = std::string(f_body->loc().filename().c_str(), f_body->loc().filename().size());
             size_t filePos = filename.find("std/");
             if (filePos != std::string::npos) {
               filePos += 4;
@@ -1258,7 +1256,7 @@ namespace MiniZinc {
         }
         os << "\n";
 
-        HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN, fi->id().str(), sig, os.str());
+        HtmlDocOutput::DocItem di(HtmlDocOutput::DocItem::T_FUN, std::string(fi->id().c_str(), fi->id().size()), sig, os.str());
         HtmlDocOutput::addToGroup(_maingroup, group, di);
       }
     }

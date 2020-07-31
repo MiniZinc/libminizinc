@@ -122,7 +122,7 @@ namespace MiniZinc {
       void mark(void) {
         _gc_mark = 1;
         if (_data[0])
-          static_cast<ASTStringO*>(_data[0])->mark();
+          static_cast<ASTStringData*>(_data[0])->mark();
       }
       
       ASTString filename(void) const;
@@ -637,7 +637,12 @@ namespace MiniZinc {
   class Id : public Expression {
   protected:
     /// The string identifier
-    void* _v_or_idn;
+    union {
+      /// Identifier of called predicate or function
+      ASTString val;
+      /// The predicate or function declaration (or NULL)
+      void* idn;
+    } _v_or_idn = {nullptr};
     /// The declaration corresponding to this identifier (may be NULL)
     Expression* _decl;
   public:
@@ -651,15 +656,18 @@ namespace MiniZinc {
     Id(const Location& loc, long long int idn, VarDecl* decl);
     /// Access identifier
     ASTString v(void) const;
+    inline bool hasStr(void) const {
+      return (reinterpret_cast<ptrdiff_t>(_v_or_idn.idn) & static_cast<ptrdiff_t>(1)) == 0;
+    }
     /// Set identifier
     void v(const ASTString& val) {
-      _v_or_idn = val.aststr();
+      _v_or_idn.val = val;
     }
     /// Access identifier number
     long long int idn(void) const;
     /// Set identifier number
     void idn(long long int n) {
-      _v_or_idn = reinterpret_cast<void*>((static_cast<ptrdiff_t>(n) << 1) | static_cast<ptrdiff_t>(1));
+      _v_or_idn.idn = reinterpret_cast<void*>((static_cast<ptrdiff_t>(n) << 1) | static_cast<ptrdiff_t>(1));
       rehash();
     }
     /// Return identifier or X_INTRODUCED plus identifier number
@@ -691,6 +699,8 @@ namespace MiniZinc {
     static const ExpressionId eid = E_TIID;
     /// Constructor
     TIId(const Location& loc, const std::string& v);
+    /// Constructor
+    TIId(const Location& loc, const ASTString& v);
     /// Access identifier
     ASTString v(void) const { return _v; }
     /// Set identifier
@@ -1038,10 +1048,10 @@ namespace MiniZinc {
   protected:
     union {
       /// Identifier of called predicate or function
-      ASTStringO* _id;
+      ASTString _id;
       /// The predicate or function declaration (or NULL)
       FunctionI* _decl;
-    } _u_id;
+    } _u_id = {nullptr};
     union {
       /// Single-argument call (tagged pointer)
       Expression* _oneArg;
@@ -1393,6 +1403,9 @@ namespace MiniZinc {
     /// Constructor
     AssignI(const Location& loc,
             const std::string& id, Expression* e);
+    /// Constructor
+    AssignI(const Location& loc,
+            const ASTString& id, Expression* e);
     /// Access identifier
     ASTString id(void) const { return _id; }
     /// Access expression

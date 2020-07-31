@@ -272,6 +272,7 @@ namespace MiniZinc {
         0, // NID_FL
         0, // NID_CHUNK
         0, // NID_VEC
+        0, // NID_STR
         sizeof(IntLit),        // E_INTLIT
         sizeof(FloatLit),      // E_FLOATLIT
         sizeof(SetLit),        // E_SETLIT
@@ -304,6 +305,7 @@ namespace MiniZinc {
         ns = static_cast<FreeListNode*>(n)->size;
         break;
       case ASTNode::NID_CHUNK:
+      case ASTNode::NID_STR:
         ns = static_cast<ASTChunk*>(n)->memsize();
         break;
       case ASTNode::NID_VEC:
@@ -332,6 +334,7 @@ namespace MiniZinc {
     "FreeList      ", // NID_FL
     "Chunk         ", // NID_CHUNK
     "Vec           ", // NID_VEC
+    "Str           ", // NID_STR
     "IntLit        ",        // E_INTLIT
     "FloatLit      ",      // E_FLOATLIT
     "SetLit        ",        // E_SETLIT
@@ -611,6 +614,9 @@ namespace MiniZinc {
             case Item::II_SOL:
               static_cast<SolveI*>(n)->ann().~Annotation();
               break;
+            case ASTNode::NID_STR:
+              static_cast<ASTStringData*>(n)->destroy();
+              break;
             case Expression::E_VARDECL:
               // Reset WeakRef inside VarDecl
               static_cast<VarDecl*>(n)->flat(NULL);
@@ -695,8 +701,8 @@ namespace MiniZinc {
     return GC::gc()->alloc(s);
   }
 
-  ASTChunk::ASTChunk(size_t size)
-    : ASTNode(NID_CHUNK), _size(size) {}
+  ASTChunk::ASTChunk(size_t size, unsigned int id)
+    : ASTNode(id), _size(size) {}
   void*
   ASTChunk::alloc(size_t size) {
     size_t s = sizeof(ASTChunk)+(size<=4?0:size-4)*sizeof(char);

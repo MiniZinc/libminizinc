@@ -41,7 +41,7 @@ namespace MiniZinc {
     void print(const Expression* e);
     void print(const Item* i);
     void print(const Model* m);
-    
+
     template<class S>
     static std::string escapeStringLit(const S& s) {
       const char* sc = s.c_str();

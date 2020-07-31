@@ -28,8 +28,6 @@ namespace MiniZinc {
     Item* find(Item* e);
     void insert(Model* e0, Model* e1);
     Model* find(Model* e);
-    void insert(const ASTString& e0, const ASTString& e1);
-    ASTStringO* find(const ASTString& e);
     void insert(IntSetVal* e0, IntSetVal* e1);
     IntSetVal* find(IntSetVal* e);
     void insert(FloatSetVal* e0, FloatSetVal* e1);

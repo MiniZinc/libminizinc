@@ -28,7 +28,6 @@
 
 #include <minizinc/solver.hh>
 
-using namespace std;
 using namespace MiniZinc;
 
 #ifdef _WIN32
@@ -66,7 +65,7 @@ int main(int argc, const char** argv) {
       std::string what = e.what();
       std::cerr << what << (what.empty() ? "" : ": ") << e.msg() << std::endl;
     }
-    catch (const exception& e) {
+    catch (const std::exception& e) {
       if (slv.get_flag_verbose())
         std::cerr << std::endl;
       std::cerr << e.what() << std::endl;
@@ -79,7 +78,7 @@ int main(int argc, const char** argv) {
     
     if (slv.get_flag_verbose()) {
       std::cerr << "   Done (";
-      cerr << "overall time " << starttime.stoptime() << ")." << std::endl;
+      std::cerr << "overall time " << starttime.stoptime() << ")." << std::endl;
     }
     return !fSuccess;
   } catch (const Exception& e) {

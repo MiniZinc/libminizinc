@@ -39,8 +39,8 @@ namespace MiniZinc {
     CopyMap cm;
     Model* m = e.envi().orig_model ? e.envi().orig_model : e.envi().model;
     Model* new_mod = new Model();
-    new_mod->setFilename(m->filename().str());
-    new_mod->setFilepath(m->filepath().str());
+    new_mod->setFilename(m->filename());
+    new_mod->setFilepath(m->filepath());
 
     vector<string> new_includePaths;
 
@@ -49,23 +49,26 @@ namespace MiniZinc {
     new_includePaths.insert(new_includePaths.end(), includePaths.begin(), includePaths.end());
 
     // Collect include items
-    vector<string> include_names;
+    vector<ASTString> include_names;
     for(Item* item : *m) {
       if(IncludeI* inc = item->dyn_cast<IncludeI>()) {
-        include_names.push_back(inc->m()->filepath().str());
+        include_names.push_back(inc->m()->filepath());
       } else {
         new_mod->addItem(copy(e.envi(),cm,item));
       }
     }
 
     std::stringstream ss;
-    for(auto& name : include_names)
+    for(auto& name : include_names) {
       ss << "include \""<< Printer::escapeStringLit(name) << "\";";
+    }
 
     vector<SyntaxError> syntax_errors;
     Env* fenv = new Env(new_mod);
     //Model* inc_mod = parse(*fenv, include_names, {}, new_includePaths, true, true, verbose, std::cerr);
-    Model* inc_mod = parseFromString(*fenv, ss.str(), m->filepath().str() + "_Dummy.mzn", new_includePaths, true, true, verbose, std::cerr, syntax_errors);
+    std::ostringstream dummy_file;
+    dummy_file << m->filepath() << "_Dummy.mzn";
+    Model* inc_mod = parseFromString(*fenv, ss.str(), dummy_file.str(), new_includePaths, true, true, verbose, std::cerr, syntax_errors);
     if(inc_mod == nullptr) {
         for(const SyntaxError& se : syntax_errors) {
             std::cerr << std::endl;
