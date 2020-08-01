@@ -10,7 +10,7 @@ macro(MD5 filename md5sum)
   string(MD5 ${md5sum} "${STRIPPED_MD5_FILE}")
 endmacro(MD5)
 
-find_package(BISON 2.3)
+find_package(BISON 3.4)
 find_package(FLEX 2.5)
 
 if(BISON_FOUND AND FLEX_FOUND)
