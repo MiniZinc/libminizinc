@@ -9,9 +9,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-%pure-parser
-
+%define api.pure
 %parse-param {void *parm}
+
+%define api.header.include {<minizinc/parser.tab.hh>}
+
 %lex-param {void* SCANNER}
 %{
 #define SCANNER static_cast<ParserState*>(parm)->yyscanner
@@ -497,7 +499,7 @@ namespace MiniZinc {
        }
 
 %locations
-%error-verbose
+%define parse.error verbose
 
 %initial-action
 {
