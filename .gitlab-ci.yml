@@ -102,7 +102,7 @@ build:win64:
   # only: [refs, branches, tags, merge_requests]
 
 build:wasm_complete:
-  image: trzeci/emscripten
+  image: emscripten/emsdk
   stage: build
   variables:
     MZNARCH: "wasm"
@@ -110,6 +110,7 @@ build:wasm_complete:
   tags: [docker]
   before_script: *download_script
   script:
+    - apt-get update && apt-get install -qq python3
     - sh download.sh vendor master vendor:wasm vendor.zip
     - unzip -q vendor.zip
     - mkdir -p build
@@ -125,7 +126,7 @@ build:wasm_complete:
   when: manual
 
 build:wasm_minimal:
-  image: trzeci/emscripten
+  image: emscripten/emsdk
   stage: build
   variables:
     MZNARCH: "wasm"
@@ -133,6 +134,7 @@ build:wasm_minimal:
   tags: [docker]
   before_script: *download_script
   script:
+    - apt-get update && apt-get install -qq python3
     - sh download.sh vendor master vendor:wasm vendor.zip
     - unzip -q vendor.zip
     - mkdir -p build
