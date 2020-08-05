@@ -195,7 +195,13 @@ namespace MiniZinc {
         return flat_exp(env,Ctx(),e0,NULL,constants().var_true).r();
       }
     } _evalf(ctx);
-    std::vector<EE> elems_ee = eval_comp<EvalF>(env,_evalf,c);
+    std::vector<EE> elems_ee;
+    bool wasUndefined = false;
+    try {
+      elems_ee = eval_comp<EvalF>(env,_evalf,c);
+    } catch (ResultUndefinedError&) {
+      wasUndefined = true;
+    }
     std::vector<Expression*> elems(elems_ee.size());
     Type elemType = Type::bot();
     bool allPar = true;
@@ -246,7 +252,11 @@ namespace MiniZinc {
       }
     }
     assert(!ka()->type().isbot());
-    ret.b = conj(env,b,Ctx(),elems_ee);
+    if (wasUndefined) {
+      ret.b = bind(env,Ctx(),b,constants().lit_false);
+    } else {
+      ret.b = conj(env,b,Ctx(),elems_ee);
+    }
     ret.r = bind(env,Ctx(),r,ka());
     return ret;
   }
