@@ -2538,12 +2538,15 @@ namespace MiniZinc {
       const std::vector<std::string> skip_dirs;
       bool had_input;
       bool had_output;
+      bool had_included_files;
       bool had_add_to_output = false;
       std::ostringstream oss_input;
       std::ostringstream oss_output;
+      std::ostringstream oss_included_files;
       std::string method;
       bool output_item;
-      IfcVisitor(Env& env0, const std::vector<std::string>& skipDirs) : env(env0), skip_dirs(skipDirs), had_input(false), had_output(false), method("sat"), output_item(false) {}
+      IfcVisitor(Env& env0, const std::vector<std::string>& skipDirs) : env(env0), skip_dirs(skipDirs),
+        had_input(false), had_output(false), had_included_files(false), method("sat"), output_item(false) {}
       bool enter(Item* i) {
         if (auto ii = i->dyn_cast<IncludeI>()) {
           std::string prefix = ii->m()->filepath().str().substr(0,ii->m()->filepath().size()-ii->f().size());
@@ -2552,6 +2555,11 @@ namespace MiniZinc {
               return false;
             }
           }
+          if (had_included_files) {
+            oss_included_files << ",\n";
+          }
+          oss_included_files << "    \"" << ii->m()->filepath().str() << "\"";
+          had_included_files = true;
         }
         return true;
       }
@@ -2601,6 +2609,7 @@ namespace MiniZinc {
     os << _ifc.method;
     os << "\"";
     os << ",\n  \"has_output_item\": " << (_ifc.output_item ? "true" : "false");
+    os << ",\n  \"included_files\": [\n" << _ifc.oss_included_files.str() << "\n  ]";
     os << "\n}\n";
   }
   
