@@ -2558,7 +2558,7 @@ namespace MiniZinc {
           if (had_included_files) {
             oss_included_files << ",\n";
           }
-          oss_included_files << "    \"" << ii->m()->filepath().str() << "\"";
+          oss_included_files << "    \"" << Printer::escapeStringLit(ii->m()->filepath()) << "\"";
           had_included_files = true;
         }
         return true;
