@@ -777,8 +777,10 @@ namespace MiniZinc { namespace Ranges {
         return false;
       if (i.max() < j.max())
         return true;
-      if (i.max() > j.max())
-        return false;
+      if (i.max() > j.max()) {
+        ++j;
+        return j();
+      }
       ++i;
       ++j;
     }
@@ -799,8 +801,10 @@ namespace MiniZinc { namespace Ranges {
         return false;
       if (i.max() < j.max())
         return true;
-      if (i.max() > j.max())
-        return false;
+      if (i.max() > j.max()) {
+        ++j;
+        return j();
+      }
       ++i;
       ++j;
     }
