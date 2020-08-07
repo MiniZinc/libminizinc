@@ -32,7 +32,6 @@
 #include <minizinc/file_utils.hh>
 #include <minizinc/solver_instance.hh>
 #include <minizinc/timer.hh>
-#include <minizinc/options.hh>
 
 #include <minizinc/passes/compile_pass.hh>
 #ifdef HAS_GECODE

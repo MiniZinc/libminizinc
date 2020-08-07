@@ -42,7 +42,6 @@ add_library(mzn
   lib/model.cpp
   lib/optimize.cpp
   lib/optimize_constraints.cpp
-  lib/options.cpp
   lib/output.cpp
   lib/parser.cpp
   lib/parser.yxx
@@ -85,7 +84,6 @@ add_library(mzn
   include/minizinc/model.hh
   include/minizinc/optimize.hh
   include/minizinc/optimize_constraints.hh
-  include/minizinc/options.hh
   include/minizinc/output.hh
   include/minizinc/parser.hh
   include/minizinc/passes/compile_pass.hh

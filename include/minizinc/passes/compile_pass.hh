@@ -12,7 +12,6 @@
 #pragma once
 
 #include <minizinc/flatten.hh>
-#include <minizinc/options.hh>
 
 namespace MiniZinc {
 
