@@ -19,12 +19,6 @@
 #include <vector>
 #include <cstring>
 
-//#define MINIZINC_GC_STATS
-
-#if defined(MINIZINC_GC_STATS)
-#include <map>
-#endif
-
 namespace MiniZinc {
   
   GC*&
@@ -79,14 +73,6 @@ namespace MiniZinc {
     friend class GC;
 #if defined(MINIZINC_GC_STATS)
     static const char* _nodeid[Item::II_END+1];
-    struct GCStat {
-      int first;
-      int second;
-      int keepalive;
-      int inmodel;
-      size_t total;
-      GCStat(void) : first(0), second(0), keepalive(0), inmodel(0), total(0) {}
-    };
     std::map<int,GCStat> gc_stats;
 #endif
   protected:
@@ -94,7 +80,7 @@ namespace MiniZinc {
     static const size_t _min_gc_threshold;
     
     HeapPage* _page;
-    Model* _rootset;
+    GCMarker* _rootset;
     KeepAlive* _roots;
     WeakRef* _weakRefs;
     ASTNodeWeakMap* _nodeWeakMaps;
@@ -419,7 +405,7 @@ namespace MiniZinc {
   GC::GC(void) : _heap(new Heap()), _lock_count(0), _timeout(0), _timeout_counter(0) {}
 
   void
-  GC::add(Model* m) {
+  GC::add(GCMarker* m) {
     GC* gc = GC::gc();
     if (gc->_heap->_rootset) {
       m->_roots_next = gc->_heap->_rootset;
@@ -432,7 +418,7 @@ namespace MiniZinc {
   }
 
   void
-  GC::remove(Model* m) {
+  GC::remove(GCMarker* m) {
     GC* gc = GC::gc();
     if (m->_roots_next == m) {
       gc->_heap->_rootset = NULL;
@@ -475,76 +461,20 @@ namespace MiniZinc {
 #if defined(MINIZINC_GC_STATS)
     std::cerr << "+";
 #endif
-    
-    Model* m = _rootset;
-    if (m==NULL)
+
+    GCMarker* m = _rootset;
+    if (m==NULL) {
       return;
+    }
     do {
-      m->_filepath.mark();
-      m->_filename.mark();
-      for (unsigned int j=0; j<m->_items.size(); j++) {
-        Item* i = m->_items[j];
-        if (i->_gc_mark==0) {
-          i->_gc_mark = 1;
-          i->loc().mark();
-          switch (i->iid()) {
-          case Item::II_INC:
-            i->cast<IncludeI>()->f().mark();
-            break;
-          case Item::II_VD:
-            Expression::mark(i->cast<VarDeclI>()->e());
-#if defined(MINIZINC_GC_STATS)
-            gc_stats[i->cast<VarDeclI>()->e()->Expression::eid()].inmodel++;
-#endif
-            break;
-          case Item::II_ASN:
-            i->cast<AssignI>()->id().mark();
-            Expression::mark(i->cast<AssignI>()->e());
-            Expression::mark(i->cast<AssignI>()->decl());
-            break;
-          case Item::II_CON:
-            Expression::mark(i->cast<ConstraintI>()->e());
-#if defined(MINIZINC_GC_STATS)
-            gc_stats[i->cast<ConstraintI>()->e()->Expression::eid()].inmodel++;
-#endif
-            break;
-          case Item::II_SOL:
-            {
-              SolveI* si = i->cast<SolveI>();
-              for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
-                Expression::mark(*it);
-              }
-            }
-            Expression::mark(i->cast<SolveI>()->e());
-            break;
-          case Item::II_OUT:
-            Expression::mark(i->cast<OutputI>()->e());
-            break;
-          case Item::II_FUN:
-            {
-              FunctionI* fi = i->cast<FunctionI>();
-              fi->id().mark();
-              Expression::mark(fi->ti());
-              for (ExpressionSetIter it = fi->ann().begin(); it != fi->ann().end(); ++it) {
-                Expression::mark(*it);
-              }
-              Expression::mark(fi->e());
-              fi->params().mark();
-              for (unsigned int k=0; k<fi->params().size(); k++) {
-                Expression::mark(fi->params()[k]);
-              }
-            }
-            break;      
-          }
-        }
-      }
+      m->mark();
       m = m->_roots_next;
     } while (m != _rootset);
-    
+
     for (unsigned int i=static_cast<unsigned int>(trail.size()); i--;) {
       Expression::mark(trail[i].v);
     }
-    
+
     bool fixPrev = false;
     WeakRef* prevWr = NULL;
     for (WeakRef* wr = _weakRefs; wr != NULL; wr = wr->next()) {
@@ -566,7 +496,7 @@ namespace MiniZinc {
       prevWr->_n = NULL;
       prevWr->_p = NULL;
     }
-    
+
     for (ASTNodeWeakMap* wr = _nodeWeakMaps; wr != NULL; wr = wr->next()) {
       std::vector<ASTNode*> toRemove;
       for (auto n : wr->_m) {
@@ -583,7 +513,7 @@ namespace MiniZinc {
     std::cerr << "\n";
 #endif
   }
-    
+
   void
   GC::Heap::sweep(void) {
 #if defined(MINIZINC_GC_STATS)

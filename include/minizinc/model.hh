@@ -18,6 +18,7 @@
 
 #include <minizinc/gc.hh>
 #include <minizinc/ast.hh>
+#include <minizinc/astmap.hh>
 
 namespace MiniZinc {
   
@@ -29,15 +30,8 @@ namespace MiniZinc {
   class EnvI;
   
   /// A MiniZinc model
-  class Model {
-    friend class GC;
+  class Model : public GCMarker {
     friend Model* copy(EnvI& env, CopyMap& cm, Model* m, bool isFlatModel);
-
-  protected:
-    /// Previous model in root set list
-    Model* _roots_prev;
-    /// Next model in root set list
-    Model* _roots_next;
 
   public:
     struct FnEntry {
@@ -51,6 +45,12 @@ namespace MiniZinc {
   protected:
     /// Add all instances of polymorphic entry \a fe to \a entries
     void addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& entries);
+
+#if defined(MINIZINC_GC_STATS)
+    void mark(std::map<int, GCStat>&) override;
+#else
+    void mark() override;
+#endif
 
     /// Type of map from identifiers to function declarations
     using FnMap = ASTStringMap<std::vector<FnEntry>>;

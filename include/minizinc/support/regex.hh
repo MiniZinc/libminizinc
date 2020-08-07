@@ -19,6 +19,7 @@
 #include <gecode/minimodel.hh>
 #include <minizinc/values.hh>
 #include <minizinc/aststring.hh>
+#include <minizinc/astmap.hh>
 
 // This is a workaround for a bug in flex that only shows up
 // with the Microsoft C++ compiler

@@ -14,12 +14,13 @@
 %{
 #include <cstdlib>
 #include <cstdio>
+#include <iostream>
 #include <memory>
 #include <set>
 
 #include <gecode/minimodel.hh>
 #include <minizinc/values.hh>
-#include <minizinc/aststring.hh>
+#include <minizinc/astmap.hh>
 using namespace Gecode;
 using namespace MiniZinc;
 
@@ -198,8 +199,9 @@ literal:
     R_INTEGER
   | R_IDENTIFIER
     {
+      GCLock lock;
       std::string s($1);
-      auto find = ctx.idMap.find(s);
+      auto find = ctx.idMap.find(s); // Implicit cast to ASTString
       if (find == ctx.idMap.end()) {
         throw std::runtime_error("Unknown identifier: " + s);
       }

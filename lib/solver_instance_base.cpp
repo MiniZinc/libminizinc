@@ -38,12 +38,18 @@ namespace MiniZinc {
   }
   
   void
-  Registry::add(const std::string& name, poster p) {
+  Registry::add(const ASTString name, poster p) {
     _registry.insert(std::make_pair(name, p));
   }
   void
+  Registry::add(const std::string& name, poster p) {
+    GCLock lock;
+    ASTString str(name);
+    return add(str, p);
+  }
+  void
   Registry::post(Call* c) {
-    auto it = _registry.find(std::string(c->id().c_str(), c->id().size()));
+    auto it = _registry.find(c->id());
     if (it == _registry.end()) {
       std::ostringstream ss;
       ss << "Error: solver backend cannot handle constraint: " << c->id();

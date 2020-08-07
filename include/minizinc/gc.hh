@@ -20,6 +20,21 @@
 
 #include <unordered_map>
 
+//#define MINIZINC_GC_STATS
+
+#if defined(MINIZINC_GC_STATS)
+#include <map>
+
+struct GCStat {
+  int first;
+  int second;
+  int keepalive;
+  int inmodel;
+  size_t total;
+  GCStat(void) : first(0), second(0), keepalive(0), inmodel(0), total(0) {}
+};
+#endif
+
 namespace MiniZinc {
   
   /**
@@ -107,9 +122,10 @@ namespace MiniZinc {
     static void* alloc(size_t size);
   };
 
-  class Model;
+
   class Expression;
 
+  class GCMarker;
   class KeepAlive;
   class WeakRef;
 
@@ -162,9 +178,9 @@ namespace MiniZinc {
     /// Test if garbage collector is locked
     static bool locked(void);
     /// Add model \a m to root set
-    static void add(Model* m);
+    static void add(GCMarker* m);
     /// Remove model \a m from root set
-    static void remove(Model* m);
+    static void remove(GCMarker* m);
     
     /// Put a mark on the trail
     static void mark(void);
@@ -243,4 +259,31 @@ namespace MiniZinc {
     ASTNode* find(ASTNode* n);
     void clear() { _m.clear(); }
   };
+
+  /**
+   * \brief Abstract base class for object containing garbage collected data
+   */
+  class GCMarker {
+    friend class GC;
+  private:
+    /// Previous object in root set list
+    GCMarker* _roots_prev = nullptr;
+    /// Next object in root set list
+    GCMarker* _roots_next = nullptr;
+  protected:
+    /// Mark garbage collected objects that 
+#if defined(MINIZINC_GC_STATS)
+    virtual void mark(std::map<int, GCStat>&) = 0;
+#else
+    virtual void mark() = 0;
+#endif
+  public:
+    GCMarker() {
+      GC::add(this);
+    }
+    ~GCMarker() {
+      GC::remove(this);
+    }
+  };
+
 }

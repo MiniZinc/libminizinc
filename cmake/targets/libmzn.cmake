@@ -9,6 +9,7 @@ add_library(mzn
   lib/MIPdomains.cpp
   lib/ast.cpp
   lib/astexception.cpp
+  lib/astmap.cpp
   lib/aststring.cpp
   lib/astvec.cpp
   lib/builtins.cpp
@@ -62,6 +63,7 @@ add_library(mzn
   include/minizinc/ast.hpp
   include/minizinc/astexception.hh
   include/minizinc/astiterator.hh
+  include/minizinc/astmap.hh
   include/minizinc/aststring.hh
   include/minizinc/astvec.hh
   include/minizinc/builtins.hh

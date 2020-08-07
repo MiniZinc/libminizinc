@@ -1333,6 +1333,15 @@ namespace MiniZinc {
     void remove(void) { _flag_1 = true; }
     /// Unset remove item flag (only possible if not already removed by compact())
     void unremove(void) { _flag_1 = false; }
+
+    /// Mark alive for garbage collection
+    void mark(void) {
+      _gc_mark = 1;
+      loc().mark();
+    }
+    bool has_mark(void) {
+      return _gc_mark != 0;
+    }
   };
 
   class Model;
@@ -1575,11 +1584,6 @@ namespace MiniZinc {
     /// Return whether function is defined in the standard library
     bool from_stdlib(void) const { return _from_stdlib; };
     
-    /// Mark for GC
-    void mark(void) {
-      _gc_mark = 1;
-      loc().mark();
-    }
   };
 
   /**

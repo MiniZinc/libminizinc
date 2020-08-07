@@ -77,12 +77,13 @@
 
 #include <cstdlib>
 #include <cstdio>
+#include <iostream>
 #include <memory>
 #include <set>
 
 #include <gecode/minimodel.hh>
 #include <minizinc/values.hh>
-#include <minizinc/aststring.hh>
+#include <minizinc/astmap.hh>
 using namespace Gecode;
 using namespace MiniZinc;
 
@@ -524,9 +525,9 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    75,    75,    82,    83,    91,    92,   100,   101,   106,
-     111,   116,   121,   126,   133,   135,   140,   150,   165,   169,
-     170,   180,   184,   198,   199
+       0,    76,    76,    83,    84,    92,    93,   101,   102,   107,
+     112,   117,   122,   127,   134,   136,   141,   151,   166,   170,
+     171,   181,   185,   199,   200
 };
 #endif
 
@@ -1261,8 +1262,9 @@ yyreduce:
 
   case 24: /* literal: R_IDENTIFIER  */
     {
+      GCLock lock;
       std::string s((yyvsp[0].sValue));
-      auto find = ctx.idMap.find(s);
+      auto find = ctx.idMap.find(s); // Implicit cast to ASTString
       if (find == ctx.idMap.end()) {
         throw std::runtime_error("Unknown identifier: " + s);
       }

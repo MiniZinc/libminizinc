@@ -137,11 +137,11 @@ void Solns2Out::initFromOzn(const std::string& filename) {
   }
 }
 
-Solns2Out::DE& Solns2Out::findOutputVar( ASTString id ) {
+Solns2Out::DE& Solns2Out::findOutputVar(ASTString name) {
   declNewOutput();
-  auto it = declmap.find(std::string(id.c_str(), id.size()));
+  auto it = declmap.find(name);
   MZN_ASSERT_HARD_MSG( declmap.end()!=it,
-                       "solns2out_base: unexpected id in output: " << id );
+                       "solns2out_base: unexpected id in output: " << name);
   return it->second;
 }
 
@@ -456,7 +456,7 @@ void Solns2Out::init() {
           }
       } else {
         GCLock lock;
-        declmap.insert(pair<std::string,DE>(std::string(vdi->e()->id()->str().c_str(), vdi->e()->id()->str().size()),DE(vdi->e(),vdi->e()->e())));
+        declmap.insert(make_pair(vdi->e()->id()->str(), DE(vdi->e(),vdi->e()->e())));
       }
     }
   }

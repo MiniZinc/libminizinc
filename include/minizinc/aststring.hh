@@ -17,7 +17,6 @@
 #include <functional>
 #include <iostream>
 #include <unordered_map>
-#include <unordered_set>
 
 #include <minizinc/gc.hh>
 
@@ -82,12 +81,6 @@ namespace MiniZinc {
     /// Mark string during garbage collection
     void mark(void) const;
   };
-
-  /// Hash map from strings to \a T
-  template <typename T>
-  using ASTStringMap = std::unordered_map<ASTString, T>;
-  /// Hash set of strings
-  using ASTStringSet = std::unordered_set<ASTString>;
 
   /**
    * \brief Print String \a s
