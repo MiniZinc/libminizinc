@@ -35,6 +35,9 @@ if(NOT USE_PROPRIETARY)
   set(GUROBI_PLUGIN ON)
 endif()
 
+# CMake options default value
+option(CMAKE_POSITION_INDEPENDENT_CODE "Default value for POSITION_INDEPENDENT_CODE of targets" TRUE)
+
 # -------------------------------------------------------------------------------------------------------------------
 #  -- CMake initialisation
 
