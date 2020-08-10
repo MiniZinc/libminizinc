@@ -52,7 +52,6 @@ add_library(mzn
   lib/solns2out.cpp
   lib/solver.cpp
   lib/solver_config.cpp
-  lib/solver_instance.cpp
   lib/solver_instance_base.cpp
   lib/statistics.cpp
   lib/type.cpp
