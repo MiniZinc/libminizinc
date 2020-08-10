@@ -4,6 +4,7 @@
 include(cmake/targets/libminizinc_parser.cmake)
 include(cmake/targets/libminizinc_fzn.cmake)
 include(cmake/targets/libminizinc_nl.cmake)
+include(cmake/targets/libminizinc_mip.cmake)
 
 add_library(mzn
   lib/MIPdomains.cpp
@@ -111,6 +112,7 @@ add_library(mzn
 
   $<TARGET_OBJECTS:minizinc_parser>
   $<TARGET_OBJECTS:minizinc_fzn>
+  $<TARGET_OBJECTS:minizinc_mip>
   $<TARGET_OBJECTS:minizinc_nl>
 )
 target_link_libraries(mzn ${CMAKE_THREAD_LIBS_INIT})
