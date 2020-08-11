@@ -1,6 +1,6 @@
 ### MiniZinc Gecode Solver Target
 
-if(GECODE_FOUND AND USE_GECODE)
+if(GECODE_FOUND)
 
   ### Compile target for the Gecode interface
   add_library(minizinc_gecode OBJECT

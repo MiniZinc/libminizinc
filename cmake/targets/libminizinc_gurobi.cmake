@@ -1,6 +1,6 @@
 ### MiniZinc Gurobi Solver Target
 
-if(GUROBI_FOUND AND USE_GUROBI)
+if(GUROBI_FOUND)
 
   ### Compile target for the Gurobi interface
   add_library(minizinc_gurobi OBJECT

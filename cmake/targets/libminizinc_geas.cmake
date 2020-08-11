@@ -1,6 +1,6 @@
 ### MiniZinc Geas Solver Target
 
-if(GEAS_FOUND AND USE_GEAS)
+if(GEAS_FOUND)
 
   ### Compile target for the Geas interface
   add_library(minizinc_geas OBJECT

@@ -1,6 +1,6 @@
 ### MiniZinc SCIP Solver Target
 
-if(SCIP_FOUND AND USE_SCIP)
+if(SCIP_FOUND)
 
   ### Compile target for the SCIP interface
   add_library(minizinc_scip OBJECT

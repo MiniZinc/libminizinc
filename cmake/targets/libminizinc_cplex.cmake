@@ -1,6 +1,6 @@
 ### MiniZinc CPLEX Solver Target
 
-if(CPLEX_FOUND AND USE_CPLEX)
+if(CPLEX_FOUND)
 
   ### Compile target for the CPlex interface
   add_library(minizinc_cplex OBJECT

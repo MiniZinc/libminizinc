@@ -1,6 +1,6 @@
 ### MiniZinc OsiCBC Solver Target
 
-if(OSICBC_FOUND AND USE_OSICBC)
+if(OSICBC_FOUND)
 
   ### Compile target for the OsiCBC interface
   add_library(minizinc_osicbc OBJECT

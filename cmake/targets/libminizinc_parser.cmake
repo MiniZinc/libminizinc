@@ -93,7 +93,7 @@ else()
   set(FLEX_RegExLexer_OUTPUTS ${PROJECT_SOURCE_DIR}/lib/cached/regex_lexer.yy.cpp)
 endif()
 
-if(NOT (GECODE_FOUND AND USE_GECODE))
+if(NOT GECODE_FOUND)
   set(FLEX_RegExLexer_OUTPUTS "")
   set(BISON_RegExParser_OUTPUTS "")
 endif()
@@ -105,7 +105,7 @@ add_library(minizinc_parser OBJECT
   ${FLEX_RegExLexer_OUTPUTS}
 )
 
-if(GECODE_FOUND AND USE_GECODE)
+if(GECODE_FOUND)
   target_include_directories(minizinc_parser PRIVATE "${GECODE_INCLUDE_DIRS}")
   target_compile_definitions(minizinc_parser PRIVATE HAS_GECODE)
 endif()

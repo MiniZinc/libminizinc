@@ -15,18 +15,9 @@ endif()
 # -------------------------------------------------------------------------------------------------------------------
 #  -- Project build options
 
-# Driver compilation selection
-option(USE_CPLEX "Enable the CPLEX solving target" TRUE)
-option(USE_GEAS "Enable the Geas solving target" TRUE)
-option(USE_GECODE "Enable the Gecode solving target" TRUE)
-option(USE_GUROBI "Enable the Gurobi solving target" TRUE)
-option(USE_OSICBC "Enable the Osi CBC solving target" TRUE)
-option(USE_SCIP "Enable the SCIP solving target" TRUE)
-option(USE_XPRESS "Enable the Xpress solving target" TRUE)
-
 # Static vs. Dynamic linking
-option(CPLEX_PLUGIN "Build CPLEX binding as a plugin" ON)
-option(GUROBI_PLUGIN "Build Gurobi binding as a plugin" ON)
+option(CPlex_PLUGIN "Build CPLEX binding as a plugin" ON)
+option(Gurobi_PLUGIN "Build Gurobi binding as a plugin" ON)
 
 # Enforce non proprietary build
 option(USE_PROPRIETARY "Enable static linking of proprietary solvers" OFF)

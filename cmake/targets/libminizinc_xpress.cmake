@@ -1,6 +1,6 @@
 ### MiniZinc FICO Xpress Solver Target
 
-if(XPRESS_FOUND AND USE_XPRESS)
+if(XPRESS_FOUND)
 
   ### Compile target for the Xpress interface
   add_library(minizinc_xpress OBJECT
