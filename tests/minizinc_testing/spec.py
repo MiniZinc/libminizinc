@@ -1,5 +1,6 @@
 from . import yaml
 import minizinc as mzn
+from minizinc.helpers import check_result
 from dataclasses import dataclass
 from dataclasses import make_dataclass
 import pathlib
@@ -31,7 +32,7 @@ class Test:
         """
         Runs this test case given an mzn file path, a solver name and some default options.
 
-        Any options specified in this test case directly will override those provided in 
+        Any options specified in this test case directly will override those provided in
         default options.
 
         Returns a tuple containing:
@@ -137,7 +138,7 @@ class SolutionSet:
     """
     Represents a set of expected solutions that passes when
     every obtained solution matches an entry in this set.
-    
+
     Represented with `!SolutionSet` in YAML
     """
 
@@ -158,7 +159,7 @@ class SolutionSet:
 class Solution:
     """
     A solution which is satisfied when every member of the this solution matches a member in the obtained solution.
-    
+
     That is, the obtained solution can contain extra items that are not compared.
 
     Represented by `!Solution` in YAML.
@@ -167,6 +168,9 @@ class Solution:
     def __init__(self, **kwargs):
         for key, value in kwargs.items():
             setattr(self, key, value)
+
+    def items(self):
+        return vars(self).items()
 
     def is_satisfied(self, other):
         """
@@ -248,26 +252,9 @@ class CachedResult:
         Checks that the result stored in this object, when given as data for the
         stored model with the given solver, is satisfied.
         """
-        # TODO: Improve this; it's a bit hacky
-        # check_solution needs the solution type to be a dataclass, so just make a dumb one
-        def as_dataclass(solution):
-            solution_dict = solution.__dict__
-            fields = solution_dict.keys()
-            return make_dataclass("Solution", fields)(**solution_dict)
-
-        solution = (
-            [as_dataclass(s) for s in self.result.solution if s is not None]
-            if isinstance(self.result.solution, list)
-            else as_dataclass(self.result.solution)
-        )
-        result = mzn.Result(
-            status=self.result.status,
-            solution=solution,
-            statistics=self.result.statistics,
-        )
         solver_instance = mzn.Solver.lookup(solver)
-        passed = mzn.helpers.check_solution(
-            model=self.model, result=result, solver=solver_instance
+        passed = check_result(
+            model=self.model, result=self.result, solver=solver_instance
         )
         return passed
 
@@ -317,7 +304,7 @@ class FlatZinc:
     def from_mzn(fzn, base):
         """
         Creates a `FlatZinc` object from a `File` returned by `flat()` in the minizinc interface.
-        
+
         Also takes the base path the mzn file was from, so that when loading the expected fzn file
         it can be done relative to the mzn path.
         """
@@ -358,7 +345,7 @@ class OutputModel:
     def from_mzn(ozn, base):
         """
         Creates a `OutputModel` object from a `File` returned by `flat()` in the minizinc interface.
-        
+
         Also takes the base path the mzn file was from, so that when loading the expected ozn file
         it can be done relative to the mzn path.
         """

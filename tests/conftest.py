@@ -9,10 +9,7 @@ from html import escape
 import pytest_html
 import re
 import minizinc as mzn
-import datetime
-from minizinc.helpers import check_solution
 from difflib import HtmlDiff
-import warnings
 import sys
 
 
@@ -40,7 +37,7 @@ def pytest_addoption(parser):
 
 def pytest_collect_file(parent, path):
     if path.ext == ".mzn":
-        return MznFile(path, parent)
+        return MznFile.from_parent(parent, fspath=path)
 
 
 def pytest_html_results_table_header(cells):
@@ -129,24 +126,24 @@ class MznFile(pytest.File):
                                 )
                                 name = "{}.{}.{}".format(suite_name, base, solver)
                                 cache = CachedResult()
-                                yield SolveItem(
-                                    name,
+                                yield SolveItem.from_parent(
                                     self,
-                                    spec,
-                                    solver,
-                                    cache,
-                                    spec.markers,
-                                    suite,
+                                    name=name,
+                                    spec=spec,
+                                    solver=solver,
+                                    cache=cache,
+                                    markers=spec.markers,
+                                    suite=suite,
                                 )
                                 for checker in spec.check_against:
-                                    yield CheckItem(
-                                        "{}:{}".format(name, checker),
+                                    yield CheckItem.from_parent(
                                         self,
-                                        cache,
-                                        solver,
-                                        checker,
-                                        spec.markers,
-                                        suite,
+                                        name="{}:{}".format(name, checker),
+                                        cache=cache,
+                                        solver=solver,
+                                        checker=checker,
+                                        markers=spec.markers,
+                                        suite=suite,
                                     )
 
 
@@ -243,9 +240,7 @@ class SolveItem(MznItem):
 
 
 class CheckItem(MznItem):
-    def __init__(
-        self, name, parent, cache, solver, checker, markers, suite
-    ):
+    def __init__(self, name, parent, cache, solver, checker, markers, suite):
         super().__init__(name, parent, solver, markers, suite)
         if not self.solver_allowed(checker):
             self.add_marker(
