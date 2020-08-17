@@ -24,6 +24,11 @@ Use the `--solvers` option to specify a subset of solvers to use in the tests. T
 pytest --solvers gecode,chuffed
 ```
 
+Use the `--driver` option to specify the directory containing the minizinc executable. Otherwise, default directories and PATH will be used to locate it.
+```sh
+pytest --driver=../build
+```
+
 ## Multiple test suites
 
 To facilitate running the test suite with different minizinc options, `specs/suites.yml` contains configurations for running tests, or a subset of tests using different options.

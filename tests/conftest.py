@@ -13,8 +13,15 @@ from difflib import HtmlDiff
 import sys
 
 
-def pytest_configure():
+def pytest_configure(config):
     pytest.solver_cache = {}
+    search = config.getoption("--driver")
+    if search is not None:
+        driver = mzn.find_driver([search])
+        if driver is None:
+            raise Exception("Failed to find MiniZinc driver in {}".format(search))
+        driver.make_default()
+
 
 def pytest_addoption(parser):
     parser.addoption(
@@ -32,6 +39,12 @@ def pytest_addoption(parser):
     )
     parser.addoption(
         "--all-suites", action="store_true", dest="feature", help="Run all test suites"
+    )
+    parser.addoption(
+        "--driver",
+        action="store",
+        metavar="MINIZINC",
+        help="Directory containing MiniZinc executable",
     )
 
 
