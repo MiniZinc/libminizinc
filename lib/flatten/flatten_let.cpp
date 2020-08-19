@@ -13,7 +13,7 @@
 
 namespace MiniZinc {
   
-  EE flatten_let(EnvI& env,Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
+  EE flatten_let(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     CallStackItem _csi(env,e);
     EE ret;
     Let* let = e->cast<Let>();
@@ -72,7 +72,7 @@ namespace MiniZinc {
           }
           CallStackItem csi_vd(env, vd);
           GCLock lock;
-          TypeInst* ti = eval_typeinst(env,vd);
+          TypeInst* ti = eval_typeinst(env, ctx, vd);
           VarDecl* nvd = newVarDecl(env, ctx, ti, NULL, vd, NULL);
           let_e = nvd->id();
         }

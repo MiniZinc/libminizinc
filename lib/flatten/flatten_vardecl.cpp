@@ -22,7 +22,7 @@ namespace MiniZinc {
     VarDecl* v = e->cast<VarDecl>();
     VarDecl* it = v->flat();
     if (it==NULL) {
-      TypeInst* ti = eval_typeinst(env,v);
+      TypeInst* ti = eval_typeinst(env, ctx, v);
       if (ti->domain() && ti->domain()->isa<SetLit>()) {
         if (ti->type().bt()==Type::BT_INT && ti->type().st()==Type::ST_PLAIN) {
           if (eval_intset(env, ti->domain())->size()==0) {

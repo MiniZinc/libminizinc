@@ -2442,7 +2442,7 @@ namespace MiniZinc {
     }
   }
 
-  TypeInst* eval_typeinst(EnvI& env, VarDecl* vd) {
+  TypeInst* eval_typeinst(EnvI& env, Ctx ctx, VarDecl* vd) {
     bool hasTiVars = vd->ti()->domain() && vd->ti()->domain()->isa<TIId>();
     for (unsigned int i=0; i<vd->ti()->ranges().size(); i++) {
       hasTiVars = hasTiVars || (vd->ti()->ranges()[i]->domain() && vd->ti()->ranges()[i]->domain()->isa<TIId>());
@@ -2456,12 +2456,13 @@ namespace MiniZinc {
       for (unsigned int i=0; i<dims.size(); i++) {
         dims[i] = new TypeInst(Location().introduce(), Type(), new SetLit(Location().introduce(),IntSetVal::a(al->min(i),al->max(i))));
       }
-      return new TypeInst(Location().introduce(), vd->e()->type(), dims, eval_par(env,vd->ti()->domain()));
+      return new TypeInst(Location().introduce(), vd->e()->type(), dims, flat_cv_exp(env, ctx, vd->ti()->domain())());
     } else {
       std::vector<TypeInst*> dims(vd->ti()->ranges().size());
       for (unsigned int i=0; i<vd->ti()->ranges().size(); i++) {
         if (vd->ti()->ranges()[i]->domain()) {
-          IntSetVal* isv = eval_intset(env,vd->ti()->ranges()[i]->domain());
+          KeepAlive range = flat_cv_exp(env, ctx, vd->ti()->ranges()[i]->domain());
+          IntSetVal* isv = eval_intset(env, range());
           if (isv->size() > 1)
             throw EvalError(env, vd->ti()->ranges()[i]->domain()->loc(),
                             "array index set must be contiguous range");
@@ -2473,7 +2474,7 @@ namespace MiniZinc {
         }
       }
       Type t = (vd->e() && !vd->e()->type().isbot()) ? vd->e()->type() : vd->ti()->type();
-      return new TypeInst(vd->ti()->loc(), t, dims, eval_par(env,vd->ti()->domain()));
+      return new TypeInst(vd->ti()->loc(), t, dims, flat_cv_exp(env, ctx, vd->ti()->domain())());
     }
   }
   
@@ -2487,6 +2488,9 @@ namespace MiniZinc {
   }
   
   KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
+    if (!e) {
+      return nullptr;
+    }
     GCLock lock;
     if (e->type().ispar() && !e->type().cv()) {
       return eval_par(env, e);

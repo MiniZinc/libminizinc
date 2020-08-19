@@ -19,7 +19,7 @@ namespace MiniZinc {
   bool istrue(EnvI& env, Expression* e);
   bool isfalse(EnvI& env, Expression* e);
   Expression* createDummyValue(EnvI& env, const Type& t);
-  TypeInst* eval_typeinst(EnvI& env, VarDecl* vd);
+  TypeInst* eval_typeinst(EnvI& env, Ctx ctx, VarDecl* vd);
 
   KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e);
   KeepAlive conj(EnvI& env,VarDecl* b,Ctx ctx,const std::vector<EE>& e);

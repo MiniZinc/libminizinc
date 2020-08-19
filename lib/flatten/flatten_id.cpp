@@ -193,8 +193,8 @@ namespace MiniZinc {
               // Do not create names for empty arrays but return array literal directly
               rete = vdea;
             } else {
-              VarDecl* nvd = newVarDecl(env, ctx, eval_typeinst(env,vd), NULL, vd, NULL);
-              
+              VarDecl* nvd = newVarDecl(env, ctx, eval_typeinst(env, ctx,vd), NULL, vd, NULL);
+
               if (vd->e()) {
                 (void) flat_exp(env, Ctx(), vd->e(), nvd, constants().var_true);
               }
