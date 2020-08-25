@@ -25,7 +25,10 @@ check:format:
   stage: check
   image: dekker1/minibuild:clang-format
   script:
-    - run-clang-format -r lib include solvers minizinc.cpp mzn2doc.cpp
+    - mkdir -p build
+    - cd build
+    - cmake -GNinja .. -DCLANG_FORMAT_EXECUTABLE="run-clang-format" -DCLANG_FORMAT_FLAGS="--color always"
+    - cmake --build . --target format
   tags: [linux, docker]
 
 # ----------- Build MiniZinc -----------

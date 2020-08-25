@@ -102,3 +102,7 @@ include(cmake/support/config_emscripten.cmake)
 
 include(cmake/support/config_export.cmake)
 include(cmake/support/config_output.cmake)
+
+# -------------------------------------------------------------------------------------------------------------------
+#  -- Support Actions
+include(cmake/support/format.cmake)
