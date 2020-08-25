@@ -110,7 +110,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
 {
   CLOParser cop( i, argv );
   string buffer;
-  
+  int intBuffer;
+
   if ( cop.getOption( "-I --search-dir", &buffer ) ) {
     includePaths.push_back(buffer+string("/"));
   } else if ( cop.getOption( "--ignore-stdlib" ) ) {
@@ -127,7 +128,7 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
     flag_model_types_only = true;
   } else if ( cop.getOption( "-v --verbose") ) {
     flag_verbose = true;
-  } else if (string(argv[i])==string("--newfzn")) {
+  } else if ( cop.getOption("--newfzn") ) {
     flag_newfzn = true;
   } else if ( cop.getOption( "--no-optimize --no-optimise") ) {
     flag_optimize = false;
@@ -190,14 +191,14 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
   } else if ( cop.getOption( "--MIPDMaxDensEE", &opt_MIPDmaxDensEE ) ) {
   } else if ( cop.getOption( "-Werror" ) ) {
     flag_werror = true;
-  } else if (string(argv[i])=="--use-gecode") {
+  } else if (cop.getOption("--use-gecode")) {
 #ifdef HAS_GECODE
     flag_two_pass = true;
     flag_gecode = true;
 #else
     log << "warning: Gecode not available. Ignoring '--use-gecode'\n";
 #endif
-  } else if (string(argv[i])=="--sac") {
+  } else if (cop.getOption("--sac")) {
 #ifdef HAS_GECODE
     flag_two_pass = true;
     flag_gecode = true;
@@ -206,7 +207,7 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
     log << "warning: Gecode not available. Ignoring '--sac'\n";
 #endif
 
-  } else if (string(argv[i])=="--shave") {
+  } else if (cop.getOption("--shave")) {
 #ifdef HAS_GECODE
     flag_two_pass = true;
     flag_gecode = true;
@@ -214,48 +215,51 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
 #else
     log << "warning: Gecode not available. Ignoring '--shave'\n";
 #endif
-  } else if (string(argv[i])=="--two-pass") {
+  } else if (cop.getOption("--two-pass")) {
     flag_two_pass = true;
-  } else if (string(argv[i])=="--npass") {
-    i++;
-    if (i==argv.size()) return false;
-    log << "warning: --npass option is deprecated --two-pass\n";
-    int passes = atoi(argv[i].c_str());
-    if(passes == 1) flag_two_pass = false;
-    else if(passes == 2) flag_two_pass = true;
-  } else if (string(argv[i])=="--pre-passes") {
-    i++;
-    if (i==argv.size()) return false;
-    int passes = atoi(argv[i].c_str());
-    if(passes >= 0) {
-      flag_pre_passes = static_cast<unsigned int>(passes);
+  } else if (cop.getOption("--pre-passes", &intBuffer)) {
+    if(intBuffer >= 0) {
+      flag_pre_passes = static_cast<unsigned int>(intBuffer);
     }
-  } else if (string(argv[i])=="-O0") {
-    flag_optimize = false;
-  } else if (string(argv[i])=="-O1") {
-    // Default settings
-  } else if (string(argv[i])=="-O2") {
-    flag_two_pass = true;
-#ifdef HAS_GECODE
-  } else if (string(argv[i])=="-O3") {
-    flag_two_pass = true;
-    flag_gecode = true;
-  } else if (string(argv[i])=="-O4") {
-    flag_two_pass = true;
-    flag_gecode = true;
-    flag_shave = true;
-  } else if (string(argv[i])=="-O5") {
-    flag_two_pass = true;
-    flag_gecode = true;
-    flag_sac = true;
-#else
-  } else if (string(argv[i])=="-O3" || string(argv[i])=="-O4" || string(argv[i])=="-O5") {
-    log << "% Warning: This compiler does not have Gecode builtin, cannot process -O3,-O4,-O5.\n";
-    return false;
-#endif
+  } else if (cop.getOption("-O", &intBuffer)) {
+    switch (intBuffer) {
+      case 0: {
+        flag_optimize = false;
+        break;
+      }
+      case 1: {
+        // Default settings
+        break;
+      }
+      case 2: {
+        flag_two_pass = true;
+        break;
+      }
+      case 3: {
+        flag_two_pass = true;
+        flag_gecode = true;
+        break;
+      }
+      case 4: {
+        flag_two_pass = true;
+        flag_gecode = true;
+        flag_shave = true;
+        break;
+      }
+      case 5: {
+        flag_two_pass = true;
+        flag_gecode = true;
+        flag_sac = true;
+        break;
+      }
+      default: {
+        log << "% Error: Unsupported optimisation level, cannot process -O" << intBuffer << "." << std::endl;
+        return false;
+      }
+    }
     // ozn options must be after the -O<n> optimisation options
   } else if ( cop.getOption( "--ozn --output-ozn-to-file", &flag_output_ozn) ) {
-  } else if (string(argv[i])=="-g") {
+  } else if ( cop.getOption("-g") ) {
     flag_optimize = false;
     flag_two_pass = false;
     flag_gecode = false;
