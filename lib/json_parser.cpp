@@ -508,16 +508,17 @@ namespace MiniZinc {
     line = 0;
     column = 0;
     expectToken(is, T_OBJ_OPEN);
-    unordered_set<ASTString> knownIds;
+    ASTStringMap<TypeInst*> knownIds;
     if (ignoreUnknown) {
       // Collect known VarDecl ids from model and includes
       class VarDeclVisitor : public ItemVisitor {
       private:
-        unordered_set<ASTString>& knownIds;
+        ASTStringMap<TypeInst*>& knownIds;
       public:
-        VarDeclVisitor(unordered_set<ASTString>& _knownIds) : knownIds(_knownIds) {}
+        VarDeclVisitor(ASTStringMap<TypeInst*>& _knownIds) : knownIds(_knownIds) {}
         void vVarDeclI(VarDeclI* vdi) {
-          knownIds.insert(vdi->e()->id()->str());
+          VarDecl* vd = vdi->e();
+          knownIds.emplace(vd->id()->str(), vd->ti());
         }
       } _varDecls(knownIds);
       iterItems(_varDecls, m);
@@ -526,7 +527,31 @@ namespace MiniZinc {
       string ident = expectString(is);
       expectToken(is, T_COLON);
       Expression* e = parseExp(is);
-      if (ident[0]!='_' && (!ignoreUnknown || knownIds.count(ident) == 1)) {
+      auto it = knownIds.find(ident);
+      if (ident[0]!='_' && (!ignoreUnknown || it != knownIds.end())) {
+        // Add correct index sets if they are non-standard
+        if (it != knownIds.end() && it->second->isarray()) {
+          TypeInst* ti = it->second;
+          bool has_index = std::any_of(ti->ranges().begin(), ti->ranges().end(),
+            [](TypeInst* nti) {
+              return nti->domain() != nullptr;
+            }
+          );
+          ArrayLit* al = e->dyn_cast<ArrayLit>();
+          if (al && has_index && al->dims() == ti->ranges().size()) {
+            std::string name = "array" + std::to_string(al->dims()) + "d";
+            std::vector<Expression*> args(al->dims() + 1);
+            for (int i = 0; i < al->dims(); ++i) {
+              if (ti->ranges()[i]->domain()) {
+                args[i] = ti->ranges()[i]->domain();
+              } else {
+                args[i] = new SetLit(Location().introduce(), IntSetVal::a(al->min(i), al->max(i)));
+              }
+            }
+            args[al->dims()] = new ArrayLit(al->loc(), *al);
+            e = new Call(Location().introduce(), name, args);
+          }
+        }
         AssignI* ai = new AssignI(Location().introduce(), ident, e);
         m->addItem(ai);
       }
