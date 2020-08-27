@@ -1,3 +1,5 @@
+include "among_fn.mzn";
+
 include "fzn_among.mzn";
 include "fzn_among_reif.mzn";
 
@@ -9,11 +11,3 @@ predicate among(var int: n, array[int] of var int: x, set of int: v) =
 
 predicate among_reif(var int: n, array[int] of var int: x, set of int: v, var bool: b) =
     fzn_among_reif(n, x, v, b);
-
-/**  @group globals.counting
-  Returns the number of variables in \a x that take one of the values in \a v.
-*/
-function var int: among(array[int] of var int:x, set of int:v) :: promise_total =
-    let { var 0..length(x): n ::is_defined_var; 
-          constraint fzn_among(n,x,v) ::defines_var(n); }
-    in n;
