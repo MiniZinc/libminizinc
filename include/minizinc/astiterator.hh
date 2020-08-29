@@ -82,8 +82,8 @@ namespace MiniZinc {
   };
 
   template<class T>
-  void topDown(T& t, Expression* e) {
-    TopDownIterator<T>(t).run(e);
+  void topDown(T& t, Expression* root) {
+    TopDownIterator<T>(t).run(root);
   }
 
   /* IMPLEMENTATION */

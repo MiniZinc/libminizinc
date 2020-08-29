@@ -1790,14 +1790,15 @@ namespace MiniZinc {
               }
             }
             TypeInst* ti = new TypeInst(e->loc(),al->type(),ranges_v,domain);
-            if (domain)
+            if (domain) {
               ti->setComputedDomain(true);
+            }
 
-            VarDecl* vd = newVarDecl(env, ctx, ti, NULL, NULL, al);
-            EE ee(vd,NULL);
+            VarDecl* nvd = newVarDecl(env, ctx, ti, NULL, NULL, al);
+            EE ee(nvd,NULL);
             env.cse_map_insert(al,ee);
-            env.cse_map_insert(vd->e(),ee);
-            return vd->id();
+            env.cse_map_insert(nvd->e(),ee);
+            return nvd->id();
           }
         case Expression::E_CALL:
           {
@@ -1806,19 +1807,19 @@ namespace MiniZinc {
             GCLock lock;
             /// TODO: handle array types
             TypeInst* ti = new TypeInst(Location().introduce(),e->type());
-            VarDecl* vd = newVarDecl(env, ctx, ti, NULL, NULL, e);
-            if (vd->e()->type().bt()==Type::BT_INT && vd->e()->type().dim()==0) {
+            VarDecl* nvd = newVarDecl(env, ctx, ti, NULL, NULL, e);
+            if (nvd->e()->type().bt()==Type::BT_INT && nvd->e()->type().dim()==0) {
               IntSetVal* ibv = NULL;
-              if (vd->e()->type().is_set()) {
-                ibv = compute_intset_bounds(env,vd->e());
+              if (nvd->e()->type().is_set()) {
+                ibv = compute_intset_bounds(env,nvd->e());
               } else {
-                IntBounds ib = compute_int_bounds(env,vd->e());
+                IntBounds ib = compute_int_bounds(env,nvd->e());
                 if (ib.valid) {
                   ibv = IntSetVal::a(ib.l,ib.u);
                 }
               }
               if (ibv) {
-                Id* id = vd->id();
+                Id* id = nvd->id();
                 while (id != NULL) {
                   if (id->decl()->ti()->domain()) {
                     IntSetVal* domain = eval_intset(env,id->decl()->ti()->domain());
@@ -1842,13 +1843,13 @@ namespace MiniZinc {
                   id = id->decl()->e() ? id->decl()->e()->dyn_cast<Id>() : NULL;
                 }
               }
-            } else if (vd->e()->type().isbool()) {
-              addCtxAnn(vd, ctx.b);
-            } else if (vd->e()->type().bt()==Type::BT_FLOAT && vd->e()->type().dim()==0) {
-              FloatBounds fb = compute_float_bounds(env,vd->e());
+            } else if (nvd->e()->type().isbool()) {
+              addCtxAnn(nvd, ctx.b);
+            } else if (nvd->e()->type().bt()==Type::BT_FLOAT && nvd->e()->type().dim()==0) {
+              FloatBounds fb = compute_float_bounds(env,nvd->e());
               FloatSetVal* ibv = LinearTraits<FloatLit>::intersect_domain(NULL, fb.l, fb.u);
               if (fb.valid) {
-                Id* id = vd->id();
+                Id* id = nvd->id();
                 while (id != NULL) {
                   if (id->decl()->ti()->domain()) {
                     FloatSetVal* domain = eval_floatset(env,id->decl()->ti()->domain());
@@ -1871,7 +1872,7 @@ namespace MiniZinc {
               }
             }
 
-            return vd->id();
+            return nvd->id();
           }
         default:
           assert(false); return NULL;

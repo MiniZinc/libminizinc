@@ -125,6 +125,7 @@ namespace MiniZinc {
       if (_opt.supports_p)
         _opt.parallel = to_string(nn);
     } else if ( cop.getOption( "-k --keep-files" ) ) {
+      // Deprecated option! Does nothing.
     } else if ( cop.getOption( "-r --seed --random-seed", &buffer) ) {
       if (_opt.supports_r) {
         _opt.fzn_flags.push_back("-r");

@@ -55,21 +55,31 @@ bool Solns2Out::processOption(int& i, std::vector<std::string>& argv)
   if ( cop.getOption( "--ozn-file", &oznfile) ) {
     initFromOzn(oznfile);
   } else if ( cop.getOption( "-o --output-to-file", &_opt.flag_output_file) ) {
+    // Parsed by reference
   } else if ( cop.getOption( "--no-flush-output" ) ) {
     _opt.flag_output_flush = false;
   } else if ( cop.getOption( "--no-output-comments" ) ) {
     _opt.flag_output_comments = false;
   } else if ( cop.getOption( "-i --ignore-lines --ignore-leading-lines", &_opt.flag_ignore_lines ) ) {
+    // Parsed by reference
   } else if ( cop.getOption( "--output-time" ) ) {
     _opt.flag_output_time = true;
   } else if ( cop.getOption( "--soln-sep --soln-separator --solution-separator", &_opt.solution_separator ) ) {
+    // Parsed by reference
   } else if ( cop.getOption( "--soln-comma --solution-comma", &_opt.solution_comma ) ) {
+    // Parsed by reference
   } else if ( cop.getOption( "--unsat-msg --unsatisfiable-msg", &_opt.unsatisfiable_msg ) ) {
+    // Parsed by reference
   } else if ( cop.getOption( "--unbounded-msg", &_opt.unbounded_msg ) ) {
+    // Parsed by reference
   } else if ( cop.getOption( "--unsatorunbnd-msg", &_opt.unsatorunbnd_msg ) ) {
+    // Parsed by reference
   } else if ( cop.getOption( "--unknown-msg", &_opt.unknown_msg ) ) {
+    // Parsed by reference
   } else if ( cop.getOption( "--error-msg", &_opt.error_msg ) ) {
+    // Parsed by reference
   } else if ( cop.getOption( "--search-complete-msg", &_opt.search_complete_msg ) ) {
+    // Parsed by reference
   } else if ( cop.getOption( "--unique") ) {
     _opt.flag_unique = true;
   } else if ( cop.getOption( "--non-unique") ) {
@@ -77,8 +87,9 @@ bool Solns2Out::processOption(int& i, std::vector<std::string>& argv)
   } else if ( cop.getOption( "-c --canonicalize") ) {
     _opt.flag_canonicalize = true;
   } else if ( cop.getOption( "--output-non-canonical --output-non-canon", &_opt.flag_output_noncanonical) ) {
+    // Parsed by reference
   } else if ( cop.getOption( "--output-raw", &_opt.flag_output_raw) ) {
-//   } else if ( cop.getOption( "--number-output", &_opt.flag_number_output ) ) {
+    // Parsed by reference
   } else if ( _opt.flag_standaloneSolns2Out ) {
     std::string oznfile(argv[i]);
     if (oznfile.length()<=4) {

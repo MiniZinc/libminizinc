@@ -46,11 +46,17 @@ namespace MiniZinc {
     /// Add all instances of polymorphic entry \a fe to \a entries
     void addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& entries);
 
+    void mark(MINIZINC_GC_STAT_ARGS) override {
+      _filepath.mark();
+      _filename.mark();
+      for (unsigned int j=0; j<_items.size(); j++) {
 #if defined(MINIZINC_GC_STATS)
-    void mark(std::map<int, GCStat>&) override;
+    Item::mark(_items[j], gc_stats);
 #else
-    void mark() override;
+    Item::mark(_items[j]);
 #endif
+      }
+    };
 
     /// Type of map from identifiers to function declarations
     using FnMap = ASTStringMap<std::vector<FnEntry>>;

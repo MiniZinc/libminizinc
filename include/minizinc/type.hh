@@ -47,7 +47,7 @@ namespace MiniZinc {
      */
     unsigned int _enumId : 12;
     /// Number of array dimensions
-    int _dim : 7;
+    signed int _dim : 7;
   public:
     /// Default constructor
     Type(void) : _ti(TI_PAR), _bt(BT_UNKNOWN), _st(ST_PLAIN),

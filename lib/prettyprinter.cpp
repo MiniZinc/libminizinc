@@ -696,10 +696,11 @@ namespace MiniZinc {
           os << fi.id();
           if (fi.params().size() > 0) {
             os << "(";
-            for (unsigned int i = 0; i < fi.params().size(); i++) {
-              p(fi.params()[i]);
-              if (i<fi.params().size()-1)
+            for (unsigned int j = 0; j < fi.params().size(); j++) {
+              p(fi.params()[j]);
+              if (j<fi.params().size()-1) {
                 os << ",";
+              }
             }
             os << ")";
           }
@@ -917,10 +918,10 @@ namespace MiniZinc {
   public:
     Line()
       : indentation(0), lineLength(0), text(0) {}
-    Line(const Line& l)
-      : indentation(l.indentation), lineLength(l.lineLength), text(l.text) {}
+    Line(const Line&) = default;
     Line(const int indent)
       : indentation(indent), lineLength(0), text(0) {}
+    Line& operator=(const Line&) = default;
     bool operator==(const Line& l) {
       return &l == this;
     }
@@ -1048,10 +1049,9 @@ namespace MiniZinc {
       if (v != NULL) {
         v->erase(std::remove(v->begin(), v->end(), i), v->end());
       }
-      std::map<int, std::vector<int> >::iterator it;
-      for (it = lines.begin(); it != lines.end(); it++) {
-        std::vector<int>* v = &(it->second);
-        v->erase(std::remove(v->begin(), v->end(), i), v->end());
+      for (auto it = lines.begin(); it != lines.end(); it++) {
+        std::vector<int>& l = it->second;
+        l.erase(std::remove(l.begin(), l.end(), i), l.end());
       }
       //Call on its parent
       if (!success) {

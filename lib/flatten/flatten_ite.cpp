@@ -13,10 +13,10 @@
 
 namespace MiniZinc {
 
-  std::vector<Expression*> get_conjuncts(Expression* e) {
+  std::vector<Expression*> get_conjuncts(Expression* start) {
     std::vector<Expression*> conj_stack;
     std::vector<Expression*> conjuncts;
-    conj_stack.push_back(e);
+    conj_stack.push_back(start);
     while (!conj_stack.empty()) {
       Expression* e = conj_stack.back();
       conj_stack.pop_back();
@@ -33,7 +33,7 @@ namespace MiniZinc {
     }
     return conjuncts;
   }
-  
+
   void classify_conjunct(Expression* e, IdMap<int>& eq_occurrences, IdMap<std::pair<Expression*,Expression*> >& eq_branches, std::vector<Expression*>& other_branches) {
     if (BinOp* bo = e->dyn_cast<BinOp>()) {
       if (bo->op()==BOT_EQ) {
@@ -116,25 +116,25 @@ namespace MiniZinc {
         }
         noOtherBranches = noOtherBranches && other_branches[ite->size()].empty();
       }
-      for (auto& e : eq_occurrences) {
-        if (e.second>=ite->size()) {
+      for (auto& eq : eq_occurrences) {
+        if (eq.second>=ite->size()) {
           // Any identifier that occurs in all or all but one branch gets its own conditional
-          results.push_back(e.first->decl());
+          results.push_back(eq.first->decl());
           e_then.push_back(std::vector<KeepAlive>());
           for (int i=0; i<ite->size(); i++) {
-            IdMap<std::pair<Expression*,Expression*> >::iterator it = eq_branches[i].find(e.first);
+            IdMap<std::pair<Expression*,Expression*> >::iterator it = eq_branches[i].find(eq.first);
             if (it==eq_branches[i].end()) {
               // not found, simply push x=x
-              e_then.back().push_back(e.first);
+              e_then.back().push_back(eq.first);
             } else {
               e_then.back().push_back(it->second.first);
             }
           }
           {
-            IdMap<std::pair<Expression*,Expression*> >::iterator it = eq_branches[ite->size()].find(e.first);
+            IdMap<std::pair<Expression*,Expression*> >::iterator it = eq_branches[ite->size()].find(eq.first);
             if (it==eq_branches[ite->size()].end()) {
               // not found, simply push x=x
-              e_else.push_back(e.first);
+              e_else.push_back(eq.first);
             } else {
               e_else.push_back(it->second.first);
             }
@@ -142,11 +142,11 @@ namespace MiniZinc {
         } else {
           // All other identifiers are put in the vector of "other" branches
           for (int i=0; i<=ite->size(); i++) {
-            IdMap<std::pair<Expression*,Expression*> >::iterator it = eq_branches[i].find(e.first);
+            IdMap<std::pair<Expression*,Expression*> >::iterator it = eq_branches[i].find(eq.first);
             if (it!=eq_branches[i].end()) {
               other_branches[i].push_back(it->second.second);
               noOtherBranches = false;
-              eq_branches[i].remove(e.first);
+              eq_branches[i].remove(eq.first);
             }
           }
         }

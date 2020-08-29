@@ -78,7 +78,7 @@ namespace MiniZinc {
             GCLock lock;
             ka = eval_arrayaccess(env, al, idx, success);
             if (!success && env.in_maybe_partial==0) {
-              ResultUndefinedError e(env,al->loc(),"array access out of bounds");
+              ResultUndefinedError warning(env,al->loc(),"array access out of bounds");
             }
           }
           ees.push_back(EE(NULL,constants().boollit(success)));
@@ -104,7 +104,7 @@ namespace MiniZinc {
               Expression* al_idx = eval_arrayaccess(env, al, idx, success);
               if (!success) {
                 if (env.in_maybe_partial==0) {
-                  ResultUndefinedError e(env,al->loc(),"array access out of bounds");
+                  ResultUndefinedError warning(env,al->loc(),"array access out of bounds");
                 }
                 ees.push_back(EE(NULL,constants().lit_false));
                 ees.push_back(EE(NULL,eev.b()));
@@ -237,7 +237,7 @@ namespace MiniZinc {
         ka = eval_arrayaccess(env,al,dims,success);
       }
       if (!success && env.in_maybe_partial==0) {
-        ResultUndefinedError e(env,al->loc(),"array access out of bounds");
+        ResultUndefinedError warning(env,al->loc(),"array access out of bounds");
       }
       ees.push_back(EE(NULL,constants().boollit(success)));
       if (aa->type().isbool() && !aa->type().isopt()) {

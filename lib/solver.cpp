@@ -587,8 +587,11 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     
     for (i=1; i<argc; ++i) {
       if ( !ifMzn2Fzn() ? s2out.processOption( i, argv ) : false ) {
+        // Processed by Solns2Out
       } else if ((!isMznMzn || is_mzn2fzn) && flt.processOption(i, argv)) {
+        // Processed by Flattener
       } else if (sf != NULL && sf->processOption(si_opt, i, argv)) {
+        // Processed by Solver Factory
       } else {
         std::string executable_name(argv[0]);
         executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);
@@ -601,6 +604,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   } else {
     for (i=1; i<argc; ++i) {
       if ( s2out.processOption( i, argv ) ) {
+        // Processed by Solns2Out
       } else {
         std::string executable_name(argv[0]);
         executable_name = executable_name.substr(executable_name.find_last_of("/\\") + 1);

@@ -33,6 +33,12 @@ struct GCStat {
   size_t total;
   GCStat(void) : first(0), second(0), keepalive(0), inmodel(0), total(0) {}
 };
+
+#define MINIZINC_GC_STAT_ARGS std::map<int, GCStat>& gc_stats
+#else
+
+#define MINIZINC_GC_STAT_ARGS
+
 #endif
 
 namespace MiniZinc {
@@ -272,11 +278,7 @@ namespace MiniZinc {
     GCMarker* _roots_next = nullptr;
   protected:
     /// Mark garbage collected objects that 
-#if defined(MINIZINC_GC_STATS)
-    virtual void mark(std::map<int, GCStat>&) = 0;
-#else
-    virtual void mark() = 0;
-#endif
+    virtual void mark(MINIZINC_GC_STAT_ARGS) = 0;
   public:
     GCMarker() {
       GC::add(this);

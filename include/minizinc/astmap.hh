@@ -38,28 +38,16 @@ namespace MiniZinc {
   template<typename T>
   class ManagedASTStringMap : public GCMarker, public std::unordered_map<ASTString, T> {
   protected:
-#if defined(MINIZINC_GC_STATS)
-    void mark(std::map<int, GCStat>&) override {
-#else
-    void mark() override {
-#endif
+    void mark(MINIZINC_GC_STAT_ARGS) override {
       for (auto& it : *this) {
         it.first.mark();
       }
     }
   };
 
-
-#if defined(MINIZINC_GC_STATS)
   template <>
-  void ManagedASTStringMap<Expression*>::mark(std::map<int, GCStat>&);
+  void ManagedASTStringMap<Expression*>::mark(MINIZINC_GC_STAT_ARGS);
   template <>
-  void ManagedASTStringMap<VarDeclI*>::mark(std::map<int, GCStat>&);
-#else
-  template <>
-  void ManagedASTStringMap<Expression*>::mark();
-  template <>
-  void ManagedASTStringMap<VarDeclI*>::mark();
-#endif
+  void ManagedASTStringMap<VarDeclI*>::mark(MINIZINC_GC_STAT_ARGS);
 
 }

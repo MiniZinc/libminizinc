@@ -201,7 +201,7 @@ namespace MiniZinc {
 
   template<class Lit>
   void collectLinExps(EnvI& env,
-                      typename LinearTraits<Lit>::Val c, Expression* exp,
+                      typename LinearTraits<Lit>::Val in_c, Expression* exp,
                       std::vector<typename LinearTraits<Lit>::Val>& coeffs,
                       std::vector<KeepAlive>& vars,
                       typename LinearTraits<Lit>::Val& constval) {
@@ -212,7 +212,7 @@ namespace MiniZinc {
       StackItem(Expression* e0, Val c0) : e(e0), c(c0) {}
     };
     std::vector<StackItem> stack;
-    stack.push_back(StackItem(exp,c));
+    stack.push_back(StackItem(exp, in_c));
     while (!stack.empty()) {
       Expression* e = stack.back().e;
       Val c = stack.back().c;
@@ -668,15 +668,15 @@ namespace MiniZinc {
             resultCoeff = coeffv[i];
             continue;
           }
-          typename LinearTraits<Lit>::Bounds b = LinearTraits<Lit>::compute_bounds(env,alv[i]());
+          typename LinearTraits<Lit>::Bounds bound = LinearTraits<Lit>::compute_bounds(env,alv[i]());
 
-          if (b.valid && LinearTraits<Lit>::finite(b)) {
+          if (bound.valid && LinearTraits<Lit>::finite(bound)) {
             if (coeffv[i] > 0) {
-              bounds.l += coeffv[i]*b.l;
-              bounds.u += coeffv[i]*b.u;
+              bounds.l += coeffv[i]*bound.l;
+              bounds.u += coeffv[i]*bound.u;
             } else {
-              bounds.l += coeffv[i]*b.u;
-              bounds.u += coeffv[i]*b.l;
+              bounds.l += coeffv[i]*bound.u;
+              bounds.u += coeffv[i]*bound.l;
             }
           } else {
             bounds.valid = false;
@@ -1018,12 +1018,12 @@ namespace MiniZinc {
       case BOT_IMPL:
       {
         if (ctx.b==C_ROOT && r==constants().var_true && boe0->type().ispar()) {
-          bool b;
+          bool bval;
           {
             GCLock lock;
-            b = eval_bool(env,boe0);
+            bval = eval_bool(env,boe0);
           }
-          if (b) {
+          if (bval) {
             Ctx nctx = ctx;
             nctx.neg = negArgs;
             nctx.b = negArgs ? C_NEG : C_ROOT;
@@ -1037,12 +1037,12 @@ namespace MiniZinc {
           break;
         }
         if (ctx.b==C_ROOT && r==constants().var_true && boe1->type().ispar()) {
-          bool b;
+          bool bval;
           {
             GCLock lock;
-            b = eval_bool(env,boe1);
+            bval = eval_bool(env,boe1);
           }
-          if (b) {
+          if (bval) {
             Ctx nctx = ctx;
             nctx.neg = negArgs;
             nctx.b = negArgs ? C_NEG : C_ROOT;

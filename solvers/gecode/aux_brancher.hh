@@ -46,19 +46,19 @@ namespace MiniZinc {
             /// Flag whether brancher is done
             bool done;
             /// Construct brancher
-            AuxVarBrancher(Gecode::Home home, Gecode::TieBreak<Gecode::IntVarBranch> int_varsel0,
-                    Gecode::IntValBranch int_valsel0,
-                    Gecode::TieBreak<Gecode::BoolVarBranch> bool_varsel0,
-                    Gecode::BoolValBranch bool_valsel0
+            AuxVarBrancher(Gecode::Home home, const Gecode::TieBreak<Gecode::IntVarBranch>& int_varsel0,
+                    const Gecode::IntValBranch& int_valsel0,
+                    const Gecode::TieBreak<Gecode::BoolVarBranch>& bool_varsel0,
+                    const Gecode::BoolValBranch& bool_valsel0
 #ifdef GECODE_HAS_SET_VARS
                     ,
-                    Gecode::SetVarBranch set_varsel0,
-                    Gecode::SetValBranch set_valsel0
+                    const Gecode::SetVarBranch& set_varsel0,
+                    const Gecode::SetValBranch& set_valsel0
 #endif
 #ifdef GECODE_HAS_FLOAT_VARS
                     ,
-                    Gecode::TieBreak<Gecode::FloatVarBranch> float_varsel0,
-                    Gecode::FloatValBranch float_valsel0
+                    const Gecode::TieBreak<Gecode::FloatVarBranch>& float_varsel0,
+                    const Gecode::FloatValBranch& float_valsel0
 #endif
                     )
                 : Brancher(home), done(false),
@@ -172,19 +172,19 @@ namespace MiniZinc {
             }
             /// Post brancher
             static void post(Gecode::Home home,
-                    Gecode::TieBreak<Gecode::IntVarBranch> int_varsel,
-                    Gecode::IntValBranch int_valsel,
-                    Gecode::TieBreak<Gecode::BoolVarBranch> bool_varsel,
-                    Gecode::BoolValBranch bool_valsel
+                    const Gecode::TieBreak<Gecode::IntVarBranch>& int_varsel,
+                    const Gecode::IntValBranch& int_valsel,
+                    const Gecode::TieBreak<Gecode::BoolVarBranch>& bool_varsel,
+                    const Gecode::BoolValBranch& bool_valsel
 #ifdef GECODE_HAS_SET_VARS
                     ,
-                    Gecode::SetVarBranch set_varsel,
-                    Gecode::SetValBranch set_valsel
+                    const Gecode::SetVarBranch& set_varsel,
+                    const Gecode::SetValBranch& set_valsel
 #endif
 #ifdef GECODE_HAS_FLOAT_VARS
                     ,
-                    Gecode::TieBreak<Gecode::FloatVarBranch> float_varsel,
-                    Gecode::FloatValBranch float_valsel
+                    const Gecode::TieBreak<Gecode::FloatVarBranch>& float_varsel,
+                    const Gecode::FloatValBranch& float_valsel
 #endif
                     ) {
                 (void) new (home) AuxVarBrancher(home, int_varsel, int_valsel,

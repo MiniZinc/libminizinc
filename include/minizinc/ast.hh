@@ -1335,10 +1335,11 @@ namespace MiniZinc {
     void unremove(void) { _flag_1 = false; }
 
     /// Mark alive for garbage collection
-    void mark(void) {
-      _gc_mark = 1;
-      loc().mark();
-    }
+#if defined(MINIZINC_GC_STATS)
+    static void mark(Item* item, MINIZINC_GC_STAT_ARGS);
+#else
+    static void mark(Item* item);
+#endif
     bool has_mark(void) {
       return _gc_mark != 0;
     }
@@ -1639,10 +1640,7 @@ namespace MiniZinc {
   };
 
   /// Statically allocated constants
-  class Constants {
-  private:
-      /// Garbage collection root set for constants
-      Model* m;
+  class Constants : public GCMarker {
   public:
       /// Literal true
       BoolLit* lit_true;
@@ -1908,6 +1906,8 @@ namespace MiniZinc {
         return b ? lit_true : lit_false;
       }
       static const int max_array_size = std::numeric_limits<int>::max() / 2;
+
+      void mark(MINIZINC_GC_STAT_ARGS) override;
   };
     
   /// Return static instance

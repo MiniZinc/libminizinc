@@ -262,8 +262,7 @@ namespace MiniZinc {
           vType = MIP_wrapper::VarType::INT;
         else if (ti->type().isvarbool() || ti->type().isbool()) {
           vType = MIP_wrapper::VarType::BINARY;
-        } else if (ti->type().isvarfloat() || ti->type().isfloat()) {
-        } else {
+        } else if (!(ti->type().isvarfloat() || ti->type().isfloat())) {
           std::stringstream ssm;
           ssm << "This type of var is not handled by MIP: " << *it << std::endl;
           ssm << "  VarDecl flags (ti, bt, st, ot): "

@@ -40,7 +40,7 @@ add_library(mzn
   lib/htmlprinter.cpp
   lib/json_parser.cpp
   lib/lexer.lxx
-  lib/miniz.c
+  lib/thirdparty/miniz.c
   lib/model.cpp
   lib/optimize.cpp
   lib/optimize_constraints.cpp

@@ -107,19 +107,29 @@ bool MIP_osicbc_wrapper::Options::processOption(int& i, std::vector<std::string>
   } else if (string(argv[i])=="-f") {
 //     std::cerr << "  Flag -f: ignoring fixed strategy anyway." << std::endl;
   } else if ( cop.get( "--writeModel", &sExportModel ) ) {
+    // Parsed by referenced
   } else if ( cop.get( "-p", &nThreads ) ) {
+    // Parsed by referenced
   } else if ( cop.get( "--solver-time-limit", &nTimeout ) ) {
+    // Parsed by referenced
   } else if ( cop.get( "--workmem", &nWorkMemLimit ) ) {
+    // Parsed by referenced
   } else if ( cop.get( "--readParam", &sReadParams ) ) {
+    // Parsed by referenced
   } else if ( cop.get( "--writeParam", &sWriteParams ) ) {
-  } else if ( cop.get( "--cbcArgs --cbcFlags --cbc-flags --solver-flags",
-    &cbc_cmdOptions ) ) {
+    // Parsed by referenced
+  } else if ( cop.get( "--cbcArgs --cbcFlags --cbc-flags --solver-flags", &cbc_cmdOptions ) ) {
+    // Parsed by referenced
   } else if ( cop.get( "--absGap", &absGap ) ) {
+    // Parsed by referenced
   } else if ( cop.get( "--relGap", &relGap ) ) {
+    // Parsed by referenced
   } else if ( cop.get( "--intTol", &intTol ) ) {
+    // Parsed by referenced
 //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
-  } else
+  } else {
     return false;
+  }
   return true;
 }
 

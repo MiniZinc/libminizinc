@@ -1574,13 +1574,13 @@ namespace MiniZinc {
               bool result = nonfixed_i==0;
               if (vdi && vdi->e()->ti()->domain()==constants().lit_false)
                 result = !result;
-              VarDecl* vd = ident->decl();
-              if (vd->ti()->domain()==NULL) {
-                vd->ti()->domain(constants().boollit(result));
-                vardeclQueue.push_back(env.vo.idx.find(vd->id())->second);
+              VarDecl* decl = ident->decl();
+              if (decl->ti()->domain()==NULL) {
+                decl->ti()->domain(constants().boollit(result));
+                vardeclQueue.push_back(env.vo.idx.find(decl->id())->second);
               } else if (vd->ti()->domain()!=constants().boollit(result)) {
                 env.fail();
-                vd->e(constants().lit_true);
+                decl->e(constants().lit_true);
               }
             } else {
               if (nonfixed_i==0) {

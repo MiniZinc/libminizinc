@@ -735,15 +735,16 @@ namespace MiniZinc {
         todo.push_back(be->lhs());
         todo.push_back(be->rhs());
         while (!todo.empty()) {
-          Expression* e = todo.back();
+          Expression* be = todo.back();
           todo.pop_back();
-          if (BinOp* e_bo = e->dyn_cast<BinOp>()) {
+          if (BinOp* e_bo = be->dyn_cast<BinOp>()) {
             todo.push_back(e_bo->lhs());
             todo.push_back(e_bo->rhs());
-            for (ExpressionSetIter it = e_bo->ann().begin(); it != e_bo->ann().end(); ++it)
+            for (ExpressionSetIter it = e_bo->ann().begin(); it != e_bo->ann().end(); ++it) {
               run(env, *it);
+            }
           } else {
-            run(env, e);
+            run(env, be);
           }
         }
       }
@@ -2061,7 +2062,6 @@ namespace MiniZinc {
           si->e(obj->id());
           objective = new VarDeclI(Location().introduce(), obj);
         }
-        
       }
     } _tsv0(env.envi(),ts,m,assignItems,enumItems,isFlatZinc);
     iterItems(_tsv0,m);

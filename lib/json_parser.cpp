@@ -69,6 +69,7 @@ namespace MiniZinc {
         case T_EOF:
           return "eof";
       }
+      return "UNKNOWN";
     }
   };
   

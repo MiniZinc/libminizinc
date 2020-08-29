@@ -188,12 +188,7 @@ namespace MiniZinc {
           if (!cur->cast<Call>()->_u._oneArg->isUnboxedVal() && !cur->cast<Call>()->_u._oneArg->isTagged())
             cur->cast<Call>()->_u._args->mark();
           if (FunctionI* fi = cur->cast<Call>()->decl()) {
-            fi->mark();
-            fi->id().mark();
-            pushstack(fi->ti());
-            pushann(fi->ann());
-            pushstack(fi->e());
-            pushall(fi->params());
+            Item::mark(fi);
           }
           break;
         case Expression::E_VARDECL:
@@ -661,10 +656,8 @@ namespace MiniZinc {
   }
 
   namespace {
-    
-    class OpToString {
-    protected:
-      Model* rootSetModel;
+
+    class OpToString : public GCMarker {
     public:
       Id* sBOT_PLUS;
       Id* sBOT_MINUS;
@@ -695,77 +688,77 @@ namespace MiniZinc {
       Id* sBOT_XOR;
       Id* sBOT_DOTDOT;
       Id* sBOT_NOT;
-      
+
       OpToString(void) {
         GCLock lock;
-        rootSetModel = new Model();
-        std::vector<Expression*> rootSet;
+
         sBOT_PLUS = new Id(Location(),"'+'",NULL);
-        rootSet.push_back(sBOT_PLUS);
         sBOT_MINUS = new Id(Location(),"'-'",NULL);
-        rootSet.push_back(sBOT_MINUS);
         sBOT_MULT = new Id(Location(),"'*'",NULL);
-        rootSet.push_back(sBOT_MULT);
         sBOT_DIV = new Id(Location(),"'/'",NULL);
-        rootSet.push_back(sBOT_DIV);
         sBOT_IDIV = new Id(Location(),"'div'",NULL);
-        rootSet.push_back(sBOT_IDIV);
         sBOT_MOD = new Id(Location(),"'mod'",NULL);
-        rootSet.push_back(sBOT_MOD);
         sBOT_POW = new Id(Location(),"'^'",NULL);
-        rootSet.push_back(sBOT_POW);
         sBOT_LE = new Id(Location(),"'<'",NULL);
-        rootSet.push_back(sBOT_LE);
         sBOT_LQ = new Id(Location(),"'<='",NULL);
-        rootSet.push_back(sBOT_LQ);
         sBOT_GR = new Id(Location(),"'>'",NULL);
-        rootSet.push_back(sBOT_GR);
         sBOT_GQ = new Id(Location(),"'>='",NULL);
-        rootSet.push_back(sBOT_GQ);
         sBOT_EQ = new Id(Location(),"'='",NULL);
-        rootSet.push_back(sBOT_EQ);
         sBOT_NQ = new Id(Location(),"'!='",NULL);
-        rootSet.push_back(sBOT_NQ);
         sBOT_IN = new Id(Location(),"'in'",NULL);
-        rootSet.push_back(sBOT_IN);
         sBOT_SUBSET = new Id(Location(),"'subset'",NULL);
-        rootSet.push_back(sBOT_SUBSET);
         sBOT_SUPERSET = new Id(Location(),"'superset'",NULL);
-        rootSet.push_back(sBOT_SUPERSET);
         sBOT_UNION = new Id(Location(),"'union'",NULL);
-        rootSet.push_back(sBOT_UNION);
         sBOT_DIFF = new Id(Location(),"'diff'",NULL);
-        rootSet.push_back(sBOT_DIFF);
         sBOT_SYMDIFF = new Id(Location(),"'symdiff'",NULL);
-        rootSet.push_back(sBOT_SYMDIFF);
         sBOT_INTERSECT = new Id(Location(),"'intersect'",NULL);
-        rootSet.push_back(sBOT_INTERSECT);
         sBOT_PLUSPLUS = new Id(Location(),"'++'",NULL);
-        rootSet.push_back(sBOT_PLUSPLUS);
         sBOT_EQUIV = new Id(Location(),"'<->'",NULL);
-        rootSet.push_back(sBOT_EQUIV);
         sBOT_IMPL = new Id(Location(),"'->'",NULL);
-        rootSet.push_back(sBOT_IMPL);
         sBOT_RIMPL = new Id(Location(),"'<-'",NULL);
-        rootSet.push_back(sBOT_RIMPL);
         sBOT_OR = new Id(Location(),"'\\/'",NULL);
-        rootSet.push_back(sBOT_OR);
         sBOT_AND = new Id(Location(),"'/\\'",NULL);
-        rootSet.push_back(sBOT_AND);
         sBOT_XOR = new Id(Location(),"'xor'",NULL);
-        rootSet.push_back(sBOT_XOR);
         sBOT_DOTDOT = new Id(Location(),"'..'",NULL);
-        rootSet.push_back(sBOT_DOTDOT);
         sBOT_NOT = new Id(Location(),"'not'",NULL);
-        rootSet.push_back(sBOT_NOT);
-        rootSetModel->addItem(new ConstraintI(Location(), new ArrayLit(Location(),rootSet)));
       }
             
       static OpToString& o(void) {
         static OpToString _o;
         return _o;
       }
-      
+
+      void mark(MINIZINC_GC_STAT_ARGS) override {
+        Expression::mark(sBOT_PLUS);
+        Expression::mark(sBOT_MINUS);
+        Expression::mark(sBOT_MULT);
+        Expression::mark(sBOT_DIV);
+        Expression::mark(sBOT_IDIV);
+        Expression::mark(sBOT_MOD);
+        Expression::mark(sBOT_POW);
+        Expression::mark(sBOT_LE);
+        Expression::mark(sBOT_LQ);
+        Expression::mark(sBOT_GR);
+        Expression::mark(sBOT_GQ);
+        Expression::mark(sBOT_EQ);
+        Expression::mark(sBOT_NQ);
+        Expression::mark(sBOT_IN);
+        Expression::mark(sBOT_SUBSET);
+        Expression::mark(sBOT_SUPERSET);
+        Expression::mark(sBOT_UNION);
+        Expression::mark(sBOT_DIFF);
+        Expression::mark(sBOT_SYMDIFF);
+        Expression::mark(sBOT_INTERSECT);
+        Expression::mark(sBOT_PLUSPLUS);
+        Expression::mark(sBOT_EQUIV);
+        Expression::mark(sBOT_IMPL);
+        Expression::mark(sBOT_RIMPL);
+        Expression::mark(sBOT_OR);
+        Expression::mark(sBOT_AND);
+        Expression::mark(sBOT_XOR);
+        Expression::mark(sBOT_DOTDOT);
+        Expression::mark(sBOT_NOT);
+      }
     };
   }
 
@@ -1163,6 +1156,67 @@ namespace MiniZinc {
     }
   }
   
+#if defined(MINIZINC_GC_STATS)
+  void Item::mark(Item* item, MINIZINC_GC_STAT_ARGS) {
+#else 
+  void Item::mark(Item* item) {
+#endif
+    if (item->has_mark()) {
+      return;
+    }
+    item->_gc_mark = 1;
+    item->loc().mark();
+    switch (item->iid()) {
+      case Item::II_INC:
+        item->cast<IncludeI>()->f().mark();
+        break;
+      case Item::II_VD:
+        Expression::mark(item->cast<VarDeclI>()->e());
+#if defined(MINIZINC_GC_STATS)
+        gc_stats[item->cast<VarDeclI>()->e()->Expression::eid()].inmodel++;
+#endif
+        break;
+      case Item::II_ASN:
+        item->cast<AssignI>()->id().mark();
+        Expression::mark(item->cast<AssignI>()->e());
+        Expression::mark(item->cast<AssignI>()->decl());
+        break;
+      case Item::II_CON:
+        Expression::mark(item->cast<ConstraintI>()->e());
+#if defined(MINIZINC_GC_STATS)
+        gc_stats[item->cast<ConstraintI>()->e()->Expression::eid()].inmodel++;
+#endif
+        break;
+      case Item::II_SOL:
+        {
+          SolveI* si = item->cast<SolveI>();
+          for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
+            Expression::mark(*it);
+          }
+        }
+        Expression::mark(item->cast<SolveI>()->e());
+        break;
+      case Item::II_OUT:
+        Expression::mark(item->cast<OutputI>()->e());
+        break;
+      case Item::II_FUN:
+        {
+          FunctionI* fi = item->cast<FunctionI>();
+          fi->id().mark();
+          Expression::mark(fi->ti());
+          for (ExpressionSetIter it = fi->ann().begin(); it != fi->ann().end(); ++it) {
+            Expression::mark(*it);
+          }
+          Expression::mark(fi->e());
+          fi->params().mark();
+          for (unsigned int k=0; k<fi->params().size(); k++) {
+            Expression::mark(fi->params()[k]);
+          }
+        }
+        break;
+    }
+  }
+
   Type
   FunctionI::rtype(EnvI& env, const std::vector<Expression*>& ta, bool strictEnums) {
     return return_type(env, this, ta, strictEnums);
@@ -1396,6 +1450,8 @@ namespace MiniZinc {
     var_false = new VarDecl(Location(), ti, "_bool_false", lit_false);
     var_ignore = new VarDecl(Location(), ti, "_bool_ignore");
     absent = new Id(Location(),"_absent",NULL);
+    var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
+                              std::vector<VarDecl*>());
     Type absent_t;
     absent_t.bt(Type::BT_BOT);
     absent_t.dim(0);
@@ -1553,10 +1609,7 @@ namespace MiniZinc {
     ann.mzn_deprecated = ASTString("mzn_deprecated");
     ann.mzn_was_undefined = new Id(Location(), ASTString("mzn_was_undefined"), NULL);
     ann.mzn_was_undefined->type(Type::ann());
-    
-    var_redef = new FunctionI(Location(),"__internal_var_redef",new TypeInst(Location(),Type::varbool()),
-                              std::vector<VarDecl*>());
-    
+
     cli.cmdlineData_short_str = ASTString("-D");
     cli.cmdlineData_str = ASTString("--cmdline-data");
     cli.datafile_str = ASTString("--data");
@@ -1634,226 +1687,229 @@ namespace MiniZinc {
     cli_cat.io = ASTString("Input/Output Options");
     cli_cat.solver = ASTString("Solver Options");
     cli_cat.translation = ASTString("Translation Options");
-    
-    std::vector<Expression*> v;
-    v.push_back(ti);
-    v.push_back(lit_true);
-    v.push_back(var_true);
-    v.push_back(lit_false);
-    v.push_back(var_false);
-    v.push_back(var_ignore);
-    v.push_back(absent);
-    v.push_back(infinity);
-    v.push_back(new StringLit(Location(),ids.forall));
-    v.push_back(new StringLit(Location(),ids.exists));
-    v.push_back(new StringLit(Location(),ids.clause));
-    v.push_back(new StringLit(Location(),ids.bool2int));
-    v.push_back(new StringLit(Location(),ids.int2float));
-    v.push_back(new StringLit(Location(),ids.bool2float));
-    v.push_back(new StringLit(Location(),ids.sum));
-    v.push_back(new StringLit(Location(),ids.lin_exp));
-    v.push_back(new StringLit(Location(),ids.element));
-    v.push_back(new StringLit(Location(),ids.show));
-    v.push_back(new StringLit(Location(),ids.output));
-    v.push_back(new StringLit(Location(),ids.fix));
-    
-    v.push_back(new StringLit(Location(),ids.int_.lin_eq));
-    v.push_back(new StringLit(Location(),ids.int_.lin_le));
-    v.push_back(new StringLit(Location(),ids.int_.lin_ne));
-    v.push_back(new StringLit(Location(),ids.int_.plus));
-    v.push_back(new StringLit(Location(),ids.int_.minus));
-    v.push_back(new StringLit(Location(),ids.int_.times));
-    v.push_back(new StringLit(Location(),ids.int_.div));
-    v.push_back(new StringLit(Location(),ids.int_.mod));
-    v.push_back(new StringLit(Location(),ids.int_.lt));
-    v.push_back(new StringLit(Location(),ids.int_.le));
-    v.push_back(new StringLit(Location(),ids.int_.gt));
-    v.push_back(new StringLit(Location(),ids.int_.ge));
-    v.push_back(new StringLit(Location(),ids.int_.eq));
-    v.push_back(new StringLit(Location(),ids.int_.ne));
+  };
 
-    v.push_back(new StringLit(Location(),ids.int_reif.lin_eq));
-    v.push_back(new StringLit(Location(),ids.int_reif.lin_le));
-    v.push_back(new StringLit(Location(),ids.int_reif.lin_ne));
-    v.push_back(new StringLit(Location(),ids.int_reif.plus));
-    v.push_back(new StringLit(Location(),ids.int_reif.minus));
-    v.push_back(new StringLit(Location(),ids.int_reif.times));
-    v.push_back(new StringLit(Location(),ids.int_reif.div));
-    v.push_back(new StringLit(Location(),ids.int_reif.mod));
-    v.push_back(new StringLit(Location(),ids.int_reif.lt));
-    v.push_back(new StringLit(Location(),ids.int_reif.le));
-    v.push_back(new StringLit(Location(),ids.int_reif.gt));
-    v.push_back(new StringLit(Location(),ids.int_reif.ge));
-    v.push_back(new StringLit(Location(),ids.int_reif.eq));
-    v.push_back(new StringLit(Location(),ids.int_reif.ne));
-
-    v.push_back(new StringLit(Location(),ids.float_.lin_eq));
-    v.push_back(new StringLit(Location(),ids.float_.lin_le));
-    v.push_back(new StringLit(Location(),ids.float_.lin_lt));
-    v.push_back(new StringLit(Location(),ids.float_.lin_ne));
-    v.push_back(new StringLit(Location(),ids.float_.plus));
-    v.push_back(new StringLit(Location(),ids.float_.minus));
-    v.push_back(new StringLit(Location(),ids.float_.times));
-    v.push_back(new StringLit(Location(),ids.float_.div));
-    v.push_back(new StringLit(Location(),ids.float_.mod));
-    v.push_back(new StringLit(Location(),ids.float_.lt));
-    v.push_back(new StringLit(Location(),ids.float_.le));
-    v.push_back(new StringLit(Location(),ids.float_.gt));
-    v.push_back(new StringLit(Location(),ids.float_.ge));
-    v.push_back(new StringLit(Location(),ids.float_.eq));
-    v.push_back(new StringLit(Location(),ids.float_.ne));
-    v.push_back(new StringLit(Location(),ids.float_.in));
-    v.push_back(new StringLit(Location(),ids.float_.dom));
-
-    v.push_back(new StringLit(Location(),ids.float_reif.lin_eq));
-    v.push_back(new StringLit(Location(),ids.float_reif.lin_le));
-    v.push_back(new StringLit(Location(),ids.float_reif.lin_lt));
-    v.push_back(new StringLit(Location(),ids.float_reif.lin_ne));
-    v.push_back(new StringLit(Location(),ids.float_reif.plus));
-    v.push_back(new StringLit(Location(),ids.float_reif.minus));
-    v.push_back(new StringLit(Location(),ids.float_reif.times));
-    v.push_back(new StringLit(Location(),ids.float_reif.div));
-    v.push_back(new StringLit(Location(),ids.float_reif.mod));
-    v.push_back(new StringLit(Location(),ids.float_reif.lt));
-    v.push_back(new StringLit(Location(),ids.float_reif.le));
-    v.push_back(new StringLit(Location(),ids.float_reif.gt));
-    v.push_back(new StringLit(Location(),ids.float_reif.ge));
-    v.push_back(new StringLit(Location(),ids.float_reif.eq));
-    v.push_back(new StringLit(Location(),ids.float_reif.ne));
-    v.push_back(new StringLit(Location(),ids.float_reif.in));
-
-    v.push_back(new StringLit(Location(),ids.bool_eq));
-    v.push_back(new StringLit(Location(),ids.bool_eq_reif));
-    v.push_back(new StringLit(Location(),ids.bool_not));
-    v.push_back(new StringLit(Location(),ids.bool_clause));
-    v.push_back(new StringLit(Location(),ids.bool_clause_reif));
-    v.push_back(new StringLit(Location(),ids.bool_xor));
-    v.push_back(new StringLit(Location(),ids.array_bool_or));
-    v.push_back(new StringLit(Location(),ids.array_bool_and));
-    v.push_back(new StringLit(Location(),ids.set_eq));
-    v.push_back(new StringLit(Location(),ids.set_in));
-    v.push_back(new StringLit(Location(),ids.set_subset));
-    v.push_back(new StringLit(Location(),ids.set_card));
-    v.push_back(new StringLit(Location(),ids.pow));
-
-    v.push_back(new StringLit(Location(),ids.assert));
-    v.push_back(new StringLit(Location(),ids.mzn_deprecate));
-    v.push_back(new StringLit(Location(),ids.trace));
-    v.push_back(new StringLit(Location(),ids.introduced_var));
-    v.push_back(new StringLit(Location(),ids.anonEnumFromStrings));
-    v.push_back(ctx.root);
-    v.push_back(ctx.pos);
-    v.push_back(ctx.neg);
-    v.push_back(ctx.mix);
-    v.push_back(ann.output_var);
-    v.push_back(ann.output_only);
-    v.push_back(ann.add_to_output);
-    v.push_back(ann.mzn_check_var);
-    v.push_back(new StringLit(Location(),ann.mzn_check_enum_var));
-    v.push_back(new StringLit(Location(),ann.output_array));
-    v.push_back(ann.is_defined_var);
-    v.push_back(new StringLit(Location(),ann.defines_var));
-    v.push_back(ann.is_reverse_map);
-    v.push_back(ann.promise_total);
-    v.push_back(ann.maybe_partial);
-    v.push_back(new StringLit(Location(),ann.doc_comment));
-    v.push_back(new StringLit(Location(),ann.mzn_path));
-    v.push_back(new StringLit(Location(), ann.is_introduced));
-    v.push_back(ann.user_cut);
-    v.push_back(ann.lazy_constraint);
-#ifndef NDEBUG
-    v.push_back(ann.mzn_break_here);
+  void Constants::mark(MINIZINC_GC_STAT_ARGS) {
+    Expression::mark(lit_true);
+    Expression::mark(var_true);
+    Expression::mark(lit_false);
+    Expression::mark(var_false);
+    Expression::mark(var_ignore);
+#if defined(MINIZINC_GC_STATS)
+    Item::mark(var_redef, gc_stats);
+#else
+    Item::mark(var_redef);
 #endif
-    v.push_back(ann.rhs_from_assignment);
-    v.push_back(ann.domain_change_constraint);
-    v.push_back(new StringLit(Location(), ann.mzn_deprecated));
-    v.push_back(ann.mzn_was_undefined);
+    Expression::mark(absent);
+    Expression::mark(infinity);
 
-    v.push_back(new StringLit(Location(),cli.cmdlineData_short_str));
-    v.push_back(new StringLit(Location(),cli.cmdlineData_str));
-    v.push_back(new StringLit(Location(),cli.datafile_short_str));
-    v.push_back(new StringLit(Location(),cli.datafile_str));
-    v.push_back(new StringLit(Location(),cli.globalsDir_alt_str));
-    v.push_back(new StringLit(Location(),cli.globalsDir_short_str));
-    v.push_back(new StringLit(Location(),cli.globalsDir_str));
-    v.push_back(new StringLit(Location(),cli.help_short_str));
-    v.push_back(new StringLit(Location(),cli.help_str));
-    v.push_back(new StringLit(Location(),cli.ignoreStdlib_str));
-    v.push_back(new StringLit(Location(),cli.include_str));
-    v.push_back(new StringLit(Location(),cli.inputFromStdin_str));
-    v.push_back(new StringLit(Location(),cli.instanceCheckOnly_str));
-    v.push_back(new StringLit(Location(),cli.newfzn_str));
-    v.push_back(new StringLit(Location(),cli.no_optimize_alt_str));
-    v.push_back(new StringLit(Location(),cli.no_optimize_str));
-    v.push_back(new StringLit(Location(),cli.no_outputOzn_short_str));
-    v.push_back(new StringLit(Location(),cli.no_outputOzn_str));
-    v.push_back(new StringLit(Location(),cli.no_typecheck_str));    
-    v.push_back(new StringLit(Location(),cli.outputBase_str));
-    v.push_back(new StringLit(Location(),cli.outputFznToStdout_alt_str));
-    v.push_back(new StringLit(Location(),cli.outputFznToStdout_str));
-    v.push_back(new StringLit(Location(),cli.outputOznToFile_str));
-    v.push_back(new StringLit(Location(),cli.outputOznToStdout_str));
-    v.push_back(new StringLit(Location(),cli.outputFznToFile_alt_str));
-    v.push_back(new StringLit(Location(),cli.outputFznToFile_short_str));
-    v.push_back(new StringLit(Location(),cli.outputFznToFile_str));
-    v.push_back(new StringLit(Location(),cli.rangeDomainsOnly_str));
-    v.push_back(new StringLit(Location(),cli.statistics_short_str));
-    v.push_back(new StringLit(Location(),cli.statistics_str));
-    v.push_back(new StringLit(Location(),cli.stdlib_str));
-    v.push_back(new StringLit(Location(),cli.verbose_short_str));
-    v.push_back(new StringLit(Location(),cli.verbose_str));
-    v.push_back(new StringLit(Location(),cli.version_str));
-    v.push_back(new StringLit(Location(),cli.werror_str)); 
-    
-    v.push_back(new StringLit(Location(),cli.solver.all_sols_str));
-    v.push_back(new StringLit(Location(),cli.solver.fzn_solver_str));
-    
-    v.push_back(new StringLit(Location(),opts.cmdlineData));
-    v.push_back(new StringLit(Location(),opts.datafile));
-    v.push_back(new StringLit(Location(),opts.datafiles));
-    v.push_back(new StringLit(Location(),opts.fznToFile));
-    v.push_back(new StringLit(Location(),opts.fznToStdout));
-    v.push_back(new StringLit(Location(),opts.globalsDir));
-    v.push_back(new StringLit(Location(),opts.ignoreStdlib));
-    v.push_back(new StringLit(Location(),opts.includePaths));
-    v.push_back(new StringLit(Location(),opts.includeDir));
-    v.push_back(new StringLit(Location(),opts.inputFromStdin));
-    v.push_back(new StringLit(Location(),opts.instanceCheckOnly));
-    v.push_back(new StringLit(Location(),opts.model));
-    v.push_back(new StringLit(Location(),opts.newfzn));
-    v.push_back(new StringLit(Location(),opts.noOznOutput));
-    v.push_back(new StringLit(Location(),opts.optimize));
-    v.push_back(new StringLit(Location(),opts.outputBase));
-    v.push_back(new StringLit(Location(),opts.oznToFile));
-    v.push_back(new StringLit(Location(),opts.oznToStdout));
-    v.push_back(new StringLit(Location(),opts.rangeDomainsOnly));
-    v.push_back(new StringLit(Location(),opts.statistics));
-    v.push_back(new StringLit(Location(),opts.stdlib));
-    v.push_back(new StringLit(Location(),opts.typecheck));
-    v.push_back(new StringLit(Location(),opts.verbose));
-    v.push_back(new StringLit(Location(),opts.werror));
-    
-    v.push_back(new StringLit(Location(),opts.solver.allSols));
-    v.push_back(new StringLit(Location(),opts.solver.numSols));
-    v.push_back(new StringLit(Location(),opts.solver.threads));
-    v.push_back(new StringLit(Location(),opts.solver.fzn_solver));
-    v.push_back(new StringLit(Location(),opts.solver.fzn_flags));
-    v.push_back(new StringLit(Location(),opts.solver.fzn_flag));
-    v.push_back(new StringLit(Location(),opts.solver.fzn_time_limit_ms));
-    v.push_back(new StringLit(Location(),opts.solver.fzn_sigint));
-    
-    v.push_back(new StringLit(Location(),cli_cat.general));
-    v.push_back(new StringLit(Location(),cli_cat.io));
-    v.push_back(new StringLit(Location(),cli_cat.solver));
-    v.push_back(new StringLit(Location(),cli_cat.translation));
-    
-    m = new Model();
-    m->addItem(new ConstraintI(Location(),new ArrayLit(Location(),v)));
-    m->addItem(var_redef);
+
+    ids.forall.mark();
+    ids.exists.mark();
+    ids.clause.mark();
+    ids.bool2int.mark();
+    ids.int2float.mark();
+    ids.bool2float.mark();
+    ids.sum.mark();
+    ids.lin_exp.mark();
+    ids.element.mark();
+    ids.show.mark();
+    ids.output.mark();
+    ids.fix.mark();
+
+    ids.int_.lin_eq.mark();
+    ids.int_.lin_le.mark();
+    ids.int_.lin_ne.mark();
+    ids.int_.plus.mark();
+    ids.int_.minus.mark();
+    ids.int_.times.mark();
+    ids.int_.div.mark();
+    ids.int_.mod.mark();
+    ids.int_.lt.mark();
+    ids.int_.le.mark();
+    ids.int_.gt.mark();
+    ids.int_.ge.mark();
+    ids.int_.eq.mark();
+    ids.int_.ne.mark();
+
+    ids.int_reif.lin_eq.mark();
+    ids.int_reif.lin_le.mark();
+    ids.int_reif.lin_ne.mark();
+    ids.int_reif.plus.mark();
+    ids.int_reif.minus.mark();
+    ids.int_reif.times.mark();
+    ids.int_reif.div.mark();
+    ids.int_reif.mod.mark();
+    ids.int_reif.lt.mark();
+    ids.int_reif.le.mark();
+    ids.int_reif.gt.mark();
+    ids.int_reif.ge.mark();
+    ids.int_reif.eq.mark();
+    ids.int_reif.ne.mark();
+
+    ids.float_.lin_eq.mark();
+    ids.float_.lin_le.mark();
+    ids.float_.lin_lt.mark();
+    ids.float_.lin_ne.mark();
+    ids.float_.plus.mark();
+    ids.float_.minus.mark();
+    ids.float_.times.mark();
+    ids.float_.div.mark();
+    ids.float_.mod.mark();
+    ids.float_.lt.mark();
+    ids.float_.le.mark();
+    ids.float_.gt.mark();
+    ids.float_.ge.mark();
+    ids.float_.eq.mark();
+    ids.float_.ne.mark();
+    ids.float_.in.mark();
+    ids.float_.dom.mark();
+
+    ids.float_reif.lin_eq.mark();
+    ids.float_reif.lin_le.mark();
+    ids.float_reif.lin_lt.mark();
+    ids.float_reif.lin_ne.mark();
+    ids.float_reif.plus.mark();
+    ids.float_reif.minus.mark();
+    ids.float_reif.times.mark();
+    ids.float_reif.div.mark();
+    ids.float_reif.mod.mark();
+    ids.float_reif.lt.mark();
+    ids.float_reif.le.mark();
+    ids.float_reif.gt.mark();
+    ids.float_reif.ge.mark();
+    ids.float_reif.eq.mark();
+    ids.float_reif.ne.mark();
+    ids.float_reif.in.mark();
+
+    ids.bool_eq.mark();
+    ids.bool_eq_reif.mark();
+    ids.bool_not.mark();
+    ids.bool_clause.mark();
+    ids.bool_clause_reif.mark();
+    ids.bool_xor.mark();
+    ids.array_bool_or.mark();
+    ids.array_bool_and.mark();
+    ids.set_eq.mark();
+    ids.set_in.mark();
+    ids.set_subset.mark();
+    ids.set_card.mark();
+    ids.pow.mark();
+
+    ids.assert.mark();
+    ids.mzn_deprecate.mark();
+    ids.trace.mark();
+    ids.introduced_var.mark();
+    ids.anonEnumFromStrings.mark();
+    Expression::mark(ctx.root);
+    Expression::mark(ctx.pos);
+    Expression::mark(ctx.neg);
+    Expression::mark(ctx.mix);
+    Expression::mark(ann.output_var);
+    Expression::mark(ann.output_only);
+    Expression::mark(ann.add_to_output);
+    Expression::mark(ann.mzn_check_var);
+    ann.mzn_check_enum_var.mark();
+    ann.output_array.mark();
+    Expression::mark(ann.is_defined_var);
+    ann.defines_var.mark();
+    Expression::mark(ann.is_reverse_map);
+    Expression::mark(ann.promise_total);
+    Expression::mark(ann.maybe_partial);
+    ann.doc_comment.mark();
+    ann.mzn_path.mark();
+    ann.is_introduced.mark();
+    Expression::mark(ann.user_cut);
+    Expression::mark(ann.lazy_constraint);
+#ifndef NDEBUG
+    Expression::mark(ann.mzn_break_here);
+#endif
+    Expression::mark(ann.rhs_from_assignment);
+    Expression::mark(ann.domain_change_constraint);
+     ann.mzn_deprecated.mark();
+    Expression::mark(ann.mzn_was_undefined);
+
+    cli.cmdlineData_short_str.mark();
+    cli.cmdlineData_str.mark();
+    cli.datafile_short_str.mark();
+    cli.datafile_str.mark();
+    cli.globalsDir_alt_str.mark();
+    cli.globalsDir_short_str.mark();
+    cli.globalsDir_str.mark();
+    cli.help_short_str.mark();
+    cli.help_str.mark();
+    cli.ignoreStdlib_str.mark();
+    cli.include_str.mark();
+    cli.inputFromStdin_str.mark();
+    cli.instanceCheckOnly_str.mark();
+    cli.newfzn_str.mark();
+    cli.no_optimize_alt_str.mark();
+    cli.no_optimize_str.mark();
+    cli.no_outputOzn_short_str.mark();
+    cli.no_outputOzn_str.mark();
+    cli.no_typecheck_str.mark();    
+    cli.outputBase_str.mark();
+    cli.outputFznToStdout_alt_str.mark();
+    cli.outputFznToStdout_str.mark();
+    cli.outputOznToFile_str.mark();
+    cli.outputOznToStdout_str.mark();
+    cli.outputFznToFile_alt_str.mark();
+    cli.outputFznToFile_short_str.mark();
+    cli.outputFznToFile_str.mark();
+    cli.rangeDomainsOnly_str.mark();
+    cli.statistics_short_str.mark();
+    cli.statistics_str.mark();
+    cli.stdlib_str.mark();
+    cli.verbose_short_str.mark();
+    cli.verbose_str.mark();
+    cli.version_str.mark();
+    cli.werror_str.mark(); 
+
+    cli.solver.all_sols_str.mark();
+    cli.solver.fzn_solver_str.mark();
+
+    opts.cmdlineData.mark();
+    opts.datafile.mark();
+    opts.datafiles.mark();
+    opts.fznToFile.mark();
+    opts.fznToStdout.mark();
+    opts.globalsDir.mark();
+    opts.ignoreStdlib.mark();
+    opts.includePaths.mark();
+    opts.includeDir.mark();
+    opts.inputFromStdin.mark();
+    opts.instanceCheckOnly.mark();
+    opts.model.mark();
+    opts.newfzn.mark();
+    opts.noOznOutput.mark();
+    opts.optimize.mark();
+    opts.outputBase.mark();
+    opts.oznToFile.mark();
+    opts.oznToStdout.mark();
+    opts.rangeDomainsOnly.mark();
+    opts.statistics.mark();
+    opts.stdlib.mark();
+    opts.typecheck.mark();
+    opts.verbose.mark();
+    opts.werror.mark();
+
+    opts.solver.allSols.mark();
+    opts.solver.numSols.mark();
+    opts.solver.threads.mark();
+    opts.solver.fzn_solver.mark();
+    opts.solver.fzn_flags.mark();
+    opts.solver.fzn_flag.mark();
+    opts.solver.fzn_time_limit_ms.mark();
+    opts.solver.fzn_sigint.mark();
+
+    cli_cat.general.mark();
+    cli_cat.io.mark();
+    cli_cat.solver.mark();
+    cli_cat.translation.mark();
   }
-  
+
   const int Constants::max_array_size;
-  
+
   Constants& constants(void) {
     static Constants _c;
     return _c;

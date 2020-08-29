@@ -222,78 +222,10 @@ namespace MiniZinc {
             stack.push_back(i);
           }
         }
-        
-      }
-      
-      
-      
-    }
-  }
-
-
-#if defined(MINIZINC_GC_STATS)
-  void Model::mark(std::map<int, GCStat>& gc_stats) { 
-#else
-  void Model::mark() {
-#endif
-    _filepath.mark();
-    _filename.mark();
-    for (unsigned int j=0; j<_items.size(); j++) {
-      Item* i = _items[j];
-      if (!i->has_mark()) {
-        i->mark();
-        switch (i->iid()) {
-          case Item::II_INC:
-            i->cast<IncludeI>()->f().mark();
-            break;
-          case Item::II_VD:
-            Expression::mark(i->cast<VarDeclI>()->e());
-#if defined(MINIZINC_GC_STATS)
-            gc_stats[i->cast<VarDeclI>()->e()->Expression::eid()].inmodel++;
-#endif
-            break;
-          case Item::II_ASN:
-            i->cast<AssignI>()->id().mark();
-            Expression::mark(i->cast<AssignI>()->e());
-            Expression::mark(i->cast<AssignI>()->decl());
-            break;
-          case Item::II_CON:
-            Expression::mark(i->cast<ConstraintI>()->e());
-#if defined(MINIZINC_GC_STATS)
-            gc_stats[i->cast<ConstraintI>()->e()->Expression::eid()].inmodel++;
-#endif
-            break;
-          case Item::II_SOL:
-            {
-              SolveI* si = i->cast<SolveI>();
-              for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
-                Expression::mark(*it);
-              }
-            }
-            Expression::mark(i->cast<SolveI>()->e());
-            break;
-          case Item::II_OUT:
-            Expression::mark(i->cast<OutputI>()->e());
-            break;
-          case Item::II_FUN:
-            {
-              FunctionI* fi = i->cast<FunctionI>();
-              fi->id().mark();
-              Expression::mark(fi->ti());
-              for (ExpressionSetIter it = fi->ann().begin(); it != fi->ann().end(); ++it) {
-                Expression::mark(*it);
-              }
-              Expression::mark(fi->e());
-              fi->params().mark();
-              for (unsigned int k=0; k<fi->params().size(); k++) {
-                Expression::mark(fi->params()[k]);
-              }
-            }
-            break;
-        }
       }
     }
   }
+
 
   void
   Model::registerFn(EnvI& env, FunctionI* fi) {

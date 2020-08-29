@@ -15,11 +15,7 @@
 namespace MiniZinc {
 
   template<>
-#if defined(MINIZINC_GC_STATS)
-  void ManagedASTStringMap<Expression*>::mark(std::map<int, GCStat>&) {
-#else
-  void ManagedASTStringMap<Expression*>::mark() {
-#endif
+  void ManagedASTStringMap<Expression*>::mark(MINIZINC_GC_STAT_ARGS) {
     for (auto& it : *this) {
       it.first.mark();
       Expression::mark(it.second);
@@ -30,17 +26,14 @@ namespace MiniZinc {
   };
 
   template<>
-#if defined(MINIZINC_GC_STATS)
-  void ManagedASTStringMap<VarDeclI*>::mark(std::map<int, GCStat>&) {
-#else
-  void ManagedASTStringMap<VarDeclI*>::mark() {
-#endif
+  void ManagedASTStringMap<VarDeclI*>::mark(MINIZINC_GC_STAT_ARGS) {
     for (auto& it : *this) {
       it.first.mark();
-      it.second->mark();
-      Expression::mark(it.second->e());
 #if defined(MINIZINC_GC_STATS)
       gc_stats[it.second->e()->Expression::eid()].keepalive++;
+      Item::mark(it.second, gc_stats);
+#else
+      Item::mark(it.second);
 #endif
     }
   };

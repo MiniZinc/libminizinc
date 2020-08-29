@@ -21,7 +21,7 @@ namespace MiniZinc {
       GecodeSolverInstance gecode(*env,log,new GecodeOptions(*gopts));
       gecode.processFlatZinc();
       gecode.presolve(env->flat());
-    } catch(InternalError e) {
+    } catch(const InternalError& e) {
       std::cerr << "Warning during presolve: " << e.msg() << std::endl;
 
     }

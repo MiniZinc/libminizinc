@@ -211,7 +211,7 @@ namespace MiniZinc {
         s2o.parse_sol(file_sol);
       }
 
-    } catch (const NLException e){
+    } catch (const NLException& e){
       out->getLog() << e.what();
       exitStatus = -2;
     }

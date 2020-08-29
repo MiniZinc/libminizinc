@@ -137,6 +137,7 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
   } else if ( cop.getOption( "--no-output-ozn -O-") ) {
     flag_no_output_ozn = true;
   } else if ( cop.getOption( "--output-base", &flag_output_base ) ) {
+    // Parsed by reference
   } else if ( cop.getOption(
     fOutputByDefault ?
       "-o --fzn --output-to-file --output-fzn-to-file"
@@ -178,7 +179,9 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
       return false;
     datafiles.push_back(buffer);
   } else if ( cop.getOption( "--stdlib-dir", &std_lib_dir ) ) {
+    // Parsed by reference
   } else if ( cop.getOption( "-G --globals-dir --mzn-globals-dir", &globals_dir ) ) {
+    // Parsed by reference
   } else if ( cop.getOption( "-D --cmdline-data", &buffer)) {
     datafiles.push_back("cmd:/"+buffer);
   } else if ( cop.getOption( "--allow-unbounded-vars" ) ) {
@@ -188,7 +191,9 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
   } else if ( cop.getOption( "--no-MIPdomains" ) ) {   // internal
     flag_noMIPdomains = true;
   } else if ( cop.getOption( "--MIPDMaxIntvEE", &opt_MIPDmaxIntvEE ) ) {
+    // Parsed by reference
   } else if ( cop.getOption( "--MIPDMaxDensEE", &opt_MIPDmaxDensEE ) ) {
+    // Parsed by reference
   } else if ( cop.getOption( "-Werror" ) ) {
     flag_werror = true;
   } else if (cop.getOption("--use-gecode")) {
@@ -259,6 +264,7 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv)
     }
     // ozn options must be after the -O<n> optimisation options
   } else if ( cop.getOption( "--ozn --output-ozn-to-file", &flag_output_ozn) ) {
+    // Parsed by reference
   } else if ( cop.getOption("-g") ) {
     flag_optimize = false;
     flag_two_pass = false;

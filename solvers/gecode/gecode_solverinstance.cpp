@@ -848,7 +848,7 @@ namespace MiniZinc {
             ia[offset++] = iv;
           } else {
             std::stringstream ssm; ssm << "Expected bool literal instead of: " << *e;
-            throw new InternalError(ssm.str());
+            throw InternalError(ssm.str());
           }
         }
     }
@@ -868,7 +868,7 @@ namespace MiniZinc {
         x0 = BoolVar(*this->_current_space, bl->v(), bl->v());
       } else {
         std::stringstream ssm; ssm << "Expected bool literal instead of: " << *e;
-        throw new InternalError(ssm.str());
+        throw InternalError(ssm.str());
       }
     }
     return x0;
@@ -914,7 +914,7 @@ namespace MiniZinc {
       } else {
           std::stringstream ssm; ssm << "Invalid argument in arg2arrayLit: " << *arg;
           ssm << ". Expected Id or ArrayLit.";
-          throw new InternalError(ssm.str());
+          throw InternalError(ssm.str());
       }
       return a;
   }
@@ -1063,7 +1063,7 @@ namespace MiniZinc {
         vd = resolveArrayAccess(aa);
     } else {
         std::stringstream ssm; ssm << "Can not extract vardecl from " << *expr;
-        throw new InternalError(ssm.str());
+        throw InternalError(ssm.str());
     }
     return vd;
   }
@@ -1084,7 +1084,7 @@ namespace MiniZinc {
         return expr->cast<VarDecl>();
     } else {
         std::stringstream ssm; ssm << "Unknown array: " << vd->id();
-        throw new InternalError(ssm.str());
+        throw InternalError(ssm.str());
     }
   }
 
