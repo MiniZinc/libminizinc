@@ -5,17 +5,17 @@ expected: !Result
   status: ALL_SOLUTIONS
   solution: !SolutionSet
   - !Solution
-    x: [3, 5]
+    xs: [3, 5]
   - !Solution
-    x: [4, 5]
+    xs: [4, 5]
   - !Solution
-    x: [5, 5]
+    xs: [5, 5]
   - !Solution
-    x: [3, null]
+    xs: [3, null]
   - !Solution
-    x: [4, null]
+    xs: [4, null]
   - !Solution
-    x: [5, null]
+    xs: [5, null]
 options:
   all_solutions: true
 ***/
