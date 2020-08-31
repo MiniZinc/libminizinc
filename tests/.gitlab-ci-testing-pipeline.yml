@@ -3,7 +3,7 @@
   stage: test
   variables:
     PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-    MZN_SOLVER_PATH: "$CI_PROJECT_DIR/vendor/chuffed:$CI_PROJECT_DIR/vendor/gecode"
+    MZN_SOLVER_PATH: "$CI_PROJECT_DIR/vendor/chuffed/share/minizinc/solvers/:$CI_PROJECT_DIR/vendor/gecode"
   before_script:
     - curl --location --header "PRIVATE-TOKEN:$ACCESS_TOKEN" --silent https://gitlab.com/api/v4/snippets/1796163/raw | tr -d '\r' > download.sh
     - sh download.sh vendor master bundle:${MZNARCH} vendor.zip
@@ -11,6 +11,7 @@
     # TODO: Add gecode configuration to the Gecode solver
     - "echo '{\n  \"id\": \"org.gecode.gecode\",\n  \"name\": \"Gecode\",\n  \"description\": \"Gecode FlatZinc executable\",\n  \"version\": \"6.1.0\",\n  \"mznlib\": \"share/gecode/mznlib\",\n  \"executable\": \"bin/fzn-gecode\",\n  \"tags\": [\"cp\",\"int\", \"float\", \"set\", \"restart\"],\n  \"stdFlags\": [\"-a\",\"-f\",\"-n\",\"-p\",\"-r\",\"-s\",\"-t\"],\n  \"supportsMzn\": false,\n  \"supportsFzn\": true,\n  \"needsSolns2Out\": true,\n  \"needsMznExecutable\": false,\n  \"needsStdlibDir\": false,\n  \"isGUIApplication\": false\n}' > vendor/gecode/gecode.msc"
     - export PATH=$CI_PROJECT_DIR/minizinc/bin:$PATH
+    - minizinc --solvers
     - cd tests
     - python3 -m venv env
     - source env/bin/activate
