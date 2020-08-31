@@ -113,6 +113,7 @@ bool Solns2Out::processOption(int& i, std::vector<std::string>& argv)
 
 bool Solns2Out::initFromEnv(Env* pE) {
   assert(pE); pEnv=pE;
+  includePaths.push_back(stdlibDir+"/std/");
   init();
   return true;
 }
