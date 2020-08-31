@@ -1,1 +1,1 @@
-predicate analyse_all_different(array[int] of var int: x) = true;
+predicate analyse_all_different(array[int] of var opt int: x) = true;

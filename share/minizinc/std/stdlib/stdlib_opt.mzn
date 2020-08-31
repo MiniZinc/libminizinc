@@ -262,5 +262,3 @@ present and equal.*/
 function var bool: '~='(var opt float: x, var opt float: y) ::promise_total =
     absent(x) \/ absent(y) \/ deopt(x)=deopt(y);
 
-
-
