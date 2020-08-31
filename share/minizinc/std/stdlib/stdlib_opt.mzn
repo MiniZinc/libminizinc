@@ -69,6 +69,10 @@ predicate mzn_reverse_map_var(var opt bool: x) =
     constraint (x = reverse_map_var_opt_bool(b,dx)) :: is_reverse_map;
   } in true;
 
+/** @group stdlib.optiontypes.bool Weak equality. True if either \a x or \a y are absent, or
+present and equal.*/
+function var bool: '~='(var opt bool: x, var opt bool: y) ::promise_total =
+    absent(x) \/ absent(y) \/ deopt(x)=deopt(y);
 
 /***
   @groupdef stdlib.optiontypes.int Option type support for integers
