@@ -5,49 +5,49 @@ expected: !Result
   status: ALL_SOLUTIONS
   solution: !SolutionSet
   - !Solution
-    x: [<>, <>, <>]
+    x: [null, null, null]
   - !Solution
-    x: [1, <>, <>]
+    x: [1, null, null]
   - !Solution
-    x: [3, <>, <>]
+    x: [3, null, null]
   - !Solution
-    x: [<>, 1, <>]
+    x: [null, 1, null]
   - !Solution
-    x: [<>, 3, <>]
+    x: [null, 3, null]
   - !Solution
-    x: [1, 1, <>]
+    x: [1, 1, null]
   - !Solution
-    x: [1, 2, <>]
+    x: [1, 2, null]
   - !Solution
-    x: [1, 3, <>]
+    x: [1, 3, null]
   - !Solution
-    x: [3, 1, <>]
+    x: [3, 1, null]
   - !Solution
-    x: [3, 3, <>]
+    x: [3, 3, null]
   - !Solution
-    x: [<>, <>, 1]
+    x: [null, null, 1]
   - !Solution
-    x: [<>, <>, 3]
+    x: [null, null, 3]
   - !Solution
-    x: [1, <>, 1]
+    x: [1, null, 1]
   - !Solution
-    x: [1, <>, 2]
+    x: [1, null, 2]
   - !Solution
-    x: [1, <>, 3]
+    x: [1, null, 3]
   - !Solution
-    x: [3, <>, 1]
+    x: [3, null, 1]
   - !Solution
-    x: [3, <>, 3]
+    x: [3, null, 3]
   - !Solution
-    x: [<>, 1, 1]
+    x: [null, 1, 1]
   - !Solution
-    x: [<>, 1, 2]
+    x: [null, 1, 2]
   - !Solution
-    x: [<>, 1, 3]
+    x: [null, 1, 3]
   - !Solution
-    x: [<>, 3, 1]
+    x: [null, 3, 1]
   - !Solution
-    x: [<>, 3, 3]
+    x: [null, 3, 3]
   - !Solution
     x: [1, 1, 1]
   - !Solution

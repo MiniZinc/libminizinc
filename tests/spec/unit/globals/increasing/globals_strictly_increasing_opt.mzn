@@ -3,7 +3,7 @@
 expected:
 - !Result
   solution: !Solution
-    xs: [1, <>, 2]
+    xs: [1, null, 2]
 ***/
 
 include "strictly_increasing.mzn";

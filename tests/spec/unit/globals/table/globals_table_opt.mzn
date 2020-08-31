@@ -11,11 +11,11 @@ expected: !Result
   - !Solution
     x: [5, 5]
   - !Solution
-    x: [3, <>]
+    x: [3, null]
   - !Solution
-    x: [4, <>]
+    x: [4, null]
   - !Solution
-    x: [5, <>]
+    x: [5, null]
 options:
   all_solutions: true
 ***/
