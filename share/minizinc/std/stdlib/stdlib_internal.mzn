@@ -391,7 +391,7 @@ function var opt int: element(var int: idx, array[int] of var opt int: x) =
   let {
     var opt int: r;
     constraint occurs(r) = element(idx,array1d(index_set(x),[occurs(x[i]) | i in index_set(x)]));
-    constraint deopt(r) = element(idx,array1d(index_set(x),[deopt(x[i]) | i in index_set(x)]));
+    constraint deopt(r) = element(idx, array1d(index_set(x), [if is_fixed(absent(x[i])) /\ fix(absent(x[i])) then deopt(r) else deopt(x[i]) endif | i in index_set(x)]));
   } in r;
 
 /** Return \a x[\a idx1, \a idx2] */
@@ -401,7 +401,7 @@ function var opt int: element(var int: idx1, var int: idx2, array[int,int] of va
     constraint occurs(r) = element(idx1,idx2,
       array2d(index_set_1of2(x),index_set_2of2(x),[occurs(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
     constraint deopt(r) = element(idx1,idx2,
-      array2d(index_set_1of2(x),index_set_2of2(x),[deopt(x[i,j]) | i in index_set_1of2(x), j in index_set_2of2(x)]));
+      array2d(index_set_1of2(x),index_set_2of2(x),[if is_fixed(absent(x[i,j])) /\ fix(absent(x[i,j])) then deopt(r) else deopt(x[i,j]) endif | i in index_set_1of2(x), j in index_set_2of2(x)]));
   } in r;
 
 /** Return absent if \a idx is absent, otherwise return \a x[\a idx] */
