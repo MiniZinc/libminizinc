@@ -1,5 +1,5 @@
 default: !Suite
-  includes: ['*']
+  includes: ['unit/*']
 
 optimize-0: !Suite
   includes: ['examples/*']
