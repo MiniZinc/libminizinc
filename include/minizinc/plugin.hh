@@ -110,7 +110,15 @@ namespace MiniZinc {
     void* dll;
     void open(const std::string& file) {
 #ifdef _WIN32
+      auto dir = MiniZinc::FileUtils::dir_name(file);
+      if (!dir.empty()) {
+        // Add the path with the DLL to the search path for dependency loading
+        SetDllDirectoryW(MiniZinc::FileUtils::utf8ToWide(dir).c_str());
+      }
       dll = (void*)LoadLibrary((LPCSTR)file.c_str());
+      if (!dir.empty()) {
+        SetDllDirectoryW(nullptr);
+      }
 #else
       dll = dlopen(file.c_str(), RTLD_NOW);
 #endif
