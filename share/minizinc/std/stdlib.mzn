@@ -12,20 +12,13 @@
 %
 % FlatZinc builtins
 %
-%  This section contains declarations for the standard FlatZinc builtins.
-%  They can be redefined by providing a custom redefinitions.mzn in the
-%  solver globals library.
-%
+%  This section contains declarations for the standard FlatZinc builtins.  They
+%  can be redefined by providing a custom redefinitions.mzn in the solver
+%  globals library. A standard redefinition is provided for FlatZinc builtins
+%  after version 2.0. This redefinition can be overriden by providing a custom
+%  redefinitions-<VERSION>.mzn
 
 include "flatzinc_builtins.mzn";
-
-include "redefinitions.mzn";
-include "redefinitions-2.0.mzn";
-include "redefinitions-2.0.2.mzn";
-include "redefinitions-2.1.mzn";
-include "redefinitions-2.1.1.mzn";
-include "redefinitions-2.2.1.mzn";
-include "redefinitions-2.3.3.mzn";
 
 /***
   @groupdef stdlib Standard Library

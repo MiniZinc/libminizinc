@@ -1,20 +1,6 @@
 % This file contains redefinitions of standard builtins for version 2.1.1
 % that can be overridden by solvers.
 
-/***
-  @groupdef flatzinc.twooneone FlatZinc builtins added in MiniZinc 2.1.1.
-  
-  These functions and predicates define built-in operations of the MiniZinc language
-  that have been added in MiniZinc 2.1.1. Solvers that support these natively need
-  to include a file called redefinitions-2.1.1.mzn in their solver library that
-  redefines these predicates as builtins.
-  
-*/
-
-/** @group flatzinc.twooneone Returns variable constrained to be equal to the minimum of the set \a s.
-  An alternative implementation can be found in the comments of the source code.
-*/
-
 function var $$E: min(var set of $$E: s) =
          let { var min(ub(s)) .. max(ub(s)): m =  
          min([ e + (max(ub(s))+1-e)*(1 - (e in s)) | e in ub(s) ]) } in m;
@@ -43,9 +29,6 @@ function var $$E: min(var set of $$E: s) =
 %     constraint b \/ 1 in x;
 %   } in min_t(x);
 
-/** @group flatzinc.twooneone Returns variable constrained to be equal to the maximum of the set \a s.
-  An alternative implementation can be found in the comments of the source code.
-*/
 function var $$E: max(var set of $$E: s) =
          let { var min(ub(s)) .. max(ub(s)): m =  
          max([ e + (min(ub(s))-1-e)*(1 - (e in s)) | e in ub(s) ]) } in m;

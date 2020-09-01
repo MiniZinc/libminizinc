@@ -124,23 +124,27 @@ namespace MiniZinc {
       model->setFilename(modelStringName);
       files.push_back(ParseWorkItem(model,NULL,modelString,modelStringName,false,true));
     }
-    
-    {
-      // TODO: It should be possible to use just flatzinc builtins instead of stdlib when parsing FlatZinc
-      /* std::string libname = isFlatZinc ? "flatzinc_builtins.mzn" : "stdlib.mzn"; */
-      std::string libname = "stdlib.mzn";
+
+    auto include_file = [&](const std::string& libname, bool builtin) {
       GCLock lock;
-      Model* stdlib = new Model;
-      stdlib->setFilename(libname);
-      files.push_back(ParseWorkItem(stdlib, nullptr, "./", libname, true));
-      seenModels.insert(pair<string,Model*>(libname, stdlib));
-      Location stdlibloc(ASTString(model->filename()),0,0,0,0);
-      IncludeI* stdlibinc =
-      new IncludeI(stdlibloc,stdlib->filename());
-      stdlibinc->m(stdlib,true);
-      model->addItem(stdlibinc);
-    }
-    
+      Model* lib = new Model;
+      lib->setFilename(libname);
+      files.push_back(ParseWorkItem(lib, nullptr, "./", libname, builtin));
+      seenModels.insert(pair<string,Model*>(libname, lib));
+      Location libloc(ASTString(model->filename()), 0, 0, 0, 0);
+      IncludeI* libinc = new IncludeI(libloc,lib->filename());
+      libinc->m(lib, true);
+      model->addItem(libinc);
+    };
+
+    // TODO: It should be possible to use just flatzinc builtins instead of stdlib when parsing FlatZinc
+    // if (!isFlatZinc) {
+    include_file("solver_redefinitions.mzn", false);
+    include_file("stdlib.mzn", true); // Added last, so it is processed first
+    // } else {
+    //   include_file("flatzinc_builtins.mzn", true);
+    // }
+
     while (!files.empty()) {
       GCLock lock;
       ParseWorkItem& np = files.back();
@@ -150,7 +154,7 @@ namespace MiniZinc {
       IncludeI* np_ii = np.ii;
       string f(np.fileName);
       files.pop_back();
-      
+
       std::string s;
       std::string fullname;
       bool isFzn;
