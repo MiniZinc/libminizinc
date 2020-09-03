@@ -946,6 +946,7 @@ namespace MiniZinc {
                       decl = origdecl;
                     }
                   }
+                  rhs->type(decl->rtype(env,tv, false));
                   rhs->decl(decl);
                 }
                 outputVarDecls(env,vdi_copy,rhs);
