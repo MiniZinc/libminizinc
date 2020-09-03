@@ -93,7 +93,7 @@ namespace MiniZinc {
     /// Construct empty model
     Model(void);
     /// Destructor
-    ~Model(void);
+    virtual ~Model(void);
     
     /// Add \a i to the model
     void addItem(Item* i);

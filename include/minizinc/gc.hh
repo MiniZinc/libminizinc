@@ -283,7 +283,7 @@ namespace MiniZinc {
     GCMarker() {
       GC::add(this);
     }
-    ~GCMarker() {
+    virtual ~GCMarker() {
       GC::remove(this);
     }
   };
