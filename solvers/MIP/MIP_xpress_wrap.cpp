@@ -209,7 +209,7 @@ vector<string> MIP_xpress_wrapper::getTags() {
 }
 
 vector<string> MIP_xpress_wrapper::getStdFlags() {
-  return {"-i", "-n", "-s"};
+  return {"-i", "-s"};
 }
 
 void MIP_xpress_wrapper::Options::printHelp(ostream &os) {
