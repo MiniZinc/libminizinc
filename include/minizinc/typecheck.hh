@@ -92,13 +92,5 @@ namespace MiniZinc {
   /// Output information about variable types (enum types) to \a os
   void output_model_variable_types(Env& env, Model* m, std::ostream& os, const std::vector<std::string>& skipDirs);
 
-  static std::string createEnumToStringName(Id* ident, std::string prefix) {
-    std::ostringstream ss;
-    if (ident->str().c_str()[0]=='\'') {
-      ss << "'" << prefix << ident->str().substr(1);
-    } else {
-      ss << prefix << ident;
-    }
-    return ss.str();
-  }
+  std::string createEnumToStringName(Id* ident, std::string prefix);
 }

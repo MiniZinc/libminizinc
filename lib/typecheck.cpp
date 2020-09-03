@@ -2621,5 +2621,15 @@ namespace MiniZinc {
     os << ",\n  \"included_files\": [\n" << _ifc.oss_included_files.str() << "\n  ]";
     os << "\n}\n";
   }
-  
+
+  std::string createEnumToStringName(Id* ident, std::string prefix) {
+    std::ostringstream ss;
+    if (ident->str().c_str()[0]=='\'') {
+      ss << "'" << prefix << ident->str().substr(1);
+    } else {
+      ss << prefix << ident;
+    }
+    return ss.str();
+  }
+
 }
