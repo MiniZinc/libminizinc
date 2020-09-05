@@ -1,7 +1,7 @@
 FindMUS 
 =======
 
-Version: 0.5.0
+Version: 0.6.0
 
 FindMUS [1]_ lists unsatisfiable subsets of constraints in your MiniZinc
 model.  These subsets, called Minimal Unsatisfiable Subsets can help
@@ -41,13 +41,12 @@ FindMUS's enumeration algorithm HierMUS.
 
 ``-n &lt;count&gt;``   Stop after the *n* th MUS is found (Default: 1)
 
-``-a``   Find all MUSes
+``-a``   Find all MUSes (equivalent to ``-n 0``)
 
-``--timeout &lt;s&gt``   Stop search after *s* seconds (Default: 1800)
+``-t`` or ``--timeout &lt;s&gt``   Stop search after *s* seconds (Default: 1800)
 
 ``--paramset hint,mzn,fzn``
-  Use a preset collection of parameters. The default behaviour of the tool
-  is to use the ``hint`` set which should quickly produce an MUS.
+  Use a preset collection of parameters. (Default: mzn)
   The ``mzn`` and ``fzn`` options can acquire MUSes in more detail.
   
   ``hint`` --structure gen --depth mzn --shrink-alg map_lin
@@ -56,11 +55,37 @@ FindMUS's enumeration algorithm HierMUS.
 
   ``fzn`` --structure normal --depth fzn --shrink-alg map_qx
 
+``--no-leftover`` Do not print leftover candidate on timeout
+  If FindMUS is exploring an unsatisfiable subset when it runs out of time,
+  it behaves as if the set could not be reduced to a smaller set and prints
+  it as an MUS. The ``--no-leftover`` setting disables this behaviour as
+  these sets can sometimes be quite large.
+
+``--frequent-stats`` Print statistics after every MUS discovered.
+
+``--no-progress`` Disable ``%%%mzn-progress`` output
+
+``--output-{html, json, brief}`` Changes output mode
+
+  ``html`` HTML output mode for use with the MiniZinc IDE
+
+  ``json`` Simple json output (each MUS should be parsed separately)
+
+  ``brief`` Same as the default output mode but without outputting the traces (paths)
+
+
+**Compiler Options**
+
+``-g`` or ``--domains`` Record domain changes during compilation (same as ``minizinc -c -g``)
+
+``--verbose-compile`` Pass ``--verbose`` to MiniZinc compiler
+
+
 **Enumeration options**
 
 The enumeration algorithm (HierMUS) explores the constraint hierarchy
 provided in the user's model and proposes potential MUSes to the
-sub-solver.  A ``shrink`` algorithm is used to reduce found unsat subsets
+sub-solver.  A ``shrink`` algorithm is used to reduce found UNSAT subsets
 to MUSes. There are currently four available shrink algorithms available
 with FindMUS.
 
@@ -76,7 +101,11 @@ with FindMUS.
     to a MUS.
 
     ``map_qx`` is an alternative implementation of ``QuickXplain`` that
-    uses the global map to avoid repeating any SAT checks while shrinking.
+    uses the global map to split subsets, and to avoid repeating any SAT
+    checks while shrinking
+
+    ``qx2`` a lightweight alternative to ``map_qx`` that only uses the
+    map to avoid repeating SAT checks.
 
 ``--depth mzn,fzn,&lt;n&gt``
   How deep in the tree should search explore. (Default: mzn)
@@ -87,6 +116,10 @@ with FindMUS.
     ``fzn`` expands search as far as the FlatZinc constraints.
 
     ``&lt;n&gt`` expand search to the *n* level of the hierarchy.
+
+``--restarts`` Enable restart to flat mode (plain Marco) if large run of SAT sets encountered
+
+``--seed <n>`` Set the random seed used for splitting with ``map_qx``
 
 **Subsolver options**
 
@@ -104,8 +137,9 @@ in later versions of the tool.
 ``--solver-timelimit &lt;ms&gt``
   Set hard time limit for solver in milliseconds. (Default: 1100)
 
-``--soft-defines``
-  Consider functional constraints as part of MUSes
+``--adapt-timelimit`` Automatically tighten solver timelimit based on
+  performance during initial sanity check (prove background is SAT,
+  background + entire foreground is UNSAT)
 
 **Filtering options**
 
@@ -114,8 +148,21 @@ expression and constraint name annotations as well as properties of their
 paths (for example, line numbers). These filters are currently based on
 substrings but in future may support text spans and regular expressions.
 
+``--soft-defines``
+  Consider functional constraints as part of MUSes
+
+``--hard-domains``
+  Consider domain constraints (added by ``-g`` option) as background
+
 ``--named-only``
   Only consider constraints annotated with string annotations
+
+``--filter-mode fg,ex`` Filtering mode
+
+  ``fg`` Foreground: Excluded items go to the background
+
+  ``ex`` Exclusive: Excluded items are omitted entirely (Useful if they are
+  part of MUSes you are not interested in)
 
 ``--filter-named &lt;names&gt;`` ``--filter-named-exclude &lt;names&gt;``
 Include/exclude constraints with names that match *sep* separated *names*
@@ -124,6 +171,7 @@ Include/exclude constraints with names that match *sep* separated *names*
 Include/exclude based on *paths*
 
 ``--filter-sep &lt;sep&gt;`` Separator used for named and path filters
+
 
 **Structure options**
 
@@ -151,13 +199,14 @@ it in several ways. The second step adds extra binary structure.
 
 ``--no-binarize``
 
-     By default will introduce extra binary structure to the
-     hierarchy. This option disables this behaviour.
+     By default FindMUS  will introduce extra binary structure to the
+     hierarchy. This option disables this behaviour (This is likely to be
+     the default in future since QX performs a type of binarization).
 
 **Verbosity options**
 
 ``--verbose-{map,enum,subsolve} &lt;n&gt`` Set verbosity level for
-different components
+different components. Currently ``n`` can only take values 0, 1, and 2;
 
 ``--verbose`` Set verbosity level of all components to 1
 
@@ -255,8 +304,7 @@ Using FindMUS in the MiniZinc IDE
 
 To use FindMUS in the MiniZinc IDE, upon discovering that a model is
 unsatisfiable. Select ``FindMUS`` from the solver configuration dropdown
-menu and click the solve button (play symbol).  By default FindMUS is
-configured to return a single MUS using the ``hint`` parameter set.
+menu and click the solve button (play symbol).
 This should be relatively fast and help locate the relevant constraint
 items.  The following shows the result of running FindMUS with the
 default options.
@@ -312,11 +360,33 @@ lower-level, more specific MUSes in conjunction with the ``--filter-name``
 and ``--filter-path`` options to focus on finding specific sub-MUSes of a
 found high-level MUS.
 
+When parameter tuning for FindMUS the oracle checker mode can speed up
+testing of different sets of parameters.
+
+  1. Run ``findMUS -a --paramset fzn --output-brief ... > muses.log`` to
+     save the output log to a file.
+  
+  2. Run subsequent sets of parameters with
+     ``findMUS -a --paramset fzn --output-brief --oracle-only muses.log ...``.
+     The oracle mode will perform enumeration without making calls to the
+     sub-solver, instead deciding SAT/UNSAT based on the MUS log (omit
+     ``--oracle-only`` to call the sub-solver when the status of a
+     subset is unknown)
+
 
 Limitations / Future work
 -------------------------
 
 There are several features that we aim to include quite soon:
+
+  Solver core/MUS/IIS integration
+    Set shrinking can be accelerated by using problem specific
+    MUS extraction methods that some solvers provide.
+
+  Context-find
+    Once a MUS has been found flip the foreground + background
+    and narrow down the parts of the background that complete
+    the MUS
 
   Regular expression based filtering
     This will allow more complex filtering to be used.
