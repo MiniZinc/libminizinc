@@ -23,9 +23,13 @@
 <var-decl-item> ::= <ti-expr-and-id> <annotations> [ "=" <expr> ]
 
 % Enum items
-<enum-item>  ::= "enum" <ident> <annotations> [ "=" <enum-cases> ]
+<enum-item>  ::= "enum" <ident> <annotations> [ "=" <enum-cases-list> ]
+
+<enum-cases-list> ::= <enum-cases>
+                    | <enum-cases-list> "++" <enum-cases>
 
 <enum-cases> ::= "{" <ident> "," ... "}"
+               | <ident> "(" <ident> ")"
 
 % Assign items
 <assign-item> ::= <ident> "=" <expr>
@@ -146,7 +150,7 @@
 % Built-in numeric operators
 <num-bin-op> ::= <builtin-num-bin-op> | ‘<ident>‘
 
-<builtin-num-bin-op> ::= "+" | "-" | "*" | "/" | "div" | "mod"
+<builtin-num-bin-op> ::= "+" | "-" | "*" | "/" | "div" | "mod" | "^"
 
 <builtin-num-un-op> ::= "+" | "-"
 

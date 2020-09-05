@@ -1269,9 +1269,9 @@ in :numref:`bin-ops-unicode` (recall that MiniZinc input is UTF-8).
 
 .. table:: Unicode equivalents of binary operators
 
-  ================  =======================  ==========
+  ================  =======================  ==============
   Operator          Unicode symbol           UTF-8 code
-  ================  =======================  ==========
+  ================  =======================  ==============
   :mzn:`<->`        :math:`\leftrightarrow`  E2 86 94
   :mzn:`->`         :math:`\rightarrow`      E2 86 92
   :mzn:`<-`         :math:`\leftarrow`       E2 86 90
@@ -1286,7 +1286,8 @@ in :numref:`bin-ops-unicode` (recall that MiniZinc input is UTF-8).
   :mzn:`superset`   :math:`\supseteq`        E2 8A 87
   :mzn:`union`      :math:`\cup`             E2 88 AA
   :mzn:`intersect`  :math:`\cap`             E2 88 A9
-  ================  =======================  ==========
+  :mzn:`^-1`        :math:`^{-1}`            E2 81 BB C2 B9
+  ================  =======================  ==============
 
 The binary operators are listed in :numref:`bin-ops`. A lower precedence
 number means tighter binding; for example, :mzn:`1+2*3` is parsed as
@@ -1296,6 +1297,8 @@ example, :mzn:`1+2+3` is parsed as :mzn:`(1+2)+3` because :mzn:`+` is
 left-associative, :mzn:`a++b++c` is parsed as :mzn:`a++(b++c)` because
 :mzn:`++` is right-associative, and :mzn:`1<x<2` is a syntax error because
 :mzn:`<` is non-associative.
+
+Note that the last entry in the table, :mzn:`^-1`, is a combination of the binary power operator and the constant -1, which effectively turns it into a unary inverse operator. Other special cases (such as power of 2) are currently not supported yet.
 
 .. _bin-ops:
 
@@ -1342,10 +1345,12 @@ left-associative, :mzn:`a++b++c` is parsed as :mzn:`a++(b++c)` because
   :mzn:`mod`                       left   300   
   :mzn:`/`                         left   300   
   :mzn:`intersect`                 left   300   
-                             
-  :mzn:`++`                        right  200   
 
-  `````  :mzndef:`<ident>` `````   left   100   
+  :mzn:`^`                         left   200
+                             
+  :mzn:`++`                        right  100   
+
+  `````  :mzndef:`<ident>` `````   left    50   
   ===============================  ====== ======
 
 
@@ -2114,6 +2119,21 @@ called the *enum case name*.
 
 Because enum case names all reside in the top-level namespace
 (:ref:`spec-Namespaces`), case names in different enums must be distinct.
+
+Enumerated type items can also be defined in terms of other enumerated types by using an *enumerated type constructor* and the :mzn:`++` operator, as in the following example:
+
+.. code-block:: minizinc
+
+     enum country_or_none = C(country) ++ {None};
+
+The :mzn:`country_or_none` type now contains all of the cases of the :mzn:`country` type, plus the new case :mzn:`None`. The two enumerated types are however completely separate: :mzn:`country` is *not* a subtype of :mzn:`country_or_none`. In order to coerce a value of type :mzn:`country` to type :mzn:`country_or_none`, use the constructor. E.g., :mzn:`C(Canada)` is of type :mzn:`country_or_none`. Similarly, you can use the *inverse constructor* to coerce a value back:
+
+.. code-block:: minizinc
+
+    country_or_none: c_o_n = C(England);
+    country: c = C⁻¹(c_o_n);
+
+The inverse operator can be written using unicode characters (as in the example) or using ASCII syntax, e.g. :mzn:`C^-1(c_o_n)`.
 
 An enum can be declared but not defined, in which case it must be defined
 elsewhere within the model, or in a data file.
