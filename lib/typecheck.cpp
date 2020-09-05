@@ -386,7 +386,7 @@ namespace MiniZinc {
             Call* toEfn_body = new Call(Location().introduce(),"to_enum",{otherEnumId,realX});
 
             FunctionI* toEfn = new FunctionI(Location().introduce(),
-                                             std::string(c->id().c_str())+"_inv",
+                                             std::string(c->id().c_str())+"⁻¹",
                                              toEfn_ti,{vd_x},toEfn_body);
             enumItems->addItem(toEfn);
           }

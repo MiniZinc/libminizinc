@@ -373,6 +373,7 @@ _[A-Za-z][A-Za-z0-9_]* {
 "\xE2\x89\xA5"      { return MZN_GQ; }
 "\xE2\x88\xAA"      { return MZN_UNION; }
 "\xE2\x88\xA9"      { return MZN_INTERSECT; }
+"\xE2\x81\xBB\xC2\xB9" { return MZN_POW_MINUS1; }
 
 $$[A-Za-z][A-Za-z0-9_]* {
   yylval->sValue = strdup(yytext+1); return MZN_TI_ENUM_IDENTIFIER; }
