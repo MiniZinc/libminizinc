@@ -574,7 +574,7 @@ namespace MiniZinc {
         {
           const VarDecl& vd = *e->cast<VarDecl>();
           p(vd.ti());
-          if (!vd.ti()->isEnum()) {
+          if (!vd.ti()->isEnum() && (vd.id()->idn() != -1 || vd.id()->v().size() > 0) ) {
             os << ":";
           }
           if (vd.id()->idn() != -1) {
@@ -1555,15 +1555,15 @@ namespace MiniZinc {
       std::ostringstream oss;
       DocumentList* dl = new DocumentList("", "", "");
       dl->addDocumentToList(expressionToDocument(vd.ti()));
-      dl->addStringToList(": ");
       if (vd.id()->idn()==-1) {
-        dl->addStringToList(std::string(vd.id()->v().c_str(), vd.id()->v().c_str()));
+        if (vd.id()->v().size()!=0) {
+          oss << ": " << vd.id()->v().c_str();
+        }
       } else {
-        std::ostringstream oss;
-        oss << "X_INTRODUCED_" << vd.id()->idn() << "_";
-        dl->addStringToList(oss.str());
+        oss << ": X_INTRODUCED_" << vd.id()->idn() << "_";
       }
-        
+      dl->addStringToList(oss.str());
+
       if (vd.introduced()) {
         dl->addStringToList(" ::var_is_introduced ");
       }
