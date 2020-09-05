@@ -1881,140 +1881,107 @@ namespace MiniZinc {
       std::vector<Expression*> args(call.n_args());
       for (unsigned int i=static_cast<unsigned int>(args.size()); i--;)
         args[i] = call.arg(i);
-      if (FunctionI* fi = _model->matchFn(_env,call.id(),args,true)) {
-        if (fi->e() && fi->e()->isa<Call>()) {
-          Call* next_call = fi->e()->cast<Call>();
-          if (next_call->decl() && next_call->n_args()==fi->params().size() && _model->sameOverloading(_env, args, fi, next_call->decl())) {
-            bool macro = true;
-            for (unsigned int i=0; i<fi->params().size(); i++) {
-              if (!Expression::equal(next_call->arg(i),fi->params()[i]->id())) {
-                macro = false;
-                break;
-              }
+      FunctionI* fi = _model->matchFn(_env,&call,true,true);
+      if (fi->e() && fi->e()->isa<Call>()) {
+        Call* next_call = fi->e()->cast<Call>();
+        if (next_call->decl() && next_call->n_args()==fi->params().size() && _model->sameOverloading(_env, args, fi, next_call->decl())) {
+          bool macro = true;
+          for (unsigned int i=0; i<fi->params().size(); i++) {
+            if (!Expression::equal(next_call->arg(i),fi->params()[i]->id())) {
+              macro = false;
+              break;
             }
-            if (macro) {
-              call.decl(next_call->decl());
-              for (ExpressionSetIter esi = next_call->ann().begin(); esi != next_call->ann().end(); ++esi) {
-                call.addAnnotation(*esi);
-              }
-              call.rehash();
-              fi = next_call->decl();
+          }
+          if (macro) {
+            call.decl(next_call->decl());
+            for (ExpressionSetIter esi = next_call->ann().begin(); esi != next_call->ann().end(); ++esi) {
+              call.addAnnotation(*esi);
             }
+            call.rehash();
+            fi = next_call->decl();
           }
         }
-        
-        bool cv = false;
-        for (unsigned int i=0; i<args.size(); i++) {
-          if(Comprehension* c = call.arg(i)->dyn_cast<Comprehension>()) {
-            Type t_before = c->e()->type();
-            Type t = fi->argtype(_env,args,i);
-            t.dim(0);
-            c->e(addCoercion(_env, _model, c->e(), t)());
-            Type t_after = c->e()->type();
-            if (t_before != t_after) {
-              Type ct = c->type();
-              ct.bt(t_after.bt());
-              c->type(ct);
-            }
-          } else {
-            args[i] = addCoercion(_env, _model,call.arg(i),fi->argtype(_env,args,i))();
-            call.arg(i, args[i]);
+      }
+      
+      bool cv = false;
+      for (unsigned int i=0; i<args.size(); i++) {
+        if(Comprehension* c = call.arg(i)->dyn_cast<Comprehension>()) {
+          Type t_before = c->e()->type();
+          Type t = fi->argtype(_env,args,i);
+          t.dim(0);
+          c->e(addCoercion(_env, _model, c->e(), t)());
+          Type t_after = c->e()->type();
+          if (t_before != t_after) {
+            Type ct = c->type();
+            ct.bt(t_after.bt());
+            c->type(ct);
           }
-          cv = cv || args[i]->type().cv();
-        }
-        // Replace par enums with their string versions
-        if (call.id()=="format" || call.id()=="show" || call.id()=="showDzn" || call.id()=="showJSON") {
-          if (call.arg(call.n_args()-1)->type().ispar()) {
-            int enumId = call.arg(call.n_args()-1)->type().enumId();
-            if (enumId != 0 && call.arg(call.n_args()-1)->type().dim() != 0) {
-              const std::vector<unsigned int>& enumIds = _env.getArrayEnum(enumId);
-              enumId = enumIds[enumIds.size()-1];
-            }
-            if (enumId > 0) {
-              VarDecl* enumDecl = _env.getEnum(enumId)->e();
-              if (enumDecl->e()) {
-                Id* ti_id = _env.getEnum(enumId)->e()->id();
-                GCLock lock;
-                std::vector<Expression*> args(3);
-                args[0] = call.arg(call.n_args()-1);
-                if (args[0]->type().dim() > 1) {
-                  std::vector<Expression*> a1dargs(1);
-                  a1dargs[0] = args[0];
-                  Call* array1d = new Call(Location().introduce(),ASTString("array1d"),a1dargs);
-                  Type array1dt = args[0]->type();
-                  array1dt.dim(1);
-                  array1d->type(array1dt);
-                  args[0] = array1d;
-                }
-                args[1] = constants().boollit(call.id()=="showDzn");
-                args[2] = constants().boollit(call.id()=="showJSON");
-                ASTString enumName(createEnumToStringName(ti_id, "_toString_"));
-                call.id(enumName);
-                call.args(args);
-                if (call.id()=="showDzn") {
-                  call.id(constants().ids.show);
-                }
-                fi = _model->matchFn(_env,&call,false);
-                if (fi==NULL) {
-                  std::ostringstream oss;
-                  oss << "no function or predicate with this signature found: `";
-                  oss << call.id() << "(";
-                  for (unsigned int i=0; i<call.n_args(); i++) {
-                    oss << call.arg(i)->type().toString(_env);
-                    if (i<call.n_args()-1) oss << ",";
-                  }
-                  oss << ")'";
-                  throw TypeError(_env,call.loc(), oss.str());
-                }
-              }
-            }
-          }
-        }
-
-        // Set type and decl
-        Type ty = fi->rtype(_env,args,true);
-        ty.cv(cv);
-        call.type(ty);
-        
-        if (Call* deprecated = fi->ann().getCall(constants().ann.mzn_deprecated)) {
-          // rewrite this call into a call to mzn_deprecate(..., e)
-          GCLock lock;
-          std::vector<Expression*> params(call.n_args());
-          for (unsigned int i=0; i<params.size(); i++) {
-            params[i] = call.arg(i);
-          }
-          Call* origCall = new Call(call.loc(),call.id(),params);
-          origCall->type(ty);
-          origCall->decl(fi);
-          call.id(constants().ids.mzn_deprecate);
-          std::vector<Expression*> args({new StringLit(Location(), fi->id()), deprecated->arg(0), deprecated->arg(1), origCall});
-          call.args(args);
-          FunctionI* deprecated_fi = _model->matchFn(_env, &call, false);
-          if (deprecated_fi==NULL) {
-            std::ostringstream oss;
-            oss << "no function or predicate with this signature found: `";
-            oss << call.id() << "(";
-            for (unsigned int i=0; i<call.n_args(); i++) {
-              oss << call.arg(i)->type().toString(_env);
-              if (i<call.n_args()-1) oss << ",";
-            }
-            oss << ")'";
-            throw TypeError(_env,call.loc(), oss.str());
-          }
-          call.decl(deprecated_fi);
         } else {
-          call.decl(fi);
+          args[i] = addCoercion(_env, _model,call.arg(i),fi->argtype(_env,args,i))();
+          call.arg(i, args[i]);
         }
+        cv = cv || args[i]->type().cv();
+      }
+      // Replace par enums with their string versions
+      if (call.id()=="format" || call.id()=="show" || call.id()=="showDzn" || call.id()=="showJSON") {
+        if (call.arg(call.n_args()-1)->type().ispar()) {
+          int enumId = call.arg(call.n_args()-1)->type().enumId();
+          if (enumId != 0 && call.arg(call.n_args()-1)->type().dim() != 0) {
+            const std::vector<unsigned int>& enumIds = _env.getArrayEnum(enumId);
+            enumId = enumIds[enumIds.size()-1];
+          }
+          if (enumId > 0) {
+            VarDecl* enumDecl = _env.getEnum(enumId)->e();
+            if (enumDecl->e()) {
+              Id* ti_id = _env.getEnum(enumId)->e()->id();
+              GCLock lock;
+              std::vector<Expression*> args(3);
+              args[0] = call.arg(call.n_args()-1);
+              if (args[0]->type().dim() > 1) {
+                std::vector<Expression*> a1dargs(1);
+                a1dargs[0] = args[0];
+                Call* array1d = new Call(Location().introduce(),ASTString("array1d"),a1dargs);
+                Type array1dt = args[0]->type();
+                array1dt.dim(1);
+                array1d->type(array1dt);
+                args[0] = array1d;
+              }
+              args[1] = constants().boollit(call.id()=="showDzn");
+              args[2] = constants().boollit(call.id()=="showJSON");
+              ASTString enumName(createEnumToStringName(ti_id, "_toString_"));
+              call.id(enumName);
+              call.args(args);
+              if (call.id()=="showDzn") {
+                call.id(constants().ids.show);
+              }
+              fi = _model->matchFn(_env,&call,false,true);
+            }
+          }
+        }
+      }
+
+      // Set type and decl
+      Type ty = fi->rtype(_env,args,true);
+      ty.cv(cv);
+      call.type(ty);
+      
+      if (Call* deprecated = fi->ann().getCall(constants().ann.mzn_deprecated)) {
+        // rewrite this call into a call to mzn_deprecate(..., e)
+        GCLock lock;
+        std::vector<Expression*> params(call.n_args());
+        for (unsigned int i=0; i<params.size(); i++) {
+          params[i] = call.arg(i);
+        }
+        Call* origCall = new Call(call.loc(),call.id(),params);
+        origCall->type(ty);
+        origCall->decl(fi);
+        call.id(constants().ids.mzn_deprecate);
+        std::vector<Expression*> args({new StringLit(Location(), fi->id()), deprecated->arg(0), deprecated->arg(1), origCall});
+        call.args(args);
+        FunctionI* deprecated_fi = _model->matchFn(_env, &call, false, true);
+        call.decl(deprecated_fi);
       } else {
-        std::ostringstream oss;
-        oss << "no function or predicate with this signature found: `";
-        oss << call.id() << "(";
-        for (unsigned int i=0; i<call.n_args(); i++) {
-          oss << call.arg(i)->type().toString(_env);
-          if (i<call.n_args()-1) oss << ",";
-        }
-        oss << ")'";
-        throw TypeError(_env,call.loc(), oss.str());
+        call.decl(fi);
       }
     }
     /// Visit let

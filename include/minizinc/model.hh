@@ -142,7 +142,7 @@ namespace MiniZinc {
     FunctionI* matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t,
                        bool strictEnums);
     /// Return function declaration matching call \a c
-    FunctionI* matchFn(EnvI& env, Call* c, bool strictEnums) const;
+    FunctionI* matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotFound=false) const;
     /// Return function declaration for reverse mapper for type \a t
     FunctionI* matchRevMap(EnvI& env, const Type& t) const;
     /// Check whether functions \a f and \a g have the same overloaded variants

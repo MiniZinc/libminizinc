@@ -464,7 +464,7 @@ namespace MiniZinc {
   }
   
   FunctionI*
-  Model::matchFn(EnvI& env, Call* c, bool strictEnums) const {
+  Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotFound) const {
     if (c->id()==constants().var_redef->id())
       return constants().var_redef;
     const Model* m = this;
@@ -472,6 +472,12 @@ namespace MiniZinc {
       m = m->_parent;
     FnMap::const_iterator it = m->fnmap.find(c->id());
     if (it == m->fnmap.end()) {
+      if (throwIfNotFound) {
+        std::ostringstream oss;
+        oss << "no function or predicate with name `";
+        oss << c->id() << "' found";
+        throw TypeError(env,c->loc(), oss.str());
+      }
       return NULL;
     }
     const std::vector<FnEntry>& v = it->second;
@@ -506,8 +512,42 @@ namespace MiniZinc {
         }
       }
     }
-    if (matched.empty())
+    if (matched.empty()) {
+      if (throwIfNotFound) {
+        std::ostringstream oss;
+        oss << "no function or predicate with this signature found: `";
+        oss << c->id() << "(";
+        for (unsigned int i=0; i<c->n_args(); i++) {
+          oss << c->arg(i)->type().toString(env);
+          if (i<c->n_args()-1) oss << ",";
+        }
+        oss << ")'\n";
+        oss << "Cannot use the following functions or predicates with the same identifier:\n";
+        Printer pp(oss, 0, false, &env);
+        for (unsigned int i=0; i<v.size(); i++) {
+          const std::vector<Type>& fi_t = v[i].t;
+          Expression* body = v[i].fi->e();
+          v[i].fi->e(nullptr);
+          pp.print(v[i].fi);
+          v[i].fi->e(body);
+          if (fi_t.size() == c->n_args()) {
+            for (unsigned int j=0; j<c->n_args(); j++) {
+              if (!env.isSubtype(c->arg(j)->type(),fi_t[j],strictEnums)) {
+                oss << "    (argument " << (j+1) << " expects type " << fi_t[j].toString(env);
+                oss << ", but type " << c->arg(j)->type().toString(env) << " given)\n";
+              }
+              if (c->arg(j)->type().isbot() && fi_t[j].bt()!=Type::BT_TOP) {
+                botarg = c->arg(j);
+              }
+            }
+          } else {
+            oss << "    (requires " << v[i].fi->params().size() << " argument" << (v[i].fi->params().size()==1 ? "" : "s") << ", but " << c->n_args() << " given)\n";
+          }
+        }
+        throw TypeError(env,c->loc(), oss.str());
+      }
       return NULL;
+    }
     if (matched.size()==1)
       return matched[0];
     Type t = matched[0]->ti()->type();
