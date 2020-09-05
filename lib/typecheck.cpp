@@ -168,7 +168,10 @@ namespace MiniZinc {
           }
           Call* toEnum = new Call(sl->v()[i]->loc(), ASTString("to_enum"), toEnumArgs);
           VarDecl* vd_id = new VarDecl(ti_id->loc(),ti_id,sl->v()[i]->cast<Id>()->str(),toEnum);
-          enumItems->addItem(new VarDeclI(vd_id->loc(),vd_id));
+          VarDeclI* vdi_id = new VarDeclI(vd_id->loc(),vd_id);
+          std::string str(sl->v()[i]->cast<Id>()->str().c_str());
+          env.reverseEnum[str] = vdi_id;
+          enumItems->addItem(vdi_id);
           if (i==sl->v().size()-1) {
             // remember the last identifier
             partCardinality.push_back(toEnumArgs[1]);
@@ -185,7 +188,6 @@ namespace MiniZinc {
             al_args[i] = new StringLit(Location().introduce(), ASTString(str));
           }
           /// TODO: reimplement reverseEnum with a symbol table into the model (so you can evalPar an expression)
-//          env.reverseEnum[str] = i+1;
         }
         ArrayLit* al = new ArrayLit(Location().introduce(),al_args);
         
@@ -360,9 +362,11 @@ namespace MiniZinc {
             }
             Call* Cfn_body = new Call(Location().introduce(),"to_enum",{vd->id(),realX});
             
+            std::string Cfn_id(c->id().c_str());
             FunctionI* Cfn = new FunctionI(Location().introduce(),
-                                           std::string(c->id().c_str()),
+                                           Cfn_id,
                                            Cfn_ti,{vd_x},Cfn_body);
+            env.reverseEnum[Cfn_id] = Cfn;
             enumItems->addItem(Cfn);
           }
           /*
@@ -2838,7 +2842,7 @@ namespace MiniZinc {
     if (ident->str().c_str()[0]=='\'') {
       ss << "'" << prefix << ident->str().substr(1);
     } else {
-      ss << prefix << ident;
+      ss << prefix << *ident;
     }
     return ss.str();
   }

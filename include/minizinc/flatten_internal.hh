@@ -110,7 +110,7 @@ namespace MiniZinc {
     bool in_reverse_map_var;
     FlatteningOptions fopts;
     unsigned int pathUse;
-    ASTStringMap<int> reverseEnum;
+    ASTStringMap<Item*> reverseEnum;
 
     struct PathVar {
       KeepAlive decl;

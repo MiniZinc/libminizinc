@@ -1,4 +1,4 @@
-/* A Bison parser, made by GNU Bison 3.7.1.  */
+/* A Bison parser, made by GNU Bison 3.6.1.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
@@ -49,7 +49,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "3.7.1"
+#define YYBISON_VERSION "3.6.1"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -96,7 +96,6 @@ extern FILE* yyin;
 typedef struct REContext{
   REG* expr;
   const IntSetVal& dom;
-  const ASTStringMap<int>& idMap;
 } REContext;
 
 void yyerror(REContext& ctx, const char* s);
@@ -154,8 +153,7 @@ enum yysymbol_kind_t
   YYSYMBOL_factor = 23,                    /* factor  */
   YYSYMBOL_atom = 24,                      /* atom  */
   YYSYMBOL_set_items = 25,                 /* set_items  */
-  YYSYMBOL_set_item = 26,                  /* set_item  */
-  YYSYMBOL_literal = 27                    /* literal  */
+  YYSYMBOL_set_item = 26                   /* set_item  */
 };
 typedef enum yysymbol_kind_t yysymbol_kind_t;
 
@@ -463,20 +461,19 @@ union yyalloc
 #endif /* !YYCOPY_NEEDED */
 
 /* YYFINAL -- State number of the termination state.  */
-#define YYFINAL  17
+#define YYFINAL  15
 /* YYLAST -- Last index in YYTABLE.  */
-#define YYLAST   34
+#define YYLAST   28
 
 /* YYNTOKENS -- Number of terminals.  */
 #define YYNTOKENS  19
 /* YYNNTS -- Number of nonterminals.  */
-#define YYNNTS  9
+#define YYNNTS  8
 /* YYNRULES -- Number of rules.  */
-#define YYNRULES  24
+#define YYNRULES  22
 /* YYNSTATES -- Number of states.  */
-#define YYNSTATES  38
+#define YYNSTATES  36
 
-/* YYMAXUTOK -- Last valid token kind.  */
 #define YYMAXUTOK   273
 
 
@@ -525,9 +522,9 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    76,    76,    83,    84,    92,    93,   101,   102,   107,
-     112,   117,   122,   127,   134,   136,   141,   151,   166,   170,
-     171,   181,   185,   199,   200
+       0,    74,    74,    81,    82,    90,    91,    99,   100,   105,
+     110,   115,   120,   125,   132,   134,   139,   149,   164,   168,
+     169,   179,   183
 };
 #endif
 
@@ -546,8 +543,7 @@ static const char *const yytname[] =
   "\"end of file\"", "error", "\"invalid token\"", "R_INTEGER", "\"(\"",
   "\")\"", "\"*\"", "\"+\"", "\".\"", "\"|\"", "\"?\"", "\"{\"", "\"}\"",
   "\",\"", "\"[\"", "\"]\"", "\"-\"", "\"^\"", "R_IDENTIFIER", "$accept",
-  "regex", "expression", "term", "factor", "atom", "set_items", "set_item",
-  "literal", YY_NULLPTR
+  "regex", "expression", "term", "factor", "atom", "set_items", "set_item", YY_NULLPTR
 };
 
 static const char *
@@ -567,7 +563,7 @@ static const yytype_int16 yytoknum[] =
 };
 #endif
 
-#define YYPACT_NINF (-8)
+#define YYPACT_NINF (-11)
 
 #define yypact_value_is_default(Yyn) \
   ((Yyn) == YYPACT_NINF)
@@ -581,10 +577,10 @@ static const yytype_int16 yytoknum[] =
      STATE-NUM.  */
 static const yytype_int8 yypact[] =
 {
-       0,    -8,     0,    -8,     2,    -8,    13,    -8,    -7,     0,
-      16,    -8,    10,     3,    18,     3,     9,    -8,     0,    -8,
-      -8,    -8,    -8,    25,    -8,    19,    -8,    -8,     3,    -8,
-      17,    -8,    -8,    -8,     4,    20,    -8,    -8
+       2,   -11,     2,   -11,    -3,     9,   -11,     4,     2,    11,
+       6,     3,    17,     8,    17,   -11,     2,   -11,   -11,   -11,
+     -11,    21,   -11,    22,    12,   -11,   -11,   -11,    -5,   -11,
+     -11,   -11,     0,    14,   -11,   -11
 };
 
   /* YYDEFACT[STATE-NUM] -- Default reduction number in state STATE-NUM.
@@ -592,22 +588,22 @@ static const yytype_int8 yypact[] =
      means the default is an error.  */
 static const yytype_int8 yydefact[] =
 {
-       0,    23,     0,    15,     0,    24,     0,     2,     3,     5,
-       7,    14,     0,     0,     0,    19,    21,     1,     0,     6,
-       8,     9,    10,     0,    18,     0,    16,    20,     0,     4,
-       0,    17,    22,    11,     0,     0,    12,    13
+       0,    14,     0,    15,     0,     0,     2,     3,     5,     7,
+       0,    21,     0,     0,    19,     1,     0,     6,     8,     9,
+      10,     0,    18,     0,     0,    16,    20,     4,     0,    22,
+      17,    11,     0,     0,    12,    13
 };
 
   /* YYPGOTO[NTERM-NUM].  */
 static const yytype_int8 yypgoto[] =
 {
-      -8,    -8,    -1,    22,    -8,    -8,    -3,    -8,    -4
+     -11,   -11,    -1,    20,   -11,   -11,   -10,   -11
 };
 
   /* YYDEFGOTO[NTERM-NUM].  */
 static const yytype_int8 yydefgoto[] =
 {
-      -1,     6,     7,     8,     9,    10,    14,    15,    11
+      -1,     5,     6,     7,     8,     9,    13,    14
 };
 
   /* YYTABLE[YYPACT[STATE-NUM]] -- What to do in state STATE-NUM.  If
@@ -615,28 +611,26 @@ static const yytype_int8 yydefgoto[] =
      number is the opposite.  If YYTABLE_NINF, syntax error.  */
 static const yytype_int8 yytable[] =
 {
-      16,    12,    18,     1,     2,     1,     1,    35,     3,    16,
-      25,    16,    27,    17,     4,    24,    36,    29,     5,    13,
-       5,     5,    20,    21,    32,    28,    22,    23,    30,    33,
-      34,    19,    37,    26,    31
+      11,    10,    24,    33,    26,     1,     2,    31,    32,    15,
+       3,    22,    34,    16,    12,    27,     4,    18,    19,    23,
+      11,    20,    21,    25,    28,    29,    35,    30,    17
 };
 
 static const yytype_int8 yycheck[] =
 {
-       4,     2,     9,     3,     4,     3,     3,     3,     8,    13,
-      13,    15,    15,     0,    14,     5,    12,    18,    18,    17,
-      18,    18,     6,     7,    28,    16,    10,    11,     3,    12,
-      13,     9,    12,    15,    15
+       3,     2,    12,     3,    14,     3,     4,    12,    13,     0,
+       8,     5,    12,     9,    17,    16,    14,     6,     7,    16,
+       3,    10,    11,    15,     3,     3,    12,    15,     8
 };
 
   /* YYSTOS[STATE-NUM] -- The (internal number of the) accessing
      symbol of state STATE-NUM.  */
 static const yytype_int8 yystos[] =
 {
-       0,     3,     4,     8,    14,    18,    20,    21,    22,    23,
-      24,    27,    21,    17,    25,    26,    27,     0,     9,    22,
-       6,     7,    10,    11,     5,    25,    15,    25,    16,    21,
-       3,    15,    27,    12,    13,     3,    12,    12
+       0,     3,     4,     8,    14,    20,    21,    22,    23,    24,
+      21,     3,    17,    25,    26,     0,     9,    22,     6,     7,
+      10,    11,     5,    16,    25,    15,    25,    21,     3,     3,
+      15,    12,    13,     3,    12,    12
 };
 
   /* YYR1[YYN] -- Symbol number of symbol that rule YYN derives.  */
@@ -644,7 +638,7 @@ static const yytype_int8 yyr1[] =
 {
        0,    19,    20,    21,    21,    22,    22,    23,    23,    23,
       23,    23,    23,    23,    24,    24,    24,    24,    24,    25,
-      25,    26,    26,    27,    27
+      25,    26,    26
 };
 
   /* YYR2[YYN] -- Number of symbols on the right hand side of rule YYN.  */
@@ -652,7 +646,7 @@ static const yytype_int8 yyr2[] =
 {
        0,     2,     1,     1,     3,     1,     2,     1,     2,     2,
        2,     4,     5,     6,     1,     1,     3,     4,     3,     1,
-       2,     1,     3,     1,     1
+       2,     1,     3
 };
 
 
@@ -866,7 +860,7 @@ yydestruct (const char *yymsg,
 }
 
 
-/* Lookahead token kind.  */
+/* The lookahead symbol.  */
 int yychar;
 
 /* The semantic value of the lookahead symbol.  */
@@ -884,30 +878,34 @@ int yynerrs;
 int
 yyparse (REContext& ctx)
 {
-    yy_state_fast_t yystate = 0;
+    yy_state_fast_t yystate;
     /* Number of tokens to shift before error messages enabled.  */
-    int yyerrstatus = 0;
+    int yyerrstatus;
 
-    /* Refer to the stacks through separate pointers, to allow yyoverflow
+    /* The stacks and their tools:
+       'yyss': related to states.
+       'yyvs': related to semantic values.
+
+       Refer to the stacks through separate pointers, to allow yyoverflow
        to reallocate them elsewhere.  */
 
     /* Their size.  */
-    YYPTRDIFF_T yystacksize = YYINITDEPTH;
+    YYPTRDIFF_T yystacksize;
 
-    /* The state stack: array, bottom, top.  */
+    /* The state stack.  */
     yy_state_t yyssa[YYINITDEPTH];
-    yy_state_t *yyss = yyssa;
-    yy_state_t *yyssp = yyss;
+    yy_state_t *yyss;
+    yy_state_t *yyssp;
 
-    /* The semantic value stack: array, bottom, top.  */
+    /* The semantic value stack.  */
     YYSTYPE yyvsa[YYINITDEPTH];
-    YYSTYPE *yyvs = yyvsa;
-    YYSTYPE *yyvsp = yyvs;
+    YYSTYPE *yyvs;
+    YYSTYPE *yyvsp;
 
   int yyn;
   /* The return value of yyparse.  */
   int yyresult;
-  /* Lookahead symbol kind.  */
+  /* Lookahead token as an internal (translated) token number.  */
   yysymbol_kind_t yytoken = YYSYMBOL_YYEMPTY;
   /* The variables used to return semantic value and location from the
      action routines.  */
@@ -920,6 +918,15 @@ yyparse (REContext& ctx)
   /* The number of symbols on the RHS of the reduced rule.
      Keep to zero when no symbol should be popped.  */
   int yylen = 0;
+
+  yynerrs = 0;
+  yystate = 0;
+  yyerrstatus = 0;
+
+  yystacksize = YYINITDEPTH;
+  yyssp = yyss = yyssa;
+  yyvsp = yyvs = yyvsa;
+
 
   YYDPRINTF ((stderr, "Starting parse\n"));
 
@@ -1121,14 +1128,14 @@ yyreduce:
   YY_REDUCE_PRINT (yyn);
   switch (yyn)
     {
-  case 2: /* regex: expression  */
+  case 2:
   {
     *ctx.expr = (*(yyvsp[0].rValue));
     delete (yyvsp[0].rValue);
   }
     break;
 
-  case 4: /* expression: term "|" expression  */
+  case 4:
     {
       *(yyvsp[-2].rValue) = *(yyvsp[-2].rValue) | *(yyvsp[0].rValue);
       delete (yyvsp[0].rValue);
@@ -1136,7 +1143,7 @@ yyreduce:
     }
     break;
 
-  case 6: /* term: factor term  */
+  case 6:
     {
       *(yyvsp[-1].rValue) = *(yyvsp[-1].rValue) + *(yyvsp[0].rValue);
       delete (yyvsp[0].rValue);
@@ -1144,60 +1151,60 @@ yyreduce:
     }
     break;
 
-  case 8: /* factor: atom "*"  */
+  case 8:
     {
       *(yyvsp[-1].rValue) = *(*(yyvsp[-1].rValue));
       (yyval.rValue) = (yyvsp[-1].rValue);
     }
     break;
 
-  case 9: /* factor: atom "+"  */
+  case 9:
     {
       *(yyvsp[-1].rValue) = +(*(yyvsp[-1].rValue));
       (yyval.rValue) = (yyvsp[-1].rValue);
     }
     break;
 
-  case 10: /* factor: atom "?"  */
+  case 10:
     {
       *(yyvsp[-1].rValue) = (*(yyvsp[-1].rValue))(0, 1);
       (yyval.rValue) = (yyvsp[-1].rValue);
     }
     break;
 
-  case 11: /* factor: atom "{" R_INTEGER "}"  */
+  case 11:
     {
       *(yyvsp[-3].rValue) = (*(yyvsp[-3].rValue))((yyvsp[-1].iValue), (yyvsp[-1].iValue));
       (yyval.rValue) = (yyvsp[-3].rValue);
     }
     break;
 
-  case 12: /* factor: atom "{" R_INTEGER "," "}"  */
+  case 12:
     {
       *(yyvsp[-4].rValue) = (*(yyvsp[-4].rValue))((yyvsp[-2].iValue));
       (yyval.rValue) = (yyvsp[-4].rValue);
     }
     break;
 
-  case 13: /* factor: atom "{" R_INTEGER "," R_INTEGER "}"  */
+  case 13:
     {
       *(yyvsp[-5].rValue) = (*(yyvsp[-5].rValue))((yyvsp[-3].iValue), (yyvsp[-1].iValue));
       (yyval.rValue) = (yyvsp[-5].rValue);
     }
     break;
 
-  case 14: /* atom: literal  */
+  case 14:
     { (yyval.rValue) = new REG((yyvsp[0].iValue)); }
     break;
 
-  case 15: /* atom: "."  */
+  case 15:
     {
       IntArgs range = IntArgs::create(ctx.dom.max().toInt() - ctx.dom.min().toInt() + 1, ctx.dom.min().toInt());
       (yyval.rValue) = new REG(range);
     }
     break;
 
-  case 16: /* atom: "[" set_items "]"  */
+  case 16:
     {
       std::vector<int> v;
       v.reserve((yyvsp[-1].setValue)->size());
@@ -1209,7 +1216,7 @@ yyreduce:
     }
     break;
 
-  case 17: /* atom: "[" "^" set_items "]"  */
+  case 17:
     {
       std::vector<int> diff;
       std::set<int> domain;
@@ -1226,11 +1233,11 @@ yyreduce:
     }
     break;
 
-  case 18: /* atom: "(" expression ")"  */
+  case 18:
     { (yyval.rValue) = (yyvsp[-1].rValue); }
     break;
 
-  case 20: /* set_items: set_item set_items  */
+  case 20:
     {
       (yyval.setValue) = (yyvsp[-1].setValue);
       for (auto i : *(yyvsp[0].setValue)) {
@@ -1240,13 +1247,13 @@ yyreduce:
     }
     break;
 
-  case 21: /* set_item: literal  */
+  case 21:
     {
       (yyval.setValue) = new std::set<int>({(yyvsp[0].iValue)});
     }
     break;
 
-  case 22: /* set_item: literal "-" literal  */
+  case 22:
     {
       int from = (yyvsp[-2].iValue);
       int to = (yyvsp[0].iValue);
@@ -1257,18 +1264,6 @@ yyreduce:
       for(int i = from; i<=to; ++i) {
         (yyval.setValue)->insert(i);
       }
-    }
-    break;
-
-  case 24: /* literal: R_IDENTIFIER  */
-    {
-      GCLock lock;
-      std::string s((yyvsp[0].sValue));
-      auto find = ctx.idMap.find(s); // Implicit cast to ASTString
-      if (find == ctx.idMap.end()) {
-        throw std::runtime_error("Unknown identifier: " + s);
-      }
-      (yyval.iValue) = find->second;
     }
     break;
 
@@ -1432,13 +1427,13 @@ yyabortlab:
 yyexhaustedlab:
   yyerror (ctx, YY_("memory exhausted"));
   yyresult = 2;
-  goto yyreturn;
+  /* Fall through.  */
 #endif
 
 
-/*-------------------------------------------------------.
-| yyreturn -- parsing is finished, clean up and return.  |
-`-------------------------------------------------------*/
+/*-----------------------------------------------------.
+| yyreturn -- parsing is finished, return the result.  |
+`-----------------------------------------------------*/
 yyreturn:
   if (yychar != YYEMPTY)
     {
@@ -1473,10 +1468,10 @@ void yyerror(REContext& ctx, const char* s) {
     throw std::runtime_error("Cannot parse regular expression: " + std::string(s));
 }
 
-std::unique_ptr<REG> regex_from_string(const std::string& regex_str, const IntSetVal& domain, const ASTStringMap<int>& identifiers) {
+std::unique_ptr<REG> regex_from_string(const std::string& regex_str, const IntSetVal& domain) {
     REG* expr = new REG();
     regex_yy_scan_string(regex_str.c_str());
-    REContext rctx = REContext{expr, domain, identifiers};
+    REContext rctx = REContext{expr, domain};
     int err = yyparse(rctx);
     if (err != 0) {
         throw std::runtime_error("Cannot parse regular expression, error code " + std::to_string(err));

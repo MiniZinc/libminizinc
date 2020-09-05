@@ -1,4 +1,4 @@
-/* A Bison parser, made by GNU Bison 3.7.1.  */
+/* A Bison parser, made by GNU Bison 3.6.1.  */
 
 /* Bison interface for Yacc-like parsers in C
 
@@ -35,8 +35,8 @@
    especially those whose name start with YY_ or yy_.  They are
    private implementation details that can be changed or removed.  */
 
-#ifndef YY_MZN_YY_USERS_JDEK0001_DROPBOX_DEVELOPMENT_MINIZINC_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
-# define YY_MZN_YY_USERS_JDEK0001_DROPBOX_DEVELOPMENT_MINIZINC_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
+#ifndef YY_MZN_YY_USERS_TACK_PROGRAMMING_MINIZINC_LIBMZN_DEVELOP_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
+# define YY_MZN_YY_USERS_TACK_PROGRAMMING_MINIZINC_LIBMZN_DEVELOP_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED
 /* Debug traces.  */
 #ifndef YYDEBUG
 # define YYDEBUG 0
@@ -149,40 +149,41 @@ extern int mzn_yydebug;
     MZN_INTERSECT = 350,           /* "intersect"  */
     MZN_WEAK_MULT = 351,           /* "~*"  */
     MZN_POW = 352,                 /* "^"  */
-    MZN_NOT = 353,                 /* "not"  */
-    MZN_PLUSPLUS = 354,            /* "++"  */
-    MZN_COLONCOLON = 355,          /* "::"  */
-    PREC_ANNO = 356,               /* PREC_ANNO  */
-    MZN_EQUIV_QUOTED = 357,        /* "'<->'"  */
-    MZN_IMPL_QUOTED = 358,         /* "'->'"  */
-    MZN_RIMPL_QUOTED = 359,        /* "'<-'"  */
-    MZN_OR_QUOTED = 360,           /* "'\\/'"  */
-    MZN_XOR_QUOTED = 361,          /* "'xor'"  */
-    MZN_AND_QUOTED = 362,          /* "'/\\'"  */
-    MZN_LE_QUOTED = 363,           /* "'<'"  */
-    MZN_GR_QUOTED = 364,           /* "'>'"  */
-    MZN_LQ_QUOTED = 365,           /* "'<='"  */
-    MZN_GQ_QUOTED = 366,           /* "'>='"  */
-    MZN_EQ_QUOTED = 367,           /* "'='"  */
-    MZN_NQ_QUOTED = 368,           /* "'!='"  */
-    MZN_IN_QUOTED = 369,           /* "'in'"  */
-    MZN_SUBSET_QUOTED = 370,       /* "'subset'"  */
-    MZN_SUPERSET_QUOTED = 371,     /* "'superset'"  */
-    MZN_UNION_QUOTED = 372,        /* "'union'"  */
-    MZN_DIFF_QUOTED = 373,         /* "'diff'"  */
-    MZN_SYMDIFF_QUOTED = 374,      /* "'symdiff'"  */
-    MZN_DOTDOT_QUOTED = 375,       /* "'..'"  */
-    MZN_PLUS_QUOTED = 376,         /* "'+'"  */
-    MZN_MINUS_QUOTED = 377,        /* "'-'"  */
-    MZN_MULT_QUOTED = 378,         /* "'*'"  */
-    MZN_DIV_QUOTED = 379,          /* "'/'"  */
-    MZN_IDIV_QUOTED = 380,         /* "'div'"  */
-    MZN_MOD_QUOTED = 381,          /* "'mod'"  */
-    MZN_INTERSECT_QUOTED = 382,    /* "'intersect'"  */
-    MZN_POW_QUOTED = 383,          /* "'^'"  */
-    MZN_NOT_QUOTED = 384,          /* "'not'"  */
-    MZN_COLONCOLON_QUOTED = 385,   /* "'::'"  */
-    MZN_PLUSPLUS_QUOTED = 386      /* "'++'"  */
+    MZN_POW_MINUS1 = 353,          /* "^-1"  */
+    MZN_NOT = 354,                 /* "not"  */
+    MZN_PLUSPLUS = 355,            /* "++"  */
+    MZN_COLONCOLON = 356,          /* "::"  */
+    PREC_ANNO = 357,               /* PREC_ANNO  */
+    MZN_EQUIV_QUOTED = 358,        /* "'<->'"  */
+    MZN_IMPL_QUOTED = 359,         /* "'->'"  */
+    MZN_RIMPL_QUOTED = 360,        /* "'<-'"  */
+    MZN_OR_QUOTED = 361,           /* "'\\/'"  */
+    MZN_XOR_QUOTED = 362,          /* "'xor'"  */
+    MZN_AND_QUOTED = 363,          /* "'/\\'"  */
+    MZN_LE_QUOTED = 364,           /* "'<'"  */
+    MZN_GR_QUOTED = 365,           /* "'>'"  */
+    MZN_LQ_QUOTED = 366,           /* "'<='"  */
+    MZN_GQ_QUOTED = 367,           /* "'>='"  */
+    MZN_EQ_QUOTED = 368,           /* "'='"  */
+    MZN_NQ_QUOTED = 369,           /* "'!='"  */
+    MZN_IN_QUOTED = 370,           /* "'in'"  */
+    MZN_SUBSET_QUOTED = 371,       /* "'subset'"  */
+    MZN_SUPERSET_QUOTED = 372,     /* "'superset'"  */
+    MZN_UNION_QUOTED = 373,        /* "'union'"  */
+    MZN_DIFF_QUOTED = 374,         /* "'diff'"  */
+    MZN_SYMDIFF_QUOTED = 375,      /* "'symdiff'"  */
+    MZN_DOTDOT_QUOTED = 376,       /* "'..'"  */
+    MZN_PLUS_QUOTED = 377,         /* "'+'"  */
+    MZN_MINUS_QUOTED = 378,        /* "'-'"  */
+    MZN_MULT_QUOTED = 379,         /* "'*'"  */
+    MZN_DIV_QUOTED = 380,          /* "'/'"  */
+    MZN_IDIV_QUOTED = 381,         /* "'div'"  */
+    MZN_MOD_QUOTED = 382,          /* "'mod'"  */
+    MZN_INTERSECT_QUOTED = 383,    /* "'intersect'"  */
+    MZN_POW_QUOTED = 384,          /* "'^'"  */
+    MZN_NOT_QUOTED = 385,          /* "'not'"  */
+    MZN_COLONCOLON_QUOTED = 386,   /* "'::'"  */
+    MZN_PLUSPLUS_QUOTED = 387      /* "'++'"  */
   };
   typedef enum yytokentype yytoken_kind_t;
 #endif
@@ -233,4 +234,4 @@ struct YYLTYPE
 
 int mzn_yyparse (void *parm);
 
-#endif /* !YY_MZN_YY_USERS_JDEK0001_DROPBOX_DEVELOPMENT_MINIZINC_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED  */
+#endif /* !YY_MZN_YY_USERS_TACK_PROGRAMMING_MINIZINC_LIBMZN_DEVELOP_BUILD_INCLUDE_MINIZINC_PARSER_TAB_HH_INCLUDED  */

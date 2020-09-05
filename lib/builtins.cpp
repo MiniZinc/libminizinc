@@ -20,11 +20,13 @@
 #include <minizinc/file_utils.hh>
 #include <minizinc/support/regex.hh>
 #include <minizinc/output.hh>
+#include <minizinc/typecheck.hh>
 
 #include <iomanip>
 #include <climits>
 #include <cmath>
 #include <random>
+#include <regex>
 
 namespace MiniZinc {
   
@@ -2462,9 +2464,90 @@ namespace MiniZinc {
     int card = dom->max().toInt() - dom->min().toInt() + 1;
     int offset = 1 - dom->min().toInt();
 
+    // Replace all occurrences of enum constructor calls
+    std::regex constructor_call("([A-Za-z][A-Za-z0-9_]*|'[^'\\xa\\xd\\x0]*')[[:space:]]*\\([[:space:]]*([A-Za-z][A-Za-z0-9_]*|'[^'\\xa\\xd\\x0]*'|([0-9]*))[[:space:]]*\\)",
+                                std::regex_constants::egrep);
+    while (std::regex_search(expr, constructor_call)) {
+      std::ostringstream oss;
+      auto id_re_it = std::sregex_token_iterator(expr.begin(), expr.end(), constructor_call, {-1,1,2,3});
+      for (; id_re_it != std::sregex_token_iterator(); ) {
+        std::string rest = *id_re_it;
+        oss << rest;
+        ++id_re_it;
+        if (id_re_it==std::sregex_token_iterator())
+          break;
+        std::string id1 = *id_re_it;
+        ++id_re_it;
+        std::string id2 = *id_re_it;
+        ++id_re_it;
+        std::string val3 = *id_re_it;
+        ++id_re_it;
+        // Enum constructor call, get both items
+        Expression* arg;
+        if (val3.empty()) {
+          auto it = env.reverseEnum.find(id2);
+          if (it == env.reverseEnum.end()) {
+            throw std::runtime_error("Unknown identifier: " + id2);
+          }
+          VarDeclI* id2_vd = it->second->dyn_cast<VarDeclI>();
+          if (id2_vd==nullptr) {
+            throw std::runtime_error("identifier " + id2 + " is not an enum constant");
+          }
+          arg = id2_vd->e()->id();
+        } else {
+          int v = std::stoi(val3);
+          arg = IntLit::a(v);
+        }
+        auto it = env.reverseEnum.find(id1);
+        if (it == env.reverseEnum.end()) {
+          throw std::runtime_error("Unknown identifier: " + id2);
+        }
+        if (VarDeclI* id1_vdi = it->second->dyn_cast<VarDeclI>()) {
+          // this is not an enum constructor, simply output both values
+          IntVal result1 = eval_int(env, id1_vdi->e()->id());
+          IntVal result2 = eval_int(env, arg);
+          oss << result1 << "(" << result2 << ")";
+        } else {
+          FunctionI* fi = it->second->cast<FunctionI>();
+          Call* c = new Call(Location().introduce(), fi->id(), {arg});
+          c->type(fi->rtype(env, {arg->type()}, true));
+          c->decl(fi);
+
+          IntVal result = eval_int(env, c);
+          oss << result;
+        }
+      }
+      expr = oss.str();
+    }
+
+    // Replace all remaining enum identifiers
+    std::regex enumid("[A-Za-z][A-Za-z0-9_]*|'[^'\\xa\\xd\\x0]*'", std::regex_constants::egrep);
+    auto id_re_it = std::sregex_token_iterator(expr.begin(), expr.end(), enumid, {-1,0});
+    std::ostringstream oss;
+    for (; id_re_it != std::sregex_token_iterator(); ) {
+      std::string rest = *id_re_it;
+      oss << rest;
+      ++id_re_it;
+      if (id_re_it==std::sregex_token_iterator())
+        break;
+      std::string id1 = *id_re_it;
+      ++id_re_it;
+      auto it = env.reverseEnum.find(id1);
+      if (it == env.reverseEnum.end()) {
+        throw std::runtime_error("Unknown identifier: " + id1);
+      }
+      VarDeclI* id1_vd = it->second->dyn_cast<VarDeclI>();
+      if (id1_vd==nullptr) {
+        throw std::runtime_error("identifier " + id1 + " is not an enum constant");
+      }
+      IntVal result1 = eval_int(env, id1_vd->e()->id());
+      oss << result1;
+    }
+    expr = oss.str();
+    
     std::unique_ptr<REG> regex;
     try {
-      regex = regex_from_string(expr, *dom, env.reverseEnum);
+      regex = regex_from_string(expr, *dom);
     } catch (const std::exception& e) {
       throw SyntaxError(call->arg(1)->loc(), e.what());
     }
