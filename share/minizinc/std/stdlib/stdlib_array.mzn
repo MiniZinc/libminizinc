@@ -309,6 +309,10 @@ function array[$$E,$$F,$$G,$$H,$$I,$$J] of var opt $V: array6d(set of $$E: S1,
                                                                set of $$J: S6,
                                                                array[$U] of var opt $V: x);
 
+/** @group stdlib.array Forces a arrayNd call to throw an error if the new index sets are offsets of the current index sets.
+*/
+annotation array_check_form;
+
 /** @group stdlib.array Return array \a y coerced to array with same number of
   dimensions and same index sets as array \a x.
   Coercions are performed by considering the array \a y in row-major order. 

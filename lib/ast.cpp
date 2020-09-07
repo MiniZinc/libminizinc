@@ -1609,6 +1609,8 @@ namespace MiniZinc {
     ann.mzn_deprecated = ASTString("mzn_deprecated");
     ann.mzn_was_undefined = new Id(Location(), ASTString("mzn_was_undefined"), NULL);
     ann.mzn_was_undefined->type(Type::ann());
+    ann.array_check_form= new Id(Location(), ASTString("array_check_form"), NULL);
+    ann.array_check_form->type(Type::ann());
 
     cli.cmdlineData_short_str = ASTString("-D");
     cli.cmdlineData_str = ASTString("--cmdline-data");
@@ -1828,6 +1830,7 @@ namespace MiniZinc {
     Expression::mark(ann.domain_change_constraint);
      ann.mzn_deprecated.mark();
     Expression::mark(ann.mzn_was_undefined);
+    Expression::mark(ann.array_check_form);
 
     cli.cmdlineData_short_str.mark();
     cli.cmdlineData_str.mark();

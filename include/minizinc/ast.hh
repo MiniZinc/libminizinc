@@ -1802,6 +1802,7 @@ namespace MiniZinc {
         Id* domain_change_constraint;
         ASTString mzn_deprecated;
         Id* mzn_was_undefined;
+        Id* array_check_form;
       } ann;
 
       /// Command line options

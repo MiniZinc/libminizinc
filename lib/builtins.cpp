@@ -1029,9 +1029,17 @@ namespace MiniZinc {
 
   ArrayLit* b_arrayXd(EnvI& env, Call* call, int d) {
     GCLock lock;
+    bool check_form = call->ann().contains(constants().ann.array_check_form);
     ArrayLit* al = eval_array_lit(env,call->arg(d));
     std::vector<std::pair<int,int> > dims(d);
     unsigned int dim1d = 1;
+
+    if (check_form && d != al->dims()) {
+      std::ostringstream ss;
+      ss << "number of dimensions of original array (" << al->dims() << ") does not match the given number of index sets (" << d << ")";
+      throw EvalError(env, call->loc(), ss.str());
+    }
+
     for (int i=0; i<d; i++) {
       IntSetVal* di = eval_intset(env,call->arg(i));
       if (di->size()==0) {
@@ -1043,10 +1051,18 @@ namespace MiniZinc {
         dims[i] = std::pair<int,int>(static_cast<int>(di->min(0).toInt()),
                                      static_cast<int>(di->max(0).toInt()));
         dim1d *= dims[i].second-dims[i].first+1;
+        if (check_form && dims[i].second-dims[i].first != al->max(i)-al->min(i)) {
+          std::ostringstream ss;
+          ss << "index set " << i+1 << " (" << dims[i].first << ".." << dims[i].second
+             << ") does not match index set " << i+1 << " of original array (" << al->min(i)
+             << ".." << al->max(i) << ")";
+          throw EvalError(env, call->arg(i)->loc(), ss.str());
+        }
       }
     }
-    if (dim1d != al->size())
+    if (dim1d != al->size()) {
       throw EvalError(env, al->loc(), "mismatch in array dimensions");
+    }
     ArrayLit* ret = new ArrayLit(al->loc(), *al, dims);
     Type t = al->type();
     t.dim(d);

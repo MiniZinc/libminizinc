@@ -539,7 +539,7 @@ namespace MiniZinc {
             }
           );
           ArrayLit* al = e->dyn_cast<ArrayLit>();
-          if (al && has_index && al->dims() == ti->ranges().size()) {
+          if (al && has_index && (al->dims() == 1 || ti->ranges().size() == al->dims())) {
             std::string name = "array" + std::to_string(al->dims()) + "d";
             std::vector<Expression*> args(al->dims() + 1);
             for (int i = 0; i < al->dims(); ++i) {
@@ -549,11 +549,14 @@ namespace MiniZinc {
                 args[i] = new SetLit(Location().introduce(), IntSetVal::a(al->min(i), al->max(i)));
               }
             }
-            args[al->dims()] = new ArrayLit(al->loc(), *al);
-            e = new Call(Location().introduce(), name, args);
+            args[al->dims()] = al;
+            e = new Call(al->loc().introduce(), name, args);
+            if (al->dims() != 1) {
+              e->addAnnotation(constants().ann.array_check_form);
+            }
           }
         }
-        AssignI* ai = new AssignI(Location().introduce(), ident, e);
+        AssignI* ai = new AssignI(e->loc().introduce(), ident, e);
         m->addItem(ai);
       }
       Token next = readToken(is);
