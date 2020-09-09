@@ -631,7 +631,8 @@ namespace MiniZinc {
         
         GCLock lock;
         for (unsigned int i=0; i<fi->params().size(); i++) {
-          if (allArgs.find(fi->params()[i]->id()->str().c_str()) == allArgs.end()) {
+          std::string param(fi->params()[i]->id()->str().c_str(), fi->params()[i]->id()->str().size());
+          if (allArgs.find(param) == allArgs.end()) {
             std::cerr << "Warning: parameter " << *fi->params()[i]->id() << " not documented for function "
                       << fi->id() << " at location " << fi->loc() << "\n";
           }
