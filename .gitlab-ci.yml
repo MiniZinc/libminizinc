@@ -107,7 +107,7 @@ build:wasm_complete:
   variables:
     MZNARCH: "wasm"
     CMAKE_ARCH: "Unix Makefiles"
-  tags: [docker]
+  tags: [docker, high-mem]
   before_script: *download_script
   script:
     - apt-get update && apt-get install -qq python3
