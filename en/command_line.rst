@@ -159,6 +159,10 @@ These options control the general behaviour of the ``minizinc`` tool.
 
     Print configurations of available solvers as a JSON array.
 
+.. option::  --param-file <file>
+
+    Read command line options from the given JSON file. See :numref:`ch-param-files`.
+
 Solving options
 ~~~~~~~~~~~~~~~
 
@@ -494,3 +498,43 @@ Here is a sample configuration file:
 Configuration values in the user-specific configuration file override the global values, except for solver default arguments, which are only overridden if the name of the option is the same, and otherwise get added to the command line.
 
 Note: Due to current limitations in MiniZinc's JSON parser, we use lists of strings rather than objects for the default mappings. This may change in a future release, but the current syntax will remain valid. The location of the global configuration is currently the ``share/minizinc`` directory of the MiniZinc installation. This may change in future versions to be more consistent with file system standards (e.g., to use ``/etc`` on Linux and ``/Library/Preferences`` on macOS).
+
+.. _ch-param-files:
+
+Command-line Parameter Files
+----------------------------
+
+The ``minizinc`` tool is able to read command line options from one or more JSON files through use of the ``--param-file`` option.
+This option may be specified multiple times, and substitutes the options given in the JSON file in its place, meaning it can be combined with normal command-line options, as well as other ``--param-file``s.
+
+As most ``minizinc`` options which take a single value are given the final one they are assigned, generally, later specifications of command-line parameter files will override options contained in previous ones, and later command-line options will override previous options.
+
+The given file must be in JSON format and contain a root object whose keys and values correspond to command line options and their values respectively.
+For long-form options which start with two dashes, the leading dashes may be omitted from the JSON object key name.
+For short-form options which start with a single dash, the leading dash is required.
+Command line options which take multiple values through being specified multiple times can be represented using a JSON array.
+
+Consider the configuration file ``config.json``:
+
+.. code-block:: json
+
+  {
+    "solver": "gecode",
+    "cmdline-data": ["x = 1", "y = 2", "z = 3"],
+    "-p": 2
+  }
+
+Running ``minizinc --verbose --param-file config.json -p 4 model.mzn`` is equivalent to running
+
+.. code-block:: bash
+
+  $ minizinc --verbose \
+      --solver gecode \
+      --cmdline-data "x = 1" \
+      --cmdline-data "y = 2" \
+      --cmdline-data "z = 3" \
+      -p 2 \
+      -p 4 \
+      model.mzn
+
+Note that since ``-p 4`` comes after ``-p 2``, its value overrides the previous one and so ``-p 4`` is used. However, the multiple ``--cmdline-data`` options do not override each other as ``--cmdline-data`` allows for specification of multiple strings of data.
