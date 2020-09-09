@@ -143,8 +143,8 @@ namespace MiniZinc {
   friend class GC::Heap;
   protected:
     /// Interning Hash Map
-    using Interner = std::unordered_map<std::pair<const char*, size_t>, ASTStringData*, CStringHash, CStringEquals>;
-    static Interner interner;
+    using Interner =std::unordered_map<std::pair<const char*, size_t>, ASTStringData*, CStringHash, CStringEquals>;
+    static Interner& interner();
     /// Constructor
     ASTStringData(const std::string& s);
   public:
@@ -169,8 +169,8 @@ namespace MiniZinc {
   protected:
     /// GC Destructor
     void destroy() {
-      assert(interner.find({this->c_str(), this->size()}) != interner.end());
-      interner.erase({this->c_str(), this->size()});
+      assert(interner().find({this->c_str(), this->size()}) != interner().end());
+      interner().erase({this->c_str(), this->size()});
     };
   };
 

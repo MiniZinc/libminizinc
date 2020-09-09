@@ -22,7 +22,10 @@ namespace {
 
 namespace MiniZinc {
 
-  ASTStringData::Interner ASTStringData::interner = Interner(1024);
+  ASTStringData::Interner& ASTStringData::interner() {
+    static Interner _interner;
+    return _interner;
+  }
 
   ASTStringData::ASTStringData(const std::string& s)
     : ASTChunk(s.size()+sizeof(size_t)+1, ASTNode::NID_STR) {
@@ -37,14 +40,13 @@ namespace MiniZinc {
     if (s.empty()) {
       return nullptr;
     }
-    auto it = interner.find({s.c_str(), s.size()});
-    if (it != interner.end()) {
+    auto it = interner().find({s.c_str(), s.size()});
+    if (it != interner().end()) {
       return it->second;
     }
     auto as = static_cast<ASTStringData*>(alloc(1+sizeof(size_t)+s.size()));
     new (as) ASTStringData(s);
-    interner.emplace(std::make_pair(as->c_str(), as->size()), as);
+    interner().emplace(std::make_pair(as->c_str(), as->size()), as);
     return as;
   }
-  
 }
