@@ -982,6 +982,14 @@ where ``<executable-name>`` is the name of the executable. Solvers may support t
   Instructs the solver to stop after reporting ``i`` solutions (only used with
   satisfaction problems).
 
+.. option:: -i
+
+  Instructs the solver to print *intermediate* solutions of increasing quality
+  (only used with optimisation problems). This option should be supported rather
+  than ``-a`` for solvers which only support printing of intermediate solutions
+  for optimisation problems but no reporting of all solutions for satisfaction
+  problems. 
+
 .. option:: -f
 
   Instructs the solver to conduct a "free search", i.e., ignore any search 
@@ -1066,7 +1074,7 @@ Here is a list of all configuration options recognised by the configuration file
   - ``"float"``: for solvers that support float variables
   - ``"api"``: for solvers that use the internal C++ API
 
-- ``stdFlags`` (list of strings, default empty): Which of the standard solver command line flags are supported by this solver. The standard flags are ``-a``, ``-n``, ``-s``, ``-v``, ``-p``, ``-r``, ``-f``, ``-t``.
+- ``stdFlags`` (list of strings, default empty): Which of the standard solver command line flags are supported by this solver. The standard flags are ``-a``, ``-n``, ``-i``, ``-s``, ``-v``, ``-p``, ``-r``, ``-f``, ``-t``.
 - ``extraFlags`` (list of list of strings, default empty): Extra command line flags supported by the solver. Each entry must be a list of four strings. The first string is the name of the option (e.g. ``"--special-algorithm"``). The second string is a description that can be used to generate help output (e.g. ``"which special algorithm to use"``). The third string specifies the type of the argument (``"int"``, ``"bool"``, ``"float"``, ``"string"`` or ``"opt"``). The fourth string is the default value. The following types have an additional extended syntax:
 
   - ``"int:n:m"`` where ``n`` and ``m`` are integers, gives lower and upper bounds for the supported values

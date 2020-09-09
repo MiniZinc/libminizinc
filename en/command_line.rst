@@ -179,6 +179,22 @@ Each solver may support specific command line options for controlling its behavi
 
   Stop after reporting ``i`` solutions (only used with satisfaction problems).
 
+.. option:: -i, --intermediate
+
+  Turns on printing of intermediate solutions for optimisation problems. Has no effect for satisfaction problems.
+  
+.. option:: -n-i, --no-intermediate
+
+  Turns off printing of intermediate solutions for optimisation problems. Has no effect for satisfaction problems.
+
+.. option:: --all-satisfaction
+
+  Turns on printing of all solutions for satisfaction problems. Has no effect for optimisation problems.
+  
+.. option:: --disable-all-satisfaction
+
+  Turns off printing of all solutions for satisfaction problems. Has no effect for optimisation problems.
+
 .. option:: -f, --free-search
 
   Instructs the solver to conduct a "free search", i.e., ignore any search 
