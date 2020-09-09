@@ -11,22 +11,21 @@
 
 #pragma once
 
+#include <minizinc/solver_instance_base.hh>
+
 #include <gecode/kernel.hh>
 #include <gecode/int.hh>
 #include <gecode/driver.hh>
-
 #ifdef GECODE_HAS_SET_VARS
 #include <gecode/set.hh>
 #endif
-
 #ifdef GECODE_HAS_FLOAT_VARS
 #include <gecode/float.hh>
 #endif
+#undef ERROR
 
-#include <minizinc/solver_instance_base.hh>
+namespace MiniZinc {
 
-namespace MiniZinc { 
-  
  class FznSpace : public Gecode::Space {
   public:
     /// The integer variables

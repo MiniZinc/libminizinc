@@ -12,19 +12,6 @@
 
 #pragma once
 
-#include <gecode/kernel.hh>
-#include <gecode/search.hh>
-
-#include <gecode/int.hh>
-#ifdef GECODE_HAS_SET_VARS
-#include <gecode/set.hh>
-#endif
-
-#ifdef GECODE_HAS_FLOAT_VARS
-#include <gecode/float.hh>
-#endif
-
-#include <gecode/driver.hh>
 #include <minizinc/solvers/gecode_solverinstance.hh>
 
 /**

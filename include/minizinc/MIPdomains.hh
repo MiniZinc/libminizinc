@@ -19,9 +19,6 @@
 
 #ifdef _MSC_VER 
 #define _CRT_SECURE_NO_WARNINGS
-#undef ERROR    // MICROsoft.
-#undef min
-#undef max
 #endif
 
 #define MZN_MIPD__assert_soft( c, e ) \

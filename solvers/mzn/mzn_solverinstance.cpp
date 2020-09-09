@@ -20,10 +20,6 @@
 #include <minizinc/timer.hh>
 #include <minizinc/process.hh>
 
-#ifdef _WIN32
-#undef ERROR
-#endif
-
 using namespace std;
 
 namespace MiniZinc {

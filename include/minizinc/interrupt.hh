@@ -15,11 +15,10 @@
 
 #define NOMINMAX // Ensure the words min/max remain available
 #include <Windows.h>
+#undef ERROR
 #include <sstream>
 #include <thread>
 
-// Remove conflicting Windows.h macro
-#undef ERROR
 
 namespace MiniZinc {
 // Listens for a message on the named pipe \\.\pipe\minizinc-PID

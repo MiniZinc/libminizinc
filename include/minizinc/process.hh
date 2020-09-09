@@ -18,6 +18,7 @@ const auto SolverInstance__ERROR = MiniZinc::SolverInstance::ERROR;  // before w
 #define NOMINMAX
 #include <Windows.h>
 #include <tchar.h>
+#undef ERROR
 //#include <atlstr.h>
 #else
 #include <unistd.h>

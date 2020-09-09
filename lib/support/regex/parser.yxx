@@ -15,12 +15,9 @@
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
-#include <memory>
-#include <set>
 
-#include <gecode/minimodel.hh>
-#include <minizinc/values.hh>
-#include <minizinc/astmap.hh>
+#include <minizinc/support/regex.hh>
+
 using namespace Gecode;
 using namespace MiniZinc;
 

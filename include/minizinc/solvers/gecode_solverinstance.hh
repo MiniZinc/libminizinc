@@ -13,18 +13,6 @@
 
 #include <unordered_map>
 
-#include <gecode/kernel.hh>
-#include <gecode/int.hh>
-#include <gecode/driver.hh>
-
-#ifdef GECODE_HAS_SET_VARS
-#include <gecode/set.hh>
-#endif
-
-#ifdef GECODE_HAS_FLOAT_VARS
-#include <gecode/float.hh>
-#endif
-
 #include <minizinc/flattener.hh>
 #include <minizinc/solver.hh>
 #include <minizinc/solvers/gecode/fzn_space.hh>

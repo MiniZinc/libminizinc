@@ -26,10 +26,6 @@
 #include <minizinc/eval_par.hh>
 #include <minizinc/process.hh>
 
-#ifdef _WIN32
-#undef ERROR
-#endif
-
 using namespace std;
 
 namespace MiniZinc {

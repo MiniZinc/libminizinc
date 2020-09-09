@@ -1,4 +1,4 @@
-/* A Bison parser, made by GNU Bison 3.6.1.  */
+/* A Bison parser, made by GNU Bison 3.7.2.  */
 
 /* Bison implementation for Yacc-like parsers in C
 
@@ -49,7 +49,7 @@
 #define YYBISON 1
 
 /* Bison version.  */
-#define YYBISON_VERSION "3.6.1"
+#define YYBISON_VERSION "3.7.2"
 
 /* Skeleton name.  */
 #define YYSKELETON_NAME "yacc.c"
@@ -78,12 +78,11 @@
 #include <cstdlib>
 #include <cstdio>
 #include <iostream>
-#include <memory>
-#include <set>
 
-#include <gecode/minimodel.hh>
-#include <minizinc/values.hh>
-#include <minizinc/astmap.hh>
+#include <minizinc/support/regex.hh>
+
+#undef ERROR
+
 using namespace Gecode;
 using namespace MiniZinc;
 
@@ -474,6 +473,7 @@ union yyalloc
 /* YYNSTATES -- Number of states.  */
 #define YYNSTATES  36
 
+/* YYMAXUTOK -- Last valid token kind.  */
 #define YYMAXUTOK   273
 
 
@@ -522,9 +522,9 @@ static const yytype_int8 yytranslate[] =
   /* YYRLINE[YYN] -- Source line where rule number YYN was defined.  */
 static const yytype_uint8 yyrline[] =
 {
-       0,    74,    74,    81,    82,    90,    91,    99,   100,   105,
-     110,   115,   120,   125,   132,   134,   139,   149,   164,   168,
-     169,   179,   183
+       0,    73,    73,    80,    81,    89,    90,    98,    99,   104,
+     109,   114,   119,   124,   131,   133,   138,   148,   163,   167,
+     168,   178,   182
 };
 #endif
 
@@ -860,7 +860,7 @@ yydestruct (const char *yymsg,
 }
 
 
-/* The lookahead symbol.  */
+/* Lookahead token kind.  */
 int yychar;
 
 /* The semantic value of the lookahead symbol.  */
@@ -878,34 +878,30 @@ int yynerrs;
 int
 yyparse (REContext& ctx)
 {
-    yy_state_fast_t yystate;
+    yy_state_fast_t yystate = 0;
     /* Number of tokens to shift before error messages enabled.  */
-    int yyerrstatus;
+    int yyerrstatus = 0;
 
-    /* The stacks and their tools:
-       'yyss': related to states.
-       'yyvs': related to semantic values.
-
-       Refer to the stacks through separate pointers, to allow yyoverflow
+    /* Refer to the stacks through separate pointers, to allow yyoverflow
        to reallocate them elsewhere.  */
 
     /* Their size.  */
-    YYPTRDIFF_T yystacksize;
+    YYPTRDIFF_T yystacksize = YYINITDEPTH;
 
-    /* The state stack.  */
+    /* The state stack: array, bottom, top.  */
     yy_state_t yyssa[YYINITDEPTH];
-    yy_state_t *yyss;
-    yy_state_t *yyssp;
+    yy_state_t *yyss = yyssa;
+    yy_state_t *yyssp = yyss;
 
-    /* The semantic value stack.  */
+    /* The semantic value stack: array, bottom, top.  */
     YYSTYPE yyvsa[YYINITDEPTH];
-    YYSTYPE *yyvs;
-    YYSTYPE *yyvsp;
+    YYSTYPE *yyvs = yyvsa;
+    YYSTYPE *yyvsp = yyvs;
 
   int yyn;
   /* The return value of yyparse.  */
   int yyresult;
-  /* Lookahead token as an internal (translated) token number.  */
+  /* Lookahead symbol kind.  */
   yysymbol_kind_t yytoken = YYSYMBOL_YYEMPTY;
   /* The variables used to return semantic value and location from the
      action routines.  */
@@ -918,15 +914,6 @@ yyparse (REContext& ctx)
   /* The number of symbols on the RHS of the reduced rule.
      Keep to zero when no symbol should be popped.  */
   int yylen = 0;
-
-  yynerrs = 0;
-  yystate = 0;
-  yyerrstatus = 0;
-
-  yystacksize = YYINITDEPTH;
-  yyssp = yyss = yyssa;
-  yyvsp = yyvs = yyvsa;
-
 
   YYDPRINTF ((stderr, "Starting parse\n"));
 
@@ -1128,14 +1115,14 @@ yyreduce:
   YY_REDUCE_PRINT (yyn);
   switch (yyn)
     {
-  case 2:
+  case 2: /* regex: expression  */
   {
     *ctx.expr = (*(yyvsp[0].rValue));
     delete (yyvsp[0].rValue);
   }
     break;
 
-  case 4:
+  case 4: /* expression: term "|" expression  */
     {
       *(yyvsp[-2].rValue) = *(yyvsp[-2].rValue) | *(yyvsp[0].rValue);
       delete (yyvsp[0].rValue);
@@ -1143,7 +1130,7 @@ yyreduce:
     }
     break;
 
-  case 6:
+  case 6: /* term: factor term  */
     {
       *(yyvsp[-1].rValue) = *(yyvsp[-1].rValue) + *(yyvsp[0].rValue);
       delete (yyvsp[0].rValue);
@@ -1151,60 +1138,60 @@ yyreduce:
     }
     break;
 
-  case 8:
+  case 8: /* factor: atom "*"  */
     {
       *(yyvsp[-1].rValue) = *(*(yyvsp[-1].rValue));
       (yyval.rValue) = (yyvsp[-1].rValue);
     }
     break;
 
-  case 9:
+  case 9: /* factor: atom "+"  */
     {
       *(yyvsp[-1].rValue) = +(*(yyvsp[-1].rValue));
       (yyval.rValue) = (yyvsp[-1].rValue);
     }
     break;
 
-  case 10:
+  case 10: /* factor: atom "?"  */
     {
       *(yyvsp[-1].rValue) = (*(yyvsp[-1].rValue))(0, 1);
       (yyval.rValue) = (yyvsp[-1].rValue);
     }
     break;
 
-  case 11:
+  case 11: /* factor: atom "{" R_INTEGER "}"  */
     {
       *(yyvsp[-3].rValue) = (*(yyvsp[-3].rValue))((yyvsp[-1].iValue), (yyvsp[-1].iValue));
       (yyval.rValue) = (yyvsp[-3].rValue);
     }
     break;
 
-  case 12:
+  case 12: /* factor: atom "{" R_INTEGER "," "}"  */
     {
       *(yyvsp[-4].rValue) = (*(yyvsp[-4].rValue))((yyvsp[-2].iValue));
       (yyval.rValue) = (yyvsp[-4].rValue);
     }
     break;
 
-  case 13:
+  case 13: /* factor: atom "{" R_INTEGER "," R_INTEGER "}"  */
     {
       *(yyvsp[-5].rValue) = (*(yyvsp[-5].rValue))((yyvsp[-3].iValue), (yyvsp[-1].iValue));
       (yyval.rValue) = (yyvsp[-5].rValue);
     }
     break;
 
-  case 14:
+  case 14: /* atom: R_INTEGER  */
     { (yyval.rValue) = new REG((yyvsp[0].iValue)); }
     break;
 
-  case 15:
+  case 15: /* atom: "."  */
     {
       IntArgs range = IntArgs::create(ctx.dom.max().toInt() - ctx.dom.min().toInt() + 1, ctx.dom.min().toInt());
       (yyval.rValue) = new REG(range);
     }
     break;
 
-  case 16:
+  case 16: /* atom: "[" set_items "]"  */
     {
       std::vector<int> v;
       v.reserve((yyvsp[-1].setValue)->size());
@@ -1216,7 +1203,7 @@ yyreduce:
     }
     break;
 
-  case 17:
+  case 17: /* atom: "[" "^" set_items "]"  */
     {
       std::vector<int> diff;
       std::set<int> domain;
@@ -1233,11 +1220,11 @@ yyreduce:
     }
     break;
 
-  case 18:
+  case 18: /* atom: "(" expression ")"  */
     { (yyval.rValue) = (yyvsp[-1].rValue); }
     break;
 
-  case 20:
+  case 20: /* set_items: set_item set_items  */
     {
       (yyval.setValue) = (yyvsp[-1].setValue);
       for (auto i : *(yyvsp[0].setValue)) {
@@ -1247,13 +1234,13 @@ yyreduce:
     }
     break;
 
-  case 21:
+  case 21: /* set_item: R_INTEGER  */
     {
       (yyval.setValue) = new std::set<int>({(yyvsp[0].iValue)});
     }
     break;
 
-  case 22:
+  case 22: /* set_item: R_INTEGER "-" R_INTEGER  */
     {
       int from = (yyvsp[-2].iValue);
       int to = (yyvsp[0].iValue);
@@ -1427,13 +1414,13 @@ yyabortlab:
 yyexhaustedlab:
   yyerror (ctx, YY_("memory exhausted"));
   yyresult = 2;
-  /* Fall through.  */
+  goto yyreturn;
 #endif
 
 
-/*-----------------------------------------------------.
-| yyreturn -- parsing is finished, return the result.  |
-`-----------------------------------------------------*/
+/*-------------------------------------------------------.
+| yyreturn -- parsing is finished, clean up and return.  |
+`-------------------------------------------------------*/
 yyreturn:
   if (yychar != YYEMPTY)
     {

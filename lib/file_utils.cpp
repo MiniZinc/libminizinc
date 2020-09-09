@@ -32,6 +32,7 @@
 #elif defined(HAS_GETMODULEFILENAME) || defined(HAS_GETFILEATTRIBUTES)
 #define NOMINMAX // Ensure the words min/max remain available
 #include <windows.h>
+#undef ERROR
 #else
 #include <unistd.h>
 #endif

@@ -34,6 +34,7 @@
 #elif defined HAS_WINDOWS_H
 #define NOMINMAX // Ensure the words min/max remain available
 #include <Windows.h>
+#undef ERROR
 #endif
 #endif
 

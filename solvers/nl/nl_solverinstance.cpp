@@ -20,11 +20,6 @@
 #include <minizinc/solvers/nl/nl_file.hh>
 #include <minizinc/solvers/nl/nl_solreader.hh>
 
-
-#ifdef _WIN32
-#undef ERROR
-#endif
-
 using namespace std;
 
 namespace MiniZinc {
