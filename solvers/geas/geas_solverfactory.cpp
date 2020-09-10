@@ -13,12 +13,8 @@
 #include <minizinc/solvers/geas_solverinstance.hh>
 
 namespace MiniZinc {
-  namespace {
-    void getWrapper() {
-      static Geas_SolverFactory _geas_solverfactory;
-    }
-  }
-  Geas_SolverFactoryInitialiser::Geas_SolverFactoryInitialiser() {
-    getWrapper();
-  }
-}
+namespace {
+void getWrapper() { static Geas_SolverFactory _geas_solverfactory; }
+}  // namespace
+Geas_SolverFactoryInitialiser::Geas_SolverFactoryInitialiser() { getWrapper(); }
+}  // namespace MiniZinc

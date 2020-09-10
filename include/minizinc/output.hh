@@ -15,23 +15,25 @@
 
 namespace MiniZinc {
 
-  /// Remove all output annotations from \a vd
-  void removeIsOutput(VarDecl* vd);
-  
-  /// Copy output item to FlatZinc model
-  void copyOutput(EnvI& e);
-  
-  /// Copy all dependent variable declarations
-  void outputVarDecls(EnvI& env, Item* ci, Expression* e);
-  
-  /// Create initial output model
-  void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outputObjective, bool includeOutputItem, bool hasChecker);
-  /// Finalise output model after flattening is complete
-  void finaliseOutput(EnvI& e);
-  
-  /// Remove all links to variables in flat model from output model in \a env
-  void cleanupOutput(EnvI& env);
+/// Remove all output annotations from \a vd
+void removeIsOutput(VarDecl* vd);
 
-  ArrayLit* createJSONOutput(EnvI& env, bool outputObjective, bool includeOutputItem, bool hasChecker);
-  
-}
+/// Copy output item to FlatZinc model
+void copyOutput(EnvI& e);
+
+/// Copy all dependent variable declarations
+void outputVarDecls(EnvI& env, Item* ci, Expression* e);
+
+/// Create initial output model
+void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outputObjective,
+                  bool includeOutputItem, bool hasChecker);
+/// Finalise output model after flattening is complete
+void finaliseOutput(EnvI& e);
+
+/// Remove all links to variables in flat model from output model in \a env
+void cleanupOutput(EnvI& env);
+
+ArrayLit* createJSONOutput(EnvI& env, bool outputObjective, bool includeOutputItem,
+                           bool hasChecker);
+
+}  // namespace MiniZinc

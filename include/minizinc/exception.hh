@@ -12,59 +12,54 @@
 #pragma once
 
 #include <exception>
-
 #include <string>
 
 namespace MiniZinc {
 
-  class Exception : public std::exception {
-  protected:
-    std::string _msg;
-  public:
-    Exception(const std::string& msg) : _msg(msg) {}
-    virtual ~Exception(void) throw() {}
-    virtual const char* what(void) const throw()  = 0;
-    const std::string& msg(void) const { return _msg; }
-  };
-  
-  class ParseException : public Exception {
-  public:
-    ParseException(const std::string& msg) : Exception(msg) {}
-    ~ParseException(void) throw() {}
-    virtual const char* what(void) const throw() { return ""; }
-  };
-  
-  class InternalError : public Exception {
-  public:
-    InternalError(const std::string& msg) : Exception(msg) {}
-    ~InternalError(void) throw() {}
-    virtual const char* what(void) const throw() {
-      return "MiniZinc: internal error";
-    }
-  };
+class Exception : public std::exception {
+protected:
+  std::string _msg;
 
-  class Error : public Exception {
-  public:
-    Error(const std::string& msg) : Exception(msg) {}
-    ~Error(void) throw() {}
-    virtual const char* what(void) const throw() { return ""; }
-  };
-  
-  class Timeout : public Exception {
-  public:
-    Timeout(void) : Exception("time limit reached") {}
-    ~Timeout(void) throw() {}
-    virtual const char* what(void) const throw() { return "MiniZinc: time out"; }
-  };
-  
-  class ArithmeticError : public Exception {
-  public:
-    ArithmeticError(const std::string& msg)
-    : Exception(msg) {}
-    virtual ~ArithmeticError(void) throw() {}
-    virtual const char* what(void) const throw() {
-      return "MiniZinc: arithmetic error";
-    }
-  };
-  
-}
+public:
+  Exception(const std::string& msg) : _msg(msg) {}
+  virtual ~Exception(void) throw() {}
+  virtual const char* what(void) const throw() = 0;
+  const std::string& msg(void) const { return _msg; }
+};
+
+class ParseException : public Exception {
+public:
+  ParseException(const std::string& msg) : Exception(msg) {}
+  ~ParseException(void) throw() {}
+  virtual const char* what(void) const throw() { return ""; }
+};
+
+class InternalError : public Exception {
+public:
+  InternalError(const std::string& msg) : Exception(msg) {}
+  ~InternalError(void) throw() {}
+  virtual const char* what(void) const throw() { return "MiniZinc: internal error"; }
+};
+
+class Error : public Exception {
+public:
+  Error(const std::string& msg) : Exception(msg) {}
+  ~Error(void) throw() {}
+  virtual const char* what(void) const throw() { return ""; }
+};
+
+class Timeout : public Exception {
+public:
+  Timeout(void) : Exception("time limit reached") {}
+  ~Timeout(void) throw() {}
+  virtual const char* what(void) const throw() { return "MiniZinc: time out"; }
+};
+
+class ArithmeticError : public Exception {
+public:
+  ArithmeticError(const std::string& msg) : Exception(msg) {}
+  virtual ~ArithmeticError(void) throw() {}
+  virtual const char* what(void) const throw() { return "MiniZinc: arithmetic error"; }
+};
+
+}  // namespace MiniZinc

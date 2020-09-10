@@ -13,9 +13,9 @@
 
 #include <minizinc/solver_instance_base.hh>
 
-#include <gecode/kernel.hh>
-#include <gecode/int.hh>
 #include <gecode/driver.hh>
+#include <gecode/int.hh>
+#include <gecode/kernel.hh>
 #ifdef GECODE_HAS_SET_VARS
 #include <gecode/set.hh>
 #endif
@@ -26,75 +26,75 @@
 
 namespace MiniZinc {
 
- class FznSpace : public Gecode::Space {
-  public:
-    /// The integer variables
-    std::vector<Gecode::IntVar> iv;
-    /// The introduced integer variables
-    Gecode::IntVarArray iv_aux;
-    /// Indicates whether an integer variable is introduced by mzn2fzn
-    std::vector<bool> iv_introduced;    
-    /// Indicates whether an integer variable is defined
-    std::vector<bool> iv_defined;    
-    /// The Boolean variables
-    std::vector<Gecode::BoolVar> bv;
-    /// The introduced Boolean variables
-    Gecode::BoolVarArray bv_aux;
-    /// Indicates whether a Boolean variable is introduced by mzn2fzn
-    std::vector<bool> bv_introduced;
-    /// Indicates whether a Boolean variable is defined
-    std::vector<bool> bv_defined;
+class FznSpace : public Gecode::Space {
+public:
+  /// The integer variables
+  std::vector<Gecode::IntVar> iv;
+  /// The introduced integer variables
+  Gecode::IntVarArray iv_aux;
+  /// Indicates whether an integer variable is introduced by mzn2fzn
+  std::vector<bool> iv_introduced;
+  /// Indicates whether an integer variable is defined
+  std::vector<bool> iv_defined;
+  /// The Boolean variables
+  std::vector<Gecode::BoolVar> bv;
+  /// The introduced Boolean variables
+  Gecode::BoolVarArray bv_aux;
+  /// Indicates whether a Boolean variable is introduced by mzn2fzn
+  std::vector<bool> bv_introduced;
+  /// Indicates whether a Boolean variable is defined
+  std::vector<bool> bv_defined;
 #ifdef GECODE_HAS_SET_VARS
-    /// The set variables
-    std::vector<Gecode::SetVar> sv;
-    /// The introduced set variables
-    Gecode::SetVarArray sv_aux;
-    /// Indicates whether a set variable is introduced by mzn2fzn
-    std::vector<bool> sv_introduced;
-        /// Indicates whether a set variable is introduced by mzn2fzn
-    std::vector<bool> sv_defined;
+  /// The set variables
+  std::vector<Gecode::SetVar> sv;
+  /// The introduced set variables
+  Gecode::SetVarArray sv_aux;
+  /// Indicates whether a set variable is introduced by mzn2fzn
+  std::vector<bool> sv_introduced;
+  /// Indicates whether a set variable is introduced by mzn2fzn
+  std::vector<bool> sv_defined;
 #endif
 #ifdef GECODE_HAS_FLOAT_VARS
-    /// The float variables
-    std::vector<Gecode::FloatVar> fv;
-    /// The introduced float variables
-    Gecode::FloatVarArray fv_aux;
-    /// Indicates whether a float variable is introduced by mzn2fzn
-    std::vector<bool> fv_introduced;
-    /// Indicates whether a float variable is defined
-    std::vector<bool> fv_defined;
-#endif 
-    /// Indicates if the objective variable is integer (float otherwise)
-    bool _optVarIsInt;
-    /// Index of the variable to optimize 
-    int _optVarIdx;    
-    /// Whether the introduced variables still need to be copied
-    bool _copyAuxVars;  
-    /// solve type (SAT, MIN or MAX)
-    MiniZinc::SolveI::SolveType _solveType;
-    
-    /// copy constructor
-    FznSpace(FznSpace&);
-    /// standard constructor
-    FznSpace(void) : _optVarIsInt(true), _optVarIdx(-1), _copyAuxVars(true) {};
-    ~FznSpace(void) {} 
-            
-    /// get the index of the Boolean variable in bv; return -1 if not exists
-    int getBoolAliasIndex(Gecode::BoolVar bvar) {
-      for(unsigned int i=0; i<bv.size(); i++) {        
-        if(bv[i].varimp()==bvar.varimp()) { 
-          // std::cout << "DEBUG: settings bool alias of variable to index " << i << std::endl;
-          return i;          
-        }            
+  /// The float variables
+  std::vector<Gecode::FloatVar> fv;
+  /// The introduced float variables
+  Gecode::FloatVarArray fv_aux;
+  /// Indicates whether a float variable is introduced by mzn2fzn
+  std::vector<bool> fv_introduced;
+  /// Indicates whether a float variable is defined
+  std::vector<bool> fv_defined;
+#endif
+  /// Indicates if the objective variable is integer (float otherwise)
+  bool _optVarIsInt;
+  /// Index of the variable to optimize
+  int _optVarIdx;
+  /// Whether the introduced variables still need to be copied
+  bool _copyAuxVars;
+  /// solve type (SAT, MIN or MAX)
+  MiniZinc::SolveI::SolveType _solveType;
+
+  /// copy constructor
+  FznSpace(FznSpace&);
+  /// standard constructor
+  FznSpace(void) : _optVarIsInt(true), _optVarIdx(-1), _copyAuxVars(true){};
+  ~FznSpace(void) {}
+
+  /// get the index of the Boolean variable in bv; return -1 if not exists
+  int getBoolAliasIndex(Gecode::BoolVar bvar) {
+    for (unsigned int i = 0; i < bv.size(); i++) {
+      if (bv[i].varimp() == bvar.varimp()) {
+        // std::cout << "DEBUG: settings bool alias of variable to index " << i << std::endl;
+        return i;
       }
-      return -1; // we should have found the boolvar in bv
     }
-  
-  protected:       
-    /// Implement optimization
-    virtual void constrain(const Space& s);
-    /// Copy function
-    virtual Gecode::Space* copy(void);
-  };
-  
-}
+    return -1;  // we should have found the boolvar in bv
+  }
+
+protected:
+  /// Implement optimization
+  virtual void constrain(const Space& s);
+  /// Copy function
+  virtual Gecode::Space* copy(void);
+};
+
+}  // namespace MiniZinc

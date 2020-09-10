@@ -16,104 +16,99 @@
 
 namespace MiniZinc {
 
-  class VarOccurrences {
-  public:
-    typedef std::unordered_set<Item*> Items;
-    IdMap<Items> _m;
-    IdMap<int> idx;
+class VarOccurrences {
+public:
+  typedef std::unordered_set<Item*> Items;
+  IdMap<Items> _m;
+  IdMap<int> idx;
 
-    /// Add \a to the index
-    void add_idx(VarDeclI* i, int idx_i);
-    /// Add \a to the index
-    void add_idx(VarDecl* e, int idx_i);
-    /// Find index of \a vd
-    int find(VarDecl* vd);
-    /// Remove index of \a vd
-    void remove(VarDecl* vd);
-    
-    /// Add \a i to the dependencies of \a v
-    void add(VarDecl* v, Item* i);
-    
-    /// Remove \a i from map and return new number of occurrences
-    int remove(VarDecl* v, Item* i);
+  /// Add \a to the index
+  void add_idx(VarDeclI* i, int idx_i);
+  /// Add \a to the index
+  void add_idx(VarDecl* e, int idx_i);
+  /// Find index of \a vd
+  int find(VarDecl* vd);
+  /// Remove index of \a vd
+  void remove(VarDecl* vd);
 
-    /// Remove all occurrences from map and return new number of occurrences
-    void removeAllOccurrences(VarDecl* v);
+  /// Add \a i to the dependencies of \a v
+  void add(VarDecl* v, Item* i);
 
-    /// Return number of occurrences of \a v
-    int occurrences(VarDecl* v);
+  /// Remove \a i from map and return new number of occurrences
+  int remove(VarDecl* v, Item* i);
 
-    /// Return number of constraint usages of \a v and whether \a v is an output variable
-    std::pair<int,bool> usages(VarDecl* v);
-    
-    /// Unify \a v0 and \a v1 (removing \a v0)
-    void unify(EnvI& env, Model* m, Id* id0, Id* id1);
-    
-    /// Clear all entries
-    void clear(void);
-  };
-  
-  class CollectOccurrencesE : public EVisitor {
-  public:
-    VarOccurrences& vo;
-    Item* ci;
-    CollectOccurrencesE(VarOccurrences& vo0, Item* ci0)
-    : vo(vo0), ci(ci0) {}
-    void vId(const Id& id) {
-      if(id.decl())
-        vo.add(id.decl(),ci);
-    }
-    
-  };
-  
-  class CollectOccurrencesI : public ItemVisitor {
-  public:
-    VarOccurrences& vo;
-    CollectOccurrencesI(VarOccurrences& vo0) : vo(vo0) {}
-    void vVarDeclI(VarDeclI* v);
-    void vConstraintI(ConstraintI* ci);
-    void vSolveI(SolveI* si);
-  };
+  /// Remove all occurrences from map and return new number of occurrences
+  void removeAllOccurrences(VarDecl* v);
 
-  class CollectDecls : public EVisitor {
-  public:
-    VarOccurrences& vo;
-    std::vector<VarDecl*>& vd;
-    Item* item;
-    CollectDecls(VarOccurrences& vo0,
-                 std::vector<VarDecl*>& vd0,
-                 Item* item0)
-    : vo(vo0), vd(vd0), item(item0) {}
-    
-    static bool varIsFree(VarDecl* vd) {
-      if (vd->e()==NULL || vd->ti()->domain()==NULL || vd->ti()->computedDomain()) {
-        return true;
-      } else {
-        /// TODO: test if id's domain is a superset of the right hand side
-        /// this currently only tests for equality, and for Boolean domains
-        if (Id* ident = vd->e()->dyn_cast<Id>()) {
-          if (Expression::equal(ident->decl()->ti()->domain(), vd->ti()->domain())) {
-            return true;
-          }
-        } else if (vd->e()==vd->ti()->domain()) {
+  /// Return number of occurrences of \a v
+  int occurrences(VarDecl* v);
+
+  /// Return number of constraint usages of \a v and whether \a v is an output variable
+  std::pair<int, bool> usages(VarDecl* v);
+
+  /// Unify \a v0 and \a v1 (removing \a v0)
+  void unify(EnvI& env, Model* m, Id* id0, Id* id1);
+
+  /// Clear all entries
+  void clear(void);
+};
+
+class CollectOccurrencesE : public EVisitor {
+public:
+  VarOccurrences& vo;
+  Item* ci;
+  CollectOccurrencesE(VarOccurrences& vo0, Item* ci0) : vo(vo0), ci(ci0) {}
+  void vId(const Id& id) {
+    if (id.decl()) vo.add(id.decl(), ci);
+  }
+};
+
+class CollectOccurrencesI : public ItemVisitor {
+public:
+  VarOccurrences& vo;
+  CollectOccurrencesI(VarOccurrences& vo0) : vo(vo0) {}
+  void vVarDeclI(VarDeclI* v);
+  void vConstraintI(ConstraintI* ci);
+  void vSolveI(SolveI* si);
+};
+
+class CollectDecls : public EVisitor {
+public:
+  VarOccurrences& vo;
+  std::vector<VarDecl*>& vd;
+  Item* item;
+  CollectDecls(VarOccurrences& vo0, std::vector<VarDecl*>& vd0, Item* item0)
+      : vo(vo0), vd(vd0), item(item0) {}
+
+  static bool varIsFree(VarDecl* vd) {
+    if (vd->e() == NULL || vd->ti()->domain() == NULL || vd->ti()->computedDomain()) {
+      return true;
+    } else {
+      /// TODO: test if id's domain is a superset of the right hand side
+      /// this currently only tests for equality, and for Boolean domains
+      if (Id* ident = vd->e()->dyn_cast<Id>()) {
+        if (Expression::equal(ident->decl()->ti()->domain(), vd->ti()->domain())) {
           return true;
         }
-      }
-      return false;
-    }
-    
-    void vId(Id& id) {
-      if (id.decl() && vo.remove(id.decl(),item) == 0) {
-        if (varIsFree(id.decl())) {
-          vd.push_back(id.decl());
-        }
+      } else if (vd->e() == vd->ti()->domain()) {
+        return true;
       }
     }
-  };
+    return false;
+  }
 
-  bool isOutput(VarDecl* vd);
-  
-  /// Simplyfy models in \a env
-  void optimize(Env& env, bool chain_compression = true);
-  
-}
+  void vId(Id& id) {
+    if (id.decl() && vo.remove(id.decl(), item) == 0) {
+      if (varIsFree(id.decl())) {
+        vd.push_back(id.decl());
+      }
+    }
+  }
+};
+
+bool isOutput(VarDecl* vd);
+
+/// Simplyfy models in \a env
+void optimize(Env& env, bool chain_compression = true);
+
+}  // namespace MiniZinc

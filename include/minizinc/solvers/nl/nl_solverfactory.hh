@@ -7,12 +7,8 @@
 #pragma once
 
 namespace MiniZinc {
-  class NL_SolverFactoryInitialiser {
-  public:
-    NL_SolverFactoryInitialiser(void);
-  };
-}
-
-
-
-
+class NL_SolverFactoryInitialiser {
+public:
+  NL_SolverFactoryInitialiser(void);
+};
+}  // namespace MiniZinc

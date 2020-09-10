@@ -13,18 +13,17 @@
 
 #ifdef _WIN32
 
-#define NOMINMAX // Ensure the words min/max remain available
+#define NOMINMAX  // Ensure the words min/max remain available
 #include <Windows.h>
 #undef ERROR
 #include <sstream>
 #include <thread>
 
-
 namespace MiniZinc {
 // Listens for a message on the named pipe \\.\pipe\minizinc-PID
 // Triggers a Ctrl+C when an empty message is received.
 class InterruptListener {
- public:
+public:
   static InterruptListener& run() {
     static InterruptListener instance;
     return instance;
@@ -41,7 +40,7 @@ class InterruptListener {
     CloseHandle(hEvents[1]);
   }
 
- private:
+private:
   std::thread thread;
   HANDLE hNamedPipe;
 
@@ -54,7 +53,8 @@ class InterruptListener {
     std::stringstream ss;
     ss << "\\\\.\\pipe\\minizinc-" << GetCurrentProcessId();
     std::string pipeName = ss.str();
-    hNamedPipe = CreateNamedPipe(pipeName.c_str(), PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED, PIPE_TYPE_MESSAGE, 1, 0, 0, 0, NULL);
+    hNamedPipe = CreateNamedPipe(pipeName.c_str(), PIPE_ACCESS_INBOUND | FILE_FLAG_OVERLAPPED,
+                                 PIPE_TYPE_MESSAGE, 1, 0, 0, 0, NULL);
 
     if (hEvents[0] && hEvents[1] && hNamedPipe) {
       SetConsoleCtrlHandler(CtrlHandler, TRUE);

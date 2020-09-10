@@ -12,29 +12,26 @@
 #include <minizinc/flat_exp.hh>
 
 namespace MiniZinc {
-  
-  EE flatten_unop(EnvI& env,Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
-    CallStackItem _csi(env,e);
-    EE ret;
-    UnOp* uo = e->cast<UnOp>();
 
-    bool isBuiltin = uo->decl() == NULL || uo->decl()->e() == NULL;
+EE flatten_unop(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
+  CallStackItem _csi(env, e);
+  EE ret;
+  UnOp* uo = e->cast<UnOp>();
 
-    if (isBuiltin) {
-      switch (uo->op()) {
-        case UOT_NOT:
-        {
-          Ctx nctx = ctx;
-          nctx.b = -nctx.b;
-          nctx.neg = !nctx.neg;
-          ret = flat_exp(env, nctx, uo->e(), r, b);
-        }
-        break;
+  bool isBuiltin = uo->decl() == NULL || uo->decl()->e() == NULL;
+
+  if (isBuiltin) {
+    switch (uo->op()) {
+      case UOT_NOT: {
+        Ctx nctx = ctx;
+        nctx.b = -nctx.b;
+        nctx.neg = !nctx.neg;
+        ret = flat_exp(env, nctx, uo->e(), r, b);
+      } break;
       case UOT_PLUS:
         ret = flat_exp(env, ctx, uo->e(), r, b);
         break;
-      case UOT_MINUS:
-      {
+      case UOT_MINUS: {
         GC::lock();
         if (UnOp* uo_inner = uo->e()->dyn_cast<UnOp>()) {
           if (uo_inner->op() == UOT_MINUS) {
@@ -52,21 +49,20 @@ namespace MiniZinc {
         KeepAlive ka(bo);
         GC::unlock();
         ret = flat_exp(env, ctx, ka(), r, b);
-      }
+      } break;
+      default:
         break;
-        default: break;
-      }
     }
-    else {
-      GC::lock();
-      Call* c = new Call(uo->loc().introduce(), uo->opToString(), { uo->e() });
-      c->decl(env.model->matchFn(env, c, false));
-      c->type(uo->type());
-      KeepAlive ka(c);
-      GC::unlock();
-      ret = flat_exp(env, ctx, c, r, b);
-    }
-
-    return ret;
+  } else {
+    GC::lock();
+    Call* c = new Call(uo->loc().introduce(), uo->opToString(), {uo->e()});
+    c->decl(env.model->matchFn(env, c, false));
+    c->type(uo->type());
+    KeepAlive ka(c);
+    GC::unlock();
+    ret = flat_exp(env, ctx, c, r, b);
   }
+
+  return ret;
 }
+}  // namespace MiniZinc

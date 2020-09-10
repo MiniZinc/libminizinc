@@ -13,18 +13,19 @@
 
 namespace MiniZinc {
 
-  EE flatten_anon(EnvI& env,Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
-    CallStackItem _csi(env,e);
-    EE ret;
-    AnonVar* av = e->cast<AnonVar>();
-    if (av->type().isbot()) {
-      throw InternalError("type of anonymous variable could not be inferred");
-    }
-    GCLock lock;
-    VarDecl* vd = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(), av->type()), NULL, NULL, NULL);
-    ret.b = bind(env, Ctx(), b, constants().lit_true);
-    ret.r = bind(env, ctx, r, vd->id());
-    return ret;
+EE flatten_anon(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
+  CallStackItem _csi(env, e);
+  EE ret;
+  AnonVar* av = e->cast<AnonVar>();
+  if (av->type().isbot()) {
+    throw InternalError("type of anonymous variable could not be inferred");
   }
-
+  GCLock lock;
+  VarDecl* vd =
+      newVarDecl(env, Ctx(), new TypeInst(Location().introduce(), av->type()), NULL, NULL, NULL);
+  ret.b = bind(env, Ctx(), b, constants().lit_true);
+  ret.r = bind(env, ctx, r, vd->id());
+  return ret;
 }
+
+}  // namespace MiniZinc

@@ -12,8 +12,8 @@
 #pragma once
 
 namespace MiniZinc {
-  class SCIP_SolverFactoryInitialiser {
-  public:
-    SCIP_SolverFactoryInitialiser(void);
-  };
-}
+class SCIP_SolverFactoryInitialiser {
+public:
+  SCIP_SolverFactoryInitialiser(void);
+};
+}  // namespace MiniZinc

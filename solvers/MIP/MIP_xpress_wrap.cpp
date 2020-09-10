@@ -7,6 +7,13 @@
  * license, v. 2.0. if a copy of the mpl was not distributed with this
  * file, you can obtain one at http://mozilla.org/mpl/2.0/. */
 
+#include "minizinc/solvers/MIP/MIP_xpress_wrap.hh"
+
+#include "minizinc/config.hh"
+#include "minizinc/exception.hh"
+#include "minizinc/file_utils.hh"
+#include "minizinc/utils.hh"
+
 #include <cmath>
 #include <cstring>
 #include <ctime>
@@ -17,17 +24,10 @@
 #include <stdexcept>
 #include <string>
 
-#include "minizinc/config.hh"
-#include "minizinc/exception.hh"
-
-#include "minizinc/solvers/MIP/MIP_xpress_wrap.hh"
-#include "minizinc/utils.hh"
-#include "minizinc/file_utils.hh"
-
 struct UserSolutionCallbackData {
-  MIP_wrapper::CBUserInfo *info;
-  XPRBprob *problem;
-  vector<XPRBvar> *variables;
+  MIP_wrapper::CBUserInfo* info;
+  XPRBprob* problem;
+  vector<XPRBvar>* variables;
   XpressPlugin* plugin;
 };
 
@@ -43,26 +43,19 @@ XprlPlugin::XprlPlugin(const std::string& dll_file) : Plugin(dll_file) {}
 const std::vector<std::string>& XprlPlugin::dlls() {
   static std::vector<std::string> ret = {
 #ifdef _WIN32
-    "xprl",
-    "C:\\xpressmp\\bin\\xprl.dll"
+      "xprl", "C:\\xpressmp\\bin\\xprl.dll"
 #elif __APPLE__
-    "libxprl",
-    " /Applications/FICO Xpress/xpressmp/lib/libxprl.dylib"
+      "libxprl", " /Applications/FICO Xpress/xpressmp/lib/libxprl.dylib"
 #else
-    "libxprl",
-    "/opt/xpressmp/lib/libxprl.so"
+      "libxprl", "/opt/xpressmp/lib/libxprl.so"
 #endif
   };
   return ret;
 }
 
-XpressPlugin::XpressPlugin() : Plugin(XpressPlugin::dlls()) {
-  load_dll();
-}
+XpressPlugin::XpressPlugin() : Plugin(XpressPlugin::dlls()) { load_dll(); }
 
-XpressPlugin::XpressPlugin(const std::string& dll_file) : Plugin(dll_file) {
-  load_dll();
-}
+XpressPlugin::XpressPlugin(const std::string& dll_file) : Plugin(dll_file) { load_dll(); }
 
 void XpressPlugin::load_dll(void) {
   load_symbol(XPRSinit);
@@ -103,14 +96,12 @@ void XpressPlugin::load_dll(void) {
 const std::vector<std::string>& XpressPlugin::dlls() {
   static std::vector<std::string> ret = {
 #ifdef _WIN32
-    "xprs",
-    "C:\\xpressmp\\bin\\xprs.dll"
+      "xprs", "C:\\xpressmp\\bin\\xprs.dll"
 #elif __APPLE__
-    "libxprs"
-    " /Applications/FICO Xpress/xpressmp/lib/libxprs.dylib"
+      "libxprs"
+      " /Applications/FICO Xpress/xpressmp/lib/libxprs.dylib"
 #else
-    "libxprs",
-    "/opt/xpressmp/lib/libxprs.so"
+      "libxprs", "/opt/xpressmp/lib/libxprs.so"
 #endif
   };
   return ret;
@@ -131,21 +122,20 @@ void MIP_xpress_wrapper::openXpress(void) {
 #endif
     plugin_dep = new XprlPlugin(xprl);
     plugin = new XpressPlugin(xprs);
-  }
-  else {
+  } else {
     plugin_dep = new XprlPlugin();
     plugin = new XpressPlugin();
   }
 
-  int ret = plugin->XPRSinit(options->xprsPassword.size() ? options->xprsPassword.c_str() : nullptr);
+  int ret =
+      plugin->XPRSinit(options->xprsPassword.size() ? options->xprsPassword.c_str() : nullptr);
   if (ret) {
     char message[512];
     plugin->XPRSgetlicerrmsg(message, 512);
     // Return code of 32 means student licence, but otherwise it's an error
     if (ret == 32) {
       std::cerr << message << std::endl;
-    }
-    else {
+    } else {
       throw XpressException(message);
     }
   }
@@ -189,33 +179,24 @@ vector<string> MIP_xpress_wrapper::getRequiredFlags(void) {
     if (ret == 0 || ret == 32) {
       return {};
     } else {
-      return { "--xpress-password" };
+      return {"--xpress-password"};
     }
   } catch (MiniZinc::Plugin::PluginError&) {
-    return { "--xpress-root" };
+    return {"--xpress-root"};
   }
 }
 
-string MIP_xpress_wrapper::getId() {
-  return "xpress";
-}
+string MIP_xpress_wrapper::getId() { return "xpress"; }
 
-string MIP_xpress_wrapper::getName() {
-  return "Xpress";
-}
+string MIP_xpress_wrapper::getName() { return "Xpress"; }
 
-vector<string> MIP_xpress_wrapper::getTags() {
-  return {"mip","float","api"};
-}
+vector<string> MIP_xpress_wrapper::getTags() { return {"mip", "float", "api"}; }
 
-vector<string> MIP_xpress_wrapper::getStdFlags() {
-  return {"-i", "-s"};
-}
+vector<string> MIP_xpress_wrapper::getStdFlags() { return {"-i", "-s"}; }
 
-void MIP_xpress_wrapper::Options::printHelp(ostream &os) {
+void MIP_xpress_wrapper::Options::printHelp(ostream& os) {
   os << "XPRESS MIP wrapper options:" << std::endl
-     << "--msgLevel <n>       print solver output, default: 0"
-     << std::endl
+     << "--msgLevel <n>       print solver output, default: 0" << std::endl
      << "--logFile <file>     log file" << std::endl
      << "--solver-time-limit <N>        stop search after N milliseconds, if negative, it "
         "will only stop if at least one solution was found"
@@ -225,19 +206,18 @@ void MIP_xpress_wrapper::Options::printHelp(ostream &os) {
      << "--writeModelFormat [lp|mps] the file format of the written model(lp "
         "or mps), default: lp"
      << std::endl
-     << "--absGap <d>         absolute gap |primal-dual| to stop, default: "
-     << 0 << std::endl
+     << "--absGap <d>         absolute gap |primal-dual| to stop, default: " << 0 << std::endl
      << "--relGap <d>         relative gap |primal-dual|/<solver-dep> to stop, "
         "default: "
      << 0.0001 << std::endl
-     << "-i                   print intermediate solution, default: false"
+     << "-i                   print intermediate solution, default: false" << std::endl
+     << "--xpress-root <dir>      Xpress installation directory (usually named xpressmp)"
      << std::endl
-     << "--xpress-root <dir>      Xpress installation directory (usually named xpressmp)" << std::endl
      << "--xpress-password <dir>  directory where xpauth.xpr is located (optional)" << std::endl
      << std::endl;
 }
 
-bool MIP_xpress_wrapper::Options::processOption(int &i, std::vector<std::string>& argv) {
+bool MIP_xpress_wrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
   MiniZinc::CLOParser cop(i, argv);
   if (cop.get("--msgLevel", &msgLevel)) {
   } else if (cop.get("--logFile", &logFile)) {
@@ -272,49 +252,51 @@ void MIP_xpress_wrapper::setOptions() {
 
 static MIP_wrapper::Status convertStatus(int xpressStatus) {
   switch (xpressStatus) {
-  case XPRB_MIP_OPTIMAL:
-    return MIP_wrapper::Status::OPT;
-  case XPRB_MIP_INFEAS:
-    return MIP_wrapper::Status::UNSAT;
-  case XPRB_MIP_UNBOUNDED:
-    return MIP_wrapper::Status::UNBND;
-  case XPRB_MIP_NO_SOL_FOUND:
-    return MIP_wrapper::Status::UNKNOWN;
-  case XPRB_MIP_NOT_LOADED:
-    return MIP_wrapper::Status::__ERROR;
-  default:
-    return MIP_wrapper::Status::UNKNOWN;
+    case XPRB_MIP_OPTIMAL:
+      return MIP_wrapper::Status::OPT;
+    case XPRB_MIP_INFEAS:
+      return MIP_wrapper::Status::UNSAT;
+    case XPRB_MIP_UNBOUNDED:
+      return MIP_wrapper::Status::UNBND;
+    case XPRB_MIP_NO_SOL_FOUND:
+      return MIP_wrapper::Status::UNKNOWN;
+    case XPRB_MIP_NOT_LOADED:
+      return MIP_wrapper::Status::__ERROR;
+    default:
+      return MIP_wrapper::Status::UNKNOWN;
   }
 }
 
 static string getStatusName(int xpressStatus) {
   string rt = "Xpress stopped with status: ";
   switch (xpressStatus) {
-  case XPRB_MIP_OPTIMAL:
-    return rt + "Optimal";
-  case XPRB_MIP_INFEAS:
-    return rt + "Infeasible";
-  case XPRB_MIP_UNBOUNDED:
-    return rt + "Unbounded";
-  case XPRB_MIP_NO_SOL_FOUND:
-    return rt + "No solution found";
-  case XPRB_MIP_NOT_LOADED:
-    return rt + "No problem loaded or error";
-  default:
-    return rt + "Unknown status";
+    case XPRB_MIP_OPTIMAL:
+      return rt + "Optimal";
+    case XPRB_MIP_INFEAS:
+      return rt + "Infeasible";
+    case XPRB_MIP_UNBOUNDED:
+      return rt + "Unbounded";
+    case XPRB_MIP_NO_SOL_FOUND:
+      return rt + "No solution found";
+    case XPRB_MIP_NOT_LOADED:
+      return rt + "No problem loaded or error";
+    default:
+      return rt + "Unknown status";
   }
 }
 
-static void setOutputVariables(XpressPlugin* plugin, MIP_xpress_wrapper::Output *output, vector<XPRBvar> *variables) {
+static void setOutputVariables(XpressPlugin* plugin, MIP_xpress_wrapper::Output* output,
+                               vector<XPRBvar>* variables) {
   size_t nCols = variables->size();
-  double *x = (double *)malloc(nCols * sizeof(double));
+  double* x = (double*)malloc(nCols * sizeof(double));
   for (size_t ii = 0; ii < nCols; ii++) {
     x[ii] = plugin->XPRBgetsol((*variables)[ii]);
   }
   output->x = x;
 }
 
-static void setOutputAttributes(XpressPlugin* plugin, MIP_xpress_wrapper::Output *output, XPRSprob xprsProblem) {
+static void setOutputAttributes(XpressPlugin* plugin, MIP_xpress_wrapper::Output* output,
+                                XPRSprob xprsProblem) {
   int xpressStatus = 0;
   plugin->XPRSgetintattrib(xprsProblem, XPRS_MIPSTATUS, &xpressStatus);
   output->status = convertStatus(xpressStatus);
@@ -326,16 +308,14 @@ static void setOutputAttributes(XpressPlugin* plugin, MIP_xpress_wrapper::Output
   plugin->XPRSgetintattrib(xprsProblem, XPRS_NODES, &output->nNodes);
   plugin->XPRSgetintattrib(xprsProblem, XPRS_ACTIVENODES, &output->nOpenNodes);
 
-  output->dWallTime = std::chrono::duration<double>(
-                          std::chrono::steady_clock::now() - output->dWallTime0)
-                          .count();
+  output->dWallTime =
+      std::chrono::duration<double>(std::chrono::steady_clock::now() - output->dWallTime0).count();
   output->dCPUTime = double(std::clock() - output->cCPUTime0) / CLOCKS_PER_SEC;
 }
 
-static void XPRS_CC userSolNotifyCallback(XPRSprob xprsProblem,
-                                          void *userData) {
-  UserSolutionCallbackData *data = (UserSolutionCallbackData *)userData;
-  MIP_wrapper::CBUserInfo *info = data->info;
+static void XPRS_CC userSolNotifyCallback(XPRSprob xprsProblem, void* userData) {
+  UserSolutionCallbackData* data = (UserSolutionCallbackData*)userData;
+  MIP_wrapper::CBUserInfo* info = data->info;
 
   setOutputAttributes(data->plugin, info->pOutput, xprsProblem);
 
@@ -349,14 +329,13 @@ static void XPRS_CC userSolNotifyCallback(XPRSprob xprsProblem,
   }
 }
 
-void MIP_xpress_wrapper::doAddVars(size_t n, double *obj, double *lb,
-                                   double *ub, VarType *vt, string *names) {
-  if (obj == nullptr || lb == nullptr || ub == nullptr || vt == nullptr ||
-      names == nullptr) {
+void MIP_xpress_wrapper::doAddVars(size_t n, double* obj, double* lb, double* ub, VarType* vt,
+                                   string* names) {
+  if (obj == nullptr || lb == nullptr || ub == nullptr || vt == nullptr || names == nullptr) {
     throw XpressException("invalid input");
   }
   for (size_t i = 0; i < n; ++i) {
-    char *var_name = (char *)names[i].c_str();
+    char* var_name = (char*)names[i].c_str();
     int var_type = convertVariableType(vt[i]);
     XPRBvar var = plugin->XPRBnewvar(problem, var_type, var_name, lb[i], ub[i]);
     variables.push_back(var);
@@ -364,16 +343,13 @@ void MIP_xpress_wrapper::doAddVars(size_t n, double *obj, double *lb,
   }
 }
 
-void MIP_xpress_wrapper::addRow(int nnz, int *rmatind, double *rmatval,
-                                LinConType sense, double rhs, int mask,
-                                string rowName) {
+void MIP_xpress_wrapper::addRow(int nnz, int* rmatind, double* rmatval, LinConType sense,
+                                double rhs, int mask, string rowName) {
   addConstraint(nnz, rmatind, rmatval, sense, rhs, mask, rowName);
 }
 
-XPRBctr MIP_xpress_wrapper::addConstraint(int nnz, int *rmatind,
-                                          double *rmatval, LinConType sense,
-                                          double rhs, int mask,
-                                          string rowName) {
+XPRBctr MIP_xpress_wrapper::addConstraint(int nnz, int* rmatind, double* rmatval, LinConType sense,
+                                          double rhs, int mask, string rowName) {
   nRows++;
   XPRBctr constraint = plugin->XPRBnewctr(problem, rowName.c_str(), convertConstraintType(sense));
   for (int i = 0; i < nnz; ++i) {
@@ -419,8 +395,7 @@ void MIP_xpress_wrapper::solve() {
 
   plugin->XPRBsetobj(problem, xpressObj);
 
-  cbui.pOutput->dWallTime0 = output.dWallTime0 =
-      std::chrono::steady_clock::now();
+  cbui.pOutput->dWallTime0 = output.dWallTime0 = std::chrono::steady_clock::now();
   cbui.pOutput->cCPUTime0 = output.dCPUTime = std::clock();
 
   if (plugin->XPRBmipoptimize(problem, "c") == 1) {
@@ -430,7 +405,7 @@ void MIP_xpress_wrapper::solve() {
   setOutputVariables(plugin, &output, &variables);
   setOutputAttributes(plugin, &output, plugin->XPRBgetXPRSprob(problem));
 
-  if ( !options->intermediateSolutions && cbui.solcbfn) {
+  if (!options->intermediateSolutions && cbui.solcbfn) {
     cbui.solcbfn(output, cbui.psi);
   }
 }
@@ -440,7 +415,7 @@ void MIP_xpress_wrapper::setUserSolutionCallback() {
     return;
   }
 
-  UserSolutionCallbackData *data =
+  UserSolutionCallbackData* data =
       new UserSolutionCallbackData{&cbui, &problem, &variables, plugin};
 
   plugin->XPRSsetcbintsol(plugin->XPRBgetXPRSprob(problem), userSolNotifyCallback, data);
@@ -450,32 +425,26 @@ void MIP_xpress_wrapper::setObjSense(int s) {
   plugin->XPRBsetsense(problem, convertObjectiveSense(s));
 }
 
-void MIP_xpress_wrapper::setVarLB(int iVar, double lb) {
-  plugin->XPRBsetlb(variables[iVar], lb);
-}
+void MIP_xpress_wrapper::setVarLB(int iVar, double lb) { plugin->XPRBsetlb(variables[iVar], lb); }
 
-void MIP_xpress_wrapper::setVarUB(int iVar, double ub) {
-  plugin->XPRBsetub(variables[iVar], ub);
-}
+void MIP_xpress_wrapper::setVarUB(int iVar, double ub) { plugin->XPRBsetub(variables[iVar], ub); }
 
 void MIP_xpress_wrapper::setVarBounds(int iVar, double lb, double ub) {
   setVarLB(iVar, lb);
   setVarUB(iVar, ub);
 }
 
-void MIP_xpress_wrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz,
-                                                int *rmatind, double *rmatval,
-                                                LinConType sense, double rhs,
+void MIP_xpress_wrapper::addIndicatorConstraint(int iBVar, int bVal, int nnz, int* rmatind,
+                                                double* rmatval, LinConType sense, double rhs,
                                                 string rowName) {
   if (bVal != 0 && bVal != 1) {
     throw XpressException("indicator bval not in 0/1");
   }
-  XPRBctr constraint =
-      addConstraint(nnz, rmatind, rmatval, sense, rhs, 0, rowName);
+  XPRBctr constraint = addConstraint(nnz, rmatind, rmatval, sense, rhs, 0, rowName);
   plugin->XPRBsetindicator(constraint, 2 * bVal - 1, variables[iBVar]);
 }
 
-bool MIP_xpress_wrapper::addWarmStart(const std::vector<VarId> &vars,
+bool MIP_xpress_wrapper::addWarmStart(const std::vector<VarId>& vars,
                                       const std::vector<double> vals) {
   XPRBsol warmstart = plugin->XPRBnewsol(problem);
   for (size_t ii = 0; ii < vars.size(); ii++) {
@@ -486,37 +455,37 @@ bool MIP_xpress_wrapper::addWarmStart(const std::vector<VarId> &vars,
 
 int MIP_xpress_wrapper::convertConstraintType(LinConType sense) {
   switch (sense) {
-  case MIP_wrapper::LQ:
-    return XPRB_L;
-  case MIP_wrapper::EQ:
-    return XPRB_E;
-  case MIP_wrapper::GQ:
-    return XPRB_G;
-  default:
-    throw XpressException("unkown constraint sense");
+    case MIP_wrapper::LQ:
+      return XPRB_L;
+    case MIP_wrapper::EQ:
+      return XPRB_E;
+    case MIP_wrapper::GQ:
+      return XPRB_G;
+    default:
+      throw XpressException("unkown constraint sense");
   }
 }
 
 int MIP_xpress_wrapper::convertVariableType(VarType varType) {
   switch (varType) {
-  case REAL:
-    return XPRB_PL;
-  case INT:
-    return XPRB_UI;
-  case BINARY:
-    return XPRB_BV;
-  default:
-    throw XpressException("unknown variable type");
+    case REAL:
+      return XPRB_PL;
+    case INT:
+      return XPRB_UI;
+    case BINARY:
+      return XPRB_BV;
+    default:
+      throw XpressException("unknown variable type");
   }
 }
 
 int MIP_xpress_wrapper::convertObjectiveSense(int s) {
   switch (s) {
-  case 1:
-    return XPRB_MAXIM;
-  case -1:
-    return XPRB_MINIM;
-  default:
-    throw XpressException("unknown objective sense");
+    case 1:
+      return XPRB_MAXIM;
+    case -1:
+      return XPRB_MINIM;
+    default:
+      throw XpressException("unknown objective sense");
   }
 }

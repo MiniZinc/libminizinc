@@ -28,125 +28,124 @@ extern "C" int isatty(int);
 #endif
 
 #if defined(_MSC_VER)
-#pragma warning(disable:4065)
+#pragma warning(disable : 4065)
 #endif
 
-#include <minizinc/model.hh>
-#include <minizinc/parser.tab.hh>
 #include <minizinc/astexception.hh>
 #include <minizinc/file_utils.hh>
+#include <minizinc/model.hh>
+#include <minizinc/parser.tab.hh>
 
-#include <string>
-#include <vector>
-#include <map>
-#include <iostream>
 #include <algorithm>
 #include <cstdlib>
 #include <cstring>
+#include <iostream>
+#include <map>
+#include <string>
+#include <vector>
 
 namespace MiniZinc {
 
-  struct ParseWorkItem {
-    Model* m;
-    IncludeI* ii;
-    std::string dirName;
-    std::string fileName;
-    bool isSTDLib;
-    bool isModelString;
-    ParseWorkItem(Model* m0, IncludeI* ii0, const std::string& dirName0, const std::string& fileName0, bool isSTDLib0=false, bool isModelString0=false)
-    : m(m0), ii(ii0), dirName(dirName0), fileName(fileName0), isSTDLib(isSTDLib0), isModelString(isModelString0) {}
-  };
-  
+struct ParseWorkItem {
+  Model* m;
+  IncludeI* ii;
+  std::string dirName;
+  std::string fileName;
+  bool isSTDLib;
+  bool isModelString;
+  ParseWorkItem(Model* m0, IncludeI* ii0, const std::string& dirName0, const std::string& fileName0,
+                bool isSTDLib0 = false, bool isModelString0 = false)
+      : m(m0),
+        ii(ii0),
+        dirName(dirName0),
+        fileName(fileName0),
+        isSTDLib(isSTDLib0),
+        isModelString(isModelString0) {}
+};
 
-  /// %State of the %MiniZinc parser
-  class ParserState {
-  public:
-    ParserState(const std::string& f,
-                const std::string& b, std::ostream& err0,
-                std::vector<ParseWorkItem>& files0,
-                std::map<std::string,Model*>& seenModels0,
-                MiniZinc::Model* model0,
-                bool isDatafile0, bool isFlatZinc0, bool isSTDLib0, bool parseDocComments0)
-    : filename(f.c_str()), buf(b.c_str()), pos(0), length(static_cast<unsigned int>(b.size())),
-      lineStartPos(0), nTokenNextStart(1), hadNewline(false),
-      files(files0), seenModels(seenModels0), model(model0),
-      isDatafile(isDatafile0), isFlatZinc(isFlatZinc0), isSTDLib(isSTDLib0),
-      parseDocComments(parseDocComments0), hadError(false), err(err0) {}
+/// %State of the %MiniZinc parser
+class ParserState {
+public:
+  ParserState(const std::string& f, const std::string& b, std::ostream& err0,
+              std::vector<ParseWorkItem>& files0, std::map<std::string, Model*>& seenModels0,
+              MiniZinc::Model* model0, bool isDatafile0, bool isFlatZinc0, bool isSTDLib0,
+              bool parseDocComments0)
+      : filename(f.c_str()),
+        buf(b.c_str()),
+        pos(0),
+        length(static_cast<unsigned int>(b.size())),
+        lineStartPos(0),
+        nTokenNextStart(1),
+        hadNewline(false),
+        files(files0),
+        seenModels(seenModels0),
+        model(model0),
+        isDatafile(isDatafile0),
+        isFlatZinc(isFlatZinc0),
+        isSTDLib(isSTDLib0),
+        parseDocComments(parseDocComments0),
+        hadError(false),
+        err(err0) {}
 
-    const char* filename;
-  
-    void* yyscanner;
-    const char* buf;
-    unsigned int pos, length;
+  const char* filename;
 
-    int lineStartPos;
-    int nTokenNextStart;
-    bool hadNewline;
+  void* yyscanner;
+  const char* buf;
+  unsigned int pos, length;
 
-    std::vector<ParseWorkItem>& files;
-    std::map<std::string,Model*>& seenModels;
-    MiniZinc::Model* model;
+  int lineStartPos;
+  int nTokenNextStart;
+  bool hadNewline;
 
-    bool isDatafile;
-    bool isFlatZinc;
-    bool isSTDLib;
-    bool parseDocComments;
-    bool hadError;
-    std::vector<SyntaxError> syntaxErrors;
-    std::ostream& err;
-    
-    std::string stringBuffer;
+  std::vector<ParseWorkItem>& files;
+  std::map<std::string, Model*>& seenModels;
+  MiniZinc::Model* model;
 
-    void printCurrentLine(int firstCol, int lastCol) {
-      const char* eol_c = strchr(buf+lineStartPos,'\n');
-      if (eol_c) {
-        if (eol_c==buf+lineStartPos)
-          return;
-        err << std::string(buf+lineStartPos,eol_c-(buf+lineStartPos));
-      } else {
-        err << buf+lineStartPos;
-      }
-      err << std::endl;
-      for (int i=0; i<firstCol-1; i++)
-        err << " ";
-      for (int i=firstCol; i<=lastCol; i++)
-        err << "^";
-      err << std::endl;
+  bool isDatafile;
+  bool isFlatZinc;
+  bool isSTDLib;
+  bool parseDocComments;
+  bool hadError;
+  std::vector<SyntaxError> syntaxErrors;
+  std::ostream& err;
+
+  std::string stringBuffer;
+
+  void printCurrentLine(int firstCol, int lastCol) {
+    const char* eol_c = strchr(buf + lineStartPos, '\n');
+    if (eol_c) {
+      if (eol_c == buf + lineStartPos) return;
+      err << std::string(buf + lineStartPos, eol_c - (buf + lineStartPos));
+    } else {
+      err << buf + lineStartPos;
     }
-  
-    int fillBuffer(char* lexBuf, unsigned int lexBufSize) {
-      if (pos >= length)
-        return 0;
-      int num = std::min(length - pos, lexBufSize);
-      memcpy(lexBuf,buf+pos,num);
-      pos += num;
-      return num;    
-    }
+    err << std::endl;
+    for (int i = 0; i < firstCol - 1; i++) err << " ";
+    for (int i = firstCol; i <= lastCol; i++) err << "^";
+    err << std::endl;
+  }
 
-  };
+  int fillBuffer(char* lexBuf, unsigned int lexBufSize) {
+    if (pos >= length) return 0;
+    int num = std::min(length - pos, lexBufSize);
+    memcpy(lexBuf, buf + pos, num);
+    pos += num;
+    return num;
+  }
+};
 
-  Model* parse(Env& env,
-               const std::vector<std::string>& filename,
-               const std::vector<std::string>& datafiles,
-               const std::string& textModel,
-               const std::string& textModelName,
-               const std::vector<std::string>& includePaths,
-               bool isFlatZinc, bool parseDocComments, bool verbose,
-               std::ostream& err);
+Model* parse(Env& env, const std::vector<std::string>& filename,
+             const std::vector<std::string>& datafiles, const std::string& textModel,
+             const std::string& textModelName, const std::vector<std::string>& includePaths,
+             bool isFlatZinc, bool parseDocComments, bool verbose, std::ostream& err);
 
-  Model* parseFromString(Env& env,
-                         const std::string& model,
-                         const std::string& filename,
-                         const std::vector<std::string>& includePaths,
-                         bool isFlatZinc, bool parseDocComments, bool verbose,
-                         std::ostream& err,
-                         std::vector<SyntaxError>& syntaxErrors);
+Model* parseFromString(Env& env, const std::string& model, const std::string& filename,
+                       const std::vector<std::string>& includePaths, bool isFlatZinc,
+                       bool parseDocComments, bool verbose, std::ostream& err,
+                       std::vector<SyntaxError>& syntaxErrors);
 
-  Model* parseData(Env& env,
-                   Model* m,
-                   const std::vector<std::string>& datafiles,
-                   const std::vector<std::string>& includePaths,
-                   bool isFlatZinc, bool parseDocComments, bool verbose,
-                   std::ostream& err);
+Model* parseData(Env& env, Model* m, const std::vector<std::string>& datafiles,
+                 const std::vector<std::string>& includePaths, bool isFlatZinc,
+                 bool parseDocComments, bool verbose, std::ostream& err);
 
-}
+}  // namespace MiniZinc

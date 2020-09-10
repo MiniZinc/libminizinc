@@ -13,17 +13,26 @@
 
 namespace MiniZinc {
 
-  class SolverInstanceBase;
+class SolverInstanceBase;
 
-  class SolverInstance {
-  protected:
-    SolverInstanceBase* _si;
-  public:
-    enum Status { OPT,  // For SAT problems this means "search complete"
-      SAT, UNSAT, UNBND, UNSATorUNBND, UNKNOWN, ERROR, NONE };
-    enum StatusReason { SR_OK=-5, SR_TIME, SR_MEMORY, SR_LIMIT, SR_ERROR };
+class SolverInstance {
+protected:
+  SolverInstanceBase* _si;
+
+public:
+  enum Status {
+    OPT,  // For SAT problems this means "search complete"
+    SAT,
+    UNSAT,
+    UNBND,
+    UNSATorUNBND,
+    UNKNOWN,
+    ERROR,
+    NONE
   };
+  enum StatusReason { SR_OK = -5, SR_TIME, SR_MEMORY, SR_LIMIT, SR_ERROR };
+};
 
-  const SolverInstance::Status SolverInstance__ERROR = SolverInstance::ERROR;  // just in case...
+const SolverInstance::Status SolverInstance__ERROR = SolverInstance::ERROR;  // just in case...
 
-}
+}  // namespace MiniZinc

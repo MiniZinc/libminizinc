@@ -14,28 +14,28 @@
 #include <minizinc/flatten_internal.hh>
 
 namespace MiniZinc {
-  void addPathAnnotation(EnvI& env, Expression* e);
-  void addCtxAnn(VarDecl* vd, BCtx& c);
-  bool istrue(EnvI& env, Expression* e);
-  bool isfalse(EnvI& env, Expression* e);
-  Expression* createDummyValue(EnvI& env, const Type& t);
-  TypeInst* eval_typeinst(EnvI& env, Ctx ctx, VarDecl* vd);
+void addPathAnnotation(EnvI& env, Expression* e);
+void addCtxAnn(VarDecl* vd, BCtx& c);
+bool istrue(EnvI& env, Expression* e);
+bool isfalse(EnvI& env, Expression* e);
+Expression* createDummyValue(EnvI& env, const Type& t);
+TypeInst* eval_typeinst(EnvI& env, Ctx ctx, VarDecl* vd);
 
-  KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e);
-  KeepAlive conj(EnvI& env,VarDecl* b,Ctx ctx,const std::vector<EE>& e);
+KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e);
+KeepAlive conj(EnvI& env, VarDecl* b, Ctx ctx, const std::vector<EE>& e);
 
-  VarDecl* newVarDecl(EnvI& env, Ctx ctx, TypeInst* ti, Id* origId, VarDecl* origVd, Expression* rhs);
+VarDecl* newVarDecl(EnvI& env, Ctx ctx, TypeInst* ti, Id* origId, VarDecl* origVd, Expression* rhs);
 
-  KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e);
+KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e);
 
-  void makeDefinedVar(VarDecl* vd, Call* c);
-  void checkIndexSets(EnvI& env, VarDecl* vd, Expression* e);
+void makeDefinedVar(VarDecl* vd, Call* c);
+void checkIndexSets(EnvI& env, VarDecl* vd, Expression* e);
 
-  class CallArgItem {
-  public:
-    EnvI& env;
-    CallArgItem(EnvI& env0);
-    ~CallArgItem(void);
-  };
+class CallArgItem {
+public:
+  EnvI& env;
+  CallArgItem(EnvI& env0);
+  ~CallArgItem(void);
+};
 
-}
+}  // namespace MiniZinc

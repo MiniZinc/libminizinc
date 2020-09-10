@@ -11,23 +11,24 @@
 
 #pragma once
 
-#include <minizinc/hash.hh>
 #include <minizinc/flatten_internal.hh>
+#include <minizinc/hash.hh>
 
 namespace MiniZinc {
-  
-  class OptimizeRegistry {
-  public:
-    enum ConstraintStatus { CS_NONE, CS_OK, CS_FAILED, CS_ENTAILED, CS_REWRITE };
-    typedef ConstraintStatus (*optimizer) (EnvI& env, Item* i, Call* c, Expression*& rewrite);
-  protected:
-    ASTStringMap<optimizer> _m;
-  public:
-    
-    void reg(const ASTString& call, optimizer);
-    ConstraintStatus process(EnvI& env, Item* i, Call* c, Expression*& rewrite);
-    
-    static OptimizeRegistry& registry(void);
-  };
-  
-}
+
+class OptimizeRegistry {
+public:
+  enum ConstraintStatus { CS_NONE, CS_OK, CS_FAILED, CS_ENTAILED, CS_REWRITE };
+  typedef ConstraintStatus (*optimizer)(EnvI& env, Item* i, Call* c, Expression*& rewrite);
+
+protected:
+  ASTStringMap<optimizer> _m;
+
+public:
+  void reg(const ASTString& call, optimizer);
+  ConstraintStatus process(EnvI& env, Item* i, Call* c, Expression*& rewrite);
+
+  static OptimizeRegistry& registry(void);
+};
+
+}  // namespace MiniZinc

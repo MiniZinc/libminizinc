@@ -14,18 +14,16 @@
 
 namespace MiniZinc {
 
-  GecodePass::GecodePass(GecodeOptions* g_opts) : gopts(g_opts) {}
+GecodePass::GecodePass(GecodeOptions* g_opts) : gopts(g_opts) {}
 
-  Env* GecodePass::run(Env* env, std::ostream& log) {
-    try {
-      GecodeSolverInstance gecode(*env,log,new GecodeOptions(*gopts));
-      gecode.processFlatZinc();
-      gecode.presolve(env->flat());
-    } catch(const InternalError& e) {
-      std::cerr << "Warning during presolve: " << e.msg() << std::endl;
-
-    }
-    return env;
+Env* GecodePass::run(Env* env, std::ostream& log) {
+  try {
+    GecodeSolverInstance gecode(*env, log, new GecodeOptions(*gopts));
+    gecode.processFlatZinc();
+    gecode.presolve(env->flat());
+  } catch (const InternalError& e) {
+    std::cerr << "Warning during presolve: " << e.msg() << std::endl;
   }
+  return env;
 }
-
+}  // namespace MiniZinc

@@ -15,40 +15,36 @@
 
 namespace MiniZinc {
 
-  struct CompilePassFlags {
-    bool noMIPdomains;
-    bool verbose;
-    bool statistics;
-    bool optimize;
-    bool chain_compression;
-    bool newfzn;
-    bool werror;
-    bool model_check_only;
-    bool model_interface_only;
-    bool allow_multi_assign;
-  };
+struct CompilePassFlags {
+  bool noMIPdomains;
+  bool verbose;
+  bool statistics;
+  bool optimize;
+  bool chain_compression;
+  bool newfzn;
+  bool werror;
+  bool model_check_only;
+  bool model_interface_only;
+  bool allow_multi_assign;
+};
 
-  class CompilePass : public Pass {
-    private:
-      Env* env;
-      FlatteningOptions fopts;
-      CompilePassFlags compflags;
-      std::string library;
-      std::vector<std::string> includePaths;
-      bool change_library;
-      bool ignore_unknown_ids;
+class CompilePass : public Pass {
+private:
+  Env* env;
+  FlatteningOptions fopts;
+  CompilePassFlags compflags;
+  std::string library;
+  std::vector<std::string> includePaths;
+  bool change_library;
+  bool ignore_unknown_ids;
 
-    public:
-      CompilePass(Env* e,
-          FlatteningOptions& opts,
-          CompilePassFlags& cflags,
-          std::string globals_library,
-          std::vector<std::string> include_paths,
-          bool change_lib,
-          bool ignore_unknown);
+public:
+  CompilePass(Env* e, FlatteningOptions& opts, CompilePassFlags& cflags,
+              std::string globals_library, std::vector<std::string> include_paths, bool change_lib,
+              bool ignore_unknown);
 
-      Env* run(Env* env, std::ostream& log);
-      ~CompilePass();
-  };
+  Env* run(Env* env, std::ostream& log);
+  ~CompilePass();
+};
 
-}
+}  // namespace MiniZinc

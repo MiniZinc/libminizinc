@@ -12,8 +12,8 @@
 #pragma once
 
 namespace MiniZinc {
-  class Gurobi_SolverFactoryInitialiser {
-  public:
-    Gurobi_SolverFactoryInitialiser(void);
-  };
-}
+class Gurobi_SolverFactoryInitialiser {
+public:
+  Gurobi_SolverFactoryInitialiser(void);
+};
+}  // namespace MiniZinc

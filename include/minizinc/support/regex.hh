@@ -14,12 +14,12 @@
 #ifdef HAS_GECODE
 
 // Regex Parser Requirements
+#include <minizinc/astmap.hh>
+#include <minizinc/aststring.hh>
+#include <minizinc/values.hh>
+
 #include <memory>
 #include <set>
-
-#include <minizinc/values.hh>
-#include <minizinc/aststring.hh>
-#include <minizinc/astmap.hh>
 
 #include <gecode/minimodel.hh>
 #undef ERROR
@@ -40,7 +40,7 @@ extern "C" int isatty(int);
 #define fileno _fileno
 #endif
 
-//Anonymous struct for when yyparse is exported
+// Anonymous struct for when yyparse is exported
 typedef struct REContext REContext;
 // Parser generated header
 #include <minizinc/support/regex_parser.tab.hh>
@@ -51,4 +51,4 @@ using namespace MiniZinc;
 // Parsing function
 std::unique_ptr<REG> regex_from_string(const std::string& expression, const IntSetVal& domain);
 
-#endif //HAS_GECODE
+#endif  // HAS_GECODE
