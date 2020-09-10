@@ -1,6 +1,7 @@
 ---
 BasedOnStyle: Google
 
+ColumnLimit: 100
 DerivePointerAlignment: false
 AccessModifierOffset: -2
 
