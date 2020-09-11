@@ -120,12 +120,16 @@ void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, Int
           eval_comp_array<Eval>(env, eval, e, gen + 1, 0, 0, e->in(gen + 1), a);
         } else {
           KeepAlive nextin;
-          if (e->in(gen + 1)->type().dim() == 0) {
+          Expression* gen_in = e->in(gen + 1);
+          if (gen_in->type().isvar() || gen_in->type().cv()) {
+            gen_in = eval.flatten(env, e->in(gen + 1));
+          }
+          if (gen_in->type().dim() == 0) {
             GCLock lock;
-            nextin = new SetLit(Location(), eval_intset(env, e->in(gen + 1)));
+            nextin = new SetLit(Location(), eval_intset(env, gen_in));
           } else {
             GCLock lock;
-            nextin = eval_array_lit(env, e->in(gen + 1));
+            nextin = eval_array_lit(env, gen_in);
           }
           if (e->in(gen + 1)->type().dim() == 0) {
             eval_comp_set<Eval>(env, eval, e, gen + 1, 0, nextin, a);
@@ -172,16 +176,18 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
           eval_comp_array<Eval>(env, eval, e, gen + 1, 0, 0, e->in(gen + 1), a);
         } else {
           KeepAlive nextin;
-          Expression* gen_in =
-              e->in(gen + 1)->type().ispar() ? e->in(gen + 1) : eval.flatten(env, e->in(gen + 1));
-          if (e->in(gen + 1)->type().dim() == 0) {
+          Expression* gen_in = e->in(gen + 1);
+          if (gen_in->type().isvar() || gen_in->type().cv()) {
+            gen_in = eval.flatten(env, e->in(gen + 1));
+          }
+          if (gen_in->type().dim() == 0) {
             GCLock lock;
             nextin = new SetLit(Location(), eval_intset(env, gen_in));
           } else {
             GCLock lock;
             nextin = eval_array_lit(env, gen_in);
           }
-          if (e->in(gen + 1)->type().dim() == 0) {
+          if (gen_in->type().dim() == 0) {
             eval_comp_set<Eval>(env, eval, e, gen + 1, 0, nextin, a);
           } else {
             eval_comp_array<Eval>(env, eval, e, gen + 1, 0, nextin, a);
