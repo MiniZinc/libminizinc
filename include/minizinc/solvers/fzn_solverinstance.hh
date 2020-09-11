@@ -45,6 +45,7 @@ public:
   bool supports_i = false;
   bool supports_n_o = false;
   bool supports_a_o = false;
+  bool supports_cpprofiler = false;
   std::vector<MZNFZNSolverFlag> fzn_solver_flags;
 };
 

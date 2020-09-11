@@ -84,7 +84,9 @@ void FZN_SolverFactory::printHelp(ostream& os) {
      << "  -k, --keep-files\n     For compatibility only: to produce .ozn and .fzn, use mzn2fzn\n"
         "     or <this_exe> --fzn ..., --ozn ...\n"
      << "  -r <n>, --seed <n>, --random-seed <n>\n     For compatibility only: use solver flags "
-        "instead.\n";
+        "instead.\n"
+     << "  --cp-profiler <id>,<port>\n    Send search to cp-profiler with given execution ID and "
+        "port.\n";
 }
 
 SolverInstanceBase::Options* FZN_SolverFactory::createOptions(void) { return new FZNSolverOptions; }
@@ -151,6 +153,9 @@ bool FZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
     _opt.verbose = true;
   } else if (cop.getOption("-f --free-search")) {
     if (_opt.supports_f) _opt.fzn_flags.push_back("-f");
+  } else if (_opt.supports_cpprofiler && cop.getOption("--cp-profiler", &buffer)) {
+    _opt.fzn_flags.push_back("-cpprofiler");
+    _opt.fzn_flags.push_back(buffer);
   } else {
     for (auto& fznf : _opt.fzn_solver_flags) {
       if (fznf.t == MZNFZNSolverFlag::FT_ARG && cop.getOption(fznf.n.c_str(), &buffer)) {
@@ -195,6 +200,8 @@ void FZN_SolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt,
       _opt.supports_n_o = true;
     } else if (f.n == "-a-o") {
       _opt.supports_a_o = true;
+    } else if (f.n == "-cpprofiler") {
+      _opt.supports_cpprofiler = true;
     } else {
       _opt.fzn_solver_flags.push_back(f);
     }
