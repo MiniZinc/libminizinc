@@ -283,7 +283,6 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   }
   string solver;
   bool load_params = false;
-  string param_file;
   bool mzn2fzn_exe = (executable_name == "mzn2fzn");
   if (mzn2fzn_exe) {
     is_mzn2fzn = true;
@@ -298,50 +297,46 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
 
   // Add params from a file if necessary
   for (i = 1; i < argc; ++i) {
+    string param_file;
+    bool used_flag = false;
+
     if (argv[i] == "--param-file") {
+      used_flag = true;
       ++i;
-      if (load_params) {
-        log << "Only one --param-file argument allowed" << endl;
-        return OPTION_ERROR;
-      }
       if (i == argc) {
         log << "Argument required for --param-file" << endl;
         return OPTION_ERROR;
       }
       param_file = argv[i];
-      load_params = true;
+    } else {
+      size_t last_dot = argv[i].find_last_of('.');
+      if (last_dot != string::npos && argv[i].substr(last_dot, string::npos) == ".mpc") {
+        param_file = argv[i];
+      }
     }
-  }
 
-  if (load_params) {
-    try {
-      vector<string> new_args = {argv[0]};
-      // add parameter file arguments
-      ParamConfig pc;
-      pc.blacklist({"--param-file", "--solvers", "--solvers-json", "--solver-json", "--help", "-h",
-                    "--config-dirs"});
-      pc.negated_flag("-i", "-n-i");
-      pc.negated_flag("--intermediate", "--no-intermediate");
-      pc.negated_flag("--intermediate-solutions", "--no-intermediate-solutions");
-      pc.negated_flag("--all-satisfaction", "--disable-all-satisfaction");
-      pc.load(param_file);
-      for (auto a : pc.argv()) {
-        new_args.push_back(a);
-      }
+    if (!param_file.empty()) {
+      try {
+        vector<string> new_args = {argv[0]};
+        // add parameter file arguments
+        ParamConfig pc;
+        pc.blacklist({"--param-file", "--solvers", "--solvers-json", "--solver-json", "--help",
+                      "-h", "--config-dirs"});
+        pc.negated_flag("-i", "-n-i");
+        pc.negated_flag("--intermediate", "--no-intermediate");
+        pc.negated_flag("--intermediate-solutions", "--no-intermediate-solutions");
+        pc.negated_flag("--all-satisfaction", "--disable-all-satisfaction");
+        pc.load(param_file);
 
-      // add command line arguments
-      for (i = 1; i < argc; ++i) {
-        if (argv[i] == "--param-file") {
-          ++i;
-          continue;
-        }
-        new_args.push_back(argv[i]);
+        auto to_insert = pc.argv();
+        auto remove = argv.begin() + (used_flag ? i - 1 : i);
+        auto insert = argv.erase(remove, argv.begin() + i + 1);
+        argv.insert(insert, to_insert.begin(), to_insert.end());
+        argc = argv.size();
+      } catch (ParamException& e) {
+        log << "Solver parameter exception: " << e.msg() << endl;
+        return OPTION_ERROR;
       }
-      argv = new_args;
-      argc = argv.size();
-    } catch (ParamException& e) {
-      log << "Solver parameter exception: " << e.msg() << endl;
-      return OPTION_ERROR;
     }
   }
 
