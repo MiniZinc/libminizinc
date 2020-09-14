@@ -109,7 +109,7 @@ public:
 
   int(__stdcall* dll_GRBloadenv)(GRBenv** envP, const char* logfilename);
 
-  GRBenv*(__stdcall* dll_GRBgetconcurrentenv) (	GRBmodel	*model, int	num );
+  GRBenv*(__stdcall* dll_GRBgetconcurrentenv)(GRBmodel* model, int num);
 
   int(__stdcall* dll_GRBnewmodel)(GRBenv* env, GRBmodel** modelP, const char* Pname, int numvars,
                                   double* obj, double* lb, double* ub, char* vtype,

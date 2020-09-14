@@ -148,10 +148,11 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
      << std::endl
      << "  --writeModel <file>\n    write model to <file> (.lp, .mps, .sav, ...)" << std::endl
      << "  --readParam <file>\n     read GUROBI parameters from file" << std::endl
-     << "  --writeParam <file>\n    write GUROBI parameters to file"  << std::endl
+     << "  --writeParam <file>\n    write GUROBI parameters to file" << std::endl
      << "  --readConcurrentParam <fileN>\n"
         "    read GUROBI parameters from file. Several such commands provide the"
-        "    parameter files for concurrent solves (applied after all other settings)" << std::endl
+        "    parameter files for concurrent solves (applied after all other settings)"
+     << std::endl
      //   << "  --tuneParam         instruct GUROBI to tune parameters instead of solving   NOT
      //   IMPL"
 
@@ -861,15 +862,14 @@ void MIP_gurobi_wrapper::solve() {    // Move into ancestor?
   }
 
   /* See if we should set up concurrent solving */
-  if (0!=options->sConcurrentParamFiles.size()) {
-    int iSetting=-1;
-    for (const auto& paramFile: options->sConcurrentParamFiles) {
+  if (0 != options->sConcurrentParamFiles.size()) {
+    int iSetting = -1;
+    for (const auto& paramFile : options->sConcurrentParamFiles) {
       ++iSetting;
       auto env_i = dll_GRBgetconcurrentenv(model, iSetting);
       error = dll_GRBreadparams(env_i, paramFile.c_str());
-      wrap_assert(!error, ("Failed to read GUROBI parameters from file " +
-                  paramFile).c_str(), false);
-
+      wrap_assert(!error, ("Failed to read GUROBI parameters from file " + paramFile).c_str(),
+                  false);
     }
   }
 
