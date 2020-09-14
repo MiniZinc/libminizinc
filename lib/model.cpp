@@ -424,6 +424,19 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
       std::ostringstream oss;
       oss << "no function or predicate with name `";
       oss << c->id() << "' found";
+
+      ASTString mostSimilar;
+      double maxSim = 0.6;
+      for (auto decls : m->fnmap) {
+        double idSim = c->id().similarity(decls.first);
+        if (idSim > maxSim) {
+          maxSim = idSim;
+          mostSimilar = decls.first;
+        }
+      }
+      if (mostSimilar.size()>0) {
+        oss << ", did you mean `" << mostSimilar << "'?";
+      }
       throw TypeError(env, c->loc(), oss.str());
     }
     return NULL;

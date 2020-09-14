@@ -68,6 +68,31 @@ VarDecl* Scopes::find(Id* ident) {
   }
 }
 
+VarDecl* Scopes::findSimilar(Id* ident) {
+  VarDecl* mostSimilar = nullptr;
+  int cur = static_cast<int>(s.size()) - 1;
+  double maxSim = 0.6;
+  for (;;) {
+    for (auto decls : s[cur].m) {
+      double idSim = ident->similarity(decls.first);
+      if (idSim > maxSim) {
+        maxSim = idSim;
+        mostSimilar = decls.second;
+      }
+    }
+    if (s[cur].toplevel) {
+      if (cur > 0) {
+        cur = 0;
+      } else {
+        break;
+      }
+    } else {
+      cur--;
+    }
+  }
+  return mostSimilar;
+}
+
 struct VarDeclCmp {
   std::unordered_map<VarDecl*, int>& _pos;
   VarDeclCmp(std::unordered_map<VarDecl*, int>& pos) : _pos(pos) {}
@@ -846,11 +871,15 @@ void TopoSorter::add(EnvI& env, VarDeclI* vdi, bool handleEnums, Model* enumItem
 
 VarDecl* TopoSorter::get(EnvI& env, const ASTString& id_v, const Location& loc) {
   GCLock lock;
-  Id* id = new Id(Location(), id_v, NULL);
-  VarDecl* decl = scopes.find(id);
+  Id* ident = new Id(Location(), id_v, NULL);
+  VarDecl* decl = scopes.find(ident);
   if (!decl) {
     std::ostringstream ss;
-    ss << "undefined identifier `" << id->str() << "'";
+    ss << "undefined identifier `" << ident->str() << "'";
+    VarDecl* similar = scopes.findSimilar(ident);
+    if (similar) {
+      ss << ", did you mean `" << *similar->id() << "'?";
+    }
     throw TypeError(env, loc, ss.str());
   }
   return decl;
@@ -861,6 +890,10 @@ VarDecl* TopoSorter::checkId(EnvI& env, Id* ident, const Location& loc) {
   if (!decl) {
     std::ostringstream ss;
     ss << "undefined identifier `" << ident->str() << "'";
+    VarDecl* similar = scopes.findSimilar(ident);
+    if (similar) {
+      ss << ", did you mean `" << *similar->id() << "'?";
+    }
     throw TypeError(env, loc, ss.str());
   }
   PosMap::iterator pi = pos.find(decl);
