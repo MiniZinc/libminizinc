@@ -271,7 +271,7 @@ void Id::rehash(void) {
 }
 
 double Id::similarity(Id* other) const {
-  if (idn()!=-1 || other->idn()!=-1) {
+  if (idn() != -1 || other->idn() != -1) {
     return 0.0;
   } else {
     return v().similarity(other->v());

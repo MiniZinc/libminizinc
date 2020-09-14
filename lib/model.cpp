@@ -434,7 +434,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
           mostSimilar = decls.first;
         }
       }
-      if (mostSimilar.size()>0) {
+      if (mostSimilar.size() > 0) {
         oss << ", did you mean `" << mostSimilar << "'?";
       }
       throw TypeError(env, c->loc(), oss.str());

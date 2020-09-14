@@ -31,6 +31,7 @@ protected:
   };
   /// Stack of scopes
   std::vector<Scope> s;
+
 public:
   /// Constructor
   Scopes(void);
@@ -45,7 +46,7 @@ public:
 
   /// Return declaration for \a ident, or NULL if not found
   VarDecl* find(Id* ident);
-  
+
   /// Find declarations with identifiers similar to \a ident
   VarDecl* findSimilar(Id* ident);
 };

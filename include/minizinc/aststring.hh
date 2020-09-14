@@ -78,7 +78,7 @@ public:
 
   /// Return percentage similarity with \a s
   double similarity(const ASTString& s) const;
-  
+
   /// Compute hash value of string
   size_t hash(void) const;
 

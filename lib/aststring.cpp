@@ -27,44 +27,42 @@ double ASTString::similarity(const ASTString& other) const {
   int n = other.size();
   const char* s = c_str();
   const char* t = other.c_str();
-  assert(m>0);
-  assert(n>0);
+  assert(m > 0);
+  assert(n > 0);
 
   // dynamic programming matrix
-  std::vector<int> dp((m+1)*(n+1),0);
+  std::vector<int> dp((m + 1) * (n + 1), 0);
   // initialise matrix
-  for (int i=0; i<=m; i++) {
-    dp[i*n]=i;
+  for (int i = 0; i <= m; i++) {
+    dp[i * n] = i;
   }
-  for (int i=0; i<=n; i++) {
-    dp[i]=i;
+  for (int i = 0; i <= n; i++) {
+    dp[i] = i;
   }
 
-  for (int i=1; i<=m; i++) {
-    for (int j=1; j<=n; j++) {
-      int v = std::min( dp[(i-1)*n+j] + 1,                   // deletion
-                        dp[i*n+j-1] + 1);                    // insertion
-      v = std::min(v, dp[(i-1)*n+j-1] + (s[i-1] != t[j-1])); // substitution
-      if (i>2 && j>2) {
-        v = std::min(v, dp[(i-2)*n+j-2]+1+(s[i-2]!=t[j-1])+(s[j-1]!=t[j-2])); // transposition
+  for (int i = 1; i <= m; i++) {
+    for (int j = 1; j <= n; j++) {
+      int v = std::min(dp[(i - 1) * n + j] + 1,                           // deletion
+                       dp[i * n + j - 1] + 1);                            // insertion
+      v = std::min(v, dp[(i - 1) * n + j - 1] + (s[i - 1] != t[j - 1]));  // substitution
+      if (i > 2 && j > 2) {
+        v = std::min(v, dp[(i - 2) * n + j - 2] + 1 + (s[i - 2] != t[j - 1]) +
+                            (s[j - 1] != t[j - 2]));  // transposition
       }
-      dp[i*n+j]=v;
+      dp[i * n + j] = v;
     }
   }
-  
+
   // Similarity is calculated as the number of non-edits required
   // as a percentage of the longer of the two identifiers
-  
-  int edits = dp[m*n+n];
-  if (edits > m || edits > n)
-    return 0.0;
-  
-  double similarity = 1.0-static_cast<double>(edits)/static_cast<double>(std::max(n,m));
+
+  int edits = dp[m * n + n];
+  if (edits > m || edits > n) return 0.0;
+
+  double similarity = 1.0 - static_cast<double>(edits) / static_cast<double>(std::max(n, m));
 
   return similarity;
-
 }
-
 
 ASTStringData::Interner& ASTStringData::interner() {
   static Interner _interner;
