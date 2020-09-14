@@ -71,12 +71,13 @@ VarDecl* Scopes::find(Id* ident) {
 VarDecl* Scopes::findSimilar(Id* ident) {
   VarDecl* mostSimilar = nullptr;
   int cur = static_cast<int>(s.size()) - 1;
-  double maxSim = 0.6;
+  int minEdits = 3;
   for (;;) {
     for (auto decls : s[cur].m) {
-      double idSim = ident->similarity(decls.first);
-      if (idSim > maxSim) {
-        maxSim = idSim;
+      int edits = ident->levenshteinDistance(decls.first);
+      if (edits < minEdits && std::abs(static_cast<int>(ident->v().size()) -
+                                       static_cast<int>(decls.first->v().size())) <= 3) {
+        minEdits = edits;
         mostSimilar = decls.second;
       }
     }

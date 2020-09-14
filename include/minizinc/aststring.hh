@@ -76,8 +76,8 @@ public:
   // Finds the first character equal to the given character sequence.
   size_t find(char ch, size_t pos = 0) const noexcept;
 
-  /// Return percentage similarity with \a s
-  double similarity(const ASTString& s) const;
+  /// Return Levenshtein distance to \a s
+  int levenshteinDistance(const ASTString& s) const;
 
   /// Compute hash value of string
   size_t hash(void) const;

@@ -270,11 +270,11 @@ void Id::rehash(void) {
     cmb_hash(h(idn()));
 }
 
-double Id::similarity(Id* other) const {
+int Id::levenshteinDistance(Id* other) const {
   if (idn() != -1 || other->idn() != -1) {
-    return 0.0;
+    return INT_MAX;
   } else {
-    return v().similarity(other->v());
+    return v().levenshteinDistance(other->v());
   }
 }
 

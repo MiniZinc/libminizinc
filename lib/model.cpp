@@ -426,12 +426,15 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
       oss << c->id() << "' found";
 
       ASTString mostSimilar;
-      double maxSim = 0.6;
+      int minEdits = 3;
       for (auto decls : m->fnmap) {
-        double idSim = c->id().similarity(decls.first);
-        if (idSim > maxSim) {
-          maxSim = idSim;
-          mostSimilar = decls.first;
+        if (std::abs(static_cast<int>(c->id().size()) - static_cast<int>(decls.first.size())) <=
+            3) {
+          int edits = c->id().levenshteinDistance(decls.first);
+          if (edits < minEdits && edits < std::min(c->id().size(), decls.first.size())) {
+            minEdits = edits;
+            mostSimilar = decls.first;
+          }
         }
       }
       if (mostSimilar.size() > 0) {

@@ -712,8 +712,8 @@ public:
   }
   /// Recompute hash value
   void rehash(void);
-  /// Similarity to \a other identifier
-  double similarity(Id* other) const;
+  /// Levenshtein distance to \a other identifier
+  int levenshteinDistance(Id* other) const;
 };
 /// \brief Type-inst identifier expression
 class TIId : public Expression {
