@@ -365,7 +365,7 @@ void MIP_gurobi_wrapper::openGUROBI() {
   {
     //   cout << "% " << flush;               // Gurobi 7.5.2 prints "Academic License..."
     MiniZinc::StreamRedir redirStdout(stdout, stderr);
-    error = dll_GRBloadenv(&env, "gurobi-mzn.log");
+    error = dll_GRBloadenv(&env, nullptr);
   }
   wrap_assert(!error, "Could not open GUROBI environment.");
   error = dll_GRBsetintparam(env, "OutputFlag", 0);  // Switch off output
