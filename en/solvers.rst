@@ -168,6 +168,8 @@ For example, tolerances have been tightened to enable more precise solving with 
                      read backend-specific parameters from file (some backends)
   --writeParam <file>
                      write backend-specific parameters to file (some backends)
+  --readConcurrentParam <file>
+                     each of these commands specifies a parameter file of one concurrent solve (Gurobi only)
   --keep-paths       this standard flattening option annotates every item in FlatZinc by its "flattening history".
                      For MIP solvers, it additionally assigns each constraint's name as the first 255 symbols of that.
   --cbcArgs '-guess -cuts off -preprocess off -passc 1'
