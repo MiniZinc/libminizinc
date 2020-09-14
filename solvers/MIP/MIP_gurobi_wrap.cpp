@@ -147,9 +147,11 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
         "    nodefile directory"
      << std::endl
      << "  --writeModel <file>\n    write model to <file> (.lp, .mps, .sav, ...)" << std::endl
-     << "  --readParam <file>\n    read GUROBI parameters from file" << std::endl
-     << "  --writeParam <file>\n    write GUROBI parameters to file"
-     << std::endl
+     << "  --readParam <file>\n     read GUROBI parameters from file" << std::endl
+     << "  --writeParam <file>\n    write GUROBI parameters to file"  << std::endl
+     << "  --readConcurrentParam <fileN>\n"
+        "    read GUROBI parameters from file. Several such commands provide the"
+        "    parameter files for concurrent solves (applied after all other settings)" << std::endl
      //   << "  --tuneParam         instruct GUROBI to tune parameters instead of solving   NOT
      //   IMPL"
 
@@ -175,6 +177,7 @@ void MIP_gurobi_wrapper::Options::printHelp(ostream& os) {
 
 bool MIP_gurobi_wrapper::Options::processOption(int& i, std::vector<std::string>& argv) {
   MiniZinc::CLOParser cop(i, argv);
+  std::string buf;
   if (cop.get("-i")) {
     flag_intermediate = true;
   } else if (string(argv[i]) == "-f") {
@@ -183,7 +186,7 @@ bool MIP_gurobi_wrapper::Options::processOption(int& i, std::vector<std::string>
   } else if (string(argv[i]) == "--uniform-search") {
     nFreeSearch = 2;
   } else if (cop.get("--mipfocus --mipFocus --MIPFocus --MIPfocus", &nMIPFocus)) {
-  } else if (cop.get("--writeModel", &sExportModel)) {
+  } else if (cop.get("--writeModel --exportModel --writemodel --exportmodel", &sExportModel)) {
   } else if (cop.get("-p", &nThreads)) {
   } else if (cop.get("--solver-time-limit --solver-time", &nTimeout1000)) {
   } else if (cop.get("--solver-time-limit-feas --solver-tlf", &nTimeoutFeas1000)) {
@@ -191,8 +194,10 @@ bool MIP_gurobi_wrapper::Options::processOption(int& i, std::vector<std::string>
   } else if (cop.get("-r --random-seed", &nSeed)) {
   } else if (cop.get("--workmem --nodefilestart", &nWorkMemLimit)) {
   } else if (cop.get("--nodefiledir --NodefileDir", &sNodefileDir)) {
-  } else if (cop.get("--readParam", &sReadParams)) {
-  } else if (cop.get("--writeParam", &sWriteParams)) {
+  } else if (cop.get("--readParam --readParams", &sReadParams)) {
+  } else if (cop.get("--writeParam --writeParams", &sWriteParams)) {
+  } else if (cop.get("--readConcurrentParam --readConcurrentParams", &buf)) {
+    sConcurrentParamFiles.push_back(buf);
   } else if (cop.get("--absGap", &absGap)) {
   } else if (cop.get("--relGap", &relGap)) {
   } else if (cop.get("--feasTol", &feasTol)) {
@@ -299,6 +304,7 @@ void MIP_gurobi_wrapper::checkDLL() {
   *(void**)(&dll_GRBgeterrormsg) = dll_sym(gurobi_dll, "GRBgeterrormsg");
   *(void**)(&dll_GRBgetintattr) = dll_sym(gurobi_dll, "GRBgetintattr");
   *(void**)(&dll_GRBloadenv) = dll_sym(gurobi_dll, "GRBloadenv");
+  *(void**)(&dll_GRBgetconcurrentenv) = dll_sym(gurobi_dll, "GRBgetconcurrentenv");
   *(void**)(&dll_GRBnewmodel) = dll_sym(gurobi_dll, "GRBnewmodel");
   *(void**)(&dll_GRBoptimize) = dll_sym(gurobi_dll, "GRBoptimize");
   *(void**)(&dll_GRBreadparams) = dll_sym(gurobi_dll, "GRBreadparams");
@@ -852,6 +858,19 @@ void MIP_gurobi_wrapper::solve() {    // Move into ancestor?
   if (options->sWriteParams.size()) {
     error = dll_GRBwriteparams(dll_GRBgetenv(model), options->sWriteParams.c_str());
     wrap_assert(!error, "Failed to write GUROBI parameters.", false);
+  }
+
+  /* See if we should set up concurrent solving */
+  if (0!=options->sConcurrentParamFiles.size()) {
+    int iSetting=-1;
+    for (const auto& paramFile: options->sConcurrentParamFiles) {
+      ++iSetting;
+      auto env_i = dll_GRBgetconcurrentenv(model, iSetting);
+      error = dll_GRBreadparams(env_i, paramFile.c_str());
+      wrap_assert(!error, ("Failed to read GUROBI parameters from file " +
+                  paramFile).c_str(), false);
+
+    }
   }
 
   cbui.pOutput->dWallTime0 = output.dWallTime0 = std::chrono::steady_clock::now();

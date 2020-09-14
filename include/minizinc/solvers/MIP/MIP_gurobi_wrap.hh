@@ -46,6 +46,7 @@ public:
     std::string sNodefileDir;
     std::string sReadParams;
     std::string sWriteParams;
+    std::vector<std::string> sConcurrentParamFiles;
     bool flag_intermediate = false;
 
     double absGap = -1;
@@ -107,6 +108,8 @@ public:
   int(__stdcall* dll_GRBgetintattr)(GRBmodel* model, const char* attrname, int* valueP);
 
   int(__stdcall* dll_GRBloadenv)(GRBenv** envP, const char* logfilename);
+
+  GRBenv*(__stdcall* dll_GRBgetconcurrentenv) (	GRBmodel	*model, int	num );
 
   int(__stdcall* dll_GRBnewmodel)(GRBenv* env, GRBmodel** modelP, const char* Pname, int numvars,
                                   double* obj, double* lb, double* ub, char* vtype,

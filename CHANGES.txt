@@ -5,6 +5,12 @@
 All bug numbers refer to the issue tracker at
 https://github.com/MiniZinc/libminizinc/issues
 
+Version 2.5.0
+=============
+
+Changes:
+- Interface to concurrent solves in Gurobi (--readConcurrentParam)
+
 Version 2.4.3
 =============
 
