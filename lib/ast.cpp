@@ -18,6 +18,8 @@
 #include <minizinc/model.hh>
 #include <minizinc/prettyprinter.hh>
 
+#include <limits>
+
 namespace MiniZinc {
 
 Location::LocVec* Location::LocVec::a(const ASTString& filename, unsigned int first_line,
@@ -272,7 +274,7 @@ void Id::rehash(void) {
 
 int Id::levenshteinDistance(Id* other) const {
   if (idn() != -1 || other->idn() != -1) {
-    return INT_MAX;
+    return std::numeric_limits<int>::max();
   } else {
     return v().levenshteinDistance(other->v());
   }
