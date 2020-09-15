@@ -36,8 +36,8 @@ ScipPlugin::ScipPlugin()
     : Plugin(
 #ifdef _WIN32
           {
-            "scip", "C:\\Program Files\\SCIPOptSuite 7.0.1\\bin\\scip.dll",
-                "C:\\Program Files\\SCIPOptSuite 7.0.0\\bin\\scip.dll",
+            "libscip", "scip", "C:\\Program Files\\SCIPOptSuite 7.0.1\\bin\\libscip.dll",
+                "C:\\Program Files\\SCIPOptSuite 7.0.0\\bin\\libscip.dll",
                 "C:\\Program Files\\SCIPOptSuite 6.0.2\\bin\\scip.dll",
                 "C:\\Program Files\\SCIPOptSuite 6.0.1\\bin\\scip.dll",
                 "C:\\Program Files\\SCIPOptSuite 6.0.0\\bin\\scip.dll",
