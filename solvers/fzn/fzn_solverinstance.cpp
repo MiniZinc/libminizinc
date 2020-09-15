@@ -154,7 +154,7 @@ bool FZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
   } else if (cop.getOption("-f --free-search")) {
     if (_opt.supports_f) _opt.fzn_flags.push_back("-f");
   } else if (_opt.supports_cpprofiler && cop.getOption("--cp-profiler", &buffer)) {
-    _opt.fzn_flags.push_back("-cpprofiler");
+    _opt.fzn_flags.push_back("--cp-profiler");
     _opt.fzn_flags.push_back(buffer);
   } else {
     for (auto& fznf : _opt.fzn_solver_flags) {
@@ -200,7 +200,7 @@ void FZN_SolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt,
       _opt.supports_n_o = true;
     } else if (f.n == "-a-o") {
       _opt.supports_a_o = true;
-    } else if (f.n == "-cpprofiler") {
+    } else if (f.n == "--cp-profiler") {
       _opt.supports_cpprofiler = true;
     } else {
       _opt.fzn_solver_flags.push_back(f);
