@@ -1249,9 +1249,16 @@ bool b_annotate(EnvI& env, Call* call) {
     env.addWarning(ss.str());
     return true;
   }
-  expr = follow_id_to_decl(expr);
+  auto var_decl = follow_id_to_decl(expr)->cast<VarDecl>();
+  // Add annotation
   Expression* ann = call->arg(1);
-  expr->ann().add(ann);
+  var_decl->ann().add(ann);
+  // Increase usage count of the annotation
+  if (auto ann_decl = follow_id_to_decl(ann)->dyn_cast<VarDecl>()) {
+    auto var_it = env.vo.idx.find(var_decl->id());
+    assert(var_it != env.vo.idx.end());
+    env.vo.add(ann_decl, (*env.model)[var_it->second]);
+  }
   return true;
 }
 
