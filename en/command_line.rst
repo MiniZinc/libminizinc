@@ -522,6 +522,7 @@ Command-line Parameter Files
 
 The ``minizinc`` tool is able to read command line options from one or more JSON files through use of the ``--param-file`` option.
 This option may be specified multiple times, and substitutes the options given in the JSON file in its place, meaning it can be combined with normal command-line options, as well as other ``--param-file``s.
+MiniZinc also recognises the ``.mpc`` file extension for command line parameter files without requiring the ``--param-file`` option.
 
 As most ``minizinc`` options which take a single value are given the final one they are assigned, generally, later specifications of command-line parameter files will override options contained in previous ones, and later command-line options will override previous options.
 
@@ -529,18 +530,20 @@ The given file must be in JSON format and contain a root object whose keys and v
 For long-form options which start with two dashes, the leading dashes may be omitted from the JSON object key name.
 For short-form options which start with a single dash, the leading dash is required.
 Command line options which take multiple values through being specified multiple times can be represented using a JSON array.
+Options which take the JSON boolean value ``true`` are treated as flags without associated parameters (``false`` omits the flag).
 
-Consider the configuration file ``config.json``:
+Consider the configuration file ``config.mpc``:
 
 .. code-block:: json
 
   {
     "solver": "gecode",
     "cmdline-data": ["x = 1", "y = 2", "z = 3"],
-    "-p": 2
+    "-p": 2,
+    "output-paths": true
   }
 
-Running ``minizinc --verbose --param-file config.json -p 4 model.mzn`` is equivalent to running
+Running ``minizinc --verbose config.mpc -p 4 model.mzn`` (or ``minizinc --verbose --param-file config.mpc -p 4 model.mzn``) is equivalent to running
 
 .. code-block:: bash
 
@@ -550,6 +553,7 @@ Running ``minizinc --verbose --param-file config.json -p 4 model.mzn`` is equiva
       --cmdline-data "y = 2" \
       --cmdline-data "z = 3" \
       -p 2 \
+      --output-paths \
       -p 4 \
       model.mzn
 
