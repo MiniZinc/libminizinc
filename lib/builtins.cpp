@@ -1393,7 +1393,7 @@ std::string show(EnvI& env, Expression* exp) {
   Printer p(oss, 0, false);
   Expression* e = follow_id_to_decl(exp);
   if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
-    if (vd->e()) {
+    if (vd->e() && !vd->e()->isa<Call>()) {
       e = vd->e();
     } else {
       e = vd->id();
