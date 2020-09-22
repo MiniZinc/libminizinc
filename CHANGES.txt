@@ -8,33 +8,60 @@ https://github.com/MiniZinc/libminizinc/issues
 Version 2.5.0
 =============
 
-Changes:
-
+Language, tool and library changes:
+- Allow reading command line arguments from JSON config file.
+- Add support for enum constructors.
+- Put subprocesses in their own process group so that they don't receive signals
+  from both the console and MiniZinc.
+- Implement soft and hard process timeouts on Windows, allow triggering of
+  shutdown from named pipe on Windows for the IDE.
+- Make MiniZinc unicode-aware on Windows.
+- Better error messages for index set mismatches.
 - Report similar identifiers when matching fails.
-- Update WebAssembly build for new versions of emscripten.
-- Interface to concurrent solves in Gurobi (--readConcurrentParam).
-- Don't create gurobi log.
-- Support --cp-profiler option to activate search profiler for IDE.
-- Clean up code base and format using clang-format.
-- Remove non-conforming -n flags for MIP solver configs standard flags.
-- Solvers which only support intermediate solutions now can now support the
-  standard flag -i rather than -a.
+- Better error messages when a call cannot be matched to an existing function
+  or predicate.
+- Print error stack if top of stack is a single identifier
+  (i.e., error occurred while flattening a variable declaration).
 - Add new separate flags for intermediate and all solutions.
   -i enables intermediate solutions for optimisation problems and
   --all-satisfaction enables all solutions for satisfaction problems.
-- Add --solver-json to output single solver config as JSON.
-- Allow reading command line arguments from JSON config file.
-- Better error messages when a call cannot be matched to an existing function
-  or predicate.
-- Add support for enum constructors.
+
+Changes in interfaces to solvers:
+- Solvers which only support intermediate solutions now can now support the
+  standard flag -i rather than -a.
+- Restructure the MiniZinc standard library.
+
+Changes in MIP solver backends:
+- Remove non-conforming -n flags for MIP solver configs standard flags.
+- Improve autodetection of Gurobi DLL.
+- Find Gurobi 9.0.2 when building.
+- Don't create gurobi log.
+- Interface to concurrent solves in Gurobi (--readConcurrentParam).
+- Add -DMinMaxGeneral option for min/max as fzn_array_float_minimum for Gurobi
+- Find SCIP 7.0 on Windows
+- Use -Glinear library, built-in cumulative by default for SCIP.
+- Use quadratics in Gurobi and SCIP by default.
+- Add options --xpress-root and --xpress-password for finding Xpress
+  installation directory and licence file.
+- Add MIQCP quadratic constraints for Gurobi and SCIP.
+
+Changes dealing with option types:
 - Add opt versions of several globals.
 - Define weak equality for var opt bool.
-- Restructure the MiniZinc standard library.
-- Enable var set literals with var opt int elements.
 - Add set_in definitions for var opt int.
-- Enable set literals with optional values (which will be ignored).
+- Enable set literals with optional values (which will be ignored),
+  including var set literals with var opt int elements.
 - Add opt version of float_dom to stdlib.
 - Change unary not for opt bool to use absorption lifting.
+- Add array2set functions on var opt int arrays.
+- Add opt versions of dom, dom_array and dom_bounds_array.
+- Add missing logical operators to var opt bool
+
+Minor changes:
+- Clean up code base and format using clang-format.
+- Update WebAssembly build for new versions of emscripten.
+- Support --cp-profiler option to activate search profiler for IDE.
+- Add --solver-json to output single solver config as JSON.
 - Coerce JSON arrays to match the MiniZinc TypeInst.
 - Add more informative README file.
 - Split shared MIP cpp code into seperate CMake object target.
@@ -42,23 +69,16 @@ Changes:
 - Change ASTString to use String Interning.
 - Add included_files output to model interface.
 - Update Bison parsers to be compatible with Bison 3.7.
-- Implement soft and hard process timeouts on Windows, allow triggering of
-  shutdown from named pipe on Windows for the IDE.
 - Allow annotating enum declarations.
 - Add support for --c_d and --a_d options to set recomputation commit/adaption
   distance for Gecode presolver.
 - Place float_set_in in a version redefinition documentation group.
 - Place int_pow_fixed into a version redefinitions group.
-- Find Gurobi 9.0.2 when building.
 - Move set_in(var int, set of int) to the Integer FlatZinc Builtins.
 - Make "show" display contents of arrays rather than array identifiers
   if the array is var
-- Make MiniZinc unicode-aware on Windows.
 - Add support for checking statistics after solving has finished.
 - Include preferences set by IDE repository.
-- Find SCIP 7.0 on Windows
-- Use -Glinear library, built-in cumulative by default for SCIP.
-- Use quadratics in Gurobi and SCIP by default.
 - Add has_ann(var, ann) annotation introspection builtin.
 - Use reverse mapped version for output if FlatZinc contains an
   aliased variable.
@@ -67,17 +87,14 @@ Changes:
   array_var_int_element, array_int_minimum, and array_int_maximum.
 - More preprocessing for pow(int, int).
 - Add is_same builtin.
-- Improve autodetection of Gurobi DLL.
 - Add multiobjective annotation for Gurobi and Yuck (in std/experimental.mzn).
-- Add --output-mode checker, whichoutputs exactly the variables
+- Add --output-mode checker, which outputs exactly the variables
   that are required for a given solution checker.
 - Improve propagation of annotations, especially for redefined
   forall, exists, clause, xor
 - Make omitting RHS from output_only variable a type error.
 - Add support for var set comprehensions
 - Make sets inside set literals a type error (rather than evaluation error).
-- Add array2set functions on var opt int arrays.
-- Add opt versions of dom, dom_array and dom_bounds_array.
 - Aggregate bool_not into exists/clause, use bool_not(e) for clause([],[e])
   expressions
 - Cleanup the common-subexpression elimination table.
@@ -87,34 +104,26 @@ Changes:
 - Remove -O flag from ozn file naming.
 - Allow var items in checkers to be omitted from the model.
 - Add builtins for binary operators that have a var redefinition. 
-- Better error messages for index set mismatches.
-- Add options --xpress-root and --xpress-password for finding Xpress
-  installation directory and licence file.
 - When an integer or bool variable has a singleton domain, use the value.
   This enables more overloading to par functions.
-- Print error stack if top of stack is a single identifier
-  (i.e., error occurred while flattening a variable declaration).
 - Check if domain becomes empty when binding variable to value, avoiding empty
   domains (such as 1..0) in FlatZinc.
-- Add -DMinMaxGeneral option for min/max as fzn_array_float_minimum for Gurobi
 - Ignore unknown JSON data items instead of throwing an error.
 - Add trace_logstream and logstream_to_string builtins. These can be used
   for writing model checkers/graders, but also for general logging.
 - Clean up CMake configuration
 - Allow any installed solver to be used with the test suite, add ability
   to test for expected ozn output.
-- Add MIQCP quadratic constraints for Gurobi and SCIP.
 
 Bug fixes:
 
 - Fix the usage count of annotations added using the annotate function
-- Flatten in expressions in comprehensions when required.
+- Flatten "in" expressions in comprehensions when required.
 - Check if operator is built-in after evaluating arguments,
   to make sure it is rewritten into the correct predicate.
 - Use dom(x) instead of lb(x)..ub(x) for opt int.
 - Use eval_par to compute bounds for par expressions since they might be opt.
 - Use library defined operators where available.
-- Add missing logical operators to var opt bool
 - Fix -O flag parsing for optimisation level.
 - Fix par set inequality calculation.
 - Flatten domain expressions that contain variables.
@@ -124,8 +133,6 @@ Bug fixes:
 - Fix crash when reporting undefined result in assignment generator.
 - Only add coercion for normal generators, not for assignment generators.
 - Check output var status on actual item being removed.
-- Put subprocesses in their own process group so that they don't receive signals
-  from both the console and MiniZinc.
 - Include absolute path instead of filename in multipass processing.
 - Coerce comprehension generators if necessary, so that slicing notation
   can be used there.
@@ -142,8 +149,8 @@ Bug fixes:
 - Fixed wrong sign in Boolean linear constraints in Geas solver interface.
 - Fix istrue and isfalse by using flat_cv_exp if necessary.
 - Fix the excess flattening of items marked for removal.
-- Do not add newline when killing process, since this may be in the middle of a
-  line
+- Do not add newline to output when killing FlatZinc solver process, since this 
+  may be in the middle of a line
 - Fix typo in loop for Geas solver instance.
 - Don't call doAddVars when there are no variables, fixing a crash in MIP
   solvers for empty models.
@@ -161,14 +168,15 @@ Bug fixes:
 - Fix flattening of calls and let expressions that have par type
   but contain var expressions.
 - Use eval_bool instead of eval_par for boolean evaluation.
-- Remove the direct assignment to domains if it has a reverse mapper.
+- Remove the direct assignment to a domain if it has a reverse mapper.
 - Fix arg_max and arg_min for array index sets not starting at 1.
 - Add missing set_superset_reif FlatZinc predicate.
-- Fix counting of non-fixed variables in boolean constraints.
+- Fix counting of non-fixed variables in Boolean constraints.
   Could previously lead to incorrect simplifications.
-- Enable eval_floatset for SetLits that contain an IntSetVal.This is used during
-  chain compression and could previously result in incorrect domains.
-- Do not modify multimaps while iterating over them.
+- Enable eval_floatset for SetLits that contain an IntSetVal. This is used
+  during chain compression and could previously result in incorrect domains.
+- Fix bugs in chain compressor caused by modifying multimaps while iterating
+  over them.
 - Fix crash when cleaning up after running builtin Gecode.
 - MIPdomains: don't assume equations have no literals.
 - Only fix domain after flattening bool_eq.
