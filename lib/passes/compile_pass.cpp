@@ -68,8 +68,8 @@ Env* changeLibrary(Env& e, vector<string>& includePaths, string globals_dir,
   // std::cerr);
   std::ostringstream dummy_file;
   dummy_file << m->filepath() << "_Dummy.mzn";
-  Model* inc_mod = parseFromString(*fenv, ss.str(), dummy_file.str(), new_includePaths, false, true,
-                                   true, verbose, std::cerr, syntax_errors);
+  Model* inc_mod = parseFromString(*fenv, ss.str(), dummy_file.str(), new_includePaths, false,
+                                   false, true, verbose, std::cerr, syntax_errors);
   if (inc_mod == nullptr) {
     for (const SyntaxError& se : syntax_errors) {
       std::cerr << std::endl;
