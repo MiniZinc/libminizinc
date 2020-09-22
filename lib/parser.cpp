@@ -296,8 +296,8 @@ Model* parseData(Env& env, Model* model, const vector<string>& datafiles,
                  bool parseDocComments, bool verbose, ostream& err) {
   vector<string> filenames;
   std::vector<SyntaxError> se;
-  parse(env, model, filenames, datafiles, "", "", includePaths, isFlatZinc, false, parseDocComments,
-        verbose, err, se);
+  parse(env, model, filenames, datafiles, "", "", includePaths, isFlatZinc, ignoreStdlib,
+        parseDocComments, verbose, err, se);
   return model;
 }
 
