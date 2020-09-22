@@ -57,7 +57,7 @@ namespace MiniZinc {
 void parse(Env& env, Model*& model, const vector<string>& filenames,
            const vector<string>& datafiles, const std::string& modelString,
            const std::string& modelStringName, const vector<string>& ip, bool isFlatZinc,
-           bool parseDocComments, bool verbose, ostream& err,
+           bool ignoreStdlib, bool parseDocComments, bool verbose, ostream& err,
            std::vector<SyntaxError>& syntaxErrors) {
   vector<string> includePaths;
   for (unsigned int i = 0; i < ip.size(); i++) includePaths.push_back(ip[i]);
@@ -126,8 +126,10 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
 
   // TODO: It should be possible to use just flatzinc builtins instead of stdlib when parsing
   // FlatZinc if (!isFlatZinc) {
-  include_file("solver_redefinitions.mzn", false);
-  include_file("stdlib.mzn", true);  // Added last, so it is processed first
+  if (!ignoreStdlib) {
+    include_file("solver_redefinitions.mzn", false);
+    include_file("stdlib.mzn", true);  // Added last, so it is processed first
+  }
   // } else {
   //   include_file("flatzinc_builtins.mzn", true);
   // }
@@ -271,7 +273,8 @@ error:
 
 Model* parse(Env& env, const vector<string>& filenames, const vector<string>& datafiles,
              const string& textModel, const string& textModelName, const vector<string>& ip,
-             bool isFlatZinc, bool parseDocComments, bool verbose, ostream& err) {
+             bool isFlatZinc, bool ignoreStdlib,
+             bool parseDocComments, bool verbose, ostream& err) {
   if (filenames.empty() && textModel.empty()) {
     err << "Error: no model given" << std::endl;
     return NULL;
@@ -283,23 +286,24 @@ Model* parse(Env& env, const vector<string>& filenames, const vector<string>& da
     model = new Model();
   }
   std::vector<SyntaxError> se;
-  parse(env, model, filenames, datafiles, textModel, textModelName, ip, isFlatZinc,
+  parse(env, model, filenames, datafiles, textModel, textModelName, ip, isFlatZinc, ignoreStdlib,
         parseDocComments, verbose, err, se);
   return model;
 }
 
 Model* parseData(Env& env, Model* model, const vector<string>& datafiles,
-                 const vector<string>& includePaths, bool isFlatZinc, bool parseDocComments,
+                 const vector<string>& includePaths, bool isFlatZinc, bool ignoreStdlib,
+                 bool parseDocComments,
                  bool verbose, ostream& err) {
   vector<string> filenames;
   std::vector<SyntaxError> se;
-  parse(env, model, filenames, datafiles, "", "", includePaths, isFlatZinc, parseDocComments,
+  parse(env, model, filenames, datafiles, "", "", includePaths, isFlatZinc, false, parseDocComments,
         verbose, err, se);
   return model;
 }
 
 Model* parseFromString(Env& env, const string& text, const string& filename,
-                       const vector<string>& ip, bool isFlatZinc, bool parseDocComments,
+                       const vector<string>& ip, bool isFlatZinc, bool ignoreStdlib, bool parseDocComments,
                        bool verbose, ostream& err, std::vector<SyntaxError>& syntaxErrors) {
   vector<string> filenames;
   vector<string> datafiles;
@@ -308,7 +312,7 @@ Model* parseFromString(Env& env, const string& text, const string& filename,
     GCLock lock;
     model = new Model();
   }
-  parse(env, model, filenames, datafiles, text, filename, ip, isFlatZinc, parseDocComments, verbose,
+  parse(env, model, filenames, datafiles, text, filename, ip, isFlatZinc, ignoreStdlib, parseDocComments, verbose,
         err, syntaxErrors);
   return model;
 }
