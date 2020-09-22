@@ -147,8 +147,8 @@ void Solns2Out::initFromOzn(const std::string& filename) {
   {
     pEnv = new Env();
     std::stringstream errstream;
-    if ((pOutput = parse(*pEnv, filenames, std::vector<std::string>(), "", "", includePaths,
-                         false, false, false, false, errstream))) {
+    if ((pOutput = parse(*pEnv, filenames, std::vector<std::string>(), "", "", includePaths, false,
+                         false, false, false, errstream))) {
       std::vector<TypeError> typeErrors;
       pEnv->model(pOutput);
       MZN_ASSERT_HARD_MSG(pEnv, "solns2out: could not allocate Env");

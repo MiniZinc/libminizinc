@@ -273,8 +273,8 @@ error:
 
 Model* parse(Env& env, const vector<string>& filenames, const vector<string>& datafiles,
              const string& textModel, const string& textModelName, const vector<string>& ip,
-             bool isFlatZinc, bool ignoreStdlib,
-             bool parseDocComments, bool verbose, ostream& err) {
+             bool isFlatZinc, bool ignoreStdlib, bool parseDocComments, bool verbose,
+             ostream& err) {
   if (filenames.empty() && textModel.empty()) {
     err << "Error: no model given" << std::endl;
     return NULL;
@@ -293,8 +293,7 @@ Model* parse(Env& env, const vector<string>& filenames, const vector<string>& da
 
 Model* parseData(Env& env, Model* model, const vector<string>& datafiles,
                  const vector<string>& includePaths, bool isFlatZinc, bool ignoreStdlib,
-                 bool parseDocComments,
-                 bool verbose, ostream& err) {
+                 bool parseDocComments, bool verbose, ostream& err) {
   vector<string> filenames;
   std::vector<SyntaxError> se;
   parse(env, model, filenames, datafiles, "", "", includePaths, isFlatZinc, false, parseDocComments,
@@ -303,8 +302,9 @@ Model* parseData(Env& env, Model* model, const vector<string>& datafiles,
 }
 
 Model* parseFromString(Env& env, const string& text, const string& filename,
-                       const vector<string>& ip, bool isFlatZinc, bool ignoreStdlib, bool parseDocComments,
-                       bool verbose, ostream& err, std::vector<SyntaxError>& syntaxErrors) {
+                       const vector<string>& ip, bool isFlatZinc, bool ignoreStdlib,
+                       bool parseDocComments, bool verbose, ostream& err,
+                       std::vector<SyntaxError>& syntaxErrors) {
   vector<string> filenames;
   vector<string> datafiles;
   Model* model;
@@ -312,8 +312,8 @@ Model* parseFromString(Env& env, const string& text, const string& filename,
     GCLock lock;
     model = new Model();
   }
-  parse(env, model, filenames, datafiles, text, filename, ip, isFlatZinc, ignoreStdlib, parseDocComments, verbose,
-        err, syntaxErrors);
+  parse(env, model, filenames, datafiles, text, filename, ip, isFlatZinc, ignoreStdlib,
+        parseDocComments, verbose, err, syntaxErrors);
   return model;
 }
 

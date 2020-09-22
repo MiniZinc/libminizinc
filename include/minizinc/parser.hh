@@ -137,18 +137,16 @@ public:
 Model* parse(Env& env, const std::vector<std::string>& filename,
              const std::vector<std::string>& datafiles, const std::string& textModel,
              const std::string& textModelName, const std::vector<std::string>& includePaths,
-             bool isFlatZinc, bool ignoreStdlib,
-             bool parseDocComments, bool verbose, std::ostream& err);
+             bool isFlatZinc, bool ignoreStdlib, bool parseDocComments, bool verbose,
+             std::ostream& err);
 
 Model* parseFromString(Env& env, const std::string& model, const std::string& filename,
-                       const std::vector<std::string>& includePaths,
-                       bool isFlatZinc, bool ignoreStdlib,
-                       bool parseDocComments, bool verbose, std::ostream& err,
+                       const std::vector<std::string>& includePaths, bool isFlatZinc,
+                       bool ignoreStdlib, bool parseDocComments, bool verbose, std::ostream& err,
                        std::vector<SyntaxError>& syntaxErrors);
 
 Model* parseData(Env& env, Model* m, const std::vector<std::string>& datafiles,
-                 const std::vector<std::string>& includePaths,
-                 bool isFlatZinc, bool ignoreStdlib,
+                 const std::vector<std::string>& includePaths, bool isFlatZinc, bool ignoreStdlib,
                  bool parseDocComments, bool verbose, std::ostream& err);
 
 }  // namespace MiniZinc

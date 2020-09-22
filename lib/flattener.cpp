@@ -481,8 +481,8 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           flag_solution_check_model.size() >= 4 &&
           flag_solution_check_model.substr(flag_solution_check_model.size() - 4) == ".mzc";
       std::vector<std::string> smm_model({flag_solution_check_model});
-      Model* smm = parse(*env, smm_model, datafiles, "", "", includePaths, is_flatzinc, false, false,
-                         flag_verbose, errstream);
+      Model* smm = parse(*env, smm_model, datafiles, "", "", includePaths, is_flatzinc, false,
+                         false, flag_verbose, errstream);
       if (flag_verbose) log << " done parsing (" << starttime.stoptime() << ")" << std::endl;
       if (smm) {
         log << errstream.str();
