@@ -52,7 +52,7 @@
   extends: .tests
   variables:
     MZNARCH: "win64"
-    MZN_SOLVER_PATH: "$CI_PROJECT_DIR/vendor/chuffed;$CI_PROJECT_DIR/vendor/gecode"
+    MZN_SOLVER_PATH: "$CI_PROJECT_DIR/vendor/chuffed/share/minizinc/solvers;$CI_PROJECT_DIR/vendor/gecode"
   before_script:
     - curl -o download.sh --location --header "PRIVATE-TOKEN:%ACCESS_TOKEN%" --silent https://gitlab.com/api/v4/snippets/1796163/raw
     - dos2unix download.sh
