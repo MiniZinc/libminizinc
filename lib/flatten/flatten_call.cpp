@@ -155,7 +155,7 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, Ctx nctx, ASTString& cid, Call* c, 
           typename LinearTraits<Lit>::Bounds sc_bounds = LinearTraits<Lit>::compute_bounds(env, sc);
           if (LinearTraits<Lit>::domain_tighter(sc_dom, sc_bounds)) {
             coeffv.push_back(c_coeff[i]);
-            alv.push_back((*al)[i]);
+            alv.emplace_back((*al)[i]);
             continue;
           }
         }
@@ -168,12 +168,12 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, Ctx nctx, ASTString& cid, Call* c, 
       assert(sc_coeff->size() == sc_al->size());
       for (unsigned int j = 0; j < sc_coeff->size(); j++) {
         coeffv.push_back(cd * LinearTraits<Lit>::eval(env, (*sc_coeff)[j]));
-        alv.push_back((*sc_al)[j]);
+        alv.emplace_back((*sc_al)[j]);
       }
       d += cd * sc_d;
     } else {
       coeffv.push_back(c_coeff[i]);
-      alv.push_back((*al)[i]);
+      alv.emplace_back((*al)[i]);
     }
   }
   simplify_lin<Lit>(coeffv, alv, d);
@@ -195,7 +195,7 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, Ctx nctx, ASTString& cid, Call* c, 
   Type t = coeff_ev[0]->type();
   t.dim(1);
   ncoeff->type(t);
-  args.push_back(ncoeff);
+  args.emplace_back(ncoeff);
   std::vector<Expression*> alv_e(alv.size());
   bool al_same_as_before = alv.size() == al->size();
   for (auto i = static_cast<unsigned int>(alv.size()); i--;) {
@@ -215,11 +215,11 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, Ctx nctx, ASTString& cid, Call* c, 
       t.dim(1);
       rd->type(t);
     }
-    args.push_back(rd);
+    args.emplace_back(rd);
   } else {
     auto* nal = new ArrayLit(al->loc(), alv_e);
     nal->type(al->type());
-    args.push_back(nal);
+    args.emplace_back(nal);
   }
   Lit* il = LinearTraits<Lit>::newLit(d);
   args.push_back(il);
@@ -483,7 +483,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
               GCLock lock;
               UnOp* notBoe0 = new UnOp(Location().introduce(), UOT_NOT, (*al_neg)[i]);
               notBoe0->type(Type::varbool());
-              newPositives.push_back(notBoe0);
+              newPositives.emplace_back(notBoe0);
             } else {
               EE res = flat_exp(env, argctx, (*al_neg)[i], nullptr, constants().var_true);
               if (res.r()->type().ispar()) {
@@ -497,7 +497,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
                   break;
                 }
               } else {
-                neg_args.push_back(res.r());
+                neg_args.emplace_back(res.r());
               }
             }
           }
@@ -509,7 +509,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         }
         auto* al_pos = c->arg(0)->cast<ArrayLit>();
         for (unsigned int i = 0; i < al_pos->size(); i++) {
-          newPositives.push_back((*al_pos)[i]);
+          newPositives.emplace_back((*al_pos)[i]);
         }
         {
           CallArgItem cai(env);
@@ -526,7 +526,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
                 break;
               }
             } else {
-              pos_args.push_back(res.r());
+              pos_args.emplace_back(res.r());
             }
           }
         }
@@ -565,7 +565,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
                 break;
               }
             } else {
-              flat_args.push_back(res.r());
+              flat_args.emplace_back(res.r());
             }
           }
           GCLock lock;
@@ -630,7 +630,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
           Expression* cur = pos_stack.back();
           pos_stack.pop_back();
           if (cur->isa<Id>() && seen.find(cur) != seen.end()) {
-            pos_alv.push_back(cur);
+            pos_alv.emplace_back(cur);
           } else {
             seen.insert(cur);
             GCLock lock;
@@ -669,10 +669,10 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
                 neg_stack.push_back(not_call->arg(0));
               } else if (Id* ident = cur->dyn_cast<Id>()) {
                 if (ident->decl()->ti()->domain() != constants().lit_false) {
-                  pos_alv.push_back(ident);
+                  pos_alv.emplace_back(ident);
                 }
               } else {
-                pos_alv.push_back(cur);
+                pos_alv.emplace_back(cur);
               }
             }
           }
@@ -683,7 +683,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
           Expression* cur = neg_stack.back();
           neg_stack.pop_back();
           if (cur->isa<Id>() && seen.find(cur) != seen.end()) {
-            neg_alv.push_back(cur);
+            neg_alv.emplace_back(cur);
           } else {
             seen.insert(cur);
             if (Call* sc =
@@ -710,10 +710,10 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
                 pos_stack.push_back(not_call->arg(0));
               } else if (Id* ident = cur->dyn_cast<Id>()) {
                 if (ident->decl()->ti()->domain() != constants().lit_true) {
-                  neg_alv.push_back(ident);
+                  neg_alv.emplace_back(ident);
                 }
               } else {
-                neg_alv.push_back(cur);
+                neg_alv.emplace_back(cur);
               }
             }
           }
@@ -741,7 +741,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         GCLock lock;
         auto* nal = new ArrayLit(Location().introduce(), toExpVec(pos_alv));
         nal->type(Type::varbool(1));
-        args.push_back(nal);
+        args.emplace_back(nal);
         cid = constants().ids.exists;
       } else {
         if (pos_alv.empty() && neg_alv.size() == 1) {
@@ -758,8 +758,8 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         auto* neg_al = new ArrayLit(Location().introduce(), toExpVec(neg_alv));
         neg_al->type(Type::varbool(1));
         cid = constants().ids.clause;
-        args.push_back(pos_al);
-        args.push_back(neg_al);
+        args.emplace_back(pos_al);
+        args.emplace_back(neg_al);
       }
       if (C_ROOT == ctx.b && cid == constants().ids.exists) {
         /// Check the special bounds disjunction for SCIP
@@ -792,10 +792,10 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
           GCLock lock;
           ArrayLit* sc_c = eval_array_lit(env, sc->arg(0));
           for (unsigned int j = 0; j < sc_c->size(); j++) {
-            alv.push_back((*sc_c)[j]);
+            alv.emplace_back((*sc_c)[j]);
           }
         } else {
-          alv.push_back((*al)[i]);
+          alv.emplace_back((*al)[i]);
         }
       }
       bool subsumed = remove_dups(alv, true);
@@ -816,7 +816,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       GCLock lock;
       auto* nal = new ArrayLit(al->loc(), toExpVec(alv));
       nal->type(al->type());
-      args.push_back(nal);
+      args.emplace_back(nal);
     } else if (decl->e() == nullptr &&
                (cid == constants().ids.lin_exp || cid == constants().ids.sum)) {
       if (e->type().isint()) {
@@ -826,7 +826,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       }
       if (args.size() == 0) return ret;
     } else {
-      for (unsigned int i = 0; i < args_ee.size(); i++) args.push_back(args_ee[i].r());
+      for (unsigned int i = 0; i < args_ee.size(); i++) args.emplace_back(args_ee[i].r());
     }
     bool hadImplementation = (decl->e() != nullptr);
     KeepAlive cr;
@@ -869,7 +869,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       if (env.ignorePartial) {
         ret.b = bind(env, Ctx(), b, constants().lit_true);
       } else {
-        args_ee.push_back(EE(nullptr, cit->second.b()));
+        args_ee.emplace_back(nullptr, cit->second.b());
         ret.b = conj(env, b, Ctx(), args_ee);
       }
       ret.r = bind(env, ctx, r, cit->second.r());
@@ -1017,7 +1017,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
                 reif_call->type(Type::varbool());
                 reif_call->decl(reif_decl);
                 flat_exp(env, Ctx(), reif_call, constants().var_true, constants().var_true);
-                args_ee.push_back(EE(nullptr, constants().lit_false));
+                args_ee.emplace_back(nullptr, constants().lit_false);
                 ret.r = conj(env, r, ctx, args_ee);
                 ret.b = bind(env, ctx, b, constants().lit_true);
                 return ret;
@@ -1036,7 +1036,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
           }
           env.vo_add_exp(reif_b);
           ret.b = bind(env, Ctx(), b, constants().lit_true);
-          args_ee.push_back(EE(nullptr, reif_b->id()));
+          args_ee.emplace_back(nullptr, reif_b->id());
           ret.r = conj(env, nullptr, ctx, args_ee);
           if (!ctx.neg && !cr()->type().isann()) {
             env.cse_map_insert(cr(), ret);

@@ -153,16 +153,16 @@ SolverInstance::Status MZNSolverInstance::solve(void) {
   cmd_line.push_back(opt.mzn_solver);
   for (auto& f : opt.mzn_flags) cmd_line.push_back(f);
   if (opt.printStatistics) {
-    cmd_line.push_back("-s");
+    cmd_line.emplace_back("-s");
   }
   if (opt.verbose) {
-    cmd_line.push_back("-v");
+    cmd_line.emplace_back("-v");
     _log << "Using MZN solver " << cmd_line[0] << " for solving, parameters: ";
     for (int i = 1; i < cmd_line.size(); ++i) _log << "" << cmd_line[i] << " ";
     _log << std::endl;
   }
   if (opt.solver_time_limit_ms != 0) {
-    cmd_line.push_back("-t");
+    cmd_line.emplace_back("-t");
     std::ostringstream oss;
     oss << opt.solver_time_limit_ms;
     cmd_line.push_back(oss.str());

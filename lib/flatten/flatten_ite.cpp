@@ -122,7 +122,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       if (eq.second >= ite->size()) {
         // Any identifier that occurs in all or all but one branch gets its own conditional
         results.push_back(eq.first->decl());
-        e_then.push_back(std::vector<KeepAlive>());
+        e_then.emplace_back();
         for (int i = 0; i < ite->size(); i++) {
           auto it = eq_branches[i].find(eq.first);
           if (it == eq_branches[i].end()) {
@@ -136,9 +136,9 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
           auto it = eq_branches[ite->size()].find(eq.first);
           if (it == eq_branches[ite->size()].end()) {
             // not found, simply push x=x
-            e_else.push_back(eq.first);
+            e_else.emplace_back(eq.first);
           } else {
-            e_else.push_back(it->second.first);
+            e_else.emplace_back(it->second.first);
           }
         }
       } else {
@@ -155,7 +155,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     }
     if (!noOtherBranches) {
       results.push_back(r);
-      e_then.push_back(std::vector<KeepAlive>());
+      e_then.emplace_back();
       for (int i = 0; i < ite->size(); i++) {
         if (eq_branches[i].size() == 0) {
           e_then.back().push_back(ite->e_then(i));
@@ -175,11 +175,11 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       }
       {
         if (eq_branches[ite->size()].size() == 0) {
-          e_else.push_back(ite->e_else());
+          e_else.emplace_back(ite->e_else());
         } else if (other_branches[ite->size()].size() == 0) {
-          e_else.push_back(constants().lit_true);
+          e_else.emplace_back(constants().lit_true);
         } else if (other_branches[ite->size()].size() == 1) {
-          e_else.push_back(other_branches[ite->size()][0]);
+          e_else.emplace_back(other_branches[ite->size()][0]);
         } else {
           GCLock lock;
           auto* al = new ArrayLit(Location().introduce(), other_branches[ite->size()]);
@@ -187,18 +187,18 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
           Call* forall = new Call(Location().introduce(), constants().ids.forall, {al});
           forall->decl(env.model->matchFn(env, forall, false));
           forall->type(forall->decl()->rtype(env, {al}, false));
-          e_else.push_back(forall);
+          e_else.emplace_back(forall);
         }
       }
     }
   } else {
     noOtherBranches = false;
     results.push_back(r);
-    e_then.push_back(std::vector<KeepAlive>());
+    e_then.emplace_back();
     for (int i = 0; i < ite->size(); i++) {
       e_then.back().push_back(ite->e_then(i));
     }
-    e_else.push_back(ite->e_else());
+    e_else.emplace_back(ite->e_else());
   }
   allBranchesPar.resize(results.size());
   r_bounds_valid_int.resize(results.size());
@@ -247,7 +247,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         // had var conditions, so we have to take them into account
         // and emit new conditional clause
         // add another condition and definedness variable
-        conditions.push_back(constants().lit_true);
+        conditions.emplace_back(constants().lit_true);
         for (unsigned int j = 0; j < results.size(); j++) {
           EE ethen = flat_exp(env, cmix, e_then[j][i](), nullptr, nullptr);
           assert(ethen.b());
@@ -261,7 +261,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         foundTrueBranch = true;
       } else {
         GCLock lock;
-        conditions.push_back(constants().lit_false);
+        conditions.emplace_back(constants().lit_false);
         for (unsigned int j = 0; j < results.size(); j++) {
           defined[j].push_back(constants().lit_true);
           branches[j].push_back(createDummyValue(env, e_then[j][i]()->type()));
@@ -326,7 +326,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
 
   if (conditions.back()() != constants().lit_true) {
     // The last condition wasn't fixed to true, we need to look at the else branch
-    conditions.push_back(constants().lit_true);
+    conditions.emplace_back(constants().lit_true);
 
     for (unsigned int j = 0; j < results.size(); j++) {
       // flatten else branch

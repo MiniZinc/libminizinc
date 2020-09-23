@@ -422,7 +422,7 @@ void NLAlgCons::set_jacobian(const vector<string>& vnames, const vector<double>&
   for (int i = 0; i < vnames.size(); ++i) {
     string vn = vnames[i];
     nl_file->variables.at(vn).jacobian_count++;
-    jacobian.push_back(pair<string, double>(vn, coeffs[i]));
+    jacobian.emplace_back(vn, coeffs[i]);
   }
 }
 
@@ -575,7 +575,7 @@ void NLObjective::set_gradient(const vector<string>& vnames, const vector<double
   assert(vnames.size() == coeffs.size());
   for (int i = 0; i < vnames.size(); ++i) {
     string vn = vnames[i];
-    gradient.push_back(pair<string, double>(vn, coeffs[i]));
+    gradient.emplace_back(vn, coeffs[i]);
   }
 }
 

@@ -125,7 +125,7 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       for (int i = 0; i < c->n_generators(); i++) {
         std::vector<VarDecl*> vds(c->n_decls(i));
         for (int j = 0; j < c->n_decls(i); j++) vds[j] = c->decl(i, j);
-        gs._g.push_back(Generator(vds, in[i], orig_where[i]));
+        gs._g.emplace_back(vds, in[i], orig_where[i]);
       }
       Expression* cond;
       if (where.size() > 1) {

@@ -1001,7 +1001,7 @@ ASTString EnvI::halfReifyId(const ASTString& id) {
 void EnvI::addWarning(const std::string& msg) {
   if (warnings.size() > 20) return;
   if (warnings.size() == 20) {
-    warnings.push_back("Further warnings have been suppressed.\n");
+    warnings.emplace_back("Further warnings have been suppressed.\n");
   } else {
     std::ostringstream oss;
     createErrorStack();
@@ -1016,7 +1016,7 @@ void EnvI::createErrorStack(void) {
     Expression* e = callStack[i]->untag();
     bool isCompIter = callStack[i]->isTagged();
     KeepAlive ka(e);
-    errorStack.push_back(std::make_pair(ka, isCompIter));
+    errorStack.emplace_back(ka, isCompIter);
   }
 }
 

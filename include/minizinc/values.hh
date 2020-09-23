@@ -601,14 +601,14 @@ public:
     IntVal max = min;
     for (unsigned int i = 1; i < s.size(); i++) {
       if (s[i] > max + 1) {
-        ranges.push_back(Range(min, max));
+        ranges.emplace_back(min, max);
         min = s[i];
         max = min;
       } else {
         max = s[i];
       }
     }
-    ranges.push_back(Range(min, max));
+    ranges.emplace_back(min, max);
     auto* r = static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range) * ranges.size()));
     new (r) IntSetVal(ranges);
     return r;
@@ -796,14 +796,14 @@ public:
     FloatVal max = min;
     for (unsigned int i = 1; i < s.size(); i++) {
       if (s[i] > max) {
-        ranges.push_back(Range(min, max));
+        ranges.emplace_back(min, max);
         min = s[i];
         max = min;
       } else {
         max = s[i];
       }
     }
-    ranges.push_back(Range(min, max));
+    ranges.emplace_back(min, max);
     auto* r = static_cast<FloatSetVal*>(ASTChunk::alloc(sizeof(Range) * ranges.size()));
     new (r) FloatSetVal(ranges);
     return r;

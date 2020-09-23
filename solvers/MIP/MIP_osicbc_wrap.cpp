@@ -187,7 +187,7 @@ void MIP_osicbc_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
   //   rowStarts.push_back(columns.size());
   //   columns.insert(columns.end(), rmatind, rmatind + nnz);
   //   element.insert(element.end(), rmatval, rmatval + nnz);
-  rows.push_back(CoinPackedVector(nnz, rmatind, rmatval));
+  rows.emplace_back(nnz, rmatind, rmatval);
   rowlb.push_back(rlb);
   rowub.push_back(rub);
 }
@@ -694,7 +694,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
     {
       std::vector<std::pair<std::string, double> > mipstart;
       for (const auto& vv : warmstart) {
-        mipstart.push_back(std::make_pair(colNames[vv.first], vv.second));
+        mipstart.emplace_back(colNames[vv.first], vv.second);
       }
       warmstart.clear();
       model.setMIPStart(mipstart);

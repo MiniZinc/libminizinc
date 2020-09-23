@@ -903,7 +903,7 @@ public:
         }
       }
     }
-    if (par != -1) parent.push_back(std::pair<int, int>(l, par));
+    if (par != -1) parent.emplace_back(l, par);
     mostRecentlyAdded.insert(std::pair<int, int>(p, l));
     std::map<int, std::vector<int> >::iterator it;
     for (it = lines.begin(); it != lines.end(); it++) {
@@ -1709,9 +1709,9 @@ void PrettyPrinter::addLine(int indentation, bool bp, bool simpl, int level) {
   }
 }
 void PrettyPrinter::addItem() {
-  items.push_back(std::vector<Line>());
-  linesToSimplify.push_back(LinesToSimplify());
-  linesNotToSimplify.push_back(LinesToSimplify());
+  items.emplace_back();
+  linesToSimplify.emplace_back();
+  linesNotToSimplify.emplace_back();
   currentItem++;
   currentLine = -1;
 }

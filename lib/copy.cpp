@@ -241,8 +241,8 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
           // full comprehension
           assert(!c->decl(i, j)->e());
         }
-        g._g.push_back(Generator(vv, copy(env, m, c->in(i), followIds, copyFundecls, isFlatModel),
-                                 copy(env, m, c->where(i), followIds, copyFundecls, isFlatModel)));
+        g._g.emplace_back(vv, copy(env, m, c->in(i), followIds, copyFundecls, isFlatModel),
+                                 copy(env, m, c->where(i), followIds, copyFundecls, isFlatModel));
       }
       cc->init(copy(env, m, c->e(), followIds, copyFundecls, isFlatModel), g);
       ret = cc;

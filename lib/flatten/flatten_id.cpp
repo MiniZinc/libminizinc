@@ -145,13 +145,13 @@ EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool do
           throw FlatteningError(env, ti->loc(), "array dimensions unknown");
         IntSetVal* isv = eval_intset(env, ti->domain());
         if (isv->size() == 0) {
-          dims.push_back(std::pair<int, int>(1, 0));
+          dims.emplace_back(1, 0);
           asize = 0;
         } else {
           if (isv->size() != 1) throw FlatteningError(env, ti->loc(), "invalid array index set");
           asize *= (isv->max(0) - isv->min(0) + 1);
-          dims.push_back(std::pair<int, int>(static_cast<int>(isv->min(0).toInt()),
-                                             static_cast<int>(isv->max(0).toInt())));
+          dims.emplace_back(static_cast<int>(isv->min(0).toInt()),
+                                             static_cast<int>(isv->max(0).toInt()));
         }
       }
       Type tt = vd->ti()->type();

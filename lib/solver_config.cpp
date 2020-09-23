@@ -50,7 +50,7 @@ std::vector<std::string> getStringList(AssignI* ai) {
     std::vector<std::string> ret;
     for (unsigned int i = 0; i < al->size(); i++) {
       if (auto* sl = (*al)[i]->dyn_cast<StringLit>()) {
-        ret.push_back(std::string(sl->v().c_str(), sl->v().size()));
+        ret.emplace_back(sl->v().c_str(), sl->v().size());
       } else {
         throw ConfigException(
             "invalid configuration item (right hand side must be a list of strings)");
@@ -71,8 +71,8 @@ std::vector<std::pair<std::string, std::string> > getStringPairList(AssignI* ai)
       auto* sl1 = (*al)[i]->dyn_cast<StringLit>();
       auto* sl2 = (*al)[i + 1]->dyn_cast<StringLit>();
       if (sl1 && sl2) {
-        ret.push_back(std::make_pair(std::string(sl1->v().c_str(), sl1->v().size()),
-                                     std::string(sl2->v().c_str(), sl2->v().size())));
+        ret.emplace_back(std::string(sl1->v().c_str(), sl1->v().size()),
+                                     std::string(sl2->v().c_str(), sl2->v().size()));
       } else {
         throw ConfigException(
             "invalid configuration item (right hand side must be a 2d array of strings)");
@@ -577,10 +577,10 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
 #ifndef _MSC_VER
   if (_mznlibDir != "/usr/local/share/minizinc" &&
       FileUtils::directory_exists("/usr/local/share")) {
-    _solver_path.push_back("/usr/local/share/minizinc/solvers");
+    _solver_path.emplace_back("/usr/local/share/minizinc/solvers");
   }
   if (_mznlibDir != "/usr/share/minizinc" && FileUtils::directory_exists("/usr/share")) {
-    _solver_path.push_back("/usr/share/minizinc/solvers");
+    _solver_path.emplace_back("/usr/share/minizinc/solvers");
   }
 #endif
   for (const string& cur_path : _solver_path) {

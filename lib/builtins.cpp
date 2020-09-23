@@ -1785,7 +1785,7 @@ IntSetVal* b_array_intersect(EnvI& env, Call* call) {
           if (min < ij.min()) min = ij.min();
           if (max > ij.max()) max = ij.max();
         }
-        ranges.push_back(IntSetVal::Range(min, max));
+        ranges.emplace_back(min, max);
         // The next interval must be at least two elements away
         min = max + 2;
       }

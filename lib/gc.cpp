@@ -528,7 +528,7 @@ void GC::Heap::sweep(void) {
             }
         }
         if (ns >= _fl_size[0] && ns <= _fl_size[_max_fl]) {
-          freeNodes.push_back(NodeInfo(n, ns));
+          freeNodes.emplace_back(n, ns);
         } else {
           assert(off == 0);
           assert(p->used == p->size);
@@ -611,7 +611,7 @@ void GC::mark(void) {
 }
 void GC::trail(Expression** l, Expression* v) {
   GC* gc = GC::gc();
-  gc->_heap->trail.push_back(GC::Heap::TItem(l, v));
+  gc->_heap->trail.emplace_back(l, v);
 }
 void GC::untrail(void) {
   GC* gc = GC::gc();

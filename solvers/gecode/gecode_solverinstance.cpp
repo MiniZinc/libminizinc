@@ -1144,7 +1144,7 @@ Expression* GecodeSolverInstance::getSolutionValue(Id* id) {
         IntVal i = svv.val();
         vals.push_back(i);
         ++svv;
-        for (; svv(); ++svv) vals.push_back(svv.val());
+        for (; svv(); ++svv) vals.emplace_back(svv.val());
         return new SetLit(Location().introduce(), IntSetVal::a(vals));
       } else {
         return new SetLit(Location().introduce(), IntSetVal::a(mi, ma));

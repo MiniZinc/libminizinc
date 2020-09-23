@@ -439,41 +439,39 @@ private:
     GCLock lock;
 
     aCT.clear();
-    aCT.push_back(DCT("int_le_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_LE, VT_Int,
-                      int_le_reif__POST));
-    aCT.push_back(DCT("int_ge_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_GE, VT_Int,
-                      int_ge_reif__POST));
-    aCT.push_back(DCT("int_eq_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_EQ, VT_Int,
-                      int_eq_reif__POST));
-    aCT.push_back(
-        DCT("int_ne__POST", t_VII, RIT_Static, CT_Comparison, CMPT_NE, VT_Int, int_ne__POST));
+    aCT.emplace_back("int_le_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_LE, VT_Int,
+                      int_le_reif__POST);
+    aCT.emplace_back("int_ge_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_GE, VT_Int,
+                      int_ge_reif__POST);
+    aCT.emplace_back("int_eq_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_EQ, VT_Int,
+                      int_eq_reif__POST);
+    aCT.emplace_back("int_ne__POST", t_VII, RIT_Static, CT_Comparison, CMPT_NE, VT_Int, int_ne__POST);
 
-    aCT.push_back(DCT("float_le_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_LE, VT_Float,
-                      float_le_reif__POST));
-    aCT.push_back(DCT("float_ge_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_GE, VT_Float,
-                      float_ge_reif__POST));
-    aCT.push_back(DCT("aux_float_lt_zero_iff_1__POST", t_VFVIF, RIT_Reif, CT_Comparison, CMPT_LT,
-                      VT_Float, aux_float_lt_zero_iff_1__POST));
-    aCT.push_back(DCT("float_eq_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_EQ, VT_Float,
-                      float_eq_reif__POST));
-    aCT.push_back(DCT("float_ne__POST", t_VFFF, RIT_Static, CT_Comparison, CMPT_NE, VT_Float,
-                      float_ne__POST));
+    aCT.emplace_back("float_le_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_LE, VT_Float,
+                      float_le_reif__POST);
+    aCT.emplace_back("float_ge_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_GE, VT_Float,
+                      float_ge_reif__POST);
+    aCT.emplace_back("aux_float_lt_zero_iff_1__POST", t_VFVIF, RIT_Reif, CT_Comparison, CMPT_LT,
+                      VT_Float, aux_float_lt_zero_iff_1__POST);
+    aCT.emplace_back("float_eq_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_EQ, VT_Float,
+                      float_eq_reif__POST);
+    aCT.emplace_back("float_ne__POST", t_VFFF, RIT_Static, CT_Comparison, CMPT_NE, VT_Float,
+                      float_ne__POST);
 
-    aCT.push_back(DCT("aux_float_eq_zero_if_1__POST", t_VFVIVF, RIT_Halfreif, CT_Comparison,
-                      CMPT_EQ_0, VT_Float, aux_float_eq_zero_if_1__POST));
-    aCT.push_back(DCT("aux_int_le_zero_if_1__POST", t_VIVI, RIT_Halfreif, CT_Comparison, CMPT_LE_0,
-                      VT_Int, aux_int_le_zero_if_1__POST));
-    aCT.push_back(DCT("aux_float_le_zero_if_1__POST", t_VFVIVF, RIT_Halfreif, CT_Comparison,
-                      CMPT_LE_0, VT_Float, aux_float_le_zero_if_1__POST));
-    aCT.push_back(DCT("aux_float_lt_zero_if_1__POST", t_VFVIVFF, RIT_Halfreif, CT_Comparison,
-                      CMPT_LT_0, VT_Float, aux_float_lt_zero_if_1__POST));
+    aCT.emplace_back("aux_float_eq_zero_if_1__POST", t_VFVIVF, RIT_Halfreif, CT_Comparison,
+                      CMPT_EQ_0, VT_Float, aux_float_eq_zero_if_1__POST);
+    aCT.emplace_back("aux_int_le_zero_if_1__POST", t_VIVI, RIT_Halfreif, CT_Comparison, CMPT_LE_0,
+                      VT_Int, aux_int_le_zero_if_1__POST);
+    aCT.emplace_back("aux_float_le_zero_if_1__POST", t_VFVIVF, RIT_Halfreif, CT_Comparison,
+                      CMPT_LE_0, VT_Float, aux_float_le_zero_if_1__POST);
+    aCT.emplace_back("aux_float_lt_zero_if_1__POST", t_VFVIVFF, RIT_Halfreif, CT_Comparison,
+                      CMPT_LT_0, VT_Float, aux_float_lt_zero_if_1__POST);
 
-    aCT.push_back(DCT("equality_encoding__POST", t_VIAVI, RIT_Static, CT_Encode, CMPT_None, VT_Int,
-                      equality_encoding__POST));
-    aCT.push_back(
-        DCT("set_in__POST", t_VISI, RIT_Static, CT_SetIn, CMPT_None, VT_Int, set_in__POST));
-    aCT.push_back(DCT("set_in_reif__POST", t_VISIVI, RIT_Reif, CT_SetIn, CMPT_None, VT_Int,
-                      set_in_reif__POST));
+    aCT.emplace_back("equality_encoding__POST", t_VIAVI, RIT_Static, CT_Encode, CMPT_None, VT_Int,
+                      equality_encoding__POST);
+    aCT.emplace_back("set_in__POST", t_VISI, RIT_Static, CT_SetIn, CMPT_None, VT_Int, set_in__POST);
+    aCT.emplace_back("set_in_reif__POST", t_VISIVI, RIT_Reif, CT_SetIn, CMPT_None, VT_Int,
+                      set_in_reif__POST);
     /// Registering all declared & compatible __POST constraints
     /// (First, cleanup FunctionIs' payload:  -- ! doing now)
     for (int i = 0; i < aCT.size(); ++i) {
@@ -516,7 +514,7 @@ private:
                                  << (*(vd0->ti()->domain())));
         if (vd0->payload() == -1) {  // ! yet visited
           vd0->payload(static_cast<int>(vVarDescr.size()));
-          vVarDescr.push_back(VarDescr(vd0, vd0->type().isint()));  // can use /prmTypes/ as well
+          vVarDescr.emplace_back(vd0, vd0->type().isint());  // can use /prmTypes/ as well
           if (vd0->e()) checkInitExpr(vd0);
         } else {
           DBGOUT_MIPD__(" (already touched)");
@@ -547,7 +545,7 @@ private:
           DBGOUT_MIPD__("  Call " << c->id().str() << " uses variable " << vd0->id()->str());
           if (vd0->payload() == -1) {  // ! yet visited
             vd0->payload(static_cast<int>(vVarDescr.size()));
-            vVarDescr.push_back(VarDescr(vd0, vd0->type().isint()));  // can use /prmTypes/ as well
+            vVarDescr.emplace_back(vd0, vd0->type().isint());  // can use /prmTypes/ as well
             // bounds/domains later for each involved var TODO
             if (vd0->e()) checkInitExpr(vd0);
           } else {
@@ -875,7 +873,7 @@ private:
     for (auto vd : led.vd) {
       if (vd->payload() < 0) {  // ! yet visited
         vd->payload(static_cast<int>(vVarDescr.size()));
-        vVarDescr.push_back(VarDescr(vd, vd->type().isint()));  // can use /prmTypes/ as well
+        vVarDescr.emplace_back(vd, vd->type().isint());  // can use /prmTypes/ as well
         if (fCheckinitExpr && vd->e()) checkInitExpr(vd);
       } else {
         int nMaybeClq = vVarDescr[vd->payload()].nClique;

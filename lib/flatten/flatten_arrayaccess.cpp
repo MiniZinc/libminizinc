@@ -65,7 +65,7 @@ start_flatten_arrayaccess:
           idx[j] = al->min(j);
           stack.push_back(static_cast<int>(nonpar.size()));
           nonpar.push_back(j);
-          dims.push_back(std::make_pair(al->min(j), al->max(j)));
+          dims.emplace_back(al->min(j), al->max(j));
           newaccess.push_back(aa->idx()[j]);
         }
       }
@@ -79,11 +79,11 @@ start_flatten_arrayaccess:
             ResultUndefinedError warning(env, al->loc(), "array access out of bounds");
           }
         }
-        ees.push_back(EE(nullptr, constants().boollit(success)));
-        ees.push_back(EE(nullptr, eev.b()));
+        ees.emplace_back(nullptr, constants().boollit(success));
+        ees.emplace_back(nullptr, eev.b());
         if (aa->type().isbool() && !aa->type().isopt()) {
           ret.b = bind(env, Ctx(), b, constants().lit_true);
-          ees.push_back(EE(nullptr, ka()));
+          ees.emplace_back(nullptr, ka());
           ret.r = conj(env, r, ctx, ees);
         } else {
           ret.b = conj(env, b, ctx, ees);
@@ -104,8 +104,8 @@ start_flatten_arrayaccess:
               if (env.in_maybe_partial == 0) {
                 ResultUndefinedError warning(env, al->loc(), "array access out of bounds");
               }
-              ees.push_back(EE(nullptr, constants().lit_false));
-              ees.push_back(EE(nullptr, eev.b()));
+              ees.emplace_back(nullptr, constants().lit_false);
+              ees.emplace_back(nullptr, eev.b());
               if (aa->type().isbool() && !aa->type().isopt()) {
                 ret.b = bind(env, Ctx(), b, constants().lit_true);
                 ret.r = conj(env, r, ctx, ees);
@@ -115,7 +115,7 @@ start_flatten_arrayaccess:
               }
               return ret;
             }
-            elems.push_back(al_idx);
+            elems.emplace_back(al_idx);
           }
         } else {
           if (idx[nonpar[cur]].toInt() == al->max(nonpar[cur])) {
@@ -196,7 +196,7 @@ flatten_arrayaccess:
     if (auto* vd = tmp->dyn_cast<VarDecl>()) tmp = vd->id();
     ees.push_back(flat_exp(env, dimctx, tmp, nullptr, nullptr));
   }
-  ees.push_back(EE(nullptr, eev.b()));
+  ees.emplace_back(nullptr, eev.b());
 
   bool parAccess = true;
   for (unsigned int i = 0; i < aa->idx().size(); i++) {
@@ -231,10 +231,10 @@ flatten_arrayaccess:
     if (!success && env.in_maybe_partial == 0) {
       ResultUndefinedError warning(env, al->loc(), "array access out of bounds");
     }
-    ees.push_back(EE(nullptr, constants().boollit(success)));
+    ees.emplace_back(nullptr, constants().boollit(success));
     if (aa->type().isbool() && !aa->type().isopt()) {
       ret.b = bind(env, Ctx(), b, constants().lit_true);
-      ees.push_back(EE(nullptr, ka()));
+      ees.emplace_back(nullptr, ka());
       ret.r = conj(env, r, ctx, ees);
     } else {
       ret.b = conj(env, b, ctx, ees);

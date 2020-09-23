@@ -261,7 +261,7 @@ void collectLinExps(EnvI& env, typename LinearTraits<Lit>::Val in_c, Expression*
             stack.push_back(StackItem(bo->lhs(), c * LinearTraits<Lit>::eval(env, bo->rhs())));
           } else {
             coeffs.push_back(c);
-            vars.push_back(e);
+            vars.emplace_back(e);
           }
           break;
         case BOT_DIV:
@@ -269,7 +269,7 @@ void collectLinExps(EnvI& env, typename LinearTraits<Lit>::Val in_c, Expression*
             stack.push_back(StackItem(bo->lhs(), c));
           } else {
             coeffs.push_back(c);
-            vars.push_back(e);
+            vars.emplace_back(e);
           }
           break;
         case BOT_IDIV:
@@ -277,19 +277,19 @@ void collectLinExps(EnvI& env, typename LinearTraits<Lit>::Val in_c, Expression*
             stack.push_back(StackItem(bo->lhs(), c));
           } else {
             coeffs.push_back(c);
-            vars.push_back(e);
+            vars.emplace_back(e);
           }
           break;
         default:
           coeffs.push_back(c);
-          vars.push_back(e);
+          vars.emplace_back(e);
           break;
       }
       //      } else if (Call* call = e->dyn_cast<Call>()) {
       //        /// TODO! Handle sum, lin_exp (maybe not that important?)
     } else {
       coeffs.push_back(c);
-      vars.push_back(e);
+      vars.emplace_back(e);
     }
   }
 }
@@ -481,7 +481,7 @@ void flatten_linexp_binop(EnvI& env, Ctx ctx, VarDecl* r, VarDecl* b, EE& ret, E
       }
     } else if (le[i]->isa<Id>()) {
       coeffv.push_back(sign);
-      alv.push_back(le[i]);
+      alv.emplace_back(le[i]);
     } else if (Call* sc = le[i]->dyn_cast<Call>()) {
       GCLock lock;
       ArrayLit* sc_coeff = eval_array_lit(env, sc->arg(0));
@@ -490,7 +490,7 @@ void flatten_linexp_binop(EnvI& env, Ctx ctx, VarDecl* r, VarDecl* b, EE& ret, E
         d += sign * LinearTraits<Lit>::eval(env, sc->arg(2));
         for (unsigned int j = 0; j < sc_coeff->size(); j++) {
           coeffv.push_back(sign * LinearTraits<Lit>::eval(env, (*sc_coeff)[j]));
-          alv.push_back((*sc_al)[j]);
+          alv.emplace_back((*sc_al)[j]);
         }
       } catch (ArithmeticError& e) {
         throw EvalError(env, sc->loc(), e.msg());
@@ -690,8 +690,8 @@ void flatten_linexp_binop(EnvI& env, Ctx ctx, VarDecl* r, VarDecl* b, EE& ret, E
           return;
         }
       }
-      args.push_back(e0);
-      args.push_back(e1);
+      args.emplace_back(e0);
+      args.emplace_back(e1);
     }
   } else if (bot == BOT_EQ && coeffv.size() == 2 && coeffv[0] == -coeffv[1] && d == 0) {
     Id* id0 = alv[0]()->cast<Id>();
@@ -704,8 +704,8 @@ void flatten_linexp_binop(EnvI& env, Ctx ctx, VarDecl* r, VarDecl* b, EE& ret, E
         (void)bind(env, ctx, id0->decl(), id1);
     } else {
       callid = LinearTraits<Lit>::id_eq();
-      args.push_back(alv[0]());
-      args.push_back(alv[1]());
+      args.emplace_back(alv[0]());
+      args.emplace_back(alv[1]());
     }
   } else {
     GCLock lock;
@@ -769,7 +769,7 @@ void flatten_linexp_binop(EnvI& env, Ctx ctx, VarDecl* r, VarDecl* b, EE& ret, E
     Type t = coeff_ev[0]->type();
     t.dim(1);
     ncoeff->type(t);
-    args.push_back(ncoeff);
+    args.emplace_back(ncoeff);
     std::vector<Expression*> alv_e(alv.size());
     Type tt = alv[0]()->type();
     tt.dim(1);
@@ -779,7 +779,7 @@ void flatten_linexp_binop(EnvI& env, Ctx ctx, VarDecl* r, VarDecl* b, EE& ret, E
     }
     auto* nal = new ArrayLit(Location().introduce(), alv_e);
     nal->type(tt);
-    args.push_back(nal);
+    args.emplace_back(nal);
     Lit* il = LinearTraits<Lit>::newLit(-d);
     args.push_back(il);
   }

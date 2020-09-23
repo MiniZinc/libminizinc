@@ -146,10 +146,10 @@ void SolverInstanceBase2::assignSolutionToOutput() {
         for (int i = 0; i < dims->length(); i++) {
           IntSetVal* isv = eval_intset(getEnv()->envi(), (*dims)[i]);
           if (isv->size() == 0) {
-            dims_v.push_back(std::pair<int, int>(1, 0));
+            dims_v.emplace_back(1, 0);
           } else {
-            dims_v.push_back(std::pair<int, int>(static_cast<int>(isv->min().toInt()),
-                                                 static_cast<int>(isv->max().toInt())));
+            dims_v.emplace_back(static_cast<int>(isv->min().toInt()),
+                                                 static_cast<int>(isv->max().toInt()));
           }
         }
         auto* array_solution = new ArrayLit(Location(), array_elems, dims_v);

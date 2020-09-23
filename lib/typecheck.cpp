@@ -23,7 +23,7 @@
 namespace MiniZinc {
 
 Scopes::Scopes(void) {
-  s.push_back(Scope());
+  s.emplace_back();
   s.back().toplevel = true;
 }
 
@@ -43,7 +43,7 @@ void Scopes::add(EnvI& env, VarDecl* vd) {
 }
 
 void Scopes::push(bool toplevel) {
-  s.push_back(Scope());
+  s.emplace_back();
   s.back().toplevel = toplevel;
 }
 
@@ -1601,10 +1601,10 @@ public:
               bo->type(bo_t);
               whereExpr = bo;
             }
-            generators._g.push_back(Generator(decls, c_in(), whereExpr));
+            generators._g.emplace_back(decls, c_in(), whereExpr);
             decls.clear();
           } else if (j == c.n_decls(i) - 1) {
-            generators._g.push_back(Generator(decls, c_in(), nullptr));
+            generators._g.emplace_back(decls, c_in(), nullptr);
             decls.clear();
           }
         }

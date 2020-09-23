@@ -58,7 +58,7 @@ namespace MiniZinc {
 void yyerror(YYLTYPE* location, void* parm, const string& str) {
   ParserState* pp = static_cast<ParserState*>(parm);
   Model* m = pp->model;
-  while (m->parent() != NULL) {
+  while (m->parent() != nullptr) {
     m = m->parent();
     pp->err << "(included from file '" << m->filename() << "')" << endl;
   }
@@ -361,22 +361,22 @@ item : MZN_DOC_COMMENT item_tail
 
 item_tail :
       include_item
-      { $$=notInDatafile(&@$,parm,"include") ? $1 : NULL; }
+      { $$=notInDatafile(&@$,parm,"include") ? $1 : nullptr; }
     | vardecl_item
-      { $$=notInDatafile(&@$,parm,"variable declaration") ? $1 : NULL; }
+      { $$=notInDatafile(&@$,parm,"variable declaration") ? $1 : nullptr; }
     | assign_item
     | constraint_item
-      { $$=notInDatafile(&@$,parm,"constraint") ? $1 : NULL; }
+      { $$=notInDatafile(&@$,parm,"constraint") ? $1 : nullptr; }
     | solve_item
-      { $$=notInDatafile(&@$,parm,"solve") ? $1 : NULL; }
+      { $$=notInDatafile(&@$,parm,"solve") ? $1 : nullptr; }
     | output_item
-      { $$=notInDatafile(&@$,parm,"output") ? $1 : NULL; }
+      { $$=notInDatafile(&@$,parm,"output") ? $1 : nullptr; }
     | predicate_item
-      { $$=notInDatafile(&@$,parm,"predicate") ? $1 : NULL; }
+      { $$=notInDatafile(&@$,parm,"predicate") ? $1 : nullptr; }
     | function_item
-      { $$=notInDatafile(&@$,parm,"predicate") ? $1 : NULL; }
+      { $$=notInDatafile(&@$,parm,"predicate") ? $1 : nullptr; }
     | annotation_item
-      { $$=notInDatafile(&@$,parm,"annotation") ? $1 : NULL; }
+      { $$=notInDatafile(&@$,parm,"annotation") ? $1 : nullptr; }
 
 error_item_start : MZN_INCLUDE | MZN_ENUM | MZN_OUTPUT
     | MZN_CONSTRAINT | MZN_SOLVE | MZN_PREDICATE | MZN_FUNCTION | MZN_TEST
@@ -506,10 +506,10 @@ enum_id_list :
       { $$ = new std::vector<Expression*>(); }
     | MZN_IDENTIFIER
       { $$ = new std::vector<Expression*>();
-        $$->push_back(new Id(@$,$1,NULL)); free($1);
+        $$->push_back(new Id(@$,$1,nullptr)); free($1);
       }
     | enum_id_list ',' MZN_IDENTIFIER
-      { $$ = $1; if ($$) $$->push_back(new Id(@$,$3,NULL)); free($3); }
+      { $$ = $1; if ($$) $$->push_back(new Id(@$,$3,nullptr)); free($3); }
 
 assign_item :
       MZN_IDENTIFIER MZN_EQ expr
@@ -610,11 +610,11 @@ annotation_item :
       {
         ParserState* pp = static_cast<ParserState*>(parm);
         TypeInst* ti=new TypeInst(@1,Type::ann());
-        if ($3==NULL || $3->empty()) {
+        if ($3==nullptr || $3->empty()) {
           VarDecl* vd = new VarDecl(@$,ti,$2);
           $$ = new VarDeclI(@$,vd);
         } else {
-          $$ = new FunctionI(@$,$2,ti,*$3,NULL,pp->isSTDLib);
+          $$ = new FunctionI(@$,$2,ti,*$3,nullptr,pp->isSTDLib);
         }
         free($2);
         delete $3;
@@ -629,7 +629,7 @@ annotation_item :
 
 operation_item_tail :
       /*empty*/
-      { $$=NULL; }
+      { $$=nullptr; }
     | MZN_EQ expr
       { $$=$2; }
 
@@ -798,8 +798,8 @@ array_access_expr :
     | MZN_DOTDOT
       { $$=new SetLit(@$, IntSetVal::a(-IntVal::infinity(),IntVal::infinity())); }
     | MZN_DOTDOT expr
-      { if ($2==NULL) {
-          $$ = NULL;
+      { if ($2==nullptr) {
+          $$ = nullptr;
         } else if ($2->isa<IntLit>()) {
           $$=new SetLit(@$, IntSetVal::a(-IntVal::infinity(),$2->cast<IntLit>()->v()));
         } else {
@@ -807,8 +807,8 @@ array_access_expr :
         }
       }
     | expr MZN_DOTDOT
-      { if ($1==NULL) {
-          $$ = NULL;
+      { if ($1==nullptr) {
+          $$ = nullptr;
         } else if ($1->isa<IntLit>()) {
           $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),IntVal::infinity()));
         } else {
@@ -838,8 +838,8 @@ set_expr :
     | set_expr MZN_SYMDIFF set_expr
       { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); }
     | set_expr MZN_DOTDOT set_expr
-      { if ($1==NULL || $3==NULL) {
-          $$ = NULL;
+      { if ($1==nullptr || $3==nullptr) {
+          $$ = nullptr;
         } else if ($1->isa<IntLit>() && $3->isa<IntLit>()) {
           $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),$3->cast<IntLit>()->v()));
         } else {
@@ -847,8 +847,8 @@ set_expr :
         }
       }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
-      { if ($3==NULL || $5==NULL) {
-          $$ = NULL;
+      { if ($3==nullptr || $5==nullptr) {
+          $$ = nullptr;
         } else if ($3->isa<IntLit>() && $5->isa<IntLit>()) {
           $$=new SetLit(@$, IntSetVal::a($3->cast<IntLit>()->v(),$5->cast<IntLit>()->v()));
         } else {
@@ -954,8 +954,8 @@ expr :
     | expr MZN_SYMDIFF expr
       { $$=new BinOp(@$, $1, BOT_SYMDIFF, $3); }
     | expr MZN_DOTDOT expr
-      { if ($1==NULL || $3==NULL) {
-          $$ = NULL;
+      { if ($1==nullptr || $3==nullptr) {
+          $$ = nullptr;
         } else if ($1->isa<IntLit>() && $3->isa<IntLit>()) {
           $$=new SetLit(@$, IntSetVal::a($1->cast<IntLit>()->v(),$3->cast<IntLit>()->v()));
         } else {
@@ -963,8 +963,8 @@ expr :
         }
       }
     | MZN_DOTDOT_QUOTED '(' expr ',' expr ')'
-      { if ($3==NULL || $5==NULL) {
-          $$ = NULL;
+      { if ($3==nullptr || $5==nullptr) {
+          $$ = nullptr;
         } else if ($3->isa<IntLit>() && $5->isa<IntLit>()) {
           $$=new SetLit(@$, IntSetVal::a($3->cast<IntLit>()->v(),$5->cast<IntLit>()->v()));
         } else {
@@ -1051,14 +1051,14 @@ expr_atom_head_nonstring :
     | '(' expr ')' array_access_tail MZN_POW_MINUS1
       { if ($4) $$=new BinOp(@$,createArrayAccess(@$, $2, *$4), BOT_POW, IntLit::a(-1)); delete $4; }
     | MZN_IDENTIFIER
-      { $$=new Id(@$, $1, NULL); free($1); }
+      { $$=new Id(@$, $1, nullptr); free($1); }
     | MZN_IDENTIFIER array_access_tail
-      { if ($2) $$=createArrayAccess(@$, new Id(@1,$1,NULL), *$2);
+      { if ($2) $$=createArrayAccess(@$, new Id(@1,$1,nullptr), *$2);
         free($1); delete $2; }
     | MZN_IDENTIFIER MZN_POW_MINUS1
-      { $$=new BinOp(@$,new Id(@$, $1, NULL), BOT_POW, IntLit::a(-1)); free($1); }
+      { $$=new BinOp(@$,new Id(@$, $1, nullptr), BOT_POW, IntLit::a(-1)); free($1); }
     | MZN_IDENTIFIER array_access_tail MZN_POW_MINUS1
-      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, new Id(@1,$1,NULL), *$2), BOT_POW, IntLit::a(-1));
+      { if ($2) $$=new BinOp(@$,createArrayAccess(@$, new Id(@1,$1,nullptr), *$2), BOT_POW, IntLit::a(-1));
         free($1); delete $2; }
     | MZN_UNDERSCORE
       { $$=new AnonVar(@$); }
@@ -1234,12 +1234,12 @@ generator_list_head :
 
 generator : 
       id_list MZN_IN expr
-      { if ($1 && $3) $$=new Generator(*$1,$3,NULL); else $$=NULL; delete $1; }
+      { if ($1 && $3) $$=new Generator(*$1,$3,nullptr); else $$=nullptr; delete $1; }
     | id_list MZN_IN expr MZN_WHERE expr
-      { if ($1 && $3) $$=new Generator(*$1,$3,$5); else $$=NULL; delete $1; }
+      { if ($1 && $3) $$=new Generator(*$1,$3,$5); else $$=nullptr; delete $1; }
 generator_eq :
       MZN_IDENTIFIER MZN_EQ expr
-      { if ($3) $$=new Generator({$1},NULL,$3); else $$=NULL; free($1); }
+      { if ($3) $$=new Generator({$1},nullptr,$3); else $$=nullptr; free($1); }
 
 id_list : id_list_head comma_or_none
 
@@ -1266,7 +1266,7 @@ simple_array_literal_2d :
               yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
           delete $2;
         } else {
-          $$ = NULL;
+          $$ = nullptr;
         }
       }
     | MZN_LEFT_2D_BRACKET simple_array_literal_2d_list '|' MZN_RIGHT_2D_BRACKET
@@ -1277,7 +1277,7 @@ simple_array_literal_2d :
               yyerror(&@2, parm, "syntax error, all sub-arrays of 2d array literal must have the same length");
           delete $2;
         } else {
-          $$ = NULL;
+          $$ = nullptr;
         }
       }
     | MZN_LEFT_2D_BRACKET simple_array_literal_3d_list MZN_RIGHT_2D_BRACKET
@@ -1315,7 +1315,7 @@ simple_array_literal_2d :
         $$ = new ArrayLit(@$,a,dims);
         delete $2;
       } else {
-        $$ = NULL;
+        $$ = nullptr;
       }
     }
 
@@ -1355,7 +1355,7 @@ if_then_else_expr :
         std::vector<Expression*> iexps;
         iexps.push_back($2);
         iexps.push_back($4);
-        $$=new ITE(@$, iexps, NULL);
+        $$=new ITE(@$, iexps, nullptr);
       }
     | MZN_IF expr MZN_THEN expr elseif_list MZN_ELSE expr MZN_ENDIF
       {
@@ -1438,7 +1438,7 @@ quoted_op :
 quoted_op_call :
       quoted_op '(' expr ',' expr ')'
       { if ($1==-1) {
-          $$=NULL;
+          $$=nullptr;
           yyerror(&@3, parm, "syntax error, unary operator with two arguments");
         } else {
           $$=new BinOp(@$, $3,static_cast<BinOpType>($1),$5);
@@ -1461,7 +1461,7 @@ quoted_op_call :
           break;
         }
         if (uot==-1)
-          $$=NULL;
+          $$=nullptr;
         else {
           if (uot==UOT_PLUS && $3 && ($3->isa<IntLit>() || $3->isa<FloatLit>())) {
             $$ = $3;
@@ -1483,14 +1483,14 @@ call_expr :
     | quoted_op_call
     | MZN_IDENTIFIER '(' comp_or_expr ')'
       { 
-        if ($3!=NULL) {
+        if ($3!=nullptr) {
           bool hadWhere = false;
           std::vector<Expression*> args;
           for (unsigned int i=0; i<$3->size(); i++) {
             if ((*$3)[i].second) {
               yyerror(&@3, parm, "syntax error, 'where' expression outside generator call");
               hadWhere = true;
-              $$=NULL;
+              $$=nullptr;
             }
             args.push_back((*$3)[i].first);
           }
@@ -1523,7 +1523,7 @@ call_expr :
                     ids = vector<Id*>();
                   } else if (id && boe->op() == BOT_EQ && ids.empty()) {
                     ids.push_back(id);
-                    gens.push_back(Generator(ids,NULL,boe->rhs()));
+                    gens.push_back(Generator(ids,nullptr,boe->rhs()));
                     if ((*$3)[i].second) {
                       gens.push_back(Generator(gens.size(),(*$3)[i].second));
                     }
@@ -1545,7 +1545,7 @@ call_expr :
         }
         ParserState* pp = static_cast<ParserState*>(parm);
         if (pp->hadError) {
-          $$=NULL;
+          $$=nullptr;
         } else {
           Generators g; g._g = gens;
           Comprehension* ac = new Comprehension(@$, $6,g,false);
@@ -1557,14 +1557,14 @@ call_expr :
       }
     | MZN_IDENTIFIER MZN_POW_MINUS1 '(' comp_or_expr ')'
       {
-        if ($4!=NULL) {
+        if ($4!=nullptr) {
           bool hadWhere = false;
           std::vector<Expression*> args;
           for (unsigned int i=0; i<$4->size(); i++) {
             if ((*$4)[i].second) {
               yyerror(&@4, parm, "syntax error, 'where' expression outside generator call");
               hadWhere = true;
-              $$=NULL;
+              $$=nullptr;
             }
             args.push_back((*$4)[i].first);
           }
@@ -1597,7 +1597,7 @@ call_expr :
                     ids = vector<Id*>();
                   } else if (id && boe->op() == BOT_EQ && ids.empty()) {
                     ids.push_back(id);
-                    gens.push_back(Generator(ids,NULL,boe->rhs()));
+                    gens.push_back(Generator(ids,nullptr,boe->rhs()));
                     if ((*$4)[i].second) {
                       gens.push_back(Generator(gens.size(),(*$4)[i].second));
                     }
@@ -1619,7 +1619,7 @@ call_expr :
         }
         ParserState* pp = static_cast<ParserState*>(parm);
         if (pp->hadError) {
-          $$=NULL;
+          $$=nullptr;
         } else {
           Generators g; g._g = gens;
           Comprehension* ac = new Comprehension(@$, $7,g,false);
@@ -1636,7 +1636,7 @@ comp_or_expr_head :
       expr
       { $$=new vector<pair<Expression*,Expression*> >;
         if ($1) {
-          $$->push_back(pair<Expression*,Expression*>($1,NULL));
+          $$->push_back(pair<Expression*,Expression*>($1,nullptr));
         }
       }
     | expr MZN_WHERE expr
@@ -1646,7 +1646,7 @@ comp_or_expr_head :
         }
       }
     | comp_or_expr_head ',' expr
-      { $$=$1; if ($$ && $3) $$->push_back(pair<Expression*,Expression*>($3,NULL)); }
+      { $$=$1; if ($$ && $3) $$->push_back(pair<Expression*,Expression*>($3,nullptr)); }
     | comp_or_expr_head ',' expr MZN_WHERE expr
       { $$=$1; if ($$ && $3 && $5) $$->push_back(pair<Expression*,Expression*>($3,$5)); }
 
@@ -1655,14 +1655,14 @@ let_expr :
       { if ($3 && $6) {
           $$=new Let(@$, *$3, $6); delete $3;
         } else {
-          $$=NULL;
+          $$=nullptr;
         }
       }
     | MZN_LET '{' let_vardecl_item_list comma_or_semi '}' MZN_IN expr %prec PREC_ANNO
       { if ($3 && $7) {
           $$=new Let(@$, *$3, $7); delete $3;
         } else {
-          $$=NULL;
+          $$=nullptr;
         }
       }
 
@@ -1674,7 +1674,7 @@ let_vardecl_item_list :
         if ($1) {
           ConstraintI* ce = $1->cast<ConstraintI>();
           $$->push_back(ce->e());
-          ce->e(NULL);
+          ce->e(nullptr);
         }
       }
     | let_vardecl_item_list comma_or_semi let_vardecl_item
@@ -1684,7 +1684,7 @@ let_vardecl_item_list :
         if ($$ && $3) {
           ConstraintI* ce = $3->cast<ConstraintI>();
           $$->push_back(ce->e());
-          ce->e(NULL);
+          ce->e(nullptr);
         }
       }
 
@@ -1708,7 +1708,7 @@ let_vardecl_item :
 
 annotations :
       /* empty */
-      { $$=NULL; }
+      { $$=nullptr; }
     | ne_annotations
 
 annotation_expr :

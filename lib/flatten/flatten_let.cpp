@@ -76,7 +76,7 @@ EE flatten_let(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         let_e = nvd->id();
       }
       vd->e(let_e);
-      flatmap.push_back(vd->flat());
+      flatmap.emplace_back(vd->flat());
       if (Id* id = Expression::dyn_cast<Id>(let_e)) {
         vd->flat(id->decl());
       } else {

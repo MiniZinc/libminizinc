@@ -129,9 +129,9 @@ bool FZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
   } else if (_opt.supports_n && cop.getOption("-n --num-solutions", &nn)) {
     _opt.numSols = nn;
   } else if (cop.getOption("-a")) {
-    _opt.fzn_flags.push_back("-a");
+    _opt.fzn_flags.emplace_back("-a");
   } else if (cop.getOption("-i")) {
-    _opt.fzn_flags.push_back("-i");
+    _opt.fzn_flags.emplace_back("-i");
   } else if (_opt.supports_n_o && cop.getOption("-n-o --num-optimal", &nn)) {
     _opt.num_optimal = nn;
   } else if (_opt.supports_a_o && cop.getOption("-a-o --all-opt --all-optimal")) {
@@ -142,7 +142,7 @@ bool FZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
     // Deprecated option! Does nothing.
   } else if (cop.getOption("-r --seed --random-seed", &buffer)) {
     if (_opt.supports_r) {
-      _opt.fzn_flags.push_back("-r");
+      _opt.fzn_flags.emplace_back("-r");
       _opt.fzn_flags.push_back(buffer);
     }
   } else if (cop.getOption("-s --solver-statistics")) {
@@ -152,9 +152,9 @@ bool FZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
   } else if (cop.getOption("-v --verbose-solving")) {
     _opt.verbose = true;
   } else if (cop.getOption("-f --free-search")) {
-    if (_opt.supports_f) _opt.fzn_flags.push_back("-f");
+    if (_opt.supports_f) _opt.fzn_flags.emplace_back("-f");
   } else if (_opt.supports_cpprofiler && cop.getOption("--cp-profiler", &buffer)) {
-    _opt.fzn_flags.push_back("--cp-profiler");
+    _opt.fzn_flags.emplace_back("--cp-profiler");
     _opt.fzn_flags.push_back(buffer);
   } else {
     for (auto& fznf : _opt.fzn_solver_flags) {
@@ -225,44 +225,44 @@ SolverInstance::Status FZNSolverInstance::solve(void) {
   string sBE = opt.backend;
   bool is_sat = _fzn->solveItem()->st() == SolveI::SolveType::ST_SAT;
   if (sBE.size()) {
-    cmd_line.push_back("-b");
+    cmd_line.emplace_back("-b");
     cmd_line.push_back(sBE);
   }
   for (auto& f : opt.fzn_flags) {
     cmd_line.push_back(f);
   }
   if (opt.all_optimal && !is_sat) {
-    cmd_line.push_back("-a-o");
+    cmd_line.emplace_back("-a-o");
   }
   if (opt.num_optimal != 1 && !is_sat) {
-    cmd_line.push_back("-n-o");
+    cmd_line.emplace_back("-n-o");
     ostringstream oss;
     oss << opt.num_optimal;
     cmd_line.push_back(oss.str());
   }
   if (opt.numSols != 1 && is_sat) {
-    cmd_line.push_back("-n");
+    cmd_line.emplace_back("-n");
     ostringstream oss;
     oss << opt.numSols;
     cmd_line.push_back(oss.str());
   }
   if (opt.parallel.size()) {
-    cmd_line.push_back("-p");
+    cmd_line.emplace_back("-p");
     ostringstream oss;
     oss << opt.parallel;
     cmd_line.push_back(oss.str());
   }
   if (opt.printStatistics) {
-    cmd_line.push_back("-s");
+    cmd_line.emplace_back("-s");
   }
   if (opt.solver_time_limit_ms != 0) {
-    cmd_line.push_back("-t");
+    cmd_line.emplace_back("-t");
     std::ostringstream oss;
     oss << opt.solver_time_limit_ms;
     cmd_line.push_back(oss.str());
   }
   if (opt.verbose) {
-    if (opt.supports_v) cmd_line.push_back("-v");
+    if (opt.supports_v) cmd_line.emplace_back("-v");
     std::cerr << "Using FZN solver " << cmd_line[0] << " for solving, parameters: ";
     for (int i = 1; i < cmd_line.size(); ++i) cerr << "" << cmd_line[i] << " ";
     cerr << std::endl;
@@ -301,7 +301,7 @@ SolverInstance::Status FZNSolverInstance::solve(void) {
     PathFilePrinter pfp(ofs, _env.envi());
     pfp.print(_fzn);
 
-    cmd_line.push_back("--paths");
+    cmd_line.emplace_back("--paths");
     cmd_line.push_back(pathsFile->name());
   }
 

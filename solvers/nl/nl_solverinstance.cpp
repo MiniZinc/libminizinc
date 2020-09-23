@@ -196,7 +196,7 @@ SolverInstance::Status NLSolverInstance::solve(void) {
 
     cmd_line.push_back(opt.nl_solver);
     cmd_line.push_back(file_nl);
-    cmd_line.push_back("-AMPL");
+    cmd_line.emplace_back("-AMPL");
     Process<NLSolns2Out> proc(cmd_line, &s2o, 0, true);
     exitStatus = proc.run();
 

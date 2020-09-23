@@ -836,7 +836,7 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
   std::vector<IndexEntry> index;
 
   std::vector<SI> stack;
-  stack.push_back(SI(&g, nullptr, 0, 0));
+  stack.emplace_back(&g, nullptr, 0, 0);
   while (!stack.empty()) {
     Group& g = *stack.back().g;
     int curLevel = stack.back().level;
@@ -844,13 +844,13 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
     Group* p = stack.back().p;
     stack.pop_back();
     for (auto it : g.items) {
-      index.push_back(IndexEntry(it.id, it.sig, g.fullPath, g.htmlName));
+      index.emplace_back(it.id, it.sig, g.fullPath, g.htmlName);
     }
-    ret.push_back(HtmlDocument(g.fullPath, g.htmlName,
-                               g.toHTML(curLevel, splitLevel, p, curIdx, basename, generateIndex)));
+    ret.emplace_back(g.fullPath, g.htmlName,
+                               g.toHTML(curLevel, splitLevel, p, curIdx, basename, generateIndex));
     if (curLevel < splitLevel) {
       for (unsigned int i = 0; i < g.subgroups.m.size(); i++) {
-        stack.push_back(SI(g.subgroups.m[i], &g, curLevel + 1, i));
+        stack.emplace_back(g.subgroups.m[i], &g, curLevel + 1, i);
       }
     }
   }
@@ -858,7 +858,7 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
   if (generateIndex) {
     std::sort(index.begin(), index.end());
     std::ostringstream oss;
-    index.push_back(IndexEntry("", "", "", ""));
+    index.emplace_back("", "", "", "");
 
     std::vector<std::string> idxSections;
 
@@ -870,7 +870,7 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
         idxSections.push_back(idxSec);
       } else {
         oss << "<h3 id='IdxSymbols'>Symbols</h3>\n";
-        idxSections.push_back("Symbols");
+        idxSections.emplace_back("Symbols");
       }
     }
     oss << "<ul>\n";
@@ -1302,10 +1302,10 @@ std::vector<HtmlDocument> RSTPrinter::printRST(EnvI& env, MiniZinc::Model* m,
     oss << "  " << sg->fullPath << "\n";
   }
 
-  ret.push_back(HtmlDocument(g.fullPath, g.htmlName, oss.str()));
+  ret.emplace_back(g.fullPath, g.htmlName, oss.str());
 
   for (auto& sg : g.subgroups.m) {
-    ret.push_back(HtmlDocument(sg->fullPath, sg->htmlName, sg->toRST(0)));
+    ret.emplace_back(sg->fullPath, sg->htmlName, sg->toRST(0));
   }
   return ret;
 }

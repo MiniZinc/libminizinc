@@ -509,7 +509,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           for (unsigned int i = 0; i < smm->size(); i++) {
             if (auto* vdi = (*smm)[i]->dyn_cast<VarDeclI>()) {
               if (vdi->e()->e() == nullptr)
-                env->envi().checkVars.push_back(vdi->e());
+                env->envi().checkVars.emplace_back(vdi->e());
               else if (vdi->e()->ann().contains(constants().ann.rhs_from_assignment)) {
                 smm_stats_oss << *vdi;
               }

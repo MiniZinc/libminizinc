@@ -2000,7 +2000,7 @@ public:
           valid = false;
         } else {
           IntVal v = exp->cast<IntLit>()->v();
-          _bounds.push_back(Bounds(v, v));
+          _bounds.emplace_back(v, v);
         }
       } else {
         valid = false;
@@ -2041,26 +2041,26 @@ public:
     return false;
   }
   /// Visit integer literal
-  void vIntLit(const IntLit& i) { _bounds.push_back(Bounds(i.v(), i.v())); }
+  void vIntLit(const IntLit& i) { _bounds.emplace_back(i.v(), i.v()); }
   /// Visit floating point literal
   void vFloatLit(const FloatLit&) {
     valid = false;
-    _bounds.push_back(Bounds(0, 0));
+    _bounds.emplace_back(0, 0);
   }
   /// Visit Boolean literal
   void vBoolLit(const BoolLit&) {
     valid = false;
-    _bounds.push_back(Bounds(0, 0));
+    _bounds.emplace_back(0, 0);
   }
   /// Visit set literal
   void vSetLit(const SetLit&) {
     valid = false;
-    _bounds.push_back(Bounds(0, 0));
+    _bounds.emplace_back(0, 0);
   }
   /// Visit string literal
   void vStringLit(const StringLit&) {
     valid = false;
-    _bounds.push_back(Bounds(0, 0));
+    _bounds.emplace_back(0, 0);
   }
   /// Visit identifier
   void vId(const Id& id) {
@@ -2071,23 +2071,23 @@ public:
       IntSetVal* isv = eval_intset(env, vd->ti()->domain());
       if (isv->size() == 0) {
         valid = false;
-        _bounds.push_back(Bounds(0, 0));
+        _bounds.emplace_back(0, 0);
       } else {
-        _bounds.push_back(Bounds(isv->min(0), isv->max(isv->size() - 1)));
+        _bounds.emplace_back(isv->min(0), isv->max(isv->size() - 1));
       }
     } else {
       if (vd->e()) {
         BottomUpIterator<ComputeIntBounds> cbi(*this);
         cbi.run(vd->e());
       } else {
-        _bounds.push_back(Bounds(-IntVal::infinity(), IntVal::infinity()));
+        _bounds.emplace_back(-IntVal::infinity(), IntVal::infinity());
       }
     }
   }
   /// Visit anonymous variable
   void vAnonVar(const AnonVar& v) {
     valid = false;
-    _bounds.push_back(Bounds(0, 0));
+    _bounds.emplace_back(0, 0);
   }
   /// Visit array literal
   void vArrayLit(const ArrayLit& al) {}
@@ -2117,23 +2117,23 @@ public:
         GCLock lock;
         IntSetVal* isv = eval_intset(env, id->decl()->ti()->domain());
         if (isv->size() > 0) {
-          _bounds.push_back(Bounds(isv->min(0), isv->max(isv->size() - 1)));
+          _bounds.emplace_back(isv->min(0), isv->max(isv->size() - 1));
           return;
         }
       }
     }
     valid = false;
-    _bounds.push_back(Bounds(0, 0));
+    _bounds.emplace_back(0, 0);
   }
   /// Visit array comprehension
   void vComprehension(const Comprehension& c) {
     valid = false;
-    _bounds.push_back(Bounds(0, 0));
+    _bounds.emplace_back(0, 0);
   }
   /// Visit if-then-else
   void vITE(const ITE& ite) {
     valid = false;
-    _bounds.push_back(Bounds(0, 0));
+    _bounds.emplace_back(0, 0);
   }
   /// Visit binary operator
   void vBinOp(const BinOp& bo) {
@@ -2144,14 +2144,14 @@ public:
     if (!b1.first.isFinite() || !b1.second.isFinite() || !b0.first.isFinite() ||
         !b0.second.isFinite()) {
       valid = false;
-      _bounds.push_back(Bounds(0, 0));
+      _bounds.emplace_back(0, 0);
     } else {
       switch (bo.op()) {
         case BOT_PLUS:
-          _bounds.push_back(Bounds(b0.first + b1.first, b0.second + b1.second));
+          _bounds.emplace_back(b0.first + b1.first, b0.second + b1.second);
           break;
         case BOT_MINUS:
-          _bounds.push_back(Bounds(b0.first - b1.second, b0.second - b1.first));
+          _bounds.emplace_back(b0.first - b1.second, b0.second - b1.first);
           break;
         case BOT_MULT: {
           IntVal x0 = b0.first * b1.first;
@@ -2160,7 +2160,7 @@ public:
           IntVal x3 = b0.second * b1.second;
           IntVal m = std::min(x0, std::min(x1, std::min(x2, x3)));
           IntVal n = std::max(x0, std::max(x1, std::max(x2, x3)));
-          _bounds.push_back(Bounds(m, n));
+          _bounds.emplace_back(m, n);
         } break;
         case BOT_IDIV: {
           IntVal b0f = b0.first == 0 ? 1 : b0.first;
@@ -2173,7 +2173,7 @@ public:
           IntVal x3 = b0s / b1s;
           IntVal m = std::min(x0, std::min(x1, std::min(x2, x3)));
           IntVal n = std::max(x0, std::max(x1, std::max(x2, x3)));
-          _bounds.push_back(Bounds(m, n));
+          _bounds.emplace_back(m, n);
         } break;
         case BOT_MOD: {
           IntVal b0f = b0.first == 0 ? 1 : b0.first;
@@ -2186,7 +2186,7 @@ public:
           IntVal x3 = b0s % b1s;
           IntVal m = std::min(x0, std::min(x1, std::min(x2, x3)));
           IntVal n = std::max(x0, std::max(x1, std::max(x2, x3)));
-          _bounds.push_back(Bounds(m, n));
+          _bounds.emplace_back(m, n);
         } break;
         case BOT_POW: {
           IntVal exp_min = std::min(0, b1.first);
@@ -2198,7 +2198,7 @@ public:
           IntVal x3 = b0.second.pow(exp_max);
           IntVal m = std::min(x0, std::min(x1, std::min(x2, x3)));
           IntVal n = std::max(x0, std::max(x1, std::max(x2, x3)));
-          _bounds.push_back(Bounds(m, n));
+          _bounds.emplace_back(m, n);
         } break;
         case BOT_DIV:
         case BOT_LE:
@@ -2223,7 +2223,7 @@ public:
         case BOT_XOR:
         case BOT_DOTDOT:
           valid = false;
-          _bounds.push_back(Bounds(0, 0));
+          _bounds.emplace_back(0, 0);
       }
     }
   }
@@ -2248,7 +2248,7 @@ public:
       ArrayLit* coeff = le ? eval_array_lit(env, c.arg(0)) : nullptr;
       if (c.arg(le ? 1 : 0)->type().isopt()) {
         valid = false;
-        _bounds.push_back(Bounds(0, 0));
+        _bounds.emplace_back(0, 0);
         return;
       }
       ArrayLit* al = eval_array_lit(env, c.arg(le ? 1 : 0));
@@ -2305,14 +2305,14 @@ public:
           }
         }
       }
-      _bounds.push_back(Bounds(lb, ub));
+      _bounds.emplace_back(lb, ub);
     } else if (c.id() == "card") {
       if (IntSetVal* isv = compute_intset_bounds(env, c.arg(0))) {
         IntSetRanges isr(isv);
-        _bounds.push_back(Bounds(0, Ranges::cardinality(isr)));
+        _bounds.emplace_back(0, Ranges::cardinality(isr));
       } else {
         valid = false;
-        _bounds.push_back(Bounds(0, 0));
+        _bounds.emplace_back(0, 0);
       }
     } else if (c.id() == "int_times") {
       Bounds b1 = _bounds.back();
@@ -2322,7 +2322,7 @@ public:
       if (!b1.first.isFinite() || !b1.second.isFinite() || !b0.first.isFinite() ||
           !b0.second.isFinite()) {
         valid = false;
-        _bounds.push_back(Bounds(0, 0));
+        _bounds.emplace_back(0, 0);
       } else {
         IntVal x0 = b0.first * b1.first;
         IntVal x1 = b0.first * b1.second;
@@ -2330,18 +2330,18 @@ public:
         IntVal x3 = b0.second * b1.second;
         IntVal m = std::min(x0, std::min(x1, std::min(x2, x3)));
         IntVal n = std::max(x0, std::max(x1, std::max(x2, x3)));
-        _bounds.push_back(Bounds(m, n));
+        _bounds.emplace_back(m, n);
       }
     } else if (c.id() == constants().ids.bool2int) {
-      _bounds.push_back(Bounds(0, 1));
+      _bounds.emplace_back(0, 1);
     } else if (c.id() == "abs") {
       Bounds b0 = _bounds.back();
       if (b0.first < 0) {
         _bounds.pop_back();
         if (b0.second < 0)
-          _bounds.push_back(Bounds(-b0.second, -b0.first));
+          _bounds.emplace_back(-b0.second, -b0.first);
         else
-          _bounds.push_back(Bounds(0, std::max(-b0.first, b0.second)));
+          _bounds.emplace_back(0, std::max(-b0.first, b0.second));
       }
     } else if (c.decl() && c.decl()->ti()->domain() && !c.decl()->ti()->domain()->isa<TIId>()) {
       for (int i = 0; i < c.n_args(); i++) {
@@ -2351,36 +2351,36 @@ public:
         }
       }
       IntSetVal* isv = eval_intset(env, c.decl()->ti()->domain());
-      _bounds.push_back(Bounds(isv->min(), isv->max()));
+      _bounds.emplace_back(isv->min(), isv->max());
     } else {
       valid = false;
-      _bounds.push_back(Bounds(0, 0));
+      _bounds.emplace_back(0, 0);
     }
   }
   /// Visit let
   void vLet(const Let& l) {
     valid = false;
-    _bounds.push_back(Bounds(0, 0));
+    _bounds.emplace_back(0, 0);
   }
   /// Visit variable declaration
   void vVarDecl(const VarDecl& vd) {
     valid = false;
-    _bounds.push_back(Bounds(0, 0));
+    _bounds.emplace_back(0, 0);
   }
   /// Visit annotation
   void vAnnotation(const Annotation& e) {
     valid = false;
-    _bounds.push_back(Bounds(0, 0));
+    _bounds.emplace_back(0, 0);
   }
   /// Visit type inst
   void vTypeInst(const TypeInst& e) {
     valid = false;
-    _bounds.push_back(Bounds(0, 0));
+    _bounds.emplace_back(0, 0);
   }
   /// Visit TIId
   void vTIId(const TIId& e) {
     valid = false;
-    _bounds.push_back(Bounds(0, 0));
+    _bounds.emplace_back(0, 0);
   }
 };
 
@@ -2420,7 +2420,7 @@ public:
           valid = false;
         } else {
           FloatVal v = exp->cast<FloatLit>()->v();
-          _bounds.push_back(FBounds(v, v));
+          _bounds.emplace_back(v, v);
         }
       }
       return false;
@@ -2461,24 +2461,24 @@ public:
   /// Visit integer literal
   void vIntLit(const IntLit& i) {
     valid = false;
-    _bounds.push_back(FBounds(0.0, 0.0));
+    _bounds.emplace_back(0.0, 0.0);
   }
   /// Visit floating point literal
-  void vFloatLit(const FloatLit& f) { _bounds.push_back(FBounds(f.v(), f.v())); }
+  void vFloatLit(const FloatLit& f) { _bounds.emplace_back(f.v(), f.v()); }
   /// Visit Boolean literal
   void vBoolLit(const BoolLit&) {
     valid = false;
-    _bounds.push_back(FBounds(0.0, 0.0));
+    _bounds.emplace_back(0.0, 0.0);
   }
   /// Visit set literal
   void vSetLit(const SetLit&) {
     valid = false;
-    _bounds.push_back(FBounds(0.0, 0.0));
+    _bounds.emplace_back(0.0, 0.0);
   }
   /// Visit string literal
   void vStringLit(const StringLit&) {
     valid = false;
-    _bounds.push_back(FBounds(0.0, 0.0));
+    _bounds.emplace_back(0.0, 0.0);
   }
   /// Visit identifier
   void vId(const Id& id) {
@@ -2489,23 +2489,23 @@ public:
       FloatSetVal* fsv = eval_floatset(env, vd->ti()->domain());
       if (fsv->size() == 0) {
         valid = false;
-        _bounds.push_back(FBounds(0, 0));
+        _bounds.emplace_back(0, 0);
       } else {
-        _bounds.push_back(FBounds(fsv->min(0), fsv->max(fsv->size() - 1)));
+        _bounds.emplace_back(fsv->min(0), fsv->max(fsv->size() - 1));
       }
     } else {
       if (vd->e()) {
         BottomUpIterator<ComputeFloatBounds> cbi(*this);
         cbi.run(vd->e());
       } else {
-        _bounds.push_back(FBounds(-FloatVal::infinity(), FloatVal::infinity()));
+        _bounds.emplace_back(-FloatVal::infinity(), FloatVal::infinity());
       }
     }
   }
   /// Visit anonymous variable
   void vAnonVar(const AnonVar& v) {
     valid = false;
-    _bounds.push_back(FBounds(0.0, 0.0));
+    _bounds.emplace_back(0.0, 0.0);
   }
   /// Visit array literal
   void vArrayLit(const ArrayLit& al) {}
@@ -2538,17 +2538,17 @@ public:
       }
     }
     valid = false;
-    _bounds.push_back(FBounds(0.0, 0.0));
+    _bounds.emplace_back(0.0, 0.0);
   }
   /// Visit array comprehension
   void vComprehension(const Comprehension& c) {
     valid = false;
-    _bounds.push_back(FBounds(0.0, 0.0));
+    _bounds.emplace_back(0.0, 0.0);
   }
   /// Visit if-then-else
   void vITE(const ITE& ite) {
     valid = false;
-    _bounds.push_back(FBounds(0.0, 0.0));
+    _bounds.emplace_back(0.0, 0.0);
   }
   /// Visit binary operator
   void vBinOp(const BinOp& bo) {
@@ -2559,14 +2559,14 @@ public:
     if (!b1.first.isFinite() || !b1.second.isFinite() || !b0.first.isFinite() ||
         !b0.second.isFinite()) {
       valid = false;
-      _bounds.push_back(FBounds(0.0, 0.0));
+      _bounds.emplace_back(0.0, 0.0);
     } else {
       switch (bo.op()) {
         case BOT_PLUS:
-          _bounds.push_back(FBounds(b0.first + b1.first, b0.second + b1.second));
+          _bounds.emplace_back(b0.first + b1.first, b0.second + b1.second);
           break;
         case BOT_MINUS:
-          _bounds.push_back(FBounds(b0.first - b1.second, b0.second - b1.first));
+          _bounds.emplace_back(b0.first - b1.second, b0.second - b1.first);
           break;
         case BOT_MULT: {
           FloatVal x0 = b0.first * b1.first;
@@ -2575,7 +2575,7 @@ public:
           FloatVal x3 = b0.second * b1.second;
           FloatVal m = std::min(x0, std::min(x1, std::min(x2, x3)));
           FloatVal n = std::max(x0, std::max(x1, std::max(x2, x3)));
-          _bounds.push_back(FBounds(m, n));
+          _bounds.emplace_back(m, n);
         } break;
         case BOT_POW: {
           FloatVal x0 = std::pow(b0.first.toDouble(), b1.first.toDouble());
@@ -2584,7 +2584,7 @@ public:
           FloatVal x3 = std::pow(b0.second.toDouble(), b1.second.toDouble());
           FloatVal m = std::min(x0, std::min(x1, std::min(x2, x3)));
           FloatVal n = std::max(x0, std::max(x1, std::max(x2, x3)));
-          _bounds.push_back(FBounds(m, n));
+          _bounds.emplace_back(m, n);
         } break;
         case BOT_DIV:
         case BOT_IDIV:
@@ -2611,7 +2611,7 @@ public:
         case BOT_XOR:
         case BOT_DOTDOT:
           valid = false;
-          _bounds.push_back(FBounds(0.0, 0.0));
+          _bounds.emplace_back(0.0, 0.0);
       }
     }
   }
@@ -2626,7 +2626,7 @@ public:
         break;
       case UOT_NOT:
         valid = false;
-        _bounds.push_back(FBounds(0.0, 0.0));
+        _bounds.emplace_back(0.0, 0.0);
     }
   }
   /// Visit call
@@ -2639,7 +2639,7 @@ public:
       }
       if (c.arg(le ? 1 : 0)->type().isopt()) {
         valid = false;
-        _bounds.push_back(FBounds(0.0, 0.0));
+        _bounds.emplace_back(0.0, 0.0);
         return;
       }
       ArrayLit* al = eval_array_lit(env, c.arg(le ? 1 : 0));
@@ -2690,7 +2690,7 @@ public:
           }
         }
       }
-      _bounds.push_back(FBounds(lb, ub));
+      _bounds.emplace_back(lb, ub);
     } else if (c.id() == "float_times") {
       BottomUpIterator<ComputeFloatBounds> cbi(*this);
       cbi.run(c.arg(0));
@@ -2702,7 +2702,7 @@ public:
       if (!b1.first.isFinite() || !b1.second.isFinite() || !b0.first.isFinite() ||
           !b0.second.isFinite()) {
         valid = false;
-        _bounds.push_back(FBounds(0, 0));
+        _bounds.emplace_back(0, 0);
       } else {
         FloatVal x0 = b0.first * b1.first;
         FloatVal x1 = b0.first * b1.second;
@@ -2710,7 +2710,7 @@ public:
         FloatVal x3 = b0.second * b1.second;
         FloatVal m = std::min(x0, std::min(x1, std::min(x2, x3)));
         FloatVal n = std::max(x0, std::max(x1, std::max(x2, x3)));
-        _bounds.push_back(FBounds(m, n));
+        _bounds.emplace_back(m, n);
       }
     } else if (c.id() == "int2float") {
       ComputeIntBounds ib(env);
@@ -2720,10 +2720,10 @@ public:
       ComputeIntBounds::Bounds result = ib._bounds.back();
       if (!result.first.isFinite() || !result.second.isFinite()) {
         valid = false;
-        _bounds.push_back(FBounds(0.0, 0.0));
+        _bounds.emplace_back(0.0, 0.0);
       } else {
-        _bounds.push_back(FBounds(static_cast<double>(result.first.toInt()),
-                                  static_cast<double>(result.second.toInt())));
+        _bounds.emplace_back(static_cast<double>(result.first.toInt()),
+                                  static_cast<double>(result.second.toInt()));
       }
     } else if (c.id() == "abs") {
       BottomUpIterator<ComputeFloatBounds> cbi(*this);
@@ -2732,9 +2732,9 @@ public:
       if (b0.first < 0) {
         _bounds.pop_back();
         if (b0.second < 0)
-          _bounds.push_back(FBounds(-b0.second, -b0.first));
+          _bounds.emplace_back(-b0.second, -b0.first);
         else
-          _bounds.push_back(FBounds(0.0, std::max(-b0.first, b0.second)));
+          _bounds.emplace_back(0.0, std::max(-b0.first, b0.second));
       }
     } else if (c.decl() && c.decl()->ti()->domain() && !c.decl()->ti()->domain()->isa<TIId>()) {
       for (int i = 0; i < c.n_args(); i++) {
@@ -2744,36 +2744,36 @@ public:
         }
       }
       FloatSetVal* fsv = eval_floatset(env, c.decl()->ti()->domain());
-      _bounds.push_back(FBounds(fsv->min(), fsv->max()));
+      _bounds.emplace_back(fsv->min(), fsv->max());
     } else {
       valid = false;
-      _bounds.push_back(FBounds(0.0, 0.0));
+      _bounds.emplace_back(0.0, 0.0);
     }
   }
   /// Visit let
   void vLet(const Let& l) {
     valid = false;
-    _bounds.push_back(FBounds(0.0, 0.0));
+    _bounds.emplace_back(0.0, 0.0);
   }
   /// Visit variable declaration
   void vVarDecl(const VarDecl& vd) {
     valid = false;
-    _bounds.push_back(FBounds(0.0, 0.0));
+    _bounds.emplace_back(0.0, 0.0);
   }
   /// Visit annotation
   void vAnnotation(const Annotation& e) {
     valid = false;
-    _bounds.push_back(FBounds(0.0, 0.0));
+    _bounds.emplace_back(0.0, 0.0);
   }
   /// Visit type inst
   void vTypeInst(const TypeInst& e) {
     valid = false;
-    _bounds.push_back(FBounds(0.0, 0.0));
+    _bounds.emplace_back(0.0, 0.0);
   }
   /// Visit TIId
   void vTIId(const TIId& e) {
     valid = false;
-    _bounds.push_back(FBounds(0.0, 0.0));
+    _bounds.emplace_back(0.0, 0.0);
   }
 };
 
