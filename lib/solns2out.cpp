@@ -429,7 +429,7 @@ bool Solns2Out::evalStatus(SolverInstance::Status status) {
 
 bool Solns2Out::__evalOutputFinal(bool) {
   /// Print the canonical list
-  for (auto& sol : sSolsCanon) {
+  for (const auto& sol : sSolsCanon) {
     if ((_opt.solution_comma.size() != 0u) && &sol != &*sSolsCanon.begin()) {
       getOutput() << _opt.solution_comma << '\n';
     }

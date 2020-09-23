@@ -619,7 +619,7 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
     SolverDefaultMap::const_iterator it = _solverDefaultOptions.find(sc.id());
     if (it != _solverDefaultOptions.end()) {
       std::vector<std::string> defaultOptions;
-      for (auto& df : it->second) {
+      for (const auto& df : it->second) {
         if (!df.empty()) {
           defaultOptions.push_back(df);
         }
@@ -638,7 +638,7 @@ vector<string> SolverConfigs::solvers() const {
   }
   // Create sorted list of solvers
   vector<string> s;
-  for (auto& sc : _solvers) {
+  for (const auto& sc : _solvers) {
     if (std::find(sc.tags().begin(), sc.tags().end(), "__internal__") != sc.tags().end()) {
       continue;
     }

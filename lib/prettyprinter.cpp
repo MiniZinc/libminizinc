@@ -2027,12 +2027,12 @@ void Printer::print(const Item* i) {
 void Printer::print(const Model* m) {
   if (_width == 0) {
     PlainPrinter p(_os, _flatZinc, env);
-    for (auto i : *m) {
+    for (auto* i : *m) {
       p.p(i);
     }
   } else {
     init();
-    for (auto i : *m) {
+    for (auto* i : *m) {
       p(i);
     }
   }

@@ -108,7 +108,7 @@ std::pair<int, bool> VarOccurrences::usages(VarDecl* v) {
   }
   int count = 0;
   for (Item* i : vi->second) {
-    auto vd = i->dyn_cast<VarDeclI>();
+    auto* vd = i->dyn_cast<VarDeclI>();
     if ((vd != nullptr) && (vd->e() != nullptr) && (vd->e()->e() != nullptr) &&
         (vd->e()->e()->isa<ArrayLit>() || vd->e()->e()->isa<SetLit>())) {
       auto u = usages(vd->e());
@@ -278,7 +278,7 @@ void pushVarDecl(EnvI& env, int vd_idx, std::deque<int>& q) {
 void pushDependentConstraints(EnvI& env, Id* id, std::deque<Item*>& q) {
   auto it = env.vo._m.find(id->decl()->id());
   if (it != env.vo._m.end()) {
-    for (auto item : it->second) {
+    for (auto* item : it->second) {
       if (auto* ci = item->dyn_cast<ConstraintI>()) {
         if (!ci->removed() && !ci->flag()) {
           ci->flag(true);
@@ -688,7 +688,7 @@ void optimize(Env& env, bool chain_compression) {
                 if ((vdi->e()->e() != nullptr) && vdi->e()->e()->isa<ArrayLit>()) {
                   auto ait = envi.vo._m.find(vdi->e()->id()->decl()->id());
                   if (ait != envi.vo._m.end()) {
-                    for (auto aitem : ait->second) {
+                    for (auto* aitem : ait->second) {
                       simplifyBoolConstraint(envi, aitem, vd, remove, vardeclQueue, constraintQueue,
                                              toRemove, deletedVarDecls, nonFixedLiteralCount);
                     }

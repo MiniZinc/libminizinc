@@ -630,12 +630,12 @@ void createDznOutputItem(EnvI& e, bool outputObjective, bool includeOutputItem, 
 
   if (hasChecker && !outputForChecker) {
     outputVars.push_back(new StringLit(Location().introduce(), "_checker = "));
-    auto checker_output = new Call(Location().introduce(), ASTString("showCheckerOutput"), {});
+    auto* checker_output = new Call(Location().introduce(), ASTString("showCheckerOutput"), {});
     checker_output->type(Type::parstring());
     FunctionI* fi = e.model->matchFn(e, checker_output, false);
     assert(fi);
     checker_output->decl(fi);
-    auto show = new Call(Location().introduce(), ASTString("showDzn"), {checker_output});
+    auto* show = new Call(Location().introduce(), ASTString("showDzn"), {checker_output});
     show->type(Type::parstring());
     fi = e.model->matchFn(e, show, false);
     assert(fi);
@@ -644,7 +644,7 @@ void createDznOutputItem(EnvI& e, bool outputObjective, bool includeOutputItem, 
     outputVars.push_back(new StringLit(Location().introduce(), ";\n"));
   }
 
-  auto newOutputItem =
+  auto* newOutputItem =
       new OutputI(Location().introduce(), new ArrayLit(Location().introduce(), outputVars));
   e.model->addItem(newOutputItem);
 }
@@ -702,7 +702,7 @@ ArrayLit* createJSONOutput(EnvI& e, bool outputObjective, bool includeOutputItem
         }
         s << "  \"" << vd->id()->str() << "\""
           << " : ";
-        auto sl = new StringLit(Location().introduce(), s.str());
+        auto* sl = new StringLit(Location().introduce(), s.str());
         outputVars.push_back(sl);
 
         std::vector<Expression*> showArgs(1);
@@ -725,7 +725,7 @@ ArrayLit* createJSONOutput(EnvI& e, bool outputObjective, bool includeOutputItem
         }
         s << "  \"_output\""
           << " : ";
-        auto sl = new StringLit(Location().introduce(), s.str());
+        auto* sl = new StringLit(Location().introduce(), s.str());
         outputVars.push_back(sl);
         Call* concat = new Call(Location().introduce(), ASTString("concat"), {oi->e()});
         concat->type(Type::parstring());
@@ -755,7 +755,7 @@ ArrayLit* createJSONOutput(EnvI& e, bool outputObjective, bool includeOutputItem
     }
     s << "  \"_checker\""
       << " : ";
-    auto sl = new StringLit(Location().introduce(), s.str());
+    auto* sl = new StringLit(Location().introduce(), s.str());
     outputVars.push_back(sl);
     Call* checker_output = new Call(Location().introduce(), ASTString("showCheckerOutput"), {});
     checker_output->type(Type::parstring());
@@ -774,7 +774,7 @@ ArrayLit* createJSONOutput(EnvI& e, bool outputObjective, bool includeOutputItem
   return new ArrayLit(Location().introduce(), outputVars);
 }
 void createJSONOutputItem(EnvI& e, bool outputObjective, bool includeOutputItem, bool hasChecker) {
-  auto newOutputItem = new OutputI(
+  auto* newOutputItem = new OutputI(
       Location().introduce(), createJSONOutput(e, outputObjective, includeOutputItem, hasChecker));
   e.model->addItem(newOutputItem);
 }

@@ -505,7 +505,7 @@ Generator::Generator(const std::vector<ASTString>& v, Expression* in, Expression
 }
 Generator::Generator(const std::vector<Id*>& v, Expression* in, Expression* where) {
   std::vector<VarDecl*> vd;
-  for (auto i : v) {
+  for (auto* i : v) {
     auto* nvd = new VarDecl(i->loc(), new TypeInst(i->loc(), Type::parint()), i->v());
     nvd->toplevel(false);
     vd.push_back(nvd);
@@ -859,7 +859,7 @@ Let::Let(const Location& loc, const std::vector<Expression*>& let, Expression* i
     : Expression(loc, E_LET, Type()) {
   _let = ASTExprVec<Expression>(let);
   std::vector<Expression*> vde;
-  for (auto i : let) {
+  for (auto* i : let) {
     if (auto* vd = Expression::dyn_cast<VarDecl>(i)) {
       vde.push_back(vd->e());
       for (unsigned int i = 0; i < vd->ti()->ranges().size(); i++) {

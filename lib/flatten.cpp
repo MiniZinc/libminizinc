@@ -3053,8 +3053,8 @@ void flatten(Env& e, FlatteningOptions opt) {
               if (env.vo._m.end() != it) {
                 bool hasRedundantOccurrenciesOnly = true;
                 for (const auto& c : it->second) {
-                  if (auto constrI = c->dyn_cast<ConstraintI>()) {
-                    if (auto call = constrI->e()->dyn_cast<Call>()) {
+                  if (auto* constrI = c->dyn_cast<ConstraintI>()) {
+                    if (auto* call = constrI->e()->dyn_cast<Call>()) {
                       if (call->id() == "mzn_reverse_map_var") {
                         continue;  // all good
                       }
@@ -3227,7 +3227,7 @@ void flatten(Env& e, FlatteningOptions opt) {
               if (c->id() == constants().ids.lin_exp) {
                 if (c->type().isfloat() && (float_lin_eq != nullptr)) {
                   std::vector<Expression*> args(c->n_args());
-                  auto le_c = follow_id(c->arg(0))->cast<ArrayLit>();
+                  auto* le_c = follow_id(c->arg(0))->cast<ArrayLit>();
                   std::vector<Expression*> nc_c(le_c->size());
                   for (auto ii = static_cast<unsigned int>(nc_c.size()); (ii--) != 0u;) {
                     nc_c[ii] = (*le_c)[ii];
@@ -3235,7 +3235,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                   nc_c.push_back(FloatLit::a(-1));
                   args[0] = new ArrayLit(Location().introduce(), nc_c);
                   args[0]->type(Type::parfloat(1));
-                  auto le_x = follow_id(c->arg(1))->cast<ArrayLit>();
+                  auto* le_x = follow_id(c->arg(1))->cast<ArrayLit>();
                   std::vector<Expression*> nx(le_x->size());
                   for (auto ii = static_cast<unsigned int>(nx.size()); (ii--) != 0u;) {
                     nx[ii] = (*le_x)[ii];
@@ -3252,7 +3252,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                 } else if (int_lin_eq != nullptr) {
                   assert(c->type().isint());
                   std::vector<Expression*> args(c->n_args());
-                  auto le_c = follow_id(c->arg(0))->cast<ArrayLit>();
+                  auto* le_c = follow_id(c->arg(0))->cast<ArrayLit>();
                   std::vector<Expression*> nc_c(le_c->size());
                   for (auto ii = static_cast<unsigned int>(nc_c.size()); (ii--) != 0u;) {
                     nc_c[ii] = (*le_c)[ii];
@@ -3260,7 +3260,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                   nc_c.push_back(IntLit::a(-1));
                   args[0] = new ArrayLit(Location().introduce(), nc_c);
                   args[0]->type(Type::parint(1));
-                  auto le_x = follow_id(c->arg(1))->cast<ArrayLit>();
+                  auto* le_x = follow_id(c->arg(1))->cast<ArrayLit>();
                   std::vector<Expression*> nx(le_x->size());
                   for (auto ii = static_cast<unsigned int>(nx.size()); (ii--) != 0u;) {
                     nx[ii] = (*le_x)[ii];
@@ -4057,7 +4057,7 @@ void oldflatzinc(Env& e) {
   Model* m = e.flat();
 
   // Mark annotations and optional variables for removal
-  for (auto item : *m) {
+  for (auto* item : *m) {
     if (auto* vdi = item->dyn_cast<VarDeclI>()) {
       if (item->cast<VarDeclI>()->e()->type().ot() == Type::OT_OPTIONAL ||
           item->cast<VarDeclI>()->e()->type().bt() == Type::BT_ANN) {
@@ -4090,7 +4090,7 @@ void oldflatzinc(Env& e) {
       } else {
         vdi->e()->payload(i);
       }
-      for (auto nc : added_constraints) {
+      for (auto* nc : added_constraints) {
         Expression* new_ce = cleanup_constraint(e.envi(), globals, nc);
         if (new_ce != nullptr) {
           e.envi().flatAddItem(new ConstraintI(Location().introduce(), new_ce));
@@ -4112,7 +4112,7 @@ void oldflatzinc(Env& e) {
           if (auto* vd = let_e->dyn_cast<VarDecl>()) {
             std::vector<Expression*> added_constraints = cleanup_vardecl(e.envi(), nullptr, vd);
             new_let.push_back(vd);
-            for (auto nc : added_constraints) {
+            for (auto* nc : added_constraints) {
               new_let.push_back(nc);
             }
           } else {

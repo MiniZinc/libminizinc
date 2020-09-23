@@ -447,7 +447,7 @@ ostream& NLAlgCons::print_on(ostream& os, const NLFile& nl_file) const {
   // Print the 'J' segment if present.
   if (!jacobian.empty()) {
     os << "J" << idx << " " << jacobian.size() << "   # Linear part of " << name << endl;
-    for (auto& vn_coef : jacobian) {
+    for (const auto& vn_coef : jacobian) {
       os << nl_file.variable_indexes.at(vn_coef.first) << " " << vn_coef.second << "   # "
          << vn_coef.first << endl;
     }
@@ -597,14 +597,14 @@ ostream& NLObjective::print_on(ostream& os, const NLFile& nl_file) const {
       if (expression_graph.empty()) {
         os << "n0  # No expression graph" << endl;
       } else {
-        for (auto& tok : expression_graph) {
+        for (const auto& tok : expression_graph) {
           tok.print_on(os, nl_file) << endl;
         }
       }
       // Print gradient
       if (!gradient.empty()) {
         os << "G0 " << gradient.size() << "   # Objective Linear part" << endl;
-        for (auto& vn_coef : gradient) {
+        for (const auto& vn_coef : gradient) {
           os << nl_file.variable_indexes.at(vn_coef.first) << " " << vn_coef.second << "   # "
              << vn_coef.first << endl;
         }

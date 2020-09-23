@@ -494,7 +494,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       }
 
       // Check support of -a and -i
-      for (auto& flag : sc.stdFlags()) {
+      for (const auto& flag : sc.stdFlags()) {
         if (flag == "-a") {
           supports_a = true;
         } else if (flag == "-i") {
@@ -502,7 +502,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         }
       }
 
-      for (auto it : getGlobalSolverRegistry()->getSolverFactories()) {
+      for (auto* it : getGlobalSolverRegistry()->getSolverFactories()) {
         if (it->getId() ==
             solverId) {  /// TODO: also check version (currently assumes all ids are unique)
           sf = it;
@@ -511,10 +511,10 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
           if (!sc.executable().empty() || solverId == "org.minizinc.mzn-fzn" ||
               solverId == "org.minizinc.mzn-nl") {
             std::vector<MZNFZNSolverFlag> acceptedFlags;
-            for (auto& sf : sc.stdFlags()) {
+            for (const auto& sf : sc.stdFlags()) {
               acceptedFlags.push_back(MZNFZNSolverFlag::std(sf));
             }
-            for (auto& ef : sc.extraFlags()) {
+            for (const auto& ef : sc.extraFlags()) {
               acceptedFlags.push_back(MZNFZNSolverFlag::extra(ef.flag, ef.flag_type));
             }
 
@@ -645,7 +645,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
           if (!sc.defaultFlags().empty()) {
             std::vector<std::string> addedArgs;
             addedArgs.push_back(argv[0]);  // excutable name
-            for (auto& df : sc.defaultFlags()) {
+            for (const auto& df : sc.defaultFlags()) {
               addedArgs.push_back(df);
             }
             for (int i = 1; i < argv.size(); i++) {
@@ -817,7 +817,7 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
   if (SolverInstance::UNKNOWN == getFltStatus()) {
     if (!ifMzn2Fzn()) {  // only then
       // Special handling of basic stdFlags
-      auto solve_item = flt.getEnv()->model()->solveItem();
+      auto* solve_item = flt.getEnv()->model()->solveItem();
       bool is_sat_problem =
           solve_item != nullptr ? solve_item->st() == SolveI::SolveType::ST_SAT : true;
       if (is_sat_problem && flag_all_satisfaction) {

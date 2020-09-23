@@ -106,14 +106,14 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     std::vector<std::vector<Expression*>> other_branches(ite->size() + 1);
     for (int i = 0; i < ite->size(); i++) {
       auto conjuncts = get_conjuncts(ite->e_then(i));
-      for (auto c : conjuncts) {
+      for (auto* c : conjuncts) {
         classify_conjunct(c, eq_occurrences, eq_branches[i], other_branches[i]);
       }
       noOtherBranches = noOtherBranches && other_branches[i].empty();
     }
     {
       auto conjuncts = get_conjuncts(ite->e_else());
-      for (auto c : conjuncts) {
+      for (auto* c : conjuncts) {
         classify_conjunct(c, eq_occurrences, eq_branches[ite->size()], other_branches[ite->size()]);
       }
       noOtherBranches = noOtherBranches && other_branches[ite->size()].empty();

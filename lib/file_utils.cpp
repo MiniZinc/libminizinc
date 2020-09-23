@@ -556,7 +556,7 @@ std::vector<std::string> parseCmdLine(const std::string& s) {
 std::string combineCmdLine(const std::vector<std::string>& cmd) {
   std::ostringstream ret;
   for (unsigned int i = 0; i < cmd.size(); i++) {
-    auto& c = cmd[i];
+    const auto& c = cmd[i];
     ret << "\"";
     for (char i : c) {
       switch (i) {

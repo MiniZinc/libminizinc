@@ -286,7 +286,7 @@ void GeasSolverInstance::processFlatZinc() {
   // Post constraints
   for (ConstraintIterator it = _flat->begin_constraints(); it != _flat->end_constraints(); ++it) {
     if (!it->removed()) {
-      if (auto c = it->e()->dyn_cast<Call>()) {
+      if (auto* c = it->e()->dyn_cast<Call>()) {
         _constraintRegistry.post(c);
       }
     }
@@ -310,8 +310,8 @@ void GeasSolverInstance::processFlatZinc() {
       if (ann->isa<Call>()) {
         Call* call = ann->cast<Call>();
         if (call->id() == "warm_start") {
-          auto vars = eval_array_lit(env().envi(), call->arg(0));
-          auto vals = eval_array_lit(env().envi(), call->arg(1));
+          auto* vars = eval_array_lit(env().envi(), call->arg(0));
+          auto* vals = eval_array_lit(env().envi(), call->arg(1));
           assert(vars->size() == vals->size());
           vec<geas::patom_t> ws(vars->size());
 
@@ -401,7 +401,7 @@ bool GeasSolverInstance::addSolutionNoGood() {
   for (auto& var : _varsWithOutput) {
     if (Expression::dyn_cast<Call>(
             getAnnotation(var->ann(), constants().ann.output_array.aststr())) != nullptr) {
-      if (auto al = var->e()->dyn_cast<ArrayLit>()) {
+      if (auto* al = var->e()->dyn_cast<ArrayLit>()) {
         for (unsigned int j = 0; j < al->size(); j++) {
           if (Id* id = (*al)[j]->dyn_cast<Id>()) {
             auto geas_var = resolveVar(id);
@@ -582,14 +582,14 @@ Expression* GeasSolverInstance::getSolutionValue(Id* id) {
 void GeasSolverInstance::resetSolver() { assert(false); }
 
 GeasTypes::Variable& GeasSolverInstance::resolveVar(Expression* e) {
-  if (auto id = e->dyn_cast<Id>()) {
+  if (auto* id = e->dyn_cast<Id>()) {
     return _variableMap.get(id->decl()->id());
-  } else if (auto vd = e->dyn_cast<VarDecl>()) {
+  } else if (auto* vd = e->dyn_cast<VarDecl>()) {
     return _variableMap.get(vd->id()->decl()->id());
-  } else if (auto aa = e->dyn_cast<ArrayAccess>()) {
-    auto ad = aa->v()->cast<Id>()->decl();
+  } else if (auto* aa = e->dyn_cast<ArrayAccess>()) {
+    auto* ad = aa->v()->cast<Id>()->decl();
     auto idx = aa->idx()[0]->cast<IntLit>()->v().toInt();
-    auto al = eval_array_lit(_env.envi(), ad->e());
+    auto* al = eval_array_lit(_env.envi(), ad->e());
     return _variableMap.get((*al)[idx]->cast<Id>());
   } else {
     std::stringstream ssm;
@@ -612,7 +612,7 @@ geas::patom_t GeasSolverInstance::asBoolVar(Expression* e) {
     assert(var.isBool());
     return var.boolVar();
   } else {
-    if (auto bl = e->dyn_cast<BoolLit>()) {
+    if (auto* bl = e->dyn_cast<BoolLit>()) {
       return bl->v() ? geas::at_True : geas::at_False;
     } else {
       std::stringstream ssm;
@@ -645,9 +645,9 @@ geas::intvar GeasSolverInstance::asIntVar(Expression* e) {
     return var.intVar();
   } else {
     IntVal i;
-    if (auto il = e->dyn_cast<IntLit>()) {
+    if (auto* il = e->dyn_cast<IntLit>()) {
       i = il->v().toInt();
-    } else if (auto bl = e->dyn_cast<BoolLit>()) {
+    } else if (auto* bl = e->dyn_cast<BoolLit>()) {
       i = static_cast<long long>(bl->v());
     } else {
       std::stringstream ssm;
@@ -719,7 +719,7 @@ SolverInstanceBase* Geas_SolverFactory::doCreateSI(Env& env, std::ostream& log,
 
 bool Geas_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
                                        std::vector<std::string>& argv) {
-  auto _opt = static_cast<GeasOptions*>(opt);
+  auto* _opt = static_cast<GeasOptions*>(opt);
   if (argv[i] == "-a" || argv[i] == "--all-solutions") {
     _opt->all_solutions = true;
   } else if (argv[i] == "--conflicts") {

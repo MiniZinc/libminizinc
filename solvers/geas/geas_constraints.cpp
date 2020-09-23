@@ -119,7 +119,7 @@ void p_int_le_reif(SolverInstanceBase& s, const Call* call) {
     if (BOOL(2)) {
       p_int_le(s, call);
     } else {
-      auto nc = new Call(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
+      auto* nc = new Call(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
       p_int_lt(s, nc);
     }
   } else {
@@ -133,7 +133,7 @@ void p_int_lt_reif(SolverInstanceBase& s, const Call* call) {
     if (BOOL(2)) {
       p_int_lt(s, call);
     } else {
-      auto nc = new Call(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
+      auto* nc = new Call(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
       p_int_le(s, nc);
     }
   } else {
@@ -366,7 +366,7 @@ void p_bool_le_reif(SolverInstanceBase& s, const Call* call) {
     if (BOOL(2)) {
       p_bool_le(s, call);
     } else {
-      auto nc = new Call(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
+      auto* nc = new Call(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
       p_bool_lt(s, nc);
     }
   } else {
@@ -381,7 +381,7 @@ void p_bool_lt_reif(SolverInstanceBase& s, const Call* call) {
     if (BOOL(2)) {
       p_int_lt(s, call);
     } else {
-      auto nc = new Call(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
+      auto* nc = new Call(Location().introduce(), call->id(), {call->arg(1), call->arg(0)});
       p_int_le(s, nc);
     }
   } else {
@@ -426,8 +426,8 @@ void p_bool_xor_imp(SolverInstanceBase& s, const Call* call) { p_bool_ne_imp(s, 
 
 void p_bool_clause(SolverInstanceBase& s, const Call* call) {
   auto& gi = static_cast<GeasSolverInstance&>(s);
-  auto pos = ARRAY(0);
-  auto neg = ARRAY(1);
+  auto* pos = ARRAY(0);
+  auto* neg = ARRAY(1);
   vec<geas::clause_elt> clause;
   for (int i = 0; i < pos->size(); ++i) {
     clause.push(SI.asBoolVar((*pos)[i]));
@@ -439,7 +439,7 @@ void p_bool_clause(SolverInstanceBase& s, const Call* call) {
 }
 
 void p_array_bool_or(SolverInstanceBase& s, const Call* call) {
-  auto arr = ARRAY(0);
+  auto* arr = ARRAY(0);
   vec<geas::clause_elt> clause;
   clause.push(~BOOLVAR(1));
   for (int i = 0; i < arr->size(); ++i) {
@@ -451,7 +451,7 @@ void p_array_bool_or(SolverInstanceBase& s, const Call* call) {
 }
 
 void p_array_bool_and(SolverInstanceBase& s, const Call* call) {
-  auto arr = ARRAY(0);
+  auto* arr = ARRAY(0);
   vec<geas::clause_elt> clause;
   clause.push(BOOLVAR(1));
   for (int i = 0; i < arr->size(); ++i) {
@@ -463,8 +463,8 @@ void p_array_bool_and(SolverInstanceBase& s, const Call* call) {
 }
 
 void p_bool_clause_imp(SolverInstanceBase& s, const Call* call) {
-  auto pos = ARRAY(0);
-  auto neg = ARRAY(1);
+  auto* pos = ARRAY(0);
+  auto* neg = ARRAY(1);
   vec<geas::clause_elt> clause;
   clause.push(~BOOLVAR(2));
   for (int i = 0; i < pos->size(); ++i) {
@@ -477,7 +477,7 @@ void p_bool_clause_imp(SolverInstanceBase& s, const Call* call) {
 }
 
 void p_array_bool_or_imp(SolverInstanceBase& s, const Call* call) {
-  auto arr = ARRAY(0);
+  auto* arr = ARRAY(0);
   vec<geas::clause_elt> clause;
   clause.push(~BOOLVAR(1));
   for (int i = 0; i < arr->size(); ++i) {
@@ -488,15 +488,15 @@ void p_array_bool_or_imp(SolverInstanceBase& s, const Call* call) {
 }
 
 void p_array_bool_and_imp(SolverInstanceBase& s, const Call* call) {
-  auto arr = ARRAY(0);
+  auto* arr = ARRAY(0);
   for (int i = 0; i < arr->size(); ++i) {
     geas::add_clause(SD, ~BOOLVAR(1), SI.asBoolVar((*arr)[i]));
   }
 }
 
 void p_bool_clause_reif(SolverInstanceBase& s, const Call* call) {
-  auto pos = ARRAY(0);
-  auto neg = ARRAY(1);
+  auto* pos = ARRAY(0);
+  auto* neg = ARRAY(1);
   vec<geas::clause_elt> clause;
   clause.push(~BOOLVAR(2));
   for (int i = 0; i < pos->size(); ++i) {

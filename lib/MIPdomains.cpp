@@ -752,7 +752,7 @@ private:
             }
           } else {  // larger eqns
             // TODO should be here?
-            auto eVD = getAnnotation(c->ann(), constants().ann.defines_var);
+            auto* eVD = getAnnotation(c->ann(), constants().ann.defines_var);
             if (eVD != nullptr) {
               if (sCallLinEqN.end() != sCallLinEqN.find(c)) {
                 continue;
@@ -921,7 +921,7 @@ private:
     // register if new variables
     //       std::vector<bool> fHaveClq(led.vd.size(), false);
     int nCliqueAvailable = -1;
-    for (auto vd : led.vd) {
+    for (auto* vd : led.vd) {
       if (vd->payload() < 0) {  // ! yet visited
         vd->payload(static_cast<int>(vVarDescr.size()));
         vVarDescr.emplace_back(vd, vd->type().isint());  // can use /prmTypes/ as well
@@ -945,13 +945,13 @@ private:
                                         << aCliques[nCliqueAvailable].size());
     TClique& clqNew = aCliques[nCliqueAvailable];
     clqNew.push_back(led);
-    for (auto vd : led.vd) {  // merging cliques
+    for (auto* vd : led.vd) {  // merging cliques
       int& nMaybeClq = vVarDescr[vd->payload()].nClique;
       if (nMaybeClq >= 0 && nMaybeClq != nCliqueAvailable) {
         TClique& clqOld = aCliques[nMaybeClq];
         MZN_MIPD__assert_hard(clqOld.size());
         for (auto& eq2 : clqOld) {
-          for (auto vd : eq2.vd) {  // point all the variables to the new clique
+          for (auto* vd : eq2.vd) {  // point all the variables to the new clique
             vVarDescr[vd->payload()].nClique = nCliqueAvailable;
           }
         }
@@ -1092,7 +1092,7 @@ private:
     void doRelate() {
       MZN_MIPD__assert_hard(mipd.vVarDescr[iVarStart].nClique >= 0);
       const TClique& clq = mipd.aCliques[mipd.vVarDescr[iVarStart].nClique];
-      for (auto& eq2 : clq) {
+      for (const auto& eq2 : clq) {
         leg.addEdge(eq2);
       }
       DBGOUT_MIPD(" Clique " << mipd.vVarDescr[iVarStart].nClique << ": " << leg.size()
@@ -1196,7 +1196,7 @@ private:
       if (sDomain.size() > MIPD__stats[N_POSTs__NSubintvMax]) {
         MIPD__stats[N_POSTs__NSubintvMax] = static_cast<double>(sDomain.size());
       }
-      for (auto& intv : sDomain) {
+      for (const auto& intv : sDomain) {
         const auto nSubSize = intv.right - intv.left;
         if (nSubSize < MIPD__stats[N_POSTs__SubSizeMin]) {
           MIPD__stats[N_POSTs__SubSizeMin] = nSubSize;
@@ -1399,7 +1399,7 @@ private:
           << (*cls.varRef1) << ",   bitflags: "
           << *(mipd.vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dyn_cast<Call>()->arg(1))
           << " ):  SETTING 0 FLAGS FOR VALUES: ");
-      for (auto& intv : sDomain) {
+      for (const auto& intv : sDomain) {
         for (; vEE < intv.left; ++vEE) {
           if (vEE >= static_cast<long long>(iMin + pp.size())) {
             return;
@@ -1449,7 +1449,7 @@ private:
       std::vector<double> vIntvLB(sDomain.size() + 1), vIntvUB__(sDomain.size() + 1);
       int i = 0;
       double dMaxIntv = -1.0;
-      for (auto& intv : sDomain) {
+      for (const auto& intv : sDomain) {
         intv.varFlag = addIntVar(0.0, 1.0);
         vVars[i] = intv.varFlag->id();
         vIntvLB[i] = intv.left;
@@ -1675,7 +1675,7 @@ private:
             mipd.vVarDescr[cls.varRef1->payload()].pEqEncoding->e()->dyn_cast<Call>()->arg(1), pp);
         MZN_MIPD__assert_hard(pp.size() >= bnds.right - bnds.left + 1);
         MZN_MIPD__assert_hard(iMin <= bnds.left);
-        for (auto& intv : SS) {
+        for (const auto& intv : SS) {
           for (long long vv = (long long)std::max(double(iMin), ceil(intv.left));
                vv <= (long long)std::min(double(iMin) + pp.size() - 1, floor(intv.right)); ++vv) {
             vIntvFlags.push_back(pp[vv - iMin]);
@@ -1683,7 +1683,7 @@ private:
         }
       } else {
         MZN_MIPD__assert_hard(varFlag->type().isint());
-        for (auto& intv : SS) {
+        for (const auto& intv : SS) {
           auto it1 = sDomain.lower_bound(intv.left);
           auto it2 = sDomain.upper_bound(intv.right);
           auto it11 = it1;
@@ -1758,7 +1758,7 @@ private:
                       EnumCmpType nCmpType, double rhs) {
       std::vector<Expression*> args(3);
       MZN_MIPD__assert_hard(vars.size() >= 2);
-      for (auto v : vars) {
+      for (auto* v : vars) {
         MZN_MIPD__assert_hard(&v);
         //             throw std::string("addLinConstr: &var=NULL");
         MZN_MIPD__assert_hard_msg(v->isa<Id>() || v->isa<IntLit>() || v->isa<FloatLit>(),
@@ -1784,7 +1784,7 @@ private:
       std::vector<Expression*> nc_c;
       std::vector<Expression*> nx;
       bool fFloat = false;
-      for (auto v : vars) {
+      for (auto* v : vars) {
         if (!v->type().isint()) {
           fFloat = true;
           break;
@@ -1846,7 +1846,7 @@ private:
         DBGOUT_MIPD__(" Found expr ");
         DBGOUT_MIPD_SELF(debugprint(args[0]));
       }
-      auto nc = new Call(Location().introduce(), ASTString(sName), args);
+      auto* nc = new Call(Location().introduce(), ASTString(sName), args);
       nc->type(Type::varbool());
       nc->decl(fDecl);
       mipd.getEnv()->envi().flatAddItem(new ConstraintI(Location().introduce(), nc));
@@ -1932,7 +1932,7 @@ private:
     }
     // Clean up __POSTs:
     for (auto& vVar : vVarDescr) {
-      for (auto pCallI : vVar.aCalls) {
+      for (auto* pCallI : vVar.aCalls) {
         pCallI->remove();
       }
       if (vVar.pEqEncoding != nullptr) {

@@ -369,11 +369,11 @@ Expression* JSONParser::parseObject(istream& is) {
 
     if (listT == T_INT) {
       int n = elems.size() / 2;
-      auto res = IntSetVal::a();
+      auto* res = IntSetVal::a();
       for (unsigned int i = 0; i < n; i++) {
         IntVal m(elems[2 * i].i);
         IntVal n(elems[2 * i + 1].i);
-        auto isv = IntSetVal::a(m, n);
+        auto* isv = IntSetVal::a(m, n);
         IntSetRanges isr(isv);
         IntSetRanges r(res);
         Ranges::Union<IntVal, IntSetRanges, IntSetRanges> u(isr, r);
@@ -382,11 +382,11 @@ Expression* JSONParser::parseObject(istream& is) {
       return new SetLit(Location().introduce(), res);
     } else if (listT == T_FLOAT) {
       int n = elems.size() / 2;
-      auto res = FloatSetVal::a();
+      auto* res = FloatSetVal::a();
       for (unsigned int i = 0; i < n; i++) {
         FloatVal m(elems[2 * i].d);
         FloatVal n(elems[2 * i + 1].d);
-        auto fsv = FloatSetVal::a(m, n);
+        auto* fsv = FloatSetVal::a(m, n);
         FloatSetRanges fsr(fsv);
         FloatSetRanges r(res);
         Ranges::Union<FloatVal, FloatSetRanges, FloatSetRanges> u(fsr, r);

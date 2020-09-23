@@ -70,7 +70,7 @@ void MZN_SolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt,
                                          const std::vector<MZNFZNSolverFlag>& flags) {
   auto& _opt = static_cast<MZNSolverOptions&>(*opt);
   _opt.mzn_solver_flags.clear();
-  for (auto& f : flags) {
+  for (const auto& f : flags) {
     if (f.n == "-t") {
       _opt.supports_t = true;
     } else {

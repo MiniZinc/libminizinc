@@ -655,7 +655,7 @@ static int CPXPUBLIC myusercutcallback(CPXCENVptr env, void* cbdata, int wherefr
                                        int* useraction_p) {
   int status = 0;
 
-  auto cutinfo = (CUTINFOptr)cbhandle;
+  auto* cutinfo = (CUTINFOptr)cbhandle;
 
   //   int      numcols  = cutinfo->numcols;
   //   int      numcuts  = cutinfo->num;

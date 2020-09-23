@@ -181,7 +181,7 @@ void FZN_SolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt,
                                          const std::vector<MZNFZNSolverFlag>& flags) {
   auto& _opt = static_cast<FZNSolverOptions&>(*opt);
   _opt.fzn_solver_flags.clear();
-  for (auto& f : flags) {
+  for (const auto& f : flags) {
     if (f.n == "-a") {
       _opt.supports_a = true;
     } else if (f.n == "-n") {

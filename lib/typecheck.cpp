@@ -1596,7 +1596,7 @@ public:
             }
           }
 
-          for (auto wp : whereParts) {
+          for (auto* wp : whereParts) {
             class FindLatestGen : public EVisitor {
             public:
               int decl_idx;
@@ -2430,7 +2430,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   auto* enumItems2 = new Model;
 
-  for (auto ai : assignItems) {
+  for (auto* ai : assignItems) {
     VarDecl* vd = nullptr;
     if (env.envi().ignoreUnknownIds) {
       try {
@@ -2881,7 +2881,7 @@ void output_model_variable_types(Env& env, Model* m, std::ostream& os,
     VInfVisitor(Env& env0, const std::vector<std::string>& skipDirs)
         : env(env0), skip_dirs(skipDirs), had_var(false), had_enum(false) {}
     bool enter(Item* i) {
-      if (auto ii = i->dyn_cast<IncludeI>()) {
+      if (auto* ii = i->dyn_cast<IncludeI>()) {
         std::string prefix =
             ii->m()->filepath().substr(0, ii->m()->filepath().size() - ii->f().size());
         for (const auto& skip_dir : skip_dirs) {
@@ -2940,7 +2940,7 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
           method("sat"),
           output_item(false) {}
     bool enter(Item* i) {
-      if (auto ii = i->dyn_cast<IncludeI>()) {
+      if (auto* ii = i->dyn_cast<IncludeI>()) {
         std::string prefix =
             ii->m()->filepath().substr(0, ii->m()->filepath().size() - ii->f().size());
         for (const auto& skip_dir : skip_dirs) {

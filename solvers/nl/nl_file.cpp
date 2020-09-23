@@ -1467,7 +1467,7 @@ ostream& NLFile::print_on(ostream& os) const {
   }
 
   // Print the Logical constraint
-  for (auto& lc : logical_constraints) {
+  for (const auto& lc : logical_constraints) {
     lc.print_on(os, *this);
   }
 

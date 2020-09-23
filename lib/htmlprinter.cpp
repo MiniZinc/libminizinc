@@ -1402,7 +1402,7 @@ std::vector<HtmlDocument> RSTPrinter::printRST(EnvI& env, MiniZinc::Model* m,
   oss << Group::rstHeading(g.htmlName, 0);
   oss << trim(g.desc) << "\n";
   oss << ".. toctree::\n\n";
-  for (auto sg : g.subgroups.m) {
+  for (auto* sg : g.subgroups.m) {
     oss << "  " << sg->fullPath << "\n";
   }
 

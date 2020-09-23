@@ -107,7 +107,7 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
     } break;
     case Expression::E_STRINGLIT: {
       auto* sl = e->cast<StringLit>();
-      auto c = new StringLit(copy_location(m, e), sl->v());
+      auto* c = new StringLit(copy_location(m, e), sl->v());
       m.insert(e, c);
       ret = c;
     } break;
@@ -421,7 +421,7 @@ Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bo
   switch (i->iid()) {
     case Item::II_INC: {
       auto* ii = i->cast<IncludeI>();
-      auto c = new IncludeI(copy_location(m, i), ii->f());
+      auto* c = new IncludeI(copy_location(m, i), ii->f());
       m.insert(i, c);
       c->m(copy(env, m, ii->m()), ii->own());
       return c;
@@ -435,7 +435,7 @@ Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bo
     }
     case Item::II_ASN: {
       auto* a = i->cast<AssignI>();
-      auto c = new AssignI(copy_location(m, i), a->id(), nullptr);
+      auto* c = new AssignI(copy_location(m, i), a->id(), nullptr);
       m.insert(i, c);
       c->e(copy(env, m, a->e(), followIds, copyFundecls, isFlatModel));
       c->decl(static_cast<VarDecl*>(copy(env, m, a->decl(), followIds, copyFundecls, isFlatModel)));
@@ -480,7 +480,7 @@ Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bo
         params[j] = static_cast<VarDecl*>(
             copy(env, m, f->params()[j], followIds, copyFundecls, isFlatModel));
       }
-      auto c = new FunctionI(
+      auto* c = new FunctionI(
           copy_location(m, i), f->id(),
           static_cast<TypeInst*>(copy(env, m, f->ti(), followIds, copyFundecls, isFlatModel)),
           params, copy(env, m, f->e(), followIds, copyFundecls, isFlatModel));

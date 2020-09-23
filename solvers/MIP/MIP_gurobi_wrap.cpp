@@ -89,7 +89,7 @@ const vector<string> gurobiDLLs(void) {
       "751", "750", "702", "701", "700", "652", "651", "650"};
   vector<string> dlls;
   string lastMajorVersion;
-  for (auto& version : versions) {
+  for (const auto& version : versions) {
     string majorVersion = version.substr(0, 2);
     if (majorVersion != lastMajorVersion) {
       dlls.push_back("gurobi" + majorVersion);
@@ -893,7 +893,7 @@ void MIP_gurobi_wrapper::solve() {    // Move into ancestor?
     int iSetting = -1;
     for (const auto& paramFile : options->sConcurrentParamFiles) {
       ++iSetting;
-      auto env_i = dll_GRBgetconcurrentenv(model, iSetting);
+      auto* env_i = dll_GRBgetconcurrentenv(model, iSetting);
       error = dll_GRBreadparams(env_i, paramFile.c_str());
       wrap_assert(error == 0, ("Failed to read GUROBI parameters from file " + paramFile).c_str(),
                   false);

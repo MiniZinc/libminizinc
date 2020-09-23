@@ -302,10 +302,10 @@ void MIP_solverinstance<MIPWrapper>::processFlatZinc(void) {
       MZN_ASSERT_HARD(id == id->decl()->id());  // Assume all unified
       MZN_ASSERT_HARD(it->e() == id->decl());   // Assume all unified
       double obj = vd == objVd ? 1.0 : 0.0;
-      auto decl00 = follow_id_to_decl(it->e());
+      auto* decl00 = follow_id_to_decl(it->e());
       MZN_ASSERT_HARD(decl00->isa<VarDecl>());
       {
-        auto vd00 = decl00->dyn_cast<VarDecl>();
+        auto* vd00 = decl00->dyn_cast<VarDecl>();
         if (nullptr != vd00->e()) {
           // Should be a const
           auto dRHS = exprToConst(vd00->e());
@@ -623,7 +623,7 @@ inline std::string makeConstrName(const char* pfx, int cnt, const Expression* cO
   std::ostringstream ss;
   if (nullptr != cOrig && ((mznp = cOrig->ann().getCall(constants().ann.mzn_path)) != nullptr)) {
     assert(1 == mznp->n_args());
-    auto strp = mznp->arg(0)->dyn_cast<StringLit>();
+    auto* strp = mznp->arg(0)->dyn_cast<StringLit>();
     assert(strp);
     ss << strp->v().substr(0, 255);  // Gurobi 8.1 has <=255 characters
   } else {

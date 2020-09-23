@@ -61,7 +61,7 @@ bool Model::FnEntry::compare(const Model::FnEntry& e1, const Model::FnEntry& e2)
 Model::Model(void) : _parent(nullptr), _solveItem(nullptr), _outputItem(nullptr) {}
 
 Model::~Model(void) {
-  for (auto i : _items) {
+  for (auto* i : _items) {
     if (auto* ii = i->dyn_cast<IncludeI>()) {
       if (ii->own()) {
         delete ii->m();

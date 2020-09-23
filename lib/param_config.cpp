@@ -55,7 +55,7 @@ void ParamConfig::add_value(const ASTString& key, Expression* e) {
   switch (e->eid()) {
     case Expression::E_ARRAYLIT: {
       auto* al = e->cast<ArrayLit>();
-      for (auto exp : al->getVec()) {
+      for (auto* exp : al->getVec()) {
         add_value(flag, exp);
       }
       break;

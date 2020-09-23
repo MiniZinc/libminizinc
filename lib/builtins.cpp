@@ -1289,12 +1289,12 @@ Expression* exp_is_fixed(EnvI& env, Expression* e) {
               (dom->isa<IntLit>() || dom->isa<BoolLit>() || dom->isa<FloatLit>())) {
             return dom;
           } else if ((dom != nullptr) && dom->isa<SetLit>()) {
-            auto sl = dom->cast<SetLit>();
-            auto isv = sl->isv();
+            auto* sl = dom->cast<SetLit>();
+            auto* isv = sl->isv();
             if ((isv != nullptr) && isv->min() == isv->max()) {
               return IntLit::a(isv->min());
             }
-            auto fsv = sl->fsv();
+            auto* fsv = sl->fsv();
             if ((fsv != nullptr) && fsv->min() == fsv->max()) {
               return FloatLit::a(fsv->min());
             }
@@ -1377,7 +1377,7 @@ bool b_has_ann(EnvI& env, Call* call) {
   if (ann->isa<Id>()) {
     return expr->ann().contains(ann);
   }
-  auto key = ann->cast<Call>();
+  auto* key = ann->cast<Call>();
   if (Call* c = expr->ann().getCall(key->id())) {
     if (c->n_args() != key->n_args()) {
       return false;
@@ -1418,12 +1418,12 @@ bool b_annotate(EnvI& env, Call* call) {
     env.addWarning(ss.str());
     return true;
   }
-  auto var_decl = follow_id_to_decl(expr)->cast<VarDecl>();
+  auto* var_decl = follow_id_to_decl(expr)->cast<VarDecl>();
   // Add annotation
   Expression* ann = call->arg(1);
   var_decl->ann().add(ann);
   // Increase usage count of the annotation
-  if (auto ann_decl = follow_id_to_decl(ann)->dyn_cast<VarDecl>()) {
+  if (auto* ann_decl = follow_id_to_decl(ann)->dyn_cast<VarDecl>()) {
     auto var_it = env.vo.idx.find(var_decl->id());
     assert(var_it != env.vo.idx.end());
     env.vo.add(ann_decl, (*env.model)[var_it->second]);
@@ -2731,7 +2731,7 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
                        IntSetVal::a(IntVal(dfa.final_fst() + 1), IntVal(dfa.final_lst())));  // F
   args[5]->type(Type::parsetint());
 
-  auto nc = new Call(call->loc().introduce(), "regular", args);
+  auto* nc = new Call(call->loc().introduce(), "regular", args);
   nc->type(Type::varbool());
 
   return nc;

@@ -243,24 +243,24 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, Ctx nctx, ASTString& cid, Call* c, 
 
 /// Special form of disjunction for SCIP
 bool addBoundsDisj(EnvI& env, Expression* arg, Call* c_orig) {
-  auto pArrayLit = arg->dyn_cast<ArrayLit>();
+  auto* pArrayLit = arg->dyn_cast<ArrayLit>();
   if (nullptr == pArrayLit) {
     return false;
   }
   std::vector<Expression*> isUBI, bndI, varI,  // integer bounds and vars
       isUBF, bndF, varF;                       // float bounds and vars
   for (int i = pArrayLit->size(); (i--) != 0;) {
-    auto pId = pArrayLit->operator[](i)->dyn_cast<Id>();
+    auto* pId = pArrayLit->operator[](i)->dyn_cast<Id>();
     if (nullptr == pId) {
       return false;
     }
-    auto pDecl = follow_id_to_decl(pId)->dyn_cast<VarDecl>();
+    auto* pDecl = follow_id_to_decl(pId)->dyn_cast<VarDecl>();
     /// Checking the rhs
-    auto pRhs = pDecl->e();
+    auto* pRhs = pDecl->e();
     if (nullptr == pRhs) {
       return false;  // not checking this boolean
     }
-    auto pCall = pRhs->dyn_cast<Call>();
+    auto* pCall = pRhs->dyn_cast<Call>();
     if (nullptr == pCall) {
       return false;
     }
@@ -272,15 +272,15 @@ bool addBoundsDisj(EnvI& env, Expression* arg, Call* c_orig) {
     bool fFloat = false;
     bool isUB = false;
     for (int j = pCall->n_args(); (j--) != 0;) {
-      if (auto pF = pCall->arg(j)->dyn_cast<FloatLit>()) {
+      if (auto* pF = pCall->arg(j)->dyn_cast<FloatLit>()) {
         pConst = pF;
         fFloat = true;
         isUB = (1 == j);
-      } else if (auto pF = pCall->arg(j)->dyn_cast<IntLit>()) {
+      } else if (auto* pF = pCall->arg(j)->dyn_cast<IntLit>()) {
         pConst = pF;
         fFloat = false;
         isUB = (1 == j);
-      } else if (auto pId = pCall->arg(j)->dyn_cast<Id>()) {
+      } else if (auto* pId = pCall->arg(j)->dyn_cast<Id>()) {
         if (nullptr != pVar) {
           return false;  // 2 variables, exit
         }

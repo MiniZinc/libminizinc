@@ -483,7 +483,7 @@ void GC::Heap::mark(void) {
         toRemove.push_back(n.first);
       }
     }
-    for (auto n : toRemove) {
+    for (auto* n : toRemove) {
       wr->_m.erase(n);
     }
   }
