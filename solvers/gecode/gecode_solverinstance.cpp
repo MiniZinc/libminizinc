@@ -1326,7 +1326,7 @@ SolverInstanceBase::Status GecodeSolverInstance::solve(void) {
 
   FznSpace* next_sol = engine->next();
   while (next_sol) {
-    if (_solution) delete _solution;
+    delete _solution;
     _solution = next_sol;
     _n_found_solutions++;
 
