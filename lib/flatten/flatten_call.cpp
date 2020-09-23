@@ -145,7 +145,7 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, Ctx nctx, ASTString& cid, Call* c, 
   for (unsigned int i = 0; i < al->size(); i++) {
     GCLock lock;
     if (Call* sc = Expression::dyn_cast<Call>(same_call(env, (*al)[i], cid))) {
-      if (VarDecl* alvi_decl = follow_id_to_decl((*al)[i])->dyn_cast<VarDecl>()) {
+      if (VarDecl* alvi_decl = follow_id_to_decl((*al)[i])->template dyn_cast<VarDecl>()) {
         if (alvi_decl->ti()->domain()) {
           // Test if the variable has tighter declared bounds than what can be inferred
           // from its RHS. If yes, keep the variable (don't aggregate), because the tighter
