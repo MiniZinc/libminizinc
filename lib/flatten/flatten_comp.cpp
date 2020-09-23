@@ -207,7 +207,7 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   std::vector<Expression*> elems(elems_ee.size());
   Type elemType = Type::bot();
   bool allPar = true;
-  for (auto i = static_cast<unsigned int>(elems.size()); (i--) != 0u;) {
+  for (auto i = static_cast<unsigned int>(elems.size()); (i--) != 0U;) {
     elems[i] = elems_ee[i].r();
     if (elemType == Type::bot()) {
       elemType = elems[i]->type();

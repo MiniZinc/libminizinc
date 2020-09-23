@@ -121,7 +121,7 @@ void MIP_solverinstance<MIPWrapper>::processSearchAnnotations(const Annotation& 
       const auto cId = pC->id();
       if (cId == "int_search" || cId == "float_search") {
         ArrayLit* alV = nullptr;
-        if ((pC->n_args() == 0u) || nullptr == (alV = eval_array_lit(_env.envi(), pC->arg(0)))) {
+        if ((pC->n_args() == 0U) || nullptr == (alV = eval_array_lit(_env.envi(), pC->arg(0)))) {
           std::cerr << "  SEARCH ANN: '" << (*pC) << "'  is unknown. " << std::endl;
           continue;
         }
@@ -205,7 +205,7 @@ template <class MIPWrapper>
 void MIP_solverinstance<MIPWrapper>::processMultipleObjectives(const Annotation& ann) {
   MultipleObjectives mo;
   flattenMultipleObjectives(ann, mo);
-  if (mo.size() != 0u) {
+  if (mo.size() != 0U) {
     typename MIPWrapper::MultipleObjectives mo_mip;
     for (const auto& obj : mo.getObjectives()) {
       mo_mip.add({exprToVar(obj.getVariable()), obj.getWeight()});

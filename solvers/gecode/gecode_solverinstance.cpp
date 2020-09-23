@@ -1509,10 +1509,10 @@ bool GecodeSolverInstance::sac(bool toFixedPoint = false, bool shaving = false) 
           }
         }
       }
-      if (nnq != 0u) {
+      if (nnq != 0U) {
         modified = true;
       }
-      while ((nnq--) != 0u) {
+      while ((nnq--) != 0U) {
         rel(*_current_space, ivar, IRT_NQ, nq[nnq]);
       }
       if (_current_space->status() == SS_FAILED) {
@@ -1531,7 +1531,7 @@ bool GecodeSolverInstance::presolve(Model* orig_model) {
   // run SAC?
   if (_run_sac || _run_shave) {
     unsigned int iters = _pre_passes;
-    if (iters != 0u) {
+    if (iters != 0U) {
       for (unsigned int i = 0; i < iters; i++) {
         sac(false, _run_shave);
       }
@@ -1865,22 +1865,22 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
 #endif
 
   std::vector<bool> iv_searched(_current_space->iv.size());
-  for (unsigned int i = _current_space->iv.size(); (i--) != 0u;) {
+  for (unsigned int i = _current_space->iv.size(); (i--) != 0U;) {
     iv_searched[i] = false;
   }
   std::vector<bool> bv_searched(_current_space->bv.size());
-  for (unsigned int i = _current_space->bv.size(); (i--) != 0u;) {
+  for (unsigned int i = _current_space->bv.size(); (i--) != 0U;) {
     bv_searched[i] = false;
   }
 #ifdef GECODE_HAS_SET_VARS
   std::vector<bool> sv_searched(_current_space->sv.size());
-  for (unsigned int i = _current_space->sv.size(); (i--) != 0u;) {
+  for (unsigned int i = _current_space->sv.size(); (i--) != 0U;) {
     sv_searched[i] = false;
   }
 #endif
 #ifdef GECODE_HAS_FLOAT_VARS
   std::vector<bool> fv_searched(_current_space->fv.size());
-  for (unsigned int i = _current_space->fv.size(); (i--) != 0u;) {
+  for (unsigned int i = _current_space->fv.size(); (i--) != 0U;) {
     fv_searched[i] = false;
   }
 #endif
@@ -1928,7 +1928,7 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
   }
   IntVarArgs iv_sol(_current_space->iv.size() - (introduced + funcdep + searched));
   IntVarArgs iv_tmp(introduced);
-  for (unsigned int i = _current_space->iv.size(), j = 0, k = 0; (i--) != 0u;) {
+  for (unsigned int i = _current_space->iv.size(), j = 0, k = 0; (i--) != 0U;) {
     if (iv_searched[i]) {
       continue;
     }

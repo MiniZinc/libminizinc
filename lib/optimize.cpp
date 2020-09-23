@@ -394,7 +394,7 @@ void optimize(Env& env, bool chain_compression) {
               // Remove forall constraints, assign variables inside the forall to true
 
               auto* al = follow_id(c->arg(0))->cast<ArrayLit>();
-              for (unsigned int j = al->size(); (j--) != 0u;) {
+              for (unsigned int j = al->size(); (j--) != 0U;) {
                 if (Id* id = (*al)[j]->dyn_cast<Id>()) {
                   if (id->decl()->ti()->domain() == nullptr) {
                     toAssignBoolVars.push_back(envi.vo.idx.find(id->decl()->id())->second);
@@ -463,7 +463,7 @@ void optimize(Env& env, bool chain_compression) {
     //  - check if any boolean constraint is subsumed (e.g. a fixed false in a forall, or a fixed
     //  true in a disjunction)
     //  - check if any boolean constraint has a single non-fixed literal left, then fix that literal
-    for (auto i = static_cast<unsigned int>(boolConstraints.size()); (i--) != 0u;) {
+    for (auto i = static_cast<unsigned int>(boolConstraints.size()); (i--) != 0U;) {
       Item* bi = m[boolConstraints[i]];
       if (bi->removed()) {
         continue;
@@ -594,7 +594,7 @@ void optimize(Env& env, bool chain_compression) {
     }
 
     // Fix all bool vars in toAssignBoolVars to true and push their declarations and constraints
-    for (unsigned int i = static_cast<int>(toAssignBoolVars.size()); (i--) != 0u;) {
+    for (unsigned int i = static_cast<int>(toAssignBoolVars.size()); (i--) != 0U;) {
       if (m[toAssignBoolVars[i]]->removed()) {
         continue;
       }
@@ -702,7 +702,7 @@ void optimize(Env& env, bool chain_compression) {
             }
           }
           // Actually remove all items that have become unnecessary in the step above
-          for (auto i = static_cast<unsigned int>(toRemove.size()); (i--) != 0u;) {
+          for (auto i = static_cast<unsigned int>(toRemove.size()); (i--) != 0U;) {
             if (auto* ci = toRemove[i]->dyn_cast<ConstraintI>()) {
               CollectDecls cd(envi.vo, deletedVarDecls, ci);
               topDown(cd, ci->e());
@@ -767,7 +767,7 @@ void optimize(Env& env, bool chain_compression) {
     }
 
     // Clean up constraints that have been removed in the previous phase
-    for (auto i = static_cast<unsigned int>(toRemoveConstraints.size()); (i--) != 0u;) {
+    for (auto i = static_cast<unsigned int>(toRemoveConstraints.size()); (i--) != 0U;) {
       auto* ci = m[toRemoveConstraints[i]]->cast<ConstraintI>();
       CollectDecls cd(envi.vo, deletedVarDecls, ci);
       topDown(cd, ci->e());
@@ -790,7 +790,7 @@ void optimize(Env& env, bool chain_compression) {
     // refactor this into a separate function)
     //
     // Difference to phase 2: constraint argument arrays are actually shortened here if possible
-    for (auto i = static_cast<unsigned int>(boolConstraints.size()); (i--) != 0u;) {
+    for (auto i = static_cast<unsigned int>(boolConstraints.size()); (i--) != 0U;) {
       Item* bi = m[boolConstraints[i]];
       if (bi->removed()) {
         continue;
@@ -1392,7 +1392,7 @@ int decrementNonFixedVars(std::unordered_map<Expression*, int>& nonFixedLiteralC
     for (unsigned int i = 0; i < c->n_args(); i++) {
       auto* al = follow_id(c->arg(i))->cast<ArrayLit>();
       nonFixedVars += al->size();
-      for (unsigned int j = al->size(); (j--) != 0u;) {
+      for (unsigned int j = al->size(); (j--) != 0U;) {
         if ((*al)[j]->type().ispar()) {
           nonFixedVars--;
         }
@@ -1528,7 +1528,7 @@ void simplifyBoolConstraint(EnvI& env, Item* ii, VarDecl* vd, bool& remove,
           bool unit = (i == 0 ? isConjunction : !isConjunction);
           auto* al = follow_id(c->arg(i))->cast<ArrayLit>();
           realNonFixed += al->size();
-          for (unsigned int j = al->size(); (j--) != 0u;) {
+          for (unsigned int j = al->size(); (j--) != 0U;) {
             if ((*al)[j]->type().ispar() ||
                 ((*al)[j]->cast<Id>()->decl()->ti()->domain() != nullptr)) {
               realNonFixed--;

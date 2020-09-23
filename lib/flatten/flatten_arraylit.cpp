@@ -22,15 +22,15 @@ EE flatten_arraylit(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     ret.r = bind(env, Ctx(), r, al);
   } else {
     std::vector<EE> elems_ee(al->size());
-    for (unsigned int i = al->size(); (i--) != 0u;) {
+    for (unsigned int i = al->size(); (i--) != 0U;) {
       elems_ee[i] = flat_exp(env, ctx, (*al)[i], nullptr, nullptr);
     }
     std::vector<Expression*> elems(elems_ee.size());
-    for (auto i = static_cast<unsigned int>(elems.size()); (i--) != 0u;) {
+    for (auto i = static_cast<unsigned int>(elems.size()); (i--) != 0U;) {
       elems[i] = elems_ee[i].r();
     }
     std::vector<std::pair<int, int> > dims(al->dims());
-    for (unsigned int i = al->dims(); (i--) != 0u;) {
+    for (unsigned int i = al->dims(); (i--) != 0U;) {
       dims[i] = std::pair<int, int>(al->min(i), al->max(i));
     }
     KeepAlive ka;

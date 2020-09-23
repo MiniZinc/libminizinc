@@ -425,7 +425,7 @@ public:
     if (exponent != 0) {
       exponent += 512;  // reconstruct original bias of 1023
     }
-    uint64_t sign = ((_u.bits & (static_cast<uint64_t>(1) << 62)) != 0u ? 1 : 0);
+    uint64_t sign = ((_u.bits & (static_cast<uint64_t>(1) << 62)) != 0U ? 1 : 0);
     _u.bits = (sign << 63) | (exponent << 52) | (_u.bits & static_cast<uint64_t>(0xFFFFFFFFFFFFF));
     return _u.d;
   }
@@ -451,7 +451,7 @@ public:
 
     _u.bits = _u.bits &
               ~(static_cast<uint64_t>(0x7FF) << 52);  // mask out top 11 bits (previously exponent)
-    _u.bits = (_u.bits << 1) | 1u;                    // shift by one bit and add tag for double
+    _u.bits = (_u.bits << 1) | 1U;                    // shift by one bit and add tag for double
     _u.bits =
         _u.bits | (static_cast<uint64_t>(sign) << 63) | (static_cast<uint64_t>(exponent) << 53);
     return _u.p;

@@ -559,10 +559,10 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
         ArrayLit* al0 = eval_array_lit(env, bo->lhs());
         ArrayLit* al1 = eval_array_lit(env, bo->rhs());
         std::vector<Expression*> v(al0->size() + al1->size());
-        for (unsigned int i = al0->size(); (i--) != 0u;) {
+        for (unsigned int i = al0->size(); (i--) != 0U;) {
           v[i] = (*al0)[i];
         }
-        for (unsigned int i = al1->size(); (i--) != 0u;) {
+        for (unsigned int i = al1->size(); (i--) != 0U;) {
           v[al0->size() + i] = (*al1)[i];
         }
         auto* ret = new ArrayLit(e->loc(), v);
@@ -672,7 +672,7 @@ Expression* eval_arrayaccess(EnvI& env, ArrayLit* al, const std::vector<IntVal>&
 Expression* eval_arrayaccess(EnvI& env, ArrayAccess* e, bool& success) {
   ArrayLit* al = eval_array_lit(env, e->v());
   std::vector<IntVal> dims(e->idx().size());
-  for (unsigned int i = e->idx().size(); (i--) != 0u;) {
+  for (unsigned int i = e->idx().size(); (i--) != 0U;) {
     dims[i] = eval_int(env, e->idx()[i]);
   }
   return eval_arrayaccess(env, al, dims, success);
@@ -1903,11 +1903,11 @@ Expression* eval_par(EnvI& env, Expression* e) {
     case Expression::E_ARRAYLIT: {
       ArrayLit* al = eval_array_lit(env, e);
       std::vector<Expression*> args(al->size());
-      for (unsigned int i = al->size(); (i--) != 0u;) {
+      for (unsigned int i = al->size(); (i--) != 0U;) {
         args[i] = eval_par(env, (*al)[i]);
       }
       std::vector<std::pair<int, int>> dims(al->dims());
-      for (unsigned int i = al->dims(); (i--) != 0u;) {
+      for (unsigned int i = al->dims(); (i--) != 0U;) {
         dims[i].first = al->min(i);
         dims[i].second = al->max(i);
       }
@@ -1928,7 +1928,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
       ASTExprVec<TypeInst> r;
       if (t->ranges().size() > 0) {
         std::vector<TypeInst*> rv(t->ranges().size());
-        for (unsigned int i = t->ranges().size(); (i--) != 0u;) {
+        for (unsigned int i = t->ranges().size(); (i--) != 0U;) {
           rv[i] = static_cast<TypeInst*>(eval_par(env, t->ranges()[i]));
         }
         r = ASTExprVec<TypeInst>(rv);
@@ -1974,11 +1974,11 @@ Expression* eval_par(EnvI& env, Expression* e) {
       if (e->type().dim() != 0) {
         ArrayLit* al = eval_array_lit(env, e);
         std::vector<Expression*> args(al->size());
-        for (unsigned int i = al->size(); (i--) != 0u;) {
+        for (unsigned int i = al->size(); (i--) != 0U;) {
           args[i] = eval_par(env, (*al)[i]);
         }
         std::vector<std::pair<int, int>> dims(al->dims());
-        for (unsigned int i = al->dims(); (i--) != 0u;) {
+        for (unsigned int i = al->dims(); (i--) != 0U;) {
           dims[i].first = al->min(i);
           dims[i].second = al->max(i);
         }
@@ -2236,7 +2236,7 @@ public:
   /// Visit array access
   void vArrayAccess(ArrayAccess& aa) {
     bool parAccess = true;
-    for (unsigned int i = aa.idx().size(); (i--) != 0u;) {
+    for (unsigned int i = aa.idx().size(); (i--) != 0U;) {
       _bounds.pop_back();
       if (!aa.idx()[i]->type().ispar()) {
         parAccess = false;
@@ -2400,7 +2400,7 @@ public:
 
       IntVal d = le ? c.arg(2)->cast<IntLit>()->v() : 0;
       int stacktop = static_cast<int>(_bounds.size());
-      for (unsigned int i = al->size(); (i--) != 0u;) {
+      for (unsigned int i = al->size(); (i--) != 0U;) {
         BottomUpIterator<ComputeIntBounds> cbi(*this);
         cbi.run((*al)[i]);
         if (!valid) {
@@ -2667,7 +2667,7 @@ public:
   /// Visit array access
   void vArrayAccess(ArrayAccess& aa) {
     bool parAccess = true;
-    for (unsigned int i = aa.idx().size(); (i--) != 0u;) {
+    for (unsigned int i = aa.idx().size(); (i--) != 0U;) {
       if (!aa.idx()[i]->type().ispar()) {
         parAccess = false;
       }
@@ -2800,7 +2800,7 @@ public:
       ArrayLit* al = eval_array_lit(env, c.arg(le ? 1 : 0));
       FloatVal d = le ? c.arg(2)->cast<FloatLit>()->v() : 0.0;
       int stacktop = static_cast<int>(_bounds.size());
-      for (unsigned int i = al->size(); (i--) != 0u;) {
+      for (unsigned int i = al->size(); (i--) != 0U;) {
         BottomUpIterator<ComputeFloatBounds> cbi(*this);
         cbi.run((*al)[i]);
         if (!valid) {
@@ -3022,7 +3022,7 @@ public:
   /// Visit array access
   void vArrayAccess(ArrayAccess& aa) {
     bool parAccess = true;
-    for (unsigned int i = aa.idx().size(); (i--) != 0u;) {
+    for (unsigned int i = aa.idx().size(); (i--) != 0U;) {
       if (!aa.idx()[i]->type().ispar()) {
         parAccess = false;
         break;

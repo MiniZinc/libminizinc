@@ -1058,7 +1058,7 @@ void EnvI::addWarning(const std::string& msg) {
 
 void EnvI::createErrorStack(void) {
   errorStack.clear();
-  for (auto i = static_cast<unsigned int>(callStack.size()); (i--) != 0u;) {
+  for (auto i = static_cast<unsigned int>(callStack.size()); (i--) != 0U;) {
     Expression* e = callStack[i]->untag();
     bool isCompIter = callStack[i]->isTagged();
     KeepAlive ka(e);
@@ -1160,8 +1160,8 @@ bool EnvI::dumpPath(std::ostream& os, bool force) {
 
     // If this call is not a dummy StringLit with empty Location (so that deferred compilation
     // doesn't drop the paths)
-    if (e->eid() != Expression::E_STRINGLIT || (loc.first_line() != 0u) ||
-        (loc.first_column() != 0u) || (loc.last_line() != 0u) || (loc.last_column() != 0u)) {
+    if (e->eid() != Expression::E_STRINGLIT || (loc.first_line() != 0U) ||
+        (loc.first_column() != 0U) || (loc.last_line() != 0U) || (loc.last_column() != 0U)) {
       os << loc.filename() << minor_sep << loc.first_line() << minor_sep << loc.first_column()
          << minor_sep << loc.last_line() << minor_sep << loc.last_column() << minor_sep;
       switch (e->eid()) {
@@ -2361,7 +2361,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
             if (c->id() == constants().ids.lin_exp) {
               auto* le_c = follow_id(c->arg(0))->cast<ArrayLit>();
               std::vector<Expression*> ncoeff(le_c->size());
-              for (auto i = static_cast<unsigned int>(ncoeff.size()); (i--) != 0u;) {
+              for (auto i = static_cast<unsigned int>(ncoeff.size()); (i--) != 0U;) {
                 ncoeff[i] = (*le_c)[i];
               }
               ncoeff.push_back(IntLit::a(-1));
@@ -2369,7 +2369,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               args[0]->type(le_c->type());
               auto* le_x = follow_id(c->arg(1))->cast<ArrayLit>();
               std::vector<Expression*> nx(le_x->size());
-              for (auto i = static_cast<unsigned int>(nx.size()); (i--) != 0u;) {
+              for (auto i = static_cast<unsigned int>(nx.size()); (i--) != 0U;) {
                 nx[i] = (*le_x)[i];
               }
               nx.push_back(vd->id());
@@ -2390,7 +2390,7 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
               return vd->id();
             } else {
               args.resize(c->n_args());
-              for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0u;) {
+              for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0U;) {
                 args[i] = c->arg(i);
               }
               args.push_back(vd->id());
@@ -3229,7 +3229,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                   std::vector<Expression*> args(c->n_args());
                   auto* le_c = follow_id(c->arg(0))->cast<ArrayLit>();
                   std::vector<Expression*> nc_c(le_c->size());
-                  for (auto ii = static_cast<unsigned int>(nc_c.size()); (ii--) != 0u;) {
+                  for (auto ii = static_cast<unsigned int>(nc_c.size()); (ii--) != 0U;) {
                     nc_c[ii] = (*le_c)[ii];
                   }
                   nc_c.push_back(FloatLit::a(-1));
@@ -3237,7 +3237,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                   args[0]->type(Type::parfloat(1));
                   auto* le_x = follow_id(c->arg(1))->cast<ArrayLit>();
                   std::vector<Expression*> nx(le_x->size());
-                  for (auto ii = static_cast<unsigned int>(nx.size()); (ii--) != 0u;) {
+                  for (auto ii = static_cast<unsigned int>(nx.size()); (ii--) != 0U;) {
                     nx[ii] = (*le_x)[ii];
                   }
                   nx.push_back(vd->id());
@@ -3254,7 +3254,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                   std::vector<Expression*> args(c->n_args());
                   auto* le_c = follow_id(c->arg(0))->cast<ArrayLit>();
                   std::vector<Expression*> nc_c(le_c->size());
-                  for (auto ii = static_cast<unsigned int>(nc_c.size()); (ii--) != 0u;) {
+                  for (auto ii = static_cast<unsigned int>(nc_c.size()); (ii--) != 0U;) {
                     nc_c[ii] = (*le_c)[ii];
                   }
                   nc_c.push_back(IntLit::a(-1));
@@ -3262,7 +3262,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                   args[0]->type(Type::parint(1));
                   auto* le_x = follow_id(c->arg(1))->cast<ArrayLit>();
                   std::vector<Expression*> nx(le_x->size());
-                  for (auto ii = static_cast<unsigned int>(nx.size()); (ii--) != 0u;) {
+                  for (auto ii = static_cast<unsigned int>(nx.size()); (ii--) != 0U;) {
                     nx[ii] = (*le_x)[ii];
                   }
                   nx.push_back(vd->id());
@@ -3366,7 +3366,7 @@ void flatten(Env& e, FlatteningOptions opt) {
                   }
                 } else {
                   std::vector<Expression*> args(c->n_args());
-                  for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0u;) {
+                  for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0U;) {
                     args[i] = c->arg(i);
                   }
                   args.push_back(vd->id());
@@ -3582,7 +3582,7 @@ void flatten(Env& e, FlatteningOptions opt) {
           GCLock lock;
           Call* rhs = copy(env, env.cmap, it->second())->cast<Call>();
           std::vector<Type> tv(rhs->n_args());
-          for (unsigned int i = rhs->n_args(); (i--) != 0u;) {
+          for (unsigned int i = rhs->n_args(); (i--) != 0U;) {
             tv[i] = rhs->arg(i)->type();
             tv[i].ti(Type::TI_PAR);
           }
@@ -3600,7 +3600,7 @@ void flatten(Env& e, FlatteningOptions opt) {
               CollectOccurrencesE ce(env.output_vo, decl);
               topDown(ce, decl->e());
               topDown(ce, decl->ti());
-              for (unsigned int i = decl->params().size(); (i--) != 0u;) {
+              for (unsigned int i = decl->params().size(); (i--) != 0U;) {
                 topDown(ce, decl->params()[i]);
               }
               env.output->registerFn(env, decl);
@@ -3768,7 +3768,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd) 
           vd->e(nullptr);
           ASTString cid;
           std::vector<Expression*> args(c->n_args());
-          for (unsigned int i = args.size(); (i--) != 0u;) {
+          for (unsigned int i = args.size(); (i--) != 0U;) {
             args[i] = c->arg(i);
           }
           if (is_fixed) {
@@ -3839,7 +3839,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd) 
           // a = lin_exp([1],[b],5) => int_lin_eq([1,-1],[b,a],-5):: defines_var(a)
           auto* le_c = follow_id(cc->arg(0))->cast<ArrayLit>();
           std::vector<Expression*> nc(le_c->size());
-          for (auto i = static_cast<unsigned int>(nc.size()); (i--) != 0u;) {
+          for (auto i = static_cast<unsigned int>(nc.size()); (i--) != 0U;) {
             nc[i] = (*le_c)[i];
           }
           if (le_c->type().bt() == Type::BT_INT) {
@@ -3849,7 +3849,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd) 
             args[0]->type(Type::parint(1));
             auto* le_x = follow_id(cc->arg(1))->cast<ArrayLit>();
             std::vector<Expression*> nx(le_x->size());
-            for (auto i = static_cast<unsigned int>(nx.size()); (i--) != 0u;) {
+            for (auto i = static_cast<unsigned int>(nx.size()); (i--) != 0U;) {
               nx[i] = (*le_x)[i];
             }
             nx.push_back(vd->id());
@@ -3865,7 +3865,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd) 
             args[0]->type(Type::parfloat(1));
             auto* le_x = follow_id(cc->arg(1))->cast<ArrayLit>();
             std::vector<Expression*> nx(le_x->size());
-            for (auto i = static_cast<unsigned int>(nx.size()); (i--) != 0u;) {
+            for (auto i = static_cast<unsigned int>(nx.size()); (i--) != 0U;) {
               nx[i] = (*le_x)[i];
             }
             nx.push_back(vd->id());
@@ -3881,7 +3881,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd) 
           } else {
             cid = cc->id();
           }
-          for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0u;) {
+          for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0U;) {
             args[i] = cc->arg(i);
           }
           args.push_back(vd->id());
@@ -4150,7 +4150,7 @@ void oldflatzinc(Env& e) {
         cur = nullptr;
       }
     }
-    for (auto i = static_cast<unsigned int>(stack.size()); (i--) != 0u;) {
+    for (auto i = static_cast<unsigned int>(stack.size()); (i--) != 0U;) {
       auto* vdi = (*m)[-stack[i] - 1]->cast<VarDeclI>();
       vdi->e()->payload(-vdi->e()->payload() - 1);
       sortedVarDecls[vdCount++] = vdi;

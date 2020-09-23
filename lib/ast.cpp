@@ -200,7 +200,7 @@ void Expression::mark(Expression* e) {
           break;
         case Expression::E_CALL:
           cur->cast<Call>()->id().mark();
-          for (unsigned int i = cur->cast<Call>()->n_args(); (i--) != 0u;) {
+          for (unsigned int i = cur->cast<Call>()->n_args(); (i--) != 0U;) {
             pushstack(cur->cast<Call>()->arg(i));
           }
           if (!cur->cast<Call>()->_u._oneArg->isUnboxedVal() &&
@@ -262,7 +262,7 @@ void SetLit::rehash(void) {
       cmb_hash(h(r0.max()));
     }
   } else {
-    for (unsigned int i = v().size(); (i--) != 0u;) {
+    for (unsigned int i = v().size(); (i--) != 0U;) {
       cmb_hash(Expression::hash(_v[i]));
     }
   }
@@ -413,12 +413,12 @@ ArrayLit::ArrayLit(const Location& loc, ArrayLit* v, const std::vector<std::pair
   _u._al = v;
   assert(slice.size() == v->dims());
   std::vector<int> d(dims.size() * 2 + 2 * slice.size());
-  for (auto i = static_cast<unsigned int>(dims.size()); (i--) != 0u;) {
+  for (auto i = static_cast<unsigned int>(dims.size()); (i--) != 0U;) {
     d[i * 2] = dims[i].first;
     d[i * 2 + 1] = dims[i].second;
   }
   int sliceOffset = static_cast<int>(2 * dims.size());
-  for (auto i = static_cast<unsigned int>(slice.size()); (i--) != 0u;) {
+  for (auto i = static_cast<unsigned int>(slice.size()); (i--) != 0U;) {
     d[sliceOffset + i * 2] = slice[i].first;
     d[sliceOffset + i * 2 + 1] = slice[i].second;
   }
@@ -457,7 +457,7 @@ ArrayLit::ArrayLit(const Location& loc, const std::vector<Expression*>& v,
   _flag_1 = false;
   _flag_2 = false;
   std::vector<int> d(dims.size() * 2);
-  for (auto i = static_cast<unsigned int>(dims.size()); (i--) != 0u;) {
+  for (auto i = static_cast<unsigned int>(dims.size()); (i--) != 0U;) {
     d[i * 2] = dims[i].first;
     d[i * 2 + 1] = dims[i].second;
   }
@@ -474,7 +474,7 @@ void ArrayLit::rehash(void) {
   if (_flag_2) {
     cmb_hash(Expression::hash(_u._al));
   } else {
-    for (unsigned int i = _u._v->size(); (i--) != 0u;) {
+    for (unsigned int i = _u._v->size(); (i--) != 0U;) {
       cmb_hash(h(i));
       cmb_hash(Expression::hash((*_u._v)[i]));
     }
@@ -486,7 +486,7 @@ void ArrayAccess::rehash(void) {
   cmb_hash(Expression::hash(_v));
   std::hash<unsigned int> h;
   cmb_hash(h(_idx.size()));
-  for (unsigned int i = _idx.size(); (i--) != 0u;) {
+  for (unsigned int i = _idx.size(); (i--) != 0U;) {
     cmb_hash(Expression::hash(_idx[i]));
   }
 }
@@ -552,11 +552,11 @@ void Comprehension::rehash(void) {
   cmb_hash(h(static_cast<unsigned int>(set())));
   cmb_hash(Expression::hash(_e));
   cmb_hash(h(_g_idx.size()));
-  for (unsigned int i = _g_idx.size(); (i--) != 0u;) {
+  for (unsigned int i = _g_idx.size(); (i--) != 0U;) {
     cmb_hash(h(_g_idx[i]));
   }
   cmb_hash(h(_g.size()));
-  for (unsigned int i = _g.size(); (i--) != 0u;) {
+  for (unsigned int i = _g.size(); (i--) != 0U;) {
     cmb_hash(Expression::hash(_g[i]));
   }
 }
@@ -602,7 +602,7 @@ void ITE::rehash(void) {
   init_hash();
   std::hash<unsigned int> h;
   cmb_hash(h(_e_if_then.size()));
-  for (unsigned int i = _e_if_then.size(); (i--) != 0u;) {
+  for (unsigned int i = _e_if_then.size(); (i--) != 0U;) {
     cmb_hash(Expression::hash(_e_if_then[i]));
   }
   cmb_hash(Expression::hash(e_else()));
@@ -850,7 +850,7 @@ void Let::rehash(void) {
   cmb_hash(Expression::hash(_in));
   std::hash<unsigned int> h;
   cmb_hash(h(_let.size()));
-  for (unsigned int i = _let.size(); (i--) != 0u;) {
+  for (unsigned int i = _let.size(); (i--) != 0U;) {
     cmb_hash(Expression::hash(_let[i]));
   }
 }
@@ -898,7 +898,7 @@ void TypeInst::rehash(void) {
   std::hash<unsigned int> h;
   unsigned int rsize = _ranges.size();
   cmb_hash(h(rsize));
-  for (unsigned int i = rsize; (i--) != 0u;) {
+  for (unsigned int i = rsize; (i--) != 0U;) {
     cmb_hash(Expression::hash(_ranges[i]));
   }
   cmb_hash(Expression::hash(domain()));
@@ -921,7 +921,7 @@ bool TypeInst::hasTiVariable(void) const {
   if ((domain() != nullptr) && domain()->isa<TIId>()) {
     return true;
   }
-  for (unsigned int i = _ranges.size(); (i--) != 0u;) {
+  for (unsigned int i = _ranges.size(); (i--) != 0U;) {
     if (_ranges[i]->isa<TIId>()) {
       return true;
     }
@@ -1378,7 +1378,7 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
       if (i0->_e_if_then.size() != i1->_e_if_then.size()) {
         return false;
       }
-      for (unsigned int i = i0->_e_if_then.size(); (i--) != 0u;) {
+      for (unsigned int i = i0->_e_if_then.size(); (i--) != 0U;) {
         if (!Expression::equal(i0->_e_if_then[i], i1->_e_if_then[i])) {
           return false;
         }
@@ -1452,7 +1452,7 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
       if (l0->let().size() != l1->let().size()) {
         return false;
       }
-      for (unsigned int i = l0->let().size(); (i--) != 0u;) {
+      for (unsigned int i = l0->let().size(); (i--) != 0U;) {
         if (!Expression::equal(l0->let()[i], l1->let()[i])) {
           return false;
         }
@@ -1465,7 +1465,7 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
       if (t0->ranges().size() != t1->ranges().size()) {
         return false;
       }
-      for (unsigned int i = t0->ranges().size(); (i--) != 0u;) {
+      for (unsigned int i = t0->ranges().size(); (i--) != 0U;) {
         if (!Expression::equal(t0->ranges()[i], t1->ranges()[i])) {
           return false;
         }
@@ -1983,7 +1983,7 @@ void Annotation::add(std::vector<Expression*> e) {
   if (_s == nullptr) {
     _s = new ExpressionSet;
   }
-  for (auto i = static_cast<unsigned int>(e.size()); (i--) != 0u;) {
+  for (auto i = static_cast<unsigned int>(e.size()); (i--) != 0U;) {
     if (e[i] != nullptr) {
       _s->insert(e[i]);
     }
@@ -2008,7 +2008,7 @@ void Annotation::removeCall(const ASTString& id) {
       }
     }
   }
-  for (auto i = static_cast<unsigned int>(toRemove.size()); (i--) != 0u;) {
+  for (auto i = static_cast<unsigned int>(toRemove.size()); (i--) != 0U;) {
     _s->remove(toRemove[i]);
   }
 }

@@ -302,7 +302,7 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit& v,
   if (_flag_2) {
     _u._al = v._u._al;
     std::vector<int> d(dims.size() * 2 + v._dims.size() - v.dims() * 2);
-    for (auto i = static_cast<unsigned int>(dims.size()); (i--) != 0u;) {
+    for (auto i = static_cast<unsigned int>(dims.size()); (i--) != 0U;) {
       d[i * 2] = dims[i].first;
       d[i * 2 + 1] = dims[i].second;
     }
@@ -314,7 +314,7 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit& v,
     _dims = ASTIntVec(d);
   } else {
     std::vector<int> d(dims.size() * 2);
-    for (auto i = static_cast<unsigned int>(dims.size()); (i--) != 0u;) {
+    for (auto i = static_cast<unsigned int>(dims.size()); (i--) != 0U;) {
       d[i * 2] = dims[i].first;
       d[i * 2 + 1] = dims[i].second;
     }

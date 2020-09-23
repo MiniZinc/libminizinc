@@ -671,7 +671,7 @@ void inflateString(std::string& s) {
     std::ostringstream oss;
     while (true) {
       status = inflate(&stream, Z_NO_FLUSH);
-      if (status == Z_STREAM_END || (stream.avail_out == 0u)) {
+      if (status == Z_STREAM_END || (stream.avail_out == 0U)) {
         // output buffer full or compression finished
         oss << std::string(reinterpret_cast<char*>(s_outbuf), BUF_SIZE - stream.avail_out);
         stream.next_out = &s_outbuf[0];

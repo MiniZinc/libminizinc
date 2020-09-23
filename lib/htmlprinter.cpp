@@ -767,7 +767,7 @@ public:
           os << ",";
           if (splitArgs) {
             os << "\n";
-            for (auto j = static_cast<unsigned int>(align); (j--) != 0u;) {
+            for (auto j = static_cast<unsigned int>(align); (j--) != 0U;) {
               os << " ";
             }
           } else {
@@ -1308,7 +1308,7 @@ public:
           os << ",";
           if (splitArgs) {
             os << "\n  ";
-            for (auto j = static_cast<unsigned int>(align); (j--) != 0u;) {
+            for (auto j = static_cast<unsigned int>(align); (j--) != 0U;) {
               os << " ";
             }
           } else {

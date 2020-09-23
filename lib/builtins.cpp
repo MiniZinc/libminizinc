@@ -1155,7 +1155,7 @@ Expression* b_arrayXd(EnvI& env, Call* call) {
   ArrayLit* al1 = eval_array_lit(env, call->arg(1));
   if (al0->dims() == al1->dims()) {
     bool sameDims = true;
-    for (unsigned int i = al0->dims(); (i--) != 0u;) {
+    for (unsigned int i = al0->dims(); (i--) != 0U;) {
       if (al0->min(i) != al1->min(i) || al0->max(i) != al1->max(i)) {
         sameDims = false;
         break;
@@ -1166,7 +1166,7 @@ Expression* b_arrayXd(EnvI& env, Call* call) {
     }
   }
   std::vector<std::pair<int, int>> dims(al0->dims());
-  for (unsigned int i = al0->dims(); (i--) != 0u;) {
+  for (unsigned int i = al0->dims(); (i--) != 0U;) {
     dims[i] = std::make_pair(al0->min(i), al0->max(i));
   }
   auto* ret = new ArrayLit(al1->loc(), *al1, dims);
@@ -1191,7 +1191,7 @@ bool b_forall_par(EnvI& env, Call* call) {
   }
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  for (unsigned int i = al->size(); (i--) != 0u;) {
+  for (unsigned int i = al->size(); (i--) != 0U;) {
     if (!eval_bool(env, (*al)[i])) {
       return false;
     }
@@ -1204,7 +1204,7 @@ bool b_exists_par(EnvI& env, Call* call) {
   }
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  for (unsigned int i = al->size(); (i--) != 0u;) {
+  for (unsigned int i = al->size(); (i--) != 0U;) {
     if (eval_bool(env, (*al)[i])) {
       return true;
     }
@@ -1217,13 +1217,13 @@ bool b_clause_par(EnvI& env, Call* call) {
   }
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  for (unsigned int i = al->size(); (i--) != 0u;) {
+  for (unsigned int i = al->size(); (i--) != 0U;) {
     if (eval_bool(env, (*al)[i])) {
       return true;
     }
   }
   al = eval_array_lit(env, call->arg(1));
-  for (unsigned int i = al->size(); (i--) != 0u;) {
+  for (unsigned int i = al->size(); (i--) != 0U;) {
     if (!eval_bool(env, (*al)[i])) {
       return true;
     }
@@ -1237,7 +1237,7 @@ bool b_xorall_par(EnvI& env, Call* call) {
   GCLock lock;
   int count = 0;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  for (unsigned int i = al->size(); (i--) != 0u;) {
+  for (unsigned int i = al->size(); (i--) != 0U;) {
     count += static_cast<int>(eval_bool(env, (*al)[i]));
   }
   return count % 2 == 1;
@@ -1249,7 +1249,7 @@ bool b_iffall_par(EnvI& env, Call* call) {
   GCLock lock;
   int count = 0;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  for (unsigned int i = al->size(); (i--) != 0u;) {
+  for (unsigned int i = al->size(); (i--) != 0U;) {
     count += static_cast<int>(eval_bool(env, (*al)[i]));
   }
   return count % 2 == 0;
@@ -2051,7 +2051,7 @@ Expression* b_sort_by_int(EnvI& env, Call* call) {
   } _ord(order);
   std::stable_sort(a.begin(), a.end(), _ord);
   std::vector<Expression*> sorted(a.size());
-  for (auto i = static_cast<unsigned int>(sorted.size()); (i--) != 0u;) {
+  for (auto i = static_cast<unsigned int>(sorted.size()); (i--) != 0U;) {
     sorted[i] = (*al)[a[i]];
   }
   auto* al_sorted = new ArrayLit(al->loc(), sorted);
@@ -2076,7 +2076,7 @@ Expression* b_sort_by_float(EnvI& env, Call* call) {
   } _ord(order);
   std::stable_sort(a.begin(), a.end(), _ord);
   std::vector<Expression*> sorted(a.size());
-  for (auto i = static_cast<unsigned int>(sorted.size()); (i--) != 0u;) {
+  for (auto i = static_cast<unsigned int>(sorted.size()); (i--) != 0U;) {
     sorted[i] = (*al)[a[i]];
   }
   auto* al_sorted = new ArrayLit(al->loc(), sorted);
@@ -2088,7 +2088,7 @@ Expression* b_sort(EnvI& env, Call* call) {
   assert(call->n_args() == 1);
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   std::vector<Expression*> sorted(al->size());
-  for (auto i = static_cast<unsigned int>(sorted.size()); (i--) != 0u;) {
+  for (auto i = static_cast<unsigned int>(sorted.size()); (i--) != 0U;) {
     sorted[i] = (*al)[i];
   }
   struct Ord {

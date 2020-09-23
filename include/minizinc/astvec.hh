@@ -158,7 +158,7 @@ public:
 template <class T>
 ASTExprVecO<T>::ASTExprVecO(const std::vector<T>& v) : ASTVec(v.size()) {
   _flag_1 = false;
-  for (auto i = static_cast<unsigned int>(v.size()); (i--) != 0u;) {
+  for (auto i = static_cast<unsigned int>(v.size()); (i--) != 0U;) {
     (*this)[i] = v[i];
   }
 }

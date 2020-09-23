@@ -1513,7 +1513,7 @@ EE flatten_binop(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         }
 
         std::vector<Expression*> args_e(args.size());
-        for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0u;) {
+        for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0U;) {
           args_e[i] = args[i]();
         }
         Call* cc = new Call(e->loc().introduce(), callid, args_e);
@@ -1627,10 +1627,10 @@ EE flatten_binop(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       }
       ArrayLit* al1 = al;
       std::vector<Expression*> v(al0->size() + al1->size());
-      for (unsigned int i = al0->size(); (i--) != 0u;) {
+      for (unsigned int i = al0->size(); (i--) != 0U;) {
         v[i] = (*al0)[i];
       }
-      for (unsigned int i = al1->size(); (i--) != 0u;) {
+      for (unsigned int i = al1->size(); (i--) != 0U;) {
         v[al0->size() + i] = (*al1)[i];
       }
       GCLock lock;

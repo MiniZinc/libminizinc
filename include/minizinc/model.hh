@@ -423,7 +423,7 @@ public:
             break;
         }
       }
-      for (auto i = static_cast<unsigned int>(includedModels.size()); (i--) != 0u;) {
+      for (auto i = static_cast<unsigned int>(includedModels.size()); (i--) != 0U;) {
         models.push_back(includedModels[i]);
       }
     }

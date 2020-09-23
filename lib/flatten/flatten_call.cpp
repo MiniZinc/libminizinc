@@ -15,7 +15,7 @@ namespace MiniZinc {
 
 std::vector<Expression*> toExpVec(std::vector<KeepAlive>& v) {
   std::vector<Expression*> r(v.size());
-  for (auto i = static_cast<unsigned int>(v.size()); (i--) != 0u;) {
+  for (auto i = static_cast<unsigned int>(v.size()); (i--) != 0U;) {
     r[i] = v[i]();
   }
   return r;
@@ -454,13 +454,13 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         CallArgItem cai(env);
         CallStackItem _csi(env, c->arg(1));
         std::vector<EE> elems_ee(vars->size());
-        for (unsigned int i = vars->size(); (i--) != 0u;) {
+        for (unsigned int i = vars->size(); (i--) != 0U;) {
           Ctx argctx = nctx;
           argctx.i = eval_int(env, (*coeffs)[i]) < 0 ? -nctx.i : +nctx.i;
           elems_ee[i] = flat_exp(env, argctx, (*vars)[i], nullptr, nullptr);
         }
         std::vector<Expression*> elems(elems_ee.size());
-        for (auto i = static_cast<unsigned int>(elems.size()); (i--) != 0u;) {
+        for (auto i = static_cast<unsigned int>(elems.size()); (i--) != 0U;) {
           elems[i] = elems_ee[i].r();
         }
         KeepAlive ka;
@@ -610,7 +610,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         }
         args_ee[0] = EE(al_new, constants().lit_true);
       } else {
-        for (unsigned int i = c->n_args(); (i--) != 0u;) {
+        for (unsigned int i = c->n_args(); (i--) != 0U;) {
           Ctx argctx = nctx;
           if (mixContext) {
             if (cid == constants().ids.clause) {
@@ -1109,7 +1109,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         Call* cr_c = cr()->cast<Call>();
         /// All builtins are total
         std::vector<Type> argt(cr_c->n_args());
-        for (auto i = static_cast<unsigned int>(argt.size()); (i--) != 0u;) {
+        for (auto i = static_cast<unsigned int>(argt.size()); (i--) != 0U;) {
           argt[i] = cr_c->arg(i)->type();
         }
         Type callt = decl->rtype(env, argt, false);
@@ -1150,7 +1150,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         }
       } else {
         std::vector<KeepAlive> previousParameters(decl->params().size());
-        for (unsigned int i = decl->params().size(); (i--) != 0u;) {
+        for (unsigned int i = decl->params().size(); (i--) != 0U;) {
           VarDecl* vd = decl->params()[i];
           previousParameters[i] = vd->e();
           vd->flat(vd);
@@ -1239,7 +1239,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         }
 
         // Restore previous mapping
-        for (unsigned int i = decl->params().size(); (i--) != 0u;) {
+        for (unsigned int i = decl->params().size(); (i--) != 0U;) {
           VarDecl* vd = decl->params()[i];
           vd->e(previousParameters[i]());
           vd->flat(vd->e() != nullptr ? vd : nullptr);

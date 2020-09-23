@@ -301,7 +301,7 @@ protected:
   }
 };
 
-const size_t GC::Heap::_min_gc_threshold = 10ll * 1024ll;
+const size_t GC::Heap::_min_gc_threshold = 10LL * 1024LL;
 
 #ifdef MINIZINC_GC_STATS
 const char* GC::Heap::_nodeid[] = {
@@ -450,7 +450,7 @@ void GC::Heap::mark(void) {
     m = m->_roots_next;
   } while (m != _rootset);
 
-  for (auto i = static_cast<unsigned int>(trail.size()); (i--) != 0u;) {
+  for (auto i = static_cast<unsigned int>(trail.size()); (i--) != 0U;) {
     Expression::mark(trail[i].v);
   }
 

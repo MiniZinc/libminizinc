@@ -47,7 +47,7 @@ bool cannotUseRHSForOutput(EnvI& env, Expression* e,
     /// Visit call
     void vCall(Call& c) {
       std::vector<Type> tv(c.n_args());
-      for (unsigned int i = c.n_args(); (i--) != 0u;) {
+      for (unsigned int i = c.n_args(); (i--) != 0U;) {
         tv[i] = c.arg(i)->type();
         tv[i].ti(Type::TI_PAR);
       }
@@ -74,7 +74,7 @@ bool cannotUseRHSForOutput(EnvI& env, Expression* e,
               CollectOccurrencesE ce(env.output_vo, decl);
               topDown(ce, decl->e());
               topDown(ce, decl->ti());
-              for (unsigned int i = decl->params().size(); (i--) != 0u;) {
+              for (unsigned int i = decl->params().size(); (i--) != 0U;) {
                 topDown(ce, decl->params()[i]);
               }
               env.output->registerFn(env, decl);
@@ -132,7 +132,7 @@ void copyOutput(EnvI& e) {
     void vId(Id& _id) { _id.decl(_id.decl()->flat()); }
     void vCall(Call& c) {
       std::vector<Type> tv(c.n_args());
-      for (unsigned int i = c.n_args(); (i--) != 0u;) {
+      for (unsigned int i = c.n_args(); (i--) != 0U;) {
         tv[i] = c.arg(i)->type();
         tv[i].ti(Type::TI_PAR);
       }
@@ -295,10 +295,10 @@ public:
           break;
         case Expression::E_COMP: {
           auto* comp = e->template cast<Comprehension>();
-          for (unsigned int i = comp->n_generators(); (i--) != 0u;) {
+          for (unsigned int i = comp->n_generators(); (i--) != 0U;) {
             stack.push_back(comp->where(i));
             stack.push_back(comp->in(i));
-            for (unsigned int j = comp->n_decls(i); (j--) != 0u;) {
+            for (unsigned int j = comp->n_decls(i); (j--) != 0U;) {
               stack.push_back(comp->decl(i, j));
             }
           }
@@ -385,7 +385,7 @@ void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
           Call* rhs = copy(env, env.cmap, it->second())->cast<Call>();
           {
             std::vector<Type> tv(rhs->n_args());
-            for (unsigned int i = rhs->n_args(); (i--) != 0u;) {
+            for (unsigned int i = rhs->n_args(); (i--) != 0U;) {
               tv[i] = rhs->arg(i)->type();
               tv[i].ti(Type::TI_PAR);
             }
@@ -402,7 +402,7 @@ void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
                 CollectOccurrencesE ce(env.output_vo, decl);
                 topDown(ce, decl->e());
                 topDown(ce, decl->ti());
-                for (unsigned int i = decl->params().size(); (i--) != 0u;) {
+                for (unsigned int i = decl->params().size(); (i--) != 0U;) {
                   topDown(ce, decl->params()[i]);
                 }
                 env.output->registerFn(env, decl);
@@ -828,7 +828,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
     }
     void vCall(Call& c) {
       std::vector<Type> tv(c.n_args());
-      for (unsigned int i = c.n_args(); (i--) != 0u;) {
+      for (unsigned int i = c.n_args(); (i--) != 0U;) {
         tv[i] = c.arg(i)->type();
         tv[i].ti(Type::TI_PAR);
       }
@@ -865,7 +865,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
             CollectOccurrencesE ce(env.output_vo, decl);
             topDown(ce, decl->e());
             topDown(ce, decl->ti());
-            for (unsigned int i = decl->params().size(); (i--) != 0u;) {
+            for (unsigned int i = decl->params().size(); (i--) != 0U;) {
               topDown(ce, decl->params()[i]);
             }
           }
@@ -960,7 +960,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
               Call* rhs = copy(env, env.cmap, it->second())->cast<Call>();
               {
                 std::vector<Type> tv(rhs->n_args());
-                for (unsigned int i = rhs->n_args(); (i--) != 0u;) {
+                for (unsigned int i = rhs->n_args(); (i--) != 0U;) {
                   tv[i] = rhs->arg(i)->type();
                   tv[i].ti(Type::TI_PAR);
                 }
@@ -977,7 +977,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
                     CollectOccurrencesE ce(env.output_vo, decl);
                     topDown(ce, decl->e());
                     topDown(ce, decl->ti());
-                    for (unsigned int i = decl->params().size(); (i--) != 0u;) {
+                    for (unsigned int i = decl->params().size(); (i--) != 0U;) {
                       topDown(ce, decl->params()[i]);
                     }
                     env.output->registerFn(env, decl);
@@ -1125,7 +1125,7 @@ void finaliseOutput(EnvI& e) {
             } else if ((it = e.reverseMappers.find(vd->id())) != e.reverseMappers.end()) {
               Call* rhs = copy(e, e.cmap, it->second())->cast<Call>();
               std::vector<Type> tv(rhs->n_args());
-              for (unsigned int i = rhs->n_args(); (i--) != 0u;) {
+              for (unsigned int i = rhs->n_args(); (i--) != 0U;) {
                 tv[i] = rhs->arg(i)->type();
                 tv[i].ti(Type::TI_PAR);
               }
@@ -1142,7 +1142,7 @@ void finaliseOutput(EnvI& e) {
                   CollectOccurrencesE ce(e.output_vo, decl);
                   topDown(ce, decl->e());
                   topDown(ce, decl->ti());
-                  for (unsigned int i = decl->params().size(); (i--) != 0u;) {
+                  for (unsigned int i = decl->params().size(); (i--) != 0U;) {
                     topDown(ce, decl->params()[i]);
                   }
                   e.output->registerFn(e, decl);
@@ -1260,7 +1260,7 @@ void finaliseOutput(EnvI& e) {
           CollectOccurrencesE ce(e.output_vo, item);
           topDown(ce, item->cast<FunctionI>()->e());
           topDown(ce, item->cast<FunctionI>()->ti());
-          for (unsigned int i = item->cast<FunctionI>()->params().size(); (i--) != 0u;) {
+          for (unsigned int i = item->cast<FunctionI>()->params().size(); (i--) != 0U;) {
             topDown(ce, item->cast<FunctionI>()->params()[i]);
           }
         } break;

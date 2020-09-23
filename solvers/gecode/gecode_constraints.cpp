@@ -583,7 +583,7 @@ void p_array_bool_and_imp(SolverInstanceBase& s, const Call* call) {
   auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVarArgs bv = gi.arg2boolvarargs(call->arg(0));
   BoolVar b1 = gi.arg2boolvar(call->arg(1));
-  for (unsigned int i = bv.size(); (i--) != 0u;) {
+  for (unsigned int i = bv.size(); (i--) != 0U;) {
     rel(*gi._current_space, b1, Gecode::BoolOpType::BOT_IMP, bv[i], 1, gi.ann2icl(ann));
   }
 }

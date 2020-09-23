@@ -1098,7 +1098,7 @@ private:
       DBGOUT_MIPD(" Clique " << mipd.vVarDescr[iVarStart].nClique << ": " << leg.size()
                              << " variables, " << clq.size() << " connections.");
       for (auto& it1 : leg) {
-        mipd.vVarDescr[it1.first->payload()].fDomainConstrProcessed = 1u;
+        mipd.vVarDescr[it1.first->payload()].fDomainConstrProcessed = 1U;
       }
 
       // Propagate the 1st var's relations:
@@ -1923,11 +1923,11 @@ private:
     bool fRetTrue = true;
     for (int iVar = 0; iVar < vVarDescr.size(); ++iVar) {
       //         VarDescr& var = vVarDescr[iVar];
-      if (vVarDescr[iVar].fDomainConstrProcessed == 0u) {
+      if (vVarDescr[iVar].fDomainConstrProcessed == 0U) {
         GCLock lock;
         DomainDecomp dd(this, iVar);
         dd.doProcess();
-        vVarDescr[iVar].fDomainConstrProcessed = 1u;
+        vVarDescr[iVar].fDomainConstrProcessed = 1U;
       }
     }
     // Clean up __POSTs:

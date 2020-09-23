@@ -237,7 +237,7 @@ flatten_arrayaccess:
     {
       GCLock lock;
       std::vector<IntVal> dims(aa->idx().size());
-      for (unsigned int i = aa->idx().size(); (i--) != 0u;) {
+      for (unsigned int i = aa->idx().size(); (i--) != 0U;) {
         dims[i] = eval_int(env, ees[i].r());
       }
       ka = eval_arrayaccess(env, al, dims, success);
@@ -256,7 +256,7 @@ flatten_arrayaccess:
     }
   } else {
     std::vector<Expression*> args(aa->idx().size() + 1);
-    for (unsigned int i = aa->idx().size(); (i--) != 0u;) {
+    for (unsigned int i = aa->idx().size(); (i--) != 0U;) {
       args[i] = ees[i].r();
     }
     args[aa->idx().size()] = eev.r();

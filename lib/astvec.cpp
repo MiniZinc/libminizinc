@@ -14,7 +14,7 @@
 namespace MiniZinc {
 
 ASTIntVecO::ASTIntVecO(const std::vector<int>& v) : ASTChunk(sizeof(int) * v.size()) {
-  for (auto i = static_cast<unsigned int>(v.size()); (i--) != 0u;) {
+  for (auto i = static_cast<unsigned int>(v.size()); (i--) != 0U;) {
     (*this)[i] = v[i];
   }
 }

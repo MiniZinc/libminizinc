@@ -2003,7 +2003,7 @@ public:
   /// Visit call
   void vCall(Call& call) {
     std::vector<Expression*> args(call.n_args());
-    for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0u;) {
+    for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0U;) {
       args[i] = call.arg(i);
     }
     FunctionI* fi = _model->matchFn(_env, &call, true, true);
