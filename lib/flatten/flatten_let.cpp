@@ -23,7 +23,7 @@ EE flatten_let(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   let->pushbindings();
   for (unsigned int i = 0; i < let->let().size(); i++) {
     Expression* le = let->let()[i];
-    if (VarDecl* vd = le->dyn_cast<VarDecl>()) {
+    if (auto* vd = le->dyn_cast<VarDecl>()) {
       Expression* let_e = nullptr;
       if (vd->e()) {
         Ctx nctx = ctx;
@@ -121,7 +121,7 @@ EE flatten_let(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   let->popbindings();
   // Restore previous mapping
   for (unsigned int i = 0; i < let->let().size(); i++) {
-    if (VarDecl* vd = let->let()[i]->dyn_cast<VarDecl>()) {
+    if (auto* vd = let->let()[i]->dyn_cast<VarDecl>()) {
       vd->flat(Expression::cast<VarDecl>(flatmap.back()()));
       flatmap.pop_back();
     }

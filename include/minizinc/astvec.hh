@@ -158,11 +158,11 @@ public:
 template <class T>
 ASTExprVecO<T>::ASTExprVecO(const std::vector<T>& v) : ASTVec(v.size()) {
   _flag_1 = false;
-  for (unsigned int i = static_cast<unsigned int>(v.size()); i--;) (*this)[i] = v[i];
+  for (auto i = static_cast<unsigned int>(v.size()); i--;) (*this)[i] = v[i];
 }
 template <class T>
 ASTExprVecO<T>* ASTExprVecO<T>::a(const std::vector<T>& v) {
-  ASTExprVecO<T>* ao = static_cast<ASTExprVecO<T>*>(alloc(v.size()));
+  auto* ao = static_cast<ASTExprVecO<T>*>(alloc(v.size()));
   new (ao) ASTExprVecO<T>(v);
   return ao;
 }

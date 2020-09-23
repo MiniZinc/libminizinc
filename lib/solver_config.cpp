@@ -28,28 +28,28 @@ namespace MiniZinc {
 
 namespace {
 std::string getString(AssignI* ai) {
-  if (StringLit* sl = ai->e()->dyn_cast<StringLit>()) {
+  if (auto* sl = ai->e()->dyn_cast<StringLit>()) {
     return std::string(sl->v().c_str(), sl->v().size());
   }
   throw ConfigException("invalid configuration item (right hand side must be string)");
 }
 bool getBool(AssignI* ai) {
-  if (BoolLit* bl = ai->e()->dyn_cast<BoolLit>()) {
+  if (auto* bl = ai->e()->dyn_cast<BoolLit>()) {
     return bl->v();
   }
   throw ConfigException("invalid configuration item (right hand side must be bool)");
 }
 int getInt(AssignI* ai) {
-  if (IntLit* il = ai->e()->dyn_cast<IntLit>()) {
+  if (auto* il = ai->e()->dyn_cast<IntLit>()) {
     return static_cast<int>(il->v().toInt());
   }
   throw ConfigException("invalid configuration item (right hand side must be int)");
 }
 std::vector<std::string> getStringList(AssignI* ai) {
-  if (ArrayLit* al = ai->e()->dyn_cast<ArrayLit>()) {
+  if (auto* al = ai->e()->dyn_cast<ArrayLit>()) {
     std::vector<std::string> ret;
     for (unsigned int i = 0; i < al->size(); i++) {
-      if (StringLit* sl = (*al)[i]->dyn_cast<StringLit>()) {
+      if (auto* sl = (*al)[i]->dyn_cast<StringLit>()) {
         ret.push_back(std::string(sl->v().c_str(), sl->v().size()));
       } else {
         throw ConfigException(
@@ -61,15 +61,15 @@ std::vector<std::string> getStringList(AssignI* ai) {
   throw ConfigException("invalid configuration item (right hand side must be a list of strings)");
 }
 std::vector<std::pair<std::string, std::string> > getStringPairList(AssignI* ai) {
-  if (ArrayLit* al = ai->e()->dyn_cast<ArrayLit>()) {
+  if (auto* al = ai->e()->dyn_cast<ArrayLit>()) {
     std::vector<std::pair<std::string, std::string> > ret;
     if (al->dims() != 2 || al->min(1) != 1 || al->max(1) != 2) {
       throw ConfigException(
           "invalid configuration item (right hand side must be a 2d array of strings)");
     }
     for (unsigned int i = 0; i < al->size(); i += 2) {
-      StringLit* sl1 = (*al)[i]->dyn_cast<StringLit>();
-      StringLit* sl2 = (*al)[i + 1]->dyn_cast<StringLit>();
+      auto* sl1 = (*al)[i]->dyn_cast<StringLit>();
+      auto* sl2 = (*al)[i + 1]->dyn_cast<StringLit>();
       if (sl1 && sl2) {
         ret.push_back(std::make_pair(std::string(sl1->v().c_str(), sl1->v().size()),
                                      std::string(sl2->v().c_str(), sl2->v().size())));
@@ -84,7 +84,7 @@ std::vector<std::pair<std::string, std::string> > getStringPairList(AssignI* ai)
       "invalid configuration item (right hand side must be a 2d array of strings)");
 }
 std::vector<std::vector<std::string> > getDefaultOptionList(AssignI* ai) {
-  if (ArrayLit* al = ai->e()->dyn_cast<ArrayLit>()) {
+  if (auto* al = ai->e()->dyn_cast<ArrayLit>()) {
     std::vector<std::vector<std::string> > ret;
     if (al->size() == 0) return ret;
     if (al->dims() != 2) {
@@ -98,9 +98,9 @@ std::vector<std::vector<std::string> > getDefaultOptionList(AssignI* ai) {
           "columns)");
     }
     for (unsigned int i = 0; i < al->size(); i += nCols) {
-      StringLit* sl0 = (*al)[i]->dyn_cast<StringLit>();
-      StringLit* sl1 = (*al)[i + 1]->dyn_cast<StringLit>();
-      StringLit* sl2 = (*al)[i + 2]->dyn_cast<StringLit>();
+      auto* sl0 = (*al)[i]->dyn_cast<StringLit>();
+      auto* sl1 = (*al)[i + 1]->dyn_cast<StringLit>();
+      auto* sl2 = (*al)[i + 2]->dyn_cast<StringLit>();
       if (sl0 && sl1 && sl2) {
         ret.push_back(std::vector<std::string>({std::string(sl0->v().c_str(), sl0->v().size()),
                                                 std::string(sl1->v().c_str(), sl1->v().size()),
@@ -116,7 +116,7 @@ std::vector<std::vector<std::string> > getDefaultOptionList(AssignI* ai) {
       "invalid configuration item (right hand side must be a 2d array of strings)");
 }
 std::vector<SolverConfig::ExtraFlag> getExtraFlagList(AssignI* ai) {
-  if (ArrayLit* al = ai->e()->dyn_cast<ArrayLit>()) {
+  if (auto* al = ai->e()->dyn_cast<ArrayLit>()) {
     std::vector<SolverConfig::ExtraFlag> ret;
     if (al->size() == 0) return ret;
     if (al->dims() != 2) {
@@ -131,8 +131,8 @@ std::vector<SolverConfig::ExtraFlag> getExtraFlagList(AssignI* ai) {
     bool haveType = (nCols >= 3);
     bool haveDefault = (nCols >= 4);
     for (unsigned int i = 0; i < al->size(); i += nCols) {
-      StringLit* sl1 = (*al)[i]->dyn_cast<StringLit>();
-      StringLit* sl2 = (*al)[i + 1]->dyn_cast<StringLit>();
+      auto* sl1 = (*al)[i]->dyn_cast<StringLit>();
+      auto* sl2 = (*al)[i + 1]->dyn_cast<StringLit>();
       StringLit* sl3 = haveType ? (*al)[i + 2]->dyn_cast<StringLit>() : nullptr;
       StringLit* sl4 = haveDefault ? (*al)[i + 3]->dyn_cast<StringLit>() : nullptr;
       std::string opt_type = sl3 ? std::string(sl3->v().c_str(), sl3->v().size()) : "bool";
@@ -237,7 +237,7 @@ SolverConfig SolverConfig::load(string filename) {
       bool hadName = false;
       string basePath = FileUtils::dir_name(sc._configFile);
       for (unsigned int i = 0; i < m->size(); i++) {
-        if (AssignI* ai = (*m)[i]->dyn_cast<AssignI>()) {
+        if (auto* ai = (*m)[i]->dyn_cast<AssignI>()) {
           if (ai->id() == "id") {
             sc._id = getString(ai);
             hadId = true;
@@ -451,7 +451,7 @@ void SolverConfigs::addConfig(const MiniZinc::SolverConfig& sc) {
   name = stringToLower(name);
   sc_tags.push_back(name);
   for (auto t : sc_tags) {
-    TagMap::iterator it = _tags.find(t);
+    auto it = _tags.find(t);
     if (it == _tags.end()) {
       _tags.insert(std::make_pair(t, std::vector<int>({newIdx})));
     } else {
@@ -507,7 +507,7 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
         }
         if (m) {
           for (unsigned int i = 0; i < m->size(); i++) {
-            if (AssignI* ai = (*m)[i]->dyn_cast<AssignI>()) {
+            if (auto* ai = (*m)[i]->dyn_cast<AssignI>()) {
               if (ai->id() == "mzn_solver_path") {
                 std::vector<std::string> sp = getStringList(ai);
                 for (auto s : sp) {
@@ -527,7 +527,7 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
                 for (auto& sd : solverDefs) {
                   assert(sd.size() == 3);
                   std::string solver = sd[0];
-                  SolverDefaultMap::iterator it = _solverDefaultOptions.find(solver);
+                  auto it = _solverDefaultOptions.find(solver);
                   if (it == _solverDefaultOptions.end()) {
                     std::vector<std::string> solverOptions({sd[1], sd[2]});
                     _solverDefaultOptions.insert(std::make_pair(solver, solverOptions));
@@ -615,7 +615,7 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
 vector<string> SolverConfigs::solvers() const {
   // Find default solver, if present
   std::string def_id;
-  DefaultMap::const_iterator def_it = _tagDefault.find("");
+  auto def_it = _tagDefault.find("");
   if (def_it != _tagDefault.end()) {
     def_id = def_it->second;
   }

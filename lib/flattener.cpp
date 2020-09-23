@@ -507,7 +507,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             throw Error("multiple type errors");
           }
           for (unsigned int i = 0; i < smm->size(); i++) {
-            if (VarDeclI* vdi = (*smm)[i]->dyn_cast<VarDeclI>()) {
+            if (auto* vdi = (*smm)[i]->dyn_cast<VarDeclI>()) {
               if (vdi->e()->e() == nullptr)
                 env->envi().checkVars.push_back(vdi->e());
               else if (vdi->e()->ann().contains(constants().ann.rhs_from_assignment)) {
@@ -518,11 +518,11 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           smm->compact();
           std::string smm_compressed =
               FileUtils::encodeBase64(FileUtils::deflateString(smm_oss.str()));
-          TypeInst* ti = new TypeInst(Location().introduce(), Type::parstring(), nullptr);
-          VarDecl* checkString =
+          auto* ti = new TypeInst(Location().introduce(), Type::parstring(), nullptr);
+          auto* checkString =
               new VarDecl(Location().introduce(), ti, ASTString("_mzn_solution_checker"),
                           new StringLit(Location().introduce(), smm_compressed));
-          VarDeclI* checkStringI = new VarDeclI(Location().introduce(), checkString);
+          auto* checkStringI = new VarDeclI(Location().introduce(), checkString);
           env->output()->addItem(checkStringI);
 
           for (FunctionIterator it = smm->begin_functions(); it != smm->end_functions(); ++it) {
@@ -537,11 +537,11 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
                                "nodes,mzn_stats_time)];\n";
               std::string smm_stats_compressed =
                   FileUtils::encodeBase64(FileUtils::deflateString(smm_stats_oss.str()));
-              TypeInst* ti = new TypeInst(Location().introduce(), Type::parstring(), nullptr);
-              VarDecl* checkStatsString =
+              auto* ti = new TypeInst(Location().introduce(), Type::parstring(), nullptr);
+              auto* checkStatsString =
                   new VarDecl(Location().introduce(), ti, ASTString("_mzn_stats_checker"),
                               new StringLit(Location().introduce(), smm_stats_compressed));
-              VarDeclI* checkStatsStringI = new VarDeclI(Location().introduce(), checkStatsString);
+              auto* checkStatsStringI = new VarDeclI(Location().introduce(), checkStatsString);
               env->output()->addItem(checkStatsStringI);
             }
           }

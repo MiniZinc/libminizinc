@@ -68,11 +68,11 @@ void MIP_solverinstance<MIPWrapper>::exprToVarArray(Expression* arg, std::vector
 template <class MIPWrapper>
 std::pair<double, bool> MIP_solverinstance<MIPWrapper>::exprToConstEasy(Expression* e) {
   std::pair<double, bool> res{0.0, true};
-  if (IntLit* il = e->dyn_cast<IntLit>()) {
+  if (auto* il = e->dyn_cast<IntLit>()) {
     res.first = (static_cast<double>(il->v().toInt()));
-  } else if (FloatLit* fl = e->dyn_cast<FloatLit>()) {
+  } else if (auto* fl = e->dyn_cast<FloatLit>()) {
     res.first = (fl->v().toDouble());
-  } else if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
+  } else if (auto* bl = e->dyn_cast<BoolLit>()) {
     res.first = (bl->v());
   } else {
     res.second = false;
@@ -151,7 +151,7 @@ void MIP_solverinstance<MIPWrapper>::processWarmstartAnnotations(const Annotatio
     if (e->isa<Call>()) {
       Call* c = e->cast<Call>();
       if (c->id() == "warm_start_array" || c->id() == "seq_search") {
-        ArrayLit* anns = c->arg(0)->cast<ArrayLit>();
+        auto* anns = c->arg(0)->cast<ArrayLit>();
         for (unsigned int i = 0; i < anns->size(); i++) {
           Annotation subann;
           subann.add((*anns)[i]);
@@ -454,7 +454,7 @@ void MIP_solverinstance<MIPWrapper>::printStatistics(void) {
 template <class MIPWrapper>
 void HandleSolutionCallback(const MIP_wrapper::Output& out, void* pp) {
   // multi-threading? TODO
-  MIP_solverinstance<MIPWrapper>* pSI = static_cast<MIP_solverinstance<MIPWrapper>*>(pp);
+  auto* pSI = static_cast<MIP_solverinstance<MIPWrapper>*>(pp);
   assert(pSI);
   /// Not for -a:
   //   if (fabs(pSI->lastIncumbent - out.objVal) > 1e-12*(1.0 + fabs(out.objVal))) {
@@ -481,7 +481,7 @@ template <class MIPWrapper>
 void HandleCutCallback(const MIP_wrapper::Output& out, MIP_wrapper::CutInput& in, void* pp,
                        bool fMIPSol) {
   // multi-threading? TODO
-  MIP_solverinstance<MIPWrapper>* pSI = static_cast<MIP_solverinstance<MIPWrapper>*>(pp);
+  auto* pSI = static_cast<MIP_solverinstance<MIPWrapper>*>(pp);
   assert(pSI);
   assert(&out);
   assert(&in);
@@ -618,7 +618,7 @@ void removeDuplicates(std::vector<Idx>& rmi, std::vector<double>& rmv) {
 
 template <class MIPWrapper>
 void p_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType lt) {
-  MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
   Env& _env = gi.env();
   //     ArrayLit* al = eval_array_lit(_env.envi(), args[0]);
   //     int nvars = al->v().size();
@@ -694,7 +694,7 @@ void p_float_lin_eq(SolverInstanceBase& si, const Call* call) {
 // The non-_lin constraints happen in a failed model || in a non-optimized one:
 template <class MIPWrapper>
 void p_non_lin(SolverInstanceBase& si, const Call* call, MIP_wrapper::LinConType nCmp) {
-  MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
   std::vector<double> coefs;
   std::vector<MIP_solver::Variable> vars;
   double rhs = 0.0;
@@ -737,7 +737,7 @@ void p_le(SolverInstanceBase& si, const Call* call) {
 /// var1<=0 if var2==0
 template <class MIPWrapper>
 void p_indicator_le0_if0(SolverInstanceBase& si, const Call* call) {
-  MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
   /// Looking at the bounded variable and the flag
   bool f1const = 0, f2const = 0;
   double val1, val2;
@@ -780,7 +780,7 @@ void p_indicator_le0_if0(SolverInstanceBase& si, const Call* call) {
 /// var1==var2 if var3==1
 template <class MIPWrapper>
 void p_indicator_eq_if1(SolverInstanceBase& si, const Call* call) {
-  MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
   std::vector<double> coefs;
   std::vector<MIP_solver::Variable> vars;
   double rhs = 0.0;
@@ -844,7 +844,7 @@ void p_indicator_eq_if1(SolverInstanceBase& si, const Call* call) {
 /// Cumulative
 template <class MIPWrapper>
 void p_cumulative(SolverInstanceBase& si, const Call* call) {
-  MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
 
   std::unique_ptr<SECCutGen> pCG(new SECCutGen(gi.getMIPWrapper()));
 
@@ -865,7 +865,7 @@ void p_cumulative(SolverInstanceBase& si, const Call* call) {
 /// The XBZ cut generator
 template <class MIPWrapper>
 void p_XBZ_cutgen(SolverInstanceBase& si, const Call* call) {
-  MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
 
   //     auto pCG = make_unique<XBZCutGen>();
   std::unique_ptr<XBZCutGen> pCG(new XBZCutGen(gi.getMIPWrapper()));
@@ -884,7 +884,7 @@ void p_XBZ_cutgen(SolverInstanceBase& si, const Call* call) {
 /// Initialize the SEC cut generator
 template <class MIPWrapper>
 void p_SEC_cutgen(SolverInstanceBase& si, const Call* call) {
-  MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
 
   std::unique_ptr<SECCutGen> pCG(new SECCutGen(gi.getMIPWrapper()));
 
@@ -904,7 +904,7 @@ void p_SEC_cutgen(SolverInstanceBase& si, const Call* call) {
 /// SCIP's bound disj
 template <class MIPWrapper>
 void p_bounds_disj(SolverInstanceBase& si, const Call* call) {
-  MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
   assert(6 == call->n_args());
   std::vector<double> fUB, fUBF, bnd, bndF;
   std::vector<MIP_solver::Variable> vars, varsF;
@@ -922,7 +922,7 @@ void p_bounds_disj(SolverInstanceBase& si, const Call* call) {
 
 template <class MIPWrapper>
 void p_array_minimum(SolverInstanceBase& si, const Call* call) {
-  MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
   assert(2 == call->n_args());
   auto res = gi.exprToVar(call->arg(0));
   std::vector<MIP_solver::Variable> args;
@@ -935,7 +935,7 @@ void p_array_minimum(SolverInstanceBase& si, const Call* call) {
 /// fzn_[int/float]_times
 template <class MIPWrapper>
 void p_times(SolverInstanceBase& si, const Call* call) {
-  MIP_solverinstance<MIPWrapper>& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
+  auto& gi = dynamic_cast<MIP_solverinstance<MIPWrapper>&>(si);
   assert(3 == call->n_args());
   auto x = gi.exprToVar(call->arg(0));
   auto y = gi.exprToVar(call->arg(1));

@@ -16,7 +16,7 @@ namespace MiniZinc {
 EE flatten_setlit(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
-  SetLit* sl = e->cast<SetLit>();
+  auto* sl = e->cast<SetLit>();
   assert(sl->isv() == nullptr && sl->fsv() == nullptr);
   std::vector<EE> elems_ee(sl->v().size());
   for (unsigned int i = sl->v().size(); i--;)
@@ -24,7 +24,7 @@ EE flatten_setlit(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   std::vector<Expression*> elems(elems_ee.size());
   bool allPar = true;
   bool hadOpt = false;
-  for (unsigned int i = static_cast<unsigned int>(elems.size()); i--;) {
+  for (auto i = static_cast<unsigned int>(elems.size()); i--;) {
     elems[i] = elems_ee[i].r();
     allPar = allPar && elems[i]->type().ispar();
     hadOpt = hadOpt || elems[i]->type().isopt();
@@ -37,7 +37,7 @@ EE flatten_setlit(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     ret.r = bind(env, Ctx(), r, ee);
   } else {
     GCLock lock;
-    ArrayLit* al = new ArrayLit(sl->loc(), elems);
+    auto* al = new ArrayLit(sl->loc(), elems);
     Type al_t = Type::varint(1);
     if (hadOpt) {
       al_t.ot(Type::OT_OPTIONAL);

@@ -16,7 +16,7 @@ namespace MiniZinc {
 EE flatten_arrayaccess(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
-  ArrayAccess* aa = e->cast<ArrayAccess>();
+  auto* aa = e->cast<ArrayAccess>();
   KeepAlive aa_ka = aa;
 
   Ctx nctx = ctx;
@@ -28,7 +28,7 @@ EE flatten_arrayaccess(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b
 start_flatten_arrayaccess:
   for (unsigned int i = 0; i < aa->idx().size(); i++) {
     Expression* tmp = follow_id_to_decl(aa->idx()[i]);
-    if (VarDecl* vd = tmp->dyn_cast<VarDecl>()) tmp = vd->id();
+    if (auto* vd = tmp->dyn_cast<VarDecl>()) tmp = vd->id();
     if (tmp->type().ispar()) {
       ArrayLit* al;
       if (eev.r()->isa<ArrayLit>()) {
@@ -57,7 +57,7 @@ start_flatten_arrayaccess:
       std::vector<int> stack;
       for (unsigned int j = 0; j < aa->idx().size(); j++) {
         Expression* tmp = follow_id_to_decl(aa->idx()[j]);
-        if (VarDecl* vd = tmp->dyn_cast<VarDecl>()) tmp = vd->id();
+        if (auto* vd = tmp->dyn_cast<VarDecl>()) tmp = vd->id();
         if (tmp->type().ispar()) {
           GCLock lock;
           idx[j] = eval_int(env, tmp).toInt();
@@ -136,7 +136,7 @@ start_flatten_arrayaccess:
         t.dim(static_cast<int>(dims.size()));
         newal->type(t);
         eev.r = newal;
-        ArrayAccess* n_aa = new ArrayAccess(aa->loc(), newal, newaccess);
+        auto* n_aa = new ArrayAccess(aa->loc(), newal, newaccess);
         n_aa->type(aa->type());
         aa = n_aa;
         aa_ka = aa;
@@ -145,7 +145,7 @@ start_flatten_arrayaccess:
   }
 
   if (aa->idx().size() == 1 && aa->idx()[0]->isa<ArrayAccess>()) {
-    ArrayAccess* aa_inner = aa->idx()[0]->cast<ArrayAccess>();
+    auto* aa_inner = aa->idx()[0]->cast<ArrayAccess>();
     ArrayLit* al;
     if (eev.r()->isa<ArrayLit>()) {
       al = eev.r()->cast<ArrayLit>();
@@ -161,7 +161,7 @@ start_flatten_arrayaccess:
     }
     if (aa_inner->v()->type().ispar()) {
       KeepAlive ka_al_inner = flat_cv_exp(env, ctx, aa_inner->v());
-      ArrayLit* al_inner = ka_al_inner()->cast<ArrayLit>();
+      auto* al_inner = ka_al_inner()->cast<ArrayLit>();
       std::vector<Expression*> composed_e(al_inner->size());
       for (unsigned int i = 0; i < al_inner->size(); i++) {
         GCLock lock;
@@ -180,7 +180,7 @@ start_flatten_arrayaccess:
         t.dim(static_cast<int>(dims.size()));
         newal->type(t);
         eev.r = newal;
-        ArrayAccess* n_aa = new ArrayAccess(aa->loc(), newal, aa_inner->idx());
+        auto* n_aa = new ArrayAccess(aa->loc(), newal, aa_inner->idx());
         n_aa->type(aa->type());
         aa = n_aa;
         aa_ka = aa;
@@ -193,7 +193,7 @@ flatten_arrayaccess:
   dimctx.neg = false;
   for (unsigned int i = 0; i < aa->idx().size(); i++) {
     Expression* tmp = follow_id_to_decl(aa->idx()[i]);
-    if (VarDecl* vd = tmp->dyn_cast<VarDecl>()) tmp = vd->id();
+    if (auto* vd = tmp->dyn_cast<VarDecl>()) tmp = vd->id();
     ees.push_back(flat_exp(env, dimctx, tmp, nullptr, nullptr));
   }
   ees.push_back(EE(nullptr, eev.b()));

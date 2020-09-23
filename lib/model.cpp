@@ -61,7 +61,7 @@ Model::Model(void) : _parent(nullptr), _solveItem(nullptr), _outputItem(nullptr)
 Model::~Model(void) {
   for (unsigned int j = 0; j < _items.size(); j++) {
     Item* i = _items[j];
-    if (IncludeI* ii = i->dyn_cast<IncludeI>()) {
+    if (auto* ii = i->dyn_cast<IncludeI>()) {
       if (ii->own()) {
         delete ii->m();
         ii->m(nullptr);
@@ -176,7 +176,7 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
           }
         } else {
           // Increment type of current item
-          Type::BaseType nextType = static_cast<Type::BaseType>(back_t.bt() + 1);
+          auto nextType = static_cast<Type::BaseType>(back_t.bt() + 1);
           for (unsigned int i = 0; i < type_ids[stack.back()].size(); i++) {
             type_ids[stack.back()][i]->bt(nextType);
           }
@@ -196,7 +196,7 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
 void Model::registerFn(EnvI& env, FunctionI* fi) {
   Model* m = this;
   while (m->_parent) m = m->_parent;
-  FnMap::iterator i_id = m->fnmap.find(fi->id());
+  auto i_id = m->fnmap.find(fi->id());
   if (i_id == m->fnmap.end()) {
     // new element
     std::vector<FnEntry> v;
@@ -259,7 +259,7 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type
   if (id == constants().var_redef->id()) return constants().var_redef;
   Model* m = this;
   while (m->_parent) m = m->_parent;
-  FnMap::iterator i_id = m->fnmap.find(id);
+  auto i_id = m->fnmap.find(id);
   if (i_id == m->fnmap.end()) {
     return nullptr;
   }
@@ -289,9 +289,8 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type
 }
 
 void Model::mergeStdLib(EnvI& env, Model* m) const {
-  for (FnMap::const_iterator it = fnmap.begin(); it != fnmap.end(); ++it) {
-    for (std::vector<FnEntry>::const_iterator cit = it->second.begin(); cit != it->second.end();
-         ++cit) {
+  for (auto it = fnmap.begin(); it != fnmap.end(); ++it) {
+    for (auto cit = it->second.begin(); cit != it->second.end(); ++cit) {
       if ((*cit).fi->from_stdlib()) {
         m->registerFn(env, (*cit).fi);
       }
@@ -302,7 +301,7 @@ void Model::mergeStdLib(EnvI& env, Model* m) const {
 void Model::sortFn(void) {
   Model* m = this;
   while (m->_parent) m = m->_parent;
-  for (FnMap::iterator it = m->fnmap.begin(); it != m->fnmap.end(); ++it) {
+  for (auto it = m->fnmap.begin(); it != m->fnmap.end(); ++it) {
     // Sort all functions by type
     std::sort(it->second.begin(), it->second.end());
   }
@@ -311,7 +310,7 @@ void Model::sortFn(void) {
 void Model::fixFnMap(void) {
   Model* m = this;
   while (m->_parent) m = m->_parent;
-  for (FnMap::iterator it = m->fnmap.begin(); it != m->fnmap.end(); ++it) {
+  for (auto it = m->fnmap.begin(); it != m->fnmap.end(); ++it) {
     for (unsigned int i = 0; i < it->second.size(); i++) {
       for (unsigned int j = 0; j < it->second[i].t.size(); j++) {
         if (it->second[i].t[j].isunknown()) {
@@ -325,7 +324,7 @@ void Model::fixFnMap(void) {
 void Model::checkFnOverloading(EnvI& env) {
   Model* m = this;
   while (m->_parent) m = m->_parent;
-  for (FnMap::iterator it = m->fnmap.begin(); it != m->fnmap.end(); ++it) {
+  for (auto it = m->fnmap.begin(); it != m->fnmap.end(); ++it) {
     std::vector<FnEntry>& fs = it->second;
     for (unsigned int i = 0; i < fs.size() - 1; i++) {
       FunctionI* cur = fs[i].fi;
@@ -395,7 +394,7 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expr
   if (id == constants().var_redef->id()) return constants().var_redef;
   const Model* m = this;
   while (m->_parent) m = m->_parent;
-  FnMap::const_iterator it = m->fnmap.find(id);
+  auto it = m->fnmap.find(id);
   if (it == m->fnmap.end()) {
     return nullptr;
   }
@@ -418,7 +417,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
   if (c->id() == constants().var_redef->id()) return constants().var_redef;
   const Model* m = this;
   while (m->_parent) m = m->_parent;
-  FnMap::const_iterator it = m->fnmap.find(c->id());
+  auto it = m->fnmap.find(c->id());
   if (it == m->fnmap.end()) {
     if (throwIfNotFound) {
       std::ostringstream oss;
@@ -551,8 +550,8 @@ bool Model::sameOverloading(EnvI& env, const std::vector<Expression*>& args, Fun
                             FunctionI* g) const {
   const Model* m = this;
   while (m->_parent) m = m->_parent;
-  FnMap::const_iterator it_f = m->fnmap.find(f->id());
-  FnMap::const_iterator it_g = m->fnmap.find(g->id());
+  auto it_f = m->fnmap.find(f->id());
+  auto it_g = m->fnmap.find(g->id());
   assert(it_f != m->fnmap.end());
   assert(it_g != m->fnmap.end());
   const std::vector<FnEntry>& v_f = it_f->second;
@@ -586,7 +585,7 @@ FunctionI* Model::matchRevMap(EnvI& env, const Type& t0) const {
   while (m->_parent) m = m->_parent;
   Type t = t0;
   t.enumId(0);
-  RevMapperMap::const_iterator it = revmapmap.find(t.toInt());
+  auto it = revmapmap.find(t.toInt());
   if (it != revmapmap.end()) {
     return it->second;
   } else {

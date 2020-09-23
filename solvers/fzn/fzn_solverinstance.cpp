@@ -98,7 +98,7 @@ SolverInstanceBase* FZN_SolverFactory::doCreateSI(Env& env, std::ostream& log,
 
 bool FZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
                                       std::vector<std::string>& argv) {
-  FZNSolverOptions& _opt = static_cast<FZNSolverOptions&>(*opt);
+  auto& _opt = static_cast<FZNSolverOptions&>(*opt);
   CLOParser cop(i, argv);
   string buffer;
   int nn = -1;
@@ -175,7 +175,7 @@ bool FZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
 
 void FZN_SolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt,
                                          const std::vector<MZNFZNSolverFlag>& flags) {
-  FZNSolverOptions& _opt = static_cast<FZNSolverOptions&>(*opt);
+  auto& _opt = static_cast<FZNSolverOptions&>(*opt);
   _opt.fzn_solver_flags.clear();
   for (auto& f : flags) {
     if (f.n == "-a") {
@@ -215,7 +215,7 @@ FZNSolverInstance::FZNSolverInstance(Env& env, std::ostream& log,
 FZNSolverInstance::~FZNSolverInstance(void) {}
 
 SolverInstance::Status FZNSolverInstance::solve(void) {
-  FZNSolverOptions& opt = static_cast<FZNSolverOptions&>(*_options);
+  auto& opt = static_cast<FZNSolverOptions&>(*_options);
   if (opt.fzn_solver.empty()) {
     throw InternalError("No FlatZinc solver specified");
   }

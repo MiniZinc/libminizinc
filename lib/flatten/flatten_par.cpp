@@ -30,7 +30,7 @@ EE flatten_par(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         vd =
             flat_exp(env, Ctx(), id->decl(), nullptr, constants().var_true).r()->cast<Id>()->decl();
         id->decl()->flat(vd);
-        ArrayLit* al = follow_id(vd->id())->cast<ArrayLit>();
+        auto* al = follow_id(vd->id())->cast<ArrayLit>();
         if (al->size() == 0) {
           if (r == nullptr)
             ret.r = al;
@@ -49,7 +49,7 @@ EE flatten_par(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       return ret;
     } else {
       GCLock lock;
-      ArrayLit* al = follow_id(eval_par(env, e))->cast<ArrayLit>();
+      auto* al = follow_id(eval_par(env, e))->cast<ArrayLit>();
       if (al->size() == 0 || (r && r->e() == nullptr)) {
         if (r == nullptr)
           ret.r = al;
@@ -71,7 +71,7 @@ EE flatten_par(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       }
       ASTExprVec<TypeInst> ranges_v(ranges);
       assert(!al->type().isbot());
-      TypeInst* ti = new TypeInst(e->loc(), al->type(), ranges_v, nullptr);
+      auto* ti = new TypeInst(e->loc(), al->type(), ranges_v, nullptr);
       VarDecl* vd = newVarDecl(env, ctx, ti, nullptr, nullptr, al);
       EE ee(vd, nullptr);
       env.cse_map_insert(al, ee);

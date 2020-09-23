@@ -32,7 +32,7 @@ void Scopes::add(EnvI& env, VarDecl* vd) {
     throw TypeError(env, vd->loc(), "enums are only allowed at top level");
   }
   if (vd->id()->idn() == -1 && vd->id()->v() == "") return;
-  DeclMap::iterator vdi = s.back().m.find(vd->id());
+  auto vdi = s.back().m.find(vd->id());
   if (vdi == s.back().m.end()) {
     s.back().m.insert(vd->id(), vd);
   } else {
@@ -52,7 +52,7 @@ void Scopes::pop(void) { s.pop_back(); }
 VarDecl* Scopes::find(Id* ident) {
   int cur = static_cast<int>(s.size()) - 1;
   for (;;) {
-    DeclMap::iterator vdi = s[cur].m.find(ident);
+    auto vdi = s[cur].m.find(ident);
     if (vdi == s[cur].m.end()) {
       if (s[cur].toplevel) {
         if (cur > 0)
@@ -98,8 +98,8 @@ struct VarDeclCmp {
   std::unordered_map<VarDecl*, int>& _pos;
   VarDeclCmp(std::unordered_map<VarDecl*, int>& pos) : _pos(pos) {}
   bool operator()(Expression* e0, Expression* e1) {
-    if (VarDecl* vd0 = Expression::dyn_cast<VarDecl>(e0)) {
-      if (VarDecl* vd1 = Expression::dyn_cast<VarDecl>(e1)) {
+    if (auto* vd0 = Expression::dyn_cast<VarDecl>(e0)) {
+      if (auto* vd1 = Expression::dyn_cast<VarDecl>(e1)) {
         return _pos[vd0] < _pos[vd1];
       } else {
         return true;
@@ -113,8 +113,8 @@ struct ItemCmp {
   std::unordered_map<VarDecl*, int>& _pos;
   ItemCmp(std::unordered_map<VarDecl*, int>& pos) : _pos(pos) {}
   bool operator()(Item* i0, Item* i1) {
-    if (VarDeclI* vd0 = i0->cast<VarDeclI>()) {
-      if (VarDeclI* vd1 = i1->cast<VarDeclI>()) {
+    if (auto* vd0 = i0->cast<VarDeclI>()) {
+      if (auto* vd1 = i1->cast<VarDeclI>()) {
         return _pos[vd0->e()] < _pos[vd1->e()];
       } else {
         return true;
@@ -130,7 +130,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
 
   Id* ident = vd->id();
   Call* c = vd->e()->dyn_cast<Call>();
-  ArrayLit* al = vd->e()->dyn_cast<ArrayLit>();
+  auto* al = vd->e()->dyn_cast<ArrayLit>();
 
   std::vector<Expression*> parts;
   if (vd->e()->isa<SetLit>()) {
@@ -158,7 +158,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
                         "enumFromConstructors used with incorrect argument type (only supports "
                         "array literals)");
       }
-      ArrayLit* al = c->arg(0)->cast<ArrayLit>();
+      auto* al = c->arg(0)->cast<ArrayLit>();
       for (unsigned int i = 0; i < al->size(); i++) {
         parts.push_back((*al)[i]);
       }
@@ -172,14 +172,14 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
 
   std::vector<Expression*> partCardinality;
   for (unsigned int p = 0; p < parts.size(); p++) {
-    if (SetLit* sl = parts[p]->dyn_cast<SetLit>()) {
+    if (auto* sl = parts[p]->dyn_cast<SetLit>()) {
       for (unsigned int i = 0; i < sl->v().size(); i++) {
         if (!sl->v()[i]->isa<Id>()) {
           throw TypeError(
               env, sl->v()[i]->loc(),
               std::string("invalid initialisation for enum `") + ident->v().c_str() + "'");
         }
-        TypeInst* ti_id = new TypeInst(sl->v()[i]->loc(), Type::parenum(enumId));
+        auto* ti_id = new TypeInst(sl->v()[i]->loc(), Type::parenum(enumId));
 
         std::vector<Expression*> toEnumArgs(2);
         toEnumArgs[0] = vd->id();
@@ -190,8 +190,8 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
               new BinOp(Location().introduce(), partCardinality.back(), BOT_PLUS, IntLit::a(i + 1));
         }
         Call* toEnum = new Call(sl->v()[i]->loc(), ASTString("to_enum"), toEnumArgs);
-        VarDecl* vd_id = new VarDecl(ti_id->loc(), ti_id, sl->v()[i]->cast<Id>()->str(), toEnum);
-        VarDeclI* vdi_id = new VarDeclI(vd_id->loc(), vd_id);
+        auto* vd_id = new VarDecl(ti_id->loc(), ti_id, sl->v()[i]->cast<Id>()->str(), toEnum);
+        auto* vdi_id = new VarDeclI(vd_id->loc(), vd_id);
         std::string str(sl->v()[i]->cast<Id>()->str().c_str());
         env.reverseEnum[str] = vdi_id;
         enumItems->addItem(vdi_id);
@@ -215,27 +215,27 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
         /// TODO: reimplement reverseEnum with a symbol table into the model (so you can evalPar an
         /// expression)
       }
-      ArrayLit* al = new ArrayLit(Location().introduce(), al_args);
+      auto* al = new ArrayLit(Location().introduce(), al_args);
 
       std::vector<TypeInst*> ranges(1);
       ranges[0] = new TypeInst(Location().introduce(), Type::parint());
-      TypeInst* ti = new TypeInst(Location().introduce(), Type::parstring(1));
+      auto* ti = new TypeInst(Location().introduce(), Type::parstring(1));
       ti->setRanges(ranges);
-      VarDecl* vd_enumToString = new VarDecl(Location().introduce(), ti, name, al);
+      auto* vd_enumToString = new VarDecl(Location().introduce(), ti, name, al);
       enumItems->addItem(new VarDeclI(Location().introduce(), vd_enumToString));
 
       Type tx = Type::parint();
       tx.ot(Type::OT_OPTIONAL);
-      TypeInst* ti_aa = new TypeInst(Location().introduce(), tx);
-      VarDecl* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
+      auto* ti_aa = new TypeInst(Location().introduce(), tx);
+      auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
       vd_aa->toplevel(false);
-      TypeInst* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
-      VarDecl* vd_ab = new VarDecl(Location().introduce(), ti_ab, "b");
+      auto* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
+      auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, "b");
       vd_ab->toplevel(false);
-      TypeInst* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
-      VarDecl* vd_aj = new VarDecl(Location().introduce(), ti_aj, "json");
+      auto* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
+      auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, "json");
       vd_aj->toplevel(false);
-      TypeInst* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
+      auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
       std::vector<VarDecl*> fi_params(3);
       fi_params[0] = vd_aa;
       fi_params[1] = vd_ab;
@@ -247,19 +247,18 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
       Call* occurs = new Call(Location().introduce(), "occurs", deopt_args);
       std::vector<Expression*> aa_args(1);
       aa_args[0] = deopt;
-      ArrayAccess* aa = new ArrayAccess(Location().introduce(), vd_enumToString->id(), aa_args);
+      auto* aa = new ArrayAccess(Location().introduce(), vd_enumToString->id(), aa_args);
 
-      StringLit* sl_absent = new StringLit(Location().introduce(), "<>");
+      auto* sl_absent = new StringLit(Location().introduce(), "<>");
 
       ITE* if_absent = new ITE(
           Location().introduce(),
           {vd_aj->id(), new StringLit(Location().introduce(), ASTString("null"))}, sl_absent);
 
-      StringLit* json_e_quote = new StringLit(Location().introduce(), ASTString("{\"e\":\""));
-      StringLit* json_e_quote_end = new StringLit(Location().introduce(), ASTString("\"}"));
-      BinOp* quote_aa = new BinOp(Location().introduce(), json_e_quote, BOT_PLUSPLUS, aa);
-      BinOp* quote_aa2 =
-          new BinOp(Location().introduce(), quote_aa, BOT_PLUSPLUS, json_e_quote_end);
+      auto* json_e_quote = new StringLit(Location().introduce(), ASTString("{\"e\":\""));
+      auto* json_e_quote_end = new StringLit(Location().introduce(), ASTString("\"}"));
+      auto* quote_aa = new BinOp(Location().introduce(), json_e_quote, BOT_PLUSPLUS, aa);
+      auto* quote_aa2 = new BinOp(Location().introduce(), quote_aa, BOT_PLUSPLUS, json_e_quote_end);
 
       Call* quote_dzn = new Call(Location().introduce(), ASTString("showDznId"), {aa});
 
@@ -275,37 +274,36 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
         toString += std::to_string(p) + "_";
       }
 
-      FunctionI* fi = new FunctionI(Location().introduce(), createEnumToStringName(ident, toString),
-                                    ti_fi, fi_params, ite);
+      auto* fi = new FunctionI(Location().introduce(), createEnumToStringName(ident, toString),
+                               ti_fi, fi_params, ite);
       enumItems->addItem(fi);
     } else if (Call* c = parts[p]->dyn_cast<Call>()) {
       if (c->id() == "anon_enum") {
         Type tx = Type::parint();
         tx.ot(Type::OT_OPTIONAL);
-        TypeInst* ti_aa = new TypeInst(Location().introduce(), tx);
-        VarDecl* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
+        auto* ti_aa = new TypeInst(Location().introduce(), tx);
+        auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
         vd_aa->toplevel(false);
 
-        TypeInst* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
-        VarDecl* vd_ab = new VarDecl(Location().introduce(), ti_ab, "b");
+        auto* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
+        auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, "b");
         vd_ab->toplevel(false);
 
-        TypeInst* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
-        VarDecl* vd_aj = new VarDecl(Location().introduce(), ti_aj, "json");
+        auto* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
+        auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, "json");
         vd_aj->toplevel(false);
 
         std::vector<Expression*> deopt_args(1);
         deopt_args[0] = vd_aa->id();
         Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
         Call* if_absent = new Call(Location().introduce(), "absent", deopt_args);
-        StringLit* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
+        auto* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
         ITE* sl_absent = new ITE(
             Location().introduce(),
             {vd_aj->id(), new StringLit(Location().introduce(), ASTString("null"))}, sl_absent_dzn);
 
-        StringLit* sl_dzn =
-            new StringLit(Location().introduce(),
-                          ASTString(std::string("to_enum(") + ident->str().c_str() + ","));
+        auto* sl_dzn = new StringLit(Location().introduce(), ASTString(std::string("to_enum(") +
+                                                                       ident->str().c_str() + ","));
 
         std::vector<Expression*> showIntArgs(1);
         if (partCardinality.empty()) {
@@ -319,29 +317,28 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
         }
 
         Call* showInt = new Call(Location().introduce(), constants().ids.show, showIntArgs);
-        BinOp* construct_string_dzn =
+        auto* construct_string_dzn =
             new BinOp(Location().introduce(), sl_dzn, BOT_PLUSPLUS, showInt);
-        StringLit* closing_bracket = new StringLit(Location().introduce(), ASTString(")"));
-        BinOp* construct_string_dzn_2 =
+        auto* closing_bracket = new StringLit(Location().introduce(), ASTString(")"));
+        auto* construct_string_dzn_2 =
             new BinOp(Location().introduce(), construct_string_dzn, BOT_PLUSPLUS, closing_bracket);
 
-        StringLit* sl = new StringLit(Location().introduce(),
-                                      ASTString(std::string(ident->str().c_str()) + "_"));
-        BinOp* construct_string = new BinOp(Location().introduce(), sl, BOT_PLUSPLUS, showInt);
+        auto* sl = new StringLit(Location().introduce(),
+                                 ASTString(std::string(ident->str().c_str()) + "_"));
+        auto* construct_string = new BinOp(Location().introduce(), sl, BOT_PLUSPLUS, showInt);
 
-        StringLit* json_e_quote = new StringLit(Location().introduce(), ASTString("{\"e\":\""));
-        StringLit* json_e_quote_mid =
-            new StringLit(Location().introduce(), ASTString("\", \"i\":"));
-        StringLit* json_e_quote_end = new StringLit(Location().introduce(), ASTString("}"));
-        BinOp* construct_string_json =
+        auto* json_e_quote = new StringLit(Location().introduce(), ASTString("{\"e\":\""));
+        auto* json_e_quote_mid = new StringLit(Location().introduce(), ASTString("\", \"i\":"));
+        auto* json_e_quote_end = new StringLit(Location().introduce(), ASTString("}"));
+        auto* construct_string_json =
             new BinOp(Location().introduce(), json_e_quote, BOT_PLUSPLUS,
                       new StringLit(Location().introduce(), ident->str()));
-        BinOp* construct_string_json_1a = new BinOp(Location().introduce(), construct_string_json,
-                                                    BOT_PLUSPLUS, json_e_quote_mid);
-        BinOp* construct_string_json_1b =
+        auto* construct_string_json_1a = new BinOp(Location().introduce(), construct_string_json,
+                                                   BOT_PLUSPLUS, json_e_quote_mid);
+        auto* construct_string_json_1b =
             new BinOp(Location().introduce(), construct_string_json_1a, BOT_PLUSPLUS, showInt);
-        BinOp* construct_string_json_2 = new BinOp(Location().introduce(), construct_string_json_1b,
-                                                   BOT_PLUSPLUS, json_e_quote_end);
+        auto* construct_string_json_2 = new BinOp(Location().introduce(), construct_string_json_1b,
+                                                  BOT_PLUSPLUS, json_e_quote_end);
 
         std::vector<Expression*> if_then(6);
         if_then[0] = if_absent;
@@ -352,7 +349,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
         if_then[5] = construct_string_json_2;
         ITE* ite = new ITE(Location().introduce(), if_then, construct_string);
 
-        TypeInst* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
+        auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
         std::vector<VarDecl*> fi_params(3);
         fi_params[0] = vd_aa;
         fi_params[1] = vd_ab;
@@ -362,8 +359,8 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
           toString += std::to_string(p) + "_";
         }
 
-        FunctionI* fi = new FunctionI(
-            Location().introduce(), createEnumToStringName(ident, toString), ti_fi, fi_params, ite);
+        auto* fi = new FunctionI(Location().introduce(), createEnumToStringName(ident, toString),
+                                 ti_fi, fi_params, ite);
         enumItems->addItem(fi);
       } else {
         // This is an enum constructor C(E)
@@ -385,9 +382,9 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
         {
           Type Xt = Type::parint();
           Xt.enumId(enumId);
-          TypeInst* Cfn_ti = new TypeInst(Location().introduce(), Xt);
-          TypeInst* Cfn_x_ti = new TypeInst(Location().introduce(), Type(), otherEnumId);
-          VarDecl* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
+          auto* Cfn_ti = new TypeInst(Location().introduce(), Xt);
+          auto* Cfn_x_ti = new TypeInst(Location().introduce(), Type(), otherEnumId);
+          auto* vd_x = new VarDecl(Location().introduce(), Cfn_x_ti, "x");
           vd_x->toplevel(false);
           Expression* realX;
           if (partCardinality.empty()) {
@@ -398,7 +395,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
           Call* Cfn_body = new Call(Location().introduce(), "to_enum", {vd->id(), realX});
 
           std::string Cfn_id(c->id().c_str());
-          FunctionI* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, Cfn_body);
+          auto* Cfn = new FunctionI(Location().introduce(), Cfn_id, Cfn_ti, {vd_x}, Cfn_body);
           env.reverseEnum[Cfn_id] = Cfn;
           enumItems->addItem(Cfn);
         }
@@ -406,9 +403,9 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
          function E: C_inv(X: x) = to_enum(E,x-partCardinality.back())
          */
         {
-          TypeInst* toEfn_ti = new TypeInst(Location().introduce(), Type(), otherEnumId);
-          TypeInst* toEfn_x_ti = new TypeInst(Location().introduce(), Type(), vd->id());
-          VarDecl* vd_x = new VarDecl(Location().introduce(), toEfn_x_ti, "x");
+          auto* toEfn_ti = new TypeInst(Location().introduce(), Type(), otherEnumId);
+          auto* toEfn_x_ti = new TypeInst(Location().introduce(), Type(), vd->id());
+          auto* vd_x = new VarDecl(Location().introduce(), toEfn_x_ti, "x");
           vd_x->toplevel(false);
           Expression* realX;
           if (partCardinality.empty()) {
@@ -419,9 +416,8 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
           }
           Call* toEfn_body = new Call(Location().introduce(), "to_enum", {otherEnumId, realX});
 
-          FunctionI* toEfn =
-              new FunctionI(Location().introduce(), std::string(c->id().c_str()) + "⁻¹", toEfn_ti,
-                            {vd_x}, toEfn_body);
+          auto* toEfn = new FunctionI(Location().introduce(), std::string(c->id().c_str()) + "⁻¹",
+                                      toEfn_ti, {vd_x}, toEfn_body);
           enumItems->addItem(toEfn);
         }
 
@@ -437,23 +433,23 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
         {
           Type tx = Type::parint();
           tx.ot(Type::OT_OPTIONAL);
-          TypeInst* ti_aa = new TypeInst(Location().introduce(), tx);
-          VarDecl* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
+          auto* ti_aa = new TypeInst(Location().introduce(), tx);
+          auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
           vd_aa->toplevel(false);
 
-          TypeInst* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
-          VarDecl* vd_ab = new VarDecl(Location().introduce(), ti_ab, "b");
+          auto* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
+          auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, "b");
           vd_ab->toplevel(false);
 
-          TypeInst* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
-          VarDecl* vd_aj = new VarDecl(Location().introduce(), ti_aj, "json");
+          auto* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
+          auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, "json");
           vd_aj->toplevel(false);
 
           std::vector<Expression*> deopt_args(1);
           deopt_args[0] = vd_aa->id();
           Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
           Call* if_absent = new Call(Location().introduce(), "absent", deopt_args);
-          StringLit* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
+          auto* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
           ITE* sl_absent =
               new ITE(Location().introduce(),
                       {vd_aj->id(), new StringLit(Location().introduce(), ASTString("null"))},
@@ -464,21 +460,21 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
               new Call(Location().introduce(), createEnumToStringName(otherEnumId, "_toString_"),
                        {toEnumE, vd_ab->id(), vd_aj->id()});
 
-          StringLit* openOther =
+          auto* openOther =
               new StringLit(Location().introduce(), std::string(c->id().c_str()) + "(");
-          StringLit* openJson =
+          auto* openJson =
               new StringLit(Location().introduce(),
                             "{ \"c\" : \"" + std::string(c->id().c_str()) + "\", \"e\" : ");
           ITE* openConstr = new ITE(Location().introduce(), {vd_aj->id(), openJson}, openOther);
-          StringLit* closeJson = new StringLit(Location().introduce(), "}");
-          StringLit* closeOther = new StringLit(Location().introduce(), ")");
+          auto* closeJson = new StringLit(Location().introduce(), "}");
+          auto* closeOther = new StringLit(Location().introduce(), ")");
           ITE* closeConstr = new ITE(Location().introduce(), {vd_aj->id(), closeJson}, closeOther);
 
-          BinOp* concat1 = new BinOp(Location().introduce(), openConstr, BOT_PLUSPLUS, toString);
-          BinOp* concat2 = new BinOp(Location().introduce(), concat1, BOT_PLUSPLUS, closeConstr);
+          auto* concat1 = new BinOp(Location().introduce(), openConstr, BOT_PLUSPLUS, toString);
+          auto* concat2 = new BinOp(Location().introduce(), concat1, BOT_PLUSPLUS, closeConstr);
 
           ITE* ite = new ITE(Location().introduce(), {if_absent, sl_absent}, concat2);
-          TypeInst* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
+          auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
           std::vector<VarDecl*> fi_params(3);
           fi_params[0] = vd_aa;
           fi_params[1] = vd_ab;
@@ -488,9 +484,8 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
             XtoString += std::to_string(p) + "_";
           }
 
-          FunctionI* fi =
-              new FunctionI(Location().introduce(), createEnumToStringName(ident, XtoString), ti_fi,
-                            fi_params, ite);
+          auto* fi = new FunctionI(Location().introduce(), createEnumToStringName(ident, XtoString),
+                                   ti_fi, fi_params, ite);
           enumItems->addItem(fi);
         }
 
@@ -508,29 +503,29 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
   }
 
   // Create set literal for overall enum
-  BinOp* rhs = new BinOp(vd->loc(), IntLit::a(1), BOT_DOTDOT, partCardinality.back());
+  auto* rhs = new BinOp(vd->loc(), IntLit::a(1), BOT_DOTDOT, partCardinality.back());
   vd->e(rhs);
 
   if (parts.size() > 1) {
     Type tx = Type::parint();
     tx.ot(Type::OT_OPTIONAL);
-    TypeInst* ti_aa = new TypeInst(Location().introduce(), tx);
-    VarDecl* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
+    auto* ti_aa = new TypeInst(Location().introduce(), tx);
+    auto* vd_aa = new VarDecl(Location().introduce(), ti_aa, "x");
     vd_aa->toplevel(false);
 
-    TypeInst* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
-    VarDecl* vd_ab = new VarDecl(Location().introduce(), ti_ab, "b");
+    auto* ti_ab = new TypeInst(Location().introduce(), Type::parbool());
+    auto* vd_ab = new VarDecl(Location().introduce(), ti_ab, "b");
     vd_ab->toplevel(false);
 
-    TypeInst* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
-    VarDecl* vd_aj = new VarDecl(Location().introduce(), ti_aj, "json");
+    auto* ti_aj = new TypeInst(Location().introduce(), Type::parbool());
+    auto* vd_aj = new VarDecl(Location().introduce(), ti_aj, "json");
     vd_aj->toplevel(false);
 
     std::vector<Expression*> deopt_args(1);
     deopt_args[0] = vd_aa->id();
     Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
     Call* if_absent = new Call(Location().introduce(), "absent", deopt_args);
-    StringLit* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
+    auto* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
     ITE* sl_absent = new ITE(
         Location().introduce(),
         {vd_aj->id(), new StringLit(Location().introduce(), ASTString("null"))}, sl_absent_dzn);
@@ -543,14 +538,14 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
       if (i == 0) {
         aa = vd_aa->id();
       } else {
-        BinOp* bo = new BinOp(Location().introduce(), deopt, BOT_MINUS, partCardinality[i - 1]);
+        auto* bo = new BinOp(Location().introduce(), deopt, BOT_MINUS, partCardinality[i - 1]);
         Call* c = new Call(Location().introduce(), "to_enum", {vd->id(), bo});
         aa = c;
       }
       Call* c = new Call(Location().introduce(), createEnumToStringName(ident, toString),
                          {aa, vd_ab->id(), vd_aj->id()});
       if (i < parts.size() - 1) {
-        BinOp* bo = new BinOp(Location().introduce(), deopt, BOT_LQ, partCardinality[i]);
+        auto* bo = new BinOp(Location().introduce(), deopt, BOT_LQ, partCardinality[i]);
         ite_cases_a.push_back(bo);
         ite_cases_a.push_back(c);
       } else {
@@ -562,13 +557,13 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
 
     ITE* ite = new ITE(Location().introduce(), {if_absent, sl_absent}, ite_cases);
 
-    TypeInst* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
+    auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
     std::vector<VarDecl*> fi_params(3);
     fi_params[0] = vd_aa;
     fi_params[1] = vd_ab;
     fi_params[2] = vd_aj;
-    FunctionI* fi = new FunctionI(
-        Location().introduce(), createEnumToStringName(ident, "_toString_"), ti_fi, fi_params, ite);
+    auto* fi = new FunctionI(Location().introduce(), createEnumToStringName(ident, "_toString_"),
+                             ti_fi, fi_params, ite);
     enumItems->addItem(fi);
 
     /*
@@ -593,43 +588,43 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
      */
 
     TIId* tiid = new TIId(Location().introduce(), "U");
-    TypeInst* ti_range = new TypeInst(Location().introduce(), Type::parint(), tiid);
+    auto* ti_range = new TypeInst(Location().introduce(), Type::parint(), tiid);
     std::vector<TypeInst*> ranges(1);
     ranges[0] = ti_range;
 
     Type tx = Type::parint(-1);
     tx.ot(Type::OT_OPTIONAL);
-    TypeInst* x_ti = new TypeInst(Location().introduce(), tx, ranges, ident);
-    VarDecl* vd_x = new VarDecl(Location().introduce(), x_ti, "x");
+    auto* x_ti = new TypeInst(Location().introduce(), tx, ranges, ident);
+    auto* vd_x = new VarDecl(Location().introduce(), x_ti, "x");
     vd_x->toplevel(false);
 
-    TypeInst* b_ti = new TypeInst(Location().introduce(), Type::parbool());
-    VarDecl* vd_b = new VarDecl(Location().introduce(), b_ti, "b");
+    auto* b_ti = new TypeInst(Location().introduce(), Type::parbool());
+    auto* vd_b = new VarDecl(Location().introduce(), b_ti, "b");
     vd_b->toplevel(false);
 
-    TypeInst* j_ti = new TypeInst(Location().introduce(), Type::parbool());
-    VarDecl* vd_j = new VarDecl(Location().introduce(), j_ti, "json");
+    auto* j_ti = new TypeInst(Location().introduce(), Type::parbool());
+    auto* vd_j = new VarDecl(Location().introduce(), j_ti, "json");
     vd_j->toplevel(false);
 
-    TypeInst* xx_range = new TypeInst(Location().introduce(), Type::parint(), nullptr);
+    auto* xx_range = new TypeInst(Location().introduce(), Type::parint(), nullptr);
     std::vector<TypeInst*> xx_ranges(1);
     xx_ranges[0] = xx_range;
-    TypeInst* xx_ti = new TypeInst(Location().introduce(), tx, xx_ranges, ident);
+    auto* xx_ti = new TypeInst(Location().introduce(), tx, xx_ranges, ident);
 
     std::vector<Expression*> array1dArgs(1);
     array1dArgs[0] = vd_x->id();
     Call* array1dCall = new Call(Location().introduce(), "array1d", array1dArgs);
 
-    VarDecl* vd_xx = new VarDecl(Location().introduce(), xx_ti, "xx", array1dCall);
+    auto* vd_xx = new VarDecl(Location().introduce(), xx_ti, "xx", array1dCall);
     vd_xx->toplevel(false);
 
-    TypeInst* idx_i_ti = new TypeInst(Location().introduce(), Type::parint());
-    VarDecl* idx_i = new VarDecl(Location().introduce(), idx_i_ti, "i");
+    auto* idx_i_ti = new TypeInst(Location().introduce(), Type::parint());
+    auto* idx_i = new VarDecl(Location().introduce(), idx_i_ti, "i");
     idx_i->toplevel(false);
 
     std::vector<Expression*> aa_xxi_idx(1);
     aa_xxi_idx[0] = idx_i->id();
-    ArrayAccess* aa_xxi = new ArrayAccess(Location().introduce(), vd_xx->id(), aa_xxi_idx);
+    auto* aa_xxi = new ArrayAccess(Location().introduce(), vd_xx->id(), aa_xxi_idx);
 
     std::vector<Expression*> _toString_ENUMArgs(3);
     _toString_ENUMArgs[0] = aa_xxi;
@@ -647,30 +642,29 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
 
     Generators generators;
     generators._g.push_back(gen);
-    Comprehension* comp =
-        new Comprehension(Location().introduce(), _toString_ENUM, generators, false);
+    auto* comp = new Comprehension(Location().introduce(), _toString_ENUM, generators, false);
 
     std::vector<Expression*> join_args(2);
     join_args[0] = new StringLit(Location().introduce(), ", ");
     join_args[1] = comp;
     Call* join = new Call(Location().introduce(), "join", join_args);
 
-    StringLit* sl_open = new StringLit(Location().introduce(), "[");
-    BinOp* bopp0 = new BinOp(Location().introduce(), sl_open, BOT_PLUSPLUS, join);
-    StringLit* sl_close = new StringLit(Location().introduce(), "]");
-    BinOp* bopp1 = new BinOp(Location().introduce(), bopp0, BOT_PLUSPLUS, sl_close);
+    auto* sl_open = new StringLit(Location().introduce(), "[");
+    auto* bopp0 = new BinOp(Location().introduce(), sl_open, BOT_PLUSPLUS, join);
+    auto* sl_close = new StringLit(Location().introduce(), "]");
+    auto* bopp1 = new BinOp(Location().introduce(), bopp0, BOT_PLUSPLUS, sl_close);
 
     std::vector<Expression*> let_args(1);
     let_args[0] = vd_xx;
     Let* let = new Let(Location().introduce(), let_args, bopp1);
 
-    TypeInst* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
+    auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
     std::vector<VarDecl*> fi_params(3);
     fi_params[0] = vd_x;
     fi_params[1] = vd_b;
     fi_params[2] = vd_j;
-    FunctionI* fi = new FunctionI(
-        Location().introduce(), createEnumToStringName(ident, "_toString_"), ti_fi, fi_params, let);
+    auto* fi = new FunctionI(Location().introduce(), createEnumToStringName(ident, "_toString_"),
+                             ti_fi, fi_params, let);
     enumItems->addItem(fi);
   }
 
@@ -685,20 +679,20 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
 
     Type argType = Type::parsetenum(ident->type().enumId());
     argType.ot(Type::OT_OPTIONAL);
-    TypeInst* x_ti = new TypeInst(Location().introduce(), argType, ident);
-    VarDecl* vd_x = new VarDecl(Location().introduce(), x_ti, "x");
+    auto* x_ti = new TypeInst(Location().introduce(), argType, ident);
+    auto* vd_x = new VarDecl(Location().introduce(), x_ti, "x");
     vd_x->toplevel(false);
 
-    TypeInst* b_ti = new TypeInst(Location().introduce(), Type::parbool());
-    VarDecl* vd_b = new VarDecl(Location().introduce(), b_ti, "b");
+    auto* b_ti = new TypeInst(Location().introduce(), Type::parbool());
+    auto* vd_b = new VarDecl(Location().introduce(), b_ti, "b");
     vd_b->toplevel(false);
 
-    TypeInst* j_ti = new TypeInst(Location().introduce(), Type::parbool());
-    VarDecl* vd_j = new VarDecl(Location().introduce(), j_ti, "json");
+    auto* j_ti = new TypeInst(Location().introduce(), Type::parbool());
+    auto* vd_j = new VarDecl(Location().introduce(), j_ti, "json");
     vd_j->toplevel(false);
 
-    TypeInst* idx_i_ti = new TypeInst(Location().introduce(), Type::parint());
-    VarDecl* idx_i = new VarDecl(Location().introduce(), idx_i_ti, "i");
+    auto* idx_i_ti = new TypeInst(Location().introduce(), Type::parint());
+    auto* idx_i = new VarDecl(Location().introduce(), idx_i_ti, "i");
     idx_i->toplevel(false);
 
     std::vector<Expression*> _toString_ENUMArgs(3);
@@ -712,7 +706,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     deopt_args[0] = vd_x->id();
     Call* deopt = new Call(Location().introduce(), "deopt", deopt_args);
     Call* if_absent = new Call(Location().introduce(), "absent", deopt_args);
-    StringLit* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
+    auto* sl_absent_dzn = new StringLit(Location().introduce(), "<>");
     ITE* sl_absent = new ITE(Location().introduce(),
                              {vd_j->id(), new StringLit(Location().introduce(), ASTString("null"))},
                              sl_absent_dzn);
@@ -723,8 +717,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
 
     Generators generators;
     generators._g.push_back(gen);
-    Comprehension* comp =
-        new Comprehension(Location().introduce(), _toString_ENUM, generators, false);
+    auto* comp = new Comprehension(Location().introduce(), _toString_ENUM, generators, false);
 
     std::vector<Expression*> join_args(2);
     join_args[0] = new StringLit(Location().introduce(), ", ");
@@ -739,25 +732,25 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
         Location().introduce(), {vd_j->id(), new StringLit(Location().introduce(), ASTString("]"))},
         new StringLit(Location().introduce(), ASTString("")));
 
-    StringLit* sl_open = new StringLit(Location().introduce(), "{");
-    BinOp* bopp0 = new BinOp(Location().introduce(), sl_open, BOT_PLUSPLUS, json_set);
-    BinOp* bopp1 = new BinOp(Location().introduce(), bopp0, BOT_PLUSPLUS, join);
-    BinOp* bopp2 = new BinOp(Location().introduce(), bopp1, BOT_PLUSPLUS, json_set_close);
-    StringLit* sl_close = new StringLit(Location().introduce(), "}");
-    BinOp* bopp3 = new BinOp(Location().introduce(), bopp2, BOT_PLUSPLUS, sl_close);
+    auto* sl_open = new StringLit(Location().introduce(), "{");
+    auto* bopp0 = new BinOp(Location().introduce(), sl_open, BOT_PLUSPLUS, json_set);
+    auto* bopp1 = new BinOp(Location().introduce(), bopp0, BOT_PLUSPLUS, join);
+    auto* bopp2 = new BinOp(Location().introduce(), bopp1, BOT_PLUSPLUS, json_set_close);
+    auto* sl_close = new StringLit(Location().introduce(), "}");
+    auto* bopp3 = new BinOp(Location().introduce(), bopp2, BOT_PLUSPLUS, sl_close);
 
     std::vector<Expression*> if_then(2);
     if_then[0] = if_absent;
     if_then[1] = sl_absent;
     ITE* ite = new ITE(Location().introduce(), if_then, bopp3);
 
-    TypeInst* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
+    auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
     std::vector<VarDecl*> fi_params(3);
     fi_params[0] = vd_x;
     fi_params[1] = vd_b;
     fi_params[2] = vd_j;
-    FunctionI* fi = new FunctionI(
-        Location().introduce(), createEnumToStringName(ident, "_toString_"), ti_fi, fi_params, ite);
+    auto* fi = new FunctionI(Location().introduce(), createEnumToStringName(ident, "_toString_"),
+                             ti_fi, fi_params, ite);
     enumItems->addItem(fi);
   }
 
@@ -772,43 +765,43 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
      */
 
     TIId* tiid = new TIId(Location().introduce(), "U");
-    TypeInst* ti_range = new TypeInst(Location().introduce(), Type::parint(), tiid);
+    auto* ti_range = new TypeInst(Location().introduce(), Type::parint(), tiid);
     std::vector<TypeInst*> ranges(1);
     ranges[0] = ti_range;
 
     Type tx = Type::parsetint(-1);
     tx.ot(Type::OT_OPTIONAL);
-    TypeInst* x_ti = new TypeInst(Location().introduce(), tx, ranges, ident);
-    VarDecl* vd_x = new VarDecl(Location().introduce(), x_ti, "x");
+    auto* x_ti = new TypeInst(Location().introduce(), tx, ranges, ident);
+    auto* vd_x = new VarDecl(Location().introduce(), x_ti, "x");
     vd_x->toplevel(false);
 
-    TypeInst* b_ti = new TypeInst(Location().introduce(), Type::parbool());
-    VarDecl* vd_b = new VarDecl(Location().introduce(), b_ti, "b");
+    auto* b_ti = new TypeInst(Location().introduce(), Type::parbool());
+    auto* vd_b = new VarDecl(Location().introduce(), b_ti, "b");
     vd_b->toplevel(false);
 
-    TypeInst* j_ti = new TypeInst(Location().introduce(), Type::parbool());
-    VarDecl* vd_j = new VarDecl(Location().introduce(), j_ti, "json");
+    auto* j_ti = new TypeInst(Location().introduce(), Type::parbool());
+    auto* vd_j = new VarDecl(Location().introduce(), j_ti, "json");
     vd_j->toplevel(false);
 
-    TypeInst* xx_range = new TypeInst(Location().introduce(), Type::parint(), nullptr);
+    auto* xx_range = new TypeInst(Location().introduce(), Type::parint(), nullptr);
     std::vector<TypeInst*> xx_ranges(1);
     xx_ranges[0] = xx_range;
-    TypeInst* xx_ti = new TypeInst(Location().introduce(), tx, xx_ranges, ident);
+    auto* xx_ti = new TypeInst(Location().introduce(), tx, xx_ranges, ident);
 
     std::vector<Expression*> array1dArgs(1);
     array1dArgs[0] = vd_x->id();
     Call* array1dCall = new Call(Location().introduce(), "array1d", array1dArgs);
 
-    VarDecl* vd_xx = new VarDecl(Location().introduce(), xx_ti, "xx", array1dCall);
+    auto* vd_xx = new VarDecl(Location().introduce(), xx_ti, "xx", array1dCall);
     vd_xx->toplevel(false);
 
-    TypeInst* idx_i_ti = new TypeInst(Location().introduce(), Type::parint());
-    VarDecl* idx_i = new VarDecl(Location().introduce(), idx_i_ti, "i");
+    auto* idx_i_ti = new TypeInst(Location().introduce(), Type::parint());
+    auto* idx_i = new VarDecl(Location().introduce(), idx_i_ti, "i");
     idx_i->toplevel(false);
 
     std::vector<Expression*> aa_xxi_idx(1);
     aa_xxi_idx[0] = idx_i->id();
-    ArrayAccess* aa_xxi = new ArrayAccess(Location().introduce(), vd_xx->id(), aa_xxi_idx);
+    auto* aa_xxi = new ArrayAccess(Location().introduce(), vd_xx->id(), aa_xxi_idx);
 
     std::vector<Expression*> _toString_ENUMArgs(3);
     _toString_ENUMArgs[0] = aa_xxi;
@@ -826,30 +819,29 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
 
     Generators generators;
     generators._g.push_back(gen);
-    Comprehension* comp =
-        new Comprehension(Location().introduce(), _toString_ENUM, generators, false);
+    auto* comp = new Comprehension(Location().introduce(), _toString_ENUM, generators, false);
 
     std::vector<Expression*> join_args(2);
     join_args[0] = new StringLit(Location().introduce(), ", ");
     join_args[1] = comp;
     Call* join = new Call(Location().introduce(), "join", join_args);
 
-    StringLit* sl_open = new StringLit(Location().introduce(), "[");
-    BinOp* bopp0 = new BinOp(Location().introduce(), sl_open, BOT_PLUSPLUS, join);
-    StringLit* sl_close = new StringLit(Location().introduce(), "]");
-    BinOp* bopp1 = new BinOp(Location().introduce(), bopp0, BOT_PLUSPLUS, sl_close);
+    auto* sl_open = new StringLit(Location().introduce(), "[");
+    auto* bopp0 = new BinOp(Location().introduce(), sl_open, BOT_PLUSPLUS, join);
+    auto* sl_close = new StringLit(Location().introduce(), "]");
+    auto* bopp1 = new BinOp(Location().introduce(), bopp0, BOT_PLUSPLUS, sl_close);
 
     std::vector<Expression*> let_args(1);
     let_args[0] = vd_xx;
     Let* let = new Let(Location().introduce(), let_args, bopp1);
 
-    TypeInst* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
+    auto* ti_fi = new TypeInst(Location().introduce(), Type::parstring());
     std::vector<VarDecl*> fi_params(3);
     fi_params[0] = vd_x;
     fi_params[1] = vd_b;
     fi_params[2] = vd_j;
-    FunctionI* fi = new FunctionI(
-        Location().introduce(), createEnumToStringName(ident, "_toString_"), ti_fi, fi_params, let);
+    auto* fi = new FunctionI(Location().introduce(), createEnumToStringName(ident, "_toString_"),
+                             ti_fi, fi_params, let);
     enumItems->addItem(fi);
   }
 }
@@ -897,7 +889,7 @@ VarDecl* TopoSorter::checkId(EnvI& env, Id* ident, const Location& loc) {
     }
     throw TypeError(env, loc, ss.str());
   }
-  PosMap::iterator pi = pos.find(decl);
+  auto pi = pos.find(decl);
   if (pi == pos.end()) {
     // new id
     scopes.push(true);
@@ -930,7 +922,7 @@ void TopoSorter::run(EnvI& env, Expression* e) {
     case Expression::E_ANON:
       break;
     case Expression::E_SETLIT: {
-      SetLit* sl = e->cast<SetLit>();
+      auto* sl = e->cast<SetLit>();
       if (sl->isv() == nullptr && sl->fsv() == nullptr)
         for (unsigned int i = 0; i < sl->v().size(); i++) run(env, sl->v()[i]);
     } break;
@@ -941,16 +933,16 @@ void TopoSorter::run(EnvI& env, Expression* e) {
       }
     } break;
     case Expression::E_ARRAYLIT: {
-      ArrayLit* al = e->cast<ArrayLit>();
+      auto* al = e->cast<ArrayLit>();
       for (unsigned int i = 0; i < al->size(); i++) run(env, (*al)[i]);
     } break;
     case Expression::E_ARRAYACCESS: {
-      ArrayAccess* ae = e->cast<ArrayAccess>();
+      auto* ae = e->cast<ArrayAccess>();
       run(env, ae->v());
       for (unsigned int i = 0; i < ae->idx().size(); i++) run(env, ae->idx()[i]);
     } break;
     case Expression::E_COMP: {
-      Comprehension* ce = e->cast<Comprehension>();
+      auto* ce = e->cast<Comprehension>();
       scopes.push(false);
       for (int i = 0; i < ce->n_generators(); i++) {
         run(env, ce->in(i));
@@ -972,14 +964,14 @@ void TopoSorter::run(EnvI& env, Expression* e) {
       run(env, ite->e_else());
     } break;
     case Expression::E_BINOP: {
-      BinOp* be = e->cast<BinOp>();
+      auto* be = e->cast<BinOp>();
       std::vector<Expression*> todo;
       todo.push_back(be->lhs());
       todo.push_back(be->rhs());
       while (!todo.empty()) {
         Expression* be = todo.back();
         todo.pop_back();
-        if (BinOp* e_bo = be->dyn_cast<BinOp>()) {
+        if (auto* e_bo = be->dyn_cast<BinOp>()) {
           todo.push_back(e_bo->lhs());
           todo.push_back(e_bo->rhs());
           for (ExpressionSetIter it = e_bo->ann().begin(); it != e_bo->ann().end(); ++it) {
@@ -999,8 +991,8 @@ void TopoSorter::run(EnvI& env, Expression* e) {
       for (unsigned int i = 0; i < ce->n_args(); i++) run(env, ce->arg(i));
     } break;
     case Expression::E_VARDECL: {
-      VarDecl* ve = e->cast<VarDecl>();
-      PosMap::iterator pi = pos.find(ve);
+      auto* ve = e->cast<VarDecl>();
+      auto pi = pos.find(ve);
       if (pi == pos.end()) {
         pos.insert(std::pair<VarDecl*, int>(ve, -1));
         run(env, ve->ti());
@@ -1014,7 +1006,7 @@ void TopoSorter::run(EnvI& env, Expression* e) {
       }
     } break;
     case Expression::E_TI: {
-      TypeInst* ti = e->cast<TypeInst>();
+      auto* ti = e->cast<TypeInst>();
       for (unsigned int i = 0; i < ti->ranges().size(); i++) run(env, ti->ranges()[i]);
       run(env, ti->domain());
     } break;
@@ -1025,7 +1017,7 @@ void TopoSorter::run(EnvI& env, Expression* e) {
       scopes.push(false);
       for (unsigned int i = 0; i < let->let().size(); i++) {
         run(env, let->let()[i]);
-        if (VarDecl* vd = let->let()[i]->dyn_cast<VarDecl>()) {
+        if (auto* vd = let->let()[i]->dyn_cast<VarDecl>()) {
           scopes.add(env, vd);
         }
       }
@@ -1033,7 +1025,7 @@ void TopoSorter::run(EnvI& env, Expression* e) {
       VarDeclCmp poscmp(pos);
       std::stable_sort(let->let().begin(), let->let().end(), poscmp);
       for (unsigned int i = 0, j = 0; i < let->let().size(); i++) {
-        if (VarDecl* vd = let->let()[i]->dyn_cast<VarDecl>()) {
+        if (auto* vd = let->let()[i]->dyn_cast<VarDecl>()) {
           let->let_orig()[j++] = vd->e();
           for (unsigned int k = 0; k < vd->ti()->ranges().size(); k++) {
             let->let_orig()[j++] = vd->ti()->ranges()[k]->domain();
@@ -1062,7 +1054,7 @@ void TopoSorter::run(EnvI& env, Expression* e) {
 
 KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) {
   if (e->isa<ArrayAccess>() && e->type().dim() > 0) {
-    ArrayAccess* aa = e->cast<ArrayAccess>();
+    auto* aa = e->cast<ArrayAccess>();
     // Turn ArrayAccess into a slicing operation
     std::vector<Expression*> args;
     args.push_back(aa->v());
@@ -1073,7 +1065,7 @@ KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) 
       if (aa->idx()[i]->type().is_set()) {
         bool needIdxSet = true;
         bool needInter = true;
-        if (SetLit* sl = aa->idx()[i]->dyn_cast<SetLit>()) {
+        if (auto* sl = aa->idx()[i]->dyn_cast<SetLit>()) {
           if (sl->isv() && sl->isv()->size() == 1) {
             if (sl->isv()->min().isFinite() && sl->isv()->max().isFinite()) {
               args.push_back(sl);
@@ -1098,7 +1090,7 @@ KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) 
           origIdxset->type(fi->rtype(env, origIdxsetArgs, false));
           origIdxset->decl(fi);
           if (needInter) {
-            BinOp* inter = new BinOp(aa->idx()[i]->loc(), aa->idx()[i], BOT_INTERSECT, origIdxset);
+            auto* inter = new BinOp(aa->idx()[i]->loc(), aa->idx()[i], BOT_INTERSECT, origIdxset);
             inter->type(Type::parsetint());
             args.push_back(inter);
           } else {
@@ -1107,12 +1099,12 @@ KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) 
         }
         slice.push_back(aa->idx()[i]);
       } else {
-        BinOp* bo = new BinOp(aa->idx()[i]->loc(), aa->idx()[i], BOT_DOTDOT, aa->idx()[i]);
+        auto* bo = new BinOp(aa->idx()[i]->loc(), aa->idx()[i], BOT_DOTDOT, aa->idx()[i]);
         bo->type(Type::parsetint());
         slice.push_back(bo);
       }
     }
-    ArrayLit* a_slice = new ArrayLit(e->loc(), slice);
+    auto* a_slice = new ArrayLit(e->loc(), slice);
     a_slice->type(Type::parsetint(1));
     args[1] = a_slice;
     std::ostringstream oss;
@@ -1282,7 +1274,7 @@ public:
       if (vi->type().dim() > 0)
         throw TypeError(_env, vi->loc(), "arrays cannot be elements of arrays");
       if (vi == constants().absent) haveAbsents = true;
-      AnonVar* av = vi->dyn_cast<AnonVar>();
+      auto* av = vi->dyn_cast<AnonVar>();
       if (av) {
         ty.ti(Type::TI_VAR);
         anons.push_back(av);
@@ -1396,7 +1388,7 @@ public:
       for (unsigned int i = 0; i < arrayEnumIds.size() - 1; i++) {
         Expression* aai = aa.idx()[i];
         // Check if index is slice operator, and convert to correct enum type
-        if (SetLit* aai_sl = aai->dyn_cast<SetLit>()) {
+        if (auto* aai_sl = aai->dyn_cast<SetLit>()) {
           if (IntSetVal* aai_isv = aai_sl->isv()) {
             if (aai_isv->min() == -IntVal::infinity() && aai_isv->max() == IntVal::infinity()) {
               Type aai_sl_t = aai_sl->type();
@@ -1404,15 +1396,15 @@ public:
               aai_sl->type(aai_sl_t);
             }
           }
-        } else if (BinOp* aai_bo = aai->dyn_cast<BinOp>()) {
+        } else if (auto* aai_bo = aai->dyn_cast<BinOp>()) {
           if (aai_bo->op() == BOT_DOTDOT) {
             Type aai_bo_t = aai_bo->type();
-            if (IntLit* il = aai_bo->lhs()->dyn_cast<IntLit>()) {
+            if (auto* il = aai_bo->lhs()->dyn_cast<IntLit>()) {
               if (il->v() == -IntVal::infinity()) {
                 // Expression is ..X, so result gets enum type of X
                 aai_bo_t.enumId(aai_bo->rhs()->type().enumId());
               }
-            } else if (IntLit* il = aai_bo->rhs()->dyn_cast<IntLit>()) {
+            } else if (auto* il = aai_bo->rhs()->dyn_cast<IntLit>()) {
               if (il->v() == IntVal::infinity()) {
                 // Expression is X.., so result gets enum type of X
                 aai_bo_t.enumId(aai_bo->lhs()->type().enumId());
@@ -1539,7 +1531,7 @@ public:
           while (!wherePartsStack.empty()) {
             Expression* e = wherePartsStack.back();
             wherePartsStack.pop_back();
-            if (BinOp* bo = e->dyn_cast<BinOp>()) {
+            if (auto* bo = e->dyn_cast<BinOp>()) {
               if (bo->op() == BOT_AND) {
                 wherePartsStack.push_back(bo->rhs());
                 wherePartsStack.push_back(bo->lhs());
@@ -1565,7 +1557,7 @@ public:
                     generatorMap(generatorMap0),
                     comp(comp0) {}
               void vId(const Id& ident) {
-                genMap_t::const_iterator it = generatorMap.find(ident.decl());
+                auto it = generatorMap.find(ident.decl());
                 if (it != generatorMap.end() && it->second.second > decl_idx) {
                   decl_idx = it->second.second;
                   decl = ident.decl();
@@ -1601,7 +1593,7 @@ public:
             Expression* whereExpr = whereMap[c.decl(i, j)][0];
             for (unsigned int k = 1; k < whereMap[c.decl(i, j)].size(); k++) {
               GCLock lock;
-              BinOp* bo =
+              auto* bo =
                   new BinOp(Location().introduce(), whereExpr, BOT_AND, whereMap[c.decl(i, j)][k]);
               Type bo_t = whereMap[c.decl(i, j)][k]->type().ispar() && whereExpr->type().ispar()
                               ? Type::parbool()
@@ -1691,7 +1683,7 @@ public:
     std::vector<AnonVar*> anons;
     bool allpar = !(tret.isvar());
     if (tret.isunknown()) {
-      if (AnonVar* av = ite.e_else()->dyn_cast<AnonVar>()) {
+      if (auto* av = ite.e_else()->dyn_cast<AnonVar>()) {
         allpar = false;
         anons.push_back(av);
       } else {
@@ -1711,7 +1703,7 @@ public:
             "expected bool conditional expression, got `" + eif->type().toString(_env) + "'");
       if (eif->type().cv()) tret.cv(true);
       if (ethen->type().isunknown()) {
-        if (AnonVar* av = ethen->dyn_cast<AnonVar>()) {
+        if (auto* av = ethen->dyn_cast<AnonVar>()) {
           allpar = false;
           anons.push_back(av);
         } else {
@@ -1809,8 +1801,8 @@ public:
         }
         if (call && (call->id() == "count" || call->id() == "sum") && call->type().isvar()) {
           if (call->n_args() == 1 && call->arg(0)->isa<Comprehension>()) {
-            Comprehension* comp = call->arg(0)->cast<Comprehension>();
-            BinOp* inner_bo = comp->e()->dyn_cast<BinOp>();
+            auto* comp = call->arg(0)->cast<Comprehension>();
+            auto* inner_bo = comp->e()->dyn_cast<BinOp>();
             if (inner_bo) {
               if (inner_bo->op() == BOT_EQ && inner_bo->lhs()->type().isint()) {
                 Expression* generated = inner_bo->lhs();
@@ -1936,7 +1928,7 @@ public:
   /// Visit call
   void vCall(Call& call) {
     std::vector<Expression*> args(call.n_args());
-    for (unsigned int i = static_cast<unsigned int>(args.size()); i--;) args[i] = call.arg(i);
+    for (auto i = static_cast<unsigned int>(args.size()); i--;) args[i] = call.arg(i);
     FunctionI* fi = _model->matchFn(_env, &call, true, true);
     if (fi->e() && fi->e()->isa<Call>()) {
       Call* next_call = fi->e()->cast<Call>();
@@ -1963,7 +1955,7 @@ public:
 
     bool cv = false;
     for (unsigned int i = 0; i < args.size(); i++) {
-      if (Comprehension* c = call.arg(i)->dyn_cast<Comprehension>()) {
+      if (auto* c = call.arg(i)->dyn_cast<Comprehension>()) {
         Type t_before = c->e()->type();
         Type t = fi->argtype(_env, args, i);
         t.dim(0);
@@ -2051,7 +2043,7 @@ public:
     for (unsigned int i = 0, j = 0; i < let.let().size(); i++) {
       Expression* li = let.let()[i];
       cv = cv || li->type().cv();
-      if (VarDecl* vdi = li->dyn_cast<VarDecl>()) {
+      if (auto* vdi = li->dyn_cast<VarDecl>()) {
         if (vdi->e() == nullptr && vdi->type().is_set() && vdi->type().isvar() &&
             vdi->ti()->domain() == nullptr) {
           std::ostringstream ss;
@@ -2157,7 +2149,7 @@ public:
           //            }
         } else if (ri->type() != Type::parint()) {
           assert(ri->isa<TypeInst>());
-          TypeInst* riti = ri->cast<TypeInst>();
+          auto* riti = ri->cast<TypeInst>();
           if (riti->domain()) {
             throw TypeError(_env, ri->loc(),
                             "array index set expression has invalid type, expected `set of int', "
@@ -2229,7 +2221,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   Model* m;
   if (!isFlatZinc && origModel == env.model()) {
     // Combine all items into single model
-    Model* combinedModel = new Model;
+    auto* combinedModel = new Model;
     class Combiner : public ItemVisitor {
     public:
       Model* m;
@@ -2252,7 +2244,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   std::vector<FunctionI*> functionItems;
   std::vector<AssignI*> assignItems;
-  Model* enumItems = new Model;
+  auto* enumItems = new Model;
 
   class TSVFuns : public ItemVisitor {
   public:
@@ -2316,8 +2308,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
       hadSolveItem = true;
       if (!isFlatZinc && si->e()) {
         GCLock lock;
-        TypeInst* ti = new TypeInst(Location().introduce(), Type());
-        VarDecl* obj = new VarDecl(Location().introduce(), ti, "_objective", si->e());
+        auto* ti = new TypeInst(Location().introduce(), Type());
+        auto* obj = new VarDecl(Location().introduce(), ti, "_objective", si->e());
         si->e(obj->id());
         objective = new VarDeclI(Location().introduce(), obj);
       }
@@ -2330,20 +2322,20 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   }
 
   for (unsigned int i = 0; i < enumItems->size(); i++) {
-    if (AssignI* ai = (*enumItems)[i]->dyn_cast<AssignI>()) {
+    if (auto* ai = (*enumItems)[i]->dyn_cast<AssignI>()) {
       assignItems.push_back(ai);
-    } else if (VarDeclI* vdi = (*enumItems)[i]->dyn_cast<VarDeclI>()) {
+    } else if (auto* vdi = (*enumItems)[i]->dyn_cast<VarDeclI>()) {
       m->addItem(vdi);
       ts.add(env.envi(), vdi, false, enumItems);
     } else {
-      FunctionI* fi = (*enumItems)[i]->dyn_cast<FunctionI>();
+      auto* fi = (*enumItems)[i]->dyn_cast<FunctionI>();
       m->addItem(fi);
       m->registerFn(env.envi(), fi);
       functionItems.push_back(fi);
     }
   }
 
-  Model* enumItems2 = new Model;
+  auto* enumItems2 = new Model;
 
   for (unsigned int i = 0; i < assignItems.size(); i++) {
     AssignI* ai = assignItems[i];
@@ -2378,11 +2370,11 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   }
 
   for (unsigned int i = 0; i < enumItems2->size(); i++) {
-    if (VarDeclI* vdi = (*enumItems2)[i]->dyn_cast<VarDeclI>()) {
+    if (auto* vdi = (*enumItems2)[i]->dyn_cast<VarDeclI>()) {
       m->addItem(vdi);
       ts.add(env.envi(), vdi, false, enumItems);
     } else {
-      FunctionI* fi = (*enumItems2)[i]->cast<FunctionI>();
+      auto* fi = (*enumItems2)[i]->cast<FunctionI>();
       m->addItem(fi);
       m->registerFn(env.envi(), fi);
       functionItems.push_back(fi);
@@ -2423,8 +2415,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     struct SortByPayload {
       bool operator()(Item* i0, Item* i1) {
         if (i0->isa<IncludeI>()) return !i1->isa<IncludeI>();
-        if (VarDeclI* vdi0 = i0->dyn_cast<VarDeclI>()) {
-          if (VarDeclI* vdi1 = i1->dyn_cast<VarDeclI>()) {
+        if (auto* vdi0 = i0->dyn_cast<VarDeclI>()) {
+          if (auto* vdi1 = i1->dyn_cast<VarDeclI>()) {
             return vdi0->e()->payload() < vdi1->e()->payload();
           } else {
             return !i1->isa<IncludeI>();
@@ -2593,7 +2585,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         outputItem = oi;
       } else {
         GCLock lock;
-        BinOp* bo = new BinOp(Location().introduce(), outputItem->e(), BOT_PLUSPLUS, oi->e());
+        auto* bo = new BinOp(Location().introduce(), outputItem->e(), BOT_PLUSPLUS, oi->e());
         bo->type(Type::parstring(1));
         outputItem->e(bo);
         oi->remove();
@@ -2659,7 +2651,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
             enumIds_a[i] = new SetLit(Location().introduce(), std::vector<Expression*>());
           }
         }
-        ArrayLit* enumIds_al = new ArrayLit(Location().introduce(), enumIds_a);
+        auto* enumIds_al = new ArrayLit(Location().introduce(), enumIds_a);
         enumIds_al->type(Type::parsetint(1));
         std::vector<Expression*> args({enumIds_al});
         Call* checkEnum =

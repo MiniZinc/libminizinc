@@ -588,7 +588,7 @@ std::string combineCmdLine(const std::vector<std::string>& cmd) {
 }
 
 void inflateString(std::string& s) {
-  unsigned char* cc = reinterpret_cast<unsigned char*>(&s[0]);
+  auto* cc = reinterpret_cast<unsigned char*>(&s[0]);
   // autodetect compressed string
   if (s.size() >= 2 && ((cc[0] == 0x1F && cc[1] == 0x8B)     // gzip
                         || (cc[0] == 0x78 && (cc[1] == 0x01  // zlib
@@ -661,8 +661,7 @@ void inflateString(std::string& s) {
 
 std::string deflateString(const std::string& s) {
   mz_ulong compressedLength = compressBound(static_cast<mz_ulong>(s.size()));
-  unsigned char* cmpr =
-      static_cast<unsigned char*>(::malloc(compressedLength * sizeof(unsigned char)));
+  auto* cmpr = static_cast<unsigned char*>(::malloc(compressedLength * sizeof(unsigned char)));
   int status = compress(cmpr, &compressedLength, reinterpret_cast<const unsigned char*>(&s[0]),
                         static_cast<mz_ulong>(s.size()));
   if (status != Z_OK) {

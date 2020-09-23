@@ -20,7 +20,7 @@ std::vector<Expression*> get_conjuncts(Expression* start) {
   while (!conj_stack.empty()) {
     Expression* e = conj_stack.back();
     conj_stack.pop_back();
-    if (BinOp* bo = e->dyn_cast<BinOp>()) {
+    if (auto* bo = e->dyn_cast<BinOp>()) {
       if (bo->op() == BOT_AND) {
         conj_stack.push_back(bo->rhs());
         conj_stack.push_back(bo->lhs());
@@ -37,11 +37,11 @@ std::vector<Expression*> get_conjuncts(Expression* start) {
 void classify_conjunct(Expression* e, IdMap<int>& eq_occurrences,
                        IdMap<std::pair<Expression*, Expression*>>& eq_branches,
                        std::vector<Expression*>& other_branches) {
-  if (BinOp* bo = e->dyn_cast<BinOp>()) {
+  if (auto* bo = e->dyn_cast<BinOp>()) {
     if (bo->op() == BOT_EQ) {
       if (Id* ident = bo->lhs()->dyn_cast<Id>()) {
         if (eq_branches.find(ident) == eq_branches.end()) {
-          IdMap<int>::iterator it = eq_occurrences.find(ident);
+          auto it = eq_occurrences.find(ident);
           if (it == eq_occurrences.end()) {
             eq_occurrences.insert(ident, 1);
           } else {
@@ -52,7 +52,7 @@ void classify_conjunct(Expression* e, IdMap<int>& eq_occurrences,
         }
       } else if (Id* ident = bo->rhs()->dyn_cast<Id>()) {
         if (eq_branches.find(ident) == eq_branches.end()) {
-          IdMap<int>::iterator it = eq_occurrences.find(ident);
+          auto it = eq_occurrences.find(ident);
           if (it == eq_occurrences.end()) {
             eq_occurrences.insert(ident, 1);
           } else {
@@ -124,7 +124,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         results.push_back(eq.first->decl());
         e_then.push_back(std::vector<KeepAlive>());
         for (int i = 0; i < ite->size(); i++) {
-          IdMap<std::pair<Expression*, Expression*>>::iterator it = eq_branches[i].find(eq.first);
+          auto it = eq_branches[i].find(eq.first);
           if (it == eq_branches[i].end()) {
             // not found, simply push x=x
             e_then.back().push_back(eq.first);
@@ -133,8 +133,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
           }
         }
         {
-          IdMap<std::pair<Expression*, Expression*>>::iterator it =
-              eq_branches[ite->size()].find(eq.first);
+          auto it = eq_branches[ite->size()].find(eq.first);
           if (it == eq_branches[ite->size()].end()) {
             // not found, simply push x=x
             e_else.push_back(eq.first);
@@ -145,7 +144,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       } else {
         // All other identifiers are put in the vector of "other" branches
         for (int i = 0; i <= ite->size(); i++) {
-          IdMap<std::pair<Expression*, Expression*>>::iterator it = eq_branches[i].find(eq.first);
+          auto it = eq_branches[i].find(eq.first);
           if (it != eq_branches[i].end()) {
             other_branches[i].push_back(it->second.second);
             noOtherBranches = false;
@@ -166,7 +165,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
           e_then.back().push_back(other_branches[i][0]);
         } else {
           GCLock lock;
-          ArrayLit* al = new ArrayLit(Location().introduce(), other_branches[i]);
+          auto* al = new ArrayLit(Location().introduce(), other_branches[i]);
           al->type(Type::varbool(1));
           Call* forall = new Call(Location().introduce(), constants().ids.forall, {al});
           forall->decl(env.model->matchFn(env, forall, false));
@@ -183,7 +182,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
           e_else.push_back(other_branches[ite->size()][0]);
         } else {
           GCLock lock;
-          ArrayLit* al = new ArrayLit(Location().introduce(), other_branches[ite->size()]);
+          auto* al = new ArrayLit(Location().introduce(), other_branches[ite->size()]);
           al->type(Type::varbool(1));
           Call* forall = new Call(Location().introduce(), constants().ids.forall, {al});
           forall->decl(env.model->matchFn(env, forall, false));
@@ -320,7 +319,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     if (results[j] == nullptr) {
       // need to introduce new result variable
       GCLock lock;
-      TypeInst* ti = new TypeInst(Location().introduce(), ite->type(), nullptr);
+      auto* ti = new TypeInst(Location().introduce(), ite->type(), nullptr);
       results[j] = newVarDecl(env, Ctx(), ti, nullptr, nullptr, nullptr);
     }
   }
@@ -378,11 +377,11 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         Ranges::Inter<IntVal, Ranges::Const<IntVal>, IntSetRanges> inter(ite_r, isv_r);
         IntSetVal* isv_new = IntSetVal::ai(inter);
         if (isv_new->card() != isv->card()) {
-          SetLit* r_dom = new SetLit(Location().introduce(), isv_new);
+          auto* r_dom = new SetLit(Location().introduce(), isv_new);
           nr->ti()->domain(r_dom);
         }
       } else {
-        SetLit* r_dom = new SetLit(Location().introduce(), IntSetVal::a(lb, ub));
+        auto* r_dom = new SetLit(Location().introduce(), IntSetVal::a(lb, ub));
         nr->ti()->domain(r_dom);
         nr->ti()->setComputedDomain(true);
       }
@@ -401,11 +400,11 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         Ranges::Inter<IntVal, IntSetRanges, IntSetRanges> inter(isv_branches_r, isv_r);
         IntSetVal* isv_new = IntSetVal::ai(inter);
         if (isv_new->card() != isv->card()) {
-          SetLit* r_dom = new SetLit(Location().introduce(), isv_new);
+          auto* r_dom = new SetLit(Location().introduce(), isv_new);
           nr->ti()->domain(r_dom);
         }
       } else {
-        SetLit* r_dom = new SetLit(Location().introduce(), isv_branches);
+        auto* r_dom = new SetLit(Location().introduce(), isv_branches);
         nr->ti()->domain(r_dom);
         nr->ti()->setComputedDomain(true);
       }
@@ -422,10 +421,10 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         FloatSetRanges isv_r(isv);
         Ranges::Inter<FloatVal, Ranges::Const<FloatVal>, FloatSetRanges> inter(ite_r, isv_r);
         FloatSetVal* fsv_new = FloatSetVal::ai(inter);
-        SetLit* r_dom = new SetLit(Location().introduce(), fsv_new);
+        auto* r_dom = new SetLit(Location().introduce(), fsv_new);
         nr->ti()->domain(r_dom);
       } else {
-        SetLit* r_dom = new SetLit(Location().introduce(), FloatSetVal::a(lb, ub));
+        auto* r_dom = new SetLit(Location().introduce(), FloatSetVal::a(lb, ub));
         nr->ti()->domain(r_dom);
         nr->ti()->setComputedDomain(true);
       }
@@ -434,10 +433,10 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
 
   // Create ite predicate calls
   GCLock lock;
-  ArrayLit* al_cond = new ArrayLit(Location().introduce(), conditions);
+  auto* al_cond = new ArrayLit(Location().introduce(), conditions);
   al_cond->type(Type::varbool(1));
   for (unsigned int j = 0; j < results.size(); j++) {
-    ArrayLit* al_branches = new ArrayLit(Location().introduce(), branches[j]);
+    auto* al_branches = new ArrayLit(Location().introduce(), branches[j]);
     Type branches_t = results[j]->type();
     branches_t.dim(1);
     branches_t.ti(allBranchesPar[j] ? Type::TI_PAR : Type::TI_VAR);
@@ -480,7 +479,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       } else if (def_i.size() == 1) {
         defined_conjunctions[i] = def_i[0];
       } else {
-        ArrayLit* al = new ArrayLit(Location().introduce(), def_i);
+        auto* al = new ArrayLit(Location().introduce(), def_i);
         al->type(Type::varbool(1));
         Call* forall = new Call(Location().introduce(), constants().ids.forall, {al});
         forall->decl(env.model->matchFn(env, forall, false));
@@ -488,7 +487,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         defined_conjunctions[i] = forall;
       }
     }
-    ArrayLit* al_defined = new ArrayLit(Location().introduce(), defined_conjunctions);
+    auto* al_defined = new ArrayLit(Location().introduce(), defined_conjunctions);
     al_defined->type(Type::varbool(1));
     Call* ite_defined_pred = new Call(ite->loc().introduce(), ASTString("if_then_else_partiality"),
                                       {al_cond, al_defined, b->id()});

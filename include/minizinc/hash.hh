@@ -98,7 +98,7 @@ public:
   /// Remove all elements from the map
   void clear(void) { _m.clear(); }
   T& get(Id* ident) {
-    iterator it = find(ident);
+    auto it = find(ident);
     //       assert(it != _m.end());
     if (_m.end() == it) {  // Changing so it stays in Release version
       std::string msg = "Id ";
@@ -149,7 +149,7 @@ public:
   void clear() { _m.clear(); }
   template <class D>
   void dump(void) {
-    for (iterator i = _m.begin(); i != _m.end(); ++i) {
+    for (auto i = _m.begin(); i != _m.end(); ++i) {
       std::cerr << D::k(i->first()) << ": " << D::d(i->second) << std::endl;
     }
   }

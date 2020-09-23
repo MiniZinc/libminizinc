@@ -33,7 +33,7 @@ Location::LocVec* Location::LocVec::a(const ASTString& filename, unsigned int fi
       combined |= (last_line - first_line) << 8;
       combined |= (first_column) << (8 + 7);
       combined |= (last_column) << (8 + 7 + 6);
-      LocVec* v = static_cast<LocVec*>(alloc(2));
+      auto* v = static_cast<LocVec*>(alloc(2));
       new (v) LocVec(filename, combined);
       return v;
     }
@@ -44,13 +44,13 @@ Location::LocVec* Location::LocVec::a(const ASTString& filename, unsigned int fi
       combined |= (static_cast<unsigned long long int>(last_line - first_line)) << 20;
       combined |= (static_cast<unsigned long long int>(first_column)) << (20 + 20);
       combined |= (static_cast<unsigned long long int>(last_column)) << (20 + 20 + 10);
-      LocVec* v = static_cast<LocVec*>(alloc(2));
+      auto* v = static_cast<LocVec*>(alloc(2));
       new (v) LocVec(filename, combined);
       return v;
     }
   }
 
-  LocVec* v = static_cast<LocVec*>(alloc(5));
+  auto* v = static_cast<LocVec*>(alloc(5));
   new (v) LocVec(filename, first_line, first_column, last_line, last_column);
   return v;
 }
@@ -390,12 +390,12 @@ ArrayLit::ArrayLit(const Location& loc, ArrayLit* v, const std::vector<std::pair
   _u._al = v;
   assert(slice.size() == v->dims());
   std::vector<int> d(dims.size() * 2 + 2 * slice.size());
-  for (unsigned int i = static_cast<unsigned int>(dims.size()); i--;) {
+  for (auto i = static_cast<unsigned int>(dims.size()); i--;) {
     d[i * 2] = dims[i].first;
     d[i * 2 + 1] = dims[i].second;
   }
   int sliceOffset = static_cast<int>(2 * dims.size());
-  for (unsigned int i = static_cast<unsigned int>(slice.size()); i--;) {
+  for (auto i = static_cast<unsigned int>(slice.size()); i--;) {
     d[sliceOffset + i * 2] = slice[i].first;
     d[sliceOffset + i * 2 + 1] = slice[i].second;
   }
@@ -434,7 +434,7 @@ ArrayLit::ArrayLit(const Location& loc, const std::vector<Expression*>& v,
   _flag_1 = false;
   _flag_2 = false;
   std::vector<int> d(dims.size() * 2);
-  for (unsigned int i = static_cast<unsigned int>(dims.size()); i--;) {
+  for (auto i = static_cast<unsigned int>(dims.size()); i--;) {
     d[i * 2] = dims[i].first;
     d[i * 2 + 1] = dims[i].second;
   }
@@ -470,7 +470,7 @@ Generator::Generator(const std::vector<ASTString>& v, Expression* in, Expression
   std::vector<VarDecl*> vd;
   Location loc = in == nullptr ? where->loc() : in->loc();
   for (unsigned int i = 0; i < v.size(); i++) {
-    VarDecl* nvd = new VarDecl(loc, new TypeInst(loc, Type::parint()), v[i]);
+    auto* nvd = new VarDecl(loc, new TypeInst(loc, Type::parint()), v[i]);
     nvd->toplevel(false);
     vd.push_back(nvd);
   }
@@ -481,7 +481,7 @@ Generator::Generator(const std::vector<ASTString>& v, Expression* in, Expression
 Generator::Generator(const std::vector<Id*>& v, Expression* in, Expression* where) {
   std::vector<VarDecl*> vd;
   for (unsigned int i = 0; i < v.size(); i++) {
-    VarDecl* nvd = new VarDecl(v[i]->loc(), new TypeInst(v[i]->loc(), Type::parint()), v[i]->v());
+    auto* nvd = new VarDecl(v[i]->loc(), new TypeInst(v[i]->loc(), Type::parint()), v[i]->v());
     nvd->toplevel(false);
     vd.push_back(nvd);
   }
@@ -493,7 +493,7 @@ Generator::Generator(const std::vector<std::string>& v, Expression* in, Expressi
   std::vector<VarDecl*> vd;
   Location loc = in == nullptr ? where->loc() : in->loc();
   for (unsigned int i = 0; i < v.size(); i++) {
-    VarDecl* nvd = new VarDecl(loc, new TypeInst(loc, Type::parint()), ASTString(v[i]));
+    auto* nvd = new VarDecl(loc, new TypeInst(loc, Type::parint()), ASTString(v[i]));
     nvd->toplevel(false);
     vd.push_back(nvd);
   }
@@ -510,7 +510,7 @@ Generator::Generator(int pos, Expression* where) {
   std::vector<VarDecl*> vd;
   std::ostringstream oss;
   oss << "__dummy" << pos;
-  VarDecl* nvd =
+  auto* nvd =
       new VarDecl(Location().introduce(), new TypeInst(Location().introduce(), Type::parint()),
                   ASTString(oss.str()));
   nvd->toplevel(false);
@@ -831,7 +831,7 @@ Let::Let(const Location& loc, const std::vector<Expression*>& let, Expression* i
   _let = ASTExprVec<Expression>(let);
   std::vector<Expression*> vde;
   for (unsigned int i = 0; i < let.size(); i++) {
-    if (VarDecl* vd = Expression::dyn_cast<VarDecl>(let[i])) {
+    if (auto* vd = Expression::dyn_cast<VarDecl>(let[i])) {
       vde.push_back(vd->e());
       for (unsigned int i = 0; i < vd->ti()->ranges().size(); i++) {
         vde.push_back(vd->ti()->ranges()[i]->domain());
@@ -846,7 +846,7 @@ Let::Let(const Location& loc, const std::vector<Expression*>& let, Expression* i
 void Let::pushbindings(void) {
   GC::mark();
   for (unsigned int i = 0, j = 0; i < _let.size(); i++) {
-    if (VarDecl* vd = _let[i]->dyn_cast<VarDecl>()) {
+    if (auto* vd = _let[i]->dyn_cast<VarDecl>()) {
       vd->trail();
       vd->e(_let_orig[j++]);
       for (unsigned int k = 0; k < vd->ti()->ranges().size(); k++) {
@@ -857,7 +857,7 @@ void Let::pushbindings(void) {
 }
 void Let::popbindings(void) {
   for (unsigned int i = 0; i < _let.size(); i++) {
-    if (VarDecl* vd = _let[i]->dyn_cast<VarDecl>()) {
+    if (auto* vd = _let[i]->dyn_cast<VarDecl>()) {
       GC::untrail();
       break;
     }
@@ -1140,7 +1140,7 @@ void Item::mark(Item* item) {
 #endif
       break;
     case Item::II_SOL: {
-      SolveI* si = item->cast<SolveI>();
+      auto* si = item->cast<SolveI>();
       for (ExpressionSetIter it = si->ann().begin(); it != si->ann().end(); ++it) {
         Expression::mark(*it);
       }
@@ -1151,7 +1151,7 @@ void Item::mark(Item* item) {
       Expression::mark(item->cast<OutputI>()->e());
       break;
     case Item::II_FUN: {
-      FunctionI* fi = item->cast<FunctionI>();
+      auto* fi = item->cast<FunctionI>();
       fi->id().mark();
       Expression::mark(fi->ti());
       for (ExpressionSetIter it = fi->ann().begin(); it != fi->ann().end(); ++it) {
@@ -1215,8 +1215,8 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
     case Expression::E_FLOATLIT:
       return e0->cast<FloatLit>()->v() == e1->cast<FloatLit>()->v();
     case Expression::E_SETLIT: {
-      const SetLit* s0 = e0->cast<SetLit>();
-      const SetLit* s1 = e1->cast<SetLit>();
+      const auto* s0 = e0->cast<SetLit>();
+      const auto* s1 = e1->cast<SetLit>();
       if (s0->isv()) {
         if (s1->isv()) {
           IntSetRanges r0(s0->isv());
@@ -1257,8 +1257,8 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
     case Expression::E_ANON:
       return false;
     case Expression::E_ARRAYLIT: {
-      const ArrayLit* a0 = e0->cast<ArrayLit>();
-      const ArrayLit* a1 = e1->cast<ArrayLit>();
+      const auto* a0 = e0->cast<ArrayLit>();
+      const auto* a1 = e1->cast<ArrayLit>();
       if (a0->size() != a1->size()) return false;
       if (a0->_dims.size() != a1->_dims.size()) return false;
       for (unsigned int i = 0; i < a0->_dims.size(); i++) {
@@ -1274,8 +1274,8 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
       return true;
     }
     case Expression::E_ARRAYACCESS: {
-      const ArrayAccess* a0 = e0->cast<ArrayAccess>();
-      const ArrayAccess* a1 = e1->cast<ArrayAccess>();
+      const auto* a0 = e0->cast<ArrayAccess>();
+      const auto* a1 = e1->cast<ArrayAccess>();
       if (!Expression::equal(a0->v(), a1->v())) return false;
       if (a0->idx().size() != a1->idx().size()) return false;
       for (unsigned int i = 0; i < a0->idx().size(); i++)
@@ -1283,8 +1283,8 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
       return true;
     }
     case Expression::E_COMP: {
-      const Comprehension* c0 = e0->cast<Comprehension>();
-      const Comprehension* c1 = e1->cast<Comprehension>();
+      const auto* c0 = e0->cast<Comprehension>();
+      const auto* c1 = e1->cast<Comprehension>();
       if (c0->set() != c1->set()) return false;
       if (!Expression::equal(c0->_e, c1->_e)) return false;
       if (c0->_g.size() != c1->_g.size()) return false;
@@ -1307,8 +1307,8 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
       return true;
     }
     case Expression::E_BINOP: {
-      const BinOp* b0 = e0->cast<BinOp>();
-      const BinOp* b1 = e1->cast<BinOp>();
+      const auto* b0 = e0->cast<BinOp>();
+      const auto* b1 = e1->cast<BinOp>();
       if (b0->op() != b1->op()) return false;
       if (!Expression::equal(b0->lhs(), b1->lhs())) return false;
       if (!Expression::equal(b0->rhs(), b1->rhs())) return false;
@@ -1332,8 +1332,8 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
       return true;
     }
     case Expression::E_VARDECL: {
-      const VarDecl* v0 = e0->cast<VarDecl>();
-      const VarDecl* v1 = e1->cast<VarDecl>();
+      const auto* v0 = e0->cast<VarDecl>();
+      const auto* v1 = e1->cast<VarDecl>();
       if (!Expression::equal(v0->ti(), v1->ti())) return false;
       if (!Expression::equal(v0->id(), v1->id())) return false;
       if (!Expression::equal(v0->e(), v1->e())) return false;
@@ -1349,8 +1349,8 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
       return true;
     }
     case Expression::E_TI: {
-      const TypeInst* t0 = e0->cast<TypeInst>();
-      const TypeInst* t1 = e1->cast<TypeInst>();
+      const auto* t0 = e0->cast<TypeInst>();
+      const auto* t1 = e1->cast<TypeInst>();
       if (t0->ranges().size() != t1->ranges().size()) return false;
       for (unsigned int i = t0->ranges().size(); i--;)
         if (!Expression::equal(t0->ranges()[i], t1->ranges()[i])) return false;
@@ -1367,7 +1367,7 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
 
 Constants::Constants(void) {
   GCLock lock;
-  TypeInst* ti = new TypeInst(Location(), Type::parbool());
+  auto* ti = new TypeInst(Location(), Type::parbool());
   lit_true = new BoolLit(Location(), true);
   var_true = new VarDecl(Location(), ti, "_bool_true", lit_true);
   lit_false = new BoolLit(Location(), false);
@@ -1862,7 +1862,7 @@ void Annotation::add(Expression* e) {
 
 void Annotation::add(std::vector<Expression*> e) {
   if (_s == nullptr) _s = new ExpressionSet;
-  for (unsigned int i = static_cast<unsigned int>(e.size()); i--;)
+  for (auto i = static_cast<unsigned int>(e.size()); i--;)
     if (e[i]) _s->insert(e[i]);
 }
 
@@ -1880,7 +1880,7 @@ void Annotation::removeCall(const ASTString& id) {
       if (c->id() == id) toRemove.push_back(*it);
     }
   }
-  for (unsigned int i = static_cast<unsigned int>(toRemove.size()); i--;) _s->remove(toRemove[i]);
+  for (auto i = static_cast<unsigned int>(toRemove.size()); i--;) _s->remove(toRemove[i]);
 }
 
 Call* Annotation::getCall(const ASTString& id) const {

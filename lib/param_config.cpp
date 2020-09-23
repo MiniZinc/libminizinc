@@ -25,7 +25,7 @@ void ParamConfig::load(const std::string& filename) {
       GCLock lock;
       jp.parse(&m, filename);
       for (unsigned int i = 0; i < m.size(); i++) {
-        if (AssignI* ai = m[i]->dyn_cast<AssignI>()) {
+        if (auto* ai = m[i]->dyn_cast<AssignI>()) {
           add_value(ai->id(), ai->e());
         }
       }
@@ -54,7 +54,7 @@ void ParamConfig::add_value(const ASTString& key, Expression* e) {
   std::stringstream val_ss;
   switch (e->eid()) {
     case Expression::E_ARRAYLIT: {
-      ArrayLit* al = e->cast<ArrayLit>();
+      auto* al = e->cast<ArrayLit>();
       for (auto exp : al->getVec()) {
         add_value(flag, exp);
       }

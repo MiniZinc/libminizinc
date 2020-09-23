@@ -25,7 +25,7 @@ void PathFilePrinter::addBetterName(Id* id, string name, string path, bool overw
   string oname;
   string opath;
 
-  NameMap::iterator it = betternames.find(id);
+  auto it = betternames.find(id);
   if (it != betternames.end()) {
     oname = it->second.first;
     opath = it->second.second;
@@ -88,7 +88,7 @@ void PathFilePrinter::print(Model* m) {
       if (Call* ca = (*it)->dyn_cast<Call>()) {
         ASTString cid = ca->id();
         if (cid == constants().ann.output_array) {
-          if (ArrayLit* rhs = e->e()->dyn_cast<ArrayLit>()) {
+          if (auto* rhs = e->e()->dyn_cast<ArrayLit>()) {
             for (unsigned int ind = 0; ind < rhs->size(); ind++) {
               if (Id* id = (*rhs)[ind]->dyn_cast<Id>()) {
                 std::stringstream bettername;
@@ -98,7 +98,7 @@ void PathFilePrinter::print(Model* m) {
                 ArrayLit& dimsets = *ca->arg(0)->cast<ArrayLit>();
                 vector<IntVal> dims(dimsets.size(), 1);
                 for (unsigned int i = 0; i < dimsets.size(); i++) {
-                  SetLit* sl = dimsets[i]->cast<SetLit>();
+                  auto* sl = dimsets[i]->cast<SetLit>();
                   dims[i] = sl->isv()->card();
                 }
                 vector<IntVal> dimspan(dims.size(), 1);
@@ -119,7 +119,7 @@ void PathFilePrinter::print(Model* m) {
             }
           }
         } else if (ca->id() == constants().ann.mzn_path) {
-          StringLit* sl = ca->arg(0)->cast<StringLit>();
+          auto* sl = ca->arg(0)->cast<StringLit>();
           addBetterName(e->id(), path2name(string(sl->v().c_str(), sl->v().size())),
                         string(sl->v().c_str()));
         }
@@ -132,7 +132,7 @@ void PathFilePrinter::print(Model* m) {
 }
 
 void PathFilePrinter::print(Item* item) {
-  if (VarDeclI* vdi = item->dyn_cast<VarDeclI>()) {
+  if (auto* vdi = item->dyn_cast<VarDeclI>()) {
     Id* id = vdi->e()->id();
     NamePair np = betternames[id];
     if (!np.first.empty() || !np.second.empty()) {
@@ -152,7 +152,7 @@ void PathFilePrinter::print(Item* item) {
       // Path
       os << np.second << std::endl;
     }
-  } else if (ConstraintI* ci = item->dyn_cast<ConstraintI>()) {
+  } else if (auto* ci = item->dyn_cast<ConstraintI>()) {
     StringLit* sl = nullptr;
     Expression* e = ci->e();
     for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {

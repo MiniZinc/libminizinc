@@ -126,7 +126,7 @@ protected:
 
   HeapPage* allocPage(size_t s, bool exact = false) {
     if (!exact) s = std::max(s, pageSize);
-    HeapPage* newPage = static_cast<HeapPage*>(::malloc(sizeof(HeapPage) + s - 1));
+    auto* newPage = static_cast<HeapPage*>(::malloc(sizeof(HeapPage) + s - 1));
     if (newPage == nullptr) {
       throw InternalError("out of memory");
     }
@@ -145,7 +145,7 @@ protected:
         assert(ns <= _fl_size[_max_fl]);
         if (ns >= _fl_size[0]) {
           // Remainder of page can be added to free lists
-          FreeListNode* fln = reinterpret_cast<FreeListNode*>(_page->data + _page->used);
+          auto* fln = reinterpret_cast<FreeListNode*>(_page->data + _page->used);
           _page->used += ns;
           new (fln) FreeListNode(ns, _fl[_fl_slot(ns)]);
           _fl[_fl_slot(ns)] = fln;
@@ -440,7 +440,7 @@ void GC::Heap::mark(void) {
     m = m->_roots_next;
   } while (m != _rootset);
 
-  for (unsigned int i = static_cast<unsigned int>(trail.size()); i--;) {
+  for (auto i = static_cast<unsigned int>(trail.size()); i--;) {
     Expression::mark(trail[i].v);
   }
 
@@ -499,7 +499,7 @@ void GC::Heap::sweep(void) {
     std::vector<NodeInfo> freeNodes;
     freeNodes.reserve(100);
     while (off < p->used) {
-      ASTNode* n = reinterpret_cast<ASTNode*>(p->data + off);
+      auto* n = reinterpret_cast<ASTNode*>(p->data + off);
       size_t ns = nodesize(n);
       assert(ns != 0);
 #if defined(MINIZINC_GC_STATS)
@@ -560,7 +560,7 @@ void GC::Heap::sweep(void) {
       ::free(pf);
     } else {
       for (auto ni : freeNodes) {
-        FreeListNode* fln = static_cast<FreeListNode*>(ni.n);
+        auto* fln = static_cast<FreeListNode*>(ni.n);
         new (fln) FreeListNode(ni.ns, _fl[_fl_slot(ni.ns)]);
         _fl[_fl_slot(ni.ns)] = fln;
         _free_mem += ni.ns;
@@ -741,7 +741,7 @@ ASTNodeWeakMap::~ASTNodeWeakMap(void) { GC::gc()->removeNodeWeakMap(this); }
 void ASTNodeWeakMap::insert(ASTNode* n0, ASTNode* n1) { _m.insert(std::make_pair(n0, n1)); }
 
 ASTNode* ASTNodeWeakMap::find(ASTNode* n) {
-  NodeMap::iterator it = _m.find(n);
+  auto it = _m.find(n);
   if (it == _m.end()) return nullptr;
   return it->second;
 }

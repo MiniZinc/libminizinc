@@ -525,8 +525,8 @@ void MIP_cplex_wrapper::setVarUB(int iVar, double ub) {
 static int CPXPUBLIC solcallback(CPXCENVptr env, void* cbdata, int wherefrom, void* cbhandle) {
   int status = 0;
 
-  MIP_wrapper::CBUserInfo* info = (MIP_wrapper::CBUserInfo*)cbhandle;
-  MIP_cplex_wrapper* cw = static_cast<MIP_cplex_wrapper*>(info->wrapper);
+  auto* info = (MIP_wrapper::CBUserInfo*)cbhandle;
+  auto* cw = static_cast<MIP_cplex_wrapper*>(info->wrapper);
   int hasincumbent = 0;
   int newincumbent = 0;
   double objVal;
@@ -639,7 +639,7 @@ static int CPXPUBLIC myusercutcallback(CPXCENVptr env, void* cbdata, int wherefr
                                        int* useraction_p) {
   int status = 0;
 
-  CUTINFOptr cutinfo = (CUTINFOptr)cbhandle;
+  auto cutinfo = (CUTINFOptr)cbhandle;
 
   //   int      numcols  = cutinfo->numcols;
   //   int      numcuts  = cutinfo->num;
@@ -654,7 +654,7 @@ static int CPXPUBLIC myusercutcallback(CPXCENVptr env, void* cbdata, int wherefr
   int addedcuts = 0;
   //   int      i, j, k; //, cutnz;
   MIP_wrapper::CBUserInfo* info = cutinfo->info;
-  MIP_cplex_wrapper* cw = static_cast<MIP_cplex_wrapper*>(info->wrapper);
+  auto* cw = static_cast<MIP_cplex_wrapper*>(info->wrapper);
   //    double   *x       = info->pCutOutput->x;
 
   *useraction_p = CPX_CALLBACK_DEFAULT;

@@ -601,7 +601,7 @@ private:
         //             debugprint(c);
         MZN_MIPD__assert_hard(c->n_args() == 3);
         //           ArrayLit* al = c->args()[1]->dyn_cast<ArrayLit>();
-        ArrayLit* al = follow_id(c->arg(1))->cast<ArrayLit>();
+        auto* al = follow_id(c->arg(1))->cast<ArrayLit>();
         MZN_MIPD__assert_hard(al);
         MZN_MIPD__assert_hard(al->size() >= 1);
         if (al->size() == 1) {  // 1-term scalar product in the rhs
@@ -686,7 +686,7 @@ private:
           //             std::cerr << "  !E call " << std::flush;
           //             debugprint(c);
           MZN_MIPD__assert_hard(c->n_args() == 3);
-          ArrayLit* al = follow_id(c->arg(1))->cast<ArrayLit>();
+          auto* al = follow_id(c->arg(1))->cast<ArrayLit>();
           MZN_MIPD__assert_hard(al);
           if (al->size() == 2) {  // 2-term eqn
             LinEq2Vars led;
@@ -1182,7 +1182,7 @@ private:
       // process calls. Can use the constr type info.
       auto& aCalls = mipd.vVarDescr[vd->payload()].aCalls;
       for (Item* pItem : aCalls) {
-        ConstraintI* pCI = pItem->dyn_cast<ConstraintI>();
+        auto* pCI = pItem->dyn_cast<ConstraintI>();
         MZN_MIPD__assert_hard(pCI != nullptr);
         Call* pCall = pCI->e()->dyn_cast<Call>();
         MZN_MIPD__assert_hard(pCall != nullptr);
@@ -1410,7 +1410,7 @@ private:
         // process calls. Can use the constr type info.
         auto& aCalls = mipd.vVarDescr[vd->payload()].aCalls;
         for (Item* pItem : aCalls) {
-          ConstraintI* pCI = pItem->dyn_cast<ConstraintI>();
+          auto* pCI = pItem->dyn_cast<ConstraintI>();
           MZN_MIPD__assert_hard(pCI);
           Call* pCall = pCI->e()->dyn_cast<Call>();
           MZN_MIPD__assert_hard(pCall);
@@ -1635,13 +1635,13 @@ private:
       // need to check if the new range is in the previous bounds...   TODO
       if (vd->type().isfloat()) {
         //           if ( 0.0==lb && 0.0==ub ) {
-        BinOp* newDom =
+        auto* newDom =
             new BinOp(Location().introduce(), FloatLit::a(lb), BOT_DOTDOT, FloatLit::a(ub));
         vd->ti()->domain(newDom);
         DBGOUT_MIPD("  NULL OUT:  " << vd->id()->str());
         //           }
       } else if (vd->type().isint() || vd->type().isbool()) {
-        SetLit* newDom = new SetLit(
+        auto* newDom = new SetLit(
             Location().introduce(),
             IntSetVal::a(static_cast<long long int>(lb), static_cast<long long int>(ub)));
         //           TypeInst* nti = copy(mipd.getEnv()->envi(),varFlag->ti())->cast<TypeInst>();
@@ -1654,11 +1654,11 @@ private:
     VarDecl* addIntVar(double LB, double UB) {
       //         GCLock lock;
       // Cache them? Only location can be different                    TODO
-      SetLit* newDom =
+      auto* newDom =
           new SetLit(Location().introduce(),
                      IntSetVal::a(static_cast<long long int>(LB), static_cast<long long int>(UB)));
-      TypeInst* ti = new TypeInst(Location().introduce(), Type::varint(), newDom);
-      VarDecl* newVar = new VarDecl(Location().introduce(), ti, mipd.getEnv()->envi().genId());
+      auto* ti = new TypeInst(Location().introduce(), Type::varint(), newDom);
+      auto* newVar = new VarDecl(Location().introduce(), ti, mipd.getEnv()->envi().genId());
       newVar->flat(newVar);
       mipd.getEnv()->envi().flatAddItem(new VarDeclI(Location().introduce(), newVar));
       return newVar;
@@ -1876,11 +1876,11 @@ private:
   }
 
   double expr2Const(Expression* arg) {
-    if (IntLit* il = arg->dyn_cast<IntLit>()) {
+    if (auto* il = arg->dyn_cast<IntLit>()) {
       return (static_cast<double>(il->v().toInt()));
-    } else if (FloatLit* fl = arg->dyn_cast<FloatLit>()) {
+    } else if (auto* fl = arg->dyn_cast<FloatLit>()) {
       return (fl->v().toDouble());
-    } else if (BoolLit* bl = arg->dyn_cast<BoolLit>()) {
+    } else if (auto* bl = arg->dyn_cast<BoolLit>()) {
       return (bl->v());
     } else {
       MZN_MIPD__assert_hard_msg(0,
@@ -1988,9 +1988,9 @@ template <class N>
 void SetOfIntervals<N>::cutOut(const Interval<N>& intv) {
   DBGOUT_MIPD__("Cutting " << intv << " from " << (*this));
   if (this->empty()) return;
-  iterator it1 = (Interval<N>::infMinus() == intv.left)
-                     ? this->lower_bound(Interval<N>(intv.left, intv.right))
-                     : this->upper_bound(Interval<N>(intv.left, intv.right));
+  auto it1 = (Interval<N>::infMinus() == intv.left)
+                 ? this->lower_bound(Interval<N>(intv.left, intv.right))
+                 : this->upper_bound(Interval<N>(intv.left, intv.right));
   auto it2Del1 = it1;  // from which to delete
   if (this->begin() != it1) {
     --it1;
@@ -2053,15 +2053,15 @@ typename SetOfIntervals<N>::SplitResult SetOfIntervals<N>::split(iterator& it, N
   MZN_MIPD__assert_hard(pos <= it->right);
   Interval<N> intvOld = *it;
   this->erase(it);
-  iterator it_01 = this->insert(Interval<N>(intvOld.left, pos));
-  iterator it_02 = this->insert(Interval<N>(pos, intvOld.right));
+  auto it_01 = this->insert(Interval<N>(intvOld.left, pos));
+  auto it_02 = this->insert(Interval<N>(pos, intvOld.right));
   it = this->end();
   return std::make_pair(it_01, it_02);
 }
 template <class N>
 Interval<N> SetOfIntervals<N>::getBounds() const {
   if (this->empty()) return Interval<N>(Interval<N>::infPlus(), Interval<N>::infMinus());
-  iterator it2 = this->end();
+  auto it2 = this->end();
   --it2;
   return Interval<N>(this->begin()->left, it2->right);
 }

@@ -172,7 +172,7 @@ Solns2Out::DE& Solns2Out::findOutputVar(ASTString name) {
 
 void Solns2Out::restoreDefaults() {
   for (unsigned int i = 0; i < getModel()->size(); i++) {
-    if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
+    if (auto* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
       if (vdi->e()->id()->idn() != -1 || (vdi->e()->id()->v() != "_mzn_solution_checker" &&
                                           vdi->e()->id()->v() != "_mzn_stats_checker")) {
         GCLock lock;
@@ -192,7 +192,7 @@ void Solns2Out::parseAssignments(string& solution) {
   if (sm.get() == nullptr) throw Error("solns2out_base: could not parse solution");
   solution = "";
   for (unsigned int i = 0; i < sm->size(); i++) {
-    if (AssignI* ai = (*sm)[i]->dyn_cast<AssignI>()) {
+    if (auto* ai = (*sm)[i]->dyn_cast<AssignI>()) {
       auto& de = findOutputVar(ai->id());
       if (!ai->e()->isa<BoolLit>() && !ai->e()->isa<IntLit>() && !ai->e()->isa<FloatLit>()) {
         Type de_t = de.first->type();
@@ -298,14 +298,14 @@ void Solns2Out::checkSolution(std::ostream& oss) {
   {
     GCLock lock;
     for (unsigned int i = 0; i < getModel()->size(); i++) {
-      if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
+      if (auto* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
         if (vdi->e()->ann().contains(constants().ann.mzn_check_var)) {
           checker << vdi->e()->id()->str() << " = ";
           Expression* e = eval_par(getEnv()->envi(), vdi->e()->e());
-          ArrayLit* al = e->dyn_cast<ArrayLit>();
+          auto* al = e->dyn_cast<ArrayLit>();
           std::vector<Id*> enumids;
           if (Call* cev = vdi->e()->ann().getCall(constants().ann.mzn_check_enum_var)) {
-            ArrayLit* enumIdsAl = cev->arg(0)->cast<ArrayLit>();
+            auto* enumIdsAl = cev->arg(0)->cast<ArrayLit>();
             for (int j = 0; j < enumIdsAl->size(); j++) {
               enumids.push_back((*enumIdsAl)[j]->dyn_cast<Id>());
             }
@@ -447,9 +447,9 @@ bool Solns2Out::__evalStatusMsg(SolverInstance::Status status) {
 void Solns2Out::init() {
   declmap.clear();
   for (unsigned int i = 0; i < getModel()->size(); i++) {
-    if (OutputI* oi = (*getModel())[i]->dyn_cast<OutputI>()) {
+    if (auto* oi = (*getModel())[i]->dyn_cast<OutputI>()) {
       outputExpr = oi->e();
-    } else if (VarDeclI* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
+    } else if (auto* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
       if (vdi->e()->id()->idn() == -1 && vdi->e()->id()->v() == "_mzn_solution_checker") {
         checkerModel = eval_string(getEnv()->envi(), vdi->e()->e());
         if (checkerModel.size() > 0 && checkerModel[0] == '@') {

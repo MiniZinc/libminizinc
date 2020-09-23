@@ -77,7 +77,7 @@ SolverInstanceBase* NL_SolverFactory::doCreateSI(Env& env, std::ostream& log,
 
 bool NL_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
                                      std::vector<std::string>& argv) {
-  NLSolverOptions& _opt = static_cast<NLSolverOptions&>(*opt);
+  auto& _opt = static_cast<NLSolverOptions&>(*opt);
   CLOParser cop(i, argv);
   string buffer;
 
@@ -125,7 +125,7 @@ void NLSolverInstance::resetSolver(void) {}
 
 SolverInstance::Status NLSolverInstance::solve(void) {
   // Get the options
-  NLSolverOptions& opt = static_cast<NLSolverOptions&>(*_options);
+  auto& opt = static_cast<NLSolverOptions&>(*_options);
 
   // --- --- --- Prepare the files
   string file_nl;   // Output for the NL, will be the input for the solver

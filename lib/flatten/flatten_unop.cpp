@@ -44,7 +44,7 @@ EE flatten_unop(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
           zero = IntLit::a(0);
         else
           zero = FloatLit::a(0.0);
-        BinOp* bo = new BinOp(Location().introduce(), zero, BOT_MINUS, uo->e());
+        auto* bo = new BinOp(Location().introduce(), zero, BOT_MINUS, uo->e());
         bo->type(uo->type());
         KeepAlive ka(bo);
         GC::unlock();

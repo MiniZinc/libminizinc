@@ -56,10 +56,10 @@ EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool do
       Generators gens;
       gens._g.push_back(gen);
       UnOp* aanot = new UnOp(id->loc(), UOT_NOT, nullptr);
-      Comprehension* cp = new Comprehension(id->loc(), aanot, gens, false);
+      auto* cp = new Comprehension(id->loc(), aanot, gens, false);
       Id* bodyidx = cp->decl(0, 0)->id();
       idx[0] = bodyidx;
-      ArrayAccess* aa = new ArrayAccess(id->loc(), id, idx);
+      auto* aa = new ArrayAccess(id->loc(), id, idx);
       aanot->e(aa);
       Type tt = id->type();
       tt.dim(0);
@@ -167,7 +167,7 @@ EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool do
       std::vector<Expression*> elems(static_cast<int>(asize.toInt()));
       for (int i = 0; i < static_cast<int>(asize.toInt()); i++) {
         CallStackItem csi(env, IntLit::a(i));
-        TypeInst* vti = new TypeInst(Location().introduce(), tt, vd->ti()->domain());
+        auto* vti = new TypeInst(Location().introduce(), tt, vd->ti()->domain());
         VarDecl* nvd = newVarDecl(env, Ctx(), vti, nullptr, vd, nullptr);
         elems[i] = nvd->id();
       }
@@ -175,7 +175,7 @@ EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool do
       // set to "computed" (since it is a consequence of the individual variable domains)
       vd->ti()->setComputedDomain(true);
 
-      ArrayLit* al = new ArrayLit(Location().introduce(), elems, dims);
+      auto* al = new ArrayLit(Location().introduce(), elems, dims);
       al->type(vd->type());
       vd->e(al);
       env.vo_add_exp(vd);
@@ -186,7 +186,7 @@ EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool do
     if (rete == nullptr) {
       if (!vd->toplevel()) {
         // create new VarDecl in toplevel, if decl doesnt exist yet
-        EnvI::CSEMap::iterator it = env.cse_map_find(vd->e());
+        auto it = env.cse_map_find(vd->e());
         if (it == env.cse_map_end()) {
           Expression* vde = follow_id(vd->e());
           ArrayLit* vdea = vde ? vde->dyn_cast<ArrayLit>() : nullptr;
@@ -215,7 +215,7 @@ EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool do
         if (id->type().bt() == Type::BT_ANN && vd->e()) {
           rete = vd->e();
         } else {
-          ArrayLit* vda = vd->dyn_cast<ArrayLit>();
+          auto* vda = vd->dyn_cast<ArrayLit>();
           if (vda && vda->size() == 0) {
             // Do not create names for empty arrays but return array literal directly
             rete = vda;

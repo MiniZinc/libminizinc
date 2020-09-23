@@ -18,7 +18,7 @@ EE flatten_vardecl(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   EE ret;
   GCLock lock;
   if (ctx.b != C_ROOT) throw FlatteningError(env, e->loc(), "not in root context");
-  VarDecl* v = e->cast<VarDecl>();
+  auto* v = e->cast<VarDecl>();
   VarDecl* it = v->flat();
   if (it == nullptr) {
     TypeInst* ti = eval_typeinst(env, ctx, v);
@@ -46,7 +46,7 @@ EE flatten_vardecl(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         Expression* ee = follow_id_to_decl(vd->e());
         if (ee->isa<VarDecl>()) ee = ee->cast<VarDecl>()->e();
         assert(ee && ee->isa<ArrayLit>());
-        ArrayLit* al = ee->cast<ArrayLit>();
+        auto* al = ee->cast<ArrayLit>();
         if (vd->ti()->domain()) {
           for (unsigned int i = 0; i < al->size(); i++) {
             if (Id* ali_id = (*al)[i]->dyn_cast<Id>()) {

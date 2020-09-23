@@ -68,7 +68,7 @@ SolverInstanceBase* MZN_SolverFactory::doCreateSI(Env& env, std::ostream& log,
 
 void MZN_SolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt,
                                          const std::vector<MZNFZNSolverFlag>& flags) {
-  MZNSolverOptions& _opt = static_cast<MZNSolverOptions&>(*opt);
+  auto& _opt = static_cast<MZNSolverOptions&>(*opt);
   _opt.mzn_solver_flags.clear();
   for (auto& f : flags) {
     if (f.n == "-t") {
@@ -81,7 +81,7 @@ void MZN_SolverFactory::setAcceptedFlags(SolverInstanceBase::Options* opt,
 
 bool MZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
                                       std::vector<std::string>& argv) {
-  MZNSolverOptions& _opt = static_cast<MZNSolverOptions&>(*opt);
+  auto& _opt = static_cast<MZNSolverOptions&>(*opt);
   CLOParser cop(i, argv);
   string buffer;
   int nn = -1;
@@ -144,7 +144,7 @@ MZNSolverInstance::MZNSolverInstance(Env& env, std::ostream& log,
 MZNSolverInstance::~MZNSolverInstance(void) {}
 
 SolverInstance::Status MZNSolverInstance::solve(void) {
-  MZNSolverOptions& opt = static_cast<MZNSolverOptions&>(*_options);
+  auto& opt = static_cast<MZNSolverOptions&>(*_options);
   if (opt.mzn_solver.empty()) {
     throw InternalError("No MiniZinc solver specified");
   }

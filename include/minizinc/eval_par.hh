@@ -159,7 +159,7 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
     e->decl(gen, id)->e(asn);
     e->rehash();
   } else {
-    ArrayLit* al = in()->cast<ArrayLit>();
+    auto* al = in()->cast<ArrayLit>();
     e->decl(gen, id)->e((*al)[static_cast<int>(i.toInt())]);
     e->rehash();
   }
@@ -235,7 +235,7 @@ void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, Kee
 template <class Eval>
 void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, KeepAlive in,
                      std::vector<typename Eval::ArrayVal>& a) {
-  ArrayLit* al = in()->cast<ArrayLit>();
+  auto* al = in()->cast<ArrayLit>();
   for (unsigned int i = 0; i < al->size(); i++) {
     eval_comp_array<Eval>(env, eval, e, gen, id, i, in, a);
   }

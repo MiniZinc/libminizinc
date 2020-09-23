@@ -20,7 +20,7 @@ namespace MiniZinc {
 namespace GecodeConstraints {
 
 void p_distinct(SolverInstanceBase& s, const Call* call) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs va = gi.arg2intvarargs(call->arg(0));
   MZ_IntConLevel icl = gi.ann2icl(call->ann());
   unshare(*gi._current_space, va);
@@ -28,7 +28,7 @@ void p_distinct(SolverInstanceBase& s, const Call* call) {
 }
 
 void p_distinctOffset(SolverInstanceBase& s, const Call* call) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs va = gi.arg2intvarargs(call->arg(1));
   unshare(*gi._current_space, va);
   IntArgs oa = gi.arg2intargs(call->arg(0));
@@ -37,7 +37,7 @@ void p_distinctOffset(SolverInstanceBase& s, const Call* call) {
 }
 
 void p_all_equal(SolverInstanceBase& s, const Call* call) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs va = gi.arg2intvarargs(call->arg(0));
   rel(*gi._current_space, va, IRT_EQ, gi.ann2icl(call->ann()));
 }
@@ -362,7 +362,7 @@ void p_bool_lin_gt_imp(SolverInstanceBase& s, const Call* call) {
 ///* arithmetic constraints */
 
 void p_int_plus(SolverInstanceBase& s, const Call* call) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   if (!call->arg(0)->type().isvarint()) {
     rel(*gi._current_space,
         call->arg(0)->cast<IntLit>()->v().toInt() + gi.arg2intvar(call->arg(1)) ==
@@ -386,7 +386,7 @@ void p_int_plus(SolverInstanceBase& s, const Call* call) {
 }
 
 void p_int_minus(SolverInstanceBase& s, const Call* call) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   if (!call->arg(0)->type().isvarint()) {
     rel(*gi._current_space,
         call->arg(0)->cast<IntLit>()->v().toInt() - gi.arg2intvar(call->arg(1)) ==
@@ -410,21 +410,21 @@ void p_int_minus(SolverInstanceBase& s, const Call* call) {
 }
 
 void p_int_times(SolverInstanceBase& s, const Call* call) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVar x0 = gi.arg2intvar(call->arg(0));
   IntVar x1 = gi.arg2intvar(call->arg(1));
   IntVar x2 = gi.arg2intvar(call->arg(2));
   mult(*gi._current_space, x0, x1, x2, gi.ann2icl(call->ann()));
 }
 void p_int_div(SolverInstanceBase& s, const Call* call) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVar x0 = gi.arg2intvar(call->arg(0));
   IntVar x1 = gi.arg2intvar(call->arg(1));
   IntVar x2 = gi.arg2intvar(call->arg(2));
   div(*gi._current_space, x0, x1, x2, gi.ann2icl(call->ann()));
 }
 void p_int_mod(SolverInstanceBase& s, const Call* call) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVar x0 = gi.arg2intvar(call->arg(0));
   IntVar x1 = gi.arg2intvar(call->arg(1));
   IntVar x2 = gi.arg2intvar(call->arg(2));
@@ -432,21 +432,21 @@ void p_int_mod(SolverInstanceBase& s, const Call* call) {
 }
 
 void p_int_min(SolverInstanceBase& s, const Call* call) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVar x0 = gi.arg2intvar(call->arg(0));
   IntVar x1 = gi.arg2intvar(call->arg(1));
   IntVar x2 = gi.arg2intvar(call->arg(2));
   min(*gi._current_space, x0, x1, x2, gi.ann2icl(call->ann()));
 }
 void p_int_max(SolverInstanceBase& s, const Call* call) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVar x0 = gi.arg2intvar(call->arg(0));
   IntVar x1 = gi.arg2intvar(call->arg(1));
   IntVar x2 = gi.arg2intvar(call->arg(2));
   max(*gi._current_space, x0, x1, x2, gi.ann2icl(call->ann()));
 }
 void p_int_negate(SolverInstanceBase& s, const Call* call) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVar x0 = gi.arg2intvar(call->arg(0));
   IntVar x1 = gi.arg2intvar(call->arg(1));
   rel(*gi._current_space, x0 == -x1, gi.ann2icl(call->ann()));
@@ -541,12 +541,12 @@ void p_bool_lt_imp(SolverInstanceBase& s, const Call* call) {
 
 void p_bool_or(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BOOL_OP(BoolOpType::BOT_OR);
 }
 void p_bool_or_imp(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVar b0 = gi.arg2boolvar(call->arg(0));
   BoolVar b1 = gi.arg2boolvar(call->arg(1));
   BoolVar b2 = gi.arg2boolvar(call->arg(2));
@@ -555,12 +555,12 @@ void p_bool_or_imp(SolverInstanceBase& s, const Call* call) {
 }
 void p_bool_and(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BOOL_OP(BoolOpType::BOT_AND);
 }
 void p_bool_and_imp(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVar b0 = gi.arg2boolvar(call->arg(0));
   BoolVar b1 = gi.arg2boolvar(call->arg(1));
   BoolVar b2 = gi.arg2boolvar(call->arg(2));
@@ -569,12 +569,12 @@ void p_bool_and_imp(SolverInstanceBase& s, const Call* call) {
 }
 void p_array_bool_and(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BOOL_ARRAY_OP(Gecode::BoolOpType::BOT_AND);
 }
 void p_array_bool_and_imp(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVarArgs bv = gi.arg2boolvarargs(call->arg(0));
   BoolVar b1 = gi.arg2boolvar(call->arg(1));
   for (unsigned int i = bv.size(); i--;)
@@ -582,24 +582,24 @@ void p_array_bool_and_imp(SolverInstanceBase& s, const Call* call) {
 }
 void p_array_bool_or(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BOOL_ARRAY_OP(BoolOpType::BOT_OR);
 }
 void p_array_bool_or_imp(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVarArgs bv = gi.arg2boolvarargs(call->arg(0));
   BoolVar b1 = gi.arg2boolvar(call->arg(1));
   clause(*gi._current_space, BoolOpType::BOT_OR, bv, BoolVarArgs() << b1, 1, gi.ann2icl(ann));
 }
 void p_array_bool_xor(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BOOL_ARRAY_OP(BoolOpType::BOT_XOR);
 }
 void p_array_bool_xor_imp(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVarArgs bv = gi.arg2boolvarargs(call->arg(0));
   BoolVar tmp(*gi._current_space, 0, 1);
   rel(*gi._current_space, BoolOpType::BOT_XOR, bv, tmp, gi.ann2icl(ann));
@@ -607,14 +607,14 @@ void p_array_bool_xor_imp(SolverInstanceBase& s, const Call* call) {
 }
 void p_array_bool_clause(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVarArgs bvp = gi.arg2boolvarargs(call->arg(0));
   BoolVarArgs bvn = gi.arg2boolvarargs(call->arg(1));
   clause(*gi._current_space, BoolOpType::BOT_OR, bvp, bvn, 1, gi.ann2icl(ann));
 }
 void p_array_bool_clause_reif(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVarArgs bvp = gi.arg2boolvarargs(call->arg(0));
   BoolVarArgs bvn = gi.arg2boolvarargs(call->arg(1));
   BoolVar b0 = gi.arg2boolvar(call->arg(2));
@@ -622,7 +622,7 @@ void p_array_bool_clause_reif(SolverInstanceBase& s, const Call* call) {
 }
 void p_array_bool_clause_imp(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVarArgs bvp = gi.arg2boolvarargs(call->arg(0));
   BoolVarArgs bvn = gi.arg2boolvarargs(call->arg(1));
   BoolVar b0 = gi.arg2boolvar(call->arg(2));
@@ -630,12 +630,12 @@ void p_array_bool_clause_imp(SolverInstanceBase& s, const Call* call) {
 }
 void p_bool_xor(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BOOL_OP(BoolOpType::BOT_XOR);
 }
 void p_bool_xor_imp(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVar b0 = gi.arg2boolvar(call->arg(0));
   BoolVar b1 = gi.arg2boolvar(call->arg(1));
   BoolVar b2 = gi.arg2boolvar(call->arg(2));
@@ -646,7 +646,7 @@ void p_bool_xor_imp(SolverInstanceBase& s, const Call* call) {
 }
 void p_bool_l_imp(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVar b0 = gi.arg2boolvar(call->arg(0));
   BoolVar b1 = gi.arg2boolvar(call->arg(1));
   if (call->arg(2)->type().isbool()) {
@@ -660,12 +660,12 @@ void p_bool_l_imp(SolverInstanceBase& s, const Call* call) {
 }
 void p_bool_r_imp(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BOOL_OP(BoolOpType::BOT_IMP);
 }
 void p_bool_not(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVar x0 = gi.arg2boolvar(call->arg(0));
   BoolVar x1 = gi.arg2boolvar(call->arg(1));
   rel(*gi._current_space, x0, BoolOpType::BOT_XOR, x1, 1, gi.ann2icl(ann));
@@ -674,7 +674,7 @@ void p_bool_not(SolverInstanceBase& s, const Call* call) {
 ///* element constraints */
 void p_array_int_element(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVar selector = gi.arg2intvar(call->arg(0));
   rel(*gi._current_space, selector > 0);
   if (call->arg(1)->type().isvar()) {
@@ -687,7 +687,7 @@ void p_array_int_element(SolverInstanceBase& s, const Call* call) {
 }
 void p_array_bool_element(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVar selector = gi.arg2intvar(call->arg(0));
   rel(*gi._current_space, selector > 0);
   if (call->arg(1)->type().isvar()) {
@@ -702,7 +702,7 @@ void p_array_bool_element(SolverInstanceBase& s, const Call* call) {
 ///* coercion constraints */
 void p_bool2int(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVar x0 = gi.arg2boolvar(call->arg(0));
   IntVar x1 = gi.arg2intvar(call->arg(1));
   if (call->arg(0)->type().isvarbool() && call->arg(1)->type().isvarint()) {
@@ -713,7 +713,7 @@ void p_bool2int(SolverInstanceBase& s, const Call* call) {
 }
 
 void p_int_in(SolverInstanceBase& s, const Call* call) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntSet d = gi.arg2intset(s.env().envi(), call->arg(1));
   if (call->arg(0)->type().isvarbool()) {
     Gecode::IntSetRanges dr(d);
@@ -731,7 +731,7 @@ void p_int_in(SolverInstanceBase& s, const Call* call) {
   }
 }
 void p_int_in_reif(SolverInstanceBase& s, const Call* call) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntSet d = gi.arg2intset(s.env().envi(), call->arg(1));
   if (call->arg(0)->type().isvarbool()) {
     Gecode::IntSetRanges dr(d);
@@ -752,7 +752,7 @@ void p_int_in_reif(SolverInstanceBase& s, const Call* call) {
   }
 }
 void p_int_in_imp(SolverInstanceBase& s, const Call* call) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntSet d = gi.arg2intset(s.env().envi(), call->arg(1));
   if (call->arg(0)->type().isvarbool()) {
     Gecode::IntSetRanges dr(d);
@@ -776,7 +776,7 @@ void p_int_in_imp(SolverInstanceBase& s, const Call* call) {
 
 void p_abs(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVar x0 = gi.arg2intvar(call->arg(0));
   IntVar x1 = gi.arg2intvar(call->arg(1));
   abs(*gi._current_space, x0, x1, gi.ann2icl(ann));
@@ -784,7 +784,7 @@ void p_abs(SolverInstanceBase& s, const Call* call) {
 
 void p_array_int_lt(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs iv0 = gi.arg2intvarargs(call->arg(0));
   IntVarArgs iv1 = gi.arg2intvarargs(call->arg(1));
   rel(*gi._current_space, iv0, IRT_LE, iv1, gi.ann2icl(ann));
@@ -792,7 +792,7 @@ void p_array_int_lt(SolverInstanceBase& s, const Call* call) {
 
 void p_array_int_lq(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs iv0 = gi.arg2intvarargs(call->arg(0));
   IntVarArgs iv1 = gi.arg2intvarargs(call->arg(1));
   rel(*gi._current_space, iv0, IRT_LQ, iv1, gi.ann2icl(ann));
@@ -800,7 +800,7 @@ void p_array_int_lq(SolverInstanceBase& s, const Call* call) {
 
 void p_array_bool_lt(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVarArgs bv0 = gi.arg2boolvarargs(call->arg(0));
   BoolVarArgs bv1 = gi.arg2boolvarargs(call->arg(1));
   rel(*gi._current_space, bv0, IRT_LE, bv1, gi.ann2icl(ann));
@@ -808,7 +808,7 @@ void p_array_bool_lt(SolverInstanceBase& s, const Call* call) {
 
 void p_array_bool_lq(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVarArgs bv0 = gi.arg2boolvarargs(call->arg(0));
   BoolVarArgs bv1 = gi.arg2boolvarargs(call->arg(1));
   rel(*gi._current_space, bv0, IRT_LQ, bv1, gi.ann2icl(ann));
@@ -816,7 +816,7 @@ void p_array_bool_lq(SolverInstanceBase& s, const Call* call) {
 
 void p_count(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs iv = gi.arg2intvarargs(call->arg(0));
   if (!call->arg(1)->type().isvarint()) {
     if (!call->arg(2)->type().isvarint()) {
@@ -837,7 +837,7 @@ void p_count(SolverInstanceBase& s, const Call* call) {
 
 void p_count_reif(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs iv = gi.arg2intvarargs(call->arg(0));
   IntVar x = gi.arg2intvar(call->arg(1));
   IntVar y = gi.arg2intvar(call->arg(2));
@@ -848,7 +848,7 @@ void p_count_reif(SolverInstanceBase& s, const Call* call) {
 }
 void p_count_imp(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs iv = gi.arg2intvarargs(call->arg(0));
   IntVar x = gi.arg2intvar(call->arg(1));
   IntVar y = gi.arg2intvar(call->arg(2));
@@ -860,7 +860,7 @@ void p_count_imp(SolverInstanceBase& s, const Call* call) {
 
 void count_rel(IntRelType irt, SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs iv = gi.arg2intvarargs(call->arg(1));
   count(*gi._current_space, iv, call->arg(2)->cast<IntLit>()->v().toInt(), irt,
         call->arg(0)->cast<IntLit>()->v().toInt(), gi.ann2icl(ann));
@@ -872,7 +872,7 @@ void p_at_least(SolverInstanceBase& s, const Call* call) { count_rel(IRT_GQ, s, 
 
 void p_bin_packing_load(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   int minIdx = call->arg(3)->cast<IntLit>()->v().toInt();
   IntVarArgs load = gi.arg2intvarargs(call->arg(0));
   IntVarArgs l;
@@ -897,7 +897,7 @@ void p_bin_packing_load(SolverInstanceBase& s, const Call* call) {
 
 void p_global_cardinality(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs iv0 = gi.arg2intvarargs(call->arg(0));
   IntArgs cover = gi.arg2intargs(call->arg(1));
   IntVarArgs iv1 = gi.arg2intvarargs(call->arg(2));
@@ -905,7 +905,7 @@ void p_global_cardinality(SolverInstanceBase& s, const Call* call) {
   Region re;
   IntSet cover_s(cover);
   Gecode::IntSetRanges cover_r(cover_s);
-  Gecode::IntVarRanges* iv0_ri = re.alloc<Gecode::IntVarRanges>(iv0.size());
+  auto* iv0_ri = re.alloc<Gecode::IntVarRanges>(iv0.size());
   for (int i = iv0.size(); i--;) iv0_ri[i] = Gecode::IntVarRanges(iv0[i]);
   Iter::Ranges::NaryUnion iv0_r(re, iv0_ri, iv0.size());
   Iter::Ranges::Diff<Iter::Ranges::NaryUnion, Gecode::IntSetRanges> extra_r(iv0_r, cover_r);
@@ -930,7 +930,7 @@ void p_global_cardinality(SolverInstanceBase& s, const Call* call) {
 
 void p_global_cardinality_closed(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs iv0 = gi.arg2intvarargs(call->arg(0));
   IntArgs cover = gi.arg2intargs(call->arg(1));
   IntVarArgs iv1 = gi.arg2intvarargs(call->arg(2));
@@ -940,7 +940,7 @@ void p_global_cardinality_closed(SolverInstanceBase& s, const Call* call) {
 
 void p_global_cardinality_low_up(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs x = gi.arg2intvarargs(call->arg(0));
   IntArgs cover = gi.arg2intargs(call->arg(1));
 
@@ -951,7 +951,7 @@ void p_global_cardinality_low_up(SolverInstanceBase& s, const Call* call) {
 
   IntSet cover_s(cover);
   Region re;
-  IntVarRanges* xrs = re.alloc<IntVarRanges>(x.size());
+  auto* xrs = re.alloc<IntVarRanges>(x.size());
   for (int i = x.size(); i--;) xrs[i].init(x[i]);
   Iter::Ranges::NaryUnion u(re, xrs, x.size());
   Iter::Ranges::ToValues<Iter::Ranges::NaryUnion> uv(u);
@@ -968,7 +968,7 @@ void p_global_cardinality_low_up(SolverInstanceBase& s, const Call* call) {
 
 void p_global_cardinality_low_up_closed(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs x = gi.arg2intvarargs(call->arg(0));
   IntArgs cover = gi.arg2intargs(call->arg(1));
 
@@ -983,35 +983,35 @@ void p_global_cardinality_low_up_closed(SolverInstanceBase& s, const Call* call)
 
 void p_minimum(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs iv = gi.arg2intvarargs(call->arg(1));
   min(*gi._current_space, iv, gi.arg2intvar(call->arg(0)), gi.ann2icl(ann));
 }
 
 void p_maximum(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs iv = gi.arg2intvarargs(call->arg(1));
   max(*gi._current_space, iv, gi.arg2intvar(call->arg(0)), gi.ann2icl(ann));
 }
 
 void p_maximum_arg(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs iv = gi.arg2intvarargs(call->arg(0));
   argmax(*gi._current_space, iv, gi.arg2intvar(call->arg(1)), true, gi.ann2icl(ann));
 }
 
 void p_minimum_arg(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs iv = gi.arg2intvarargs(call->arg(0));
   argmin(*gi._current_space, iv, gi.arg2intvar(call->arg(1)), true, gi.ann2icl(ann));
 }
 
 void p_regular(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs iv = gi.arg2intvarargs(call->arg(0));
   int q = call->arg(1)->cast<IntLit>()->v().toInt();
   int symbols = call->arg(2)->cast<IntLit>()->v().toInt();
@@ -1026,7 +1026,7 @@ void p_regular(SolverInstanceBase& s, const Call* call) {
   }
 
   Region re;
-  DFA::Transition* t = re.alloc<DFA::Transition>(noOfTrans + 1);
+  auto* t = re.alloc<DFA::Transition>(noOfTrans + 1);
   noOfTrans = 0;
   for (int i = 1; i <= q; i++) {
     for (int j = 1; j <= symbols; j++) {
@@ -1059,7 +1059,7 @@ void p_regular(SolverInstanceBase& s, const Call* call) {
 
 void p_sort(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs x = gi.arg2intvarargs(call->arg(0));
   IntVarArgs y = gi.arg2intvarargs(call->arg(1));
   IntVarArgs xy(x.size() + y.size());
@@ -1072,7 +1072,7 @@ void p_sort(SolverInstanceBase& s, const Call* call) {
 }
 
 void p_inverse_offsets(SolverInstanceBase& s, const Call* call) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs x = gi.arg2intvarargs(call->arg(0));
   unshare(*gi._current_space, x);
   int xoff = call->arg(1)->cast<IntLit>()->v().toInt();
@@ -1085,35 +1085,35 @@ void p_inverse_offsets(SolverInstanceBase& s, const Call* call) {
 
 void p_increasing_int(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs x = gi.arg2intvarargs(call->arg(0));
   rel(*gi._current_space, x, IRT_LQ, gi.ann2icl(ann));
 }
 
 void p_increasing_bool(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVarArgs x = gi.arg2boolvarargs(call->arg(0));
   rel(*gi._current_space, x, IRT_LQ, gi.ann2icl(ann));
 }
 
 void p_decreasing_int(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs x = gi.arg2intvarargs(call->arg(0));
   rel(*gi._current_space, x, IRT_GQ, gi.ann2icl(ann));
 }
 
 void p_decreasing_bool(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVarArgs x = gi.arg2boolvarargs(call->arg(0));
   rel(*gi._current_space, x, IRT_GQ, gi.ann2icl(ann));
 }
 
 void p_table_int(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs x = gi.arg2intvarargs(call->arg(0));
   IntArgs tuples = gi.arg2intargs(call->arg(1));
   int noOfVars = x.size();
@@ -1131,7 +1131,7 @@ void p_table_int(SolverInstanceBase& s, const Call* call) {
 }
 void p_table_bool(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVarArgs x = gi.arg2boolvarargs(call->arg(0));
   IntArgs tuples = gi.arg2boolargs(call->arg(1));
   int noOfVars = x.size();
@@ -1150,7 +1150,7 @@ void p_table_bool(SolverInstanceBase& s, const Call* call) {
 
 void p_cumulatives(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs start = gi.arg2intvarargs(call->arg(0));
   IntVarArgs duration = gi.arg2intvarargs(call->arg(1));
   IntVarArgs height = gi.arg2intvarargs(call->arg(2));
@@ -1222,7 +1222,7 @@ void p_cumulatives(SolverInstanceBase& s, const Call* call) {
 
 void p_among_seq_int(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   Gecode::IntVarArgs x = gi.arg2intvarargs(call->arg(0));
   IntSet S = gi.arg2intset(s.env().envi(), call->arg(1));
   int q = call->arg(2)->cast<IntLit>()->v().toInt();
@@ -1234,7 +1234,7 @@ void p_among_seq_int(SolverInstanceBase& s, const Call* call) {
 
 void p_among_seq_bool(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVarArgs x = gi.arg2boolvarargs(call->arg(0));
   bool val = call->arg(1)->cast<BoolLit>()->v();
   int q = call->arg(2)->cast<IntLit>()->v().toInt();
@@ -1246,7 +1246,7 @@ void p_among_seq_bool(SolverInstanceBase& s, const Call* call) {
 }
 
 void p_schedule_unary(SolverInstanceBase& s, const Call* call) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs x = gi.arg2intvarargs(call->arg(0));
   IntArgs p = gi.arg2intargs(call->arg(1));
   unshare(*gi._current_space, x);
@@ -1254,7 +1254,7 @@ void p_schedule_unary(SolverInstanceBase& s, const Call* call) {
 }
 
 void p_schedule_unary_optional(SolverInstanceBase& s, const Call* call) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs x = gi.arg2intvarargs(call->arg(0));
   IntArgs p = gi.arg2intargs(call->arg(1));
   BoolVarArgs m = gi.arg2boolvarargs(call->arg(2));
@@ -1264,7 +1264,7 @@ void p_schedule_unary_optional(SolverInstanceBase& s, const Call* call) {
 
 void p_cumulative_opt(SolverInstanceBase& s, const Call* ce) {
   const Annotation& ann = ce->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs start = gi.arg2intvarargs(ce->arg(0));
   IntArgs duration = gi.arg2intargs(ce->arg(1));
   IntArgs height = gi.arg2intargs(ce->arg(2));
@@ -1276,7 +1276,7 @@ void p_cumulative_opt(SolverInstanceBase& s, const Call* ce) {
 
 void p_circuit(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   int off = call->arg(0)->cast<IntLit>()->v().toInt();
   IntVarArgs xv = gi.arg2intvarargs(call->arg(1));
   unshare(*gi._current_space, xv);
@@ -1284,7 +1284,7 @@ void p_circuit(SolverInstanceBase& s, const Call* call) {
 }
 void p_circuit_cost_array(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntArgs c = gi.arg2intargs(call->arg(0));
   IntVarArgs xv = gi.arg2intvarargs(call->arg(1));
   IntVarArgs yv = gi.arg2intvarargs(call->arg(2));
@@ -1294,7 +1294,7 @@ void p_circuit_cost_array(SolverInstanceBase& s, const Call* call) {
 }
 void p_circuit_cost(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntArgs c = gi.arg2intargs(call->arg(0));
   IntVarArgs xv = gi.arg2intvarargs(call->arg(1));
   IntVar z = gi.arg2intvar(call->arg(2));
@@ -1304,7 +1304,7 @@ void p_circuit_cost(SolverInstanceBase& s, const Call* call) {
 
 void p_nooverlap(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs x0 = gi.arg2intvarargs(call->arg(0));
   IntVarArgs w = gi.arg2intvarargs(call->arg(1));
   IntVarArgs y0 = gi.arg2intvarargs(call->arg(2));
@@ -1325,7 +1325,7 @@ void p_nooverlap(SolverInstanceBase& s, const Call* call) {
 
 void p_precede(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs x = gi.arg2intvarargs(call->arg(0));
   int p_s = call->arg(1)->cast<IntLit>()->v().toInt();
   int p_t = call->arg(2)->cast<IntLit>()->v().toInt();
@@ -1334,7 +1334,7 @@ void p_precede(SolverInstanceBase& s, const Call* call) {
 
 void p_nvalue(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs x = gi.arg2intvarargs(call->arg(1));
   if (call->arg(0)->type().isvarint()) {
     IntVar y = gi.arg2intvar(call->arg(0));
@@ -1347,7 +1347,7 @@ void p_nvalue(SolverInstanceBase& s, const Call* call) {
 
 void p_among(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs x = gi.arg2intvarargs(call->arg(1));
   IntSet v = gi.arg2intset(s.env().envi(), call->arg(2));
   if (call->arg(0)->type().isvarint()) {
@@ -1363,14 +1363,14 @@ void p_among(SolverInstanceBase& s, const Call* call) {
 
 void p_member_int(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs x = gi.arg2intvarargs(call->arg(0));
   IntVar y = gi.arg2intvar(call->arg(1));
   member(*gi._current_space, x, y, gi.ann2icl(ann));
 }
 void p_member_int_reif(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVarArgs x = gi.arg2intvarargs(call->arg(0));
   IntVar y = gi.arg2intvar(call->arg(1));
   BoolVar b = gi.arg2boolvar(call->arg(2));
@@ -1378,14 +1378,14 @@ void p_member_int_reif(SolverInstanceBase& s, const Call* call) {
 }
 void p_member_bool(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVarArgs x = gi.arg2boolvarargs(call->arg(0));
   BoolVar y = gi.arg2boolvar(call->arg(1));
   member(*gi._current_space, x, y, gi.ann2icl(ann));
 }
 void p_member_bool_reif(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVarArgs x = gi.arg2boolvarargs(call->arg(0));
   BoolVar y = gi.arg2boolvar(call->arg(1));
   member(*gi._current_space, x, y, gi.arg2boolvar(call->arg(2)), gi.ann2icl(ann));
@@ -1395,7 +1395,7 @@ void p_member_bool_reif(SolverInstanceBase& s, const Call* call) {
 #ifdef GECODE_HAS_FLOAT_VARS
 
 void p_int2float(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntVar x0 = gi.arg2intvar(ce->arg(0));
   FloatVar x1 = gi.arg2floatvar(ce->arg(1));
   channel(*gi._current_space, x0, x1);
@@ -1413,24 +1413,24 @@ void p_float_lin_cmp_reif(GecodeSolverInstance& s, FloatRelType frt, const Call*
          s.arg2boolvar(ce->arg(3)));
 }
 void p_float_lin_eq(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   p_float_lin_cmp(gi, FRT_EQ, ce);
 }
 void p_float_lin_eq_reif(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   p_float_lin_cmp_reif(gi, FRT_EQ, ce);
 }
 void p_float_lin_le(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   p_float_lin_cmp(gi, FRT_LQ, ce);
 }
 void p_float_lin_le_reif(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   p_float_lin_cmp_reif(gi, FRT_LQ, ce);
 }
 
 void p_float_times(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   FloatVar x = gi.arg2floatvar(ce->arg(0));
   FloatVar y = gi.arg2floatvar(ce->arg(1));
   FloatVar z = gi.arg2floatvar(ce->arg(2));
@@ -1438,7 +1438,7 @@ void p_float_times(SolverInstanceBase& s, const Call* ce) {
 }
 
 void p_float_div(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   FloatVar x = gi.arg2floatvar(ce->arg(0));
   FloatVar y = gi.arg2floatvar(ce->arg(1));
   FloatVar z = gi.arg2floatvar(ce->arg(2));
@@ -1446,7 +1446,7 @@ void p_float_div(SolverInstanceBase& s, const Call* ce) {
 }
 
 void p_float_plus(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   FloatVar x = gi.arg2floatvar(ce->arg(0));
   FloatVar y = gi.arg2floatvar(ce->arg(1));
   FloatVar z = gi.arg2floatvar(ce->arg(2));
@@ -1454,61 +1454,61 @@ void p_float_plus(SolverInstanceBase& s, const Call* ce) {
 }
 
 void p_float_sqrt(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   FloatVar x = gi.arg2floatvar(ce->arg(0));
   FloatVar y = gi.arg2floatvar(ce->arg(1));
   sqrt(*gi._current_space, x, y);
 }
 
 void p_float_abs(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   FloatVar x = gi.arg2floatvar(ce->arg(0));
   FloatVar y = gi.arg2floatvar(ce->arg(1));
   abs(*gi._current_space, x, y);
 }
 
 void p_float_eq(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   FloatVar x = gi.arg2floatvar(ce->arg(0));
   FloatVar y = gi.arg2floatvar(ce->arg(1));
   rel(*gi._current_space, x, FRT_EQ, y);
 }
 void p_float_eq_reif(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   FloatVar x = gi.arg2floatvar(ce->arg(0));
   FloatVar y = gi.arg2floatvar(ce->arg(1));
   BoolVar b = gi.arg2boolvar(ce->arg(2));
   rel(*gi._current_space, x, FRT_EQ, y, b);
 }
 void p_float_le(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   FloatVar x = gi.arg2floatvar(ce->arg(0));
   FloatVar y = gi.arg2floatvar(ce->arg(1));
   rel(*gi._current_space, x, FRT_LQ, y);
 }
 void p_float_le_reif(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   FloatVar x = gi.arg2floatvar(ce->arg(0));
   FloatVar y = gi.arg2floatvar(ce->arg(1));
   BoolVar b = gi.arg2boolvar(ce->arg(2));
   rel(*gi._current_space, x, FRT_LQ, y, b);
 }
 void p_float_max(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   FloatVar x = gi.arg2floatvar(ce->arg(0));
   FloatVar y = gi.arg2floatvar(ce->arg(1));
   FloatVar z = gi.arg2floatvar(ce->arg(2));
   max(*gi._current_space, x, y, z);
 }
 void p_float_min(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   FloatVar x = gi.arg2floatvar(ce->arg(0));
   FloatVar y = gi.arg2floatvar(ce->arg(1));
   FloatVar z = gi.arg2floatvar(ce->arg(2));
   min(*gi._current_space, x, y, z);
 }
 void p_float_lt(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   FloatVar x = gi.arg2floatvar(ce->arg(0));
   FloatVar y = gi.arg2floatvar(ce->arg(1));
   rel(*gi._current_space, x, FRT_LQ, y);
@@ -1516,7 +1516,7 @@ void p_float_lt(SolverInstanceBase& s, const Call* ce) {
 }
 
 void p_float_lt_reif(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   FloatVar x = gi.arg2floatvar(ce->arg(0));
   FloatVar y = gi.arg2floatvar(ce->arg(1));
   BoolVar b = gi.arg2boolvar(ce->arg(2));
@@ -1528,7 +1528,7 @@ void p_float_lt_reif(SolverInstanceBase& s, const Call* ce) {
 }
 
 void p_float_ne(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   FloatVar x = gi.arg2floatvar(ce->arg(0));
   FloatVar y = gi.arg2floatvar(ce->arg(1));
   rel(*gi._current_space, x, FRT_EQ, y, BoolVar(*gi._current_space, 0, 0));
@@ -1578,7 +1578,7 @@ void p_float_log2(SolverInstanceBase& s, const Call* ce) {
 
 #ifdef GECODE_HAS_SET_VARS
 void p_set_OP(SolverInstanceBase& s, SetOpType op, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   rel(*gi._current_space, gi.arg2setvar(ce->arg(0)), op, gi.arg2setvar(ce->arg(1)), SRT_EQ,
       gi.arg2setvar(ce->arg(2)));
 }
@@ -1587,7 +1587,7 @@ void p_set_intersect(SolverInstanceBase& s, const Call* ce) { p_set_OP(s, SOT_IN
 void p_set_diff(SolverInstanceBase& s, const Call* ce) { p_set_OP(s, SOT_MINUS, ce); }
 
 void p_set_symdiff(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   SetVar x = gi.arg2setvar(ce->arg(0));
   SetVar y = gi.arg2setvar(ce->arg(1));
 
@@ -1605,7 +1605,7 @@ void p_set_symdiff(SolverInstanceBase& s, const Call* ce) {
 }
 
 void p_array_set_OP(SolverInstanceBase& s, SetOpType op, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   SetVarArgs xs = gi.arg2setvarargs(ce->arg(0));
   rel(*gi._current_space, op, xs, gi.arg2setvar(ce->arg(1)));
 }
@@ -1615,7 +1615,7 @@ void p_array_set_partition(SolverInstanceBase& s, const Call* ce) {
 }
 
 void p_set_rel(SolverInstanceBase& s, SetRelType srt, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   rel(*gi._current_space, gi.arg2setvar(ce->arg(0)), srt, gi.arg2setvar(ce->arg(1)));
 }
 
@@ -1626,18 +1626,18 @@ void p_set_superset(SolverInstanceBase& s, const Call* ce) { p_set_rel(s, SRT_SU
 void p_set_le(SolverInstanceBase& s, const Call* ce) { p_set_rel(s, SRT_LQ, ce); }
 void p_set_lt(SolverInstanceBase& s, const Call* ce) { p_set_rel(s, SRT_LE, ce); }
 void p_set_card(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   if (!ce->arg(1)->type().isvar()) {
     IntVal i = ce->arg(1)->cast<IntLit>()->v().toInt();
     assert(i >= 0 && i <= Gecode::Int::Limits::max);
-    unsigned int ui = static_cast<unsigned int>(i.toInt());
+    auto ui = static_cast<unsigned int>(i.toInt());
     cardinality(*gi._current_space, gi.arg2setvar(ce->arg(0)), ui, ui);
   } else {
     cardinality(*gi._current_space, gi.arg2setvar(ce->arg(0)), gi.arg2intvar(ce->arg(1)));
   }
 }
 void p_set_in(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   if (!ce->arg(1)->type().isvar()) {
     IntSet d = gi.arg2intset(s.env().envi(), ce->arg(1));
     if (ce->arg(0)->type().isvar()) {
@@ -1664,7 +1664,7 @@ void p_set_in(SolverInstanceBase& s, const Call* ce) {
   }
 }
 void p_set_rel_reif(SolverInstanceBase& s, SetRelType srt, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   rel(*gi._current_space, gi.arg2setvar(ce->arg(0)), srt, gi.arg2setvar(ce->arg(1)),
       gi.arg2boolvar(ce->arg(2)));
 }
@@ -1676,7 +1676,7 @@ void p_set_ne_reif(SolverInstanceBase& s, const Call* ce) { p_set_rel_reif(s, SR
 void p_set_subset_reif(SolverInstanceBase& s, const Call* ce) { p_set_rel_reif(s, SRT_SUB, ce); }
 void p_set_superset_reif(SolverInstanceBase& s, const Call* ce) { p_set_rel_reif(s, SRT_SUP, ce); }
 void p_set_in_reif(SolverInstanceBase& s, const Call* ce, ReifyMode rm) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   if (!ce->arg(1)->type().isvar()) {
     if (rm == RM_EQV) {
       p_int_in_reif(s, ce);
@@ -1697,12 +1697,12 @@ void p_set_in_reif(SolverInstanceBase& s, const Call* ce, ReifyMode rm) {
 void p_set_in_reif(SolverInstanceBase& s, const Call* ce) { p_set_in_reif(s, ce, RM_EQV); }
 void p_set_in_imp(SolverInstanceBase& s, const Call* ce) { p_set_in_reif(s, ce, RM_IMP); }
 void p_set_disjoint(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   rel(*gi._current_space, gi.arg2setvar(ce->arg(0)), SRT_DISJ, gi.arg2setvar(ce->arg(1)));
 }
 
 void p_link_set_to_booleans(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   SetVar x = gi.arg2setvar(ce->arg(0));
   int idx = ce->arg(2)->cast<IntLit>()->v().toInt();
   assert(idx >= 0);
@@ -1713,7 +1713,7 @@ void p_link_set_to_booleans(SolverInstanceBase& s, const Call* ce) {
 }
 
 void p_array_set_element(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   bool isConstant = true;
   ArrayLit* a = gi.arg2arraylit(ce->arg(1));
   for (int i = a->size(); i--;) {
@@ -1735,7 +1735,7 @@ void p_array_set_element(SolverInstanceBase& s, const Call* ce) {
 
 void p_array_set_element_op(SolverInstanceBase& s, const Call* ce, SetOpType op,
                             const IntSet& universe = IntSet(Set::Limits::min, Set::Limits::max)) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   bool isConstant = true;
   ArrayLit* a = gi.arg2arraylit(ce->arg(1));
   for (int i = a->size(); i--;) {
@@ -1764,7 +1764,7 @@ void p_array_set_element_intersect(SolverInstanceBase& s, const Call* ce) {
 }
 
 void p_array_set_element_intersect_in(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntSet d = gi.arg2intset(gi.env().envi(), ce->arg(3));
   p_array_set_element_op(s, ce, SOT_INTER, d);
 }
@@ -1774,24 +1774,24 @@ void p_array_set_element_partition(SolverInstanceBase& s, const Call* ce) {
 }
 
 void p_set_convex(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   convex(*gi._current_space, gi.arg2setvar(ce->arg(0)));
 }
 
 void p_array_set_seq(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   SetVarArgs sv = gi.arg2setvarargs(ce->arg(0));
   sequence(*gi._current_space, sv);
 }
 
 void p_array_set_seq_union(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   SetVarArgs sv = gi.arg2setvarargs(ce->arg(0));
   sequence(*gi._current_space, sv, gi.arg2setvar(ce->arg(1)));
 }
 
 void p_int_set_channel(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   int xoff = ce->arg(1)->cast<IntLit>()->v().toInt();
   assert(xoff >= 0);
   int yoff = ce->arg(3)->cast<IntLit>()->v().toInt();
@@ -1810,7 +1810,7 @@ void p_int_set_channel(SolverInstanceBase& s, const Call* ce) {
 }
 
 void p_range(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   int xoff = ce->arg(1)->cast<IntLit>()->v().toInt();
   assert(xoff >= 0);
   IntVarArgs xv = gi.arg2intvarargs(ce->arg(0), xoff);
@@ -1818,7 +1818,7 @@ void p_range(SolverInstanceBase& s, const Call* ce) {
 }
 
 void p_weights(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   IntArgs e = gi.arg2intargs(ce->arg(0));
   IntArgs w = gi.arg2intargs(ce->arg(1));
   SetVar x = gi.arg2setvar(ce->arg(2));
@@ -1827,7 +1827,7 @@ void p_weights(SolverInstanceBase& s, const Call* ce) {
 }
 
 void p_inverse_set(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   int xoff = ce->arg(2)->cast<IntLit>()->v().toInt();
   int yoff = ce->arg(3)->cast<IntLit>()->v().toInt();
   SetVarArgs x = gi.arg2setvarargs(ce->arg(0), xoff);
@@ -1836,7 +1836,7 @@ void p_inverse_set(SolverInstanceBase& s, const Call* ce) {
 }
 
 void p_precede_set(SolverInstanceBase& s, const Call* ce) {
-  GecodeSolverInstance& gi = static_cast<GecodeSolverInstance&>(s);
+  auto& gi = static_cast<GecodeSolverInstance&>(s);
   SetVarArgs x = gi.arg2setvarargs(ce->arg(0));
   int p_s = ce->arg(1)->cast<IntLit>()->v().toInt();
   int p_t = ce->arg(2)->cast<IntLit>()->v().toInt();

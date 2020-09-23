@@ -54,7 +54,7 @@ string Gecode_SolverFactory::getVersion(SolverInstanceBase::Options*) {
 
 bool Gecode_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
                                          std::vector<std::string>& argv) {
-  GecodeOptions& _opt = static_cast<GecodeOptions&>(*opt);
+  auto& _opt = static_cast<GecodeOptions&>(*opt);
   if (string(argv[i]) == "--allow-unbounded-vars") {
     _opt.allow_unbounded_vars = true;
   } else if (string(argv[i]) == "--only-range-domains") {
@@ -434,7 +434,7 @@ inline bool GecodeSolverInstance::valueWithinBounds(double b) {
 }
 
 void GecodeSolverInstance::processFlatZinc(void) {
-  GecodeOptions& _opt = static_cast<GecodeOptions&>(*_options);
+  auto& _opt = static_cast<GecodeOptions&>(*_options);
   _only_range_domains = _opt.only_range_domains;
   _run_sac = _opt.sac;
   _run_shave = _opt.shave;
@@ -452,7 +452,7 @@ void GecodeSolverInstance::processFlatZinc(void) {
       VarDecl* vd = it->e();
       if (!vd->ann().isEmpty()) {
         if (vd->ann().containsCall(constants().ann.output_array.aststr())) {
-          ArrayLit* al = vd->e()->dyn_cast<ArrayLit>();
+          auto* al = vd->e()->dyn_cast<ArrayLit>();
           if (!al) {
             std::stringstream ssm;
             ssm << "GecodeSolverInstance::processFlatZinc: Error: Array without right hand side: "
@@ -569,7 +569,7 @@ void GecodeSolverInstance::processFlatZinc(void) {
             _current_space->bv.push_back(var.boolVar(_current_space));
             insertVar(it->e()->id(), var);
           } else {
-            double b = (double)init->cast<BoolLit>()->v();
+            auto b = (double)init->cast<BoolLit>()->v();
             BoolVar boolVar(*this->_current_space, b, b);
             _current_space->bv.push_back(boolVar);
             insertVar(it->e()->id(),
@@ -851,7 +851,7 @@ Gecode::BoolVarArgs GecodeSolverInstance::arg2boolvarargs(Expression* arg, int o
         throw InternalError(ssm.str());
       }
     } else {
-      if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
+      if (auto* bl = e->dyn_cast<BoolLit>()) {
         bool value = bl->v();
         BoolVar iv(*this->_current_space, value, value);
         ia[offset++] = iv;
@@ -873,7 +873,7 @@ Gecode::BoolVar GecodeSolverInstance::arg2boolvar(Expression* e) {
     assert(var.isbool());
     x0 = var.boolVar(_current_space);
   } else {
-    if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
+    if (auto* bl = e->dyn_cast<BoolLit>()) {
       x0 = BoolVar(*this->_current_space, bl->v(), bl->v());
     } else {
       std::stringstream ssm;
@@ -893,9 +893,9 @@ Gecode::IntVar GecodeSolverInstance::arg2intvar(Expression* e) {
     x0 = var.intVar(_current_space);
   } else {
     IntVal i;
-    if (IntLit* il = e->dyn_cast<IntLit>())
+    if (auto* il = e->dyn_cast<IntLit>())
       i = il->v().toInt();
-    else if (BoolLit* bl = e->dyn_cast<BoolLit>())
+    else if (auto* bl = e->dyn_cast<BoolLit>())
       i = bl->v();
     else {
       std::stringstream ssm;
@@ -920,7 +920,7 @@ ArrayLit* GecodeSolverInstance::arg2arraylit(Expression* arg) {
         ids.push_back(((*array)[i])->cast<VarDecl>()->id());
       a = new ArrayLit(vd->loc(), ids);
     }
-  } else if (ArrayLit* al = arg->dyn_cast<ArrayLit>()) {
+  } else if (auto* al = arg->dyn_cast<ArrayLit>()) {
     a = al;
   } else {
     std::stringstream ssm;
@@ -998,11 +998,11 @@ Gecode::FloatVar GecodeSolverInstance::arg2floatvar(Expression* e) {
     x0 = var.floatVar(_current_space);
   } else {
     FloatVal i;
-    if (IntLit* il = e->dyn_cast<IntLit>())
+    if (auto* il = e->dyn_cast<IntLit>())
       i = il->v().toInt();
-    else if (BoolLit* bl = e->dyn_cast<BoolLit>())
+    else if (auto* bl = e->dyn_cast<BoolLit>())
       i = bl->v();
-    else if (FloatLit* fl = e->dyn_cast<FloatLit>())
+    else if (auto* fl = e->dyn_cast<FloatLit>())
       i = fl->v();
     else {
       std::stringstream ssm;
@@ -1029,7 +1029,7 @@ Gecode::FloatVarArgs GecodeSolverInstance::arg2floatvarargs(Expression* arg, int
       assert(var.isfloat());
       fa[i + offset] = var.floatVar(_current_space);
     } else {
-      if (FloatLit* fl = e->dyn_cast<FloatLit>()) {
+      if (auto* fl = e->dyn_cast<FloatLit>()) {
         double value = fl->v().toDouble();
         FloatVar fv(*this->_current_space, value, value);
         fa[i + offset] = fv;
@@ -1061,7 +1061,7 @@ VarDecl* GecodeSolverInstance::getVarDecl(Expression* expr) {
     vd = expr->cast<VarDecl>();
   } else if (Id* id = expr->dyn_cast<Id>()) {
     vd = id->decl();
-  } else if (ArrayAccess* aa = expr->dyn_cast<ArrayAccess>()) {
+  } else if (auto* aa = expr->dyn_cast<ArrayAccess>()) {
     vd = resolveArrayAccess(aa);
   } else {
     std::stringstream ssm;
@@ -1078,7 +1078,7 @@ VarDecl* GecodeSolverInstance::resolveArrayAccess(ArrayAccess* aa) {
 }
 
 VarDecl* GecodeSolverInstance::resolveArrayAccess(VarDecl* vd, int index) {
-  std::unordered_map<VarDecl*, std::vector<Expression*>*>::iterator it = arrayMap.find(vd);
+  auto it = arrayMap.find(vd);
   if (it != arrayMap.end()) {
     std::vector<Expression*>* exprs = it->second;
     Expression* expr = (*exprs)[index - 1];
@@ -1093,9 +1093,9 @@ VarDecl* GecodeSolverInstance::resolveArrayAccess(VarDecl* vd, int index) {
 GecodeSolver::Variable GecodeSolverInstance::resolveVar(Expression* e) {
   if (Id* id = e->dyn_cast<Id>()) {
     return _variableMap.get(id->decl()->id());  // lookupVar(id->decl());
-  } else if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
+  } else if (auto* vd = e->dyn_cast<VarDecl>()) {
     return _variableMap.get(vd->id()->decl()->id());
-  } else if (ArrayAccess* aa = e->dyn_cast<ArrayAccess>()) {
+  } else if (auto* aa = e->dyn_cast<ArrayAccess>()) {
     return _variableMap.get(resolveArrayAccess(aa)->id()->decl()->id());
   } else {
     std::stringstream ssm;
@@ -1173,7 +1173,7 @@ Expression* GecodeSolverInstance::getSolutionValue(Id* id) {
 
 void GecodeSolverInstance::prepareEngine(void) {
   GCLock lock;
-  GecodeOptions& _opt = static_cast<GecodeOptions&>(*_options);
+  auto& _opt = static_cast<GecodeOptions&>(*_options);
   if (engine == nullptr) {
     // TODO: check what we need to do options-wise
     std::vector<Expression*> branch_vars;
@@ -1267,7 +1267,7 @@ void GecodeSolverInstance::processSolution(bool last_sol) {
     } else {
       if (engine->stopped()) {
         Gecode::Search::Statistics stat = engine->statistics();
-        Driver::CombinedStop* cs = static_cast<Driver::CombinedStop*>(engine_options.stop);
+        auto* cs = static_cast<Driver::CombinedStop*>(engine_options.stop);
         std::cerr << "% GecodeSolverInstance: ";
         int r = cs->reason(stat, engine_options);
         if (r & Driver::CombinedStop::SR_INT)
@@ -1392,7 +1392,7 @@ bool GecodeSolverInstance::sac(bool toFixedPoint = false, bool shaving = false) 
       BoolVar bvar = _current_space->bv[idx];
       if (!bvar.assigned()) {
         for (int val = bvar.min(); val <= bvar.max(); ++val) {
-          FznSpace* f = static_cast<FznSpace*>(_current_space->clone());
+          auto* f = static_cast<FznSpace*>(_current_space->clone());
           rel(*f, f->bv[idx], IRT_EQ, val);
           if (f->status() == SS_FAILED) {
             rel(*_current_space, bvar, IRT_NQ, val);
@@ -1412,7 +1412,7 @@ bool GecodeSolverInstance::sac(bool toFixedPoint = false, bool shaving = false) 
       int fwd_min;
       IntArgs nq(ivar.size());
       for (IntVarValues vv(ivar); vv() && !tight; ++vv) {
-        FznSpace* f = static_cast<FznSpace*>(_current_space->clone());
+        auto* f = static_cast<FznSpace*>(_current_space->clone());
         rel(*f, f->iv[idx], IRT_EQ, vv.val());
         if (f->status() == SS_FAILED) {
           nq[nnq++] = vv.val();
@@ -1426,7 +1426,7 @@ bool GecodeSolverInstance::sac(bool toFixedPoint = false, bool shaving = false) 
         tight = false;
         for (IntVarRangesBwd vr(ivar); vr() && !tight; ++vr) {
           for (int i = vr.max(); i >= vr.min() && i >= fwd_min; i--) {
-            FznSpace* f = static_cast<FznSpace*>(_current_space->clone());
+            auto* f = static_cast<FznSpace*>(_current_space->clone());
             rel(*f, f->iv[idx], IRT_EQ, i);
             if (f->status() == SS_FAILED)
               nq[nnq++] = i;
@@ -1706,7 +1706,7 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
     } else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id() == "float_search") {
 #ifdef GECODE_HAS_FLOAT_VARS
       Call* call = flatAnn[i]->dyn_cast<Call>();
-      ArrayLit* vars = call->arg(0)->cast<ArrayLit>();
+      auto* vars = call->arg(0)->cast<ArrayLit>();
       int k = vars->size();
       for (int i = vars->size(); i--;)
         if (!((*vars)[i])->type().isvarfloat()) k--;

@@ -55,9 +55,9 @@ inline IntLit* IntLit::a(MiniZinc::IntVal v) {
     }
   }
 
-  std::unordered_map<IntVal, WeakRef>::iterator it = constants().integerMap.find(v);
+  auto it = constants().integerMap.find(v);
   if (it == constants().integerMap.end() || it->second() == nullptr) {
-    IntLit* il = new IntLit(Location().introduce(), v);
+    auto* il = new IntLit(Location().introduce(), v);
     if (it == constants().integerMap.end()) {
       constants().integerMap.insert(std::make_pair(v, il));
     } else {
@@ -71,7 +71,7 @@ inline IntLit* IntLit::a(MiniZinc::IntVal v) {
 
 inline IntLit* IntLit::aEnum(IntVal v, unsigned int enumId) {
   if (enumId == 0) return a(v);
-  IntLit* il = new IntLit(Location().introduce(), v);
+  auto* il = new IntLit(Location().introduce(), v);
   Type tt(il->type());
   tt.enumId(enumId);
   il->type(tt);
@@ -84,7 +84,7 @@ inline ASTString Location::LocVec::filename(void) const {
 inline unsigned int Location::LocVec::first_line(void) const {
   if (_size == 2) {
     static const unsigned int pointerBits = sizeof(IntLit*) * 8;
-    IntLit* il = static_cast<IntLit*>(_data[1]);
+    auto* il = static_cast<IntLit*>(_data[1]);
     long long unsigned int mask = pointerBits <= 32 ? 0xFF : 0xFFFFF;
     union {
       long long int i;
@@ -93,14 +93,14 @@ inline unsigned int Location::LocVec::first_line(void) const {
     ui.i = il->v().toInt();
     return static_cast<unsigned int>(ui.u & mask);
   } else {
-    IntLit* il = static_cast<IntLit*>(_data[1]);
+    auto* il = static_cast<IntLit*>(_data[1]);
     return il->v().toInt();
   }
 }
 inline unsigned int Location::LocVec::last_line(void) const {
   if (_size == 2) {
     static const unsigned int pointerBits = sizeof(IntLit*) * 8;
-    IntLit* il = static_cast<IntLit*>(_data[1]);
+    auto* il = static_cast<IntLit*>(_data[1]);
     long long unsigned int first_line_size = pointerBits <= 32 ? 8 : 20;
     long long unsigned int mask = pointerBits <= 32 ? 0xFF : 0xFFFFF;
     long long unsigned int offsetmask = pointerBits <= 32 ? 0x7F : 0xFFFFF;
@@ -112,14 +112,14 @@ inline unsigned int Location::LocVec::last_line(void) const {
     // return first line (8 bit) + offset (7 bit)
     return static_cast<unsigned int>((ui.u & mask) + ((ui.u >> first_line_size) & offsetmask));
   } else {
-    IntLit* il = static_cast<IntLit*>(_data[2]);
+    auto* il = static_cast<IntLit*>(_data[2]);
     return il->v().toInt();
   }
 }
 inline unsigned int Location::LocVec::first_column(void) const {
   if (_size == 2) {
     static const unsigned int pointerBits = sizeof(IntLit*) * 8;
-    IntLit* il = static_cast<IntLit*>(_data[1]);
+    auto* il = static_cast<IntLit*>(_data[1]);
     long long unsigned int first_col_offset = pointerBits <= 32 ? 8 + 7 : 20 + 20;
     long long unsigned int mask = pointerBits <= 32 ? 0x3F : 0x3FF;
     union {
@@ -130,14 +130,14 @@ inline unsigned int Location::LocVec::first_column(void) const {
     // return first line (8 bit) + offset (7 bit)
     return static_cast<unsigned int>((ui.u >> first_col_offset) & mask);
   } else {
-    IntLit* il = static_cast<IntLit*>(_data[3]);
+    auto* il = static_cast<IntLit*>(_data[3]);
     return il->v().toInt();
   }
 }
 inline unsigned int Location::LocVec::last_column(void) const {
   if (_size == 2) {
     static const unsigned int pointerBits = sizeof(IntLit*) * 8;
-    IntLit* il = static_cast<IntLit*>(_data[1]);
+    auto* il = static_cast<IntLit*>(_data[1]);
     long long unsigned int last_col_offset = pointerBits <= 32 ? 8 + 7 + 6 : 20 + 20 + 10;
     long long unsigned int mask = pointerBits <= 32 ? 0x7F : 0x3FF;
     union {
@@ -148,7 +148,7 @@ inline unsigned int Location::LocVec::last_column(void) const {
     // return first line (8 bit) + offset (7 bit)
     return static_cast<unsigned int>((ui.u >> last_col_offset) & mask);
   } else {
-    IntLit* il = static_cast<IntLit*>(_data[4]);
+    auto* il = static_cast<IntLit*>(_data[4]);
     return il->v().toInt();
   }
 }
@@ -166,9 +166,9 @@ inline FloatLit* FloatLit::a(MiniZinc::FloatVal v) {
     }
   }
 
-  std::unordered_map<FloatVal, WeakRef>::iterator it = constants().floatMap.find(v);
+  auto it = constants().floatMap.find(v);
   if (it == constants().floatMap.end() || it->second() == nullptr) {
-    FloatLit* fl = new FloatLit(Location().introduce(), v);
+    auto* fl = new FloatLit(Location().introduce(), v);
     if (it == constants().floatMap.end()) {
       constants().floatMap.insert(std::make_pair(v, fl));
     } else {
@@ -286,7 +286,7 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit& v,
   if (_flag_2) {
     _u._al = v._u._al;
     std::vector<int> d(dims.size() * 2 + v._dims.size() - v.dims() * 2);
-    for (unsigned int i = static_cast<unsigned int>(dims.size()); i--;) {
+    for (auto i = static_cast<unsigned int>(dims.size()); i--;) {
       d[i * 2] = dims[i].first;
       d[i * 2 + 1] = dims[i].second;
     }
@@ -298,7 +298,7 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit& v,
     _dims = ASTIntVec(d);
   } else {
     std::vector<int> d(dims.size() * 2);
-    for (unsigned int i = static_cast<unsigned int>(dims.size()); i--;) {
+    for (auto i = static_cast<unsigned int>(dims.size()); i--;) {
       d[i * 2] = dims[i].first;
       d[i * 2 + 1] = dims[i].second;
     }
@@ -597,17 +597,17 @@ inline ConstraintI::ConstraintI(const Location& loc, Expression* e) : Item(loc, 
 
 inline SolveI::SolveI(const Location& loc, Expression* e) : Item(loc, II_SOL), _e(e) {}
 inline SolveI* SolveI::sat(const Location& loc) {
-  SolveI* si = new SolveI(loc, nullptr);
+  auto* si = new SolveI(loc, nullptr);
   si->_sec_id = ST_SAT;
   return si;
 }
 inline SolveI* SolveI::min(const Location& loc, Expression* e) {
-  SolveI* si = new SolveI(loc, e);
+  auto* si = new SolveI(loc, e);
   si->_sec_id = ST_MIN;
   return si;
 }
 inline SolveI* SolveI::max(const Location& loc, Expression* e) {
-  SolveI* si = new SolveI(loc, e);
+  auto* si = new SolveI(loc, e);
   si->_sec_id = ST_MAX;
   return si;
 }

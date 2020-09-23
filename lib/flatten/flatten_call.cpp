@@ -15,7 +15,7 @@ namespace MiniZinc {
 
 std::vector<Expression*> toExpVec(std::vector<KeepAlive>& v) {
   std::vector<Expression*> r(v.size());
-  for (unsigned int i = static_cast<unsigned int>(v.size()); i--;) r[i] = v[i]();
+  for (auto i = static_cast<unsigned int>(v.size()); i--;) r[i] = v[i]();
   return r;
 }
 
@@ -37,7 +37,7 @@ Call* same_call(EnvI& env, Expression* e, const ASTString& id) {
         for (unsigned int i = 0; i < coeffs->size(); i++) {
           ncoeff_v[i] = FloatLit::a(eval_int(env, (*coeffs)[i]));
         }
-        ArrayLit* ncoeff = new ArrayLit(coeffs->loc().introduce(), ncoeff_v);
+        auto* ncoeff = new ArrayLit(coeffs->loc().introduce(), ncoeff_v);
         ncoeff->type(Type::parfloat(1));
         ArrayLit* vars = eval_array_lit(env, i2fc->arg(1));
         std::vector<Expression*> n_vars_v(vars->size());
@@ -50,7 +50,7 @@ Call* same_call(EnvI& env, Expression* e, const ASTString& id) {
           EE ee = flat_exp(env, Ctx(), f2i, nullptr, constants().var_true);
           n_vars_v[i] = ee.r();
         }
-        ArrayLit* nvars = new ArrayLit(vars->loc().introduce(), n_vars_v);
+        auto* nvars = new ArrayLit(vars->loc().introduce(), n_vars_v);
         nvars->type(Type::varfloat(1));
         FloatVal c = eval_int(env, i2fc->arg(2));
         Call* nlinexp = new Call(i2fc->loc().introduce(), constants().ids.lin_exp,
@@ -118,7 +118,7 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, Ctx nctx, ASTString& cid, Call* c, 
   typedef typename LinearTraits<Lit>::Val Val;
   Expression* al_arg = (cid == constants().ids.sum ? args_ee[0].r() : args_ee[1].r());
   EE flat_al = flat_exp(env, nctx, al_arg, nullptr, nullptr);
-  ArrayLit* al = follow_id(flat_al.r())->template cast<ArrayLit>();
+  auto* al = follow_id(flat_al.r())->template cast<ArrayLit>();
   KeepAlive al_ka = al;
   if (al->dims() > 1) {
     Type alt = al->type();
@@ -135,7 +135,7 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, Ctx nctx, ASTString& cid, Call* c, 
     for (unsigned int i = al->size(); i--;) c_coeff[i] = 1;
   } else {
     EE flat_coeff = flat_exp(env, nctx, args_ee[0].r(), nullptr, nullptr);
-    ArrayLit* coeff = follow_id(flat_coeff.r())->template cast<ArrayLit>();
+    auto* coeff = follow_id(flat_coeff.r())->template cast<ArrayLit>();
     for (unsigned int i = coeff->size(); i--;)
       c_coeff[i] = LinearTraits<Lit>::eval(env, (*coeff)[i]);
   }
@@ -145,7 +145,7 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, Ctx nctx, ASTString& cid, Call* c, 
   for (unsigned int i = 0; i < al->size(); i++) {
     GCLock lock;
     if (Call* sc = Expression::dyn_cast<Call>(same_call(env, (*al)[i], cid))) {
-      if (VarDecl* alvi_decl = follow_id_to_decl((*al)[i])->template dyn_cast<VarDecl>()) {
+      if (auto* alvi_decl = follow_id_to_decl((*al)[i])->template dyn_cast<VarDecl>()) {
         if (alvi_decl->ti()->domain()) {
           // Test if the variable has tighter declared bounds than what can be inferred
           // from its RHS. If yes, keep the variable (don't aggregate), because the tighter
@@ -189,16 +189,16 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, Ctx nctx, ASTString& cid, Call* c, 
   }
   GCLock lock;
   std::vector<Expression*> coeff_ev(coeffv.size());
-  for (unsigned int i = static_cast<unsigned int>(coeff_ev.size()); i--;)
+  for (auto i = static_cast<unsigned int>(coeff_ev.size()); i--;)
     coeff_ev[i] = LinearTraits<Lit>::newLit(coeffv[i]);
-  ArrayLit* ncoeff = new ArrayLit(Location().introduce(), coeff_ev);
+  auto* ncoeff = new ArrayLit(Location().introduce(), coeff_ev);
   Type t = coeff_ev[0]->type();
   t.dim(1);
   ncoeff->type(t);
   args.push_back(ncoeff);
   std::vector<Expression*> alv_e(alv.size());
   bool al_same_as_before = alv.size() == al->size();
-  for (unsigned int i = static_cast<unsigned int>(alv.size()); i--;) {
+  for (auto i = static_cast<unsigned int>(alv.size()); i--;) {
     alv_e[i] = alv[i]();
     al_same_as_before = al_same_as_before && Expression::equal(alv_e[i], (*al)[i]);
   }
@@ -217,7 +217,7 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, Ctx nctx, ASTString& cid, Call* c, 
     }
     args.push_back(rd);
   } else {
-    ArrayLit* nal = new ArrayLit(al->loc(), alv_e);
+    auto* nal = new ArrayLit(al->loc(), alv_e);
     nal->type(al->type());
     args.push_back(nal);
   }
@@ -407,7 +407,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       // flatten the coefficient array
       Expression* tmp = follow_id_to_decl(c->arg(0));
       ArrayLit* coeffs;
-      if (VarDecl* vd = tmp->dyn_cast<VarDecl>()) tmp = vd->id();
+      if (auto* vd = tmp->dyn_cast<VarDecl>()) tmp = vd->id();
       {
         CallArgItem cai(env);
         args_ee[0] = flat_exp(env, nctx, tmp, nullptr, nullptr);
@@ -429,12 +429,11 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
           elems_ee[i] = flat_exp(env, argctx, (*vars)[i], nullptr, nullptr);
         }
         std::vector<Expression*> elems(elems_ee.size());
-        for (unsigned int i = static_cast<unsigned int>(elems.size()); i--;)
-          elems[i] = elems_ee[i].r();
+        for (auto i = static_cast<unsigned int>(elems.size()); i--;) elems[i] = elems_ee[i].r();
         KeepAlive ka;
         {
           GCLock lock;
-          ArrayLit* alr = new ArrayLit(Location().introduce(), elems);
+          auto* alr = new ArrayLit(Location().introduce(), elems);
           alr->type(vars->type());
           alr->flat(true);
           ka = alr;
@@ -445,7 +444,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
 
       {
         Expression* constant = follow_id_to_decl(c->arg(2));
-        if (VarDecl* vd = constant->dyn_cast<VarDecl>()) constant = vd->id();
+        if (auto* vd = constant->dyn_cast<VarDecl>()) constant = vd->id();
         CallArgItem cai(env);
         args_ee[2] = flat_exp(env, nctx, constant, nullptr, nullptr);
         isPartial |= isfalse(env, args_ee[2].b());
@@ -472,11 +471,11 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         std::vector<KeepAlive> pos_args;
         std::vector<KeepAlive> newPositives;
         bool is_subsumed = false;
-        ArrayLit* al_neg = c->arg(1)->cast<ArrayLit>();
+        auto* al_neg = c->arg(1)->cast<ArrayLit>();
         {
           CallArgItem cai(env);
           for (unsigned int i = 0; i < al_neg->size(); i++) {
-            BinOp* bo = (*al_neg)[i]->dyn_cast<BinOp>();
+            auto* bo = (*al_neg)[i]->dyn_cast<BinOp>();
             Call* co = (*al_neg)[i]->dyn_cast<Call>();
             if (bo ||
                 (co && (co->id() == constants().ids.forall || co->id() == constants().ids.exists ||
@@ -508,7 +507,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         if (mixContext) {
           argctx.b = +nctx.b;
         }
-        ArrayLit* al_pos = c->arg(0)->cast<ArrayLit>();
+        auto* al_pos = c->arg(0)->cast<ArrayLit>();
         for (unsigned int i = 0; i < al_pos->size(); i++) {
           newPositives.push_back((*al_pos)[i]);
         }
@@ -533,11 +532,11 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         }
 
         GCLock lock;
-        ArrayLit* al_new_pos = new ArrayLit(al_pos->loc(), toExpVec(pos_args));
+        auto* al_new_pos = new ArrayLit(al_pos->loc(), toExpVec(pos_args));
         al_new_pos->type(Type::varbool(1));
         al_new_pos->flat(true);
         args_ee[0] = EE(al_new_pos, constants().lit_true);
-        ArrayLit* al_new_neg = new ArrayLit(al_neg->loc(), toExpVec(neg_args));
+        auto* al_new_neg = new ArrayLit(al_neg->loc(), toExpVec(neg_args));
         al_new_neg->flat(true);
         al_new_neg->type(Type::varbool(1));
         args_ee[1] = EE(al_new_neg, constants().lit_true);
@@ -548,7 +547,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         if (mixContext) {
           argctx.b = C_MIX;
         }
-        ArrayLit* al = c->arg(0)->cast<ArrayLit>();
+        auto* al = c->arg(0)->cast<ArrayLit>();
         ArrayLit* al_new;
         if (al->flat()) {
           al_new = al;
@@ -590,7 +589,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
             argctx.b = argctx.i;
           }
           Expression* tmp = follow_id_to_decl(c->arg(i));
-          if (VarDecl* vd = tmp->dyn_cast<VarDecl>()) tmp = vd->id();
+          if (auto* vd = tmp->dyn_cast<VarDecl>()) tmp = vd->id();
           CallArgItem cai(env);
           args_ee[i] = flat_exp(env, argctx, tmp, nullptr, nullptr);
           isPartial |= isfalse(env, args_ee[i].b());
@@ -613,12 +612,12 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       std::vector<Expression*> pos_stack;
       std::vector<Expression*> neg_stack;
 
-      ArrayLit* al_pos = follow_id(args_ee[0].r())->cast<ArrayLit>();
+      auto* al_pos = follow_id(args_ee[0].r())->cast<ArrayLit>();
       for (unsigned int i = 0; i < al_pos->size(); i++) {
         pos_stack.push_back((*al_pos)[i]);
       }
       if (cid == constants().ids.clause) {
-        ArrayLit* al_neg = follow_id(args_ee[1].r())->cast<ArrayLit>();
+        auto* al_neg = follow_id(args_ee[1].r())->cast<ArrayLit>();
         for (unsigned int i = 0; i < al_neg->size(); i++) {
           neg_stack.push_back((*al_neg)[i]);
         }
@@ -740,7 +739,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
           return ret;
         }
         GCLock lock;
-        ArrayLit* nal = new ArrayLit(Location().introduce(), toExpVec(pos_alv));
+        auto* nal = new ArrayLit(Location().introduce(), toExpVec(pos_alv));
         nal->type(Type::varbool(1));
         args.push_back(nal);
         cid = constants().ids.exists;
@@ -754,9 +753,9 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
           return ret;
         }
         GCLock lock;
-        ArrayLit* pos_al = new ArrayLit(Location().introduce(), toExpVec(pos_alv));
+        auto* pos_al = new ArrayLit(Location().introduce(), toExpVec(pos_alv));
         pos_al->type(Type::varbool(1));
-        ArrayLit* neg_al = new ArrayLit(Location().introduce(), toExpVec(neg_alv));
+        auto* neg_al = new ArrayLit(Location().introduce(), toExpVec(neg_alv));
         neg_al->type(Type::varbool(1));
         cid = constants().ids.clause;
         args.push_back(pos_al);
@@ -785,7 +784,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       }
 
     } else if (decl->e() == nullptr && cid == constants().ids.forall) {
-      ArrayLit* al = follow_id(args_ee[0].r())->cast<ArrayLit>();
+      auto* al = follow_id(args_ee[0].r())->cast<ArrayLit>();
       std::vector<KeepAlive> alv;
       for (unsigned int i = 0; i < al->size(); i++) {
         GCLock lock;
@@ -815,7 +814,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         return ret;
       }
       GCLock lock;
-      ArrayLit* nal = new ArrayLit(al->loc(), toExpVec(alv));
+      auto* nal = new ArrayLit(al->loc(), toExpVec(alv));
       nal->type(al->type());
       args.push_back(nal);
     } else if (decl->e() == nullptr &&
@@ -865,7 +864,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       cr_c->decl(decl);
       cr = cr_c;
     }
-    EnvI::CSEMap::iterator cit = env.cse_map_find(cr());
+    auto cit = env.cse_map_find(cr());
     if (cit != env.cse_map_end()) {
       if (env.ignorePartial) {
         ret.b = bind(env, Ctx(), b, constants().lit_true);
@@ -878,7 +877,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       for (unsigned int i = 0; i < decl->params().size(); i++) {
         if (decl->params()[i]->type().dim() > 0) {
           // Check array index sets
-          ArrayLit* al = follow_id(args[i]())->cast<ArrayLit>();
+          auto* al = follow_id(args[i]())->cast<ArrayLit>();
           VarDecl* pi = decl->params()[i];
           for (unsigned int j = 0; j < pi->ti()->ranges().size(); j++) {
             TypeInst* range_ti = pi->ti()->ranges()[j];
@@ -1051,8 +1050,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         Call* cr_c = cr()->cast<Call>();
         /// All builtins are total
         std::vector<Type> argt(cr_c->n_args());
-        for (unsigned int i = static_cast<unsigned int>(argt.size()); i--;)
-          argt[i] = cr_c->arg(i)->type();
+        for (auto i = static_cast<unsigned int>(argt.size()); i--;) argt[i] = cr_c->arg(i)->type();
         Type callt = decl->rtype(env, argt, false);
         if (callt.ispar() && callt.bt() != Type::BT_ANN) {
           GCLock lock;
@@ -1117,7 +1115,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
             ret = flat_exp(env, ctx, decl->e(), r, nullptr);
             args_ee.push_back(ret);
             if (decl->e()->type().dim() > 0) {
-              ArrayLit* al = follow_id(ret.r())->cast<ArrayLit>();
+              auto* al = follow_id(ret.r())->cast<ArrayLit>();
               assert(al->dims() == decl->e()->type().dim());
               for (unsigned int i = 0; i < decl->ti()->ranges().size(); i++) {
                 if (decl->ti()->ranges()[i]->domain() &&

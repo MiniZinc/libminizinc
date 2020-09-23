@@ -330,7 +330,7 @@ public:
   typedef IntSetVal* Val;
   static IntSetVal* e(EnvI& env, Expression* e) { return eval_boolset(env, e); }
   static Expression* exp(IntSetVal* e) {
-    SetLit* sl = new SetLit(Location(), e);
+    auto* sl = new SetLit(Location(), e);
     sl->type(Type::parsetbool());
     return sl;
   }
@@ -364,7 +364,7 @@ public:
   typedef SetLit* Val;
   typedef Expression* ArrayVal;
   static SetLit* e(EnvI& env, Expression* e) {
-    SetLit* sl = new SetLit(e->loc(), eval_boolset(env, e));
+    auto* sl = new SetLit(e->loc(), eval_boolset(env, e));
     sl->type(Type::parsetbool());
     return sl;
   }
@@ -436,7 +436,7 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
     VarDecl* vd = ce->decl()->params()[i];
     if (vd->type().dim() > 0) {
       // Check array index sets
-      ArrayLit* al = params[i]->cast<ArrayLit>();
+      auto* al = params[i]->cast<ArrayLit>();
       for (unsigned int j = 0; j < vd->ti()->ranges().size(); j++) {
         TypeInst* range_ti = vd->ti()->ranges()[j];
         if (range_ti->domain() && !range_ti->domain()->isa<TIId>()) {
@@ -541,14 +541,14 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
       return eval_array_lit(env, ite->e_else());
     }
     case Expression::E_BINOP: {
-      BinOp* bo = e->cast<BinOp>();
+      auto* bo = e->cast<BinOp>();
       if (bo->op() == BOT_PLUSPLUS) {
         ArrayLit* al0 = eval_array_lit(env, bo->lhs());
         ArrayLit* al1 = eval_array_lit(env, bo->rhs());
         std::vector<Expression*> v(al0->size() + al1->size());
         for (unsigned int i = al0->size(); i--;) v[i] = (*al0)[i];
         for (unsigned int i = al1->size(); i--;) v[al0->size() + i] = (*al1)[i];
-        ArrayLit* ret = new ArrayLit(e->loc(), v);
+        auto* ret = new ArrayLit(e->loc(), v);
         ret->flat(al0->flat() && al1->flat());
         ret->type(e->type());
         return ret;
@@ -585,7 +585,7 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
       l->pushbindings();
       for (unsigned int i = 0; i < l->let().size(); i++) {
         // Evaluate all variable declarations
-        if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+        if (auto* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
           vdi->e(eval_par(env, vdi->e()));
           checkParDeclaration(env, vdi);
         } else {
@@ -598,7 +598,7 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
         }
       }
       ArrayLit* l_in = eval_array_lit(env, l->in());
-      ArrayLit* ret = copy(env, l_in, true)->cast<ArrayLit>();
+      auto* ret = copy(env, l_in, true)->cast<ArrayLit>();
       ret->flat(l_in->flat());
       l->popbindings();
       return ret;
@@ -625,7 +625,7 @@ Expression* eval_arrayaccess(EnvI& env, ArrayLit* al, const std::vector<IntVal>&
       if (t.isbool()) return constants().lit_false;
       if (t.isfloat()) return FloatLit::a(0.0);
       if (t.st() == Type::ST_SET || t.isbot()) {
-        SetLit* ret = new SetLit(Location(), std::vector<Expression*>());
+        auto* ret = new SetLit(Location(), std::vector<Expression*>());
         ret->type(t);
         return ret;
       }
@@ -661,7 +661,7 @@ SetLit* eval_set_lit(EnvI& env, Expression* e) {
     case Type::BT_BOT:
       return new SetLit(e->loc(), eval_intset(env, e));
     case Type::BT_BOOL: {
-      SetLit* sl = new SetLit(e->loc(), eval_boolset(env, e));
+      auto* sl = new SetLit(e->loc(), eval_boolset(env, e));
       sl->type(Type::parsetbool());
       return sl;
     }
@@ -673,13 +673,13 @@ SetLit* eval_set_lit(EnvI& env, Expression* e) {
 }
 
 IntSetVal* eval_intset(EnvI& env, Expression* e) {
-  if (SetLit* sl = e->dyn_cast<SetLit>()) {
+  if (auto* sl = e->dyn_cast<SetLit>()) {
     if (sl->isv()) return sl->isv();
   }
   CallStackItem csi(env, e);
   switch (e->eid()) {
     case Expression::E_SETLIT: {
-      SetLit* sl = e->cast<SetLit>();
+      auto* sl = e->cast<SetLit>();
       std::vector<IntVal> vals;
       for (unsigned int i = 0; i < sl->v().size(); i++) {
         Expression* vi = eval_par(env, sl->v()[i]);
@@ -700,13 +700,13 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
       throw EvalError(env, e->loc(), "not a set of int expression");
       break;
     case Expression::E_ARRAYLIT: {
-      ArrayLit* al = e->cast<ArrayLit>();
+      auto* al = e->cast<ArrayLit>();
       std::vector<IntVal> vals(al->size());
       for (unsigned int i = 0; i < al->size(); i++) vals[i] = eval_int(env, (*al)[i]);
       return IntSetVal::a(vals);
     } break;
     case Expression::E_COMP: {
-      Comprehension* c = e->cast<Comprehension>();
+      auto* c = e->cast<Comprehension>();
       std::vector<IntVal> a = eval_comp<EvalIntVal>(env, c);
       return IntSetVal::a(a);
     }
@@ -726,7 +726,7 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
       return eval_intset(env, ite->e_else());
     } break;
     case Expression::E_BINOP: {
-      BinOp* bo = e->cast<BinOp>();
+      auto* bo = e->cast<BinOp>();
       if (bo->decl() && bo->decl()->e()) {
         return eval_call<EvalIntSet, BinOp>(env, bo);
       }
@@ -797,7 +797,7 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
       l->pushbindings();
       for (unsigned int i = 0; i < l->let().size(); i++) {
         // Evaluate all variable declarations
-        if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+        if (auto* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
           vdi->e(eval_par(env, vdi->e()));
           checkParDeclaration(env, vdi);
         } else {
@@ -820,7 +820,7 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
 }
 
 FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
-  if (SetLit* sl = e->dyn_cast<SetLit>()) {
+  if (auto* sl = e->dyn_cast<SetLit>()) {
     if (sl->fsv()) {
       return sl->fsv();
     } else if (sl->isv()) {
@@ -831,7 +831,7 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
   CallStackItem csi(env, e);
   switch (e->eid()) {
     case Expression::E_SETLIT: {
-      SetLit* sl = e->cast<SetLit>();
+      auto* sl = e->cast<SetLit>();
       std::vector<FloatVal> vals;
       for (unsigned int i = 0; i < sl->v().size(); i++) {
         Expression* vi = eval_par(env, sl->v()[i]);
@@ -852,13 +852,13 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
       throw EvalError(env, e->loc(), "not a set of float expression");
       break;
     case Expression::E_ARRAYLIT: {
-      ArrayLit* al = e->cast<ArrayLit>();
+      auto* al = e->cast<ArrayLit>();
       std::vector<FloatVal> vals(al->size());
       for (unsigned int i = 0; i < al->size(); i++) vals[i] = eval_float(env, (*al)[i]);
       return FloatSetVal::a(vals);
     } break;
     case Expression::E_COMP: {
-      Comprehension* c = e->cast<Comprehension>();
+      auto* c = e->cast<Comprehension>();
       std::vector<FloatVal> a = eval_comp<EvalFloatVal>(env, c);
       return FloatSetVal::a(a);
     }
@@ -878,7 +878,7 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
       return eval_floatset(env, ite->e_else());
     } break;
     case Expression::E_BINOP: {
-      BinOp* bo = e->cast<BinOp>();
+      auto* bo = e->cast<BinOp>();
       if (bo->decl() && bo->decl()->e()) {
         return eval_call<EvalFloatSet, BinOp>(env, bo);
       }
@@ -947,7 +947,7 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
       l->pushbindings();
       for (unsigned int i = 0; i < l->let().size(); i++) {
         // Evaluate all variable declarations
-        if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+        if (auto* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
           vdi->e(eval_par(env, vdi->e()));
           checkParDeclaration(env, vdi);
         } else {
@@ -972,7 +972,7 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
 bool eval_bool(EnvI& env, Expression* e) {
   CallStackItem csi(env, e);
   try {
-    if (BoolLit* bl = e->dyn_cast<BoolLit>()) {
+    if (auto* bl = e->dyn_cast<BoolLit>()) {
       return bl->v();
     }
     switch (e->eid()) {
@@ -1005,7 +1005,7 @@ bool eval_bool(EnvI& env, Expression* e) {
         return eval_bool(env, ite->e_else());
       } break;
       case Expression::E_BINOP: {
-        BinOp* bo = e->cast<BinOp>();
+        auto* bo = e->cast<BinOp>();
         Expression* lhs = bo->lhs();
         if (lhs->type().bt() == Type::BT_TOP) lhs = eval_par(env, lhs);
         Expression* rhs = bo->rhs();
@@ -1241,7 +1241,7 @@ bool eval_bool(EnvI& env, Expression* e) {
         bool ret = true;
         for (unsigned int i = 0; i < l->let().size(); i++) {
           // Evaluate all variable declarations
-          if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+          if (auto* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
             vdi->e(eval_par(env, vdi->e()));
             bool maybe_partial = vdi->ann().contains(constants().ann.maybe_partial);
             if (maybe_partial) {
@@ -1287,7 +1287,7 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
   CallStackItem csi(env, e);
   switch (e->eid()) {
     case Expression::E_SETLIT: {
-      SetLit* sl = e->cast<SetLit>();
+      auto* sl = e->cast<SetLit>();
       if (sl->isv()) return sl->isv();
       std::vector<IntVal> vals;
       for (unsigned int i = 0; i < sl->v().size(); i++) {
@@ -1309,13 +1309,13 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
       throw EvalError(env, e->loc(), "not a set of bool expression");
       break;
     case Expression::E_ARRAYLIT: {
-      ArrayLit* al = e->cast<ArrayLit>();
+      auto* al = e->cast<ArrayLit>();
       std::vector<IntVal> vals(al->size());
       for (unsigned int i = 0; i < al->size(); i++) vals[i] = eval_bool(env, (*al)[i]);
       return IntSetVal::a(vals);
     } break;
     case Expression::E_COMP: {
-      Comprehension* c = e->cast<Comprehension>();
+      auto* c = e->cast<Comprehension>();
       std::vector<IntVal> a = eval_comp<EvalIntVal>(env, c);
       return IntSetVal::a(a);
     }
@@ -1335,7 +1335,7 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
       return eval_boolset(env, ite->e_else());
     } break;
     case Expression::E_BINOP: {
-      BinOp* bo = e->cast<BinOp>();
+      auto* bo = e->cast<BinOp>();
       if (bo->decl() && bo->decl()->e()) {
         return eval_call<EvalBoolSet, BinOp>(env, bo);
       }
@@ -1406,7 +1406,7 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
       l->pushbindings();
       for (unsigned int i = 0; i < l->let().size(); i++) {
         // Evaluate all variable declarations
-        if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+        if (auto* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
           vdi->e(eval_par(env, vdi->e()));
           checkParDeclaration(env, vdi);
         } else {
@@ -1432,7 +1432,7 @@ IntVal eval_int(EnvI& env, Expression* e) {
   if (e->type().isbool()) {
     return eval_bool(env, e);
   }
-  if (IntLit* il = e->dyn_cast<IntLit>()) {
+  if (auto* il = e->dyn_cast<IntLit>()) {
     return il->v();
   }
   CallStackItem csi(env, e);
@@ -1466,7 +1466,7 @@ IntVal eval_int(EnvI& env, Expression* e) {
         return eval_int(env, ite->e_else());
       } break;
       case Expression::E_BINOP: {
-        BinOp* bo = e->cast<BinOp>();
+        auto* bo = e->cast<BinOp>();
         if (bo->decl() && bo->decl()->e()) {
           return eval_call<EvalIntVal, BinOp>(env, bo);
         }
@@ -1526,7 +1526,7 @@ IntVal eval_int(EnvI& env, Expression* e) {
         l->pushbindings();
         for (unsigned int i = 0; i < l->let().size(); i++) {
           // Evaluate all variable declarations
-          if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+          if (auto* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
             vdi->e(eval_par(env, vdi->e()));
             checkParDeclaration(env, vdi);
           } else {
@@ -1559,7 +1559,7 @@ FloatVal eval_float(EnvI& env, Expression* e) {
   }
   CallStackItem csi(env, e);
   try {
-    if (FloatLit* fl = e->dyn_cast<FloatLit>()) {
+    if (auto* fl = e->dyn_cast<FloatLit>()) {
       return fl->v();
     }
     switch (e->eid()) {
@@ -1591,7 +1591,7 @@ FloatVal eval_float(EnvI& env, Expression* e) {
         return eval_float(env, ite->e_else());
       } break;
       case Expression::E_BINOP: {
-        BinOp* bo = e->cast<BinOp>();
+        auto* bo = e->cast<BinOp>();
         if (bo->decl() && bo->decl()->e()) {
           return eval_call<EvalFloatVal, BinOp>(env, bo);
         }
@@ -1648,7 +1648,7 @@ FloatVal eval_float(EnvI& env, Expression* e) {
         l->pushbindings();
         for (unsigned int i = 0; i < l->let().size(); i++) {
           // Evaluate all variable declarations
-          if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+          if (auto* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
             vdi->e(eval_par(env, vdi->e()));
             checkParDeclaration(env, vdi);
           } else {
@@ -1709,7 +1709,7 @@ std::string eval_string(EnvI& env, Expression* e) {
       return eval_string(env, ite->e_else());
     } break;
     case Expression::E_BINOP: {
-      BinOp* bo = e->cast<BinOp>();
+      auto* bo = e->cast<BinOp>();
       if (bo->decl() && bo->decl()->e()) {
         return eval_call<EvalString, BinOp>(env, bo);
       }
@@ -1749,7 +1749,7 @@ std::string eval_string(EnvI& env, Expression* e) {
       l->pushbindings();
       for (unsigned int i = 0; i < l->let().size(); i++) {
         // Evaluate all variable declarations
-        if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+        if (auto* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
           vdi->e(eval_par(env, vdi->e()));
           checkParDeclaration(env, vdi);
         } else {
@@ -1790,7 +1790,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
         dims[i].first = al->min(i);
         dims[i].second = al->max(i);
       }
-      ArrayLit* ret = new ArrayLit(al->loc(), args, dims);
+      auto* ret = new ArrayLit(al->loc(), args, dims);
       Type t = al->type();
       if (t.isbot() && ret->size() > 0) {
         t.bt((*ret)[0]->type().bt());
@@ -1799,11 +1799,11 @@ Expression* eval_par(EnvI& env, Expression* e) {
       return ret;
     }
     case Expression::E_VARDECL: {
-      VarDecl* vd = e->cast<VarDecl>();
+      auto* vd = e->cast<VarDecl>();
       throw EvalError(env, vd->loc(), "cannot evaluate variable declaration", vd->id()->v());
     }
     case Expression::E_TI: {
-      TypeInst* t = e->cast<TypeInst>();
+      auto* t = e->cast<TypeInst>();
       ASTExprVec<TypeInst> r;
       if (t->ranges().size() > 0) {
         std::vector<TypeInst*> rv(t->ranges().size());
@@ -1818,9 +1818,9 @@ Expression* eval_par(EnvI& env, Expression* e) {
       Id* id = e->cast<Id>();
       if (id->decl() == nullptr) throw EvalError(env, e->loc(), "undefined identifier", id->v());
       if (id->decl()->ti()->domain()) {
-        if (BoolLit* bl = id->decl()->ti()->domain()->dyn_cast<BoolLit>()) return bl;
+        if (auto* bl = id->decl()->ti()->domain()->dyn_cast<BoolLit>()) return bl;
         if (id->decl()->ti()->type().isint()) {
-          if (SetLit* sl = id->decl()->ti()->domain()->dyn_cast<SetLit>()) {
+          if (auto* sl = id->decl()->ti()->domain()->dyn_cast<SetLit>()) {
             if (sl->isv() && sl->isv()->min() == sl->isv()->max()) {
               return IntLit::a(sl->isv()->min());
             }
@@ -1852,7 +1852,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
           dims[i].first = al->min(i);
           dims[i].second = al->max(i);
         }
-        ArrayLit* ret = new ArrayLit(al->loc(), args, dims);
+        auto* ret = new ArrayLit(al->loc(), args, dims);
         Type t = al->type();
         if ((t.bt() == Type::BT_BOT || t.bt() == Type::BT_TOP) && ret->size() > 0) {
           t.bt((*ret)[0]->type().bt());
@@ -1920,11 +1920,11 @@ Expression* eval_par(EnvI& env, Expression* e) {
           }
         }
         case Expression::E_BINOP: {
-          BinOp* bo = e->cast<BinOp>();
+          auto* bo = e->cast<BinOp>();
           if (bo->decl() && bo->decl()->e()) {
             return eval_call<EvalPar, BinOp>(env, bo);
           }
-          BinOp* nbo =
+          auto* nbo =
               new BinOp(e->loc(), eval_par(env, bo->lhs()), bo->op(), eval_par(env, bo->rhs()));
           nbo->type(bo->type());
           return nbo;
@@ -1939,14 +1939,14 @@ Expression* eval_par(EnvI& env, Expression* e) {
           return nuo;
         }
         case Expression::E_ARRAYACCESS: {
-          ArrayAccess* aa = e->cast<ArrayAccess>();
+          auto* aa = e->cast<ArrayAccess>();
           for (unsigned int i = 0; i < aa->idx().size(); i++) {
             if (!aa->idx()[i]->type().ispar()) {
               std::vector<Expression*> idx(aa->idx().size());
               for (unsigned int j = 0; j < aa->idx().size(); j++) {
                 idx[j] = eval_par(env, aa->idx()[j]);
               }
-              ArrayAccess* aa_new = new ArrayAccess(e->loc(), eval_par(env, aa->v()), idx);
+              auto* aa_new = new ArrayAccess(e->loc(), eval_par(env, aa->v()), idx);
               aa_new->type(aa->type());
               return aa_new;
             }
@@ -1959,7 +1959,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
           l->pushbindings();
           for (unsigned int i = 0; i < l->let().size(); i++) {
             // Evaluate all variable declarations
-            if (VarDecl* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
+            if (auto* vdi = l->let()[i]->dyn_cast<VarDecl>()) {
               vdi->e(eval_par(env, vdi->e()));
               checkParDeclaration(env, vdi);
             } else {
@@ -3057,7 +3057,7 @@ Expression* follow_id_to_decl(Expression* e) {
 
 Expression* follow_id_to_value(Expression* e) {
   Expression* decl = follow_id_to_decl(e);
-  if (VarDecl* vd = decl->dyn_cast<VarDecl>()) {
+  if (auto* vd = decl->dyn_cast<VarDecl>()) {
     if (vd->e() && vd->e()->type().ispar()) return vd->e();
     return vd->id();
   } else {

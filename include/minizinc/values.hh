@@ -518,7 +518,7 @@ private:
   IntSetVal(IntVal m, IntVal n);
   /// Construct set from \a s
   IntSetVal(const std::vector<Range>& s) : ASTChunk(sizeof(Range) * s.size()) {
-    for (unsigned int i = static_cast<unsigned int>(s.size()); i--;) get(i) = s[i];
+    for (auto i = static_cast<unsigned int>(s.size()); i--;) get(i) = s[i];
   }
 
   /// Disabled
@@ -565,7 +565,7 @@ public:
 
   /// Allocate empty set from context
   static IntSetVal* a(void) {
-    IntSetVal* r = static_cast<IntSetVal*>(ASTChunk::alloc(0));
+    auto* r = static_cast<IntSetVal*>(ASTChunk::alloc(0));
     new (r) IntSetVal();
     return r;
   }
@@ -575,7 +575,7 @@ public:
     if (m > n) {
       return a();
     } else {
-      IntSetVal* r = static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range)));
+      auto* r = static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range)));
       new (r) IntSetVal(m, n);
       return r;
     }
@@ -586,7 +586,7 @@ public:
   static IntSetVal* ai(I& i) {
     std::vector<Range> s;
     for (; i(); ++i) s.push_back(Range(i.min(), i.max()));
-    IntSetVal* r = static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range) * s.size()));
+    auto* r = static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range) * s.size()));
     new (r) IntSetVal(s);
     return r;
   }
@@ -609,12 +609,12 @@ public:
       }
     }
     ranges.push_back(Range(min, max));
-    IntSetVal* r = static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range) * ranges.size()));
+    auto* r = static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range) * ranges.size()));
     new (r) IntSetVal(ranges);
     return r;
   }
   static IntSetVal* a(const std::vector<Range>& ranges) {
-    IntSetVal* r = static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range) * ranges.size()));
+    auto* r = static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range) * ranges.size()));
     new (r) IntSetVal(ranges);
     return r;
   }
@@ -713,7 +713,7 @@ private:
   FloatSetVal(FloatVal m, FloatVal n);
   /// Construct set from \a s
   FloatSetVal(const std::vector<Range>& s) : ASTChunk(sizeof(Range) * s.size()) {
-    for (unsigned int i = static_cast<unsigned int>(s.size()); i--;) get(i) = s[i];
+    for (auto i = static_cast<unsigned int>(s.size()); i--;) get(i) = s[i];
   }
 
   /// Disabled
@@ -760,7 +760,7 @@ public:
 
   /// Allocate empty set from context
   static FloatSetVal* a(void) {
-    FloatSetVal* r = static_cast<FloatSetVal*>(ASTChunk::alloc(0));
+    auto* r = static_cast<FloatSetVal*>(ASTChunk::alloc(0));
     new (r) FloatSetVal();
     return r;
   }
@@ -770,7 +770,7 @@ public:
     if (m > n) {
       return a();
     } else {
-      FloatSetVal* r = static_cast<FloatSetVal*>(ASTChunk::alloc(sizeof(Range)));
+      auto* r = static_cast<FloatSetVal*>(ASTChunk::alloc(sizeof(Range)));
       new (r) FloatSetVal(m, n);
       return r;
     }
@@ -781,7 +781,7 @@ public:
   static FloatSetVal* ai(I& i) {
     std::vector<Range> s;
     for (; i(); ++i) s.push_back(Range(i.min(), i.max()));
-    FloatSetVal* r = static_cast<FloatSetVal*>(ASTChunk::alloc(sizeof(Range) * s.size()));
+    auto* r = static_cast<FloatSetVal*>(ASTChunk::alloc(sizeof(Range) * s.size()));
     new (r) FloatSetVal(s);
     return r;
   }
@@ -804,12 +804,12 @@ public:
       }
     }
     ranges.push_back(Range(min, max));
-    FloatSetVal* r = static_cast<FloatSetVal*>(ASTChunk::alloc(sizeof(Range) * ranges.size()));
+    auto* r = static_cast<FloatSetVal*>(ASTChunk::alloc(sizeof(Range) * ranges.size()));
     new (r) FloatSetVal(ranges);
     return r;
   }
   static FloatSetVal* a(const std::vector<Range>& ranges) {
-    FloatSetVal* r = static_cast<FloatSetVal*>(ASTChunk::alloc(sizeof(Range) * ranges.size()));
+    auto* r = static_cast<FloatSetVal*>(ASTChunk::alloc(sizeof(Range) * ranges.size()));
     new (r) FloatSetVal(ranges);
     return r;
   }

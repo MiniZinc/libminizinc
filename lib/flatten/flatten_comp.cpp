@@ -16,7 +16,7 @@ namespace MiniZinc {
 EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
-  Comprehension* c = e->cast<Comprehension>();
+  auto* c = e->cast<Comprehension>();
   KeepAlive c_ka(c);
 
   bool isvarset = false;
@@ -57,7 +57,7 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
           ub->decl(env.model->matchFn(env, ub, false));
           in[i] = ub;
           for (int j = 0; j < c->n_decls(i); j++) {
-            BinOp* bo = new BinOp(Location().introduce(), c->decl(i, j)->id(), BOT_IN, c->in(i));
+            auto* bo = new BinOp(Location().introduce(), c->decl(i, j)->id(), BOT_IN, c->in(i));
             bo->type(Type::varbool());
             where.push_back(bo);
           }
@@ -102,7 +102,7 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
                 orig_where[i]->type(Type::parbool());
                 break;
               default: {
-                ArrayLit* parWhereAl = new ArrayLit(c->where(i)->loc(), parWhere);
+                auto* parWhereAl = new ArrayLit(c->where(i)->loc(), parWhere);
                 parWhereAl->type(Type::parbool(1));
                 Call* forall = new Call(c->where(i)->loc(), constants().ids.forall, {parWhereAl});
                 forall->type(Type::parbool());
@@ -129,7 +129,7 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       }
       Expression* cond;
       if (where.size() > 1) {
-        ArrayLit* al = new ArrayLit(Location().introduce(), where);
+        auto* al = new ArrayLit(Location().introduce(), where);
         al->type(Type::varbool(1));
         std::vector<Expression*> args(1);
         args[0] = al;
@@ -172,7 +172,7 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         if_b_else_absent->type(tt);
         new_e = if_b_else_absent;
       }
-      Comprehension* nc = new Comprehension(c->loc(), new_e, gs, c->set());
+      auto* nc = new Comprehension(c->loc(), new_e, gs, c->set());
       nc->type(ntype);
       c = nc;
       c_ka = c;
@@ -205,7 +205,7 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   std::vector<Expression*> elems(elems_ee.size());
   Type elemType = Type::bot();
   bool allPar = true;
-  for (unsigned int i = static_cast<unsigned int>(elems.size()); i--;) {
+  for (auto i = static_cast<unsigned int>(elems.size()); i--;) {
     elems[i] = elems_ee[i].r();
     if (elemType == Type::bot()) elemType = elems[i]->type();
     if (!elems[i]->type().ispar()) allPar = false;
@@ -224,13 +224,13 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     GCLock lock;
     if (c->set()) {
       if (c->type().ispar() && allPar) {
-        SetLit* sl = new SetLit(c->loc(), elems);
+        auto* sl = new SetLit(c->loc(), elems);
         sl->type(elemType);
         Expression* slr = eval_par(env, sl);
         slr->type(elemType);
         ka = slr;
       } else {
-        ArrayLit* alr = new ArrayLit(Location().introduce(), elems);
+        auto* alr = new ArrayLit(Location().introduce(), elems);
         elemType.st(Type::ST_PLAIN);
         elemType.dim(1);
         alr->type(elemType);
@@ -242,7 +242,7 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         ka = ee.r();
       }
     } else {
-      ArrayLit* alr = new ArrayLit(Location().introduce(), elems);
+      auto* alr = new ArrayLit(Location().introduce(), elems);
       alr->type(elemType);
       alr->flat(true);
       ka = alr;

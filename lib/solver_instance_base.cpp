@@ -108,7 +108,7 @@ void SolverInstanceBase2::assignSolutionToOutput() {
             getAnnotation(vd->ann(), constants().ann.output_array.aststr()))) {
       assert(vd->e());
 
-      if (ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
+      if (auto* al = vd->e()->dyn_cast<ArrayLit>()) {
         std::vector<Expression*> array_elems;
         ArrayLit& array = *al;
         for (unsigned int j = 0; j < array.size(); j++) {
@@ -116,15 +116,15 @@ void SolverInstanceBase2::assignSolutionToOutput() {
             // std::cout << "DEBUG: getting solution value from " << *id  << " : " << id->v() <<
             // std::endl;
             array_elems.push_back(getSolutionValue(id));
-          } else if (FloatLit* floatLit = array[j]->dyn_cast<FloatLit>()) {
+          } else if (auto* floatLit = array[j]->dyn_cast<FloatLit>()) {
             array_elems.push_back(floatLit);
-          } else if (IntLit* intLit = array[j]->dyn_cast<IntLit>()) {
+          } else if (auto* intLit = array[j]->dyn_cast<IntLit>()) {
             array_elems.push_back(intLit);
-          } else if (BoolLit* boolLit = array[j]->dyn_cast<BoolLit>()) {
+          } else if (auto* boolLit = array[j]->dyn_cast<BoolLit>()) {
             array_elems.push_back(boolLit);
-          } else if (SetLit* setLit = array[j]->dyn_cast<SetLit>()) {
+          } else if (auto* setLit = array[j]->dyn_cast<SetLit>()) {
             array_elems.push_back(setLit);
-          } else if (StringLit* strLit = array[j]->dyn_cast<StringLit>()) {
+          } else if (auto* strLit = array[j]->dyn_cast<StringLit>()) {
             array_elems.push_back(strLit);
           } else {
             std::ostringstream oss;
@@ -135,7 +135,7 @@ void SolverInstanceBase2::assignSolutionToOutput() {
         GCLock lock;
         ArrayLit* dims;
         Expression* e = output_array_ann->arg(0);
-        if (ArrayLit* al = e->dyn_cast<ArrayLit>()) {
+        if (auto* al = e->dyn_cast<ArrayLit>()) {
           dims = al;
         } else if (Id* id = e->dyn_cast<Id>()) {
           dims = id->decl()->e()->cast<ArrayLit>();
@@ -152,7 +152,7 @@ void SolverInstanceBase2::assignSolutionToOutput() {
                                                  static_cast<int>(isv->max().toInt())));
           }
         }
-        ArrayLit* array_solution = new ArrayLit(Location(), array_elems, dims_v);
+        auto* array_solution = new ArrayLit(Location(), array_elems, dims_v);
         KeepAlive ka(array_solution);
         auto& de = getSolns2Out()->findOutputVar(vd->id()->str());
         de.first->e(array_solution);

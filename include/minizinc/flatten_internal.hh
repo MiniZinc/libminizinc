@@ -444,10 +444,10 @@ template <class Lit>
 void simplify_lin(std::vector<typename LinearTraits<Lit>::Val>& c, std::vector<KeepAlive>& x,
                   typename LinearTraits<Lit>::Val& d) {
   std::vector<int> idx(c.size());
-  for (unsigned int i = static_cast<unsigned int>(idx.size()); i--;) {
+  for (auto i = static_cast<unsigned int>(idx.size()); i--;) {
     idx[i] = i;
     Expression* e = follow_id_to_decl(x[i]());
-    if (VarDecl* vd = e->dyn_cast<VarDecl>()) {
+    if (auto* vd = e->dyn_cast<VarDecl>()) {
       if (vd->e() && vd->e()->isa<Lit>()) {
         x[i] = vd->e();
       } else {

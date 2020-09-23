@@ -16,7 +16,7 @@ namespace MiniZinc {
 EE flatten_anon(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
-  AnonVar* av = e->cast<AnonVar>();
+  auto* av = e->cast<AnonVar>();
   if (av->type().isbot()) {
     throw InternalError("type of anonymous variable could not be inferred");
   }

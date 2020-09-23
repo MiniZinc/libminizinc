@@ -37,7 +37,7 @@ Env* changeLibrary(Env& e, vector<string>& includePaths, string globals_dir,
   GCLock lock;
   CopyMap cm;
   Model* m = e.envi().orig_model ? e.envi().orig_model : e.envi().model;
-  Model* new_mod = new Model();
+  auto* new_mod = new Model();
   new_mod->setFilename(m->filename());
   new_mod->setFilepath(m->filepath());
 
@@ -50,7 +50,7 @@ Env* changeLibrary(Env& e, vector<string>& includePaths, string globals_dir,
   // Collect include items
   vector<ASTString> include_names;
   for (Item* item : *m) {
-    if (IncludeI* inc = item->dyn_cast<IncludeI>()) {
+    if (auto* inc = item->dyn_cast<IncludeI>()) {
       include_names.push_back(inc->m()->filepath());
     } else {
       new_mod->addItem(copy(e.envi(), cm, item));
@@ -78,7 +78,7 @@ Env* changeLibrary(Env& e, vector<string>& includePaths, string globals_dir,
     }
     return nullptr;
   }
-  IncludeI* new_inc = new IncludeI(Location().introduce(), string("MultiPassDummy.mzn"));
+  auto* new_inc = new IncludeI(Location().introduce(), string("MultiPassDummy.mzn"));
   new_inc->m(inc_mod);
   inc_mod->setParent(new_mod);
   new_mod->addItem(new_inc);

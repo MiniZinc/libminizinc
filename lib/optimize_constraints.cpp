@@ -142,9 +142,9 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
       coeffs_e[i] = IntLit::a(coeffs[i]);
       x_e[i] = x[i]();
     }
-    ArrayLit* al_c_new = new ArrayLit(al_c->loc(), coeffs_e);
+    auto* al_c_new = new ArrayLit(al_c->loc(), coeffs_e);
     al_c_new->type(Type::parint(1));
-    ArrayLit* al_x_new = new ArrayLit(al_x->loc(), x_e);
+    auto* al_x_new = new ArrayLit(al_x->loc(), x_e);
     al_x_new->type(al_x->type());
 
     std::vector<Expression*> args(3);
@@ -192,9 +192,9 @@ OptimizeRegistry::ConstraintStatus o_lin_exp(EnvI& env, Item* i, Call* c, Expres
         coeffs_e[j] = IntLit::a(coeffs[j]);
         x_e[j] = x[j]();
       }
-      ArrayLit* al_c_new = new ArrayLit(al_c->loc(), coeffs_e);
+      auto* al_c_new = new ArrayLit(al_c->loc(), coeffs_e);
       al_c_new->type(Type::parint(1));
-      ArrayLit* al_x_new = new ArrayLit(al_x->loc(), x_e);
+      auto* al_x_new = new ArrayLit(al_x->loc(), x_e);
       al_x_new->type(al_x->type());
 
       std::vector<Expression*> args(3);

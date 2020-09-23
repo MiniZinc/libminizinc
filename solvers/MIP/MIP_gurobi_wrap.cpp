@@ -550,8 +550,8 @@ void MIP_gurobi_wrapper::setVarUB(int iVar, double ub) {
 /// SolutionCallback ------------------------------------------------------------------------
 /// Gurobi ensures thread-safety
 static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void* usrdata) {
-  MIP_wrapper::CBUserInfo* info = (MIP_wrapper::CBUserInfo*)usrdata;
-  MIP_gurobi_wrapper* gw = static_cast<MIP_gurobi_wrapper*>(info->wrapper);
+  auto* info = (MIP_wrapper::CBUserInfo*)usrdata;
+  auto* gw = static_cast<MIP_gurobi_wrapper*>(info->wrapper);
 
   double nodecnt = 0.0, actnodes = 0.0, objVal = 0.0;
   int solcnt = 0;

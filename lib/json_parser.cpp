@@ -543,7 +543,7 @@ void JSONParser::parse(Model* m, std::istream& is, bool ignoreUnknown) {
         TypeInst* ti = it->second;
         bool has_index = std::any_of(ti->ranges().begin(), ti->ranges().end(),
                                      [](TypeInst* nti) { return nti->domain() != nullptr; });
-        ArrayLit* al = e->dyn_cast<ArrayLit>();
+        auto* al = e->dyn_cast<ArrayLit>();
         if (al && has_index && (al->dims() == 1 || ti->ranges().size() == al->dims())) {
           std::string name = "array" + std::to_string(al->dims()) + "d";
           std::vector<Expression*> args(al->dims() + 1);
@@ -561,7 +561,7 @@ void JSONParser::parse(Model* m, std::istream& is, bool ignoreUnknown) {
           }
         }
       }
-      AssignI* ai = new AssignI(e->loc().introduce(), ident, e);
+      auto* ai = new AssignI(e->loc().introduce(), ident, e);
       m->addItem(ai);
     }
     Token next = readToken(is);

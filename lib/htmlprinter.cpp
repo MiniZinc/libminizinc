@@ -152,7 +152,7 @@ public:
     if (subgroups.m.size() != 0) {
       oss << "<p>Sections:</p>\n";
       oss << "<ul>\n";
-      for (GroupMap::Map::iterator it = subgroups.m.begin(); it != subgroups.m.end(); ++it) {
+      for (auto it = subgroups.m.begin(); it != subgroups.m.end(); ++it) {
         oss << "<li><a href='" << (*it)->getAnchor(level, indivFileLevel) << "'>" << (*it)->htmlName
             << "</a>\n";
 
@@ -254,12 +254,12 @@ public:
 };
 
 GroupMap::~GroupMap() {
-  for (Map::iterator it = m.begin(); it != m.end(); ++it) {
+  for (auto it = m.begin(); it != m.end(); ++it) {
     delete *it;
   }
 }
 GroupMap::Map::iterator GroupMap::find(const std::string& n) {
-  for (Map::iterator it = m.begin(); it != m.end(); ++it)
+  for (auto it = m.begin(); it != m.end(); ++it)
     if ((*it)->name == n) return it;
   return m.end();
 }
@@ -660,7 +660,7 @@ public:
       std::string sig;
       {
         GCLock lock;
-        FunctionI* fi_c = new FunctionI(Location(), fi->id(), fi->ti(), fi->params());
+        auto* fi_c = new FunctionI(Location(), fi->id(), fi->ti(), fi->params());
         std::ostringstream oss_sig;
         oss_sig << *fi_c;
         sig = oss_sig.str();
@@ -705,7 +705,7 @@ public:
           os << ",";
           if (splitArgs) {
             os << "\n";
-            for (unsigned int j = static_cast<unsigned int>(align); j--;) os << " ";
+            for (auto j = static_cast<unsigned int>(align); j--;) os << " ";
           } else {
             os << " ";
           }
@@ -1155,7 +1155,7 @@ public:
       std::string sig;
       {
         GCLock lock;
-        FunctionI* fi_c = new FunctionI(Location(), fi->id(), fi->ti(), fi->params());
+        auto* fi_c = new FunctionI(Location(), fi->id(), fi->ti(), fi->params());
         std::ostringstream oss_sig;
         oss_sig << *fi_c;
         sig = oss_sig.str();
@@ -1206,7 +1206,7 @@ public:
           os << ",";
           if (splitArgs) {
             os << "\n  ";
-            for (unsigned int j = static_cast<unsigned int>(align); j--;) os << " ";
+            for (auto j = static_cast<unsigned int>(align); j--;) os << " ";
           } else {
             os << " ";
           }

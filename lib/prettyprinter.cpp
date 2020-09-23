@@ -26,7 +26,7 @@
 namespace MiniZinc {
 
 int precedence(const Expression* e) {
-  if (const BinOp* bo = e->dyn_cast<BinOp>()) {
+  if (const auto* bo = e->dyn_cast<BinOp>()) {
     switch (bo->op()) {
       case BOT_EQUIV:
         return 1200;
@@ -621,7 +621,7 @@ public:
         p(i->cast<ConstraintI>()->e());
         break;
       case Item::II_SOL: {
-        const SolveI* si = i->cast<SolveI>();
+        const auto* si = i->cast<SolveI>();
         os << "solve ";
         p(si->ann());
         switch (si->st()) {
@@ -896,7 +896,7 @@ public:
   void addLine(int p, int l, int par = -1) {
     if (par == -1) {
       for (int i = p - 1; i >= 0; i--) {
-        std::map<int, int>::iterator it = mostRecentlyAdded.find(i);
+        auto it = mostRecentlyAdded.find(i);
         if (it != mostRecentlyAdded.end()) {
           par = it->second;
           break;
@@ -965,7 +965,7 @@ public:
     }
   }
   std::vector<int>* getLinesToSimplify() {
-    std::vector<int>* vec = new std::vector<int>();
+    auto* vec = new std::vector<int>();
     std::map<int, std::vector<int> >::iterator it;
     for (it = lines.begin(); it != lines.end(); it++) {
       std::vector<int>& svec = it->second;
@@ -978,7 +978,7 @@ public:
 Document* expressionToDocument(const Expression* e);
 Document* annotationToDocument(const Annotation& ann);
 Document* tiexpressionToDocument(const Type& type, const Expression* e) {
-  DocumentList* dl = new DocumentList("", "", "", false);
+  auto* dl = new DocumentList("", "", "", false);
   switch (type.ti()) {
     case Type::TI_PAR:
       break;
@@ -1146,7 +1146,7 @@ public:
     } else if (n == 2 && al.min(0) == 1 && al.min(1) == 1) {
       dl = new DocumentList("[| ", " | ", " |]");
       for (int i = 0; i < al.max(0); i++) {
-        DocumentList* row = new DocumentList("", ", ", "");
+        auto* row = new DocumentList("", ", ", "");
         for (int j = 0; j < al.max(1); j++) {
           row->addDocumentToList(expressionToDocument(al[i * al.max(1) + j]));
         }
@@ -1158,14 +1158,14 @@ public:
       std::stringstream oss;
       oss << "array" << n << "d";
       dl->addStringToList(oss.str());
-      DocumentList* args = new DocumentList("(", ", ", ")");
+      auto* args = new DocumentList("(", ", ", ")");
 
       for (int i = 0; i < al.dims(); i++) {
         oss.str("");
         oss << al.min(i) << ".." << al.max(i);
         args->addStringToList(oss.str());
       }
-      DocumentList* array = new DocumentList("[", ", ", "]");
+      auto* array = new DocumentList("[", ", ", "]");
       for (unsigned int i = 0; i < al.size(); i++)
         array->addDocumentToList(expressionToDocument(al[i]));
       args->addDocumentToList(array);
@@ -1174,10 +1174,10 @@ public:
     return dl;
   }
   ret mapArrayAccess(const ArrayAccess& aa) {
-    DocumentList* dl = new DocumentList("", "", "");
+    auto* dl = new DocumentList("", "", "");
 
     dl->addDocumentToList(expressionToDocument(aa.v()));
-    DocumentList* args = new DocumentList("[", ", ", "]");
+    auto* args = new DocumentList("[", ", ", "]");
     for (unsigned int i = 0; i < aa.idx().size(); i++) {
       args->addDocumentToList(expressionToDocument(aa.idx()[i]));
     }
@@ -1192,11 +1192,11 @@ public:
     else
       dl = new DocumentList("[ ", " | ", " ]");
     dl->addDocumentToList(expressionToDocument(c.e()));
-    DocumentList* head = new DocumentList("", " ", "");
-    DocumentList* generators = new DocumentList("", ", ", "");
+    auto* head = new DocumentList("", " ", "");
+    auto* generators = new DocumentList("", ", ", "");
     for (int i = 0; i < c.n_generators(); i++) {
-      DocumentList* gen = new DocumentList("", "", "");
-      DocumentList* idents = new DocumentList("", ", ", "");
+      auto* gen = new DocumentList("", "", "");
+      auto* idents = new DocumentList("", ", ", "");
       for (int j = 0; j < c.n_decls(i); j++) {
         idents->addStringToList(
             std::string(c.decl(i, j)->id()->v().c_str(), c.decl(i, j)->id()->v().size()));
@@ -1221,14 +1221,14 @@ public:
     return dl;
   }
   ret mapITE(const ITE& ite) {
-    DocumentList* dl = new DocumentList("", "", "");
+    auto* dl = new DocumentList("", "", "");
     for (int i = 0; i < ite.size(); i++) {
       std::string beg = (i == 0 ? "if " : " elseif ");
       dl->addStringToList(beg);
       dl->addDocumentToList(expressionToDocument(ite.e_if(i)));
       dl->addStringToList(" then ");
 
-      DocumentList* ifdoc = new DocumentList("", "", "", false);
+      auto* ifdoc = new DocumentList("", "", "", false);
       ifdoc->addBreakPoint();
       ifdoc->addDocumentToList(expressionToDocument(ite.e_then(i)));
       dl->addDocumentToList(ifdoc);
@@ -1237,7 +1237,7 @@ public:
     dl->addBreakPoint();
     dl->addStringToList("else ");
 
-    DocumentList* elsedoc = new DocumentList("", "", "", false);
+    auto* elsedoc = new DocumentList("", "", "", false);
     elsedoc->addBreakPoint();
     elsedoc->addDocumentToList(expressionToDocument(ite.e_else()));
     dl->addDocumentToList(elsedoc);
@@ -1365,7 +1365,7 @@ public:
     return dl;
   }
   ret mapUnOp(const UnOp& uo) {
-    DocumentList* dl = new DocumentList("", "", "");
+    auto* dl = new DocumentList("", "", "");
     std::string op;
     switch (uo.op()) {
       case UOT_NOT:
@@ -1405,16 +1405,16 @@ public:
 
       const Expression* e = c.arg(0);
       if (e->isa<Comprehension>()) {
-        const Comprehension* com = e->cast<Comprehension>();
+        const auto* com = e->cast<Comprehension>();
         if (!com->set()) {
-          DocumentList* dl = new DocumentList("", " ", "");
+          auto* dl = new DocumentList("", " ", "");
           dl->addStringToList(std::string(c.id().c_str(), c.id().size()));
-          DocumentList* args = new DocumentList("", " ", "", false);
-          DocumentList* generators = new DocumentList("", ", ", "");
+          auto* args = new DocumentList("", " ", "", false);
+          auto* generators = new DocumentList("", ", ", "");
 
           for (int i = 0; i < com->n_generators(); i++) {
-            DocumentList* gen = new DocumentList("", "", "");
-            DocumentList* idents = new DocumentList("", ", ", "");
+            auto* gen = new DocumentList("", "", "");
+            auto* idents = new DocumentList("", ", ", "");
             for (int j = 0; j < com->n_decls(i); j++) {
               idents->addStringToList(std::string(com->decl(i, j)->id()->v().c_str(),
                                                   com->decl(i, j)->id()->v().size()));
@@ -1452,7 +1452,7 @@ public:
     }
     std::ostringstream beg;
     beg << c.id() << "(";
-    DocumentList* dl = new DocumentList(beg.str(), ", ", ")");
+    auto* dl = new DocumentList(beg.str(), ", ", ")");
     for (unsigned int i = 0; i < c.n_args(); i++) {
       dl->addDocumentToList(expressionToDocument(c.arg(i)));
     }
@@ -1460,7 +1460,7 @@ public:
   }
   ret mapVarDecl(const VarDecl& vd) {
     std::ostringstream oss;
-    DocumentList* dl = new DocumentList("", "", "");
+    auto* dl = new DocumentList("", "", "");
     dl->addDocumentToList(expressionToDocument(vd.ti()));
     if (vd.id()->idn() == -1) {
       if (vd.id()->v().size() != 0) {
@@ -1484,14 +1484,14 @@ public:
     return dl;
   }
   ret mapLet(const Let& l) {
-    DocumentList* letin = new DocumentList("", "", "", false);
-    DocumentList* lets = new DocumentList("", " ", "", true);
-    DocumentList* inexpr = new DocumentList("", "", "");
+    auto* letin = new DocumentList("", "", "", false);
+    auto* lets = new DocumentList("", " ", "", true);
+    auto* inexpr = new DocumentList("", "", "");
     bool ds = l.let().size() > 1;
 
     for (unsigned int i = 0; i < l.let().size(); i++) {
       if (i != 0) lets->addBreakPoint(ds);
-      DocumentList* exp = new DocumentList("", " ", ",");
+      auto* exp = new DocumentList("", " ", ",");
       const Expression* li = l.let()[i];
       if (!li->isa<VarDecl>()) exp->addStringToList("constraint");
       exp->addDocumentToList(expressionToDocument(li));
@@ -1502,12 +1502,12 @@ public:
     letin->addBreakPoint(ds);
     letin->addDocumentToList(lets);
 
-    DocumentList* letin2 = new DocumentList("", "", "", false);
+    auto* letin2 = new DocumentList("", "", "", false);
 
     letin2->addBreakPoint();
     letin2->addDocumentToList(inexpr);
 
-    DocumentList* dl = new DocumentList("", "", "");
+    auto* dl = new DocumentList("", "", "");
     dl->addStringToList("let {");
     dl->addDocumentToList(letin);
     dl->addBreakPoint(ds);
@@ -1518,10 +1518,10 @@ public:
     return dl;
   }
   ret mapTypeInst(const TypeInst& ti) {
-    DocumentList* dl = new DocumentList("", "", "");
+    auto* dl = new DocumentList("", "", "");
     if (ti.isarray()) {
       dl->addStringToList("array [");
-      DocumentList* ran = new DocumentList("", ", ", "");
+      auto* ran = new DocumentList("", ", ", "");
       for (unsigned int i = 0; i < ti.ranges().size(); i++) {
         ran->addDocumentToList(tiexpressionToDocument(Type::parint(), ti.ranges()[i]));
       }
@@ -1534,7 +1534,7 @@ public:
 };
 
 Document* annotationToDocument(const Annotation& ann) {
-  DocumentList* dl = new DocumentList(" :: ", " :: ", "");
+  auto* dl = new DocumentList(" :: ", " :: ", "");
   for (ExpressionSetIter it = ann.begin(); it != ann.end(); ++it) {
     dl->addDocumentToList(expressionToDocument(*it));
   }
@@ -1545,7 +1545,7 @@ Document* expressionToDocument(const Expression* e) {
   if (e == nullptr) return new StringDocument("NULL");
   ExpressionDocumentMapper esm;
   ExpressionMapper<ExpressionDocumentMapper> em(esm);
-  DocumentList* dl = new DocumentList("", "", "");
+  auto* dl = new DocumentList("", "", "");
   Document* s = em.map(e);
   dl->addDocumentToList(s);
   if (!e->isa<VarDecl>() && !e->ann().isEmpty()) {
@@ -1563,23 +1563,23 @@ public:
     return new StringDocument(oss.str());
   }
   ret mapVarDeclI(const VarDeclI& vi) {
-    DocumentList* dl = new DocumentList("", " ", ";");
+    auto* dl = new DocumentList("", " ", ";");
     dl->addDocumentToList(expressionToDocument(vi.e()));
     return dl;
   }
   ret mapAssignI(const AssignI& ai) {
-    DocumentList* dl = new DocumentList("", " = ", ";");
+    auto* dl = new DocumentList("", " = ", ";");
     dl->addStringToList(std::string(ai.id().c_str(), ai.id().size()));
     dl->addDocumentToList(expressionToDocument(ai.e()));
     return dl;
   }
   ret mapConstraintI(const ConstraintI& ci) {
-    DocumentList* dl = new DocumentList("constraint ", " ", ";");
+    auto* dl = new DocumentList("constraint ", " ", ";");
     dl->addDocumentToList(expressionToDocument(ci.e()));
     return dl;
   }
   ret mapSolveI(const SolveI& si) {
-    DocumentList* dl = new DocumentList("", "", ";");
+    auto* dl = new DocumentList("", "", ";");
     dl->addStringToList("solve");
     if (!si.ann().isEmpty()) dl->addDocumentToList(annotationToDocument(si.ann()));
     switch (si.st()) {
@@ -1598,7 +1598,7 @@ public:
     return dl;
   }
   ret mapOutputI(const OutputI& oi) {
-    DocumentList* dl = new DocumentList("output ", " ", ";");
+    auto* dl = new DocumentList("output ", " ", ";");
     dl->addDocumentToList(expressionToDocument(oi.e()));
     return dl;
   }
@@ -1617,9 +1617,9 @@ public:
     }
     dl->addStringToList(std::string(fi.id().c_str(), fi.id().size()));
     if (fi.params().size() > 0) {
-      DocumentList* params = new DocumentList("(", ", ", ")");
+      auto* params = new DocumentList("(", ", ", ")");
       for (unsigned int i = 0; i < fi.params().size(); i++) {
-        DocumentList* par = new DocumentList("", "", "");
+        auto* par = new DocumentList("", "", "");
         par->setUnbreakable(true);
         par->addDocumentToList(expressionToDocument(fi.params()[i]));
         params->addDocumentToList(par);
@@ -1736,11 +1736,11 @@ std::string PrettyPrinter::printSpaces(int n) {
 
 void PrettyPrinter::printDocument(Document* d, bool alignment, int alignmentCol,
                                   const std::string& before, const std::string& after) {
-  if (DocumentList* dl = dynamic_cast<DocumentList*>(d)) {
+  if (auto* dl = dynamic_cast<DocumentList*>(d)) {
     printDocList(dl, alignmentCol, before, after);
-  } else if (StringDocument* sd = dynamic_cast<StringDocument*>(d)) {
+  } else if (auto* sd = dynamic_cast<StringDocument*>(d)) {
     printStringDoc(sd, alignment, alignmentCol, before, after);
-  } else if (BreakPoint* bp = dynamic_cast<BreakPoint*>(d)) {
+  } else if (auto* bp = dynamic_cast<BreakPoint*>(d)) {
     printString(before, alignment, alignmentCol);
     addLine(alignmentCol, deeplySimp, !bp->getDontSimplify(), d->getLevel());
     printString(after, alignment, alignmentCol);

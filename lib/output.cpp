@@ -136,7 +136,7 @@ void copyOutput(EnvI& e) {
 
   if (OutputI* oi = e.model->outputItem()) {
     GCLock lock;
-    OutputI* noi = copy(e, oi)->cast<OutputI>();
+    auto* noi = copy(e, oi)->cast<OutputI>();
     CopyOutput co(e);
     topDown(co, noi->e());
     e.flatAddItem(noi);
@@ -145,7 +145,7 @@ void copyOutput(EnvI& e) {
 
 void cleanupOutput(EnvI& env) {
   for (unsigned int i = 0; i < env.output->size(); i++) {
-    if (VarDeclI* vdi = (*env.output)[i]->dyn_cast<VarDeclI>()) {
+    if (auto* vdi = (*env.output)[i]->dyn_cast<VarDeclI>()) {
       vdi->e()->flat(nullptr);
     }
   }
@@ -233,8 +233,8 @@ void makePar(EnvI& env, Expression* e) {
 
 void checkRenameVar(EnvI& e, VarDecl* vd) {
   if (vd->id()->idn() != vd->flat()->id()->idn()) {
-    TypeInst* vd_rename_ti = copy(e, e.cmap, vd->ti())->cast<TypeInst>();
-    VarDecl* vd_rename =
+    auto* vd_rename_ti = copy(e, e.cmap, vd->ti())->cast<TypeInst>();
+    auto* vd_rename =
         new VarDecl(Location().introduce(), vd_rename_ti, vd->flat()->id()->idn(), nullptr);
     vd_rename->flat(vd->flat());
     makePar(e, vd_rename);
@@ -283,7 +283,7 @@ public:
           stack.push_back(e->template cast<ArrayAccess>()->v());
           break;
         case Expression::E_COMP: {
-          Comprehension* comp = e->template cast<Comprehension>();
+          auto* comp = e->template cast<Comprehension>();
           for (unsigned int i = comp->n_generators(); i--;) {
             stack.push_back(comp->where(i));
             stack.push_back(comp->in(i));
@@ -342,12 +342,11 @@ void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
       VarDecl* reallyFlat = vd->flat();
       while (reallyFlat != nullptr && reallyFlat != reallyFlat->flat())
         reallyFlat = reallyFlat->flat();
-      IdMap<int>::iterator idx =
+      auto idx =
           reallyFlat ? env.output_vo_flat.idx.find(reallyFlat->id()) : env.output_vo_flat.idx.end();
-      IdMap<int>::iterator idx2 = env.output_vo.idx.find(vd->id());
+      auto idx2 = env.output_vo.idx.find(vd->id());
       if (idx == env.output_vo_flat.idx.end() && idx2 == env.output_vo.idx.end()) {
-        VarDeclI* nvi =
-            new VarDeclI(Location().introduce(), copy(env, env.cmap, vd)->cast<VarDecl>());
+        auto* nvi = new VarDeclI(Location().introduce(), copy(env, env.cmap, vd)->cast<VarDecl>());
         Type t = nvi->e()->ti()->type();
         if (t.ti() != Type::TI_PAR) {
           t.ti(Type::TI_PAR);
@@ -412,7 +411,7 @@ void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
                                      eval_intset(env, nvi->e()->ti()->ranges()[i]->domain()));
               }
             }
-            ArrayLit* al = new ArrayLit(Location().introduce(), args);
+            auto* al = new ArrayLit(Location().introduce(), args);
             args.resize(1);
             args[0] = al;
             reallyFlat->addAnnotation(
@@ -434,7 +433,7 @@ void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
 void processDeletions(EnvI& e) {
   std::vector<VarDecl*> deletedVarDecls;
   for (unsigned int i = 0; i < e.output->size(); i++) {
-    if (VarDeclI* vdi = (*e.output)[i]->dyn_cast<VarDeclI>()) {
+    if (auto* vdi = (*e.output)[i]->dyn_cast<VarDeclI>()) {
       if (!vdi->removed() && e.output_vo.occurrences(vdi->e()) == 0 &&
           !vdi->e()->ann().contains(constants().ann.mzn_check_var) &&
           !(vdi->e()->id()->idn() == -1 && (vdi->e()->id()->v() == "_mzn_solution_checker" ||
@@ -451,9 +450,9 @@ void processDeletions(EnvI& e) {
     VarDecl* cur = deletedVarDecls.back();
     deletedVarDecls.pop_back();
     if (e.output_vo.occurrences(cur) == 0) {
-      IdMap<int>::iterator cur_idx = e.output_vo.idx.find(cur->id());
+      auto cur_idx = e.output_vo.idx.find(cur->id());
       if (cur_idx != e.output_vo.idx.end()) {
-        VarDeclI* vdi = (*e.output)[cur_idx->second]->cast<VarDeclI>();
+        auto* vdi = (*e.output)[cur_idx->second]->cast<VarDeclI>();
         if (!vdi->removed()) {
           CollectDecls cd(e.output_vo, deletedVarDecls, vdi);
           topDown(cd, cur->e());
@@ -465,10 +464,9 @@ void processDeletions(EnvI& e) {
     }
   }
 
-  for (IdMap<VarOccurrences::Items>::iterator it = e.output_vo._m.begin();
-       it != e.output_vo._m.end(); ++it) {
+  for (auto it = e.output_vo._m.begin(); it != e.output_vo._m.end(); ++it) {
     std::vector<Item*> toRemove;
-    for (VarOccurrences::Items::iterator iit = it->second.begin(); iit != it->second.end(); ++iit) {
+    for (auto iit = it->second.begin(); iit != it->second.end(); ++iit) {
       if ((*iit)->removed()) {
         toRemove.push_back(*iit);
       }
@@ -523,7 +521,7 @@ void createDznOutputItem(EnvI& e, bool outputObjective, bool includeOutputItem, 
               process_var = false;
               if (vd->type().isvar()) {
                 if (vd->e()) {
-                  if (ArrayLit* al = vd->e()->dyn_cast<ArrayLit>()) {
+                  if (auto* al = vd->e()->dyn_cast<ArrayLit>()) {
                     for (unsigned int i = 0; i < al->size(); i++) {
                       if ((*al)[i]->isa<AnonVar>()) {
                         process_var = true;
@@ -565,7 +563,7 @@ void createDznOutputItem(EnvI& e, bool outputObjective, bool includeOutputItem, 
             }
           }
         }
-        StringLit* sl = new StringLit(Location().introduce(), s.str());
+        auto* sl = new StringLit(Location().introduce(), s.str());
         outputVars.push_back(sl);
 
         std::vector<Expression*> showArgs(1);
@@ -578,7 +576,7 @@ void createDznOutputItem(EnvI& e, bool outputObjective, bool includeOutputItem, 
         outputVars.push_back(show);
         std::string ends = vd->type().dim() > 0 ? ")" : "";
         ends += ";\n";
-        StringLit* eol = new StringLit(Location().introduce(), ends);
+        auto* eol = new StringLit(Location().introduce(), ends);
         outputVars.push_back(eol);
       }
     }
@@ -830,7 +828,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
           throw FlatteningError(env, c.loc(), ss.str());
         }
         if (!origdecl->from_stdlib()) {
-          FunctionI* decl_copy = copy(env, env.cmap, origdecl)->cast<FunctionI>();
+          auto* decl_copy = copy(env, env.cmap, origdecl)->cast<FunctionI>();
           if (decl_copy != decl) {
             decl = decl_copy;
             env.output->registerFn(env, decl);
@@ -862,7 +860,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
     OV1(EnvI& env0, CollectFunctions& cf) : env(env0), _cf(cf) {}
     void vVarDeclI(VarDeclI* vdi) {
       if (vdi->e()->ann().contains(constants().ann.mzn_check_var)) {
-        VarDecl* output_vd = copy(env, env.cmap, vdi->e())->cast<VarDecl>();
+        auto* output_vd = copy(env, env.cmap, vdi->e())->cast<VarDecl>();
         topDown(_cf, output_vd);
       }
     }
@@ -879,12 +877,12 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
     EnvI& env;
     OV2(EnvI& env0) : env(env0) {}
     void vVarDeclI(VarDeclI* vdi) {
-      IdMap<int>::iterator idx = env.output_vo.idx.find(vdi->e()->id());
+      auto idx = env.output_vo.idx.find(vdi->e()->id());
       if (idx != env.output_vo.idx.end()) return;
       if (Expression* vd_e = env.cmap.find(vdi->e())) {
         // We found a copied VarDecl, now need to create a VarDeclI
-        VarDecl* vd = vd_e->cast<VarDecl>();
-        VarDeclI* vdi_copy = copy(env, env.cmap, vdi)->cast<VarDeclI>();
+        auto* vd = vd_e->cast<VarDecl>();
+        auto* vdi_copy = copy(env, env.cmap, vdi)->cast<VarDeclI>();
 
         Type t = vdi_copy->e()->ti()->type();
         t.ti(Type::TI_PAR);
@@ -972,7 +970,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
               } else {
                 bool needOutputAnn = true;
                 if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
-                  ArrayLit* al = reallyFlat->e()->cast<ArrayLit>();
+                  auto* al = reallyFlat->e()->cast<ArrayLit>();
                   for (unsigned int i = 0; i < al->size(); i++) {
                     if (Id* id = (*al)[i]->dyn_cast<Id>()) {
                       if (env.reverseMappers.find(id) != env.reverseMappers.end()) {
@@ -998,7 +996,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
                                            eval_intset(env, vd->ti()->ranges()[i]->domain()));
                     }
                   }
-                  ArrayLit* al = new ArrayLit(Location().introduce(), args);
+                  auto* al = new ArrayLit(Location().introduce(), args);
                   args.resize(1);
                   args[0] = al;
                   vd->flat()->addAnnotation(
@@ -1041,7 +1039,7 @@ Expression* isFixedDomain(EnvI& env, VarDecl* vd) {
     return nullptr;
   Expression* e = vd->ti()->domain();
   if (e == constants().lit_true || e == constants().lit_false) return e;
-  if (SetLit* sl = Expression::dyn_cast<SetLit>(e)) {
+  if (auto* sl = Expression::dyn_cast<SetLit>(e)) {
     if (sl->type().bt() == Type::BT_INT) {
       IntSetVal* isv = eval_intset(env, sl);
       return isv->min() == isv->max() ? IntLit::a(isv->min()) : nullptr;
@@ -1147,7 +1145,7 @@ void finaliseOutput(EnvI& e) {
                   }
                 }
               } else if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
-                ArrayLit* al = reallyFlat->e()->cast<ArrayLit>();
+                auto* al = reallyFlat->e()->cast<ArrayLit>();
                 for (unsigned int i = 0; i < al->size(); i++) {
                   if (Id* id = (*al)[i]->dyn_cast<Id>()) {
                     if (e.reverseMappers.find(id) != e.reverseMappers.end()) {
@@ -1189,7 +1187,7 @@ void finaliseOutput(EnvI& e) {
                                              eval_intset(e, vd->ti()->ranges()[i]->domain()));
                       }
                     }
-                    ArrayLit* al = new ArrayLit(Location().introduce(), args);
+                    auto* al = new ArrayLit(Location().introduce(), args);
                     args.resize(1);
                     args[0] = al;
                     vd->flat()->addAnnotation(
