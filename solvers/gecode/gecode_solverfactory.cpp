@@ -3,10 +3,7 @@
 
 namespace MiniZinc {
 namespace {
-void getWrapper() {
-  static Gecode_SolverFactory _gecode_solverfactory;
-  return;
-}
+void getWrapper() { static Gecode_SolverFactory _gecode_solverfactory; }
 }  // namespace
 Gecode_SolverFactoryInitialiser::Gecode_SolverFactoryInitialiser(void) { getWrapper(); }
 }  // namespace MiniZinc

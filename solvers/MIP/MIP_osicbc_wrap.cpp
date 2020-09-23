@@ -292,7 +292,6 @@ static void
 #endif  // _MSC_VER
     signal_handler(int /*whichSignal*/) {
   cancelAsap = 3;
-  return;
 }
 }
 /** This is so user can trap events and do useful stuff.
