@@ -3451,12 +3451,10 @@ void flatten(Env& e, FlatteningOptions opt) {
                 }
                 ItemTimer item_timer(orig_loc, timing_map);
                 (void)flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
-                if (csi != nullptr) {
-                  delete csi;
-                }
-                if (vsi != nullptr) {
-                  delete vsi;
-                }
+
+                delete csi;
+
+                delete vsi;
 
                 // Remove VarDecls becoming unused through the removal of c
                 // because they are not used by nc
@@ -3564,9 +3562,8 @@ void flatten(Env& e, FlatteningOptions opt) {
               ItemTimer item_timer(nc->loc(), timing_map);
               (void)flat_exp(env, Ctx(), nc, constants().var_true, constants().var_true);
               env.flatRemoveItem(ci);
-              if (csi != nullptr) {
-                delete csi;
-              }
+
+              delete csi;
             }
           }
         }
