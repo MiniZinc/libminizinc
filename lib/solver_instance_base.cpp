@@ -49,14 +49,19 @@ void Registry::post(Call* c) {
 void SolverInstanceBase::printSolution() {
   std::ostringstream oss;
 
-  if (_options->printStatistics) printStatistics();  // Insert stats before sol separator
+  if (_options->printStatistics) {
+    printStatistics();  // Insert stats before sol separator
+  }
   if (nullptr == pS2Out) {
     getEnv()->evalOutput(std::cout);  // deprecated
     std::cout << oss.str();
-    if ((oss.str().size() != 0u) && '\n' != oss.str().back()) std::cout << '\n';
+    if ((oss.str().size() != 0u) && '\n' != oss.str().back()) {
+      std::cout << '\n';
+    }
     std::cout << "----------" << std::endl;
-  } else
+  } else {
     getSolns2Out()->evalOutput(oss.str());
+  }
 }
 
 void SolverInstanceBase2::printSolution() {
@@ -213,22 +218,23 @@ void SolverInstanceBase::flattenMultObjComponent(const Annotation& ann,
   Call* c = e->cast<Call>();
   obj.setVariable(c->arg(0));
   const auto id = c->id();
-  if (id == "min_goal")
+  if (id == "min_goal") {
     obj.setWeight(-1.0);
-  else if (id == "int_min_goal")
+  } else if (id == "int_min_goal") {
     obj.setWeight(-1.0);
-  else if (id == "float_min_goal")
+  } else if (id == "float_min_goal") {
     obj.setWeight(-1.0);
-  else if (id == "max_goal")
+  } else if (id == "max_goal") {
     obj.setWeight(1.0);
-  else if (id == "int_max_goal")
+  } else if (id == "int_max_goal") {
     obj.setWeight(1.0);
-  else if (id == "float_max_goal")
+  } else if (id == "float_max_goal") {
     obj.setWeight(1.0);
-  else if (id == "sat_goal")
+  } else if (id == "sat_goal") {
     obj.setWeight(1.0);
-  else
+  } else {
     MZN_ASSERT_HARD_MSG(false, "unknown goal: " << id);
+  }
 }
 
 }  // namespace MiniZinc

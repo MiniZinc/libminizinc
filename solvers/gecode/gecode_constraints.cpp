@@ -155,7 +155,9 @@ void p_int_lin_CMP(GecodeSolverInstance& s, IntRelType irt, const Call* call) {
         IntArgs ia_tmp(ia.size() - 1);
         int count = 0;
         for (int i = 0; i < ia.size(); i++) {
-          if (i != singleIntVar) ia_tmp[count++] = ia[singleIntVar] == -1 ? ia[i] : -ia[i];
+          if (i != singleIntVar) {
+            ia_tmp[count++] = ia[singleIntVar] == -1 ? ia[i] : -ia[i];
+          }
         }
         IntRelType t = (ia[singleIntVar] == -1 ? irt : swap(irt));
         linear(*s._current_space, ia_tmp, iv, t, siv, s.ann2icl(ann));
@@ -196,7 +198,9 @@ void p_int_lin_CMP_reif(GecodeSolverInstance& s, IntRelType irt, ReifyMode rm, c
         IntArgs ia_tmp(ia.size() - 1);
         int count = 0;
         for (int i = 0; i < ia.size(); i++) {
-          if (i != singleIntVar) ia_tmp[count++] = ia[singleIntVar] == -1 ? ia[i] : -ia[i];
+          if (i != singleIntVar) {
+            ia_tmp[count++] = ia[singleIntVar] == -1 ? ia[i] : -ia[i];
+          }
         }
         IntRelType t = (ia[singleIntVar] == -1 ? irt : swap(irt));
         linear(*s._current_space, ia_tmp, iv, t, siv, Reify(s.arg2boolvar(call->arg(3)), rm),
@@ -277,12 +281,13 @@ void p_bool_lin_CMP(GecodeSolverInstance& s, IntRelType irt, const Call* call) {
   const Annotation& ann = call->ann();
   IntArgs ia = s.arg2intargs(call->arg(0));
   BoolVarArgs iv = s.arg2boolvarargs(call->arg(1));
-  if (call->arg(2)->type().isvarint())
+  if (call->arg(2)->type().isvarint()) {
     linear(*s._current_space, ia, iv, irt,
            s.resolveVar(call->arg(2)->cast<Id>()->decl()).intVar(s._current_space), s.ann2icl(ann));
-  else
+  } else {
     linear(*s._current_space, ia, iv, irt, call->arg(2)->cast<IntLit>()->v().toInt(),
            s.ann2icl(ann));
+  }
 }
 void p_bool_lin_CMP_reif(GecodeSolverInstance& s, IntRelType irt, ReifyMode rm, const Call* call) {
   const Annotation& ann = call->ann();
@@ -296,13 +301,14 @@ void p_bool_lin_CMP_reif(GecodeSolverInstance& s, IntRelType irt, ReifyMode rm, 
   }
   IntArgs ia = s.arg2intargs(call->arg(0));
   BoolVarArgs iv = s.arg2boolvarargs(call->arg(1));
-  if (call->arg(2)->type().isvarint())
+  if (call->arg(2)->type().isvarint()) {
     linear(*s._current_space, ia, iv, irt,
            s.resolveVar(call->arg(2)->cast<Id>()->decl()).intVar(s._current_space),
            Reify(s.arg2boolvar(call->arg(3)), rm), s.ann2icl(ann));
-  else
+  } else {
     linear(*s._current_space, ia, iv, irt, call->arg(2)->cast<IntLit>()->v().toInt(),
            Reify(s.arg2boolvar(call->arg(3)), rm), s.ann2icl(ann));
+  }
 }
 void p_bool_lin_eq(SolverInstanceBase& s, const Call* call) {
   p_bool_lin_CMP(static_cast<GecodeSolverInstance&>(s), IRT_EQ, call);
@@ -577,8 +583,9 @@ void p_array_bool_and_imp(SolverInstanceBase& s, const Call* call) {
   auto& gi = static_cast<GecodeSolverInstance&>(s);
   BoolVarArgs bv = gi.arg2boolvarargs(call->arg(0));
   BoolVar b1 = gi.arg2boolvar(call->arg(1));
-  for (unsigned int i = bv.size(); (i--) != 0u;)
+  for (unsigned int i = bv.size(); (i--) != 0u;) {
     rel(*gi._current_space, b1, Gecode::BoolOpType::BOT_IMP, bv[i], 1, gi.ann2icl(ann));
+  }
 }
 void p_array_bool_or(SolverInstanceBase& s, const Call* call) {
   const Annotation& ann = call->ann();
@@ -877,13 +884,18 @@ void p_bin_packing_load(SolverInstanceBase& s, const Call* call) {
   IntVarArgs load = gi.arg2intvarargs(call->arg(0));
   IntVarArgs l;
   IntVarArgs bin = gi.arg2intvarargs(call->arg(1));
-  for (int i = bin.size(); (i--) != 0;) rel(*gi._current_space, bin[i] >= minIdx);
+  for (int i = bin.size(); (i--) != 0;) {
+    rel(*gi._current_space, bin[i] >= minIdx);
+  }
   if (minIdx > 0) {
-    for (int i = minIdx; (i--) != 0;) l << IntVar(*gi._current_space, 0, 0);
+    for (int i = minIdx; (i--) != 0;) {
+      l << IntVar(*gi._current_space, 0, 0);
+    }
   } else if (minIdx < 0) {
     IntVarArgs bin2(bin.size());
-    for (int i = bin.size(); (i--) != 0;)
+    for (int i = bin.size(); (i--) != 0;) {
       bin2[i] = expr(*gi._current_space, bin[i] - minIdx, gi.ann2icl(ann));
+    }
     bin = bin2;
   }
   l << load;
@@ -906,7 +918,9 @@ void p_global_cardinality(SolverInstanceBase& s, const Call* call) {
   IntSet cover_s(cover);
   Gecode::IntSetRanges cover_r(cover_s);
   auto* iv0_ri = re.alloc<Gecode::IntVarRanges>(iv0.size());
-  for (int i = iv0.size(); (i--) != 0;) iv0_ri[i] = Gecode::IntVarRanges(iv0[i]);
+  for (int i = iv0.size(); (i--) != 0;) {
+    iv0_ri[i] = Gecode::IntVarRanges(iv0[i]);
+  }
   Iter::Ranges::NaryUnion iv0_r(re, iv0_ri, iv0.size());
   Iter::Ranges::Diff<Iter::Ranges::NaryUnion, Gecode::IntSetRanges> extra_r(iv0_r, cover_r);
   Iter::Ranges::ToValues<Iter::Ranges::Diff<Iter::Ranges::NaryUnion, Gecode::IntSetRanges> > extra(
@@ -947,12 +961,16 @@ void p_global_cardinality_low_up(SolverInstanceBase& s, const Call* call) {
   IntArgs lbound = gi.arg2intargs(call->arg(2));
   IntArgs ubound = gi.arg2intargs(call->arg(3));
   IntSetArgs y(cover.size());
-  for (int i = cover.size(); (i--) != 0;) y[i] = IntSet(lbound[i], ubound[i]);
+  for (int i = cover.size(); (i--) != 0;) {
+    y[i] = IntSet(lbound[i], ubound[i]);
+  }
 
   IntSet cover_s(cover);
   Region re;
   auto* xrs = re.alloc<IntVarRanges>(x.size());
-  for (int i = x.size(); (i--) != 0;) xrs[i].init(x[i]);
+  for (int i = x.size(); (i--) != 0;) {
+    xrs[i].init(x[i]);
+  }
   Iter::Ranges::NaryUnion u(re, xrs, x.size());
   Iter::Ranges::ToValues<Iter::Ranges::NaryUnion> uv(u);
   for (; uv(); ++uv) {
@@ -975,7 +993,9 @@ void p_global_cardinality_low_up_closed(SolverInstanceBase& s, const Call* call)
   IntArgs lbound = gi.arg2intargs(call->arg(2));
   IntArgs ubound = gi.arg2intargs(call->arg(3));
   IntSetArgs y(cover.size());
-  for (int i = cover.size(); (i--) != 0;) y[i] = IntSet(lbound[i], ubound[i]);
+  for (int i = cover.size(); (i--) != 0;) {
+    y[i] = IntSet(lbound[i], ubound[i]);
+  }
 
   unshare(*gi._current_space, x);
   count(*gi._current_space, x, y, cover, gi.ann2icl(ann));
@@ -1021,7 +1041,9 @@ void p_regular(SolverInstanceBase& s, const Call* call) {
   int noOfTrans = 0;
   for (int i = 1; i <= q; i++) {
     for (int j = 1; j <= symbols; j++) {
-      if (d[(i - 1) * symbols + (j - 1)] > 0) noOfTrans++;
+      if (d[(i - 1) * symbols + (j - 1)] > 0) {
+        noOfTrans++;
+      }
     }
   }
 
@@ -1063,11 +1085,19 @@ void p_sort(SolverInstanceBase& s, const Call* call) {
   IntVarArgs x = gi.arg2intvarargs(call->arg(0));
   IntVarArgs y = gi.arg2intvarargs(call->arg(1));
   IntVarArgs xy(x.size() + y.size());
-  for (int i = x.size(); (i--) != 0;) xy[i] = x[i];
-  for (int i = y.size(); (i--) != 0;) xy[i + x.size()] = y[i];
+  for (int i = x.size(); (i--) != 0;) {
+    xy[i] = x[i];
+  }
+  for (int i = y.size(); (i--) != 0;) {
+    xy[i + x.size()] = y[i];
+  }
   unshare(*gi._current_space, xy);
-  for (int i = x.size(); (i--) != 0;) x[i] = xy[i];
-  for (int i = y.size(); (i--) != 0;) y[i] = xy[i + x.size()];
+  for (int i = x.size(); (i--) != 0;) {
+    x[i] = xy[i];
+  }
+  for (int i = y.size(); (i--) != 0;) {
+    y[i] = xy[i + x.size()];
+  }
   sorted(*gi._current_space, x, y, gi.ann2icl(ann));
 }
 
@@ -1159,11 +1189,13 @@ void p_cumulatives(SolverInstanceBase& s, const Call* call) {
 
   int minHeight = INT_MAX;
   int minHeight2 = INT_MAX;
-  for (int i = n; (i--) != 0;)
-    if (height[i].min() < minHeight)
+  for (int i = n; (i--) != 0;) {
+    if (height[i].min() < minHeight) {
       minHeight = height[i].min();
-    else if (height[i].min() < minHeight2)
+    } else if (height[i].min() < minHeight2) {
       minHeight2 = height[i].min();
+    }
+  }
   bool disjunctive = (minHeight > bound.max() / 2) ||
                      (minHeight2 > bound.max() / 2 && minHeight + minHeight2 > bound.max());
   if (disjunctive) {
@@ -1171,32 +1203,44 @@ void p_cumulatives(SolverInstanceBase& s, const Call* call) {
     // Unary
     if (duration.assigned()) {
       IntArgs durationI(n);
-      for (int i = n; (i--) != 0;) durationI[i] = duration[i].val();
+      for (int i = n; (i--) != 0;) {
+        durationI[i] = duration[i].val();
+      }
       unshare(*gi._current_space, start);
       unary(*gi._current_space, start, durationI);
     } else {
       IntVarArgs end(n);
-      for (int i = n; (i--) != 0;) end[i] = expr(*gi._current_space, start[i] + duration[i]);
+      for (int i = n; (i--) != 0;) {
+        end[i] = expr(*gi._current_space, start[i] + duration[i]);
+      }
       unshare(*gi._current_space, start);
       unary(*gi._current_space, start, duration, end);
     }
   } else if (height.assigned()) {
     IntArgs heightI(n);
-    for (int i = n; (i--) != 0;) heightI[i] = height[i].val();
+    for (int i = n; (i--) != 0;) {
+      heightI[i] = height[i].val();
+    }
     if (duration.assigned()) {
       IntArgs durationI(n);
-      for (int i = n; (i--) != 0;) durationI[i] = duration[i].val();
+      for (int i = n; (i--) != 0;) {
+        durationI[i] = duration[i].val();
+      }
       cumulative(*gi._current_space, bound, start, durationI, heightI);
     } else {
       IntVarArgs end(n);
-      for (int i = n; (i--) != 0;) end[i] = expr(*gi._current_space, start[i] + duration[i]);
+      for (int i = n; (i--) != 0;) {
+        end[i] = expr(*gi._current_space, start[i] + duration[i]);
+      }
       cumulative(*gi._current_space, bound, start, duration, end, heightI);
     }
   } else if (bound.assigned()) {
     IntArgs machine = IntArgs::create(n, 0, 0);
     IntArgs limit({bound.val()});
     IntVarArgs end(n);
-    for (int i = n; (i--) != 0;) end[i] = expr(*gi._current_space, start[i] + duration[i]);
+    for (int i = n; (i--) != 0;) {
+      end[i] = expr(*gi._current_space, start[i] + duration[i]);
+    }
     cumulatives(*gi._current_space, machine, start, duration, end, height, limit, true,
                 gi.ann2icl(ann));
   } else {
@@ -1311,14 +1355,22 @@ void p_nooverlap(SolverInstanceBase& s, const Call* call) {
   IntVarArgs h = gi.arg2intvarargs(call->arg(3));
   if (w.assigned() && h.assigned()) {
     IntArgs iw(w.size());
-    for (int i = w.size(); (i--) != 0;) iw[i] = w[i].val();
+    for (int i = w.size(); (i--) != 0;) {
+      iw[i] = w[i].val();
+    }
     IntArgs ih(h.size());
-    for (int i = h.size(); (i--) != 0;) ih[i] = h[i].val();
+    for (int i = h.size(); (i--) != 0;) {
+      ih[i] = h[i].val();
+    }
     nooverlap(*gi._current_space, x0, iw, y0, ih, gi.ann2icl(ann));
   } else {
     IntVarArgs x1(x0.size()), y1(y0.size());
-    for (int i = x0.size(); (i--) != 0;) x1[i] = expr(*gi._current_space, x0[i] + w[i]);
-    for (int i = y0.size(); (i--) != 0;) y1[i] = expr(*gi._current_space, y0[i] + h[i]);
+    for (int i = x0.size(); (i--) != 0;) {
+      x1[i] = expr(*gi._current_space, x0[i] + w[i]);
+    }
+    for (int i = y0.size(); (i--) != 0;) {
+      y1[i] = expr(*gi._current_space, y0[i] + h[i]);
+    }
     nooverlap(*gi._current_space, x0, w, x1, y0, h, y1, gi.ann2icl(ann));
   }
 }

@@ -723,9 +723,13 @@ bool Geas_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
   if (argv[i] == "-a" || argv[i] == "--all-solutions") {
     _opt->all_solutions = true;
   } else if (argv[i] == "--conflicts") {
-    if (++i == argv.size()) return false;
+    if (++i == argv.size()) {
+      return false;
+    }
     int nodes = atoi(argv[i].c_str());
-    if (nodes >= 0) _opt->conflicts = nodes;
+    if (nodes >= 0) {
+      _opt->conflicts = nodes;
+    }
   } else if (argv[i] == "-f") {
     _opt->free_search = true;
   } else if (argv[i] == "-n") {
@@ -747,9 +751,13 @@ bool Geas_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
   } else if (argv[i] == "--solver-statistics" || argv[i] == "-s") {
     _opt->statistics = true;
   } else if (argv[i] == "--solver-time-limit" || argv[i] == "-t") {
-    if (++i == argv.size()) return false;
+    if (++i == argv.size()) {
+      return false;
+    }
     int time = atoi(argv[i].c_str());
-    if (time >= 0) _opt->time = std::chrono::milliseconds(time);
+    if (time >= 0) {
+      _opt->time = std::chrono::milliseconds(time);
+    }
   } else {
     return false;
   }

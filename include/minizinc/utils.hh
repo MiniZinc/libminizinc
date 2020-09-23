@@ -114,23 +114,30 @@ public:
   ) {
     assert(nullptr == strchr(names, ','));
     assert(nullptr == strchr(names, ';'));
-    if (i >= argv.size()) return false;
+    if (i >= argv.size()) {
+      return false;
+    }
     std::string arg(argv[i]);
     /// Separate keywords
     std::string keyword;
     std::istringstream iss(names);
     while (iss >> keyword) {
       if (((2 < keyword.size() || nullptr == pResult) && arg != keyword) ||  // exact cmp
-          (0 != arg.compare(0, keyword.size(), keyword)))                    // truncated cmp
+          (0 != arg.compare(0, keyword.size(), keyword))) {                  // truncated cmp
         continue;
+      }
       /// Process it
       bool combinedArg = false;  // whether arg and value are combined in one string (like -Ggecode)
       if (keyword.size() < arg.size()) {
-        if (nullptr == pResult) continue;
+        if (nullptr == pResult) {
+          continue;
+        }
         combinedArg = true;
         arg.erase(0, keyword.size());
       } else {
-        if (nullptr == pResult) return true;
+        if (nullptr == pResult) {
+          return true;
+        }
         i++;
         if (i >= argv.size()) {
           --i;
@@ -139,11 +146,15 @@ public:
         arg = argv[i];
       }
       assert(pResult);
-      if (assignStr(pResult, arg)) return true;
+      if (assignStr(pResult, arg)) {
+        return true;
+      }
       std::istringstream iss(arg);
       Value tmp;
       if (!(iss >> tmp)) {
-        if (!combinedArg) --i;
+        if (!combinedArg) {
+          --i;
+        }
         if (fValueOptional) {
           return true;
         }
@@ -167,10 +178,14 @@ public:
   std::string operator()(const N& val, const char* descr = nullptr) {
     std::ostringstream oss;
     if (val) {
-      if (fHadOne) oss << ", ";
+      if (fHadOne) {
+        oss << ", ";
+      }
       fHadOne = true;
       oss << val;
-      if (descr) oss << descr;
+      if (descr) {
+        oss << descr;
+      }
     }
     return oss.str();
   }

@@ -227,7 +227,9 @@ std::ostream& operator<<(std::ostream& os, const SetOfIntervals<N>& soi) {
   os << "[[ ";
   for (auto& ii : soi) {
     os << "[ " << ii.left << ", " << ii.right;
-    if (ii.varFlag) os << " @" << ii.varFlag;
+    if (ii.varFlag) {
+      os << " @" << ii.varFlag;
+    }
     os << " ] ";
   }
   os << "]]";
@@ -245,9 +247,13 @@ public:
 template <class Coefs, class Vars>
 static std::ostream& operator<<(std::ostream& os, LinEq__<Coefs, Vars>& led) {
   os << "( [";
-  for (auto c : led.coefs) os << c << ' ';
+  for (auto c : led.coefs) {
+    os << c << ' ';
+  }
   os << " ] * [ ";
-  for (auto v : led.vd) os << v->id()->str() << ' ';
+  for (auto v : led.vd) {
+    os << v->id()->str() << ' ';
+  }
   os << " ] ) == " << led.rhs;
   return os;
 }
@@ -302,14 +308,23 @@ public:
     MIPD__stats[N_POSTs__NSubintvMin] = 1e100;
     MIPD__stats[N_POSTs__SubSizeMin] = 1e100;
 
-    if (!registerLinearConstraintDecls()) return true;
-    if (!register__POSTconstraintDecls())  // not declared => no conversions
+    if (!registerLinearConstraintDecls()) {
       return true;
+    }
+    if (!register__POSTconstraintDecls()) {  // not declared => no conversions
+      return true;
+    }
     register__POSTvariables();
-    if (vVarDescr.empty()) return true;
+    if (vVarDescr.empty()) {
+      return true;
+    }
     constructVarViewCliques();
-    if (!decomposeDomains()) return false;
-    if (fVerbose) printStats(std::cerr);
+    if (!decomposeDomains()) {
+      return false;
+    }
+    if (fVerbose) {
+      printStats(std::cerr);
+    }
     return true;
   }
 
@@ -517,7 +532,9 @@ private:
         if (vd0->payload() == -1) {  // ! yet visited
           vd0->payload(static_cast<int>(vVarDescr.size()));
           vVarDescr.emplace_back(vd0, vd0->type().isint());  // can use /prmTypes/ as well
-          if (vd0->e() != nullptr) checkInitExpr(vd0);
+          if (vd0->e() != nullptr) {
+            checkInitExpr(vd0);
+          }
         } else {
           DBGOUT_MIPD__(" (already touched)");
         }
@@ -527,7 +544,9 @@ private:
     }
     // Iterate thru original __POST constraints to mark constrained vars:
     for (ConstraintIterator ic = mFlat.begin_constraints(); ic != mFlat.end_constraints(); ++ic) {
-      if (ic->removed()) continue;
+      if (ic->removed()) {
+        continue;
+      }
       if (Call* c = ic->e()->dyn_cast<Call>()) {
         auto ipct = mCallTypes.find(c->decl());
         if (ipct != mCallTypes.end()) {
@@ -540,8 +559,9 @@ private:
             DBGOUT_MIPD__("  Call " << *c << ": 1st arg not a VarDecl, removing if eq_encoding...");
             /// Only allow literals as main argument for equality_encoding
             if (equality_encoding__POST ==
-                ipct->first)  //  was MZN_MIPD__assert_hard before MZN 2017
+                ipct->first) {  //  was MZN_MIPD__assert_hard before MZN 2017
               ic->remove();
+            }
             continue;  // ignore this call
           }
           DBGOUT_MIPD__("  Call " << c->id().str() << " uses variable " << vd0->id()->str());
@@ -549,7 +569,9 @@ private:
             vd0->payload(static_cast<int>(vVarDescr.size()));
             vVarDescr.emplace_back(vd0, vd0->type().isint());  // can use /prmTypes/ as well
             // bounds/domains later for each involved var TODO
-            if (vd0->e() != nullptr) checkInitExpr(vd0);
+            if (vd0->e() != nullptr) {
+              checkInitExpr(vd0);
+            }
           } else {
             DBGOUT_MIPD__(" (already touched)");
           }
@@ -559,8 +581,9 @@ private:
             vVarDescr[vd0->payload()].pEqEncoding = &*ic;
             DBGOUT_MIPD(" Variable " << vd0->id()->str() << " has eq_encode.");
           }  // + if has aux_ constraints?
-          else
+          else {
             vVarDescr[vd0->payload()].aCalls.push_back(&*ic);
+          }
         }
       }
     }
@@ -575,8 +598,12 @@ private:
   // Guido: can! be recursive in FZN
   bool checkInitExpr(VarDecl* vd, bool fCheckArg = false) {
     MZN_MIPD__assert_hard(vd->e());
-    if (!vd->type().isint() && !vd->type().isfloat()) return false;
-    if (!fCheckArg) MZN_MIPD__assert_hard(vd->payload() >= 0);
+    if (!vd->type().isint() && !vd->type().isfloat()) {
+      return false;
+    }
+    if (!fCheckArg) {
+      MZN_MIPD__assert_hard(vd->payload() >= 0);
+    }
     if (Id* id = vd->e()->dyn_cast<Id>()) {
       //         const int f1 = ( vd->payload()>=0 );
       //         const int f2 = ( id->decl()->payload()>=0 );
@@ -591,8 +618,9 @@ private:
         led.rhs = 0.0;
         put2VarsConnection(led, false);
         ++MIPD__stats[N_POSTs__initexpr1id];
-        if (id->decl()->e() != nullptr)  // no initexpr for initexpr  FAILS on cc-base.mzn
+        if (id->decl()->e() != nullptr) {  // no initexpr for initexpr  FAILS on cc-base.mzn
           checkInitExpr(id->decl());
+        }
         return true;  // in any case
       }
     } else if (Call* c = vd->e()->dyn_cast<Call>()) {
@@ -622,8 +650,9 @@ private:
             led.rhs = -expr2Const(c->arg(2));  // MINUS
             put2VarsConnection(led, false);
             ++MIPD__stats[N_POSTs__initexpr1linexp];
-            if (led.vd[1]->e() != nullptr)  // no initexpr for initexpr   FAILS  TODO
+            if (led.vd[1]->e() != nullptr) {  // no initexpr for initexpr   FAILS  TODO
               checkInitExpr(led.vd[1]);
+            }
             return true;  // in any case
           }
         } else if (true) {  // check larger views always. OK? TODO
@@ -667,10 +696,15 @@ private:
 
     DBGOUT_MIPD("  CHECK ALL INITEXPR if they access a touched variable:");
     for (VarDeclIterator ivd = mFlat.begin_vardecls(); ivd != mFlat.end_vardecls(); ++ivd) {
-      if (ivd->removed()) continue;
-      if ((ivd->e()->e() != nullptr) && ivd->e()->payload() < 0         // untouched
-          && (ivd->e()->type().isint() || ivd->e()->type().isfloat()))  // scalars
-        if (checkInitExpr(ivd->e(), true)) fChanges = true;
+      if (ivd->removed()) {
+        continue;
+      }
+      if ((ivd->e()->e() != nullptr) && ivd->e()->payload() < 0           // untouched
+          && (ivd->e()->type().isint() || ivd->e()->type().isfloat())) {  // scalars
+        if (checkInitExpr(ivd->e(), true)) {
+          fChanges = true;
+        }
+      }
     }
 
     DBGOUT_MIPD("  CHECK ALL CONSTRAINTS for 2-var equations:");
@@ -678,7 +712,9 @@ private:
       //         std::cerr << "  SEE constraint: " << "      ";
       //         debugprint(&*ic);
       //         debugprint(c->decl());
-      if (ic->removed()) continue;
+      if (ic->removed()) {
+        continue;
+      }
       if (Call* c = ic->e()->dyn_cast<Call>()) {
         const bool fIntLinEq = int_lin_eq == c->decl();
         const bool fFloatLinEq = float_lin_eq == c->decl();
@@ -692,9 +728,11 @@ private:
             LinEq2Vars led;
             expr2DeclArray(c->arg(1), led.vd);
             // At least 1 touched var:
-            if (nullptr != led.vd[0] && nullptr != led.vd[1])
+            if (nullptr != led.vd[0] && nullptr != led.vd[1]) {
               if (led.vd[0]->payload() >= 0 || led.vd[1]->payload() >= 0) {
-                if (sCallLinEq2.end() != sCallLinEq2.find(c)) continue;
+                if (sCallLinEq2.end() != sCallLinEq2.find(c)) {
+                  continue;
+                }
                 sCallLinEq2.insert(c);  // memorize this call
                 DBGOUT_MIPD("  REG 2-call ");
                 DBGOUT_MIPD_SELF(debugprint(c));
@@ -705,6 +743,7 @@ private:
                 put2VarsConnection(led);
                 ++MIPD__stats[fIntLinEq ? N_POSTs__eq2intlineq : N_POSTs__eq2floatlineq];
               }
+            }
           } else if (al->size() == 1) {
             static int nn = 0;
             if (++nn <= 7) {
@@ -715,7 +754,9 @@ private:
             // TODO should be here?
             auto eVD = getAnnotation(c->ann(), constants().ann.defines_var);
             if (eVD != nullptr) {
-              if (sCallLinEqN.end() != sCallLinEqN.find(c)) continue;
+              if (sCallLinEqN.end() != sCallLinEqN.find(c)) {
+                continue;
+              }
               sCallLinEqN.insert(c);  // memorize this call
               DBGOUT_MIPD("       REG N-call ");
               DBGOUT_MIPD_SELF(debugprint(c));
@@ -724,8 +765,11 @@ private:
               MZN_MIPD__assert_hard(pC->n_args());
               // Checking all but adding only touched defined vars? Seems too long.
               VarDecl* vd = expr2VarDecl(pC->arg(0));
-              if ((vd != nullptr) && vd->payload() >= 0)  // only if touched
-                if (findOrAddDefining(pC->arg(0), c)) fChanges = true;
+              if ((vd != nullptr) && vd->payload() >= 0) {  // only if touched
+                if (findOrAddDefining(pC->arg(0), c)) {
+                  fChanges = true;
+                }
+              }
             }
           }
         } else
@@ -742,7 +786,9 @@ private:
           led.vd[1] = expr2VarDecl(c->arg(1));
           // At least 1 touched var:
           if (led.vd[0]->payload() >= 0 || led.vd[1]->payload() >= 0) {
-            if (sCallInt2Float.end() != sCallInt2Float.find(c)) continue;
+            if (sCallInt2Float.end() != sCallInt2Float.find(c)) {
+              continue;
+            }
             sCallInt2Float.insert(c);  // memorize this call
             DBGOUT_MIPD("  REG call ");
             DBGOUT_MIPD_SELF(debugprint(c));
@@ -800,8 +846,9 @@ private:
         nVRest.coef0 = -coefs[i];
         nVRest.rhs = -nVRest.rhs;
         ++nVD;
-      } else
+      } else {
         rhsLin.push_back(std::make_pair(vars[i], coefs[i]));
+      }
     }
     MZN_MIPD__assert_hard(1 >= nVD);
     std::sort(rhsLin.begin(), rhsLin.end());
@@ -811,7 +858,9 @@ private:
     MZN_MIPD__assert_hard(0.0 != std::fabs(coef1));
     nVRest.coef0 /= coef1;
     nVRest.rhs /= coef1;
-    for (auto& rhsL : rhsLin) rhsL.second /= coef1;
+    for (auto& rhsL : rhsLin) {
+      rhsL.second /= coef1;
+    }
 
     auto it = mNViews.find(rhsLin);
     if (mNViews.end() != it &&
@@ -876,10 +925,14 @@ private:
       if (vd->payload() < 0) {  // ! yet visited
         vd->payload(static_cast<int>(vVarDescr.size()));
         vVarDescr.emplace_back(vd, vd->type().isint());  // can use /prmTypes/ as well
-        if (fCheckinitExpr && (vd->e() != nullptr)) checkInitExpr(vd);
+        if (fCheckinitExpr && (vd->e() != nullptr)) {
+          checkInitExpr(vd);
+        }
       } else {
         int nMaybeClq = vVarDescr[vd->payload()].nClique;
-        if (nMaybeClq >= 0) nCliqueAvailable = nMaybeClq;
+        if (nMaybeClq >= 0) {
+          nCliqueAvailable = nMaybeClq;
+        }
         //           MZN_MIPD__assert_hard( nCliqueAvailable>=0 );
         //           fHaveClq[i] = true;
       }
@@ -943,11 +996,12 @@ private:
                                   " Very small coef: " << (*begV)->id()->str() << " = " << A
                                                        << " * " << (*(begV + 1))->id()->str()
                                                        << " + " << B);
-            if (fReportRepeat)
+            if (fReportRepeat) {
               MZN_MIPD__assert_soft(!fVerbose, "LinEqGraph: eqn between "
                                                    << (*begV)->id()->str() << " && "
                                                    << (*(begV + 1))->id()->str()
                                                    << " is repeated. ");
+            }
             return true;
           }
         }
@@ -977,8 +1031,12 @@ private:
         checkExistingArc(begV, negBA, CA);
         (*this)[*begV][*(begV + 1)] = std::make_pair(negBA, CA);
         const double dCoefAbs = std::fabs(negBA);
-        if (dCoefAbs < dCoefMin) dCoefMin = dCoefAbs;
-        if (dCoefAbs > dCoefMax) dCoefMax = dCoefAbs;
+        if (dCoefAbs < dCoefMin) {
+          dCoefMin = dCoefAbs;
+        }
+        if (dCoefAbs > dCoefMax) {
+          dCoefMax = dCoefAbs;
+        }
       }
       void addEdge(const LinEq2Vars& led) {
         addArc(led.coefs.begin(), led.vd.begin(), led.rhs);
@@ -1004,7 +1062,9 @@ private:
                       TMatrixVars& mWhereStore) {
         for (auto itDst = itVia->second.begin(); itDst != itVia->second.end(); ++itDst) {
           // Transform x1=A1x2+B1, x2=A2x3+B2 into x1=A1A2x3+A1B2+B1
-          if (itDst->first == itSrc->first) continue;
+          if (itDst->first == itSrc->first) {
+            continue;
+          }
           const double A1A2 = rel.first * itDst->second.first;
           const double A1B2plusB1 = rel.first * itDst->second.second + rel.second;
           bool fDive = true;
@@ -1014,8 +1074,9 @@ private:
               mWhereStore[vd[0]][vd[1]] = std::make_pair(A1A2, A1B2plusB1);
               DBGOUT_MIPD("   PROPAGATING: " << vd[0]->id()->str() << " = " << A1A2 << " * "
                                              << vd[1]->id()->str() << " + " << A1B2plusB1);
-            } else
+            } else {
               fDive = false;
+            }
           }
           if (fDive) {
             auto itDST = this->find(itDst->first);
@@ -1036,7 +1097,9 @@ private:
       }
       DBGOUT_MIPD(" Clique " << mipd.vVarDescr[iVarStart].nClique << ": " << leg.size()
                              << " variables, " << clq.size() << " connections.");
-      for (auto& it1 : leg) mipd.vVarDescr[it1.first->payload()].fDomainConstrProcessed = 1u;
+      for (auto& it1 : leg) {
+        mipd.vVarDescr[it1.first->payload()].fDomainConstrProcessed = 1u;
+      }
 
       // Propagate the 1st var's relations:
       leg.propagate(leg.begin(), mRef0);
@@ -1078,8 +1141,9 @@ private:
       const int nClique = mipd.vVarDescr[iVarStart].nClique;
       if (nClique >= 0) {
         cls.doRelate();
-      } else
+      } else {
         cls.varRef1 = mipd.vVarDescr[iVarStart].vd;
+      }
       // Adding itself:
       cls.mRef1[cls.varRef1] = std::make_pair(1.0, 0.0);
 
@@ -1125,20 +1189,26 @@ private:
       implement__POSTs();
 
       // Statistics
-      if (sDomain.size() < MIPD__stats[N_POSTs__NSubintvMin])
+      if (sDomain.size() < MIPD__stats[N_POSTs__NSubintvMin]) {
         MIPD__stats[N_POSTs__NSubintvMin] = static_cast<double>(sDomain.size());
+      }
       MIPD__stats[N_POSTs__NSubintvSum] += sDomain.size();
-      if (sDomain.size() > MIPD__stats[N_POSTs__NSubintvMax])
+      if (sDomain.size() > MIPD__stats[N_POSTs__NSubintvMax]) {
         MIPD__stats[N_POSTs__NSubintvMax] = static_cast<double>(sDomain.size());
+      }
       for (auto& intv : sDomain) {
         const auto nSubSize = intv.right - intv.left;
-        if (nSubSize < MIPD__stats[N_POSTs__SubSizeMin])
+        if (nSubSize < MIPD__stats[N_POSTs__SubSizeMin]) {
           MIPD__stats[N_POSTs__SubSizeMin] = nSubSize;
+        }
         MIPD__stats[N_POSTs__SubSizeSum] += nSubSize;
-        if (nSubSize > MIPD__stats[N_POSTs__SubSizeMax])
+        if (nSubSize > MIPD__stats[N_POSTs__SubSizeMax]) {
           MIPD__stats[N_POSTs__SubSizeMax] = nSubSize;
+        }
       }
-      if (cls.fRef1HasEqEncode) ++MIPD__stats[N_POSTs__cliquesWithEqEncode];
+      if (cls.fRef1HasEqEncode) {
+        ++MIPD__stats[N_POSTs__cliquesWithEqEncode];
+      }
     }
 
     /// Project the domain-related constraints of a variable into the clique
@@ -1192,9 +1262,10 @@ private:
         MZN_MIPD__assert_hard(mipd.mCallTypes.end() != ipct);
         const DCT& dct = *ipct->second;
         int nCmpType_ADAPTED = dct.nCmpType;
-        if (A < 0.0) {                          // negative factor
-          if (std::abs(nCmpType_ADAPTED) >= 4)  // inequality
+        if (A < 0.0) {                            // negative factor
+          if (std::abs(nCmpType_ADAPTED) >= 4) {  // inequality
             nCmpType_ADAPTED = -nCmpType_ADAPTED;
+          }
         }
         switch (dct.nConstrType) {
           case CT_SetIn: {
@@ -1233,9 +1304,10 @@ private:
                   sDomain.cutDeltas(rhsUp + delta, IntvReal::infPlus(), delta);
                   break;
                 case CMPT_EQ:
-                  if (!(cls.varRef1->type().isint() &&       // skip if int target var
-                        std::fabs(rhs - rhsRnd) > INT_EPS))  // && fract value
+                  if (!(cls.varRef1->type().isint() &&         // skip if int target var
+                        std::fabs(rhs - rhsRnd) > INT_EPS)) {  // && fract value
                     sDomain.cutDeltas(rhsRnd, rhsRnd, delta);
+                  }
                   break;
                 default:
                   MZN_MIPD__assert_hard_msg(0, " No other reified cmp type ");
@@ -1278,7 +1350,9 @@ private:
       return vdTarget->type().isint() ? std::round(v) : v;
     }
     static double rndIfBothInt(VarDecl* vdTarget, double v) {
-      if (!vdTarget->type().isint()) return v;
+      if (!vdTarget->type().isint()) {
+        return v;
+      }
       const double vRnd = std::round(v);
       return (fabs(v - vRnd) < INT_EPS) ? vRnd : v;
     }
@@ -1327,21 +1401,25 @@ private:
           << " ):  SETTING 0 FLAGS FOR VALUES: ");
       for (auto& intv : sDomain) {
         for (; vEE < intv.left; ++vEE) {
-          if (vEE >= static_cast<long long>(iMin + pp.size())) return;
-          if (pp[vEE - iMin]->isa<Id>())
+          if (vEE >= static_cast<long long>(iMin + pp.size())) {
+            return;
+          }
+          if (pp[vEE - iMin]->isa<Id>()) {
             if (pp[vEE - iMin]->dyn_cast<Id>()->decl()->type().isvar()) {
               DBGOUT_MIPD__(vEE << ", ");
               setVarDomain(pp[vEE - iMin]->dyn_cast<Id>()->decl(), 0.0, 0.0);
             }
+          }
         }
         vEE = static_cast<long long>(intv.right + 1);
       }
       for (; vEE < static_cast<long long>(iMin + pp.size()); ++vEE) {
-        if (pp[vEE - iMin]->isa<Id>())
+        if (pp[vEE - iMin]->isa<Id>()) {
           if (pp[vEE - iMin]->dyn_cast<Id>()->decl()->type().isvar()) {
             DBGOUT_MIPD__(vEE << ", ");
             setVarDomain(pp[vEE - iMin]->dyn_cast<Id>()->decl(), 0.0, 0.0);
           }
+        }
       }
       DBGOUT_MIPD("");
     }
@@ -1420,9 +1498,10 @@ private:
           MZN_MIPD__assert_hard(mipd.mCallTypes.end() != ipct);
           const DCT& dct = *ipct->second;
           int nCmpType_ADAPTED = dct.nCmpType;
-          if (A < 0.0) {                          // negative factor
-            if (std::abs(nCmpType_ADAPTED) >= 4)  // inequality
+          if (A < 0.0) {                            // negative factor
+            if (std::abs(nCmpType_ADAPTED) >= 4) {  // inequality
               nCmpType_ADAPTED = -nCmpType_ADAPTED;
+            }
           }
           switch (dct.nConstrType) {
             case CT_SetIn:
@@ -1474,14 +1553,18 @@ private:
                 const double rhsDown = rndDownIfInt(cls.varRef1, rhs);
                 const double rhsRnd = rndIfInt(cls.varRef1, rhs);
                 double delta = 0.0;
-                if (mipd.aux_float_lt_zero_if_1__POST == pCall->decl())  // only float && lt
+                if (mipd.aux_float_lt_zero_if_1__POST == pCall->decl()) {  // only float && lt
                   delta = computeDelta(cls.varRef1, vd, bnds, A, pCall, 3);
-                if (nCmpType_ADAPTED < 0) delta = -delta;
+                }
+                if (nCmpType_ADAPTED < 0) {
+                  delta = -delta;
+                }
                 if (cls.varRef1->type().isint() && CMPT_EQ_0 != nCmpType_ADAPTED) {
-                  if (nCmpType_ADAPTED < 0)
+                  if (nCmpType_ADAPTED < 0) {
                     rhs = rhsDown;
-                  else
+                  } else {
                     rhs = rhsUp;
+                  }
                 } else {
                   rhs += delta;
                 }
@@ -1499,7 +1582,9 @@ private:
                       bool fInner = false;
                       if (sDomain.begin() != itUB) {
                         --itUB;
-                        if (itUB->right > rhs) fInner = true;
+                        if (itUB->right > rhs) {
+                          fInner = true;
+                        }
                       }
                       fUseDD = !fInner;
                     } break;
@@ -1509,7 +1594,9 @@ private:
                       bool fInner = false;
                       if (sDomain.begin() != itLB) {
                         --itLB;
-                        if (itLB->right >= rhs) fInner = true;
+                        if (itLB->right >= rhs) {
+                          fInner = true;
+                        }
                       }
                       fUseDD = !fInner;
                     } break;
@@ -1543,16 +1630,18 @@ private:
                       // Use the float version of indicator:
                       std::vector<Expression*> vars = {cls.varRef1->id(), pInd};
                       addLinConstr(coefs, vars, CMPT_LE, bnds.right);
-                    } else
+                    } else {
                       setVarDomain(mipd.expr2VarDecl(pInd), 0.0, 0.0);
+                    }
                   }
                   if (fGE && rhs > bnds.left) {
                     if (rhs <= bnds.right) {
                       std::vector<double> coefs = {-1.0, rhs - bnds.left};
                       std::vector<Expression*> vars = {cls.varRef1->id(), pInd};
                       addLinConstr(coefs, vars, CMPT_LE, -bnds.left);
-                    } else
+                    } else {
                       setVarDomain(mipd.expr2VarDecl(pInd), 0.0, 0.0);
+                    }
                   }
                 }
               }
@@ -1566,8 +1655,9 @@ private:
           pItem->remove();  // removing the call
         }
         // removing the eq_encoding call
-        if (mipd.vVarDescr[vd->payload()].pEqEncoding != nullptr)
+        if (mipd.vVarDescr[vd->payload()].pEqEncoding != nullptr) {
           mipd.vVarDescr[vd->payload()].pEqEncoding->remove();
+        }
       }
     }
 
@@ -1609,9 +1699,9 @@ private:
                                       "  relateReifFlag for " << intv << " in " << sDomain);
           }
           for (it12 = it1; it12 != it2; ++it12) {
-            if (it12->varFlag != nullptr)
+            if (it12->varFlag != nullptr) {
               vIntvFlags.push_back(it12->varFlag->id());
-            else {
+            } else {
               MZN_MIPD__assert_hard(1 == sDomain.size());
               vIntvFlags.push_back(IntLit::a(1));  // just a constant then
             }
@@ -1646,8 +1736,9 @@ private:
         //           TypeInst* nti = copy(mipd.getEnv()->envi(),varFlag->ti())->cast<TypeInst>();
         //           nti->domain(newDom);
         vd->ti()->domain(newDom);
-      } else
+      } else {
         MZN_MIPD__assert_hard_msg(0, "Unknown var type ");
+      }
     }
 
     VarDecl* addIntVar(double LB, double UB) {
@@ -1702,7 +1793,7 @@ private:
       auto sName = constants().ids.float_.lin_eq;  // "int_lin_eq";
       FunctionI* fDecl = mipd.float_lin_eq;
       if (fFloat) {  // MZN_MIPD__assert_hard all vars of same type     TODO
-        for (int i = 0; i < vars.size(); ++i)
+        for (int i = 0; i < vars.size(); ++i) {
           if (fabs(coefs[i]) > 1e-8)  /// Only add terms with non-0 coefs. TODO Eps=param
           {
             nc_c.push_back(FloatLit::a(coefs[i]));
@@ -1718,6 +1809,7 @@ private:
               nx.push_back(vars[i]);  // ->id();   once passing a general expression
             }
           }
+        }
         args[2] = FloatLit::a(rhs);
         args[2]->type(Type::parfloat(0));
         args[0] = new ArrayLit(Location().introduce(), nc_c);
@@ -1729,12 +1821,13 @@ private:
           fDecl = mipd.float_lin_le;
         }
       } else {
-        for (int i = 0; i < vars.size(); ++i)
+        for (int i = 0; i < vars.size(); ++i) {
           if (fabs(coefs[i]) > 1e-8)  /// Only add terms with non-0 coefs. TODO Eps=param
           {
             nc_c.push_back(IntLit::a(static_cast<long long int>(coefs[i])));
             nx.push_back(vars[i]);  //->id();
           }
+        }
         args[2] = IntLit::a(static_cast<long long int>(rhs));
         args[2]->type(Type::parint(0));
         args[0] = new ArrayLit(Location().introduce(), nc_c);
@@ -1768,7 +1861,9 @@ private:
         for (; domr(); ++domr) {  // * A + B
           IntVal mmin = domr.min();
           IntVal mmax = domr.max();
-          if (A < 0.0) std::swap(mmin, mmax);
+          if (A < 0.0) {
+            std::swap(mmin, mmax);
+          }
           s.insert(IntvReal(  // * A + B
               mmin.isFinite() ? rndUpIfInt(varTarget, (mmin.toInt() * A + B))
                               : IntvReal::infMinus(),
@@ -1782,7 +1877,9 @@ private:
         for (; domr(); ++domr) {  // * A + B
           FloatVal mmin = domr.min();
           FloatVal mmax = domr.max();
-          if (A < 0.0) std::swap(mmin, mmax);
+          if (A < 0.0) {
+            std::swap(mmin, mmax);
+          }
           s.insert(IntvReal(  // * A + B
               mmin.isFinite() ? rndUpIfInt(varTarget, (mmin.toDouble() * A + B))
                               : IntvReal::infMinus(),
@@ -1799,8 +1896,9 @@ private:
                          ? mipd.expr2Const(pCall->arg(nArg))
                          // * ( bnds.right-bnds.left )   ABANDONED 12.4.18 due to #207
                          : std::fabs(A);  // delta should be scaled as well
-      if (var->type().isint())            // the projected-onto variable
+      if (var->type().isint()) {          // the projected-onto variable
         delta = std::max(1.0, delta);
+      }
       return delta;
     }
   };  // class DomainDecomp
@@ -1834,8 +1932,12 @@ private:
     }
     // Clean up __POSTs:
     for (auto& vVar : vVarDescr) {
-      for (auto pCallI : vVar.aCalls) pCallI->remove();
-      if (vVar.pEqEncoding != nullptr) vVar.pEqEncoding->remove();
+      for (auto pCallI : vVar.aCalls) {
+        pCallI->remove();
+      }
+      if (vVar.pEqEncoding != nullptr) {
+        vVar.pEqEncoding->remove();
+      }
     }
     return fRetTrue;
   }
@@ -1850,7 +1952,9 @@ private:
     //       MZN_MIPD__assert_hard( ! arg->dyn_cast<BoolLit>() );
     Id* id = arg->dyn_cast<Id>();
     //       MZN_MIPD__assert_hard(id);
-    if (nullptr == id) return nullptr;  // the call using this should be ignored?
+    if (nullptr == id) {
+      return nullptr;  // the call using this should be ignored?
+    }
     VarDecl* vd = id->decl();
     MZN_MIPD__assert_hard(vd);
     return vd;
@@ -1861,7 +1965,9 @@ private:
   long long expr2DeclArray(Expression* arg, Array& aVD) {
     ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
     checkOrResize(aVD, al->size());
-    for (unsigned int i = 0; i < al->size(); i++) aVD[i] = expr2VarDecl((*al)[i]);
+    for (unsigned int i = 0; i < al->size(); i++) {
+      aVD[i] = expr2VarDecl((*al)[i]);
+    }
     return al->min(0);
   }
 
@@ -1870,7 +1976,9 @@ private:
   long long expr2ExprArray(Expression* arg, Array& aVD) {
     ArrayLit* al = eval_array_lit(getEnv()->envi(), arg);
     checkOrResize(aVD, al->size());
-    for (unsigned int i = 0; i < al->size(); i++) aVD[i] = ((*al)[i]);
+    for (unsigned int i = 0; i < al->size(); i++) {
+      aVD[i] = ((*al)[i]);
+    }
     return al->min(0);
   }
 
@@ -1916,15 +2024,22 @@ private:
   void printStats(std::ostream& os) {
     //       if ( aCliques.empty() )
     //         return;
-    if (vVarDescr.empty()) return;
+    if (vVarDescr.empty()) {
+      return;
+    }
     int nc = 0;
-    for (auto& cl : aCliques)
-      if (cl.size() != 0u) ++nc;
-    for (auto& var : vVarDescr)
-      if (0 > var.nClique)
+    for (auto& cl : aCliques) {
+      if (cl.size() != 0u) {
+        ++nc;
+      }
+    }
+    for (auto& var : vVarDescr) {
+      if (0 > var.nClique) {
         ++nc;  // 1-var cliques
-               //       os << "N cliques " << aCliques.size() << "  total, "
-               //          << nc << " final" << std::endl;
+      }
+    }
+    //       os << "N cliques " << aCliques.size() << "  total, "
+    //          << nc << " final" << std::endl;
     MZN_MIPD__assert_hard(nc);
     MIPD__stats[N_POSTs__eqNmapsize] = static_cast<double>(mNViews.size());
     double nSubintvAve = MIPD__stats[N_POSTs__NSubintvSum] / nc;
@@ -1934,9 +2049,13 @@ private:
        << " POSTs"
 #ifdef __MZN__MIPDOMAINS__PRINTMORESTATS
           " [ ";
-    for (int i = N_POSTs__intCmpReif; i <= N_POSTs__floatAux; ++i) os << MIPD__stats[i] << ',';
+    for (int i = N_POSTs__intCmpReif; i <= N_POSTs__floatAux; ++i) {
+      os << MIPD__stats[i] << ',';
+    }
     os << " ], LINEQ [ ";
-    for (int i = N_POSTs__eq2intlineq; i <= N_POSTs__eqNmapsize; ++i) os << MIPD__stats[i] << ',';
+    for (int i = N_POSTs__eq2intlineq; i <= N_POSTs__eqNmapsize; ++i) {
+      os << MIPD__stats[i] << ',';
+    }
     os << " ]"
 #endif
           ", "
@@ -1949,9 +2068,10 @@ private:
        << "(" << MIPD__stats[N_POSTs__clEEFound] << ")"
        << " clq eq_encoded ";
     //       << std::flush
-    if (TCliqueSorter::LinEqGraph::dCoefMax > 1.0)
+    if (TCliqueSorter::LinEqGraph::dCoefMax > 1.0) {
       os << TCliqueSorter::LinEqGraph::dCoefMin << "--" << TCliqueSorter::LinEqGraph::dCoefMax
          << " abs coefs";
+    }
     os << " ... ";
   }
 
@@ -1975,18 +2095,25 @@ void SetOfIntervals<N>::intersect(const SetOfIntervals<N1>& s2) {
 template <class N>
 template <class N1>
 void SetOfIntervals<N>::cutDeltas(const SetOfIntervals<N1>& s2, N1 delta) {
-  if (this->empty()) return;
+  if (this->empty()) {
+    return;
+  }
   // What if distance < delta?                 TODO
   for (auto is2 : s2) {
-    if (is2.left > Interval<N1>::infMinus()) this->cutOut(Interval<N>(is2.left - delta, is2.left));
-    if (is2.right < Interval<N1>::infPlus())
+    if (is2.left > Interval<N1>::infMinus()) {
+      this->cutOut(Interval<N>(is2.left - delta, is2.left));
+    }
+    if (is2.right < Interval<N1>::infPlus()) {
       this->cutOut(Interval<N>(is2.right, is2.right + delta));
+    }
   }
 }
 template <class N>
 void SetOfIntervals<N>::cutOut(const Interval<N>& intv) {
   DBGOUT_MIPD__("Cutting " << intv << " from " << (*this));
-  if (this->empty()) return;
+  if (this->empty()) {
+    return;
+  }
   auto it1 = (Interval<N>::infMinus() == intv.left)
                  ? this->lower_bound(Interval<N>(intv.left, intv.right))
                  : this->upper_bound(Interval<N>(intv.left, intv.right));
@@ -2019,7 +2146,9 @@ void SetOfIntervals<N>::cutOut(const Interval<N>& intv) {
       this->erase(it2);
       it2 = this->end();
       it2Del2 = this->insert(Interval<N>(intv.right, it2r));
-      if (fEEE) it2Del1 = it2Del2;
+      if (fEEE) {
+        it2Del1 = it2Del2;
+      }
     }
   }
   DBGOUT_MIPD__("; after split 2: " << (*this));
@@ -2037,7 +2166,9 @@ void SetOfIntervals<N>::cutOut(const Interval<N>& intv) {
         MZN_MIPD__assert_hard(1 == nO);
         ++nO;
       }
-      if (this->end() == it) break;
+      if (this->end() == it) {
+        break;
+      }
       ++it;
     } while (true);
     MZN_MIPD__assert_hard(2 == nO);
@@ -2059,25 +2190,33 @@ typename SetOfIntervals<N>::SplitResult SetOfIntervals<N>::split(iterator& it, N
 }
 template <class N>
 Interval<N> SetOfIntervals<N>::getBounds() const {
-  if (this->empty()) return Interval<N>(Interval<N>::infPlus(), Interval<N>::infMinus());
+  if (this->empty()) {
+    return Interval<N>(Interval<N>::infPlus(), Interval<N>::infMinus());
+  }
   auto it2 = this->end();
   --it2;
   return Interval<N>(this->begin()->left, it2->right);
 }
 template <class N>
 bool SetOfIntervals<N>::checkFiniteBounds() {
-  if (this->empty()) return false;
+  if (this->empty()) {
+    return false;
+  }
   auto bnds = getBounds();
   return bnds.left > Interval<N>::infMinus() && bnds.right < Interval<N>::infPlus();
 }
 template <class N>
 bool SetOfIntervals<N>::checkDisjunctStrict() {
   for (auto it = this->begin(); it != this->end(); ++it) {
-    if (it->left > it->right) return false;
+    if (it->left > it->right) {
+      return false;
+    }
     if (this->begin() != it) {
       auto it_1 = it;
       --it_1;
-      if (it_1->right >= it->left) return false;
+      if (it_1->right >= it->left) {
+        return false;
+      }
     }
   }
   return true;
@@ -2105,8 +2244,9 @@ template <class N>
 void SetOfIntervals<N>::split2Bits() {
   Base bsNew;
   for (auto it = this->begin(); it != this->end(); ++it) {
-    for (int v = static_cast<int>(round(it->left)); v <= round(it->right); ++v)
+    for (int v = static_cast<int>(round(it->left)); v <= round(it->right); ++v) {
       bsNew.insert(Intv(v, v));
+    }
   }
   *(Base*)this = std::move(bsNew);
 }

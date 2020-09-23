@@ -231,7 +231,9 @@ Expression* NLSolverInstance::getSolutionValue(Id* id) {
  */
 void NLSolverInstance::analyse(const Item* i) {
   // Guard
-  if (i == nullptr) return;
+  if (i == nullptr) {
+    return;
+  }
 
   // Switch on the id of item
   switch (i->iid()) {

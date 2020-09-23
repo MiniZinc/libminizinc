@@ -21,8 +21,9 @@ LocationException::LocationException(EnvI& env, const Location& loc, const std::
 
 ResultUndefinedError::ResultUndefinedError(EnvI& env, const Location& loc, const std::string& msg)
     : LocationException(env, loc, msg) {
-  if (env.in_maybe_partial == 0)
+  if (env.in_maybe_partial == 0) {
     env.addWarning("undefined result becomes false in Boolean context\n  (" + msg + ")");
+  }
 }
 
 }  // namespace MiniZinc

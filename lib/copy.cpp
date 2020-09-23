@@ -15,7 +15,9 @@
 namespace MiniZinc {
 
 void CopyMap::insert(Expression* e0, Expression* e1) {
-  if (!e0->isUnboxedVal() && !e1->isUnboxedVal()) node_m.insert(e0, e1);
+  if (!e0->isUnboxedVal() && !e1->isUnboxedVal()) {
+    node_m.insert(e0, e1);
+  }
 }
 Expression* CopyMap::find(Expression* e) { return static_cast<Expression*>(node_m.find(e)); }
 void CopyMap::insert(Item* e0, Item* e1) { node_m.insert(e0, e1); }
@@ -23,7 +25,9 @@ Item* CopyMap::find(Item* e) { return static_cast<Item*>(node_m.find(e)); }
 void CopyMap::insert(Model* e0, Model* e1) { model_m.insert(std::make_pair(e0, e1)); }
 Model* CopyMap::find(Model* e) {
   auto it = model_m.find(e);
-  if (it == model_m.end()) return nullptr;
+  if (it == model_m.end()) {
+    return nullptr;
+  }
   return it->second;
 }
 void CopyMap::insert(IntSetVal* e0, IntSetVal* e1) { node_m.insert(e0, e1); }
@@ -40,8 +44,12 @@ void copy_ann(EnvI& env, CopyMap& m, Annotation& oldAnn, Annotation& newAnn, boo
 
 Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copyFundecls,
                  bool isFlatModel) {
-  if (e == nullptr) return nullptr;
-  if (Expression* cached = m.find(e)) return cached;
+  if (e == nullptr) {
+    return nullptr;
+  }
+  if (Expression* cached = m.find(e)) {
+    return cached;
+  }
   Expression* ret = nullptr;
   switch (e->eid()) {
     case Expression::E_INTLIT: {
@@ -83,8 +91,9 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
           c->v(ASTExprVec<Expression>(ve));
         } else {
           std::vector<Expression*> elems(s->v().size());
-          for (unsigned int i = s->v().size(); (i--) != 0u;)
+          for (unsigned int i = s->v().size(); (i--) != 0u;) {
             elems[i] = copy(env, m, s->v()[i], followIds, copyFundecls, isFlatModel);
+          }
           ASTExprVec<Expression> ce(elems);
           m.insert(s->v(), ce);
           c->v(ce);
@@ -103,7 +112,9 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
       ret = c;
     } break;
     case Expression::E_ID: {
-      if (e == constants().absent) return e;
+      if (e == constants().absent) {
+        return e;
+      }
       Id* id = e->cast<Id>();
 
       if (followIds) {
@@ -196,8 +207,9 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
           v = cv;
         } else {
           std::vector<Expression*> elems(al->size());
-          for (unsigned int i = al->size(); (i--) != 0u;)
+          for (unsigned int i = al->size(); (i--) != 0u;) {
             elems[i] = copy(env, m, (*al)[i], followIds, copyFundecls, isFlatModel);
+          }
           ASTExprVec<Expression> ce(elems);
           m.insert(al->getVec(), ce);
           v = ce.vec();
@@ -216,8 +228,9 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
         idx = cidx;
       } else {
         std::vector<Expression*> elems(aa->idx().size());
-        for (unsigned int i = aa->idx().size(); (i--) != 0u;)
+        for (unsigned int i = aa->idx().size(); (i--) != 0u;) {
           elems[i] = copy(env, m, aa->idx()[i], followIds, copyFundecls, isFlatModel);
+        }
         ASTExprVec<Expression> ce(elems);
         m.insert(aa->idx(), ce);
         idx = ce.vec();
@@ -302,8 +315,9 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
 
       m.insert(e, c);
       std::vector<Expression*> args(ca->n_args());
-      for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0u;)
+      for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0u;) {
         args[i] = copy(env, m, ca->arg(i), followIds, copyFundecls, isFlatModel);
+      }
       c->args(args);
       ret = c;
     } break;
@@ -317,10 +331,11 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
       }
       c->toplevel(vd->toplevel());
       c->introduced(vd->introduced());
-      if (isFlatModel && vd->flat() == vd)
+      if (isFlatModel && vd->flat() == vd) {
         c->flat(c);
-      else
+      } else {
         c->flat(vd->flat());
+      }
       c->payload(vd->payload());
       m.insert(e, c);
       m.insert(c, c);
@@ -333,8 +348,9 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
     case Expression::E_LET: {
       Let* l = e->cast<Let>();
       std::vector<Expression*> let(l->let().size());
-      for (unsigned int i = l->let().size(); (i--) != 0u;)
+      for (unsigned int i = l->let().size(); (i--) != 0u;) {
         let[i] = copy(env, m, l->let()[i], followIds, copyFundecls, isFlatModel);
+      }
       Let* c = new Let(copy_location(m, e), let,
                        copy(env, m, l->in(), followIds, copyFundecls, isFlatModel));
       for (unsigned int i = l->_let_orig.size(); (i--) != 0u;) {
@@ -353,9 +369,10 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
         r = cr;
       } else {
         std::vector<TypeInst*> rr(t->ranges().size());
-        for (unsigned int i = t->ranges().size(); (i--) != 0u;)
+        for (unsigned int i = t->ranges().size(); (i--) != 0u;) {
           rr[i] = static_cast<TypeInst*>(
               copy(env, m, t->ranges()[i], followIds, copyFundecls, isFlatModel));
+        }
         r = ASTExprVecO<TypeInst*>::a(rr);
       }
       auto* c = new TypeInst(copy_location(m, e), t->type(), ASTExprVec<TypeInst>(r),
@@ -373,15 +390,18 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
     default:
       assert(false);
   }
-  if (!ret->isa<Id>() || ret->cast<Id>()->decl() == nullptr) ret->type(e->type());
+  if (!ret->isa<Id>() || ret->cast<Id>()->decl() == nullptr) {
+    ret->type(e->type());
+  }
   copy_ann(env, m, e->ann(), ret->ann(), followIds, copyFundecls, isFlatModel);
   return ret;
 }
 
 void copy_ann(EnvI& env, CopyMap& m, Annotation& oldAnn, Annotation& newAnn, bool followIds,
               bool copyFundecls, bool isFlatModel) {
-  for (ExpressionSetIter it = oldAnn.begin(); it != oldAnn.end(); ++it)
+  for (ExpressionSetIter it = oldAnn.begin(); it != oldAnn.end(); ++it) {
     newAnn.add(copy(env, m, *it, followIds, copyFundecls, isFlatModel));
+  }
 }
 
 Expression* copy(EnvI& env, Expression* e, bool followIds, bool copyFundecls, bool isFlatModel) {
@@ -392,8 +412,12 @@ Expression* copy(EnvI& env, Expression* e, bool followIds, bool copyFundecls, bo
 Model* copy(EnvI& env, CopyMap& cm, Model* m, bool isFlatModel);
 
 Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bool isFlatModel) {
-  if (i == nullptr) return nullptr;
-  if (Item* cached = m.find(i)) return cached;
+  if (i == nullptr) {
+    return nullptr;
+  }
+  if (Item* cached = m.find(i)) {
+    return cached;
+  }
   switch (i->iid()) {
     case Item::II_INC: {
       auto* ii = i->cast<IncludeI>();
@@ -452,9 +476,10 @@ Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bo
     case Item::II_FUN: {
       auto* f = i->cast<FunctionI>();
       std::vector<VarDecl*> params(f->params().size());
-      for (unsigned int j = f->params().size(); (j--) != 0u;)
+      for (unsigned int j = f->params().size(); (j--) != 0u;) {
         params[j] = static_cast<VarDecl*>(
             copy(env, m, f->params()[j], followIds, copyFundecls, isFlatModel));
+      }
       auto c = new FunctionI(
           copy_location(m, i), f->id(),
           static_cast<TypeInst*>(copy(env, m, f->ti(), followIds, copyFundecls, isFlatModel)),
@@ -482,15 +507,22 @@ Item* copy(EnvI& env, Item* i, bool followIds, bool copyFundecls, bool isFlatMod
 }
 
 Model* copy(EnvI& env, CopyMap& cm, Model* m, bool isFlatModel) {
-  if (m == nullptr) return nullptr;
-  if (Model* cached = cm.find(m)) return cached;
+  if (m == nullptr) {
+    return nullptr;
+  }
+  if (Model* cached = cm.find(m)) {
+    return cached;
+  }
   auto* c = new Model;
-  for (auto& i : *m) c->addItem(copy(env, cm, i, false, true));
+  for (auto& i : *m) {
+    c->addItem(copy(env, cm, i, false, true));
+  }
 
   for (auto& it : m->fnmap) {
-    for (unsigned int i = 0; i < it.second.size(); i++)
+    for (unsigned int i = 0; i < it.second.size(); i++) {
       c->registerFn(env,
                     copy(env, cm, it.second[i].fi, false, true, isFlatModel)->cast<FunctionI>());
+    }
   }
   cm.insert(m, c);
   return c;

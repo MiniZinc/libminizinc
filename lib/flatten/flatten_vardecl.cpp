@@ -17,7 +17,9 @@ EE flatten_vardecl(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
   GCLock lock;
-  if (ctx.b != C_ROOT) throw FlatteningError(env, e->loc(), "not in root context");
+  if (ctx.b != C_ROOT) {
+    throw FlatteningError(env, e->loc(), "not in root context");
+  }
   auto* v = e->cast<VarDecl>();
   VarDecl* it = v->flat();
   if (it == nullptr) {
@@ -39,12 +41,16 @@ EE flatten_vardecl(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     VarDecl* vd = newVarDecl(env, ctx, ti, reuseVarId ? v->id() : nullptr, v, nullptr);
     v->flat(vd);
     Ctx nctx;
-    if ((v->e() != nullptr) && v->e()->type().bt() == Type::BT_BOOL) nctx.b = C_MIX;
+    if ((v->e() != nullptr) && v->e()->type().bt() == Type::BT_BOOL) {
+      nctx.b = C_MIX;
+    }
     if (v->e() != nullptr) {
       (void)flat_exp(env, nctx, v->e(), vd, constants().var_true);
       if (v->e()->type().dim() > 0) {
         Expression* ee = follow_id_to_decl(vd->e());
-        if (ee->isa<VarDecl>()) ee = ee->cast<VarDecl>()->e();
+        if (ee->isa<VarDecl>()) {
+          ee = ee->cast<VarDecl>()->e();
+        }
         assert(ee && ee->isa<ArrayLit>());
         auto* al = ee->cast<ArrayLit>();
         if (vd->ti()->domain() != nullptr) {

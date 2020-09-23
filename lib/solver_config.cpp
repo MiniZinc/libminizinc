@@ -86,7 +86,9 @@ std::vector<std::pair<std::string, std::string> > getStringPairList(AssignI* ai)
 std::vector<std::vector<std::string> > getDefaultOptionList(AssignI* ai) {
   if (auto* al = ai->e()->dyn_cast<ArrayLit>()) {
     std::vector<std::vector<std::string> > ret;
-    if (al->size() == 0) return ret;
+    if (al->size() == 0) {
+      return ret;
+    }
     if (al->dims() != 2) {
       throw ConfigException(
           "invalid configuration item (right hand side must be a 2d array of strings)");
@@ -118,7 +120,9 @@ std::vector<std::vector<std::string> > getDefaultOptionList(AssignI* ai) {
 std::vector<SolverConfig::ExtraFlag> getExtraFlagList(AssignI* ai) {
   if (auto* al = ai->e()->dyn_cast<ArrayLit>()) {
     std::vector<SolverConfig::ExtraFlag> ret;
-    if (al->size() == 0) return ret;
+    if (al->size() == 0) {
+      return ret;
+    }
     if (al->dims() != 2) {
       throw ConfigException(
           "invalid configuration item (right hand side must be a 2d array of strings)");
@@ -191,8 +195,9 @@ std::string stringToLower(std::string s) {
 struct SortByLowercase {
   bool operator()(const std::string& n1, const std::string& n2) {
     for (size_t i = 0; i < n1.size() && i < n2.size(); i++) {
-      if (std::tolower(n1[i]) != std::tolower(n2[i]))
+      if (std::tolower(n1[i]) != std::tolower(n2[i])) {
         return std::tolower(n1[i]) < std::tolower(n2[i]);
+      }
     }
     return n1.size() < n2.size();
   }
@@ -358,7 +363,9 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
     oss << ",\n    \"defaultFlags\": [";
     for (unsigned int j = 0; j < defaultFlags().size(); j++) {
       oss << "\"" << Printer::escapeStringLit(defaultFlags()[j]) << "\"";
-      if (j < defaultFlags().size() - 1) oss << ",";
+      if (j < defaultFlags().size() - 1) {
+        oss << ",";
+      }
     }
     oss << "]";
   }
@@ -387,7 +394,9 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
     oss << "  \"requiredFlags\": [";
     for (unsigned int j = 0; j < requiredFlags().size(); j++) {
       oss << "\"" << requiredFlags()[j] << "\"";
-      if (j < requiredFlags().size() - 1) oss << ",";
+      if (j < requiredFlags().size() - 1) {
+        oss << ",";
+      }
     }
     oss << "],\n";
   }
@@ -395,7 +404,9 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
     oss << "  \"stdFlags\": [";
     for (unsigned int j = 0; j < stdFlags().size(); j++) {
       oss << "\"" << stdFlags()[j] << "\"";
-      if (j < stdFlags().size() - 1) oss << ",";
+      if (j < stdFlags().size() - 1) {
+        oss << ",";
+      }
     }
     oss << "],\n";
   }
@@ -405,7 +416,9 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
       oss << "["
           << "\"" << extraFlags()[j].flag << "\",\"" << extraFlags()[j].description << "\",\"";
       oss << extraFlags()[j].flag_type << "\",\"" << extraFlags()[j].default_value << "\"]";
-      if (j < extraFlags().size() - 1) oss << ",";
+      if (j < extraFlags().size() - 1) {
+        oss << ",";
+      }
     }
     oss << "],\n";
   }
@@ -414,7 +427,9 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
     oss << "  \"tags\": [";
     for (unsigned int j = 0; j < tags().size(); j++) {
       oss << "\"" << Printer::escapeStringLit(tags()[j]) << "\"";
-      if (j < tags().size() - 1) oss << ",";
+      if (j < tags().size() - 1) {
+        oss << ",";
+      }
     }
     oss << "],\n";
   }
@@ -477,10 +492,11 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
     size_t next_sep = mzn_solver_path.find(PATHSEP);
     string cur_path = mzn_solver_path.substr(0, next_sep);
     _solver_path.push_back(cur_path);
-    if (next_sep != string::npos)
+    if (next_sep != string::npos) {
       mzn_solver_path = mzn_solver_path.substr(next_sep + 1, string::npos);
-    else
+    } else {
       mzn_solver_path = "";
+    }
   }
   std::string userConfigDir = FileUtils::user_config_dir();
   if (FileUtils::directory_exists(userConfigDir + "/solvers")) {
@@ -623,7 +639,9 @@ vector<string> SolverConfigs::solvers() const {
   // Create sorted list of solvers
   vector<string> s;
   for (auto& sc : _solvers) {
-    if (std::find(sc.tags().begin(), sc.tags().end(), "__internal__") != sc.tags().end()) continue;
+    if (std::find(sc.tags().begin(), sc.tags().end(), "__internal__") != sc.tags().end()) {
+      continue;
+    }
     std::ostringstream oss;
     oss << sc.name() << " " << sc.version() << " (" << sc.id();
     if (!def_id.empty() && sc.id() == def_id) {
@@ -654,7 +672,9 @@ std::string SolverConfigs::solverConfigsJSON() const {
   oss << "[";
   for (unsigned int i = 0; i < _solvers.size(); i++) {
     const SolverConfig& sc = _solvers[solversIdx[i]];
-    if (std::find(sc.tags().begin(), sc.tags().end(), "__internal__") != sc.tags().end()) continue;
+    if (std::find(sc.tags().begin(), sc.tags().end(), "__internal__") != sc.tags().end()) {
+      continue;
+    }
     if (hadSolver) {
       oss << ",";
     }
@@ -715,7 +735,9 @@ const SolverConfig& SolverConfigs::config(const std::string& _s) {
   }
   std::string tv = getVersion(firstTag);
   for (int sidx : tag_it->second) {
-    if (tv.empty() || tv == _solvers[sidx].version()) selectedSolvers.insert(sidx);
+    if (tv.empty() || tv == _solvers[sidx].version()) {
+      selectedSolvers.insert(sidx);
+    }
   }
   DefaultMap::const_iterator def_it = _tagDefault.find(getTag(firstTag));
   if (def_it != _tagDefault.end()) {
@@ -729,7 +751,9 @@ const SolverConfig& SolverConfigs::config(const std::string& _s) {
     tv = getVersion(tags[i]);
     std::set<int> newSolvers;
     for (int sidx : tag_it->second) {
-      if (tv.empty() || tv == _solvers[sidx].version()) newSolvers.insert(sidx);
+      if (tv.empty() || tv == _solvers[sidx].version()) {
+        newSolvers.insert(sidx);
+      }
     }
     std::set<int> intersection;
     std::set_intersection(selectedSolvers.begin(), selectedSolvers.end(), newSolvers.begin(),

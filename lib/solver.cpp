@@ -94,7 +94,9 @@ SolverInitialiser::SolverInitialiser(void) {
 
 MZNFZNSolverFlag MZNFZNSolverFlag::std(const std::string& n0) {
   const std::string argFlags("-I -n -p -r -n-o");
-  if (argFlags.find(n0) != std::string::npos) return MZNFZNSolverFlag(FT_ARG, n0);
+  if (argFlags.find(n0) != std::string::npos) {
+    return MZNFZNSolverFlag(FT_ARG, n0);
+  }
   return MZNFZNSolverFlag(FT_NOARG, n0);
 }
 
@@ -134,8 +136,11 @@ SolverInstanceBase* SolverFactory::createSI(Env& env, std::ostream& log,
 /// also providing a destroy function for a DLL or just special allocator etc.
 void SolverFactory::destroySI(SolverInstanceBase* pSI) {
   auto it = sistorage.begin();
-  for (; it != sistorage.end(); ++it)
-    if (it->get() == pSI) break;
+  for (; it != sistorage.end(); ++it) {
+    if (it->get() == pSI) {
+      break;
+    }
+  }
   if (sistorage.end() == it) {
     cerr << "  SolverFactory: failed to remove solver at " << pSI << endl;
     throw InternalError("  SolverFactory: failed to remove solver");
@@ -167,13 +172,16 @@ bool MznSolver::ifSolns2out() { return s2out._opt.flag_standaloneSolns2Out; }
 void MznSolver::addSolverInterface(SolverFactory* sf) {
   si = sf->createSI(*flt.getEnv(), log, si_opt);
   assert(si);
-  if (s2out.getEnv() == nullptr) s2out.initFromEnv(flt.getEnv());
+  if (s2out.getEnv() == nullptr) {
+    s2out.initFromEnv(flt.getEnv());
+  }
   si->setSolns2Out(&s2out);
-  if (flag_compiler_verbose)
+  if (flag_compiler_verbose) {
     log
         //     << "  ---------------------------------------------------------------------------\n"
         << "      % SOLVING PHASE\n"
         << sf->getDescription(si_opt) << endl;
+  }
 }
 
 void MznSolver::addSolverInterface() {
@@ -235,7 +243,9 @@ void MznSolver::printHelp(const std::string& selectedSolver) {
     }
     os << "Available solvers (get help using --help <solver id>):" << endl;
     std::vector<std::string> solvers = solver_configs.solvers();
-    if (solvers.size() == 0) cout << "  none.\n";
+    if (solvers.size() == 0) {
+      cout << "  none.\n";
+    }
     for (auto& solver : solvers) {
       cout << "  " << solver << endl;
     }
@@ -293,7 +303,9 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
   bool compileSolutionChecker = false;
   int i = 1, j = 1;
   int argc = static_cast<int>(argv.size());
-  if (argc < 2) return OPTION_ERROR;
+  if (argc < 2) {
+    return OPTION_ERROR;
+  }
 
   // Add params from a file if necessary
   for (i = 1; i < argc; ++i) {
@@ -356,7 +368,9 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     if (argv[i] == "--solvers") {
       cout << "MiniZinc driver.\nAvailable solver configurations:\n";
       std::vector<std::string> solvers = solver_configs.solvers();
-      if (solvers.size() == 0) cout << "  none.\n";
+      if (solvers.size() == 0) {
+        cout << "  none.\n";
+      }
       for (auto& solver : solvers) {
         cout << "  " << solver << endl;
       }
@@ -500,8 +514,9 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
             for (auto& sf : sc.stdFlags()) {
               acceptedFlags.push_back(MZNFZNSolverFlag::std(sf));
             }
-            for (auto& ef : sc.extraFlags())
+            for (auto& ef : sc.extraFlags()) {
               acceptedFlags.push_back(MZNFZNSolverFlag::extra(ef.flag, ef.flag_type));
+            }
 
             // Collect arguments required for underlying exe
             vector<string> fzn_mzn_flags;
@@ -712,12 +727,20 @@ SolverInstance::Status MznSolver::solve() {
   SolverInstance::Status status = getSI()->solve();
   GCLock lock;
   if (status == SolverInstance::SAT || status == SolverInstance::OPT) {
-    if (!getSI()->getSolns2Out()->fStatusPrinted) getSI()->getSolns2Out()->evalStatus(status);
+    if (!getSI()->getSolns2Out()->fStatusPrinted) {
+      getSI()->getSolns2Out()->evalStatus(status);
+    }
   } else {
-    if (!getSI()->getSolns2Out()->fStatusPrinted) getSI()->getSolns2Out()->evalStatus(status);
+    if (!getSI()->getSolns2Out()->fStatusPrinted) {
+      getSI()->getSolns2Out()->evalStatus(status);
+    }
   }
-  if (si_opt->printStatistics) getSI()->printStatistics();
-  if (flag_statistics) getSI()->getSolns2Out()->printStatistics(os);
+  if (si_opt->printStatistics) {
+    getSI()->printStatistics();
+  }
+  if (flag_statistics) {
+    getSI()->getSolns2Out()->printStatistics(os);
+  }
   return status;
 }
 
@@ -727,7 +750,9 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
   using namespace std::chrono;
   steady_clock::time_point startTime = steady_clock::now();
   std::vector<std::string> args = {exeName};
-  for (auto a : args0) args.push_back(a);
+  for (auto a : args0) {
+    args.push_back(a);
+  }
   switch (processOptions(args)) {
     case OPTION_FINISH:
       return SolverInstance::NONE;
@@ -819,7 +844,9 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
     }
     return SolverInstance::NONE;
   } else {
-    if (!ifMzn2Fzn()) s2out.evalStatus(getFltStatus());
+    if (!ifMzn2Fzn()) {
+      s2out.evalStatus(getFltStatus());
+    }
     return getFltStatus();
   }  //  Add evalOutput() here?   TODO
 }

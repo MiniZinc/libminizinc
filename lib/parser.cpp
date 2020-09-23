@@ -60,7 +60,9 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
            bool ignoreStdlib, bool parseDocComments, bool verbose, ostream& err,
            std::vector<SyntaxError>& syntaxErrors) {
   vector<string> includePaths;
-  for (const auto& i : ip) includePaths.push_back(i);
+  for (const auto& i : ip) {
+    includePaths.push_back(i);
+  }
 
   vector<ParseWorkItem> files;
   map<string, Model*> seenModels;
@@ -80,7 +82,9 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       GCLock lock;
       string fullName = filenames[i];
       string baseName = FileUtils::base_name(filenames[i]);
-      if (!FileUtils::is_absolute(fullName)) fullName = workingDir + "/" + fullName;
+      if (!FileUtils::is_absolute(fullName)) {
+        fullName = workingDir + "/" + fullName;
+      }
       bool isFzn = (baseName.compare(baseName.length() - 4, 4, ".fzn") == 0);
       if (isFzn) {
         files.emplace_back(model, nullptr, "", fullName);
@@ -169,7 +173,9 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
           fullname = includePaths[i] + "/" + f;
           if (FileUtils::file_exists(fullname)) {
             file.open(FILE_PATH(fullname), std::ios::binary);
-            if (file.is_open()) break;
+            if (file.is_open()) {
+              break;
+            }
           }
         }
         if (file.is_open() && i < includePaths.size() - 1 && parentPath == workingDir &&
@@ -204,10 +210,14 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
         }
         goto error;
       }
-      if (verbose) std::cerr << "processing file '" << fullname << "'" << endl;
+      if (verbose) {
+        std::cerr << "processing file '" << fullname << "'" << endl;
+      }
       s = get_file_contents(file);
 
-      if (m->filepath().size() == 0) m->setFilepath(fullname);
+      if (m->filepath().size() == 0) {
+        m->setFilepath(fullname);
+      }
       isFzn = (fullname.compare(fullname.length() - 4, 4, ".fzn") == 0);
       isFzn |= (fullname.compare(fullname.length() - 4, 4, ".ozn") == 0);
       isFzn |= (fullname.compare(fullname.length() - 4, 4, ".szn") == 0);
@@ -222,9 +232,13 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
     mzn_yylex_init(&pp.yyscanner);
     mzn_yyset_extra(&pp, pp.yyscanner);
     mzn_yyparse(&pp);
-    if (pp.yyscanner != nullptr) mzn_yylex_destroy(pp.yyscanner);
+    if (pp.yyscanner != nullptr) {
+      mzn_yylex_destroy(pp.yyscanner);
+    }
     if (pp.hadError) {
-      for (const auto& syntaxError : pp.syntaxErrors) syntaxErrors.push_back(syntaxError);
+      for (const auto& syntaxError : pp.syntaxErrors) {
+        syntaxErrors.push_back(syntaxError);
+      }
       goto error;
     }
   }
@@ -244,7 +258,9 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
           err << "Error: cannot open data file '" << f << "'." << endl;
           goto error;
         }
-        if (verbose) std::cerr << "processing data file '" << f << "'" << endl;
+        if (verbose) {
+          std::cerr << "processing data file '" << f << "'" << endl;
+        }
         s = get_file_contents(file);
       }
 
@@ -252,9 +268,13 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       mzn_yylex_init(&pp.yyscanner);
       mzn_yyset_extra(&pp, pp.yyscanner);
       mzn_yyparse(&pp);
-      if (pp.yyscanner != nullptr) mzn_yylex_destroy(pp.yyscanner);
+      if (pp.yyscanner != nullptr) {
+        mzn_yylex_destroy(pp.yyscanner);
+      }
       if (pp.hadError) {
-        for (const auto& syntaxError : pp.syntaxErrors) syntaxErrors.push_back(syntaxError);
+        for (const auto& syntaxError : pp.syntaxErrors) {
+          syntaxErrors.push_back(syntaxError);
+        }
         goto error;
       }
     }

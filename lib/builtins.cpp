@@ -105,10 +105,13 @@ IntVal b_int_min(EnvI& env, Call* call) {
       } else {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env, call->arg(0));
-        if (al->size() == 0)
+        if (al->size() == 0) {
           throw ResultUndefinedError(env, al->loc(), "minimum of empty array is undefined");
+        }
         IntVal m = eval_int(env, (*al)[0]);
-        for (unsigned int i = 1; i < al->size(); i++) m = std::min(m, eval_int(env, (*al)[i]));
+        for (unsigned int i = 1; i < al->size(); i++) {
+          m = std::min(m, eval_int(env, (*al)[i]));
+        }
         return m;
       }
     case 2: {
@@ -127,10 +130,13 @@ IntVal b_int_max(EnvI& env, Call* call) {
       } else {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env, call->arg(0));
-        if (al->size() == 0)
+        if (al->size() == 0) {
           throw ResultUndefinedError(env, al->loc(), "maximum of empty array is undefined");
+        }
         IntVal m = eval_int(env, (*al)[0]);
-        for (unsigned int i = 1; i < al->size(); i++) m = std::max(m, eval_int(env, (*al)[i]));
+        for (unsigned int i = 1; i < al->size(); i++) {
+          m = std::max(m, eval_int(env, (*al)[i]));
+        }
         return m;
       }
     case 2: {
@@ -255,25 +261,32 @@ FloatVal b_abs_float(EnvI& env, Call* call) {
 }
 
 bool b_has_bounds_int(EnvI& env, Call* call) {
-  if (call->n_args() != 1) throw EvalError(env, Location(), "dynamic type error");
+  if (call->n_args() != 1) {
+    throw EvalError(env, Location(), "dynamic type error");
+  }
   IntBounds ib = compute_int_bounds(env, call->arg(0));
   return ib.valid && ib.l.isFinite() && ib.u.isFinite();
 }
 bool b_has_bounds_float(EnvI& env, Call* call) {
-  if (call->n_args() != 1) throw EvalError(env, Location(), "dynamic type error");
+  if (call->n_args() != 1) {
+    throw EvalError(env, Location(), "dynamic type error");
+  }
   FloatBounds fb = compute_float_bounds(env, call->arg(0));
   return fb.valid;
 }
 
 IntVal lb_varoptint(EnvI& env, Expression* e) {
   IntBounds b = compute_int_bounds(env, e);
-  if (b.valid)
+  if (b.valid) {
     return b.l;
-  else
+  } else {
     return -IntVal::infinity();
+  }
 }
 IntVal b_lb_varoptint(EnvI& env, Call* call) {
-  if (call->n_args() != 1) throw EvalError(env, Location(), "dynamic type error");
+  if (call->n_args() != 1) {
+    throw EvalError(env, Location(), "dynamic type error");
+  }
   return lb_varoptint(env, call->arg(0));
 }
 
@@ -285,48 +298,54 @@ bool b_occurs(EnvI& env, Call* call) {
 IntVal b_deopt_int(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
-  if (e == constants().absent)
+  if (e == constants().absent) {
     throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+  }
   return eval_int(env, e);
 }
 
 bool b_deopt_bool(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
-  if (e == constants().absent)
+  if (e == constants().absent) {
     throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+  }
   return eval_bool(env, e);
 }
 
 FloatVal b_deopt_float(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
-  if (e == constants().absent)
+  if (e == constants().absent) {
     throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+  }
   return eval_float(env, e);
 }
 
 IntSetVal* b_deopt_intset(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
-  if (e == constants().absent)
+  if (e == constants().absent) {
     throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+  }
   return eval_intset(env, e);
 }
 
 std::string b_deopt_string(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
-  if (e == constants().absent)
+  if (e == constants().absent) {
     throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+  }
   return eval_string(env, e);
 }
 
 Expression* b_deopt_expr(EnvI& env, Call* call) {
   GCLock lock;
   Expression* e = eval_par(env, call->arg(0));
-  if (e == constants().absent)
+  if (e == constants().absent) {
     throw EvalError(env, e->loc(), "cannot evaluate deopt on absent value");
+  }
   return e;
 };
 
@@ -352,17 +371,22 @@ IntVal b_array_lb_int(EnvI& env, Call* call) {
   if (e != nullptr) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
-    if (al->size() == 0) throw EvalError(env, Location(), "lower bound of empty array undefined");
+    if (al->size() == 0) {
+      throw EvalError(env, Location(), "lower bound of empty array undefined");
+    }
     IntVal min = IntVal::infinity();
     for (unsigned int i = 0; i < al->size(); i++) {
       IntBounds ib = compute_int_bounds(env, (*al)[i]);
-      if (!ib.valid) goto b_array_lb_int_done;
+      if (!ib.valid) {
+        goto b_array_lb_int_done;
+      }
       min = std::min(min, ib.l);
     }
-    if (foundMin)
+    if (foundMin) {
       array_lb = std::max(array_lb, min);
-    else
+    } else {
       array_lb = min;
+    }
     foundMin = true;
   }
 b_array_lb_int_done:
@@ -375,13 +399,16 @@ b_array_lb_int_done:
 
 IntVal ub_varoptint(EnvI& env, Expression* e) {
   IntBounds b = compute_int_bounds(env, e);
-  if (b.valid)
+  if (b.valid) {
     return b.u;
-  else
+  } else {
     return IntVal::infinity();
+  }
 }
 IntVal b_ub_varoptint(EnvI& env, Call* call) {
-  if (call->n_args() != 1) throw EvalError(env, Location(), "dynamic type error");
+  if (call->n_args() != 1) {
+    throw EvalError(env, Location(), "dynamic type error");
+  }
   return ub_varoptint(env, call->arg(0));
 }
 
@@ -407,17 +434,22 @@ IntVal b_array_ub_int(EnvI& env, Call* call) {
   if (e != nullptr) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
-    if (al->size() == 0) throw EvalError(env, Location(), "upper bound of empty array undefined");
+    if (al->size() == 0) {
+      throw EvalError(env, Location(), "upper bound of empty array undefined");
+    }
     IntVal max = -IntVal::infinity();
     for (unsigned int i = 0; i < al->size(); i++) {
       IntBounds ib = compute_int_bounds(env, (*al)[i]);
-      if (!ib.valid) goto b_array_ub_int_done;
+      if (!ib.valid) {
+        goto b_array_ub_int_done;
+      }
       max = std::max(max, ib.u);
     }
-    if (foundMax)
+    if (foundMax) {
       array_ub = std::min(array_ub, max);
-    else
+    } else {
       array_ub = max;
+    }
     foundMax = true;
   }
 b_array_ub_int_done:
@@ -466,9 +498,13 @@ IntVal b_sum_int(EnvI& env, Call* call) {
   assert(call->n_args() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) return 0;
+  if (al->size() == 0) {
+    return 0;
+  }
   IntVal m = 0;
-  for (unsigned int i = 0; i < al->size(); i++) m += eval_int(env, (*al)[i]);
+  for (unsigned int i = 0; i < al->size(); i++) {
+    m += eval_int(env, (*al)[i]);
+  }
   return m;
 }
 
@@ -476,9 +512,13 @@ IntVal b_product_int(EnvI& env, Call* call) {
   assert(call->n_args() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) return 1;
+  if (al->size() == 0) {
+    return 1;
+  }
   IntVal m = 1;
-  for (unsigned int i = 0; i < al->size(); i++) m *= eval_int(env, (*al)[i]);
+  for (unsigned int i = 0; i < al->size(); i++) {
+    m *= eval_int(env, (*al)[i]);
+  }
   return m;
 }
 
@@ -486,33 +526,43 @@ FloatVal b_product_float(EnvI& env, Call* call) {
   assert(call->n_args() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) return 1;
+  if (al->size() == 0) {
+    return 1;
+  }
   FloatVal m = 1.0;
-  for (unsigned int i = 0; i < al->size(); i++) m *= eval_float(env, (*al)[i]);
+  for (unsigned int i = 0; i < al->size(); i++) {
+    m *= eval_float(env, (*al)[i]);
+  }
   return m;
 }
 
 FloatVal lb_varoptfloat(EnvI& env, Expression* e) {
   FloatBounds b = compute_float_bounds(env, e);
-  if (b.valid)
+  if (b.valid) {
     return b.l;
-  else
+  } else {
     throw EvalError(env, e->loc(), "cannot determine bounds");
+  }
 }
 FloatVal ub_varoptfloat(EnvI& env, Expression* e) {
   FloatBounds b = compute_float_bounds(env, e);
-  if (b.valid)
+  if (b.valid) {
     return b.u;
-  else
+  } else {
     throw EvalError(env, e->loc(), "cannot determine bounds");
+  }
 }
 
 FloatVal b_lb_varoptfloat(EnvI& env, Call* call) {
-  if (call->n_args() != 1) throw EvalError(env, Location(), "dynamic type error");
+  if (call->n_args() != 1) {
+    throw EvalError(env, Location(), "dynamic type error");
+  }
   return lb_varoptfloat(env, call->arg(0));
 }
 FloatVal b_ub_varoptfloat(EnvI& env, Call* call) {
-  if (call->n_args() != 1) throw EvalError(env, Location(), "dynamic type error");
+  if (call->n_args() != 1) {
+    throw EvalError(env, Location(), "dynamic type error");
+  }
   return ub_varoptfloat(env, call->arg(0));
 }
 
@@ -535,12 +585,16 @@ FloatVal b_array_lb_float(EnvI& env, Call* call) {
   if (e != nullptr) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
-    if (al->size() == 0) throw EvalError(env, Location(), "lower bound of empty array undefined");
+    if (al->size() == 0) {
+      throw EvalError(env, Location(), "lower bound of empty array undefined");
+    }
     bool min_valid = false;
     FloatVal min = 0.0;
     for (unsigned int i = 0; i < al->size(); i++) {
       FloatBounds fb = compute_float_bounds(env, (*al)[i]);
-      if (!fb.valid) goto b_array_lb_float_done;
+      if (!fb.valid) {
+        goto b_array_lb_float_done;
+      }
       if (min_valid) {
         min = std::min(min, fb.l);
       } else {
@@ -549,10 +603,11 @@ FloatVal b_array_lb_float(EnvI& env, Call* call) {
       }
     }
     assert(min_valid);
-    if (foundMin)
+    if (foundMin) {
       array_lb = std::max(array_lb, min);
-    else
+    } else {
       array_lb = min;
+    }
     foundMin = true;
   }
 b_array_lb_float_done:
@@ -582,12 +637,16 @@ FloatVal b_array_ub_float(EnvI& env, Call* call) {
   if (e != nullptr) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
-    if (al->size() == 0) throw EvalError(env, Location(), "upper bound of empty array undefined");
+    if (al->size() == 0) {
+      throw EvalError(env, Location(), "upper bound of empty array undefined");
+    }
     bool max_valid = false;
     FloatVal max = 0.0;
     for (unsigned int i = 0; i < al->size(); i++) {
       FloatBounds fb = compute_float_bounds(env, (*al)[i]);
-      if (!fb.valid) goto b_array_ub_float_done;
+      if (!fb.valid) {
+        goto b_array_ub_float_done;
+      }
       if (max_valid) {
         max = std::max(max, fb.u);
       } else {
@@ -596,10 +655,11 @@ FloatVal b_array_ub_float(EnvI& env, Call* call) {
       }
     }
     assert(max_valid);
-    if (foundMax)
+    if (foundMax) {
       array_ub = std::min(array_ub, max);
-    else
+    } else {
       array_ub = max;
+    }
     foundMax = true;
   }
 b_array_ub_float_done:
@@ -614,9 +674,13 @@ FloatVal b_sum_float(EnvI& env, Call* call) {
   assert(call->n_args() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) return 0;
+  if (al->size() == 0) {
+    return 0;
+  }
   FloatVal m = 0;
-  for (unsigned int i = 0; i < al->size(); i++) m += eval_float(env, (*al)[i]);
+  for (unsigned int i = 0; i < al->size(); i++) {
+    m += eval_float(env, (*al)[i]);
+  }
   return m;
 }
 
@@ -628,9 +692,13 @@ FloatVal b_float_min(EnvI& env, Call* call) {
       } else {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env, call->arg(0));
-        if (al->size() == 0) throw EvalError(env, al->loc(), "min on empty array undefined");
+        if (al->size() == 0) {
+          throw EvalError(env, al->loc(), "min on empty array undefined");
+        }
         FloatVal m = eval_float(env, (*al)[0]);
-        for (unsigned int i = 1; i < al->size(); i++) m = std::min(m, eval_float(env, (*al)[i]));
+        for (unsigned int i = 1; i < al->size(); i++) {
+          m = std::min(m, eval_float(env, (*al)[i]));
+        }
         return m;
       }
     case 2: {
@@ -649,9 +717,13 @@ FloatVal b_float_max(EnvI& env, Call* call) {
       } else {
         GCLock lock;
         ArrayLit* al = eval_array_lit(env, call->arg(0));
-        if (al->size() == 0) throw EvalError(env, al->loc(), "max on empty array undefined");
+        if (al->size() == 0) {
+          throw EvalError(env, al->loc(), "max on empty array undefined");
+        }
         FloatVal m = eval_float(env, (*al)[0]);
-        for (unsigned int i = 1; i < al->size(); i++) m = std::max(m, eval_float(env, (*al)[i]));
+        for (unsigned int i = 1; i < al->size(); i++) {
+          m = std::max(m, eval_float(env, (*al)[i]));
+        }
         return m;
       }
     case 2: {
@@ -666,11 +738,15 @@ IntSetVal* b_index_set(EnvI& env, Expression* e, int i) {
   if (e->eid() != Expression::E_ID) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
-    if (al->dims() < i) throw EvalError(env, e->loc(), "index_set: wrong dimension");
+    if (al->dims() < i) {
+      throw EvalError(env, e->loc(), "index_set: wrong dimension");
+    }
     return IntSetVal::a(al->min(i - 1), al->max(i - 1));
   }
   Id* id = e->cast<Id>();
-  if (id->decl() == nullptr) throw EvalError(env, id->loc(), "undefined identifier");
+  if (id->decl() == nullptr) {
+    throw EvalError(env, id->loc(), "undefined identifier");
+  }
   if ((id->decl()->ti()->ranges().size() == 1 &&
        id->decl()->ti()->ranges()[0]->domain() != nullptr &&
        id->decl()->ti()->ranges()[0]->domain()->isa<TIId>()) ||
@@ -679,49 +755,69 @@ IntSetVal* b_index_set(EnvI& env, Expression* e, int i) {
         id->decl()->ti()->ranges()[i - 1]->domain()->isa<TIId>()))) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, id);
-    if (al->dims() < i) throw EvalError(env, id->loc(), "index_set: wrong dimension");
+    if (al->dims() < i) {
+      throw EvalError(env, id->loc(), "index_set: wrong dimension");
+    }
     return IntSetVal::a(al->min(i - 1), al->max(i - 1));
   }
-  if (static_cast<int>(id->decl()->ti()->ranges().size()) < i)
+  if (static_cast<int>(id->decl()->ti()->ranges().size()) < i) {
     throw EvalError(env, id->loc(), "index_set: wrong dimension");
+  }
   return eval_intset(env, id->decl()->ti()->ranges()[i - 1]->domain());
 }
 bool b_index_sets_agree(EnvI& env, Call* call) {
-  if (call->n_args() != 2)
+  if (call->n_args() != 2) {
     throw EvalError(env, Location(), "index_sets_agree needs exactly two arguments");
+  }
   GCLock lock;
   ArrayLit* al0 = eval_array_lit(env, call->arg(0));
   ArrayLit* al1 = eval_array_lit(env, call->arg(1));
-  if (al0->type().dim() != al1->type().dim()) return false;
+  if (al0->type().dim() != al1->type().dim()) {
+    return false;
+  }
   for (int i = 1; i <= al0->type().dim(); i++) {
     IntSetVal* index0 = b_index_set(env, al0, i);
     IntSetVal* index1 = b_index_set(env, al1, i);
-    if (!index0->equal(index1)) return false;
+    if (!index0->equal(index1)) {
+      return false;
+    }
   }
   return true;
 }
 IntSetVal* b_index_set1(EnvI& env, Call* call) {
-  if (call->n_args() != 1) throw EvalError(env, Location(), "index_set needs exactly one argument");
+  if (call->n_args() != 1) {
+    throw EvalError(env, Location(), "index_set needs exactly one argument");
+  }
   return b_index_set(env, call->arg(0), 1);
 }
 IntSetVal* b_index_set2(EnvI& env, Call* call) {
-  if (call->n_args() != 1) throw EvalError(env, Location(), "index_set needs exactly one argument");
+  if (call->n_args() != 1) {
+    throw EvalError(env, Location(), "index_set needs exactly one argument");
+  }
   return b_index_set(env, call->arg(0), 2);
 }
 IntSetVal* b_index_set3(EnvI& env, Call* call) {
-  if (call->n_args() != 1) throw EvalError(env, Location(), "index_set needs exactly one argument");
+  if (call->n_args() != 1) {
+    throw EvalError(env, Location(), "index_set needs exactly one argument");
+  }
   return b_index_set(env, call->arg(0), 3);
 }
 IntSetVal* b_index_set4(EnvI& env, Call* call) {
-  if (call->n_args() != 1) throw EvalError(env, Location(), "index_set needs exactly one argument");
+  if (call->n_args() != 1) {
+    throw EvalError(env, Location(), "index_set needs exactly one argument");
+  }
   return b_index_set(env, call->arg(0), 4);
 }
 IntSetVal* b_index_set5(EnvI& env, Call* call) {
-  if (call->n_args() != 1) throw EvalError(env, Location(), "index_set needs exactly one argument");
+  if (call->n_args() != 1) {
+    throw EvalError(env, Location(), "index_set needs exactly one argument");
+  }
   return b_index_set(env, call->arg(0), 5);
 }
 IntSetVal* b_index_set6(EnvI& env, Call* call) {
-  if (call->n_args() != 1) throw EvalError(env, Location(), "index_set needs exactly one argument");
+  if (call->n_args() != 1) {
+    throw EvalError(env, Location(), "index_set needs exactly one argument");
+  }
   return b_index_set(env, call->arg(0), 6);
 }
 
@@ -744,7 +840,9 @@ IntSetVal* b_lb_set(EnvI& env, Call* e) {
 }
 IntSetVal* b_ub_set(EnvI& env, Expression* e) {
   IntSetVal* isv = compute_intset_bounds(env, e);
-  if (isv != nullptr) return isv;
+  if (isv != nullptr) {
+    return isv;
+  }
   throw EvalError(env, e->loc(), "cannot determine bounds of set expression");
 }
 IntSetVal* b_ub_set(EnvI& env, Call* call) {
@@ -759,11 +857,14 @@ bool b_has_ub_set(EnvI& env, Call* call) {
         return true;
       case Expression::E_ID: {
         Id* id = e->cast<Id>();
-        if (id->decl() == nullptr) throw EvalError(env, id->loc(), "undefined identifier");
-        if (id->decl()->e() == nullptr)
+        if (id->decl() == nullptr) {
+          throw EvalError(env, id->loc(), "undefined identifier");
+        }
+        if (id->decl()->e() == nullptr) {
           return id->decl()->ti()->domain() != nullptr;
-        else
+        } else {
           e = id->decl()->e();
+        }
       } break;
       default:
         throw EvalError(env, e->loc(), "invalid argument to has_ub_set");
@@ -775,7 +876,9 @@ IntSetVal* b_array_ub_set(EnvI& env, Call* call) {
   assert(call->n_args() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) throw EvalError(env, Location(), "upper bound of empty array undefined");
+  if (al->size() == 0) {
+    throw EvalError(env, Location(), "upper bound of empty array undefined");
+  }
   IntSetVal* ub = b_ub_set(env, (*al)[0]);
   for (unsigned int i = 1; i < al->size(); i++) {
     IntSetRanges isr(ub);
@@ -793,10 +896,11 @@ IntSetVal* b_dom_varint(EnvI& env, Expression* e) {
     if (cur == nullptr) {
       if (lastid == nullptr || lastid->decl()->ti()->domain() == nullptr) {
         IntBounds b = compute_int_bounds(env, e);
-        if (b.valid)
+        if (b.valid) {
           return IntSetVal::a(b.l, b.u);
-        else
+        } else {
           return IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
+        }
       } else {
         return eval_intset(env, lastid->decl()->ti()->domain());
       }
@@ -808,9 +912,12 @@ IntSetVal* b_dom_varint(EnvI& env, Expression* e) {
       }
       case Expression::E_ID: {
         lastid = cur->cast<Id>();
-        if (lastid == constants().absent)
+        if (lastid == constants().absent) {
           return IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
-        if (lastid->decl() == nullptr) throw EvalError(env, lastid->loc(), "undefined identifier");
+        }
+        if (lastid->decl() == nullptr) {
+          throw EvalError(env, lastid->loc(), "undefined identifier");
+        }
         cur = lastid->decl()->e();
       } break;
       case Expression::E_ARRAYACCESS: {
@@ -851,7 +958,9 @@ IntSetVal* b_dom_bounds_array(EnvI& env, Call* call) {
       }
     }
     e = vd->e();
-    if (e == nullptr) e = vd->flat()->e();
+    if (e == nullptr) {
+      e = vd->flat()->e();
+    }
   }
 
   if (foundBounds) {
@@ -861,12 +970,16 @@ IntSetVal* b_dom_bounds_array(EnvI& env, Call* call) {
   if (e != nullptr) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
-    if (al->size() == 0) throw EvalError(env, Location(), "lower bound of empty array undefined");
+    if (al->size() == 0) {
+      throw EvalError(env, Location(), "lower bound of empty array undefined");
+    }
     IntVal min = IntVal::infinity();
     IntVal max = -IntVal::infinity();
     for (unsigned int i = 0; i < al->size(); i++) {
       IntBounds ib = compute_int_bounds(env, (*al)[i]);
-      if (!ib.valid) goto b_array_lb_int_done;
+      if (!ib.valid) {
+        goto b_array_lb_int_done;
+      }
       min = std::min(min, ib.l);
       max = std::max(max, ib.u);
     }
@@ -893,7 +1006,9 @@ IntSetVal* b_dom_array(EnvI& env, Call* call) {
         break;
       case Expression::E_ID: {
         Id* id = ae->cast<Id>();
-        if (id->decl() == nullptr) throw EvalError(env, id->loc(), "undefined identifier");
+        if (id->decl() == nullptr) {
+          throw EvalError(env, id->loc(), "undefined identifier");
+        }
         if (id->decl()->e() == nullptr) {
           if (id->decl()->flat() == nullptr) {
             throw EvalError(env, id->loc(), "array without initialiser");
@@ -911,7 +1026,9 @@ IntSetVal* b_dom_array(EnvI& env, Call* call) {
         throw EvalError(env, ae->loc(), "invalid argument to dom");
     }
   }
-  if (al->size() == 0) return IntSetVal::a();
+  if (al->size() == 0) {
+    return IntSetVal::a();
+  }
   IntSetVal* isv = b_dom_varint(env, (*al)[0]);
   for (unsigned int i = 1; i < al->size(); i++) {
     IntSetRanges isr(isv);
@@ -924,12 +1041,20 @@ IntSetVal* b_dom_array(EnvI& env, Call* call) {
 IntSetVal* b_compute_div_bounds(EnvI& env, Call* call) {
   assert(call->n_args() == 2);
   IntBounds bx = compute_int_bounds(env, call->arg(0));
-  if (!bx.valid) throw EvalError(env, call->arg(0)->loc(), "cannot determine bounds");
+  if (!bx.valid) {
+    throw EvalError(env, call->arg(0)->loc(), "cannot determine bounds");
+  }
   /// TODO: better bounds if only some input bounds are infinite
-  if (!bx.l.isFinite() || !bx.u.isFinite()) return constants().infinity->isv();
+  if (!bx.l.isFinite() || !bx.u.isFinite()) {
+    return constants().infinity->isv();
+  }
   IntBounds by = compute_int_bounds(env, call->arg(1));
-  if (!by.valid) throw EvalError(env, call->arg(1)->loc(), "cannot determine bounds");
-  if (!by.l.isFinite() || !by.u.isFinite()) return constants().infinity->isv();
+  if (!by.valid) {
+    throw EvalError(env, call->arg(1)->loc(), "cannot determine bounds");
+  }
+  if (!by.l.isFinite() || !by.u.isFinite()) {
+    return constants().infinity->isv();
+  }
   Ranges::Const<IntVal> byr(by.l, by.u);
   Ranges::Const<IntVal> by0(0, 0);
   Ranges::Diff<IntVal, Ranges::Const<IntVal>, Ranges::Const<IntVal>> byr0(byr, by0);
@@ -1036,7 +1161,9 @@ Expression* b_arrayXd(EnvI& env, Call* call) {
         break;
       }
     }
-    if (sameDims) return call->arg(1)->isa<Id>() ? call->arg(1) : al1;
+    if (sameDims) {
+      return call->arg(1)->isa<Id>() ? call->arg(1) : al1;
+    }
   }
   std::vector<std::pair<int, int>> dims(al0->dims());
   for (unsigned int i = al0->dims(); (i--) != 0u;) {
@@ -1059,48 +1186,72 @@ IntVal b_length(EnvI& env, Call* call) {
 IntVal b_bool2int(EnvI& env, Call* call) { return eval_bool(env, call->arg(0)) ? 1 : 0; }
 
 bool b_forall_par(EnvI& env, Call* call) {
-  if (call->n_args() != 1) throw EvalError(env, Location(), "forall needs exactly one argument");
+  if (call->n_args() != 1) {
+    throw EvalError(env, Location(), "forall needs exactly one argument");
+  }
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  for (unsigned int i = al->size(); (i--) != 0u;)
-    if (!eval_bool(env, (*al)[i])) return false;
+  for (unsigned int i = al->size(); (i--) != 0u;) {
+    if (!eval_bool(env, (*al)[i])) {
+      return false;
+    }
+  }
   return true;
 }
 bool b_exists_par(EnvI& env, Call* call) {
-  if (call->n_args() != 1) throw EvalError(env, Location(), "exists needs exactly one argument");
+  if (call->n_args() != 1) {
+    throw EvalError(env, Location(), "exists needs exactly one argument");
+  }
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  for (unsigned int i = al->size(); (i--) != 0u;)
-    if (eval_bool(env, (*al)[i])) return true;
+  for (unsigned int i = al->size(); (i--) != 0u;) {
+    if (eval_bool(env, (*al)[i])) {
+      return true;
+    }
+  }
   return false;
 }
 bool b_clause_par(EnvI& env, Call* call) {
-  if (call->n_args() != 2) throw EvalError(env, Location(), "clause needs exactly two arguments");
+  if (call->n_args() != 2) {
+    throw EvalError(env, Location(), "clause needs exactly two arguments");
+  }
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  for (unsigned int i = al->size(); (i--) != 0u;)
-    if (eval_bool(env, (*al)[i])) return true;
+  for (unsigned int i = al->size(); (i--) != 0u;) {
+    if (eval_bool(env, (*al)[i])) {
+      return true;
+    }
+  }
   al = eval_array_lit(env, call->arg(1));
-  for (unsigned int i = al->size(); (i--) != 0u;)
-    if (!eval_bool(env, (*al)[i])) return true;
+  for (unsigned int i = al->size(); (i--) != 0u;) {
+    if (!eval_bool(env, (*al)[i])) {
+      return true;
+    }
+  }
   return false;
 }
 bool b_xorall_par(EnvI& env, Call* call) {
-  if (call->n_args() != 1) throw EvalError(env, Location(), "xorall needs exactly one argument");
+  if (call->n_args() != 1) {
+    throw EvalError(env, Location(), "xorall needs exactly one argument");
+  }
   GCLock lock;
   int count = 0;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  for (unsigned int i = al->size(); (i--) != 0u;)
+  for (unsigned int i = al->size(); (i--) != 0u;) {
     count += static_cast<int>(eval_bool(env, (*al)[i]));
+  }
   return count % 2 == 1;
 }
 bool b_iffall_par(EnvI& env, Call* call) {
-  if (call->n_args() != 1) throw EvalError(env, Location(), "xorall needs exactly one argument");
+  if (call->n_args() != 1) {
+    throw EvalError(env, Location(), "xorall needs exactly one argument");
+  }
   GCLock lock;
   int count = 0;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  for (unsigned int i = al->size(); (i--) != 0u;)
+  for (unsigned int i = al->size(); (i--) != 0u;) {
     count += static_cast<int>(eval_bool(env, (*al)[i]));
+  }
   return count % 2 == 0;
 }
 bool b_not_par(EnvI& env, Call* call) {
@@ -1109,7 +1260,9 @@ bool b_not_par(EnvI& env, Call* call) {
 }
 
 IntVal b_card(EnvI& env, Call* call) {
-  if (call->n_args() != 1) throw EvalError(env, Location(), "card needs exactly one argument");
+  if (call->n_args() != 1) {
+    throw EvalError(env, Location(), "card needs exactly one argument");
+  }
   IntSetVal* isv = eval_intset(env, call->arg(0));
   IntSetRanges isr(isv);
   return Ranges::cardinality(isr);
@@ -1119,8 +1272,12 @@ Expression* exp_is_fixed(EnvI& env, Expression* e) {
   GCLock lock;
   Expression* cur = e;
   for (;;) {
-    if (cur == nullptr) return nullptr;
-    if (cur->type().ispar()) return eval_par(env, cur);
+    if (cur == nullptr) {
+      return nullptr;
+    }
+    if (cur->type().ispar()) {
+      return eval_par(env, cur);
+    }
     switch (cur->eid()) {
       case Expression::E_ID:
         cur = cur->cast<Id>()->decl();
@@ -1129,9 +1286,9 @@ Expression* exp_is_fixed(EnvI& env, Expression* e) {
         if (cur->type().st() != Type::ST_SET) {
           Expression* dom = cur->cast<VarDecl>()->ti()->domain();
           if ((dom != nullptr) &&
-              (dom->isa<IntLit>() || dom->isa<BoolLit>() || dom->isa<FloatLit>()))
+              (dom->isa<IntLit>() || dom->isa<BoolLit>() || dom->isa<FloatLit>())) {
             return dom;
-          else if ((dom != nullptr) && dom->isa<SetLit>()) {
+          } else if ((dom != nullptr) && dom->isa<SetLit>()) {
             auto sl = dom->cast<SetLit>();
             auto isv = sl->isv();
             if ((isv != nullptr) && isv->min() == isv->max()) {
@@ -1160,9 +1317,13 @@ bool b_is_fixed_array(EnvI& env, Call* call) {
   assert(call->n_args() == 1);
   GCLock lock;
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) return true;
+  if (al->size() == 0) {
+    return true;
+  }
   for (unsigned int i = 0; i < al->size(); i++) {
-    if (exp_is_fixed(env, (*al)[i]) == nullptr) return false;
+    if (exp_is_fixed(env, (*al)[i]) == nullptr) {
+      return false;
+    }
   }
   return true;
 }
@@ -1175,7 +1336,9 @@ bool b_is_same(EnvI& env, Call* call) {
 Expression* b_fix(EnvI& env, Call* call) {
   assert(call->n_args() == 1);
   Expression* ret = exp_is_fixed(env, call->arg(0));
-  if (ret == nullptr) throw EvalError(env, call->arg(0)->loc(), "expression is not fixed");
+  if (ret == nullptr) {
+    throw EvalError(env, call->arg(0)->loc(), "expression is not fixed");
+  }
   return ret;
 }
 
@@ -1191,7 +1354,9 @@ Expression* b_fix_array(EnvI& env, Call* call) {
   std::vector<Expression*> fixed(al->size());
   for (unsigned int i = 0; i < fixed.size(); i++) {
     fixed[i] = exp_is_fixed(env, (*al)[i]);
-    if (fixed[i] == nullptr) throw EvalError(env, (*al)[i]->loc(), "expression is not fixed");
+    if (fixed[i] == nullptr) {
+      throw EvalError(env, (*al)[i]->loc(), "expression is not fixed");
+    }
   }
   auto* ret = new ArrayLit(Location(), fixed);
   Type tt = al->type();
@@ -1297,8 +1462,12 @@ IntVal b_pow_int(EnvI& env, Call* call) {
   IntVal p = eval_int(env, call->arg(0));
   IntVal r = 1;
   long long int e = eval_int(env, call->arg(1)).toInt();
-  if (e < 0) throw EvalError(env, call->arg(1)->loc(), "Cannot raise integer to a negative power");
-  for (long long int i = e; (i--) != 0;) r = r * p;
+  if (e < 0) {
+    throw EvalError(env, call->arg(1)->loc(), "Cannot raise integer to a negative power");
+  }
+  for (long long int i = e; (i--) != 0;) {
+    r = r * p;
+  }
   return r;
 }
 FloatVal b_sqrt(EnvI& env, Call* call) {
@@ -1308,7 +1477,9 @@ FloatVal b_sqrt(EnvI& env, Call* call) {
 bool b_assert_bool(EnvI& env, Call* call) {
   assert(call->n_args() == 2);
   GCLock lock;
-  if (eval_bool(env, call->arg(0))) return true;
+  if (eval_bool(env, call->arg(0))) {
+    return true;
+  }
   auto* err = eval_par(env, call->arg(1))->cast<StringLit>();
   std::ostringstream ss;
   ss << "Assertion failed: " << err->v();
@@ -1318,7 +1489,9 @@ bool b_assert_bool(EnvI& env, Call* call) {
 Expression* b_assert(EnvI& env, Call* call) {
   assert(call->n_args() == 3);
   GCLock lock;
-  if (eval_bool(env, call->arg(0))) return call->arg(2);
+  if (eval_bool(env, call->arg(0))) {
+    return call->arg(2);
+  }
   auto* err = eval_par(env, call->arg(1))->cast<StringLit>();
   std::ostringstream ss;
   ss << "Assertion failed: " << err->v();
@@ -1378,8 +1551,9 @@ Expression* b_set2array(EnvI& env, Call* call) {
   IntSetVal* isv = eval_intset(env, call->arg(0));
   std::vector<Expression*> elems;
   IntSetRanges isr(isv);
-  for (Ranges::ToValues<IntSetRanges> isr_v(isr); isr_v(); ++isr_v)
+  for (Ranges::ToValues<IntSetRanges> isr_v(isr); isr_v(); ++isr_v) {
     elems.push_back(IntLit::a(isr_v.val()));
+  }
   auto* al = new ArrayLit(call->arg(0)->loc(), elems);
   al->type(Type::parint(1));
   return al;
@@ -1413,7 +1587,9 @@ std::string show(EnvI& env, Expression* exp) {
     oss << "[";
     for (unsigned int i = 0; i < al->size(); i++) {
       p.print((*al)[i]);
-      if (i < al->size() - 1) oss << ", ";
+      if (i < al->size() - 1) {
+        oss << ", ";
+      }
     }
     oss << "]";
   } else {
@@ -1474,7 +1650,9 @@ std::string b_show_json_basic(EnvI& env, Expression* e) {
     } else {
       for (unsigned int i = 0; i < sl->v().size(); i++) {
         p.print(sl->v()[i]);
-        if (i < sl->v().size() - 1) oss << ",";
+        if (i < sl->v().size() - 1) {
+          oss << ",";
+        }
       }
     }
     oss << "]}";
@@ -1521,7 +1699,9 @@ std::string b_show_json(EnvI& env, Call* call) {
           }
         }
 
-        if (i < al->size() - 1) oss << ", ";
+        if (i < al->size() - 1) {
+          oss << ", ";
+        }
       }
       oss << "]";
 
@@ -1591,8 +1771,9 @@ std::string b_format(EnvI& env, Call* call) {
     } else {
       assert(call->n_args() == 3);
       prec = static_cast<int>(eval_int(env, call->arg(1)).toInt());
-      if (prec < 0)
+      if (prec < 0) {
         throw EvalError(env, call->arg(1)->loc(), "output precision cannot be negative");
+      }
       e = eval_par(env, call->arg(2));
     }
   } else {
@@ -1607,7 +1788,9 @@ std::string b_format(EnvI& env, Call* call) {
       formatted.width(-width);
       formatted.flags(std::ios::left);
     }
-    if (prec != -1) formatted.precision(prec);
+    if (prec != -1) {
+      formatted.precision(prec);
+    }
     formatted << i;
     return formatted.str();
   } else if (e->type() == Type::parfloat()) {
@@ -1621,21 +1804,33 @@ std::string b_format(EnvI& env, Call* call) {
     }
     formatted.setf(std::ios::fixed);
     formatted.precision(std::numeric_limits<double>::digits10 + 2);
-    if (prec != -1) formatted.precision(prec);
+    if (prec != -1) {
+      formatted.precision(prec);
+    }
     formatted << i;
     return formatted.str();
   } else {
     std::string s = show(env, e);
-    if (prec >= 0 && prec < s.size()) s = s.substr(0, prec);
+    if (prec >= 0 && prec < s.size()) {
+      s = s.substr(0, prec);
+    }
     std::ostringstream oss;
     if (s.size() < std::abs(width)) {
       int addLeft = width < 0 ? 0 : (width - static_cast<int>(s.size()));
-      if (addLeft < 0) addLeft = 0;
+      if (addLeft < 0) {
+        addLeft = 0;
+      }
       int addRight = width < 0 ? (-width - static_cast<int>(s.size())) : 0;
-      if (addRight < 0) addRight = 0;
-      for (int i = addLeft; (i--) != 0;) oss << " ";
+      if (addRight < 0) {
+        addRight = 0;
+      }
+      for (int i = addLeft; (i--) != 0;) {
+        oss << " ";
+      }
       oss << s;
-      for (int i = addRight; (i--) != 0;) oss << " ";
+      for (int i = addRight; (i--) != 0;) {
+        oss << " ";
+      }
       return oss.str();
     } else {
       return s;
@@ -1653,12 +1848,20 @@ std::string b_format_justify_string(EnvI& env, Call* call) {
   std::ostringstream oss;
   if (s.size() < std::abs(width)) {
     int addLeft = width < 0 ? 0 : (width - static_cast<int>(s.size()));
-    if (addLeft < 0) addLeft = 0;
+    if (addLeft < 0) {
+      addLeft = 0;
+    }
     int addRight = width < 0 ? (-width - static_cast<int>(s.size())) : 0;
-    if (addRight < 0) addRight = 0;
-    for (int i = addLeft; (i--) != 0;) oss << " ";
+    if (addRight < 0) {
+      addRight = 0;
+    }
+    for (int i = addLeft; (i--) != 0;) {
+      oss << " ";
+    }
     oss << s;
-    for (int i = addRight; (i--) != 0;) oss << " ";
+    for (int i = addRight; (i--) != 0;) {
+      oss << " ";
+    }
     return oss.str();
   } else {
     return s;
@@ -1676,12 +1879,20 @@ std::string b_show_int(EnvI& env, Call* call) {
     oss_length << iv->v();
     int iv_length = static_cast<int>(oss_length.str().size());
     int addLeft = justify < 0 ? 0 : (justify - iv_length);
-    if (addLeft < 0) addLeft = 0;
+    if (addLeft < 0) {
+      addLeft = 0;
+    }
     int addRight = justify < 0 ? (-justify - iv_length) : 0;
-    if (addRight < 0) addRight = 0;
-    for (int i = addLeft; (i--) != 0;) oss << " ";
+    if (addRight < 0) {
+      addRight = 0;
+    }
+    for (int i = addLeft; (i--) != 0;) {
+      oss << " ";
+    }
     oss << iv->v();
-    for (int i = addRight; (i--) != 0;) oss << " ";
+    for (int i = addRight; (i--) != 0;) {
+      oss << " ";
+    }
   } else {
     Printer p(oss, 0, false);
     p.print(e);
@@ -1697,19 +1908,28 @@ std::string b_show_float(EnvI& env, Call* call) {
   if (auto* fv = e->dyn_cast<FloatLit>()) {
     int justify = static_cast<int>(eval_int(env, call->arg(0)).toInt());
     int prec = static_cast<int>(eval_int(env, call->arg(1)).toInt());
-    if (prec < 0)
+    if (prec < 0) {
       throw EvalError(env, call->arg(1)->loc(),
                       "number of digits in show_float cannot be negative");
+    }
     std::ostringstream oss_length;
     oss_length << std::setprecision(prec) << std::fixed << fv->v();
     int fv_length = static_cast<int>(oss_length.str().size());
     int addLeft = justify < 0 ? 0 : (justify - fv_length);
-    if (addLeft < 0) addLeft = 0;
+    if (addLeft < 0) {
+      addLeft = 0;
+    }
     int addRight = justify < 0 ? (-justify - fv_length) : 0;
-    if (addRight < 0) addRight = 0;
-    for (int i = addLeft; (i--) != 0;) oss << " ";
+    if (addRight < 0) {
+      addRight = 0;
+    }
+    for (int i = addLeft; (i--) != 0;) {
+      oss << " ";
+    }
     oss << std::setprecision(prec) << std::fixed << fv->v();
-    for (int i = addRight; (i--) != 0;) oss << " ";
+    for (int i = addRight; (i--) != 0;) {
+      oss << " ";
+    }
   } else {
     Printer p(oss, 0, false);
     p.print(e);
@@ -1741,7 +1961,9 @@ std::string b_join(EnvI& env, Call* call) {
   std::ostringstream oss;
   for (unsigned int i = 0; i < al->size(); i++) {
     oss << eval_string(env, (*al)[i]);
-    if (i < al->size() - 1) oss << sep;
+    if (i < al->size() - 1) {
+      oss << sep;
+    }
   }
   return oss.str();
 }
@@ -1749,7 +1971,9 @@ std::string b_join(EnvI& env, Call* call) {
 IntSetVal* b_array_union(EnvI& env, Call* call) {
   assert(call->n_args() == 1);
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) return IntSetVal::a();
+  if (al->size() == 0) {
+    return IntSetVal::a();
+  }
   IntSetVal* isv = eval_intset(env, (*al)[0]);
   for (unsigned int i = 0; i < al->size(); i++) {
     IntSetRanges i0(isv);
@@ -1777,16 +2001,24 @@ IntSetVal* b_array_intersect(EnvI& env, Call* call) {
         for (int j = al->size(); (j--) != 0;) {
           IntSetRanges ij(eval_intset(env, (*al)[j]));
           // Skip intervals that are too small
-          while (ij() && (ij.max() < min)) ++ij;
-          if (!ij()) goto done;
+          while (ij() && (ij.max() < min)) {
+            ++ij;
+          }
+          if (!ij()) {
+            goto done;
+          }
           if (ij.min() > max) {
             min = ij.min();
             max = ij.max();
             goto restart;
           }
           // Now the intervals overlap
-          if (min < ij.min()) min = ij.min();
-          if (max > ij.max()) max = ij.max();
+          if (min < ij.min()) {
+            min = ij.min();
+          }
+          if (max > ij.max()) {
+            max = ij.max();
+          }
         }
         ranges.emplace_back(min, max);
         // The next interval must be at least two elements away
@@ -1819,7 +2051,9 @@ Expression* b_sort_by_int(EnvI& env, Call* call) {
   } _ord(order);
   std::stable_sort(a.begin(), a.end(), _ord);
   std::vector<Expression*> sorted(a.size());
-  for (auto i = static_cast<unsigned int>(sorted.size()); (i--) != 0u;) sorted[i] = (*al)[a[i]];
+  for (auto i = static_cast<unsigned int>(sorted.size()); (i--) != 0u;) {
+    sorted[i] = (*al)[a[i]];
+  }
   auto* al_sorted = new ArrayLit(al->loc(), sorted);
   al_sorted->type(al->type());
   return al_sorted;
@@ -1842,7 +2076,9 @@ Expression* b_sort_by_float(EnvI& env, Call* call) {
   } _ord(order);
   std::stable_sort(a.begin(), a.end(), _ord);
   std::vector<Expression*> sorted(a.size());
-  for (auto i = static_cast<unsigned int>(sorted.size()); (i--) != 0u;) sorted[i] = (*al)[a[i]];
+  for (auto i = static_cast<unsigned int>(sorted.size()); (i--) != 0u;) {
+    sorted[i] = (*al)[a[i]];
+  }
   auto* al_sorted = new ArrayLit(al->loc(), sorted);
   al_sorted->type(al->type());
   return al_sorted;
@@ -1852,7 +2088,9 @@ Expression* b_sort(EnvI& env, Call* call) {
   assert(call->n_args() == 1);
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   std::vector<Expression*> sorted(al->size());
-  for (auto i = static_cast<unsigned int>(sorted.size()); (i--) != 0u;) sorted[i] = (*al)[i];
+  for (auto i = static_cast<unsigned int>(sorted.size()); (i--) != 0u;) {
+    sorted[i] = (*al)[i];
+  }
   struct Ord {
     EnvI& env;
     Ord(EnvI& env0) : env(env0) {}
@@ -1878,7 +2116,9 @@ Expression* b_sort(EnvI& env, Call* call) {
 Expression* b_inverse(EnvI& env, Call* call) {
   assert(call->n_args() == 1);
   ArrayLit* al = eval_array_lit(env, call->arg(0));
-  if (al->size() == 0) return al;
+  if (al->size() == 0) {
+    return al;
+  }
   int min_idx = al->min(0);
 
   std::vector<IntVal> ivs(al->size());
@@ -2272,24 +2512,27 @@ IntVal b_to_enum(EnvI& env, Call* call) {
   assert(call->n_args() == 2);
   IntSetVal* isv = eval_intset(env, call->arg(0));
   IntVal v = eval_int(env, call->arg(1));
-  if (!isv->contains(v))
+  if (!isv->contains(v)) {
     throw ResultUndefinedError(env, call->loc(), "value outside of enum range");
+  }
   return v;
 }
 
 IntVal b_enum_next(EnvI& env, Call* call) {
   IntSetVal* isv = eval_intset(env, call->arg(0));
   IntVal v = eval_int(env, call->arg(1));
-  if (!isv->contains(v + 1))
+  if (!isv->contains(v + 1)) {
     throw ResultUndefinedError(env, call->loc(), "value outside of enum range");
+  }
   return v + 1;
 }
 
 IntVal b_enum_prev(EnvI& env, Call* call) {
   IntSetVal* isv = eval_intset(env, call->arg(0));
   IntVal v = eval_int(env, call->arg(1));
-  if (!isv->contains(v - 1))
+  if (!isv->contains(v - 1)) {
     throw ResultUndefinedError(env, call->loc(), "value outside of enum range");
+  }
   return v - 1;
 }
 
@@ -2307,12 +2550,14 @@ Expression* b_slice(EnvI& env, Call* call) {
     if (isv->size() == 0) {
       newSlice[i] = std::pair<int, int>(1, 0);
     } else {
-      if (isv->size() > 1)
+      if (isv->size() > 1) {
         throw ResultUndefinedError(env, call->loc(), "array slice must be contiguous");
+      }
       int sl_min = isv->min().isFinite() ? static_cast<int>(isv->min().toInt()) : al->min(i);
       int sl_max = isv->max().isFinite() ? static_cast<int>(isv->max().toInt()) : al->max(i);
-      if (sl_min < al->min(i) || sl_max > al->max(i))
+      if (sl_min < al->min(i) || sl_max > al->max(i)) {
         throw ResultUndefinedError(env, call->loc(), "array slice out of bounds");
+      }
       newSlice[i] = std::pair<int, int>(sl_min, sl_max);
     }
   }
@@ -2366,7 +2611,9 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
       std::string rest = *id_re_it;
       oss << rest;
       ++id_re_it;
-      if (id_re_it == std::sregex_token_iterator()) break;
+      if (id_re_it == std::sregex_token_iterator()) {
+        break;
+      }
       std::string id1 = *id_re_it;
       ++id_re_it;
       std::string id2 = *id_re_it;
@@ -2419,7 +2666,9 @@ Expression* b_regular_from_string(EnvI& env, Call* call) {
     std::string rest = *id_re_it;
     oss << rest;
     ++id_re_it;
-    if (id_re_it == std::sregex_token_iterator()) break;
+    if (id_re_it == std::sregex_token_iterator()) {
+      break;
+    }
     std::string id1 = *id_re_it;
     ++id_re_it;
     auto it = env.reverseEnum.find(id1);

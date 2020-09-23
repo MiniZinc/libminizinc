@@ -49,42 +49,58 @@ private:
 
   static long long int safePlus(long long int x, long long int y) {
     if (x < 0) {
-      if (y < std::numeric_limits<long long int>::min() - x)
+      if (y < std::numeric_limits<long long int>::min() - x) {
         throw ArithmeticError("integer overflow");
+      }
     } else {
-      if (y > std::numeric_limits<long long int>::max() - x)
+      if (y > std::numeric_limits<long long int>::max() - x) {
         throw ArithmeticError("integer overflow");
+      }
     }
     return x + y;
   }
   static long long int safeMinus(long long int x, long long int y) {
     if (x < 0) {
-      if (y > x - std::numeric_limits<long long int>::min())
+      if (y > x - std::numeric_limits<long long int>::min()) {
         throw ArithmeticError("integer overflow");
+      }
     } else {
-      if (y < x - std::numeric_limits<long long int>::max())
+      if (y < x - std::numeric_limits<long long int>::max()) {
         throw ArithmeticError("integer overflow");
+      }
     }
     return x - y;
   }
   static long long int safeMult(long long int x, long long int y) {
-    if (y == 0) return 0;
+    if (y == 0) {
+      return 0;
+    }
     long long unsigned int x_abs = (x < 0 ? 0 - x : x);
     long long unsigned int y_abs = (y < 0 ? 0 - y : y);
-    if (x_abs > std::numeric_limits<long long int>::max() / y_abs)
+    if (x_abs > std::numeric_limits<long long int>::max() / y_abs) {
       throw ArithmeticError("integer overflow");
+    }
     return x * y;
   }
   static long long int safeDiv(long long int x, long long int y) {
-    if (y == 0) throw ArithmeticError("integer division by zero");
-    if (x == 0) return 0;
-    if (x == std::numeric_limits<long long int>::min() && y == -1)
+    if (y == 0) {
+      throw ArithmeticError("integer division by zero");
+    }
+    if (x == 0) {
+      return 0;
+    }
+    if (x == std::numeric_limits<long long int>::min() && y == -1) {
       throw ArithmeticError("integer overflow");
+    }
     return x / y;
   }
   static long long int safeMod(long long int x, long long int y) {
-    if (y == 0) throw ArithmeticError("integer division by zero");
-    if (y == -1) return 0;
+    if (y == 0) {
+      throw ArithmeticError("integer division by zero");
+    }
+    if (y == -1) {
+      return 0;
+    }
     return x % y;
   }
 
@@ -94,7 +110,9 @@ public:
   IntVal(const FloatVal& v);
 
   long long int toInt(void) const {
-    if (!isFinite()) throw ArithmeticError("arithmetic operation on infinite value");
+    if (!isFinite()) {
+      throw ArithmeticError("arithmetic operation on infinite value");
+    }
     return _v;
   }
 
@@ -103,26 +121,30 @@ public:
   bool isMinusInfinity(void) const { return _infinity && _v == -1; }
 
   IntVal& operator+=(const IntVal& x) {
-    if (!(isFinite() && x.isFinite()))
+    if (!(isFinite() && x.isFinite())) {
       throw ArithmeticError("arithmetic operation on infinite value");
+    }
     _v = safePlus(_v, x._v);
     return *this;
   }
   IntVal& operator-=(const IntVal& x) {
-    if (!(isFinite() && x.isFinite()))
+    if (!(isFinite() && x.isFinite())) {
       throw ArithmeticError("arithmetic operation on infinite value");
+    }
     _v = safeMinus(_v, x._v);
     return *this;
   }
   IntVal& operator*=(const IntVal& x) {
-    if (!(isFinite() && x.isFinite()))
+    if (!(isFinite() && x.isFinite())) {
       throw ArithmeticError("arithmetic operation on infinite value");
+    }
     _v = safeMult(_v, x._v);
     return *this;
   }
   IntVal& operator/=(const IntVal& x) {
-    if (!(isFinite() && x.isFinite()))
+    if (!(isFinite() && x.isFinite())) {
       throw ArithmeticError("arithmetic operation on infinite value");
+    }
     _v = safeDiv(_v, x._v);
     return *this;
   }
@@ -132,32 +154,45 @@ public:
     return r;
   }
   IntVal& operator++() {
-    if (!isFinite()) throw ArithmeticError("arithmetic operation on infinite value");
+    if (!isFinite()) {
+      throw ArithmeticError("arithmetic operation on infinite value");
+    }
     _v = safePlus(_v, 1);
     return *this;
   }
   IntVal operator++(int) {
-    if (!isFinite()) throw ArithmeticError("arithmetic operation on infinite value");
+    if (!isFinite()) {
+      throw ArithmeticError("arithmetic operation on infinite value");
+    }
     IntVal ret = *this;
     _v = safePlus(_v, 1);
     return ret;
   }
   IntVal& operator--() {
-    if (!isFinite()) throw ArithmeticError("arithmetic operation on infinite value");
+    if (!isFinite()) {
+      throw ArithmeticError("arithmetic operation on infinite value");
+    }
     _v = safeMinus(_v, 1);
     return *this;
   }
   IntVal operator--(int) {
-    if (!isFinite()) throw ArithmeticError("arithmetic operation on infinite value");
+    if (!isFinite()) {
+      throw ArithmeticError("arithmetic operation on infinite value");
+    }
     IntVal ret = *this;
     _v = safeMinus(_v, 1);
     return ret;
   }
   IntVal pow(const IntVal& exponent) {
-    if (!exponent.isFinite() || !isFinite())
+    if (!exponent.isFinite() || !isFinite()) {
       throw ArithmeticError("arithmetic operation on infinite value");
-    if (exponent == 0) return 1;
-    if (exponent == 1) return *this;
+    }
+    if (exponent == 0) {
+      return 1;
+    }
+    if (exponent == 1) {
+      return *this;
+    }
     IntVal result = 1;
     for (int i = 0; i < exponent.toInt(); i++) {
       result *= *this;
@@ -171,17 +206,19 @@ public:
 
   /// Infinity-safe addition
   IntVal plus(int x) const {
-    if (isFinite())
+    if (isFinite()) {
       return safePlus(_v, x);
-    else
+    } else {
       return *this;
+    }
   }
   /// Infinity-safe subtraction
   IntVal minus(int x) const {
-    if (isFinite())
+    if (isFinite()) {
       return safeMinus(_v, x);
-    else
+    } else {
       return *this;
+    }
   }
 
   size_t hash(void) const {
@@ -206,55 +243,65 @@ inline bool operator>=(const IntVal& x, const IntVal& y) { return y <= x; }
 inline bool operator>(const IntVal& x, const IntVal& y) { return y < x; }
 inline bool operator!=(const IntVal& x, const IntVal& y) { return !(x == y); }
 inline IntVal operator+(const IntVal& x, const IntVal& y) {
-  if (!(x.isFinite() && y.isFinite()))
+  if (!(x.isFinite() && y.isFinite())) {
     throw ArithmeticError("arithmetic operation on infinite value");
+  }
   return IntVal::safePlus(x._v, y._v);
 }
 inline IntVal operator-(const IntVal& x, const IntVal& y) {
-  if (!(x.isFinite() && y.isFinite()))
+  if (!(x.isFinite() && y.isFinite())) {
     throw ArithmeticError("arithmetic operation on infinite value");
+  }
   return IntVal::safeMinus(x._v, y._v);
 }
 inline IntVal operator*(const IntVal& x, const IntVal& y) {
   if (!x.isFinite()) {
-    if (y.isFinite() && (y._v == 1 || y._v == -1))
+    if (y.isFinite() && (y._v == 1 || y._v == -1)) {
       return IntVal(IntVal::safeMult(x._v, y._v), !x.isFinite());
+    }
   } else if (!y.isFinite()) {
-    if (x.isFinite() && (y._v == 1 || y._v == -1))
+    if (x.isFinite() && (y._v == 1 || y._v == -1)) {
       return IntVal(IntVal::safeMult(x._v, y._v), true);
+    }
   } else {
     return IntVal::safeMult(x._v, y._v);
   }
   throw ArithmeticError("arithmetic operation on infinite value");
 }
 inline IntVal operator/(const IntVal& x, const IntVal& y) {
-  if (y.isFinite() && (y._v == 1 || y._v == -1))
+  if (y.isFinite() && (y._v == 1 || y._v == -1)) {
     return IntVal(IntVal::safeMult(x._v, y._v), !x.isFinite());
-  if (!(x.isFinite() && y.isFinite()))
+  }
+  if (!(x.isFinite() && y.isFinite())) {
     throw ArithmeticError("arithmetic operation on infinite value");
+  }
   return IntVal::safeDiv(x._v, y._v);
 }
 inline IntVal operator%(const IntVal& x, const IntVal& y) {
-  if (!(x.isFinite() && y.isFinite()))
+  if (!(x.isFinite() && y.isFinite())) {
     throw ArithmeticError("arithmetic operation on infinite value");
+  }
   return IntVal::safeMod(x._v, y._v);
 }
 template <class Char, class Traits>
 std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os,
                                              const IntVal& s) {
-  if (s.isMinusInfinity())
+  if (s.isMinusInfinity()) {
     return os << "-infinity";
-  else if (s.isPlusInfinity())
+  } else if (s.isPlusInfinity()) {
     return os << "infinity";
-  else
+  } else {
     return os << s.toInt();
+  }
 }
 
 }  // namespace MiniZinc
 
 namespace std {
 inline MiniZinc::IntVal abs(const MiniZinc::IntVal& x) {
-  if (!x.isFinite()) return MiniZinc::IntVal::infinity();
+  if (!x.isFinite()) {
+    return MiniZinc::IntVal::infinity();
+  }
   return x < 0 ? MiniZinc::IntVal::safeMinus(0, x._v) : x;
 }
 
@@ -297,7 +344,9 @@ private:
   double _v;
   bool _infinity;
   void checkOverflow(void) {
-    if (!std::isfinite(_v)) throw ArithmeticError("overflow in floating point operation");
+    if (!std::isfinite(_v)) {
+      throw ArithmeticError("overflow in floating point operation");
+    }
   }
   FloatVal(double v, bool infinity) : _v(v), _infinity(infinity) { checkOverflow(); }
 
@@ -307,7 +356,9 @@ public:
   FloatVal(const IntVal& v) : _v(static_cast<double>(v._v)), _infinity(!v.isFinite()) {}
 
   double toDouble(void) const {
-    if (!isFinite()) throw ArithmeticError("arithmetic operation on infinite value");
+    if (!isFinite()) {
+      throw ArithmeticError("arithmetic operation on infinite value");
+    }
     return _v;
   }
 
@@ -316,29 +367,33 @@ public:
   bool isMinusInfinity(void) const { return _infinity && _v == -1.0; }
 
   FloatVal& operator+=(const FloatVal& x) {
-    if (!(isFinite() && x.isFinite()))
+    if (!(isFinite() && x.isFinite())) {
       throw ArithmeticError("arithmetic operation on infinite value");
+    }
     _v += x._v;
     checkOverflow();
     return *this;
   }
   FloatVal& operator-=(const FloatVal& x) {
-    if (!(isFinite() && x.isFinite()))
+    if (!(isFinite() && x.isFinite())) {
       throw ArithmeticError("arithmetic operation on infinite value");
+    }
     _v -= x._v;
     checkOverflow();
     return *this;
   }
   FloatVal& operator*=(const FloatVal& x) {
-    if (!(isFinite() && x.isFinite()))
+    if (!(isFinite() && x.isFinite())) {
       throw ArithmeticError("arithmetic operation on infinite value");
+    }
     _v *= x._v;
     checkOverflow();
     return *this;
   }
   FloatVal& operator/=(const FloatVal& x) {
-    if (!(isFinite() && x.isFinite()))
+    if (!(isFinite() && x.isFinite())) {
       throw ArithmeticError("arithmetic operation on infinite value");
+    }
     _v = _v / x._v;
     checkOverflow();
     return *this;
@@ -349,26 +404,34 @@ public:
     return r;
   }
   FloatVal& operator++() {
-    if (!isFinite()) throw ArithmeticError("arithmetic operation on infinite value");
+    if (!isFinite()) {
+      throw ArithmeticError("arithmetic operation on infinite value");
+    }
     _v = _v + 1;
     checkOverflow();
     return *this;
   }
   FloatVal operator++(int) {
-    if (!isFinite()) throw ArithmeticError("arithmetic operation on infinite value");
+    if (!isFinite()) {
+      throw ArithmeticError("arithmetic operation on infinite value");
+    }
     FloatVal ret = *this;
     _v = _v + 1;
     checkOverflow();
     return ret;
   }
   FloatVal& operator--() {
-    if (!isFinite()) throw ArithmeticError("arithmetic operation on infinite value");
+    if (!isFinite()) {
+      throw ArithmeticError("arithmetic operation on infinite value");
+    }
     _v = _v - 1;
     checkOverflow();
     return *this;
   }
   FloatVal operator--(int) {
-    if (!isFinite()) throw ArithmeticError("arithmetic operation on infinite value");
+    if (!isFinite()) {
+      throw ArithmeticError("arithmetic operation on infinite value");
+    }
     FloatVal ret = *this;
     _v = _v - 1;
     checkOverflow();
@@ -379,17 +442,19 @@ public:
 
   /// Infinity-safe addition
   FloatVal plus(int x) {
-    if (isFinite())
+    if (isFinite()) {
       return (*this) + x;
-    else
+    } else {
       return *this;
+    }
   }
   /// Infinity-safe subtraction
   FloatVal minus(int x) {
-    if (isFinite())
+    if (isFinite()) {
       return (*this) - x;
-    else
+    } else {
       return *this;
+    }
   }
 
   size_t hash(void) const {
@@ -414,34 +479,39 @@ inline bool operator>=(const FloatVal& x, const FloatVal& y) { return y <= x; }
 inline bool operator>(const FloatVal& x, const FloatVal& y) { return y < x; }
 inline bool operator!=(const FloatVal& x, const FloatVal& y) { return !(x == y); }
 inline FloatVal operator+(const FloatVal& x, const FloatVal& y) {
-  if (!(x.isFinite() && y.isFinite()))
+  if (!(x.isFinite() && y.isFinite())) {
     throw ArithmeticError("arithmetic operation on infinite value");
+  }
   return x.toDouble() + y.toDouble();
 }
 inline FloatVal operator-(const FloatVal& x, const FloatVal& y) {
-  if (!(x.isFinite() && y.isFinite()))
+  if (!(x.isFinite() && y.isFinite())) {
     throw ArithmeticError("arithmetic operation on infinite value");
+  }
   return x.toDouble() - y.toDouble();
 }
 inline FloatVal operator*(const FloatVal& x, const FloatVal& y) {
-  if (!(x.isFinite() && y.isFinite()))
+  if (!(x.isFinite() && y.isFinite())) {
     throw ArithmeticError("arithmetic operation on infinite value");
+  }
   return x.toDouble() * y.toDouble();
 }
 inline FloatVal operator/(const FloatVal& x, const FloatVal& y) {
-  if (!(x.isFinite() && y.isFinite()))
+  if (!(x.isFinite() && y.isFinite())) {
     throw ArithmeticError("arithmetic operation on infinite value");
+  }
   return x.toDouble() / y.toDouble();
 }
 template <class Char, class Traits>
 std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os,
                                              const FloatVal& s) {
-  if (s.isMinusInfinity())
+  if (s.isMinusInfinity()) {
     return os << "-infinity";
-  else if (s.isPlusInfinity())
+  } else if (s.isPlusInfinity()) {
     return os << "infinity";
-  else
+  } else {
     return os << s.toDouble();
+  }
 }
 
 inline IntVal::IntVal(const FloatVal& v)
@@ -451,7 +521,9 @@ inline IntVal::IntVal(const FloatVal& v)
 
 namespace std {
 inline MiniZinc::FloatVal abs(const MiniZinc::FloatVal& x) {
-  if (!x.isFinite()) return MiniZinc::FloatVal::infinity();
+  if (!x.isFinite()) {
+    return MiniZinc::FloatVal::infinity();
+  }
   return x.toDouble() < 0 ? MiniZinc::FloatVal(-x.toDouble()) : x;
 }
 
@@ -463,11 +535,15 @@ inline MiniZinc::FloatVal max(const MiniZinc::FloatVal& x, const MiniZinc::Float
 }
 
 inline MiniZinc::FloatVal floor(const MiniZinc::FloatVal& x) {
-  if (!x.isFinite()) return x;
+  if (!x.isFinite()) {
+    return x;
+  }
   return floor(x.toDouble());
 }
 inline MiniZinc::FloatVal ceil(const MiniZinc::FloatVal& x) {
-  if (!x.isFinite()) return x;
+  if (!x.isFinite()) {
+    return x;
+  }
   return ceil(x.toDouble());
 }
 
@@ -518,7 +594,9 @@ private:
   IntSetVal(IntVal m, IntVal n);
   /// Construct set from \a s
   IntSetVal(const std::vector<Range>& s) : ASTChunk(sizeof(Range) * s.size()) {
-    for (auto i = static_cast<unsigned int>(s.size()); (i--) != 0u;) get(i) = s[i];
+    for (auto i = static_cast<unsigned int>(s.size()); (i--) != 0u;) {
+      get(i) = s[i];
+    }
   }
 
   /// Disabled
@@ -546,19 +624,21 @@ public:
   /// Return width of range \a i
   IntVal width(int i) const {
     assert(i < size());
-    if (min(i).isFinite() && max(i).isFinite())
+    if (min(i).isFinite() && max(i).isFinite()) {
       return max(i) - min(i) + 1;
-    else
+    } else {
       return IntVal::infinity();
+    }
   }
   /// Return cardinality
   IntVal card(void) const {
     IntVal c = 0;
     for (unsigned int i = size(); (i--) != 0u;) {
-      if (width(i).isFinite())
+      if (width(i).isFinite()) {
         c += width(i);
-      else
+      } else {
         return IntVal::infinity();
+      }
     }
     return c;
   }
@@ -585,7 +665,9 @@ public:
   template <class I>
   static IntSetVal* ai(I& i) {
     std::vector<Range> s;
-    for (; i(); ++i) s.push_back(Range(i.min(), i.max()));
+    for (; i(); ++i) {
+      s.push_back(Range(i.min(), i.max()));
+    }
     auto* r = static_cast<IntSetVal*>(ASTChunk::alloc(sizeof(Range) * s.size()));
     new (r) IntSetVal(s);
     return r;
@@ -593,7 +675,9 @@ public:
 
   /// Allocate set from vector \a s0 (may contain duplicates)
   static IntSetVal* a(const std::vector<IntVal>& s0) {
-    if (s0.size() == 0) return a();
+    if (s0.size() == 0) {
+      return a();
+    }
     std::vector<IntVal> s = s0;
     std::sort(s.begin(), s.end());
     std::vector<Range> ranges;
@@ -622,17 +706,26 @@ public:
   /// Check if set contains \a v
   bool contains(const IntVal& v) {
     for (int i = 0; i < size(); i++) {
-      if (v < min(i)) return false;
-      if (v <= max(i)) return true;
+      if (v < min(i)) {
+        return false;
+      }
+      if (v <= max(i)) {
+        return true;
+      }
     }
     return false;
   }
 
   /// Check if it is equal to \a s
   bool equal(const IntSetVal* s) {
-    if (size() != s->size()) return false;
-    for (int i = 0; i < size(); i++)
-      if (min(i) != s->min(i) || max(i) != s->max(i)) return false;
+    if (size() != s->size()) {
+      return false;
+    }
+    for (int i = 0; i < size(); i++) {
+      if (min(i) != s->min(i) || max(i) != s->max(i)) {
+        return false;
+      }
+    }
     return true;
   }
 
@@ -676,7 +769,9 @@ std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& o
     bool first = true;
     os << "{";
     for (IntSetRanges isr(&s); isr(); ++isr) {
-      if (!first) os << ", ";
+      if (!first) {
+        os << ", ";
+      }
       first = false;
       for (IntVal v = isr.min(); v < isr.max(); ++v) {
         os << v;
@@ -713,7 +808,9 @@ private:
   FloatSetVal(FloatVal m, FloatVal n);
   /// Construct set from \a s
   FloatSetVal(const std::vector<Range>& s) : ASTChunk(sizeof(Range) * s.size()) {
-    for (auto i = static_cast<unsigned int>(s.size()); (i--) != 0u;) get(i) = s[i];
+    for (auto i = static_cast<unsigned int>(s.size()); (i--) != 0u;) {
+      get(i) = s[i];
+    }
   }
 
   /// Disabled
@@ -741,19 +838,21 @@ public:
   /// Return width of range \a i
   FloatVal width(int i) const {
     assert(i < size());
-    if (min(i).isFinite() && max(i).isFinite() && min(i) == max(i))
+    if (min(i).isFinite() && max(i).isFinite() && min(i) == max(i)) {
       return 1;
-    else
+    } else {
       return IntVal::infinity();
+    }
   }
   /// Return cardinality
   FloatVal card(void) const {
     FloatVal c = 0;
     for (unsigned int i = size(); (i--) != 0u;) {
-      if (width(i).isFinite())
+      if (width(i).isFinite()) {
         c += width(i);
-      else
+      } else {
         return FloatVal::infinity();
+      }
     }
     return c;
   }
@@ -780,7 +879,9 @@ public:
   template <class I>
   static FloatSetVal* ai(I& i) {
     std::vector<Range> s;
-    for (; i(); ++i) s.push_back(Range(i.min(), i.max()));
+    for (; i(); ++i) {
+      s.push_back(Range(i.min(), i.max()));
+    }
     auto* r = static_cast<FloatSetVal*>(ASTChunk::alloc(sizeof(Range) * s.size()));
     new (r) FloatSetVal(s);
     return r;
@@ -788,7 +889,9 @@ public:
 
   /// Allocate set from vector \a s0 (may contain duplicates)
   static FloatSetVal* a(const std::vector<FloatVal>& s0) {
-    if (s0.size() == 0) return a();
+    if (s0.size() == 0) {
+      return a();
+    }
     std::vector<FloatVal> s = s0;
     std::sort(s.begin(), s.end());
     std::vector<Range> ranges;
@@ -817,17 +920,26 @@ public:
   /// Check if set contains \a v
   bool contains(const FloatVal& v) {
     for (int i = 0; i < size(); i++) {
-      if (v < min(i)) return false;
-      if (v <= max(i)) return true;
+      if (v < min(i)) {
+        return false;
+      }
+      if (v <= max(i)) {
+        return true;
+      }
     }
     return false;
   }
 
   /// Check if it is equal to \a s
   bool equal(const FloatSetVal* s) {
-    if (size() != s->size()) return false;
-    for (int i = 0; i < size(); i++)
-      if (min(i) != s->min(i) || max(i) != s->max(i)) return false;
+    if (size() != s->size()) {
+      return false;
+    }
+    for (int i = 0; i < size(); i++) {
+      if (min(i) != s->min(i) || max(i) != s->max(i)) {
+        return false;
+      }
+    }
     return true;
   }
 
@@ -860,7 +972,9 @@ public:
 template <class Char, class Traits>
 std::basic_ostream<Char, Traits>& operator<<(std::basic_ostream<Char, Traits>& os,
                                              const FloatSetVal& s) {
-  for (FloatSetRanges isr(&s); isr(); ++isr) os << isr.min() << ".." << isr.max() << " ";
+  for (FloatSetRanges isr(&s); isr(); ++isr) {
+    os << isr.min() << ".." << isr.max() << " ";
+  }
   return os;
 }
 }  // namespace MiniZinc

@@ -292,17 +292,23 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         if (r_bounds_valid_int[j] && e_then[j][i]()->type().isint()) {
           GCLock lock;
           IntBounds ib_then = compute_int_bounds(env, branches[j][i]());
-          if (ib_then.valid) r_bounds_int[j].push_back(ib_then);
+          if (ib_then.valid) {
+            r_bounds_int[j].push_back(ib_then);
+          }
           r_bounds_valid_int[j] = r_bounds_valid_int[j] && ib_then.valid;
         } else if (r_bounds_valid_set[j] && e_then[j][i]()->type().isintset()) {
           GCLock lock;
           IntSetVal* isv = compute_intset_bounds(env, branches[j][i]());
-          if (isv != nullptr) r_bounds_set[j].push_back(isv);
+          if (isv != nullptr) {
+            r_bounds_set[j].push_back(isv);
+          }
           r_bounds_valid_set[j] = r_bounds_valid_set[j] && (isv != nullptr);
         } else if (r_bounds_valid_float[j] && e_then[j][i]()->type().isfloat()) {
           GCLock lock;
           FloatBounds fb_then = compute_float_bounds(env, branches[j][i]());
-          if (fb_then.valid) r_bounds_float[j].push_back(fb_then);
+          if (fb_then.valid) {
+            r_bounds_float[j].push_back(fb_then);
+          }
           r_bounds_valid_float[j] = r_bounds_valid_float[j] && fb_then.valid;
         }
       }
@@ -342,17 +348,23 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       if (r_bounds_valid_int[j] && e_else[j]()->type().isint()) {
         GCLock lock;
         IntBounds ib_else = compute_int_bounds(env, eelse.r());
-        if (ib_else.valid) r_bounds_int[j].push_back(ib_else);
+        if (ib_else.valid) {
+          r_bounds_int[j].push_back(ib_else);
+        }
         r_bounds_valid_int[j] = r_bounds_valid_int[j] && ib_else.valid;
       } else if (r_bounds_valid_set[j] && e_else[j]()->type().isintset()) {
         GCLock lock;
         IntSetVal* isv = compute_intset_bounds(env, eelse.r());
-        if (isv != nullptr) r_bounds_set[j].push_back(isv);
+        if (isv != nullptr) {
+          r_bounds_set[j].push_back(isv);
+        }
         r_bounds_valid_set[j] = r_bounds_valid_set[j] && (isv != nullptr);
       } else if (r_bounds_valid_float[j] && e_else[j]()->type().isfloat()) {
         GCLock lock;
         FloatBounds fb_else = compute_float_bounds(env, eelse.r());
-        if (fb_else.valid) r_bounds_float[j].push_back(fb_else);
+        if (fb_else.valid) {
+          r_bounds_float[j].push_back(fb_else);
+        }
         r_bounds_valid_float[j] = r_bounds_valid_float[j] && fb_else.valid;
       }
     }

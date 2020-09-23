@@ -124,7 +124,9 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       Generators gs;
       for (int i = 0; i < c->n_generators(); i++) {
         std::vector<VarDecl*> vds(c->n_decls(i));
-        for (int j = 0; j < c->n_decls(i); j++) vds[j] = c->decl(i, j);
+        for (int j = 0; j < c->n_decls(i); j++) {
+          vds[j] = c->decl(i, j);
+        }
         gs._g.emplace_back(vds, in[i], orig_where[i]);
       }
       Expression* cond;
@@ -207,18 +209,25 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   bool allPar = true;
   for (auto i = static_cast<unsigned int>(elems.size()); (i--) != 0u;) {
     elems[i] = elems_ee[i].r();
-    if (elemType == Type::bot()) elemType = elems[i]->type();
-    if (!elems[i]->type().ispar()) allPar = false;
+    if (elemType == Type::bot()) {
+      elemType = elems[i]->type();
+    }
+    if (!elems[i]->type().ispar()) {
+      allPar = false;
+    }
   }
   if (elemType.isbot()) {
     elemType = c->type();
     elemType.ti(Type::TI_PAR);
   }
-  if (!allPar) elemType.ti(Type::TI_VAR);
-  if (c->set())
+  if (!allPar) {
+    elemType.ti(Type::TI_VAR);
+  }
+  if (c->set()) {
     elemType.st(Type::ST_SET);
-  else
+  } else {
     elemType.dim(c->type().dim());
+  }
   KeepAlive ka;
   {
     GCLock lock;

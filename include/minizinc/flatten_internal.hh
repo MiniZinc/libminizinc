@@ -198,10 +198,13 @@ public:
   std::vector<KeepAlive>& x;
   CmpExpIdx(std::vector<KeepAlive>& x0) : x(x0) {}
   bool operator()(int i, int j) const {
-    if (Expression::equal(x[i](), x[j]())) return false;
+    if (Expression::equal(x[i](), x[j]())) {
+      return false;
+    }
     if (x[i]()->isa<Id>() && x[j]()->isa<Id>() && x[i]()->cast<Id>()->idn() != -1 &&
-        x[j]()->cast<Id>()->idn() != -1)
+        x[j]()->cast<Id>()->idn() != -1) {
       return x[i]()->cast<Id>()->idn() < x[j]()->cast<Id>()->idn();
+    }
     return x[i]() < x[j]();
   }
 };

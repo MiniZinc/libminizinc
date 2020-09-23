@@ -31,8 +31,12 @@ void PathFilePrinter::addBetterName(Id* id, string name, string path, bool overw
     opath = it->second.second;
   }
 
-  if (!name.empty() && (overwrite || oname.empty())) oname = name;
-  if (!path.empty() && (overwrite || opath.empty())) opath = path;
+  if (!name.empty() && (overwrite || oname.empty())) {
+    oname = name;
+  }
+  if (!path.empty() && (overwrite || opath.empty())) {
+    opath = path;
+  }
 
   betternames[id] = NamePair(oname, opath);
 }
@@ -57,17 +61,20 @@ string path2name(string path) {
           ilpos += 3;
           semi = path.find(";", ilpos);
           if (semi != string::npos) {
-            if (dim == 0)
+            if (dim == 0) {
               name << "[";
-            else
+            } else {
               name << ",";
+            }
             name << path.substr(ilpos, semi - ilpos);
             dim++;
           }
         }
       } while (ilpos != string::npos);
 
-      if (dim > 0) name << "?]";
+      if (dim > 0) {
+        name << "?]";
+      }
 
       // Check for anon
       if (path.find(":anon") != string::npos || path.find("=") != string::npos) {
@@ -102,8 +109,11 @@ void PathFilePrinter::print(Model* m) {
                   dims[i] = sl->isv()->card();
                 }
                 vector<IntVal> dimspan(dims.size(), 1);
-                for (unsigned int i = 0; i < dims.size(); i++)
-                  for (unsigned int j = i + 1; j < dims.size(); j++) dimspan[i] *= dims[j];
+                for (unsigned int i = 0; i < dims.size(); i++) {
+                  for (unsigned int j = i + 1; j < dims.size(); j++) {
+                    dimspan[i] *= dims[j];
+                  }
+                }
 
                 IntVal curind = ind;
                 for (unsigned int i = 0; i < dims.size() - 1; i++) {
@@ -128,7 +138,9 @@ void PathFilePrinter::print(Model* m) {
   }
 
   // Print values
-  for (Item* item : *m) print(item);
+  for (Item* item : *m) {
+    print(item);
+  }
 }
 
 void PathFilePrinter::print(Item* item) {
@@ -145,7 +157,9 @@ void PathFilePrinter::print(Item* item) {
       } else {
         string name = np.first;
         os << name;
-        if (name.find("?") != string::npos) os << "(" << *id << ")";
+        if (name.find("?") != string::npos) {
+          os << "(" << *id << ")";
+        }
         os << "\t";
       }
 

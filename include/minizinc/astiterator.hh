@@ -42,7 +42,9 @@ protected:
   /// Push all elements of \a v onto \a stack
   template <class E>
   void pushVec(std::vector<C>& stack, ASTExprVec<E> v) {
-    for (unsigned int i = 0; i < v.size(); i++) stack.push_back(C(v[i]));
+    for (unsigned int i = 0; i < v.size(); i++) {
+      stack.push_back(C(v[i]));
+    }
   }
 
 public:
@@ -69,7 +71,9 @@ protected:
   /// Push all elements of \a v onto \a stack
   template <class E>
   static void pushVec(std::vector<Expression*>& stack, ASTExprVec<E> v) {
-    for (unsigned int i = 0; i < v.size(); i++) stack.push_back(v[i]);
+    for (unsigned int i = 0; i < v.size(); i++) {
+      stack.push_back(v[i]);
+    }
   }
 
 public:
@@ -89,7 +93,9 @@ void topDown(T& t, Expression* root) {
 template <class T>
 void BottomUpIterator<T>::run(Expression* root) {
   std::vector<C> stack;
-  if (_t.enter(root)) stack.push_back(C(root));
+  if (_t.enter(root)) {
+    stack.push_back(C(root));
+  }
   while (!stack.empty()) {
     C& c = stack.back();
     if (c._e == nullptr) {
@@ -163,7 +169,9 @@ void BottomUpIterator<T>::run(Expression* root) {
       c._done = true;
       Expression* ce = c._e;
       for (ExpressionSetIter it = ce->ann().begin(); it != ce->ann().end(); ++it) {
-        if (_t.enter(*it)) stack.push_back(C(*it));
+        if (_t.enter(*it)) {
+          stack.push_back(C(*it));
+        }
       }
       if (_t.enter(ce)) {
         switch (ce->eid()) {
@@ -179,8 +187,9 @@ void BottomUpIterator<T>::run(Expression* root) {
             pushVec(stack, ce->template cast<SetLit>()->v());
             break;
           case Expression::E_ARRAYLIT: {
-            for (unsigned int i = 0; i < ce->cast<ArrayLit>()->size(); i++)
+            for (unsigned int i = 0; i < ce->cast<ArrayLit>()->size(); i++) {
               stack.push_back((*ce->cast<ArrayLit>())[i]);
+            }
           } break;
           case Expression::E_ARRAYACCESS:
             pushVec(stack, ce->template cast<ArrayAccess>()->idx());
@@ -219,8 +228,9 @@ void BottomUpIterator<T>::run(Expression* root) {
             stack.push_back(C(ce->template cast<UnOp>()->e()));
             break;
           case Expression::E_CALL:
-            for (unsigned int i = 0; i < ce->template cast<Call>()->n_args(); i++)
+            for (unsigned int i = 0; i < ce->template cast<Call>()->n_args(); i++) {
               stack.push_back(ce->template cast<Call>()->arg(i));
+            }
             break;
           case Expression::E_VARDECL:
             stack.push_back(C(ce->template cast<VarDecl>()->e()));
@@ -245,14 +255,18 @@ void BottomUpIterator<T>::run(Expression* root) {
 template <class T>
 void TopDownIterator<T>::run(Expression* root) {
   std::vector<Expression*> stack;
-  if (_t.enter(root)) stack.push_back(root);
+  if (_t.enter(root)) {
+    stack.push_back(root);
+  }
   while (!stack.empty()) {
     Expression* e = stack.back();
     stack.pop_back();
     if (e == nullptr) {
       continue;
     }
-    if (!_t.enter(e)) continue;
+    if (!_t.enter(e)) {
+      continue;
+    }
     for (ExpressionSetIter it = e->ann().begin(); it != e->ann().end(); ++it) {
       stack.push_back(*it);
     }
@@ -281,8 +295,9 @@ void TopDownIterator<T>::run(Expression* root) {
         break;
       case Expression::E_ARRAYLIT:
         _t.vArrayLit(*e->template cast<ArrayLit>());
-        for (unsigned int i = 0; i < e->cast<ArrayLit>()->size(); i++)
+        for (unsigned int i = 0; i < e->cast<ArrayLit>()->size(); i++) {
           stack.push_back((*e->cast<ArrayLit>())[i]);
+        }
         break;
       case Expression::E_ARRAYACCESS:
         _t.vArrayAccess(*e->template cast<ArrayAccess>());
@@ -325,8 +340,9 @@ void TopDownIterator<T>::run(Expression* root) {
         break;
       case Expression::E_CALL:
         _t.vCall(*e->template cast<Call>());
-        for (unsigned int i = 0; i < e->template cast<Call>()->n_args(); i++)
+        for (unsigned int i = 0; i < e->template cast<Call>()->n_args(); i++) {
           stack.push_back(e->template cast<Call>()->arg(i));
+        }
         break;
       case Expression::E_VARDECL:
         _t.vVarDecl(*e->template cast<VarDecl>());

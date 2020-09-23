@@ -97,8 +97,9 @@ public:
                          std::string* names);
 
   void addPhase1Vars() {
-    if (fVerbose)
+    if (fVerbose) {
       std::cerr << "  MIP_osicbc_wrapper: delaying physical addition of variables..." << std::endl;
+    }
   }
 
   /// adding a linear constraint
@@ -119,7 +120,9 @@ public:
   }
   virtual int getNColsModel() { return osi.getNumCols(); }
   virtual int getNRows() {
-    if (rowlb.size() != 0u) return rowlb.size();
+    if (rowlb.size() != 0u) {
+      return rowlb.size();
+    }
     return osi.getNumRows();
   }
 

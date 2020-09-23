@@ -111,10 +111,11 @@ protected:
   static std::condition_variable i_cv;
 #else
   static void handleInterrupt(int signal) {
-    if (signal == SIGINT)
+    if (signal == SIGINT) {
       hadInterrupt = true;
-    else
+    } else {
       hadTerm = true;
+    }
   }
   static bool hadTerm;
 #endif
@@ -484,14 +485,18 @@ public:
       }
 
       char** argv = new char*[cmd_line.size() + 1];
-      for (unsigned int i = 0; i < cmd_line.size(); i++) argv[i] = cmd_line[i];
+      for (unsigned int i = 0; i < cmd_line.size(); i++) {
+        argv[i] = cmd_line[i];
+      }
       argv[cmd_line.size()] = nullptr;
 
       int status = execvp(argv[0], argv);  // execvp only returns if an error occurs.
       assert(status == -1);                // the returned value will always be -1
       std::stringstream ssm;
       ssm << "Error occurred when executing FZN solver with command \"";
-      for (auto& s : cmd_line) ssm << s << ' ';
+      for (auto& s : cmd_line) {
+        ssm << s << ' ';
+      }
       ssm << "\".";
       throw InternalError(ssm.str());
     }

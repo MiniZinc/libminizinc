@@ -114,19 +114,27 @@ public:
   void printCurrentLine(int firstCol, int lastCol) {
     const char* eol_c = strchr(buf + lineStartPos, '\n');
     if (eol_c != nullptr) {
-      if (eol_c == buf + lineStartPos) return;
+      if (eol_c == buf + lineStartPos) {
+        return;
+      }
       err << std::string(buf + lineStartPos, eol_c - (buf + lineStartPos));
     } else {
       err << buf + lineStartPos;
     }
     err << std::endl;
-    for (int i = 0; i < firstCol - 1; i++) err << " ";
-    for (int i = firstCol; i <= lastCol; i++) err << "^";
+    for (int i = 0; i < firstCol - 1; i++) {
+      err << " ";
+    }
+    for (int i = firstCol; i <= lastCol; i++) {
+      err << "^";
+    }
     err << std::endl;
   }
 
   int fillBuffer(char* lexBuf, unsigned int lexBufSize) {
-    if (pos >= length) return 0;
+    if (pos >= length) {
+      return 0;
+    }
     int num = std::min(length - pos, lexBufSize);
     memcpy(lexBuf, buf + pos, num);
     pos += num;

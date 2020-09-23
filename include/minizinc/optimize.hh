@@ -59,7 +59,9 @@ public:
   Item* ci;
   CollectOccurrencesE(VarOccurrences& vo0, Item* ci0) : vo(vo0), ci(ci0) {}
   void vId(const Id& id) {
-    if (id.decl() != nullptr) vo.add(id.decl(), ci);
+    if (id.decl() != nullptr) {
+      vo.add(id.decl(), ci);
+    }
   }
 };
 

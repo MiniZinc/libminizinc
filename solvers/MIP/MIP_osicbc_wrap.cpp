@@ -196,7 +196,9 @@ bool MIP_osicbc_wrapper::addWarmStart(const std::vector<VarId>& vars,
                                       const std::vector<double> vals) {
   assert(vars.size() == vals.size());
   static_assert(sizeof(VarId) == sizeof(int), "VarId should be (u)int currently");
-  for (int i = 0; i < vars.size(); ++i) warmstart[vars[i]] = vals[i];
+  for (int i = 0; i < vars.size(); ++i) {
+    warmstart[vars[i]] = vals[i];
+  }
   return true;
 }
 
@@ -437,7 +439,7 @@ CbcEventHandler::CbcAction MyEventHandler3::event(CbcEvent whichEvent) {
           origModel = model_->solver();
           ui.pCbui->pOutput->x = bestSolution;
         }
-        if (ui.pCbui->fVerb)
+        if (ui.pCbui->fVerb) {
           cerr << " % OBJ VAL RAW: " << model_->getObjValue() << "  OBJ VAL ORIG(?): " << objVal
                << " % BND RAW: " << model_->getBestPossibleObjValue() << "  BND ORIG(?): "
                << bestBnd
@@ -445,10 +447,12 @@ CbcEventHandler::CbcAction MyEventHandler3::event(CbcEvent whichEvent) {
                //         << "  &model_._solver(): " << model_->solver()
                << "  orig NCols: " << ui.pCbui->pOutput->nCols
                << "  prepro NCols:  " << model_->getNumCols();
+        }
         assert(origModel->getNumCols() == ui.pCbui->pOutput->nCols);
         if (ui.pCbui->fVerb) {
-          if (ui.pCbui->pOutput->nObjVarIndex >= 0)
+          if (ui.pCbui->pOutput->nObjVarIndex >= 0) {
             cerr << "  objVAR: " << ui.pCbui->pOutput->x[ui.pCbui->pOutput->nObjVarIndex];
+          }
           cerr << endl;
         }
         ui.pCbui->pOutput->objVal = objVal;
@@ -619,9 +623,13 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
     //                 columns.data(), element.data(), rowlb.data(), rowub.data());
     /// So:
     MIP_wrapper::addPhase1Vars();  // only now
-    if (fVerbose) cerr << "  MIP_osicbc_wrapper: adding constraints physically..." << flush;
+    if (fVerbose) {
+      cerr << "  MIP_osicbc_wrapper: adding constraints physically..." << flush;
+    }
     vector<CoinPackedVectorBase*> pRows(rowlb.size());
-    for (int i = 0; i < rowlb.size(); ++i) pRows[i] = &rows[i];
+    for (int i = 0; i < rowlb.size(); ++i) {
+      pRows[i] = &rows[i];
+    }
     osi.addRows(rowlb.size(), pRows.data(), rowlb.data(), rowub.data());
     //     rowStarts.clear();
     //     columns.clear();
@@ -630,7 +638,9 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
     rows.clear();
     rowlb.clear();
     rowub.clear();
-    if (fVerbose) cerr << " done." << endl;
+    if (fVerbose) {
+      cerr << " done." << endl;
+    }
     /////////////// Last-minute solver options //////////////////
     //       osi->loadProblem(*matrix,
     {
@@ -648,7 +658,9 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
       // Not implemented for OsiClp:
       //       osi.setColNames(colNames, 0, colObj.size(), 0);
       vector<const char*> colN(colObj.size());
-      for (int j = 0; j < colNames.size(); ++j) colN[j] = colNames[j].c_str();
+      for (int j = 0; j < colNames.size(); ++j) {
+        colN[j] = colNames[j].c_str();
+      }
       osi.writeMpsNative(options->sExportModel.c_str(), nullptr, colN.data());
     }
 
@@ -668,7 +680,9 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
     //     // initialize   ???????
     //     control.fillValuesInSolver();
     //     CbcModel * pModel = control.model();
-    if (fVerbose) cerr << " Model creation..." << endl;
+    if (fVerbose) {
+      cerr << " Model creation..." << endl;
+    }
 
     // #define __USE_CbcSolver__  -- not linked rev2274
     /// FOR WARMSTART
@@ -685,9 +699,15 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 #endif
     //     CbcSolver control(osi);
     //     control.solve();
-    if (options->absGap >= 0.0) model.setAllowableGap(options->absGap);
-    if (options->relGap >= 0.0) model.setAllowableFractionGap(options->relGap);
-    if (options->intTol >= 0.0) model.setIntegerTolerance(options->intTol);
+    if (options->absGap >= 0.0) {
+      model.setAllowableGap(options->absGap);
+    }
+    if (options->relGap >= 0.0) {
+      model.setAllowableFractionGap(options->relGap);
+    }
+    if (options->intTol >= 0.0) {
+      model.setIntegerTolerance(options->intTol);
+    }
     //     model.setCutoffIncrement( objDiff );
 
     /// WARMSTART
@@ -833,8 +853,9 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 #else
 #define __USE_callCbc1__
 #ifdef __USE_callCbc1__
-    if (fVerbose)
+    if (fVerbose) {
       cerr << "  Calling callCbc with options '" << options->cbc_cmdOptions << "'..." << endl;
+    }
     callCbc(options->cbc_cmdOptions, model);
 //     callCbc1(cbc_cmdOptions, model, callBack);
 // What is callBack() for?    TODO

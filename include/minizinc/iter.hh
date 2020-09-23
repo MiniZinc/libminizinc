@@ -96,8 +96,12 @@ inline Val MinMax<Val>::max(void) const {
 }
 template <class Val>
 inline Val MinMax<Val>::width(void) const {
-  if (mi > ma) return 0;
-  if (mi.isFinite() && ma.isFinite()) return ma - mi + 1;
+  if (mi > ma) {
+    return 0;
+  }
+  if (mi.isFinite() && ma.isFinite()) {
+    return ma - mi + 1;
+  }
   return Val::infinity();
 }
 
@@ -138,7 +142,9 @@ public:
 template <class Val, class I>
 inline Bounded<Val, I>::Bounded(I& i0, Val min0, bool umin0, Val max0, bool umax0)
     : i(i0), _min(min0), use_min(umin0), _max(max0), use_max(umax0) {
-  while (i() && use_min && i.max() < _min) ++i;
+  while (i() && use_min && i.max() < _min) {
+    ++i;
+  }
 }
 template <class Val, class I>
 inline Bounded<Val, I> Bounded<Val, I>::miniter(I& i, Val min) {
@@ -160,7 +166,9 @@ inline bool Bounded<Val, I>::operator()(void) const {
 template <class Val, class I>
 inline void Bounded<Val, I>::operator++(void) {
   ++i;
-  while (i() && use_min && i.max() < _min) ++i;
+  while (i() && use_min && i.max() < _min) {
+    ++i;
+  }
 }
 template <class Val, class I>
 inline Val Bounded<Val, I>::min(void) const {
@@ -172,8 +180,12 @@ inline Val Bounded<Val, I>::max(void) const {
 }
 template <class Val, class I>
 inline Val Bounded<Val, I>::width(void) const {
-  if (min() > max()) return 0;
-  if (min().isFinite() && max().isFinite()) return max() - min() + 1;
+  if (min() > max()) {
+    return 0;
+  }
+  if (min().isFinite() && max().isFinite()) {
+    return max() - min() + 1;
+  }
   return Val::infinity();
 }
 
@@ -226,8 +238,12 @@ inline Val Const<Val>::max(void) const {
 }
 template <class Val>
 inline Val Const<Val>::width(void) const {
-  if (min() > max()) return 0;
-  if (min().isFinite() && max().isFinite()) return max() - min() + 1;
+  if (min() > max()) {
+    return 0;
+  }
+  if (min().isFinite() && max().isFinite()) {
+    return max() - min() + 1;
+  }
   return Val::infinity();
 }
 
@@ -266,8 +282,12 @@ public:
 inline bool overlaps(const IntVal& x, const IntVal& y) { return x.plus(1) >= y; }
 /// Return whether an interval ending with \a x overlaps with an interval starting at \a y
 inline bool overlaps(const FloatVal& x, const FloatVal& y) {
-  if (x.isPlusInfinity()) return true;
-  if (y.isMinusInfinity()) return true;
+  if (x.isPlusInfinity()) {
+    return true;
+  }
+  if (y.isMinusInfinity()) {
+    return true;
+  }
   if (x.isFinite() && y.isFinite()) {
     return std::nextafter(x.toDouble(), INFINITY) >= y.toDouble();
   }
@@ -276,11 +296,15 @@ inline bool overlaps(const FloatVal& x, const FloatVal& y) {
 inline IntVal nextHigher(const IntVal& x) { return x.plus(1); }
 inline IntVal nextLower(const IntVal& x) { return x.minus(1); }
 inline FloatVal nextHigher(const FloatVal& x) {
-  if (x.isFinite()) return std::nextafter(x.toDouble(), INFINITY);
+  if (x.isFinite()) {
+    return std::nextafter(x.toDouble(), INFINITY);
+  }
   return x;
 }
 inline FloatVal nextLower(const FloatVal& x) {
-  if (x.isFinite()) return std::nextafter(x.toDouble(), -INFINITY);
+  if (x.isFinite()) {
+    return std::nextafter(x.toDouble(), -INFINITY);
+  }
   return x;
 }
 
@@ -381,20 +405,31 @@ public:
 
 template <class Val, class I, class J>
 inline void Inter<Val, I, J>::operator++(void) {
-  if (!i() || !j()) goto done;
+  if (!i() || !j()) {
+    goto done;
+  }
   do {
-    while (i() && (i.max() < j.min())) ++i;
-    if (!i()) goto done;
-    while (j() && (j.max() < i.min())) ++j;
-    if (!j()) goto done;
+    while (i() && (i.max() < j.min())) {
+      ++i;
+    }
+    if (!i()) {
+      goto done;
+    }
+    while (j() && (j.max() < i.min())) {
+      ++j;
+    }
+    if (!j()) {
+      goto done;
+    }
   } while (i.max() < j.min());
   // Now the intervals overlap: consume the smaller interval
   MinMax<Val>::ma = std::min(i.max(), j.max());
   MinMax<Val>::mi = std::max(i.min(), j.min());
-  if (i.max() < j.max())
+  if (i.max() < j.max()) {
     ++i;
-  else
+  } else {
     ++j;
+  }
   return;
 done:
   MinMax<Val>::finish();
@@ -452,27 +487,37 @@ inline void Diff<Val, I, J>::operator++(void) {
   // Precondition: mi <= ma
   // Task: find next mi greater than ma
   while (true) {
-    if (!i()) break;
+    if (!i()) {
+      break;
+    }
     bool isInfinite = (!MinMax<Val>::ma.isFinite() && MinMax<Val>::ma > 0);
     MinMax<Val>::mi = nextHigher(MinMax<Val>::ma);
     MinMax<Val>::ma = i.max();
     if (isInfinite || MinMax<Val>::mi > i.max()) {
       ++i;
-      if (!i()) break;
+      if (!i()) {
+        break;
+      }
       MinMax<Val>::mi = i.min();
       MinMax<Val>::ma = i.max();
     }
-    while (j() && (j.max() < MinMax<Val>::mi)) ++j;
+    while (j() && (j.max() < MinMax<Val>::mi)) {
+      ++j;
+    }
     if (j() && (j.min() <= MinMax<Val>::ma)) {
       // Now the interval [mi ... ma] must be shrunken
       // Is [mi ... ma] completely consumed?
-      if ((MinMax<Val>::mi >= j.min()) && (MinMax<Val>::ma <= j.max())) continue;
+      if ((MinMax<Val>::mi >= j.min()) && (MinMax<Val>::ma <= j.max())) {
+        continue;
+      }
       // Does [mi ... ma] overlap on the left?
       if (j.min() <= MinMax<Val>::mi) {
         MinMax<Val>::mi = nextHigher(j.max());
         // Search for max!
         ++j;
-        if (j() && (j.min() <= MinMax<Val>::ma)) MinMax<Val>::ma = nextLower(j.min());
+        if (j() && (j.min() <= MinMax<Val>::ma)) {
+          MinMax<Val>::ma = nextLower(j.min());
+        }
       } else {
         MinMax<Val>::ma = nextLower(j.min());
       }
@@ -651,20 +696,21 @@ inline IntVal cardinality(I& i) {
 template <class I, class J>
 inline bool equal(I& i, J& j) {
   // Are i and j equal?
-  while (i() && j())
+  while (i() && j()) {
     if ((i.min() == j.min()) && (i.max() == j.max())) {
       ++i;
       ++j;
     } else {
       return false;
     }
+  }
   return !i() && !j();
 }
 
 template <class I, class J>
 inline bool subset(I& i, J& j) {
   // Is i subset of j?
-  while (i() && j())
+  while (i() && j()) {
     if (j.max() < i.min()) {
       ++j;
     } else if ((i.min() >= j.min()) && (i.max() <= j.max())) {
@@ -672,13 +718,14 @@ inline bool subset(I& i, J& j) {
     } else {
       return false;
     }
+  }
   return !i();
 }
 
 template <class I, class J>
 inline bool disjoint(I& i, J& j) {
   // Are i and j disjoint?
-  while (i() && j())
+  while (i() && j()) {
     if (j.max() < i.min()) {
       ++j;
     } else if (i.max() < j.min()) {
@@ -686,6 +733,7 @@ inline bool disjoint(I& i, J& j) {
     } else {
       return false;
     }
+  }
   return true;
 }
 
@@ -712,18 +760,30 @@ inline CompareStatus compare(I& i, J& j) {
       subset = false;
     }
   }
-  if (i()) subset = false;
-  if (subset) return CS_SUBSET;
+  if (i()) {
+    subset = false;
+  }
+  if (subset) {
+    return CS_SUBSET;
+  }
   return disjoint ? CS_DISJOINT : CS_NONE;
 }
 
 template <class I, class J>
 inline bool less(I& i, J& j) {
   while (i()) {
-    if (!j()) return false;
-    if (i.min() < j.min()) return true;
-    if (i.min() > j.min()) return false;
-    if (i.max() < j.max()) return true;
+    if (!j()) {
+      return false;
+    }
+    if (i.min() < j.min()) {
+      return true;
+    }
+    if (i.min() > j.min()) {
+      return false;
+    }
+    if (i.max() < j.max()) {
+      return true;
+    }
     if (i.max() > j.max()) {
       ++j;
       return j();
@@ -731,17 +791,27 @@ inline bool less(I& i, J& j) {
     ++i;
     ++j;
   }
-  if (j()) return true;
+  if (j()) {
+    return true;
+  }
   return false;
 }
 
 template <class I, class J>
 inline bool lessEq(I& i, J& j) {
   while (i()) {
-    if (!j()) return false;
-    if (i.min() < j.min()) return true;
-    if (i.min() > j.min()) return false;
-    if (i.max() < j.max()) return true;
+    if (!j()) {
+      return false;
+    }
+    if (i.min() < j.min()) {
+      return true;
+    }
+    if (i.min() > j.min()) {
+      return false;
+    }
+    if (i.max() < j.max()) {
+      return true;
+    }
     if (i.max() > j.max()) {
       ++j;
       return j();

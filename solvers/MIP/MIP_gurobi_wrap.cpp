@@ -206,8 +206,9 @@ bool MIP_gurobi_wrapper::Options::processOption(int& i, std::vector<std::string>
   } else if (cop.get("--nonConvex --nonconvex --NonConvex", &nonConvex)) {
   } else if (cop.get("--gurobi-dll", &sGurobiDLL)) {
     //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
-  } else
+  } else {
     return false;
+  }
   return true;
 }
 
@@ -251,8 +252,9 @@ void* dll_sym(void* dll, const char* sym) {
 #else
   void* ret = GetProcAddress((HMODULE)dll, sym);
 #endif
-  if (ret == nullptr)
+  if (ret == nullptr) {
     throw MiniZinc::InternalError("cannot load symbol " + string(sym) + " from gurobi dll");
+  }
   return ret;
 }
 void dll_close(void* dll) {
@@ -390,11 +392,13 @@ void MIP_gurobi_wrapper::closeGUROBI() {
 
   /* Free environment */
 
-  if (nullptr != env) dll_GRBfreeenv(env);
-    /// and at last:
+  if (nullptr != env) {
+    dll_GRBfreeenv(env);
+  }
+  /// and at last:
 //   MIP_wrapper::cleanup();
 #ifdef GUROBI_PLUGIN
-    // dll_close(gurobi_dll);    // Is called too many times, disabling. 2019-05-06
+  // dll_close(gurobi_dll);    // Is called too many times, disabling. 2019-05-06
 #endif
 }
 
@@ -454,12 +458,14 @@ void MIP_gurobi_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
   const bool fLazy = (MaskConsType_Lazy & mask) != 0;
   /// Gurobi 6.5.2 has lazyness 1-3.
   if (fUser) {
-    if (fLazy)
+    if (fLazy) {
       nLazyAttr = 2;  // just active lazy
-    else
+    } else {
       nLazyAttr = 3;  // even LP-active
-  } else if (fLazy)
+    }
+  } else if (fLazy) {
     nLazyAttr = 1;  // very lazy
+  }
   if (nLazyAttr != 0) {
     nLazyIdx.push_back(nRows - 1);
     nLazyValue.push_back(nLazyAttr);
@@ -566,7 +572,9 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
     if (-1e100 != info->nTime1Feas) {
       double tNow;
       gw->dll_GRBcbget(cbdata, where, GRB_CB_RUNTIME, (void*)&tNow);
-      if (tNow - info->nTime1Feas >= info->nTimeoutFeas) gw->dll_GRBterminate(model);
+      if (tNow - info->nTime1Feas >= info->nTimeoutFeas) {
+        gw->dll_GRBterminate(model);
+      }
     }
   } else if (GRB_CB_MESSAGE == where) {
     /* Message callback */
@@ -611,10 +619,11 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
           int error =
               gw->dll_GRBcblazy(cbdata, static_cast<int>(cd.rmatind.size()), cd.rmatind.data(),
                                 cd.rmatval.data(), getGRBSense(cd.sense), cd.rhs);
-          if (error != 0)
+          if (error != 0) {
             cerr << "  GRB_wrapper: failed to add lazy cut. " << endl;
-          else
+          } else {
             newincumbent = -1;
+          }
           //             info->pOutput->objVal = 1e100;  // to mark that we can get a new incumbent
           //             which should be printed
         }
@@ -632,13 +641,18 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
       info->pOutput->dCPUTime = double(std::clock() - info->pOutput->cCPUTime0) / CLOCKS_PER_SEC;
 
       /// Set time for the 1st feas
-      if (0 <= info->nTimeoutFeas && -1e100 == info->nTime1Feas)
+      if (0 <= info->nTimeoutFeas && -1e100 == info->nTime1Feas) {
         gw->dll_GRBcbget(cbdata, where, GRB_CB_RUNTIME, (void*)&info->nTime1Feas);
+      }
 
       /// Call the user function:
-      if (info->solcbfn != nullptr) (*info->solcbfn)(*info->pOutput, info->psi);
+      if (info->solcbfn != nullptr) {
+        (*info->solcbfn)(*info->pOutput, info->psi);
+      }
 
-      if (0 == info->nTimeoutFeas) gw->dll_GRBterminate(model);  // Straight after feas
+      if (0 == info->nTimeoutFeas) {
+        gw->dll_GRBterminate(model);  // Straight after feas
+      }
     }
   } else if (GRB_CB_MIPNODE == where) {
     int status;
@@ -658,19 +672,24 @@ static int __stdcall solcallback(GRBmodel* model, void* cbdata, int where, void*
       //       if ( cutInput.size() )
       //         cerr << "\n   N CUTS:  " << nCuts << endl;
       for (auto& cd : cutInput) {
-        if ((cd.mask & (MIP_wrapper::MaskConsType_Usercut | MIP_wrapper::MaskConsType_Lazy)) == 0)
+        if ((cd.mask & (MIP_wrapper::MaskConsType_Usercut | MIP_wrapper::MaskConsType_Lazy)) == 0) {
           throw runtime_error("Cut callback: should be user/lazy");
+        }
         if ((cd.mask & MIP_wrapper::MaskConsType_Usercut) != 0) {
           int error =
               gw->dll_GRBcbcut(cbdata, static_cast<int>(cd.rmatind.size()), cd.rmatind.data(),
                                cd.rmatval.data(), getGRBSense(cd.sense), cd.rhs);
-          if (error != 0) cerr << "  GRB_wrapper: failed to add user cut. " << endl;
+          if (error != 0) {
+            cerr << "  GRB_wrapper: failed to add user cut. " << endl;
+          }
         }
         if ((cd.mask & MIP_wrapper::MaskConsType_Lazy) != 0) {
           int error =
               gw->dll_GRBcblazy(cbdata, static_cast<int>(cd.rmatind.size()), cd.rmatind.data(),
                                 cd.rmatval.data(), getGRBSense(cd.sense), cd.rhs);
-          if (error != 0) cerr << "  GRB_wrapper: failed to add lazy cut. " << endl;
+          if (error != 0) {
+            cerr << "  GRB_wrapper: failed to add lazy cut. " << endl;
+          }
         }
       }
     }
@@ -699,7 +718,9 @@ MIP_gurobi_wrapper::Status MIP_gurobi_wrapper::convertStatus(int gurobiStatus) {
     int solcount = 0;
     error = dll_GRBgetintattr(model, "SolCount", &solcount);
     wrap_assert(error == 0, "  Failure to access solution count.", false);
-    if (solcount != 0) s = Status::SAT;
+    if (solcount != 0) {
+      s = Status::SAT;
+    }
     oss << "Gurobi stopped with status " << gurobiStatus;
   }
   output.statusName = gurobi_status_buffer = oss.str();
@@ -713,8 +734,9 @@ void MIP_gurobi_wrapper::solve() {    // Move into ancestor?
   /// ADDING LAZY CONSTRAINTS IF ANY
   if (nLazyIdx.size() != 0u) {
     assert(nLazyIdx.size() == nLazyValue.size());
-    if (fVerbose)
+    if (fVerbose) {
       cerr << "  MIP_gurobi_wrapper: marking " << nLazyIdx.size() << " lazy cuts." << endl;
+    }
     error = dll_GRBsetintattrlist(model, "Lazy", static_cast<int>(nLazyIdx.size()), nLazyIdx.data(),
                                   nLazyValue.data());
     wrap_assert(error == 0, "Failed to set constraint attribute.");
@@ -828,21 +850,25 @@ void MIP_gurobi_wrapper::solve() {    // Move into ancestor?
   if (true) {  // Need for logging
     cbui.fVerb = fVerbose;
     cbui.nTimeoutFeas = options->nTimeoutFeas1000 / 1000.0;
-    if (!options->flag_intermediate) cbui.solcbfn = nullptr;
+    if (!options->flag_intermediate) {
+      cbui.solcbfn = nullptr;
+    }
     if (cbui.cutcbfn != nullptr) {
       assert(cbui.cutMask & (MaskConsType_Usercut | MaskConsType_Lazy));
       if ((cbui.cutMask & MaskConsType_Usercut) != 0) {
         // For user cuts, needs to keep some info after presolve
-        if (fVerbose)
+        if (fVerbose) {
           cerr << "  MIP_gurobi_wrapper: user cut callback enabled, setting PreCrush=1" << endl;
+        }
         error = dll_GRBsetintparam(dll_GRBgetenv(model), GRB_INT_PAR_PRECRUSH, 1);
         wrap_assert(error == 0, "Failed to set GRB_INT_PAR_PRECRUSH.", false);
       }
       if ((cbui.cutMask & MaskConsType_Lazy) != 0) {
         // For lazy cuts, Gurobi disables some presolves
-        if (fVerbose)
+        if (fVerbose) {
           cerr << "  MIP_gurobi_wrapper: lazy cut callback enabled, setting LazyConstraints=1"
                << endl;
+        }
         error = dll_GRBsetintparam(dll_GRBgetenv(model), GRB_INT_PAR_LAZYCONSTRAINTS, 1);
         wrap_assert(error == 0, "Failed to set GRB_INT_PAR_LAZYCONSTRAINTS.", false);
       }

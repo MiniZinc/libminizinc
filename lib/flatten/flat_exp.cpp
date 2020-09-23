@@ -75,11 +75,15 @@ EE flatten_par(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
 EE flatten_error(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
 
 EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
-  if (e == nullptr) return EE();
+  if (e == nullptr) {
+    return EE();
+  }
 
 #ifndef NDEBUG
   Annotation& e_ann = e->ann();
-  if (e_ann.contains(constants().ann.mzn_break_here)) mzn_break_here(e);
+  if (e_ann.contains(constants().ann.mzn_break_here)) {
+    mzn_break_here(e);
+  }
 #endif
 
   assert(!e->type().isunknown());

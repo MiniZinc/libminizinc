@@ -113,8 +113,9 @@ public:
         return lhs - rhs;
       } else if (GQ == sense) {
         return rhs - lhs;
-      } else
+      } else {
         assert(0);
+      }
       return 0.0;
     }
   };
@@ -204,7 +205,9 @@ public:
   virtual VarId addVar(double obj, double lb, double ub, VarType vt, std::string name = "") {
     //       cerr << "  AddVar: " << lb << ":   ";
     VarId res = addVarLocal(obj, lb, ub, vt, name);
-    if (fPhase1Over) addVar(res);
+    if (fPhase1Over) {
+      addVar(res);
+    }
     return res;
   }
   int nLitVars = 0;
@@ -219,9 +222,13 @@ public:
     oss << "lit_" << v << "__" << (nLitVars++);
     std::string name = oss.str();
     size_t pos = name.find('.');
-    if (std::string::npos != pos) name.replace(pos, 1, "p");
+    if (std::string::npos != pos) {
+      name.replace(pos, 1, "p");
+    }
     VarId res = addVarLocal(0.0, v, v, REAL, name);
-    if (fPhase1Over) addVar(res);
+    if (fPhase1Over) {
+      addVar(res);
+    }
     //       cerr << "  AddLitVar " << v << "   (PROBABLY WRONG)" << endl;
     sLitValues[v] = res;
     return res;
@@ -230,13 +237,16 @@ public:
   virtual void addPhase1Vars() {
     assert(0 == getNColsModel());
     assert(!fPhase1Over);
-    if (fVerbose)
+    if (fVerbose) {
       std::cerr << "  MIP_wrapper: adding the " << colObj.size() << " Phase-1 variables..."
                 << std::flush;
+    }
     if (colObj.size() != 0u) {
       doAddVars(colObj.size(), &colObj[0], &colLB[0], &colUB[0], &colTypes[0], &colNames[0]);
     }
-    if (fVerbose) std::cerr << " done." << std::endl;
+    if (fVerbose) {
+      std::cerr << " done." << std::endl;
+    }
     fPhase1Over = true;  // SCIP needs after adding
   }
 

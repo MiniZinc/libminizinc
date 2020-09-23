@@ -31,11 +31,15 @@ std::string trim(const std::string& s0) {
   // remove carriage returns
   size_t j = 0;
   for (size_t i = 0; i < s.size(); i++) {
-    if (s[i] != '\r') s[j++] = s[i];
+    if (s[i] != '\r') {
+      s[j++] = s[i];
+    }
   }
   s.resize(j);
   size_t first_line_indent = s.find_first_not_of(" \t");
-  if (first_line_indent == std::string::npos) return "";
+  if (first_line_indent == std::string::npos) {
+    return "";
+  }
   size_t first_nl = s.find("\n");
   std::ostringstream oss;
   if (first_line_indent == first_nl) {
@@ -47,9 +51,13 @@ std::string trim(const std::string& s0) {
         first_nl == std::string::npos ? std::string::npos : first_nl - first_line_indent + 1;
     oss << s.substr(first_line_indent, end_of_first_line);
   }
-  if (first_nl == std::string::npos) return oss.str();
+  if (first_nl == std::string::npos) {
+    return oss.str();
+  }
   size_t unindent = s.find_first_not_of(" \t", first_nl + 1);
-  if (unindent == std::string::npos) return oss.str();
+  if (unindent == std::string::npos) {
+    return oss.str();
+  }
   size_t pos = s.find("\n", first_nl + 1);
   if (unindent == 0 || unindent > pos) {
     oss << s.substr(first_nl + 1, std::string::npos);
@@ -68,7 +76,9 @@ std::string trim(const std::string& s0) {
     }
     pos = (lastpos == std::string::npos ? lastpos : s.find("\n", lastpos));
   }
-  if (lastpos != std::string::npos) oss << s.substr(lastpos, std::string::npos);
+  if (lastpos != std::string::npos) {
+    oss << s.substr(lastpos, std::string::npos);
+  }
   return oss.str();
 }
 
@@ -134,7 +144,9 @@ public:
             << parent->subgroups.m[idx + 1]->getAnchor(level - 1, indivFileLevel) << "' title='"
             << parent->subgroups.m[idx + 1]->htmlName << "'>&#8658;</a> ";
       }
-      if (generateIndex) oss << "<a href='doc-index.html'>Index</a>\n";
+      if (generateIndex) {
+        oss << "<a href='doc-index.html'>Index</a>\n";
+      }
       if (items.size() > 0) {
         oss << "<a href='javascript:void(0)' onclick='revealAll()' class='mzn-nav-text'>reveal "
                "all</a>\n";
@@ -164,7 +176,9 @@ public:
       if (parent == nullptr && generateIndex) {
         oss << "<p><a href='doc-index.html'>Index</a></p>\n";
       }
-      if (items.size() > 0) oss << "<p>Declarations in this section:</p>\n";
+      if (items.size() > 0) {
+        oss << "<p>Declarations in this section:</p>\n";
+      }
     }
 
     struct SortById {
@@ -179,14 +193,18 @@ public:
     const char* dt_desc[] = {"Parameters", "Variables", "Functions and Predicates"};
     for (std::vector<DocItem>::const_iterator it = items.begin(); it != items.end(); ++it) {
       if (it->t != cur_t) {
-        if (cur_t != -1) oss << "</div>\n";
+        if (cur_t != -1) {
+          oss << "</div>\n";
+        }
         cur_t = it->t;
         oss << "<div class='mzn-decl-type-" << dt[cur_t] << "'>\n";
         oss << "<div class='mzn-decl-type-heading'>" << dt_desc[cur_t] << "</div>\n";
       }
       oss << it->doc;
     }
-    if (cur_t != -1) oss << "</div>\n";
+    if (cur_t != -1) {
+      oss << "</div>\n";
+    }
 
     if (level >= indivFileLevel) {
       for (unsigned int i = 0; i < subgroups.m.size(); i++) {
@@ -202,7 +220,9 @@ public:
     std::vector<char> levelChar({'#', '=', '-', '^', '+', '"'});
     std::ostringstream oss;
     oss << s << "\n";
-    for (int i = 0; i < s.size(); i++) oss << levelChar[level];
+    for (int i = 0; i < s.size(); i++) {
+      oss << levelChar[level];
+    }
     oss << "\n\n";
     return oss.str();
   }
@@ -243,8 +263,9 @@ public:
       for (std::vector<DocItem>::const_iterator it = items.begin(); it != items.end(); ++it) {
         if (it->t != cur_t) {
           cur_t = it->t;
-          if (nHeadings > 1)
+          if (nHeadings > 1) {
             oss << rstHeading(dt_desc[cur_t], subgroups.m.size() == 0 ? level + 1 : level + 2);
+          }
         }
         oss << it->doc;
       }
@@ -259,8 +280,11 @@ GroupMap::~GroupMap() {
   }
 }
 GroupMap::Map::iterator GroupMap::find(const std::string& n) {
-  for (auto it = m.begin(); it != m.end(); ++it)
-    if ((*it)->name == n) return it;
+  for (auto it = m.begin(); it != m.end(); ++it) {
+    if ((*it)->name == n) {
+      return it;
+    }
+  }
   return m.end();
 }
 
@@ -335,10 +359,16 @@ void setGroupDesc(Group& maingroup, const std::string& group, std::string htmlNa
 
 std::string extractArgWord(std::string& s, size_t n) {
   size_t start = n;
-  while (start < s.size() && s[start] != ' ' && s[start] != '\t') start++;
-  while (start < s.size() && (s[start] == ' ' || s[start] == '\t')) start++;
+  while (start < s.size() && s[start] != ' ' && s[start] != '\t') {
+    start++;
+  }
+  while (start < s.size() && (s[start] == ' ' || s[start] == '\t')) {
+    start++;
+  }
   size_t end = start + 1;
-  while (end < s.size() && ((isalnum(s[end]) != 0) || s[end] == '_' || s[end] == '.')) end++;
+  while (end < s.size() && ((isalnum(s[end]) != 0) || s[end] == '_' || s[end] == '.')) {
+    end++;
+  }
   std::string ret = s.substr(start, end - start);
   s = s.substr(end, std::string::npos);
   return ret;
@@ -461,14 +491,22 @@ protected:
     size_t pos = std::min(s.find("\\a"), s.find("\\p"));
     size_t mathjax_open = s.find("\\(");
     size_t mathjax_close = s.rfind("\\)");
-    if (pos == std::string::npos) return replacements;
+    if (pos == std::string::npos) {
+      return replacements;
+    }
     while (pos != std::string::npos) {
       oss << s.substr(lastpos, pos - lastpos);
       size_t start = pos;
-      while (start < s.size() && s[start] != ' ' && s[start] != '\t') start++;
-      while (start < s.size() && (s[start] == ' ' || s[start] == '\t')) start++;
+      while (start < s.size() && s[start] != ' ' && s[start] != '\t') {
+        start++;
+      }
+      while (start < s.size() && (s[start] == ' ' || s[start] == '\t')) {
+        start++;
+      }
       size_t end = start + 1;
-      while (end < s.size() && ((isalnum(s[end]) != 0) || s[end] == '_')) end++;
+      while (end < s.size() && ((isalnum(s[end]) != 0) || s[end] == '_')) {
+        end++;
+      }
       if (s[pos + 1] == 'a') {
         replacements.push_back(s.substr(start, end - start));
         if (pos >= mathjax_open && pos <= mathjax_close) {
@@ -493,13 +531,21 @@ protected:
 
   std::pair<std::string, std::string> extractArgLine(std::string& s, size_t n) {
     size_t start = n;
-    while (start < s.size() && s[start] != ' ' && s[start] != '\t') start++;
-    while (start < s.size() && (s[start] == ' ' || s[start] == '\t')) start++;
+    while (start < s.size() && s[start] != ' ' && s[start] != '\t') {
+      start++;
+    }
+    while (start < s.size() && (s[start] == ' ' || s[start] == '\t')) {
+      start++;
+    }
     size_t end = start + 1;
-    while (end < s.size() && s[end] != ':') end++;
+    while (end < s.size() && s[end] != ':') {
+      end++;
+    }
     std::string arg = s.substr(start, end - start);
     size_t doc_start = end + 1;
-    while (end < s.size() && s[end] != '\n') end++;
+    while (end < s.size() && s[end] != '\n') {
+      end++;
+    }
     std::string ret = s.substr(doc_start, end - doc_start);
     replaceArgs(ret);
     s = s.substr(0, n) + s.substr(end, std::string::npos);
@@ -556,7 +602,9 @@ protected:
       }
     }
     oss << s.substr(lastpos, std::string::npos);
-    if (inUl) oss << "</ul>\n";
+    if (inUl) {
+      oss << "</ul>\n";
+    }
     oss << "</p>\n";
     return oss.str();
   }
@@ -566,20 +614,29 @@ public:
                    bool includeStdLib)
       : env(env0), _maingroup(mg), _funmap(fm), _includeStdLib(includeStdLib) {}
   bool enterModel(Model* m) {
-    if (!_includeStdLib && m->filename() == "stdlib.mzn") return false;
+    if (!_includeStdLib && m->filename() == "stdlib.mzn") {
+      return false;
+    }
     const std::string& dc = m->docComment();
     if (!dc.empty()) {
       size_t gpos = dc.find("@groupdef");
       while (gpos != std::string::npos) {
         size_t start = gpos;
-        while (start < dc.size() && dc[start] != ' ' && dc[start] != '\t') start++;
-        while (start < dc.size() && (dc[start] == ' ' || dc[start] == '\t')) start++;
+        while (start < dc.size() && dc[start] != ' ' && dc[start] != '\t') {
+          start++;
+        }
+        while (start < dc.size() && (dc[start] == ' ' || dc[start] == '\t')) {
+          start++;
+        }
         size_t end = start + 1;
-        while (end < dc.size() && ((isalnum(dc[end]) != 0) || dc[end] == '_' || dc[end] == '.'))
+        while (end < dc.size() && ((isalnum(dc[end]) != 0) || dc[end] == '_' || dc[end] == '.')) {
           end++;
+        }
         std::string groupName = dc.substr(start, end - start);
         size_t doc_start = end + 1;
-        while (end < dc.size() && dc[end] != '\n') end++;
+        while (end < dc.size() && dc[end] != '\n') {
+          end++;
+        }
         std::string groupHTMLName = dc.substr(doc_start, end - doc_start);
 
         size_t next = dc.find("@groupdef", gpos + 1);
@@ -644,8 +701,12 @@ public:
       std::vector<std::string> args = replaceArgs(ds);
 
       std::unordered_set<std::string> allArgs;
-      for (auto& arg : args) allArgs.insert(arg);
-      for (auto& param : params) allArgs.insert(param.first);
+      for (auto& arg : args) {
+        allArgs.insert(arg);
+      }
+      for (auto& param : params) {
+        allArgs.insert(param.first);
+      }
 
       GCLock lock;
       for (unsigned int i = 0; i < fi->params().size(); i++) {
@@ -706,7 +767,9 @@ public:
           os << ",";
           if (splitArgs) {
             os << "\n";
-            for (auto j = static_cast<unsigned int>(align); (j--) != 0u;) os << " ";
+            for (auto j = static_cast<unsigned int>(align); (j--) != 0u;) {
+              os << " ";
+            }
           } else {
             os << " ";
           }
@@ -830,7 +893,9 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
       }
     }
     bool operator<(const IndexEntry& e) const {
-      if ((isalpha(id[0]) == 0) && (isalpha(e.id[0]) != 0)) return true;
+      if ((isalpha(id[0]) == 0) && (isalpha(e.id[0]) != 0)) {
+        return true;
+      }
       return id == e.id ? groupName < e.groupName : id < e.id;
     }
   };
@@ -959,10 +1024,16 @@ protected:
     while (pos != std::string::npos) {
       oss << s.substr(lastpos, pos - lastpos);
       size_t start = pos;
-      while (start < s.size() && s[start] != ' ' && s[start] != '\t') start++;
-      while (start < s.size() && (s[start] == ' ' || s[start] == '\t')) start++;
+      while (start < s.size() && s[start] != ' ' && s[start] != '\t') {
+        start++;
+      }
+      while (start < s.size() && (s[start] == ' ' || s[start] == '\t')) {
+        start++;
+      }
       size_t end = start + 1;
-      while (end < s.size() && ((isalnum(s[end]) != 0) || s[end] == '_')) end++;
+      while (end < s.size() && ((isalnum(s[end]) != 0) || s[end] == '_')) {
+        end++;
+      }
       bool needSpace = pos != 0 && s[pos - 1] != ' ' && s[pos - 1] != '\n';
       if (s[pos + 1] == 'a') {
         replacements.push_back(s.substr(start, end - start));
@@ -992,7 +1063,9 @@ protected:
         // remove trailing whitespace
         std::string t = s.substr(lastpos, pos - lastpos);
         size_t t_end = t.find_last_not_of(" ");
-        if (t_end != std::string::npos) t_end++;
+        if (t_end != std::string::npos) {
+          t_end++;
+        }
         oss2 << t.substr(0, t_end);
       } else {
         oss2 << s.substr(lastpos, pos - lastpos);
@@ -1017,7 +1090,9 @@ protected:
         // remove trailing whitespace
         std::string t = s.substr(lastpos, pos - lastpos);
         size_t t_end = t.find_last_not_of(" ");
-        if (t_end != std::string::npos) t_end++;
+        if (t_end != std::string::npos) {
+          t_end++;
+        }
         oss3 << t.substr(0, t_end);
       } else {
         oss3 << s.substr(lastpos, pos - lastpos);
@@ -1038,13 +1113,21 @@ protected:
 
   std::pair<std::string, std::string> extractArgLine(std::string& s, size_t n) {
     size_t start = n;
-    while (start < s.size() && s[start] != ' ' && s[start] != '\t') start++;
-    while (start < s.size() && (s[start] == ' ' || s[start] == '\t')) start++;
+    while (start < s.size() && s[start] != ' ' && s[start] != '\t') {
+      start++;
+    }
+    while (start < s.size() && (s[start] == ' ' || s[start] == '\t')) {
+      start++;
+    }
     size_t end = start + 1;
-    while (end < s.size() && s[end] != ':') end++;
+    while (end < s.size() && s[end] != ':') {
+      end++;
+    }
     std::string arg = s.substr(start, end - start);
     size_t doc_start = end + 1;
-    while (end < s.size() && s[end] != '\n') end++;
+    while (end < s.size() && s[end] != '\n') {
+      end++;
+    }
     std::string ret = s.substr(doc_start, end - doc_start);
     replaceArgsRST(ret);
     s = s.substr(0, n) + s.substr(end, std::string::npos);
@@ -1056,20 +1139,29 @@ public:
                   bool includeStdLib)
       : env(env0), _maingroup(mg), _funmap(fm), _includeStdLib(includeStdLib) {}
   bool enterModel(Model* m) {
-    if (!_includeStdLib && m->filename() == "stdlib.mzn") return false;
+    if (!_includeStdLib && m->filename() == "stdlib.mzn") {
+      return false;
+    }
     const std::string& dc = m->docComment();
     if (!dc.empty()) {
       size_t gpos = dc.find("@groupdef");
       while (gpos != std::string::npos) {
         size_t start = gpos;
-        while (start < dc.size() && dc[start] != ' ' && dc[start] != '\t') start++;
-        while (start < dc.size() && (dc[start] == ' ' || dc[start] == '\t')) start++;
+        while (start < dc.size() && dc[start] != ' ' && dc[start] != '\t') {
+          start++;
+        }
+        while (start < dc.size() && (dc[start] == ' ' || dc[start] == '\t')) {
+          start++;
+        }
         size_t end = start + 1;
-        while (end < dc.size() && ((isalnum(dc[end]) != 0) || dc[end] == '_' || dc[end] == '.'))
+        while (end < dc.size() && ((isalnum(dc[end]) != 0) || dc[end] == '_' || dc[end] == '.')) {
           end++;
+        }
         std::string groupName = dc.substr(start, end - start);
         size_t doc_start = end + 1;
-        while (end < dc.size() && dc[end] != '\n') end++;
+        while (end < dc.size() && dc[end] != '\n') {
+          end++;
+        }
         std::string groupHTMLName = dc.substr(doc_start, end - doc_start);
 
         size_t next = dc.find("@groupdef", gpos + 1);
@@ -1141,8 +1233,12 @@ public:
       std::vector<std::string> args = replaceArgsRST(ds);
 
       std::unordered_set<std::string> allArgs;
-      for (auto& arg : args) allArgs.insert(arg);
-      for (auto& param : params) allArgs.insert(param.first);
+      for (auto& arg : args) {
+        allArgs.insert(arg);
+      }
+      for (auto& param : params) {
+        allArgs.insert(param.first);
+      }
 
       GCLock lock;
       for (unsigned int i = 0; i < fi->params().size(); i++) {
@@ -1193,7 +1289,9 @@ public:
         fs << *fi->params()[i]->ti();
         std::ostringstream fid;
         fid << *fi->params()[i]->id();
-        if (fid.str().size() != 0) fs << ": " << *fi->params()[i]->id();
+        if (fid.str().size() != 0) {
+          fs << ": " << *fi->params()[i]->id();
+        }
         if (i < fi->params().size() - 1) {
           fs << ", ";
         }
@@ -1203,12 +1301,16 @@ public:
         os << *fi->params()[i]->ti();
         std::ostringstream fid;
         fid << *fi->params()[i]->id();
-        if (fid.str().size() != 0) os << ": " << *fi->params()[i]->id();
+        if (fid.str().size() != 0) {
+          os << ": " << *fi->params()[i]->id();
+        }
         if (i < fi->params().size() - 1) {
           os << ",";
           if (splitArgs) {
             os << "\n  ";
-            for (auto j = static_cast<unsigned int>(align); (j--) != 0u;) os << " ";
+            for (auto j = static_cast<unsigned int>(align); (j--) != 0u;) {
+              os << " ";
+            }
           } else {
             os << " ";
           }

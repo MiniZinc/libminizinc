@@ -32,10 +32,11 @@ EE flatten_par(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         id->decl()->flat(vd);
         auto* al = follow_id(vd->id())->cast<ArrayLit>();
         if (al->size() == 0) {
-          if (r == nullptr)
+          if (r == nullptr) {
             ret.r = al;
-          else
+          } else {
             ret.r = bind(env, ctx, r, al);
+          }
           ret.b = bind(env, Ctx(), b, constants().lit_true);
           return ret;
         }
@@ -51,10 +52,11 @@ EE flatten_par(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       GCLock lock;
       auto* al = follow_id(eval_par(env, e))->cast<ArrayLit>();
       if (al->size() == 0 || ((r != nullptr) && r->e() == nullptr)) {
-        if (r == nullptr)
+        if (r == nullptr) {
           ret.r = al;
-        else
+        } else {
           ret.r = bind(env, ctx, r, al);
+        }
         ret.b = bind(env, Ctx(), b, constants().lit_true);
         return ret;
       }

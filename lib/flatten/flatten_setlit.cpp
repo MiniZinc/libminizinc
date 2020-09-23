@@ -19,8 +19,9 @@ EE flatten_setlit(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   auto* sl = e->cast<SetLit>();
   assert(sl->isv() == nullptr && sl->fsv() == nullptr);
   std::vector<EE> elems_ee(sl->v().size());
-  for (unsigned int i = sl->v().size(); (i--) != 0u;)
+  for (unsigned int i = sl->v().size(); (i--) != 0u;) {
     elems_ee[i] = flat_exp(env, ctx, sl->v()[i], nullptr, nullptr);
+  }
   std::vector<Expression*> elems(elems_ee.size());
   bool allPar = true;
   bool hadOpt = false;

@@ -49,10 +49,14 @@ int main(int argc, char** argv) {
   }
   string globals_dir;
 
-  if (argc < 2) goto error;
+  if (argc < 2) {
+    goto error;
+  }
 
   for (int i = 1; i < argc; i++) {
-    if (string(argv[i]) == string("-h") || string(argv[i]) == string("--help")) goto error;
+    if (string(argv[i]) == string("-h") || string(argv[i]) == string("--help")) {
+      goto error;
+    }
     if (string(argv[i]) == string("--version")) {
       std::cout << "MiniZinc documentation generator, version " << MZN_VERSION_MAJOR << "."
                 << MZN_VERSION_MINOR << "." << MZN_VERSION_PATCH << std::endl;
@@ -74,7 +78,9 @@ int main(int argc, char** argv) {
       flag_verbose = true;
     } else if (string(argv[i]) == "--stdlib-dir") {
       i++;
-      if (i == argc) goto error;
+      if (i == argc) {
+        goto error;
+      }
       std_lib_dir = argv[i];
     } else if (beginswith(string(argv[i]), "-G")) {
       string filename(argv[i]);
@@ -89,15 +95,21 @@ int main(int argc, char** argv) {
       }
     } else if (string(argv[i]) == "--toplevel-groups") {
       i++;
-      if (i == argc) goto error;
+      if (i == argc) {
+        goto error;
+      }
       toplevel_groups = atoi(argv[i]);
     } else if (string(argv[i]) == "--html-header" || string(argv[i]) == "--rst-header") {
       i++;
-      if (i == argc) goto error;
+      if (i == argc) {
+        goto error;
+      }
       header_file = string(argv[i]);
     } else if (string(argv[i]) == "--html-footer" || string(argv[i]) == "--rst-footer") {
       i++;
-      if (i == argc) goto error;
+      if (i == argc) {
+        goto error;
+      }
       footer_file = string(argv[i]);
     } else if (string(argv[i]) == "--include-stdlib") {
       flag_include_stdlib = true;
@@ -105,11 +117,15 @@ int main(int argc, char** argv) {
       flag_index = false;
     } else if (string(argv[i]) == "--globals-dir" || string(argv[i]) == "--mzn-globals-dir") {
       i++;
-      if (i == argc) goto error;
+      if (i == argc) {
+        goto error;
+      }
       globals_dir = argv[i];
     } else if (string(argv[i]) == "--output-base") {
       i++;
-      if (i == argc) goto error;
+      if (i == argc) {
+        goto error;
+      }
       output_base = argv[i];
     } else if (string(argv[i]) == "--rst-output") {
       flag_rst = true;
@@ -122,7 +138,9 @@ int main(int argc, char** argv) {
       }
       size_t last_dot = input_file.find_last_of('.');
       std::string extension;
-      if (last_dot != string::npos) extension = input_file.substr(last_dot, string::npos);
+      if (last_dot != string::npos) {
+        extension = input_file.substr(last_dot, string::npos);
+      }
       if (extension == ".mzn") {
         if (filename == "") {
           filename = input_file;
@@ -198,7 +216,9 @@ int main(int argc, char** argv) {
     }
 
     std::stringstream errstream;
-    if (flag_verbose) std::cerr << "Parsing '" << filename << "'" << std::endl;
+    if (flag_verbose) {
+      std::cerr << "Parsing '" << filename << "'" << std::endl;
+    }
     std::vector<std::string> filenames;
     filenames.push_back(filename);
     Env env;
@@ -206,19 +226,27 @@ int main(int argc, char** argv) {
                          flag_verbose, errstream)) {
       try {
         env.model(m);
-        if (flag_verbose) std::cerr << "Done parsing." << std::endl;
-        if (flag_verbose) std::cerr << "Typechecking ...";
+        if (flag_verbose) {
+          std::cerr << "Done parsing." << std::endl;
+        }
+        if (flag_verbose) {
+          std::cerr << "Typechecking ...";
+        }
         vector<TypeError> typeErrors;
         MiniZinc::typecheck(env, m, typeErrors, true, false);
         if (typeErrors.size() > 0) {
           for (auto& typeError : typeErrors) {
-            if (flag_verbose) std::cerr << std::endl;
+            if (flag_verbose) {
+              std::cerr << std::endl;
+            }
             std::cerr << typeError.loc() << ":" << std::endl;
             std::cerr << typeError.what() << ": " << typeError.msg() << std::endl;
           }
           exit(EXIT_FAILURE);
         }
-        if (flag_verbose) std::cerr << " done" << std::endl;
+        if (flag_verbose) {
+          std::cerr << " done" << std::endl;
+        }
         std::string basename = output_base;
         std::string basedir;
         size_t lastSlash = output_base.find_last_of("/");
@@ -247,24 +275,32 @@ int main(int argc, char** argv) {
           os.close();
         }
       } catch (LocationException& e) {
-        if (flag_verbose) std::cerr << std::endl;
+        if (flag_verbose) {
+          std::cerr << std::endl;
+        }
         std::cerr << e.loc() << ":" << std::endl;
         std::cerr << e.what() << ": " << e.msg() << std::endl;
         exit(EXIT_FAILURE);
       } catch (Exception& e) {
-        if (flag_verbose) std::cerr << std::endl;
+        if (flag_verbose) {
+          std::cerr << std::endl;
+        }
         std::cerr << e.what() << ": " << e.msg() << std::endl;
         exit(EXIT_FAILURE);
       }
     } else {
-      if (flag_verbose) std::cerr << std::endl;
+      if (flag_verbose) {
+        std::cerr << std::endl;
+      }
       std::copy(istreambuf_iterator<char>(errstream), istreambuf_iterator<char>(),
                 ostreambuf_iterator<char>(std::cerr));
       exit(EXIT_FAILURE);
     }
   }
 
-  if (flag_verbose) std::cerr << "Done." << std::endl;
+  if (flag_verbose) {
+    std::cerr << "Done." << std::endl;
+  }
   return 0;
 
 error:

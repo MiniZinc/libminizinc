@@ -40,7 +40,9 @@ bool Model::FnEntry::compare(const Model::FnEntry& e1, const Model::FnEntry& e2)
         if (e1.t[i].isSubtypeOf(e2.t[i], true)) {
           return true;
         } else {
-          if (e2.t[i].isSubtypeOf(e1.t[i], true)) return false;
+          if (e2.t[i].isSubtypeOf(e1.t[i], true)) {
+            return false;
+          }
           switch (e1.t[i].cmp(e2.t[i])) {
             case -1:
               return true;
@@ -84,31 +86,43 @@ void Model::addItem(Item* i) {
   _items.push_back(i);
   if (i->isa<SolveI>()) {
     Model* m = this;
-    while (m->_parent != nullptr) m = m->_parent;
+    while (m->_parent != nullptr) {
+      m = m->_parent;
+    }
     m->_solveItem = i->cast<SolveI>();
   } else if (i->isa<OutputI>()) {
     Model* m = this;
-    while (m->_parent != nullptr) m = m->_parent;
+    while (m->_parent != nullptr) {
+      m = m->_parent;
+    }
     m->_outputItem = i->cast<OutputI>();
   }
 }
 
 void Model::setOutputItem(OutputI* oi) {
   Model* m = this;
-  while (m->_parent != nullptr) m = m->_parent;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
   m->_outputItem = oi;
 }
 
 namespace {
 /// Return lowest possible base type given other type-inst restrictions
 Type::BaseType lowestBt(const Type& t) {
-  if (t.st() == Type::ST_SET && t.ti() == Type::TI_VAR) return Type::BT_INT;
+  if (t.st() == Type::ST_SET && t.ti() == Type::TI_VAR) {
+    return Type::BT_INT;
+  }
   return Type::BT_BOOL;
 }
 /// Return highest possible base type given other type-inst restrictions
 Type::BaseType highestBt(const Type& t) {
-  if (t.st() == Type::ST_SET && t.ti() == Type::TI_VAR) return Type::BT_INT;
-  if (t.ti() == Type::TI_VAR || t.st() == Type::ST_SET) return Type::BT_FLOAT;
+  if (t.st() == Type::ST_SET && t.ti() == Type::TI_VAR) {
+    return Type::BT_INT;
+  }
+  if (t.ti() == Type::TI_VAR || t.st() == Type::ST_SET) {
+    return Type::BT_FLOAT;
+  }
   return Type::BT_ANN;
 }
 }  // namespace
@@ -144,7 +158,9 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
     }
 
     std::vector<int> stack;
-    for (unsigned int i = 0; i < type_ids.size(); i++) stack.push_back(i);
+    for (unsigned int i = 0; i < type_ids.size(); i++) {
+      stack.push_back(i);
+    }
     int final_id = static_cast<int>(type_ids.size()) - 1;
 
     while (!stack.empty()) {
@@ -194,7 +210,9 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
 
 void Model::registerFn(EnvI& env, FunctionI* fi) {
   Model* m = this;
-  while (m->_parent != nullptr) m = m->_parent;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
   auto i_id = m->fnmap.find(fi->id());
   if (i_id == m->fnmap.end()) {
     // new element
@@ -255,9 +273,13 @@ void Model::registerFn(EnvI& env, FunctionI* fi) {
 
 FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type>& t,
                           bool strictEnums) {
-  if (id == constants().var_redef->id()) return constants().var_redef;
+  if (id == constants().var_redef->id()) {
+    return constants().var_redef;
+  }
   Model* m = this;
-  while (m->_parent != nullptr) m = m->_parent;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
   auto i_id = m->fnmap.find(id);
   if (i_id == m->fnmap.end()) {
     return nullptr;
@@ -299,7 +321,9 @@ void Model::mergeStdLib(EnvI& env, Model* m) const {
 
 void Model::sortFn(void) {
   Model* m = this;
-  while (m->_parent != nullptr) m = m->_parent;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
   for (auto& it : m->fnmap) {
     // Sort all functions by type
     std::sort(it.second.begin(), it.second.end());
@@ -308,7 +332,9 @@ void Model::sortFn(void) {
 
 void Model::fixFnMap(void) {
   Model* m = this;
-  while (m->_parent != nullptr) m = m->_parent;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
   for (auto& it : m->fnmap) {
     for (unsigned int i = 0; i < it.second.size(); i++) {
       for (unsigned int j = 0; j < it.second[i].t.size(); j++) {
@@ -322,14 +348,18 @@ void Model::fixFnMap(void) {
 
 void Model::checkFnOverloading(EnvI& env) {
   Model* m = this;
-  while (m->_parent != nullptr) m = m->_parent;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
   for (auto& it : m->fnmap) {
     std::vector<FnEntry>& fs = it.second;
     for (unsigned int i = 0; i < fs.size() - 1; i++) {
       FunctionI* cur = fs[i].fi;
       for (unsigned int j = i + 1; j < fs.size(); j++) {
         FunctionI* cmp = fs[j].fi;
-        if (cur == cmp || cur->params().size() != cmp->params().size()) break;
+        if (cur == cmp || cur->params().size() != cmp->params().size()) {
+          break;
+        }
         bool allEqual = true;
         for (unsigned int i = 0; i < cur->params().size(); i++) {
           Type t1 = cur->params()[i]->type();
@@ -341,11 +371,12 @@ void Model::checkFnOverloading(EnvI& env) {
             break;
           }
         }
-        if (allEqual)
+        if (allEqual) {
           throw TypeError(env, cur->loc(),
                           "unsupported type of overloading. \nFunction/predicate with equivalent "
                           "signature defined in " +
                               cmp->loc().toString());
+        }
       }
     }
   }
@@ -390,9 +421,13 @@ int matchIdx(std::vector<FunctionI*>& matched, Expression*& botarg, EnvI& env,
 
 FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expression*>& args,
                           bool strictEnums) const {
-  if (id == constants().var_redef->id()) return constants().var_redef;
+  if (id == constants().var_redef->id()) {
+    return constants().var_redef;
+  }
   const Model* m = this;
-  while (m->_parent != nullptr) m = m->_parent;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
   auto it = m->fnmap.find(id);
   if (it == m->fnmap.end()) {
     return nullptr;
@@ -401,21 +436,30 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expr
   std::vector<FunctionI*> matched;
   Expression* botarg;
   (void)matchIdx(matched, botarg, env, v, args, strictEnums);
-  if (matched.empty()) return nullptr;
-  if (matched.size() == 1) return matched[0];
+  if (matched.empty()) {
+    return nullptr;
+  }
+  if (matched.size() == 1) {
+    return matched[0];
+  }
   Type t = matched[0]->ti()->type();
   t.ti(Type::TI_PAR);
   for (unsigned int i = 1; i < matched.size(); i++) {
-    if (!env.isSubtype(t, matched[i]->ti()->type(), strictEnums))
+    if (!env.isSubtype(t, matched[i]->ti()->type(), strictEnums)) {
       throw TypeError(env, botarg->loc(), "ambiguous overloading on return type of function");
+    }
   }
   return matched[0];
 }
 
 FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotFound) const {
-  if (c->id() == constants().var_redef->id()) return constants().var_redef;
+  if (c->id() == constants().var_redef->id()) {
+    return constants().var_redef;
+  }
   const Model* m = this;
-  while (m->_parent != nullptr) m = m->_parent;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
   auto it = m->fnmap.find(c->id());
   if (it == m->fnmap.end()) {
     if (throwIfNotFound) {
@@ -467,10 +511,11 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
         }
       }
       if (match) {
-        if (botarg != nullptr)
+        if (botarg != nullptr) {
           matched.push_back(i.fi);
-        else
+        } else {
           return i.fi;
+        }
       }
     }
   }
@@ -481,7 +526,9 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
       oss << c->id() << "(";
       for (unsigned int i = 0; i < c->n_args(); i++) {
         oss << c->arg(i)->type().toString(env);
-        if (i < c->n_args() - 1) oss << ",";
+        if (i < c->n_args() - 1) {
+          oss << ",";
+        }
       }
       oss << ")'\n";
       oss << "Cannot use the following functions or predicates with the same identifier:\n";
@@ -511,12 +558,15 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
     }
     return nullptr;
   }
-  if (matched.size() == 1) return matched[0];
+  if (matched.size() == 1) {
+    return matched[0];
+  }
   Type t = matched[0]->ti()->type();
   t.ti(Type::TI_PAR);
   for (unsigned int i = 1; i < matched.size(); i++) {
-    if (!env.isSubtype(t, matched[i]->ti()->type(), strictEnums))
+    if (!env.isSubtype(t, matched[i]->ti()->type(), strictEnums)) {
       throw TypeError(env, botarg->loc(), "ambiguous overloading on return type of function");
+    }
   }
   return matched[0];
 }
@@ -547,7 +597,9 @@ int firstOverloaded(EnvI& env, const std::vector<Model::FnEntry>& v_f, int i_f) 
 bool Model::sameOverloading(EnvI& env, const std::vector<Expression*>& args, FunctionI* f,
                             FunctionI* g) const {
   const Model* m = this;
-  while (m->_parent != nullptr) m = m->_parent;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
   auto it_f = m->fnmap.find(f->id());
   auto it_g = m->fnmap.find(g->id());
   assert(it_f != m->fnmap.end());
@@ -558,9 +610,13 @@ bool Model::sameOverloading(EnvI& env, const std::vector<Expression*>& args, Fun
   std::vector<FunctionI*> dummyMatched;
   Expression* dummyBotarg;
   int i_f = matchIdx(dummyMatched, dummyBotarg, env, v_f, args, true);
-  if (i_f == -1) return false;
+  if (i_f == -1) {
+    return false;
+  }
   int i_g = matchIdx(dummyMatched, dummyBotarg, env, v_g, args, true);
-  if (i_g == -1) return false;
+  if (i_g == -1) {
+    return false;
+  }
   assert(i_f < v_f.size());
   assert(i_g < v_g.size());
   unsigned int first_i_f = firstOverloaded(env, v_f, i_f);
@@ -580,7 +636,9 @@ bool Model::sameOverloading(EnvI& env, const std::vector<Expression*>& args, Fun
 
 FunctionI* Model::matchRevMap(EnvI& env, const Type& t0) const {
   const Model* m = this;
-  while (m->_parent != nullptr) m = m->_parent;
+  while (m->_parent != nullptr) {
+    m = m->_parent;
+  }
   Type t = t0;
   t.enumId(0);
   auto it = revmapmap.find(t.toInt());

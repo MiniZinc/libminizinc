@@ -73,7 +73,9 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
       IntVal rd = eval_int(env, c->arg(2)) - d;
       if (rd % coeffs[0] == 0) {
         IntVal nd = rd / coeffs[0];
-        if ((domain != nullptr) && !domain->contains(nd)) return OptimizeRegistry::CS_FAILED;
+        if ((domain != nullptr) && !domain->contains(nd)) {
+          return OptimizeRegistry::CS_FAILED;
+        }
         std::vector<Expression*> args(2);
         args[0] = x[0]();
         args[1] = IntLit::a(nd);
@@ -108,18 +110,22 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
         if (swapSign) {
           if (domain->max() < nd) {
             return OptimizeRegistry::CS_FAILED;
-          } else if (domain->min() >= nd)
+          } else if (domain->min() >= nd) {
             return OptimizeRegistry::CS_ENTAILED;
+          }
         } else {
           if (domain->min() > nd) {
             return OptimizeRegistry::CS_FAILED;
-          } else if (domain->max() <= nd)
+          } else if (domain->max() <= nd) {
             return OptimizeRegistry::CS_ENTAILED;
+          }
         }
         std::vector<Expression*> args(2);
         args[0] = x[0]();
         args[1] = IntLit::a(nd);
-        if (swapSign) std::swap(args[0], args[1]);
+        if (swapSign) {
+          std::swap(args[0], args[1]);
+        }
         Call* nc = new Call(Location(), constants().ids.int_.le, args);
         nc->type(Type::varbool());
         rewrite = nc;
@@ -238,13 +244,17 @@ OptimizeRegistry::ConstraintStatus o_clause(EnvI& env, Item* i, Call* c, Express
   ArrayLit* al_pos = eval_array_lit(env, c->arg(0));
   for (unsigned int j = 0; j < al_pos->size(); j++) {
     if (Id* ident = (*al_pos)[j]->dyn_cast<Id>()) {
-      if (ident->decl()->ti()->domain() == nullptr) pos.push_back(ident->decl());
+      if (ident->decl()->ti()->domain() == nullptr) {
+        pos.push_back(ident->decl());
+      }
     }
   }
   ArrayLit* al_neg = eval_array_lit(env, c->arg(1));
   for (unsigned int j = 0; j < al_neg->size(); j++) {
     if (Id* ident = (*al_neg)[j]->dyn_cast<Id>()) {
-      if (ident->decl()->ti()->domain() == nullptr) neg.push_back(ident->decl());
+      if (ident->decl()->ti()->domain() == nullptr) {
+        neg.push_back(ident->decl());
+      }
     }
   }
   bool subsumed = false;
@@ -263,7 +273,9 @@ OptimizeRegistry::ConstraintStatus o_clause(EnvI& env, Item* i, Call* c, Express
       } else {
         iy++;
       }
-      if (ix == pos.size() || iy == neg.size()) break;
+      if (ix == pos.size() || iy == neg.size()) {
+        break;
+      }
     }
   }
   if (subsumed) {
@@ -360,12 +372,16 @@ OptimizeRegistry::ConstraintStatus o_set_in(EnvI& env, Item* i, Call* c, Express
         {
           IntSetRanges isv_r(isv);
           IntSetRanges dom_r(dom);
-          if (Ranges::subset(dom_r, isv_r)) return OptimizeRegistry::CS_ENTAILED;
+          if (Ranges::subset(dom_r, isv_r)) {
+            return OptimizeRegistry::CS_ENTAILED;
+          }
         }
         {
           IntSetRanges isv_r(isv);
           IntSetRanges dom_r(dom);
-          if (Ranges::disjoint(dom_r, isv_r)) return OptimizeRegistry::CS_FAILED;
+          if (Ranges::disjoint(dom_r, isv_r)) {
+            return OptimizeRegistry::CS_FAILED;
+          }
         }
       } else if (isv->min() == isv->max()) {
         std::vector<Expression*> args(2);
@@ -395,8 +411,12 @@ OptimizeRegistry::ConstraintStatus o_int_ne(EnvI& env, Item* i, Call* c, Express
       if (ident->decl()->ti()->domain() != nullptr) {
         IntVal e1v = eval_int(env, e1);
         IntSetVal* isv = eval_intset(env, ident->decl()->ti()->domain());
-        if (!isv->contains(e1v)) return OptimizeRegistry::CS_ENTAILED;
-        if (e1v == isv->min() && e1v == isv->max()) return OptimizeRegistry::CS_FAILED;
+        if (!isv->contains(e1v)) {
+          return OptimizeRegistry::CS_ENTAILED;
+        }
+        if (e1v == isv->min() && e1v == isv->max()) {
+          return OptimizeRegistry::CS_FAILED;
+        }
       }
     }
   }
@@ -422,11 +442,19 @@ OptimizeRegistry::ConstraintStatus o_int_le(EnvI& env, Item* i, Call* c, Express
         IntVal e1v = eval_int(env, e1);
         IntSetVal* isv = eval_intset(env, ident->decl()->ti()->domain());
         if (!swapped) {
-          if (isv->max() <= e1v) return OptimizeRegistry::CS_ENTAILED;
-          if (isv->min() > e1v) return OptimizeRegistry::CS_FAILED;
+          if (isv->max() <= e1v) {
+            return OptimizeRegistry::CS_ENTAILED;
+          }
+          if (isv->min() > e1v) {
+            return OptimizeRegistry::CS_FAILED;
+          }
         } else {
-          if (e1v <= isv->min()) return OptimizeRegistry::CS_ENTAILED;
-          if (e1v > isv->max()) return OptimizeRegistry::CS_FAILED;
+          if (e1v <= isv->min()) {
+            return OptimizeRegistry::CS_ENTAILED;
+          }
+          if (e1v > isv->max()) {
+            return OptimizeRegistry::CS_FAILED;
+          }
         }
       }
     }

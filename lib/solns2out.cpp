@@ -189,7 +189,9 @@ void Solns2Out::parseAssignments(string& solution) {
   std::vector<SyntaxError> se;
   unique_ptr<Model> sm(parseFromString(*pEnv, solution, "solution received from solver",
                                        includePaths, false, true, false, false, log, se));
-  if (sm.get() == nullptr) throw Error("solns2out_base: could not parse solution");
+  if (sm.get() == nullptr) {
+    throw Error("solns2out_base: could not parse solution");
+  }
   solution = "";
   for (unsigned int i = 0; i < sm->size(); i++) {
     if (auto* ai = (*sm)[i]->dyn_cast<AssignI>()) {
@@ -204,7 +206,9 @@ void Solns2Out::parseAssignments(string& solution) {
       if (Call* c = ai->e()->dyn_cast<Call>()) {
         // This is an arrayXd call, make sure we get the right builtin
         assert(c->arg(c->n_args() - 1)->isa<ArrayLit>());
-        for (unsigned int i = 0; i < c->n_args(); i++) c->arg(i)->type(Type::parsetint());
+        for (unsigned int i = 0; i < c->n_args(); i++) {
+          c->arg(i)->type(Type::parsetint());
+        }
         c->arg(c->n_args() - 1)->type(de.first->type());
         c->decl(getModel()->matchFn(pEnv->envi(), c, false));
       }
@@ -220,7 +224,9 @@ void Solns2Out::declNewOutput() {
 }
 
 bool Solns2Out::evalOutput(const string& s_ExtraInfo) {
-  if (!fNewSol2Print) return true;
+  if (!fNewSol2Print) {
+    return true;
+  }
   ostringstream oss;
   if (!checkerModel.empty()) {
     auto& checkerStream = pEnv->envi().checker_output;
@@ -234,8 +240,9 @@ bool Solns2Out::evalOutput(const string& s_ExtraInfo) {
   bool fNew = true;
   if (_opt.flag_unique || _opt.flag_canonicalize) {
     auto res = sSolsCanon.insert(oss.str());
-    if (!res.second)  // repeated solution
+    if (!res.second) {  // repeated solution
       fNew = false;
+    }
   }
   if (fNew) {
     {
@@ -252,24 +259,31 @@ bool Solns2Out::evalOutput(const string& s_ExtraInfo) {
     }
     ++_stats.nSolns;
     if (_opt.flag_canonicalize) {
-      if (pOfs_non_canon.get() != nullptr)
+      if (pOfs_non_canon.get() != nullptr) {
         if (pOfs_non_canon->good()) {
           (*pOfs_non_canon) << oss.str();
           (*pOfs_non_canon) << comments;
           if (s_ExtraInfo.size() != 0u) {
             (*pOfs_non_canon) << s_ExtraInfo;
-            if ('\n' != s_ExtraInfo.back())  /// TODO is this enough to check EOL?
+            if ('\n' != s_ExtraInfo.back()) {  /// TODO is this enough to check EOL?
               (*pOfs_non_canon) << '\n';
+            }
           }
-          if (_opt.flag_output_time)
+          if (_opt.flag_output_time) {
             (*pOfs_non_canon) << "% time elapsed: " << starttime.stoptime() << "\n";
-          if (!_opt.solution_separator.empty())
+          }
+          if (!_opt.solution_separator.empty()) {
             (*pOfs_non_canon) << _opt.solution_separator << '\n';
-          if (_opt.flag_output_flush) pOfs_non_canon->flush();
+          }
+          if (_opt.flag_output_flush) {
+            pOfs_non_canon->flush();
+          }
         }
+      }
     } else {
-      if ((_opt.solution_comma.size() != 0u) && _stats.nSolns > 1)
+      if ((_opt.solution_comma.size() != 0u) && _stats.nSolns > 1) {
         getOutput() << _opt.solution_comma << '\n';
+      }
       getOutput() << oss.str();
     }
   }
@@ -277,14 +291,19 @@ bool Solns2Out::evalOutput(const string& s_ExtraInfo) {
   comments = "";
   if (s_ExtraInfo.size() != 0u) {
     getOutput() << s_ExtraInfo;
-    if ('\n' != s_ExtraInfo.back())  /// TODO is this enough to check EOL?
+    if ('\n' != s_ExtraInfo.back()) {  /// TODO is this enough to check EOL?
       getOutput() << '\n';
+    }
   }
-  if (fNew && _opt.flag_output_time)
+  if (fNew && _opt.flag_output_time) {
     getOutput() << "% time elapsed: " << starttime.stoptime() << "\n";
-  if (fNew && !_opt.flag_canonicalize && !_opt.solution_separator.empty())
+  }
+  if (fNew && !_opt.flag_canonicalize && !_opt.solution_separator.empty()) {
     getOutput() << _opt.solution_separator << '\n';
-  if (_opt.flag_output_flush) getOutput().flush();
+  }
+  if (_opt.flag_output_flush) {
+    getOutput().flush();
+  }
   restoreDefaults();  // cleans data. evalOutput() should not be called again w/o assigning new
                       // data.
   return true;
@@ -400,7 +419,9 @@ bool Solns2Out::__evalOutput(ostream& fout) {
 }
 
 bool Solns2Out::evalStatus(SolverInstance::Status status) {
-  if (_opt.flag_canonicalize) __evalOutputFinal(_opt.flag_output_flush);
+  if (_opt.flag_canonicalize) {
+    __evalOutputFinal(_opt.flag_output_flush);
+  }
   __evalStatusMsg(status);
   fStatusPrinted = true;
   return true;
@@ -409,10 +430,13 @@ bool Solns2Out::evalStatus(SolverInstance::Status status) {
 bool Solns2Out::__evalOutputFinal(bool) {
   /// Print the canonical list
   for (auto& sol : sSolsCanon) {
-    if ((_opt.solution_comma.size() != 0u) && &sol != &*sSolsCanon.begin())
+    if ((_opt.solution_comma.size() != 0u) && &sol != &*sSolsCanon.begin()) {
       getOutput() << _opt.solution_comma << '\n';
+    }
     getOutput() << sol;
-    if (!_opt.solution_separator.empty()) getOutput() << _opt.solution_separator << '\n';
+    if (!_opt.solution_separator.empty()) {
+      getOutput() << _opt.solution_separator << '\n';
+    }
   }
   return true;
 }
@@ -429,13 +453,21 @@ bool Solns2Out::__evalStatusMsg(SolverInstance::Status status) {
   auto it = stat2msg.find(status);
   if (stat2msg.end() != it) {
     getOutput() << comments;
-    if (!it->second.empty()) getOutput() << it->second << '\n';
-    if (_opt.flag_output_time) getOutput() << "% time elapsed: " << starttime.stoptime() << "\n";
-    if (_opt.flag_output_flush) getOutput().flush();
+    if (!it->second.empty()) {
+      getOutput() << it->second << '\n';
+    }
+    if (_opt.flag_output_time) {
+      getOutput() << "% time elapsed: " << starttime.stoptime() << "\n";
+    }
+    if (_opt.flag_output_flush) {
+      getOutput().flush();
+    }
     Solns2Out::status = status;
   } else {
     getOutput() << comments;
-    if (_opt.flag_output_flush) getOutput().flush();
+    if (_opt.flag_output_flush) {
+      getOutput().flush();
+    }
     MZN_ASSERT_HARD_MSG(SolverInstance::SAT == status,  // which is ignored
                         "solns2out_base: undefined solution status code " << status);
     Solns2Out::status = SolverInstance::SAT;
@@ -502,7 +534,9 @@ Solns2Out::Solns2Out(std::ostream& os0, std::ostream& log0, const std::string& s
 
 Solns2Out::~Solns2Out() {
   getOutput() << comments;
-  if (_opt.flag_output_flush) getOutput() << flush;
+  if (_opt.flag_output_flush) {
+    getOutput() << flush;
+  }
 }
 
 ostream& Solns2Out::getOutput() { return (((pOut.get() != nullptr) && pOut->good()) ? *pOut : os); }
@@ -522,13 +556,18 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
       line_part = line;
       break;  // to get to raw output
     }
-    if (line.size() != 0u)
-      if ('\r' == line.back()) line.pop_back();  // For WIN files
+    if (line.size() != 0u) {
+      if ('\r' == line.back()) {
+        line.pop_back();  // For WIN files
+      }
+    }
     if (nLinesIgnore > 0) {
       --nLinesIgnore;
       continue;
     }
-    if (mapInputStatus.empty()) createInputMap();
+    if (mapInputStatus.empty()) {
+      createInputMap();
+    }
     auto it = mapInputStatus.find(line);
     if (mapInputStatus.end() != it) {
       if (SolverInstance::SAT == it->second) {
@@ -546,9 +585,14 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
         if (iss.good() && '%' == c) {
           // Feed comments directly
           getOutput() << line << '\n';
-          if (_opt.flag_output_flush) getOutput().flush();
-          if (pOfs_non_canon.get() != nullptr)
-            if (pOfs_non_canon->good()) (*pOfs_non_canon) << line << '\n';
+          if (_opt.flag_output_flush) {
+            getOutput().flush();
+          }
+          if (pOfs_non_canon.get() != nullptr) {
+            if (pOfs_non_canon->good()) {
+              (*pOfs_non_canon) << line << '\n';
+            }
+          }
           if (line.substr(0, 13) == "%%%mzn-stat: " && line.size() > 13) {
             if (line.substr(13, 6) == "nodes=") {
               std::istringstream iss(line.substr(19));
@@ -568,7 +612,9 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
   }
   if (pOfs_raw.get() != nullptr) {
     (*pOfs_raw.get()) << data;
-    if (_opt.flag_output_flush) pOfs_raw->flush();
+    if (_opt.flag_output_flush) {
+      pOfs_raw->flush();
+    }
   }
   return true;
 }

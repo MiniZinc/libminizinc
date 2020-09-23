@@ -63,7 +63,9 @@ public:
 struct IdEq {
   bool operator()(const Id* e0, const Id* e1) const {
     if (e0->idn() == e1->idn()) {
-      if (e0->idn() == -1) return e0->v() == e1->v();
+      if (e0->idn() == -1) {
+        return e0->v() == e1->v();
+      }
       return true;
     }
     return false;

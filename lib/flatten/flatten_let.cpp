@@ -28,7 +28,9 @@ EE flatten_let(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       if (vd->e() != nullptr) {
         Ctx nctx = ctx;
         nctx.neg = false;
-        if (vd->e()->type().bt() == Type::BT_BOOL) nctx.b = C_MIX;
+        if (vd->e()->type().bt() == Type::BT_BOOL) {
+          nctx.b = C_MIX;
+        }
 
         EE ee = flat_exp(env, nctx, vd->e(), nullptr, nullptr);
         let_e = ee.r();
@@ -51,8 +53,9 @@ EE flatten_let(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
           Call* c = new Call(vd->ti()->loc().introduce(), "var_dom", domargs);
           c->type(Type::varbool());
           c->decl(env.model->matchFn(env, c, false));
-          if (c->decl() == nullptr)
+          if (c->decl() == nullptr) {
             throw InternalError("no matching declaration found for var_dom");
+          }
           VarDecl* b_b = (nctx.b == C_ROOT && b == constants().var_true) ? b : nullptr;
           VarDecl* r_r = (nctx.b == C_ROOT && b == constants().var_true) ? b : nullptr;
           ee = flat_exp(env, nctx, c, r_r, b_b);

@@ -28,7 +28,9 @@ EE flatten_arrayaccess(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b
 start_flatten_arrayaccess:
   for (unsigned int i = 0; i < aa->idx().size(); i++) {
     Expression* tmp = follow_id_to_decl(aa->idx()[i]);
-    if (auto* vd = tmp->dyn_cast<VarDecl>()) tmp = vd->id();
+    if (auto* vd = tmp->dyn_cast<VarDecl>()) {
+      tmp = vd->id();
+    }
     if (tmp->type().ispar()) {
       ArrayLit* al;
       if (eev.r()->isa<ArrayLit>()) {
@@ -57,7 +59,9 @@ start_flatten_arrayaccess:
       std::vector<int> stack;
       for (unsigned int j = 0; j < aa->idx().size(); j++) {
         Expression* tmp = follow_id_to_decl(aa->idx()[j]);
-        if (auto* vd = tmp->dyn_cast<VarDecl>()) tmp = vd->id();
+        if (auto* vd = tmp->dyn_cast<VarDecl>()) {
+          tmp = vd->id();
+        }
         if (tmp->type().ispar()) {
           GCLock lock;
           idx[j] = eval_int(env, tmp).toInt();
@@ -123,12 +127,16 @@ start_flatten_arrayaccess:
             stack.pop_back();
           } else {
             idx[nonpar[cur]]++;
-            for (unsigned int j = cur + 1; j < nonpar.size(); j++) stack.push_back(j);
+            for (unsigned int j = cur + 1; j < nonpar.size(); j++) {
+              stack.push_back(j);
+            }
           }
         }
       }
       std::vector<Expression*> elems_e(elems.size());
-      for (unsigned int i = 0; i < elems.size(); i++) elems_e[i] = elems[i]();
+      for (unsigned int i = 0; i < elems.size(); i++) {
+        elems_e[i] = elems[i]();
+      }
       {
         GCLock lock;
         Expression* newal = new ArrayLit(al->loc(), elems_e, dims);
@@ -166,7 +174,9 @@ start_flatten_arrayaccess:
       for (unsigned int i = 0; i < al_inner->size(); i++) {
         GCLock lock;
         IntVal inner_idx = eval_int(env, (*al_inner)[i]);
-        if (inner_idx < al->min(0) || inner_idx > al->max(0)) goto flatten_arrayaccess;
+        if (inner_idx < al->min(0) || inner_idx > al->max(0)) {
+          goto flatten_arrayaccess;
+        }
         composed_e[i] = (*al)[static_cast<int>(inner_idx.toInt()) - al->min(0)];
       }
       std::vector<std::pair<int, int> > dims(al_inner->dims());
@@ -193,7 +203,9 @@ flatten_arrayaccess:
   dimctx.neg = false;
   for (unsigned int i = 0; i < aa->idx().size(); i++) {
     Expression* tmp = follow_id_to_decl(aa->idx()[i]);
-    if (auto* vd = tmp->dyn_cast<VarDecl>()) tmp = vd->id();
+    if (auto* vd = tmp->dyn_cast<VarDecl>()) {
+      tmp = vd->id();
+    }
     ees.push_back(flat_exp(env, dimctx, tmp, nullptr, nullptr));
   }
   ees.emplace_back(nullptr, eev.b());
@@ -225,7 +237,9 @@ flatten_arrayaccess:
     {
       GCLock lock;
       std::vector<IntVal> dims(aa->idx().size());
-      for (unsigned int i = aa->idx().size(); (i--) != 0u;) dims[i] = eval_int(env, ees[i].r());
+      for (unsigned int i = aa->idx().size(); (i--) != 0u;) {
+        dims[i] = eval_int(env, ees[i].r());
+      }
       ka = eval_arrayaccess(env, al, dims, success);
     }
     if (!success && env.in_maybe_partial == 0) {
@@ -242,7 +256,9 @@ flatten_arrayaccess:
     }
   } else {
     std::vector<Expression*> args(aa->idx().size() + 1);
-    for (unsigned int i = aa->idx().size(); (i--) != 0u;) args[i] = ees[i].r();
+    for (unsigned int i = aa->idx().size(); (i--) != 0u;) {
+      args[i] = ees[i].r();
+    }
     args[aa->idx().size()] = eev.r();
     KeepAlive ka;
     {

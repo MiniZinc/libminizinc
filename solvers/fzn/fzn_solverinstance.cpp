@@ -137,7 +137,9 @@ bool FZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
   } else if (_opt.supports_a_o && cop.getOption("-a-o --all-opt --all-optimal")) {
     _opt.all_optimal = true;
   } else if (cop.getOption("-p --parallel", &nn)) {
-    if (_opt.supports_p) _opt.parallel = to_string(nn);
+    if (_opt.supports_p) {
+      _opt.parallel = to_string(nn);
+    }
   } else if (cop.getOption("-k --keep-files")) {
     // Deprecated option! Does nothing.
   } else if (cop.getOption("-r --seed --random-seed", &buffer)) {
@@ -152,7 +154,9 @@ bool FZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
   } else if (cop.getOption("-v --verbose-solving")) {
     _opt.verbose = true;
   } else if (cop.getOption("-f --free-search")) {
-    if (_opt.supports_f) _opt.fzn_flags.emplace_back("-f");
+    if (_opt.supports_f) {
+      _opt.fzn_flags.emplace_back("-f");
+    }
   } else if (_opt.supports_cpprofiler && cop.getOption("--cp-profiler", &buffer)) {
     _opt.fzn_flags.emplace_back("--cp-profiler");
     _opt.fzn_flags.push_back(buffer);
@@ -262,9 +266,13 @@ SolverInstance::Status FZNSolverInstance::solve(void) {
     cmd_line.push_back(oss.str());
   }
   if (opt.verbose) {
-    if (opt.supports_v) cmd_line.emplace_back("-v");
+    if (opt.supports_v) {
+      cmd_line.emplace_back("-v");
+    }
     std::cerr << "Using FZN solver " << cmd_line[0] << " for solving, parameters: ";
-    for (int i = 1; i < cmd_line.size(); ++i) cerr << "" << cmd_line[i] << " ";
+    for (int i = 1; i < cmd_line.size(); ++i) {
+      cerr << "" << cmd_line[i] << " ";
+    }
     cerr << std::endl;
   }
   int timelimit = opt.fzn_time_limit_ms;

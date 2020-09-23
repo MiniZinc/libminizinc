@@ -184,7 +184,9 @@ inline ASTString::ASTString(const std::string& s) : _s(ASTStringData::a(s)) {}
 inline size_t ASTString::size(void) const { return _s != nullptr ? _s->size() : 0; }
 inline const char* ASTString::c_str(void) const { return _s != nullptr ? _s->c_str() : nullptr; }
 inline void ASTString::mark(void) const {
-  if (_s != nullptr) _s->mark();
+  if (_s != nullptr) {
+    _s->mark();
+  }
 }
 
 inline bool ASTString::operator==(const ASTString& s) const { return _s == s._s; }

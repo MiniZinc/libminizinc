@@ -66,8 +66,9 @@ void* dll_sym(void* dll, const char* sym) {
 #else
   void* ret = GetProcAddress((HMODULE)dll, sym);
 #endif
-  if (ret == nullptr)
+  if (ret == nullptr) {
     throw MiniZinc::InternalError("cannot load symbol " + string(sym) + " from CPLEX dll");
+  }
   return ret;
 }
 void dll_close(void* dll) {
@@ -219,8 +220,9 @@ string MIP_cplex_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options* 
     if (env != nullptr) {
       v += mcw.dll_CPXversion(env);
       status = mcw.dll_CPXcloseCPLEX(&env);
-    } else
+    } else {
       v += "[?? ...cannot open CPLEX env to query version]";
+    }
   } catch (MiniZinc::InternalError&) {
     v += "[?? ...cannot open CPLEX env to query version]";
   }
@@ -338,8 +340,9 @@ bool MIP_cplex_wrapper::Options::processOption(int& i, std::vector<std::string>&
   } else if (cop.get("--intTol", &intTol)) {
   } else if (cop.get("--cplex-dll", &sCPLEXDLL)) {
     //   } else if ( cop.get( "--objDiff", &objDiff ) ) {
-  } else
+  } else {
     return false;
+  }
   return true;
 }
 
@@ -533,20 +536,28 @@ static int CPXPUBLIC solcallback(CPXCENVptr env, void* cbdata, int wherefrom, vo
 
   status = cw->dll_CPXgetcallbackinfo(env, cbdata, wherefrom, CPX_CALLBACK_INFO_NODE_COUNT,
                                       &info->pOutput->nNodes);
-  if (status != 0) goto TERMINATE;
+  if (status != 0) {
+    goto TERMINATE;
+  }
 
   status = cw->dll_CPXgetcallbackinfo(env, cbdata, wherefrom, CPX_CALLBACK_INFO_NODES_LEFT,
                                       &info->pOutput->nOpenNodes);
-  if (status != 0) goto TERMINATE;
+  if (status != 0) {
+    goto TERMINATE;
+  }
 
   status =
       cw->dll_CPXgetcallbackinfo(env, cbdata, wherefrom, CPX_CALLBACK_INFO_MIP_FEAS, &hasincumbent);
-  if (status != 0) goto TERMINATE;
+  if (status != 0) {
+    goto TERMINATE;
+  }
 
   if (hasincumbent != 0) {
     status =
         cw->dll_CPXgetcallbackinfo(env, cbdata, wherefrom, CPX_CALLBACK_INFO_BEST_INTEGER, &objVal);
-    if (status != 0) goto TERMINATE;
+    if (status != 0) {
+      goto TERMINATE;
+    }
 
     if (fabs(info->pOutput->objVal - objVal) > 1e-12 * (1.0 + fabs(objVal))) {
       newincumbent = 1;
@@ -576,7 +587,9 @@ static int CPXPUBLIC solcallback(CPXCENVptr env, void* cbdata, int wherefrom, vo
     assert(info->pOutput->x);
     status = cw->dll_CPXgetcallbackincumbent(env, cbdata, wherefrom, (double*)info->pOutput->x, 0,
                                              info->pOutput->nCols - 1);
-    if (status != 0) goto TERMINATE;
+    if (status != 0) {
+      goto TERMINATE;
+    }
 
     info->pOutput->dWallTime =
         std::chrono::duration<double>(std::chrono::steady_clock::now() - info->pOutput->dWallTime0)
@@ -584,7 +597,9 @@ static int CPXPUBLIC solcallback(CPXCENVptr env, void* cbdata, int wherefrom, vo
     info->pOutput->dCPUTime = double(std::clock() - info->pOutput->cCPUTime0) / CLOCKS_PER_SEC;
 
     /// Call the user function:
-    if (info->solcbfn != nullptr) (*info->solcbfn)(*info->pOutput, info->psi);
+    if (info->solcbfn != nullptr) {
+      (*info->solcbfn)(*info->pOutput, info->psi);
+    }
     info->printed = true;
   }
 
@@ -629,10 +644,11 @@ static void initnodeobjvalinfo(MIP_cplex_wrapper* cw, CPXENVptr env, CPXLPptr lp
   cutinfo->nodeid = -1;
   cutinfo->nodeobjval = 0.0;
   cutinfo->objsen = cw->dll_CPXgetobjsen(env, lp);
-  if (cutinfo->objsen == CPX_MIN)
+  if (cutinfo->objsen == CPX_MIN) {
     cutinfo->objsen = 1;
-  else
+  } else {
     cutinfo->objsen = -1;
+  }
 } /* END initnodeobjvalinfo */
 
 static int CPXPUBLIC myusercutcallback(CPXCENVptr env, void* cbdata, int wherefrom, void* cbhandle,
@@ -738,8 +754,9 @@ static int CPXPUBLIC myusercutcallback(CPXCENVptr env, void* cbdata, int wherefr
     // if ( cutInput.size() )
     //  cerr << "\n   N CUTS:  " << nCuts << endl;
     for (auto& cd : cutInput) {
-      if ((cd.mask & (MIP_wrapper::MaskConsType_Usercut | MIP_wrapper::MaskConsType_Lazy)) == 0)
+      if ((cd.mask & (MIP_wrapper::MaskConsType_Usercut | MIP_wrapper::MaskConsType_Lazy)) == 0) {
         throw runtime_error("Cut callback: should be user/lazy");
+      }
       /* Use a cut violation tolerance of 0.01 */
       if (true) {  // cutvio > 0.01 ) {
         status = cw->dll_CPXcutcallbackadd(env, cbdata, wherefrom, cd.rmatind.size(), cd.rhs,
@@ -805,10 +822,11 @@ MIP_cplex_wrapper::Status MIP_cplex_wrapper::convertStatus(int cplexStatus) {
     default:
       //      case CPXMIP_OPTIMAL_TOL:
       //      case CPXMIP_ABORT_RELAXATION_UNBOUNDED:
-      if (dll_CPXgetsolnpoolnumsolns(env, lp) != 0)
+      if (dll_CPXgetsolnpoolnumsolns(env, lp) != 0) {
         s = Status::SAT;
-      else
+      } else {
         s = Status::UNKNOWN;
+      }
   }
   return s;
 }
@@ -919,8 +937,9 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
     assert(cbui.cutMask & (MaskConsType_Usercut | MaskConsType_Lazy));
     if ((cbui.cutMask & MaskConsType_Usercut) != 0) {
       // For user cuts, needs to keep some info after presolve
-      if (fVerbose)
+      if (fVerbose) {
         cerr << "  MIP_cplex_wrapper: user cut callback enabled, setting params" << endl;
+      }
       CUTINFO usercutinfo;  // THREADS?  TODO
       usercutinfo.info = &cbui;
       /* Init information on the node objval for the user cut callback */
@@ -942,8 +961,9 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
       wrap_assert(status == 0, "CPLEX: setting user cut callback");
     }
     if ((cbui.cutMask & MaskConsType_Lazy) != 0) {
-      if (fVerbose)
+      if (fVerbose) {
         cerr << "  MIP_cplex_wrapper: lazy cut callback enabled, setting params" << endl;
+      }
       CUTINFO lazyconinfo;
       lazyconinfo.info = &cbui;
       /* Init information on the node objval for the user cut callback.

@@ -151,10 +151,11 @@ std::string file_path(const std::string& filename, const std::string& basePath) 
 #else
   char* rp = realpath(filename.c_str(), nullptr);
   if (rp == nullptr) {
-    if (basePath.empty())
+    if (basePath.empty()) {
       return filename;
-    else
+    } else {
       return file_path(basePath + "/" + filename);
+    }
   }
   std::string rp_s(rp);
   free(rp);
@@ -231,7 +232,9 @@ std::string find_executable(const std::string& filename) {
   std::stringstream pathStream(path);
   while (std::getline(pathStream, pathItem, pathsep)) {
     std::string fileWithPath = pathItem + "/" + filename;
-    if (file_exists(fileWithPath)) return fileWithPath;
+    if (file_exists(fileWithPath)) {
+      return fileWithPath;
+    }
 #ifdef _MSC_VER
     if (FileUtils::file_exists(fileWithPath + ".exe")) {
       return fileWithPath + ".exe";
@@ -287,7 +290,9 @@ std::string working_directory(void) {
   return wideToUtf8(wd);
 #else
   char wd[FILENAME_MAX];
-  if (getcwd(wd, sizeof(wd)) == nullptr) return "";
+  if (getcwd(wd, sizeof(wd)) == nullptr) {
+    return "";
+  }
   return wd;
 #endif
 }
@@ -304,11 +309,15 @@ std::string share_directory(void) {
 #endif
   std::string mypath = FileUtils::progpath();
   int depth = 0;
-  for (char i : mypath)
-    if (i == '/' || i == '\\') depth++;
+  for (char i : mypath) {
+    if (i == '/' || i == '\\') {
+      depth++;
+    }
+  }
   for (int i = 0; i <= depth; i++) {
-    if (FileUtils::file_exists(mypath + "/share/minizinc/std/stdlib.mzn"))
+    if (FileUtils::file_exists(mypath + "/share/minizinc/std/stdlib.mzn")) {
       return mypath + "/share/minizinc";
+    }
     mypath += "/..";
   }
   return "";
@@ -340,7 +349,9 @@ std::string user_config_dir(void) {
 
 std::string global_config_file(void) {
   std::string sd = share_directory();
-  if (sd.empty()) return "";
+  if (sd.empty()) {
+    return "";
+  }
   return sd + "/Preferences.json";
 }
 
@@ -383,7 +394,9 @@ TmpFile::~TmpFile(void) {
   }
 #else
   remove(_name.c_str());
-  if (_tmpfile_desc != -1) close(_tmpfile_desc);
+  if (_tmpfile_desc != -1) {
+    close(_tmpfile_desc);
+  }
 #endif
 }
 
@@ -606,27 +619,39 @@ void inflateString(std::string& s) {
       windowBits = -Z_DEFAULT_WINDOW_BITS;
       if ((cc[3] & 0x4) != 0) {
         dataStart += 2;
-        if (dataStart >= cc + s.size()) throw(-1);
+        if (dataStart >= cc + s.size()) {
+          throw(-1);
+        }
       }
       if ((cc[3] & 0x8) != 0) {
         while (*dataStart != '\0') {
           dataStart++;
-          if (dataStart >= cc + s.size()) throw(-1);
+          if (dataStart >= cc + s.size()) {
+            throw(-1);
+          }
         }
         dataStart++;
-        if (dataStart >= cc + s.size()) throw(-1);
+        if (dataStart >= cc + s.size()) {
+          throw(-1);
+        }
       }
       if ((cc[3] & 0x10) != 0) {
         while (*dataStart != '\0') {
           dataStart++;
-          if (dataStart >= cc + s.size()) throw(-1);
+          if (dataStart >= cc + s.size()) {
+            throw(-1);
+          }
         }
         dataStart++;
-        if (dataStart >= cc + s.size()) throw(-1);
+        if (dataStart >= cc + s.size()) {
+          throw(-1);
+        }
       }
       if ((cc[3] & 0x2) != 0) {
         dataStart += 2;
-        if (dataStart >= cc + s.size()) throw(-1);
+        if (dataStart >= cc + s.size()) {
+          throw(-1);
+        }
       }
       dataLen = s.size() - (dataStart - cc);
     } else {
@@ -640,7 +665,9 @@ void inflateString(std::string& s) {
     stream.next_out = &s_outbuf[0];
     stream.avail_out = BUF_SIZE;
     int status = inflateInit2(&stream, windowBits);
-    if (status != Z_OK) throw(status);
+    if (status != Z_OK) {
+      throw(status);
+    }
     std::ostringstream oss;
     while (true) {
       status = inflate(&stream, Z_NO_FLUSH);
@@ -650,11 +677,17 @@ void inflateString(std::string& s) {
         stream.next_out = &s_outbuf[0];
         stream.avail_out = BUF_SIZE;
       }
-      if (status == Z_STREAM_END) break;
-      if (status != Z_OK) throw(status);
+      if (status == Z_STREAM_END) {
+        break;
+      }
+      if (status != Z_OK) {
+        throw(status);
+      }
     }
     status = inflateEnd(&stream);
-    if (status != Z_OK) throw(status);
+    if (status != Z_OK) {
+      throw(status);
+    }
     s = oss.str();
   }
 }
@@ -683,7 +716,9 @@ std::string encodeBase64(const std::string& s) {
 }
 
 std::string decodeBase64(const std::string& s) {
-  if (s.size() == 0 || s[0] != '@') throw InternalError("string is not base64 encoded");
+  if (s.size() == 0 || s[0] != '@') {
+    throw InternalError("string is not base64 encoded");
+  }
   base64::decoder D;
   std::ostringstream oss;
   std::istringstream iss(s);

@@ -36,8 +36,9 @@ EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool do
     }
   }
   if (ctx.neg && id->type().dim() > 0) {
-    if (id->type().dim() > 1)
+    if (id->type().dim() > 1) {
       throw InternalError("multi-dim arrays in negative positions not supported yet");
+    }
     KeepAlive ka;
     {
       GCLock lock;
@@ -141,14 +142,17 @@ EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool do
       IntVal asize = 1;
       for (unsigned int i = 0; i < vd->ti()->ranges().size(); i++) {
         TypeInst* ti = vd->ti()->ranges()[i];
-        if (ti->domain() == nullptr)
+        if (ti->domain() == nullptr) {
           throw FlatteningError(env, ti->loc(), "array dimensions unknown");
+        }
         IntSetVal* isv = eval_intset(env, ti->domain());
         if (isv->size() == 0) {
           dims.emplace_back(1, 0);
           asize = 0;
         } else {
-          if (isv->size() != 1) throw FlatteningError(env, ti->loc(), "invalid array index set");
+          if (isv->size() != 1) {
+            throw FlatteningError(env, ti->loc(), "invalid array index set");
+          }
           asize *= (isv->max(0) - isv->min(0) + 1);
           dims.emplace_back(static_cast<int>(isv->min(0).toInt()),
                             static_cast<int>(isv->max(0).toInt()));
@@ -201,7 +205,9 @@ EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool do
             }
             vd = nvd;
             EE ee(vd, nullptr);
-            if (vd->e() != nullptr) env.cse_map_insert(vd->e(), ee);
+            if (vd->e() != nullptr) {
+              env.cse_map_insert(vd->e(), ee);
+            }
           }
         } else {
           if (it->second.r()->isa<VarDecl>()) {

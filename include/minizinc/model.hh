@@ -384,11 +384,17 @@ public:
     while (!models.empty()) {
       Model* cm = models.back();
       models.pop_back();
-      if (!iter.enterModel(cm)) continue;
+      if (!iter.enterModel(cm)) {
+        continue;
+      }
       std::vector<Model*> includedModels;
       for (auto& i : *cm) {
-        if (i->removed()) continue;
-        if (!iter.enter(i)) continue;
+        if (i->removed()) {
+          continue;
+        }
+        if (!iter.enter(i)) {
+          continue;
+        }
         switch (i->iid()) {
           case Item::II_INC:
             if (seen.find(i->cast<IncludeI>()->m()) == seen.end()) {

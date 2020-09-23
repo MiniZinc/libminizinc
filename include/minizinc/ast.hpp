@@ -12,18 +12,30 @@
 namespace MiniZinc {
 
 inline bool Expression::equal(const Expression* e0, const Expression* e1) {
-  if (e0 == e1) return true;
-  if (e0 == nullptr || e1 == nullptr) return false;
-  if (e0->isUnboxedInt() || e1->isUnboxedInt()) return false;
+  if (e0 == e1) {
+    return true;
+  }
+  if (e0 == nullptr || e1 == nullptr) {
+    return false;
+  }
+  if (e0->isUnboxedInt() || e1->isUnboxedInt()) {
+    return false;
+  }
   if (e0->isUnboxedFloatVal() || e1->isUnboxedFloatVal()) {
     if (e0->isUnboxedFloatVal() && e1->isUnboxedFloatVal()) {
       return e0->unboxedFloatToFloatVal() == e1->unboxedFloatToFloatVal();
     }
     return false;
   }
-  if (e0->_id != e1->_id) return false;
-  if (e0->type() != e1->type()) return false;
-  if (e0->hash() != e1->hash()) return false;
+  if (e0->_id != e1->_id) {
+    return false;
+  }
+  if (e0->type() != e1->type()) {
+    return false;
+  }
+  if (e0->hash() != e1->hash()) {
+    return false;
+  }
   return equal_internal(e0, e1);
 }
 
@@ -70,7 +82,9 @@ inline IntLit* IntLit::a(MiniZinc::IntVal v) {
 }
 
 inline IntLit* IntLit::aEnum(IntVal v, unsigned int enumId) {
-  if (enumId == 0) return a(v);
+  if (enumId == 0) {
+    return a(v);
+  }
   auto* il = new IntLit(Location().introduce(), v);
   Type tt(il->type());
   tt.enumId(enumId);
@@ -260,7 +274,9 @@ inline long long int Id::idn(void) const {
     }
     return d->cast<VarDecl>()->id()->idn();
   } else {
-    if (hasStr()) return -1;
+    if (hasStr()) {
+      return -1;
+    }
     long long int i = reinterpret_cast<ptrdiff_t>(_v_or_idn.idn) & ~static_cast<ptrdiff_t>(1);
     return i >> 1;
   }
@@ -375,8 +391,11 @@ inline ArrayLit::ArrayLit(const Location& loc, const std::vector<std::vector<Exp
   dims[2] = 1;
   dims[3] = v.size() > 0 ? static_cast<int>(v[0].size()) : 0;
   std::vector<Expression*> vv;
-  for (const auto& i : v)
-    for (auto j : i) vv.push_back(j);
+  for (const auto& i : v) {
+    for (auto j : i) {
+      vv.push_back(j);
+    }
+  }
   compress(vv, dims);
   rehash();
 }
@@ -534,10 +553,11 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const std::string& id
 
 inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, Id* id, Expression* e)
     : Expression(loc, E_VARDECL, ti->type()), _id(nullptr), _flat(nullptr) {
-  if (id->idn() == -1)
+  if (id->idn() == -1) {
     _id = new Id(loc, id->v(), this);
-  else
+  } else {
     _id = new Id(loc, id->idn(), this);
+  }
   _flag_1 = true;
   _flag_2 = false;
   _ti = ti;
@@ -563,10 +583,11 @@ inline void VarDecl::introduced(bool t) { _flag_2 = t; }
 inline bool VarDecl::evaluated(void) const { return _e->isUnboxedVal() || _e->isTagged(); }
 inline void VarDecl::evaluated(bool t) {
   if (!_e->isUnboxedVal()) {
-    if (t)
+    if (t) {
       _e = _e->tag();
-    else
+    } else {
       _e = _e->untag();
+    }
   }
 }
 inline void VarDecl::flat(VarDecl* vd) { _flat = WeakRef(vd); }

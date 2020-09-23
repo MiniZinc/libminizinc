@@ -127,7 +127,9 @@ protected:
                      unsigned int last_line, unsigned int last_column);
     void mark(void) {
       _gc_mark = 1;
-      if (_data[0] != nullptr) static_cast<ASTStringData*>(_data[0])->mark();
+      if (_data[0] != nullptr) {
+        static_cast<ASTStringData*>(_data[0])->mark();
+      }
     }
 
     ASTString filename(void) const;
@@ -155,7 +157,9 @@ public:
   /// Construct location
   Location(const ASTString& filename, unsigned int first_line, unsigned int first_column,
            unsigned int last_line, unsigned int last_column) {
-    if (last_line < first_line) throw InternalError("invalid location");
+    if (last_line < first_line) {
+      throw InternalError("invalid location");
+    }
     _loc_info.lv = LocVec::a(filename, first_line, first_column, last_line, last_column);
   }
 
@@ -327,7 +331,9 @@ public:
 
   const Location& loc(void) const { return isUnboxedVal() ? Location::nonalloc : _loc; }
   void loc(const Location& l) {
-    if (!isUnboxedVal()) _loc = l;
+    if (!isUnboxedVal()) {
+      _loc = l;
+    }
   }
   const Type& type(void) const {
     return isUnboxedInt() ? Type::unboxedint : isUnboxedFloatVal() ? Type::unboxedfloat : _type;
@@ -383,18 +389,26 @@ public:
     if (sizeof(double) <= sizeof(FloatVal*)) {
       static const long long int maxUnboxedVal =
           (static_cast<long long int>(1) << (pointerBits - 3)) - static_cast<long long int>(1);
-      if (i < -maxUnboxedVal || i > maxUnboxedVal) return nullptr;
+      if (i < -maxUnboxedVal || i > maxUnboxedVal) {
+        return nullptr;
+      }
       long long int j = i < 0 ? -i : i;
       ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 3) | static_cast<ptrdiff_t>(2);
-      if (i < 0) ubi_p = ubi_p | static_cast<ptrdiff_t>(4);
+      if (i < 0) {
+        ubi_p = ubi_p | static_cast<ptrdiff_t>(4);
+      }
       return reinterpret_cast<IntLit*>(ubi_p);
     } else {
       static const long long int maxUnboxedVal =
           (static_cast<long long int>(1) << (pointerBits - 2)) - static_cast<long long int>(1);
-      if (i < -maxUnboxedVal || i > maxUnboxedVal) return nullptr;
+      if (i < -maxUnboxedVal || i > maxUnboxedVal) {
+        return nullptr;
+      }
       long long int j = i < 0 ? -i : i;
       ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 2) | static_cast<ptrdiff_t>(1);
-      if (i < 0) ubi_p = ubi_p | static_cast<ptrdiff_t>(2);
+      if (i < 0) {
+        ubi_p = ubi_p | static_cast<ptrdiff_t>(2);
+      }
       return reinterpret_cast<IntLit*>(ubi_p);
     }
   }
@@ -416,7 +430,9 @@ public:
     return _u.d;
   }
   static FloatLit* doubleToUnboxedFloatVal(double d) {
-    if (sizeof(double) > sizeof(FloatLit*)) return nullptr;
+    if (sizeof(double) > sizeof(FloatLit*)) {
+      return nullptr;
+    }
     union {
       double d;
       uint64_t bits;
@@ -426,7 +442,9 @@ public:
 
     uint64_t exponent = (_u.bits & (static_cast<uint64_t>(0x7FF) << 52)) >> 52;
     if (exponent != 0) {
-      if (exponent < 513 || exponent > 1534) return nullptr;  // exponent doesn't fit in 10 bits
+      if (exponent < 513 || exponent > 1534) {
+        return nullptr;  // exponent doesn't fit in 10 bits
+      }
       exponent -= 512;  // make exponent fit in 10 bits, with bias 511
     }
     bool sign = (_u.bits & (static_cast<uint64_t>(1) << 63)) != 0;
@@ -441,30 +459,37 @@ public:
 
   bool isTagged(void) const {
     // only bit 2 is set
-    if (isUnboxedVal()) return false;
-    if (sizeof(double) <= sizeof(FloatVal*))
+    if (isUnboxedVal()) {
+      return false;
+    }
+    if (sizeof(double) <= sizeof(FloatVal*)) {
       return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(7)) == 4;
-    else
+    } else {
       return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
+    }
   }
 
   Expression* tag(void) const {
     assert(!isUnboxedVal());
-    if (sizeof(double) <= sizeof(FloatVal*))
+    if (sizeof(double) <= sizeof(FloatVal*)) {
       return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
                                            static_cast<ptrdiff_t>(4));
-    else
+    } else {
       return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
                                            static_cast<ptrdiff_t>(2));
+    }
   }
   Expression* untag(void) {
-    if (isUnboxedVal()) return this;
-    if (sizeof(double) <= sizeof(FloatVal*))
+    if (isUnboxedVal()) {
+      return this;
+    }
+    if (sizeof(double) <= sizeof(FloatVal*)) {
       return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) &
                                            ~static_cast<ptrdiff_t>(4));
-    else
+    } else {
       return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) &
                                            ~static_cast<ptrdiff_t>(2));
+    }
   }
 
   /// Test if expression is of type \a T
@@ -474,7 +499,9 @@ public:
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wtautological-undefined-compare"
 #endif
-    if (nullptr == this) throw InternalError("isa: nullptr");
+    if (nullptr == this) {
+      throw InternalError("isa: nullptr");
+    }
 #ifdef __clang__
 #pragma clang diagnostic pop
 #endif
@@ -700,7 +727,9 @@ public:
   /// Access declaration
   VarDecl* decl(void) const {
     Expression* d = _decl;
-    while ((d != nullptr) && d->isa<Id>()) d = d->cast<Id>()->_decl;
+    while ((d != nullptr) && d->isa<Id>()) {
+      d = d->cast<Id>()->_decl;
+    }
     return Expression::cast<VarDecl>(d);
   }
   /// Set declaration

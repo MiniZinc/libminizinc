@@ -62,7 +62,9 @@ int GetMaskConsType(const Call* call) {
   if (fLC) {
     mask |= MIP_wrapper::MaskConsType_Lazy;
   }
-  if (!fUC && !fLC) mask |= MIP_wrapper::MaskConsType_Normal;
+  if (!fUC && !fLC) {
+    mask |= MIP_wrapper::MaskConsType_Normal;
+  }
   return mask;
   //       return MIP_wrapper::MaskConsType_Normal;    // recognition fails
 }
@@ -112,19 +114,25 @@ void XBZCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInpu
 
 void XBZCutGen::print(ostream& os) {
   os << varZ << '\n' << varX.size() << '\n';
-  for (int i : varX) os << i << ' ';
+  for (int i : varX) {
+    os << i << ' ';
+  }
   os << endl;
-  for (int i : varB) os << i << ' ';
+  for (int i : varB) {
+    os << i << ' ';
+  }
   os << endl;
 }
 
 std::string SECCutGen::validate() const {
   std::ostringstream oss;
   /// Check that diagonal flows are 0
-  for (int i = 0; i < nN; ++i)
-    if (pMIP->colUB[varXij[i * nN + i]] > 0.0)
+  for (int i = 0; i < nN; ++i) {
+    if (pMIP->colUB[varXij[i * nN + i]] > 0.0) {
       oss << "SECutGen with " << nN << " cities: diagonal flow " << (i + 1)
           << " has UB=" << pMIP->colUB[varXij[i * nN + i]] << "\n";
+    }
+  }
   return oss.str();
 }
 
@@ -136,9 +144,10 @@ void SECCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInpu
   for (int i = 0; i < nN; ++i) {
     for (int j = 0; j < nN; ++j) {
       const double xij = slvOut.x[varXij[nN * i + j]];
-      if (i == j)
+      if (i == j) {
         MZN_ASSERT_HARD_MSG(1e-4 > fabs(xij),
                             "circuit: X[" << (i + 1) << ", " << (j + 1) << "]==" << xij);
+      }
       MZN_ASSERT_HARD_MSG(
           -1e-4 < xij && 1.0 + 1e-4 > xij,  // adjusted from 1e-6 to 1e-4 for CBC. 7.8.19
           "circuit: X[" << (i + 1) << ", " << (j + 1) << "]==" << xij);
@@ -166,18 +175,20 @@ void SECCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInpu
     int nCutSize = 0;
     constexpr int nElemPrint = 20;
     // cerr << "  CUT: [ ";
-    for (int i = 0; i < nN; ++i)
+    for (int i = 0; i < nN; ++i) {
       if (mc.parities[i]) {
         ++nCutSize;
         // if ( nCutSize<=nElemPrint )
         //  cerr << (i+1) << ", ";
         // else if ( nCutSize==nElemPrint+1 )
         //  cerr << "...";
-        for (int j = 0; j < nN; ++j)
+        for (int j = 0; j < nN; ++j) {
           if (!mc.parities[j]) {
             cut.addVar(varXij[nN * i + j], 1.0);
           }
+        }
       }
+    }
     // cerr << "]. " << flush;
     double dViol = cut.computeViol(slvOut.x, slvOut.nCols);
     if (dViol > 0.0001) {  // ?? PARAM?  TODO. See also min cut value required

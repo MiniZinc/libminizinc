@@ -43,8 +43,9 @@ Env* changeLibrary(Env& e, vector<string>& includePaths, string globals_dir,
 
   vector<string> new_includePaths;
 
-  if (std::find(includePaths.begin(), includePaths.end(), globals_dir) == includePaths.end())
+  if (std::find(includePaths.begin(), includePaths.end(), globals_dir) == includePaths.end()) {
     new_includePaths.push_back(globals_dir);
+  }
   new_includePaths.insert(new_includePaths.end(), includePaths.begin(), includePaths.end());
 
   // Collect include items
@@ -99,12 +100,16 @@ CompilePass::CompilePass(Env* e, FlatteningOptions& opts, CompilePassFlags& cfla
 
 Env* CompilePass::run(Env* store, std::ostream& log) {
   Timer lasttime;
-  if (compflags.verbose) log << "\n\tCompilePass: Flatten with \'" << library << "\' library ...\n";
+  if (compflags.verbose) {
+    log << "\n\tCompilePass: Flatten with \'" << library << "\' library ...\n";
+  }
 
   Env* new_env;
   if (change_library) {
     new_env = changeLibrary(*env, includePaths, library, compflags, compflags.verbose);
-    if (new_env == nullptr) return nullptr;
+    if (new_env == nullptr) {
+      return nullptr;
+    }
     new_env->envi().copyPathMapsAndState(store->envi());
   } else {
     new_env = env;
@@ -129,7 +134,9 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
   try {
     flatten(*new_env, fopts);
   } catch (LocationException& e) {
-    if (compflags.verbose) log << std::endl;
+    if (compflags.verbose) {
+      log << std::endl;
+    }
     std::ostringstream errstream;
     errstream << e.what() << ": " << std::endl;
     new_env->dumpErrorStack(errstream);
@@ -138,15 +145,23 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
   }
 
   if (!compflags.noMIPdomains) {
-    if (compflags.verbose) log << "MIP domains ...";
+    if (compflags.verbose) {
+      log << "MIP domains ...";
+    }
     MIPdomains(*new_env, compflags.statistics);
-    if (compflags.verbose) log << " done (" << lasttime.stoptime() << ")" << std::endl;
+    if (compflags.verbose) {
+      log << " done (" << lasttime.stoptime() << ")" << std::endl;
+    }
   }
 
   if (compflags.optimize) {
-    if (compflags.verbose) log << "Optimizing ...";
+    if (compflags.verbose) {
+      log << "Optimizing ...";
+    }
     optimize(*new_env, compflags.chain_compression);
-    if (compflags.verbose) log << " done (" << lasttime.stoptime() << ")" << std::endl;
+    if (compflags.verbose) {
+      log << " done (" << lasttime.stoptime() << ")" << std::endl;
+    }
   }
 
   for (const auto& i : new_env->warnings()) {
@@ -158,15 +173,21 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
   new_env->clearWarnings();
 
   if (!compflags.newfzn) {
-    if (compflags.verbose) log << "Converting to old FlatZinc ...";
+    if (compflags.verbose) {
+      log << "Converting to old FlatZinc ...";
+    }
     oldflatzinc(*new_env);
-    if (compflags.verbose) log << " done (" << lasttime.stoptime() << ")" << std::endl;
+    if (compflags.verbose) {
+      log << " done (" << lasttime.stoptime() << ")" << std::endl;
+    }
   } else {
     new_env->flat()->compact();
     new_env->output()->compact();
   }
 
-  if (compflags.verbose) log << " done (" << lasttime.stoptime() << ")" << std::endl;
+  if (compflags.verbose) {
+    log << " done (" << lasttime.stoptime() << ")" << std::endl;
+  }
 
   return new_env;
 }
