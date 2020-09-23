@@ -80,7 +80,7 @@ public:
     double bestBound = 1e308;
     int nCols = 0;
     int nObjVarIndex = -1;
-    const double* x = 0;
+    const double* x = nullptr;
     int nNodes = 0;
     int nOpenNodes = 0;
     double dWallTime = 0.0;
@@ -129,12 +129,12 @@ public:
                                 bool fMIPSol  // if with a MIP feas sol - lazy cuts only
   );
   struct CBUserInfo {
-    MIP_wrapper* wrapper = 0;
-    MIP_wrapper::Output* pOutput = 0;
-    MIP_wrapper::Output* pCutOutput = 0;
-    void* psi = 0;  // external info. Intended to keep MIP_solverinstance
-    SolCallbackFn solcbfn = 0;
-    CutCallbackFn cutcbfn = 0;
+    MIP_wrapper* wrapper = nullptr;
+    MIP_wrapper::Output* pOutput = nullptr;
+    MIP_wrapper::Output* pCutOutput = nullptr;
+    void* psi = nullptr;  // external info. Intended to keep MIP_solverinstance
+    SolCallbackFn solcbfn = nullptr;
+    CutCallbackFn cutcbfn = nullptr;
     /// Union of all flags used for the registered callback cuts
     /// See MaskConstrType_..
     /// Solvers need to know this
@@ -311,7 +311,7 @@ public:
   /// solution callback handler, the wrapper might not have these callbacks implemented
   virtual void provideCutCallback(CutCallbackFn cbfn, void* info) {
     assert(cbfn);
-    cbui.pCutOutput = 0;  // &outpCuts;   thread-safety: caller has to provide this
+    cbui.pCutOutput = nullptr;  // &outpCuts;   thread-safety: caller has to provide this
     cbui.psi = info;
     cbui.cutcbfn = cbfn;
   }

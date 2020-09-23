@@ -39,12 +39,12 @@ namespace MiniZinc {
 class Solns2Out {
 protected:
   std::unique_ptr<Env> pEnv_guard;
-  Env* pEnv = 0;
-  Model* pOutput = 0;
+  Env* pEnv = nullptr;
+  Model* pOutput = nullptr;
 
   typedef std::pair<VarDecl*, KeepAlive> DE;
   ManagedASTStringMap<DE> declmap;
-  Expression* outputExpr = NULL;
+  Expression* outputExpr = nullptr;
   std::string checkerModel;
   std::string statisticsCheckerModel;
   bool fNewSol2Print = false;  // should be set for evalOutput to work

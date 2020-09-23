@@ -236,7 +236,7 @@ public:
 
   // Presolve the currently loaded model, updating variables with the same
   // names in the given Model* m.
-  bool presolve(Model* m = NULL);
+  bool presolve(Model* m = nullptr);
   bool sac(bool toFixedPoint, bool shaving);
   void printStatistics(void);
 
@@ -362,8 +362,8 @@ public:
   Gecode_SolverFactory(void);
   SolverInstanceBase::Options* createOptions(void);
   SolverInstanceBase* doCreateSI(Env& env, std::ostream& log, SolverInstanceBase::Options* opt);
-  std::string getDescription(SolverInstanceBase::Options* opt = NULL);
-  std::string getVersion(SolverInstanceBase::Options* opt = NULL);
+  std::string getDescription(SolverInstanceBase::Options* opt = nullptr);
+  std::string getVersion(SolverInstanceBase::Options* opt = nullptr);
   std::string getId() { return "org.minizinc.gecode_presolver"; }
   virtual bool processOption(SolverInstanceBase::Options* opt, int& i,
                              std::vector<std::string>& argv);

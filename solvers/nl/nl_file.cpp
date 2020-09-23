@@ -105,7 +105,7 @@ void NLFile::add_vdecl(const VarDecl& vd, const TypeInst& ti, const Expression& 
     // Look for the annotation "output_array"
     for (ExpressionSetIter it = vd.ann().begin(); it != vd.ann().end(); ++it) {
       Call* c = (*it)->dyn_cast<Call>();
-      if (c != NULL && c->id() == (constants().ann.output_array)) {
+      if (c != nullptr && c->id() == (constants().ann.output_array)) {
         NLArray array;
         array.name = name;
         array.is_integer = ti.type().bt() == Type::BT_INT;
@@ -160,15 +160,15 @@ void NLFile::add_vdecl(const VarDecl& vd, const TypeInst& ti, const Expression& 
     // Note: we directly jump to the specialized Int/Float set, going through the set literal
     if (isvarint) {
       // Integer
-      IntSetVal* isv = NULL;
-      if (domain != NULL) {
+      IntSetVal* isv = nullptr;
+      if (domain != nullptr) {
         isv = domain->cast<SetLit>()->isv();
       }
       add_vdecl_integer(name, isv, to_report);
     } else {
       // Floating point
-      FloatSetVal* fsv = NULL;
-      if (domain != NULL) {
+      FloatSetVal* fsv = nullptr;
+      if (domain != nullptr) {
         fsv = domain->cast<SetLit>()->fsv();
       }
       add_vdecl_fp(name, fsv, to_report);
@@ -183,7 +183,7 @@ void NLFile::add_vdecl_integer(const string& name, const IntSetVal* isv, bool to
 
   // Check the domain.
   NLBound bound;
-  if (isv == NULL) {
+  if (isv == nullptr) {
     bound = NLBound::make_nobound();
   } else if (isv->size() == 1) {
     long long lb = isv->min(0).toInt();
@@ -203,7 +203,7 @@ void NLFile::add_vdecl_fp(const string& name, const FloatSetVal* fsv, bool to_re
   assert(variables.find(name) == variables.end());
   // Check the domain.
   NLBound bound;
-  if (fsv == NULL) {
+  if (fsv == nullptr) {
     bound = NLBound::make_nobound();
   } else if (fsv->size() == 1) {
     double lb = fsv->min(0).toDouble();

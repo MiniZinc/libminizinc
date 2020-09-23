@@ -171,7 +171,7 @@ public:
     }
     if (type.ot() == Type::OT_OPTIONAL) os << "opt ";
     if (type.st() == Type::ST_SET) os << "set of ";
-    if (e == NULL) {
+    if (e == nullptr) {
       switch (type.bt()) {
         case Type::BT_INT:
           os << "int";
@@ -211,7 +211,7 @@ public:
   }
 
   void p(const Expression* e) {
-    if (e == NULL) return;
+    if (e == nullptr) return;
     switch (e->eid()) {
       case Expression::E_INTLIT:
         os << e->cast<IntLit>()->v();
@@ -386,13 +386,13 @@ public:
             os << c.decl(i, j)->id()->v();
             if (j < c.n_decls(i) - 1) os << ",";
           }
-          if (c.in(i) == NULL) {
+          if (c.in(i) == nullptr) {
             os << " = ";
             p(c.where(i));
           } else {
             os << " in ";
             p(c.in(i));
-            if (c.where(i) != NULL) {
+            if (c.where(i) != nullptr) {
               os << " where ";
               p(c.where(i));
             }
@@ -603,7 +603,7 @@ public:
   }
 
   void p(const Item* i) {
-    if (i == NULL) return;
+    if (i == nullptr) return;
     if (i->removed()) os << "% ";
     switch (i->iid()) {
       case Item::II_INC:
@@ -644,7 +644,7 @@ public:
         break;
       case Item::II_FUN: {
         const FunctionI& fi = *i->cast<FunctionI>();
-        if (fi.ti()->type().isann() && fi.e() == NULL) {
+        if (fi.ti()->type().isann() && fi.e() == nullptr) {
           os << "annotation ";
         } else if (fi.ti()->type() == Type::parbool()) {
           os << "test ";
@@ -891,7 +891,7 @@ public:
     for (it = lines.begin(); it != lines.end(); it++) {
       if (it->first == p) return &(it->second);
     }
-    return NULL;
+    return nullptr;
   }
   void addLine(int p, int l, int par = -1) {
     if (par == -1) {
@@ -918,7 +918,7 @@ public:
   }
   void decrementLine(std::vector<int>* vec, int l) {
     std::vector<int>::iterator vit;
-    if (vec != NULL) {
+    if (vec != nullptr) {
       for (vit = vec->begin(); vit != vec->end(); vit++) {
         if (*vit >= l) *vit = *vit - 1;
       }
@@ -942,12 +942,12 @@ public:
     for (it = lts.lines.begin(); it != lts.lines.end(); it++) {
       std::vector<int>::iterator vit;
       for (vit = it->second.begin(); vit != it->second.end(); vit++) {
-        remove(NULL, *vit, false);
+        remove(nullptr, *vit, false);
       }
     }
   }
   void remove(std::vector<int>* v, int i, bool success = true) {
-    if (v != NULL) {
+    if (v != nullptr) {
       v->erase(std::remove(v->begin(), v->end(), i), v->end());
     }
     for (auto it = lines.begin(); it != lines.end(); it++) {
@@ -988,7 +988,7 @@ Document* tiexpressionToDocument(const Type& type, const Expression* e) {
   }
   if (type.ot() == Type::OT_OPTIONAL) dl->addStringToList("opt ");
   if (type.st() == Type::ST_SET) dl->addStringToList("set of ");
-  if (e == NULL) {
+  if (e == nullptr) {
     switch (type.bt()) {
       case Type::BT_INT:
         dl->addStringToList("int");
@@ -1202,13 +1202,13 @@ public:
             std::string(c.decl(i, j)->id()->v().c_str(), c.decl(i, j)->id()->v().size()));
       }
       gen->addDocumentToList(idents);
-      if (c.in(i) == NULL) {
+      if (c.in(i) == nullptr) {
         gen->addStringToList(" = ");
         gen->addDocumentToList(expressionToDocument(c.where(i)));
       } else {
         gen->addStringToList(" in ");
         gen->addDocumentToList(expressionToDocument(c.in(i)));
-        if (c.where(i) != NULL) {
+        if (c.where(i) != nullptr) {
           gen->addStringToList(" where ");
           gen->addDocumentToList(expressionToDocument(c.where(i)));
         }
@@ -1420,13 +1420,13 @@ public:
                                                   com->decl(i, j)->id()->v().size()));
             }
             gen->addDocumentToList(idents);
-            if (com->in(i) == NULL) {
+            if (com->in(i) == nullptr) {
               gen->addStringToList(" = ");
               gen->addDocumentToList(expressionToDocument(com->where(i)));
             } else {
               gen->addStringToList(" in ");
               gen->addDocumentToList(expressionToDocument(com->in(i)));
-              if (com->where(i) != NULL) {
+              if (com->where(i) != nullptr) {
                 gen->addStringToList(" where ");
                 gen->addDocumentToList(expressionToDocument(com->where(i)));
               }
@@ -1542,7 +1542,7 @@ Document* annotationToDocument(const Annotation& ann) {
 }
 
 Document* expressionToDocument(const Expression* e) {
-  if (e == NULL) return new StringDocument("NULL");
+  if (e == nullptr) return new StringDocument("NULL");
   ExpressionDocumentMapper esm;
   ExpressionMapper<ExpressionDocumentMapper> em(esm);
   DocumentList* dl = new DocumentList("", "", "");
@@ -1604,7 +1604,7 @@ public:
   }
   ret mapFunctionI(const FunctionI& fi) {
     DocumentList* dl;
-    if (fi.ti()->type().isann() && fi.e() == NULL) {
+    if (fi.ti()->type().isann() && fi.e() == nullptr) {
       dl = new DocumentList("annotation ", " ", ";", false);
     } else if (fi.ti()->type() == Type::parbool()) {
       dl = new DocumentList("test ", "", ";", false);
@@ -1752,7 +1752,7 @@ void PrettyPrinter::printDocument(Document* d, bool alignment, int alignmentCol,
 void PrettyPrinter::printStringDoc(StringDocument* d, bool alignment, int alignmentCol,
                                    const std::string& before, const std::string& after) {
   std::string s;
-  if (d != NULL) s = d->getString();
+  if (d != nullptr) s = d->getString();
   s = before + s + after;
   printString(s, alignment, alignmentCol);
 }
@@ -1789,7 +1789,8 @@ void PrettyPrinter::printDocList(DocumentList* d, int alignmentCol, const std::s
     if (!dynamic_cast<BreakPoint*>(ld[i])) lastVisibleElementIndex = i;
   }
   if (vectorSize == 0) {
-    printStringDoc(NULL, true, newAlignmentCol, super_before + beginToken, endToken + super_after);
+    printStringDoc(nullptr, true, newAlignmentCol, super_before + beginToken,
+                   endToken + super_after);
   }
   for (int i = 0; i < vectorSize; i++) {
     Document* subdoc = ld[i];
@@ -1815,7 +1816,7 @@ void PrettyPrinter::printDocList(DocumentList* d, int alignmentCol, const std::s
     printDocument(subdoc, _alignment, newAlignmentCol, be, af);
   }
   if (d->getUnbreakable()) {
-    simplify(currentItem, currentLine, NULL);
+    simplify(currentItem, currentLine, nullptr);
   }
 }
 void PrettyPrinter::simplifyItem(int item) {
@@ -1848,9 +1849,9 @@ bool PrettyPrinter::simplify(int item, int line, std::vector<int>* vec) {
 }
 
 Printer::Printer(std::ostream& os, int width, bool flatZinc, EnvI* env0)
-    : env(env0), ism(NULL), printer(NULL), _os(os), _width(width), _flatZinc(flatZinc) {}
+    : env(env0), ism(nullptr), printer(nullptr), _os(os), _width(width), _flatZinc(flatZinc) {}
 void Printer::init(void) {
-  if (ism == NULL) {
+  if (ism == nullptr) {
     ism = new ItemDocumentMapper();
     printer = new PrettyPrinter(_width, 4, true, true);
   }

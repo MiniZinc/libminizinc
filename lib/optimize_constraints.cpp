@@ -67,7 +67,7 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
              (ii->isa<ConstraintI>() ||
               ii->cast<VarDeclI>()->e()->ti()->domain() == constants().lit_true)) {
     VarDecl* vd = x[0]()->cast<Id>()->decl();
-    IntSetVal* domain = vd->ti()->domain() ? eval_intset(env, vd->ti()->domain()) : NULL;
+    IntSetVal* domain = vd->ti()->domain() ? eval_intset(env, vd->ti()->domain()) : nullptr;
     if (c->id() == constants().ids.int_.lin_eq) {
       IntVal rd = eval_int(env, c->arg(2)) - d;
       if (rd % coeffs[0] == 0) {
@@ -237,13 +237,13 @@ OptimizeRegistry::ConstraintStatus o_clause(EnvI& env, Item* i, Call* c, Express
   ArrayLit* al_pos = eval_array_lit(env, c->arg(0));
   for (unsigned int j = 0; j < al_pos->size(); j++) {
     if (Id* ident = (*al_pos)[j]->dyn_cast<Id>()) {
-      if (ident->decl()->ti()->domain() == NULL) pos.push_back(ident->decl());
+      if (ident->decl()->ti()->domain() == nullptr) pos.push_back(ident->decl());
     }
   }
   ArrayLit* al_neg = eval_array_lit(env, c->arg(1));
   for (unsigned int j = 0; j < al_neg->size(); j++) {
     if (Id* ident = (*al_neg)[j]->dyn_cast<Id>()) {
-      if (ident->decl()->ti()->domain() == NULL) neg.push_back(ident->decl());
+      if (ident->decl()->ti()->domain() == nullptr) neg.push_back(ident->decl());
     }
   }
   bool subsumed = false;

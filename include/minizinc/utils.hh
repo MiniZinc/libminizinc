@@ -112,25 +112,25 @@ public:
                         Value* pResult = nullptr,    // pointer to value storage
                         bool fValueOptional = false  // if pResult, for non-string values
   ) {
-    assert(0 == strchr(names, ','));
-    assert(0 == strchr(names, ';'));
+    assert(nullptr == strchr(names, ','));
+    assert(nullptr == strchr(names, ';'));
     if (i >= argv.size()) return false;
     std::string arg(argv[i]);
     /// Separate keywords
     std::string keyword;
     std::istringstream iss(names);
     while (iss >> keyword) {
-      if (((2 < keyword.size() || 0 == pResult) && arg != keyword) ||  // exact cmp
-          (0 != arg.compare(0, keyword.size(), keyword)))              // truncated cmp
+      if (((2 < keyword.size() || nullptr == pResult) && arg != keyword) ||  // exact cmp
+          (0 != arg.compare(0, keyword.size(), keyword)))                    // truncated cmp
         continue;
       /// Process it
       bool combinedArg = false;  // whether arg and value are combined in one string (like -Ggecode)
       if (keyword.size() < arg.size()) {
-        if (0 == pResult) continue;
+        if (nullptr == pResult) continue;
         combinedArg = true;
         arg.erase(0, keyword.size());
       } else {
-        if (0 == pResult) return true;
+        if (nullptr == pResult) return true;
         i++;
         if (i >= argv.size()) {
           --i;
@@ -164,7 +164,7 @@ class HadOne {
 
 public:
   template <class N>
-  std::string operator()(const N& val, const char* descr = 0) {
+  std::string operator()(const N& val, const char* descr = nullptr) {
     std::ostringstream oss;
     if (val) {
       if (fHadOne) oss << ", ";

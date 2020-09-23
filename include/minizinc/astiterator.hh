@@ -92,7 +92,7 @@ void BottomUpIterator<T>::run(Expression* root) {
   if (_t.enter(root)) stack.push_back(C(root));
   while (!stack.empty()) {
     C& c = stack.back();
-    if (c._e == NULL) {
+    if (c._e == nullptr) {
       stack.pop_back();
       continue;
     }
@@ -236,7 +236,7 @@ void BottomUpIterator<T>::run(Expression* root) {
             break;
         }
       } else {
-        c._e = NULL;
+        c._e = nullptr;
       }
     }
   }
@@ -249,7 +249,7 @@ void TopDownIterator<T>::run(Expression* root) {
   while (!stack.empty()) {
     Expression* e = stack.back();
     stack.pop_back();
-    if (e == NULL) {
+    if (e == nullptr) {
       continue;
     }
     if (!_t.enter(e)) continue;

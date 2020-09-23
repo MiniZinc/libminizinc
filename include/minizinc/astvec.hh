@@ -29,7 +29,7 @@ protected:
 
 public:
   /// Default constructor
-  ASTIntVec(void) : _v(NULL) {}
+  ASTIntVec(void) : _v(nullptr) {}
   /// Constructor
   ASTIntVec(ASTIntVecO* v) : _v(v) {}
   /// Constructor
@@ -67,7 +67,7 @@ protected:
 
 public:
   /// Default constructor
-  ASTExprVec(void) : _v(NULL) {}
+  ASTExprVec(void) : _v(nullptr) {}
   /// Constructor
   ASTExprVec(ASTExprVecO<T*>* v) : _v(v) {}
   /// Constructor
@@ -177,8 +177,8 @@ inline ASTIntVec& ASTIntVec::operator=(const ASTIntVec& v) {
 inline unsigned int ASTIntVec::size(void) const { return _v ? _v->size() : 0; }
 inline int& ASTIntVec::operator[](unsigned int i) { return (*_v)[i]; }
 inline int ASTIntVec::operator[](unsigned int i) const { return (*_v)[i]; }
-inline int* ASTIntVec::begin(void) { return _v ? _v->begin() : NULL; }
-inline int* ASTIntVec::end(void) { return _v ? _v->end() : NULL; }
+inline int* ASTIntVec::begin(void) { return _v ? _v->begin() : nullptr; }
+inline int* ASTIntVec::end(void) { return _v ? _v->end() : nullptr; }
 inline void ASTIntVec::mark(void) const {
   if (_v) _v->mark();
 }
@@ -206,11 +206,11 @@ inline T* ASTExprVec<T>::operator[](unsigned int i) const {
 }
 template <class T>
 inline T** ASTExprVec<T>::begin(void) {
-  return _v ? _v->begin() : NULL;
+  return _v ? _v->begin() : nullptr;
 }
 template <class T>
 inline T** ASTExprVec<T>::end(void) {
-  return _v ? _v->end() : NULL;
+  return _v ? _v->end() : nullptr;
 }
 template <class T>
 inline ASTExprVecO<T*>* ASTExprVec<T>::vec(void) const {

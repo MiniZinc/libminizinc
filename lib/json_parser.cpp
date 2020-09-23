@@ -387,7 +387,7 @@ Expression* JSONParser::parseObject(istream& is) {
         break;
       case T_OBJ_OPEN:
         for (unsigned int i = 0; i < elems.size(); i++) {
-          elems_e[i] = new Id(Location().introduce(), ASTString(elems[i].s), NULL);
+          elems_e[i] = new Id(Location().introduce(), ASTString(elems[i].s), nullptr);
         }
         break;
       default:
@@ -397,7 +397,7 @@ Expression* JSONParser::parseObject(istream& is) {
   } else if (objid.s == "e") {
     Token next = parseEnumString(is);
     expectToken(is, T_OBJ_CLOSE);
-    return new Id(Location().introduce(), ASTString(next.s), NULL);
+    return new Id(Location().introduce(), ASTString(next.s), nullptr);
   } else {
     throw JSONError(env, errLocation(), "invalid object");
   }

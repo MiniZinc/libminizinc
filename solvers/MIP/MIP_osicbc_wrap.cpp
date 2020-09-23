@@ -281,7 +281,7 @@ static int cancelAsap = 0;
   2 - ending Cbc
 */
 static int statusOfCbc = 0;
-static CoinSighandler_t saveSignal = static_cast<CoinSighandler_t>(0);
+static CoinSighandler_t saveSignal = static_cast<CoinSighandler_t>(nullptr);
 
 extern "C" {
 static void
@@ -300,8 +300,8 @@ static void
 */
 
 struct EventUserInfo {
-  MIP_wrapper::CBUserInfo* pCbui = 0;
-  CglPreProcess* pPP = 0;
+  MIP_wrapper::CBUserInfo* pCbui = nullptr;
+  CglPreProcess* pPP = nullptr;
 };
 
 extern CglPreProcess* cbcPreProcessPointer;
@@ -407,7 +407,7 @@ CbcEventHandler::CbcAction MyEventHandler3::event(CbcEvent whichEvent) {
         double objVal =
             (model_->getObjValue());  //- objOffset);   John Forrest suggested to remove, 17.11.17
         double bestBnd = (model_->getBestPossibleObjValue());  //- objOffset);
-        if (0 != cbcPreProcessPointer) {
+        if (nullptr != cbcPreProcessPointer) {
           if (OsiSolverInterface* cbcPreOrig = cbcPreProcessPointer->originalModel()) {
             objVal *= cbcPreOrig->getObjSense();
             bestBnd *= cbcPreOrig->getObjSense();
@@ -416,8 +416,8 @@ CbcEventHandler::CbcAction MyEventHandler3::event(CbcEvent whichEvent) {
           objVal *= model_->getObjSense();
           bestBnd *= model_->getObjSense();
         }
-        OsiSolverInterface* origModel = 0;
-        if (0 != cbcPreProcessPointer && 0 != model_->continuousSolver()) {
+        OsiSolverInterface* origModel = nullptr;
+        if (nullptr != cbcPreProcessPointer && nullptr != model_->continuousSolver()) {
           OsiSolverInterface* solver = (model_->continuousSolver()->clone());
           //       ? model_->continuousSolver()->clone()
           //       : model_->continuousSolver()->clone();
@@ -649,7 +649,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
       //       osi.setColNames(colNames, 0, colObj.size(), 0);
       vector<const char*> colN(colObj.size());
       for (int j = 0; j < colNames.size(); ++j) colN[j] = colNames[j].c_str();
-      osi.writeMpsNative(options->sExportModel.c_str(), 0, colN.data());
+      osi.writeMpsNative(options->sExportModel.c_str(), nullptr, colN.data());
     }
 
     // Tell solver to return fast if presolve or initial solve infeasible

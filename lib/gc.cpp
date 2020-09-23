@@ -25,7 +25,7 @@ GC*& GC::gc(void) {
 #if defined(HAS_DECLSPEC_THREAD)
   __declspec(thread) static GC* gc = NULL;
 #elif defined(HAS_ATTR_THREAD)
-  static __thread GC* gc = NULL;
+  static __thread GC* gc = nullptr;
 #else
 #error Need thread-local storage
 #endif
@@ -47,7 +47,7 @@ public:
   FreeListNode(size_t s, FreeListNode* n) : ASTNode(ASTNode::NID_FL), next(n), size(s) {
     _gc_mark = 1;
   }
-  FreeListNode(size_t s) : ASTNode(ASTNode::NID_FL), next(NULL), size(s) {}
+  FreeListNode(size_t s) : ASTNode(ASTNode::NID_FL), next(nullptr), size(s) {}
 };
 
 class HeapPage {
@@ -109,16 +109,16 @@ protected:
   std::vector<TItem> trail;
 
   Heap(void)
-      : _page(NULL),
-        _rootset(NULL),
-        _roots(NULL),
-        _weakRefs(NULL),
-        _nodeWeakMaps(NULL),
+      : _page(nullptr),
+        _rootset(nullptr),
+        _roots(nullptr),
+        _weakRefs(nullptr),
+        _nodeWeakMaps(nullptr),
         _alloced_mem(0),
         _free_mem(0),
         _gc_threshold(_min_gc_threshold),
         _max_alloced_mem(0) {
-    for (int i = _max_fl + 1; i--;) _fl[i] = NULL;
+    for (int i = _max_fl + 1; i--;) _fl[i] = nullptr;
   }
 
   /// Default size of pages to allocate
@@ -127,7 +127,7 @@ protected:
   HeapPage* allocPage(size_t s, bool exact = false) {
     if (!exact) s = std::max(s, pageSize);
     HeapPage* newPage = static_cast<HeapPage*>(::malloc(sizeof(HeapPage) + s - 1));
-    if (newPage == NULL) {
+    if (newPage == nullptr) {
       throw InternalError("out of memory");
     }
 #ifndef NDEBUG
@@ -166,7 +166,7 @@ protected:
     /// Align to word boundary
     size += ((8 - (size & 7)) & 7);
     HeapPage* p = _page;
-    if (exact || _page == NULL || _page->used + size >= _page->size) p = allocPage(size, exact);
+    if (exact || _page == nullptr || _page->used + size >= _page->size) p = allocPage(size, exact);
     char* ret = p->data + p->used;
     p->used += size;
     _free_mem -= size;
@@ -332,7 +332,7 @@ const char* GC::Heap::_nodeid[] = {
 #endif
 
 void GC::setTimeout(unsigned long long int t) {
-  if (gc() == NULL) {
+  if (gc() == nullptr) {
     gc() = new GC();
   }
   gc()->_timeout = t;
@@ -340,7 +340,7 @@ void GC::setTimeout(unsigned long long int t) {
 }
 
 void GC::lock(void) {
-  if (gc() == NULL) {
+  if (gc() == nullptr) {
     gc() = new GC();
   }
   // If a timeout has been specified, first check counter
@@ -393,7 +393,7 @@ void GC::add(GCMarker* m) {
 void GC::remove(GCMarker* m) {
   GC* gc = GC::gc();
   if (m->_roots_next == m) {
-    gc->_heap->_rootset = NULL;
+    gc->_heap->_rootset = nullptr;
   } else {
     m->_roots_next->_roots_prev = m->_roots_prev;
     m->_roots_prev->_roots_next = m->_roots_next;
@@ -419,7 +419,7 @@ void GC::Heap::mark(void) {
   gc_stats.clear();
 #endif
 
-  for (KeepAlive* e = _roots; e != NULL; e = e->next()) {
+  for (KeepAlive* e = _roots; e != nullptr; e = e->next()) {
     if ((*e)() && (*e)()->_gc_mark == 0) {
       Expression::mark((*e)());
 #if defined(MINIZINC_GC_STATS)
@@ -432,7 +432,7 @@ void GC::Heap::mark(void) {
 #endif
 
   GCMarker* m = _rootset;
-  if (m == NULL) {
+  if (m == nullptr) {
     return;
   }
   do {
@@ -445,16 +445,16 @@ void GC::Heap::mark(void) {
   }
 
   bool fixPrev = false;
-  WeakRef* prevWr = NULL;
-  for (WeakRef* wr = _weakRefs; wr != NULL; wr = wr->next()) {
+  WeakRef* prevWr = nullptr;
+  for (WeakRef* wr = _weakRefs; wr != nullptr; wr = wr->next()) {
     if (fixPrev) {
       fixPrev = false;
       removeWeakRef(prevWr);
-      prevWr->_n = NULL;
-      prevWr->_p = NULL;
+      prevWr->_n = nullptr;
+      prevWr->_p = nullptr;
     }
     if ((*wr)() && (*wr)()->_gc_mark == 0) {
-      wr->_e = NULL;
+      wr->_e = nullptr;
       wr->_valid = false;
       fixPrev = true;
       prevWr = wr;
@@ -462,11 +462,11 @@ void GC::Heap::mark(void) {
   }
   if (fixPrev) {
     removeWeakRef(prevWr);
-    prevWr->_n = NULL;
-    prevWr->_p = NULL;
+    prevWr->_n = nullptr;
+    prevWr->_p = nullptr;
   }
 
-  for (ASTNodeWeakMap* wr = _nodeWeakMaps; wr != NULL; wr = wr->next()) {
+  for (ASTNodeWeakMap* wr = _nodeWeakMaps; wr != nullptr; wr = wr->next()) {
     std::vector<ASTNode*> toRemove;
     for (auto n : wr->_m) {
       if (n.first->_gc_mark == 0 || n.second->_gc_mark == 0) toRemove.push_back(n.first);
@@ -487,7 +487,7 @@ void GC::Heap::sweep(void) {
   std::cerr << "=============== GC sweep =============\n";
 #endif
   HeapPage* p = _page;
-  HeapPage* prev = NULL;
+  HeapPage* prev = nullptr;
   while (p) {
     size_t off = 0;
     bool wholepage = true;
@@ -520,7 +520,7 @@ void GC::Heap::sweep(void) {
             break;
           case Expression::E_VARDECL:
             // Reset WeakRef inside VarDecl
-            static_cast<VarDecl*>(n)->flat(NULL);
+            static_cast<VarDecl*>(n)->flat(nullptr);
             // fall through
           default:
             if (n->_id >= ASTNode::NID_END + 1 && n->_id <= Expression::EID_END) {
@@ -629,8 +629,8 @@ size_t GC::maxMem(void) {
 void* ASTNode::operator new(size_t size) { return GC::gc()->alloc(size); }
 
 void GC::addKeepAlive(KeepAlive* e) {
-  assert(e->_p == NULL);
-  assert(e->_n == NULL);
+  assert(e->_p == nullptr);
+  assert(e->_n == nullptr);
   e->_n = GC::gc()->_heap->_roots;
   if (GC::gc()->_heap->_roots) GC::gc()->_heap->_roots->_p = e;
   GC::gc()->_heap->_roots = e;
@@ -647,31 +647,31 @@ void GC::removeKeepAlive(KeepAlive* e) {
   }
 }
 
-KeepAlive::KeepAlive(Expression* e) : _e(e), _p(NULL), _n(NULL) {
+KeepAlive::KeepAlive(Expression* e) : _e(e), _p(nullptr), _n(nullptr) {
   if (_e && !_e->isUnboxedVal()) GC::gc()->addKeepAlive(this);
 }
 KeepAlive::~KeepAlive(void) {
   if (_e && !_e->isUnboxedVal()) GC::gc()->removeKeepAlive(this);
 }
-KeepAlive::KeepAlive(const KeepAlive& e) : _e(e._e), _p(NULL), _n(NULL) {
+KeepAlive::KeepAlive(const KeepAlive& e) : _e(e._e), _p(nullptr), _n(nullptr) {
   if (_e && !_e->isUnboxedVal()) GC::gc()->addKeepAlive(this);
 }
 KeepAlive& KeepAlive::operator=(const KeepAlive& e) {
   if (_e && !_e->isUnboxedVal()) {
-    if (e._e == NULL || e._e->isUnboxedVal()) {
+    if (e._e == nullptr || e._e->isUnboxedVal()) {
       GC::gc()->removeKeepAlive(this);
-      _p = _n = NULL;
+      _p = _n = nullptr;
     }
   } else {
-    if (e._e != NULL && !e._e->isUnboxedVal()) GC::gc()->addKeepAlive(this);
+    if (e._e != nullptr && !e._e->isUnboxedVal()) GC::gc()->addKeepAlive(this);
   }
   _e = e._e;
   return *this;
 }
 
 void GC::addWeakRef(WeakRef* e) {
-  assert(e->_p == NULL);
-  assert(e->_n == NULL);
+  assert(e->_p == nullptr);
+  assert(e->_n == nullptr);
   e->_n = GC::gc()->_heap->_weakRefs;
   if (GC::gc()->_heap->_weakRefs) GC::gc()->_heap->_weakRefs->_p = e;
   GC::gc()->_heap->_weakRefs = e;
@@ -688,8 +688,8 @@ void GC::removeWeakRef(MiniZinc::WeakRef* e) {
   }
 }
 void GC::addNodeWeakMap(ASTNodeWeakMap* m) {
-  assert(m->_p == NULL);
-  assert(m->_n == NULL);
+  assert(m->_p == nullptr);
+  assert(m->_n == nullptr);
   m->_n = GC::gc()->_heap->_nodeWeakMaps;
   if (GC::gc()->_heap->_nodeWeakMaps) GC::gc()->_heap->_nodeWeakMaps->_p = m;
   GC::gc()->_heap->_nodeWeakMaps = m;
@@ -706,13 +706,13 @@ void GC::removeNodeWeakMap(ASTNodeWeakMap* m) {
   }
 }
 
-WeakRef::WeakRef(Expression* e) : _e(e), _p(NULL), _n(NULL), _valid(true) {
+WeakRef::WeakRef(Expression* e) : _e(e), _p(nullptr), _n(nullptr), _valid(true) {
   if (_e && !_e->isUnboxedVal()) GC::gc()->addWeakRef(this);
 }
 WeakRef::~WeakRef(void) {
   if (_e && !_e->isUnboxedVal()) GC::gc()->removeWeakRef(this);
 }
-WeakRef::WeakRef(const WeakRef& e) : _e(e()), _p(NULL), _n(NULL), _valid(true) {
+WeakRef::WeakRef(const WeakRef& e) : _e(e()), _p(nullptr), _n(nullptr), _valid(true) {
   if (_e && !_e->isUnboxedVal()) GC::gc()->addWeakRef(this);
 }
 WeakRef& WeakRef::operator=(const WeakRef& e) {
@@ -721,20 +721,20 @@ WeakRef& WeakRef::operator=(const WeakRef& e) {
   if (isActive) {
     // Yes, active WeakRef.
     // If after assigning WeakRef should be inactive, remove it.
-    if (e() == NULL || e()->isUnboxedVal()) {
+    if (e() == nullptr || e()->isUnboxedVal()) {
       GC::gc()->removeWeakRef(this);
-      _n = _p = NULL;
+      _n = _p = nullptr;
     }
   }
   _e = e();
   _valid = true;
 
   // If this WeakRef was not active but now should be, add it
-  if (!isActive && _e != NULL && !_e->isUnboxedVal()) GC::gc()->addWeakRef(this);
+  if (!isActive && _e != nullptr && !_e->isUnboxedVal()) GC::gc()->addWeakRef(this);
   return *this;
 }
 
-ASTNodeWeakMap::ASTNodeWeakMap(void) : _p(NULL), _n(NULL) { GC::gc()->addNodeWeakMap(this); }
+ASTNodeWeakMap::ASTNodeWeakMap(void) : _p(nullptr), _n(nullptr) { GC::gc()->addNodeWeakMap(this); }
 
 ASTNodeWeakMap::~ASTNodeWeakMap(void) { GC::gc()->removeNodeWeakMap(this); }
 
@@ -742,7 +742,7 @@ void ASTNodeWeakMap::insert(ASTNode* n0, ASTNode* n1) { _m.insert(std::make_pair
 
 ASTNode* ASTNodeWeakMap::find(ASTNode* n) {
   NodeMap::iterator it = _m.find(n);
-  if (it == _m.end()) return NULL;
+  if (it == _m.end()) return nullptr;
   return it->second;
 }
 

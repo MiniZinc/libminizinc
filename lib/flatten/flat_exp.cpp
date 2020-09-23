@@ -45,7 +45,7 @@ Expression* createDummyValue(EnvI& env, const Type& t) {
     case Type::BT_ANN:
       return constants().ann.promise_total;
     default:
-      return NULL;
+      return nullptr;
   }
 }
 
@@ -75,7 +75,7 @@ EE flatten_par(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
 EE flatten_error(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b);
 
 EE flat_exp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
-  if (e == NULL) return EE();
+  if (e == nullptr) return EE();
 
 #ifndef NDEBUG
   Annotation& e_ann = e->ann();

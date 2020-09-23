@@ -232,7 +232,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       Ctx cmix_not_negated;
       cmix_not_negated.b = C_MIX;
       cmix_not_negated.i = C_MIX;
-      e_if = flat_exp(env, cmix_not_negated, ite->e_if(i), NULL, constants().var_true);
+      e_if = flat_exp(env, cmix_not_negated, ite->e_if(i), nullptr, constants().var_true);
     }
     if (e_if.r()->type() == Type::parbool()) {
       {
@@ -250,7 +250,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         // add another condition and definedness variable
         conditions.push_back(constants().lit_true);
         for (unsigned int j = 0; j < results.size(); j++) {
-          EE ethen = flat_exp(env, cmix, e_then[j][i](), NULL, NULL);
+          EE ethen = flat_exp(env, cmix, e_then[j][i](), nullptr, nullptr);
           assert(ethen.b());
           defined[j].push_back(ethen.b);
           allDefined = allDefined && (ethen.b() == constants().lit_true);
@@ -275,7 +275,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
 
       for (unsigned int j = 0; j < results.size(); j++) {
         // flatten the then branch
-        EE ethen = flat_exp(env, cmix, e_then[j][i](), NULL, NULL);
+        EE ethen = flat_exp(env, cmix, e_then[j][i](), nullptr, nullptr);
 
         assert(ethen.b());
         defined[j].push_back(ethen.b);
@@ -317,11 +317,11 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   }
 
   for (unsigned int j = 0; j < results.size(); j++) {
-    if (results[j] == NULL) {
+    if (results[j] == nullptr) {
       // need to introduce new result variable
       GCLock lock;
-      TypeInst* ti = new TypeInst(Location().introduce(), ite->type(), NULL);
-      results[j] = newVarDecl(env, Ctx(), ti, NULL, NULL, NULL);
+      TypeInst* ti = new TypeInst(Location().introduce(), ite->type(), nullptr);
+      results[j] = newVarDecl(env, Ctx(), ti, nullptr, nullptr, nullptr);
     }
   }
 
@@ -331,7 +331,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
 
     for (unsigned int j = 0; j < results.size(); j++) {
       // flatten else branch
-      EE eelse = flat_exp(env, cmix, e_else[j](), NULL, NULL);
+      EE eelse = flat_exp(env, cmix, e_else[j](), nullptr, nullptr);
       assert(eelse.b());
       defined[j].push_back(eelse.b);
       allDefined = allDefined && (eelse.b() == constants().lit_true);
@@ -459,10 +459,10 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     ret.b = constants().lit_true;
   } else {
     // Otherwise, constraint linking conditions, b and the definedness variables
-    if (b == NULL) {
+    if (b == nullptr) {
       CallStackItem _csi(env, new StringLit(Location().introduce(), "b"));
-      b = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(), Type::varbool()), NULL, NULL,
-                     NULL);
+      b = newVarDecl(env, Ctx(), new TypeInst(Location().introduce(), Type::varbool()), nullptr,
+                     nullptr, nullptr);
     }
     ret.b = b->id();
 

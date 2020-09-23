@@ -13,7 +13,7 @@ namespace MiniZinc {
 
 inline bool Expression::equal(const Expression* e0, const Expression* e1) {
   if (e0 == e1) return true;
-  if (e0 == NULL || e1 == NULL) return false;
+  if (e0 == nullptr || e1 == nullptr) return false;
   if (e0->isUnboxedInt() || e1->isUnboxedInt()) return false;
   if (e0->isUnboxedFloatVal() || e1->isUnboxedFloatVal()) {
     if (e0->isUnboxedFloatVal() && e1->isUnboxedFloatVal()) {
@@ -56,7 +56,7 @@ inline IntLit* IntLit::a(MiniZinc::IntVal v) {
   }
 
   std::unordered_map<IntVal, WeakRef>::iterator it = constants().integerMap.find(v);
-  if (it == constants().integerMap.end() || it->second() == NULL) {
+  if (it == constants().integerMap.end() || it->second() == nullptr) {
     IntLit* il = new IntLit(Location().introduce(), v);
     if (it == constants().integerMap.end()) {
       constants().integerMap.insert(std::make_pair(v, il));
@@ -167,7 +167,7 @@ inline FloatLit* FloatLit::a(MiniZinc::FloatVal v) {
   }
 
   std::unordered_map<FloatVal, WeakRef>::iterator it = constants().floatMap.find(v);
-  if (it == constants().floatMap.end() || it->second() == NULL) {
+  if (it == constants().floatMap.end() || it->second() == nullptr) {
     FloatLit* fl = new FloatLit(Location().introduce(), v);
     if (it == constants().floatMap.end()) {
       constants().floatMap.insert(std::make_pair(v, fl));
@@ -182,13 +182,13 @@ inline FloatLit* FloatLit::a(MiniZinc::FloatVal v) {
 
 inline SetLit::SetLit(const Location& loc, const std::vector<Expression*>& v)
     : Expression(loc, E_SETLIT, Type()), _v(ASTExprVec<Expression>(v)) {
-  _u.isv = NULL;
+  _u.isv = nullptr;
   rehash();
 }
 
 inline SetLit::SetLit(const Location& loc, ASTExprVec<Expression> v)
     : Expression(loc, E_SETLIT, Type()), _v(v) {
-  _u.isv = NULL;
+  _u.isv = nullptr;
   rehash();
 }
 
@@ -429,13 +429,13 @@ inline ITE::ITE(const Location& loc, const std::vector<Expression*>& e_if_then, 
 }
 
 inline BinOp::BinOp(const Location& loc, Expression* e0, BinOpType op, Expression* e1)
-    : Expression(loc, E_BINOP, Type()), _e0(e0), _e1(e1), _decl(NULL) {
+    : Expression(loc, E_BINOP, Type()), _e0(e0), _e1(e1), _decl(nullptr) {
   _sec_id = op;
   rehash();
 }
 
 inline UnOp::UnOp(const Location& loc, UnOpType op, Expression* e)
-    : Expression(loc, E_UNOP, Type()), _e0(e), _decl(NULL) {
+    : Expression(loc, E_UNOP, Type()), _e0(e), _decl(nullptr) {
   _sec_id = op;
   rehash();
 }
@@ -449,17 +449,17 @@ inline ASTString Call::id(void) const { return hasId() ? _u_id._id : decl()->id(
 inline void Call::id(const ASTString& i) {
   _u_id._id = i;
   assert(hasId());
-  assert(decl() == NULL);
+  assert(decl() == nullptr);
 }
 
 inline FunctionI* Call::decl(void) const {
-  return hasId() ? NULL
+  return hasId() ? nullptr
                  : reinterpret_cast<FunctionI*>(reinterpret_cast<ptrdiff_t>(_u_id._decl) &
                                                 ~static_cast<ptrdiff_t>(1));
 }
 
 inline void Call::decl(FunctionI* f) {
-  assert(f != NULL);
+  assert(f != nullptr);
   _u_id._decl =
       reinterpret_cast<FunctionI*>(reinterpret_cast<ptrdiff_t>(f) | static_cast<ptrdiff_t>(1));
 }
@@ -475,7 +475,7 @@ inline Call::Call(const Location& loc, const std::string& id0, const std::vector
   }
   rehash();
   assert(hasId());
-  assert(decl() == NULL);
+  assert(decl() == nullptr);
 }
 
 inline Call::Call(const Location& loc, const ASTString& id0, const std::vector<Expression*>& args)
@@ -489,11 +489,11 @@ inline Call::Call(const Location& loc, const ASTString& id0, const std::vector<E
   }
   rehash();
   assert(hasId());
-  assert(decl() == NULL);
+  assert(decl() == nullptr);
 }
 
 inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const ASTString& id, Expression* e)
-    : Expression(loc, E_VARDECL, ti ? ti->type() : Type()), _id(NULL), _flat(NULL) {
+    : Expression(loc, E_VARDECL, ti ? ti->type() : Type()), _id(nullptr), _flat(nullptr) {
   _id = new Id(loc, id, this);
   _flag_1 = true;
   _flag_2 = false;
@@ -505,7 +505,7 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const ASTString& id, 
 }
 
 inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, long long int idn, Expression* e)
-    : Expression(loc, E_VARDECL, ti ? ti->type() : Type()), _id(NULL), _flat(NULL) {
+    : Expression(loc, E_VARDECL, ti ? ti->type() : Type()), _id(nullptr), _flat(nullptr) {
   _id = new Id(loc, idn, this);
   _flag_1 = true;
   _flag_2 = false;
@@ -517,7 +517,7 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, long long int idn, Ex
 }
 
 inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const std::string& id, Expression* e)
-    : Expression(loc, E_VARDECL, ti->type()), _id(NULL), _flat(NULL) {
+    : Expression(loc, E_VARDECL, ti->type()), _id(nullptr), _flat(nullptr) {
   _id = new Id(loc, ASTString(id), this);
   _flag_1 = true;
   _flag_2 = false;
@@ -529,7 +529,7 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const std::string& id
 }
 
 inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, Id* id, Expression* e)
-    : Expression(loc, E_VARDECL, ti->type()), _id(NULL), _flat(NULL) {
+    : Expression(loc, E_VARDECL, ti->type()), _id(nullptr), _flat(nullptr) {
   if (id->idn() == -1)
     _id = new Id(loc, id->v(), this);
   else
@@ -548,7 +548,7 @@ inline Expression* VarDecl::e(void) const {
 }
 
 inline void VarDecl::e(Expression* rhs) {
-  assert(rhs == NULL || !rhs->isa<Id>() || rhs->cast<Id>() != _id);
+  assert(rhs == nullptr || !rhs->isa<Id>() || rhs->cast<Id>() != _id);
   _e = rhs;
 }
 
@@ -583,21 +583,21 @@ inline TypeInst::TypeInst(const Location& loc, const Type& type, Expression* dom
 }
 
 inline IncludeI::IncludeI(const Location& loc, const ASTString& f)
-    : Item(loc, II_INC), _f(f), _m(NULL) {}
+    : Item(loc, II_INC), _f(f), _m(nullptr) {}
 
 inline VarDeclI::VarDeclI(const Location& loc, VarDecl* e) : Item(loc, II_VD), _e(e) {}
 
 inline AssignI::AssignI(const Location& loc, const std::string& id, Expression* e)
-    : Item(loc, II_ASN), _id(ASTString(id)), _e(e), _decl(NULL) {}
+    : Item(loc, II_ASN), _id(ASTString(id)), _e(e), _decl(nullptr) {}
 
 inline AssignI::AssignI(const Location& loc, const ASTString& id, Expression* e)
-    : Item(loc, II_ASN), _id(id), _e(e), _decl(NULL) {}
+    : Item(loc, II_ASN), _id(id), _e(e), _decl(nullptr) {}
 
 inline ConstraintI::ConstraintI(const Location& loc, Expression* e) : Item(loc, II_CON), _e(e) {}
 
 inline SolveI::SolveI(const Location& loc, Expression* e) : Item(loc, II_SOL), _e(e) {}
 inline SolveI* SolveI::sat(const Location& loc) {
-  SolveI* si = new SolveI(loc, NULL);
+  SolveI* si = new SolveI(loc, nullptr);
   si->_sec_id = ST_SAT;
   return si;
 }
@@ -624,23 +624,23 @@ inline FunctionI::FunctionI(const Location& loc, const std::string& id, TypeInst
       _params(ASTExprVec<VarDecl>(params)),
       _e(e),
       _from_stdlib(from_stdlib) {
-  _builtins.e = NULL;
-  _builtins.b = NULL;
-  _builtins.f = NULL;
-  _builtins.i = NULL;
-  _builtins.s = NULL;
-  _builtins.str = NULL;
+  _builtins.e = nullptr;
+  _builtins.b = nullptr;
+  _builtins.f = nullptr;
+  _builtins.i = nullptr;
+  _builtins.s = nullptr;
+  _builtins.str = nullptr;
 }
 
 inline FunctionI::FunctionI(const Location& loc, const ASTString& id, TypeInst* ti,
                             const ASTExprVec<VarDecl>& params, Expression* e, bool from_stdlib)
     : Item(loc, II_FUN), _id(id), _ti(ti), _params(params), _e(e), _from_stdlib(from_stdlib) {
-  _builtins.e = NULL;
-  _builtins.b = NULL;
-  _builtins.f = NULL;
-  _builtins.i = NULL;
-  _builtins.s = NULL;
-  _builtins.str = NULL;
+  _builtins.e = nullptr;
+  _builtins.b = nullptr;
+  _builtins.f = nullptr;
+  _builtins.i = nullptr;
+  _builtins.s = nullptr;
+  _builtins.str = nullptr;
 }
 
 }  // namespace MiniZinc

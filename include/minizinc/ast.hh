@@ -150,7 +150,7 @@ protected:
 
 public:
   /// Construct empty location
-  Location(void) { _loc_info.lv = NULL; }
+  Location(void) { _loc_info.lv = nullptr; }
 
   /// Construct location
   Location(const ASTString& filename, unsigned int first_line, unsigned int first_column,
@@ -183,7 +183,7 @@ public:
   unsigned int last_column(void) const { return lv() ? lv()->last_column() : 0; }
 
   /// Return whether location is introduced by the compiler
-  bool is_introduced(void) const { return _loc_info.lv == NULL || ((_loc_info.t & 1) != 0); }
+  bool is_introduced(void) const { return _loc_info.lv == nullptr || ((_loc_info.t & 1) != 0); }
 
   /// Mark as alive for garbage collection
   void mark(void) const;
@@ -234,7 +234,7 @@ private:
   Annotation& operator=(const Annotation&);
 
 public:
-  Annotation(void) : _s(NULL) {}
+  Annotation(void) : _s(nullptr) {}
   ~Annotation(void);
   bool contains(Expression* e) const;
   bool containsCall(const ASTString& id) const;
@@ -383,7 +383,7 @@ public:
     if (sizeof(double) <= sizeof(FloatVal*)) {
       static const long long int maxUnboxedVal =
           (static_cast<long long int>(1) << (pointerBits - 3)) - static_cast<long long int>(1);
-      if (i < -maxUnboxedVal || i > maxUnboxedVal) return NULL;
+      if (i < -maxUnboxedVal || i > maxUnboxedVal) return nullptr;
       long long int j = i < 0 ? -i : i;
       ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 3) | static_cast<ptrdiff_t>(2);
       if (i < 0) ubi_p = ubi_p | static_cast<ptrdiff_t>(4);
@@ -391,7 +391,7 @@ public:
     } else {
       static const long long int maxUnboxedVal =
           (static_cast<long long int>(1) << (pointerBits - 2)) - static_cast<long long int>(1);
-      if (i < -maxUnboxedVal || i > maxUnboxedVal) return NULL;
+      if (i < -maxUnboxedVal || i > maxUnboxedVal) return nullptr;
       long long int j = i < 0 ? -i : i;
       ptrdiff_t ubi_p = (static_cast<ptrdiff_t>(j) << 2) | static_cast<ptrdiff_t>(1);
       if (i < 0) ubi_p = ubi_p | static_cast<ptrdiff_t>(2);
@@ -416,7 +416,7 @@ public:
     return _u.d;
   }
   static FloatLit* doubleToUnboxedFloatVal(double d) {
-    if (sizeof(double) > sizeof(FloatLit*)) return NULL;
+    if (sizeof(double) > sizeof(FloatLit*)) return nullptr;
     union {
       double d;
       uint64_t bits;
@@ -426,7 +426,7 @@ public:
 
     uint64_t exponent = (_u.bits & (static_cast<uint64_t>(0x7FF) << 52)) >> 52;
     if (exponent != 0) {
-      if (exponent < 513 || exponent > 1534) return NULL;  // exponent doesn't fit in 10 bits
+      if (exponent < 513 || exponent > 1534) return nullptr;  // exponent doesn't fit in 10 bits
       exponent -= 512;  // make exponent fit in 10 bits, with bias 511
     }
     bool sign = (_u.bits & (static_cast<uint64_t>(1) << 63)) != 0;
@@ -496,33 +496,33 @@ public:
   /// Cast expression to type \a T* or NULL if types do not match
   template <class T>
   T* dyn_cast(void) {
-    return isa<T>() ? static_cast<T*>(this) : NULL;
+    return isa<T>() ? static_cast<T*>(this) : nullptr;
   }
   /// Cast expression to type \a const T* or NULL if types do not match
   template <class T>
   const T* dyn_cast(void) const {
-    return isa<T>() ? static_cast<const T*>(this) : NULL;
+    return isa<T>() ? static_cast<const T*>(this) : nullptr;
   }
 
   /// Cast expression to type \a T*
   template <class T>
   static T* cast(Expression* e) {
-    return e == NULL ? NULL : e->cast<T>();
+    return e == nullptr ? nullptr : e->cast<T>();
   }
   /// Cast expression to type \a const T*
   template <class T>
   static const T* cast(const Expression* e) {
-    return e == NULL ? NULL : e->cast<T>();
+    return e == nullptr ? NULL : e->cast<T>();
   }
   /// Cast expression to type \a T* or NULL if types do not match
   template <class T>
   static T* dyn_cast(Expression* e) {
-    return e == NULL ? NULL : e->dyn_cast<T>();
+    return e == nullptr ? nullptr : e->dyn_cast<T>();
   }
   /// Cast expression to type \a const T* or NULL if types do not match
   template <class T>
   static const T* dyn_cast(const Expression* e) {
-    return e == NULL ? NULL : e->dyn_cast<T>();
+    return e == nullptr ? NULL : e->dyn_cast<T>();
   }
 
   /// Add annotation \a ann to the expression
@@ -535,7 +535,7 @@ public:
   Annotation& ann(void) { return isUnboxedVal() ? Annotation::empty : _ann; }
 
   /// Return hash value of \a e
-  static size_t hash(const Expression* e) { return e == NULL ? 0 : e->hash(); }
+  static size_t hash(const Expression* e) { return e == nullptr ? 0 : e->hash(); }
 
   /// Check if \a e0 and \a e1 are equal
   static bool equal(const Expression* e0, const Expression* e1);
@@ -611,12 +611,12 @@ public:
   void v(const ASTExprVec<Expression>& val) { _v = val; }
   /// Access integer set value if present
   IntSetVal* isv(void) const {
-    return (type().bt() == Type::BT_INT || type().bt() == Type::BT_BOOL) ? _u.isv : NULL;
+    return (type().bt() == Type::BT_INT || type().bt() == Type::BT_BOOL) ? _u.isv : nullptr;
   }
   /// Set integer set value
   void isv(IntSetVal* val) { _u.isv = val; }
   /// Access float set value if present
-  FloatSetVal* fsv(void) const { return type().bt() == Type::BT_FLOAT ? _u.fsv : NULL; }
+  FloatSetVal* fsv(void) const { return type().bt() == Type::BT_FLOAT ? _u.fsv : nullptr; }
   /// Set integer set value
   void fsv(FloatSetVal* val) { _u.fsv = val; }
   /// Recompute hash value
@@ -707,7 +707,7 @@ public:
   void decl(VarDecl* d);
   /// Redirect to another Id \a id
   void redirect(Id* id) {
-    assert(_decl == NULL || _decl->isa<VarDecl>());
+    assert(_decl == nullptr || _decl->isa<VarDecl>());
     _decl = id;
   }
   /// Recompute hash value
@@ -809,7 +809,7 @@ public:
     _u._v = val.vec();
   }
   /// Get underlying array (if this is an array slice) or NULL
-  ArrayLit* getSliceLiteral(void) const { return _flag_2 ? _u._al : NULL; }
+  ArrayLit* getSliceLiteral(void) const { return _flag_2 ? _u._al : nullptr; }
   /// Get underlying _dims vector
   ASTIntVec dimsInternal(void) const { return _dims; }
 
@@ -1187,13 +1187,13 @@ public:
   /// The identifier of this expression type
   static const ExpressionId eid = E_VARDECL;
   /// Constructor
-  VarDecl(const Location& loc, TypeInst* ti, const std::string& id, Expression* e = NULL);
+  VarDecl(const Location& loc, TypeInst* ti, const std::string& id, Expression* e = nullptr);
   /// Constructor
-  VarDecl(const Location& loc, TypeInst* ti, const ASTString& id, Expression* e = NULL);
+  VarDecl(const Location& loc, TypeInst* ti, const ASTString& id, Expression* e = nullptr);
   /// Constructor
-  VarDecl(const Location& loc, TypeInst* ti, long long int idn, Expression* e = NULL);
+  VarDecl(const Location& loc, TypeInst* ti, long long int idn, Expression* e = nullptr);
   /// Constructor
-  VarDecl(const Location& loc, TypeInst* ti, Id* id, Expression* e = NULL);
+  VarDecl(const Location& loc, TypeInst* ti, Id* id, Expression* e = nullptr);
 
   /// Access TypeInst
   TypeInst* ti(void) const { return _ti; }
@@ -1206,7 +1206,7 @@ public:
   /// Set initialisation expression
   void e(Expression* rhs);
   /// Access flattened version
-  VarDecl* flat(void) { return _flat() ? _flat()->cast<VarDecl>() : NULL; }
+  VarDecl* flat(void) { return _flat() ? _flat()->cast<VarDecl>() : nullptr; }
   /// Set flattened version
   void flat(VarDecl* vd);
 
@@ -1283,9 +1283,9 @@ public:
   static const ExpressionId eid = E_TI;
   /// Constructor
   TypeInst(const Location& loc, const Type& t, ASTExprVec<TypeInst> ranges,
-           Expression* domain = NULL);
+           Expression* domain = nullptr);
   /// Constructor
-  TypeInst(const Location& loc, const Type& t, Expression* domain = NULL);
+  TypeInst(const Location& loc, const Type& t, Expression* domain = nullptr);
 
   /// Access ranges
   ASTExprVec<TypeInst> ranges(void) const { return _ranges; }
@@ -1359,7 +1359,7 @@ public:
   /// Cast item to type \a T* or NULL if types do not match
   template <class T>
   T* dyn_cast(void) {
-    return isa<T>() ? static_cast<T*>(this) : NULL;
+    return isa<T>() ? static_cast<T*>(this) : nullptr;
   }
   /// Cast item to type \a const T* or NULL if types do not match
   template <class T>
@@ -1370,22 +1370,22 @@ public:
   /// Cast item to type \a T*
   template <class T>
   static T* cast(Item* i) {
-    return i == NULL ? NULL : i->cast<T>();
+    return i == nullptr ? nullptr : i->cast<T>();
   }
   /// Cast item to type \a const T*
   template <class T>
   static const T* cast(const Item* i) {
-    return i == NULL ? NULL : i->cast<T>();
+    return i == nullptr ? NULL : i->cast<T>();
   }
   /// Cast item to type \a T* or NULL if types do not match
   template <class T>
   static T* dyn_cast(Item* i) {
-    return i == NULL ? NULL : i->dyn_cast<T>();
+    return i == nullptr ? nullptr : i->dyn_cast<T>();
   }
   /// Cast item to type \a const T* or NULL if types do not match
   template <class T>
   static const T* dyn_cast(const Item* i) {
-    return i == NULL ? NULL : i->dyn_cast<T>();
+    return i == nullptr ? NULL : i->dyn_cast<T>();
   }
 
   /// Check if item should be removed
@@ -1427,7 +1427,7 @@ public:
   Model* m(void) const { return _m; }
   /// Set the model
   void m(Model* m0, bool own = true) {
-    assert(_m == NULL || m0 == NULL);
+    assert(_m == nullptr || m0 == nullptr);
     _m = m0;
     _flag_2 = own;
   }
@@ -1604,10 +1604,10 @@ public:
 
   /// Constructor
   FunctionI(const Location& loc, const std::string& id, TypeInst* ti,
-            const std::vector<VarDecl*>& params, Expression* e = NULL, bool from_stdlib = false);
+            const std::vector<VarDecl*>& params, Expression* e = nullptr, bool from_stdlib = false);
   /// Constructor
   FunctionI(const Location& loc, const ASTString& id, TypeInst* ti,
-            const ASTExprVec<VarDecl>& params, Expression* e = NULL, bool from_stdlib = false);
+            const ASTExprVec<VarDecl>& params, Expression* e = nullptr, bool from_stdlib = false);
 
   /// Access identifier
   ASTString id(void) const { return _id; }

@@ -220,7 +220,7 @@ private:
   KeepAlive* _n;
 
 public:
-  KeepAlive(Expression* e = NULL);
+  KeepAlive(Expression* e = nullptr);
   ~KeepAlive(void);
   KeepAlive(const KeepAlive& e);
   KeepAlive& operator=(const KeepAlive& e);
@@ -240,12 +240,12 @@ private:
   bool _valid;
 
 public:
-  WeakRef(Expression* e = NULL);
+  WeakRef(Expression* e = nullptr);
   ~WeakRef(void);
   WeakRef(const WeakRef& e);
   WeakRef& operator=(const WeakRef& e);
-  Expression* operator()(void) { return _valid ? _e : NULL; }
-  Expression* operator()(void) const { return _valid ? _e : NULL; }
+  Expression* operator()(void) { return _valid ? _e : nullptr; }
+  Expression* operator()(void) const { return _valid ? _e : nullptr; }
   WeakRef* next(void) const { return _n; }
 };
 

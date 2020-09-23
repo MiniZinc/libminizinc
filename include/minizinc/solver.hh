@@ -104,8 +104,8 @@ public:
     return false;
   }
 
-  virtual std::string getDescription(SolverInstanceBase::Options* opt = NULL) = 0;
-  virtual std::string getVersion(SolverInstanceBase::Options* opt = NULL) = 0;
+  virtual std::string getDescription(SolverInstanceBase::Options* opt = nullptr) = 0;
+  virtual std::string getVersion(SolverInstanceBase::Options* opt = nullptr) = 0;
   virtual std::string getId(void) = 0;
   virtual void printHelp(std::ostream&) {}
 };  // SolverFactory
@@ -118,9 +118,9 @@ private:
   /// Solver configurations
   SolverConfigs solver_configs;
   Flattener flt;
-  SolverInstanceBase* si = 0;
-  SolverInstanceBase::Options* si_opt = 0;
-  SolverFactory* sf = 0;
+  SolverInstanceBase* si = nullptr;
+  SolverInstanceBase::Options* si_opt = nullptr;
+  SolverFactory* sf = nullptr;
   bool is_mzn2fzn = 0;
 
   std::string executable_name;

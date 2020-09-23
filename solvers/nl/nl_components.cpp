@@ -312,7 +312,7 @@ const char* NLToken::get_name(OpCode oc) {
       return "N_OPS";
     default:
       assert(false);
-      return NULL;
+      return nullptr;
   }
 };
 
@@ -338,7 +338,7 @@ const char* NLToken::get_name(MOpCode moc) {
       return "OPALLDIFF";
     default:
       assert(false);
-      return NULL;
+      return nullptr;
   }
 }
 

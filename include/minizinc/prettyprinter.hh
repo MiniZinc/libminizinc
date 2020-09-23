@@ -36,7 +36,7 @@ private:
   void p(const Item* i);
 
 public:
-  Printer(std::ostream& os, int width = 80, bool flatZinc = true, EnvI* env = NULL);
+  Printer(std::ostream& os, int width = 80, bool flatZinc = true, EnvI* env = nullptr);
   ~Printer(void);
 
   void print(const Expression* e);

@@ -58,7 +58,7 @@ VarDecl* Scopes::find(Id* ident) {
         if (cur > 0)
           cur = 0;
         else
-          return NULL;
+          return nullptr;
       } else {
         cur--;
       }
@@ -611,7 +611,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     VarDecl* vd_j = new VarDecl(Location().introduce(), j_ti, "json");
     vd_j->toplevel(false);
 
-    TypeInst* xx_range = new TypeInst(Location().introduce(), Type::parint(), NULL);
+    TypeInst* xx_range = new TypeInst(Location().introduce(), Type::parint(), nullptr);
     std::vector<TypeInst*> xx_ranges(1);
     xx_ranges[0] = xx_range;
     TypeInst* xx_ti = new TypeInst(Location().introduce(), tx, xx_ranges, ident);
@@ -643,7 +643,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     Call* index_set_xx = new Call(Location().introduce(), "index_set", index_set_xx_args);
     std::vector<VarDecl*> gen_exps(1);
     gen_exps[0] = idx_i;
-    Generator gen(gen_exps, index_set_xx, NULL);
+    Generator gen(gen_exps, index_set_xx, nullptr);
 
     Generators generators;
     generators._g.push_back(gen);
@@ -719,7 +719,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
 
     std::vector<VarDecl*> gen_exps(1);
     gen_exps[0] = idx_i;
-    Generator gen(gen_exps, deopt, NULL);
+    Generator gen(gen_exps, deopt, nullptr);
 
     Generators generators;
     generators._g.push_back(gen);
@@ -790,7 +790,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     VarDecl* vd_j = new VarDecl(Location().introduce(), j_ti, "json");
     vd_j->toplevel(false);
 
-    TypeInst* xx_range = new TypeInst(Location().introduce(), Type::parint(), NULL);
+    TypeInst* xx_range = new TypeInst(Location().introduce(), Type::parint(), nullptr);
     std::vector<TypeInst*> xx_ranges(1);
     xx_ranges[0] = xx_range;
     TypeInst* xx_ti = new TypeInst(Location().introduce(), tx, xx_ranges, ident);
@@ -822,7 +822,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
     Call* index_set_xx = new Call(Location().introduce(), "index_set", index_set_xx_args);
     std::vector<VarDecl*> gen_exps(1);
     gen_exps[0] = idx_i;
-    Generator gen(gen_exps, index_set_xx, NULL);
+    Generator gen(gen_exps, index_set_xx, nullptr);
 
     Generators generators;
     generators._g.push_back(gen);
@@ -872,7 +872,7 @@ void TopoSorter::add(EnvI& env, VarDeclI* vdi, bool handleEnums, Model* enumItem
 
 VarDecl* TopoSorter::get(EnvI& env, const ASTString& id_v, const Location& loc) {
   GCLock lock;
-  Id* ident = new Id(Location(), id_v, NULL);
+  Id* ident = new Id(Location(), id_v, nullptr);
   VarDecl* decl = scopes.find(ident);
   if (!decl) {
     std::ostringstream ss;
@@ -916,12 +916,12 @@ VarDecl* TopoSorter::checkId(EnvI& env, Id* ident, const Location& loc) {
 
 VarDecl* TopoSorter::checkId(EnvI& env, const ASTString& id_v, const Location& loc) {
   GCLock lock;
-  Id* id = new Id(loc, id_v, NULL);
+  Id* id = new Id(loc, id_v, nullptr);
   return checkId(env, id, loc);
 }
 
 void TopoSorter::run(EnvI& env, Expression* e) {
-  if (e == NULL) return;
+  if (e == nullptr) return;
   switch (e->eid()) {
     case Expression::E_INTLIT:
     case Expression::E_FLOATLIT:
@@ -931,7 +931,7 @@ void TopoSorter::run(EnvI& env, Expression* e) {
       break;
     case Expression::E_SETLIT: {
       SetLit* sl = e->cast<SetLit>();
-      if (sl->isv() == NULL && sl->fsv() == NULL)
+      if (sl->isv() == nullptr && sl->fsv() == nullptr)
         for (unsigned int i = 0; i < sl->v().size(); i++) run(env, sl->v()[i]);
     } break;
     case Expression::E_ID: {
@@ -1066,7 +1066,7 @@ KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) 
     // Turn ArrayAccess into a slicing operation
     std::vector<Expression*> args;
     args.push_back(aa->v());
-    args.push_back(NULL);
+    args.push_back(nullptr);
     std::vector<Expression*> slice;
     GCLock lock;
     for (unsigned int i = 0; i < aa->idx().size(); i++) {
@@ -1129,7 +1129,7 @@ KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) 
        e->type().bt() == funarg_t.bt() || e->type().bt() == Type::BT_BOT))
     return e;
   GCLock lock;
-  Call* c = NULL;
+  Call* c = nullptr;
   if (e->type().dim() == 0 && funarg_t.dim() != 0) {
     if (e->type().isvar()) {
       throw TypeError(env, e->loc(), "cannot coerce var set into array");
@@ -1295,7 +1295,7 @@ public:
       }
 
       if (ty.bt() == Type::BT_UNKNOWN) {
-        if (av == NULL) {
+        if (av == nullptr) {
           if (haveInferredType) {
             if (ty.st() != vi->type().st() && vi->type().ot() != Type::OT_OPTIONAL) {
               throw TypeError(_env, al.loc(), "non-uniform array literal");
@@ -1310,7 +1310,7 @@ public:
           }
         }
       } else {
-        if (av == NULL) {
+        if (av == nullptr) {
           if (vi->type().bt() == Type::BT_BOT) {
             if (vi->type().st() != ty.st() && vi->type().ot() != Type::OT_OPTIONAL) {
               throw TypeError(_env, al.loc(), "non-uniform array literal");
@@ -1570,7 +1570,7 @@ public:
                   decl_idx = it->second.second;
                   decl = ident.decl();
                   int gen = it->second.first;
-                  while (comp->in(gen) == NULL && gen < comp->n_generators() - 1) {
+                  while (comp->in(gen) == nullptr && gen < comp->n_generators() - 1) {
                     decl_idx++;
                     gen++;
                     decl = comp->decl(gen, 0);
@@ -1583,7 +1583,7 @@ public:
           }
         }
       } else {
-        assert(c.where(i) != NULL);
+        assert(c.where(i) != nullptr);
         whereMap[c.decl(i, 0)].push_back(c.where(i));
       }
     }
@@ -1612,7 +1612,7 @@ public:
             generators._g.push_back(Generator(decls, c_in(), whereExpr));
             decls.clear();
           } else if (j == c.n_decls(i) - 1) {
-            generators._g.push_back(Generator(decls, c_in(), NULL));
+            generators._g.push_back(Generator(decls, c_in(), nullptr));
             decls.clear();
           }
         }
@@ -1646,9 +1646,9 @@ public:
   /// Visit array comprehension generator
   void vComprehensionGenerator(Comprehension& c, int gen_i) {
     Expression* g_in = c.in(gen_i);
-    if (g_in == NULL) {
+    if (g_in == nullptr) {
       // This is an "assignment generator" (i = expr)
-      assert(c.where(gen_i) != NULL);
+      assert(c.where(gen_i) != nullptr);
       assert(c.n_decls(gen_i) == 1);
       const Type& ty_where = c.where(gen_i)->type();
       c.decl(gen_i, 0)->type(ty_where);
@@ -1682,7 +1682,7 @@ public:
   /// Visit if-then-else
   void vITE(ITE& ite) {
     bool mustBeBool = false;
-    if (ite.e_else() == NULL) {
+    if (ite.e_else() == nullptr) {
       // this is an "if <cond> then <expr> endif" so the <expr> must be bool
       ite.e_else(constants().boollit(true));
       mustBeBool = true;
@@ -1779,7 +1779,7 @@ public:
       if (fi->e())
         bop.decl(fi);
       else
-        bop.decl(NULL);
+        bop.decl(nullptr);
 
       if (bop.lhs()->type().isint() && bop.rhs()->type().isint() &&
           (bop.op() == BOT_EQ || bop.op() == BOT_GQ || bop.op() == BOT_GR || bop.op() == BOT_NQ ||
@@ -2052,8 +2052,8 @@ public:
       Expression* li = let.let()[i];
       cv = cv || li->type().cv();
       if (VarDecl* vdi = li->dyn_cast<VarDecl>()) {
-        if (vdi->e() == NULL && vdi->type().is_set() && vdi->type().isvar() &&
-            vdi->ti()->domain() == NULL) {
+        if (vdi->e() == nullptr && vdi->type().is_set() && vdi->type().isvar() &&
+            vdi->ti()->domain() == nullptr) {
           std::ostringstream ss;
           ss << "set element type for `" << vdi->id()->str() << "' is not finite";
           _typeErrors.emplace_back(_env, vdi->loc(), ss.str());
@@ -2143,7 +2143,7 @@ public:
       bool foundTIId = false;
       for (unsigned int i = 0; i < ti.ranges().size(); i++) {
         TypeInst* ri = ti.ranges()[i];
-        assert(ri != NULL);
+        assert(ri != nullptr);
         if (ri->type().cv()) tt.cv(true);
         if (ri->type().enumId() != 0) {
           foundEnum = true;
@@ -2285,7 +2285,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           model(model0),
           hadSolveItem(false),
           ais(ais0),
-          objective(NULL),
+          objective(nullptr),
           enumis(enumis0),
           isFlatZinc(isFlatZinc0) {}
     void vAssignI(AssignI* i) { ais.push_back(i); }
@@ -2347,7 +2347,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   for (unsigned int i = 0; i < assignItems.size(); i++) {
     AssignI* ai = assignItems[i];
-    VarDecl* vd = NULL;
+    VarDecl* vd = nullptr;
     if (env.envi().ignoreUnknownIds) {
       try {
         vd = ts.get(env.envi(), ai->id(), ai->loc());
@@ -2475,8 +2475,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           _typeErrors.emplace_back(env, i->e()->loc(), ss.str());
         }
         VarDecl* vdi = i->e();
-        if (vdi->e() == NULL && vdi->type().is_set() && vdi->type().isvar() &&
-            vdi->ti()->domain() == NULL) {
+        if (vdi->e() == nullptr && vdi->type().is_set() && vdi->type().isvar() &&
+            vdi->ti()->domain() == nullptr) {
           std::ostringstream ss;
           ss << "set element type for `" << vdi->id()->str() << "' is not finite";
           _typeErrors.emplace_back(env, vdi->loc(), ss.str());
@@ -2586,10 +2586,10 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     EnvI& env;
     Model* m;
     OutputI* outputItem;
-    TSV3(EnvI& env0, Model* m0) : env(env0), m(m0), outputItem(NULL) {}
+    TSV3(EnvI& env0, Model* m0) : env(env0), m(m0), outputItem(nullptr) {}
     void vAssignI(AssignI* i) { i->decl()->e(addCoercion(env, m, i->e(), i->decl()->type())()); }
     void vOutputI(OutputI* oi) {
-      if (outputItem == NULL) {
+      if (outputItem == nullptr) {
         outputItem = oi;
       } else {
         GCLock lock;
@@ -2613,7 +2613,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   for (unsigned int i = 0; i < ts.decls.size(); i++) {
     if (ts.decls[i]->toplevel() && ts.decls[i]->type().ispar() && !ts.decls[i]->type().isann() &&
-        ts.decls[i]->e() == NULL) {
+        ts.decls[i]->e() == nullptr) {
       if (ts.decls[i]->type().isopt() && ts.decls[i]->type().dim() == 0) {
         ts.decls[i]->e(constants().absent);
         ts.decls[i]->addAnnotation(constants().ann.mzn_was_undefined);
@@ -2852,8 +2852,8 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
     void vVarDeclI(VarDeclI* vdi) {
       VarDecl* vd = vdi->e();
       if (vd->type().ispar() && !vd->type().isann() &&
-          (vd->e() == NULL || (vd->e() == constants().absent &&
-                               vd->ann().contains(constants().ann.mzn_was_undefined)))) {
+          (vd->e() == nullptr || (vd->e() == constants().absent &&
+                                  vd->ann().contains(constants().ann.mzn_was_undefined)))) {
         if (had_input) oss_input << ",\n";
         output_var_desc_json(env, vd, oss_input);
         had_input = true;
@@ -2869,7 +2869,7 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
         } else if (!had_add_to_output) {
           process_var =
               vd->type().isvar() &&
-              (vd->e() == NULL || vd->ann().contains(constants().ann.rhs_from_assignment));
+              (vd->e() == nullptr || vd->ann().contains(constants().ann.rhs_from_assignment));
         }
         if (process_var) {
           if (had_output) {

@@ -47,7 +47,7 @@ public:
     message = static_cast<std::ostringstream&>(stream).str();
     std::ostringstream outputStream;
 
-    if (expression == NULL) {
+    if (expression == nullptr) {
       outputStream << "Something should not have happen in file '" << file << "' line " << line
                    << ". Message:" << endl;
       if (!message.empty()) {

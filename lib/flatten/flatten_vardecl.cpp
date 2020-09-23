@@ -20,7 +20,7 @@ EE flatten_vardecl(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   if (ctx.b != C_ROOT) throw FlatteningError(env, e->loc(), "not in root context");
   VarDecl* v = e->cast<VarDecl>();
   VarDecl* it = v->flat();
-  if (it == NULL) {
+  if (it == nullptr) {
     TypeInst* ti = eval_typeinst(env, ctx, v);
     if (ti->domain() && ti->domain()->isa<SetLit>()) {
       if (ti->type().bt() == Type::BT_INT && ti->type().st() == Type::ST_PLAIN) {
@@ -36,7 +36,7 @@ EE flatten_vardecl(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     bool reuseVarId =
         v->type().isann() || (v->toplevel() && v->id()->idn() == -1 &&
                               v->id()->v().c_str()[0] != '\'' && v->id()->v().c_str()[0] != '_');
-    VarDecl* vd = newVarDecl(env, ctx, ti, reuseVarId ? v->id() : NULL, v, NULL);
+    VarDecl* vd = newVarDecl(env, ctx, ti, reuseVarId ? v->id() : nullptr, v, nullptr);
     v->flat(vd);
     Ctx nctx;
     if (v->e() && v->e()->type().bt() == Type::BT_BOOL) nctx.b = C_MIX;
@@ -50,7 +50,7 @@ EE flatten_vardecl(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         if (vd->ti()->domain()) {
           for (unsigned int i = 0; i < al->size(); i++) {
             if (Id* ali_id = (*al)[i]->dyn_cast<Id>()) {
-              if (ali_id != constants().absent && ali_id->decl()->ti()->domain() == NULL) {
+              if (ali_id != constants().absent && ali_id->decl()->ti()->domain() == nullptr) {
                 ali_id->decl()->ti()->domain(vd->ti()->domain());
               }
             }

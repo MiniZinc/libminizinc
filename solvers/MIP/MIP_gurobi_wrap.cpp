@@ -65,7 +65,7 @@ string MIP_gurobi_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt
 }
 
 vector<string> MIP_gurobi_wrapper::getRequiredFlags(void) {
-  MIP_gurobi_wrapper mgw(NULL);
+  MIP_gurobi_wrapper mgw(nullptr);
   try {
     mgw.checkDLL();
     return {};
@@ -251,7 +251,7 @@ void* dll_sym(void* dll, const char* sym) {
 #else
   void* ret = GetProcAddress((HMODULE)dll, sym);
 #endif
-  if (ret == NULL)
+  if (ret == nullptr)
     throw MiniZinc::InternalError("cannot load symbol " + string(sym) + " from gurobi dll");
   return ret;
 }
@@ -268,20 +268,20 @@ void dll_close(void* dll) {
 
 void MIP_gurobi_wrapper::checkDLL() {
 #ifdef GUROBI_PLUGIN
-  gurobi_dll = NULL;
+  gurobi_dll = nullptr;
   if (options && options->sGurobiDLL.size()) {
     gurobi_dll = dll_open(options->sGurobiDLL.c_str());
   } else {
     for (const auto& s : gurobiDLLs()) {
       gurobi_dll = dll_open(s.c_str());
-      if (NULL != gurobi_dll) {
+      if (nullptr != gurobi_dll) {
         break;
       }
     }
   }
 
-  if (gurobi_dll == NULL) {
-    if (options == NULL || options->sGurobiDLL.empty()) {
+  if (gurobi_dll == nullptr) {
+    if (options == nullptr || options->sGurobiDLL.empty()) {
       throw MiniZinc::InternalError("cannot load gurobi dll, specify --gurobi-dll");
     } else {
       throw MiniZinc::InternalError("cannot load gurobi dll `" + options->sGurobiDLL + "'");
@@ -373,8 +373,9 @@ void MIP_gurobi_wrapper::openGUROBI() {
   //   error = dll_GRBsetintparam(env, "LogToConsole",
   //                            fVerbose ? 1 : 0);  // also when flag_intermediate?  TODO
   /* Create the problem. */
-  error = dll_GRBnewmodel(env, &model, "mzn_gurobi", 0, NULL, NULL, NULL, NULL, NULL);
-  wrap_assert(model != NULL, "Failed to create LP.");
+  error =
+      dll_GRBnewmodel(env, &model, "mzn_gurobi", 0, nullptr, nullptr, nullptr, nullptr, nullptr);
+  wrap_assert(model != nullptr, "Failed to create LP.");
 }
 
 void MIP_gurobi_wrapper::closeGUROBI() {
@@ -384,7 +385,7 @@ void MIP_gurobi_wrapper::closeGUROBI() {
   if (nullptr != model) {
     /* Free up the problem as allocated by GRB_createprob, if necessary */
     dll_GRBfreemodel(model);
-    model = 0;
+    model = nullptr;
   }
 
   /* Free environment */
@@ -418,8 +419,8 @@ void MIP_gurobi_wrapper::doAddVars(size_t n, double* obj, double* lb, double* ub
         throw runtime_error("  MIP_wrapper: unknown variable type");
     }
   }
-  error = dll_GRBaddvars(model, static_cast<int>(n), 0, NULL, NULL, NULL, obj, lb, ub, &ctype[0],
-                         &pcNames[0]);
+  error = dll_GRBaddvars(model, static_cast<int>(n), 0, nullptr, nullptr, nullptr, obj, lb, ub,
+                         &ctype[0], &pcNames[0]);
   wrap_assert(!error, "Failed to declare variables.");
   error = dll_GRBupdatemodel(model);
   wrap_assert(!error, "Failed to update model.");
@@ -827,7 +828,7 @@ void MIP_gurobi_wrapper::solve() {    // Move into ancestor?
   if (true) {  // Need for logging
     cbui.fVerb = fVerbose;
     cbui.nTimeoutFeas = options->nTimeoutFeas1000 / 1000.0;
-    if (!options->flag_intermediate) cbui.solcbfn = 0;
+    if (!options->flag_intermediate) cbui.solcbfn = nullptr;
     if (cbui.cutcbfn) {
       assert(cbui.cutMask & (MaskConsType_Usercut | MaskConsType_Lazy));
       if (cbui.cutMask & MaskConsType_Usercut) {

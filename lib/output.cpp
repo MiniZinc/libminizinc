@@ -19,7 +19,7 @@ void outputVarDecls(EnvI& env, Item* ci, Expression* e);
 
 bool cannotUseRHSForOutput(EnvI& env, Expression* e,
                            std::unordered_set<FunctionI*>& seen_functions) {
-  if (e == NULL) return true;
+  if (e == nullptr) return true;
 
   class V : public EVisitor {
   public:
@@ -51,9 +51,9 @@ bool cannotUseRHSForOutput(EnvI& env, Expression* e,
       }
       FunctionI* decl = env.output->matchFn(env, c.id(), tv, false);
       Type t;
-      if (decl == NULL) {
+      if (decl == nullptr) {
         FunctionI* origdecl = env.model->matchFn(env, c.id(), tv, false);
-        if (origdecl == NULL) {
+        if (origdecl == nullptr) {
           std::ostringstream ss;
           ss << "function " << c.id() << " is used in output, par version needed";
           throw FlatteningError(env, c.loc(), ss.str());
@@ -111,7 +111,7 @@ bool cannotUseRHSForOutput(EnvI& env, Expression* e) {
 }
 
 void removeIsOutput(VarDecl* vd) {
-  if (vd == NULL) return;
+  if (vd == nullptr) return;
   vd->ann().remove(constants().ann.output_var);
   vd->ann().removeCall(constants().ann.output_array);
 }
@@ -146,7 +146,7 @@ void copyOutput(EnvI& e) {
 void cleanupOutput(EnvI& env) {
   for (unsigned int i = 0; i < env.output->size(); i++) {
     if (VarDeclI* vdi = (*env.output)[i]->dyn_cast<VarDeclI>()) {
-      vdi->e()->flat(NULL);
+      vdi->e()->flat(nullptr);
     }
   }
 }
@@ -235,7 +235,7 @@ void checkRenameVar(EnvI& e, VarDecl* vd) {
   if (vd->id()->idn() != vd->flat()->id()->idn()) {
     TypeInst* vd_rename_ti = copy(e, e.cmap, vd->ti())->cast<TypeInst>();
     VarDecl* vd_rename =
-        new VarDecl(Location().introduce(), vd_rename_ti, vd->flat()->id()->idn(), NULL);
+        new VarDecl(Location().introduce(), vd_rename_ti, vd->flat()->id()->idn(), nullptr);
     vd_rename->flat(vd->flat());
     makePar(e, vd_rename);
     vd->e(vd_rename->id());
@@ -257,7 +257,7 @@ public:
     while (!stack.empty()) {
       Expression* e = stack.back();
       stack.pop_back();
-      if (e == NULL) {
+      if (e == nullptr) {
         continue;
       }
       e->ann().clear();
@@ -340,7 +340,7 @@ void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
       if (!id.decl()->toplevel()) return;
       VarDecl* vd = id.decl();
       VarDecl* reallyFlat = vd->flat();
-      while (reallyFlat != NULL && reallyFlat != reallyFlat->flat())
+      while (reallyFlat != nullptr && reallyFlat != reallyFlat->flat())
         reallyFlat = reallyFlat->flat();
       IdMap<int>::iterator idx =
           reallyFlat ? env.output_vo_flat.idx.find(reallyFlat->id()) : env.output_vo_flat.idx.end();
@@ -353,7 +353,7 @@ void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
           t.ti(Type::TI_PAR);
         }
         makePar(env, nvi->e());
-        nvi->e()->ti()->domain(NULL);
+        nvi->e()->ti()->domain(nullptr);
         nvi->e()->flat(vd->flat());
         ClearAnnotations::run(nvi->e());
         nvi->e()->introduced(false);
@@ -372,9 +372,9 @@ void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
               tv[i].ti(Type::TI_PAR);
             }
             FunctionI* decl = env.output->matchFn(env, rhs->id(), tv, false);
-            if (decl == NULL) {
+            if (decl == nullptr) {
               FunctionI* origdecl = env.model->matchFn(env, rhs->id(), tv, false);
-              if (origdecl == NULL) {
+              if (origdecl == nullptr) {
                 std::ostringstream ss;
                 ss << "function " << rhs->id() << " is used in output, par version needed";
                 throw FlatteningError(env, rhs->loc(), ss.str());
@@ -398,13 +398,13 @@ void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
           nvi->e()->e(rhs);
         } else if (reallyFlat && cannotUseRHSForOutput(env, reallyFlat->e())) {
           assert(nvi->e()->flat());
-          nvi->e()->e(NULL);
+          nvi->e()->e(nullptr);
           if (nvi->e()->type().dim() == 0) {
             reallyFlat->addAnnotation(constants().ann.output_var);
           } else {
             std::vector<Expression*> args(reallyFlat->e()->type().dim());
             for (unsigned int i = 0; i < args.size(); i++) {
-              if (nvi->e()->ti()->ranges()[i]->domain() == NULL) {
+              if (nvi->e()->ti()->ranges()[i]->domain() == nullptr) {
                 args[i] = new SetLit(Location().introduce(),
                                      eval_intset(env, reallyFlat->ti()->ranges()[i]->domain()));
               } else {
@@ -545,7 +545,7 @@ void createDznOutputItem(EnvI& e, bool outputObjective, bool includeOutputItem, 
         std::ostringstream s;
         s << vd->id()->str() << " = ";
         if (vd->type().dim() > 0) {
-          ArrayLit* al = NULL;
+          ArrayLit* al = nullptr;
           if (vd->flat() && vd->flat()->e()) {
             al = eval_array_lit(e, vd->flat()->e());
           } else if (vd->e()) {
@@ -557,7 +557,7 @@ void createDznOutputItem(EnvI& e, bool outputObjective, bool includeOutputItem, 
                 (vd->type().enumId() != 0 ? e.getArrayEnum(vd->type().enumId())[i] : 0);
             if (enumId != 0) {
               s << e.getEnum(enumId)->e()->id()->str() << ", ";
-            } else if (al != NULL) {
+            } else if (al != nullptr) {
               s << al->min(i) << ".." << al->max(i) << ", ";
             } else {
               IntSetVal* idxset = eval_intset(e, vd->ti()->ranges()[i]->domain());
@@ -759,7 +759,7 @@ void createJSONOutputItem(EnvI& e, bool outputObjective, bool includeOutputItem,
 void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool outputObjective,
                   bool includeOutputItem, bool hasChecker) {
   // Create new output model
-  OutputI* outputItem = NULL;
+  OutputI* outputItem = nullptr;
   GCLock lock;
 
   switch (outputMode) {
@@ -773,7 +773,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
       createDznOutputItem(e, outputObjective, includeOutputItem, hasChecker, true);
       break;
     default:
-      if (e.model->outputItem() == NULL) {
+      if (e.model->outputItem() == nullptr) {
         createDznOutputItem(e, outputObjective, false, false, false);
       }
       break;
@@ -824,7 +824,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
       }
       Type t;
       if (!canReuseDecl) {
-        if (origdecl == NULL || !origdecl->rtype(env, tv, false).ispar()) {
+        if (origdecl == nullptr || !origdecl->rtype(env, tv, false).ispar()) {
           std::ostringstream ss;
           ss << "function " << c.id() << " is used in output, par version needed";
           throw FlatteningError(env, c.loc(), ss.str());
@@ -888,7 +888,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
 
         Type t = vdi_copy->e()->ti()->type();
         t.ti(Type::TI_PAR);
-        vdi_copy->e()->ti()->domain(NULL);
+        vdi_copy->e()->ti()->domain(nullptr);
         vdi_copy->e()->flat(vdi->e()->flat());
         bool isCheckVar = vdi_copy->e()->ann().contains(constants().ann.mzn_check_var);
         Call* checkVarEnum = vdi_copy->e()->ann().getCall(constants().ann.mzn_check_enum_var);
@@ -902,7 +902,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
         vdi_copy->e()->introduced(false);
         IdMap<KeepAlive>::iterator it;
         if (!vdi->e()->type().ispar()) {
-          if (vd->flat() == NULL && vdi->e()->e() != NULL && vdi->e()->e()->type().ispar()) {
+          if (vd->flat() == nullptr && vdi->e()->e() != nullptr && vdi->e()->e()->type().ispar()) {
             // Don't have a flat version of this variable, but the original has a right hand
             // side that is par, so we can use that.
             Expression* flate = eval_par(env, vdi->e()->e());
@@ -912,7 +912,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
             vd = follow_id_to_decl(vd->id())->cast<VarDecl>();
             VarDecl* reallyFlat = vd->flat();
             while (reallyFlat && reallyFlat != reallyFlat->flat()) reallyFlat = reallyFlat->flat();
-            if (reallyFlat == NULL) {
+            if (reallyFlat == nullptr) {
               // The variable doesn't have a flat version. This can only happen if
               // the original variable had type-inst var, but a right-hand-side that
               // was par, so follow_id_to_decl lead to a par variable.
@@ -936,9 +936,9 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
                   tv[i].ti(Type::TI_PAR);
                 }
                 FunctionI* decl = env.output->matchFn(env, rhs->id(), tv, false);
-                if (decl == NULL) {
+                if (decl == nullptr) {
                   FunctionI* origdecl = env.model->matchFn(env, rhs->id(), tv, false);
-                  if (origdecl == NULL) {
+                  if (origdecl == nullptr) {
                     std::ostringstream ss;
                     ss << "function " << rhs->id() << " is used in output, par version needed";
                     throw FlatteningError(env, rhs->loc(), ss.str());
@@ -964,7 +964,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
             } else if (cannotUseRHSForOutput(env, vd->e())) {
               // If the VarDecl does not have a usable right hand side, it needs to be
               // marked as output in the FlatZinc
-              vd->e(NULL);
+              vd->e(nullptr);
               assert(vd->flat());
               if (vd->type().dim() == 0) {
                 vd->flat()->addAnnotation(constants().ann.output_var);
@@ -989,7 +989,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
                 if (needOutputAnn) {
                   std::vector<Expression*> args(vdi->e()->type().dim());
                   for (unsigned int i = 0; i < args.size(); i++) {
-                    if (vdi->e()->ti()->ranges()[i]->domain() == NULL) {
+                    if (vdi->e()->ti()->ranges()[i]->domain() == nullptr) {
                       args[i] =
                           new SetLit(Location().introduce(),
                                      eval_intset(env, vd->flat()->ti()->ranges()[i]->domain()));
@@ -1011,7 +1011,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
               env.output_vo_flat.add_idx(reallyFlat, env.output->size());
           }
         } else {
-          if (vd->flat() == NULL && vdi->e()->e() != NULL) {
+          if (vd->flat() == nullptr && vdi->e()->e() != nullptr) {
             // Need to process right hand side of variable, since it may contain
             // identifiers that are only in the FlatZinc and that we would
             // therefore fail to copy into the output model
@@ -1038,19 +1038,19 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
 Expression* isFixedDomain(EnvI& env, VarDecl* vd) {
   if (vd->type() != Type::varbool() && vd->type() != Type::varint() &&
       vd->type() != Type::varfloat())
-    return NULL;
+    return nullptr;
   Expression* e = vd->ti()->domain();
   if (e == constants().lit_true || e == constants().lit_false) return e;
   if (SetLit* sl = Expression::dyn_cast<SetLit>(e)) {
     if (sl->type().bt() == Type::BT_INT) {
       IntSetVal* isv = eval_intset(env, sl);
-      return isv->min() == isv->max() ? IntLit::a(isv->min()) : NULL;
+      return isv->min() == isv->max() ? IntLit::a(isv->min()) : nullptr;
     } else if (sl->type().bt() == Type::BT_FLOAT) {
       FloatSetVal* fsv = eval_floatset(env, sl);
-      return fsv->min() == fsv->max() ? FloatLit::a(fsv->min()) : NULL;
+      return fsv->min() == fsv->max() ? FloatLit::a(fsv->min()) : nullptr;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 void finaliseOutput(EnvI& e) {
@@ -1068,7 +1068,7 @@ void finaliseOutput(EnvI& e) {
           GCLock lock;
           VarDecl* reallyFlat = vd->flat();
           while (reallyFlat && reallyFlat != reallyFlat->flat()) reallyFlat = reallyFlat->flat();
-          if (vd->e() == NULL) {
+          if (vd->e() == nullptr) {
             if ((vd->flat()->e() && vd->flat()->e()->type().ispar()) ||
                 isFixedDomain(e, vd->flat())) {
               VarDecl* reallyFlat = vd->flat();
@@ -1090,9 +1090,9 @@ void finaliseOutput(EnvI& e) {
                 tv[i].ti(Type::TI_PAR);
               }
               FunctionI* decl = e.output->matchFn(e, rhs->id(), tv, false);
-              if (decl == NULL) {
+              if (decl == nullptr) {
                 FunctionI* origdecl = e.model->matchFn(e, rhs->id(), tv, false);
-                if (origdecl == NULL) {
+                if (origdecl == nullptr) {
                   std::ostringstream ss;
                   ss << "function " << rhs->id() << " is used in output, par version needed";
                   throw FlatteningError(e, rhs->loc(), ss.str());
@@ -1115,7 +1115,7 @@ void finaliseOutput(EnvI& e) {
               outputVarDecls(e, item, it->second()->cast<Call>());
               vd->e(rhs);
 
-              if (e.vo.occurrences(reallyFlat) == 0 && reallyFlat->e() == NULL) {
+              if (e.vo.occurrences(reallyFlat) == 0 && reallyFlat->e() == nullptr) {
                 auto it = e.vo.idx.find(reallyFlat->id());
                 assert(it != e.vo.idx.end());
                 e.flatRemoveItem((*e.flat())[it->second]->cast<VarDeclI>());
@@ -1180,7 +1180,7 @@ void finaliseOutput(EnvI& e) {
                   } else {
                     std::vector<Expression*> args(vd->type().dim());
                     for (unsigned int i = 0; i < args.size(); i++) {
-                      if (vd->ti()->ranges()[i]->domain() == NULL) {
+                      if (vd->ti()->ranges()[i]->domain() == nullptr) {
                         args[i] =
                             new SetLit(Location().introduce(),
                                        eval_intset(e, vd->flat()->ti()->ranges()[i]->domain()));
@@ -1199,7 +1199,7 @@ void finaliseOutput(EnvI& e) {
                 }
               }
             }
-            vd->flat(NULL);
+            vd->flat(nullptr);
             // Remove enum type
             Type vdt = vd->type();
             vdt.enumId(0);

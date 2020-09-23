@@ -18,7 +18,7 @@ EE flatten_unop(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   EE ret;
   UnOp* uo = e->cast<UnOp>();
 
-  bool isBuiltin = uo->decl() == NULL || uo->decl()->e() == NULL;
+  bool isBuiltin = uo->decl() == nullptr || uo->decl()->e() == nullptr;
 
   if (isBuiltin) {
     switch (uo->op()) {

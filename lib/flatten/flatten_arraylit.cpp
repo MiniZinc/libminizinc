@@ -22,7 +22,8 @@ EE flatten_arraylit(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     ret.r = bind(env, Ctx(), r, al);
   } else {
     std::vector<EE> elems_ee(al->size());
-    for (unsigned int i = al->size(); i--;) elems_ee[i] = flat_exp(env, ctx, (*al)[i], NULL, NULL);
+    for (unsigned int i = al->size(); i--;)
+      elems_ee[i] = flat_exp(env, ctx, (*al)[i], nullptr, nullptr);
     std::vector<Expression*> elems(elems_ee.size());
     for (unsigned int i = static_cast<unsigned int>(elems.size()); i--;) elems[i] = elems_ee[i].r();
     std::vector<std::pair<int, int> > dims(al->dims());

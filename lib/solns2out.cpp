@@ -189,7 +189,7 @@ void Solns2Out::parseAssignments(string& solution) {
   std::vector<SyntaxError> se;
   unique_ptr<Model> sm(parseFromString(*pEnv, solution, "solution received from solver",
                                        includePaths, false, true, false, false, log, se));
-  if (sm.get() == NULL) throw Error("solns2out_base: could not parse solution");
+  if (sm.get() == nullptr) throw Error("solns2out_base: could not parse solution");
   solution = "";
   for (unsigned int i = 0; i < sm->size(); i++) {
     if (AssignI* ai = (*sm)[i]->dyn_cast<AssignI>()) {
@@ -393,7 +393,7 @@ void Solns2Out::checkStatistics(std::ostream& oss) {
 }
 
 bool Solns2Out::__evalOutput(ostream& fout) {
-  if (0 != outputExpr) {
+  if (nullptr != outputExpr) {
     pEnv->envi().evalOutput(fout);
   }
   return true;
@@ -470,7 +470,7 @@ void Solns2Out::init() {
   }
 
   /// Main output file
-  if (0 == pOut) {
+  if (nullptr == pOut) {
     if (_opt.flag_output_file.size()) {
       pOut.reset(new ofstream(FILE_PATH(_opt.flag_output_file)));
       MZN_ASSERT_HARD_MSG(pOut.get(),

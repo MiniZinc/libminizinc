@@ -20,8 +20,8 @@ extern "C" {
 }
 
 class MIP_gurobi_wrapper : public MIP_wrapper {
-  GRBenv* env = 0;
-  GRBmodel* model = 0;
+  GRBenv* env = nullptr;
+  GRBmodel* model = nullptr;
 #ifdef GUROBI_PLUGIN
   void* gurobi_dll;
 #endif
@@ -158,8 +158,8 @@ public:
   }
   virtual ~MIP_gurobi_wrapper() { closeGUROBI(); }
 
-  static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = NULL);
-  static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = NULL);
+  static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
   static std::string getId(void);
   static std::string getName(void);
   static std::vector<std::string> getTags(void);

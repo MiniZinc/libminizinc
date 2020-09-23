@@ -48,7 +48,7 @@ bool checkParDomain(EnvI& env, Expression* e, Expression* domain) {
 void checkParDeclaration(EnvI& env, VarDecl* vd) {
   if (vd->type().dim() > 0) {
     checkIndexSets(env, vd, vd->e());
-    if (vd->ti()->domain() != NULL) {
+    if (vd->ti()->domain() != nullptr) {
       ArrayLit* al = eval_array_lit(env, vd->e());
       for (unsigned int i = 0; i < al->size(); i++) {
         if (!checkParDomain(env, (*al)[i], vd->ti()->domain())) {
@@ -57,7 +57,7 @@ void checkParDeclaration(EnvI& env, VarDecl* vd) {
       }
     }
   } else {
-    if (vd->ti()->domain() != NULL) {
+    if (vd->ti()->domain() != nullptr) {
       if (!checkParDomain(env, vd->e(), vd->ti()->domain())) {
         throw ResultUndefinedError(env, vd->e()->loc(), "parameter value out of range");
       }
@@ -482,7 +482,7 @@ typename Eval::Val eval_call(EnvI& env, CallClass* ce) {
   for (unsigned int i = ce->decl()->params().size(); i--;) {
     VarDecl* vd = ce->decl()->params()[i];
     vd->e(previousParameters[i]);
-    vd->flat(vd->e() ? vd : NULL);
+    vd->flat(vd->e() ? vd : nullptr);
   }
   return ret;
 }
@@ -568,7 +568,7 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
     }
     case Expression::E_CALL: {
       Call* ce = e->cast<Call>();
-      if (ce->decl() == NULL) throw EvalError(env, e->loc(), "undeclared function", ce->id());
+      if (ce->decl() == nullptr) throw EvalError(env, e->loc(), "undeclared function", ce->id());
 
       if (ce->decl()->_builtins.e) return eval_array_lit(env, ce->decl()->_builtins.e(env, ce));
 
@@ -605,7 +605,7 @@ ArrayLit* eval_array_lit(EnvI& env, Expression* e) {
     }
   }
   assert(false);
-  return NULL;
+  return nullptr;
 }
 
 Expression* eval_arrayaccess(EnvI& env, ArrayLit* al, const std::vector<IntVal>& dims,
@@ -778,7 +778,7 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
     }
     case Expression::E_CALL: {
       Call* ce = e->cast<Call>();
-      if (ce->decl() == NULL) throw EvalError(env, e->loc(), "undeclared function", ce->id());
+      if (ce->decl() == nullptr) throw EvalError(env, e->loc(), "undeclared function", ce->id());
 
       if (ce->decl()->_builtins.s) return ce->decl()->_builtins.s(env, ce);
 
@@ -815,7 +815,7 @@ IntSetVal* eval_intset(EnvI& env, Expression* e) {
     } break;
     default:
       assert(false);
-      return NULL;
+      return nullptr;
   }
 }
 
@@ -930,7 +930,7 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
     }
     case Expression::E_CALL: {
       Call* ce = e->cast<Call>();
-      if (ce->decl() == NULL) throw EvalError(env, e->loc(), "undeclared function", ce->id());
+      if (ce->decl() == nullptr) throw EvalError(env, e->loc(), "undeclared function", ce->id());
 
       if (ce->decl()->_builtins.e) return eval_floatset(env, ce->decl()->_builtins.e(env, ce));
 
@@ -965,7 +965,7 @@ FloatSetVal* eval_floatset(EnvI& env, Expression* e) {
     } break;
     default:
       assert(false);
-      return NULL;
+      return nullptr;
   }
 }
 
@@ -1217,7 +1217,8 @@ bool eval_bool(EnvI& env, Expression* e) {
       case Expression::E_CALL: {
         try {
           Call* ce = e->cast<Call>();
-          if (ce->decl() == NULL) throw EvalError(env, e->loc(), "undeclared function", ce->id());
+          if (ce->decl() == nullptr)
+            throw EvalError(env, e->loc(), "undeclared function", ce->id());
 
           if (ce->decl()->_builtins.b) return ce->decl()->_builtins.b(env, ce);
 
@@ -1386,7 +1387,7 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
     }
     case Expression::E_CALL: {
       Call* ce = e->cast<Call>();
-      if (ce->decl() == NULL) throw EvalError(env, e->loc(), "undeclared function", ce->id());
+      if (ce->decl() == nullptr) throw EvalError(env, e->loc(), "undeclared function", ce->id());
 
       if (ce->decl()->_builtins.s) return ce->decl()->_builtins.s(env, ce);
 
@@ -1423,7 +1424,7 @@ IntSetVal* eval_boolset(EnvI& env, Expression* e) {
     } break;
     default:
       assert(false);
-      return NULL;
+      return nullptr;
   }
 }
 
@@ -1507,7 +1508,7 @@ IntVal eval_int(EnvI& env, Expression* e) {
       } break;
       case Expression::E_CALL: {
         Call* ce = e->cast<Call>();
-        if (ce->decl() == NULL) throw EvalError(env, e->loc(), "undeclared function", ce->id());
+        if (ce->decl() == nullptr) throw EvalError(env, e->loc(), "undeclared function", ce->id());
         if (ce->decl()->_builtins.i) return ce->decl()->_builtins.i(env, ce);
 
         if (ce->decl()->_builtins.e) return eval_int(env, ce->decl()->_builtins.e(env, ce));
@@ -1629,7 +1630,7 @@ FloatVal eval_float(EnvI& env, Expression* e) {
       } break;
       case Expression::E_CALL: {
         Call* ce = e->cast<Call>();
-        if (ce->decl() == NULL) throw EvalError(env, e->loc(), "undeclared function", ce->id());
+        if (ce->decl() == nullptr) throw EvalError(env, e->loc(), "undeclared function", ce->id());
         if (ce->decl()->_builtins.f) return ce->decl()->_builtins.f(env, ce);
 
         if (ce->decl()->_builtins.e) return eval_float(env, ce->decl()->_builtins.e(env, ce));
@@ -1730,12 +1731,12 @@ std::string eval_string(EnvI& env, Expression* e) {
     } break;
     case Expression::E_CALL: {
       Call* ce = e->cast<Call>();
-      if (ce->decl() == NULL) throw EvalError(env, e->loc(), "undeclared function", ce->id());
+      if (ce->decl() == nullptr) throw EvalError(env, e->loc(), "undeclared function", ce->id());
 
       if (ce->decl()->_builtins.str) return ce->decl()->_builtins.str(env, ce);
       if (ce->decl()->_builtins.e) return eval_string(env, ce->decl()->_builtins.e(env, ce));
 
-      if (ce->decl()->e() == NULL) {
+      if (ce->decl()->e() == nullptr) {
         std::ostringstream ss;
         ss << "internal error: missing builtin '" << ce->id() << "'";
         throw EvalError(env, ce->loc(), ss.str());
@@ -1766,12 +1767,12 @@ std::string eval_string(EnvI& env, Expression* e) {
     } break;
     default:
       assert(false);
-      return NULL;
+      return nullptr;
   }
 }
 
 Expression* eval_par(EnvI& env, Expression* e) {
-  if (e == NULL) return NULL;
+  if (e == nullptr) return nullptr;
   switch (e->eid()) {
     case Expression::E_ANON:
     case Expression::E_TIID: {
@@ -1815,7 +1816,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
     case Expression::E_ID: {
       if (e == constants().absent) return e;
       Id* id = e->cast<Id>();
-      if (id->decl() == NULL) throw EvalError(env, e->loc(), "undefined identifier", id->v());
+      if (id->decl() == nullptr) throw EvalError(env, e->loc(), "undefined identifier", id->v());
       if (id->decl()->ti()->domain()) {
         if (BoolLit* bl = id->decl()->ti()->domain()->dyn_cast<BoolLit>()) return bl;
         if (id->decl()->ti()->type().isint()) {
@@ -1833,7 +1834,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
           }
         }
       }
-      if (id->decl()->e() == NULL) {
+      if (id->decl()->e() == nullptr) {
         return id;
       } else {
         return eval_par(env, id->decl()->e());
@@ -1901,7 +1902,7 @@ Expression* eval_par(EnvI& env, Expression* e) {
             if (c->decl()->_builtins.e) {
               return eval_par(env, c->decl()->_builtins.e(env, c));
             } else {
-              if (c->decl()->e() == NULL) {
+              if (c->decl()->e() == nullptr) {
                 if (c->id() == "deopt" && Expression::equal(c->arg(0), constants().absent))
                   throw ResultUndefinedError(env, e->loc(), "deopt(<>) is undefined");
                 return c;
@@ -2244,7 +2245,7 @@ public:
   void vCall(Call& c) {
     if (c.id() == constants().ids.lin_exp || c.id() == constants().ids.sum) {
       bool le = c.id() == constants().ids.lin_exp;
-      ArrayLit* coeff = le ? eval_array_lit(env, c.arg(0)) : NULL;
+      ArrayLit* coeff = le ? eval_array_lit(env, c.arg(0)) : nullptr;
       if (c.arg(le ? 1 : 0)->type().isopt()) {
         valid = false;
         _bounds.push_back(Bounds(0, 0));
@@ -2632,7 +2633,7 @@ public:
   void vCall(Call& c) {
     if (c.id() == constants().ids.lin_exp || c.id() == constants().ids.sum) {
       bool le = c.id() == constants().ids.lin_exp;
-      ArrayLit* coeff = le ? eval_array_lit(env, c.arg(0)) : NULL;
+      ArrayLit* coeff = le ? eval_array_lit(env, c.arg(0)) : nullptr;
       if (le) {
         _bounds.pop_back();  // remove constant (third arg) from stack
       }
@@ -2813,7 +2814,7 @@ public:
   /// Visit set literal
   void vSetLit(const SetLit& sl) {
     assert(sl.type().isvar());
-    assert(sl.isv() == NULL);
+    assert(sl.isv() == nullptr);
 
     IntSetVal* isv = IntSetVal::a();
     for (unsigned int i = 0; i < sl.v().size(); i++) {
@@ -2821,7 +2822,7 @@ public:
       IntBounds ib = compute_int_bounds(env, sl.v()[i]);
       if (!ib.valid || !ib.l.isFinite() || !ib.u.isFinite()) {
         valid = false;
-        _bounds.push_back(NULL);
+        _bounds.push_back(nullptr);
         return;
       }
       Ranges::Const<IntVal> cr(ib.l, ib.u);
@@ -2840,14 +2841,14 @@ public:
         cbi.run(id.decl()->e());
       } else {
         valid = false;
-        _bounds.push_back(NULL);
+        _bounds.push_back(nullptr);
       }
     }
   }
   /// Visit anonymous variable
   void vAnonVar(const AnonVar& v) {
     valid = false;
-    _bounds.push_back(NULL);
+    _bounds.push_back(nullptr);
   }
   /// Visit array access
   void vArrayAccess(ArrayAccess& aa) {
@@ -2877,17 +2878,17 @@ public:
       }
     }
     valid = false;
-    _bounds.push_back(NULL);
+    _bounds.push_back(nullptr);
   }
   /// Visit array comprehension
   void vComprehension(const Comprehension& c) {
     valid = false;
-    _bounds.push_back(NULL);
+    _bounds.push_back(nullptr);
   }
   /// Visit if-then-else
   void vITE(const ITE& ite) {
     valid = false;
-    _bounds.push_back(NULL);
+    _bounds.push_back(nullptr);
   }
   /// Visit binary operator
   void vBinOp(const BinOp& bo) {
@@ -2914,7 +2915,7 @@ public:
         } break;
         case BOT_SYMDIFF:
           valid = false;
-          _bounds.push_back(NULL);
+          _bounds.push_back(nullptr);
           break;
         case BOT_PLUS:
         case BOT_MINUS:
@@ -2941,14 +2942,14 @@ public:
         case BOT_XOR:
         case BOT_DOTDOT:
           valid = false;
-          _bounds.push_back(NULL);
+          _bounds.push_back(nullptr);
       }
     }
   }
   /// Visit unary operator
   void vUnOp(const UnOp& uo) {
     valid = false;
-    _bounds.push_back(NULL);
+    _bounds.push_back(nullptr);
   }
   /// Visit call
   void vCall(Call& c) {
@@ -2977,33 +2978,33 @@ public:
       _bounds.push_back(fsv);
     } else {
       valid = false;
-      _bounds.push_back(NULL);
+      _bounds.push_back(nullptr);
     }
   }
   /// Visit let
   void vLet(const Let& l) {
     valid = false;
-    _bounds.push_back(NULL);
+    _bounds.push_back(nullptr);
   }
   /// Visit variable declaration
   void vVarDecl(const VarDecl& vd) {
     valid = false;
-    _bounds.push_back(NULL);
+    _bounds.push_back(nullptr);
   }
   /// Visit annotation
   void vAnnotation(const Annotation& e) {
     valid = false;
-    _bounds.push_back(NULL);
+    _bounds.push_back(nullptr);
   }
   /// Visit type inst
   void vTypeInst(const TypeInst& e) {
     valid = false;
-    _bounds.push_back(NULL);
+    _bounds.push_back(nullptr);
   }
   /// Visit TIId
   void vTIId(const TIId& e) {
     valid = false;
-    _bounds.push_back(NULL);
+    _bounds.push_back(nullptr);
   }
 };
 
@@ -3015,15 +3016,15 @@ IntSetVal* compute_intset_bounds(EnvI& env, Expression* e) {
     if (cb.valid)
       return cb._bounds.back();
     else
-      return NULL;
+      return nullptr;
   } catch (ResultUndefinedError&) {
-    return NULL;
+    return nullptr;
   }
 }
 
 Expression* follow_id(Expression* e) {
   for (;;) {
-    if (e == NULL) return NULL;
+    if (e == nullptr) return nullptr;
     if (e->eid() == Expression::E_ID && e != constants().absent) {
       e = e->cast<Id>()->decl()->e();
     } else {
@@ -3034,7 +3035,7 @@ Expression* follow_id(Expression* e) {
 
 Expression* follow_id_to_decl(Expression* e) {
   for (;;) {
-    if (e == NULL) return NULL;
+    if (e == nullptr) return nullptr;
     if (e == constants().absent) return e;
     switch (e->eid()) {
       case Expression::E_ID:

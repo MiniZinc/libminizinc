@@ -133,8 +133,8 @@ std::vector<SolverConfig::ExtraFlag> getExtraFlagList(AssignI* ai) {
     for (unsigned int i = 0; i < al->size(); i += nCols) {
       StringLit* sl1 = (*al)[i]->dyn_cast<StringLit>();
       StringLit* sl2 = (*al)[i + 1]->dyn_cast<StringLit>();
-      StringLit* sl3 = haveType ? (*al)[i + 2]->dyn_cast<StringLit>() : NULL;
-      StringLit* sl4 = haveDefault ? (*al)[i + 3]->dyn_cast<StringLit>() : NULL;
+      StringLit* sl3 = haveType ? (*al)[i + 2]->dyn_cast<StringLit>() : nullptr;
+      StringLit* sl4 = haveDefault ? (*al)[i + 3]->dyn_cast<StringLit>() : nullptr;
       std::string opt_type = sl3 ? std::string(sl3->v().c_str(), sl3->v().size()) : "bool";
       std::string opt_def;
       if (sl4) {
@@ -213,7 +213,7 @@ SolverConfig SolverConfig::load(string filename) {
   ostringstream errstream;
   try {
     Env confenv;
-    Model* m = NULL;
+    Model* m = nullptr;
     if (JSONParser::fileIsJSON(filename)) {
       JSONParser jp(confenv.envi());
       try {
@@ -222,7 +222,7 @@ SolverConfig SolverConfig::load(string filename) {
         jp.parse(m, filename);
       } catch (JSONError& e) {
         delete m;
-        m = NULL;
+        m = nullptr;
         throw ConfigException(e.msg());
       }
     } else {
@@ -493,7 +493,7 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
       ostringstream errstream;
       try {
         Env userconfenv;
-        Model* m = NULL;
+        Model* m = nullptr;
         if (JSONParser::fileIsJSON(cf)) {
           JSONParser jp(userconfenv.envi());
           try {
@@ -502,7 +502,7 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
             jp.parse(m, cf);
           } catch (JSONError&) {
             delete m;
-            m = NULL;
+            m = nullptr;
           }
         }
         if (m) {

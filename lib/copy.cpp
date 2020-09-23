@@ -23,7 +23,7 @@ Item* CopyMap::find(Item* e) { return static_cast<Item*>(node_m.find(e)); }
 void CopyMap::insert(Model* e0, Model* e1) { model_m.insert(std::make_pair(e0, e1)); }
 Model* CopyMap::find(Model* e) {
   ModelMap::iterator it = model_m.find(e);
-  if (it == model_m.end()) return NULL;
+  if (it == model_m.end()) return nullptr;
   return it->second;
 }
 void CopyMap::insert(IntSetVal* e0, IntSetVal* e1) { node_m.insert(e0, e1); }
@@ -40,9 +40,9 @@ void copy_ann(EnvI& env, CopyMap& m, Annotation& oldAnn, Annotation& newAnn, boo
 
 Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copyFundecls,
                  bool isFlatModel) {
-  if (e == NULL) return NULL;
+  if (e == nullptr) return nullptr;
   if (Expression* cached = m.find(e)) return cached;
-  Expression* ret = NULL;
+  Expression* ret = nullptr;
   switch (e->eid()) {
     case Expression::E_INTLIT: {
       IntLit* c = IntLit::a(e->cast<IntLit>()->v());
@@ -56,7 +56,7 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
     } break;
     case Expression::E_SETLIT: {
       SetLit* s = e->cast<SetLit>();
-      SetLit* c = new SetLit(copy_location(m, e), static_cast<IntSetVal*>(NULL));
+      SetLit* c = new SetLit(copy_location(m, e), static_cast<IntSetVal*>(nullptr));
       m.insert(e, c);
       if (s->isv()) {
         IntSetVal* isv;
@@ -111,7 +111,7 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
         Expression* cur = e;
         bool done = false;
         do {
-          if (cur == NULL) {
+          if (cur == nullptr) {
             cur = prevId;
             done = true;
           } else {
@@ -151,9 +151,9 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
           c = vd->id();
         } else {
           if (id->idn() != -1) {
-            c = new Id(copy_location(m, e), id->idn(), NULL);
+            c = new Id(copy_location(m, e), id->idn(), nullptr);
           } else {
-            c = new Id(copy_location(m, e), id->v(), NULL);
+            c = new Id(copy_location(m, e), id->v(), nullptr);
           }
         }
         m.insert(e, c);
@@ -208,7 +208,7 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
     } break;
     case Expression::E_ARRAYACCESS: {
       ArrayAccess* aa = e->cast<ArrayAccess>();
-      ArrayAccess* c = new ArrayAccess(copy_location(m, e), NULL, std::vector<Expression*>());
+      ArrayAccess* c = new ArrayAccess(copy_location(m, e), nullptr, std::vector<Expression*>());
       m.insert(e, c);
 
       ASTExprVecO<Expression*>* idx;
@@ -229,7 +229,7 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
     case Expression::E_COMP: {
       Comprehension* c = e->cast<Comprehension>();
       Generators g;
-      Comprehension* cc = new Comprehension(copy_location(m, e), NULL, g, c->set());
+      Comprehension* cc = new Comprehension(copy_location(m, e), nullptr, g, c->set());
       m.insert(c, cc);
 
       for (int i = 0; i < c->n_generators(); i++) {
@@ -249,7 +249,7 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
     } break;
     case Expression::E_ITE: {
       ITE* ite = e->cast<ITE>();
-      ITE* c = new ITE(copy_location(m, e), std::vector<Expression*>(), NULL);
+      ITE* c = new ITE(copy_location(m, e), std::vector<Expression*>(), nullptr);
       m.insert(e, c);
       std::vector<Expression*> ifthen(2 * ite->size());
       for (unsigned int i = ite->size(); i--;) {
@@ -261,7 +261,7 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
     } break;
     case Expression::E_BINOP: {
       BinOp* b = e->cast<BinOp>();
-      BinOp* c = new BinOp(copy_location(m, e), NULL, b->op(), NULL);
+      BinOp* c = new BinOp(copy_location(m, e), nullptr, b->op(), nullptr);
       if (b->decl()) {
         if (copyFundecls) {
           c->decl(Item::cast<FunctionI>(copy(env, m, b->decl())));
@@ -276,7 +276,7 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
     } break;
     case Expression::E_UNOP: {
       UnOp* b = e->cast<UnOp>();
-      UnOp* c = new UnOp(copy_location(m, e), b->op(), NULL);
+      UnOp* c = new UnOp(copy_location(m, e), b->op(), nullptr);
       if (b->decl()) {
         if (copyFundecls) {
           c->decl(Item::cast<FunctionI>(copy(env, m, b->decl())));
@@ -311,9 +311,9 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
       VarDecl* vd = e->cast<VarDecl>();
       VarDecl* c;
       if (vd->id()->hasStr()) {
-        c = new VarDecl(copy_location(m, e), NULL, vd->id()->v(), NULL);
+        c = new VarDecl(copy_location(m, e), nullptr, vd->id()->v(), nullptr);
       } else {
-        c = new VarDecl(copy_location(m, e), NULL, vd->id()->idn(), NULL);
+        c = new VarDecl(copy_location(m, e), nullptr, vd->id()->idn(), nullptr);
       }
       c->toplevel(vd->toplevel());
       c->introduced(vd->introduced());
@@ -348,7 +348,7 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
       TypeInst* t = e->cast<TypeInst>();
       ASTExprVecO<TypeInst*>* r;
       if (t->ranges().size() == 0) {
-        r = NULL;
+        r = nullptr;
       } else if (ASTExprVecO<TypeInst*>* cr = m.find(t->ranges())) {
         r = cr;
       } else {
@@ -373,7 +373,7 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
     default:
       assert(false);
   }
-  if (!ret->isa<Id>() || ret->cast<Id>()->decl() == NULL) ret->type(e->type());
+  if (!ret->isa<Id>() || ret->cast<Id>()->decl() == nullptr) ret->type(e->type());
   copy_ann(env, m, e->ann(), ret->ann(), followIds, copyFundecls, isFlatModel);
   return ret;
 }
@@ -392,7 +392,7 @@ Expression* copy(EnvI& env, Expression* e, bool followIds, bool copyFundecls, bo
 Model* copy(EnvI& env, CopyMap& cm, Model* m, bool isFlatModel);
 
 Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bool isFlatModel) {
-  if (i == NULL) return NULL;
+  if (i == nullptr) return nullptr;
   if (Item* cached = m.find(i)) return cached;
   switch (i->iid()) {
     case Item::II_INC: {
@@ -404,14 +404,14 @@ Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bo
     }
     case Item::II_VD: {
       VarDeclI* v = i->cast<VarDeclI>();
-      VarDeclI* c = new VarDeclI(copy_location(m, i), NULL);
+      VarDeclI* c = new VarDeclI(copy_location(m, i), nullptr);
       m.insert(i, c);
       c->e(static_cast<VarDecl*>(copy(env, m, v->e(), followIds, copyFundecls, isFlatModel)));
       return c;
     }
     case Item::II_ASN: {
       AssignI* a = i->cast<AssignI>();
-      auto c = new AssignI(copy_location(m, i), a->id(), NULL);
+      auto c = new AssignI(copy_location(m, i), a->id(), nullptr);
       m.insert(i, c);
       c->e(copy(env, m, a->e(), followIds, copyFundecls, isFlatModel));
       c->decl(static_cast<VarDecl*>(copy(env, m, a->decl(), followIds, copyFundecls, isFlatModel)));
@@ -419,7 +419,7 @@ Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bo
     }
     case Item::II_CON: {
       ConstraintI* cc = i->cast<ConstraintI>();
-      ConstraintI* c = new ConstraintI(copy_location(m, i), NULL);
+      ConstraintI* c = new ConstraintI(copy_location(m, i), nullptr);
       m.insert(i, c);
       c->e(copy(env, m, cc->e(), followIds, copyFundecls, isFlatModel));
       return c;
@@ -472,7 +472,7 @@ Item* copy(EnvI& env, CopyMap& m, Item* i, bool followIds, bool copyFundecls, bo
     }
     default:
       assert(false);
-      return NULL;
+      return nullptr;
   }
 }
 
@@ -482,7 +482,7 @@ Item* copy(EnvI& env, Item* i, bool followIds, bool copyFundecls, bool isFlatMod
 }
 
 Model* copy(EnvI& env, CopyMap& cm, Model* m, bool isFlatModel) {
-  if (m == NULL) return NULL;
+  if (m == nullptr) return nullptr;
   if (Model* cached = cm.find(m)) return cached;
   Model* c = new Model;
   for (unsigned int i = 0; i < m->size(); i++) c->addItem(copy(env, cm, (*m)[i], false, true));

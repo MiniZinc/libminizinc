@@ -17,10 +17,10 @@ EE flatten_setlit(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   CallStackItem _csi(env, e);
   EE ret;
   SetLit* sl = e->cast<SetLit>();
-  assert(sl->isv() == NULL && sl->fsv() == NULL);
+  assert(sl->isv() == nullptr && sl->fsv() == nullptr);
   std::vector<EE> elems_ee(sl->v().size());
   for (unsigned int i = sl->v().size(); i--;)
-    elems_ee[i] = flat_exp(env, ctx, sl->v()[i], NULL, NULL);
+    elems_ee[i] = flat_exp(env, ctx, sl->v()[i], nullptr, nullptr);
   std::vector<Expression*> elems(elems_ee.size());
   bool allPar = true;
   bool hadOpt = false;
@@ -48,13 +48,13 @@ EE flatten_setlit(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     Call* cc = new Call(sl->loc().introduce(), "array2set", args);
     cc->type(Type::varsetint());
     FunctionI* fi = env.model->matchFn(env, cc->id(), args, false);
-    if (fi == NULL) {
+    if (fi == nullptr) {
       throw FlatteningError(env, cc->loc(), "cannot find matching declaration");
     }
     assert(fi);
     assert(env.isSubtype(fi->rtype(env, args, false), cc->type(), false));
     cc->decl(fi);
-    EE ee = flat_exp(env, Ctx(), cc, NULL, constants().var_true);
+    EE ee = flat_exp(env, Ctx(), cc, nullptr, constants().var_true);
     ret.r = bind(env, Ctx(), r, ee.r());
   }
   return ret;

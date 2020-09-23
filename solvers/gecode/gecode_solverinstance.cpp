@@ -156,9 +156,9 @@ GecodeSolverInstance::GecodeSolverInstance(Env& env, std::ostream& log,
                                            SolverInstanceBase::Options* opt)
     : SolverInstanceImpl<GecodeSolver>(env, log, opt),
       _n_found_solutions(0),
-      _current_space(NULL),
-      _solution(NULL),
-      engine(NULL) {
+      _current_space(nullptr),
+      _solution(nullptr),
+      engine(nullptr) {
   registerConstraints();
   _flat = env.flat();
 }
@@ -537,10 +537,10 @@ void GecodeSolverInstance::processFlatZinc(void) {
         }
         isIntroduced =
             it->e()->introduced() ||
-            (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced) != NULL);
+            (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced) != nullptr);
         _current_space->iv_introduced.push_back(isIntroduced);
-        isDefined =
-            MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str()) != NULL;
+        isDefined = MiniZinc::getAnnotation(it->e()->ann(),
+                                            constants().ann.is_defined_var->str()) != nullptr;
         _current_space->iv_defined.push_back(isDefined);
 
       } else if (vd->type().isbool()) {
@@ -578,14 +578,14 @@ void GecodeSolverInstance::processFlatZinc(void) {
         }
         isIntroduced =
             it->e()->introduced() ||
-            (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced) != NULL);
+            (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced) != nullptr);
         _current_space->bv_introduced.push_back(isIntroduced);
-        isDefined =
-            MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str()) != NULL;
+        isDefined = MiniZinc::getAnnotation(it->e()->ann(),
+                                            constants().ann.is_defined_var->str()) != nullptr;
         _current_space->bv_defined.push_back(isDefined);
 #ifdef GECODE_HAS_FLOAT_VARS
       } else if (vd->type().isfloat()) {
-        if (it->e()->e() == NULL) {  // there is NO initialisation expression
+        if (it->e()->e() == nullptr) {  // there is NO initialisation expression
           Expression* domain = ti->domain();
           double lb, ub;
           if (domain) {
@@ -629,10 +629,10 @@ void GecodeSolverInstance::processFlatZinc(void) {
         }
         isIntroduced =
             it->e()->introduced() ||
-            (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced) != NULL);
+            (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced) != nullptr);
         _current_space->fv_introduced.push_back(isIntroduced);
-        isDefined =
-            MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str()) != NULL;
+        isDefined = MiniZinc::getAnnotation(it->e()->ann(),
+                                            constants().ann.is_defined_var->str()) != nullptr;
         _current_space->fv_defined.push_back(isDefined);
 #endif
 #ifdef GECODE_HAS_SET_VARS
@@ -643,10 +643,10 @@ void GecodeSolverInstance::processFlatZinc(void) {
         _current_space->sv.push_back(setVar);
         isIntroduced =
             it->e()->introduced() ||
-            (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced) != NULL);
+            (MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_introduced) != nullptr);
         _current_space->sv_introduced.push_back(isIntroduced);
-        isDefined =
-            MiniZinc::getAnnotation(it->e()->ann(), constants().ann.is_defined_var->str()) != NULL;
+        isDefined = MiniZinc::getAnnotation(it->e()->ann(),
+                                            constants().ann.is_defined_var->str()) != nullptr;
         _current_space->sv_defined.push_back(isDefined);
         insertVar(it->e()->id(),
                   GecodeVariable(GecodeVariable::SET_TYPE, _current_space->sv.size() - 1));
@@ -1056,7 +1056,7 @@ MZ_IntConLevel GecodeSolverInstance::ann2icl(const Annotation& ann) {
 }
 
 VarDecl* GecodeSolverInstance::getVarDecl(Expression* expr) {
-  VarDecl* vd = NULL;
+  VarDecl* vd = nullptr;
   if ((vd = expr->dyn_cast<VarDecl>())) {
     vd = expr->cast<VarDecl>();
   } else if (Id* id = expr->dyn_cast<Id>()) {
@@ -1164,7 +1164,7 @@ Expression* GecodeSolverInstance::getSolutionValue(Id* id) {
         return FloatLit::a(var.floatVar(_solution).val().med());
 #endif
       default:
-        return NULL;
+        return nullptr;
     }
   } else {
     return id->decl()->e();
@@ -1174,24 +1174,24 @@ Expression* GecodeSolverInstance::getSolutionValue(Id* id) {
 void GecodeSolverInstance::prepareEngine(void) {
   GCLock lock;
   GecodeOptions& _opt = static_cast<GecodeOptions&>(*_options);
-  if (engine == NULL) {
+  if (engine == nullptr) {
     // TODO: check what we need to do options-wise
     std::vector<Expression*> branch_vars;
     std::vector<Expression*> solve_args;
     Expression* solveExpr = _flat->solveItem()->e();
-    Expression* optSearch = NULL;
+    Expression* optSearch = nullptr;
 
     switch (_current_space->_solveType) {
       case MiniZinc::SolveI::SolveType::ST_MIN:
-        assert(solveExpr != NULL);
+        assert(solveExpr != nullptr);
         branch_vars.push_back(solveExpr);
         solve_args.push_back(new ArrayLit(Location(), branch_vars));
         if (!_current_space->_optVarIsInt)  // TODO: why??
           solve_args.push_back(FloatLit::a(0.0));
-        solve_args.push_back(new Id(Location(), "input_order", NULL));
+        solve_args.push_back(new Id(Location(), "input_order", nullptr));
         solve_args.push_back(new Id(
-            Location(), _current_space->_optVarIsInt ? "indomain_min" : "indomain_split", NULL));
-        solve_args.push_back(new Id(Location(), "complete", NULL));
+            Location(), _current_space->_optVarIsInt ? "indomain_min" : "indomain_split", nullptr));
+        solve_args.push_back(new Id(Location(), "complete", nullptr));
         optSearch = new Call(
             Location(), _current_space->_optVarIsInt ? "int_search" : "float_search", solve_args);
         break;
@@ -1199,11 +1199,11 @@ void GecodeSolverInstance::prepareEngine(void) {
         branch_vars.push_back(solveExpr);
         solve_args.push_back(new ArrayLit(Location(), branch_vars));
         if (!_current_space->_optVarIsInt) solve_args.push_back(FloatLit::a(0.0));
-        solve_args.push_back(new Id(Location(), "input_order", NULL));
-        solve_args.push_back(
-            new Id(Location(),
-                   _current_space->_optVarIsInt ? "indomain_max" : "indomain_split_reverse", NULL));
-        solve_args.push_back(new Id(Location(), "complete", NULL));
+        solve_args.push_back(new Id(Location(), "input_order", nullptr));
+        solve_args.push_back(new Id(
+            Location(), _current_space->_optVarIsInt ? "indomain_max" : "indomain_split_reverse",
+            nullptr));
+        solve_args.push_back(new Id(Location(), "complete", nullptr));
         optSearch = new Call(
             Location(), _current_space->_optVarIsInt ? "int_search" : "float_search", solve_args);
         break;
@@ -1342,11 +1342,11 @@ SolverInstanceBase::Status GecodeSolverInstance::solve(void) {
   if (_current_space->_solveType != MiniZinc::SolveI::SolveType::ST_SAT) {
     if (n_max_solutions == -1) {
       // Print last solution
-      processSolution(next_sol == NULL);
+      processSolution(next_sol == nullptr);
       if (_print_stats) printStatistics();
     }
   }
-  if (next_sol == NULL) {
+  if (next_sol == nullptr) {
     if (_solution) {
       ret = engine->stopped() ? SolverInstance::SAT : SolverInstance::OPT;
     } else {
@@ -1358,7 +1358,7 @@ SolverInstanceBase::Status GecodeSolverInstance::solve(void) {
   pS2Out->_stats.nFails = engine->statistics().fail;
   pS2Out->_stats.nNodes = engine->statistics().node;
   delete engine;
-  engine = NULL;
+  engine = nullptr;
   return ret;
 }
 
@@ -1457,7 +1457,7 @@ bool GecodeSolverInstance::presolve(Model* orig_model) {
     }
   }
 
-  if (orig_model != NULL) {
+  if (orig_model != nullptr) {
     ASTStringMap<VarDecl*> vds;
     for (VarDeclIterator it = orig_model->begin_vardecls(); it != orig_model->end_vardecls();
          ++it) {
@@ -1590,7 +1590,7 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
       std::string r0, r1;
       // BrancherHandle bh =
       branch(*_current_space, va, ann2ivarsel(call->arg(1)->cast<Id>()->str(), rnd, decay),
-             ann2ivalsel(call->arg(2)->cast<Id>()->str(), r0, r1, rnd), NULL
+             ann2ivalsel(call->arg(2)->cast<Id>()->str(), r0, r1, rnd), nullptr
              //,&varValPrint<IntVar>
       );
       // branchInfo.add(bh,r0,r1,names);
@@ -1609,7 +1609,7 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
         va[k++] = _current_space->iv[idx];
         iv_searched[idx] = true;
       }
-      assign(*_current_space, va, ann2asnivalsel(call->arg(1)->cast<Id>()->str(), rnd), NULL
+      assign(*_current_space, va, ann2asnivalsel(call->arg(1)->cast<Id>()->str(), rnd), nullptr
              //&varValPrint<IntVar>
       );
     } else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id() == "bool_search") {
@@ -1632,7 +1632,7 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
       std::string r0, r1;
       // BrancherHandle bh =
       branch(*_current_space, va, ann2bvarsel(call->arg(1)->cast<Id>()->str(), rnd, decay),
-             ann2bvalsel(call->arg(2)->cast<Id>()->str(), r0, r1, rnd), NULL  //,
+             ann2bvalsel(call->arg(2)->cast<Id>()->str(), r0, r1, rnd), nullptr  //,
              //&varValPrint<BoolVar>
       );
       // branchInfo.add(bh,r0,r1,names);
@@ -1667,8 +1667,8 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
       // BrancherHandle bh =
       branch(*_current_space, va, ann2svarsel(call->arg(1)->cast<Id>()->str(), rnd, decay),
              ann2svalsel(call->arg(2)->cast<Id>()->str(), r0, r1, rnd),
-             NULL  //,
-                   //&varValPrint<SetVar>
+             nullptr  //,
+                      //&varValPrint<SetVar>
       );
       // branchInfo.add(bh,r0,r1,names);
 #else
@@ -1724,8 +1724,8 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
       // BrancherHandle bh =
       branch(*_current_space, va, ann2fvarsel(call->arg(2)->cast<Id>()->str(), rnd, decay),
              ann2fvalsel(call->arg(3)->cast<Id>()->str(), r0, r1),
-             NULL  //,
-                   //&varValPrintF
+             nullptr  //,
+                      //&varValPrintF
       );
       // branchInfo.add(bh,r0,r1,names);
 #else
@@ -1776,7 +1776,7 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
   if (!ann.isEmpty()) {
     flattenSearchAnnotations(ann, flatAnn);
   }
-  if (additionalAnn != NULL) {
+  if (additionalAnn != nullptr) {
     flatAnn.push_back(additionalAnn);
   }
   if (flatAnn.size() > 0) {

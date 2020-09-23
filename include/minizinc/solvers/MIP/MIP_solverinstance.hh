@@ -43,7 +43,7 @@ public:
 /// XBZ cut generator
 class XBZCutGen : public CutGen {
   XBZCutGen() {}
-  MIP_wrapper* pMIP = 0;
+  MIP_wrapper* pMIP = nullptr;
 
 public:
   XBZCutGen(MIP_wrapper* pw) : pMIP(pw) {}
@@ -58,7 +58,7 @@ public:
 /// SEC cut generator for circuit
 class SECCutGen : public CutGen {
   SECCutGen() {}
-  MIP_wrapper* pMIP = 0;
+  MIP_wrapper* pMIP = nullptr;
 
 public:
   SECCutGen(MIP_wrapper* pw) : pMIP(pw) {}
@@ -140,8 +140,8 @@ public:
                                               static_cast<typename MIPWrapper::Options*>(opt));
   }
   bool processOption(SolverInstanceBase::Options* opt, int& i, std::vector<std::string>& argv);
-  std::string getDescription(SolverInstanceBase::Options* opt = NULL);
-  std::string getVersion(SolverInstanceBase::Options* opt = NULL);
+  std::string getDescription(SolverInstanceBase::Options* opt = nullptr);
+  std::string getVersion(SolverInstanceBase::Options* opt = nullptr);
   std::string getId();
   void printHelp(std::ostream& os) { MIPWrapper::Options::printHelp(os); }
 };

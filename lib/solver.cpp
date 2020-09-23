@@ -155,7 +155,7 @@ MznSolver::~MznSolver() {
   //   if (si)                         // first the solver
   //     CleanupSolverInterface(si);
   // TODO cleanup the used solver interfaces
-  si = 0;
+  si = nullptr;
   si_opt = nullptr;
   GC::trigger();
 }
@@ -167,7 +167,7 @@ bool MznSolver::ifSolns2out() { return s2out._opt.flag_standaloneSolns2Out; }
 void MznSolver::addSolverInterface(SolverFactory* sf) {
   si = sf->createSI(*flt.getEnv(), log, si_opt);
   assert(si);
-  if (s2out.getEnv() == NULL) s2out.initFromEnv(flt.getEnv());
+  if (s2out.getEnv() == nullptr) s2out.initFromEnv(flt.getEnv());
   si->setSolns2Out(&s2out);
   if (flag_compiler_verbose)
     log
@@ -178,7 +178,7 @@ void MznSolver::addSolverInterface(SolverFactory* sf) {
 
 void MznSolver::addSolverInterface() {
   GCLock lock;
-  if (sf == NULL) {
+  if (sf == nullptr) {
     if (getGlobalSolverRegistry()->getSolverFactories().empty()) {
       log << " MznSolver: NO SOLVER FACTORIES LINKED." << endl;
       assert(0);
@@ -649,7 +649,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       return OPTION_ERROR;
     }
 
-    if (sf == NULL) {
+    if (sf == nullptr) {
       log << "Solver " << solver << " not found." << endl;
       return OPTION_ERROR;
     }
@@ -672,7 +672,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         flag_all_satisfaction = true;
       } else if (cop.get("--disable-all-satisfaction")) {
         flag_all_satisfaction = false;
-      } else if (sf != NULL && sf->processOption(si_opt, i, argv)) {
+      } else if (sf != nullptr && sf->processOption(si_opt, i, argv)) {
         // Processed by Solver Factory
       } else {
         std::string executable_name(argv[0]);
@@ -739,7 +739,8 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
     case OPTION_OK:
       break;
   }
-  if (flag_is_solns2out && (ifMzn2Fzn() || sf == NULL || sf->getId() != "org.minizinc.mzn-mzn") &&
+  if (flag_is_solns2out &&
+      (ifMzn2Fzn() || sf == nullptr || sf->getId() != "org.minizinc.mzn-mzn") &&
       !flt.hasInputFiles() && model.empty()) {
     // We are in solns2out mode
     while (std::cin.good()) {

@@ -123,7 +123,7 @@ protected:
 public:
   Process(std::vector<std::string>& fzncmd, S2O* pso, int tl, bool si)
       : _fzncmd(fzncmd), pS2Out(pso), timelimit(tl), sigint(si) {
-    assert(0 != pS2Out);
+    assert(nullptr != pS2Out);
   }
   int run(void) {
 #ifdef _WIN32
@@ -316,7 +316,7 @@ public:
       FD_ZERO(&fdset);
 
       struct timeval starttime;
-      gettimeofday(&starttime, NULL);
+      gettimeofday(&starttime, nullptr);
 
       struct timeval timeout_orig;
       timeout_orig.tv_sec = timelimit / 1000;
@@ -342,7 +342,7 @@ public:
       while (!done) {
         FD_SET(pipes[1][0], &fdset);
         FD_SET(pipes[2][0], &fdset);
-        int sel = select(FD_SETSIZE, &fdset, NULL, NULL, timelimit == 0 ? NULL : &timeout);
+        int sel = select(FD_SETSIZE, &fdset, nullptr, nullptr, timelimit == 0 ? nullptr : &timeout);
         if (sel == -1) {
           if (errno != EINTR) {
             // some error has happened
@@ -368,14 +368,14 @@ public:
           timeout.tv_usec = 0;
           timeout_orig = timeout;
           timeval currentTime;
-          gettimeofday(&currentTime, NULL);
+          gettimeofday(&currentTime, nullptr);
           starttime = currentTime;
         }
 
         bool killed = false;
         if (timelimit != 0) {
           timeval currentTime;
-          gettimeofday(&currentTime, NULL);
+          gettimeofday(&currentTime, nullptr);
           if (sel != 0) {
             timeval elapsed;
             elapsed.tv_sec = currentTime.tv_sec - starttime.tv_sec;
@@ -452,8 +452,8 @@ public:
           exitStatus = WEXITSTATUS(childStatus);
         }
       }
-      sigaction(SIGINT, &old_sa_int, NULL);
-      sigaction(SIGTERM, &old_sa_term, NULL);
+      sigaction(SIGINT, &old_sa_int, nullptr);
+      sigaction(SIGTERM, &old_sa_term, nullptr);
       if (hadInterrupt) {
         kill(getpid(), SIGINT);
       }
@@ -485,7 +485,7 @@ public:
 
       char** argv = new char*[cmd_line.size() + 1];
       for (unsigned int i = 0; i < cmd_line.size(); i++) argv[i] = cmd_line[i];
-      argv[cmd_line.size()] = 0;
+      argv[cmd_line.size()] = nullptr;
 
       int status = execvp(argv[0], argv);  // execvp only returns if an error occurs.
       assert(status == -1);                // the returned value will always be -1

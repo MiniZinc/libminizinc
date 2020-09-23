@@ -71,9 +71,9 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
     GCLock lock;
     model->setFilename(FileUtils::base_name(filenames[0]));
     if (FileUtils::is_absolute(filenames[0])) {
-      files.push_back(ParseWorkItem(model, NULL, "", filenames[0]));
+      files.push_back(ParseWorkItem(model, nullptr, "", filenames[0]));
     } else {
-      files.push_back(ParseWorkItem(model, NULL, "", workingDir + "/" + filenames[0]));
+      files.push_back(ParseWorkItem(model, nullptr, "", workingDir + "/" + filenames[0]));
     }
 
     for (unsigned int i = 1; i < filenames.size(); i++) {
@@ -83,11 +83,11 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       if (!FileUtils::is_absolute(fullName)) fullName = workingDir + "/" + fullName;
       bool isFzn = (baseName.compare(baseName.length() - 4, 4, ".fzn") == 0);
       if (isFzn) {
-        files.push_back(ParseWorkItem(model, NULL, "", fullName));
+        files.push_back(ParseWorkItem(model, nullptr, "", fullName));
       } else {
         Model* includedModel = new Model;
         includedModel->setFilename(baseName);
-        files.push_back(ParseWorkItem(includedModel, NULL, "", fullName));
+        files.push_back(ParseWorkItem(includedModel, nullptr, "", fullName));
         seenModels.insert(pair<string, Model*>(baseName, includedModel));
         Location loc(ASTString(filenames[i]), 0, 0, 0, 0);
         IncludeI* inc = new IncludeI(loc, includedModel->filename());
@@ -99,7 +99,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       Model* includedModel = new Model;
       includedModel->setFilename(modelStringName);
       files.push_back(
-          ParseWorkItem(includedModel, NULL, modelString, modelStringName, false, true));
+          ParseWorkItem(includedModel, nullptr, modelString, modelStringName, false, true));
       seenModels.insert(pair<string, Model*>(modelStringName, includedModel));
       Location loc(ASTString(modelStringName), 0, 0, 0, 0);
       IncludeI* inc = new IncludeI(loc, includedModel->filename());
@@ -109,7 +109,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
   } else if (!modelString.empty()) {
     GCLock lock;
     model->setFilename(modelStringName);
-    files.push_back(ParseWorkItem(model, NULL, modelString, modelStringName, false, true));
+    files.push_back(ParseWorkItem(model, nullptr, modelString, modelStringName, false, true));
   }
 
   auto include_file = [&](const std::string& libname, bool builtin) {
@@ -185,7 +185,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
             string deprecatedBaseName = FileUtils::base_name(deprecatedName);
             Model* includedModel = new Model;
             includedModel->setFilename(deprecatedBaseName);
-            files.push_back(ParseWorkItem(includedModel, NULL, "", deprecatedName, np.isSTDLib));
+            files.push_back(ParseWorkItem(includedModel, nullptr, "", deprecatedName, np.isSTDLib));
             seenModels.insert(pair<string, Model*>(deprecatedBaseName, includedModel));
             Location loc(ASTString(deprecatedName), 0, 0, 0, 0);
             IncludeI* inc = new IncludeI(loc, includedModel->filename());
@@ -268,7 +268,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
   return;
 error:
   delete model;
-  model = NULL;
+  model = nullptr;
 }
 
 Model* parse(Env& env, const vector<string>& filenames, const vector<string>& datafiles,
@@ -277,7 +277,7 @@ Model* parse(Env& env, const vector<string>& filenames, const vector<string>& da
              ostream& err) {
   if (filenames.empty() && textModel.empty()) {
     err << "Error: no model given" << std::endl;
-    return NULL;
+    return nullptr;
   }
 
   Model* model;

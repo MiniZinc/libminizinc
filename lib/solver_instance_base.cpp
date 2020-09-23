@@ -50,7 +50,7 @@ void SolverInstanceBase::printSolution() {
   std::ostringstream oss;
 
   if (_options->printStatistics) printStatistics();  // Insert stats before sol separator
-  if (0 == pS2Out) {
+  if (nullptr == pS2Out) {
     getEnv()->evalOutput(std::cout);  // deprecated
     std::cout << oss.str();
     if (oss.str().size() && '\n' != oss.str().back()) std::cout << '\n';
@@ -79,7 +79,8 @@ void SolverInstanceBase2::assignSolutionToOutput() {
   GCLock lock;
 
   MZN_ASSERT_HARD_MSG(
-      0 != pS2Out, "Setup a Solns2Out object to use default solution extraction/reporting procs");
+      nullptr != pS2Out,
+      "Setup a Solns2Out object to use default solution extraction/reporting procs");
 
   if (_varsWithOutput.empty()) {
     for (VarDeclIterator it = getEnv()->flat()->begin_vardecls();

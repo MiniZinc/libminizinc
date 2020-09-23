@@ -45,8 +45,8 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     std::vector<Expression*> where;
     GCLock lock;
     for (int i = 0; i < c->n_generators(); i++) {
-      if (c->in(i) == NULL) {
-        in[i] = NULL;
+      if (c->in(i) == nullptr) {
+        in[i] = nullptr;
         orig_where[i] = c->where(i);
       } else {
         if (c->in(i)->type().isvar() && c->in(i)->type().dim() == 0) {
@@ -92,7 +92,7 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
             }
             switch (parWhere.size()) {
               case 0:
-                orig_where[i] = NULL;
+                orig_where[i] = nullptr;
                 break;
               case 1:
                 orig_where[i] = parWhere[0];
@@ -112,7 +112,7 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
               }
             }
           } else {
-            orig_where[i] = NULL;
+            orig_where[i] = nullptr;
             where.push_back(c->where(i));
           }
         } else {
@@ -185,14 +185,14 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     EvalF(Ctx ctx0) : ctx(ctx0) {}
     typedef EE ArrayVal;
     EE e(EnvI& env, Expression* e0) {
-      VarDecl* b = ctx.b == C_ROOT ? constants().var_true : NULL;
+      VarDecl* b = ctx.b == C_ROOT ? constants().var_true : nullptr;
       VarDecl* r = (ctx.b == C_ROOT && e0->type().isbool() && !e0->type().isopt())
                        ? constants().var_true
-                       : NULL;
+                       : nullptr;
       return flat_exp(env, ctx, e0, r, b);
     }
     Expression* flatten(EnvI& env, Expression* e0) {
-      return flat_exp(env, Ctx(), e0, NULL, constants().var_true).r();
+      return flat_exp(env, Ctx(), e0, nullptr, constants().var_true).r();
     }
   } _evalf(ctx);
   std::vector<EE> elems_ee;

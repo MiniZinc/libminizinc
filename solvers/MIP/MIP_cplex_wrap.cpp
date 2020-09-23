@@ -66,7 +66,7 @@ void* dll_sym(void* dll, const char* sym) {
 #else
   void* ret = GetProcAddress((HMODULE)dll, sym);
 #endif
-  if (ret == NULL)
+  if (ret == nullptr)
     throw MiniZinc::InternalError("cannot load symbol " + string(sym) + " from CPLEX dll");
   return ret;
 }
@@ -88,19 +88,19 @@ const vector<string>& CPLEXDLLs(void) {
 
 void MIP_cplex_wrapper::checkDLL() {
 #ifdef CPLEX_PLUGIN
-  _cplex_dll = NULL;
+  _cplex_dll = nullptr;
   if (options->sCPLEXDLL.size()) {
     _cplex_dll = dll_open(options->sCPLEXDLL.c_str());
   } else {
     for (const auto& s : CPLEXDLLs()) {
       _cplex_dll = dll_open(s.c_str());
-      if (NULL != _cplex_dll) {
+      if (nullptr != _cplex_dll) {
         break;
       }
     }
   }
 
-  if (_cplex_dll == NULL) {
+  if (_cplex_dll == nullptr) {
     if (options->sCPLEXDLL.empty()) {
       throw MiniZinc::InternalError("cannot load cplex dll, specify --cplex-dll");
     } else {
@@ -388,9 +388,9 @@ void MIP_cplex_wrapper::closeCPLEX() {
   //       status = CPXfreeprob (env, &lp);
   //       cplex_wrap_assert ( !status, "CPXfreeprob failed." );
   //    }
-  lp = 0;
+  lp = nullptr;
   /* Free up the CPLEX environment, if necessary */
-  if (env != NULL) {
+  if (env != nullptr) {
     status = dll_CPXcloseCPLEX(&env);
     wrap_assert(!status, "Could not close CPLEX environment.");
   }
@@ -450,7 +450,7 @@ void MIP_cplex_wrapper::addRow(int nnz, int* rmatind, double* rmatval,
   char* pRName = (char*)rowName.c_str();
   if (MaskConsType_Normal & mask) {
     status = dll_CPXaddrows(env, lp, ccnt, rcnt, nnz, &rhs, &ssense, rmatbeg, rmatind, rmatval,
-                            NULL, &pRName);
+                            nullptr, &pRName);
     wrap_assert(!status, "Failed to add constraint.");
   }
   if (MaskConsType_Usercut & mask) {
@@ -618,7 +618,7 @@ struct cutinfo {
   int nodeid;
   double nodeobjval;
   int objsen;
-  MIP_wrapper::CBUserInfo* info = 0;
+  MIP_wrapper::CBUserInfo* info = nullptr;
 };
 typedef struct cutinfo CUTINFO, *CUTINFOptr;
 
@@ -845,7 +845,7 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
   wrap_assert(!status, "  CPLEX Warning: Failure to set access original model in callbacks.",
               false);
   if (options->sExportModel.size()) {
-    status = dll_CPXwriteprob(env, lp, options->sExportModel.c_str(), NULL);
+    status = dll_CPXwriteprob(env, lp, options->sExportModel.c_str(), nullptr);
     wrap_assert(!status, "Failed to write LP to disk.", false);
   }
 

@@ -22,7 +22,7 @@ EE flatten_arrayaccess(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b
   Ctx nctx = ctx;
   nctx.b = +nctx.b;
   nctx.neg = false;
-  EE eev = flat_exp(env, nctx, aa->v(), NULL, NULL);
+  EE eev = flat_exp(env, nctx, aa->v(), nullptr, nullptr);
   std::vector<EE> ees;
 
 start_flatten_arrayaccess:
@@ -35,10 +35,10 @@ start_flatten_arrayaccess:
         al = eev.r()->cast<ArrayLit>();
       } else {
         Id* id = eev.r()->cast<Id>();
-        if (id->decl() == NULL) {
+        if (id->decl() == nullptr) {
           throw InternalError("undefined identifier");
         }
-        if (id->decl()->e() == NULL) {
+        if (id->decl()->e() == nullptr) {
           throw InternalError("array without initialiser not supported");
         }
         Expression* id_e = follow_id(id);
@@ -79,11 +79,11 @@ start_flatten_arrayaccess:
             ResultUndefinedError warning(env, al->loc(), "array access out of bounds");
           }
         }
-        ees.push_back(EE(NULL, constants().boollit(success)));
-        ees.push_back(EE(NULL, eev.b()));
+        ees.push_back(EE(nullptr, constants().boollit(success)));
+        ees.push_back(EE(nullptr, eev.b()));
         if (aa->type().isbool() && !aa->type().isopt()) {
           ret.b = bind(env, Ctx(), b, constants().lit_true);
-          ees.push_back(EE(NULL, ka()));
+          ees.push_back(EE(nullptr, ka()));
           ret.r = conj(env, r, ctx, ees);
         } else {
           ret.b = conj(env, b, ctx, ees);
@@ -104,8 +104,8 @@ start_flatten_arrayaccess:
               if (env.in_maybe_partial == 0) {
                 ResultUndefinedError warning(env, al->loc(), "array access out of bounds");
               }
-              ees.push_back(EE(NULL, constants().lit_false));
-              ees.push_back(EE(NULL, eev.b()));
+              ees.push_back(EE(nullptr, constants().lit_false));
+              ees.push_back(EE(nullptr, eev.b()));
               if (aa->type().isbool() && !aa->type().isopt()) {
                 ret.b = bind(env, Ctx(), b, constants().lit_true);
                 ret.r = conj(env, r, ctx, ees);
@@ -151,10 +151,10 @@ start_flatten_arrayaccess:
       al = eev.r()->cast<ArrayLit>();
     } else {
       Id* id = eev.r()->cast<Id>();
-      if (id->decl() == NULL) {
+      if (id->decl() == nullptr) {
         throw InternalError("undefined identifier");
       }
-      if (id->decl()->e() == NULL) {
+      if (id->decl()->e() == nullptr) {
         throw InternalError("array without initialiser not supported");
       }
       al = follow_id(id)->cast<ArrayLit>();
@@ -194,9 +194,9 @@ flatten_arrayaccess:
   for (unsigned int i = 0; i < aa->idx().size(); i++) {
     Expression* tmp = follow_id_to_decl(aa->idx()[i]);
     if (VarDecl* vd = tmp->dyn_cast<VarDecl>()) tmp = vd->id();
-    ees.push_back(flat_exp(env, dimctx, tmp, NULL, NULL));
+    ees.push_back(flat_exp(env, dimctx, tmp, nullptr, nullptr));
   }
-  ees.push_back(EE(NULL, eev.b()));
+  ees.push_back(EE(nullptr, eev.b()));
 
   bool parAccess = true;
   for (unsigned int i = 0; i < aa->idx().size(); i++) {
@@ -212,10 +212,10 @@ flatten_arrayaccess:
       al = eev.r()->cast<ArrayLit>();
     } else {
       Id* id = eev.r()->cast<Id>();
-      if (id->decl() == NULL) {
+      if (id->decl() == nullptr) {
         throw InternalError("undefined identifier");
       }
-      if (id->decl()->e() == NULL) {
+      if (id->decl()->e() == nullptr) {
         throw InternalError("array without initialiser not supported");
       }
       al = follow_id(id)->cast<ArrayLit>();
@@ -231,10 +231,10 @@ flatten_arrayaccess:
     if (!success && env.in_maybe_partial == 0) {
       ResultUndefinedError warning(env, al->loc(), "array access out of bounds");
     }
-    ees.push_back(EE(NULL, constants().boollit(success)));
+    ees.push_back(EE(nullptr, constants().boollit(success)));
     if (aa->type().isbool() && !aa->type().isopt()) {
       ret.b = bind(env, Ctx(), b, constants().lit_true);
-      ees.push_back(EE(NULL, ka()));
+      ees.push_back(EE(nullptr, ka()));
       ret.r = conj(env, r, ctx, ees);
     } else {
       ret.b = conj(env, b, ctx, ees);
@@ -250,7 +250,7 @@ flatten_arrayaccess:
       Call* cc = new Call(e->loc().introduce(), constants().ids.element, args);
       cc->type(aa->type());
       FunctionI* fi = env.model->matchFn(env, cc->id(), args, false);
-      if (fi == NULL) {
+      if (fi == nullptr) {
         throw FlatteningError(env, cc->loc(), "cannot find matching declaration");
       }
       assert(fi);
@@ -260,7 +260,7 @@ flatten_arrayaccess:
     }
     Ctx elemctx = ctx;
     elemctx.neg = false;
-    EE ee = flat_exp(env, elemctx, ka(), NULL, NULL);
+    EE ee = flat_exp(env, elemctx, ka(), nullptr, nullptr);
     ees.push_back(ee);
     if (aa->type().isbool() && !aa->type().isopt()) {
       ee.b = ee.r;

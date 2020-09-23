@@ -82,8 +82,8 @@ protected:
 public:
   FZN_SolverFactory(void);
   virtual SolverInstanceBase::Options* createOptions(void);
-  virtual std::string getDescription(SolverInstanceBase::Options* opt = NULL);
-  virtual std::string getVersion(SolverInstanceBase::Options* opt = NULL);
+  virtual std::string getDescription(SolverInstanceBase::Options* opt = nullptr);
+  virtual std::string getVersion(SolverInstanceBase::Options* opt = nullptr);
   virtual std::string getId(void);
   virtual bool processOption(SolverInstanceBase::Options* opt, int& i,
                              std::vector<std::string>& argv);

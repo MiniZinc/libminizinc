@@ -349,7 +349,7 @@ IntVal b_array_lb_int(EnvI& env, Call* call) {
     e = vd->e();
   }
 
-  if (e != NULL) {
+  if (e != nullptr) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
     if (al->size() == 0) throw EvalError(env, Location(), "lower bound of empty array undefined");
@@ -404,7 +404,7 @@ IntVal b_array_ub_int(EnvI& env, Call* call) {
     e = vd->e();
   }
 
-  if (e != NULL) {
+  if (e != nullptr) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
     if (al->size() == 0) throw EvalError(env, Location(), "upper bound of empty array undefined");
@@ -532,7 +532,7 @@ FloatVal b_array_lb_float(EnvI& env, Call* call) {
     e = vd->e();
   }
 
-  if (e != NULL) {
+  if (e != nullptr) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
     if (al->size() == 0) throw EvalError(env, Location(), "lower bound of empty array undefined");
@@ -579,7 +579,7 @@ FloatVal b_array_ub_float(EnvI& env, Call* call) {
     e = vd->e();
   }
 
-  if (e != NULL) {
+  if (e != nullptr) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
     if (al->size() == 0) throw EvalError(env, Location(), "upper bound of empty array undefined");
@@ -670,11 +670,12 @@ IntSetVal* b_index_set(EnvI& env, Expression* e, int i) {
     return IntSetVal::a(al->min(i - 1), al->max(i - 1));
   }
   Id* id = e->cast<Id>();
-  if (id->decl() == NULL) throw EvalError(env, id->loc(), "undefined identifier");
-  if ((id->decl()->ti()->ranges().size() == 1 && id->decl()->ti()->ranges()[0]->domain() != NULL &&
+  if (id->decl() == nullptr) throw EvalError(env, id->loc(), "undefined identifier");
+  if ((id->decl()->ti()->ranges().size() == 1 &&
+       id->decl()->ti()->ranges()[0]->domain() != nullptr &&
        id->decl()->ti()->ranges()[0]->domain()->isa<TIId>()) ||
       (static_cast<int>(id->decl()->ti()->ranges().size()) >= i &&
-       (id->decl()->ti()->ranges()[i - 1]->domain() == NULL ||
+       (id->decl()->ti()->ranges()[i - 1]->domain() == nullptr ||
         id->decl()->ti()->ranges()[i - 1]->domain()->isa<TIId>()))) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, id);
@@ -758,9 +759,9 @@ bool b_has_ub_set(EnvI& env, Call* call) {
         return true;
       case Expression::E_ID: {
         Id* id = e->cast<Id>();
-        if (id->decl() == NULL) throw EvalError(env, id->loc(), "undefined identifier");
-        if (id->decl()->e() == NULL)
-          return id->decl()->ti()->domain() != NULL;
+        if (id->decl() == nullptr) throw EvalError(env, id->loc(), "undefined identifier");
+        if (id->decl()->e() == nullptr)
+          return id->decl()->ti()->domain() != nullptr;
         else
           e = id->decl()->e();
       } break;
@@ -786,11 +787,11 @@ IntSetVal* b_array_ub_set(EnvI& env, Call* call) {
 }
 
 IntSetVal* b_dom_varint(EnvI& env, Expression* e) {
-  Id* lastid = NULL;
+  Id* lastid = nullptr;
   Expression* cur = e;
   for (;;) {
-    if (cur == NULL) {
-      if (lastid == NULL || lastid->decl()->ti()->domain() == NULL) {
+    if (cur == nullptr) {
+      if (lastid == nullptr || lastid->decl()->ti()->domain() == nullptr) {
         IntBounds b = compute_int_bounds(env, e);
         if (b.valid)
           return IntSetVal::a(b.l, b.u);
@@ -809,18 +810,18 @@ IntSetVal* b_dom_varint(EnvI& env, Expression* e) {
         lastid = cur->cast<Id>();
         if (lastid == constants().absent)
           return IntSetVal::a(-IntVal::infinity(), IntVal::infinity());
-        if (lastid->decl() == NULL) throw EvalError(env, lastid->loc(), "undefined identifier");
+        if (lastid->decl() == nullptr) throw EvalError(env, lastid->loc(), "undefined identifier");
         cur = lastid->decl()->e();
       } break;
       case Expression::E_ARRAYACCESS: {
         bool success;
         cur = eval_arrayaccess(env, cur->cast<ArrayAccess>(), success);
         if (!success) {
-          cur = NULL;
+          cur = nullptr;
         }
       } break;
       default:
-        cur = NULL;
+        cur = nullptr;
         break;
     }
   }
@@ -850,14 +851,14 @@ IntSetVal* b_dom_bounds_array(EnvI& env, Call* call) {
       }
     }
     e = vd->e();
-    if (e == NULL) e = vd->flat()->e();
+    if (e == nullptr) e = vd->flat()->e();
   }
 
   if (foundBounds) {
     return IntSetVal::a(array_lb, array_ub);
   }
 
-  if (e != NULL) {
+  if (e != nullptr) {
     GCLock lock;
     ArrayLit* al = eval_array_lit(env, e);
     if (al->size() == 0) throw EvalError(env, Location(), "lower bound of empty array undefined");
@@ -884,20 +885,20 @@ b_array_lb_int_done:
 IntSetVal* b_dom_array(EnvI& env, Call* call) {
   assert(call->n_args() == 1);
   Expression* ae = call->arg(0);
-  ArrayLit* al = NULL;
-  while (al == NULL) {
+  ArrayLit* al = nullptr;
+  while (al == nullptr) {
     switch (ae->eid()) {
       case Expression::E_ARRAYLIT:
         al = ae->cast<ArrayLit>();
         break;
       case Expression::E_ID: {
         Id* id = ae->cast<Id>();
-        if (id->decl() == NULL) throw EvalError(env, id->loc(), "undefined identifier");
-        if (id->decl()->e() == NULL) {
-          if (id->decl()->flat() == NULL) {
+        if (id->decl() == nullptr) throw EvalError(env, id->loc(), "undefined identifier");
+        if (id->decl()->e() == nullptr) {
+          if (id->decl()->flat() == nullptr) {
             throw EvalError(env, id->loc(), "array without initialiser");
           } else {
-            if (id->decl()->flat()->e() == NULL) {
+            if (id->decl()->flat()->e() == nullptr) {
               throw EvalError(env, id->loc(), "array without initialiser");
             }
             ae = id->decl()->flat()->e();
@@ -1116,7 +1117,7 @@ Expression* exp_is_fixed(EnvI& env, Expression* e) {
   GCLock lock;
   Expression* cur = e;
   for (;;) {
-    if (cur == NULL) return NULL;
+    if (cur == nullptr) return nullptr;
     if (cur->type().ispar()) return eval_par(env, cur);
     switch (cur->eid()) {
       case Expression::E_ID:
@@ -1142,14 +1143,14 @@ Expression* exp_is_fixed(EnvI& env, Expression* e) {
         cur = cur->cast<VarDecl>()->e();
         break;
       default:
-        return NULL;
+        return nullptr;
     }
   }
 }
 
 bool b_is_fixed(EnvI& env, Call* call) {
   assert(call->n_args() == 1);
-  return exp_is_fixed(env, call->arg(0)) != NULL;
+  return exp_is_fixed(env, call->arg(0)) != nullptr;
 }
 
 bool b_is_fixed_array(EnvI& env, Call* call) {
@@ -1158,7 +1159,7 @@ bool b_is_fixed_array(EnvI& env, Call* call) {
   ArrayLit* al = eval_array_lit(env, call->arg(0));
   if (al->size() == 0) return true;
   for (unsigned int i = 0; i < al->size(); i++) {
-    if (exp_is_fixed(env, (*al)[i]) == NULL) return false;
+    if (exp_is_fixed(env, (*al)[i]) == nullptr) return false;
   }
   return true;
 }
@@ -1171,7 +1172,7 @@ bool b_is_same(EnvI& env, Call* call) {
 Expression* b_fix(EnvI& env, Call* call) {
   assert(call->n_args() == 1);
   Expression* ret = exp_is_fixed(env, call->arg(0));
-  if (ret == NULL) throw EvalError(env, call->arg(0)->loc(), "expression is not fixed");
+  if (ret == nullptr) throw EvalError(env, call->arg(0)->loc(), "expression is not fixed");
   return ret;
 }
 
@@ -1187,7 +1188,7 @@ Expression* b_fix_array(EnvI& env, Call* call) {
   std::vector<Expression*> fixed(al->size());
   for (unsigned int i = 0; i < fixed.size(); i++) {
     fixed[i] = exp_is_fixed(env, (*al)[i]);
-    if (fixed[i] == NULL) throw EvalError(env, (*al)[i]->loc(), "expression is not fixed");
+    if (fixed[i] == nullptr) throw EvalError(env, (*al)[i]->loc(), "expression is not fixed");
   }
   ArrayLit* ret = new ArrayLit(Location(), fixed);
   Type tt = al->type();

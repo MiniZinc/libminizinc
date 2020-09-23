@@ -124,7 +124,7 @@ enum EnumVarType { VT_None, VT_Int, VT_Float };
 
 /// struct DomainCallType describes & characterizes a possible domain constr call
 struct DCT {
-  const char* sFuncName = 0;
+  const char* sFuncName = nullptr;
   const std::vector<Type>& aParams;
   //     unsigned iItem;          // call's item number in the flat
   EnumReifType nReifType = RIT_None;     // 0/static/halfreif/reif
@@ -147,7 +147,7 @@ struct DCT {
 template <class N>
 struct Interval {
   N left = infMinus(), right = infPlus();
-  mutable VarDecl* varFlag = 0;
+  mutable VarDecl* varFlag = nullptr;
   /*constexpr*/ static N infMinus() {
     return (std::numeric_limits<N>::has_infinity) ? -std::numeric_limits<N>::infinity()
                                                   : std::numeric_limits<N>::lowest();
@@ -314,7 +314,7 @@ public:
   }
 
 private:
-  Env* __env = 0;
+  Env* __env = nullptr;
   Env* getEnv() {
     MZN_MIPD__assert_hard(__env);
     return __env;
@@ -412,12 +412,12 @@ private:
     VarDescr(VarDecl* vd_, boolShort fi, double l_ = 0.0, double u_ = 0.0)
         : lb(l_), ub(u_), vd(vd_), fInt(fi) {}
     double lb, ub;
-    VarDecl* vd = 0;
+    VarDecl* vd = nullptr;
     int nClique = -1;  // clique number
                        //       std::vector<Call*> aCalls;
     std::vector<ConstraintI*> aCalls;
     boolShort fInt = 0;
-    ConstraintI* pEqEncoding = 0;
+    ConstraintI* pEqEncoding = nullptr;
     boolShort fDomainConstrProcessed = 0;
     //       boolShort fPropagatedViews=0;
     //       boolShort fPropagatedLargerEqns=0;
@@ -425,12 +425,14 @@ private:
 
   std::vector<VarDescr> vVarDescr;
 
-  FunctionI *int_le_reif__POST = 0, *int_ge_reif__POST = 0, *int_eq_reif__POST = 0,
-            *int_ne__POST = 0, *float_le_reif__POST = 0, *float_ge_reif__POST = 0,
-            *aux_float_lt_zero_iff_1__POST = 0, *float_eq_reif__POST = 0, *float_ne__POST = 0,
-            *aux_float_eq_zero_if_1__POST = 0, *aux_int_le_zero_if_1__POST = 0,
-            *aux_float_le_zero_if_1__POST = 0, *aux_float_lt_zero_if_1__POST = 0,
-            *equality_encoding__POST = 0, *set_in__POST = 0, *set_in_reif__POST = 0;
+  FunctionI *int_le_reif__POST = nullptr, *int_ge_reif__POST = nullptr,
+            *int_eq_reif__POST = nullptr, *int_ne__POST = nullptr, *float_le_reif__POST = nullptr,
+            *float_ge_reif__POST = nullptr, *aux_float_lt_zero_iff_1__POST = nullptr,
+            *float_eq_reif__POST = nullptr, *float_ne__POST = nullptr,
+            *aux_float_eq_zero_if_1__POST = nullptr, *aux_int_le_zero_if_1__POST = nullptr,
+            *aux_float_le_zero_if_1__POST = nullptr, *aux_float_lt_zero_if_1__POST = nullptr,
+            *equality_encoding__POST = nullptr, *set_in__POST = nullptr,
+            *set_in_reif__POST = nullptr;
 
   bool register__POSTconstraintDecls() {
     EnvI& env = getEnv()->envi();
@@ -482,7 +484,7 @@ private:
         //         fi->pPayload = (void*)this;
         //         std::cerr << "  FOund declaration: " << aCT[i].sFuncName << std::endl;
       } else {
-        aCT[i].pfi = 0;
+        aCT[i].pfi = nullptr;
         DBGOUT_MIPD("  MIssing declaration: " << aCT[i].sFuncName);
         return false;
       }
@@ -534,7 +536,7 @@ private:
           MZN_MIPD__assert_hard(c->n_args() > 1);
           ++MIPD__stats[N_POSTs__all];
           VarDecl* vd0 = expr2VarDecl(c->arg(0));
-          if (0 == vd0) {
+          if (nullptr == vd0) {
             DBGOUT_MIPD__("  Call " << *c << ": 1st arg not a VarDecl, removing if eq_encoding...");
             /// Only allow literals as main argument for equality_encoding
             if (equality_encoding__POST ==
@@ -760,7 +762,7 @@ private:
   typedef std::vector<std::pair<VarDecl*, float> > TLinExpLin;
   /// This struct has data describing the rest of a general view
   struct NViewData {
-    VarDecl* pVarDefined = 0;
+    VarDecl* pVarDefined = nullptr;
     double coef0 = 1.0;
     double rhs;
   };
@@ -914,9 +916,9 @@ private:
     const int iVarStart;  // this is the first var to which all others are related
   public:
     //       VarDecl* varRef0=0;  // this is the first var to which all others are related
-    VarDecl* varRef1 = 0;  // this is the 2nd main reference.
-                           // it is a var with eq_encode, ||
-                           // an (integer if any) variable with the least rel. factor
+    VarDecl* varRef1 = nullptr;  // this is the 2nd main reference.
+                                 // it is a var with eq_encode, ||
+                                 // an (integer if any) variable with the least rel. factor
     bool fRef1HasEqEncode = false;
     /// This map stores the relations y = ax+b of all the clique's vars to y
     typedef std::unordered_map<VarDecl*, std::pair<double, double> > TMapVars;
@@ -1045,11 +1047,11 @@ private:
       varRef1 = leg.begin()->first;
       std::array<double, 3> aCrit = {
           {(double)mipd.vVarDescr[varRef1->payload()].fInt,
-           static_cast<double>(mipd.vVarDescr[varRef1->payload()].pEqEncoding != NULL), 1.0}};
+           static_cast<double>(mipd.vVarDescr[varRef1->payload()].pEqEncoding != nullptr), 1.0}};
       for (auto it2 = mRef0.begin(); it2 != mRef0.end(); ++it2) {
         VarDescr& vard = mipd.vVarDescr[it2->first->payload()];
         std::array<double, 3> aCrit1 = {{(double)vard.fInt,
-                                         static_cast<double>(vard.pEqEncoding != NULL),
+                                         static_cast<double>(vard.pEqEncoding != nullptr),
                                          std::fabs(it2->second.first)}};
         if (aCrit1 > aCrit) {
           varRef1 = it2->first;
@@ -1084,7 +1086,7 @@ private:
 
       int iVarRef1 = cls.varRef1->payload();
       MZN_MIPD__assert_hard(nClique == mipd.vVarDescr[iVarRef1].nClique);
-      cls.fRef1HasEqEncode = (mipd.vVarDescr[iVarRef1].pEqEncoding != NULL);
+      cls.fRef1HasEqEncode = (mipd.vVarDescr[iVarRef1].pEqEncoding != nullptr);
 
       // First, construct the domain decomposition in any case
       //         projectVariableConstr( cls.varRef1, std::make_pair(1.0, 0.0) );
@@ -1171,7 +1173,7 @@ private:
         //           /// Deleting var domain:
         //           vd->ti()->domain( NULL );
       } else {
-        if (NULL == vd->ti()->domain() && !vd->type().isbool()) {
+        if (nullptr == vd->ti()->domain() && !vd->type().isbool()) {
           lb = IntvReal::infMinus();
           ub = IntvReal::infPlus();
         }
@@ -1711,7 +1713,7 @@ private:
               Call* i2f = new Call(Location().introduce(), constants().ids.int2float, i2f_args);
               i2f->type(Type::varfloat());
               i2f->decl(mipd.getEnv()->model()->matchFn(mipd.getEnv()->envi(), i2f, false));
-              EE ret = flat_exp(mipd.getEnv()->envi(), Ctx(), i2f, NULL, constants().var_true);
+              EE ret = flat_exp(mipd.getEnv()->envi(), Ctx(), i2f, nullptr, constants().var_true);
               nx.push_back(ret.r());
             } else {
               nx.push_back(vars[i]);  // ->id();   once passing a general expression

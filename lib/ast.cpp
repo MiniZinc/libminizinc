@@ -125,7 +125,7 @@ void Expression::addAnnotations(std::vector<Expression*> ann) {
     }                                                             \
   } while (0)
 void Expression::mark(Expression* e) {
-  if (e == NULL || e->isUnboxedVal()) return;
+  if (e == nullptr || e->isUnboxedVal()) return;
   std::vector<const Expression*> stack;
   stack.reserve(1000);
   stack.push_back(e);
@@ -468,7 +468,7 @@ void ArrayAccess::rehash(void) {
 
 Generator::Generator(const std::vector<ASTString>& v, Expression* in, Expression* where) {
   std::vector<VarDecl*> vd;
-  Location loc = in == NULL ? where->loc() : in->loc();
+  Location loc = in == nullptr ? where->loc() : in->loc();
   for (unsigned int i = 0; i < v.size(); i++) {
     VarDecl* nvd = new VarDecl(loc, new TypeInst(loc, Type::parint()), v[i]);
     nvd->toplevel(false);
@@ -491,7 +491,7 @@ Generator::Generator(const std::vector<Id*>& v, Expression* in, Expression* wher
 }
 Generator::Generator(const std::vector<std::string>& v, Expression* in, Expression* where) {
   std::vector<VarDecl*> vd;
-  Location loc = in == NULL ? where->loc() : in->loc();
+  Location loc = in == nullptr ? where->loc() : in->loc();
   for (unsigned int i = 0; i < v.size(); i++) {
     VarDecl* nvd = new VarDecl(loc, new TypeInst(loc, Type::parint()), ASTString(v[i]));
     nvd->toplevel(false);
@@ -638,35 +638,35 @@ public:
   OpToString(void) {
     GCLock lock;
 
-    sBOT_PLUS = new Id(Location(), "'+'", NULL);
-    sBOT_MINUS = new Id(Location(), "'-'", NULL);
-    sBOT_MULT = new Id(Location(), "'*'", NULL);
-    sBOT_DIV = new Id(Location(), "'/'", NULL);
-    sBOT_IDIV = new Id(Location(), "'div'", NULL);
-    sBOT_MOD = new Id(Location(), "'mod'", NULL);
-    sBOT_POW = new Id(Location(), "'^'", NULL);
-    sBOT_LE = new Id(Location(), "'<'", NULL);
-    sBOT_LQ = new Id(Location(), "'<='", NULL);
-    sBOT_GR = new Id(Location(), "'>'", NULL);
-    sBOT_GQ = new Id(Location(), "'>='", NULL);
-    sBOT_EQ = new Id(Location(), "'='", NULL);
-    sBOT_NQ = new Id(Location(), "'!='", NULL);
-    sBOT_IN = new Id(Location(), "'in'", NULL);
-    sBOT_SUBSET = new Id(Location(), "'subset'", NULL);
-    sBOT_SUPERSET = new Id(Location(), "'superset'", NULL);
-    sBOT_UNION = new Id(Location(), "'union'", NULL);
-    sBOT_DIFF = new Id(Location(), "'diff'", NULL);
-    sBOT_SYMDIFF = new Id(Location(), "'symdiff'", NULL);
-    sBOT_INTERSECT = new Id(Location(), "'intersect'", NULL);
-    sBOT_PLUSPLUS = new Id(Location(), "'++'", NULL);
-    sBOT_EQUIV = new Id(Location(), "'<->'", NULL);
-    sBOT_IMPL = new Id(Location(), "'->'", NULL);
-    sBOT_RIMPL = new Id(Location(), "'<-'", NULL);
-    sBOT_OR = new Id(Location(), "'\\/'", NULL);
-    sBOT_AND = new Id(Location(), "'/\\'", NULL);
-    sBOT_XOR = new Id(Location(), "'xor'", NULL);
-    sBOT_DOTDOT = new Id(Location(), "'..'", NULL);
-    sBOT_NOT = new Id(Location(), "'not'", NULL);
+    sBOT_PLUS = new Id(Location(), "'+'", nullptr);
+    sBOT_MINUS = new Id(Location(), "'-'", nullptr);
+    sBOT_MULT = new Id(Location(), "'*'", nullptr);
+    sBOT_DIV = new Id(Location(), "'/'", nullptr);
+    sBOT_IDIV = new Id(Location(), "'div'", nullptr);
+    sBOT_MOD = new Id(Location(), "'mod'", nullptr);
+    sBOT_POW = new Id(Location(), "'^'", nullptr);
+    sBOT_LE = new Id(Location(), "'<'", nullptr);
+    sBOT_LQ = new Id(Location(), "'<='", nullptr);
+    sBOT_GR = new Id(Location(), "'>'", nullptr);
+    sBOT_GQ = new Id(Location(), "'>='", nullptr);
+    sBOT_EQ = new Id(Location(), "'='", nullptr);
+    sBOT_NQ = new Id(Location(), "'!='", nullptr);
+    sBOT_IN = new Id(Location(), "'in'", nullptr);
+    sBOT_SUBSET = new Id(Location(), "'subset'", nullptr);
+    sBOT_SUPERSET = new Id(Location(), "'superset'", nullptr);
+    sBOT_UNION = new Id(Location(), "'union'", nullptr);
+    sBOT_DIFF = new Id(Location(), "'diff'", nullptr);
+    sBOT_SYMDIFF = new Id(Location(), "'symdiff'", nullptr);
+    sBOT_INTERSECT = new Id(Location(), "'intersect'", nullptr);
+    sBOT_PLUSPLUS = new Id(Location(), "'++'", nullptr);
+    sBOT_EQUIV = new Id(Location(), "'<->'", nullptr);
+    sBOT_IMPL = new Id(Location(), "'->'", nullptr);
+    sBOT_RIMPL = new Id(Location(), "'<-'", nullptr);
+    sBOT_OR = new Id(Location(), "'\\/'", nullptr);
+    sBOT_AND = new Id(Location(), "'/\\'", nullptr);
+    sBOT_XOR = new Id(Location(), "'xor'", nullptr);
+    sBOT_DOTDOT = new Id(Location(), "'..'", nullptr);
+    sBOT_NOT = new Id(Location(), "'not'", nullptr);
   }
 
   static OpToString& o(void) {
@@ -1248,11 +1248,11 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
     case Expression::E_ID: {
       const Id* id0 = e0->cast<Id>();
       const Id* id1 = e1->cast<Id>();
-      if (id0->decl() == NULL || id1->decl() == NULL) {
+      if (id0->decl() == nullptr || id1->decl() == nullptr) {
         return id0->v() == id1->v() && id0->idn() == id1->idn();
       }
       return id0->decl() == id1->decl() ||
-             (id0->decl()->flat() != NULL && id0->decl()->flat() == id1->decl()->flat());
+             (id0->decl()->flat() != nullptr && id0->decl()->flat() == id1->decl()->flat());
     }
     case Expression::E_ANON:
       return false;
@@ -1373,7 +1373,7 @@ Constants::Constants(void) {
   lit_false = new BoolLit(Location(), false);
   var_false = new VarDecl(Location(), ti, "_bool_false", lit_false);
   var_ignore = new VarDecl(Location(), ti, "_bool_ignore");
-  absent = new Id(Location(), "_absent", NULL);
+  absent = new Id(Location(), "_absent", nullptr);
   var_redef = new FunctionI(Location(), "__internal_var_redef",
                             new TypeInst(Location(), Type::varbool()), std::vector<VarDecl*>());
   Type absent_t;
@@ -1487,53 +1487,53 @@ Constants::Constants(void) {
   ids.introduced_var = ASTString("__INTRODUCED");
   ids.anonEnumFromStrings = ASTString("anon_enum");
 
-  ctx.root = new Id(Location(), ASTString("ctx_root"), NULL);
+  ctx.root = new Id(Location(), ASTString("ctx_root"), nullptr);
   ctx.root->type(Type::ann());
-  ctx.pos = new Id(Location(), ASTString("ctx_pos"), NULL);
+  ctx.pos = new Id(Location(), ASTString("ctx_pos"), nullptr);
   ctx.pos->type(Type::ann());
-  ctx.neg = new Id(Location(), ASTString("ctx_neg"), NULL);
+  ctx.neg = new Id(Location(), ASTString("ctx_neg"), nullptr);
   ctx.neg->type(Type::ann());
-  ctx.mix = new Id(Location(), ASTString("ctx_mix"), NULL);
+  ctx.mix = new Id(Location(), ASTString("ctx_mix"), nullptr);
   ctx.mix->type(Type::ann());
 
-  ann.output_var = new Id(Location(), ASTString("output_var"), NULL);
+  ann.output_var = new Id(Location(), ASTString("output_var"), nullptr);
   ann.output_var->type(Type::ann());
-  ann.output_only = new Id(Location(), ASTString("output_only"), NULL);
+  ann.output_only = new Id(Location(), ASTString("output_only"), nullptr);
   ann.output_only->type(Type::ann());
   ann.output_array = ASTString("output_array");
-  ann.add_to_output = new Id(Location(), ASTString("add_to_output"), NULL);
+  ann.add_to_output = new Id(Location(), ASTString("add_to_output"), nullptr);
   ann.add_to_output->type(Type::ann());
-  ann.mzn_check_var = new Id(Location(), ASTString("mzn_check_var"), NULL);
+  ann.mzn_check_var = new Id(Location(), ASTString("mzn_check_var"), nullptr);
   ann.mzn_check_var->type(Type::ann());
   ann.mzn_check_enum_var = ASTString("mzn_check_enum_var");
-  ann.is_defined_var = new Id(Location(), ASTString("is_defined_var"), NULL);
+  ann.is_defined_var = new Id(Location(), ASTString("is_defined_var"), nullptr);
   ann.is_defined_var->type(Type::ann());
   ann.defines_var = ASTString("defines_var");
-  ann.is_reverse_map = new Id(Location(), ASTString("is_reverse_map"), NULL);
+  ann.is_reverse_map = new Id(Location(), ASTString("is_reverse_map"), nullptr);
   ann.is_reverse_map->type(Type::ann());
-  ann.promise_total = new Id(Location(), ASTString("promise_total"), NULL);
+  ann.promise_total = new Id(Location(), ASTString("promise_total"), nullptr);
   ann.promise_total->type(Type::ann());
-  ann.maybe_partial = new Id(Location(), ASTString("maybe_partial"), NULL);
+  ann.maybe_partial = new Id(Location(), ASTString("maybe_partial"), nullptr);
   ann.maybe_partial->type(Type::ann());
   ann.doc_comment = ASTString("doc_comment");
   ann.mzn_path = ASTString("mzn_path");
   ann.is_introduced = ASTString("is_introduced");
-  ann.user_cut = new Id(Location(), ASTString("user_cut"), NULL);
+  ann.user_cut = new Id(Location(), ASTString("user_cut"), nullptr);
   ann.user_cut->type(Type::ann());
-  ann.lazy_constraint = new Id(Location(), ASTString("lazy_constraint"), NULL);
+  ann.lazy_constraint = new Id(Location(), ASTString("lazy_constraint"), nullptr);
   ann.lazy_constraint->type(Type::ann());
 #ifndef NDEBUG
-  ann.mzn_break_here = new Id(Location(), ASTString("mzn_break_here"), NULL);
+  ann.mzn_break_here = new Id(Location(), ASTString("mzn_break_here"), nullptr);
   ann.mzn_break_here->type(Type::ann());
 #endif
-  ann.rhs_from_assignment = new Id(Location(), ASTString("mzn_rhs_from_assignment"), NULL);
+  ann.rhs_from_assignment = new Id(Location(), ASTString("mzn_rhs_from_assignment"), nullptr);
   ann.rhs_from_assignment->type(Type::ann());
-  ann.domain_change_constraint = new Id(Location(), ASTString("domain_change_constraint"), NULL);
+  ann.domain_change_constraint = new Id(Location(), ASTString("domain_change_constraint"), nullptr);
   ann.domain_change_constraint->type(Type::ann());
   ann.mzn_deprecated = ASTString("mzn_deprecated");
-  ann.mzn_was_undefined = new Id(Location(), ASTString("mzn_was_undefined"), NULL);
+  ann.mzn_was_undefined = new Id(Location(), ASTString("mzn_was_undefined"), nullptr);
   ann.mzn_was_undefined->type(Type::ann());
-  ann.array_check_form = new Id(Location(), ASTString("array_check_form"), NULL);
+  ann.array_check_form = new Id(Location(), ASTString("array_check_form"), nullptr);
   ann.array_check_form->type(Type::ann());
 
   cli.cmdlineData_short_str = ASTString("-D");
@@ -1845,23 +1845,23 @@ Annotation::~Annotation(void) { delete _s; }
 
 bool Annotation::contains(Expression* e) const { return _s && _s->contains(e); }
 
-bool Annotation::isEmpty(void) const { return _s == NULL || _s->isEmpty(); }
+bool Annotation::isEmpty(void) const { return _s == nullptr || _s->isEmpty(); }
 
 ExpressionSetIter Annotation::begin(void) const {
-  return _s == NULL ? ExpressionSetIter(true) : _s->begin();
+  return _s == nullptr ? ExpressionSetIter(true) : _s->begin();
 }
 
 ExpressionSetIter Annotation::end(void) const {
-  return _s == NULL ? ExpressionSetIter(true) : _s->end();
+  return _s == nullptr ? ExpressionSetIter(true) : _s->end();
 }
 
 void Annotation::add(Expression* e) {
-  if (_s == NULL) _s = new ExpressionSet;
+  if (_s == nullptr) _s = new ExpressionSet;
   if (e) _s->insert(e);
 }
 
 void Annotation::add(std::vector<Expression*> e) {
-  if (_s == NULL) _s = new ExpressionSet;
+  if (_s == nullptr) _s = new ExpressionSet;
   for (unsigned int i = static_cast<unsigned int>(e.size()); i--;)
     if (e[i]) _s->insert(e[i]);
 }
@@ -1873,7 +1873,7 @@ void Annotation::remove(Expression* e) {
 }
 
 void Annotation::removeCall(const ASTString& id) {
-  if (_s == NULL) return;
+  if (_s == nullptr) return;
   std::vector<Expression*> toRemove;
   for (ExpressionSetIter it = _s->begin(); it != _s->end(); ++it) {
     if (Call* c = (*it)->dyn_cast<Call>()) {
@@ -1884,17 +1884,17 @@ void Annotation::removeCall(const ASTString& id) {
 }
 
 Call* Annotation::getCall(const ASTString& id) const {
-  if (_s == NULL) return NULL;
+  if (_s == nullptr) return nullptr;
   for (ExpressionSetIter it = _s->begin(); it != _s->end(); ++it) {
     if (Call* c = (*it)->dyn_cast<Call>()) {
       if (c->id() == id) return c;
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 bool Annotation::containsCall(const MiniZinc::ASTString& id) const {
-  if (_s == NULL) return false;
+  if (_s == nullptr) return false;
   for (ExpressionSetIter it = _s->begin(); it != _s->end(); ++it) {
     if (Call* c = (*it)->dyn_cast<Call>()) {
       if (c->id() == id) return true;
@@ -1910,8 +1910,8 @@ void Annotation::clear(void) {
 }
 
 void Annotation::merge(const Annotation& ann) {
-  if (ann._s == NULL) return;
-  if (_s == NULL) {
+  if (ann._s == nullptr) return;
+  if (_s == nullptr) {
     _s = new ExpressionSet;
   }
   for (ExpressionSetIter it = ann.begin(); it != ann.end(); ++it) {
@@ -1927,7 +1927,7 @@ Expression* getAnnotation(const Annotation& ann, std::string str) {
       return e;
     }
   }
-  return NULL;
+  return nullptr;
 }
 Expression* getAnnotation(const Annotation& ann, const ASTString& str) {
   for (ExpressionSetIter i = ann.begin(); i != ann.end(); ++i) {
@@ -1936,6 +1936,6 @@ Expression* getAnnotation(const Annotation& ann, const ASTString& str) {
         (e->isa<Call>() && e->cast<Call>()->id() == str))
       return e;
   }
-  return NULL;
+  return nullptr;
 }
 }  // namespace MiniZinc

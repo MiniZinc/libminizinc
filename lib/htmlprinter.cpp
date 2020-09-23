@@ -161,7 +161,7 @@ public:
         }
       }
       oss << "</ul>\n";
-      if (parent == NULL && generateIndex) {
+      if (parent == nullptr && generateIndex) {
         oss << "<p><a href='doc-index.html'>Index</a></p>\n";
       }
       if (items.size() > 0) oss << "<p>Declarations in this section:</p>\n";
@@ -723,7 +723,7 @@ public:
             bool sameParams = true;
             for (unsigned int i = 0; i < f_body->params().size(); i++) {
               Id* ident = c->arg(i)->dyn_cast<Id>();
-              if (ident == NULL || ident->decl() != f_body->params()[i] ||
+              if (ident == nullptr || ident->decl() != f_body->params()[i] ||
                   ident->str() != c->decl()->params()[i]->id()->str()) {
                 sameParams = false;
                 break;
@@ -836,7 +836,7 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
   std::vector<IndexEntry> index;
 
   std::vector<SI> stack;
-  stack.push_back(SI(&g, NULL, 0, 0));
+  stack.push_back(SI(&g, nullptr, 0, 0));
   while (!stack.empty()) {
     Group& g = *stack.back().g;
     int curLevel = stack.back().level;
@@ -1238,7 +1238,7 @@ public:
             bool sameParams = true;
             for (unsigned int i = 0; i < f_body->params().size(); i++) {
               Id* ident = c->arg(i)->dyn_cast<Id>();
-              if (ident == NULL || ident->decl() != f_body->params()[i] ||
+              if (ident == nullptr || ident->decl() != f_body->params()[i] ||
                   ident->str() != c->decl()->params()[i]->id()->str()) {
                 sameParams = false;
                 break;

@@ -81,7 +81,7 @@ public:
       : vo(vo0), vd(vd0), item(item0) {}
 
   static bool varIsFree(VarDecl* vd) {
-    if (vd->e() == NULL || vd->ti()->domain() == NULL || vd->ti()->computedDomain()) {
+    if (vd->e() == nullptr || vd->ti()->domain() == nullptr || vd->ti()->computedDomain()) {
       return true;
     } else {
       /// TODO: test if id's domain is a superset of the right hand side

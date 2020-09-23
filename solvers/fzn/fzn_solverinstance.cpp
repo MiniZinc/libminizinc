@@ -294,7 +294,7 @@ SolverInstance::Status FZNSolverInstance::solve(void) {
   p.print(_fzn->solveItem());
   cmd_line.push_back(fznFile.name());
 
-  FileUtils::TmpFile* pathsFile = NULL;
+  FileUtils::TmpFile* pathsFile = nullptr;
   if (opt.fzn_needs_paths) {
     pathsFile = new FileUtils::TmpFile(".paths");
     std::ofstream ofs(FILE_PATH(pathsFile->name()));
@@ -325,6 +325,6 @@ void FZNSolverInstance::resetSolver(void) {}
 
 Expression* FZNSolverInstance::getSolutionValue(Id* id) {
   assert(false);
-  return NULL;
+  return nullptr;
 }
 }  // namespace MiniZinc

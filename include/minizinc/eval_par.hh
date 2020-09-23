@@ -109,14 +109,14 @@ void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, Int
   CallStackItem csi(env, e->decl(gen, id)->id(), i);
   if (id == e->n_decls(gen) - 1) {
     bool where = true;
-    if (e->where(gen) != NULL && !e->where(gen)->type().isvar()) {
+    if (e->where(gen) != nullptr && !e->where(gen)->type().isvar()) {
       where = eval.eval_bool_cv(env, e->where(gen));
     }
     if (where) {
       if (gen == e->n_generators() - 1) {
         a.push_back(eval.e(env, e->e()));
       } else {
-        if (e->in(gen + 1) == NULL) {
+        if (e->in(gen + 1) == nullptr) {
           eval_comp_array<Eval>(env, eval, e, gen + 1, 0, 0, e->in(gen + 1), a);
         } else {
           KeepAlive nextin;
@@ -143,7 +143,7 @@ void eval_comp_set(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, Int
     eval_comp_set<Eval>(env, eval, e, gen, id + 1, in, a);
   }
   GC::untrail();
-  e->decl(gen, id)->flat(NULL);
+  e->decl(gen, id)->flat(nullptr);
 }
 
 template <class Eval>
@@ -152,7 +152,7 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
   GC::mark();
   e->decl(gen, id)->trail();
   CallStackItem csi(env, e->decl(gen, id)->id(), i);
-  if (in() == NULL) {
+  if (in() == nullptr) {
     // this is an assignment generator
     Expression* asn = e->where(gen)->type().ispar() ? eval_par(env, e->where(gen))
                                                     : eval.flatten(env, e->where(gen));
@@ -165,14 +165,14 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
   }
   if (id == e->n_decls(gen) - 1) {
     bool where = true;
-    if (e->in(gen) != NULL && e->where(gen) != NULL && !e->where(gen)->type().isvar()) {
+    if (e->in(gen) != nullptr && e->where(gen) != nullptr && !e->where(gen)->type().isvar()) {
       where = eval.eval_bool_cv(env, e->where(gen));
     }
     if (where) {
       if (gen == e->n_generators() - 1) {
         a.push_back(eval.e(env, e->e()));
       } else {
-        if (e->in(gen + 1) == NULL) {
+        if (e->in(gen + 1) == nullptr) {
           eval_comp_array<Eval>(env, eval, e, gen + 1, 0, 0, e->in(gen + 1), a);
         } else {
           KeepAlive nextin;
@@ -199,7 +199,7 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, I
     eval_comp_array<Eval>(env, eval, e, gen, id + 1, in, a);
   }
   GC::untrail();
-  e->decl(gen, id)->flat(NULL);
+  e->decl(gen, id)->flat(nullptr);
 }
 
 /**
@@ -250,7 +250,7 @@ void eval_comp_array(EnvI& env, Eval& eval, Comprehension* e, int gen, int id, K
 template <class Eval>
 std::vector<typename Eval::ArrayVal> eval_comp(EnvI& env, Eval& eval, Comprehension* e) {
   std::vector<typename Eval::ArrayVal> a;
-  if (e->in(0) == NULL) {
+  if (e->in(0) == nullptr) {
     eval_comp_array<Eval>(env, eval, e, 0, 0, 0, e->in(0), a);
   } else {
     KeepAlive in;

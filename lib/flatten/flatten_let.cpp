@@ -24,16 +24,16 @@ EE flatten_let(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   for (unsigned int i = 0; i < let->let().size(); i++) {
     Expression* le = let->let()[i];
     if (VarDecl* vd = le->dyn_cast<VarDecl>()) {
-      Expression* let_e = NULL;
+      Expression* let_e = nullptr;
       if (vd->e()) {
         Ctx nctx = ctx;
         nctx.neg = false;
         if (vd->e()->type().bt() == Type::BT_BOOL) nctx.b = C_MIX;
 
-        EE ee = flat_exp(env, nctx, vd->e(), NULL, NULL);
+        EE ee = flat_exp(env, nctx, vd->e(), nullptr, nullptr);
         let_e = ee.r();
         cs.push_back(ee);
-        if (vd->ti()->domain() != NULL) {
+        if (vd->ti()->domain() != nullptr) {
           GCLock lock;
           std::vector<Expression*> domargs(2);
           domargs[0] = ee.r();
@@ -51,9 +51,10 @@ EE flatten_let(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
           Call* c = new Call(vd->ti()->loc().introduce(), "var_dom", domargs);
           c->type(Type::varbool());
           c->decl(env.model->matchFn(env, c, false));
-          if (c->decl() == NULL) throw InternalError("no matching declaration found for var_dom");
-          VarDecl* b_b = (nctx.b == C_ROOT && b == constants().var_true) ? b : NULL;
-          VarDecl* r_r = (nctx.b == C_ROOT && b == constants().var_true) ? b : NULL;
+          if (c->decl() == nullptr)
+            throw InternalError("no matching declaration found for var_dom");
+          VarDecl* b_b = (nctx.b == C_ROOT && b == constants().var_true) ? b : nullptr;
+          VarDecl* r_r = (nctx.b == C_ROOT && b == constants().var_true) ? b : nullptr;
           ee = flat_exp(env, nctx, c, r_r, b_b);
           cs.push_back(ee);
           ee.b = ee.r;
@@ -71,7 +72,7 @@ EE flatten_let(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         CallStackItem csi_vd(env, vd);
         GCLock lock;
         TypeInst* ti = eval_typeinst(env, ctx, vd);
-        VarDecl* nvd = newVarDecl(env, ctx, ti, NULL, vd, NULL);
+        VarDecl* nvd = newVarDecl(env, ctx, ti, nullptr, vd, nullptr);
         let_e = nvd->id();
       }
       vd->e(let_e);
@@ -85,7 +86,7 @@ EE flatten_let(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       if (ctx.b == C_ROOT || le->ann().contains(constants().ann.promise_total)) {
         (void)flat_exp(env, Ctx(), le, constants().var_true, constants().var_true);
       } else {
-        EE ee = flat_exp(env, ctx, le, NULL, constants().var_true);
+        EE ee = flat_exp(env, ctx, le, nullptr, constants().var_true);
         ee.b = ee.r;
         cs.push_back(ee);
       }
@@ -101,11 +102,11 @@ EE flatten_let(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     VarDecl* bb = b;
     for (EE& ee : cs) {
       if (ee.b() != constants().lit_true) {
-        bb = NULL;
+        bb = nullptr;
         break;
       }
     }
-    EE ee = flat_exp(env, nctx, let->in(), NULL, bb);
+    EE ee = flat_exp(env, nctx, let->in(), nullptr, bb);
     if (let->type().isbool() && !let->type().isopt()) {
       ee.b = ee.r;
       cs.push_back(ee);

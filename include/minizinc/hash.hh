@@ -44,7 +44,7 @@ public:
       typename std::unordered_map<Expression*, T, ExpressionHash, ExpressionEq>::iterator iterator;
   /// Insert mapping from \a e to \a t
   iterator insert(Expression* e, const T& t) {
-    assert(e != NULL);
+    assert(e != nullptr);
     return _m.insert(std::pair<Expression*, T>(e, t)).first;
   }
   /// Find \a e in map
@@ -82,7 +82,7 @@ public:
   typedef typename std::unordered_map<Id*, T, ExpressionHash, IdEq>::iterator iterator;
   /// Insert mapping from \a e to \a t
   void insert(Id* e, const T& t) {
-    assert(e != NULL);
+    assert(e != nullptr);
     _m.insert(std::pair<Id*, T>(e, t));
   }
   /// Find \a e in map
@@ -135,7 +135,7 @@ public:
   typedef typename std::unordered_map<KeepAlive, T, KAHash, KAEq>::iterator iterator;
   /// Insert mapping from \a e to \a t
   void insert(KeepAlive& e, const T& t) {
-    assert(e() != NULL);
+    assert(e() != nullptr);
     _m.insert(std::pair<KeepAlive, T>(e, t));
   }
   /// Find \a e in map
@@ -180,7 +180,7 @@ protected:
 public:
   /// Insert \a e
   void insert(Expression* e) {
-    assert(e != NULL);
+    assert(e != nullptr);
     _s.insert(e);
   }
   /// Find \a e in map

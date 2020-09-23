@@ -19,8 +19,8 @@
 #include <ilcplex/cplex.h>  // add -DCPLEX_STUDIO_DIR=/opt/ibm/ILOG/CPLEX_Studio1261 to the 1st call of cmake
 
 class MIP_cplex_wrapper : public MIP_wrapper {
-  CPXENVptr env = 0;
-  CPXLPptr lp = 0;
+  CPXENVptr env = nullptr;
+  CPXLPptr lp = nullptr;
 
   int status;
   char cplex_buffer[CPXMESSAGEBUFSIZE];
@@ -63,8 +63,8 @@ public:
   MIP_cplex_wrapper(Options* opt) : options(opt) { openCPLEX(); }
   virtual ~MIP_cplex_wrapper() { closeCPLEX(); }
 
-  static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = NULL);
-  static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = NULL);
+  static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
   static std::string getId(void);
   static std::string getName(void);
   static std::vector<std::string> getTags(void);

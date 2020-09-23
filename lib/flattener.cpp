@@ -470,7 +470,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     std::stringstream errstream;
 
     Model* m;
-    pEnv.reset(new Env(NULL, os, log));
+    pEnv.reset(new Env(nullptr, os, log));
     Env* env = getEnv();
 
     if (!flag_compile_solution_check_model && !flag_solution_check_model.empty()) {
@@ -508,7 +508,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           }
           for (unsigned int i = 0; i < smm->size(); i++) {
             if (VarDeclI* vdi = (*smm)[i]->dyn_cast<VarDeclI>()) {
-              if (vdi->e()->e() == NULL)
+              if (vdi->e()->e() == nullptr)
                 env->envi().checkVars.push_back(vdi->e());
               else if (vdi->e()->ann().contains(constants().ann.rhs_from_assignment)) {
                 smm_stats_oss << *vdi;
@@ -518,7 +518,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           smm->compact();
           std::string smm_compressed =
               FileUtils::encodeBase64(FileUtils::deflateString(smm_oss.str()));
-          TypeInst* ti = new TypeInst(Location().introduce(), Type::parstring(), NULL);
+          TypeInst* ti = new TypeInst(Location().introduce(), Type::parstring(), nullptr);
           VarDecl* checkString =
               new VarDecl(Location().introduce(), ti, ASTString("_mzn_solution_checker"),
                           new StringLit(Location().introduce(), smm_compressed));
@@ -537,7 +537,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
                                "nodes,mzn_stats_time)];\n";
               std::string smm_stats_compressed =
                   FileUtils::encodeBase64(FileUtils::deflateString(smm_stats_oss.str()));
-              TypeInst* ti = new TypeInst(Location().introduce(), Type::parstring(), NULL);
+              TypeInst* ti = new TypeInst(Location().introduce(), Type::parstring(), nullptr);
               VarDecl* checkStatsString =
                   new VarDecl(Location().introduce(), ti, ASTString("_mzn_stats_checker"),
                               new StringLit(Location().introduce(), smm_stats_compressed));
@@ -599,7 +599,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     if (globals_dir != "") {
       includePaths.erase(includePaths.begin());
     }
-    if (m == NULL) throw Error(errstream.str());
+    if (m == nullptr) throw Error(errstream.str());
     log << errstream.str();
     env->model(m);
     if (flag_typecheck) {

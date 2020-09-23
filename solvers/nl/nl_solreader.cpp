@@ -115,7 +115,7 @@ NLSol NLSol::parse_sol(istream& in) {
  *  We may be in a middle of a line!
  */
 bool NLSolns2Out::feedRawDataChunk(const char* data) {
-  if (data != NULL) {
+  if (data != nullptr) {
     std::stringstream ss(data);
     string to;
 

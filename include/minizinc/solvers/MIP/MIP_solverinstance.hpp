@@ -165,10 +165,10 @@ void MIP_solverinstance<MIPWrapper>::processWarmstartAnnotations(const Annotatio
         /// Process coefs & vars together to eliminate literals (problem with Gurobi's
         /// updatemodel()'s)
         ArrayLit* alC = eval_array_lit(_env.envi(), c->arg(1));
-        MZN_ASSERT_HARD_MSG(0 != alC, "ERROR: warm_start needs 2 array args");
+        MZN_ASSERT_HARD_MSG(nullptr != alC, "ERROR: warm_start needs 2 array args");
         coefs.reserve(alC->size());
         ArrayLit* alV = eval_array_lit(_env.envi(), c->arg(0));
-        MZN_ASSERT_HARD_MSG(0 != alV, "ERROR: warm_start needs 2 array args");
+        MZN_ASSERT_HARD_MSG(nullptr != alV, "ERROR: warm_start needs 2 array args");
         vars.reserve(alV->size());
         for (unsigned int i = 0; i < alV->size() && i < alC->size(); i++) {
           const auto e2c = exprToConstEasy((*alC)[i]);
@@ -213,7 +213,7 @@ void MIP_solverinstance<MIPWrapper>::processFlatZinc(void) {
   mip_wrap->fVerbose = _options->verbose;
 
   SolveI* solveItem = getEnv()->flat()->solveItem();
-  VarDecl* objVd = NULL;
+  VarDecl* objVd = nullptr;
 
   if (solveItem->st() != SolveI::SolveType::ST_SAT) {
     if (Id* id = solveItem->e()->dyn_cast<Id>()) {
@@ -295,7 +295,7 @@ void MIP_solverinstance<MIPWrapper>::processFlatZinc(void) {
       MZN_ASSERT_HARD(decl00->isa<VarDecl>());
       {
         auto vd00 = decl00->dyn_cast<VarDecl>();
-        if (0 != vd00->e()) {
+        if (nullptr != vd00->e()) {
           // Should be a const
           auto dRHS = exprToConst(vd00->e());
           lb = std::max(lb, dRHS);
@@ -381,7 +381,7 @@ Expression* MIP_solverinstance<MIPWrapper>::getSolutionValue(Id* id) {
       case Type::BT_BOOL:
         return new BoolLit(Location(), round_to_longlong(val) != 0);
       default:
-        return NULL;
+        return nullptr;
     }
   } else {
     return id->decl()->e();

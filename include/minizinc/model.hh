@@ -103,7 +103,7 @@ public:
   Model* parent(void) const { return _parent; }
   /// Set parent model to \a p
   void setParent(Model* p) {
-    assert(_parent == NULL);
+    assert(_parent == nullptr);
     _parent = p;
   }
 
@@ -320,7 +320,7 @@ private:
   EnvI* e;
 
 public:
-  Env(Model* m = NULL, std::ostream& outstream = std::cout, std::ostream& errstream = std::cerr);
+  Env(Model* m = nullptr, std::ostream& outstream = std::cout, std::ostream& errstream = std::cerr);
   ~Env(void);
 
   Model* model(void);

@@ -149,8 +149,8 @@ std::string file_path(const std::string& filename, const std::string& basePath) 
   LocalFree(lpBuffer);
   return ret;
 #else
-  char* rp = realpath(filename.c_str(), NULL);
-  if (rp == NULL) {
+  char* rp = realpath(filename.c_str(), nullptr);
+  if (rp == nullptr) {
     if (basePath.empty())
       return filename;
     else
@@ -260,7 +260,7 @@ std::vector<std::string> directory_list(const std::string& dir, const std::strin
   DIR* dirp = opendir(dir.c_str());
   if (dirp) {
     struct dirent* dp;
-    while ((dp = readdir(dirp)) != NULL) {
+    while ((dp = readdir(dirp)) != nullptr) {
       std::string fileName(dp->d_name);
       struct stat info;
       if (stat((dir + "/" + fileName).c_str(), &info) == 0 && (info.st_mode & S_IFREG)) {
@@ -402,7 +402,7 @@ TmpDir::TmpDir(void) {
   _name = "/tmp/mzndirXXXXXX";
   char* tmpfile = strndup(_name.c_str(), _name.size());
 
-  if (mkdtemp(tmpfile) == NULL) {
+  if (mkdtemp(tmpfile) == nullptr) {
     ::free(tmpfile);
     throw InternalError("Error occurred when creating temporary directory");
   }

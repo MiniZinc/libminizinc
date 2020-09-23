@@ -56,7 +56,7 @@ bool Model::FnEntry::compare(const Model::FnEntry& e1, const Model::FnEntry& e2)
   return false;
 }
 
-Model::Model(void) : _parent(NULL), _solveItem(NULL), _outputItem(NULL) {}
+Model::Model(void) : _parent(nullptr), _solveItem(nullptr), _outputItem(nullptr) {}
 
 Model::~Model(void) {
   for (unsigned int j = 0; j < _items.size(); j++) {
@@ -261,7 +261,7 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type
   while (m->_parent) m = m->_parent;
   FnMap::iterator i_id = m->fnmap.find(id);
   if (i_id == m->fnmap.end()) {
-    return NULL;
+    return nullptr;
   }
   std::vector<FnEntry>& v = i_id->second;
   for (unsigned int i = 0; i < v.size(); i++) {
@@ -285,7 +285,7 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type
       }
     }
   }
-  return NULL;
+  return nullptr;
 }
 
 void Model::mergeStdLib(EnvI& env, Model* m) const {
@@ -357,7 +357,7 @@ namespace {
 int matchIdx(std::vector<FunctionI*>& matched, Expression*& botarg, EnvI& env,
              const std::vector<Model::FnEntry>& v, const std::vector<Expression*>& args,
              bool strictEnums) {
-  botarg = NULL;
+  botarg = nullptr;
   for (unsigned int i = 0; i < v.size(); i++) {
     const std::vector<Type>& fi_t = v[i].t;
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
@@ -397,13 +397,13 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expr
   while (m->_parent) m = m->_parent;
   FnMap::const_iterator it = m->fnmap.find(id);
   if (it == m->fnmap.end()) {
-    return NULL;
+    return nullptr;
   }
   const std::vector<FnEntry>& v = it->second;
   std::vector<FunctionI*> matched;
   Expression* botarg;
   (void)matchIdx(matched, botarg, env, v, args, strictEnums);
-  if (matched.empty()) return NULL;
+  if (matched.empty()) return nullptr;
   if (matched.size() == 1) return matched[0];
   Type t = matched[0]->ti()->type();
   t.ti(Type::TI_PAR);
@@ -442,11 +442,11 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
       }
       throw TypeError(env, c->loc(), oss.str());
     }
-    return NULL;
+    return nullptr;
   }
   const std::vector<FnEntry>& v = it->second;
   std::vector<FunctionI*> matched;
-  Expression* botarg = NULL;
+  Expression* botarg = nullptr;
   for (unsigned int i = 0; i < v.size(); i++) {
     const std::vector<Type>& fi_t = v[i].t;
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
@@ -512,7 +512,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
       }
       throw TypeError(env, c->loc(), oss.str());
     }
-    return NULL;
+    return nullptr;
   }
   if (matched.size() == 1) return matched[0];
   Type t = matched[0]->ti()->type();
@@ -590,7 +590,7 @@ FunctionI* Model::matchRevMap(EnvI& env, const Type& t0) const {
   if (it != revmapmap.end()) {
     return it->second;
   } else {
-    return NULL;
+    return nullptr;
   }
 }
 

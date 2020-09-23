@@ -28,7 +28,7 @@ namespace MiniZinc {
 class SolverInstanceBase {
 protected:
   Env& _env;
-  Solns2Out* pS2Out = 0;
+  Solns2Out* pS2Out = nullptr;
   std::ostream& _log;
 
 public:

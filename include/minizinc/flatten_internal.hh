@@ -28,7 +28,7 @@ public:
   /// Boolean expression representing whether result is defined
   KeepAlive b;
   /// Constructor
-  explicit EE(Expression* r0 = NULL, Expression* b0 = NULL) : r(r0), b(b0) {}
+  explicit EE(Expression* r0 = nullptr, Expression* b0 = nullptr) : r(r0), b(b0) {}
 };
 
 /// Boolean evaluation context
@@ -304,7 +304,7 @@ public:
       } break;
       default:
         assert(false);
-        return NULL;
+        return nullptr;
     }
     return ndomain;
   }
@@ -411,14 +411,14 @@ public:
     FloatSetVal* ndomain;
     switch (bot) {
       case BOT_LE:
-        return NULL;
+        return nullptr;
       case BOT_LQ: {
         Ranges::Bounded<FloatVal, FloatSetRanges> b =
             Ranges::Bounded<FloatVal, FloatSetRanges>::maxiter(dr, v);
         ndomain = FloatSetVal::ai(b);
       } break;
       case BOT_GR:
-        return NULL;
+        return nullptr;
       case BOT_GQ: {
         Ranges::Bounded<FloatVal, FloatSetRanges> b =
             Ranges::Bounded<FloatVal, FloatSetRanges>::miniter(dr, v);
@@ -431,7 +431,7 @@ public:
       } break;
       default:
         assert(false);
-        return NULL;
+        return nullptr;
     }
     return ndomain;
   }
