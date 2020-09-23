@@ -72,7 +72,7 @@ std::vector<std::pair<std::string, std::string> > getStringPairList(AssignI* ai)
       auto* sl2 = (*al)[i + 1]->dyn_cast<StringLit>();
       if (sl1 && sl2) {
         ret.emplace_back(std::string(sl1->v().c_str(), sl1->v().size()),
-                                     std::string(sl2->v().c_str(), sl2->v().size()));
+                         std::string(sl2->v().c_str(), sl2->v().size()));
       } else {
         throw ConfigException(
             "invalid configuration item (right hand side must be a 2d array of strings)");
@@ -236,8 +236,8 @@ SolverConfig SolverConfig::load(string filename) {
       bool hadVersion = false;
       bool hadName = false;
       string basePath = FileUtils::dir_name(sc._configFile);
-      for (unsigned int i = 0; i < m->size(); i++) {
-        if (auto* ai = (*m)[i]->dyn_cast<AssignI>()) {
+      for (auto& i : *m) {
+        if (auto* ai = i->dyn_cast<AssignI>()) {
           if (ai->id() == "id") {
             sc._id = getString(ai);
             hadId = true;
@@ -506,8 +506,8 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
           }
         }
         if (m) {
-          for (unsigned int i = 0; i < m->size(); i++) {
-            if (auto* ai = (*m)[i]->dyn_cast<AssignI>()) {
+          for (auto& i : *m) {
+            if (auto* ai = i->dyn_cast<AssignI>()) {
               if (ai->id() == "mzn_solver_path") {
                 std::vector<std::string> sp = getStringList(ai);
                 for (auto s : sp) {
@@ -585,13 +585,13 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
 #endif
   for (const string& cur_path : _solver_path) {
     std::vector<std::string> configFiles = FileUtils::directory_list(cur_path, "msc");
-    for (unsigned int i = 0; i < configFiles.size(); i++) {
+    for (auto& configFile : configFiles) {
       try {
-        SolverConfig sc = SolverConfig::load(cur_path + "/" + configFiles[i]);
+        SolverConfig sc = SolverConfig::load(cur_path + "/" + configFile);
         addConfig(sc);
       } catch (ConfigException& e) {
         log << "Warning: error loading solver configuration from file " << cur_path << "/"
-            << configFiles[i] << "\n";
+            << configFile << "\n";
         log << "Error was:\n" << e.msg() << "\n";
       }
     }

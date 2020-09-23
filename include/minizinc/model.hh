@@ -50,11 +50,11 @@ protected:
   void mark(MINIZINC_GC_STAT_ARGS) override {
     _filepath.mark();
     _filename.mark();
-    for (unsigned int j = 0; j < _items.size(); j++) {
+    for (auto& _item : _items) {
 #if defined(MINIZINC_GC_STATS)
       Item::mark(_items[j], gc_stats);
 #else
-      Item::mark(_items[j]);
+      Item::mark(_item);
 #endif
     }
   };
@@ -386,34 +386,34 @@ public:
       models.pop_back();
       if (!iter.enterModel(cm)) continue;
       std::vector<Model*> includedModels;
-      for (unsigned int i = 0; i < cm->size(); i++) {
-        if ((*cm)[i]->removed()) continue;
-        if (!iter.enter((*cm)[i])) continue;
-        switch ((*cm)[i]->iid()) {
+      for (auto& i : *cm) {
+        if (i->removed()) continue;
+        if (!iter.enter(i)) continue;
+        switch (i->iid()) {
           case Item::II_INC:
-            if (seen.find((*cm)[i]->cast<IncludeI>()->m()) == seen.end()) {
-              includedModels.push_back((*cm)[i]->cast<IncludeI>()->m());
-              seen.insert((*cm)[i]->cast<IncludeI>()->m());
+            if (seen.find(i->cast<IncludeI>()->m()) == seen.end()) {
+              includedModels.push_back(i->cast<IncludeI>()->m());
+              seen.insert(i->cast<IncludeI>()->m());
             }
-            iter.vIncludeI((*cm)[i]->cast<IncludeI>());
+            iter.vIncludeI(i->cast<IncludeI>());
             break;
           case Item::II_VD:
-            iter.vVarDeclI((*cm)[i]->cast<VarDeclI>());
+            iter.vVarDeclI(i->cast<VarDeclI>());
             break;
           case Item::II_ASN:
-            iter.vAssignI((*cm)[i]->cast<AssignI>());
+            iter.vAssignI(i->cast<AssignI>());
             break;
           case Item::II_CON:
-            iter.vConstraintI((*cm)[i]->cast<ConstraintI>());
+            iter.vConstraintI(i->cast<ConstraintI>());
             break;
           case Item::II_SOL:
-            iter.vSolveI((*cm)[i]->cast<SolveI>());
+            iter.vSolveI(i->cast<SolveI>());
             break;
           case Item::II_OUT:
-            iter.vOutputI((*cm)[i]->cast<OutputI>());
+            iter.vOutputI(i->cast<OutputI>());
             break;
           case Item::II_FUN:
-            iter.vFunctionI((*cm)[i]->cast<FunctionI>());
+            iter.vFunctionI(i->cast<FunctionI>());
             break;
         }
       }

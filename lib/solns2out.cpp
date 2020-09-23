@@ -137,9 +137,9 @@ void Solns2Out::initFromOzn(const std::string& filename) {
 
   includePaths.push_back(stdlibDir + "/std/");
 
-  for (unsigned int i = 0; i < includePaths.size(); i++) {
-    if (!FileUtils::directory_exists(includePaths[i])) {
-      std::cerr << "solns2out: cannot access include directory " << includePaths[i] << "\n";
+  for (auto& includePath : includePaths) {
+    if (!FileUtils::directory_exists(includePath)) {
+      std::cerr << "solns2out: cannot access include directory " << includePath << "\n";
       std::exit(EXIT_FAILURE);
     }
   }
@@ -171,8 +171,8 @@ Solns2Out::DE& Solns2Out::findOutputVar(ASTString name) {
 }
 
 void Solns2Out::restoreDefaults() {
-  for (unsigned int i = 0; i < getModel()->size(); i++) {
-    if (auto* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
+  for (auto& i : *getModel()) {
+    if (auto* vdi = i->dyn_cast<VarDeclI>()) {
       if (vdi->e()->id()->idn() != -1 || (vdi->e()->id()->v() != "_mzn_solution_checker" &&
                                           vdi->e()->id()->v() != "_mzn_stats_checker")) {
         GCLock lock;
@@ -297,8 +297,8 @@ void Solns2Out::checkSolution(std::ostream& oss) {
   checker << checkerModel;
   {
     GCLock lock;
-    for (unsigned int i = 0; i < getModel()->size(); i++) {
-      if (auto* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
+    for (auto& i : *getModel()) {
+      if (auto* vdi = i->dyn_cast<VarDeclI>()) {
         if (vdi->e()->ann().contains(constants().ann.mzn_check_var)) {
           checker << vdi->e()->id()->str() << " = ";
           Expression* e = eval_par(getEnv()->envi(), vdi->e()->e());
@@ -446,10 +446,10 @@ bool Solns2Out::__evalStatusMsg(SolverInstance::Status status) {
 
 void Solns2Out::init() {
   declmap.clear();
-  for (unsigned int i = 0; i < getModel()->size(); i++) {
-    if (auto* oi = (*getModel())[i]->dyn_cast<OutputI>()) {
+  for (auto& i : *getModel()) {
+    if (auto* oi = i->dyn_cast<OutputI>()) {
       outputExpr = oi->e();
-    } else if (auto* vdi = (*getModel())[i]->dyn_cast<VarDeclI>()) {
+    } else if (auto* vdi = i->dyn_cast<VarDeclI>()) {
       if (vdi->e()->id()->idn() == -1 && vdi->e()->id()->v() == "_mzn_solution_checker") {
         checkerModel = eval_string(getEnv()->envi(), vdi->e()->e());
         if (checkerModel.size() > 0 && checkerModel[0] == '@') {

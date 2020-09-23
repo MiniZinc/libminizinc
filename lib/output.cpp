@@ -144,8 +144,8 @@ void copyOutput(EnvI& e) {
 }
 
 void cleanupOutput(EnvI& env) {
-  for (unsigned int i = 0; i < env.output->size(); i++) {
-    if (auto* vdi = (*env.output)[i]->dyn_cast<VarDeclI>()) {
+  for (auto& i : *env.output) {
+    if (auto* vdi = i->dyn_cast<VarDeclI>()) {
       vdi->e()->flat(nullptr);
     }
   }
@@ -464,15 +464,15 @@ void processDeletions(EnvI& e) {
     }
   }
 
-  for (auto it = e.output_vo._m.begin(); it != e.output_vo._m.end(); ++it) {
+  for (auto& it : e.output_vo._m) {
     std::vector<Item*> toRemove;
-    for (auto iit = it->second.begin(); iit != it->second.end(); ++iit) {
+    for (auto iit = it.second.begin(); iit != it.second.end(); ++iit) {
       if ((*iit)->removed()) {
         toRemove.push_back(*iit);
       }
     }
-    for (unsigned int i = 0; i < toRemove.size(); i++) {
-      it->second.erase(toRemove[i]);
+    for (auto& i : toRemove) {
+      it.second.erase(i);
     }
   }
 }

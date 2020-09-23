@@ -196,10 +196,10 @@ bool nonpos(const BCtx& c) { return c == C_NEG || c == C_MIX; }
 bool nonneg(const BCtx& c) { return c == C_ROOT || c == C_POS; }
 
 void dumpEEb(const std::vector<EE>& ee) {
-  for (unsigned int i = 0; i < ee.size(); i++) std::cerr << *ee[i].b() << "\n";
+  for (const auto& i : ee) std::cerr << *i.b() << "\n";
 }
 void dumpEEr(const std::vector<EE>& ee) {
-  for (unsigned int i = 0; i < ee.size(); i++) std::cerr << *ee[i].r() << "\n";
+  for (const auto& i : ee) std::cerr << *i.r() << "\n";
 }
 
 std::tuple<BCtx, bool> ann2Ctx(VarDecl* vd) {
@@ -861,14 +861,14 @@ void EnvI::fail(const std::string& msg) {
     addWarning(std::string("model inconsistency detected") +
                (msg.empty() ? std::string() : (": " + msg)));
     _failed = true;
-    for (unsigned int i = 0; i < _flat->size(); i++) {
-      (*_flat)[i]->remove();
+    for (auto& i : *_flat) {
+      i->remove();
     }
     auto* failedConstraint = new ConstraintI(Location().introduce(), constants().lit_false);
     _flat->addItem(failedConstraint);
     _flat->addItem(SolveI::sat(Location().introduce()));
-    for (unsigned int i = 0; i < output->size(); i++) {
-      (*output)[i]->remove();
+    for (auto& i : *output) {
+      i->remove();
     }
     output->addItem(
         new OutputI(Location().introduce(), new ArrayLit(Location(), std::vector<Expression*>())));
@@ -896,9 +896,9 @@ VarDeclI* EnvI::getEnum(unsigned int i) const {
 }
 unsigned int EnvI::registerArrayEnum(const std::vector<unsigned int>& arrayEnum) {
   std::ostringstream oss;
-  for (unsigned int i = 0; i < arrayEnum.size(); i++) {
-    assert(arrayEnum[i] <= enumVarDecls.size());
-    oss << arrayEnum[i] << ".";
+  for (unsigned int i : arrayEnum) {
+    assert(i <= enumVarDecls.size());
+    oss << i << ".";
   }
   auto it = arrayEnumMap.find(oss.str());
   unsigned int ret;
@@ -2327,12 +2327,12 @@ KeepAlive bind(EnvI& env, Ctx ctx, VarDecl* vd, Expression* e) {
 KeepAlive conj(EnvI& env, VarDecl* b, Ctx ctx, const std::vector<EE>& e) {
   if (!ctx.neg) {
     std::vector<Expression*> nontrue;
-    for (unsigned int i = 0; i < e.size(); i++) {
-      if (istrue(env, e[i].b())) continue;
-      if (isfalse(env, e[i].b())) {
+    for (const auto& i : e) {
+      if (istrue(env, i.b())) continue;
+      if (isfalse(env, i.b())) {
         return bind(env, Ctx(), b, constants().lit_false);
       }
-      nontrue.push_back(e[i].b());
+      nontrue.push_back(i.b());
     }
     if (nontrue.empty()) {
       return bind(env, Ctx(), b, constants().lit_true);
@@ -2340,7 +2340,7 @@ KeepAlive conj(EnvI& env, VarDecl* b, Ctx ctx, const std::vector<EE>& e) {
       return bind(env, ctx, b, nontrue[0]);
     } else {
       if (b == constants().var_true) {
-        for (unsigned int i = 0; i < nontrue.size(); i++) bind(env, ctx, b, nontrue[i]);
+        for (auto& i : nontrue) bind(env, ctx, b, i);
         return constants().lit_true;
       } else {
         GC::lock();
@@ -2362,12 +2362,12 @@ KeepAlive conj(EnvI& env, VarDecl* b, Ctx ctx, const std::vector<EE>& e) {
     nctx.b = -nctx.b;
     // negated
     std::vector<Expression*> nonfalse;
-    for (unsigned int i = 0; i < e.size(); i++) {
-      if (istrue(env, e[i].b())) continue;
-      if (isfalse(env, e[i].b())) {
+    for (const auto& i : e) {
+      if (istrue(env, i.b())) continue;
+      if (isfalse(env, i.b())) {
         return bind(env, Ctx(), b, constants().lit_true);
       }
-      nonfalse.push_back(e[i].b());
+      nonfalse.push_back(i.b());
     }
     if (nonfalse.empty()) {
       return bind(env, Ctx(), b, constants().lit_false);
@@ -2380,15 +2380,15 @@ KeepAlive conj(EnvI& env, VarDecl* b, Ctx ctx, const std::vector<EE>& e) {
       return flat_exp(env, nctx, uo, b, constants().var_true).r;
     } else {
       if (b == constants().var_false) {
-        for (unsigned int i = 0; i < nonfalse.size(); i++) bind(env, nctx, b, nonfalse[i]);
+        for (auto& i : nonfalse) bind(env, nctx, b, i);
         return constants().lit_false;
       } else {
         GC::lock();
         std::vector<Expression*> args;
-        for (unsigned int i = 0; i < nonfalse.size(); i++) {
-          UnOp* uo = new UnOp(nonfalse[i]->loc(), UOT_NOT, nonfalse[i]);
+        for (auto& i : nonfalse) {
+          UnOp* uo = new UnOp(i->loc(), UOT_NOT, i);
           uo->type(Type::varbool());
-          nonfalse[i] = uo;
+          i = uo;
         }
         auto* al = new ArrayLit(Location().introduce(), nonfalse);
         al->type(Type::varbool(1));
@@ -2537,9 +2537,9 @@ KeepAlive flat_cv_exp(EnvI& env, Ctx ctx, Expression* e) {
 
       Type t = Type::bot();
       bool allPar = true;
-      for (unsigned int i = 0; i < a.size(); i++) {
-        if (t == Type::bot()) t = a[i]->type();
-        if (!a[i]->type().ispar()) allPar = false;
+      for (auto& i : a) {
+        if (t == Type::bot()) t = i->type();
+        if (!i->type().ispar()) allPar = false;
       }
       if (!allPar) t.ti(Type::TI_VAR);
       if (c->set())
@@ -2885,8 +2885,8 @@ void flatten(Env& e, FlatteningOptions opt) {
       for (int i = startItem; i <= endItem; i++) {
         agenda.push_back(i);
       }
-      for (unsigned int i = 0; i < env.modifiedVarDecls.size(); i++) {
-        agenda.push_back(env.modifiedVarDecls[i]);
+      for (int modifiedVarDecl : env.modifiedVarDecls) {
+        agenda.push_back(modifiedVarDecl);
       }
       env.modifiedVarDecls.clear();
 
@@ -2899,8 +2899,7 @@ void flatten(Env& e, FlatteningOptions opt) {
         doConvertToRangeDomain = true;
       }
 
-      for (int ai = 0; ai < agenda.size(); ai++) {
-        int i = agenda[ai];
+      for (int i : agenda) {
         if (auto* vdi = m[i]->dyn_cast<VarDeclI>()) {
           if (vdi->removed()) continue;
           /// Look at constraints
@@ -3064,8 +3063,7 @@ void flatten(Env& e, FlatteningOptions opt) {
       }
 
       // rewrite some constraints if there are redefinitions
-      for (int ai = 0; ai < agenda.size(); ai++) {
-        int i = agenda[ai];
+      for (int i : agenda) {
         if (m[i]->removed()) {
           continue;
         }
@@ -3461,8 +3459,8 @@ void flatten(Env& e, FlatteningOptions opt) {
       finaliseOutput(env);
     }
 
-    for (unsigned int i = 0; i < m.size(); i++) {
-      if (auto* ci = m[i]->dyn_cast<ConstraintI>()) {
+    for (auto& i : m) {
+      if (auto* ci = i->dyn_cast<ConstraintI>()) {
         if (Call* c = ci->e()->dyn_cast<Call>()) {
           if (c->decl() == constants().var_redef) {
             env.flatRemoveItem(ci);
@@ -3510,8 +3508,8 @@ void clearInternalAnnotations(Expression* e) {
       }
     }
   }
-  for (unsigned int i = 0; i < removeAnns.size(); i++) {
-    e->ann().remove(removeAnns[i]);
+  for (auto& removeAnn : removeAnns) {
+    e->ann().remove(removeAnn);
   }
 }
 
@@ -3884,8 +3882,7 @@ void oldflatzinc(Env& e) {
   Model* m = e.flat();
 
   // Mark annotations and optional variables for removal
-  for (unsigned int i = 0; i < m->size(); i++) {
-    Item* item = (*m)[i];
+  for (auto item : *m) {
     if (auto* vdi = item->dyn_cast<VarDeclI>()) {
       if (item->cast<VarDeclI>()->e()->type().ot() == Type::OT_OPTIONAL ||
           item->cast<VarDeclI>()->e()->type().bt() == Type::BT_ANN) {
@@ -3963,8 +3960,8 @@ void oldflatzinc(Env& e) {
   // Sort VarDecls in FlatZinc so that VarDecls are declared before use
   std::vector<VarDeclI*> sortedVarDecls(declsWithIds.size());
   int vdCount = 0;
-  for (unsigned int i = 0; i < declsWithIds.size(); i++) {
-    VarDecl* cur = (*m)[declsWithIds[i]]->cast<VarDeclI>()->e();
+  for (int declsWithId : declsWithIds) {
+    VarDecl* cur = (*m)[declsWithId]->cast<VarDeclI>()->e();
     std::vector<int> stack;
     while (cur && cur->payload() < 0) {
       stack.push_back(cur->payload());
@@ -3988,15 +3985,15 @@ void oldflatzinc(Env& e) {
   m->compact();
   e.envi().output->compact();
 
-  for (auto it = env.vo._m.begin(); it != env.vo._m.end(); ++it) {
+  for (auto& it : env.vo._m) {
     std::vector<Item*> toRemove;
-    for (auto iit = it->second.begin(); iit != it->second.end(); ++iit) {
+    for (auto iit = it.second.begin(); iit != it.second.end(); ++iit) {
       if ((*iit)->removed()) {
         toRemove.push_back(*iit);
       }
     }
-    for (unsigned int i = 0; i < toRemove.size(); i++) {
-      it->second.erase(toRemove[i]);
+    for (auto& i : toRemove) {
+      it.second.erase(i);
     }
   }
 
@@ -4047,9 +4044,9 @@ FlatModelStatistics statistics(Env& m) {
   stats.n_imp_ct = m.envi().n_imp_ct;
   stats.n_imp_del = m.envi().n_imp_del;
   stats.n_lin_del = m.envi().n_lin_del;
-  for (unsigned int i = 0; i < flat->size(); i++) {
-    if (!(*flat)[i]->removed()) {
-      if (auto* vdi = (*flat)[i]->dyn_cast<VarDeclI>()) {
+  for (auto& i : *flat) {
+    if (!i->removed()) {
+      if (auto* vdi = i->dyn_cast<VarDeclI>()) {
         Type t = vdi->e()->type();
         if (t.isvar() && t.dim() == 0) {
           if (t.is_set())
@@ -4061,7 +4058,7 @@ FlatModelStatistics statistics(Env& m) {
           else if (t.isfloat())
             stats.n_float_vars++;
         }
-      } else if (auto* ci = (*flat)[i]->dyn_cast<ConstraintI>()) {
+      } else if (auto* ci = i->dyn_cast<ConstraintI>()) {
         if (Call* call = ci->e()->dyn_cast<Call>()) {
           if (call->id().endsWith("_reif")) {
             stats.n_reif_ct++;

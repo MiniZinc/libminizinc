@@ -60,7 +60,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
            bool ignoreStdlib, bool parseDocComments, bool verbose, ostream& err,
            std::vector<SyntaxError>& syntaxErrors) {
   vector<string> includePaths;
-  for (unsigned int i = 0; i < ip.size(); i++) includePaths.push_back(ip[i]);
+  for (const auto& i : ip) includePaths.push_back(i);
 
   vector<ParseWorkItem> files;
   map<string, Model*> seenModels;
@@ -224,15 +224,13 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
     mzn_yyparse(&pp);
     if (pp.yyscanner) mzn_yylex_destroy(pp.yyscanner);
     if (pp.hadError) {
-      for (unsigned int i = 0; i < pp.syntaxErrors.size(); i++)
-        syntaxErrors.push_back(pp.syntaxErrors[i]);
+      for (const auto& syntaxError : pp.syntaxErrors) syntaxErrors.push_back(syntaxError);
       goto error;
     }
   }
 
-  for (unsigned int i = 0; i < datafiles.size(); i++) {
+  for (auto f : datafiles) {
     GCLock lock;
-    string f = datafiles[i];
     if (f.size() >= 6 && f.substr(f.size() - 5, string::npos) == ".json") {
       JSONParser jp(env.envi());
       jp.parse(model, f, true);
@@ -256,8 +254,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       mzn_yyparse(&pp);
       if (pp.yyscanner) mzn_yylex_destroy(pp.yyscanner);
       if (pp.hadError) {
-        for (unsigned int i = 0; i < pp.syntaxErrors.size(); i++)
-          syntaxErrors.push_back(pp.syntaxErrors[i]);
+        for (const auto& syntaxError : pp.syntaxErrors) syntaxErrors.push_back(syntaxError);
         goto error;
       }
     }

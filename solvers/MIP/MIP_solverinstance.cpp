@@ -112,9 +112,9 @@ void XBZCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInpu
 
 void XBZCutGen::print(ostream& os) {
   os << varZ << '\n' << varX.size() << '\n';
-  for (int i = 0; i < varX.size(); ++i) os << varX[i] << ' ';
+  for (int i : varX) os << i << ' ';
   os << endl;
-  for (int i = 0; i < varB.size(); ++i) os << varB[i] << ' ';
+  for (int i : varB) os << i << ' ';
   os << endl;
 }
 

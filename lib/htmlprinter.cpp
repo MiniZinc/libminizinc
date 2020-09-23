@@ -152,12 +152,12 @@ public:
     if (subgroups.m.size() != 0) {
       oss << "<p>Sections:</p>\n";
       oss << "<ul>\n";
-      for (auto it = subgroups.m.begin(); it != subgroups.m.end(); ++it) {
-        oss << "<li><a href='" << (*it)->getAnchor(level, indivFileLevel) << "'>" << (*it)->htmlName
+      for (auto& it : subgroups.m) {
+        oss << "<li><a href='" << it->getAnchor(level, indivFileLevel) << "'>" << it->htmlName
             << "</a>\n";
 
-        if ((*it)->htmlName.empty()) {
-          std::cerr << "Warning: undocumented group " << (*it)->fullPath << "\n";
+        if (it->htmlName.empty()) {
+          std::cerr << "Warning: undocumented group " << it->fullPath << "\n";
         }
       }
       oss << "</ul>\n";
@@ -216,8 +216,8 @@ public:
       oss << rstHeading(htmlName, level);
       oss << HtmlDocOutput::trim(desc) << "\n\n";
     }
-    for (unsigned int i = 0; i < subgroups.m.size(); i++) {
-      oss << subgroups.m[i]->toRST(level + 1);
+    for (auto& i : subgroups.m) {
+      oss << i->toRST(level + 1);
     }
     if (items.size() > 0) {
       if (subgroups.m.size() != 0) {
@@ -254,8 +254,8 @@ public:
 };
 
 GroupMap::~GroupMap() {
-  for (auto it = m.begin(); it != m.end(); ++it) {
-    delete *it;
+  for (auto& it : m) {
+    delete it;
   }
 }
 GroupMap::Map::iterator GroupMap::find(const std::string& n) {
@@ -348,9 +348,9 @@ std::string makeHTMLId(const std::string& ident) {
   std::ostringstream oss;
   oss << "I";
   bool prevWasSym = false;
-  for (size_t i = 0; i < ident.size(); i++) {
+  for (char i : ident) {
     bool isSym = true;
-    switch (ident[i]) {
+    switch (i) {
       case '!':
         oss << "-ex";
         break;
@@ -412,7 +412,7 @@ std::string makeHTMLId(const std::string& ident) {
         oss << "-cm";
         break;
       default:
-        oss << (prevWasSym ? "-" : "") << ident[i];
+        oss << (prevWasSym ? "-" : "") << i;
         isSym = false;
         break;
     }
@@ -643,8 +643,8 @@ public:
       std::vector<std::string> args = replaceArgs(ds);
 
       std::unordered_set<std::string> allArgs;
-      for (unsigned int i = 0; i < args.size(); i++) allArgs.insert(args[i]);
-      for (unsigned int i = 0; i < params.size(); i++) allArgs.insert(params[i].first);
+      for (auto& arg : args) allArgs.insert(arg);
+      for (auto& param : params) allArgs.insert(param.first);
 
       GCLock lock;
       for (unsigned int i = 0; i < fi->params().size(); i++) {
@@ -778,8 +778,8 @@ public:
       if (params.size() > 0) {
         os << "<div class='mzn-fundecl-params-heading'>Parameters</div>\n";
         os << "<ul class='mzn-fundecl-params'>\n";
-        for (unsigned int i = 0; i < params.size(); i++) {
-          os << "<li><span class='mzn-arg'>" << params[i].first << "</span>: " << params[i].second
+        for (auto& param : params) {
+          os << "<li><span class='mzn-arg'>" << param.first << "</span>: " << param.second
              << "</li>\n";
         }
         os << "</ul>\n";
@@ -847,7 +847,7 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
       index.emplace_back(it.id, it.sig, g.fullPath, g.htmlName);
     }
     ret.emplace_back(g.fullPath, g.htmlName,
-                               g.toHTML(curLevel, splitLevel, p, curIdx, basename, generateIndex));
+                     g.toHTML(curLevel, splitLevel, p, curIdx, basename, generateIndex));
     if (curLevel < splitLevel) {
       for (unsigned int i = 0; i < g.subgroups.m.size(); i++) {
         stack.emplace_back(g.subgroups.m[i], &g, curLevel + 1, i);
@@ -1139,8 +1139,8 @@ public:
       std::vector<std::string> args = replaceArgsRST(ds);
 
       std::unordered_set<std::string> allArgs;
-      for (unsigned int i = 0; i < args.size(); i++) allArgs.insert(args[i]);
-      for (unsigned int i = 0; i < params.size(); i++) allArgs.insert(params[i].first);
+      for (auto& arg : args) allArgs.insert(arg);
+      for (auto& param : params) allArgs.insert(param.first);
 
       GCLock lock;
       for (unsigned int i = 0; i < fi->params().size(); i++) {
@@ -1267,8 +1267,8 @@ public:
 
       if (params.size() > 0) {
         os << "Parameters:\n\n";
-        for (unsigned int i = 0; i < params.size(); i++) {
-          os << "- ``" << params[i].first << "``: " << params[i].second << "\n";
+        for (auto& param : params) {
+          os << "- ``" << param.first << "``: " << param.second << "\n";
         }
         os << "\n";
       }

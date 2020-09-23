@@ -1342,8 +1342,8 @@ public:
           throw TypeError(_env, al.loc(), "cannot coerce array element to var set of int");
         }
       }
-      for (unsigned int i = 0; i < anons.size(); i++) {
-        anons[i]->type(at);
+      for (auto& anon : anons) {
+        anon->type(at);
       }
       for (unsigned int i = 0; i < al.size(); i++) {
         al.set(i, addCoercion(_env, _model, al[i], at)());
@@ -1543,8 +1543,7 @@ public:
             }
           }
 
-          for (unsigned int wpi = 0; wpi < whereParts.size(); wpi++) {
-            Expression* wp = whereParts[wpi];
+          for (auto wp : whereParts) {
             class FindLatestGen : public EVisitor {
             public:
               int decl_idx;
@@ -1740,8 +1739,8 @@ public:
     }
     Type tret_var(tret);
     tret_var.ti(Type::TI_VAR);
-    for (unsigned int i = 0; i < anons.size(); i++) {
-      anons[i]->type(tret_var);
+    for (auto& anon : anons) {
+      anon->type(tret_var);
     }
     for (int i = 0; i < ite.size(); i++) {
       ite.e_then(i, addCoercion(_env, _model, ite.e_then(i), tret)());
@@ -2337,8 +2336,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
 
   auto* enumItems2 = new Model;
 
-  for (unsigned int i = 0; i < assignItems.size(); i++) {
-    AssignI* ai = assignItems[i];
+  for (auto ai : assignItems) {
     VarDecl* vd = nullptr;
     if (env.envi().ignoreUnknownIds) {
       try {
@@ -2369,12 +2367,12 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     ai->remove();
   }
 
-  for (unsigned int i = 0; i < enumItems2->size(); i++) {
-    if (auto* vdi = (*enumItems2)[i]->dyn_cast<VarDeclI>()) {
+  for (auto& i : *enumItems2) {
+    if (auto* vdi = i->dyn_cast<VarDeclI>()) {
       m->addItem(vdi);
       ts.add(env.envi(), vdi, false, enumItems);
     } else {
-      auto* fi = (*enumItems2)[i]->cast<FunctionI>();
+      auto* fi = i->cast<FunctionI>();
       m->addItem(fi);
       m->registerFn(env.envi(), fi);
       functionItems.push_back(fi);
@@ -2432,15 +2430,15 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
   {
     Typer<false> ty(env.envi(), m, typeErrors, ignoreUndefinedParameters);
     BottomUpIterator<Typer<false> > bu_ty(ty);
-    for (unsigned int i = 0; i < ts.decls.size(); i++) {
-      ts.decls[i]->payload(0);
-      bu_ty.run(ts.decls[i]->ti());
-      ty.vVarDecl(*ts.decls[i]);
+    for (auto& decl : ts.decls) {
+      decl->payload(0);
+      bu_ty.run(decl->ti());
+      ty.vVarDecl(*decl);
     }
-    for (unsigned int i = 0; i < functionItems.size(); i++) {
-      bu_ty.run(functionItems[i]->ti());
-      for (unsigned int j = 0; j < functionItems[i]->params().size(); j++)
-        bu_ty.run(functionItems[i]->params()[j]);
+    for (auto& functionItem : functionItems) {
+      bu_ty.run(functionItem->ti());
+      for (unsigned int j = 0; j < functionItem->params().size(); j++)
+        bu_ty.run(functionItem->params()[j]);
     }
   }
 
@@ -2603,24 +2601,23 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     typeErrors.push_back(e);
   }
 
-  for (unsigned int i = 0; i < ts.decls.size(); i++) {
-    if (ts.decls[i]->toplevel() && ts.decls[i]->type().ispar() && !ts.decls[i]->type().isann() &&
-        ts.decls[i]->e() == nullptr) {
-      if (ts.decls[i]->type().isopt() && ts.decls[i]->type().dim() == 0) {
-        ts.decls[i]->e(constants().absent);
-        ts.decls[i]->addAnnotation(constants().ann.mzn_was_undefined);
+  for (auto& decl : ts.decls) {
+    if (decl->toplevel() && decl->type().ispar() && !decl->type().isann() && decl->e() == nullptr) {
+      if (decl->type().isopt() && decl->type().dim() == 0) {
+        decl->e(constants().absent);
+        decl->addAnnotation(constants().ann.mzn_was_undefined);
       } else if (!ignoreUndefinedParameters) {
         std::ostringstream ss;
-        ss << "  symbol error: variable `" << ts.decls[i]->id()->str()
+        ss << "  symbol error: variable `" << decl->id()->str()
            << "' must be defined (did you forget to specify a data file?)";
-        typeErrors.emplace_back(env.envi(), ts.decls[i]->loc(), ss.str());
+        typeErrors.emplace_back(env.envi(), decl->loc(), ss.str());
       }
     }
-    if (ts.decls[i]->ti()->isEnum()) {
-      ts.decls[i]->ti()->setIsEnum(false);
-      Type vdt = ts.decls[i]->ti()->type();
+    if (decl->ti()->isEnum()) {
+      decl->ti()->setIsEnum(false);
+      Type vdt = decl->ti()->type();
       vdt.enumId(0);
-      ts.decls[i]->ti()->type(vdt);
+      decl->ti()->type(vdt);
     }
   }
 
@@ -2728,10 +2725,10 @@ void output_var_desc_json(Env& env, VarDecl* vd, std::ostream& os, bool extra = 
       os << ", \"dims\" : [";
       bool had_dim = false;
       ASTExprVec<TypeInst> ranges = vd->ti()->ranges();
-      for (int i = 0; i < static_cast<int>(ranges.size()); i++) {
-        if (ranges[i]->type().enumId() > 0) {
+      for (auto& range : ranges) {
+        if (range->type().enumId() > 0) {
           os << (had_dim ? "," : "") << "\""
-             << *env.envi().getEnum(ranges[i]->type().enumId())->e()->id() << "\"";
+             << *env.envi().getEnum(range->type().enumId())->e()->id() << "\"";
         } else {
           os << (had_dim ? "," : "") << "\"int\"";
         }

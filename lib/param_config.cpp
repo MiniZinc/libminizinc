@@ -24,8 +24,8 @@ void ParamConfig::load(const std::string& filename) {
       Model m;
       GCLock lock;
       jp.parse(&m, filename);
-      for (unsigned int i = 0; i < m.size(); i++) {
-        if (auto* ai = m[i]->dyn_cast<AssignI>()) {
+      for (auto& i : m) {
+        if (auto* ai = i->dyn_cast<AssignI>()) {
           add_value(ai->id(), ai->e());
         }
       }

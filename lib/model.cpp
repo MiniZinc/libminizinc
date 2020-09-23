@@ -59,8 +59,7 @@ bool Model::FnEntry::compare(const Model::FnEntry& e1, const Model::FnEntry& e2)
 Model::Model(void) : _parent(nullptr), _solveItem(nullptr), _outputItem(nullptr) {}
 
 Model::~Model(void) {
-  for (unsigned int j = 0; j < _items.size(); j++) {
-    Item* i = _items[j];
+  for (auto i : _items) {
     if (auto* ii = i->dyn_cast<IncludeI>()) {
       if (ii->own()) {
         delete ii->m();
@@ -152,8 +151,8 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
       if (stack.back() == final_id) {
         // If this instance isn't in entries yet, add it
         bool alreadyDefined = false;
-        for (unsigned int i = 0; i < entries.size(); i++) {
-          if (entries[i].t == cur.t) {
+        for (auto& entrie : entries) {
+          if (entrie.t == cur.t) {
             alreadyDefined = true;
             break;
           }
@@ -170,21 +169,21 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
       } else {
         if (back_t.bt() == highestBt(back_t)) {
           // Create set type for current item
-          for (unsigned int i = 0; i < type_ids[stack.back()].size(); i++) {
-            type_ids[stack.back()][i]->st(Type::ST_SET);
-            type_ids[stack.back()][i]->bt(lowestBt(*type_ids[stack.back()][i]));
+          for (auto& i : type_ids[stack.back()]) {
+            i->st(Type::ST_SET);
+            i->bt(lowestBt(*i));
           }
         } else {
           // Increment type of current item
           auto nextType = static_cast<Type::BaseType>(back_t.bt() + 1);
-          for (unsigned int i = 0; i < type_ids[stack.back()].size(); i++) {
-            type_ids[stack.back()][i]->bt(nextType);
+          for (auto& i : type_ids[stack.back()]) {
+            i->bt(nextType);
           }
         }
         // Reset types of all further items and push them
         for (unsigned int i = stack.back() + 1; i < type_ids.size(); i++) {
-          for (unsigned int j = 0; j < type_ids[i].size(); j++) {
-            type_ids[i][j]->bt(lowestBt(*type_ids[i][j]));
+          for (auto& j : type_ids[i]) {
+            j->bt(lowestBt(*j));
           }
           stack.push_back(i);
         }
@@ -206,13 +205,13 @@ void Model::registerFn(EnvI& env, FunctionI* fi) {
   } else {
     // add to list of existing elements
     std::vector<FnEntry>& v = i_id->second;
-    for (unsigned int i = 0; i < v.size(); i++) {
-      if (v[i].fi == fi) {
+    for (auto& i : v) {
+      if (i.fi == fi) {
         return;
-      } else if (v[i].fi->params().size() == fi->params().size()) {
+      } else if (i.fi->params().size() == fi->params().size()) {
         bool alleq = true;
         for (unsigned int j = 0; j < fi->params().size(); j++) {
-          Type t1 = v[i].fi->params()[j]->type();
+          Type t1 = i.fi->params()[j]->type();
           Type t2 = fi->params()[j]->type();
           t1.enumId(0);
           t2.enumId(0);
@@ -222,18 +221,18 @@ void Model::registerFn(EnvI& env, FunctionI* fi) {
           }
         }
         if (alleq) {
-          if (v[i].fi->e() && fi->e() && !v[i].isPolymorphic) {
+          if (i.fi->e() && fi->e() && !i.isPolymorphic) {
             throw TypeError(
                 env, fi->loc(),
-                "function with the same type already defined in " + v[i].fi->loc().toString());
+                "function with the same type already defined in " + i.fi->loc().toString());
           } else {
-            if (fi->e() || v[i].isPolymorphic) {
-              if (Call* deprecated = v[i].fi->ann().getCall(constants().ann.mzn_deprecated)) {
+            if (fi->e() || i.isPolymorphic) {
+              if (Call* deprecated = i.fi->ann().getCall(constants().ann.mzn_deprecated)) {
                 fi->ann().add(deprecated);
               }
-              v[i] = fi;
+              i = fi;
             } else if (Call* deprecated = fi->ann().getCall(constants().ann.mzn_deprecated)) {
-              v[i].fi->ann().add(deprecated);
+              i.fi->ann().add(deprecated);
             }
             return;
           }
@@ -264,8 +263,8 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type
     return nullptr;
   }
   std::vector<FnEntry>& v = i_id->second;
-  for (unsigned int i = 0; i < v.size(); i++) {
-    std::vector<Type>& fi_t = v[i].t;
+  for (auto& i : v) {
+    std::vector<Type>& fi_t = i.t;
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
     std::cerr << "try " << *v[i].fi;
 #endif
@@ -281,7 +280,7 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type
         }
       }
       if (match) {
-        return v[i].fi;
+        return i.fi;
       }
     }
   }
@@ -289,8 +288,8 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type
 }
 
 void Model::mergeStdLib(EnvI& env, Model* m) const {
-  for (auto it = fnmap.begin(); it != fnmap.end(); ++it) {
-    for (auto cit = it->second.begin(); cit != it->second.end(); ++cit) {
+  for (const auto& it : fnmap) {
+    for (auto cit = it.second.begin(); cit != it.second.end(); ++cit) {
       if ((*cit).fi->from_stdlib()) {
         m->registerFn(env, (*cit).fi);
       }
@@ -301,20 +300,20 @@ void Model::mergeStdLib(EnvI& env, Model* m) const {
 void Model::sortFn(void) {
   Model* m = this;
   while (m->_parent) m = m->_parent;
-  for (auto it = m->fnmap.begin(); it != m->fnmap.end(); ++it) {
+  for (auto& it : m->fnmap) {
     // Sort all functions by type
-    std::sort(it->second.begin(), it->second.end());
+    std::sort(it.second.begin(), it.second.end());
   }
 }
 
 void Model::fixFnMap(void) {
   Model* m = this;
   while (m->_parent) m = m->_parent;
-  for (auto it = m->fnmap.begin(); it != m->fnmap.end(); ++it) {
-    for (unsigned int i = 0; i < it->second.size(); i++) {
-      for (unsigned int j = 0; j < it->second[i].t.size(); j++) {
-        if (it->second[i].t[j].isunknown()) {
-          it->second[i].t[j] = it->second[i].fi->params()[j]->type();
+  for (auto& it : m->fnmap) {
+    for (unsigned int i = 0; i < it.second.size(); i++) {
+      for (unsigned int j = 0; j < it.second[i].t.size(); j++) {
+        if (it.second[i].t[j].isunknown()) {
+          it.second[i].t[j] = it.second[i].fi->params()[j]->type();
         }
       }
     }
@@ -324,8 +323,8 @@ void Model::fixFnMap(void) {
 void Model::checkFnOverloading(EnvI& env) {
   Model* m = this;
   while (m->_parent) m = m->_parent;
-  for (auto it = m->fnmap.begin(); it != m->fnmap.end(); ++it) {
-    std::vector<FnEntry>& fs = it->second;
+  for (auto& it : m->fnmap) {
+    std::vector<FnEntry>& fs = it.second;
     for (unsigned int i = 0; i < fs.size() - 1; i++) {
       FunctionI* cur = fs[i].fi;
       for (unsigned int j = i + 1; j < fs.size(); j++) {
@@ -446,8 +445,8 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
   const std::vector<FnEntry>& v = it->second;
   std::vector<FunctionI*> matched;
   Expression* botarg = nullptr;
-  for (unsigned int i = 0; i < v.size(); i++) {
-    const std::vector<Type>& fi_t = v[i].t;
+  for (const auto& i : v) {
+    const std::vector<Type>& fi_t = i.t;
 #ifdef MZN_DEBUG_FUNCTION_REGISTRY
     std::cerr << "try " << *v[i].fi;
 #endif
@@ -469,9 +468,9 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
       }
       if (match) {
         if (botarg)
-          matched.push_back(v[i].fi);
+          matched.push_back(i.fi);
         else
-          return v[i].fi;
+          return i.fi;
       }
     }
   }
@@ -487,12 +486,12 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
       oss << ")'\n";
       oss << "Cannot use the following functions or predicates with the same identifier:\n";
       Printer pp(oss, 0, false, &env);
-      for (unsigned int i = 0; i < v.size(); i++) {
-        const std::vector<Type>& fi_t = v[i].t;
-        Expression* body = v[i].fi->e();
-        v[i].fi->e(nullptr);
-        pp.print(v[i].fi);
-        v[i].fi->e(body);
+      for (const auto& i : v) {
+        const std::vector<Type>& fi_t = i.t;
+        Expression* body = i.fi->e();
+        i.fi->e(nullptr);
+        pp.print(i.fi);
+        i.fi->e(body);
         if (fi_t.size() == c->n_args()) {
           for (unsigned int j = 0; j < c->n_args(); j++) {
             if (!env.isSubtype(c->arg(j)->type(), fi_t[j], strictEnums)) {
@@ -504,9 +503,8 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
             }
           }
         } else {
-          oss << "    (requires " << v[i].fi->params().size() << " argument"
-              << (v[i].fi->params().size() == 1 ? "" : "s") << ", but " << c->n_args()
-              << " given)\n";
+          oss << "    (requires " << i.fi->params().size() << " argument"
+              << (i.fi->params().size() == 1 ? "" : "s") << ", but " << c->n_args() << " given)\n";
         }
       }
       throw TypeError(env, c->loc(), oss.str());

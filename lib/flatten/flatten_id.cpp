@@ -151,7 +151,7 @@ EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool do
           if (isv->size() != 1) throw FlatteningError(env, ti->loc(), "invalid array index set");
           asize *= (isv->max(0) - isv->min(0) + 1);
           dims.emplace_back(static_cast<int>(isv->min(0).toInt()),
-                                             static_cast<int>(isv->max(0).toInt()));
+                            static_cast<int>(isv->max(0).toInt()));
         }
       }
       Type tt = vd->ti()->type();

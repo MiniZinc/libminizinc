@@ -117,9 +117,9 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
                       compflags.allow_multi_assign);
   if (typeErrors.size() > 0) {
     std::ostringstream errstream;
-    for (unsigned int i = 0; i < typeErrors.size(); i++) {
-      errstream << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
-      errstream << typeErrors[i].loc() << std::endl;
+    for (auto& typeError : typeErrors) {
+      errstream << typeError.what() << ": " << typeError.msg() << std::endl;
+      errstream << typeError.loc() << std::endl;
     }
     throw Error(errstream.str());
   }
@@ -149,8 +149,8 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
     if (compflags.verbose) log << " done (" << lasttime.stoptime() << ")" << std::endl;
   }
 
-  for (unsigned int i = 0; i < new_env->warnings().size(); i++) {
-    log << (compflags.werror ? "\n  ERROR: " : "\n  WARNING: ") << new_env->warnings()[i];
+  for (const auto& i : new_env->warnings()) {
+    log << (compflags.werror ? "\n  ERROR: " : "\n  WARNING: ") << i;
   }
   if (compflags.werror && new_env->warnings().size() > 0) {
     throw Error("errors encountered");

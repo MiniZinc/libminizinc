@@ -161,9 +161,9 @@ int main(int argc, char** argv) {
   }
   includePaths.push_back(std_lib_dir + "/std/");
 
-  for (unsigned int i = 0; i < includePaths.size(); i++) {
-    if (!FileUtils::directory_exists(includePaths[i])) {
-      std::cerr << "Cannot access include directory " << includePaths[i] << "\n";
+  for (auto& includePath : includePaths) {
+    if (!FileUtils::directory_exists(includePath)) {
+      std::cerr << "Cannot access include directory " << includePath << "\n";
       std::exit(EXIT_FAILURE);
     }
   }
@@ -211,10 +211,10 @@ int main(int argc, char** argv) {
         vector<TypeError> typeErrors;
         MiniZinc::typecheck(env, m, typeErrors, true, false);
         if (typeErrors.size() > 0) {
-          for (unsigned int i = 0; i < typeErrors.size(); i++) {
+          for (auto& typeError : typeErrors) {
             if (flag_verbose) std::cerr << std::endl;
-            std::cerr << typeErrors[i].loc() << ":" << std::endl;
-            std::cerr << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
+            std::cerr << typeError.loc() << ":" << std::endl;
+            std::cerr << typeError.what() << ": " << typeError.msg() << std::endl;
           }
           exit(EXIT_FAILURE);
         }
@@ -235,14 +235,14 @@ int main(int argc, char** argv) {
                                         flag_include_stdlib, flag_index);
         }
 
-        for (unsigned int i = 0; i < docs.size(); i++) {
-          std::ofstream os(FILE_PATH(basedir + docs[i].filename() + (flag_rst ? ".rst" : ".html")));
+        for (auto& doc : docs) {
+          std::ofstream os(FILE_PATH(basedir + doc.filename() + (flag_rst ? ".rst" : ".html")));
           std::string header_replace = header;
           if (header_title != std::string::npos) {
-            header_replace = header_replace.replace(header_title, title_size, docs[i].title());
+            header_replace = header_replace.replace(header_title, title_size, doc.title());
           }
           os << header_replace;
-          os << docs[i].document();
+          os << doc.document();
           os << footer;
           os.close();
         }

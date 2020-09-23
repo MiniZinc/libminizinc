@@ -74,8 +74,8 @@ public:
 };
 
 bool remove_dups(std::vector<KeepAlive>& x, bool identity) {
-  for (unsigned int i = 0; i < x.size(); i++) {
-    x[i] = follow_id_to_value(x[i]());
+  for (auto& i : x) {
+    i = follow_id_to_value(i());
   }
   std::sort(x.begin(), x.end(), CmpExp());
   int ci = 0;
@@ -513,8 +513,8 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         }
         {
           CallArgItem cai(env);
-          for (unsigned int i = 0; i < newPositives.size(); i++) {
-            EE res = flat_exp(env, argctx, newPositives[i](), nullptr, constants().var_true);
+          for (auto& newPositive : newPositives) {
+            EE res = flat_exp(env, argctx, newPositive(), nullptr, constants().var_true);
             if (res.r()->type().ispar()) {
               if (!eval_bool(env, res.r())) {
                 // this element is irrelevant
@@ -826,7 +826,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       }
       if (args.size() == 0) return ret;
     } else {
-      for (unsigned int i = 0; i < args_ee.size(); i++) args.emplace_back(args_ee[i].r());
+      for (auto& i : args_ee) args.emplace_back(i.r());
     }
     bool hadImplementation = (decl->e() != nullptr);
     KeepAlive cr;

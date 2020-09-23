@@ -950,8 +950,8 @@ public:
     if (v != nullptr) {
       v->erase(std::remove(v->begin(), v->end(), i), v->end());
     }
-    for (auto it = lines.begin(); it != lines.end(); it++) {
-      std::vector<int>& l = it->second;
+    for (auto& line : lines) {
+      std::vector<int>& l = line.second;
       l.erase(std::remove(l.begin(), l.end(), i), l.end());
     }
     // Call on its parent
@@ -1919,13 +1919,13 @@ void Printer::print(const Item* i) {
 void Printer::print(const Model* m) {
   if (_width == 0) {
     PlainPrinter p(_os, _flatZinc, env);
-    for (unsigned int i = 0; i < m->size(); i++) {
-      p.p((*m)[i]);
+    for (auto i : *m) {
+      p.p(i);
     }
   } else {
     init();
-    for (unsigned int i = 0; i < m->size(); i++) {
-      p((*m)[i]);
+    for (auto i : *m) {
+      p(i);
     }
   }
 }

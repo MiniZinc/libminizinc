@@ -427,9 +427,9 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
   }
   includePaths.push_back(std_lib_dir + "/std/");
 
-  for (unsigned int i = 0; i < includePaths.size(); i++) {
-    if (!FileUtils::directory_exists(includePaths[i])) {
-      throw Error("Cannot access include directory " + includePaths[i]);
+  for (auto& includePath : includePaths) {
+    if (!FileUtils::directory_exists(includePath)) {
+      throw Error("Cannot access include directory " + includePath);
     }
   }
 
@@ -498,16 +498,16 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           MiniZinc::typecheck(smm_env, smm, typeErrors, true, false, true);
           if (typeErrors.size() > 0) {
             if (!isCompressedChecker) {
-              for (unsigned int i = 0; i < typeErrors.size(); i++) {
+              for (auto& typeError : typeErrors) {
                 if (flag_verbose) log << std::endl;
-                log << typeErrors[i].loc() << ":" << std::endl;
-                log << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
+                log << typeError.loc() << ":" << std::endl;
+                log << typeError.what() << ": " << typeError.msg() << std::endl;
               }
             }
             throw Error("multiple type errors");
           }
-          for (unsigned int i = 0; i < smm->size(); i++) {
-            if (auto* vdi = (*smm)[i]->dyn_cast<VarDeclI>()) {
+          for (auto& i : *smm) {
+            if (auto* vdi = i->dyn_cast<VarDeclI>()) {
               if (vdi->e()->e() == nullptr)
                 env->envi().checkVars.emplace_back(vdi->e());
               else if (vdi->e()->ann().contains(constants().ann.rhs_from_assignment)) {
@@ -619,10 +619,10 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             flag_model_types_only || flag_model_interface_only || flag_model_check_only,
             flag_allow_multi_assign);
         if (typeErrors.size() > 0) {
-          for (unsigned int i = 0; i < typeErrors.size(); i++) {
+          for (auto& typeError : typeErrors) {
             if (flag_verbose) log << std::endl;
-            log << typeErrors[i].loc() << ":" << std::endl;
-            log << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
+            log << typeError.loc() << ":" << std::endl;
+            log << typeError.what() << ": " << typeError.msg() << std::endl;
           }
           throw Error("multiple type errors");
         }
@@ -650,10 +650,10 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
                               flag_model_check_only || flag_model_interface_only,
                               flag_allow_multi_assign, true);
           if (typeErrors.size() > 0) {
-            for (unsigned int i = 0; i < typeErrors.size(); i++) {
+            for (auto& typeError : typeErrors) {
               if (flag_verbose) log << std::endl;
-              log << typeErrors[i].loc() << ":" << std::endl;
-              log << typeErrors[i].what() << ": " << typeErrors[i].msg() << std::endl;
+              log << typeError.loc() << ":" << std::endl;
+              log << typeError.what() << ": " << typeError.msg() << std::endl;
             }
             throw Error("multiple type errors");
           }

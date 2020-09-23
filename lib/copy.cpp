@@ -242,7 +242,7 @@ Expression* copy(EnvI& env, CopyMap& m, Expression* e, bool followIds, bool copy
           assert(!c->decl(i, j)->e());
         }
         g._g.emplace_back(vv, copy(env, m, c->in(i), followIds, copyFundecls, isFlatModel),
-                                 copy(env, m, c->where(i), followIds, copyFundecls, isFlatModel));
+                          copy(env, m, c->where(i), followIds, copyFundecls, isFlatModel));
       }
       cc->init(copy(env, m, c->e(), followIds, copyFundecls, isFlatModel), g);
       ret = cc;
@@ -485,12 +485,12 @@ Model* copy(EnvI& env, CopyMap& cm, Model* m, bool isFlatModel) {
   if (m == nullptr) return nullptr;
   if (Model* cached = cm.find(m)) return cached;
   auto* c = new Model;
-  for (unsigned int i = 0; i < m->size(); i++) c->addItem(copy(env, cm, (*m)[i], false, true));
+  for (auto& i : *m) c->addItem(copy(env, cm, i, false, true));
 
-  for (auto it = m->fnmap.begin(); it != m->fnmap.end(); ++it) {
-    for (unsigned int i = 0; i < it->second.size(); i++)
+  for (auto& it : m->fnmap) {
+    for (unsigned int i = 0; i < it.second.size(); i++)
       c->registerFn(env,
-                    copy(env, cm, it->second[i].fi, false, true, isFlatModel)->cast<FunctionI>());
+                    copy(env, cm, it.second[i].fi, false, true, isFlatModel)->cast<FunctionI>());
   }
   cm.insert(m, c);
   return c;

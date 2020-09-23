@@ -100,8 +100,8 @@ void Expression::addAnnotation(Expression* ann) {
 }
 void Expression::addAnnotations(std::vector<Expression*> ann) {
   if (!isUnboxedVal())
-    for (unsigned int i = 0; i < ann.size(); i++)
-      if (ann[i]) _ann.add(ann[i]);
+    for (auto& i : ann)
+      if (i) _ann.add(i);
 }
 
 #define pushstack(e)      \
@@ -445,8 +445,8 @@ ArrayLit::ArrayLit(const Location& loc, const std::vector<Expression*>& v,
 void ArrayLit::rehash(void) {
   init_hash();
   std::hash<int> h;
-  for (unsigned int i = 0; i < _dims.size(); i++) {
-    cmb_hash(h(_dims[i]));
+  for (int _dim : _dims) {
+    cmb_hash(h(_dim));
   }
   if (_flag_2) {
     cmb_hash(Expression::hash(_u._al));
@@ -469,8 +469,8 @@ void ArrayAccess::rehash(void) {
 Generator::Generator(const std::vector<ASTString>& v, Expression* in, Expression* where) {
   std::vector<VarDecl*> vd;
   Location loc = in == nullptr ? where->loc() : in->loc();
-  for (unsigned int i = 0; i < v.size(); i++) {
-    auto* nvd = new VarDecl(loc, new TypeInst(loc, Type::parint()), v[i]);
+  for (auto i : v) {
+    auto* nvd = new VarDecl(loc, new TypeInst(loc, Type::parint()), i);
     nvd->toplevel(false);
     vd.push_back(nvd);
   }
@@ -480,8 +480,8 @@ Generator::Generator(const std::vector<ASTString>& v, Expression* in, Expression
 }
 Generator::Generator(const std::vector<Id*>& v, Expression* in, Expression* where) {
   std::vector<VarDecl*> vd;
-  for (unsigned int i = 0; i < v.size(); i++) {
-    auto* nvd = new VarDecl(v[i]->loc(), new TypeInst(v[i]->loc(), Type::parint()), v[i]->v());
+  for (auto i : v) {
+    auto* nvd = new VarDecl(i->loc(), new TypeInst(i->loc(), Type::parint()), i->v());
     nvd->toplevel(false);
     vd.push_back(nvd);
   }
@@ -492,8 +492,8 @@ Generator::Generator(const std::vector<Id*>& v, Expression* in, Expression* wher
 Generator::Generator(const std::vector<std::string>& v, Expression* in, Expression* where) {
   std::vector<VarDecl*> vd;
   Location loc = in == nullptr ? where->loc() : in->loc();
-  for (unsigned int i = 0; i < v.size(); i++) {
-    auto* nvd = new VarDecl(loc, new TypeInst(loc, Type::parint()), ASTString(v[i]));
+  for (const auto& i : v) {
+    auto* nvd = new VarDecl(loc, new TypeInst(loc, Type::parint()), ASTString(i));
     nvd->toplevel(false);
     vd.push_back(nvd);
   }
@@ -830,8 +830,8 @@ Let::Let(const Location& loc, const std::vector<Expression*>& let, Expression* i
     : Expression(loc, E_LET, Type()) {
   _let = ASTExprVec<Expression>(let);
   std::vector<Expression*> vde;
-  for (unsigned int i = 0; i < let.size(); i++) {
-    if (auto* vd = Expression::dyn_cast<VarDecl>(let[i])) {
+  for (auto i : let) {
+    if (auto* vd = Expression::dyn_cast<VarDecl>(i)) {
       vde.push_back(vd->e());
       for (unsigned int i = 0; i < vd->ti()->ranges().size(); i++) {
         vde.push_back(vd->ti()->ranges()[i]->domain());
@@ -856,8 +856,8 @@ void Let::pushbindings(void) {
   }
 }
 void Let::popbindings(void) {
-  for (unsigned int i = 0; i < _let.size(); i++) {
-    if (auto* vd = _let[i]->dyn_cast<VarDecl>()) {
+  for (auto& i : _let) {
+    if (auto* vd = i->dyn_cast<VarDecl>()) {
       GC::untrail();
       break;
     }

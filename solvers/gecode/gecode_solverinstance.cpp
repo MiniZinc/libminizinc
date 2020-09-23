@@ -916,8 +916,7 @@ ArrayLit* GecodeSolverInstance::arg2arraylit(Expression* arg) {
     } else {
       std::vector<Expression*>* array = arrayMap[vd];
       std::vector<Expression*> ids;
-      for (unsigned int i = 0; i < array->size(); i++)
-        ids.push_back(((*array)[i])->cast<VarDecl>()->id());
+      for (auto& i : *array) ids.push_back(i->cast<VarDecl>()->id());
       a = new ArrayLit(vd->loc(), ids);
     }
   } else if (auto* al = arg->dyn_cast<ArrayLit>()) {
@@ -1404,8 +1403,7 @@ bool GecodeSolverInstance::sac(bool toFixedPoint = false, bool shaving = false) 
       }
     }
 
-    for (unsigned int i = 0; i < sorted_iv.size(); i++) {
-      unsigned int idx = sorted_iv[i];
+    for (unsigned int idx : sorted_iv) {
       IntVar ivar = _current_space->iv[idx];
       bool tight = false;
       unsigned int nnq = 0;
@@ -1558,14 +1556,14 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
     TieBreak<FloatVarBranch>& def_float_varsel, FloatValBranch& def_float_valsel,
 #endif
     Rnd& rnd, double decay, bool ignoreUnknown, std::ostream& err) {
-  for (unsigned int i = 0; i < flatAnn.size(); i++) {
-    if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id() == "gecode_search") {
+  for (auto& i : flatAnn) {
+    if (i->isa<Call>() && i->cast<Call>()->id() == "gecode_search") {
       // Call* c = flatAnn[i]->cast<Call>();
       // branchWithPlugin(c->args);
       std::cerr << "WARNING: Not supporting search annotation \"gecode_search\" yet." << std::endl;
       return;
-    } else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id() == "int_search") {
-      Call* call = flatAnn[i]->cast<Call>();
+    } else if (i->isa<Call>() && i->cast<Call>()->id() == "int_search") {
+      Call* call = i->cast<Call>();
       ArrayLit* vars = arg2arraylit(call->arg(0));
       if (vars->size() == 0) {  // empty array
         std::cerr << "WARNING: trying to branch on empty array in search annotation: " << *call
@@ -1595,8 +1593,8 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
       );
       // branchInfo.add(bh,r0,r1,names);
     }  // end int_search
-    else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id() == "int_assign") {
-      Call* call = flatAnn[i]->dyn_cast<Call>();
+    else if (i->isa<Call>() && i->cast<Call>()->id() == "int_assign") {
+      Call* call = i->dyn_cast<Call>();
       ArrayLit* vars = arg2arraylit(call->arg(0));
       int k = vars->size();
       for (int i = vars->size(); i--;)
@@ -1612,8 +1610,8 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
       assign(*_current_space, va, ann2asnivalsel(call->arg(1)->cast<Id>()->str(), rnd), nullptr
              //&varValPrint<IntVar>
       );
-    } else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id() == "bool_search") {
-      Call* call = flatAnn[i]->dyn_cast<Call>();
+    } else if (i->isa<Call>() && i->cast<Call>()->id() == "bool_search") {
+      Call* call = i->dyn_cast<Call>();
       ArrayLit* vars = arg2arraylit(call->arg(0));
       int k = vars->size();
       for (int i = vars->size(); i--;)
@@ -1636,19 +1634,19 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
              //&varValPrint<BoolVar>
       );
       // branchInfo.add(bh,r0,r1,names);
-    } else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id() == "int_default_search") {
-      Call* call = flatAnn[i]->dyn_cast<Call>();
+    } else if (i->isa<Call>() && i->cast<Call>()->id() == "int_default_search") {
+      Call* call = i->dyn_cast<Call>();
       def_int_varsel = ann2ivarsel(call->arg(0)->cast<Id>()->str(), rnd, decay);
       std::string r0;
       def_int_valsel = ann2ivalsel(call->arg(1)->cast<Id>()->str(), r0, r0, rnd);
-    } else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id() == "bool_default_search") {
-      Call* call = flatAnn[i]->dyn_cast<Call>();
+    } else if (i->isa<Call>() && i->cast<Call>()->id() == "bool_default_search") {
+      Call* call = i->dyn_cast<Call>();
       std::string r0;
       def_bool_varsel = ann2bvarsel(call->arg(0)->cast<Id>()->str(), rnd, decay);
       def_bool_valsel = ann2bvalsel(call->arg(1)->cast<Id>()->str(), r0, r0, rnd);
-    } else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id() == "set_search") {
+    } else if (i->isa<Call>() && i->cast<Call>()->id() == "set_search") {
 #ifdef GECODE_HAS_SET_VARS
-      Call* call = flatAnn[i]->dyn_cast<Call>();
+      Call* call = i->dyn_cast<Call>();
       ArrayLit* vars = arg2arraylit(call->arg(0));
       int k = vars->size();
       for (int i = vars->size(); i--;)
@@ -1678,9 +1676,9 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
         err << std::endl;
       }
 #endif
-    } else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id() == "set_default_search") {
+    } else if (i->isa<Call>() && i->cast<Call>()->id() == "set_default_search") {
 #ifdef GECODE_HAS_SET_VARS
-      Call* call = flatAnn[i]->dyn_cast<Call>();
+      Call* call = i->dyn_cast<Call>();
       def_set_varsel = ann2svarsel(call->arg(0)->cast<Id>()->str(), rnd, decay);
       std::string r0;
       def_set_valsel = ann2svalsel(call->arg(1)->cast<Id>()->str(), r0, r0, rnd);
@@ -1691,10 +1689,9 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
         err << std::endl;
       }
 #endif
-    } else if (flatAnn[i]->isa<Call>() &&
-               flatAnn[i]->cast<Call>()->id() == "float_default_search") {
+    } else if (i->isa<Call>() && i->cast<Call>()->id() == "float_default_search") {
 #ifdef GECODE_HAS_FLOAT_VARS
-      Call* call = flatAnn[i]->dyn_cast<Call>();
+      Call* call = i->dyn_cast<Call>();
       def_float_varsel = ann2fvarsel(call->arg(0)->cast<Id>()->str(), rnd, decay);
       std::string r0;
       def_float_valsel = ann2fvalsel(call->arg(1)->cast<Id>()->str(), r0, r0);
@@ -1703,9 +1700,9 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
         err << "Warning, ignored search annotation: float_default_search" << std::endl;
       }
 #endif
-    } else if (flatAnn[i]->isa<Call>() && flatAnn[i]->cast<Call>()->id() == "float_search") {
+    } else if (i->isa<Call>() && i->cast<Call>()->id() == "float_search") {
 #ifdef GECODE_HAS_FLOAT_VARS
-      Call* call = flatAnn[i]->dyn_cast<Call>();
+      Call* call = i->dyn_cast<Call>();
       auto* vars = call->arg(0)->cast<ArrayLit>();
       int k = vars->size();
       for (int i = vars->size(); i--;)
@@ -1735,7 +1732,7 @@ void GecodeSolverInstance::setSearchStrategyFromAnnotation(
 #endif
     } else {
       if (!ignoreUnknown) {
-        err << "Warning, ignored search annotation: " << *flatAnn[i] << std::endl;
+        err << "Warning, ignored search annotation: " << *i << std::endl;
       }
     }
   }  // end for all annotations

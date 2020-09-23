@@ -375,8 +375,8 @@ inline ArrayLit::ArrayLit(const Location& loc, const std::vector<std::vector<Exp
   dims[2] = 1;
   dims[3] = v.size() > 0 ? static_cast<int>(v[0].size()) : 0;
   std::vector<Expression*> vv;
-  for (unsigned int i = 0; i < v.size(); i++)
-    for (unsigned int j = 0; j < v[i].size(); j++) vv.push_back(v[i][j]);
+  for (const auto& i : v)
+    for (auto j : i) vv.push_back(j);
   compress(vv, dims);
   rehash();
 }
@@ -400,12 +400,12 @@ inline void Comprehension::init(Expression* e, Generators& g) {
   _e = e;
   std::vector<Expression*> es;
   std::vector<int> idx;
-  for (unsigned int i = 0; i < g._g.size(); i++) {
+  for (auto& i : g._g) {
     idx.push_back(static_cast<int>(es.size()));
-    es.push_back(g._g[i]._in);
-    es.push_back(g._g[i]._where);
-    for (unsigned int j = 0; j < g._g[i]._v.size(); j++) {
-      es.push_back(g._g[i]._v[j]);
+    es.push_back(i._in);
+    es.push_back(i._where);
+    for (auto& j : i._v) {
+      es.push_back(j);
     }
   }
   idx.push_back(static_cast<int>(es.size()));

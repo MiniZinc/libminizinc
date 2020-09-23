@@ -315,12 +315,12 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     return flat_exp(env, ctx, ite->e_else(), r, b);
   }
 
-  for (unsigned int j = 0; j < results.size(); j++) {
-    if (results[j] == nullptr) {
+  for (auto& result : results) {
+    if (result == nullptr) {
       // need to introduce new result variable
       GCLock lock;
       auto* ti = new TypeInst(Location().introduce(), ite->type(), nullptr);
-      results[j] = newVarDecl(env, Ctx(), ti, nullptr, nullptr, nullptr);
+      result = newVarDecl(env, Ctx(), ti, nullptr, nullptr, nullptr);
     }
   }
 
@@ -366,9 +366,9 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     if (r_bounds_valid_int[j] && ite->type().isint()) {
       IntVal lb = IntVal::infinity();
       IntVal ub = -IntVal::infinity();
-      for (unsigned int i = 0; i < r_bounds_int[j].size(); i++) {
-        lb = std::min(lb, r_bounds_int[j][i].l);
-        ub = std::max(ub, r_bounds_int[j][i].u);
+      for (auto& i : r_bounds_int[j]) {
+        lb = std::min(lb, i.l);
+        ub = std::max(ub, i.u);
       }
       if (nr->ti()->domain()) {
         IntSetVal* isv = eval_intset(env, nr->ti()->domain());
@@ -387,9 +387,9 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       }
     } else if (r_bounds_valid_set[j] && ite->type().isintset()) {
       IntSetVal* isv_branches = IntSetVal::a();
-      for (unsigned int i = 0; i < r_bounds_set[j].size(); i++) {
+      for (auto& i : r_bounds_set[j]) {
         IntSetRanges i0(isv_branches);
-        IntSetRanges i1(r_bounds_set[j][i]);
+        IntSetRanges i1(i);
         Ranges::Union<IntVal, IntSetRanges, IntSetRanges> u(i0, i1);
         isv_branches = IntSetVal::ai(u);
       }
@@ -411,9 +411,9 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     } else if (r_bounds_valid_float[j] && ite->type().isfloat()) {
       FloatVal lb = FloatVal::infinity();
       FloatVal ub = -FloatVal::infinity();
-      for (unsigned int i = 0; i < r_bounds_float[j].size(); i++) {
-        lb = std::min(lb, r_bounds_float[j][i].l);
-        ub = std::max(ub, r_bounds_float[j][i].u);
+      for (auto& i : r_bounds_float[j]) {
+        lb = std::min(lb, i.l);
+        ub = std::max(ub, i.u);
       }
       if (nr->ti()->domain()) {
         FloatSetVal* isv = eval_floatset(env, nr->ti()->domain());
@@ -468,10 +468,10 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     std::vector<Expression*> defined_conjunctions(ite->size() + 1);
     for (unsigned int i = 0; i < ite->size() + 1; i++) {
       std::vector<Expression*> def_i;
-      for (unsigned int j = 0; j < defined.size(); j++) {
-        assert(defined[j].size() > i);
-        if (defined[j][i]() != constants().lit_true) {
-          def_i.push_back(defined[j][i]());
+      for (auto& j : defined) {
+        assert(j.size() > i);
+        if (j[i]() != constants().lit_true) {
+          def_i.push_back(j[i]());
         }
       }
       if (def_i.size() == 0) {

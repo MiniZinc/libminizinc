@@ -20,9 +20,8 @@ FznSpace::FznSpace(FznSpace& f) : Space(f) {
   // integer variables
   iv.resize(f.iv.size());
   for (unsigned int i = 0; i < iv.size(); i++) iv[i].update(*this, f.iv[i]);
-  for (unsigned int i = 0; i < f.iv_introduced.size(); i++)
-    iv_introduced.push_back(f.iv_introduced[i]);
-  for (unsigned int i = 0; i < f.iv_defined.size(); i++) iv_defined.push_back(f.iv_defined[i]);
+  for (auto&& i : f.iv_introduced) iv_introduced.push_back(i);
+  for (auto&& i : f.iv_defined) iv_defined.push_back(i);
   if (f._copyAuxVars) {
     IntVarArgs iva;
     for (int i = 0; i < f.iv_aux.size(); i++) {
@@ -47,8 +46,7 @@ FznSpace::FznSpace(FznSpace& f) : Space(f) {
     }
     bv_aux = BoolVarArray(*this, bva);
   }
-  for (unsigned int i = 0; i < f.bv_introduced.size(); i++)
-    bv_introduced.push_back(f.bv_introduced[i]);
+  for (auto&& i : f.bv_introduced) bv_introduced.push_back(i);
 
 #ifdef GECODE_HAS_SET_VARS
   sv.resize(f.sv.size());
@@ -63,8 +61,7 @@ FznSpace::FznSpace(FznSpace& f) : Space(f) {
     }
     sv_aux = SetVarArray(*this, sva);
   }
-  for (unsigned int i = 0; i < f.sv_introduced.size(); i++)
-    sv_introduced.push_back(f.sv_introduced[i]);
+  for (auto&& i : f.sv_introduced) sv_introduced.push_back(i);
 #endif
 
 #ifdef GECODE_HAS_FLOAT_VARS

@@ -394,9 +394,9 @@ Call* aggregateAndOrOps(EnvI& env, BinOp* bo, bool negateArgs, BinOpType bot) {
   Call* c;
   std::vector<Expression*> c_args(1);
   if (bot == BOT_AND) {
-    for (unsigned int i = 0; i < output_neg.size(); i++) {
-      UnOp* neg_arg = new UnOp(output_neg[i]->loc(), UOT_NOT, output_neg[i]);
-      neg_arg->type(output_neg[i]->type());
+    for (auto& i : output_neg) {
+      UnOp* neg_arg = new UnOp(i->loc(), UOT_NOT, i);
+      neg_arg->type(i->type());
       output_pos.push_back(neg_arg);
     }
     auto* al = new ArrayLit(bo->loc().introduce(), output_pos);
@@ -1531,8 +1531,8 @@ EE flatten_binop(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
           GC::unlock();
         } else {
           bool singleExp = true;
-          for (unsigned int i = 0; i < ees.size(); i++) {
-            if (!istrue(env, ees[i].b())) {
+          for (auto& ee : ees) {
+            if (!istrue(env, ee.b())) {
               singleExp = false;
               break;
             }

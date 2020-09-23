@@ -1506,14 +1506,14 @@ std::string b_show_json(EnvI& env, Call* call) {
       std::ostringstream oss;
       oss << "[";
       for (unsigned int i = 0; i < al->size(); i++) {
-        for (unsigned int j = 0; j < dims.size(); j++) {
-          if (i % dims[j] == 0) {
+        for (unsigned int dim : dims) {
+          if (i % dim == 0) {
             oss << "[";
           }
         }
         oss << b_show_json_basic(env, (*al)[i]);
-        for (unsigned int j = 0; j < dims.size(); j++) {
-          if (i % dims[j] == dims[j] - 1) {
+        for (unsigned int dim : dims) {
+          if (i % dim == dim - 1) {
             oss << "]";
           }
         }

@@ -183,8 +183,7 @@ void NLSolns2Out::parse_sol(const string& filename) {
       }
 
       // Output the arrays
-      for (int i = 0; i < nl_file.output_arrays.size(); ++i) {
-        NLArray& a = nl_file.output_arrays.at(i);
+      for (auto& a : nl_file.output_arrays) {
         sb << a.name << " = array" << a.dimensions.size() << "d( ";
         for (const string& s : a.dimensions) {
           sb << s << ", ";

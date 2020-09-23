@@ -269,13 +269,13 @@ void pushVarDecl(EnvI& env, int vd_idx, std::deque<int>& q) {
 void pushDependentConstraints(EnvI& env, Id* id, std::deque<Item*>& q) {
   auto it = env.vo._m.find(id->decl()->id());
   if (it != env.vo._m.end()) {
-    for (auto item = it->second.begin(); item != it->second.end(); ++item) {
-      if (auto* ci = (*item)->dyn_cast<ConstraintI>()) {
+    for (auto item : it->second) {
+      if (auto* ci = item->dyn_cast<ConstraintI>()) {
         if (!ci->removed() && !ci->flag()) {
           ci->flag(true);
           q.push_back(ci);
         }
-      } else if (auto* vdi = (*item)->dyn_cast<VarDeclI>()) {
+      } else if (auto* vdi = item->dyn_cast<VarDeclI>()) {
         if (vdi->e()->id()->decl() != vdi->e()) {
           vdi = (*env.flat())[env.vo.find(vdi->e()->id()->decl())]->cast<VarDeclI>();
         }
@@ -309,11 +309,11 @@ void optimize(Env& env, bool chain_compression) {
     // Phase 0: clean up
     // - clear flags for all constraint and variable declaration items
     //   (flags are used to indicate whether an item is already queued or not)
-    for (unsigned int i = 0; i < m.size(); i++) {
-      if (!m[i]->removed()) {
-        if (auto* ci = m[i]->dyn_cast<ConstraintI>()) {
+    for (auto& i : m) {
+      if (!i->removed()) {
+        if (auto* ci = i->dyn_cast<ConstraintI>()) {
           ci->flag(false);
-        } else if (auto* vdi = m[i]->dyn_cast<VarDeclI>()) {
+        } else if (auto* vdi = i->dyn_cast<VarDeclI>()) {
           vdi->flag(false);
         }
       }
@@ -662,10 +662,9 @@ void optimize(Env& env, bool chain_compression) {
                 if (vdi->e()->e() && vdi->e()->e()->isa<ArrayLit>()) {
                   auto ait = envi.vo._m.find(vdi->e()->id()->decl()->id());
                   if (ait != envi.vo._m.end()) {
-                    for (auto aitem = ait->second.begin(); aitem != ait->second.end(); ++aitem) {
-                      simplifyBoolConstraint(envi, *aitem, vd, remove, vardeclQueue,
-                                             constraintQueue, toRemove, deletedVarDecls,
-                                             nonFixedLiteralCount);
+                    for (auto aitem : ait->second) {
+                      simplifyBoolConstraint(envi, aitem, vd, remove, vardeclQueue, constraintQueue,
+                                             toRemove, deletedVarDecls, nonFixedLiteralCount);
                     }
                   }
                   continue;
@@ -833,13 +832,12 @@ void optimize(Env& env, bool chain_compression) {
           }
         }
       }
-      for (unsigned int j = 0; j < removedVarDecls.size(); j++) {
-        if (env.envi().vo.remove(removedVarDecls[j], bi) == 0) {
-          if ((removedVarDecls[j]->e() == nullptr ||
-               removedVarDecls[j]->ti()->domain() == nullptr ||
-               removedVarDecls[j]->ti()->computedDomain()) &&
-              !isOutput(removedVarDecls[j])) {
-            deletedVarDecls.push_back(removedVarDecls[j]);
+      for (auto& removedVarDecl : removedVarDecls) {
+        if (env.envi().vo.remove(removedVarDecl, bi) == 0) {
+          if ((removedVarDecl->e() == nullptr || removedVarDecl->ti()->domain() == nullptr ||
+               removedVarDecl->ti()->computedDomain()) &&
+              !isOutput(removedVarDecl)) {
+            deletedVarDecls.push_back(removedVarDecl);
           }
         }
       }
@@ -941,13 +939,12 @@ public:
   /// Determine whether to enter node
   bool enter(Expression* e) { return !e->isa<Id>(); }
   void remove(EnvI& env, Item* item, std::vector<VarDecl*>& deletedVarDecls) {
-    for (unsigned int i = 0; i < removed.size(); i++) {
-      removed[i]->ann().remove(constants().ann.is_defined_var);
-      if (env.vo.remove(removed[i], item) == 0) {
-        if ((removed[i]->e() == nullptr || removed[i]->ti()->domain() == nullptr ||
-             removed[i]->ti()->computedDomain()) &&
-            !isOutput(removed[i])) {
-          deletedVarDecls.push_back(removed[i]);
+    for (auto& i : removed) {
+      i->ann().remove(constants().ann.is_defined_var);
+      if (env.vo.remove(i, item) == 0) {
+        if ((i->e() == nullptr || i->ti()->domain() == nullptr || i->ti()->computedDomain()) &&
+            !isOutput(i)) {
+          deletedVarDecls.push_back(i);
         }
       }
     }
@@ -1284,8 +1281,8 @@ bool simplifyConstraint(EnvI& env, Item* ii, std::vector<VarDecl*>& deletedVarDe
           CollectOccurrencesE ce(env.vo, ii);
           topDown(ce, rewrite);
 
-          for (unsigned int i = 0; i < tdv.size(); i++) {
-            if (env.vo.occurrences(tdv[i]) == 0) deletedVarDecls.push_back(tdv[i]);
+          for (auto& i : tdv) {
+            if (env.vo.occurrences(i) == 0) deletedVarDecls.push_back(i);
           }
 
           assert(rewrite != nullptr);

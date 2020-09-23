@@ -304,8 +304,8 @@ std::string share_directory(void) {
 #endif
   std::string mypath = FileUtils::progpath();
   int depth = 0;
-  for (unsigned int i = 0; i < mypath.size(); i++)
-    if (mypath[i] == '/' || mypath[i] == '\\') depth++;
+  for (char i : mypath)
+    if (i == '/' || i == '\\') depth++;
   for (int i = 0; i <= depth; i++) {
     if (FileUtils::file_exists(mypath + "/share/minizinc/std/stdlib.mzn"))
       return mypath + "/share/minizinc";
@@ -545,8 +545,8 @@ std::string combineCmdLine(const std::vector<std::string>& cmd) {
   for (unsigned int i = 0; i < cmd.size(); i++) {
     auto& c = cmd[i];
     ret << "\"";
-    for (size_t i = 0; i < c.size(); i++) {
-      switch (c[i]) {
+    for (char i : c) {
+      switch (i) {
         case '\a':
           ret << "\\a";
           break;
@@ -575,7 +575,7 @@ std::string combineCmdLine(const std::vector<std::string>& cmd) {
           ret << "\\\\";
           break;
         default:
-          ret << c[i];
+          ret << i;
           break;
       }
     }

@@ -440,38 +440,39 @@ private:
 
     aCT.clear();
     aCT.emplace_back("int_le_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_LE, VT_Int,
-                      int_le_reif__POST);
+                     int_le_reif__POST);
     aCT.emplace_back("int_ge_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_GE, VT_Int,
-                      int_ge_reif__POST);
+                     int_ge_reif__POST);
     aCT.emplace_back("int_eq_reif__POST", t_VIIVI, RIT_Reif, CT_Comparison, CMPT_EQ, VT_Int,
-                      int_eq_reif__POST);
-    aCT.emplace_back("int_ne__POST", t_VII, RIT_Static, CT_Comparison, CMPT_NE, VT_Int, int_ne__POST);
+                     int_eq_reif__POST);
+    aCT.emplace_back("int_ne__POST", t_VII, RIT_Static, CT_Comparison, CMPT_NE, VT_Int,
+                     int_ne__POST);
 
     aCT.emplace_back("float_le_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_LE, VT_Float,
-                      float_le_reif__POST);
+                     float_le_reif__POST);
     aCT.emplace_back("float_ge_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_GE, VT_Float,
-                      float_ge_reif__POST);
+                     float_ge_reif__POST);
     aCT.emplace_back("aux_float_lt_zero_iff_1__POST", t_VFVIF, RIT_Reif, CT_Comparison, CMPT_LT,
-                      VT_Float, aux_float_lt_zero_iff_1__POST);
+                     VT_Float, aux_float_lt_zero_iff_1__POST);
     aCT.emplace_back("float_eq_reif__POST", t_VFFVIF, RIT_Reif, CT_Comparison, CMPT_EQ, VT_Float,
-                      float_eq_reif__POST);
+                     float_eq_reif__POST);
     aCT.emplace_back("float_ne__POST", t_VFFF, RIT_Static, CT_Comparison, CMPT_NE, VT_Float,
-                      float_ne__POST);
+                     float_ne__POST);
 
     aCT.emplace_back("aux_float_eq_zero_if_1__POST", t_VFVIVF, RIT_Halfreif, CT_Comparison,
-                      CMPT_EQ_0, VT_Float, aux_float_eq_zero_if_1__POST);
+                     CMPT_EQ_0, VT_Float, aux_float_eq_zero_if_1__POST);
     aCT.emplace_back("aux_int_le_zero_if_1__POST", t_VIVI, RIT_Halfreif, CT_Comparison, CMPT_LE_0,
-                      VT_Int, aux_int_le_zero_if_1__POST);
+                     VT_Int, aux_int_le_zero_if_1__POST);
     aCT.emplace_back("aux_float_le_zero_if_1__POST", t_VFVIVF, RIT_Halfreif, CT_Comparison,
-                      CMPT_LE_0, VT_Float, aux_float_le_zero_if_1__POST);
+                     CMPT_LE_0, VT_Float, aux_float_le_zero_if_1__POST);
     aCT.emplace_back("aux_float_lt_zero_if_1__POST", t_VFVIVFF, RIT_Halfreif, CT_Comparison,
-                      CMPT_LT_0, VT_Float, aux_float_lt_zero_if_1__POST);
+                     CMPT_LT_0, VT_Float, aux_float_lt_zero_if_1__POST);
 
     aCT.emplace_back("equality_encoding__POST", t_VIAVI, RIT_Static, CT_Encode, CMPT_None, VT_Int,
-                      equality_encoding__POST);
+                     equality_encoding__POST);
     aCT.emplace_back("set_in__POST", t_VISI, RIT_Static, CT_SetIn, CMPT_None, VT_Int, set_in__POST);
     aCT.emplace_back("set_in_reif__POST", t_VISIVI, RIT_Reif, CT_SetIn, CMPT_None, VT_Int,
-                      set_in_reif__POST);
+                     set_in_reif__POST);
     /// Registering all declared & compatible __POST constraints
     /// (First, cleanup FunctionIs' payload:  -- ! doing now)
     for (int i = 0; i < aCT.size(); ++i) {
@@ -1034,8 +1035,7 @@ private:
       }
       DBGOUT_MIPD(" Clique " << mipd.vVarDescr[iVarStart].nClique << ": " << leg.size()
                              << " variables, " << clq.size() << " connections.");
-      for (auto it1 = leg.begin(); it1 != leg.end(); ++it1)
-        mipd.vVarDescr[it1->first->payload()].fDomainConstrProcessed = true;
+      for (auto& it1 : leg) mipd.vVarDescr[it1.first->payload()].fDomainConstrProcessed = true;
 
       // Propagate the 1st var's relations:
       leg.propagate(leg.begin(), mRef0);
@@ -1046,13 +1046,13 @@ private:
       std::array<double, 3> aCrit = {
           {(double)mipd.vVarDescr[varRef1->payload()].fInt,
            static_cast<double>(mipd.vVarDescr[varRef1->payload()].pEqEncoding != nullptr), 1.0}};
-      for (auto it2 = mRef0.begin(); it2 != mRef0.end(); ++it2) {
-        VarDescr& vard = mipd.vVarDescr[it2->first->payload()];
+      for (auto& it2 : mRef0) {
+        VarDescr& vard = mipd.vVarDescr[it2.first->payload()];
         std::array<double, 3> aCrit1 = {{(double)vard.fInt,
                                          static_cast<double>(vard.pEqEncoding != nullptr),
-                                         std::fabs(it2->second.first)}};
+                                         std::fabs(it2.second.first)}};
         if (aCrit1 > aCrit) {
-          varRef1 = it2->first;
+          varRef1 = it2.first;
           aCrit = aCrit1;
         }
       }

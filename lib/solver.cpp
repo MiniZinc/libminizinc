@@ -236,8 +236,8 @@ void MznSolver::printHelp(const std::string& selectedSolver) {
     os << "Available solvers (get help using --help <solver id>):" << endl;
     std::vector<std::string> solvers = solver_configs.solvers();
     if (solvers.size() == 0) cout << "  none.\n";
-    for (unsigned int i = 0; i < solvers.size(); i++) {
-      cout << "  " << solvers[i] << endl;
+    for (auto& solver : solvers) {
+      cout << "  " << solver << endl;
     }
   } else {
     const SolverConfig& sc = solver_configs.config(selectedSolver);
@@ -357,8 +357,8 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
       cout << "MiniZinc driver.\nAvailable solver configurations:\n";
       std::vector<std::string> solvers = solver_configs.solvers();
       if (solvers.size() == 0) cout << "  none.\n";
-      for (unsigned int i = 0; i < solvers.size(); i++) {
-        cout << "  " << solvers[i] << endl;
+      for (auto& solver : solvers) {
+        cout << "  " << solver << endl;
       }
       cout << "Search path for solver configurations:\n";
       for (const string& p : solver_configs.solverConfigsPath()) {
@@ -488,11 +488,10 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         }
       }
 
-      for (auto it = getGlobalSolverRegistry()->getSolverFactories().begin();
-           it != getGlobalSolverRegistry()->getSolverFactories().end(); ++it) {
-        if ((*it)->getId() ==
+      for (auto it : getGlobalSolverRegistry()->getSolverFactories()) {
+        if (it->getId() ==
             solverId) {  /// TODO: also check version (currently assumes all ids are unique)
-          sf = *it;
+          sf = it;
           delete si_opt;
           si_opt = sf->createOptions();
           if (!sc.executable().empty() || solverId == "org.minizinc.mzn-fzn" ||

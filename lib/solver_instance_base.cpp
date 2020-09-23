@@ -101,8 +101,7 @@ void SolverInstanceBase2::assignSolutionToOutput() {
 
   // iterate over set of ids that have an output annotation && obtain their right hand side from the
   // flat model
-  for (unsigned int i = 0; i < _varsWithOutput.size(); i++) {
-    VarDecl* vd = _varsWithOutput[i];
+  for (auto vd : _varsWithOutput) {
     // std::cout << "DEBUG: Looking at var-decl with output-annotation: " << *vd << std::endl;
     if (Call* output_array_ann = Expression::dyn_cast<Call>(
             getAnnotation(vd->ann(), constants().ann.output_array.aststr()))) {
@@ -149,7 +148,7 @@ void SolverInstanceBase2::assignSolutionToOutput() {
             dims_v.emplace_back(1, 0);
           } else {
             dims_v.emplace_back(static_cast<int>(isv->min().toInt()),
-                                                 static_cast<int>(isv->max().toInt()));
+                                static_cast<int>(isv->max().toInt()));
           }
         }
         auto* array_solution = new ArrayLit(Location(), array_elems, dims_v);
