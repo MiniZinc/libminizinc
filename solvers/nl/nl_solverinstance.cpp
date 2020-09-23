@@ -134,8 +134,8 @@ SolverInstance::Status NLSolverInstance::solve(void) {
 
   if (opt.do_keepfile) {
     // Keep file: output next to original file
-    ASTString file_mzn =
-        _env.envi().orig_model ? _env.envi().orig_model->filepath() : _env.envi().model->filepath();
+    ASTString file_mzn = _env.envi().orig_model != nullptr ? _env.envi().orig_model->filepath()
+                                                           : _env.envi().model->filepath();
     string file_base = std::string(file_mzn.substr(0, file_mzn.find_last_of('.')));
     file_nl = file_base + ".nl";
     file_sol = file_base + ".sol";

@@ -28,7 +28,7 @@ Scopes::Scopes(void) {
 }
 
 void Scopes::add(EnvI& env, VarDecl* vd) {
-  if (!s.back().toplevel && vd->ti()->isEnum() && vd->e()) {
+  if (!s.back().toplevel && vd->ti()->isEnum() && (vd->e() != nullptr)) {
     throw TypeError(env, vd->loc(), "enums are only allowed at top level");
   }
   if (vd->id()->idn() == -1 && vd->id()->v() == "") return;
@@ -135,9 +135,9 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
   std::vector<Expression*> parts;
   if (vd->e()->isa<SetLit>()) {
     parts.push_back(vd->e());
-  } else if (al ||
-             (c && c->id() == "anon_enum" && c->n_args() == 1 && c->arg(0)->isa<ArrayLit>())) {
-    if (c) {
+  } else if ((al != nullptr) || ((c != nullptr) && c->id() == "anon_enum" && c->n_args() == 1 &&
+                                 c->arg(0)->isa<ArrayLit>())) {
+    if (c != nullptr) {
       al = c->arg(0)->cast<ArrayLit>();
     }
     std::vector<Expression*> enumIds(al->size());
@@ -151,7 +151,7 @@ void createEnumMapper(EnvI& env, Model* m, unsigned int enumId, VarDecl* vd, Mod
       }
     }
     parts.push_back(new SetLit(vd->e()->loc(), enumIds));
-  } else if (c) {
+  } else if (c != nullptr) {
     if (c->id() == "enumFromConstructors") {
       if (c->n_args() != 1 || !c->arg(0)->isa<ArrayLit>()) {
         throw TypeError(env, c->loc(),
@@ -855,7 +855,7 @@ void TopoSorter::add(EnvI& env, VarDeclI* vdi, bool handleEnums, Model* enumItem
     vd->ti()->type(vdt);
     vd->type(vdt);
 
-    if (vd->e()) {
+    if (vd->e() != nullptr) {
       createEnumMapper(env, model, enumId, vd, enumItems);
     }
   }
@@ -866,11 +866,11 @@ VarDecl* TopoSorter::get(EnvI& env, const ASTString& id_v, const Location& loc) 
   GCLock lock;
   Id* ident = new Id(Location(), id_v, nullptr);
   VarDecl* decl = scopes.find(ident);
-  if (!decl) {
+  if (decl == nullptr) {
     std::ostringstream ss;
     ss << "undefined identifier `" << ident->str() << "'";
     VarDecl* similar = scopes.findSimilar(ident);
-    if (similar) {
+    if (similar != nullptr) {
       ss << ", did you mean `" << *similar->id() << "'?";
     }
     throw TypeError(env, loc, ss.str());
@@ -880,11 +880,11 @@ VarDecl* TopoSorter::get(EnvI& env, const ASTString& id_v, const Location& loc) 
 
 VarDecl* TopoSorter::checkId(EnvI& env, Id* ident, const Location& loc) {
   VarDecl* decl = scopes.find(ident);
-  if (!decl) {
+  if (decl == nullptr) {
     std::ostringstream ss;
     ss << "undefined identifier `" << ident->str() << "'";
     VarDecl* similar = scopes.findSimilar(ident);
-    if (similar) {
+    if (similar != nullptr) {
       ss << ", did you mean `" << *similar->id() << "'?";
     }
     throw TypeError(env, loc, ss.str());
@@ -950,7 +950,7 @@ void TopoSorter::run(EnvI& env, Expression* e) {
           run(env, ce->decl(i, j));
           scopes.add(env, ce->decl(i, j));
         }
-        if (ce->where(i)) run(env, ce->where(i));
+        if (ce->where(i) != nullptr) run(env, ce->where(i));
       }
       run(env, ce->e());
       scopes.pop();
@@ -1066,7 +1066,7 @@ KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) 
         bool needIdxSet = true;
         bool needInter = true;
         if (auto* sl = aa->idx()[i]->dyn_cast<SetLit>()) {
-          if (sl->isv() && sl->isv()->size() == 1) {
+          if ((sl->isv() != nullptr) && sl->isv()->size() == 1) {
             if (sl->isv()->min().isFinite() && sl->isv()->max().isFinite()) {
               args.push_back(sl);
               needIdxSet = false;
@@ -1086,7 +1086,7 @@ KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) 
           origIdxsetArgs[0] = aa->v();
           Call* origIdxset = new Call(aa->v()->loc(), ASTString(oss.str()), origIdxsetArgs);
           FunctionI* fi = m->matchFn(env, origIdxset, false);
-          if (!fi) throw TypeError(env, e->loc(), "missing builtin " + oss.str());
+          if (fi == nullptr) throw TypeError(env, e->loc(), "missing builtin " + oss.str());
           origIdxset->type(fi->rtype(env, origIdxsetArgs, false));
           origIdxset->decl(fi);
           if (needInter) {
@@ -1111,7 +1111,7 @@ KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) 
     oss << "slice_" << (args.size() - 2) << "d";
     Call* c = new Call(e->loc(), ASTString(oss.str()), args);
     FunctionI* fi = m->matchFn(env, c, false);
-    if (!fi) throw TypeError(env, e->loc(), "missing builtin " + oss.str());
+    if (fi == nullptr) throw TypeError(env, e->loc(), "missing builtin " + oss.str());
     c->type(fi->rtype(env, args, false));
     c->decl(fi);
     e = c;
@@ -1133,7 +1133,7 @@ KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) 
     set2a_args[0] = e;
     Call* set2a = new Call(e->loc(), ASTString("set2array"), set2a_args);
     FunctionI* fi = m->matchFn(env, set2a, false);
-    if (fi) {
+    if (fi != nullptr) {
       set2a->type(fi->rtype(env, set2a_args, false));
       set2a->decl(fi);
       e = set2a;
@@ -1157,7 +1157,7 @@ KeepAlive addCoercion(EnvI& env, Model* m, Expression* e, const Type& funarg_t) 
       c = new Call(e->loc(), constants().ids.int2float, args);
     }
   }
-  if (c) {
+  if (c != nullptr) {
     FunctionI* fi = m->matchFn(env, c, false);
     assert(fi);
     Type ct = fi->rtype(env, args, false);
@@ -1202,13 +1202,13 @@ public:
   void vSetLit(SetLit& sl) {
     Type ty;
     ty.st(Type::ST_SET);
-    if (sl.isv()) {
+    if (sl.isv() != nullptr) {
       ty.bt(Type::BT_INT);
       ty.enumId(sl.type().enumId());
       sl.type(ty);
       return;
     }
-    if (sl.fsv()) {
+    if (sl.fsv() != nullptr) {
       ty.bt(Type::BT_FLOAT);
       sl.type(ty);
       return;
@@ -1275,7 +1275,7 @@ public:
         throw TypeError(_env, vi->loc(), "arrays cannot be elements of arrays");
       if (vi == constants().absent) haveAbsents = true;
       auto* av = vi->dyn_cast<AnonVar>();
-      if (av) {
+      if (av != nullptr) {
         ty.ti(Type::TI_VAR);
         anons.push_back(av);
       } else if (vi->type().isvar()) {
@@ -1500,7 +1500,7 @@ public:
         whereMap[c.decl(i, j)] = std::vector<Expression*>();
       }
       Expression* g_in = c.in(i);
-      if (g_in) {
+      if (g_in != nullptr) {
         const Type& ty_in = g_in->type();
         if (ty_in == Type::varsetint()) {
           if (!c.set()) {
@@ -1510,7 +1510,7 @@ public:
           tt.cv(true);
         }
         if (ty_in.cv()) tt.cv(true);
-        if (c.where(i)) {
+        if (c.where(i) != nullptr) {
           if (c.where(i)->type() == Type::varbool()) {
             if (!c.set()) {
               tt.ot(Type::OT_OPTIONAL);
@@ -1586,7 +1586,8 @@ public:
         std::vector<VarDecl*> decls;
         for (int j = 0; j < c.n_decls(i); j++) {
           decls.push_back(c.decl(i, j));
-          KeepAlive c_in = c.in(i) ? addCoercion(_env, _model, c.in(i), c.in(i)->type()) : nullptr;
+          KeepAlive c_in =
+              c.in(i) != nullptr ? addCoercion(_env, _model, c.in(i), c.in(i)->type()) : nullptr;
           if (whereMap[c.decl(i, j)].size() != 0) {
             // need a generator for all the decls up to this point
             Expression* whereExpr = whereMap[c.decl(i, j)][0];
@@ -1767,7 +1768,7 @@ public:
       ty.cv(bop.lhs()->type().cv() || bop.rhs()->type().cv());
       bop.type(ty);
 
-      if (fi->e())
+      if (fi->e() != nullptr)
         bop.decl(fi);
       else
         bop.decl(nullptr);
@@ -1778,7 +1779,7 @@ public:
         Call* call = bop.lhs()->dyn_cast<Call>();
         Expression* rhs = bop.rhs();
         BinOpType bot = bop.op();
-        if (!call) {
+        if (call == nullptr) {
           call = bop.rhs()->dyn_cast<Call>();
           rhs = bop.lhs();
           switch (bop.op()) {
@@ -1798,11 +1799,12 @@ public:
               break;
           }
         }
-        if (call && (call->id() == "count" || call->id() == "sum") && call->type().isvar()) {
+        if ((call != nullptr) && (call->id() == "count" || call->id() == "sum") &&
+            call->type().isvar()) {
           if (call->n_args() == 1 && call->arg(0)->isa<Comprehension>()) {
             auto* comp = call->arg(0)->cast<Comprehension>();
             auto* inner_bo = comp->e()->dyn_cast<BinOp>();
-            if (inner_bo) {
+            if (inner_bo != nullptr) {
               if (inner_bo->op() == BOT_EQ && inner_bo->lhs()->type().isint()) {
                 Expression* generated = inner_bo->lhs();
                 Expression* comparedTo = inner_bo->rhs();
@@ -1813,7 +1815,7 @@ public:
                     std::swap(generated, comparedTo);
                   }
                 }
-                if (comparedTo) {
+                if (comparedTo != nullptr) {
                   GCLock lock;
                   ASTString cid;
                   switch (bot) {
@@ -1885,7 +1887,7 @@ public:
             }
             std::vector<Expression*> args({call->arg(0), call->arg(1), rhs});
             FunctionI* newCall_decl = _model->matchFn(_env, cid, args, true);
-            if (!newCall_decl) {
+            if (newCall_decl == nullptr) {
               std::ostringstream ss;
               ss << "could not replace binary operator by call to " << cid;
               throw InternalError(ss.str());
@@ -1915,7 +1917,7 @@ public:
       Type ty = fi->rtype(_env, args, true);
       ty.cv(uop.e()->type().cv());
       uop.type(ty);
-      if (fi->e()) uop.decl(fi);
+      if (fi->e() != nullptr) uop.decl(fi);
     } else {
       std::ostringstream ss;
       ss << "type error in operator application for `" << uop.opToString()
@@ -1927,11 +1929,11 @@ public:
   /// Visit call
   void vCall(Call& call) {
     std::vector<Expression*> args(call.n_args());
-    for (auto i = static_cast<unsigned int>(args.size()); i--;) args[i] = call.arg(i);
+    for (auto i = static_cast<unsigned int>(args.size()); (i--) != 0u;) args[i] = call.arg(i);
     FunctionI* fi = _model->matchFn(_env, &call, true, true);
-    if (fi->e() && fi->e()->isa<Call>()) {
+    if ((fi->e() != nullptr) && fi->e()->isa<Call>()) {
       Call* next_call = fi->e()->cast<Call>();
-      if (next_call->decl() && next_call->n_args() == fi->params().size() &&
+      if ((next_call->decl() != nullptr) && next_call->n_args() == fi->params().size() &&
           _model->sameOverloading(_env, args, fi, next_call->decl())) {
         bool macro = true;
         for (unsigned int i = 0; i < fi->params().size(); i++) {
@@ -1982,7 +1984,7 @@ public:
         }
         if (enumId > 0) {
           VarDecl* enumDecl = _env.getEnum(enumId)->e();
-          if (enumDecl->e()) {
+          if (enumDecl->e() != nullptr) {
             Id* ti_id = _env.getEnum(enumId)->e()->id();
             GCLock lock;
             std::vector<Expression*> args(3);
@@ -2049,7 +2051,7 @@ public:
           ss << "set element type for `" << vdi->id()->str() << "' is not finite";
           _typeErrors.emplace_back(_env, vdi->loc(), ss.str());
         }
-        if (vdi->type().ispar() && !vdi->e()) {
+        if (vdi->type().ispar() && (vdi->e() == nullptr)) {
           std::ostringstream ss;
           ss << "let variable `" << vdi->id()->v() << "' must be initialised";
           throw TypeError(_env, vdi->loc(), ss.str());
@@ -2075,7 +2077,7 @@ public:
   /// Visit variable declaration
   void vVarDecl(VarDecl& vd) {
     if (ignoreVarDecl) {
-      if (vd.e()) {
+      if (vd.e() != nullptr) {
         Type vdt = vd.ti()->type();
         Type vet = vd.e()->type();
         if (vdt.enumId() != 0 && vdt.dim() > 0 &&
@@ -2129,7 +2131,8 @@ public:
   /// Visit type inst
   void vTypeInst(TypeInst& ti) {
     Type tt = ti.type();
-    bool foundEnum = ti.ranges().size() > 0 && ti.domain() && ti.domain()->type().enumId() != 0;
+    bool foundEnum =
+        ti.ranges().size() > 0 && (ti.domain() != nullptr) && ti.domain()->type().enumId() != 0;
     if (ti.ranges().size() > 0) {
       bool foundTIId = false;
       for (unsigned int i = 0; i < ti.ranges().size(); i++) {
@@ -2149,7 +2152,7 @@ public:
         } else if (ri->type() != Type::parint()) {
           assert(ri->isa<TypeInst>());
           auto* riti = ri->cast<TypeInst>();
-          if (riti->domain()) {
+          if (riti->domain() != nullptr) {
             throw TypeError(_env, ri->loc(),
                             "array index set expression has invalid type, expected `set of int', "
                             "actual `set of " +
@@ -2163,8 +2166,8 @@ public:
       }
       tt.dim(foundTIId ? -1 : ti.ranges().size());
     }
-    if (ti.domain() && ti.domain()->type().cv()) tt.cv(true);
-    if (ti.domain()) {
+    if ((ti.domain() != nullptr) && ti.domain()->type().cv()) tt.cv(true);
+    if (ti.domain() != nullptr) {
       if (TIId* tiid = ti.domain()->dyn_cast<TIId>()) {
         if (tiid->isEnum()) {
           tt.bt(Type::BT_INT);
@@ -2178,7 +2181,7 @@ public:
           throw TypeError(_env, ti.domain()->loc(), "type-inst cannot be an array");
       }
     }
-    if (tt.isunknown() && ti.domain()) {
+    if (tt.isunknown() && (ti.domain() != nullptr)) {
       assert(ti.domain());
       switch (ti.domain()->type().bt()) {
         case Type::BT_INT:
@@ -2202,7 +2205,7 @@ public:
       for (unsigned int i = 0; i < ti.ranges().size(); i++) {
         enumIds[i] = ti.ranges()[i]->type().enumId();
       }
-      enumIds[ti.ranges().size()] = ti.domain() ? ti.domain()->type().enumId() : 0;
+      enumIds[ti.ranges().size()] = ti.domain() != nullptr ? ti.domain()->type().enumId() : 0;
       int arrayEnumId = _env.registerArrayEnum(enumIds);
       tt.enumId(arrayEnumId);
     }
@@ -2305,7 +2308,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     void vSolveI(SolveI* si) {
       if (hadSolveItem) throw TypeError(env, si->loc(), "Only one solve item allowed");
       hadSolveItem = true;
-      if (!isFlatZinc && si->e()) {
+      if (!isFlatZinc && (si->e() != nullptr)) {
         GCLock lock;
         auto* ti = new TypeInst(Location().introduce(), Type());
         auto* obj = new VarDecl(Location().introduce(), ti, "_objective", si->e());
@@ -2315,7 +2318,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     }
   } _tsv0(env.envi(), ts, m, assignItems, enumItems, isFlatZinc);
   iterItems(_tsv0, m);
-  if (_tsv0.objective) {
+  if (_tsv0.objective != nullptr) {
     m->addItem(_tsv0.objective);
     ts.add(env.envi(), _tsv0.objective, true, enumItems);
   }
@@ -2346,8 +2349,8 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
     } else {
       vd = ts.get(env.envi(), ai->id(), ai->loc());
     }
-    if (vd) {
-      if (vd->e()) {
+    if (vd != nullptr) {
+      if (vd->e() != nullptr) {
         if (allowMultiAssignment) {
           GCLock lock;
           m->addItem(new ConstraintI(
@@ -2472,7 +2475,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
           _typeErrors.emplace_back(env, vdi->loc(), ss.str());
         }
         if (i->e()->ann().contains(constants().ann.output_only)) {
-          if (!vdi->e()) {
+          if (vdi->e() == nullptr) {
             _typeErrors.emplace_back(
                 env, vdi->loc(),
                 "variables annotated with ::output_only must have a right hand side");
@@ -2510,7 +2513,7 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
                             "expected annotation, got `" + (*it)->type().toString(env) + "'");
         }
         bu_ty.run(i->e());
-        if (i->e()) {
+        if (i->e() != nullptr) {
           Type et = i->e()->type();
 
           bool needOptCoercion = et.isopt() && et.isint();
@@ -2554,18 +2557,18 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         }
         bu_ty.run(i->ti());
         bu_ty.run(i->e());
-        if (i->e() && !env.isSubtype(i->e()->type(), i->ti()->type(), true))
+        if ((i->e() != nullptr) && !env.isSubtype(i->e()->type(), i->ti()->type(), true))
           throw TypeError(env, i->e()->loc(),
                           "return type of function does not match body, declared type is `" +
                               i->ti()->type().toString(env) + "', body type is `" +
                               i->e()->type().toString(env) + "'");
-        if (i->e() && i->e()->type().ispar() && i->ti()->type().isvar()) {
+        if ((i->e() != nullptr) && i->e()->type().ispar() && i->ti()->type().isvar()) {
           // this is a par function declared as var, so change declared return type
           Type i_t = i->ti()->type();
           i_t.ti(Type::TI_PAR);
           i->ti()->type(i_t);
         }
-        if (i->e()) i->e(addCoercion(env, m, i->e(), i->ti()->type())());
+        if (i->e() != nullptr) i->e(addCoercion(env, m, i->e(), i->ti()->type())());
       }
     } _tsv2(env.envi(), m, bu_ty, typeErrors);
     iterItems(_tsv2, m);

@@ -82,7 +82,7 @@ bool ImpCompressor::trackItem(Item* i) {
       }
     }
   } else if (auto vdi = i->dyn_cast<VarDeclI>()) {
-    if (vdi->e()->type().isvarbool() && vdi->e() && vdi->e()->e()) {
+    if (vdi->e()->type().isvarbool() && (vdi->e() != nullptr) && (vdi->e()->e() != nullptr)) {
       if (auto c = vdi->e()->e()->dyn_cast<Call>()) {
         // x = forall([y,z,...]); potentially: x -> (y /\ z /\ ...)
         if (c->id() == constants().ids.forall) {
@@ -100,7 +100,7 @@ bool ImpCompressor::trackItem(Item* i) {
           args.push_back(Type::varbool());
           FunctionI* decl = env.model->matchFn(env, cid, args, false);
 
-          if (decl) {
+          if (decl != nullptr) {
             storeItem(vdi->e(), i);
             return true;
           }
@@ -135,7 +135,7 @@ void ImpCompressor::compress() {
         // - There is one occurrence on the RHS of a clause, that Id is a reification in a positive
         // context, and all other occurrences are on the LHS of a clause
         bool compress = !output_var && lhs_occurences > 0;
-        if (var->decl()->e() && var->decl()->e()->dyn_cast<Call>()) {
+        if ((var->decl()->e() != nullptr) && (var->decl()->e()->dyn_cast<Call>() != nullptr)) {
           auto call = var->decl()->e()->cast<Call>();
           if (call->id() == constants().ids.forall) {
             compress = compress && (occurrences == 1 && lhs_occurences == 1);
@@ -157,7 +157,7 @@ void ImpCompressor::compress() {
       }
     }
 
-    if (lhs && rhs) {
+    if ((lhs != nullptr) && (rhs != nullptr)) {
       assert(count(rhs) > 0);
 
       auto range = find(rhs);
@@ -230,7 +230,7 @@ bool ImpCompressor::compressItem(Item* i, VarDecl* newLHS) {
 ConstraintI* ImpCompressor::constructClause(Expression* pos, Expression* neg) {
   assert(GC::locked());
   std::vector<Expression*> args(2);
-  if (pos->dyn_cast<ArrayLit>()) {
+  if (pos->dyn_cast<ArrayLit>() != nullptr) {
     args[0] = pos;
   } else {
     assert(neg->type().isbool());
@@ -239,7 +239,7 @@ ConstraintI* ImpCompressor::constructClause(Expression* pos, Expression* neg) {
     args[0] = new ArrayLit(pos->loc().introduce(), eVec);
     args[0]->type(Type::varbool(1));
   }
-  if (neg->dyn_cast<ArrayLit>()) {
+  if (neg->dyn_cast<ArrayLit>() != nullptr) {
     args[1] = neg;
   } else {
     assert(neg->type().isbool());
@@ -269,7 +269,7 @@ ConstraintI* ImpCompressor::constructHalfReif(Call* call, Id* control) {
   }
   args.push_back(control);
   FunctionI* decl = env.model->matchFn(env, cid, args, false);
-  if (decl) {
+  if (decl != nullptr) {
     auto nc = new Call(call->loc().introduce(), cid, args);
     nc->decl(decl);
     nc->type(Type::varbool());
@@ -383,7 +383,7 @@ void LECompressor::compress() {
             }
 
             auto pos = follow_id_to_decl((*bs)[1 - i])->dyn_cast<VarDecl>();
-            if (pos && compress) {
+            if ((pos != nullptr) && compress) {
               rhs = neg;
               lhs = pos;
               assert(lhs != rhs);
@@ -394,7 +394,7 @@ void LECompressor::compress() {
       }
     }
 
-    if (lhs && rhs) {
+    if ((lhs != nullptr) && (rhs != nullptr)) {
       assert(count(rhs) + count(alias) > 0);
 
       auto range = find(rhs);
@@ -409,7 +409,7 @@ void LECompressor::compress() {
           LEReplaceVar<IntLit>(item, rhs, lhs);
         }
       }
-      if (alias) {
+      if (alias != nullptr) {
         VarDecl* i2f_lhs;
 
         auto search = aliasMap.find(lhs);
@@ -528,7 +528,7 @@ bool LECompressor::eqBounds(Expression* a, Expression* b) {
   IntSetVal* dom_b = nullptr;
 
   if (auto a_decl = follow_id_to_decl(a)->dyn_cast<VarDecl>()) {
-    if (a_decl->ti()->domain()) {
+    if (a_decl->ti()->domain() != nullptr) {
       dom_a = eval_intset(env, a_decl->ti()->domain());
     }
   } else {
@@ -538,7 +538,7 @@ bool LECompressor::eqBounds(Expression* a, Expression* b) {
   }
 
   if (auto b_decl = follow_id_to_decl(b)->dyn_cast<VarDecl>()) {
-    if (b_decl->ti()->domain()) {
+    if (b_decl->ti()->domain() != nullptr) {
       dom_b = eval_intset(env, b_decl->ti()->domain());
     }
   } else {
@@ -547,8 +547,9 @@ bool LECompressor::eqBounds(Expression* a, Expression* b) {
     dom_b = IntSetVal::a(b_val->v(), b_val->v());
   }
 
-  return (dom_a && dom_b && (dom_a->min() == dom_b->min()) && (dom_a->max() == dom_b->max())) ||
-         (!dom_a && !dom_b);
+  return ((dom_a != nullptr) && (dom_b != nullptr) && (dom_a->min() == dom_b->min()) &&
+          (dom_a->max() == dom_b->max())) ||
+         ((dom_a == nullptr) && (dom_b == nullptr));
 }
 
 }  // namespace MiniZinc

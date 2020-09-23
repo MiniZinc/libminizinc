@@ -23,13 +23,13 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   if (c->set()) {
     for (int i = 0; i < c->n_generators(); i++) {
       Expression* g_in = c->in(i);
-      if (g_in) {
+      if (g_in != nullptr) {
         const Type& ty_in = g_in->type();
         if (ty_in == Type::varsetint()) {
           isvarset = true;
           break;
         }
-        if (c->where(i)) {
+        if (c->where(i) != nullptr) {
           if (c->where(i)->type() == Type::varbool()) {
             isvarset = true;
             break;
@@ -64,7 +64,7 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         } else {
           in[i] = c->in(i);
         }
-        if (c->where(i) && c->where(i)->type().isvar()) {
+        if ((c->where(i) != nullptr) && c->where(i)->type().isvar()) {
           // This is a generalised where clause. Split into par and var part.
           // The par parts can remain in where clause. The var parts are translated
           // into optionality constraints.
@@ -146,15 +146,15 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       Call* surround = env.surroundingCall();
 
       Type ntype = c->type();
-      if (surround && surround->id() == constants().ids.forall) {
+      if ((surround != nullptr) && surround->id() == constants().ids.forall) {
         new_e = new BinOp(Location().introduce(), cond, BOT_IMPL, c->e());
         new_e->type(Type::varbool());
         ntype.ot(Type::OT_PRESENT);
-      } else if (surround && surround->id() == constants().ids.exists) {
+      } else if ((surround != nullptr) && surround->id() == constants().ids.exists) {
         new_e = new BinOp(Location().introduce(), cond, BOT_AND, c->e());
         new_e->type(Type::varbool());
         ntype.ot(Type::OT_PRESENT);
-      } else if (surround && surround->id() == constants().ids.sum) {
+      } else if ((surround != nullptr) && surround->id() == constants().ids.sum) {
         ITE* if_b_else_zero = new ITE(c->loc().introduce(), {cond, c->e()}, IntLit::a(0));
         Type tt;
         tt = c->e()->type();
@@ -205,7 +205,7 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   std::vector<Expression*> elems(elems_ee.size());
   Type elemType = Type::bot();
   bool allPar = true;
-  for (auto i = static_cast<unsigned int>(elems.size()); i--;) {
+  for (auto i = static_cast<unsigned int>(elems.size()); (i--) != 0u;) {
     elems[i] = elems_ee[i].r();
     if (elemType == Type::bot()) elemType = elems[i]->type();
     if (!elems[i]->type().ispar()) allPar = false;

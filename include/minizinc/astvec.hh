@@ -158,7 +158,7 @@ public:
 template <class T>
 ASTExprVecO<T>::ASTExprVecO(const std::vector<T>& v) : ASTVec(v.size()) {
   _flag_1 = false;
-  for (auto i = static_cast<unsigned int>(v.size()); i--;) (*this)[i] = v[i];
+  for (auto i = static_cast<unsigned int>(v.size()); (i--) != 0u;) (*this)[i] = v[i];
 }
 template <class T>
 ASTExprVecO<T>* ASTExprVecO<T>::a(const std::vector<T>& v) {
@@ -174,13 +174,13 @@ inline ASTIntVec& ASTIntVec::operator=(const ASTIntVec& v) {
   return *this;
 }
 
-inline unsigned int ASTIntVec::size(void) const { return _v ? _v->size() : 0; }
+inline unsigned int ASTIntVec::size(void) const { return _v != nullptr ? _v->size() : 0; }
 inline int& ASTIntVec::operator[](unsigned int i) { return (*_v)[i]; }
 inline int ASTIntVec::operator[](unsigned int i) const { return (*_v)[i]; }
-inline int* ASTIntVec::begin(void) { return _v ? _v->begin() : nullptr; }
-inline int* ASTIntVec::end(void) { return _v ? _v->end() : nullptr; }
+inline int* ASTIntVec::begin(void) { return _v != nullptr ? _v->begin() : nullptr; }
+inline int* ASTIntVec::end(void) { return _v != nullptr ? _v->end() : nullptr; }
 inline void ASTIntVec::mark(void) const {
-  if (_v) _v->mark();
+  if (_v != nullptr) _v->mark();
 }
 
 template <class T>

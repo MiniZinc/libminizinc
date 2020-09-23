@@ -125,8 +125,8 @@ Parentheses needParens(const BinOp* bo, const Expression* left, const Expression
   int pbo = precedence(bo);
   int pl = precedence(left);
   int pr = precedence(right);
-  int ret = (pbo < pl) || (pbo == pl && assoc(bo) != AS_LEFT);
-  ret += 2 * ((pbo < pr) || (pbo == pr && assoc(bo) != AS_RIGHT));
+  int ret = static_cast<int>((pbo < pl) || (pbo == pl && assoc(bo) != AS_LEFT));
+  ret += 2 * static_cast<int>((pbo < pr) || (pbo == pr && assoc(bo) != AS_RIGHT));
   return static_cast<Parentheses>(ret);
 }
 
@@ -221,7 +221,7 @@ public:
       } break;
       case Expression::E_SETLIT: {
         const SetLit& sl = *e->cast<SetLit>();
-        if (sl.isv()) {
+        if (sl.isv() != nullptr) {
           if (sl.type().bt() == Type::BT_BOOL) {
             if (sl.isv()->size() == 0) {
               os << (_flatZinc ? "true..false" : "{}");
@@ -263,7 +263,7 @@ public:
                    << sl.isv()->max(sl.isv()->size() - 1);
             }
           }
-        } else if (sl.fsv()) {
+        } else if (sl.fsv() != nullptr) {
           if (sl.fsv()->size() == 0) {
             os << (_flatZinc ? "1.0..0.0" : "{}");
           } else if (sl.fsv()->size() == 1) {
@@ -318,7 +318,7 @@ public:
           os << "<>";
         } else {
           const Id* id = e->cast<Id>();
-          if (id->decl()) id = id->decl()->id();
+          if (id->decl() != nullptr) id = id->decl()->id();
           if (id->idn() == -1) {
             os << id->v();
           } else {
@@ -409,7 +409,7 @@ public:
           os << " then ";
           p(ite.e_then(i));
         }
-        if (ite.e_else()) {
+        if (ite.e_else() != nullptr) {
           os << " else ";
           p(ite.e_else());
         }
@@ -418,9 +418,9 @@ public:
       case Expression::E_BINOP: {
         const BinOp& bo = *e->cast<BinOp>();
         Parentheses ps = needParens(&bo, bo.lhs(), bo.rhs());
-        if (ps & PN_LEFT) os << "(";
+        if ((ps & PN_LEFT) != 0) os << "(";
         p(bo.lhs());
-        if (ps & PN_LEFT) os << ")";
+        if ((ps & PN_LEFT) != 0) os << ")";
         switch (bo.op()) {
           case BOT_PLUS:
             os << "+";
@@ -511,9 +511,9 @@ public:
             break;
         }
 
-        if (ps & PN_RIGHT) os << "(";
+        if ((ps & PN_RIGHT) != 0) os << "(";
         p(bo.rhs());
-        if (ps & PN_RIGHT) os << ")";
+        if ((ps & PN_RIGHT) != 0) os << ")";
       } break;
       case Expression::E_UNOP: {
         const UnOp& uo = *e->cast<UnOp>();
@@ -559,7 +559,7 @@ public:
           os << " ::var_is_introduced ";
         }
         p(vd.ann());
-        if (vd.e()) {
+        if (vd.e() != nullptr) {
           os << " = ";
           p(vd.e());
         }
@@ -582,7 +582,7 @@ public:
         const TypeInst& ti = *e->cast<TypeInst>();
         if (ti.isEnum()) {
           os << "enum";
-        } else if (env) {
+        } else if (env != nullptr) {
           os << ti.type().toString(*env);
         } else {
           if (ti.isarray()) {
@@ -667,7 +667,7 @@ public:
           os << ")";
         }
         p(fi.ann());
-        if (fi.e()) {
+        if (fi.e() != nullptr) {
           os << " = ";
           p(fi.e());
         }
@@ -1036,7 +1036,7 @@ public:
   }
   ret mapSetLit(const SetLit& sl) {
     DocumentList* dl;
-    if (sl.isv()) {
+    if (sl.isv() != nullptr) {
       if (sl.type().bt() == Type::BT_BOOL) {
         if (sl.isv()->size() == 0) {
           dl = new DocumentList("true..false", "", "");
@@ -1076,7 +1076,7 @@ public:
           }
         }
       }
-    } else if (sl.fsv()) {
+    } else if (sl.fsv() != nullptr) {
       if (sl.fsv()->size() == 0) {
         dl = new DocumentList("1.0..0.0", "", "");
       } else if (sl.fsv()->size() == 1) {
@@ -1253,7 +1253,7 @@ public:
     DocumentList* dl;
     DocumentList* opRight;
     bool linebreak = false;
-    if (ps & PN_LEFT)
+    if ((ps & PN_LEFT) != 0)
       opLeft = new DocumentList("(", " ", ")");
     else
       opLeft = new DocumentList("", " ", "");
@@ -1353,7 +1353,7 @@ public:
     }
     dl = new DocumentList("", op, "");
 
-    if (ps & PN_RIGHT)
+    if ((ps & PN_RIGHT) != 0)
       opRight = new DocumentList("(", " ", ")");
     else
       opRight = new DocumentList("", "", "");
@@ -1477,7 +1477,7 @@ public:
     if (!vd.ann().isEmpty()) {
       dl->addDocumentToList(annotationToDocument(vd.ann()));
     }
-    if (vd.e()) {
+    if (vd.e() != nullptr) {
       dl->addStringToList(" = ");
       dl->addDocumentToList(expressionToDocument(vd.e()));
     }
@@ -1629,7 +1629,7 @@ public:
     if (!fi.ann().isEmpty()) {
       dl->addDocumentToList(annotationToDocument(fi.ann()));
     }
-    if (fi.e()) {
+    if (fi.e() != nullptr) {
       dl->addStringToList(" = ");
       dl->addBreakPoint();
       dl->addDocumentToList(expressionToDocument(fi.e()));
@@ -1786,7 +1786,7 @@ void PrettyPrinter::printDocList(DocumentList* d, int alignmentCol, const std::s
   int vectorSize = static_cast<int>(ld.size());
   int lastVisibleElementIndex;
   for (int i = 0; i < vectorSize; i++) {
-    if (!dynamic_cast<BreakPoint*>(ld[i])) lastVisibleElementIndex = i;
+    if (dynamic_cast<BreakPoint*>(ld[i]) == nullptr) lastVisibleElementIndex = i;
   }
   if (vectorSize == 0) {
     printStringDoc(nullptr, true, newAlignmentCol, super_before + beginToken,
@@ -1795,7 +1795,7 @@ void PrettyPrinter::printDocList(DocumentList* d, int alignmentCol, const std::s
   for (int i = 0; i < vectorSize; i++) {
     Document* subdoc = ld[i];
     bool bp = false;
-    if (dynamic_cast<BreakPoint*>(subdoc)) {
+    if (dynamic_cast<BreakPoint*>(subdoc) != nullptr) {
       if (!_alignment) newAlignmentCol += indentationBase;
       bp = true;
     }

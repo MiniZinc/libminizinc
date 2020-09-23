@@ -360,7 +360,7 @@ Flattener::Flattener(std::ostream& os_, std::ostream& log_, const std::string& s
     : os(os_), log(log_), std_lib_dir(stdlibDir) {}
 
 Flattener::~Flattener() {
-  if (pEnv.get()) {  // ??? TODO
+  if (pEnv.get() != nullptr) {  // ??? TODO
     if (is_flatzinc) {
       pEnv->swap();
     }
@@ -484,7 +484,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
       Model* smm = parse(*env, smm_model, datafiles, "", "", includePaths, is_flatzinc, false,
                          false, flag_verbose, errstream);
       if (flag_verbose) log << " done parsing (" << starttime.stoptime() << ")" << std::endl;
-      if (smm) {
+      if (smm != nullptr) {
         log << errstream.str();
         errstream.str("");
         std::ostringstream smm_oss;
@@ -724,43 +724,43 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
 
           os << "%%%mzn-stat: paths=" << env->envi().getPathMap().size() << endl;
 
-          if (stats.n_bool_vars) {
+          if (stats.n_bool_vars != 0) {
             os << "%%%mzn-stat: flatBoolVars=" << stats.n_bool_vars << endl;
           }
-          if (stats.n_int_vars) {
+          if (stats.n_int_vars != 0) {
             os << "%%%mzn-stat: flatIntVars=" << stats.n_int_vars << endl;
           }
-          if (stats.n_float_vars) {
+          if (stats.n_float_vars != 0) {
             os << "%%%mzn-stat: flatFloatVars=" << stats.n_float_vars << endl;
           }
-          if (stats.n_set_vars) {
+          if (stats.n_set_vars != 0) {
             os << "%%%mzn-stat: flatSetVars=" << stats.n_set_vars << endl;
           }
 
-          if (stats.n_bool_ct) {
+          if (stats.n_bool_ct != 0) {
             os << "%%%mzn-stat: flatBoolConstraints=" << stats.n_bool_ct << endl;
           }
-          if (stats.n_int_ct) {
+          if (stats.n_int_ct != 0) {
             os << "%%%mzn-stat: flatIntConstraints=" << stats.n_int_ct << endl;
           }
-          if (stats.n_float_ct) {
+          if (stats.n_float_ct != 0) {
             os << "%%%mzn-stat: flatFloatConstraints=" << stats.n_float_ct << endl;
           }
-          if (stats.n_set_ct) {
+          if (stats.n_set_ct != 0) {
             os << "%%%mzn-stat: flatSetConstraints=" << stats.n_set_ct << endl;
           }
 
-          if (stats.n_reif_ct) {
+          if (stats.n_reif_ct != 0) {
             os << "%%%mzn-stat: evaluatedReifiedConstraints=" << stats.n_reif_ct << endl;
           }
-          if (stats.n_imp_ct) {
+          if (stats.n_imp_ct != 0) {
             os << "%%%mzn-stat: evaluatedHalfReifiedConstraints=" << stats.n_imp_ct << endl;
           }
 
-          if (stats.n_imp_del) {
+          if (stats.n_imp_del != 0) {
             os << "%%%mzn-stat: eliminatedImplications=" << stats.n_imp_del << endl;
           }
-          if (stats.n_lin_del) {
+          if (stats.n_lin_del != 0) {
             os << "%%%mzn-stat: eliminatedLinearConstraints=" << stats.n_lin_del << endl;
           }
 

@@ -120,7 +120,7 @@ public:
 
     int realLevel = (level < indivFileLevel) ? 0 : level - indivFileLevel;
     oss << "<div class='mzn-group-level-" << realLevel << "'>\n";
-    if (parent) {
+    if (parent != nullptr) {
       oss << "<div class='mzn-group-nav'>";
       if (idx > 0) {
         oss << "<a class='mzn-nav-prev' href='"
@@ -338,7 +338,7 @@ std::string extractArgWord(std::string& s, size_t n) {
   while (start < s.size() && s[start] != ' ' && s[start] != '\t') start++;
   while (start < s.size() && (s[start] == ' ' || s[start] == '\t')) start++;
   size_t end = start + 1;
-  while (end < s.size() && (isalnum(s[end]) || s[end] == '_' || s[end] == '.')) end++;
+  while (end < s.size() && ((isalnum(s[end]) != 0) || s[end] == '_' || s[end] == '.')) end++;
   std::string ret = s.substr(start, end - start);
   s = s.substr(end, std::string::npos);
   return ret;
@@ -468,7 +468,7 @@ protected:
       while (start < s.size() && s[start] != ' ' && s[start] != '\t') start++;
       while (start < s.size() && (s[start] == ' ' || s[start] == '\t')) start++;
       size_t end = start + 1;
-      while (end < s.size() && (isalnum(s[end]) || s[end] == '_')) end++;
+      while (end < s.size() && ((isalnum(s[end]) != 0) || s[end] == '_')) end++;
       if (s[pos + 1] == 'a') {
         replacements.push_back(s.substr(start, end - start));
         if (pos >= mathjax_open && pos <= mathjax_close) {
@@ -575,7 +575,8 @@ public:
         while (start < dc.size() && dc[start] != ' ' && dc[start] != '\t') start++;
         while (start < dc.size() && (dc[start] == ' ' || dc[start] == '\t')) start++;
         size_t end = start + 1;
-        while (end < dc.size() && (isalnum(dc[end]) || dc[end] == '_' || dc[end] == '.')) end++;
+        while (end < dc.size() && ((isalnum(dc[end]) != 0) || dc[end] == '_' || dc[end] == '.'))
+          end++;
         std::string groupName = dc.substr(start, end - start);
         size_t doc_start = end + 1;
         while (end < dc.size() && dc[end] != '\n') end++;
@@ -705,7 +706,7 @@ public:
           os << ",";
           if (splitArgs) {
             os << "\n";
-            for (auto j = static_cast<unsigned int>(align); j--;) os << " ";
+            for (auto j = static_cast<unsigned int>(align); (j--) != 0u;) os << " ";
           } else {
             os << " ";
           }
@@ -713,13 +714,13 @@ public:
       }
       os << ")";
 
-      if (fi->e()) {
+      if (fi->e() != nullptr) {
         FunctionI* f_body = fi;
         bool alias;
         do {
           alias = false;
           Call* c = Expression::dyn_cast<Call>(f_body->e());
-          if (c && c->n_args() == f_body->params().size()) {
+          if ((c != nullptr) && c->n_args() == f_body->params().size()) {
             bool sameParams = true;
             for (unsigned int i = 0; i < f_body->params().size(); i++) {
               Id* ident = c->arg(i)->dyn_cast<Id>();
@@ -735,7 +736,7 @@ public:
             }
           }
         } while (alias);
-        if (f_body->e()) {
+        if (f_body->e() != nullptr) {
           std::ostringstream body_os;
           Printer p(body_os, 70);
           p.print(f_body->e());
@@ -829,7 +830,7 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
       }
     }
     bool operator<(const IndexEntry& e) const {
-      if (!isalpha(id[0]) && isalpha(e.id[0])) return true;
+      if ((isalpha(id[0]) == 0) && (isalpha(e.id[0]) != 0)) return true;
       return id == e.id ? groupName < e.groupName : id < e.id;
     }
   };
@@ -863,7 +864,7 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
     std::vector<std::string> idxSections;
 
     if (index.size() != 0) {
-      if (isalpha(index[0].id[0])) {
+      if (isalpha(index[0].id[0]) != 0) {
         char idxSec_c = (char)toupper(index[0].id[0]);
         std::string idxSec(&idxSec_c, 1);
         oss << "<h3 id='Idx" << idxSec << "'>" << idxSec << "</h3>\n";
@@ -903,7 +904,7 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
         oss << "</li>\n";
         curEntries.clear();
       }
-      if (isalpha(ie.id[0]) && ie.id[0] != prevId[0]) {
+      if ((isalpha(ie.id[0]) != 0) && ie.id[0] != prevId[0]) {
         char idxSec_c = (char)toupper(ie.id[0]);
         std::string idxSec(&idxSec_c, 1);
         oss << "</ul>\n<h3 id='Idx" << idxSec << "'>" << idxSec << "</h3><ul>";
@@ -961,7 +962,7 @@ protected:
       while (start < s.size() && s[start] != ' ' && s[start] != '\t') start++;
       while (start < s.size() && (s[start] == ' ' || s[start] == '\t')) start++;
       size_t end = start + 1;
-      while (end < s.size() && (isalnum(s[end]) || s[end] == '_')) end++;
+      while (end < s.size() && ((isalnum(s[end]) != 0) || s[end] == '_')) end++;
       bool needSpace = pos != 0 && s[pos - 1] != ' ' && s[pos - 1] != '\n';
       if (s[pos + 1] == 'a') {
         replacements.push_back(s.substr(start, end - start));
@@ -1064,7 +1065,8 @@ public:
         while (start < dc.size() && dc[start] != ' ' && dc[start] != '\t') start++;
         while (start < dc.size() && (dc[start] == ' ' || dc[start] == '\t')) start++;
         size_t end = start + 1;
-        while (end < dc.size() && (isalnum(dc[end]) || dc[end] == '_' || dc[end] == '.')) end++;
+        while (end < dc.size() && ((isalnum(dc[end]) != 0) || dc[end] == '_' || dc[end] == '.'))
+          end++;
         std::string groupName = dc.substr(start, end - start);
         size_t doc_start = end + 1;
         while (end < dc.size() && dc[end] != '\n') end++;
@@ -1206,7 +1208,7 @@ public:
           os << ",";
           if (splitArgs) {
             os << "\n  ";
-            for (auto j = static_cast<unsigned int>(align); j--;) os << " ";
+            for (auto j = static_cast<unsigned int>(align); (j--) != 0u;) os << " ";
           } else {
             os << " ";
           }
@@ -1228,13 +1230,13 @@ public:
 
       os << HtmlDocOutput::trim(ds) << "\n\n";
 
-      if (fi->e()) {
+      if (fi->e() != nullptr) {
         FunctionI* f_body = fi;
         bool alias;
         do {
           alias = false;
           Call* c = Expression::dyn_cast<Call>(f_body->e());
-          if (c && c->n_args() == f_body->params().size()) {
+          if ((c != nullptr) && c->n_args() == f_body->params().size()) {
             bool sameParams = true;
             for (unsigned int i = 0; i < f_body->params().size(); i++) {
               Id* ident = c->arg(i)->dyn_cast<Id>();
@@ -1250,7 +1252,7 @@ public:
             }
           }
         } while (alias);
-        if (f_body->e()) {
+        if (f_body->e() != nullptr) {
           std::string filename =
               std::string(f_body->loc().filename().c_str(), f_body->loc().filename().size());
           size_t filePos = filename.find("std/");

@@ -72,7 +72,7 @@ int main(int argc, const char** argv) {
       std::cerr << "   Done (";
       std::cerr << "overall time " << starttime.stoptime() << ")." << std::endl;
     }
-    return !fSuccess;
+    return static_cast<int>(!fSuccess);
   } catch (const Exception& e) {
     std::string what = e.what();
     std::cerr << what << (what.empty() ? "" : ": ") << e.msg() << std::endl;

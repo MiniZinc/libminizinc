@@ -121,7 +121,7 @@ private:
   SolverInstanceBase* si = nullptr;
   SolverInstanceBase::Options* si_opt = nullptr;
   SolverFactory* sf = nullptr;
-  bool is_mzn2fzn = 0;
+  bool is_mzn2fzn = false;
 
   std::string executable_name;
   std::ostream& os;

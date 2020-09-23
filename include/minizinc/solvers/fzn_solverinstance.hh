@@ -28,7 +28,7 @@ public:
   int solver_time_limit_ms = 0;
   bool fzn_sigint = false;
   /// Number of (optimal) solutions to output
-  bool num_optimal = 1;
+  bool num_optimal = true;
   bool all_optimal = false;
 
   bool fzn_needs_paths = false;

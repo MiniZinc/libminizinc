@@ -175,10 +175,10 @@ void GeasSolverInstance::processFlatZinc() {
       VarDecl* vd = it->e();
 
       if (vd->type().isbool()) {
-        if (!vd->e()) {
+        if (vd->e() == nullptr) {
           Expression* domain = vd->ti()->domain();
           long long int lb, ub;
-          if (domain) {
+          if (domain != nullptr) {
             IntBounds ib = compute_int_bounds(_env.envi(), domain);
             lb = ib.l.toInt();
             ub = ib.u.toInt();
@@ -206,10 +206,10 @@ void GeasSolverInstance::processFlatZinc() {
           }
         }
       } else if (vd->type().isfloat()) {
-        if (!vd->e()) {
+        if (vd->e() == nullptr) {
           Expression* domain = vd->ti()->domain();
           double lb, ub;
-          if (domain) {
+          if (domain != nullptr) {
             FloatBounds fb = compute_float_bounds(_env.envi(), vd->id());
             lb = fb.l.toDouble();
             ub = fb.u.toDouble();
@@ -237,9 +237,9 @@ void GeasSolverInstance::processFlatZinc() {
           }
         }
       } else if (vd->type().isint()) {
-        if (!vd->e()) {
+        if (vd->e() == nullptr) {
           Expression* domain = vd->ti()->domain();
-          if (domain) {
+          if (domain != nullptr) {
             IntSetVal* isv = eval_intset(env().envi(), domain);
             auto var = _solver.new_intvar(static_cast<geas::intvar::val_t>(isv->min().toInt()),
                                           static_cast<geas::intvar::val_t>(isv->max().toInt()));
@@ -293,7 +293,7 @@ void GeasSolverInstance::processFlatZinc() {
   }
   // Set objective
   SolveI* si = _flat->solveItem();
-  if (si->e()) {
+  if (si->e() != nullptr) {
     _obj_type = si->st();
     if (_obj_type == SolveI::ST_MIN) {
       _obj_var = std::unique_ptr<GeasTypes::Variable>(new GeasTypes::Variable(resolveVar(si->e())));
@@ -400,7 +400,7 @@ bool GeasSolverInstance::addSolutionNoGood() {
   vec<geas::clause_elt> clause;
   for (auto& var : _varsWithOutput) {
     if (Expression::dyn_cast<Call>(
-            getAnnotation(var->ann(), constants().ann.output_array.aststr()))) {
+            getAnnotation(var->ann(), constants().ann.output_array.aststr())) != nullptr) {
       if (auto al = var->e()->dyn_cast<ArrayLit>()) {
         for (unsigned int j = 0; j < al->size(); j++) {
           if (Id* id = (*al)[j]->dyn_cast<Id>()) {
@@ -648,7 +648,7 @@ geas::intvar GeasSolverInstance::asIntVar(Expression* e) {
     if (auto il = e->dyn_cast<IntLit>()) {
       i = il->v().toInt();
     } else if (auto bl = e->dyn_cast<BoolLit>()) {
-      i = bl->v();
+      i = static_cast<long long>(bl->v());
     } else {
       std::stringstream ssm;
       ssm << "Expected bool or int literal instead of: " << *e;

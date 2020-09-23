@@ -35,7 +35,7 @@ inline void Expression::type(const Type& t) {
   }
   if (eid() == E_VARDECL) {
     this->cast<VarDecl>()->id()->_type = t;
-  } else if (eid() == E_ID && this->cast<Id>()->decl()) {
+  } else if (eid() == E_ID && (this->cast<Id>()->decl() != nullptr)) {
     assert(_type.bt() == Type::BT_UNKNOWN || _type.dim() == t.dim() || t.dim() != -1);
     this->cast<Id>()->decl()->_type = t;
   }
@@ -50,7 +50,7 @@ inline IntLit::IntLit(const Location& loc, IntVal v)
 inline IntLit* IntLit::a(MiniZinc::IntVal v) {
   if (v.isFinite()) {
     IntLit* ret = intToUnboxedInt(v.toInt());
-    if (ret) {
+    if (ret != nullptr) {
       return ret;
     }
   }
@@ -161,7 +161,7 @@ inline FloatLit::FloatLit(const Location& loc, FloatVal v)
 inline FloatLit* FloatLit::a(MiniZinc::FloatVal v) {
   if (sizeof(double) <= sizeof(FloatLit*) && v.isFinite()) {
     FloatLit* ret = Expression::doubleToUnboxedFloatVal(v.toDouble());
-    if (ret) {
+    if (ret != nullptr) {
       return ret;
     }
   }
@@ -240,9 +240,9 @@ inline Id::Id(const Location& loc, long long int idn0, VarDecl* decl)
 inline void Id::decl(VarDecl* d) { _decl = d; }
 
 inline ASTString Id::v(void) const {
-  if (_decl && _decl->isa<Id>()) {
+  if ((_decl != nullptr) && _decl->isa<Id>()) {
     Expression* d = _decl;
-    while (d && d->isa<Id>()) {
+    while ((d != nullptr) && d->isa<Id>()) {
       d = d->cast<Id>()->_decl;
     }
     return d->cast<VarDecl>()->id()->v();
@@ -253,9 +253,9 @@ inline ASTString Id::v(void) const {
 }
 
 inline long long int Id::idn(void) const {
-  if (_decl && _decl->isa<Id>()) {
+  if ((_decl != nullptr) && _decl->isa<Id>()) {
     Expression* d = _decl;
-    while (d && d->isa<Id>()) {
+    while ((d != nullptr) && d->isa<Id>()) {
       d = d->cast<Id>()->_decl;
     }
     return d->cast<VarDecl>()->id()->idn();
@@ -286,7 +286,7 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit& v,
   if (_flag_2) {
     _u._al = v._u._al;
     std::vector<int> d(dims.size() * 2 + v._dims.size() - v.dims() * 2);
-    for (auto i = static_cast<unsigned int>(dims.size()); i--;) {
+    for (auto i = static_cast<unsigned int>(dims.size()); (i--) != 0u;) {
       d[i * 2] = dims[i].first;
       d[i * 2 + 1] = dims[i].second;
     }
@@ -298,7 +298,7 @@ inline ArrayLit::ArrayLit(const Location& loc, ArrayLit& v,
     _dims = ASTIntVec(d);
   } else {
     std::vector<int> d(dims.size() * 2);
-    for (auto i = static_cast<unsigned int>(dims.size()); i--;) {
+    for (auto i = static_cast<unsigned int>(dims.size()); (i--) != 0u;) {
       d[i * 2] = dims[i].first;
       d[i * 2 + 1] = dims[i].second;
     }
@@ -493,7 +493,9 @@ inline Call::Call(const Location& loc, const ASTString& id0, const std::vector<E
 }
 
 inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const ASTString& id, Expression* e)
-    : Expression(loc, E_VARDECL, ti ? ti->type() : Type()), _id(nullptr), _flat(nullptr) {
+    : Expression(loc, E_VARDECL, ti != nullptr ? ti->type() : Type()),
+      _id(nullptr),
+      _flat(nullptr) {
   _id = new Id(loc, id, this);
   _flag_1 = true;
   _flag_2 = false;
@@ -505,7 +507,9 @@ inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, const ASTString& id, 
 }
 
 inline VarDecl::VarDecl(const Location& loc, TypeInst* ti, long long int idn, Expression* e)
-    : Expression(loc, E_VARDECL, ti ? ti->type() : Type()), _id(nullptr), _flat(nullptr) {
+    : Expression(loc, E_VARDECL, ti != nullptr ? ti->type() : Type()),
+      _id(nullptr),
+      _flat(nullptr) {
   _id = new Id(loc, idn, this);
   _flag_1 = true;
   _flag_2 = false;

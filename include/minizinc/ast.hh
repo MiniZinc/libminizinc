@@ -127,7 +127,7 @@ protected:
                      unsigned int last_line, unsigned int last_column);
     void mark(void) {
       _gc_mark = 1;
-      if (_data[0]) static_cast<ASTStringData*>(_data[0])->mark();
+      if (_data[0] != nullptr) static_cast<ASTStringData*>(_data[0])->mark();
     }
 
     ASTString filename(void) const;
@@ -168,19 +168,19 @@ public:
   std::string toString(void) const;
 
   /// Return filename
-  ASTString filename(void) const { return lv() ? lv()->filename() : ASTString(); }
+  ASTString filename(void) const { return lv() != nullptr ? lv()->filename() : ASTString(); }
 
   /// Return first line number
-  unsigned int first_line(void) const { return lv() ? lv()->first_line() : 0; }
+  unsigned int first_line(void) const { return lv() != nullptr ? lv()->first_line() : 0; }
 
   /// Return last line number
-  unsigned int last_line(void) const { return lv() ? lv()->last_line() : 0; }
+  unsigned int last_line(void) const { return lv() != nullptr ? lv()->last_line() : 0; }
 
   /// Return first column number
-  unsigned int first_column(void) const { return lv() ? lv()->first_column() : 0; }
+  unsigned int first_column(void) const { return lv() != nullptr ? lv()->first_column() : 0; }
 
   /// Return last column number
-  unsigned int last_column(void) const { return lv() ? lv()->last_column() : 0; }
+  unsigned int last_column(void) const { return lv() != nullptr ? lv()->last_column() : 0; }
 
   /// Return whether location is introduced by the compiler
   bool is_introduced(void) const { return _loc_info.lv == nullptr || ((_loc_info.t & 1) != 0); }
@@ -411,7 +411,7 @@ public:
     if (exponent != 0) {
       exponent += 512;  // reconstruct original bias of 1023
     }
-    uint64_t sign = (_u.bits & (static_cast<uint64_t>(1) << 62) ? 1 : 0);
+    uint64_t sign = ((_u.bits & (static_cast<uint64_t>(1) << 62)) != 0u ? 1 : 0);
     _u.bits = (sign << 63) | (exponent << 52) | (_u.bits & static_cast<uint64_t>(0xFFFFFFFFFFFFF));
     return _u.d;
   }
@@ -700,7 +700,7 @@ public:
   /// Access declaration
   VarDecl* decl(void) const {
     Expression* d = _decl;
-    while (d && d->isa<Id>()) d = d->cast<Id>()->_decl;
+    while ((d != nullptr) && d->isa<Id>()) d = d->cast<Id>()->_decl;
     return Expression::cast<VarDecl>(d);
   }
   /// Set declaration
@@ -1206,7 +1206,7 @@ public:
   /// Set initialisation expression
   void e(Expression* rhs);
   /// Access flattened version
-  VarDecl* flat(void) { return _flat() ? _flat()->cast<VarDecl>() : nullptr; }
+  VarDecl* flat(void) { return _flat() != nullptr ? _flat()->cast<VarDecl>() : nullptr; }
   /// Set flattened version
   void flat(VarDecl* vd);
 

@@ -123,7 +123,7 @@ void SolverRegistry::removeSolverFactory(SolverFactory* pSF) {
 SolverInstanceBase* SolverFactory::createSI(Env& env, std::ostream& log,
                                             SolverInstanceBase::Options* opt) {
   SolverInstanceBase* pSI = doCreateSI(env, log, opt);
-  if (!pSI) {
+  if (pSI == nullptr) {
     throw InternalError("SolverFactory: failed to initialize solver " + getDescription());
   }
   sistorage.resize(sistorage.size() + 1);
@@ -519,7 +519,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               static_cast<MZN_SolverFactory*>(sf)->setAcceptedFlags(si_opt, acceptedFlags);
               std::vector<std::string> additionalArgs_s;
               additionalArgs_s.emplace_back("-m");
-              if (sc.executable_resolved().size()) {
+              if (sc.executable_resolved().size() != 0u) {
                 additionalArgs_s.push_back(sc.executable_resolved());
               } else {
                 additionalArgs_s.push_back(sc.executable());
@@ -541,7 +541,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                   additionalArgs_s.emplace_back("-I");
                   additionalArgs_s.emplace_back("--mzn-flag");
                   std::string _mznlib;
-                  if (sc.mznlib_resolved().size()) {
+                  if (sc.mznlib_resolved().size() != 0u) {
                     _mznlib = sc.mznlib_resolved();
                   } else {
                     _mznlib = sc.mznlib();
@@ -568,7 +568,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                 // supports nl
                 additionalArgs.emplace_back("--nl-cmd");
               }
-              if (sc.executable_resolved().size()) {
+              if (sc.executable_resolved().size() != 0u) {
                 additionalArgs.push_back(sc.executable_resolved());
               } else {
                 additionalArgs.push_back(sc.executable());
@@ -615,7 +615,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
             } else {
               std::vector<std::string> additionalArgs(2);
               additionalArgs[0] = "-I";
-              if (sc.mznlib_resolved().size()) {
+              if (sc.mznlib_resolved().size() != 0u) {
                 additionalArgs[1] = sc.mznlib_resolved();
               } else {
                 additionalArgs[1] = sc.mznlib();
@@ -793,7 +793,8 @@ SolverInstance::Status MznSolver::run(const std::vector<std::string>& args0,
     if (!ifMzn2Fzn()) {  // only then
       // Special handling of basic stdFlags
       auto solve_item = flt.getEnv()->model()->solveItem();
-      bool is_sat_problem = solve_item ? solve_item->st() == SolveI::SolveType::ST_SAT : true;
+      bool is_sat_problem =
+          solve_item != nullptr ? solve_item->st() == SolveI::SolveType::ST_SAT : true;
       if (is_sat_problem && flag_all_satisfaction) {
         if (supports_a) {
           std::vector<std::string> a_flag = {"-a"};

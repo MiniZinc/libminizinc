@@ -22,7 +22,7 @@ EE flatten_vardecl(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   VarDecl* it = v->flat();
   if (it == nullptr) {
     TypeInst* ti = eval_typeinst(env, ctx, v);
-    if (ti->domain() && ti->domain()->isa<SetLit>()) {
+    if ((ti->domain() != nullptr) && ti->domain()->isa<SetLit>()) {
       if (ti->type().bt() == Type::BT_INT && ti->type().st() == Type::ST_PLAIN) {
         if (eval_intset(env, ti->domain())->size() == 0) {
           env.fail("domain is empty");
@@ -39,15 +39,15 @@ EE flatten_vardecl(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     VarDecl* vd = newVarDecl(env, ctx, ti, reuseVarId ? v->id() : nullptr, v, nullptr);
     v->flat(vd);
     Ctx nctx;
-    if (v->e() && v->e()->type().bt() == Type::BT_BOOL) nctx.b = C_MIX;
-    if (v->e()) {
+    if ((v->e() != nullptr) && v->e()->type().bt() == Type::BT_BOOL) nctx.b = C_MIX;
+    if (v->e() != nullptr) {
       (void)flat_exp(env, nctx, v->e(), vd, constants().var_true);
       if (v->e()->type().dim() > 0) {
         Expression* ee = follow_id_to_decl(vd->e());
         if (ee->isa<VarDecl>()) ee = ee->cast<VarDecl>()->e();
         assert(ee && ee->isa<ArrayLit>());
         auto* al = ee->cast<ArrayLit>();
-        if (vd->ti()->domain()) {
+        if (vd->ti()->domain() != nullptr) {
           for (unsigned int i = 0; i < al->size(); i++) {
             if (Id* ali_id = (*al)[i]->dyn_cast<Id>()) {
               if (ali_id != constants().absent && ali_id->decl()->ti()->domain() == nullptr) {

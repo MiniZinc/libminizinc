@@ -72,7 +72,7 @@ public:
   //     virtual void printSolution(ostream& );  // deprecated
   /// print statistics in form of comments
   virtual void printStatistics(void) {}
-  virtual void printStatisticsLine(bool fLegend = 0) {}
+  virtual void printStatisticsLine(bool fLegend = false) {}
 
   /// find the next solution
   virtual Status next(void) = 0;

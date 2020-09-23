@@ -166,7 +166,7 @@ void PathFilePrinter::print(Item* item) {
 
     os << constraint_index << "\t";
     os << constraint_index << "\t";
-    if (sl) {
+    if (sl != nullptr) {
       os << sl->v();
     } else {
       os << "";

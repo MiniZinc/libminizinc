@@ -368,7 +368,7 @@ MyEventHandler3& MyEventHandler3::operator=(const MyEventHandler3& rhs) {
 CbcEventHandler* MyEventHandler3::clone() const { return new MyEventHandler3(*this); }
 
 CbcEventHandler::CbcAction MyEventHandler3::event(CbcEvent whichEvent) {
-  if (!statusOfCbc) {
+  if (statusOfCbc == 0) {
     // override signal handler
     // register signal handler
     saveSignal = signal(SIGINT, signal_handler);
@@ -381,7 +381,7 @@ CbcEventHandler::CbcAction MyEventHandler3::event(CbcEvent whichEvent) {
     return stop;
   }
   // If in sub tree carry on
-  if (!model_->parentModel()) {
+  if (model_->parentModel() == nullptr) {
     if (whichEvent == endSearch && statusOfCbc == 1) {
       // switch off cancel
       cancelAsap = 0;
@@ -465,7 +465,7 @@ CbcEventHandler::CbcAction MyEventHandler3::event(CbcEvent whichEvent) {
         ui.pCbui->pOutput->nOpenNodes = -1;  // model_->getNodeCount2();
 
         /// Call the user function:
-        if (ui.pCbui->solcbfn) {
+        if (ui.pCbui->solcbfn != nullptr) {
           (*(ui.pCbui->solcbfn))(*(ui.pCbui->pOutput), ui.pCbui->psi);
           ui.pCbui->printed = true;
         }
@@ -644,7 +644,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
       }
       osi.setInteger(integer_vars.data(), integer_vars.size());
     }
-    if (options->sExportModel.size()) {
+    if (options->sExportModel.size() != 0u) {
       // Not implemented for OsiClp:
       //       osi.setColNames(colNames, 0, colObj.size(), 0);
       vector<const char*> colN(colObj.size());
@@ -746,7 +746,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
     //    x.resize(output.nCols);
     //    output.x = &x[0];
 
-    if (options->flag_intermediate && cbui.solcbfn) {
+    if (options->flag_intermediate && (cbui.solcbfn != nullptr)) {
       // Event handler. Should be after CbcMain0()?
       EventUserInfo ui;
       ui.pCbui = &cbui;
@@ -756,7 +756,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
     }
 
     /// Cuts needed
-    if (cbui.cutcbfn) {
+    if (cbui.cutcbfn != nullptr) {
       /// This class is passed to CBC to organize cut callbacks
       /// We need original solutions here (combinatorial cuts)
       class CutCallback : public CglCutGenerator {
@@ -780,8 +780,8 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
           cbui.pOutput->x = si.getColSolution();  // change the pointer?
           MIP_wrapper::CutInput cuts;
           cbui.cutcbfn(*cbui.pOutput, cuts, cbui.psi,
-                       info.options & 128);  // options&128: integer candidate
-          for (const auto& cut : cuts) {     // Convert cut sense
+                       (info.options & 128) != 0);  // options&128: integer candidate
+          for (const auto& cut : cuts) {            // Convert cut sense
             OsiRowCut rc;
             switch (cut.sense) {
               case LQ:
@@ -879,11 +879,11 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
       //       int cur_numcols = osi.getNumCols ();
       assert(cur_numcols == colObj.size());
 
-      wrap_assert(model.getColSolution(), "Failed to get variable values.");
+      wrap_assert(model.getColSolution() != nullptr, "Failed to get variable values.");
       x.assign(model.getColSolution(), model.getColSolution() + cur_numcols);  // ColSolution();
       output.x = x.data();
       //       output.x = osi.getColSolution();
-      if (cbui.solcbfn && (!options->flag_intermediate || !cbui.printed)) {
+      if ((cbui.solcbfn != nullptr) && (!options->flag_intermediate || !cbui.printed)) {
         cbui.solcbfn(output, cbui.psi);
       }
     }

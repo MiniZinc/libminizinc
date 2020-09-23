@@ -36,7 +36,7 @@ Env* changeLibrary(Env& e, vector<string>& includePaths, string globals_dir,
                    CompilePassFlags& compflags, bool verbose = false) {
   GCLock lock;
   CopyMap cm;
-  Model* m = e.envi().orig_model ? e.envi().orig_model : e.envi().model;
+  Model* m = e.envi().orig_model != nullptr ? e.envi().orig_model : e.envi().model;
   auto* new_mod = new Model();
   new_mod->setFilename(m->filename());
   new_mod->setFilepath(m->filepath());

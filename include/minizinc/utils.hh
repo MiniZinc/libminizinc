@@ -70,7 +70,7 @@ namespace MiniZinc {
 
 inline bool beginswith(std::string s, std::string t) { return s.compare(0, t.length(), t) == 0; }
 
-inline void checkIOStatus(bool fOk, std::string msg, bool fHard = 1) {
+inline void checkIOStatus(bool fOk, std::string msg, bool fHard = true) {
   if (!fOk) {
 #ifdef _MSC_VER
     char errBuf[1024];

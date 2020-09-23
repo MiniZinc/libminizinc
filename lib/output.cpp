@@ -45,7 +45,7 @@ bool cannotUseRHSForOutput(EnvI& env, Expression* e,
     /// Visit call
     void vCall(Call& c) {
       std::vector<Type> tv(c.n_args());
-      for (unsigned int i = c.n_args(); i--;) {
+      for (unsigned int i = c.n_args(); (i--) != 0u;) {
         tv[i] = c.arg(i)->type();
         tv[i].ti(Type::TI_PAR);
       }
@@ -63,7 +63,8 @@ bool cannotUseRHSForOutput(EnvI& env, Expression* e,
           success = false;
         } else {
           seen_functions.insert(origdecl);
-          if (origdecl->e() && cannotUseRHSForOutput(env, origdecl->e(), seen_functions)) {
+          if ((origdecl->e() != nullptr) &&
+              cannotUseRHSForOutput(env, origdecl->e(), seen_functions)) {
             success = false;
           } else {
             if (!origdecl->from_stdlib()) {
@@ -71,7 +72,8 @@ bool cannotUseRHSForOutput(EnvI& env, Expression* e,
               CollectOccurrencesE ce(env.output_vo, decl);
               topDown(ce, decl->e());
               topDown(ce, decl->ti());
-              for (unsigned int i = decl->params().size(); i--;) topDown(ce, decl->params()[i]);
+              for (unsigned int i = decl->params().size(); (i--) != 0u;)
+                topDown(ce, decl->params()[i]);
               env.output->registerFn(env, decl);
               env.output->addItem(decl);
               outputVarDecls(env, origdecl, decl->e());
@@ -123,7 +125,7 @@ void copyOutput(EnvI& e) {
     void vId(Id& _id) { _id.decl(_id.decl()->flat()); }
     void vCall(Call& c) {
       std::vector<Type> tv(c.n_args());
-      for (unsigned int i = c.n_args(); i--;) {
+      for (unsigned int i = c.n_args(); (i--) != 0u;) {
         tv[i] = c.arg(i)->type();
         tv[i].ti(Type::TI_PAR);
       }
@@ -284,10 +286,10 @@ public:
           break;
         case Expression::E_COMP: {
           auto* comp = e->template cast<Comprehension>();
-          for (unsigned int i = comp->n_generators(); i--;) {
+          for (unsigned int i = comp->n_generators(); (i--) != 0u;) {
             stack.push_back(comp->where(i));
             stack.push_back(comp->in(i));
-            for (unsigned int j = comp->n_decls(i); j--;) {
+            for (unsigned int j = comp->n_decls(i); (j--) != 0u;) {
               stack.push_back(comp->decl(i, j));
             }
           }
@@ -342,8 +344,8 @@ void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
       VarDecl* reallyFlat = vd->flat();
       while (reallyFlat != nullptr && reallyFlat != reallyFlat->flat())
         reallyFlat = reallyFlat->flat();
-      auto idx =
-          reallyFlat ? env.output_vo_flat.idx.find(reallyFlat->id()) : env.output_vo_flat.idx.end();
+      auto idx = reallyFlat != nullptr ? env.output_vo_flat.idx.find(reallyFlat->id())
+                                       : env.output_vo_flat.idx.end();
       auto idx2 = env.output_vo.idx.find(vd->id());
       if (idx == env.output_vo_flat.idx.end() && idx2 == env.output_vo.idx.end()) {
         auto* nvi = new VarDeclI(Location().introduce(), copy(env, env.cmap, vd)->cast<VarDecl>());
@@ -356,7 +358,7 @@ void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
         nvi->e()->flat(vd->flat());
         ClearAnnotations::run(nvi->e());
         nvi->e()->introduced(false);
-        if (reallyFlat) env.output_vo_flat.add_idx(reallyFlat, env.output->size());
+        if (reallyFlat != nullptr) env.output_vo_flat.add_idx(reallyFlat, env.output->size());
         env.output_vo.add_idx(nvi, env.output->size());
         env.output_vo.add(nvi->e(), ci);
         env.output->addItem(nvi);
@@ -366,7 +368,7 @@ void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
           Call* rhs = copy(env, env.cmap, it->second())->cast<Call>();
           {
             std::vector<Type> tv(rhs->n_args());
-            for (unsigned int i = rhs->n_args(); i--;) {
+            for (unsigned int i = rhs->n_args(); (i--) != 0u;) {
               tv[i] = rhs->arg(i)->type();
               tv[i].ti(Type::TI_PAR);
             }
@@ -383,7 +385,8 @@ void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
                 CollectOccurrencesE ce(env.output_vo, decl);
                 topDown(ce, decl->e());
                 topDown(ce, decl->ti());
-                for (unsigned int i = decl->params().size(); i--;) topDown(ce, decl->params()[i]);
+                for (unsigned int i = decl->params().size(); (i--) != 0u;)
+                  topDown(ce, decl->params()[i]);
                 env.output->registerFn(env, decl);
                 env.output->addItem(decl);
               } else {
@@ -395,7 +398,7 @@ void outputVarDecls(EnvI& env, Item* ci, Expression* e) {
           }
           outputVarDecls(env, nvi, it->second());
           nvi->e()->e(rhs);
-        } else if (reallyFlat && cannotUseRHSForOutput(env, reallyFlat->e())) {
+        } else if ((reallyFlat != nullptr) && cannotUseRHSForOutput(env, reallyFlat->e())) {
           assert(nvi->e()->flat());
           nvi->e()->e(nullptr);
           if (nvi->e()->type().dim() == 0) {
@@ -520,7 +523,7 @@ void createDznOutputItem(EnvI& e, bool outputObjective, bool includeOutputItem, 
             if (!had_add_to_output) {
               process_var = false;
               if (vd->type().isvar()) {
-                if (vd->e()) {
+                if (vd->e() != nullptr) {
                   if (auto* al = vd->e()->dyn_cast<ArrayLit>()) {
                     for (unsigned int i = 0; i < al->size(); i++) {
                       if ((*al)[i]->isa<AnonVar>()) {
@@ -544,9 +547,9 @@ void createDznOutputItem(EnvI& e, bool outputObjective, bool includeOutputItem, 
         s << vd->id()->str() << " = ";
         if (vd->type().dim() > 0) {
           ArrayLit* al = nullptr;
-          if (vd->flat() && vd->flat()->e()) {
+          if ((vd->flat() != nullptr) && (vd->flat()->e() != nullptr)) {
             al = eval_array_lit(e, vd->flat()->e());
-          } else if (vd->e()) {
+          } else if (vd->e() != nullptr) {
             al = eval_array_lit(e, vd->e());
           }
           s << "array" << vd->type().dim() << "d(";
@@ -797,20 +800,20 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
     }
     void vId(Id& i) {
       // Also collect functions from output_only variables we depend on
-      if (i.decl() && i.decl()->ann().contains(constants().ann.output_only)) {
+      if ((i.decl() != nullptr) && i.decl()->ann().contains(constants().ann.output_only)) {
         topDown(*this, i.decl()->e());
       }
     }
     void vCall(Call& c) {
       std::vector<Type> tv(c.n_args());
-      for (unsigned int i = c.n_args(); i--;) {
+      for (unsigned int i = c.n_args(); (i--) != 0u;) {
         tv[i] = c.arg(i)->type();
         tv[i].ti(Type::TI_PAR);
       }
       FunctionI* decl = env.output->matchFn(env, c.id(), tv, false);
       FunctionI* origdecl = env.model->matchFn(env, c.id(), tv, false);
       bool canReuseDecl = (decl != nullptr);
-      if (canReuseDecl && origdecl) {
+      if (canReuseDecl && (origdecl != nullptr)) {
         // Check if this is the exact same overloaded declaration as in the model
         for (unsigned int i = 0; i < decl->params().size(); i++) {
           if (decl->params()[i]->type() != origdecl->params()[i]->type()) {
@@ -833,14 +836,15 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
             decl = decl_copy;
             env.output->registerFn(env, decl);
             env.output->addItem(decl);
-            if (decl->e()) {
+            if (decl->e() != nullptr) {
               makePar(env, decl->e());
               topDown(*this, decl->e());
             }
             CollectOccurrencesE ce(env.output_vo, decl);
             topDown(ce, decl->e());
             topDown(ce, decl->ti());
-            for (unsigned int i = decl->params().size(); i--;) topDown(ce, decl->params()[i]);
+            for (unsigned int i = decl->params().size(); (i--) != 0u;)
+              topDown(ce, decl->params()[i]);
           }
         } else {
           decl = origdecl;
@@ -894,7 +898,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
         if (isCheckVar) {
           vdi_copy->e()->ann().add(constants().ann.mzn_check_var);
         }
-        if (checkVarEnum) {
+        if (checkVarEnum != nullptr) {
           vdi_copy->e()->ann().add(checkVarEnum);
         }
         vdi_copy->e()->introduced(false);
@@ -909,7 +913,8 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
           } else {
             vd = follow_id_to_decl(vd->id())->cast<VarDecl>();
             VarDecl* reallyFlat = vd->flat();
-            while (reallyFlat && reallyFlat != reallyFlat->flat()) reallyFlat = reallyFlat->flat();
+            while ((reallyFlat != nullptr) && reallyFlat != reallyFlat->flat())
+              reallyFlat = reallyFlat->flat();
             if (reallyFlat == nullptr) {
               // The variable doesn't have a flat version. This can only happen if
               // the original variable had type-inst var, but a right-hand-side that
@@ -918,7 +923,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
               Expression* flate = eval_par(env, vd->e());
               outputVarDecls(env, vdi_copy, flate);
               vd->e(flate);
-            } else if (vd->flat()->e() && vd->flat()->e()->type().ispar()) {
+            } else if ((vd->flat()->e() != nullptr) && vd->flat()->e()->type().ispar()) {
               // We can use the right hand side of the flat version of this variable
               Expression* flate = copy(env, env.cmap, follow_id(reallyFlat->id()));
               outputVarDecls(env, vdi_copy, flate);
@@ -929,7 +934,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
               Call* rhs = copy(env, env.cmap, it->second())->cast<Call>();
               {
                 std::vector<Type> tv(rhs->n_args());
-                for (unsigned int i = rhs->n_args(); i--;) {
+                for (unsigned int i = rhs->n_args(); (i--) != 0u;) {
                   tv[i] = rhs->arg(i)->type();
                   tv[i].ti(Type::TI_PAR);
                 }
@@ -946,7 +951,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
                     CollectOccurrencesE ce(env.output_vo, decl);
                     topDown(ce, decl->e());
                     topDown(ce, decl->ti());
-                    for (unsigned int i = decl->params().size(); i--;)
+                    for (unsigned int i = decl->params().size(); (i--) != 0u;)
                       topDown(ce, decl->params()[i]);
                     env.output->registerFn(env, decl);
                     env.output->addItem(decl);
@@ -969,7 +974,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
                 checkRenameVar(env, vd);
               } else {
                 bool needOutputAnn = true;
-                if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
+                if ((reallyFlat->e() != nullptr) && reallyFlat->e()->isa<ArrayLit>()) {
                   auto* al = reallyFlat->e()->cast<ArrayLit>();
                   for (unsigned int i = 0; i < al->size(); i++) {
                     if (Id* id = (*al)[i]->dyn_cast<Id>()) {
@@ -1005,7 +1010,7 @@ void createOutput(EnvI& e, FlatteningOptions::OutputMode outputMode, bool output
                 }
               }
             }
-            if (reallyFlat && env.output_vo_flat.find(reallyFlat) == -1)
+            if ((reallyFlat != nullptr) && env.output_vo_flat.find(reallyFlat) == -1)
               env.output_vo_flat.add_idx(reallyFlat, env.output->size());
           }
         } else {
@@ -1065,10 +1070,11 @@ void finaliseOutput(EnvI& e) {
           IdMap<KeepAlive>::iterator it;
           GCLock lock;
           VarDecl* reallyFlat = vd->flat();
-          while (reallyFlat && reallyFlat != reallyFlat->flat()) reallyFlat = reallyFlat->flat();
+          while ((reallyFlat != nullptr) && reallyFlat != reallyFlat->flat())
+            reallyFlat = reallyFlat->flat();
           if (vd->e() == nullptr) {
-            if ((vd->flat()->e() && vd->flat()->e()->type().ispar()) ||
-                isFixedDomain(e, vd->flat())) {
+            if (((vd->flat()->e() != nullptr) && vd->flat()->e()->type().ispar()) ||
+                (isFixedDomain(e, vd->flat()) != nullptr)) {
               VarDecl* reallyFlat = vd->flat();
               while (reallyFlat != reallyFlat->flat()) reallyFlat = reallyFlat->flat();
               removeIsOutput(reallyFlat);
@@ -1083,7 +1089,7 @@ void finaliseOutput(EnvI& e) {
             } else if ((it = e.reverseMappers.find(vd->id())) != e.reverseMappers.end()) {
               Call* rhs = copy(e, e.cmap, it->second())->cast<Call>();
               std::vector<Type> tv(rhs->n_args());
-              for (unsigned int i = rhs->n_args(); i--;) {
+              for (unsigned int i = rhs->n_args(); (i--) != 0u;) {
                 tv[i] = rhs->arg(i)->type();
                 tv[i].ti(Type::TI_PAR);
               }
@@ -1100,7 +1106,8 @@ void finaliseOutput(EnvI& e) {
                   CollectOccurrencesE ce(e.output_vo, decl);
                   topDown(ce, decl->e());
                   topDown(ce, decl->ti());
-                  for (unsigned int i = decl->params().size(); i--;) topDown(ce, decl->params()[i]);
+                  for (unsigned int i = decl->params().size(); (i--) != 0u;)
+                    topDown(ce, decl->params()[i]);
                   e.output->registerFn(e, decl);
                   e.output->addItem(decl);
                 } else {
@@ -1124,7 +1131,7 @@ void finaliseOutput(EnvI& e) {
               assert(vd->flat());
 
               bool needOutputAnn = true;
-              if (reallyFlat->e() && reallyFlat->e()->isa<Id>()) {
+              if ((reallyFlat->e() != nullptr) && reallyFlat->e()->isa<Id>()) {
                 Id* ident = reallyFlat->e()->cast<Id>();
                 if (e.reverseMappers.find(ident) != e.reverseMappers.end()) {
                   needOutputAnn = false;
@@ -1144,7 +1151,7 @@ void finaliseOutput(EnvI& e) {
                     e.flatRemoveItem((*e.flat())[it->second]->cast<VarDeclI>());
                   }
                 }
-              } else if (reallyFlat->e() && reallyFlat->e()->isa<ArrayLit>()) {
+              } else if ((reallyFlat->e() != nullptr) && reallyFlat->e()->isa<ArrayLit>()) {
                 auto* al = reallyFlat->e()->cast<ArrayLit>();
                 for (unsigned int i = 0; i < al->size(); i++) {
                   if (Id* id = (*al)[i]->dyn_cast<Id>()) {
@@ -1216,7 +1223,7 @@ void finaliseOutput(EnvI& e) {
           CollectOccurrencesE ce(e.output_vo, item);
           topDown(ce, item->cast<FunctionI>()->e());
           topDown(ce, item->cast<FunctionI>()->ti());
-          for (unsigned int i = item->cast<FunctionI>()->params().size(); i--;)
+          for (unsigned int i = item->cast<FunctionI>()->params().size(); (i--) != 0u;)
             topDown(ce, item->cast<FunctionI>()->params()[i]);
         } break;
         default:

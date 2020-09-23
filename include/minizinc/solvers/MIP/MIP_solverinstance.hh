@@ -115,7 +115,7 @@ public:
 
   //       void assignSolutionToOutput();   // needs to be public for the callback?
   virtual void printStatistics(void);
-  virtual void printStatisticsLine(bool fLegend = 0);
+  virtual void printStatisticsLine(bool fLegend = false);
 
 public:
   /// creates a var for a literal, if necessary

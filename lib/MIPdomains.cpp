@@ -353,7 +353,8 @@ private:
     lin_exp_int = env.model->matchFn(env, constants().ids.lin_exp, int_lin_eq_t, false);
     lin_exp_float = env.model->matchFn(env, constants().ids.lin_exp, float_lin_eq_t, false);
 
-    if (!(int_lin_eq && int_lin_le && float_lin_eq && float_lin_le)) {
+    if (!((int_lin_eq != nullptr) && (int_lin_le != nullptr) && (float_lin_eq != nullptr) &&
+          (float_lin_le != nullptr))) {
       // say something...
       return false;
     }
@@ -477,7 +478,7 @@ private:
     /// (First, cleanup FunctionIs' payload:  -- ! doing now)
     for (int i = 0; i < aCT.size(); ++i) {
       FunctionI* fi = env.model->matchFn(env, ASTString(aCT[i].sFuncName), aCT[i].aParams, false);
-      if (fi) {
+      if (fi != nullptr) {
         mCallTypes[fi] = aCT.data() + i;
         aCT[i].pfi = fi;
         //         fi->pPayload = (void*)this;
@@ -503,7 +504,7 @@ private:
     // Now add variables with non-contiguous domain
     for (VarDeclIterator ivd = mFlat.begin_vardecls(); ivd != mFlat.end_vardecls(); ++ivd) {
       VarDecl* vd0 = ivd->e();
-      bool fNonCtg = 0;
+      bool fNonCtg = false;
       if (vd0->type().isint()) {  // currently only for int vars   TODO
         if (Expression* eDom = vd0->ti()->domain()) {
           IntSetVal* dom = eval_intset(env, eDom);
@@ -516,7 +517,7 @@ private:
         if (vd0->payload() == -1) {  // ! yet visited
           vd0->payload(static_cast<int>(vVarDescr.size()));
           vVarDescr.emplace_back(vd0, vd0->type().isint());  // can use /prmTypes/ as well
-          if (vd0->e()) checkInitExpr(vd0);
+          if (vd0->e() != nullptr) checkInitExpr(vd0);
         } else {
           DBGOUT_MIPD__(" (already touched)");
         }
@@ -548,7 +549,7 @@ private:
             vd0->payload(static_cast<int>(vVarDescr.size()));
             vVarDescr.emplace_back(vd0, vd0->type().isint());  // can use /prmTypes/ as well
             // bounds/domains later for each involved var TODO
-            if (vd0->e()) checkInitExpr(vd0);
+            if (vd0->e() != nullptr) checkInitExpr(vd0);
           } else {
             DBGOUT_MIPD__(" (already touched)");
           }
@@ -590,7 +591,7 @@ private:
         led.rhs = 0.0;
         put2VarsConnection(led, false);
         ++MIPD__stats[N_POSTs__initexpr1id];
-        if (id->decl()->e())  // no initexpr for initexpr  FAILS on cc-base.mzn
+        if (id->decl()->e() != nullptr)  // no initexpr for initexpr  FAILS on cc-base.mzn
           checkInitExpr(id->decl());
         return true;  // in any case
       }
@@ -621,7 +622,7 @@ private:
             led.rhs = -expr2Const(c->arg(2));  // MINUS
             put2VarsConnection(led, false);
             ++MIPD__stats[N_POSTs__initexpr1linexp];
-            if (led.vd[1]->e())  // no initexpr for initexpr   FAILS  TODO
+            if (led.vd[1]->e() != nullptr)  // no initexpr for initexpr   FAILS  TODO
               checkInitExpr(led.vd[1]);
             return true;  // in any case
           }
@@ -667,7 +668,7 @@ private:
     DBGOUT_MIPD("  CHECK ALL INITEXPR if they access a touched variable:");
     for (VarDeclIterator ivd = mFlat.begin_vardecls(); ivd != mFlat.end_vardecls(); ++ivd) {
       if (ivd->removed()) continue;
-      if (ivd->e()->e() && ivd->e()->payload() < 0                      // untouched
+      if ((ivd->e()->e() != nullptr) && ivd->e()->payload() < 0         // untouched
           && (ivd->e()->type().isint() || ivd->e()->type().isfloat()))  // scalars
         if (checkInitExpr(ivd->e(), true)) fChanges = true;
     }
@@ -713,7 +714,7 @@ private:
           } else {  // larger eqns
             // TODO should be here?
             auto eVD = getAnnotation(c->ann(), constants().ann.defines_var);
-            if (eVD) {
+            if (eVD != nullptr) {
               if (sCallLinEqN.end() != sCallLinEqN.find(c)) continue;
               sCallLinEqN.insert(c);  // memorize this call
               DBGOUT_MIPD("       REG N-call ");
@@ -723,7 +724,7 @@ private:
               MZN_MIPD__assert_hard(pC->n_args());
               // Checking all but adding only touched defined vars? Seems too long.
               VarDecl* vd = expr2VarDecl(pC->arg(0));
-              if (vd && vd->payload() >= 0)  // only if touched
+              if ((vd != nullptr) && vd->payload() >= 0)  // only if touched
                 if (findOrAddDefining(pC->arg(0), c)) fChanges = true;
             }
           }
@@ -820,7 +821,7 @@ private:
       leq.coefs = {{nVRest.coef0, -it->second.coef0}};  // +, -
       leq.rhs = nVRest.rhs - it->second.rhs;
       put2VarsConnection(leq, false);
-      ++MIPD__stats[nVD ? N_POSTs__eqNlineq : N_POSTs__initexprN];
+      ++MIPD__stats[nVD != 0 ? N_POSTs__eqNlineq : N_POSTs__initexprN];
       return true;
     } else {
       if (vd->payload() >= 0) {  // only touched
@@ -875,7 +876,7 @@ private:
       if (vd->payload() < 0) {  // ! yet visited
         vd->payload(static_cast<int>(vVarDescr.size()));
         vVarDescr.emplace_back(vd, vd->type().isint());  // can use /prmTypes/ as well
-        if (fCheckinitExpr && vd->e()) checkInitExpr(vd);
+        if (fCheckinitExpr && (vd->e() != nullptr)) checkInitExpr(vd);
       } else {
         int nMaybeClq = vVarDescr[vd->payload()].nClique;
         if (nMaybeClq >= 0) nCliqueAvailable = nMaybeClq;
@@ -1035,7 +1036,7 @@ private:
       }
       DBGOUT_MIPD(" Clique " << mipd.vVarDescr[iVarStart].nClique << ": " << leg.size()
                              << " variables, " << clq.size() << " connections.");
-      for (auto& it1 : leg) mipd.vVarDescr[it1.first->payload()].fDomainConstrProcessed = true;
+      for (auto& it1 : leg) mipd.vVarDescr[it1.first->payload()].fDomainConstrProcessed = 1u;
 
       // Propagate the 1st var's relations:
       leg.propagate(leg.begin(), mRef0);
@@ -1151,7 +1152,7 @@ private:
       const double B = eq1.second;
       // process domain info
       double lb = B, ub = A + B;  // projected bounds for bool
-      if (vd->ti()->domain()) {
+      if (vd->ti()->domain() != nullptr) {
         if (vd->type().isint() || vd->type().isfloat()) {  // INT VAR OR FLOAT VAR
           SetOfIntvReal sD1;
           convertIntSet(vd->ti()->domain(), sD1, cls.varRef1, A, B);
@@ -1565,7 +1566,7 @@ private:
           pItem->remove();  // removing the call
         }
         // removing the eq_encoding call
-        if (mipd.vVarDescr[vd->payload()].pEqEncoding)
+        if (mipd.vVarDescr[vd->payload()].pEqEncoding != nullptr)
           mipd.vVarDescr[vd->payload()].pEqEncoding->remove();
       }
     }
@@ -1608,7 +1609,7 @@ private:
                                       "  relateReifFlag for " << intv << " in " << sDomain);
           }
           for (it12 = it1; it12 != it2; ++it12) {
-            if (it12->varFlag)
+            if (it12->varFlag != nullptr)
               vIntvFlags.push_back(it12->varFlag->id());
             else {
               MZN_MIPD__assert_hard(1 == sDomain.size());
@@ -1617,7 +1618,7 @@ private:
           }
         }
       }
-      if (vIntvFlags.size()) {
+      if (vIntvFlags.size() != 0u) {
         // Could find out if reif is true                  -- TODO && see above for 1 subinterval
         std::vector<double> onesm(vIntvFlags.size(), -1.0);
         onesm.push_back(1.0);
@@ -1824,17 +1825,17 @@ private:
     bool fRetTrue = true;
     for (int iVar = 0; iVar < vVarDescr.size(); ++iVar) {
       //         VarDescr& var = vVarDescr[iVar];
-      if (!vVarDescr[iVar].fDomainConstrProcessed) {
+      if (vVarDescr[iVar].fDomainConstrProcessed == 0u) {
         GCLock lock;
         DomainDecomp dd(this, iVar);
         dd.doProcess();
-        vVarDescr[iVar].fDomainConstrProcessed = true;
+        vVarDescr[iVar].fDomainConstrProcessed = 1u;
       }
     }
     // Clean up __POSTs:
     for (auto& vVar : vVarDescr) {
       for (auto pCallI : vVar.aCalls) pCallI->remove();
-      if (vVar.pEqEncoding) vVar.pEqEncoding->remove();
+      if (vVar.pEqEncoding != nullptr) vVar.pEqEncoding->remove();
     }
     return fRetTrue;
   }
@@ -1879,7 +1880,7 @@ private:
     } else if (auto* fl = arg->dyn_cast<FloatLit>()) {
       return (fl->v().toDouble());
     } else if (auto* bl = arg->dyn_cast<BoolLit>()) {
-      return (bl->v());
+      return static_cast<double>(bl->v());
     } else {
       MZN_MIPD__assert_hard_msg(0,
                                 "unexpected expression instead of an int/float/bool literal: eid="
@@ -1918,7 +1919,7 @@ private:
     if (vVarDescr.empty()) return;
     int nc = 0;
     for (auto& cl : aCliques)
-      if (cl.size()) ++nc;
+      if (cl.size() != 0u) ++nc;
     for (auto& var : vVarDescr)
       if (0 > var.nClique)
         ++nc;  // 1-var cliques
@@ -2038,7 +2039,7 @@ void SetOfIntervals<N>::cutOut(const Interval<N>& intv) {
       }
       if (this->end() == it) break;
       ++it;
-    } while (1);
+    } while (true);
     MZN_MIPD__assert_hard(2 == nO);
   }
 #endif

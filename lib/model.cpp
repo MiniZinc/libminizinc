@@ -84,18 +84,18 @@ void Model::addItem(Item* i) {
   _items.push_back(i);
   if (i->isa<SolveI>()) {
     Model* m = this;
-    while (m->_parent) m = m->_parent;
+    while (m->_parent != nullptr) m = m->_parent;
     m->_solveItem = i->cast<SolveI>();
   } else if (i->isa<OutputI>()) {
     Model* m = this;
-    while (m->_parent) m = m->_parent;
+    while (m->_parent != nullptr) m = m->_parent;
     m->_outputItem = i->cast<OutputI>();
   }
 }
 
 void Model::setOutputItem(OutputI* oi) {
   Model* m = this;
-  while (m->_parent) m = m->_parent;
+  while (m->_parent != nullptr) m = m->_parent;
   m->_outputItem = oi;
 }
 
@@ -127,7 +127,7 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
         for (unsigned int j = i; j < cur.t.size(); j++) {
           assert(cur.fi->params()[i]->ti()->domain() &&
                  cur.fi->params()[i]->ti()->domain()->isa<TIId>());
-          if (cur.fi->params()[j]->ti()->domain() &&
+          if ((cur.fi->params()[j]->ti()->domain() != nullptr) &&
               cur.fi->params()[j]->ti()->domain()->isa<TIId>()) {
             TIId* id0 = cur.fi->params()[i]->ti()->domain()->cast<TIId>();
             TIId* id1 = cur.fi->params()[j]->ti()->domain()->cast<TIId>();
@@ -194,7 +194,7 @@ void Model::addPolymorphicInstances(Model::FnEntry& fe, std::vector<FnEntry>& en
 
 void Model::registerFn(EnvI& env, FunctionI* fi) {
   Model* m = this;
-  while (m->_parent) m = m->_parent;
+  while (m->_parent != nullptr) m = m->_parent;
   auto i_id = m->fnmap.find(fi->id());
   if (i_id == m->fnmap.end()) {
     // new element
@@ -221,12 +221,12 @@ void Model::registerFn(EnvI& env, FunctionI* fi) {
           }
         }
         if (alleq) {
-          if (i.fi->e() && fi->e() && !i.isPolymorphic) {
+          if ((i.fi->e() != nullptr) && (fi->e() != nullptr) && !i.isPolymorphic) {
             throw TypeError(
                 env, fi->loc(),
                 "function with the same type already defined in " + i.fi->loc().toString());
           } else {
-            if (fi->e() || i.isPolymorphic) {
+            if ((fi->e() != nullptr) || i.isPolymorphic) {
               if (Call* deprecated = i.fi->ann().getCall(constants().ann.mzn_deprecated)) {
                 fi->ann().add(deprecated);
               }
@@ -257,7 +257,7 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type
                           bool strictEnums) {
   if (id == constants().var_redef->id()) return constants().var_redef;
   Model* m = this;
-  while (m->_parent) m = m->_parent;
+  while (m->_parent != nullptr) m = m->_parent;
   auto i_id = m->fnmap.find(id);
   if (i_id == m->fnmap.end()) {
     return nullptr;
@@ -299,7 +299,7 @@ void Model::mergeStdLib(EnvI& env, Model* m) const {
 
 void Model::sortFn(void) {
   Model* m = this;
-  while (m->_parent) m = m->_parent;
+  while (m->_parent != nullptr) m = m->_parent;
   for (auto& it : m->fnmap) {
     // Sort all functions by type
     std::sort(it.second.begin(), it.second.end());
@@ -308,7 +308,7 @@ void Model::sortFn(void) {
 
 void Model::fixFnMap(void) {
   Model* m = this;
-  while (m->_parent) m = m->_parent;
+  while (m->_parent != nullptr) m = m->_parent;
   for (auto& it : m->fnmap) {
     for (unsigned int i = 0; i < it.second.size(); i++) {
       for (unsigned int j = 0; j < it.second[i].t.size(); j++) {
@@ -322,7 +322,7 @@ void Model::fixFnMap(void) {
 
 void Model::checkFnOverloading(EnvI& env) {
   Model* m = this;
-  while (m->_parent) m = m->_parent;
+  while (m->_parent != nullptr) m = m->_parent;
   for (auto& it : m->fnmap) {
     std::vector<FnEntry>& fs = it.second;
     for (unsigned int i = 0; i < fs.size() - 1; i++) {
@@ -378,7 +378,7 @@ int matchIdx(std::vector<FunctionI*>& matched, Expression*& botarg, EnvI& env,
       }
       if (match) {
         matched.push_back(v[i].fi);
-        if (!botarg) {
+        if (botarg == nullptr) {
           return i;
         }
       }
@@ -392,7 +392,7 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expr
                           bool strictEnums) const {
   if (id == constants().var_redef->id()) return constants().var_redef;
   const Model* m = this;
-  while (m->_parent) m = m->_parent;
+  while (m->_parent != nullptr) m = m->_parent;
   auto it = m->fnmap.find(id);
   if (it == m->fnmap.end()) {
     return nullptr;
@@ -415,7 +415,7 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Expr
 FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotFound) const {
   if (c->id() == constants().var_redef->id()) return constants().var_redef;
   const Model* m = this;
-  while (m->_parent) m = m->_parent;
+  while (m->_parent != nullptr) m = m->_parent;
   auto it = m->fnmap.find(c->id());
   if (it == m->fnmap.end()) {
     if (throwIfNotFound) {
@@ -467,7 +467,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
         }
       }
       if (match) {
-        if (botarg)
+        if (botarg != nullptr)
           matched.push_back(i.fi);
         else
           return i.fi;
@@ -524,7 +524,7 @@ FunctionI* Model::matchFn(EnvI& env, Call* c, bool strictEnums, bool throwIfNotF
 namespace {
 int firstOverloaded(EnvI& env, const std::vector<Model::FnEntry>& v_f, int i_f) {
   int first_i_f = i_f;
-  for (; first_i_f--;) {
+  for (; (first_i_f--) != 0;) {
     // find first instance overloaded on subtypes
     if (v_f[first_i_f].t.size() != v_f[i_f].t.size()) {
       break;
@@ -547,7 +547,7 @@ int firstOverloaded(EnvI& env, const std::vector<Model::FnEntry>& v_f, int i_f) 
 bool Model::sameOverloading(EnvI& env, const std::vector<Expression*>& args, FunctionI* f,
                             FunctionI* g) const {
   const Model* m = this;
-  while (m->_parent) m = m->_parent;
+  while (m->_parent != nullptr) m = m->_parent;
   auto it_f = m->fnmap.find(f->id());
   auto it_g = m->fnmap.find(g->id());
   assert(it_f != m->fnmap.end());
@@ -580,7 +580,7 @@ bool Model::sameOverloading(EnvI& env, const std::vector<Expression*>& args, Fun
 
 FunctionI* Model::matchRevMap(EnvI& env, const Type& t0) const {
   const Model* m = this;
-  while (m->_parent) m = m->_parent;
+  while (m->_parent != nullptr) m = m->_parent;
   Type t = t0;
   t.enumId(0);
   auto it = revmapmap.find(t.toInt());

@@ -115,11 +115,11 @@ public:
 
   virtual int getNCols() {
     int nc = osi.getNumCols();
-    return nc ? nc : colLB.size();
+    return nc != 0 ? nc : colLB.size();
   }
   virtual int getNColsModel() { return osi.getNumCols(); }
   virtual int getNRows() {
-    if (rowlb.size()) return rowlb.size();
+    if (rowlb.size() != 0u) return rowlb.size();
     return osi.getNumRows();
   }
 

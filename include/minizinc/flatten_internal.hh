@@ -396,7 +396,7 @@ public:
   }
 
   static Domain intersect_domain(Domain dom, Val v0, Val v1) {
-    if (dom) {
+    if (dom != nullptr) {
       FloatSetRanges dr(dom);
       Ranges::Const<FloatVal> c(v0, v1);
       Ranges::Inter<FloatVal, FloatSetRanges, Ranges::Const<FloatVal> > inter(dr, c);

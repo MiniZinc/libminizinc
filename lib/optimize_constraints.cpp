@@ -67,12 +67,13 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
              (ii->isa<ConstraintI>() ||
               ii->cast<VarDeclI>()->e()->ti()->domain() == constants().lit_true)) {
     VarDecl* vd = x[0]()->cast<Id>()->decl();
-    IntSetVal* domain = vd->ti()->domain() ? eval_intset(env, vd->ti()->domain()) : nullptr;
+    IntSetVal* domain =
+        vd->ti()->domain() != nullptr ? eval_intset(env, vd->ti()->domain()) : nullptr;
     if (c->id() == constants().ids.int_.lin_eq) {
       IntVal rd = eval_int(env, c->arg(2)) - d;
       if (rd % coeffs[0] == 0) {
         IntVal nd = rd / coeffs[0];
-        if (domain && !domain->contains(nd)) return OptimizeRegistry::CS_FAILED;
+        if ((domain != nullptr) && !domain->contains(nd)) return OptimizeRegistry::CS_FAILED;
         std::vector<Expression*> args(2);
         args[0] = x[0]();
         args[1] = IntLit::a(nd);
@@ -103,7 +104,7 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
         }
       }
       bool swapSign = coeffs[0] < 0;
-      if (domain) {
+      if (domain != nullptr) {
         if (swapSign) {
           if (domain->max() < nd) {
             return OptimizeRegistry::CS_FAILED;
@@ -330,7 +331,7 @@ OptimizeRegistry::ConstraintStatus o_times(EnvI& env, Item* i, Call* c, Expressi
     }
   }
 
-  if (result) {
+  if (result != nullptr) {
     if (c->n_args() == 2) {
       // this is the functional version of times
       rewrite = result;
@@ -354,7 +355,7 @@ OptimizeRegistry::ConstraintStatus o_set_in(EnvI& env, Item* i, Call* c, Express
     } else if (Id* ident = c->arg(0)->dyn_cast<Id>()) {
       VarDecl* vd = ident->decl();
       IntSetVal* isv = eval_intset(env, c->arg(1));
-      if (vd->ti()->domain()) {
+      if (vd->ti()->domain() != nullptr) {
         IntSetVal* dom = eval_intset(env, vd->ti()->domain());
         {
           IntSetRanges isv_r(isv);
@@ -391,7 +392,7 @@ OptimizeRegistry::ConstraintStatus o_int_ne(EnvI& env, Item* i, Call* c, Express
   }
   if (Id* ident = e0->dyn_cast<Id>()) {
     if (e1->type().ispar()) {
-      if (ident->decl()->ti()->domain()) {
+      if (ident->decl()->ti()->domain() != nullptr) {
         IntVal e1v = eval_int(env, e1);
         IntSetVal* isv = eval_intset(env, ident->decl()->ti()->domain());
         if (!isv->contains(e1v)) return OptimizeRegistry::CS_ENTAILED;
@@ -417,7 +418,7 @@ OptimizeRegistry::ConstraintStatus o_int_le(EnvI& env, Item* i, Call* c, Express
   }
   if (Id* ident = e0->dyn_cast<Id>()) {
     if (e1->type().ispar()) {
-      if (ident->decl()->ti()->domain()) {
+      if (ident->decl()->ti()->domain() != nullptr) {
         IntVal e1v = eval_int(env, e1);
         IntSetVal* isv = eval_intset(env, ident->decl()->ti()->domain());
         if (!swapped) {

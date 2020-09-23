@@ -147,10 +147,10 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
     std::string fullname;
     bool isFzn;
     if (!isModelString) {
-      for (Model* p = m->parent(); p; p = p->parent()) {
+      for (Model* p = m->parent(); p != nullptr; p = p->parent()) {
         if (p->filename() == f) {
           err << "Error: cyclic includes: " << std::endl;
-          for (Model* pe = m; pe; pe = pe->parent()) {
+          for (Model* pe = m; pe != nullptr; pe = pe->parent()) {
             err << "  " << pe->filename() << std::endl;
           }
           goto error;
@@ -196,7 +196,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
         includePaths.pop_back();
       }
       if (!file.is_open()) {
-        if (np_ii) {
+        if (np_ii != nullptr) {
           err << np_ii->loc().toString() << ":\n";
           err << "MiniZinc: error in include item, cannot open file '" << f << "'." << endl;
         } else {
@@ -222,7 +222,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
     mzn_yylex_init(&pp.yyscanner);
     mzn_yyset_extra(&pp, pp.yyscanner);
     mzn_yyparse(&pp);
-    if (pp.yyscanner) mzn_yylex_destroy(pp.yyscanner);
+    if (pp.yyscanner != nullptr) mzn_yylex_destroy(pp.yyscanner);
     if (pp.hadError) {
       for (const auto& syntaxError : pp.syntaxErrors) syntaxErrors.push_back(syntaxError);
       goto error;
@@ -252,7 +252,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
       mzn_yylex_init(&pp.yyscanner);
       mzn_yyset_extra(&pp, pp.yyscanner);
       mzn_yyparse(&pp);
-      if (pp.yyscanner) mzn_yylex_destroy(pp.yyscanner);
+      if (pp.yyscanner != nullptr) mzn_yylex_destroy(pp.yyscanner);
       if (pp.hadError) {
         for (const auto& syntaxError : pp.syntaxErrors) syntaxErrors.push_back(syntaxError);
         goto error;

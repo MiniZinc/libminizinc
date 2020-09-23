@@ -112,7 +112,7 @@ bool file_exists(const std::string& filename) {
   return (dwAttrib != INVALID_FILE_ATTRIBUTES && !(dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 #else
   struct stat info;
-  return stat(filename.c_str(), &info) == 0 && (info.st_mode & S_IFREG);
+  return stat(filename.c_str(), &info) == 0 && ((info.st_mode & S_IFREG) != 0);
 #endif
 }
 
@@ -123,7 +123,7 @@ bool directory_exists(const std::string& dirname) {
   return (dwAttrib != INVALID_FILE_ATTRIBUTES && (dwAttrib & FILE_ATTRIBUTE_DIRECTORY));
 #else
   struct stat info;
-  return stat(dirname.c_str(), &info) == 0 && (info.st_mode & S_IFDIR);
+  return stat(dirname.c_str(), &info) == 0 && ((info.st_mode & S_IFDIR) != 0);
 #endif
 }
 
@@ -220,9 +220,9 @@ std::string find_executable(const std::string& filename) {
   char pathsep = ':';
 #endif
   std::string path;
-  if (path_c) {
+  if (path_c != nullptr) {
     path = path_c;
-    if (path.size()) {
+    if (path.size() != 0u) {
       path += pathsep;
     }
   }
@@ -258,12 +258,12 @@ std::vector<std::string> directory_list(const std::string& dir, const std::strin
   }
 #else
   DIR* dirp = opendir(dir.c_str());
-  if (dirp) {
+  if (dirp != nullptr) {
     struct dirent* dp;
     while ((dp = readdir(dirp)) != nullptr) {
       std::string fileName(dp->d_name);
       struct stat info;
-      if (stat((dir + "/" + fileName).c_str(), &info) == 0 && (info.st_mode & S_IFREG)) {
+      if (stat((dir + "/" + fileName).c_str(), &info) == 0 && ((info.st_mode & S_IFREG) != 0)) {
         if (ext == "*") {
           entries.push_back(fileName);
         } else {
@@ -287,7 +287,7 @@ std::string working_directory(void) {
   return wideToUtf8(wd);
 #else
   char wd[FILENAME_MAX];
-  if (!getcwd(wd, sizeof(wd))) return "";
+  if (getcwd(wd, sizeof(wd)) == nullptr) return "";
   return wd;
 #endif
 }
@@ -604,11 +604,11 @@ void inflateString(std::string& s) {
     if (cc[0] == 0x1F && cc[1] == 0x8B) {
       dataStart = cc + 10;
       windowBits = -Z_DEFAULT_WINDOW_BITS;
-      if (cc[3] & 0x4) {
+      if ((cc[3] & 0x4) != 0) {
         dataStart += 2;
         if (dataStart >= cc + s.size()) throw(-1);
       }
-      if (cc[3] & 0x8) {
+      if ((cc[3] & 0x8) != 0) {
         while (*dataStart != '\0') {
           dataStart++;
           if (dataStart >= cc + s.size()) throw(-1);
@@ -616,7 +616,7 @@ void inflateString(std::string& s) {
         dataStart++;
         if (dataStart >= cc + s.size()) throw(-1);
       }
-      if (cc[3] & 0x10) {
+      if ((cc[3] & 0x10) != 0) {
         while (*dataStart != '\0') {
           dataStart++;
           if (dataStart >= cc + s.size()) throw(-1);
@@ -624,7 +624,7 @@ void inflateString(std::string& s) {
         dataStart++;
         if (dataStart >= cc + s.size()) throw(-1);
       }
-      if (cc[3] & 0x2) {
+      if ((cc[3] & 0x2) != 0) {
         dataStart += 2;
         if (dataStart >= cc + s.size()) throw(-1);
       }
@@ -644,7 +644,7 @@ void inflateString(std::string& s) {
     std::ostringstream oss;
     while (true) {
       status = inflate(&stream, Z_NO_FLUSH);
-      if (status == Z_STREAM_END || !stream.avail_out) {
+      if (status == Z_STREAM_END || (stream.avail_out == 0u)) {
         // output buffer full or compression finished
         oss << std::string(reinterpret_cast<char*>(s_outbuf), BUF_SIZE - stream.avail_out);
         stream.next_out = &s_outbuf[0];

@@ -518,7 +518,7 @@ private:
   IntSetVal(IntVal m, IntVal n);
   /// Construct set from \a s
   IntSetVal(const std::vector<Range>& s) : ASTChunk(sizeof(Range) * s.size()) {
-    for (auto i = static_cast<unsigned int>(s.size()); i--;) get(i) = s[i];
+    for (auto i = static_cast<unsigned int>(s.size()); (i--) != 0u;) get(i) = s[i];
   }
 
   /// Disabled
@@ -554,7 +554,7 @@ public:
   /// Return cardinality
   IntVal card(void) const {
     IntVal c = 0;
-    for (unsigned int i = size(); i--;) {
+    for (unsigned int i = size(); (i--) != 0u;) {
       if (width(i).isFinite())
         c += width(i);
       else
@@ -713,7 +713,7 @@ private:
   FloatSetVal(FloatVal m, FloatVal n);
   /// Construct set from \a s
   FloatSetVal(const std::vector<Range>& s) : ASTChunk(sizeof(Range) * s.size()) {
-    for (auto i = static_cast<unsigned int>(s.size()); i--;) get(i) = s[i];
+    for (auto i = static_cast<unsigned int>(s.size()); (i--) != 0u;) get(i) = s[i];
   }
 
   /// Disabled
@@ -749,7 +749,7 @@ public:
   /// Return cardinality
   FloatVal card(void) const {
     FloatVal c = 0;
-    for (unsigned int i = size(); i--;) {
+    for (unsigned int i = size(); (i--) != 0u;) {
       if (width(i).isFinite())
         c += width(i);
       else

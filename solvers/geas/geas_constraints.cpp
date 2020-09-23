@@ -606,7 +606,7 @@ void p_array_bool_element(SolverInstanceBase& s, const Call* call) {
     SOL.post(vals[INT(0) - 1] ? BOOLVAR(2) : ~BOOLVAR(2));
   } else if (PAR(2)) {
     for (int j = 0; j < vals.size(); ++j) {
-      if (vals[j] != BOOL(2)) {
+      if (static_cast<int>(vals[j]) != BOOL(2)) {
         SOL.post(INTVAR(0) != j + 1);
       }
     }

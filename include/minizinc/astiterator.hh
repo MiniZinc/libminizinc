@@ -189,11 +189,11 @@ void BottomUpIterator<T>::run(Expression* root) {
           case Expression::E_COMP: {
             auto* comp = ce->template cast<Comprehension>();
             stack.push_back(C(comp->e()));
-            for (unsigned int i = comp->n_generators(); i--;) {
-              for (unsigned int j = comp->n_decls(i); j--;) {
+            for (unsigned int i = comp->n_generators(); (i--) != 0u;) {
+              for (unsigned int j = comp->n_decls(i); (j--) != 0u;) {
                 stack.push_back(C(comp->decl(i, j)));
               }
-              if (comp->in(i)) {
+              if (comp->in(i) != nullptr) {
                 stack.push_back(C(comp->where(i)));
                 stack.push_back(C(comp, i));
                 stack.push_back(C(comp->in(i)));
@@ -293,10 +293,10 @@ void TopDownIterator<T>::run(Expression* root) {
         _t.vComprehension(*e->template cast<Comprehension>());
         {
           auto* comp = e->template cast<Comprehension>();
-          for (unsigned int i = comp->n_generators(); i--;) {
+          for (unsigned int i = comp->n_generators(); (i--) != 0u;) {
             stack.push_back(comp->where(i));
             stack.push_back(comp->in(i));
-            for (unsigned int j = comp->n_decls(i); j--;) {
+            for (unsigned int j = comp->n_decls(i); (j--) != 0u;) {
               stack.push_back(comp->decl(i, j));
             }
           }

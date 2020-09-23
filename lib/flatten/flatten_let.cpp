@@ -25,7 +25,7 @@ EE flatten_let(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     Expression* le = let->let()[i];
     if (auto* vd = le->dyn_cast<VarDecl>()) {
       Expression* let_e = nullptr;
-      if (vd->e()) {
+      if (vd->e() != nullptr) {
         Ctx nctx = ctx;
         nctx.neg = false;
         if (vd->e()->type().bt() == Type::BT_BOOL) nctx.b = C_MIX;

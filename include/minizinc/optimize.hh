@@ -59,7 +59,7 @@ public:
   Item* ci;
   CollectOccurrencesE(VarOccurrences& vo0, Item* ci0) : vo(vo0), ci(ci0) {}
   void vId(const Id& id) {
-    if (id.decl()) vo.add(id.decl(), ci);
+    if (id.decl() != nullptr) vo.add(id.decl(), ci);
   }
 };
 
@@ -98,7 +98,7 @@ public:
   }
 
   void vId(Id& id) {
-    if (id.decl() && vo.remove(id.decl(), item) == 0) {
+    if ((id.decl() != nullptr) && vo.remove(id.decl(), item) == 0) {
       if (varIsFree(id.decl())) {
         vd.push_back(id.decl());
       }

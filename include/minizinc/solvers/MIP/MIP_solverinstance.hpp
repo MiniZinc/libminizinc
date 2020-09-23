@@ -73,7 +73,7 @@ std::pair<double, bool> MIP_solverinstance<MIPWrapper>::exprToConstEasy(Expressi
   } else if (auto* fl = e->dyn_cast<FloatLit>()) {
     res.first = (fl->v().toDouble());
   } else if (auto* bl = e->dyn_cast<BoolLit>()) {
-    res.first = (bl->v());
+    res.first = static_cast<double>(bl->v());
   } else {
     res.second = false;
   }
@@ -116,7 +116,7 @@ void MIP_solverinstance<MIPWrapper>::processSearchAnnotations(const Annotation& 
       const auto cId = pC->id();
       if (cId == "int_search" || cId == "float_search") {
         ArrayLit* alV = nullptr;
-        if (!pC->n_args() || nullptr == (alV = eval_array_lit(_env.envi(), pC->arg(0)))) {
+        if ((pC->n_args() == 0u) || nullptr == (alV = eval_array_lit(_env.envi(), pC->arg(0)))) {
           std::cerr << "  SEARCH ANN: '" << (*pC) << "'  is unknown. " << std::endl;
           continue;
         }
@@ -130,7 +130,7 @@ void MIP_solverinstance<MIPWrapper>::processSearchAnnotations(const Annotation& 
       }
     }
   }
-  if (vars.size()) {
+  if (vars.size() != 0u) {
     if (2 == getMIPWrapper()->getFreeSearch()) {
       for (int i = 0; i < vars.size(); ++i)
         aPri[i] = 1;  // vars.size()-i;                                    // descending
@@ -197,7 +197,7 @@ template <class MIPWrapper>
 void MIP_solverinstance<MIPWrapper>::processMultipleObjectives(const Annotation& ann) {
   MultipleObjectives mo;
   flattenMultipleObjectives(ann, mo);
-  if (mo.size()) {
+  if (mo.size() != 0u) {
     typename MIPWrapper::MultipleObjectives mo_mip;
     for (const auto& obj : mo.getObjectives())
       mo_mip.add({exprToVar(obj.getVariable()), obj.getWeight()});
@@ -256,7 +256,7 @@ void MIP_solverinstance<MIPWrapper>::processFlatZinc(void) {
         throw InternalError(ssm.str());
       }
       double lb = 0.0, ub = 1.0;  // for bool
-      if (ti->domain()) {
+      if (ti->domain() != nullptr) {
         if (MIP_wrapper::VarType::REAL == vType) {
           FloatBounds fb = compute_float_bounds(getEnv()->envi(), it->e()->id());
           if (fb.valid) {
@@ -332,7 +332,7 @@ void MIP_solverinstance<MIPWrapper>::processFlatZinc(void) {
       assert(res == _variableMap.get(id));
     }
   }
-  if (mip_wrap->fVerbose && mip_wrap->sLitValues.size())
+  if (mip_wrap->fVerbose && (mip_wrap->sLitValues.size() != 0u))
     std::cerr << "  MIP_solverinstance: during Phase 1,  " << mip_wrap->nLitVars
               << " literals with " << mip_wrap->sLitValues.size() << " values used." << std::endl;
   if (!getMIPWrapper()->fPhase1Over) getMIPWrapper()->addPhase1Vars();
@@ -351,10 +351,10 @@ void MIP_solverinstance<MIPWrapper>::processFlatZinc(void) {
   if (mip_wrap->fVerbose) {
     std::cerr << " done, " << mip_wrap->getNRows() << " rows && " << mip_wrap->getNCols()
               << " columns in total.";
-    if (mip_wrap->nIndicatorConstr)
+    if (mip_wrap->nIndicatorConstr != 0)
       std::cerr << "  " << mip_wrap->nIndicatorConstr << " indicator constraints." << std::endl;
     std::cerr << std::endl;
-    if (mip_wrap->sLitValues.size())
+    if (mip_wrap->sLitValues.size() != 0u)
       std::cerr << "  MIP_solverinstance: overall,  " << mip_wrap->nLitVars << " literals with "
                 << mip_wrap->sLitValues.size() << " values used." << std::endl;
   }
@@ -392,7 +392,8 @@ template <class MIPWrapper>
 void MIP_solverinstance<MIPWrapper>::genCuts(const MIP_wrapper::Output& slvOut,
                                              MIP_wrapper::CutInput& cutsIn, bool fMIPSol) {
   for (auto& pCG : cutGenerators) {
-    if (!fMIPSol || pCG->getMask() & MIP_wrapper::MaskConsType_Lazy) pCG->generate(slvOut, cutsIn);
+    if (!fMIPSol || ((pCG->getMask() & MIP_wrapper::MaskConsType_Lazy) != 0))
+      pCG->generate(slvOut, cutsIn);
   }
   /// Select some most violated? TODO
 }
@@ -414,7 +415,7 @@ void MIP_solverinstance<MIPWrapper>::printStatisticsLine(bool fLegend) {
     _log << mip_wrap->getWallTimeElapsed() << "/";
     _log << mip_wrap->getCPUTime() << ",  ";
     _log << mip_wrap->getNNodes();
-    if (mip_wrap->getNOpen()) _log << " ( " << mip_wrap->getNOpen() << " )";
+    if (mip_wrap->getNOpen() != 0) _log << " ( " << mip_wrap->getNOpen() << " )";
     //       _log << "    " << std::ctime( &n_c );
     //  ctime already adds EOL.     os << endl;
     _log << std::endl;
@@ -438,7 +439,7 @@ void MIP_solverinstance<MIPWrapper>::printStatistics(void) {
     ;
     env.outstream << "%%%mzn-stat: nodes=" << mip_wrap->getNNodes() << std::endl;
     ;
-    if (mip_wrap->getNOpen())
+    if (mip_wrap->getNOpen() != 0)
       env.outstream << "%%%mzn-stat: openNodes=" << mip_wrap->getNOpen() << std::endl;
     ;
     env.outstream.setf(std::ios::fixed);
@@ -522,7 +523,7 @@ SolverInstance::Status MIP_solverinstance<MIPWrapper>::solve(void) {
     return _status;
   if (getMIPWrapper()->getNCols()) {  // If any variables, we need to run solver just to get values?
     getMIPWrapper()->provideSolutionCallback(HandleSolutionCallback<MIPWrapper>, this);
-    if (cutGenerators.size())  // only then, can modify presolve
+    if (cutGenerators.size() != 0u)  // only then, can modify presolve
       getMIPWrapper()->provideCutCallback(HandleCutCallback<MIPWrapper>, this);
     ////////////// clean up envi /////////////////
     {
@@ -588,7 +589,7 @@ int GetMaskConsType(const Call* call);
 inline std::string makeConstrName(const char* pfx, int cnt, const Expression* cOrig = nullptr) {
   Call* mznp;
   std::ostringstream ss;
-  if (nullptr != cOrig && (mznp = cOrig->ann().getCall(constants().ann.mzn_path))) {
+  if (nullptr != cOrig && ((mznp = cOrig->ann().getCall(constants().ann.mzn_path)) != nullptr)) {
     assert(1 == mznp->n_args());
     auto strp = mznp->arg(0)->dyn_cast<StringLit>();
     assert(strp);

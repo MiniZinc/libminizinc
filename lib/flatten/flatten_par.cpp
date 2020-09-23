@@ -24,7 +24,7 @@ EE flatten_par(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
   if (e->type().dim() > 0) {
     EnvI::CSEMap::iterator it;
     Id* id = e->dyn_cast<Id>();
-    if (id && (id->decl()->flat() == nullptr || id->decl()->toplevel())) {
+    if ((id != nullptr) && (id->decl()->flat() == nullptr || id->decl()->toplevel())) {
       VarDecl* vd = id->decl()->flat();
       if (vd == nullptr) {
         vd =
@@ -50,7 +50,7 @@ EE flatten_par(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
     } else {
       GCLock lock;
       auto* al = follow_id(eval_par(env, e))->cast<ArrayLit>();
-      if (al->size() == 0 || (r && r->e() == nullptr)) {
+      if (al->size() == 0 || ((r != nullptr) && r->e() == nullptr)) {
         if (r == nullptr)
           ret.r = al;
         else

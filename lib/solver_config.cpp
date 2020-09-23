@@ -70,7 +70,7 @@ std::vector<std::pair<std::string, std::string> > getStringPairList(AssignI* ai)
     for (unsigned int i = 0; i < al->size(); i += 2) {
       auto* sl1 = (*al)[i]->dyn_cast<StringLit>();
       auto* sl2 = (*al)[i + 1]->dyn_cast<StringLit>();
-      if (sl1 && sl2) {
+      if ((sl1 != nullptr) && (sl2 != nullptr)) {
         ret.emplace_back(std::string(sl1->v().c_str(), sl1->v().size()),
                          std::string(sl2->v().c_str(), sl2->v().size()));
       } else {
@@ -101,7 +101,7 @@ std::vector<std::vector<std::string> > getDefaultOptionList(AssignI* ai) {
       auto* sl0 = (*al)[i]->dyn_cast<StringLit>();
       auto* sl1 = (*al)[i + 1]->dyn_cast<StringLit>();
       auto* sl2 = (*al)[i + 2]->dyn_cast<StringLit>();
-      if (sl0 && sl1 && sl2) {
+      if ((sl0 != nullptr) && (sl1 != nullptr) && (sl2 != nullptr)) {
         ret.push_back(std::vector<std::string>({std::string(sl0->v().c_str(), sl0->v().size()),
                                                 std::string(sl1->v().c_str(), sl1->v().size()),
                                                 std::string(sl2->v().c_str(), sl2->v().size())}));
@@ -135,9 +135,10 @@ std::vector<SolverConfig::ExtraFlag> getExtraFlagList(AssignI* ai) {
       auto* sl2 = (*al)[i + 1]->dyn_cast<StringLit>();
       StringLit* sl3 = haveType ? (*al)[i + 2]->dyn_cast<StringLit>() : nullptr;
       StringLit* sl4 = haveDefault ? (*al)[i + 3]->dyn_cast<StringLit>() : nullptr;
-      std::string opt_type = sl3 ? std::string(sl3->v().c_str(), sl3->v().size()) : "bool";
+      std::string opt_type =
+          sl3 != nullptr ? std::string(sl3->v().c_str(), sl3->v().size()) : "bool";
       std::string opt_def;
-      if (sl4) {
+      if (sl4 != nullptr) {
         opt_def = std::string(sl4->v().c_str(), sl4->v().size());
       } else if (opt_type == "bool") {
         opt_def = "false";
@@ -146,7 +147,7 @@ std::vector<SolverConfig::ExtraFlag> getExtraFlagList(AssignI* ai) {
       } else if (opt_type == "float") {
         opt_def = "0.0";
       }
-      if (sl1 && sl2) {
+      if ((sl1 != nullptr) && (sl2 != nullptr)) {
         ret.emplace_back(std::string(sl1->v().c_str(), sl1->v().size()),
                          std::string(sl2->v().c_str(), sl2->v().size()), opt_type, opt_def);
       } else {
@@ -175,7 +176,7 @@ std::string getEnv(const char* v) {
   }
 #else
   char* p = getenv(v);
-  if (p) {
+  if (p != nullptr) {
     ret = p;
   }
 #endif
@@ -231,7 +232,7 @@ SolverConfig SolverConfig::load(string filename) {
       m = parse(confenv, filenames, vector<string>(), "", "", vector<string>(), false, true, false,
                 false, errstream);
     }
-    if (m) {
+    if (m != nullptr) {
       bool hadId = false;
       bool hadVersion = false;
       bool hadName = false;
@@ -346,14 +347,14 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
   if (!def_id.empty() && def_id == id()) {
     oss << "    \"isDefault\": true,\n";
   }
-  if (mznlib_resolved().size()) {
+  if (mznlib_resolved().size() != 0u) {
     oss << "    \"mznlib\": \"" << Printer::escapeStringLit(mznlib_resolved()) << "\",\n";
   }
-  if (executable_resolved().size()) {
+  if (executable_resolved().size() != 0u) {
     oss << "    \"executable\": \"" << Printer::escapeStringLit(executable_resolved()) << "\",\n";
   }
   oss << "    \"configFile\": \"" << Printer::escapeStringLit(configFile()) << "\"";
-  if (defaultFlags().size()) {
+  if (defaultFlags().size() != 0u) {
     oss << ",\n    \"defaultFlags\": [";
     for (unsigned int j = 0; j < defaultFlags().size(); j++) {
       oss << "\"" << Printer::escapeStringLit(defaultFlags()[j]) << "\"";
@@ -366,23 +367,23 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
   oss << "  \"id\": \"" << Printer::escapeStringLit(id()) << "\",\n";
   oss << "  \"name\": \"" << Printer::escapeStringLit(name()) << "\",\n";
   oss << "  \"version\": \"" << Printer::escapeStringLit(version()) << "\",\n";
-  if (mznlib().size()) {
+  if (mznlib().size() != 0u) {
     oss << "  \"mznlib\": \"" << Printer::escapeStringLit(mznlib()) << "\",\n";
   }
-  if (executable().size()) {
+  if (executable().size() != 0u) {
     oss << "  \"executable\": \"" << Printer::escapeStringLit(executable()) << "\",\n";
   }
   oss << "  \"mznlibVersion\": " << mznlibVersion() << ",\n";
-  if (description().size()) {
+  if (description().size() != 0u) {
     oss << "  \"description\": \"" << Printer::escapeStringLit(description()) << "\",\n";
   }
-  if (contact().size()) {
+  if (contact().size() != 0u) {
     oss << "  \"contact\": \"" << Printer::escapeStringLit(contact()) << "\",\n";
   }
-  if (website().size()) {
+  if (website().size() != 0u) {
     oss << "  \"website\": \"" << Printer::escapeStringLit(website()) << "\",\n";
   }
-  if (requiredFlags().size()) {
+  if (requiredFlags().size() != 0u) {
     oss << "  \"requiredFlags\": [";
     for (unsigned int j = 0; j < requiredFlags().size(); j++) {
       oss << "\"" << requiredFlags()[j] << "\"";
@@ -390,7 +391,7 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
     }
     oss << "],\n";
   }
-  if (stdFlags().size()) {
+  if (stdFlags().size() != 0u) {
     oss << "  \"stdFlags\": [";
     for (unsigned int j = 0; j < stdFlags().size(); j++) {
       oss << "\"" << stdFlags()[j] << "\"";
@@ -398,7 +399,7 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
     }
     oss << "],\n";
   }
-  if (extraFlags().size()) {
+  if (extraFlags().size() != 0u) {
     oss << "  \"extraFlags\": [";
     for (unsigned int j = 0; j < extraFlags().size(); j++) {
       oss << "["
@@ -409,7 +410,7 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
     oss << "],\n";
   }
 
-  if (tags().size()) {
+  if (tags().size() != 0u) {
     oss << "  \"tags\": [";
     for (unsigned int j = 0; j < tags().size(); j++) {
       oss << "\"" << Printer::escapeStringLit(tags()[j]) << "\"";
@@ -505,7 +506,7 @@ SolverConfigs::SolverConfigs(std::ostream& log) {
             m = nullptr;
           }
         }
-        if (m) {
+        if (m != nullptr) {
           for (auto& i : *m) {
             if (auto* ai = i->dyn_cast<AssignI>()) {
               if (ai->id() == "mzn_solver_path") {

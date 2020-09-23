@@ -43,7 +43,7 @@ int ASTString::levenshteinDistance(const ASTString& other) const {
     for (int j = 1; j <= n; j++) {
       int del = dp0[j] + 1;
       int ins = dp1[j - 1] + 1;
-      int sub = dp0[j - 1] + (s[i - 1] != t[j - 1]);
+      int sub = dp0[j - 1] + static_cast<int>(s[i - 1] != t[j - 1]);
       dp1[j] = std::min(del, std::min(ins, sub));
     }
     std::swap(dp0, dp1);

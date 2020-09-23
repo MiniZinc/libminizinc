@@ -133,7 +133,7 @@ bool FZN_SolverFactory::processOption(SolverInstanceBase::Options* opt, int& i,
   } else if (cop.getOption("-i")) {
     _opt.fzn_flags.emplace_back("-i");
   } else if (_opt.supports_n_o && cop.getOption("-n-o --num-optimal", &nn)) {
-    _opt.num_optimal = nn;
+    _opt.num_optimal = (nn != 0);
   } else if (_opt.supports_a_o && cop.getOption("-a-o --all-opt --all-optimal")) {
     _opt.all_optimal = true;
   } else if (cop.getOption("-p --parallel", &nn)) {
@@ -224,7 +224,7 @@ SolverInstance::Status FZNSolverInstance::solve(void) {
   cmd_line.push_back(opt.fzn_solver);
   string sBE = opt.backend;
   bool is_sat = _fzn->solveItem()->st() == SolveI::SolveType::ST_SAT;
-  if (sBE.size()) {
+  if (sBE.size() != 0u) {
     cmd_line.emplace_back("-b");
     cmd_line.push_back(sBE);
   }
@@ -234,7 +234,7 @@ SolverInstance::Status FZNSolverInstance::solve(void) {
   if (opt.all_optimal && !is_sat) {
     cmd_line.emplace_back("-a-o");
   }
-  if (opt.num_optimal != 1 && !is_sat) {
+  if (static_cast<int>(opt.num_optimal) != 1 && !is_sat) {
     cmd_line.emplace_back("-n-o");
     ostringstream oss;
     oss << opt.num_optimal;
@@ -246,7 +246,7 @@ SolverInstance::Status FZNSolverInstance::solve(void) {
     oss << opt.numSols;
     cmd_line.push_back(oss.str());
   }
-  if (opt.parallel.size()) {
+  if (opt.parallel.size() != 0u) {
     cmd_line.emplace_back("-p");
     ostringstream oss;
     oss << opt.parallel;

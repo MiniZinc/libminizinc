@@ -60,8 +60,8 @@ public:
     bool flag_output_flush = true;
     bool flag_output_time = false;
     int flag_ignore_lines = 0;
-    bool flag_unique = 1;
-    bool flag_canonicalize = 0;
+    bool flag_unique = true;
+    bool flag_canonicalize = false;
     bool flag_standaloneSolns2Out = false;
     std::string flag_output_noncanonical;
     std::string flag_output_raw;

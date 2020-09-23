@@ -36,7 +36,7 @@ public:
   Token(std::string s0) : t(T_STRING), s(s0) {}
   Token(int i0) : t(T_INT), i(i0), d(i0) {}
   Token(double d0) : t(T_FLOAT), d(d0) {}
-  Token(bool b0) : t(T_BOOL), i(b0), d(b0), b(b0) {}
+  Token(bool b0) : t(T_BOOL), i(static_cast<int>(b0)), d(static_cast<double>(b0)), b(b0) {}
   static Token listOpen() { return Token(T_LIST_OPEN); }
   static Token listClose() { return Token(T_LIST_CLOSE); }
   static Token objOpen() { return Token(T_OBJ_OPEN); }
@@ -544,11 +544,12 @@ void JSONParser::parse(Model* m, std::istream& is, bool ignoreUnknown) {
         bool has_index = std::any_of(ti->ranges().begin(), ti->ranges().end(),
                                      [](TypeInst* nti) { return nti->domain() != nullptr; });
         auto* al = e->dyn_cast<ArrayLit>();
-        if (al && has_index && (al->dims() == 1 || ti->ranges().size() == al->dims())) {
+        if ((al != nullptr) && has_index &&
+            (al->dims() == 1 || ti->ranges().size() == al->dims())) {
           std::string name = "array" + std::to_string(al->dims()) + "d";
           std::vector<Expression*> args(al->dims() + 1);
           for (int i = 0; i < al->dims(); ++i) {
-            if (ti->ranges()[i]->domain()) {
+            if (ti->ranges()[i]->domain() != nullptr) {
               args[i] = ti->ranges()[i]->domain();
             } else {
               args[i] = new SetLit(Location().introduce(), IntSetVal::a(al->min(i), al->max(i)));

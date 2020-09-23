@@ -89,7 +89,7 @@ EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool do
     if (vd->e() != nullptr) {
       if (vd->e()->type().ispar() && vd->e()->type().dim() == 0) {
         rete = eval_par(env, vd->e());
-        if (vd->toplevel() && vd->ti()->domain() && !vd->ti()->computedDomain()) {
+        if (vd->toplevel() && (vd->ti()->domain() != nullptr) && !vd->ti()->computedDomain()) {
           // need to check if domain includes RHS value
           if (vd->type() == Type::varbool()) {
             if (!Expression::equal(rete, vd->ti()->domain())) {
@@ -126,12 +126,12 @@ EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool do
       } else if (vd->e()->isa<Id>()) {
         rete = vd->e();
       }
-    } else if (vd->ti()->ranges().size() == 0 && vd->ti()->domain() &&
+    } else if (vd->ti()->ranges().size() == 0 && (vd->ti()->domain() != nullptr) &&
                vd->type().st() == Type::ST_PLAIN && vd->type().ot() == Type::OT_PRESENT) {
       if (vd->type().bt() == Type::BT_BOOL) {
         rete = vd->ti()->domain();
       } else if (vd->type().bt() == Type::BT_INT && vd->ti()->domain()->isa<SetLit>() &&
-                 vd->ti()->domain()->cast<SetLit>()->isv() &&
+                 (vd->ti()->domain()->cast<SetLit>()->isv() != nullptr) &&
                  vd->ti()->domain()->cast<SetLit>()->isv()->card() == 1) {
         rete = IntLit::a(vd->ti()->domain()->cast<SetLit>()->isv()->min());
       }
@@ -189,19 +189,19 @@ EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool do
         auto it = env.cse_map_find(vd->e());
         if (it == env.cse_map_end()) {
           Expression* vde = follow_id(vd->e());
-          ArrayLit* vdea = vde ? vde->dyn_cast<ArrayLit>() : nullptr;
-          if (vdea && vdea->size() == 0) {
+          ArrayLit* vdea = vde != nullptr ? vde->dyn_cast<ArrayLit>() : nullptr;
+          if ((vdea != nullptr) && vdea->size() == 0) {
             // Do not create names for empty arrays but return array literal directly
             rete = vdea;
           } else {
             VarDecl* nvd = newVarDecl(env, ctx, eval_typeinst(env, ctx, vd), nullptr, vd, nullptr);
 
-            if (vd->e()) {
+            if (vd->e() != nullptr) {
               (void)flat_exp(env, Ctx(), vd->e(), nvd, constants().var_true);
             }
             vd = nvd;
             EE ee(vd, nullptr);
-            if (vd->e()) env.cse_map_insert(vd->e(), ee);
+            if (vd->e() != nullptr) env.cse_map_insert(vd->e(), ee);
           }
         } else {
           if (it->second.r()->isa<VarDecl>()) {
@@ -212,11 +212,11 @@ EE flatten_id(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b, bool do
         }
       }
       if (rete == nullptr) {
-        if (id->type().bt() == Type::BT_ANN && vd->e()) {
+        if (id->type().bt() == Type::BT_ANN && (vd->e() != nullptr)) {
           rete = vd->e();
         } else {
           auto* vda = vd->dyn_cast<ArrayLit>();
-          if (vda && vda->size() == 0) {
+          if ((vda != nullptr) && vda->size() == 0) {
             // Do not create names for empty arrays but return array literal directly
             rete = vda;
           } else {

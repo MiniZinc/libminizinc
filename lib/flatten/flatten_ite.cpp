@@ -297,8 +297,8 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         } else if (r_bounds_valid_set[j] && e_then[j][i]()->type().isintset()) {
           GCLock lock;
           IntSetVal* isv = compute_intset_bounds(env, branches[j][i]());
-          if (isv) r_bounds_set[j].push_back(isv);
-          r_bounds_valid_set[j] = r_bounds_valid_set[j] && isv;
+          if (isv != nullptr) r_bounds_set[j].push_back(isv);
+          r_bounds_valid_set[j] = r_bounds_valid_set[j] && (isv != nullptr);
         } else if (r_bounds_valid_float[j] && e_then[j][i]()->type().isfloat()) {
           GCLock lock;
           FloatBounds fb_then = compute_float_bounds(env, branches[j][i]());
@@ -347,8 +347,8 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       } else if (r_bounds_valid_set[j] && e_else[j]()->type().isintset()) {
         GCLock lock;
         IntSetVal* isv = compute_intset_bounds(env, eelse.r());
-        if (isv) r_bounds_set[j].push_back(isv);
-        r_bounds_valid_set[j] = r_bounds_valid_set[j] && isv;
+        if (isv != nullptr) r_bounds_set[j].push_back(isv);
+        r_bounds_valid_set[j] = r_bounds_valid_set[j] && (isv != nullptr);
       } else if (r_bounds_valid_float[j] && e_else[j]()->type().isfloat()) {
         GCLock lock;
         FloatBounds fb_else = compute_float_bounds(env, eelse.r());
@@ -370,7 +370,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         lb = std::min(lb, i.l);
         ub = std::max(ub, i.u);
       }
-      if (nr->ti()->domain()) {
+      if (nr->ti()->domain() != nullptr) {
         IntSetVal* isv = eval_intset(env, nr->ti()->domain());
         Ranges::Const<IntVal> ite_r(lb, ub);
         IntSetRanges isv_r(isv);
@@ -393,7 +393,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         Ranges::Union<IntVal, IntSetRanges, IntSetRanges> u(i0, i1);
         isv_branches = IntSetVal::ai(u);
       }
-      if (nr->ti()->domain()) {
+      if (nr->ti()->domain() != nullptr) {
         IntSetVal* isv = eval_intset(env, nr->ti()->domain());
         IntSetRanges isv_r(isv);
         IntSetRanges isv_branches_r(isv_branches);
@@ -415,7 +415,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         lb = std::min(lb, i.l);
         ub = std::max(ub, i.u);
       }
-      if (nr->ti()->domain()) {
+      if (nr->ti()->domain() != nullptr) {
         FloatSetVal* isv = eval_floatset(env, nr->ti()->domain());
         Ranges::Const<FloatVal> ite_r(lb, ub);
         FloatSetRanges isv_r(isv);

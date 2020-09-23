@@ -53,7 +53,7 @@ void SolverInstanceBase::printSolution() {
   if (nullptr == pS2Out) {
     getEnv()->evalOutput(std::cout);  // deprecated
     std::cout << oss.str();
-    if (oss.str().size() && '\n' != oss.str().back()) std::cout << '\n';
+    if ((oss.str().size() != 0u) && '\n' != oss.str().back()) std::cout << '\n';
     std::cout << "----------" << std::endl;
   } else
     getSolns2Out()->evalOutput(oss.str());

@@ -113,7 +113,7 @@ public:
 
   void printCurrentLine(int firstCol, int lastCol) {
     const char* eol_c = strchr(buf + lineStartPos, '\n');
-    if (eol_c) {
+    if (eol_c != nullptr) {
       if (eol_c == buf + lineStartPos) return;
       err << std::string(buf + lineStartPos, eol_c - (buf + lineStartPos));
     } else {

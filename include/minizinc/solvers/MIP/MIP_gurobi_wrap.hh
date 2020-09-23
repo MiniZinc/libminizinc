@@ -154,7 +154,7 @@ public:
 
 public:
   MIP_gurobi_wrapper(Options* opt) : options(opt) {
-    if (opt) openGUROBI();
+    if (opt != nullptr) openGUROBI();
   }
   virtual ~MIP_gurobi_wrapper() { closeGUROBI(); }
 
