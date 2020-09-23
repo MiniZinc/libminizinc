@@ -685,17 +685,19 @@ KeepAlive::KeepAlive(const KeepAlive& e) : _e(e._e), _p(nullptr), _n(nullptr) {
   }
 }
 KeepAlive& KeepAlive::operator=(const KeepAlive& e) {
-  if ((_e != nullptr) && !_e->isUnboxedVal()) {
-    if (e._e == nullptr || e._e->isUnboxedVal()) {
-      GC::gc()->removeKeepAlive(this);
-      _p = _n = nullptr;
+  if (this != &e) {
+    if ((_e != nullptr) && !_e->isUnboxedVal()) {
+      if (e._e == nullptr || e._e->isUnboxedVal()) {
+        GC::gc()->removeKeepAlive(this);
+        _p = _n = nullptr;
+      }
+    } else {
+      if (e._e != nullptr && !e._e->isUnboxedVal()) {
+        GC::gc()->addKeepAlive(this);
+      }
     }
-  } else {
-    if (e._e != nullptr && !e._e->isUnboxedVal()) {
-      GC::gc()->addKeepAlive(this);
-    }
+    _e = e._e;
   }
-  _e = e._e;
   return *this;
 }
 
@@ -756,22 +758,24 @@ WeakRef::WeakRef(const WeakRef& e) : _e(e()), _p(nullptr), _n(nullptr), _valid(t
   }
 }
 WeakRef& WeakRef::operator=(const WeakRef& e) {
-  // Test if this WeakRef is currently active in the GC
-  bool isActive = ((_e != nullptr) && !_e->isUnboxedVal());
-  if (isActive) {
-    // Yes, active WeakRef.
-    // If after assigning WeakRef should be inactive, remove it.
-    if (e() == nullptr || e()->isUnboxedVal()) {
-      GC::gc()->removeWeakRef(this);
-      _n = _p = nullptr;
+  if (this != &e) {
+    // Test if this WeakRef is currently active in the GC
+    bool isActive = ((_e != nullptr) && !_e->isUnboxedVal());
+    if (isActive) {
+      // Yes, active WeakRef.
+      // If after assigning WeakRef should be inactive, remove it.
+      if (e() == nullptr || e()->isUnboxedVal()) {
+        GC::gc()->removeWeakRef(this);
+        _n = _p = nullptr;
+      }
     }
-  }
-  _e = e();
-  _valid = true;
+    _e = e();
+    _valid = true;
 
-  // If this WeakRef was not active but now should be, add it
-  if (!isActive && _e != nullptr && !_e->isUnboxedVal()) {
-    GC::gc()->addWeakRef(this);
+    // If this WeakRef was not active but now should be, add it
+    if (!isActive && _e != nullptr && !_e->isUnboxedVal()) {
+      GC::gc()->addWeakRef(this);
+    }
   }
   return *this;
 }

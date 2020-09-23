@@ -75,6 +75,7 @@ public:
   /// Copy constructor
   ASTExprVec(const ASTExprVec& v);
   /// Assignment operator
+  // NOLINTNEXTLINE(bugprone-unhandled-self-assignment)
   ASTExprVec& operator=(const ASTExprVec& v);
 
   /// Size of vector
@@ -171,6 +172,7 @@ ASTExprVecO<T>* ASTExprVecO<T>::a(const std::vector<T>& v) {
 
 inline ASTIntVec::ASTIntVec(const std::vector<int>& v) : _v(ASTIntVecO::a(v)) {}
 inline ASTIntVec::ASTIntVec(const ASTIntVec& v) : _v(v._v) {}
+// NOLINTNEXTLINE(bugprone-unhandled-self-assignment)
 inline ASTIntVec& ASTIntVec::operator=(const ASTIntVec& v) {
   _v = v._v;
   return *this;
@@ -192,6 +194,7 @@ ASTExprVec<T>::ASTExprVec(const std::vector<T*>& v) : _v(ASTExprVecO<T*>::a(v)) 
 template <class T>
 inline ASTExprVec<T>::ASTExprVec(const ASTExprVec<T>& v) : _v(v._v) {}
 template <class T>
+// NOLINTNEXTLINE(bugprone-unhandled-self-assignment)
 inline ASTExprVec<T>& ASTExprVec<T>::operator=(const ASTExprVec<T>& v) {
   _v = v._v;
   return *this;
