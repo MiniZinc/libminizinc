@@ -102,7 +102,7 @@ bool remove_dups(std::vector<KeepAlive>& x, bool identity) {
   return false;
 }
 bool contains_dups(std::vector<KeepAlive>& x, std::vector<KeepAlive>& y) {
-  if (x.size() == 0 || y.size() == 0) {
+  if (x.empty() || y.empty()) {
     return false;
   }
   unsigned int ix = 0;
@@ -190,7 +190,7 @@ void flatten_linexp_call(EnvI& env, Ctx ctx, Ctx nctx, ASTString& cid, Call* c, 
     }
   }
   simplify_lin<Lit>(coeffv, alv, d);
-  if (coeffv.size() == 0) {
+  if (coeffv.empty()) {
     GCLock lock;
     ret.b = conj(env, b, Ctx(), args_ee);
     ret.r = bind(env, ctx, r, LinearTraits<Lit>::newLit(d));
@@ -774,7 +774,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         return ret;
       }
       if (neg_alv.empty()) {
-        if (pos_alv.size() == 0) {
+        if (pos_alv.empty()) {
           ret.b = bind(env, Ctx(), b, constants().lit_true);
           ret.r = bind(env, ctx, r, constants().lit_false);
           return ret;
@@ -849,7 +849,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         ret.r = bind(env, ctx, r, constants().lit_false);
         return ret;
       }
-      if (alv.size() == 0) {
+      if (alv.empty()) {
         ret.b = bind(env, Ctx(), b, constants().lit_true);
         ret.r = bind(env, ctx, r, constants().lit_true);
         return ret;
@@ -869,7 +869,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       } else {
         flatten_linexp_call<FloatLit>(env, ctx, nctx, cid, c, ret, b, r, args_ee, args);
       }
-      if (args.size() == 0) {
+      if (args.empty()) {
         return ret;
       }
     } else {
@@ -902,7 +902,7 @@ EE flatten_call(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         flatten_linexp_call<FloatLit>(env, ctx, nctx, cid, cr()->cast<Call>(), ret, b, r, args_ee,
                                       args);
       }
-      if (args.size() == 0) {
+      if (args.empty()) {
         return ret;
       }
       GCLock lock;

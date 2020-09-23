@@ -312,7 +312,7 @@ KeepAlive mklinexp(EnvI& env, typename LinearTraits<Lit>::Val c0,
   collectLinExps<Lit>(env, c1, e1, coeffs, vars, constval);
   simplify_lin<Lit>(coeffs, vars, constval);
   KeepAlive ka;
-  if (coeffs.size() == 0) {
+  if (coeffs.empty()) {
     ka = LinearTraits<Lit>::newLit(constval);
   } else if (coeffs.size() == 1 && coeffs[0] == 1 && constval == 0) {
     ka = vars[0];
@@ -421,7 +421,7 @@ Call* aggregateAndOrOps(EnvI& env, BinOp* bo, bool negateArgs, BinOpType bot) {
     al_pos->type(al_t);
     env.annotateFromCallStack(al_pos);
     c_args[0] = al_pos;
-    if (output_neg.size() > 0) {
+    if (!output_neg.empty()) {
       auto* al_neg = new ArrayLit(bo->loc().introduce(), output_neg);
       al_neg->type(al_t);
       env.annotateFromCallStack(al_neg);
@@ -510,7 +510,7 @@ void flatten_linexp_binop(EnvI& env, Ctx ctx, VarDecl* r, VarDecl* b, EE& ret, E
     }
   }
   simplify_lin<Lit>(coeffv, alv, d);
-  if (coeffv.size() == 0) {
+  if (coeffv.empty()) {
     bool result;
     switch (bot) {
       case BOT_LE:
@@ -1498,7 +1498,7 @@ EE flatten_binop(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         args.push_back(e1.r);
       }
 
-      if (args.size() > 0) {
+      if (!args.empty()) {
         GC::lock();
 
         bool idIsOp = false;

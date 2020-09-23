@@ -352,14 +352,14 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
   if (!def_id.empty() && def_id == id()) {
     oss << "    \"isDefault\": true,\n";
   }
-  if (mznlib_resolved().size() != 0u) {
+  if (!mznlib_resolved().empty()) {
     oss << "    \"mznlib\": \"" << Printer::escapeStringLit(mznlib_resolved()) << "\",\n";
   }
-  if (executable_resolved().size() != 0u) {
+  if (!executable_resolved().empty()) {
     oss << "    \"executable\": \"" << Printer::escapeStringLit(executable_resolved()) << "\",\n";
   }
   oss << "    \"configFile\": \"" << Printer::escapeStringLit(configFile()) << "\"";
-  if (defaultFlags().size() != 0u) {
+  if (!defaultFlags().empty()) {
     oss << ",\n    \"defaultFlags\": [";
     for (unsigned int j = 0; j < defaultFlags().size(); j++) {
       oss << "\"" << Printer::escapeStringLit(defaultFlags()[j]) << "\"";
@@ -374,23 +374,23 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
   oss << "  \"id\": \"" << Printer::escapeStringLit(id()) << "\",\n";
   oss << "  \"name\": \"" << Printer::escapeStringLit(name()) << "\",\n";
   oss << "  \"version\": \"" << Printer::escapeStringLit(version()) << "\",\n";
-  if (mznlib().size() != 0u) {
+  if (!mznlib().empty()) {
     oss << "  \"mznlib\": \"" << Printer::escapeStringLit(mznlib()) << "\",\n";
   }
-  if (executable().size() != 0u) {
+  if (!executable().empty()) {
     oss << "  \"executable\": \"" << Printer::escapeStringLit(executable()) << "\",\n";
   }
   oss << "  \"mznlibVersion\": " << mznlibVersion() << ",\n";
-  if (description().size() != 0u) {
+  if (!description().empty()) {
     oss << "  \"description\": \"" << Printer::escapeStringLit(description()) << "\",\n";
   }
-  if (contact().size() != 0u) {
+  if (!contact().empty()) {
     oss << "  \"contact\": \"" << Printer::escapeStringLit(contact()) << "\",\n";
   }
-  if (website().size() != 0u) {
+  if (!website().empty()) {
     oss << "  \"website\": \"" << Printer::escapeStringLit(website()) << "\",\n";
   }
-  if (requiredFlags().size() != 0u) {
+  if (!requiredFlags().empty()) {
     oss << "  \"requiredFlags\": [";
     for (unsigned int j = 0; j < requiredFlags().size(); j++) {
       oss << "\"" << requiredFlags()[j] << "\"";
@@ -400,7 +400,7 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
     }
     oss << "],\n";
   }
-  if (stdFlags().size() != 0u) {
+  if (!stdFlags().empty()) {
     oss << "  \"stdFlags\": [";
     for (unsigned int j = 0; j < stdFlags().size(); j++) {
       oss << "\"" << stdFlags()[j] << "\"";
@@ -410,7 +410,7 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
     }
     oss << "],\n";
   }
-  if (extraFlags().size() != 0u) {
+  if (!extraFlags().empty()) {
     oss << "  \"extraFlags\": [";
     for (unsigned int j = 0; j < extraFlags().size(); j++) {
       oss << "["
@@ -423,7 +423,7 @@ std::string SolverConfig::toJSON(const SolverConfigs& configs) const {
     oss << "],\n";
   }
 
-  if (tags().size() != 0u) {
+  if (!tags().empty()) {
     oss << "  \"tags\": [";
     for (unsigned int j = 0; j < tags().size(); j++) {
       oss << "\"" << Printer::escapeStringLit(tags()[j]) << "\"";

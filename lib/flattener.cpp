@@ -426,14 +426,14 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     throw Error("Error: no model file given.");
   }
 
-  if (std_lib_dir == "") {
+  if (std_lib_dir.empty()) {
     throw Error(
         "Error: unknown minizinc standard library directory.\n"
         "Specify --stdlib-dir on the command line or set the\n"
         "MZN_STDLIB_DIR environment variable.");
   }
 
-  if (globals_dir != "") {
+  if (!globals_dir.empty()) {
     includePaths.insert(includePaths.begin(), std_lib_dir + "/" + globals_dir + "/");
   }
   includePaths.push_back(std_lib_dir + "/std/");
@@ -444,7 +444,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     }
   }
 
-  if (flag_output_base == "") {
+  if (flag_output_base.empty()) {
     if (filenames.empty()) {
       flag_output_base = "mznout";
     } else {
@@ -466,13 +466,13 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
   }
 
   if (fOutputByDefault) {
-    if (flag_output_fzn == "") {
+    if (flag_output_fzn.empty()) {
       flag_output_fzn = flag_output_base + ".fzn";
     }
-    if (flag_output_paths == "" && fopts.collect_mzn_paths) {
+    if (flag_output_paths.empty() && fopts.collect_mzn_paths) {
       flag_output_paths = flag_output_base + ".paths";
     }
-    if (flag_output_ozn == "" && !flag_no_output_ozn) {
+    if (flag_output_ozn.empty() && !flag_no_output_ozn) {
       flag_output_ozn = flag_output_base + ".ozn";
     }
   }
@@ -510,7 +510,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
         vector<TypeError> typeErrors;
         try {
           MiniZinc::typecheck(smm_env, smm, typeErrors, true, false, true);
-          if (typeErrors.size() > 0) {
+          if (!typeErrors.empty()) {
             if (!isCompressedChecker) {
               for (auto& typeError : typeErrors) {
                 if (flag_verbose) {
@@ -591,7 +591,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
       }
     }
 
-    if (!flag_solution_check_model.empty() && filenames.size() == 0) {
+    if (!flag_solution_check_model.empty() && filenames.empty()) {
       throw Error("Cannot run solution checker without model.");
     }
 
@@ -615,7 +615,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
     errstream.str("");
     m = parse(*env, filenames, datafiles, modelText, modelName.empty() ? "stdin" : modelName,
               includePaths, is_flatzinc, false, false, flag_verbose, errstream);
-    if (globals_dir != "") {
+    if (!globals_dir.empty()) {
       includePaths.erase(includePaths.begin());
     }
     if (m == nullptr) {
@@ -641,7 +641,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             *env, m, typeErrors,
             flag_model_types_only || flag_model_interface_only || flag_model_check_only,
             flag_allow_multi_assign);
-        if (typeErrors.size() > 0) {
+        if (!typeErrors.empty()) {
           for (auto& typeError : typeErrors) {
             if (flag_verbose) {
               log << std::endl;
@@ -676,7 +676,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           MiniZinc::typecheck(*env, m, typeErrors,
                               flag_model_check_only || flag_model_interface_only,
                               flag_allow_multi_assign, true);
-          if (typeErrors.size() > 0) {
+          if (!typeErrors.empty()) {
             for (auto& typeError : typeErrors) {
               if (flag_verbose) {
                 log << std::endl;
@@ -825,7 +825,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           if (flag_verbose) {
             log << " done (" << starttime.stoptime() << ")" << std::endl;
           }
-        } else if (flag_output_paths != "") {
+        } else if (!flag_output_paths.empty()) {
           if (flag_verbose) {
             log << "Printing Paths to '" << flag_output_paths << "' ..." << std::flush;
           }
@@ -865,7 +865,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
           if (flag_verbose) {
             log << " done (" << starttime.stoptime() << ")" << std::endl;
           }
-        } else if (flag_output_fzn != "") {
+        } else if (!flag_output_fzn.empty()) {
           if (flag_verbose) {
             log << "Printing FlatZinc to '" << flag_output_fzn << "' ..." << std::flush;
           }
@@ -889,7 +889,7 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
             if (flag_verbose) {
               log << " done (" << starttime.stoptime() << ")" << std::endl;
             }
-          } else if (flag_output_ozn != "") {
+          } else if (!flag_output_ozn.empty()) {
             if (flag_verbose) {
               log << "Printing .ozn to '" << flag_output_ozn << "' ..." << std::flush;
             }

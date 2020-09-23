@@ -120,7 +120,7 @@ EE flatten_comp(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
         }
       }
     }
-    if (where.size() > 0) {
+    if (!where.empty()) {
       Generators gs;
       for (int i = 0; i < c->n_generators(); i++) {
         std::vector<VarDecl*> vds(c->n_decls(i));

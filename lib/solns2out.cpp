@@ -263,7 +263,7 @@ bool Solns2Out::evalOutput(const string& s_ExtraInfo) {
         if (pOfs_non_canon->good()) {
           (*pOfs_non_canon) << oss.str();
           (*pOfs_non_canon) << comments;
-          if (s_ExtraInfo.size() != 0u) {
+          if (!s_ExtraInfo.empty()) {
             (*pOfs_non_canon) << s_ExtraInfo;
             if ('\n' != s_ExtraInfo.back()) {  /// TODO is this enough to check EOL?
               (*pOfs_non_canon) << '\n';
@@ -281,7 +281,7 @@ bool Solns2Out::evalOutput(const string& s_ExtraInfo) {
         }
       }
     } else {
-      if ((_opt.solution_comma.size() != 0u) && _stats.nSolns > 1) {
+      if ((!_opt.solution_comma.empty()) && _stats.nSolns > 1) {
         getOutput() << _opt.solution_comma << '\n';
       }
       getOutput() << oss.str();
@@ -289,7 +289,7 @@ bool Solns2Out::evalOutput(const string& s_ExtraInfo) {
   }
   getOutput() << comments;  // print them now ????
   comments = "";
-  if (s_ExtraInfo.size() != 0u) {
+  if (!s_ExtraInfo.empty()) {
     getOutput() << s_ExtraInfo;
     if ('\n' != s_ExtraInfo.back()) {  /// TODO is this enough to check EOL?
       getOutput() << '\n';
@@ -333,17 +333,17 @@ void Solns2Out::checkSolution(std::ostream& oss) {
           if (al != nullptr) {
             checker << "array" << al->dims() << "d(";
             for (int i = 0; i < al->dims(); i++) {
-              if (enumids.size() > 0 && enumids[i] != nullptr) {
+              if (!enumids.empty() && enumids[i] != nullptr) {
                 checker << "to_enum(" << *enumids[i] << ",";
               }
               checker << al->min(i) << ".." << al->max(i);
-              if (enumids.size() > 0 && enumids[i] != nullptr) {
+              if (!enumids.empty() && enumids[i] != nullptr) {
                 checker << ")";
               }
               checker << ",";
             }
           }
-          if (enumids.size() > 0 && enumids.back() != nullptr) {
+          if (!enumids.empty() && enumids.back() != nullptr) {
             checker << "to_enum(" << *enumids.back() << "," << *e << ")";
           } else {
             checker << *e;
@@ -430,7 +430,7 @@ bool Solns2Out::evalStatus(SolverInstance::Status status) {
 bool Solns2Out::__evalOutputFinal(bool) {
   /// Print the canonical list
   for (const auto& sol : sSolsCanon) {
-    if ((_opt.solution_comma.size() != 0u) && &sol != &*sSolsCanon.begin()) {
+    if ((!_opt.solution_comma.empty()) && &sol != &*sSolsCanon.begin()) {
       getOutput() << _opt.solution_comma << '\n';
     }
     getOutput() << sol;
@@ -484,13 +484,13 @@ void Solns2Out::init() {
     } else if (auto* vdi = i->dyn_cast<VarDeclI>()) {
       if (vdi->e()->id()->idn() == -1 && vdi->e()->id()->v() == "_mzn_solution_checker") {
         checkerModel = eval_string(getEnv()->envi(), vdi->e()->e());
-        if (checkerModel.size() > 0 && checkerModel[0] == '@') {
+        if (!checkerModel.empty() && checkerModel[0] == '@') {
           checkerModel = FileUtils::decodeBase64(checkerModel);
           FileUtils::inflateString(checkerModel);
         }
       } else if (vdi->e()->id()->idn() == -1 && vdi->e()->id()->v() == "_mzn_stats_checker") {
         statisticsCheckerModel = eval_string(getEnv()->envi(), vdi->e()->e());
-        if (statisticsCheckerModel.size() > 0 && statisticsCheckerModel[0] == '@') {
+        if (!statisticsCheckerModel.empty() && statisticsCheckerModel[0] == '@') {
           statisticsCheckerModel = FileUtils::decodeBase64(statisticsCheckerModel);
           FileUtils::inflateString(statisticsCheckerModel);
         }
@@ -503,7 +503,7 @@ void Solns2Out::init() {
 
   /// Main output file
   if (nullptr == pOut) {
-    if (_opt.flag_output_file.size() != 0u) {
+    if (!_opt.flag_output_file.empty()) {
       pOut.reset(new ofstream(FILE_PATH(_opt.flag_output_file)));
       MZN_ASSERT_HARD_MSG(pOut.get(),
                           "solns2out_base: could not allocate stream object for file output into "
@@ -512,14 +512,14 @@ void Solns2Out::init() {
     }
   }
   /// Non-canonical output
-  if (_opt.flag_canonicalize && (_opt.flag_output_noncanonical.size() != 0u)) {
+  if (_opt.flag_canonicalize && (!_opt.flag_output_noncanonical.empty())) {
     pOfs_non_canon.reset(new ofstream(FILE_PATH(_opt.flag_output_noncanonical)));
     MZN_ASSERT_HARD_MSG(pOfs_non_canon.get(),
                         "solns2out_base: could not allocate stream object for non-canon output");
     checkIOStatus(pOfs_non_canon->good(), _opt.flag_output_noncanonical, false);
   }
   /// Raw output
-  if (_opt.flag_output_raw.size() != 0u) {
+  if (!_opt.flag_output_raw.empty()) {
     pOfs_raw.reset(new ofstream(FILE_PATH(_opt.flag_output_raw)));
     MZN_ASSERT_HARD_MSG(pOfs_raw.get(),
                         "solns2out_base: could not allocate stream object for raw output");
@@ -548,7 +548,7 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
   while (solstream.good()) {
     string line;
     getline(solstream, line);
-    if (line_part.size() != 0u) {
+    if (!line_part.empty()) {
       line = line_part + line;
       line_part.clear();
     }
@@ -556,7 +556,7 @@ bool Solns2Out::feedRawDataChunk(const char* data) {
       line_part = line;
       break;  // to get to raw output
     }
-    if (line.size() != 0u) {
+    if (!line.empty()) {
       if ('\r' == line.back()) {
         line.pop_back();  // For WIN files
       }

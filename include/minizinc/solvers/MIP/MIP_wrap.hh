@@ -241,7 +241,7 @@ public:
       std::cerr << "  MIP_wrapper: adding the " << colObj.size() << " Phase-1 variables..."
                 << std::flush;
     }
-    if (colObj.size() != 0u) {
+    if (!colObj.empty()) {
       doAddVars(colObj.size(), &colObj[0], &colLB[0], &colUB[0], &colTypes[0], &colNames[0]);
     }
     if (fVerbose) {

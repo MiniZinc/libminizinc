@@ -120,7 +120,7 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
   MiniZinc::typecheck(*new_env, new_env->model(), typeErrors,
                       compflags.model_check_only || compflags.model_interface_only,
                       compflags.allow_multi_assign);
-  if (typeErrors.size() > 0) {
+  if (!typeErrors.empty()) {
     std::ostringstream errstream;
     for (auto& typeError : typeErrors) {
       errstream << typeError.what() << ": " << typeError.msg() << std::endl;
@@ -167,7 +167,7 @@ Env* CompilePass::run(Env* store, std::ostream& log) {
   for (const auto& i : new_env->warnings()) {
     log << (compflags.werror ? "\n  ERROR: " : "\n  WARNING: ") << i;
   }
-  if (compflags.werror && new_env->warnings().size() > 0) {
+  if (compflags.werror && !new_env->warnings().empty()) {
     throw Error("errors encountered");
   }
   new_env->clearWarnings();

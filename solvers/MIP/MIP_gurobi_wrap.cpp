@@ -271,7 +271,7 @@ void dll_close(void* dll) {
 void MIP_gurobi_wrapper::checkDLL() {
 #ifdef GUROBI_PLUGIN
   gurobi_dll = nullptr;
-  if ((options != nullptr) && (options->sGurobiDLL.size() != 0u)) {
+  if ((options != nullptr) && (!options->sGurobiDLL.empty())) {
     gurobi_dll = dll_open(options->sGurobiDLL.c_str());
   } else {
     for (const auto& s : gurobiDLLs()) {
@@ -732,7 +732,7 @@ void MIP_gurobi_wrapper::solve() {    // Move into ancestor?
   wrap_assert(error == 0, "Failed to update model.");
 
   /// ADDING LAZY CONSTRAINTS IF ANY
-  if (nLazyIdx.size() != 0u) {
+  if (!nLazyIdx.empty()) {
     assert(nLazyIdx.size() == nLazyValue.size());
     if (fVerbose) {
       cerr << "  MIP_gurobi_wrapper: marking " << nLazyIdx.size() << " lazy cuts." << endl;
@@ -759,7 +759,7 @@ void MIP_gurobi_wrapper::solve() {    // Move into ancestor?
   //    error =  dll_GRB_setintparam (env, GRB_PARAM_ClockType, 1);            // CPU time
   //    error =  dll_GRB_setintparam (env, GRB_PARAM_MIP_Strategy_CallbackReducedLP, GRB__OFF); //
   //    Access original model
-  if (options->sExportModel.size() != 0u) {
+  if (!options->sExportModel.empty()) {
     error = dll_GRBwrite(model, options->sExportModel.c_str());
     wrap_assert(error == 0, "Failed to write LP to disk.", false);
   }
@@ -799,7 +799,7 @@ void MIP_gurobi_wrapper::solve() {    // Move into ancestor?
     wrap_assert(error == 0, "Failed to set NodefileStart.", false);
   }
 
-  if (options->sNodefileDir.size() > 0) {
+  if (!options->sNodefileDir.empty()) {
     error = dll_GRBsetstrparam(dll_GRBgetenv(model), "NodefileDir", options->sNodefileDir.c_str());
     wrap_assert(error == 0, "Failed to set NodefileDir.", false);
   }
@@ -878,18 +878,18 @@ void MIP_gurobi_wrapper::solve() {    // Move into ancestor?
   }
 
   /// after all modifs
-  if (options->sReadParams.size() != 0u) {
+  if (!options->sReadParams.empty()) {
     error = dll_GRBreadparams(dll_GRBgetenv(model), options->sReadParams.c_str());
     wrap_assert(error == 0, "Failed to read GUROBI parameters.", false);
   }
 
-  if (options->sWriteParams.size() != 0u) {
+  if (!options->sWriteParams.empty()) {
     error = dll_GRBwriteparams(dll_GRBgetenv(model), options->sWriteParams.c_str());
     wrap_assert(error == 0, "Failed to write GUROBI parameters.", false);
   }
 
   /* See if we should set up concurrent solving */
-  if (0 != options->sConcurrentParamFiles.size()) {
+  if (!options->sConcurrentParamFiles.empty()) {
     int iSetting = -1;
     for (const auto& paramFile : options->sConcurrentParamFiles) {
       ++iSetting;

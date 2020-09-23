@@ -675,7 +675,7 @@ public:
 
   /// Allocate set from vector \a s0 (may contain duplicates)
   static IntSetVal* a(const std::vector<IntVal>& s0) {
-    if (s0.size() == 0) {
+    if (s0.empty()) {
       return a();
     }
     std::vector<IntVal> s = s0;
@@ -889,7 +889,7 @@ public:
 
   /// Allocate set from vector \a s0 (may contain duplicates)
   static FloatSetVal* a(const std::vector<FloatVal>& s0) {
-    if (s0.size() == 0) {
+    if (s0.empty()) {
       return a();
     }
     std::vector<FloatVal> s = s0;

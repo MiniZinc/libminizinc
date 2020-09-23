@@ -389,7 +389,7 @@ inline ArrayLit::ArrayLit(const Location& loc, const std::vector<std::vector<Exp
   dims[0] = 1;
   dims[1] = static_cast<int>(v.size());
   dims[2] = 1;
-  dims[3] = v.size() > 0 ? static_cast<int>(v[0].size()) : 0;
+  dims[3] = !v.empty() ? static_cast<int>(v[0].size()) : 0;
   std::vector<Expression*> vv;
   for (const auto& i : v) {
     for (auto* j : i) {

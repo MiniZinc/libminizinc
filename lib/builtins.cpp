@@ -1676,7 +1676,7 @@ std::string b_show_json(EnvI& env, Call* call) {
   } else {
     if (auto* al = e->dyn_cast<ArrayLit>()) {
       std::vector<unsigned int> dims(al->dims() - 1);
-      if (dims.size() != 0) {
+      if (!dims.empty()) {
         dims[0] = al->max(al->dims() - 1) - al->min(al->dims() - 1) + 1;
       }
 

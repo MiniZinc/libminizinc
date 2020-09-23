@@ -653,7 +653,7 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
       }
       osi.setInteger(integer_vars.data(), integer_vars.size());
     }
-    if (options->sExportModel.size() != 0u) {
+    if (!options->sExportModel.empty()) {
       // Not implemented for OsiClp:
       //       osi.setColNames(colNames, 0, colObj.size(), 0);
       vector<const char*> colN(colObj.size());

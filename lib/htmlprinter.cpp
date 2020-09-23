@@ -147,7 +147,7 @@ public:
       if (generateIndex) {
         oss << "<a href='doc-index.html'>Index</a>\n";
       }
-      if (items.size() > 0) {
+      if (!items.empty()) {
         oss << "<a href='javascript:void(0)' onclick='revealAll()' class='mzn-nav-text'>reveal "
                "all</a>\n";
         oss << "<a href='javascript:void(0)' onclick='hideAll()' class='mzn-nav-text'>hide "
@@ -161,7 +161,7 @@ public:
       oss << "<div class='mzn-group-desc'>\n" << desc << "</div>\n";
     }
 
-    if (subgroups.m.size() != 0) {
+    if (!subgroups.m.empty()) {
       oss << "<p>Sections:</p>\n";
       oss << "<ul>\n";
       for (auto& it : subgroups.m) {
@@ -176,7 +176,7 @@ public:
       if (parent == nullptr && generateIndex) {
         oss << "<p><a href='doc-index.html'>Index</a></p>\n";
       }
-      if (items.size() > 0) {
+      if (!items.empty()) {
         oss << "<p>Declarations in this section:</p>\n";
       }
     }
@@ -239,8 +239,8 @@ public:
     for (auto& i : subgroups.m) {
       oss << i->toRST(level + 1);
     }
-    if (items.size() > 0) {
-      if (subgroups.m.size() != 0) {
+    if (!items.empty()) {
+      if (!subgroups.m.empty()) {
         oss << rstHeading("Other declarations", level + 1);
       }
       struct SortById {
@@ -264,7 +264,7 @@ public:
         if (it->t != cur_t) {
           cur_t = it->t;
           if (nHeadings > 1) {
-            oss << rstHeading(dt_desc[cur_t], subgroups.m.size() == 0 ? level + 1 : level + 2);
+            oss << rstHeading(dt_desc[cur_t], subgroups.m.empty() ? level + 1 : level + 2);
           }
         }
         oss << it->doc;
@@ -839,7 +839,7 @@ public:
       std::string dshtml = addHTML(ds);
 
       os << dshtml;
-      if (params.size() > 0) {
+      if (!params.empty()) {
         os << "<div class='mzn-fundecl-params-heading'>Parameters</div>\n";
         os << "<ul class='mzn-fundecl-params'>\n";
         for (auto& param : params) {
@@ -928,7 +928,7 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
 
     std::vector<std::string> idxSections;
 
-    if (index.size() != 0) {
+    if (!index.empty()) {
       if (isalpha(index[0].id[0]) != 0) {
         char idxSec_c = (char)toupper(index[0].id[0]);
         std::string idxSec(&idxSec_c, 1);
@@ -940,12 +940,12 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
       }
     }
     oss << "<ul>\n";
-    std::string prevId = index.size() == 0 ? "" : index[0].id;
+    std::string prevId = index.empty() ? "" : index[0].id;
     std::vector<IndexEntry> curEntries;
     for (auto ie : index) {
       if (ie.id != prevId) {
         oss << "<li>";
-        assert(curEntries.size() != 0);
+        assert(!curEntries.empty());
         IndexEntry& cur = curEntries[0];
         if (curEntries.size() == 1) {
           oss << cur.id << " <a href='" << cur.link << ".html#"
@@ -976,7 +976,7 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
         idxSections.push_back(idxSec);
       }
       prevId = ie.id;
-      if (curEntries.size() == 0 || curEntries.back().groupName != ie.groupName) {
+      if (curEntries.empty() || curEntries.back().groupName != ie.groupName) {
         curEntries.push_back(ie);
       }
     }
@@ -1289,7 +1289,7 @@ public:
         fs << *fi->params()[i]->ti();
         std::ostringstream fid;
         fid << *fi->params()[i]->id();
-        if (fid.str().size() != 0) {
+        if (!fid.str().empty()) {
           fs << ": " << *fi->params()[i]->id();
         }
         if (i < fi->params().size() - 1) {
@@ -1301,7 +1301,7 @@ public:
         os << *fi->params()[i]->ti();
         std::ostringstream fid;
         fid << *fi->params()[i]->id();
-        if (fid.str().size() != 0) {
+        if (!fid.str().empty()) {
           os << ": " << *fi->params()[i]->id();
         }
         if (i < fi->params().size() - 1) {
@@ -1369,7 +1369,7 @@ public:
         }
       }
 
-      if (params.size() > 0) {
+      if (!params.empty()) {
         os << "Parameters:\n\n";
         for (auto& param : params) {
           os << "- ``" << param.first << "``: " << param.second << "\n";

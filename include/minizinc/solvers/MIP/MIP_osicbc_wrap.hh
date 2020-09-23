@@ -120,7 +120,7 @@ public:
   }
   virtual int getNColsModel() { return osi.getNumCols(); }
   virtual int getNRows() {
-    if (rowlb.size() != 0u) {
+    if (!rowlb.empty()) {
       return rowlb.size();
     }
     return osi.getNumRows();

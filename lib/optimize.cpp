@@ -517,7 +517,7 @@ void optimize(Env& env, bool chain_compression) {
           }
         }
       }
-      if (pos.size() > 0 && neg.size() > 0) {
+      if (!pos.empty() && !neg.empty()) {
         std::sort(pos.begin(), pos.end());
         std::sort(neg.begin(), neg.end());
         unsigned int ix = 0;

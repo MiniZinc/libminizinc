@@ -2492,7 +2492,7 @@ public:
                !c.decl()->ti()->domain()->isa<TIId>()) {
       for (int i = 0; i < c.n_args(); i++) {
         if (c.arg(i)->type().isint()) {
-          assert(_bounds.size() > 0);
+          assert(!_bounds.empty());
           _bounds.pop_back();
         }
       }
@@ -2900,7 +2900,7 @@ public:
                !c.decl()->ti()->domain()->isa<TIId>()) {
       for (int i = 0; i < c.n_args(); i++) {
         if (c.arg(i)->type().isfloat()) {
-          assert(_bounds.size() > 0);
+          assert(!_bounds.empty());
           _bounds.pop_back();
         }
       }
@@ -2944,7 +2944,7 @@ FloatBounds compute_float_bounds(EnvI& env, Expression* e) {
     BottomUpIterator<ComputeFloatBounds> cbi(cb);
     cbi.run(e);
     if (cb.valid) {
-      assert(cb._bounds.size() > 0);
+      assert(!cb._bounds.empty());
       return FloatBounds(cb._bounds.back().first, cb._bounds.back().second, true);
     } else {
       return FloatBounds(0.0, 0.0, false);
@@ -3140,7 +3140,7 @@ public:
                !c.decl()->ti()->domain()->isa<TIId>()) {
       for (int i = 0; i < c.n_args(); i++) {
         if (c.arg(i)->type().isintset()) {
-          assert(_bounds.size() > 0);
+          assert(!_bounds.empty());
           _bounds.pop_back();
         }
       }

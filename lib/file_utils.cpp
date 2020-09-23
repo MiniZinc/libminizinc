@@ -223,7 +223,7 @@ std::string find_executable(const std::string& filename) {
   std::string path;
   if (path_c != nullptr) {
     path = path_c;
-    if (path.size() != 0u) {
+    if (!path.empty()) {
       path += pathsep;
     }
   }
@@ -716,7 +716,7 @@ std::string encodeBase64(const std::string& s) {
 }
 
 std::string decodeBase64(const std::string& s) {
-  if (s.size() == 0 || s[0] != '@') {
+  if (s.empty() || s[0] != '@') {
     throw InternalError("string is not base64 encoded");
   }
   base64::decoder D;

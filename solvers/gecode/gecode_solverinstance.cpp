@@ -1893,7 +1893,7 @@ void GecodeSolverInstance::createBranchers(Annotation& ann, Expression* addition
   if (additionalAnn != nullptr) {
     flatAnn.push_back(additionalAnn);
   }
-  if (flatAnn.size() > 0) {
+  if (!flatAnn.empty()) {
     setSearchStrategyFromAnnotation(flatAnn, iv_searched, bv_searched,
 #ifdef GECODE_HAS_SET_VARS
                                     sv_searched,

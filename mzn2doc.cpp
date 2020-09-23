@@ -142,7 +142,7 @@ int main(int argc, char** argv) {
         extension = input_file.substr(last_dot, string::npos);
       }
       if (extension == ".mzn") {
-        if (filename == "") {
+        if (filename.empty()) {
           filename = input_file;
         } else {
           std::cerr << "Error: Multiple .mzn files given." << std::endl;
@@ -157,7 +157,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (filename == "") {
+  if (filename.empty()) {
     std::cerr << "Error: no model file given." << std::endl;
     goto error;
   }
@@ -174,7 +174,7 @@ int main(int argc, char** argv) {
     std::exit(EXIT_FAILURE);
   }
 
-  if (globals_dir != "") {
+  if (!globals_dir.empty()) {
     includePaths.push_back(std_lib_dir + "/" + globals_dir + "/");
   }
   includePaths.push_back(std_lib_dir + "/std/");
@@ -186,7 +186,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  if (output_base == "") {
+  if (output_base.empty()) {
     output_base = filename.substr(0, filename.length() - 4);
   }
 
@@ -234,7 +234,7 @@ int main(int argc, char** argv) {
         }
         vector<TypeError> typeErrors;
         MiniZinc::typecheck(env, m, typeErrors, true, false);
-        if (typeErrors.size() > 0) {
+        if (!typeErrors.empty()) {
           for (auto& typeError : typeErrors) {
             if (flag_verbose) {
               std::cerr << std::endl;

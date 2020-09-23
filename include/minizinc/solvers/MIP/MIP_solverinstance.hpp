@@ -135,7 +135,7 @@ void MIP_solverinstance<MIPWrapper>::processSearchAnnotations(const Annotation& 
       }
     }
   }
-  if (vars.size() != 0u) {
+  if (!vars.empty()) {
     if (2 == getMIPWrapper()->getFreeSearch()) {
       for (int i = 0; i < vars.size(); ++i) {
         aPri[i] = 1;  // vars.size()-i;                                    // descending
@@ -189,7 +189,7 @@ void MIP_solverinstance<MIPWrapper>::processWarmstartAnnotations(const Annotatio
         }
         assert(coefs.size() == vars.size());
         nVal += static_cast<int>(coefs.size());
-        if (coefs.size() && !getMIPWrapper()->addWarmStart(vars, coefs)) {
+        if (!coefs.empty() && !getMIPWrapper()->addWarmStart(vars, coefs)) {
           std::cerr << "\nWARNING: MIP backend seems to ignore warm starts" << std::endl;
           return;
         }
@@ -345,7 +345,7 @@ void MIP_solverinstance<MIPWrapper>::processFlatZinc(void) {
       assert(res == _variableMap.get(id));
     }
   }
-  if (mip_wrap->fVerbose && (mip_wrap->sLitValues.size() != 0u)) {
+  if (mip_wrap->fVerbose && (!mip_wrap->sLitValues.empty())) {
     std::cerr << "  MIP_solverinstance: during Phase 1,  " << mip_wrap->nLitVars
               << " literals with " << mip_wrap->sLitValues.size() << " values used." << std::endl;
   }
@@ -373,7 +373,7 @@ void MIP_solverinstance<MIPWrapper>::processFlatZinc(void) {
       std::cerr << "  " << mip_wrap->nIndicatorConstr << " indicator constraints." << std::endl;
     }
     std::cerr << std::endl;
-    if (mip_wrap->sLitValues.size() != 0u) {
+    if (!mip_wrap->sLitValues.empty()) {
       std::cerr << "  MIP_solverinstance: overall,  " << mip_wrap->nLitVars << " literals with "
                 << mip_wrap->sLitValues.size() << " values used." << std::endl;
     }
@@ -552,7 +552,7 @@ SolverInstance::Status MIP_solverinstance<MIPWrapper>::solve(void) {
   }
   if (getMIPWrapper()->getNCols()) {  // If any variables, we need to run solver just to get values?
     getMIPWrapper()->provideSolutionCallback(HandleSolutionCallback<MIPWrapper>, this);
-    if (cutGenerators.size() != 0u) {  // only then, can modify presolve
+    if (!cutGenerators.empty()) {  // only then, can modify presolve
       getMIPWrapper()->provideCutCallback(HandleCutCallback<MIPWrapper>, this);
     }
     ////////////// clean up envi /////////////////

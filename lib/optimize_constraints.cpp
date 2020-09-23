@@ -49,7 +49,7 @@ OptimizeRegistry::ConstraintStatus o_linear(EnvI& env, Item* ii, Call* c, Expres
   }
   IntVal d = 0;
   simplify_lin<IntLit>(coeffs, x, d);
-  if (coeffs.size() == 0) {
+  if (coeffs.empty()) {
     bool failed;
     if (c->id() == constants().ids.int_.lin_le) {
       failed = (d > eval_int(env, c->arg(2)));
@@ -184,7 +184,7 @@ OptimizeRegistry::ConstraintStatus o_lin_exp(EnvI& env, Item* i, Call* c, Expres
     }
     IntVal d = eval_int(env, c->arg(2));
     simplify_lin<IntLit>(coeffs, x, d);
-    if (coeffs.size() == 0) {
+    if (coeffs.empty()) {
       rewrite = IntLit::a(d);
       return OptimizeRegistry::CS_REWRITE;
     } else if (coeffs.size() < al_c->size()) {
@@ -258,7 +258,7 @@ OptimizeRegistry::ConstraintStatus o_clause(EnvI& env, Item* i, Call* c, Express
     }
   }
   bool subsumed = false;
-  if (pos.size() > 0 && neg.size() > 0) {
+  if (!pos.empty() && !neg.empty()) {
     std::sort(pos.begin(), pos.end());
     std::sort(neg.begin(), neg.end());
     unsigned int ix = 0;

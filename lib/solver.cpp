@@ -243,7 +243,7 @@ void MznSolver::printHelp(const std::string& selectedSolver) {
     }
     os << "Available solvers (get help using --help <solver id>):" << endl;
     std::vector<std::string> solvers = solver_configs.solvers();
-    if (solvers.size() == 0) {
+    if (solvers.empty()) {
       cout << "  none.\n";
     }
     for (auto& solver : solvers) {
@@ -368,7 +368,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
     if (argv[i] == "--solvers") {
       cout << "MiniZinc driver.\nAvailable solver configurations:\n";
       std::vector<std::string> solvers = solver_configs.solvers();
-      if (solvers.size() == 0) {
+      if (solvers.empty()) {
         cout << "  none.\n";
       }
       for (auto& solver : solvers) {
@@ -390,7 +390,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         log << "Argument required for --solver-json" << endl;
         return OPTION_ERROR;
       }
-      if (solver.size() > 0 && solver != argv[i]) {
+      if (!solver.empty() && solver != argv[i]) {
         log << "Only one --solver-json option allowed" << endl;
         return OPTION_ERROR;
       }
@@ -426,7 +426,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
         log << "Argument required for --solver" << endl;
         return OPTION_ERROR;
       }
-      if (solver.size() > 0 && solver != argv[i]) {
+      if (!solver.empty() && solver != argv[i]) {
         log << "Only one --solver option allowed" << endl;
         return OPTION_ERROR;
       }
@@ -534,7 +534,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
               static_cast<MZN_SolverFactory*>(sf)->setAcceptedFlags(si_opt, acceptedFlags);
               std::vector<std::string> additionalArgs_s;
               additionalArgs_s.emplace_back("-m");
-              if (sc.executable_resolved().size() != 0u) {
+              if (!sc.executable_resolved().empty()) {
                 additionalArgs_s.push_back(sc.executable_resolved());
               } else {
                 additionalArgs_s.push_back(sc.executable());
@@ -556,7 +556,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                   additionalArgs_s.emplace_back("-I");
                   additionalArgs_s.emplace_back("--mzn-flag");
                   std::string _mznlib;
-                  if (sc.mznlib_resolved().size() != 0u) {
+                  if (!sc.mznlib_resolved().empty()) {
                     _mznlib = sc.mznlib_resolved();
                   } else {
                     _mznlib = sc.mznlib();
@@ -583,7 +583,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
                 // supports nl
                 additionalArgs.emplace_back("--nl-cmd");
               }
-              if (sc.executable_resolved().size() != 0u) {
+              if (!sc.executable_resolved().empty()) {
                 additionalArgs.push_back(sc.executable_resolved());
               } else {
                 additionalArgs.push_back(sc.executable());
@@ -630,7 +630,7 @@ MznSolver::OptionStatus MznSolver::processOptions(std::vector<std::string>& argv
             } else {
               std::vector<std::string> additionalArgs(2);
               additionalArgs[0] = "-I";
-              if (sc.mznlib_resolved().size() != 0u) {
+              if (!sc.mznlib_resolved().empty()) {
                 additionalArgs[1] = sc.mznlib_resolved();
               } else {
                 additionalArgs[1] = sc.mznlib();

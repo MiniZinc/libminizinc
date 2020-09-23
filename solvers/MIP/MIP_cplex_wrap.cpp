@@ -90,7 +90,7 @@ const vector<string>& CPLEXDLLs(void) {
 void MIP_cplex_wrapper::checkDLL() {
 #ifdef CPLEX_PLUGIN
   _cplex_dll = nullptr;
-  if (options->sCPLEXDLL.size() != 0u) {
+  if (!options->sCPLEXDLL.empty()) {
     _cplex_dll = dll_open(options->sCPLEXDLL.c_str());
   } else {
     for (const auto& s : CPLEXDLLs()) {
@@ -837,7 +837,7 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
 
   /////////////// Last-minute solver options //////////////////
   // Before all manual params ???
-  if (options->sReadParams.size() != 0u) {
+  if (!options->sReadParams.empty()) {
     status = dll_CPXreadcopyparam(env, options->sReadParams.c_str());
     wrap_assert(status == 0, "Failed to read CPLEX parameters.", false);
   }
@@ -862,7 +862,7 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
   status = dll_CPXsetintparam(env, CPX_PARAM_MIPCBREDLP, CPX_OFF);  // Access original model
   wrap_assert(status == 0, "  CPLEX Warning: Failure to set access original model in callbacks.",
               false);
-  if (options->sExportModel.size() != 0u) {
+  if (!options->sExportModel.empty()) {
     status = dll_CPXwriteprob(env, lp, options->sExportModel.c_str(), nullptr);
     wrap_assert(status == 0, "Failed to write LP to disk.", false);
   }
@@ -904,7 +904,7 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
     wrap_assert(status == 0, "Failed to set CPXPARAM_WorkMem.", false);
   }
 
-  if (options->sNodefileDir.size() > 0) {
+  if (!options->sNodefileDir.empty()) {
     status = dll_CPXsetstrparam(env, CPXPARAM_WorkDir, options->sNodefileDir.c_str());
     wrap_assert(status == 0, "Failed to set CPXPARAM_WorkDir.", false);
   }
@@ -991,7 +991,7 @@ void MIP_cplex_wrapper::solve() {  // Move into ancestor?
   }
 
   /// after all modifs
-  if (options->sWriteParams.size() != 0u) {
+  if (!options->sWriteParams.empty()) {
     status = dll_CPXwriteparam(env, options->sWriteParams.c_str());
     wrap_assert(status == 0, "Failed to write CPLEX parameters.", false);
   }

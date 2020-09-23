@@ -527,7 +527,7 @@ void addPathAnnotation(EnvI& env, Expression* e) {
       p = it->second;
     }
 
-    if (p.size() != 0) {
+    if (!p.empty()) {
       path_args[0] = new StringLit(Location(), p);
       Call* path_call = new Call(e->loc(), constants().ann.mzn_path, path_args);
       path_call->type(Type::ann());
@@ -834,7 +834,7 @@ void EnvI::flatAddItem(Item* i) {
 }
 
 void EnvI::annotateFromCallStack(Expression* e) {
-  int prev = idStack.size() > 0 ? idStack.back() : 0;
+  int prev = !idStack.empty() ? idStack.back() : 0;
   bool allCalls = true;
   for (int i = static_cast<int>(callStack.size()) - 1; i >= prev; i--) {
     Expression* ee = callStack[i]->untag();
@@ -987,7 +987,7 @@ bool EnvI::isSubtype(const Type& t1, const Type& t2, bool strictEnums) {
 void EnvI::collectVarDecls(bool b) { collect_vardecls = b; }
 void EnvI::vo_add_exp(VarDecl* vd) {
   if ((vd->e() != nullptr) && vd->e()->isa<Call>() && !vd->e()->type().isann()) {
-    int prev = idStack.size() > 0 ? idStack.back() : 0;
+    int prev = !idStack.empty() ? idStack.back() : 0;
     for (int i = static_cast<int>(callStack.size()) - 1; i >= prev; i--) {
       Expression* ee = callStack[i]->untag();
       for (ExpressionSetIter it = ee->ann().begin(); it != ee->ann().end(); ++it) {
@@ -1278,7 +1278,7 @@ std::ostream& EnvI::dumpStack(std::ostream& os, bool errStack) {
   ASTString curloc_f;
   int curloc_l = -1;
 
-  if (lastError == 0 && stack.size() != 0 && stack[0]->untag()->isa<Id>()) {
+  if (lastError == 0 && !stack.empty() && stack[0]->untag()->isa<Id>()) {
     Expression* e = stack[0]->untag();
     ASTString newloc_f = e->loc().filename();
     if (!e->loc().is_introduced()) {
@@ -3726,7 +3726,7 @@ std::vector<Expression*> cleanup_vardecl(EnvI& env, VarDeclI* vdi, VarDecl* vd) 
             args.push_back(vcc->arg(1));
           }
 
-          if (args.size() == 0) {
+          if (args.empty()) {
             // Post original RHS as stand alone constraint
             ve = vcc;
           } else {

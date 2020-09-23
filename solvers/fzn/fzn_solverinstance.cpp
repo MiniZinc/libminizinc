@@ -228,7 +228,7 @@ SolverInstance::Status FZNSolverInstance::solve(void) {
   cmd_line.push_back(opt.fzn_solver);
   string sBE = opt.backend;
   bool is_sat = _fzn->solveItem()->st() == SolveI::SolveType::ST_SAT;
-  if (sBE.size() != 0u) {
+  if (!sBE.empty()) {
     cmd_line.emplace_back("-b");
     cmd_line.push_back(sBE);
   }
@@ -250,7 +250,7 @@ SolverInstance::Status FZNSolverInstance::solve(void) {
     oss << opt.numSols;
     cmd_line.push_back(oss.str());
   }
-  if (opt.parallel.size() != 0u) {
+  if (!opt.parallel.empty()) {
     cmd_line.emplace_back("-p");
     ostringstream oss;
     oss << opt.parallel;

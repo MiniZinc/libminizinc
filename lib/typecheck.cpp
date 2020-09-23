@@ -1641,7 +1641,7 @@ public:
           decls.push_back(c.decl(i, j));
           KeepAlive c_in =
               c.in(i) != nullptr ? addCoercion(_env, _model, c.in(i), c.in(i)->type()) : nullptr;
-          if (whereMap[c.decl(i, j)].size() != 0) {
+          if (!whereMap[c.decl(i, j)].empty()) {
             // need a generator for all the decls up to this point
             Expression* whereExpr = whereMap[c.decl(i, j)][0];
             for (unsigned int k = 1; k < whereMap[c.decl(i, j)].size(); k++) {
@@ -2379,9 +2379,9 @@ void typecheck(Env& env, Model* origModel, std::vector<TypeError>& typeErrors,
         env.minId(i->e()->id()->idn());
       } else if (i->e()->id()->v().beginsWith("X_INTRODUCED_") && i->e()->id()->v().endsWith("_")) {
         std::string numId = i->e()->id()->v().substr(std::string("X_INTRODUCED_").size());
-        if (numId.size() > 0) {
+        if (!numId.empty()) {
           numId = numId.substr(0, numId.size() - 1);
-          if (numId.size() > 0) {
+          if (!numId.empty()) {
             int vId = -1;
             try {
               vId = std::stoi(numId);

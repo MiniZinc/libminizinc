@@ -159,7 +159,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       for (int i = 0; i < ite->size(); i++) {
         if (eq_branches[i].size() == 0) {
           e_then.back().push_back(ite->e_then(i));
-        } else if (other_branches[i].size() == 0) {
+        } else if (other_branches[i].empty()) {
           e_then.back().push_back(constants().lit_true);
         } else if (other_branches[i].size() == 1) {
           e_then.back().push_back(other_branches[i][0]);
@@ -176,7 +176,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
       {
         if (eq_branches[ite->size()].size() == 0) {
           e_else.emplace_back(ite->e_else());
-        } else if (other_branches[ite->size()].size() == 0) {
+        } else if (other_branches[ite->size()].empty()) {
           e_else.emplace_back(constants().lit_true);
         } else if (other_branches[ite->size()].size() == 1) {
           e_else.emplace_back(other_branches[ite->size()][0]);
@@ -486,7 +486,7 @@ EE flatten_ite(EnvI& env, Ctx ctx, Expression* e, VarDecl* r, VarDecl* b) {
           def_i.push_back(j[i]());
         }
       }
-      if (def_i.size() == 0) {
+      if (def_i.empty()) {
         defined_conjunctions[i] = constants().lit_true;
       } else if (def_i.size() == 1) {
         defined_conjunctions[i] = def_i[0];

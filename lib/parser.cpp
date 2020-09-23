@@ -42,7 +42,7 @@ std::string get_file_contents(std::ifstream& in) {
     in.seekg(0, std::ios::beg);
     in.read(&contents[0], contents.size());
     in.close();
-    if (contents.size() > 0 && contents[0] == '@') {
+    if (!contents.empty() && contents[0] == '@') {
       contents = MiniZinc::FileUtils::decodeBase64(contents);
       MiniZinc::FileUtils::inflateString(contents);
     }
@@ -69,7 +69,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
 
   string workingDir = FileUtils::working_directory();
 
-  if (filenames.size() > 0) {
+  if (!filenames.empty()) {
     GCLock lock;
     model->setFilename(FileUtils::base_name(filenames[0]));
     if (FileUtils::is_absolute(filenames[0])) {
@@ -161,7 +161,7 @@ void parse(Env& env, Model*& model, const vector<string>& filenames,
         }
       }
       ifstream file;
-      if (FileUtils::is_absolute(f) || parentPath == "") {
+      if (FileUtils::is_absolute(f) || parentPath.empty()) {
         fullname = f;
         if (FileUtils::file_exists(fullname)) {
           file.open(FILE_PATH(fullname), std::ios::binary);

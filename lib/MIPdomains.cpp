@@ -1161,7 +1161,7 @@ private:
       DBGOUT_MIPD("Clique " << nClique << ": main ref var " << cls.varRef1->id()->str()
                             << ", domain dec: " << sDomain);
 
-      MZN_MIPD__ASSERT_FOR_SAT(sDomain.size() != 0, mipd.getEnv()->envi(), cls.varRef1->loc(),
+      MZN_MIPD__ASSERT_FOR_SAT(!sDomain.empty(), mipd.getEnv()->envi(), cls.varRef1->loc(),
                                "clique " << nClique << ": main ref var " << *cls.varRef1->id()
                                          << ", domain decomposition seems empty: " << sDomain);
 
@@ -1708,7 +1708,7 @@ private:
           }
         }
       }
-      if (vIntvFlags.size() != 0u) {
+      if (!vIntvFlags.empty()) {
         // Could find out if reif is true                  -- TODO && see above for 1 subinterval
         std::vector<double> onesm(vIntvFlags.size(), -1.0);
         onesm.push_back(1.0);
@@ -2029,7 +2029,7 @@ private:
     }
     int nc = 0;
     for (auto& cl : aCliques) {
-      if (cl.size() != 0u) {
+      if (!cl.empty()) {
         ++nc;
       }
     }
