@@ -791,10 +791,7 @@ inline bool less(I& i, J& j) {
     ++i;
     ++j;
   }
-  if (j()) {
-    return true;
-  }
-  return false;
+  return static_cast<bool>(j());
 }
 
 template <class I, class J>

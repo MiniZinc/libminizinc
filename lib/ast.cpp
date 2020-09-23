@@ -1383,10 +1383,7 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
           return false;
         }
       }
-      if (!Expression::equal(i0->e_else(), i1->e_else())) {
-        return false;
-      }
-      return true;
+      return Expression::equal(i0->e_else(), i1->e_else());
     }
     case Expression::E_BINOP: {
       const auto* b0 = e0->cast<BinOp>();
@@ -1473,10 +1470,7 @@ bool Expression::equal_internal(const Expression* e0, const Expression* e1) {
           return false;
         }
       }
-      if (!Expression::equal(t0->domain(), t1->domain())) {
-        return false;
-      }
-      return true;
+      return Expression::equal(t0->domain(), t1->domain());
     }
     case Expression::E_TIID:
       return false;
