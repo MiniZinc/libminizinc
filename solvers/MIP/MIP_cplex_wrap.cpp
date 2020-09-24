@@ -758,7 +758,7 @@ static int CPXPUBLIC myusercutcallback(CPXCENVptr env, void* cbdata, int wherefr
         throw runtime_error("Cut callback: should be user/lazy");
       }
       /* Use a cut violation tolerance of 0.01 */
-      if (true) {  // cutvio > 0.01 ) {
+      if (true) {  // NOLINT: cutvio > 0.01 ) {
         status = cw->dll_CPXcutcallbackadd(env, cbdata, wherefrom, cd.rmatind.size(), cd.rhs,
                                            getCPLEXConstrSense(cd.sense), cd.rmatind.data(),
                                            cd.rmatval.data(),

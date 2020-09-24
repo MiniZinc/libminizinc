@@ -25,7 +25,7 @@ public:
   XprlPlugin(const std::string& dll);
 
 private:
-  static const std::vector<std::string>& dlls(void);
+  static const std::vector<std::string>& dlls();
 };
 
 class XpressPlugin : MiniZinc::Plugin {
@@ -33,7 +33,7 @@ public:
   XpressPlugin();
   XpressPlugin(const std::string& dll);
   int(XPRS_CC* XPRSinit)(const char* path);
-  int(XPRS_CC* XPRSfree)(void);
+  int(XPRS_CC* XPRSfree)();
   int(XB_CC* XPRSgetversion)(char* version);
   int(XPRS_CC* XPRSgetlicerrmsg)(char* buffer, int length);
   struct xo_prob_struct*(XB_CC* XPRBgetXPRSprob)(struct Xbprob* prob);
@@ -69,8 +69,8 @@ public:
   int(XB_CC* XPRBdelprob)(struct Xbprob* prob);
 
 private:
-  void load_dll(void);
-  static const std::vector<std::string>& dlls(void);
+  void load_dll();
+  static const std::vector<std::string>& dlls();
 };
 
 class MIP_xpress_wrapper : public MIP_wrapper {
@@ -126,13 +126,13 @@ public:
   MIP_xpress_wrapper(Options* opt) : options(opt) { openXpress(); };
   virtual ~MIP_xpress_wrapper() { closeXpress(); };
 
-  static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = NULL);
-  static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = NULL);
-  static std::string getId(void);
-  static std::string getName(void);
-  static std::vector<std::string> getTags(void);
-  static std::vector<std::string> getStdFlags(void);
-  static std::vector<std::string> getRequiredFlags(void);
+  static std::string getDescription(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getVersion(MiniZinc::SolverInstanceBase::Options* opt = nullptr);
+  static std::string getId();
+  static std::string getName();
+  static std::vector<std::string> getTags();
+  static std::vector<std::string> getStdFlags();
+  static std::vector<std::string> getRequiredFlags();
 
 private:
   XPRBprob problem;
@@ -140,8 +140,8 @@ private:
   vector<XPRBvar> variables;
   size_t nRows{0};
 
-  void openXpress(void);
-  void closeXpress(void);
+  void openXpress();
+  void closeXpress();
 
   void setUserSolutionCallback();
   void setOptions();

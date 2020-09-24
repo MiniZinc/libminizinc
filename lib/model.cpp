@@ -311,9 +311,9 @@ FunctionI* Model::matchFn(EnvI& env, const ASTString& id, const std::vector<Type
 
 void Model::mergeStdLib(EnvI& env, Model* m) const {
   for (const auto& it : fnmap) {
-    for (auto cit = it.second.begin(); cit != it.second.end(); ++cit) {
-      if ((*cit).fi->from_stdlib()) {
-        m->registerFn(env, (*cit).fi);
+    for (const auto& cit : it.second) {
+      if (cit.fi->from_stdlib()) {
+        m->registerFn(env, cit.fi);
       }
     }
   }
@@ -336,10 +336,10 @@ void Model::fixFnMap() {
     m = m->_parent;
   }
   for (auto& it : m->fnmap) {
-    for (unsigned int i = 0; i < it.second.size(); i++) {
-      for (unsigned int j = 0; j < it.second[i].t.size(); j++) {
-        if (it.second[i].t[j].isunknown()) {
-          it.second[i].t[j] = it.second[i].fi->params()[j]->type();
+    for (auto& i : it.second) {
+      for (unsigned int j = 0; j < i.t.size(); j++) {
+        if (i.t[j].isunknown()) {
+          i.t[j] = i.fi->params()[j]->type();
         }
       }
     }

@@ -57,7 +57,7 @@ XpressPlugin::XpressPlugin() : Plugin(XpressPlugin::dlls()) { load_dll(); }
 
 XpressPlugin::XpressPlugin(const std::string& dll_file) : Plugin(dll_file) { load_dll(); }
 
-void XpressPlugin::load_dll(void) {
+void XpressPlugin::load_dll() {
   load_symbol(XPRSinit);
   load_symbol(XPRSfree);
   load_symbol(XPRSgetversion);
@@ -107,8 +107,8 @@ const std::vector<std::string>& XpressPlugin::dlls() {
   return ret;
 }
 
-void MIP_xpress_wrapper::openXpress(void) {
-  if (options->xprsRoot.size()) {
+void MIP_xpress_wrapper::openXpress() {
+  if (!options->xprsRoot.empty()) {
     auto base = MiniZinc::FileUtils::file_path(options->xprsRoot);
 #ifdef _WIN32
     auto xprl = MiniZinc::FileUtils::file_path("bin/xprl.dll", base);
@@ -128,8 +128,8 @@ void MIP_xpress_wrapper::openXpress(void) {
   }
 
   int ret =
-      plugin->XPRSinit(options->xprsPassword.size() ? options->xprsPassword.c_str() : nullptr);
-  if (ret) {
+      plugin->XPRSinit(!options->xprsPassword.empty() ? options->xprsPassword.c_str() : nullptr);
+  if (ret != 0) {
     char message[512];
     plugin->XPRSgetlicerrmsg(message, 512);
     // Return code of 32 means student licence, but otherwise it's an error
@@ -144,7 +144,7 @@ void MIP_xpress_wrapper::openXpress(void) {
   xpressObj = plugin->XPRBnewctr(problem, nullptr, XB_N);
 }
 
-void MIP_xpress_wrapper::closeXpress(void) {
+void MIP_xpress_wrapper::closeXpress() {
   plugin->XPRBdelprob(problem);
   plugin->XPRSfree();
   delete plugin;
@@ -170,7 +170,7 @@ string MIP_xpress_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* opt
   }
 }
 
-vector<string> MIP_xpress_wrapper::getRequiredFlags(void) {
+vector<string> MIP_xpress_wrapper::getRequiredFlags() {
   try {
     XprlPlugin p1;
     XpressPlugin p2;
@@ -231,8 +231,9 @@ bool MIP_xpress_wrapper::Options::processOption(int& i, std::vector<std::string>
     intermediateSolutions = true;
   } else if (cop.get("--xpress-root", &xprsRoot)) {
   } else if (cop.get("--xpress-password", &xprsPassword)) {
-  } else
+  } else {
     return false;
+  }
   return true;
 }
 
@@ -288,7 +289,7 @@ static string getStatusName(int xpressStatus) {
 static void setOutputVariables(XpressPlugin* plugin, MIP_xpress_wrapper::Output* output,
                                vector<XPRBvar>* variables) {
   size_t nCols = variables->size();
-  double* x = (double*)malloc(nCols * sizeof(double));
+  auto* x = (double*)malloc(nCols * sizeof(double));
   for (size_t ii = 0; ii < nCols; ii++) {
     x[ii] = plugin->XPRBgetsol((*variables)[ii]);
   }
@@ -314,7 +315,7 @@ static void setOutputAttributes(XpressPlugin* plugin, MIP_xpress_wrapper::Output
 }
 
 static void XPRS_CC userSolNotifyCallback(XPRSprob xprsProblem, void* userData) {
-  UserSolutionCallbackData* data = (UserSolutionCallbackData*)userData;
+  auto* data = (UserSolutionCallbackData*)userData;
   MIP_wrapper::CBUserInfo* info = data->info;
 
   setOutputAttributes(data->plugin, info->pOutput, xprsProblem);
@@ -324,7 +325,7 @@ static void XPRS_CC userSolNotifyCallback(XPRSprob xprsProblem, void* userData) 
   setOutputVariables(data->plugin, info->pOutput, data->variables);
   data->plugin->XPRBendcb(*(data->problem));
 
-  if (info->solcbfn) {
+  if (info->solcbfn != nullptr) {
     (*info->solcbfn)(*info->pOutput, info->psi);
   }
 }
@@ -380,7 +381,7 @@ void MIP_xpress_wrapper::addDummyConstraint() {
   XPRBctr constraint = plugin->XPRBnewctr(problem, "dummy_constraint", XPRB_L);
   plugin->XPRBsetterm(constraint, variables[0], 1);
   double ub;
-  plugin->XPRBgetbounds(variables[0], NULL, &ub);
+  plugin->XPRBgetbounds(variables[0], nullptr, &ub);
   plugin->XPRBsetterm(constraint, nullptr, ub);
 }
 
@@ -405,7 +406,7 @@ void MIP_xpress_wrapper::solve() {
   setOutputVariables(plugin, &output, &variables);
   setOutputAttributes(plugin, &output, plugin->XPRBgetXPRSprob(problem));
 
-  if (!options->intermediateSolutions && cbui.solcbfn) {
+  if (!options->intermediateSolutions && cbui.solcbfn != nullptr) {
     cbui.solcbfn(output, cbui.psi);
   }
 }
@@ -415,8 +416,7 @@ void MIP_xpress_wrapper::setUserSolutionCallback() {
     return;
   }
 
-  UserSolutionCallbackData* data =
-      new UserSolutionCallbackData{&cbui, &problem, &variables, plugin};
+  auto* data = new UserSolutionCallbackData{&cbui, &problem, &variables, plugin};
 
   plugin->XPRSsetcbintsol(plugin->XPRBgetXPRSprob(problem), userSolNotifyCallback, data);
 }
@@ -450,7 +450,7 @@ bool MIP_xpress_wrapper::addWarmStart(const std::vector<VarId>& vars,
   for (size_t ii = 0; ii < vars.size(); ii++) {
     plugin->XPRBsetsolvar(warmstart, variables[vars[ii]], vals[ii]);
   }
-  return 1 - plugin->XPRBaddmipsol(problem, warmstart, nullptr);
+  return !(plugin->XPRBaddmipsol(problem, warmstart, nullptr) != 0);
 }
 
 int MIP_xpress_wrapper::convertConstraintType(LinConType sense) {

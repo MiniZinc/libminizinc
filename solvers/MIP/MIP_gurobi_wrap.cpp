@@ -847,7 +847,7 @@ void MIP_gurobi_wrapper::solve() {    // Move into ancestor?
   x.resize(output.nCols);
   output.x = &x[0];
   SolCallbackFn solcbfn = cbui.solcbfn;
-  if (true) {  // Need for logging
+  if (true) {  // NOLINT: Need for logging
     cbui.fVerb = fVerbose;
     cbui.nTimeoutFeas = options->nTimeoutFeas1000 / 1000.0;
     if (!options->flag_intermediate) {

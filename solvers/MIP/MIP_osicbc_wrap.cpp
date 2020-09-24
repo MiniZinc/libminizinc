@@ -430,7 +430,7 @@ CbcEventHandler::CbcAction MyEventHandler3::event(CbcEvent whichEvent) {
             }
           }
           solver->resolve();
-          cbcPreProcessPointer->postProcess(*solver, false);
+          cbcPreProcessPointer->postProcess(*solver, 0);
           delete solver;
           origModel = cbcPreProcessPointer->originalModel();
           ui.pCbui->pOutput->x = origModel->getColSolution();

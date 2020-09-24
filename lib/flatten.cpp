@@ -4166,9 +4166,9 @@ void oldflatzinc(Env& e) {
 
   for (auto& it : env.vo._m) {
     std::vector<Item*> toRemove;
-    for (auto iit = it.second.begin(); iit != it.second.end(); ++iit) {
-      if ((*iit)->removed()) {
-        toRemove.push_back(*iit);
+    for (auto* iit : it.second) {
+      if (iit->removed()) {
+        toRemove.push_back(iit);
       }
     }
     for (auto& i : toRemove) {

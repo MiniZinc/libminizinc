@@ -519,9 +519,8 @@ Model* copy(EnvI& env, CopyMap& cm, Model* m, bool isFlatModel) {
   }
 
   for (auto& it : m->fnmap) {
-    for (unsigned int i = 0; i < it.second.size(); i++) {
-      c->registerFn(env,
-                    copy(env, cm, it.second[i].fi, false, true, isFlatModel)->cast<FunctionI>());
+    for (auto& i : it.second) {
+      c->registerFn(env, copy(env, cm, i.fi, false, true, isFlatModel)->cast<FunctionI>());
     }
   }
   cm.insert(m, c);

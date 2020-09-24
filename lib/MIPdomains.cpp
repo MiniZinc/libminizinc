@@ -157,13 +157,7 @@ struct Interval {
                                                   : std::numeric_limits<N>::max();
   }
   Interval(N a = infMinus(), N b = infPlus()) : left(a), right(b) {}
-  bool operator<(const Interval& intv) const {
-    if (left < intv.left) {
-      //         assert( right <= intv.left );              // assume disjoint
-      return true;
-    }
-    return false;
-  }
+  bool operator<(const Interval& intv) const { return left < intv.left; }
 };
 typedef Interval<double> IntvReal;
 
@@ -368,12 +362,9 @@ private:
     lin_exp_int = env.model->matchFn(env, constants().ids.lin_exp, int_lin_eq_t, false);
     lin_exp_float = env.model->matchFn(env, constants().ids.lin_exp, float_lin_eq_t, false);
 
-    if (!((int_lin_eq != nullptr) && (int_lin_le != nullptr) && (float_lin_eq != nullptr) &&
-          (float_lin_le != nullptr))) {
-      // say something...
-      return false;
-    }
-    return true;
+    return (!((int_lin_eq != nullptr) && (int_lin_le != nullptr) && (float_lin_eq != nullptr) &&
+              (float_lin_le != nullptr)));
+    // say something...
 
     //       std::cerr << "  lin_exp_int=" << lin_exp_int << std::endl;
     //       std::cerr << "  lin_exp_float=" << lin_exp_float << std::endl;
@@ -655,7 +646,7 @@ private:
             }
             return true;  // in any case
           }
-        } else if (true) {  // check larger views always. OK? TODO
+        } else if (true) {  // NOLINT: check larger views always. OK? TODO
           //             if ( vd->payload()>=0 )  {                      // larger views
           // TODO should be here?
           //             std::cerr << " LE_" << al->v().size() << ' ' << std::flush;
@@ -2075,7 +2066,7 @@ private:
     os << " ... ";
   }
 
-};  // class MIPD
+};  // namespace MiniZinc
 
 template <class N>
 template <class N1>
