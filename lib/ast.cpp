@@ -25,7 +25,7 @@ namespace MiniZinc {
 Location::LocVec* Location::LocVec::a(const ASTString& filename, unsigned int first_line,
                                       unsigned int first_column, unsigned int last_line,
                                       unsigned int last_column) {
-  static const unsigned int pointerBits = sizeof(IntLit*) * 8;
+  static const unsigned int pointerBits = sizeof(void*) * 8;
   if (pointerBits <= 32) {
     if (first_line < (1 << 8) && last_line - first_line < (1 << 7) && first_column < (1 << 6) &&
         last_column < (1 << 7)) {

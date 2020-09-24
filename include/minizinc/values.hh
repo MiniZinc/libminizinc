@@ -633,7 +633,7 @@ public:
   /// Return cardinality
   IntVal card(void) const {
     IntVal c = 0;
-    for (unsigned int i = size(); (i--) != 0U;) {
+    for (int i = size(); (i--) != 0;) {
       if (width(i).isFinite()) {
         c += width(i);
       } else {
@@ -847,7 +847,7 @@ public:
   /// Return cardinality
   FloatVal card(void) const {
     FloatVal c = 0;
-    for (unsigned int i = size(); (i--) != 0U;) {
+    for (int i = size(); (i--) != 0;) {
       if (width(i).isFinite()) {
         c += width(i);
       } else {

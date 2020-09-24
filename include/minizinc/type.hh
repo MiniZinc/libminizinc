@@ -156,41 +156,42 @@ public:
   static Type unboxedint;
   static Type unboxedfloat;
 
-  bool isunknown(void) const { return _bt == BT_UNKNOWN; }
-  bool isplain(void) const { return _dim == 0 && _st == ST_PLAIN && _ot == OT_PRESENT; }
-  bool isint(void) const { return _dim == 0 && _st == ST_PLAIN && _bt == BT_INT; }
-  bool isbot(void) const { return _bt == BT_BOT; }
-  bool isfloat(void) const { return _dim == 0 && _st == ST_PLAIN && _bt == BT_FLOAT; }
-  bool isbool(void) const { return _dim == 0 && _st == ST_PLAIN && _bt == BT_BOOL; }
-  bool isstring(void) const { return isplain() && _bt == BT_STRING; }
-  bool isvar(void) const { return _ti != TI_PAR; }
+  bool isunknown(void) const { return bt() == BT_UNKNOWN; }
+  bool isplain(void) const { return _dim == 0 && st() == ST_PLAIN && ot() == OT_PRESENT; }
+  bool isint(void) const { return _dim == 0 && st() == ST_PLAIN && bt() == BT_INT; }
+  bool isbot(void) const { return bt() == BT_BOT; }
+  bool isfloat(void) const { return _dim == 0 && st() == ST_PLAIN && bt() == BT_FLOAT; }
+  bool isbool(void) const { return _dim == 0 && st() == ST_PLAIN && bt() == BT_BOOL; }
+  bool isstring(void) const { return isplain() && bt() == BT_STRING; }
+  bool isvar(void) const { return ti() != TI_PAR; }
   bool isvarbool(void) const {
-    return _ti == TI_VAR && _dim == 0 && _st == ST_PLAIN && _bt == BT_BOOL && _ot == OT_PRESENT;
+    return ti() == TI_VAR && _dim == 0 && st() == ST_PLAIN && bt() == BT_BOOL && ot() == OT_PRESENT;
   }
   bool isvarfloat(void) const {
-    return _ti == TI_VAR && _dim == 0 && _st == ST_PLAIN && _bt == BT_FLOAT && _ot == OT_PRESENT;
+    return ti() == TI_VAR && _dim == 0 && st() == ST_PLAIN && bt() == BT_FLOAT &&
+           ot() == OT_PRESENT;
   }
   bool isvarint(void) const {
-    return _ti == TI_VAR && _dim == 0 && _st == ST_PLAIN && _bt == BT_INT && _ot == OT_PRESENT;
+    return ti() == TI_VAR && _dim == 0 && st() == ST_PLAIN && bt() == BT_INT && ot() == OT_PRESENT;
   }
-  bool ispar(void) const { return _ti == TI_PAR; }
-  bool isopt(void) const { return _ot == OT_OPTIONAL; }
-  bool ispresent(void) const { return _ot == OT_PRESENT; }
-  bool is_set(void) const { return _dim == 0 && _st == ST_SET; }
-  bool isintset(void) const { return is_set() && (_bt == BT_INT || _bt == BT_BOT); }
-  bool isboolset(void) const { return is_set() && (_bt == BT_BOOL || _bt == BT_BOT); }
-  bool isfloatset(void) const { return is_set() && (_bt == BT_FLOAT || _bt == BT_BOT); }
-  bool isann(void) const { return isplain() && _bt == BT_ANN; }
+  bool ispar(void) const { return ti() == TI_PAR; }
+  bool isopt(void) const { return ot() == OT_OPTIONAL; }
+  bool ispresent(void) const { return ot() == OT_PRESENT; }
+  bool is_set(void) const { return _dim == 0 && st() == ST_SET; }
+  bool isintset(void) const { return is_set() && (bt() == BT_INT || bt() == BT_BOT); }
+  bool isboolset(void) const { return is_set() && (bt() == BT_BOOL || bt() == BT_BOT); }
+  bool isfloatset(void) const { return is_set() && (bt() == BT_FLOAT || bt() == BT_BOT); }
+  bool isann(void) const { return isplain() && bt() == BT_ANN; }
   bool isintarray(void) const {
-    return _dim == 1 && _st == ST_PLAIN && _ot == OT_PRESENT && _bt == BT_INT;
+    return _dim == 1 && st() == ST_PLAIN && ot() == OT_PRESENT && bt() == BT_INT;
   }
   bool isboolarray(void) const {
-    return _dim == 1 && _st == ST_PLAIN && _ot == OT_PRESENT && _bt == BT_BOOL;
+    return _dim == 1 && st() == ST_PLAIN && ot() == OT_PRESENT && bt() == BT_BOOL;
   }
-  bool isintsetarray(void) const { return _dim == 1 && _st == ST_SET && _bt == BT_INT; }
+  bool isintsetarray(void) const { return _dim == 1 && st() == ST_SET && bt() == BT_INT; }
 
   bool operator==(const Type& t) const {
-    return _ti == t._ti && _bt == t._bt && _st == t._st && _ot == t._ot && _dim == t._dim;
+    return ti() == t.ti() && bt() == t.bt() && st() == t.st() && ot() == t.ot() && _dim == t._dim;
   }
   bool operator!=(const Type& t) const { return !this->operator==(t); }
   // protected:
@@ -233,9 +234,9 @@ public:
 
   /// Check if this type is a subtype of \a t
   bool isSubtypeOf(const Type& t, bool strictEnums) const {
-    if (_dim == 0 && t._dim != 0 && _st == ST_SET && t._st == ST_PLAIN && bt() != BT_FLOAT &&
-        (bt() == BT_BOT || bt_subtype(*this, t, false) || t.bt() == BT_TOP) && _ti == TI_PAR &&
-        (_ot == OT_PRESENT || _ot == t._ot)) {
+    if (_dim == 0 && t._dim != 0 && st() == ST_SET && t.st() == ST_PLAIN && bt() != BT_FLOAT &&
+        (bt() == BT_BOT || bt_subtype(*this, t, false) || t.bt() == BT_TOP) && ti() == TI_PAR &&
+        (ot() == OT_PRESENT || ot() == t.ot())) {
       return true;
     }
     // either same dimension or t has variable dimension
@@ -243,21 +244,22 @@ public:
       return false;
     }
     // same type, this is present or both optional
-    if (_ti == t._ti && bt_subtype(*this, t, strictEnums) && _st == t._st) {
-      return _ot == OT_PRESENT || _ot == t._ot;
+    if (ti() == t.ti() && bt_subtype(*this, t, strictEnums) && st() == t.st()) {
+      return ot() == OT_PRESENT || ot() == t.ot();
     }
     // this is par other than that same type as t
-    if (_ti == TI_PAR && bt_subtype(*this, t, strictEnums) && _st == t._st) {
-      return _ot == OT_PRESENT || _ot == t._ot;
+    if (ti() == TI_PAR && bt_subtype(*this, t, strictEnums) && st() == t.st()) {
+      return ot() == OT_PRESENT || ot() == t.ot();
     }
-    if (_ti == TI_PAR && t._bt == BT_BOT) {
+    if (ti() == TI_PAR && t.bt() == BT_BOT) {
       return true;
     }
-    if ((_ti == t._ti || _ti == TI_PAR) && _bt == BT_BOT && (_st == t._st || _st == ST_PLAIN)) {
-      return _ot == OT_PRESENT || _ot == t._ot;
+    if ((ti() == t.ti() || ti() == TI_PAR) && bt() == BT_BOT &&
+        (st() == t.st() || st() == ST_PLAIN)) {
+      return ot() == OT_PRESENT || ot() == t.ot();
     }
-    if (t._bt == BT_TOP && (_ot == OT_PRESENT || _ot == t._ot) &&
-        (t._st == ST_PLAIN || _st == t._st) && (_ti == TI_PAR || t._ti == TI_VAR)) {
+    if (t.bt() == BT_TOP && (ot() == OT_PRESENT || ot() == t.ot()) &&
+        (t.st() == ST_PLAIN || st() == t.st()) && (ti() == TI_PAR || t.ti() == TI_VAR)) {
       return true;
     }
     return false;

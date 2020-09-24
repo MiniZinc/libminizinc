@@ -27,7 +27,7 @@ inline bool Expression::equal(const Expression* e0, const Expression* e1) {
     }
     return false;
   }
-  if (e0->_id != e1->_id) {
+  if (static_cast<ExpressionId>(e0->_id) != static_cast<ExpressionId>(e1->_id)) {
     return false;
   }
   if (e0->type() != e1->type()) {
@@ -97,7 +97,7 @@ inline ASTString Location::LocVec::filename(void) const {
 }
 inline unsigned int Location::LocVec::first_line(void) const {
   if (_size == 2) {
-    static const unsigned int pointerBits = sizeof(IntLit*) * 8;
+    static const unsigned int pointerBits = sizeof(void*) * 8;
     auto* il = static_cast<IntLit*>(_data[1]);
     long long unsigned int mask = pointerBits <= 32 ? 0xFF : 0xFFFFF;
     union {
@@ -113,7 +113,7 @@ inline unsigned int Location::LocVec::first_line(void) const {
 }
 inline unsigned int Location::LocVec::last_line(void) const {
   if (_size == 2) {
-    static const unsigned int pointerBits = sizeof(IntLit*) * 8;
+    static const unsigned int pointerBits = sizeof(void*) * 8;
     auto* il = static_cast<IntLit*>(_data[1]);
     long long unsigned int first_line_size = pointerBits <= 32 ? 8 : 20;
     long long unsigned int mask = pointerBits <= 32 ? 0xFF : 0xFFFFF;
@@ -132,7 +132,7 @@ inline unsigned int Location::LocVec::last_line(void) const {
 }
 inline unsigned int Location::LocVec::first_column(void) const {
   if (_size == 2) {
-    static const unsigned int pointerBits = sizeof(IntLit*) * 8;
+    static const unsigned int pointerBits = sizeof(void*) * 8;
     auto* il = static_cast<IntLit*>(_data[1]);
     long long unsigned int first_col_offset = pointerBits <= 32 ? 8 + 7 : 20 + 20;
     long long unsigned int mask = pointerBits <= 32 ? 0x3F : 0x3FF;
@@ -150,7 +150,7 @@ inline unsigned int Location::LocVec::first_column(void) const {
 }
 inline unsigned int Location::LocVec::last_column(void) const {
   if (_size == 2) {
-    static const unsigned int pointerBits = sizeof(IntLit*) * 8;
+    static const unsigned int pointerBits = sizeof(void*) * 8;
     auto* il = static_cast<IntLit*>(_data[1]);
     long long unsigned int last_col_offset = pointerBits <= 32 ? 8 + 7 + 6 : 20 + 20 + 10;
     long long unsigned int mask = pointerBits <= 32 ? 0x7F : 0x3FF;
@@ -173,7 +173,7 @@ inline FloatLit::FloatLit(const Location& loc, FloatVal v)
 }
 
 inline FloatLit* FloatLit::a(MiniZinc::FloatVal v) {
-  if (sizeof(double) <= sizeof(FloatLit*) && v.isFinite()) {
+  if (sizeof(double) <= sizeof(void*) && v.isFinite()) {
     FloatLit* ret = Expression::doubleToUnboxedFloatVal(v.toDouble());
     if (ret != nullptr) {
       return ret;

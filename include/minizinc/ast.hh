@@ -301,7 +301,7 @@ public:
   };
 
   bool isUnboxedVal(void) const {
-    if (sizeof(double) <= sizeof(FloatLit*)) {
+    if (sizeof(double) <= sizeof(void*)) {
       // bit 1 or bit 0 is set
       return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) != 0;
     } else {
@@ -310,7 +310,7 @@ public:
     }
   }
   bool isUnboxedInt(void) const {
-    if (sizeof(double) <= sizeof(FloatLit*)) {
+    if (sizeof(double) <= sizeof(void*)) {
       // bit 1 is set, bit 0 is not set
       return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
     } else {
@@ -320,7 +320,7 @@ public:
   }
   bool isUnboxedFloatVal(void) const {
     // bit 0 is set (and doubles fit inside pointers)
-    return (sizeof(double) <= sizeof(FloatLit*)) &&
+    return (sizeof(double) <= sizeof(void*)) &&
            (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(1)) == 1;
   }
 
@@ -366,11 +366,11 @@ protected:
 public:
   IntVal unboxedIntToIntVal(void) const {
     assert(isUnboxedInt());
-    if (sizeof(double) <= sizeof(FloatVal*)) {
+    if (sizeof(double) <= sizeof(void*)) {
       unsigned long long int i = reinterpret_cast<ptrdiff_t>(this) & ~static_cast<ptrdiff_t>(7);
       bool pos = ((reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(4)) == 0);
       if (pos) {
-        return i >> 3;
+        return static_cast<long long int>(i >> 3);
       } else {
         return -(static_cast<long long int>(i >> 3));
       }
@@ -378,15 +378,15 @@ public:
       unsigned long long int i = reinterpret_cast<ptrdiff_t>(this) & ~static_cast<ptrdiff_t>(3);
       bool pos = ((reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(2)) == 0);
       if (pos) {
-        return i >> 2;
+        return static_cast<long long int>(i >> 2);
       } else {
         return -(static_cast<long long int>(i >> 2));
       }
     }
   }
   static IntLit* intToUnboxedInt(long long int i) {
-    static const unsigned int pointerBits = sizeof(IntLit*) * 8;
-    if (sizeof(double) <= sizeof(FloatVal*)) {
+    static const unsigned int pointerBits = sizeof(void*) * 8;
+    if (sizeof(double) <= sizeof(void*)) {
       static const long long int maxUnboxedVal =
           (static_cast<long long int>(1) << (pointerBits - 3)) - static_cast<long long int>(1);
       if (i < -maxUnboxedVal || i > maxUnboxedVal) {
@@ -430,7 +430,7 @@ public:
     return _u.d;
   }
   static FloatLit* doubleToUnboxedFloatVal(double d) {
-    if (sizeof(double) > sizeof(FloatLit*)) {
+    if (sizeof(double) > sizeof(void*)) {
       return nullptr;
     }
     union {
@@ -462,7 +462,7 @@ public:
     if (isUnboxedVal()) {
       return false;
     }
-    if (sizeof(double) <= sizeof(FloatVal*)) {
+    if (sizeof(double) <= sizeof(void*)) {
       return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(7)) == 4;
     } else {
       return (reinterpret_cast<ptrdiff_t>(this) & static_cast<ptrdiff_t>(3)) == 2;
@@ -471,7 +471,7 @@ public:
 
   Expression* tag(void) const {
     assert(!isUnboxedVal());
-    if (sizeof(double) <= sizeof(FloatVal*)) {
+    if (sizeof(double) <= sizeof(void*)) {
       return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) |
                                            static_cast<ptrdiff_t>(4));
     } else {
@@ -483,7 +483,7 @@ public:
     if (isUnboxedVal()) {
       return this;
     }
-    if (sizeof(double) <= sizeof(FloatVal*)) {
+    if (sizeof(double) <= sizeof(void*)) {
       return reinterpret_cast<Expression*>(reinterpret_cast<ptrdiff_t>(this) &
                                            ~static_cast<ptrdiff_t>(4));
     } else {
@@ -1000,7 +1000,7 @@ public:
   static const ExpressionId eid = E_ITE;
   /// Constructor
   ITE(const Location& loc, const std::vector<Expression*>& e_if_then, Expression* e_else);
-  int size(void) const { return _e_if_then.size() / 2; }
+  int size(void) const { return static_cast<int>(_e_if_then.size() / 2); }
   Expression* e_if(int i) { return _e_if_then[2 * i]; }
   Expression* e_then(int i) { return _e_if_then[2 * i + 1]; }
   Expression* e_else(void) { return _e_else; }
@@ -1430,7 +1430,7 @@ public:
 #else
   static void mark(Item* item);
 #endif
-  bool has_mark(void) { return _gc_mark != 0; }
+  bool has_mark(void) { return _gc_mark != 0U; }
 };
 
 class Model;
