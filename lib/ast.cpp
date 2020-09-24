@@ -104,7 +104,7 @@ void Expression::addAnnotation(Expression* ann) {
 }
 void Expression::addAnnotations(const std::vector<Expression*>& ann) {
   if (!isUnboxedVal()) {
-    for (auto& i : ann) {
+    for (const auto& i : ann) {
       if (i != nullptr) {
         _ann.add(i);
       }
