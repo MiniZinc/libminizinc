@@ -59,20 +59,20 @@ void mzn_break_here(Expression* e) { std::cerr << "% mzn_break_here: " << *e << 
 
 typedef EE (*ExprFlattener)(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 
-EE flatten_setlit(EnvI& env, const Ctx&, Expression* e, VarDecl* r, VarDecl* b);
-EE flatten_id(EnvI& env, const Ctx&, Expression* e, VarDecl* r, VarDecl* b);
-EE flatten_anon(EnvI& env, const Ctx&, Expression* e, VarDecl* r, VarDecl* b);
-EE flatten_arraylit(EnvI& env, const Ctx&, Expression* e, VarDecl* r, VarDecl* b);
-EE flatten_arrayaccess(EnvI& env, const Ctx&, Expression* e, VarDecl* r, VarDecl* b);
-EE flatten_comp(EnvI& env, const Ctx&, Expression* e, VarDecl* r, VarDecl* b);
-EE flatten_ite(EnvI& env, const Ctx&, Expression* e, VarDecl* r, VarDecl* b);
-EE flatten_binop(EnvI& env, const Ctx&, Expression* e, VarDecl* r, VarDecl* b);
-EE flatten_unop(EnvI& env, const Ctx&, Expression* e, VarDecl* r, VarDecl* b);
-EE flatten_call(EnvI& env, const Ctx&, Expression* e, VarDecl* r, VarDecl* b);
-EE flatten_vardecl(EnvI& env, const Ctx&, Expression* e, VarDecl* r, VarDecl* b);
-EE flatten_let(EnvI& env, const Ctx&, Expression* e, VarDecl* r, VarDecl* b);
-EE flatten_par(EnvI& env, const Ctx&, Expression* e, VarDecl* r, VarDecl* b);
-EE flatten_error(EnvI& env, const Ctx&, Expression* e, VarDecl* r, VarDecl* b);
+EE flatten_setlit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
+EE flatten_id(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
+EE flatten_anon(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
+EE flatten_arraylit(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
+EE flatten_arrayaccess(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
+EE flatten_comp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
+EE flatten_ite(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
+EE flatten_binop(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
+EE flatten_unop(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
+EE flatten_call(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
+EE flatten_vardecl(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
+EE flatten_let(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
+EE flatten_par(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
+EE flatten_error(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b);
 
 EE flat_exp(EnvI& env, const Ctx& ctx, Expression* e, VarDecl* r, VarDecl* b) {
   if (e == nullptr) {

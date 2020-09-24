@@ -586,7 +586,7 @@ bool Comprehension::containsBoundVariable(Expression* e) {
 
   public:
     FindVar(std::unordered_set<VarDecl*>& decls) : _decls(decls), _found(false) {}
-    bool enter(Expression*) { return !_found; }
+    bool enter(Expression* /*e*/) { return !_found; }
     void vId(Id& ident) {
       if (_decls.find(ident.decl()) != _decls.end()) {
         _found = true;
@@ -932,8 +932,8 @@ bool TypeInst::hasTiVariable() const {
 namespace {
 Type getType(Expression* e) { return e->type(); }
 Type getType(const Type& t) { return t; }
-const Location& getLoc(Expression* e, FunctionI*) { return e->loc(); }
-const Location& getLoc(const Type&, FunctionI* fi) { return fi->loc(); }
+const Location& getLoc(Expression* e, FunctionI* /*fi*/) { return e->loc(); }
+const Location& getLoc(const Type& /*t*/, FunctionI* fi) { return fi->loc(); }
 
 bool isaTIId(Expression* e) {
   if (TIId* t = Expression::dyn_cast<TIId>(e)) {

@@ -39,12 +39,14 @@ NL_SolverFactory::NL_SolverFactory() {
   SolverConfigs::registerBuiltinSolver(sc);
 }
 
-string NL_SolverFactory::getDescription(SolverInstanceBase::Options*) {
+string NL_SolverFactory::getDescription(SolverInstanceBase::Options* /*opt*/) {
   string v = "NL solver plugin, compiled  " __DATE__ "  " __TIME__;
   return v;
 }
 
-string NL_SolverFactory::getVersion(SolverInstanceBase::Options*) { return MZN_VERSION_MAJOR; }
+string NL_SolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
+  return MZN_VERSION_MAJOR;
+}
 
 string NL_SolverFactory::getId() { return "org.minizinc.mzn-nl"; }
 

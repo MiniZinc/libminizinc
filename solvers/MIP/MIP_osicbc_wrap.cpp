@@ -38,7 +38,7 @@ using namespace std;
 
 #define WANT_SOLUTION
 
-string MIP_osicbc_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options*) {
+string MIP_osicbc_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options* /*opt*/) {
   string v = "MIP wrapper for COIN-BC ";
   v += CBC_VERSION;  // E.g., 2.9 stable or 2.9.7 latest release
   v += ",  using CLP ";
@@ -47,7 +47,7 @@ string MIP_osicbc_wrapper::getDescription(MiniZinc::SolverInstanceBase::Options*
   return v;
 }
 
-string MIP_osicbc_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options*) {
+string MIP_osicbc_wrapper::getVersion(MiniZinc::SolverInstanceBase::Options* /*opt*/) {
   return string(CBC_VERSION) + "/" + string(CLP_VERSION);
 }
 
@@ -430,7 +430,7 @@ CbcEventHandler::CbcAction MyEventHandler3::event(CbcEvent whichEvent) {
             }
           }
           solver->resolve();
-          cbcPreProcessPointer->postProcess(*solver, 0);
+          cbcPreProcessPointer->postProcess(*solver, false);
           delete solver;
           origModel = cbcPreProcessPointer->originalModel();
           ui.pCbui->pOutput->x = origModel->getColSolution();

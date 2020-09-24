@@ -1219,13 +1219,13 @@ public:
       }
     }
   }
-  bool enter(Expression*) { return true; }
+  bool enter(Expression* /*e*/) { return true; }
   /// Visit integer literal
-  void vIntLit(const IntLit&) {}
+  void vIntLit(const IntLit& /*i*/) {}
   /// Visit floating point literal
-  void vFloatLit(const FloatLit&) {}
+  void vFloatLit(const FloatLit& /*f*/) {}
   /// Visit Boolean literal
-  void vBoolLit(const BoolLit&) {}
+  void vBoolLit(const BoolLit& /*b*/) {}
   /// Visit set literal
   void vSetLit(SetLit& sl) {
     Type ty;
@@ -1289,7 +1289,7 @@ public:
     sl.type(ty);
   }
   /// Visit string literal
-  void vStringLit(const StringLit&) {}
+  void vStringLit(const StringLit& /*sl*/) {}
   /// Visit identifier
   void vId(Id& id) {
     if (&id != constants().absent) {
@@ -1298,7 +1298,7 @@ public:
     }
   }
   /// Visit anonymous variable
-  void vAnonVar(const AnonVar&) {}
+  void vAnonVar(const AnonVar& /*v*/) {}
   /// Visit array literal
   void vArrayLit(ArrayLit& al) {
     Type ty;

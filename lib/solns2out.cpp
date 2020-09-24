@@ -428,7 +428,7 @@ bool Solns2Out::evalStatus(SolverInstance::Status status) {
   return true;
 }
 
-bool Solns2Out::__evalOutputFinal(bool) {
+bool Solns2Out::__evalOutputFinal(bool /*b*/) {
   /// Print the canonical list
   for (const auto& sol : sSolsCanon) {
     if ((!_opt.solution_comma.empty()) && &sol != &*sSolsCanon.begin()) {

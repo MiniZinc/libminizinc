@@ -452,7 +452,9 @@ void remove_dir(const std::string& d) {
 }  // namespace
 #else
 namespace {
-int remove_file(const char* fpath, const struct stat*, int, struct FTW*) { return unlink(fpath); }
+int remove_file(const char* fpath, const struct stat* /*s*/, int /*i*/, struct FTW* /*ftw*/) {
+  return unlink(fpath);
+}
 }  // namespace
 #endif
 

@@ -1212,7 +1212,7 @@ public:
     ss << "$" << id.v();
     return new StringDocument(ss.str());
   }
-  ret mapAnonVar(const AnonVar&) { return new StringDocument("_"); }
+  ret mapAnonVar(const AnonVar& /*v*/) { return new StringDocument("_"); }
   ret mapArrayLit(const ArrayLit& al) {
     /// TODO: test multi-dimensional arrays handling
     DocumentList* dl;

@@ -42,12 +42,14 @@ FZN_SolverFactory::FZN_SolverFactory() {
   SolverConfigs::registerBuiltinSolver(sc);
 }
 
-string FZN_SolverFactory::getDescription(SolverInstanceBase::Options*) {
+string FZN_SolverFactory::getDescription(SolverInstanceBase::Options* /*opt*/) {
   string v = "FZN solver plugin, compiled  " __DATE__ "  " __TIME__;
   return v;
 }
 
-string FZN_SolverFactory::getVersion(SolverInstanceBase::Options*) { return MZN_VERSION_MAJOR; }
+string FZN_SolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
+  return MZN_VERSION_MAJOR;
+}
 
 string FZN_SolverFactory::getId() { return "org.minizinc.mzn-fzn"; }
 

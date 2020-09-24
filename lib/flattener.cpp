@@ -930,4 +930,4 @@ void Flattener::flatten(const std::string& modelString, const std::string& model
   }
 }
 
-void Flattener::printStatistics(ostream&) {}
+void Flattener::printStatistics(ostream& /*os*/) {}

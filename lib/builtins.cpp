@@ -1543,7 +1543,9 @@ Expression* b_trace_logstream(EnvI& env, Call* call) {
 }
 std::string b_logstream(EnvI& env, Call* call) { return env.logstream.str(); }
 
-bool b_in_redundant_constraint(EnvI& env, Call*) { return env.in_redundant_constraint > 0; }
+bool b_in_redundant_constraint(EnvI& env, Call* /*call*/) {
+  return env.in_redundant_constraint > 0;
+}
 
 Expression* b_set2array(EnvI& env, Call* call) {
   assert(call->n_args() == 1);
@@ -1937,7 +1939,7 @@ std::string b_show_float(EnvI& env, Call* call) {
   return oss.str();
 }
 
-std::string b_file_path(EnvI&, Call* call) {
+std::string b_file_path(EnvI& /*env*/, Call* call) {
   return FileUtils::file_path(
       std::string(call->loc().filename().c_str(), call->loc().filename().size()));
 }
@@ -2536,7 +2538,7 @@ IntVal b_enum_prev(EnvI& env, Call* call) {
   return v - 1;
 }
 
-IntVal b_mzn_compiler_version(EnvI&, Call*) {
+IntVal b_mzn_compiler_version(EnvI& /*env*/, Call* /*call*/) {
   return atoi(MZN_VERSION_MAJOR) * 10000 + atoi(MZN_VERSION_MINOR) * 1000 + atoi(MZN_VERSION_PATCH);
 }
 

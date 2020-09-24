@@ -16,7 +16,7 @@
 
 #ifndef HAS_MEMCPY_S
 namespace {
-void memcpy_s(char* dest, size_t, const char* src, size_t count) { memcpy(dest, src, count); }
+void memcpy_s(char* dest, size_t /*size*/, const char* src, size_t count) { memcpy(dest, src, count); }
 }  // namespace
 #endif
 

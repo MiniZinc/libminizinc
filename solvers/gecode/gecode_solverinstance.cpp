@@ -44,13 +44,13 @@ SolverInstanceBase* Gecode_SolverFactory::doCreateSI(Env& env, std::ostream& log
   return new GecodeSolverInstance(env, log, opt);
 }
 
-string Gecode_SolverFactory::getDescription(SolverInstanceBase::Options*) {
+string Gecode_SolverFactory::getDescription(SolverInstanceBase::Options* /*opt*/) {
   string v = "Gecode solver plugin, compiled " __DATE__ ", using: Gecode version " +
              string(GECODE_VERSION);
   return v;
 }
 
-string Gecode_SolverFactory::getVersion(SolverInstanceBase::Options*) {
+string Gecode_SolverFactory::getVersion(SolverInstanceBase::Options* /*opt*/) {
   return string(GECODE_VERSION);
 }
 

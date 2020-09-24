@@ -31,19 +31,19 @@ bool cannotUseRHSForOutput(EnvI& env, Expression* e,
     V(EnvI& env0, std::unordered_set<FunctionI*>& seen_functions0)
         : env(env0), seen_functions(seen_functions0), success(true) {}
     /// Visit anonymous variable
-    void vAnonVar(const AnonVar&) { success = false; }
+    void vAnonVar(const AnonVar& /*v*/) { success = false; }
     /// Visit array literal
-    void vArrayLit(const ArrayLit&) {}
+    void vArrayLit(const ArrayLit& /*al*/) {}
     /// Visit array access
-    void vArrayAccess(const ArrayAccess&) {}
+    void vArrayAccess(const ArrayAccess& /*aa*/) {}
     /// Visit array comprehension
-    void vComprehension(const Comprehension&) {}
+    void vComprehension(const Comprehension& /*c*/) {}
     /// Visit if-then-else
-    void vITE(const ITE&) {}
+    void vITE(const ITE& /*ite*/) {}
     /// Visit binary operator
-    void vBinOp(const BinOp&) {}
+    void vBinOp(const BinOp& /*bo*/) {}
     /// Visit unary operator
-    void vUnOp(const UnOp&) {}
+    void vUnOp(const UnOp& /*uo*/) {}
     /// Visit call
     void vCall(Call& c) {
       std::vector<Type> tv(c.n_args());
@@ -95,17 +95,17 @@ bool cannotUseRHSForOutput(EnvI& env, Expression* e,
         }
       }
     }
-    void vId(const Id& id) {}
+    void vId(const Id& /*id*/) {}
     /// Visit let
-    void vLet(const Let&) { success = false; }
+    void vLet(const Let& /*let*/) { success = false; }
     /// Visit variable declaration
-    void vVarDecl(const VarDecl& vd) {}
+    void vVarDecl(const VarDecl& /*vd*/) {}
     /// Visit type inst
-    void vTypeInst(const TypeInst&) {}
+    void vTypeInst(const TypeInst& /*ti*/) {}
     /// Visit TIId
-    void vTIId(const TIId&) {}
+    void vTIId(const TIId& /*tiid*/) {}
     /// Determine whether to enter node
-    bool enter(Expression* e) { return success; }
+    bool enter(Expression* /*e*/) { return success; }
   } _v(env, seen_functions);
   topDown(_v, e);
 

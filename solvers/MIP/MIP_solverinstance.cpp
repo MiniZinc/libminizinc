@@ -205,4 +205,4 @@ void SECCutGen::generate(const MIP_wrapper::Output& slvOut, MIP_wrapper::CutInpu
   }
 }
 
-void SECCutGen::print(ostream&) {}
+void SECCutGen::print(ostream& /*os*/) {}
