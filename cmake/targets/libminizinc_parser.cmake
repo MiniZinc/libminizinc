@@ -104,6 +104,9 @@ add_library(minizinc_parser OBJECT
   ${BISON_RegExParser_OUTPUTS}
   ${FLEX_RegExLexer_OUTPUTS}
 )
+set_target_properties(minizinc_parser PROPERTIES
+  CXX_CLANG_TIDY ""
+)
 
 if(GECODE_FOUND)
   target_include_directories(minizinc_parser PRIVATE "${GECODE_INCLUDE_DIRS}")
