@@ -16,16 +16,15 @@ of data files by typing:
 
 ``findMUS model.mzn data-1.dzn``
 
-This will perform a simple search for a single generalized MUS.
-To acquire a more accurate MUS with correct index variable assignments the
-``--paramset mzn`` argument should be used. To search for more than one
-MUS use the ``-a`` or ``-n <count>`` arguments.  By default FindMUS will
-use ``gecode`` for checking the satisfiability of a subset of constraints.
-This can be changed using the ``--solver`` argument.  For example, given
-a model that is better suited to a Mixed Integer Programming solver,
-the argument ``--solver cbc`` could be used to instruct FindMUS to
-flatten the model with the linear library and use the CBC solver for
-satisfiability checking.
+This will perform a search for a single instance level MUS.
+To acquire a low level MUS the ``--paramset fzn`` argument can be used.
+To search for more than one MUS use the ``-a`` or ``-n <count>`` arguments.
+By default FindMUS will use ``gecode_presolver`` for checking the
+satisfiability of a subset of constraints. This can be changed using the
+``--subsolver`` argument.  For example, given a model that is better
+suited to a Mixed Integer Programming solver, the argument
+``--solver cbc`` could be used to instruct FindMUS to flatten the model
+with the linear library and use the CBC solver for satisfiability checking.
 
 Note: FindMUS requires a fully instantiated constraint model.
 
@@ -65,13 +64,18 @@ FindMUS's enumeration algorithm HierMUS.
 
 ``--no-progress`` Disable ``%%%mzn-progress`` output
 
-``--output-{html, json, brief}`` Changes output mode
+``--no-stats`` Disable output of initial parsing stats and summary stats
+
+``--output-{html, json, brief, human}`` Changes output mode
 
   ``html`` HTML output mode for use with the MiniZinc IDE
 
   ``json`` Simple json output (each MUS should be parsed separately)
 
   ``brief`` Same as the default output mode but without outputting the traces (paths)
+
+  ``human`` Tries to format the MUS in a more readable form grouping constraints by
+      their constraint names
 
 
 **Compiler Options**
@@ -89,7 +93,7 @@ sub-solver.  A ``shrink`` algorithm is used to reduce found UNSAT subsets
 to MUSes. There are currently four available shrink algorithms available
 with FindMUS.
 
-``--shrink-alg lin,map_lin,qx,map_qx``
+``--shrink-alg lin,map_lin,qx,map_qx,qx2``
   Select shrink algorithm (Default: map_lin)
 
     ``lin`` simple linear shrink algorithm.
@@ -128,7 +132,7 @@ options mimic the ``minizinc`` arguments ``--solver`` and
 ``--fzn-flags``. The behavior of these arguments is likely to change
 in later versions of the tool.
 
-``--solver &lt;s&gt``
+``--subsolver &lt;s&gt``
   Use solver *s* for SAT checking. (Default: "gecode")
 
 ``--solver-flags &lt;f&gt``
@@ -237,46 +241,53 @@ latin square. The next two constraints ``LLRows`` and ``LGCols`` post
 to be increasing. Certain combinations of these constraints are going
 to be in conflict.
 
-Executing the command ``minizinc --solver -a latin_squares.mzn``
-returns the following output. Note that the ``-a`` argument requests
-all MUSes that can be found with the default settings (more detail below).
+Executing the command ``findMUS -n 2 latin_squares.mzn``
+returns the following output. Note that the ``-n 2`` argument requests
+that just the first two MUSes are found.
 
 .. code-block:: minizincdef
 
-    FznSubProblem:  hard cons: 36   soft cons: 26   leaves: 26      branches: 21    Built tree in 0.03100 seconds.
-    SubsetMap:      nleaves:        4       nbranches:      1
-    MUS: 0 1 2 21 22 3 32 33 4 43 44 5 54 55 6 7 8
-    Brief: exists;@{LG(cols 1 2@LGCols}:() exists;@{LG(cols 2 3@LGCols}:() exists;@{LL(rows 1 2)@LLRows}:() exists;@{LL(rows 2 3)@LLRows}:() int_lin_le;@{LG(cols 1 2@LGCols}:() int_lin_le;@{LG(cols 2 3@LGCols}:() int_lin_le;@{LL(rows 1 2)@LLRows}:() int_lin_le;@{LL(rows 2 3)@LLRows}:() int_lin_ne;@{AD(row 1)@ADRows}:() int_lin_ne;@{AD(row 1)@ADRows}:() int_lin_ne;@{AD(row 1)@ADRows}:() int_lin_ne;@{AD(row 2)@ADRows}:() int_lin_ne;@{AD(row 2)@ADRows}:() int_lin_ne;@{AD(row 2)@ADRows}:() int_lin_ne;@{AD(row 3)@ADRows}:() int_lin_ne;@{AD(row 3)@ADRows}:() int_lin_ne;@{AD(row 3)@ADRows}:()
+   FznSubProblem:  hard cons: 0    soft cons: 10   leaves: 10      branches: 11    Built tree in 0.02854 seconds.
+   MUS: 7 3 6 4 8
+   Brief: gecode_all_different_int;@{ADCols@AD(col 1)}:(j=1)
+   gecode_all_different_int;@{ADCols@AD(col 2)}:(j=2)
+   gecode_array_int_lt;@{LGCols@LG(cols 1 2)}:(j=1)
+   gecode_array_int_lt;@{LLRows@LL(rows 1 2)}:(i=1)
+   gecode_array_int_lt;@{LLRows@LL(rows 2 3)}:(i=2)
 
-    Traces:
-    latin_squares.mzn|9|5|10|51|ca|forall
-    latin_squares.mzn|16|5|17|68|ca|forall
-    latin_squares.mzn|19|5|20|70|ca|forall
-    ====================
+   Traces:
+   latin_squares.mzn|18|5|20|9|ca|forall;latin_squares.mzn|18|5|20|9|ac;latin_squares.mzn|18|13|18|13|i=2;latin_squares.mzn|19|10|19|37|ca|lex_less
+   latin_squares.mzn|13|5|15|9|ca|forall;latin_squares.mzn|13|5|15|9|ac;latin_squares.mzn|13|13|13|13|j=1;latin_squares.mzn|14|10|14|30|ca|alldifferent
+   latin_squares.mzn|18|5|20|9|ca|forall;latin_squares.mzn|18|5|20|9|ac;latin_squares.mzn|18|13|18|13|i=1;latin_squares.mzn|19|10|19|37|ca|lex_less
+   latin_squares.mzn|13|5|15|9|ca|forall;latin_squares.mzn|13|5|15|9|ac;latin_squares.mzn|13|13|13|13|j=2;latin_squares.mzn|14|10|14|30|ca|alldifferent
+   latin_squares.mzn|22|5|24|9|ca|forall;latin_squares.mzn|22|5|24|9|ac;latin_squares.mzn|22|13|22|13|j=1;latin_squares.mzn|23|10|23|40|ca|lex_greater
 
-    MUS: 10 11 12 13 14 15 16 17 21 22 32 33 43 44 54 55 9
-    Brief: exists;@{LG(cols 1 2@LGCols}:() exists;@{LG(cols 2 3@LGCols}:() exists;@{LL(rows 1 2)@LLRows}:() exists;@{LL(rows 2 3)@LLRows}:() int_lin_le;@{LG(cols 1 2@LGCols}:() int_lin_le;@{LG(cols 2 3@LGCols}:() int_lin_le;@{LL(rows 1 2)@LLRows}:() int_lin_le;@{LL(rows 2 3)@LLRows}:() int_lin_ne;@{AD(col 1)@ADCols}:() int_lin_ne;@{AD(col 1)@ADCols}:() int_lin_ne;@{AD(col 1)@ADCols}:() int_lin_ne;@{AD(col 2)@ADCols}:() int_lin_ne;@{AD(col 2)@ADCols}:() int_lin_ne;@{AD(col 2)@ADCols}:() int_lin_ne;@{AD(col 3)@ADCols}:() int_lin_ne;@{AD(col 3)@ADCols}:() int_lin_ne;@{AD(col 3)@ADCols}:()
+   MUS: 7 3 5 6 8 9
+   Brief: gecode_all_different_int;@{ADCols@AD(col 1)}:(j=1)
+   gecode_all_different_int;@{ADCols@AD(col 3)}:(j=3)
+   gecode_array_int_lt;@{LGCols@LG(cols 1 2)}:(j=1)
+   gecode_array_int_lt;@{LGCols@LG(cols 2 3)}:(j=2)
+   gecode_array_int_lt;@{LLRows@LL(rows 1 2)}:(i=1)
+   gecode_array_int_lt;@{LLRows@LL(rows 2 3)}:(i=2)
 
-    Traces:
-    latin_squares.mzn|16|5|17|68|ca|forall
-    latin_squares.mzn|12|5|13|51|ca|forall
-    latin_squares.mzn|19|5|20|70|ca|forall
-    ====================
+   Traces:
+   latin_squares.mzn|18|5|20|9|ca|forall;latin_squares.mzn|18|5|20|9|ac;latin_squares.mzn|18|13|18|13|i=2;latin_squares.mzn|19|10|19|37|ca|lex_less
+   latin_squares.mzn|13|5|15|9|ca|forall;latin_squares.mzn|13|5|15|9|ac;latin_squares.mzn|13|13|13|13|j=1;latin_squares.mzn|14|10|14|30|ca|alldifferent
+   latin_squares.mzn|13|5|15|9|ca|forall;latin_squares.mzn|13|5|15|9|ac;latin_squares.mzn|13|13|13|13|j=3;latin_squares.mzn|14|10|14|30|ca|alldifferent
+   latin_squares.mzn|18|5|20|9|ca|forall;latin_squares.mzn|18|5|20|9|ac;latin_squares.mzn|18|13|18|13|i=1;latin_squares.mzn|19|10|19|37|ca|lex_less
+   latin_squares.mzn|22|5|24|9|ca|forall;latin_squares.mzn|22|5|24|9|ac;latin_squares.mzn|22|13|22|13|j=1;latin_squares.mzn|23|10|23|40|ca|lex_greater
+   latin_squares.mzn|22|5|24|9|ca|forall;latin_squares.mzn|22|5|24|9|ac;latin_squares.mzn|22|13|22|13|j=2;latin_squares.mzn|23|10|23|40|ca|lex_greater
+   Total Time: 0.39174     nmuses: 2       map:     40     sat:     21     total:     61
 
-    Total Time: 0.24700     nmuses: 2       map: 10 sat: 6  total: 16
+The first line, starting with ``FznSubProblem:`` provides some useful
+information for debugging the ``findMUS`` tool. Next we have the list of MUSes.
+Each MUS is described with three sections:
 
-    =====UNKNOWN=====
-
-The first two lines, starting with ``FznSubProblem:`` and ``SubsetMap``
-provide some useful information for debugging the ``findMUS`` tool.
-Next we have the list of MUSes separated by a series of equals ``=``
-signs.  Each MUS is described with three sections:
-
- #. ``MUS:`` lists the indices of FlatZinc constraints involved in
+ #. ``MUS:`` lists the indices of the FlatZinc constraints involved in
     this MUS.
  #. ``Brief:`` lists the FlatZinc constraint name, the
-    expression name, and the constraint name for each involved FlatZinc
-    constraint.
+    expression name, the constraint name, and the loop index assignments
+    for each involved FlatZinc constraint.
  #. ``Traces:`` lists the MiniZinc paths corresponding to the constraints
     of the MUS.
     Each path typically contains a list of path elements separated by
@@ -291,12 +302,8 @@ found, and some statistics about the number of times the internal map
 solver ``map`` was called, and the number of times the subproblem solver
 was called ``sat``.
 
-Interpreting the two MUSes listed here we see that the ``lex``
-constraints from lines 16 and 19 were included in both and only one of
-the ``alldifferent`` constraints from line 9 and 12 are required for
-the model to be unsatisfiable.  The ``lex`` constraints being involved
-in every MUS make them a strong candidate for being the source of
-unsatisfiability in the user's model.
+Interpreting these two MUSes we see that the ``lex`` constraints are
+incompatible with the ``alldifferent`` constraints.
 
 
 Using FindMUS in the MiniZinc IDE
@@ -305,27 +312,37 @@ Using FindMUS in the MiniZinc IDE
 To use FindMUS in the MiniZinc IDE, upon discovering that a model is
 unsatisfiable. Select ``FindMUS`` from the solver configuration dropdown
 menu and click the solve button (play symbol).
-This should be relatively fast and help locate the relevant constraint
-items.  The following shows the result of running FindMUS with the
-default options.
+This will look for MUSes using the default ``--paramset mzn`` argument.
+
+.. image:: figures/findmus/ide_depth_mzn.png
+
+In this case we can see that the output pane shows the constraints
+involved in the MUS in terms of the expression annotations, grouped
+by the constraint annotations. Clicking on the MUS in the output pane
+will highlight the constraints in your model.
+
+If finding MUSes with ``--paramset mzn`` is prohibitively slow,
+you can try running instead with ``--paramset hint``.
+This merges many of the low level constraints into larger units
+and should be relatively fast and help locate the relevant constraint
+items.  The following shows the result:
 
 .. image:: figures/findmus/ide_depth_1.png
 
 Selecting the returned MUS highlights three top level constraints as
-shown: ``ADRows``, ``LLRows`` and ``LGCols``.  To get a more specific
-MUS we can instruct FindMUS to go deeper than the top level constraints
-by clicking the "Show configuration editor" button in the top right
-hand corner of the MiniZinc IDE window, and selecting the "Extra solver
-options" and selecting the ``mzn`` option under "Preset parameters".
-The following shows a more specific MUS in this model.
+shown: ``ADRows``, ``LLRows`` and ``LGCols``.
 
-.. image:: figures/findmus/ide_depth_mzn.png
+Alternatively, in some cases you may wish to look at the MUSes of your
+model in terms of the flattened FlatZinc program. To display these
+MUSes run FindMUS with the ``--paramset fzn`` argument.
 
-In this case we can see that the output pane lists more specific
-information about the constraints involved in the MUS. After each
-listed constraint name we see what any loop variables were
-assigned to when the constraint was added to the FlatZinc. For
-example ``(j=2)``.
+.. image:: figures/findmus/ide_depth_fzn.png
+
+In this figure you can see that the MUSes are expressed in terms of
+FlatZinc constraints along with any assignments to relevant loop variables.
+Clicking on this MUS also opens and highlights the source of the constraints
+in the MiniZinc library (in this case in Gecode's custom redefinition of
+``fzn_all_different_int``.
 
 How it works
 ------------
