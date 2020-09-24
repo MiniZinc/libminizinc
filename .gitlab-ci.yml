@@ -31,7 +31,9 @@ check:format:
     - cmake --build . --target format
   tags: [linux, docker]
   only:
-    - merge_requests
+    changes:
+      - "**/*.{cpp,c,h,hh,hpp}"
+      - .clang-format
 
 check:analyse:
   stage: check
@@ -43,7 +45,9 @@ check:analyse:
     - cmake --build . --config Debug
   tags: [linux, docker]
   only:
-    - merge_requests
+    changes:
+      - "**/*.{cpp,c,h,hh,hpp}"
+      - .clang-tidy
 
 # ----------- Build MiniZinc -----------
 
