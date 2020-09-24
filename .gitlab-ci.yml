@@ -37,7 +37,7 @@ check:analyse:
   script:
     - mkdir -p build
     - cd build
-    - cmake -GNinja .. -DCLANG_CXX_CLANG_TIDY="clang-tidy" -DCMAKE_BUILD_TYPE="Debug"
+    - cmake -GNinja .. -DCMAKE_CXX_CLANG_TIDY="clang-tidy" -DCMAKE_BUILD_TYPE="Debug"
     - cmake --build . --config Debug
   tags: [linux, docker]
 
