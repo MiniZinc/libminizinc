@@ -809,7 +809,7 @@ private:
 public:
   BreakPoint() { dontSimplify = false; }
   BreakPoint(bool ds) { dontSimplify = ds; }
-  virtual ~BreakPoint() {}
+  ~BreakPoint() override {}
   void setDontSimplify(bool b) { dontSimplify = b; }
   bool getDontSimplify() { return dontSimplify; }
 };
@@ -820,7 +820,7 @@ private:
 
 public:
   StringDocument() {}
-  virtual ~StringDocument() {}
+  ~StringDocument() override {}
 
   StringDocument(std::string s) : stringDocument(std::move(s)) {}
 
@@ -838,7 +838,7 @@ private:
   bool alignment;
 
 public:
-  virtual ~DocumentList() {
+  ~DocumentList() override {
     std::vector<Document*>::iterator it;
     for (it = docs.begin(); it != docs.end(); it++) {
       delete *it;
@@ -852,7 +852,7 @@ public:
     d->setParent(this);
   }
 
-  void setParent(Document* d) {
+  void setParent(Document* d) override {
     Document::setParent(d);
     std::vector<Document*>::iterator it;
     for (it = docs.begin(); it != docs.end(); it++) {

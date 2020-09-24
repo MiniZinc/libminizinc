@@ -177,9 +177,9 @@ class MetaEngine : public GecodeEngine {
 
 public:
   MetaEngine(FznSpace* s, Search::Options& o) : e(s, o) {}
-  virtual FznSpace* next() { return e.next(); }
-  virtual bool stopped() { return e.stopped(); }
-  virtual Gecode::Search::Statistics statistics() { return e.statistics(); }
+  FznSpace* next() override { return e.next(); }
+  bool stopped() override { return e.stopped(); }
+  Gecode::Search::Statistics statistics() override { return e.statistics(); }
 };
 
 GecodeSolverInstance::GecodeSolverInstance(Env& env, std::ostream& log,

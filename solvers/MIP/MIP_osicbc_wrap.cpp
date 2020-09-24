@@ -310,7 +310,7 @@ class MyEventHandler3 : public CbcEventHandler {
 public:
   /**@name Overrides */
   //@{
-  virtual CbcAction event(CbcEvent whichEvent);
+  CbcAction event(CbcEvent whichEvent) override;
   //@}
 
   /**@name Constructors, destructor etc*/
@@ -320,13 +320,13 @@ public:
   /// Constructor with pointer to model (redundant as setEventHandler does)
   MyEventHandler3(CbcModel* model, EventUserInfo& u_);
   /** Destructor */
-  virtual ~MyEventHandler3();
+  ~MyEventHandler3() override;
   /** The copy constructor. */
   MyEventHandler3(const MyEventHandler3& rhs);
   /// Assignment
   MyEventHandler3& operator=(const MyEventHandler3& rhs);
   /// Clone
-  virtual CbcEventHandler* clone() const;
+  CbcEventHandler* clone() const override;
   //@}
 
 protected:
@@ -493,7 +493,7 @@ class MyEventHandler4 : public ClpEventHandler {
 public:
   /**@name Overrides */
   //@{
-  virtual int event(Event whichEvent);
+  int event(Event whichEvent) override;
   //@}
 
   /**@name Constructors, destructor etc*/
@@ -503,13 +503,13 @@ public:
   /// Constructor with pointer to model (redundant as setEventHandler does)
   MyEventHandler4(ClpSimplex* model);
   /** Destructor */
-  virtual ~MyEventHandler4();
+  ~MyEventHandler4() override;
   /** The copy constructor. */
   MyEventHandler4(const MyEventHandler4& rhs);
   /// Assignment
   MyEventHandler4& operator=(const MyEventHandler4& rhs);
   /// Clone
-  virtual ClpEventHandler* clone() const;
+  ClpEventHandler* clone() const override;
   //@}
 
 protected:
@@ -671,8 +671,8 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
 
     /* switch on/off output to the screen */
     class NullCoinMessageHandler : public CoinMessageHandler {
-      int print() { return 0; }
-      void checkSeverity() {}
+      int print() override { return 0; }
+      void checkSeverity() override {}
     } nullHandler;
 
     //     CbcSolver control(osi);
@@ -722,11 +722,11 @@ void MIP_osicbc_wrapper::solve() {  // Move into ancestor?
     CoinMessageHandler msgStderr(stderr);
 
     class StderrCoinMessageHandler : public CoinMessageHandler {
-      int print() {
+      int print() override {
         cerr << messageBuffer_ << endl;
         return 0;
       }
-      void checkSeverity() {}
+      void checkSeverity() override {}
     } stderrHandler;
 
     if (fVerbose) {

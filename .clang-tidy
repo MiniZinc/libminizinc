@@ -18,7 +18,8 @@ Checks: '-*,
   modernize-deprecated-headers,
   performance-unnecessary-value-param,
   readability-named-parameter,
-  readability-non-const-parameter
+  readability-non-const-parameter,
+  modernize-use-override
 '
 WarningsAsErrors:  '*'
 HeaderFilterRegex: '^include/minizinc'
