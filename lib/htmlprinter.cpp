@@ -18,6 +18,7 @@
 
 #include <cctype>
 #include <sstream>
+#include <utility>
 
 namespace MiniZinc {
 
@@ -86,7 +87,7 @@ class DocItem {
 public:
   enum DocType { T_PAR = 0, T_VAR = 1, T_FUN = 2 };
   DocItem(const DocType& t0, std::string id0, std::string sig0, std::string doc0)
-      : t(t0), id(id0), sig(sig0), doc(doc0) {}
+      : t(t0), id(std::move(id0)), sig(std::move(sig0)), doc(std::move(doc0)) {}
   DocType t;
   std::string id;
   std::string sig;
@@ -107,8 +108,8 @@ public:
 
 class Group {
 public:
-  Group(const std::string& name0, const std::string& fullPath0)
-      : name(name0), fullPath(fullPath0) {}
+  Group(std::string name0, std::string fullPath0)
+      : name(std::move(name0)), fullPath(std::move(fullPath0)) {}
   std::string name;
   std::string fullPath;
   std::string desc;
@@ -884,9 +885,11 @@ std::vector<HtmlDocument> HtmlPrinter::printHtml(EnvI& env, MiniZinc::Model* m,
     std::string sig;
     std::string link;
     std::string groupName;
-    IndexEntry(const std::string& id0, const std::string& sig0, const std::string& link0,
-               const std::string& groupName0)
-        : id(id0), sig(sig0), link(link0), groupName(groupName0) {
+    IndexEntry(std::string id0, std::string sig0, std::string link0, std::string groupName0)
+        : id(std::move(id0)),
+          sig(std::move(sig0)),
+          link(std::move(link0)),
+          groupName(std::move(groupName0)) {
       size_t spacepos = id.find_last_of(' ');
       if (spacepos != std::string::npos) {
         id = id.substr(spacepos + 1);

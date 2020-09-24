@@ -15,6 +15,7 @@
 
 #include <string>
 #include <unordered_map>
+#include <utility>
 #include <vector>
 
 namespace MiniZinc {
@@ -31,9 +32,11 @@ public:
     std::string description;
     std::string flag_type;
     std::string default_value;
-    ExtraFlag(const std::string& f, const std::string& d, const std::string& t = "bool",
-              const std::string& v = "false")
-        : flag(f), description(d), flag_type(t), default_value(v) {}
+    ExtraFlag(std::string f, std::string d, std::string t = "bool", std::string v = "false")
+        : flag(std::move(f)),
+          description(std::move(d)),
+          flag_type(std::move(t)),
+          default_value(std::move(v)) {}
   };
 
 protected:
@@ -94,7 +97,8 @@ public:
   /// Default constructor
   SolverConfig() {}
   /// Constructor
-  SolverConfig(const std::string& id, const std::string& version) : _id(id), _version(version) {}
+  SolverConfig(std::string id, std::string version)
+      : _id(std::move(id)), _version(std::move(version)) {}
   /// Return identifier
   std::string id(void) const { return _id; }
   /// Return version string

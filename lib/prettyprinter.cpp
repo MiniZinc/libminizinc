@@ -21,6 +21,7 @@
 #include <map>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace MiniZinc {
@@ -821,7 +822,7 @@ public:
   StringDocument() {}
   virtual ~StringDocument() {}
 
-  StringDocument(std::string s) : stringDocument(s) {}
+  StringDocument(std::string s) : stringDocument(std::move(s)) {}
 
   std::string getString() { return stringDocument; }
   void setString(std::string s) { stringDocument = s; }

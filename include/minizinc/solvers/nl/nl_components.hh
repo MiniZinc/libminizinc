@@ -6,6 +6,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace std;
@@ -204,8 +205,8 @@ public:
   NLVar() = default;
 
   /** Constructor with declare time information */
-  NLVar(const string& name, bool is_integer, bool to_report, NLBound bound)
-      : name(name), is_integer(is_integer), to_report(to_report), bound(bound) {}
+  NLVar(string name, bool is_integer, bool to_report, NLBound bound)
+      : name(std::move(name)), is_integer(is_integer), to_report(to_report), bound(bound) {}
 
   /** Copy constructor, with update on bound */
   NLVar copy_with_bound(NLBound bound) const;

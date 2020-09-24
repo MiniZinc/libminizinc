@@ -19,6 +19,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace MiniZinc {
@@ -54,7 +55,7 @@ public:
   std::string n;
 
 protected:
-  MZNFZNSolverFlag(const FlagType& t0, const std::string& n0) : t(t0), n(n0) {}
+  MZNFZNSolverFlag(const FlagType& t0, std::string n0) : t(t0), n(std::move(n0)) {}
 
 public:
   /// Create flag that has an argument

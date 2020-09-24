@@ -19,6 +19,7 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace MiniZinc {
 
@@ -2931,9 +2932,9 @@ void output_model_interface(Env& env, Model* m, std::ostream& os,
     std::ostringstream oss_included_files;
     std::string method;
     bool output_item;
-    IfcVisitor(Env& env0, const std::vector<std::string>& skipDirs)
+    IfcVisitor(Env& env0, std::vector<std::string> skipDirs)
         : env(env0),
-          skip_dirs(skipDirs),
+          skip_dirs(std::move(skipDirs)),
           had_input(false),
           had_output(false),
           had_included_files(false),

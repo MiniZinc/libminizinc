@@ -12,6 +12,7 @@
 #pragma once
 
 #include <iostream>
+#include <utility>
 #include <vector>
 
 namespace MiniZinc {
@@ -25,8 +26,8 @@ protected:
   std::string _doc;
 
 public:
-  HtmlDocument(const std::string& filename, const std::string& title, const std::string& document)
-      : _filename(filename), _title(title), _doc(document) {}
+  HtmlDocument(std::string filename, std::string title, std::string document)
+      : _filename(std::move(filename)), _title(std::move(title)), _doc(std::move(document)) {}
   std::string filename(void) const { return _filename; }
   std::string title(void) const { return _title; }
   std::string document(void) const { return _doc; }

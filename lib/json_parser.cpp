@@ -15,6 +15,7 @@
 
 #include <fstream>
 #include <sstream>
+#include <utility>
 
 using namespace std;
 
@@ -33,7 +34,7 @@ public:
   int i;
   double d;
   bool b;
-  Token(std::string s0) : t(T_STRING), s(s0) {}
+  Token(std::string s0) : t(T_STRING), s(std::move(s0)) {}
   Token(int i0) : t(T_INT), i(i0), d(i0) {}
   Token(double d0) : t(T_FLOAT), d(d0) {}
   Token(bool b0) : t(T_BOOL), i(static_cast<int>(b0)), d(static_cast<double>(b0)), b(b0) {}

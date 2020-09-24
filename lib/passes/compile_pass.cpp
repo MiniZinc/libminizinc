@@ -26,6 +26,7 @@
 #include <minizinc/typecheck.hh>
 
 #include <fstream>
+#include <utility>
 
 namespace MiniZinc {
 
@@ -93,8 +94,8 @@ CompilePass::CompilePass(Env* e, FlatteningOptions& opts, CompilePassFlags& cfla
     : env(e),
       fopts(opts),
       compflags(cflags),
-      library(globals_library),
-      includePaths(include_paths),
+      library(std::move(globals_library)),
+      includePaths(std::move(include_paths)),
       change_library(change_lib),
       ignore_unknown_ids(ignore_unknown) {}
 

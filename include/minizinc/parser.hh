@@ -42,6 +42,7 @@ extern "C" int isatty(int);
 #include <iostream>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 namespace MiniZinc {
@@ -53,12 +54,12 @@ struct ParseWorkItem {
   std::string fileName;
   bool isSTDLib;
   bool isModelString;
-  ParseWorkItem(Model* m0, IncludeI* ii0, const std::string& dirName0, const std::string& fileName0,
+  ParseWorkItem(Model* m0, IncludeI* ii0, std::string dirName0, std::string fileName0,
                 bool isSTDLib0 = false, bool isModelString0 = false)
       : m(m0),
         ii(ii0),
-        dirName(dirName0),
-        fileName(fileName0),
+        dirName(std::move(dirName0)),
+        fileName(std::move(fileName0)),
         isSTDLib(isSTDLib0),
         isModelString(isModelString0) {}
 };

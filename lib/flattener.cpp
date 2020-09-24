@@ -23,6 +23,8 @@
 
 #ifdef HAS_GECODE
 #include <minizinc/solvers/gecode_solverinstance.hh>
+
+#include <utility>
 #endif
 
 using namespace std;
@@ -359,8 +361,8 @@ bool Flattener::processOption(int& i, std::vector<std::string>& argv) {
   return true;
 }
 
-Flattener::Flattener(std::ostream& os_, std::ostream& log_, const std::string& stdlibDir)
-    : os(os_), log(log_), std_lib_dir(stdlibDir) {}
+Flattener::Flattener(std::ostream& os_, std::ostream& log_, std::string stdlibDir)
+    : os(os_), log(log_), std_lib_dir(std::move(stdlibDir)) {}
 
 Flattener::~Flattener() {
   if (pEnv.get() != nullptr) {  // ??? TODO

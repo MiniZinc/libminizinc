@@ -13,6 +13,7 @@
 
 #include <exception>
 #include <string>
+#include <utility>
 
 namespace MiniZinc {
 
@@ -21,7 +22,7 @@ protected:
   std::string _msg;
 
 public:
-  Exception(const std::string& msg) : _msg(msg) {}
+  Exception(std::string msg) : _msg(std::move(msg)) {}
   virtual ~Exception(void) throw() {}
   virtual const char* what(void) const throw() = 0;
   const std::string& msg(void) const { return _msg; }

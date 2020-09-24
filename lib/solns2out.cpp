@@ -18,6 +18,7 @@
 #include <minizinc/solver.hh>
 
 #include <fstream>
+#include <utility>
 
 using namespace std;
 using namespace MiniZinc;
@@ -529,8 +530,8 @@ void Solns2Out::init() {
   nLinesIgnore = _opt.flag_ignore_lines;
 }
 
-Solns2Out::Solns2Out(std::ostream& os0, std::ostream& log0, const std::string& stdlibDir0)
-    : os(os0), log(log0), stdlibDir(stdlibDir0) {}
+Solns2Out::Solns2Out(std::ostream& os0, std::ostream& log0, std::string stdlibDir0)
+    : os(os0), log(log0), stdlibDir(std::move(stdlibDir0)) {}
 
 Solns2Out::~Solns2Out() {
   getOutput() << comments;

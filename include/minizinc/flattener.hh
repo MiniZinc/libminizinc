@@ -45,7 +45,7 @@ private:
   std::ostream& log;
 
 public:
-  Flattener(std::ostream& os, std::ostream& log, const std::string& stdlibDir);
+  Flattener(std::ostream& os, std::ostream& log, std::string stdlibDir);
   ~Flattener();
   bool processOption(int& i, std::vector<std::string>& argv);
   void printVersion(std::ostream&);

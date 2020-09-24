@@ -6,6 +6,7 @@
 #include <cstring>
 #include <fstream>
 #include <string>
+#include <utility>
 #include <vector>
 
 using namespace std;
@@ -83,7 +84,7 @@ public:
   NLSol() = default;
 
   NLSol(string mes, NL_Solver_Status st, vector<double> res)
-      : message(mes), status(st), values(res) {}
+      : message(std::move(mes)), status(st), values(std::move(res)) {}
 
   // --- --- --- Static functions
 
