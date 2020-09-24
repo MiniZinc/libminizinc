@@ -30,6 +30,8 @@ check:format:
     - cmake -GNinja .. -DCLANG_FORMAT_EXECUTABLE="run-clang-format" -DCLANG_FORMAT_FLAGS="--color always"
     - cmake --build . --target format
   tags: [linux, docker]
+  only:
+    - merge_requests
 
 check:analyse:
   stage: check
@@ -40,6 +42,8 @@ check:analyse:
     - cmake -GNinja .. -DCMAKE_CXX_CLANG_TIDY="clang-tidy" -DCMAKE_BUILD_TYPE="Debug"
     - cmake --build . --config Debug
   tags: [linux, docker]
+  only:
+    - merge_requests
 
 # ----------- Build MiniZinc -----------
 
