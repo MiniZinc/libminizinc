@@ -1,0 +1,23 @@
+---
+Checks: '-*,
+  modernize-use-nullptr,
+  modernize-use-auto,
+  modernize-use-emplace,
+  modernize-loop-convert,
+  readability-implicit-bool-conversion,
+  readability-braces-around-statements,
+  readability-delete-null-pointer,
+  readability-qualified-auto,
+  readability-redundant-control-flow,
+  readability-simplify-boolean-expr,
+  readability-container-size-empty,
+  readability-uppercase-literal-suffix,
+  modernize-pass-by-value,
+  modernize-redundant-void-arg,
+  bugprone-unhandled-self-assignment,
+  modernize-deprecated-headers
+'
+WarningsAsErrors:  '*'
+HeaderFilterRegex: '^include/minizinc'
+FormatStyle: file
+...
